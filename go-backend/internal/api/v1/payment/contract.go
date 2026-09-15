@@ -29,7 +29,7 @@ type transactionResponse struct {
 	OrderID          uint       `json:"order_id"`
 	TransactionID    string     `json:"transaction_id"`
 	PaymentMethod    string     `json:"payment_method"`
-	Amount           float64    `json:"amount"`
+	AmountMinor      int64      `json:"amount_minor"`
 	Currency         string     `json:"currency"`
 	Status           string     `json:"status"`
 	LiabilityShifted *bool      `json:"liability_shifted,omitempty"`
@@ -40,35 +40,38 @@ type transactionResponse struct {
 }
 
 type refundResponse struct {
-	ID                     uint                     `json:"id"`
-	OrderID                uint                     `json:"order_id"`
-	TransactionID          uint                     `json:"transaction_id"`
-	RefundID               *string                  `json:"refund_id,omitempty"`
-	Amount                 float64                  `json:"amount"`
-	RequestedAmount        float64                  `json:"requested_amount"`
-	DiscountClawbackAmount float64                  `json:"discount_clawback_amount"`
-	LineItems              []refundLineItemResponse `json:"line_items,omitempty"`
-	Reason                 string                   `json:"reason"`
-	Status                 string                   `json:"status"`
-	CreatedAt              time.Time                `json:"created_at"`
-	UpdatedAt              time.Time                `json:"updated_at"`
-	CompletedAt            *time.Time               `json:"completed_at"`
+	ID                    uint                     `json:"id"`
+	OrderID               uint                     `json:"order_id"`
+	TransactionID         uint                     `json:"transaction_id"`
+	RefundID              *string                  `json:"refund_id,omitempty"`
+	AmountMinor           int64                    `json:"amount_minor"`
+	GiftCardAmountMinor   int64                    `json:"gift_card_refund_amount_minor"`
+	RequestedAmountMinor  int64                    `json:"requested_amount_minor"`
+	DiscountClawbackMinor int64                    `json:"discount_clawback_amount_minor"`
+	Currency              string                   `json:"currency"`
+	LineItems             []refundLineItemResponse `json:"line_items,omitempty"`
+	Reason                string                   `json:"reason"`
+	Status                string                   `json:"status"`
+	CreatedAt             time.Time                `json:"created_at"`
+	UpdatedAt             time.Time                `json:"updated_at"`
+	CompletedAt           *time.Time               `json:"completed_at"`
 }
 
 type refundLineItemResponse struct {
-	ID                 uint    `json:"id"`
-	OrderItemID        uint    `json:"order_item_id"`
-	ProductID          uint    `json:"product_id"`
-	VariantID          *uint   `json:"variant_id,omitempty"`
-	ProductName        string  `json:"product_name"`
-	SKU                string  `json:"sku"`
-	Quantity           int     `json:"quantity"`
-	UnitPrice          float64 `json:"unit_price"`
-	LineSubtotalAmount float64 `json:"line_subtotal_amount"`
-	LineTaxAmount      float64 `json:"line_tax_amount"`
-	LineDiscountAmount float64 `json:"line_discount_amount"`
-	LineTotalAmount    float64 `json:"line_total_amount"`
-	Restock            bool    `json:"restock"`
+	ID                uint   `json:"id"`
+	OrderItemID       uint   `json:"order_item_id"`
+	ProductID         uint   `json:"product_id"`
+	VariantID         *uint  `json:"variant_id,omitempty"`
+	ProductName       string `json:"product_name"`
+	SKU               string `json:"sku"`
+	Quantity          int    `json:"quantity"`
+	Currency          string `json:"currency"`
+	UnitPriceMinor    int64  `json:"unit_price_minor"`
+	LineSubtotalMinor int64  `json:"line_subtotal_minor"`
+	LineTaxMinor      int64  `json:"line_tax_minor"`
+	LineDiscountMinor int64  `json:"line_discount_minor"`
+	LineTotalMinor    int64  `json:"line_total_minor"`
+	Restock           bool   `json:"restock"`
 }
 
 func paymentMethodToResponse(method paymentdomain.PaymentMethod) paymentMethodResponse {
@@ -100,12 +103,18 @@ func paymentMethodsToResponse(methods []paymentdomain.PaymentMethod) []paymentMe
 }
 
 func transactionToResponse(transaction paymentdomain.Transaction) transactionResponse {
+	amountMinor := transaction.AmountMinor
+	if amountMinor == 0 && transaction.Amount != 0 {
+		if amount, err := transaction.AmountMoney(); err == nil {
+			amountMinor = amount.AmountMinor()
+		}
+	}
 	return transactionResponse{
 		ID:               transaction.ID,
 		OrderID:          transaction.OrderID,
 		TransactionID:    transaction.TransactionID,
 		PaymentMethod:    transaction.PaymentMethod,
-		Amount:           transaction.Amount,
+		AmountMinor:      amountMinor,
 		Currency:         transaction.Currency,
 		Status:           transaction.Status,
 		LiabilityShifted: transaction.LiabilityShifted,
@@ -125,20 +134,35 @@ func transactionsToResponse(transactions []paymentdomain.Transaction) []transact
 }
 
 func refundToResponse(refund paymentdomain.Refund) refundResponse {
+	amountMinor := refund.AmountMinor
+	requestedMinor := refund.RequestedAmountMinor
+	discountMinor := refund.DiscountClawbackAmountMinor
+	if amountMinor == 0 && refund.Amount != 0 {
+		if amount, err := refund.AmountMoney(); err == nil {
+			amountMinor = amount.AmountMinor()
+		}
+	}
+	if requestedMinor == 0 && refund.RequestedAmount != 0 {
+		if amount, err := refund.RequestedAmountMoney(); err == nil {
+			requestedMinor = amount.AmountMinor()
+		}
+	}
 	return refundResponse{
-		ID:                     refund.ID,
-		OrderID:                refund.OrderID,
-		TransactionID:          refund.TransactionID,
-		RefundID:               refund.RefundID,
-		Amount:                 refund.Amount,
-		RequestedAmount:        refund.RequestedAmount,
-		DiscountClawbackAmount: refund.DiscountClawbackAmount,
-		LineItems:              refundLineItemsToResponse(refund.LineItems),
-		Reason:                 refund.Reason,
-		Status:                 refund.Status,
-		CreatedAt:              refund.CreatedAt,
-		UpdatedAt:              refund.UpdatedAt,
-		CompletedAt:            refund.CompletedAt,
+		ID:                    refund.ID,
+		OrderID:               refund.OrderID,
+		TransactionID:         refund.TransactionID,
+		RefundID:              refund.RefundID,
+		AmountMinor:           amountMinor,
+		GiftCardAmountMinor:   refund.GiftCardRefundAmountMinor,
+		RequestedAmountMinor:  requestedMinor,
+		DiscountClawbackMinor: discountMinor,
+		Currency:              refund.Currency,
+		LineItems:             refundLineItemsToResponse(refund.LineItems),
+		Reason:                refund.Reason,
+		Status:                refund.Status,
+		CreatedAt:             refund.CreatedAt,
+		UpdatedAt:             refund.UpdatedAt,
+		CompletedAt:           refund.CompletedAt,
 	}
 }
 
@@ -148,20 +172,51 @@ func refundLineItemsToResponse(lineItems []paymentdomain.RefundLineItem) []refun
 	}
 	items := make([]refundLineItemResponse, 0, len(lineItems))
 	for _, item := range lineItems {
+		unitPriceMinor := item.UnitPriceMinor
+		if unitPriceMinor == 0 && item.UnitPrice != 0 {
+			if value, err := item.UnitPriceMoney(); err == nil {
+				unitPriceMinor = value.AmountMinor()
+			}
+		}
+		subtotalMinor := item.LineSubtotalMinor
+		if subtotalMinor == 0 && item.LineSubtotalAmount != 0 {
+			if value, err := item.LineSubtotalMoney(); err == nil {
+				subtotalMinor = value.AmountMinor()
+			}
+		}
+		taxMinor := item.LineTaxMinor
+		if taxMinor == 0 && item.LineTaxAmount != 0 {
+			if value, err := item.LineTaxMoney(); err == nil {
+				taxMinor = value.AmountMinor()
+			}
+		}
+		discountMinor := item.LineDiscountMinor
+		if discountMinor == 0 && item.LineDiscountAmount != 0 {
+			if value, err := item.LineDiscountMoney(); err == nil {
+				discountMinor = value.AmountMinor()
+			}
+		}
+		totalMinor := item.LineTotalMinor
+		if totalMinor == 0 && item.LineTotalAmount != 0 {
+			if value, err := item.LineTotalMoney(); err == nil {
+				totalMinor = value.AmountMinor()
+			}
+		}
 		items = append(items, refundLineItemResponse{
-			ID:                 item.ID,
-			OrderItemID:        item.OrderItemID,
-			ProductID:          item.ProductID,
-			VariantID:          item.VariantID,
-			ProductName:        item.ProductName,
-			SKU:                item.SKU,
-			Quantity:           item.Quantity,
-			UnitPrice:          item.UnitPrice,
-			LineSubtotalAmount: item.LineSubtotalAmount,
-			LineTaxAmount:      item.LineTaxAmount,
-			LineDiscountAmount: item.LineDiscountAmount,
-			LineTotalAmount:    item.LineTotalAmount,
-			Restock:            item.Restock,
+			ID:                item.ID,
+			OrderItemID:       item.OrderItemID,
+			ProductID:         item.ProductID,
+			VariantID:         item.VariantID,
+			ProductName:       item.ProductName,
+			SKU:               item.SKU,
+			Quantity:          item.Quantity,
+			Currency:          item.Currency,
+			UnitPriceMinor:    unitPriceMinor,
+			LineSubtotalMinor: subtotalMinor,
+			LineTaxMinor:      taxMinor,
+			LineDiscountMinor: discountMinor,
+			LineTotalMinor:    totalMinor,
+			Restock:           item.Restock,
 		})
 	}
 	return items

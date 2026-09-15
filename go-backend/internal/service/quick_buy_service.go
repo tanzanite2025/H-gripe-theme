@@ -153,15 +153,15 @@ type QuickBuyStepView struct {
 }
 
 type QuickBuySpecFilterView struct {
-	ID              uint     `json:"id"`
-	Name            string   `json:"name"`
-	Slug            string   `json:"slug"`
-	Unit            string   `json:"unit,omitempty"`
-	FieldType       string   `json:"field_type"`
-	Presentation    string   `json:"presentation"`
-	IsVariantOption bool     `json:"is_variant_option"`
-	Multiple        bool     `json:"multiple"`
-	Values          []string `json:"values"`
+	ID           uint     `json:"id"`
+	Name         string   `json:"name"`
+	Slug         string   `json:"slug"`
+	Unit         string   `json:"unit,omitempty"`
+	FieldType    string   `json:"field_type"`
+	Presentation string   `json:"presentation"`
+	Role         string   `json:"role"`
+	Multiple     bool     `json:"multiple"`
+	Values       []string `json:"values"`
 }
 
 type QuickBuyProductSpecificationTemplateView struct {

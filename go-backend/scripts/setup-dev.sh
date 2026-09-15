@@ -4,6 +4,12 @@
 
 set -e
 
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$(cd -- "${SCRIPT_DIR}/../.." && pwd)"
+BACKEND_DIR="${ROOT_DIR}/go-backend"
+COMPOSE_FILE="${ROOT_DIR}/docker-compose.yml"
+cd "${BACKEND_DIR}"
+
 echo "🔧 Setting up Storefront Go Backend development environment..."
 
 # Check Go installation
@@ -54,9 +60,9 @@ go mod download
 go mod tidy
 
 # Start Docker services (PostgreSQL + Redis)
-if command -v docker-compose &> /dev/null; then
+if command -v docker &> /dev/null && docker compose version &> /dev/null; then
     echo "🐳 Starting Docker services..."
-    docker-compose up -d postgres redis
+    docker compose -f "${COMPOSE_FILE}" up -d postgres redis
     echo "⏳ Waiting for services to be ready..."
     sleep 5
 fi
@@ -72,4 +78,4 @@ echo "  4. Visit http://localhost:9200/health to check if it's running"
 echo ""
 echo "🔥 For hot reload development: make dev"
 echo "🧪 To run tests: make test"
-echo "🐳 To start all services with Docker: make docker-up"
+echo "🐳 To start all services with Docker: make docker-compose-up"

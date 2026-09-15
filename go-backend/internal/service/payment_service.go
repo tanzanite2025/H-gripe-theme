@@ -6,10 +6,10 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"math"
 	"strings"
 	"time"
 
+	domainmoney "commerce-platform/internal/domain/money"
 	"commerce-platform/internal/domain/payment"
 	"commerce-platform/internal/pkg/antifraud"
 	"commerce-platform/internal/repository"
@@ -133,8 +133,7 @@ type GatewayPaymentAttemptInput struct {
 	ProviderRequestKey string
 	PaymentMethod      string
 	Status             string
-	Amount             float64
-	Currency           string
+	Amount             domainmoney.Money
 	GatewayResponse    string
 	ErrorMessage       string
 }
@@ -145,19 +144,13 @@ type EnsureGatewayPaymentAttemptInput struct {
 	AttemptKey         string
 	ProviderRequestKey string
 	PaymentMethod      string
-	Amount             float64
-	Currency           string
+	Amount             domainmoney.Money
 }
 
-// NormalizePaymentAttemptKey scopes a client retry key to one provider and
-// order. A missing key keeps legacy callers on the old order-scoped behavior;
-// API handlers should always receive a key from the Idempotency-Key middleware.
-func NormalizePaymentAttemptKey(provider string, orderID uint, requestKey string) string {
-	requestKey = strings.TrimSpace(requestKey)
-	if requestKey == "" {
-		return fmt.Sprintf("legacy:%s:%d", strings.TrimSpace(provider), orderID)
-	}
-	return requestKey
+// NormalizePaymentAttemptKey accepts only the client-provided retry key.
+// Payment-facing routes require this value through idempotency middleware.
+func NormalizePaymentAttemptKey(requestKey string) string {
+	return strings.TrimSpace(requestKey)
 }
 
 func PaymentProviderRequestKey(provider string, orderID uint, attemptKey string) string {
@@ -222,31 +215,40 @@ func (s *PaymentService) EnsureGatewayPaymentAttempt(input EnsureGatewayPaymentA
 	if input.PaymentMethod == "" {
 		input.PaymentMethod = input.Provider
 	}
-	input.Currency = normalizePaymentCurrency(input.Currency)
-
 	var attempt *payment.Transaction
 	err := s.txManager.WithinTx(func(repos repository.TxRepositories) error {
 		o, err := repos.Order.FindByOrderNumberForVerification(input.OrderNumber)
 		if err != nil {
 			return normalizeOrderError(err)
 		}
-		expectedCurrency, err := orderPaymentCurrency(o)
+		expectedSettlement, err := orderPaymentSettlement(o)
 		if err != nil {
 			return err
 		}
-		if input.Currency == "" {
-			input.Currency = expectedCurrency
-		} else if input.Currency != expectedCurrency {
-			return fmt.Errorf("transaction currency %s does not match order currency %s", input.Currency, expectedCurrency)
+		expectedCurrency := expectedSettlement.Currency().String()
+		if input.Amount.Currency().String() == "" {
+			return errors.New("payment attempt amount is required")
 		}
-		if input.Amount <= 0 {
-			input.Amount = o.TotalAmount
+		if input.Amount.Currency().String() != expectedCurrency {
+			return fmt.Errorf("payment amount currency %s does not match order currency %s", input.Amount.Currency().String(), expectedCurrency)
 		}
-		if math.Abs(o.TotalAmount-input.Amount) >= gatewayPaymentAmountTolerance {
-			return fmt.Errorf("payment amount %.2f does not match order total %.2f", input.Amount, o.TotalAmount)
+		if input.Amount.AmountMinor() <= 0 {
+			return errors.New("payment attempt amount must be greater than zero")
+		}
+		if input.Amount.AmountMinor() != expectedSettlement.AmountMinor() {
+			actualAmount, _ := input.Amount.MajorFloat()
+			expectedAmount, _ := expectedSettlement.MajorFloat()
+			return fmt.Errorf("payment amount %.2f does not match payable amount %.2f", actualAmount, expectedAmount)
+		}
+		inputAmount, amountErr := input.Amount.MajorFloat()
+		if amountErr != nil {
+			return amountErr
 		}
 
-		input.AttemptKey = NormalizePaymentAttemptKey(input.Provider, o.ID, input.AttemptKey)
+		input.AttemptKey = NormalizePaymentAttemptKey(input.AttemptKey)
+		if input.AttemptKey == "" {
+			return errors.New("payment attempt key is required")
+		}
 		if input.ProviderRequestKey == "" {
 			input.ProviderRequestKey = PaymentProviderRequestKey(input.Provider, o.ID, input.AttemptKey)
 		}
@@ -264,8 +266,9 @@ func (s *PaymentService) EnsureGatewayPaymentAttempt(input EnsureGatewayPaymentA
 			AttemptKey:         input.AttemptKey,
 			ProviderRequestKey: input.ProviderRequestKey,
 			PaymentMethod:      input.PaymentMethod,
-			Amount:             input.Amount,
-			Currency:           input.Currency,
+			AmountMinor:        input.Amount.AmountMinor(),
+			Amount:             inputAmount,
+			Currency:           expectedCurrency,
 			Status:             "pending",
 			CreatedAt:          now,
 			UpdatedAt:          now,
@@ -311,29 +314,38 @@ func (s *PaymentService) RecordGatewayPaymentAttempt(input GatewayPaymentAttempt
 		input.PaymentMethod = input.Provider
 	}
 	input.Status = normalizeGatewayAttemptStatus(input.Status)
-	input.Currency = normalizePaymentCurrency(input.Currency)
-
 	return s.txManager.WithinTx(func(repos repository.TxRepositories) error {
 		o, err := repos.Order.FindByOrderNumberForVerification(input.OrderNumber)
 		if err != nil {
 			return normalizeOrderError(err)
 		}
-		expectedCurrency, err := orderPaymentCurrency(o)
+		expectedSettlement, err := orderPaymentSettlement(o)
 		if err != nil {
 			return err
 		}
-		if input.Currency == "" {
-			input.Currency = expectedCurrency
-		} else if input.Currency != expectedCurrency {
-			return fmt.Errorf("transaction currency %s does not match order currency %s", input.Currency, expectedCurrency)
+		expectedCurrency := expectedSettlement.Currency().String()
+		expectedAmount, err := expectedSettlement.MajorFloat()
+		if err != nil {
+			return err
 		}
-		if input.Amount > 0 && math.Abs(o.TotalAmount-input.Amount) >= gatewayPaymentAmountTolerance {
-			return fmt.Errorf("payment amount %.2f does not match order total %.2f", input.Amount, o.TotalAmount)
+		amountMoney := input.Amount
+		if amountMoney.Currency().String() == "" || amountMoney.AmountMinor() <= 0 {
+			amountMoney = expectedSettlement
+		} else if amountMoney.Currency().String() != expectedCurrency {
+			return fmt.Errorf("payment amount currency %s does not match order currency %s", amountMoney.Currency().String(), expectedCurrency)
+		}
+		if amountMoney.AmountMinor() != expectedSettlement.AmountMinor() {
+			actualAmount, _ := amountMoney.MajorFloat()
+			return fmt.Errorf("payment amount %.2f does not match payable amount %.2f", actualAmount, expectedAmount)
+		}
+		amount, amountErr := amountMoney.MajorFloat()
+		if amountErr != nil {
+			return amountErr
 		}
 
 		var existing *payment.Transaction
 		if input.AttemptKey != "" {
-			input.AttemptKey = NormalizePaymentAttemptKey(input.Provider, o.ID, input.AttemptKey)
+			input.AttemptKey = NormalizePaymentAttemptKey(input.AttemptKey)
 			if attempt, attemptErr := repos.Payment.FindTransactionByAttemptKeyForUpdate(o.ID, input.PaymentMethod, input.AttemptKey); attemptErr == nil {
 				existing = attempt
 			} else if !repository.IsRecordNotFound(attemptErr) {
@@ -348,7 +360,10 @@ func (s *PaymentService) RecordGatewayPaymentAttempt(input GatewayPaymentAttempt
 			}
 		}
 		if existing != nil {
-			if existing.Status == "completed" || existing.Status == "refunded" || existing.Status == "expired" {
+			if existing.Status == "completed" ||
+				existing.Status == payment.TransactionStatusDuplicatePaid ||
+				existing.Status == "refunded" ||
+				existing.Status == "expired" {
 				return nil
 			}
 			if input.AttemptKey != "" {
@@ -360,30 +375,24 @@ func (s *PaymentService) RecordGatewayPaymentAttempt(input GatewayPaymentAttempt
 			existing.TransactionID = input.TransactionID
 			existing.OrderID = o.ID
 			existing.PaymentMethod = input.PaymentMethod
-			if input.Amount > 0 {
-				existing.Amount = input.Amount
-			} else if existing.Amount <= 0 {
-				existing.Amount = o.TotalAmount
-			}
-			existing.Currency = input.Currency
+			existing.AmountMinor = amountMoney.AmountMinor()
+			existing.Amount = amount
+			existing.Currency = expectedCurrency
 			existing.Status = input.Status
 			existing.GatewayResponse = input.GatewayResponse
 			existing.ErrorMessage = input.ErrorMessage
 			return repos.Payment.UpdateTransaction(existing)
 		}
 
-		amount := input.Amount
-		if amount <= 0 {
-			amount = o.TotalAmount
-		}
 		return repos.Payment.CreateTransaction(&payment.Transaction{
 			OrderID:            o.ID,
 			TransactionID:      input.TransactionID,
 			AttemptKey:         input.AttemptKey,
 			ProviderRequestKey: input.ProviderRequestKey,
 			PaymentMethod:      input.PaymentMethod,
+			AmountMinor:        amountMoney.AmountMinor(),
 			Amount:             amount,
-			Currency:           input.Currency,
+			Currency:           expectedCurrency,
 			Status:             input.Status,
 			GatewayResponse:    input.GatewayResponse,
 			ErrorMessage:       input.ErrorMessage,

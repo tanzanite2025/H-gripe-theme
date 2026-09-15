@@ -32,7 +32,7 @@ const { t } = useI18n()
 const route = useRoute()
 const localePath = useLocalePath()
 const auth = useAuth()
-const { clearCart, openCart } = useCart()
+const { reloadCartFromBackend, openCart } = useCart()
 const { confirmAlipayOrder } = useAlipayPayment()
 const status = ref<'loading' | 'success' | 'error'>('loading')
 const message = ref(t('checkout.alipayReturn.messages.confirming'))
@@ -70,7 +70,7 @@ onMounted(async () => {
       throw new Error(t('checkout.alipayReturn.messages.incomplete'))
     }
 
-    clearCart()
+    await reloadCartFromBackend()
     status.value = 'success'
     message.value = t('checkout.alipayReturn.messages.success')
   } catch (error) {

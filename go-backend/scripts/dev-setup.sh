@@ -7,6 +7,13 @@
 
 set -euo pipefail
 
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$(cd -- "${SCRIPT_DIR}/../.." && pwd)"
+BACKEND_DIR="${ROOT_DIR}/go-backend"
+COMPOSE_FILE="${ROOT_DIR}/docker-compose.yml"
+COMPOSE=(docker compose -f "${COMPOSE_FILE}")
+cd "${BACKEND_DIR}"
+
 # 颜色输出
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -82,8 +89,11 @@ if ! check_tool "docker" "https://docs.docker.com/get-docker/"; then
     MISSING_TOOLS=$((MISSING_TOOLS + 1))
 fi
 
-# Docker Compose
-if ! check_tool "docker-compose" "https://docs.docker.com/compose/install/"; then
+# Docker Compose v2
+if command -v docker &> /dev/null && docker compose version &> /dev/null; then
+    log "✓ docker compose 已安装"
+else
+    warn "✗ Docker Compose v2 未安装"
     MISSING_TOOLS=$((MISSING_TOOLS + 1))
 fi
 
@@ -120,14 +130,14 @@ APP_DEBUG=true
 # 数据库配置
 DB_HOST=localhost
 DB_PORT=9400
-DB_NAME=commerce_platform_dev
+DB_NAME=commerce_platform
 DB_USERNAME=commerce_platform
-DB_PASSWORD=commerce_platform_dev_password
+DB_PASSWORD=commerce_platform_password
 DB_SSLMODE=disable
 
 # Redis配置
 REDIS_HOST=localhost
-REDIS_PORT=9510
+REDIS_PORT=9562
 REDIS_PASSWORD=
 REDIS_DB=0
 
@@ -174,39 +184,36 @@ echo ""
 #############################################
 log "Step 3: 启动Docker服务（PostgreSQL和Redis）..."
 
-# 检查docker-compose.yml是否存在
-if [ ! -f "../docker-compose.yml" ]; then
-    error "docker-compose.yml 文件不存在"
+# 检查根目录 Compose 文件是否存在
+if [ ! -f "${COMPOSE_FILE}" ]; then
+    error "根目录 docker-compose.yml 文件不存在"
     exit 1
 fi
 
 # 启动服务
 log "启动PostgreSQL和Redis..."
-cd ..
-docker-compose up -d postgres redis
+"${COMPOSE[@]}" up -d postgres redis
 
 # 等待服务就绪
 log "等待数据库服务就绪..."
 sleep 5
 
 # 检查服务状态
-if docker-compose ps | grep -q "postgres.*Up"; then
+if "${COMPOSE[@]}" ps | grep -q "postgres.*Up"; then
     log "✓ PostgreSQL 已启动"
 else
     error "PostgreSQL 启动失败"
-    docker-compose logs postgres
+    "${COMPOSE[@]}" logs postgres
     exit 1
 fi
 
-if docker-compose ps | grep -q "redis.*Up"; then
+if "${COMPOSE[@]}" ps | grep -q "redis.*Up"; then
     log "✓ Redis 已启动"
 else
     error "Redis 启动失败"
-    docker-compose logs redis
+    "${COMPOSE[@]}" logs redis
     exit 1
 fi
-
-cd go-backend
 
 echo ""
 
@@ -323,12 +330,12 @@ echo "   ${GREEN}make help${NC}"
 echo ""
 info "数据库连接信息："
 echo "  Host: localhost:9400"
-echo "  Database: commerce_platform_dev"
+echo "  Database: commerce_platform"
 echo "  User: commerce_platform"
-echo "  Password: commerce_platform_dev_password"
+echo "  Password: commerce_platform_password"
 echo ""
 info "Redis连接信息："
-echo "  Host: localhost:9510"
+echo "  Host: localhost:9562"
 echo "  Database: 0"
 echo ""
 echo "=========================================="

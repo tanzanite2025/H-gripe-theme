@@ -37,6 +37,31 @@
         </div>
       </fieldset>
     </div>
+    <div v-if="customOptionGroups.length" class="custom-option-groups">
+      <fieldset v-for="group in customOptionGroups" :key="`custom-${group.slug}`" class="variant-option-group">
+        <legend>
+          {{ group.name }}
+          <small v-if="group.isValid === false" class="custom-option-group__error">Select required options</small>
+        </legend>
+        <div class="variant-option-buttons">
+          <button
+            v-for="option in group.options"
+            :key="`${group.slug}-${option.value}`"
+            type="button"
+            class="variant-option-button"
+            :class="{ 'variant-option-button--selected': option.selected, 'variant-option-button--out': !option.available }"
+            :disabled="!option.available"
+            :title="!option.available && option.unavailableReason ? option.unavailableReason : undefined"
+            :aria-label="`${group.name}: ${option.label}${!option.available && option.unavailableReason ? ` (${option.unavailableReason})` : ''}`"
+            :aria-pressed="option.selected"
+            @click="emit('select-custom-option', { slug: group.slug, value: option.value })"
+          >
+            <span class="variant-option-button__label">{{ option.label }}</span>
+            <small v-if="option.priceDeltaMinor > 0">+{{ formatPriceDelta(option.priceDeltaMinor) }}</small>
+          </button>
+        </div>
+      </fieldset>
+    </div>
     <div v-else-if="variantChoices.length > 1" class="product-variants">
       <label for="variant-select">Choose option</label>
       <select
@@ -64,28 +89,42 @@
 </template>
 
 <script setup lang="ts">
-import type { ProductVariantOptionGroup } from '~/types/productDetail'
+import type { ProductCustomOptionGroup, ProductVariantOptionGroup } from '~/types/productDetail'
 
 interface VariantChoice {
   id: number
   label: string
 }
 
-defineProps<{
+const props = withDefaults(defineProps<{
   variantChoices: VariantChoice[]
   variantOptionGroups: ProductVariantOptionGroup[]
+  customOptionGroups?: ProductCustomOptionGroup[]
+  currency?: string
   selectedVariantId: number | null
   selectedVariantWeight: number | null
-}>()
+}>(), { customOptionGroups: () => [], currency: 'USD' })
 
 const emit = defineEmits<{
   (event: 'select-option', payload: { slug: string; value: string }): void
   (event: 'update:selectedVariantId', value: number | null): void
+  (event: 'select-custom-option', payload: { slug: string; value: string }): void
 }>()
 
 const handleVariantChange = (event: Event) => {
   const value = Number((event.target as HTMLSelectElement).value)
   emit('update:selectedVariantId', Number.isFinite(value) && value > 0 ? value : null)
+}
+
+const formatPriceDelta = (minor: number) => {
+  const value = Number(minor || 0)
+  if (!Number.isFinite(value) || value <= 0) return ''
+  const currencyCode = String(props.currency || 'USD').toUpperCase()
+  try {
+    return new Intl.NumberFormat(undefined, { style: 'currency', currency: currencyCode }).format(value / (['BHD', 'IQD', 'JOD', 'KWD', 'LYD', 'OMR', 'TND'].includes(currencyCode) ? 1000 : ['BIF', 'CLP', 'DJF', 'GNF', 'JPY', 'KMF', 'KRW', 'MGA', 'PYG', 'RWF', 'UGX', 'VND', 'VUV', 'XAF', 'XOF', 'XPF'].includes(currencyCode) ? 1 : 100))
+  } catch {
+    return String(value)
+  }
 }
 </script>
 
@@ -125,6 +164,14 @@ const handleVariantChange = (event: Event) => {
   font-weight: 700;
   letter-spacing: 0;
   text-transform: uppercase;
+}
+
+.custom-option-group__error {
+  margin-left: 0.5rem;
+  color: var(--tz-status-danger-text);
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: none;
 }
 
 .variant-option-buttons {

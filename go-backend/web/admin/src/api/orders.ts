@@ -1,5 +1,6 @@
 import axios from '@/utils/axios'
 import {
+  requireApiAcknowledgement,
   requireApiArray,
   requireApiObject,
   requireApiPagination,
@@ -26,6 +27,11 @@ const readPaged = <T = any>(response: unknown, path: string) => {
 }
 
 export const ordersApi = {
+  async hideUnpaidCancelledOrPaymentExpiredOrderFromDefaultQueries(orderID: number | string) {
+    const path = `/api/admin/orders/${orderID}/hide-unpaid-terminal`
+    return requireApiAcknowledgement(await axios.post(path), path)
+  },
+
   async listDisputes(params: Record<string, any> = {}) {
     const path = '/api/admin/orders/disputes'
     return readPaged<OrderDisputeCase>(await axios.get(path, { params }), path)

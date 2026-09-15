@@ -254,7 +254,7 @@ const {
   cartCount,
   subtotal,
   cartCurrency,
-  clearCart,
+  reloadCartFromBackend,
   closeCart,
   openCheckout,
   updateQuantity,
@@ -446,7 +446,7 @@ const handleStripeExpressCheckoutConfirm = async (
       returnUrl.toString(),
     )
     if (['succeeded', 'processing', 'requires_capture'].includes(result.status)) {
-      clearCart()
+      await reloadCartFromBackend()
       closeCart()
       return
     }
@@ -480,7 +480,7 @@ const handleAddToWishlist = async (item: any) => {
   }
 }
 
-const onQuantityInput = (id: number, event: Event) => {
+const onQuantityInput = (id: number | string, event: Event) => {
   const target = event.target as HTMLInputElement | null
   const raw = target ? target.value : ''
   const parsed = parseInt(raw, 10) || 1

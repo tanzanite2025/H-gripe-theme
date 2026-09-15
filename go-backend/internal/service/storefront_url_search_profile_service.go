@@ -5,8 +5,8 @@ import (
 	"strings"
 	"time"
 
-	urlmanagementdomain "commerce-platform/internal/domain/urlmanagement"
 	"commerce-platform/internal/domain/seo"
+	urlmanagementdomain "commerce-platform/internal/domain/urlmanagement"
 	"commerce-platform/internal/repository"
 
 	"gorm.io/datatypes"
@@ -104,15 +104,15 @@ func (s *StorefrontURLSearchProfileService) Get(routeEntryID uint) (*urlmanageme
 	}
 
 	return &urlmanagementdomain.StorefrontURLSearchProfile{
-		RouteEntryID:    routeEntryID,
-		Enabled:         true,
-		SearchWeight:    100,
-		Keywords:        datatypes.JSONSlice[string]{},
-		DisplayTitle:    entry.Title,
-		DisplaySummary:  entry.Summary,
-		RouteEntry:      entry,
-		CreatedAt:       time.Time{},
-		UpdatedAt:       time.Time{},
+		RouteEntryID:   routeEntryID,
+		Enabled:        true,
+		SearchWeight:   100,
+		Keywords:       datatypes.JSONSlice[string]{},
+		DisplayTitle:   entry.Title,
+		DisplaySummary: entry.Summary,
+		RouteEntry:     entry,
+		CreatedAt:      time.Time{},
+		UpdatedAt:      time.Time{},
 	}, nil
 }
 
@@ -195,12 +195,12 @@ func (s *StorefrontURLSearchProfileService) listPublicCatalogEntries(locale stri
 	entries := make([]seo.StorefrontRouteCatalogEntry, 0)
 	for page := 1; ; page++ {
 		batch, total, err := s.catalog.List(repository.StorefrontRouteCatalogListFilter{
-			Page:        page,
-			PageSize:    storefrontURLSearchPublicPageSize,
-			Locale:      normalizedLocale,
-			EntryStatus: seo.RouteEntryStatusActive,
-			Searchable:  boolValuePtr(true),
-			Indexable:   boolValuePtr(true),
+			Page:         page,
+			PageSize:     storefrontURLSearchPublicPageSize,
+			Locale:       normalizedLocale,
+			EntryStatus:  seo.RouteEntryStatusActive,
+			Searchable:   boolValuePtr(true),
+			Indexable:    boolValuePtr(true),
 			ExcludeAlias: true,
 		})
 		if err != nil {

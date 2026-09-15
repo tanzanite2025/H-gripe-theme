@@ -27,7 +27,7 @@ database:
 redis:
   mode: "standalone"  # standalone or sentinel; cluster is rejected until all multi-key scripts are hash-tagged
   host: "localhost"
-  port: 9510
+  port: 9562
   addrs: []  # sentinel example: ["redis-sentinel-1:26379", "redis-sentinel-2:26379", "redis-sentinel-3:26379"]
   username: ""
   password: ""
@@ -54,8 +54,8 @@ google_merchant:
   state_ttl_seconds: 600
 
 google_indexing:
-  # Google Indexing API is disabled by default. Keep service account material
-  # outside source control and provide either JSON or a file path, not both.
+  # Product pages are not eligible for Google's Indexing API. This legacy
+  # section is retained only so old deployments continue to parse.
   enabled: false
   service_account_json: ""
   service_account_file: ""
@@ -142,6 +142,7 @@ cors:
     - "X-Device-Fingerprint"
     - "X-Quick-Buy-Session"
     - "X-Anonymous-ID"
+    - "X-Warranty-Claim-Token"
   expose_headers:
     - "Content-Length"
     - "Idempotency-Replayed"
@@ -201,15 +202,25 @@ showcase_upload_protection:
 
 worker:
   enabled: false  # Enable only after registering Asynq task handlers
+  product_view_count_flush_enabled: true
+  product_view_count_flush_interval_seconds: 10
+  product_view_count_flush_batch_limit: 500
+  distributed_lock_ttl_seconds: 0  # 0 = twice each scheduler interval
   tracking_polling_enabled: false  # Tracking polling scheduler can run without Asynq worker
   tracking_polling_interval_seconds: 300
   tracking_polling_batch_limit: 20
   visitor_profile_ip_address_retention_days: 30
+  quick_buy_abandonment_enabled: false
+  quick_buy_abandonment_interval_seconds: 3600
+  quick_buy_abandonment_after_seconds: 86400
   outbox_dispatch_enabled: false
   outbox_dispatch_interval_seconds: 10
   outbox_dispatch_batch_limit: 100
   outbox_dispatch_lock_timeout_seconds: 300
-  payment_expiration_enabled: false
+  referral_lifecycle_enabled: false
+  referral_lifecycle_interval_seconds: 86400
+  referral_lifecycle_batch_limit: 100
+  payment_expiration_enabled: true
   payment_expiration_interval_seconds: 900
   payment_pending_ttl_seconds: 1800
   payment_expiration_batch_limit: 100
@@ -232,6 +243,8 @@ worker:
   media_derivative_rebuild_enabled: true
   media_derivative_rebuild_interval_seconds: 5
   media_derivative_rebuild_batch_limit: 10
+  # Shared upload/backfill image conversion concurrency limit.
+  media_derivative_generation_capacity: 8
   showcase_cleanup_enabled: true
   showcase_cleanup_interval_seconds: 86400
   showcase_pending_ttl_seconds: 2592000

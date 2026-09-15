@@ -65,8 +65,10 @@ func newDependencySupport(
 		return nil, fmt.Errorf("initialize email service: %w", err)
 	}
 	txManager := repository.NewTxManager(db, repos.Order, repos.Product, repos.Coupon, repos.Loyalty, repos.Payment, repos.Shipping)
+	txManager.ConfigureCartRepository(repos.Cart)
 	txManager.ConfigureGiftCardRedemptionRepository(repos.GiftCardRedemption)
 	txManager.ConfigureLoyaltyProgramRepository(repos.LoyaltyProgram)
+	txManager.ConfigureReferralRepositories(repos.Referral, repos.ReferralProgram)
 	txManager.ConfigureOutboxRepository(repos.Outbox)
 	txManager.ConfigureProductBrandRepository(repos.ProductBrand)
 	txManager.ConfigureOrderIdempotencyRepository(repos.OrderIdempotency)
@@ -80,10 +82,13 @@ func newDependencySupport(
 	txManager.ConfigureOrderEvidenceSubmissionSnapshotRepository(repos.OrderEvidenceSubmission)
 	txManager.ConfigurePaymentRefundRecommendationRepository(repos.PaymentRefundReview)
 	txManager.ConfigurePaymentRefundExecutionRepository(repos.PaymentRefundExec)
+	txManager.ConfigurePaymentRefundIdempotencyRepository(repos.PaymentRefundIdempotency)
+	txManager.ConfigureAfterSalesCaseRepository(repos.AfterSales)
 	txManager.ConfigureAfterSalesRefundReviewRepository(repos.AfterSalesRefundReview)
 
 	shippingService := service.NewShippingService(repos.Shipping, repos.Product)
 	shippingService.ConfigureOrderRepository(repos.Order)
+	shippingService.ConfigureTxManager(txManager)
 	outboundHTTPResilience := newOutboundHTTPResilience(
 		redisCache.Client(),
 		cfg.OutboundHTTPResilience,

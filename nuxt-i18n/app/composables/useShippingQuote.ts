@@ -11,8 +11,11 @@ export interface ShippingQuoteItemInput {
 
 export interface ShippingQuoteRequest {
   country: string
+  postal_code?: string
   currency: string
   display_currency?: string
+  shipping_quote_id?: string
+  selected_quote_plan_id?: string
   items: ShippingQuoteItemInput[]
 }
 
@@ -44,7 +47,10 @@ export interface ShippingQuoteItemResult {
   free_shipping: boolean
 }
 
-export interface ShippingQuoteOption {
+export interface ShippingQuoteLeg {
+  group_key: string
+  item_indexes: number[]
+  allocation_basis: string
   carrier_id: number
   carrier_name: string
   carrier_code: string
@@ -72,17 +78,31 @@ export interface ShippingQuoteOption {
   sort_order: number
 }
 
+export interface ShippingQuotePlan {
+  id: string
+  currency: string
+  shipping_fee: number
+  display_price?: ShippingDisplayPrice | null
+  display_prices?: ShippingDisplayPrice[]
+  free_shipping: boolean
+  eta_min_days: number
+  eta_max_days: number
+  legs: ShippingQuoteLeg[]
+}
+
 export interface ShippingQuoteResult {
+  id: string
+  rate_version: string
+  expires_at: string
   shipping_fee: number
   free_shipping: boolean
   currency?: string
   display_price?: ShippingDisplayPrice | null
   display_prices?: ShippingDisplayPrice[]
   display_currency?: string
-  source?: string
   items?: ShippingQuoteItemResult[]
-  options?: ShippingQuoteOption[]
-  selected_option?: ShippingQuoteOption | null
+  plans: ShippingQuotePlan[]
+  selected_plan: ShippingQuotePlan
 }
 
 const unwrapApiData = <T>(payload: ApiResponse<T> | null | undefined): T | null => {
@@ -151,8 +171,11 @@ export const useShippingQuote = () => {
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
         body: JSON.stringify({
           country,
+          ...(payload.postal_code?.trim() ? { postal_code: payload.postal_code.trim() } : {}),
           currency,
           ...(displayCurrency ? { display_currency: displayCurrency } : {}),
+          ...(payload.shipping_quote_id?.trim() ? { shipping_quote_id: payload.shipping_quote_id.trim() } : {}),
+          ...(payload.selected_quote_plan_id?.trim() ? { selected_quote_plan_id: payload.selected_quote_plan_id.trim() } : {}),
           items,
         }),
       })
@@ -170,9 +193,10 @@ export const useShippingQuote = () => {
     }
   }
 
-  const quoteCartItems = (items: CartItem[], country: string, currency: string, displayCurrency?: string) => {
+  const quoteCartItems = (items: CartItem[], country: string, currency: string, displayCurrency?: string, postalCode?: string) => {
     return quoteCart({
       country,
+      postal_code: postalCode,
       currency,
       display_currency: displayCurrency,
       items: items.map(cartItemToQuoteItem).filter((item): item is ShippingQuoteItemInput => Boolean(item)),

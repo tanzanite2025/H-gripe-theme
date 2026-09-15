@@ -780,7 +780,9 @@
       "noResults": "\"{query}\" से मेल खाने वाला कोई FAQ नहीं मिला",
       "loadingAnswers": "उत्तर लोड हो रहे हैं",
       "illustrationAlt": "FAQ चित्र",
-      "selectQuestion": "Select a question to view the answer."
+      "selectQuestion": "Select a question to view the answer.",
+      "pagesAriaLabel": "FAQ pages",
+      "pagesLabel": "FAQ pages"
     }
   },
   "feedback": {

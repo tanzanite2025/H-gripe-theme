@@ -26,7 +26,7 @@ const instance = axios.create({
 
 const LOGIN_PATH = '/login'
 const AUTH_STORAGE_KEYS = ['admin_user', 'admin_permissions']
-const CSRF_COOKIE_NAME = 'csrf_token'
+const CSRF_COOKIE_NAME = 'admin_csrf_token'
 const CSRF_HEADER_NAME = 'X-CSRF-Token'
 
 let refreshPromise: Promise<boolean> | null = null

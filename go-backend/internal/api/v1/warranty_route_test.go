@@ -3,17 +3,19 @@ package v1
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"strconv"
 	"strings"
 	"testing"
 
 	"commerce-platform/internal/app"
 	domainorder "commerce-platform/internal/domain/order"
-	"commerce-platform/internal/domain/warranty"
 	"commerce-platform/internal/domain/verification"
+	"commerce-platform/internal/domain/warranty"
 	"commerce-platform/internal/pkg/config"
 	"commerce-platform/internal/repository"
 	"commerce-platform/internal/service"
@@ -24,6 +26,71 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 )
+
+func TestGuestWarrantyClaimCanBeViewedAfterSubmission(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	db, warrantyService, emailSender := newWarrantyRouteFixture(t)
+	router := gin.New()
+	RegisterRoutes(router, &app.Dependencies{
+		Services: app.Services{
+			Warranty: warrantyService,
+		},
+	}, &config.Config{
+		CORS: config.CORSConfig{},
+		JWT:  config.JWTConfig{Secret: "test-email-secret"},
+	})
+
+	order := domainorder.Order{
+		OrderNumber:   "TZ-WARRANTY-GUEST-ROUTE",
+		UserID:        0,
+		Status:        "paid",
+		PaymentStatus: "paid",
+		TotalAmount:   199,
+		Currency:      "USD",
+	}
+	order.ShippingAddress.Email = "guest@example.test"
+	require.NoError(t, db.Create(&order).Error)
+
+	verifyResponse := warrantyJSONRequest(t, router, http.MethodPost, "/api/v1/warranty/verify-order", `{"order_number":"TZ-WARRANTY-GUEST-ROUTE","email":"guest@example.test"}`)
+	require.Equal(t, http.StatusAccepted, verifyResponse.Code, verifyResponse.Body.String())
+	verificationToken := emailSender.LastLink(t).Query().Get("verification_token")
+	require.NotEmpty(t, verificationToken)
+
+	claimResponse := warrantyClaimRequest(t, router, map[string]string{
+		"order_number":       order.OrderNumber,
+		"email":              order.ShippingAddress.Email,
+		"verification_token": verificationToken,
+		"issue_description":  "guest rim issue",
+	})
+	require.Equal(t, http.StatusCreated, claimResponse.Code, claimResponse.Body.String())
+
+	var submitted struct {
+		Data struct {
+			ID               uint   `json:"id"`
+			ClaimAccessToken string `json:"claim_access_token"`
+		} `json:"data"`
+	}
+	require.NoError(t, json.Unmarshal(claimResponse.Body.Bytes(), &submitted))
+	submittedClaimID := submitted.Data.ID
+	submittedClaimAccessToken := submitted.Data.ClaimAccessToken
+	require.NotZero(t, submittedClaimID)
+	require.NotEmpty(t, submittedClaimAccessToken)
+
+	var claim warranty.WarrantyClaim
+	require.NoError(t, db.First(&claim, submittedClaimID).Error)
+	claim.Status = "approved"
+	claim.Resolution = "Send the wheel to the service address."
+	require.NoError(t, db.Save(&claim).Error)
+
+	viewResponse := warrantyLinkRequest(t, router, "/api/v1/warranty/claims/"+strconv.FormatUint(uint64(submittedClaimID), 10)+"?access_token="+url.QueryEscape(submittedClaimAccessToken))
+	require.Equal(t, http.StatusOK, viewResponse.Code, viewResponse.Body.String())
+	require.Contains(t, viewResponse.Body.String(), `"status":"approved"`)
+	require.Contains(t, viewResponse.Body.String(), `"resolution":"Send the wheel to the service address."`)
+
+	unauthorizedResponse := warrantyLinkRequest(t, router, "/api/v1/warranty/claims/"+strconv.FormatUint(uint64(submittedClaimID), 10))
+	require.Equal(t, http.StatusUnauthorized, unauthorizedResponse.Code, unauthorizedResponse.Body.String())
+}
 
 func TestWarrantyRoutesCompleteEmailVerificationAndClaimSubmission(t *testing.T) {
 	gin.SetMode(gin.TestMode)
@@ -185,6 +252,7 @@ func newWarrantyRouteFixture(t *testing.T) (*gorm.DB, *service.WarrantyService, 
 		&domainorder.Order{},
 		&domainorder.OrderItem{},
 		&warranty.WarrantyClaim{},
+		&warranty.WarrantyServiceRecord{},
 		&verification.EmailChallenge{},
 	))
 

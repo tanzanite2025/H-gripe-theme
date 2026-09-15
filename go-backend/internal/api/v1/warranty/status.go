@@ -98,15 +98,15 @@ func shipmentWarrantyStatusResponse(record *shippingdomain.ShipmentRecord) gin.H
 	}
 
 	return gin.H{
-		"order_number":  record.OrderNumber,
-		"product_type":  gin.H{"code": "order-shipment", "name": "Order shipment", "name_zh": "订单发货"},
-		"product_name":  firstProductName,
-		"items":         items,
-		"ship_date":     record.ShippedAt.Format("2006-01-02"),
+		"order_number":    record.OrderNumber,
+		"product_type":    gin.H{"code": "order-shipment", "name": "Order shipment", "name_zh": "订单发货"},
+		"product_name":    firstProductName,
+		"items":           items,
+		"ship_date":       record.ShippedAt.Format("2006-01-02"),
 		"warranty_months": record.WarrantyMonths,
-		"warranty_end":  record.WarrantyExpires.Format("2006-01-02"),
-		"status":        status,
-		"remaining":     remaining,
-		"records":       []gin.H{},
+		"warranty_end":    record.WarrantyExpires.Format("2006-01-02"),
+		"status":          status,
+		"remaining":       remaining,
+		"records":         []gin.H{},
 	}
 }

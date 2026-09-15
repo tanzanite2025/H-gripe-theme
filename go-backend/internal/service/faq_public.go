@@ -58,10 +58,10 @@ func (s *FAQService) GetPublicPageData(pageID, locale string) (*FAQPublicPageDat
 	}
 
 	publicPage := &FAQPublicPageData{
-		PageID:     page.PageID,
-		Title:      page.Title,
-		Subtitle:   page.Subtitle,
-		Items:      publicItems,
+		PageID:   page.PageID,
+		Title:    page.Title,
+		Subtitle: page.Subtitle,
+		Items:    publicItems,
 	}
 	return publicPage, nil
 }

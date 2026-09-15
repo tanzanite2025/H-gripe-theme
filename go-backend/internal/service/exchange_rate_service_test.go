@@ -24,7 +24,8 @@ func TestExchangeRateConvertUsesDirectRate(t *testing.T) {
 		exchangeRateRecord("USD", "EUR", 0.9),
 	}))
 
-	converted := service.Convert(100, "USD", "EUR")
+	converted, err := service.ConvertStrict(100, "USD", "EUR")
+	require.NoError(t, err)
 
 	require.True(t, converted.Converted)
 	require.Equal(t, "EUR", converted.Currency)
@@ -39,7 +40,8 @@ func TestExchangeRateConvertUsesReverseRate(t *testing.T) {
 		exchangeRateRecord("USD", "EUR", 0.8),
 	}))
 
-	converted := service.Convert(100, "EUR", "USD")
+	converted, err := service.ConvertStrict(100, "EUR", "USD")
+	require.NoError(t, err)
 
 	require.True(t, converted.Converted)
 	require.Equal(t, "USD", converted.Currency)
@@ -55,7 +57,8 @@ func TestExchangeRateConvertUsesConfiguredBaseAsCrossRateAnchor(t *testing.T) {
 		exchangeRateRecord("USD", "GBP", 0.7),
 	}))
 
-	converted := service.Convert(100, "EUR", "GBP")
+	converted, err := service.ConvertStrict(100, "EUR", "GBP")
+	require.NoError(t, err)
 
 	require.True(t, converted.Converted)
 	require.Equal(t, "GBP", converted.Currency)
@@ -67,13 +70,11 @@ func TestExchangeRateConvertUsesConfiguredBaseAsCrossRateAnchor(t *testing.T) {
 func TestExchangeRateConvertFallsBackToCatalogCurrencyWhenRateMissing(t *testing.T) {
 	service, _ := newExchangeRateTestService(t)
 
-	converted := service.Convert(100, "USD", "EUR")
+	converted, err := service.ConvertStrict(100, "USD", "EUR")
+	require.ErrorIs(t, err, ErrExchangeRateMissing)
 
 	require.False(t, converted.Converted)
-	require.Equal(t, "USD", converted.Currency)
-	require.Equal(t, "catalog_currency", converted.Source)
-	require.Equal(t, ErrExchangeRateMissing.Error(), converted.FallbackReason)
-	require.InDelta(t, 100, converted.Amount, 0.0001)
+	require.Empty(t, converted.Currency)
 }
 
 func TestExchangeRateConvertIgnoresExpiredRate(t *testing.T) {
@@ -83,11 +84,12 @@ func TestExchangeRateConvertIgnoresExpiredRate(t *testing.T) {
 	record.ExpiresAt = &expiredAt
 	require.NoError(t, repo.UpsertRates([]currency.ExchangeRate{record}))
 
-	converted := service.Convert(100, "USD", "EUR")
+	converted, err := service.ConvertStrict(100, "USD", "EUR")
+	require.ErrorIs(t, err, ErrExchangeRateMissing)
 
 	require.False(t, converted.Converted)
-	require.Equal(t, ErrExchangeRateMissing.Error(), converted.FallbackReason)
-	require.InDelta(t, 100, converted.Amount, 0.0001)
+	require.Empty(t, converted.FallbackReason)
+	require.Zero(t, converted.Amount)
 }
 
 func TestExchangeRateSyncRejectsConcurrentCallsWithinService(t *testing.T) {

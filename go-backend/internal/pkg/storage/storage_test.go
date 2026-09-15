@@ -1,7 +1,11 @@
 package storage
 
 import (
+	"bytes"
 	"context"
+	"mime/multipart"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -84,6 +88,125 @@ func TestLoadSiteLogoConfigFromEnvAllowsDedicatedBucket(t *testing.T) {
 	if cfg.BaseURL != "https://logo-cdn.example.test" {
 		t.Fatalf("BaseURL = %q, want dedicated base URL", cfg.BaseURL)
 	}
+}
+
+func TestLocalStorageRejectsSharedPrivatePath(t *testing.T) {
+	root := filepath.Join(t.TempDir(), "uploads")
+	if _, err := newLocalStorage(&Config{
+		Type:             StorageTypeLocal,
+		LocalPath:        root,
+		PrivateLocalPath: root,
+	}); err == nil {
+		t.Fatal("newLocalStorage() unexpectedly accepted shared public/private path")
+	}
+}
+
+func TestLocalPrivateUploadUsesDedicatedPathAndObjectOperations(t *testing.T) {
+	publicRoot := filepath.Join(t.TempDir(), "uploads")
+	privateRoot := filepath.Join(t.TempDir(), "private-uploads")
+	service, err := newLocalStorage(&Config{
+		Type:             StorageTypeLocal,
+		LocalPath:        publicRoot,
+		BaseURL:          "https://public.example.test",
+		PrivateLocalPath: privateRoot,
+		PrivateBaseURL:   "https://private.example.test",
+	})
+	if err != nil {
+		t.Fatalf("newLocalStorage() error = %v", err)
+	}
+	uploader, ok := service.(PrivateObjectUploader)
+	if !ok {
+		t.Fatal("local storage does not implement PrivateObjectUploader")
+	}
+	file := testStorageMultipartFile(t, "evidence.pdf", "application/pdf", []byte("sensitive"))
+	reference, err := uploader.UploadWithPrefixPrivate(context.Background(), file, "warranty")
+	if err != nil {
+		t.Fatalf("UploadWithPrefixPrivate() error = %v", err)
+	}
+	key, err := service.ObjectKey(reference)
+	if err != nil {
+		t.Fatalf("ObjectKey() error = %v", err)
+	}
+	if !IsPrivateObjectKey(key) {
+		t.Fatalf("private upload key %q is not private", key)
+	}
+	privatePath := filepath.Join(privateRoot, filepath.FromSlash(key))
+	if _, err := os.Stat(privatePath); err != nil {
+		t.Fatalf("private object missing: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(publicRoot, filepath.FromSlash(key))); !os.IsNotExist(err) {
+		t.Fatalf("private object unexpectedly present in public root (err=%v)", err)
+	}
+	opener := service.(ObjectOpener)
+	object, err := opener.Open(context.Background(), key)
+	if err != nil {
+		t.Fatalf("Open() error = %v", err)
+	}
+	_ = object.ReadCloser.Close()
+	if err := service.Delete(context.Background(), reference); err != nil {
+		t.Fatalf("Delete() error = %v", err)
+	}
+	if _, err := os.Stat(privatePath); !os.IsNotExist(err) {
+		t.Fatalf("private object still exists after Delete (err=%v)", err)
+	}
+}
+
+func TestLocalUploadWithPrivatePrefixUsesDedicatedPath(t *testing.T) {
+	publicRoot := filepath.Join(t.TempDir(), "uploads")
+	privateRoot := filepath.Join(t.TempDir(), "private-uploads")
+	service, err := newLocalStorage(&Config{
+		Type:             StorageTypeLocal,
+		LocalPath:        publicRoot,
+		BaseURL:          "https://public.example.test",
+		PrivateLocalPath: privateRoot,
+		PrivateBaseURL:   "https://private.example.test",
+	})
+	if err != nil {
+		t.Fatalf("newLocalStorage() error = %v", err)
+	}
+	file := testStorageMultipartFile(t, "evidence.pdf", "application/pdf", []byte("sensitive"))
+	reference, err := service.UploadWithPrefix(context.Background(), file, "warranty")
+	if err != nil {
+		t.Fatalf("UploadWithPrefix() error = %v", err)
+	}
+	key, err := service.ObjectKey(reference)
+	if err != nil {
+		t.Fatalf("ObjectKey() error = %v", err)
+	}
+	if !IsPrivateObjectKey(key) {
+		t.Fatalf("private prefix upload key %q is not private", key)
+	}
+	if _, err := os.Stat(filepath.Join(privateRoot, filepath.FromSlash(key))); err != nil {
+		t.Fatalf("private object missing: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(publicRoot, filepath.FromSlash(key))); !os.IsNotExist(err) {
+		t.Fatalf("private object unexpectedly present in public root (err=%v)", err)
+	}
+}
+
+func testStorageMultipartFile(t *testing.T, filename, mimeType string, contents []byte) *multipart.FileHeader {
+	t.Helper()
+	var body bytes.Buffer
+	writer := multipart.NewWriter(&body)
+	part, err := writer.CreateFormFile("file", filename)
+	if err != nil {
+		t.Fatalf("CreateFormFile() error = %v", err)
+	}
+	if _, err := part.Write(contents); err != nil {
+		t.Fatalf("write multipart file: %v", err)
+	}
+	if err := writer.Close(); err != nil {
+		t.Fatalf("close multipart writer: %v", err)
+	}
+	request := httptest.NewRequest(http.MethodPost, "/", &body)
+	request.Header.Set("Content-Type", writer.FormDataContentType())
+	if err := request.ParseMultipartForm(int64(len(contents) + 1024)); err != nil {
+		t.Fatalf("ParseMultipartForm() error = %v", err)
+	}
+	t.Cleanup(func() { _ = request.MultipartForm.RemoveAll() })
+	file := request.MultipartForm.File["file"][0]
+	file.Header.Set("Content-Type", mimeType)
+	return file
 }
 
 func uploadPathDirectories(root, filePath string) []string {

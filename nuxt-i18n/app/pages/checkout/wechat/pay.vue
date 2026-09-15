@@ -44,7 +44,7 @@ const { t } = useI18n()
 const route = useRoute()
 const localePath = useLocalePath()
 const auth = useAuth()
-const { clearCart } = useCart()
+const { reloadCartFromBackend } = useCart()
 const { createWeChatOrder, confirmWeChatOrder, createWeChatQrDataUrl } = useWeChatPayment()
 
 const status = ref<'loading' | 'waiting' | 'success' | 'error'>('loading')
@@ -96,9 +96,9 @@ const clearStoredSession = () => {
 
 const isPaidStatus = (value: string) => String(value || '').toUpperCase() === 'SUCCESS'
 
-const completePayment = () => {
+const completePayment = async () => {
   clearStoredSession()
-  clearCart()
+  await reloadCartFromBackend()
   status.value = 'success'
   message.value = t('checkout.wechatPay.messages.success')
   stopPolling()
@@ -113,7 +113,7 @@ const pollPayment = async (): Promise<boolean> => {
       `wechat-confirm-${orderNumber.value}`,
     )
     if (isPaidStatus(result.status)) {
-      completePayment()
+      await completePayment()
       return true
     }
     status.value = 'waiting'

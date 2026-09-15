@@ -2,24 +2,30 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"strconv"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
 	"commerce-platform/internal/domain/coupon"
 	"commerce-platform/internal/domain/currency"
 	"commerce-platform/internal/domain/loyalty"
+	domainmoney "commerce-platform/internal/domain/money"
 	"commerce-platform/internal/domain/order"
 	"commerce-platform/internal/domain/orderevidence"
 	outboxdomain "commerce-platform/internal/domain/outbox"
 	paymentdomain "commerce-platform/internal/domain/payment"
+	pricingdomain "commerce-platform/internal/domain/pricing"
 	"commerce-platform/internal/domain/product"
 	productrequirement "commerce-platform/internal/domain/productrequirement"
+	refundcancellationdomain "commerce-platform/internal/domain/refundcancellation"
 	"commerce-platform/internal/domain/setting"
 	shippingdomain "commerce-platform/internal/domain/shipping"
+	attributionpkg "commerce-platform/internal/pkg/attribution"
 	"commerce-platform/internal/pkg/cache"
 	"commerce-platform/internal/pkg/config"
 	"commerce-platform/internal/pkg/ordernumber"
@@ -32,6 +38,401 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 )
+
+func TestOrderServiceCreateOrderRejectsChangedExpectedTotalBeforeStockDeduction(t *testing.T) {
+	db, orderService := newTestOrderService(t)
+	productRecord := seedProduct(t, db, 100, 5)
+	expectedTotal := 100.06
+
+	createdOrder, err := orderService.CreateOrderWithAttributionAndOptions(
+		context.Background(),
+		42,
+		[]order.OrderItem{{ProductID: productRecord.ID, Quantity: 1}},
+		testAddress(),
+		testAddress(),
+		"card",
+		"standard",
+		"",
+		0,
+		attributionpkg.Context{},
+		OrderCreationOptions{ExpectedTotal: &expectedTotal},
+	)
+
+	require.ErrorIs(t, err, ErrOrderTotalChanged)
+	assert.Nil(t, createdOrder)
+
+	var orderCount int64
+	require.NoError(t, db.Model(&order.Order{}).Count(&orderCount).Error)
+	assert.Zero(t, orderCount)
+
+	var savedProduct product.Product
+	require.NoError(t, db.First(&savedProduct, productRecord.ID).Error)
+	assert.Equal(t, 5, savedProduct.Stock)
+}
+
+func TestOrderServiceCreateOrderRejectsExpectedTotalDifferencePreviouslyWithinTolerance(t *testing.T) {
+	db, orderService := newTestOrderService(t)
+	productRecord := seedProduct(t, db, 100, 5)
+	expectedTotal := 100.05
+
+	createdOrder, err := orderService.CreateOrderWithAttributionAndOptions(
+		context.Background(),
+		42,
+		[]order.OrderItem{{ProductID: productRecord.ID, Quantity: 1}},
+		testAddress(),
+		testAddress(),
+		"card",
+		"standard",
+		"",
+		0,
+		attributionpkg.Context{},
+		OrderCreationOptions{ExpectedTotal: &expectedTotal},
+	)
+
+	require.ErrorIs(t, err, ErrOrderTotalChanged)
+	assert.Nil(t, createdOrder)
+}
+
+func TestOrderServiceCreateOrderUsesRequestedCarrierServiceForExpectedTotal(t *testing.T) {
+	db, orderService := newTestOrderService(t)
+	productRecord := seedProduct(t, db, 100, 5)
+	require.NotNil(t, productRecord.ShippingTemplateID)
+	require.NoError(t, db.Model(&shippingdomain.ShippingTemplate{}).
+		Where("id = ?", *productRecord.ShippingTemplateID).
+		Update("free_shipping", false).Error)
+
+	carrier := shippingdomain.Carrier{Name: "DHL", Code: "DHL", Enabled: true}
+	require.NoError(t, db.Create(&carrier).Error)
+	standardService := shippingdomain.CarrierService{
+		CarrierID: carrier.ID, TemplateID: productRecord.ShippingTemplateID,
+		ServiceCode: "DHL-STD", ServiceName: "DHL Standard", Countries: `["US"]`,
+		Currency: "USD", BillingMode: "actual_weight", Enabled: true,
+	}
+	expressService := shippingdomain.CarrierService{
+		CarrierID: carrier.ID, TemplateID: productRecord.ShippingTemplateID,
+		ServiceCode: "DHL-EXP", ServiceName: "DHL Express", Countries: `["US"]`,
+		Currency: "USD", BillingMode: "actual_weight", RemoteSurcharge: 100, Enabled: true,
+	}
+	require.NoError(t, db.Create(&standardService).Error)
+	require.NoError(t, db.Create(&expressService).Error)
+	checkoutQuote, err := orderService.checkout.Quote(CheckoutQuoteInput{
+		UserID:          42,
+		Items:           []order.OrderItem{{ProductID: productRecord.ID, Quantity: 1}},
+		ShippingAddress: testAddress(),
+	})
+	require.NoError(t, err)
+	require.NotNil(t, checkoutQuote.ShippingQuote)
+	expressPlanID := ""
+	for _, plan := range checkoutQuote.ShippingQuote.Plans {
+		if len(plan.Legs) == 1 && plan.Legs[0].CarrierServiceID == expressService.ID {
+			expressPlanID = plan.ID
+			break
+		}
+	}
+	require.NotEmpty(t, expressPlanID)
+	expectedTotal := 210.0
+
+	createdOrder, err := orderService.CreateOrderWithAttributionAndOptions(
+		context.Background(),
+		42,
+		[]order.OrderItem{{ProductID: productRecord.ID, Quantity: 1}},
+		testAddress(),
+		testAddress(),
+		"card",
+		"standard",
+		"",
+		0,
+		attributionpkg.Context{},
+		OrderCreationOptions{
+			ExpectedTotal:       &expectedTotal,
+			ShippingQuoteID:     checkoutQuote.ShippingQuote.ID,
+			SelectedQuotePlanID: expressPlanID,
+		},
+	)
+
+	require.NoError(t, err)
+	require.NotNil(t, createdOrder)
+	assert.Equal(t, 110.0, createdOrder.ShippingFee)
+	assert.Equal(t, expectedTotal, createdOrder.TotalAmount)
+	require.NotNil(t, createdOrder.CarrierID)
+	assert.Equal(t, carrier.ID, *createdOrder.CarrierID)
+	require.NotNil(t, createdOrder.CarrierServiceID)
+	assert.Equal(t, expressService.ID, *createdOrder.CarrierServiceID)
+	assert.Contains(t, createdOrder.ShippingMethod, "DHL Express")
+	assert.Equal(t, checkoutQuote.ShippingQuote.ID, createdOrder.ShippingQuoteID)
+	assert.Equal(t, expressPlanID, createdOrder.ShippingQuotePlanID)
+	assert.NotEmpty(t, createdOrder.ShippingPlanSnapshotData)
+}
+
+func TestOrderServiceRejectsUnavailableShippingRateBeforeStockDeduction(t *testing.T) {
+	db, orderService := newTestOrderService(t)
+	productRecord := seedProduct(t, db, 1200, 5)
+	require.NotNil(t, productRecord.ShippingTemplateID)
+	require.NoError(t, db.Model(&shippingdomain.ShippingTemplate{}).
+		Where("id = ?", *productRecord.ShippingTemplateID).
+		Updates(map[string]interface{}{"free_shipping": false, "default_fee": 0}).Error)
+	shippingAddress := testAddress()
+	shippingAddress.Country = "BR"
+
+	createdOrder, err := orderService.CreateOrderWithAttributionAndOptions(
+		context.Background(),
+		42,
+		[]order.OrderItem{{ProductID: productRecord.ID, Quantity: 1}},
+		shippingAddress,
+		shippingAddress,
+		"card",
+		"standard",
+		"",
+		0,
+		attributionpkg.Context{},
+		OrderCreationOptions{},
+	)
+
+	assert.Nil(t, createdOrder)
+	require.ErrorIs(t, err, ErrCountryNotSupported)
+	var orderCount int64
+	require.NoError(t, db.Model(&order.Order{}).Count(&orderCount).Error)
+	assert.Zero(t, orderCount)
+	var savedProduct product.Product
+	require.NoError(t, db.First(&savedProduct, productRecord.ID).Error)
+	assert.Equal(t, 5, savedProduct.Stock)
+}
+
+func TestOrderServiceCreateOrderConsumesCheckoutCartAndStoresConsumedCartReference(t *testing.T) {
+	db, orderService := newTestOrderService(t)
+	userID := uint(42)
+	productRecord := seedProduct(t, db, 100, 5)
+	variant := product.ProductVariant{}
+	require.NoError(t, db.Where("product_id = ?", productRecord.ID).First(&variant).Error)
+	cart := seedCheckoutCart(t, db, userID, productRecord.ID, variant.ID, 1, 100)
+
+	createdOrder, err := orderService.CreateOrderWithAttributionAndOptions(
+		context.Background(),
+		userID,
+		[]order.OrderItem{{ProductID: productRecord.ID, VariantID: &variant.ID, Quantity: 99}},
+		testAddress(),
+		testAddress(),
+		"paypal",
+		"standard",
+		"",
+		0,
+		attributionpkg.Context{},
+		OrderCreationOptions{CheckoutCartID: cart.ID},
+	)
+	require.NoError(t, err)
+	require.NotNil(t, createdOrder)
+	require.NotNil(t, createdOrder.CheckoutCartID)
+	assert.Equal(t, cart.ID, *createdOrder.CheckoutCartID)
+
+	var remainingCartItems []product.CartItem
+	require.NoError(t, db.Where("cart_id = ?", cart.ID).Find(&remainingCartItems).Error)
+	assert.Empty(t, remainingCartItems)
+
+	var savedVariant product.ProductVariant
+	require.NoError(t, db.First(&savedVariant, variant.ID).Error)
+	assert.Equal(t, 4, savedVariant.Stock)
+
+	var savedOrder order.Order
+	require.NoError(t, db.Preload("Items").First(&savedOrder, createdOrder.ID).Error)
+	require.NotNil(t, savedOrder.CheckoutCartID)
+	assert.Equal(t, cart.ID, *savedOrder.CheckoutCartID)
+	require.Len(t, savedOrder.Items, 1)
+	assert.Equal(t, 1, savedOrder.Items[0].Quantity)
+}
+
+func TestOrderServiceCreateOrderRejectsSecondCheckoutAgainstConsumedCart(t *testing.T) {
+	db, orderService := newTestOrderService(t)
+	userID := uint(42)
+	productRecord := seedProduct(t, db, 100, 5)
+	variant := product.ProductVariant{}
+	require.NoError(t, db.Where("product_id = ?", productRecord.ID).First(&variant).Error)
+	cart := seedCheckoutCart(t, db, userID, productRecord.ID, variant.ID, 1, 100)
+
+	_, err := orderService.CreateOrderWithAttributionAndOptions(
+		context.Background(),
+		userID,
+		nil,
+		testAddress(),
+		testAddress(),
+		"paypal",
+		"standard",
+		"",
+		0,
+		attributionpkg.Context{},
+		OrderCreationOptions{CheckoutCartID: cart.ID},
+	)
+	require.NoError(t, err)
+
+	_, err = orderService.CreateOrderWithAttributionAndOptions(
+		context.Background(),
+		userID,
+		nil,
+		testAddress(),
+		testAddress(),
+		"card",
+		"standard",
+		"",
+		0,
+		attributionpkg.Context{},
+		OrderCreationOptions{CheckoutCartID: cart.ID},
+	)
+	require.ErrorIs(t, err, ErrCheckoutCartAlreadyConsumed)
+
+	var orderCount int64
+	require.NoError(t, db.Model(&order.Order{}).Count(&orderCount).Error)
+	assert.Equal(t, int64(1), orderCount)
+
+	var savedVariant product.ProductVariant
+	require.NoError(t, db.First(&savedVariant, variant.ID).Error)
+	assert.Equal(t, 4, savedVariant.Stock)
+}
+
+func TestOrderServiceConcurrentCheckoutAgainstSameCartCreatesOnlyOneOrder(t *testing.T) {
+	db, orderService := newTestOrderService(t)
+	userID := uint(42)
+	productRecord := seedProduct(t, db, 100, 5)
+	variant := product.ProductVariant{}
+	require.NoError(t, db.Where("product_id = ?", productRecord.ID).First(&variant).Error)
+	cart := seedCheckoutCart(t, db, userID, productRecord.ID, variant.ID, 1, 100)
+
+	var waitGroup sync.WaitGroup
+	errs := make(chan error, 2)
+	waitGroup.Add(2)
+	for i := 0; i < 2; i++ {
+		go func() {
+			defer waitGroup.Done()
+			_, err := orderService.CreateOrderWithAttributionAndOptions(
+				context.Background(),
+				userID,
+				nil,
+				testAddress(),
+				testAddress(),
+				"paypal",
+				"standard",
+				"",
+				0,
+				attributionpkg.Context{},
+				OrderCreationOptions{CheckoutCartID: cart.ID},
+			)
+			errs <- err
+		}()
+	}
+	waitGroup.Wait()
+	close(errs)
+
+	var successCount int
+	var consumedCartErrorCount int
+	for err := range errs {
+		if err == nil {
+			successCount++
+			continue
+		}
+		if errors.Is(err, ErrCheckoutCartAlreadyConsumed) {
+			consumedCartErrorCount++
+			continue
+		}
+		t.Fatalf("unexpected concurrent checkout error: %v", err)
+	}
+	assert.Equal(t, 1, successCount)
+	assert.Equal(t, 1, consumedCartErrorCount)
+
+	var orderCount int64
+	require.NoError(t, db.Model(&order.Order{}).Count(&orderCount).Error)
+	assert.Equal(t, int64(1), orderCount)
+
+	var savedVariant product.ProductVariant
+	require.NoError(t, db.First(&savedVariant, variant.ID).Error)
+	assert.Equal(t, 4, savedVariant.Stock)
+}
+
+func TestOrderServiceCheckoutTransactionFailureRestoresCartConsumption(t *testing.T) {
+	db, orderService := newTestOrderService(t)
+	userID := uint(42)
+	productRecord := seedProduct(t, db, 100, 5)
+	variant := product.ProductVariant{}
+	require.NoError(t, db.Where("product_id = ?", productRecord.ID).First(&variant).Error)
+	cart := seedCheckoutCart(t, db, userID, productRecord.ID, variant.ID, 1, 100)
+	require.NoError(t, db.Create(&setting.Setting{
+		Key:      refundcancellationdomain.Key,
+		Locale:   "en",
+		Value:    "{invalid-json",
+		Type:     "json",
+		IsPublic: true,
+	}).Error)
+	orderService.ConfigureRefundCancellationPolicy(
+		NewRefundCancellationPolicyService(repository.NewSettingRepository(db)),
+	)
+
+	_, err := orderService.CreateOrderWithAttributionAndOptions(
+		context.Background(),
+		userID,
+		nil,
+		testAddress(),
+		testAddress(),
+		"paypal",
+		"standard",
+		"",
+		0,
+		attributionpkg.Context{},
+		OrderCreationOptions{CheckoutCartID: cart.ID},
+	)
+	require.ErrorIs(t, err, ErrOrderPolicyDisclosureFailure)
+
+	var orderCount int64
+	require.NoError(t, db.Model(&order.Order{}).Count(&orderCount).Error)
+	assert.Zero(t, orderCount)
+
+	var cartItems []product.CartItem
+	require.NoError(t, db.Where("cart_id = ?", cart.ID).Find(&cartItems).Error)
+	require.Len(t, cartItems, 1)
+	assert.Equal(t, 1, cartItems[0].Quantity)
+
+	var savedVariant product.ProductVariant
+	require.NoError(t, db.First(&savedVariant, variant.ID).Error)
+	assert.Equal(t, 5, savedVariant.Stock)
+}
+
+func TestOrderServiceCancelUnpaidCheckoutOrderRestoresCartExactlyOnce(t *testing.T) {
+	db, orderService := newTestOrderService(t)
+	userID := uint(42)
+	productRecord := seedProduct(t, db, 100, 5)
+	variant := product.ProductVariant{}
+	require.NoError(t, db.Where("product_id = ?", productRecord.ID).First(&variant).Error)
+	cart := seedCheckoutCart(t, db, userID, productRecord.ID, variant.ID, 1, 100)
+
+	createdOrder, err := orderService.CreateOrderWithAttributionAndOptions(
+		context.Background(),
+		userID,
+		nil,
+		testAddress(),
+		testAddress(),
+		"paypal",
+		"standard",
+		"",
+		0,
+		attributionpkg.Context{},
+		OrderCreationOptions{CheckoutCartID: cart.ID},
+	)
+	require.NoError(t, err)
+
+	require.NoError(t, orderService.CancelOrder(createdOrder.ID, userID))
+
+	var restoredCartItems []product.CartItem
+	require.NoError(t, db.Where("cart_id = ?", cart.ID).Find(&restoredCartItems).Error)
+	require.Len(t, restoredCartItems, 1)
+	assert.Equal(t, 1, restoredCartItems[0].Quantity)
+
+	var savedVariant product.ProductVariant
+	require.NoError(t, db.First(&savedVariant, variant.ID).Error)
+	assert.Equal(t, 5, savedVariant.Stock)
+
+	require.ErrorIs(t, orderService.CancelOrder(createdOrder.ID, userID), ErrOrderCancellationConflict)
+	require.NoError(t, db.Where("cart_id = ?", cart.ID).Find(&restoredCartItems).Error)
+	require.Len(t, restoredCartItems, 1)
+	assert.Equal(t, 1, restoredCartItems[0].Quantity)
+	require.NoError(t, db.First(&savedVariant, variant.ID).Error)
+	assert.Equal(t, 5, savedVariant.Stock)
+}
 
 func TestOrderServiceCreateOrderPersistsPricingAndAdjustments(t *testing.T) {
 	db, orderService := newTestOrderService(t)
@@ -101,7 +502,11 @@ func TestOrderServiceCreateOrderPersistsPricingAndAdjustments(t *testing.T) {
 
 	var savedProduct product.Product
 	require.NoError(t, db.First(&savedProduct, productRecord.ID).Error)
-	assert.Equal(t, 3, savedProduct.Stock)
+	assert.Equal(t, 5, savedProduct.Stock)
+
+	var savedVariant product.ProductVariant
+	require.NoError(t, db.Where("product_id = ?", productRecord.ID).First(&savedVariant).Error)
+	assert.Equal(t, 3, savedVariant.Stock)
 
 	var savedLoyalty loyalty.UserLoyalty
 	require.NoError(t, db.Where("user_id = ?", userID).First(&savedLoyalty).Error)
@@ -170,6 +575,225 @@ func TestOrderServiceCreateOrderSettlesZeroTotalDiscountOrder(t *testing.T) {
 	var conversionCount int64
 	require.NoError(t, db.Model(&outboxdomain.Event{}).Where("event_type = ? AND aggregate_id = ?", outboxdomain.EventTypeVerifiedConversion, fmt.Sprint(createdOrder.ID)).Count(&conversionCount).Error)
 	assert.Zero(t, conversionCount)
+}
+
+func TestOrderServiceCreateOrderConsumesGiftCardAndSettlesZeroTotal(t *testing.T) {
+	db, orderService := newTestOrderService(t)
+	userID := uint(42)
+	productRecord := seedProduct(t, db, 100, 5)
+	giftCard := seedGiftCard(t, db, "REDEEM-ZERO-TOTAL", userID, "USD", 10000)
+
+	createdOrder, err := orderService.CreateOrderWithAttributionAndOptions(
+		context.Background(),
+		userID,
+		[]order.OrderItem{{ProductID: productRecord.ID, Quantity: 1}},
+		testAddress(),
+		testAddress(),
+		"card",
+		"standard",
+		"",
+		0,
+		attributionpkg.Context{},
+		OrderCreationOptions{GiftCardCode: giftCard.Code},
+	)
+
+	require.NoError(t, err)
+	require.NotNil(t, createdOrder)
+	assert.InDelta(t, 100, createdOrder.DiscountAmount, 0.001)
+	assert.InDelta(t, 0, createdOrder.TotalAmount, 0.001)
+	assert.Equal(t, "paid", createdOrder.PaymentStatus)
+
+	var savedGiftCard coupon.GiftCard
+	require.NoError(t, db.First(&savedGiftCard, giftCard.ID).Error)
+	assert.Equal(t, int64(0), savedGiftCard.BalanceCents)
+	assert.Equal(t, "used", savedGiftCard.Status)
+
+	var useTransaction coupon.GiftCardTransaction
+	require.NoError(t, db.Where("gift_card_id = ? AND order_id = ? AND type = ?", giftCard.ID, createdOrder.ID, "use").First(&useTransaction).Error)
+	assert.Equal(t, int64(-10000), useTransaction.AmountCents)
+	assert.Equal(t, int64(0), useTransaction.BalanceCents)
+}
+
+func TestOrderServiceCreateOrderPreservesGiftCardRemainder(t *testing.T) {
+	db, orderService := newTestOrderService(t)
+	userID := uint(42)
+	productRecord := seedProduct(t, db, 100, 5)
+	giftCard := seedGiftCard(t, db, "REDEEM-REMAINDER", userID, "USD", 12500)
+
+	createdOrder, err := orderService.CreateOrderWithAttributionAndOptions(
+		context.Background(),
+		userID,
+		[]order.OrderItem{{ProductID: productRecord.ID, Quantity: 1}},
+		testAddress(),
+		testAddress(),
+		"card",
+		"standard",
+		"",
+		0,
+		attributionpkg.Context{},
+		OrderCreationOptions{GiftCardCode: giftCard.Code},
+	)
+
+	require.NoError(t, err)
+	require.NotNil(t, createdOrder)
+	assert.InDelta(t, 100, createdOrder.DiscountAmount, 0.001)
+	assert.InDelta(t, 0, createdOrder.TotalAmount, 0.001)
+
+	var savedGiftCard coupon.GiftCard
+	require.NoError(t, db.First(&savedGiftCard, giftCard.ID).Error)
+	assert.Equal(t, int64(2500), savedGiftCard.BalanceCents)
+	assert.Equal(t, "active", savedGiftCard.Status)
+}
+
+func TestOrderServiceCreateOrderPartiallyConsumesGiftCard(t *testing.T) {
+	db, orderService := newTestOrderService(t)
+	userID := uint(42)
+	productRecord := seedProduct(t, db, 100, 5)
+	giftCard := seedGiftCard(t, db, "REDEEM-PARTIAL", userID, "USD", 2500)
+
+	createdOrder, err := orderService.CreateOrderWithAttributionAndOptions(
+		context.Background(),
+		userID,
+		[]order.OrderItem{{ProductID: productRecord.ID, Quantity: 1}},
+		testAddress(),
+		testAddress(),
+		"card",
+		"standard",
+		"",
+		0,
+		attributionpkg.Context{},
+		OrderCreationOptions{GiftCardCode: giftCard.Code},
+	)
+
+	require.NoError(t, err)
+	require.NotNil(t, createdOrder)
+	assert.InDelta(t, 25, createdOrder.DiscountAmount, 0.001)
+	assert.InDelta(t, 75, createdOrder.TotalAmount, 0.001)
+	assert.Equal(t, "unpaid", createdOrder.PaymentStatus)
+
+	var savedGiftCard coupon.GiftCard
+	require.NoError(t, db.First(&savedGiftCard, giftCard.ID).Error)
+	assert.Equal(t, int64(0), savedGiftCard.BalanceCents)
+	assert.Equal(t, "used", savedGiftCard.Status)
+}
+
+func TestOrderServiceCreateOrderRejectsInvalidGiftCards(t *testing.T) {
+	testCases := []struct {
+		name      string
+		configure func(*coupon.GiftCard)
+	}{
+		{
+			name: "cancelled",
+			configure: func(card *coupon.GiftCard) {
+				card.Status = "cancelled"
+			},
+		},
+		{
+			name: "expired",
+			configure: func(card *coupon.GiftCard) {
+				expiredAt := time.Now().Add(-time.Hour)
+				card.ExpiresAt = &expiredAt
+			},
+		},
+		{
+			name: "owned by another customer",
+			configure: func(card *coupon.GiftCard) {
+				otherUserID := uint(99)
+				card.OwnerUserID = &otherUserID
+			},
+		},
+		{
+			name: "currency mismatch",
+			configure: func(card *coupon.GiftCard) {
+				card.Currency = "EUR"
+			},
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			db, orderService := newTestOrderService(t)
+			productRecord := seedProduct(t, db, 100, 5)
+			giftCard := seedGiftCard(t, db, "REDEEM-INVALID-"+strings.ToUpper(strings.ReplaceAll(testCase.name, " ", "-")), 42, "USD", 5000)
+			testCase.configure(giftCard)
+			require.NoError(t, db.Save(giftCard).Error)
+
+			createdOrder, err := orderService.CreateOrderWithAttributionAndOptions(
+				context.Background(),
+				42,
+				[]order.OrderItem{{ProductID: productRecord.ID, Quantity: 1}},
+				testAddress(),
+				testAddress(),
+				"card",
+				"standard",
+				"",
+				0,
+				attributionpkg.Context{},
+				OrderCreationOptions{GiftCardCode: giftCard.Code},
+			)
+
+			require.Error(t, err)
+			assert.Nil(t, createdOrder)
+
+			var orderCount int64
+			require.NoError(t, db.Model(&order.Order{}).Count(&orderCount).Error)
+			assert.Zero(t, orderCount)
+		})
+	}
+}
+
+func TestOrderServiceGiftCardIdempotentRetryDoesNotDuplicateUsage(t *testing.T) {
+	db, orderService := newTestOrderService(t)
+	userID := uint(42)
+	productRecord := seedProduct(t, db, 100, 5)
+	giftCard := seedGiftCard(t, db, "REDEEM-IDEMPOTENT", userID, "USD", 2000)
+	options := OrderCreationOptions{
+		GiftCardCode:           giftCard.Code,
+		IdempotencyKey:         "gift-card-idempotency-key",
+		IdempotencyRequestHash: strings.Repeat("a", 64),
+	}
+
+	first, err := orderService.CreateOrderWithAttributionAndOptions(
+		context.Background(),
+		userID,
+		[]order.OrderItem{{ProductID: productRecord.ID, Quantity: 1}},
+		testAddress(),
+		testAddress(),
+		"card",
+		"standard",
+		"",
+		0,
+		attributionpkg.Context{},
+		options,
+	)
+	require.NoError(t, err)
+
+	second, err := orderService.CreateOrderWithAttributionAndOptions(
+		context.Background(),
+		userID,
+		[]order.OrderItem{{ProductID: productRecord.ID, Quantity: 1}},
+		testAddress(),
+		testAddress(),
+		"card",
+		"standard",
+		"",
+		0,
+		attributionpkg.Context{},
+		options,
+	)
+	require.NoError(t, err)
+	require.NotNil(t, second)
+	assert.Equal(t, first.ID, second.ID)
+
+	var savedGiftCard coupon.GiftCard
+	require.NoError(t, db.First(&savedGiftCard, giftCard.ID).Error)
+	assert.Equal(t, int64(0), savedGiftCard.BalanceCents)
+
+	var usageCount int64
+	require.NoError(t, db.Model(&coupon.GiftCardTransaction{}).
+		Where("gift_card_id = ? AND order_id = ? AND type = ?", giftCard.ID, first.ID, "use").
+		Count(&usageCount).Error)
+	assert.Equal(t, int64(1), usageCount)
 }
 
 func TestOrderServiceCreateOrderSnapshotsMadeToOrderFulfillment(t *testing.T) {
@@ -246,6 +870,57 @@ func TestOrderServiceCreateOrderRejectsCouponPerUserUsageLimit(t *testing.T) {
 	assert.Equal(t, 0, savedCoupon.UsedCount)
 }
 
+func TestOrderServiceCreateOrderEnforcesGuestCouponUsageLimitByNormalizedEmail(t *testing.T) {
+	db, orderService := newTestOrderService(t)
+	productRecord := seedProduct(t, db, 50, 5)
+	now := time.Now()
+	cp := coupon.Coupon{
+		Code:              "GUESTWELCOME",
+		Type:              "fixed",
+		Value:             20,
+		UsageLimitPerUser: 1,
+		StartDate:         now.Add(-time.Hour),
+		EndDate:           now.Add(time.Hour),
+		Enabled:           true,
+	}
+	require.NoError(t, db.Create(&cp).Error)
+
+	firstAddress := testAddress()
+	firstAddress.Email = " Buyer@Example.com "
+	createdOrder, err := orderService.CreateOrder(
+		context.Background(),
+		0,
+		[]order.OrderItem{{ProductID: productRecord.ID, Quantity: 1}},
+		firstAddress,
+		firstAddress,
+		"card",
+		"standard",
+		"GUESTWELCOME",
+		0,
+	)
+	require.NoError(t, err)
+	require.NotNil(t, createdOrder)
+
+	var usage coupon.CouponUsage
+	require.NoError(t, db.Where("coupon_id = ? AND order_id = ?", cp.ID, createdOrder.ID).First(&usage).Error)
+	assert.Equal(t, "buyer@example.com", usage.Email)
+
+	secondAddress := testAddress()
+	secondAddress.Email = "buyer@example.com"
+	_, err = orderService.CreateOrder(
+		context.Background(),
+		0,
+		[]order.OrderItem{{ProductID: productRecord.ID, Quantity: 1}},
+		secondAddress,
+		secondAddress,
+		"card",
+		"standard",
+		"GUESTWELCOME",
+		0,
+	)
+	require.ErrorIs(t, err, ErrCouponPerUserUsageLimitReached)
+}
+
 func TestOrderServiceUpdateOrderItemCustoms(t *testing.T) {
 	db, orderService := newTestOrderService(t)
 	productRecord := seedProduct(t, db, 50, 5)
@@ -267,6 +942,12 @@ func TestOrderServiceUpdateOrderItemCustoms(t *testing.T) {
 	require.NoError(t, db.Preload("Items").First(&savedOrder, createdOrder.ID).Error)
 	require.Len(t, savedOrder.Items, 1)
 	orderItemID := savedOrder.Items[0].ID
+	originalPricingSnapshot := append([]byte(nil), savedOrder.Items[0].PricingSnapshotData...)
+	require.NotEqual(t, "{}", string(originalPricingSnapshot))
+	require.NotEqual(t, "{}", string(savedOrder.PricingSnapshotData))
+	pricingPayload, err := pricingdomain.ParseOrderPricingSnapshot(savedOrder.PricingSnapshotData)
+	require.NoError(t, err)
+	assert.Equal(t, int64(6000), pricingPayload.TotalMinor)
 
 	declaredValue := 42.75
 	require.NoError(t, orderService.UpdateOrderItemCustoms(createdOrder.ID, orderItemID, &declaredValue, true))
@@ -275,6 +956,7 @@ func TestOrderServiceUpdateOrderItemCustoms(t *testing.T) {
 	require.NotNil(t, savedOrder.Items[0].DeclaredValue)
 	assert.InDelta(t, declaredValue, *savedOrder.Items[0].DeclaredValue, 0.001)
 	assert.True(t, savedOrder.Items[0].DeclaredValueConfirmed)
+	assert.Equal(t, originalPricingSnapshot, []byte(savedOrder.Items[0].PricingSnapshotData))
 
 	require.NoError(t, orderService.UpdateOrderItemCustoms(createdOrder.ID, orderItemID, nil, false))
 	require.NoError(t, db.Preload("Items").First(&savedOrder, createdOrder.ID).Error)
@@ -285,6 +967,72 @@ func TestOrderServiceUpdateOrderItemCustoms(t *testing.T) {
 	negativeValue := -1.0
 	require.ErrorIs(t, orderService.UpdateOrderItemCustoms(createdOrder.ID, orderItemID, &negativeValue, false), ErrDeclaredValueInvalid)
 	require.ErrorIs(t, orderService.UpdateOrderItemCustoms(createdOrder.ID, orderItemID+1000, &declaredValue, true), ErrOrderItemNotFound)
+}
+
+func TestOrderServiceUpdateOrderItemCustomsRejectsPostShipmentChanges(t *testing.T) {
+	testCases := []struct {
+		name           string
+		status         string
+		shippingStatus string
+		setShippedAt   bool
+	}{
+		{name: "shipped status", status: "shipped", shippingStatus: "pending"},
+		{name: "completed status", status: "completed", shippingStatus: "shipped"},
+		{name: "shipped shipping status", status: "processing", shippingStatus: "shipped"},
+		{name: "shipped timestamp", status: "processing", shippingStatus: "pending", setShippedAt: true},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			db, orderService := newTestOrderService(t)
+			productRecord := seedProduct(t, db, 50, 5)
+			createdOrder, err := orderService.CreateOrder(
+				context.Background(),
+				42,
+				[]order.OrderItem{{ProductID: productRecord.ID, Quantity: 1}},
+				testAddress(),
+				testAddress(),
+				"card",
+				"standard",
+				"",
+				0,
+			)
+			require.NoError(t, err)
+
+			var savedOrder order.Order
+			require.NoError(t, db.Preload("Items").First(&savedOrder, createdOrder.ID).Error)
+			require.Len(t, savedOrder.Items, 1)
+			orderItemID := savedOrder.Items[0].ID
+			originalValue := 17.5
+			require.NoError(t, db.Model(&order.OrderItem{}).
+				Where("id = ?", orderItemID).
+				Updates(map[string]interface{}{
+					"declared_value":           originalValue,
+					"declared_value_confirmed": true,
+				}).Error)
+
+			var shippedAt *time.Time
+			if testCase.setShippedAt {
+				value := time.Now().UTC()
+				shippedAt = &value
+			}
+			require.NoError(t, db.Model(&order.Order{}).
+				Where("id = ?", createdOrder.ID).
+				Updates(map[string]interface{}{
+					"status":          testCase.status,
+					"shipping_status": testCase.shippingStatus,
+					"shipped_at":      shippedAt,
+				}).Error)
+
+			updatedValue := 42.75
+			require.ErrorIs(t, orderService.UpdateOrderItemCustoms(createdOrder.ID, orderItemID, &updatedValue, true), ErrOrderCustomsUpdateLocked)
+
+			require.NoError(t, db.Preload("Items").First(&savedOrder, createdOrder.ID).Error)
+			require.NotNil(t, savedOrder.Items[0].DeclaredValue)
+			assert.InDelta(t, originalValue, *savedOrder.Items[0].DeclaredValue, 0.001)
+			assert.True(t, savedOrder.Items[0].DeclaredValueConfirmed)
+		})
+	}
 }
 
 func TestOrderServiceCreateOrderUsesVersionedLoyaltyExchangeRate(t *testing.T) {
@@ -389,7 +1137,7 @@ func TestOrderServiceCreateOrderUsesVariantPricingAndStock(t *testing.T) {
 
 	var savedProduct product.Product
 	require.NoError(t, db.First(&savedProduct, productRecord.ID).Error)
-	assert.Equal(t, 1, savedProduct.Stock)
+	assert.Equal(t, 99, savedProduct.Stock)
 	assert.Equal(t, []uint{productRecord.ID}, cacheInvalidator.productIDs)
 
 	var cacheEvent outboxdomain.Event
@@ -408,6 +1156,7 @@ func TestOrderServiceCreateOrderInvalidatesWarmedProductDetailCache(t *testing.T
 	warmed, err := productService.GetPublicByID(productRecord.ID)
 	require.NoError(t, err)
 	require.Equal(t, 5, warmed.Stock)
+	require.Equal(t, 5, warmed.TotalVariantStock())
 
 	createdOrder, err := orderService.CreateOrder(
 		context.Background(),
@@ -425,7 +1174,8 @@ func TestOrderServiceCreateOrderInvalidatesWarmedProductDetailCache(t *testing.T
 
 	reloaded, err := productService.GetPublicByID(productRecord.ID)
 	require.NoError(t, err)
-	assert.Equal(t, 3, reloaded.Stock)
+	assert.Equal(t, 5, reloaded.Stock)
+	assert.Equal(t, 3, reloaded.TotalVariantStock())
 }
 
 func TestOrderServiceCreateOrderPersistsSelectedCarrierService(t *testing.T) {
@@ -596,6 +1346,85 @@ func TestOrderServiceCreateOrderPersistsImmutableEvidenceSnapshot(t *testing.T) 
 	foundAgain, err := repository.NewOrderEvidenceSnapshotRepository(db).FindByOrderID(createdOrder.ID)
 	require.NoError(t, err)
 	assert.True(t, foundAgain.HasSpokeTensionQC)
+}
+
+func TestOrderServiceCreateOrderUsesVariantRequirementOverrideAndFreezesSnapshot(t *testing.T) {
+	db, orderService := newTestOrderService(t)
+	productRecord := seedProduct(t, db, 100, 5)
+	variant := product.ProductVariant{}
+	require.NoError(t, db.Where("product_id = ?", productRecord.ID).First(&variant).Error)
+
+	productDefaultRule := productrequirement.ProductQualityRequirementRule{
+		ProductID:              productRecord.ID,
+		RequirementType:        productrequirement.RequirementTypeSpokeTensionQC,
+		SpokeTensionQCRequired: false,
+		Status:                 productrequirement.RuleStatusActive,
+		RuleVersion:            "product-v1",
+		Reason:                 "product default does not require QC",
+	}
+	require.NoError(t, db.Create(&productDefaultRule).Error)
+
+	variantRule := productrequirement.ProductQualityRequirementRule{
+		ProductID:              productRecord.ID,
+		VariantID:              &variant.ID,
+		RequirementType:        productrequirement.RequirementTypeSpokeTensionQC,
+		SpokeTensionQCRequired: true,
+		Status:                 productrequirement.RuleStatusActive,
+		RuleVersion:            "variant-v1",
+		Reason:                 "variant requires QC",
+	}
+	require.NoError(t, db.Create(&variantRule).Error)
+
+	createdOrder, err := orderService.CreateOrder(
+		context.Background(),
+		42,
+		[]order.OrderItem{{ProductID: productRecord.ID, VariantID: &variant.ID, Quantity: 1}},
+		testAddress(),
+		testAddress(),
+		"card",
+		"standard",
+		"",
+		0,
+	)
+	require.NoError(t, err)
+	require.NotNil(t, createdOrder)
+
+	snapshot, err := repository.NewOrderEvidenceSnapshotRepository(db).FindByOrderID(createdOrder.ID)
+	require.NoError(t, err)
+	require.True(t, snapshot.HasSpokeTensionQC)
+
+	payload, err := orderevidence.ParseOrderEvidenceSnapshotPayload(snapshot)
+	require.NoError(t, err)
+	require.Len(t, payload.Items, 1)
+	require.NotNil(t, payload.Items[0].ProductRequirementSnapshot.RuleID)
+	assert.Equal(t, variantRule.ID, *payload.Items[0].ProductRequirementSnapshot.RuleID)
+	assert.Equal(t, "variant-v1", payload.Items[0].ProductRequirementSnapshot.RuleVersion)
+	assert.Equal(t, productrequirement.ResolutionSourceVariant, payload.Items[0].ProductRequirementSnapshot.Source)
+
+	var storedRequirement productrequirement.ProductQualityRequirementRule
+	require.NoError(t, db.First(&storedRequirement, variantRule.ID).Error)
+	require.NoError(t, db.Model(&storedRequirement).Updates(map[string]interface{}{
+		"spoke_tension_qc_required": false,
+		"status":                    productrequirement.RuleStatusInactive,
+		"rule_version":              "variant-v2",
+	}).Error)
+
+	foundAgain, err := repository.NewOrderEvidenceSnapshotRepository(db).FindByOrderID(createdOrder.ID)
+	require.NoError(t, err)
+	assert.True(t, foundAgain.HasSpokeTensionQC)
+
+	evidenceRepo := repository.NewOrderEvidenceRepository(db)
+	pkg, err := evidenceRepo.FindLatestPackageByOrderID(createdOrder.ID)
+	require.NoError(t, err)
+	items, err := evidenceRepo.ListItemsByPackageID(pkg.ID)
+	require.NoError(t, err)
+	var tensionItems int
+	for _, item := range items {
+		if item.ItemType == orderevidence.EvidenceItemTypeSpokeQCTension {
+			tensionItems++
+		}
+	}
+	assert.Equal(t, 1, tensionItems)
 }
 
 func TestOrderServiceEvidenceSeparatesHighValueFromSpokeTensionRequirement(t *testing.T) {
@@ -892,7 +1721,11 @@ func TestOrderServiceExpireStalePendingPaymentsSkipsRecentPaymentActivity(t *tes
 
 	var savedProduct product.Product
 	require.NoError(t, db.First(&savedProduct, productRecord.ID).Error)
-	assert.Equal(t, 4, savedProduct.Stock)
+	assert.Equal(t, 5, savedProduct.Stock)
+
+	var savedVariant product.ProductVariant
+	require.NoError(t, db.Where("product_id = ?", productRecord.ID).First(&savedVariant).Error)
+	assert.Equal(t, 4, savedVariant.Stock)
 }
 
 func TestOrderStatusTransitionUsesDomainRules(t *testing.T) {
@@ -980,11 +1813,69 @@ func TestOrderServiceCompletingOrderDoesNotChangeShippingStatus(t *testing.T) {
 	assert.NotNil(t, saved.CompletedAt)
 }
 
-func TestOrderServiceCompletionRejectsNonUSDPointsWithoutConversion(t *testing.T) {
+func TestOrderServiceCompletionConvertsNonUSDPointsUsingHistoricalFXSnapshot(t *testing.T) {
 	db, orderService := newTestOrderService(t)
-	userID := uint(43)
+	testCases := []struct {
+		currency        string
+		baseToOrderRate float64
+		subtotal        float64
+		discount        float64
+		expectedPoints  int
+	}{
+		{currency: "EUR", baseToOrderRate: 0.9, subtotal: 120, discount: 20, expectedPoints: 111},
+		{currency: "GBP", baseToOrderRate: 0.8, subtotal: 120, discount: 20, expectedPoints: 125},
+		{currency: "JPY", baseToOrderRate: 150, subtotal: 15000, discount: 0, expectedPoints: 100},
+		{currency: "CNY", baseToOrderRate: 7, subtotal: 120, discount: 20, expectedPoints: 14},
+	}
+
+	for index, testCase := range testCases {
+		t.Run(testCase.currency, func(t *testing.T) {
+			userID := uint(43 + index)
+			orderRecord := order.Order{
+				OrderNumber:    "ORD-COMPLETE-" + testCase.currency + "-POINTS",
+				UserID:         userID,
+				Status:         "shipped",
+				PaymentStatus:  "paid",
+				SubtotalAmount: testCase.subtotal,
+				DiscountAmount: testCase.discount,
+				TotalAmount:    testCase.subtotal - testCase.discount,
+				Currency:       testCase.currency,
+				FXSnapshotData: currency.OrderFXSnapshotJSON(currency.OrderFXSnapshot{
+					Version:         currency.OrderFXSnapshotVersion,
+					BaseCurrency:    "USD",
+					OrderCurrency:   testCase.currency,
+					BaseToOrderRate: testCase.baseToOrderRate,
+					Source:          "test-rate",
+					CapturedAt:      time.Now().UTC(),
+				}),
+			}
+			require.NoError(t, db.Create(&orderRecord).Error)
+
+			require.NoError(t, orderService.UpdateOrderStatus(orderRecord.ID, "completed"))
+
+			var savedOrder order.Order
+			require.NoError(t, db.First(&savedOrder, orderRecord.ID).Error)
+			assert.Equal(t, "completed", savedOrder.Status)
+
+			var earnedTransactions []loyalty.LoyaltyTransaction
+			require.NoError(t, db.Where(
+				"user_id = ? AND type = ? AND source = ? AND source_id = ?",
+				userID,
+				"earn",
+				"order",
+				orderRecord.ID,
+			).Find(&earnedTransactions).Error)
+			require.Len(t, earnedTransactions, 1)
+			assert.Equal(t, testCase.expectedPoints, earnedTransactions[0].Points)
+		})
+	}
+}
+
+func TestOrderServiceCompletionAllowsLegacyNonUSDOrderWithoutFXSnapshot(t *testing.T) {
+	db, orderService := newTestOrderService(t)
+	userID := uint(44)
 	orderRecord := order.Order{
-		OrderNumber:    "ORD-COMPLETE-EUR-POINTS",
+		OrderNumber:    "ORD-COMPLETE-LEGACY-EUR",
 		UserID:         userID,
 		Status:         "shipped",
 		PaymentStatus:  "paid",
@@ -995,12 +1886,11 @@ func TestOrderServiceCompletionRejectsNonUSDPointsWithoutConversion(t *testing.T
 	}
 	require.NoError(t, db.Create(&orderRecord).Error)
 
-	err := orderService.UpdateOrderStatus(orderRecord.ID, "completed")
+	require.NoError(t, orderService.UpdateOrderStatus(orderRecord.ID, "completed"))
 
-	require.ErrorIs(t, err, ErrInvalidLoyaltyProgramConfig)
 	var savedOrder order.Order
 	require.NoError(t, db.First(&savedOrder, orderRecord.ID).Error)
-	assert.Equal(t, "shipped", savedOrder.Status)
+	assert.Equal(t, "completed", savedOrder.Status)
 
 	var count int64
 	require.NoError(t, db.Model(&loyalty.LoyaltyTransaction{}).
@@ -1030,7 +1920,7 @@ func TestOrderServiceCreateOrderUsesProductPriceCurrency(t *testing.T) {
 	assert.Equal(t, "USD", createdOrder.Currency)
 }
 
-func TestOrderServiceCreateOrderRejectsUnsupportedPaymentCurrency(t *testing.T) {
+func TestOrderServiceCreateOrderPersistsDomesticProviderSettlementForCrossCurrencyOrder(t *testing.T) {
 	db, orderService := newTestOrderService(t)
 	productRecord := seedProduct(t, db, 50, 5)
 
@@ -1046,18 +1936,19 @@ func TestOrderServiceCreateOrderRejectsUnsupportedPaymentCurrency(t *testing.T) 
 		0,
 	)
 
-	require.Error(t, err)
-	assert.Nil(t, createdOrder)
-	assert.Contains(t, err.Error(), "wechat")
-	assert.Contains(t, err.Error(), "USD")
+	require.NoError(t, err)
+	require.NotNil(t, createdOrder)
+	assert.Equal(t, "USD", createdOrder.Currency)
+	assert.Equal(t, "CNY", createdOrder.PaymentCurrency)
+	assert.Greater(t, createdOrder.PaymentAmount, createdOrder.TotalAmount)
 
 	var orderCount int64
 	require.NoError(t, db.Model(&order.Order{}).Count(&orderCount).Error)
-	assert.Zero(t, orderCount)
+	assert.EqualValues(t, 1, orderCount)
 
 	var variant product.ProductVariant
 	require.NoError(t, db.Where("product_id = ?", productRecord.ID).First(&variant).Error)
-	assert.Equal(t, 5, variant.Stock)
+	assert.Equal(t, 4, variant.Stock)
 }
 
 func TestOrderServiceCreateOrderAcceptsSupportedPaymentCurrency(t *testing.T) {
@@ -1259,6 +2150,59 @@ func TestOrderServiceFulfillOrderMarksOrderShippedAndCreatesTrackingTask(t *test
 	assert.Equal(t, "shipped", savedOrder.ShippingStatus)
 }
 
+func TestOrderServiceFulfillOrderRequiresPositiveConfirmedCustomsDeclaredValue(t *testing.T) {
+	positiveDeclaredValue := 42.75
+	zeroDeclaredValue := 0.0
+	testCases := []struct {
+		name           string
+		declaredValue  *float64
+		valueConfirmed bool
+	}{
+		{name: "missing value", declaredValue: nil, valueConfirmed: false},
+		{name: "value not confirmed", declaredValue: &positiveDeclaredValue, valueConfirmed: false},
+		{name: "zero value", declaredValue: &zeroDeclaredValue, valueConfirmed: true},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			db, orderService := newTestOrderService(t)
+			orderRecord := order.Order{
+				OrderNumber:   "ORD-FULFILL-CUSTOMS-" + strings.ToUpper(strings.ReplaceAll(testCase.name, " ", "-")),
+				UserID:        42,
+				Status:        "processing",
+				PaymentStatus: "paid",
+				TotalAmount:   100,
+				Currency:      "USD",
+			}
+			require.NoError(t, db.Create(&orderRecord).Error)
+			variantID := uint(1)
+			require.NoError(t, db.Create(&order.OrderItem{
+				OrderID:                orderRecord.ID,
+				ProductID:              1,
+				VariantID:              &variantID,
+				ProductName:            "Customs test product",
+				SKU:                    "CUSTOMS-TEST-SKU",
+				Quantity:               1,
+				Price:                  100,
+				Subtotal:               100,
+				Total:                  100,
+				DeclaredValue:          testCase.declaredValue,
+				DeclaredValueConfirmed: testCase.valueConfirmed,
+			}).Error)
+
+			_, err := orderService.FulfillOrder(context.Background(), orderRecord.ID, OrderTrackingUpdateInput{})
+
+			require.ErrorIs(t, err, ErrOrderCustomsDeclarationIncomplete)
+			assert.Contains(t, err.Error(), "CUSTOMS-TEST-SKU")
+
+			var unchanged order.Order
+			require.NoError(t, db.First(&unchanged, orderRecord.ID).Error)
+			assert.Equal(t, "processing", unchanged.Status)
+			assert.Equal(t, "pending", unchanged.ShippingStatus)
+		})
+	}
+}
+
 func TestOrderServiceFulfillOrderDoesNotMarkOrderShippedWhenCarrierMappingFails(t *testing.T) {
 	db, orderService := newTestOrderService(t)
 	provider, _, carrierService := seedTrackingProviderCarrierAndService(t, db)
@@ -1355,6 +2299,53 @@ func TestOrderServiceRejectsSequentialPublicOrderNumber(t *testing.T) {
 	assert.True(t, service.validatesKnownProtectedOrderNumber("ORD-LEGACY-1001"))
 }
 
+func TestOrderServiceHideUnpaidCancelledOrPaymentExpiredOrderFromDefaultQueries(t *testing.T) {
+	testCases := []struct {
+		name          string
+		status        string
+		paymentStatus string
+		canHide       bool
+	}{
+		{name: "paid order", status: "paid", paymentStatus: "paid", canHide: false},
+		{name: "refunded order", status: "refunded", paymentStatus: "refunded", canHide: false},
+		{name: "cancelled unpaid terminal order", status: "cancelled", paymentStatus: "unpaid", canHide: true},
+		{name: "payment expired terminal order", status: "payment_expired", paymentStatus: "expired", canHide: true},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			db, orderService := newTestOrderService(t)
+			orderRecord := order.Order{
+				OrderNumber:   "ORD-HIDE-" + strings.ToUpper(strings.ReplaceAll(testCase.name, " ", "-")),
+				UserID:        42,
+				Status:        testCase.status,
+				PaymentStatus: testCase.paymentStatus,
+				TotalAmount:   100,
+				Currency:      "USD",
+			}
+			require.NoError(t, db.Create(&orderRecord).Error)
+
+			err := orderService.HideUnpaidCancelledOrPaymentExpiredOrderFromDefaultQueries(orderRecord.ID)
+			if testCase.canHide {
+				require.NoError(t, err)
+			} else {
+				require.ErrorIs(t, err, ErrOrderHideNotAllowed)
+			}
+
+			var retainedOrder order.Order
+			require.NoError(t, db.Unscoped().First(&retainedOrder, orderRecord.ID).Error)
+			assert.Equal(t, testCase.canHide, retainedOrder.DeletedAt.Valid)
+
+			var defaultQueryOrder order.Order
+			if testCase.canHide {
+				require.ErrorIs(t, db.First(&defaultQueryOrder, orderRecord.ID).Error, gorm.ErrRecordNotFound)
+			} else {
+				require.NoError(t, db.First(&defaultQueryOrder, orderRecord.ID).Error)
+			}
+		})
+	}
+}
+
 func newTestOrderService(t *testing.T) (*gorm.DB, *OrderService) {
 	t.Helper()
 
@@ -1377,6 +2368,8 @@ func newTestOrderService(t *testing.T) (*gorm.DB, *OrderService) {
 		&product.ProductMedia{},
 		&product.ProductSpecValue{},
 		&product.ProductVariant{},
+		&product.Cart{},
+		&product.CartItem{},
 		&order.Order{},
 		&order.OrderItem{},
 		&order.OrderIdempotency{},
@@ -1389,6 +2382,8 @@ func newTestOrderService(t *testing.T) (*gorm.DB, *OrderService) {
 		&outboxdomain.Event{},
 		&coupon.Coupon{},
 		&coupon.CouponUsage{},
+		&coupon.GiftCard{},
+		&coupon.GiftCardTransaction{},
 		&currency.ExchangeRate{},
 		&currency.ExchangeRateSyncLease{},
 		&loyalty.UserLoyalty{},
@@ -1399,8 +2394,12 @@ func newTestOrderService(t *testing.T) (*gorm.DB, *OrderService) {
 		&setting.Setting{},
 		&paymentdomain.Transaction{},
 		&paymentdomain.TaxRate{},
+		&paymentdomain.StripeDispute{},
+		&paymentdomain.PayPalDispute{},
+		&paymentdomain.PaymentReview{},
 		&shippingdomain.Carrier{},
 		&shippingdomain.CarrierService{},
+		&shippingdomain.QuoteSnapshot{},
 		&shippingdomain.TrackingProviderConfig{},
 		&shippingdomain.TrackingCarrierMapping{},
 		&shippingdomain.TrackingShipment{},
@@ -1421,6 +2420,7 @@ func newTestOrderService(t *testing.T) (*gorm.DB, *OrderService) {
 	seedDefaultShippingTemplate(t, db)
 	checkoutService := NewCheckoutService(productRepo, couponRepo, paymentRepo, loyaltyRepo, shippingService)
 	txManager := repository.NewTxManager(db, orderRepo, productRepo, couponRepo, loyaltyRepo, paymentRepo, shippingRepo)
+	txManager.ConfigureCartRepository(repository.NewCartRepository(db))
 	txManager.ConfigureOrderIdempotencyRepository(repository.NewOrderIdempotencyRepository(db))
 	currencyPolicyService := seedTestCurrencyPolicy(t, db)
 	exchangeRateRepo := repository.NewExchangeRateRepository(db)
@@ -1568,6 +2568,28 @@ func seedProductWithSKU(t *testing.T, db *gorm.DB, price float64, stock int, sku
 	return record
 }
 
+func seedCheckoutCart(t *testing.T, db *gorm.DB, userID, productID, variantID uint, quantity int, price float64) product.Cart {
+	t.Helper()
+
+	cart := product.Cart{UserID: &userID}
+	require.NoError(t, db.Create(&cart).Error)
+	require.NoError(t, db.Create(&product.CartItem{
+		CartID:    cart.ID,
+		ProductID: productID,
+		VariantID: &variantID,
+		Quantity:  quantity,
+		PriceMinor: func() int64 {
+			value, err := domainmoney.FromMajorFloat(price, "USD")
+			if err != nil {
+				t.Fatalf("invalid test price: %v", err)
+			}
+			return value.AmountMinor()
+		}(),
+		Currency: "USD",
+	}).Error)
+	return cart
+}
+
 func seedOrderTestShippingTemplateID(t *testing.T, db *gorm.DB) *uint {
 	t.Helper()
 
@@ -1628,6 +2650,22 @@ func seedCoupon(t *testing.T, db *gorm.DB, code, couponType string, value float6
 		EndDate:    now.Add(time.Hour),
 		Enabled:    true,
 	}).Error)
+}
+
+func seedGiftCard(t *testing.T, db *gorm.DB, code string, ownerUserID uint, cardCurrency string, balanceCents int64) *coupon.GiftCard {
+	t.Helper()
+
+	card := &coupon.GiftCard{
+		Code:         code,
+		InitialCents: balanceCents,
+		BalanceCents: balanceCents,
+		Currency:     cardCurrency,
+		Status:       "active",
+		OwnerUserID:  &ownerUserID,
+		Origin:       "loyalty_redemption",
+	}
+	require.NoError(t, db.Create(card).Error)
+	return card
 }
 
 func testAddress() order.Address {

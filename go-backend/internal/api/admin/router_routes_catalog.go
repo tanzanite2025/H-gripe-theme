@@ -10,7 +10,7 @@ import (
 func registerProductRoutes(
 	authenticated *gin.RouterGroup,
 	productHandler *ProductHandler,
-	productProcurementHandler *ProductProcurementHandler,
+	productSupplierCostRecordHandler *ProductSupplierCostRecordHandler,
 	frameFitmentEntryHandler *FrameFitmentEntryHandler,
 	forkFitmentEntryHandler *ForkFitmentEntryHandler,
 	fitmentHubSpecificationHandler *FitmentHubSpecificationHandler,
@@ -25,23 +25,24 @@ func registerProductRoutes(
 	selectionConfigurationKeyHandler *SelectionConfigurationKeyHandler,
 	wheelsetFitQuestionnaireHandler *WheelsetFitQuestionnaireHandler,
 ) {
-	// 商品管理（需要商品管理权限）
-	// 采购资料是独立附加域，只读写自身产品编码/名称快照。
-	productProcurementGroup := authenticated.Group("/procurement/records")
-	productProcurementGroup.Use(middleware.RequirePermission(auth.PermProcurementView))
+	// 商品成本与供应商资料是独立附加域，只读写自身 SKU/名称快照。
+	// The /procurement path and permission values are legacy compatibility
+	// identifiers; this is not a supplier-order or inventory workflow.
+	productSupplierCostRecordGroup := authenticated.Group("/procurement/records")
+	productSupplierCostRecordGroup.Use(middleware.RequirePermission(auth.PermSupplierCostView))
 	{
-		productProcurementGroup.GET("", productProcurementHandler.List)
-		productProcurementGroup.GET("/by-codes", productProcurementHandler.ListByCodes)
-		productProcurementGroup.GET("/:id", productProcurementHandler.Get)
-		productProcurementGroup.POST("", middleware.RequirePermission(auth.PermProcurementCreate), productProcurementHandler.Create)
-		productProcurementGroup.PUT("/:id", middleware.RequirePermission(auth.PermProcurementEdit), productProcurementHandler.Update)
-		productProcurementGroup.DELETE("/:id", middleware.RequirePermission(auth.PermProcurementDelete), productProcurementHandler.Delete)
+		productSupplierCostRecordGroup.GET("", productSupplierCostRecordHandler.List)
+		productSupplierCostRecordGroup.GET("/by-codes", productSupplierCostRecordHandler.ListByCodes)
+		productSupplierCostRecordGroup.GET("/:id", productSupplierCostRecordHandler.Get)
+		productSupplierCostRecordGroup.POST("", middleware.RequirePermission(auth.PermSupplierCostCreate), productSupplierCostRecordHandler.Create)
+		productSupplierCostRecordGroup.PUT("/:id", middleware.RequirePermission(auth.PermSupplierCostEdit), productSupplierCostRecordHandler.Update)
+		productSupplierCostRecordGroup.DELETE("/:id", middleware.RequirePermission(auth.PermSupplierCostDelete), productSupplierCostRecordHandler.Delete)
 	}
 
-	productProcurementOptionsGroup := authenticated.Group("/procurement/product-options")
-	productProcurementOptionsGroup.Use(middleware.RequirePermission(auth.PermProcurementView))
+	productSupplierCostRecordOptionsGroup := authenticated.Group("/procurement/product-options")
+	productSupplierCostRecordOptionsGroup.Use(middleware.RequirePermission(auth.PermSupplierCostView))
 	{
-		productProcurementOptionsGroup.GET("", productProcurementHandler.ProductOptions)
+		productSupplierCostRecordOptionsGroup.GET("", productSupplierCostRecordHandler.ProductOptions)
 	}
 
 	frameFitmentEntriesGroup := authenticated.Group("/fitment-catalog/frame-entries")
@@ -78,11 +79,11 @@ func registerProductRoutes(
 	}
 
 	productProfitabilityGroup := authenticated.Group("/procurement/profitability")
-	productProfitabilityGroup.Use(middleware.RequirePermission(auth.PermProcurementView))
+	productProfitabilityGroup.Use(middleware.RequirePermission(auth.PermSupplierCostView))
 	{
 		productProfitabilityGroup.GET("/by-codes", productProfitabilityHandler.ListByCodes)
 		productProfitabilityGroup.POST("/preview", productProfitabilityHandler.Preview)
-		productProfitabilityGroup.POST("/bulk-upsert", middleware.RequirePermission(auth.PermProcurementEdit), productProfitabilityHandler.BulkUpsert)
+		productProfitabilityGroup.POST("/bulk-upsert", middleware.RequirePermission(auth.PermSupplierCostEdit), productProfitabilityHandler.BulkUpsert)
 	}
 
 	productSpecificationTemplatesGroup := authenticated.Group("/product-specification-templates")

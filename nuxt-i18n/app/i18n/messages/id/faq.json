@@ -12,6 +12,8 @@
     "noResults": "Tidak ada FAQ yang cocok dengan \"{query}\"",
     "loadingAnswers": "Memuat jawaban",
     "illustrationAlt": "Ilustrasi FAQ",
-    "selectQuestion": "Select a question to view the answer."
+    "selectQuestion": "Select a question to view the answer.",
+    "pagesAriaLabel": "FAQ pages",
+    "pagesLabel": "FAQ pages"
   }
 }

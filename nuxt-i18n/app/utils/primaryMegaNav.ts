@@ -159,6 +159,16 @@ export const primaryMegaNavSections: PrimaryMegaNavSection[] = [
         size: 'standard',
         accent: 'emerald',
       },
+      {
+        id: 'workbench',
+        labelKey: 'workbench.nav.feed',
+        labelFallback: 'Workbench Feed',
+        description: 'Short, real notes from wheel builds, repairs, measurements, and fitment work.',
+        to: '/resources/workbench',
+        icon: 'lucide:wrench',
+        size: 'standard',
+        accent: 'emerald',
+      },
     ],
   },
   {

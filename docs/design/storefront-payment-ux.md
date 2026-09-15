@@ -39,6 +39,23 @@ Use customer-safe language instead:
 
 Admin tools may still show exact gateway configuration states.
 
+## Checkout Total Confirmation
+
+- The shared checkout must refresh the backend quote immediately before creating a local order.
+- The create-order request must include that quote's `total_amount` as `expected_total`.
+- The backend recomputes the quote inside the order-creation transaction and compares it with `expected_total`.
+- If the absolute difference is greater than `0.05` in the order currency, the backend returns HTTP `409` with code `order_total_changed`; it must not create the order, deduct stock, spend points, or start provider payment.
+- The storefront refreshes the quote and asks the customer to review the updated total before retrying.
+
+## Checkout Cart Consumption
+
+- The API reads the authenticated customer's cart and passes its explicit cart ID into order creation.
+- The order-creation transaction locks that cart and its item rows, rebuilds the quote from the locked cart snapshot, reserves stock, creates the order, and deletes exactly those cart rows before commit.
+- This applies to card, PayPal, Alipay, WeChat Pay, and other asynchronous payment methods. Browser return pages are never the source of truth for cart consumption.
+- A second concurrent checkout against the same cart receives HTTP `409` with code `checkout_cart_already_consumed`; it must not create another order or deduct stock.
+- If an unpaid order is cancelled or expires before payment, its order items, points, and coupon usage are restored in the same rollback transaction. A paid order does not restore the cart.
+- After payment success, the storefront reloads the backend cart instead of issuing a broad client-side clear, so products added while an asynchronous payment was pending are preserved.
+
 ## Visual Assets
 
 - Use existing SVG payment assets from `nuxt-i18n/public/icons/payment/`.

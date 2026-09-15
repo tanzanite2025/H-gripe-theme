@@ -415,6 +415,11 @@ const loadGlobalProductDetailBottomSheetProduct = async () => {
 }
 
 const resolveInitialGlobalProductDetailBottomSheetVariantId = (shopProduct: ShopProduct) => {
+  const requestedVariantID = Number(productReference.value?.variantId || 0)
+  if (requestedVariantID > 0) {
+    const requestedVariant = shopProduct.variants.find(variant => variant.id === requestedVariantID)
+    if (requestedVariant) return requestedVariant.id
+  }
   const defaultVariant = shopProduct.variants.find(variant => variant.isDefault)
     || shopProduct.variants[0]
   return defaultVariant?.id || null

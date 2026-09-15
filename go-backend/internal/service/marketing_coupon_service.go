@@ -2,6 +2,8 @@ package service
 
 import (
 	"commerce-platform/internal/domain/coupon"
+	"commerce-platform/internal/domain/currency"
+	domainmoney "commerce-platform/internal/domain/money"
 	"commerce-platform/internal/repository"
 	"errors"
 	"fmt"
@@ -12,6 +14,7 @@ type CouponCreateInput struct {
 	Code                 string
 	Type                 string
 	Value                float64
+	Currency             string
 	Description          string
 	MinAmount            float64
 	MaxDiscount          float64
@@ -29,6 +32,7 @@ type CouponUpdateInput struct {
 	Code                 *string
 	Type                 *string
 	Value                *float64
+	Currency             *string
 	Description          *string
 	MinAmount            *float64
 	MaxDiscount          *float64
@@ -42,7 +46,7 @@ type CouponUpdateInput struct {
 	Enabled              *bool
 }
 
-func (s *MarketingService) ValidateCoupon(code string, userID uint, amount float64) (*coupon.Coupon, float64, error) {
+func (s *MarketingService) ValidateCoupon(code string, userID uint, amount float64, emails ...string) (*coupon.Coupon, float64, error) {
 	c, err := s.couponRepo.FindCouponByCode(code)
 	if err != nil {
 		return nil, 0, errors.New("coupon not found")
@@ -50,6 +54,13 @@ func (s *MarketingService) ValidateCoupon(code string, userID uint, amount float
 
 	if !c.Enabled {
 		return nil, 0, errors.New("coupon is disabled")
+	}
+	if err := validateCouponRecipient(c, userID); err != nil {
+		return nil, 0, err
+	}
+	couponCurrency, err := parseCouponCurrency(c.Currency)
+	if err != nil {
+		return nil, 0, err
 	}
 
 	now := time.Now()
@@ -60,18 +71,49 @@ func (s *MarketingService) ValidateCoupon(code string, userID uint, amount float
 	if err := validateCouponUsageLimit(c); err != nil {
 		return nil, 0, err
 	}
-	if err := validateCouponPerUserUsageLimit(s.couponRepo, c, userID); err != nil {
+	var email string
+	if len(emails) > 0 {
+		email = emails[0]
+	}
+	if err := validateCouponPerUserUsageLimit(s.couponRepo, c, userID, email); err != nil {
 		return nil, 0, err
 	}
 
-	if amount < c.MinAmount {
-		return nil, 0, fmt.Errorf("minimum amount %.2f required", c.MinAmount)
+	amountMoney, err := domainmoney.FromMajorFloat(amount, couponCurrency)
+	if err != nil {
+		return nil, 0, fmt.Errorf("invalid amount: %w", err)
+	}
+	minimumMoney, err := domainmoney.FromMajorFloat(c.MinAmount, couponCurrency)
+	if err != nil {
+		return nil, 0, fmt.Errorf("invalid coupon minimum amount: %w", err)
+	}
+	if amountMoney.AmountMinor() < minimumMoney.AmountMinor() {
+		minimumMajor, _ := minimumMoney.FormatMajor()
+		return nil, 0, fmt.Errorf("minimum amount %s required", minimumMajor)
 	}
 
-	return c, c.CalculateDiscount(amount), nil
+	discountMoney, err := c.CalculateDiscountMoney(amountMoney)
+	if err != nil {
+		return nil, 0, err
+	}
+	discount, err := discountMoney.MajorFloat()
+	if err != nil {
+		return nil, 0, fmt.Errorf("format coupon discount: %w", err)
+	}
+	return c, discount, nil
 }
 
-func (s *MarketingService) UseCoupon(couponID, userID, orderID uint, discountAmount float64) error {
+func validateCouponRecipient(c *coupon.Coupon, userID uint) error {
+	if c == nil || c.ReferralRecipientUserID == nil {
+		return nil
+	}
+	if userID == 0 || *c.ReferralRecipientUserID != userID {
+		return errors.New("coupon is not available for this customer")
+	}
+	return nil
+}
+
+func (s *MarketingService) UseCoupon(couponID, userID, orderID uint, discountAmount float64, emails ...string) error {
 	return s.txManager.WithinTx(func(repos repository.TxRepositories) error {
 		c, err := repos.Coupon.FindCouponByIDForUpdate(couponID)
 		if err != nil {
@@ -80,7 +122,17 @@ func (s *MarketingService) UseCoupon(couponID, userID, orderID uint, discountAmo
 		if err := validateCouponUsageLimit(c); err != nil {
 			return err
 		}
-		if err := validateCouponPerUserUsageLimit(repos.Coupon, c, userID); err != nil {
+		if err := validateCouponRecipient(c, userID); err != nil {
+			return err
+		}
+		if _, err := parseCouponCurrency(c.Currency); err != nil {
+			return err
+		}
+		var email string
+		if len(emails) > 0 {
+			email = emails[0]
+		}
+		if err := validateCouponPerUserUsageLimit(repos.Coupon, c, userID, email); err != nil {
 			return err
 		}
 		if err := repos.Coupon.IncrementUsedCount(couponID); err != nil {
@@ -90,6 +142,7 @@ func (s *MarketingService) UseCoupon(couponID, userID, orderID uint, discountAmo
 		usage := &coupon.CouponUsage{
 			CouponID: couponID,
 			UserID:   userID,
+			Email:    coupon.NormalizeEmail(email),
 			OrderID:  orderID,
 			Discount: discountAmount,
 		}
@@ -105,11 +158,30 @@ func validateCouponUsageLimit(c *coupon.Coupon) error {
 	return nil
 }
 
-func validateCouponPerUserUsageLimit(couponRepo *repository.CouponRepository, c *coupon.Coupon, userID uint) error {
-	if c.UsageLimitPerUser <= 0 || userID == 0 {
+func validateCouponPerUserUsageLimit(couponRepo *repository.CouponRepository, c *coupon.Coupon, userID uint, emails ...string) error {
+	if c.UsageLimitPerUser <= 0 {
 		return nil
 	}
-	usedCount, err := couponRepo.CountUserCouponUsage(userID, c.ID)
+	if userID > 0 {
+		usedCount, err := couponRepo.CountUserCouponUsage(userID, c.ID)
+		if err != nil {
+			return err
+		}
+		if int(usedCount) >= c.UsageLimitPerUser {
+			return ErrCouponPerUserUsageLimitReached
+		}
+		return nil
+	}
+
+	var email string
+	if len(emails) > 0 {
+		email = emails[0]
+	}
+	email = coupon.NormalizeEmail(email)
+	if email == "" {
+		return ErrCouponUsageIdentityRequired
+	}
+	usedCount, err := couponRepo.CountEmailCouponUsage(email, c.ID)
 	if err != nil {
 		return err
 	}
@@ -124,33 +196,7 @@ func (s *MarketingService) GetActiveCoupons() ([]coupon.Coupon, error) {
 }
 
 func (s *MarketingService) ListCouponsAdmin(page, pageSize int, status string) ([]coupon.Coupon, int64, error) {
-	coupons, total, err := s.couponRepo.FindAllCoupons(page, pageSize)
-	if err != nil || status == "" || status == "all" {
-		return coupons, total, err
-	}
-
-	filtered := make([]coupon.Coupon, 0, len(coupons))
-	now := time.Now()
-	for _, cp := range coupons {
-		switch status {
-		case "active":
-			if cp.Enabled && now.After(cp.StartDate) && now.Before(cp.EndDate) {
-				filtered = append(filtered, cp)
-			}
-		case "expired":
-			if now.After(cp.EndDate) {
-				filtered = append(filtered, cp)
-			}
-		case "disabled":
-			if !cp.Enabled {
-				filtered = append(filtered, cp)
-			}
-		default:
-			return nil, 0, fmt.Errorf("unsupported coupon status filter %s", status)
-		}
-	}
-
-	return filtered, int64(len(filtered)), nil
+	return s.couponRepo.FindAllCouponsByStatus(page, pageSize, status)
 }
 
 func (s *MarketingService) GetCoupon(id uint) (*coupon.Coupon, error) {
@@ -165,11 +211,16 @@ func (s *MarketingService) CreateCouponAdmin(input CouponCreateInput) (*coupon.C
 	if err := s.ensureCouponCodeAvailable(input.Code, 0); err != nil {
 		return nil, err
 	}
+	couponCurrency, err := parseCouponCurrency(input.Currency)
+	if err != nil {
+		return nil, err
+	}
 
 	cp := &coupon.Coupon{
 		Code:                 input.Code,
 		Type:                 input.Type,
 		Value:                input.Value,
+		Currency:             couponCurrency,
 		Description:          input.Description,
 		MinAmount:            input.MinAmount,
 		MaxDiscount:          input.MaxDiscount,
@@ -207,6 +258,13 @@ func (s *MarketingService) UpdateCouponAdmin(id uint, input CouponUpdateInput) (
 	}
 	if input.Value != nil {
 		cp.Value = *input.Value
+	}
+	if input.Currency != nil {
+		couponCurrency, err := parseCouponCurrency(*input.Currency)
+		if err != nil {
+			return nil, err
+		}
+		cp.Currency = couponCurrency
 	}
 	if input.Description != nil {
 		cp.Description = *input.Description
@@ -247,6 +305,17 @@ func (s *MarketingService) UpdateCouponAdmin(id uint, input CouponUpdateInput) (
 	}
 
 	return cp, nil
+}
+
+func parseCouponCurrency(value string) (string, error) {
+	value = currency.NormalizeCode(value)
+	if value == "" {
+		return currency.DefaultPrimaryCurrency, nil
+	}
+	if !currency.IsCatalogCode(value) {
+		return "", fmt.Errorf("unsupported coupon currency %s", value)
+	}
+	return value, nil
 }
 
 func (s *MarketingService) DeleteCouponAdmin(id uint) error {

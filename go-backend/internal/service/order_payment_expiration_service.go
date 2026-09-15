@@ -1,9 +1,11 @@
 package service
 
 import (
+	"commerce-platform/internal/pkg/logger"
 	"time"
 
 	"commerce-platform/internal/repository"
+	"go.uber.org/zap"
 )
 
 const (
@@ -50,7 +52,12 @@ func (s *OrderService) ExpireStalePendingPayments(now time.Time, ttl time.Durati
 	for _, candidate := range candidates {
 		expiredTransactions, expired, err := s.expirePaymentOrderIfStillEligible(candidate.ID, cutoff, now)
 		if err != nil {
-			return result, err
+			// One malformed order/cart must not prevent the remainder of the
+			// expiration batch from releasing inventory and payment holds.
+			logger.Error("payment expiration candidate failed",
+				zap.Uint("order_id", candidate.ID), zap.Error(err))
+			result.SkippedOrders++
+			continue
 		}
 		if expired {
 			result.ExpiredOrders++
@@ -81,8 +88,12 @@ func (s *OrderService) expirePaymentOrderIfStillEligible(orderID uint, cutoff, n
 			return nil
 		}
 
-		if err := repos.Order.MarkPaymentExpired(orderRecord.ID, now); err != nil {
+		claimedExpiration, err := repos.Order.MarkPaymentExpired(orderRecord.ID, now)
+		if err != nil {
 			return err
+		}
+		if !claimedExpiration {
+			return nil
 		}
 		expiredTransactions, err = repos.Payment.ExpireOpenTransactionsByOrderID(orderRecord.ID, now)
 		if err != nil {

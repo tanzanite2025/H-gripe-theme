@@ -194,11 +194,11 @@ func buildDisputeEvidenceChecklist(
 			orderRecord.Currency,
 		)
 	} else {
-		orderReason = "拒付记录没有关联完整的本地订单，无法证明采购凭证。"
+		orderReason = "拒付记录没有关联完整的本地订单，无法证明订单凭证。"
 	}
 	items = append(items, DisputeEvidenceChecklistItem{
-		Key:           "purchase_order",
-		Title:         "采购与订单凭证",
+		Key:           "order_payment_evidence",
+		Title:         "订单与付款凭证",
 		ProviderField: disputeProviderField(provider, "receipt", "commercial_invoice"),
 		Status:        checklistStatus(orderReady, DisputeEvidenceStatusMissing),
 		Required:      true,

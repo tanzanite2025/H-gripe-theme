@@ -3,7 +3,9 @@ package service
 import (
 	"commerce-platform/internal/domain/setting"
 	"commerce-platform/internal/pkg/locales"
+	"commerce-platform/internal/pkg/websitecontent"
 	"errors"
+	"fmt"
 	"strings"
 )
 
@@ -55,6 +57,11 @@ func (s *WebsiteNameService) Update(request setting.WebsiteNameUpdateRequest) (*
 	}
 	values := request.Settings()
 	values.Locale = locale
+	normalizedBody, err := websitecontent.NormalizeWebsiteBody(values.Body)
+	if err != nil {
+		return nil, fmt.Errorf("normalize website name body: %w", err)
+	}
+	values.Body = normalizedBody
 
 	if err := s.settings.BatchSet(websiteNameRecords(values, locale)); err != nil {
 		return nil, err
@@ -81,8 +88,18 @@ func (s *WebsiteNameService) resolve(locale string, publicOnly bool) (*setting.W
 			if strings.TrimSpace(record.Value) == "" {
 				continue
 			}
+			value := record.Value
+			if record.Key == setting.WebsiteNameKeyBody {
+				value, err = websitecontent.NormalizeWebsiteBody(value)
+				if err != nil {
+					return nil, fmt.Errorf("normalize website name body: %w", err)
+				}
+				if strings.TrimSpace(value) == "" {
+					continue
+				}
+			}
 			seenKeys[record.Key] = struct{}{}
-			applyWebsiteNameRecord(&result, record.Key, record.Value)
+			applyWebsiteNameRecord(&result, record.Key, value)
 		}
 	}
 

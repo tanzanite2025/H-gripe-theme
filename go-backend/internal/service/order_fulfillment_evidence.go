@@ -29,6 +29,7 @@ type OrderFulfillmentEvidenceCheck struct {
 	Ready    bool                              `json:"ready"`
 	Total    int                               `json:"total"`
 	Complete int                               `json:"complete"`
+	Waived   int                               `json:"waived"`
 	Pending  int                               `json:"pending"`
 	Missing  []OrderFulfillmentEvidenceMissing `json:"missing,omitempty"`
 }
@@ -120,9 +121,12 @@ func evaluateOrderFulfillmentEvidence(
 		}
 
 		check.Total++
-		if item.Status == orderevidence.EvidenceItemStatusComplete {
+		switch item.Status {
+		case orderevidence.EvidenceItemStatusComplete:
 			check.Complete++
-		} else {
+		case orderevidence.EvidenceItemStatusWaived:
+			check.Waived++
+		default:
 			check.Pending++
 		}
 
@@ -141,6 +145,12 @@ func evaluateOrderFulfillmentEvidence(
 			}
 		case orderevidence.EvidenceItemTypeOutboundWeightPackaging:
 			hasOutboundEvidence = true
+		}
+
+		// A waived item is an explicit administrative exception. It satisfies
+		// the dispatch gate without requiring completion or attachments.
+		if item.Status == orderevidence.EvidenceItemStatusWaived {
+			continue
 		}
 
 		if item.ItemType == orderevidence.EvidenceItemTypeConfigurationConfirmation {
@@ -213,7 +223,8 @@ func evaluateOrderFulfillmentEvidence(
 					ItemType:    orderevidence.EvidenceItemTypeSpokeQCTension,
 					Reason:      "spoke tension evidence is missing for the order item",
 				})
-			} else if tension.Status != orderevidence.EvidenceItemStatusComplete || len(tension.Attachments) == 0 {
+			} else if tension.Status != orderevidence.EvidenceItemStatusWaived &&
+				(tension.Status != orderevidence.EvidenceItemStatusComplete || len(tension.Attachments) == 0) {
 				check.Missing = append(check.Missing, missingEvidence(tension, "spoke tension evidence needs a complete record and at least one attachment"))
 			}
 		}

@@ -51,7 +51,8 @@ func CORS(cfg config.CORSConfig) gin.HandlerFunc {
 
 func corsAllowedHeaders(headers []string) []string {
 	headers = appendHeaderIfMissing(headers, idempotencyKeyHeader)
-	return appendHeaderIfMissing(headers, "X-Anonymous-ID")
+	headers = appendHeaderIfMissing(headers, "X-Anonymous-ID")
+	return appendHeaderIfMissing(headers, "X-Warranty-Claim-Token")
 }
 
 func corsExposedHeaders(headers []string) []string {

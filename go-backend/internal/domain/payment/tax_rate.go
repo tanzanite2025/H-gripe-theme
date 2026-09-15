@@ -1,6 +1,10 @@
 package payment
 
 import (
+	domainmoney "commerce-platform/internal/domain/money"
+	"fmt"
+	"math/big"
+	"strconv"
 	"time"
 
 	"gorm.io/gorm"
@@ -28,7 +32,15 @@ func (TaxRate) TableName() string {
 	return "tax_rates"
 }
 
-// CalculateTax 计算税额
-func (tr *TaxRate) CalculateTax(amount float64) float64 {
-	return amount * tr.Rate / 100
+// CalculateTaxMoney calculates tax in minor units using the configured rate.
+func (tr *TaxRate) CalculateTaxMoney(amount domainmoney.Money) (domainmoney.Money, error) {
+	if tr == nil {
+		return domainmoney.Money{}, fmt.Errorf("tax rate is required")
+	}
+	rate, ok := new(big.Rat).SetString(strconv.FormatFloat(tr.Rate, 'f', -1, 64))
+	if !ok || rate.Sign() < 0 {
+		return domainmoney.Money{}, fmt.Errorf("invalid tax rate percentage")
+	}
+	rate.Quo(rate, big.NewRat(100, 1))
+	return amount.MultiplyRat(rate)
 }

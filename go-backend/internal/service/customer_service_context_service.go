@@ -1,6 +1,7 @@
 package service
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -663,8 +664,18 @@ func (s *CustomerServiceContextService) customerCartContext(userID uint) Custome
 		return result
 	}
 	result.ItemCount = summary.ItemCount
-	result.Total = summary.Total
-	result.Items = customerCartItems(summary.Items, s.mediaURLResolver)
+	if total, totalErr := summary.TotalMoney.MajorFloat(); totalErr == nil {
+		result.Total = total
+	} else {
+		result.Available = false
+		result.Reason = totalErr.Error()
+	}
+	result.Items, err = customerCartItems(summary.Items, s.mediaURLResolver)
+	if err != nil {
+		result.Available = false
+		result.Reason = err.Error()
+		result.Items = []CustomerServiceContextCartItem{}
+	}
 	return result
 }
 
@@ -688,8 +699,18 @@ func (s *CustomerServiceContextService) customerCartContextBySessionID(sessionID
 		return result
 	}
 	result.ItemCount = summary.ItemCount
-	result.Total = summary.Total
-	result.Items = customerCartItems(summary.Items, s.mediaURLResolver)
+	if total, totalErr := summary.TotalMoney.MajorFloat(); totalErr == nil {
+		result.Total = total
+	} else {
+		result.Available = false
+		result.Reason = totalErr.Error()
+	}
+	result.Items, err = customerCartItems(summary.Items, s.mediaURLResolver)
+	if err != nil {
+		result.Available = false
+		result.Reason = err.Error()
+		result.Items = []CustomerServiceContextCartItem{}
+	}
 	return result
 }
 
@@ -732,9 +753,12 @@ func (s *CustomerServiceContextService) customerBrowsingContext(userID uint) Cus
 	return result
 }
 
-func customerCartItems(items []product.CartItem, resolvers ...PublicMediaURLResolver) []CustomerServiceContextCartItem {
+func customerCartItems(items []product.CartItem, resolvers ...PublicMediaURLResolver) ([]CustomerServiceContextCartItem, error) {
 	result := make([]CustomerServiceContextCartItem, 0, len(items))
 	for _, item := range items {
+		if item.Quantity <= 0 {
+			return nil, fmt.Errorf("customer cart item %d quantity must be greater than zero", item.ID)
+		}
 		name := "Unknown product"
 		sku := ""
 		image := ""
@@ -750,6 +774,22 @@ func customerCartItems(items []product.CartItem, resolvers ...PublicMediaURLReso
 			}
 			variantName = strings.TrimSpace(item.Variant.OptionValues)
 		}
+		unitMoney, err := item.PriceMoney()
+		if err != nil {
+			return nil, fmt.Errorf("customer cart item %d price: %w", item.ID, err)
+		}
+		lineMoney, err := unitMoney.MultiplyInt(int64(item.Quantity))
+		if err != nil {
+			return nil, fmt.Errorf("calculate customer cart item %d total: %w", item.ID, err)
+		}
+		lineTotal, err := lineMoney.MajorFloat()
+		if err != nil {
+			return nil, fmt.Errorf("format customer cart item %d total: %w", item.ID, err)
+		}
+		unitPrice, err := unitMoney.MajorFloat()
+		if err != nil {
+			return nil, fmt.Errorf("format customer cart item %d price: %w", item.ID, err)
+		}
 		result = append(result, CustomerServiceContextCartItem{
 			ID:          item.ID,
 			ProductID:   item.ProductID,
@@ -758,12 +798,12 @@ func customerCartItems(items []product.CartItem, resolvers ...PublicMediaURLReso
 			SKU:         sku,
 			Image:       image,
 			Quantity:    item.Quantity,
-			Price:       item.Price,
-			LineTotal:   item.Price * float64(item.Quantity),
+			Price:       unitPrice,
+			LineTotal:   lineTotal,
 			VariantName: variantName,
 		})
 	}
-	return result
+	return result, nil
 }
 
 func customerWishlistItems(items []wishlist.Item, limit int, resolvers ...PublicMediaURLResolver) []CustomerServiceContextWishlistItem {

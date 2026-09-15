@@ -11,10 +11,11 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func CSRFProtection(allowedOrigins []string) gin.HandlerFunc {
+func CSRFProtection(allowedOrigins []string, cookieScopes ...securecookie.CookieNames) gin.HandlerFunc {
 	trustedOrigins := buildTrustedOriginSet(allowedOrigins)
 
 	return func(c *gin.Context) {
+		names := resolveCookieNames(c, cookieScopes)
 		if isSafeMethod(c.Request.Method) {
 			c.Next()
 			return
@@ -41,7 +42,7 @@ func CSRFProtection(allowedOrigins []string) gin.HandlerFunc {
 			}
 		}
 
-		if requestHasAuthCookie(c.Request) && !hasValidCSRFToken(c) {
+		if requestHasAuthCookie(c.Request, names) && !hasValidCSRFToken(c, names) {
 			abortCSRF(c)
 			return
 		}
@@ -59,8 +60,8 @@ func isSafeMethod(method string) bool {
 	}
 }
 
-func requestHasAuthCookie(r *http.Request) bool {
-	for _, name := range []string{securecookie.AuthTokenCookie, securecookie.RefreshTokenCookie} {
+func requestHasAuthCookie(r *http.Request, names securecookie.CookieNames) bool {
+	for _, name := range []string{names.AuthToken, names.RefreshToken} {
 		if cookie, err := r.Cookie(name); err == nil && cookie.Value != "" {
 			return true
 		}
@@ -68,13 +69,13 @@ func requestHasAuthCookie(r *http.Request) bool {
 	return false
 }
 
-func hasValidCSRFToken(c *gin.Context) bool {
+func hasValidCSRFToken(c *gin.Context, names securecookie.CookieNames) bool {
 	headerToken := strings.TrimSpace(c.GetHeader(securecookie.CSRFTokenHeader))
 	if headerToken == "" {
 		return false
 	}
 
-	cookie, err := c.Cookie(securecookie.CSRFTokenCookie)
+	cookie, err := c.Cookie(names.CSRFToken)
 	if err != nil || cookie == "" {
 		return false
 	}

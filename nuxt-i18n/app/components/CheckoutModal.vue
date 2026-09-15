@@ -155,6 +155,96 @@
                   <p v-if="shippingValidation.reason && form.country" class="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">
                     {{ shippingValidation.reason }}
                   </p>
+
+                  <div v-if="checkoutQuote?.shipping_quote?.plans?.length" class="space-y-2 pt-2">
+                    <p class="checkout-label">{{ t('checkout.stepper.shipping.method', 'Delivery method') }}</p>
+                    <label
+                      v-for="plan in checkoutQuote.shipping_quote.plans"
+                      :key="plan.id"
+                      class="flex cursor-pointer items-center justify-between gap-3 rounded-lg border tz-border-subtle px-3 py-2 text-sm transition hover:tz-surface-subtle"
+                      :class="selectedQuotePlanID === plan.id ? 'tz-border-strong bg-white/[0.06]' : ''"
+                    >
+                      <span class="flex min-w-0 items-center gap-2">
+                        <input
+                          v-model="selectedQuotePlanID"
+                          type="radio"
+                          name="checkout-shipping-method"
+                          :value="plan.id"
+                          @change="selectShippingPlan(plan.id)"
+                        />
+                        <span class="min-w-0">
+                          <span class="block font-medium">{{ shippingPlanLabel(plan) }}</span>
+                          <span v-if="plan.eta_min_days || plan.eta_max_days" class="block text-xs tz-text-primary/50">
+                            {{ plan.eta_min_days }}-{{ plan.eta_max_days }} days
+                          </span>
+                        </span>
+                      </span>
+                      <span class="shrink-0 font-medium">{{ formatPrice(plan.shipping_fee, checkoutCurrency) }}</span>
+                    </label>
+                  </div>
+                </section>
+
+                <section class="border-t tz-border-subtle pt-5">
+                  <label class="checkout-policy-confirmation">
+                    <input v-model="billingSameAsShipping" type="checkbox" />
+                    <span>{{ t('checkout.stepper.billing.sameAsShipping', 'Billing address is the same as shipping address') }}</span>
+                  </label>
+
+                  <div v-if="!billingSameAsShipping" class="mt-4 grid gap-3 sm:grid-cols-2">
+                    <label class="sm:col-span-2">
+                      <span class="checkout-label">{{ t('checkout.stepper.billing.countryRegion', 'Billing country / region') }}</span>
+                      <select v-model="billingForm.country" class="checkout-input">
+                        <option value="" disabled>{{ t('checkout.stepper.shipping.selectCountry', 'Select country') }}</option>
+                        <option v-for="country in COUNTRIES" :key="`billing-${country.code}`" :value="country.code">
+                          {{ countryLabel(country) }}
+                        </option>
+                      </select>
+                    </label>
+                    <label class="sm:col-span-2">
+                      <span class="checkout-label">{{ t('checkout.stepper.billing.recipient', 'Billing name') }}</span>
+                      <input v-model.trim="billingForm.name" class="checkout-input" type="text" autocomplete="billing name" />
+                    </label>
+                    <label>
+                      <span class="checkout-label">{{ t('checkout.stepper.shipping.phone', 'Phone') }}</span>
+                      <input v-model.trim="billingForm.phone" class="checkout-input" type="tel" autocomplete="billing tel" />
+                    </label>
+                    <label>
+                      <span class="checkout-label">{{ t('checkout.stepper.shipping.city', 'City') }}</span>
+                      <input v-model.trim="billingForm.city" class="checkout-input" type="text" autocomplete="billing address-level2" />
+                    </label>
+                    <label class="sm:col-span-2">
+                      <span class="checkout-label">{{ t('checkout.stepper.shipping.address', 'Address') }}</span>
+                      <input v-model.trim="billingForm.address" class="checkout-input" type="text" autocomplete="billing street-address" />
+                    </label>
+                    <label>
+                      <span class="checkout-label">{{ t('checkout.stepper.shipping.zip', 'Postal code') }}</span>
+                      <input
+                        v-model.trim="billingForm.zip"
+                        class="checkout-input"
+                        type="text"
+                        autocomplete="billing postal-code"
+                        :placeholder="billingZipPlaceholder"
+                      />
+                    </label>
+                  </div>
+                  <p v-if="!billingSameAsShipping && billingZipHint" class="mt-2 text-xs tz-text-primary/45">{{ billingZipHint }}</p>
+                  <p v-if="!billingSameAsShipping && !billingAddressComplete" class="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                    {{ t('checkout.stepper.billing.completeAddress', 'Please complete your billing address before continuing.') }}
+                  </p>
+                </section>
+
+                <section class="border-t tz-border-subtle pt-5">
+                  <label>
+                    <span class="checkout-label">{{ t('checkout.stepper.review.giftCard', 'Gift card') }}</span>
+                    <input
+                      v-model.trim="giftCardCode"
+                      class="checkout-input"
+                      type="text"
+                      autocomplete="off"
+                      :disabled="isSubmitting"
+                      :placeholder="t('checkout.stepper.review.giftCardPlaceholder', 'Enter gift card code')"
+                    />
+                  </label>
                 </section>
 
                 <section v-if="stripePaymentSession" class="border-t tz-border-subtle pt-5">
@@ -166,6 +256,7 @@
                   </div>
                   <StripePaymentElement
                     :session="stripePaymentSession"
+                    :return-url="stripeReturnUrl"
                     :confirm-label="t('checkout.payment.stripe.confirm', 'Confirm payment')"
                     :confirming-label="t('checkout.payment.stripe.confirming', 'Confirming...')"
                     :disabled="isSubmitting"
@@ -263,7 +354,7 @@
                 <div class="space-y-2 border-t tz-border-subtle pt-4 text-sm">
                   <div class="flex justify-between gap-3 tz-text-muted">
                     <span>{{ t('checkout.stepper.summary.subtotal', 'Subtotal') }}</span>
-                    <span>{{ formatPrice(orderTotals.subtotal, cartCurrency) }}</span>
+                    <span>{{ formatPrice(orderTotals.subtotal, checkoutCurrency) }}</span>
                   </div>
                   <div class="flex justify-between gap-3 tz-text-muted">
                     <span>{{ t('checkout.stepper.summary.shipping', 'Shipping') }}</span>
@@ -272,6 +363,14 @@
                   <div class="flex justify-between gap-3 tz-text-muted">
                     <span>{{ t('checkout.stepper.summary.tax', 'Tax') }}</span>
                     <span>{{ checkoutAmountLabel(orderTotals.tax) }}</span>
+                  </div>
+                  <div v-if="orderTotals.couponDiscount > 0" class="flex justify-between gap-3 tz-text-muted">
+                    <span>{{ t('checkout.stepper.summary.couponDiscount', 'Coupon discount') }}</span>
+                    <span>-{{ formatPrice(orderTotals.couponDiscount, checkoutCurrency) }}</span>
+                  </div>
+                  <div v-if="orderTotals.giftCardDiscount > 0" class="flex justify-between gap-3 tz-text-muted">
+                    <span>{{ t('checkout.stepper.summary.giftCardDiscount', 'Gift card discount') }}</span>
+                    <span>-{{ formatPrice(orderTotals.giftCardDiscount, checkoutCurrency) }}</span>
                   </div>
                   <div class="flex justify-between gap-3 border-t tz-border-subtle pt-3 text-base font-semibold">
                     <span>{{ t('checkout.stepper.summary.total', 'Total') }}</span>
@@ -305,8 +404,8 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
-import { useI18n, useLocalePath } from '#imports'
-import { COUNTRIES, getCountryName, getZipFormatHint } from '~/data/countries'
+import { navigateTo, useI18n, useLocalePath } from '#imports'
+import { COUNTRIES, getCountryName, getZipFormatHint, validateZipFormat } from '~/data/countries'
 import { useAuth } from '~/composables/useAuth'
 import { useCart } from '~/composables/useCart'
 import { usePaymentMethods } from '~/composables/usePaymentMethods'
@@ -329,20 +428,58 @@ import {
   type PaymentLogoAsset,
 } from '~/utils/paymentPresentation'
 import { createIdempotencyKey } from '~/utils/idempotency'
+import {
+  STRIPE_RETURN_PATH,
+  clearStripeReturnSession,
+  saveStripeReturnSession,
+} from '~/utils/stripeReturn'
 import StripePaymentElement from '~/components/StripePaymentElement.vue'
 
 type ApiResponse<T> = T | { data?: T | { data?: T } }
 
 interface CheckoutQuote {
+	currency?: string
   subtotal_amount?: number
-  shipping_fee?: number
-  tax_amount?: number
+	  shipping_fee?: number
+	  tax_amount?: number
+	coupon_discount?: number
+	  gift_card_discount?: number
   total_amount?: number
-  shipping_quote?: { selected_option?: { service_name?: string; service_code?: string } }
+  shipping_quote?: {
+    id: string
+    selected_plan?: CheckoutShippingPlan
+    plans: CheckoutShippingPlan[]
+  }
+}
+
+interface CheckoutShippingLeg {
+  carrier_service_id?: number
+  service_name?: string
+  service_code?: string
+  template_name?: string
+}
+
+interface CheckoutShippingPlan {
+  id: string
+  shipping_fee: number
+  eta_min_days?: number
+  eta_max_days?: number
+  legs: CheckoutShippingLeg[]
 }
 
 interface OrderResponse {
   order_number: string
+  total_amount?: number | string | null
+  payment_status?: string | null
+}
+
+interface CheckoutAddressForm {
+  country: string
+  name: string
+  phone: string
+  address: string
+  city: string
+  zip: string
 }
 
 const { t, locale } = useI18n()
@@ -356,6 +493,7 @@ const {
   priceBreakdown,
   formatPrice,
   clearCart,
+  reloadCartFromBackend,
   closeCheckout,
   backToCart,
 } = useCart()
@@ -373,7 +511,7 @@ const {
   validateShipping,
   getZipFormatHint: getShippingZipFormatHint,
 } = useShippingValidation()
-const { baseCurrency } = useStorefrontContext()
+const { displayCurrency } = useStorefrontContext()
 
 const selectedMethod = ref('card')
 const checkoutError = ref('')
@@ -382,8 +520,11 @@ const isSubmitting = ref(false)
 const showAuthModal = ref(false)
 const stripePaymentSession = ref<StripePaymentSession | null>(null)
 const checkoutQuote = ref<CheckoutQuote | null>(null)
+const selectedQuotePlanID = ref<string | null>(null)
 const checkoutSubmissionKey = ref('')
 const policyDisclosureAcknowledged = ref(false)
+const giftCardCode = ref('')
+const billingSameAsShipping = ref(true)
 let quoteTimer: ReturnType<typeof setTimeout> | null = null
 
 const normalizeCheckoutPaymentMethod = (value?: string | null) => {
@@ -401,7 +542,7 @@ const ensureCheckoutSubmissionKey = () => {
   return checkoutSubmissionKey.value
 }
 
-const form = ref({
+const form = ref<CheckoutAddressForm & { notes: string }>({
   country: '',
   name: '',
   phone: '',
@@ -409,6 +550,15 @@ const form = ref({
   city: '',
   zip: '',
   notes: '',
+})
+
+const billingForm = ref<CheckoutAddressForm>({
+  country: '',
+  name: '',
+  phone: '',
+  address: '',
+  city: '',
+  zip: '',
 })
 
 const fallbackPaymentOptions = computed<CheckoutPaymentOption[]>(() => [
@@ -443,6 +593,26 @@ const zipPlaceholder = computed(() => {
   if (!form.value.country) return ''
   return getZipFormatHint(form.value.country)?.placeholder || ''
 })
+const billingZipHint = computed(() => {
+  if (!billingForm.value.country) return ''
+  return getShippingZipFormatHint(billingForm.value.country)?.hint || ''
+})
+const billingZipPlaceholder = computed(() => {
+  if (!billingForm.value.country) return ''
+  return getZipFormatHint(billingForm.value.country)?.placeholder || ''
+})
+const billingAddressComplete = computed(() => {
+  if (billingSameAsShipping.value) return true
+  return Boolean(
+    billingForm.value.country &&
+    billingForm.value.name.trim() &&
+    billingForm.value.phone.trim() &&
+    billingForm.value.address.trim() &&
+    billingForm.value.city.trim() &&
+    billingForm.value.zip.trim() &&
+    validateZipFormat(billingForm.value.country, billingForm.value.zip),
+  )
+})
 
 const orderTotals = computed(() => {
   const local = priceBreakdown.value as {
@@ -453,25 +623,45 @@ const orderTotals = computed(() => {
     subtotal: Number(quote?.subtotal_amount ?? local.subtotal ?? 0),
     shipping: quote ? Number(quote.shipping_fee ?? 0) : null,
     tax: quote ? Number(quote.tax_amount ?? 0) : null,
+    couponDiscount: quote ? Number(quote.coupon_discount ?? 0) : 0,
+    giftCardDiscount: quote ? Number(quote.gift_card_discount ?? 0) : 0,
     total: quote ? Number(quote.total_amount ?? 0) : null,
   }
 })
 
+const checkoutCurrency = computed(() => String(
+  checkoutQuote.value?.currency || displayCurrency.value || cartCurrency.value || 'USD',
+).trim().toUpperCase())
+
 const shippingLabel = computed(() => {
   if (!form.value.country) return t('checkout.stepper.shipping.state.selectCountry', 'Select country')
-  if (checkoutQuote.value?.shipping_quote?.selected_option) {
-    const option = checkoutQuote.value.shipping_quote.selected_option
-    return option.service_name || option.service_code || t('checkout.stepper.shipping.state.calculating', 'Calculating...')
+  if (checkoutQuote.value?.shipping_quote?.selected_plan) {
+    return shippingPlanLabel(checkoutQuote.value.shipping_quote.selected_plan)
   }
   return orderTotals.value.shipping !== null && orderTotals.value.shipping > 0
-    ? formatPrice(orderTotals.value.shipping, cartCurrency.value)
+    ? formatPrice(orderTotals.value.shipping, checkoutCurrency.value)
     : t('checkout.stepper.shipping.state.calculating', 'Calculating...')
 })
+
+const shippingPlanLabel = (plan?: CheckoutShippingPlan | null) => {
+  const labels = (plan?.legs || []).map(leg => (
+    leg.service_name || leg.service_code || leg.template_name || ''
+  )).filter(Boolean)
+  return labels.join(' + ') || t('checkout.stepper.shipping.state.calculating', 'Calculating...')
+}
+
+const selectShippingPlan = (planID: string) => {
+  const normalized = String(planID || '').trim()
+  if (!normalized) return
+  selectedQuotePlanID.value = normalized
+  resetCheckoutSubmissionKey()
+  scheduleQuoteRefresh()
+}
 
 const checkoutAmountLabel = (amount: number | null) =>
   amount === null
     ? t('cartDrawer.summary.calculatedAtCheckout', 'Calculated at checkout')
-    : formatPrice(amount, cartCurrency.value)
+    : formatPrice(amount, checkoutCurrency.value)
 
 const hasMadeToOrderItems = computed(() => cartItems.value.some(item => (
   isMadeToOrderFulfillment(item.fulfillment_mode)
@@ -501,7 +691,10 @@ const canSubmit = computed(() =>
     form.value.phone.trim() &&
     form.value.address.trim() &&
     form.value.city.trim() &&
-    shippingValidation.value.isShippable,
+    form.value.zip.trim() &&
+    validateZipFormat(form.value.country, form.value.zip) &&
+    shippingValidation.value.isShippable &&
+    billingAddressComplete.value,
   ),
 )
 
@@ -575,19 +768,31 @@ const selectGatewayFallbackPaymentOption = (option: CheckoutPaymentOption) => {
   resetCheckoutSubmissionKey()
 }
 
-const buildShippingAddressPayload = () => {
-  const nameParts = form.value.name.trim().split(/\s+/).filter(Boolean)
+const addressPayloadFromForm = (addressForm: CheckoutAddressForm) => {
+  const nameParts = addressForm.name.trim().split(/\s+/).filter(Boolean)
   return {
     first_name: nameParts[0] || 'Customer',
     last_name: nameParts.length > 1 ? nameParts.slice(1).join(' ') : 'User',
-    address1: form.value.address.trim(),
-    city: form.value.city.trim(),
-    postal_code: form.value.zip.trim(),
-    country: form.value.country.trim().toUpperCase(),
-    phone: form.value.phone.trim(),
+    address1: addressForm.address.trim(),
+    city: addressForm.city.trim(),
+    postal_code: addressForm.zip.trim(),
+    country: addressForm.country.trim().toUpperCase(),
+    phone: addressForm.phone.trim(),
     email: checkoutEmail.value,
   }
 }
+
+const buildShippingAddressPayload = () => addressPayloadFromForm(form.value)
+
+const buildBillingAddressPayload = () => {
+  if (billingSameAsShipping.value) return buildShippingAddressPayload()
+  return addressPayloadFromForm(billingForm.value)
+}
+
+const shippingUnavailableMessage = () => t(
+  'checkout.stepper.shipping.unavailableFallback',
+  'Shipping unavailable for this country.',
+)
 
 const unwrapApiData = <T,>(payload: ApiResponse<T> | null | undefined): T | null => {
   let current: unknown = payload
@@ -609,11 +814,33 @@ const refreshCheckoutQuote = async () => {
     const response = await auth.request<ApiResponse<CheckoutQuote>>('/checkout/quote', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-      body: JSON.stringify({ shipping_address: buildShippingAddressPayload() }),
+      body: JSON.stringify({
+        shipping_address: buildShippingAddressPayload(),
+        display_currency: String(displayCurrency.value || '').trim().toUpperCase(),
+        payment_method: selectedMethod.value === 'card' ? 'card' : selectedMethod.value,
+        gift_card_code: giftCardCode.value.trim(),
+        ...(selectedQuotePlanID.value && checkoutQuote.value?.shipping_quote?.id
+          ? {
+              shipping_quote_id: checkoutQuote.value.shipping_quote.id,
+              selected_quote_plan_id: selectedQuotePlanID.value,
+            }
+          : {}),
+      }),
     })
-    checkoutQuote.value = unwrapApiData<CheckoutQuote>(response)
-  } catch {
+    const nextQuote = unwrapApiData<CheckoutQuote>(response)
+    checkoutQuote.value = nextQuote
+    if (checkoutError.value === shippingUnavailableMessage()) {
+      checkoutError.value = ''
+    }
+    const available = nextQuote?.shipping_quote?.plans || []
+    if (!selectedQuotePlanID.value || !available.some(plan => plan.id === selectedQuotePlanID.value)) {
+      selectedQuotePlanID.value = nextQuote?.shipping_quote?.selected_plan?.id || null
+    }
+  } catch (error) {
     checkoutQuote.value = null
+    if (error instanceof ApiRequestError && error.code === 'shipping_rate_unavailable') {
+      checkoutError.value = shippingUnavailableMessage()
+    }
   }
 }
 
@@ -638,6 +865,15 @@ const requireAuthenticatedUser = async () => {
 }
 
 const createLocalOrder = async (idempotencyKey: string): Promise<OrderResponse> => {
+  const expectedTotal = Number(checkoutQuote.value?.total_amount)
+  if (!Number.isFinite(expectedTotal)) {
+    throw new Error(t('checkout.modal.messages.unableRefreshQuote', 'Unable to refresh checkout quote'))
+  }
+  const shippingQuoteID = checkoutQuote.value?.shipping_quote?.id
+  if (!shippingQuoteID || !selectedQuotePlanID.value) {
+    throw new Error(shippingUnavailableMessage())
+  }
+
   const response = await auth.request<ApiResponse<OrderResponse>>('/orders', {
     method: 'POST',
     headers: {
@@ -652,8 +888,14 @@ const createLocalOrder = async (idempotencyKey: string): Promise<OrderResponse> 
         quantity: Math.max(1, Number(item.quantity || 1)),
       })),
       shipping_address: buildShippingAddressPayload(),
+      billing_address: buildBillingAddressPayload(),
       payment_method: selectedMethod.value === 'card' ? 'card' : selectedMethod.value,
+      display_currency: String(displayCurrency.value || '').trim().toUpperCase(),
       shipping_method: 'standard',
+      shipping_quote_id: shippingQuoteID,
+      selected_quote_plan_id: selectedQuotePlanID.value,
+      expected_total: Number(expectedTotal.toFixed(2)),
+      gift_card_code: giftCardCode.value.trim(),
       policy_disclosure_acknowledged: policyDisclosureAcknowledged.value,
     }),
   })
@@ -662,12 +904,39 @@ const createLocalOrder = async (idempotencyKey: string): Promise<OrderResponse> 
   return order
 }
 
+const isSettledOrder = (order: OrderResponse) => {
+  const paymentStatus = String(order.payment_status || '').trim().toLowerCase()
+  if (paymentStatus === 'paid') return true
+
+  if (order.total_amount === null || order.total_amount === undefined || order.total_amount === '') {
+    return false
+  }
+
+  const totalAmount = Number(order.total_amount)
+  return Number.isFinite(totalAmount) && totalAmount <= 0
+}
+
+const completeSettledOrder = async (orderNumber: string) => {
+  await clearCart()
+  await reloadCartFromBackend()
+  await closeCheckout()
+  await navigateTo({
+    path: localePath('/checkout/success'),
+    query: { order_number: orderNumber },
+  })
+}
+
 const checkoutUrl = (path: string, orderNumber: string) => {
   if (!import.meta.client) return ''
   const target = new URL(localePath(path), window.location.origin)
   target.searchParams.set('order_number', orderNumber)
   return target.toString()
 }
+
+const stripeReturnUrl = computed(() => {
+  const orderNumber = stripePaymentSession.value?.orderNumber
+  return orderNumber ? checkoutUrl(STRIPE_RETURN_PATH, orderNumber) : ''
+})
 
 const startProviderPayment = async (orderNumber: string, idempotencyKey: string) => {
   if (selectedMethod.value === 'paypal') {
@@ -716,7 +985,12 @@ const startProviderPayment = async (orderNumber: string, idempotencyKey: string)
   const clientSecret = session?.clientSecret || session?.client_secret || ''
   const publishableKey = session?.publishableKey || session?.publishable_key || ''
   if (!clientSecret || !publishableKey) throw new Error('Stripe payment response is incomplete')
-  stripePaymentSession.value = { clientSecret, publishableKey }
+  stripePaymentSession.value = { clientSecret, publishableKey, orderNumber }
+  saveStripeReturnSession({
+    orderNumber,
+    clientSecret,
+    publishableKey,
+  })
 }
 
 const paymentGatewayFallbackMethodKey = (method: PaymentGatewayFallbackMethod) =>
@@ -811,7 +1085,17 @@ const submitOrder = async () => {
   try {
     const idempotencyKey = ensureCheckoutSubmissionKey()
     await refreshCheckoutQuote()
+    if (!checkoutQuote.value) {
+      if (!checkoutError.value) {
+        checkoutError.value = t('checkout.modal.messages.unableRefreshQuote', 'Unable to refresh checkout quote')
+      }
+      return
+    }
     const order = await createLocalOrder(idempotencyKey)
+    if (isSettledOrder(order)) {
+      await completeSettledOrder(order.order_number)
+      return
+    }
     await startProviderPayment(order.order_number, idempotencyKey)
   } catch (error) {
     if (applyPaymentGatewayFallbackRecommendation(error)) {
@@ -819,6 +1103,22 @@ const submitOrder = async () => {
         'checkout.payment.gatewayFallback.error',
         'The selected payment provider is temporarily unavailable. Please choose another available payment method.',
       )
+    } else if (error instanceof ApiRequestError && error.code === 'order_total_changed') {
+      resetCheckoutSubmissionKey()
+      await refreshCheckoutQuote()
+      checkoutError.value = error.message || t(
+        'checkout.modal.messages.priceUpdated',
+        'The price has been updated. Please review the new order total.',
+      )
+    } else if (error instanceof ApiRequestError && error.code === 'checkout_cart_already_consumed') {
+      await reloadCartFromBackend()
+      resetCheckoutSubmissionKey()
+      checkoutError.value = error.message || t(
+        'checkout.modal.messages.checkoutAlreadySubmitted',
+        'This cart was already submitted as an order. Please check your order status before trying again.',
+      )
+    } else if (error instanceof ApiRequestError && error.code === 'shipping_rate_unavailable') {
+      checkoutError.value = shippingUnavailableMessage()
     } else {
       checkoutError.value = error instanceof Error
         ? error.message
@@ -829,12 +1129,54 @@ const submitOrder = async () => {
   }
 }
 
-const handleStripeConfirmed = (result: StripeConfirmationResult) => {
+watch(giftCardCode, () => {
+  resetCheckoutSubmissionKey()
+  scheduleQuoteRefresh()
+})
+
+watch(billingSameAsShipping, (same) => {
+  if (!same) {
+    billingForm.value = {
+      country: form.value.country,
+      name: form.value.name,
+      phone: form.value.phone,
+      address: form.value.address,
+      city: form.value.city,
+      zip: form.value.zip,
+    }
+  }
+  resetCheckoutSubmissionKey()
+})
+
+watch(
+  () => [
+    billingForm.value.country,
+    billingForm.value.name,
+    billingForm.value.phone,
+    billingForm.value.address,
+    billingForm.value.city,
+    billingForm.value.zip,
+  ],
+  () => {
+    if (isCheckoutOpen.value && !billingSameAsShipping.value) {
+      resetCheckoutSubmissionKey()
+    }
+  },
+)
+
+const handleStripeConfirmed = async (result: StripeConfirmationResult) => {
+  const orderNumber = stripePaymentSession.value?.orderNumber || ''
   stripePaymentSession.value = null
   gatewayFallbackOptions.value = []
   if (['succeeded', 'processing', 'requires_capture'].includes(result.status)) {
-    clearCart()
-    closeCheckout()
+    if (orderNumber) {
+      clearStripeReturnSession(orderNumber)
+      await completeSettledOrder(orderNumber)
+    } else {
+      await clearCart()
+      await reloadCartFromBackend()
+      await closeCheckout()
+    }
     checkoutError.value = ''
     return
   }
@@ -867,7 +1209,17 @@ watch(isCheckoutOpen, (open) => {
     checkoutError.value = ''
     gatewayFallbackOptions.value = []
     policyDisclosureAcknowledged.value = false
+    billingSameAsShipping.value = true
+    billingForm.value = {
+      country: '',
+      name: '',
+      phone: '',
+      address: '',
+      city: '',
+      zip: '',
+    }
     resetCheckoutSubmissionKey()
+    selectedQuotePlanID.value = null
   }
 }, { immediate: true })
 
@@ -884,8 +1236,19 @@ watch(preferredCheckoutPaymentMethod, (method) => {
 
 watch(() => form.value.country, () => {
   if (isCheckoutOpen.value) {
+    selectedQuotePlanID.value = null
+    checkoutQuote.value = null
     resetCheckoutSubmissionKey()
     void loadPaymentMethods(form.value.country || undefined)
+    scheduleQuoteRefresh()
+  }
+})
+
+watch(selectedMethod, () => {
+  if (isCheckoutOpen.value) {
+    selectedQuotePlanID.value = null
+    checkoutQuote.value = null
+    resetCheckoutSubmissionKey()
     scheduleQuoteRefresh()
   }
 })
@@ -894,6 +1257,8 @@ watch(
   () => [form.value.name, form.value.phone, form.value.address, form.value.city, form.value.zip],
   () => {
     if (isCheckoutOpen.value) {
+      selectedQuotePlanID.value = null
+      checkoutQuote.value = null
       resetCheckoutSubmissionKey()
       scheduleQuoteRefresh()
     }
@@ -903,6 +1268,7 @@ watch(
 watch(
   () => [
     cartCurrency.value,
+    displayCurrency.value,
     ...cartItems.value.map(item => [
       item.product_id || item.id,
       item.variant_id || '',
@@ -911,8 +1277,11 @@ watch(
   ],
   () => {
     if (isCheckoutOpen.value) {
+      selectedQuotePlanID.value = null
+      checkoutQuote.value = null
       resetCheckoutSubmissionKey()
       policyDisclosureAcknowledged.value = false
+      scheduleQuoteRefresh()
     }
   },
 )

@@ -1,10 +1,13 @@
 package shipping
 
 import (
+	"errors"
+	"net/http"
+	"strconv"
+
 	"commerce-platform/internal/pkg/apierror"
 	"commerce-platform/internal/pkg/response"
 	"commerce-platform/internal/service"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
@@ -56,6 +59,22 @@ func (h *Handler) CalculateShipping(c *gin.Context) {
 		Country:    req.Country,
 	})
 	if err != nil {
+		if errors.Is(err, service.ErrInvalidShippingDestination) {
+			apierror.RespondBadRequest(c, err.Error())
+			return
+		}
+		if errors.Is(err, service.ErrCountryNotSupported) {
+			apierror.RespondError(c, http.StatusUnprocessableEntity, "country_not_supported", err.Error())
+			return
+		}
+		if errors.Is(err, service.ErrShippingRateConfigurationInvalid) {
+			apierror.RespondInternalError(c, err)
+			return
+		}
+		if errors.Is(err, service.ErrShippingRateUnavailable) {
+			apierror.RespondError(c, http.StatusUnprocessableEntity, "shipping_rate_unavailable", err.Error())
+			return
+		}
 		apierror.RespondNotFound(c, "Template")
 		return
 	}
@@ -72,6 +91,30 @@ func (h *Handler) QuoteShipping(c *gin.Context) {
 
 	quote, err := h.shippingService.QuoteCart(req)
 	if err != nil {
+		if errors.Is(err, service.ErrInvalidShippingDestination) {
+			apierror.RespondBadRequest(c, err.Error())
+			return
+		}
+		if errors.Is(err, service.ErrCountryNotSupported) {
+			apierror.RespondError(c, http.StatusUnprocessableEntity, "country_not_supported", err.Error())
+			return
+		}
+		if errors.Is(err, service.ErrShippingQuoteExpired) || errors.Is(err, service.ErrShippingQuoteStale) {
+			apierror.RespondError(c, http.StatusConflict, "shipping_quote_stale", err.Error())
+			return
+		}
+		if errors.Is(err, service.ErrShippingQuotePlanUnavailable) {
+			apierror.RespondError(c, http.StatusUnprocessableEntity, "shipping_quote_plan_unavailable", err.Error())
+			return
+		}
+		if errors.Is(err, service.ErrShippingRateConfigurationInvalid) {
+			apierror.RespondInternalError(c, err)
+			return
+		}
+		if errors.Is(err, service.ErrShippingRateUnavailable) {
+			apierror.RespondError(c, http.StatusUnprocessableEntity, "shipping_rate_unavailable", err.Error())
+			return
+		}
 		apierror.RespondBadRequest(c, err.Error())
 		return
 	}

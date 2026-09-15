@@ -82,7 +82,10 @@
             <Textarea v-model="form.intro" class="min-h-24" :disabled="!canEdit || loadError" />
           </AdminFormField>
           <AdminFormField label="正文内容" class="md:col-span-2">
-            <Textarea v-model="form.body" class="min-h-44" :disabled="!canEdit || loadError" />
+            <RichTextEditor
+              v-model="form.body"
+              :disabled="!canEdit || loadError"
+            />
           </AdminFormField>
         </div>
       </section>
@@ -96,6 +99,7 @@ import { toast } from 'vue-sonner'
 import { LoaderCircle, RefreshCw, Save } from '@lucide/vue'
 import AdminFormField from '@/components/admin/AdminFormField.vue'
 import AdminPageHeader from '@/components/admin/AdminPageHeader.vue'
+import RichTextEditor from '@/components/admin/settings/RichTextEditor.vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'

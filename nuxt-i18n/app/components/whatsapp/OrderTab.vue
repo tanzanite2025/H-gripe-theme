@@ -17,7 +17,7 @@
             {{ order.status || 'Processing' }}
           </span>
         </div>
-        <p class="tz-text-secondary text-xs">{{ order.total }} {{ order.currency || '' }}</p>
+        <p class="tz-text-secondary text-xs">{{ formatOrderMoney(order.total_minor, order.currency) }}</p>
         <p v-if="order.item_count" class="tz-caption md:text-xs tz-text-secondary mt-1">
           {{ order.item_count }} {{ Number(order.item_count) > 1 ? t('chatModal.orders.items', 'items') : t('chatModal.orders.item', 'item') }}
         </p>
@@ -131,6 +131,14 @@ const formatOrderDate = (value: unknown) => {
   } catch {
     return date.toLocaleString()
   }
+}
+
+const formatOrderMoney = (minor: unknown, currency: unknown) => {
+  const code = String(currency || '').trim().toUpperCase()
+  const amount = Number(minor)
+  if (!Number.isFinite(amount)) return code
+  const digits = ['BIF', 'CLP', 'DJF', 'GNF', 'JPY', 'KMF', 'KRW', 'PYG', 'RWF', 'UGX', 'VND', 'VUV', 'XAF', 'XOF', 'XPF'].includes(code) ? 0 : 2
+  return `${code || 'Currency missing'} ${(amount / (10 ** digits)).toFixed(digits)}`
 }
 
 defineProps<{

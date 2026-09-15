@@ -12,6 +12,8 @@
     "noResults": "Ingen FAQ fundet for \"{query}\"",
     "loadingAnswers": "Indlæser svar",
     "illustrationAlt": "FAQ-illustration",
-    "selectQuestion": "Select a question to view the answer."
+    "selectQuestion": "Select a question to view the answer.",
+    "pagesAriaLabel": "FAQ pages",
+    "pagesLabel": "FAQ pages"
   }
 }

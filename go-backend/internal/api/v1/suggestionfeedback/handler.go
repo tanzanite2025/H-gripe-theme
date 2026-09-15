@@ -10,16 +10,31 @@ import (
 	"errors"
 	"net/http"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
 
 const suggestionFeedbackMaxRequestBytes = 6 << 20
 
+const (
+	suggestionFeedbackUploadMaxPerUserPerDay       = 20
+	suggestionFeedbackUploadBytesPerUserDay  int64 = 50 << 20
+)
+
 type Handler struct {
 	suggestionService *service.SuggestionFeedbackService
 	storageService    storage.StorageService
 	mediaService      *service.MediaService
+	quotaMu           sync.Mutex
+	quotas            map[uint]*suggestionUploadQuota
+}
+
+type suggestionUploadQuota struct {
+	day   time.Time
+	count int
+	bytes int64
 }
 
 type createSuggestionRequest struct {
@@ -43,6 +58,7 @@ func NewHandler(suggestionService *service.SuggestionFeedbackService, storageSer
 		suggestionService: suggestionService,
 		storageService:    storageService,
 		mediaService:      mediaService,
+		quotas:            make(map[uint]*suggestionUploadQuota),
 	}
 }
 
@@ -59,8 +75,8 @@ func (h *Handler) Eligibility(c *gin.Context) {
 func (h *Handler) Upload(c *gin.Context) {
 	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, suggestionFeedbackMaxRequestBytes)
 
-	_, exists := currentUserID(c)
-	if !exists {
+	userID, exists := currentUserID(c)
+	if !exists || userID == 0 {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized", "message": "Please sign in to upload files."})
 		return
 	}
@@ -81,9 +97,19 @@ func (h *Handler) Upload(c *gin.Context) {
 		c.JSON(upload.HTTPStatus(err), gin.H{"error": upload.ErrorCode(err), "message": err.Error()})
 		return
 	}
+	if h.storageService == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "storage_unavailable", "message": "File storage is unavailable."})
+		return
+	}
+	if !h.reserveSuggestionUpload(userID, file.Size) {
+		c.Header("Retry-After", "86400")
+		c.JSON(http.StatusTooManyRequests, gin.H{"error": "upload_quota_exceeded", "message": "Daily upload quota exceeded."})
+		return
+	}
 
 	url, err := h.storageService.Upload(c.Request.Context(), file)
 	if err != nil {
+		h.releaseSuggestionUpload(userID, file.Size)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "upload_failed", "message": "Failed to upload file"})
 		return
 	}
@@ -93,6 +119,41 @@ func (h *Handler) Upload(c *gin.Context) {
 		"name": file.Filename,
 		"size": file.Size,
 	})
+}
+
+func (h *Handler) reserveSuggestionUpload(userID uint, size int64) bool {
+	if h == nil || userID == 0 || size <= 0 {
+		return false
+	}
+	h.quotaMu.Lock()
+	defer h.quotaMu.Unlock()
+	today := time.Now().UTC().Truncate(24 * time.Hour)
+	quota := h.quotas[userID]
+	if quota == nil || !quota.day.Equal(today) {
+		quota = &suggestionUploadQuota{day: today}
+		h.quotas[userID] = quota
+	}
+	if quota.count >= suggestionFeedbackUploadMaxPerUserPerDay || quota.bytes > suggestionFeedbackUploadBytesPerUserDay-size {
+		return false
+	}
+	quota.count++
+	quota.bytes += size
+	return true
+}
+
+func (h *Handler) releaseSuggestionUpload(userID uint, size int64) {
+	h.quotaMu.Lock()
+	defer h.quotaMu.Unlock()
+	if quota := h.quotas[userID]; quota != nil {
+		if quota.count > 0 {
+			quota.count--
+		}
+		if quota.bytes >= size {
+			quota.bytes -= size
+		} else {
+			quota.bytes = 0
+		}
+	}
 }
 
 func (h *Handler) publicMediaURL(value string) string {

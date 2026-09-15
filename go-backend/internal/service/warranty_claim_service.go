@@ -9,11 +9,14 @@ import (
 	"net/url"
 	"strings"
 	"time"
+
+	"commerce-platform/internal/pkg/emailtoken"
 )
 
 var (
 	ErrWarrantyEmailMismatch        = errors.New("email does not match order record")
 	ErrWarrantyVerificationRequired = errors.New("warranty email verification is required")
+	ErrWarrantyClaimAccessRequired  = errors.New("warranty claim access verification is required")
 	ErrWarrantyOrderItemMismatch    = errors.New("order item does not match warranty claim")
 	ErrWarrantyOrderItemUnavailable = errors.New("order item binding is unavailable")
 )
@@ -45,6 +48,13 @@ type WarrantyClaimByOrderInput struct {
 }
 
 const warrantyOrderChallengePurpose = "warranty:order"
+
+// Claim access tokens are deliberately long lived. They are issued only after
+// the customer has completed the one-time order email challenge and are bound
+// to the claim id and verified email. This lets guest customers revisit the
+// claim without weakening the claim-id authorization boundary.
+const warrantyClaimAccessPurpose = "warranty:claim:view"
+const warrantyClaimAccessTokenTTL = 100 * 365 * 24 * time.Hour
 
 type WarrantyServiceRecordInput struct {
 	ServiceType string
@@ -159,6 +169,43 @@ func (s *WarrantyService) CreateWarrantyClaimForOrder(input WarrantyClaimByOrder
 	return claim, nil
 }
 
+// IssueWarrantyClaimAccessToken creates a long-lived, signed read token for a
+// guest claim. The token contains no mutable claim data and is safe to return
+// to the verified customer after submission.
+func (s *WarrantyService) IssueWarrantyClaimAccessToken(claim *warranty.WarrantyClaim) (string, error) {
+	if claim == nil || claim.ID == 0 || normalizeWarrantyEmail(claim.Email) == "" {
+		return "", ErrWarrantyClaimAccessRequired
+	}
+	if strings.TrimSpace(s.challengeSecret) == "" {
+		return "", ErrEmailChallengeUnavailable
+	}
+	now := time.Now()
+	return emailtoken.Sign(s.challengeSecret, emailtoken.Claims{
+		Purpose:   warrantyClaimAccessPurpose,
+		Email:     normalizeWarrantyEmail(claim.Email),
+		Subject:   warrantyClaimAccessSubject(claim.ID, claim.Email),
+		ExpiresAt: now.Add(warrantyClaimAccessTokenTTL).Unix(),
+	})
+}
+
+func (s *WarrantyService) validateWarrantyClaimAccessToken(claim *warranty.WarrantyClaim, token string) error {
+	if claim == nil || claim.ID == 0 || strings.TrimSpace(token) == "" {
+		return ErrWarrantyClaimAccessRequired
+	}
+	if strings.TrimSpace(s.challengeSecret) == "" {
+		return ErrEmailChallengeUnavailable
+	}
+	claims, err := emailtoken.Verify(s.challengeSecret, strings.TrimSpace(token), warrantyClaimAccessPurpose, time.Now())
+	if err != nil || !strings.EqualFold(claims.Email, normalizeWarrantyEmail(claim.Email)) || claims.Subject != warrantyClaimAccessSubject(claim.ID, claim.Email) {
+		return ErrWarrantyClaimAccessRequired
+	}
+	return nil
+}
+
+func warrantyClaimAccessSubject(claimID uint, email string) string {
+	return fmt.Sprintf("%d|%s", claimID, normalizeWarrantyEmail(email))
+}
+
 func warrantyOrderChallengeSubject(orderNumber, email string) string {
 	return strings.TrimSpace(orderNumber) + "|" + normalizeWarrantyEmail(email)
 }
@@ -169,17 +216,35 @@ func normalizeWarrantyEmail(email string) string {
 
 // GetWarrantyClaim 获取保修申请
 func (s *WarrantyService) GetWarrantyClaim(id uint, userID uint, isAdmin bool) (*warranty.WarrantyClaim, error) {
+	return s.GetWarrantyClaimForViewer(id, userID, "", "", isAdmin)
+}
+
+// GetWarrantyClaimForViewer authorizes registered users by account ownership,
+// and also permits a registered account to access a legacy guest claim when
+// its verified login email matches the claim email. Guest claims require the
+// signed access token returned after verified submission.
+func (s *WarrantyService) GetWarrantyClaimForViewer(id uint, userID uint, userEmail, accessToken string, isAdmin bool) (*warranty.WarrantyClaim, error) {
 	claim, err := s.warrantyRepo.FindWarrantyClaimByID(id)
 	if err != nil {
 		return nil, err
 	}
 
-	// 验证权限
-	if !isAdmin && claim.UserID != userID {
-		return nil, errors.New("unauthorized")
+	if isAdmin {
+		return claim, nil
+	}
+	if claim.UserID == userID && userID > 0 {
+		return claim, nil
+	}
+	if claim.UserID == 0 {
+		if normalizedUserEmail := normalizeWarrantyEmail(userEmail); normalizedUserEmail != "" && normalizedUserEmail == normalizeWarrantyEmail(claim.Email) {
+			return claim, nil
+		}
+		if err := s.validateWarrantyClaimAccessToken(claim, accessToken); err == nil {
+			return claim, nil
+		}
 	}
 
-	return claim, nil
+	return nil, errors.New("unauthorized")
 }
 
 // GetAllWarrantyClaims 获取所有保修申请（管理员）
@@ -349,15 +414,15 @@ func (s *WarrantyService) CreateWarrantyServiceRecord(claimID uint, input Warran
 	}
 
 	record := &warranty.WarrantyServiceRecord{
-		ClaimID:        claim.ID,
-		ServiceType:    serviceType,
-		Status:         status,
-		Summary:        summary,
-		CostAmount:     input.CostAmount,
-		Currency:       currency,
-		PerformedBy:    createdBy,
-		CreatedBy:      createdBy,
-		PerformedAt:    input.PerformedAt,
+		ClaimID:     claim.ID,
+		ServiceType: serviceType,
+		Status:      status,
+		Summary:     summary,
+		CostAmount:  input.CostAmount,
+		Currency:    currency,
+		PerformedBy: createdBy,
+		CreatedBy:   createdBy,
+		PerformedAt: input.PerformedAt,
 	}
 
 	if err := s.warrantyRepo.CreateWarrantyServiceRecord(record); err != nil {

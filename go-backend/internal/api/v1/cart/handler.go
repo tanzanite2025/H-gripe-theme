@@ -6,6 +6,7 @@ import (
 	"commerce-platform/internal/pkg/response"
 	"commerce-platform/internal/service"
 	"errors"
+	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -109,15 +110,17 @@ func parseOptionalUintQuery(c *gin.Context, key string) *uint {
 }
 
 type AddToCartRequest struct {
-	ProductID uint  `json:"product_id" binding:"required"`
-	VariantID *uint `json:"variant_id"`
-	Quantity  int   `json:"quantity" binding:"required,min=1"`
+	ProductID       uint                     `json:"product_id" binding:"required"`
+	VariantID       *uint                    `json:"variant_id"`
+	Quantity        int                      `json:"quantity" binding:"required,min=1"`
+	SelectedOptions []service.SelectedOption `json:"selected_options,omitempty"`
 }
 
 // UpdateCartItemRequest 更新购物车项目请求
 type UpdateCartItemRequest struct {
-	VariantID *uint `json:"variant_id"`
-	Quantity  int   `json:"quantity" binding:"required,min=1"`
+	VariantID       *uint                    `json:"variant_id"`
+	Quantity        int                      `json:"quantity" binding:"required,min=1"`
+	SelectedOptions []service.SelectedOption `json:"selected_options,omitempty"`
 }
 
 // GetCartSummary 获取购物车摘要
@@ -144,8 +147,8 @@ func (h *Handler) AddToCart(c *gin.Context) {
 		apierror.RespondValidationError(c, err.Error())
 		return
 	}
-	if err := h.cartService.ValidateAddToCart(req.ProductID, req.VariantID, req.Quantity); err != nil {
-		apierror.RespondBadRequest(c, err.Error())
+	if err := h.cartService.ValidateAddToCartWithConfiguration(req.ProductID, req.VariantID, req.Quantity, req.SelectedOptions); err != nil {
+		respondConfigurationError(c, err)
 		return
 	}
 
@@ -157,8 +160,8 @@ func (h *Handler) AddToCart(c *gin.Context) {
 		return
 	}
 
-	if err := h.cartService.AddToCart(cart.ID, req.ProductID, req.VariantID, req.Quantity); err != nil {
-		apierror.RespondBadRequest(c, err.Error())
+	if err := h.cartService.AddToCartWithConfiguration(cart.ID, req.ProductID, req.VariantID, req.Quantity, req.SelectedOptions); err != nil {
+		respondConfigurationError(c, err)
 		return
 	}
 
@@ -195,8 +198,8 @@ func (h *Handler) UpdateCartItem(c *gin.Context) {
 	}
 	pID := uint(parsedProductID)
 
-	if err := h.cartService.UpdateCartItem(cart.ID, pID, req.VariantID, req.Quantity); err != nil {
-		apierror.RespondBadRequest(c, err.Error())
+	if err := h.cartService.UpdateCartItemWithConfiguration(cart.ID, pID, req.VariantID, req.Quantity, req.SelectedOptions); err != nil {
+		respondConfigurationError(c, err)
 		return
 	}
 
@@ -228,7 +231,7 @@ func (h *Handler) RemoveFromCart(c *gin.Context) {
 	pID := uint(parsedProductID)
 
 	variantID := parseOptionalUintQuery(c, "variant_id")
-	if err := h.cartService.RemoveFromCart(cart.ID, pID, variantID); err != nil {
+	if err := h.cartService.RemoveFromCartWithConfiguration(cart.ID, pID, variantID, c.Query("configuration_hash")); err != nil {
 		apierror.RespondBadRequest(c, err.Error())
 		return
 	}
@@ -267,7 +270,7 @@ func (h *Handler) SyncCart(c *gin.Context) {
 	}
 
 	if err := h.cartService.SyncCart(cart.ID, items); err != nil {
-		apierror.RespondBadRequest(c, err.Error())
+		respondConfigurationError(c, err)
 		return
 	}
 
@@ -282,6 +285,18 @@ func (h *Handler) SyncCart(c *gin.Context) {
 	}
 
 	response.Success(c, PublicCartSummaryFromDomain(summary, h.mediaService))
+}
+
+func respondConfigurationError(c *gin.Context, err error) {
+	if errors.Is(err, service.ErrProductConfigurationConflict) || errors.Is(err, service.ErrProductConfigurationPriceChanged) {
+		code := "product_configuration_conflict"
+		if errors.Is(err, service.ErrProductConfigurationPriceChanged) {
+			code = "product_configuration_price_changed"
+		}
+		apierror.RespondError(c, http.StatusConflict, code, err.Error())
+		return
+	}
+	apierror.RespondBadRequest(c, err.Error())
 }
 
 // ClearCart 清空购物车

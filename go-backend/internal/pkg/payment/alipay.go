@@ -205,7 +205,7 @@ func buildAlipayRefundRequest(paymentID string, amount float64, refundNo string,
 	if refundNo = strings.TrimSpace(refundNo); refundNo == "" {
 		return alipay.TradeRefund{}, fmt.Errorf("refund request id is required")
 	}
-	refundAmount, err := FormatMajorAmount(amount, "CNY")
+	refundAmount, err := paymentMajorString(amount, "CNY")
 	if err != nil {
 		return alipay.TradeRefund{}, err
 	}

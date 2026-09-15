@@ -32,7 +32,7 @@ const { t } = useI18n()
 const route = useRoute()
 const localePath = useLocalePath()
 const auth = useAuth()
-const { clearCart, openCart } = useCart()
+const { reloadCartFromBackend, openCart } = useCart()
 const { capturePayPalOrder } = usePayPalPayment()
 const status = ref<'loading' | 'success' | 'error'>('loading')
 const message = ref(t('checkout.paypalReturn.messages.capturing'))
@@ -72,7 +72,7 @@ onMounted(async () => {
       throw new Error(t('checkout.paypalReturn.messages.incomplete'))
     }
 
-    clearCart()
+    await reloadCartFromBackend()
     status.value = 'success'
     message.value = t('checkout.paypalReturn.messages.success')
   } catch (error) {

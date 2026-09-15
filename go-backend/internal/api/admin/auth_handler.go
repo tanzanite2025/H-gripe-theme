@@ -24,9 +24,16 @@ func NewAuthHandler(authService *service.AuthService, cookieOptions ...securecoo
 
 func resolveCookieOptions(cookieOptions []securecookie.Options) securecookie.Options {
 	if len(cookieOptions) == 0 {
-		return securecookie.DefaultOptions()
+		return securecookie.AdminOptions()
 	}
-	return cookieOptions[0]
+	resolved := securecookie.NormalizeOptions(cookieOptions[0])
+	if cookieOptions[0].Names.AuthToken == "" {
+		resolved.Names = securecookie.AdminCookieNames()
+	}
+	if cookieOptions[0].Path == "" {
+		resolved.Path = "/api/admin"
+	}
+	return resolved
 }
 
 func isBackofficeRole(role auth.Role) bool {
@@ -193,7 +200,7 @@ func (h *AuthHandler) GetProfile(c *gin.Context) {
 // RefreshToken 刷新令牌
 // POST /api/admin/auth/refresh
 func (h *AuthHandler) RefreshToken(c *gin.Context) {
-	refreshToken, err := c.Cookie(securecookie.RefreshTokenCookie)
+	refreshToken, err := c.Cookie(h.cookieOptions.Names.RefreshToken)
 	if err != nil || refreshToken == "" {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return

@@ -28,6 +28,9 @@ type MediaUploadInput struct {
 	UploaderID uint
 	Width      int
 	Height     int
+	// StoragePrefix scopes an upload to a feature-owned storage directory.
+	// Empty keeps the legacy storage layout unchanged.
+	StoragePrefix string
 }
 
 func (s *MediaService) UploadAsset(ctx context.Context, input MediaUploadInput) (*media.MediaAsset, error) {
@@ -56,7 +59,12 @@ func (s *MediaService) UploadAsset(ctx context.Context, input MediaUploadInput) 
 		return nil, err
 	}
 
-	url, err := s.storage.Upload(ctx, input.File)
+	var url string
+	if prefix := strings.TrimSpace(input.StoragePrefix); prefix != "" {
+		url, err = s.storage.UploadWithPrefix(ctx, input.File, prefix)
+	} else {
+		url, err = s.storage.Upload(ctx, input.File)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -96,9 +104,11 @@ func (s *MediaService) UploadAsset(ctx context.Context, input MediaUploadInput) 
 
 	derivatives, err := s.generateAssetDerivatives(ctx, asset, input.File)
 	if err != nil {
-		_ = s.storage.Delete(ctx, asset.URL)
-		_ = s.repo.HardDeleteAsset(asset.ID)
-		return nil, err
+		// Derivative conversion is best-effort. Keep the original asset and its
+		// database record intact when conversion times out or fails; a rebuild
+		// worker can generate missing variants later without losing the upload.
+		s.hydrateAssetAccessURL(asset)
+		return asset, nil
 	}
 	if len(derivatives) > 0 {
 		if err := s.repo.CreateAssetDerivatives(derivatives); err != nil {
@@ -107,8 +117,8 @@ func (s *MediaService) UploadAsset(ctx context.Context, input MediaUploadInput) 
 				derivativeURLs = append(derivativeURLs, derivative.URL)
 			}
 			deleteUploadedMediaObjectsBestEffort(ctx, s.storage, derivativeURLs)
-			_ = s.storage.Delete(ctx, asset.URL)
-			_ = s.repo.HardDeleteAsset(asset.ID)
+			// Preserve the source asset even when derivative metadata persistence
+			// fails; cleanup of derivative objects is still attempted above.
 			return nil, err
 		}
 		asset.Derivatives = derivatives

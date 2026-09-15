@@ -4,9 +4,12 @@ import (
 	"commerce-platform/internal/domain/coupon"
 	"commerce-platform/internal/domain/currency"
 	"commerce-platform/internal/domain/loyalty"
+	domainmoney "commerce-platform/internal/domain/money"
 	"errors"
 	"math"
+	"math/big"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -340,18 +343,40 @@ func promotionRiskItemFromCoupon(
 	memberRate float64,
 	pointsRate float64,
 ) MarketingPromotionRiskItem {
-	estimateSubtotal := roundMoney(math.Max(threshold.estimate, promotionRiskMinimumSubtotal))
+	estimateSubtotal := roundMoney(math.Max(threshold.estimate, promotionRiskMinimumSubtotal), currency.DefaultPrimaryCurrency)
 	couponDiscount := 0.0
-	if cp.ID > 0 {
-		couponDiscount = roundMoney(cp.CalculateDiscount(estimateSubtotal))
+	if cp.ID > 0 && (currency.NormalizeCode(cp.Currency) == "" || currency.NormalizeCode(cp.Currency) == currency.DefaultPrimaryCurrency) {
+		estimateMoney, moneyErr := domainmoney.FromMajorFloat(estimateSubtotal, currency.DefaultPrimaryCurrency)
+		if moneyErr == nil {
+			discountMoney, discountErr := cp.CalculateDiscountMoney(estimateMoney)
+			if discountErr == nil {
+				couponDiscount, _ = discountMoney.MajorFloat()
+				couponDiscount = roundMoney(couponDiscount, currency.DefaultPrimaryCurrency)
+			}
+		}
 	}
-	memberDiscount := roundMoney(estimateSubtotal * memberRate)
-	pointsDiscount := roundMoney(estimateSubtotal * boundedFraction(pointsRate))
-	totalDiscount := roundMoney(couponDiscount + memberDiscount + pointsDiscount)
-	payable := roundMoney(estimateSubtotal - totalDiscount)
-	if payable < 0 {
-		payable = 0
+	estimateMoney, _ := domainmoney.FromMajorFloat(estimateSubtotal, currency.DefaultPrimaryCurrency)
+	memberMoney := promotionRiskRateAmount(estimateMoney, memberRate)
+	pointsMoney := promotionRiskRateAmount(estimateMoney, boundedFraction(pointsRate))
+	memberDiscount, _ := memberMoney.MajorFloat()
+	pointsDiscount, _ := pointsMoney.MajorFloat()
+	couponMoney, _ := domainmoney.FromMajorFloat(couponDiscount, currency.DefaultPrimaryCurrency)
+	totalMoney, totalErr := couponMoney.Add(memberMoney)
+	if totalErr == nil {
+		totalMoney, totalErr = totalMoney.Add(pointsMoney)
 	}
+	if totalErr != nil {
+		totalMoney = estimateMoney
+	}
+	if totalMoney.AmountMinor() > estimateMoney.AmountMinor() {
+		totalMoney = estimateMoney
+	}
+	totalDiscount, _ := totalMoney.MajorFloat()
+	payableMoney, payableErr := estimateMoney.Subtract(totalMoney)
+	if payableErr != nil || payableMoney.AmountMinor() < 0 {
+		payableMoney = domainmoney.MustNew(0, currency.DefaultPrimaryCurrency)
+	}
+	payable, _ := payableMoney.MajorFloat()
 
 	item := MarketingPromotionRiskItem{
 		Severity:                   threshold.severity,
@@ -361,13 +386,13 @@ func promotionRiskItemFromCoupon(
 		CouponCode:                 cp.Code,
 		CouponType:                 cp.Type,
 		CouponStatus:               couponRiskStatus(cp),
-		CouponValue:                roundMoney(cp.Value),
-		CouponMinAmount:            roundMoney(cp.MinAmount),
-		CouponMaxDiscount:          roundMoney(cp.MaxDiscount),
+		CouponValue:                roundMoney(cp.Value, currency.DefaultPrimaryCurrency),
+		CouponMinAmount:            roundMoney(cp.MinAmount, currency.DefaultPrimaryCurrency),
+		CouponMaxDiscount:          roundMoney(cp.MaxDiscount, currency.DefaultPrimaryCurrency),
 		MemberDiscountRate:         roundPromotionRate(memberRate * 100),
 		PointsDiscountRate:         roundPromotionRate(boundedFraction(pointsRate) * 100),
-		FullCoverSubtotalThreshold: roundMoney(threshold.fullCover),
-		GatewayMinimumThreshold:    roundMoney(threshold.gatewayFloor),
+		FullCoverSubtotalThreshold: roundMoney(threshold.fullCover, currency.DefaultPrimaryCurrency),
+		GatewayMinimumThreshold:    roundMoney(threshold.gatewayFloor, currency.DefaultPrimaryCurrency),
 		EstimatedSubtotal:          estimateSubtotal,
 		EstimatedCouponDiscount:    couponDiscount,
 		EstimatedMemberDiscount:    memberDiscount,
@@ -386,6 +411,18 @@ func promotionRiskItemFromCoupon(
 	return item
 }
 
+func promotionRiskRateAmount(base domainmoney.Money, rate float64) domainmoney.Money {
+	rat, ok := new(big.Rat).SetString(strconv.FormatFloat(rate, 'f', -1, 64))
+	if !ok || rate <= 0 {
+		return domainmoney.MustNew(0, base.Currency().String())
+	}
+	value, err := base.MultiplyRat(rat)
+	if err != nil {
+		return domainmoney.MustNew(0, base.Currency().String())
+	}
+	return value
+}
+
 func promotionRiskMaxMemberLevel(levels []loyalty.MemberLevel) *loyalty.MemberLevel {
 	var selected *loyalty.MemberLevel
 	for index := range levels {
@@ -401,15 +438,37 @@ func maxRedeemGiftCardValue(config *loyalty.ProgramConfig) float64 {
 	if config == nil || !config.Enabled {
 		return 0
 	}
-	maxValue := 0.0
+	targetCurrency := currency.NormalizeCode(config.Currency)
+	if !currency.IsCatalogCode(targetCurrency) {
+		targetCurrency = currency.DefaultPrimaryCurrency
+	}
+	var maxValue domainmoney.Money
+	hasValue := false
 	for _, option := range config.RedeemOptions {
-		pointsRequired, err := PointsForGiftCardValue(option.ValueCents, config.ExchangeRatePoints)
+		optionMoney, err := domainmoney.New(option.ValueCents, option.Currency)
+		if err != nil {
+			continue
+		}
+		if optionMoney.Currency().String() != targetCurrency {
+			continue
+		}
+		pointsRequired, err := PointsForGiftCardMoney(optionMoney, config.ExchangeRatePoints)
 		if err != nil || pointsRequired < config.MinRedeemPoints || option.RemainingQuantity() <= 0 {
 			continue
 		}
-		maxValue = math.Max(maxValue, float64(option.ValueCents)/100)
+		if !hasValue || optionMoney.AmountMinor() > maxValue.AmountMinor() {
+			maxValue = optionMoney
+			hasValue = true
+		}
 	}
-	return roundMoney(maxValue)
+	if !hasValue {
+		return 0
+	}
+	value, err := maxValue.MajorFloat()
+	if err != nil {
+		return 0
+	}
+	return value
 }
 
 func promotionRiskFactors(couponCode string, couponType string, maxLevel *loyalty.MemberLevel, memberRate float64, pointsRate float64) []string {

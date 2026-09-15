@@ -2,16 +2,27 @@ package service
 
 import (
 	"errors"
-	"math"
+	"fmt"
+	"os"
 	"sort"
+	"sync/atomic"
+	"time"
 
 	"commerce-platform/internal/domain/currency"
+	domainmoney "commerce-platform/internal/domain/money"
+	"commerce-platform/internal/domain/product"
 	"commerce-platform/internal/repository"
 
 	"gorm.io/datatypes"
 )
 
 const displayPriceRefreshBatchSize = 500
+const displayPriceRefreshLeaseKey = "product-display-price-refresh"
+const displayPriceRefreshLeaseTTL = 30 * time.Minute
+
+var displayPriceRefreshOwnerSequence uint64
+
+var ErrProductDisplayPriceRefreshInProgress = errors.New("product display price refresh is already running")
 
 type ProductDisplayPriceRefreshResult struct {
 	BaseCurrency          string   `json:"base_currency"`
@@ -41,6 +52,35 @@ func (s *ProductService) RefreshDisplayPriceSnapshots(
 
 	quoteCurrencies = normalizeDisplayPriceRefreshQuotes(quoteCurrencies, baseCurrency)
 	ratesByQuote := displayPriceRatesByQuote(rates, baseCurrency)
+	leaseOwner := fmt.Sprintf("product-display-price:%d:%d", os.Getpid(), atomic.AddUint64(&displayPriceRefreshOwnerSequence, 1))
+	if s.displayPriceLeaseRepo != nil {
+		acquired, err := s.displayPriceLeaseRepo.TryAcquireSyncLease(displayPriceRefreshLeaseKey, leaseOwner, time.Now().UTC(), displayPriceRefreshLeaseTTL)
+		if err != nil {
+			return ProductDisplayPriceRefreshResult{}, err
+		}
+		if !acquired {
+			return ProductDisplayPriceRefreshResult{}, ErrProductDisplayPriceRefreshInProgress
+		}
+		heartbeatDone := make(chan struct{})
+		go func() {
+			ticker := time.NewTicker(displayPriceRefreshLeaseTTL / 3)
+			defer ticker.Stop()
+			for {
+				select {
+				case <-ticker.C:
+					if renewed, renewErr := s.displayPriceLeaseRepo.RenewSyncLease(displayPriceRefreshLeaseKey, leaseOwner, time.Now().UTC(), displayPriceRefreshLeaseTTL); renewErr != nil || !renewed {
+						return
+					}
+				case <-heartbeatDone:
+					return
+				}
+			}
+		}()
+		defer func() {
+			close(heartbeatDone)
+			_ = s.displayPriceLeaseRepo.ReleaseSyncLease(displayPriceRefreshLeaseKey, leaseOwner, time.Now().UTC())
+		}()
+	}
 	products, err := s.productRepo.ListProductsForDisplayPriceRefresh()
 	if err != nil {
 		return ProductDisplayPriceRefreshResult{}, err
@@ -56,6 +96,10 @@ func (s *ProductService) RefreshDisplayPriceSnapshots(
 
 	for _, item := range products {
 		result.VariantsScanned += len(item.Variants)
+		productSourcePrice, productSourceSalePrice, priceErr := productDisplaySourcePrices(&item)
+		if priceErr != nil {
+			return result, fmt.Errorf("resolve source price for product %d: %w", item.ID, priceErr)
+		}
 
 		productCurrency := currency.NormalizeCode(item.Currency)
 		if productCurrency != baseCurrency {
@@ -66,8 +110,8 @@ func (s *ProductService) RefreshDisplayPriceSnapshots(
 		productCanRefresh := productCurrency == baseCurrency
 		if productCanRefresh {
 			productSnapshot = displayPriceSnapshotJSON(
-				item.Price,
-				item.SalePrice,
+				productSourcePrice,
+				productSourceSalePrice,
 				baseCurrency,
 				quoteCurrencies,
 				ratesByQuote,
@@ -77,7 +121,15 @@ func (s *ProductService) RefreshDisplayPriceSnapshots(
 		}
 
 		update := repository.ProductDisplayPriceSnapshotUpdate{
-			ProductID: item.ID,
+			ProductID:      item.ID,
+			SourceCurrency: item.Currency,
+		}
+		if sourceMoney, moneyErr := item.PriceMoney(); moneyErr == nil {
+			update.SourcePriceMinor = sourceMoney.AmountMinor()
+		}
+		if saleMoney, moneyErr := item.SalePriceMoney(); moneyErr == nil && saleMoney != nil {
+			minor := saleMoney.AmountMinor()
+			update.SourceSalePriceMinor = &minor
 		}
 		if productCanRefresh {
 			update.UpdateProduct = true
@@ -86,6 +138,10 @@ func (s *ProductService) RefreshDisplayPriceSnapshots(
 		}
 
 		for _, variant := range item.Variants {
+			variantSourcePrice, variantSourceSalePrice, variantPriceErr := productDisplaySourcePricesVariant(&variant)
+			if variantPriceErr != nil {
+				return result, fmt.Errorf("resolve source price for variant %d: %w", variant.ID, variantPriceErr)
+			}
 			variantCurrency := currency.NormalizeCode(variant.Currency)
 			if variantCurrency != baseCurrency {
 				result.CurrencyMismatchCount++
@@ -93,17 +149,26 @@ func (s *ProductService) RefreshDisplayPriceSnapshots(
 			}
 
 			variantSnapshot := displayPriceSnapshotJSON(
-				variant.Price,
-				variant.SalePrice,
+				variantSourcePrice,
+				variantSourceSalePrice,
 				baseCurrency,
 				quoteCurrencies,
 				ratesByQuote,
 				currency.ParseDisplayPriceSnapshots(variant.DisplayPriceData),
 			)
-			update.VariantSnapshotUpdates = append(update.VariantSnapshotUpdates, repository.ProductVariantDisplayPriceSnapshotUpdate{
+			variantUpdate := repository.ProductVariantDisplayPriceSnapshotUpdate{
 				VariantID:        variant.ID,
+				SourceCurrency:   variant.Currency,
 				DisplayPriceData: variantSnapshot,
-			})
+			}
+			if sourceMoney, moneyErr := variant.PriceMoney(); moneyErr == nil {
+				variantUpdate.SourcePriceMinor = sourceMoney.AmountMinor()
+			}
+			if saleMoney, moneyErr := variant.SalePriceMoney(); moneyErr == nil && saleMoney != nil {
+				minor := saleMoney.AmountMinor()
+				variantUpdate.SourceSalePriceMinor = &minor
+			}
+			update.VariantSnapshotUpdates = append(update.VariantSnapshotUpdates, variantUpdate)
 			result.VariantsUpdated++
 		}
 
@@ -137,6 +202,46 @@ func (s *ProductService) RefreshDisplayPriceSnapshots(
 	}
 
 	return result, nil
+}
+
+func productDisplaySourcePrices(item *product.Product) (float64, *float64, error) {
+	priceMoney, err := item.PriceMoney()
+	if err != nil {
+		return 0, nil, err
+	}
+	price, err := priceMoney.MajorFloat()
+	if err != nil {
+		return 0, nil, err
+	}
+	saleMoney, err := item.SalePriceMoney()
+	if err != nil || saleMoney == nil {
+		return price, nil, err
+	}
+	sale, err := saleMoney.MajorFloat()
+	if err != nil {
+		return 0, nil, err
+	}
+	return price, &sale, nil
+}
+
+func productDisplaySourcePricesVariant(item *product.ProductVariant) (float64, *float64, error) {
+	priceMoney, err := item.PriceMoney()
+	if err != nil {
+		return 0, nil, err
+	}
+	price, err := priceMoney.MajorFloat()
+	if err != nil {
+		return 0, nil, err
+	}
+	saleMoney, err := item.SalePriceMoney()
+	if err != nil || saleMoney == nil {
+		return price, nil, err
+	}
+	sale, err := saleMoney.MajorFloat()
+	if err != nil {
+		return 0, nil, err
+	}
+	return price, &sale, nil
 }
 
 func normalizeDisplayPriceRefreshQuotes(values []string, baseCurrency string) []string {
@@ -208,8 +313,20 @@ func displayPriceSnapshotJSON(
 			}
 			continue
 		}
+		baseMoney, moneyErr := domainmoney.FromMajorFloat(amount, baseCurrency)
+		if moneyErr != nil {
+			continue
+		}
+		convertedMoney, moneyErr := baseMoney.ConvertAtRate(rate, quote)
+		if moneyErr != nil {
+			continue
+		}
+		convertedAmount, moneyErr := convertedMoney.MajorFloat()
+		if moneyErr != nil || convertedAmount <= 0 {
+			continue
+		}
 		snapshots = append(snapshots, currency.DisplayPriceSnapshot{
-			Amount:        roundDisplayPriceAmount(amount*rate, quote),
+			Amount:        convertedAmount,
 			Currency:      quote,
 			QuoteCurrency: quote,
 			Rate:          rate,
@@ -218,13 +335,4 @@ func displayPriceSnapshotJSON(
 		})
 	}
 	return currency.DisplayPriceSnapshotsJSON(snapshots, baseCurrency)
-}
-
-func roundDisplayPriceAmount(amount float64, currencyCode string) float64 {
-	minorUnits, ok := currency.MinorUnits(currencyCode)
-	if !ok {
-		minorUnits = 2
-	}
-	factor := math.Pow10(minorUnits)
-	return math.Round(amount*factor) / factor
 }

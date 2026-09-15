@@ -4,7 +4,9 @@ import (
 	shippingdomain "commerce-platform/internal/domain/shipping"
 	"commerce-platform/internal/pkg/apierror"
 	"commerce-platform/internal/pkg/response"
+	"encoding/json"
 	"errors"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -136,6 +138,25 @@ func validateCarrierService(service shippingdomain.CarrierService) error {
 	}
 	if service.EtaMaxDays > 0 && service.EtaMinDays > 0 && service.EtaMaxDays < service.EtaMinDays {
 		return errors.New("eta max days cannot be less than eta min days")
+	}
+	if raw := strings.TrimSpace(service.RemotePostalCodes); raw != "" && raw != "[]" {
+		var rules []json.RawMessage
+		if err := json.Unmarshal([]byte(raw), &rules); err != nil {
+			return errors.New("remote postal codes must be a JSON array")
+		}
+		for _, rule := range rules {
+			var text string
+			if json.Unmarshal(rule, &text) == nil {
+				if strings.TrimSpace(text) == "" {
+					return errors.New("remote postal code entries cannot be empty")
+				}
+				continue
+			}
+			var object map[string]interface{}
+			if err := json.Unmarshal(rule, &object); err != nil || len(object) == 0 {
+				return errors.New("remote postal codes must contain strings or rule objects")
+			}
+		}
 	}
 
 	return nil

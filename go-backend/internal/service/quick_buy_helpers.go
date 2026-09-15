@@ -100,7 +100,10 @@ func (s *QuickBuyService) listVersionStepCandidates(version quickbuy.Version, in
 	}
 
 	locale := locales.ResolveSupported(input.Locale)
-	currency := normalizeQuickBuyCurrency(input.Currency)
+	currency, err := normalizeQuickBuyCurrency(input.Currency)
+	if err != nil {
+		return nil, err
+	}
 	page, pageSize := normalizeQuickBuyCandidatePaging(input.Page, input.PageSize)
 	exposeProductSpecificationTemplates := !isDefaultQuickBuyFlow(version) && len(step.ProductSpecificationTemplates) > 0
 	if !exposeProductSpecificationTemplates {
@@ -200,12 +203,23 @@ func (s *QuickBuyService) sessionItemFromSelection(session quickbuy.Session, ver
 
 	variantID := variant.ID
 	price := variant.EffectivePrice()
-	currency := normalizeQuickBuyCurrency(variant.Currency)
-	if currency == "" {
-		currency = normalizeQuickBuyCurrency(productItem.DisplayPriceCurrency())
+	rawCurrency := strings.TrimSpace(variant.Currency)
+	if rawCurrency == "" {
+		rawCurrency = productItem.DisplayPriceCurrency()
 	}
-	if currency == "" {
-		currency = session.Currency
+	if strings.TrimSpace(rawCurrency) == "" {
+		rawCurrency = session.Currency
+	}
+	currency, err := normalizeQuickBuyCurrency(rawCurrency)
+	if err != nil {
+		return nil, false, err
+	}
+	sessionCurrency, err := normalizeQuickBuyCurrency(session.Currency)
+	if err != nil {
+		return nil, false, fmt.Errorf("%w: session currency is invalid", err)
+	}
+	if currency != sessionCurrency {
+		return nil, false, fmt.Errorf("%w: product currency %s does not match quick-buy session currency %s", ErrQuickBuyInvalid, currency, sessionCurrency)
 	}
 	return &quickbuy.SessionItem{
 		StepID:            step.ID,

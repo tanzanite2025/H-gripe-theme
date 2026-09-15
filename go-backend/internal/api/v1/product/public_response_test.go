@@ -197,28 +197,29 @@ func TestPublicProductFromDomainExposesVariantOptionPresentationMetadata(t *test
 			Slug: "finish_product",
 			SpecDefinitions: []productdomain.SpecDefinition{
 				{
-					ID:              7,
-					Group:           "Appearance",
-					Name:            "Finish",
-					Slug:            "finish",
-					FieldType:       "select",
-					Presentation:    "color",
-					IsVariantOption: true,
-					IsVisible:       true,
-					SortOrder:       10,
+					ID:           7,
+					Group:        "Appearance",
+					Name:         "Finish",
+					Slug:         "finish",
+					FieldType:    "select",
+					Presentation: "color",
+					Role:         "variant",
+					IsVisible:    true,
+					SortOrder:    10,
 				},
 			},
 		},
 		VariantOptionValues: []productdomain.ProductVariantOptionValue{
 			{
-				ID:               optionValueID,
-				SpecDefinitionID: 7,
-				ValueKey:         "ruby_red",
-				Label:            "Ruby Red",
-				ColorHex:         "#8F2028",
-				SwatchURL:        "/uploads/swatches/ruby-red.webp",
-				SortOrder:        10,
-				IsEnabled:        true,
+				ID:                 optionValueID,
+				SpecDefinitionID:   7,
+				ValueKey:           "ruby_red",
+				Label:              "Ruby Red",
+				ColorHex:           "#8F2028",
+				SwatchURL:          "/uploads/swatches/ruby-red.webp",
+				SortOrder:          10,
+				IsEnabled:          true,
+				CustomOptionPolicy: &productdomain.ProductCustomOptionPolicy{IsDefault: true, PriceDeltaMinor: 250, InventoryPolicy: "none"},
 			},
 		},
 		Media: []productdomain.ProductMedia{
@@ -256,6 +257,9 @@ func TestPublicProductFromDomainExposesVariantOptionPresentationMetadata(t *test
 	if option.ColorHex != "#8F2028" || option.SwatchURL != "/uploads/swatches/ruby-red.webp" {
 		t.Fatalf("expected public swatch metadata, got %#v", option)
 	}
+	if !option.IsDefault || option.PriceDeltaMinor != 250 || option.InventoryPolicy != "none" {
+		t.Fatalf("expected custom option policy metadata, got %#v", option)
+	}
 	if len(publicProduct.Media) != 1 {
 		t.Fatalf("expected one public media item, got %#v", publicProduct.Media)
 	}
@@ -285,11 +289,11 @@ func TestPublicProductFromDomainCanonicalizesFirstPartyMediaURLs(t *testing.T) {
 			Slug: "wheelset",
 			SpecDefinitions: []productdomain.SpecDefinition{
 				{
-					ID:              17,
-					Name:            "Finish",
-					Slug:            "finish",
-					IsVisible:       true,
-					IsVariantOption: true,
+					ID:        17,
+					Name:      "Finish",
+					Slug:      "finish",
+					IsVisible: true,
+					Role:      "variant",
 				},
 			},
 		},
@@ -434,6 +438,68 @@ func TestPublicProductDisplayPriceUsesStoredSnapshotForRequestedCurrency(t *test
 	}
 	if publicProduct.Variants[0].DisplayPrice.Currency != "USD" || publicProduct.Variants[0].DisplayPrice.Amount != 96.8 {
 		t.Fatalf("expected variant stored USD display price, got %#v", publicProduct.Variants[0].DisplayPrice)
+	}
+}
+
+func TestPublicProductPriceAndSnapshotUseLowestEffectivePriceVariant(t *testing.T) {
+	defaultDisplayPrices := currency.DisplayPriceSnapshotsJSON([]currency.DisplayPriceSnapshot{
+		{Amount: 125, Currency: "USD", QuoteCurrency: "USD", Rate: 1.25, Source: "default_variant"},
+	}, "EUR")
+	startingDisplayPrices := currency.DisplayPriceSnapshotsJSON([]currency.DisplayPriceSnapshot{
+		{Amount: 88, Currency: "USD", QuoteCurrency: "USD", Rate: 1.1, Source: "starting_variant"},
+	}, "CNY")
+	startingSalePrice := 80.0
+	item := productdomain.Product{
+		ID:               61,
+		SKU:              "LEGACY-PRODUCT",
+		Name:             "Multi Variant Product",
+		Slug:             "multi-variant-product",
+		Currency:         "GBP",
+		Price:            999,
+		DisplayPriceData: defaultDisplayPrices,
+		Status:           "active",
+		Variants: []productdomain.ProductVariant{
+			{
+				ID:               62,
+				SKU:              "DEFAULT-HIGHER",
+				Title:            "Default",
+				Currency:         "EUR",
+				Price:            100,
+				DisplayPriceData: defaultDisplayPrices,
+				Stock:            4,
+				IsDefault:        true,
+				IsActive:         true,
+			},
+			{
+				ID:               63,
+				SKU:              "LOWEST-EFFECTIVE",
+				Title:            "Lowest effective price",
+				Currency:         "CNY",
+				Price:            90,
+				SalePrice:        &startingSalePrice,
+				DisplayPriceData: startingDisplayPrices,
+				Stock:            2,
+				IsActive:         true,
+			},
+		},
+	}
+
+	publicProduct := PublicProductFromDomainWithDisplayCurrency(item, "USD")
+
+	if publicProduct.Price != 90 || publicProduct.SalePrice == nil || *publicProduct.SalePrice != 80 {
+		t.Fatalf("expected product price fields from lowest effective price variant, got price=%v sale_price=%v", publicProduct.Price, publicProduct.SalePrice)
+	}
+	if publicProduct.Currency != "CNY" {
+		t.Fatalf("expected product currency from lowest effective price variant, got %q", publicProduct.Currency)
+	}
+	if publicProduct.DisplayPrice == nil || publicProduct.DisplayPrice.Amount != 88 || publicProduct.DisplayPrice.Source != "starting_variant" {
+		t.Fatalf("expected requested display price from lowest effective price variant snapshot, got %#v", publicProduct.DisplayPrice)
+	}
+	if len(publicProduct.DisplayPrices) != 1 || publicProduct.DisplayPrices[0].Source != "starting_variant" {
+		t.Fatalf("expected product display price snapshots from lowest effective price variant, got %#v", publicProduct.DisplayPrices)
+	}
+	if publicProduct.SKU != "DEFAULT-HIGHER" {
+		t.Fatalf("expected product SKU to remain anchored to default variant, got %q", publicProduct.SKU)
 	}
 }
 

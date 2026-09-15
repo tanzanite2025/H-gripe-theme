@@ -41,6 +41,24 @@ func (r *PaymentRefundExecutionRepository) FindByRefundIDForUpdate(refundID uint
 	return &execution, nil
 }
 
+func (r *PaymentRefundExecutionRepository) FindByIdempotencyKeyForUpdate(key string) (*paymentdomain.PaymentRefundExecution, error) {
+	var execution paymentdomain.PaymentRefundExecution
+	err := r.lockForUpdate(r.db).Where("idempotency_key = ?", key).First(&execution).Error
+	if err != nil {
+		return nil, err
+	}
+	return &execution, nil
+}
+
+func (r *PaymentRefundExecutionRepository) FindByProviderRefundIDForUpdate(providerRefundID string) (*paymentdomain.PaymentRefundExecution, error) {
+	var execution paymentdomain.PaymentRefundExecution
+	err := r.lockForUpdate(r.db).Where("provider_refund_id = ?", providerRefundID).First(&execution).Error
+	if err != nil {
+		return nil, err
+	}
+	return &execution, nil
+}
+
 func (r *PaymentRefundExecutionRepository) Update(execution *paymentdomain.PaymentRefundExecution) error {
 	return r.db.Save(execution).Error
 }

@@ -71,7 +71,7 @@ func (g *paypalGatewayImpl) CreatePayment(ctx context.Context, req *PaymentReque
 	if err := ValidateGatewayCurrency(g.config.Type, req.Currency); err != nil {
 		return nil, fmt.Errorf("invalid payment request: %w", err)
 	}
-	amountValue, err := FormatMajorAmount(req.Amount, req.Currency)
+	amountValue, err := paymentMajorString(req.Amount, req.Currency)
 	if err != nil {
 		return nil, err
 	}

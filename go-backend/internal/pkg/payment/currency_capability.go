@@ -70,6 +70,21 @@ func ValidateGatewayCurrency(provider GatewayType, code string) error {
 	return fmt.Errorf("%s does not support currency %s", provider, code)
 }
 
+// SettlementCurrency returns the currency that must be used for a gateway
+// settlement. CNY-only gateways deliberately override the storefront display
+// currency; this keeps their order/payment contracts aligned instead of
+// discovering the mismatch after the order has been created.
+func SettlementCurrency(provider GatewayType, requested string) (string, error) {
+	requested = currency.NormalizeCode(requested)
+	if provider == GatewayAlipay || provider == GatewayWechat {
+		return "CNY", nil
+	}
+	if err := ValidateGatewayCurrency(provider, requested); err != nil {
+		return "", err
+	}
+	return requested, nil
+}
+
 func catalogCurrencyCodes() []string {
 	options := currency.Catalog()
 	codes := make([]string, 0, len(options))

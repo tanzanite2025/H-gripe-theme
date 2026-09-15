@@ -454,7 +454,7 @@ func countRecommendationSpecMatches(contextProduct product.Product, candidate pr
 		if value.SpecDefinition == nil {
 			continue
 		}
-		if !value.SpecDefinition.IsFilterable && !value.SpecDefinition.IsVariantOption {
+		if !value.SpecDefinition.IsFilterable && value.SpecDefinition.RuntimeRole() != "variant" {
 			continue
 		}
 		expected, ok := contextValues[value.SpecDefinitionID]
@@ -474,7 +474,7 @@ func recommendationComparableSpecValues(item product.Product) map[uint]string {
 		if value.SpecDefinition == nil {
 			continue
 		}
-		if !value.SpecDefinition.IsFilterable && !value.SpecDefinition.IsVariantOption {
+		if !value.SpecDefinition.IsFilterable && value.SpecDefinition.RuntimeRole() != "variant" {
 			continue
 		}
 		normalized := normalizeRecommendationComparableValue(value.Value)

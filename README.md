@@ -24,7 +24,8 @@ repo-root/
 |   `-- web/admin/           # Admin console
 |-- shared/                  # Shared fixed registries
 |-- docs/                    # Current docs plus archive index
-|-- docker-compose.yml       # Local Docker services
+|-- docker-compose.yml       # Local development Compose source of truth
+|-- compose.prod.yml         # Production Compose source of truth
 `-- start-dev.ps1            # Windows local development launcher
 ```
 
@@ -133,7 +134,7 @@ Default admin address:
 
 ## Docker Compose
 
-The root `docker-compose.yml` can start PostgreSQL, Redis, backend, and the Nuxt storefront:
+The root `docker-compose.yml` is the only local development Compose file. It can start PostgreSQL, Redis, backend, and the Nuxt storefront:
 
 ```powershell
 docker compose up -d
@@ -160,6 +161,7 @@ Optional tools:
 - Redis Commander: `http://localhost:9700`
 
 The root Compose file is for local development only.
+The backend directory does not contain a second Compose file; backend-only commands use this root file with `-f ../docker-compose.yml` when run from `go-backend/`.
 
 ## Production Notes
 
@@ -226,6 +228,7 @@ If a frontend build fails immediately after checkout, run `npm install` in that 
 - Storefront locale registry: `go-backend/docs/STOREFRONT_LOCALE_REGISTRY.md`
 - Admin app guide: `go-backend/web/admin/README.md`
 - Kubernetes manifests and notes: `go-backend/k8s/`
+- Distributed locks, task state machine, and idempotency architecture: `docs/design/distributed-lock-task-state-machine-idempotency-architecture.md`
 - Historical reports: `docs/archive/`
 
 Historical reports are context only. Prefer the current code, this README, and area-specific README files when documents conflict.

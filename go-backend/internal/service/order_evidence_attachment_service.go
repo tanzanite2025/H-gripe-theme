@@ -104,18 +104,18 @@ func (s *OrderEvidenceAttachmentService) Upload(
 	}
 
 	prefix := fmt.Sprintf("order-evidence/%d/%d", orderID, itemID)
-	var referenceURL string
-	if privateUploader, ok := s.storage.(storage.PrivateObjectUploader); ok {
-		referenceURL, err = privateUploader.UploadWithPrefixPrivate(ctx, file, prefix)
-	} else {
-		referenceURL, err = s.storage.UploadWithPrefix(ctx, file, prefix)
+	privateUploader, ok := s.storage.(storage.PrivateObjectUploader)
+	if !ok {
+		return nil, fmt.Errorf("%w: private evidence storage is required", ErrOrderEvidenceAttachmentUnavailable)
 	}
+	referenceURL, err := privateUploader.UploadWithPrefixPrivate(ctx, file, prefix)
 	if err != nil {
 		return nil, fmt.Errorf("upload order evidence attachment: %w", err)
 	}
 
 	storageKey, err := s.storage.ObjectKey(referenceURL)
 	if err != nil {
+		_ = s.storage.Delete(ctx, referenceURL)
 		return nil, fmt.Errorf("resolve order evidence attachment key: %w", err)
 	}
 	attachmentInput := OrderEvidenceAttachmentReferenceInput{
@@ -135,6 +135,7 @@ func (s *OrderEvidenceAttachmentService) Upload(
 		return registerErr
 	})
 	if err != nil {
+		_ = s.storage.Delete(ctx, referenceURL)
 		return nil, err
 	}
 	return attachment, nil

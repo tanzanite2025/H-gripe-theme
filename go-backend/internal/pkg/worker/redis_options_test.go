@@ -13,7 +13,7 @@ func TestNewRedisConnOptStandalone(t *testing.T) {
 		Mode:     "standalone",
 		Addrs:    []string{"redis.internal:6380"},
 		Host:     "localhost",
-		Port:     9510,
+		Port:     9562,
 		Username: "app",
 		Password: "secret",
 		DB:       4,

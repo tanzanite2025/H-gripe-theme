@@ -25,20 +25,21 @@ type DisputePolicyDisclosureEvidence struct {
 }
 
 type DisputeRefundLineItemEvidence struct {
-	OrderItemID uint    `json:"order_item_id"`
-	ProductName string  `json:"product_name"`
-	SKU         string  `json:"sku"`
-	Quantity    int     `json:"quantity"`
-	LineTotal   float64 `json:"line_total"`
-	Restock     bool    `json:"restock"`
+	OrderItemID    uint   `json:"order_item_id"`
+	ProductName    string `json:"product_name"`
+	SKU            string `json:"sku"`
+	Quantity       int    `json:"quantity"`
+	Currency       string `json:"currency"`
+	LineTotalMinor int64  `json:"line_total_minor"`
+	Restock        bool   `json:"restock"`
 }
 
 type DisputeRefundEvidence struct {
 	ID                      uint                            `json:"id"`
 	ProviderRefundID        string                          `json:"provider_refund_id,omitempty"`
 	Status                  string                          `json:"status"`
-	Amount                  float64                         `json:"amount"`
-	RequestedAmount         float64                         `json:"requested_amount"`
+	AmountMinor             int64                           `json:"amount_minor"`
+	RequestedAmountMinor    int64                           `json:"requested_amount_minor"`
 	Currency                string                          `json:"currency"`
 	Reason                  string                          `json:"reason"`
 	CreatedAt               time.Time                       `json:"created_at"`
@@ -68,30 +69,49 @@ func buildPolicyDisclosureEvidence(disclosure *orderdomain.PolicyDisclosure) *Di
 func buildRefundEvidence(refunds []paymentdomain.Refund, currency string) []DisputeRefundEvidence {
 	result := make([]DisputeRefundEvidence, 0, len(refunds))
 	for _, refund := range refunds {
+		amountMinor := refund.AmountMinor
+		if amountMinor == 0 && refund.Amount != 0 {
+			if value, err := refund.AmountMoney(); err == nil {
+				amountMinor = value.AmountMinor()
+			}
+		}
+		requestedMinor := refund.RequestedAmountMinor
+		if requestedMinor == 0 && refund.RequestedAmount != 0 {
+			if value, err := refund.RequestedAmountMoney(); err == nil {
+				requestedMinor = value.AmountMinor()
+			}
+		}
 		item := DisputeRefundEvidence{
-			ID:               refund.ID,
-			ProviderRefundID: strings.TrimSpace(disputeStringValue(refund.RefundID)),
-			Status:           strings.TrimSpace(refund.Status),
-			Amount:           refund.Amount,
-			RequestedAmount:  refund.RequestedAmount,
-			Currency:         strings.TrimSpace(currency),
-			Reason:           strings.TrimSpace(refund.Reason),
-			CreatedAt:        refund.CreatedAt.UTC(),
-			CompletedAt:      refund.CompletedAt,
-			LineItems:        []DisputeRefundLineItemEvidence{},
+			ID:                   refund.ID,
+			ProviderRefundID:     strings.TrimSpace(disputeStringValue(refund.RefundID)),
+			Status:               strings.TrimSpace(refund.Status),
+			AmountMinor:          amountMinor,
+			RequestedAmountMinor: requestedMinor,
+			Currency:             strings.TrimSpace(currency),
+			Reason:               strings.TrimSpace(refund.Reason),
+			CreatedAt:            refund.CreatedAt.UTC(),
+			CompletedAt:          refund.CompletedAt,
+			LineItems:            []DisputeRefundLineItemEvidence{},
 		}
 		if snapshot := strings.TrimSpace(refund.CalculationSnapshot); snapshot != "" {
 			hash := sha256.Sum256([]byte(snapshot))
 			item.CalculationSnapshotHash = hex.EncodeToString(hash[:])
 		}
 		for _, line := range refund.LineItems {
+			lineTotalMinor := line.LineTotalMinor
+			if lineTotalMinor == 0 && line.LineTotalAmount != 0 {
+				if value, err := line.LineTotalMoney(); err == nil {
+					lineTotalMinor = value.AmountMinor()
+				}
+			}
 			item.LineItems = append(item.LineItems, DisputeRefundLineItemEvidence{
-				OrderItemID: line.OrderItemID,
-				ProductName: strings.TrimSpace(line.ProductName),
-				SKU:         strings.TrimSpace(line.SKU),
-				Quantity:    line.Quantity,
-				LineTotal:   line.LineTotalAmount,
-				Restock:     line.Restock,
+				OrderItemID:    line.OrderItemID,
+				ProductName:    strings.TrimSpace(line.ProductName),
+				SKU:            strings.TrimSpace(line.SKU),
+				Quantity:       line.Quantity,
+				Currency:       line.Currency,
+				LineTotalMinor: lineTotalMinor,
+				Restock:        line.Restock,
 			})
 		}
 		result = append(result, item)
@@ -117,12 +137,12 @@ func refundEvidenceSummary(refunds []DisputeRefundEvidence) string {
 			providerID = "not assigned"
 		}
 		line := fmt.Sprintf(
-			"- refund #%d: status=%s; amount=%.2f %s; requested=%.2f; provider_refund_id=%s; created_at=%s",
+			"- refund #%d: status=%s; amount_minor=%d %s; requested_minor=%d; provider_refund_id=%s; created_at=%s",
 			refund.ID,
 			refund.Status,
-			refund.Amount,
+			refund.AmountMinor,
 			refund.Currency,
-			refund.RequestedAmount,
+			refund.RequestedAmountMinor,
 			providerID,
 			refund.CreatedAt.UTC().Format(time.RFC3339),
 		)
@@ -135,12 +155,12 @@ func refundEvidenceSummary(refunds []DisputeRefundEvidence) string {
 		lines = append(lines, line)
 		for _, item := range refund.LineItems {
 			lines = append(lines, fmt.Sprintf(
-				"  - item %d: %s SKU %s x%d line_total=%.2f restock=%t",
+				"  - item %d: %s SKU %s x%d line_total_minor=%d restock=%t",
 				item.OrderItemID,
 				item.ProductName,
 				item.SKU,
 				item.Quantity,
-				item.LineTotal,
+				item.LineTotalMinor,
 				item.Restock,
 			))
 		}

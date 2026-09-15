@@ -116,12 +116,12 @@ func orderEvidenceExportSnapshotAuditValue(
 		return nil
 	}
 	return map[string]interface{}{
-		"snapshot_id":             snapshot.ID,
-		"order_id":                snapshot.OrderID,
-		"evidence_package_id":     snapshot.EvidencePackageID,
+		"snapshot_id":              snapshot.ID,
+		"order_id":                 snapshot.OrderID,
+		"evidence_package_id":      snapshot.EvidencePackageID,
 		"evidence_package_version": snapshot.EvidencePackageVersion,
-		"snapshot_version":        snapshot.Version,
-		"snapshot_sha256":         strings.TrimSpace(snapshot.SnapshotSHA256),
-		"locked_at":               snapshot.LockedAt.UTC(),
+		"snapshot_version":         snapshot.Version,
+		"snapshot_sha256":          strings.TrimSpace(snapshot.SnapshotSHA256),
+		"locked_at":                snapshot.LockedAt.UTC(),
 	}
 }

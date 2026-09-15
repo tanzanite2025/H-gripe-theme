@@ -356,8 +356,20 @@ export const membershipAndPointsTabs = [
 export type MembershipTabId = (typeof membershipAndPointsTabs)[number]['id']
 
 export const pictureWarehouseTabs = [
-  { id: 'riders', label: 'Riders photos', description: 'Customer and rider photo references.' },
-  { id: 'brand', label: 'Brand photos', description: 'Product and brand image library.' },
+  {
+    id: 'riders',
+    labelKey: 'resourcesPictureWarehouseRiders.navLabel',
+    fallback: 'Rider photos',
+    descriptionKey: 'resourcesPictureWarehouseRiders.navDescription',
+    description: 'Customer and rider photo references.',
+  },
+  {
+    id: 'brand',
+    labelKey: 'resourcesPictureWarehouseBrand.navLabel',
+    fallback: 'Brand photos',
+    descriptionKey: 'resourcesPictureWarehouseBrand.navDescription',
+    description: 'Product and brand image library.',
+  },
 ] as const satisfies readonly PageSubNavigationTab[]
 
 export type PictureWarehouseTabId = (typeof pictureWarehouseTabs)[number]['id']

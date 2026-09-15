@@ -20,18 +20,27 @@
 </template>
 
 <script setup lang="ts">
-import { useHead } from '#imports'
+import { useHead, useRoute } from '#imports'
+import { computed } from 'vue'
 import BehaviorAttributionBootstrapDeferred from '~/components/BehaviorAttributionBootstrapDeferred.vue'
 import GradientDockMenuDeferred from '~/components/GradientDockMenuDeferred.vue'
 import { useStorefrontSeoLinks } from '~/composables/seo/useStorefrontSeoLinks'
 import { STOREFRONT_FOOTER_HYDRATION_OPTIONS } from '~/utils/storefrontLoadingPolicy'
 
 const { canonicalUrl, alternateLinks, xDefaultLink } = useStorefrontSeoLinks()
+const route = useRoute()
+const resolvedCanonicalUrl = computed(() => {
+  const variant = typeof route.query.variant === 'string' ? route.query.variant.trim() : ''
+  if (!variant || !/^\d+$/.test(variant) || !route.path.includes('/products/')) {
+    return canonicalUrl.value
+  }
+  return `${canonicalUrl.value}?variant=${encodeURIComponent(variant)}`
+})
 const footerHydrationOptions = STOREFRONT_FOOTER_HYDRATION_OPTIONS
 
 useHead(() => ({
   link: [
-    { rel: 'canonical', href: canonicalUrl.value },
+    { rel: 'canonical', href: resolvedCanonicalUrl.value },
     ...alternateLinks.value.map((link) => ({
       rel: 'alternate',
       hreflang: link.hreflang,

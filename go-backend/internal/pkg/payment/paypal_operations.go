@@ -129,7 +129,7 @@ func (g *paypalGatewayImpl) refundPayPalCapture(ctx context.Context, paymentRefe
 		if currency == "" {
 			return nil, fmt.Errorf("paypal refund currency is required for partial refunds")
 		}
-		refundAmount, err := FormatMajorAmount(amount, currency)
+		refundAmount, err := paymentMajorString(amount, currency)
 		if err != nil {
 			return nil, err
 		}

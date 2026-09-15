@@ -53,6 +53,40 @@ func TestOutboxServiceProcessesRegisteredHandler(t *testing.T) {
 	assert.NotNil(t, saved.ProcessedAt)
 }
 
+func TestOutboxServiceProcessesOrderPaidWhenERPWebhookIsNotConfigured(t *testing.T) {
+	t.Setenv("ORDER_PAID_OUTBOX_WEBHOOK_URL", "")
+	t.Setenv("OUTBOX_ORDER_PAID_WEBHOOK_URL", "")
+	t.Setenv("ERP_ORDER_PAID_WEBHOOK_URL", "")
+
+	db, service := newTestOutboxService(t)
+	now := time.Now().UTC()
+	require.NoError(t, db.Create(&outboxdomain.Event{
+		EventKey:      "order.paid:without-erp:txn_1",
+		EventType:     outboxdomain.EventTypeOrderPaid,
+		AggregateType: outboxdomain.AggregateTypeOrder,
+		AggregateID:   "1",
+		Payload:       datatypes.JSON([]byte(`{"order_id":1}`)),
+		AvailableAt:   now.Add(-time.Minute),
+	}).Error)
+
+	handler := NewOrderPaidOutboxWebhookHandlerFromEnv()
+	assert.False(t, handler.Configured())
+	service.RegisterHandler(outboxdomain.EventTypeOrderPaid, handler.Handle)
+
+	result, err := service.ProcessPending(context.Background(), now, 10)
+
+	require.NoError(t, err)
+	assert.Equal(t, 1, result.Claimed)
+	assert.Equal(t, 1, result.Processed)
+	assert.Zero(t, result.Failed)
+	assert.Zero(t, result.DeadLetter)
+
+	var saved outboxdomain.Event
+	require.NoError(t, db.Where("event_key = ?", "order.paid:without-erp:txn_1").First(&saved).Error)
+	assert.Equal(t, outboxdomain.EventStatusProcessed, saved.Status)
+	assert.Empty(t, saved.LastError)
+}
+
 func TestOutboxServiceRetriesFailedHandler(t *testing.T) {
 	db, service := newTestOutboxService(t)
 	now := time.Now().UTC()

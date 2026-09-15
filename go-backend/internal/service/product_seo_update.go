@@ -19,15 +19,19 @@ func (s *ProductService) UpdateProductSEO(id uint, input ProductSEOUpdateInput) 
 	if err != nil {
 		return nil, err
 	}
+	metaTitle := existingProduct.MetaTitle
+	metaDescription := existingProduct.MetaDesc
 	if input.MetaTitle != nil {
-		existingProduct.MetaTitle = *input.MetaTitle
+		metaTitle = *input.MetaTitle
 	}
 	if input.MetaDescription != nil {
-		existingProduct.MetaDesc = *input.MetaDescription
+		metaDescription = *input.MetaDescription
 	}
-	if err := s.productRepo.Update(existingProduct); err != nil {
+	if err := s.productRepo.UpdateSEO(id, metaTitle, metaDescription); err != nil {
 		return nil, err
 	}
+	existingProduct.MetaTitle = metaTitle
+	existingProduct.MetaDesc = metaDescription
 
 	s.clearProductCache(existingProduct)
 	if err := s.enqueueProductCacheInvalidationByIDs([]uint{existingProduct.ID}, "product SEO update"); err != nil {

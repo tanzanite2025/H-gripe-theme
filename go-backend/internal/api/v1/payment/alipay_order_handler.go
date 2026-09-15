@@ -62,11 +62,17 @@ func (h *Handler) CreateAlipayOrder(c *gin.Context) {
 		return
 	}
 
-	orderCurrency, err := strictOrderCurrency(orderRecord)
+	settlement, err := strictProviderSettlement(orderRecord)
 	if err != nil {
 		apierror.RespondInternalError(c, err)
 		return
 	}
+	orderAmount, err := settlement.MajorFloat()
+	if err != nil {
+		apierror.RespondInternalError(c, err)
+		return
+	}
+	orderCurrency := settlement.Currency().String()
 	if !ensureGatewayCurrency(c, pgateway.GatewayAlipay, orderCurrency) {
 		return
 	}
@@ -91,14 +97,13 @@ func (h *Handler) CreateAlipayOrder(c *gin.Context) {
 		pgateway.GatewayAlipay,
 		"alipay",
 		orderRecord,
-		orderRecord.TotalAmount,
-		orderCurrency,
+		settlement,
 	)
 	if !ok {
 		return
 	}
 	paymentResponse, err := gateway.CreatePayment(c.Request.Context(), &pgateway.PaymentRequest{
-		Amount:         orderRecord.TotalAmount,
+		Amount:         orderAmount,
 		Currency:       orderCurrency,
 		OrderID:        orderRecord.OrderNumber,
 		Description:    fmt.Sprintf("Order %s", orderRecord.OrderNumber),
@@ -122,8 +127,7 @@ func (h *Handler) CreateAlipayOrder(c *gin.Context) {
 			ProviderRequestKey: attempt.ProviderRequestKey,
 			PaymentMethod:      "alipay",
 			Status:             "failed",
-			Amount:             orderRecord.TotalAmount,
-			Currency:           orderCurrency,
+			Amount:             settlement,
 			ErrorMessage:       err.Error(),
 		})
 		h.respondToPaymentGatewayOperationFailure(
@@ -138,6 +142,11 @@ func (h *Handler) CreateAlipayOrder(c *gin.Context) {
 	h.recordSuccessfulPaymentGatewayAPIResponse(c, pgateway.GatewayAlipay)
 
 	gatewayResponse, _ := json.Marshal(paymentResponse)
+	providerAmount, amountErr := providerPaymentResponseMoney(paymentResponse, settlement)
+	if amountErr != nil {
+		apierror.RespondInternalError(c, amountErr)
+		return
+	}
 	if err := h.paymentService.RecordGatewayPaymentAttempt(service.GatewayPaymentAttemptInput{
 		Provider:           string(pgateway.GatewayAlipay),
 		OrderNumber:        orderRecord.OrderNumber,
@@ -146,8 +155,7 @@ func (h *Handler) CreateAlipayOrder(c *gin.Context) {
 		ProviderRequestKey: attempt.ProviderRequestKey,
 		PaymentMethod:      "alipay",
 		Status:             alipayAttemptStatus(paymentResponse.Status),
-		Amount:             paymentResponse.Amount,
-		Currency:           paymentResponse.Currency,
+		Amount:             providerAmount,
 		GatewayResponse:    string(gatewayResponse),
 	}); err != nil {
 		respondVerifiedProviderPaymentError(c, err)
@@ -180,12 +188,22 @@ func (h *Handler) ConfirmAlipayOrder(c *gin.Context) {
 	if !ok {
 		return
 	}
+	settlement, err := strictProviderSettlement(orderRecord)
+	if err != nil {
+		apierror.RespondInternalError(c, err)
+		return
+	}
 	if orderRecord.PaymentStatus == "paid" {
+		orderAmount, err := settlement.MajorFloat()
+		if err != nil {
+			apierror.RespondInternalError(c, err)
+			return
+		}
 		response.Success(c, &pgateway.PaymentResponse{
 			ID:            orderRecord.OrderNumber,
 			Status:        alipayTradeStatusSuccess,
-			Amount:        orderRecord.TotalAmount,
-			Currency:      orderRecord.Currency,
+			Amount:        orderAmount,
+			Currency:      settlement.Currency().String(),
 			TransactionID: orderRecord.OrderNumber,
 		})
 		return
@@ -235,14 +253,18 @@ func (h *Handler) ConfirmAlipayOrder(c *gin.Context) {
 
 	gatewayResponse, _ := json.Marshal(paymentResponse)
 	if !isAlipayPaidStatus(paymentResponse.Status) {
+		providerAmount, amountErr := providerPaymentResponseMoney(paymentResponse, settlement)
+		if amountErr != nil {
+			apierror.RespondInternalError(c, amountErr)
+			return
+		}
 		_ = h.paymentService.RecordGatewayPaymentAttempt(service.GatewayPaymentAttemptInput{
 			Provider:        string(pgateway.GatewayAlipay),
 			OrderNumber:     orderRecord.OrderNumber,
 			TransactionID:   gatewayTransactionID(paymentResponse, orderRecord.OrderNumber),
 			PaymentMethod:   "alipay",
 			Status:          alipayAttemptStatus(paymentResponse.Status),
-			Amount:          paymentResponse.Amount,
-			Currency:        paymentResponse.Currency,
+			Amount:          providerAmount,
 			GatewayResponse: string(gatewayResponse),
 		})
 		apierror.RespondErrorWithDetails(c, http.StatusConflict, "alipay_payment_incomplete", "Alipay payment is not completed", gin.H{
@@ -255,14 +277,18 @@ func (h *Handler) ConfirmAlipayOrder(c *gin.Context) {
 		apierror.RespondError(c, http.StatusBadGateway, "alipay_transaction_id_missing", "Alipay trade query did not return a trade number")
 		return
 	}
+	providerAmount, amountErr := providerPaymentResponseMoney(paymentResponse, settlement)
+	if amountErr != nil {
+		apierror.RespondInternalError(c, amountErr)
+		return
+	}
 
 	if err := h.paymentService.RecordVerifiedGatewayPayment(service.VerifiedGatewayPaymentInput{
 		Provider:        string(pgateway.GatewayAlipay),
 		OrderNumber:     orderRecord.OrderNumber,
 		TransactionID:   transactionID,
 		PaymentMethod:   "alipay",
-		Amount:          paymentResponse.Amount,
-		Currency:        paymentResponse.Currency,
+		Amount:          providerAmount,
 		GatewayResponse: string(gatewayResponse),
 	}); err != nil {
 		if errors.Is(err, service.ErrOrderNotFound) {

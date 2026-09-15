@@ -6,6 +6,7 @@ import (
 	"sort"
 	"strings"
 
+	domainmoney "commerce-platform/internal/domain/money"
 	productdomain "commerce-platform/internal/domain/product"
 	"commerce-platform/internal/domain/quickbuy"
 	"commerce-platform/internal/pkg/locales"
@@ -13,18 +14,42 @@ import (
 	"gorm.io/datatypes"
 )
 
-func quickBuySessionTotals(items []quickbuy.SessionItem) (float64, int) {
-	var subtotal float64
+func quickBuySessionTotals(items []quickbuy.SessionItem) (float64, int, error) {
+	var subtotalMoney domainmoney.Money
+	initialized := false
 	var weightG int
 	for _, item := range items {
 		quantity := item.Quantity
 		if quantity <= 0 {
-			quantity = 1
+			return 0, weightG, fmt.Errorf("quick buy session item %d quantity must be greater than zero", item.ID)
 		}
-		subtotal += item.UnitPriceSnapshot * float64(quantity)
+		unitMoney, err := domainmoney.FromMajorFloat(item.UnitPriceSnapshot, item.CurrencySnapshot)
+		if err != nil {
+			return 0, weightG, fmt.Errorf("quick buy session item %d price: %w", item.ID, err)
+		}
+		lineMoney, err := unitMoney.MultiplyInt(int64(quantity))
+		if err != nil {
+			return 0, weightG, fmt.Errorf("calculate quick buy session item %d subtotal: %w", item.ID, err)
+		}
+		if !initialized {
+			subtotalMoney = lineMoney
+			initialized = true
+		} else {
+			subtotalMoney, err = subtotalMoney.Add(lineMoney)
+			if err != nil {
+				return 0, weightG, fmt.Errorf("calculate quick buy session subtotal: %w", err)
+			}
+		}
 		weightG += item.WeightSnapshotG * quantity
 	}
-	return subtotal, weightG
+	if !initialized {
+		return 0, weightG, nil
+	}
+	subtotal, err := subtotalMoney.MajorFloat()
+	if err != nil {
+		return 0, weightG, fmt.Errorf("format quick buy session subtotal: %w", err)
+	}
+	return subtotal, weightG, nil
 }
 
 func quickBuySessionView(session quickbuy.Session, validation *QuickBuySessionValidationResult, resolvers ...PublicMediaURLResolver) *QuickBuySessionView {
@@ -413,15 +438,15 @@ func quickBuyStepFilters(step quickbuy.Step, valuesBySlug map[string][]string) [
 			values = append(values, valuesBySlug[definition.Slug]...)
 		}
 		result = append(result, QuickBuySpecFilterView{
-			ID:              definition.ID,
-			Name:            definition.Name,
-			Slug:            definition.Slug,
-			Unit:            definition.Unit,
-			FieldType:       definition.FieldType,
-			Presentation:    definition.Presentation,
-			IsVariantOption: definition.IsVariantOption,
-			Multiple:        true,
-			Values:          values,
+			ID:           definition.ID,
+			Name:         definition.Name,
+			Slug:         definition.Slug,
+			Unit:         definition.Unit,
+			FieldType:    definition.FieldType,
+			Presentation: definition.Presentation,
+			Role:         definition.RuntimeRole(),
+			Multiple:     true,
+			Values:       values,
 		})
 	}
 	return result

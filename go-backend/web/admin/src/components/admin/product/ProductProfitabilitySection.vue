@@ -12,7 +12,7 @@
           </span>
         </div>
         <p class="mt-1 text-xs leading-5 text-muted-foreground">
-          资料按 SKU 保存，不会写入商品目录；预计毛利 = 实际售价 - 采购价 - 运费、包装和其他附加成本。
+          资料按 SKU 保存，不会写入商品目录；预计毛利 = 实际售价 - 单位成本价 - 运费、包装和其他附加成本。
         </p>
       </div>
       <div class="text-right text-xs text-muted-foreground">
@@ -63,18 +63,18 @@
       <div class="grid gap-3 xl:grid-cols-[minmax(0,1.05fr)_minmax(0,1.35fr)]">
         <div class="space-y-3">
           <div class="grid gap-3 sm:grid-cols-2">
-            <AdminFormField label="采购价" description="空值不会按零成本计算">
+            <AdminFormField label="单位成本价" description="空值不会按零成本计算">
               <Input
-                :model-value="drafts[index].purchasePrice ?? undefined"
+                :model-value="drafts[index].unitCost ?? undefined"
                 type="number"
                 min="0"
                 step="0.01"
                 placeholder="未填写"
                 :disabled="!canEdit"
-                @update:model-value="setPurchasePrice(drafts[index], $event)"
+                @update:model-value="setUnitCost(drafts[index], $event)"
               />
             </AdminFormField>
-            <AdminFormField label="采购币种" description="必须与商品主币种一致">
+            <AdminFormField label="成本币种" description="必须与商品主币种一致">
               <Input
                 :model-value="drafts[index].currency"
                 class="font-mono uppercase"
@@ -146,7 +146,7 @@
                 </p>
               </div>
               <div v-if="calculationFor(index).currencyMismatch" class="max-w-xs text-right text-xs leading-5 text-amber-700 dark:text-amber-300">
-                采购币种 {{ drafts[index].currency || '未设置' }} 与商品币种 {{ currency }} 不一致
+                成本币种 {{ drafts[index].currency || '未设置' }} 与商品币种 {{ currency }} 不一致
               </div>
             </div>
           </div>
@@ -169,12 +169,12 @@ import { RefreshCw, TriangleAlert } from '@lucide/vue'
 import AdminFormField from '@/components/admin/AdminFormField.vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import type { ProcurementProfitDraft } from '@/composables/product/useProcurementProfitDraft'
+import type { ProductSupplierCostProfitDraft } from '@/composables/product/useProductSupplierCostProfitDraft'
 import type { ProductVariantForm } from '@/modules/product/productEditorTypes'
 
 const props = withDefaults(defineProps<{
   variants: ProductVariantForm[]
-  drafts: ProcurementProfitDraft[]
+  drafts: ProductSupplierCostProfitDraft[]
   currency?: string
   canEdit?: boolean
   loading?: boolean
@@ -207,7 +207,7 @@ const currencyMinorUnits: Record<string, number> = {
   VND: 0,
 }
 
-type CalculationStatus = 'ready' | 'warning' | 'missing_purchase_price' | 'currency_mismatch' | 'invalid'
+type CalculationStatus = 'ready' | 'warning' | 'missing_unit_cost' | 'currency_mismatch' | 'invalid'
 
 interface LocalCalculation {
   status: CalculationStatus
@@ -236,11 +236,11 @@ const finiteNumber = (value: unknown): number | null => {
   return Number.isFinite(number) ? number : null
 }
 
-const draftAt = (index: number): ProcurementProfitDraft => props.drafts[index] || {
+const draftAt = (index: number): ProductSupplierCostProfitDraft => props.drafts[index] || {
   productCode: '',
   productName: '',
-  purchasePrice: null,
-  purchasePriceKnown: false,
+  unitCost: null,
+  unitCostKnown: false,
   currency: props.currency,
   supplierName: '',
   supplierContactName: '',
@@ -280,12 +280,12 @@ const calculationFor = (index: number): LocalCalculation => {
     return { status: 'currency_mismatch', landedCost: null, grossProfit: null, grossMargin: null, currencyMismatch: true, warnings }
   }
   if (sellingPrice <= 0) return { status: 'invalid', landedCost: null, grossProfit: null, grossMargin: null, currencyMismatch: false, warnings: ['invalid_selling_price'] }
-  if (!draft.purchasePriceKnown || draft.purchasePrice == null) {
-    return { status: 'missing_purchase_price', landedCost: null, grossProfit: null, grossMargin: null, currencyMismatch: false, warnings: [...warnings, 'missing_purchase_price'] }
+  if (!draft.unitCostKnown || draft.unitCost == null) {
+    return { status: 'missing_unit_cost', landedCost: null, grossProfit: null, grossMargin: null, currencyMismatch: false, warnings: [...warnings, 'missing_unit_cost'] }
   }
 
   const costValues = [
-    finiteNumber(draft.purchasePrice),
+    finiteNumber(draft.unitCost),
     finiteNumber(draft.inboundShippingUnitCost),
     finiteNumber(draft.packagingUnitCost),
     finiteNumber(draft.otherUnitCost),
@@ -312,7 +312,7 @@ const calculations = computed(() => props.variants.map((_, index) => calculation
 const statusLabel = (status: CalculationStatus): string => ({
   ready: '可计算',
   warning: '需要关注',
-  missing_purchase_price: '待填写采购价',
+  missing_unit_cost: '待填写单位成本价',
   currency_mismatch: '币种不一致',
   invalid: '输入有误',
 }[status])
@@ -320,7 +320,7 @@ const statusLabel = (status: CalculationStatus): string => ({
 const statusClass = (status: CalculationStatus): string => ({
   ready: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300',
   warning: 'bg-amber-500/10 text-amber-700 dark:text-amber-300',
-  missing_purchase_price: 'bg-muted text-muted-foreground',
+  missing_unit_cost: 'bg-muted text-muted-foreground',
   currency_mismatch: 'bg-amber-500/10 text-amber-700 dark:text-amber-300',
   invalid: 'bg-red-500/10 text-red-700 dark:text-red-300',
 }[status])
@@ -328,12 +328,12 @@ const statusClass = (status: CalculationStatus): string => ({
 const warningLabel = (warning: string): string => ({
   sale_price_missing: '未填写促销价，当前按常规售价计算。',
   sale_price_above_list_price: '促销价高于常规售价，请确认价格关系。',
-  negative_gross_profit: '预计单位毛利为负，请确认售价或采购成本。',
-  missing_purchase_price: '采购价未确认，暂不生成利润数值。',
-  currency_mismatch: '采购币种与商品币种不一致，后端不会自动换算。',
+  negative_gross_profit: '预计单位毛利为负，请确认售价或单位成本。',
+  missing_unit_cost: '单位成本价未确认，暂不生成利润数值。',
+  currency_mismatch: '成本币种与商品币种不一致，后端不会自动换算。',
   invalid_selling_price: '实际售价必须大于 0。',
-  invalid_cost: '采购价和附加成本必须是有效的非负金额。',
-  invalid_currency: '采购币种必须填写有效的三位字母币种代码。',
+  invalid_cost: '单位成本价和附加成本必须是有效的非负金额。',
+  invalid_currency: '成本币种必须填写有效的三位字母币种代码。',
 }[warning] || warning)
 
 const formatMoney = (value: number, currency: string): string => {
@@ -351,14 +351,14 @@ const formatSavedAt = (value: string): string => {
   return timestamp.toLocaleString('zh-CN', { hour12: false })
 }
 
-const setPurchasePrice = (draft: ProcurementProfitDraft, value: string | number): void => {
+const setUnitCost = (draft: ProductSupplierCostProfitDraft, value: string | number): void => {
   const rawValue = String(value ?? '').trim()
   const parsedValue = rawValue === '' ? null : Number(rawValue)
-  draft.purchasePrice = parsedValue != null && Number.isFinite(parsedValue) ? parsedValue : null
-  draft.purchasePriceKnown = draft.purchasePrice != null
+  draft.unitCost = parsedValue != null && Number.isFinite(parsedValue) ? parsedValue : null
+  draft.unitCostKnown = draft.unitCost != null
 }
 
-const setDraftCurrency = (draft: ProcurementProfitDraft, value: string | number): void => {
+const setDraftCurrency = (draft: ProductSupplierCostProfitDraft, value: string | number): void => {
   draft.currency = String(value || '').toUpperCase()
 }
 

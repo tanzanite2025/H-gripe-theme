@@ -1,10 +1,14 @@
 package payment
 
 import (
+	"errors"
+	"fmt"
 	"net/http"
 	"net/url"
 	"strings"
 
+	"commerce-platform/internal/domain/currency"
+	domainmoney "commerce-platform/internal/domain/money"
 	orderdomain "commerce-platform/internal/domain/order"
 	"commerce-platform/internal/pkg/apierror"
 	pgateway "commerce-platform/internal/pkg/payment"
@@ -69,11 +73,36 @@ func (h *Handler) loadProviderOrderForConfirmation(
 }
 
 func ensureOrderHasPayableAmount(c *gin.Context, orderRecord *orderdomain.Order) bool {
-	if orderRecord == nil || orderRecord.TotalAmount > 0 {
+	if orderRecord == nil || orderRecord.TotalAmount > 0 || orderRecord.PaymentAmount > 0 {
 		return true
 	}
 	apierror.RespondError(c, http.StatusBadRequest, "order_has_no_payable_amount", "Order has no payable amount")
 	return false
+}
+
+// strictProviderSettlement returns the immutable channel amount captured at
+// checkout. Settlement amounts are represented as Money throughout the
+// application and converted to a gateway/API number only at the transport
+// boundary.
+func strictProviderSettlement(orderRecord *orderdomain.Order) (domainmoney.Money, error) {
+	if orderRecord == nil {
+		return domainmoney.Money{}, errors.New("order is required")
+	}
+	code := currency.NormalizeCode(orderRecord.PaymentCurrency)
+	if code == "" {
+		return domainmoney.Money{}, errors.New("order payment currency snapshot is required")
+	}
+	if !currency.IsValidCode(code) || !currency.IsCatalogCode(code) {
+		return domainmoney.Money{}, errors.New("order payable currency is not configured")
+	}
+	money, err := domainmoney.FromMajorFloat(orderRecord.PaymentAmount, code)
+	if err != nil {
+		return domainmoney.Money{}, fmt.Errorf("invalid order payment amount: %w", err)
+	}
+	if money.AmountMinor() <= 0 {
+		return domainmoney.Money{}, errors.New("order payable amount must be greater than zero")
+	}
+	return money, nil
 }
 
 func paymentCustomerFromOrder(orderRecord *orderdomain.Order) *pgateway.Customer {
@@ -182,6 +211,17 @@ func gatewayTransactionID(paymentResponse *pgateway.PaymentResponse, fallback st
 		}
 	}
 	return strings.TrimSpace(fallback)
+}
+
+func providerPaymentResponseMoney(paymentResponse *pgateway.PaymentResponse, fallback domainmoney.Money) (domainmoney.Money, error) {
+	if paymentResponse == nil || paymentResponse.Amount <= 0 || strings.TrimSpace(paymentResponse.Currency) == "" {
+		return fallback, nil
+	}
+	money, err := domainmoney.FromMajorFloat(paymentResponse.Amount, paymentResponse.Currency)
+	if err != nil {
+		return domainmoney.Money{}, fmt.Errorf("invalid provider payment amount: %w", err)
+	}
+	return money, nil
 }
 
 func providerTransactionID(paymentResponse *pgateway.PaymentResponse) string {

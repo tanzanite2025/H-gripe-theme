@@ -102,14 +102,14 @@
       :customs-classification-select-value="customsClassificationSelectValue"
       :template-scoped-values-touched="templateScopedValuesTouched"
       :uploading-media="uploadingMedia"
-      :procurement-visible="canViewProcurement"
-      :procurement-can-edit="canEditProcurement"
-      :procurement-loading="procurementLoading"
-      :procurement-saving="procurementSaving"
-      :procurement-pending="procurementPending"
-      :procurement-error="procurementError"
-      :procurement-last-saved-at="procurementLastSavedAt"
-      :procurement-drafts="procurementDraftRows"
+      :supplier-cost-visible="canViewSupplierCost"
+      :supplier-cost-can-edit="canEditSupplierCost"
+      :supplier-cost-loading="supplierCostLoading"
+      :supplier-cost-saving="supplierCostSaving"
+      :supplier-cost-pending="supplierCostPending"
+      :supplier-cost-error="supplierCostError"
+      :supplier-cost-last-saved-at="supplierCostLastSavedAt"
+      :supplier-cost-drafts="supplierCostDraftRows"
       :parse-spec-options="parseSpecOptions"
       :format-spec-option="formatSpecOption"
       :get-spec-label="getSpecLabel"
@@ -134,7 +134,7 @@
       @set-primary-media="setPrimaryMedia"
       @move-media="moveMedia"
       @remove-media="removeMedia"
-      @retry-procurement="retryProcurement"
+      @retry-supplier-cost="retrySupplierCost"
     />
 
     <AdminConfirmDialog
@@ -174,29 +174,33 @@ import productCategoryApi, { type ProductCategoryRecord } from '@/api/productCat
 import shippingApi from '@/api/shipping'
 import { useProductCatalog } from '@/composables/product/useProductCatalog'
 import { useProductEditor } from '@/composables/product/useProductEditor'
-import { useProcurementProfitDraft } from '@/composables/product/useProcurementProfitDraft'
+import { useProductSupplierCostProfitDraft } from '@/composables/product/useProductSupplierCostProfitDraft'
 import { useSupportedLanguages } from '@/composables/useSupportedLanguages'
 import { Button } from '@/components/ui/button'
+import {
+  LEGACY_PRODUCT_SUPPLIER_COST_EDIT_PERMISSION_CODE,
+  LEGACY_PRODUCT_SUPPLIER_COST_VIEW_PERMISSION_CODE,
+} from '@/lib/productSupplierCostLegacyPermissionCodes'
 import { useAuthStore } from '@/stores/auth'
 import type { ProductTranslation, ProductTranslationGroup } from '@/modules/product/productEditorTypes'
 
 const authStore = useAuthStore()
 const router = useRouter()
-const canViewProcurement = computed(() => authStore.hasPermission('procurement:view'))
-const canEditProcurement = computed(() => authStore.hasPermission('procurement:edit'))
+const canViewSupplierCost = computed(() => authStore.hasPermission(LEGACY_PRODUCT_SUPPLIER_COST_VIEW_PERMISSION_CODE))
+const canEditSupplierCost = computed(() => authStore.hasPermission(LEGACY_PRODUCT_SUPPLIER_COST_EDIT_PERMISSION_CODE))
 const {
-  loading: procurementLoading,
-  saving: procurementSaving,
-  pending: procurementPending,
-  loadError: procurementLoadError,
-  saveError: procurementSaveError,
-  lastSavedAt: procurementLastSavedAt,
-  rowsForVariants: procurementRowsForVariants,
-  loadForProduct: loadProcurementForProduct,
-  saveForProduct: saveProcurementForProduct,
-  retryPending: retryProcurementPending,
-} = useProcurementProfitDraft()
-const procurementError = computed(() => procurementLoadError.value || procurementSaveError.value)
+  loading: supplierCostLoading,
+  saving: supplierCostSaving,
+  pending: supplierCostPending,
+  loadError: supplierCostLoadError,
+  saveError: supplierCostSaveError,
+  lastSavedAt: supplierCostLastSavedAt,
+  rowsForVariants: supplierCostRowsForVariants,
+  loadForProduct: loadSupplierCostForProduct,
+  saveForProduct: saveSupplierCostForProduct,
+  retryPending: retrySupplierCostPending,
+} = useProductSupplierCostProfitDraft()
+const supplierCostError = computed(() => supplierCostLoadError.value || supplierCostSaveError.value)
 interface ProductInformationTemplateRecord {
   id: number
   kind: 'after_sales' | 'packaging'
@@ -310,16 +314,16 @@ const {
   refreshProducts,
   defaultLocale: supportedLanguages.defaultLocale,
   afterProductLoaded: async (product) => {
-    if (!canViewProcurement.value) return
-    await loadProcurementForProduct(product)
+    if (!canViewSupplierCost.value) return
+    await loadSupplierCostForProduct(product)
   },
   afterProductSaved: async (savedProduct: AdminProductRecord) => {
-    if (!canEditProcurement.value) return {}
-    if (procurementLoadError.value) {
+    if (!canEditSupplierCost.value) return {}
+    if (supplierCostLoadError.value) {
       toast.warning('商品已保存，但成本资料尚未加载完成')
       return { keepDialogOpen: true }
     }
-    const result = await saveProcurementForProduct(savedProduct)
+    const result = await saveSupplierCostForProduct(savedProduct)
     if (!result.success) {
       toast.warning('商品已保存，成本与利润资料待重试')
       return { keepDialogOpen: true }
@@ -333,15 +337,15 @@ const {
   },
 })
 
-const procurementDraftRows = computed(() => procurementRowsForVariants(
+const supplierCostDraftRows = computed(() => supplierCostRowsForVariants(
   productForm.variants,
   productForm.name,
   productForm.currency,
 ))
 
-const retryProcurement = async () => {
-  if (!canEditProcurement.value) return
-  const result = await retryProcurementPending()
+const retrySupplierCost = async () => {
+  if (!canEditSupplierCost.value) return
+  const result = await retrySupplierCostPending()
   if (result.success) toast.success('成本与利润资料已重试保存')
   else toast.error('成本与利润资料重试失败')
 }

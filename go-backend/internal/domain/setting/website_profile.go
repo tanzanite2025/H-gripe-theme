@@ -15,6 +15,7 @@ const (
 	WebsiteProfileKeyProfileContext      = "profile_context"
 	WebsiteProfileKeyStatementEyebrow    = "statement_eyebrow"
 	WebsiteProfileKeyStatementTitle      = "statement_title"
+	WebsiteProfileKeyStatementBody       = "statement_body"
 	WebsiteProfileKeyStatementParagraph1 = "statement_paragraph_1"
 	WebsiteProfileKeyStatementParagraph2 = "statement_paragraph_2"
 	WebsiteProfileKeyFactoryImageURL     = "factory_image_url"
@@ -41,8 +42,7 @@ type WebsiteProfileSettings struct {
 	ProfileContext      string `json:"profile_context"`
 	StatementEyebrow    string `json:"statement_eyebrow"`
 	StatementTitle      string `json:"statement_title"`
-	StatementParagraph1 string `json:"statement_paragraph_1"`
-	StatementParagraph2 string `json:"statement_paragraph_2"`
+	StatementBody       string `json:"statement_body"`
 	FactoryImageURL     string `json:"factory_image_url"`
 	FactoryImageAlt     string `json:"factory_image_alt"`
 	FactoryImageCaption string `json:"factory_image_caption"`
@@ -67,8 +67,7 @@ type WebsiteProfileUpdateRequest struct {
 	ProfileContext      string `json:"profile_context"`
 	StatementEyebrow    string `json:"statement_eyebrow"`
 	StatementTitle      string `json:"statement_title"`
-	StatementParagraph1 string `json:"statement_paragraph_1"`
-	StatementParagraph2 string `json:"statement_paragraph_2"`
+	StatementBody       string `json:"statement_body"`
 	FactoryImageURL     string `json:"factory_image_url"`
 	FactoryImageAlt     string `json:"factory_image_alt"`
 	FactoryImageCaption string `json:"factory_image_caption"`
@@ -94,8 +93,7 @@ func (request WebsiteProfileUpdateRequest) Settings() WebsiteProfileSettings {
 		ProfileContext:      request.ProfileContext,
 		StatementEyebrow:    request.StatementEyebrow,
 		StatementTitle:      request.StatementTitle,
-		StatementParagraph1: request.StatementParagraph1,
-		StatementParagraph2: request.StatementParagraph2,
+		StatementBody:       request.StatementBody,
 		FactoryImageURL:     request.FactoryImageURL,
 		FactoryImageAlt:     request.FactoryImageAlt,
 		FactoryImageCaption: request.FactoryImageCaption,
@@ -122,8 +120,7 @@ func DefaultWebsiteProfileSettings(locale string) WebsiteProfileSettings {
 			ProfileContext:      "我们工厂的一员",
 			StatementEyebrow:    "为什么有这一页",
 			StatementTitle:      "让网站背后的人被看见",
-			StatementParagraph1: "这个域名属于我，但它表达的并不是一个脱离工厂的个人身份。相反，我希望用更接近个人的方式，说明我如何理解我们的工厂、产品和长期方向。",
-			StatementParagraph2: "这里会记录网站背后的判断、正在推进的事情，以及我认为应该被准确表达的内容。它不是客服窗口，也不是单独成立的另一家公司，而是我们工厂工作中的一个管理和表达入口。",
+			StatementBody:       "这个域名属于我，但它表达的并不是一个脱离工厂的个人身份。相反，我希望用更接近个人的方式，说明我如何理解我们的工厂、产品和长期方向。\n\n这里会记录网站背后的判断、正在推进的事情，以及我认为应该被准确表达的内容。它不是客服窗口，也不是单独成立的另一家公司，而是我们工厂工作中的一个管理和表达入口。",
 			FactoryImageAlt:     "我们工厂的碳纤维手工铺层工序",
 			FactoryImageCaption: "我负责表达的网站，来自我们真实的制造工作。",
 			FactoryEyebrow:      "我们共同的工作",
@@ -147,8 +144,7 @@ func DefaultWebsiteProfileSettings(locale string) WebsiteProfileSettings {
 		ProfileContext:      "Part of our factory",
 		StatementEyebrow:    "WHY THIS PAGE EXISTS",
 		StatementTitle:      "Let the person behind the site be visible",
-		StatementParagraph1: "This domain belongs to me, but it does not describe a personal identity outside the factory. It gives me a more direct way to explain how I see our factory, our products, and the direction we are building toward.",
-		StatementParagraph2: "This is where I can record the decisions behind the website, the work in progress, and the things I believe should be represented accurately. It is not a support desk or a separate company. It is one management and expression point within our factory work.",
+		StatementBody:       "This domain belongs to me, but it does not describe a personal identity outside the factory. It gives me a more direct way to explain how I see our factory, our products, and the direction we are building toward.\n\nThis is where I can record the decisions behind the website, the work in progress, and the things I believe should be represented accurately. It is not a support desk or a separate company. It is one management and expression point within our factory work.",
 		FactoryImageAlt:     "Carbon fiber hand layup work inside our factory",
 		FactoryImageCaption: "The site I manage is grounded in our real manufacturing work.",
 		FactoryEyebrow:      "THE WORK WE SHARE",

@@ -1,4 +1,4 @@
-.PHONY: help build run test clean docker-build docker-run lint fmt migrate dev
+.PHONY: help build run test clean docker-build docker-run lint fmt migrate dev docker-compose-up docker-compose-down docker-compose-logs dev-reset dev-db-reset
 
 # 变量定义
 APP_NAME=commerce-platform-api
@@ -7,6 +7,8 @@ BUILD_TIME=$(shell date -u +"%Y-%m-%dT%H:%M:%SZ")
 LDFLAGS=-ldflags "-w -s -X main.Version=$(VERSION) -X main.BuildTime=$(BUILD_TIME)"
 DOCKER_IMAGE=$(APP_NAME):$(VERSION)
 DOCKER_REGISTRY?=ghcr.io/your-org
+COMPOSE_FILE=../docker-compose.yml
+COMPOSE=docker compose -f $(COMPOSE_FILE)
 
 # Go相关变量
 GO=go
@@ -132,14 +134,14 @@ docker-run: ## 运行Docker容器
 		--name $(APP_NAME) \
 		$(DOCKER_IMAGE)
 
-docker-compose-up: ## 使用docker-compose启动所有服务
-	docker-compose up -d
+docker-compose-up: ## 使用根目录 Compose 启动所有本地服务
+	$(COMPOSE) up -d
 
-docker-compose-down: ## 停止docker-compose服务
-	docker-compose down
+docker-compose-down: ## 停止根目录 Compose 服务
+	$(COMPOSE) down
 
-docker-compose-logs: ## 查看docker-compose日志
-	docker-compose logs -f
+docker-compose-logs: ## 查看根目录 Compose 日志
+	$(COMPOSE) logs -f
 
 ##@ Kubernetes命令
 
@@ -318,13 +320,13 @@ dev-setup: ## 快速设置开发环境
 
 dev-reset: ## 重置开发环境
 	@echo "Resetting development environment..."
-	docker-compose down -v
+	$(COMPOSE) down -v
 	rm -f .env
 	$(MAKE) dev-setup
 
 dev-db-reset: ## 重置开发数据库
 	@echo "Resetting development database..."
-	docker-compose restart postgres
+	$(COMPOSE) restart postgres
 	sleep 5
 	$(MAKE) migrate-up
 

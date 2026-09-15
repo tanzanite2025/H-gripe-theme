@@ -48,14 +48,15 @@ end
 return redis.call("DEL", KEYS[1])
 `)
 
-	ErrGoogleIndexingDisabled         = errors.New("Google Indexing is disabled")
-	ErrGoogleIndexingNotConfigured    = errors.New("Google Indexing is not configured")
-	ErrGoogleIndexingProductNotFound  = errors.New("product not found for Google Indexing")
-	ErrGoogleIndexingProductNotPublic = errors.New("product must be active before Google Indexing notification")
-	ErrGoogleIndexingInvalidURL       = errors.New("product URL is invalid for Google Indexing")
-	ErrGoogleIndexingUpstream         = errors.New("Google Indexing upstream request failed")
-	ErrGoogleIndexingRecentlyNotified = errors.New("Google Indexing notification was submitted recently")
-	ErrGoogleIndexingProtection       = errors.New("Google Indexing duplicate protection is unavailable")
+	ErrGoogleIndexingDisabled           = errors.New("Google Indexing is disabled")
+	ErrGoogleIndexingNotConfigured      = errors.New("Google Indexing is not configured")
+	ErrGoogleIndexingProductUnsupported = errors.New("Google Indexing API does not support product pages")
+	ErrGoogleIndexingProductNotFound    = errors.New("product not found for Google Indexing")
+	ErrGoogleIndexingProductNotPublic   = errors.New("product must be active before Google Indexing notification")
+	ErrGoogleIndexingInvalidURL         = errors.New("product URL is invalid for Google Indexing")
+	ErrGoogleIndexingUpstream           = errors.New("Google Indexing upstream request failed")
+	ErrGoogleIndexingRecentlyNotified   = errors.New("Google Indexing notification was submitted recently")
+	ErrGoogleIndexingProtection         = errors.New("Google Indexing duplicate protection is unavailable")
 )
 
 type GoogleIndexingCooldownError struct {
@@ -139,16 +140,11 @@ func NewGoogleIndexingService(
 		now:           time.Now,
 	}
 	service.configureDefaultHTTPClients()
-
-	if !googleConfig.Enabled {
-		return service, nil
-	}
-
-	credentials, err := loadGoogleIndexingCredentials(googleConfig)
-	if err != nil {
-		return nil, err
-	}
-	service.credentials = credentials
+	// Product URLs are not eligible for Google's Indexing API. Keep the
+	// constructor tolerant of legacy credentials/configuration so an old
+	// deployment cannot fail startup for a feature that is intentionally
+	// unavailable. PushProduct is guarded before any product, token, Redis, or
+	// HTTP work, so these values can never produce an external notification.
 	return service, nil
 }
 
@@ -193,30 +189,15 @@ func (s *GoogleIndexingService) Status() GoogleIndexingStatus {
 			Message:    "Google Indexing service is unavailable",
 		}
 	}
-
-	configured := strings.TrimSpace(s.config.ServiceAccountJSON) != "" ||
-		strings.TrimSpace(s.config.ServiceAccountFile) != ""
-	if !s.config.Enabled {
-		return GoogleIndexingStatus{
-			Enabled:    false,
-			Configured: configured,
-			Ready:      false,
-			Message:    "Google Indexing is disabled",
-		}
-	}
-	if strings.TrimSpace(s.credentials.ClientEmail) == "" || s.credentials.PrivateKey == nil {
-		return GoogleIndexingStatus{
-			Enabled:    true,
-			Configured: configured,
-			Ready:      false,
-			Message:    "Google service account credentials are not ready",
-		}
-	}
+	// Google's Indexing API is restricted to JobPosting and BroadcastEvent
+	// pages. This service only knows about commerce products, so product
+	// notifications are permanently disabled regardless of credentials or
+	// the legacy feature flag.
 	return GoogleIndexingStatus{
-		Enabled:    true,
-		Configured: true,
-		Ready:      true,
-		Message:    "Google Indexing is ready",
+		Enabled:    false,
+		Configured: false,
+		Ready:      false,
+		Message:    "Google Indexing API is not supported for product pages; use the sitemap workflow instead",
 	}
 }
 
@@ -224,79 +205,10 @@ func (s *GoogleIndexingService) PushProduct(ctx context.Context, productID uint)
 	if s == nil {
 		return nil, ErrGoogleIndexingNotConfigured
 	}
-	status := s.Status()
-	if !status.Enabled {
-		return nil, ErrGoogleIndexingDisabled
-	}
-	if !status.Ready {
-		return nil, ErrGoogleIndexingNotConfigured
-	}
-	if productID == 0 || s.products == nil {
-		return nil, ErrGoogleIndexingProductNotFound
-	}
-
-	item, err := s.products.GetAdminProduct(productID)
-	if err != nil {
-		if errors.Is(err, ErrProductNotFound) {
-			return nil, ErrGoogleIndexingProductNotFound
-		}
-		return nil, err
-	}
-	if item == nil {
-		return nil, ErrGoogleIndexingProductNotFound
-	}
-	if strings.TrimSpace(item.Status) != "active" {
-		return nil, ErrGoogleIndexingProductNotPublic
-	}
-
-	productURL, err := s.productURL(item)
-	if err != nil {
-		return nil, err
-	}
-
-	result := &GoogleIndexingPushResult{
-		ProductID:        item.ID,
-		URL:              productURL,
-		NotificationType: googleIndexingNotifyType,
-	}
-	if s.redisClient == nil {
-		return result, ErrGoogleIndexingProtection
-	}
-
-	if ctx == nil {
-		ctx = context.Background()
-	}
-	reservationToken, err := s.reserveCooldown(ctx, productURL)
-	if err != nil {
-		return result, err
-	}
-
-	accessToken, err := s.accessToken(ctx)
-	if err != nil {
-		s.releaseCooldown(productURL, reservationToken)
-		return result, err
-	}
-
-	result.SubmittedAt = s.currentTime().UTC()
-	httpStatus, metadata, err := s.publish(ctx, accessToken, productURL)
-	result.HTTPStatus = httpStatus
-	result.Metadata = metadata
-	if errors.Is(err, errGoogleIndexingUnauthorized) {
-		s.clearAccessToken()
-		accessToken, refreshErr := s.accessToken(ctx)
-		if refreshErr != nil {
-			return result, refreshErr
-		}
-		httpStatus, metadata, err = s.publish(ctx, accessToken, productURL)
-		result.HTTPStatus = httpStatus
-		result.Metadata = metadata
-	}
-	if err != nil {
-		return result, err
-	}
-
-	result.Accepted = httpStatus >= http.StatusOK && httpStatus < http.StatusMultipleChoices
-	return result, nil
+	// Product detail pages are not an eligible Google Indexing API resource.
+	// Keep this guard before product/Redis/token work so no caller can
+	// accidentally turn a normal commerce URL into an URL_UPDATED request.
+	return nil, ErrGoogleIndexingProductUnsupported
 }
 
 func (s *GoogleIndexingService) reserveCooldown(ctx context.Context, productURL string) (string, error) {

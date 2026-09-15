@@ -1,12 +1,12 @@
 package service
 
 import (
-	"strings"
-	"testing"
 	"context"
 	"io"
 	"net/http"
+	"strings"
 	"sync/atomic"
+	"testing"
 
 	"commerce-platform/internal/pkg/config"
 )
@@ -139,9 +139,9 @@ func TestGoogleMerchantOAuthTokenExchangeDoesNotRetryUnsafePOST(t *testing.T) {
 	})
 
 	_, err := exchangeGoogleMerchantCode(context.Background(), config.GoogleMerchantConfig{
-		ClientID:    "client-id",
+		ClientID:     "client-id",
 		ClientSecret: "client-secret",
-		RedirectURL: "https://admin.example.test/api/admin/google-merchant/oauth/callback",
+		RedirectURL:  "https://admin.example.test/api/admin/google-merchant/oauth/callback",
 	}, "authorization-code")
 	if err == nil {
 		t.Fatal("exchangeGoogleMerchantCode() error = nil, want failure")

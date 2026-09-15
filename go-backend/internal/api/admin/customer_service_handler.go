@@ -1,6 +1,7 @@
 package admin
 
 import (
+	"commerce-platform/internal/api/realtime"
 	"commerce-platform/internal/service"
 	"strings"
 )
@@ -12,6 +13,7 @@ type TicketHandler struct {
 	customerServiceEvents    *service.CustomerServiceEventHub
 	mediaService             *service.MediaService
 	allowedOrigins           []string
+	webSocketLimiter         *realtime.CustomerServiceWebSocketLimiter
 }
 
 func (h *TicketHandler) ConfigureAllowedOrigins(allowedOrigins []string) {
@@ -44,4 +46,11 @@ func NewTicketHandler(
 		customerServiceEvents:    customerServiceEvents,
 		mediaService:             mediaSvc,
 	}
+}
+
+func (h *TicketHandler) ConfigureCustomerServiceWebSocketLimiter(limiter *realtime.CustomerServiceWebSocketLimiter) {
+	if h == nil {
+		return
+	}
+	h.webSocketLimiter = limiter
 }

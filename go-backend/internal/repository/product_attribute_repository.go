@@ -100,6 +100,9 @@ func (r *ProductRepository) FindAllProductSpecificationTemplates(includeDisabled
 	query := r.db.Preload("SpecDefinitions", func(db *gorm.DB) *gorm.DB {
 		return orderSpecDefinitions(db)
 	})
+	if r.db.Migrator().HasTable(&product.ProductSpecOptionItem{}) {
+		query = preloadSpecDefinitionOptionItems(query)
+	}
 	if !includeDisabled {
 		query = query.Where("is_enabled = ?", true)
 	}
@@ -121,9 +124,13 @@ func (r *ProductRepository) FindPublicProductSpecificationTemplates(includeDisab
 
 func (r *ProductRepository) FindProductSpecificationTemplateByID(id uint) (*product.ProductSpecificationTemplate, error) {
 	var productSpecificationTemplate product.ProductSpecificationTemplate
-	err := r.db.Preload("SpecDefinitions", func(db *gorm.DB) *gorm.DB {
+	query := r.db.Preload("SpecDefinitions", func(db *gorm.DB) *gorm.DB {
 		return orderSpecDefinitions(db)
-	}).First(&productSpecificationTemplate, id).Error
+	})
+	if r.db.Migrator().HasTable(&product.ProductSpecOptionItem{}) {
+		query = preloadSpecDefinitionOptionItems(query)
+	}
+	err := query.First(&productSpecificationTemplate, id).Error
 	if err != nil {
 		return nil, err
 	}
@@ -132,9 +139,13 @@ func (r *ProductRepository) FindProductSpecificationTemplateByID(id uint) (*prod
 
 func (r *ProductRepository) FindProductSpecificationTemplateBySlug(slug string) (*product.ProductSpecificationTemplate, error) {
 	var productSpecificationTemplate product.ProductSpecificationTemplate
-	err := r.db.Preload("SpecDefinitions", func(db *gorm.DB) *gorm.DB {
+	query := r.db.Preload("SpecDefinitions", func(db *gorm.DB) *gorm.DB {
 		return orderSpecDefinitions(db)
-	}).Where("slug = ?", slug).First(&productSpecificationTemplate).Error
+	})
+	if r.db.Migrator().HasTable(&product.ProductSpecOptionItem{}) {
+		query = preloadSpecDefinitionOptionItems(query)
+	}
+	err := query.Where("slug = ?", slug).First(&productSpecificationTemplate).Error
 	if err != nil {
 		return nil, err
 	}
@@ -186,6 +197,7 @@ func (r *ProductRepository) UpdateProductSpecificationTemplate(productSpecificat
 			"description": productSpecificationTemplate.Description,
 			"sort_order":  productSpecificationTemplate.SortOrder,
 			"is_enabled":  productSpecificationTemplate.IsEnabled,
+			"revision":    productSpecificationTemplate.Revision,
 		})
 		if result.Error != nil {
 			return result.Error
@@ -212,6 +224,9 @@ func (r *ProductRepository) UpdateProductSpecificationTemplate(productSpecificat
 			}
 			if result.RowsAffected == 0 {
 				return gorm.ErrRecordNotFound
+			}
+			if err := replaceSpecOptionItems(tx, definition.ID, definition.OptionItems); err != nil {
+				return err
 			}
 		}
 
@@ -243,27 +258,69 @@ func (r *ProductRepository) DeleteProductSpecificationTemplate(id uint) error {
 }
 
 func createSpecDefinition(tx *gorm.DB, definition *product.SpecDefinition) error {
+	optionItems := definition.OptionItems
+	definition.OptionItems = nil
 	updates := specDefinitionUpdates(definition)
 	if err := tx.Create(definition).Error; err != nil {
 		return err
 	}
-	return tx.Model(definition).Updates(updates).Error
+	definition.OptionItems = optionItems
+	if err := tx.Model(definition).Updates(updates).Error; err != nil {
+		return err
+	}
+	return replaceSpecOptionItems(tx, definition.ID, optionItems)
+}
+
+func replaceSpecOptionItems(tx *gorm.DB, definitionID uint, items []product.ProductSpecOptionItem) error {
+	if !tx.Migrator().HasTable(&product.ProductSpecOptionItem{}) {
+		return nil
+	}
+	var existing []product.ProductSpecOptionItem
+	if err := tx.Where("spec_definition_id = ?", definitionID).Find(&existing).Error; err != nil {
+		return err
+	}
+	existingByID := make(map[uint]struct{}, len(existing))
+	for _, item := range existing {
+		existingByID[item.ID] = struct{}{}
+	}
+	keepIDs := make([]uint, 0, len(items))
+	for index := range items {
+		items[index].SpecDefinitionID = definitionID
+		if items[index].ID != 0 {
+			if _, ok := existingByID[items[index].ID]; !ok {
+				return gorm.ErrRecordNotFound
+			}
+			if err := tx.Save(&items[index]).Error; err != nil {
+				return err
+			}
+		} else if err := tx.Create(&items[index]).Error; err != nil {
+			return err
+		}
+		keepIDs = append(keepIDs, items[index].ID)
+	}
+	deleteQuery := tx.Where("spec_definition_id = ?", definitionID)
+	if len(keepIDs) > 0 {
+		deleteQuery = deleteQuery.Where("id NOT IN ?", keepIDs)
+	}
+	return deleteQuery.Delete(&product.ProductSpecOptionItem{}).Error
 }
 
 func specDefinitionUpdates(definition *product.SpecDefinition) map[string]interface{} {
 	return map[string]interface{}{
-		"group":             definition.Group,
-		"name":              definition.Name,
-		"slug":              definition.Slug,
-		"field_type":        definition.FieldType,
-		"presentation":      definition.Presentation,
-		"unit":              definition.Unit,
-		"is_required":       definition.IsRequired,
-		"is_filterable":     definition.IsFilterable,
-		"is_visible":        definition.IsVisible,
-		"is_variant_option": definition.IsVariantOption,
-		"sort_order":        definition.SortOrder,
-		"options":           definition.Options,
-		"validation":        definition.Validation,
+		"group":          definition.Group,
+		"name":           definition.Name,
+		"slug":           definition.Slug,
+		"field_type":     definition.FieldType,
+		"role":           definition.Role,
+		"selection_mode": definition.SelectionMode,
+		"min_selections": definition.MinSelections,
+		"max_selections": definition.MaxSelections,
+		"presentation":   definition.Presentation,
+		"unit":           definition.Unit,
+		"is_required":    definition.IsRequired,
+		"is_filterable":  definition.IsFilterable,
+		"is_visible":     definition.IsVisible,
+		"sort_order":     definition.SortOrder,
+		"validation":     definition.Validation,
 	}
 }

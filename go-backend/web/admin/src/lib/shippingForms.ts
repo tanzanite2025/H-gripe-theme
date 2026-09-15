@@ -29,6 +29,7 @@ export const defaultShippingCarrierServiceForm = (carriers: any[] = []) => ({
   volumetric_divisor: 6000,
   fuel_surcharge_percent: 0,
   remote_surcharge: 0,
+  remote_postal_codes: '[]',
   eta_min_days: 0,
   eta_max_days: 0,
   enabled: true,

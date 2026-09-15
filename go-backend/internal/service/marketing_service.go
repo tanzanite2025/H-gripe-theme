@@ -30,7 +30,9 @@ var (
 	ErrMarketingNotFound              = errors.New("marketing resource not found")
 	ErrCouponCodeExists               = errors.New("coupon code already exists")
 	ErrCouponPerUserUsageLimitReached = errors.New("coupon per-user usage limit reached")
+	ErrCouponUsageIdentityRequired    = errors.New("email is required for guest coupon usage limits")
 	ErrInvalidMemberLevel             = errors.New("invalid member level")
+	ErrLegacyReferralWriteDisabled    = errors.New("legacy referral writes are disabled while the referral program is being upgraded")
 )
 
 type MemberLevelCreateInput struct {
@@ -103,22 +105,7 @@ func (s *MarketingService) ListReferrals(referrerID uint) ([]loyalty.Referral, e
 }
 
 func (s *MarketingService) UpdateReferralStatus(id uint, status string) (*loyalty.Referral, error) {
-	referral, err := s.loyaltyRepo.FindReferralByID(id)
-	if err != nil {
-		return nil, normalizeMarketingError(err)
-	}
-
-	referral.Status = status
-	if status == "completed" && referral.CompletedAt == nil {
-		now := time.Now()
-		referral.CompletedAt = &now
-	}
-
-	if err := s.loyaltyRepo.UpdateReferral(referral); err != nil {
-		return nil, err
-	}
-
-	return referral, nil
+	return nil, ErrLegacyReferralWriteDisabled
 }
 
 func (s *MarketingService) GetMemberLevel(id uint) (*loyalty.MemberLevel, error) {
@@ -296,70 +283,12 @@ func (s *MarketingService) CheckIn(userID uint) (int, error) {
 
 // CreateReferral 创建推荐
 func (s *MarketingService) CreateReferral(referrerID, refereeID uint) error {
-	// 检查是否已经被推荐过
-	existing, _ := s.loyaltyRepo.FindReferralByRefereeID(refereeID)
-	if existing != nil {
-		return errors.New("user already referred")
-	}
-
-	referral := &loyalty.Referral{
-		ReferrerID: referrerID,
-		ReferredID: refereeID,
-		Status:     "pending",
-	}
-
-	return s.loyaltyRepo.CreateReferral(referral)
+	return ErrLegacyReferralWriteDisabled
 }
 
 // CompleteReferral 完成推荐（被推荐人首次购买后）
 func (s *MarketingService) CompleteReferral(refereeID uint, orderID uint) error {
-	config, err := s.getCurrentProgramConfig()
-	if err != nil {
-		return err
-	}
-
-	return s.txManager.WithinTx(func(repos repository.TxRepositories) error {
-		referral, err := repos.Loyalty.FindReferralByRefereeIDForUpdate(refereeID)
-		if err != nil {
-			return err
-		}
-		if referral.Status != "pending" {
-			return errors.New("referral already completed")
-		}
-
-		now := time.Now()
-		referral.Status = "completed"
-		referral.CompletedAt = &now
-		referral.CompletedOrderID = orderID
-		referral.ReferrerPoints = config.ReferralReferrerPoints
-		referral.ReferredPoints = config.ReferralRefereePoints
-		referral.PointsEarned = config.ReferralReferrerPoints + config.ReferralRefereePoints
-
-		if err := repos.Loyalty.UpdateReferral(referral); err != nil {
-			return err
-		}
-		if _, err := repos.Loyalty.AdjustUserPointsInCurrentTxWithConfig(
-			referral.ReferrerID,
-			config.ReferralReferrerPoints,
-			"earn",
-			"referral",
-			referral.ID,
-			"Referral reward",
-			programConfigID(config),
-		); err != nil {
-			return err
-		}
-		_, err = repos.Loyalty.AdjustUserPointsInCurrentTxWithConfig(
-			refereeID,
-			config.ReferralRefereePoints,
-			"earn",
-			"referral",
-			referral.ID,
-			"New user referral bonus",
-			programConfigID(config),
-		)
-		return err
-	})
+	return ErrLegacyReferralWriteDisabled
 }
 
 func (s *MarketingService) getCurrentProgramConfig() (*loyalty.ProgramConfig, error) {

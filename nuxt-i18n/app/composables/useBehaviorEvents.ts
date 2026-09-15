@@ -3,6 +3,7 @@ import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 import { useApiRequest } from '~/composables/useApiRequest'
 import { scheduleDeferredClientWork } from '~/utils/clientDeferredWork'
+import { COOKIE_CONSENT_UPDATED_EVENT, readCookieConsent } from '~/utils/cookieConsent'
 import type {
   BehaviorEventMetadata,
   BehaviorEventType,
@@ -59,6 +60,11 @@ const writeStorageValue = (storage: Storage | undefined, key: string, value: str
   }
 }
 
+const removeStorageValue = (storage: Storage | undefined, key: string) => {
+  if (!storage) return
+  try { storage.removeItem(key) } catch { /* storage may be unavailable */ }
+}
+
 const normalizeMetadata = (metadata?: BehaviorEventMetadata) => {
   if (!metadata) return undefined
 
@@ -79,8 +85,15 @@ export const useBehaviorEvents = () => {
   const sessionId = useState<string>('tz-recommendation-session-id', () => '')
   const queue = useState<QueuedBehaviorEvent[]>('tz-behavior-event-queue', () => [])
 
+  const hasTrackingConsent = () => {
+    const consent = readCookieConsent()
+    return Boolean(consent?.performance || consent?.advertising)
+  }
+
+  const hasAdvertisingConsent = () => Boolean(readCookieConsent()?.advertising)
+
   const ensureIdentity = () => {
-    if (!import.meta.client) return
+    if (!import.meta.client || !hasTrackingConsent()) return
 
     if (!anonymousId.value) {
       anonymousId.value = readStorageValue(window.localStorage, ANONYMOUS_ID_KEY)
@@ -100,7 +113,7 @@ export const useBehaviorEvents = () => {
   }
 
   const flush = async () => {
-    if (!import.meta.client || activeFlush || queue.value.length === 0) return
+    if (!import.meta.client || !hasTrackingConsent() || activeFlush || queue.value.length === 0) return
 
     ensureIdentity()
     const batch = queue.value.splice(0, BATCH_SIZE)
@@ -145,7 +158,7 @@ export const useBehaviorEvents = () => {
   }
 
   const track = (input: TrackBehaviorEventInput) => {
-    if (!import.meta.client) return ''
+    if (!import.meta.client || !hasTrackingConsent()) return ''
 
     ensureIdentity()
     if (!anonymousId.value && !sessionId.value) return ''
@@ -204,7 +217,7 @@ export const useBehaviorEvents = () => {
   }
 
   const captureAttribution = () => {
-    if (!import.meta.client || attributionCaptured) return
+    if (!import.meta.client || !hasAdvertisingConsent() || attributionCaptured) return
 
     const query = new URLSearchParams(window.location.search)
     const metadata: BehaviorEventMetadata = {}
@@ -232,11 +245,35 @@ export const useBehaviorEvents = () => {
   }
 
   onMounted(() => {
-    scheduleDeferredClientWork(() => {
+    const handleConsentUpdate = () => {
+      if (!hasTrackingConsent()) {
+        queue.value = []
+        anonymousId.value = ''
+        sessionId.value = ''
+        removeStorageValue(window.localStorage, ANONYMOUS_ID_KEY)
+        removeStorageValue(window.sessionStorage, SESSION_ID_KEY)
+        return
+      }
+      if (!hasAdvertisingConsent()) {
+        attributionCaptured = false
+      }
       ensureIdentity()
-      captureAttribution()
+      if (hasAdvertisingConsent()) captureAttribution()
       registerLifecycle()
-    }, { delayMs: 6500, idleTimeoutMs: 3000 })
+    }
+    window.addEventListener(COOKIE_CONSENT_UPDATED_EVENT, handleConsentUpdate)
+    if (!hasTrackingConsent()) {
+      anonymousId.value = ''
+      sessionId.value = ''
+      removeStorageValue(window.localStorage, ANONYMOUS_ID_KEY)
+      removeStorageValue(window.sessionStorage, SESSION_ID_KEY)
+    }
+    scheduleDeferredClientWork(() => {
+      if (!hasTrackingConsent()) return
+      ensureIdentity()
+      if (hasAdvertisingConsent()) captureAttribution()
+      registerLifecycle()
+    }, { delayMs: 250, idleTimeoutMs: 1000 })
   })
 
   return {

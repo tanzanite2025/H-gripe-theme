@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"commerce-platform/internal/domain/currency"
+	domainmoney "commerce-platform/internal/domain/money"
 	paymentdomain "commerce-platform/internal/domain/payment"
 	"commerce-platform/internal/repository"
 )
@@ -136,7 +137,7 @@ func (s *PaymentRefundRecommendationService) UpdateRecommendationDecision(
 
 type CreatePendingRefundFromRecommendationInput struct {
 	RecommendationID uint
-	Amount           float64
+	Amount           *domainmoney.Money
 	Reason           string
 	DecisionNotes    string
 	AdminID          uint
@@ -189,20 +190,43 @@ func (s *PaymentRefundRecommendationService) CreatePendingRefundFromRecommendati
 			return errors.New("refund recommendation is missing transaction linkage")
 		}
 
-		amount := roundRefundMoney(input.Amount)
-		if amount <= 0 {
-			amount = roundRefundMoney(recommendation.RecommendedAmount)
+		recommendedMoney, moneyErr := parseRefundMoney(recommendation.RecommendedAmount, recommendation.Currency)
+		if moneyErr != nil {
+			return moneyErr
 		}
-		if amount <= 0 {
-			return errors.New("refund amount is required")
+		amountMoney := recommendedMoney
+		if input.Amount != nil {
+			amountMoney = *input.Amount
+			if err := validateRefundMoneyOperand(amountMoney, "recommendation"); err != nil {
+				return err
+			}
+			if amountMoney.Currency() != recommendedMoney.Currency() {
+				return domainmoney.ErrCurrencyMismatch
+			}
 		}
-		if recommendation.RecommendedAmount > 0 && amount-recommendation.RecommendedAmount > 0.01 {
-			return fmt.Errorf("refund amount %.2f exceeds recommended amount %.2f", amount, recommendation.RecommendedAmount)
+		if amountMoney.AmountMinor() <= 0 {
+			return errors.New("refund amount is required and must be greater than zero")
+		}
+		amountExceeds, compareErr := refundAmountExceedsInMinorUnits(amountMoney, recommendedMoney)
+		if compareErr != nil {
+			return compareErr
+		}
+		if recommendedMoney.AmountMinor() > 0 && amountExceeds {
+			return fmt.Errorf(
+				"refund amount %s exceeds recommended amount %s",
+				formatRefundMoney(amountMoney),
+				formatRefundMoney(recommendedMoney),
+			)
+		}
+		amount, moneyErr := amountMoney.MajorFloat()
+		if moneyErr != nil {
+			return fmt.Errorf("format refund recommendation amount: %w", moneyErr)
 		}
 
 		refund := &paymentdomain.Refund{
 			OrderID:       *recommendation.OrderID,
 			TransactionID: *recommendation.TransactionID,
+			Currency:      recommendation.Currency,
 			Amount:        amount,
 			Reason:        refundRecommendationDraftReason(recommendation, input.Reason),
 		}

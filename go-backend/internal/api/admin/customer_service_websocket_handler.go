@@ -65,9 +65,11 @@ func (h *TicketHandler) StreamCustomerServiceWebSocket(c *gin.Context) {
 		CheckOrigin: func(request *http.Request) bool {
 			return realtime.CustomerServiceWebSocketOriginAllowed(request, h.allowedOrigins)
 		},
-		Subscription: subscription,
-		Replay:       replay,
-		AllowEvent:   allowEvent,
+		Subscription:      subscription,
+		ConnectionLimiter: h.webSocketLimiter,
+		ClientIP:          c.ClientIP(),
+		Replay:            replay,
+		AllowEvent:        allowEvent,
 		HandleControl: func(control realtime.CustomerServiceWebSocketControl) {
 			if control.Type != "typing" || conversationID == 0 || !canEdit {
 				return

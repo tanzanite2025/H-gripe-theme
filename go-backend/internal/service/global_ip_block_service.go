@@ -233,13 +233,11 @@ func (s *GlobalIPBlockService) refreshLocked(ctx context.Context) error {
 	}
 
 	compiled := make([]compiledIPBlockRule, 0, len(rules))
-	var compileErr error
+	invalidRuleCount := 0
 	for _, rule := range rules {
 		compiledRule, parseErr := compileIPBlockRule(rule)
 		if parseErr != nil {
-			if compileErr == nil {
-				compileErr = fmt.Errorf("%w: stored CIDR %q cannot be parsed", ErrIPBlockRuleInvalid, rule.CIDR)
-			}
+			invalidRuleCount++
 			appLogger.Error(
 				"global IP block cache skipped invalid active rule",
 				zap.Uint("rule_id", rule.ID),
@@ -250,8 +248,12 @@ func (s *GlobalIPBlockService) refreshLocked(ctx context.Context) error {
 		}
 		compiled = append(compiled, compiledRule)
 	}
-	if compileErr != nil {
-		return compileErr
+	if invalidRuleCount > 0 {
+		appLogger.Warn(
+			"global IP block cache refreshed with invalid rules excluded",
+			zap.Int("invalid_rule_count", invalidRuleCount),
+			zap.Int("active_rule_count", len(compiled)),
+		)
 	}
 
 	s.cacheMu.Lock()

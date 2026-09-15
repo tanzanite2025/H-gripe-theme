@@ -1,6 +1,7 @@
 package repository
 
 import (
+	domainmoney "commerce-platform/internal/domain/money"
 	"errors"
 	"regexp"
 	"testing"
@@ -95,11 +96,11 @@ func TestUpdateGiftCardBalanceRequiresSufficientBalanceForDebit(t *testing.T) {
 	repo, mock, cleanup := newMockCouponRepository(t)
 	defer cleanup()
 
-	mock.ExpectExec(regexp.QuoteMeta(`UPDATE "gift_cards" SET "balance_cents"=balance_cents + $1 WHERE id = $2 AND balance_cents >= $3 AND "gift_cards"."deleted_at" IS NULL`)).
-		WithArgs(int64(-800), sqlmock.AnyArg(), int64(800)).
+	mock.ExpectExec(regexp.QuoteMeta(`UPDATE "gift_cards" SET "balance_cents"=balance_cents + $1 WHERE (id = $2 AND currency = $3) AND balance_cents >= $4 AND "gift_cards"."deleted_at" IS NULL`)).
+		WithArgs(int64(-800), sqlmock.AnyArg(), "USD", int64(800)).
 		WillReturnResult(sqlmock.NewResult(0, 0))
 
-	err := repo.UpdateGiftCardBalance(42, -8)
+	err := repo.UpdateGiftCardBalance(42, domainmoney.MustNew(-800, "USD"))
 	if !errors.Is(err, ErrGiftCardInsufficientBalance) {
 		t.Fatalf("expected ErrGiftCardInsufficientBalance, got %v", err)
 	}

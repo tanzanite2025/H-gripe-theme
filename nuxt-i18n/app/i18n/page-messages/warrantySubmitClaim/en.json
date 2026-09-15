@@ -52,6 +52,16 @@
     "orderVerificationFailed": "Order verification failed. Please check your details.",
     "genericError": "An error occurred. Please try again."
   },
+  "claimStatus": {
+    "title": "Your warranty claim",
+    "claimId": "Claim #{id}",
+    "status": "Status",
+    "resolution": "Technical decision",
+    "noResolution": "No technical decision has been recorded yet.",
+    "refresh": "Refresh",
+    "refreshing": "Refreshing...",
+    "loadFailed": "Unable to load your claim status. Please try again."
+  },
   "errors": {
     "imagesFallback": "You can upload up to {count} images.",
     "videoUnsupported": "{file} is not supported. Use MP4, MOV or WebM.",

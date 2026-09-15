@@ -53,4 +53,3 @@ func (g ProductGate) Allows(account TestAccount) bool {
 	}
 	return account.ID != 0 && account.ID == *g.AllowedTestAccountID
 }
-

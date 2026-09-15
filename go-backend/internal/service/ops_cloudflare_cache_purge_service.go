@@ -14,8 +14,6 @@ import (
 	"commerce-platform/internal/repository"
 )
 
-const opsCloudflareCachePurgeBatchSize = 30
-
 var ErrOpsCloudflareCachePurge = errors.New("operations Cloudflare cache purge failed")
 
 type opsCloudflareCachePurgeClient interface {
@@ -120,43 +118,38 @@ func (s *OpsCloudflareCachePurgeService) PurgeProject(ctx context.Context, proje
 			ZoneID:      zoneID,
 			Hosts:       hosts,
 		}
-		for start := 0; start < len(hosts); start += opsCloudflareCachePurgeBatchSize {
-			if err := contextError(ctx); err != nil {
-				return result, fmt.Errorf("%w: %v", ErrOpsCloudflareCachePurge, err)
-			}
-			end := start + opsCloudflareCachePurgeBatchSize
-			if end > len(hosts) {
-				end = len(hosts)
-			}
-			batch := hosts[start:end]
-			payload, err := json.Marshal(map[string][]string{"hosts": batch})
-			if err != nil {
-				return result, fmt.Errorf("%w: encode purge request: %v", ErrOpsCloudflareCachePurge, err)
-			}
-			var response cloudflareCachePurgeResponse
-			_, err = s.connectorService.CloudflareWrite(
-				ctx,
-				group.connectorID,
-				http.MethodPost,
-				"/zones/"+url.PathEscape(zoneID)+"/purge_cache",
-				payload,
-				&response,
-			)
-			if err != nil {
-				return result, fmt.Errorf("%w: zone %s hosts %d-%d: %v", ErrOpsCloudflareCachePurge, group.zone, start+1, end, err)
-			}
-			groupResult.RequestCount++
-			if operationID := strings.TrimSpace(response.ID); operationID != "" {
-				groupResult.OperationIDs = append(groupResult.OperationIDs, operationID)
-			}
-			result.RequestCount++
-			result.HostCount += len(batch)
+		if err := contextError(ctx); err != nil {
+			return result, fmt.Errorf("%w: %v", ErrOpsCloudflareCachePurge, err)
 		}
+		// Host/tag/prefix purge requires Enterprise Flex Purge. A zone-wide
+		// purge keeps deployment and rollback compatible with standard plans.
+		payload, err := json.Marshal(map[string]bool{"purge_everything": true})
+		if err != nil {
+			return result, fmt.Errorf("%w: encode purge request: %v", ErrOpsCloudflareCachePurge, err)
+		}
+		var response cloudflareCachePurgeResponse
+		_, err = s.connectorService.CloudflareWrite(
+			ctx,
+			group.connectorID,
+			http.MethodPost,
+			"/zones/"+url.PathEscape(zoneID)+"/purge_cache",
+			payload,
+			&response,
+		)
+		if err != nil {
+			return result, fmt.Errorf("%w: zone %s full purge: %v", ErrOpsCloudflareCachePurge, group.zone, err)
+		}
+		groupResult.RequestCount = 1
+		if operationID := strings.TrimSpace(response.ID); operationID != "" {
+			groupResult.OperationIDs = append(groupResult.OperationIDs, operationID)
+		}
+		result.RequestCount++
+		result.HostCount += len(hosts)
 		result.Groups = append(result.Groups, groupResult)
 	}
 
 	result.Summary = fmt.Sprintf(
-		"Cloudflare 缓存清理完成：%d 个域名、%d 个 Zone、%d 个请求。",
+		"Cloudflare Zone 全量缓存清理完成：%d 个项目域名、%d 个 Zone、%d 个请求。",
 		result.HostCount,
 		result.ZoneCount,
 		result.RequestCount,

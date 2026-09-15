@@ -4,6 +4,8 @@
     "categorizedSupport": "分类支持",
     "categoriesAriaLabel": "FAQ 分类",
     "categoriesLabel": "FAQ 分类",
+    "pagesAriaLabel": "FAQ 页面",
+    "pagesLabel": "FAQ 页面",
     "all": "全部",
     "pageIntro": "浏览有关订单、产品与服务的常见问题和快速答案。",
     "searchPlaceholder": "搜索 FAQ...",

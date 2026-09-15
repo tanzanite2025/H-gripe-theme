@@ -780,7 +780,9 @@
       "noResults": "\"{query}\" ile eşleşen FAQ bulunamadı",
       "loadingAnswers": "Yanıtlar yükleniyor",
       "illustrationAlt": "FAQ görseli",
-      "selectQuestion": "Select a question to view the answer."
+      "selectQuestion": "Select a question to view the answer.",
+      "pagesAriaLabel": "FAQ pages",
+      "pagesLabel": "FAQ pages"
     }
   },
   "feedback": {

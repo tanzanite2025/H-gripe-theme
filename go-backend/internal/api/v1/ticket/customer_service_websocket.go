@@ -39,8 +39,10 @@ func (h *Handler) StreamPublicCustomerServiceWebSocket(c *gin.Context) {
 		CheckOrigin: func(request *http.Request) bool {
 			return realtime.CustomerServiceWebSocketOriginAllowed(request, h.allowedOrigins)
 		},
-		Subscription: subscription,
-		Replay:       replay,
+		Subscription:      subscription,
+		ConnectionLimiter: h.webSocketLimiter,
+		ClientIP:          c.ClientIP(),
+		Replay:            replay,
 		AllowEvent: func(event service.CustomerServiceRealtimeEvent) bool {
 			return event.TicketID == conversation.ID &&
 				event.DeliversTo(service.CustomerServiceRealtimeAudiencePublic)

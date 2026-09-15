@@ -36,7 +36,7 @@
       :pagination="pagination"
       :selection-state="selectionState"
       :can-edit="hasPermission('order:edit')"
-      :can-delete="hasPermission('order:delete')"
+      :can-hide-unpaid-terminal="hasPermission('order:delete')"
       :order-status-name="getOrderStatusName"
       :order-status-tone="orderStatusTone"
       :payment-status-name="getPaymentStatusName"
@@ -52,7 +52,7 @@
       @view-detail="showOrderDetail"
       @fulfill="showFulfillmentDialog"
       @show-status="showStatusDialog"
-      @delete="requestDelete"
+      @hide-unpaid-terminal="requestHideUnpaidCancelledOrPaymentExpiredOrder"
       @update-page="updatePage"
       @update-page-size="updatePageSize"
     />
@@ -1049,8 +1049,13 @@ const toggleOrder = (order: OrderRecord, checked: boolean | 'indeterminate'): vo
 const setConfirmation = (values: Partial<OrderConfirmation>): void => {
   Object.assign(confirmation, { open: true, destructive: false, confirmLabel: '确定', ...values })
 }
-const requestDelete = (order: OrderRecord): void => setConfirmation({
-  type: 'delete', target: order, title: '删除订单？', description: `订单 ${order.order_number} 将被永久删除，此操作不可恢复。`, confirmLabel: '删除', destructive: true
+const requestHideUnpaidCancelledOrPaymentExpiredOrder = (order: OrderRecord): void => setConfirmation({
+  type: 'hide-unpaid-terminal',
+  target: order,
+  title: '隐藏订单？',
+  description: `订单 ${order.order_number} 将从默认订单列表中隐藏。订单本身、支付/退款流水、拒付记录和证据包不会物理删除。`,
+  confirmLabel: '隐藏订单',
+  destructive: false
 })
 const requestBatchStatus = (status: string): void => {
   const completing = status === 'completed'
@@ -1069,10 +1074,10 @@ const executeConfirmedAction = async (): Promise<void> => {
   const { type, target, status } = confirmation
   confirmation.open = false
   try {
-    if (type === 'delete') {
+    if (type === 'hide-unpaid-terminal') {
       if (!target || Array.isArray(target)) return
-      await axios.delete(`/api/admin/orders/${target.id}`)
-      toast.success('订单已删除')
+      await ordersApi.hideUnpaidCancelledOrPaymentExpiredOrderFromDefaultQueries(target.id)
+      toast.success('订单已从默认列表隐藏')
     } else if (type === 'batch-status') {
       if (!target || !Array.isArray(target)) return
       const response = await axios.post('/api/admin/orders/batch-status', {

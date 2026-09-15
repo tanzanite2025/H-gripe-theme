@@ -59,9 +59,16 @@ func runSpokeCatalogHTTPRoundTrip(t *testing.T, buildRequest func(spokedomain.Ex
 	replaceExport := executeSpokeCatalogRequest(t, router, request)
 	require.Equal(t, expectedExport, replaceExport)
 
+	// The admin catalog endpoint is the authoritative round-trip projection.
+	// The public spoke export intentionally redacts proprietary geometry and
+	// verified build measurements, so it must not be used for this assertion.
+	adminRequest := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/api/admin/spoke-catalog", nil)
+	adminExport := executeSpokeCatalogRequest(t, router, adminRequest)
+	require.Equal(t, expectedExport, adminExport)
+
 	publicRequest := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/api/v1/spoke/export", nil)
 	publicExport := executeSpokeCatalogRequest(t, router, publicRequest)
-	require.Equal(t, expectedExport, publicExport)
+	assertPublicSpokeExportRedacted(t, publicExport, expectedExport)
 }
 
 func newSpokeCatalogRoundTripRouter(t *testing.T) *gin.Engine {
@@ -104,6 +111,7 @@ func newSpokeCatalogRoundTripRouter(t *testing.T) *gin.Engine {
 	router := gin.New()
 	router.PUT("/api/admin/spoke-catalog", adminapi.NewSpokeCatalogHandler(spokeService).Replace)
 	router.POST("/api/admin/spoke-catalog/import", adminapi.NewSpokeCatalogHandler(spokeService).Import)
+	router.GET("/api/admin/spoke-catalog", adminapi.NewSpokeCatalogHandler(spokeService).Get)
 	router.GET("/api/admin/spoke-catalog/preset-template", adminapi.NewSpokeCatalogHandler(spokeService).DownloadPresetTemplate)
 	router.POST("/api/admin/spoke-catalog/preset-template/import", adminapi.NewSpokeCatalogHandler(spokeService).ImportPresetTemplate)
 	router.GET("/api/v1/spoke/export", spokeapi.NewHandler(spokeService).GetExport)
@@ -114,6 +122,8 @@ func runSpokePresetTemplateHTTPRoundTrip(t *testing.T) {
 	t.Helper()
 
 	router := newSpokeCatalogRoundTripRouter(t)
+	adminRequest := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/api/admin/spoke-catalog", nil)
+	adminExport := executeSpokeCatalogRequest(t, router, adminRequest)
 	publicRequest := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/api/v1/spoke/export", nil)
 	publicExport := executeSpokeCatalogRequest(t, router, publicRequest)
 
@@ -161,6 +171,8 @@ func runSpokePresetTemplateHTTPRoundTrip(t *testing.T) {
 	require.Contains(t, string(presetSheetXML), "dataValidations")
 	require.GreaterOrEqual(t, protectedSheetCount, 3)
 
+	// Template selectors only need catalog identifiers. Use the public
+	// projection here to verify that the browser-facing payload remains safe.
 	input := publicExport
 	rimBrand := input.Rims[0]
 	rimModel := rimBrand.Items[0]
@@ -208,9 +220,13 @@ func runSpokePresetTemplateHTTPRoundTrip(t *testing.T) {
 	require.Equal(t, []string{"DT Swiss 350", "350"}, importedPreset.Keywords)
 	require.Equal(t, "auto", importedPreset.WheelPosition)
 
+	adminRequest = httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/api/admin/spoke-catalog", nil)
+	adminExport = executeSpokeCatalogRequest(t, router, adminRequest)
+	require.Equal(t, importedExport, adminExport)
+
 	publicRequest = httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/api/v1/spoke/export", nil)
 	publicExport = executeSpokeCatalogRequest(t, router, publicRequest)
-	require.Equal(t, importedExport, publicExport)
+	assertPublicSpokeExportRedacted(t, publicExport, importedExport)
 
 	require.NoError(t, workbook.SetCellValue(spokedomain.PresetTemplateSheet, "A1", "wrong-header"))
 	var invalidHeaderTemplate bytes.Buffer
@@ -238,6 +254,52 @@ func executeSpokeCatalogRequest(t *testing.T, router *gin.Engine, request *http.
 	var export spokedomain.ExportResponse
 	require.NoError(t, json.Unmarshal(recorder.Body.Bytes(), &export))
 	return export
+}
+
+func assertPublicSpokeExportRedacted(t *testing.T, public, full spokedomain.ExportResponse) {
+	t.Helper()
+	require.Equal(t, full.Options, public.Options)
+	require.Equal(t, len(full.Rims), len(public.Rims))
+	require.Equal(t, len(full.Hubs), len(public.Hubs))
+	require.Equal(t, len(full.Presets), len(public.Presets))
+	for i, brand := range public.Rims {
+		require.Equal(t, full.Rims[i].ID, brand.ID)
+		require.Equal(t, full.Rims[i].Name, brand.Name)
+		require.Equal(t, len(full.Rims[i].Items), len(brand.Items))
+		for j, model := range brand.Items {
+			require.Equal(t, full.Rims[i].Items[j].ID, model.ID)
+			require.Equal(t, full.Rims[i].Items[j].Name, model.Name)
+			require.Nil(t, model.ERD)
+			require.Nil(t, model.Weight)
+		}
+	}
+	for i, brand := range public.Hubs {
+		require.Equal(t, full.Hubs[i].ID, brand.ID)
+		require.Equal(t, full.Hubs[i].Name, brand.Name)
+		require.Equal(t, len(full.Hubs[i].Items), len(brand.Items))
+		for j, model := range brand.Items {
+			require.Equal(t, full.Hubs[i].Items[j].ID, model.ID)
+			require.Equal(t, full.Hubs[i].Items[j].Name, model.Name)
+			require.Nil(t, model.Front)
+			require.Nil(t, model.Rear)
+		}
+	}
+	for i, preset := range public.Presets {
+		require.Equal(t, full.Presets[i].ID, preset.ID)
+		require.Equal(t, full.Presets[i].Name, preset.Name)
+		require.Equal(t, full.Presets[i].Keywords, preset.Keywords)
+		require.Equal(t, full.Presets[i].Description, preset.Description)
+		require.Equal(t, full.Presets[i].RimBrandID, preset.RimBrandID)
+		require.Equal(t, full.Presets[i].RimModelID, preset.RimModelID)
+		require.Equal(t, full.Presets[i].HubBrandID, preset.HubBrandID)
+		require.Equal(t, full.Presets[i].HubModelID, preset.HubModelID)
+		require.Equal(t, full.Presets[i].WheelPosition, preset.WheelPosition)
+		require.Equal(t, full.Presets[i].SpokeCount, preset.SpokeCount)
+		require.Equal(t, full.Presets[i].Crossing, preset.Crossing)
+		require.Equal(t, full.Presets[i].NippleType, preset.NippleType)
+		require.Nil(t, preset.NippleLength)
+		require.Nil(t, preset.ActualLengths)
+	}
 }
 
 func newJSONCatalogRequest(method, path string, payload spokedomain.ExportResponse) (*http.Request, error) {

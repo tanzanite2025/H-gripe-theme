@@ -534,9 +534,9 @@ func TestProductServiceCreateAdminProductPersistsProductScopedVisualVariantOptio
 		Presentation:                   "color",
 		IsVisible:                      true,
 		IsFilterable:                   true,
-		IsVariantOption:                true,
+		Role:                           "variant",
 		SortOrder:                      10,
-		Options:                        `["template_black"]`,
+		OptionItems:                    []product.ProductSpecOptionItem{{ValueKey: "ruby_red", DefaultLabel: "Ruby Red", IsEnabledByDefault: true}},
 	}
 	require.NoError(t, db.Create(&finishSpec).Error)
 
@@ -623,7 +623,7 @@ func TestProductServiceCreateAdminProductRejectsMediaBoundToOtherProductVariantO
 		},
 	})
 	require.NoError(t, err)
-	require.Len(t, sourceProduct.VariantOptionValues, 1)
+	require.Len(t, sourceProduct.VariantOptionValues, 2)
 	foreignOptionValueID := sourceProduct.VariantOptionValues[0].ID
 
 	createdProduct, err := productService.CreateAdminProduct(ProductCreateInput{
@@ -768,6 +768,56 @@ func TestProductServiceCreateAdminProductUsesPrimaryPricingCurrency(t *testing.T
 	require.Equal(t, "CNY", createdProduct.Currency)
 	require.Len(t, createdProduct.Variants, 1)
 	require.Equal(t, "CNY", createdProduct.Variants[0].Currency)
+}
+
+func TestProductServiceCreateAdminProductRejectsCrossCurrencyProductAndVariantPrices(t *testing.T) {
+	tests := []struct {
+		name            string
+		productCurrency string
+		variantCurrency string
+	}{
+		{
+			name:            "product-price-currency",
+			productCurrency: "EUR",
+			variantCurrency: "CNY",
+		},
+		{
+			name:            "variant-price-currency",
+			productCurrency: "CNY",
+			variantCurrency: "EUR",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			db, productService := newTestProductService(t)
+			policy := NewCurrencyPolicyService(repository.NewSettingRepository(db))
+			_, err := policy.UpdatePolicy(currency.Policy{PrimaryCurrency: "CNY"})
+			require.NoError(t, err)
+			productService.ConfigureCurrencyPolicy(policy)
+
+			createdProduct, err := productService.CreateAdminProduct(ProductCreateInput{
+				Name:     "Cross Currency Rim",
+				Slug:     "cross-currency-rim-" + test.name,
+				Currency: test.productCurrency,
+				Status:   "active",
+				Locale:   "en",
+				Variants: []ProductVariantInput{
+					{
+						SKU:       "CROSS-CURRENCY-" + test.name,
+						Currency:  test.variantCurrency,
+						Price:     699,
+						Stock:     5,
+						IsDefault: true,
+						IsActive:  boolPtr(true),
+					},
+				},
+			})
+
+			require.ErrorIs(t, err, ErrProductVariantInvalid)
+			assert.Nil(t, createdProduct)
+		})
+	}
 }
 
 func TestProductServiceCreateAdminProductPersistsDisplayPriceSnapshots(t *testing.T) {
@@ -1498,7 +1548,7 @@ func TestProductServiceCopyAdminProductTranslationCreatesGroupedCopyWithUniqueSl
 	})
 	require.NoError(t, err)
 	require.Len(t, source.Variants, 1)
-	require.Len(t, source.VariantOptionValues, 1)
+	require.Len(t, source.VariantOptionValues, 2)
 
 	sourceVariantID := source.Variants[0].ID
 	sourceOptionValueID := source.VariantOptionValues[0].ID
@@ -1546,7 +1596,7 @@ func TestProductServiceCopyAdminProductTranslationCreatesGroupedCopyWithUniqueSl
 	assert.Equal(t, "RIM-COPY-DISC-fr-2", translated.SKU)
 	require.Len(t, translated.SpecValues, 2)
 	require.Len(t, translated.Variants, 1)
-	require.Len(t, translated.VariantOptionValues, 1)
+	require.Len(t, translated.VariantOptionValues, 2)
 	require.Len(t, translated.Media, 1)
 	assert.Equal(t, "RIM-COPY-DISC-fr-2", translated.Variants[0].SKU)
 	assert.Equal(t, source.HSCode, translated.HSCode)
@@ -1622,12 +1672,16 @@ func newTestProductService(t *testing.T) (*gorm.DB, *ProductService) {
 		&product.ProductCategoryTranslation{},
 		&product.ProductSpecificationTemplate{},
 		&product.SpecDefinition{},
+		&product.ProductSpecOptionItem{},
 		&product.ProductInformationTemplate{},
 		&product.Product{},
 		&product.ProductMedia{},
 		&product.ProductSpecValue{},
 		&product.ProductVariant{},
 		&product.ProductVariantOptionValue{},
+		&product.ProductCustomOptionPolicy{},
+		&product.ProductOptionGroupVariantRule{},
+		&product.ProductOptionValueVariantRule{},
 		&setting.Setting{},
 	))
 
@@ -1669,9 +1723,9 @@ func seedCarbonRimType(t *testing.T, db *gorm.DB) product.ProductSpecificationTe
 			IsRequired:                     true,
 			IsFilterable:                   true,
 			IsVisible:                      true,
-			IsVariantOption:                true,
+			Role:                           "variant",
 			SortOrder:                      20,
-			Options:                        `["disc","rim"]`,
+			OptionItems:                    []product.ProductSpecOptionItem{{ValueKey: "disc", DefaultLabel: "disc", IsEnabledByDefault: true}, {ValueKey: "rim", DefaultLabel: "rim", IsEnabledByDefault: true}},
 		},
 		{
 			ProductSpecificationTemplateID: productSpecificationTemplate.ID,

@@ -54,6 +54,7 @@ type shippingCarrierServiceRequest struct {
 	VolumetricDivisor     int     `json:"volumetric_divisor"`
 	FuelSurchargePercent  float64 `json:"fuel_surcharge_percent"`
 	RemoteSurcharge       float64 `json:"remote_surcharge"`
+	RemotePostalCodes     string  `json:"remote_postal_codes"`
 	EtaMinDays            int     `json:"eta_min_days"`
 	EtaMaxDays            int     `json:"eta_max_days"`
 	Enabled               *bool   `json:"enabled"`
@@ -201,6 +202,7 @@ func (r shippingCarrierServiceRequest) toDomain() shippingdomain.CarrierService 
 		VolumetricDivisor:     volumetricDivisor,
 		FuelSurchargePercent:  r.FuelSurchargePercent,
 		RemoteSurcharge:       r.RemoteSurcharge,
+		RemotePostalCodes:     strings.TrimSpace(r.RemotePostalCodes),
 		EtaMinDays:            r.EtaMinDays,
 		EtaMaxDays:            r.EtaMaxDays,
 		Enabled:               enabled,

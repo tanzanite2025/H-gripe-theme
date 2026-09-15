@@ -77,6 +77,36 @@ func TestAuthorizeOrderPaymentStartUsesShippingCountry(t *testing.T) {
 	require.Equal(t, http.StatusForbidden, recorder.Code)
 }
 
+func TestAuthorizeOrderPaymentStartUsesBillingCountry(t *testing.T) {
+	db := newOrderPaymentProtectionTestDB(t)
+	protection := newOrderPaymentProtectionService(db)
+	_, err := protection.CreateControl(service.CreatePaymentProtectionControlInput{
+		Action:     "pause_payment",
+		ScopeType:  "country",
+		ScopeValue: "DE",
+		Reason:     "temporary regional acquiring incident",
+		ExpiresAt:  time.Now().UTC().Add(time.Hour),
+	}, service.PaymentProtectionActor{UserID: 1})
+	require.NoError(t, err)
+
+	gin.SetMode(gin.TestMode)
+	recorder := httptest.NewRecorder()
+	context, _ := gin.CreateTestContext(recorder)
+	context.Request = httptest.NewRequest(http.MethodPost, "/api/v1/orders", nil)
+
+	billing := &AddressRequest{Country: "DE"}
+	handler := NewHandler(nil, nil)
+	handler.ConfigurePaymentProtection(protection)
+	allowed := handler.authorizeOrderPaymentStart(context, CreateOrderRequest{
+		PaymentMethod:   "card",
+		ShippingAddress: AddressRequest{Country: "US"},
+		BillingAddress:  billing,
+	})
+
+	require.False(t, allowed)
+	require.Equal(t, http.StatusForbidden, recorder.Code)
+}
+
 func TestAuthorizeOrderPaymentStartAllowsNonMatchingProvider(t *testing.T) {
 	db := newOrderPaymentProtectionTestDB(t)
 	protection := newOrderPaymentProtectionService(db)
@@ -131,7 +161,10 @@ func validCreateOrderBody(paymentMethod string, country string) string {
 			"email": "buyer@example.com"
 		},
 		"payment_method": "` + paymentMethod + `",
-		"shipping_method": "standard"
+		"shipping_method": "standard",
+		"shipping_quote_id": "00000000-0000-0000-0000-000000000001",
+		"selected_quote_plan_id": "00000000-0000-0000-0000-000000000002",
+		"expected_total": 0
 	}`
 }
 

@@ -35,7 +35,7 @@ const normalizeQuickBuySpecFilter = (value: unknown): QuickBuySpecFilter | null 
     unit: asQuickBuyString(record.unit).trim() || undefined,
     fieldType: asQuickBuyString(record.fieldType ?? record.field_type).trim() || 'text',
     presentation: asQuickBuyString(record.presentation).trim() || 'text',
-    isVariantOption: Boolean(record.isVariantOption ?? record.is_variant_option),
+    role: asQuickBuyString(record.role).trim() || undefined,
     multiple: record.multiple !== false,
     values: asQuickBuyArray(record.values)
       .map((item) => asQuickBuyString(item).trim())

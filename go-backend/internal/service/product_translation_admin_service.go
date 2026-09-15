@@ -138,6 +138,9 @@ func (s *ProductService) CopyAdminProductTranslation(id uint, targetLocale strin
 	}
 	if len(source.Variants) > 0 {
 		target.SKU = ""
+		// The translated rows do not own stock, but the product-level summary
+		// must still expose the source inventory to storefront consumers.
+		target.Stock = source.TotalVariantStock()
 	}
 
 	if err := s.productRepo.CreateTranslatedCopy(source, target, variantSKUs); err != nil {

@@ -181,6 +181,8 @@ func respondProductCategoryError(c *gin.Context, err error) {
 		c.JSON(http.StatusConflict, gin.H{"error": "Product category slug already exists"})
 	case errors.Is(err, service.ErrProductCategoryHasChildren):
 		c.JSON(http.StatusConflict, gin.H{"error": err.Error()})
+	case errors.Is(err, service.ErrProductCategoryInUse), errors.Is(err, service.ErrProductCategoryHasProducts), errors.Is(err, service.ErrProductCategoryInQuickBuy):
+		c.JSON(http.StatusConflict, gin.H{"error": err.Error()})
 	case errors.Is(err, service.ErrProductCategoryImageInvalid):
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Product category image must be an active public image from the media library"})
 	case errors.Is(err, service.ErrProductCategoryInvalid):

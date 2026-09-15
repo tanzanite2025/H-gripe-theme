@@ -19,20 +19,38 @@ type productSpecificationTemplateRequest struct {
 }
 
 type productSpecDefinitionRequest struct {
-	ID              uint   `json:"id"`
-	Group           string `json:"group"`
-	Name            string `json:"name" binding:"required"`
-	Slug            string `json:"slug" binding:"required"`
-	FieldType       string `json:"field_type" binding:"required,oneof=text number select boolean"`
-	Presentation    string `json:"presentation"`
-	Unit            string `json:"unit"`
-	IsRequired      bool   `json:"is_required"`
-	IsFilterable    bool   `json:"is_filterable"`
-	IsVisible       bool   `json:"is_visible"`
-	IsVariantOption bool   `json:"is_variant_option"`
-	SortOrder       int    `json:"sort_order"`
-	Options         string `json:"options"`
-	Validation      string `json:"validation"`
+	ID            uint                           `json:"id"`
+	Group         string                         `json:"group"`
+	Name          string                         `json:"name" binding:"required"`
+	Slug          string                         `json:"slug" binding:"required"`
+	FieldType     string                         `json:"field_type" binding:"required,oneof=text number select boolean"`
+	Role          string                         `json:"role" binding:"omitempty,oneof=attribute variant custom_option"`
+	SelectionMode string                         `json:"selection_mode" binding:"omitempty,oneof=single multiple"`
+	MinSelections int                            `json:"min_selections" binding:"min=0"`
+	MaxSelections *int                           `json:"max_selections" binding:"omitempty,min=0"`
+	Presentation  string                         `json:"presentation"`
+	Unit          string                         `json:"unit"`
+	IsRequired    bool                           `json:"is_required"`
+	IsFilterable  bool                           `json:"is_filterable"`
+	IsVisible     bool                           `json:"is_visible"`
+	SortOrder     int                            `json:"sort_order"`
+	Validation    string                         `json:"validation"`
+	OptionItems   []productSpecOptionItemRequest `json:"option_items"`
+}
+
+type productSpecOptionItemRequest struct {
+	ID                     uint   `json:"id"`
+	ValueKey               string `json:"value_key" binding:"required"`
+	DefaultLabel           string `json:"default_label"`
+	ColorHex               string `json:"color_hex"`
+	SwatchMediaAssetID     *uint  `json:"swatch_media_asset_id"`
+	SwatchURL              string `json:"swatch_url"`
+	IsEnabledByDefault     *bool  `json:"is_enabled_by_default"`
+	IsDefault              bool   `json:"is_default"`
+	DefaultPriceDeltaMinor *int64 `json:"default_price_delta_minor"`
+	DefaultPriceCurrency   string `json:"default_price_currency"`
+	SortOrder              int    `json:"sort_order"`
+	Revision               int    `json:"revision"`
 }
 
 func (h *ProductHandler) GetProductSpecificationTemplate(c *gin.Context) {
@@ -107,20 +125,23 @@ func productSpecificationTemplateInputFromRequest(request productSpecificationTe
 	definitions := make([]service.ProductSpecDefinitionInput, 0, len(request.SpecDefinitions))
 	for _, definition := range request.SpecDefinitions {
 		definitions = append(definitions, service.ProductSpecDefinitionInput{
-			ID:              definition.ID,
-			Group:           definition.Group,
-			Name:            definition.Name,
-			Slug:            definition.Slug,
-			FieldType:       definition.FieldType,
-			Presentation:    definition.Presentation,
-			Unit:            definition.Unit,
-			IsRequired:      definition.IsRequired,
-			IsFilterable:    definition.IsFilterable,
-			IsVisible:       definition.IsVisible,
-			IsVariantOption: definition.IsVariantOption,
-			SortOrder:       definition.SortOrder,
-			Options:         definition.Options,
-			Validation:      definition.Validation,
+			ID:            definition.ID,
+			Group:         definition.Group,
+			Name:          definition.Name,
+			Slug:          definition.Slug,
+			FieldType:     definition.FieldType,
+			Role:          definition.Role,
+			SelectionMode: definition.SelectionMode,
+			MinSelections: definition.MinSelections,
+			MaxSelections: definition.MaxSelections,
+			Presentation:  definition.Presentation,
+			Unit:          definition.Unit,
+			IsRequired:    definition.IsRequired,
+			IsFilterable:  definition.IsFilterable,
+			IsVisible:     definition.IsVisible,
+			SortOrder:     definition.SortOrder,
+			Validation:    definition.Validation,
+			OptionItems:   productSpecOptionItemsFromRequest(definition.OptionItems),
 		})
 	}
 	input := service.ProductSpecificationTemplateInput{
@@ -132,6 +153,30 @@ func productSpecificationTemplateInputFromRequest(request productSpecificationTe
 		SpecDefinitions: definitions,
 	}
 	return input
+}
+
+func productSpecOptionItemsFromRequest(items []productSpecOptionItemRequest) []service.ProductSpecOptionItemInput {
+	if len(items) == 0 {
+		return nil
+	}
+	result := make([]service.ProductSpecOptionItemInput, 0, len(items))
+	for _, item := range items {
+		result = append(result, service.ProductSpecOptionItemInput{
+			ID:                     item.ID,
+			ValueKey:               item.ValueKey,
+			DefaultLabel:           item.DefaultLabel,
+			ColorHex:               item.ColorHex,
+			SwatchMediaAssetID:     item.SwatchMediaAssetID,
+			SwatchURL:              item.SwatchURL,
+			IsEnabledByDefault:     item.IsEnabledByDefault,
+			IsDefault:              item.IsDefault,
+			DefaultPriceDeltaMinor: item.DefaultPriceDeltaMinor,
+			DefaultPriceCurrency:   item.DefaultPriceCurrency,
+			SortOrder:              item.SortOrder,
+			Revision:               item.Revision,
+		})
+	}
+	return result
 }
 
 func respondProductSpecificationTemplateServiceError(c *gin.Context, err error) {

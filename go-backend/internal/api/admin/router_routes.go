@@ -3,10 +3,13 @@ package admin
 import (
 	"os"
 	"strings"
+	"time"
 
 	seoapi "commerce-platform/internal/api/admin/seo"
 	urlapi "commerce-platform/internal/api/admin/urlmanagement"
+	workbenchfeedapi "commerce-platform/internal/api/admin/workbenchfeed"
 	"commerce-platform/internal/api/middleware"
+	"commerce-platform/internal/api/realtime"
 	"commerce-platform/internal/app"
 	"commerce-platform/internal/domain/auth"
 	"commerce-platform/internal/pkg/config"
@@ -26,7 +29,7 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 	userService := services.User
 	postService := services.Post
 	productService := services.Product
-	productProcurementService := services.ProductProcurement
+	productSupplierCostRecordService := services.ProductSupplierCostRecord
 	frameFitmentEntryService := services.FrameFitmentEntry
 	forkFitmentEntryService := services.ForkFitmentEntry
 	fitmentHubSpecificationService := services.FitmentHubSpecification
@@ -42,6 +45,9 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 		Secure:   cfg.Cookie.SecureEnabled(cfg.Server),
 		SameSite: cfg.Cookie.SameSiteMode(),
 		Domain:   cfg.Cookie.Domain,
+		Path:     "/api/admin",
+		CSRFPath: "/",
+		Names:    securecookie.AdminCookieNames(),
 	}
 	authHandler := NewAuthHandler(authService, cookieOptions)
 	adminAccountHandler := NewAdminAccountHandler(services.AdminAccountMaintenance)
@@ -49,7 +55,7 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 	userHandler := NewUserHandler(userService)
 	customerHandler := NewCustomerHandler(userService)
 	productHandler := NewProductHandler(productService)
-	productProcurementHandler := NewProductProcurementHandler(productProcurementService)
+	productSupplierCostRecordHandler := NewProductSupplierCostRecordHandler(productSupplierCostRecordService)
 	frameFitmentEntryHandler := NewFrameFitmentEntryHandler(frameFitmentEntryService)
 	forkFitmentEntryHandler := NewForkFitmentEntryHandler(forkFitmentEntryService)
 	fitmentHubSpecificationHandler := NewFitmentHubSpecificationHandler(fitmentHubSpecificationService)
@@ -101,6 +107,11 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 	subscriptionHandler := NewSubscriptionHandler(services.Subscription)
 	ticketHandler := NewTicketHandler(services.Ticket, services.CustomerServiceContext, services.CustomerServiceAnalytics, services.CustomerServiceEvents, services.Media)
 	ticketHandler.ConfigureAllowedOrigins(cfg.CORS.AllowedOrigins)
+	ticketHandler.ConfigureCustomerServiceWebSocketLimiter(realtime.NewCustomerServiceWebSocketLimiter(
+		deps.RedisClient,
+		cfg.CustomerServiceRealtime.WebSocketMaxConnectionsPerIP,
+		time.Duration(cfg.CustomerServiceRealtime.WebSocketConnectionLeaseSeconds)*time.Second,
+	))
 	autoReplyHandler := NewAutoReplyHandler(services.Ticket, services.FAQ)
 	visitorProfileHandler := NewVisitorProfileHandler(services.VisitorProfile)
 	visitorProfileHandler.ConfigureAuditService(services.Audit)
@@ -108,7 +119,7 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 	visitorRiskHandler.ConfigureAuditService(services.Audit)
 	globalIPBlockHandler := NewGlobalIPBlockHandler(services.GlobalIPBlock)
 	globalIPBlockHandler.ConfigureAuditService(services.Audit)
-	marketingHandler := NewMarketingHandler(marketingService, services.LoyaltyProgram)
+	marketingHandler := NewMarketingHandlerWithReferral(marketingService, services.LoyaltyProgram, services.Referral)
 	settingsHandler := NewSettingsHandler(services.AdminSettings)
 	refundCancellationPolicyHandler := NewRefundCancellationPolicyHandler(services.RefundCancellationPolicy)
 	siteLogoHandler := NewSiteLogoHandler(services.SiteLogo, services.AdminSettings)
@@ -192,6 +203,7 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 	pageFeedbackHandler := NewPageFeedbackHandler(services.Feedback)
 	pageFeedbackHandler.ConfigureAuditService(services.Audit)
 	pageFeedbackHandler.ConfigureRedisClient(deps.RedisClient)
+	workbenchFeedHandler := workbenchfeedapi.NewHandler(services.WorkbenchFeed)
 
 	// 管理后台 API 路由组
 	admin := r.Group("/api/admin")
@@ -220,7 +232,7 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 	registerProductRoutes(
 		authenticated,
 		productHandler,
-		productProcurementHandler,
+		productSupplierCostRecordHandler,
 		frameFitmentEntryHandler,
 		forkFitmentEntryHandler,
 		fitmentHubSpecificationHandler,
@@ -235,6 +247,7 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 		selectionConfigurationKeyHandler,
 		wheelsetFitQuestionnaireHandler,
 	)
+	registerWorkbenchFeedRoutes(authenticated, workbenchFeedHandler)
 	registerIntegrationRoutes(authenticated, googleMerchantHandler, socialOAuthHandler)
 	registerMediaAndPreflightRoutes(
 		authenticated,
@@ -253,6 +266,7 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 		paymentRiskMonitoringHandler,
 		paymentProtectionHandler,
 		paymentRefundRecommendationHandler,
+		deps.RedisClient,
 	)
 	registerOrderEvidenceRoutes(authenticated, orderEvidenceHandler)
 	registerProductQualityRequirementRoutes(authenticated, productQualityRequirementHandler)

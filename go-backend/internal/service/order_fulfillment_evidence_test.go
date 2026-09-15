@@ -57,7 +57,7 @@ func TestEvaluateOrderFulfillmentEvidenceExcludesPODButRequiresEveryOrderLine(t 
 	assert.Contains(t, check.Missing[1].Reason, "missing")
 }
 
-func TestEvaluateOrderFulfillmentEvidenceRejectsWaivedPhysicalEvidence(t *testing.T) {
+func TestEvaluateOrderFulfillmentEvidenceAllowsWaivedPhysicalEvidence(t *testing.T) {
 	orderItemID := uint(11)
 	check := evaluateOrderFulfillmentEvidence(
 		[]orderevidence.OrderEvidenceItem{
@@ -86,9 +86,12 @@ func TestEvaluateOrderFulfillmentEvidenceRejectsWaivedPhysicalEvidence(t *testin
 		nil,
 	)
 
-	assert.False(t, check.Ready)
-	assert.Len(t, check.Missing, 1)
-	assert.Equal(t, orderevidence.EvidenceItemStatusWaived, check.Missing[0].Status)
+	assert.True(t, check.Ready)
+	assert.Equal(t, 3, check.Total)
+	assert.Equal(t, 2, check.Complete)
+	assert.Equal(t, 1, check.Waived)
+	assert.Zero(t, check.Pending)
+	assert.Empty(t, check.Missing)
 }
 
 func TestOrderEvidenceServiceCheckFulfillmentReadinessAllowsMissingPOD(t *testing.T) {

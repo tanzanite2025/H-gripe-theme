@@ -6,7 +6,10 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
+	"commerce-platform/internal/domain/aftersales"
+	domainmoney "commerce-platform/internal/domain/money"
 	"commerce-platform/internal/pkg/apierror"
 	"commerce-platform/internal/pkg/pagination"
 	"commerce-platform/internal/pkg/response"
@@ -31,8 +34,17 @@ type createAfterSalesCaseRequest struct {
 }
 
 type updateAfterSalesStatusRequest struct {
-	Status     string `json:"status" binding:"required"`
-	Resolution string `json:"resolution"`
+	Status           string     `json:"status" binding:"required"`
+	Resolution       string     `json:"resolution"`
+	ReturnShipmentID uint       `json:"return_shipment_id"`
+	WarehouseName    string     `json:"warehouse_name"`
+	WarehouseAddress string     `json:"warehouse_address"`
+	Carrier          string     `json:"carrier"`
+	TrackingNumber   string     `json:"tracking_number"`
+	TrackingURL      string     `json:"tracking_url"`
+	LabelURL         string     `json:"label_url"`
+	ShippedAt        *time.Time `json:"shipped_at"`
+	ReceivedAt       *time.Time `json:"received_at"`
 }
 
 type saveAfterSalesRefundReviewRequest struct {
@@ -185,7 +197,20 @@ func (h *AfterSalesHandler) UpdateStatus(c *gin.Context) {
 		return
 	}
 
-	record, err := h.service.UpdateStatus(caseID, req.Status, req.Resolution, c.GetUint("user_id"))
+	updatedBy := c.GetUint("user_id")
+	record, err := h.service.UpdateStatusWithReturnShipment(caseID, service.UpdateAfterSalesStatusInput{
+		Status: req.Status, Resolution: req.Resolution, UpdatedBy: updatedBy,
+		ReturnShipmentID: req.ReturnShipmentID, WarehouseName: req.WarehouseName,
+		WarehouseAddress: req.WarehouseAddress, Carrier: req.Carrier,
+		TrackingNumber: req.TrackingNumber, TrackingURL: req.TrackingURL,
+		LabelURL: req.LabelURL, ShippedAt: req.ShippedAt, ReceivedAt: req.ReceivedAt,
+		ReceivedBy: func() *uint {
+			if strings.TrimSpace(req.Status) != aftersales.StatusReceived || updatedBy == 0 {
+				return nil
+			}
+			return &updatedBy
+		}(),
+	})
 	if err != nil {
 		respondAfterSalesError(c, err)
 		return
@@ -222,11 +247,15 @@ func (h *AfterSalesHandler) SaveRefundReview(c *gin.Context) {
 		apierror.RespondValidationError(c, err.Error())
 		return
 	}
+	proposedAmount, err := domainmoney.FromMajorFloat(req.ProposedAmount, req.Currency)
+	if err != nil {
+		apierror.RespondValidationError(c, "proposed_amount and currency must form a valid monetary amount")
+		return
+	}
 
 	review, err := h.service.SaveRefundReview(service.SaveAfterSalesRefundReviewInput{
 		CaseID:         caseID,
-		ProposedAmount: req.ProposedAmount,
-		Currency:       req.Currency,
+		ProposedAmount: proposedAmount,
 		RequestNotes:   req.RequestNotes,
 		UpdatedBy:      c.GetUint("user_id"),
 	})
@@ -325,6 +354,10 @@ func respondAfterSalesError(c *gin.Context, err error) {
 	case errors.Is(err, service.ErrAfterSalesTypeInvalid),
 		errors.Is(err, service.ErrAfterSalesStatusInvalid),
 		errors.Is(err, service.ErrAfterSalesTransitionInvalid),
+		errors.Is(err, service.ErrAfterSalesReturnCarrierRequired),
+		errors.Is(err, service.ErrAfterSalesReturnTrackingRequired),
+		errors.Is(err, service.ErrAfterSalesReturnWarehouseRequired),
+		errors.Is(err, service.ErrAfterSalesReturnReceiverRequired),
 		errors.Is(err, service.ErrAfterSalesOrderNotEligible),
 		errors.Is(err, service.ErrAfterSalesItemsRequired),
 		errors.Is(err, service.ErrAfterSalesItemNotFound),

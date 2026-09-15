@@ -2,6 +2,7 @@ import { computed, type Ref } from 'vue'
 import {
   useHead,
   useLocalePath,
+  useRoute,
   useRequestURL,
   useRuntimeConfig,
 } from '#imports'
@@ -94,6 +95,7 @@ const isValidBreadcrumbItemPath = (type: string, path: string) => {
 export function useProductDetailSeo(options: ProductDetailSeoOptions) {
   const config = useRuntimeConfig()
   const requestUrl = useRequestURL()
+  const route = useRoute()
   const localePath = useLocalePath()
   const siteOrigin = computed(() => {
     const value = (config.public as { siteUrl?: string }).siteUrl
@@ -138,10 +140,22 @@ export function useProductDetailSeo(options: ProductDetailSeoOptions) {
 
   useStorefrontSeoRouteOverride(localizedProductSeoRoutes)
 
-  const canonicalUrl = computed(() => toAbsoluteSeoUrl(
+  const rootCanonicalUrl = computed(() => toAbsoluteSeoUrl(
     siteOrigin.value,
     localizedProductPath.value,
   ))
+
+  // Variant selections are addressable via ?variant= and must not emit a
+  // canonical link to the unselected product URL, otherwise search engines
+  // collapse every variant into one duplicate document.
+  const canonicalUrl = computed(() => {
+    const variantID = options.selectedVariant.value?.id
+    const requestedVariant = typeof route.query.variant === 'string' ? route.query.variant.trim() : ''
+    const path = variantID && requestedVariant === String(variantID)
+      ? `${localizedProductPath.value}?variant=${encodeURIComponent(String(variantID))}`
+      : localizedProductPath.value
+    return toAbsoluteSeoUrl(siteOrigin.value, path)
+  })
 
   const metaTitle = computed(() => resolveProductMetaTitle(
     options.product.value?.meta_title,
@@ -280,7 +294,7 @@ export function useProductDetailSeo(options: ProductDetailSeoOptions) {
       || itemListElement[1]?.type !== 'shop'
       || itemListElement[itemListElement.length - 1]?.type !== 'product'
       || categoryCount < 1
-      || finalProductItem?.item !== canonicalUrl.value
+      || finalProductItem?.item !== rootCanonicalUrl.value
     ) {
       return null
     }
@@ -296,7 +310,7 @@ export function useProductDetailSeo(options: ProductDetailSeoOptions) {
     const seo = productSeoDocument.value
     const seoTitle = seo?.title || metaTitle.value
     const seoDescription = seo?.description || metaDescription.value
-    const seoCanonicalUrl = seo?.canonicalUrl || canonicalUrl.value
+    const seoCanonicalUrl = canonicalUrl.value || seo?.canonicalUrl || rootCanonicalUrl.value
     const metaEntries = [
       { name: 'description', content: seoDescription },
       { property: 'og:title', content: seoTitle },
@@ -314,7 +328,16 @@ export function useProductDetailSeo(options: ProductDetailSeoOptions) {
       metaEntries.push({ name: 'twitter:image', content: seoImage })
     }
 
-    const seoOffer = seo?.schema?.['@type'] === 'Product' ? seo.schema.offers : null
+    const seoOffer = seo?.schema?.['@type'] === 'Product'
+      ? seo.schema.offers
+      : options.selectedVariant.value
+        ? {
+            price: options.currentDisplayPrice.value.amount,
+            priceCurrency: options.currentDisplayPrice.value.currency,
+          }
+        : seo?.schema?.['@type'] === 'ProductGroup'
+          ? seo.schema.hasVariant.find((variant) => variant.offers)?.offers
+          : null
     if (seoOffer) {
       metaEntries.push({
         property: 'product:price:amount',

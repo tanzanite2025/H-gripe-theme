@@ -12,7 +12,7 @@
       </div>
 
       <form class="mt-5 space-y-4" @submit.prevent="submitQuote">
-        <div class="grid gap-3 sm:grid-cols-2">
+        <div class="grid gap-3 sm:grid-cols-3">
           <AdminFormField label="国家/地区代码" required :error="errors.country">
             <Input
               v-model.trim="form.country"
@@ -21,6 +21,10 @@
               maxlength="8"
               @input="clearError('country')"
             />
+          </AdminFormField>
+
+          <AdminFormField label="邮编 / Postal Code" description="用于命中线路的偏远邮编段规则。">
+            <Input v-model.trim="form.postal_code" class="font-mono" placeholder="可选，例如 10005" />
           </AdminFormField>
 
           <AdminFormField label="币种" required :error="errors.currency">
@@ -117,70 +121,67 @@
  <p class="mt-1 text-2xl font-black tracking-tighter">{{ quote.free_shipping ? '是': '否'}}</p>
           </div>
           <div class="rounded-lg border bg-muted/35 p-3">
-            <span class="text-[10px] font-black uppercase tracking-wider text-muted-foreground">默认线路</span>
-            <p class="mt-1 truncate text-sm font-black tracking-tighter">{{ selectedOptionLabel(quote.selected_option) }}</p>
- <p class="mt-1 text-[10px] text-muted-foreground">{{ quote.source === 'carrier_service'? '线路服务报价': '模板基础报价'}}</p>
+            <span class="text-[10px] font-black uppercase tracking-wider text-muted-foreground">默认方案</span>
+            <p class="mt-1 text-sm font-black">{{ selectedPlanLabel(quote.selected_plan) }}</p>
+            <p class="mt-1 font-mono text-[10px] text-muted-foreground">{{ quote.selected_plan?.id || '-' }}</p>
           </div>
         </div>
 
         <div class="rounded-lg border bg-card p-3">
           <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h3 class="text-xs font-black uppercase tracking-wider">可选线路</h3>
+              <h3 class="text-xs font-black uppercase tracking-wider">可选运输方案</h3>
               <p class="mt-1 text-[10px] text-muted-foreground">
-                只展示已启用、国家/币种匹配、且使用当前模板的线路；体积重线路必须有包装尺寸才会进入候选。
+                每个方案覆盖全部商品分组；多模板商品会显示为包含多段线路的完整方案。
               </p>
             </div>
-            <Badge variant="outline" class="w-fit">{{ quote.options?.length || 0 }} OPTIONS</Badge>
+            <Badge variant="outline" class="w-fit">{{ quote.plans?.length || 0 }} PLANS</Badge>
           </div>
 
-          <div v-if="!quote.options?.length" class="mt-3 rounded-lg border border-dashed p-4 text-xs text-muted-foreground">
-            当前没有可用线路服务，系统仍返回模板基础报价。请检查：线路是否启用、是否使用商品/SKU 设置的运费模板、国家/币种是否匹配、体积重线路是否已配置包装尺寸。
+          <div v-if="!quote.plans?.length" class="mt-3 rounded-lg border border-dashed p-4 text-xs text-muted-foreground">
+            当前没有覆盖全部商品分组的运输方案。
           </div>
 
           <AdminTablePanel v-else :loading="false" class="mt-3">
             <Table class="min-w-[1080px]">
               <TableHeader>
                 <TableRow>
-                  <TableHead>线路服务</TableHead>
-                  <TableHead class="w-32">计费模式</TableHead>
-                  <TableHead class="w-44 text-right">重量口径</TableHead>
-                  <TableHead class="w-40 text-right">费用拆分</TableHead>
+                  <TableHead>运输方案</TableHead>
+                  <TableHead class="w-24 text-right">分段</TableHead>
+                  <TableHead class="w-64 text-right">计费明细</TableHead>
                   <TableHead class="w-28 text-right">总运费</TableHead>
                   <TableHead class="w-28 text-right">时效</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                <TableRow v-for="option in quote.options" :key="option.carrier_service_id">
+                <TableRow v-for="plan in quote.plans" :key="plan.id || selectedPlanLabel(plan)">
                   <TableCell>
                     <div class="flex items-start gap-2">
                       <Badge
-                        v-if="isSelectedOption(option)"
+                        v-if="isSelectedPlan(plan)"
                         variant="outline"
                         class="mt-0.5 border-emerald-200 bg-emerald-50 text-[10px] text-emerald-700"
                       >
                         默认
                       </Badge>
-                      <div class="min-w-0">
- <span class="block truncate text-xs font-bold">{{ option.service_name || '-'}}</span>
-                        <span class="block truncate font-mono text-[10px] text-muted-foreground">
-                          {{ option.carrier_name || '-' }} · {{ option.service_code || '-' }} · template_id={{ option.template_id || '-' }}
-                        </span>
+                      <div class="min-w-0 space-y-1">
+                        <div v-for="leg in plan.legs || []" :key="leg.group_key || `${leg.template_id}-${leg.carrier_service_id}`">
+                          <span class="block text-xs font-bold">{{ leg.service_name || leg.template_name || '-' }}</span>
+                          <span class="block font-mono text-[10px] text-muted-foreground">
+                            {{ leg.carrier_name || '模板费率' }} · {{ leg.service_code || leg.group_key || '-' }}
+                          </span>
+                        </div>
                       </div>
                     </div>
                   </TableCell>
-                  <TableCell>{{ billingModeLabel(option.billing_mode) }}</TableCell>
+                  <TableCell class="text-right font-mono text-xs">{{ plan.legs?.length || 0 }}</TableCell>
                   <TableCell class="text-right font-mono text-[10px] text-muted-foreground">
-                    实重 {{ formatGrams(option.actual_weight_grams) }}<br />
-                    体积 {{ formatGrams(option.volumetric_weight_grams) }}<br />
-                    计费 {{ formatGrams(option.billable_weight_grams) }}
+                    <div v-for="leg in plan.legs || []" :key="`fee-${leg.group_key || leg.template_id}`">
+                      {{ billingModeLabel(leg.billing_mode) }} · {{ formatGrams(leg.billable_weight_grams) }} · {{ formatMoney(leg.shipping_fee) }}
+                    </div>
                   </TableCell>
-                  <TableCell class="text-right font-mono text-[10px] text-muted-foreground">
-                    base {{ formatMoney(option.base_fee) }}<br />
-                    fuel {{ formatMoney(option.fuel_surcharge) }} · remote {{ formatMoney(option.remote_surcharge) }}
-                  </TableCell>
-                  <TableCell class="text-right text-sm font-black tabular-nums">{{ formatMoney(option.shipping_fee) }}</TableCell>
-                  <TableCell class="text-right text-xs tabular-nums">{{ formatEta(option) }}</TableCell>
+                  <TableCell class="text-right text-sm font-black tabular-nums">{{ formatMoney(plan.shipping_fee) }}</TableCell>
+                  <TableCell class="text-right text-xs tabular-nums">{{ formatEta(plan) }}</TableCell>
                 </TableRow>
               </TableBody>
             </Table>
@@ -247,12 +248,13 @@ import { Table, TableBody, TableCell, TableEmpty, TableHead, TableHeader, TableR
 import type {
   ShippingQuoteForm,
   ShippingQuoteItemInput,
-  ShippingQuoteOption,
+  ShippingQuotePlan,
   ShippingQuoteResult
 } from '@/modules/shipping/shippingTypes'
 
 const form = reactive<ShippingQuoteForm>({
   country: 'US',
+  postal_code: '',
   currency: '',
   items: [
     {
@@ -313,6 +315,7 @@ const validate = () => {
 
 const buildPayload = () => ({
   country: form.country.trim().toUpperCase(),
+  ...(form.postal_code.trim() ? { postal_code: form.postal_code.trim() } : {}),
   currency: form.currency.trim().toUpperCase(),
   items: form.items.map((item) => ({
     product_id: Number(item.product_id),
@@ -339,24 +342,25 @@ const submitQuote = async () => {
 
 const formatMoney = (value: unknown) => Number(value || 0).toFixed(2)
 const formatGrams = (value: unknown) => `${Number(value || 0).toLocaleString()} g`
-const selectedOptionLabel = (option?: ShippingQuoteOption | null) => {
-  if (!option) return '未命中线路'
-  return [option.carrier_name, option.service_name].filter(Boolean).join(' / ') || `Service #${option.carrier_service_id || '-'}`
+const selectedPlanLabel = (plan?: ShippingQuotePlan | null) => {
+  if (!plan) return '未命中方案'
+  const labels = (plan.legs || []).map(leg => leg.service_name || leg.template_name || '').filter(Boolean)
+  return labels.join(' + ') || '未命名方案'
 }
 const billingModeLabel = (mode?: string | null) => ({
   actual_weight: '实重计费',
   volumetric_weight: '体积重计费',
   greater_of_actual_and_volumetric: '实重/体积重取大',
 }[mode] || mode || '-')
-const formatEta = (option?: ShippingQuoteOption | null) => {
-  const min = Number(option?.eta_min_days || 0)
-  const max = Number(option?.eta_max_days || 0)
+const formatEta = (plan?: ShippingQuotePlan | null) => {
+  const min = Number(plan?.eta_min_days || 0)
+  const max = Number(plan?.eta_max_days || 0)
   if (min > 0 && max > 0) return min === max ? `${min} 天` : `${min}-${max} 天`
   if (min > 0) return `${min}+ 天`
   if (max > 0) return `${max} 天内`
   return '-'
 }
-const isSelectedOption = (option?: ShippingQuoteOption | null) =>
-  Number(option?.carrier_service_id || 0) === Number(quote.value?.selected_option?.carrier_service_id || 0)
+const isSelectedPlan = (plan?: ShippingQuotePlan | null) =>
+  Boolean(plan?.id) && plan?.id === quote.value?.selected_plan?.id
 </script>
 

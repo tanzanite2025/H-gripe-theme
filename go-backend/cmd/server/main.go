@@ -114,6 +114,7 @@ func main() {
 		if err := service.SeedDefaultMediaDerivativePresets(presetRepo); err != nil {
 			logger.Fatal("seed media derivative presets failed", zap.Error(err))
 		}
+		service.ConfigureMediaDerivativeGenerationCapacity(cfg.Worker.MediaDerivativeGenerationCapacity)
 
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Hour)
 		mediaService := service.NewMediaService(
@@ -198,7 +199,7 @@ func main() {
 
 	var trackingScheduler *scheduler.TrackingScheduler
 	if cfg.Worker.TrackingPollingEnabled {
-		trackingScheduler = scheduler.NewTrackingScheduler(deps.Services.Shipping, cfg.Worker)
+		trackingScheduler = scheduler.NewTrackingScheduler(deps.Services.Shipping, cfg.Worker, deps.RedisClient)
 		trackingScheduler.Start(context.Background())
 	} else {
 		deps.Services.Shipping.ConfigureTrackingPolling(false, time.Duration(cfg.Worker.TrackingPollingIntervalSeconds)*time.Second, cfg.Worker.TrackingPollingBatchLimit)
@@ -221,6 +222,14 @@ func main() {
 		logger.Info("behavior event cleanup scheduler disabled")
 	}
 
+	var quickBuyAbandonmentScheduler *scheduler.QuickBuyAbandonmentScheduler
+	if cfg.Worker.QuickBuyAbandonmentEnabled {
+		quickBuyAbandonmentScheduler = scheduler.NewQuickBuyAbandonmentScheduler(deps.Services.QuickBuy, cfg.Worker)
+		quickBuyAbandonmentScheduler.Start(context.Background())
+	} else {
+		logger.Info("quick-buy abandonment scheduler disabled")
+	}
+
 	var ugcShowcaseCleanupScheduler *scheduler.UGCShowcaseCleanupScheduler
 	if cfg.Worker.ShowcaseCleanupEnabled {
 		ugcShowcaseCleanupScheduler = scheduler.NewUGCShowcaseCleanupScheduler(deps.Services.UGCShowcase, cfg.Worker)
@@ -241,9 +250,17 @@ func main() {
 		logger.Info("outbox dispatch scheduler disabled")
 	}
 
+	var referralLifecycleScheduler *scheduler.ReferralLifecycleScheduler
+	if cfg.Worker.ReferralLifecycleEnabled {
+		referralLifecycleScheduler = scheduler.NewReferralLifecycleScheduler(deps.Services.Referral, cfg.Worker, deps.RedisClient)
+		referralLifecycleScheduler.Start(context.Background())
+	} else {
+		logger.Info("referral lifecycle scheduler disabled")
+	}
+
 	var paymentExpirationScheduler *scheduler.PaymentExpirationScheduler
 	if cfg.Worker.PaymentExpirationEnabled {
-		paymentExpirationScheduler = scheduler.NewPaymentExpirationScheduler(deps.Services.Order, cfg.Worker)
+		paymentExpirationScheduler = scheduler.NewPaymentExpirationScheduler(deps.Services.Order, cfg.Worker, deps.RedisClient)
 		paymentExpirationScheduler.Start(context.Background())
 	} else {
 		logger.Info("payment expiration scheduler disabled")
@@ -299,6 +316,13 @@ func main() {
 	}
 
 	var visitorRiskFlushScheduler *scheduler.VisitorRiskFlushScheduler
+	var productViewCountFlushScheduler *scheduler.ProductViewCountFlushScheduler
+	if cfg.Worker.ProductViewCountFlushEnabled {
+		productViewCountFlushScheduler = scheduler.NewProductViewCountFlushScheduler(deps.Services.Product, deps.RedisClient, cfg.Worker)
+		productViewCountFlushScheduler.Start(context.Background())
+	} else {
+		logger.Info("product view count flush scheduler disabled")
+	}
 	if cfg.VisitorRisk.Enabled {
 		visitorRiskFlushScheduler = scheduler.NewVisitorRiskFlushScheduler(deps.Services.VisitorRisk, cfg.VisitorRisk)
 		visitorRiskFlushScheduler.Start(context.Background())
@@ -341,11 +365,17 @@ func main() {
 	if behaviorEventCleanupScheduler != nil {
 		behaviorEventCleanupScheduler.Stop()
 	}
+	if quickBuyAbandonmentScheduler != nil {
+		quickBuyAbandonmentScheduler.Stop()
+	}
 	if ugcShowcaseCleanupScheduler != nil {
 		ugcShowcaseCleanupScheduler.Stop()
 	}
 	if outboxDispatchScheduler != nil {
 		outboxDispatchScheduler.Stop()
+	}
+	if referralLifecycleScheduler != nil {
+		referralLifecycleScheduler.Stop()
 	}
 	if paymentExpirationScheduler != nil {
 		paymentExpirationScheduler.Stop()
@@ -367,6 +397,9 @@ func main() {
 	}
 	if visitorRiskFlushScheduler != nil {
 		visitorRiskFlushScheduler.Stop()
+	}
+	if productViewCountFlushScheduler != nil {
+		productViewCountFlushScheduler.Stop()
 	}
 	if deps.CustomerServiceRealtimeRelay != nil {
 		deps.CustomerServiceRealtimeRelay.Stop()

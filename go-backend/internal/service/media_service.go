@@ -41,6 +41,7 @@ type MediaService struct {
 	settings                 *SettingService
 	siteURL                  string
 	accountStorageQuotaBytes int64
+	cdnPurger                *mediaCDNPurger
 }
 
 // PublicMediaURLResolver is the boundary used by public response mappers when
@@ -62,6 +63,7 @@ func NewMediaService(
 		settings:                 settingSvc,
 		siteURL:                  strings.TrimRight(strings.TrimSpace(siteURL), "/"),
 		accountStorageQuotaBytes: accountStorageQuotaBytes,
+		cdnPurger:                newMediaCDNPurgerFromEnv(),
 	}
 }
 

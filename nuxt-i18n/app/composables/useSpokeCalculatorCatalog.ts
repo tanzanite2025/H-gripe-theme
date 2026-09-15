@@ -1,11 +1,7 @@
 import { computed } from 'vue'
 import { useState } from '#imports'
 import { useApiRequest } from '~/composables/useApiRequest'
-import {
-  DEFAULT_SPOKE_CATALOG,
-  SPOKE_CALCULATOR_OPTIONS,
-  type SpokeCatalog,
-} from '~/data/spoke-calculator/database'
+import { SPOKE_CALCULATOR_OPTIONS, type SpokeCatalog } from '~/data/spoke-calculator/database'
 import { normalizeSpokeCatalogPayload } from '../utils/spokeCatalogNormalizer'
 
 type SpokeCatalogSource = 'empty' | 'api' | 'dev-fallback' | 'error'
@@ -38,18 +34,11 @@ export const useSpokeCalculatorCatalog = () => {
   const state = useState<SpokeCatalogState>(`spoke-calculator-catalog:${baseURL}`, createEmptyState)
 
   const applyDevFallback = (reason: string): SpokeCatalog => {
-    if (!import.meta.dev) {
-      state.value.catalog = emptyCatalog()
-      state.value.source = 'error'
-      state.value.error = reason
-      return state.value.catalog
-    }
-
-    // eslint-disable-next-line no-console
-    console.warn(`[spoke catalog] using development fallback: ${reason}`)
-    state.value.catalog = DEFAULT_SPOKE_CATALOG
-    state.value.source = 'dev-fallback'
-    state.value.error = null
+    // Never fall back to a bundled catalog: doing so would expose proprietary
+    // CAD geometry and allow the calculator to run outside the protected API.
+    state.value.catalog = emptyCatalog()
+    state.value.source = 'error'
+    state.value.error = reason
     return state.value.catalog
   }
 
@@ -61,7 +50,7 @@ export const useSpokeCalculatorCatalog = () => {
     state.value.loading = true
     state.value.error = null
 
-    const loadRequest = apiRequest<unknown>('/spoke/export', {}, 'Failed to load spoke calculator data')
+    const loadRequest = apiRequest<unknown>('/spoke/catalog/export', {}, 'Failed to load spoke calculator data')
       .then((payload) => {
         const catalog = normalizeSpokeCatalogPayload(payload)
         state.value.catalog = catalog

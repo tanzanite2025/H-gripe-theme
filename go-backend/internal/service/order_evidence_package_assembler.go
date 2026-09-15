@@ -33,15 +33,15 @@ type OrderEvidenceSourceReference struct {
 // records private to the service package so provider credentials cannot leak
 // through this result.
 type OrderEvidencePackageAssembly struct {
-	Order             *order.Order                         `json:"order,omitempty"`
-	Package           *orderevidence.OrderEvidencePackage  `json:"package,omitempty"`
-	Completeness      orderevidence.EvidenceCompleteness   `json:"completeness"`
-	TrackingContext   *OrderEvidenceTrackingContext        `json:"tracking_context,omitempty"`
-	Sources           []OrderEvidenceSourceReference       `json:"sources"`
-	Warnings          []string                             `json:"warnings,omitempty"`
-	AssembledAt       time.Time                            `json:"assembled_at"`
-	Shipment          *shipping.TrackingShipment           `json:"-"`
-	TrackingEvents    []shipping.TrackingEvent             `json:"-"`
+	Order           *order.Order                        `json:"order,omitempty"`
+	Package         *orderevidence.OrderEvidencePackage `json:"package,omitempty"`
+	Completeness    orderevidence.EvidenceCompleteness  `json:"completeness"`
+	TrackingContext *OrderEvidenceTrackingContext       `json:"tracking_context,omitempty"`
+	Sources         []OrderEvidenceSourceReference      `json:"sources"`
+	Warnings        []string                            `json:"warnings,omitempty"`
+	AssembledAt     time.Time                           `json:"assembled_at"`
+	Shipment        *shipping.TrackingShipment          `json:"-"`
+	TrackingEvents  []shipping.TrackingEvent            `json:"-"`
 }
 
 // OrderEvidencePackageAssembler joins order-time evidence facts with the

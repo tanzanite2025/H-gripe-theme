@@ -94,8 +94,8 @@ export interface ShopProductSpecDefinition {
   group?: string
   fieldType?: string
   unit?: string
+  role?: 'attribute' | 'variant' | 'custom_option' | string
   isFilterable?: boolean
-  isVariantOption?: boolean
   sortOrder?: number
 }
 
@@ -140,6 +140,7 @@ export interface ShopProductCartOptions {
   thumbnail?: string
   weightGrams?: number | null
   fulfillmentMode?: ShopProductFulfillmentMode
+  selectedOptions?: Array<{ group_slug: string; value_keys: string[] }>
 }
 
 const toFiniteNumber = (value: unknown, fallback = 0) => {
@@ -300,8 +301,8 @@ const normalizeSpecDefinitions = (item: any): ShopProductSpecDefinition[] => {
         group: definition?.group ? String(definition.group) : undefined,
         fieldType: definition?.field_type ? String(definition.field_type) : undefined,
         unit: definition?.unit ? String(definition.unit) : undefined,
+        role: definition?.role ? String(definition.role) : undefined,
         isFilterable: Boolean(definition?.is_filterable),
-        isVariantOption: Boolean(definition?.is_variant_option),
         sortOrder: toFiniteNumber(definition?.sort_order),
       }
     })
@@ -681,7 +682,8 @@ export function useShopProducts() {
       image: thumbnail,
       thumbnail,
       weight_grams: weightGrams || undefined,
-      fulfillment_mode: fulfillmentMode,
+		fulfillment_mode: fulfillmentMode,
+		selected_options: options.selectedOptions || [],
     }
   }
 

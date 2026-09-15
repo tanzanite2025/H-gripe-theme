@@ -774,6 +774,8 @@
       "all": "All",
       "viewAll": "View All FAQs",
       "emptySection": "No FAQs available for this section.",
+      "pagesAriaLabel": "FAQ pages",
+      "pagesLabel": "FAQ pages",
       "pageIntro": "Browse common questions and quick answers about orders, products, and service.",
       "searchPlaceholder": "Search FAQs...",
       "viewMoreContent": "View More Content",

@@ -1,6 +1,7 @@
 package service
 
 import (
+	"math"
 	"testing"
 
 	productdomain "commerce-platform/internal/domain/product"
@@ -37,6 +38,64 @@ func TestSpokeServiceListUserHistoryFiltersByOwner(t *testing.T) {
 	require.Len(t, items, 1)
 	require.NotNil(t, items[0].RimModel)
 	assert.Equal(t, rimModel, *items[0].RimModel)
+}
+
+func TestSpokeServiceCalculateAppliesHiddenNippleAndPersistsHistory(t *testing.T) {
+	db, spokeService := newTestSpokeService(t)
+	erd := 598.0
+	left := 22.5
+	right := 35.6
+	pcd := 44.0
+	_, err := spokeService.ReplaceCatalog(spokedomain.ExportResponse{
+		Rims: []spokedomain.RimBrand{{ID: "dt_swiss", Name: "DT Swiss", Items: []spokedomain.RimModel{{ID: "rr411_db", Name: "RR 411 db", ERD: &erd}}}},
+		Hubs: []spokedomain.HubBrand{{ID: "dt_swiss", Name: "DT Swiss", Items: []spokedomain.HubModel{{ID: "hub", Name: "Hub", Front: &spokedomain.HubGeometry{LeftFlange: &left, RightFlange: &right, LeftFlangePCD: &pcd, RightFlangePCD: &pcd}}}}},
+	})
+	require.NoError(t, err)
+
+	standard, err := spokeService.Calculate(SpokeCalculationInput{RimID: "rr411_db", HubID: "hub", WheelPosition: "front", SpokeCount: 24, Crossing: 2, NippleType: "standard"})
+	require.NoError(t, err)
+	nippleLength := 12.0
+	userID := uint(7)
+	hidden, err := spokeService.Calculate(SpokeCalculationInput{RimID: "rr411_db", HubID: "hub", WheelPosition: "front", SpokeCount: 24, Crossing: 2, NippleType: "hidden", NippleLengthMM: &nippleLength, UserID: &userID})
+	require.NoError(t, err)
+	require.InDelta(t, 9, hidden.LeftLengthMM-standard.LeftLengthMM, 0.01)
+	require.InDelta(t, 9, hidden.RightLengthMM-standard.RightLengthMM, 0.01)
+
+	var histories []spokedomain.History
+	require.NoError(t, db.Order("id ASC").Find(&histories).Error)
+	require.Len(t, histories, 2)
+	require.Equal(t, userID, *histories[1].UserID)
+	require.Equal(t, hidden.LeftLengthMM, *histories[1].LeftLengthMM)
+}
+
+func TestSpokeServiceRejectsNonFiniteGeometry(t *testing.T) {
+	_, spokeService := newTestSpokeService(t)
+	nan := math.NaN()
+	value := 35.0
+	pcd := 50.0
+	_, err := spokeService.Calculate(SpokeCalculationInput{
+		WheelPosition: "front", SpokeCount: 24, Crossing: 2,
+		ERDMM: &nan, LeftFlangeMM: &value, RightFlangeMM: &value,
+		LeftFlangePCDMM: &pcd, RightFlangePCDMM: &pcd,
+	})
+	require.ErrorIs(t, err, ErrInvalidSpokeCalculation)
+}
+
+func TestSpokeServicePublicExportRedactsProprietaryGeometry(t *testing.T) {
+	_, spokeService := newTestSpokeService(t)
+	erd := 598.0
+	left := 22.5
+	right := 35.6
+	pcd := 44.0
+	_, err := spokeService.ReplaceCatalog(spokedomain.ExportResponse{
+		Rims: []spokedomain.RimBrand{{ID: "dt_swiss", Name: "DT Swiss", Items: []spokedomain.RimModel{{ID: "rr411_db", Name: "RR 411 db", ERD: &erd}}}},
+		Hubs: []spokedomain.HubBrand{{ID: "dt_swiss", Name: "DT Swiss", Items: []spokedomain.HubModel{{ID: "hub", Name: "Hub", Front: &spokedomain.HubGeometry{LeftFlange: &left, RightFlange: &right, LeftFlangePCD: &pcd, RightFlangePCD: &pcd}}}}},
+	})
+	require.NoError(t, err)
+	public, err := spokeService.GetPublicExport()
+	require.NoError(t, err)
+	require.Nil(t, public.Rims[0].Items[0].ERD)
+	require.Nil(t, public.Hubs[0].Items[0].Front)
 }
 
 func TestSpokeServiceReplaceCatalogAllowsMissingGeometry(t *testing.T) {

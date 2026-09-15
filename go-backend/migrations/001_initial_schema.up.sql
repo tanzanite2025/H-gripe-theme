@@ -81,12 +81,49 @@ CREATE TABLE IF NOT EXISTS post_categories (
 CREATE INDEX IF NOT EXISTS idx_post_categories_post_id ON post_categories(post_id);
 CREATE INDEX IF NOT EXISTS idx_post_categories_category_id ON post_categories(category_id);
 
+-- Product categories are part of the baseline so fresh databases and upgraded
+-- databases share the same restrictive deletion contract. Later migrations
+-- add SEO and media fields to these tables.
+CREATE TABLE IF NOT EXISTS product_categories (
+    id BIGSERIAL PRIMARY KEY,
+    parent_id BIGINT NULL,
+    name VARCHAR(120) NOT NULL,
+    slug VARCHAR(120) NOT NULL,
+    description TEXT NOT NULL DEFAULT '',
+    depth INTEGER NOT NULL DEFAULT 1,
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    is_enabled BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT fk_product_categories_parent
+        FOREIGN KEY (parent_id) REFERENCES product_categories(id) ON DELETE RESTRICT,
+    CONSTRAINT chk_product_categories_depth
+        CHECK (depth >= 1 AND depth <= 5),
+    CONSTRAINT chk_product_categories_not_self_parent
+        CHECK (parent_id IS NULL OR parent_id <> id)
+);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_product_categories_slug ON product_categories(slug);
+CREATE INDEX IF NOT EXISTS idx_product_categories_parent_id ON product_categories(parent_id);
+
+CREATE TABLE IF NOT EXISTS product_category_translations (
+    id BIGSERIAL PRIMARY KEY,
+    product_category_id BIGINT NOT NULL REFERENCES product_categories(id) ON DELETE CASCADE,
+    locale VARCHAR(32) NOT NULL,
+    name VARCHAR(120) NOT NULL,
+    description TEXT NOT NULL DEFAULT '',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_product_category_translations_category_locale
+    ON product_category_translations(product_category_id, locale);
+
 -- Products Table
 CREATE TABLE IF NOT EXISTS products (
     id BIGSERIAL PRIMARY KEY,
     sku VARCHAR(100) UNIQUE NOT NULL,
     name VARCHAR(500) NOT NULL,
     slug VARCHAR(255) NOT NULL,
+    product_category_id BIGINT NULL,
     description TEXT,
     short_description TEXT,
     hs_code VARCHAR(12),
@@ -106,7 +143,9 @@ CREATE TABLE IF NOT EXISTS products (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP,
-    FOREIGN KEY (parent_id) REFERENCES products(id)
+    FOREIGN KEY (parent_id) REFERENCES products(id),
+    CONSTRAINT fk_products_product_category
+        FOREIGN KEY (product_category_id) REFERENCES product_categories(id) ON DELETE RESTRICT
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_product_slug_locale ON products(slug, locale);
@@ -114,6 +153,7 @@ CREATE INDEX IF NOT EXISTS idx_products_sku ON products(sku);
 CREATE INDEX IF NOT EXISTS idx_products_status ON products(status);
 CREATE INDEX IF NOT EXISTS idx_products_locale ON products(locale);
 CREATE INDEX IF NOT EXISTS idx_products_deleted_at ON products(deleted_at);
+CREATE INDEX IF NOT EXISTS idx_products_product_category_id ON products(product_category_id);
 
 -- Carts Table
 CREATE TABLE IF NOT EXISTS carts (

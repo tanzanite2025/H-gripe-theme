@@ -8,6 +8,7 @@ import (
 
 	"commerce-platform/internal/domain/coupon"
 	"commerce-platform/internal/domain/loyalty"
+	domainmoney "commerce-platform/internal/domain/money"
 	"commerce-platform/internal/repository"
 )
 
@@ -21,7 +22,6 @@ type RedeemResult struct {
 	RedemptionID       uint       `json:"redemption_id"`
 	GiftCardID         uint       `json:"giftcard_id"`
 	CardCode           string     `json:"card_code"`
-	Balance            float64    `json:"balance"`
 	BalanceCents       int64      `json:"balance_cents"`
 	GiftCardValueCents int64      `json:"giftcard_value_cents"`
 	PointsSpent        int        `json:"points_spent"`
@@ -47,14 +47,18 @@ func (s *MarketingService) ListRedeemGiftCardOptionsFromConfig(config *loyalty.P
 
 	options := make([]RedeemGiftCardOption, 0, len(config.RedeemOptions))
 	for _, option := range config.RedeemOptions {
-		pointsRequired, err := PointsForGiftCardValue(option.ValueCents, config.ExchangeRatePoints)
+		optionMoney, err := domainmoney.New(option.ValueCents, option.Currency)
+		if err != nil {
+			continue
+		}
+		pointsRequired, err := PointsForGiftCardMoney(optionMoney, config.ExchangeRatePoints)
 		if err != nil || pointsRequired < config.MinRedeemPoints || option.RemainingQuantity() <= 0 {
 			continue
 		}
-		value := float64(option.ValueCents) / 100
+		value := majorValueFromCents(option.ValueCents, option.Currency)
 		options = append(options, RedeemGiftCardOption{
 			ID:                 option.ID,
-			Label:              fmt.Sprintf("%s %.2f Gift Card", option.Currency, value),
+			Label:              giftCardValueLabel(option.ValueCents, option.Currency),
 			GiftCardValue:      value,
 			GiftCardValueCents: option.ValueCents,
 			Currency:           option.Currency,
@@ -89,7 +93,11 @@ func (s *MarketingService) RedeemPointsForGiftCard(
 		return nil, err
 	}
 	valueCents := selectedOption.ValueCents
-	pointsToSpend, err := PointsForGiftCardValue(valueCents, config.ExchangeRatePoints)
+	optionMoney, err := domainmoney.New(valueCents, selectedOption.Currency)
+	if err != nil {
+		return nil, fmt.Errorf("invalid gift card amount: %w", err)
+	}
+	pointsToSpend, err := PointsForGiftCardMoney(optionMoney, config.ExchangeRatePoints)
 	if err != nil {
 		return nil, err
 	}
@@ -137,9 +145,9 @@ func (s *MarketingService) RedeemPointsForGiftCard(
 		if config.MaxValuePerDayCents > 0 && todayValueCents+valueCents > config.MaxValuePerDayCents {
 			return fmt.Errorf(
 				"daily limit exceeded: limit %.2f, redeemed %.2f, attempted %.2f",
-				float64(config.MaxValuePerDayCents)/100,
-				float64(todayValueCents)/100,
-				float64(valueCents)/100,
+				majorValueFromCents(config.MaxValuePerDayCents, config.Currency),
+				majorValueFromCents(todayValueCents, selectedOption.Currency),
+				majorValueFromCents(valueCents, selectedOption.Currency),
 			)
 		}
 
@@ -200,6 +208,7 @@ func (s *MarketingService) RedeemPointsForGiftCard(
 		redemptionID := redemption.ID
 		if err := repos.Coupon.CreateGiftCardTransaction(&coupon.GiftCardTransaction{
 			GiftCardID:   giftCard.ID,
+			Currency:     giftCard.Currency,
 			RedemptionID: &redemptionID,
 			Type:         "issue",
 			AmountCents:  valueCents,
@@ -213,7 +222,6 @@ func (s *MarketingService) RedeemPointsForGiftCard(
 			RedemptionID:       redemption.ID,
 			GiftCardID:         giftCard.ID,
 			CardCode:           giftCard.Code,
-			Balance:            giftCard.Balance,
 			BalanceCents:       giftCard.BalanceCents,
 			GiftCardValueCents: valueCents,
 			PointsSpent:        pointsToSpend,
@@ -267,7 +275,6 @@ func (s *MarketingService) redeemResultFromExisting(
 		RedemptionID:       redemption.ID,
 		GiftCardID:         redemption.GiftCard.ID,
 		CardCode:           redemption.GiftCard.Code,
-		Balance:            redemption.GiftCard.Balance,
 		BalanceCents:       redemption.GiftCard.BalanceCents,
 		GiftCardValueCents: redemption.GiftCardValueCents,
 		PointsSpent:        redemption.PointsSpent,

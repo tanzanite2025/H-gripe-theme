@@ -16,6 +16,30 @@ import (
 	"gorm.io/gorm/logger"
 )
 
+func TestCustomerCartItemsUsesCurrencyMinorUnits(t *testing.T) {
+	items, err := customerCartItems([]product.CartItem{{
+		ID:         7,
+		Quantity:   2,
+		PriceMinor: 10000,
+		Currency:   "JPY",
+	}})
+	require.NoError(t, err)
+	require.Len(t, items, 1)
+	assert.Equal(t, 20000.0, items[0].LineTotal)
+}
+
+func TestCustomerCartItemsRejectsInvalidMoneyInsteadOfReturningZero(t *testing.T) {
+	items, err := customerCartItems([]product.CartItem{{
+		ID:         8,
+		Quantity:   1,
+		PriceMinor: 1000,
+		Currency:   "XXX",
+	}})
+	require.Error(t, err)
+	assert.Nil(t, items)
+	assert.Contains(t, err.Error(), "price")
+}
+
 func TestCustomerServiceReplyMetricsPairsLatestCustomerTurn(t *testing.T) {
 	start := time.Date(2026, 8, 15, 0, 0, 0, 0, time.UTC)
 	end := start.Add(24 * time.Hour)

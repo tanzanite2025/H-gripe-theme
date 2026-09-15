@@ -2,9 +2,11 @@ package service
 
 import (
 	"errors"
+	"path/filepath"
 	"testing"
 
 	"commerce-platform/internal/domain/media"
+	"commerce-platform/internal/pkg/storage"
 	"commerce-platform/internal/pkg/ugc"
 	"commerce-platform/internal/repository"
 
@@ -66,6 +68,22 @@ func TestCanonicalPublicMediaURLFallsBackToRelativeUploadPath(t *testing.T) {
 
 	require.Equal(t, "/uploads/photo.jpg", service.CanonicalPublicMediaURL("/uploads/photo.jpg"))
 	require.Equal(t, "/uploads/photo.jpg", service.CanonicalPublicMediaURL("uploads/photo.jpg"))
+}
+
+func TestCanonicalPublicMediaURLHidesPrivateNativeStorageURL(t *testing.T) {
+	storageService, err := storage.NewStorageService(&storage.Config{
+		Type:             storage.StorageTypeLocal,
+		LocalPath:        filepath.Join(t.TempDir(), "uploads"),
+		BaseURL:          "https://public.example.test",
+		PrivateLocalPath: filepath.Join(t.TempDir(), "private-uploads"),
+	})
+	require.NoError(t, err)
+	service := NewMediaService(nil, storageService, nil, "https://shop.example.test", 20<<30)
+
+	require.Empty(t, service.CanonicalPublicMediaURL("https://public.example.test/uploads/warranty/claim.mp4"))
+	key, err := storageService.ObjectKey("https://public.example.test/uploads/warranty/claim.mp4")
+	require.NoError(t, err)
+	require.True(t, storage.IsPrivateObjectKey(key))
 }
 
 func TestPublicMediaDimensionsReturnsKnownUploadAssetSize(t *testing.T) {

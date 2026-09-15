@@ -270,16 +270,24 @@ func TestDecodeDerivativeSourceAppliesJPEGExifOrientation(t *testing.T) {
 }
 
 func TestMediaDerivativeGenerationSlotsRespectCanceledContext(t *testing.T) {
-	releaseFirst, err := acquireMediaDerivativeGenerationSlot(context.Background())
-	require.NoError(t, err)
-	defer releaseFirst()
-	releaseSecond, err := acquireMediaDerivativeGenerationSlot(context.Background())
-	require.NoError(t, err)
-	defer releaseSecond()
+	mediaDerivativeGenerationSlotsMu.RLock()
+	capacity := cap(mediaDerivativeGenerationSlots)
+	mediaDerivativeGenerationSlotsMu.RUnlock()
+	releases := make([]func(), 0, capacity)
+	for i := 0; i < capacity; i++ {
+		release, err := acquireMediaDerivativeGenerationSlot(context.Background())
+		require.NoError(t, err)
+		releases = append(releases, release)
+	}
+	defer func() {
+		for _, release := range releases {
+			release()
+		}
+	}()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Millisecond)
 	defer cancel()
-	_, err = acquireMediaDerivativeGenerationSlot(ctx)
+	_, err := acquireMediaDerivativeGenerationSlot(ctx)
 	require.ErrorIs(t, err, ErrMediaDerivativeGenerationFailed)
 }
 

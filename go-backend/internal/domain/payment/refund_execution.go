@@ -1,6 +1,13 @@
 package payment
 
-import "time"
+import (
+	"errors"
+	"time"
+
+	"commerce-platform/internal/domain/currency"
+	domainmoney "commerce-platform/internal/domain/money"
+	"gorm.io/gorm"
+)
 
 const (
 	PaymentRefundExecutionStatusProcessing = "processing"
@@ -17,7 +24,8 @@ type PaymentRefundExecution struct {
 	ProviderPaymentID     string     `gorm:"index;not null" json:"provider_payment_id"`
 	MerchantOrderNumber   string     `gorm:"index;not null" json:"merchant_order_number"`
 	ProviderTransactionID string     `gorm:"index;not null" json:"provider_transaction_id"`
-	Amount                float64    `gorm:"not null" json:"amount"`
+	AmountMinor           int64      `gorm:"column:amount_minor;not null;default:0" json:"amount_minor"`
+	Amount                float64    `gorm:"not null" json:"-"`
 	Currency              string     `gorm:"not null;default:''" json:"currency"`
 	Status                string     `gorm:"index;not null;default:'processing'" json:"status"`
 	IdempotencyKey        string     `gorm:"uniqueIndex;not null" json:"idempotency_key"`
@@ -31,6 +39,31 @@ type PaymentRefundExecution struct {
 	ErrorMessage          string     `gorm:"type:text" json:"error_message,omitempty"`
 	CreatedAt             time.Time  `json:"created_at"`
 	UpdatedAt             time.Time  `json:"updated_at"`
+}
+
+func (e *PaymentRefundExecution) BeforeSave(tx *gorm.DB) error {
+	e.Currency = currency.NormalizeCode(e.Currency)
+	if !currency.IsCatalogCode(e.Currency) {
+		return errors.New("payment refund execution currency must be a supported ISO 4217 code")
+	}
+	if e.AmountMinor == 0 && e.Amount != 0 {
+		value, err := domainmoney.FromMajorFloat(e.Amount, e.Currency)
+		if err != nil {
+			return err
+		}
+		e.AmountMinor = value.AmountMinor()
+	}
+	if e.AmountMinor < 0 {
+		return errors.New("payment refund execution amount cannot be negative")
+	}
+	return nil
+}
+
+func (e PaymentRefundExecution) AmountMoney() (domainmoney.Money, error) {
+	if e.AmountMinor == 0 && e.Amount != 0 {
+		return domainmoney.FromMajorFloat(e.Amount, e.Currency)
+	}
+	return domainmoney.New(e.AmountMinor, e.Currency)
 }
 
 func (PaymentRefundExecution) TableName() string {

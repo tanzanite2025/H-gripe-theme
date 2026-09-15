@@ -121,21 +121,38 @@ type PublicProductBrand struct {
 type PublicProductSpecificationTemplate struct {
 	Name            string                 `json:"name"`
 	Slug            string                 `json:"slug"`
+	Revision        int                    `json:"revision"`
 	SpecDefinitions []PublicSpecDefinition `json:"spec_definitions,omitempty"`
 }
 
 type PublicSpecDefinition struct {
-	Group           string `json:"group"`
-	Name            string `json:"name"`
-	Slug            string `json:"slug"`
-	FieldType       string `json:"field_type"`
-	Unit            string `json:"unit,omitempty"`
-	IsVariantOption bool   `json:"is_variant_option"`
-	Presentation    string `json:"presentation"`
-	SortOrder       int    `json:"sort_order"`
-	IsVisible       bool   `json:"is_visible"`
-	IsFilterable    bool   `json:"is_filterable"`
-	Options         string `json:"options,omitempty"`
+	Group         string                 `json:"group"`
+	Name          string                 `json:"name"`
+	Slug          string                 `json:"slug"`
+	FieldType     string                 `json:"field_type"`
+	Unit          string                 `json:"unit,omitempty"`
+	Role          string                 `json:"role"`
+	SelectionMode string                 `json:"selection_mode"`
+	MinSelections int                    `json:"min_selections"`
+	MaxSelections *int                   `json:"max_selections,omitempty"`
+	IsRequired    bool                   `json:"is_required"`
+	Presentation  string                 `json:"presentation"`
+	SortOrder     int                    `json:"sort_order"`
+	IsVisible     bool                   `json:"is_visible"`
+	IsFilterable  bool                   `json:"is_filterable"`
+	OptionItems   []PublicSpecOptionItem `json:"option_items,omitempty"`
+}
+
+type PublicSpecOptionItem struct {
+	ValueKey               string `json:"value_key"`
+	DefaultLabel           string `json:"default_label"`
+	ColorHex               string `json:"color_hex,omitempty"`
+	SwatchURL              string `json:"swatch_url,omitempty"`
+	IsEnabledByDefault     bool   `json:"is_enabled_by_default"`
+	IsDefault              bool   `json:"is_default"`
+	DefaultPriceDeltaMinor *int64 `json:"default_price_delta_minor,omitempty"`
+	DefaultPriceCurrency   string `json:"default_price_currency,omitempty"`
+	SortOrder              int    `json:"sort_order"`
 }
 
 type PublicProductSpecValue struct {
@@ -144,18 +161,36 @@ type PublicProductSpecValue struct {
 }
 
 type PublicProductVariant struct {
-	ID            uint                 `json:"id"`
-	SKU           string               `json:"sku,omitempty"`
-	Title         string               `json:"title"`
-	OptionValues  string               `json:"option_values"`
-	WeightGrams   int                  `json:"weight_grams,omitempty"`
-	Currency      string               `json:"currency"`
-	Price         float64              `json:"price"`
-	SalePrice     *float64             `json:"sale_price"`
-	DisplayPrice  *PublicDisplayPrice  `json:"display_price,omitempty"`
-	DisplayPrices []PublicDisplayPrice `json:"display_prices,omitempty"`
-	IsDefault     bool                 `json:"is_default"`
-	Availability  Availability         `json:"availability"`
+	ID               uint                                  `json:"id"`
+	SKU              string                                `json:"sku,omitempty"`
+	Title            string                                `json:"title"`
+	OptionValues     string                                `json:"option_values"`
+	WeightGrams      int                                   `json:"weight_grams,omitempty"`
+	Currency         string                                `json:"currency"`
+	Price            float64                               `json:"price"`
+	SalePrice        *float64                              `json:"sale_price"`
+	DisplayPrice     *PublicDisplayPrice                   `json:"display_price,omitempty"`
+	DisplayPrices    []PublicDisplayPrice                  `json:"display_prices,omitempty"`
+	IsDefault        bool                                  `json:"is_default"`
+	Availability     Availability                          `json:"availability"`
+	OptionGroupRules []PublicProductOptionGroupVariantRule `json:"option_group_rules,omitempty"`
+	OptionValueRules []PublicProductOptionValueVariantRule `json:"option_value_rules,omitempty"`
+}
+
+type PublicProductOptionGroupVariantRule struct {
+	ID                    uint `json:"id"`
+	SpecDefinitionID      uint `json:"spec_definition_id"`
+	IsApplicable          bool `json:"is_applicable"`
+	MinSelectionsOverride *int `json:"min_selections_override,omitempty"`
+	MaxSelectionsOverride *int `json:"max_selections_override,omitempty"`
+}
+
+type PublicProductOptionValueVariantRule struct {
+	ID                          uint   `json:"id"`
+	ProductVariantOptionValueID uint   `json:"product_variant_option_value_id"`
+	IsEnabled                   bool   `json:"is_enabled"`
+	PriceDeltaMinorOverride     *int64 `json:"price_delta_minor_override,omitempty"`
+	UnavailableReason           string `json:"unavailable_reason,omitempty"`
 }
 
 type PublicVariantOptionValue struct {
@@ -168,6 +203,9 @@ type PublicVariantOptionValue struct {
 	SwatchURL        string `json:"swatch_url,omitempty"`
 	SortOrder        int    `json:"sort_order"`
 	IsEnabled        bool   `json:"is_enabled"`
+	IsDefault        bool   `json:"is_default"`
+	PriceDeltaMinor  int64  `json:"price_delta_minor,omitempty"`
+	InventoryPolicy  string `json:"inventory_policy,omitempty"`
 }
 
 type PublicDisplayPrice struct {
@@ -242,7 +280,11 @@ func PublicProductFromDomainWithLocaleAndRoutes(item productdomain.Product, disp
 	resolver := publicmediaResolver(resolvers)
 	price, salePrice := item.DisplayPrices()
 	priceCurrency := item.DisplayPriceCurrency()
-	displayPrices := publicDisplayPricesFromSnapshots(item.DisplayPriceData)
+	displayPriceData := item.DisplayPriceData
+	if startingVariant := item.StartingPriceVariant(); startingVariant != nil {
+		displayPriceData = startingVariant.DisplayPriceData
+	}
+	displayPrices := publicDisplayPricesFromSnapshots(displayPriceData)
 
 	variants := make([]PublicProductVariant, 0, len(item.ActiveVariants()))
 	productAvailable := productStatusAllowsAvailability(item.Status)
@@ -282,9 +324,20 @@ func PublicProductFromDomainWithLocaleAndRoutes(item productdomain.Product, disp
 	variantOptionValues := make([]PublicVariantOptionValue, 0, len(item.VariantOptionValues))
 	for _, optionValue := range item.VariantOptionValues {
 		definition, ok := definitionsByID[optionValue.SpecDefinitionID]
-		if !ok || !definition.IsVisible || !definition.IsVariantOption || !optionValue.IsEnabled {
+		if !ok {
 			continue
 		}
+		role := definition.RuntimeRole()
+		if !definition.IsVisible || (role != "variant" && role != "custom_option") || !optionValue.IsEnabled {
+			continue
+		}
+		var priceDeltaMinor int64
+		inventoryPolicy := ""
+		if optionValue.CustomOptionPolicy != nil {
+			priceDeltaMinor = optionValue.CustomOptionPolicy.PriceDeltaMinor
+			inventoryPolicy = optionValue.CustomOptionPolicy.InventoryPolicy
+		}
+		isDefault := optionValue.CustomOptionPolicy != nil && optionValue.CustomOptionPolicy.IsDefault
 		variantOptionValues = append(variantOptionValues, PublicVariantOptionValue{
 			ID:               optionValue.ID,
 			SpecDefinitionID: optionValue.SpecDefinitionID,
@@ -295,6 +348,9 @@ func PublicProductFromDomainWithLocaleAndRoutes(item productdomain.Product, disp
 			SwatchURL:        publicmedia.URL(resolver, optionValue.SwatchURL),
 			SortOrder:        optionValue.SortOrder,
 			IsEnabled:        optionValue.IsEnabled,
+			IsDefault:        isDefault,
+			PriceDeltaMinor:  priceDeltaMinor,
+			InventoryPolicy:  inventoryPolicy,
 		})
 	}
 
@@ -424,20 +480,64 @@ func publicProductVariantFromDomainWithDisplayCurrency(item productdomain.Produc
 
 func publicProductVariantFromDomainWithFulfillmentMode(item productdomain.ProductVariant, productAvailable bool, displayCurrency, fulfillmentMode string) PublicProductVariant {
 	displayPrices := publicDisplayPricesFromSnapshots(item.DisplayPriceData)
-	return PublicProductVariant{
-		ID:            item.ID,
-		SKU:           item.SKU,
-		Title:         item.Title,
-		OptionValues:  item.OptionValues,
-		WeightGrams:   item.Weight,
-		Currency:      item.Currency,
-		Price:         item.Price,
-		SalePrice:     item.SalePrice,
-		DisplayPrice:  displayPriceForCurrency(displayCurrency, displayPrices),
-		DisplayPrices: displayPrices,
-		IsDefault:     item.IsDefault,
-		Availability:  availabilityForVariant(item, productAvailable, fulfillmentMode),
+	priceMoney, _ := item.PriceMoney()
+	price, _ := priceMoney.MajorFloat()
+	var salePrice *float64
+	if saleMoney, err := item.SalePriceMoney(); err == nil && saleMoney != nil {
+		if sale, saleErr := saleMoney.MajorFloat(); saleErr == nil {
+			salePrice = &sale
+		}
 	}
+	return PublicProductVariant{
+		ID:               item.ID,
+		SKU:              item.SKU,
+		Title:            item.Title,
+		OptionValues:     item.OptionValues,
+		WeightGrams:      item.Weight,
+		Currency:         item.Currency,
+		Price:            price,
+		SalePrice:        salePrice,
+		DisplayPrice:     displayPriceForCurrency(displayCurrency, displayPrices),
+		DisplayPrices:    displayPrices,
+		IsDefault:        item.IsDefault,
+		Availability:     availabilityForVariant(item, productAvailable, fulfillmentMode),
+		OptionGroupRules: publicProductOptionGroupVariantRules(item.OptionGroupRules),
+		OptionValueRules: publicProductOptionValueVariantRules(item.OptionValueRules),
+	}
+}
+
+func publicProductOptionGroupVariantRules(values []productdomain.ProductOptionGroupVariantRule) []PublicProductOptionGroupVariantRule {
+	if len(values) == 0 {
+		return nil
+	}
+	result := make([]PublicProductOptionGroupVariantRule, 0, len(values))
+	for _, value := range values {
+		result = append(result, PublicProductOptionGroupVariantRule{
+			ID:                    value.ID,
+			SpecDefinitionID:      value.SpecDefinitionID,
+			IsApplicable:          value.IsApplicable,
+			MinSelectionsOverride: value.MinSelectionsOverride,
+			MaxSelectionsOverride: value.MaxSelectionsOverride,
+		})
+	}
+	return result
+}
+
+func publicProductOptionValueVariantRules(values []productdomain.ProductOptionValueVariantRule) []PublicProductOptionValueVariantRule {
+	if len(values) == 0 {
+		return nil
+	}
+	result := make([]PublicProductOptionValueVariantRule, 0, len(values))
+	for _, value := range values {
+		result = append(result, PublicProductOptionValueVariantRule{
+			ID:                          value.ID,
+			ProductVariantOptionValueID: value.ProductVariantOptionValueID,
+			IsEnabled:                   value.IsEnabled,
+			PriceDeltaMinorOverride:     value.PriceDeltaMinorOverride,
+			UnavailableReason:           value.UnavailableReason,
+		})
+	}
+	return result
 }
 
 func publicDisplayPricesFromSnapshots(raw []byte) []PublicDisplayPrice {
@@ -479,6 +579,7 @@ func publicProductSpecificationTemplateFromDomain(item *productdomain.ProductSpe
 	result := &PublicProductSpecificationTemplate{
 		Name:            item.Name,
 		Slug:            item.Slug,
+		Revision:        item.Revision,
 		SpecDefinitions: make([]PublicSpecDefinition, 0, len(item.SpecDefinitions)),
 	}
 	for _, definition := range item.SpecDefinitions {
@@ -491,19 +592,41 @@ func publicProductSpecificationTemplateFromDomain(item *productdomain.ProductSpe
 }
 
 func publicSpecDefinitionFromDomain(item productdomain.SpecDefinition) PublicSpecDefinition {
-	return PublicSpecDefinition{
-		Group:           item.Group,
-		Name:            item.Name,
-		Slug:            item.Slug,
-		FieldType:       item.FieldType,
-		Unit:            item.Unit,
-		IsVariantOption: item.IsVariantOption,
-		Presentation:    item.Presentation,
-		SortOrder:       item.SortOrder,
-		IsVisible:       item.IsVisible,
-		IsFilterable:    item.IsFilterable,
-		Options:         item.Options,
+	optionItems := make([]PublicSpecOptionItem, 0, len(item.OptionItems))
+	for _, optionItem := range item.OptionItems {
+		optionItems = append(optionItems, PublicSpecOptionItem{
+			ValueKey:               optionItem.ValueKey,
+			DefaultLabel:           optionItem.DefaultLabel,
+			ColorHex:               optionItem.ColorHex,
+			SwatchURL:              optionItem.SwatchURL,
+			IsEnabledByDefault:     optionItem.IsEnabledByDefault,
+			IsDefault:              optionItem.IsDefault,
+			DefaultPriceDeltaMinor: optionItem.DefaultPriceDeltaMinor,
+			DefaultPriceCurrency:   optionItem.DefaultPriceCurrency,
+			SortOrder:              optionItem.SortOrder,
+		})
 	}
+	return PublicSpecDefinition{
+		Group:         item.Group,
+		Name:          item.Name,
+		Slug:          item.Slug,
+		FieldType:     item.FieldType,
+		Unit:          item.Unit,
+		Role:          item.RuntimeRole(),
+		SelectionMode: item.SelectionMode,
+		MinSelections: item.MinSelections,
+		MaxSelections: item.MaxSelections,
+		IsRequired:    item.IsRequired,
+		Presentation:  item.Presentation,
+		SortOrder:     item.SortOrder,
+		IsVisible:     item.IsVisible,
+		IsFilterable:  item.IsFilterable,
+		OptionItems:   optionItems,
+	}
+}
+
+func normalizedSpecRole(item productdomain.SpecDefinition) string {
+	return item.RuntimeRole()
 }
 
 func PublicProductSpecificationTemplatesFromDomain(items []productdomain.ProductSpecificationTemplate) []PublicProductSpecificationTemplateIndex {

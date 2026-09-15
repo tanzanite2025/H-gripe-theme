@@ -653,10 +653,12 @@ const orderItems = (message: any) => {
 }
 
 const formatOrderTotal = (order: any) => {
-  const total = Number(order?.total || 0)
   const currency = String(order?.currency || '').trim().toUpperCase()
+  const minor = Number(order?.total_minor || 0)
+  const digits = ['BIF', 'CLP', 'DJF', 'GNF', 'JPY', 'KMF', 'KRW', 'PYG', 'RWF', 'UGX', 'VND', 'VUV', 'XAF', 'XOF', 'XPF'].includes(currency) ? 0 : 2
+  const total = minor / (10 ** digits)
   if (!Number.isFinite(total) || total <= 0) return currency
-  return `${currency || 'Currency missing'} ${total.toFixed(2)}`
+  return `${currency || 'Currency missing'} ${total.toFixed(digits)}`
 }
 
 const faqPayload = (message: any) => {

@@ -3,12 +3,14 @@ package service
 import (
 	"errors"
 	"fmt"
+	"math"
 	"strings"
 	"time"
 	"unicode"
 
 	"commerce-platform/internal/domain/currency"
 	"commerce-platform/internal/domain/merchant"
+	domainmoney "commerce-platform/internal/domain/money"
 	"commerce-platform/internal/domain/product"
 	"commerce-platform/internal/pkg/config"
 	"commerce-platform/internal/pkg/resilience"
@@ -23,13 +25,13 @@ var (
 )
 
 type GoogleMerchantService struct {
-	offers         *repository.GoogleMerchantRepository
-	products       *repository.ProductRepository
-	googleConfig   config.GoogleMerchantConfig
-	storefrontURL  string
-	mediaResolver  PublicMediaURLResolver
-	merchantEvents MerchantOfferEventPublisher
-	httpClient     *resilience.HTTPClient
+	offers          *repository.GoogleMerchantRepository
+	products        *repository.ProductRepository
+	googleConfig    config.GoogleMerchantConfig
+	storefrontURL   string
+	mediaResolver   PublicMediaURLResolver
+	merchantEvents  MerchantOfferEventPublisher
+	httpClient      *resilience.HTTPClient
 	oauthHTTPClient *resilience.HTTPClient
 }
 
@@ -330,7 +332,7 @@ func (s *GoogleMerchantService) buildOffer(input GoogleMerchantOfferInput) (*mer
 		brand = strings.TrimSpace(item.Brand.Name)
 	}
 
-	return &merchant.GoogleMerchantOffer{
+	offer := &merchant.GoogleMerchantOffer{
 		ProductID:             item.ID,
 		VariantID:             variant.ID,
 		OfferID:               offerID,
@@ -350,7 +352,15 @@ func (s *GoogleMerchantService) buildOffer(input GoogleMerchantOfferInput) (*mer
 		SalePriceOverride:     input.SalePriceOverride,
 		PublicationStatus:     status,
 		SyncStatus:            "not_synced",
-	}, nil
+	}
+	if status == "ready" {
+		priceSourceOffer := *offer
+		priceSourceOffer.Product = item
+		if err := validateGoogleMerchantPriceSources(&priceSourceOffer, variant); err != nil {
+			return nil, err
+		}
+	}
+	return offer, nil
 }
 
 func (s *GoogleMerchantService) validateReadyOffer(offer *merchant.GoogleMerchantOffer) error {
@@ -385,13 +395,9 @@ func (s *GoogleMerchantService) validateReadyOfferWithStorefrontURL(offer *merch
 	if !currency.IsCatalogCode(offer.CurrencyCode) {
 		return fmt.Errorf("%w: supported currency is required", ErrGoogleMerchantOfferInvalid)
 	}
-	price := offer.Variant.Price
-	if offer.PriceOverride != nil {
-		price = *offer.PriceOverride
-	}
-	sale := offer.Variant.SalePrice
-	if offer.SalePriceOverride != nil {
-		sale = offer.SalePriceOverride
+	price, sale, err := effectiveGoogleMerchantPrices(offer)
+	if err != nil {
+		return err
 	}
 	if price <= 0 || (sale != nil && (*sale <= 0 || *sale >= price)) {
 		return fmt.Errorf("%w: effective sale price must be below effective price", ErrGoogleMerchantOfferInvalid)
@@ -400,6 +406,129 @@ func (s *GoogleMerchantService) validateReadyOfferWithStorefrontURL(offer *merch
 		return fmt.Errorf("%w: %v", ErrGoogleMerchantOfferInvalid, err)
 	}
 	return nil
+}
+
+func effectiveGoogleMerchantPrices(offer *merchant.GoogleMerchantOffer) (float64, *float64, error) {
+	if offer == nil || offer.Variant == nil {
+		return 0, nil, fmt.Errorf("%w: offer source SKU is unavailable", ErrGoogleMerchantOfferInvalid)
+	}
+	if err := validateGoogleMerchantPriceSources(offer, offer.Variant); err != nil {
+		return 0, nil, err
+	}
+
+	targetCurrency := currency.NormalizeCode(offer.CurrencyCode)
+	sourceCurrency := googleMerchantSourceCurrency(offer, offer.Variant)
+	rate := 1.0
+	needsRate := offer.PriceOverride == nil || (offer.Variant.SalePrice != nil && offer.SalePriceOverride == nil)
+	if targetCurrency != sourceCurrency && needsRate {
+		var ok bool
+		rate, ok = googleMerchantVariantDisplayRate(offer.Variant, targetCurrency)
+		if !ok {
+			// validateGoogleMerchantPriceSources already returned an actionable
+			// error for this case; keep this guard for future callers.
+			return 0, nil, fmt.Errorf("%w: converted price snapshot is unavailable for %s", ErrGoogleMerchantOfferInvalid, targetCurrency)
+		}
+	}
+
+	price := offer.Variant.Price
+	if offer.PriceOverride != nil {
+		price = *offer.PriceOverride
+	} else if rate != 1 {
+		price = convertGoogleMerchantPrice(price, sourceCurrency, rate, targetCurrency)
+	}
+	sale := offer.Variant.SalePrice
+	if offer.SalePriceOverride != nil {
+		sale = offer.SalePriceOverride
+	} else if sale != nil && rate != 1 {
+		convertedSale := convertGoogleMerchantPrice(*sale, sourceCurrency, rate, targetCurrency)
+		sale = &convertedSale
+	}
+	return price, sale, nil
+}
+
+// validateGoogleMerchantPriceSources prevents a source-currency amount from
+// being relabeled as the target currency. Cross-currency offers must carry
+// explicit target-market amounts or a persisted conversion rate so the feed
+// cannot silently understate price.
+func validateGoogleMerchantPriceSources(offer *merchant.GoogleMerchantOffer, variant *product.ProductVariant) error {
+	if offer == nil || variant == nil {
+		return fmt.Errorf("%w: offer source SKU is unavailable", ErrGoogleMerchantOfferInvalid)
+	}
+	targetCurrency := currency.NormalizeCode(offer.CurrencyCode)
+	if !currency.IsCatalogCode(targetCurrency) {
+		return fmt.Errorf("%w: supported currency is required", ErrGoogleMerchantOfferInvalid)
+	}
+	sourceCurrency := googleMerchantSourceCurrency(offer, variant)
+	if !currency.IsCatalogCode(sourceCurrency) {
+		return fmt.Errorf("%w: source SKU currency is required", ErrGoogleMerchantOfferInvalid)
+	}
+	if targetCurrency == sourceCurrency {
+		return nil
+	}
+	_, hasDisplayRate := googleMerchantVariantDisplayRate(variant, targetCurrency)
+	if offer.PriceOverride == nil && !hasDisplayRate {
+		return fmt.Errorf(
+			"%w: price_override in %s or a converted display-price snapshot is required when offer currency differs from source SKU currency %s",
+			ErrGoogleMerchantOfferInvalid,
+			targetCurrency,
+			sourceCurrency,
+		)
+	}
+	if variant.SalePrice != nil && offer.SalePriceOverride == nil && !hasDisplayRate {
+		return fmt.Errorf(
+			"%w: sale_price_override in %s or a converted display-price snapshot is required when the source SKU has a sale price in %s",
+			ErrGoogleMerchantOfferInvalid,
+			targetCurrency,
+			sourceCurrency,
+		)
+	}
+	return nil
+}
+
+func googleMerchantSourceCurrency(offer *merchant.GoogleMerchantOffer, variant *product.ProductVariant) string {
+	sourceCurrency := currency.NormalizeCode(variant.Currency)
+	if sourceCurrency == "" && offer != nil && offer.Product != nil {
+		sourceCurrency = currency.NormalizeCode(offer.Product.Currency)
+	}
+	// Product/variant hooks persist USD when a source currency is omitted. Keep
+	// the same default for in-memory records loaded from legacy integrations.
+	if sourceCurrency == "" {
+		sourceCurrency = product.DefaultPriceCurrency
+	}
+	return sourceCurrency
+}
+
+func googleMerchantVariantDisplayRate(variant *product.ProductVariant, targetCurrency string) (float64, bool) {
+	if variant == nil {
+		return 0, false
+	}
+	targetCurrency = currency.NormalizeCode(targetCurrency)
+	for _, snapshot := range currency.ParseDisplayPriceSnapshots(variant.DisplayPriceData) {
+		quoteCurrency := currency.NormalizeCode(snapshot.QuoteCurrency)
+		if quoteCurrency == "" {
+			quoteCurrency = currency.NormalizeCode(snapshot.Currency)
+		}
+		if quoteCurrency == targetCurrency && snapshot.Rate > 0 && !math.IsInf(snapshot.Rate, 0) && !math.IsNaN(snapshot.Rate) {
+			return snapshot.Rate, true
+		}
+	}
+	return 0, false
+}
+
+func convertGoogleMerchantPrice(amount float64, sourceCurrency string, rate float64, targetCurrency string) float64 {
+	baseMoney, err := domainmoney.FromMajorFloat(amount, sourceCurrency)
+	if err != nil {
+		return 0
+	}
+	converted, err := baseMoney.ConvertAtRate(rate, targetCurrency)
+	if err != nil {
+		return 0
+	}
+	value, err := converted.MajorFloat()
+	if err != nil {
+		return 0
+	}
+	return value
 }
 
 func normalizeGoogleMerchantOfferError(err error) error {

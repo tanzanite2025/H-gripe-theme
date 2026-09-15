@@ -5,6 +5,7 @@ import (
 	"errors"
 	"testing"
 
+	domainmoney "commerce-platform/internal/domain/money"
 	paymentdomain "commerce-platform/internal/domain/payment"
 	"commerce-platform/internal/domain/visitor"
 	"commerce-platform/internal/pkg/antifraud"
@@ -156,6 +157,102 @@ func TestPaymentThreeDSPolicyChallengesHighValueAvsMismatchEvenWhenAdaptiveRiskI
 	require.Equal(t, visitor.RiskLevelSuspicious, decision.RiskLevel)
 	require.Contains(t, decision.Reasons, paymentThreeDSBillingShippingMismatchReason)
 	require.Contains(t, decision.Reasons, "adaptive_3ds_disabled")
+}
+
+func TestPaymentThreeDSPolicyChallengesHighValueAvsMismatchUsingUSDEquivalent(t *testing.T) {
+	tests := []struct {
+		name     string
+		currency string
+		amount   float64
+		usdValue float64
+	}{
+		{name: "EUR", currency: "EUR", amount: 750, usdValue: 825},
+		{name: "GBP", currency: "GBP", amount: 600, usdValue: 840},
+		{name: "AUD", currency: "AUD", amount: 1200, usdValue: 816},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			policy := newTestPaymentThreeDSPolicy(config.PaymentThreeDSConfig{
+				AdaptiveEnabled: false,
+			})
+			converter := &fakeThreeDSCurrencyConverter{
+				conversion: CurrencyConversion{
+					Amount:    test.usdValue,
+					Currency:  "USD",
+					Converted: true,
+				},
+			}
+			policy.ConfigureExchangeRateService(converter)
+
+			decision := policy.Decide(context.Background(), PaymentThreeDSDecisionInput{
+				UserID:          10,
+				OrderID:         99,
+				Amount:          test.amount,
+				Currency:        test.currency,
+				BaseMode:        PaymentThreeDSModeAutomatic,
+				IPAddress:       "203.0.113.10",
+				UserAgent:       "Mozilla/5.0",
+				BillingCountry:  "FR",
+				ShippingCountry: "DE",
+			})
+
+			require.Equal(t, PaymentThreeDSModeChallenge, decision.Mode)
+			require.Contains(t, decision.Reasons, paymentThreeDSBillingShippingMismatchReason)
+			require.Equal(t, test.currency, converter.baseCurrency)
+			require.Equal(t, "USD", converter.quoteCurrency)
+			require.Equal(t, test.amount, converter.amount)
+		})
+	}
+}
+
+func TestPaymentThreeDSPolicyDoesNotChallengeNonUSDAvsMismatchBelowUSDThreshold(t *testing.T) {
+	policy := newTestPaymentThreeDSPolicy(config.PaymentThreeDSConfig{
+		AdaptiveEnabled: false,
+	})
+	policy.ConfigureExchangeRateService(&fakeThreeDSCurrencyConverter{
+		conversion: CurrencyConversion{
+			Amount:    799,
+			Currency:  "USD",
+			Converted: true,
+		},
+	})
+
+	decision := policy.Decide(context.Background(), PaymentThreeDSDecisionInput{
+		UserID:          10,
+		OrderID:         99,
+		Amount:          700,
+		Currency:        "EUR",
+		BaseMode:        PaymentThreeDSModeAutomatic,
+		IPAddress:       "203.0.113.10",
+		UserAgent:       "Mozilla/5.0",
+		BillingCountry:  "FR",
+		ShippingCountry: "DE",
+	})
+
+	require.Equal(t, PaymentThreeDSModeAutomatic, decision.Mode)
+	require.NotContains(t, decision.Reasons, paymentThreeDSBillingShippingMismatchReason)
+}
+
+func TestPaymentThreeDSPolicyChallengesWhenNonUSDCurrencyConversionIsUnavailable(t *testing.T) {
+	policy := newTestPaymentThreeDSPolicy(config.PaymentThreeDSConfig{
+		AdaptiveEnabled: false,
+	})
+
+	decision := policy.Decide(context.Background(), PaymentThreeDSDecisionInput{
+		UserID:          10,
+		OrderID:         99,
+		Amount:          2500,
+		Currency:        "EUR",
+		BaseMode:        PaymentThreeDSModeAutomatic,
+		IPAddress:       "203.0.113.10",
+		UserAgent:       "Mozilla/5.0",
+		BillingCountry:  "FR",
+		ShippingCountry: "DE",
+	})
+
+	require.Equal(t, PaymentThreeDSModeChallenge, decision.Mode)
+	require.Contains(t, decision.Reasons, paymentThreeDSBillingShippingMismatchCurrencyUnavailableReason)
 }
 
 func TestPaymentThreeDSPolicyChallengesHighPaymentRisk(t *testing.T) {
@@ -515,6 +612,27 @@ type fakeThreeDSPaymentRisk struct {
 
 func (f *fakeThreeDSPaymentRisk) Evaluate(ctx context.Context, key string, signals antifraud.Signals) (antifraud.Decision, error) {
 	return f.decision, f.err
+}
+
+type fakeThreeDSCurrencyConverter struct {
+	conversion    CurrencyConversion
+	err           error
+	amount        float64
+	baseCurrency  string
+	quoteCurrency string
+}
+
+func (f *fakeThreeDSCurrencyConverter) ConvertMoneyStrict(amount domainmoney.Money, quoteCurrency string) (domainmoney.Money, error) {
+	f.amount, _ = amount.MajorFloat()
+	f.baseCurrency = amount.Currency().String()
+	f.quoteCurrency = quoteCurrency
+	if f.err != nil {
+		return domainmoney.Money{}, f.err
+	}
+	if !f.conversion.Converted || f.conversion.Amount <= 0 {
+		return domainmoney.Money{}, errors.New("conversion unavailable")
+	}
+	return domainmoney.FromMajorFloat(f.conversion.Amount, quoteCurrency)
 }
 
 type fakeThreeDSPortfolioRisk struct {

@@ -65,6 +65,7 @@ export const storefrontNoStorePagePaths = [
   '/shop',
   '/resources/membershipandpoints/**',
   '/resources/spoke-calculator/**',
+  '/resources/workbench',
   '/support/test-report',
   '/support/warranty-check',
 ]

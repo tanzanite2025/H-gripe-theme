@@ -118,7 +118,20 @@
                       </SelectContent>
                     </Select>
                   </AdminFormField>
-                  <AdminFormField v-if="spec.field_type === 'select' && spec.is_variant_option" label="前台展示">
+                  <AdminFormField label="字段角色" :error="errors[`spec:${index}:role`]">
+                    <Select
+                      v-model="spec.role"
+                      :disabled="systemManaged"
+                    >
+                      <SelectTrigger class="w-full"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="attribute">静态规格</SelectItem>
+                        <SelectItem value="variant">核心变体</SelectItem>
+                        <SelectItem value="custom_option">买家选配</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </AdminFormField>
+                  <AdminFormField v-if="spec.field_type === 'select' && (spec.role === 'variant' || spec.role === 'custom_option')" label="前台展示">
                     <Select v-model="spec.presentation" :disabled="systemManaged">
                       <SelectTrigger class="w-full"><SelectValue /></SelectTrigger>
                       <SelectContent>
@@ -127,6 +140,21 @@
                         <SelectItem value="image">图片选项</SelectItem>
                       </SelectContent>
                     </Select>
+                  </AdminFormField>
+                  <AdminFormField v-if="spec.role === 'custom_option'" label="选择方式">
+                    <Select v-model="spec.selection_mode" :disabled="systemManaged">
+                      <SelectTrigger class="w-full"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="single">单选</SelectItem>
+                        <SelectItem value="multiple">多选</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </AdminFormField>
+                  <AdminFormField v-if="spec.role === 'custom_option'" label="最少选择数">
+                    <Input v-model.number="spec.min_selections" type="number" min="0" step="1" />
+                  </AdminFormField>
+                  <AdminFormField v-if="spec.role === 'custom_option'" label="最多选择数">
+                    <Input v-model.number="spec.max_selections" type="number" min="0" step="1" placeholder="不限制" />
                   </AdminFormField>
                   <AdminFormField label="单位">
                     <Input v-model="spec.unit" placeholder="可选" />
@@ -147,9 +175,32 @@
                       class="min-h-12 font-mono text-xs"
                       :disabled="systemManaged"
                       placeholder="可选，每行一个常用共享值，例如：Black\nWhite"
-                      @input="emit('clear-error', `spec:${index}:options`)"
+                      @input="syncOptionItems(spec); emit('clear-error', `spec:${index}:options`)"
                     />
                   </AdminFormField>
+                  <div
+                    v-if="spec.role === 'variant' || spec.role === 'custom_option'"
+                    class="sm:col-span-2"
+                  >
+                    <div class="mb-2 flex items-center justify-between gap-2">
+                      <span class="text-xs font-semibold">候选值属性</span>
+                      <span class="text-[11px] text-muted-foreground">新建商品时会复制这些默认值</span>
+                    </div>
+                    <div v-if="spec.option_items.length" class="grid gap-2 md:grid-cols-2">
+                      <div v-for="item in spec.option_items" :key="item.value_key" class="space-y-2 rounded-lg border p-2">
+                        <div class="grid gap-2 sm:grid-cols-2">
+                          <Input v-model="item.value_key" class="font-mono text-xs" placeholder="稳定值" />
+                          <Input v-model="item.default_label" class="text-xs" placeholder="默认显示名" />
+                          <Input v-if="spec.presentation === 'color'" v-model="item.color_hex" class="font-mono text-xs uppercase" placeholder="#000000" />
+                          <Input v-if="spec.role === 'custom_option'" v-model.number="item.default_price_delta_minor" type="number" min="0" step="1" placeholder="默认加价（最小货币单位）" />
+                        </div>
+                        <label v-if="spec.role === 'custom_option'" class="flex items-center justify-between gap-2 text-xs">
+                          <span>默认选中</span>
+                          <Switch v-model="item.is_default" :aria-label="`${item.default_label || item.value_key}默认选中`" />
+                        </label>
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
                 <div v-if="showSpecAdvanced" class="mt-2 grid gap-2 border-t border-dashed pt-2 sm:grid-cols-2">
@@ -166,8 +217,8 @@
                     <Switch v-model="spec.is_visible" :aria-label="`${spec.name || '字段'}前台可见`" />
                   </label>
                   <label class="flex items-center justify-between gap-3 rounded-xl border border-dashed px-3 py-2 text-xs font-bold uppercase tracking-wider">
-                    <span>SKU 选项</span>
-                    <Switch v-model="spec.is_variant_option" :disabled="systemManaged" :aria-label="`${spec.name || '字段'}作为变体选项`" />
+                    <span>运行时角色</span>
+                    <span class="font-mono text-[10px] text-muted-foreground">{{ spec.role }}</span>
                   </label>
                 </div>
               </section>
@@ -237,5 +288,22 @@ const emit = defineEmits<{
   (event: 'add-spec'): void
   (event: 'remove-spec', index: number): void
 }>()
+
+const syncOptionItems = (spec: ProductSpecTemplateSpecForm): void => {
+  const keys = String(spec.optionsText || '')
+    .split(/\r?\n/)
+    .map((value) => value.trim())
+    .filter(Boolean)
+    .filter((value, index, values) => values.indexOf(value) === index)
+  const existing = new Map((spec.option_items || []).map((item) => [String(item.value_key || ''), item]))
+  spec.option_items = keys.map((valueKey, index) => ({
+    ...(existing.get(valueKey) || {}),
+    value_key: valueKey,
+    default_label: existing.get(valueKey)?.default_label || valueKey,
+    is_enabled_by_default: existing.get(valueKey)?.is_enabled_by_default !== false,
+    sort_order: existing.get(valueKey)?.sort_order ?? index * 10,
+    revision: existing.get(valueKey)?.revision || 1
+  }))
+}
 </script>
 

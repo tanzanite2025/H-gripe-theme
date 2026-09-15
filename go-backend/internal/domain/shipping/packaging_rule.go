@@ -25,9 +25,11 @@ func (PackagingRule) TableName() string {
 
 // PackagingRuleApply 包装规则应用的产品
 type PackagingRuleApply struct {
-	ID        uint           `gorm:"primarykey" json:"id"`
-	RuleID    uint           `gorm:"not null;index;uniqueIndex:idx_shipping_packaging_rule_apply_rule_product" json:"rule_id"`
-	ProductID uint           `gorm:"not null;index;uniqueIndex:idx_shipping_packaging_rule_apply_rule_product;uniqueIndex:idx_shipping_packaging_rule_apply_product" json:"product_id"`
+	ID        uint `gorm:"primarykey" json:"id"`
+	RuleID    uint `gorm:"not null;index;uniqueIndex:idx_shipping_packaging_rule_apply_rule_product_variant" json:"rule_id"`
+	ProductID uint `gorm:"not null;index;uniqueIndex:idx_shipping_packaging_rule_apply_rule_product_variant;uniqueIndex:idx_shipping_packaging_rule_apply_product_variant" json:"product_id"`
+	// VariantID is nil for the product-level default packaging rule.
+	VariantID *uint          `gorm:"index;uniqueIndex:idx_shipping_packaging_rule_apply_rule_product_variant;uniqueIndex:idx_shipping_packaging_rule_apply_product_variant" json:"variant_id,omitempty"`
 	Rule      *PackagingRule `gorm:"foreignKey:RuleID" json:"rule,omitempty"`
 	CreatedAt time.Time      `json:"created_at"`
 }

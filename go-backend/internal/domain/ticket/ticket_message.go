@@ -9,7 +9,7 @@ import (
 type TicketMessage struct {
 	ID          uint       `gorm:"primarykey" json:"id"`
 	TicketID    uint       `gorm:"not null;index" json:"ticket_id"`
-	UserID      uint       `gorm:"not null" json:"user_id"`
+	UserID      *uint      `gorm:"index" json:"user_id"`
 	IsStaff     bool       `gorm:"default:false" json:"is_staff"` // 是否客服回复
 	Content     string     `gorm:"type:text;not null" json:"content"`
 	MessageType string     `gorm:"type:varchar(40);default:'text';not null;index" json:"message_type"`

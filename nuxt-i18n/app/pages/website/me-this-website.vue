@@ -33,9 +33,7 @@
       </div>
 
       <div class="website-statement__body">
-        <p v-for="paragraph in copy.statementParagraphs" :key="paragraph">
-          {{ paragraph }}
-        </p>
+        <div v-html="copy.statementBody"></div>
       </div>
     </section>
 
@@ -125,7 +123,7 @@ useHead(() => ({
 .website-title {
   margin: 0.65rem 0 0;
   color: var(--tz-text-primary);
-  font-size: 5rem;
+  font-size: var(--tz-type-website-title);
   font-weight: 800;
   letter-spacing: 0;
   line-height: 0.98;
@@ -237,15 +235,59 @@ useHead(() => ({
   max-width: 48rem;
 }
 
-.website-statement__body p {
-  margin: 0;
+.website-statement__body {
   color: var(--tz-text-secondary);
   font-size: 1.16rem;
   line-height: 1.85;
 }
 
-.website-statement__body p + p {
-  margin-top: 1.35rem;
+.website-statement__body :deep(p),
+.website-statement__body :deep(ul),
+.website-statement__body :deep(ol),
+.website-statement__body :deep(blockquote) {
+  margin: 0 0 1rem;
+}
+
+.website-statement__body :deep(h2),
+.website-statement__body :deep(h3) {
+  margin: 1.5rem 0 0.65rem;
+  color: var(--tz-text-primary);
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+.website-statement__body :deep(h2) {
+  font-size: 1.45rem;
+}
+
+.website-statement__body :deep(h3) {
+  font-size: 1.2rem;
+}
+
+.website-statement__body :deep(ul),
+.website-statement__body :deep(ol) {
+  padding-left: 1.35rem;
+  list-style-position: outside;
+}
+
+.website-statement__body :deep(ul) {
+  list-style-type: disc;
+}
+
+.website-statement__body :deep(ol) {
+  list-style-type: decimal;
+}
+
+.website-statement__body :deep(blockquote) {
+  margin-left: 0;
+  border-left: 3px solid var(--tz-text-accent);
+  padding-left: 1rem;
+  color: var(--tz-text-muted);
+}
+
+.website-statement__body :deep(a) {
+  color: var(--tz-text-accent);
+  text-decoration: underline;
 }
 
 .website-factory {
@@ -341,7 +383,7 @@ useHead(() => ({
   }
 
   .website-title {
-    font-size: 2.25rem;
+    font-size: var(--tz-type-website-title-mobile);
   }
 
   .website-lead {
@@ -369,7 +411,7 @@ useHead(() => ({
     font-size: 1.45rem;
   }
 
-  .website-statement__body p {
+  .website-statement__body {
     font-size: 1rem;
   }
 

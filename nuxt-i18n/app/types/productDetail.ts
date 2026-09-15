@@ -31,6 +31,7 @@ export interface ProductSpecificationTemplate {
   id?: number
   name: string
   slug: string
+  revision?: number
   spec_definitions?: SpecDefinition[]
 }
 
@@ -43,7 +44,24 @@ export interface SpecDefinition {
   presentation?: 'text' | 'color' | 'image' | string
   unit?: string
   is_visible?: boolean
-  is_variant_option?: boolean
+  role?: 'attribute' | 'variant' | 'custom_option' | string
+  selection_mode?: 'single' | 'multiple' | string
+  min_selections?: number
+  max_selections?: number | null
+  option_items?: ProductSpecOptionItem[]
+  sort_order?: number
+}
+
+export interface ProductSpecOptionItem {
+  id?: number
+  value_key: string
+  default_label?: string
+  color_hex?: string
+  swatch_url?: string
+  is_enabled_by_default?: boolean
+  is_default?: boolean
+  default_price_delta_minor?: number
+  default_price_currency?: string
   sort_order?: number
 }
 
@@ -67,6 +85,26 @@ export interface ProductVariant {
   availability: ProductAvailability
   is_default?: boolean
   is_active?: boolean
+  option_group_rules?: ProductOptionGroupVariantRule[]
+  option_value_rules?: ProductOptionValueVariantRule[]
+}
+
+export interface ProductOptionGroupVariantRule {
+  id?: number
+  variant_id?: number
+  spec_definition_id?: number
+  is_applicable: boolean
+  min_selections_override?: number | null
+  max_selections_override?: number | null
+}
+
+export interface ProductOptionValueVariantRule {
+  id?: number
+  variant_id?: number
+  product_variant_option_value_id?: number
+  is_enabled: boolean
+  price_delta_minor_override?: number | null
+  unavailable_reason?: string
 }
 
 export type ProductFulfillmentMode = 'stock' | 'made_to_order'
@@ -82,6 +120,9 @@ export interface ProductVariantOptionValue {
   swatch_url?: string
   sort_order?: number
   is_enabled?: boolean
+  is_default?: boolean
+  price_delta_minor?: number
+  inventory_policy?: string
 }
 
 export interface ProductInformationTemplate {
@@ -214,6 +255,27 @@ export interface ProductVariantOptionGroup {
     swatchUrl: string
     selected: boolean
     available: boolean
+  }>
+}
+
+export interface ProductCustomOptionGroup {
+  slug: string
+  name: string
+  selectionMode: 'single' | 'multiple' | string
+  minSelections: number
+  maxSelections: number | null
+  selectedCount?: number
+  isValid?: boolean
+  presentation: string
+  options: Array<{
+    value: string
+    label: string
+    colorHex: string
+    swatchUrl: string
+    selected: boolean
+    available: boolean
+    unavailableReason?: string
+    priceDeltaMinor: number
   }>
 }
 

@@ -4,6 +4,7 @@ import (
 	"commerce-platform/internal/pkg/antibot"
 	"commerce-platform/internal/pkg/apierror"
 	"commerce-platform/internal/pkg/response"
+	"commerce-platform/internal/pkg/storage"
 	"commerce-platform/internal/pkg/upload"
 	"commerce-platform/internal/service"
 	"errors"
@@ -122,6 +123,7 @@ func (h *Handler) SubmitWarrantyClaim(c *gin.Context) {
 		VideoURL:          videoURL,
 	})
 	if err != nil {
+		h.cleanupUploadedWarrantyFiles(c, imageURLs, videoURL)
 		if errors.Is(err, service.ErrWarrantyEmailMismatch) || service.IsRecordNotFound(err) {
 			apierror.RespondNotFound(c, "Order")
 			return
@@ -133,12 +135,24 @@ func (h *Handler) SubmitWarrantyClaim(c *gin.Context) {
 		apierror.RespondBadRequest(c, err.Error())
 		return
 	}
+	accessToken, accessTokenErr := h.warrantySvc.IssueWarrantyClaimAccessToken(claim)
+	if accessTokenErr != nil {
+		// The claim is already persisted. A missing access token must not turn a
+		// successful submission into a client-visible failure; authenticated
+		// customers can still access their claim and the token can be reissued by
+		// a future verification flow.
+		accessToken = ""
+	}
 
-	response.Created(c, gin.H{
+	payload := gin.H{
 		"success": true,
 		"message": "Claim submitted successfully",
 		"id":      claim.ID,
-	})
+	}
+	if accessToken != "" {
+		payload["claim_access_token"] = accessToken
+	}
+	response.Created(c, payload)
 }
 
 func (h *Handler) allowDelivery(c *gin.Context, destination, challengeToken string) bool {
@@ -180,19 +194,25 @@ func (h *Handler) allowChallenge(c *gin.Context, challengeToken string) bool {
 }
 
 func (h *Handler) GetWarrantyClaim(c *gin.Context) {
-	userID, exists := c.Get("user_id")
-	if !exists {
-		apierror.RespondUnauthorized(c)
-		return
-	}
-
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
 		apierror.RespondBadRequest(c, "Invalid claim ID")
 		return
 	}
 
-	claim, err := h.warrantySvc.GetWarrantyClaim(uint(id), userID.(uint), false)
+	userID, _ := warrantyUserID(c)
+	userEmail, _ := c.Get("email")
+	viewerEmail, _ := userEmail.(string)
+	accessToken := strings.TrimSpace(c.GetHeader("X-Warranty-Claim-Token"))
+	if accessToken == "" {
+		accessToken = strings.TrimSpace(c.Query("access_token"))
+	}
+	if userID == 0 && accessToken == "" {
+		apierror.RespondUnauthorized(c)
+		return
+	}
+
+	claim, err := h.warrantySvc.GetWarrantyClaimForViewer(uint(id), userID, viewerEmail, accessToken, false)
 	if err != nil {
 		respondWarrantyServiceError(c, err)
 		return
@@ -226,6 +246,10 @@ func (h *Handler) uploadWarrantyClaimFiles(c *gin.Context) ([]string, string, er
 	if (len(imageFiles) > 0 || len(videoFiles) > 0) && h.storageService == nil {
 		return nil, "", errWarrantyStorageUnavailable
 	}
+	privateUploader, hasPrivateStorage := h.storageService.(storage.PrivateObjectUploader)
+	if (len(imageFiles) > 0 || len(videoFiles) > 0) && !hasPrivateStorage {
+		return nil, "", errWarrantyStorageUnavailable
+	}
 	if err := upload.ValidateSpecFiles(imageFiles, string(upload.SpecWarrantyEvidence)); err != nil {
 		return nil, "", err
 	}
@@ -246,8 +270,9 @@ func (h *Handler) uploadWarrantyClaimFiles(c *gin.Context) ([]string, string, er
 
 	imageURLs := make([]string, 0, len(imageFiles))
 	for _, file := range imageFiles {
-		url, err := h.storageService.Upload(c.Request.Context(), file)
+		url, err := privateUploader.UploadWithPrefixPrivate(c.Request.Context(), file, "warranty")
 		if err != nil {
+			h.cleanupUploadedWarrantyFiles(c, imageURLs, "")
 			return nil, "", err
 		}
 		imageURLs = append(imageURLs, url)
@@ -255,11 +280,24 @@ func (h *Handler) uploadWarrantyClaimFiles(c *gin.Context) ([]string, string, er
 
 	videoURL := ""
 	if len(videoFiles) == 1 {
-		url, err := h.storageService.Upload(c.Request.Context(), videoFiles[0])
+		url, err := privateUploader.UploadWithPrefixPrivate(c.Request.Context(), videoFiles[0], "warranty")
 		if err != nil {
+			h.cleanupUploadedWarrantyFiles(c, imageURLs, "")
 			return nil, "", err
 		}
 		videoURL = url
 	}
 	return imageURLs, videoURL, nil
+}
+
+func (h *Handler) cleanupUploadedWarrantyFiles(c *gin.Context, imageURLs []string, videoURL string) {
+	if h == nil || h.storageService == nil {
+		return
+	}
+	for _, reference := range append(append([]string{}, imageURLs...), videoURL) {
+		if strings.TrimSpace(reference) == "" {
+			continue
+		}
+		_ = h.storageService.Delete(c.Request.Context(), reference)
+	}
 }

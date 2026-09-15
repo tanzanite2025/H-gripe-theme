@@ -1,7 +1,10 @@
 package v1
 
 import (
+	"time"
+
 	"commerce-platform/internal/api/middleware"
+	"commerce-platform/internal/api/realtime"
 	analyticsapi "commerce-platform/internal/api/v1/analytics"
 	"commerce-platform/internal/api/v1/auth"
 	"commerce-platform/internal/api/v1/behavior"
@@ -21,6 +24,7 @@ import (
 	"commerce-platform/internal/api/v1/product"
 	quickbuyapi "commerce-platform/internal/api/v1/quickbuy"
 	"commerce-platform/internal/api/v1/recommendation"
+	referralapi "commerce-platform/internal/api/v1/referral"
 	"commerce-platform/internal/api/v1/review"
 	selectionassistantapi "commerce-platform/internal/api/v1/selectionassistant"
 	seohomeapi "commerce-platform/internal/api/v1/seo/home"
@@ -35,6 +39,7 @@ import (
 	"commerce-platform/internal/api/v1/warranty"
 	wheelsetfitapi "commerce-platform/internal/api/v1/wheelsetfit"
 	"commerce-platform/internal/api/v1/wishlist"
+	workbenchfeedapi "commerce-platform/internal/api/v1/workbenchfeed"
 	"commerce-platform/internal/app"
 	attributionpkg "commerce-platform/internal/pkg/attribution"
 	"commerce-platform/internal/pkg/config"
@@ -77,8 +82,12 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 		Secure:   cfg.Cookie.SecureEnabled(cfg.Server),
 		SameSite: cfg.Cookie.SameSiteMode(),
 		Domain:   cfg.Cookie.Domain,
+		Path:     "/api/v1",
+		CSRFPath: "/",
+		Names:    securecookie.StorefrontCookieNames(),
 	}
 	authHandler := auth.NewHandler(authService, cookieOptions)
+	authHandler.ConfigureCartService(cartService)
 	browsingHistoryHandler := auth.NewBrowsingHistoryHandler(services.User)
 	contentHandler := content.NewHandler(postService, faqService, services.Media)
 	contentHandler.ConfigureRefundCancellationPolicyService(services.RefundCancellationPolicy)
@@ -98,6 +107,7 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 		services.ForkFitmentEntry,
 		services.FitmentHubSpecification,
 	)
+	workbenchFeedHandler := workbenchfeedapi.NewHandler(services.WorkbenchFeed)
 	cartHandler := cart.NewHandler(cartService, cart.Options{
 		MediaService:          services.Media,
 		VisitorProfileService: services.VisitorProfile,
@@ -120,6 +130,7 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 	orderHandler.ConfigureAfterSales(services.AfterSales, storageSvc)
 	checkoutHandler := checkout.NewHandler(checkoutService, cartService)
 	marketingHandler := marketing.NewHandler(marketingService, settingService, services.LoyaltyProgram)
+	referralHandler := referralapi.NewHandler(services.Referral, cookieOptions, services.Referral.StorefrontURL())
 	marketingHandler.ConfigureMediaService(services.Media)
 	reviewHandler := review.NewHandler(reviewService)
 	ticketHandler := ticket.NewHandler(ticketService, ticket.Options{
@@ -128,6 +139,11 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 		VisitorSecret:         cfg.JWT.Secret,
 		VisitorProfileService: services.VisitorProfile,
 		CustomerServiceEvents: services.CustomerServiceEvents,
+		CustomerServiceWebSocketLimiter: realtime.NewCustomerServiceWebSocketLimiter(
+			deps.RedisClient,
+			cfg.CustomerServiceRealtime.WebSocketMaxConnectionsPerIP,
+			time.Duration(cfg.CustomerServiceRealtime.WebSocketConnectionLeaseSeconds)*time.Second,
+		),
 	})
 	paymentHandler := payment.NewHandler(
 		paymentService,
@@ -184,6 +200,8 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 	}
 
 	// API v1 路由组
+	r.GET("/r/:code", middleware.RateLimit(10), referralHandler.Capture)
+
 	v1 := r.Group("/api/v1")
 	v1.Use(middleware.CSRFProtection(cfg.CORS.AllowedOrigins))
 	v1.Use(middleware.I18n())
@@ -235,6 +253,14 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 		)
 		{
 			behaviorEventsGroup.POST("/batch", behaviorEventHandler.IngestBatch)
+		}
+
+		customerReferralGroup := v1.Group("/customer/referral")
+		{
+			customerReferralGroup.POST("/validate", middleware.RateLimit(5), referralHandler.Validate)
+			customerReferralGroup.GET("/me", middleware.AuthMiddleware(authService), referralHandler.Me)
+			customerReferralGroup.GET("/history", middleware.AuthMiddleware(authService), referralHandler.History)
+			customerReferralGroup.POST("/bind", middleware.AuthMiddleware(authService), middleware.RateLimitByUser(2), referralHandler.Bind)
 		}
 
 		// 推荐读取路由（公开，可选认证）
@@ -291,6 +317,11 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 			homeVisualTileGroup.GET("/:showcase_key", homeVisualTileHandler.Get)
 		}
 
+		workbenchFeedGroup := v1.Group("/workbench-feed")
+		{
+			workbenchFeedGroup.GET("/entries", workbenchFeedHandler.List)
+		}
+
 		// 购物车路由（可选认证）
 		cartGroup := v1.Group("/cart")
 		cartGroup.Use(
@@ -335,10 +366,13 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 		}
 
 		spokeGroup := v1.Group("/spoke")
-		spokeGroup.Use(middleware.RateLimit(5))
+		// Anonymous calculator traffic is capped at 20 requests/minute with a
+		// burst of five per IP, preventing equation-fitting and catalog scraping.
+		spokeGroup.Use(middleware.SpokeRateLimit(deps.RedisClient))
 		{
 			spokeGroup.POST("/calc", spokeHandler.Calculate)
-			spokeGroup.GET("/export", spokeHandler.GetExport)
+			spokeGroup.GET("/export", spokeHandler.GetPublicCatalog)
+			spokeGroup.GET("/catalog/export", spokeHandler.GetPublicCatalog)
 			spokeGroup.GET("/history", middleware.AuthMiddleware(authService), spokeHandler.ListHistory)
 		}
 
@@ -362,6 +396,10 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 				"/:order_number/after-sales",
 				middleware.RateLimitByUser(2),
 				orderHandler.CreateAfterSalesRequest,
+			)
+			orderGroup.GET(
+				"/:order_number/after-sales",
+				orderHandler.ListAfterSalesRequests,
 			)
 			orderGroup.GET("/:order_number", orderHandler.GetOrder)
 			orderGroup.POST("/:order_number/cancel", orderHandler.CancelOrder)
@@ -429,7 +467,7 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 			customerServiceGroup.GET("/messages/:conversation_id", middleware.OptionalAuthMiddleware(authService), ticketHandler.GetPublicCustomerServiceMessages)
 			customerServiceGroup.GET("/auto-reply/welcome", middleware.OptionalAuthMiddleware(authService), ticketHandler.GetWelcomeMessage)
 			customerServiceGroup.POST("/auto-reply/match", middleware.OptionalAuthMiddleware(authService), middleware.RateLimitByUser(5), ticketHandler.MatchKeywordMessage)
-			customerServiceGroup.GET("/ws", middleware.OptionalAuthMiddleware(authService), ticketHandler.StreamPublicCustomerServiceWebSocket)
+			customerServiceGroup.GET("/ws", middleware.OptionalAuthMiddleware(authService), middleware.RateLimit(10), ticketHandler.StreamPublicCustomerServiceWebSocket)
 		}
 
 		// 用户浏览历史路由（需要认证）
@@ -527,11 +565,11 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 				authPayment.GET("/orders/:order_id/refunds", paymentHandler.GetOrderRefunds)
 				authPayment.POST("/stripe/payment-intents", middleware.Idempotency(deps.RedisClient), middleware.RateLimitByUser(3), paymentHandler.CreateStripePaymentIntent)
 				authPayment.POST("/paypal/orders", middleware.Idempotency(deps.RedisClient), middleware.RateLimitByUser(3), paymentHandler.CreatePayPalOrder)
-				authPayment.POST("/paypal/orders/:paypal_order_id/capture", middleware.Idempotency(deps.RedisClient), middleware.RateLimitByUser(5), paymentHandler.CapturePayPalOrder)
+				authPayment.POST("/paypal/orders/:paypal_order_id/capture", middleware.PaymentOperationIdempotency(deps.Repositories.PaymentOperationIdempotency, "paypal_capture"), middleware.Idempotency(deps.RedisClient), middleware.RateLimitByUser(5), paymentHandler.CapturePayPalOrder)
 				authPayment.POST("/alipay/orders", middleware.Idempotency(deps.RedisClient), middleware.RateLimitByUser(3), paymentHandler.CreateAlipayOrder)
-				authPayment.POST("/alipay/orders/:order_number/confirm", middleware.Idempotency(deps.RedisClient), middleware.RateLimitByUser(5), paymentHandler.ConfirmAlipayOrder)
+				authPayment.POST("/alipay/orders/:order_number/confirm", middleware.PaymentOperationIdempotency(deps.Repositories.PaymentOperationIdempotency, "alipay_confirm"), middleware.Idempotency(deps.RedisClient), middleware.RateLimitByUser(5), paymentHandler.ConfirmAlipayOrder)
 				authPayment.POST("/wechat/orders", middleware.Idempotency(deps.RedisClient), middleware.RateLimitByUser(3), paymentHandler.CreateWechatOrder)
-				authPayment.POST("/wechat/orders/:order_number/confirm", middleware.Idempotency(deps.RedisClient), middleware.RateLimitByUser(5), paymentHandler.ConfirmWechatOrder)
+				authPayment.POST("/wechat/orders/:order_number/confirm", middleware.PaymentOperationIdempotency(deps.Repositories.PaymentOperationIdempotency, "wechat_confirm"), middleware.Idempotency(deps.RedisClient), middleware.RateLimitByUser(5), paymentHandler.ConfirmWechatOrder)
 			}
 		}
 
@@ -575,13 +613,15 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 			warrantyGroup.POST("/verify-order", middleware.RateLimit(2), warrantyHandler.VerifyWarrantyOrder)
 			warrantyGroup.GET("/verify/:token", middleware.RateLimit(5), warrantyHandler.VerifyWarrantyOrderToken)
 			warrantyGroup.POST("/claim", middleware.RateLimit(1), warrantyHandler.SubmitWarrantyClaim)
+			// Claim details may be viewed by an authenticated owner or by a guest
+			// presenting the signed access token returned after submission.
+			warrantyGroup.GET("/claims/:id", middleware.OptionalAuthMiddleware(authService), middleware.RateLimit(10), warrantyHandler.GetWarrantyClaim)
 
 			// 需要认证的端点
 			authWarranty := warrantyGroup.Group("")
 			authWarranty.Use(middleware.AuthMiddleware(authService))
 			{
 				authWarranty.GET("/orders/:order_number", warrantyHandler.GetWarrantyStatus)
-				authWarranty.GET("/claims/:id", warrantyHandler.GetWarrantyClaim)
 			}
 		}
 

@@ -13,6 +13,18 @@ func (r *PaymentRepository) UpsertStripeDispute(dispute *payment.StripeDispute) 
 	err := r.db.Where("stripe_dispute_id = ?", dispute.StripeDisputeID).First(&existing).Error
 	if err == nil {
 		dispute.ID = existing.ID
+		if dispute.StripeChargeID == "" {
+			dispute.StripeChargeID = existing.StripeChargeID
+		}
+		if dispute.PaymentIntentID == "" {
+			dispute.PaymentIntentID = existing.PaymentIntentID
+		}
+		if dispute.OrderID == nil {
+			dispute.OrderID = existing.OrderID
+		}
+		if dispute.TransactionID == nil {
+			dispute.TransactionID = existing.TransactionID
+		}
 		return r.db.Session(&gorm.Session{SkipHooks: true}).Model(&payment.StripeDispute{}).
 			Where("id = ?", existing.ID).
 			Updates(map[string]interface{}{
@@ -33,6 +45,22 @@ func (r *PaymentRepository) UpsertStripeDispute(dispute *payment.StripeDispute) 
 		return err
 	}
 	return r.db.Create(dispute).Error
+}
+
+func (r *PaymentRepository) HasActiveStripeDisputeByOrderID(orderID uint) (bool, error) {
+	var dispute payment.StripeDispute
+	err := r.db.Select("id").
+		Where(
+			"order_id = ? AND LOWER(status) NOT IN ?",
+			orderID,
+			[]string{"won", "lost", "closed", "resolved", "cancelled", "canceled", "denied", "rejected", "withdrawn", "refunded"},
+		).
+		Limit(1).
+		First(&dispute).Error
+	if IsRecordNotFound(err) {
+		return false, nil
+	}
+	return err == nil, err
 }
 
 func (r *PaymentRepository) FindStripeDisputeByID(id uint) (*payment.StripeDispute, error) {
@@ -126,6 +154,24 @@ func (r *PaymentRepository) UpsertPayPalDispute(dispute *payment.PayPalDispute) 
 		return err
 	}
 	return r.db.Create(dispute).Error
+}
+
+func (r *PaymentRepository) HasActivePayPalDisputeByOrderID(orderID uint) (bool, error) {
+	var dispute payment.PayPalDispute
+	terminalStatuses := []string{"won", "lost", "closed", "resolved", "cancelled", "canceled", "denied", "rejected", "withdrawn", "refunded"}
+	err := r.db.Select("id").
+		Where(
+			"order_id = ? AND LOWER(COALESCE(status, '')) NOT IN ? AND LOWER(COALESCE(dispute_state, '')) NOT IN ?",
+			orderID,
+			terminalStatuses,
+			terminalStatuses,
+		).
+		Limit(1).
+		First(&dispute).Error
+	if IsRecordNotFound(err) {
+		return false, nil
+	}
+	return err == nil, err
 }
 
 func (r *PaymentRepository) FindPayPalDisputeByID(id uint) (*payment.PayPalDispute, error) {

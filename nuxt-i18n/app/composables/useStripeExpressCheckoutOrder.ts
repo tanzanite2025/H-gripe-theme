@@ -5,8 +5,17 @@ import type {
 import type { CartItem } from '~~/types/cart'
 import { useAuth } from '~/composables/useAuth'
 import { createIdempotencyKey } from '~/utils/idempotency'
+import { useStorefrontContext } from '~/composables/useStorefrontContext'
 
 type ApiResponse<T> = T | { data?: T | { data?: T } }
+
+interface CheckoutQuoteResponse {
+  total_amount?: number | string | null
+  shipping_quote?: {
+    id?: string
+    selected_plan?: { id?: string }
+  }
+}
 
 export interface StripeExpressCheckoutOrderSession {
   orderNumber: string
@@ -84,6 +93,7 @@ const buildOrderAddressFromStripeExpressCheckoutDetails = (
 
 export function useStripeExpressCheckoutOrder() {
   const auth = useAuth()
+  const { displayCurrency } = useStorefrontContext()
 
   const loadStripeExpressCheckoutPublishableKey = async () => {
     const response = await auth.request<ApiResponse<{ publishable_key?: string; publishableKey?: string }>>(
@@ -136,6 +146,25 @@ export function useStripeExpressCheckoutOrder() {
       }
     }
 
+    const quoteResponse = await auth.request<ApiResponse<CheckoutQuoteResponse>>('/checkout/quote', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify({ shipping_address: shippingAddress, display_currency: String(displayCurrency.value || '').trim().toUpperCase() }),
+    }, 'Express Checkout quote refresh failed')
+    const quote = unwrapApiData<CheckoutQuoteResponse>(quoteResponse)
+    const expectedTotal = Number(quote?.total_amount)
+    if (!Number.isFinite(expectedTotal)) {
+      throw new Error('Express Checkout quote did not include a valid total')
+    }
+    const shippingQuoteID = String(quote?.shipping_quote?.id || '').trim()
+    const selectedQuotePlanID = String(quote?.shipping_quote?.selected_plan?.id || '').trim()
+    if (!shippingQuoteID || !selectedQuotePlanID) {
+      throw new Error('Express Checkout quote did not include a shipping plan')
+    }
+
     const response = await auth.request<ApiResponse<{ order_number?: string }>>('/orders', {
       method: 'POST',
       headers: {
@@ -153,6 +182,10 @@ export function useStripeExpressCheckoutOrder() {
         billing_address: billingAddress,
         payment_method: 'card',
         shipping_method: 'standard',
+        shipping_quote_id: shippingQuoteID,
+        selected_quote_plan_id: selectedQuotePlanID,
+        expected_total: Number(expectedTotal.toFixed(2)),
+        display_currency: String(displayCurrency.value || '').trim().toUpperCase(),
       }),
     }, 'Express Checkout order creation failed')
     const order = unwrapApiData<{ order_number?: string }>(response)

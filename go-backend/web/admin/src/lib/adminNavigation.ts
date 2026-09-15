@@ -35,9 +35,11 @@ import {
   Truck,
   Type,
   Users,
+  UsersRound,
   Waypoints,
   Zap,
 } from '@lucide/vue'
+import { LEGACY_PRODUCT_SUPPLIER_COST_VIEW_PERMISSION_CODE } from '@/lib/productSupplierCostLegacyPermissionCodes'
 
 export interface AdminNavigationItem {
   id: string
@@ -89,13 +91,13 @@ export const adminNavigationItems: AdminNavigationItem[] = [
     ],
   },
   {
-    id: 'procurement',
-    code: 'PROCUREMENT',
+    id: 'product-supplier-cost',
+    code: 'PRODUCT_SUPPLIER_COST',
     label: '商品成本',
     icon: ClipboardList,
-    permission: 'procurement:view',
+    permission: LEGACY_PRODUCT_SUPPLIER_COST_VIEW_PERMISSION_CODE,
     children: [
-      { id: 'procurement-records', path: '/procurement/records', routeName: 'ProcurementRecords', label: '商品成本' },
+      { id: 'product-supplier-cost-records', path: '/product-supplier-cost/records', routeName: 'ProductSupplierCostRecords', label: '商品成本' },
     ],
   },
   {
@@ -348,6 +350,7 @@ export const adminNavigationItems: AdminNavigationItem[] = [
     icon: FileText,
     children: [
       { id: 'content-blog', path: '/content/blog', routeName: 'ContentBlog', label: '博客内容', permission: 'content:view' },
+      { id: 'content-workbench-feed', path: '/workbench-feed', routeName: 'WorkbenchFeed', label: '车间手记', icon: ClipboardList, permission: 'workbench_feed:view' },
       { id: 'content-brand-gallery', path: '/content/brand-gallery', routeName: 'ContentBrandGallery', label: '品牌图库', permission: 'gallery:view' },
       { id: 'content-showcase', path: '/content/showcase', routeName: 'ContentShowcase', label: '买家秀审批', permission: 'gallery:view' },
       { id: 'content-reviews', path: '/content/reviews', routeName: 'ContentReviews', label: '评价审核', icon: Star, permission: 'review:view' },
@@ -407,6 +410,7 @@ export const adminNavigationItems: AdminNavigationItem[] = [
       { id: 'marketing-loyalty-rules', path: '/marketing/loyalty/rules', routeName: 'MarketingLoyaltyRules', label: '积分规则', permission: 'marketing:view' },
       { id: 'marketing-levels', path: '/marketing/levels', routeName: 'MarketingLevels', label: '会员等级', permission: 'marketing:view' },
       { id: 'marketing-promotion-risk', path: '/marketing/risk', routeName: 'MarketingPromotionRisk', label: '优惠风险', icon: ShieldAlert, permission: 'marketing:view' },
+      { id: 'marketing-referrals', path: '/marketing/referrals', routeName: 'MarketingReferrals', label: '推荐裂变台账', icon: UsersRound, permission: 'marketing:view' },
       { id: 'marketing-subscriptions', path: '/marketing/subscriptions', routeName: 'MarketingSubscriptions', label: '邮件订阅', permission: 'subscription:view' },
     ],
   },

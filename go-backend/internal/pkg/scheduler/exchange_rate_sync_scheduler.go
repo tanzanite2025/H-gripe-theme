@@ -79,7 +79,8 @@ func (s *ExchangeRateSyncScheduler) syncOnce() {
 	if err != nil {
 		if errors.Is(err, service.ErrExchangeRateDisabled) ||
 			errors.Is(err, service.ErrExchangeRateNotConfigured) ||
-			errors.Is(err, service.ErrExchangeRateSyncInProgress) {
+			errors.Is(err, service.ErrExchangeRateSyncInProgress) ||
+			errors.Is(err, service.ErrProductDisplayPriceRefreshInProgress) {
 			logger.Info("exchange rate sync skipped", zap.Error(err))
 			return
 		}

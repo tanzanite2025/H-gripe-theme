@@ -140,7 +140,7 @@ func TestBackofficeDashboardGateUsesCurrentUserRole(t *testing.T) {
 			)
 
 			req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/api/admin/dashboard/stats", nil)
-			req.AddCookie(&http.Cookie{Name: securecookie.AuthTokenCookie, Value: token})
+			req.AddCookie(&http.Cookie{Name: securecookie.AdminAuthTokenCookie, Value: token})
 			rec := httptest.NewRecorder()
 
 			router.ServeHTTP(rec, req)

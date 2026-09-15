@@ -256,13 +256,25 @@ const openCaseDetail = async (record: AfterSalesCase): Promise<void> => {
   }
 }
 
-const updateStatus = async (nextStatus: string, resolution: string): Promise<void> => {
+const updateStatus = async (nextStatus: string, resolution: string, shipment: {
+  return_shipment_id?: number | string
+  warehouse_name?: string
+  warehouse_address?: string
+  carrier?: string
+  tracking_number?: string
+  tracking_url?: string
+  label_url?: string
+}): Promise<void> => {
   const record = selectedCase.value
   if (!record || !nextStatus || nextStatus === record.status) return
 
   submittingCaseID.value = record.id
   try {
-    const updated = await afterSalesApi.updateStatus(record.id, nextStatus, resolution)
+    const updated = await afterSalesApi.updateStatus(record.id, {
+      status: nextStatus,
+      resolution,
+      ...shipment,
+    })
     const index = records.value.findIndex((item) => item.id === record.id)
     if (index >= 0) records.value[index] = updated
     selectedCase.value = updated

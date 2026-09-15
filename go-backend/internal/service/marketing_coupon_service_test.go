@@ -32,12 +32,12 @@ func TestMarketingServiceValidateCouponRejectsPerUserUsageLimit(t *testing.T) {
 		Discount: 20,
 	}).Error)
 
-	_, discount, err := marketingService.ValidateCoupon("WELCOME20", 42, 100)
+	_, discount, err := marketingService.ValidateCoupon("WELCOME20", 42, 100, "")
 
 	require.ErrorIs(t, err, ErrCouponPerUserUsageLimitReached)
 	assert.Zero(t, discount)
 
-	validCoupon, discount, err := marketingService.ValidateCoupon("WELCOME20", 7, 100)
+	validCoupon, discount, err := marketingService.ValidateCoupon("WELCOME20", 7, 100, "")
 	require.NoError(t, err)
 	require.NotNil(t, validCoupon)
 	assert.Equal(t, cp.ID, validCoupon.ID)
@@ -64,7 +64,7 @@ func TestMarketingServiceUseCouponRejectsPerUserUsageLimit(t *testing.T) {
 		Discount: 10,
 	}).Error)
 
-	err := marketingService.UseCoupon(cp.ID, 42, 1002, 10)
+	err := marketingService.UseCoupon(cp.ID, 42, 1002, 10, "")
 
 	require.ErrorIs(t, err, ErrCouponPerUserUsageLimitReached)
 
@@ -75,6 +75,79 @@ func TestMarketingServiceUseCouponRejectsPerUserUsageLimit(t *testing.T) {
 	var usageCount int64
 	require.NoError(t, db.Model(&coupon.CouponUsage{}).Where("coupon_id = ? AND user_id = ?", cp.ID, uint(42)).Count(&usageCount).Error)
 	assert.Equal(t, int64(1), usageCount)
+}
+
+func TestMarketingServiceValidateCouponEnforcesGuestEmailUsageLimit(t *testing.T) {
+	db, marketingService := newTestMarketingService(t)
+	now := time.Now()
+	cp := coupon.Coupon{
+		Code:              "GUESTWELCOME",
+		Type:              "fixed",
+		Value:             50,
+		UsageLimitPerUser: 1,
+		StartDate:         now.Add(-time.Hour),
+		EndDate:           now.Add(time.Hour),
+		Enabled:           true,
+	}
+	require.NoError(t, db.Create(&cp).Error)
+	require.NoError(t, db.Create(&coupon.CouponUsage{
+		CouponID: cp.ID,
+		UserID:   0,
+		Email:    "buyer@example.com",
+		OrderID:  1001,
+		Discount: 50,
+	}).Error)
+
+	_, discount, err := marketingService.ValidateCoupon("GUESTWELCOME", 0, 100, " Buyer@Example.com ")
+
+	require.ErrorIs(t, err, ErrCouponPerUserUsageLimitReached)
+	assert.Zero(t, discount)
+
+	validCoupon, discount, err := marketingService.ValidateCoupon("GUESTWELCOME", 0, 100, "other@example.com")
+	require.NoError(t, err)
+	require.NotNil(t, validCoupon)
+	assert.InDelta(t, 50, discount, 0.001)
+}
+
+func TestMarketingServiceValidateCouponRequiresGuestEmailForPerUserLimit(t *testing.T) {
+	db, marketingService := newTestMarketingService(t)
+	now := time.Now()
+	cp := coupon.Coupon{
+		Code:              "GUESTIDENTITY",
+		Type:              "fixed",
+		Value:             5,
+		UsageLimitPerUser: 1,
+		StartDate:         now.Add(-time.Hour),
+		EndDate:           now.Add(time.Hour),
+		Enabled:           true,
+	}
+	require.NoError(t, db.Create(&cp).Error)
+
+	_, discount, err := marketingService.ValidateCoupon("GUESTIDENTITY", 0, 100, "")
+
+	require.ErrorIs(t, err, ErrCouponUsageIdentityRequired)
+	assert.Zero(t, discount)
+}
+
+func TestMarketingServiceUseCouponStoresNormalizedGuestEmail(t *testing.T) {
+	db, marketingService := newTestMarketingService(t)
+	now := time.Now()
+	cp := coupon.Coupon{
+		Code:              "GUESTSAVE",
+		Type:              "fixed",
+		Value:             10,
+		UsageLimitPerUser: 1,
+		StartDate:         now.Add(-time.Hour),
+		EndDate:           now.Add(time.Hour),
+		Enabled:           true,
+	}
+	require.NoError(t, db.Create(&cp).Error)
+
+	require.NoError(t, marketingService.UseCoupon(cp.ID, 0, 1001, 10, " Buyer@Example.com "))
+
+	var usage coupon.CouponUsage
+	require.NoError(t, db.Where("coupon_id = ? AND order_id = ?", cp.ID, 1001).First(&usage).Error)
+	assert.Equal(t, "buyer@example.com", usage.Email)
 }
 
 func TestMarketingServiceUseCouponRejectsGlobalUsageLimitInsideTransaction(t *testing.T) {
@@ -92,7 +165,7 @@ func TestMarketingServiceUseCouponRejectsGlobalUsageLimitInsideTransaction(t *te
 	}
 	require.NoError(t, db.Create(&cp).Error)
 
-	err := marketingService.UseCoupon(cp.ID, 42, 1001, 100)
+	err := marketingService.UseCoupon(cp.ID, 42, 1001, 100, "")
 
 	require.ErrorIs(t, err, repository.ErrCouponUsageLimitReached)
 
@@ -119,7 +192,7 @@ func TestMarketingServiceValidateCouponCapsFixedDiscountAtAmount(t *testing.T) {
 	}
 	require.NoError(t, db.Create(&cp).Error)
 
-	validCoupon, discount, err := marketingService.ValidateCoupon("BIG50", 42, 30)
+	validCoupon, discount, err := marketingService.ValidateCoupon("BIG50", 42, 30, "")
 
 	require.NoError(t, err)
 	require.NotNil(t, validCoupon)

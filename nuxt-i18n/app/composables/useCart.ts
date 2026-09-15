@@ -1,6 +1,6 @@
 import { ref, computed, watch } from 'vue'
 import { useCookie, useRuntimeConfig } from '#imports'
-import type { CartItem } from '~~/types/cart'
+import type { CartItem, CartSelectedOption } from '~~/types/cart'
 import { useAuth } from '~/composables/useAuth'
 import { useCartCalculation } from '~/composables/useCartCalculation'
 import { useBehaviorEvents } from '~/composables/useBehaviorEvents'
@@ -33,7 +33,41 @@ const isLoadingCart = ref(false)
 let eventListenersAdded = false
 let cartBackendLoaded = false
 
-const cartItemKey = (productId: number, variantId?: number | null) => variantId || productId
+const normalizedSelectedOptions = (input: unknown): CartSelectedOption[] => {
+  if (!Array.isArray(input)) return []
+  return input
+    .map((item: any) => ({
+      group_slug: String(item?.group_slug || '').trim(),
+      value_keys: Array.isArray(item?.value_keys)
+        ? Array.from(new Set<string>(item.value_keys.map((value: unknown) => String(value || '').trim()).filter(Boolean))).sort()
+        : [],
+    }))
+    .filter(item => item.group_slug && item.value_keys.length)
+    .sort((left, right) => left.group_slug.localeCompare(right.group_slug))
+}
+
+const selectedOptionsFromConfiguration = (configuration: unknown): CartSelectedOption[] => {
+  if (!configuration) return []
+  if (typeof configuration === 'string') {
+    try {
+      return selectedOptionsFromConfiguration(JSON.parse(configuration))
+    } catch {
+      return []
+    }
+  }
+  if (typeof configuration !== 'object' || Array.isArray(configuration)) return []
+  return normalizedSelectedOptions((configuration as Record<string, unknown>).selections)
+}
+
+const cartItemKey = (
+  productId: number,
+  variantId?: number | null,
+  configurationHash = '',
+  selectedOptions: CartSelectedOption[] = [],
+) => {
+  const configurationKey = configurationHash || JSON.stringify(normalizedSelectedOptions(selectedOptions))
+  return `${variantId || productId}:${configurationKey}`
+}
 
 const normalizeCurrencyCode = (value: unknown) => {
   const code = String(value || '').trim().toUpperCase()
@@ -93,12 +127,13 @@ const normalizeBackendCartItem = (
   const variantId = item.variant_id || null
   const product = item.product || {}
   const variant = item.variant || {}
+  const selectedOptions = selectedOptionsFromConfiguration(item.configuration)
   const thumbnail = resolveProductThumbnail(product, mediaContext)
   const itemCurrency = normalizeCurrencyCode(item.currency || variant.currency || product.currency) || normalizeCurrencyCode(fallbackCurrency) || 'USD'
   const fulfillmentMode = product.fulfillment_mode === 'made_to_order' ? 'made_to_order' : 'stock'
 
   return {
-    id: cartItemKey(productId, variantId),
+    id: cartItemKey(productId, variantId, item.configuration_hash, selectedOptions),
     product_id: productId,
     variant_id: variantId,
     name: product.name || 'Unknown Product',
@@ -112,6 +147,8 @@ const normalizeBackendCartItem = (
     thumbnail,
     categories: product.categories || [],
     fulfillment_mode: fulfillmentMode,
+    selected_options: selectedOptions,
+    configuration_hash: String(item.configuration_hash || ''),
   }
 }
 
@@ -142,6 +179,10 @@ export const useCart = () => {
     } finally {
       isLoadingCart.value = false
     }
+  }
+
+  const reloadCartFromBackend = async () => {
+    await loadCartFromBackend()
   }
 
   const loadCartForInteraction = async () => {
@@ -182,6 +223,7 @@ export const useCart = () => {
         product_id: item.product_id || item.id,
         variant_id: item.variant_id || null,
         quantity: item.quantity,
+        selected_options: normalizedSelectedOptions(item.selected_options),
       }))
 
       let lastError: unknown
@@ -231,20 +273,25 @@ export const useCart = () => {
     productId?: number,
     quantity?: number,
     variantId?: number | null,
+    selectedOptions: CartSelectedOption[] = [],
+    configurationHash = '',
   ) => {
     try {
       if (action === 'add') {
         await auth.request('/cart/add', {
           method: 'POST',
-          body: JSON.stringify({ product_id: productId, variant_id: variantId || null, quantity }),
+          body: JSON.stringify({ product_id: productId, variant_id: variantId || null, quantity, selected_options: normalizedSelectedOptions(selectedOptions) }),
         })
       } else if (action === 'update') {
         await auth.request(`/cart/items/${productId}`, {
           method: 'PUT',
-          body: JSON.stringify({ variant_id: variantId || null, quantity }),
+          body: JSON.stringify({ variant_id: variantId || null, quantity, selected_options: normalizedSelectedOptions(selectedOptions) }),
         })
       } else if (action === 'remove') {
-        const suffix = variantId ? `?variant_id=${variantId}` : ''
+        const params = new URLSearchParams()
+        if (variantId) params.set('variant_id', String(variantId))
+        if (configurationHash) params.set('configuration_hash', configurationHash)
+        const suffix = params.size ? `?${params.toString()}` : ''
         await auth.request(`/cart/items/${productId}${suffix}`, { method: 'DELETE' })
       } else if (action === 'clear') {
         await auth.request('/cart/clear', { method: 'POST' })
@@ -300,9 +347,10 @@ export const useCart = () => {
   })
 
   const addToCart = (product: Omit<CartItem, 'quantity'>, quantity = 1) => {
-    const productId = product.product_id || product.id
+    const productId = Number(product.product_id || product.id)
     const variantId = product.variant_id || null
-    const itemId = cartItemKey(productId, variantId)
+    const selectedOptions = normalizedSelectedOptions(product.selected_options)
+    const itemId = cartItemKey(productId, variantId, product.configuration_hash, selectedOptions)
     const existingItem = cartItems.value.find(item => item.id === itemId)
     const quantityToAdd = Math.max(1, Math.floor(Number(quantity) || 1))
     const itemCurrency = normalizeCurrencyCode(product.currency) || normalizeCurrencyCode(baseCurrency.value) || 'USD'
@@ -326,10 +374,10 @@ export const useCart = () => {
 
     if (existingItem) {
       existingItem.quantity += quantityToAdd
-      syncPromise = syncAction('update', productId, existingItem.quantity, variantId)
+      syncPromise = syncAction('update', productId, existingItem.quantity, variantId, selectedOptions, existingItem.configuration_hash)
     } else {
       cartItems.value.push({ ...normalizedProduct, id: itemId, product_id: productId, variant_id: variantId, quantity: quantityToAdd })
-      syncPromise = syncAction('add', productId, quantityToAdd, variantId)
+      syncPromise = syncAction('add', productId, quantityToAdd, variantId, selectedOptions)
     }
 
     trackBehaviorEvent({
@@ -346,7 +394,7 @@ export const useCart = () => {
     return { success: true, message: 'Added to cart', syncPromise }
   }
 
-  const updateQuantity = (id: number, quantity: number) => {
+  const updateQuantity = (id: number | string, quantity: number) => {
     const item = cartItems.value.find(item => item.id === id)
     if (!item) return
     if (quantity <= 0) {
@@ -354,18 +402,18 @@ export const useCart = () => {
       return
     }
     item.quantity = quantity
-    syncAction('update', item.product_id || item.id, quantity, item.variant_id || null)
+    syncAction('update', Number(item.product_id || item.id), quantity, item.variant_id || null, item.selected_options, item.configuration_hash)
   }
 
-  const incrementQuantity = (id: number) => {
+  const incrementQuantity = (id: number | string) => {
     const item = cartItems.value.find(item => item.id === id)
     if (!item) return
     item.quantity++
-    syncAction('update', item.product_id || item.id, item.quantity, item.variant_id || null)
+    syncAction('update', Number(item.product_id || item.id), item.quantity, item.variant_id || null, item.selected_options, item.configuration_hash)
     return { success: true }
   }
 
-  const decrementQuantity = (id: number) => {
+  const decrementQuantity = (id: number | string) => {
     const item = cartItems.value.find(item => item.id === id)
     if (!item) return
     if (item.quantity <= 1) {
@@ -373,22 +421,25 @@ export const useCart = () => {
       return
     }
     item.quantity--
-    syncAction('update', item.product_id || item.id, item.quantity, item.variant_id || null)
+    syncAction('update', Number(item.product_id || item.id), item.quantity, item.variant_id || null, item.selected_options, item.configuration_hash)
   }
 
-  const removeFromCart = (id: number) => {
+  const removeFromCart = (id: number | string) => {
     const index = cartItems.value.findIndex(item => item.id === id)
     if (index > -1) {
       const item = cartItems.value[index]
       if (!item) return
       cartItems.value.splice(index, 1)
-      syncAction('remove', item.product_id || item.id, undefined, item.variant_id || null)
+      syncAction('remove', Number(item.product_id || item.id), undefined, item.variant_id || null, item.selected_options, item.configuration_hash)
     }
   }
 
-  const clearCart = () => {
+  const clearCart = async () => {
     cartItems.value = []
-    syncAction('clear')
+    if (import.meta.client) {
+      localStorage.removeItem('commerce_platform_cart')
+    }
+    await syncAction('clear')
   }
 
   const closeCartState = () => {
@@ -500,6 +551,7 @@ export const useCart = () => {
     priceBreakdown,
     cartCurrency,
     calculation,
+    reloadCartFromBackend,
 
     addToCart,
     updateQuantity,

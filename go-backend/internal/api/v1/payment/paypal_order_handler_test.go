@@ -44,6 +44,7 @@ func TestCreatePayPalOrderRecordsPendingAttempt(t *testing.T) {
 		bytes.NewBufferString(`{"order_number":"ORD-PAYPAL-1","return_url":"https://shop.example/paypal/return","cancel_url":"https://shop.example/cart"}`),
 	)
 	context.Request.Header.Set("Content-Type", "application/json")
+	context.Request.Header.Set("Idempotency-Key", "paypal-create-1")
 
 	handler.CreatePayPalOrder(context)
 
@@ -69,6 +70,7 @@ func TestCreatePayPalOrderRejectsZeroTotalBeforeGateway(t *testing.T) {
 		bytes.NewBufferString(`{"order_number":"ORD-PAYPAL-ZERO","return_url":"https://shop.example/paypal/return"}`),
 	)
 	context.Request.Header.Set("Content-Type", "application/json")
+	context.Request.Header.Set("Idempotency-Key", "paypal-create-zero")
 
 	handler.CreatePayPalOrder(context)
 
@@ -153,7 +155,7 @@ func TestCapturePayPalOrderAcknowledgesWebhookPaidOrder(t *testing.T) {
 	require.Zero(t, gateway.captureCalls)
 }
 
-func TestCapturePayPalOrderAcknowledgesWebhookRaceDuringCapture(t *testing.T) {
+func TestCapturePayPalOrderRecordsDuplicatePaidTransactionAndCreatesPendingFullRefundWhenWebhookWinsDuringCapture(t *testing.T) {
 	var db *gorm.DB
 	db, handler := newPayPalHandlerTestHarness(t, &fakePaymentGateway{
 		captureResponse: &pgateway.PaymentResponse{
@@ -190,11 +192,33 @@ func TestCapturePayPalOrderAcknowledgesWebhookRaceDuringCapture(t *testing.T) {
 
 	require.Equal(t, http.StatusOK, recorder.Code)
 	var payload struct {
-		Data pgateway.PaymentResponse `json:"data"`
+		Message string `json:"message"`
+		Data    struct {
+			DuplicatePaid bool   `json:"duplicate_paid"`
+			RefundID      uint   `json:"refund_id"`
+			OrderNumber   string `json:"order_number"`
+			TransactionID string `json:"transaction_id"`
+		} `json:"data"`
 	}
 	require.NoError(t, json.Unmarshal(recorder.Body.Bytes(), &payload))
-	require.Equal(t, "COMPLETED", payload.Data.Status)
-	require.Equal(t, "PAYPAL-ORDER-WEBHOOK-RACE", payload.Data.ID)
+	require.Equal(t, "PayPal duplicate payment recorded; refund is pending", payload.Message)
+	require.True(t, payload.Data.DuplicatePaid)
+	require.NotZero(t, payload.Data.RefundID)
+	require.Equal(t, "ORD-PAYPAL-WEBHOOK-RACE", payload.Data.OrderNumber)
+	require.Equal(t, "PAYPAL-CAPTURE-WEBHOOK-RACE", payload.Data.TransactionID)
+
+	var savedTransaction paymentdomain.Transaction
+	require.NoError(t, db.Where("transaction_id = ?", "PAYPAL-CAPTURE-WEBHOOK-RACE").First(&savedTransaction).Error)
+	require.Equal(t, paymentdomain.TransactionStatusDuplicatePaid, savedTransaction.Status)
+	require.InDelta(t, 1500, savedTransaction.Amount, 0.001)
+	require.Equal(t, "USD", savedTransaction.Currency)
+
+	var savedRefund paymentdomain.Refund
+	require.NoError(t, db.Where("id = ?", payload.Data.RefundID).First(&savedRefund).Error)
+	require.Equal(t, savedTransaction.ID, savedRefund.TransactionID)
+	require.Equal(t, "pending", savedRefund.Status)
+	require.InDelta(t, 1500, savedRefund.Amount, 0.001)
+	require.InDelta(t, 1500, savedRefund.RequestedAmount, 0.001)
 }
 
 func TestCapturePayPalOrderRejectsMismatchedProviderOrderMetadata(t *testing.T) {
@@ -281,7 +305,14 @@ func newPayPalHandlerTestHarness(t *testing.T, gateway pgateway.PaymentGateway) 
 	require.NoError(t, err)
 	sqlDB.SetMaxOpenConns(1)
 	t.Cleanup(func() { _ = sqlDB.Close() })
-	require.NoError(t, db.AutoMigrate(&orderdomain.Order{}, &orderdomain.OrderItem{}, &paymentdomain.Transaction{}))
+	require.NoError(t, db.AutoMigrate(
+		&orderdomain.Order{},
+		&orderdomain.OrderItem{},
+		&paymentdomain.Transaction{},
+		&paymentdomain.Refund{},
+		&paymentdomain.RefundLineItem{},
+		&paymentdomain.PaymentReview{},
+	))
 
 	orderRepo := repository.NewOrderRepository(db)
 	paymentRepo := repository.NewPaymentRepository(db)
@@ -305,15 +336,17 @@ func newPayPalHandlerTestHarness(t *testing.T, gateway pgateway.PaymentGateway) 
 func seedPayPalOrder(t *testing.T, db *gorm.DB, orderNumber string, userID uint, total float64, status string, paymentStatus string) orderdomain.Order {
 	t.Helper()
 	orderRecord := orderdomain.Order{
-		OrderNumber:    orderNumber,
-		UserID:         userID,
-		Status:         status,
-		PaymentMethod:  "paypal",
-		PaymentStatus:  paymentStatus,
-		ShippingMethod: "standard",
-		ShippingStatus: "pending",
-		TotalAmount:    total,
-		Currency:       "USD",
+		OrderNumber:     orderNumber,
+		UserID:          userID,
+		Status:          status,
+		PaymentMethod:   "paypal",
+		PaymentStatus:   paymentStatus,
+		ShippingMethod:  "standard",
+		ShippingStatus:  "pending",
+		TotalAmount:     total,
+		Currency:        "USD",
+		PaymentAmount:   total,
+		PaymentCurrency: "USD",
 		ShippingAddress: orderdomain.Address{
 			FirstName: "Ada",
 			LastName:  "Lovelace",

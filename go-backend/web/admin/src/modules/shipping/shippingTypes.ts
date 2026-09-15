@@ -112,6 +112,7 @@ export interface ShippingCarrierService {
   volumetric_divisor?: number | string | null
   fuel_surcharge_percent?: number | string | null
   remote_surcharge?: number | string | null
+  remote_postal_codes?: string | null
   eta_min_days?: number | string | null
   eta_max_days?: number | string | null
   enabled?: boolean
@@ -133,6 +134,7 @@ export interface ShippingCarrierServiceForm {
   volumetric_divisor: number
   fuel_surcharge_percent: number
   remote_surcharge: number
+  remote_postal_codes: string
   eta_min_days: number
   eta_max_days: number
   enabled: boolean
@@ -240,16 +242,21 @@ export interface ShippingQuoteItemInput {
 
 export interface ShippingQuoteForm {
   country: string
+  postal_code: string
   currency: string
   items: ShippingQuoteItemInput[]
 }
 
-export interface ShippingQuoteOption {
+export interface ShippingQuoteLeg {
+  group_key?: string | null
+  item_indexes?: number[]
+  allocation_basis?: string | null
   carrier_service_id?: ShippingID | null
   service_name?: string | null
   carrier_name?: string | null
   service_code?: string | null
   template_id?: ShippingID | null
+  template_name?: string | null
   billing_mode?: string | null
   actual_weight_grams?: number | string | null
   volumetric_weight_grams?: number | string | null
@@ -260,6 +267,16 @@ export interface ShippingQuoteOption {
   shipping_fee?: number | string | null
   eta_min_days?: number | string | null
   eta_max_days?: number | string | null
+}
+
+export interface ShippingQuotePlan {
+  id?: string | null
+  currency?: string | null
+  shipping_fee?: number | string | null
+  free_shipping?: boolean
+  eta_min_days?: number | string | null
+  eta_max_days?: number | string | null
+  legs?: ShippingQuoteLeg[]
 }
 
 export interface ShippingQuoteItemResult {
@@ -278,12 +295,14 @@ export interface ShippingQuoteItemResult {
 }
 
 export interface ShippingQuoteResult {
+  id?: string | null
+  rate_version?: string | null
+  expires_at?: string | number | Date | null
   shipping_fee?: number | string | null
   currency?: string | null
   free_shipping?: boolean
-  source?: string | null
-  selected_option?: ShippingQuoteOption | null
-  options?: ShippingQuoteOption[]
+  selected_plan?: ShippingQuotePlan | null
+  plans?: ShippingQuotePlan[]
   items?: ShippingQuoteItemResult[]
 }
 

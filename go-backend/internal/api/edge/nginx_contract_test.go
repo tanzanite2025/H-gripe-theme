@@ -36,6 +36,10 @@ func TestThemeWebNginxProtectsRenderedAndStaticTraffic(t *testing.T) {
 	require.Contains(t, storefront, "location ^~ /_ipx/")
 	require.Contains(t, storefront, "location ^~ /uploads/site-logo/")
 	require.Contains(t, storefront, "location ^~ /uploads/")
+	require.Contains(t, storefront, "location ^~ /r/")
+	require.Contains(t, nginxLocationBlock(storefront, "location ^~ /r/"), "proxy_pass $api_upstream;")
+	require.Contains(t, nginxLocationBlock(storefront, "location ^~ /uploads/"), "proxy_pass $api_upstream;")
+	require.NotContains(t, nginxLocationBlock(storefront, "location ^~ /uploads/"), "alias /srv/uploads/")
 	require.Contains(t, storefront, "location = /api/v1/registration/warranty/claim")
 	require.Contains(t, storefront, "location ~ ^/api/v1/(customer-service/attachments|suggestion-feedback/upload|showcase/upload)$")
 }

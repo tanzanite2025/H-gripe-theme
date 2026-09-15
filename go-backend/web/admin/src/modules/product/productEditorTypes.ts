@@ -55,12 +55,32 @@ export interface ProductVariantForm {
   option_values: Record<string, any>
   currency?: string
   price?: number | string
+  price_minor?: number | string
   sale_price?: number | string
+  sale_price_minor?: number | string | null
   weight_grams?: number | string
   shipping_template_id?: number | string | null
   stock?: number | string
   is_active?: boolean
   display_prices?: ProductDisplayPriceResult[]
+  option_group_rules?: ProductOptionGroupVariantRuleForm[]
+  option_value_rules?: ProductOptionValueVariantRuleForm[]
+}
+
+export interface ProductOptionGroupVariantRuleForm {
+  id?: number | string | null
+  spec_definition_id: number | string
+  is_applicable: boolean
+  min_selections_override?: number | string | null
+  max_selections_override?: number | string | null
+}
+
+export interface ProductOptionValueVariantRuleForm {
+  id?: number | string | null
+  product_variant_option_value_id: number | string
+  is_enabled: boolean
+  price_delta_minor_override?: number | string | null
+  unavailable_reason?: string
 }
 
 export interface ProductVariantRecord extends ProductVariantForm {
@@ -75,6 +95,8 @@ export interface ProductVariantOptionValueForm {
   id: number | string | null
   local_key?: string
   spec_definition_id: number | string
+  template_option_item_id?: number | string | null
+  source_template_revision?: number | string
   value_key: string
   label: string
   color_hex: string
@@ -82,6 +104,11 @@ export interface ProductVariantOptionValueForm {
   swatch_url: string
   sort_order: number
   is_enabled: boolean
+  price_delta_minor?: number | string | null
+  is_default?: boolean
+  inventory_policy?: string
+  component_variant_id?: number | string | null
+  component_quantity?: number | string
 }
 
 export interface ProductSpecDefinition {
@@ -91,9 +118,12 @@ export interface ProductSpecDefinition {
   field_type: string
   presentation?: string
   is_required?: boolean
-  is_variant_option?: boolean
+  role?: string
+  selection_mode?: string
+  min_selections?: number
+  max_selections?: number | null
   unit?: string
-  options?: string
+  option_items?: Array<{ value_key?: string; default_label?: string }>
 }
 
 export interface ShippingTemplateRecord {

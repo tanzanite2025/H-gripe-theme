@@ -73,20 +73,24 @@ func activeVariantExistsSQL(alias string) string {
 	)`, alias, alias, alias, alias)
 }
 
+func activeVariantInStockSQL(alias string) string {
+	return fmt.Sprintf(`EXISTS (
+		SELECT 1 FROM product_variants %s
+		LEFT JOIN product_variants %s_master ON %s_master.id = %s.master_variant_id AND %s_master.deleted_at IS NULL
+		WHERE %s.product_id = products.id
+		  AND %s.deleted_at IS NULL
+		  AND %s.is_active = TRUE
+		  AND COALESCE(%s_master.stock, %s.stock) > 0
+	)`, alias, alias, alias, alias, alias, alias, alias, alias, alias, alias)
+}
+
 func applyQuickBuyCandidateScope(query *gorm.DB, input ProductQuickBuyCandidateQuery) *gorm.DB {
 	query = query.
 		Where("products.status = ?", "active").
 		Where(activeVariantExistsSQL("pv_quick_buy_candidate")).
 		Where(`(
 			products.fulfillment_mode = ?
-			OR EXISTS (
-				SELECT 1
-				FROM product_variants pv_quick_buy_candidate_stock
-				WHERE pv_quick_buy_candidate_stock.product_id = products.id
-				  AND pv_quick_buy_candidate_stock.deleted_at IS NULL
-				  AND pv_quick_buy_candidate_stock.is_active = TRUE
-				  AND pv_quick_buy_candidate_stock.stock > 0
-			)
+			OR `+activeVariantInStockSQL("pv_quick_buy_candidate_stock")+`
 		)`, product.FulfillmentModeMadeToOrder)
 
 	if len(input.ProductSpecificationTemplateIDs) > 0 {
@@ -236,6 +240,33 @@ func (r *ProductRepository) List(locale, status string, featured bool, offset, l
 	return products, total, err
 }
 
+// FindPublished returns the complete set of storefront products that can be
+// exposed publicly.  Sitemap generation intentionally uses a lightweight
+// projection (no relation preloads) and does not impose the paged-list limit
+// used by the admin/public API endpoints.
+func (r *ProductRepository) FindPublished() ([]product.Product, error) {
+	return r.FindPublishedByLocale("")
+}
+
+// FindPublishedByLocale returns storefront products for one locale.  An empty
+// locale returns all locales.  Products without an active variant are not
+// routable by the public storefront and are therefore excluded.
+func (r *ProductRepository) FindPublishedByLocale(locale string) ([]product.Product, error) {
+	var products []product.Product
+	query := r.db.Model(&product.Product{}).
+		Where("products.status = ?", "active").
+		Where(activeVariantExistsSQL("pv_sitemap")).
+		Where("TRIM(products.slug) <> ''").
+		Where("TRIM(products.locale) <> ''")
+	if strings.TrimSpace(locale) != "" {
+		query = query.Where("products.locale = ?", strings.TrimSpace(locale))
+	}
+	if err := query.Order("products.locale ASC").Order("products.id ASC").Find(&products).Error; err != nil {
+		return nil, err
+	}
+	return products, nil
+}
+
 // ListPublicAvailable returns active products with at least one active variant
 // that can currently be purchased.
 func (r *ProductRepository) ListPublicAvailable(locale string, offset, limit int) ([]product.Product, int64, error) {
@@ -260,14 +291,7 @@ func (r *ProductRepository) ListPublicAvailable(locale string, offset, limit int
 		Where(activeVariantExistsSQL("pv_recommendation")).
 		Where(`(
 			products.fulfillment_mode = ?
-			OR EXISTS (
-				SELECT 1
-				FROM product_variants pv_recommendation_stock
-				WHERE pv_recommendation_stock.product_id = products.id
-				  AND pv_recommendation_stock.deleted_at IS NULL
-				  AND pv_recommendation_stock.is_active = TRUE
-				  AND pv_recommendation_stock.stock > 0
-			)
+			OR `+activeVariantInStockSQL("pv_recommendation_stock")+`
 		)`, product.FulfillmentModeMadeToOrder)
 
 	if locale != "" {
@@ -305,14 +329,7 @@ func (r *ProductRepository) ListRecommendationCandidates(input ProductRecommenda
 		Where(activeVariantExistsSQL("pv_recommendation_candidate")).
 		Where(`(
 			products.fulfillment_mode = ?
-			OR EXISTS (
-				SELECT 1
-				FROM product_variants pv_recommendation_candidate_stock
-				WHERE pv_recommendation_candidate_stock.product_id = products.id
-				  AND pv_recommendation_candidate_stock.deleted_at IS NULL
-				  AND pv_recommendation_candidate_stock.is_active = TRUE
-				  AND pv_recommendation_candidate_stock.stock > 0
-			)
+			OR `+activeVariantInStockSQL("pv_recommendation_candidate_stock")+`
 		)`, product.FulfillmentModeMadeToOrder)
 
 	if input.Locale != "" {
@@ -504,11 +521,10 @@ func (r *ProductRepository) ListFilterableSpecificationsForCategory(categorySlug
 		Name      string
 		FieldType string
 		Unit      string
-		Options   string
 	}
 	var definitions []definitionRow
 	if err := r.db.Table("product_spec_definitions AS definition").
-		Select("DISTINCT definition.slug, definition.name, definition.field_type, definition.unit, definition.options").
+		Select("DISTINCT definition.slug, definition.name, definition.field_type, definition.unit").
 		Joins("JOIN products ON products.product_specification_template_id = definition.product_specification_template_id").
 		Where("products.id IN ?", productIDs).
 		Where("definition.is_filterable = TRUE AND definition.is_visible = TRUE").
@@ -534,9 +550,15 @@ func (r *ProductRepository) ListFilterableSpecificationsForCategory(categorySlug
 		knownSlugs = append(knownSlugs, slug)
 		valuesBySlug[slug] = make(map[string]struct{})
 		options := []string{}
-		if strings.TrimSpace(definition.Options) != "" {
-			_ = json.Unmarshal([]byte(definition.Options), &options)
-		}
+		var optionKeys []string
+		_ = r.db.Table("product_spec_option_items AS item").
+			Select("item.value_key").
+			Group("item.value_key").
+			Joins("JOIN product_spec_definitions AS item_definition ON item_definition.id = item.spec_definition_id").
+			Joins("JOIN products AS option_product ON option_product.product_specification_template_id = item_definition.product_specification_template_id").
+			Where("option_product.id IN ? AND item_definition.slug = ? AND item_definition.is_filterable = TRUE AND item_definition.is_visible = TRUE", productIDs, slug).
+			Order("MIN(item.sort_order) ASC, MIN(item.id) ASC").Pluck("item.value_key", &optionKeys).Error
+		options = append(options, optionKeys...)
 		for _, option := range options {
 			if value := strings.TrimSpace(option); value != "" {
 				valuesBySlug[slug][value] = struct{}{}

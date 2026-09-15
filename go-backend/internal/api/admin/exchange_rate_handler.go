@@ -2,9 +2,10 @@ package admin
 
 import (
 	"errors"
-	"math"
+	"net/http"
 
 	"commerce-platform/internal/domain/currency"
+	domainmoney "commerce-platform/internal/domain/money"
 	"commerce-platform/internal/pkg/apierror"
 	"commerce-platform/internal/pkg/response"
 	"commerce-platform/internal/service"
@@ -142,7 +143,11 @@ func (h *ExchangeRateHandler) ConvertDisplayPrices(c *gin.Context) {
 
 	prices := make([]exchangeRateDisplayPrice, 0, len(quoteCurrencies))
 	for _, quoteCurrency := range quoteCurrencies {
-		converted := h.exchangeRateService.Convert(req.Amount, baseCurrency, quoteCurrency)
+		converted, err := h.exchangeRateService.ConvertStrict(req.Amount, baseCurrency, quoteCurrency)
+		if err != nil {
+			apierror.RespondError(c, http.StatusUnprocessableEntity, "exchange_rate_unavailable", err.Error())
+			return
+		}
 		prices = append(prices, exchangeRateDisplayPrice{
 			Amount:         roundCurrencyAmount(converted.Amount, converted.Currency),
 			Currency:       converted.Currency,
@@ -184,10 +189,13 @@ func normalizeQuoteCurrencies(requested []string, defaults []string, baseCurrenc
 }
 
 func roundCurrencyAmount(amount float64, currencyCode string) float64 {
-	minorUnits, ok := currency.MinorUnits(currencyCode)
-	if !ok {
-		minorUnits = 2
+	money, err := domainmoney.FromMajorFloat(amount, currencyCode)
+	if err != nil {
+		return 0
 	}
-	factor := math.Pow10(minorUnits)
-	return math.Round(amount*factor) / factor
+	rounded, err := money.MajorFloat()
+	if err != nil {
+		return 0
+	}
+	return rounded
 }

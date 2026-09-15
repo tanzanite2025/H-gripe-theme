@@ -47,6 +47,10 @@ func makePublicChatOrder(item orderdomain.Order) gin.H {
 	if item.ProductionStatus == "" {
 		productionStatus = orderdomain.DefaultProductionStatus(fulfillmentMode)
 	}
+	totalMinor := int64(0)
+	if value, err := item.TotalMoney(); err == nil {
+		totalMinor = value.AmountMinor()
+	}
 
 	return gin.H{
 		"order_number":            item.OrderNumber,
@@ -59,7 +63,7 @@ func makePublicChatOrder(item orderdomain.Order) gin.H {
 		"signature_required":      item.SignatureRequired,
 		"production_started_at":   item.ProductionStartedAt,
 		"production_completed_at": item.ProductionCompletedAt,
-		"total":                   item.TotalAmount,
+		"total_minor":             totalMinor,
 		"currency":                item.Currency,
 		"date":                    item.CreatedAt.Format("2006-01-02"),
 		"created_at":              item.CreatedAt.Format(time.RFC3339),
@@ -83,6 +87,18 @@ func publicChatOrderItemCount(items []orderdomain.OrderItem) int {
 func makePublicChatOrderItems(items []orderdomain.OrderItem) []gin.H {
 	result := make([]gin.H, 0, len(items))
 	for _, item := range items {
+		priceMinor := int64(0)
+		if value, err := item.PriceMoney(); err == nil {
+			priceMinor = value.AmountMinor()
+		}
+		subtotalMinor := int64(0)
+		if value, err := item.SubtotalMoney(); err == nil {
+			subtotalMinor = value.AmountMinor()
+		}
+		totalMinor := int64(0)
+		if value, err := item.TotalMoney(); err == nil {
+			totalMinor = value.AmountMinor()
+		}
 		result = append(result, gin.H{
 			"product_id":       item.ProductID,
 			"variant_id":       item.VariantID,
@@ -90,9 +106,10 @@ func makePublicChatOrderItems(items []orderdomain.OrderItem) []gin.H {
 			"sku":              item.SKU,
 			"fulfillment_mode": orderdomain.NormalizeFulfillmentMode(item.FulfillmentMode),
 			"quantity":         item.Quantity,
-			"price":            item.Price,
-			"subtotal":         item.Subtotal,
-			"total":            item.Total,
+			"currency":         item.Currency,
+			"price_minor":      priceMinor,
+			"subtotal_minor":   subtotalMinor,
+			"total_minor":      totalMinor,
 			"attributes":       parsePublicChatOrderItemAttributes(item.Attributes),
 		})
 	}

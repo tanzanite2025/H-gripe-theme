@@ -105,7 +105,7 @@ func (s *emailService) SendHTMLEmail(to []string, subject, templateName string, 
 func (s *emailService) SendOrderConfirmation(to string, orderData interface{}) error {
 	return s.SendHTMLEmail(
 		[]string{to},
-		"订单确认",
+		"Order confirmation",
 		"order_confirmation.html",
 		orderData,
 	)
@@ -115,7 +115,7 @@ func (s *emailService) SendOrderConfirmation(to string, orderData interface{}) e
 func (s *emailService) SendShippingNotification(to string, shippingData interface{}) error {
 	return s.SendHTMLEmail(
 		[]string{to},
-		"您的订单已发货",
+		"Your order has shipped",
 		"shipping_notification.html",
 		shippingData,
 	)
@@ -211,7 +211,7 @@ func buildPlainTextFallback(subject, templateName string, data interface{}) stri
 
 // send 发送邮件
 func (s *emailService) send(to []string, message []byte) error {
-	addr := fmt.Sprintf("%s:%d", s.config.Host, s.config.Port)
+	addr := net.JoinHostPort(s.config.Host, strconv.Itoa(s.config.Port))
 
 	timeout := s.config.Timeout
 	if timeout <= 0 {

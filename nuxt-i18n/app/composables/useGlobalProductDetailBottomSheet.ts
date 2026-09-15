@@ -4,6 +4,7 @@ import { activateStorefrontClientOverlays } from '~/utils/clientOverlays'
 
 export interface GlobalProductDetailBottomSheetProductReference {
   id?: number | null
+  variantId?: number | null
   slug: string
   title?: string
   thumbnail?: string
@@ -35,6 +36,7 @@ export const useGlobalProductDetailBottomSheet = () => {
     activateStorefrontClientOverlays()
     globalProductDetailBottomSheetProductReference.value = {
       id: reference.id ?? null,
+      variantId: reference.variantId ?? null,
       slug,
       title: reference.title || '',
       thumbnail: reference.thumbnail || '',

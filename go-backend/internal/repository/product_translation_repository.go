@@ -117,6 +117,13 @@ func (r *ProductRepository) CreateTranslatedCopy(source, target *product.Product
 			clonedVariant.ProductID = 0
 			clonedVariant.DeletedAt = gorm.DeletedAt{}
 			clonedVariant.SKU = sku
+			// A translated variant is a localized presentation of the source
+			// variant. Inventory remains owned by the root variant.
+			masterVariantID := sourceVariant.ID
+			if sourceVariant.MasterVariantID != nil && *sourceVariant.MasterVariantID > 0 {
+				masterVariantID = *sourceVariant.MasterVariantID
+			}
+			clonedVariant.MasterVariantID = &masterVariantID
 			variants = append(variants, clonedVariant)
 		}
 
@@ -148,6 +155,7 @@ func (r *ProductRepository) CreateTranslatedCopy(source, target *product.Product
 				clonedOptionValue := sourceOptionValue
 				clonedOptionValue.ID = 0
 				clonedOptionValue.ProductID = target.ID
+				clonedOptionValue.CustomOptionPolicy = nil
 				optionValues = append(optionValues, clonedOptionValue)
 			}
 			if err := tx.Create(&optionValues).Error; err != nil {
@@ -155,6 +163,15 @@ func (r *ProductRepository) CreateTranslatedCopy(source, target *product.Product
 			}
 			for index, sourceOptionValue := range source.VariantOptionValues {
 				optionValueIDs[sourceOptionValue.ID] = optionValues[index].ID
+				if sourceOptionValue.CustomOptionPolicy == nil {
+					continue
+				}
+				policy := *sourceOptionValue.CustomOptionPolicy
+				policy.ID = 0
+				policy.ProductVariantOptionValueID = optionValues[index].ID
+				if err := tx.Create(&policy).Error; err != nil {
+					return err
+				}
 			}
 		}
 
@@ -162,6 +179,7 @@ func (r *ProductRepository) CreateTranslatedCopy(source, target *product.Product
 		if len(variants) > 0 {
 			for index := range variants {
 				variants[index].ProductID = target.ID
+				variants[index].Stock = 0
 			}
 			if err := tx.Create(&variants).Error; err != nil {
 				return err

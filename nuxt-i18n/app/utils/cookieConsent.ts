@@ -12,7 +12,12 @@ export interface CookieConsentPreferences {
 export function readCookieConsent(): CookieConsentPreferences | null {
   if (!import.meta.client) return null
 
-  const stored = localStorage.getItem(COOKIE_CONSENT_KEY)
+  let stored = ''
+  try {
+    stored = localStorage.getItem(COOKIE_CONSENT_KEY) || ''
+  } catch {
+    return null
+  }
   if (!stored) return null
 
   try {

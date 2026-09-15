@@ -95,3 +95,49 @@ func TestSetAuthTokenAcceptsConfiguredCookieOptions(t *testing.T) {
 		t.Fatalf("Domain = %q, want %q", cookie.Domain, "example.com")
 	}
 }
+
+func TestCookieScopesUseDistinctNamesAndPaths(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	storefrontRecorder := httptest.NewRecorder()
+	storefrontContext, _ := gin.CreateTestContext(storefrontRecorder)
+	storefrontOptions := Options{
+		Secure:   false,
+		Path:     "/api/v1",
+		CSRFPath: "/",
+		Names:    StorefrontCookieNames(),
+	}
+	SetAuthToken(storefrontContext, "storefront", 3600, storefrontOptions)
+	if cookie := storefrontRecorder.Result().Cookies()[0]; cookie.Name != StorefrontAuthTokenCookie || cookie.Path != "/api/v1" {
+		t.Fatalf("storefront auth cookie = (%q, %q), want (%q, %q)", cookie.Name, cookie.Path, StorefrontAuthTokenCookie, "/api/v1")
+	}
+
+	adminRecorder := httptest.NewRecorder()
+	adminContext, _ := gin.CreateTestContext(adminRecorder)
+	adminOptions := Options{
+		Secure:   false,
+		Path:     "/api/admin",
+		CSRFPath: "/",
+		Names:    AdminCookieNames(),
+	}
+	SetCSRFToken(adminContext, 3600, adminOptions)
+	if cookie := adminRecorder.Result().Cookies()[0]; cookie.Name != AdminCSRFTokenCookie || cookie.Path != "/" {
+		t.Fatalf("admin CSRF cookie = (%q, %q), want (%q, %q)", cookie.Name, cookie.Path, AdminCSRFTokenCookie, "/")
+	}
+
+	if StorefrontAuthTokenCookie == AdminAuthTokenCookie || StorefrontRefreshTokenCookie == AdminRefreshTokenCookie || StorefrontCSRFTokenCookie == AdminCSRFTokenCookie {
+		t.Fatal("storefront and admin cookie names must be distinct")
+	}
+}
+
+func TestScopedDefaults(t *testing.T) {
+	storefront := StorefrontOptions()
+	if storefront.Path != "/api/v1" || storefront.CSRFPath != "/" || storefront.Names != StorefrontCookieNames() {
+		t.Fatalf("unexpected storefront defaults: %+v", storefront)
+	}
+
+	admin := AdminOptions()
+	if admin.Path != "/api/admin" || admin.CSRFPath != "/" || admin.Names != AdminCookieNames() {
+		t.Fatalf("unexpected admin defaults: %+v", admin)
+	}
+}

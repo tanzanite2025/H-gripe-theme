@@ -5,9 +5,10 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"path/filepath"
 	"testing"
 
-	procurementdomain "commerce-platform/internal/domain/procurement"
+	suppliercostdomain "commerce-platform/internal/domain/productsuppliercost"
 	"commerce-platform/internal/repository"
 	"commerce-platform/internal/service"
 
@@ -15,6 +16,7 @@ import (
 	"github.com/glebarez/sqlite"
 	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 func TestProductProfitabilityHandlerPreviewDoesNotWriteDatabase(t *testing.T) {
@@ -34,8 +36,8 @@ func TestProductProfitabilityHandlerPreviewDoesNotWriteDatabase(t *testing.T) {
 			"currency": "USD",
 			"list_price": 100,
 			"sale_price": 90,
-			"purchase_price": 50,
-			"purchase_price_known": true
+			"unit_cost": 50,
+			"unit_cost_known": true
 		}]
 	}`)
 	require.Equal(t, http.StatusOK, response.Code)
@@ -51,7 +53,7 @@ func TestProductProfitabilityHandlerPreviewDoesNotWriteDatabase(t *testing.T) {
 	require.Equal(t, 40.0, *payload.Items[0].GrossProfit)
 
 	var count int64
-	require.NoError(t, db.Model(&procurementdomain.ProductProfitCalculation{}).Count(&count).Error)
+	require.NoError(t, db.Model(&suppliercostdomain.ProductProfitCalculation{}).Count(&count).Error)
 	require.Equal(t, int64(0), count)
 }
 
@@ -72,8 +74,8 @@ func TestProductProfitabilityHandlerBulkUpsertRejectsInvalidBatchWithoutPartialW
 				"product_name": "Valid item",
 				"currency": "USD",
 				"list_price": 100,
-				"purchase_price": 40,
-				"purchase_price_known": true
+				"unit_cost": 40,
+				"unit_cost_known": true
 			},
 			{
 				"product_code": "SKU-HANDLER-INVALID",
@@ -81,8 +83,8 @@ func TestProductProfitabilityHandlerBulkUpsertRejectsInvalidBatchWithoutPartialW
 				"currency": "USD",
 				"cost_currency": "CNY",
 				"list_price": 100,
-				"purchase_price": 40,
-				"purchase_price_known": true
+				"unit_cost": 40,
+				"unit_cost_known": true
 			}
 		]
 	}`)
@@ -91,16 +93,16 @@ func TestProductProfitabilityHandlerBulkUpsertRejectsInvalidBatchWithoutPartialW
 	require.Contains(t, response.Body.String(), "SKU-HANDLER-INVALID")
 
 	var count int64
-	require.NoError(t, db.Model(&procurementdomain.ProductProfitCalculation{}).Count(&count).Error)
+	require.NoError(t, db.Model(&suppliercostdomain.ProductProfitCalculation{}).Count(&count).Error)
 	require.Equal(t, int64(0), count)
 }
 
-func TestProductProfitabilityHandlerBulkUpsertAcceptsNestedProcurement(t *testing.T) {
+func TestProductProfitabilityHandlerBulkUpsertAcceptsNestedSupplierCostDetails(t *testing.T) {
 	db := newProductProfitabilityHandlerTestDB(t)
 	handler := NewProductProfitabilityHandler(
-		service.NewProductProfitabilityServiceWithProcurement(
+		service.NewProductProfitabilityServiceWithSupplierCostRecords(
 			repository.NewProductProfitCalculationRepository(db),
-			repository.NewProductProcurementRepository(db),
+			repository.NewProductSupplierCostRecordRepository(db),
 		),
 	)
 
@@ -110,13 +112,13 @@ func TestProductProfitabilityHandlerBulkUpsertAcceptsNestedProcurement(t *testin
 
 	response := performProductProfitabilityJSONRequest(t, router, http.MethodPost, "/bulk-upsert", `{
 		"items": [{
-			"product_code": "SKU-HANDLER-PROCUREMENT",
-			"product_name": "Handler procurement item",
+			"product_code": "SKU-HANDLER-SUPPLIER-COST",
+			"product_name": "Handler supplier cost item",
 			"currency": "USD",
 			"list_price": 100,
-			"purchase_price": 40,
-			"purchase_price_known": true,
-			"procurement": {
+			"unit_cost": 40,
+			"unit_cost_known": true,
+			"supplier_cost_details": {
 				"supplier_name": "Nested Supplier",
 				"supplier_contact_name": "Ming",
 				"supplier_phone": "+86-456",
@@ -127,26 +129,65 @@ func TestProductProfitabilityHandlerBulkUpsertAcceptsNestedProcurement(t *testin
 	}`)
 	require.Equal(t, http.StatusOK, response.Code)
 
-	procurementRecord, err := repository.NewProductProcurementRepository(db).
-		FindByProductCode("SKU-HANDLER-PROCUREMENT")
+	supplierCostRecord, err := repository.NewProductSupplierCostRecordRepository(db).
+		FindByProductCode("SKU-HANDLER-SUPPLIER-COST")
 	require.NoError(t, err)
-	require.Equal(t, "Nested Supplier", procurementRecord.SupplierName)
-	require.Equal(t, "Ming", procurementRecord.SupplierContactName)
-	require.Equal(t, 12, procurementRecord.LeadTimeDays)
-	require.Equal(t, 5, procurementRecord.MinimumOrderQuantity)
+	require.Equal(t, "Nested Supplier", supplierCostRecord.SupplierName)
+	require.Equal(t, "Ming", supplierCostRecord.SupplierContactName)
+	require.Equal(t, 12, supplierCostRecord.LeadTimeDays)
+	require.Equal(t, 5, supplierCostRecord.MinimumOrderQuantity)
+}
+
+func TestProductProfitabilityHandlerAcceptsHistoricalLegacyCostAndSupplierDetailsEnvelopeAsSupplierCostCompatibility(t *testing.T) {
+	db := newProductProfitabilityHandlerTestDB(t)
+	handler := NewProductProfitabilityHandler(
+		service.NewProductProfitabilityServiceWithSupplierCostRecords(
+			repository.NewProductProfitCalculationRepository(db),
+			repository.NewProductSupplierCostRecordRepository(db),
+		),
+	)
+
+	gin.SetMode(gin.TestMode)
+	router := gin.New()
+	router.POST("/bulk-upsert", handler.BulkUpsert)
+
+	response := performProductProfitabilityJSONRequest(t, router, http.MethodPost, "/bulk-upsert", `{
+		"items": [{
+			"product_code": "SKU-HANDLER-LEGACY-SUPPLIER-COST",
+			"product_name": "Handler legacy supplier cost item",
+			"currency": "USD",
+			"list_price": 100,
+			"purchase_price": 40,
+			"purchase_price_known": true,
+			"procurement": {
+				"supplier_name": "Legacy Supplier",
+				"supplier_contact_name": "Ming",
+				"lead_time_days": 12,
+				"minimum_order_quantity": 5
+			}
+		}]
+	}`)
+	require.Equal(t, http.StatusOK, response.Code)
+
+	supplierCostRecord, err := repository.NewProductSupplierCostRecordRepository(db).
+		FindByProductCode("SKU-HANDLER-LEGACY-SUPPLIER-COST")
+	require.NoError(t, err)
+	require.Equal(t, "Legacy Supplier", supplierCostRecord.SupplierName)
 }
 
 func newProductProfitabilityHandlerTestDB(t *testing.T) *gorm.DB {
 	t.Helper()
 
-	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	db, err := gorm.Open(sqlite.Open(filepath.Join(t.TempDir(), "product-profitability-handler.sqlite")), &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Silent),
+	})
 	require.NoError(t, err)
 	sqlDB, err := db.DB()
 	require.NoError(t, err)
 	sqlDB.SetMaxOpenConns(1)
 	t.Cleanup(func() { _ = sqlDB.Close() })
-	require.NoError(t, db.AutoMigrate(&procurementdomain.ProductProfitCalculation{}))
-	require.NoError(t, db.AutoMigrate(&procurementdomain.ProductProcurement{}))
+	require.NoError(t, db.AutoMigrate(&suppliercostdomain.ProductProfitCalculation{}))
+	require.NoError(t, db.AutoMigrate(&suppliercostdomain.ProductSupplierCostRecord{}))
 	return db
 }
 

@@ -13,6 +13,7 @@ vendor/
 .playwright-cli/
 .codex-gh-artifacts-*/
 go-backend/uploads/
+go-backend/site-logo-uploads/
 
 # IDE & OS
 .vscode/

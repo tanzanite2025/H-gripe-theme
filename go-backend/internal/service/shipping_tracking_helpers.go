@@ -1,10 +1,12 @@
 package service
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 	"time"
 
+	"commerce-platform/internal/domain/order"
 	"commerce-platform/internal/domain/shipping"
 	"commerce-platform/internal/pkg/resilience"
 	"commerce-platform/internal/pkg/tracking"
@@ -72,18 +74,38 @@ func (s *ShippingService) updateOrderShippingStatusIfDelivered(
 		return nil
 	}
 
-	currentOrder, err := s.orderRepo.FindByIDBasic(orderID)
-	if err != nil {
-		return err
+	deliveredAt := referralDeliveryTime(events)
+	var currentOrder *order.Order
+	var updated bool
+	var err error
+	if s.txManager != nil {
+		err = s.txManager.WithinTx(func(repos repository.TxRepositories) error {
+			if repos.Order == nil {
+				return errors.New("order repository is not configured")
+			}
+			currentOrder, err = repos.Order.FindByIDForUpdate(orderID)
+			if err != nil {
+				return err
+			}
+			updated, err = repos.Order.MarkDeliveredAtIfNeeded(orderID, deliveredAt)
+			if err != nil || !updated {
+				return err
+			}
+			return enqueueReferralOrderDeliveredOutboxEvent(repos.Outbox, orderID, deliveredAt, source)
+		})
+	} else {
+		currentOrder, err = s.orderRepo.FindByIDBasic(orderID)
+		if err == nil {
+			updated, err = s.orderRepo.MarkDeliveredAtIfNeeded(orderID, deliveredAt)
+		}
 	}
-	oldShippingStatus := strings.TrimSpace(currentOrder.ShippingStatus)
-	updated, err := s.orderRepo.UpdateShippingStatusIfDifferent(orderID, "delivered")
 	if err != nil {
 		return err
 	}
 	if !updated {
 		return nil
 	}
+	oldShippingStatus := strings.TrimSpace(currentOrder.ShippingStatus)
 
 	recordServiceAudit(s.auditRecorder, serviceAuditEvent{
 		Action:     "execute",
@@ -107,6 +129,27 @@ func (s *ShippingService) updateOrderShippingStatusIfDelivered(
 		},
 	})
 	return nil
+}
+
+func referralDeliveryTime(events []shipping.TrackingEvent) time.Time {
+	var deliveredAt time.Time
+	for _, event := range events {
+		if !trackingStatusTextIndicatesDelivery(event.Status) || event.EventTime.IsZero() {
+			continue
+		}
+		if deliveredAt.IsZero() || event.EventTime.Before(deliveredAt) {
+			deliveredAt = event.EventTime
+		}
+	}
+	if deliveredAt.IsZero() {
+		if latest := latestTrackingEventTime(events); latest != nil {
+			deliveredAt = *latest
+		}
+	}
+	if deliveredAt.IsZero() {
+		deliveredAt = time.Now().UTC()
+	}
+	return deliveredAt.UTC()
 }
 
 func deliveryTrackingStatusForAudit(status string, statusCode int, events []shipping.TrackingEvent) string {

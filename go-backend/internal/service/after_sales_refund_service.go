@@ -3,12 +3,12 @@ package service
 import (
 	"errors"
 	"fmt"
-	"math"
 	"strings"
 	"time"
 
 	"commerce-platform/internal/domain/aftersales"
 	"commerce-platform/internal/domain/currency"
+	domainmoney "commerce-platform/internal/domain/money"
 	"commerce-platform/internal/domain/order"
 	"commerce-platform/internal/domain/payment"
 	"commerce-platform/internal/repository"
@@ -30,8 +30,7 @@ var (
 
 type SaveAfterSalesRefundReviewInput struct {
 	CaseID         uint
-	ProposedAmount float64
-	Currency       string
+	ProposedAmount domainmoney.Money
 	RequestNotes   string
 	UpdatedBy      uint
 }
@@ -79,7 +78,6 @@ func (s *AfterSalesService) SaveRefundReview(
 	if input.UpdatedBy == 0 {
 		return nil, ErrAfterSalesRefundReviewOperatorRequired
 	}
-	input.Currency = currency.NormalizeCode(input.Currency)
 	input.RequestNotes = strings.TrimSpace(input.RequestNotes)
 	if input.RequestNotes == "" {
 		return nil, ErrAfterSalesRefundReviewNotesRequired
@@ -99,16 +97,20 @@ func (s *AfterSalesService) SaveRefundReview(
 		}
 		return nil, err
 	}
-	maximumAmount, expectedCurrency := refundReviewLimit(caseRecord, orderRecord)
-	amount, err := normalizeRefundReviewAmount(input.ProposedAmount, expectedCurrency)
-	if err != nil {
-		return nil, err
+	maximumAmount := refundReviewLimit(caseRecord, orderRecord)
+	expectedCurrency := maximumAmount.Currency().String()
+	if input.ProposedAmount.Validate() != nil || input.ProposedAmount.AmountMinor() <= 0 {
+		return nil, ErrAfterSalesRefundReviewAmountInvalid
 	}
-	if input.Currency != expectedCurrency {
+	if input.ProposedAmount.Currency().String() != expectedCurrency {
 		return nil, ErrAfterSalesRefundReviewCurrencyInvalid
 	}
-	if amount > maximumAmount+0.000001 {
+	if maximumAmount.Validate() != nil || input.ProposedAmount.AmountMinor() > maximumAmount.AmountMinor() {
 		return nil, ErrAfterSalesRefundReviewAmountExceeded
+	}
+	amount, amountErr := input.ProposedAmount.MajorFloat()
+	if amountErr != nil {
+		return nil, ErrAfterSalesRefundReviewAmountInvalid
 	}
 
 	var saved *aftersales.AfterSalesRefundReview
@@ -295,22 +297,32 @@ func (s *AfterSalesService) CreatePendingRefundFromApprovedReview(
 		if err != nil {
 			return normalizeOrderError(err)
 		}
-		maximumAmount, expectedCurrency := refundReviewLimit(caseRecord, orderRecord)
+		maximumAmount := refundReviewLimit(caseRecord, orderRecord)
+		expectedCurrency := maximumAmount.Currency().String()
 		if !strings.EqualFold(expectedCurrency, review.Currency) {
 			return ErrAfterSalesRefundReviewCurrencyInvalid
 		}
-		if review.ProposedAmount <= 0 || review.ProposedAmount > maximumAmount+0.01 {
+		proposedMoney, amountErr := domainmoney.FromMajorFloat(review.ProposedAmount, review.Currency)
+		if amountErr != nil || maximumAmount.Validate() != nil || proposedMoney.AmountMinor() <= 0 || proposedMoney.AmountMinor() > maximumAmount.AmountMinor() {
 			return ErrAfterSalesRefundReviewAmountExceeded
 		}
 
 		refund := &payment.Refund{
 			OrderID:       caseRecord.OrderID,
 			TransactionID: transaction.ID,
+			Currency:      transaction.Currency,
 			Amount:        review.ProposedAmount,
 			Reason:        afterSalesRefundDraftReason(caseRecord.ID, review),
 		}
-		if review.ProposedAmount+0.01 >= maximumAmount {
+		if proposedMoney.AmountMinor() >= maximumAmount.AmountMinor() {
 			refund.LineItems = afterSalesRefundLineItems(caseRecord)
+			// Line item snapshots carry the pre-order-discount merchandise total.
+			// Let the payment refund service derive the requested amount from those
+			// snapshots so the order-level coupon clawback can be applied exactly
+			// once. Keeping the review's post-discount amount here would make the
+			// line-item amount consistency check reject every fully approved
+			// order-level coupon refund (for example, 900 vs. 1000).
+			refund.Amount = 0
 		}
 		if err := createAdminRefundInTx(repos, refund, input.AdminID); err != nil {
 			return err
@@ -340,7 +352,9 @@ func (s *AfterSalesService) populateRefundReviewDetails(record *aftersales.After
 	if s != nil && s.orderRepo != nil {
 		orderRecord, err := s.orderRepo.FindByID(record.OrderID)
 		if err == nil {
-			record.RefundReviewMaximumAmount, record.RefundReviewCurrency = refundReviewLimit(record, orderRecord)
+			maximumAmount := refundReviewLimit(record, orderRecord)
+			record.RefundReviewCurrency = maximumAmount.Currency().String()
+			record.RefundReviewMaximumAmount, _ = maximumAmount.MajorFloat()
 		}
 	}
 	s.populateRefundReviewOperatorNames(record.RefundReview)
@@ -383,9 +397,9 @@ func refundReviewAvailable(record *aftersales.AfterSalesCase) bool {
 func refundReviewLimit(
 	caseRecord *aftersales.AfterSalesCase,
 	orderRecord *order.Order,
-) (float64, string) {
+) domainmoney.Money {
 	if caseRecord == nil || orderRecord == nil || !aftersales.IsRefundReviewCaseType(caseRecord.Type) {
-		return 0, ""
+		return domainmoney.Money{}
 	}
 
 	currencyCode := currency.NormalizeCode(orderRecord.Currency)
@@ -394,65 +408,81 @@ func refundReviewLimit(
 		quantitiesByOrderItemID[item.OrderItemID] += item.Quantity
 	}
 
-	amount := 0.0
+	amountMoney, err := domainmoney.New(0, currencyCode)
+	if err != nil {
+		return domainmoney.Money{}
+	}
 	for _, item := range orderRecord.Items {
 		quantity := quantitiesByOrderItemID[item.ID]
 		if quantity <= 0 || item.Quantity <= 0 {
 			continue
 		}
-		amount += item.Total * float64(quantity) / float64(item.Quantity)
+		lineMoney, lineErr := item.TotalMoney()
+		if lineErr != nil {
+			continue
+		}
+		if lineMoney.Currency().String() != currencyCode {
+			return domainmoney.Money{}
+		}
+		allocated, lineErr := lineMoney.MultiplyRatio(int64(quantity), int64(item.Quantity))
+		if lineErr != nil {
+			continue
+		}
+		amountMoney, err = amountMoney.Add(allocated)
+		if err != nil {
+			return domainmoney.Money{}
+		}
 	}
 
 	// Order-level discounts are not stored on order items, so allocate them
 	// across selected merchandise by the original order subtotal.
-	orderSubtotal := orderRecord.SubtotalAmount
-	if orderSubtotal <= 0 {
+	orderSubtotalMoney, subtotalErr := orderRecord.SubtotalMoney()
+	if subtotalErr != nil {
+		return domainmoney.Money{}
+	}
+	if orderSubtotalMoney.AmountMinor() <= 0 {
+		orderSubtotalMoney, subtotalErr = domainmoney.New(0, currencyCode)
+		if subtotalErr != nil {
+			return domainmoney.Money{}
+		}
 		for _, item := range orderRecord.Items {
-			if item.Subtotal > 0 {
-				orderSubtotal += item.Subtotal
+			lineMoney, lineErr := item.SubtotalMoney()
+			if lineErr == nil && lineMoney.AmountMinor() > 0 {
+				orderSubtotalMoney, subtotalErr = orderSubtotalMoney.Add(lineMoney)
 				continue
 			}
-			if item.Total > 0 {
-				orderSubtotal += item.Total
+			lineMoney, lineErr = item.TotalMoney()
+			if lineErr == nil && lineMoney.AmountMinor() > 0 {
+				orderSubtotalMoney, subtotalErr = orderSubtotalMoney.Add(lineMoney)
 			}
 		}
 	}
-	if amount > 0 && orderSubtotal > 0 && orderRecord.DiscountAmount > 0 {
-		discountAmount := math.Min(orderRecord.DiscountAmount, orderSubtotal)
-		amount *= (orderSubtotal - discountAmount) / orderSubtotal
+	if subtotalErr != nil {
+		return domainmoney.Money{}
+	}
+	orderDiscountMoney, discountErr := orderRecord.DiscountMoney()
+	if amountMoney.AmountMinor() > 0 && orderSubtotalMoney.AmountMinor() > 0 && discountErr == nil && orderDiscountMoney.AmountMinor() > 0 {
+		discountMoney := orderDiscountMoney
+		if discountMoney.AmountMinor() > orderSubtotalMoney.AmountMinor() {
+			discountMoney = orderSubtotalMoney
+		}
+		netSubtotalMoney, subtractErr := orderSubtotalMoney.Subtract(discountMoney)
+		if subtractErr != nil {
+			return domainmoney.Money{}
+		}
+		amountMoney, err = amountMoney.MultiplyRatio(netSubtotalMoney.AmountMinor(), orderSubtotalMoney.AmountMinor())
+		if err != nil {
+			return domainmoney.Money{}
+		}
 	}
 
-	amount = roundRefundReviewMoney(amount, currencyCode)
-	if orderRecord.TotalAmount <= 0 {
-		amount = 0
-	} else if paidAmount := roundRefundReviewMoney(orderRecord.TotalAmount, currencyCode); amount > paidAmount {
-		amount = paidAmount
+	orderTotalMoney, totalErr := orderRecord.TotalMoney()
+	if totalErr != nil || orderTotalMoney.AmountMinor() <= 0 {
+		amountMoney, _ = domainmoney.New(0, currencyCode)
+	} else if amountMoney.AmountMinor() > orderTotalMoney.AmountMinor() {
+		amountMoney = orderTotalMoney
 	}
-	return amount, currencyCode
-}
-
-func normalizeRefundReviewAmount(amount float64, currencyCode string) (float64, error) {
-	if math.IsNaN(amount) || math.IsInf(amount, 0) || amount <= 0 {
-		return 0, ErrAfterSalesRefundReviewAmountInvalid
-	}
-	if !currency.IsValidCode(currencyCode) || !currency.IsCatalogCode(currencyCode) {
-		return 0, ErrAfterSalesRefundReviewCurrencyInvalid
-	}
-
-	rounded := roundRefundReviewMoney(amount, currencyCode)
-	if math.Abs(amount-rounded) > 0.000001 {
-		return 0, ErrAfterSalesRefundReviewAmountInvalid
-	}
-	return rounded, nil
-}
-
-func roundRefundReviewMoney(amount float64, currencyCode string) float64 {
-	minorUnits, ok := currency.MinorUnits(currencyCode)
-	if !ok {
-		return amount
-	}
-	factor := math.Pow10(minorUnits)
-	return math.Round(amount*factor) / factor
+	return amountMoney
 }
 
 func afterSalesRefundDraftReason(

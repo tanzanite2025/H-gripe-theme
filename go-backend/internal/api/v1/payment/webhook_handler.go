@@ -1,6 +1,7 @@
 package payment
 
 import (
+	domainmoney "commerce-platform/internal/domain/money"
 	paymentdomain "commerce-platform/internal/domain/payment"
 	"commerce-platform/internal/pkg/apierror"
 	pgateway "commerce-platform/internal/pkg/payment" // alias for gateway
@@ -11,6 +12,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -100,6 +102,10 @@ func (h *Handler) handleStripeWebhook(c *gin.Context, payload []byte) {
 		h.handleStripePaymentIntentRequiresAction(c, event)
 	case "payment_intent.processing":
 		h.handleStripePaymentIntentProcessing(c, event)
+	case "charge.refunded":
+		h.handleStripeChargeRefunded(c, event, payload)
+	case "refund.created":
+		h.handleStripeRefundCreated(c, event, payload)
 	case "review.opened":
 		h.handleStripeReviewOpened(c, event)
 	case "review.closed":
@@ -200,10 +206,7 @@ func (h *Handler) handleStripePaymentIntentSucceeded(c *gin.Context, event strip
 
 	orderNumber := stripeOrderNumber(intent.Metadata)
 	if orderNumber == "" {
-		setStripeWebhookSuccess(c, "Ignored Stripe payment_intent.succeeded without order metadata", gin.H{
-			"event_id":          event.ID,
-			"payment_intent_id": intent.ID,
-		})
+		apierror.RespondBadRequest(c, "Stripe payment_intent.succeeded is missing order_number metadata")
 		return
 	}
 
@@ -218,27 +221,31 @@ func (h *Handler) handleStripePaymentIntentSucceeded(c *gin.Context, event strip
 		})
 		return
 	}
-	majorAmount, err := pgateway.MinorToMajorAmount(amount, string(intent.Currency))
+	verifiedAmount, err := domainmoney.New(amount, string(intent.Currency))
 	if err != nil {
 		apierror.RespondBadRequest(c, err.Error())
 		return
 	}
 
-	if err := h.paymentService.RecordVerifiedGatewayPayment(service.VerifiedGatewayPaymentInput{
+	result, err := h.paymentService.RecordVerifiedGatewayPaymentResult(service.VerifiedGatewayPaymentInput{
 		Provider:         string(pgateway.GatewayStripe),
 		OrderNumber:      orderNumber,
 		TransactionID:    intent.ID,
 		PaymentMethod:    "stripe",
-		Amount:           majorAmount,
-		Currency:         string(intent.Currency),
+		Amount:           verifiedAmount,
 		GatewayResponse:  string(payload),
 		LiabilityShifted: stripeLiabilityShiftedFromPaymentIntentSucceeded(event.Data.Raw, payload),
-	}); err != nil {
+	})
+	if err != nil {
 		if errors.Is(err, service.ErrOrderNotFound) {
 			apierror.RespondNotFound(c, "Order")
 			return
 		}
 		apierror.RespondBadRequest(c, err.Error())
+		return
+	}
+	if err := h.paymentService.ResolveStripeRequiresActionReview(intent.ID); err != nil {
+		apierror.RespondInternalError(c, err)
 		return
 	}
 	if h.antiFraud != nil {
@@ -251,12 +258,19 @@ func (h *Handler) handleStripePaymentIntentSucceeded(c *gin.Context, event strip
 		}
 	}
 
-	setStripeWebhookSuccess(c, "Stripe webhook processed successfully", gin.H{
+	message := "Stripe webhook processed successfully"
+	data := gin.H{
 		"event_id":          event.ID,
 		"event_type":        string(event.Type),
 		"payment_intent_id": intent.ID,
 		"order_number":      orderNumber,
-	})
+	}
+	if result.DuplicatePaid {
+		message = "Stripe duplicate payment recorded; refund is pending"
+		data["duplicate_paid"] = true
+		data["refund_id"] = result.RefundID
+	}
+	setStripeWebhookSuccess(c, message, data)
 }
 
 func (h *Handler) handleStripePaymentIntentRequiresAction(c *gin.Context, event stripe.Event) {
@@ -268,7 +282,7 @@ func (h *Handler) handleStripePaymentIntentRequiresAction(c *gin.Context, event 
 	orderNumber := stripeOrderNumber(intent.Metadata)
 	var orderID *uint
 	if orderNumber != "" {
-		majorAmount, err := pgateway.MinorToMajorAmount(intent.Amount, string(intent.Currency))
+		amount, err := domainmoney.New(intent.Amount, string(intent.Currency))
 		if err != nil {
 			apierror.RespondBadRequest(c, err.Error())
 			return
@@ -279,8 +293,7 @@ func (h *Handler) handleStripePaymentIntentRequiresAction(c *gin.Context, event 
 			TransactionID: intent.ID,
 			PaymentMethod: "stripe",
 			Status:        "requires_action",
-			Amount:        majorAmount,
-			Currency:      string(intent.Currency),
+			Amount:        amount,
 		})
 		if record, err := h.orderService.GetOrderByNumberForPayment(orderNumber); err == nil {
 			orderID = &record.ID
@@ -313,7 +326,7 @@ func (h *Handler) handleStripePaymentIntentProcessing(c *gin.Context, event stri
 	}
 	orderNumber := stripeOrderNumber(intent.Metadata)
 	if orderNumber != "" {
-		majorAmount, err := pgateway.MinorToMajorAmount(intent.Amount, string(intent.Currency))
+		amount, err := domainmoney.New(intent.Amount, string(intent.Currency))
 		if err != nil {
 			apierror.RespondBadRequest(c, err.Error())
 			return
@@ -324,8 +337,7 @@ func (h *Handler) handleStripePaymentIntentProcessing(c *gin.Context, event stri
 			TransactionID: intent.ID,
 			PaymentMethod: "stripe",
 			Status:        "processing",
-			Amount:        majorAmount,
-			Currency:      string(intent.Currency),
+			Amount:        amount,
 		})
 	}
 	setStripeWebhookSuccess(c, "Stripe payment processing recorded", gin.H{
@@ -333,6 +345,209 @@ func (h *Handler) handleStripePaymentIntentProcessing(c *gin.Context, event stri
 		"payment_intent_id": intent.ID,
 		"order_number":      orderNumber,
 	})
+}
+
+func (h *Handler) handleStripeRefundCreated(c *gin.Context, event stripe.Event, payload []byte) {
+	var refund stripe.Refund
+	if err := json.Unmarshal(event.Data.Raw, &refund); err != nil {
+		apierror.RespondBadRequest(c, "Invalid JSON payload")
+		return
+	}
+	if !stripeRefundStatusRecordable(refund.Status) {
+		setStripeWebhookSuccess(c, "Ignored Stripe refund event with terminal failure status", gin.H{
+			"event_id":  event.ID,
+			"refund_id": refund.ID,
+			"status":    string(refund.Status),
+		})
+		return
+	}
+
+	input, err := stripeVerifiedRefundInput(&refund, nil, payload)
+	if err != nil {
+		apierror.RespondBadRequest(c, err.Error())
+		return
+	}
+	if !h.recordVerifiedGatewayRefund(c, input) {
+		return
+	}
+
+	setStripeWebhookSuccess(c, "Stripe refund webhook processed successfully", gin.H{
+		"event_id":        event.ID,
+		"refund_id":       input.RefundID,
+		"transaction_id":  input.TransactionID,
+		"refund_amount":   providerRefundAmountMajor(input.ProviderRefundAmount),
+		"refund_currency": input.ProviderRefundAmount.Currency().String(),
+	})
+}
+
+func (h *Handler) handleStripeChargeRefunded(c *gin.Context, event stripe.Event, payload []byte) {
+	var charge stripe.Charge
+	if err := json.Unmarshal(event.Data.Raw, &charge); err != nil {
+		apierror.RespondBadRequest(c, "Invalid JSON payload")
+		return
+	}
+
+	inputs := make([]service.VerifiedGatewayRefundInput, 0)
+	if charge.Refunds != nil {
+		for _, refund := range charge.Refunds.Data {
+			if refund == nil || !stripeRefundStatusRecordable(refund.Status) {
+				continue
+			}
+			input, err := stripeVerifiedRefundInput(refund, &charge, payload)
+			if err != nil {
+				apierror.RespondBadRequest(c, err.Error())
+				return
+			}
+			inputs = append(inputs, input)
+		}
+	}
+
+	if len(inputs) == 0 {
+		if charge.AmountRefunded <= 0 {
+			setStripeWebhookSuccess(c, "Ignored Stripe charge.refunded without refund details", gin.H{
+				"event_id":  event.ID,
+				"charge_id": charge.ID,
+			})
+			return
+		}
+
+		transactionID := stripeChargePaymentTransactionID(&charge)
+		if transactionID == "" {
+			apierror.RespondBadRequest(c, "Stripe refunded charge does not contain a payment intent")
+			return
+		}
+		amount, err := domainmoney.New(charge.AmountRefunded, string(charge.Currency))
+		if err != nil {
+			apierror.RespondBadRequest(c, err.Error())
+			return
+		}
+		inputs = append(inputs, service.VerifiedGatewayRefundInput{
+			Provider:             string(pgateway.GatewayStripe),
+			OrderNumber:          stripeOrderNumber(charge.Metadata),
+			TransactionID:        transactionID,
+			RefundID:             event.ID,
+			ProviderStatus:       "succeeded",
+			ProviderRefundAmount: amount,
+			GatewayResponse:      string(payload),
+		})
+	}
+
+	refundIDs := make([]string, 0, len(inputs))
+	for _, input := range inputs {
+		if !h.recordVerifiedGatewayRefund(c, input) {
+			return
+		}
+		refundIDs = append(refundIDs, input.RefundID)
+	}
+
+	setStripeWebhookSuccess(c, "Stripe charge refund webhook processed successfully", gin.H{
+		"event_id":   event.ID,
+		"charge_id":  charge.ID,
+		"refund_ids": refundIDs,
+	})
+}
+
+func stripeVerifiedRefundInput(refund *stripe.Refund, fallbackCharge *stripe.Charge, payload []byte) (service.VerifiedGatewayRefundInput, error) {
+	if refund == nil {
+		return service.VerifiedGatewayRefundInput{}, errors.New("Stripe refund resource is required")
+	}
+	refundID := strings.TrimSpace(refund.ID)
+	if refundID == "" {
+		return service.VerifiedGatewayRefundInput{}, errors.New("Stripe refund resource does not contain a refund id")
+	}
+	if refund.Amount <= 0 {
+		return service.VerifiedGatewayRefundInput{}, errors.New("Stripe refund resource does not contain a positive amount")
+	}
+	currency := strings.TrimSpace(string(refund.Currency))
+	if currency == "" && refund.Charge != nil {
+		currency = strings.TrimSpace(string(refund.Charge.Currency))
+	}
+	if currency == "" && fallbackCharge != nil {
+		currency = strings.TrimSpace(string(fallbackCharge.Currency))
+	}
+	if currency == "" {
+		return service.VerifiedGatewayRefundInput{}, errors.New("Stripe refund resource does not contain currency")
+	}
+	amount, err := domainmoney.New(refund.Amount, currency)
+	if err != nil {
+		return service.VerifiedGatewayRefundInput{}, err
+	}
+	transactionID := stripeRefundTransactionID(refund, fallbackCharge)
+	if transactionID == "" {
+		return service.VerifiedGatewayRefundInput{}, errors.New("Stripe refund resource does not contain a payment intent")
+	}
+
+	orderNumber := stripeOrderNumber(refund.Metadata)
+	if orderNumber == "" && refund.PaymentIntent != nil {
+		orderNumber = stripeOrderNumber(refund.PaymentIntent.Metadata)
+	}
+	if orderNumber == "" && refund.Charge != nil {
+		orderNumber = stripeOrderNumber(refund.Charge.Metadata)
+	}
+	if orderNumber == "" && fallbackCharge != nil {
+		orderNumber = stripeOrderNumber(fallbackCharge.Metadata)
+	}
+
+	return service.VerifiedGatewayRefundInput{
+		Provider:             string(pgateway.GatewayStripe),
+		OrderNumber:          orderNumber,
+		TransactionID:        transactionID,
+		RefundID:             refundID,
+		ProviderStatus:       strings.TrimSpace(string(refund.Status)),
+		ProviderRefundAmount: amount,
+		GatewayResponse:      string(payload),
+	}, nil
+}
+
+func stripeRefundTransactionID(refund *stripe.Refund, fallbackCharge *stripe.Charge) string {
+	if refund != nil {
+		if refund.PaymentIntent != nil {
+			if paymentIntentID := strings.TrimSpace(refund.PaymentIntent.ID); paymentIntentID != "" {
+				return paymentIntentID
+			}
+		}
+		if refund.Charge != nil {
+			if refund.Charge.PaymentIntent != nil {
+				if paymentIntentID := strings.TrimSpace(refund.Charge.PaymentIntent.ID); paymentIntentID != "" {
+					return paymentIntentID
+				}
+			}
+		}
+	}
+	if fallbackCharge != nil {
+		if fallbackCharge.PaymentIntent != nil {
+			if paymentIntentID := strings.TrimSpace(fallbackCharge.PaymentIntent.ID); paymentIntentID != "" {
+				return paymentIntentID
+			}
+		}
+	}
+	return ""
+}
+
+func stripeChargePaymentTransactionID(charge *stripe.Charge) string {
+	if charge == nil {
+		return ""
+	}
+	if charge.PaymentIntent != nil {
+		if paymentIntentID := strings.TrimSpace(charge.PaymentIntent.ID); paymentIntentID != "" {
+			return paymentIntentID
+		}
+	}
+	for _, key := range []string{"payment_intent_id", "payment_intent"} {
+		if value := strings.TrimSpace(charge.Metadata[key]); value != "" {
+			return value
+		}
+	}
+	return ""
+}
+
+func stripeRefundStatusRecordable(status stripe.RefundStatus) bool {
+	switch strings.ToLower(strings.TrimSpace(string(status))) {
+	case "failed", "canceled":
+		return false
+	default:
+		return true
+	}
 }
 
 func (h *Handler) handleStripeReviewOpened(c *gin.Context, event stripe.Event) {
@@ -394,7 +609,7 @@ func (h *Handler) handleStripeDispute(c *gin.Context, event stripe.Event, payloa
 		return
 	}
 
-	majorAmount, err := pgateway.MinorToMajorAmount(dispute.Amount, string(dispute.Currency))
+	majorAmount, err := webhookMajorAmountFromMinor(dispute.Amount, string(dispute.Currency))
 	if err != nil {
 		apierror.RespondBadRequest(c, err.Error())
 		return
@@ -455,6 +670,14 @@ func (h *Handler) handleStripeDispute(c *gin.Context, event stripe.Event, payloa
 		"stripe_dispute_id": record.StripeDisputeID,
 		"status":            record.Status,
 	})
+}
+
+func webhookMajorAmountFromMinor(amount int64, code string) (float64, error) {
+	money, err := domainmoney.New(amount, code)
+	if err != nil {
+		return 0, err
+	}
+	return money.MajorFloat()
 }
 
 func stripeOrderNumber(metadata map[string]string) string {

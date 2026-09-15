@@ -17,9 +17,17 @@ const (
 	EventStatusDeadLetter = "dead_letter"
 
 	EventTypeOrderPaid                        = "order.paid"
+	EventTypeOrderConfirmationEmail           = "order.confirmation_email"
+	EventTypeOrderShippingNotificationEmail   = "order.shipping_notification_email"
+	EventTypeReferralOrderPaid                = "referral.order_paid"
+	EventTypeReferralOrderDelivered           = "referral.order_delivered"
+	EventTypeReferralOrderInvalidated         = "referral.order_invalidated"
 	EventTypeVerifiedConversion               = "conversion.verified"
 	EventTypePaymentRiskLevelChanged          = "payment.risk_level_changed"
 	EventTypePaymentRiskFailOpen              = "payment.risk_fail_open"
+	EventTypePaymentRefundPending             = "payment.refund_pending"
+	EventTypePaymentRefundCompleted           = "payment.refund_completed"
+	EventTypePaymentRefundFailed              = "payment.refund_failed"
 	EventTypeMerchantProductUpsert            = "merchant.product_upsert"
 	EventTypeMerchantProductWithdraw          = "merchant.product_withdraw"
 	EventTypeMerchantOfferRevalidate          = "merchant.offer_revalidate"
@@ -29,6 +37,7 @@ const (
 	EventTypeStorefrontRouteCatalogChanged    = "storefront.route_catalog_changed"
 	AggregateTypeOrder                        = "order"
 	AggregateTypePaymentRiskProvider          = "payment_risk_provider"
+	AggregateTypePayment                      = "payment"
 	AggregateTypeProduct                      = "product"
 	AggregateTypeProductCache                 = "product_cache"
 	AggregateTypeProductSpecificationTemplate = "product_specification_template"
@@ -96,6 +105,69 @@ type OrderPaidPayload struct {
 	CustomerEmail        string    `json:"customer_email,omitempty"`
 	CustomerName         string    `json:"customer_name,omitempty"`
 	ShippingCountry      string    `json:"shipping_country,omitempty"`
+}
+
+type OrderConfirmationEmailPayload struct {
+	RecipientEmail string    `json:"recipient_email"`
+	CustomerName   string    `json:"customer_name,omitempty"`
+	OrderID        uint      `json:"order_id"`
+	OrderNumber    string    `json:"order_number"`
+	Amount         float64   `json:"amount"`
+	Currency       string    `json:"currency"`
+	PaidAt         time.Time `json:"paid_at"`
+}
+
+type OrderShippingNotificationEmailPayload struct {
+	RecipientEmail string    `json:"recipient_email"`
+	CustomerName   string    `json:"customer_name,omitempty"`
+	OrderID        uint      `json:"order_id"`
+	OrderNumber    string    `json:"order_number"`
+	CarrierName    string    `json:"carrier_name,omitempty"`
+	TrackingNumber string    `json:"tracking_number"`
+	TrackingURL    string    `json:"tracking_url,omitempty"`
+	ShippedAt      time.Time `json:"shipped_at"`
+}
+
+type ReferralOrderPaidPayload struct {
+	OrderID     uint      `json:"order_id"`
+	UserID      uint      `json:"user_id"`
+	AmountMinor int64     `json:"amount_minor"`
+	Currency    string    `json:"currency"`
+	PaidAt      time.Time `json:"paid_at"`
+}
+
+type ReferralOrderDeliveredPayload struct {
+	OrderID     uint      `json:"order_id"`
+	DeliveredAt time.Time `json:"delivered_at"`
+	Source      string    `json:"source"`
+}
+
+type ReferralOrderInvalidatedPayload struct {
+	OrderID    uint      `json:"order_id"`
+	OccurredAt time.Time `json:"occurred_at"`
+	Reason     string    `json:"reason"`
+	Source     string    `json:"source"`
+	Reference  string    `json:"reference,omitempty"`
+}
+
+// PaymentRefundPayload is the durable state-transition envelope for refund
+// intents and executions. Amounts are always minor units; consumers must not
+// infer currency scale from a floating-point value.
+type PaymentRefundPayload struct {
+	RefundID             uint      `json:"refund_id"`
+	OrderID              uint      `json:"order_id"`
+	TransactionID        uint      `json:"transaction_id"`
+	Provider             string    `json:"provider,omitempty"`
+	ProviderRefundID     string    `json:"provider_refund_id,omitempty"`
+	RefundStatus         string    `json:"refund_status"`
+	ExecutionStatus      string    `json:"execution_status,omitempty"`
+	AmountMinor          int64     `json:"amount_minor"`
+	GiftCardAmountMinor  int64     `json:"gift_card_amount_minor"`
+	RequestedAmountMinor int64     `json:"requested_amount_minor"`
+	Currency             string    `json:"currency"`
+	Reason               string    `json:"reason,omitempty"`
+	ErrorMessage         string    `json:"error_message,omitempty"`
+	OccurredAt           time.Time `json:"occurred_at"`
 }
 
 // VerifiedConversionPayload intentionally excludes customer contact details

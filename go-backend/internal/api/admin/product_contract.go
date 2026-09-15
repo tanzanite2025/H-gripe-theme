@@ -2,6 +2,7 @@ package admin
 
 import (
 	"commerce-platform/internal/domain/currency"
+	productdomain "commerce-platform/internal/domain/product"
 	"commerce-platform/internal/service"
 	"encoding/json"
 	"errors"
@@ -68,20 +69,38 @@ type productUpdateRequest struct {
 }
 
 type productVariantRequest struct {
-	ID                 *uint                           `json:"id"`
-	ShippingTemplateID *uint                           `json:"shipping_template_id"`
-	SKU                string                          `json:"sku"`
-	Title              string                          `json:"title"`
-	OptionValues       map[string]interface{}          `json:"option_values"`
-	Currency           string                          `json:"currency"`
-	Price              float64                         `json:"price"`
-	SalePrice          *float64                        `json:"sale_price"`
-	DisplayPrices      []currency.DisplayPriceSnapshot `json:"display_prices"`
-	Stock              int                             `json:"stock"`
-	Weight             int                             `json:"weight_grams"`
-	IsDefault          bool                            `json:"is_default"`
-	IsActive           *bool                           `json:"is_active"`
-	SortOrder          int                             `json:"sort_order"`
+	ID                 *uint                                  `json:"id"`
+	ShippingTemplateID *uint                                  `json:"shipping_template_id"`
+	SKU                string                                 `json:"sku"`
+	Title              string                                 `json:"title"`
+	OptionValues       map[string]interface{}                 `json:"option_values"`
+	Currency           string                                 `json:"currency"`
+	PriceMinor         int64                                  `json:"price_minor" binding:"required"`
+	SalePriceMinor     *int64                                 `json:"sale_price_minor"`
+	DisplayPrices      []currency.DisplayPriceSnapshot        `json:"display_prices"`
+	Stock              int                                    `json:"stock"`
+	Weight             int                                    `json:"weight_grams"`
+	IsDefault          bool                                   `json:"is_default"`
+	IsActive           *bool                                  `json:"is_active"`
+	SortOrder          int                                    `json:"sort_order"`
+	OptionGroupRules   []productOptionGroupVariantRuleRequest `json:"option_group_rules"`
+	OptionValueRules   []productOptionValueVariantRuleRequest `json:"option_value_rules"`
+}
+
+type productOptionGroupVariantRuleRequest struct {
+	ID                    *uint `json:"id"`
+	SpecDefinitionID      uint  `json:"spec_definition_id"`
+	IsApplicable          bool  `json:"is_applicable"`
+	MinSelectionsOverride *int  `json:"min_selections_override"`
+	MaxSelectionsOverride *int  `json:"max_selections_override"`
+}
+
+type productOptionValueVariantRuleRequest struct {
+	ID                          *uint  `json:"id"`
+	ProductVariantOptionValueID uint   `json:"product_variant_option_value_id"`
+	IsEnabled                   bool   `json:"is_enabled"`
+	PriceDeltaMinorOverride     *int64 `json:"price_delta_minor_override"`
+	UnavailableReason           string `json:"unavailable_reason"`
 }
 
 type productMediaRequest struct {
@@ -103,15 +122,22 @@ type productMediaRequest struct {
 }
 
 type productVariantOptionValueRequest struct {
-	ID                 *uint  `json:"id"`
-	SpecDefinitionID   uint   `json:"spec_definition_id" binding:"required"`
-	ValueKey           string `json:"value_key"`
-	Label              string `json:"label"`
-	ColorHex           string `json:"color_hex"`
-	SwatchMediaAssetID *uint  `json:"swatch_media_asset_id"`
-	SwatchURL          string `json:"swatch_url"`
-	SortOrder          int    `json:"sort_order"`
-	IsEnabled          *bool  `json:"is_enabled"`
+	ID                     *uint  `json:"id"`
+	SpecDefinitionID       uint   `json:"spec_definition_id" binding:"required"`
+	TemplateOptionItemID   *uint  `json:"template_option_item_id"`
+	SourceTemplateRevision int    `json:"source_template_revision"`
+	ValueKey               string `json:"value_key"`
+	Label                  string `json:"label"`
+	ColorHex               string `json:"color_hex"`
+	SwatchMediaAssetID     *uint  `json:"swatch_media_asset_id"`
+	SwatchURL              string `json:"swatch_url"`
+	SortOrder              int    `json:"sort_order"`
+	IsEnabled              *bool  `json:"is_enabled"`
+	PriceDeltaMinor        *int64 `json:"price_delta_minor"`
+	IsDefault              bool   `json:"is_default"`
+	InventoryPolicy        string `json:"inventory_policy"`
+	ComponentVariantID     *uint  `json:"component_variant_id"`
+	ComponentQuantity      int    `json:"component_quantity"`
 }
 
 func respondProductServiceError(c *gin.Context, err error, fallbackMessage string) {
@@ -203,17 +229,48 @@ func normalizeVariantRequests(raw []productVariantRequest) []service.ProductVari
 			Title:              item.Title,
 			OptionValues:       normalizeRequestSpecs(item.OptionValues),
 			Currency:           item.Currency,
-			Price:              item.Price,
-			SalePrice:          item.SalePrice,
+			PriceMinor:         item.PriceMinor,
+			SalePriceMinor:     item.SalePriceMinor,
 			DisplayPrices:      item.DisplayPrices,
 			Stock:              item.Stock,
 			Weight:             item.Weight,
 			IsDefault:          item.IsDefault,
 			IsActive:           item.IsActive,
 			SortOrder:          item.SortOrder,
+			OptionGroupRules:   normalizeOptionGroupVariantRules(item.OptionGroupRules),
+			OptionValueRules:   normalizeOptionValueVariantRules(item.OptionValueRules),
 		})
 	}
 	return variants
+}
+
+func normalizeOptionGroupVariantRules(raw []productOptionGroupVariantRuleRequest) []productdomain.ProductOptionGroupVariantRule {
+	if len(raw) == 0 {
+		return nil
+	}
+	result := make([]productdomain.ProductOptionGroupVariantRule, 0, len(raw))
+	for _, item := range raw {
+		result = append(result, productdomain.ProductOptionGroupVariantRule{ID: valueOrZero(item.ID), SpecDefinitionID: item.SpecDefinitionID, IsApplicable: item.IsApplicable, MinSelectionsOverride: item.MinSelectionsOverride, MaxSelectionsOverride: item.MaxSelectionsOverride})
+	}
+	return result
+}
+
+func normalizeOptionValueVariantRules(raw []productOptionValueVariantRuleRequest) []productdomain.ProductOptionValueVariantRule {
+	if len(raw) == 0 {
+		return nil
+	}
+	result := make([]productdomain.ProductOptionValueVariantRule, 0, len(raw))
+	for _, item := range raw {
+		result = append(result, productdomain.ProductOptionValueVariantRule{ID: valueOrZero(item.ID), ProductVariantOptionValueID: item.ProductVariantOptionValueID, IsEnabled: item.IsEnabled, PriceDeltaMinorOverride: item.PriceDeltaMinorOverride, UnavailableReason: item.UnavailableReason})
+	}
+	return result
+}
+
+func valueOrZero(value *uint) uint {
+	if value == nil {
+		return 0
+	}
+	return *value
 }
 
 func normalizeMediaRequests(raw []productMediaRequest) []service.ProductMediaInput {
@@ -252,15 +309,22 @@ func normalizeVariantOptionValueRequests(raw []productVariantOptionValueRequest)
 	items := make([]service.ProductVariantOptionValueInput, 0, len(raw))
 	for _, item := range raw {
 		items = append(items, service.ProductVariantOptionValueInput{
-			ID:                 item.ID,
-			SpecDefinitionID:   item.SpecDefinitionID,
-			ValueKey:           item.ValueKey,
-			Label:              item.Label,
-			ColorHex:           item.ColorHex,
-			SwatchMediaAssetID: item.SwatchMediaAssetID,
-			SwatchURL:          item.SwatchURL,
-			SortOrder:          item.SortOrder,
-			IsEnabled:          item.IsEnabled,
+			ID:                     item.ID,
+			SpecDefinitionID:       item.SpecDefinitionID,
+			TemplateOptionItemID:   item.TemplateOptionItemID,
+			SourceTemplateRevision: item.SourceTemplateRevision,
+			ValueKey:               item.ValueKey,
+			Label:                  item.Label,
+			ColorHex:               item.ColorHex,
+			SwatchMediaAssetID:     item.SwatchMediaAssetID,
+			SwatchURL:              item.SwatchURL,
+			SortOrder:              item.SortOrder,
+			IsEnabled:              item.IsEnabled,
+			PriceDeltaMinor:        item.PriceDeltaMinor,
+			IsDefault:              item.IsDefault,
+			InventoryPolicy:        item.InventoryPolicy,
+			ComponentVariantID:     item.ComponentVariantID,
+			ComponentQuantity:      item.ComponentQuantity,
 		})
 	}
 	return items

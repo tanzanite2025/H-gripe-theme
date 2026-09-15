@@ -22,8 +22,8 @@ import (
 	"commerce-platform/internal/domain/payment"
 	"commerce-platform/internal/domain/post"
 	preflightdomain "commerce-platform/internal/domain/preflight"
-	procurementdomain "commerce-platform/internal/domain/procurement"
 	"commerce-platform/internal/domain/product"
+	suppliercostdomain "commerce-platform/internal/domain/productsuppliercost"
 	recommendationdomain "commerce-platform/internal/domain/recommendation"
 	"commerce-platform/internal/domain/review"
 	securitydomain "commerce-platform/internal/domain/security"
@@ -46,6 +46,7 @@ import (
 	"commerce-platform/internal/domain/wishlist"
 	"commerce-platform/internal/pkg/config"
 	"commerce-platform/internal/pkg/logger"
+	"commerce-platform/internal/workbenchfeed"
 	"context"
 	"database/sql"
 	"fmt"
@@ -80,13 +81,18 @@ func AutoMigrate(db *gorm.DB, serverMode string) error {
 		&product.ProductCategory{},
 		&product.ProductCategoryTranslation{},
 		&product.SpecDefinition{},
+		&product.ProductSpecOptionItem{},
 		&product.ProductSpecValue{},
 		&product.ProductVariant{},
+		&product.ProductDisplayPriceSnapshot{},
 		&product.ProductVariantOptionValue{},
+		&product.ProductCustomOptionPolicy{},
+		&product.ProductOptionGroupVariantRule{},
+		&product.ProductOptionValueVariantRule{},
 		&product.Cart{},
 		&product.CartItem{},
-		&procurementdomain.ProductProcurement{},
-		&procurementdomain.ProductProfitCalculation{},
+		&suppliercostdomain.ProductSupplierCostRecord{},
+		&suppliercostdomain.ProductProfitCalculation{},
 		&fitmentcatalogdomain.FrameFitmentEntry{},
 		&fitmentcatalogdomain.HubSpecification{},
 		&fitmentcatalogdomain.FrameHubSpecification{},
@@ -116,10 +122,12 @@ func AutoMigrate(db *gorm.DB, serverMode string) error {
 		&aftersales.AfterSalesCaseEvent{},
 		&aftersales.AfterSalesCaseEventArchive{},
 		&aftersales.AfterSalesCaseAttachment{},
+		&aftersales.AfterSalesReturnShipment{},
 		&aftersales.AfterSalesRefundReview{},
 		&attributiondomain.OrderAttribution{},
 		&outboxdomain.Event{},
 		&payment.PaymentMethod{},
+		&payment.PaymentOperationIdempotency{},
 		&payment.TaxRate{},
 		&payment.Transaction{},
 		&payment.Refund{},
@@ -133,12 +141,14 @@ func AutoMigrate(db *gorm.DB, serverMode string) error {
 		&payment.PaymentRiskCheckoutDecision{},
 		&payment.PaymentProtectionControl{},
 		&payment.PaymentRefundRecommendation{},
+		&payment.RefundIdempotency{},
 		&currency.ExchangeRate{},
 		&currency.ExchangeRateSyncLease{},
 		&shipping.ShippingTemplate{},
 		&shipping.ShippingRule{},
 		&shipping.Carrier{},
 		&shipping.CarrierService{},
+		&shipping.QuoteSnapshot{},
 		&shipping.TrackingProviderConfig{},
 		&shipping.TrackingCarrierMapping{},
 		&shipping.TrackingShipment{},
@@ -157,6 +167,11 @@ func AutoMigrate(db *gorm.DB, serverMode string) error {
 		&loyalty.ProgramRedeemOption{},
 		&loyalty.CheckIn{},
 		&loyalty.Referral{},
+		&loyalty.ReferralProgramConfig{},
+		&loyalty.ReferralIdentity{},
+		&loyalty.ReferralRecord{},
+		&loyalty.ReferralReward{},
+		&loyalty.ReferralTransition{},
 		&loyalty.MemberLevel{},
 		&loyalty.UserLoyalty{},
 		&faq.FAQPage{},
@@ -214,6 +229,9 @@ func AutoMigrate(db *gorm.DB, serverMode string) error {
 		&sitequalitydomain.SiteQualityRunArchive{},
 		&sitequalitydomain.SiteQualityFinding{},
 		&sitequalitydomain.SiteQualityFindingEvent{},
+		&workbenchfeed.FeedEntry{},
+		&workbenchfeed.FeedMedia{},
+		&workbenchfeed.TaggedProduct{},
 	)
 	if err != nil {
 		return err
@@ -303,6 +321,8 @@ func PrepareSchema(ctx context.Context, db *gorm.DB, cfg *config.DatabaseConfig,
 		return fmt.Errorf("run SQL migrations: %w", err)
 	}
 	if err := VerifyRequiredTables(ctx, sqlDB,
+		// Legacy physical table name for SKU supplier-cost records. This table
+		// does not imply that the application implements supplier-side workflow.
 		"product_procurement_records",
 		"product_profit_calculations",
 	); err != nil {

@@ -218,6 +218,27 @@ definePageMeta({
 
 useHead(() => ({
   title: t('resourcesSpokeCalculator.title'),
+  script: [{
+    type: 'application/ld+json',
+    children: JSON.stringify({
+      '@context': 'https://schema.org',
+      '@type': 'TechArticle',
+      headline: t('resourcesSpokeCalculator.title'),
+      version: 'V1.0-ENGINEERING',
+      proficiencyLevel: 'Expert',
+      articleBody: t('resourcesSpokeCalculator.parameter.intro'),
+      author: {
+        '@type': 'Organization',
+        name: 'Guangengwang Engineering Lab',
+      },
+      inLanguage: locale.value,
+      hasPart: [{
+        '@type': 'Dataset',
+        name: 'Spoke calculator engineering dataset',
+        description: 'Server-side spoke length and tension-ratio calculations for validated rim and hub geometry.',
+      }],
+    }),
+  }],
 }))
 </script>
 

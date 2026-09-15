@@ -98,14 +98,14 @@ func (s *s3StorageImpl) Upload(ctx context.Context, file *multipart.FileHeader) 
 }
 
 func (s *s3StorageImpl) UploadWithPrefix(ctx context.Context, file *multipart.FileHeader, prefix string) (string, error) {
-	return s.uploadWithPrefix(ctx, file, prefix, "")
+	return s.uploadWithPrefix(ctx, file, prefix, "", false)
 }
 
 func (s *s3StorageImpl) UploadWithPrefixAndCacheControl(ctx context.Context, file *multipart.FileHeader, prefix string, cacheControl string) (string, error) {
-	return s.uploadWithPrefix(ctx, file, prefix, cacheControl)
+	return s.uploadWithPrefix(ctx, file, prefix, cacheControl, false)
 }
 
-func (s *s3StorageImpl) uploadWithPrefix(ctx context.Context, file *multipart.FileHeader, prefix string, cacheControl string) (string, error) {
+func (s *s3StorageImpl) uploadWithPrefix(ctx context.Context, file *multipart.FileHeader, prefix string, cacheControl string, private bool) (string, error) {
 	// 打开上传的文件
 	src, err := file.Open()
 	if err != nil {
@@ -123,8 +123,12 @@ func (s *s3StorageImpl) uploadWithPrefix(ctx context.Context, file *multipart.Fi
 	contentType := detectContentType(file.Filename)
 
 	// 上传到S3
+	bucket, err := s.requireBucketForKey(filename)
+	if err != nil {
+		return "", err
+	}
 	input := &s3.PutObjectInput{
-		Bucket:      aws.String(s.config.Bucket),
+		Bucket:      aws.String(bucket),
 		Key:         aws.String(filename),
 		Body:        src,
 		ContentType: aws.String(contentType),
@@ -139,13 +143,43 @@ func (s *s3StorageImpl) uploadWithPrefix(ctx context.Context, file *multipart.Fi
 		return "", fmt.Errorf("failed to upload to S3: %w", err)
 	}
 
-	return s.GetURL(filename), nil
+	return s.getURL(filename, private), nil
 }
 
 func (s *s3StorageImpl) UploadWithPrefixPrivate(ctx context.Context, file *multipart.FileHeader, prefix string) (string, error) {
-	// Do not send an ACL here: S3 buckets using Bucket Owner Enforced reject
-	// ACL headers. Private-bucket policy is the durable access boundary.
-	return s.UploadWithPrefix(ctx, file, prefix)
+	if !isPrivateUploadPrefix(prefix) {
+		return "", fmt.Errorf("private upload prefix must use a private namespace")
+	}
+	if strings.TrimSpace(s.config.PrivateBucket) == "" || strings.TrimSpace(s.config.PrivateBucket) == strings.TrimSpace(s.config.Bucket) {
+		return "", fmt.Errorf("private storage bucket is not configured")
+	}
+	if strings.TrimSpace(s.config.PrivateBaseURL) != "" && strings.EqualFold(strings.TrimRight(strings.TrimSpace(s.config.PrivateBaseURL), "/"), strings.TrimRight(strings.TrimSpace(s.config.BaseURL), "/")) {
+		return "", fmt.Errorf("private storage base URL must be separate from public base URL")
+	}
+	return s.uploadWithPrefix(ctx, file, prefix, "", true)
+}
+
+func (s *s3StorageImpl) bucketForKey(key string) string {
+	if s == nil || s.config == nil {
+		return ""
+	}
+	if IsPrivateObjectKey(key) {
+		return strings.TrimSpace(s.config.PrivateBucket)
+	}
+	return s.config.Bucket
+}
+
+func (s *s3StorageImpl) requireBucketForKey(key string) (string, error) {
+	bucket := s.bucketForKey(key)
+	if IsPrivateObjectKey(key) {
+		if strings.TrimSpace(bucket) == "" || strings.EqualFold(strings.TrimSpace(bucket), strings.TrimSpace(s.config.Bucket)) {
+			return "", fmt.Errorf("private storage bucket is not configured")
+		}
+	}
+	if strings.TrimSpace(bucket) == "" {
+		return "", fmt.Errorf("S3 bucket is required")
+	}
+	return bucket, nil
 }
 
 // UploadFromReader 从Reader上传到S3
@@ -163,13 +197,17 @@ func (s *s3StorageImpl) UploadFromReaderWithPrefixAndCacheControl(ctx context.Co
 	if err != nil {
 		return "", err
 	}
+	bucket, err := s.requireBucketForKey(newFilename)
+	if err != nil {
+		return "", err
+	}
 
 	// 检测内容类型
 	contentType := detectContentType(filename)
 
 	// 上传到S3
 	input := &s3.PutObjectInput{
-		Bucket:      aws.String(s.config.Bucket),
+		Bucket:      aws.String(bucket),
 		Key:         aws.String(newFilename),
 		Body:        reader,
 		ContentType: aws.String(contentType),
@@ -195,8 +233,12 @@ func (s *s3StorageImpl) Delete(ctx context.Context, url string) error {
 	}
 
 	// 从S3删除对象
+	bucket, err := s.requireBucketForKey(key)
+	if err != nil {
+		return err
+	}
 	_, err = s.client.DeleteObject(ctx, &s3.DeleteObjectInput{
-		Bucket: aws.String(s.config.Bucket),
+		Bucket: aws.String(bucket),
 		Key:    aws.String(key),
 	})
 
@@ -209,27 +251,55 @@ func (s *s3StorageImpl) Delete(ctx context.Context, url string) error {
 
 // GetURL 获取S3文件URL
 func (s *s3StorageImpl) GetURL(filename string) string {
-	if s.config.BaseURL != "" {
+	return s.getURL(filename, false)
+}
+
+func (s *s3StorageImpl) getURL(filename string, forcePrivate bool) string {
+	if forcePrivate || IsPrivateObjectKey(filename) {
+		if _, err := s.requireBucketForKey(filename); err != nil {
+			return ""
+		}
+	}
+	baseURL := s.config.BaseURL
+	if forcePrivate || IsPrivateObjectKey(filename) {
+		if strings.TrimSpace(s.config.PrivateBaseURL) != "" {
+			baseURL = s.config.PrivateBaseURL
+		} else {
+			// Never point a private object at the public CDN origin. Fall back to
+			// the bucket-native URL (or endpoint path) below.
+			baseURL = ""
+		}
+	}
+	if baseURL != "" {
 		// 使用自定义域名或CDN
-		return fmt.Sprintf("%s/%s", strings.TrimSuffix(s.config.BaseURL, "/"), filename)
+		return fmt.Sprintf("%s/%s", strings.TrimSuffix(baseURL, "/"), filename)
 	}
 
 	if s.config.Endpoint != "" {
 		// 使用自定义端点（MinIO等）
-		return fmt.Sprintf("%s/%s/%s", s.config.Endpoint, s.config.Bucket, filename)
+		bucket := s.bucketForKey(filename)
+		return fmt.Sprintf("%s/%s/%s", strings.TrimRight(s.config.Endpoint, "/"), bucket, filename)
 	}
 
 	// 使用标准S3 URL
+	bucket := s.bucketForKey(filename)
+	if strings.TrimSpace(bucket) == "" {
+		return ""
+	}
 	return fmt.Sprintf("https://%s.s3.%s.amazonaws.com/%s",
-		s.config.Bucket, s.config.Region, filename)
+		bucket, s.config.Region, filename)
 }
 
 // GetPresignedURL 获取预签名URL（用于临时访问私有文件）
 func (s *s3StorageImpl) GetPresignedURL(ctx context.Context, filename string, duration time.Duration) (string, error) {
 	presignClient := s3.NewPresignClient(s.client)
 
+	bucket, err := s.requireBucketForKey(filename)
+	if err != nil {
+		return "", err
+	}
 	req, err := presignClient.PresignGetObject(ctx, &s3.GetObjectInput{
-		Bucket: aws.String(s.config.Bucket),
+		Bucket: aws.String(bucket),
 		Key:    aws.String(filename),
 	}, func(opts *s3.PresignOptions) {
 		opts.Expires = duration
@@ -244,26 +314,41 @@ func (s *s3StorageImpl) GetPresignedURL(ctx context.Context, filename string, du
 
 // extractKeyFromURL 从URL提取S3 key
 func (s *s3StorageImpl) extractKeyFromURL(url string) string {
-	// 处理自定义域名
+	// 处理私有和公共自定义域名（两者可能同时配置）
+	if s.config.PrivateBaseURL != "" {
+		prefix := strings.TrimRight(s.config.PrivateBaseURL, "/") + "/"
+		if strings.HasPrefix(url, prefix) {
+			return strings.TrimPrefix(url, prefix)
+		}
+	}
 	if s.config.BaseURL != "" {
 		prefix := strings.TrimRight(s.config.BaseURL, "/") + "/"
 		if strings.HasPrefix(url, prefix) {
 			return strings.TrimPrefix(url, prefix)
 		}
-		return ""
 	}
 
 	// 处理标准S3 URL
-	bucketPrefix := fmt.Sprintf("https://%s.s3.%s.amazonaws.com/", s.config.Bucket, s.config.Region)
-	if strings.HasPrefix(url, bucketPrefix) {
-		return strings.TrimPrefix(url, bucketPrefix)
+	for _, bucket := range []string{s.config.PrivateBucket, s.config.Bucket} {
+		if strings.TrimSpace(bucket) == "" {
+			continue
+		}
+		bucketPrefix := fmt.Sprintf("https://%s.s3.%s.amazonaws.com/", bucket, s.config.Region)
+		if strings.HasPrefix(url, bucketPrefix) {
+			return strings.TrimPrefix(url, bucketPrefix)
+		}
 	}
 
 	// 处理自定义端点
 	if s.config.Endpoint != "" {
-		endpointPrefix := fmt.Sprintf("%s/%s/", s.config.Endpoint, s.config.Bucket)
-		if strings.HasPrefix(url, endpointPrefix) {
-			return strings.TrimPrefix(url, endpointPrefix)
+		for _, bucket := range []string{s.config.PrivateBucket, s.config.Bucket} {
+			if strings.TrimSpace(bucket) == "" {
+				continue
+			}
+			endpointPrefix := fmt.Sprintf("%s/%s/", strings.TrimRight(s.config.Endpoint, "/"), bucket)
+			if strings.HasPrefix(url, endpointPrefix) {
+				return strings.TrimPrefix(url, endpointPrefix)
+			}
 		}
 	}
 
@@ -271,6 +356,9 @@ func (s *s3StorageImpl) extractKeyFromURL(url string) string {
 }
 
 func (s *s3StorageImpl) ObjectKey(reference string) (string, error) {
+	if key, ok := ObjectKeyFromBaseURL(reference, s.config.PrivateBaseURL); ok {
+		return key, nil
+	}
 	if key, ok := ObjectKeyFromBaseURL(reference, s.config.BaseURL); ok {
 		return key, nil
 	}
@@ -282,19 +370,26 @@ func (s *s3StorageImpl) ObjectKey(reference string) (string, error) {
 
 	value := strings.TrimSpace(reference)
 	if parsed, err := url.Parse(value); err == nil && parsed.Scheme != "" && parsed.Host != "" {
-		standardHost := fmt.Sprintf("%s.s3.%s.amazonaws.com", s.config.Bucket, s.config.Region)
-		if strings.EqualFold(parsed.Host, standardHost) {
-			if normalized, ok := NormalizeObjectKey(strings.TrimPrefix(parsed.Path, "/")); ok {
-				return normalized, nil
+		for _, bucket := range []string{s.config.PrivateBucket, s.config.Bucket} {
+			if strings.TrimSpace(bucket) == "" {
+				continue
+			}
+			standardHost := fmt.Sprintf("%s.s3.%s.amazonaws.com", bucket, s.config.Region)
+			if strings.EqualFold(parsed.Host, standardHost) {
+				if normalized, ok := NormalizeObjectKey(strings.TrimPrefix(parsed.Path, "/")); ok {
+					return normalized, nil
+				}
 			}
 		}
 		if s.config.Endpoint != "" {
 			endpoint, endpointErr := url.Parse(strings.TrimRight(s.config.Endpoint, "/"))
 			if endpointErr == nil && strings.EqualFold(parsed.Host, endpoint.Host) {
-				expectedPrefix := "/" + strings.Trim(s.config.Bucket, "/") + "/"
-				if strings.HasPrefix(parsed.Path, expectedPrefix) {
-					if normalized, ok := NormalizeObjectKey(strings.TrimPrefix(parsed.Path, expectedPrefix)); ok {
-						return normalized, nil
+				for _, bucket := range []string{s.config.PrivateBucket, s.config.Bucket} {
+					expectedPrefix := "/" + strings.Trim(bucket, "/") + "/"
+					if strings.HasPrefix(parsed.Path, expectedPrefix) {
+						if normalized, ok := NormalizeObjectKey(strings.TrimPrefix(parsed.Path, expectedPrefix)); ok {
+							return normalized, nil
+						}
 					}
 				}
 			}
@@ -313,8 +408,12 @@ func (s *s3StorageImpl) Open(ctx context.Context, key string) (*StoredObject, er
 		return nil, fmt.Errorf("invalid object key")
 	}
 
+	bucket, err := s.requireBucketForKey(normalizedKey)
+	if err != nil {
+		return nil, err
+	}
 	object, err := s.client.GetObject(ctx, &s3.GetObjectInput{
-		Bucket: aws.String(s.config.Bucket),
+		Bucket: aws.String(bucket),
 		Key:    aws.String(normalizedKey),
 	})
 	if err != nil {
@@ -398,8 +497,16 @@ func detectContentType(filename string) string {
 
 // ListObjects 列出S3中的对象
 func (s *s3StorageImpl) ListObjects(ctx context.Context, prefix string, maxKeys int32) ([]string, error) {
+	bucket := s.config.Bucket
+	if IsPrivateObjectKey(prefix) || isPrivateUploadPrefix(prefix) {
+		var err error
+		bucket, err = s.requireBucketForKey(prefix)
+		if err != nil {
+			return nil, err
+		}
+	}
 	input := &s3.ListObjectsV2Input{
-		Bucket:  aws.String(s.config.Bucket),
+		Bucket:  aws.String(bucket),
 		Prefix:  aws.String(prefix),
 		MaxKeys: maxKeys,
 	}
@@ -429,10 +536,18 @@ func (s *s3StorageImpl) CopyObject(ctx context.Context, sourceKey, destKey strin
 	if !ok {
 		return fmt.Errorf("invalid destination object key")
 	}
-	copySource := fmt.Sprintf("%s/%s", s.config.Bucket, normalizedSourceKey)
+	sourceBucket, err := s.requireBucketForKey(normalizedSourceKey)
+	if err != nil {
+		return err
+	}
+	destBucket, err := s.requireBucketForKey(normalizedDestKey)
+	if err != nil {
+		return err
+	}
+	copySource := fmt.Sprintf("%s/%s", sourceBucket, normalizedSourceKey)
 
-	_, err := s.client.CopyObject(ctx, &s3.CopyObjectInput{
-		Bucket:     aws.String(s.config.Bucket),
+	_, err = s.client.CopyObject(ctx, &s3.CopyObjectInput{
+		Bucket:     aws.String(destBucket),
 		CopySource: aws.String(copySource),
 		Key:        aws.String(normalizedDestKey),
 	})

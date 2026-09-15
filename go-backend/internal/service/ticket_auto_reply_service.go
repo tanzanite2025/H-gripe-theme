@@ -166,7 +166,7 @@ func (s *TicketService) deliverAutoReply(t *ticket.Ticket, rule ticket.AutoReply
 
 	msg := &ticket.TicketMessage{
 		TicketID:    t.ID,
-		UserID:      userID,
+		UserID:      &userID,
 		IsStaff:     true,
 		Content:     replyMessage,
 		MessageType: normalizeAutoReplyMessageType(rule.MessageType),

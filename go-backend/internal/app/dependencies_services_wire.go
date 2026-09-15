@@ -40,11 +40,14 @@ func (b *dependencyServicesBuilder) wire() error {
 	services.Checkout.ConfigureLoyaltyProgram(b.services.LoyaltyProgram)
 	services.Checkout.ConfigureCurrencyPolicy(services.CurrencyPolicy)
 	services.Checkout.ConfigureExchangeRateRepository(repos.ExchangeRate)
+	services.Checkout.ConfigureReferralRepositories(repos.Referral, repos.ReferralProgram)
 	services.Product.ConfigureCurrencyPolicy(services.CurrencyPolicy)
 	services.Product.ConfigureInformationTemplateRepository(repos.ProductInformationTemplate)
 	services.Product.ConfigureProductBrandRepository(repos.ProductBrand)
 	services.Product.ConfigureCustomsClassificationRepository(repos.CustomsClassification)
 	services.Product.ConfigureProductCategoryRepository(repos.ProductCategory)
+	services.ProductCategory.ConfigureProductCacheInvalidator(services.Product)
+	services.ProductCategory.SetStorefrontHTMLCacheInvalidator(support.StorefrontHTMLCacheInvalidator)
 	services.Product.ConfigureMerchantEventPublisher(b.merchantOutboxPublisher)
 	services.Product.ConfigureProductCacheEventPublisher(b.productCacheOutboxPublisher)
 	services.ProductBrand.ConfigureProductDependencies(repos.Product, b.productCacheOutboxPublisher, b.merchantOutboxPublisher)
@@ -57,6 +60,7 @@ func (b *dependencyServicesBuilder) wire() error {
 	services.ExchangeRate.ConfigureStorefrontMarkets(services.StorefrontMarket)
 	services.ExchangeRate.ConfigureProductService(services.Product)
 	services.ExchangeRate.ConfigureShippingService(support.ShippingService)
+	support.ShippingService.ConfigureExchangeRateService(services.ExchangeRate)
 	services.Warranty.ConfigureEmailChallenges(repos.EmailChallenge, cfg.JWT.Secret, support.EmailSvc)
 	services.Warranty.ConfigureEmailBaseURL(support.StorefrontBaseURL)
 	services.Subscription.ConfigureEmailChallenges(repos.EmailChallenge, cfg.JWT.Secret, support.EmailSvc)
@@ -121,6 +125,7 @@ func (b *dependencyServicesBuilder) wire() error {
 	)
 	services.PaymentThreeDS.ConfigureRiskMonitoring(services.PaymentRiskMonitoring)
 	services.PaymentThreeDS.ConfigurePaymentProtection(services.PaymentProtection)
+	services.PaymentThreeDS.ConfigureExchangeRateService(services.ExchangeRate)
 
 	if cfg.CustomerServiceRealtime.Enabled {
 		var err error
@@ -145,9 +150,13 @@ func (b *dependencyServicesBuilder) wire() error {
 		support.OutboundHTTPResilience.retry,
 		support.OutboundHTTPResilience.breaker,
 	)
-	if orderPaidWebhookHandler.Configured() {
-		services.Outbox.RegisterHandler(outbox.EventTypeOrderPaid, orderPaidWebhookHandler.Handle)
-	}
+	services.Outbox.RegisterHandler(outbox.EventTypeOrderPaid, orderPaidWebhookHandler.Handle)
+	services.Outbox.RegisterHandler(outbox.EventTypeReferralOrderPaid, services.Referral.HandleOrderPaidOutbox)
+	services.Outbox.RegisterHandler(outbox.EventTypeReferralOrderDelivered, services.Referral.HandleOrderDeliveredOutbox)
+	services.Outbox.RegisterHandler(outbox.EventTypeReferralOrderInvalidated, services.Referral.HandleOrderInvalidatedOutbox)
+	orderTransactionalEmailHandler := service.NewOrderTransactionalEmailOutboxHandler(support.EmailSvc)
+	services.Outbox.RegisterHandler(outbox.EventTypeOrderConfirmationEmail, orderTransactionalEmailHandler.Handle)
+	services.Outbox.RegisterHandler(outbox.EventTypeOrderShippingNotificationEmail, orderTransactionalEmailHandler.Handle)
 	verifiedConversionWebhookHandler := service.NewVerifiedConversionOutboxWebhookHandlerFromEnvWithResilience(
 		support.OutboundHTTPResilience.retry,
 		support.OutboundHTTPResilience.breaker,
@@ -164,6 +173,15 @@ func (b *dependencyServicesBuilder) wire() error {
 		services.Outbox.RegisterHandler(outbox.EventTypePaymentRiskLevelChanged, paymentRiskAlertWebhookHandler.Handle)
 		services.Outbox.RegisterHandler(outbox.EventTypePaymentRiskFailOpen, paymentRiskAlertWebhookHandler.Handle)
 		services.PaymentThreeDS.ConfigureFailOpenAlertPublisher(service.NewPaymentRiskFailOpenOutboxPublisher(repos.Outbox))
+	}
+	paymentRefundWebhookHandler := service.NewPaymentRefundOutboxWebhookHandlerFromEnvWithResilience(
+		support.OutboundHTTPResilience.retry,
+		support.OutboundHTTPResilience.breaker,
+	)
+	if paymentRefundWebhookHandler.Configured() {
+		services.Outbox.RegisterHandler(outbox.EventTypePaymentRefundPending, paymentRefundWebhookHandler.Handle)
+		services.Outbox.RegisterHandler(outbox.EventTypePaymentRefundCompleted, paymentRefundWebhookHandler.Handle)
+		services.Outbox.RegisterHandler(outbox.EventTypePaymentRefundFailed, paymentRefundWebhookHandler.Handle)
 	}
 	merchantOutboxHandler := service.NewGoogleMerchantOutboxHandler(services.GoogleMerchant)
 	services.Outbox.RegisterHandler(outbox.EventTypeMerchantProductUpsert, merchantOutboxHandler.Handle)

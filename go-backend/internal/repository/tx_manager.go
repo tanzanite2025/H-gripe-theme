@@ -11,11 +11,15 @@ type TxManager struct {
 	couponRepo                    *CouponRepository
 	loyaltyRepo                   *LoyaltyRepository
 	programRepo                   *LoyaltyProgramRepository
+	referralRepo                  *ReferralRepository
+	referralProgramRepo           *ReferralProgramRepository
 	redemptionRepo                *GiftCardRedemptionRepository
 	paymentRepo                   *PaymentRepository
 	refundReviewRepo              *PaymentRefundRecommendationRepository
 	refundExecRepo                *PaymentRefundExecutionRepository
+	refundIdempotencyRepo         *PaymentRefundIdempotencyRepository
 	afterSalesRefundRepo          *AfterSalesRefundReviewRepository
+	afterSalesCaseRepo            *AfterSalesCaseRepository
 	shippingRepo                  *ShippingRepository
 	settingRepo                   *SettingRepository
 	exchangeRateRepo              *ExchangeRateRepository
@@ -26,6 +30,14 @@ type TxManager struct {
 	orderEvidenceSubmissionRepo   *OrderEvidenceSubmissionSnapshotRepository
 	outboxRepo                    *OutboxRepository
 	productBrandRepo              *ProductBrandRepository
+	cartRepo                      *CartRepository
+}
+
+func (m *TxManager) OrderRepository() *OrderRepository {
+	if m == nil {
+		return nil
+	}
+	return m.orderRepo
 }
 
 type TxRepositories struct {
@@ -36,11 +48,15 @@ type TxRepositories struct {
 	Coupon                    *CouponRepository
 	Loyalty                   *LoyaltyRepository
 	Program                   *LoyaltyProgramRepository
+	Referral                  *ReferralRepository
+	ReferralProgram           *ReferralProgramRepository
 	Redemption                *GiftCardRedemptionRepository
 	Payment                   *PaymentRepository
 	RefundReview              *PaymentRefundRecommendationRepository
 	RefundExecution           *PaymentRefundExecutionRepository
+	RefundIdempotency         *PaymentRefundIdempotencyRepository
 	AfterSalesRefund          *AfterSalesRefundReviewRepository
+	AfterSalesCase            *AfterSalesCaseRepository
 	Shipping                  *ShippingRepository
 	Setting                   *SettingRepository
 	ExchangeRate              *ExchangeRateRepository
@@ -51,6 +67,7 @@ type TxRepositories struct {
 	OrderEvidenceSubmission   *OrderEvidenceSubmissionSnapshotRepository
 	Outbox                    *OutboxRepository
 	ProductBrand              *ProductBrandRepository
+	Cart                      *CartRepository
 }
 
 func NewTxManager(
@@ -84,12 +101,21 @@ func (m *TxManager) ConfigureLoyaltyProgramRepository(repo *LoyaltyProgramReposi
 	m.programRepo = repo
 }
 
+func (m *TxManager) ConfigureReferralRepositories(referralRepo *ReferralRepository, programRepo *ReferralProgramRepository) {
+	m.referralRepo = referralRepo
+	m.referralProgramRepo = programRepo
+}
+
 func (m *TxManager) ConfigureOutboxRepository(repo *OutboxRepository) {
 	m.outboxRepo = repo
 }
 
 func (m *TxManager) ConfigureProductBrandRepository(repo *ProductBrandRepository) {
 	m.productBrandRepo = repo
+}
+
+func (m *TxManager) ConfigureCartRepository(repo *CartRepository) {
+	m.cartRepo = repo
 }
 
 func (m *TxManager) ConfigurePaymentRefundRecommendationRepository(repo *PaymentRefundRecommendationRepository) {
@@ -100,8 +126,16 @@ func (m *TxManager) ConfigurePaymentRefundExecutionRepository(repo *PaymentRefun
 	m.refundExecRepo = repo
 }
 
+func (m *TxManager) ConfigurePaymentRefundIdempotencyRepository(repo *PaymentRefundIdempotencyRepository) {
+	m.refundIdempotencyRepo = repo
+}
+
 func (m *TxManager) ConfigureAfterSalesRefundReviewRepository(repo *AfterSalesRefundReviewRepository) {
 	m.afterSalesRefundRepo = repo
+}
+
+func (m *TxManager) ConfigureAfterSalesCaseRepository(repo *AfterSalesCaseRepository) {
+	m.afterSalesCaseRepo = repo
 }
 
 func (m *TxManager) ConfigureOrderAttributionRepository(repo *OrderAttributionRepository) {
@@ -154,6 +188,14 @@ func (m *TxManager) WithinTx(fn func(TxRepositories) error) error {
 		if m.programRepo != nil {
 			programRepo = m.programRepo.WithTx(tx)
 		}
+		var referralRepo *ReferralRepository
+		if m.referralRepo != nil {
+			referralRepo = m.referralRepo.WithTx(tx)
+		}
+		var referralProgramRepo *ReferralProgramRepository
+		if m.referralProgramRepo != nil {
+			referralProgramRepo = m.referralProgramRepo.WithTx(tx)
+		}
 		var outboxRepo *OutboxRepository
 		if m.outboxRepo != nil {
 			outboxRepo = m.outboxRepo.WithTx(tx)
@@ -174,9 +216,17 @@ func (m *TxManager) WithinTx(fn func(TxRepositories) error) error {
 		if m.refundExecRepo != nil {
 			refundExecRepo = m.refundExecRepo.WithTx(tx)
 		}
+		var refundIdempotencyRepo *PaymentRefundIdempotencyRepository
+		if m.refundIdempotencyRepo != nil {
+			refundIdempotencyRepo = m.refundIdempotencyRepo.WithTx(tx)
+		}
 		var afterSalesRefundRepo *AfterSalesRefundReviewRepository
 		if m.afterSalesRefundRepo != nil {
 			afterSalesRefundRepo = m.afterSalesRefundRepo.WithTx(tx)
+		}
+		var afterSalesCaseRepo *AfterSalesCaseRepository
+		if m.afterSalesCaseRepo != nil {
+			afterSalesCaseRepo = m.afterSalesCaseRepo.WithTx(tx)
 		}
 		var settingRepo *SettingRepository
 		if m.settingRepo != nil {
@@ -210,6 +260,10 @@ func (m *TxManager) WithinTx(fn func(TxRepositories) error) error {
 		if m.productBrandRepo != nil {
 			productBrandRepo = m.productBrandRepo.WithTx(tx)
 		}
+		var cartRepo *CartRepository
+		if m.cartRepo != nil {
+			cartRepo = m.cartRepo.WithTx(tx)
+		}
 		return fn(TxRepositories{
 			Order:                     m.orderRepo.WithTx(tx),
 			OrderIdempotency:          orderIdempotencyRepo,
@@ -218,11 +272,15 @@ func (m *TxManager) WithinTx(fn func(TxRepositories) error) error {
 			Coupon:                    m.couponRepo.WithTx(tx),
 			Loyalty:                   m.loyaltyRepo.WithTx(tx),
 			Program:                   programRepo,
+			Referral:                  referralRepo,
+			ReferralProgram:           referralProgramRepo,
 			Redemption:                redemptionRepo,
 			Payment:                   m.paymentRepo.WithTx(tx),
 			RefundReview:              refundReviewRepo,
 			RefundExecution:           refundExecRepo,
+			RefundIdempotency:         refundIdempotencyRepo,
 			AfterSalesRefund:          afterSalesRefundRepo,
+			AfterSalesCase:            afterSalesCaseRepo,
 			Shipping:                  shippingRepo,
 			Setting:                   settingRepo,
 			ExchangeRate:              exchangeRateRepo,
@@ -233,6 +291,7 @@ func (m *TxManager) WithinTx(fn func(TxRepositories) error) error {
 			OrderEvidenceSubmission:   orderEvidenceSubmissionRepo,
 			Outbox:                    outboxRepo,
 			ProductBrand:              productBrandRepo,
+			Cart:                      cartRepo,
 		})
 	})
 }

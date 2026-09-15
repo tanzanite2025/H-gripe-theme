@@ -154,6 +154,9 @@ func (s *ShippingService) CreateCarrierService(service *shipping.CarrierService)
 	if err := s.prepareCarrierServiceCurrency(service); err != nil {
 		return err
 	}
+	if err := s.validateCarrierServiceWeightBilling(service); err != nil {
+		return err
+	}
 	return s.shippingRepo.CreateCarrierService(service)
 }
 
@@ -161,7 +164,33 @@ func (s *ShippingService) UpdateCarrierService(service *shipping.CarrierService)
 	if err := s.prepareCarrierServiceCurrency(service); err != nil {
 		return err
 	}
+	if err := s.validateCarrierServiceWeightBilling(service); err != nil {
+		return err
+	}
 	return s.shippingRepo.UpdateCarrierService(service)
+}
+
+func (s *ShippingService) validateCarrierServiceWeightBilling(service *shipping.CarrierService) error {
+	if service == nil || service.TemplateID == nil || *service.TemplateID == 0 {
+		return nil
+	}
+	template, err := s.GetTemplate(*service.TemplateID)
+	if err != nil {
+		return err
+	}
+	if template.Type != "weight" {
+		return nil
+	}
+	for _, rule := range template.Rules {
+		if rule.Additional <= 0 {
+			continue
+		}
+		return validateShippingWeightBilling(rule, shippingWeightBilling{
+			firstWeightGrams:      service.FirstWeightGrams,
+			additionalWeightGrams: service.AdditionalWeightGrams,
+		})
+	}
+	return nil
 }
 
 func (s *ShippingService) prepareCarrierServiceCurrency(carrierService *shipping.CarrierService) error {
@@ -249,6 +278,9 @@ func (s *ShippingService) CreatePackagingRuleApply(apply *shipping.PackagingRule
 	if apply.ProductID == 0 {
 		return errors.New("product id is required")
 	}
+	if apply.VariantID != nil && *apply.VariantID == 0 {
+		return errors.New("variant id must be greater than zero")
+	}
 
 	if _, err := s.shippingRepo.FindPackagingRuleByID(apply.RuleID); err != nil {
 		if repository.IsRecordNotFound(err) {
@@ -258,20 +290,36 @@ func (s *ShippingService) CreatePackagingRuleApply(apply *shipping.PackagingRule
 	}
 
 	if s.productRepo != nil {
-		if _, err := s.productRepo.FindByID(apply.ProductID); err != nil {
+		product, err := s.productRepo.FindByID(apply.ProductID)
+		if err != nil {
 			if repository.IsRecordNotFound(err) {
 				return fmt.Errorf("product ID %d does not exist", apply.ProductID)
 			}
 			return err
 		}
+		if apply.VariantID != nil {
+			belongsToProduct := false
+			for _, variant := range product.Variants {
+				if variant.ID == *apply.VariantID {
+					belongsToProduct = true
+					break
+				}
+			}
+			if !belongsToProduct {
+				return fmt.Errorf("variant ID %d does not belong to product ID %d", *apply.VariantID, apply.ProductID)
+			}
+		}
 	}
 
-	existing, err := s.shippingRepo.FindPackagingRuleApplyByProductID(apply.ProductID)
+	existing, err := s.shippingRepo.FindPackagingRuleApplyByProductAndVariant(apply.ProductID, apply.VariantID)
 	if err == nil && existing != nil && existing.ID > 0 {
 		if existing.RuleID == apply.RuleID {
-			return errors.New("packaging rule already applies to this product")
+			return errors.New("packaging rule already applies to this product target")
 		}
-		return errors.New("product already has a packaging rule")
+		if apply.VariantID == nil {
+			return errors.New("product already has a packaging rule (default)")
+		}
+		return errors.New("variant already has a packaging rule")
 	}
 	if err != nil && !repository.IsRecordNotFound(err) {
 		return err

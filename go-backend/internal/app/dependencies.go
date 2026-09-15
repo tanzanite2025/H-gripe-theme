@@ -13,6 +13,7 @@ import (
 	"commerce-platform/internal/pkg/storage"
 	"commerce-platform/internal/repository"
 	"commerce-platform/internal/service"
+	"commerce-platform/internal/workbenchfeed"
 
 	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
@@ -49,13 +50,13 @@ type Repositories struct {
 	SiteQualityFindings          *repository.SiteQualityFindingRepository
 	HotDataArchive               *repository.HotDataArchiveRepository
 	Product                      *repository.ProductRepository
-	ProductProcurement           *repository.ProductProcurementRepository
+	ProductSupplierCostRecord    *repository.ProductSupplierCostRecordRepository
 	FrameFitmentEntry            *repository.FrameFitmentEntryRepository
 	ForkFitmentEntry             *repository.ForkFitmentEntryRepository
 	FitmentFrameHubSpecification *repository.FitmentFrameHubSpecificationRepository
 	FitmentForkHubSpecification  *repository.FitmentForkHubSpecificationRepository
 	FitmentHubSpecification      *repository.FitmentHubSpecificationRepository
-	ProductProcurementCatalog    *repository.ProductProcurementCatalogRepository
+	ProductSupplierCostCatalog   *repository.ProductSupplierCostCatalogRepository
 	ProductProfitCalculation     *repository.ProductProfitCalculationRepository
 	ProductCategory              *repository.ProductCategoryRepository
 	ProductBrand                 *repository.ProductBrandRepository
@@ -76,15 +77,19 @@ type Repositories struct {
 	OrderEvidenceSubmission      *repository.OrderEvidenceSubmissionSnapshotRepository
 	OrderEvidenceExport          *repository.OrderEvidenceExportSnapshotRepository
 	Payment                      *repository.PaymentRepository
+	PaymentOperationIdempotency  *repository.PaymentOperationIdempotencyRepository
 	PaymentRisk                  *repository.PaymentRiskRepository
 	PaymentProtection            *repository.PaymentProtectionRepository
 	PaymentRefundReview          *repository.PaymentRefundRecommendationRepository
 	PaymentRefundExec            *repository.PaymentRefundExecutionRepository
+	PaymentRefundIdempotency     *repository.PaymentRefundIdempotencyRepository
 	ExchangeRate                 *repository.ExchangeRateRepository
 	Shipping                     *repository.ShippingRepository
 	Coupon                       *repository.CouponRepository
 	Loyalty                      *repository.LoyaltyRepository
 	LoyaltyProgram               *repository.LoyaltyProgramRepository
+	Referral                     *repository.ReferralRepository
+	ReferralProgram              *repository.ReferralProgramRepository
 	GiftCardRedemption           *repository.GiftCardRedemptionRepository
 	Review                       *repository.ReviewRepository
 	Ticket                       *repository.TicketRepository
@@ -131,7 +136,7 @@ type Services struct {
 	Post                              *service.PostService
 	BlogCategory                      *service.BlogCategoryService
 	Product                           *service.ProductService
-	ProductProcurement                *service.ProductProcurementService
+	ProductSupplierCostRecord         *service.ProductSupplierCostRecordService
 	FrameFitmentEntry                 *service.FrameFitmentEntryService
 	ForkFitmentEntry                  *service.ForkFitmentEntryService
 	FitmentHubSpecification           *service.FitmentHubSpecificationService
@@ -171,6 +176,7 @@ type Services struct {
 	Payment                           *service.PaymentService
 	Marketing                         *service.MarketingService
 	LoyaltyProgram                    *service.LoyaltyProgramService
+	Referral                          *service.ReferralService
 	Review                            *service.ReviewService
 	ReviewModeration                  *service.ReviewModerationService
 	Ticket                            *service.TicketService
@@ -235,6 +241,7 @@ type Services struct {
 	UGCShowcaseUploadEligibility      *service.UGCShowcaseUploadEligibilityService
 	PublicUploadAccess                *service.PublicUploadAccessService
 	HomeVisualTiles                   *service.HomeVisualTileService
+	WorkbenchFeed                     *workbenchfeed.Service
 }
 
 func NewDependencies(db *gorm.DB, redisCache *cache.RedisCache, cfg *config.Config) (*Dependencies, error) {

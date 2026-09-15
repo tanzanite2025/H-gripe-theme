@@ -153,16 +153,24 @@ const collectByLocale = async <T>(
   label: string,
   loader: (locale: string) => Promise<T[]>,
 ) => {
-  const batches = await Promise.all(localeCodes.map(async (locale) => {
-    try {
-      return await loader(locale)
-    } catch (error) {
-      throw new Error(
-        `[sitemap] failed to load ${label} for ${locale}: ${error instanceof Error ? error.message : String(error)}`,
-        { cause: error },
-      )
-    }
-  }))
+  // Keep API/DB fan-out bounded and degrade gracefully when one locale is
+  // temporarily unavailable. A partial sitemap is preferable to a 500 for
+  // every locale when crawlers request this endpoint.
+  const batches: T[][] = []
+  const concurrency = 4
+  for (let offset = 0; offset < localeCodes.length; offset += concurrency) {
+    const chunk = localeCodes.slice(offset, offset + concurrency)
+    const results = await Promise.allSettled(chunk.map((locale) => loader(locale)))
+    results.forEach((result, index) => {
+      if (result.status === 'fulfilled') {
+        batches.push(result.value)
+      } else {
+        console.error(
+          `[sitemap] failed to load ${label} for ${chunk[index]}: ${result.reason instanceof Error ? result.reason.message : String(result.reason)}`,
+        )
+      }
+    })
+  }
   return batches.flat()
 }
 
@@ -343,7 +351,10 @@ export default defineSitemapEventHandler(async () => {
   const seen = new Set<string>()
 
   const [catalogRoutes, categories, products, faqPages, posts] = await Promise.all([
-    fetchCatalogSitemapRoutes(apiOrigin),
+    fetchCatalogSitemapRoutes(apiOrigin).catch((error) => {
+      console.error(`[sitemap] catalog routes unavailable: ${error instanceof Error ? error.message : String(error)}`)
+      return [] as SitemapEntry[]
+    }),
     collectByLocale('product categories', (locale) => fetchAllCategories(apiOrigin, locale)),
     collectByLocale('products', (locale) => fetchAllProducts(apiOrigin, locale)),
     collectByLocale('FAQ pages', (locale) => fetchAllFAQPages(apiOrigin, locale)),

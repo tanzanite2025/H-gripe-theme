@@ -481,6 +481,16 @@ func (r *SpokeRepository) ListHistoryByUserID(userID uint, search string, page, 
 	return r.listHistory(search, page, pageSize, &userID)
 }
 
+func (r *SpokeRepository) CreateHistory(history *spoke.History) error {
+	if r == nil || r.db == nil {
+		return errors.New("spoke repository is unavailable")
+	}
+	if history == nil {
+		return errors.New("spoke history is required")
+	}
+	return r.db.Create(history).Error
+}
+
 func (r *SpokeRepository) listHistory(search string, page, pageSize int, userID *uint) ([]spoke.History, int64, error) {
 	var items []spoke.History
 	var total int64

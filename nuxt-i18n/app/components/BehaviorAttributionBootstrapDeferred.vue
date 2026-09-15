@@ -10,7 +10,6 @@
 <script setup lang="ts">
 import { defineAsyncComponent, onBeforeUnmount, onMounted, ref, type Component } from 'vue'
 import { scheduleDeferredClientWork } from '~/utils/clientDeferredWork'
-import { STOREFRONT_IDLE_CLIENT_WORK } from '~/utils/storefrontLoadingPolicy'
 
 const mounted = ref(false)
 let cancelDeferredMount: (() => void) | null = null
@@ -30,7 +29,12 @@ const mountBehaviorAttribution = () => {
 }
 
 onMounted(() => {
-  cancelDeferredMount = scheduleDeferredClientWork(mountBehaviorAttribution, STOREFRONT_IDLE_CLIENT_WORK)
+  // Attribution must run during the initial landing-page interaction window;
+  // deferring it for 15s loses UTM/GCLID data when users bounce or navigate.
+  cancelDeferredMount = scheduleDeferredClientWork(mountBehaviorAttribution, {
+    delayMs: 250,
+    idleTimeoutMs: 1000,
+  })
 })
 
 onBeforeUnmount(() => {

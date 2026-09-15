@@ -32,6 +32,10 @@ func registerLocalUploadsRoute(router *gin.Engine, deps *app.Dependencies) {
 			c.Status(http.StatusNotFound)
 			return
 		}
+		if storage.IsPrivateObjectKey(key) {
+			c.Status(http.StatusNotFound)
+			return
+		}
 
 		if deps == nil || deps.Services.PublicUploadAccess == nil {
 			c.Status(http.StatusNotFound)

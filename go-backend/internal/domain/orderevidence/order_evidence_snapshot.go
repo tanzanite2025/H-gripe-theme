@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"commerce-platform/internal/domain/currency"
+	domainmoney "commerce-platform/internal/domain/money"
 	"commerce-platform/internal/domain/order"
 	productrequirement "commerce-platform/internal/domain/productrequirement"
 
@@ -98,9 +99,17 @@ func BuildOrderEvidenceSnapshot(
 	if err != nil {
 		return nil, fmt.Errorf("parse order FX snapshot: %w", err)
 	}
-	highValueEvaluation, err := order.EvaluateHighValueOrder(orderRecord.TotalAmount, fxSnapshot)
+	totalMoney, err := domainmoney.FromMajorFloat(orderRecord.TotalAmount, orderRecord.Currency)
+	if err != nil {
+		return nil, fmt.Errorf("parse order total amount: %w", err)
+	}
+	highValueEvaluation, err := order.EvaluateHighValueOrder(totalMoney, fxSnapshot)
 	if err != nil {
 		return nil, fmt.Errorf("evaluate order high-value policy: %w", err)
+	}
+	orderTotalUSD, err := highValueEvaluation.OrderTotalUSD.MajorFloat()
+	if err != nil {
+		return nil, fmt.Errorf("serialize order USD total: %w", err)
 	}
 	if len(items) == 0 {
 		return nil, errors.New("order evidence snapshot items are required")
@@ -154,7 +163,7 @@ func BuildOrderEvidenceSnapshot(
 		ConfirmedAt:      confirmedAt,
 		Currency:         currency.NormalizeCode(orderRecord.Currency),
 		OrderTotalAmount: orderRecord.TotalAmount,
-		OrderTotalUSD:    highValueEvaluation.OrderTotalUSD,
+		OrderTotalUSD:    orderTotalUSD,
 		IsHighValue:      highValueEvaluation.IsHighValue,
 		FXSnapshot:       fxSnapshot,
 		Items:            payloadItems,

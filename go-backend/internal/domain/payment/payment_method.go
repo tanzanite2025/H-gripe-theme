@@ -1,6 +1,10 @@
 package payment
 
 import (
+	domainmoney "commerce-platform/internal/domain/money"
+	"fmt"
+	"math/big"
+	"strconv"
 	"time"
 
 	"gorm.io/gorm"
@@ -30,10 +34,18 @@ func (PaymentMethod) TableName() string {
 	return "payment_methods"
 }
 
-// CalculateFee 计算手续费
-func (pm *PaymentMethod) CalculateFee(amount float64) float64 {
-	if pm.FeeType == "percentage" {
-		return amount * pm.FeeValue / 100
+// CalculateFeeMoney calculates the gateway fee in the amount's currency.
+func (pm *PaymentMethod) CalculateFeeMoney(amount domainmoney.Money) (domainmoney.Money, error) {
+	if pm == nil {
+		return domainmoney.Money{}, fmt.Errorf("payment method is required")
 	}
-	return pm.FeeValue
+	if pm.FeeType == "percentage" {
+		rate, ok := new(big.Rat).SetString(strconv.FormatFloat(pm.FeeValue, 'f', -1, 64))
+		if !ok || rate.Sign() < 0 {
+			return domainmoney.Money{}, fmt.Errorf("invalid payment method fee percentage")
+		}
+		rate.Quo(rate, big.NewRat(100, 1))
+		return amount.MultiplyRat(rate)
+	}
+	return domainmoney.FromMajorFloat(pm.FeeValue, amount.Currency().String())
 }

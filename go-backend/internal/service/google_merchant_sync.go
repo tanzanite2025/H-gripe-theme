@@ -194,9 +194,9 @@ func (s *GoogleMerchantService) buildGoogleMerchantProductInput(offer *merchant.
 		return nil, fmt.Errorf("%w: title and description are required", ErrGoogleMerchantOfferInvalid)
 	}
 
-	price := offer.Variant.Price
-	if offer.PriceOverride != nil {
-		price = *offer.PriceOverride
+	price, sale, err := effectiveGoogleMerchantPrices(offer)
+	if err != nil {
+		return nil, err
 	}
 	priceMicros, err := googleMerchantPriceMicros(price)
 	if err != nil {
@@ -234,17 +234,8 @@ func (s *GoogleMerchantService) buildGoogleMerchantProductInput(offer *merchant.
 	if offer.MPN != "" {
 		input.ProductAttributes.MPN = offer.MPN
 	}
-	if offer.SalePriceOverride != nil {
-		saleMicros, err := googleMerchantPriceMicros(*offer.SalePriceOverride)
-		if err != nil {
-			return nil, fmt.Errorf("%w: %v", ErrGoogleMerchantOfferInvalid, err)
-		}
-		input.ProductAttributes.SalePrice = &googleMerchantAPIPrice{
-			AmountMicros: strconv.FormatInt(saleMicros, 10),
-			CurrencyCode: offer.CurrencyCode,
-		}
-	} else if offer.Variant.SalePrice != nil {
-		saleMicros, err := googleMerchantPriceMicros(*offer.Variant.SalePrice)
+	if sale != nil {
+		saleMicros, err := googleMerchantPriceMicros(*sale)
 		if err != nil {
 			return nil, fmt.Errorf("%w: %v", ErrGoogleMerchantOfferInvalid, err)
 		}

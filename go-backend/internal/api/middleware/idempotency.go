@@ -38,8 +38,9 @@ const (
 	idempotencyMaxRequestBytes  = 1 << 20
 	idempotencyMaxResponseBytes = 256 << 10
 
-	idempotencyKeyContext         = "commerce_idempotency_key"
-	idempotencyRequestHashContext = "commerce_idempotency_request_hash"
+	idempotencyKeyContext             = "commerce_idempotency_key"
+	idempotencyRequestHashContext     = "commerce_idempotency_request_hash"
+	idempotencyDurableFallbackContext = "commerce_idempotency_durable_fallback"
 )
 
 var (
@@ -134,6 +135,10 @@ func (w *idempotencyBodyWriter) capture(data []byte) {
 func Idempotency(redisClient redis.UniversalClient) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if redisClient == nil {
+			if durableIdempotencyFallbackEnabled(c) {
+				c.Next()
+				return
+			}
 			respondIdempotencyUnavailable(c)
 			c.Abort()
 			return
@@ -186,6 +191,10 @@ func Idempotency(redisClient redis.UniversalClient) gin.HandlerFunc {
 
 		acquired, err := acquireIdempotency(ctx, redisClient, redisKey, ownerKey, ownerToken, requestHash)
 		if err != nil {
+			if durableIdempotencyFallbackEnabled(c) {
+				c.Next()
+				return
+			}
 			respondIdempotencyUnavailable(c)
 			c.Abort()
 			return
@@ -193,6 +202,10 @@ func Idempotency(redisClient redis.UniversalClient) gin.HandlerFunc {
 		if !acquired {
 			record, found, err := loadIdempotencyRecord(ctx, redisClient, redisKey)
 			if err != nil {
+				if durableIdempotencyFallbackEnabled(c) {
+					c.Next()
+					return
+				}
 				respondIdempotencyUnavailable(c)
 				c.Abort()
 				return
@@ -213,6 +226,10 @@ func Idempotency(redisClient redis.UniversalClient) gin.HandlerFunc {
 				}
 				waitRecord, ok, err := waitForIdempotencyRecord(ctx, redisClient, redisKey, requestHash)
 				if err != nil {
+					if durableIdempotencyFallbackEnabled(c) {
+						c.Next()
+						return
+					}
 					respondIdempotencyUnavailable(c)
 					c.Abort()
 					return
@@ -312,6 +329,15 @@ func GetIdempotencyRequestHash(c *gin.Context) string {
 		}
 	}
 	return ""
+}
+
+func durableIdempotencyFallbackEnabled(c *gin.Context) bool {
+	if c == nil {
+		return false
+	}
+	value, exists := c.Get(idempotencyDurableFallbackContext)
+	enabled, _ := value.(bool)
+	return exists && enabled
 }
 
 func readRequestBody(c *gin.Context) ([]byte, error) {

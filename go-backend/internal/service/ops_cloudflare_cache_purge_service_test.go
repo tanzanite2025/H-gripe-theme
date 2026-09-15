@@ -25,7 +25,7 @@ type fakeOpsCloudflareCachePurgeClient struct {
 type fakeOpsCloudflareWriteCall struct {
 	Method string
 	Path   string
-	Body   map[string][]string
+	Body   map[string]interface{}
 }
 
 func (f *fakeOpsCloudflareCachePurgeClient) CloudflareRead(
@@ -53,7 +53,7 @@ func (f *fakeOpsCloudflareCachePurgeClient) CloudflareWrite(
 	body []byte,
 	target interface{},
 ) (int, error) {
-	var payload map[string][]string
+	var payload map[string]interface{}
 	if err := json.Unmarshal(body, &payload); err != nil {
 		return http.StatusBadRequest, err
 	}
@@ -68,7 +68,7 @@ func (f *fakeOpsCloudflareCachePurgeClient) CloudflareWrite(
 	return http.StatusOK, nil
 }
 
-func TestOpsCloudflareCachePurgeGroupsAndBatchesHosts(t *testing.T) {
+func TestOpsCloudflareCachePurgeGroupsByZoneAndPurgesEverything(t *testing.T) {
 	db, projectID := newOpsCloudflareCachePurgeTestDB(t)
 	domainRepo := repository.NewOpsDomainBindingRepository(db)
 	client := &fakeOpsCloudflareCachePurgeClient{}
@@ -127,14 +127,15 @@ func TestOpsCloudflareCachePurgeGroupsAndBatchesHosts(t *testing.T) {
 	require.Equal(t, 32, result.DomainCount)
 	require.Equal(t, 32, result.HostCount)
 	require.Equal(t, 2, result.ZoneCount)
-	require.Equal(t, 3, result.RequestCount)
+	require.Equal(t, 2, result.RequestCount)
 	require.Len(t, result.Groups, 2)
 	require.Len(t, client.readCalls, 2)
-	require.Len(t, client.writeCalls, 3)
+	require.Len(t, client.writeCalls, 2)
 	for _, call := range client.writeCalls {
 		require.Equal(t, http.MethodPost, call.Method)
 		require.Contains(t, call.Path, "/purge_cache")
-		require.LessOrEqual(t, len(call.Body["hosts"]), opsCloudflareCachePurgeBatchSize)
+		require.Equal(t, true, call.Body["purge_everything"])
+		require.NotContains(t, call.Body, "hosts")
 	}
 }
 

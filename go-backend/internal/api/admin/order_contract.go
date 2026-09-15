@@ -93,12 +93,18 @@ func respondOrderServiceError(c *gin.Context, err error, fallbackMessage string,
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Order dispute contact email is not configured"})
 	case errors.Is(err, service.ErrPaidOrderCancellationNotAllowed),
 		errors.Is(err, service.ErrProductionStartedCancellationNotAllowed),
-		errors.Is(err, service.ErrOrderCancellationConflict):
+		errors.Is(err, service.ErrOrderCancellationConflict),
+		errors.Is(err, service.ErrOrderStatusConflict),
+		errors.Is(err, service.ErrOrderFulfillmentOnHold):
 		c.JSON(http.StatusConflict, gin.H{"error": err.Error()})
 	case errors.Is(err, service.ErrSystemManagedOrderStatus):
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 	case errors.Is(err, service.ErrOrderFulfillmentStatusManaged):
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	case errors.Is(err, service.ErrOrderCustomsUpdateLocked):
+		c.JSON(http.StatusConflict, gin.H{"error": err.Error()})
+	case errors.Is(err, service.ErrOrderCustomsUpdateTransactionNeeded):
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Order customs update transaction is not configured"})
 	case errors.Is(err, service.ErrOrderFulfillmentNotAllowed),
 		errors.Is(err, service.ErrOrderFulfillmentPaymentRequired),
 		errors.Is(err, service.ErrOrderFulfillmentSignatureConfirmationRequired),
@@ -125,13 +131,23 @@ func respondOrderServiceError(c *gin.Context, err error, fallbackMessage string,
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error(), "code": "order_fulfillment_evidence_incomplete"})
 	case errors.Is(err, service.ErrOrderProductionAlreadyStarted):
 		c.JSON(http.StatusConflict, gin.H{"error": err.Error()})
-	case errors.Is(err, service.ErrOrderDeleteNotAllowed):
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	case errors.Is(err, service.ErrOrderHideTransactionRequired):
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Order hiding transaction is not configured"})
+	case errors.Is(err, service.ErrOrderHideNotAllowed):
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": err.Error(),
+			"code":  "order_hide_not_allowed",
+		})
 	case errors.Is(err, service.ErrOrderItemNotFound):
 		c.JSON(http.StatusNotFound, gin.H{"error": "Order item not found"})
 	case errors.Is(err, service.ErrDeclaredValueInvalid),
 		errors.Is(err, service.ErrDeclaredValueConfirmationRequired):
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	case errors.Is(err, service.ErrOrderCustomsDeclarationIncomplete):
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": err.Error(),
+			"code":  "order_customs_declared_value_incomplete",
+		})
 	case errors.Is(err, service.ErrTrackingNumberRequired),
 		errors.Is(err, service.ErrTrackingProviderRequired),
 		errors.Is(err, service.ErrTrackingLocalTargetRequired),

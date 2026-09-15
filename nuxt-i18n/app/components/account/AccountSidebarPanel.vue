@@ -88,6 +88,11 @@
           v-show="activeTab === 'addresses'"
           @close="closeSidebar"
         />
+
+        <AccountReferralTab
+          v-show="activeTab === 'referral'"
+          :active="activeTab === 'referral'"
+        />
       </div>
     </template>
 
@@ -109,13 +114,14 @@ import AccountAddressesTab from '~/components/account/AccountAddressesTab.vue'
 import AccountCartTab from '~/components/account/AccountCartTab.vue'
 import AccountLoginPrompt from '~/components/account/AccountLoginPrompt.vue'
 import AccountPointsTab from '~/components/account/AccountPointsTab.vue'
+import AccountReferralTab from '~/components/account/AccountReferralTab.vue'
 import AccountWishlistTab from '~/components/account/AccountWishlistTab.vue'
 import { useAuth } from '~/composables/useAuth'
 import { useCart } from '~/composables/useCart'
 import { useMembership } from '~/composables/useMembership'
 import { useWishlist } from '~/composables/useWishlist'
 
-type AccountTabId = 'points' | 'wishlist' | 'cart' | 'addresses'
+type AccountTabId = 'points' | 'wishlist' | 'cart' | 'addresses' | 'referral'
 
 const { t } = useI18n()
 const auth = useAuth()
@@ -145,6 +151,7 @@ const tabs: Array<{ id: AccountTabId; icon: string; labelKey: string; label: str
   { id: 'wishlist', icon: 'lucide:heart', labelKey: 'accountSidebar.tabs.wishlist', label: 'Wishlist' },
   { id: 'cart', icon: 'lucide:shopping-cart', labelKey: 'accountSidebar.tabs.cart', label: 'Cart' },
   { id: 'addresses', icon: 'lucide:map-pin', labelKey: 'accountSidebar.tabs.addresses', label: 'Address' },
+  { id: 'referral', icon: 'lucide:users-round', labelKey: 'accountSidebar.tabs.referral', label: 'Refer a friend' },
 ]
 
 const isAuthenticated = computed(() => auth.isAuthenticated.value)
@@ -312,7 +319,7 @@ watch(
 .account-sidebar__tabs {
   display: grid;
   flex: 0 0 auto;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 0.42rem;
   border-radius: 1.25rem;
   border: 1px solid var(--tz-border-subtle);

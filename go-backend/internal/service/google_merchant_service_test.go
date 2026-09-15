@@ -196,6 +196,29 @@ func TestGoogleMerchantDeleteOfferRequiresRemoteRemovalFirst(t *testing.T) {
 	}
 }
 
+func TestGoogleMerchantCreateReadyOfferRequiresCrossCurrencyOverride(t *testing.T) {
+	_, googleMerchantService, productRecord, variantRecord := newTestGoogleMerchantService(t)
+	input := googleMerchantOfferInputForTest(productRecord.ID, variantRecord.ID, "ready")
+	input.TargetCountry = "JP"
+	input.ContentLanguage = "ja"
+	input.CurrencyCode = "JPY"
+	input.FeedLabel = "JP"
+
+	_, err := googleMerchantService.CreateOffer(input)
+	if !errors.Is(err, ErrGoogleMerchantOfferInvalid) || !strings.Contains(err.Error(), "price_override in JPY") {
+		t.Fatalf("CreateOffer() error = %v, want cross-currency price override requirement", err)
+	}
+
+	input.PublicationStatus = "draft"
+	created, err := googleMerchantService.CreateOffer(input)
+	if err != nil {
+		t.Fatalf("CreateOffer() draft error = %v", err)
+	}
+	if created.PublicationStatus != "draft" {
+		t.Fatalf("PublicationStatus = %q, want draft", created.PublicationStatus)
+	}
+}
+
 func newTestGoogleMerchantService(t *testing.T) (*gorm.DB, *GoogleMerchantService, product.Product, product.ProductVariant) {
 	t.Helper()
 

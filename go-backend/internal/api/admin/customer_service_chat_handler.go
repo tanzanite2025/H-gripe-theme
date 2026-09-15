@@ -140,7 +140,12 @@ func (h *TicketHandler) GetCustomerServiceConversationMessages(c *gin.Context) {
 	}
 
 	agentUserID, canViewAll := adminCustomerServiceScope(c)
-	messages, err := h.ticketService.GetCustomerServiceMessagesForAgent(ticketID, agentUserID, canViewAll)
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "50"))
+	offset, _ := strconv.Atoi(c.DefaultQuery("offset", "0"))
+	if offset < 0 {
+		offset = 0
+	}
+	messages, total, err := h.ticketService.GetCustomerServiceMessagesForAgentPage(ticketID, agentUserID, canViewAll, limit, offset)
 	if err != nil {
 		respondAdminCustomerServiceError(c, err)
 		return
@@ -151,7 +156,11 @@ func (h *TicketHandler) GetCustomerServiceConversationMessages(c *gin.Context) {
 		items = append(items, adminCustomerServiceMessageResponse(item))
 	}
 
-	response.Success(c, gin.H{"messages": items})
+	response.Success(c, gin.H{
+		"messages": items,
+		"total":    total,
+		"has_more": int64(offset)+int64(len(items)) < total,
+	})
 }
 
 // CreateCustomerServiceConversationMessage sends a staff reply from the admin chat inbox.
@@ -189,7 +198,7 @@ func (h *TicketHandler) CreateCustomerServiceConversationMessage(c *gin.Context)
 
 	msg := &ticket.TicketMessage{
 		TicketID:    ticketID,
-		UserID:      agentUserID,
+		UserID:      &agentUserID,
 		IsStaff:     true,
 		Content:     strings.TrimSpace(req.Message),
 		MessageType: normalizeAdminCustomerServiceMessageType(req.MessageType),

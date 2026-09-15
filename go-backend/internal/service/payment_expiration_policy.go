@@ -14,7 +14,7 @@ func paymentExpirationStillEligible(orderRecord *order.Order, transactions []pay
 
 	latestActivity := orderRecord.CreatedAt
 	for _, transaction := range transactions {
-		if transaction.Status == "completed" {
+		if transaction.Status == "completed" || transaction.Status == payment.TransactionStatusDuplicatePaid {
 			return false
 		}
 		if transaction.UpdatedAt.After(latestActivity) {

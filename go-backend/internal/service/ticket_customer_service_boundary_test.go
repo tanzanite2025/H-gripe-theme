@@ -52,6 +52,30 @@ func TestCustomerServiceDedicatedPathStillHandlesConversationMessages(t *testing
 	assert.True(t, messages[1].IsStaff)
 }
 
+func TestCustomerServiceMessagePageUsesStableDatabaseOrderAndTrueTotal(t *testing.T) {
+	db, ticketService := newTestTicketBoundaryService(t)
+	agent := createTicketBoundaryUser(t, db, "page-agent@example.test", "page-agent", "support")
+	owner := CustomerServiceOwner{VisitorSessionHash: "page-visitor-hash"}
+	conversation, err := ticketService.GetOrCreatePublicCustomerServiceConversation(owner, agent.ID)
+	require.NoError(t, err)
+
+	createdAt := time.Date(2026, time.September, 11, 10, 0, 0, 0, time.UTC)
+	for _, content := range []string{"first", "second", "third"} {
+		require.NoError(t, ticketService.ticketRepo.CreateTicketMessage(&ticket.TicketMessage{
+			TicketID:  conversation.ID,
+			Content:   content,
+			CreatedAt: createdAt,
+		}))
+	}
+
+	messages, total, err := ticketService.GetPublicCustomerServiceMessagesPage(ticketConversationID(conversation), owner, 2, 1)
+	require.NoError(t, err)
+	assert.EqualValues(t, 3, total)
+	require.Len(t, messages, 2)
+	assert.Equal(t, "second", messages[0].Content)
+	assert.Equal(t, "third", messages[1].Content)
+}
+
 func TestCustomerServiceAgentMessagePreservesVideoType(t *testing.T) {
 	db, ticketService := newTestTicketBoundaryService(t)
 	agent := createTicketBoundaryUser(t, db, "agent-video@example.test", "agent-video", "support")
@@ -97,7 +121,7 @@ func TestCustomerServiceConversationFallsBackToActiveSupportUserWithoutProfile(t
 	)
 	require.NoError(t, err)
 	require.NotNil(t, message)
-	assert.Equal(t, fallbackAgent.ID, message.UserID)
+	assert.Nil(t, message.UserID)
 }
 
 func TestCustomerServiceMessagesCreateRealtimeOutboxEvents(t *testing.T) {
@@ -678,7 +702,7 @@ func TestCustomerServiceConversationListFiltersUseBackendSource(t *testing.T) {
 	require.NoError(t, ticketService.createTicket(&memberChat))
 	require.NoError(t, ticketService.ticketRepo.CreateTicketMessage(&ticket.TicketMessage{
 		TicketID: memberChat.ID,
-		UserID:   customer.ID,
+		UserID:   &customer.ID,
 		Content:  "Need help with a tire order",
 		IsStaff:  false,
 		IsRead:   false,
@@ -704,7 +728,7 @@ func TestCustomerServiceConversationListFiltersUseBackendSource(t *testing.T) {
 	}).Error)
 	require.NoError(t, ticketService.ticketRepo.CreateTicketMessage(&ticket.TicketMessage{
 		TicketID: anonymousChat.ID,
-		UserID:   agentB.ID,
+		UserID:   &agentB.ID,
 		Content:  "Already handled",
 		IsStaff:  false,
 		IsRead:   true,
@@ -774,7 +798,7 @@ func TestCustomerServiceConversationWindowKeepsLatestMessageBeforeWindow(t *test
 
 	require.NoError(t, ticketService.ticketRepo.CreateTicketMessage(&ticket.TicketMessage{
 		TicketID:   conversation.ID,
-		UserID:     agent.ID,
+		UserID:     &agent.ID,
 		Content:    "customer message before the day",
 		CreatedAt:  start.Add(-30 * time.Minute),
 		IsStaff:    false,
@@ -782,7 +806,7 @@ func TestCustomerServiceConversationWindowKeepsLatestMessageBeforeWindow(t *test
 	}))
 	require.NoError(t, ticketService.ticketRepo.CreateTicketMessage(&ticket.TicketMessage{
 		TicketID:   conversation.ID,
-		UserID:     agent.ID,
+		UserID:     &agent.ID,
 		Content:    "reply during the day",
 		CreatedAt:  start.Add(30 * time.Minute),
 		IsStaff:    true,

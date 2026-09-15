@@ -10,6 +10,7 @@ import (
 
 	"commerce-platform/internal/domain/auth"
 	"commerce-platform/internal/domain/currency"
+	domainmoney "commerce-platform/internal/domain/money"
 	orderdomain "commerce-platform/internal/domain/order"
 	"commerce-platform/internal/pkg/antibot"
 	"commerce-platform/internal/pkg/antifraud"
@@ -232,6 +233,11 @@ func (h *Handler) CreateStripePaymentIntent(c *gin.Context) {
 		apierror.RespondInternalError(c, err)
 		return
 	}
+	orderAmountMoney, err := domainmoney.FromMajorFloat(orderRecord.TotalAmount, orderCurrency)
+	if err != nil {
+		apierror.RespondInternalError(c, err)
+		return
+	}
 	config.PaymentMethodTypes, err = h.resolveStripePaymentMethodTypes(orderRecord.ShippingAddress.Country, orderCurrency, orderRecord.TotalAmount, config.PaymentMethodTypes)
 	if err != nil {
 		apierror.RespondInternalError(c, err)
@@ -268,8 +274,7 @@ func (h *Handler) CreateStripePaymentIntent(c *gin.Context) {
 		pgateway.GatewayStripe,
 		"stripe",
 		orderRecord,
-		orderRecord.TotalAmount,
-		orderCurrency,
+		orderAmountMoney,
 	)
 	if !ok {
 		return
@@ -298,8 +303,7 @@ func (h *Handler) CreateStripePaymentIntent(c *gin.Context) {
 			ProviderRequestKey: attempt.ProviderRequestKey,
 			PaymentMethod:      "stripe",
 			Status:             "failed",
-			Amount:             orderRecord.TotalAmount,
-			Currency:           orderCurrency,
+			Amount:             orderAmountMoney,
 			ErrorMessage:       err.Error(),
 		})
 		h.respondToPaymentGatewayOperationFailure(
@@ -315,6 +319,11 @@ func (h *Handler) CreateStripePaymentIntent(c *gin.Context) {
 		return
 	}
 	h.recordSuccessfulPaymentGatewayAPIResponse(c, pgateway.GatewayStripe)
+	providerAmount, amountErr := providerPaymentResponseMoney(paymentResponse, orderAmountMoney)
+	if amountErr != nil {
+		apierror.RespondInternalError(c, amountErr)
+		return
+	}
 	if h.antiFraud != nil {
 		if err := h.antiFraud.BindPaymentIntent(c.Request.Context(), paymentResponse.TransactionID, riskIdentity); err != nil {
 			apierror.RespondInternalError(c, err)
@@ -335,8 +344,7 @@ func (h *Handler) CreateStripePaymentIntent(c *gin.Context) {
 		ProviderRequestKey: attempt.ProviderRequestKey,
 		PaymentMethod:      "stripe",
 		Status:             "pending",
-		Amount:             paymentResponse.Amount,
-		Currency:           paymentResponse.Currency,
+		Amount:             providerAmount,
 	}); err != nil {
 		apierror.RespondInternalError(c, err)
 		return
@@ -466,10 +474,12 @@ func (h *Handler) decideStripeThreeDS(
 		}
 	}
 
+	amountMoney, _ := domainmoney.FromMajorFloat(orderRecord.TotalAmount, normalizedOrderCurrency(orderRecord))
 	return h.threeDSPolicy.Decide(c.Request.Context(), service.PaymentThreeDSDecisionInput{
 		Provider:          string(pgateway.GatewayStripe),
 		UserID:            userID,
 		OrderID:           orderRecord.ID,
+		AmountMoney:       amountMoney,
 		Amount:            orderRecord.TotalAmount,
 		Currency:          normalizedOrderCurrency(orderRecord),
 		BaseMode:          baseMode,

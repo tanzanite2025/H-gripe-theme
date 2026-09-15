@@ -60,11 +60,17 @@ func (h *Handler) CreateWechatOrder(c *gin.Context) {
 		return
 	}
 
-	orderCurrency, err := strictOrderCurrency(orderRecord)
+	settlement, err := strictProviderSettlement(orderRecord)
 	if err != nil {
 		apierror.RespondInternalError(c, err)
 		return
 	}
+	orderAmount, err := settlement.MajorFloat()
+	if err != nil {
+		apierror.RespondInternalError(c, err)
+		return
+	}
+	orderCurrency := settlement.Currency().String()
 	if !ensureGatewayCurrency(c, pgateway.GatewayWechat, orderCurrency) {
 		return
 	}
@@ -89,14 +95,13 @@ func (h *Handler) CreateWechatOrder(c *gin.Context) {
 		pgateway.GatewayWechat,
 		"wechat",
 		orderRecord,
-		orderRecord.TotalAmount,
-		orderCurrency,
+		settlement,
 	)
 	if !ok {
 		return
 	}
 	paymentResponse, err := gateway.CreatePayment(c.Request.Context(), &pgateway.PaymentRequest{
-		Amount:         orderRecord.TotalAmount,
+		Amount:         orderAmount,
 		Currency:       orderCurrency,
 		OrderID:        orderRecord.OrderNumber,
 		Description:    fmt.Sprintf("Order %s", orderRecord.OrderNumber),
@@ -118,8 +123,7 @@ func (h *Handler) CreateWechatOrder(c *gin.Context) {
 			ProviderRequestKey: attempt.ProviderRequestKey,
 			PaymentMethod:      "wechat",
 			Status:             "failed",
-			Amount:             orderRecord.TotalAmount,
-			Currency:           orderCurrency,
+			Amount:             settlement,
 			ErrorMessage:       err.Error(),
 		})
 		h.respondToPaymentGatewayOperationFailure(
@@ -134,6 +138,11 @@ func (h *Handler) CreateWechatOrder(c *gin.Context) {
 	h.recordSuccessfulPaymentGatewayAPIResponse(c, pgateway.GatewayWechat)
 
 	gatewayResponse, _ := json.Marshal(paymentResponse)
+	providerAmount, amountErr := providerPaymentResponseMoney(paymentResponse, settlement)
+	if amountErr != nil {
+		apierror.RespondInternalError(c, amountErr)
+		return
+	}
 	if err := h.paymentService.RecordGatewayPaymentAttempt(service.GatewayPaymentAttemptInput{
 		Provider:           string(pgateway.GatewayWechat),
 		OrderNumber:        orderRecord.OrderNumber,
@@ -142,8 +151,7 @@ func (h *Handler) CreateWechatOrder(c *gin.Context) {
 		ProviderRequestKey: attempt.ProviderRequestKey,
 		PaymentMethod:      "wechat",
 		Status:             wechatAttemptStatus(paymentResponse.Status),
-		Amount:             paymentResponse.Amount,
-		Currency:           paymentResponse.Currency,
+		Amount:             providerAmount,
 		GatewayResponse:    string(gatewayResponse),
 	}); err != nil {
 		respondVerifiedProviderPaymentError(c, err)
@@ -177,11 +185,21 @@ func (h *Handler) ConfirmWechatOrder(c *gin.Context) {
 		return
 	}
 	if orderRecord.PaymentStatus == "paid" {
+		settlement, err := strictProviderSettlement(orderRecord)
+		if err != nil {
+			apierror.RespondInternalError(c, err)
+			return
+		}
+		orderAmount, err := settlement.MajorFloat()
+		if err != nil {
+			apierror.RespondInternalError(c, err)
+			return
+		}
 		response.Success(c, &pgateway.PaymentResponse{
 			ID:            orderRecord.OrderNumber,
 			Status:        wechatTradeStateSuccess,
-			Amount:        orderRecord.TotalAmount,
-			Currency:      orderRecord.Currency,
+			Amount:        orderAmount,
+			Currency:      settlement.Currency().String(),
 			TransactionID: orderRecord.OrderNumber,
 		})
 		return
@@ -230,15 +248,24 @@ func (h *Handler) ConfirmWechatOrder(c *gin.Context) {
 	}
 
 	gatewayResponse, _ := json.Marshal(paymentResponse)
+	settlement, err := strictProviderSettlement(orderRecord)
+	if err != nil {
+		apierror.RespondInternalError(c, err)
+		return
+	}
 	if !isWechatPaidStatus(paymentResponse.Status) {
+		providerAmount, amountErr := providerPaymentResponseMoney(paymentResponse, settlement)
+		if amountErr != nil {
+			apierror.RespondInternalError(c, amountErr)
+			return
+		}
 		_ = h.paymentService.RecordGatewayPaymentAttempt(service.GatewayPaymentAttemptInput{
 			Provider:        string(pgateway.GatewayWechat),
 			OrderNumber:     orderRecord.OrderNumber,
 			TransactionID:   gatewayTransactionID(paymentResponse, orderRecord.OrderNumber),
 			PaymentMethod:   "wechat",
 			Status:          wechatAttemptStatus(paymentResponse.Status),
-			Amount:          paymentResponse.Amount,
-			Currency:        paymentResponse.Currency,
+			Amount:          providerAmount,
 			GatewayResponse: string(gatewayResponse),
 		})
 		apierror.RespondErrorWithDetails(c, http.StatusConflict, "wechat_payment_incomplete", "WeChat Pay payment is not completed", gin.H{
@@ -251,14 +278,18 @@ func (h *Handler) ConfirmWechatOrder(c *gin.Context) {
 		apierror.RespondError(c, http.StatusBadGateway, "wechat_transaction_id_missing", "WeChat Pay trade query did not return a transaction id")
 		return
 	}
+	providerAmount, amountErr := providerPaymentResponseMoney(paymentResponse, settlement)
+	if amountErr != nil {
+		apierror.RespondInternalError(c, amountErr)
+		return
+	}
 
 	if err := h.paymentService.RecordVerifiedGatewayPayment(service.VerifiedGatewayPaymentInput{
 		Provider:        string(pgateway.GatewayWechat),
 		OrderNumber:     orderRecord.OrderNumber,
 		TransactionID:   transactionID,
 		PaymentMethod:   "wechat",
-		Amount:          paymentResponse.Amount,
-		Currency:        paymentResponse.Currency,
+		Amount:          providerAmount,
 		GatewayResponse: string(gatewayResponse),
 	}); err != nil {
 		if errors.Is(err, service.ErrOrderNotFound) {

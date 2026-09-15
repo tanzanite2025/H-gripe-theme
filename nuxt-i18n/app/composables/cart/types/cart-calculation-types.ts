@@ -69,6 +69,7 @@ export interface Coupon {
   code: string
   type: 'percentage' | 'fixed' | 'points'
   value: number
+  currency?: string
   min_amount?: number
   max_discount?: number
 }

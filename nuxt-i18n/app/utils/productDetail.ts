@@ -52,7 +52,7 @@ export const validProductDisplayPrice = (displayPrice?: ProductDisplayPrice | nu
   const amount = Number(displayPrice?.amount)
   const currency = normalizeProductCurrencyCode(displayPrice?.currency)
   if (!Number.isFinite(amount) || amount <= 0 || !currency) return null
-  return { amount, currency }
+  return { ...displayPrice, amount, currency }
 }
 
 export const displayPriceSnapshotForCurrency = (

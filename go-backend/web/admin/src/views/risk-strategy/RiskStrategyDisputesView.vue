@@ -277,7 +277,7 @@
                 <Input v-model="evidenceForm.customer_communication_file_id" placeholder="Customer communication File ID (file_...)" />
               </label>
               <label class="grid gap-1">
-                <span class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70">采购收据</span>
+                <span class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70">订单收据</span>
                 <Input v-model="evidenceForm.receipt_file_id" placeholder="Receipt File ID (file_...)" />
               </label>
               <label class="grid gap-1">

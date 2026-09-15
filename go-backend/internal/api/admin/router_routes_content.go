@@ -200,7 +200,7 @@ func registerContentRoutes(
 		customerServiceGroup.DELETE("/auto-reply/rules/:id", middleware.RequirePermission(auth.PermTicketDelete), autoReplyHandler.DeleteRule)
 		customerServiceGroup.GET("/analytics", ticketHandler.GetCustomerServiceAnalytics)
 		customerServiceGroup.GET("/conversations", ticketHandler.ListCustomerServiceConversations)
-		customerServiceGroup.GET("/ws", ticketHandler.StreamCustomerServiceWebSocket)
+		customerServiceGroup.GET("/ws", middleware.RateLimit(10), ticketHandler.StreamCustomerServiceWebSocket)
 		customerServiceGroup.GET("/visitor-profiles", visitorProfileHandler.ListVisitorProfiles)
 		customerServiceGroup.GET("/visitor-profiles/stats", visitorProfileHandler.GetVisitorProfileStats)
 		customerServiceGroup.POST("/visitor-profiles/:id/ip-block", middleware.AdminOnly(), visitorProfileHandler.BlockVisitorProfileIP)

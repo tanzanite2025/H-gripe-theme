@@ -45,6 +45,7 @@ func (h *MarketingHandler) CreateCoupon(c *gin.Context) {
 		Code                 string    `json:"code" binding:"required"`
 		Type                 string    `json:"type" binding:"required,oneof=fixed percentage"`
 		Value                float64   `json:"value" binding:"required,gt=0"`
+		Currency             string    `json:"currency"`
 		Description          string    `json:"description"`
 		MinAmount            float64   `json:"min_amount"`
 		MaxDiscount          float64   `json:"max_discount"`
@@ -72,6 +73,7 @@ func (h *MarketingHandler) CreateCoupon(c *gin.Context) {
 		Code:                 req.Code,
 		Type:                 req.Type,
 		Value:                req.Value,
+		Currency:             req.Currency,
 		Description:          req.Description,
 		MinAmount:            req.MinAmount,
 		MaxDiscount:          req.MaxDiscount,
@@ -103,6 +105,7 @@ func (h *MarketingHandler) UpdateCoupon(c *gin.Context) {
 		Code                 *string    `json:"code"`
 		Type                 *string    `json:"type" binding:"omitempty,oneof=fixed percentage"`
 		Value                *float64   `json:"value" binding:"omitempty,gt=0"`
+		Currency             *string    `json:"currency"`
 		Description          *string    `json:"description"`
 		MinAmount            *float64   `json:"min_amount"`
 		MaxDiscount          *float64   `json:"max_discount"`
@@ -125,6 +128,7 @@ func (h *MarketingHandler) UpdateCoupon(c *gin.Context) {
 		Code:                 req.Code,
 		Type:                 req.Type,
 		Value:                req.Value,
+		Currency:             req.Currency,
 		Description:          req.Description,
 		MinAmount:            req.MinAmount,
 		MaxDiscount:          req.MaxDiscount,

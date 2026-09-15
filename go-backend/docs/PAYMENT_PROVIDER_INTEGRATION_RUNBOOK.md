@@ -37,6 +37,34 @@ Storefront checkout creates a local order first, then creates a provider order/s
 | Alipay | `POST /api/v1/payment/alipay/orders` | `POST /api/v1/payment/alipay/orders/:order_number/confirm` | `POST /api/v1/payment/webhook/alipay` |
 | WeChat Pay | `POST /api/v1/payment/wechat/orders` | `POST /api/v1/payment/wechat/orders/:order_number/confirm` | `POST /api/v1/payment/webhook/wechat` |
 
+Before the local order is created, the storefront sends the latest backend quote
+as `expected_total` in `POST /api/v1/orders`. The order service recomputes the
+quote inside the creation transaction. A difference greater than `0.05` in the
+order currency returns HTTP `409` with `code=order_total_changed`; no order,
+stock deduction, loyalty spend, or provider payment is started. The storefront
+refreshes the quote and asks the customer to review the updated total.
+
+The API also passes the authenticated customer's explicit checkout cart ID into
+order creation. The order transaction locks the cart row and cart-item rows,
+rebuilds the quote from that locked snapshot, reserves stock, creates the local
+order, and consumes exactly those cart rows before commit. This is the
+concurrency boundary for card, PayPal, Alipay, WeChat Pay, and any future
+asynchronous gateway. A browser return page or webhook must not be responsible
+for consuming the cart.
+
+If a second checkout request reaches the same cart after the first transaction
+commits, it receives HTTP `409` with
+`code=checkout_cart_already_consumed`. The request must not create another
+order or deduct stock. The storefront reloads the backend cart state and tells
+the customer to check the existing order; it does not issue a broad cart-clear
+request that could remove products added during the first checkout.
+
+If an unpaid order is cancelled or reaches payment expiration, the rollback
+transaction restores the consumed order items to the recorded checkout cart
+and reverses the other reservations. A paid order deliberately keeps the cart
+consumed. If the cart row was deleted later, the order's nullable cart reference
+is cleared by the foreign key and no restoration is attempted.
+
 The confirm endpoints are for user experience and recovery. Provider notify/webhook must still be configured in production because browser redirects can be closed, blocked, delayed, or replayed.
 
 Payment webhook payloads are capped at 1MiB at the application boundary before provider dispatch.
@@ -179,12 +207,63 @@ Provider-specific refund references are strict:
 - WeChat Pay refunds use `transaction_id` only and send both refund amount and
   original transaction amount, as required by the provider API.
 
+Refund records have two independent scopes and can coexist on the same order:
+
+- An amount-only refund is a monetary adjustment or compensation. It has no
+  `refund_line_items` rows and never restores inventory.
+- An item-level refund identifies `order_item_id` and refunded quantity.
+  Inventory restoration is evaluated per line item and only occurs when that
+  line item has `restock=true`.
+- The system does not enforce a whole-order exclusion between these refund
+  types. A compensation refund may precede a returned-item refund, or the
+  returned-item refund may precede the compensation. Transaction-level refund
+  caps and per-order-item quantity caps still apply independently.
+
 Successful provider finalization must write refundable platform transaction
 references into the completed transaction row. PayPal must record the capture
 id, Alipay must record `trade_no`, and WeChat Pay must record `transaction_id`.
 Pending or in-progress attempts may use provider order numbers or merchant order
 numbers for traceability, but those rows are not refundable until a verified
 success writes the platform transaction id.
+
+Duplicate successful payments have a separate ledger rule:
+
+- The same provider transaction ID delivered more than once is an idempotent
+  webhook retry. It reuses the existing transaction and refund state.
+- A different verified provider transaction ID received after the order is
+  already paid is a real duplicate charge. It is recorded as
+  `transactions.status = duplicate_paid` with the original provider amount,
+  currency, response, and transaction ID.
+- The same transaction then receives one full-amount local
+  `refunds.status = pending` record. The refund is linked to that duplicate
+  transaction and is idempotent on later webhook retries.
+- The webhook returns a success acknowledgement only after those local writes
+  commit. This acknowledgement confirms durable local accounting, not
+  completion of a provider refund.
+- The existing explicit admin refund execution workflow remains responsible for
+  calling Stripe, PayPal, Alipay, or WeChat Pay and moving the local refund to
+  `completed`.
+
+Refund loyalty settlement has one shared accounting boundary:
+
+- `refunds.requested_amount` is the original refund request; `refunds.amount`
+  is the net amount sent to the provider after coupon and loyalty deductions.
+- Completed-order reward points are clawed back proportionally to the
+  cumulative requested refund amount. Points spent as an order discount are
+  returned by the same proportion.
+- If the customer's available balance cannot cover the earned-point clawback,
+  the missing points are converted with the active `ExchangeRatePoints` and
+  deducted from the provider refund before the gateway call.
+- The refund ID is the idempotency key for the clawback, reversal, and
+  used-point-return ledger entries. Repeated provider notifications do not
+  apply them twice.
+- A provider call failure before a provider refund ID is returned releases the
+  reservation. A provider response with a refund ID but a mismatched amount is
+  retained as a failed execution for manual reconciliation; the reservation is
+  not released because money may already have moved.
+- A verified provider refund with no local pending refund must carry both the
+  provider-confirmed net amount and the original requested amount. The service
+  does not guess the original request from the provider net amount.
 
 High-risk admin payment actions are written to the audit log:
 
@@ -238,15 +317,23 @@ Before enabling a provider in production:
   - PayPal receives a normal HTTP 2xx response after processing.
   - Alipay receives a plain text `success` body after successful notification verification and processing.
   - WeChat Pay receives HTTP 204 with no response body after successful API v3 notification verification and processing.
-- A small live payment creates a local order, creates a provider payment, receives provider notify/webhook, records a transaction, marks the order paid, and clears the cart after confirmation.
+- A small live payment creates a local order, consumes the cart in the order transaction, creates a provider payment, receives provider notify/webhook, records a transaction, and marks the order paid. The browser return is not required for cart correctness.
 - The completed transaction row stores a refundable platform reference: Stripe payment intent id, PayPal capture id, Alipay `trade_no`, or WeChat Pay `transaction_id`.
-- Duplicate webhook delivery is idempotent and does not create duplicate transactions.
+- Duplicate delivery of the same provider transaction ID is idempotent and does
+  not create duplicate transactions.
+- A different successful provider transaction ID after the order is paid is
+  recorded as `duplicate_paid` and receives a full-amount pending refund record;
+  it must not be silently acknowledged as an ordinary duplicate webhook.
 - Payment creation and webhook/capture handling verify provider amount and currency against the local order before marking it paid.
 - `pause_payment` for provider scope blocks active payment creation before provider SDK calls.
 
 ## Operational Notes
 
-PayPal, Alipay, and WeChat Pay are asynchronous checkout methods. Do not clear the cart immediately after local order creation. Clear it only after the provider confirms payment or after the customer reaches a verified success state.
+PayPal, Alipay, and WeChat Pay are asynchronous checkout methods. Their local
+order transaction consumes the backend cart before provider creation. Provider
+confirmation settles the order; it does not perform the cart-consumption
+operation. Browser return pages may reload stale local UI state, but a closed
+browser must not leave the backend cart available for a second checkout.
 
 WeChat Native payment returns a QR code URL. The storefront generates the QR image locally in the browser and stores only the short payment session in `sessionStorage`.
 

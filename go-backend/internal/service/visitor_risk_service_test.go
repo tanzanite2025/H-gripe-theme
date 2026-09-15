@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -102,6 +103,54 @@ func TestVisitorRiskServiceAggregatesRequestsByDeviceFingerprintAcrossIPs(t *tes
 	assert.Equal(t, 2, fact.RequestCount)
 	assert.NotEmpty(t, fact.DeviceFingerprintHash)
 	assert.NotContains(t, fact.DeviceFingerprintHash, fingerprint)
+}
+
+func TestVisitorRiskServicePromotesFallbackAccumulatorAcrossShards(t *testing.T) {
+	db, visitorRiskService := newTestVisitorRiskService(t, true)
+	now := time.Date(2026, 7, 29, 10, 0, 0, 0, time.UTC)
+	ipAddress := "203.0.113.20"
+	userAgent := "Mozilla/5.0"
+	ipHash := visitorRiskService.hash(ipAddress)
+	uaHash := visitorRiskService.hash(userAgent)
+	fallbackKey := visitorRiskAccumulatorKey(visitorRiskDay(now), ipHash, uaHash, "")
+
+	fingerprint := ""
+	for index := 0; index < 1000; index++ {
+		candidate := fmt.Sprintf("browser-fingerprint-%d", index)
+		deviceKey := visitorRiskAccumulatorKey(visitorRiskDay(now), ipHash, uaHash, visitorRiskService.hash(candidate))
+		if visitorRiskService.pendingShardIndex(fallbackKey) != visitorRiskService.pendingShardIndex(deviceKey) {
+			fingerprint = candidate
+			break
+		}
+	}
+	require.NotEmpty(t, fingerprint)
+
+	visitorRiskService.RecordRequest(VisitorRiskRecordInput{
+		IPAddress:  ipAddress,
+		UserAgent:  userAgent,
+		Path:       "/api/v1/products/42",
+		StatusCode: 200,
+		OccurredAt: now,
+	})
+	visitorRiskService.RecordRequest(VisitorRiskRecordInput{
+		IPAddress:         ipAddress,
+		DeviceFingerprint: fingerprint,
+		UserAgent:         userAgent,
+		Path:              "/api/v1/cart/add",
+		StatusCode:        200,
+		OccurredAt:        now.Add(time.Minute),
+	})
+
+	assert.Equal(t, 1, visitorRiskService.PendingCount())
+	result, err := visitorRiskService.Flush(context.Background())
+	require.NoError(t, err)
+	assert.Equal(t, 1, result.FlushedFacts)
+
+	var facts []visitor.RiskDailyFact
+	require.NoError(t, db.Find(&facts).Error)
+	require.Len(t, facts, 1)
+	assert.Equal(t, 2, facts[0].RequestCount)
+	assert.NotEmpty(t, facts[0].DeviceFingerprintHash)
 }
 
 func TestVisitorRiskServiceAssessesIdentityByDeviceFingerprintAcrossIPs(t *testing.T) {

@@ -2,13 +2,10 @@ package service
 
 import (
 	"context"
-	"errors"
 
 	"commerce-platform/internal/domain/outbox"
 	"commerce-platform/internal/pkg/resilience"
 )
-
-var ErrOrderPaidOutboxWebhookNotConfigured = errors.New("order paid outbox webhook is not configured")
 
 type OrderPaidOutboxWebhookHandler struct {
 	dispatcher *OutboxWebhookDispatcher
@@ -62,7 +59,7 @@ func (h *OrderPaidOutboxWebhookHandler) Configured() bool {
 
 func (h *OrderPaidOutboxWebhookHandler) Handle(ctx context.Context, event outbox.Event) error {
 	if h == nil || !h.Configured() {
-		return ErrOrderPaidOutboxWebhookNotConfigured
+		return nil
 	}
 	return h.dispatcher.Dispatch(ctx, event)
 }

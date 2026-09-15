@@ -4,7 +4,7 @@ import (
 	"errors"
 	"strings"
 
-	procurementdomain "commerce-platform/internal/domain/procurement"
+	suppliercostdomain "commerce-platform/internal/domain/productsuppliercost"
 
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -29,17 +29,17 @@ func (r *ProductProfitCalculationRepository) Transaction(fn func(*gorm.DB) error
 	return r.db.Transaction(fn)
 }
 
-func (r *ProductProfitCalculationRepository) FindByProductCodes(codes []string) ([]procurementdomain.ProductProfitCalculation, error) {
+func (r *ProductProfitCalculationRepository) FindByProductCodes(codes []string) ([]suppliercostdomain.ProductProfitCalculation, error) {
 	if r == nil || r.db == nil {
 		return nil, errors.New("product profitability repository is unavailable")
 	}
 
 	normalized := normalizeProductCodes(codes)
 	if len(normalized) == 0 {
-		return []procurementdomain.ProductProfitCalculation{}, nil
+		return []suppliercostdomain.ProductProfitCalculation{}, nil
 	}
 
-	var records []procurementdomain.ProductProfitCalculation
+	var records []suppliercostdomain.ProductProfitCalculation
 	if err := r.db.
 		Where("product_code IN ?", normalized).
 		Order("product_code ASC").
@@ -49,12 +49,12 @@ func (r *ProductProfitCalculationRepository) FindByProductCodes(codes []string) 
 	return records, nil
 }
 
-func (r *ProductProfitCalculationRepository) FindByProductCode(code string) (*procurementdomain.ProductProfitCalculation, error) {
+func (r *ProductProfitCalculationRepository) FindByProductCode(code string) (*suppliercostdomain.ProductProfitCalculation, error) {
 	if r == nil || r.db == nil {
 		return nil, errors.New("product profitability repository is unavailable")
 	}
 
-	var record procurementdomain.ProductProfitCalculation
+	var record suppliercostdomain.ProductProfitCalculation
 	if err := r.db.Where("product_code = ?", strings.TrimSpace(code)).First(&record).Error; err != nil {
 		return nil, err
 	}
@@ -63,14 +63,14 @@ func (r *ProductProfitCalculationRepository) FindByProductCode(code string) (*pr
 
 // BulkUpsert writes only the profitability domain. The transaction intentionally
 // does not include the product repository or any product-domain event/outbox.
-func (r *ProductProfitCalculationRepository) BulkUpsert(records []procurementdomain.ProductProfitCalculation) error {
+func (r *ProductProfitCalculationRepository) BulkUpsert(records []suppliercostdomain.ProductProfitCalculation) error {
 	return r.ReplaceCurrentSnapshots(records, nil)
 }
 
 // ReplaceCurrentSnapshots atomically clears codes with no known cost and
 // upserts the remaining current snapshots. It only operates in this domain.
 func (r *ProductProfitCalculationRepository) ReplaceCurrentSnapshots(
-	records []procurementdomain.ProductProfitCalculation,
+	records []suppliercostdomain.ProductProfitCalculation,
 	clearCodes []string,
 ) error {
 	if r == nil || r.db == nil {
@@ -83,7 +83,7 @@ func (r *ProductProfitCalculationRepository) ReplaceCurrentSnapshots(
 
 func (r *ProductProfitCalculationRepository) ReplaceCurrentSnapshotsInTx(
 	tx *gorm.DB,
-	records []procurementdomain.ProductProfitCalculation,
+	records []suppliercostdomain.ProductProfitCalculation,
 	clearCodes []string,
 ) error {
 	if tx == nil {
@@ -97,7 +97,7 @@ func (r *ProductProfitCalculationRepository) ReplaceCurrentSnapshotsInTx(
 	if len(normalizedClearCodes) > 0 {
 		if err := tx.
 			Where("product_code IN ?", normalizedClearCodes).
-			Delete(&procurementdomain.ProductProfitCalculation{}).Error; err != nil {
+			Delete(&suppliercostdomain.ProductProfitCalculation{}).Error; err != nil {
 			return err
 		}
 	}
@@ -106,7 +106,7 @@ func (r *ProductProfitCalculationRepository) ReplaceCurrentSnapshotsInTx(
 	}
 
 	for i := range records {
-		procurementdomain.NormalizeProductProfitCalculation(&records[i])
+		suppliercostdomain.NormalizeProductProfitCalculation(&records[i])
 	}
 	return tx.
 		Clauses(clause.OnConflict{

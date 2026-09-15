@@ -90,14 +90,13 @@
                   <RefreshCw class="size-4" />
                   {{ order.status === 'shipped' || order.shipping_status === 'shipped' || order.shipping_status === 'delivered' ? '纠正物流' : '状态管理' }}
                 </DropdownMenuItem>
-                <DropdownMenuSeparator v-if="canDelete" />
+                <DropdownMenuSeparator v-if="canHideUnpaidTerminal && isEligibleForUnpaidTerminalOrderDefaultQueryHide(order)" />
                 <DropdownMenuItem
-                  v-if="canDelete"
-                  class="text-destructive focus:text-destructive"
-                  @select="emit('delete', order)"
+                  v-if="canHideUnpaidTerminal && isEligibleForUnpaidTerminalOrderDefaultQueryHide(order)"
+                  @select="emit('hide-unpaid-terminal', order)"
                 >
-                  <Trash2 class="size-4" />
-                  删除
+                  <EyeOff class="size-4" />
+                  隐藏订单
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -119,7 +118,7 @@
 </template>
 
 <script setup lang="ts">
-import { CircleCheck, CircleX, Eye, MoreHorizontal, RefreshCw, ShoppingBag, Trash2, Truck } from '@lucide/vue'
+import { CircleCheck, CircleX, Eye, EyeOff, MoreHorizontal, RefreshCw, ShoppingBag, Truck } from '@lucide/vue'
 import AdminPagination from '@/components/admin/AdminPagination.vue'
 import AdminStatusBadge from '@/components/admin/AdminStatusBadge.vue'
 import AdminTablePanel from '@/components/admin/AdminTablePanel.vue'
@@ -152,7 +151,7 @@ const props = withDefaults(defineProps<{
   pagination: OrderPagination
   selectionState?: OrderSelectionState
   canEdit?: boolean
-  canDelete?: boolean
+  canHideUnpaidTerminal?: boolean
   orderStatusName: OrderStatusNameResolver
   orderStatusTone: OrderStatusToneResolver
   paymentStatusName: OrderStatusNameResolver
@@ -168,7 +167,7 @@ const props = withDefaults(defineProps<{
   selectedOrders: () => [],
   selectionState: false,
   canEdit: false,
-  canDelete: false
+  canHideUnpaidTerminal: false
 })
 
 const emit = defineEmits<{
@@ -178,11 +177,18 @@ const emit = defineEmits<{
   (event: 'view-detail', order: OrderRecord): void
   (event: 'fulfill', order: OrderRecord): void
   (event: 'show-status', order: OrderRecord): void
-  (event: 'delete', order: OrderRecord): void
+  (event: 'hide-unpaid-terminal', order: OrderRecord): void
   (event: 'update-page', page: number): void
   (event: 'update-page-size', pageSize: number): void
 }>()
 
 const isOrderSelected = (orderId: OrderID): boolean => props.selectedOrders.some((order) => order.id === orderId)
+
+const isEligibleForUnpaidTerminalOrderDefaultQueryHide = (order: OrderRecord): boolean => {
+  const status = order.status || ''
+  const paymentStatus = order.payment_status || ''
+  return (status === 'cancelled' && paymentStatus === 'unpaid') ||
+    (status === 'payment_expired' && paymentStatus === 'expired')
+}
 </script>
 

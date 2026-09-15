@@ -22,8 +22,8 @@ func TestMarketingServiceRejectsUnsafeGiftCardStatusTransitions(t *testing.T) {
 	db, marketingService := newTestMarketingService(t)
 	card := coupon.GiftCard{
 		Code:         "GC-ACTIVE",
-		InitialValue: 50,
-		Balance:      50,
+		InitialCents: 5000,
+		BalanceCents: 5000,
 		Currency:     "USD",
 		Status:       "active",
 	}
@@ -41,8 +41,8 @@ func TestMarketingServiceAllowsTerminalGiftCardTransitionFromActive(t *testing.T
 	db, marketingService := newTestMarketingService(t)
 	card := coupon.GiftCard{
 		Code:         "GC-CANCEL",
-		InitialValue: 50,
-		Balance:      50,
+		InitialCents: 5000,
+		BalanceCents: 5000,
 		Currency:     "USD",
 		Status:       "active",
 	}

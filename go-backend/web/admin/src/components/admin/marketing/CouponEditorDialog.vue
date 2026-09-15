@@ -23,6 +23,9 @@
               </label>
             </RadioGroup>
           </AdminFormField>
+          <AdminFormField label="优惠券币种" description="固定金额、最低消费和最大折扣使用的币种">
+            <Input v-model="form.currency" class="font-mono uppercase" maxlength="3" placeholder="USD" />
+          </AdminFormField>
           <AdminFormField label="折扣值" required :error="errors.value">
             <div class="relative">
               <Input v-model.number="form.value" type="number" min="0" step="0.01" class="pr-10" @input="emit('clear-error', 'value')" />
@@ -101,6 +104,7 @@ import { Textarea } from '@/components/ui/textarea'
 export interface CouponForm {
   code: string
   type: 'fixed' | 'percentage' | string
+  currency: string
   value: number | string
   min_amount: number | string
   max_discount: number | string

@@ -6,7 +6,7 @@ Payment-risk monitoring evaluates provider-neutral operational indicators over
 a rolling window. This alerting path notifies an external operations system
 only when a provider's evaluated level changes.
 
-It does not create refunds or change payment providers. Checkout protection is
+It does not call provider refund APIs or change payment providers. Checkout protection is
 limited to audited, time-bounded manual controls such as `force_3ds` and
 `pause_payment`; it does not perform automatic provider failover or permanent
 global checkout shutdown.
@@ -21,9 +21,11 @@ The current delivery includes:
 - webhook-driven refund recommendation queue for operator review;
 - manual dispute evidence preparation and submission.
 
-The current delivery does not automatically refund payments, switch payment
-providers, or close checkout permanently. `pause_payment` is evaluated before
-new payment starts in two concrete places: public order creation
+The current delivery does not automatically execute provider refunds, switch
+payment providers, or close checkout permanently. A narrow duplicate-paid
+ledger path may create a local pending refund work item, but it does not call
+the provider refund API. `pause_payment` is evaluated before new payment
+starts in two concrete places: public order creation
 (`POST /api/v1/orders`) and Stripe PaymentIntent creation
 (`POST /api/v1/payment/stripe/payment-intents`). PayPal provider-order
 creation (`POST /api/v1/payment/paypal/orders`) uses the same guard before
@@ -97,9 +99,9 @@ a recommendation only records the decision. A separate operator action can
 create a local `pending` refund draft linked to that recommendation, but it
 still does not call a payment provider. A second explicit operator action can
 execute that pending refund through the configured payment gateway with an
-idempotency key and execution audit row. Automatic refunding, provider routing,
-and broader circuit breakers are later, separately gated capabilities and must
-not be described as enabled production behavior.
+idempotency key and execution audit row. Automatic provider-side refund
+execution, provider routing, and broader circuit breakers are later, separately
+gated capabilities and must not be described as enabled production behavior.
 
 ## Future Provider Routing Boundary
 
@@ -153,6 +155,29 @@ endpoint requires refund permission and `confirm=true`, writes or reuses a
 `payment_refund_executions` row, sends a stable idempotency key to supported
 gateways, and only marks the local refund `completed` after the gateway returns
 a provider refund id.
+
+### Duplicate Paid-Charge Safety Path
+
+When a verified payment arrives with a different provider transaction ID after
+the order is already paid, the payment service does not discard it and does not
+return the ordinary "already paid" acknowledgement. It:
+
+1. stores the second provider transaction with
+   `transactions.status = duplicate_paid`;
+2. preserves the provider amount, currency, response, and transaction ID;
+3. creates one full-amount `refunds.status = pending` record linked to that
+   transaction; and
+4. returns webhook success only after the transaction and local refund record
+   commit.
+
+This automatic step creates a durable local refund work item. It does not call
+the provider refund API. The existing explicit refund execution endpoint still
+requires an authorized operator, a confirmation, an execution audit row, and a
+provider refund response before the local refund becomes `completed`.
+
+Repeated delivery of the same provider transaction ID is idempotent: it reuses
+the stored transaction and its duplicate-paid refund record. A different
+transaction ID is never treated as a harmless duplicate webhook.
 
 These admin actions also write global audit-log entries with operator, IP,
 user agent, request path, status, failure reason, and safe operational

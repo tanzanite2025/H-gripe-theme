@@ -1,6 +1,7 @@
 package admin
 
 import (
+	"commerce-platform/internal/api/middleware"
 	orderdomain "commerce-platform/internal/domain/order"
 	"commerce-platform/internal/pkg/response"
 	"commerce-platform/internal/service"
@@ -335,7 +336,15 @@ func (h *OrderHandler) FulfillOrder(c *gin.Context) {
 		return
 	}
 
-	result, err := h.orderService.FulfillOrder(c.Request.Context(), orderID, req.toServiceInput())
+	adminID, _ := currentAdminUserID(c)
+	result, err := h.orderService.FulfillOrderWithIdempotency(
+		c.Request.Context(),
+		orderID,
+		req.toServiceInput(),
+		adminID,
+		middleware.GetIdempotencyKey(c),
+		middleware.GetIdempotencyRequestHash(c),
+	)
 	if err != nil {
 		recordAdminAudit(h.auditService, c, adminAuditEvent{
 			StartedAt:    startedAt,
@@ -583,21 +592,25 @@ func (h *OrderHandler) BatchUpdateStatus(c *gin.Context) {
 	})
 }
 
-// DeleteOrder 删除订单
-// DELETE /api/admin/orders/:id
-func (h *OrderHandler) DeleteOrder(c *gin.Context) {
+// HideUnpaidCancelledOrPaymentExpiredOrderFromDefaultQueries hides an eligible
+// unpaid terminal order from default admin queries. It never physically deletes
+// an order. The POST route is canonical; the DELETE route is deprecated API
+// compatibility and invokes the same guarded operation.
+// POST /api/admin/orders/:id/hide-unpaid-terminal
+// DELETE /api/admin/orders/:id (deprecated compatibility route)
+func (h *OrderHandler) HideUnpaidCancelledOrPaymentExpiredOrderFromDefaultQueries(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid order ID"})
 		return
 	}
 
-	if err := h.orderService.DeleteAdminOrder(uint(id)); err != nil {
-		respondOrderServiceError(c, err, "Failed to delete order", http.StatusInternalServerError)
+	if err := h.orderService.HideUnpaidCancelledOrPaymentExpiredOrderFromDefaultQueries(uint(id)); err != nil {
+		respondOrderServiceError(c, err, "Failed to hide order", http.StatusInternalServerError)
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"message": "Order deleted successfully",
+		"message": "Order hidden successfully",
 	})
 }

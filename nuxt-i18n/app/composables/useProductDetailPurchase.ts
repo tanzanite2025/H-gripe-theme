@@ -11,7 +11,7 @@ import type {
   StripeExpressCheckoutElementShippingAddressChangeEvent,
   StripeExpressCheckoutElementShippingRateChangeEvent,
 } from '@stripe/stripe-js'
-import { useI18n } from '#imports'
+import { navigateTo, useI18n, useLocalePath } from '#imports'
 import { COUNTRIES } from '~/data/countries'
 import { useAuth } from '~/composables/useAuth'
 import { useCart } from '~/composables/useCart'
@@ -23,6 +23,11 @@ import {
   convertMajorAmountToStripeMinorAmount,
   type StripeExpressCheckoutAvailablePaymentMethods,
 } from '~/composables/useStripeExpressCheckout'
+import {
+  STRIPE_RETURN_PATH,
+  clearStripeReturnSession,
+  saveStripeReturnSession,
+} from '~/utils/stripeReturn'
 import type { ProductDetailExpressCheckoutExposed } from '~/components/shop/product-detail/ProductDetailExpressCheckout.vue'
 import type {
   CheckoutPaymentOption,
@@ -52,10 +57,13 @@ export interface ProductDetailPurchaseOptions {
   currentCurrency: MaybeRefOrGetter<string>
   selectedAvailability: MaybeRefOrGetter<ProductAvailability>
   primaryMediaThumbnail: MaybeRefOrGetter<string>
+  selectedOptions?: MaybeRefOrGetter<Array<{ group_slug: string; value_keys: string[] }>>
+  customOptionsValid?: MaybeRefOrGetter<boolean>
 }
 
 export function useProductDetailPurchase(options: ProductDetailPurchaseOptions) {
   const { t } = useI18n()
+  const localePath = useLocalePath()
   const auth = useAuth()
   const {
     addToCart,
@@ -64,6 +72,7 @@ export function useProductDetailPurchase(options: ProductDetailPurchaseOptions) 
     cartItems,
     cartCurrency,
     clearCart,
+    reloadCartFromBackend,
   } = useCart()
   const { toCartItem } = useShopProducts()
   const { countryCode } = useStorefrontContext()
@@ -91,11 +100,16 @@ export function useProductDetailPurchase(options: ProductDetailPurchaseOptions) 
   const currentCurrency = computed(() => toValue(options.currentCurrency) || 'USD')
   const selectedAvailability = computed<ProductAvailability>(() => toValue(options.selectedAvailability) || 'out_of_stock')
   const primaryMediaThumbnail = computed(() => toValue(options.primaryMediaThumbnail) || '')
+  const selectedOptions = computed(() => toValue(options.selectedOptions) || [])
+  const customOptionsValid = computed(() => options.customOptionsValid == null
+    ? true
+    : Boolean(toValue(options.customOptionsValid)))
 
   const canAddToCart = computed(() => Boolean(
     product.value
     && effectivePrice.value > 0
-    && ['in_stock', 'made_to_order'].includes(selectedAvailability.value),
+    && ['in_stock', 'made_to_order'].includes(selectedAvailability.value)
+    && customOptionsValid.value,
   ))
 
   const normalizeSelectedQuantity = (value: unknown) => {
@@ -216,6 +230,7 @@ export function useProductDetailPurchase(options: ProductDetailPurchaseOptions) 
         thumbnail: primaryMediaThumbnail.value || undefined,
         weightGrams: selectedVariantWeight.value,
         fulfillmentMode: shopProduct.value.fulfillmentMode,
+        selectedOptions: selectedOptions.value,
       }),
       quantity: selectedQuantity.value,
     }
@@ -304,6 +319,7 @@ export function useProductDetailPurchase(options: ProductDetailPurchaseOptions) 
       thumbnail: primaryMediaThumbnail.value || undefined,
       weightGrams: selectedVariantWeight.value,
       fulfillmentMode: shopProduct.value.fulfillmentMode,
+      selectedOptions: selectedOptions.value,
     }), selectedQuantity.value)
   }
 
@@ -422,14 +438,25 @@ export function useProductDetailPurchase(options: ProductDetailPurchaseOptions) 
         confirmationEvent,
         cartItems.value,
       )
-      const returnUrl = new URL(window.location.href)
+      saveStripeReturnSession({
+        orderNumber: session.orderNumber,
+        clientSecret: session.clientSecret,
+        publishableKey: session.publishableKey,
+      })
+      const returnUrl = new URL(localePath(STRIPE_RETURN_PATH), window.location.origin)
       returnUrl.searchParams.set('order_number', session.orderNumber)
       const result = await expressCheckoutElement.confirmExpressCheckoutPayment(
         session.clientSecret,
         returnUrl.toString(),
       )
       if (['succeeded', 'processing', 'requires_capture'].includes(result.status)) {
-        clearCart()
+        clearStripeReturnSession(session.orderNumber)
+        await clearCart()
+        await reloadCartFromBackend()
+        await navigateTo({
+          path: localePath('/checkout/success'),
+          query: { order_number: session.orderNumber },
+        })
         return
       }
 

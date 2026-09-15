@@ -35,6 +35,24 @@ func TestRegisterRoutesBuildsCompleteRouteTree(t *testing.T) {
 	RegisterRoutes(router, deps, cfg)
 }
 
+func TestRegisterRoutesExposesCustomerAfterSalesReadRoute(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	router := gin.New()
+	cfg := &config.Config{
+		CORS: config.CORSConfig{},
+		JWT:  config.JWTConfig{Secret: "test-secret"},
+	}
+	RegisterRoutes(router, &app.Dependencies{}, cfg)
+
+	for _, route := range router.Routes() {
+		if route.Method == http.MethodGet && route.Path == "/api/v1/orders/:order_number/after-sales" {
+			return
+		}
+	}
+	t.Fatal("customer after-sales GET route is not registered")
+}
+
 func TestAnonymousProfileProbeReturnsNoContent(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 

@@ -51,24 +51,8 @@
       </div>
     </ProgramSection>
 
-    <ProgramSection title="推荐与签到积分" description="用于推荐奖励、每日签到和连续签到奖励。">
+    <ProgramSection title="签到积分" description="推荐计划升级期间，推荐奖励改由独立配置管理且保持关闭。">
       <div class="grid gap-4 md:grid-cols-2">
-        <AdminFormField label="推荐人奖励积分" description="被推荐用户完成首次购买后，推荐人获得的积分。">
-          <Input
-            v-model.number="loyaltySettings.tz_loyalty_referral_referrer_points"
-            type="number"
-            min="0"
-            :disabled="!canEdit"
-          />
-        </AdminFormField>
-        <AdminFormField label="被推荐人奖励积分" description="被推荐用户完成首次购买后，被推荐人获得的积分。">
-          <Input
-            v-model.number="loyaltySettings.tz_loyalty_referral_referee_points"
-            type="number"
-            min="0"
-            :disabled="!canEdit"
-          />
-        </AdminFormField>
         <AdminFormField label="每日签到基础积分" description="会员每天第一次签到获得的基础积分。">
           <Input
             v-model.number="loyaltySettings.tz_loyalty_checkin_base_points"

@@ -152,6 +152,23 @@ func TestVerifyAlipayWebhookFailsClosedWithoutSignatureOrPublicKey(t *testing.T)
 
 }
 
+func TestValidateAlipayWebhookMerchantIdentity(t *testing.T) {
+	config := &Config{APIKey: "app-id"}
+
+	if err := ValidateAlipayWebhookMerchantIdentity(config, AlipayWebhookNotification{AppID: "app-id"}); err != nil {
+		t.Fatalf("expected matching Alipay app_id to pass: %v", err)
+	}
+	if err := ValidateAlipayWebhookMerchantIdentity(config, AlipayWebhookNotification{}); err == nil || !strings.Contains(err.Error(), "notification app_id") {
+		t.Fatalf("expected missing Alipay notification app_id error, got %v", err)
+	}
+	if err := ValidateAlipayWebhookMerchantIdentity(config, AlipayWebhookNotification{AppID: "attacker-app-id"}); err == nil || !strings.Contains(err.Error(), "does not match") {
+		t.Fatalf("expected cross-merchant Alipay app_id error, got %v", err)
+	}
+	if err := ValidateAlipayWebhookMerchantIdentity(&Config{}, AlipayWebhookNotification{AppID: "app-id"}); err == nil || !strings.Contains(err.Error(), "not configured") {
+		t.Fatalf("expected missing configured Alipay app_id error, got %v", err)
+	}
+}
+
 func TestVerifyWechatWebhookFailsClosedWithoutRequiredHeadersOrVerifierMaterial(t *testing.T) {
 	_, err := VerifyWechatWebhook(context.Background(), &Config{Type: GatewayWechat}, http.Header{}, []byte(`{}`))
 	if err == nil || !strings.Contains(err.Error(), "api_v3_key") {
@@ -174,6 +191,52 @@ func TestVerifyWechatWebhookFailsClosedWithoutRequiredHeadersOrVerifierMaterial(
 		t.Fatalf("expected missing WeChat platform verifier error, got %v", err)
 	}
 
+}
+
+func TestValidateWechatWebhookMerchantIdentity(t *testing.T) {
+	config := &Config{APIKey: "mch-id", WechatAppID: "app-id"}
+	transaction := WechatWebhookTransaction{AppID: "app-id", MchID: "mch-id"}
+
+	if err := ValidateWechatWebhookMerchantIdentity(config, transaction); err != nil {
+		t.Fatalf("expected matching WeChat merchant identity to pass: %v", err)
+	}
+
+	if err := ValidateWechatWebhookMerchantIdentity(config, WechatWebhookTransaction{MchID: "mch-id"}); err == nil || !strings.Contains(err.Error(), "notification appid") {
+		t.Fatalf("expected missing WeChat notification appid error, got %v", err)
+	}
+	if err := ValidateWechatWebhookMerchantIdentity(config, WechatWebhookTransaction{AppID: "app-id"}); err == nil || !strings.Contains(err.Error(), "notification mchid") {
+		t.Fatalf("expected missing WeChat notification mchid error, got %v", err)
+	}
+
+	transaction.AppID = "attacker-app-id"
+	if err := ValidateWechatWebhookMerchantIdentity(config, transaction); err == nil || !strings.Contains(err.Error(), "appid does not match") {
+		t.Fatalf("expected cross-merchant WeChat appid error, got %v", err)
+	}
+	transaction = WechatWebhookTransaction{AppID: "app-id", MchID: "attacker-mch-id"}
+	if err := ValidateWechatWebhookMerchantIdentity(config, transaction); err == nil || !strings.Contains(err.Error(), "mchid does not match") {
+		t.Fatalf("expected cross-merchant WeChat mchid error, got %v", err)
+	}
+	if err := ValidateWechatWebhookMerchantIdentity(&Config{APIKey: "mch-id"}, transaction); err == nil || !strings.Contains(err.Error(), "app_id is not configured") {
+		t.Fatalf("expected missing configured WeChat app_id error, got %v", err)
+	}
+	if err := ValidateWechatWebhookMerchantIdentity(&Config{WechatAppID: "app-id"}, transaction); err == nil || !strings.Contains(err.Error(), "mch_id is not configured") {
+		t.Fatalf("expected missing configured WeChat mch_id error, got %v", err)
+	}
+}
+
+func TestValidateWechatRefundWebhookMerchantIdentityAllowsMissingAppID(t *testing.T) {
+	config := &Config{APIKey: "mch-id", WechatAppID: "app-id"}
+	refund := WechatRefundNotification{MchID: "mch-id"}
+
+	if err := ValidateWechatRefundWebhookMerchantIdentity(config, refund); err != nil {
+		t.Fatalf("expected refund notification without appid to pass: %v", err)
+	}
+	if err := ValidateWechatRefundWebhookMerchantIdentity(config, WechatRefundNotification{AppID: "app-id"}); err == nil || !strings.Contains(err.Error(), "notification mchid") {
+		t.Fatalf("expected missing refund notification mchid error, got %v", err)
+	}
+	if err := ValidateWechatRefundWebhookMerchantIdentity(config, WechatRefundNotification{MchID: "attacker-mch-id"}); err == nil || !strings.Contains(err.Error(), "does not match") {
+		t.Fatalf("expected cross-merchant refund mchid error, got %v", err)
+	}
 }
 
 func validPayPalWebhookHeaders() http.Header {

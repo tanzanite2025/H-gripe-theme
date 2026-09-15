@@ -431,12 +431,15 @@ func (h *Handler) GetPublicCustomerServiceMessages(c *gin.Context) {
 	conversationID := strings.TrimSpace(c.Param("conversation_id"))
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "50"))
 	offset, _ := strconv.Atoi(c.DefaultQuery("offset", "0"))
+	if offset < 0 {
+		offset = 0
+	}
 	if conversationID == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "[CRITICAL] missing conversation id"})
 		return
 	}
 
-	messages, err := h.ticketService.GetPublicCustomerServiceMessages(conversationID, h.existingPublicCustomerOwner(c), limit, offset)
+	messages, total, err := h.ticketService.GetPublicCustomerServiceMessagesPage(conversationID, h.existingPublicCustomerOwner(c), limit, offset)
 	if err != nil {
 		writePublicCustomerServiceError(c, err)
 		return
@@ -452,8 +455,9 @@ func (h *Handler) GetPublicCustomerServiceMessages(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"data":    items,
-		"total":   len(items),
+		"success":  true,
+		"data":     items,
+		"total":    total,
+		"has_more": int64(offset)+int64(len(items)) < total,
 	})
 }

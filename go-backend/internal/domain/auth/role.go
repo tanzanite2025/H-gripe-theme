@@ -59,10 +59,12 @@ const (
 	PermProductEdit   Permission = "product:edit"
 	PermProductDelete Permission = "product:delete"
 
-	PermProcurementView   Permission = "procurement:view"
-	PermProcurementCreate Permission = "procurement:create"
-	PermProcurementEdit   Permission = "procurement:edit"
-	PermProcurementDelete Permission = "procurement:delete"
+	// These permission values are legacy identifiers for the SKU supplier-cost
+	// and profitability add-on. Keep the values stable to avoid a role migration.
+	PermSupplierCostView   Permission = "procurement:view"
+	PermSupplierCostCreate Permission = "procurement:create"
+	PermSupplierCostEdit   Permission = "procurement:edit"
+	PermSupplierCostDelete Permission = "procurement:delete"
 
 	PermFitmentCatalogView   Permission = "fitment_catalog:view"
 	PermFitmentCatalogCreate Permission = "fitment_catalog:create"
@@ -163,13 +165,18 @@ const (
 
 	PermServicesView   Permission = "services:view"
 	PermServicesManage Permission = "services:manage"
+
+	PermWorkbenchFeedView   Permission = "workbench_feed:view"
+	PermWorkbenchFeedCreate Permission = "workbench_feed:create"
+	PermWorkbenchFeedEdit   Permission = "workbench_feed:edit"
+	PermWorkbenchFeedDelete Permission = "workbench_feed:delete"
 )
 
 // RolePermissions maps each role to the admin permissions it receives.
 var RolePermissions = map[Role][]Permission{
 	RoleAdmin: {
 		PermProductView, PermProductCreate, PermProductEdit, PermProductDelete,
-		PermProcurementView, PermProcurementCreate, PermProcurementEdit, PermProcurementDelete,
+		PermSupplierCostView, PermSupplierCostCreate, PermSupplierCostEdit, PermSupplierCostDelete,
 		PermFitmentCatalogView, PermFitmentCatalogCreate, PermFitmentCatalogEdit, PermFitmentCatalogDelete,
 		PermOrderView, PermOrderEdit, PermOrderRefund, PermOrderDelete,
 		PermUserView, PermUserCreate, PermUserEdit, PermUserDelete,
@@ -193,10 +200,11 @@ var RolePermissions = map[Role][]Permission{
 		PermOpsProjectView, PermOpsProjectEdit, PermOpsProjectSync, PermOpsDeployView,
 		PermOpsDeployDryRun, PermOpsDeployExecute, PermOpsDeployRollback, PermOpsWorkflowApprove,
 		PermServicesView, PermServicesManage,
+		PermWorkbenchFeedView, PermWorkbenchFeedCreate, PermWorkbenchFeedEdit, PermWorkbenchFeedDelete,
 	},
 	RoleManager: {
 		PermProductView, PermProductCreate, PermProductEdit, PermProductDelete,
-		PermProcurementView, PermProcurementCreate, PermProcurementEdit, PermProcurementDelete,
+		PermSupplierCostView, PermSupplierCostCreate, PermSupplierCostEdit, PermSupplierCostDelete,
 		PermFitmentCatalogView, PermFitmentCatalogCreate, PermFitmentCatalogEdit, PermFitmentCatalogDelete,
 		PermOrderView, PermOrderEdit, PermOrderRefund,
 		PermUserView, PermUserCreate, PermUserEdit,
@@ -219,10 +227,11 @@ var RolePermissions = map[Role][]Permission{
 		PermOpsProjectView, PermOpsProjectEdit, PermOpsProjectSync, PermOpsDeployView,
 		PermOpsDeployDryRun, PermOpsDeployExecute, PermOpsDeployRollback, PermOpsWorkflowApprove,
 		PermServicesView, PermServicesManage,
+		PermWorkbenchFeedView, PermWorkbenchFeedCreate, PermWorkbenchFeedEdit, PermWorkbenchFeedDelete,
 	},
 	RoleEditor: {
 		PermProductView, PermProductCreate, PermProductEdit,
-		PermProcurementView, PermProcurementCreate, PermProcurementEdit,
+		PermSupplierCostView, PermSupplierCostCreate, PermSupplierCostEdit,
 		PermFitmentCatalogView, PermFitmentCatalogCreate, PermFitmentCatalogEdit,
 		PermShippingView,
 		PermContentView, PermContentCreate, PermContentEdit,
@@ -232,6 +241,7 @@ var RolePermissions = map[Role][]Permission{
 		PermMediaView, PermMediaCreate, PermMediaEdit,
 		PermMerchantView, PermMerchantEdit, PermMerchantSync,
 		PermURLView,
+		PermWorkbenchFeedView, PermWorkbenchFeedCreate, PermWorkbenchFeedEdit,
 	},
 	RoleSupport: {
 		PermOrderView,
@@ -258,6 +268,7 @@ var RolePermissions = map[Role][]Permission{
 		PermSEOView, PermURLView, PermAnalyticsView,
 		PermShippingView,
 		PermSettingsView,
+		PermWorkbenchFeedView,
 	},
 	RoleUser:     {},
 	RoleTestUser: {},

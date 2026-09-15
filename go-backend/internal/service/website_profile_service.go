@@ -2,6 +2,7 @@ package service
 
 import (
 	"commerce-platform/internal/domain/setting"
+	"commerce-platform/internal/pkg/websitecontent"
 	"fmt"
 	"strings"
 )
@@ -28,6 +29,11 @@ func (s *WebsiteProfileService) Update(request setting.WebsiteProfileUpdateReque
 	locale := normalizeWebsiteProfileLocale(request.Locale)
 	values := request.Settings()
 	values.Locale = locale
+	normalizedBody, err := websitecontent.NormalizeWebsiteBody(values.StatementBody)
+	if err != nil {
+		return nil, fmt.Errorf("normalize website profile body: %w", err)
+	}
+	values.StatementBody = normalizedBody
 
 	records := websiteProfileRecords(values, locale)
 	if err := s.settings.BatchSet(records); err != nil {
@@ -45,24 +51,78 @@ func (s *WebsiteProfileService) resolve(locale string, publicOnly bool) (*settin
 	}
 
 	seenKeys := make(map[string]struct{})
+	statementSourceFound := false
 	for _, candidateLocale := range websiteProfileFallbackLocales(normalizedLocale) {
 		records, err := s.records(candidateLocale, publicOnly)
 		if err != nil {
 			return nil, err
 		}
 
+		candidateBody := ""
+		candidateLegacyParts := map[string]string{}
 		for _, record := range records {
 			if _, seen := seenKeys[record.Key]; seen {
 				continue
 			}
+
+			switch record.Key {
+			case setting.WebsiteProfileKeyStatementBody:
+				if candidateBody != "" || strings.TrimSpace(record.Value) == "" {
+					continue
+				}
+				value, normalizeErr := websitecontent.NormalizeWebsiteBody(record.Value)
+				if normalizeErr != nil {
+					return nil, fmt.Errorf("normalize website profile body: %w", normalizeErr)
+				}
+				if strings.TrimSpace(value) == "" {
+					continue
+				}
+				candidateBody = value
+				continue
+			case setting.WebsiteProfileKeyStatementParagraph1, setting.WebsiteProfileKeyStatementParagraph2:
+				if _, seen := candidateLegacyParts[record.Key]; seen || strings.TrimSpace(record.Value) == "" {
+					continue
+				}
+				candidateLegacyParts[record.Key] = record.Value
+				continue
+			}
+
 			if strings.TrimSpace(record.Value) == "" {
 				continue
 			}
 			seenKeys[record.Key] = struct{}{}
 			applyWebsiteProfileRecord(&result, record.Key, record.Value)
 		}
+
+		if statementSourceFound {
+			continue
+		}
+
+		if candidateBody != "" {
+			result.StatementBody = candidateBody
+			statementSourceFound = true
+			continue
+		}
+
+		if len(candidateLegacyParts) > 0 {
+			legacyBody := strings.TrimSpace(strings.Join([]string{
+				candidateLegacyParts[setting.WebsiteProfileKeyStatementParagraph1],
+				candidateLegacyParts[setting.WebsiteProfileKeyStatementParagraph2],
+			}, "\n\n"))
+			normalizedBody, normalizeErr := websitecontent.NormalizeWebsiteBody(legacyBody)
+			if normalizeErr != nil {
+				return nil, fmt.Errorf("normalize legacy website profile body: %w", normalizeErr)
+			}
+			result.StatementBody = normalizedBody
+			statementSourceFound = true
+		}
 	}
 
+	normalizedBody, err := websitecontent.NormalizeWebsiteBody(result.StatementBody)
+	if err != nil {
+		return nil, fmt.Errorf("normalize website profile body: %w", err)
+	}
+	result.StatementBody = normalizedBody
 	result.Locale = normalizedLocale
 	if result.FactoryImageURL == "" {
 		result.FactoryImageURL = websiteProfileDefaultFactoryImageURL
@@ -78,7 +138,7 @@ func (s *WebsiteProfileService) records(locale string, publicOnly bool) ([]setti
 }
 
 func websiteProfileRecords(values setting.WebsiteProfileSettings, locale string) []setting.Setting {
-	records := make([]setting.Setting, 0, 23)
+	records := make([]setting.Setting, 0, 24)
 	add := func(key, value, recordLocale string) {
 		records = append(records, setting.Setting{
 			Key:         key,
@@ -102,8 +162,9 @@ func websiteProfileRecords(values setting.WebsiteProfileSettings, locale string)
 	add(setting.WebsiteProfileKeyProfileContext, values.ProfileContext, locale)
 	add(setting.WebsiteProfileKeyStatementEyebrow, values.StatementEyebrow, locale)
 	add(setting.WebsiteProfileKeyStatementTitle, values.StatementTitle, locale)
-	add(setting.WebsiteProfileKeyStatementParagraph1, values.StatementParagraph1, locale)
-	add(setting.WebsiteProfileKeyStatementParagraph2, values.StatementParagraph2, locale)
+	add(setting.WebsiteProfileKeyStatementBody, values.StatementBody, locale)
+	add(setting.WebsiteProfileKeyStatementParagraph1, "", locale)
+	add(setting.WebsiteProfileKeyStatementParagraph2, "", locale)
 	add(setting.WebsiteProfileKeyFactoryImageAlt, values.FactoryImageAlt, locale)
 	add(setting.WebsiteProfileKeyFactoryImageCaption, values.FactoryImageCaption, locale)
 	add(setting.WebsiteProfileKeyFactoryEyebrow, values.FactoryEyebrow, locale)
@@ -144,10 +205,8 @@ func applyWebsiteProfileRecord(target *setting.WebsiteProfileSettings, key, valu
 		target.StatementEyebrow = value
 	case setting.WebsiteProfileKeyStatementTitle:
 		target.StatementTitle = value
-	case setting.WebsiteProfileKeyStatementParagraph1:
-		target.StatementParagraph1 = value
-	case setting.WebsiteProfileKeyStatementParagraph2:
-		target.StatementParagraph2 = value
+	case setting.WebsiteProfileKeyStatementBody:
+		target.StatementBody = value
 	case setting.WebsiteProfileKeyFactoryImageURL:
 		target.FactoryImageURL = value
 	case setting.WebsiteProfileKeyFactoryImageAlt:

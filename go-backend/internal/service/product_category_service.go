@@ -26,6 +26,9 @@ var (
 	ErrProductCategoryInvalid            = errors.New("product category invalid")
 	ErrProductCategorySlugExists         = errors.New("product category slug already exists")
 	ErrProductCategoryHasChildren        = errors.New("product category has child categories")
+	ErrProductCategoryInUse              = errors.New("product category is in use")
+	ErrProductCategoryHasProducts        = errors.New("product category has products")
+	ErrProductCategoryInQuickBuy         = errors.New("product category is used by quick buy flows")
 	ErrProductCategoryImageInvalid       = errors.New("product category image invalid")
 	ErrProductCategoryTranslationInvalid = errors.New("product category translation invalid")
 	ErrProductCategorySystemProtected    = errors.New("system product category cannot be changed")
@@ -118,8 +121,24 @@ type ProductBreadcrumbView struct {
 }
 
 type ProductCategoryService struct {
-	repo      *repository.ProductCategoryRepository
-	mediaRepo *repository.MediaRepository
+	repo                    *repository.ProductCategoryRepository
+	mediaRepo               *repository.MediaRepository
+	productCacheInvalidator ProductCacheInvalidator
+	htmlCache               *StorefrontHTMLCacheInvalidator
+}
+
+func (s *ProductCategoryService) ConfigureProductCacheInvalidator(invalidator ProductCacheInvalidator) {
+	if s == nil {
+		return
+	}
+	s.productCacheInvalidator = invalidator
+}
+
+func (s *ProductCategoryService) SetStorefrontHTMLCacheInvalidator(invalidator *StorefrontHTMLCacheInvalidator) {
+	if s == nil {
+		return
+	}
+	s.htmlCache = invalidator
 }
 
 func NewProductCategoryService(repo *repository.ProductCategoryRepository, mediaRepos ...*repository.MediaRepository) *ProductCategoryService {
@@ -346,6 +365,7 @@ func (s *ProductCategoryService) UpdateSEO(id uint, locale string, metaTitle, me
 	if err := s.repo.UpdateSEO(id, normalizedLocale, nextMetaTitle, nextMetaDescription, nextIntro); err != nil {
 		return nil, err
 	}
+	s.invalidateCategoryProducts([]uint{id}, "product category SEO update")
 	return s.GetSEO(id, normalizedLocale)
 }
 
@@ -427,6 +447,7 @@ func (s *ProductCategoryService) UpdateTranslations(id uint, inputs []ProductCat
 	if err := s.repo.ReplaceTranslations(id, translations); err != nil {
 		return nil, err
 	}
+	s.invalidateCategoryProducts([]uint{id}, "product category translation update")
 	return s.ListTranslations(id)
 }
 
@@ -461,6 +482,7 @@ func (s *ProductCategoryService) Create(input ProductCategoryInput) (*ProductCat
 	if err := s.repo.Create(category); err != nil {
 		return nil, err
 	}
+	s.purgeHTMLCache("product category create")
 	return s.Get(category.ID)
 }
 
@@ -547,6 +569,11 @@ func (s *ProductCategoryService) Update(id uint, input ProductCategoryInput) (*P
 	if err := s.repo.Update(category, descendantDepths); err != nil {
 		return nil, err
 	}
+	affectedCategories := make([]uint, 0, len(descendantDepths))
+	for categoryID := range descendantDepths {
+		affectedCategories = append(affectedCategories, categoryID)
+	}
+	s.invalidateCategoryProducts(affectedCategories, "product category update")
 	return s.Get(id)
 }
 
@@ -568,7 +595,42 @@ func (s *ProductCategoryService) Delete(id uint) error {
 	if childCount > 0 {
 		return fmt.Errorf("%w: delete child categories first", ErrProductCategoryHasChildren)
 	}
-	return s.repo.Delete(id)
+	productCount, err := s.repo.CountProducts(id)
+	if err != nil {
+		return err
+	}
+	if productCount > 0 {
+		return fmt.Errorf("%w: %w: %d products still reference this category", ErrProductCategoryInUse, ErrProductCategoryHasProducts, productCount)
+	}
+	quickBuyCount, err := s.repo.CountQuickBuyReferences(id)
+	if err != nil {
+		return err
+	}
+	if quickBuyCount > 0 {
+		return fmt.Errorf("%w: %w: %d quick buy step references still point to this category", ErrProductCategoryInUse, ErrProductCategoryInQuickBuy, quickBuyCount)
+	}
+	if err := s.repo.Delete(id); err != nil {
+		return err
+	}
+	s.purgeHTMLCache("product category delete")
+	return nil
+}
+
+func (s *ProductCategoryService) invalidateCategoryProducts(categoryIDs []uint, reason string) {
+	if s == nil || s.repo == nil {
+		return
+	}
+	productIDs, err := s.repo.ListProductIDs(categoryIDs)
+	if err == nil && s.productCacheInvalidator != nil {
+		s.productCacheInvalidator.InvalidateProductCacheByIDs(productIDs)
+	}
+	s.purgeHTMLCache(reason)
+}
+
+func (s *ProductCategoryService) purgeHTMLCache(reason string) {
+	if s != nil && s.htmlCache != nil {
+		s.htmlCache.PurgeAllAsync(reason)
+	}
 }
 
 func isSystemProductCategorySlug(slug string) bool {

@@ -155,7 +155,7 @@ export interface TrackingShipment {
 
 export interface OrderConfirmation {
   open: boolean
-  type: '' | 'delete' | 'batch-status'
+  type: '' | 'hide-unpaid-terminal' | 'batch-status'
   target: OrderRecord | OrderRecord[] | null
   status: string
   title: string

@@ -88,7 +88,7 @@ test('session hints restore profile and keep account data lazy', async ({ page, 
 
   await context.addCookies([
     {
-      name: 'csrf_token',
+      name: 'storefront_csrf_token',
       value: 'session-hint',
       url: storefrontUrl,
     },

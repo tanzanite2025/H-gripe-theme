@@ -2,7 +2,7 @@ import { deviceFingerprintHeaderName, resolveDeviceFingerprint } from '@/utils/d
 
 const API_SETTINGS_GROUP = 'api'
 const API_SETTINGS_LOCALE = 'en'
-const CSRF_COOKIE_NAME = 'csrf_token'
+const CSRF_COOKIE_NAME = 'admin_csrf_token'
 const CSRF_HEADER_NAME = 'X-CSRF-Token'
 const DEFAULT_SAVE_TIMEOUT_MS = 12000
 

@@ -1,6 +1,7 @@
 package realtime
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -10,7 +11,9 @@ import (
 
 	"commerce-platform/internal/service"
 
+	"github.com/alicebob/miniredis/v2"
 	"github.com/gorilla/websocket"
+	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -180,6 +183,49 @@ func TestCustomerServiceWebSocketReleasesConnectionSlotAfterDisconnect(t *testin
 	require.Eventually(t, func() bool {
 		return customerServiceWebSocketConnections.Load() == 0
 	}, 5*time.Second, 10*time.Millisecond)
+}
+
+func TestCustomerServiceWebSocketLimiterEnforcesSharedIPLeaseLimit(t *testing.T) {
+	server, err := miniredis.Run()
+	require.NoError(t, err)
+	t.Cleanup(server.Close)
+
+	client := redis.NewClient(&redis.Options{Addr: server.Addr()})
+	t.Cleanup(func() { _ = client.Close() })
+	limiter := NewCustomerServiceWebSocketLimiter(client, 2, time.Minute)
+
+	first, err := limiter.Acquire(context.Background(), "203.0.113.9")
+	require.NoError(t, err)
+	second, err := limiter.Acquire(context.Background(), "203.0.113.9")
+	require.NoError(t, err)
+	_, err = limiter.Acquire(context.Background(), "203.0.113.9")
+	require.ErrorIs(t, err, errCustomerServiceWebSocketIPLimit)
+
+	otherIP, err := limiter.Acquire(context.Background(), "203.0.113.10")
+	require.NoError(t, err)
+	require.NoError(t, first.Release(context.Background()))
+	third, err := limiter.Acquire(context.Background(), "203.0.113.9")
+	require.NoError(t, err)
+
+	require.NoError(t, second.Release(context.Background()))
+	require.NoError(t, otherIP.Release(context.Background()))
+	require.NoError(t, third.Release(context.Background()))
+}
+
+func TestCustomerServiceWebSocketCapacityRejectionCancelsSubscription(t *testing.T) {
+	require.Equal(t, int64(0), customerServiceWebSocketConnections.Load())
+	customerServiceWebSocketConnections.Store(customerServiceWebSocketMaxConnections)
+	t.Cleanup(func() { customerServiceWebSocketConnections.Store(0) })
+
+	hub := service.NewCustomerServiceEventHub()
+	subscription := hub.SubscribeConversation(123)
+	recorder := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodGet, "http://example.test/customer-service/ws", nil)
+	ServeCustomerServiceWebSocket(recorder, request, CustomerServiceWebSocketOptions{Subscription: subscription})
+
+	assert.Equal(t, http.StatusServiceUnavailable, recorder.Code)
+	_, open := <-subscription.Events()
+	assert.False(t, open, "capacity rejection must release the pre-upgrade subscription")
 }
 
 func newCustomerServiceWebSocketTestServer(t *testing.T, hub *service.CustomerServiceEventHub, options CustomerServiceWebSocketOptions) *httptest.Server {

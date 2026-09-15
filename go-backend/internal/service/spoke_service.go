@@ -18,7 +18,7 @@ var (
 	ErrSpokeHubGeometryMissing  = errors.New("hub geometry not available for requested position")
 	ErrInvalidSpokeCalculation  = errors.New("invalid spoke calculation input")
 	ErrInvalidSpokeCatalog      = errors.New("invalid spoke catalog")
-	spokeCalculationFormulaName = "v1.1-go-backend"
+	spokeCalculationFormulaName = "v1.2-go-backend-hidden-nipple-safe"
 	spokeCatalogIDPattern       = regexp.MustCompile(`^[a-z0-9][a-z0-9_-]{0,139}$`)
 )
 
@@ -27,15 +27,25 @@ type SpokeService struct {
 }
 
 type SpokeCalculationInput struct {
-	RimID         string
-	HubID         string
-	WheelPosition string
-	SpokeCount    int
-	Crossing      int
+	RimID          string
+	HubID          string
+	WheelPosition  string
+	SpokeCount     int
+	Crossing       int
+	NippleType     string
+	NippleLengthMM *float64
 	// RimOffsetMM is positive when the rim center moves toward the right
 	// flange. The value changes both the spoke length geometry and bracing
 	// angles used for the tension-ratio estimate.
 	RimOffsetMM float64
+	// Optional user-entered geometry. Catalog geometry is preferred whenever
+	// RimID/HubID resolve to an authoritative record.
+	ERDMM            *float64
+	LeftFlangeMM     *float64
+	RightFlangeMM    *float64
+	LeftFlangePCDMM  *float64
+	RightFlangePCDMM *float64
+	UserID           *uint
 }
 
 type SpokeCalculationResult struct {
@@ -46,8 +56,10 @@ type SpokeCalculationResult struct {
 }
 
 type SpokeCalculationDebug struct {
-	Rim            *domainspoke.RimModel    `json:"rim"`
-	Hub            *domainspoke.HubGeometry `json:"hub"`
+	// Geometry is intentionally internal-only; exposing it lets clients
+	// reconstruct the proprietary catalog from a single calculation response.
+	Rim            *domainspoke.RimModel    `json:"-"`
+	Hub            *domainspoke.HubGeometry `json:"-"`
 	RimOffsetMM    float64                  `json:"rimOffsetMm"`
 	FormulaVersion string                   `json:"formulaVersion"`
 }
@@ -77,6 +89,33 @@ func (s *SpokeService) GetExport() (domainspoke.ExportResponse, error) {
 	}
 	if !found {
 		return domainspoke.DefaultExport(), nil
+	}
+	return export, nil
+}
+
+// GetPublicExport intentionally omits all proprietary geometry and verified
+// build lengths. The browser only needs stable identifiers and labels; the
+// calculation engine resolves dimensions server-side.
+func (s *SpokeService) GetPublicExport() (domainspoke.ExportResponse, error) {
+	export, err := s.GetExport()
+	if err != nil {
+		return domainspoke.ExportResponse{}, err
+	}
+	for bi := range export.Rims {
+		for mi := range export.Rims[bi].Items {
+			export.Rims[bi].Items[mi].ERD = nil
+			export.Rims[bi].Items[mi].Weight = nil
+		}
+	}
+	for bi := range export.Hubs {
+		for mi := range export.Hubs[bi].Items {
+			export.Hubs[bi].Items[mi].Front = nil
+			export.Hubs[bi].Items[mi].Rear = nil
+		}
+	}
+	for pi := range export.Presets {
+		export.Presets[pi].NippleLength = nil
+		export.Presets[pi].ActualLengths = nil
 	}
 	return export, nil
 }
@@ -120,6 +159,9 @@ func (s *SpokeService) ListUserHistory(userID uint, search string, page, pageSiz
 }
 
 func (s *SpokeService) Calculate(input SpokeCalculationInput) (*SpokeCalculationResult, error) {
+	if !isFinite(input.RimOffsetMM) || math.Abs(input.RimOffsetMM) > 20 {
+		return nil, ErrInvalidSpokeCalculation
+	}
 	options := domainspoke.DefaultOptions()
 	if _, exists := intOptionSet(options.SpokeCounts)[input.SpokeCount]; !exists {
 		return nil, ErrInvalidSpokeCalculation
@@ -127,7 +169,17 @@ func (s *SpokeService) Calculate(input SpokeCalculationInput) (*SpokeCalculation
 	if _, exists := intOptionSet(options.Crossings)[input.Crossing]; !exists {
 		return nil, ErrInvalidSpokeCalculation
 	}
-	if math.Abs(input.RimOffsetMM) > 20 {
+	if input.WheelPosition != "auto" && input.WheelPosition != "front" && input.WheelPosition != "rear" {
+		return nil, ErrInvalidSpokeCalculation
+	}
+	input.NippleType = strings.ToLower(strings.TrimSpace(input.NippleType))
+	if input.NippleType == "" {
+		input.NippleType = "standard"
+	}
+	if input.NippleType != "" && input.NippleType != "standard" && input.NippleType != "hidden" {
+		return nil, ErrInvalidSpokeCalculation
+	}
+	if input.NippleLengthMM != nil && (!isFinite(*input.NippleLengthMM) || *input.NippleLengthMM < 0 || *input.NippleLengthMM > 40) {
 		return nil, ErrInvalidSpokeCalculation
 	}
 
@@ -137,19 +189,35 @@ func (s *SpokeService) Calculate(input SpokeCalculationInput) (*SpokeCalculation
 	}
 	rim := findSpokeRim(export, input.RimID)
 	hub := findSpokeHub(export, input.HubID)
-	if rim == nil || hub == nil {
+	if (rim == nil || hub == nil) && input.ERDMM == nil {
 		return nil, ErrSpokeGeometryNotFound
 	}
-	if rim.ERD == nil {
+	if rim != nil && rim.ERD == nil && input.ERDMM == nil {
 		return nil, ErrSpokeRimGeometryMissing
 	}
 
-	hubGeo := hub.Rear
-	if input.WheelPosition == "front" {
-		hubGeo = hub.Front
+	hubGeo := (*domainspoke.HubGeometry)(nil)
+	if hub != nil {
+		hubGeo = hub.Rear
+		if input.WheelPosition == "front" {
+			hubGeo = hub.Front
+		}
 	}
 	if !isCompleteHubGeometry(hubGeo) {
-		return nil, ErrSpokeHubGeometryMissing
+		if input.LeftFlangeMM == nil || input.RightFlangeMM == nil || input.LeftFlangePCDMM == nil || input.RightFlangePCDMM == nil {
+			return nil, ErrSpokeHubGeometryMissing
+		}
+		hubGeo = &domainspoke.HubGeometry{LeftFlange: input.LeftFlangeMM, RightFlange: input.RightFlangeMM, LeftFlangePCD: input.LeftFlangePCDMM, RightFlangePCD: input.RightFlangePCDMM}
+	}
+	erd := input.ERDMM
+	if rim != nil && rim.ERD != nil {
+		erd = rim.ERD
+	}
+	if erd == nil || !isFinite(*erd) || *erd < 250 || *erd > 800 {
+		return nil, ErrInvalidSpokeCalculation
+	}
+	if !finiteGeometry(hubGeo) {
+		return nil, ErrInvalidSpokeCalculation
 	}
 
 	leftFlange := effectiveSpokeFlangeDistance(*hubGeo.LeftFlange, input.RimOffsetMM, "left")
@@ -159,16 +227,41 @@ func (s *SpokeService) Calculate(input SpokeCalculationInput) (*SpokeCalculation
 	}
 	leftFlangeRadius := *hubGeo.LeftFlangePCD / 2.0
 	rightFlangeRadius := *hubGeo.RightFlangePCD / 2.0
-	radius := *rim.ERD / 2.0
+	radius := *erd / 2.0
 	angleRad := (720.0 * float64(input.Crossing) / float64(input.SpokeCount)) * math.Pi / 180.0
 
-	left := math.Sqrt(radius*radius + leftFlangeRadius*leftFlangeRadius + leftFlange*leftFlange - 2*radius*leftFlangeRadius*math.Cos(angleRad))
-	right := math.Sqrt(radius*radius + rightFlangeRadius*rightFlangeRadius + rightFlange*rightFlange - 2*radius*rightFlangeRadius*math.Cos(angleRad))
-	tensionRatio := computeSpokeTensionRatio(leftFlange, rightFlange, left, right)
+	leftSquared := radius*radius + leftFlangeRadius*leftFlangeRadius + leftFlange*leftFlange - 2*radius*leftFlangeRadius*math.Cos(angleRad)
+	rightSquared := radius*radius + rightFlangeRadius*rightFlangeRadius + rightFlange*rightFlange - 2*radius*rightFlangeRadius*math.Cos(angleRad)
+	if !isFinite(leftSquared) || !isFinite(rightSquared) || leftSquared < 0 || rightSquared < 0 {
+		return nil, fmt.Errorf("%w: spoke geometry produced an invalid triangle", ErrInvalidSpokeCalculation)
+	}
+	left := math.Sqrt(leftSquared)
+	right := math.Sqrt(rightSquared)
+	if !isFinite(left) || !isFinite(right) || left <= 0 || right <= 0 {
+		return nil, fmt.Errorf("%w: spoke length calculation diverged", ErrInvalidSpokeCalculation)
+	}
+	if input.NippleType == "hidden" && input.NippleLengthMM != nil {
+		correction := *input.NippleLengthMM - 3
+		if correction < 0 {
+			return nil, fmt.Errorf("%w: hidden nipple length must be at least 3mm", ErrInvalidSpokeCalculation)
+		}
+		left += correction
+		right += correction
+	}
+	tensionRatio, err := computeSpokeTensionRatioSafe(leftFlange, rightFlange, left, right)
+	if err != nil {
+		return nil, err
+	}
+	if s.spokeRepo != nil {
+		history := buildSpokeHistory(input, export, rim, hub, hubGeo, *erd, left, right)
+		if err := s.spokeRepo.CreateHistory(history); err != nil {
+			return nil, fmt.Errorf("persist spoke calculation history: %w", err)
+		}
+	}
 
 	return &SpokeCalculationResult{
-		LeftLengthMM:  math.Round(left*10) / 10,
-		RightLengthMM: math.Round(right*10) / 10,
+		LeftLengthMM:  roundSpokeLength(left),
+		RightLengthMM: roundSpokeLength(right),
 		TensionRatio:  tensionRatio,
 		Debug: SpokeCalculationDebug{
 			Rim:            rim,
@@ -186,15 +279,25 @@ func effectiveSpokeFlangeDistance(flangeDistance, rimOffset float64, side string
 	return flangeDistance - rimOffset
 }
 
+// computeSpokeTensionRatio is retained for package-level compatibility. The
+// service path uses the error-returning variant so invalid values fail loudly.
 func computeSpokeTensionRatio(leftBracingDistance, rightBracingDistance, leftLength, rightLength float64) *SpokeTensionRatio {
+	result, _ := computeSpokeTensionRatioSafe(leftBracingDistance, rightBracingDistance, leftLength, rightLength)
+	return result
+}
+
+func computeSpokeTensionRatioSafe(leftBracingDistance, rightBracingDistance, leftLength, rightLength float64) (*SpokeTensionRatio, error) {
 	if leftBracingDistance <= 0 || rightBracingDistance <= 0 || leftLength <= 0 || rightLength <= 0 {
-		return nil
+		return nil, fmt.Errorf("%w: bracing geometry must be positive", ErrInvalidSpokeCalculation)
+	}
+	if !isFinite(leftBracingDistance) || !isFinite(rightBracingDistance) || !isFinite(leftLength) || !isFinite(rightLength) {
+		return nil, fmt.Errorf("%w: tension ratio calculation received a non-finite value", ErrInvalidSpokeCalculation)
 	}
 
 	leftSin := math.Min(1, leftBracingDistance/leftLength)
 	rightSin := math.Min(1, rightBracingDistance/rightLength)
-	if leftSin <= 0 || rightSin <= 0 {
-		return nil
+	if leftSin <= 0 || rightSin <= 0 || !isFinite(leftSin) || !isFinite(rightSin) {
+		return nil, fmt.Errorf("%w: tension ratio calculation diverged", ErrInvalidSpokeCalculation)
 	}
 
 	leftToRight := rightSin / leftSin
@@ -209,7 +312,7 @@ func computeSpokeTensionRatio(leftBracingDistance, rightBracingDistance, leftLen
 		lowerSide = "right"
 	}
 
-	return &SpokeTensionRatio{
+	result := &SpokeTensionRatio{
 		LeftToRight:          roundSpokeRatio(leftToRight),
 		RightToLeft:          roundSpokeRatio(rightToLeft),
 		LowerToHigher:        roundSpokeRatio(lowerToHigher),
@@ -217,6 +320,75 @@ func computeSpokeTensionRatio(leftBracingDistance, rightBracingDistance, leftLen
 		LeftBracingAngleDeg:  roundSpokeRatio(math.Asin(leftSin) * 180 / math.Pi),
 		RightBracingAngleDeg: roundSpokeRatio(math.Asin(rightSin) * 180 / math.Pi),
 	}
+	if !isFinite(result.LeftToRight) || !isFinite(result.RightToLeft) || !isFinite(result.LowerToHigher) {
+		return nil, fmt.Errorf("%w: tension ratio calculation diverged", ErrInvalidSpokeCalculation)
+	}
+	return result, nil
+}
+
+func roundSpokeLength(value float64) float64 { return math.Round(value*100) / 100 }
+
+func isFinite(value float64) bool { return !math.IsNaN(value) && !math.IsInf(value, 0) }
+
+func finiteGeometry(geometry *domainspoke.HubGeometry) bool {
+	if geometry == nil || geometry.LeftFlange == nil || geometry.RightFlange == nil || geometry.LeftFlangePCD == nil || geometry.RightFlangePCD == nil {
+		return false
+	}
+	return isFinite(*geometry.LeftFlange) && isFinite(*geometry.RightFlange) &&
+		isFinite(*geometry.LeftFlangePCD) && isFinite(*geometry.RightFlangePCD) &&
+		*geometry.LeftFlange > 0 && *geometry.LeftFlange <= 100 &&
+		*geometry.RightFlange > 0 && *geometry.RightFlange <= 100 &&
+		*geometry.LeftFlangePCD >= 10 && *geometry.LeftFlangePCD <= 150 &&
+		*geometry.RightFlangePCD >= 10 && *geometry.RightFlangePCD <= 150
+}
+
+func buildSpokeHistory(input SpokeCalculationInput, export domainspoke.ExportResponse, rim *domainspoke.RimModel, hub *domainspoke.HubModel, geometry *domainspoke.HubGeometry, erd, left, right float64) *domainspoke.History {
+	history := &domainspoke.History{UserID: input.UserID, ERDMM: &erd, LeftFlangePCDMM: geometry.LeftFlangePCD, RightFlangePCDMM: geometry.RightFlangePCD, LeftFlangeToCenterMM: geometry.LeftFlange, RightFlangeToCenterMM: geometry.RightFlange, SpokeCount: &input.SpokeCount, LeftLengthMM: func() *float64 { v := roundSpokeLength(left); return &v }(), RightLengthMM: func() *float64 { v := roundSpokeLength(right); return &v }()}
+	source := "calculator"
+	history.SourceType = &source
+	position := input.WheelPosition
+	history.WheelType = &position
+	nipple := input.NippleType
+	if nipple != "" {
+		history.NippleType = &nipple
+	}
+	crossing := fmt.Sprintf("%d-cross", input.Crossing)
+	history.LacingPattern = &crossing
+	if rim != nil {
+		history.RimModel = &rim.Name
+	}
+	if hub != nil {
+		history.HubModel = &hub.Name
+	}
+	if brand := spokeRimBrandName(export, input.RimID); brand != "" {
+		history.RimBrand = &brand
+	}
+	if brand := spokeHubBrandName(export, input.HubID); brand != "" {
+		history.HubBrand = &brand
+	}
+	return history
+}
+
+func spokeRimBrandName(export domainspoke.ExportResponse, modelID string) string {
+	for _, brand := range export.Rims {
+		for _, model := range brand.Items {
+			if model.ID == modelID {
+				return brand.Name
+			}
+		}
+	}
+	return ""
+}
+
+func spokeHubBrandName(export domainspoke.ExportResponse, modelID string) string {
+	for _, brand := range export.Hubs {
+		for _, model := range brand.Items {
+			if model.ID == modelID {
+				return brand.Name
+			}
+		}
+	}
+	return ""
 }
 
 func roundSpokeRatio(value float64) float64 {

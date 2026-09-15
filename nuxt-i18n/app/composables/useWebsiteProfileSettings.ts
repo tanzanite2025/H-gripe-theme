@@ -21,7 +21,7 @@ export interface WebsiteProfileSettings {
   profileContext: string
   statementEyebrow: string
   statementTitle: string
-  statementParagraphs: string[]
+  statementBody: string
   factoryImageUrl: string
   factoryImageAlt: string
   factoryImageCaption: string
@@ -57,10 +57,7 @@ export const defaultWebsiteProfileSettings = (locale: unknown): WebsiteProfileSe
       profileContext: '我们工厂的一员',
       statementEyebrow: '为什么有这一页',
       statementTitle: '让网站背后的人被看见',
-      statementParagraphs: [
-        '这个域名属于我，但它表达的并不是一个脱离工厂的个人身份。相反，我希望用更接近个人的方式，说明我如何理解我们的工厂、产品和长期方向。',
-        '这里会记录网站背后的判断、正在推进的事情，以及我认为应该被准确表达的内容。它不是客服窗口，也不是单独成立的另一家公司，而是我们工厂工作中的一个管理和表达入口。',
-      ],
+      statementBody: '<p>这个域名属于我，但它表达的并不是一个脱离工厂的个人身份。相反，我希望用更接近个人的方式，说明我如何理解我们的工厂、产品和长期方向。</p><p>这里会记录网站背后的判断、正在推进的事情，以及我认为应该被准确表达的内容。它不是客服窗口，也不是单独成立的另一家公司，而是我们工厂工作中的一个管理和表达入口。</p>',
       factoryImageUrl: defaultFactoryImageUrl,
       factoryImageAlt: '我们工厂的碳纤维手工铺层工序',
       factoryImageCaption: '我负责表达的网站，来自我们真实的制造工作。',
@@ -86,10 +83,7 @@ export const defaultWebsiteProfileSettings = (locale: unknown): WebsiteProfileSe
     profileContext: 'Part of our factory',
     statementEyebrow: 'WHY THIS PAGE EXISTS',
     statementTitle: 'Let the person behind the site be visible',
-    statementParagraphs: [
-      'This domain belongs to me, but it does not describe a personal identity outside the factory. It gives me a more direct way to explain how I see our factory, our products, and the direction we are building toward.',
-      'This is where I can record the decisions behind the website, the work in progress, and the things I believe should be represented accurately. It is not a support desk or a separate company. It is one management and expression point within our factory work.',
-    ],
+    statementBody: '<p>This domain belongs to me, but it does not describe a personal identity outside the factory. It gives me a more direct way to explain how I see our factory, our products, and the direction we are building toward.</p><p>This is where I can record the decisions behind the website, the work in progress, and the things I believe should be represented accurately. It is not a support desk or a separate company. It is one management and expression point within our factory work.</p>',
     factoryImageUrl: defaultFactoryImageUrl,
     factoryImageAlt: 'Carbon fiber hand layup work inside our factory',
     factoryImageCaption: 'The site I manage is grounded in our real manufacturing work.',
@@ -107,10 +101,10 @@ const normalizeWebsiteProfileSettings = (
   mediaContext: ReturnType<typeof createStorefrontMediaContext>,
 ): WebsiteProfileSettings => {
   const fallback = defaultWebsiteProfileSettings(locale)
-  const statementParagraphs = [
-    asString(raw?.statement_paragraph_1, fallback.statementParagraphs[0]),
-    asString(raw?.statement_paragraph_2, fallback.statementParagraphs[1]),
-  ]
+  const legacyStatementBody = [
+    asString(raw?.statement_paragraph_1),
+    asString(raw?.statement_paragraph_2),
+  ].filter(Boolean).map((value) => `<p>${value}</p>`).join('')
 
   return {
     locale: asString(raw?.locale, fallback.locale),
@@ -129,7 +123,7 @@ const normalizeWebsiteProfileSettings = (
     profileContext: asString(raw?.profile_context, fallback.profileContext),
     statementEyebrow: asString(raw?.statement_eyebrow, fallback.statementEyebrow),
     statementTitle: asString(raw?.statement_title, fallback.statementTitle),
-    statementParagraphs,
+    statementBody: asString(raw?.statement_body, legacyStatementBody || fallback.statementBody),
     factoryImageUrl: normalizeStorefrontMediaUrl(
       asString(raw?.factory_image_url, fallback.factoryImageUrl),
       mediaContext,

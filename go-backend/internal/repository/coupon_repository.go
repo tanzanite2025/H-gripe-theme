@@ -2,6 +2,7 @@ package repository
 
 import (
 	"commerce-platform/internal/domain/coupon"
+	domainmoney "commerce-platform/internal/domain/money"
 	"errors"
 	"time"
 
@@ -93,15 +94,46 @@ func (r *CouponRepository) FindCouponByCodeForUpdate(code string) (*coupon.Coupo
 
 // FindAllCoupons 查找所有优惠券
 func (r *CouponRepository) FindAllCoupons(page, pageSize int) ([]coupon.Coupon, int64, error) {
+	return r.findAllCoupons(page, pageSize, "")
+}
+
+// FindAllCouponsByStatus applies status predicates in SQL before counting and
+// paginating. Filtering a paginated slice in memory under-reports totals and
+// makes later pages inaccessible in the admin UI.
+func (r *CouponRepository) FindAllCouponsByStatus(page, pageSize int, status string) ([]coupon.Coupon, int64, error) {
+	return r.findAllCoupons(page, pageSize, status)
+}
+
+func (r *CouponRepository) findAllCoupons(page, pageSize int, status string) ([]coupon.Coupon, int64, error) {
 	var coupons []coupon.Coupon
 	var total int64
 
-	if err := r.db.Model(&coupon.Coupon{}).Count(&total).Error; err != nil {
+	query := r.db.Model(&coupon.Coupon{})
+	now := time.Now()
+	switch status {
+	case "", "all":
+	case "active":
+		query = query.Where("enabled = ? AND start_date < ? AND end_date > ?", true, now, now)
+	case "expired":
+		query = query.Where("end_date < ?", now)
+	case "disabled":
+		query = query.Where("enabled = ?", false)
+	default:
+		return nil, 0, errors.New("unsupported coupon status filter " + status)
+	}
+
+	if err := query.Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
 
+	if page < 1 {
+		page = 1
+	}
+	if pageSize <= 0 {
+		pageSize = 10
+	}
 	offset := (page - 1) * pageSize
-	err := r.db.Order("created_at DESC").Offset(offset).Limit(pageSize).Find(&coupons).Error
+	err := query.Order("created_at DESC").Offset(offset).Limit(pageSize).Find(&coupons).Error
 
 	return coupons, total, err
 }
@@ -112,6 +144,7 @@ func (r *CouponRepository) FindActiveCoupons() ([]coupon.Coupon, error) {
 	now := time.Now()
 
 	err := r.db.Where("enabled = ? AND start_date <= ? AND end_date >= ?", true, now, now).
+		Where("referral_recipient_user_id IS NULL").
 		Where("used_count < usage_limit OR usage_limit = 0").
 		Find(&coupons).Error
 
@@ -213,6 +246,15 @@ func (r *CouponRepository) CountUserCouponUsage(userID, couponID uint) (int64, e
 	return count, err
 }
 
+// CountEmailCouponUsage 统计邮箱使用某优惠券的次数
+func (r *CouponRepository) CountEmailCouponUsage(email string, couponID uint) (int64, error) {
+	var count int64
+	err := r.db.Model(&coupon.CouponUsage{}).
+		Where("email = ? AND coupon_id = ? AND status = ?", coupon.NormalizeEmail(email), couponID, coupon.CouponUsageStatusApplied).
+		Count(&count).Error
+	return count, err
+}
+
 // GiftCard 相关方法
 
 // CreateGiftCard 创建礼品卡
@@ -224,6 +266,15 @@ func (r *CouponRepository) CreateGiftCard(g *coupon.GiftCard) error {
 func (r *CouponRepository) FindGiftCardByID(id uint) (*coupon.GiftCard, error) {
 	var g coupon.GiftCard
 	err := r.db.First(&g, id).Error
+	if err != nil {
+		return nil, err
+	}
+	return &g, nil
+}
+
+func (r *CouponRepository) FindGiftCardByIDForUpdate(id uint) (*coupon.GiftCard, error) {
+	var g coupon.GiftCard
+	err := r.db.Clauses(clause.Locking{Strength: "UPDATE"}).First(&g, id).Error
 	if err != nil {
 		return nil, err
 	}
@@ -293,19 +344,22 @@ func (r *CouponRepository) UpdateGiftCard(g *coupon.GiftCard) error {
 	return r.db.Save(g).Error
 }
 
-// UpdateGiftCardBalance 更新礼品卡余额
-func (r *CouponRepository) UpdateGiftCardBalance(id uint, amount float64) error {
-	amountCents := coupon.AmountToCents(amount)
-	query := r.db.Model(&coupon.GiftCard{}).Where("id = ?", id)
-	if amountCents < 0 {
-		query = query.Where("balance_cents >= ?", -amountCents)
+// UpdateGiftCardBalance applies a minor-unit delta after validating its
+// currency against the ledger row.
+func (r *CouponRepository) UpdateGiftCardBalance(id uint, amount domainmoney.Money) error {
+	if err := amount.Validate(); err != nil {
+		return err
 	}
-
-	tx := query.UpdateColumn("balance_cents", gorm.Expr("balance_cents + ?", amountCents))
+	amountMinor := amount.AmountMinor()
+	query := r.db.Model(&coupon.GiftCard{}).Where("id = ? AND currency = ?", id, amount.Currency().String())
+	if amountMinor < 0 {
+		query = query.Where("balance_cents >= ?", -amountMinor)
+	}
+	tx := query.UpdateColumn("balance_cents", gorm.Expr("balance_cents + ?", amountMinor))
 	if tx.Error != nil {
 		return tx.Error
 	}
-	if amountCents < 0 && tx.RowsAffected == 0 {
+	if amountMinor < 0 && tx.RowsAffected == 0 {
 		return ErrGiftCardInsufficientBalance
 	}
 	return nil
@@ -328,6 +382,6 @@ func (r *CouponRepository) FindGiftCardTransactionsByCardID(cardID uint) ([]coup
 // FindGiftCardTransactionByOrderID 根据订单ID查找交易
 func (r *CouponRepository) FindGiftCardTransactionByOrderID(orderID uint) ([]coupon.GiftCardTransaction, error) {
 	var transactions []coupon.GiftCardTransaction
-	err := r.db.Where("order_id = ?", orderID).Find(&transactions).Error
+	err := r.db.Where("order_id = ?", orderID).Order("id ASC").Find(&transactions).Error
 	return transactions, err
 }

@@ -66,7 +66,7 @@ func TestDisputeEvidenceUsesOrderPolicySnapshotAndRefundFacts(t *testing.T) {
 	require.Equal(t, DisputeEvidenceStatusReady, checklistItem(paypalPackage.EvidenceChecklist, "refund_activity").Status)
 }
 
-func TestPayPalSignatureRequirementPrefersOrderSnapshot(t *testing.T) {
+func TestPayPalSignatureRequirementUsesOnlyOrderShippingPolicy(t *testing.T) {
 	dispute := &paymentdomain.PayPalDispute{
 		Reason:   "INR",
 		Amount:   1000,
@@ -90,6 +90,21 @@ func TestPayPalSignatureRequirementPrefersOrderSnapshot(t *testing.T) {
 
 	orderRecord.SignatureRequired = true
 	require.True(t, paypalDisputeRequiresSignaturePOD(dispute, orderRecord))
+}
+
+func TestPayPalSignatureRequirementDoesNotUseDisputeAmountFallback(t *testing.T) {
+	dispute := &paymentdomain.PayPalDispute{
+		Reason:   "INR",
+		Amount:   1000,
+		Currency: "USD",
+	}
+	orderRecord := &order.Order{
+		TotalAmount:       700,
+		Currency:          "USD",
+		SignatureRequired: false,
+	}
+
+	require.False(t, paypalDisputeRequiresSignaturePOD(dispute, orderRecord))
 }
 
 func checklistItem(checklist DisputeEvidenceChecklist, key string) DisputeEvidenceChecklistItem {

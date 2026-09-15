@@ -162,7 +162,7 @@ const separatedColumnSectionIds = new Set<PrimaryMegaNavSection['id']>([
   'guides',
 ])
 
-const { t, locales } = useI18n() as any
+const { t, te, locales } = useI18n() as any
 const localePath = useLocalePath()
 
 const localeCodes = computed(() => {
@@ -272,7 +272,7 @@ const menuColumns = computed<MegaMenuColumn[]>(() => {
 })
 
 const cardLabel = (card: PrimaryMegaNavCard) => {
-  return t(card.labelKey, card.labelFallback) as string
+  return te(card.labelKey) ? t(card.labelKey) as string : card.labelFallback
 }
 
 const cardTitle = (card: PrimaryMegaNavCard) => {

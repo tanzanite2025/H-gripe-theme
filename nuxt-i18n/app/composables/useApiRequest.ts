@@ -30,7 +30,7 @@ export class ApiRequestError extends Error {
 }
 
 const defaultCredentials: RequestCredentials = 'include'
-const csrfCookieName = 'csrf_token'
+const csrfCookieName = 'storefront_csrf_token'
 const csrfHeaderName = 'X-CSRF-Token'
 
 const isUnsafeMethod = (method?: string) => !['GET', 'HEAD', 'OPTIONS', 'TRACE'].includes((method || 'GET').toUpperCase())

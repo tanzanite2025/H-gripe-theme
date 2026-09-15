@@ -320,6 +320,7 @@
                 :currency="form.currency"
                 :spec-definitions="variantSpecDefinitions"
                 :option-values="form.variant_option_values"
+                :custom-option-definitions="customOptionDefinitions"
                 :default-index="defaultVariantIndex"
                 :shipping-templates="shippingTemplates"
                 class="min-w-0 p-3"
@@ -333,17 +334,17 @@
           </AdminFormSection>
 
           <ProductProfitabilitySection
-            v-if="procurementVisible"
+            v-if="supplierCostVisible"
             :variants="form.variants"
-            :drafts="procurementDrafts"
+            :drafts="supplierCostDrafts"
             :currency="form.currency"
-            :can-edit="procurementCanEdit"
-            :loading="procurementLoading"
-            :saving="procurementSaving"
-            :pending="procurementPending"
-            :error="procurementError"
-            :last-saved-at="procurementLastSavedAt"
-            @retry="emit('retry-procurement')"
+            :can-edit="supplierCostCanEdit"
+            :loading="supplierCostLoading"
+            :saving="supplierCostSaving"
+            :pending="supplierCostPending"
+            :error="supplierCostError"
+            :last-saved-at="supplierCostLastSavedAt"
+            @retry="emit('retry-supplier-cost')"
           />
 
           <ProductMediaSection
@@ -423,9 +424,9 @@
 
         <DialogFooter class="mx-0 mb-0 shrink-0 rounded-b-[32px] border-t bg-background/95 px-5 py-4 backdrop-blur">
           <Button type="button" variant="outline" @click="emit('update:open', false)">取消</Button>
-          <Button type="submit" :disabled="submitting || procurementPending">
+          <Button type="submit" :disabled="submitting || supplierCostPending">
             <LoaderCircle v-if="submitting" class="size-4 animate-spin" />
-            {{ procurementPending ? '请先处理成本资料' : submitting ? '保存中' : '保存商品' }}
+            {{ supplierCostPending ? '请先处理成本资料' : submitting ? '保存中' : '保存商品' }}
           </Button>
         </DialogFooter>
       </form>
@@ -445,7 +446,7 @@ import ProductDescriptionEditor from '@/components/admin/product/ProductDescript
 import ProductMediaSection from '@/components/admin/product/ProductMediaSection.vue'
 import ProductProfitabilitySection from '@/components/admin/product/ProductProfitabilitySection.vue'
 import ProductVariantEditor from '@/components/admin/product/ProductVariantEditor.vue'
-import type { ProcurementProfitDraft } from '@/composables/product/useProcurementProfitDraft'
+import type { ProductSupplierCostProfitDraft } from '@/composables/product/useProductSupplierCostProfitDraft'
 import type { ProductFormRecord } from '@/modules/product/productEditorTypes'
 import { Button } from '@/components/ui/button'
 import {
@@ -477,9 +478,8 @@ interface ProductSpecDefinition {
   field_type: string
   presentation?: string
   is_required?: boolean
-  is_variant_option?: boolean
   unit?: string
-  options?: string
+  option_items?: Array<{ value_key?: string; default_label?: string }>
 }
 
 interface ProductSpecTemplateRecord {
@@ -557,6 +557,7 @@ defineProps({
   selectedProductSpecTemplate: { type: Object as PropType<ProductSpecTemplateRecord | null>, default: null },
   selectedSpecDefinitions: { type: Array as PropType<ProductSpecDefinition[]>, default: () => [] },
   variantSpecDefinitions: { type: Array as PropType<ProductSpecDefinition[]>, default: () => [] },
+  customOptionDefinitions: { type: Array as PropType<ProductSpecDefinition[]>, default: () => [] },
   defaultVariantIndex: { type: Number, default: 0 },
   productSpecTemplateSelectValue: { type: String, default: '__none__' },
   productCategorySelectValue: { type: String, default: '__none__' },
@@ -571,14 +572,14 @@ defineProps({
   customsClassificationSelectValue: { type: String, default: '__none__' },
   templateScopedValuesTouched: { type: Boolean, default: false },
   uploadingMedia: { type: Boolean, default: false },
-  procurementVisible: { type: Boolean, default: false },
-  procurementCanEdit: { type: Boolean, default: false },
-  procurementLoading: { type: Boolean, default: false },
-  procurementSaving: { type: Boolean, default: false },
-  procurementPending: { type: Boolean, default: false },
-  procurementError: { type: String, default: '' },
-  procurementLastSavedAt: { type: String, default: '' },
-  procurementDrafts: { type: Array as PropType<ProcurementProfitDraft[]>, default: () => [] },
+  supplierCostVisible: { type: Boolean, default: false },
+  supplierCostCanEdit: { type: Boolean, default: false },
+  supplierCostLoading: { type: Boolean, default: false },
+  supplierCostSaving: { type: Boolean, default: false },
+  supplierCostPending: { type: Boolean, default: false },
+  supplierCostError: { type: String, default: '' },
+  supplierCostLastSavedAt: { type: String, default: '' },
+  supplierCostDrafts: { type: Array as PropType<ProductSupplierCostProfitDraft[]>, default: () => [] },
   parseSpecOptions: { type: Function as PropType<(spec: ProductSpecDefinition) => ProductFormValue[]>, required: true },
   formatSpecOption: { type: Function as PropType<(option: ProductFormValue) => string>, required: true },
   getSpecLabel: { type: Function as PropType<(spec: ProductSpecDefinition) => string>, required: true },
@@ -607,7 +608,7 @@ const emit = defineEmits([
   'set-primary-media',
   'move-media',
   'remove-media',
-  'retry-procurement',
+  'retry-supplier-cost',
 ])
 </script>
 

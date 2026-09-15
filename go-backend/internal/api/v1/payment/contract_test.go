@@ -32,6 +32,8 @@ func TestTransactionResponseOmitsGatewayResponse(t *testing.T) {
 		ID:              1,
 		OrderID:         2,
 		TransactionID:   "txn_123",
+		AmountMinor:     1234,
+		Currency:        "USD",
 		GatewayResponse: `{"client_secret":"pi_secret"}`,
 	}))
 	if err != nil {
@@ -41,6 +43,9 @@ func TestTransactionResponseOmitsGatewayResponse(t *testing.T) {
 	payload := string(body)
 	if strings.Contains(payload, "gateway_response") || strings.Contains(payload, "pi_secret") {
 		t.Fatalf("transaction response leaked gateway response: %s", payload)
+	}
+	if !strings.Contains(payload, `"amount_minor":1234`) || strings.Contains(payload, `"amount":`) {
+		t.Fatalf("transaction response must expose canonical minor amount only: %s", payload)
 	}
 }
 
@@ -59,5 +64,33 @@ func TestRefundResponseOmitsGatewayResponse(t *testing.T) {
 	payload := string(body)
 	if strings.Contains(payload, "gateway_response") || strings.Contains(payload, "refund_secret") || strings.Contains(payload, "calculation_snapshot") || strings.Contains(payload, "refund_policy") {
 		t.Fatalf("refund response leaked gateway response: %s", payload)
+	}
+}
+
+func TestRefundLineItemResponseUsesMinorUnitsOnly(t *testing.T) {
+	body, err := json.Marshal(refundToResponse(paymentdomain.Refund{
+		Currency: "USD",
+		LineItems: []paymentdomain.RefundLineItem{{
+			Currency:          "USD",
+			UnitPriceMinor:    1234,
+			LineSubtotalMinor: 2468,
+			LineTaxMinor:      200,
+			LineDiscountMinor: 100,
+			LineTotalMinor:    2568,
+			UnitPrice:         999,
+			LineTotalAmount:   999,
+		}},
+	}))
+	if err != nil {
+		t.Fatalf("marshal refund response: %v", err)
+	}
+	payload := string(body)
+	if !strings.Contains(payload, `"unit_price_minor":1234`) || !strings.Contains(payload, `"line_total_minor":2568`) {
+		t.Fatalf("refund line response missing canonical minor fields: %s", payload)
+	}
+	for _, legacy := range []string{"unit_price", "line_subtotal_amount", "line_tax_amount", "line_discount_amount", "line_total_amount"} {
+		if strings.Contains(payload, `"`+legacy+`"`) {
+			t.Fatalf("refund line response exposed legacy field %s: %s", legacy, payload)
+		}
 	}
 }

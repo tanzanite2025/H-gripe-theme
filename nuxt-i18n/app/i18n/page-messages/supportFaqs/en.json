@@ -4,6 +4,8 @@
     "categorizedSupport": "Categorized Support",
     "categoriesAriaLabel": "FAQ categories",
     "categoriesLabel": "FAQ Categories",
+    "pagesAriaLabel": "FAQ pages",
+    "pagesLabel": "FAQ pages",
     "all": "All",
     "pageIntro": "Browse common questions and quick answers about orders, products, and service.",
     "searchPlaceholder": "Search FAQs...",

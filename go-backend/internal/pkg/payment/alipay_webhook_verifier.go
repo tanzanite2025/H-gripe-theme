@@ -10,12 +10,19 @@ import (
 )
 
 type AlipayWebhookNotification struct {
-	AppID       string
-	OutTradeNo  string
-	TradeNo     string
-	TradeStatus string
-	TotalAmount string
-	Currency    string
+	NotifyID     string
+	NotifyType   string
+	AppID        string
+	OutTradeNo   string
+	TradeNo      string
+	OutRequestNo string
+	OutBizNo     string
+	TradeStatus  string
+	RefundStatus string
+	RefundAmount string
+	RefundFee    string
+	TotalAmount  string
+	Currency     string
 }
 
 func VerifyAlipayWebhook(ctx context.Context, config *Config, payload []byte) (AlipayWebhookNotification, error) {
@@ -48,15 +55,45 @@ func VerifyAlipayWebhook(ctx context.Context, config *Config, payload []byte) (A
 	}
 
 	notification := AlipayWebhookNotification{
-		AppID:       values.Get("app_id"),
-		OutTradeNo:  values.Get("out_trade_no"),
-		TradeNo:     values.Get("trade_no"),
-		TradeStatus: values.Get("trade_status"),
-		TotalAmount: values.Get("total_amount"),
-		Currency:    values.Get("currency"),
+		NotifyID:     strings.TrimSpace(values.Get("notify_id")),
+		NotifyType:   strings.TrimSpace(values.Get("notify_type")),
+		AppID:        strings.TrimSpace(values.Get("app_id")),
+		OutTradeNo:   values.Get("out_trade_no"),
+		TradeNo:      values.Get("trade_no"),
+		OutRequestNo: values.Get("out_request_no"),
+		OutBizNo:     values.Get("out_biz_no"),
+		TradeStatus:  values.Get("trade_status"),
+		RefundStatus: values.Get("refund_status"),
+		RefundAmount: values.Get("refund_amount"),
+		RefundFee:    values.Get("refund_fee"),
+		TotalAmount:  values.Get("total_amount"),
+		Currency:     values.Get("currency"),
+	}
+	if err := ValidateAlipayWebhookMerchantIdentity(config, notification); err != nil {
+		return AlipayWebhookNotification{}, err
 	}
 	if notification.Currency == "" {
 		notification.Currency = "CNY"
 	}
 	return notification, nil
+}
+
+// ValidateAlipayWebhookMerchantIdentity binds a verified notification to the
+// Alipay application configured for this merchant.
+func ValidateAlipayWebhookMerchantIdentity(config *Config, notification AlipayWebhookNotification) error {
+	if config == nil {
+		return fmt.Errorf("alipay config is required")
+	}
+
+	expectedAppID := strings.TrimSpace(config.APIKey)
+	if expectedAppID == "" {
+		return fmt.Errorf("alipay app_id is not configured for webhook verification")
+	}
+	if strings.TrimSpace(notification.AppID) == "" {
+		return fmt.Errorf("alipay notification app_id is required")
+	}
+	if strings.TrimSpace(notification.AppID) != expectedAppID {
+		return fmt.Errorf("alipay notification app_id does not match configured app_id")
+	}
+	return nil
 }

@@ -1,12 +1,14 @@
 import type { Stripe, StripeElements, StripePaymentElement } from '@stripe/stripe-js'
 import { shallowRef } from 'vue'
 import { useI18n } from '#imports'
+import { useApiRequest } from '~/composables/useApiRequest'
 import { storefrontFontFamilyForLocale, storefrontFontStylesheetUrl } from '~/utils/storefrontFonts'
 import { createStripeInstance } from '~/utils/security/stripeClient'
 
 export interface StripePaymentSession {
   clientSecret: string
   publishableKey: string
+  orderNumber?: string
 }
 
 export interface StripeConfirmationResult {
@@ -14,8 +16,21 @@ export interface StripeConfirmationResult {
   paymentIntentId?: string
 }
 
+type ApiResponse<T> = T | { data?: T | { data?: T } }
+
+const unwrapApiData = <T,>(payload: ApiResponse<T> | null | undefined): T | null => {
+  let current: unknown = payload
+  for (let depth = 0; depth < 3; depth += 1) {
+    if (!current || typeof current !== 'object') return (current as T) || null
+    if (!('data' in current)) return current as T
+    current = (current as { data?: unknown }).data
+  }
+  return null
+}
+
 export function useStripePayment() {
   const { locale } = useI18n()
+  const { request } = useApiRequest()
   const stripe = shallowRef<Stripe | null>(null)
   const elements = shallowRef<StripeElements | null>(null)
   const paymentElement = shallowRef<StripePaymentElement | null>(null)
@@ -79,6 +94,43 @@ export function useStripePayment() {
     paymentElement.value = mountedElement
   }
 
+  const loadPublishableKey = async () => {
+    const response = await request<ApiResponse<{ publishable_key?: string; publishableKey?: string }>>(
+      '/payment/stripe/express-checkout/config',
+      { method: 'GET', headers: { Accept: 'application/json' } },
+      'Stripe payment is not configured',
+    )
+    const config = unwrapApiData<{ publishable_key?: string; publishableKey?: string }>(response)
+    const publishableKey = String(config?.publishableKey || config?.publishable_key || '').trim()
+    if (!publishableKey) {
+      throw new Error('Stripe publishable key is missing')
+    }
+    return publishableKey
+  }
+
+  const retrievePaymentIntent = async (
+    clientSecret: string,
+    publishableKey: string,
+  ): Promise<StripeConfirmationResult> => {
+    if (!clientSecret || !publishableKey) {
+      throw new Error('Stripe payment recovery data is incomplete')
+    }
+
+    const loadedStripe = await createStripeInstance(publishableKey)
+    const result = await loadedStripe.retrievePaymentIntent(clientSecret)
+    if (result.error) {
+      throw new Error(result.error.message || 'Stripe payment could not be recovered')
+    }
+    if (!result.paymentIntent) {
+      throw new Error('Stripe did not return a payment result')
+    }
+
+    return {
+      status: result.paymentIntent.status,
+      paymentIntentId: result.paymentIntent.id,
+    }
+  }
+
   const confirm = async (returnUrl: string): Promise<StripeConfirmationResult> => {
     if (!stripe.value || !elements.value) {
       throw new Error('Stripe payment form is not ready')
@@ -112,6 +164,8 @@ export function useStripePayment() {
     paymentElement,
     mount,
     confirm,
+    loadPublishableKey,
+    retrievePaymentIntent,
     destroy,
   }
 }

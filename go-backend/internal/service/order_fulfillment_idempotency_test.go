@@ -2,10 +2,14 @@ package service
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"testing"
 	"time"
 
 	"commerce-platform/internal/domain/order"
+	outboxdomain "commerce-platform/internal/domain/outbox"
+	paymentdomain "commerce-platform/internal/domain/payment"
 	shippingdomain "commerce-platform/internal/domain/shipping"
 	"commerce-platform/internal/repository"
 
@@ -55,6 +59,201 @@ func TestOrderServiceFulfillOrderRetriesSameShippedTrackingWithoutChangingShipme
 		Where("order_id = ?", orderRecord.ID).
 		Count(&shipmentCount).Error)
 	assert.Equal(t, int64(1), shipmentCount)
+}
+
+func TestOrderServiceFulfillOrderWithIdempotencyReplaysDurableRequest(t *testing.T) {
+	db, orderService := newTestOrderService(t)
+	provider, _, carrierService := seedTrackingProviderCarrierAndService(t, db)
+	seedTrackingCarrierMapping(t, db, provider.ID, "carrier_service", nil, &carrierService.ID, "DHL-EXP-US")
+
+	orderRecord := order.Order{
+		OrderNumber:    "ORD-FULFILL-DURABLE-IDEMPOTENCY",
+		UserID:         42,
+		Status:         "processing",
+		PaymentStatus:  "paid",
+		ShippingStatus: "pending",
+		TotalAmount:    100,
+		Currency:       "USD",
+	}
+	require.NoError(t, db.Create(&orderRecord).Error)
+	seedReadyFulfillmentEvidenceForTest(t, db, &orderRecord)
+
+	input := OrderTrackingUpdateInput{
+		TrackingNumber:     "TRACK-DURABLE-IDEMPOTENCY",
+		TrackingProviderID: provider.ID,
+		CarrierServiceID:   &carrierService.ID,
+	}
+	first, err := orderService.FulfillOrderWithIdempotency(
+		context.Background(), orderRecord.ID, input, 7, "fulfillment-request-1", "fulfillment-hash-1",
+	)
+	require.NoError(t, err)
+
+	second, err := orderService.FulfillOrderWithIdempotency(
+		context.Background(), orderRecord.ID, input, 7, "fulfillment-request-1", "fulfillment-hash-1",
+	)
+	require.NoError(t, err)
+	require.NotNil(t, first)
+	require.NotNil(t, second)
+	assert.Equal(t, first.Order.ID, second.Order.ID)
+	assert.Equal(t, first.TrackingShipment.ID, second.TrackingShipment.ID)
+
+	var idempotencyCount int64
+	require.NoError(t, db.Model(&order.OrderIdempotency{}).
+		Where("user_id = ? AND scope = ? AND idempotency_key = ?", 7, "admin_order_fulfillment", "fulfillment-request-1").
+		Count(&idempotencyCount).Error)
+	assert.Equal(t, int64(1), idempotencyCount)
+
+	_, err = orderService.FulfillOrderWithIdempotency(
+		context.Background(), orderRecord.ID, input, 7, "fulfillment-request-1", "fulfillment-hash-2",
+	)
+	assert.ErrorIs(t, err, ErrOrderFulfillmentIdempotencyConflict)
+}
+
+func TestOrderServiceFulfillOrderQueuesShippingNotificationOnce(t *testing.T) {
+	db, orderService := newTestOrderService(t)
+	provider, carrier, carrierService := seedTrackingProviderCarrierAndService(t, db)
+	carrier.TrackingURL = "https://tracking.example.test/track/{tracking_number}"
+	require.NoError(t, db.Save(&carrier).Error)
+	seedTrackingCarrierMapping(t, db, provider.ID, "carrier_service", nil, &carrierService.ID, "DHL-EXP-US")
+
+	orderRecord := order.Order{
+		OrderNumber:    "ORD-FULFILL-EMAIL",
+		UserID:         42,
+		Status:         "processing",
+		PaymentStatus:  "paid",
+		ShippingStatus: "pending",
+		TotalAmount:    100,
+		Currency:       "USD",
+		ShippingAddress: order.Address{
+			FirstName: "Ada",
+			LastName:  "Rider",
+			Email:     "ada.rider@example.test",
+		},
+	}
+	require.NoError(t, db.Create(&orderRecord).Error)
+	seedReadyFulfillmentEvidenceForTest(t, db, &orderRecord)
+
+	input := OrderTrackingUpdateInput{
+		TrackingNumber:     "TRACK-NOTIFY-100",
+		TrackingProviderID: provider.ID,
+		CarrierServiceID:   &carrierService.ID,
+	}
+	_, err := orderService.FulfillOrder(context.Background(), orderRecord.ID, input)
+	require.NoError(t, err)
+
+	eventKey := fmt.Sprintf(
+		"%s:%d:%s",
+		outboxdomain.EventTypeOrderShippingNotificationEmail,
+		orderRecord.ID,
+		input.TrackingNumber,
+	)
+	var event outboxdomain.Event
+	require.NoError(t, db.Where("event_key = ?", eventKey).First(&event).Error)
+	assert.Equal(t, outboxdomain.EventTypeOrderShippingNotificationEmail, event.EventType)
+	assert.Equal(t, outboxdomain.EventStatusPending, event.Status)
+
+	var payload outboxdomain.OrderShippingNotificationEmailPayload
+	require.NoError(t, json.Unmarshal(event.Payload, &payload))
+	assert.Equal(t, "ada.rider@example.test", payload.RecipientEmail)
+	assert.Equal(t, "Ada Rider", payload.CustomerName)
+	assert.Equal(t, orderRecord.OrderNumber, payload.OrderNumber)
+	assert.Equal(t, "DHL", payload.CarrierName)
+	assert.Equal(t, input.TrackingNumber, payload.TrackingNumber)
+	assert.Equal(t, "https://tracking.example.test/track/TRACK-NOTIFY-100", payload.TrackingURL)
+	assert.False(t, payload.ShippedAt.IsZero())
+
+	_, err = orderService.FulfillOrder(context.Background(), orderRecord.ID, input)
+	require.NoError(t, err)
+
+	var eventCount int64
+	require.NoError(t, db.Model(&outboxdomain.Event{}).Where("event_key = ?", eventKey).Count(&eventCount).Error)
+	assert.Equal(t, int64(1), eventCount)
+}
+
+func TestOrderServiceFulfillOrderBlocksActivePaymentDispute(t *testing.T) {
+	db, orderService := newTestOrderService(t)
+	provider, _, carrierService := seedTrackingProviderCarrierAndService(t, db)
+	seedTrackingCarrierMapping(t, db, provider.ID, "carrier_service", nil, &carrierService.ID, "DHL-EXP-US")
+
+	orderRecord := order.Order{
+		OrderNumber:    "ORD-FULFILL-DISPUTE-HOLD",
+		UserID:         42,
+		Status:         "processing",
+		PaymentStatus:  "paid",
+		ShippingStatus: "pending",
+		TotalAmount:    100,
+		Currency:       "USD",
+	}
+	require.NoError(t, db.Create(&orderRecord).Error)
+	seedReadyFulfillmentEvidenceForTest(t, db, &orderRecord)
+	require.NoError(t, db.Create(&paymentdomain.StripeDispute{
+		StripeDisputeID: "dp_fulfillment_hold",
+		OrderID:         &orderRecord.ID,
+		Amount:          100,
+		Currency:        "USD",
+		Status:          "under_review",
+	}).Error)
+
+	_, err := orderService.FulfillOrder(context.Background(), orderRecord.ID, OrderTrackingUpdateInput{
+		TrackingNumber:     "TRACK-DISPUTE-HOLD",
+		TrackingProviderID: provider.ID,
+		CarrierServiceID:   &carrierService.ID,
+	})
+	require.ErrorIs(t, err, ErrOrderFulfillmentOnHold)
+
+	var savedOrder order.Order
+	require.NoError(t, db.First(&savedOrder, orderRecord.ID).Error)
+	assert.Equal(t, "processing", savedOrder.Status)
+	assert.Equal(t, "pending", savedOrder.ShippingStatus)
+	assert.Empty(t, savedOrder.TrackingNumber)
+
+	var shipmentCount int64
+	require.NoError(t, db.Model(&shippingdomain.TrackingShipment{}).
+		Where("order_id = ?", orderRecord.ID).
+		Count(&shipmentCount).Error)
+	assert.Zero(t, shipmentCount)
+}
+
+func TestOrderServiceFulfillOrderBlocksPendingPaymentReview(t *testing.T) {
+	db, orderService := newTestOrderService(t)
+	provider, _, carrierService := seedTrackingProviderCarrierAndService(t, db)
+	seedTrackingCarrierMapping(t, db, provider.ID, "carrier_service", nil, &carrierService.ID, "DHL-EXP-US")
+
+	orderRecord := order.Order{
+		OrderNumber:    "ORD-FULFILL-REVIEW-HOLD",
+		UserID:         42,
+		Status:         "processing",
+		PaymentStatus:  "paid",
+		ShippingStatus: "pending",
+		TotalAmount:    100,
+		Currency:       "USD",
+	}
+	require.NoError(t, db.Create(&orderRecord).Error)
+	seedReadyFulfillmentEvidenceForTest(t, db, &orderRecord)
+	require.NoError(t, db.Create(&paymentdomain.PaymentReview{
+		OrderID: &orderRecord.ID,
+		Status:  "pending",
+		Reason:  "manual_payment_review",
+		Source:  "operator",
+	}).Error)
+
+	_, err := orderService.FulfillOrder(context.Background(), orderRecord.ID, OrderTrackingUpdateInput{
+		TrackingNumber:     "TRACK-REVIEW-HOLD",
+		TrackingProviderID: provider.ID,
+		CarrierServiceID:   &carrierService.ID,
+	})
+	require.ErrorIs(t, err, ErrOrderFulfillmentOnHold)
+
+	var savedOrder order.Order
+	require.NoError(t, db.First(&savedOrder, orderRecord.ID).Error)
+	assert.Equal(t, "processing", savedOrder.Status)
+	assert.Equal(t, "pending", savedOrder.ShippingStatus)
+
+	var shipmentCount int64
+	require.NoError(t, db.Model(&shippingdomain.TrackingShipment{}).
+		Where("order_id = ?", orderRecord.ID).
+		Count(&shipmentCount).Error)
+	assert.Zero(t, shipmentCount)
 }
 
 func TestOrderServiceFulfillOrderRejectsDifferentTrackingAfterShipment(t *testing.T) {

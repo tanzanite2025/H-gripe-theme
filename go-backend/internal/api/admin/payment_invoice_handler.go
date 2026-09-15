@@ -2,11 +2,14 @@ package admin
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
 
+	"commerce-platform/internal/domain/currency"
+	domainmoney "commerce-platform/internal/domain/money"
 	"commerce-platform/internal/domain/setting"
 	"commerce-platform/internal/pkg/apierror"
 	"commerce-platform/internal/pkg/invoice"
@@ -73,42 +76,137 @@ func (r paypalCommercialInvoicePreviewRequest) commercialInvoice() (invoice.Comm
 	if err != nil {
 		return invoice.CommercialInvoice{}, err
 	}
+	currencyCode, err := currency.ParseCode(r.Currency)
+	if err != nil {
+		return invoice.CommercialInvoice{}, fmt.Errorf("invalid invoice currency: %w", err)
+	}
+	toMoney := func(amount float64) (domainmoney.Money, error) {
+		return domainmoney.FromMajorFloat(amount, currencyCode.String())
+	}
+	toMajor := func(amount domainmoney.Money) (float64, error) {
+		return amount.MajorFloat()
+	}
 
 	items := make([]invoice.LineItem, 0, len(r.Items))
-	var calculatedSubtotal float64
+	calculatedSubtotal := domainmoney.MustNew(0, currencyCode.String())
 	for _, item := range r.Items {
 		quantity := item.Quantity
 		if quantity <= 0 {
 			quantity = 1
 		}
-		subtotal := item.Subtotal
-		if subtotal == 0 && item.UnitPrice != 0 {
-			subtotal = item.UnitPrice * float64(quantity)
+		unitPriceMoney, err := toMoney(item.UnitPrice)
+		if err != nil {
+			return invoice.CommercialInvoice{}, err
 		}
-		total := item.Total
-		if total == 0 {
-			total = subtotal + item.Tax - item.Discount
+		subtotalMoney, err := toMoney(item.Subtotal)
+		if err != nil {
+			return invoice.CommercialInvoice{}, err
 		}
-		calculatedSubtotal += subtotal
+		if item.Subtotal == 0 && item.UnitPrice != 0 {
+			subtotalMoney, err = unitPriceMoney.MultiplyInt(int64(quantity))
+			if err != nil {
+				return invoice.CommercialInvoice{}, err
+			}
+		}
+		taxMoney, err := toMoney(item.Tax)
+		if err != nil {
+			return invoice.CommercialInvoice{}, err
+		}
+		discountMoney, err := toMoney(item.Discount)
+		if err != nil {
+			return invoice.CommercialInvoice{}, err
+		}
+		totalMoney, err := toMoney(item.Total)
+		if err != nil {
+			return invoice.CommercialInvoice{}, err
+		}
+		if item.Total == 0 {
+			totalMoney, err = subtotalMoney.Add(taxMoney)
+			if err == nil {
+				totalMoney, err = totalMoney.Subtract(discountMoney)
+			}
+			if err != nil {
+				return invoice.CommercialInvoice{}, err
+			}
+		}
+		calculatedSubtotal, err = calculatedSubtotal.Add(subtotalMoney)
+		if err != nil {
+			return invoice.CommercialInvoice{}, err
+		}
+		unitPrice, err := toMajor(unitPriceMoney)
+		if err != nil {
+			return invoice.CommercialInvoice{}, err
+		}
+		subtotal, err := toMajor(subtotalMoney)
+		if err != nil {
+			return invoice.CommercialInvoice{}, err
+		}
+		tax, err := toMajor(taxMoney)
+		if err != nil {
+			return invoice.CommercialInvoice{}, err
+		}
+		discount, err := toMajor(discountMoney)
+		if err != nil {
+			return invoice.CommercialInvoice{}, err
+		}
+		total, err := toMajor(totalMoney)
+		if err != nil {
+			return invoice.CommercialInvoice{}, err
+		}
 		items = append(items, invoice.LineItem{
 			Description: item.Description,
 			SKU:         item.SKU,
 			Quantity:    quantity,
-			UnitPrice:   item.UnitPrice,
+			UnitPrice:   unitPrice,
 			Subtotal:    subtotal,
-			Tax:         item.Tax,
-			Discount:    item.Discount,
+			Tax:         tax,
+			Discount:    discount,
 			Total:       total,
 		})
 	}
 
-	subtotal := r.Subtotal
-	if subtotal == 0 {
-		subtotal = calculatedSubtotal
+	subtotalMoney, err := toMoney(r.Subtotal)
+	if err != nil {
+		return invoice.CommercialInvoice{}, err
 	}
-	total := r.Total
-	if total == 0 {
-		total = subtotal + r.Shipping + r.Tax - r.Discount
+	if r.Subtotal == 0 {
+		subtotalMoney = calculatedSubtotal
+	}
+	shippingMoney, err := toMoney(r.Shipping)
+	if err != nil {
+		return invoice.CommercialInvoice{}, err
+	}
+	taxMoney, err := toMoney(r.Tax)
+	if err != nil {
+		return invoice.CommercialInvoice{}, err
+	}
+	discountMoney, err := toMoney(r.Discount)
+	if err != nil {
+		return invoice.CommercialInvoice{}, err
+	}
+	totalMoney, err := toMoney(r.Total)
+	if err != nil {
+		return invoice.CommercialInvoice{}, err
+	}
+	if r.Total == 0 {
+		totalMoney, err = subtotalMoney.Add(shippingMoney)
+		if err == nil {
+			totalMoney, err = totalMoney.Add(taxMoney)
+		}
+		if err == nil {
+			totalMoney, err = totalMoney.Subtract(discountMoney)
+		}
+		if err != nil {
+			return invoice.CommercialInvoice{}, err
+		}
+	}
+	subtotal, err := toMajor(subtotalMoney)
+	if err != nil {
+		return invoice.CommercialInvoice{}, err
+	}
+	total, err := toMajor(totalMoney)
+	if err != nil {
+		return invoice.CommercialInvoice{}, err
 	}
 
 	var paymentDate *time.Time

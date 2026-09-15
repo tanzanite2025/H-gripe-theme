@@ -79,11 +79,23 @@ func (s *TicketService) ListCustomerServiceConversationsInWindowForAgent(start, 
 	return s.ticketRepo.FindCustomerServiceConversationsInWindow(start, end, filters)
 }
 
-func (s *TicketService) GetCustomerServiceMessagesForAgent(ticketID uint, agentUserID uint, canViewAll bool) ([]ticket.TicketMessage, error) {
+func (s *TicketService) GetCustomerServiceMessagesForAgent(ticketID uint, agentUserID uint, canViewAll bool, limit, offset int) ([]ticket.TicketMessage, error) {
 	if _, err := s.getAgentAccessibleCustomerServiceConversation(ticketID, agentUserID, canViewAll); err != nil {
 		return nil, err
 	}
-	return s.ticketRepo.FindMessagesByTicketID(ticketID)
+	return s.ticketRepo.FindMessagesByTicketID(ticketID, limit, offset)
+}
+
+func (s *TicketService) GetCustomerServiceMessagesForAgentPage(ticketID uint, agentUserID uint, canViewAll bool, limit, offset int) ([]ticket.TicketMessage, int64, error) {
+	if _, err := s.getAgentAccessibleCustomerServiceConversation(ticketID, agentUserID, canViewAll); err != nil {
+		return nil, 0, err
+	}
+	total, err := s.ticketRepo.CountMessagesByTicketID(ticketID)
+	if err != nil {
+		return nil, 0, err
+	}
+	messages, err := s.ticketRepo.FindMessagesByTicketID(ticketID, limit, offset)
+	return messages, total, err
 }
 
 func (s *TicketService) GetCustomerServiceConversationForAgent(ticketID uint, agentUserID uint, canViewAll bool) (*ticket.Ticket, error) {
@@ -99,7 +111,7 @@ func (s *TicketService) AddCustomerServiceAgentMessage(m *ticket.TicketMessage, 
 		return err
 	}
 
-	m.UserID = agentUserID
+	m.UserID = &agentUserID
 	m.IsStaff = true
 	m.MessageType = normalizeCustomerServiceMessageType(m.MessageType)
 	actorUserID := agentUserID
@@ -364,14 +376,9 @@ func (s *TicketService) AddPublicCustomerServiceMessage(conversationID string, o
 		return nil, nil, err
 	}
 
-	persistedUserID := t.UserID
-	if owner.UserID != nil && *owner.UserID > 0 {
-		persistedUserID = *owner.UserID
-	}
-
 	msg := &ticket.TicketMessage{
 		TicketID:    t.ID,
-		UserID:      persistedUserID,
+		UserID:      owner.UserID,
 		IsStaff:     false,
 		Content:     message,
 		MessageType: normalizeCustomerServiceMessageType(messageType),
@@ -445,9 +452,19 @@ func (s *TicketService) GetPublicCustomerServiceMessages(conversationID string, 
 	if err != nil {
 		return nil, err
 	}
-	messages, err := s.ticketRepo.FindMessagesByTicketID(t.ID)
+	if offset < 0 {
+		offset = 0
+	}
+	if limit < 1 || limit > 100 {
+		limit = 50
+	}
+	return s.ticketRepo.FindMessagesByTicketID(t.ID, limit, offset)
+}
+
+func (s *TicketService) GetPublicCustomerServiceMessagesPage(conversationID string, owner CustomerServiceOwner, limit, offset int) ([]ticket.TicketMessage, int64, error) {
+	t, err := s.getAccessibleCustomerServiceConversation(conversationID, owner)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	if offset < 0 {
 		offset = 0
@@ -455,14 +472,12 @@ func (s *TicketService) GetPublicCustomerServiceMessages(conversationID string, 
 	if limit < 1 || limit > 100 {
 		limit = 50
 	}
-	if offset >= len(messages) {
-		return []ticket.TicketMessage{}, nil
+	total, err := s.ticketRepo.CountMessagesByTicketID(t.ID)
+	if err != nil {
+		return nil, 0, err
 	}
-	end := offset + limit
-	if end > len(messages) {
-		end = len(messages)
-	}
-	return messages[offset:end], nil
+	messages, err := s.ticketRepo.FindMessagesByTicketID(t.ID, limit, offset)
+	return messages, total, err
 }
 
 func (s *TicketService) GetPublicCustomerServiceConversation(conversationID string, owner CustomerServiceOwner) (*ticket.Ticket, error) {
@@ -530,6 +545,7 @@ func (s *TicketService) findCustomerServiceConversationByOwner(owner CustomerSer
 		if !repository.IsRecordNotFound(err) {
 			return nil, err
 		}
+		return nil, repository.ErrRecordNotFound
 	}
 
 	if owner.VisitorSessionHash != "" {
@@ -630,10 +646,13 @@ func (owner CustomerServiceOwner) Valid() bool {
 }
 
 func customerServiceOwnerMatches(t *ticket.Ticket, owner CustomerServiceOwner) bool {
-	if owner.UserID != nil && t.CustomerUserID != nil && *t.CustomerUserID == *owner.UserID {
-		return true
+	if t == nil {
+		return false
 	}
-	return owner.VisitorSessionHash != "" && t.VisitorSessionHash == owner.VisitorSessionHash
+	if t.CustomerUserID != nil {
+		return owner.UserID != nil && *t.CustomerUserID == *owner.UserID
+	}
+	return owner.UserID == nil && owner.VisitorSessionHash != "" && t.VisitorSessionHash == owner.VisitorSessionHash
 }
 
 func ticketConversationID(t *ticket.Ticket) string {

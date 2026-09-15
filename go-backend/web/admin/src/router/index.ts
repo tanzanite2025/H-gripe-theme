@@ -8,6 +8,7 @@ import type {
   RouteRecordRaw
 } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { LEGACY_PRODUCT_SUPPLIER_COST_VIEW_PERMISSION_CODE } from '@/lib/productSupplierCostLegacyPermissionCodes'
 
 const firstQueryValue = (value: LocationQueryValue | LocationQueryValue[]): LocationQueryValue => Array.isArray(value) ? value[0] : value
 
@@ -30,6 +31,7 @@ const marketingRedirect = (to: RouteLocationNormalized): RouteLocationRaw => {
         giftcards: 'MarketingGiftCards',
         levels: 'MarketingLevels',
         risk: 'MarketingPromotionRisk',
+        referrals: 'MarketingReferrals',
       }[tab] || 'MarketingCoupons'
 
   return {
@@ -123,10 +125,15 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '首页主力产品', permission: 'content:view' }
       },
       {
+        path: 'product-supplier-cost/records',
+        name: 'ProductSupplierCostRecords',
+        component: () => import('@/views/ProductSupplierCostRecords.vue'),
+        meta: { title: '商品成本', permission: LEGACY_PRODUCT_SUPPLIER_COST_VIEW_PERMISSION_CODE }
+      },
+      {
         path: 'procurement/records',
-        name: 'ProcurementRecords',
-        component: () => import('@/views/ProcurementRecords.vue'),
-        meta: { title: '商品成本', permission: 'procurement:view' }
+        redirect: { name: 'ProductSupplierCostRecords' },
+        meta: { title: '商品成本', permission: LEGACY_PRODUCT_SUPPLIER_COST_VIEW_PERMISSION_CODE }
       },
       {
         path: 'fitment-catalog/frame-entries',
@@ -578,6 +585,12 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '博客内容', permission: 'content:view' }
       },
       {
+        path: 'workbench-feed',
+        name: 'WorkbenchFeed',
+        component: () => import('@/views/WorkbenchFeed.vue'),
+        meta: { title: '车间手记', permission: 'workbench_feed:view' }
+      },
+      {
         path: 'content/faqs',
         name: 'ContentFAQs',
         component: () => import('@/views/FAQs.vue'),
@@ -705,6 +718,12 @@ const routes: RouteRecordRaw[] = [
         name: 'MarketingPromotionRisk',
         component: () => import('@/views/Marketing.vue'),
         meta: { title: '优惠风险', permission: 'marketing:view' }
+      },
+      {
+        path: 'marketing/referrals',
+        name: 'MarketingReferrals',
+        component: () => import('@/views/ReferralHub.vue'),
+        meta: { title: '推荐裂变台账', permission: 'marketing:view' }
       },
       {
         path: 'marketing/subscriptions',

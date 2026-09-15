@@ -27,6 +27,7 @@ import { useStripePayment, type StripeConfirmationResult, type StripePaymentSess
 
 const props = defineProps<{
   session: StripePaymentSession
+  returnUrl: string
   confirmLabel: string
   confirmingLabel: string
   disabled?: boolean
@@ -64,7 +65,7 @@ const confirmPayment = async () => {
   isConfirming.value = true
   errorMessage.value = ''
   try {
-    const result = await confirm(window.location.href)
+    const result = await confirm(props.returnUrl)
     emit('confirmed', result)
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Stripe payment could not be confirmed'

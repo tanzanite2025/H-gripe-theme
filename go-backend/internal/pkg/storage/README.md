@@ -29,6 +29,9 @@ STORAGE_SECRET_ACCESS_KEY=...
 # Optional S3-compatible endpoint, for example https://minio.internal:9000
 STORAGE_ENDPOINT=
 STORAGE_BASE_URL=https://cdn.example.com
+# Sensitive evidence must use a separate bucket and (optionally) private URL.
+STORAGE_PRIVATE_BUCKET=my-private-evidence-bucket
+STORAGE_PRIVATE_BASE_URL=https://private.example.com
 ```
 
 ```env
@@ -39,7 +42,15 @@ STORAGE_ACCESS_KEY_ID=...
 STORAGE_SECRET_ACCESS_KEY=...
 STORAGE_ENDPOINT=https://oss-cn-hangzhou.aliyuncs.com
 STORAGE_BASE_URL=https://cdn.example.com
+STORAGE_PRIVATE_BUCKET=my-private-evidence-bucket
+STORAGE_PRIVATE_BASE_URL=https://private.example.com
 ```
+
+For local storage, set `STORAGE_PRIVATE_LOCAL_PATH` (for example
+`./uploads-private`). Private upload prefixes (`order-evidence/`, `warranty/`,
+`after-sales/`, and `showcase/pending/`) are rejected when a separate private
+backend is unavailable; they are never silently written to the public bucket
+or directory.
 
 Do not commit real credentials.
 

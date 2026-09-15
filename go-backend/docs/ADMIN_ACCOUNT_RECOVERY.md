@@ -13,10 +13,10 @@ The page is available from **Operations Center -> Admin Accounts**. It never ret
 
 ## DEV Bootstrap
 
-For a local Docker Compose environment, start the database first and run the one-off command against the same `app` image:
+For a local Docker Compose environment, start the database first from the repository root and run the one-off command against the same `backend` image:
 
 ```powershell
-cd go-backend
+cd <repository-root>
 docker compose up -d postgres redis
 
 $env:SERVER_MODE = "debug"
@@ -27,7 +27,7 @@ docker compose run --rm --no-deps `
   -e ADMIN_EMAIL `
   -e ADMIN_PASSWORD `
   --entrypoint /app/adminctl `
-  app ensure-admin
+  backend ensure-admin
 
 Remove-Item Env:SERVER_MODE, Env:ADMIN_EMAIL, Env:ADMIN_PASSWORD
 ```

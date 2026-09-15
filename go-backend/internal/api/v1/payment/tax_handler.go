@@ -1,6 +1,8 @@
 package payment
 
 import (
+	"commerce-platform/internal/domain/currency"
+	domainmoney "commerce-platform/internal/domain/money"
 	"commerce-platform/internal/pkg/apierror"
 	"commerce-platform/internal/pkg/response"
 	"strconv"
@@ -46,18 +48,32 @@ func (h *Handler) CalculateTax(c *gin.Context) {
 		return
 	}
 
-	taxRate, tax, err := h.paymentService.CalculateTax(req.Amount, req.Country, req.State, req.PostalCode)
+	amountMoney, err := domainmoney.FromMajorFloat(req.Amount, currency.DefaultPrimaryCurrency)
 	if err != nil {
-		response.Success(c, gin.H{
-			"amount":   req.Amount,
-			"tax_rate": 0.0,
-			"tax":      0.0,
-			"total":    req.Amount,
-		})
+		apierror.RespondBadRequest(c, "invalid amount")
+		return
+	}
+	taxRate, taxMoney, err := h.paymentService.CalculateTaxMoney(amountMoney, req.Country, req.State, req.PostalCode)
+	if err != nil {
+		apierror.RespondInternalError(c, err)
 		return
 	}
 
-	total := req.Amount + tax
+	tax, err := taxMoney.MajorFloat()
+	if err != nil {
+		apierror.RespondInternalError(c, err)
+		return
+	}
+	totalMoney, err := amountMoney.Add(taxMoney)
+	if err != nil {
+		apierror.RespondInternalError(c, err)
+		return
+	}
+	total, err := totalMoney.MajorFloat()
+	if err != nil {
+		apierror.RespondInternalError(c, err)
+		return
+	}
 
 	response.Success(c, gin.H{
 		"amount":   req.Amount,

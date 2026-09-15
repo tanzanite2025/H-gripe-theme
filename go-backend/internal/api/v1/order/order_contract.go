@@ -2,6 +2,8 @@ package order
 
 import (
 	orderdomain "commerce-platform/internal/domain/order"
+	"encoding/json"
+	"strings"
 	"time"
 )
 
@@ -9,10 +11,15 @@ import (
 type CreateOrderRequest struct {
 	Items                        []OrderItemRequest `json:"items" binding:"required,min=1"`
 	ShippingAddress              AddressRequest     `json:"shipping_address" binding:"required"`
-	BillingAddress               AddressRequest     `json:"billing_address"`
+	BillingAddress               *AddressRequest    `json:"billing_address,omitempty" binding:"omitempty"`
 	PaymentMethod                string             `json:"payment_method" binding:"required"`
 	ShippingMethod               string             `json:"shipping_method" binding:"required"`
+	ExpectedTotal                *float64           `json:"expected_total" binding:"required"`
+	ShippingQuoteID              string             `json:"shipping_quote_id" binding:"required"`
+	SelectedQuotePlanID          string             `json:"selected_quote_plan_id" binding:"required"`
 	CouponCode                   string             `json:"coupon_code"`
+	GiftCardCode                 string             `json:"gift_card_code"`
+	DisplayCurrency              string             `json:"display_currency"`
 	PointsToUse                  int                `json:"points_to_use"`
 	PolicyDisclosureAcknowledged bool               `json:"policy_disclosure_acknowledged"`
 	ClientRisk                   *ClientRiskRequest `json:"client_risk,omitempty"`
@@ -20,7 +27,7 @@ type CreateOrderRequest struct {
 
 type ClientRiskRequest struct {
 	IPCountry      string `json:"ip_country,omitempty"`
-	BillingCountry string `json:"billing_country,omitempty"`
+	BillingCountry string `json:"billing_country,omitempty"` // retained for client compatibility; server ignores it
 	VPNDetected    bool   `json:"vpn_detected,omitempty"`
 	Timezone       string `json:"timezone,omitempty"`
 }
@@ -61,15 +68,15 @@ type PublicOrderResponse struct {
 	TrackingNumber        string              `json:"tracking_number"`
 	ProviderCarrierCode   string              `json:"provider_carrier_code"`
 	ProviderCarrierName   string              `json:"provider_carrier_name"`
-	SubtotalAmount        float64             `json:"subtotal_amount"`
-	ShippingFee           float64             `json:"shipping_fee"`
-	TaxAmount             float64             `json:"tax_amount"`
-	DiscountAmount        float64             `json:"discount_amount"`
-	TotalAmount           float64             `json:"total_amount"`
+	SubtotalMinor         int64               `json:"subtotal_minor"`
+	ShippingFeeMinor      int64               `json:"shipping_fee_minor"`
+	TaxMinor              int64               `json:"tax_minor"`
+	DiscountMinor         int64               `json:"discount_minor"`
+	TotalMinor            int64               `json:"total_minor"`
 	Currency              string              `json:"currency"`
 	CouponCode            string              `json:"coupon_code"`
 	PointsUsed            int                 `json:"points_used"`
-	PointsValue           float64             `json:"points_value"`
+	PointsValueMinor      int64               `json:"points_value_minor"`
 	ShippingAddress       orderdomain.Address `json:"shipping_address"`
 	BillingAddress        orderdomain.Address `json:"billing_address"`
 	CustomerNote          string              `json:"customer_note"`
@@ -85,18 +92,20 @@ type PublicOrderResponse struct {
 }
 
 type PublicOrderItem struct {
-	ProductID       uint    `json:"product_id"`
-	VariantID       *uint   `json:"variant_id"`
-	ProductName     string  `json:"product_name"`
-	SKU             string  `json:"sku"`
-	Attributes      string  `json:"attributes"`
-	FulfillmentMode string  `json:"fulfillment_mode"`
-	Quantity        int     `json:"quantity"`
-	Price           float64 `json:"price"`
-	Subtotal        float64 `json:"subtotal"`
-	Discount        float64 `json:"discount"`
-	TaxAmount       float64 `json:"tax_amount"`
-	Total           float64 `json:"total"`
+	ProductID       uint            `json:"product_id"`
+	VariantID       *uint           `json:"variant_id"`
+	ProductName     string          `json:"product_name"`
+	SKU             string          `json:"sku"`
+	Attributes      string          `json:"attributes"`
+	Configuration   json.RawMessage `json:"configuration,omitempty"`
+	FulfillmentMode string          `json:"fulfillment_mode"`
+	Quantity        int             `json:"quantity"`
+	Currency        string          `json:"currency"`
+	PriceMinor      int64           `json:"price_minor"`
+	SubtotalMinor   int64           `json:"subtotal_minor"`
+	DiscountMinor   int64           `json:"discount_minor"`
+	TaxMinor        int64           `json:"tax_minor"`
+	TotalMinor      int64           `json:"total_minor"`
 }
 
 func publicOrderResponse(item orderdomain.Order) PublicOrderResponse {
@@ -109,6 +118,26 @@ func publicOrderResponse(item orderdomain.Order) PublicOrderResponse {
 		productionStatus = orderdomain.DefaultProductionStatus(fulfillmentMode)
 	}
 
+	subtotalMinor := int64(0)
+	if value, err := item.SubtotalMoney(); err == nil {
+		subtotalMinor = value.AmountMinor()
+	}
+	shippingMinor := int64(0)
+	if value, err := item.ShippingFeeMoney(); err == nil {
+		shippingMinor = value.AmountMinor()
+	}
+	taxMinor := int64(0)
+	if value, err := item.TaxMoney(); err == nil {
+		taxMinor = value.AmountMinor()
+	}
+	discountMinor := int64(0)
+	if value, err := item.DiscountMoney(); err == nil {
+		discountMinor = value.AmountMinor()
+	}
+	totalMinor := int64(0)
+	if value, err := item.TotalMoney(); err == nil {
+		totalMinor = value.AmountMinor()
+	}
 	return PublicOrderResponse{
 		OrderNumber:           item.OrderNumber,
 		Status:                item.Status,
@@ -122,15 +151,15 @@ func publicOrderResponse(item orderdomain.Order) PublicOrderResponse {
 		TrackingNumber:        item.TrackingNumber,
 		ProviderCarrierCode:   item.ProviderCarrierCode,
 		ProviderCarrierName:   item.ProviderCarrierName,
-		SubtotalAmount:        item.SubtotalAmount,
-		ShippingFee:           item.ShippingFee,
-		TaxAmount:             item.TaxAmount,
-		DiscountAmount:        item.DiscountAmount,
-		TotalAmount:           item.TotalAmount,
+		SubtotalMinor:         subtotalMinor,
+		ShippingFeeMinor:      shippingMinor,
+		TaxMinor:              taxMinor,
+		DiscountMinor:         discountMinor,
+		TotalMinor:            totalMinor,
 		Currency:              item.Currency,
 		CouponCode:            item.CouponCode,
 		PointsUsed:            item.PointsUsed,
-		PointsValue:           item.PointsValue,
+		PointsValueMinor:      item.PointsValueMinor,
 		ShippingAddress:       item.ShippingAddress,
 		BillingAddress:        item.BillingAddress,
 		CustomerNote:          item.CustomerNote,
@@ -157,19 +186,41 @@ func publicOrderResponses(items []orderdomain.Order) []PublicOrderResponse {
 func publicOrderItems(items []orderdomain.OrderItem) []PublicOrderItem {
 	result := make([]PublicOrderItem, 0, len(items))
 	for _, item := range items {
+		priceMinor := int64(0)
+		if value, err := item.PriceMoney(); err == nil {
+			priceMinor = value.AmountMinor()
+		}
+		subtotalMinor := int64(0)
+		if value, err := item.SubtotalMoney(); err == nil {
+			subtotalMinor = value.AmountMinor()
+		}
+		discountMinor := int64(0)
+		if value, err := item.DiscountMoney(); err == nil {
+			discountMinor = value.AmountMinor()
+		}
+		taxMinor := int64(0)
+		if value, err := item.TaxAmountMoney(); err == nil {
+			taxMinor = value.AmountMinor()
+		}
+		totalMinor := int64(0)
+		if value, err := item.TotalMoney(); err == nil {
+			totalMinor = value.AmountMinor()
+		}
 		result = append(result, PublicOrderItem{
 			ProductID:       item.ProductID,
 			VariantID:       item.VariantID,
 			ProductName:     item.ProductName,
 			SKU:             item.SKU,
 			Attributes:      item.Attributes,
+			Configuration:   append(json.RawMessage(nil), item.ConfigurationSnapshotData...),
 			FulfillmentMode: item.FulfillmentMode,
 			Quantity:        item.Quantity,
-			Price:           item.Price,
-			Subtotal:        item.Subtotal,
-			Discount:        item.Discount,
-			TaxAmount:       item.TaxAmount,
-			Total:           item.Total,
+			Currency:        item.Currency,
+			PriceMinor:      priceMinor,
+			SubtotalMinor:   subtotalMinor,
+			DiscountMinor:   discountMinor,
+			TaxMinor:        taxMinor,
+			TotalMinor:      totalMinor,
 		})
 	}
 	return result
@@ -191,9 +242,18 @@ func addressFromRequest(req AddressRequest) orderdomain.Address {
 	}
 }
 
-func billingAddressFromRequest(shippingAddr orderdomain.Address, req AddressRequest) orderdomain.Address {
-	if req.FirstName == "" {
+func billingCountryFromRequest(shippingCountry string, req *AddressRequest) string {
+	if req != nil {
+		if country := strings.TrimSpace(req.Country); country != "" {
+			return country
+		}
+	}
+	return strings.TrimSpace(shippingCountry)
+}
+
+func billingAddressFromRequest(shippingAddr orderdomain.Address, req *AddressRequest) orderdomain.Address {
+	if req == nil {
 		return shippingAddr
 	}
-	return addressFromRequest(req)
+	return addressFromRequest(*req)
 }

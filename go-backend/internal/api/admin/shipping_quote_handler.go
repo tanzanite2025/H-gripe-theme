@@ -1,6 +1,9 @@
 package admin
 
 import (
+	"errors"
+	"net/http"
+
 	"commerce-platform/internal/pkg/apierror"
 	"commerce-platform/internal/pkg/response"
 	"commerce-platform/internal/service"
@@ -17,6 +20,10 @@ func (h *ShippingHandler) QuoteShipping(c *gin.Context) {
 
 	quote, err := h.shippingService.QuoteCart(req)
 	if err != nil {
+		if errors.Is(err, service.ErrCountryNotSupported) {
+			apierror.RespondError(c, http.StatusUnprocessableEntity, "country_not_supported", err.Error())
+			return
+		}
 		apierror.RespondBadRequest(c, err.Error())
 		return
 	}

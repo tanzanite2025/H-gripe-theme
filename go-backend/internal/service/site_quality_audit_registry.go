@@ -9,13 +9,13 @@ import (
 const siteQualityAuditRuleVersion = "2026-08-23"
 
 const (
-	siteQualityResourceBudgetAuditID        = "site-resource-budget"
-	siteQualityBrokenLinkAuditID            = "site-link-broken"
-	siteQualityLinkAuditFailedAuditID       = "site-link-audit-failed"
-	siteQualityInteractionLatencyAuditID    = "site-interaction-latency"
-	siteQualityInteractionAuditFailedID     = "site-interaction-audit-failed"
-	siteQualitySoftNavigationRegressionID   = "site-soft-navigation-regression"
-	siteQualitySoftNavigationAuditFailedID  = "site-soft-navigation-audit-failed"
+	siteQualityResourceBudgetAuditID       = "site-resource-budget"
+	siteQualityBrokenLinkAuditID           = "site-link-broken"
+	siteQualityLinkAuditFailedAuditID      = "site-link-audit-failed"
+	siteQualityInteractionLatencyAuditID   = "site-interaction-latency"
+	siteQualityInteractionAuditFailedID    = "site-interaction-audit-failed"
+	siteQualitySoftNavigationRegressionID  = "site-soft-navigation-regression"
+	siteQualitySoftNavigationAuditFailedID = "site-soft-navigation-audit-failed"
 )
 
 type siteQualityAuditRule struct {

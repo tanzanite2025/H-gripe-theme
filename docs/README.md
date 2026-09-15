@@ -13,7 +13,10 @@ This directory is a project-level documentation hub. It is not the source of tru
 - CDN/WAF and responsive image cache runbook: `../deployment/EDGE_SECURITY_RUNBOOK.md`
 - Backend module notes: `../go-backend/docs/`
 - Backend security follow-ups: `../go-backend/docs/SECURITY_FOLLOW_UPS.md`
+- Form Honeypot anti-spam architecture: `security/form-honeypot-anti-spam-architecture.md`
+- Storefront Content Security Policy: `security/content-security-policy.md`
 - Admin console guide: `../go-backend/web/admin/README.md`
+- Distributed locks, task state machine, and idempotency architecture: `design/distributed-lock-task-state-machine-idempotency-architecture.md`
 - Payment channel and risk architecture: `design/payment-channel-domain-architecture.md`
 - Storefront hub: `../nuxt-i18n/docs/README.md`
 - Storefront active notes: `../nuxt-i18n/docs/notes/`
@@ -23,11 +26,16 @@ This directory is a project-level documentation hub. It is not the source of tru
 - QUICK selection flow architecture: `design/quick-buy-configuration-architecture.md`
 - Order evidence package architecture: `design/order-evidence-package-architecture.md`
 - Wheelset fit questionnaire specification: `design/wheelset-fit-questionnaire-specification.md`
+- Technical algorithm and simulation standards: `design/technical-algorithm-engineering-standards.md`
+- Spoke stress relief materials science whitepaper: `design/spoke-stress-relief-materials-science.md`
 - Storefront recommendation UX and algorithm contract: `design/storefront-recommendation-ux.md`
 - Storefront Maple UI font performance strategy: `design/storefront-font-performance-strategy.md`
 - Storefront light-theme color tokens: `design/emerald-light-theme-palette.md`
 - Ops control plane and workflow engine design: `design/ops-control-plane-workflow-engine.md`
-- Product profitability and procurement isolation design: `design/product-profit-procurement-isolation-architecture.md`
+- Product supplier-cost and profitability isolation design: `design/product-supplier-cost-profitability-isolation-architecture.md`
+- Product template and configurable options architecture: `design/product-template-and-options-architecture.md`
+- Referral and loyalty reward system architecture: `design/referral-reward-system-longterm-architecture.md`
+- Shipping quote, route plan, and price-lock architecture: `design/shipping-quote-plan-architecture.md`
 - SEO architecture: `seo/SEO_SYSTEM_ARCHITECTURE.md`
 - E-commerce URL and SEO target architecture: `seo/ECOMMERCE_URL_ARCHITECTURE.md`
 - SEO documentation index: `seo/README.md`
@@ -53,4 +61,4 @@ Archived files are historical context only. They should not be used to claim pro
 - Prefer one source of truth for each area: backend docs under `go-backend/`, storefront notes under `nuxt-i18n/`, project-level docs under `docs/`.
 - Remove legacy WordPress compatibility docs unless they describe an explicit migration-only tool.
 
-Last updated: 2026-09-05.
+Last updated: 2026-09-11.

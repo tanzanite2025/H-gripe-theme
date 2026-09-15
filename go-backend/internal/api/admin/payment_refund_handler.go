@@ -1,6 +1,7 @@
 package admin
 
 import (
+	"commerce-platform/internal/api/middleware"
 	"errors"
 	"strconv"
 
@@ -23,7 +24,7 @@ func (h *PaymentHandler) GetRefund(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, refund)
+	response.Success(c, adminRefundResponse(*refund))
 }
 
 func (h *PaymentHandler) GetOrderRefunds(c *gin.Context) {
@@ -38,7 +39,32 @@ func (h *PaymentHandler) GetOrderRefunds(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, gin.H{"data": refunds})
+	items := make([]interface{}, 0, len(refunds))
+	for _, refund := range refunds {
+		items = append(items, adminRefundResponse(refund))
+	}
+	response.Success(c, gin.H{"data": items})
+}
+
+func adminRefundResponse(refund paymentdomain.Refund) gin.H {
+	return gin.H{
+		"id":                             refund.ID,
+		"order_id":                       refund.OrderID,
+		"transaction_id":                 refund.TransactionID,
+		"refund_id":                      refund.RefundID,
+		"amount_minor":                   refund.AmountMinor,
+		"gift_card_refund_amount_minor":  refund.GiftCardRefundAmountMinor,
+		"requested_amount_minor":         refund.RequestedAmountMinor,
+		"discount_clawback_amount_minor": refund.DiscountClawbackAmountMinor,
+		"currency":                       refund.Currency,
+		"line_items":                     refund.LineItems,
+		"reason":                         refund.Reason,
+		"status":                         refund.Status,
+		"refunded_by":                    refund.RefundedBy,
+		"created_at":                     refund.CreatedAt,
+		"updated_at":                     refund.UpdatedAt,
+		"completed_at":                   refund.CompletedAt,
+	}
 }
 
 func (h *PaymentHandler) CreateRefund(c *gin.Context) {
@@ -138,7 +164,13 @@ func (h *PaymentHandler) CreateRefund(c *gin.Context) {
 		apierror.RespondInternalError(c, err)
 		return
 	}
-	if err := h.paymentService.CreateAdminRefund(&refund, adminID); err != nil {
+	createdRefund, err := h.paymentService.CreateAdminRefundWithIdempotency(
+		&refund,
+		adminID,
+		middleware.GetIdempotencyKey(c),
+		middleware.GetIdempotencyRequestHash(c),
+	)
+	if err != nil {
 		h.recordPaymentAdminAudit(c, paymentAdminAuditEvent{
 			StartedAt:    startedAt,
 			Action:       paymentAuditActionCreate,
@@ -163,7 +195,7 @@ func (h *PaymentHandler) CreateRefund(c *gin.Context) {
 		StartedAt:  startedAt,
 		Action:     paymentAuditActionCreate,
 		Resource:   paymentAuditResourceRefundDraft,
-		ResourceID: refund.ID,
+		ResourceID: createdRefund.ID,
 		Status:     paymentAuditStatusSuccess,
 		Changes: paymentRefundDraftAuditDetails(
 			req.OrderID,
@@ -172,10 +204,10 @@ func (h *PaymentHandler) CreateRefund(c *gin.Context) {
 			req.Reason,
 			len(req.LineItems),
 			restockCount,
-			&refund,
+			createdRefund,
 		),
 	})
-	response.Created(c, refund)
+	response.Created(c, createdRefund)
 }
 
 func parseAdminUintParam(c *gin.Context, name, message string) (uint, error) {

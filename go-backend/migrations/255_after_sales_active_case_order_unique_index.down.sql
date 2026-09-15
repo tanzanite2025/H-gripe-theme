@@ -1,0 +1,1 @@
+DROP INDEX IF EXISTS uq_active_after_sales_case_per_order;

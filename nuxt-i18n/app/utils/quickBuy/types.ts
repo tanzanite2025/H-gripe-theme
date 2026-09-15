@@ -15,7 +15,7 @@ export interface QuickBuySpecFilter {
   unit?: string
   fieldType: string
   presentation: string
-  isVariantOption?: boolean
+  role?: 'attribute' | 'variant' | 'custom_option' | string
   multiple?: boolean
   values: string[]
 }

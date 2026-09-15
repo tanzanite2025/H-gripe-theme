@@ -3,24 +3,27 @@ package cart
 import (
 	"commerce-platform/internal/api/v1/publicmedia"
 	productdomain "commerce-platform/internal/domain/product"
+	"encoding/json"
 )
 
 type PublicCartSummary struct {
-	ItemCount int              `json:"item_count"`
-	Total     float64          `json:"total"`
-	Items     []PublicCartItem `json:"items"`
+	ItemCount  int              `json:"item_count"`
+	TotalMinor int64            `json:"total_minor"`
+	Items      []PublicCartItem `json:"items"`
 }
 
 type PublicCartItem struct {
-	ID        uint               `json:"id"`
-	CartID    uint               `json:"cart_id"`
-	ProductID uint               `json:"product_id"`
-	VariantID *uint              `json:"variant_id"`
-	Quantity  int                `json:"quantity"`
-	Price     float64            `json:"price"`
-	Currency  string             `json:"currency"`
-	Product   *PublicCartProduct `json:"product,omitempty"`
-	Variant   *PublicCartVariant `json:"variant,omitempty"`
+	ID                uint               `json:"id"`
+	CartID            uint               `json:"cart_id"`
+	ProductID         uint               `json:"product_id"`
+	VariantID         *uint              `json:"variant_id"`
+	Quantity          int                `json:"quantity"`
+	PriceMinor        int64              `json:"price_minor"`
+	Currency          string             `json:"currency"`
+	Configuration     json.RawMessage    `json:"configuration,omitempty"`
+	ConfigurationHash string             `json:"configuration_hash,omitempty"`
+	Product           *PublicCartProduct `json:"product,omitempty"`
+	Variant           *PublicCartVariant `json:"variant,omitempty"`
 }
 
 type PublicCartProduct struct {
@@ -79,22 +82,32 @@ func PublicCartSummaryFromDomain(summary *productdomain.CartSummary, resolvers .
 			fulfillmentMode = productdomain.NormalizeFulfillmentMode(item.Product.FulfillmentMode)
 		}
 		publicItem := PublicCartItem{
-			ID:        item.ID,
-			CartID:    item.CartID,
-			ProductID: item.ProductID,
-			VariantID: item.VariantID,
-			Quantity:  item.Quantity,
-			Price:     item.Price,
-			Currency:  item.Currency,
+			ID:                item.ID,
+			CartID:            item.CartID,
+			ProductID:         item.ProductID,
+			VariantID:         item.VariantID,
+			Quantity:          item.Quantity,
+			PriceMinor:        item.PriceMinor,
+			Currency:          item.Currency,
+			Configuration:     append(json.RawMessage(nil), item.ConfigurationData...),
+			ConfigurationHash: item.ConfigurationHash,
 		}
 		if item.Variant != nil {
+			variantPriceMoney, _ := item.Variant.PriceMoney()
+			variantPrice, _ := variantPriceMoney.MajorFloat()
+			var variantSalePrice *float64
+			if saleMoney, err := item.Variant.SalePriceMoney(); err == nil && saleMoney != nil {
+				if sale, saleErr := saleMoney.MajorFloat(); saleErr == nil {
+					variantSalePrice = &sale
+				}
+			}
 			publicVariant := PublicCartVariant{
 				ID:           item.Variant.ID,
 				ProductID:    item.Variant.ProductID,
 				Title:        item.Variant.Title,
 				OptionValues: item.Variant.OptionValues,
-				Price:        item.Variant.Price,
-				SalePrice:    item.Variant.SalePrice,
+				Price:        variantPrice,
+				SalePrice:    variantSalePrice,
 				IsDefault:    item.Variant.IsDefault,
 				Availability: string(cartAvailabilityForVariant(*item.Variant, fulfillmentMode)),
 			}
@@ -122,10 +135,20 @@ func PublicCartSummaryFromDomain(summary *productdomain.CartSummary, resolvers .
 	}
 
 	return PublicCartSummary{
-		ItemCount: summary.ItemCount,
-		Total:     summary.Total,
-		Items:     items,
+		ItemCount:  summary.ItemCount,
+		TotalMinor: summaryTotalMinor(summary),
+		Items:      items,
 	}
+}
+
+func summaryTotalMinor(summary *productdomain.CartSummary) int64 {
+	if summary == nil {
+		return 0
+	}
+	if err := summary.TotalMoney.Validate(); err != nil {
+		return 0
+	}
+	return summary.TotalMoney.AmountMinor()
 }
 
 func publicCartMediaFromDomain(items []productdomain.ProductMedia, resolver publicmedia.Resolver) []PublicCartMedia {

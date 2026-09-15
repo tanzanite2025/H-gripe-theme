@@ -21,7 +21,8 @@ func (r *PaymentRepository) FindTaxRateByID(id uint) (*payment.TaxRate, error) {
 }
 
 // FindTaxRateByLocation 根据地区查找税率。
-// postalCode 是可选的；提供时优先匹配精确邮编，找不到再回退到该地区的默认税率。
+// postalCode 是可选的；查找按精确邮编 -> 州默认 -> 全国默认（state 为空）
+// 三级回退，确保只配置全国 VAT 的国家不会被静默按零税率结算。
 func (r *PaymentRepository) FindTaxRateByLocation(country, state string, postalCodes ...string) (*payment.TaxRate, error) {
 	var tr payment.TaxRate
 
@@ -32,11 +33,8 @@ func (r *PaymentRepository) FindTaxRateByLocation(country, state string, postalC
 		postalCode = strings.ToUpper(strings.TrimSpace(postalCodes[0]))
 	}
 
-	locationQuery := func() *gorm.DB {
-		return r.db.Where("country = ? AND state = ? AND enabled = ?", country, state, true)
-	}
 	if postalCode != "" {
-		err := locationQuery().
+		err := r.db.Where("country = ? AND COALESCE(state, '') = ? AND enabled = ?", country, state, true).
 			Where("postal_code = ?", postalCode).
 			Order("priority DESC, id ASC").
 			First(&tr).Error
@@ -48,7 +46,23 @@ func (r *PaymentRepository) FindTaxRateByLocation(country, state string, postalC
 		}
 	}
 
-	err := locationQuery().
+	if state != "" {
+		err := r.db.Where("country = ? AND state = ? AND enabled = ?", country, state, true).
+			Where("COALESCE(postal_code, '') = ''").
+			Order("priority DESC, id ASC").
+			First(&tr).Error
+		if err == nil {
+			return &tr, nil
+		}
+		if !errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, err
+		}
+	}
+
+	// National rules are represented by an empty state (and, like state
+	// defaults, an empty postal code). Keep the country predicate strict so a
+	// missing country can never borrow another country's VAT rate.
+	err := r.db.Where("country = ? AND COALESCE(state, '') = '' AND enabled = ?", country, true).
 		Where("COALESCE(postal_code, '') = ''").
 		Order("priority DESC, id ASC").
 		First(&tr).Error

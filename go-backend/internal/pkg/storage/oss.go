@@ -17,9 +17,10 @@ import (
 
 // ossStorageImpl 阿里云OSS存储完整实现
 type ossStorageImpl struct {
-	config *Config
-	client *oss.Client
-	bucket *oss.Bucket
+	config        *Config
+	client        *oss.Client
+	bucket        *oss.Bucket
+	privateBucket *oss.Bucket
 }
 
 // NewOSSStorage 创建OSS存储服务
@@ -59,10 +60,19 @@ func NewOSSStorage(cfg *Config) (StorageService, error) {
 		return nil, fmt.Errorf("failed to get OSS bucket: %w", err)
 	}
 
+	var privateBucket *oss.Bucket
+	if strings.TrimSpace(cfg.PrivateBucket) != "" && cfg.PrivateBucket != cfg.Bucket {
+		privateBucket, err = client.Bucket(cfg.PrivateBucket)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get private OSS bucket: %w", err)
+		}
+	}
+
 	return &ossStorageImpl{
-		config: cfg,
-		client: client,
-		bucket: bucket,
+		config:        cfg,
+		client:        client,
+		bucket:        bucket,
+		privateBucket: privateBucket,
 	}, nil
 }
 
@@ -76,7 +86,26 @@ func (s *ossStorageImpl) UploadWithPrefix(ctx context.Context, file *multipart.F
 }
 
 func (s *ossStorageImpl) UploadWithPrefixPrivate(ctx context.Context, file *multipart.FileHeader, prefix string) (string, error) {
+	if !isPrivateUploadPrefix(prefix) {
+		return "", fmt.Errorf("private upload prefix must use a private namespace")
+	}
+	if strings.TrimSpace(s.config.PrivateBucket) == "" || strings.TrimSpace(s.config.PrivateBucket) == strings.TrimSpace(s.config.Bucket) {
+		return "", fmt.Errorf("private storage bucket is not configured")
+	}
+	if strings.TrimSpace(s.config.PrivateBaseURL) != "" && strings.EqualFold(strings.TrimRight(strings.TrimSpace(s.config.PrivateBaseURL), "/"), strings.TrimRight(strings.TrimSpace(s.config.BaseURL), "/")) {
+		return "", fmt.Errorf("private storage base URL must be separate from public base URL")
+	}
 	return s.uploadWithPrefix(ctx, file, prefix, true, "")
+}
+
+func (s *ossStorageImpl) bucketForKey(key string) *oss.Bucket {
+	if s != nil && IsPrivateObjectKey(key) {
+		if s.privateBucket == nil {
+			return nil
+		}
+		return s.privateBucket
+	}
+	return s.bucket
 }
 
 func (s *ossStorageImpl) UploadWithPrefixAndCacheControl(ctx context.Context, file *multipart.FileHeader, prefix string, cacheControl string) (string, error) {
@@ -112,12 +141,16 @@ func (s *ossStorageImpl) uploadWithPrefix(ctx context.Context, file *multipart.F
 	}
 
 	// 上传到OSS
-	err = s.bucket.PutObject(filename, src, options...)
+	bucket := s.bucketForKey(filename)
+	if bucket == nil {
+		return "", fmt.Errorf("private storage bucket is not configured")
+	}
+	err = bucket.PutObject(filename, src, options...)
 	if err != nil {
 		return "", fmt.Errorf("failed to upload to OSS: %w", err)
 	}
 
-	return s.GetURL(filename), nil
+	return s.getURL(filename, private), nil
 }
 
 // UploadFromReader 从Reader上传到OSS
@@ -148,7 +181,11 @@ func (s *ossStorageImpl) UploadFromReaderWithPrefixAndCacheControl(_ context.Con
 	}
 
 	// 上传到OSS
-	err = s.bucket.PutObject(newFilename, reader, options...)
+	bucket := s.bucketForKey(newFilename)
+	if bucket == nil {
+		return "", fmt.Errorf("private storage bucket is not configured")
+	}
+	err = bucket.PutObject(newFilename, reader, options...)
 	if err != nil {
 		return "", fmt.Errorf("failed to upload to OSS: %w", err)
 	}
@@ -165,7 +202,11 @@ func (s *ossStorageImpl) Delete(ctx context.Context, url string) error {
 	}
 
 	// 从OSS删除对象
-	err = s.bucket.DeleteObject(key)
+	bucket := s.bucketForKey(key)
+	if bucket == nil {
+		return fmt.Errorf("private storage bucket is not configured")
+	}
+	err = bucket.DeleteObject(key)
 	if err != nil {
 		return fmt.Errorf("failed to delete from OSS: %w", err)
 	}
@@ -175,22 +216,47 @@ func (s *ossStorageImpl) Delete(ctx context.Context, url string) error {
 
 // GetURL 获取OSS文件URL
 func (s *ossStorageImpl) GetURL(filename string) string {
-	if s.config.BaseURL != "" {
+	return s.getURL(filename, false)
+}
+
+func (s *ossStorageImpl) getURL(filename string, forcePrivate bool) string {
+	if (forcePrivate || IsPrivateObjectKey(filename)) && s.privateBucket == nil {
+		return ""
+	}
+	baseURL := s.config.BaseURL
+	if forcePrivate || IsPrivateObjectKey(filename) {
+		if strings.TrimSpace(s.config.PrivateBaseURL) != "" {
+			baseURL = s.config.PrivateBaseURL
+		} else {
+			// Never expose private objects through the public CDN. Fall back to
+			// the private bucket's native endpoint URL below.
+			baseURL = ""
+		}
+	}
+	if baseURL != "" {
 		// 使用自定义域名或CDN
-		return fmt.Sprintf("%s/%s", strings.TrimSuffix(s.config.BaseURL, "/"), filename)
+		return fmt.Sprintf("%s/%s", strings.TrimSuffix(baseURL, "/"), filename)
 	}
 
 	// 使用标准OSS URL
 	// 格式：https://{bucket}.{endpoint}/{object}
 	endpoint := strings.TrimPrefix(s.config.Endpoint, "https://")
 	endpoint = strings.TrimPrefix(endpoint, "http://")
-	return fmt.Sprintf("https://%s.%s/%s", s.config.Bucket, endpoint, filename)
+	bucket := s.config.Bucket
+	if (forcePrivate || IsPrivateObjectKey(filename)) && strings.TrimSpace(s.config.PrivateBucket) != "" {
+		bucket = s.config.PrivateBucket
+	}
+	return fmt.Sprintf("https://%s.%s/%s", bucket, endpoint, filename)
 }
 
 // GetPresignedURL 获取OSS预签名URL（用于临时访问私有文件）
 func (s *ossStorageImpl) GetPresignedURL(ctx context.Context, filename string, duration time.Duration) (string, error) {
 	// 生成预签名URL
-	signedURL, err := s.bucket.SignURL(filename, oss.HTTPGet, int64(duration.Seconds()))
+	bucket := s.bucketForKey(filename)
+	if bucket == nil {
+		return "", fmt.Errorf("private storage bucket is not configured")
+	}
+	signedURL, err := bucket.SignURL(filename, oss.HTTPGet, int64(duration.Seconds()))
 	if err != nil {
 		return "", fmt.Errorf("failed to generate presigned URL: %w", err)
 	}
@@ -200,28 +266,40 @@ func (s *ossStorageImpl) GetPresignedURL(ctx context.Context, filename string, d
 
 // extractKeyFromURL 从URL提取OSS key
 func (s *ossStorageImpl) extractKeyFromURL(url string) string {
-	// 处理自定义域名
+	// 处理私有和公共自定义域名（两者可能同时配置）
+	if s.config.PrivateBaseURL != "" {
+		prefix := strings.TrimRight(s.config.PrivateBaseURL, "/") + "/"
+		if strings.HasPrefix(url, prefix) {
+			return strings.TrimPrefix(url, prefix)
+		}
+	}
 	if s.config.BaseURL != "" {
 		prefix := strings.TrimRight(s.config.BaseURL, "/") + "/"
 		if strings.HasPrefix(url, prefix) {
 			return strings.TrimPrefix(url, prefix)
 		}
-		return ""
 	}
 
 	// 处理标准OSS URL
 	endpoint := strings.TrimPrefix(s.config.Endpoint, "https://")
 	endpoint = strings.TrimPrefix(endpoint, "http://")
-	ossPrefix := fmt.Sprintf("https://%s.%s/", s.config.Bucket, endpoint)
-
-	if strings.HasPrefix(url, ossPrefix) {
-		return strings.TrimPrefix(url, ossPrefix)
+	for _, bucket := range []string{s.config.PrivateBucket, s.config.Bucket} {
+		if strings.TrimSpace(bucket) == "" {
+			continue
+		}
+		ossPrefix := fmt.Sprintf("https://%s.%s/", bucket, endpoint)
+		if strings.HasPrefix(url, ossPrefix) {
+			return strings.TrimPrefix(url, ossPrefix)
+		}
 	}
 
 	return ""
 }
 
 func (s *ossStorageImpl) ObjectKey(reference string) (string, error) {
+	if key, ok := ObjectKeyFromBaseURL(reference, s.config.PrivateBaseURL); ok {
+		return key, nil
+	}
 	if key, ok := ObjectKeyFromBaseURL(reference, s.config.BaseURL); ok {
 		return key, nil
 	}
@@ -235,10 +313,15 @@ func (s *ossStorageImpl) ObjectKey(reference string) (string, error) {
 	if parsed, err := url.Parse(value); err == nil && parsed.Scheme != "" && parsed.Host != "" {
 		endpoint := strings.TrimPrefix(s.config.Endpoint, "https://")
 		endpoint = strings.TrimPrefix(endpoint, "http://")
-		standardHost := fmt.Sprintf("%s.%s", s.config.Bucket, endpoint)
-		if strings.EqualFold(parsed.Host, standardHost) {
-			if normalized, ok := NormalizeObjectKey(strings.TrimPrefix(parsed.Path, "/")); ok {
-				return normalized, nil
+		for _, bucket := range []string{s.config.PrivateBucket, s.config.Bucket} {
+			if strings.TrimSpace(bucket) == "" {
+				continue
+			}
+			standardHost := fmt.Sprintf("%s.%s", bucket, endpoint)
+			if strings.EqualFold(parsed.Host, standardHost) {
+				if normalized, ok := NormalizeObjectKey(strings.TrimPrefix(parsed.Path, "/")); ok {
+					return normalized, nil
+				}
 			}
 		}
 	}
@@ -261,11 +344,15 @@ func (s *ossStorageImpl) Open(ctx context.Context, key string) (*StoredObject, e
 		return nil, fmt.Errorf("invalid object key")
 	}
 
-	headers, err := s.bucket.GetObjectMeta(normalizedKey)
+	bucket := s.bucketForKey(normalizedKey)
+	if bucket == nil {
+		return nil, fmt.Errorf("private storage bucket is not configured")
+	}
+	headers, err := bucket.GetObjectMeta(normalizedKey)
 	if err != nil {
 		return nil, fmt.Errorf("failed to inspect OSS object: %w", err)
 	}
-	body, err := s.bucket.GetObject(normalizedKey)
+	body, err := bucket.GetObject(normalizedKey)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open OSS object: %w", err)
 	}
@@ -285,9 +372,16 @@ func (s *ossStorageImpl) Open(ctx context.Context, key string) (*StoredObject, e
 func (s *ossStorageImpl) ListObjects(ctx context.Context, prefix string, maxKeys int) ([]string, error) {
 	marker := ""
 	keys := make([]string, 0)
+	bucket := s.bucket
+	if IsPrivateObjectKey(prefix) || isPrivateUploadPrefix(prefix) {
+		bucket = s.bucketForKey(prefix)
+		if bucket == nil {
+			return nil, fmt.Errorf("private storage bucket is not configured")
+		}
+	}
 
 	for {
-		lsRes, err := s.bucket.ListObjects(
+		lsRes, err := bucket.ListObjects(
 			oss.Prefix(prefix),
 			oss.MaxKeys(maxKeys),
 			oss.Marker(marker),
@@ -321,7 +415,19 @@ func (s *ossStorageImpl) CopyObject(ctx context.Context, sourceKey, destKey stri
 		return fmt.Errorf("invalid destination object key")
 	}
 
-	_, err := s.bucket.CopyObject(normalizedSourceKey, normalizedDestKey)
+	sourceBucket := s.bucketForKey(normalizedSourceKey)
+	destBucket := s.bucketForKey(normalizedDestKey)
+	if sourceBucket == nil || destBucket == nil {
+		return fmt.Errorf("private storage bucket is not configured")
+	}
+	var err error
+	if sourceBucket == destBucket {
+		_, err = sourceBucket.CopyObject(normalizedSourceKey, normalizedDestKey)
+	} else if sourceBucket == s.privateBucket {
+		_, err = destBucket.CopyObjectFrom(s.config.PrivateBucket, normalizedSourceKey, normalizedDestKey)
+	} else {
+		_, err = destBucket.CopyObjectFrom(s.config.Bucket, normalizedSourceKey, normalizedDestKey)
+	}
 	if err != nil {
 		return fmt.Errorf("failed to copy object: %w", err)
 	}
@@ -365,7 +471,11 @@ func (s *ossStorageImpl) UploadMultipart(ctx context.Context, reader io.Reader, 
 
 // GetObjectMeta 获取对象元信息
 func (s *ossStorageImpl) GetObjectMeta(ctx context.Context, key string) (map[string]string, error) {
-	headers, err := s.bucket.GetObjectMeta(key)
+	bucket := s.bucketForKey(key)
+	if bucket == nil {
+		return nil, fmt.Errorf("private storage bucket is not configured")
+	}
+	headers, err := bucket.GetObjectMeta(key)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get object meta: %w", err)
 	}
@@ -382,7 +492,11 @@ func (s *ossStorageImpl) GetObjectMeta(ctx context.Context, key string) (map[str
 
 // IsObjectExist 检查对象是否存在
 func (s *ossStorageImpl) IsObjectExist(ctx context.Context, key string) (bool, error) {
-	exists, err := s.bucket.IsObjectExist(key)
+	bucket := s.bucketForKey(key)
+	if bucket == nil {
+		return false, fmt.Errorf("private storage bucket is not configured")
+	}
+	exists, err := bucket.IsObjectExist(key)
 	if err != nil {
 		return false, fmt.Errorf("failed to check object existence: %w", err)
 	}
@@ -392,7 +506,11 @@ func (s *ossStorageImpl) IsObjectExist(ctx context.Context, key string) (bool, e
 
 // SetObjectACL 设置对象访问权限
 func (s *ossStorageImpl) SetObjectACL(ctx context.Context, key string, acl oss.ACLType) error {
-	err := s.bucket.SetObjectACL(key, acl)
+	bucket := s.bucketForKey(key)
+	if bucket == nil {
+		return fmt.Errorf("private storage bucket is not configured")
+	}
+	err := bucket.SetObjectACL(key, acl)
 	if err != nil {
 		return fmt.Errorf("failed to set object ACL: %w", err)
 	}
@@ -402,7 +520,11 @@ func (s *ossStorageImpl) SetObjectACL(ctx context.Context, key string, acl oss.A
 
 // GetObjectToFile 下载对象到本地文件
 func (s *ossStorageImpl) GetObjectToFile(ctx context.Context, key, filename string) error {
-	err := s.bucket.GetObjectToFile(key, filename)
+	bucket := s.bucketForKey(key)
+	if bucket == nil {
+		return fmt.Errorf("private storage bucket is not configured")
+	}
+	err := bucket.GetObjectToFile(key, filename)
 	if err != nil {
 		return fmt.Errorf("failed to download object: %w", err)
 	}

@@ -2,6 +2,7 @@ package service
 
 import (
 	"testing"
+	"time"
 
 	"commerce-platform/internal/domain/aftersales"
 	coupondomain "commerce-platform/internal/domain/coupon"
@@ -111,10 +112,70 @@ func TestAfterSalesServiceEnforcesTransitionsAndRemainingQuantity(t *testing.T) 
 			Quantity:    1,
 		}},
 	})
-	require.ErrorIs(t, err, ErrAfterSalesQuantityExceeded)
+	require.NoError(t, err)
 }
 
-func TestAfterSalesServiceCustomerRequestUsesRemainingQuantityAfterCompletedCase(t *testing.T) {
+func TestAfterSalesServicePersistsAndValidatesReturnShipmentLifecycle(t *testing.T) {
+	db, service := newAfterSalesService(t)
+	orderRecord := seedAfterSalesOrder(t, db, 1)
+	created, err := service.CreateCase(CreateAfterSalesCaseInput{
+		OrderID: orderRecord.ID,
+		Type:    aftersales.TypeReturnRefund,
+		Reason:  "Return damaged item",
+		Items: []AfterSalesCaseItemInput{{
+			OrderItemID: orderRecord.Items[0].ID,
+			Quantity:    1,
+		}},
+	})
+	require.NoError(t, err)
+	_, err = service.UpdateStatus(created.ID, aftersales.StatusReviewing, "Reviewed", 7)
+	require.NoError(t, err)
+	_, err = service.UpdateStatus(created.ID, aftersales.StatusApproved, "Return approved", 7)
+	require.NoError(t, err)
+
+	_, err = service.UpdateStatusWithReturnShipment(created.ID, UpdateAfterSalesStatusInput{
+		Status:           aftersales.StatusAwaitingReturn,
+		Resolution:       "Send the item to the EU returns hub",
+		UpdatedBy:        7,
+		WarehouseName:    "EU Returns Hub",
+		WarehouseAddress: "1 Returns Way, Amsterdam",
+	})
+	require.NoError(t, err)
+	_, err = service.UpdateStatusWithReturnShipment(created.ID, UpdateAfterSalesStatusInput{
+		Status:         aftersales.StatusReturnInTransit,
+		Resolution:     "Customer shipped the package",
+		UpdatedBy:      7,
+		Carrier:        "DHL",
+		TrackingNumber: "DHL-123",
+		TrackingURL:    "https://tracking.example/DHL-123",
+	})
+	require.NoError(t, err)
+
+	withoutReceiver := uint(0)
+	_, err = service.UpdateStatusWithReturnShipment(created.ID, UpdateAfterSalesStatusInput{
+		Status:     aftersales.StatusReceived,
+		Resolution: "Package arrived",
+		UpdatedBy:  7,
+		ReceivedBy: &withoutReceiver,
+	})
+	require.ErrorIs(t, err, ErrAfterSalesReturnReceiverRequired)
+
+	receivedBy := uint(42)
+	updated, err := service.UpdateStatusWithReturnShipment(created.ID, UpdateAfterSalesStatusInput{
+		Status:     aftersales.StatusReceived,
+		Resolution: "Package arrived",
+		UpdatedBy:  7,
+		ReceivedBy: &receivedBy,
+	})
+	require.NoError(t, err)
+	assert.Equal(t, aftersales.StatusReceived, updated.Status)
+	require.Len(t, updated.ReturnShipments, 1)
+	assert.Equal(t, "DHL", updated.ReturnShipments[0].Carrier)
+	assert.Equal(t, "DHL-123", updated.ReturnShipments[0].TrackingNumber)
+	assert.NotNil(t, updated.ReturnShipments[0].ReceivedAt)
+}
+
+func TestAfterSalesServiceCustomerRequestDoesNotConsumeCompletedCaseQuantity(t *testing.T) {
 	db, service := newAfterSalesService(t)
 	orderRecord := seedAfterSalesOrder(t, db, 2)
 
@@ -142,7 +203,125 @@ func TestAfterSalesServiceCustomerRequestUsesRemainingQuantityAfterCompletedCase
 	require.NoError(t, err)
 	require.Len(t, request.Items, 1)
 	assert.Equal(t, orderRecord.Items[0].ID, request.Items[0].OrderItemID)
-	assert.Equal(t, 1, request.Items[0].Quantity)
+	assert.Equal(t, 2, request.Items[0].Quantity)
+}
+
+func TestAfterSalesServiceCustomerRequestSnapshotDoesNotReserveEligibility(t *testing.T) {
+	db, service := newAfterSalesService(t)
+	orderRecord := seedAfterSalesOrder(t, db, 2)
+
+	request, err := service.CreateCustomerRequest(CreateCustomerAfterSalesRequestInput{
+		OrderID:     orderRecord.ID,
+		Reason:      "Valve color is wrong",
+		Description: "Please review the affected item.",
+		CreatedBy:   1,
+	})
+	require.NoError(t, err)
+	require.Len(t, request.Items, 1)
+	assert.Equal(t, 2, request.Items[0].Quantity)
+
+	// The customer snapshot contains the complete order for staff context, but
+	// it must not prevent a later operator-created case from selecting the
+	// actual affected line and quantity.
+	created, err := service.CreateCase(CreateAfterSalesCaseInput{
+		OrderID: orderRecord.ID,
+		Type:    aftersales.TypeRefundOnly,
+		Reason:  "Refund only the incorrectly colored valve",
+		Items: []AfterSalesCaseItemInput{{
+			OrderItemID: orderRecord.Items[0].ID,
+			Quantity:    2,
+		}},
+		CreatedBy: 7,
+	})
+	require.NoError(t, err)
+	require.Len(t, created.Items, 1)
+	assert.Equal(t, 2, created.Items[0].Quantity)
+}
+
+func TestAfterSalesServiceAllowsCustomerRequestAlongsideOperatorCase(t *testing.T) {
+	db, service := newAfterSalesService(t)
+	orderRecord := seedAfterSalesOrder(t, db, 2)
+
+	operatorCase, err := service.CreateCase(CreateAfterSalesCaseInput{
+		OrderID: orderRecord.ID,
+		Type:    aftersales.TypeReturnRefund,
+		Reason:  "Return one wheelset",
+		Items: []AfterSalesCaseItemInput{{
+			OrderItemID: orderRecord.Items[0].ID,
+			Quantity:    1,
+		}},
+		CreatedBy: 7,
+	})
+	require.NoError(t, err)
+
+	customerCase, err := service.CreateCustomerRequest(CreateCustomerAfterSalesRequestInput{
+		OrderID:     orderRecord.ID,
+		Reason:      "The remaining wheelset needs support",
+		Description: "Please review the other item while the first return is in transit.",
+		CreatedBy:   1,
+	})
+	require.NoError(t, err)
+	require.NotNil(t, customerCase)
+	assert.Equal(t, aftersales.TypeCustomerRequest, customerCase.Type)
+	require.Len(t, customerCase.Items, 1)
+	// Customer requests keep a complete order snapshot for staff context;
+	// operator-managed reservations are not subtracted from this informational
+	// snapshot.
+	assert.Equal(t, 2, customerCase.Items[0].Quantity)
+	assert.NotEqual(t, operatorCase.ID, customerCase.ID)
+}
+
+func TestAfterSalesServiceListsCustomerCasesWithStatusHistory(t *testing.T) {
+	db, service := newAfterSalesService(t)
+	orderRecord := seedAfterSalesOrder(t, db, 1)
+
+	created, err := service.CreateCustomerRequest(CreateCustomerAfterSalesRequestInput{
+		OrderID:     orderRecord.ID,
+		Reason:      "Need return instructions",
+		Description: "Please share the return address and next steps.",
+		CreatedBy:   1,
+	})
+	require.NoError(t, err)
+
+	cases, err := service.ListCustomerCasesByOrder(orderRecord.ID, "")
+	require.NoError(t, err)
+	require.Len(t, cases, 1)
+	assert.Equal(t, created.ID, cases[0].ID)
+	assert.Equal(t, aftersales.StatusRequested, cases[0].Status)
+	require.Len(t, cases[0].Items, 1)
+	require.Len(t, cases[0].Events, 1)
+	assert.Equal(t, aftersales.StatusRequested, cases[0].Events[0].ToStatus)
+}
+
+func TestAfterSalesServiceRejectsDuplicateActiveCustomerRequests(t *testing.T) {
+	db, service := newAfterSalesService(t)
+	orderRecord := seedAfterSalesOrder(t, db, 1)
+	input := CreateCustomerAfterSalesRequestInput{
+		OrderID:     orderRecord.ID,
+		Reason:      "Package arrived damaged",
+		Description: "The product needs support review.",
+		CreatedBy:   1,
+	}
+
+	first, err := service.CreateCustomerRequest(input)
+	require.NoError(t, err)
+	require.NotNil(t, first)
+	assert.Equal(t, aftersales.StatusRequested, first.Status)
+
+	second, err := service.CreateCustomerRequest(input)
+	require.ErrorIs(t, err, ErrAfterSalesRequestAlreadyExists)
+	assert.Nil(t, second)
+
+	var activeCount int64
+	require.NoError(t, db.Model(&aftersales.AfterSalesCase{}).
+		Where("order_id = ?", orderRecord.ID).
+		Where("status NOT IN ?", []string{
+			aftersales.StatusCompleted,
+			aftersales.StatusRejected,
+			aftersales.StatusCancelled,
+		}).
+		Count(&activeCount).Error)
+	assert.Equal(t, int64(1), activeCount)
 }
 
 func TestAfterSalesServiceListsAdminCasesWithOrderNumberAndFilters(t *testing.T) {
@@ -238,8 +417,7 @@ func TestAfterSalesServiceRefundReviewDraftAndDecision(t *testing.T) {
 
 	draft, err := service.SaveRefundReview(SaveAfterSalesRefundReviewInput{
 		CaseID:         created.ID,
-		ProposedAmount: 50,
-		Currency:       "usd",
+		ProposedAmount: mustTestMoney(t, 50, "usd"),
 		RequestNotes:   "Selected item total is refundable.",
 		UpdatedBy:      7,
 	})
@@ -261,8 +439,7 @@ func TestAfterSalesServiceRefundReviewDraftAndDecision(t *testing.T) {
 
 	_, err = service.SaveRefundReview(SaveAfterSalesRefundReviewInput{
 		CaseID:         created.ID,
-		ProposedAmount: 20,
-		Currency:       "USD",
+		ProposedAmount: mustTestMoney(t, 20, "USD"),
 		RequestNotes:   "Attempt to overwrite approved decision.",
 		UpdatedBy:      7,
 	})
@@ -285,8 +462,7 @@ func TestAfterSalesServiceRefundReviewValidatesAvailabilityAndAmount(t *testing.
 	require.NoError(t, err)
 	_, err = service.SaveRefundReview(SaveAfterSalesRefundReviewInput{
 		CaseID:         created.ID,
-		ProposedAmount: 10,
-		Currency:       "USD",
+		ProposedAmount: mustTestMoney(t, 10, "USD"),
 		RequestNotes:   "Not a refund case.",
 		UpdatedBy:      7,
 	})
@@ -311,8 +487,7 @@ func TestAfterSalesServiceRefundReviewValidatesAvailabilityAndAmount(t *testing.
 
 	_, err = service.SaveRefundReview(SaveAfterSalesRefundReviewInput{
 		CaseID:         refundCase.ID,
-		ProposedAmount: 51,
-		Currency:       "USD",
+		ProposedAmount: mustTestMoney(t, 51, "USD"),
 		RequestNotes:   "Exceeds selected item total.",
 		UpdatedBy:      7,
 	})
@@ -321,13 +496,13 @@ func TestAfterSalesServiceRefundReviewValidatesAvailabilityAndAmount(t *testing.
 
 func TestRefundReviewLimitAllocatesOrderDiscountAcrossSelectedItems(t *testing.T) {
 	orderRecord := &order.Order{
-		SubtotalAmount: 200,
-		DiscountAmount: 100,
-		TotalAmount:    100,
-		Currency:       "USD",
+		SubtotalAmountMinor: 20000,
+		DiscountAmountMinor: 10000,
+		TotalAmountMinor:    10000,
+		Currency:            "USD",
 		Items: []order.OrderItem{
-			{ID: 1, Quantity: 1, Subtotal: 100, Total: 100},
-			{ID: 2, Quantity: 1, Subtotal: 100, Total: 100},
+			{ID: 1, Quantity: 1, Currency: "USD", SubtotalMinor: 10000, TotalMinor: 10000},
+			{ID: 2, Quantity: 1, Currency: "USD", SubtotalMinor: 10000, TotalMinor: 10000},
 		},
 	}
 	caseRecord := &aftersales.AfterSalesCase{
@@ -337,20 +512,20 @@ func TestRefundReviewLimitAllocatesOrderDiscountAcrossSelectedItems(t *testing.T
 		},
 	}
 
-	amount, currencyCode := refundReviewLimit(caseRecord, orderRecord)
+	amount := refundReviewLimit(caseRecord, orderRecord)
 
-	assert.Equal(t, "USD", currencyCode)
-	assert.Equal(t, 50.0, amount)
+	assert.Equal(t, "USD", amount.Currency().String())
+	assert.Equal(t, int64(5000), amount.AmountMinor())
 }
 
 func TestRefundReviewLimitKeepsUndiscountedAmountAndCapsAtOrderTotal(t *testing.T) {
 	orderRecord := &order.Order{
-		SubtotalAmount: 200,
-		TotalAmount:    30,
-		Currency:       "USD",
+		SubtotalAmountMinor: 20000,
+		TotalAmountMinor:    3000,
+		Currency:            "USD",
 		Items: []order.OrderItem{
-			{ID: 1, Quantity: 1, Subtotal: 100, Total: 100},
-			{ID: 2, Quantity: 1, Subtotal: 100, Total: 100},
+			{ID: 1, Quantity: 1, Currency: "USD", SubtotalMinor: 10000, TotalMinor: 10000},
+			{ID: 2, Quantity: 1, Currency: "USD", SubtotalMinor: 10000, TotalMinor: 10000},
 		},
 	}
 	caseRecord := &aftersales.AfterSalesCase{
@@ -360,9 +535,9 @@ func TestRefundReviewLimitKeepsUndiscountedAmountAndCapsAtOrderTotal(t *testing.
 		},
 	}
 
-	amount, _ := refundReviewLimit(caseRecord, orderRecord)
+	amount := refundReviewLimit(caseRecord, orderRecord)
 
-	assert.Equal(t, 30.0, amount)
+	assert.Equal(t, int64(3000), amount.AmountMinor())
 }
 
 func TestAfterSalesServiceCreatesIdempotentPendingRefundFromApprovedReview(t *testing.T) {
@@ -393,8 +568,7 @@ func TestAfterSalesServiceCreatesIdempotentPendingRefundFromApprovedReview(t *te
 
 	_, err = service.SaveRefundReview(SaveAfterSalesRefundReviewInput{
 		CaseID:         created.ID,
-		ProposedAmount: 50,
-		Currency:       "USD",
+		ProposedAmount: mustTestMoney(t, 50, "USD"),
 		RequestNotes:   "One selected item is refundable.",
 		UpdatedBy:      7,
 	})
@@ -439,6 +613,87 @@ func TestAfterSalesServiceCreatesIdempotentPendingRefundFromApprovedReview(t *te
 	assert.Equal(t, int64(1), refundCount)
 }
 
+func TestAfterSalesServiceCreatesPendingRefundForFullyApprovedOrderCouponRefund(t *testing.T) {
+	db, service := newAfterSalesService(t)
+	orderRecord := seedAfterSalesOrder(t, db, 1)
+	require.NoError(t, db.Model(&order.Order{}).Where("id = ?", orderRecord.ID).Updates(map[string]interface{}{
+		"subtotal_amount_minor": 100000,
+		"discount_amount_minor": 10000,
+		"total_amount_minor":    90000,
+		"coupon_code":           "SAVE100",
+	}).Error)
+	pricingSnapshot := refundPricingLineForTest(
+		t,
+		orderRecord.Items[0].ProductID,
+		orderRecord.Items[0].VariantID,
+		1,
+		1000,
+		0,
+		"USD",
+	)
+	require.NoError(t, db.Model(&order.OrderItem{}).Where("id = ?", orderRecord.Items[0].ID).Updates(map[string]interface{}{
+		"price_minor":      100000,
+		"subtotal_minor":   100000,
+		"total_minor":      100000,
+		"pricing_snapshot": pricingSnapshot,
+	}).Error)
+	require.NoError(t, db.Create(&paymentdomain.Transaction{
+		OrderID:       orderRecord.ID,
+		TransactionID: "as-coupon-refund-transaction",
+		PaymentMethod: "stripe",
+		Amount:        900,
+		Currency:      "USD",
+		Status:        "completed",
+	}).Error)
+	promo := seedAfterSalesCoupon(t, db, "SAVE100", "fixed", 100, 1000, 0)
+	require.NoError(t, db.Create(&coupondomain.CouponUsage{
+		CouponID: promo.ID,
+		UserID:   orderRecord.UserID,
+		OrderID:  orderRecord.ID,
+		Discount: 100,
+	}).Error)
+
+	created, err := service.CreateCase(CreateAfterSalesCaseInput{
+		OrderID: orderRecord.ID,
+		Type:    aftersales.TypeRefundOnly,
+		Reason:  "Order-level coupon refund",
+		Items: []AfterSalesCaseItemInput{{
+			OrderItemID: orderRecord.Items[0].ID,
+			Quantity:    1,
+		}},
+		CreatedBy: 7,
+	})
+	require.NoError(t, err)
+	moveAfterSalesCaseToResolving(t, service, created.ID)
+	_, err = service.SaveRefundReview(SaveAfterSalesRefundReviewInput{
+		CaseID:         created.ID,
+		ProposedAmount: mustTestMoney(t, 900, "USD"),
+		RequestNotes:   "Approve the paid amount after coupon discount.",
+		UpdatedBy:      7,
+	})
+	require.NoError(t, err)
+	_, err = service.DecideRefundReview(DecideAfterSalesRefundReviewInput{
+		CaseID:        created.ID,
+		Status:        aftersales.RefundReviewStatusApproved,
+		DecisionNotes: "Approved.",
+		ReviewedBy:    8,
+	})
+	require.NoError(t, err)
+
+	_, refund, err := service.CreatePendingRefundFromApprovedReview(CreateAfterSalesPendingRefundInput{
+		CaseID:  created.ID,
+		AdminID: 9,
+	})
+	require.NoError(t, err)
+	require.NotNil(t, refund)
+	assert.Equal(t, "pending", refund.Status)
+	assert.InDelta(t, 1000, refund.RequestedAmount, 0.001)
+	assert.InDelta(t, 100, refund.DiscountClawbackAmount, 0.001)
+	assert.InDelta(t, 900, refund.Amount, 0.001)
+	require.Len(t, refund.LineItems, 1)
+	assert.InDelta(t, 1000, refund.LineItems[0].LineTotalAmount, 0.001)
+}
+
 func TestAfterSalesServiceDoesNotCreateRefundBeforeApproval(t *testing.T) {
 	db, service := newAfterSalesService(t)
 	orderRecord := seedAfterSalesOrder(t, db, 1)
@@ -464,8 +719,7 @@ func TestAfterSalesServiceDoesNotCreateRefundBeforeApproval(t *testing.T) {
 	moveAfterSalesCaseToResolving(t, service, created.ID)
 	_, err = service.SaveRefundReview(SaveAfterSalesRefundReviewInput{
 		CaseID:         created.ID,
-		ProposedAmount: 100,
-		Currency:       "USD",
+		ProposedAmount: mustTestMoney(t, 100, "USD"),
 		RequestNotes:   "Awaiting refund approval.",
 		UpdatedBy:      7,
 	})
@@ -495,6 +749,7 @@ func newAfterSalesService(t *testing.T) (*gorm.DB, *AfterSalesService) {
 		&user.User{},
 		&coupondomain.Coupon{},
 		&coupondomain.CouponUsage{},
+		&coupondomain.GiftCardTransaction{},
 		&paymentdomain.Transaction{},
 		&paymentdomain.Refund{},
 		&paymentdomain.RefundLineItem{},
@@ -502,6 +757,7 @@ func newAfterSalesService(t *testing.T) (*gorm.DB, *AfterSalesService) {
 		&aftersales.AfterSalesCaseItem{},
 		&aftersales.AfterSalesCaseEvent{},
 		&aftersales.AfterSalesCaseAttachment{},
+		&aftersales.AfterSalesReturnShipment{},
 		&aftersales.AfterSalesRefundReview{},
 	))
 
@@ -517,6 +773,7 @@ func newAfterSalesService(t *testing.T) (*gorm.DB, *AfterSalesService) {
 		paymentRepo,
 	)
 	txManager.ConfigureAfterSalesRefundReviewRepository(refundReviewRepo)
+	txManager.ConfigureAfterSalesCaseRepository(repository.NewAfterSalesCaseRepository(db))
 
 	service := NewAfterSalesService(
 		repository.NewAfterSalesCaseRepository(db),
@@ -562,8 +819,34 @@ func seedAfterSalesOrder(t *testing.T, db *gorm.DB, quantity int) *order.Order {
 			Total:       100,
 		}},
 	}
+	record.Items[0].PricingSnapshotData = refundPricingLineForTest(
+		t,
+		record.Items[0].ProductID,
+		record.Items[0].VariantID,
+		record.Items[0].Quantity,
+		record.Items[0].Price,
+		record.Items[0].Discount,
+		record.Currency,
+	)
 	require.NoError(t, db.Create(record).Error)
 	require.NoError(t, db.Preload("Items").First(record, record.ID).Error)
+	return record
+}
+
+func seedAfterSalesCoupon(t *testing.T, db *gorm.DB, code string, couponType string, value float64, minAmount float64, maxDiscount float64) coupondomain.Coupon {
+	t.Helper()
+
+	record := coupondomain.Coupon{
+		Code:        code,
+		Type:        couponType,
+		Value:       value,
+		MinAmount:   minAmount,
+		MaxDiscount: maxDiscount,
+		Enabled:     true,
+		StartDate:   time.Now().Add(-24 * time.Hour),
+		EndDate:     time.Now().Add(24 * time.Hour),
+	}
+	require.NoError(t, db.Create(&record).Error)
 	return record
 }
 

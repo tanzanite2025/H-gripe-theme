@@ -39,6 +39,32 @@ const normalizeBrands = <T>(value: unknown): Brand<T>[] => (
     : []
 )
 
+const normalizePublicRims = (value: unknown): Brand<RimModel>[] => (
+  normalizeBrands<unknown>(value).map(brand => ({
+    ...brand,
+    items: brand.items.flatMap(item => {
+      if (!item || typeof item !== 'object') return []
+      const record = item as Partial<RimModel>
+      if (!record.id || !record.name) return []
+      // ERD/weight are deliberately discarded even if a misconfigured API
+      // accidentally includes them in its public response.
+      return [{ id: String(record.id), name: String(record.name), erd: null }]
+    }),
+  }))
+)
+
+const normalizePublicHubs = (value: unknown): Brand<HubModel>[] => (
+  normalizeBrands<unknown>(value).map(brand => ({
+    ...brand,
+    items: brand.items.flatMap(item => {
+      if (!item || typeof item !== 'object') return []
+      const record = item as Partial<HubModel>
+      if (!record.id || !record.name) return []
+      return [{ id: String(record.id), name: String(record.name) }]
+    }),
+  }))
+)
+
 const normalizeActualLengths = (value: unknown): WheelBuildActualLengths | null => {
   if (!value || typeof value !== 'object') return null
   const record = value as Partial<WheelBuildActualLengths>
@@ -82,8 +108,8 @@ export const normalizeSpokeCatalogPayload = (payload: unknown): SpokeCatalog => 
 
   return {
     options: normalizeOptions(record.options),
-    rims: normalizeBrands<RimModel>(record.rims),
-    hubs: normalizeBrands<HubModel>(record.hubs),
+    rims: normalizePublicRims(record.rims),
+    hubs: normalizePublicHubs(record.hubs),
     presets: normalizePresets(record.presets),
   }
 }

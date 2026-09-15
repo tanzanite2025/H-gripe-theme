@@ -31,7 +31,7 @@ func (s *ProductService) GetPublicBySlugWithRoutesContext(ctx context.Context, s
 	if result.Status != "active" {
 		return nil, nil, ErrProductNotFound
 	}
-	_ = s.productRepo.IncrementViewCountContext(ctx, result.ID)
+	s.recordProductView(ctx, result.ID)
 
 	routes, err := s.productRepo.FindPublicTranslationRoutesContext(ctx, result.ID)
 	if err != nil {

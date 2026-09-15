@@ -90,10 +90,11 @@ func (g *wechatGatewayImpl) CreatePayment(ctx context.Context, req *PaymentReque
 	if notifyURL == "" {
 		return nil, fmt.Errorf("wechat notify_url is required")
 	}
-	amount, err := MajorToMinorAmount(req.Amount, req.Currency)
+	amountMoney, err := paymentMoneyFromMajor(req.Amount, req.Currency)
 	if err != nil {
 		return nil, err
 	}
+	amount := amountMoney.AmountMinor()
 
 	prepayReq := native.PrepayRequest{
 		Appid:       core.String(g.appID),
@@ -217,11 +218,11 @@ func buildWechatRefundRequest(paymentID string, amount float64, refundNo string,
 	if currency == "" {
 		currency = "CNY"
 	}
-	refundAmount, err := MajorToMinorAmount(amount, currency)
+	refundMoney, err := paymentMoneyFromMajor(amount, currency)
 	if err != nil {
 		return refunddomestic.CreateRequest{}, err
 	}
-	totalAmount, err := MajorToMinorAmount(options.OriginalAmount, currency)
+	totalMoney, err := paymentMoneyFromMajor(options.OriginalAmount, currency)
 	if err != nil {
 		return refunddomestic.CreateRequest{}, err
 	}
@@ -234,8 +235,8 @@ func buildWechatRefundRequest(paymentID string, amount float64, refundNo string,
 		OutRefundNo:   core.String(refundNo),
 		Reason:        core.String(reason),
 		Amount: &refunddomestic.AmountReq{
-			Refund:   core.Int64(refundAmount),
-			Total:    core.Int64(totalAmount),
+			Refund:   core.Int64(refundMoney.AmountMinor()),
+			Total:    core.Int64(totalMoney.AmountMinor()),
 			Currency: core.String(currency),
 		},
 	}, nil
@@ -267,7 +268,10 @@ func (g *wechatGatewayImpl) GetPayment(ctx context.Context, paymentID string) (*
 	// 提取金额
 	var amount float64
 	if resp.Amount != nil && resp.Amount.Total != nil {
-		amount = float64(*resp.Amount.Total) / 100
+		amount, err = paymentMajorFloatFromMinor(*resp.Amount.Total, "CNY")
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// 构建元数据

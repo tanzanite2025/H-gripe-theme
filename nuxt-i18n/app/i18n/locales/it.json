@@ -780,7 +780,9 @@
       "noResults": "Nessuna FAQ trovata per \"{query}\"",
       "loadingAnswers": "Caricamento risposte",
       "illustrationAlt": "Illustrazione FAQ",
-      "selectQuestion": "Select a question to view the answer."
+      "selectQuestion": "Select a question to view the answer.",
+      "pagesAriaLabel": "FAQ pages",
+      "pagesLabel": "FAQ pages"
     }
   },
   "feedback": {

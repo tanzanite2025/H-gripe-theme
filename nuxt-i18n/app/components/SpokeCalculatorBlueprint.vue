@@ -683,15 +683,10 @@
 import SpokeWheelSchematic from '~/components/SpokeWheelSchematic.vue'
 import { computed, reactive, ref, watch } from 'vue'
 import SpokeCalculatorSelect from '~/components/SpokeCalculatorSelect.vue'
-import type { HubGeometry, HubModel, RimModel, WheelBuildPreset } from '~/data/spoke-calculator/database'
-import {
-  computeSpokeLength,
-  computeSpokeTensionRatio,
-  effectiveSpokeFlangeDistance,
-  type SpokeTensionRatio,
-} from '~/utils/spokeMath'
+import type { HubGeometry, HubModel, RimModel } from '~/data/spoke-calculator/database'
 import { useBehaviorEvents } from '~/composables/useBehaviorEvents'
 import { useSpokeCalculatorCatalog } from '~/composables/useSpokeCalculatorCatalog'
+import { useApiRequest } from '~/composables/useApiRequest'
 import { useI18n } from '#imports'
 
 interface WheelConfig {
@@ -725,12 +720,12 @@ const frontConfig = reactive<WheelConfig>({
   rimModelId: null,
   hubBrandId: null,
   hubModelId: null,
-  erd: 622,
+  erd: null,
   rimOffsetMm: 0,
-  leftFlange: 35,
-  rightFlange: 35,
-  leftFlangePcd: 50,
-  rightFlangePcd: 50,
+  leftFlange: null,
+  rightFlange: null,
+  leftFlangePcd: null,
+  rightFlangePcd: null,
 })
 
 // Rear wheel configuration
@@ -743,16 +738,17 @@ const rearConfig = reactive<WheelConfig>({
   rimModelId: null,
   hubBrandId: null,
   hubModelId: null,
-  erd: 622,
+  erd: null,
   rimOffsetMm: 0,
-  leftFlange: 35,
-  rightFlange: 20,
-  leftFlangePcd: 55,
-  rightFlangePcd: 55,
+  leftFlange: null,
+  rightFlange: null,
+  leftFlangePcd: null,
+  rightFlangePcd: null,
 })
 
 const { t } = useI18n()
-const { rims, hubs, presets, options: catalogOptions } = useSpokeCalculatorCatalog()
+const { rims, hubs, options: catalogOptions } = useSpokeCalculatorCatalog()
+const { request: apiRequest } = useApiRequest()
 
 const spokeCountOptions = computed(() => catalogOptions.value.spokeCounts)
 const crossingTranslationKeys: Record<number, string> = {
@@ -838,6 +834,7 @@ const rearHubModelOptions = computed(() => rearHubModels.value.map(hub => ({
 })))
 
 const applyHubGeometry = (config: WheelConfig, geometry?: HubGeometry | null) => {
+  if (!geometry) return
   config.leftFlange = geometry?.leftFlange ?? null
   config.rightFlange = geometry?.rightFlange ?? null
   config.leftFlangePcd = geometry?.leftFlangePcd ?? null
@@ -857,8 +854,6 @@ watch(
     const model = frontRimModels.value.find(m => m.id === newId)
     if (model && model.erd != null) {
       frontConfig.erd = model.erd
-    } else {
-      frontConfig.erd = null
     }
   }
 )
@@ -868,7 +863,7 @@ watch(
   () => frontConfig.hubModelId,
   (newId) => {
     if (!newId) {
-      applyHubGeometry(frontConfig, null)
+      frontConfig.leftFlange = frontConfig.rightFlange = frontConfig.leftFlangePcd = frontConfig.rightFlangePcd = null
       return
     }
     const model = frontHubModels.value.find(m => m.id === newId)
@@ -887,8 +882,6 @@ watch(
     const model = rearRimModels.value.find(m => m.id === newId)
     if (model && model.erd != null) {
       rearConfig.erd = model.erd
-    } else {
-      rearConfig.erd = null
     }
   }
 )
@@ -898,7 +891,7 @@ watch(
   () => rearConfig.hubModelId,
   (newId) => {
     if (!newId) {
-      applyHubGeometry(rearConfig, null)
+      rearConfig.leftFlange = rearConfig.rightFlange = rearConfig.leftFlangePcd = rearConfig.rightFlangePcd = null
       return
     }
     const model = rearHubModels.value.find(m => m.id === newId)
@@ -910,7 +903,7 @@ const loading = ref(false)
 const error = ref<string | null>(null)
 
 type WheelPosition = 'front' | 'rear'
-type ResultSource = 'verified' | 'calculated'
+type ResultSource = 'calculated'
 
 interface SpokeResult {
   leftLengthMm: number | null
@@ -923,6 +916,16 @@ interface SpokeResult {
 interface CalculatedWheelResult {
   leftLengthMm: number | null
   rightLengthMm: number | null
+  tensionRatio: SpokeTensionRatio | null
+}
+
+interface SpokeTensionRatio {
+  leftToRight: number
+  rightToLeft: number
+  lowerToHigher: number
+  lowerSide: 'left' | 'right' | 'balanced'
+  leftBracingAngleDeg: number
+  rightBracingAngleDeg: number
 }
 
 const frontResult = ref<SpokeResult | null>(null)
@@ -931,19 +934,19 @@ const lastTrackedCalculation = ref('')
 const { track: trackBehaviorEvent } = useBehaviorEvents()
 
 const formatResultLength = (value: number | null | undefined) => (
-  value == null ? '--' : value.toFixed(1)
+  value == null ? '--' : value.toFixed(2)
 )
 
 const formatTensionRatio = (value: SpokeTensionRatio | null | undefined) => (
-  value == null ? '--' : `${Math.round(value.lowerToHigher * 100)}%`
+  value == null ? '--' : `${(value.lowerToHigher * 100).toFixed(2)}%`
 )
 
 const formatDirectionalTensionRatio = (value: SpokeTensionRatio | null | undefined) => {
   if (!value) return '--'
   if (value.leftToRight <= 1) {
-    return `${Math.round(value.leftToRight * 100)}% : 100%`
+    return `${(value.leftToRight * 100).toFixed(2)}% : 100.00%`
   }
-  return `100% : ${Math.round(value.rightToLeft * 100)}%`
+  return `100.00% : ${(value.rightToLeft * 100).toFixed(2)}%`
 }
 
 const lowerTensionSideLabel = (value: SpokeTensionRatio | null | undefined) => {
@@ -956,7 +959,6 @@ const lowerTensionSideLabel = (value: SpokeTensionRatio | null | undefined) => {
 }
 
 const resultSourceLabel = (source: ResultSource | null | undefined) => {
-  if (source === 'verified') return t('resourcesSpokeCalculator.calculator.results.verified')
   if (source === 'calculated') return t('resourcesSpokeCalculator.calculator.results.calculated')
   return ''
 }
@@ -971,12 +973,12 @@ const frontRightSourceLabel = computed(() => resultSourceLabel(frontResult.value
 const rearLeftSourceLabel = computed(() => resultSourceLabel(rearResult.value?.leftSource))
 const rearRightSourceLabel = computed(() => resultSourceLabel(rearResult.value?.rightSource))
 
-const onCalculate = () => {
+const onCalculate = async () => {
   error.value = null
   loading.value = true
 
   try {
-    const completedWheelCount = updateResults()
+    const completedWheelCount = await updateResults()
 
     if (completedWheelCount > 0) {
       const fingerprint = JSON.stringify({
@@ -1012,106 +1014,75 @@ const onCalculate = () => {
   }
 }
 
-const updateResults = () => {
-  frontResult.value = buildWheelResult(frontConfig, 'front')
-  rearResult.value = buildWheelResult(rearConfig, 'rear')
+const updateResults = async () => {
+  const [front, rear] = await Promise.all([
+    buildWheelResult(frontConfig, 'front'),
+    buildWheelResult(rearConfig, 'rear'),
+  ])
+  frontResult.value = front
+  rearResult.value = rear
 
   return [frontResult.value, rearResult.value].filter(result => (
     result && (result.leftLengthMm != null || result.rightLengthMm != null)
   )).length
 }
 
-const buildWheelResult = (config: WheelConfig, wheel: WheelPosition): SpokeResult | null => {
-  const verified = findVerifiedWheelLengths(config, wheel)
-  const calculated = calculateWheel(config)
+const buildWheelResult = async (config: WheelConfig, wheel: WheelPosition): Promise<SpokeResult | null> => {
+  const calculated = await calculateWheel(config, wheel)
 
-  const leftLengthMm = verified?.leftLengthMm ?? calculated?.leftLengthMm ?? null
-  const rightLengthMm = verified?.rightLengthMm ?? calculated?.rightLengthMm ?? null
+  const leftLengthMm = calculated?.leftLengthMm ?? null
+  const rightLengthMm = calculated?.rightLengthMm ?? null
 
   if (leftLengthMm == null && rightLengthMm == null) return null
 
   return {
     leftLengthMm,
     rightLengthMm,
-    tensionRatio: computeSpokeTensionRatio(
-      effectiveSpokeFlangeDistance(config.leftFlange ?? 0, config.rimOffsetMm, 'left'),
-      effectiveSpokeFlangeDistance(config.rightFlange ?? 0, config.rimOffsetMm, 'right'),
-      leftLengthMm ?? 0,
-      rightLengthMm ?? 0
-    ),
-    leftSource: verified?.leftLengthMm != null ? 'verified' : calculated?.leftLengthMm != null ? 'calculated' : null,
-    rightSource: verified?.rightLengthMm != null ? 'verified' : calculated?.rightLengthMm != null ? 'calculated' : null,
+    tensionRatio: calculated?.tensionRatio ?? null,
+    leftSource: calculated?.leftLengthMm != null ? 'calculated' : null,
+    rightSource: calculated?.rightLengthMm != null ? 'calculated' : null,
   }
 }
 
-const findVerifiedWheelLengths = (config: WheelConfig, wheel: WheelPosition): CalculatedWheelResult | null => {
-  const preset = presets.value.find(item => presetMatchesWheelConfig(item, config, wheel))
-  const actual = preset?.actualLengths
-  if (!actual) return null
-
-  const leftLengthMm = wheel === 'front' ? actual.frontLeft : actual.rearLeft
-  const rightLengthMm = wheel === 'front' ? actual.frontRight : actual.rearRight
-  if (leftLengthMm == null && rightLengthMm == null) return null
-
-  return {
-    leftLengthMm: leftLengthMm ?? null,
-    rightLengthMm: rightLengthMm ?? null,
-  }
-}
-
-const presetMatchesWheelConfig = (preset: WheelBuildPreset, config: WheelConfig, wheel: WheelPosition) => {
-  if (!config.rimBrandId || !config.rimModelId || !config.hubBrandId || !config.hubModelId) return false
-  if (Math.abs(config.rimOffsetMm) > 0.001) return false
-  if (preset.wheelPosition && preset.wheelPosition !== 'auto' && preset.wheelPosition !== wheel) return false
-  if (!preset.actualLengths) return false
-  if (wheel === 'front' && preset.actualLengths.frontLeft == null && preset.actualLengths.frontRight == null) return false
-  if (wheel === 'rear' && preset.actualLengths.rearLeft == null && preset.actualLengths.rearRight == null) return false
-
-  return preset.rimBrandId === config.rimBrandId &&
-    preset.rimModelId === config.rimModelId &&
-    preset.hubBrandId === config.hubBrandId &&
-    preset.hubModelId === config.hubModelId &&
-    preset.spokeCount === config.spokeCount &&
-    preset.crossing === config.crossing &&
-    preset.nippleType === config.nippleType &&
-    compatibleNippleLength(preset, config)
-}
-
-const compatibleNippleLength = (preset: WheelBuildPreset, config: WheelConfig) => {
-  if (config.nippleType !== 'hidden') return true
-  if (preset.nippleLength == null || config.nippleLength == null) return true
-  return Math.abs(preset.nippleLength - config.nippleLength) < 0.01
-}
-
-const calculateWheel = (config: WheelConfig): CalculatedWheelResult | null => {
-  if (!config.erd || !config.leftFlangePcd || !config.rightFlangePcd ||
-      config.leftFlange == null || config.rightFlange == null) {
+const calculateWheel = async (config: WheelConfig, wheel: WheelPosition): Promise<CalculatedWheelResult | null> => {
+  const hasCatalogSelection = Boolean(config.rimModelId && config.hubModelId)
+  const hasManualGeometry = Boolean(config.erd && config.leftFlangePcd && config.rightFlangePcd && config.leftFlange != null && config.rightFlange != null)
+  if (!hasCatalogSelection && !hasManualGeometry) {
     return null
   }
 
-  const leftFlange = effectiveSpokeFlangeDistance(config.leftFlange, config.rimOffsetMm, 'left')
-  const rightFlange = effectiveSpokeFlangeDistance(config.rightFlange, config.rimOffsetMm, 'right')
-  if (leftFlange <= 0 || rightFlange <= 0) return null
-
-  return {
-    leftLengthMm: computeSpokeLength(
-      config.erd,
-      config.leftFlangePcd,
-      leftFlange,
-      config.spokeCount,
-      config.crossing,
-      config.nippleType,
-      config.nippleLength
-    ),
-    rightLengthMm: computeSpokeLength(
-      config.erd,
-      config.rightFlangePcd,
-      rightFlange,
-      config.spokeCount,
-      config.crossing,
-      config.nippleType,
-      config.nippleLength
-    ),
+  try {
+    const payload = await apiRequest<{
+      leftLengthMm: number
+      rightLengthMm: number
+      tensionRatio?: SpokeTensionRatio | null
+    }>('/spoke/calc', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        rimId: config.rimModelId || '',
+        hubId: config.hubModelId || '',
+        wheelPosition: wheel,
+        spokeCount: config.spokeCount,
+        crossing: config.crossing,
+        nippleType: config.nippleType,
+        nippleLengthMm: config.nippleLength,
+        rimOffsetMm: config.rimOffsetMm,
+        erdMm: config.erd,
+        leftFlangeMm: config.leftFlange,
+        rightFlangeMm: config.rightFlange,
+        leftFlangePcdMm: config.leftFlangePcd,
+        rightFlangePcdMm: config.rightFlangePcd,
+      }),
+    }, t('resourcesSpokeCalculator.calculator.action.calculationFailed'))
+    return {
+      leftLengthMm: Number.isFinite(payload.leftLengthMm) ? payload.leftLengthMm : null,
+      rightLengthMm: Number.isFinite(payload.rightLengthMm) ? payload.rightLengthMm : null,
+      tensionRatio: payload.tensionRatio ?? null,
+    }
+  } catch (requestError: any) {
+    error.value = requestError?.message || t('resourcesSpokeCalculator.calculator.action.calculationFailed')
+    return null
   }
 }
 
@@ -1119,16 +1090,14 @@ watch(
   () => ({
     front: { ...frontConfig },
     rear: { ...rearConfig },
-    presets: presets.value,
   }),
   () => {
-    try {
-      updateResults()
-    } catch (e: any) {
-      error.value = e?.message || t('resourcesSpokeCalculator.calculator.action.calculationFailed')
-    }
+    // Results are generated explicitly by the Calculate action. Avoid firing
+    // an API request for every slider/input keystroke (and wasting the quota).
+    frontResult.value = null
+    rearResult.value = null
   },
-  { deep: true, immediate: true }
+  { deep: true }
 )
 </script>
 

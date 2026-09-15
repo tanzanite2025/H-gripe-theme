@@ -192,8 +192,9 @@
                     </p>
                   </form>
                 </div>
+              </div>
 
-                <div v-if="completionState" class="space-y-6 text-center">
+              <div v-if="completionState" class="space-y-6 text-center">
                   <div class="flex justify-center">
                     <div class="w-16 h-16 rounded-full tz-surface-subtle flex items-center justify-center text-3xl text-[#059669]">
                       &#10003;
@@ -203,11 +204,17 @@
                     <h3 class="text-2xl font-semibold">{{ completionTitle }}</h3>
                     <p class="tz-text-secondary">{{ completionMessage }}</p>
                   </div>
+                  <p
+                    v-if="auth.referralBindingError.value"
+                    class="rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-700"
+                    role="status"
+                  >
+                    {{ auth.referralBindingError.value }}
+                  </p>
                   <button type="button" class="primary-btn w-full" @click="handleCompletionCta">
                     {{ completionCtaLabel }}
                   </button>
                 </div>
-              </div>
             </div>
           </div>
         </div>

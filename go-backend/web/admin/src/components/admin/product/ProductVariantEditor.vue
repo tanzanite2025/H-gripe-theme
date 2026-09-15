@@ -17,7 +17,7 @@
       </span>
     </div>
 
-    <div v-if="presentableSpecDefinitions.length" class="space-y-3 rounded-lg border bg-muted/10 p-3">
+    <div v-if="presentableSpecDefinitions.length || customOptionDefinitions.length" class="space-y-3 rounded-lg border bg-muted/10 p-3">
       <div class="flex flex-wrap items-start justify-between gap-2">
         <div>
           <h3 class="text-sm font-semibold text-foreground">选项展示值</h3>
@@ -97,6 +97,35 @@
         </template>
         <UploadSpecHint code="product_variant_swatch" />
       </div>
+
+      <div v-for="spec in customOptionDefinitions" :key="`custom-option-${spec.id}`" class="space-y-2 rounded-lg border bg-background/70 p-3">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div class="flex items-center gap-2">
+            <span class="text-xs font-bold">{{ specLabel(spec) }}</span>
+            <span class="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] text-primary">{{ spec.selection_mode === 'multiple' ? '多选' : '单选' }}</span>
+          </div>
+          <Button type="button" variant="outline" size="sm" @click="addOptionValue(spec)">
+            <Plus class="size-3.5" />
+            添加选配
+          </Button>
+        </div>
+        <div v-if="optionsForSpec(spec).length" class="grid gap-2 md:grid-cols-2 xl:grid-cols-4">
+          <div v-for="option in optionsForSpec(spec)" :key="option.local_key || option.id || `${spec.id}-${option.value_key}`" class="min-w-0 rounded-lg border bg-background p-2.5">
+            <div class="mb-2 flex items-center justify-between gap-2">
+              <span class="text-[10px] text-muted-foreground">价格增量（最小货币单位）</span>
+              <Button type="button" variant="ghost" size="icon" class="size-8 text-destructive hover:text-destructive" :aria-label="`删除${spec.name}选配`" @click="removeOptionValue(option)"><Trash2 class="size-4" /></Button>
+            </div>
+            <div class="space-y-2">
+              <Input v-model="option.value_key" class="font-mono text-xs" placeholder="稳定值，如 xdr" />
+              <Input v-model="option.label" class="text-xs" :placeholder="`${spec.name}显示名称`" />
+              <Input v-model.number="option.price_delta_minor" type="number" min="0" step="1" placeholder="0" />
+              <label class="flex items-center justify-between gap-2 text-xs"><span>默认选中</span><Switch v-model="option.is_default" :aria-label="`${option.label || option.value_key || spec.name}默认选中`" /></label>
+              <label class="flex items-center justify-between gap-2 text-xs"><span>启用</span><Switch v-model="option.is_enabled" :aria-label="`${option.label || option.value_key || spec.name}启用`" /></label>
+            </div>
+          </div>
+        </div>
+        <p v-else class="rounded-md border border-dashed px-3 py-3 text-center text-xs text-muted-foreground">还没有配置买家选配值。</p>
+      </div>
     </div>
 
     <div class="flex flex-wrap items-center justify-between gap-2 rounded-lg border bg-background px-3 py-2">
@@ -135,7 +164,8 @@
         </TableRow>
       </TableHeader>
       <TableBody>
-        <TableRow v-for="(variant, index) in variants" :key="variant.id || `variant-${index}`">
+        <template v-for="(variant, index) in variants" :key="variant.id || `variant-${index}`">
+        <TableRow>
           <TableCell class="text-center">
             <input
               type="radio"
@@ -250,6 +280,54 @@
               </Tooltip>
             </TableCell>
         </TableRow>
+        <TableRow v-if="customOptionDefinitions.length" :key="`${variant.id || `variant-${index}`}-custom-rules`">
+          <TableCell :colspan="specDefinitions.length + 10" class="bg-muted/10 p-3">
+            <div class="grid gap-2 lg:grid-cols-2">
+              <div v-for="spec in customOptionDefinitions" :key="`rule-${variant.id || index}-${spec.id}`" class="rounded-md border bg-background p-2.5">
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                  <span class="text-xs font-semibold">{{ specLabel(spec) }}</span>
+                  <label class="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                    <Switch :model-value="ensureGroupRule(variant, spec).is_applicable" :aria-label="`${spec.name}适用于此 SKU`" @update:model-value="value => ensureGroupRule(variant, spec).is_applicable = Boolean(value)" />
+                    适用于此 SKU
+                  </label>
+                </div>
+                <div class="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
+                  <span>选择数覆盖</span>
+                  <Input v-model.number="ensureGroupRule(variant, spec).min_selections_override" class="h-7 w-20 text-xs" type="number" min="0" placeholder="最少" />
+                  <span>-</span>
+                  <Input v-model.number="ensureGroupRule(variant, spec).max_selections_override" class="h-7 w-20 text-xs" type="number" min="0" placeholder="最多" />
+                </div>
+                <div v-if="optionsForSpec(spec).length" class="mt-2 grid gap-1.5">
+                  <div v-for="option in optionsForSpec(spec)" :key="`${variant.id || index}-${option.id || option.local_key}`" class="grid grid-cols-[minmax(0,1fr)_auto_7rem_minmax(7rem,1fr)] items-center gap-2 rounded border px-2 py-1.5">
+                    <span class="min-w-0 truncate text-xs">{{ option.label || option.value_key }}</span>
+                    <Switch
+                      v-if="option.id"
+                      :model-value="ensureValueRule(variant, option).is_enabled"
+                      :aria-label="`${option.label || option.value_key}在此 SKU 可用`"
+                      @update:model-value="value => ensureValueRule(variant, option).is_enabled = Boolean(value)"
+                    />
+                    <Input
+                      v-if="option.id"
+                      v-model.number="ensureValueRule(variant, option).price_delta_minor_override"
+                      class="h-7 text-xs"
+                      type="number"
+                      min="0"
+                      placeholder="价格覆盖"
+                    />
+                    <Input
+                      v-if="option.id"
+                      v-model="ensureValueRule(variant, option).unavailable_reason"
+                      class="h-7 text-xs"
+                      placeholder="不可用原因"
+                    />
+                    <span v-else class="col-span-2 text-[10px] text-muted-foreground">保存商品后可配置 SKU 覆盖</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </TableCell>
+        </TableRow>
+        </template>
       </TableBody>
     </Table>
 
@@ -280,6 +358,8 @@ import type {
   ProductSpecDefinition,
   ProductVariantForm,
   ProductVariantOptionValueForm,
+  ProductOptionGroupVariantRuleForm,
+  ProductOptionValueVariantRuleForm,
   ShippingTemplateRecord,
 } from '@/modules/product/productEditorTypes'
 
@@ -292,12 +372,14 @@ const props = withDefaults(defineProps<{
   defaultIndex?: number
   shippingTemplates?: ShippingTemplateRecord[]
   optionValues?: ProductVariantOptionValueForm[]
+  customOptionDefinitions?: ProductSpecDefinition[]
 }>(), {
   currency: 'USD',
   specDefinitions: () => [],
   defaultIndex: 0,
   shippingTemplates: () => [],
   optionValues: () => [],
+  customOptionDefinitions: () => [],
 })
 
 const emit = defineEmits<{
@@ -322,13 +404,11 @@ const specOptions = (spec: ProductSpecDefinition): unknown[] => {
     .map((item) => String(item?.value_key || '').trim())
     .filter(Boolean)
   if (configuredValues.length) return configuredValues
-  if (!spec?.options) return []
-  try {
-    const options = JSON.parse(spec.options)
-    return Array.isArray(options) ? options : []
-  } catch {
-    return []
-  }
+  const templateValues = (spec.option_items || [])
+    .map((item) => String(item?.value_key || '').trim())
+    .filter(Boolean)
+  if (templateValues.length) return templateValues
+  return []
 }
 
 const specLabel = (spec: ProductSpecDefinition): string => spec.unit ? `${spec.name} (${spec.unit})` : spec.name
@@ -341,6 +421,33 @@ const optionLabel = (spec: ProductSpecDefinition, option: unknown): string => {
 }
 const optionKey = (option: ProductVariantOptionValueForm): string => `${option?.spec_definition_id || 'option'}:${option?.id || option?.local_key || option?.value_key || 'new'}`
 const optionsForSpec = (spec: ProductSpecDefinition): ProductVariantOptionValueForm[] => props.optionValues.filter((item) => Number(item?.spec_definition_id) === Number(spec?.id))
+const ensureGroupRule = (variant: ProductVariantForm, spec: ProductSpecDefinition): ProductOptionGroupVariantRuleForm => {
+  variant.option_group_rules ||= []
+  const existing = variant.option_group_rules.find(rule => Number(rule.spec_definition_id) === Number(spec.id))
+  if (existing) return existing
+  const created: ProductOptionGroupVariantRuleForm = {
+    spec_definition_id: Number(spec.id || 0),
+    is_applicable: true,
+    min_selections_override: null,
+    max_selections_override: null,
+  }
+  variant.option_group_rules.push(created)
+  return created
+}
+const ensureValueRule = (variant: ProductVariantForm, option: ProductVariantOptionValueForm): ProductOptionValueVariantRuleForm => {
+  variant.option_value_rules ||= []
+  const optionID = Number(option.id || 0)
+  const existing = variant.option_value_rules.find(rule => Number(rule.product_variant_option_value_id) === optionID)
+  if (existing) return existing
+  const created: ProductOptionValueVariantRuleForm = {
+    product_variant_option_value_id: optionID,
+    is_enabled: true,
+    price_delta_minor_override: null,
+    unavailable_reason: '',
+  }
+  variant.option_value_rules.push(created)
+  return created
+}
 const addOptionValue = (spec: ProductSpecDefinition): void => {
   props.optionValues.push({
     id: null,

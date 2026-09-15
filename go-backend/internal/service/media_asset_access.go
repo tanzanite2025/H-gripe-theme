@@ -87,16 +87,26 @@ func (s *MediaService) CanServePublicUpload(key string) (bool, error) {
 		return false, err
 	}
 	if !access.Found {
-		return true, nil
+		return false, nil
 	}
 	return access.Allowed, nil
 }
 
 func (s *MediaService) PublicUploadAssetAccess(key string) (PublicUploadAssetAccess, error) {
-	asset, err := s.repo.FindAssetByStorageKey(key)
+	normalizedKey, ok := storage.NormalizeObjectKey(key)
+	if !ok {
+		return PublicUploadAssetAccess{}, nil
+	}
+	if storage.IsPrivateObjectKey(normalizedKey) {
+		return PublicUploadAssetAccess{Found: true, Allowed: false}, nil
+	}
+	if s == nil || s.repo == nil {
+		return PublicUploadAssetAccess{}, nil
+	}
+	asset, err := s.repo.FindAssetByStorageKey(normalizedKey)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			derivative, derivativeErr := s.repo.FindDerivativeByStorageKey(key)
+			derivative, derivativeErr := s.repo.FindDerivativeByStorageKey(normalizedKey)
 			if derivativeErr != nil {
 				if errors.Is(derivativeErr, gorm.ErrRecordNotFound) {
 					return PublicUploadAssetAccess{}, nil
@@ -149,6 +159,14 @@ func (s *MediaService) CanonicalPublicMediaURL(reference string) string {
 	value := strings.TrimSpace(reference)
 	if value == "" {
 		return ""
+	}
+	if s != nil && s.storage != nil {
+		if key, err := s.storage.ObjectKey(value); err == nil && storage.IsPrivateObjectKey(key) {
+			// Private evidence references must never be echoed by a public
+			// response mapper, even when the storage provider uses a native URL
+			// without the /uploads/ marker.
+			return ""
+		}
 	}
 
 	uploadPath, ok := canonicalPublicUploadPath(value)

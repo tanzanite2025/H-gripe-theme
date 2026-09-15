@@ -33,7 +33,7 @@ interface ProductSpecDefinition {
   field_type: string
   is_filterable: boolean
   sort_order: number
-  options?: string | null
+  option_items?: Array<{ value_key?: string | null }>
 }
 
 interface ProductSpecificationTemplateSchema {
@@ -50,16 +50,6 @@ export const useProductAttributes = () => {
   const loading = ref(false)
   const error = ref<string | null>(null)
 
-  const parseOptions = (raw?: string | null): string[] => {
-    if (!raw) return []
-    try {
-      const parsed = JSON.parse(raw)
-      return Array.isArray(parsed) ? parsed.map(String) : []
-    } catch {
-      return []
-    }
-  }
-
   const formatLabel = (value: string) => value.replace(/_/g, ' ')
 
   const buildAttributesFromSpecificationTemplates = (productSpecificationTemplates: ProductSpecificationTemplateSchema[]): AttributeWithValues[] => {
@@ -73,7 +63,9 @@ export const useProductAttributes = () => {
             spec.field_type === 'boolean'
               ? ['true', 'false']
               : spec.field_type === 'select'
-                ? parseOptions(spec.options)
+                ? (spec.option_items || [])
+                  .map((item) => String(item.value_key || '').trim())
+                  .filter(Boolean)
                 : []
 
           if (options.length === 0) return

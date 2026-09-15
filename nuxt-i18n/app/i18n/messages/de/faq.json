@@ -12,6 +12,8 @@
     "noResults": "Keine FAQs gefunden für „{query}“",
     "loadingAnswers": "Antworten werden geladen",
     "illustrationAlt": "FAQ-Illustration",
-    "selectQuestion": "Select a question to view the answer."
+    "selectQuestion": "Select a question to view the answer.",
+    "pagesAriaLabel": "FAQ pages",
+    "pagesLabel": "FAQ pages"
   }
 }

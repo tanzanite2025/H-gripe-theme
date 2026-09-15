@@ -14,6 +14,7 @@ import (
 	"mime/multipart"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	mediadomain "commerce-platform/internal/domain/media"
 	productdomain "commerce-platform/internal/domain/product"
@@ -25,16 +26,35 @@ import (
 )
 
 const (
-	mediaDerivativePrefix             = "media-derivatives"
-	mediaDerivativeCacheControl       = "public, max-age=31536000, immutable"
-	mediaDerivativeMaxPixels          = 24_000_000
-	mediaDerivativeMaxDimension       = 8000
-	mediaDerivativeMaxSourceBytes     = 12 << 20
-	mediaDerivativeActivePresetLimit  = 12
-	mediaDerivativeGenerationCapacity = 2
+	mediaDerivativePrefix            = "media-derivatives"
+	mediaDerivativeCacheControl      = "public, max-age=31536000, immutable"
+	mediaDerivativeMaxPixels         = 24_000_000
+	mediaDerivativeMaxDimension      = 8000
+	mediaDerivativeMaxSourceBytes    = 12 << 20
+	mediaDerivativeActivePresetLimit = 12
+	// The package fallback keeps standalone service users from inheriting the
+	// old two-slot bottleneck. The application may override it during startup
+	// through Worker.MediaDerivativeGenerationCapacity.
+	mediaDerivativeGenerationDefaultCapacity = 8
 )
 
-var mediaDerivativeGenerationSlots = make(chan struct{}, mediaDerivativeGenerationCapacity)
+var (
+	mediaDerivativeGenerationSlotsMu sync.RWMutex
+	mediaDerivativeGenerationSlots   = make(chan struct{}, mediaDerivativeGenerationDefaultCapacity)
+)
+
+// ConfigureMediaDerivativeGenerationCapacity updates the process-wide
+// conversion concurrency limit. It is intended to be called during startup,
+// before serving requests; existing holders remain valid if a deployment
+// reconfigures the limit while draining.
+func ConfigureMediaDerivativeGenerationCapacity(capacity int) {
+	if capacity < 1 || capacity > 100 {
+		return
+	}
+	mediaDerivativeGenerationSlotsMu.Lock()
+	mediaDerivativeGenerationSlots = make(chan struct{}, capacity)
+	mediaDerivativeGenerationSlotsMu.Unlock()
+}
 
 // MediaDerivativePresetDefinition is one persistent image conversion emitted
 // for every image asset. All upload, backfill, and preflight checks consume
@@ -373,10 +393,17 @@ func acquireMediaDerivativeGenerationSlot(ctx context.Context) (func(), error) {
 	if ctx == nil {
 		ctx = context.Background()
 	}
+	if err := ctx.Err(); err != nil {
+		return nil, fmt.Errorf("%w: derivative generation canceled: %v", ErrMediaDerivativeGenerationFailed, err)
+	}
+
+	mediaDerivativeGenerationSlotsMu.RLock()
+	slots := mediaDerivativeGenerationSlots
+	mediaDerivativeGenerationSlotsMu.RUnlock()
 	select {
-	case mediaDerivativeGenerationSlots <- struct{}{}:
+	case slots <- struct{}{}:
 		return func() {
-			<-mediaDerivativeGenerationSlots
+			<-slots
 		}, nil
 	case <-ctx.Done():
 		return nil, fmt.Errorf("%w: derivative generation canceled: %v", ErrMediaDerivativeGenerationFailed, ctx.Err())

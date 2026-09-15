@@ -9,6 +9,7 @@ import (
 	"commerce-platform/internal/pkg/logger"
 	"commerce-platform/internal/service"
 
+	"github.com/redis/go-redis/v9"
 	"go.uber.org/zap"
 )
 
@@ -16,12 +17,14 @@ type TrackingScheduler struct {
 	shippingService *service.ShippingService
 	interval        time.Duration
 	batchLimit      int
+	lockTTL         time.Duration
+	redisClient     redis.UniversalClient
 	cancel          context.CancelFunc
 	done            chan struct{}
 	once            sync.Once
 }
 
-func NewTrackingScheduler(shippingService *service.ShippingService, cfg config.WorkerConfig) *TrackingScheduler {
+func NewTrackingScheduler(shippingService *service.ShippingService, cfg config.WorkerConfig, redisClients ...redis.UniversalClient) *TrackingScheduler {
 	intervalSeconds := cfg.TrackingPollingIntervalSeconds
 	if intervalSeconds <= 0 {
 		intervalSeconds = 300
@@ -31,11 +34,21 @@ func NewTrackingScheduler(shippingService *service.ShippingService, cfg config.W
 	if batchLimit <= 0 {
 		batchLimit = 20
 	}
+	lockTTL := time.Duration(cfg.DistributedLockTTLSeconds) * time.Second
+	if lockTTL < 2*time.Duration(intervalSeconds)*time.Second {
+		lockTTL = 2 * time.Duration(intervalSeconds) * time.Second
+	}
+	var redisClient redis.UniversalClient
+	if len(redisClients) > 0 {
+		redisClient = redisClients[0]
+	}
 
 	return &TrackingScheduler{
 		shippingService: shippingService,
 		interval:        time.Duration(intervalSeconds) * time.Second,
 		batchLimit:      batchLimit,
+		lockTTL:         lockTTL,
+		redisClient:     redisClient,
 		done:            make(chan struct{}),
 	}
 }
@@ -54,6 +67,7 @@ func (s *TrackingScheduler) Start(ctx context.Context) {
 		defer close(s.done)
 		logger.Info("tracking scheduler started",
 			zap.Duration("interval", s.interval),
+			zap.Duration("lock_ttl", s.lockTTL),
 			zap.Int("batch_limit", s.batchLimit),
 		)
 
@@ -90,6 +104,22 @@ func (s *TrackingScheduler) Stop() {
 }
 
 func (s *TrackingScheduler) syncOnce(ctx context.Context) {
+	lock, acquired, err := acquireSchedulerLock(ctx, s.redisClient, "scheduler:tracking-polling", s.lockTTL)
+	if err != nil {
+		logger.Error("tracking scheduler lease unavailable", zap.Error(err))
+		return
+	}
+	if !acquired {
+		return
+	}
+	stopLeaseMaintenance := maintainSchedulerLock(lock, s.lockTTL)
+	defer stopLeaseMaintenance()
+	defer func() {
+		if err := lock.release(context.Background()); err != nil {
+			logger.Error("tracking scheduler lease release failed", zap.Error(err))
+		}
+	}()
+
 	startedAt := time.Now()
 	s.shippingService.MarkTrackingPollingStarted(startedAt)
 

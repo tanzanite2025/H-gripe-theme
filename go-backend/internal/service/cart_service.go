@@ -2,9 +2,11 @@ package service
 
 import (
 	"commerce-platform/internal/domain/currency"
+	domainmoney "commerce-platform/internal/domain/money"
 	"commerce-platform/internal/domain/product"
 	"commerce-platform/internal/repository"
 	"errors"
+	"fmt"
 	"strings"
 )
 
@@ -31,13 +33,7 @@ func (s *CartService) FindCart(userID *uint, sessionID string) (*product.Cart, e
 		return nil, ErrCartNotFound
 	}
 
-	var cart *product.Cart
-	var err error
-	if userID != nil {
-		cart, err = s.cartRepo.FindByUserID(*userID)
-	} else {
-		cart, err = s.cartRepo.FindBySessionID(sessionID)
-	}
+	cart, err := s.findCartByIdentity(userID, sessionID)
 
 	if repository.IsRecordNotFound(err) {
 		return nil, ErrCartNotFound
@@ -54,22 +50,27 @@ func (s *CartService) GetOrCreateCart(userID *uint, sessionID string) (*product.
 		return nil, ErrCartNotFound
 	}
 
-	var cart *product.Cart
-	var err error
-
-	if userID != nil {
-		cart, err = s.cartRepo.FindByUserID(*userID)
-	} else {
-		cart, err = s.cartRepo.FindBySessionID(sessionID)
-	}
+	cart, err := s.findCartByIdentity(userID, sessionID)
 
 	if repository.IsRecordNotFound(err) {
 		cart = &product.Cart{
 			UserID:    userID,
 			SessionID: sessionID,
 		}
-		if err := s.cartRepo.Create(cart); err != nil {
-			return nil, err
+		if createErr := s.cartRepo.Create(cart); createErr != nil {
+			// The identity lookup and insert are intentionally separate. A
+			// concurrent initializer may win between them; the unique index
+			// turns that race into a safe read-after-conflict.
+			if repository.IsDuplicatedKey(createErr) {
+				cart, err = s.findCartByIdentity(userID, sessionID)
+				if err == nil {
+					return cart, nil
+				}
+				if !repository.IsRecordNotFound(err) {
+					return nil, err
+				}
+			}
+			return nil, createErr
 		}
 	} else if err != nil {
 		return nil, err
@@ -78,14 +79,26 @@ func (s *CartService) GetOrCreateCart(userID *uint, sessionID string) (*product.
 	return cart, nil
 }
 
+func (s *CartService) findCartByIdentity(userID *uint, sessionID string) (*product.Cart, error) {
+	if userID != nil {
+		return s.cartRepo.FindByUserID(*userID)
+	}
+	return s.cartRepo.FindBySessionID(sessionID)
+}
+
 func (s *CartService) ValidateAddToCart(productID uint, variantID *uint, quantity int) error {
-	_, _, _, _, _, err := s.resolvePurchasableCartItem(productID, variantID, quantity)
+	_, _, _, _, _, err := s.resolvePurchasableCartItemWithConfiguration(productID, variantID, quantity, nil)
+	return err
+}
+
+func (s *CartService) ValidateAddToCartWithConfiguration(productID uint, variantID *uint, quantity int, selected []SelectedOption) error {
+	_, _, _, _, _, err := s.resolvePurchasableCartItemWithConfiguration(productID, variantID, quantity, selected)
 	return err
 }
 
 func (s *CartService) HasPurchasableSyncItems(items []SyncCartItemReq) bool {
 	for _, item := range items {
-		if _, _, _, _, _, err := s.resolvePurchasableCartItem(item.ProductID, item.VariantID, item.Quantity); err == nil {
+		if _, _, _, _, _, err := s.resolvePurchasableCartItemWithConfiguration(item.ProductID, item.VariantID, item.Quantity, item.SelectedOptions); err == nil {
 			return true
 		}
 	}
@@ -93,66 +106,99 @@ func (s *CartService) HasPurchasableSyncItems(items []SyncCartItemReq) bool {
 }
 
 func (s *CartService) AddToCart(cartID, productID uint, variantID *uint, quantity int) error {
-	price, itemCurrency, availableStock, resolvedVariantID, requiresStock, err := s.resolvePurchasableCartItem(productID, variantID, quantity)
+	return s.AddToCartWithConfiguration(cartID, productID, variantID, quantity, nil)
+}
+
+func (s *CartService) AddToCartWithConfiguration(cartID, productID uint, variantID *uint, quantity int, selected []SelectedOption) error {
+	priceMoney, availableStock, resolvedVariantID, requiresStock, configuration, err := s.resolvePurchasableCartItemWithConfiguration(productID, variantID, quantity, selected)
 	if err != nil {
 		return err
 	}
+	itemCurrency := priceMoney.Currency().String()
 
 	if err := s.ensureCartCurrency(cartID, itemCurrency); err != nil {
 		return err
 	}
-	existingItem, err := s.cartRepo.FindItem(cartID, productID, resolvedVariantID)
+	existingItem, err := s.cartRepo.FindItemWithConfiguration(cartID, productID, resolvedVariantID, configuration.Hash)
 	if err == nil {
 		if requiresStock && existingItem.Quantity+quantity > availableStock {
 			return errors.New("insufficient stock")
 		}
 		existingItem.Quantity += quantity
-		existingItem.Price = price
-		existingItem.Currency = itemCurrency
+		if err := existingItem.SetPriceMoney(priceMoney); err != nil {
+			return err
+		}
+		existingItem.ConfigurationData = configuration.Data
+		existingItem.ConfigurationHash = configuration.Hash
 		return s.cartRepo.UpdateItem(existingItem)
 	}
 	if !repository.IsRecordNotFound(err) {
 		return err
 	}
 
-	return s.cartRepo.AddItem(&product.CartItem{
-		CartID:    cartID,
-		ProductID: productID,
-		VariantID: resolvedVariantID,
-		Quantity:  quantity,
-		Price:     price,
-		Currency:  itemCurrency,
-	})
+	item := &product.CartItem{
+		CartID:            cartID,
+		ProductID:         productID,
+		VariantID:         resolvedVariantID,
+		Quantity:          quantity,
+		ConfigurationData: configuration.Data,
+		ConfigurationHash: configuration.Hash,
+	}
+	if err := item.SetPriceMoney(priceMoney); err != nil {
+		return err
+	}
+	return s.cartRepo.AddItem(item)
 }
 
 func (s *CartService) UpdateCartItem(cartID, productID uint, variantID *uint, quantity int) error {
+	return s.UpdateCartItemWithConfiguration(cartID, productID, variantID, quantity, nil)
+}
+
+func (s *CartService) UpdateCartItemWithConfiguration(cartID, productID uint, variantID *uint, quantity int, selected []SelectedOption) error {
 	if quantity <= 0 {
 		return errors.New("quantity must be greater than 0")
 	}
 
-	item, err := s.cartRepo.FindItem(cartID, productID, variantID)
+	productRecord, variant, err := s.productRepo.FindPurchasableVariant(productID, variantID)
+	if err != nil || variant == nil {
+		return errors.New("product not found")
+	}
+	configuration, err := ResolveProductConfiguration(productRecord, variant, selected)
+	if err != nil {
+		return err
+	}
+	item, err := s.cartRepo.FindItemWithConfiguration(cartID, productID, &variant.ID, configuration.Hash)
 	if err != nil {
 		return errors.New("item not found in cart")
 	}
 
-	productRecord, variant, err := s.productRepo.FindPurchasableVariant(productID, item.VariantID)
-	if err != nil || variant == nil {
-		return errors.New("product not found")
+	priceMoney, availableStock, _, err := purchasablePriceStock(variant)
+	if err != nil {
+		return err
 	}
-
-	price, itemCurrency, availableStock, _ := purchasablePriceStock(variant)
 	if productRequiresStock(productRecord) && availableStock < quantity {
 		return errors.New("insufficient stock")
 	}
+	priceMoney, err = priceMoney.Add(configuration.Delta)
+	if err != nil {
+		return fmt.Errorf("calculate configured price: %w", err)
+	}
 
 	item.Quantity = quantity
-	item.Price = price
-	item.Currency = itemCurrency
+	if err := item.SetPriceMoney(priceMoney); err != nil {
+		return err
+	}
+	item.ConfigurationData = configuration.Data
+	item.ConfigurationHash = configuration.Hash
 	return s.cartRepo.UpdateItem(item)
 }
 
 func (s *CartService) RemoveFromCart(cartID, productID uint, variantID *uint) error {
-	item, err := s.cartRepo.FindItem(cartID, productID, variantID)
+	return s.RemoveFromCartWithConfiguration(cartID, productID, variantID, product.DefaultConfigurationHash)
+}
+
+func (s *CartService) RemoveFromCartWithConfiguration(cartID, productID uint, variantID *uint, configurationHash string) error {
+	item, err := s.cartRepo.FindItemWithConfiguration(cartID, productID, variantID, configurationHash)
 	if err != nil {
 		return nil
 	}
@@ -160,9 +206,10 @@ func (s *CartService) RemoveFromCart(cartID, productID uint, variantID *uint) er
 }
 
 type SyncCartItemReq struct {
-	ProductID uint  `json:"product_id"`
-	VariantID *uint `json:"variant_id"`
-	Quantity  int   `json:"quantity"`
+	ProductID       uint             `json:"product_id"`
+	VariantID       *uint            `json:"variant_id"`
+	Quantity        int              `json:"quantity"`
+	SelectedOptions []SelectedOption `json:"selected_options,omitempty"`
 }
 
 func (s *CartService) SyncCart(cartID uint, items []SyncCartItemReq) error {
@@ -173,20 +220,25 @@ func (s *CartService) SyncCart(cartID uint, items []SyncCartItemReq) error {
 	var cartItems []product.CartItem
 	currencySet := make(map[string]struct{})
 	for _, req := range items {
-		price, itemCurrency, _, resolvedVariantID, _, err := s.resolvePurchasableCartItem(req.ProductID, req.VariantID, req.Quantity)
+		priceMoney, _, resolvedVariantID, _, configuration, err := s.resolvePurchasableCartItemWithConfiguration(req.ProductID, req.VariantID, req.Quantity, req.SelectedOptions)
 		if err != nil {
 			continue
 		}
+		itemCurrency := priceMoney.Currency().String()
 		currencySet[itemCurrency] = struct{}{}
 
-		cartItems = append(cartItems, product.CartItem{
-			CartID:    cartID,
-			ProductID: req.ProductID,
-			VariantID: resolvedVariantID,
-			Quantity:  req.Quantity,
-			Price:     price,
-			Currency:  itemCurrency,
-		})
+		item := product.CartItem{
+			CartID:            cartID,
+			ProductID:         req.ProductID,
+			VariantID:         resolvedVariantID,
+			Quantity:          req.Quantity,
+			ConfigurationData: configuration.Data,
+			ConfigurationHash: configuration.Hash,
+		}
+		if err := item.SetPriceMoney(priceMoney); err != nil {
+			continue
+		}
+		cartItems = append(cartItems, item)
 	}
 
 	if len(currencySet) > 1 {
@@ -216,14 +268,23 @@ func (s *CartService) GetCartSummary(userID *uint, sessionID string) (*product.C
 
 func emptyCartSummary() *product.CartSummary {
 	return &product.CartSummary{
-		ItemCount: 0,
-		Total:     0,
-		Items:     []product.CartItem{},
+		ItemCount:  0,
+		TotalMoney: domainmoney.MustNew(0, product.DefaultPriceCurrency),
+		Items:      []product.CartItem{},
 	}
 }
 
 func (s *CartService) ClearCart(cartID uint) error {
 	return s.cartRepo.ClearCart(cartID)
+}
+
+// MergeGuestCartOnLogin transfers the cart identified by the browser session
+// to the user's persistent cart. It is safe to call when no guest cart exists.
+func (s *CartService) MergeGuestCartOnLogin(userID uint, sessionID string) error {
+	if s == nil || s.cartRepo == nil {
+		return nil
+	}
+	return s.cartRepo.MergeGuestCartOnLogin(userID, sessionID)
 }
 
 func (s *CartService) ensureCartCurrency(cartID uint, itemCurrency string) error {
@@ -240,36 +301,62 @@ func (s *CartService) ensureCartCurrency(cartID uint, itemCurrency string) error
 	return nil
 }
 
-func (s *CartService) resolvePurchasableCartItem(productID uint, variantID *uint, quantity int) (float64, string, int, *uint, bool, error) {
+func (s *CartService) resolvePurchasableCartItem(productID uint, variantID *uint, quantity int) (domainmoney.Money, int, *uint, bool, error) {
+	price, stock, resolved, requires, _, err := s.resolvePurchasableCartItemWithConfiguration(productID, variantID, quantity, nil)
+	return price, stock, resolved, requires, err
+}
+
+func (s *CartService) resolvePurchasableCartItemWithConfiguration(productID uint, variantID *uint, quantity int, selected []SelectedOption) (domainmoney.Money, int, *uint, bool, ProductConfigurationResult, error) {
 	if quantity <= 0 {
-		return 0, "", 0, nil, false, errors.New("quantity must be greater than 0")
+		return domainmoney.Money{}, 0, nil, false, ProductConfigurationResult{}, errors.New("quantity must be greater than 0")
 	}
 
 	productRecord, variant, err := s.productRepo.FindPurchasableVariant(productID, variantID)
 	if err != nil || variant == nil {
-		return 0, "", 0, nil, false, errors.New("product not found")
+		return domainmoney.Money{}, 0, nil, false, ProductConfigurationResult{}, errors.New("product not found")
 	}
 
-	price, itemCurrency, availableStock, resolvedVariantID := purchasablePriceStock(variant)
+	price, availableStock, resolvedVariantID, err := purchasablePriceStock(variant)
+	if err != nil {
+		return domainmoney.Money{}, 0, nil, false, ProductConfigurationResult{}, err
+	}
+	configuration, err := ResolveProductConfiguration(productRecord, variant, selected)
+	if err != nil {
+		return domainmoney.Money{}, 0, nil, false, ProductConfigurationResult{}, err
+	}
+	price, err = price.Add(configuration.Delta)
+	if err != nil {
+		return domainmoney.Money{}, 0, nil, false, ProductConfigurationResult{}, fmt.Errorf("calculate configured price: %w", err)
+	}
 	requiresStock := productRequiresStock(productRecord)
 	if requiresStock && availableStock < quantity {
-		return 0, "", 0, nil, requiresStock, errors.New("insufficient stock")
+		return domainmoney.Money{}, 0, nil, requiresStock, ProductConfigurationResult{}, errors.New("insufficient stock")
 	}
-	return price, itemCurrency, availableStock, resolvedVariantID, requiresStock, nil
+	return price, availableStock, resolvedVariantID, requiresStock, configuration, nil
 }
 
 func productRequiresStock(item *product.Product) bool {
 	return item == nil || product.NormalizeFulfillmentMode(item.FulfillmentMode) == product.FulfillmentModeStock
 }
 
-func purchasablePriceStock(variant *product.ProductVariant) (float64, string, int, *uint) {
+func purchasablePriceStock(variant *product.ProductVariant) (domainmoney.Money, int, *uint, error) {
+	if variant == nil {
+		return domainmoney.Money{}, 0, nil, errors.New("product variant is required")
+	}
 	variantID := variant.ID
 	itemCurrency := currency.NormalizeCode(variant.Currency)
 	if itemCurrency == "" {
 		itemCurrency = product.DefaultPriceCurrency
 	}
 	if !currency.IsValidCode(itemCurrency) || !currency.IsCatalogCode(itemCurrency) {
-		itemCurrency = product.DefaultPriceCurrency
+		return domainmoney.Money{}, 0, nil, errors.New("product price currency is invalid")
 	}
-	return variant.EffectivePrice(), itemCurrency, variant.Stock, &variantID
+	price, err := variant.EffectivePriceMoney()
+	if err != nil {
+		return domainmoney.Money{}, 0, nil, err
+	}
+	if price.Currency().String() != itemCurrency {
+		return domainmoney.Money{}, 0, nil, errors.New("product price currency mismatch")
+	}
+	return price, variant.Stock, &variantID, nil
 }

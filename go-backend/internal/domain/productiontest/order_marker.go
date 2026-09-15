@@ -45,4 +45,3 @@ func NewOrderMarker(orderID uint, orderNumber string, decision PurchaseDecision)
 		Reason:               "production test checkout",
 	}, true
 }
-

@@ -39,6 +39,20 @@ export interface AfterSalesCaseAttachment {
   updated_at?: string | null
 }
 
+export interface AfterSalesReturnShipment {
+  id?: AfterSalesCaseID
+  case_id?: AfterSalesCaseID
+  warehouse_name?: string | null
+  warehouse_address?: string | null
+  carrier?: string | null
+  tracking_number?: string | null
+  tracking_url?: string | null
+  label_url?: string | null
+  shipped_at?: string | null
+  received_at?: string | null
+  received_by?: AfterSalesCaseID | null
+}
+
 export interface AfterSalesRefundReview {
   id?: AfterSalesCaseID
   case_id?: AfterSalesCaseID
@@ -70,6 +84,7 @@ export interface AfterSalesCase {
   items?: AfterSalesCaseItem[]
   events?: AfterSalesCaseEvent[]
   attachments?: AfterSalesCaseAttachment[]
+  return_shipments?: AfterSalesReturnShipment[]
   refund_review?: AfterSalesRefundReview | null
   refund_review_maximum_amount?: number | null
   refund_review_currency?: string | null
@@ -103,6 +118,18 @@ export interface CreateAfterSalesCaseInput {
   reason: string
   description?: string
   items: CreateAfterSalesCaseItemInput[]
+}
+
+export interface UpdateAfterSalesStatusInput {
+  status: string
+  resolution?: string
+  return_shipment_id?: AfterSalesCaseID
+  warehouse_name?: string
+  warehouse_address?: string
+  carrier?: string
+  tracking_number?: string
+  tracking_url?: string
+  label_url?: string
 }
 
 export interface AfterSalesListParams {
@@ -158,11 +185,14 @@ export const afterSalesApi = {
 
   async updateStatus(
     caseID: AfterSalesCaseID,
-    status: string,
+    input: UpdateAfterSalesStatusInput | string,
     resolution = '',
   ): Promise<AfterSalesCase> {
     const path = `/api/admin/after-sales/${caseID}/status`
-    return readObjectPayload<AfterSalesCase>(await axios.patch(path, { status, resolution }), path)
+    const payload: UpdateAfterSalesStatusInput = typeof input === 'string'
+      ? { status: input, resolution }
+      : input
+    return readObjectPayload<AfterSalesCase>(await axios.patch(path, payload), path)
   },
 
   async getRefundReview(caseID: AfterSalesCaseID): Promise<AfterSalesRefundReview> {

@@ -30,7 +30,7 @@ func TestCORSAllowsIdempotencyKeyAndExposesReplayMetadata(t *testing.T) {
 	request := httptest.NewRequest(http.MethodOptions, "/api/v1/orders", nil)
 	request.Header.Set("Origin", "https://store.example.test")
 	request.Header.Set("Access-Control-Request-Method", http.MethodPost)
-	request.Header.Set("Access-Control-Request-Headers", "content-type, idempotency-key, x-anonymous-id")
+	request.Header.Set("Access-Control-Request-Headers", "content-type, idempotency-key, x-anonymous-id, x-warranty-claim-token")
 	response := httptest.NewRecorder()
 
 	router.ServeHTTP(response, request)
@@ -39,6 +39,7 @@ func TestCORSAllowsIdempotencyKeyAndExposesReplayMetadata(t *testing.T) {
 	require.Equal(t, "https://store.example.test", response.Header().Get("Access-Control-Allow-Origin"))
 	require.Contains(t, response.Header().Get("Access-Control-Allow-Headers"), "Idempotency-Key")
 	require.Contains(t, response.Header().Get("Access-Control-Allow-Headers"), "X-Anonymous-ID")
+	require.Contains(t, response.Header().Get("Access-Control-Allow-Headers"), "X-Warranty-Claim-Token")
 	require.Contains(t, response.Header().Get("Access-Control-Expose-Headers"), "Idempotency-Replayed")
 	require.Contains(t, response.Header().Get("Access-Control-Expose-Headers"), "Retry-After")
 }

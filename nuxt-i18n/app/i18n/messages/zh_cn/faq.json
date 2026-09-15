@@ -6,6 +6,8 @@
     "all": "全部",
     "viewAll": "查看全部 FAQ",
     "emptySection": "此部分暂无 FAQ。",
+    "pagesAriaLabel": "FAQ 页面",
+    "pagesLabel": "FAQ 页面",
     "pageIntro": "浏览有关订单、产品与服务的常见问题和快速答案。",
     "searchPlaceholder": "搜索 FAQ...",
     "viewMoreContent": "查看更多内容",

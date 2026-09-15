@@ -4,7 +4,7 @@
 
 This document defines how customer loyalty points should be awarded after an order is completed.
 
-The goal is to close the loyalty loop without coupling payment, order fulfillment, refunds, and marketing rules into one fragile path. A bug in the loyalty reward module must not block payment verification, order completion, shipment updates, or refund recording.
+The goal is to close the loyalty loop without coupling payment, order fulfillment, refunds, and marketing rules into one fragile path. A bug in the loyalty reward module must not block payment verification, order completion, shipment updates, or refund recording. Refund settlement is a separate, shared payment transaction that runs when a refund is completed or a verified provider refund is recorded.
 
 ## Current State
 
@@ -18,11 +18,19 @@ The system already has the following pieces:
 - Loyalty ledger entries are stored in `loyalty_transactions`.
 - Member levels are stored in `member_levels` and include `points_multiplier`.
 - Versioned loyalty configuration exists in `loyalty_program_configs`, but it currently focuses on redemption, check-in, and referral rules.
+- Completed-order reward points are clawed back by the refund settlement path, and points spent as an order discount are returned by that same path.
 
-The missing piece is an isolated, idempotent reward flow for:
+The canonical reward flow is:
 
 ```text
 paid order -> completed order -> award earned points -> update member level
+```
+
+The refund flow is separate:
+
+```text
+pending refund -> reserve loyalty settlement -> provider refund
+  -> complete refund -> finalize clawback and used-point return
 ```
 
 ## Design Principles
@@ -44,7 +52,7 @@ This design does not implement:
 - Per-product reward rules.
 - Product-category reward exclusions.
 - Manual admin point adjustment redesign.
-- A full refund clawback policy for every partial refund edge case.
+- Changes to the order reward calculation itself.
 
 Those can be added later after the basic completion reward pipeline is stable.
 
@@ -327,41 +335,56 @@ Failure outcomes:
 
 ## Refund and Clawback
 
-A completed order can later be fully or partially refunded. The reward design must reserve a clean clawback path.
+Refund settlement is implemented in the payment refund workflow and applies to
+both explicit provider refund execution and verified provider refund recording.
+The two paths use the same transaction helpers and the refund ID as the
+idempotency key.
 
-Initial minimum rule:
+The accounting fields have distinct meanings:
 
-```text
-When a completed order becomes fully refunded, reverse the order reward if it exists.
-```
+- `refunds.requested_amount` is the original refund amount before coupon or
+  loyalty deductions.
+- `refunds.amount` is the net amount sent to the payment provider.
+- `refunds.loyalty_points_clawback` is the number of earned order points
+  actually removed.
+- `refunds.loyalty_points_returned` is the proportional return of points used
+  as the order discount.
+- `refunds.loyalty_cash_deduction_amount` is the cash equivalent of earned
+  points that were already unavailable.
 
-Suggested reversal ledger:
+Referral welcome points are a separate account adjustment and are never part
+of the cash-refund calculation. If a referee spends referral points together
+with cash, a refund returns the order's `PointsUsed` in full (for a full cash
+refund) while the later referral invalidation event writes an independent
+`referral_referee_reversal` entry for the original welcome reward. The cash
+amount sent to the provider remains the actual cash amount paid for the order.
 
-```text
-type = spend or reverse
-source = order_refund
-source_id = refund_id
-description = Reversed reward points for refunded order #{order_number}
-```
+For a partial refund, earned points are allocated by
+`floor(refund requested amount / order total amount * order points)`. Used
+points are allocated against the cash payment leg; when the full cash amount
+paid for the order is refunded, all `PointsUsed` are returned. A full refund
+also removes all order-earned points. The cumulative allocation across
+multiple refunds is capped so the same points cannot be clawed back or
+returned twice.
 
-Important edge case:
+The refund execution transaction first reserves all currently available points
+that can be clawed back. If earned points have already been spent or redeemed,
+the unavailable remainder is converted using the active
+`ExchangeRatePoints` and subtracted from the provider refund amount. The
+provider is called with this net amount; it is never silently replaced by the
+original requested amount.
 
-If the user has already spent the earned reward points, immediate clawback may fail due to insufficient available points.
+If the provider call fails before a refund ID is returned, the reservation is
+reversed and the pending refund remains retryable. If the provider returns a
+refund ID with an amount that does not match the local net amount, the
+execution is marked failed with the provider response retained and the loyalty
+reservation is kept for manual reconciliation because the provider may already
+have moved money.
 
-Possible policies:
-
-- Allow negative available balance.
-- Record pending clawback debt.
-- Block refund completion until points are available.
-- Do not claw back points after settlement.
-
-Recommended first policy:
-
-```text
-Record pending clawback debt instead of blocking refund.
-```
-
-This keeps refund processing isolated from loyalty balance problems.
+When a verified provider refund arrives without a local pending refund, the
+input must provide both the provider-confirmed net amount and the original
+requested amount. The service does not infer the gross request from the net
+gateway amount.
 
 ## Data Integrity Checks
 
@@ -373,6 +396,9 @@ Before implementation, verify:
 - `member_levels` default six levels exist in all environments.
 - `order.completed` outbox event can be created inside the order status transaction.
 - Outbox scheduler is enabled in DEV and production workers.
+- `refunds` has the loyalty settlement columns from migration 254.
+- The refund settlement ledger sources are protected by a refund-scoped unique
+  index for clawback, clawback reversal, and used-point return entries.
 
 ## Rollout Plan
 
@@ -420,7 +446,12 @@ Required backend tests:
 - Member level updates after reward.
 - Reward config disabled means no points are awarded.
 - Missing member level falls back safely or returns retryable error.
-- Full refund reverses or schedules reversal of previously awarded points.
+- Full refund claws back all earned order points and returns all points used on the order.
+- Partial refunds allocate earned and used points cumulatively without exceeding the order totals.
+- Insufficient available points reduce the gateway refund by the configured cash equivalent.
+- A failed provider call releases the point reservation.
+- A repeated verified refund does not duplicate loyalty ledger entries.
+- A provider amount mismatch is retained as a failed execution for manual reconciliation.
 - Reward failure does not roll back order completion.
 
 Required migration checks:
@@ -429,19 +460,17 @@ Required migration checks:
 - Existing DEV database can migrate cleanly.
 - Empty database baseline plus SQL migrations produces the same schema.
 
-## Open Decisions
+## Remaining Decisions
 
-These should be decided before coding:
+The refund clawback and partial-refund rules above are now fixed:
 
-- Should partial refunds claw back proportional reward points?
-- Should negative loyalty balance be allowed?
 - Should gift card purchases earn points?
 - Should manually completed orders award points immediately, or only after a delay?
 - Should reward points expire, and if so after how many days?
 
-## Recommended First Implementation
+## Current Reward Implementation
 
-Implement the minimal safe version:
+The current implementation:
 
 - Award points only for `payment_status = paid` and `status = completed`.
 - Use `rewardable_amount = max(subtotal_amount - discount_amount, 0)`.

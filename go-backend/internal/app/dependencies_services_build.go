@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"commerce-platform/internal/service"
+	"commerce-platform/internal/workbenchfeed"
 )
 
 func (b *dependencyServicesBuilder) build() error {
@@ -25,11 +26,14 @@ func (b *dependencyServicesBuilder) build() error {
 	postService := service.NewPostService(b.repos.Post, b.redisCache, b.cfg.Cache.PostTTL, b.repos.BlogCategory)
 	blogCategoryService := service.NewBlogCategoryService(b.repos.BlogCategory)
 	productService := service.NewProductServiceWithCacheOptions(b.repos.Product, b.redisCache, b.cfg.Cache.ProductTTL, b.cfg.Cache.ProductLockTTL)
-	productProcurementService := service.NewProductProcurementServiceWithProfitability(
-		b.repos.ProductProcurement,
+	if b.cfg.Worker.ProductViewCountFlushEnabled && b.redisCache != nil {
+		productService.ConfigureProductViewCountBuffer(b.redisCache.Client(), b.cfg.Worker.ProductViewCountFlushBatchLimit)
+	}
+	productSupplierCostRecordService := service.NewProductSupplierCostRecordServiceWithProfitability(
+		b.repos.ProductSupplierCostRecord,
 		b.repos.ProductProfitCalculation,
 	)
-	productProcurementService.ConfigureCatalogRepository(b.repos.ProductProcurementCatalog)
+	productSupplierCostRecordService.ConfigureCatalogRepository(b.repos.ProductSupplierCostCatalog)
 	fitmentHubSpecificationService := service.NewFitmentHubSpecificationService(
 		b.repos.FitmentHubSpecification,
 		b.repos.FitmentFrameHubSpecification,
@@ -46,9 +50,9 @@ func (b *dependencyServicesBuilder) build() error {
 		b.repos.FitmentHubSpecification,
 		b.repos.FitmentForkHubSpecification,
 	)
-	productProfitabilityService := service.NewProductProfitabilityServiceWithProcurement(
+	productProfitabilityService := service.NewProductProfitabilityServiceWithSupplierCostRecords(
 		b.repos.ProductProfitCalculation,
-		b.repos.ProductProcurement,
+		b.repos.ProductSupplierCostRecord,
 	)
 	productCategoryService := service.NewProductCategoryService(b.repos.ProductCategory, b.repos.Media)
 	productBrandService := service.NewProductBrandService(b.repos.ProductBrand)
@@ -63,6 +67,7 @@ func (b *dependencyServicesBuilder) build() error {
 	analyticsService := service.NewAnalyticsService(settingService)
 	currencyPolicyService := service.NewCurrencyPolicyService(b.repos.Setting)
 	exchangeRateService := service.NewExchangeRateService(b.repos.ExchangeRate, b.repos.Setting)
+	productService.ConfigureDisplayPriceRefreshLeaseRepository(b.repos.ExchangeRate)
 	shippingService.ConfigureCurrencyPolicy(currencyPolicyService)
 	orderEvidenceSnapshotService := service.NewOrderEvidenceSnapshotService()
 	orderEvidenceService := service.NewOrderEvidenceService()
@@ -197,8 +202,15 @@ func (b *dependencyServicesBuilder) build() error {
 		},
 	)
 	mediaService := service.NewMediaService(b.repos.Media, storageSvc, settingService, storefrontBaseURL, b.cfg.MediaUpload.AccountStorageQuotaBytes)
+	service.ConfigureMediaDerivativeGenerationCapacity(b.cfg.Worker.MediaDerivativeGenerationCapacity)
 	mediaService.ConfigureDerivativePresetRepository(b.repos.MediaDerivativePresets)
 	mediaService.ConfigureDerivativeRebuildJobRepository(b.repos.MediaDerivativeRebuildJobs)
+	workbenchFeedService := workbenchfeed.NewService(
+		b.db,
+		workbenchfeed.NewRepository(b.db),
+		workbenchfeed.NewCatalog(b.db),
+		mediaService,
+	)
 	siteLogoService := service.NewSiteLogoService(b.repos.SiteLogo, siteLogoStorageSvc, storefrontBaseURL)
 	productService.ConfigureMediaService(mediaService)
 	seoResourceService.ConfigureMediaService(mediaService)
@@ -284,7 +296,7 @@ func (b *dependencyServicesBuilder) build() error {
 		Post:                              postService,
 		BlogCategory:                      blogCategoryService,
 		Product:                           productService,
-		ProductProcurement:                productProcurementService,
+		ProductSupplierCostRecord:         productSupplierCostRecordService,
 		FrameFitmentEntry:                 frameFitmentEntryService,
 		ForkFitmentEntry:                  forkFitmentEntryService,
 		FitmentHubSpecification:           fitmentHubSpecificationService,
@@ -339,26 +351,36 @@ func (b *dependencyServicesBuilder) build() error {
 		AfterSales:                        afterSalesService,
 		Marketing:                         service.NewMarketingService(txManager, b.repos.Coupon, b.repos.Loyalty, settingService),
 		LoyaltyProgram:                    loyaltyProgramService,
-		Review:                            service.NewReviewService(b.repos.Review),
-		ReviewModeration:                  service.NewReviewModerationService(b.repos.Review),
-		Ticket:                            service.NewTicketService(b.repos.Ticket, b.repos.User, b.repos.FAQ),
-		CustomerServiceEvents:             service.NewCustomerServiceEventHub(),
-		Subscription:                      service.NewSubscriptionService(b.repos.Subscription),
-		Sitemap:                           service.NewSitemapService(b.repos.Post, b.cfg.Server.BaseURL),
-		StorefrontRouteCatalog:            storefrontRouteCatalogService,
-		StorefrontURLSearchProfiles:       storefrontURLSearchProfileService,
-		StorefrontRedirectRules:           storefrontRedirectRuleService,
-		StorefrontURLIssues:               storefrontURLIssueService,
-		PreflightContentLinks:             preflightContentLinkService,
-		LighthouseRunner:                  lighthouseRunnerService,
-		SiteQualityEngine:                 siteQualityEngineService,
-		HotDataArchive:                    hotDataArchiveService,
-		UGCShowcase:                       service.NewUGCShowcaseService(b.repos.UGCShowcase, storageSvc),
-		HomeVisualTiles:                   service.NewHomeVisualTileService(b.repos.HomeVisualTiles, storageSvc),
-		UGCShowcaseUploadProtection:       UGCShowcaseUploadProtectionService,
-		UGCShowcaseUploadEligibility:      UGCShowcaseUploadEligibilityService,
-		Wishlist:                          service.NewWishlistService(b.repos.Wishlist, b.repos.Product),
-		Feedback:                          service.NewFeedbackService(b.repos.Feedback),
+		Referral: service.NewReferralService(
+			txManager,
+			b.repos.Referral,
+			b.repos.ReferralProgram,
+			b.repos.User,
+			b.cfg.Server.BaseURL,
+			b.cfg.JWT.Secret,
+			storefrontBaseURL,
+		),
+		Review:                       service.NewReviewService(b.repos.Review),
+		ReviewModeration:             service.NewReviewModerationService(b.repos.Review),
+		Ticket:                       service.NewTicketService(b.repos.Ticket, b.repos.User, b.repos.FAQ),
+		CustomerServiceEvents:        service.NewCustomerServiceEventHub(),
+		Subscription:                 service.NewSubscriptionService(b.repos.Subscription),
+		Sitemap:                      service.NewSitemapServiceWithCatalog(b.repos.Post, b.repos.Product, b.repos.ProductCategory, b.cfg.Server.BaseURL),
+		StorefrontRouteCatalog:       storefrontRouteCatalogService,
+		StorefrontURLSearchProfiles:  storefrontURLSearchProfileService,
+		StorefrontRedirectRules:      storefrontRedirectRuleService,
+		StorefrontURLIssues:          storefrontURLIssueService,
+		PreflightContentLinks:        preflightContentLinkService,
+		LighthouseRunner:             lighthouseRunnerService,
+		SiteQualityEngine:            siteQualityEngineService,
+		HotDataArchive:               hotDataArchiveService,
+		UGCShowcase:                  service.NewUGCShowcaseService(b.repos.UGCShowcase, storageSvc),
+		HomeVisualTiles:              service.NewHomeVisualTileService(b.repos.HomeVisualTiles, storageSvc),
+		WorkbenchFeed:                workbenchFeedService,
+		UGCShowcaseUploadProtection:  UGCShowcaseUploadProtectionService,
+		UGCShowcaseUploadEligibility: UGCShowcaseUploadEligibilityService,
+		Wishlist:                     service.NewWishlistService(b.repos.Wishlist, b.repos.Product),
+		Feedback:                     service.NewFeedbackService(b.repos.Feedback),
 		SuggestionFeedback: service.NewSuggestionFeedbackService(
 			b.repos.SuggestionFeedback,
 		),

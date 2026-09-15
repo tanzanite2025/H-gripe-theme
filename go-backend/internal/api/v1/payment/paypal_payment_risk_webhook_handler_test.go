@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	coupondomain "commerce-platform/internal/domain/coupon"
 	orderdomain "commerce-platform/internal/domain/order"
 	"commerce-platform/internal/domain/orderevidence"
 	paymentdomain "commerce-platform/internal/domain/payment"
@@ -151,10 +152,13 @@ func newPayPalDisputeWebhookHarness(t *testing.T) (*gorm.DB, *Handler, *fakePayP
 	require.NoError(t, db.AutoMigrate(
 		&orderdomain.Order{},
 		&orderdomain.OrderItem{},
+		&coupondomain.GiftCard{},
+		&coupondomain.GiftCardTransaction{},
 		&paymentdomain.Transaction{},
 		&paymentdomain.Refund{},
 		&paymentdomain.RefundLineItem{},
 		&paymentdomain.PayPalDispute{},
+		&paymentdomain.PaymentReview{},
 		&orderevidence.OrderEvidenceSubmissionSnapshot{},
 		&shippingdomain.TrackingProviderConfig{},
 		&shippingdomain.TrackingShipment{},
@@ -163,9 +167,13 @@ func newPayPalDisputeWebhookHarness(t *testing.T) (*gorm.DB, *Handler, *fakePayP
 
 	orderRepo := repository.NewOrderRepository(db)
 	paymentRepo := repository.NewPaymentRepository(db)
+	productRepo := repository.NewProductRepository(db)
+	couponRepo := repository.NewCouponRepository(db)
+	loyaltyRepo := repository.NewLoyaltyRepository(db)
 	shippingRepo := repository.NewShippingRepository(db)
 	orderEvidenceSubmissionRepo := repository.NewOrderEvidenceSubmissionSnapshotRepository(db)
-	paymentService := service.NewPaymentService(nil, paymentRepo)
+	txManager := repository.NewTxManager(db, orderRepo, productRepo, couponRepo, loyaltyRepo, paymentRepo, shippingRepo)
+	paymentService := service.NewPaymentService(txManager, paymentRepo)
 	paymentService.ConfigureEvidenceSources(orderRepo, nil)
 	paymentService.ConfigureOrderEvidenceSubmissionSnapshotRepository(orderEvidenceSubmissionRepo)
 	paymentService.ConfigureOrderEvidenceAssembler(
@@ -196,6 +204,8 @@ func seedPayPalDisputeWebhookOrder(t *testing.T, db *gorm.DB, orderNumber string
 		SubtotalAmount:      total,
 		TotalAmount:         total,
 		Currency:            "USD",
+		PaymentAmount:       total,
+		PaymentCurrency:     "USD",
 		PaidAt:              &paidAt,
 		ShippedAt:           &shippedAt,
 		ShippingAddress: orderdomain.Address{

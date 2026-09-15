@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	domainmoney "commerce-platform/internal/domain/money"
 	paymentdomain "commerce-platform/internal/domain/payment"
 	"commerce-platform/internal/domain/visitor"
 	"commerce-platform/internal/pkg/antifraud"
@@ -24,8 +25,9 @@ const (
 )
 
 const (
-	paymentThreeDSBillingShippingMismatchReason       = "avs_billing_shipping_mismatch_high_value"
-	paymentThreeDSBillingShippingMismatchThresholdUSD = 800.0
+	paymentThreeDSBillingShippingMismatchReason                    = "avs_billing_shipping_mismatch_high_value"
+	paymentThreeDSBillingShippingMismatchCurrencyUnavailableReason = "avs_billing_shipping_mismatch_currency_conversion_unavailable"
+	paymentThreeDSBillingShippingMismatchThresholdUSD              = 800.0
 )
 
 type paymentThreeDSVisitorAssessor interface {
@@ -44,6 +46,10 @@ type paymentThreeDSPaymentProtectionProvider interface {
 	Evaluate(input paymentdomain.PaymentProtectionEvaluationInput) (paymentdomain.PaymentProtectionDecision, error)
 }
 
+type paymentThreeDSCurrencyConverter interface {
+	ConvertMoneyStrict(amount domainmoney.Money, quoteCurrency string) (domainmoney.Money, error)
+}
+
 type paymentThreeDSOrderHistory interface {
 	CountPaidOrdersForUserBefore(userID uint, excludeOrderID uint) (int64, error)
 }
@@ -54,14 +60,19 @@ type PaymentThreeDSPolicyService struct {
 	paymentRisk    paymentThreeDSRiskEvaluator
 	portfolioRisk  paymentThreeDSPortfolioRiskProvider
 	protection     paymentThreeDSPaymentProtectionProvider
+	currency       paymentThreeDSCurrencyConverter
 	orderHistory   paymentThreeDSOrderHistory
 	failOpenAlerts PaymentRiskFailOpenAlertPublisher
 }
 
 type PaymentThreeDSDecisionInput struct {
-	Provider          string
-	UserID            uint
-	OrderID           uint
+	Provider string
+	UserID   uint
+	OrderID  uint
+	// AmountMoney is the canonical transactional amount. Amount remains a
+	// transport fallback for callers that have not yet materialized Money at
+	// their boundary.
+	AmountMoney       domainmoney.Money
 	Amount            float64
 	Currency          string
 	BaseMode          string
@@ -121,6 +132,13 @@ func (s *PaymentThreeDSPolicyService) ConfigurePaymentProtection(provider paymen
 		return
 	}
 	s.protection = provider
+}
+
+func (s *PaymentThreeDSPolicyService) ConfigureExchangeRateService(converter paymentThreeDSCurrencyConverter) {
+	if s == nil {
+		return
+	}
+	s.currency = converter
 }
 
 func (s *PaymentThreeDSPolicyService) ConfigureFailOpenAlertPublisher(publisher PaymentRiskFailOpenAlertPublisher) {
@@ -228,7 +246,7 @@ func (s *PaymentThreeDSPolicyService) Decide(ctx context.Context, input PaymentT
 	} else if decision.Mode == PaymentThreeDSModeAutomatic && s.lowRiskExemptionCandidate(input, paidOrders, paymentRiskDecision, visitorAssessment) {
 		decision.Strategy = "adaptive_exemption_candidate"
 		decision.ExemptionCandidate = true
-		decision.Reasons = append(decision.Reasons, paymentThreeDSLowRiskReason(input.Amount, s.cfg.LowRiskMaxAmount, paidOrders, s.cfg.TrustedPaidOrders))
+		decision.Reasons = append(decision.Reasons, paymentThreeDSLowRiskReason(s.lowRiskAmountQualified(input), paidOrders, s.cfg.TrustedPaidOrders))
 	}
 
 	if len(decision.Reasons) == 0 {
@@ -310,6 +328,12 @@ func (s *PaymentThreeDSPolicyService) alertPaymentRiskFailOpen(ctx context.Conte
 		fallbackAction = "step_up_3ds_any"
 	)
 
+	loggedAmount := input.Amount
+	if amountMoney, amountErr := paymentThreeDSInputMoney(input); amountErr == nil {
+		if value, valueErr := amountMoney.MajorFloat(); valueErr == nil {
+			loggedAmount = value
+		}
+	}
 	appLogger.Critical("payment risk protection fail-open; Redis-backed antifraud unavailable",
 		zap.Error(riskErr),
 		zap.Bool("fail_open", true),
@@ -322,7 +346,7 @@ func (s *PaymentThreeDSPolicyService) alertPaymentRiskFailOpen(ctx context.Conte
 		zap.String("fallback_action", fallbackAction),
 		zap.Uint("order_id", input.OrderID),
 		zap.Uint("user_id", input.UserID),
-		zap.Float64("amount", input.Amount),
+		zap.Float64("amount", loggedAmount),
 		zap.String("currency", strings.ToUpper(strings.TrimSpace(input.Currency))),
 	)
 	if s == nil || s.failOpenAlerts == nil {
@@ -384,20 +408,53 @@ func (s *PaymentThreeDSPolicyService) applyBillingShippingMismatchHighValueRule(
 	if billingCountry == "" || shippingCountry == "" || billingCountry == shippingCountry {
 		return false
 	}
-	if !strings.EqualFold(strings.TrimSpace(input.Currency), "USD") {
+	amountMoney, amountErr := paymentThreeDSInputMoney(input)
+	if amountErr != nil {
+		if input.Amount > 0 {
+			s.applyBillingShippingMismatchChallenge(decision, paymentThreeDSBillingShippingMismatchCurrencyUnavailableReason)
+			return true
+		}
 		return false
 	}
-	if input.Amount <= s.cfg.AVSBillingShippingMismatchHighValueThresholdUSD {
+	if amountMoney.AmountMinor() <= 0 {
 		return false
 	}
 
+	amountUSD := amountMoney
+	currencyCode := strings.ToUpper(strings.TrimSpace(input.Currency))
+	if currencyCode == "" {
+		currencyCode = amountMoney.Currency().String()
+	}
+	if currencyCode != "USD" {
+		if s.currency == nil {
+			s.applyBillingShippingMismatchChallenge(decision, paymentThreeDSBillingShippingMismatchCurrencyUnavailableReason)
+			return true
+		}
+		amountUSD, amountErr = s.currency.ConvertMoneyStrict(amountMoney, "USD")
+		if amountErr != nil {
+			s.applyBillingShippingMismatchChallenge(decision, paymentThreeDSBillingShippingMismatchCurrencyUnavailableReason)
+			return true
+		}
+	}
+	threshold, thresholdErr := domainmoney.FromMajorFloat(s.cfg.AVSBillingShippingMismatchHighValueThresholdUSD, "USD")
+	if thresholdErr != nil || amountUSD.AmountMinor() <= threshold.AmountMinor() {
+		return false
+	}
+
+	s.applyBillingShippingMismatchChallenge(decision, paymentThreeDSBillingShippingMismatchReason)
+	return true
+}
+
+func (s *PaymentThreeDSPolicyService) applyBillingShippingMismatchChallenge(
+	decision *PaymentThreeDSDecision,
+	reason string,
+) {
 	decision.Mode = strongerThreeDSMode(decision.Mode, PaymentThreeDSModeChallenge)
 	decision.Strategy = strongerPaymentThreeDSStrategy(decision.Strategy, "adaptive_challenge")
 	decision.RiskLevel = strongerVisitorRiskLevel(decision.RiskLevel, visitor.RiskLevelSuspicious)
 	decision.RiskScore = paymentThreeDSMaxInt(decision.RiskScore, s.cfg.ChallengeRiskScore)
 	decision.ExemptionCandidate = false
-	decision.Reasons = append(decision.Reasons, paymentThreeDSBillingShippingMismatchReason)
-	return true
+	decision.Reasons = append(decision.Reasons, reason)
 }
 
 func (s *PaymentThreeDSPolicyService) applyVisitorRiskAssessment(decision *PaymentThreeDSDecision, assessment VisitorRiskIdentityAssessment) {
@@ -452,7 +509,8 @@ func (s *PaymentThreeDSPolicyService) lowRiskExemptionCandidate(
 	paymentRiskDecision antifraud.Decision,
 	visitorAssessment VisitorRiskIdentityAssessment,
 ) bool {
-	if input.Amount < 0 || paymentRiskDecision.HighRisk {
+	amountMoney, amountErr := paymentThreeDSInputMoney(input)
+	if amountErr != nil || amountMoney.AmountMinor() < 0 || paymentRiskDecision.HighRisk {
 		return false
 	}
 	if paymentRiskDecision.Score >= s.cfg.StepUpRiskScore || paymentRiskDecision.Failures > 0 {
@@ -472,9 +530,32 @@ func (s *PaymentThreeDSPolicyService) lowRiskExemptionCandidate(
 		return false
 	}
 
-	smallAmount := s.cfg.LowRiskMaxAmount > 0 && input.Amount <= s.cfg.LowRiskMaxAmount
+	smallAmount := s.lowRiskAmountQualified(input)
 	trustedCustomer := paidOrders >= int64(s.cfg.TrustedPaidOrders)
 	return smallAmount || trustedCustomer
+}
+
+func (s *PaymentThreeDSPolicyService) lowRiskAmountQualified(input PaymentThreeDSDecisionInput) bool {
+	if s == nil || s.cfg.LowRiskMaxAmount <= 0 {
+		return false
+	}
+	amount, err := paymentThreeDSInputMoney(input)
+	if err != nil {
+		return false
+	}
+	limit, err := domainmoney.FromMajorFloat(s.cfg.LowRiskMaxAmount, amount.Currency().String())
+	return err == nil && amount.AmountMinor() <= limit.AmountMinor()
+}
+
+func paymentThreeDSInputMoney(input PaymentThreeDSDecisionInput) (domainmoney.Money, error) {
+	if input.AmountMoney.Validate() == nil {
+		return input.AmountMoney, nil
+	}
+	code := strings.ToUpper(strings.TrimSpace(input.Currency))
+	if code == "" {
+		code = "USD"
+	}
+	return domainmoney.FromMajorFloat(input.Amount, code)
 }
 
 func normalizePaymentThreeDSConfig(cfg config.PaymentThreeDSConfig) config.PaymentThreeDSConfig {
@@ -574,9 +655,9 @@ func paymentThreeDSBillingCountry(input PaymentThreeDSDecisionInput) string {
 	return input.ShippingCountry
 }
 
-func paymentThreeDSLowRiskReason(amount, lowRiskMax float64, paidOrders int64, trustedPaidOrders int) string {
+func paymentThreeDSLowRiskReason(smallAmount bool, paidOrders int64, trustedPaidOrders int) string {
 	reasons := []string{}
-	if lowRiskMax > 0 && amount <= lowRiskMax {
+	if smallAmount {
 		reasons = append(reasons, "low_amount")
 	}
 	if paidOrders >= int64(trustedPaidOrders) {

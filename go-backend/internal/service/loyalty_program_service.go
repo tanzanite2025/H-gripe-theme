@@ -3,10 +3,12 @@ package service
 import (
 	"errors"
 	"fmt"
+	"math/big"
 	"time"
 
 	"commerce-platform/internal/domain/currency"
 	"commerce-platform/internal/domain/loyalty"
+	domainmoney "commerce-platform/internal/domain/money"
 	"commerce-platform/internal/repository"
 )
 
@@ -232,16 +234,35 @@ func redeemOptionKey(currencyCode string, valueCents int64) string {
 	return fmt.Sprintf("%s:%d", currency.NormalizeCode(currencyCode), valueCents)
 }
 
-func PointsForGiftCardValue(valueCents int64, exchangeRatePoints int) (int, error) {
-	if valueCents <= 0 || exchangeRatePoints <= 0 {
+// PointsForGiftCardMoney values a gift-card amount in its own currency's
+// minor-unit scale. The currency's ISO minor-unit precision determines the
+// major-unit conversion before applying the configured points rate.
+func PointsForGiftCardMoney(value domainmoney.Money, exchangeRatePoints int) (int, error) {
+	if err := value.Validate(); err != nil || value.AmountMinor() <= 0 || exchangeRatePoints <= 0 {
 		return 0, ErrInvalidLoyaltyProgramConfig
 	}
-	points := (valueCents*int64(exchangeRatePoints) + 50) / 100
-	maxInt := int64(^uint(0) >> 1)
-	if points <= 0 || points > maxInt {
+	minorUnits, ok := currency.MinorUnits(value.Currency().String())
+	if !ok {
+		return 0, ErrInvalidLoyaltyProgramConfig
+	}
+	scale := new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(minorUnits)), nil)
+	product := new(big.Int).Mul(big.NewInt(value.AmountMinor()), big.NewInt(int64(exchangeRatePoints)))
+	quotient, remainder := new(big.Int), new(big.Int)
+	quotient.QuoRem(product, scale, remainder)
+	if remainder.Sign() != 0 {
+		twice := new(big.Int).Lsh(new(big.Int).Abs(remainder), 1)
+		if twice.Cmp(scale) >= 0 {
+			quotient.Add(quotient, big.NewInt(1))
+		}
+	}
+	if !quotient.IsInt64() || quotient.Sign() <= 0 {
 		return 0, fmt.Errorf("%w: calculated points are out of range", ErrInvalidLoyaltyProgramConfig)
 	}
-	return int(points), nil
+	maxInt := int64(^uint(0) >> 1)
+	if quotient.Int64() > maxInt {
+		return 0, fmt.Errorf("%w: calculated points are out of range", ErrInvalidLoyaltyProgramConfig)
+	}
+	return int(quotient.Int64()), nil
 }
 
 func programConfigResponse(config *loyalty.ProgramConfig) LoyaltyProgramConfigResponse {
@@ -256,7 +277,7 @@ func programConfigResponse(config *loyalty.ProgramConfig) LoyaltyProgramConfigRe
 		ExchangeRatePoints:        config.ExchangeRatePoints,
 		MinRedeemPoints:           config.MinRedeemPoints,
 		MaxValuePerDayCents:       config.MaxValuePerDayCents,
-		MaxValuePerDay:            float64(config.MaxValuePerDayCents) / 100,
+		MaxValuePerDay:            majorValueFromCents(config.MaxValuePerDayCents, config.Currency),
 		CardExpiryDays:            config.CardExpiryDays,
 		ReferralReferrerPoints:    config.ReferralReferrerPoints,
 		ReferralRefereePoints:     config.ReferralRefereePoints,
@@ -271,8 +292,13 @@ func programConfigResponse(config *loyalty.ProgramConfig) LoyaltyProgramConfigRe
 	}
 
 	for _, option := range config.RedeemOptions {
-		pointsRequired, _ := PointsForGiftCardValue(option.ValueCents, config.ExchangeRatePoints)
-		value := float64(option.ValueCents) / 100
+		optionMoney, moneyErr := domainmoney.New(option.ValueCents, option.Currency)
+		pointsRequired := 0
+		if moneyErr == nil {
+			pointsRequired, _ = PointsForGiftCardMoney(optionMoney, config.ExchangeRatePoints)
+		}
+		value := majorValueFromCents(option.ValueCents, option.Currency)
+		label := giftCardValueLabel(option.ValueCents, option.Currency)
 		response.RedeemOptions = append(response.RedeemOptions, LoyaltyProgramOptionResponse{
 			ID:                option.ID,
 			ValueCents:        option.ValueCents,
@@ -282,12 +308,36 @@ func programConfigResponse(config *loyalty.ProgramConfig) LoyaltyProgramConfigRe
 			StockQuantity:     option.StockQuantity,
 			RedeemedQuantity:  option.RedeemedQuantity,
 			RemainingQuantity: option.RemainingQuantity(),
-			Label:             fmt.Sprintf("%s %.2f Gift Card", option.Currency, value),
+			Label:             label,
 			Status:            redeemOptionPublicStatus(config, pointsRequired, option.RemainingQuantity()),
 		})
 	}
 
 	return response
+}
+
+func majorValueFromCents(valueCents int64, currencyCode string) float64 {
+	value, err := domainmoney.New(valueCents, currencyCode)
+	if err != nil {
+		return 0
+	}
+	major, err := value.MajorFloat()
+	if err != nil {
+		return 0
+	}
+	return major
+}
+
+func giftCardValueLabel(valueMinor int64, currencyCode string) string {
+	money, err := domainmoney.New(valueMinor, currencyCode)
+	if err != nil {
+		return fmt.Sprintf("%s Gift Card", currency.NormalizeCode(currencyCode))
+	}
+	formatted, err := money.FormatMajor()
+	if err != nil {
+		return fmt.Sprintf("%s Gift Card", currency.NormalizeCode(currencyCode))
+	}
+	return fmt.Sprintf("%s %s Gift Card", currency.NormalizeCode(currencyCode), formatted)
 }
 
 func redeemOptionPublicStatus(config *loyalty.ProgramConfig, pointsRequired int, remainingQuantity int64) string {

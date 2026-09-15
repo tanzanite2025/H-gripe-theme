@@ -28,6 +28,20 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
     mode: ProductEditorMode,
   ) => Promise<ProductEditorCallbackResult | void> | ProductEditorCallbackResult | void
   const defaultPrimaryCurrency = 'USD'
+  const minorUnitsForCurrency = (value: any): number => {
+    const code = normalizeCurrencyCode(value)
+    if (['BHD', 'IQD', 'JOD', 'KWD', 'LYD', 'OMR', 'TND'].includes(code)) return 3
+    if (['BIF', 'CLP', 'DJF', 'GNF', 'JPY', 'KMF', 'KRW', 'MGA', 'PYG', 'RWF', 'UGX', 'VND', 'VUV', 'XAF', 'XOF', 'XPF'].includes(code)) return 0
+    return 2
+  }
+  const majorFromMinor = (value: any, currency: any): number => {
+    const minor = Number(value)
+    return Number.isFinite(minor) ? minor / (10 ** minorUnitsForCurrency(currency)) : 0
+  }
+  const minorFromMajor = (value: any, currency: any): number => {
+    const major = Number(value)
+    return Number.isFinite(major) ? Math.round(major * (10 ** minorUnitsForCurrency(currency))) : 0
+  }
   const normalizeCurrencyCode = (value: any) => String(value || '').trim().toUpperCase()
   const validCurrencyCodeOrDefault = (value: any) => {
     const code = normalizeCurrencyCode(value)
@@ -85,8 +99,14 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
   } = useProductMediaManager(productForm, { clearFieldError })
 
   const selectedProductSpecTemplate = computed(() => productSpecTemplates.value.find((template) => template.id === productForm.product_specification_template_id) || null)
-  const selectedSpecDefinitions = computed(() => (selectedProductSpecTemplate.value?.spec_definitions || []).filter((spec: any) => !spec.is_variant_option))
-  const variantSpecDefinitions = computed(() => (selectedProductSpecTemplate.value?.spec_definitions || []).filter((spec: any) => spec.is_variant_option))
+  const definitionRole = (spec: any): string => {
+    const role = String(spec?.role || '').trim()
+    if (role === 'custom_option' || role === 'variant' || role === 'attribute') return role
+    return 'attribute'
+  }
+  const selectedSpecDefinitions = computed(() => (selectedProductSpecTemplate.value?.spec_definitions || []).filter((spec: any) => definitionRole(spec) === 'attribute'))
+  const variantSpecDefinitions = computed(() => (selectedProductSpecTemplate.value?.spec_definitions || []).filter((spec: any) => definitionRole(spec) === 'variant'))
+  const customOptionDefinitions = computed(() => (selectedProductSpecTemplate.value?.spec_definitions || []).filter((spec: any) => definitionRole(spec) === 'custom_option'))
   const defaultVariantIndex = computed(() => {
     const index = productForm.variants.findIndex((variant: any) => variant.is_default)
     return index >= 0 ? index : 0
@@ -116,13 +136,11 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
   ))
 
   const parseSpecOptions = (spec: any) => {
-    if (!spec?.options) return []
-    try {
-      const parsed = JSON.parse(spec.options)
-      return Array.isArray(parsed) ? parsed : []
-    } catch {
-      return []
-    }
+    const templateValues = (spec?.option_items || [])
+      .map((item: any) => String(item?.value_key || '').trim())
+      .filter(Boolean)
+    if (templateValues.length) return templateValues
+    return []
   }
   const formatSpecOption = (option: unknown) => String(option).replace(/_/g, ' ')
   const getSpecLabel = (spec: any) => spec.unit ? `${spec.name} (${spec.unit})` : spec.name
@@ -264,19 +282,26 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
     (product.variant_option_values || []).map((item: any, index: number) => createEmptyVariantOptionValue({
       id: item.id || null,
       spec_definition_id: item.spec_definition_id || 0,
+      template_option_item_id: item.template_option_item_id || null,
+      source_template_revision: item.source_template_revision ?? 0,
       value_key: String(item.value_key || ''),
       label: String(item.label || ''),
       color_hex: String(item.color_hex || ''),
       swatch_media_asset_id: item.swatch_media_asset_id || null,
       swatch_url: String(item.swatch_url || ''),
       sort_order: Number(item.sort_order ?? index * 10),
-      is_enabled: item.is_enabled !== false
+      is_enabled: item.is_enabled !== false,
+      price_delta_minor: item.price_delta_minor ?? item.custom_option_policy?.price_delta_minor ?? null,
+      is_default: Boolean(item.is_default ?? item.custom_option_policy?.is_default),
+      inventory_policy: item.inventory_policy || item.custom_option_policy?.inventory_policy || 'none',
+      component_variant_id: item.component_variant_id ?? item.custom_option_policy?.component_variant_id ?? null,
+      component_quantity: item.component_quantity ?? item.custom_option_policy?.component_quantity ?? 0
     }))
   )
 
   const normalizeVariantOptionValues = () => {
     const definitionIDs = new Set(
-      variantSpecDefinitions.value
+      [...variantSpecDefinitions.value, ...customOptionDefinitions.value]
         .map((definition: any) => Number(definition.id || 0))
         .filter((id: number) => id > 0)
     )
@@ -288,14 +313,54 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
       .map((item: ProductVariantOptionValueForm, index: number) => ({
         id: item.id || undefined,
         spec_definition_id: Number(item.spec_definition_id),
+        template_option_item_id: item.template_option_item_id == null ? undefined : Number(item.template_option_item_id),
+        source_template_revision: Number(item.source_template_revision || 0),
         value_key: String(item.value_key || '').trim(),
         label: String(item.label || '').trim(),
         color_hex: String(item.color_hex || '').trim(),
         swatch_media_asset_id: item.swatch_media_asset_id ? Number(item.swatch_media_asset_id) : undefined,
         swatch_url: String(item.swatch_url || '').trim(),
         sort_order: Number(item.sort_order ?? index * 10),
-        is_enabled: item.is_enabled !== false
+        is_enabled: item.is_enabled !== false,
+        price_delta_minor: item.price_delta_minor == null ? undefined : Number(item.price_delta_minor),
+        is_default: Boolean(item.is_default),
+        inventory_policy: String(item.inventory_policy || 'none'),
+        component_variant_id: item.component_variant_id == null ? undefined : Number(item.component_variant_id),
+        component_quantity: Number(item.component_quantity || 0)
       }))
+  }
+
+  const materializeTemplateOptionValues = (template: any | null): void => {
+    if (!template) {
+      productForm.variant_option_values = []
+      return
+    }
+    const revision = Number(template.revision || 1)
+    const values: ProductVariantOptionValueForm[] = []
+    ;(template.spec_definitions || []).forEach((definition: any) => {
+      if (definitionRole(definition) !== 'variant' && definitionRole(definition) !== 'custom_option') return
+      ;(definition.option_items || []).forEach((item: any, index: number) => {
+        const enabled = item.is_enabled_by_default !== false
+        values.push(createEmptyVariantOptionValue({
+          spec_definition_id: Number(definition.id || 0),
+          template_option_item_id: item.id || null,
+          source_template_revision: revision,
+          value_key: String(item.value_key || '').trim(),
+          label: String(item.default_label || item.value_key || '').trim(),
+          color_hex: String(item.color_hex || ''),
+          swatch_media_asset_id: item.swatch_media_asset_id || null,
+          swatch_url: String(item.swatch_url || ''),
+          sort_order: Number(item.sort_order ?? index * 10),
+          is_enabled: enabled,
+          price_delta_minor: definitionRole(definition) === 'custom_option' ? (item.default_price_delta_minor ?? null) : null,
+          is_default: definitionRole(definition) === 'custom_option' ? Boolean(item.is_default) : false,
+          inventory_policy: definitionRole(definition) === 'custom_option' ? 'none' : undefined,
+          component_variant_id: null,
+          component_quantity: 0
+        }))
+      })
+    })
+    productForm.variant_option_values = values
   }
 
   const buildVariantFormValues = (product: any) => {
@@ -306,14 +371,30 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
       title: variant.title || '',
       option_values: parseVariantOptions(variant),
       currency: validCurrencyCodeOrDefault(variant.currency || product.currency),
-      price: Number(variant.price || 0),
-      sale_price: variant.sale_price ?? null,
+      price_minor: Number.isFinite(Number(variant.price_minor)) ? Number(variant.price_minor) : minorFromMajor(variant.price, variant.currency || product.currency),
+      price: Number.isFinite(Number(variant.price_minor)) ? majorFromMinor(variant.price_minor, variant.currency || product.currency) : Number(variant.price || 0),
+      sale_price_minor: variant.sale_price_minor == null ? null : Number(variant.sale_price_minor),
+      sale_price: variant.sale_price_minor == null ? null : majorFromMinor(variant.sale_price_minor, variant.currency || product.currency),
       display_prices: normalizeDisplayPrices(variant.display_prices),
       stock: Number(variant.stock || 0),
       weight_grams: variant.weight_grams ?? variant.weight ?? 0,
       is_default: Boolean(variant.is_default),
       is_active: variant.is_active !== false,
-      sort_order: variant.sort_order ?? index * 10
+      sort_order: variant.sort_order ?? index * 10,
+      option_group_rules: (variant.option_group_rules || []).map((rule: any) => ({
+        id: rule.id || null,
+        spec_definition_id: Number(rule.spec_definition_id || 0),
+        is_applicable: rule.is_applicable !== false,
+        min_selections_override: rule.min_selections_override ?? null,
+        max_selections_override: rule.max_selections_override ?? null
+      })),
+      option_value_rules: (variant.option_value_rules || []).map((rule: any) => ({
+        id: rule.id || null,
+        product_variant_option_value_id: Number(rule.product_variant_option_value_id || 0),
+        is_enabled: rule.is_enabled !== false,
+        price_delta_minor_override: rule.price_delta_minor_override ?? null,
+        unavailable_reason: String(rule.unavailable_reason || '')
+      }))
     }))
     if (variants.length === 0) variants.push(createEmptyVariant({ is_default: true }))
     if (!variants.some((variant: any) => variant.is_default)) variants[0].is_default = true
@@ -373,13 +454,29 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
         option_values: optionValues,
         currency: validCurrencyCodeOrDefault(variant.currency || productForm.currency),
         price: Number(variant.price || 0),
+        price_minor: minorFromMajor(variant.price, variant.currency || productForm.currency),
         sale_price: variant.sale_price === '' || variant.sale_price == null ? null : Number(variant.sale_price),
+        sale_price_minor: variant.sale_price === '' || variant.sale_price == null ? null : minorFromMajor(variant.sale_price, variant.currency || productForm.currency),
         display_prices: normalizeDisplayPrices(variant.display_prices),
         stock: Number(variant.stock || 0),
         weight_grams: Number(variant.weight_grams || 0),
         is_default: Boolean(variant.is_default),
         is_active: variant.is_active !== false,
-        sort_order: Number(variant.sort_order ?? index * 10)
+        sort_order: Number(variant.sort_order ?? index * 10),
+        option_group_rules: (variant.option_group_rules || []).filter((rule: any) => Number(rule.spec_definition_id) > 0).map((rule: any) => ({
+          id: rule.id || undefined,
+          spec_definition_id: Number(rule.spec_definition_id),
+          is_applicable: rule.is_applicable !== false,
+          min_selections_override: rule.min_selections_override == null || rule.min_selections_override === '' ? null : Number(rule.min_selections_override),
+          max_selections_override: rule.max_selections_override == null || rule.max_selections_override === '' ? null : Number(rule.max_selections_override)
+        })),
+        option_value_rules: (variant.option_value_rules || []).filter((rule: any) => Number(rule.product_variant_option_value_id) > 0).map((rule: any) => ({
+          id: rule.id || undefined,
+          product_variant_option_value_id: Number(rule.product_variant_option_value_id),
+          is_enabled: rule.is_enabled !== false,
+          price_delta_minor_override: rule.price_delta_minor_override == null || rule.price_delta_minor_override === '' ? null : Number(rule.price_delta_minor_override),
+          unavailable_reason: String(rule.unavailable_reason || '').trim()
+        }))
       }
     })
   }
@@ -455,7 +552,7 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
     })
     productForm.specs = nextSpecs
     productForm.variants.forEach((variant: any) => { variant.option_values = {} })
-    productForm.variant_option_values = []
+    materializeTemplateOptionValues(selectedProductSpecTemplate.value)
     clearFormErrors()
     if (hadTemplateValues) {
       toast.info('已切换商品规格模板，商品参数和 SKU 选项值已按新模板重置；SKU 价格、重量、库存和媒体已保留。')
@@ -613,6 +710,7 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
     selectedProductSpecTemplate,
     selectedSpecDefinitions,
     variantSpecDefinitions,
+    customOptionDefinitions,
     defaultVariantIndex,
     productSpecTemplateSelectValue,
     productCategorySelectValue,

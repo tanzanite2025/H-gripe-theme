@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"strings"
 
+	domainmoney "commerce-platform/internal/domain/money"
 	"commerce-platform/internal/pkg/apierror"
 	"commerce-platform/internal/pkg/pagination"
 	"commerce-platform/internal/pkg/response"
@@ -189,10 +190,10 @@ func (h *PaymentRefundRecommendationHandler) CreatePendingRefund(c *gin.Context)
 	}
 	recommendationID := uint(id)
 	var req struct {
-		Amount        float64 `json:"amount"`
-		Reason        string  `json:"reason"`
-		DecisionNotes string  `json:"decision_notes"`
-		Confirm       bool    `json:"confirm"`
+		Amount        *float64 `json:"amount"`
+		Reason        string   `json:"reason"`
+		DecisionNotes string   `json:"decision_notes"`
+		Confirm       bool     `json:"confirm"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		h.recordRefundRecommendationAudit(c, paymentAdminAuditEvent{
@@ -224,11 +225,51 @@ func (h *PaymentRefundRecommendationHandler) CreatePendingRefund(c *gin.Context)
 		apierror.RespondBadRequest(c, "confirmation is required before creating a pending refund")
 		return
 	}
+	var requestedAmount *domainmoney.Money
+	if req.Amount != nil {
+		recommendation, lookupErr := h.recommendations.GetRecommendation(recommendationID)
+		if lookupErr != nil {
+			details := paymentRefundRecommendationAuditDetails(recommendationID, "", req.DecisionNotes, nil, nil)
+			details["requested_amount"] = req.Amount
+			h.recordRefundRecommendationAudit(c, paymentAdminAuditEvent{
+				StartedAt:    startedAt,
+				Action:       paymentAuditActionCreate,
+				Resource:     paymentAuditResourceRefundRecommendation,
+				ResourceID:   recommendationID,
+				Status:       paymentAuditStatusFailed,
+				ErrorMessage: lookupErr.Error(),
+				Changes:      details,
+			})
+			if errors.Is(lookupErr, service.ErrPaymentRefundRecommendationNotFound) {
+				apierror.RespondNotFound(c, "Refund recommendation")
+				return
+			}
+			apierror.RespondBadRequest(c, lookupErr.Error())
+			return
+		}
+		amount, amountErr := domainmoney.FromMajorFloat(*req.Amount, recommendation.Currency)
+		if amountErr != nil {
+			details := paymentRefundRecommendationAuditDetails(recommendationID, "", req.DecisionNotes, recommendation, nil)
+			details["requested_amount"] = req.Amount
+			h.recordRefundRecommendationAudit(c, paymentAdminAuditEvent{
+				StartedAt:    startedAt,
+				Action:       paymentAuditActionCreate,
+				Resource:     paymentAuditResourceRefundRecommendation,
+				ResourceID:   recommendationID,
+				Status:       paymentAuditStatusFailed,
+				ErrorMessage: amountErr.Error(),
+				Changes:      details,
+			})
+			apierror.RespondBadRequest(c, amountErr.Error())
+			return
+		}
+		requestedAmount = &amount
+	}
 
 	recommendation, refund, err := h.recommendations.CreatePendingRefundFromRecommendation(
 		service.CreatePendingRefundFromRecommendationInput{
 			RecommendationID: recommendationID,
-			Amount:           req.Amount,
+			Amount:           requestedAmount,
 			Reason:           req.Reason,
 			DecisionNotes:    req.DecisionNotes,
 			AdminID:          adminID,

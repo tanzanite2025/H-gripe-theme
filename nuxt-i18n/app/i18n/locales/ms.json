@@ -780,7 +780,9 @@
       "noResults": "Tiada FAQ ditemui untuk \"{query}\"",
       "loadingAnswers": "Memuatkan jawapan",
       "illustrationAlt": "Ilustrasi FAQ",
-      "selectQuestion": "Select a question to view the answer."
+      "selectQuestion": "Select a question to view the answer.",
+      "pagesAriaLabel": "FAQ pages",
+      "pagesLabel": "FAQ pages"
     }
   },
   "feedback": {

@@ -11,8 +11,8 @@ import (
 	"commerce-platform/internal/service"
 
 	"github.com/gin-gonic/gin"
-	"github.com/stretchr/testify/require"
 	"github.com/glebarez/sqlite"
+	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 )

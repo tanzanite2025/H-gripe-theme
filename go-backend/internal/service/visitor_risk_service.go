@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 	"unicode/utf8"
 
@@ -26,8 +27,15 @@ type VisitorRiskService struct {
 	maxPendingFacts int
 	samplePathLimit int
 	retentionDays   int
-	mu              sync.Mutex
-	pending         map[string]*visitorRiskAccumulator
+	pending         [visitorRiskPendingShardCount]visitorRiskPendingShard
+	pendingCount    atomic.Int64
+}
+
+const visitorRiskPendingShardCount = 32
+
+type visitorRiskPendingShard struct {
+	mu      sync.Mutex
+	pending map[string]*visitorRiskAccumulator
 }
 
 var (
@@ -187,15 +195,18 @@ func NewVisitorRiskService(riskRepo *repository.VisitorRiskFactRepository, cfg c
 		hashSalt = strings.TrimSpace(fallbackHashSalt)
 	}
 
-	return &VisitorRiskService{
+	service := &VisitorRiskService{
 		riskRepo:        riskRepo,
 		enabled:         cfg.Enabled,
 		hashSalt:        hashSalt,
 		maxPendingFacts: maxPendingFacts,
 		samplePathLimit: samplePathLimit,
 		retentionDays:   retentionDays,
-		pending:         map[string]*visitorRiskAccumulator{},
 	}
+	for index := range service.pending {
+		service.pending[index].pending = map[string]*visitorRiskAccumulator{}
+	}
+	return service
 }
 
 func (s *VisitorRiskService) Enabled() bool {
@@ -224,25 +235,53 @@ func (s *VisitorRiskService) RecordRequest(input VisitorRiskRecordInput) {
 	if input.DeviceFingerprint != "" {
 		deviceFingerprintHash = s.hash(input.DeviceFingerprint)
 	}
+	anonymousHash := ""
+	if input.AnonymousID != "" {
+		anonymousHash = s.hash(input.AnonymousID)
+	}
+	sessionHash := ""
+	if input.SessionID != "" {
+		sessionHash = s.hash(input.SessionID)
+	}
 	day := visitorRiskDay(input.OccurredAt)
 	key := visitorRiskAccumulatorKey(day, ipHash, uaHash, deviceFingerprintHash)
+	fallbackKey := ""
+	shard := s.pendingShard(key)
+	fallbackShard := shard
+	if deviceFingerprintHash != "" {
+		fallbackKey = visitorRiskAccumulatorKey(day, ipHash, uaHash, "")
+		fallbackShard = s.pendingShard(fallbackKey)
+	}
 
-	s.mu.Lock()
-	defer s.mu.Unlock()
+	// Device discovery promotes an existing IP/user-agent accumulator into a
+	// device accumulator. Lock both shards in a stable order so this retains the
+	// former aggregation semantics without falling back to one global mutex.
+	if fallbackShard != shard {
+		first, second := shard, fallbackShard
+		if s.pendingShardIndex(key) > s.pendingShardIndex(fallbackKey) {
+			first, second = second, first
+		}
+		first.mu.Lock()
+		second.mu.Lock()
+		defer second.mu.Unlock()
+		defer first.mu.Unlock()
+	} else {
+		shard.mu.Lock()
+		defer shard.mu.Unlock()
+	}
 
-	acc := s.pending[key]
+	acc := shard.pending[key]
 	promotedFromFallback := false
 	if acc == nil && deviceFingerprintHash != "" {
-		fallbackKey := visitorRiskAccumulatorKey(day, ipHash, uaHash, "")
-		if fallback := s.pending[fallbackKey]; fallback != nil {
+		if fallback := fallbackShard.pending[fallbackKey]; fallback != nil {
 			acc = fallback
-			delete(s.pending, fallbackKey)
+			delete(fallbackShard.pending, fallbackKey)
 			acc.DeviceFingerprintHash = deviceFingerprintHash
 			promotedFromFallback = true
 		}
 	}
 	if acc == nil {
-		if len(s.pending) >= s.maxPendingFacts {
+		if !s.reservePendingFact() {
 			return
 		}
 		acc = &visitorRiskAccumulator{
@@ -257,9 +296,9 @@ func (s *VisitorRiskService) RecordRequest(input VisitorRiskRecordInput) {
 			anonymousSet:          map[string]struct{}{},
 			sessionSet:            map[string]struct{}{},
 		}
-		s.pending[key] = acc
+		shard.pending[key] = acc
 	} else if promotedFromFallback {
-		s.pending[key] = acc
+		shard.pending[key] = acc
 	}
 
 	acc.RequestCount++
@@ -281,10 +320,10 @@ func (s *VisitorRiskService) RecordRequest(input VisitorRiskRecordInput) {
 		}
 	}
 	if input.AnonymousID != "" {
-		acc.anonymousSet[s.hash(input.AnonymousID)] = struct{}{}
+		acc.anonymousSet[anonymousHash] = struct{}{}
 	}
 	if input.SessionID != "" {
-		acc.sessionSet[s.hash(input.SessionID)] = struct{}{}
+		acc.sessionSet[sessionHash] = struct{}{}
 	}
 	if input.StatusCode >= 400 {
 		acc.InvalidRequestCount++
@@ -576,20 +615,21 @@ func (s *VisitorRiskService) PendingCount() int {
 	if s == nil {
 		return 0
 	}
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	return len(s.pending)
+	return int(s.pendingCount.Load())
 }
 
 func (s *VisitorRiskService) takePendingDeltas() []repository.VisitorRiskFactDelta {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	deltas := make([]repository.VisitorRiskFactDelta, 0, len(s.pending))
-	for _, acc := range s.pending {
-		deltas = append(deltas, acc.toDelta(s.samplePathLimit))
+	deltas := make([]repository.VisitorRiskFactDelta, 0, s.PendingCount())
+	for index := range s.pending {
+		shard := &s.pending[index]
+		shard.mu.Lock()
+		for _, acc := range shard.pending {
+			deltas = append(deltas, acc.toDelta(s.samplePathLimit))
+		}
+		s.pendingCount.Add(-int64(len(shard.pending)))
+		shard.pending = map[string]*visitorRiskAccumulator{}
+		shard.mu.Unlock()
 	}
-	s.pending = map[string]*visitorRiskAccumulator{}
 	return deltas
 }
 
@@ -598,13 +638,18 @@ func (s *VisitorRiskService) restorePendingDeltas(deltas []repository.VisitorRis
 		return
 	}
 
-	s.mu.Lock()
-	defer s.mu.Unlock()
 	for _, delta := range deltas {
-		if len(s.pending) >= s.maxPendingFacts {
+		if !s.reservePendingFact() {
 			return
 		}
 		key := visitorRiskAccumulatorKey(delta.Day, delta.IPHash, delta.UserAgentHash, delta.DeviceFingerprintHash)
+		shard := s.pendingShard(key)
+		shard.mu.Lock()
+		if _, exists := shard.pending[key]; exists {
+			shard.mu.Unlock()
+			s.pendingCount.Add(-1)
+			continue
+		}
 		acc := &visitorRiskAccumulator{
 			Day:                   delta.Day,
 			IPHash:                delta.IPHash,
@@ -629,7 +674,33 @@ func (s *VisitorRiskService) restorePendingDeltas(deltas []repository.VisitorRis
 		for _, path := range delta.SamplePaths {
 			acc.pathSet[path] = struct{}{}
 		}
-		s.pending[key] = acc
+		shard.pending[key] = acc
+		shard.mu.Unlock()
+	}
+}
+
+func (s *VisitorRiskService) pendingShard(key string) *visitorRiskPendingShard {
+	return &s.pending[s.pendingShardIndex(key)]
+}
+
+func (s *VisitorRiskService) pendingShardIndex(key string) int {
+	var hash uint32 = 2166136261
+	for index := 0; index < len(key); index++ {
+		hash ^= uint32(key[index])
+		hash *= 16777619
+	}
+	return int(hash % visitorRiskPendingShardCount)
+}
+
+func (s *VisitorRiskService) reservePendingFact() bool {
+	for {
+		current := s.pendingCount.Load()
+		if current >= int64(s.maxPendingFacts) {
+			return false
+		}
+		if s.pendingCount.CompareAndSwap(current, current+1) {
+			return true
+		}
 	}
 }
 

@@ -106,7 +106,7 @@ useHead(() => ({
   max-width: 48rem;
   margin: 0.65rem 0 0;
   color: var(--tz-text-primary);
-  font-size: clamp(2.5rem, 6vw, 5rem);
+  font-size: var(--tz-type-website-title);
   font-weight: 800;
   letter-spacing: 0;
   line-height: 0.98;
@@ -187,7 +187,7 @@ useHead(() => ({
   }
 
   .website-hub h1 {
-    font-size: 2.35rem;
+    font-size: var(--tz-type-website-title-mobile);
   }
 
   .website-hub__lead {

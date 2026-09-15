@@ -84,6 +84,7 @@ func (h *Handler) ConfigureAfterSales(
 // @Success 201 {object} order.Order
 // @Failure 400 {object} map[string]interface{}
 // @Failure 401 {object} map[string]interface{}
+// @Failure 409 {object} map[string]interface{}
 // @Router /api/v1/orders [post]
 func (h *Handler) CreateOrder(c *gin.Context) {
 	// 获取用户ID
@@ -106,6 +107,8 @@ func (h *Handler) CreateOrder(c *gin.Context) {
 		return
 	}
 
+	billingCountry := billingCountryFromRequest(req.ShippingAddress.Country, req.BillingAddress)
+
 	riskKey := fmt.Sprintf("user:%d", userID.(uint))
 	if sessionID, err := c.Cookie("session_id"); err == nil && strings.TrimSpace(sessionID) != "" {
 		riskKey += ":session:" + strings.TrimSpace(sessionID)
@@ -113,15 +116,12 @@ func (h *Handler) CreateOrder(c *gin.Context) {
 	if isCardLikePaymentMethod(req.PaymentMethod) && h.riskService != nil {
 		signals := antifraud.Signals{
 			IPCountry:      c.GetHeader("CF-IPCountry"),
-			BillingCountry: req.ShippingAddress.Country,
+			BillingCountry: billingCountry,
 			UserAgent:      c.Request.UserAgent(),
 		}
 		if req.ClientRisk != nil {
 			if req.ClientRisk.IPCountry != "" {
 				signals.IPCountry = req.ClientRisk.IPCountry
-			}
-			if req.ClientRisk.BillingCountry != "" {
-				signals.BillingCountry = req.ClientRisk.BillingCountry
 			}
 			signals.VPNDetected = req.ClientRisk.VPNDetected
 			signals.Timezone = req.ClientRisk.Timezone
@@ -160,10 +160,24 @@ func (h *Handler) CreateOrder(c *gin.Context) {
 
 	items := make([]order.OrderItem, len(summary.Items))
 	for i, item := range summary.Items {
+		priceMoney, priceErr := item.PriceMoney()
+		if priceErr != nil {
+			apierror.RespondBadRequest(c, priceErr.Error())
+			return
+		}
+		price, priceErr := priceMoney.MajorFloat()
+		if priceErr != nil {
+			apierror.RespondBadRequest(c, priceErr.Error())
+			return
+		}
 		items[i] = order.OrderItem{
-			ProductID: item.ProductID,
-			VariantID: item.VariantID,
-			Quantity:  item.Quantity,
+			ProductID:         item.ProductID,
+			VariantID:         item.VariantID,
+			Quantity:          item.Quantity,
+			Currency:          priceMoney.Currency().String(),
+			Price:             price,
+			ConfigurationData: append([]byte(nil), item.ConfigurationData...),
+			ConfigurationHash: item.ConfigurationHash,
 		}
 	}
 
@@ -197,6 +211,12 @@ func (h *Handler) CreateOrder(c *gin.Context) {
 			PolicySource:                 "checkout_order_creation",
 			IdempotencyKey:               middleware.GetIdempotencyKey(c),
 			IdempotencyRequestHash:       middleware.GetIdempotencyRequestHash(c),
+			ExpectedTotal:                req.ExpectedTotal,
+			ShippingQuoteID:              req.ShippingQuoteID,
+			SelectedQuotePlanID:          req.SelectedQuotePlanID,
+			CheckoutCartID:               cart.ID,
+			GiftCardCode:                 req.GiftCardCode,
+			DisplayCurrency:              req.DisplayCurrency,
 		},
 	)
 	if err != nil {
@@ -210,14 +230,56 @@ func (h *Handler) CreateOrder(c *gin.Context) {
 		_ = h.riskService.RecordSuccess(c.Request.Context(), riskKey)
 	}
 
-	if !isAsyncGatewayPaymentMethod(req.PaymentMethod) {
-		_ = h.cartService.ClearCart(cart.ID)
-	}
-
 	response.Created(c, publicOrderResponse(*o))
 }
 
 func respondCreateOrderError(c *gin.Context, err error) {
+	if errors.Is(err, service.ErrProductConfigurationPriceChanged) {
+		apierror.RespondError(c, http.StatusConflict, "product_configuration_price_changed", err.Error())
+		return
+	}
+	if errors.Is(err, service.ErrProductConfigurationConflict) || errors.Is(err, service.ErrProductConfigurationRequired) {
+		apierror.RespondError(c, http.StatusConflict, "product_configuration_conflict", err.Error())
+		return
+	}
+	if errors.Is(err, service.ErrCountryNotSupported) {
+		apierror.RespondError(c, http.StatusUnprocessableEntity, "country_not_supported", err.Error())
+		return
+	}
+	if errors.Is(err, service.ErrShippingQuoteExpired) || errors.Is(err, service.ErrShippingQuoteStale) {
+		apierror.RespondError(c, http.StatusConflict, "shipping_quote_stale", err.Error())
+		return
+	}
+	if errors.Is(err, service.ErrShippingQuotePlanUnavailable) {
+		apierror.RespondError(c, http.StatusUnprocessableEntity, "shipping_quote_plan_unavailable", err.Error())
+		return
+	}
+	if errors.Is(err, service.ErrShippingRateConfigurationInvalid) {
+		apierror.RespondInternalError(c, err)
+		return
+	}
+	if errors.Is(err, service.ErrShippingRateUnavailable) {
+		apierror.RespondError(c, http.StatusUnprocessableEntity, "shipping_rate_unavailable", err.Error())
+		return
+	}
+	if strings.Contains(err.Error(), "exchange rate unavailable") {
+		apierror.RespondError(c, http.StatusUnprocessableEntity, "exchange_rate_unavailable", err.Error())
+		return
+	}
+	if errors.Is(err, service.ErrCheckoutCartAlreadyConsumed) ||
+		errors.Is(err, service.ErrCheckoutCartConsumptionConflict) {
+		apierror.RespondError(
+			c,
+			http.StatusConflict,
+			"checkout_cart_already_consumed",
+			"Your cart was already submitted as an order. Check your order status before trying again.",
+		)
+		return
+	}
+	if errors.Is(err, service.ErrOrderTotalChanged) {
+		apierror.RespondError(c, http.StatusConflict, "order_total_changed", "Price has been updated; please review the order total")
+		return
+	}
 	if errors.Is(err, service.ErrOrderIdempotencyConflict) {
 		apierror.RespondError(c, http.StatusConflict, "idempotency_key_conflict", err.Error())
 		return
@@ -286,16 +348,6 @@ func isCardLikePaymentMethod(value string) bool {
 	value = strings.ToLower(strings.TrimSpace(value))
 	switch value {
 	case "card", "credit_card", "debit_card", "stripe", "alipay", "paypal", "wechat", "wechatpay", "wechat_pay":
-		return true
-	default:
-		return false
-	}
-}
-
-func isAsyncGatewayPaymentMethod(value string) bool {
-	value = strings.ToLower(strings.TrimSpace(value))
-	switch value {
-	case "card", "stripe", "paypal", "alipay", "wechat", "wechatpay", "wechat_pay":
 		return true
 	default:
 		return false

@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	procurementdomain "commerce-platform/internal/domain/procurement"
+	suppliercostdomain "commerce-platform/internal/domain/productsuppliercost"
 
 	"github.com/glebarez/sqlite"
 	"github.com/stretchr/testify/require"
@@ -16,30 +16,30 @@ func TestProductProfitCalculationRepositoryBulkUpsertUsesProductCodeAsStableKey(
 	db := newProductProfitCalculationTestDB(t)
 	repo := NewProductProfitCalculationRepository(db)
 
-	first := procurementdomain.ProductProfitCalculation{
+	first := suppliercostdomain.ProductProfitCalculation{
 		ProductCode:             " SKU-001 ",
 		ProductName:             "Initial name",
 		Currency:                "usd",
 		ListPrice:               100,
 		SalePrice:               float64PointerForRepositoryTest(90),
 		EffectiveSellingPrice:   90,
-		PurchasePrice:           50,
+		UnitCost:                50,
 		InboundShippingUnitCost: 2,
 		PackagingUnitCost:       0.5,
 		OtherUnitCost:           0.25,
 		LandedCost:              50,
 		GrossProfit:             40,
 		GrossMarginBPS:          4444,
-		CalculationStatus:       procurementdomain.ProfitStatusReady,
-		FormulaVersion:          procurementdomain.ProfitFormulaVersion,
+		CalculationStatus:       suppliercostdomain.ProfitStatusReady,
+		FormulaVersion:          suppliercostdomain.ProfitFormulaVersion,
 		WarningsData:            datatypes.JSON([]byte(`[]`)),
 		CalculatedAt:            time.Now().UTC(),
 	}
-	require.NoError(t, repo.BulkUpsert([]procurementdomain.ProductProfitCalculation{first}))
+	require.NoError(t, repo.BulkUpsert([]suppliercostdomain.ProductProfitCalculation{first}))
 
 	updated := first
 	updated.ProductName = "Updated name"
-	updated.PurchasePrice = 60
+	updated.UnitCost = 60
 	updated.InboundShippingUnitCost = 4
 	updated.PackagingUnitCost = 2
 	updated.OtherUnitCost = 1
@@ -47,10 +47,10 @@ func TestProductProfitCalculationRepositoryBulkUpsertUsesProductCodeAsStableKey(
 	updated.GrossProfit = 20
 	updated.GrossMarginBPS = 3333
 	updated.CalculatedAt = time.Now().UTC().Add(time.Minute)
-	require.NoError(t, repo.BulkUpsert([]procurementdomain.ProductProfitCalculation{updated}))
+	require.NoError(t, repo.BulkUpsert([]suppliercostdomain.ProductProfitCalculation{updated}))
 
 	var count int64
-	require.NoError(t, db.Model(&procurementdomain.ProductProfitCalculation{}).
+	require.NoError(t, db.Model(&suppliercostdomain.ProductProfitCalculation{}).
 		Where("product_code = ?", "SKU-001").
 		Count(&count).Error)
 	require.Equal(t, int64(1), count)
@@ -59,7 +59,7 @@ func TestProductProfitCalculationRepositoryBulkUpsertUsesProductCodeAsStableKey(
 	require.NoError(t, err)
 	require.Equal(t, "SKU-001", record.ProductCode)
 	require.Equal(t, "Updated name", record.ProductName)
-	require.Equal(t, 60.0, record.PurchasePrice)
+	require.Equal(t, 60.0, record.UnitCost)
 	require.Equal(t, 4.0, record.InboundShippingUnitCost)
 	require.Equal(t, 2.0, record.PackagingUnitCost)
 	require.Equal(t, 1.0, record.OtherUnitCost)
@@ -77,18 +77,18 @@ func TestProductProfitCalculationRepositoryDoesNotRequireCatalogTables(t *testin
 	db := newProductProfitCalculationTestDB(t)
 	repo := NewProductProfitCalculationRepository(db)
 
-	require.NoError(t, repo.BulkUpsert([]procurementdomain.ProductProfitCalculation{{
+	require.NoError(t, repo.BulkUpsert([]suppliercostdomain.ProductProfitCalculation{{
 		ProductCode:           "SKU-ISOLATED",
 		ProductName:           "Isolated item",
 		Currency:              "USD",
 		ListPrice:             10,
 		EffectiveSellingPrice: 10,
-		PurchasePrice:         5,
+		UnitCost:              5,
 		LandedCost:            5,
 		GrossProfit:           5,
 		GrossMarginBPS:        5000,
-		CalculationStatus:     procurementdomain.ProfitStatusReady,
-		FormulaVersion:        procurementdomain.ProfitFormulaVersion,
+		CalculationStatus:     suppliercostdomain.ProfitStatusReady,
+		FormulaVersion:        suppliercostdomain.ProfitFormulaVersion,
 		WarningsData:          datatypes.JSON([]byte(`[]`)),
 		CalculatedAt:          time.Now().UTC(),
 	}}))
@@ -104,22 +104,22 @@ func TestProductProfitCalculationRepositoryReplaceCurrentSnapshotsClearsUnknownC
 	db := newProductProfitCalculationTestDB(t)
 	repo := NewProductProfitCalculationRepository(db)
 
-	record := procurementdomain.ProductProfitCalculation{
+	record := suppliercostdomain.ProductProfitCalculation{
 		ProductCode:           "SKU-CLEAR",
 		ProductName:           "Clear cost",
 		Currency:              "USD",
 		ListPrice:             100,
 		EffectiveSellingPrice: 100,
-		PurchasePrice:         40,
+		UnitCost:              40,
 		LandedCost:            40,
 		GrossProfit:           60,
 		GrossMarginBPS:        6000,
-		CalculationStatus:     procurementdomain.ProfitStatusReady,
-		FormulaVersion:        procurementdomain.ProfitFormulaVersion,
+		CalculationStatus:     suppliercostdomain.ProfitStatusReady,
+		FormulaVersion:        suppliercostdomain.ProfitFormulaVersion,
 		WarningsData:          datatypes.JSON([]byte(`[]`)),
 		CalculatedAt:          time.Now().UTC(),
 	}
-	require.NoError(t, repo.BulkUpsert([]procurementdomain.ProductProfitCalculation{record}))
+	require.NoError(t, repo.BulkUpsert([]suppliercostdomain.ProductProfitCalculation{record}))
 	require.NoError(t, repo.ReplaceCurrentSnapshots(nil, []string{" SKU-CLEAR "}))
 
 	_, err := repo.FindByProductCode("SKU-CLEAR")
@@ -135,7 +135,7 @@ func newProductProfitCalculationTestDB(t *testing.T) *gorm.DB {
 	require.NoError(t, err)
 	sqlDB.SetMaxOpenConns(1)
 	t.Cleanup(func() { _ = sqlDB.Close() })
-	require.NoError(t, db.AutoMigrate(&procurementdomain.ProductProfitCalculation{}))
+	require.NoError(t, db.AutoMigrate(&suppliercostdomain.ProductProfitCalculation{}))
 	return db
 }
 

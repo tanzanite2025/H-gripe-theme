@@ -12,7 +12,7 @@ import (
 
 const (
 	seoAuditActionUpdate   = "update"
-	seoAuditActionIndexing = "indexing_notify"
+	seoAuditActionIndexing = "indexing_rejected"
 	seoAuditStatusOK       = "success"
 	seoAuditStatusFailed   = "failed"
 

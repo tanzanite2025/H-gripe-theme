@@ -16,6 +16,93 @@ import (
 	"gorm.io/gorm/logger"
 )
 
+func TestQuickBuySessionTotalsUsesCurrencyMinorUnits(t *testing.T) {
+	total, weight, err := quickBuySessionTotals([]quickbuy.SessionItem{{
+		Quantity:          2,
+		UnitPriceSnapshot: 10000,
+		CurrencySnapshot:  "JPY",
+		WeightSnapshotG:   300,
+	}})
+	require.NoError(t, err)
+	require.Equal(t, 20000.0, total)
+	require.Equal(t, 600, weight)
+}
+
+func TestQuickBuySessionTotalsRejectsInvalidMoney(t *testing.T) {
+	total, weight, err := quickBuySessionTotals([]quickbuy.SessionItem{{
+		ID:                9,
+		Quantity:          1,
+		UnitPriceSnapshot: 10,
+		CurrencySnapshot:  "XXX",
+	}})
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "price")
+	require.Zero(t, total)
+	require.Zero(t, weight)
+}
+
+func TestQuickBuySessionTotalsRejectsNonPositiveQuantity(t *testing.T) {
+	_, _, err := quickBuySessionTotals([]quickbuy.SessionItem{{
+		ID:                10,
+		Quantity:          0,
+		UnitPriceSnapshot: 10,
+		CurrencySnapshot:  "USD",
+	}})
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "quantity")
+}
+
+func TestNormalizeQuickBuyCurrencyRejectsUnsupportedValues(t *testing.T) {
+	currency, err := normalizeQuickBuyCurrency("")
+	require.NoError(t, err)
+	require.Equal(t, productdomain.DefaultPriceCurrency, currency)
+
+	currency, err = normalizeQuickBuyCurrency("jpy")
+	require.NoError(t, err)
+	require.Equal(t, "JPY", currency)
+
+	currency, err = normalizeQuickBuyCurrency("XXX")
+	require.Error(t, err)
+	require.ErrorIs(t, err, ErrQuickBuyInvalid)
+	require.Empty(t, currency)
+}
+
+func TestQuickBuySelectionRejectsCurrencyMismatch(t *testing.T) {
+	db, quickBuyService := newQuickBuyTestService(t)
+	template := seedQuickBuyProductSpecificationTemplate(t, db, "Rim", "rim")
+	created, err := quickBuyService.CreateFlow(QuickBuyFlowInput{
+		Slug:         "currency-guard",
+		Name:         "Currency Guard",
+		EntrySurface: "dock",
+		Version: QuickBuyVersionInput{Steps: []QuickBuyStepInput{{
+			StepKey:                         "rim",
+			Name:                            "Rim",
+			ProductSpecificationTemplateIDs: []uint{template.ID},
+		}}},
+	})
+	require.NoError(t, err)
+	published, err := quickBuyService.PublishVersion(created.Version.ID, nil)
+	require.NoError(t, err)
+
+	productRecord := seedQuickBuyProductWithDetails(t, db, template.ID, "CURRENCY-GUARD", "Currency Guard Product", "currency-guard-product", 10)
+	var variant productdomain.ProductVariant
+	require.NoError(t, db.Where("product_id = ?", productRecord.ID).First(&variant).Error)
+
+	session, err := quickBuyService.CreateSession(QuickBuySessionInput{
+		FlowVersionID: published.Version.ID,
+		Currency:      "EUR",
+	})
+	require.NoError(t, err)
+	_, err = quickBuyService.UpdateSessionSelections(session.SessionToken, QuickBuySelectionUpdateInput{Selections: []QuickBuySelectionInput{{
+		StepKey:   "rim",
+		ProductID: productRecord.ID,
+		VariantID: &variant.ID,
+		Quantity:  1,
+	}}})
+	require.ErrorIs(t, err, ErrQuickBuyInvalid)
+	require.Contains(t, err.Error(), "does not match")
+}
+
 func TestQuickBuyServiceCreatesPublishesAndReturnsCurrentFlow(t *testing.T) {
 	db, quickBuyService := newQuickBuyTestService(t)
 	productSpecificationTemplate := seedQuickBuyProductSpecificationTemplate(t, db, "Rim", "rim")

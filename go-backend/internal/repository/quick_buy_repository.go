@@ -178,6 +178,34 @@ func (r *QuickBuyRepository) FindSessionByToken(token string) (*quickbuy.Session
 	return &session, nil
 }
 
+// MarkStaleSessions transitions inactive sessions out of the active state so
+// abandoned checkout intent can be measured and acted on by recovery jobs.
+// Sessions past their explicit expiry are marked expired; sessions that have
+// not changed for abandonedAfter are marked abandoned.
+func (r *QuickBuyRepository) MarkStaleSessions(now time.Time, abandonedAfter time.Duration) (int64, error) {
+	if now.IsZero() {
+		now = time.Now().UTC()
+	}
+	if abandonedAfter <= 0 {
+		abandonedAfter = 24 * time.Hour
+	}
+	cutoff := now.Add(-abandonedAfter)
+	var affected int64
+	if result := r.db.Model(&quickbuy.Session{}).
+		Where("status = ? AND expires_at IS NOT NULL AND expires_at <= ?", quickbuy.SessionStatusActive, now).
+		Updates(map[string]interface{}{"status": quickbuy.SessionStatusExpired}); result.Error != nil {
+		return 0, result.Error
+	}
+	result := r.db.Model(&quickbuy.Session{}).
+		Where("status = ? AND updated_at <= ? AND (expires_at IS NULL OR expires_at > ?)", quickbuy.SessionStatusActive, cutoff, now).
+		Updates(map[string]interface{}{"status": quickbuy.SessionStatusAbandoned})
+	if result.Error != nil {
+		return 0, result.Error
+	}
+	affected += result.RowsAffected
+	return affected, nil
+}
+
 func (r *QuickBuyRepository) ReplaceSessionItems(sessionID uint, items []quickbuy.SessionItem, status, validationStatus string, subtotal float64, weightG int) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
 		if err := tx.Where("session_id = ?", sessionID).Delete(&quickbuy.SessionItem{}).Error; err != nil {

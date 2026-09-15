@@ -8,6 +8,7 @@
         {{$customerName := field . "CustomerName" "Name" "customer_name"}}
         {{$orderNumber := field . "OrderNumber" "OrderNo" "Number" "order_number"}}
         {{$total := field . "Total" "TotalAmount" "Amount" "total" "total_amount"}}
+        {{$currency := field . "Currency" "currency"}}
         <p style="margin:0 0 16px;font-size:16px;line-height:1.6;">
           {{if $customerName}}Hi {{$customerName}},{{else}}Hi,{{end}} we have received your order and are preparing it for processing.
         </p>
@@ -15,7 +16,7 @@
         <p style="margin:0 0 8px;font-size:15px;line-height:1.6;"><strong>Order:</strong> {{$orderNumber}}</p>
         {{end}}
         {{if $total}}
-        <p style="margin:0 0 8px;font-size:15px;line-height:1.6;"><strong>Total:</strong> {{$total}}</p>
+        <p style="margin:0 0 8px;font-size:15px;line-height:1.6;"><strong>Total:</strong> {{if $currency}}{{$currency}} {{end}}{{$total}}</p>
         {{end}}
         <p style="margin:18px 0 0;font-size:15px;line-height:1.6;color:#4b5563;">We will send another update as soon as the order ships.</p>
       </div>

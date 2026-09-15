@@ -89,7 +89,10 @@ func (s *QuickBuyService) CreateSession(input QuickBuySessionInput) (*QuickBuySe
 		return nil, ErrQuickBuyNotFound
 	}
 
-	currency := normalizeQuickBuyCurrency(input.Currency)
+	currency, err := normalizeQuickBuyCurrency(input.Currency)
+	if err != nil {
+		return nil, err
+	}
 	validation := s.validateQuickBuySession(*version, nil)
 	expiresAt := time.Now().UTC().Add(7 * 24 * time.Hour)
 	session := &quickbuy.Session{
@@ -114,6 +117,16 @@ func (s *QuickBuyService) CreateSession(input QuickBuySessionInput) (*QuickBuySe
 		return nil, err
 	}
 	return quickBuySessionView(*loaded, &validation, s.mediaURLResolver), nil
+}
+
+// SweepAbandonedSessions advances stale quick-buy sessions to abandoned (or
+// expired when their explicit TTL elapsed). It is safe to call periodically
+// from a worker and returns the number newly marked abandoned.
+func (s *QuickBuyService) SweepAbandonedSessions(now time.Time, abandonedAfter time.Duration) (int64, error) {
+	if s == nil || s.repo == nil {
+		return 0, errors.New("quick buy service is not configured")
+	}
+	return s.repo.MarkStaleSessions(now, abandonedAfter)
 }
 
 func (s *QuickBuyService) GetSession(token string) (*QuickBuySessionView, error) {
@@ -177,7 +190,10 @@ func (s *QuickBuyService) UpdateSessionSelections(token string, input QuickBuySe
 	}
 
 	validation := s.validateQuickBuySession(*version, nextItems)
-	subtotal, weightG := quickBuySessionTotals(nextItems)
+	subtotal, weightG, err := quickBuySessionTotals(nextItems)
+	if err != nil {
+		return nil, err
+	}
 	if err := s.repo.ReplaceSessionItems(session.ID, nextItems, session.Status, quickBuySessionValidationStatus(validation), subtotal, weightG); err != nil {
 		return nil, err
 	}

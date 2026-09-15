@@ -80,10 +80,13 @@
         <ProductDetailVariantSelector
           :variant-choices="variantChoices"
           :variant-option-groups="variantOptionGroups"
+          :custom-option-groups="customOptionGroups"
+          :currency="currentCurrency"
           :selected-variant-id="selectedVariantId"
           :selected-variant-weight="selectedVariantWeight"
           @select-option="({ slug, value }) => selectVariantOption(slug, value)"
           @update:selected-variant-id="selectedVariantId = $event"
+          @select-custom-option="({ slug, value }) => selectCustomOption(slug, value)"
         />
 
         <ProductDetailQuantityActions
@@ -202,6 +205,10 @@ const {
   selectedCartTitle,
   variantOptionDefinitions,
   variantOptionGroups,
+  customOptionGroups,
+  customOptionsValid,
+  selectCustomOption,
+  selectedOptions,
   variantChoices,
   variantLabel,
   selectVariantOption,
@@ -268,6 +275,8 @@ const {
   currentCurrency,
   selectedAvailability,
   primaryMediaThumbnail,
+  selectedOptions,
+  customOptionsValid,
 })
 
 const {

@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"commerce-platform/internal/domain/currency"
+	"commerce-platform/internal/domain/money"
 )
 
 func TestResolveFulfillmentModeDefaultsLegacyItemsToStock(t *testing.T) {
@@ -80,7 +81,11 @@ func TestResolveSignatureRequiredUsesUSDOrderFXSnapshot(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := ResolveSignatureRequired(tt.totalAmount, tt.fxSnapshot); got != tt.wantRequired {
+			totalMoney, err := money.FromMajorFloat(tt.totalAmount, tt.fxSnapshot.OrderCurrency)
+			if err != nil {
+				t.Fatalf("parse test amount: %v", err)
+			}
+			if got := ResolveSignatureRequired(totalMoney, tt.fxSnapshot); got != tt.wantRequired {
 				t.Fatalf("ResolveSignatureRequired(%v, %#v) = %v, want %v",
 					tt.totalAmount,
 					tt.fxSnapshot,
@@ -101,10 +106,10 @@ func TestResolveSignatureRequiredRejectsNonUSDOrInvalidSnapshots(t *testing.T) {
 		Source:          "test",
 		CapturedAt:      time.Now().UTC(),
 	}
-	if ResolveSignatureRequired(750, nonUSDBase) {
+	if ResolveSignatureRequired(money.MustNew(75000, "CNY"), nonUSDBase) {
 		t.Fatal("non-USD policy snapshots must not be treated as USD thresholds")
 	}
-	if ResolveSignatureRequired(1000, currency.OrderFXSnapshot{}) {
+	if ResolveSignatureRequired(money.MustNew(100000, "USD"), currency.OrderFXSnapshot{}) {
 		t.Fatal("invalid FX snapshots must not require signature")
 	}
 }

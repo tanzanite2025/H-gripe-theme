@@ -15,7 +15,7 @@ type ProductProfitabilityHandler struct {
 	service *service.ProductProfitabilityService
 }
 
-type profitabilityProcurementRequest struct {
+type profitabilitySupplierCostDetailsRequest struct {
 	SupplierName         string `json:"supplier_name"`
 	SupplierContactName  string `json:"supplier_contact_name"`
 	SupplierPhone        string `json:"supplier_phone"`
@@ -31,16 +31,19 @@ type profitabilityItemRequest struct {
 	SellingCurrency string `json:"currency"`
 	CostCurrency    string `json:"cost_currency"`
 
-	ListPrice          float64  `json:"list_price"`
-	SalePrice          *float64 `json:"sale_price"`
-	PurchasePrice      *float64 `json:"purchase_price"`
-	PurchasePriceKnown bool     `json:"purchase_price_known"`
+	ListPrice           float64  `json:"list_price"`
+	SalePrice           *float64 `json:"sale_price"`
+	UnitCost            *float64 `json:"unit_cost"`
+	UnitCostKnown       bool     `json:"unit_cost_known"`
+	LegacyUnitCost      *float64 `json:"purchase_price"`
+	LegacyUnitCostKnown bool     `json:"purchase_price_known"`
 
 	InboundShippingUnitCost float64 `json:"inbound_shipping_unit_cost"`
 	PackagingUnitCost       float64 `json:"packaging_unit_cost"`
 	OtherUnitCost           float64 `json:"other_unit_cost"`
 
-	Procurement *profitabilityProcurementRequest `json:"procurement"`
+	SupplierCostDetails               *profitabilitySupplierCostDetailsRequest `json:"supplier_cost_details"`
+	LegacySupplierCostDetailsEnvelope *profitabilitySupplierCostDetailsRequest `json:"procurement"`
 }
 
 type profitabilityItemsRequest struct {
@@ -104,25 +107,43 @@ func toProfitabilityInputs(items []profitabilityItemRequest) []service.Profitabi
 			CostCurrency:            item.CostCurrency,
 			ListPrice:               item.ListPrice,
 			SalePrice:               item.SalePrice,
-			PurchasePrice:           item.PurchasePrice,
-			PurchasePriceKnown:      item.PurchasePriceKnown,
+			UnitCost:                item.supplierUnitCost(),
+			UnitCostKnown:           item.supplierUnitCostKnown(),
 			InboundShippingUnitCost: item.InboundShippingUnitCost,
 			PackagingUnitCost:       item.PackagingUnitCost,
 			OtherUnitCost:           item.OtherUnitCost,
 		}
-		if item.Procurement != nil {
-			input.Procurement = &service.ProfitabilityProcurementInput{
-				SupplierName:         item.Procurement.SupplierName,
-				SupplierContactName:  item.Procurement.SupplierContactName,
-				SupplierPhone:        item.Procurement.SupplierPhone,
-				SupplierEmail:        item.Procurement.SupplierEmail,
-				LeadTimeDays:         item.Procurement.LeadTimeDays,
-				MinimumOrderQuantity: item.Procurement.MinimumOrderQuantity,
+		if supplierCostDetails := item.supplierCostDetails(); supplierCostDetails != nil {
+			input.SupplierCostDetails = &service.ProfitabilitySupplierCostDetailsInput{
+				SupplierName:         supplierCostDetails.SupplierName,
+				SupplierContactName:  supplierCostDetails.SupplierContactName,
+				SupplierPhone:        supplierCostDetails.SupplierPhone,
+				SupplierEmail:        supplierCostDetails.SupplierEmail,
+				LeadTimeDays:         supplierCostDetails.LeadTimeDays,
+				MinimumOrderQuantity: supplierCostDetails.MinimumOrderQuantity,
 			}
 		}
 		inputs = append(inputs, input)
 	}
 	return inputs
+}
+
+func (item profitabilityItemRequest) supplierCostDetails() *profitabilitySupplierCostDetailsRequest {
+	if item.SupplierCostDetails != nil {
+		return item.SupplierCostDetails
+	}
+	return item.LegacySupplierCostDetailsEnvelope
+}
+
+func (item profitabilityItemRequest) supplierUnitCost() *float64 {
+	if item.UnitCost != nil {
+		return item.UnitCost
+	}
+	return item.LegacyUnitCost
+}
+
+func (item profitabilityItemRequest) supplierUnitCostKnown() bool {
+	return item.UnitCostKnown || item.LegacyUnitCostKnown
 }
 
 func respondProductProfitabilityError(c *gin.Context, err error) {
@@ -136,8 +157,8 @@ func respondProductProfitabilityError(c *gin.Context, err error) {
 	case errors.Is(err, service.ErrProductProfitabilityInvalid),
 		errors.Is(err, service.ErrProductProfitabilityBatchLarge):
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-	case errors.Is(err, service.ErrProductProfitabilityProcurementUnavailable):
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "product procurement repository is unavailable"})
+	case errors.Is(err, service.ErrProductProfitabilitySupplierCostRecordRepositoryUnavailable):
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "product supplier cost record repository is unavailable"})
 	case errors.Is(err, gorm.ErrRecordNotFound):
 		c.JSON(http.StatusNotFound, gin.H{"error": "product profitability record not found"})
 	default:

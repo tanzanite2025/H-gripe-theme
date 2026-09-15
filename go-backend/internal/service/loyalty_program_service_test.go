@@ -5,6 +5,7 @@ import (
 
 	"commerce-platform/internal/domain/currency"
 	"commerce-platform/internal/domain/loyalty"
+	domainmoney "commerce-platform/internal/domain/money"
 	"commerce-platform/internal/domain/setting"
 	"commerce-platform/internal/repository"
 
@@ -13,6 +14,21 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 )
+
+func TestPointsForGiftCardMoneyUsesCurrencyMinorUnits(t *testing.T) {
+	usd, err := domainmoney.New(1000, "USD")
+	require.NoError(t, err)
+	points, err := PointsForGiftCardMoney(usd, 100)
+	require.NoError(t, err)
+	require.Equal(t, 1000, points)
+
+	jpy, err := domainmoney.New(1000, "JPY")
+	require.NoError(t, err)
+	points, err = PointsForGiftCardMoney(jpy, 100)
+	require.NoError(t, err)
+	require.Equal(t, 100000, points)
+	require.Equal(t, "JPY 1000 Gift Card", giftCardValueLabel(1000, "JPY"))
+}
 
 func TestLoyaltyProgramServiceCreatesImmutableVersions(t *testing.T) {
 	db := openLoyaltyProgramTestDB(t)

@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"net/http"
+	"strings"
 
 	"commerce-platform/internal/domain/auth"
 	"commerce-platform/internal/pkg/securecookie"
@@ -10,9 +11,10 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func AuthMiddleware(authService *service.AuthService) gin.HandlerFunc {
+func AuthMiddleware(authService *service.AuthService, cookieScopes ...securecookie.CookieNames) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		tokenString, err := c.Cookie(securecookie.AuthTokenCookie)
+		names := resolveCookieNames(c, cookieScopes)
+		tokenString, err := c.Cookie(names.AuthToken)
 		if err != nil || tokenString == "" {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "authentication cookie required"})
 			c.Abort()
@@ -31,9 +33,10 @@ func AuthMiddleware(authService *service.AuthService) gin.HandlerFunc {
 	}
 }
 
-func OptionalAuthMiddleware(authService *service.AuthService) gin.HandlerFunc {
+func OptionalAuthMiddleware(authService *service.AuthService, cookieScopes ...securecookie.CookieNames) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		tokenString, err := c.Cookie(securecookie.AuthTokenCookie)
+		names := resolveCookieNames(c, cookieScopes)
+		tokenString, err := c.Cookie(names.AuthToken)
 		if err != nil || tokenString == "" {
 			c.Next()
 			return
@@ -46,6 +49,16 @@ func OptionalAuthMiddleware(authService *service.AuthService) gin.HandlerFunc {
 
 		c.Next()
 	}
+}
+
+func resolveCookieNames(c *gin.Context, cookieScopes []securecookie.CookieNames) securecookie.CookieNames {
+	if len(cookieScopes) > 0 {
+		return cookieScopes[0]
+	}
+	if c != nil && strings.HasPrefix(c.Request.URL.Path, "/api/admin/") {
+		return securecookie.AdminCookieNames()
+	}
+	return securecookie.StorefrontCookieNames()
 }
 
 func setAuthClaims(c *gin.Context, claims *service.Claims) {

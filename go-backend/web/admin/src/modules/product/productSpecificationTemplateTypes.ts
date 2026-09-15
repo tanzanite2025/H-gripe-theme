@@ -1,6 +1,23 @@
 export type ProductSpecTemplateDialogMode = 'create' | 'edit'
 export type ProductSpecFieldType = 'text' | 'number' | 'select' | 'boolean'
 export type ProductSpecPresentation = 'text' | 'color' | 'image'
+export type ProductSpecRole = 'attribute' | 'variant' | 'custom_option'
+export type ProductSpecSelectionMode = 'single' | 'multiple'
+
+export interface ProductSpecTemplateOptionItem {
+  id?: number | string | null
+  value_key: string
+  default_label?: string | null
+  color_hex?: string | null
+  swatch_media_asset_id?: number | string | null
+  swatch_url?: string | null
+  is_enabled_by_default?: boolean
+  is_default?: boolean
+  default_price_delta_minor?: number | string | null
+  default_price_currency?: string | null
+  sort_order?: number | string | null
+  revision?: number | string | null
+}
 
 export interface ProductSpecTemplateFilters {
   search: string
@@ -18,14 +35,18 @@ export interface ProductSpecTemplateSpecDefinition {
   is_required?: boolean
   is_filterable?: boolean
   is_visible?: boolean
-  is_variant_option?: boolean
+  role?: ProductSpecRole | string | null
+  selection_mode?: ProductSpecSelectionMode | string | null
+  min_selections?: number | string | null
+  max_selections?: number | string | null
   sort_order?: number | string | null
-  options?: string | null
   validation?: string | null
+  option_items?: ProductSpecTemplateOptionItem[]
 }
 
 export interface ProductSpecTemplateRecord {
   id: number | string
+  revision?: number | string | null
   name?: string | null
   slug?: string | null
   description?: string | null
@@ -48,11 +69,14 @@ export interface ProductSpecTemplateSpecForm {
   is_required: boolean
   is_filterable: boolean
   is_visible: boolean
-  is_variant_option: boolean
+  role: ProductSpecRole
+  selection_mode: ProductSpecSelectionMode
+  min_selections: number
+  max_selections: number | null
   sort_order: number
-  options?: string | null
   optionsText: string
   validation: string
+  option_items: ProductSpecTemplateOptionItem[]
 }
 
 export interface ProductSpecTemplateForm {
@@ -77,10 +101,13 @@ export interface ProductSpecTemplateSpecPayload {
   is_required: boolean
   is_filterable: boolean
   is_visible: boolean
-  is_variant_option: boolean
+  role: ProductSpecRole
+  selection_mode: ProductSpecSelectionMode
+  min_selections: number
+  max_selections: number | null
   sort_order: number
-  options: string
   validation: string
+  option_items: ProductSpecTemplateOptionItem[]
 }
 
 export interface ProductSpecTemplatePayload {

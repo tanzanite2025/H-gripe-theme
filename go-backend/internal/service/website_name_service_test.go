@@ -135,7 +135,7 @@ func TestWebsiteNameServiceUpdateNormalizesAndStoresSupportedLocale(t *testing.T
 	require.NoError(t, err)
 	assert.Equal(t, "zh_cn", settings.Locale)
 	assert.Equal(t, "为什么叫这个名字", settings.Title)
-	assert.Equal(t, "正文", settings.Body)
+	assert.Equal(t, "<p>正文</p>", settings.Body)
 
 	record, err := settingService.Get(settingdomain.WebsiteNameKeyTitle, "zh_cn")
 	require.NoError(t, err)

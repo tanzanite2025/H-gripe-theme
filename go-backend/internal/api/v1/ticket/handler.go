@@ -1,6 +1,9 @@
 package ticket
 
-import "commerce-platform/internal/service"
+import (
+	"commerce-platform/internal/api/realtime"
+	"commerce-platform/internal/service"
+)
 
 type Handler struct {
 	ticketService         *service.TicketService
@@ -9,14 +12,16 @@ type Handler struct {
 	customerServiceEvents *service.CustomerServiceEventHub
 	allowedOrigins        []string
 	visitorSecret         []byte
+	webSocketLimiter      *realtime.CustomerServiceWebSocketLimiter
 }
 
 type Options struct {
-	MediaService          *service.MediaService
-	AllowedOrigins        []string
-	VisitorSecret         string
-	VisitorProfileService *service.VisitorProfileService
-	CustomerServiceEvents *service.CustomerServiceEventHub
+	MediaService                    *service.MediaService
+	AllowedOrigins                  []string
+	VisitorSecret                   string
+	VisitorProfileService           *service.VisitorProfileService
+	CustomerServiceEvents           *service.CustomerServiceEventHub
+	CustomerServiceWebSocketLimiter *realtime.CustomerServiceWebSocketLimiter
 }
 
 func NewHandler(ticketService *service.TicketService, opts ...Options) *Handler {
@@ -31,5 +36,6 @@ func NewHandler(ticketService *service.TicketService, opts ...Options) *Handler 
 		customerServiceEvents: options.CustomerServiceEvents,
 		allowedOrigins:        append([]string(nil), options.AllowedOrigins...),
 		visitorSecret:         []byte(options.VisitorSecret),
+		webSocketLimiter:      options.CustomerServiceWebSocketLimiter,
 	}
 }

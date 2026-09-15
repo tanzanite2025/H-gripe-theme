@@ -79,6 +79,12 @@ type Config struct {
 	AccessKeyID     string
 	SecretAccessKey string
 	Endpoint        string
+	// Private storage is intentionally separated from the public media bucket
+	// (or local directory). Sensitive evidence uploads are routed here by
+	// UploadWithPrefixPrivate and never inherit public-read bucket policy.
+	PrivateBucket    string
+	PrivateLocalPath string
+	PrivateBaseURL   string
 }
 
 // localStorage 本地存储实现
@@ -88,6 +94,9 @@ type localStorage struct {
 
 // NewStorageService 创建存储服务
 func NewStorageService(config *Config) (StorageService, error) {
+	if config == nil {
+		return nil, fmt.Errorf("storage config cannot be nil")
+	}
 	switch config.Type {
 	case StorageTypeLocal:
 		return newLocalStorage(config)
@@ -102,6 +111,25 @@ func NewStorageService(config *Config) (StorageService, error) {
 
 // newLocalStorage 创建本地存储
 func newLocalStorage(config *Config) (StorageService, error) {
+	if config == nil {
+		return nil, fmt.Errorf("storage config cannot be nil")
+	}
+	if strings.TrimSpace(config.PrivateLocalPath) != "" {
+		publicRoot, publicErr := filepath.Abs(config.LocalPath)
+		privateRoot, privateErr := filepath.Abs(config.PrivateLocalPath)
+		if publicErr != nil || privateErr != nil {
+			return nil, fmt.Errorf("failed to resolve local storage paths")
+		}
+		publicRoot = filepath.Clean(publicRoot)
+		privateRoot = filepath.Clean(privateRoot)
+		publicToPrivate, _ := filepath.Rel(publicRoot, privateRoot)
+		privateToPublic, _ := filepath.Rel(privateRoot, publicRoot)
+		if publicToPrivate == "." || privateToPublic == "." ||
+			(publicToPrivate != ".." && !strings.HasPrefix(publicToPrivate, ".."+string(os.PathSeparator))) ||
+			(privateToPublic != ".." && !strings.HasPrefix(privateToPublic, ".."+string(os.PathSeparator))) {
+			return nil, fmt.Errorf("private local path must be separate from public local path")
+		}
+	}
 	if err := ensureLocalDirectory(config.LocalPath, config.LocalPath); err != nil {
 		return nil, fmt.Errorf("failed to create upload directory: %w", err)
 	}
@@ -117,6 +145,14 @@ func (s *localStorage) Upload(ctx context.Context, file *multipart.FileHeader) (
 }
 
 func (s *localStorage) UploadWithPrefix(ctx context.Context, file *multipart.FileHeader, prefix string) (string, error) {
+	if isPrivateUploadPrefix(prefix) {
+		private := s.privateStorage()
+		return private.uploadWithPrefix(ctx, file, prefix)
+	}
+	return s.uploadWithPrefix(ctx, file, prefix)
+}
+
+func (s *localStorage) uploadWithPrefix(ctx context.Context, file *multipart.FileHeader, prefix string) (string, error) {
 	// 打开上传的文件
 	src, err := file.Open()
 	if err != nil {
@@ -158,12 +194,34 @@ func (s *localStorage) UploadWithPrefix(ctx context.Context, file *multipart.Fil
 
 func (s *localStorage) UploadWithPrefixAndCacheControl(ctx context.Context, file *multipart.FileHeader, prefix string, _ string) (string, error) {
 	// Local upload responses set the policy in uploads_route.go.
-	return s.UploadWithPrefix(ctx, file, prefix)
+	if isPrivateUploadPrefix(prefix) {
+		private := s.privateStorage()
+		return private.uploadWithPrefix(ctx, file, prefix)
+	}
+	return s.uploadWithPrefix(ctx, file, prefix)
 }
 
 func (s *localStorage) UploadWithPrefixPrivate(ctx context.Context, file *multipart.FileHeader, prefix string) (string, error) {
-	// Local objects are protected by the public upload authorization route.
-	return s.UploadWithPrefix(ctx, file, prefix)
+	if !isPrivateUploadPrefix(prefix) {
+		return "", fmt.Errorf("private upload prefix must use a private namespace")
+	}
+	private := s.privateStorage()
+	return private.uploadWithPrefix(ctx, file, prefix)
+}
+
+func (s *localStorage) privateStorage() *localStorage {
+	if s == nil || s.config == nil {
+		return s
+	}
+	cfg := *s.config
+	if strings.TrimSpace(cfg.PrivateLocalPath) == "" {
+		cfg.PrivateLocalPath = filepath.Join(filepath.Dir(cfg.LocalPath), filepath.Base(cfg.LocalPath)+"-private")
+	}
+	if strings.TrimSpace(cfg.PrivateBaseURL) != "" {
+		cfg.BaseURL = cfg.PrivateBaseURL
+	}
+	cfg.LocalPath = cfg.PrivateLocalPath
+	return &localStorage{config: &cfg}
 }
 
 // UploadFromReader 从 Reader 上传
@@ -175,7 +233,15 @@ func (s *localStorage) UploadFromReaderWithPrefix(ctx context.Context, reader io
 	return s.UploadFromReaderWithPrefixAndCacheControl(ctx, reader, filename, prefix, "")
 }
 
-func (s *localStorage) UploadFromReaderWithPrefixAndCacheControl(_ context.Context, reader io.Reader, filename string, prefix string, _ string) (string, error) {
+func (s *localStorage) UploadFromReaderWithPrefixAndCacheControl(ctx context.Context, reader io.Reader, filename string, prefix string, _ string) (string, error) {
+	if isPrivateUploadPrefix(prefix) {
+		private := s.privateStorage()
+		return private.uploadFromReaderWithPrefix(ctx, reader, filename, prefix)
+	}
+	return s.uploadFromReaderWithPrefix(ctx, reader, filename, prefix)
+}
+
+func (s *localStorage) uploadFromReaderWithPrefix(_ context.Context, reader io.Reader, filename string, prefix string) (string, error) {
 	// 生成唯一文件名
 	newFilename, err := generateObjectKey(filename, prefix)
 	if err != nil {
@@ -208,6 +274,34 @@ func (s *localStorage) UploadFromReaderWithPrefixAndCacheControl(_ context.Conte
 	return s.GetURL(newFilename), nil
 }
 
+// IsPrivateObjectKey identifies namespaces that must never be exposed by the
+// public upload route or a public bucket policy.
+func IsPrivateObjectKey(key string) bool {
+	normalized, ok := NormalizeObjectKey(key)
+	if !ok {
+		return false
+	}
+	for _, prefix := range []string{"order-evidence/", "warranty/", "after-sales/", "showcase/pending/"} {
+		if strings.HasPrefix(normalized, prefix) {
+			return true
+		}
+	}
+	return false
+}
+
+func isPrivateUploadPrefix(prefix string) bool {
+	normalized, ok := NormalizeObjectKey(prefix)
+	if !ok {
+		return false
+	}
+	for _, namespace := range []string{"order-evidence", "warranty", "after-sales", "showcase/pending"} {
+		if normalized == namespace || strings.HasPrefix(normalized, namespace+"/") {
+			return true
+		}
+	}
+	return false
+}
+
 // Delete 删除文件
 func (s *localStorage) Delete(ctx context.Context, url string) error {
 	// 从 URL 提取文件路径
@@ -217,7 +311,11 @@ func (s *localStorage) Delete(ctx context.Context, url string) error {
 		return err
 	}
 
-	absFilePath, err := s.localPath(urlPath)
+	targetStorage := s
+	if IsPrivateObjectKey(urlPath) {
+		targetStorage = s.privateStorage()
+	}
+	absFilePath, err := targetStorage.localPath(urlPath)
 	if err != nil {
 		return err
 	}
@@ -244,6 +342,14 @@ func (s *localStorage) GetURL(filename string) string {
 }
 
 func (s *localStorage) ObjectKey(reference string) (string, error) {
+	if strings.TrimSpace(s.config.PrivateBaseURL) != "" {
+		if key, ok := ObjectKeyFromBaseURL(reference, s.config.PrivateBaseURL); ok {
+			return strings.TrimPrefix(key, "uploads/"), nil
+		}
+	}
+	if key, ok := ObjectKeyFromBaseURL(reference, s.config.BaseURL); ok {
+		return strings.TrimPrefix(key, "uploads/"), nil
+	}
 	key, ok := ObjectKeyFromReference(reference, s.config.BaseURL)
 	if !ok {
 		return "", fmt.Errorf("invalid object key")
@@ -258,7 +364,11 @@ func (s *localStorage) Open(ctx context.Context, key string) (*StoredObject, err
 	default:
 	}
 
-	filePath, err := s.localPath(key)
+	targetStorage := s
+	if IsPrivateObjectKey(key) {
+		targetStorage = s.privateStorage()
+	}
+	filePath, err := targetStorage.localPath(key)
 	if err != nil {
 		return nil, err
 	}
@@ -300,16 +410,24 @@ func (s *localStorage) CopyObject(ctx context.Context, sourceKey string, destKey
 		return fmt.Errorf("invalid destination object key")
 	}
 
-	sourcePath, err := s.localPath(normalizedSourceKey)
+	sourceStorage := s
+	if IsPrivateObjectKey(normalizedSourceKey) {
+		sourceStorage = s.privateStorage()
+	}
+	destStorage := s
+	if IsPrivateObjectKey(normalizedDestKey) {
+		destStorage = s.privateStorage()
+	}
+	sourcePath, err := sourceStorage.localPath(normalizedSourceKey)
 	if err != nil {
 		return err
 	}
-	destPath, err := s.localPath(normalizedDestKey)
+	destPath, err := destStorage.localPath(normalizedDestKey)
 	if err != nil {
 		return err
 	}
 	destDir := filepath.Dir(destPath)
-	if err := ensureLocalDirectory(s.config.LocalPath, destDir); err != nil {
+	if err := ensureLocalDirectory(destStorage.config.LocalPath, destDir); err != nil {
 		return fmt.Errorf("failed to create destination directory: %w", err)
 	}
 
@@ -452,14 +570,17 @@ func LoadConfigFromEnv() *Config {
 	}
 
 	return &Config{
-		Type:            StorageType(storageType),
-		LocalPath:       getEnv("STORAGE_LOCAL_PATH", "./uploads"),
-		BaseURL:         getEnv("STORAGE_BASE_URL", "http://localhost:8080"),
-		Bucket:          os.Getenv("STORAGE_BUCKET"),
-		Region:          os.Getenv("STORAGE_REGION"),
-		AccessKeyID:     os.Getenv("STORAGE_ACCESS_KEY_ID"),
-		SecretAccessKey: os.Getenv("STORAGE_SECRET_ACCESS_KEY"),
-		Endpoint:        os.Getenv("STORAGE_ENDPOINT"),
+		Type:             StorageType(storageType),
+		LocalPath:        getEnv("STORAGE_LOCAL_PATH", "./uploads"),
+		BaseURL:          getEnv("STORAGE_BASE_URL", "http://localhost:8080"),
+		Bucket:           os.Getenv("STORAGE_BUCKET"),
+		Region:           os.Getenv("STORAGE_REGION"),
+		AccessKeyID:      os.Getenv("STORAGE_ACCESS_KEY_ID"),
+		SecretAccessKey:  os.Getenv("STORAGE_SECRET_ACCESS_KEY"),
+		Endpoint:         os.Getenv("STORAGE_ENDPOINT"),
+		PrivateBucket:    os.Getenv("STORAGE_PRIVATE_BUCKET"),
+		PrivateLocalPath: os.Getenv("STORAGE_PRIVATE_LOCAL_PATH"),
+		PrivateBaseURL:   os.Getenv("STORAGE_PRIVATE_BASE_URL"),
 	}
 }
 

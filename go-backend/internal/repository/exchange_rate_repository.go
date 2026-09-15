@@ -142,3 +142,23 @@ func (r *ExchangeRateRepository) ReleaseSyncLease(leaseKey, ownerID string, now 
 			"updated_at":       now,
 		}).Error
 }
+
+// RenewSyncLease extends an active lease only when this process still owns
+// it. Workers call this periodically while a provider request or display
+// snapshot refresh is in progress so a healthy long-running sync cannot lose
+// its distributed lock.
+func (r *ExchangeRateRepository) RenewSyncLease(leaseKey, ownerID string, now time.Time, leaseTTL time.Duration) (bool, error) {
+	leaseKey = strings.TrimSpace(leaseKey)
+	ownerID = strings.TrimSpace(ownerID)
+	if leaseKey == "" || ownerID == "" || leaseTTL <= 0 {
+		return false, nil
+	}
+	now = now.UTC()
+	result := r.db.Model(&currency.ExchangeRateSyncLease{}).
+		Where("lease_key = ? AND owner_id = ? AND lease_expires_at > ?", leaseKey, ownerID, now).
+		Updates(map[string]interface{}{
+			"lease_expires_at": now.Add(leaseTTL),
+			"updated_at":       now,
+		})
+	return result.RowsAffected > 0, result.Error
+}

@@ -12,6 +12,8 @@
     "noResults": "ไม่พบ FAQ ที่ตรงกับ \"{query}\"",
     "loadingAnswers": "กำลังโหลดคำตอบ",
     "illustrationAlt": "ภาพประกอบ FAQ",
-    "selectQuestion": "Select a question to view the answer."
+    "selectQuestion": "Select a question to view the answer.",
+    "pagesAriaLabel": "FAQ pages",
+    "pagesLabel": "FAQ pages"
   }
 }

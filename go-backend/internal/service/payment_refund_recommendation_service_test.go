@@ -5,6 +5,8 @@ import (
 	"time"
 
 	coupondomain "commerce-platform/internal/domain/coupon"
+	loyaltydomain "commerce-platform/internal/domain/loyalty"
+	domainmoney "commerce-platform/internal/domain/money"
 	orderdomain "commerce-platform/internal/domain/order"
 	outboxdomain "commerce-platform/internal/domain/outbox"
 	paymentdomain "commerce-platform/internal/domain/payment"
@@ -139,10 +141,11 @@ func TestPaymentRefundRecommendationCreatesPendingRefundDraft(t *testing.T) {
 	service := newPaymentRefundRecommendationWorkflowService(db)
 	orderRecord, transaction := createRefundRecommendationPaidOrder(t, db, 120)
 	recommendation := createRefundRecommendationRecord(t, db, orderRecord.ID, transaction.ID, 100)
+	requestedAmount := domainmoney.MustNew(8000, "USD")
 
 	updated, refund, err := service.CreatePendingRefundFromRecommendation(CreatePendingRefundFromRecommendationInput{
 		RecommendationID: recommendation.ID,
-		Amount:           80,
+		Amount:           &requestedAmount,
 		Reason:           "manual risk review refund",
 		DecisionNotes:    "Customer contacted before dispute escalation.",
 		AdminID:          7,
@@ -200,6 +203,33 @@ func TestPaymentRefundRecommendationPendingRefundDraftIsIdempotent(t *testing.T)
 	require.Equal(t, int64(1), refundCount)
 }
 
+func TestPaymentRefundRecommendationRejectsInvalidExplicitMoney(t *testing.T) {
+	db := newPaymentRefundRecommendationTestDB(t)
+	service := newPaymentRefundRecommendationWorkflowService(db)
+	orderRecord, transaction := createRefundRecommendationPaidOrder(t, db, 100)
+	recommendation := createRefundRecommendationRecord(t, db, orderRecord.ID, transaction.ID, 100)
+
+	euroAmount := domainmoney.MustNew(5000, "EUR")
+	_, _, err := service.CreatePendingRefundFromRecommendation(CreatePendingRefundFromRecommendationInput{
+		RecommendationID: recommendation.ID,
+		Amount:           &euroAmount,
+		AdminID:          9,
+	})
+	require.ErrorIs(t, err, domainmoney.ErrCurrencyMismatch)
+
+	zeroAmount := domainmoney.MustNew(0, "USD")
+	_, _, err = service.CreatePendingRefundFromRecommendation(CreatePendingRefundFromRecommendationInput{
+		RecommendationID: recommendation.ID,
+		Amount:           &zeroAmount,
+		AdminID:          9,
+	})
+	require.EqualError(t, err, "refund amount is required and must be greater than zero")
+
+	var refundCount int64
+	require.NoError(t, db.Model(&paymentdomain.Refund{}).Count(&refundCount).Error)
+	require.Zero(t, refundCount)
+}
+
 func newPaymentRefundRecommendationTestDB(t *testing.T) *gorm.DB {
 	t.Helper()
 
@@ -220,6 +250,12 @@ func newPaymentRefundRecommendationTestDB(t *testing.T) *gorm.DB {
 		&orderdomain.OrderItem{},
 		&coupondomain.Coupon{},
 		&coupondomain.CouponUsage{},
+		&coupondomain.GiftCard{},
+		&coupondomain.GiftCardTransaction{},
+		&loyaltydomain.ProgramConfig{},
+		&loyaltydomain.ProgramRedeemOption{},
+		&loyaltydomain.UserLoyalty{},
+		&loyaltydomain.LoyaltyTransaction{},
 		&outboxdomain.Event{},
 		&paymentdomain.Transaction{},
 		&paymentdomain.Refund{},
@@ -250,13 +286,15 @@ func createRefundRecommendationPaidOrder(t *testing.T, db *gorm.DB, amount float
 	t.Helper()
 
 	orderRecord := orderdomain.Order{
-		OrderNumber:    "ORD-RISK-1",
-		UserID:         11,
-		Status:         "paid",
-		PaymentStatus:  "paid",
-		SubtotalAmount: amount,
-		TotalAmount:    amount,
-		Currency:       "USD",
+		OrderNumber:     "ORD-RISK-1",
+		UserID:          11,
+		Status:          "paid",
+		PaymentStatus:   "paid",
+		SubtotalAmount:  amount,
+		TotalAmount:     amount,
+		Currency:        "USD",
+		PaymentAmount:   amount,
+		PaymentCurrency: "USD",
 	}
 	require.NoError(t, db.Create(&orderRecord).Error)
 	transaction := paymentdomain.Transaction{

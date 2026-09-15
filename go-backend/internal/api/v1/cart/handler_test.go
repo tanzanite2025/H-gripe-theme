@@ -122,11 +122,11 @@ func TestGetCartSummaryOmitsExactInventory(t *testing.T) {
 	var variant product.ProductVariant
 	require.NoError(t, db.Where("product_id = ?", productRecord.ID).First(&variant).Error)
 	require.NoError(t, db.Create(&product.CartItem{
-		CartID:    cartRecord.ID,
-		ProductID: productRecord.ID,
-		VariantID: &variant.ID,
-		Quantity:  1,
-		Price:     100,
+		CartID:     cartRecord.ID,
+		ProductID:  productRecord.ID,
+		VariantID:  &variant.ID,
+		Quantity:   1,
+		PriceMinor: 10000,
 	}).Error)
 
 	router := gin.New()

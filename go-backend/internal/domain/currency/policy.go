@@ -2,10 +2,31 @@ package currency
 
 import (
 	"encoding/json"
+	"fmt"
 	"strings"
 )
 
 const DefaultPrimaryCurrency = "USD"
+
+// Code is the validated domain representation of an ISO 4217 currency code.
+//
+// A Code should be created with ParseCode. Keeping the type in the currency
+// package lets monetary value objects carry a currency without falling back
+// to an untyped string at every call site.
+type Code string
+
+func (c Code) String() string {
+	return string(c)
+}
+
+// ParseCode normalizes and validates a catalog currency code.
+func ParseCode(value string) (Code, error) {
+	code := NormalizeCode(value)
+	if !IsCatalogCode(code) {
+		return "", fmt.Errorf("unsupported currency code %q", value)
+	}
+	return Code(code), nil
+}
 
 // Policy stores the backend entry currency for admin-entered commercial
 // amounts. Storefront display currencies are owned by storefront market

@@ -2,9 +2,12 @@ package service
 
 import (
 	"commerce-platform/internal/domain/product"
+	"commerce-platform/internal/pkg/cache"
 	"commerce-platform/internal/pkg/metrics"
+	"context"
 	"errors"
 	"fmt"
+	"time"
 )
 
 const (
@@ -52,6 +55,10 @@ type pagedProductBrandCacheProductRepository interface {
 
 type productDetailCache interface {
 	Delete(key string) error
+}
+
+type productDetailCacheWriteBarrier interface {
+	AcquireLock(ctx context.Context, key string, ttl time.Duration) (*cache.RedisLock, bool, error)
 }
 
 func productIDCacheKey(id uint) string {
@@ -280,7 +287,7 @@ func (i *ProductDetailCacheInvalidator) InvalidateProductCachesWithSource(produc
 		}
 		result.Products++
 		for _, key := range keys {
-			if deleteErr := i.cache.Delete(key); deleteErr != nil {
+			if deleteErr := deleteProductCacheKeyWithBarrier(i.cache, key); deleteErr != nil {
 				err = errors.Join(err, deleteErr)
 			}
 			result.Keys++
@@ -288,6 +295,32 @@ func (i *ProductDetailCacheInvalidator) InvalidateProductCachesWithSource(produc
 	}
 	recordProductCacheInvalidationMetric(source, result.Keys, err)
 	return result, err
+}
+
+const productCacheInvalidationLockTTL = 5 * time.Second
+
+func deleteProductCacheKeyWithBarrier(cache productDetailCache, key string) error {
+	barrier, ok := cache.(productDetailCacheWriteBarrier)
+	if !ok {
+		return cache.Delete(key)
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), productCacheInvalidationLockTTL)
+	defer cancel()
+	for {
+		lock, acquired, err := barrier.AcquireLock(ctx, productCacheLockKey(key), productCacheInvalidationLockTTL)
+		if err != nil {
+			return err
+		}
+		if acquired {
+			defer lock.Release(ctx)
+			return cache.Delete(key)
+		}
+		if err := ctx.Err(); err != nil {
+			return fmt.Errorf("timed out waiting for product cache invalidation lock %s: %w", key, err)
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
 }
 
 func (s *ProductService) invalidateStorefrontHTMLCache(reason string) {

@@ -52,6 +52,16 @@
     "orderVerificationFailed": "订单验证失败，请检查填写的信息。",
     "genericError": "发生错误，请重试。"
   },
+  "claimStatus": {
+    "title": "您的质保申请",
+    "claimId": "申请编号 #{id}",
+    "status": "处理状态",
+    "resolution": "技术处理决定",
+    "noResolution": "暂未记录技术处理决定。",
+    "refresh": "刷新",
+    "refreshing": "刷新中……",
+    "loadFailed": "无法加载质保申请状态，请重试。"
+  },
   "errors": {
     "imagesFallback": "最多可上传 {count} 张图片。",
     "videoUnsupported": "{file} 不支持此格式，请使用 MP4、MOV 或 WebM。",

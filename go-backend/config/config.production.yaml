@@ -47,6 +47,8 @@ customer_service_realtime:
   replay_limit: 200
   consumer_block_seconds: 5
   dedup_retention_seconds: 86400
+  websocket_max_connections_per_ip: 5
+  websocket_connection_lease_seconds: 120
 
 jwt:
   secret: ${JWT_SECRET}
@@ -67,8 +69,8 @@ google_merchant:
   state_ttl_seconds: 600
 
 google_indexing:
-  # Keep service account credentials outside source control. Configure through
-  # GOOGLE_INDEXING_SERVICE_ACCOUNT_FILE or GOOGLE_INDEXING_SERVICE_ACCOUNT_JSON.
+  # Product pages are not eligible for Google's Indexing API. Do not enable
+  # this legacy configuration for commerce URLs.
   enabled: false
   service_account_json: ""
   service_account_file: ""
@@ -152,6 +154,7 @@ cors:
     - X-Request-Signature
     - X-Quick-Buy-Session
     - X-Anonymous-ID
+    - X-Warranty-Claim-Token
   expose_headers:
     - Content-Length
     - X-Request-ID
@@ -174,16 +177,27 @@ cache:
 
 worker:
   enabled: false
+  product_view_count_flush_enabled: true
+  product_view_count_flush_interval_seconds: 10
+  product_view_count_flush_batch_limit: 500
+  distributed_lock_ttl_seconds: 0
   tracking_polling_enabled: false
   tracking_polling_interval_seconds: 300
   tracking_polling_batch_limit: 20
   visitor_profile_ip_address_retention_days: 30
+  quick_buy_abandonment_enabled: true
+  quick_buy_abandonment_interval_seconds: 3600
+  quick_buy_abandonment_after_seconds: 86400
   # This scheduler is independent from worker.enabled and is required by the
   # durable customer-service Relay as well as the other Outbox consumers.
   outbox_dispatch_enabled: true
   outbox_dispatch_interval_seconds: 2
   outbox_dispatch_batch_limit: 100
   outbox_dispatch_lock_timeout_seconds: 300
+  # Referral lifecycle remains opt-in while the v2 program is in shadow mode.
+  referral_lifecycle_enabled: false
+  referral_lifecycle_interval_seconds: 86400
+  referral_lifecycle_batch_limit: 100
   payment_expiration_enabled: true
   payment_expiration_interval_seconds: 900
   payment_pending_ttl_seconds: 1800
@@ -206,6 +220,7 @@ worker:
   media_derivative_rebuild_enabled: true
   media_derivative_rebuild_interval_seconds: 5
   media_derivative_rebuild_batch_limit: 10
+  media_derivative_generation_capacity: 8
 
 site_quality:
   runner_url: ${SITE_QUALITY_RUNNER_URL}

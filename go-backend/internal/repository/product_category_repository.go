@@ -29,6 +29,21 @@ func (r *ProductCategoryRepository) List(includeDisabled bool) ([]product.Produc
 	return categories, nil
 }
 
+// FindPublished returns enabled categories in route-construction order.  The
+// storefront exposes the same category tree for every locale (translations
+// affect labels/SEO metadata, not the slug path), so sitemap generation can
+// safely reuse this complete enabled set.
+func (r *ProductCategoryRepository) FindPublished() ([]product.ProductCategory, error) {
+	var categories []product.ProductCategory
+	if err := r.db.Model(&product.ProductCategory{}).
+		Where("is_enabled = ?", true).
+		Order("depth ASC").Order("sort_order ASC").Order("name ASC").Order("id ASC").
+		Find(&categories).Error; err != nil {
+		return nil, err
+	}
+	return categories, nil
+}
+
 func (r *ProductCategoryRepository) ListWithTranslations(includeDisabled bool, locales []string) ([]product.ProductCategory, error) {
 	var categories []product.ProductCategory
 	query := r.db.Model(&product.ProductCategory{}).
@@ -90,6 +105,40 @@ func (r *ProductCategoryRepository) CountChildren(parentID uint) (int64, error) 
 		return 0, err
 	}
 	return count, nil
+}
+
+func (r *ProductCategoryRepository) CountProducts(categoryID uint) (int64, error) {
+	var count int64
+	if err := r.db.Model(&product.Product{}).Where("product_category_id = ?", categoryID).Count(&count).Error; err != nil {
+		return 0, err
+	}
+	return count, nil
+}
+
+func (r *ProductCategoryRepository) CountQuickBuyReferences(categoryID uint) (int64, error) {
+	if !r.db.Migrator().HasTable("quick_buy_step_product_categories") {
+		return 0, nil
+	}
+	var count int64
+	if err := r.db.Table("quick_buy_step_product_categories").
+		Where("product_category_id = ?", categoryID).
+		Count(&count).Error; err != nil {
+		return 0, err
+	}
+	return count, nil
+}
+
+func (r *ProductCategoryRepository) ListProductIDs(categoryIDs []uint) ([]uint, error) {
+	if len(categoryIDs) == 0 {
+		return []uint{}, nil
+	}
+	var ids []uint
+	if err := r.db.Model(&product.Product{}).
+		Where("product_category_id IN ?", categoryIDs).
+		Pluck("id", &ids).Error; err != nil {
+		return nil, err
+	}
+	return ids, nil
 }
 
 func (r *ProductCategoryRepository) Create(category *product.ProductCategory) error {

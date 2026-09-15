@@ -2,7 +2,12 @@ package realtime
 
 import (
 	"bytes"
+	"context"
+	"crypto/rand"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"net/url"
@@ -16,18 +21,21 @@ import (
 	"commerce-platform/internal/service"
 
 	"github.com/gorilla/websocket"
+	"github.com/redis/go-redis/v9"
 	"go.uber.org/zap"
 )
 
 const (
-	customerServiceWebSocketReadBufferSize  = 1024
-	customerServiceWebSocketWriteBufferSize = 1024
-	customerServiceWebSocketMaxConnections  = 500
-	customerServiceWebSocketMaxMessageSize  = 4 << 10
-	customerServiceWebSocketWriteWait       = 10 * time.Second
-	customerServiceWebSocketPongWait        = 60 * time.Second
-	customerServiceWebSocketPingPeriod      = 50 * time.Second
-	customerServiceWebSocketOutboundBuffer  = 256
+	customerServiceWebSocketReadBufferSize      = 1024
+	customerServiceWebSocketWriteBufferSize     = 1024
+	customerServiceWebSocketMaxConnections      = 500
+	customerServiceWebSocketMaxMessageSize      = 4 << 10
+	customerServiceWebSocketWriteWait           = 10 * time.Second
+	customerServiceWebSocketPongWait            = 60 * time.Second
+	customerServiceWebSocketPingPeriod          = 50 * time.Second
+	customerServiceWebSocketOutboundBuffer      = 256
+	customerServiceWebSocketMaxConnectionsPerIP = 5
+	customerServiceWebSocketLeaseTTL            = 2 * time.Minute
 )
 
 var customerServiceWebSocketConnections atomic.Int64
@@ -50,12 +58,138 @@ type customerServiceWebSocketFrame struct {
 // Subscription must be created before Serve so replay and live delivery cannot
 // leave an intentional subscription gap.
 type CustomerServiceWebSocketOptions struct {
-	CheckOrigin   func(*http.Request) bool
-	Subscription  *service.CustomerServiceEventSubscription
-	Replay        []service.CustomerServiceRealtimeEvent
-	AllowEvent    func(service.CustomerServiceRealtimeEvent) bool
-	HandleControl func(CustomerServiceWebSocketControl)
+	CheckOrigin       func(*http.Request) bool
+	Subscription      *service.CustomerServiceEventSubscription
+	Replay            []service.CustomerServiceRealtimeEvent
+	AllowEvent        func(service.CustomerServiceRealtimeEvent) bool
+	HandleControl     func(CustomerServiceWebSocketControl)
+	ConnectionLimiter *CustomerServiceWebSocketLimiter
+	ClientIP          string
 }
+
+// CustomerServiceWebSocketLimiter stores expiring connection leases in Redis.
+// A sorted set gives every socket its own lease, so a dead process cannot leave
+// an IP permanently blocked and concurrent replicas share one atomic limit.
+type CustomerServiceWebSocketLimiter struct {
+	client   redis.UniversalClient
+	maxPerIP int
+	ttl      time.Duration
+}
+
+type CustomerServiceWebSocketLease struct {
+	limiter *CustomerServiceWebSocketLimiter
+	key     string
+	token   string
+	once    sync.Once
+}
+
+var (
+	acquireCustomerServiceWebSocketLeaseScript = redis.NewScript(`
+local now = tonumber(ARGV[1])
+local ttl = tonumber(ARGV[2])
+local max_connections = tonumber(ARGV[3])
+redis.call("ZREMRANGEBYSCORE", KEYS[1], "-inf", now)
+local count = redis.call("ZCARD", KEYS[1])
+if count >= max_connections then
+  if count > 0 then redis.call("EXPIRE", KEYS[1], ttl) end
+  return 0
+end
+redis.call("ZADD", KEYS[1], now + (ttl * 1000), ARGV[4])
+redis.call("EXPIRE", KEYS[1], ttl)
+return 1
+`)
+	renewCustomerServiceWebSocketLeaseScript = redis.NewScript(`
+local now = tonumber(ARGV[1])
+local ttl = tonumber(ARGV[2])
+if redis.call("ZSCORE", KEYS[1], ARGV[3]) == false then return 0 end
+redis.call("ZADD", KEYS[1], now + (ttl * 1000), ARGV[3])
+redis.call("EXPIRE", KEYS[1], ttl)
+return 1
+`)
+	releaseCustomerServiceWebSocketLeaseScript = redis.NewScript(`
+redis.call("ZREM", KEYS[1], ARGV[1])
+if redis.call("ZCARD", KEYS[1]) == 0 then redis.call("DEL", KEYS[1]) end
+return 1
+`)
+)
+
+func NewCustomerServiceWebSocketLimiter(client redis.UniversalClient, maxPerIP int, leaseTTL time.Duration) *CustomerServiceWebSocketLimiter {
+	if maxPerIP <= 0 {
+		maxPerIP = customerServiceWebSocketMaxConnectionsPerIP
+	}
+	if leaseTTL <= 0 {
+		leaseTTL = customerServiceWebSocketLeaseTTL
+	}
+	return &CustomerServiceWebSocketLimiter{client: client, maxPerIP: maxPerIP, ttl: leaseTTL}
+}
+
+func (l *CustomerServiceWebSocketLimiter) Acquire(ctx context.Context, clientIP string) (*CustomerServiceWebSocketLease, error) {
+	if l == nil || l.client == nil {
+		return nil, errors.New("customer-service websocket connection limiter unavailable")
+	}
+	clientIP = strings.TrimSpace(clientIP)
+	if clientIP == "" {
+		return nil, errors.New("customer-service websocket client IP unavailable")
+	}
+	tokenBytes := make([]byte, 16)
+	if _, err := rand.Read(tokenBytes); err != nil {
+		return nil, err
+	}
+	token := hex.EncodeToString(tokenBytes)
+	key := customerServiceWebSocketIPKey(clientIP)
+	ttlSeconds := int64(l.ttl / time.Second)
+	if ttlSeconds < 1 {
+		ttlSeconds = 1
+	}
+	result, err := acquireCustomerServiceWebSocketLeaseScript.Run(ctx, l.client, []string{key},
+		time.Now().UnixMilli(), ttlSeconds, l.maxPerIP, token).Int()
+	if err != nil {
+		return nil, err
+	}
+	if result != 1 {
+		return nil, errCustomerServiceWebSocketIPLimit
+	}
+	return &CustomerServiceWebSocketLease{limiter: l, key: key, token: token}, nil
+}
+
+func (l *CustomerServiceWebSocketLease) Renew(ctx context.Context) error {
+	if l == nil || l.limiter == nil || l.limiter.client == nil {
+		return errors.New("customer-service websocket lease unavailable")
+	}
+	ttlSeconds := int64(l.limiter.ttl / time.Second)
+	if ttlSeconds < 1 {
+		ttlSeconds = 1
+	}
+	result, err := renewCustomerServiceWebSocketLeaseScript.Run(ctx, l.limiter.client, []string{l.key},
+		time.Now().UnixMilli(), ttlSeconds, l.token).Int()
+	if err != nil {
+		return err
+	}
+	if result != 1 {
+		return errors.New("customer-service websocket lease expired")
+	}
+	return nil
+}
+
+func (l *CustomerServiceWebSocketLease) Release(ctx context.Context) error {
+	if l == nil || l.limiter == nil || l.limiter.client == nil {
+		return nil
+	}
+	var err error
+	l.once.Do(func() {
+		err = releaseCustomerServiceWebSocketLeaseScript.Run(ctx, l.limiter.client, []string{l.key}, l.token).Err()
+	})
+	return err
+}
+
+func customerServiceWebSocketIPKey(clientIP string) string {
+	// The IP is already resolved by Gin using its trusted-proxy configuration.
+	// Hashing keeps the Redis key bounded and avoids exposing it in key dumps.
+	sum := sha256.Sum256([]byte(clientIP))
+	return "commerce_platform:customer_service:websocket:ip:" + hex.EncodeToString(sum[:])
+}
+
+var errCustomerServiceWebSocketIPLimit = errors.New("customer-service websocket IP connection limit reached")
 
 // ServeCustomerServiceWebSocket owns all writes for one socket. A full outbound
 // queue closes the connection so the client reconnects and reconciles through
@@ -65,13 +199,41 @@ func ServeCustomerServiceWebSocket(w http.ResponseWriter, r *http.Request, optio
 		http.Error(w, "customer service realtime unavailable", http.StatusServiceUnavailable)
 		return
 	}
+	// The handler creates the subscription before entering Serve to avoid an
+	// event gap. Consequently Serve must own cleanup even when capacity checks
+	// reject the handshake before a WebSocket is upgraded.
+	defer options.Subscription.Cancel()
 	if !acquireCustomerServiceWebSocketConnection() {
 		metrics.CustomerServiceRealtimeWebSocketConnectionAttempts.WithLabelValues("capacity_rejected").Inc()
 		http.Error(w, "too many websocket connections", http.StatusServiceUnavailable)
 		return
 	}
 	defer releaseCustomerServiceWebSocketConnection()
-	defer options.Subscription.Cancel()
+
+	var lease *CustomerServiceWebSocketLease
+	if options.ConnectionLimiter != nil {
+		ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
+		lease, err := options.ConnectionLimiter.Acquire(ctx, options.ClientIP)
+		cancel()
+		if err != nil {
+			if errors.Is(err, errCustomerServiceWebSocketIPLimit) {
+				metrics.CustomerServiceRealtimeWebSocketConnectionAttempts.WithLabelValues("ip_capacity_rejected").Inc()
+				http.Error(w, "too many websocket connections from this IP", http.StatusTooManyRequests)
+			} else {
+				metrics.CustomerServiceRealtimeWebSocketConnectionAttempts.WithLabelValues("limiter_unavailable").Inc()
+				appLogger.Warn("customer-service websocket distributed limiter unavailable", zap.Error(err))
+				http.Error(w, "customer service realtime unavailable", http.StatusServiceUnavailable)
+			}
+			return
+		}
+		defer func() {
+			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+			defer cancel()
+			if err := lease.Release(ctx); err != nil {
+				appLogger.Warn("customer-service websocket lease release failed", zap.Error(err))
+			}
+		}()
+	}
 
 	upgrader := websocket.Upgrader{
 		ReadBufferSize:  customerServiceWebSocketReadBufferSize,
@@ -92,6 +254,32 @@ func ServeCustomerServiceWebSocket(w http.ResponseWriter, r *http.Request, optio
 		stopOnce.Do(func() {
 			close(done)
 		})
+	}
+	if lease != nil {
+		go func() {
+			renewEvery := lease.limiter.ttl / 2
+			if renewEvery < time.Second {
+				renewEvery = time.Second
+			}
+			ticker := time.NewTicker(renewEvery)
+			defer ticker.Stop()
+			for {
+				select {
+				case <-done:
+					return
+				case <-ticker.C:
+					ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
+					err := lease.Renew(ctx)
+					cancel()
+					if err != nil {
+						metrics.CustomerServiceRealtimeWebSocketConnectionAttempts.WithLabelValues("lease_renewal_failed").Inc()
+						appLogger.Warn("customer-service websocket lease renewal failed", zap.Error(err))
+						stop()
+						return
+					}
+				}
+			}
+		}()
 	}
 
 	outbound := make(chan customerServiceWebSocketFrame, customerServiceWebSocketOutboundBuffer)

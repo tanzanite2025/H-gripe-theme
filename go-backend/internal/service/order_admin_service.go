@@ -66,27 +66,11 @@ func (s *OrderService) UpdateOrderStatus(id uint, status string) error {
 		return s.cancelOrderWithRollback(o)
 	}
 
-	if status == "shipped" && s.txManager != nil {
-		return s.txManager.WithinTx(func(repos repository.TxRepositories) error {
-			lockedOrder, err := repos.Order.FindByIDForUpdateWithItems(id)
-			if err != nil {
-				return normalizeOrderError(err)
-			}
-			if !lockedOrder.CanTransitionTo(status) {
-				return fmt.Errorf("invalid status transition from %s to %s", lockedOrder.Status, status)
-			}
-			if err := repos.Order.UpdateStatus(id, status); err != nil {
-				return err
-			}
-			return nil
-		})
-	}
-
-	return s.orderRepo.UpdateStatus(id, status)
+	return s.orderRepo.UpdateStatus(id, o.Status, status)
 }
 
 func isSystemManagedOrderStatus(status string) bool {
-	return status == "paid" || status == "refunded" || status == "payment_expired"
+	return status == "paid" || status == "refunded" || status == "payment_expired" || status == "disputed" || status == "needs_review"
 }
 
 func (s *OrderService) UpdateShippingStatus(id uint, shippingStatus string) error {
@@ -114,9 +98,11 @@ func (s *OrderService) UpdateShippingStatus(id uint, shippingStatus string) erro
 }
 
 type resolvedOrderTrackingUpdate struct {
-	trackingInfo     order.TrackingInfoUpdate
-	trackingShipment TrackingShipmentInput
-	autoRegister     bool
+	trackingInfo        order.TrackingInfoUpdate
+	trackingShipment    TrackingShipmentInput
+	carrierName         string
+	trackingURLTemplate string
+	autoRegister        bool
 }
 
 func resolveOrderTrackingUpdate(
@@ -157,6 +143,19 @@ func resolveOrderTrackingUpdate(
 		carrierServiceID = carrierServiceIDInput
 	}
 
+	carrierName := ""
+	trackingURLTemplate := ""
+	if resolution.Carrier != nil {
+		carrierName = strings.TrimSpace(resolution.Carrier.Name)
+		trackingURLTemplate = strings.TrimSpace(resolution.Carrier.TrackingURL)
+	}
+	if carrierName == "" {
+		carrierName = strings.TrimSpace(resolution.ProviderCarrierName)
+	}
+	if carrierName == "" {
+		carrierName = strings.TrimSpace(resolution.ProviderCarrierCode)
+	}
+
 	return &resolvedOrderTrackingUpdate{
 		trackingInfo: order.TrackingInfoUpdate{
 			TrackingNumber:           trackingNumber,
@@ -175,7 +174,9 @@ func resolveOrderTrackingUpdate(
 			CarrierServiceID:         carrierServiceID,
 			TrackingCarrierMappingID: uintPtr(resolution.Mapping.ID),
 		},
-		autoRegister: resolution.Provider.AutoRegister,
+		carrierName:         carrierName,
+		trackingURLTemplate: trackingURLTemplate,
+		autoRegister:        resolution.Provider.AutoRegister,
 	}, nil
 }
 
@@ -239,6 +240,17 @@ func (s *OrderService) UpdateTrackingInfo(ctx context.Context, id uint, input Or
 // Registration happens after commit so a temporary provider outage never blocks
 // a parcel that has already been physically handed to the carrier.
 func (s *OrderService) FulfillOrder(ctx context.Context, id uint, input OrderTrackingUpdateInput) (*OrderFulfillmentResult, error) {
+	return s.FulfillOrderWithIdempotency(ctx, id, input, 0, "", "")
+}
+
+func (s *OrderService) FulfillOrderWithIdempotency(
+	ctx context.Context,
+	id uint,
+	input OrderTrackingUpdateInput,
+	adminUserID uint,
+	idempotencyKey string,
+	requestHash string,
+) (*OrderFulfillmentResult, error) {
 	if s.txManager == nil {
 		return nil, ErrOrderFulfillmentTransactionNeeded
 	}
@@ -248,16 +260,78 @@ func (s *OrderService) FulfillOrder(ctx context.Context, id uint, input OrderTra
 	if s.orderEvidence == nil {
 		return nil, ErrOrderFulfillmentEvidenceNotConfigured
 	}
+	idempotencyKey = strings.TrimSpace(idempotencyKey)
+	requestHash = strings.TrimSpace(requestHash)
+	if idempotencyKey != "" {
+		if adminUserID == 0 {
+			return nil, ErrOrderIdempotencyUnavailable
+		}
+		if requestHash == "" {
+			return nil, ErrOrderIdempotencyHashRequired
+		}
+	}
 
 	var resolvedTracking *resolvedOrderTrackingUpdate
+	var idempotencyRecord *order.OrderIdempotency
 	if err := s.txManager.WithinTx(func(repos repository.TxRepositories) error {
 		if repos.Order == nil || repos.Shipping == nil || repos.OrderEvidence == nil {
 			return ErrOrderShippingNotConfigured
+		}
+		if idempotencyKey != "" {
+			if repos.OrderIdempotency == nil {
+				return ErrOrderFulfillmentIdempotencyUnavailable
+			}
+			const fulfillmentScope = "admin_order_fulfillment"
+			record := &order.OrderIdempotency{
+				UserID:         adminUserID,
+				Scope:          fulfillmentScope,
+				IdempotencyKey: idempotencyKey,
+				RequestHash:    requestHash,
+			}
+			claimed, err := repos.OrderIdempotency.TryCreate(record)
+			if err != nil {
+				return err
+			}
+			if !claimed {
+				existing, err := repos.OrderIdempotency.FindByUserScopeKey(adminUserID, fulfillmentScope, idempotencyKey)
+				if err != nil {
+					return err
+				}
+				if existing.RequestHash != requestHash {
+					return ErrOrderFulfillmentIdempotencyConflict
+				}
+				if existing.OrderID == nil || *existing.OrderID == 0 {
+					return ErrOrderFulfillmentIdempotencyInProgress
+				}
+				if *existing.OrderID != id {
+					return ErrOrderFulfillmentIdempotencyConflict
+				}
+				return nil
+			}
+			idempotencyRecord = record
 		}
 
 		o, err := repos.Order.FindByIDForUpdateWithItems(id)
 		if err != nil {
 			return normalizeOrderError(err)
+		}
+		if o.FulfillmentHold {
+			return ErrOrderFulfillmentOnHold
+		}
+		activeStripeDispute, err := repos.Payment.HasActiveStripeDisputeByOrderID(id)
+		if err != nil {
+			return err
+		}
+		activePayPalDispute, err := repos.Payment.HasActivePayPalDisputeByOrderID(id)
+		if err != nil {
+			return err
+		}
+		activePaymentReview, err := repos.Payment.HasActivePaymentReviewByOrderID(id)
+		if err != nil {
+			return err
+		}
+		if activeStripeDispute || activePayPalDispute || activePaymentReview {
+			return ErrOrderFulfillmentOnHold
 		}
 		if o.Status == "shipped" {
 			txShippingService := NewShippingService(repos.Shipping)
@@ -270,6 +344,11 @@ func (s *OrderService) FulfillOrder(ctx context.Context, id uint, input OrderTra
 				return ErrOrderFulfillmentTrackingConflict
 			}
 			resolvedTracking = nil
+			if idempotencyRecord != nil {
+				if err := repos.OrderIdempotency.BindOrderID(idempotencyRecord.ID, id); err != nil {
+					return err
+				}
+			}
 			return nil
 		}
 		if o.PaymentStatus != "paid" {
@@ -284,6 +363,9 @@ func (s *OrderService) FulfillOrder(ctx context.Context, id uint, input OrderTra
 		}
 		if o.SignatureRequired && !input.SignatureConfirmed {
 			return ErrOrderFulfillmentSignatureConfirmationRequired
+		}
+		if err := ValidateOrderCustomsDeclaredValuesAreConfirmed(o); err != nil {
+			return err
 		}
 		if _, err := s.orderEvidence.CheckFulfillmentReadiness(repos, o); err != nil {
 			return err
@@ -310,12 +392,25 @@ func (s *OrderService) FulfillOrder(ctx context.Context, id uint, input OrderTra
 			o.ShippedAt = &shippedAt
 		}
 		if o.Status != "shipped" {
-			if err := repos.Order.UpdateStatus(id, "shipped"); err != nil {
+			if err := repos.Order.UpdateStatus(id, o.Status, "shipped"); err != nil {
 				return err
 			}
 		}
 		if o.ShippingStatus != "shipped" {
 			if err := repos.Order.UpdateShippingStatus(id, "shipped"); err != nil {
+				return err
+			}
+		}
+		if err := enqueueOrderShippingNotificationEmailOutboxEvent(
+			repos.Outbox,
+			o,
+			resolvedTracking,
+			shippedAt,
+		); err != nil {
+			return err
+		}
+		if idempotencyRecord != nil {
+			if err := repos.OrderIdempotency.BindOrderID(idempotencyRecord.ID, id); err != nil {
 				return err
 			}
 		}
@@ -350,6 +445,33 @@ func (s *OrderService) FulfillOrder(ctx context.Context, id uint, input OrderTra
 	result.Order = fulfilledOrder
 	result.TrackingShipment = trackingShipment
 	return result, nil
+}
+
+// ValidateOrderCustomsDeclaredValuesAreConfirmed ensures every order line has
+// a positive, explicitly confirmed customs declaration before external dispatch.
+func ValidateOrderCustomsDeclaredValuesAreConfirmed(orderRecord *order.Order) error {
+	if orderRecord == nil {
+		return ErrOrderCustomsDeclarationIncomplete
+	}
+	for _, item := range orderRecord.Items {
+		if item.DeclaredValue == nil ||
+			!item.DeclaredValueConfirmed ||
+			math.IsNaN(*item.DeclaredValue) ||
+			math.IsInf(*item.DeclaredValue, 0) ||
+			*item.DeclaredValue <= 0 {
+			itemReference := strings.TrimSpace(item.SKU)
+			if itemReference == "" {
+				itemReference = fmt.Sprintf("order_item_id=%d", item.ID)
+			}
+			return fmt.Errorf(
+				"%w: order %s item %s",
+				ErrOrderCustomsDeclarationIncomplete,
+				orderRecord.OrderNumber,
+				itemReference,
+			)
+		}
+	}
+	return nil
 }
 
 func (s *OrderService) SyncOrderTracking(ctx context.Context, id uint) (*TrackingSyncResult, error) {
@@ -401,40 +523,83 @@ func (s *OrderService) UpdateOrderItemCustoms(orderID, orderItemID uint, declare
 	if confirmed && declaredValue == nil {
 		return ErrDeclaredValueConfirmationRequired
 	}
-
-	o, err := s.findOrder(orderID)
-	if err != nil {
-		return err
+	if s == nil || s.txManager == nil {
+		return ErrOrderCustomsUpdateTransactionNeeded
 	}
 
-	found := false
-	for _, item := range o.Items {
-		if item.ID == orderItemID {
-			found = true
-			break
+	return s.txManager.WithinTx(func(repos repository.TxRepositories) error {
+		o, err := repos.Order.FindByIDForUpdateWithItems(orderID)
+		if err != nil {
+			return normalizeOrderError(err)
 		}
-	}
-	if !found {
-		return ErrOrderItemNotFound
-	}
+		if orderCustomsDeclarationLocked(o) {
+			return ErrOrderCustomsUpdateLocked
+		}
 
-	if declaredValue == nil {
-		confirmed = false
-	}
-	return s.orderRepo.UpdateOrderItemCustoms(orderID, orderItemID, declaredValue, confirmed)
+		found := false
+		for _, item := range o.Items {
+			if item.ID == orderItemID {
+				found = true
+				break
+			}
+		}
+		if !found {
+			return ErrOrderItemNotFound
+		}
+
+		if declaredValue == nil {
+			confirmed = false
+		}
+		return repos.Order.UpdateOrderItemCustoms(orderID, orderItemID, declaredValue, confirmed)
+	})
 }
 
-func (s *OrderService) DeleteAdminOrder(id uint) error {
-	o, err := s.findOrder(id)
-	if err != nil {
-		return err
+func orderCustomsDeclarationLocked(o *order.Order) bool {
+	if o == nil {
+		return false
+	}
+	return o.Status == "shipped" ||
+		o.Status == "completed" ||
+		o.ShippingStatus == "shipped" ||
+		o.ShippingStatus == "delivered" ||
+		(o.ShippedAt != nil && !o.ShippedAt.IsZero())
+}
+
+// HideUnpaidCancelledOrPaymentExpiredOrderFromDefaultQueries keeps the
+// existing admin action limited to orders that never reached a paid state.
+// The order row is locked before the financial-state check so a payment
+// callback cannot win a race after the check and before the soft delete.
+func (s *OrderService) HideUnpaidCancelledOrPaymentExpiredOrderFromDefaultQueries(id uint) error {
+	if s == nil || s.txManager == nil {
+		return ErrOrderHideTransactionRequired
 	}
 
-	if o.Status != "cancelled" && o.Status != "refunded" && o.Status != "payment_expired" {
-		return ErrOrderDeleteNotAllowed
-	}
+	return s.txManager.WithinTx(func(repos repository.TxRepositories) error {
+		lockedOrder, err := repos.Order.FindByIDForUpdate(id)
+		if err != nil {
+			return normalizeOrderError(err)
+		}
+		if !isOrderEligibleForDefaultQueryHideWithoutPaymentActivity(lockedOrder) {
+			return ErrOrderHideNotAllowed
+		}
 
-	return s.orderRepo.Delete(id)
+		hidden, err := repos.Order.SoftDeleteUnpaidCancelledOrPaymentExpiredOrderRecord(id)
+		if err != nil {
+			return err
+		}
+		if !hidden {
+			return ErrOrderHideNotAllowed
+		}
+		return nil
+	})
+}
+
+func isOrderEligibleForDefaultQueryHideWithoutPaymentActivity(o *order.Order) bool {
+	if o == nil || o.Status == "refunded" || o.PaymentStatus == "paid" || o.PaymentStatus == "refunded" {
+		return false
+	}
+	return (o.Status == "cancelled" && o.PaymentStatus == "unpaid") ||
+		(o.Status == "payment_expired" && o.PaymentStatus == "expired")
 }
 
 func (s *OrderService) GetAdminStats() (map[string]interface{}, error) {

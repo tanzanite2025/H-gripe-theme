@@ -37,7 +37,7 @@ func TestAdminRouteRegistrationHasNoDuplicateRoutes(t *testing.T) {
 		registerProductRoutes(authenticated, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 		registerIntegrationRoutes(authenticated, nil, nil)
 		registerMediaAndPreflightRoutes(authenticated, nil, nil, nil, nil, nil)
-		registerCommerceRoutes(authenticated, nil, nil, nil, nil, nil, nil, nil)
+		registerCommerceRoutes(authenticated, nil, nil, nil, nil, nil, nil, nil, nil)
 		registerContentRoutes(authenticated, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 		registerBusinessRoutes(authenticated, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 		registerSystemRoutes(authenticated, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)

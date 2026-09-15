@@ -1,5 +1,6 @@
 import { useNuxtApp, useState } from 'nuxt/app'
 import { computed } from 'vue'
+import { ApiRequestError } from '~/composables/useApiRequest'
 import { hasBrowserCookie } from '~/utils/browserCookies'
 
 interface LoginPayload {
@@ -58,8 +59,26 @@ export function useAuth() {
   const user = useState<AuthUser | null>('auth-user', () => null)
   const loading = useState<boolean>('auth-loading', () => false)
   const error = useState<string | null>('auth-error', () => null)
+  const referralBindingError = useState<string | null>('auth-referral-binding-error', () => null)
   const initialized = useState<boolean>('auth-initialized', () => false)
   const isAuthenticated = computed(() => !!user.value)
+
+  const bindPendingReferral = async () => {
+    referralBindingError.value = null
+    try {
+      await request('/customer/referral/bind', {
+        method: 'POST',
+        headers: { 'Accept': 'application/json' }
+      }, 'Unable to apply referral attribution')
+    } catch (err) {
+      if (err instanceof ApiRequestError && err.code === 'referral_attribution_missing') {
+        return
+      }
+      referralBindingError.value = err instanceof Error
+        ? err.message
+        : 'Unable to apply referral attribution'
+    }
+  }
 
   const ensureSession = async (force = false) => {
     if (!baseURL) {
@@ -76,7 +95,7 @@ export function useAuth() {
       return user.value
     }
 
-    if (import.meta.client && !force && !hasBrowserCookie('csrf_token')) {
+    if (import.meta.client && !force && !hasBrowserCookie('storefront_csrf_token')) {
       user.value = null
       initialized.value = true
       return null
@@ -126,6 +145,7 @@ export function useAuth() {
       const responsePayload = unwrapData<{ token?: string, user?: AuthUser }>(response)
       const data = responsePayload?.user || null
       user.value = data
+      await bindPendingReferral()
       return data
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Login failed'
@@ -200,6 +220,7 @@ export function useAuth() {
       const payload = unwrapData<{ token?: string, user?: AuthUser }>(response)
       const data = payload?.user || null
       user.value = data
+      await bindPendingReferral()
       return data
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Google login failed'
@@ -221,6 +242,7 @@ export function useAuth() {
     user,
     loading,
     error,
+    referralBindingError,
     initialized,
     isAuthenticated,
     isAgent,

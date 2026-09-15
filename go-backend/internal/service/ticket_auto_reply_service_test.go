@@ -46,13 +46,14 @@ func TestAutoReplyWelcomeUsesConversationStaffIdentityAndCooldown(t *testing.T) 
 	}).Error)
 
 	service := newAutoReplyTestTicketService(db)
-	owner := CustomerServiceOwner{VisitorSessionHash: "auto-reply-visitor"}
+	owner := CustomerServiceOwner{UserID: &customer.ID, VisitorSessionHash: "auto-reply-visitor"}
 
 	_, alreadySent, first, err := service.GetWelcomeMessage(conversationID, owner, agent.ID, "en")
 	require.NoError(t, err)
 	require.False(t, alreadySent)
 	require.NotNil(t, first)
-	require.Equal(t, agent.ID, first.UserID)
+	require.NotNil(t, first.UserID)
+	require.Equal(t, agent.ID, *first.UserID)
 	require.Equal(t, "text", first.MessageType)
 	require.Contains(t, first.Metadata, `"auto_reply"`)
 

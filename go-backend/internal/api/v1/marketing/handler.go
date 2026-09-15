@@ -1,9 +1,9 @@
 package marketing
 
 import (
+	domainmoney "commerce-platform/internal/domain/money"
 	"commerce-platform/internal/service"
 	"fmt"
-	"math"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -60,7 +60,9 @@ func (h *Handler) ValidateCoupon(c *gin.Context) {
 		return
 	}
 
-	coupon, discount, err := h.marketingService.ValidateCoupon(req.Code, userID.(uint), req.Amount)
+	customerEmail, _ := c.Get("email")
+	email, _ := customerEmail.(string)
+	coupon, discount, err := h.marketingService.ValidateCoupon(req.Code, userID.(uint), req.Amount, email)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -113,26 +115,10 @@ func (h *Handler) CheckIn(c *gin.Context) {
 }
 
 func (h *Handler) CreateReferral(c *gin.Context) {
-	userID, exists := c.Get("user_id")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
-		return
-	}
-
-	var req struct {
-		RefereeID uint `json:"referee_id" binding:"required"`
-	}
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	if err := h.marketingService.CreateReferral(userID.(uint), req.RefereeID); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusCreated, gin.H{"message": "referral created"})
+	c.JSON(http.StatusGone, gin.H{
+		"code":  "referral_legacy_endpoint_retired",
+		"error": "This referral endpoint is retired; use the referral-code flow when the new program is enabled.",
+	})
 }
 
 func (h *Handler) GetLoyaltyInfo(c *gin.Context) {
@@ -224,12 +210,22 @@ func (h *Handler) ListRedeemGiftCardOptions(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("[CRITICAL] Failed to load redeem config: %v", err)})
 		return
 	}
+	maxValueMoney, moneyErr := domainmoney.New(config.MaxValuePerDayCents, config.Currency)
+	if moneyErr != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("[CRITICAL] Invalid loyalty currency: %v", moneyErr)})
+		return
+	}
+	maxValuePerDay, moneyErr := maxValueMoney.MajorFloat()
+	if moneyErr != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("[CRITICAL] Invalid loyalty amount: %v", moneyErr)})
+		return
+	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"enabled":                 config.Enabled,
 		"exchange_rate":           config.ExchangeRatePoints,
 		"min_points":              config.MinRedeemPoints,
-		"max_value_per_day":       float64(config.MaxValuePerDayCents) / 100,
+		"max_value_per_day":       maxValuePerDay,
 		"max_value_per_day_cents": config.MaxValuePerDayCents,
 		"card_expiry_days":        config.CardExpiryDays,
 		"currency":                config.Currency,
@@ -273,19 +269,15 @@ func (h *Handler) RedeemPointsToGiftCard(c *gin.Context) {
 	}
 
 	var req struct {
-		OptionID           uint    `json:"option_id"`
-		GiftCardValueCents int64   `json:"giftcard_value_cents"`
-		GiftCardValue      float64 `json:"giftcard_value"`
-		IdempotencyKey     string  `json:"idempotency_key"`
+		OptionID           uint   `json:"option_id"`
+		GiftCardValueCents int64  `json:"giftcard_value_cents"`
+		IdempotencyKey     string `json:"idempotency_key"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("[CRITICAL] Invalid request arguments: %v", err)})
 		return
 	}
 
-	if req.GiftCardValueCents <= 0 && req.GiftCardValue > 0 {
-		req.GiftCardValueCents = int64(math.Round(req.GiftCardValue * 100))
-	}
 	idempotencyKey := c.GetHeader("Idempotency-Key")
 	if idempotencyKey == "" {
 		idempotencyKey = req.IdempotencyKey
@@ -313,7 +305,6 @@ func (h *Handler) RedeemPointsToGiftCard(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"giftcard_id":          result.GiftCardID,
 		"card_code":            result.CardCode,
-		"balance":              result.Balance,
 		"balance_cents":        result.BalanceCents,
 		"giftcard_value_cents": result.GiftCardValueCents,
 		"redemption_id":        result.RedemptionID,

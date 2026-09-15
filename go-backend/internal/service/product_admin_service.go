@@ -27,15 +27,22 @@ type ProductMediaInput struct {
 }
 
 type ProductVariantOptionValueInput struct {
-	ID                 *uint
-	SpecDefinitionID   uint
-	ValueKey           string
-	Label              string
-	ColorHex           string
-	SwatchMediaAssetID *uint
-	SwatchURL          string
-	SortOrder          int
-	IsEnabled          *bool
+	ID                     *uint
+	SpecDefinitionID       uint
+	TemplateOptionItemID   *uint
+	SourceTemplateRevision int
+	ValueKey               string
+	Label                  string
+	ColorHex               string
+	SwatchMediaAssetID     *uint
+	SwatchURL              string
+	SortOrder              int
+	IsEnabled              *bool
+	PriceDeltaMinor        *int64
+	IsDefault              bool
+	InventoryPolicy        string
+	ComponentVariantID     *uint
+	ComponentQuantity      int
 }
 
 type ProductCreateInput struct {
@@ -178,7 +185,18 @@ func (s *ProductService) CreateAdminProduct(input ProductCreateInput) (*product.
 		return nil, err
 	}
 
-	optionValues, err := s.buildVariantOptionValues(input.ProductSpecificationTemplateID, input.VariantOptionValues)
+	optionValueInputs := input.VariantOptionValues
+	if input.ProductSpecificationTemplateID != nil {
+		defaults, materializeErr := s.materializeTemplateOptionValueInputs(input.ProductSpecificationTemplateID)
+		if materializeErr != nil {
+			return nil, materializeErr
+		}
+		optionValueInputs = mergeTemplateOptionValueInputs(defaults, optionValueInputs)
+		if len(optionValueInputs) == 0 {
+			optionValueInputs = nil
+		}
+	}
+	optionValues, err := s.buildVariantOptionValues(input.ProductSpecificationTemplateID, optionValueInputs)
 	if err != nil {
 		return nil, err
 	}

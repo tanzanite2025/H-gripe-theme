@@ -65,6 +65,15 @@ func (r *AfterSalesRefundReviewRepository) FindByCaseIDForUpdate(caseID uint) (*
 	return &record, nil
 }
 
+func (r *AfterSalesRefundReviewRepository) FindByLinkedRefundIDForUpdate(refundID uint) (*aftersales.AfterSalesRefundReview, error) {
+	var record aftersales.AfterSalesRefundReview
+	err := r.lockForUpdate(r.db).Where("linked_refund_id = ?", refundID).First(&record).Error
+	if err != nil {
+		return nil, err
+	}
+	return &record, nil
+}
+
 func (r *AfterSalesRefundReviewRepository) Create(review *aftersales.AfterSalesRefundReview) error {
 	return r.db.Create(review).Error
 }

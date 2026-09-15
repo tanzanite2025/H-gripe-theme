@@ -58,7 +58,7 @@ func TestGatewayCurrencyCapabilities(t *testing.T) {
 	}
 }
 
-func TestFormatMajorAmountUsesCurrencyMinorUnits(t *testing.T) {
+func TestPaymentMajorStringUsesCurrencyMinorUnits(t *testing.T) {
 	tests := []struct {
 		name     string
 		amount   float64
@@ -72,33 +72,34 @@ func TestFormatMajorAmountUsesCurrencyMinorUnits(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			value, err := FormatMajorAmount(tt.amount, tt.currency)
+			value, err := paymentMajorString(tt.amount, tt.currency)
 			if err != nil {
-				t.Fatalf("FormatMajorAmount(%s) error = %v", tt.currency, err)
+				t.Fatalf("paymentMajorString(%s) error = %v", tt.currency, err)
 			}
 			if value != tt.want {
-				t.Fatalf("FormatMajorAmount(%s) = %q, want %q", tt.currency, value, tt.want)
+				t.Fatalf("paymentMajorString(%s) = %q, want %q", tt.currency, value, tt.want)
 			}
 		})
 	}
 }
 
-func TestAmountHelpersRoundFloatingPointNoise(t *testing.T) {
+func TestPaymentMoneyBoundaryRoundsFloatingPointNoise(t *testing.T) {
 	amount := math.Nextafter(199.99, 200)
 
-	minor, err := MajorToMinorAmount(amount, "USD")
+	money, err := paymentMoneyFromMajor(amount, "USD")
 	if err != nil {
-		t.Fatalf("MajorToMinorAmount() error = %v", err)
+		t.Fatalf("paymentMoneyFromMajor() error = %v", err)
 	}
-	if minor != 19999 {
-		t.Fatalf("MajorToMinorAmount() = %d, want %d", minor, 19999)
+	if money.AmountMinor() != 19999 {
+		t.Fatalf("paymentMoneyFromMajor() = %d, want %d", money.AmountMinor(), 19999)
 	}
 
-	formatted, err := FormatMajorAmount(amount, "USD")
+	formatted, err := paymentMajorString(amount, "USD")
 	if err != nil {
-		t.Fatalf("FormatMajorAmount() error = %v", err)
+		t.Fatalf("paymentMajorString() error = %v", err)
 	}
 	if formatted != "199.99" {
-		t.Fatalf("FormatMajorAmount() = %q, want %q", formatted, "199.99")
+		t.Fatalf("paymentMajorString() = %q, want %q", formatted, "199.99")
 	}
+
 }

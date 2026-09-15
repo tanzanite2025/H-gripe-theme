@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	domainmoney "commerce-platform/internal/domain/money"
 	productdomain "commerce-platform/internal/domain/product"
 	"commerce-platform/internal/service"
 )
@@ -16,17 +17,17 @@ func TestPublicCartSummaryUsesMinimalMediaContract(t *testing.T) {
 	mediaAssetID := uint(14)
 
 	summary := &productdomain.CartSummary{
-		ItemCount: 1,
-		Total:     79.5,
+		ItemCount:  1,
+		TotalMoney: domainmoney.MustNew(7950, "USD"),
 		Items: []productdomain.CartItem{
 			{
-				ID:        21,
-				CartID:    22,
-				ProductID: 7,
-				VariantID: &variantID,
-				Quantity:  1,
-				Price:     79.5,
-				Currency:  "USD",
+				ID:         21,
+				CartID:     22,
+				ProductID:  7,
+				VariantID:  &variantID,
+				Quantity:   1,
+				PriceMinor: 7950,
+				Currency:   "USD",
 				Product: &productdomain.Product{
 					ID:                             7,
 					ProductSpecificationTemplateID: &productSpecificationTemplateID,
@@ -157,10 +158,12 @@ func TestPublicCartSummaryExposesMadeToOrderAvailabilityWithoutStock(t *testing.
 		ItemCount: 1,
 		Items: []productdomain.CartItem{
 			{
-				ID:        20,
-				ProductID: 18,
-				VariantID: &variantID,
-				Quantity:  1,
+				ID:         20,
+				ProductID:  18,
+				VariantID:  &variantID,
+				Quantity:   1,
+				PriceMinor: 100,
+				Currency:   "USD",
 				Product: &productdomain.Product{
 					ID:              18,
 					Name:            "Custom Cart Product",

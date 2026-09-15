@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	procurementdomain "commerce-platform/internal/domain/procurement"
+	suppliercostdomain "commerce-platform/internal/domain/productsuppliercost"
 	"commerce-platform/internal/repository"
 
 	"gorm.io/datatypes"
@@ -20,17 +20,17 @@ const (
 )
 
 var (
-	ErrProductProfitabilityInvalid                = errors.New("product profitability input is invalid")
-	ErrProductProfitabilityBatchLarge             = errors.New("product profitability batch is too large")
-	ErrProductProfitabilityProcurementUnavailable = errors.New("product procurement repository is unavailable")
+	ErrProductProfitabilityInvalid                                 = errors.New("product profitability input is invalid")
+	ErrProductProfitabilityBatchLarge                              = errors.New("product profitability batch is too large")
+	ErrProductProfitabilitySupplierCostRecordRepositoryUnavailable = errors.New("product supplier cost record repository is unavailable")
 )
 
 type ProductProfitabilityService struct {
-	repo            *repository.ProductProfitCalculationRepository
-	procurementRepo *repository.ProductProcurementRepository
+	repo                   *repository.ProductProfitCalculationRepository
+	supplierCostRecordRepo *repository.ProductSupplierCostRecordRepository
 }
 
-type ProfitabilityProcurementInput struct {
+type ProfitabilitySupplierCostDetailsInput struct {
 	SupplierName         string
 	SupplierContactName  string
 	SupplierPhone        string
@@ -46,18 +46,18 @@ type ProfitabilityItemInput struct {
 	SellingCurrency string
 	CostCurrency    string
 
-	ListPrice     float64
-	SalePrice     *float64
-	PurchasePrice *float64
-	// PurchasePriceKnown distinguishes an explicit zero cost from an omitted
+	ListPrice float64
+	SalePrice *float64
+	UnitCost  *float64
+	// UnitCostKnown distinguishes an explicit zero cost from an omitted
 	// cost. Unknown cost values are never persisted as a ready snapshot.
-	PurchasePriceKnown bool
+	UnitCostKnown bool
 
 	InboundShippingUnitCost float64
 	PackagingUnitCost       float64
 	OtherUnitCost           float64
 
-	Procurement *ProfitabilityProcurementInput
+	SupplierCostDetails *ProfitabilitySupplierCostDetailsInput
 }
 
 type ProfitabilitySkippedItem struct {
@@ -67,8 +67,8 @@ type ProfitabilitySkippedItem struct {
 }
 
 type ProfitabilityBatchResult struct {
-	Records []procurementdomain.ProductProfitCalculation `json:"records"`
-	Skipped []ProfitabilitySkippedItem                   `json:"skipped"`
+	Records []suppliercostdomain.ProductProfitCalculation `json:"records"`
+	Skipped []ProfitabilitySkippedItem                    `json:"skipped"`
 }
 
 type ProfitabilityItemIssue struct {
@@ -97,22 +97,22 @@ func NewProductProfitabilityService(repo *repository.ProductProfitCalculationRep
 	return &ProductProfitabilityService{repo: repo}
 }
 
-func NewProductProfitabilityServiceWithProcurement(
+func NewProductProfitabilityServiceWithSupplierCostRecords(
 	repo *repository.ProductProfitCalculationRepository,
-	procurementRepo *repository.ProductProcurementRepository,
+	supplierCostRecordRepo *repository.ProductSupplierCostRecordRepository,
 ) *ProductProfitabilityService {
 	return &ProductProfitabilityService{
-		repo:            repo,
-		procurementRepo: procurementRepo,
+		repo:                   repo,
+		supplierCostRecordRepo: supplierCostRecordRepo,
 	}
 }
 
-func (s *ProductProfitabilityService) Preview(items []ProfitabilityItemInput) ([]procurementdomain.ProfitCalculationResult, error) {
+func (s *ProductProfitabilityService) Preview(items []ProfitabilityItemInput) ([]suppliercostdomain.ProfitCalculationResult, error) {
 	if len(items) > MaxProfitabilityBatchItems {
 		return nil, ErrProductProfitabilityBatchLarge
 	}
 
-	results := make([]procurementdomain.ProfitCalculationResult, 0, len(items))
+	results := make([]suppliercostdomain.ProfitCalculationResult, 0, len(items))
 	seenCodes := make(map[string]int, len(items))
 	for index, item := range items {
 		normalized, err := normalizeProfitabilityItem(item)
@@ -137,7 +137,7 @@ func (s *ProductProfitabilityService) Preview(items []ProfitabilityItemInput) ([
 	return results, nil
 }
 
-func (s *ProductProfitabilityService) ListByCodes(codes []string) ([]procurementdomain.ProductProfitCalculation, error) {
+func (s *ProductProfitabilityService) ListByCodes(codes []string) ([]suppliercostdomain.ProductProfitCalculation, error) {
 	if s == nil || s.repo == nil {
 		return nil, errors.New("product profitability service is unavailable")
 	}
@@ -156,8 +156,8 @@ func (s *ProductProfitabilityService) BulkUpsert(items []ProfitabilityItemInput)
 		return ProfitabilityBatchResult{}, ErrProductProfitabilityBatchLarge
 	}
 
-	records := make([]procurementdomain.ProductProfitCalculation, 0, len(items))
-	procurementRecords := make([]procurementdomain.ProductProcurement, 0, len(items))
+	records := make([]suppliercostdomain.ProductProfitCalculation, 0, len(items))
+	supplierCostRecords := make([]suppliercostdomain.ProductSupplierCostRecord, 0, len(items))
 	skipped := make([]ProfitabilitySkippedItem, 0)
 	clearCodes := make([]string, 0)
 	issues := make([]ProfitabilityItemIssue, 0)
@@ -191,27 +191,27 @@ func (s *ProductProfitabilityService) BulkUpsert(items []ProfitabilityItemInput)
 			})
 			continue
 		}
-		if normalized.Procurement != nil && result.Status == procurementdomain.ProfitStatusMissingPurchase {
+		if normalized.SupplierCostDetails != nil && result.Status == suppliercostdomain.ProfitStatusMissingUnitCost {
 			issues = append(issues, ProfitabilityItemIssue{
 				Index:       index,
 				ProductCode: normalized.ProductCode,
 				Status:      result.Status,
-				Reason:      "purchase_price is required when procurement data is supplied",
+				Reason:      "unit_cost is required when supplier cost details are supplied",
 			})
 			continue
 		}
-		if result.Status == procurementdomain.ProfitStatusMissingPurchase {
+		if result.Status == suppliercostdomain.ProfitStatusMissingUnitCost {
 			skipped = append(skipped, ProfitabilitySkippedItem{
 				ProductCode: normalized.ProductCode,
 				Status:      result.Status,
-				Reason:      "purchase price is not known",
+				Reason:      "unit cost is not known",
 			})
 			clearCodes = append(clearCodes, normalized.ProductCode)
 			continue
 		}
-		if result.Status == procurementdomain.ProfitStatusCurrencyMismatch ||
-			result.Status == procurementdomain.ProfitStatusInvalidSelling ||
-			result.Status == procurementdomain.ProfitStatusInvalidCost {
+		if result.Status == suppliercostdomain.ProfitStatusCurrencyMismatch ||
+			result.Status == suppliercostdomain.ProfitStatusInvalidSelling ||
+			result.Status == suppliercostdomain.ProfitStatusInvalidCost {
 			issues = append(issues, ProfitabilityItemIssue{
 				Index:       index,
 				ProductCode: normalized.ProductCode,
@@ -220,11 +220,11 @@ func (s *ProductProfitabilityService) BulkUpsert(items []ProfitabilityItemInput)
 			})
 			continue
 		}
-		if result.PurchasePrice == nil {
+		if result.UnitCost == nil {
 			issues = append(issues, ProfitabilityItemIssue{
 				Index:       index,
 				ProductCode: normalized.ProductCode,
-				Reason:      "purchase_price is required",
+				Reason:      "unit_cost is required",
 			})
 			continue
 		}
@@ -233,52 +233,52 @@ func (s *ProductProfitabilityService) BulkUpsert(items []ProfitabilityItemInput)
 		if strings.TrimSpace(costCurrency) == "" {
 			costCurrency = normalized.SellingCurrency
 		}
-		procurementInput := productProcurementSnapshotInput{
+		supplierCostRecordInput := productSupplierCostRecordSnapshotInput{
 			ProductCode: normalized.ProductCode,
 			ProductName: normalized.ProductName,
-			ProductProcurementDetailsInput: ProductProcurementDetailsInput{
-				PurchasePrice: result.PurchasePrice,
-				Currency:      costCurrency,
+			ProductSupplierCostRecordDetailsInput: ProductSupplierCostRecordDetailsInput{
+				UnitCost: result.UnitCost,
+				Currency: costCurrency,
 			},
 		}
-		if normalized.Procurement != nil {
-			procurementInput.SupplierName = normalized.Procurement.SupplierName
-			procurementInput.SupplierContactName = normalized.Procurement.SupplierContactName
-			procurementInput.SupplierPhone = normalized.Procurement.SupplierPhone
-			procurementInput.SupplierEmail = normalized.Procurement.SupplierEmail
-			procurementInput.LeadTimeDays = normalized.Procurement.LeadTimeDays
-			procurementInput.MinimumOrderQuantity = normalized.Procurement.MinimumOrderQuantity
+		if normalized.SupplierCostDetails != nil {
+			supplierCostRecordInput.SupplierName = normalized.SupplierCostDetails.SupplierName
+			supplierCostRecordInput.SupplierContactName = normalized.SupplierCostDetails.SupplierContactName
+			supplierCostRecordInput.SupplierPhone = normalized.SupplierCostDetails.SupplierPhone
+			supplierCostRecordInput.SupplierEmail = normalized.SupplierCostDetails.SupplierEmail
+			supplierCostRecordInput.LeadTimeDays = normalized.SupplierCostDetails.LeadTimeDays
+			supplierCostRecordInput.MinimumOrderQuantity = normalized.SupplierCostDetails.MinimumOrderQuantity
 		}
-		procurementInput.InboundShippingUnitCost = normalized.InboundShippingUnitCost
-		procurementInput.PackagingUnitCost = normalized.PackagingUnitCost
-		procurementInput.OtherUnitCost = normalized.OtherUnitCost
-		procurementRecord, procurementErr := normalizeProductProcurementSnapshotInput(procurementInput)
-		if procurementErr != nil {
+		supplierCostRecordInput.InboundShippingUnitCost = normalized.InboundShippingUnitCost
+		supplierCostRecordInput.PackagingUnitCost = normalized.PackagingUnitCost
+		supplierCostRecordInput.OtherUnitCost = normalized.OtherUnitCost
+		supplierCostRecord, supplierCostRecordErr := normalizeProductSupplierCostRecordSnapshotInput(supplierCostRecordInput)
+		if supplierCostRecordErr != nil {
 			issues = append(issues, ProfitabilityItemIssue{
 				Index:       index,
 				ProductCode: normalized.ProductCode,
-				Reason:      procurementErr.Error(),
+				Reason:      supplierCostRecordErr.Error(),
 			})
 			continue
 		}
-		procurementRecords = append(procurementRecords, *procurementRecord)
+		supplierCostRecords = append(supplierCostRecords, *supplierCostRecord)
 		records = append(records, profitCalculationRecord(result))
 	}
 
 	if len(issues) > 0 {
 		return ProfitabilityBatchResult{Skipped: skipped}, &ProfitabilityBatchValidationError{Items: issues}
 	}
-	if (len(procurementRecords) > 0 || len(clearCodes) > 0) && s.procurementRepo == nil {
-		return ProfitabilityBatchResult{Skipped: skipped}, ErrProductProfitabilityProcurementUnavailable
+	if (len(supplierCostRecords) > 0 || len(clearCodes) > 0) && s.supplierCostRecordRepo == nil {
+		return ProfitabilityBatchResult{Skipped: skipped}, ErrProductProfitabilitySupplierCostRecordRepositoryUnavailable
 	}
 	if err := s.repo.Transaction(func(tx *gorm.DB) error {
-		if len(procurementRecords) > 0 {
-			if err := s.procurementRepo.UpsertInTx(tx, procurementRecords); err != nil {
+		if len(supplierCostRecords) > 0 {
+			if err := s.supplierCostRecordRepo.UpsertInTx(tx, supplierCostRecords); err != nil {
 				return err
 			}
 		}
 		if len(clearCodes) > 0 {
-			if err := s.procurementRepo.DeleteByProductCodesInTx(tx, clearCodes); err != nil {
+			if err := s.supplierCostRecordRepo.DeleteByProductCodesInTx(tx, clearCodes); err != nil {
 				return err
 			}
 		}
@@ -296,7 +296,7 @@ func (s *ProductProfitabilityService) BulkUpsert(items []ProfitabilityItemInput)
 			Skipped: skipped,
 		}, nil
 	}
-	return ProfitabilityBatchResult{Records: []procurementdomain.ProductProfitCalculation{}, Skipped: skipped}, nil
+	return ProfitabilityBatchResult{Records: []suppliercostdomain.ProductProfitCalculation{}, Skipped: skipped}, nil
 }
 
 func normalizeProfitabilityItem(input ProfitabilityItemInput) (ProfitabilityItemInput, error) {
@@ -314,32 +314,32 @@ func normalizeProfitabilityItem(input ProfitabilityItemInput) (ProfitabilityItem
 	if len(input.ProductName) > 255 {
 		return input, errors.New("product_name is too long")
 	}
-	if !input.PurchasePriceKnown {
-		input.PurchasePrice = nil
+	if !input.UnitCostKnown {
+		input.UnitCost = nil
 	}
-	if input.PurchasePriceKnown && input.PurchasePrice == nil {
-		return input, errors.New("purchase_price is required when purchase_price_known is true")
+	if input.UnitCostKnown && input.UnitCost == nil {
+		return input, errors.New("unit_cost is required when unit_cost_known is true")
 	}
 	return input, nil
 }
 
-func calculateProfitabilityItem(input ProfitabilityItemInput) (procurementdomain.ProfitCalculationResult, error) {
-	return procurementdomain.CalculateProfit(procurementdomain.ProfitCalculationInput{
+func calculateProfitabilityItem(input ProfitabilityItemInput) (suppliercostdomain.ProfitCalculationResult, error) {
+	return suppliercostdomain.CalculateProfit(suppliercostdomain.ProfitCalculationInput{
 		ProductCode:             input.ProductCode,
 		ProductName:             input.ProductName,
 		SellingCurrency:         input.SellingCurrency,
 		CostCurrency:            input.CostCurrency,
 		ListPrice:               input.ListPrice,
 		SalePrice:               input.SalePrice,
-		PurchasePrice:           input.PurchasePrice,
+		UnitCost:                input.UnitCost,
 		InboundShippingUnitCost: input.InboundShippingUnitCost,
 		PackagingUnitCost:       input.PackagingUnitCost,
 		OtherUnitCost:           input.OtherUnitCost,
 	})
 }
 
-func profitCalculationRecord(result procurementdomain.ProfitCalculationResult) procurementdomain.ProductProfitCalculation {
-	record := procurementdomain.ProductProfitCalculation{
+func profitCalculationRecord(result suppliercostdomain.ProfitCalculationResult) suppliercostdomain.ProductProfitCalculation {
+	record := suppliercostdomain.ProductProfitCalculation{
 		ProductCode:             result.ProductCode,
 		ProductName:             result.ProductName,
 		Currency:                result.Currency,
@@ -353,8 +353,8 @@ func profitCalculationRecord(result procurementdomain.ProfitCalculationResult) p
 		FormulaVersion:          result.FormulaVersion,
 		CalculatedAt:            time.Now().UTC(),
 	}
-	if result.PurchasePrice != nil {
-		record.PurchasePrice = *result.PurchasePrice
+	if result.UnitCost != nil {
+		record.UnitCost = *result.UnitCost
 	}
 	if result.LandedCost != nil {
 		record.LandedCost = *result.LandedCost
@@ -375,12 +375,12 @@ func profitCalculationRecord(result procurementdomain.ProfitCalculationResult) p
 
 func profitabilityStatusReason(status string) string {
 	switch status {
-	case procurementdomain.ProfitStatusCurrencyMismatch:
+	case suppliercostdomain.ProfitStatusCurrencyMismatch:
 		return "selling currency and cost currency must match"
-	case procurementdomain.ProfitStatusInvalidSelling:
+	case suppliercostdomain.ProfitStatusInvalidSelling:
 		return "effective selling price must be positive"
-	case procurementdomain.ProfitStatusInvalidCost:
-		return "purchase price and additional costs must be valid and non-negative"
+	case suppliercostdomain.ProfitStatusInvalidCost:
+		return "unit supplier cost and additional costs must be valid and non-negative"
 	default:
 		return "profitability calculation is not ready"
 	}
@@ -403,7 +403,7 @@ func normalizeCodesForProfitability(codes []string) []string {
 	return normalized
 }
 
-func profitabilityRecordCodes(records []procurementdomain.ProductProfitCalculation) []string {
+func profitabilityRecordCodes(records []suppliercostdomain.ProductProfitCalculation) []string {
 	codes := make([]string, 0, len(records))
 	for _, record := range records {
 		codes = append(codes, record.ProductCode)

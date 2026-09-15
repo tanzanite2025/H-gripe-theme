@@ -58,3 +58,29 @@ func TestPublicUploadAccessShowcaseNamespaceCannotBeOverriddenByMediaAsset(t *te
 	require.NoError(t, err)
 	require.False(t, allowed)
 }
+
+func TestPublicUploadAccessDeniesUnknownObject(t *testing.T) {
+	accessService := NewPublicUploadAccessService(nil, nil)
+	allowed, err := accessService.CanServePublicUpload(context.Background(), "misc/unregistered.png")
+	require.NoError(t, err)
+	require.False(t, allowed)
+}
+
+func TestPublicUploadAccessDeniesPrivateNamespacesEvenWhenRegistered(t *testing.T) {
+	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{Logger: logger.Default.LogMode(logger.Silent)})
+	require.NoError(t, err)
+	sqlDB, err := db.DB()
+	require.NoError(t, err)
+	sqlDB.SetMaxOpenConns(1)
+	t.Cleanup(func() { _ = sqlDB.Close() })
+	require.NoError(t, db.AutoMigrate(&media.MediaAsset{}))
+	key := "warranty/2026/09/14/claim.pdf"
+	require.NoError(t, db.Create(&media.MediaAsset{
+		Filename: "claim.pdf", URL: "https://private.example.test/" + key, StorageKey: key,
+		MediaType: "video", MimeType: "application/pdf", Status: "active", Visibility: "public",
+	}).Error)
+	accessService := NewPublicUploadAccessService(NewMediaService(repository.NewMediaRepository(db), nil, nil, "", 20<<30), nil)
+	allowed, err := accessService.CanServePublicUpload(context.Background(), key)
+	require.NoError(t, err)
+	require.False(t, allowed)
+}

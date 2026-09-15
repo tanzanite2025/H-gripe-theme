@@ -162,11 +162,8 @@
               <AdminFormField label="说明标题">
                 <Input v-model="form.statement_title" :disabled="!canEdit" />
               </AdminFormField>
-              <AdminFormField label="第一段正文" class="md:col-span-2">
-                <Textarea v-model="form.statement_paragraph_1" class="min-h-24" :disabled="!canEdit" />
-              </AdminFormField>
-              <AdminFormField label="第二段正文" class="md:col-span-2">
-                <Textarea v-model="form.statement_paragraph_2" class="min-h-24" :disabled="!canEdit" />
+              <AdminFormField label="正文内容" class="md:col-span-2">
+                <RichTextEditor v-model="form.statement_body" :disabled="!canEdit" />
               </AdminFormField>
             </div>
           </section>
@@ -260,6 +257,7 @@ import { toast } from 'vue-sonner'
 import { ImagePlus, LoaderCircle, Save } from '@lucide/vue'
 import AdminFormField from '@/components/admin/AdminFormField.vue'
 import AdminPageHeader from '@/components/admin/AdminPageHeader.vue'
+import RichTextEditor from '@/components/admin/settings/RichTextEditor.vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -289,8 +287,7 @@ interface WebsiteProfileForm {
   profile_context: string
   statement_eyebrow: string
   statement_title: string
-  statement_paragraph_1: string
-  statement_paragraph_2: string
+  statement_body: string
   factory_image_url: string
   factory_image_alt: string
   factory_image_caption: string
@@ -327,8 +324,7 @@ const form = reactive<WebsiteProfileForm>({
   profile_context: '',
   statement_eyebrow: '',
   statement_title: '',
-  statement_paragraph_1: '',
-  statement_paragraph_2: '',
+  statement_body: '',
   factory_image_url: '',
   factory_image_alt: '',
   factory_image_caption: '',

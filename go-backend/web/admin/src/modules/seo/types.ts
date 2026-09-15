@@ -186,20 +186,3 @@ export interface SEOResourceEditorValues {
   canonical_url: string
   intro: string
 }
-
-export interface GoogleIndexingStatus {
-  enabled: boolean
-  configured: boolean
-  ready: boolean
-  message: string
-}
-
-export interface GoogleIndexingPushResult {
-  product_id: number | string
-  url: string
-  notification_type: string
-  accepted: boolean
-  http_status: number
-  submitted_at: string
-  metadata?: Record<string, unknown> | null
-}

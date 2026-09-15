@@ -225,20 +225,20 @@ func (h *Handler) resolvePublicShippingDetails(item productdomain.Product, publi
 			},
 		},
 	})
-	if err != nil || quote == nil || quote.SelectedOption == nil {
+	if err != nil || quote == nil || quote.SelectedPlan == nil {
 		return nil
 	}
 
-	option := quote.SelectedOption
-	if option.EtaMinDays <= 0 && option.EtaMaxDays <= 0 {
+	plan := quote.SelectedPlan
+	if plan.EtaMinDays <= 0 && plan.EtaMaxDays <= 0 {
 		return nil
 	}
 
-	amount := option.ShippingFee
-	amountCurrency := option.Currency
-	if option.DisplayPrice != nil {
-		amount = option.DisplayPrice.Amount
-		amountCurrency = option.DisplayPrice.Currency
+	amount := plan.ShippingFee
+	amountCurrency := plan.Currency
+	if plan.DisplayPrice != nil {
+		amount = plan.DisplayPrice.Amount
+		amountCurrency = plan.DisplayPrice.Currency
 	}
 	if strings.TrimSpace(amountCurrency) == "" {
 		amountCurrency = currency
@@ -248,9 +248,9 @@ func (h *Handler) resolvePublicShippingDetails(item productdomain.Product, publi
 		Country:      country,
 		Amount:       amount,
 		Currency:     strings.ToUpper(strings.TrimSpace(amountCurrency)),
-		FreeShipping: option.FreeShipping,
-		EtaMinDays:   option.EtaMinDays,
-		EtaMaxDays:   option.EtaMaxDays,
+		FreeShipping: plan.FreeShipping,
+		EtaMinDays:   plan.EtaMinDays,
+		EtaMaxDays:   plan.EtaMaxDays,
 	}
 }
 

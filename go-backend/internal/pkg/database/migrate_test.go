@@ -437,10 +437,14 @@ func assertRefundAndPolicyMigrationState(ctx context.Context, t *testing.T, db *
 	t.Helper()
 
 	assertPostgresColumns(ctx, t, db, "refunds", map[string]string{
-		"requested_amount":         "numeric",
-		"discount_clawback_amount": "numeric",
-		"calculation_snapshot":     "text",
-		"fx_snapshot":              "jsonb",
+		"requested_amount":              "numeric",
+		"discount_clawback_amount":      "numeric",
+		"loyalty_settlement_prepared":   "bool",
+		"loyalty_points_clawback":       "int4",
+		"loyalty_points_returned":       "int4",
+		"loyalty_cash_deduction_amount": "numeric",
+		"calculation_snapshot":          "text",
+		"fx_snapshot":                   "jsonb",
 	})
 	assertPostgresColumns(ctx, t, db, "refund_line_items", map[string]string{
 		"refund_id":     "int8",

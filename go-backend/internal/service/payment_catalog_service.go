@@ -1,6 +1,13 @@
 package service
 
-import "commerce-platform/internal/domain/payment"
+import (
+	domainmoney "commerce-platform/internal/domain/money"
+	"commerce-platform/internal/domain/payment"
+	"errors"
+	"fmt"
+
+	"gorm.io/gorm"
+)
 
 func (s *PaymentService) ListPaymentMethods(enabledOnly bool) ([]payment.PaymentMethod, error) {
 	return s.paymentRepo.FindAllPaymentMethods(enabledOnly)
@@ -62,12 +69,25 @@ func (s *PaymentService) GetPublicTaxRate(id uint) (*payment.TaxRate, error) {
 	return rate, nil
 }
 
-func (s *PaymentService) CalculateTax(amount float64, country, state string, postalCodes ...string) (float64, float64, error) {
+// CalculateTaxMoney is the transactional tax path. It keeps the taxable
+// amount and computed tax in one currency-specific minor-unit model.
+func (s *PaymentService) CalculateTaxMoney(amountMoney domainmoney.Money, country, state string, postalCodes ...string) (float64, domainmoney.Money, error) {
+	if err := amountMoney.Validate(); err != nil {
+		return 0, domainmoney.Money{}, fmt.Errorf("invalid tax amount: %w", err)
+	}
 	taxRate, err := s.paymentRepo.FindTaxRateByLocation(country, state, postalCodes...)
 	if err != nil {
-		return 0, 0, nil
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return 0, domainmoney.MustNew(0, amountMoney.Currency().String()), nil
+		}
+		return 0, domainmoney.Money{}, fmt.Errorf("failed to load tax rate for %s/%s: %w", country, state, err)
 	}
-
-	tax := amount * taxRate.Rate / 100
-	return taxRate.Rate, tax, nil
+	if taxRate == nil {
+		return 0, domainmoney.Money{}, errors.New("tax rate lookup returned no result")
+	}
+	taxMoney, err := taxRate.CalculateTaxMoney(amountMoney)
+	if err != nil {
+		return 0, domainmoney.Money{}, err
+	}
+	return taxRate.Rate, taxMoney, nil
 }

@@ -2,17 +2,47 @@ package auth
 
 import (
 	"commerce-platform/internal/pkg/apierror"
+	"commerce-platform/internal/pkg/logger"
 	"commerce-platform/internal/pkg/response"
 	"commerce-platform/internal/pkg/securecookie"
 	"commerce-platform/internal/service"
 	"errors"
 
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 )
 
 type Handler struct {
 	authService   *service.AuthService
+	cartService   *service.CartService
 	cookieOptions securecookie.Options
+}
+
+// ConfigureCartService wires the persistent cart merger used after an
+// authentication event. Keeping this optional preserves the handler's use in
+// isolated auth tests and deployments that do not expose carts.
+func (h *Handler) ConfigureCartService(cartService *service.CartService) {
+	if h != nil {
+		h.cartService = cartService
+	}
+}
+
+func (h *Handler) mergeGuestCartOnLogin(c *gin.Context, userID uint) {
+	if h == nil || h.cartService == nil || c == nil {
+		return
+	}
+	sessionID, err := c.Cookie("session_id")
+	if err != nil || sessionID == "" {
+		return
+	}
+	if err := h.cartService.MergeGuestCartOnLogin(userID, sessionID); err != nil {
+		// Authentication must remain available even if cart storage is
+		// temporarily unavailable; the guest cart remains intact for retry.
+		logger.Error("guest cart merge after authentication failed",
+			zap.Uint("user_id", userID),
+			zap.Error(err),
+		)
+	}
 }
 
 func NewHandler(authService *service.AuthService, cookieOptions ...securecookie.Options) *Handler {
@@ -24,9 +54,13 @@ func NewHandler(authService *service.AuthService, cookieOptions ...securecookie.
 
 func resolveCookieOptions(cookieOptions []securecookie.Options) securecookie.Options {
 	if len(cookieOptions) == 0 {
-		return securecookie.DefaultOptions()
+		return securecookie.StorefrontOptions()
 	}
-	return cookieOptions[0]
+	resolved := securecookie.NormalizeOptions(cookieOptions[0])
+	if cookieOptions[0].Path == "" {
+		resolved.Path = "/api/v1"
+	}
+	return resolved
 }
 
 // RegisterRequest 注册请求
@@ -59,6 +93,7 @@ func (h *Handler) Register(c *gin.Context) {
 		apierror.RespondBadRequest(c, err.Error())
 		return
 	}
+	h.mergeGuestCartOnLogin(c, user.ID)
 
 	response.Created(c, gin.H{
 		"message": "User registered successfully",
@@ -79,6 +114,7 @@ func (h *Handler) Login(c *gin.Context) {
 		apierror.RespondUnauthorized(c)
 		return
 	}
+	h.mergeGuestCartOnLogin(c, user.ID)
 
 	securecookie.SetAuthToken(c, token, 3600*24*7, h.cookieOptions)
 	if _, err := securecookie.SetCSRFToken(c, 3600*24*7, h.cookieOptions); err != nil {
@@ -104,6 +140,7 @@ func (h *Handler) GoogleLogin(c *gin.Context) {
 		apierror.RespondBadRequest(c, err.Error())
 		return
 	}
+	h.mergeGuestCartOnLogin(c, user.ID)
 
 	securecookie.SetAuthToken(c, token, 3600*24*7, h.cookieOptions)
 	if _, err := securecookie.SetCSRFToken(c, 3600*24*7, h.cookieOptions); err != nil {

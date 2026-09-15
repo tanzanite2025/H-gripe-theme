@@ -156,12 +156,15 @@ func quickBuyVersionIsActive(version quickbuy.Version, now time.Time) bool {
 	return true
 }
 
-func normalizeQuickBuyCurrency(value string) string {
+func normalizeQuickBuyCurrency(value string) (string, error) {
 	currency := currencydomain.NormalizeCode(value)
-	if currency == "" || !currencydomain.IsCatalogCode(currency) {
-		return productdomain.DefaultPriceCurrency
+	if currency == "" {
+		return productdomain.DefaultPriceCurrency, nil
 	}
-	return currency
+	if !currencydomain.IsCatalogCode(currency) {
+		return "", fmt.Errorf("%w: unsupported currency %q", ErrQuickBuyInvalid, value)
+	}
+	return currency, nil
 }
 
 func generateQuickBuySessionToken() string {

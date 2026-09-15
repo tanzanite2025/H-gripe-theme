@@ -4,7 +4,9 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"testing"
+	"time"
 
 	"commerce-platform/internal/domain/currency"
 	"commerce-platform/internal/domain/product"
@@ -62,6 +64,11 @@ func TestRefreshDisplayPriceSnapshotsPreservesMismatchedSourceAmounts(t *testing
 	require.NoError(t, db.Create(&productOne).Error)
 	require.NoError(t, db.Create(&productTwo).Error)
 	require.NoError(t, db.Create(&productThree).Error)
+	var coreBefore struct {
+		UpdatedAt     time.Time
+		DisplayPrices []byte `gorm:"column:display_prices"`
+	}
+	require.NoError(t, db.Model(&product.Product{}).Select("updated_at, display_prices").Where("id = ?", productOne.ID).Scan(&coreBefore).Error)
 
 	variantOne := product.ProductVariant{
 		ProductID:        productOne.ID,
@@ -140,6 +147,17 @@ func TestRefreshDisplayPriceSnapshotsPreservesMismatchedSourceAmounts(t *testing
 	require.Equal(t, 200.0, storedVariantThree.Price)
 	require.Equal(t, "USD", storedVariantThree.Currency)
 	require.Equal(t, 101.0, displaySnapshotAmount(storedVariantThree.DisplayPriceData, "USD"))
+	var coreAfter struct {
+		UpdatedAt     time.Time
+		DisplayPrices []byte `gorm:"column:display_prices"`
+	}
+	require.NoError(t, db.Model(&product.Product{}).Select("updated_at, display_prices").Where("id = ?", productOne.ID).Scan(&coreAfter).Error)
+	require.Equal(t, coreBefore.UpdatedAt, coreAfter.UpdatedAt)
+	require.JSONEq(t, string(coreBefore.DisplayPrices), string(coreAfter.DisplayPrices))
+	var snapshot product.ProductDisplayPriceSnapshot
+	require.NoError(t, db.Where("scope_key = ?", "product:"+strconv.FormatUint(uint64(productOne.ID), 10)).First(&snapshot).Error)
+	require.Equal(t, int64(69900), snapshot.SourcePriceMinor)
+	require.Equal(t, 97.86, displaySnapshotAmount(snapshot.DisplayPriceData, "USD"))
 }
 
 func TestExchangeRateSyncRefreshesProductDisplayPriceSnapshots(t *testing.T) {
@@ -221,7 +239,7 @@ func newDisplayPriceRefreshTestDB(t *testing.T) *gorm.DB {
 	require.NoError(t, err)
 	sqlDB.SetMaxOpenConns(1)
 	t.Cleanup(func() { _ = sqlDB.Close() })
-	require.NoError(t, db.AutoMigrate(&product.Product{}, &product.ProductVariant{}))
+	require.NoError(t, db.AutoMigrate(&product.Product{}, &product.ProductVariant{}, &product.ProductDisplayPriceSnapshot{}))
 	return db
 }
 

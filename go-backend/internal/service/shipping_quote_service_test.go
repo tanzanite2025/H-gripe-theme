@@ -1,7 +1,9 @@
 package service
 
 import (
+	"fmt"
 	"testing"
+	"time"
 
 	"commerce-platform/internal/domain/currency"
 	productdomain "commerce-platform/internal/domain/product"
@@ -39,7 +41,7 @@ func TestShippingServicePublicCatalogFiltersDisabledResources(t *testing.T) {
 	require.ErrorIs(t, err, ErrShippingNotFound)
 }
 
-func TestCalculateShippingIncludesFirstUnitBeforeAdditionalCharge(t *testing.T) {
+func TestCalculateShippingRequiresCarrierWeightStepForAdditionalFee(t *testing.T) {
 	_, shippingService := newTestShippingQuoteService(t)
 
 	template := shippingdomain.ShippingTemplate{
@@ -59,26 +61,167 @@ func TestCalculateShippingIncludesFirstUnitBeforeAdditionalCharge(t *testing.T) 
 	}
 	require.NoError(t, shippingService.CreateTemplate(&template))
 
-	tests := []struct {
-		name   string
-		weight float64
-		want   float64
-	}{
-		{name: "below first unit", weight: 0.5, want: 15},
-		{name: "at first unit", weight: 1, want: 15},
-		{name: "after first unit", weight: 1.01, want: 20},
+	_, err := shippingService.CalculateShipping(ShippingCalculationInput{
+		TemplateID: template.ID,
+		Weight:     0.8,
+		Country:    "US",
+	})
+	require.ErrorIs(t, err, ErrShippingRateConfigurationInvalid)
+}
+
+func TestQuoteCartChargesCarrierSpecificAdditionalWeightStep(t *testing.T) {
+	db, shippingService := newTestShippingQuoteService(t)
+	template := shippingdomain.ShippingTemplate{
+		Name:       "500g carrier shipping",
+		Type:       "weight",
+		Currency:   "USD",
+		DefaultFee: 99,
+		Enabled:    true,
+		Rules: []shippingdomain.ShippingRule{{
+			Region: "US", MinValue: 0, MaxValue: 10, Fee: 15, Additional: 5,
+		}},
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			quote, err := shippingService.CalculateShipping(ShippingCalculationInput{
-				TemplateID: template.ID,
-				Weight:     tt.weight,
-				Country:    "US",
-			})
-			require.NoError(t, err)
-			assert.Equal(t, tt.want, quote.ShippingFee)
-		})
+	require.NoError(t, shippingService.CreateTemplate(&template))
+	record, variant := seedQuoteProduct(t, db, 50, 800, template.ID)
+	carrier := seedQuoteCarrier(t, db, "International Line", "INTL")
+	service := seedQuoteCarrierService(t, db, carrier.ID, template.ID, shippingdomain.CarrierService{
+		ServiceCode:           "INTL-500G",
+		ServiceName:           "International 500g",
+		Countries:             `["US"]`,
+		BillingMode:           "actual_weight",
+		FirstWeightGrams:      500,
+		AdditionalWeightGrams: 500,
+	})
+
+	quote, err := shippingService.QuoteCart(ShippingQuoteInput{
+		Country:  "US",
+		Currency: "USD",
+		Items:    []ShippingQuoteItemInput{{ProductID: record.ID, VariantID: &variant.ID, Quantity: 1}},
+	})
+
+	require.NoError(t, err)
+	leg := requireSelectedQuoteLeg(t, quote)
+	assert.Equal(t, service.ID, leg.CarrierServiceID)
+	assert.Equal(t, 1000, leg.BillableWeightGrams)
+	assert.Equal(t, 20.0, leg.ShippingFee)
+	assert.Equal(t, 20.0, quote.ShippingFee)
+}
+
+func TestQuoteCartRejectsAdditionalWeightRuleWithoutCarrierScale(t *testing.T) {
+	db, shippingService := newTestShippingQuoteService(t)
+	template := shippingdomain.ShippingTemplate{
+		Name: "Unconfigured weight scale", Type: "weight", Currency: "USD", DefaultFee: 99, Enabled: true,
+		Rules: []shippingdomain.ShippingRule{{Region: "US", MinValue: 0, MaxValue: 10, Fee: 15, Additional: 5}},
 	}
+	require.NoError(t, shippingService.CreateTemplate(&template))
+	record, variant := seedQuoteProduct(t, db, 50, 800, template.ID)
+
+	_, err := shippingService.QuoteCart(ShippingQuoteInput{
+		Country:  "US",
+		Currency: "USD",
+		Items:    []ShippingQuoteItemInput{{ProductID: record.ID, VariantID: &variant.ID, Quantity: 1}},
+	})
+
+	require.ErrorIs(t, err, ErrShippingRateConfigurationInvalid)
+}
+
+func TestCreateCarrierServiceRejectsMissingWeightScaleForAdditionalRule(t *testing.T) {
+	db, shippingService := newTestShippingQuoteService(t)
+	template := shippingdomain.ShippingTemplate{
+		Name: "Carrier scale required", Type: "weight", Currency: "USD", DefaultFee: 99, Enabled: true,
+		Rules: []shippingdomain.ShippingRule{{Region: "US", MinValue: 0, MaxValue: 10, Fee: 15, Additional: 5}},
+	}
+	require.NoError(t, shippingService.CreateTemplate(&template))
+	carrier := seedQuoteCarrier(t, db, "Configuration Carrier", "CONFIG")
+	service := shippingdomain.CarrierService{
+		CarrierID: carrier.ID, TemplateID: &template.ID, ServiceCode: "CONFIG-MISSING-SCALE",
+		ServiceName: "Missing scale", Currency: "USD", BillingMode: "actual_weight", Enabled: true,
+	}
+
+	err := shippingService.CreateCarrierService(&service)
+	require.ErrorIs(t, err, ErrShippingRateConfigurationInvalid)
+}
+
+func TestCalculateShippingRejectsUnmatchedCountryWithoutPositiveDefaultFee(t *testing.T) {
+	_, shippingService := newTestShippingQuoteService(t)
+	template := shippingdomain.ShippingTemplate{
+		Name: "Core markets only", Type: "weight", DefaultFee: 0, Enabled: true,
+		Rules: []shippingdomain.ShippingRule{{Region: "US", MinValue: 0, MaxValue: 10, Fee: 20}},
+	}
+	require.NoError(t, shippingService.CreateTemplate(&template))
+
+	quote, err := shippingService.CalculateShipping(ShippingCalculationInput{
+		TemplateID: template.ID,
+		Weight:     1,
+		Country:    "BR",
+	})
+
+	assert.Nil(t, quote)
+	require.ErrorIs(t, err, ErrCountryNotSupported)
+	assert.Contains(t, err.Error(), `shipping template "Core markets only"`)
+	assert.Contains(t, err.Error(), "country BR")
+}
+
+func TestQuoteCartRejectsUnmatchedCountryWithoutPositiveDefaultFee(t *testing.T) {
+	db, shippingService := newTestShippingQuoteService(t)
+	template := shippingdomain.ShippingTemplate{
+		Name: "Core markets only", Type: "weight", DefaultFee: 0, Enabled: true,
+		Rules: []shippingdomain.ShippingRule{{Region: "US", MinValue: 0, MaxValue: 10, Fee: 20}},
+	}
+	require.NoError(t, shippingService.CreateTemplate(&template))
+	record, variant := seedQuoteProduct(t, db, 1200, 900, template.ID)
+
+	quote, err := shippingService.QuoteCart(ShippingQuoteInput{
+		Country:  "BR",
+		Currency: "USD",
+		Items:    []ShippingQuoteItemInput{{ProductID: record.ID, VariantID: &variant.ID, Quantity: 1}},
+	})
+
+	assert.Nil(t, quote)
+	require.ErrorIs(t, err, ErrCountryNotSupported)
+	assert.Contains(t, err.Error(), "country BR")
+}
+
+func TestQuoteCartUsesPositiveDefaultFeeForUnmatchedCountry(t *testing.T) {
+	db, shippingService := newTestShippingQuoteService(t)
+	template := shippingdomain.ShippingTemplate{
+		Name: "Worldwide fallback", Type: "weight", DefaultFee: 75, Enabled: true,
+		Rules: []shippingdomain.ShippingRule{{Region: "US", MinValue: 0, MaxValue: 10, Fee: 20}},
+	}
+	require.NoError(t, shippingService.CreateTemplate(&template))
+	record, variant := seedQuoteProduct(t, db, 1200, 900, template.ID)
+
+	quote, err := shippingService.QuoteCart(ShippingQuoteInput{
+		Country:  "BR",
+		Currency: "USD",
+		Items:    []ShippingQuoteItemInput{{ProductID: record.ID, VariantID: &variant.ID, Quantity: 1}},
+	})
+
+	require.NoError(t, err)
+	require.NotNil(t, quote)
+	assert.Equal(t, 75.0, quote.ShippingFee)
+	assert.False(t, quote.FreeShipping)
+}
+
+func TestQuoteCartAllowsExplicitZeroFeeRule(t *testing.T) {
+	db, shippingService := newTestShippingQuoteService(t)
+	template := shippingdomain.ShippingTemplate{
+		Name: "Explicit Brazil promotion", Type: "weight", DefaultFee: 0, Enabled: true,
+		Rules: []shippingdomain.ShippingRule{{Region: "BR", MinValue: 0, MaxValue: 10, Fee: 0}},
+	}
+	require.NoError(t, shippingService.CreateTemplate(&template))
+	record, variant := seedQuoteProduct(t, db, 1200, 900, template.ID)
+
+	quote, err := shippingService.QuoteCart(ShippingQuoteInput{
+		Country:  "BR",
+		Currency: "USD",
+		Items:    []ShippingQuoteItemInput{{ProductID: record.ID, VariantID: &variant.ID, Quantity: 1}},
+	})
+
+	require.NoError(t, err)
+	require.NotNil(t, quote)
+	assert.Zero(t, quote.ShippingFee)
+	assert.True(t, quote.FreeShipping)
 }
 
 func TestShippingServicePublicCarrierServicesRequireVisibleAssociations(t *testing.T) {
@@ -242,6 +385,11 @@ func TestQuoteCartReturnsDisplayPriceFromStoredShippingSnapshots(t *testing.T) {
 	}
 	require.NoError(t, shippingService.CreateTemplate(&template))
 	record, variant := seedQuoteProduct(t, db, 50, 2500, template.ID)
+	carrier := seedQuoteCarrier(t, db, "Display Carrier", "DISPLAY")
+	seedQuoteCarrierService(t, db, carrier.ID, template.ID, shippingdomain.CarrierService{
+		ServiceCode: "DISPLAY-500G", ServiceName: "Display 500g", Countries: `["US"]`, BillingMode: "actual_weight",
+		FirstWeightGrams: 1000, AdditionalWeightGrams: 1000,
+	})
 
 	quote, err := shippingService.QuoteCart(ShippingQuoteInput{
 		Country:         "US",
@@ -288,6 +436,11 @@ func TestQuoteCartOmitsIncompleteShippingDisplayPrice(t *testing.T) {
 	}
 	require.NoError(t, shippingService.CreateTemplate(&template))
 	record, variant := seedQuoteProduct(t, db, 50, 2500, template.ID)
+	carrier := seedQuoteCarrier(t, db, "Incomplete Display Carrier", "DISPLAY-INCOMPLETE")
+	seedQuoteCarrierService(t, db, carrier.ID, template.ID, shippingdomain.CarrierService{
+		ServiceCode: "DISPLAY-INCOMPLETE-500G", ServiceName: "Display incomplete 500g", Countries: `["US"]`, BillingMode: "actual_weight",
+		FirstWeightGrams: 1000, AdditionalWeightGrams: 1000,
+	})
 
 	quote, err := shippingService.QuoteCart(ShippingQuoteInput{
 		Country:         "US",
@@ -399,20 +552,411 @@ func TestQuoteCartUsesLowestCarrierServiceOptionWhenAvailable(t *testing.T) {
 	})
 
 	require.NoError(t, err)
-	require.Len(t, quote.Options, 2)
-	require.NotNil(t, quote.SelectedOption)
-	assert.Equal(t, "carrier_service", quote.Source)
-	assert.Equal(t, cheapService.ID, quote.SelectedOption.CarrierServiceID)
-	assert.Equal(t, 5.0, quote.SelectedOption.ShippingFee)
+	require.Len(t, quote.Plans, 2)
+	leg := requireSelectedQuoteLeg(t, quote)
+	assert.Equal(t, cheapService.ID, leg.CarrierServiceID)
+	assert.Equal(t, 5.0, leg.ShippingFee)
 	assert.Equal(t, 5.0, quote.ShippingFee)
 	assert.Equal(t, 5.0, quote.Items[0].ShippingFee)
 
-	assert.Equal(t, expensiveService.ID, quote.Options[1].CarrierServiceID)
-	assert.Equal(t, 1000, quote.Options[1].BillableWeightGrams)
-	assert.Equal(t, 5.0, quote.Options[1].BaseFee)
-	assert.Equal(t, 0.5, quote.Options[1].FuelSurcharge)
-	assert.Equal(t, 1.0, quote.Options[1].RemoteSurcharge)
-	assert.Equal(t, 6.5, quote.Options[1].ShippingFee)
+	require.Len(t, quote.Plans[1].Legs, 1)
+	expensiveLeg := quote.Plans[1].Legs[0]
+	assert.Equal(t, expensiveService.ID, expensiveLeg.CarrierServiceID)
+	assert.Equal(t, 1000, expensiveLeg.BillableWeightGrams)
+	assert.Equal(t, 5.0, expensiveLeg.BaseFee)
+	assert.Equal(t, 0.5, expensiveLeg.FuelSurcharge)
+	assert.Equal(t, 1.0, expensiveLeg.RemoteSurcharge)
+	assert.Equal(t, 6.5, expensiveLeg.ShippingFee)
+}
+
+func TestQuoteCartUsesRequestedCarrierServiceOption(t *testing.T) {
+	db, shippingService := newTestShippingQuoteService(t)
+	template := seedWeightQuoteTemplate(t, db)
+	record, variant := seedQuoteProduct(t, db, 50, 900, template.ID)
+	carrier := seedQuoteCarrier(t, db, "DHL", "DHL")
+	cheapService := seedQuoteCarrierService(t, db, carrier.ID, template.ID, shippingdomain.CarrierService{
+		ServiceCode: "DHL-STD", ServiceName: "DHL Standard", Countries: `["US"]`, BillingMode: "actual_weight", FirstWeightGrams: 500, AdditionalWeightGrams: 500,
+	})
+	expressService := seedQuoteCarrierService(t, db, carrier.ID, template.ID, shippingdomain.CarrierService{
+		ServiceCode: "DHL-EXP", ServiceName: "DHL Express", Countries: `["US"]`, BillingMode: "actual_weight", FirstWeightGrams: 500, AdditionalWeightGrams: 500, RemoteSurcharge: 100,
+	})
+
+	quote, err := shippingService.QuoteCart(ShippingQuoteInput{
+		Country: "US", Currency: "USD",
+		Items: []ShippingQuoteItemInput{{ProductID: record.ID, VariantID: &variant.ID, Quantity: 1}},
+	})
+
+	require.NoError(t, err)
+	require.Len(t, quote.Plans, 2)
+	expressPlan := quote.Plans[1]
+	selectedQuote, err := shippingService.QuoteCart(ShippingQuoteInput{
+		Country: "US", Currency: "USD", ShippingQuoteID: quote.ID, SelectedQuotePlanID: expressPlan.ID,
+		Items: []ShippingQuoteItemInput{{ProductID: record.ID, VariantID: &variant.ID, Quantity: 1}},
+	})
+	require.NoError(t, err)
+	leg := requireSelectedQuoteLeg(t, selectedQuote)
+	assert.Equal(t, expressService.ID, leg.CarrierServiceID)
+	assert.Equal(t, 105.0, selectedQuote.ShippingFee)
+	assert.Equal(t, 5.0, quote.Plans[0].ShippingFee)
+	assert.Equal(t, cheapService.ID, quote.Plans[0].Legs[0].CarrierServiceID)
+}
+
+func TestQuoteCartRejectsUnavailableRequestedCarrierService(t *testing.T) {
+	db, shippingService := newTestShippingQuoteService(t)
+	template := seedWeightQuoteTemplate(t, db)
+	record, variant := seedQuoteProduct(t, db, 50, 900, template.ID)
+	carrier := seedQuoteCarrier(t, db, "DHL", "DHL")
+	seedQuoteCarrierService(t, db, carrier.ID, template.ID, shippingdomain.CarrierService{
+		ServiceCode: "DHL-STD", ServiceName: "DHL Standard", Countries: `["US"]`, BillingMode: "actual_weight", FirstWeightGrams: 500, AdditionalWeightGrams: 500,
+	})
+	quote, err := shippingService.QuoteCart(ShippingQuoteInput{
+		Country: "US", Currency: "USD",
+		Items: []ShippingQuoteItemInput{{ProductID: record.ID, VariantID: &variant.ID, Quantity: 1}},
+	})
+	require.NoError(t, err)
+
+	_, err = shippingService.QuoteCart(ShippingQuoteInput{
+		Country: "US", Currency: "USD", ShippingQuoteID: quote.ID, SelectedQuotePlanID: "999999",
+		Items: []ShippingQuoteItemInput{{ProductID: record.ID, VariantID: &variant.ID, Quantity: 1}},
+	})
+
+	require.ErrorIs(t, err, ErrShippingQuotePlanUnavailable)
+}
+
+func TestQuoteCartRestoresLockedPlanAfterRateChange(t *testing.T) {
+	db, shippingService := newTestShippingQuoteService(t)
+	template := seedWeightQuoteTemplate(t, db)
+	record, variant := seedQuoteProduct(t, db, 50, 900, template.ID)
+	carrier := seedQuoteCarrier(t, db, "Lock Carrier", "LOCK")
+	seedQuoteCarrierService(t, db, carrier.ID, template.ID, shippingdomain.CarrierService{
+		ServiceCode: "LOCK-STD", ServiceName: "Locked Standard", Countries: `["US"]`,
+		BillingMode: "actual_weight",
+	})
+	input := ShippingQuoteInput{
+		Country: "US", Currency: "USD",
+		Items: []ShippingQuoteItemInput{{ProductID: record.ID, VariantID: &variant.ID, Quantity: 1}},
+	}
+
+	quote, err := shippingService.QuoteCart(input)
+	require.NoError(t, err)
+	require.NotEmpty(t, quote.ID)
+	require.NotEmpty(t, quote.RateVersion)
+	require.True(t, quote.ExpiresAt.After(time.Now()))
+	require.NotNil(t, quote.SelectedPlan)
+	lockedFee := quote.ShippingFee
+
+	require.NoError(t, db.Model(&shippingdomain.ShippingRule{}).
+		Where("template_id = ? AND min_value = ?", template.ID, 0).
+		Update("fee", 50).Error)
+	input.ShippingQuoteID = quote.ID
+	input.SelectedQuotePlanID = quote.SelectedPlan.ID
+	restored, err := shippingService.QuoteCart(input)
+	require.NoError(t, err)
+	assert.Equal(t, quote.ID, restored.ID)
+	assert.Equal(t, quote.RateVersion, restored.RateVersion)
+	assert.Equal(t, lockedFee, restored.ShippingFee)
+
+	input.ShippingQuoteID = ""
+	input.SelectedQuotePlanID = ""
+	fresh, err := shippingService.QuoteCart(input)
+	require.NoError(t, err)
+	assert.Equal(t, 50.0, fresh.ShippingFee)
+}
+
+func TestQuoteCartRejectsSnapshotForChangedItems(t *testing.T) {
+	db, shippingService := newTestShippingQuoteService(t)
+	template := seedWeightQuoteTemplate(t, db)
+	record, variant := seedQuoteProduct(t, db, 50, 900, template.ID)
+	input := ShippingQuoteInput{
+		Country: "US", Currency: "USD",
+		Items: []ShippingQuoteItemInput{{ProductID: record.ID, VariantID: &variant.ID, Quantity: 1}},
+	}
+	quote, err := shippingService.QuoteCart(input)
+	require.NoError(t, err)
+
+	input.ShippingQuoteID = quote.ID
+	input.SelectedQuotePlanID = quote.SelectedPlan.ID
+	input.Items[0].Quantity = 2
+	_, err = shippingService.QuoteCart(input)
+	require.ErrorIs(t, err, ErrShippingQuoteStale)
+}
+
+func TestQuoteCartRejectsExpiredSnapshot(t *testing.T) {
+	db, shippingService := newTestShippingQuoteService(t)
+	template := seedWeightQuoteTemplate(t, db)
+	record, variant := seedQuoteProduct(t, db, 50, 900, template.ID)
+	input := ShippingQuoteInput{
+		Country: "US", Currency: "USD",
+		Items: []ShippingQuoteItemInput{{ProductID: record.ID, VariantID: &variant.ID, Quantity: 1}},
+	}
+	quote, err := shippingService.QuoteCart(input)
+	require.NoError(t, err)
+	require.NoError(t, db.Model(&shippingdomain.QuoteSnapshot{}).
+		Where("id = ?", quote.ID).
+		Update("expires_at", time.Now().Add(-time.Minute)).Error)
+
+	input.ShippingQuoteID = quote.ID
+	input.SelectedQuotePlanID = quote.SelectedPlan.ID
+	_, err = shippingService.QuoteCart(input)
+	require.ErrorIs(t, err, ErrShippingQuoteExpired)
+}
+
+func TestQuoteCartBuildsCompleteCarrierPlanCombinations(t *testing.T) {
+	db, shippingService := newTestShippingQuoteService(t)
+	firstTemplate := seedWeightQuoteTemplate(t, db)
+	secondTemplate := seedWeightQuoteTemplate(t, db)
+	firstProduct, firstVariant := seedQuoteProduct(t, db, 50, 900, firstTemplate.ID)
+	secondProduct, secondVariant := seedQuoteProduct(t, db, 50, 900, secondTemplate.ID)
+	carrier := seedQuoteCarrier(t, db, "Plan Carrier", "PLAN")
+	for _, serviceInput := range []struct {
+		templateID uint
+		code       string
+		surcharge  float64
+	}{
+		{templateID: firstTemplate.ID, code: "FIRST-A", surcharge: 0},
+		{templateID: firstTemplate.ID, code: "FIRST-B", surcharge: 1},
+		{templateID: secondTemplate.ID, code: "SECOND-A", surcharge: 0},
+		{templateID: secondTemplate.ID, code: "SECOND-B", surcharge: 2},
+	} {
+		seedQuoteCarrierService(t, db, carrier.ID, serviceInput.templateID, shippingdomain.CarrierService{
+			ServiceCode: serviceInput.code, ServiceName: serviceInput.code, Countries: `["US"]`,
+			BillingMode: "actual_weight", RemoteSurcharge: serviceInput.surcharge,
+		})
+	}
+
+	quote, err := shippingService.QuoteCart(ShippingQuoteInput{
+		Country: "US", Currency: "USD",
+		Items: []ShippingQuoteItemInput{
+			{ProductID: firstProduct.ID, VariantID: &firstVariant.ID, Quantity: 1},
+			{ProductID: secondProduct.ID, VariantID: &secondVariant.ID, Quantity: 1},
+		},
+	})
+	require.NoError(t, err)
+	require.Len(t, quote.Plans, 4)
+	assert.Equal(t, []float64{10, 11, 12, 13}, []float64{
+		quote.Plans[0].ShippingFee,
+		quote.Plans[1].ShippingFee,
+		quote.Plans[2].ShippingFee,
+		quote.Plans[3].ShippingFee,
+	})
+	for _, plan := range quote.Plans {
+		require.Len(t, plan.Legs, 2)
+		assert.NotEqual(t, plan.Legs[0].TemplateID, plan.Legs[1].TemplateID)
+	}
+}
+
+func TestQuoteCartKeepsCarrierOptionsForMultipleShippingTemplates(t *testing.T) {
+	db, shippingService := newTestShippingQuoteService(t)
+	largeTemplate := seedWeightQuoteTemplate(t, db)
+	largeTemplate.Name = "Large item template"
+	require.NoError(t, db.Save(&largeTemplate).Error)
+	smallTemplate := seedWeightQuoteTemplate(t, db)
+	smallTemplate.Name = "Accessory template"
+	require.NoError(t, db.Save(&smallTemplate).Error)
+	largeProduct, largeVariant := seedQuoteProduct(t, db, 50, 900, largeTemplate.ID)
+	smallProduct, smallVariant := seedQuoteProduct(t, db, 10, 100, smallTemplate.ID)
+	require.NoError(t, db.Model(&productdomain.Product{}).Where("id = ?", smallProduct.ID).Updates(map[string]interface{}{"sku": "SKU-QUOTE-ACCESSORY", "slug": "quote-accessory"}).Error)
+	require.NoError(t, db.Model(&productdomain.ProductVariant{}).Where("id = ?", smallVariant.ID).Update("sku", "SKU-QUOTE-ACCESSORY").Error)
+	carrier := seedQuoteCarrier(t, db, "DHL", "DHL")
+	largeService := seedQuoteCarrierService(t, db, carrier.ID, largeTemplate.ID, shippingdomain.CarrierService{
+		ServiceCode: "DHL-LARGE", ServiceName: "DHL Large", Countries: `["US"]`, BillingMode: "actual_weight", FirstWeightGrams: 500, AdditionalWeightGrams: 500, RemoteSurcharge: 4,
+	})
+	smallService := seedQuoteCarrierService(t, db, carrier.ID, smallTemplate.ID, shippingdomain.CarrierService{
+		ServiceCode: "DHL-SMALL", ServiceName: "DHL Small", Countries: `["US"]`, BillingMode: "actual_weight", FirstWeightGrams: 500, AdditionalWeightGrams: 500, RemoteSurcharge: 1,
+	})
+
+	quote, err := shippingService.QuoteCart(ShippingQuoteInput{
+		Country: "US", Currency: "USD",
+		Items: []ShippingQuoteItemInput{
+			{ProductID: largeProduct.ID, VariantID: &largeVariant.ID, Quantity: 1},
+			{ProductID: smallProduct.ID, VariantID: &smallVariant.ID, Quantity: 1},
+		},
+	})
+
+	require.NoError(t, err)
+	require.Len(t, quote.Plans, 1)
+	require.NotNil(t, quote.SelectedPlan)
+	require.Len(t, quote.SelectedPlan.Legs, 2)
+	assert.Equal(t, largeService.ID, quote.SelectedPlan.Legs[0].CarrierServiceID)
+	assert.Equal(t, smallService.ID, quote.SelectedPlan.Legs[1].CarrierServiceID)
+	assert.Equal(t, 15.0, quote.ShippingFee)
+	assert.Equal(t, 9.0, quote.Items[0].ShippingFee)
+	assert.Equal(t, 6.0, quote.Items[1].ShippingFee)
+
+	selectedQuote, err := shippingService.QuoteCart(ShippingQuoteInput{
+		Country:             "US",
+		Currency:            "USD",
+		ShippingQuoteID:     quote.ID,
+		SelectedQuotePlanID: quote.SelectedPlan.ID,
+		Items: []ShippingQuoteItemInput{
+			{ProductID: largeProduct.ID, VariantID: &largeVariant.ID, Quantity: 1},
+			{ProductID: smallProduct.ID, VariantID: &smallVariant.ID, Quantity: 1},
+		},
+	})
+
+	require.NoError(t, err)
+	require.NotNil(t, selectedQuote.SelectedPlan)
+	assert.Equal(t, quote.SelectedPlan.ID, selectedQuote.SelectedPlan.ID)
+	assert.Equal(t, 15.0, selectedQuote.ShippingFee)
+	assert.Equal(t, 9.0, selectedQuote.Items[0].ShippingFee)
+	assert.Equal(t, 6.0, selectedQuote.Items[1].ShippingFee)
+}
+
+func TestQuoteCartOmitsPartialCarrierDisplayPriceAcrossTemplates(t *testing.T) {
+	db, shippingService := newTestShippingQuoteService(t)
+	largeTemplate := shippingdomain.ShippingTemplate{
+		Name: "Large item display template", Type: "weight", Currency: "CNY", DefaultFee: 99, Enabled: true,
+		Rules: []shippingdomain.ShippingRule{{
+			Region: "US", Currency: "CNY", MinValue: 0, MaxValue: 1, Fee: 5,
+			DisplayPriceData: shippingdomain.RuleDisplayPriceSnapshotsJSON(map[string][]currency.DisplayPriceSnapshot{
+				shippingdomain.ShippingRuleDisplayPriceFieldFee: {
+					{Amount: 0.7, Currency: "USD", QuoteCurrency: "USD", Rate: 0.14, Source: "direct_rate", Converted: true},
+				},
+			}),
+		}},
+	}
+	smallTemplate := shippingdomain.ShippingTemplate{
+		Name: "Accessory display template", Type: "weight", Currency: "CNY", DefaultFee: 99, Enabled: true,
+		Rules: []shippingdomain.ShippingRule{{
+			Region: "US", Currency: "CNY", MinValue: 0, MaxValue: 1, Fee: 5,
+			DisplayPriceData: shippingdomain.RuleDisplayPriceSnapshotsJSON(map[string][]currency.DisplayPriceSnapshot{
+				shippingdomain.ShippingRuleDisplayPriceFieldFee: {
+					{Amount: 0.7, Currency: "USD", QuoteCurrency: "USD", Rate: 0.14, Source: "direct_rate", Converted: true},
+				},
+			}),
+		}},
+	}
+	require.NoError(t, db.Create(&largeTemplate).Error)
+	require.NoError(t, db.Create(&smallTemplate).Error)
+	largeProduct, largeVariant := seedQuoteProduct(t, db, 50, 900, largeTemplate.ID)
+	smallProduct, smallVariant := seedQuoteProduct(t, db, 10, 100, smallTemplate.ID)
+	carrier := seedQuoteCarrier(t, db, "DHL", "DHL")
+	seedQuoteCarrierService(t, db, carrier.ID, largeTemplate.ID, shippingdomain.CarrierService{
+		ServiceCode: "DHL-REMOTE", ServiceName: "DHL Remote", Countries: `["US"]`, Currency: "CNY",
+		BillingMode: "actual_weight", FirstWeightGrams: 500, AdditionalWeightGrams: 500, RemoteSurcharge: 1,
+	})
+
+	quote, err := shippingService.QuoteCart(ShippingQuoteInput{
+		Country: "US", Currency: "CNY", DisplayCurrency: "USD",
+		Items: []ShippingQuoteItemInput{
+			{ProductID: largeProduct.ID, VariantID: &largeVariant.ID, Quantity: 1},
+			{ProductID: smallProduct.ID, VariantID: &smallVariant.ID, Quantity: 1},
+		},
+	})
+
+	require.NoError(t, err)
+	require.Len(t, quote.Plans, 1)
+	assert.Equal(t, 11.0, quote.ShippingFee)
+	// Remote surcharge is now included in the stored display snapshot instead
+	// of suppressing all multi-currency prices.
+	require.NotNil(t, quote.DisplayPrice)
+	assert.InDelta(t, 1.54, quote.DisplayPrice.Amount, 0.001)
+	require.Len(t, quote.DisplayPrices, 1)
+	require.NotNil(t, quote.Plans[0].DisplayPrice)
+	assert.InDelta(t, 1.54, quote.Plans[0].DisplayPrice.Amount, 0.001)
+	require.Len(t, quote.Plans[0].DisplayPrices, 1)
+}
+
+func TestQuoteCartUsesVariantPackagingRuleBeforeProductDefault(t *testing.T) {
+	db, shippingService := newTestShippingQuoteService(t)
+	template := seedWeightQuoteTemplate(t, db)
+	record, defaultVariant := seedQuoteProduct(t, db, 50, 900, template.ID)
+	secondVariant := productdomain.ProductVariant{
+		ProductID:    record.ID,
+		SKU:          "SKU-QUOTE-VARIANT-2",
+		Title:        "Second variant",
+		OptionValues: `{"size":"large"}`,
+		Currency:     "USD",
+		Price:        50,
+		Weight:       900,
+		Stock:        10,
+		IsActive:     true,
+	}
+	require.NoError(t, db.Create(&secondVariant).Error)
+
+	defaultRule := shippingdomain.PackagingRule{RuleName: "Product default", BoxWeight: 0.1, IsActive: true}
+	variantRule := shippingdomain.PackagingRule{RuleName: "Variant carton", BoxWeight: 0.5, IsActive: true}
+	require.NoError(t, db.Create(&defaultRule).Error)
+	require.NoError(t, db.Create(&variantRule).Error)
+	require.NoError(t, shippingService.CreatePackagingRuleApply(&shippingdomain.PackagingRuleApply{
+		RuleID: defaultRule.ID, ProductID: record.ID,
+	}))
+	require.NoError(t, shippingService.CreatePackagingRuleApply(&shippingdomain.PackagingRuleApply{
+		RuleID: variantRule.ID, ProductID: record.ID, VariantID: &secondVariant.ID,
+	}))
+
+	quote, err := shippingService.QuoteCart(ShippingQuoteInput{
+		Country: "US", Currency: "USD",
+		Items: []ShippingQuoteItemInput{
+			{ProductID: record.ID, VariantID: &defaultVariant.ID, Quantity: 1},
+			{ProductID: record.ID, VariantID: &secondVariant.ID, Quantity: 1},
+		},
+	})
+	require.NoError(t, err)
+	require.Len(t, quote.Items, 2)
+	assert.Equal(t, 100, quote.Items[0].PackagingWeightGrams)
+	assert.Equal(t, defaultRule.ID, *quote.Items[0].PackagingRuleID)
+	assert.Equal(t, 500, quote.Items[1].PackagingWeightGrams)
+	assert.Equal(t, variantRule.ID, *quote.Items[1].PackagingRuleID)
+}
+
+func TestQuoteCartAppliesRemoteSurchargeOnlyForConfiguredPostalRange(t *testing.T) {
+	db, shippingService := newTestShippingQuoteService(t)
+	template := seedWeightQuoteTemplate(t, db)
+	record, variant := seedQuoteProduct(t, db, 50, 900, template.ID)
+	carrier := seedQuoteCarrier(t, db, "Postal Carrier", "POSTAL")
+	service := seedQuoteCarrierService(t, db, carrier.ID, template.ID, shippingdomain.CarrierService{
+		ServiceCode: "POSTAL-REMOTE", ServiceName: "Postal Remote", Countries: `["US"]`,
+		RemoteSurcharge: 7, RemotePostalCodes: `["10000-10009"]`,
+	})
+
+	quote, err := shippingService.QuoteCart(ShippingQuoteInput{
+		Country: "US", PostalCode: "10005", Currency: "USD",
+		Items: []ShippingQuoteItemInput{{ProductID: record.ID, VariantID: &variant.ID, Quantity: 1}},
+	})
+	require.NoError(t, err)
+	leg := requireSelectedQuoteLeg(t, quote)
+	assert.Equal(t, service.ID, leg.CarrierServiceID)
+	assert.Equal(t, 12.0, leg.ShippingFee)
+	assert.Equal(t, 7.0, leg.RemoteSurcharge)
+
+	quote, err = shippingService.QuoteCart(ShippingQuoteInput{
+		Country: "US", PostalCode: "10020", Currency: "USD",
+		Items: []ShippingQuoteItemInput{{ProductID: record.ID, VariantID: &variant.ID, Quantity: 1}},
+	})
+	require.NoError(t, err)
+	leg = requireSelectedQuoteLeg(t, quote)
+	assert.Equal(t, 5.0, leg.ShippingFee)
+	assert.Zero(t, leg.RemoteSurcharge)
+}
+
+func TestQuoteResolvedItemsKeepsFreeShippingThresholdWithinTemplateGroup(t *testing.T) {
+	db, shippingService := newTestShippingQuoteService(t)
+	primaryTemplate := shippingdomain.ShippingTemplate{
+		Name: "Primary free template", Type: "weight", Currency: "USD", DefaultFee: 20,
+		FreeShipping: true, FreeThreshold: 100, Enabled: true,
+	}
+	accessoryTemplate := shippingdomain.ShippingTemplate{
+		Name: "Accessory free template", Type: "weight", Currency: "USD", DefaultFee: 5,
+		FreeShipping: true, FreeThreshold: 50, Enabled: true,
+	}
+	require.NoError(t, db.Create(&primaryTemplate).Error)
+	require.NoError(t, db.Create(&accessoryTemplate).Error)
+	primary, primaryVariant := seedQuoteProduct(t, db, 200, 900, primaryTemplate.ID)
+	accessory, accessoryVariant := seedQuoteProduct(t, db, 10, 100, accessoryTemplate.ID)
+
+	quote, err := shippingService.QuoteCart(ShippingQuoteInput{
+		Country: "US", Currency: "USD",
+		Items: []ShippingQuoteItemInput{
+			{ProductID: primary.ID, VariantID: &primaryVariant.ID, Quantity: 1},
+			{ProductID: accessory.ID, VariantID: &accessoryVariant.ID, Quantity: 1},
+		},
+	})
+	require.NoError(t, err)
+	assert.Equal(t, 5.0, quote.ShippingFee)
+	assert.True(t, quote.Items[0].FreeShipping)
+	assert.False(t, quote.Items[1].FreeShipping)
+	assert.Equal(t, 5.0, quote.Items[1].ShippingFee)
 }
 
 func TestQuoteCartUsesPackagingDimensionsForVolumetricCarrierService(t *testing.T) {
@@ -452,15 +996,120 @@ func TestQuoteCartUsesPackagingDimensionsForVolumetricCarrierService(t *testing.
 	})
 
 	require.NoError(t, err)
-	require.Len(t, quote.Options, 1)
-	require.NotNil(t, quote.SelectedOption)
-	assert.Equal(t, service.ID, quote.SelectedOption.CarrierServiceID)
-	assert.Equal(t, 1100, quote.SelectedOption.ActualWeightGrams)
-	assert.Equal(t, 12000, quote.SelectedOption.VolumetricWeightGrams)
-	assert.Equal(t, 12000, quote.SelectedOption.ChargeWeightGrams)
-	assert.Equal(t, 12000, quote.SelectedOption.BillableWeightGrams)
-	assert.Equal(t, 99.0, quote.SelectedOption.ShippingFee)
+	require.Len(t, quote.Plans, 1)
+	leg := requireSelectedQuoteLeg(t, quote)
+	assert.Equal(t, service.ID, leg.CarrierServiceID)
+	assert.Equal(t, 1100, leg.ActualWeightGrams)
+	assert.Equal(t, 12000, leg.VolumetricWeightGrams)
+	assert.Equal(t, 12000, leg.ChargeWeightGrams)
+	assert.Equal(t, 12000, leg.BillableWeightGrams)
+	assert.Equal(t, 99.0, leg.ShippingFee)
 	assert.Equal(t, 99.0, quote.ShippingFee)
+}
+
+func TestQuoteCartKeepsKnownVolumetricWeightWhenAccessoryLacksPackagingRule(t *testing.T) {
+	db, shippingService := newTestShippingQuoteService(t)
+	template := shippingdomain.ShippingTemplate{
+		Name: "DHL wheelset rates", Type: "weight", Currency: "USD", DefaultFee: 999, Enabled: true,
+		Rules: []shippingdomain.ShippingRule{
+			{Region: "US", MinValue: 0, MaxValue: 2, Fee: 18},
+			{Region: "US", MinValue: 20, MaxValue: 21, Fee: 160},
+		},
+	}
+	require.NoError(t, db.Create(&template).Error)
+	wheelset, wheelsetVariant := seedQuoteProduct(t, db, 1200, 1350, template.ID)
+	accessory, accessoryVariant := seedQuoteProduct(t, db, 2, 20, template.ID)
+	carrier := seedQuoteCarrier(t, db, "DHL", "DHL")
+
+	packagingRule := shippingdomain.PackagingRule{
+		RuleName:  "Wheelset carton",
+		BoxLength: 83,
+		BoxWidth:  68,
+		BoxHeight: 18,
+		IsActive:  true,
+	}
+	require.NoError(t, db.Create(&packagingRule).Error)
+	require.NoError(t, db.Create(&shippingdomain.PackagingRuleApply{
+		RuleID:    packagingRule.ID,
+		ProductID: wheelset.ID,
+	}).Error)
+
+	service := seedQuoteCarrierService(t, db, carrier.ID, template.ID, shippingdomain.CarrierService{
+		ServiceCode:       "DHL-WHEELSET",
+		ServiceName:       "DHL Wheelset Express",
+		Countries:         `["US"]`,
+		BillingMode:       "greater_of_actual_and_volumetric",
+		VolumetricDivisor: 5000,
+	})
+
+	quote, err := shippingService.QuoteCart(ShippingQuoteInput{
+		Country:  "US",
+		Currency: "USD",
+		Items: []ShippingQuoteItemInput{
+			{ProductID: wheelset.ID, VariantID: &wheelsetVariant.ID, Quantity: 1},
+			{ProductID: accessory.ID, VariantID: &accessoryVariant.ID, Quantity: 1},
+		},
+	})
+
+	require.NoError(t, err)
+	require.Len(t, quote.Plans, 1)
+	leg := requireSelectedQuoteLeg(t, quote)
+	assert.Equal(t, service.ID, leg.CarrierServiceID)
+	assert.Equal(t, 1370, leg.ActualWeightGrams)
+	assert.Equal(t, 20319, leg.VolumetricWeightGrams)
+	assert.Equal(t, 20339, leg.ChargeWeightGrams)
+	assert.Equal(t, 20339, leg.BillableWeightGrams)
+	assert.Equal(t, 160.0, leg.ShippingFee)
+	assert.Equal(t, 160.0, quote.ShippingFee)
+}
+
+func TestQuoteCartOmitsVolumetricOnlyCarrierServiceWhenAccessoryLacksPackagingRule(t *testing.T) {
+	db, shippingService := newTestShippingQuoteService(t)
+	template := shippingdomain.ShippingTemplate{
+		Name: "Volumetric-only rates", Type: "weight", Currency: "USD", DefaultFee: 999, Enabled: true,
+		Rules: []shippingdomain.ShippingRule{{Region: "US", MinValue: 0, MaxValue: 2, Fee: 18}},
+	}
+	require.NoError(t, db.Create(&template).Error)
+	wheelset, wheelsetVariant := seedQuoteProduct(t, db, 1200, 1350, template.ID)
+	accessory, accessoryVariant := seedQuoteProduct(t, db, 2, 20, template.ID)
+	carrier := seedQuoteCarrier(t, db, "DHL", "DHL")
+
+	packagingRule := shippingdomain.PackagingRule{
+		RuleName:  "Wheelset carton",
+		BoxLength: 83,
+		BoxWidth:  68,
+		BoxHeight: 18,
+		IsActive:  true,
+	}
+	require.NoError(t, db.Create(&packagingRule).Error)
+	require.NoError(t, db.Create(&shippingdomain.PackagingRuleApply{
+		RuleID:    packagingRule.ID,
+		ProductID: wheelset.ID,
+	}).Error)
+	seedQuoteCarrierService(t, db, carrier.ID, template.ID, shippingdomain.CarrierService{
+		ServiceCode:       "DHL-VOLUMETRIC-ONLY",
+		ServiceName:       "DHL Volumetric Only",
+		Countries:         `["US"]`,
+		BillingMode:       "volumetric_weight",
+		VolumetricDivisor: 5000,
+	})
+
+	quote, err := shippingService.QuoteCart(ShippingQuoteInput{
+		Country:  "US",
+		Currency: "USD",
+		Items: []ShippingQuoteItemInput{
+			{ProductID: wheelset.ID, VariantID: &wheelsetVariant.ID, Quantity: 1},
+			{ProductID: accessory.ID, VariantID: &accessoryVariant.ID, Quantity: 1},
+		},
+	})
+
+	require.NoError(t, err)
+	require.NotNil(t, quote)
+	require.Len(t, quote.Plans, 1)
+	leg := requireSelectedQuoteLeg(t, quote)
+	assert.Zero(t, leg.CarrierServiceID)
+	assert.Equal(t, "template", leg.BillingMode)
+	assert.Equal(t, 18.0, quote.ShippingFee)
 }
 
 func TestQuoteCartFallsBackToActualWeightWhenGreaterOfLacksVolumetricWeight(t *testing.T) {
@@ -486,14 +1135,14 @@ func TestQuoteCartFallsBackToActualWeightWhenGreaterOfLacksVolumetricWeight(t *t
 	})
 
 	require.NoError(t, err)
-	require.Len(t, quote.Options, 1)
-	require.NotNil(t, quote.SelectedOption)
-	assert.Equal(t, service.ID, quote.SelectedOption.CarrierServiceID)
-	assert.Equal(t, 900, quote.SelectedOption.ActualWeightGrams)
-	assert.Equal(t, 0, quote.SelectedOption.VolumetricWeightGrams)
-	assert.Equal(t, 900, quote.SelectedOption.ChargeWeightGrams)
-	assert.Equal(t, 900, quote.SelectedOption.BillableWeightGrams)
-	assert.Equal(t, 5.0, quote.SelectedOption.ShippingFee)
+	require.Len(t, quote.Plans, 1)
+	leg := requireSelectedQuoteLeg(t, quote)
+	assert.Equal(t, service.ID, leg.CarrierServiceID)
+	assert.Equal(t, 900, leg.ActualWeightGrams)
+	assert.Equal(t, 0, leg.VolumetricWeightGrams)
+	assert.Equal(t, 900, leg.ChargeWeightGrams)
+	assert.Equal(t, 900, leg.BillableWeightGrams)
+	assert.Equal(t, 5.0, leg.ShippingFee)
 	assert.Equal(t, 5.0, quote.ShippingFee)
 }
 
@@ -584,6 +1233,7 @@ func newTestShippingQuoteService(t *testing.T) (*gorm.DB, *ShippingService) {
 		&shippingdomain.ShippingRule{},
 		&shippingdomain.Carrier{},
 		&shippingdomain.CarrierService{},
+		&shippingdomain.QuoteSnapshot{},
 		&shippingdomain.PackagingRule{},
 		&shippingdomain.PackagingRuleApply{},
 	))
@@ -600,11 +1250,17 @@ func seedQuoteProduct(t *testing.T, db *gorm.DB, price float64, weightGrams int,
 	if len(shippingTemplateIDs) > 0 {
 		shippingTemplateID = &shippingTemplateIDs[0]
 	}
+	var productCount int64
+	require.NoError(t, db.Model(&productdomain.Product{}).Count(&productCount).Error)
+	suffix := ""
+	if productCount > 0 {
+		suffix = fmt.Sprintf("-%d", productCount+1)
+	}
 	record := productdomain.Product{
 		ShippingTemplateID: shippingTemplateID,
-		SKU:                "SKU-QUOTE",
+		SKU:                "SKU-QUOTE" + suffix,
 		Name:               "Quote Product",
-		Slug:               "quote-product",
+		Slug:               "quote-product" + suffix,
 		Price:              price,
 		Stock:              10,
 		Status:             "active",
@@ -613,7 +1269,7 @@ func seedQuoteProduct(t *testing.T, db *gorm.DB, price float64, weightGrams int,
 
 	variant := productdomain.ProductVariant{
 		ProductID:    record.ID,
-		SKU:          "SKU-QUOTE-DEFAULT",
+		SKU:          "SKU-QUOTE-DEFAULT" + suffix,
 		Title:        "Default",
 		OptionValues: "{}",
 		Price:        price,
@@ -654,6 +1310,14 @@ func seedQuoteCarrier(t *testing.T, db *gorm.DB, name string, code string) shipp
 	}
 	require.NoError(t, db.Create(&carrier).Error)
 	return carrier
+}
+
+func requireSelectedQuoteLeg(t *testing.T, quote *ShippingQuote) ShippingQuoteLeg {
+	t.Helper()
+	require.NotNil(t, quote)
+	require.NotNil(t, quote.SelectedPlan)
+	require.Len(t, quote.SelectedPlan.Legs, 1)
+	return quote.SelectedPlan.Legs[0]
 }
 
 func seedQuoteCarrierService(t *testing.T, db *gorm.DB, carrierID uint, templateID uint, input shippingdomain.CarrierService) shippingdomain.CarrierService {

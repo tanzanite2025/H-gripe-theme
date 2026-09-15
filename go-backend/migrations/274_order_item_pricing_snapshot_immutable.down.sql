@@ -1,0 +1,2 @@
+DROP TRIGGER IF EXISTS trigger_prevent_order_item_pricing_snapshot_mutation ON order_items;
+DROP FUNCTION IF EXISTS prevent_order_item_pricing_snapshot_mutation();

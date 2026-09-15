@@ -5,7 +5,9 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
+	currencydomain "commerce-platform/internal/domain/currency"
 	orderdomain "commerce-platform/internal/domain/order"
 	paymentdomain "commerce-platform/internal/domain/payment"
 	pgateway "commerce-platform/internal/pkg/payment"
@@ -29,6 +31,7 @@ func TestCreateStripePaymentIntentRejectsZeroTotalBeforeGateway(t *testing.T) {
 		bytes.NewBufferString(`{"order_number":"ORD-STRIPE-ZERO"}`),
 	)
 	context.Request.Header.Set("Content-Type", "application/json")
+	context.Request.Header.Set("Idempotency-Key", "stripe-zero-total")
 
 	handler.CreateStripePaymentIntent(context)
 
@@ -39,6 +42,31 @@ func TestCreateStripePaymentIntentRejectsZeroTotalBeforeGateway(t *testing.T) {
 	var transactionCount int64
 	require.NoError(t, db.Model(&paymentdomain.Transaction{}).Where("order_id = ?", orderRecord.ID).Count(&transactionCount).Error)
 	require.Zero(t, transactionCount)
+}
+
+func TestStrictProviderSettlementRequiresPaymentSnapshot(t *testing.T) {
+	orderRecord := &orderdomain.Order{
+		TotalAmount: 12.34,
+		Currency:    "USD",
+	}
+
+	_, err := strictProviderSettlement(orderRecord)
+
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "payment currency snapshot is required")
+}
+
+func TestStrictProviderSettlementUsesCurrencyMinorUnits(t *testing.T) {
+	orderRecord := &orderdomain.Order{
+		PaymentAmount:   1200,
+		PaymentCurrency: "JPY",
+	}
+
+	settlement, err := strictProviderSettlement(orderRecord)
+
+	require.NoError(t, err)
+	require.Equal(t, int64(1200), settlement.AmountMinor())
+	require.Equal(t, "JPY", settlement.Currency().String())
 }
 
 func TestCreateAlipayOrderRecordsPendingAttempt(t *testing.T) {
@@ -68,6 +96,7 @@ func TestCreateAlipayOrderRecordsPendingAttempt(t *testing.T) {
 	)
 	context.Request.Host = "shop.example"
 	context.Request.Header.Set("Content-Type", "application/json")
+	context.Request.Header.Set("Idempotency-Key", "alipay-create-1")
 
 	handler.CreateAlipayOrder(context)
 
@@ -105,6 +134,7 @@ func TestCreateAlipayOrderRejectsUnsupportedCurrency(t *testing.T) {
 	)
 	context.Request.Host = "shop.example"
 	context.Request.Header.Set("Content-Type", "application/json")
+	context.Request.Header.Set("Idempotency-Key", "alipay-create-usd")
 
 	handler.CreateAlipayOrder(context)
 
@@ -145,6 +175,7 @@ func TestCreateWechatOrderRejectsUnsupportedCurrency(t *testing.T) {
 	)
 	context.Request.Host = "shop.example"
 	context.Request.Header.Set("Content-Type", "application/json")
+	context.Request.Header.Set("Idempotency-Key", "wechat-create-usd")
 
 	handler.CreateWechatOrder(context)
 
@@ -188,6 +219,7 @@ func TestCreateWechatOrderUsesConfiguredWebhookBaseURL(t *testing.T) {
 	context.Request.Host = "spoofed.example"
 	context.Request.Header.Set("X-Forwarded-Host", "attacker.example")
 	context.Request.Header.Set("Content-Type", "application/json")
+	context.Request.Header.Set("Idempotency-Key", "wechat-create-cny")
 
 	handler.CreateWechatOrder(context)
 
@@ -215,6 +247,15 @@ func TestConfirmWechatOrderMarksMatchingOrderPaid(t *testing.T) {
 	t.Setenv("WECHAT_PAY_PLATFORM_PUBLIC_KEY", "wechat-platform-public-key")
 	t.Setenv("WECHAT_PAY_PLATFORM_PUBLIC_KEY_ID", "PUB_KEY_ID")
 	orderRecord := seedWalletOrder(t, db, "ORD-WECHAT-1", 7, "wechat", 236, "CNY", "pending", "unpaid")
+	orderRecord.FXSnapshotData = currencydomain.OrderFXSnapshotJSON(currencydomain.OrderFXSnapshot{
+		Version:         currencydomain.OrderFXSnapshotVersion,
+		BaseCurrency:    "USD",
+		OrderCurrency:   "CNY",
+		BaseToOrderRate: 7.2,
+		Source:          "test",
+		CapturedAt:      time.Date(2026, time.January, 1, 0, 0, 0, 0, time.UTC),
+	})
+	require.NoError(t, db.Save(&orderRecord).Error)
 
 	recorder := httptest.NewRecorder()
 	context, _ := gin.CreateTestContext(recorder)
@@ -226,6 +267,7 @@ func TestConfirmWechatOrderMarksMatchingOrderPaid(t *testing.T) {
 		bytes.NewBufferString(`{}`),
 	)
 	context.Request.Header.Set("Content-Type", "application/json")
+	context.Request.Header.Set("Idempotency-Key", "wechat-confirm-1")
 
 	handler.ConfirmWechatOrder(context)
 
@@ -254,15 +296,17 @@ func seedWalletOrder(
 ) orderdomain.Order {
 	t.Helper()
 	orderRecord := orderdomain.Order{
-		OrderNumber:    orderNumber,
-		UserID:         userID,
-		Status:         status,
-		PaymentMethod:  paymentMethod,
-		PaymentStatus:  paymentStatus,
-		ShippingMethod: "standard",
-		ShippingStatus: "pending",
-		TotalAmount:    total,
-		Currency:       currency,
+		OrderNumber:     orderNumber,
+		UserID:          userID,
+		Status:          status,
+		PaymentMethod:   paymentMethod,
+		PaymentStatus:   paymentStatus,
+		ShippingMethod:  "standard",
+		ShippingStatus:  "pending",
+		TotalAmount:     total,
+		Currency:        currency,
+		PaymentAmount:   total,
+		PaymentCurrency: currency,
 		ShippingAddress: orderdomain.Address{
 			FirstName: "Ada",
 			LastName:  "Lovelace",

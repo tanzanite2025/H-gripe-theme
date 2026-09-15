@@ -186,6 +186,7 @@ type LogConfig struct {
 
 type WorkerConfig struct {
 	Enabled                               bool `mapstructure:"enabled"`
+	DistributedLockTTLSeconds             int  `mapstructure:"distributed_lock_ttl_seconds"`
 	TrackingPollingEnabled                bool `mapstructure:"tracking_polling_enabled"`
 	TrackingPollingIntervalSeconds        int  `mapstructure:"tracking_polling_interval_seconds"`
 	TrackingPollingBatchLimit             int  `mapstructure:"tracking_polling_batch_limit"`
@@ -194,10 +195,16 @@ type WorkerConfig struct {
 	VisitorProfileIPAddressRetentionDays  int  `mapstructure:"visitor_profile_ip_address_retention_days"`
 	BehaviorEventCleanupEnabled           bool `mapstructure:"behavior_event_cleanup_enabled"`
 	BehaviorEventCleanupIntervalSeconds   int  `mapstructure:"behavior_event_cleanup_interval_seconds"`
+	QuickBuyAbandonmentEnabled            bool `mapstructure:"quick_buy_abandonment_enabled"`
+	QuickBuyAbandonmentIntervalSeconds    int  `mapstructure:"quick_buy_abandonment_interval_seconds"`
+	QuickBuyAbandonmentAfterSeconds       int  `mapstructure:"quick_buy_abandonment_after_seconds"`
 	OutboxDispatchEnabled                 bool `mapstructure:"outbox_dispatch_enabled"`
 	OutboxDispatchIntervalSeconds         int  `mapstructure:"outbox_dispatch_interval_seconds"`
 	OutboxDispatchBatchLimit              int  `mapstructure:"outbox_dispatch_batch_limit"`
 	OutboxDispatchLockTimeoutSeconds      int  `mapstructure:"outbox_dispatch_lock_timeout_seconds"`
+	ReferralLifecycleEnabled              bool `mapstructure:"referral_lifecycle_enabled"`
+	ReferralLifecycleIntervalSeconds      int  `mapstructure:"referral_lifecycle_interval_seconds"`
+	ReferralLifecycleBatchLimit           int  `mapstructure:"referral_lifecycle_batch_limit"`
 	PaymentExpirationEnabled              bool `mapstructure:"payment_expiration_enabled"`
 	PaymentExpirationIntervalSeconds      int  `mapstructure:"payment_expiration_interval_seconds"`
 	PaymentPendingTTLSeconds              int  `mapstructure:"payment_pending_ttl_seconds"`
@@ -219,13 +226,20 @@ type WorkerConfig struct {
 	MediaDerivativeRebuildEnabled         bool `mapstructure:"media_derivative_rebuild_enabled"`
 	MediaDerivativeRebuildIntervalSeconds int  `mapstructure:"media_derivative_rebuild_interval_seconds"`
 	MediaDerivativeRebuildBatchLimit      int  `mapstructure:"media_derivative_rebuild_batch_limit"`
-	ShowcaseCleanupEnabled                bool `mapstructure:"showcase_cleanup_enabled"`
-	ShowcaseCleanupIntervalSeconds        int  `mapstructure:"showcase_cleanup_interval_seconds"`
-	ShowcasePendingTTLSeconds             int  `mapstructure:"showcase_pending_ttl_seconds"`
-	ShowcaseCleanupBatchLimit             int  `mapstructure:"showcase_cleanup_batch_limit"`
-	HotDataArchiveEnabled                 bool `mapstructure:"hot_data_archive_enabled"`
-	HotDataArchiveIntervalSeconds         int  `mapstructure:"hot_data_archive_interval_seconds"`
-	HotDataArchiveBatchLimit              int  `mapstructure:"hot_data_archive_batch_limit"`
+	// MediaDerivativeGenerationCapacity bounds concurrent image decode/resize
+	// jobs. It is separate from the rebuild batch size because uploads and
+	// backfills share the same process-wide conversion pool.
+	MediaDerivativeGenerationCapacity    int  `mapstructure:"media_derivative_generation_capacity"`
+	ShowcaseCleanupEnabled               bool `mapstructure:"showcase_cleanup_enabled"`
+	ShowcaseCleanupIntervalSeconds       int  `mapstructure:"showcase_cleanup_interval_seconds"`
+	ShowcasePendingTTLSeconds            int  `mapstructure:"showcase_pending_ttl_seconds"`
+	ShowcaseCleanupBatchLimit            int  `mapstructure:"showcase_cleanup_batch_limit"`
+	HotDataArchiveEnabled                bool `mapstructure:"hot_data_archive_enabled"`
+	HotDataArchiveIntervalSeconds        int  `mapstructure:"hot_data_archive_interval_seconds"`
+	HotDataArchiveBatchLimit             int  `mapstructure:"hot_data_archive_batch_limit"`
+	ProductViewCountFlushEnabled         bool `mapstructure:"product_view_count_flush_enabled"`
+	ProductViewCountFlushIntervalSeconds int  `mapstructure:"product_view_count_flush_interval_seconds"`
+	ProductViewCountFlushBatchLimit      int  `mapstructure:"product_view_count_flush_batch_limit"`
 }
 
 // SiteQualityConfig describes the internal-only Lighthouse runner endpoint.
@@ -259,12 +273,14 @@ type SiteQualityConfig struct {
 // durable customer-service message events. HTTP remains authoritative when it
 // is disabled or the bounded replay window has expired.
 type CustomerServiceRealtimeConfig struct {
-	Enabled               bool   `mapstructure:"enabled"`
-	Stream                string `mapstructure:"stream"`
-	StreamMaxLen          int    `mapstructure:"stream_max_len"`
-	ReplayLimit           int    `mapstructure:"replay_limit"`
-	ConsumerBlockSeconds  int    `mapstructure:"consumer_block_seconds"`
-	DedupRetentionSeconds int    `mapstructure:"dedup_retention_seconds"`
+	Enabled                         bool   `mapstructure:"enabled"`
+	Stream                          string `mapstructure:"stream"`
+	StreamMaxLen                    int    `mapstructure:"stream_max_len"`
+	ReplayLimit                     int    `mapstructure:"replay_limit"`
+	ConsumerBlockSeconds            int    `mapstructure:"consumer_block_seconds"`
+	DedupRetentionSeconds           int    `mapstructure:"dedup_retention_seconds"`
+	WebSocketMaxConnectionsPerIP    int    `mapstructure:"websocket_max_connections_per_ip"`
+	WebSocketConnectionLeaseSeconds int    `mapstructure:"websocket_connection_lease_seconds"`
 }
 
 type BehaviorEventsConfig struct {
@@ -516,7 +532,7 @@ func setDefaults() {
 
 	viper.SetDefault("redis.mode", "standalone")
 	viper.SetDefault("redis.host", "localhost")
-	viper.SetDefault("redis.port", 9510)
+	viper.SetDefault("redis.port", 9562)
 	viper.SetDefault("redis.addrs", []string{})
 	viper.SetDefault("redis.username", "")
 	viper.SetDefault("redis.password", "")
@@ -586,6 +602,7 @@ func setDefaults() {
 		"X-Request-Signature",
 		"X-Quick-Buy-Session",
 		"X-Anonymous-ID",
+		"X-Warranty-Claim-Token",
 	})
 	viper.SetDefault("cors.expose_headers", []string{
 		"Content-Length",
@@ -610,6 +627,7 @@ func setDefaults() {
 	viper.SetDefault("log.output", "stdout")
 
 	viper.SetDefault("worker.enabled", false)
+	viper.SetDefault("worker.distributed_lock_ttl_seconds", 0)
 	viper.SetDefault("worker.tracking_polling_enabled", false)
 	viper.SetDefault("worker.tracking_polling_interval_seconds", 300)
 	viper.SetDefault("worker.tracking_polling_batch_limit", 20)
@@ -618,11 +636,14 @@ func setDefaults() {
 	viper.SetDefault("worker.visitor_profile_ip_address_retention_days", DefaultVisitorProfileIPAddressRetentionDays)
 	viper.SetDefault("worker.behavior_event_cleanup_enabled", false)
 	viper.SetDefault("worker.behavior_event_cleanup_interval_seconds", 86400)
+	viper.SetDefault("worker.quick_buy_abandonment_enabled", false)
+	viper.SetDefault("worker.quick_buy_abandonment_interval_seconds", 3600)
+	viper.SetDefault("worker.quick_buy_abandonment_after_seconds", 86400)
 	viper.SetDefault("worker.outbox_dispatch_enabled", false)
 	viper.SetDefault("worker.outbox_dispatch_interval_seconds", 10)
 	viper.SetDefault("worker.outbox_dispatch_batch_limit", 100)
 	viper.SetDefault("worker.outbox_dispatch_lock_timeout_seconds", 300)
-	viper.SetDefault("worker.payment_expiration_enabled", false)
+	viper.SetDefault("worker.payment_expiration_enabled", true)
 	viper.SetDefault("worker.payment_expiration_interval_seconds", 900)
 	viper.SetDefault("worker.payment_pending_ttl_seconds", 1800)
 	viper.SetDefault("worker.payment_expiration_batch_limit", 100)
@@ -643,6 +664,7 @@ func setDefaults() {
 	viper.SetDefault("worker.media_derivative_rebuild_enabled", true)
 	viper.SetDefault("worker.media_derivative_rebuild_interval_seconds", 5)
 	viper.SetDefault("worker.media_derivative_rebuild_batch_limit", 10)
+	viper.SetDefault("worker.media_derivative_generation_capacity", 8)
 	viper.SetDefault("site_quality.runner_url", "")
 	viper.SetDefault("site_quality.runner_token", "")
 	viper.SetDefault("site_quality.runner_timeout_seconds", 90)
@@ -672,6 +694,9 @@ func setDefaults() {
 	viper.SetDefault("worker.hot_data_archive_enabled", false)
 	viper.SetDefault("worker.hot_data_archive_interval_seconds", 86400)
 	viper.SetDefault("worker.hot_data_archive_batch_limit", 500)
+	viper.SetDefault("worker.product_view_count_flush_enabled", true)
+	viper.SetDefault("worker.product_view_count_flush_interval_seconds", 10)
+	viper.SetDefault("worker.product_view_count_flush_batch_limit", 500)
 
 	viper.SetDefault("customer_service_realtime.enabled", false)
 	viper.SetDefault("customer_service_realtime.stream", "customer_service:{realtime}:v1")
@@ -679,6 +704,8 @@ func setDefaults() {
 	viper.SetDefault("customer_service_realtime.replay_limit", 200)
 	viper.SetDefault("customer_service_realtime.consumer_block_seconds", 5)
 	viper.SetDefault("customer_service_realtime.dedup_retention_seconds", 86400)
+	viper.SetDefault("customer_service_realtime.websocket_max_connections_per_ip", 5)
+	viper.SetDefault("customer_service_realtime.websocket_connection_lease_seconds", 120)
 
 	viper.SetDefault("behavior_events.low_intent_retention_days", 30)
 	viper.SetDefault("behavior_events.standard_intent_retention_days", 60)
@@ -889,6 +916,7 @@ func bindEnvironment() {
 	_ = viper.BindEnv("log.output", "LOG_OUTPUT")
 
 	_ = viper.BindEnv("worker.enabled", "WORKER_ENABLED", "ASYNQ_WORKER_ENABLED")
+	_ = viper.BindEnv("worker.distributed_lock_ttl_seconds", "WORKER_DISTRIBUTED_LOCK_TTL_SECONDS")
 	_ = viper.BindEnv("worker.tracking_polling_enabled", "WORKER_TRACKING_POLLING_ENABLED", "TRACKING_POLLING_ENABLED")
 	_ = viper.BindEnv("worker.tracking_polling_interval_seconds", "WORKER_TRACKING_POLLING_INTERVAL_SECONDS", "TRACKING_POLLING_INTERVAL_SECONDS")
 	_ = viper.BindEnv("worker.tracking_polling_batch_limit", "WORKER_TRACKING_POLLING_BATCH_LIMIT", "TRACKING_POLLING_BATCH_LIMIT")
@@ -897,6 +925,9 @@ func bindEnvironment() {
 	_ = viper.BindEnv("worker.visitor_profile_ip_address_retention_days", "WORKER_VISITOR_PROFILE_IP_ADDRESS_RETENTION_DAYS", "VISITOR_PROFILE_IP_ADDRESS_RETENTION_DAYS")
 	_ = viper.BindEnv("worker.behavior_event_cleanup_enabled", "WORKER_BEHAVIOR_EVENT_CLEANUP_ENABLED", "BEHAVIOR_EVENT_CLEANUP_ENABLED")
 	_ = viper.BindEnv("worker.behavior_event_cleanup_interval_seconds", "WORKER_BEHAVIOR_EVENT_CLEANUP_INTERVAL_SECONDS", "BEHAVIOR_EVENT_CLEANUP_INTERVAL_SECONDS")
+	_ = viper.BindEnv("worker.quick_buy_abandonment_enabled", "WORKER_QUICK_BUY_ABANDONMENT_ENABLED", "QUICK_BUY_ABANDONMENT_ENABLED")
+	_ = viper.BindEnv("worker.quick_buy_abandonment_interval_seconds", "WORKER_QUICK_BUY_ABANDONMENT_INTERVAL_SECONDS", "QUICK_BUY_ABANDONMENT_INTERVAL_SECONDS")
+	_ = viper.BindEnv("worker.quick_buy_abandonment_after_seconds", "WORKER_QUICK_BUY_ABANDONMENT_AFTER_SECONDS", "QUICK_BUY_ABANDONMENT_AFTER_SECONDS")
 	_ = viper.BindEnv("worker.outbox_dispatch_enabled", "WORKER_OUTBOX_DISPATCH_ENABLED", "OUTBOX_DISPATCH_ENABLED")
 	_ = viper.BindEnv("worker.outbox_dispatch_interval_seconds", "WORKER_OUTBOX_DISPATCH_INTERVAL_SECONDS", "OUTBOX_DISPATCH_INTERVAL_SECONDS")
 	_ = viper.BindEnv("worker.outbox_dispatch_batch_limit", "WORKER_OUTBOX_DISPATCH_BATCH_LIMIT", "OUTBOX_DISPATCH_BATCH_LIMIT")
@@ -922,6 +953,7 @@ func bindEnvironment() {
 	_ = viper.BindEnv("worker.media_derivative_rebuild_enabled", "WORKER_MEDIA_DERIVATIVE_REBUILD_ENABLED")
 	_ = viper.BindEnv("worker.media_derivative_rebuild_interval_seconds", "WORKER_MEDIA_DERIVATIVE_REBUILD_INTERVAL_SECONDS")
 	_ = viper.BindEnv("worker.media_derivative_rebuild_batch_limit", "WORKER_MEDIA_DERIVATIVE_REBUILD_BATCH_LIMIT")
+	_ = viper.BindEnv("worker.media_derivative_generation_capacity", "WORKER_MEDIA_DERIVATIVE_GENERATION_CAPACITY")
 	_ = viper.BindEnv("site_quality.runner_url", "SITE_QUALITY_RUNNER_URL")
 	_ = viper.BindEnv("site_quality.runner_token", "SITE_QUALITY_RUNNER_TOKEN")
 	_ = viper.BindEnv("site_quality.runner_timeout_seconds", "SITE_QUALITY_RUNNER_TIMEOUT_SECONDS")
@@ -951,6 +983,9 @@ func bindEnvironment() {
 	_ = viper.BindEnv("worker.hot_data_archive_enabled", "WORKER_HOT_DATA_ARCHIVE_ENABLED")
 	_ = viper.BindEnv("worker.hot_data_archive_interval_seconds", "WORKER_HOT_DATA_ARCHIVE_INTERVAL_SECONDS")
 	_ = viper.BindEnv("worker.hot_data_archive_batch_limit", "WORKER_HOT_DATA_ARCHIVE_BATCH_LIMIT")
+	_ = viper.BindEnv("worker.product_view_count_flush_enabled", "WORKER_PRODUCT_VIEW_COUNT_FLUSH_ENABLED", "PRODUCT_VIEW_COUNT_FLUSH_ENABLED")
+	_ = viper.BindEnv("worker.product_view_count_flush_interval_seconds", "WORKER_PRODUCT_VIEW_COUNT_FLUSH_INTERVAL_SECONDS", "PRODUCT_VIEW_COUNT_FLUSH_INTERVAL_SECONDS")
+	_ = viper.BindEnv("worker.product_view_count_flush_batch_limit", "WORKER_PRODUCT_VIEW_COUNT_FLUSH_BATCH_LIMIT", "PRODUCT_VIEW_COUNT_FLUSH_BATCH_LIMIT")
 
 	_ = viper.BindEnv("customer_service_realtime.enabled", "CUSTOMER_SERVICE_REALTIME_ENABLED")
 	_ = viper.BindEnv("customer_service_realtime.stream", "CUSTOMER_SERVICE_REALTIME_STREAM")
@@ -958,6 +993,8 @@ func bindEnvironment() {
 	_ = viper.BindEnv("customer_service_realtime.replay_limit", "CUSTOMER_SERVICE_REALTIME_REPLAY_LIMIT")
 	_ = viper.BindEnv("customer_service_realtime.consumer_block_seconds", "CUSTOMER_SERVICE_REALTIME_CONSUMER_BLOCK_SECONDS")
 	_ = viper.BindEnv("customer_service_realtime.dedup_retention_seconds", "CUSTOMER_SERVICE_REALTIME_DEDUP_RETENTION_SECONDS")
+	_ = viper.BindEnv("customer_service_realtime.websocket_max_connections_per_ip", "CUSTOMER_SERVICE_REALTIME_WEBSOCKET_MAX_CONNECTIONS_PER_IP")
+	_ = viper.BindEnv("customer_service_realtime.websocket_connection_lease_seconds", "CUSTOMER_SERVICE_REALTIME_WEBSOCKET_CONNECTION_LEASE_SECONDS")
 
 	_ = viper.BindEnv("behavior_events.low_intent_retention_days", "BEHAVIOR_EVENTS_LOW_INTENT_RETENTION_DAYS")
 	_ = viper.BindEnv("behavior_events.standard_intent_retention_days", "BEHAVIOR_EVENTS_STANDARD_INTENT_RETENTION_DAYS")
@@ -1449,6 +1486,9 @@ func validateConfig(cfg *Config) error {
 	if cfg.Worker.BehaviorEventCleanupEnabled && cfg.Worker.BehaviorEventCleanupIntervalSeconds <= 0 {
 		return fmt.Errorf("behavior event cleanup interval must be positive when cleanup is enabled")
 	}
+	if cfg.Worker.QuickBuyAbandonmentEnabled && (cfg.Worker.QuickBuyAbandonmentIntervalSeconds <= 0 || cfg.Worker.QuickBuyAbandonmentAfterSeconds <= 0) {
+		return fmt.Errorf("quick buy abandonment scheduler configuration is invalid")
+	}
 	if cfg.Worker.OutboxDispatchEnabled {
 		if cfg.Worker.OutboxDispatchIntervalSeconds <= 0 ||
 			cfg.Worker.OutboxDispatchBatchLimit <= 0 ||
@@ -1468,6 +1508,10 @@ func validateConfig(cfg *Config) error {
 			cfg.CustomerServiceRealtime.DedupRetentionSeconds <= 0 {
 			return fmt.Errorf("customer-service realtime configuration is invalid")
 		}
+	}
+	if cfg.CustomerServiceRealtime.WebSocketMaxConnectionsPerIP <= 0 ||
+		cfg.CustomerServiceRealtime.WebSocketConnectionLeaseSeconds <= 0 {
+		return fmt.Errorf("customer-service websocket connection limit configuration is invalid")
 	}
 	if cfg.Worker.PaymentExpirationEnabled {
 		if cfg.Worker.PaymentExpirationIntervalSeconds <= 0 ||
@@ -1522,10 +1566,19 @@ func validateConfig(cfg *Config) error {
 	if err := validateSiteQualityRunnerAccuracyConfig(cfg.SiteQuality); err != nil {
 		return err
 	}
+	// Uploads and rebuilds share the same process-wide conversion pool, so a
+	// configured capacity must remain bounded even when the rebuild worker is
+	// disabled. Zero is retained as the legacy "unset" value for callers that
+	// construct Config structs directly; Viper-backed application config has a
+	// default of eight.
+	if cfg.Worker.MediaDerivativeGenerationCapacity < 0 || cfg.Worker.MediaDerivativeGenerationCapacity > 100 {
+		return fmt.Errorf("media derivative generation capacity must be zero (unset) or between 1 and 100")
+	}
 	if cfg.Worker.MediaDerivativeRebuildEnabled {
 		if cfg.Worker.MediaDerivativeRebuildIntervalSeconds <= 0 ||
 			cfg.Worker.MediaDerivativeRebuildBatchLimit <= 0 ||
-			cfg.Worker.MediaDerivativeRebuildBatchLimit > 100 {
+			cfg.Worker.MediaDerivativeRebuildBatchLimit > 100 ||
+			cfg.Worker.MediaDerivativeGenerationCapacity <= 0 {
 			return fmt.Errorf("media derivative rebuild worker configuration is invalid")
 		}
 	}
@@ -1534,6 +1587,11 @@ func validateConfig(cfg *Config) error {
 			cfg.Worker.ShowcasePendingTTLSeconds <= 0 ||
 			cfg.Worker.ShowcaseCleanupBatchLimit <= 0 {
 			return fmt.Errorf("showcase cleanup configuration is invalid")
+		}
+	}
+	if cfg.Worker.ProductViewCountFlushEnabled {
+		if cfg.Worker.ProductViewCountFlushIntervalSeconds <= 0 || cfg.Worker.ProductViewCountFlushBatchLimit <= 0 {
+			return fmt.Errorf("product view count flush configuration is invalid")
 		}
 	}
 	if cfg.Worker.HotDataArchiveEnabled {
@@ -1663,17 +1721,11 @@ func validateConfig(cfg *Config) error {
 }
 
 func validateGoogleIndexingConfig(cfg GoogleIndexingConfig) error {
-	jsonConfigured := strings.TrimSpace(cfg.ServiceAccountJSON) != ""
-	fileConfigured := strings.TrimSpace(cfg.ServiceAccountFile) != ""
-	if jsonConfigured && fileConfigured {
-		return fmt.Errorf("Google Indexing requires either service account JSON or service account file, not both")
-	}
-	if cfg.RequestTimeoutSeconds < 0 {
-		return fmt.Errorf("Google Indexing request timeout must not be negative")
-	}
-	if cfg.Enabled && !jsonConfigured && !fileConfigured {
-		return fmt.Errorf("Google Indexing requires GOOGLE_INDEXING_SERVICE_ACCOUNT_JSON or GOOGLE_INDEXING_SERVICE_ACCOUNT_FILE when enabled")
-	}
+	// Product pages are not eligible for Google's Indexing API. These settings
+	// remain readable for backwards-compatible config loading, but must never
+	// make the application fail to start or imply that product notifications
+	// are available.
+	_ = cfg
 	return nil
 }
 

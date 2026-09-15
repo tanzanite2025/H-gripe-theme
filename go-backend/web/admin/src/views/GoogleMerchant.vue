@@ -282,8 +282,8 @@
                 <option value="">请选择</option><option value="true">有商品标识</option><option value="false">确实没有</option>
               </select>
             </AdminFormField>
-            <AdminFormField label="市场价格覆盖"><Input v-model.number="form.price_override" type="number" min="0" step="0.01" placeholder="留空使用站内价格" /></AdminFormField>
-            <AdminFormField label="市场促销价覆盖"><Input v-model.number="form.sale_price_override" type="number" min="0" step="0.01" placeholder="可选" /></AdminFormField>
+            <AdminFormField label="市场价格覆盖"><Input v-model.number="form.price_override" type="number" min="0" step="0.01" placeholder="同币种可留空；跨币种优先使用换算快照" /></AdminFormField>
+            <AdminFormField label="市场促销价覆盖"><Input v-model.number="form.sale_price_override" type="number" min="0" step="0.01" placeholder="跨币种无换算快照时必填" /></AdminFormField>
           </div>
           <AdminFormField label="同步标题"><Input v-model="form.title" placeholder="留空可后续按站内商品标题映射" /></AdminFormField>
           <AdminFormField label="同步描述"><Textarea v-model="form.description" class="min-h-24" placeholder="填写 Google 渠道描述" /></AdminFormField>

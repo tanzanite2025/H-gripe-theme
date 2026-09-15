@@ -33,6 +33,13 @@ func registerBusinessRoutes(
 		// 营销统计
 		marketingGroup.GET("/stats", marketingHandler.GetMarketingStats)
 		marketingGroup.GET("/risk-analysis", marketingHandler.GetPromotionRiskAnalysis)
+		marketingGroup.GET("/referrals", marketingHandler.ListReferralLedger)
+		marketingGroup.GET("/referrals/export", marketingHandler.ExportReferralLedger)
+		marketingGroup.GET("/referrals/:id", marketingHandler.GetReferralDetail)
+		marketingGroup.POST("/referrals/:id/settle", middleware.RequirePermission(auth.PermMarketingEdit), marketingHandler.SettleReferral)
+		marketingGroup.POST("/referrals/:id/revoke", middleware.RequirePermission(auth.PermMarketingEdit), marketingHandler.RevokeReferral)
+		marketingGroup.GET("/referral-config", marketingHandler.GetReferralProgramConfig)
+		marketingGroup.PUT("/referral-config", middleware.RequirePermission(auth.PermMarketingEdit), marketingHandler.UpdateReferralProgramConfig)
 
 		// 优惠券管理
 		couponsGroup := marketingGroup.Group("/coupons")
@@ -99,8 +106,6 @@ func registerBusinessRoutes(
 		seoGroup.POST(
 			"/products/:id/indexing",
 			middleware.RequirePermission(auth.PermSEOEdit),
-			middleware.Idempotency(redisClient),
-			middleware.RateLimitByUserPerMinuteRedis(redisClient),
 			seoProductsHandler.PushIndexing,
 		)
 	}

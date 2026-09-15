@@ -92,6 +92,24 @@
           </div>
         </section>
 
+        <section v-if="record.return_shipments?.length" class="space-y-3">
+          <h3 class="text-sm font-black uppercase text-foreground">退货物流</h3>
+          <div class="space-y-2 rounded-lg border bg-muted/20 p-3 text-xs">
+            <div v-for="shipment in record.return_shipments" :key="String(shipment.id)" class="grid gap-2 sm:grid-cols-2">
+              <div><span class="text-muted-foreground">仓库：</span>{{ shipment.warehouse_name || '-' }}</div>
+              <div><span class="text-muted-foreground">承运商：</span>{{ shipment.carrier || '-' }}</div>
+              <div><span class="text-muted-foreground">单号：</span><span class="font-mono">{{ shipment.tracking_number || '-' }}</span></div>
+              <div><span class="text-muted-foreground">寄出：</span>{{ formatDate(shipment.shipped_at) }}</div>
+              <div><span class="text-muted-foreground">签收：</span>{{ formatDate(shipment.received_at) }}</div>
+              <div class="sm:col-span-2"><span class="text-muted-foreground">地址：</span>{{ shipment.warehouse_address || '-' }}</div>
+              <div v-if="shipment.tracking_url || shipment.label_url" class="flex flex-wrap gap-3 sm:col-span-2">
+                <a v-if="shipment.tracking_url" :href="shipment.tracking_url" target="_blank" rel="noreferrer" class="text-primary hover:underline">打开物流追踪</a>
+                <a v-if="shipment.label_url" :href="shipment.label_url" target="_blank" rel="noreferrer" class="text-primary hover:underline">打开退货面单</a>
+              </div>
+            </div>
+          </div>
+        </section>
+
         <form v-if="availableStatuses.length" class="space-y-3 border-t border-dashed pt-5" @submit.prevent="submit">
           <h3 class="text-sm font-black uppercase text-foreground">处理售后单</h3>
           <div class="grid gap-4 sm:grid-cols-2">
@@ -118,6 +136,32 @@
               placeholder="填写本次审核结论、异常原因或后续处理备注"
             />
           </label>
+          <div v-if="needsReturnDetails" class="grid gap-4 rounded-lg border border-dashed bg-muted/10 p-3 sm:grid-cols-2">
+            <label class="block space-y-1.5">
+              <span class="field-label">WAREHOUSE / 退货仓库</span>
+              <Input v-model="form.warehouseName" :disabled="submitting" placeholder="例如：EU Returns Hub" />
+            </label>
+            <label class="block space-y-1.5">
+              <span class="field-label">CARRIER / 承运商</span>
+              <Input v-model="form.carrier" :disabled="submitting" placeholder="DHL / UPS" />
+            </label>
+            <label class="block space-y-1.5 sm:col-span-2">
+              <span class="field-label">WAREHOUSE ADDRESS / 退货地址</span>
+              <Input v-model="form.warehouseAddress" :disabled="submitting" placeholder="完整退货地址" />
+            </label>
+            <label class="block space-y-1.5">
+              <span class="field-label">TRACKING NUMBER / 退货单号</span>
+              <Input v-model="form.trackingNumber" :disabled="submitting" placeholder="退货物流单号" />
+            </label>
+            <label class="block space-y-1.5">
+              <span class="field-label">TRACKING URL / 追踪链接</span>
+              <Input v-model="form.trackingURL" :disabled="submitting" placeholder="https://..." />
+            </label>
+            <label class="block space-y-1.5 sm:col-span-2">
+              <span class="field-label">LABEL URL / 面单链接</span>
+              <Input v-model="form.labelURL" :disabled="submitting" placeholder="https://..." />
+            </label>
+          </div>
           <DialogFooter>
             <Button type="button" variant="outline" :disabled="submitting" @click="emit('update:open', false)">
               关闭
@@ -153,6 +197,7 @@ import {
 } from '@/components/ui/dialog'
 import { Table, TableBody, TableCell, TableEmpty, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Textarea } from '@/components/ui/textarea'
+import { Input } from '@/components/ui/input'
 import type { AfterSalesCase } from '@/api/afterSales'
 import {
   afterSalesStatusClass as statusClass,
@@ -187,14 +232,26 @@ const props = withDefaults(defineProps<{
 
 const emit = defineEmits<{
   (event: 'update:open', value: boolean): void
-  (event: 'submit', status: string, resolution: string): void
+  (event: 'submit', status: string, resolution: string, shipment: {
+    return_shipment_id?: number | string
+    warehouse_name?: string
+    warehouse_address?: string
+    carrier?: string
+    tracking_number?: string
+    tracking_url?: string
+    label_url?: string
+  }): void
   (event: 'save-refund-review', proposedAmount: number, currency: string, requestNotes: string): void
   (event: 'decide-refund-review', status: 'approved' | 'rejected' | 'cancelled', decisionNotes: string): void
   (event: 'create-pending-refund'): void
 }>()
 
-const form = reactive({ status: '', resolution: '' })
+const form = reactive({
+  status: '', resolution: '', returnShipmentID: '', warehouseName: '', warehouseAddress: '',
+  carrier: '', trackingNumber: '', trackingURL: '', labelURL: '',
+})
 const availableStatuses = computed(() => nextStatuses(props.record?.status))
+const needsReturnDetails = computed(() => ['awaiting_return', 'return_in_transit', 'received'].includes(form.status))
 const canSubmit = computed(() => Boolean(form.status && form.resolution.trim()))
 
 const formatDate = (value?: string | null): string => value ? new Date(value).toLocaleString('zh-CN') : '-'
@@ -211,11 +268,29 @@ const eventOperatorLabel = (event: { operator_name?: string | null; updated_by?:
 const resetForm = (): void => {
   form.status = availableStatuses.value[0] || ''
   form.resolution = ''
+  const shipment = props.record?.return_shipments?.[props.record.return_shipments.length - 1]
+  // Entering awaiting_return starts a new package; later transitions edit the
+  // latest package unless an operator explicitly selects another one.
+  form.returnShipmentID = form.status === 'awaiting_return' ? '' : (shipment?.id ? String(shipment.id) : '')
+  form.warehouseName = shipment?.warehouse_name || ''
+  form.warehouseAddress = shipment?.warehouse_address || ''
+  form.carrier = shipment?.carrier || ''
+  form.trackingNumber = shipment?.tracking_number || ''
+  form.trackingURL = shipment?.tracking_url || ''
+  form.labelURL = shipment?.label_url || ''
 }
 
 const submit = (): void => {
   if (!canSubmit.value) return
-  emit('submit', form.status, form.resolution.trim())
+  emit('submit', form.status, form.resolution.trim(), {
+    return_shipment_id: form.returnShipmentID ? Number(form.returnShipmentID) : undefined,
+    warehouse_name: form.warehouseName.trim() || undefined,
+    warehouse_address: form.warehouseAddress.trim() || undefined,
+    carrier: form.carrier.trim() || undefined,
+    tracking_number: form.trackingNumber.trim() || undefined,
+    tracking_url: form.trackingURL.trim() || undefined,
+    label_url: form.labelURL.trim() || undefined,
+  })
 }
 
 const forwardRefundReviewSave = (

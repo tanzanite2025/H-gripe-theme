@@ -49,6 +49,8 @@ policies, or Google Merchant channel credentials.
 - Resolve a public Product by the requested locale. Missing translations are
   a real absence, not an instruction to serve another language under the
   wrong URL.
+- Do not send product URLs to Google's Indexing API; use the sitemap workflow
+  because the API is restricted to JobPosting and BroadcastEvent resources.
 
 ## Maintenance Rule
 

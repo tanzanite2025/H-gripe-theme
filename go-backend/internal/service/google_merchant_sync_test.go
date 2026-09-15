@@ -10,6 +10,7 @@ import (
 	"sync/atomic"
 	"testing"
 
+	"commerce-platform/internal/domain/currency"
 	"commerce-platform/internal/domain/merchant"
 	"commerce-platform/internal/domain/product"
 )
@@ -47,6 +48,7 @@ func TestBuildGoogleMerchantProductInputUsesOneSKUAndStorefrontFields(t *testing
 		Variant: &product.ProductVariant{
 			ID:        700,
 			SKU:       "TZ-700",
+			Currency:  "USD",
 			Price:     1299.99,
 			SalePrice: &salePrice,
 			Stock:     3,
@@ -83,6 +85,117 @@ func TestBuildGoogleMerchantProductInputUsesOneSKUAndStorefrontFields(t *testing
 	}
 }
 
+func TestBuildGoogleMerchantProductInputRejectsUnconvertedCrossCurrencyPrices(t *testing.T) {
+	identifierExists := false
+	salePrice := 1200.0
+	offer := &merchant.GoogleMerchantOffer{
+		OfferID:               "tz-wheel-jp",
+		Brand:                 "Commerce Platform",
+		Condition:             "new",
+		GoogleProductCategory: "Sporting Goods",
+		IdentifierExists:      &identifierExists,
+		ContentLanguage:       "ja",
+		FeedLabel:             "JP",
+		CurrencyCode:          "JPY",
+		Product: &product.Product{
+			Name:        "Carbon Wheelset",
+			Slug:        "carbon-wheelset",
+			Description: "A fast wheelset.",
+			Media: []product.ProductMedia{{
+				MediaType: "image",
+				URL:       "https://cdn.example.com/wheelset.jpg",
+				IsVisible: true,
+			}},
+		},
+		Variant: &product.ProductVariant{
+			ID:        700,
+			SKU:       "TZ-700",
+			Currency:  "USD",
+			Price:     1500,
+			SalePrice: &salePrice,
+			Stock:     3,
+			IsActive:  true,
+		},
+	}
+	service := &GoogleMerchantService{}
+
+	if _, err := service.buildGoogleMerchantProductInput(offer, "https://example.com"); err == nil || !strings.Contains(err.Error(), "price_override in JPY") {
+		t.Fatalf("buildGoogleMerchantProductInput() error = %v, want JPY price override requirement", err)
+	}
+
+	priceOverride := 230000.0
+	offer.PriceOverride = &priceOverride
+	if _, err := service.buildGoogleMerchantProductInput(offer, "https://example.com"); err == nil || !strings.Contains(err.Error(), "sale_price_override in JPY") {
+		t.Fatalf("buildGoogleMerchantProductInput() error = %v, want JPY sale price override requirement", err)
+	}
+
+	salePriceOverride := 184000.0
+	offer.SalePriceOverride = &salePriceOverride
+	input, err := service.buildGoogleMerchantProductInput(offer, "https://example.com")
+	if err != nil {
+		t.Fatalf("buildGoogleMerchantProductInput() error = %v", err)
+	}
+	if input.ProductAttributes.Price.AmountMicros != "230000000000" || input.ProductAttributes.Price.CurrencyCode != "JPY" {
+		t.Fatalf("unexpected overridden price: %#v", input.ProductAttributes.Price)
+	}
+	if input.ProductAttributes.SalePrice == nil || input.ProductAttributes.SalePrice.AmountMicros != "184000000000" || input.ProductAttributes.SalePrice.CurrencyCode != "JPY" {
+		t.Fatalf("unexpected overridden sale price: %#v", input.ProductAttributes.SalePrice)
+	}
+}
+
+func TestBuildGoogleMerchantProductInputUsesConvertedDisplayPriceSnapshot(t *testing.T) {
+	identifierExists := false
+	salePrice := 1200.0
+	offer := &merchant.GoogleMerchantOffer{
+		OfferID:               "tz-wheel-jp-snapshot",
+		Brand:                 "Commerce Platform",
+		Condition:             "new",
+		GoogleProductCategory: "Sporting Goods",
+		IdentifierExists:      &identifierExists,
+		ContentLanguage:       "ja",
+		FeedLabel:             "JP",
+		CurrencyCode:          "JPY",
+		Product: &product.Product{
+			Name:        "Carbon Wheelset",
+			Slug:        "carbon-wheelset",
+			Description: "A fast wheelset.",
+			Media: []product.ProductMedia{{
+				MediaType: "image",
+				URL:       "https://cdn.example.com/wheelset.jpg",
+				IsVisible: true,
+			}},
+		},
+		Variant: &product.ProductVariant{
+			ID:        701,
+			SKU:       "TZ-701",
+			Currency:  "USD",
+			Price:     1500,
+			SalePrice: &salePrice,
+			DisplayPriceData: currency.DisplayPriceSnapshotsJSON([]currency.DisplayPriceSnapshot{{
+				Amount:        230000,
+				Currency:      "JPY",
+				QuoteCurrency: "JPY",
+				Rate:          153.333333,
+				Source:        "direct_rate",
+				Converted:     true,
+			}}, "USD"),
+			Stock:    3,
+			IsActive: true,
+		},
+	}
+
+	input, err := (&GoogleMerchantService{}).buildGoogleMerchantProductInput(offer, "https://example.com")
+	if err != nil {
+		t.Fatalf("buildGoogleMerchantProductInput() error = %v", err)
+	}
+	if input.ProductAttributes.Price.AmountMicros != "230000000000" || input.ProductAttributes.Price.CurrencyCode != "JPY" {
+		t.Fatalf("unexpected converted price: %#v", input.ProductAttributes.Price)
+	}
+	if input.ProductAttributes.SalePrice == nil || input.ProductAttributes.SalePrice.AmountMicros != "184000000000" || input.ProductAttributes.SalePrice.CurrencyCode != "JPY" {
+		t.Fatalf("unexpected converted sale price: %#v", input.ProductAttributes.SalePrice)
+	}
+}
+
 func TestBuildGoogleMerchantProductInputMapsOutOfStockSKU(t *testing.T) {
 	identifierExists := false
 	offer := &merchant.GoogleMerchantOffer{
@@ -105,6 +218,7 @@ func TestBuildGoogleMerchantProductInputMapsOutOfStockSKU(t *testing.T) {
 			}},
 		},
 		Variant: &product.ProductVariant{
+			Currency: "USD",
 			Price:    99.99,
 			Stock:    0,
 			IsActive: true,
@@ -144,6 +258,7 @@ func TestBuildGoogleMerchantProductInputResolvesRelativeImageAndLocaleURL(t *tes
 		},
 		Variant: &product.ProductVariant{
 			ID:       701,
+			Currency: "EUR",
 			Price:    999.99,
 			Stock:    5,
 			IsActive: true,
@@ -185,6 +300,7 @@ func TestBuildGoogleMerchantProductInputCanonicalizesFirstPartyImage(t *testing.
 		},
 		Variant: &product.ProductVariant{
 			ID:       702,
+			Currency: "USD",
 			Price:    999.99,
 			Stock:    5,
 			IsActive: true,

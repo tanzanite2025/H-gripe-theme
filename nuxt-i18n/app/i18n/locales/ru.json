@@ -780,7 +780,9 @@
       "noResults": "FAQ по запросу «{query}» не найдены",
       "loadingAnswers": "Загрузка ответов",
       "illustrationAlt": "Иллюстрация FAQ",
-      "selectQuestion": "Select a question to view the answer."
+      "selectQuestion": "Select a question to view the answer.",
+      "pagesAriaLabel": "FAQ pages",
+      "pagesLabel": "FAQ pages"
     }
   },
   "feedback": {

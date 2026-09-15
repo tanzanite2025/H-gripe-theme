@@ -100,7 +100,8 @@ func paymentRefundExecutionAuditDetails(
 		details["refund_id"] = refund.ID
 		details["order_id"] = refund.OrderID
 		details["transaction_id"] = refund.TransactionID
-		details["amount"] = refund.Amount
+		details["amount_minor"] = refund.AmountMinor
+		details["currency"] = refund.Currency
 		details["refund_status"] = refund.Status
 		details["line_item_count"] = len(refund.LineItems)
 	}
@@ -146,9 +147,10 @@ func paymentRefundDraftAuditDetails(
 		details["refund_id"] = refund.ID
 		details["order_id"] = refund.OrderID
 		details["transaction_id"] = refund.TransactionID
-		details["requested_amount"] = refund.RequestedAmount
-		details["net_amount"] = refund.Amount
-		details["discount_clawback_amount"] = refund.DiscountClawbackAmount
+		details["requested_amount_minor"] = refund.RequestedAmountMinor
+		details["net_amount_minor"] = refund.AmountMinor
+		details["discount_clawback_amount_minor"] = refund.DiscountClawbackAmountMinor
+		details["currency"] = refund.Currency
 		details["refund_status"] = refund.Status
 		details["line_item_count"] = len(refund.LineItems)
 	}

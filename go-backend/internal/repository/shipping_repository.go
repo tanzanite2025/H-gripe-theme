@@ -815,6 +815,7 @@ func (r *ShippingRepository) UpdateCarrierService(service *shipping.CarrierServi
 		"volumetric_divisor":      service.VolumetricDivisor,
 		"fuel_surcharge_percent":  service.FuelSurchargePercent,
 		"remote_surcharge":        service.RemoteSurcharge,
+		"remote_postal_codes":     service.RemotePostalCodes,
 		"eta_min_days":            service.EtaMinDays,
 		"eta_max_days":            service.EtaMaxDays,
 		"enabled":                 service.Enabled,
@@ -1002,9 +1003,17 @@ func (r *ShippingRepository) CreatePackagingRuleApply(apply *shipping.PackagingR
 	return r.db.Create(apply).Error
 }
 
-func (r *ShippingRepository) FindPackagingRuleApply(ruleID uint, productID uint) (*shipping.PackagingRuleApply, error) {
+func (r *ShippingRepository) FindPackagingRuleApply(ruleID uint, productID uint, variantID ...*uint) (*shipping.PackagingRuleApply, error) {
 	var apply shipping.PackagingRuleApply
-	err := r.db.Where("rule_id = ? AND product_id = ?", ruleID, productID).First(&apply).Error
+	query := r.db.Where("rule_id = ? AND product_id = ?", ruleID, productID)
+	if len(variantID) > 0 {
+		if variantID[0] == nil {
+			query = query.Where("variant_id IS NULL")
+		} else {
+			query = query.Where("variant_id = ?", *variantID[0])
+		}
+	}
+	err := query.First(&apply).Error
 	if err != nil {
 		return nil, err
 	}
@@ -1020,6 +1029,22 @@ func (r *ShippingRepository) FindPackagingRuleApplyByProductID(productID uint) (
 	return &apply, nil
 }
 
+// FindPackagingRuleApplyByProductAndVariant returns the binding for one
+// product target. A nil variant ID addresses the product-level default.
+func (r *ShippingRepository) FindPackagingRuleApplyByProductAndVariant(productID uint, variantID *uint) (*shipping.PackagingRuleApply, error) {
+	var apply shipping.PackagingRuleApply
+	query := r.db.Where("product_id = ?", productID)
+	if variantID == nil {
+		query = query.Where("variant_id IS NULL")
+	} else {
+		query = query.Where("variant_id = ?", *variantID)
+	}
+	if err := query.First(&apply).Error; err != nil {
+		return nil, err
+	}
+	return &apply, nil
+}
+
 // DeletePackagingRuleApply 閸掔娀娅庨崠鍛邦棅鐟欏嫬鍨惃鍕安閻劋楠囬崫浣筋唶瑜?
 func (r *ShippingRepository) DeletePackagingRuleApply(id uint) error {
 	return r.db.Delete(&shipping.PackagingRuleApply{}, id).Error
@@ -1029,6 +1054,39 @@ func (r *ShippingRepository) FindActivePackagingRulesByProductIDs(productIDs []u
 	rulesByProduct := make(map[uint]*shipping.PackagingRule)
 	if len(productIDs) == 0 {
 		return rulesByProduct, nil
+	}
+
+	rulesByTarget, err := r.FindActivePackagingRulesByProductIDsAndVariants(productIDs)
+	if err != nil {
+		return nil, err
+	}
+	for productID, rules := range rulesByTarget {
+		if rule := rules[0]; rule != nil {
+			rulesByProduct[productID] = rule
+			continue
+		}
+		// Preserve a useful result for legacy callers when a product only has
+		// one variant-specific rule and no product-level default.
+		var firstVariantID uint
+		for variantID, rule := range rules {
+			if variantID == 0 || rule == nil || (firstVariantID != 0 && variantID >= firstVariantID) {
+				continue
+			}
+			firstVariantID = variantID
+			rulesByProduct[productID] = rule
+		}
+	}
+	return rulesByProduct, nil
+}
+
+// FindActivePackagingRulesByProductIDsAndVariants loads all active bindings
+// for the requested products. The inner map uses variant ID 0 for the
+// product-level default rule. This allows callers to apply the deterministic
+// precedence of variant-specific rule over the product default.
+func (r *ShippingRepository) FindActivePackagingRulesByProductIDsAndVariants(productIDs []uint) (map[uint]map[uint]*shipping.PackagingRule, error) {
+	rulesByTarget := make(map[uint]map[uint]*shipping.PackagingRule)
+	if len(productIDs) == 0 {
+		return rulesByTarget, nil
 	}
 
 	var applies []shipping.PackagingRuleApply
@@ -1047,13 +1105,25 @@ func (r *ShippingRepository) FindActivePackagingRulesByProductIDs(productIDs []u
 		if apply.Rule == nil {
 			continue
 		}
-		if _, exists := rulesByProduct[apply.ProductID]; exists {
-			return nil, fmt.Errorf("product ID %d has multiple active packaging rules", apply.ProductID)
+		variantID := uint(0)
+		if apply.VariantID != nil {
+			variantID = *apply.VariantID
 		}
-		rulesByProduct[apply.ProductID] = apply.Rule
+		rules := rulesByTarget[apply.ProductID]
+		if rules == nil {
+			rules = make(map[uint]*shipping.PackagingRule)
+			rulesByTarget[apply.ProductID] = rules
+		}
+		if _, exists := rules[variantID]; exists {
+			if variantID == 0 {
+				return nil, fmt.Errorf("product ID %d has multiple active default packaging rules", apply.ProductID)
+			}
+			return nil, fmt.Errorf("product ID %d variant ID %d has multiple active packaging rules", apply.ProductID, variantID)
+		}
+		rules[variantID] = apply.Rule
 	}
 
-	return rulesByProduct, nil
+	return rulesByTarget, nil
 }
 
 // FindPackagingRulesByProductID 閺嶈宓佹禍褍鎼D閺屻儲澹橀崠褰掑帳閻ㄥ嫭绺哄ú璇插瘶鐟佸懓顫夐弽鑹邦潐閸?
@@ -1061,6 +1131,7 @@ func (r *ShippingRepository) FindPackagingRulesByProductID(productID uint) ([]sh
 	var rules []shipping.PackagingRule
 	err := r.db.Joins("JOIN shipping_packaging_rule_applies ON shipping_packaging_rule_applies.rule_id = shipping_packaging_rules.id").
 		Where("shipping_packaging_rule_applies.product_id = ? AND shipping_packaging_rules.is_active = ?", productID, true).
+		Order("shipping_packaging_rule_applies.variant_id ASC, shipping_packaging_rule_applies.id DESC").
 		Find(&rules).Error
 	return rules, err
 }

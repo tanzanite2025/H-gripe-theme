@@ -27,15 +27,20 @@ type OrderService struct {
 
 var (
 	ErrOrderNotFound                                 = errors.New("order not found")
-	ErrOrderDeleteNotAllowed                         = errors.New("only cancelled, payment expired, or refunded orders can be deleted")
+	ErrOrderHideNotAllowed                           = errors.New("only orders in cancelled/unpaid or payment_expired/expired state can be hidden; orders with payment activity must be retained")
+	ErrOrderHideTransactionRequired                  = errors.New("hiding an order requires a transaction manager")
 	ErrPaidOrderCancellationNotAllowed               = errors.New("paid orders cannot be cancelled directly; please submit an after-sales refund request or contact support")
 	ErrOrderCancellationConflict                     = errors.New("order was already cancelled or is no longer eligible for cancellation")
+	ErrOrderStatusConflict                           = repository.ErrOrderStatusConflict
 	ErrSystemManagedOrderStatus                      = errors.New("order status is managed by payment workflow")
 	ErrOrderFulfillmentNotAllowed                    = errors.New("only paid, processing, or already shipped orders can be fulfilled")
 	ErrOrderFulfillmentPaymentRequired               = errors.New("only paid orders can be fulfilled")
+	ErrOrderFulfillmentOnHold                        = errors.New("order fulfillment is blocked while payment dispute or review is active")
 	ErrOrderFulfillmentTransactionNeeded             = errors.New("order fulfillment transaction is not configured")
+	ErrOrderCustomsUpdateTransactionNeeded           = errors.New("order customs update transaction is not configured")
 	ErrOrderFulfillmentSignatureConfirmationRequired = errors.New("signature confirmation is required before fulfilling this order")
 	ErrOrderFulfillmentStatusManaged                 = errors.New("shipped status is managed by the fulfillment workflow")
+	ErrOrderCustomsUpdateLocked                      = errors.New("order customs declaration is locked after shipment")
 	ErrOrderProductionNotRequired                    = errors.New("order does not require production")
 	ErrOrderProductionPaymentRequired                = errors.New("only paid orders can enter production")
 	ErrOrderProductionNotAllowed                     = errors.New("order is not eligible for production workflow")
@@ -52,9 +57,13 @@ var (
 	ErrOrderIdempotencyConflict                      = errors.New("idempotency key was already used for a different order request")
 	ErrOrderIdempotencyInProgress                    = errors.New("idempotent order request is already being processed")
 	ErrOrderIdempotencyHashRequired                  = errors.New("idempotency request hash is required")
+	ErrOrderFulfillmentIdempotencyUnavailable        = errors.New("order fulfillment idempotency is not configured")
+	ErrOrderFulfillmentIdempotencyConflict           = errors.New("idempotency key was already used for a different fulfillment request")
+	ErrOrderFulfillmentIdempotencyInProgress         = errors.New("idempotent fulfillment request is already being processed")
 	ErrOrderEvidenceNotConfigured                    = errors.New("order evidence services are not configured")
 	ErrDeclaredValueInvalid                          = errors.New("declared value must be a finite non-negative number")
 	ErrDeclaredValueConfirmationRequired             = errors.New("declared value is required when confirming")
+	ErrOrderCustomsDeclarationIncomplete             = errors.New("customs declared value must be a positive confirmed value for every order item")
 )
 
 func NewOrderService(

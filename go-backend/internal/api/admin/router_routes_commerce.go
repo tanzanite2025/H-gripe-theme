@@ -5,6 +5,7 @@ import (
 	"commerce-platform/internal/domain/auth"
 
 	"github.com/gin-gonic/gin"
+	"github.com/redis/go-redis/v9"
 )
 
 func registerCommerceRoutes(
@@ -16,6 +17,7 @@ func registerCommerceRoutes(
 	paymentRiskMonitoringHandler *PaymentRiskMonitoringHandler,
 	paymentProtectionHandler *PaymentProtectionHandler,
 	paymentRefundRecommendationHandler *PaymentRefundRecommendationHandler,
+	redisClient redis.UniversalClient,
 ) {
 	// 订单管理（需要订单管理权限）
 	ordersGroup := authenticated.Group("/orders")
@@ -31,11 +33,12 @@ func registerCommerceRoutes(
 		ordersGroup.PATCH("/after-sales/:id/status", middleware.RequirePermission(auth.PermOrderEdit), afterSalesHandler.UpdateStatus)
 		ordersGroup.GET("/:id/dispute-analysis", orderHandler.GetOrderDisputeAnalysis)
 		ordersGroup.GET("/:id/customs-export", orderHandler.ExportOrderCustoms)
+		ordersGroup.POST("/:id/hide-unpaid-terminal", middleware.RequirePermission(auth.PermOrderDelete), orderHandler.HideUnpaidCancelledOrPaymentExpiredOrderFromDefaultQueries)
 		ordersGroup.GET("/:id", orderHandler.GetOrder)
 		ordersGroup.PATCH("/:id/status", middleware.RequirePermission(auth.PermOrderEdit), orderHandler.UpdateOrderStatus)
 		ordersGroup.PATCH("/:id/shipping-status", middleware.RequirePermission(auth.PermOrderEdit), orderHandler.UpdateShippingStatus)
 		ordersGroup.PATCH("/:id/tracking", middleware.RequirePermission(auth.PermOrderEdit), orderHandler.UpdateTrackingInfo)
-		ordersGroup.POST("/:id/fulfillment", middleware.RequirePermission(auth.PermOrderEdit), orderHandler.FulfillOrder)
+		ordersGroup.POST("/:id/fulfillment", middleware.RequirePermission(auth.PermOrderEdit), middleware.Idempotency(redisClient), orderHandler.FulfillOrder)
 		ordersGroup.POST("/:id/production/start", middleware.RequirePermission(auth.PermOrderEdit), orderHandler.StartProduction)
 		ordersGroup.POST("/:id/production/complete", middleware.RequirePermission(auth.PermOrderEdit), orderHandler.CompleteProduction)
 		ordersGroup.POST("/:id/tracking/sync", middleware.RequirePermission(auth.PermOrderEdit), orderHandler.SyncTrackingInfo)
@@ -43,7 +46,8 @@ func registerCommerceRoutes(
 		ordersGroup.PATCH("/:id/admin-note", middleware.RequirePermission(auth.PermOrderEdit), orderHandler.UpdateAdminNote)
 		ordersGroup.PATCH("/:id/items/:item_id/customs", middleware.RequirePermission(auth.PermOrderEdit), orderHandler.UpdateOrderItemCustoms)
 		ordersGroup.POST("/batch-status", middleware.RequirePermission(auth.PermOrderEdit), orderHandler.BatchUpdateStatus)
-		ordersGroup.DELETE("/:id", middleware.RequirePermission(auth.PermOrderDelete), orderHandler.DeleteOrder)
+		// Deprecated compatibility route: this is a guarded soft hide, never a physical delete.
+		ordersGroup.DELETE("/:id", middleware.RequirePermission(auth.PermOrderDelete), orderHandler.HideUnpaidCancelledOrPaymentExpiredOrderFromDefaultQueries)
 	}
 
 	afterSalesGroup := authenticated.Group("/after-sales")
@@ -66,8 +70,8 @@ func registerCommerceRoutes(
 		paymentGroup.GET("/orders/:order_id/transactions", paymentHandler.GetOrderTransactions)
 		paymentGroup.GET("/refunds/:id", paymentHandler.GetRefund)
 		paymentGroup.GET("/orders/:order_id/refunds", paymentHandler.GetOrderRefunds)
-		paymentGroup.POST("/refunds", middleware.RequirePermission(auth.PermOrderRefund), paymentHandler.CreateRefund)
-		paymentGroup.POST("/refunds/:id/execute", middleware.RequirePermission(auth.PermOrderRefund), paymentRefundExecutionHandler.ExecutePendingRefund)
+		paymentGroup.POST("/refunds", middleware.RequirePermission(auth.PermOrderRefund), middleware.Idempotency(redisClient), paymentHandler.CreateRefund)
+		paymentGroup.POST("/refunds/:id/execute", middleware.RequirePermission(auth.PermOrderRefund), middleware.Idempotency(redisClient), paymentRefundExecutionHandler.ExecutePendingRefund)
 		paymentGroup.GET("/disputes", paymentHandler.ListStripeDisputes)
 		paymentGroup.GET("/disputes/:id", paymentHandler.GetStripeDispute)
 		paymentGroup.GET("/disputes/:id/evidence", paymentHandler.GetStripeDisputeEvidence)

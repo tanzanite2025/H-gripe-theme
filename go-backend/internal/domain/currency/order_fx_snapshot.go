@@ -56,16 +56,6 @@ func (s OrderFXSnapshot) Validate(expectedOrderCurrency string) error {
 	return nil
 }
 
-func (s OrderFXSnapshot) OrderAmountToBase(amount float64) (float64, error) {
-	if err := s.Validate(s.OrderCurrency); err != nil {
-		return 0, err
-	}
-	if amount < 0 {
-		return 0, errors.New("order amount cannot be negative")
-	}
-	return amount / s.BaseToOrderRate, nil
-}
-
 func OrderFXSnapshotJSON(snapshot OrderFXSnapshot) datatypes.JSON {
 	encoded, err := json.Marshal(snapshot)
 	if err != nil {

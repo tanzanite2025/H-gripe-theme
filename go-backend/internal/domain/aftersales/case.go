@@ -110,10 +110,11 @@ type AfterSalesCase struct {
 	UpdatedBy   uint       `gorm:"not null;default:0" json:"updated_by"`
 	ClosedAt    *time.Time `gorm:"index" json:"closed_at,omitempty"`
 
-	Items        []AfterSalesCaseItem       `gorm:"foreignKey:CaseID" json:"items"`
-	Events       []AfterSalesCaseEvent      `gorm:"foreignKey:CaseID" json:"events"`
-	Attachments  []AfterSalesCaseAttachment `gorm:"foreignKey:CaseID" json:"attachments"`
-	RefundReview *AfterSalesRefundReview    `gorm:"foreignKey:CaseID" json:"refund_review,omitempty"`
+	Items           []AfterSalesCaseItem       `gorm:"foreignKey:CaseID" json:"items"`
+	Events          []AfterSalesCaseEvent      `gorm:"foreignKey:CaseID" json:"events"`
+	Attachments     []AfterSalesCaseAttachment `gorm:"foreignKey:CaseID" json:"attachments"`
+	ReturnShipments []AfterSalesReturnShipment `gorm:"foreignKey:CaseID" json:"return_shipments"`
+	RefundReview    *AfterSalesRefundReview    `gorm:"foreignKey:CaseID" json:"refund_review,omitempty"`
 
 	RefundReviewMaximumAmount float64 `gorm:"-" json:"refund_review_maximum_amount"`
 	RefundReviewCurrency      string  `gorm:"-" json:"refund_review_currency"`

@@ -81,6 +81,8 @@ import ProductSpecificationTemplateTablePanel from '@/components/admin/product/P
 import type {
   ProductSpecFieldType,
   ProductSpecPresentation,
+  ProductSpecRole,
+  ProductSpecSelectionMode,
   ProductSpecTemplateDialogMode,
   ProductSpecTemplateFilters,
   ProductSpecTemplateForm,
@@ -137,7 +139,7 @@ const statItems = computed(() => [
 
 const hasPermission = (permission: string): boolean => authStore.hasPermission(permission)
 const formatDate = (value?: string | null): string => value ? new Date(value).toLocaleString('zh-CN') : '-'
-const variantSpecCount = (template: ProductSpecTemplateRecord): number => (template.spec_definitions || []).filter((spec) => spec.is_variant_option).length
+const variantSpecCount = (template: ProductSpecTemplateRecord): number => (template.spec_definitions || []).filter((spec) => normalizedRole(spec) === 'variant').length
 const productSpecificSpecPattern = /(weight|重量|size|尺寸|diameter|直径|width|宽|height|高|depth|深|length|长|pack|包装|数量|count|qty)/i
 const isProductSpecificSelect = (spec: ProductSpecTemplateSpecForm): boolean => (
   spec.field_type === 'select' &&
@@ -149,6 +151,15 @@ const normalizeFieldType = (fieldType?: string | null): ProductSpecFieldType => 
   fieldTypes.includes(fieldType as ProductSpecFieldType) ? fieldType as ProductSpecFieldType : 'text'
 )
 const presentations: ProductSpecPresentation[] = ['text', 'color', 'image']
+const roles: ProductSpecRole[] = ['attribute', 'variant', 'custom_option']
+const selectionModes: ProductSpecSelectionMode[] = ['single', 'multiple']
+const normalizedRole = (spec: ProductSpecTemplateSpecDefinition | ProductSpecTemplateSpecForm): ProductSpecRole => {
+  const role = String(spec.role || '').trim() as ProductSpecRole
+  if (roles.includes(role)) return role
+  return 'attribute'
+}
+const normalizeRole = (value?: string | null): ProductSpecRole => roles.includes(value as ProductSpecRole) ? value as ProductSpecRole : 'attribute'
+const normalizeSelectionMode = (value?: string | null): ProductSpecSelectionMode => selectionModes.includes(value as ProductSpecSelectionMode) ? value as ProductSpecSelectionMode : 'single'
 const normalizePresentation = (presentation?: string | null): ProductSpecPresentation => (
   presentations.includes(presentation as ProductSpecPresentation) ? presentation as ProductSpecPresentation : 'text'
 )
@@ -165,22 +176,16 @@ const createEmptySpec = (overrides: Partial<ProductSpecTemplateSpecForm> = {}): 
   is_required: false,
   is_filterable: false,
   is_visible: true,
-  is_variant_option: false,
+  role: 'attribute',
+  selection_mode: 'single',
+  min_selections: 0,
+  max_selections: null,
   sort_order: 0,
   optionsText: '',
   validation: '',
+  option_items: [],
   ...overrides
 })
-
-const optionsToText = (options?: string | null): string => {
-  if (!options) return ''
-  try {
-    const parsed = JSON.parse(options)
-    return Array.isArray(parsed) ? parsed.join('\n') : ''
-  } catch {
-    return ''
-  }
-}
 
 const apiSpecToForm = (spec: ProductSpecTemplateSpecDefinition): ProductSpecTemplateSpecForm => ({
   ...createEmptySpec(),
@@ -191,11 +196,16 @@ const apiSpecToForm = (spec: ProductSpecTemplateSpecDefinition): ProductSpecTemp
   name: String(spec.name || ''),
   slug: String(spec.slug || ''),
   field_type: normalizeFieldType(spec.field_type),
+  role: normalizedRole(spec),
+  selection_mode: normalizeSelectionMode(spec.selection_mode),
+  min_selections: Number(spec.min_selections || 0),
+  max_selections: spec.max_selections == null ? null : Number(spec.max_selections),
   presentation: normalizePresentation(spec.presentation),
   unit: String(spec.unit || ''),
   sort_order: Number(spec.sort_order || 0),
   validation: String(spec.validation || ''),
-  optionsText: optionsToText(spec.options)
+  optionsText: (spec.option_items || []).map((item) => String(item.value_key || '').trim()).filter(Boolean).join('\n'),
+  option_items: (spec.option_items || []).map((item) => ({ ...item }))
 })
 
 const resetForm = (): void => {
@@ -257,11 +267,6 @@ const specOptionsFromText = (text?: string | null): string[] => String(text || '
 
 const specOptions = (spec: ProductSpecTemplateSpecForm): string[] => specOptionsFromText(spec.optionsText)
 
-const specPayloadOptions = (spec: ProductSpecTemplateSpecForm | ProductSpecTemplateSpecDefinition): string[] => {
-  if ('optionsText' in spec) return specOptionsFromText(spec.optionsText)
-  return specOptionsFromText(optionsToText(spec.options))
-}
-
 const validateForm = (): boolean => {
   clearFormErrors()
   const slugPattern = /^[a-z0-9]+(?:[_-][a-z0-9]+)*$/
@@ -275,6 +280,10 @@ const validateForm = (): boolean => {
     if (!slugPattern.test(slug)) formErrors[`spec:${index}:slug`] = '请输入有效的字段标识'
     else if (seenSlugs.has(slug)) formErrors[`spec:${index}:slug`] = '字段标识不能重复'
     else seenSlugs.add(slug)
+    const role = normalizeRole(spec.role)
+    if (role === 'custom_option' && spec.field_type !== 'select') formErrors[`spec:${index}:role`] = '选配项必须使用选项类型'
+    if (role === 'custom_option' && spec.selection_mode === 'single' && spec.min_selections > 1) formErrors[`spec:${index}:role`] = '单选最多要求一个值'
+    if (spec.max_selections != null && spec.max_selections < spec.min_selections) formErrors[`spec:${index}:role`] = '最大选择数不能小于最小选择数'
   })
 
   if (Object.keys(formErrors).length > 0) {
@@ -295,20 +304,46 @@ const buildPayload = (
   is_enabled: Boolean(enabled),
   spec_definitions: (source.spec_definitions || []).map((spec) => {
     const fieldType = normalizeFieldType(spec.field_type)
+    const role = normalizeRole(spec.role)
+    const selectionMode = normalizeSelectionMode(spec.selection_mode)
+    const existingItems = Array.isArray(spec.option_items) ? spec.option_items : []
+    const itemKeys = existingItems
+      .map((item) => String(item.value_key || '').trim())
+      .filter(Boolean)
+      .filter((value, index, values) => values.indexOf(value) === index)
+    const optionKeys = fieldType === 'select'
+      ? itemKeys
+      : []
+    const optionItems = optionKeys.map((valueKey, index) => {
+      const existing = existingItems.find((item) => String(item.value_key || '') === valueKey)
+      return {
+        ...(existing || {}),
+        id: existing?.id || undefined,
+        value_key: valueKey,
+        default_label: String(existing?.default_label || valueKey).trim(),
+        is_enabled_by_default: existing?.is_enabled_by_default !== false,
+        is_default: Boolean(existing?.is_default),
+        sort_order: Number(existing?.sort_order ?? index * 10),
+        revision: Number(existing?.revision || 1)
+      }
+    })
     return {
       id: Number(spec.id || 0),
       group: String(spec.group || '').trim(),
       name: String(spec.name || '').trim(),
       slug: String(spec.slug || '').trim().toLowerCase(),
       field_type: fieldType,
-      presentation: fieldType === 'select' && spec.is_variant_option ? normalizePresentation(spec.presentation) : 'text',
+      presentation: fieldType === 'select' && (role === 'variant' || role === 'custom_option') ? normalizePresentation(spec.presentation) : 'text',
       unit: String(spec.unit || '').trim(),
       is_required: Boolean(spec.is_required),
       is_filterable: Boolean(spec.is_filterable),
       is_visible: Boolean(spec.is_visible),
-      is_variant_option: Boolean(spec.is_variant_option),
+      role,
+      selection_mode: selectionMode,
+      min_selections: Math.max(0, Number(spec.min_selections || 0)),
+      max_selections: spec.max_selections == null ? null : Math.max(0, Number(spec.max_selections)),
       sort_order: Number(spec.sort_order || 0),
-      options: fieldType === 'select' ? JSON.stringify(specPayloadOptions(spec)) : '',
+      option_items: optionItems,
       validation: String(spec.validation || '')
     }
   })

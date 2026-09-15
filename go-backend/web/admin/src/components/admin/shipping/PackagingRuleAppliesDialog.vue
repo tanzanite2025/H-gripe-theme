@@ -4,7 +4,7 @@
       <DialogHeader>
         <DialogTitle>维护包装规则适用商品</DialogTitle>
         <DialogDescription>
-          {{ rule?.rule_name || '包装规则' }} · 当前为产品级唯一绑定，一个商品只能命中一个包装规则。
+          {{ rule?.rule_name || '包装规则' }} · 可配置商品默认规则，也可为具体 SKU 配置覆盖规则。
         </DialogDescription>
       </DialogHeader>
 
@@ -23,8 +23,8 @@
         </div>
       </section>
 
-      <form class="grid gap-3 md:grid-cols-[1fr_auto]" @submit.prevent="addApply">
-        <AdminFormField label="商品 ID" required description="当前事实源是 shipping_packaging_rule_applies.product_id；后续若要 SKU 级包装规则，需要升级为 scope 结构。">
+      <form class="grid gap-3 md:grid-cols-[1fr_1fr_auto]" @submit.prevent="addApply">
+        <AdminFormField label="商品 ID" required description="包装规则至少需要绑定一个商品；Variant ID 可选。">
           <Input
             v-model.number="productIDInput"
             type="number"
@@ -33,17 +33,19 @@
             placeholder="例如 1001"
           />
         </AdminFormField>
+        <AdminFormField label="SKU / Variant ID" description="留空表示商品默认规则；填写后仅覆盖该 SKU。">
+          <Input v-model.number="variantIDInput" type="number" min="1" step="1" placeholder="可选，例如 2001" />
+        </AdminFormField>
         <div class="flex items-end">
           <Button type="submit" class="w-full md:w-auto" :disabled="applySubmitting || !rule?.id">
             <LoaderCircle v-if="applySubmitting" class="size-4 animate-spin" />
-            添加适用商品
+            添加绑定
           </Button>
         </div>
       </form>
 
       <div class="rounded-lg border bg-muted/35 p-3 text-xs text-muted-foreground">
-        稳定口径：包装规则负责箱规与包装重量，SKU 负责商品实重，线路服务负责计费口径；这里不要录入 SKU 重量，也不和图库/商品图片混在一起。
-        如果商品需要换包装规则，请先移除旧绑定再添加新绑定。
+        稳定口径：包装规则负责箱规与包装重量，SKU 负责商品实重，线路服务负责计费口径；同一商品可有一个默认规则，并为不同 SKU 配置覆盖规则。
       </div>
 
       <div class="rounded-lg border">
@@ -52,17 +54,19 @@
             <TableRow>
               <TableHead class="w-24">绑定 ID</TableHead>
               <TableHead>商品 ID</TableHead>
+              <TableHead>Variant ID</TableHead>
               <TableHead class="w-44">创建时间</TableHead>
               <TableHead class="w-24 text-right">操作</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            <TableEmpty v-if="localApplies.length === 0" :colspan="4">
+            <TableEmpty v-if="localApplies.length === 0" :colspan="5">
               <div class="py-4 text-xs text-muted-foreground">暂无适用商品，报价时不会通过商品匹配到此包装规则。</div>
             </TableEmpty>
             <TableRow v-for="apply in localApplies" :key="apply.id || apply.product_id">
  <TableCell class="font-mono text-xs">#{{ apply.id || '-'}}</TableCell>
- <TableCell class="font-mono text-xs font-bold">product_id={{ apply.product_id || '-'}}</TableCell>
+              <TableCell class="font-mono text-xs font-bold">product_id={{ apply.product_id || '-'}}</TableCell>
+              <TableCell class="font-mono text-xs">{{ apply.variant_id || '默认' }}</TableCell>
               <TableCell class="font-mono text-[10px] text-muted-foreground">{{ formatDate(apply.created_at) }}</TableCell>
               <TableCell class="text-right">
                 <Button
@@ -104,11 +108,12 @@ const props = defineProps({
 const emit = defineEmits(['update:open', 'updated'])
 
 const productIDInput = ref('')
+const variantIDInput = ref('')
 const localApplies = ref([])
 const applySubmitting = ref(false)
 const deletingApplyIds = ref(new Set())
 
-const existingProductIDs = computed(() => new Set(localApplies.value.map((apply) => Number(apply.product_id || 0)).filter(Boolean)))
+const existingTargets = computed(() => new Set(localApplies.value.map((apply) => `${Number(apply.product_id || 0)}:${Number(apply.variant_id || 0)}`)))
 
 const syncLocalApplies = () => {
   localApplies.value = Array.isArray(props.rule?.applies)
@@ -119,6 +124,7 @@ const syncLocalApplies = () => {
 watch(() => props.open, (open) => {
   if (open) {
     productIDInput.value = ''
+    variantIDInput.value = ''
     syncLocalApplies()
   }
 })
@@ -130,6 +136,7 @@ watch(() => props.rule, () => {
 const addApply = async () => {
   const ruleID = Number(props.rule?.id || 0)
   const productID = Number(productIDInput.value || 0)
+  const variantID = Number(variantIDInput.value || 0)
   if (!ruleID) {
     toast.error('请先选择包装规则')
     return
@@ -138,16 +145,25 @@ const addApply = async () => {
     toast.error('请输入有效的商品 ID')
     return
   }
-  if (existingProductIDs.value.has(productID)) {
-    toast.error('这个商品已绑定当前包装规则')
+  if (!Number.isInteger(variantID) || variantID < 0) {
+    toast.error('请输入有效的 Variant ID')
+    return
+  }
+  if (existingTargets.value.has(`${productID}:${variantID}`)) {
+    toast.error('这个商品/SKU 已绑定当前包装规则')
     return
   }
 
   applySubmitting.value = true
   try {
-    const apply = await shippingApi.createPackagingRuleApply({ rule_id: ruleID, product_id: productID })
+    const apply = await shippingApi.createPackagingRuleApply({
+      rule_id: ruleID,
+      product_id: productID,
+      variant_id: variantID > 0 ? variantID : null,
+    })
     localApplies.value = [...localApplies.value, apply]
     productIDInput.value = ''
+    variantIDInput.value = ''
     emit('updated')
     toast.success('包装规则适用商品已添加')
   } catch (error) {

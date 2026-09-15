@@ -122,26 +122,26 @@ func TestValidateConfigRejectsInvalidOutboundHTTPResilienceConfig(t *testing.T) 
 	}
 }
 
-func TestValidateConfigRejectsEnabledGoogleIndexingWithoutCredentials(t *testing.T) {
+func TestValidateConfigIgnoresLegacyGoogleIndexingWithoutCredentials(t *testing.T) {
 	cfg := validTestConfig()
 	cfg.GoogleIndexing = GoogleIndexingConfig{
 		Enabled: true,
 	}
 
-	if err := validateConfig(cfg); err == nil {
-		t.Fatal("validateConfig should require Google Indexing credentials when enabled")
+	if err := validateConfig(cfg); err != nil {
+		t.Fatalf("validateConfig should ignore legacy Google Indexing settings: %v", err)
 	}
 }
 
-func TestValidateConfigRejectsBothGoogleIndexingCredentialSources(t *testing.T) {
+func TestValidateConfigIgnoresLegacyGoogleIndexingCredentialSources(t *testing.T) {
 	cfg := validTestConfig()
 	cfg.GoogleIndexing = GoogleIndexingConfig{
 		ServiceAccountJSON: "json",
 		ServiceAccountFile: "service-account.json",
 	}
 
-	if err := validateConfig(cfg); err == nil {
-		t.Fatal("validateConfig should reject both Google Indexing credential sources")
+	if err := validateConfig(cfg); err != nil {
+		t.Fatalf("validateConfig should ignore legacy Google Indexing settings: %v", err)
 	}
 }
 
@@ -415,6 +415,42 @@ func TestFeedbackRateLimitDefaultsFailClosed(t *testing.T) {
 	}
 }
 
+func TestLoadEnablesPaymentExpirationByDefault(t *testing.T) {
+	t.Setenv("SERVER_MODE", "debug")
+	t.Setenv("JWT_SECRET", "test-secret")
+	t.Setenv("WORKER_PAYMENT_EXPIRATION_ENABLED", "")
+	t.Setenv("PAYMENT_EXPIRATION_ENABLED", "")
+	t.Setenv("WORKER_PAYMENT_EXPIRATION_INTERVAL_SECONDS", "")
+	t.Setenv("PAYMENT_EXPIRATION_INTERVAL_SECONDS", "")
+	t.Setenv("WORKER_PAYMENT_PENDING_TTL_SECONDS", "")
+	t.Setenv("PAYMENT_PENDING_TTL_SECONDS", "")
+	t.Setenv("WORKER_PAYMENT_EXPIRATION_BATCH_LIMIT", "")
+	t.Setenv("PAYMENT_EXPIRATION_BATCH_LIMIT", "")
+
+	configFile := filepath.Join(t.TempDir(), "config.yaml")
+	if err := os.WriteFile(configFile, []byte("jwt:\n  secret: test-secret\n"), 0o600); err != nil {
+		t.Fatalf("write test config: %v", err)
+	}
+
+	cfg, err := Load(configFile)
+	if err != nil {
+		t.Fatalf("Load config: %v", err)
+	}
+
+	if !cfg.Worker.PaymentExpirationEnabled {
+		t.Fatal("payment expiration scheduler should be enabled by default")
+	}
+	if cfg.Worker.PaymentExpirationIntervalSeconds != 900 {
+		t.Fatalf("payment expiration interval = %d, want 900", cfg.Worker.PaymentExpirationIntervalSeconds)
+	}
+	if cfg.Worker.PaymentPendingTTLSeconds != 1800 {
+		t.Fatalf("payment pending TTL = %d, want 1800", cfg.Worker.PaymentPendingTTLSeconds)
+	}
+	if cfg.Worker.PaymentExpirationBatchLimit != 100 {
+		t.Fatalf("payment expiration batch limit = %d, want 100", cfg.Worker.PaymentExpirationBatchLimit)
+	}
+}
+
 func TestValidateConfigRejectsShortPreviousOrderNumberSecretInRelease(t *testing.T) {
 	cfg := validTestConfig()
 	cfg.Server.Mode = "release"
@@ -501,16 +537,27 @@ func TestValidateConfigRejectsInvalidCustomerServiceRealtimeConfig(t *testing.T)
 		OutboxDispatchLockTimeoutSeconds: 300,
 	}
 	cfg.CustomerServiceRealtime = CustomerServiceRealtimeConfig{
-		Enabled:               true,
-		Stream:                "customer_service:{realtime}:v1",
-		StreamMaxLen:          10000,
-		ReplayLimit:           0,
-		ConsumerBlockSeconds:  5,
-		DedupRetentionSeconds: 86400,
+		Enabled:                         true,
+		Stream:                          "customer_service:{realtime}:v1",
+		StreamMaxLen:                    10000,
+		ReplayLimit:                     0,
+		ConsumerBlockSeconds:            5,
+		DedupRetentionSeconds:           86400,
+		WebSocketMaxConnectionsPerIP:    5,
+		WebSocketConnectionLeaseSeconds: 120,
 	}
 
 	if err := validateConfig(cfg); err == nil {
 		t.Fatal("validateConfig should reject invalid customer-service realtime configuration")
+	}
+}
+
+func TestValidateConfigRejectsInvalidCustomerServiceWebSocketLimit(t *testing.T) {
+	cfg := validTestConfig()
+	cfg.CustomerServiceRealtime.WebSocketMaxConnectionsPerIP = 0
+
+	if err := validateConfig(cfg); err == nil {
+		t.Fatal("validateConfig should reject a non-positive customer-service websocket IP limit")
 	}
 }
 
@@ -523,12 +570,14 @@ func TestValidateConfigRejectsCustomerServiceRealtimeStreamWithoutRedisHashTag(t
 		OutboxDispatchLockTimeoutSeconds: 300,
 	}
 	cfg.CustomerServiceRealtime = CustomerServiceRealtimeConfig{
-		Enabled:               true,
-		Stream:                "customer_service:realtime:v1",
-		StreamMaxLen:          10000,
-		ReplayLimit:           200,
-		ConsumerBlockSeconds:  5,
-		DedupRetentionSeconds: 86400,
+		Enabled:                         true,
+		Stream:                          "customer_service:realtime:v1",
+		StreamMaxLen:                    10000,
+		ReplayLimit:                     200,
+		ConsumerBlockSeconds:            5,
+		DedupRetentionSeconds:           86400,
+		WebSocketMaxConnectionsPerIP:    5,
+		WebSocketConnectionLeaseSeconds: 120,
 	}
 
 	if err := validateConfig(cfg); err == nil {
@@ -539,12 +588,14 @@ func TestValidateConfigRejectsCustomerServiceRealtimeStreamWithoutRedisHashTag(t
 func TestValidateConfigRejectsCustomerServiceRealtimeWithoutOutboxDispatcher(t *testing.T) {
 	cfg := validTestConfig()
 	cfg.CustomerServiceRealtime = CustomerServiceRealtimeConfig{
-		Enabled:               true,
-		Stream:                "customer_service:{realtime}:v1",
-		StreamMaxLen:          10000,
-		ReplayLimit:           200,
-		ConsumerBlockSeconds:  5,
-		DedupRetentionSeconds: 86400,
+		Enabled:                         true,
+		Stream:                          "customer_service:{realtime}:v1",
+		StreamMaxLen:                    10000,
+		ReplayLimit:                     200,
+		ConsumerBlockSeconds:            5,
+		DedupRetentionSeconds:           86400,
+		WebSocketMaxConnectionsPerIP:    5,
+		WebSocketConnectionLeaseSeconds: 120,
 	}
 
 	if err := validateConfig(cfg); err == nil {
@@ -561,12 +612,14 @@ func TestValidateConfigAllowsCustomerServiceRealtimeWithOutboxDispatcher(t *test
 		OutboxDispatchLockTimeoutSeconds: 300,
 	}
 	cfg.CustomerServiceRealtime = CustomerServiceRealtimeConfig{
-		Enabled:               true,
-		Stream:                "customer_service:{realtime}:v1",
-		StreamMaxLen:          10000,
-		ReplayLimit:           200,
-		ConsumerBlockSeconds:  5,
-		DedupRetentionSeconds: 86400,
+		Enabled:                         true,
+		Stream:                          "customer_service:{realtime}:v1",
+		StreamMaxLen:                    10000,
+		ReplayLimit:                     200,
+		ConsumerBlockSeconds:            5,
+		DedupRetentionSeconds:           86400,
+		WebSocketMaxConnectionsPerIP:    5,
+		WebSocketConnectionLeaseSeconds: 120,
 	}
 
 	if err := validateConfig(cfg); err != nil {
@@ -786,6 +839,10 @@ func validTestConfig() *Config {
 		},
 		PaymentThreeDS: PaymentThreeDSConfig{
 			AVSBillingShippingMismatchHighValueThresholdUSD: 800,
+		},
+		CustomerServiceRealtime: CustomerServiceRealtimeConfig{
+			WebSocketMaxConnectionsPerIP:    5,
+			WebSocketConnectionLeaseSeconds: 120,
 		},
 		SiteQuality: validSiteQualityRunnerConfig("", ""),
 	}

@@ -12,8 +12,8 @@ import (
 	"gorm.io/gorm/logger"
 
 	orderdomain "commerce-platform/internal/domain/order"
-	"commerce-platform/internal/domain/warranty"
 	"commerce-platform/internal/domain/verification"
+	"commerce-platform/internal/domain/warranty"
 	"commerce-platform/internal/repository"
 )
 
@@ -144,6 +144,37 @@ func TestWarrantyOrderClaimRequiresVerifiedEmailChallenge(t *testing.T) {
 		Description:       "replay",
 	})
 	require.ErrorIs(t, err, ErrWarrantyVerificationRequired)
+}
+
+func TestGuestWarrantyClaimCanBeViewedWithAccessTokenOrMatchingAccountEmail(t *testing.T) {
+	db, warrantyService := newTestWarrantyService(t)
+	warrantyService.ConfigureEmailChallenges(
+		repository.NewEmailChallengeRepository(db),
+		"test-email-secret",
+	)
+
+	guestClaim := seedWarrantyClaim(t, db, "TZ-WARRANTY-GUEST", 0)
+	guestClaim.Email = "guest@example.com"
+	guestClaim.Resolution = "Send the wheel to the service address."
+	require.NoError(t, db.Save(&guestClaim).Error)
+
+	accessToken, err := warrantyService.IssueWarrantyClaimAccessToken(&guestClaim)
+	require.NoError(t, err)
+	require.NotEmpty(t, accessToken)
+
+	viewed, err := warrantyService.GetWarrantyClaimForViewer(guestClaim.ID, 0, "", accessToken, false)
+	require.NoError(t, err)
+	require.Equal(t, guestClaim.Resolution, viewed.Resolution)
+
+	_, err = warrantyService.GetWarrantyClaimForViewer(guestClaim.ID, 0, "", accessToken+"tampered", false)
+	require.Error(t, err)
+
+	viewed, err = warrantyService.GetWarrantyClaimForViewer(guestClaim.ID, 5, "GUEST@example.com", "", false)
+	require.NoError(t, err)
+	require.Equal(t, guestClaim.ID, viewed.ID)
+
+	_, err = warrantyService.GetWarrantyClaimForViewer(guestClaim.ID, 5, "other@example.com", "", false)
+	require.Error(t, err)
 }
 
 func newTestWarrantyService(t *testing.T) (*gorm.DB, *WarrantyService) {

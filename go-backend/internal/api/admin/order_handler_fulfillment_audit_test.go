@@ -15,6 +15,7 @@ import (
 	"commerce-platform/internal/domain/currency"
 	orderdomain "commerce-platform/internal/domain/order"
 	"commerce-platform/internal/domain/orderevidence"
+	paymentdomain "commerce-platform/internal/domain/payment"
 	shippingdomain "commerce-platform/internal/domain/shipping"
 	"commerce-platform/internal/repository"
 	"commerce-platform/internal/service"
@@ -123,6 +124,22 @@ func TestFulfillOrderRecordsFailedFulfillmentAuditWithoutChangingOrder(t *testin
 	assert.Equal(t, "pending", stored.ShippingStatus)
 }
 
+func TestRespondOrderServiceErrorMapsFulfillmentHoldToConflict(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	recorder := httptest.NewRecorder()
+	context, _ := gin.CreateTestContext(recorder)
+
+	respondOrderServiceError(
+		context,
+		service.ErrOrderFulfillmentOnHold,
+		"fallback",
+		http.StatusInternalServerError,
+	)
+
+	assert.Equal(t, http.StatusConflict, recorder.Code)
+	assert.Contains(t, recorder.Body.String(), "payment dispute or review")
+}
+
 func TestUpdateTrackingInfoRecordsTrackingCorrectionAudit(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	db, handler, providerID, carrierServiceID := newOrderFulfillmentAuditHandler(t)
@@ -196,6 +213,9 @@ func newOrderFulfillmentAuditHandler(t *testing.T) (*gorm.DB, *OrderHandler, uin
 		&orderevidence.OrderEvidencePackage{},
 		&orderevidence.OrderEvidenceItem{},
 		&orderevidence.OrderEvidenceAttachment{},
+		&paymentdomain.StripeDispute{},
+		&paymentdomain.PayPalDispute{},
+		&paymentdomain.PaymentReview{},
 		&shippingdomain.Carrier{},
 		&shippingdomain.CarrierService{},
 		&shippingdomain.TrackingProviderConfig{},
@@ -278,17 +298,19 @@ func seedReadyFulfillmentEvidenceForAdminTest(t *testing.T, db *gorm.DB, orderRe
 
 	variantID := uint(1)
 	item := orderdomain.OrderItem{
-		OrderID:     storedOrder.ID,
-		ProductID:   1,
-		VariantID:   &variantID,
-		ProductName: "Fulfillment audit product",
-		SKU:         fmt.Sprintf("FULFILL-AUDIT-%d", storedOrder.ID),
-		Quantity:    1,
-		Price:       storedOrder.TotalAmount,
-		Subtotal:    storedOrder.TotalAmount,
-		Total:       storedOrder.TotalAmount,
-		Attributes:  "{}",
-		WeightGrams: 1000,
+		OrderID:                storedOrder.ID,
+		ProductID:              1,
+		VariantID:              &variantID,
+		ProductName:            "Fulfillment audit product",
+		SKU:                    fmt.Sprintf("FULFILL-AUDIT-%d", storedOrder.ID),
+		Quantity:               1,
+		Price:                  storedOrder.TotalAmount,
+		Subtotal:               storedOrder.TotalAmount,
+		Total:                  storedOrder.TotalAmount,
+		Attributes:             "{}",
+		WeightGrams:            1000,
+		DeclaredValue:          float64PtrForAdminFulfillmentTest(storedOrder.TotalAmount),
+		DeclaredValueConfirmed: true,
 	}
 	require.NoError(t, db.Create(&item).Error)
 	storedOrder.Items = []orderdomain.OrderItem{item}
@@ -350,6 +372,9 @@ func seedReadyFulfillmentEvidenceForAdminTest(t *testing.T, db *gorm.DB, orderRe
 	}
 }
 
+func float64PtrForAdminFulfillmentTest(value float64) *float64 {
+	return &value
+}
 func registerAdminFulfillmentAttachment(
 	t *testing.T,
 	db *gorm.DB,

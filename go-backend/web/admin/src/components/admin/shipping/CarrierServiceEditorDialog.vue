@@ -109,6 +109,14 @@
             <Input v-model.number="form.remote_surcharge" type="number" min="0" step="0.01" />
           </AdminFormField>
 
+          <AdminFormField
+            label="偏远邮编段"
+            class="lg:col-span-2"
+            description="JSON 数组，支持精确邮编、前缀 * 或范围；为空时对该线路全部目的地收取偏远附加费。"
+          >
+            <Textarea v-model="form.remote_postal_codes" class="min-h-20 font-mono text-xs" placeholder='["10000-10099","967*"]' />
+          </AdminFormField>
+
           <AdminFormField label="最短时效 天">
             <Input v-model.number="form.eta_min_days" type="number" min="0" step="1" />
           </AdminFormField>

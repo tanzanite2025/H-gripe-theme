@@ -101,6 +101,48 @@ func (h *Handler) CreateAfterSalesRequest(c *gin.Context) {
 	response.Created(c, record)
 }
 
+// ListAfterSalesRequests returns the authenticated customer's after-sales
+// cases for an order, including the current resolution and status history.
+// GET /api/v1/orders/:order_number/after-sales
+func (h *Handler) ListAfterSalesRequests(c *gin.Context) {
+	userIDValue, exists := c.Get("user_id")
+	if !exists {
+		apierror.RespondUnauthorized(c)
+		return
+	}
+	userID, ok := userIDValue.(uint)
+	if !ok || userID == 0 {
+		apierror.RespondUnauthorized(c)
+		return
+	}
+	if h == nil || h.orderService == nil || h.afterSalesService == nil {
+		apierror.RespondInternalError(c, errors.New("after-sales service is not configured"))
+		return
+	}
+
+	orderNumber := strings.TrimSpace(c.Param("order_number"))
+	if orderNumber == "" {
+		apierror.RespondBadRequest(c, "Invalid order number")
+		return
+	}
+
+	// Resolve ownership before querying cases so an order number cannot be used
+	// to enumerate another customer's after-sales history.
+	orderRecord, err := h.orderService.GetOrderByNumber(orderNumber, userID)
+	if err != nil {
+		apierror.RespondNotFound(c, "Order")
+		return
+	}
+
+	cases, err := h.afterSalesService.ListCustomerCasesByOrder(orderRecord.ID, c.Query("status"))
+	if err != nil {
+		respondAfterSalesRequestError(c, err)
+		return
+	}
+
+	response.Success(c, gin.H{"cases": publicAfterSalesCasesFromDomain(cases)})
+}
+
 func (h *Handler) uploadAfterSalesEvidence(
 	c *gin.Context,
 ) ([]aftersales.AfterSalesCaseAttachment, []string, error) {
@@ -235,7 +277,8 @@ func respondAfterSalesRequestError(c *gin.Context, err error) {
 	case errors.Is(err, service.ErrAfterSalesOrderNotEligible),
 		errors.Is(err, service.ErrAfterSalesDescriptionRequired),
 		errors.Is(err, service.ErrAfterSalesItemsRequired),
-		errors.Is(err, service.ErrAfterSalesAttachmentKindInvalid):
+		errors.Is(err, service.ErrAfterSalesAttachmentKindInvalid),
+		errors.Is(err, service.ErrAfterSalesStatusInvalid):
 		apierror.RespondBadRequest(c, err.Error())
 	case errors.Is(err, service.ErrAfterSalesRequestAlreadyExists):
 		apierror.RespondConflict(c, err.Error())

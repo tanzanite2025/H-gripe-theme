@@ -3,9 +3,12 @@ package service
 import (
 	"errors"
 	"fmt"
+	"math/big"
+	"strconv"
 	"strings"
 
 	currencydomain "commerce-platform/internal/domain/currency"
+	domainmoney "commerce-platform/internal/domain/money"
 	orderdomain "commerce-platform/internal/domain/order"
 	paymentdomain "commerce-platform/internal/domain/payment"
 )
@@ -68,8 +71,8 @@ func ensureRefundFXSnapshot(
 func validateHistoricalRefundFXCap(
 	snapshot currencydomain.OrderFXSnapshot,
 	transaction *paymentdomain.Transaction,
-	refundAmount float64,
-	reservedAmount float64,
+	refundAmount domainmoney.Money,
+	reservedAmount domainmoney.Money,
 ) error {
 	if transaction == nil {
 		return errors.New("transaction is required for FX validation")
@@ -77,41 +80,63 @@ func validateHistoricalRefundFXCap(
 	if err := snapshot.Validate(transaction.Currency); err != nil {
 		return err
 	}
-	if refundAmount <= 0 {
-		return errors.New("refund amount must be greater than zero")
+	if err := refundAmount.Validate(); err != nil {
+		return fmt.Errorf("invalid refund amount: %w", err)
 	}
-	if reservedAmount < 0 {
-		reservedAmount = 0
+	if err := reservedAmount.Validate(); err != nil {
+		return fmt.Errorf("invalid reserved refund amount: %w", err)
+	}
+	transactionCurrency, err := currencydomain.ParseCode(transaction.Currency)
+	if err != nil {
+		return fmt.Errorf("invalid transaction currency: %w", err)
+	}
+	if refundAmount.Currency() != transactionCurrency || reservedAmount.Currency() != transactionCurrency {
+		return domainmoney.ErrCurrencyMismatch
+	}
+	if refundAmount.AmountMinor() < 0 {
+		return errors.New("refund amount cannot be negative")
+	}
+	if reservedAmount.AmountMinor() < 0 {
+		reservedAmount, err = domainmoney.New(0, transaction.Currency)
+		if err != nil {
+			return err
+		}
 	}
 
-	originalBaseAmount, err := snapshot.OrderAmountToBase(transaction.Amount)
+	transactionMoney, err := transaction.AmountMoney()
 	if err != nil {
-		return err
+		return fmt.Errorf("invalid transaction amount: %w", err)
 	}
-	reservedBaseAmount, err := snapshot.OrderAmountToBase(reservedAmount)
+	remainingMoney, err := transactionMoney.Subtract(reservedAmount)
 	if err != nil {
-		return err
+		return fmt.Errorf("calculate remaining refund amount: %w", err)
 	}
-	refundBaseAmount, err := snapshot.OrderAmountToBase(refundAmount)
+	if remainingMoney.AmountMinor() < 0 {
+		remainingMoney, _ = domainmoney.New(0, transaction.Currency)
+	}
+	rate, ok := new(big.Rat).SetString(strconv.FormatFloat(snapshot.BaseToOrderRate, 'f', -1, 64))
+	if !ok || rate.Sign() <= 0 {
+		return errors.New("order FX snapshot rate is invalid")
+	}
+	orderToBase := new(big.Rat).Inv(rate)
+	remainingBase, err := remainingMoney.ConvertAtRat(orderToBase, snapshot.BaseCurrency)
 	if err != nil {
-		return err
+		return fmt.Errorf("convert remaining refund amount to base currency: %w", err)
 	}
-	remainingBaseAmount := originalBaseAmount - reservedBaseAmount
-	if refundBaseAmount > remainingBaseAmount+0.01 {
+	refundBase, err := refundAmount.ConvertAtRat(orderToBase, snapshot.BaseCurrency)
+	if err != nil {
+		return fmt.Errorf("convert refund amount to base currency: %w", err)
+	}
+	if refundBase.AmountMinor() > remainingBase.AmountMinor() {
+		remainingFormatted, _ := remainingBase.FormatMajor()
+		refundFormatted, _ := refundBase.FormatMajor()
 		return fmt.Errorf(
-			"refund amount %.2f %s exceeds historical FX cap %.2f %s",
-			refundBaseAmount,
+			"refund amount %s %s exceeds historical FX cap %s %s",
+			refundFormatted,
 			snapshot.BaseCurrency,
-			maxFloat(remainingBaseAmount, 0),
+			remainingFormatted,
 			snapshot.BaseCurrency,
 		)
 	}
 	return nil
-}
-
-func maxFloat(value, minimum float64) float64 {
-	if value < minimum {
-		return minimum
-	}
-	return value
 }

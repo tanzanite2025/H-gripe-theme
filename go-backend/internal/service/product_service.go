@@ -12,6 +12,8 @@ import (
 
 	"golang.org/x/sync/singleflight"
 	"gorm.io/gorm"
+
+	"github.com/redis/go-redis/v9"
 )
 
 type mediaAssetDeleter interface {
@@ -35,6 +37,8 @@ type ProductService struct {
 	storefrontHTMLCacheInvalidator *StorefrontHTMLCacheInvalidator
 	merchantEvents                 MerchantProductEventPublisher
 	txManager                      *repository.TxManager
+	displayPriceLeaseRepo          *repository.ExchangeRateRepository
+	viewCountBuffer                *ProductViewCountBuffer
 }
 
 func NewProductService(productRepo *repository.ProductRepository, cache *cache.RedisCache, cacheTTL int) *ProductService {
@@ -59,11 +63,33 @@ func NewProductServiceWithCacheOptions(productRepo *repository.ProductRepository
 	}
 }
 
+// ConfigureProductViewCountBuffer enables Redis-backed asynchronous view counting.
+func (s *ProductService) ConfigureProductViewCountBuffer(client redis.UniversalClient, batchSize int) {
+	if s == nil {
+		return
+	}
+	s.viewCountBuffer = NewProductViewCountBuffer(client, s.productRepo, batchSize)
+}
+
+func (s *ProductService) FlushProductViewCounts(ctx context.Context) (int, error) {
+	if s == nil || s.viewCountBuffer == nil {
+		return 0, nil
+	}
+	return s.viewCountBuffer.Flush(ctx)
+}
+
 func (s *ProductService) ConfigureCurrencyPolicy(policy *CurrencyPolicyService) {
 	if s == nil {
 		return
 	}
 	s.currencyPolicy = policy
+}
+
+func (s *ProductService) ConfigureDisplayPriceRefreshLeaseRepository(repo *repository.ExchangeRateRepository) {
+	if s == nil {
+		return
+	}
+	s.displayPriceLeaseRepo = repo
 }
 
 func (s *ProductService) ConfigureInformationTemplateRepository(repo *repository.ProductInformationTemplateRepository) {
@@ -225,7 +251,7 @@ func (s *ProductService) GetByIDContext(ctx context.Context, id uint) (*product.
 		if err != nil {
 			return nil, err
 		}
-		_ = s.productRepo.IncrementViewCountContext(ctx, id)
+		s.recordProductView(ctx, id)
 		return result, nil
 	})
 }
@@ -243,7 +269,7 @@ func (s *ProductService) GetBySlugContext(ctx context.Context, slug, locale stri
 		if err != nil {
 			return nil, err
 		}
-		_ = s.productRepo.IncrementViewCountContext(ctx, result.ID)
+		s.recordProductView(ctx, result.ID)
 		return result, nil
 	})
 }
@@ -336,7 +362,20 @@ func (s *ProductService) loadAndCacheProduct(ctx context.Context, cacheKey strin
 		return nil, err
 	}
 	result = sanitizeProductHTML(result)
-	_ = s.cache.SetContext(ctx, cacheKey, result, s.cacheTTL)
+	// This path is used when the distributed read lease cannot be acquired.
+	// Take the same key lock before publishing so a concurrent invalidation
+	// cannot be followed by a stale cache write.
+	if barrier, ok := interface{}(s.cache).(interface {
+		AcquireLock(context.Context, string, time.Duration) (*cache.RedisLock, bool, error)
+	}); ok {
+		lock, acquired, lockErr := barrier.AcquireLock(ctx, productCacheLockKey(cacheKey), s.cacheLockTTL)
+		if lockErr == nil && acquired {
+			_ = s.cache.SetContext(ctx, cacheKey, result, s.cacheTTL)
+			_ = lock.Release(context.Background())
+		}
+	} else {
+		_ = s.cache.SetContext(ctx, cacheKey, result, s.cacheTTL)
+	}
 	return result, nil
 }
 
@@ -437,8 +476,18 @@ func (s *ProductService) GetPublicByIDContext(ctx context.Context, id uint) (*pr
 	if result.Status != "active" {
 		return nil, ErrProductNotFound
 	}
-	_ = s.productRepo.IncrementViewCountContext(ctx, id)
+	s.recordProductView(ctx, id)
 	return sanitizeProductHTML(result), nil
+}
+
+func (s *ProductService) recordProductView(ctx context.Context, id uint) {
+	if s.viewCountBuffer != nil {
+		// View telemetry must never put synchronous pressure back on PostgreSQL
+		// when Redis is unavailable. The next request/flush will retry naturally.
+		_ = s.viewCountBuffer.Increment(ctx, id)
+		return
+	}
+	_ = s.productRepo.IncrementViewCountContext(ctx, id)
 }
 
 func (s *ProductService) GetRecommendationContextProduct(id uint) (*product.Product, error) {

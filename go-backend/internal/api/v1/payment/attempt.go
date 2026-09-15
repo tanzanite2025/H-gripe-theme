@@ -2,6 +2,7 @@ package payment
 
 import (
 	"commerce-platform/internal/api/middleware"
+	domainmoney "commerce-platform/internal/domain/money"
 	orderdomain "commerce-platform/internal/domain/order"
 	paymentdomain "commerce-platform/internal/domain/payment"
 	"commerce-platform/internal/pkg/apierror"
@@ -16,17 +17,16 @@ func (h *Handler) ensurePaymentAttempt(
 	provider pgateway.GatewayType,
 	paymentMethod string,
 	orderRecord *orderdomain.Order,
-	amount float64,
-	currency string,
+	amount domainmoney.Money,
 ) (*paymentdomain.Transaction, bool) {
 	if h == nil || h.paymentService == nil || orderRecord == nil {
 		return nil, false
 	}
-	attemptKey := service.NormalizePaymentAttemptKey(
-		string(provider),
-		orderRecord.ID,
-		middleware.GetIdempotencyKey(c),
-	)
+	attemptKey := service.NormalizePaymentAttemptKey(middleware.GetIdempotencyKey(c))
+	if attemptKey == "" {
+		apierror.RespondBadRequest(c, "Idempotency-Key header is required")
+		return nil, false
+	}
 	providerRequestKey := service.PaymentProviderRequestKey(
 		string(provider),
 		orderRecord.ID,
@@ -39,7 +39,6 @@ func (h *Handler) ensurePaymentAttempt(
 		ProviderRequestKey: providerRequestKey,
 		PaymentMethod:      paymentMethod,
 		Amount:             amount,
-		Currency:           currency,
 	})
 	if err != nil {
 		apierror.RespondInternalError(c, err)

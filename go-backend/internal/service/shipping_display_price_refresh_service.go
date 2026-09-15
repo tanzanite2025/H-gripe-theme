@@ -1,10 +1,10 @@
 package service
 
 import (
-	"errors"
 	"commerce-platform/internal/domain/currency"
 	shippingdomain "commerce-platform/internal/domain/shipping"
 	"commerce-platform/internal/repository"
+	"errors"
 
 	"gorm.io/datatypes"
 )

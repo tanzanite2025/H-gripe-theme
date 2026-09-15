@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"commerce-platform/internal/domain/aftersales"
 	"commerce-platform/internal/domain/order"
@@ -25,6 +26,10 @@ var (
 	ErrAfterSalesQuantityExceeded             = errors.New("after-sales item quantity exceeds the remaining eligible quantity")
 	ErrAfterSalesDescriptionRequired          = errors.New("after-sales case description is required")
 	ErrAfterSalesRequestAlreadyExists         = errors.New("an active after-sales request already exists for this order")
+	ErrAfterSalesReturnCarrierRequired        = errors.New("return carrier is required for in-transit returns")
+	ErrAfterSalesReturnTrackingRequired       = errors.New("return tracking number is required for in-transit returns")
+	ErrAfterSalesReturnWarehouseRequired      = errors.New("return warehouse and address are required before return transit")
+	ErrAfterSalesReturnReceiverRequired       = errors.New("return receiver is required when marking a return received")
 	ErrAfterSalesAttachmentKindInvalid        = errors.New("invalid after-sales attachment kind")
 	ErrAfterSalesAttachmentNotFound           = errors.New("after-sales attachment not found")
 	ErrAfterSalesAttachmentStorageUnavailable = errors.New("after-sales attachment storage is unavailable")
@@ -205,6 +210,9 @@ func (s *AfterSalesService) CreateCustomerRequest(input CreateCustomerAfterSales
 	if s == nil || s.caseRepo == nil || s.orderRepo == nil {
 		return nil, errors.New("after-sales service is not configured")
 	}
+	if s.txManager == nil {
+		return nil, errors.New("after-sales transaction manager is not configured")
+	}
 	if input.OrderID == 0 {
 		return nil, ErrAfterSalesOrderNotFound
 	}
@@ -229,70 +237,84 @@ func (s *AfterSalesService) CreateCustomerRequest(input CreateCustomerAfterSales
 		}
 	}
 
-	orderRecord, err := s.orderRepo.FindByID(input.OrderID)
-	if err != nil {
-		if repository.IsRecordNotFound(err) {
-			return nil, ErrAfterSalesOrderNotFound
+	var caseID uint
+	err := s.txManager.WithinTx(func(repos repository.TxRepositories) error {
+		if repos.AfterSalesCase == nil {
+			return errors.New("after-sales case repository is not configured for transactions")
 		}
-		return nil, err
-	}
-	if !eligibleForAfterSales(orderRecord) {
-		return nil, ErrAfterSalesOrderNotEligible
-	}
 
-	existingCases, err := s.caseRepo.FindByOrderID(input.OrderID, "")
+		orderRecord, err := repos.Order.FindByIDForUpdateWithItems(input.OrderID)
+		if err != nil {
+			if repository.IsRecordNotFound(err) {
+				return ErrAfterSalesOrderNotFound
+			}
+			return err
+		}
+		if !eligibleForAfterSales(orderRecord) {
+			return ErrAfterSalesOrderNotEligible
+		}
+
+		existingCases, err := repos.AfterSalesCase.FindByOrderID(orderRecord.ID, "")
+		if err != nil {
+			return err
+		}
+		for _, existingCase := range existingCases {
+			// Customer-originated requests are informational snapshots and are
+			// intentionally limited to one active request per order. They must not
+			// block a customer from opening a new request while an operator-managed
+			// case is still in transit or awaiting resolution.
+			if existingCase.Type == aftersales.TypeCustomerRequest && !aftersales.IsTerminalStatus(existingCase.Status) {
+				return ErrAfterSalesRequestAlreadyExists
+			}
+		}
+
+		caseItems := make([]aftersales.AfterSalesCaseItem, 0, len(orderRecord.Items))
+		for _, orderItem := range orderRecord.Items {
+			if orderItem.Quantity <= 0 {
+				continue
+			}
+			// This is a support snapshot, not an item reservation. Include the
+			// full order even when another case has the item in transit so the
+			// customer can still contact support about that same case or order.
+			caseItems = append(caseItems, aftersales.AfterSalesCaseItem{
+				OrderID:     orderRecord.ID,
+				OrderItemID: orderItem.ID,
+				ProductID:   orderItem.ProductID,
+				VariantID:   orderItem.VariantID,
+				ProductName: orderItem.ProductName,
+				SKU:         orderItem.SKU,
+				Quantity:    orderItem.Quantity,
+			})
+		}
+		if len(caseItems) == 0 {
+			return ErrAfterSalesItemsRequired
+		}
+
+		caseRecord := &aftersales.AfterSalesCase{
+			OrderID:     orderRecord.ID,
+			Type:        aftersales.TypeCustomerRequest,
+			Status:      aftersales.StatusRequested,
+			Reason:      input.Reason,
+			Description: input.Description,
+			CreatedBy:   input.CreatedBy,
+			UpdatedBy:   input.CreatedBy,
+		}
+		if err := caseRecord.Validate(); err != nil {
+			return err
+		}
+		if err := repos.AfterSalesCase.CreateWithItemsAndAttachments(caseRecord, caseItems, input.Attachments); err != nil {
+			return err
+		}
+		caseID = caseRecord.ID
+		return nil
+	})
 	if err != nil {
-		return nil, err
-	}
-	for _, existingCase := range existingCases {
-		if !aftersales.IsTerminalStatus(existingCase.Status) {
+		if repository.IsDuplicatedKey(err) {
 			return nil, ErrAfterSalesRequestAlreadyExists
 		}
-	}
-
-	caseItems := make([]aftersales.AfterSalesCaseItem, 0, len(orderRecord.Items))
-	for _, orderItem := range orderRecord.Items {
-		if orderItem.Quantity <= 0 {
-			continue
-		}
-		usedQuantity, err := s.caseRepo.SumActiveQuantity(orderItem.ID)
-		if err != nil {
-			return nil, err
-		}
-		remainingQuantity := orderItem.Quantity - usedQuantity
-		if remainingQuantity <= 0 {
-			continue
-		}
-		caseItems = append(caseItems, aftersales.AfterSalesCaseItem{
-			OrderID:     orderRecord.ID,
-			OrderItemID: orderItem.ID,
-			ProductID:   orderItem.ProductID,
-			VariantID:   orderItem.VariantID,
-			ProductName: orderItem.ProductName,
-			SKU:         orderItem.SKU,
-			Quantity:    remainingQuantity,
-		})
-	}
-	if len(caseItems) == 0 {
-		return nil, ErrAfterSalesItemsRequired
-	}
-
-	caseRecord := &aftersales.AfterSalesCase{
-		OrderID:     orderRecord.ID,
-		Type:        aftersales.TypeCustomerRequest,
-		Status:      aftersales.StatusRequested,
-		Reason:      input.Reason,
-		Description: input.Description,
-		CreatedBy:   input.CreatedBy,
-		UpdatedBy:   input.CreatedBy,
-	}
-	if err := caseRecord.Validate(); err != nil {
 		return nil, err
 	}
-	if err := s.caseRepo.CreateWithItemsAndAttachments(caseRecord, caseItems, input.Attachments); err != nil {
-		return nil, err
-	}
-	return s.GetCase(caseRecord.ID)
+	return s.GetCase(caseID)
 }
 
 func (s *AfterSalesService) ListCasesByOrder(orderID uint, status string) ([]aftersales.AfterSalesCase, error) {
@@ -312,6 +334,29 @@ func (s *AfterSalesService) ListCasesByOrder(orderID uint, status string) ([]aft
 		return nil, err
 	}
 	return s.caseRepo.FindByOrderID(orderID, strings.TrimSpace(status))
+}
+
+// ListCustomerCasesByOrder returns the customer's cases with their status
+// history and refund-review details populated. Ownership is enforced by the
+// public order handler before this method is called.
+func (s *AfterSalesService) ListCustomerCasesByOrder(orderID uint, status string) ([]aftersales.AfterSalesCase, error) {
+	records, err := s.ListCasesByOrder(orderID, status)
+	if err != nil {
+		return nil, err
+	}
+	if len(records) == 0 {
+		return records, nil
+	}
+
+	detailed := make([]aftersales.AfterSalesCase, 0, len(records))
+	for _, record := range records {
+		caseRecord, err := s.GetCase(record.ID)
+		if err != nil {
+			return nil, err
+		}
+		detailed = append(detailed, *caseRecord)
+	}
+	return detailed, nil
 }
 
 func (s *AfterSalesService) GetCase(id uint) (*aftersales.AfterSalesCase, error) {
@@ -358,15 +403,37 @@ func (s *AfterSalesService) ListAdminCases(input ListAfterSalesCasesInput) ([]af
 	return s.caseRepo.List(input.Page, input.PageSize, input.Status, input.Type, input.Search)
 }
 
+type UpdateAfterSalesStatusInput struct {
+	Status           string
+	Resolution       string
+	UpdatedBy        uint
+	ReturnShipmentID uint
+	WarehouseName    string
+	WarehouseAddress string
+	Carrier          string
+	TrackingNumber   string
+	TrackingURL      string
+	LabelURL         string
+	ShippedAt        *time.Time
+	ReceivedAt       *time.Time
+	ReceivedBy       *uint
+}
+
 func (s *AfterSalesService) UpdateStatus(id uint, status, resolution string, updatedBy uint) (*aftersales.AfterSalesCase, error) {
+	return s.UpdateStatusWithReturnShipment(id, UpdateAfterSalesStatusInput{
+		Status: status, Resolution: resolution, UpdatedBy: updatedBy,
+	})
+}
+
+func (s *AfterSalesService) UpdateStatusWithReturnShipment(id uint, input UpdateAfterSalesStatusInput) (*aftersales.AfterSalesCase, error) {
 	if s == nil || s.caseRepo == nil {
 		return nil, errors.New("after-sales service is not configured")
 	}
 	if id == 0 {
 		return nil, ErrAfterSalesCaseNotFound
 	}
-	status = strings.TrimSpace(status)
-	resolution = strings.TrimSpace(resolution)
+	status := strings.TrimSpace(input.Status)
+	resolution := strings.TrimSpace(input.Resolution)
 	if !aftersales.IsValidStatus(status) {
 		return nil, ErrAfterSalesStatusInvalid
 	}
@@ -386,7 +453,110 @@ func (s *AfterSalesService) UpdateStatus(id uint, status, resolution string, upd
 			status,
 		)
 	}
-	updated, err := s.caseRepo.UpdateStatusIfCurrent(id, record.Status, status, resolution, updatedBy)
+	var shipment *aftersales.AfterSalesReturnShipment
+	if status == aftersales.StatusAwaitingReturn || status == aftersales.StatusReturnInTransit || status == aftersales.StatusReceived || input.ReturnShipmentID != 0 || strings.TrimSpace(input.Carrier) != "" || strings.TrimSpace(input.TrackingNumber) != "" {
+		shipment = &aftersales.AfterSalesReturnShipment{
+			ID: input.ReturnShipmentID, WarehouseName: strings.TrimSpace(input.WarehouseName), WarehouseAddress: strings.TrimSpace(input.WarehouseAddress),
+			Carrier: strings.TrimSpace(input.Carrier), TrackingNumber: strings.TrimSpace(input.TrackingNumber), TrackingURL: strings.TrimSpace(input.TrackingURL), LabelURL: strings.TrimSpace(input.LabelURL),
+			ShippedAt: input.ShippedAt, ReceivedAt: input.ReceivedAt, ReceivedBy: input.ReceivedBy,
+		}
+		// Awaiting-return starts a new package. Later transitions continue to
+		// update the most recent package unless the caller supplies an explicit
+		// shipment ID (for a replacement label or another package).
+		if len(record.ReturnShipments) > 0 && shipment.ID == 0 && status != aftersales.StatusAwaitingReturn {
+			previous := record.ReturnShipments[len(record.ReturnShipments)-1]
+			shipment.ID = previous.ID
+			if shipment.WarehouseName == "" {
+				shipment.WarehouseName = previous.WarehouseName
+			}
+			if shipment.WarehouseAddress == "" {
+				shipment.WarehouseAddress = previous.WarehouseAddress
+			}
+			if shipment.Carrier == "" {
+				shipment.Carrier = previous.Carrier
+			}
+			if shipment.TrackingNumber == "" {
+				shipment.TrackingNumber = previous.TrackingNumber
+			}
+			if shipment.TrackingURL == "" {
+				shipment.TrackingURL = previous.TrackingURL
+			}
+			if shipment.LabelURL == "" {
+				shipment.LabelURL = previous.LabelURL
+			}
+			if shipment.ShippedAt == nil {
+				shipment.ShippedAt = previous.ShippedAt
+			}
+		}
+		if shipment.ID != 0 {
+			for _, previous := range record.ReturnShipments {
+				if previous.ID != shipment.ID {
+					continue
+				}
+				if shipment.WarehouseName == "" {
+					shipment.WarehouseName = previous.WarehouseName
+				}
+				if shipment.WarehouseAddress == "" {
+					shipment.WarehouseAddress = previous.WarehouseAddress
+				}
+				if shipment.Carrier == "" {
+					shipment.Carrier = previous.Carrier
+				}
+				if shipment.TrackingNumber == "" {
+					shipment.TrackingNumber = previous.TrackingNumber
+				}
+				if shipment.TrackingURL == "" {
+					shipment.TrackingURL = previous.TrackingURL
+				}
+				if shipment.LabelURL == "" {
+					shipment.LabelURL = previous.LabelURL
+				}
+				if shipment.ShippedAt == nil {
+					shipment.ShippedAt = previous.ShippedAt
+				}
+				if shipment.ReceivedAt == nil {
+					shipment.ReceivedAt = previous.ReceivedAt
+				}
+				if shipment.ReceivedBy == nil {
+					shipment.ReceivedBy = previous.ReceivedBy
+				}
+				break
+			}
+		}
+	}
+	if status == aftersales.StatusAwaitingReturn {
+		if shipment == nil || shipment.WarehouseName == "" || shipment.WarehouseAddress == "" {
+			return nil, ErrAfterSalesReturnWarehouseRequired
+		}
+	}
+	if status == aftersales.StatusReturnInTransit {
+		if shipment == nil || shipment.Carrier == "" {
+			return nil, ErrAfterSalesReturnCarrierRequired
+		}
+		if shipment.TrackingNumber == "" {
+			return nil, ErrAfterSalesReturnTrackingRequired
+		}
+		if shipment.WarehouseName == "" || shipment.WarehouseAddress == "" {
+			return nil, ErrAfterSalesReturnWarehouseRequired
+		}
+		if shipment.ShippedAt == nil {
+			now := time.Now().UTC()
+			shipment.ShippedAt = &now
+		}
+	}
+	if status == aftersales.StatusReceived {
+		if shipment == nil || shipment.ID == 0 {
+			return nil, ErrAfterSalesReturnReceiverRequired
+		}
+		if shipment.ReceivedBy == nil || *shipment.ReceivedBy == 0 {
+			return nil, ErrAfterSalesReturnReceiverRequired
+		}
+		if shipment.ReceivedAt == nil {
+			now := time.Now().UTC()
+			shipment.ReceivedAt = &now
+		}
+	}
+	updated, err := s.caseRepo.UpdateStatusAndSaveReturnShipmentIfCurrent(id, record.Status, status, resolution, input.UpdatedBy, shipment)
 	if err != nil {
 		return nil, err
 	}

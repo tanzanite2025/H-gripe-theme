@@ -38,10 +38,7 @@ func (h *Handler) authorizeOrderPaymentStart(c *gin.Context, req CreateOrderRequ
 }
 
 func orderPaymentProtectionCountry(c *gin.Context, req CreateOrderRequest) string {
-	if country := strings.TrimSpace(req.BillingAddress.Country); country != "" {
-		return country
-	}
-	if country := strings.TrimSpace(req.ShippingAddress.Country); country != "" {
+	if country := billingCountryFromRequest(req.ShippingAddress.Country, req.BillingAddress); country != "" {
 		return country
 	}
 	return middleware.TrustedEdgeCountry(c)

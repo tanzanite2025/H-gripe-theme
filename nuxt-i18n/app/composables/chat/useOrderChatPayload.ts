@@ -5,8 +5,9 @@ export interface OrderChatItem {
   title: string
   sku: string
   quantity: number
-  price: number
-  total: number
+  currency: string
+  price_minor: number
+  total_minor: number
   attributes: unknown
 }
 
@@ -21,7 +22,7 @@ export interface OrderChatMetadata {
   signature_required: boolean
   production_started_at: string
   production_completed_at: string
-  total: number
+  total_minor: number
   currency: string
   url: string
   thumbnail: string
@@ -57,8 +58,8 @@ const normalizeOrderItems = (order: Record<string, any>): OrderChatItem[] => {
 
   return items.map((item: Record<string, any>) => {
     const quantity = toFiniteNumber(item?.quantity, 1)
-    const price = toFiniteNumber(item?.price)
-    const total = toFiniteNumber(item?.total ?? item?.line_total ?? item?.subtotal, price * quantity)
+    const priceMinor = toFiniteNumber(item?.price_minor)
+    const totalMinor = toFiniteNumber(item?.total_minor, priceMinor * quantity)
 
     return {
       id: toFiniteNumber(item?.id),
@@ -68,8 +69,9 @@ const normalizeOrderItems = (order: Record<string, any>): OrderChatItem[] => {
       sku: String(item?.sku || '').trim(),
       fulfillment_mode: String(item?.fulfillment_mode || '').trim(),
       quantity,
-      price,
-      total,
+      currency: String(item?.currency || '').trim().toUpperCase(),
+      price_minor: priceMinor,
+      total_minor: totalMinor,
       attributes: parseAttributes(item?.attributes),
     }
   })
@@ -79,7 +81,7 @@ export const buildOrderChatMetadata = (order: Record<string, any>): OrderChatMet
   const items = normalizeOrderItems(order)
   const orderNumber = String(order?.order_number || order?.orderNumber || '').trim()
   const title = String(order?.title || (orderNumber ? `Order #${orderNumber}` : 'Order')).trim()
-  const total = toFiniteNumber(order?.total ?? order?.total_amount)
+  const totalMinor = toFiniteNumber(order?.total_minor)
 
   return {
     order_number: orderNumber,
@@ -92,7 +94,7 @@ export const buildOrderChatMetadata = (order: Record<string, any>): OrderChatMet
     signature_required: Boolean(order?.signature_required),
     production_started_at: String(order?.production_started_at || '').trim(),
     production_completed_at: String(order?.production_completed_at || '').trim(),
-    total,
+    total_minor: totalMinor,
     currency: String(order?.currency || '').trim().toUpperCase(),
     url: String(order?.url || '').trim(),
     thumbnail: String(order?.thumbnail || '').trim(),

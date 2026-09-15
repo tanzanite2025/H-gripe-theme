@@ -59,6 +59,54 @@ func TestWebsiteProfileServiceUpdateStoresLocaleAndGlobalFields(t *testing.T) {
 	assert.Equal(t, "/uploads/avatar.webp", globalRecord.Value)
 }
 
+func TestWebsiteProfileServiceMergesLegacyStatementParagraphs(t *testing.T) {
+	_, settingService := newTestSettingService(t)
+	websiteProfileService := NewWebsiteProfileService(settingService)
+
+	require.NoError(t, settingService.BatchSet([]settingdomain.Setting{
+		{
+			Key:      settingdomain.WebsiteProfileKeyStatementParagraph1,
+			Value:    "第一段",
+			Type:     "string",
+			Locale:   "zh_cn",
+			Group:    settingdomain.WebsiteProfileGroup,
+			IsPublic: true,
+		},
+		{
+			Key:      settingdomain.WebsiteProfileKeyStatementParagraph2,
+			Value:    "第二段",
+			Type:     "string",
+			Locale:   "zh_cn",
+			Group:    settingdomain.WebsiteProfileGroup,
+			IsPublic: true,
+		},
+	}))
+
+	settings, err := websiteProfileService.GetAdmin("zh-CN")
+	require.NoError(t, err)
+	assert.Equal(t, "<p>第一段</p><p>第二段</p>", settings.StatementBody)
+}
+
+func TestWebsiteProfileServiceUpdateStoresUnifiedStatementBody(t *testing.T) {
+	_, settingService := newTestSettingService(t)
+	websiteProfileService := NewWebsiteProfileService(settingService)
+
+	settings, err := websiteProfileService.Update(settingdomain.WebsiteProfileUpdateRequest{
+		Locale:        "zh-CN",
+		StatementBody: "统一正文",
+	})
+	require.NoError(t, err)
+	assert.Equal(t, "<p>统一正文</p>", settings.StatementBody)
+
+	bodyRecord, err := settingService.Get(settingdomain.WebsiteProfileKeyStatementBody, "zh_cn")
+	require.NoError(t, err)
+	assert.Equal(t, "<p>统一正文</p>", bodyRecord.Value)
+
+	legacyRecord, err := settingService.Get(settingdomain.WebsiteProfileKeyStatementParagraph1, "zh_cn")
+	require.NoError(t, err)
+	assert.Empty(t, legacyRecord.Value)
+}
+
 func TestWebsiteProfileServiceIgnoresEmptyOverrides(t *testing.T) {
 	_, settingService := newTestSettingService(t)
 	websiteProfileService := NewWebsiteProfileService(settingService)

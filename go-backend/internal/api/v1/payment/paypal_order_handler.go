@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"strings"
 
+	domainmoney "commerce-platform/internal/domain/money"
 	orderdomain "commerce-platform/internal/domain/order"
 	"commerce-platform/internal/pkg/apierror"
 	pgateway "commerce-platform/internal/pkg/payment"
@@ -67,6 +68,11 @@ func (h *Handler) CreatePayPalOrder(c *gin.Context) {
 		apierror.RespondInternalError(c, err)
 		return
 	}
+	orderAmountMoney, err := domainmoney.FromMajorFloat(orderRecord.TotalAmount, orderCurrency)
+	if err != nil {
+		apierror.RespondInternalError(c, err)
+		return
+	}
 	if !ensureGatewayCurrency(c, pgateway.GatewayPayPal, orderCurrency) {
 		return
 	}
@@ -91,8 +97,7 @@ func (h *Handler) CreatePayPalOrder(c *gin.Context) {
 		pgateway.GatewayPayPal,
 		"paypal",
 		orderRecord,
-		orderRecord.TotalAmount,
-		orderCurrency,
+		orderAmountMoney,
 	)
 	if !ok {
 		return
@@ -123,8 +128,7 @@ func (h *Handler) CreatePayPalOrder(c *gin.Context) {
 			ProviderRequestKey: attempt.ProviderRequestKey,
 			PaymentMethod:      "paypal",
 			Status:             "failed",
-			Amount:             orderRecord.TotalAmount,
-			Currency:           orderCurrency,
+			Amount:             orderAmountMoney,
 			ErrorMessage:       err.Error(),
 		})
 		h.respondToPaymentGatewayOperationFailure(
@@ -139,6 +143,11 @@ func (h *Handler) CreatePayPalOrder(c *gin.Context) {
 	h.recordSuccessfulPaymentGatewayAPIResponse(c, pgateway.GatewayPayPal)
 
 	gatewayResponse, _ := json.Marshal(paymentResponse)
+	providerAmount, amountErr := providerPaymentResponseMoney(paymentResponse, orderAmountMoney)
+	if amountErr != nil {
+		apierror.RespondInternalError(c, amountErr)
+		return
+	}
 	if err := h.paymentService.RecordGatewayPaymentAttempt(service.GatewayPaymentAttemptInput{
 		Provider:           string(pgateway.GatewayPayPal),
 		OrderNumber:        orderRecord.OrderNumber,
@@ -147,8 +156,7 @@ func (h *Handler) CreatePayPalOrder(c *gin.Context) {
 		ProviderRequestKey: attempt.ProviderRequestKey,
 		PaymentMethod:      "paypal",
 		Status:             paypalAttemptStatus(paymentResponse.Status),
-		Amount:             paymentResponse.Amount,
-		Currency:           paymentResponse.Currency,
+		Amount:             providerAmount,
 		GatewayResponse:    string(gatewayResponse),
 	}); err != nil {
 		respondVerifiedProviderPaymentError(c, err)
@@ -232,15 +240,24 @@ func (h *Handler) CapturePayPalOrder(c *gin.Context) {
 		return
 	}
 	gatewayResponse, _ := json.Marshal(paymentResponse)
+	orderAmountMoney, amountErr := strictProviderSettlement(orderRecord)
+	if amountErr != nil {
+		apierror.RespondInternalError(c, amountErr)
+		return
+	}
 	if !strings.EqualFold(strings.TrimSpace(paymentResponse.Status), "COMPLETED") {
+		providerAmount, amountErr := providerPaymentResponseMoney(paymentResponse, orderAmountMoney)
+		if amountErr != nil {
+			apierror.RespondInternalError(c, amountErr)
+			return
+		}
 		_ = h.paymentService.RecordGatewayPaymentAttempt(service.GatewayPaymentAttemptInput{
 			Provider:        string(pgateway.GatewayPayPal),
 			OrderNumber:     orderRecord.OrderNumber,
 			TransactionID:   gatewayTransactionID(paymentResponse, paypalOrderID),
 			PaymentMethod:   "paypal",
 			Status:          paypalAttemptStatus(paymentResponse.Status),
-			Amount:          paymentResponse.Amount,
-			Currency:        paymentResponse.Currency,
+			Amount:          providerAmount,
 			GatewayResponse: string(gatewayResponse),
 		})
 		apierror.RespondErrorWithDetails(c, http.StatusConflict, "paypal_capture_incomplete", "PayPal payment is not completed", gin.H{
@@ -253,29 +270,39 @@ func (h *Handler) CapturePayPalOrder(c *gin.Context) {
 		apierror.RespondError(c, http.StatusBadGateway, "paypal_capture_id_missing", "PayPal capture response did not return a capture id")
 		return
 	}
+	providerAmount, amountErr := providerPaymentResponseMoney(paymentResponse, orderAmountMoney)
+	if amountErr != nil {
+		apierror.RespondInternalError(c, amountErr)
+		return
+	}
 
-	if err := h.paymentService.RecordVerifiedGatewayPayment(service.VerifiedGatewayPaymentInput{
+	result, err := h.paymentService.RecordVerifiedGatewayPaymentResult(service.VerifiedGatewayPaymentInput{
 		Provider:         string(pgateway.GatewayPayPal),
 		OrderNumber:      orderRecord.OrderNumber,
 		TransactionID:    transactionID,
 		PaymentMethod:    "paypal",
-		Amount:           paymentResponse.Amount,
-		Currency:         paymentResponse.Currency,
+		Amount:           providerAmount,
 		GatewayResponse:  string(gatewayResponse),
 		LiabilityShifted: paymentResponseLiabilityShifted(paymentResponse, gatewayResponse),
-	}); err != nil {
+	})
+	if err != nil {
 		if errors.Is(err, service.ErrOrderNotFound) {
 			apierror.RespondNotFound(c, "Order")
-			return
-		}
-		if errors.Is(err, service.ErrOrderAlreadyPaid) {
-			response.Success(c, completedPayPalPaymentResponse(paypalOrderID, orderRecord))
 			return
 		}
 		apierror.RespondBadRequest(c, err.Error())
 		return
 	}
 
+	if result.DuplicatePaid {
+		response.SuccessWithMessage(c, "PayPal duplicate payment recorded; refund is pending", gin.H{
+			"duplicate_paid": true,
+			"refund_id":      result.RefundID,
+			"order_number":   orderRecord.OrderNumber,
+			"transaction_id": result.TransactionID,
+		})
+		return
+	}
 	response.Success(c, paymentResponse)
 }
 

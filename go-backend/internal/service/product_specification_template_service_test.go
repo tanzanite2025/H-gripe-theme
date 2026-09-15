@@ -28,7 +28,7 @@ func TestProductServiceCreatesManagedProductSpecificationTemplate(t *testing.T) 
 				IsFilterable: true,
 				IsVisible:    true,
 				SortOrder:    10,
-				Options:      `["银","金","银"]`,
+				OptionItems:  []ProductSpecOptionItemInput{{ValueKey: "银"}, {ValueKey: "金"}},
 			},
 		},
 	})
@@ -37,7 +37,7 @@ func TestProductServiceCreatesManagedProductSpecificationTemplate(t *testing.T) 
 	assert.Equal(t, "首饰", created.Name)
 	assert.True(t, created.IsEnabled)
 	require.Len(t, created.SpecDefinitions, 1)
-	assert.JSONEq(t, `["银","金"]`, created.SpecDefinitions[0].Options)
+	assert.Equal(t, []string{"银", "金"}, []string{created.SpecDefinitions[0].OptionItems[0].ValueKey, created.SpecDefinitions[0].OptionItems[1].ValueKey})
 	assert.True(t, created.SpecDefinitions[0].IsVisible)
 }
 
@@ -50,15 +50,14 @@ func TestProductServiceCreatesVisualVariantOptionWithoutFixedTemplateOptions(t *
 		IsEnabled: true,
 		SpecDefinitions: []ProductSpecDefinitionInput{
 			{
-				Group:           "Appearance",
-				Name:            "Finish",
-				Slug:            "finish",
-				FieldType:       "select",
-				Presentation:    "color",
-				IsVisible:       true,
-				IsVariantOption: true,
-				SortOrder:       10,
-				Options:         "",
+				Group:        "Appearance",
+				Name:         "Finish",
+				Slug:         "finish",
+				FieldType:    "select",
+				Presentation: "color",
+				IsVisible:    true,
+				Role:         "variant",
+				SortOrder:    10,
 			},
 		},
 	})
@@ -66,7 +65,142 @@ func TestProductServiceCreatesVisualVariantOptionWithoutFixedTemplateOptions(t *
 	require.NoError(t, err)
 	require.Len(t, created.SpecDefinitions, 1)
 	assert.Equal(t, "color", created.SpecDefinitions[0].Presentation)
-	assert.JSONEq(t, `[]`, created.SpecDefinitions[0].Options)
+	assert.Empty(t, created.SpecDefinitions[0].OptionItems)
+}
+
+func TestProductServicePersistsCustomOptionSelectionContract(t *testing.T) {
+	_, productService := newTestProductService(t)
+	max := 2
+	created, err := productService.CreateProductSpecificationTemplate(ProductSpecificationTemplateInput{
+		Name:      "Wheelset Options",
+		Slug:      "wheelset_options_contract",
+		IsEnabled: true,
+		SpecDefinitions: []ProductSpecDefinitionInput{{
+			Name:          "Freehub",
+			Slug:          "freehub",
+			FieldType:     "select",
+			Role:          "custom_option",
+			SelectionMode: "single",
+			IsRequired:    true,
+			OptionItems:   []ProductSpecOptionItemInput{{ValueKey: "hg"}, {ValueKey: "xdr"}},
+		}, {
+			Name:          "Accessories",
+			Slug:          "accessories",
+			FieldType:     "select",
+			Role:          "custom_option",
+			SelectionMode: "multiple",
+			MinSelections: 1,
+			MaxSelections: &max,
+		}},
+	})
+
+	require.NoError(t, err)
+	require.Len(t, created.SpecDefinitions, 2)
+	assert.Equal(t, "custom_option", created.SpecDefinitions[0].Role)
+	assert.Equal(t, "single", created.SpecDefinitions[0].SelectionMode)
+	assert.True(t, created.SpecDefinitions[0].IsRequired)
+	assert.Equal(t, "custom_option", created.SpecDefinitions[1].Role)
+	assert.Equal(t, "multiple", created.SpecDefinitions[1].SelectionMode)
+	assert.Equal(t, 1, created.SpecDefinitions[1].MinSelections)
+	require.NotNil(t, created.SpecDefinitions[1].MaxSelections)
+	assert.Equal(t, 2, *created.SpecDefinitions[1].MaxSelections)
+}
+
+func TestProductServicePersistsTemplateOptionItemsAndRevision(t *testing.T) {
+	_, productService := newTestProductService(t)
+	price := int64(1500)
+	created, err := productService.CreateProductSpecificationTemplate(ProductSpecificationTemplateInput{
+		Name:      "Wheelset option items",
+		Slug:      "wheelset_option_items_contract",
+		IsEnabled: true,
+		SpecDefinitions: []ProductSpecDefinitionInput{{
+			Name: "Freehub", Slug: "freehub", FieldType: "select", Role: "custom_option",
+			SelectionMode: "single", IsRequired: true,
+			OptionItems: []ProductSpecOptionItemInput{{
+				ValueKey: "hg", DefaultLabel: "Shimano HG", IsDefault: true,
+				DefaultPriceDeltaMinor: &price, DefaultPriceCurrency: "USD",
+			}},
+		}},
+	})
+	require.NoError(t, err)
+	assert.Equal(t, 1, created.Revision)
+	require.Len(t, created.SpecDefinitions, 1)
+	require.Len(t, created.SpecDefinitions[0].OptionItems, 1)
+	assert.Equal(t, "hg", created.SpecDefinitions[0].OptionItems[0].ValueKey)
+	assert.Equal(t, "Shimano HG", created.SpecDefinitions[0].OptionItems[0].DefaultLabel)
+	assert.Equal(t, int64(1500), *created.SpecDefinitions[0].OptionItems[0].DefaultPriceDeltaMinor)
+
+	updated, err := productService.UpdateProductSpecificationTemplate(created.ID, ProductSpecificationTemplateInput{
+		Name: created.Name, Slug: created.Slug, IsEnabled: true,
+		SpecDefinitions: []ProductSpecDefinitionInput{{
+			ID:   created.SpecDefinitions[0].ID,
+			Name: "Freehub", Slug: "freehub", FieldType: "select", Role: "custom_option",
+			SelectionMode: "single", IsRequired: true,
+			OptionItems: []ProductSpecOptionItemInput{{ValueKey: "xdr", DefaultLabel: "SRAM XDR", IsDefault: true}},
+		}},
+	})
+	require.NoError(t, err)
+	assert.Equal(t, 2, updated.Revision)
+	require.Len(t, updated.SpecDefinitions[0].OptionItems, 1)
+	assert.Equal(t, "xdr", updated.SpecDefinitions[0].OptionItems[0].ValueKey)
+}
+
+func TestProductServiceMaterializesTemplateOptionItemsOnProductCreate(t *testing.T) {
+	_, productService := newTestProductService(t)
+	priceDelta := int64(1500)
+	template, err := productService.CreateProductSpecificationTemplate(ProductSpecificationTemplateInput{
+		Name: "Materialized Wheelset Options", Slug: "materialized_wheelset_options", IsEnabled: true,
+		SpecDefinitions: []ProductSpecDefinitionInput{{
+			Name: "Freehub", Slug: "freehub", FieldType: "select", Role: "custom_option",
+			SelectionMode: "single", IsRequired: true,
+			OptionItems: []ProductSpecOptionItemInput{{
+				ValueKey: "xdr", DefaultLabel: "SRAM XDR", IsDefault: true,
+				DefaultPriceDeltaMinor: &priceDelta, DefaultPriceCurrency: "USD",
+			}},
+		}},
+	})
+	require.NoError(t, err)
+	require.Len(t, template.SpecDefinitions, 1)
+
+	created, err := productService.CreateAdminProduct(ProductCreateInput{
+		ProductSpecificationTemplateID: &template.ID,
+		Name:                           "Materialized Wheelset", Slug: "materialized-wheelset", Status: "active", Locale: "en",
+		Variants: []ProductVariantInput{{SKU: "MAT-WHEELSET-001", Price: 499, Stock: 3, IsDefault: true, IsActive: boolPtr(true)}},
+	})
+	require.NoError(t, err)
+	require.Len(t, created.VariantOptionValues, 1)
+	materialized := created.VariantOptionValues[0]
+	assert.Equal(t, "xdr", materialized.ValueKey)
+	assert.Equal(t, template.Revision, materialized.SourceTemplateRevision)
+	require.NotNil(t, materialized.TemplateOptionItemID)
+	assert.Equal(t, template.SpecDefinitions[0].OptionItems[0].ID, *materialized.TemplateOptionItemID)
+	require.NotNil(t, materialized.CustomOptionPolicy)
+	assert.Equal(t, priceDelta, materialized.CustomOptionPolicy.PriceDeltaMinor)
+	assert.True(t, materialized.CustomOptionPolicy.IsDefault)
+	assert.Equal(t, ProductCustomOptionInventoryNone, materialized.CustomOptionPolicy.InventoryPolicy)
+}
+
+func TestProductServiceRejectsInvalidCustomOptionSelectionContract(t *testing.T) {
+	_, productService := newTestProductService(t)
+	tests := []ProductSpecDefinitionInput{
+		{Name: "Bad type", Slug: "bad_type", FieldType: "text", Role: "custom_option"},
+		{Name: "Bad role", Slug: "bad_role", FieldType: "select", Role: "unknown"},
+		{Name: "Bad bounds", Slug: "bad_bounds", FieldType: "select", Role: "custom_option", SelectionMode: "multiple", MinSelections: 2, MaxSelections: intPtrForProductSpecTest(1)},
+		{Name: "Single max", Slug: "single_max", FieldType: "select", Role: "custom_option", SelectionMode: "single", MaxSelections: intPtrForProductSpecTest(2)},
+	}
+	for _, definition := range tests {
+		_, err := productService.CreateProductSpecificationTemplate(ProductSpecificationTemplateInput{
+			Name:            "Invalid " + definition.Name,
+			Slug:            "invalid_" + definition.Slug,
+			IsEnabled:       true,
+			SpecDefinitions: []ProductSpecDefinitionInput{definition},
+		})
+		assert.ErrorIs(t, err, ErrProductSpecInvalid, definition.Name)
+	}
+}
+
+func intPtrForProductSpecTest(value int) *int {
+	return &value
 }
 
 func TestProductServiceAllowsDynamicSelectSpecificationWithoutSharedOptions(t *testing.T) {
@@ -92,7 +226,7 @@ func TestProductServiceAllowsDynamicSelectSpecificationWithoutSharedOptions(t *t
 	require.NoError(t, err)
 	require.Len(t, created.SpecDefinitions, 1)
 	assert.Equal(t, "select", created.SpecDefinitions[0].FieldType)
-	assert.JSONEq(t, `[]`, created.SpecDefinitions[0].Options)
+	assert.Empty(t, created.SpecDefinitions[0].OptionItems)
 }
 
 func TestProductServiceListsPublicProductSpecificationTemplatesWithoutSpecifications(t *testing.T) {

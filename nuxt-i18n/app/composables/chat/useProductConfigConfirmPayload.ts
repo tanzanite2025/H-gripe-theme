@@ -88,7 +88,7 @@ const specDefinitionMap = (product: ProductLike) => {
       group: raw?.group ? String(raw.group) : undefined,
       fieldType: raw?.fieldType || raw?.field_type,
       unit: raw?.unit ? String(raw.unit) : undefined,
-      isVariantOption: Boolean(raw?.isVariantOption ?? raw?.is_variant_option),
+      role: raw?.role ? String(raw.role) : undefined,
       sortOrder: toFiniteNumber(raw?.sortOrder ?? raw?.sort_order),
     })
     return acc

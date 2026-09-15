@@ -13,6 +13,7 @@ import type {
   ProductAvailability,
   ProductVariant,
   ProductVariantOptionGroup,
+  ProductCustomOptionGroup,
 } from '~/types/productDetail'
 
 export function useProductDetailVariants(
@@ -30,6 +31,11 @@ export function useProductDetailVariants(
   const isVariantPurchasable = (variant: ProductVariant) => (
     variant.availability === 'in_stock' || variant.availability === 'made_to_order'
   )
+  const definitionRole = (definition: { role?: string } | undefined): string => {
+    const role = String(definition?.role || '').trim()
+    if (role === 'attribute' || role === 'variant' || role === 'custom_option') return role
+    return 'attribute'
+  }
   const requestedVariantId = computed(() => {
     const value = Number(route.query.variant || 0)
     return Number.isFinite(value) && value > 0 ? value : 0
@@ -64,7 +70,7 @@ export function useProductDetailVariants(
     return (product.value?.product_specification_template?.spec_definitions || [])
       .filter((definition) => (
         definition.is_visible !== false
-        && definition.is_variant_option
+        && definitionRole(definition) === 'variant'
         && !PRODUCT_DETAIL_HIDDEN_SPEC_SLUGS.has(String(definition.slug || '').trim().toLowerCase())
       ))
       .sort((left, right) => {
@@ -74,6 +80,84 @@ export function useProductDetailVariants(
         return String(left.name || left.slug).localeCompare(String(right.name || right.slug))
       })
   })
+
+  const customOptionDefinitions = computed(() => {
+    const currentVariant = selectedVariant.value
+    const groupRules = new Map((currentVariant?.option_group_rules || []).map(rule => [Number(rule.spec_definition_id), rule]))
+    return (product.value?.product_specification_template?.spec_definitions || [])
+      .filter((definition) => definition.is_visible !== false && definitionRole(definition) === 'custom_option')
+      .filter((definition) => groupRules.get(Number(definition.id))?.is_applicable !== false)
+      .sort((left, right) => Number(left.sort_order || 0) - Number(right.sort_order || 0))
+  })
+
+  const selectedCustomOptions = ref<Record<string, string[]>>({})
+
+  watch([product, selectedVariant], () => {
+    const next: Record<string, string[]> = {}
+    const valueRules = new Map((selectedVariant.value?.option_value_rules || []).map(rule => [Number(rule.product_variant_option_value_id), rule]))
+    customOptionDefinitions.value.forEach((definition) => {
+      const defaults = (product.value?.variant_option_values || [])
+        .filter(option => option.spec_slug === definition.slug && option.is_enabled !== false)
+        .filter(option => valueRules.get(Number(option.id))?.is_enabled !== false)
+        .filter(option => option.is_default)
+        .map(option => option.value_key)
+      if (defaults.length) next[definition.slug] = defaults
+    })
+    selectedCustomOptions.value = next
+  }, { immediate: true })
+
+  const customOptionGroups = computed(() => customOptionDefinitions.value.map((definition) => {
+    const currentVariant = selectedVariant.value
+    const valueRules = new Map((currentVariant?.option_value_rules || []).map(rule => [Number(rule.product_variant_option_value_id), rule]))
+    const groupRule = (currentVariant?.option_group_rules || [])
+      .find(rule => Number(rule.spec_definition_id) === Number(definition.id))
+    const minSelections = groupRule?.min_selections_override ?? definition.min_selections ?? 0
+    const maxSelections = groupRule?.max_selections_override ?? definition.max_selections ?? null
+    const values = (product.value?.variant_option_values || [])
+      .filter(option => option.spec_slug === definition.slug && option.is_enabled !== false)
+      .map(option => {
+        const rule = valueRules.get(Number(option.id))
+        return {
+          value: option.value_key,
+          label: option.label,
+          colorHex: option.color_hex || '',
+          swatchUrl: option.swatch_url || '',
+          selected: (selectedCustomOptions.value[definition.slug] || []).includes(option.value_key),
+          available: rule?.is_enabled !== false,
+          unavailableReason: rule?.unavailable_reason || '',
+          priceDeltaMinor: rule?.price_delta_minor_override ?? option.price_delta_minor ?? 0,
+        }
+      })
+    return {
+      slug: definition.slug,
+      name: definition.name,
+      selectionMode: definition.selection_mode || 'single',
+      minSelections,
+      maxSelections,
+      presentation: definition.presentation || 'text',
+      options: values,
+      selectedCount: selectedCustomOptions.value[definition.slug]?.length || 0,
+      isValid: (selectedCustomOptions.value[definition.slug]?.length || 0) >= minSelections
+        && (maxSelections == null || (selectedCustomOptions.value[definition.slug]?.length || 0) <= maxSelections),
+    }
+  }))
+
+  const selectCustomOption = (slug: string, value: string) => {
+    const group = customOptionGroups.value.find(item => item.slug === slug)
+    if (!group) return
+    const current = selectedCustomOptions.value[slug] || []
+    if (group.selectionMode === 'multiple') {
+      selectedCustomOptions.value = { ...selectedCustomOptions.value, [slug]: current.includes(value) ? current.filter(item => item !== value) : [...current, value] }
+    } else {
+      selectedCustomOptions.value = { ...selectedCustomOptions.value, [slug]: [value] }
+    }
+  }
+
+  const selectedOptions = computed(() => Object.entries(selectedCustomOptions.value).map(([groupSlug, valueKeys]) => ({ group_slug: groupSlug, value_keys: valueKeys })))
+  const customOptionsValid = computed(() => customOptionGroups.value.every((group) => {
+    const count = selectedCustomOptions.value[group.slug]?.length || 0
+    return count >= group.minSelections && (group.maxSelections == null || count <= group.maxSelections)
+  }))
 
   const specDefinitionsBySlug = computed(() => {
     const entries = (product.value?.product_specification_template?.spec_definitions || [])
@@ -217,12 +301,30 @@ export function useProductDetailVariants(
     return productName
   })
 
+  const selectedCustomOptionPriceDeltaMinor = computed(() => customOptionGroups.value.reduce((total, group) => (
+    total + group.options
+      .filter(option => option.selected)
+      .reduce((subtotal, option) => subtotal + Number(option.priceDeltaMinor || 0), 0)
+  ), 0))
+
+  const minorUnitsForCurrency = (value: string) => {
+    const code = normalizeProductCurrencyCode(value)
+    if (['BHD', 'IQD', 'JOD', 'KWD', 'LYD', 'OMR', 'TND'].includes(code)) return 3
+    if (['BIF', 'CLP', 'DJF', 'GNF', 'JPY', 'KMF', 'KRW', 'MGA', 'PYG', 'RWF', 'UGX', 'VND', 'VUV', 'XAF', 'XOF', 'XPF'].includes(code)) return 0
+    return 2
+  }
+
+  const customOptionPriceDeltaMajor = computed(() => (
+    selectedCustomOptionPriceDeltaMinor.value / (10 ** minorUnitsForCurrency(currentCurrency.value))
+  ))
+
   const effectivePrice = computed(() => {
-    return selectedVariant.value?.sale_price
+    const basePrice = selectedVariant.value?.sale_price
       ?? selectedVariant.value?.price
       ?? product.value?.sale_price
       ?? product.value?.price
       ?? 0
+    return Number(basePrice || 0) + customOptionPriceDeltaMajor.value
   })
 
   const currentCurrency = computed(() => {
@@ -235,12 +337,26 @@ export function useProductDetailVariants(
     const selectedVariantDisplayPrice =
       validProductDisplayPrice(selectedVariant.value?.display_price)
       || displayPriceSnapshotForCurrency(selectedVariant.value?.display_prices, displayCurrency.value)
-    if (selectedVariantDisplayPrice) return selectedVariantDisplayPrice
+    if (selectedVariantDisplayPrice) {
+      const snapshotCurrency = normalizeProductCurrencyCode(selectedVariantDisplayPrice.currency)
+      const baseCurrency = currentCurrency.value
+      const delta = snapshotCurrency === baseCurrency
+        ? customOptionPriceDeltaMajor.value
+        : customOptionPriceDeltaMajor.value * Number(selectedVariantDisplayPrice.rate || 0)
+      return { ...selectedVariantDisplayPrice, amount: Number(selectedVariantDisplayPrice.amount || 0) + delta }
+    }
 
     const productDisplayPrice =
       validProductDisplayPrice(product.value?.display_price)
       || displayPriceSnapshotForCurrency(product.value?.display_prices, displayCurrency.value)
-    if (productDisplayPrice) return productDisplayPrice
+    if (productDisplayPrice) {
+      const snapshotCurrency = normalizeProductCurrencyCode(productDisplayPrice.currency)
+      const baseCurrency = currentCurrency.value
+      const delta = snapshotCurrency === baseCurrency
+        ? customOptionPriceDeltaMajor.value
+        : customOptionPriceDeltaMajor.value * Number(productDisplayPrice.rate || 0)
+      return { ...productDisplayPrice, amount: Number(productDisplayPrice.amount || 0) + delta }
+    }
 
     return { amount: Number(effectivePrice.value || 0), currency: currentCurrency.value }
   })
@@ -256,7 +372,8 @@ export function useProductDetailVariants(
   const canAddToCart = computed(() => Boolean(
     product.value
     && Number(effectivePrice.value) > 0
-    && ['in_stock', 'made_to_order'].includes(selectedAvailability.value),
+    && ['in_stock', 'made_to_order'].includes(selectedAvailability.value)
+    && customOptionsValid.value,
   ))
 
   const formattedPrice = computed(() => {
@@ -285,13 +402,20 @@ export function useProductDetailVariants(
     selectedVariantWeight,
     selectedCartTitle,
     variantOptionDefinitions,
+    customOptionDefinitions,
     variantOptionGroups,
+    customOptionGroups,
+    customOptionsValid,
+    selectedCustomOptions,
+    selectedOptions,
+    selectCustomOption,
     variantChoices,
     currentVariantOptions,
     parseVariantOptions: parseProductVariantOptions,
     variantLabel,
     selectVariantOption,
     effectivePrice,
+    selectedCustomOptionPriceDeltaMinor,
     currentCurrency,
     currentDisplayPrice,
     selectedAvailability,

@@ -18,12 +18,18 @@ func NewHandler(spokeService *service.SpokeService) *Handler {
 }
 
 func (h *Handler) GetExport(c *gin.Context) {
-	export, err := h.spokeService.GetExport()
+	// Public callers must never receive CAD geometry or verified measurements.
+	export, err := h.spokeService.GetPublicExport()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "spoke_export_error", "message": err.Error()})
 		return
 	}
 	c.JSON(http.StatusOK, export)
+}
+
+// GetPublicCatalog is an explicit alias for the browser-facing projection.
+func (h *Handler) GetPublicCatalog(c *gin.Context) {
+	h.GetExport(c)
 }
 
 func (h *Handler) ListHistory(c *gin.Context) {
@@ -63,12 +69,19 @@ func (h *Handler) ListHistory(c *gin.Context) {
 }
 
 type CalcRequest struct {
-	RimID         string  `json:"rimId" binding:"required"`
-	HubID         string  `json:"hubId" binding:"required"`
-	WheelPosition string  `json:"wheelPosition" binding:"required"`
-	SpokeCount    int     `json:"spokeCount" binding:"required"`
-	Crossing      int     `json:"crossing"`
-	RimOffsetMM   float64 `json:"rimOffsetMm"`
+	RimID            string   `json:"rimId"`
+	HubID            string   `json:"hubId"`
+	WheelPosition    string   `json:"wheelPosition" binding:"required"`
+	SpokeCount       int      `json:"spokeCount" binding:"required"`
+	Crossing         int      `json:"crossing"`
+	RimOffsetMM      float64  `json:"rimOffsetMm"`
+	NippleType       string   `json:"nippleType"`
+	NippleLengthMM   *float64 `json:"nippleLengthMm"`
+	ERDMM            *float64 `json:"erdMm"`
+	LeftFlangeMM     *float64 `json:"leftFlangeMm"`
+	RightFlangeMM    *float64 `json:"rightFlangeMm"`
+	LeftFlangePCDMM  *float64 `json:"leftFlangePcdMm"`
+	RightFlangePCDMM *float64 `json:"rightFlangePcdMm"`
 }
 
 func (h *Handler) Calculate(c *gin.Context) {
@@ -78,13 +91,27 @@ func (h *Handler) Calculate(c *gin.Context) {
 		return
 	}
 
+	var userID *uint
+	if value, exists := c.Get("user_id"); exists {
+		if id, ok := value.(uint); ok && id > 0 {
+			userID = &id
+		}
+	}
 	result, err := h.spokeService.Calculate(service.SpokeCalculationInput{
-		RimID:         req.RimID,
-		HubID:         req.HubID,
-		WheelPosition: req.WheelPosition,
-		SpokeCount:    req.SpokeCount,
-		Crossing:      req.Crossing,
-		RimOffsetMM:   req.RimOffsetMM,
+		RimID:            req.RimID,
+		HubID:            req.HubID,
+		WheelPosition:    req.WheelPosition,
+		SpokeCount:       req.SpokeCount,
+		Crossing:         req.Crossing,
+		RimOffsetMM:      req.RimOffsetMM,
+		NippleType:       req.NippleType,
+		NippleLengthMM:   req.NippleLengthMM,
+		ERDMM:            req.ERDMM,
+		LeftFlangeMM:     req.LeftFlangeMM,
+		RightFlangeMM:    req.RightFlangeMM,
+		LeftFlangePCDMM:  req.LeftFlangePCDMM,
+		RightFlangePCDMM: req.RightFlangePCDMM,
+		UserID:           userID,
 	})
 	if err != nil {
 		switch {

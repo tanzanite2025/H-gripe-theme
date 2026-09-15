@@ -104,6 +104,7 @@ func newCurrencyAwareShippingService(t *testing.T) (*gorm.DB, *ShippingService, 
 	require.NoError(t, db.AutoMigrate(
 		&settingdomain.Setting{},
 		&shippingdomain.ShippingTemplate{},
+		&shippingdomain.QuoteSnapshot{},
 		&shippingdomain.ShippingRule{},
 		&shippingdomain.Carrier{},
 		&shippingdomain.CarrierService{},

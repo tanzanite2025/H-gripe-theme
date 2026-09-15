@@ -41,6 +41,9 @@ func (s *PublicUploadAccessService) CanServePublicUpload(ctx context.Context, ke
 	if !ok {
 		return false, nil
 	}
+	if storage.IsPrivateObjectKey(normalizedKey) {
+		return false, nil
+	}
 	if showcaseStorageKeyIsPending(normalizedKey) {
 		return false, nil
 	}
@@ -88,5 +91,8 @@ func (s *PublicUploadAccessService) CanServePublicUpload(ctx context.Context, ke
 		}
 	}
 
-	return true, nil
+	// Public upload access is an explicit allow-list. Unknown keys must never
+	// be served: callers need a registered media/showcase/avatar/logo record
+	// whose visibility has been positively verified above.
+	return false, nil
 }

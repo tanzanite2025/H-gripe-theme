@@ -9,6 +9,34 @@
         {{ submitMessage }}
       </div>
 
+      <div v-if="claimAccess" class="mb-6 rounded border border-emerald-500/30 bg-emerald-500/10 p-4 tz-text-primary">
+        <div class="flex items-center justify-between gap-3">
+          <h3 class="font-bold">{{ t('warrantySubmitClaim.claimStatus.title') }}</h3>
+          <button
+            type="button"
+            class="text-sm font-semibold text-emerald-600 hover:text-emerald-700 disabled:opacity-50"
+            :disabled="claimStatusLoading"
+            @click="loadClaimStatus"
+          >
+            {{ claimStatusLoading ? t('warrantySubmitClaim.claimStatus.refreshing') : t('warrantySubmitClaim.claimStatus.refresh') }}
+          </button>
+        </div>
+        <p class="mt-1 text-sm tz-text-secondary">
+          {{ t('warrantySubmitClaim.claimStatus.claimId', { id: claimAccess.id }) }}
+        </p>
+        <p v-if="claimStatusError" class="mt-3 text-sm text-red-600">{{ claimStatusError }}</p>
+        <div v-else-if="claimStatus" class="mt-3 space-y-2 text-sm">
+          <p>
+            <span class="font-semibold">{{ t('warrantySubmitClaim.claimStatus.status') }}:</span>
+            {{ claimStatus.status || '-' }}
+          </p>
+          <p>
+            <span class="font-semibold">{{ t('warrantySubmitClaim.claimStatus.resolution') }}:</span>
+            {{ claimStatus.resolution || t('warrantySubmitClaim.claimStatus.noResolution') }}
+          </p>
+        </div>
+      </div>
+
       <form @submit.prevent="submitClaim" class="space-y-4">
         <TurnstileChallenge ref="turnstileChallenge" action="warranty" />
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -220,8 +248,24 @@ const isVerifying = ref(false)
 const isFormLocked = ref(true)
 const submitMessage = ref('')
 const submitStatus = ref<'success' | 'error' | ''>('')
+interface WarrantyClaimStatus {
+  status?: string
+  resolution?: string
+}
+
+interface WarrantyClaimAccess {
+  id: number
+  token: string
+}
+
+const claimAccess = ref<WarrantyClaimAccess | null>(null)
+const claimStatus = ref<WarrantyClaimStatus | null>(null)
+const claimStatusLoading = ref(false)
+const claimStatusError = ref('')
 const route = useRoute()
 const turnstileChallenge = ref<{ execute: () => Promise<string> } | null>(null)
+
+const claimAccessStorageKey = 'tanzanite:warranty-claim-access'
 
 const MAX_IMAGE_FILES = 10
 const MAX_VIDEO_SIZE = 50 * 1024 * 1024
@@ -398,6 +442,50 @@ const handleVideo = (event: Event) => {
   }
 }
 
+const loadClaimStatus = async () => {
+  const access = claimAccess.value
+  if (!access) return
+
+  claimStatusLoading.value = true
+  claimStatusError.value = ''
+  try {
+    const response = await auth.request<{ data?: WarrantyClaimStatus } | WarrantyClaimStatus>(
+      `/warranty/claims/${encodeURIComponent(String(access.id))}`,
+      {
+        headers: {
+          accept: 'application/json',
+          'X-Warranty-Claim-Token': access.token,
+        },
+      },
+      t('warrantySubmitClaim.claimStatus.loadFailed')
+    )
+    const wrappedResponse = response as { data?: WarrantyClaimStatus }
+    const directResponse = response as WarrantyClaimStatus
+    claimStatus.value = wrappedResponse.data ?? directResponse
+  } catch (err: unknown) {
+    claimStatus.value = null
+    claimStatusError.value = err instanceof Error
+      ? err.message
+      : t('warrantySubmitClaim.claimStatus.loadFailed')
+  } finally {
+    claimStatusLoading.value = false
+  }
+}
+
+const restoreClaimAccess = () => {
+  if (!import.meta.client) return
+  try {
+    const raw = localStorage.getItem(claimAccessStorageKey)
+    if (!raw) return
+    const parsed = JSON.parse(raw) as Partial<WarrantyClaimAccess>
+    if (typeof parsed.id !== 'number' || parsed.id <= 0 || typeof parsed.token !== 'string' || !parsed.token.trim()) return
+    claimAccess.value = { id: parsed.id, token: parsed.token }
+    void loadClaimStatus()
+  } catch {
+    localStorage.removeItem(claimAccessStorageKey)
+  }
+}
+
 const submitClaim = async () => {
   isSubmitting.value = true
   submitMessage.value = ''
@@ -428,7 +516,13 @@ const submitClaim = async () => {
       formData.append('video', videoFile.value)
     }
 
-    const response = await auth.request<{ success: boolean; message?: string; id?: number }>(
+    const response = await auth.request<{
+      message?: string
+      data?: { success?: boolean; message?: string; id?: number; claim_access_token?: string }
+      success?: boolean
+      id?: number
+      claim_access_token?: string
+    }>(
       '/warranty/claim',
       {
         method: 'POST',
@@ -437,8 +531,21 @@ const submitClaim = async () => {
       t('warrantySubmitClaim.errors.submissionFailed')
     )
 
+    const responseData = response.data || response
     submitStatus.value = 'success'
-    submitMessage.value = response.message || t('warrantySubmitClaim.messages.submitted')
+    submitMessage.value = responseData.message || response.message || t('warrantySubmitClaim.messages.submitted')
+
+    if (responseData.id && responseData.claim_access_token) {
+      claimAccess.value = {
+        id: responseData.id,
+        token: responseData.claim_access_token,
+      }
+      claimStatus.value = null
+      if (import.meta.client) {
+        localStorage.setItem(claimAccessStorageKey, JSON.stringify(claimAccess.value))
+      }
+      await loadClaimStatus()
+    }
     
     form.value = {
       order_number: '',
@@ -465,7 +572,10 @@ const submitClaim = async () => {
   }
 }
 
-onMounted(readVerificationToken)
+onMounted(() => {
+  readVerificationToken()
+  restoreClaimAccess()
+})
 
 watch(
   () => route.query.verification_token,

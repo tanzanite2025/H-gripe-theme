@@ -15,7 +15,6 @@ import (
 	"strings"
 	"time"
 
-	currencydomain "commerce-platform/internal/domain/currency"
 	orderdomain "commerce-platform/internal/domain/order"
 	"commerce-platform/internal/domain/orderevidence"
 	paymentdomain "commerce-platform/internal/domain/payment"
@@ -37,8 +36,6 @@ var (
 	ErrPayPalDisputeEvidenceConfigRequired              = errors.New("paypal client id and secret are required")
 	ErrPayPalDisputeInvoiceUnavailable                  = errors.New("paypal dispute commercial invoice is unavailable")
 )
-
-const paypalSignaturePODThresholdUSD = orderdomain.HighValueSignatureThresholdUSD
 
 type PayPalDisputeEvidenceSubmitter interface {
 	ProvideEvidence(ctx context.Context, disputeID string, params *paypalapi.DisputeProvideEvidenceParams) error
@@ -241,7 +238,7 @@ func (s *PaymentService) BuildPayPalDisputeEvidencePackage(disputeID uint) (*Pay
 		pkg.Warnings = append(pkg.Warnings, "Tracking events do not contain a clear delivered or signed event.")
 	}
 	if paypalDisputeRequiresSignaturePOD(record, orderRecord) && trackingSignaturePODEvent(pkg.TrackingEvents) == nil {
-		pkg.Warnings = append(pkg.Warnings, "PayPal high-value USD INR disputes (>= 750 USD) require recipient signature/POD; delivered tracking status alone is not sufficient.")
+		pkg.Warnings = append(pkg.Warnings, "This PayPal INR dispute requires recipient signature/POD under the order shipping policy; delivered tracking status alone is not sufficient.")
 	}
 	if len(pkg.Communications) == 0 {
 		pkg.Warnings = append(pkg.Warnings, "No linked customer communication was found by order number, customer account, or order email.")
@@ -563,9 +560,9 @@ func paypalDisputeEvidenceNotes(pkg *PayPalDisputeEvidencePackage, draft PayPalD
 	}
 	if paypalDisputeRequiresSignaturePOD(pkg.Dispute, pkg.Order) {
 		if signaturePOD := trackingSignaturePODEvent(pkg.TrackingEvents); signaturePOD != nil {
-			lines = append(lines, "PayPal high-value INR Signature POD: "+trackingEventPODSummary(signaturePOD))
+			lines = append(lines, "PayPal order-policy Signature POD: "+trackingEventPODSummary(signaturePOD))
 		} else {
-			lines = append(lines, "PayPal high-value INR Signature POD: missing recipient signature/POD; delivered tracking status alone is insufficient for this threshold.")
+			lines = append(lines, "PayPal order-policy Signature POD: missing recipient signature/POD; delivered tracking status alone is insufficient.")
 		}
 	}
 	if len(pkg.TrackingEvents) > 0 {
@@ -672,21 +669,7 @@ func paypalDisputeRequiresSignaturePOD(record *paymentdomain.PayPalDispute, orde
 	if record == nil || !paypalDisputeReasonIsINR(record.Reason) {
 		return false
 	}
-	if orderRecord != nil {
-		if orderRecord.SignatureRequired {
-			return true
-		}
-		if _, err := currencydomain.ParseOrderFXSnapshot(orderRecord.FXSnapshotData); err == nil {
-			return false
-		}
-	}
-	if paypalHighValueUSD(record.Amount, record.Currency) {
-		return true
-	}
-	if orderRecord != nil {
-		return paypalHighValueUSD(orderRecord.TotalAmount, orderRecord.Currency)
-	}
-	return false
+	return orderRecord != nil && orderRecord.SignatureRequired
 }
 
 func paypalDisputeReasonIsINR(reason string) bool {
@@ -696,11 +679,6 @@ func paypalDisputeReasonIsINR(reason string) bool {
 		normalized == "ITEM_NOT_RECEIVED" ||
 		normalized == "MERCHANDISE_OR_SERVICE_NOT_RECEIVED" ||
 		strings.Contains(normalized, "NOT_RECEIVED")
-}
-
-func paypalHighValueUSD(amount float64, currency string) bool {
-	return amount >= paypalSignaturePODThresholdUSD &&
-		strings.EqualFold(strings.TrimSpace(currency), "USD")
 }
 
 func paypalProofOfDeliverySummary(event *shippingdomain.TrackingEvent) string {

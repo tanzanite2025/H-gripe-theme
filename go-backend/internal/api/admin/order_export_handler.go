@@ -7,6 +7,8 @@ import (
 	"strconv"
 	"strings"
 
+	"commerce-platform/internal/service"
+
 	"github.com/gin-gonic/gin"
 )
 
@@ -141,6 +143,10 @@ func (h *OrderHandler) ExportOrderCustoms(c *gin.Context) {
 	record, err := h.orderService.GetAdminOrder(uint(id))
 	if err != nil {
 		respondOrderServiceError(c, err, "Failed to fetch order", http.StatusInternalServerError)
+		return
+	}
+	if err := service.ValidateOrderCustomsDeclaredValuesAreConfirmed(record); err != nil {
+		respondOrderServiceError(c, err, "Failed to export customs data", http.StatusInternalServerError)
 		return
 	}
 

@@ -3,10 +3,11 @@ package service
 import (
 	"errors"
 	"fmt"
-	"math"
+	"math/big"
 
 	"commerce-platform/internal/domain/currency"
 	"commerce-platform/internal/domain/loyalty"
+	domainmoney "commerce-platform/internal/domain/money"
 	"commerce-platform/internal/domain/order"
 	"commerce-platform/internal/repository"
 )
@@ -20,7 +21,7 @@ func (s *OrderService) completeOrderWithLoyaltyReward(id uint) error {
 		if !o.CanTransitionTo("completed") {
 			return fmt.Errorf("invalid status transition from %s to completed", o.Status)
 		}
-		if err := repos.Order.UpdateStatus(id, "completed"); err != nil {
+		if err := repos.Order.UpdateStatus(id, o.Status, "completed"); err != nil {
 			return err
 		}
 		return s.awardOrderCompletionPoints(repos, o)
@@ -101,16 +102,52 @@ func (s *OrderService) calculateOrderCompletionPoints(
 	o *order.Order,
 	config *loyalty.ProgramConfig,
 ) (int, error) {
-	eligibleAmount := o.SubtotalAmount - o.DiscountAmount
-	if eligibleAmount <= 0 || config == nil || config.PurchaseEarnPointsPerUnit <= 0 {
+	if o == nil {
 		return 0, nil
 	}
-	if currency.NormalizeCode(o.Currency) != LoyaltyPointsBaseCurrency {
-		return 0, fmt.Errorf("%w: order completion points require %s order amounts, got %s", ErrInvalidLoyaltyProgramConfig, LoyaltyPointsBaseCurrency, o.Currency)
+	subtotalMoney, err := domainmoney.FromMajorFloat(o.SubtotalAmount, o.Currency)
+	if err != nil {
+		return 0, nil
+	}
+	discountMoney, err := domainmoney.FromMajorFloat(o.DiscountAmount, o.Currency)
+	if err != nil {
+		return 0, nil
+	}
+	eligibleMoney, err := subtotalMoney.Subtract(discountMoney)
+	if err != nil || eligibleMoney.AmountMinor() <= 0 || config == nil || config.PurchaseEarnPointsPerUnit <= 0 {
+		return 0, nil
 	}
 
-	basePoints := int(math.Floor(eligibleAmount * float64(config.PurchaseEarnPointsPerUnit)))
-	if basePoints <= 0 {
+	rewardableBaseMoney := eligibleMoney
+	if currency.NormalizeCode(o.Currency) != LoyaltyPointsBaseCurrency {
+		// New orders carry an immutable rate captured at checkout. Legacy
+		// non-USD orders without a usable snapshot remain completable, but
+		// cannot receive a reward without guessing a historical rate.
+		snapshot, err := currency.ParseOrderFXSnapshot(o.FXSnapshotData)
+		if err != nil ||
+			currency.NormalizeCode(snapshot.BaseCurrency) != LoyaltyPointsBaseCurrency ||
+			currency.NormalizeCode(snapshot.OrderCurrency) != currency.NormalizeCode(o.Currency) {
+			return 0, nil
+		}
+		rewardableBaseMoney, err = order.OrderAmountToBaseMoney(eligibleMoney, snapshot)
+		if err != nil {
+			return 0, nil
+		}
+	}
+
+	// PurchaseEarnPointsPerUnit is points per whole USD unit. Keep the
+	// calculation in minor units so fractional cents cannot create points.
+	pointsNumerator := new(big.Int).Mul(
+		big.NewInt(rewardableBaseMoney.AmountMinor()),
+		big.NewInt(int64(config.PurchaseEarnPointsPerUnit)),
+	)
+	basePointsBig := new(big.Int).Quo(pointsNumerator, big.NewInt(100))
+	if !basePointsBig.IsInt64() {
+		return 0, errors.New("order loyalty points overflow")
+	}
+	basePoints64 := basePointsBig.Int64()
+	basePoints := int(basePoints64)
+	if int64(basePoints) != basePoints64 || basePoints <= 0 {
 		return 0, nil
 	}
 

@@ -10,6 +10,7 @@ export interface CouponRecord {
   id: string | number
   code: string
   type: string
+  currency?: string
   value?: number | string
   description?: string
   min_amount?: number | string

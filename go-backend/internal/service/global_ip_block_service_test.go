@@ -321,7 +321,7 @@ func TestGlobalIPBlockServiceReusesExpiredEnabledIdentity(t *testing.T) {
 	assert.Equal(t, previous.ID, match.ID)
 }
 
-func TestGlobalIPBlockServiceFailsClosedWhenRefreshCannotCompileRule(t *testing.T) {
+func TestGlobalIPBlockServiceSkipsInvalidRuleAndKeepsValidRules(t *testing.T) {
 	db, blockService := newTestGlobalIPBlockService(t)
 	valid, err := blockService.Block(context.Background(), IPBlockRuleInput{
 		CIDR:   "203.0.113.0/24",
@@ -339,9 +339,9 @@ func TestGlobalIPBlockServiceFailsClosedWhenRefreshCannotCompileRule(t *testing.
 	blockService.Invalidate()
 
 	match, err := blockService.FindMatch(context.Background(), "203.0.113.19", time.Now())
-	require.ErrorIs(t, err, ErrIPBlockCacheUnavailable)
-	assert.Nil(t, match)
-	assert.Contains(t, err.Error(), "not-a-cidr")
+	require.NoError(t, err)
+	require.NotNil(t, match)
+	assert.Equal(t, valid.ID, match.ID)
 	assert.NotZero(t, valid.ID)
 }
 

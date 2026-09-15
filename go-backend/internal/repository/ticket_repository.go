@@ -409,11 +409,30 @@ func (r *TicketRepository) TouchTicket(id uint, updatedAt time.Time) error {
 }
 
 // FindMessagesByTicketID 查找工单的消息列表
-func (r *TicketRepository) FindMessagesByTicketID(ticketID uint) ([]ticket.TicketMessage, error) {
+func (r *TicketRepository) FindMessagesByTicketID(ticketID uint, limit, offset int) ([]ticket.TicketMessage, error) {
+	if limit < 1 || limit > 100 {
+		limit = 50
+	}
+	if offset < 0 {
+		offset = 0
+	}
 	var messages []ticket.TicketMessage
 	err := r.db.Where("ticket_id = ?", ticketID).
-		Preload("User").Order("created_at ASC").Find(&messages).Error
+		Preload("User").
+		Order("created_at ASC, id ASC").
+		Limit(limit).
+		Offset(offset).
+		Find(&messages).Error
 	return messages, err
+}
+
+func (r *TicketRepository) CountMessagesByTicketID(ticketID uint) (int64, error) {
+	if ticketID == 0 {
+		return 0, gorm.ErrInvalidData
+	}
+	var total int64
+	err := r.db.Model(&ticket.TicketMessage{}).Where("ticket_id = ?", ticketID).Count(&total).Error
+	return total, err
 }
 
 func (r *TicketRepository) FindDisputeCandidateMessages(filter DisputeCommunicationFilter) ([]ticket.TicketMessage, error) {

@@ -47,10 +47,11 @@ func (g *stripeGatewayImpl) CreatePayment(ctx context.Context, req *PaymentReque
 		return nil, fmt.Errorf("invalid payment request: %w", err)
 	}
 
-	amount, err := MajorToMinorAmount(req.Amount, req.Currency)
+	amountMoney, err := paymentMoneyFromMajor(req.Amount, req.Currency)
 	if err != nil {
 		return nil, err
 	}
+	amount := amountMoney.AmountMinor()
 	threeDSMode := NormalizeThreeDSecureMode(req.ThreeDSecure)
 	if req.ThreeDSecure == "" {
 		threeDSMode = NormalizeThreeDSecureMode(g.config.ThreeDSecure)
@@ -133,7 +134,7 @@ func (g *stripeGatewayImpl) CreatePayment(ctx context.Context, req *PaymentReque
 	}
 
 	// 返回响应
-	responseAmount, err := MinorToMajorAmount(pi.Amount, string(pi.Currency))
+	responseAmount, err := paymentMajorFloatFromMinor(pi.Amount, string(pi.Currency))
 	if err != nil {
 		return nil, err
 	}
@@ -173,7 +174,7 @@ func (g *stripeGatewayImpl) CapturePayment(ctx context.Context, paymentID string
 		return nil, fmt.Errorf("failed to capture stripe payment: %w", err)
 	}
 
-	responseAmount, err := MinorToMajorAmount(pi.Amount, string(pi.Currency))
+	responseAmount, err := paymentMajorFloatFromMinor(pi.Amount, string(pi.Currency))
 	if err != nil {
 		return nil, err
 	}
@@ -224,11 +225,11 @@ func (g *stripeGatewayImpl) RefundPaymentWithOptions(ctx context.Context, paymen
 
 	// 如果指定了金额，设置部分退款
 	if amount > 0 {
-		refundAmount, err := MajorToMinorAmount(amount, string(pi.Currency))
+		refundMoney, err := paymentMoneyFromMajor(amount, string(pi.Currency))
 		if err != nil {
 			return nil, err
 		}
-		params.Amount = stripe.Int64(refundAmount)
+		params.Amount = stripe.Int64(refundMoney.AmountMinor())
 	}
 
 	// 创建退款
@@ -237,7 +238,7 @@ func (g *stripeGatewayImpl) RefundPaymentWithOptions(ctx context.Context, paymen
 		return nil, fmt.Errorf("failed to create stripe refund: %w", err)
 	}
 
-	responseAmount, err := MinorToMajorAmount(r.Amount, string(pi.Currency))
+	responseAmount, err := paymentMajorFloatFromMinor(r.Amount, string(pi.Currency))
 	if err != nil {
 		return nil, err
 	}
@@ -272,7 +273,7 @@ func (g *stripeGatewayImpl) GetPayment(ctx context.Context, paymentID string) (*
 		return nil, fmt.Errorf("failed to get stripe payment: %w", err)
 	}
 
-	responseAmount, err := MinorToMajorAmount(pi.Amount, string(pi.Currency))
+	responseAmount, err := paymentMajorFloatFromMinor(pi.Amount, string(pi.Currency))
 	if err != nil {
 		return nil, err
 	}

@@ -780,7 +780,9 @@
       "noResults": "Inga FAQ hittades för \"{query}\"",
       "loadingAnswers": "Laddar svar",
       "illustrationAlt": "FAQ-illustration",
-      "selectQuestion": "Select a question to view the answer."
+      "selectQuestion": "Select a question to view the answer.",
+      "pagesAriaLabel": "FAQ pages",
+      "pagesLabel": "FAQ pages"
     }
   },
   "feedback": {

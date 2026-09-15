@@ -515,9 +515,9 @@ func (h *OrderEvidenceHandler) DeleteAttachment(c *gin.Context) {
 		ResourceID: orderID,
 		Status:     adminAuditStatusSuccess,
 		Changes: map[string]interface{}{
-			"operation":     "attachment_reference_delete",
-			"item_id":       itemID,
-			"attachment_id": attachmentID,
+			"operation":      "attachment_reference_delete",
+			"item_id":        itemID,
+			"attachment_id":  attachmentID,
 			"storage_object": "retained",
 		},
 	})

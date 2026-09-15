@@ -1,6 +1,7 @@
 package service
 
 import (
+	"commerce-platform/internal/domain/currency"
 	"commerce-platform/internal/domain/product"
 	"commerce-platform/internal/repository"
 	"encoding/json"
@@ -25,20 +26,38 @@ type ProductSpecificationTemplateInput struct {
 }
 
 type ProductSpecDefinitionInput struct {
-	ID              uint
-	Group           string
-	Name            string
-	Slug            string
-	FieldType       string
-	Presentation    string
-	Unit            string
-	IsRequired      bool
-	IsFilterable    bool
-	IsVisible       bool
-	IsVariantOption bool
-	SortOrder       int
-	Options         string
-	Validation      string
+	ID            uint
+	Group         string
+	Name          string
+	Slug          string
+	FieldType     string
+	Role          string
+	SelectionMode string
+	MinSelections int
+	MaxSelections *int
+	Presentation  string
+	Unit          string
+	IsRequired    bool
+	IsFilterable  bool
+	IsVisible     bool
+	SortOrder     int
+	Validation    string
+	OptionItems   []ProductSpecOptionItemInput
+}
+
+type ProductSpecOptionItemInput struct {
+	ID                     uint
+	ValueKey               string
+	DefaultLabel           string
+	ColorHex               string
+	SwatchMediaAssetID     *uint
+	SwatchURL              string
+	IsEnabledByDefault     *bool
+	IsDefault              bool
+	DefaultPriceDeltaMinor *int64
+	DefaultPriceCurrency   string
+	SortOrder              int
+	Revision               int
 }
 
 func (s *ProductService) GetAttributeByID(id uint) (*product.ProductAttribute, error) {
@@ -140,6 +159,10 @@ func (s *ProductService) UpdateProductSpecificationTemplate(id uint, input Produ
 		return nil, err
 	}
 	productSpecificationTemplate.ID = id
+	productSpecificationTemplate.Revision = existing.Revision + 1
+	if productSpecificationTemplate.Revision < 1 {
+		productSpecificationTemplate.Revision = 1
+	}
 
 	if existing.IsSystemManaged {
 		if productSpecificationTemplate.Slug != existing.Slug {
@@ -290,10 +313,12 @@ func validateSystemManagedProductSpecificationTemplate(existing, next *product.P
 		}
 		if previous.Slug != current.Slug ||
 			previous.FieldType != current.FieldType ||
+			previous.Role != current.Role ||
+			previous.SelectionMode != current.SelectionMode ||
+			previous.MinSelections != current.MinSelections ||
+			!sameOptionalInt(previous.MaxSelections, current.MaxSelections) ||
 			previous.Presentation != current.Presentation ||
 			previous.IsFilterable != current.IsFilterable ||
-			previous.IsVariantOption != current.IsVariantOption ||
-			normalizedSpecOptionsForComparison(previous.Options) != normalizedSpecOptionsForComparison(current.Options) ||
 			previous.Validation != current.Validation {
 			return fmt.Errorf("%w: field %q structure is immutable", ErrProductSpecificationTemplateSystemManaged, previous.Slug)
 		}
@@ -301,21 +326,11 @@ func validateSystemManagedProductSpecificationTemplate(existing, next *product.P
 	return nil
 }
 
-func normalizedSpecOptionsForComparison(raw string) string {
-	raw = strings.TrimSpace(raw)
-	if raw == "" {
-		return "[]"
+func sameOptionalInt(left, right *int) bool {
+	if left == nil || right == nil {
+		return left == nil && right == nil
 	}
-
-	var values []string
-	if err := json.Unmarshal([]byte(raw), &values); err != nil {
-		return raw
-	}
-	encoded, err := json.Marshal(values)
-	if err != nil {
-		return raw
-	}
-	return string(encoded)
+	return *left == *right
 }
 
 func normalizeProductSpecificationTemplateInput(input ProductSpecificationTemplateInput) (*product.ProductSpecificationTemplate, error) {
@@ -376,6 +391,38 @@ func normalizeSpecDefinition(input ProductSpecDefinitionInput, index int) (produ
 		return product.SpecDefinition{}, fmt.Errorf("%w: unsupported field type %q", ErrProductSpecInvalid, fieldType)
 	}
 
+	role := strings.ToLower(strings.TrimSpace(input.Role))
+	if role == "" {
+		role = "attribute"
+	}
+	if role != "attribute" && role != "variant" && role != "custom_option" {
+		return product.SpecDefinition{}, fmt.Errorf("%w: unsupported specification role %q", ErrProductSpecInvalid, role)
+	}
+	if role == "custom_option" && fieldType != "select" {
+		return product.SpecDefinition{}, fmt.Errorf("%w: custom option %q must use select field type", ErrProductSpecInvalid, slug)
+	}
+	selectionMode := strings.ToLower(strings.TrimSpace(input.SelectionMode))
+	if selectionMode == "" {
+		selectionMode = "single"
+	}
+	if selectionMode != "single" && selectionMode != "multiple" {
+		return product.SpecDefinition{}, fmt.Errorf("%w: unsupported selection mode %q", ErrProductSpecInvalid, selectionMode)
+	}
+	if input.MinSelections < 0 {
+		return product.SpecDefinition{}, fmt.Errorf("%w: min selections cannot be negative", ErrProductSpecInvalid)
+	}
+	if input.MaxSelections != nil {
+		if *input.MaxSelections < 0 || *input.MaxSelections < input.MinSelections {
+			return product.SpecDefinition{}, fmt.Errorf("%w: max selections must be greater than or equal to min selections", ErrProductSpecInvalid)
+		}
+		if selectionMode == "single" && *input.MaxSelections > 1 {
+			return product.SpecDefinition{}, fmt.Errorf("%w: single selection cannot accept more than one value", ErrProductSpecInvalid)
+		}
+	}
+	if selectionMode == "single" && input.MinSelections > 1 {
+		return product.SpecDefinition{}, fmt.Errorf("%w: single selection cannot require more than one value", ErrProductSpecInvalid)
+	}
+
 	presentation := strings.ToLower(strings.TrimSpace(input.Presentation))
 	if presentation == "" {
 		presentation = "text"
@@ -383,35 +430,13 @@ func normalizeSpecDefinition(input ProductSpecDefinitionInput, index int) (produ
 	if presentation != "text" && presentation != "color" && presentation != "image" {
 		return product.SpecDefinition{}, fmt.Errorf("%w: unsupported presentation %q", ErrProductSpecInvalid, presentation)
 	}
-	if presentation != "text" && (!input.IsVariantOption || fieldType != "select") {
+	if presentation != "text" && (role != "variant" && role != "custom_option" || fieldType != "select") {
 		return product.SpecDefinition{}, fmt.Errorf("%w: color/image presentation requires a select SKU option", ErrProductSpecInvalid)
 	}
 
-	options := strings.TrimSpace(input.Options)
-	if fieldType == "select" {
-		var values []string
-		if options != "" {
-			if err := json.Unmarshal([]byte(options), &values); err != nil {
-				return product.SpecDefinition{}, fmt.Errorf("%w: select specification %q requires valid options", ErrProductSpecInvalid, slug)
-			}
-		}
-		cleaned := make([]string, 0, len(values))
-		seen := make(map[string]struct{}, len(values))
-		for _, value := range values {
-			value = strings.TrimSpace(value)
-			if value == "" {
-				continue
-			}
-			if _, exists := seen[value]; exists {
-				continue
-			}
-			seen[value] = struct{}{}
-			cleaned = append(cleaned, value)
-		}
-		encoded, _ := json.Marshal(cleaned)
-		options = string(encoded)
-	} else {
-		options = ""
+	optionItems, err := normalizeSpecOptionItems(input.OptionItems, nil, index)
+	if err != nil {
+		return product.SpecDefinition{}, err
 	}
 
 	validation := strings.TrimSpace(input.Validation)
@@ -424,19 +449,107 @@ func normalizeSpecDefinition(input ProductSpecDefinitionInput, index int) (produ
 		group = "规格"
 	}
 	return product.SpecDefinition{
-		ID:              input.ID,
-		Group:           group,
-		Name:            name,
-		Slug:            slug,
-		FieldType:       fieldType,
-		Presentation:    presentation,
-		Unit:            strings.TrimSpace(input.Unit),
-		IsRequired:      input.IsRequired,
-		IsFilterable:    input.IsFilterable,
-		IsVisible:       input.IsVisible,
-		IsVariantOption: input.IsVariantOption,
-		SortOrder:       input.SortOrder,
-		Options:         options,
-		Validation:      validation,
+		ID:            input.ID,
+		Group:         group,
+		Name:          name,
+		Slug:          slug,
+		FieldType:     fieldType,
+		Role:          role,
+		SelectionMode: selectionMode,
+		MinSelections: input.MinSelections,
+		MaxSelections: input.MaxSelections,
+		Presentation:  presentation,
+		Unit:          strings.TrimSpace(input.Unit),
+		IsRequired:    input.IsRequired,
+		IsFilterable:  input.IsFilterable,
+		IsVisible:     input.IsVisible,
+		SortOrder:     input.SortOrder,
+		Validation:    validation,
+		OptionItems:   optionItems,
 	}, nil
+}
+
+func normalizeSpecOptionItems(input []ProductSpecOptionItemInput, legacyKeys []string, definitionIndex int) ([]product.ProductSpecOptionItem, error) {
+	if len(input) == 0 && len(legacyKeys) == 0 {
+		return nil, nil
+	}
+	items := make([]product.ProductSpecOptionItem, 0, len(input)+len(legacyKeys))
+	if len(input) == 0 {
+		for index, key := range legacyKeys {
+			items = append(items, product.ProductSpecOptionItem{
+				ValueKey:           key,
+				DefaultLabel:       key,
+				IsEnabledByDefault: true,
+				SortOrder:          index * 10,
+				Revision:           1,
+			})
+		}
+		return items, nil
+	}
+
+	seen := make(map[string]struct{}, len(input))
+	defaultCount := 0
+	for index, item := range input {
+		key := strings.TrimSpace(item.ValueKey)
+		if key == "" || len(key) > 160 {
+			return nil, fmt.Errorf("%w: specification %d option %d requires a value_key up to 160 characters", ErrProductSpecInvalid, definitionIndex+1, index+1)
+		}
+		if _, exists := seen[key]; exists {
+			return nil, fmt.Errorf("%w: duplicate option value %q in specification %d", ErrProductSpecInvalid, key, definitionIndex+1)
+		}
+		seen[key] = struct{}{}
+
+		label := strings.TrimSpace(item.DefaultLabel)
+		if label == "" {
+			label = key
+		}
+		colorHex := strings.TrimSpace(item.ColorHex)
+		if colorHex != "" && !isValidColorHex(colorHex) {
+			return nil, fmt.Errorf("%w: invalid color_hex for option %q", ErrProductSpecInvalid, key)
+		}
+		priceCurrency := currency.NormalizeCode(item.DefaultPriceCurrency)
+		if item.DefaultPriceDeltaMinor == nil && priceCurrency != "" {
+			return nil, fmt.Errorf("%w: option %q price currency requires a price amount", ErrProductSpecInvalid, key)
+		}
+		if item.DefaultPriceDeltaMinor != nil {
+			if *item.DefaultPriceDeltaMinor < 0 {
+				return nil, fmt.Errorf("%w: option %q price cannot be negative", ErrProductSpecInvalid, key)
+			}
+			if !currency.IsCatalogCode(priceCurrency) {
+				return nil, fmt.Errorf("%w: option %q requires a valid catalog price currency", ErrProductSpecInvalid, key)
+			}
+		}
+		isEnabled := true
+		if item.IsEnabledByDefault != nil {
+			isEnabled = *item.IsEnabledByDefault
+		}
+		if item.IsDefault {
+			defaultCount++
+			if defaultCount > 1 {
+				return nil, fmt.Errorf("%w: specification %d can have at most one default option", ErrProductSpecInvalid, definitionIndex+1)
+			}
+			if !isEnabled {
+				return nil, fmt.Errorf("%w: default option %q must be enabled", ErrProductSpecInvalid, key)
+			}
+		}
+		revision := item.Revision
+		if revision < 1 {
+			revision = 1
+		}
+		items = append(items, product.ProductSpecOptionItem{
+			ID:                     item.ID,
+			ValueKey:               key,
+			DefaultLabel:           label,
+			ColorHex:               colorHex,
+			SwatchMediaAssetID:     item.SwatchMediaAssetID,
+			SwatchURL:              strings.TrimSpace(item.SwatchURL),
+			IsEnabledByDefault:     isEnabled,
+			IsDefault:              item.IsDefault,
+			DefaultPriceDeltaMinor: item.DefaultPriceDeltaMinor,
+			DefaultPriceCurrency:   priceCurrency,
+			SortOrder:              item.SortOrder,
+			Revision:               revision,
+		})
+	}
+	return items, nil
 }

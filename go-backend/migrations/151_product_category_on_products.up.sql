@@ -12,7 +12,7 @@ BEGIN
             ADD CONSTRAINT fk_products_product_category
             FOREIGN KEY (product_category_id)
             REFERENCES product_categories(id)
-            ON DELETE SET NULL;
+            ON DELETE RESTRICT;
     END IF;
 END
 $$;

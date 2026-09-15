@@ -1,36 +1,27 @@
 package payment
 
-import (
-	"fmt"
-	"math"
-	"strconv"
+import domainmoney "commerce-platform/internal/domain/money"
 
-	"commerce-platform/internal/domain/currency"
-)
-
-// MajorToMinorAmount rounds first so float64 noise does not truncate away a cent.
-func MajorToMinorAmount(amount float64, code string) (int64, error) {
-	minorUnits, ok := currency.MinorUnits(code)
-	if !ok {
-		return 0, fmt.Errorf("unsupported currency %s", currency.NormalizeCode(code))
-	}
-	scale := math.Pow10(minorUnits)
-	return int64(math.Round(amount * scale)), nil
+func paymentMoneyFromMajor(amount float64, code string) (domainmoney.Money, error) {
+	return domainmoney.FromMajorFloat(amount, code)
 }
 
-func MinorToMajorAmount(amount int64, code string) (float64, error) {
-	minorUnits, ok := currency.MinorUnits(code)
-	if !ok {
-		return 0, fmt.Errorf("unsupported currency %s", currency.NormalizeCode(code))
-	}
-	scale := math.Pow10(minorUnits)
-	return float64(amount) / scale, nil
+func paymentMoneyFromMinor(amount int64, code string) (domainmoney.Money, error) {
+	return domainmoney.New(amount, code)
 }
 
-func FormatMajorAmount(amount float64, code string) (string, error) {
-	minorUnits, ok := currency.MinorUnits(code)
-	if !ok {
-		return "", fmt.Errorf("unsupported currency %s", currency.NormalizeCode(code))
+func paymentMajorFloatFromMinor(amount int64, code string) (float64, error) {
+	money, err := paymentMoneyFromMinor(amount, code)
+	if err != nil {
+		return 0, err
 	}
-	return strconv.FormatFloat(amount, 'f', minorUnits, 64), nil
+	return money.MajorFloat()
+}
+
+func paymentMajorString(amount float64, code string) (string, error) {
+	money, err := paymentMoneyFromMajor(amount, code)
+	if err != nil {
+		return "", err
+	}
+	return money.FormatMajor()
 }

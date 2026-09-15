@@ -19,7 +19,7 @@ docker compose up -d postgres redis
 This starts:
 
 - PostgreSQL: `localhost:9400`
-- Redis: `localhost:9510`
+- Redis: `localhost:9562`
 
 ## Initialize or Migrate the Database
 

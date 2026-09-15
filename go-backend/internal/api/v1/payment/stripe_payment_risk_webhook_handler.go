@@ -149,7 +149,7 @@ func stripeEarlyFraudWarningAmount(warning stripe.RadarEarlyFraudWarning) (float
 	if minorAmount <= 0 || strings.TrimSpace(currency) == "" {
 		return 0, strings.ToUpper(strings.TrimSpace(currency))
 	}
-	amount, err := pgateway.MinorToMajorAmount(minorAmount, currency)
+	amount, err := webhookMajorAmountFromMinor(minorAmount, currency)
 	if err != nil {
 		return 0, strings.ToUpper(strings.TrimSpace(currency))
 	}

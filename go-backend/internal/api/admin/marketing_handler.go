@@ -11,6 +11,7 @@ import (
 type MarketingHandler struct {
 	marketingService *service.MarketingService
 	programService   *service.LoyaltyProgramService
+	referralService  *service.ReferralService
 }
 
 func NewMarketingHandler(marketingService *service.MarketingService, programServices ...*service.LoyaltyProgramService) *MarketingHandler {
@@ -19,6 +20,10 @@ func NewMarketingHandler(marketingService *service.MarketingService, programServ
 		handler.programService = programServices[0]
 	}
 	return handler
+}
+
+func NewMarketingHandlerWithReferral(marketingService *service.MarketingService, programService *service.LoyaltyProgramService, referralService *service.ReferralService) *MarketingHandler {
+	return &MarketingHandler{marketingService: marketingService, programService: programService, referralService: referralService}
 }
 
 func respondMarketingError(c *gin.Context, err error, notFoundResource string) {

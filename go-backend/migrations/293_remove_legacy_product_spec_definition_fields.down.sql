@@ -1,0 +1,2 @@
+-- Legacy fields are intentionally not restored on rollback. Their values were
+-- migrated into role and product_spec_option_items before this migration.

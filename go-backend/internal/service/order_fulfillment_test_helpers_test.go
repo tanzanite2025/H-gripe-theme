@@ -70,6 +70,24 @@ func seedReadyFulfillmentEvidenceForTest(t *testing.T, db *gorm.DB, orderRecord 
 		storedOrder.Items = []order.OrderItem{item}
 	}
 
+	for i := range storedOrder.Items {
+		declaredValue := storedOrder.Items[i].Total
+		if declaredValue <= 0 {
+			declaredValue = storedOrder.Items[i].Price
+		}
+		if declaredValue <= 0 {
+			declaredValue = 1
+		}
+		storedOrder.Items[i].DeclaredValue = &declaredValue
+		storedOrder.Items[i].DeclaredValueConfirmed = true
+		require.NoError(t, db.Model(&order.OrderItem{}).
+			Where("id = ?", storedOrder.Items[i].ID).
+			Updates(map[string]interface{}{
+				"declared_value":           declaredValue,
+				"declared_value_confirmed": true,
+			}).Error)
+	}
+
 	snapshot, err := orderevidence.BuildOrderEvidenceSnapshot(
 		&storedOrder,
 		snapshotInputsForFulfillmentTest(storedOrder.Items),

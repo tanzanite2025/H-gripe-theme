@@ -9,7 +9,7 @@
 
       <div v-if="copy.intro || copy.body || copy.note" class="website-name-content__copy">
         <p v-if="copy.intro" class="website-name-content__intro">{{ copy.intro }}</p>
-        <p v-if="copy.body" class="website-name-content__body">{{ copy.body }}</p>
+        <div v-if="copy.body" class="website-name-content__body" v-html="copy.body"></div>
         <span v-if="copy.note" class="website-name-content__note">{{ copy.note }}</span>
       </div>
     </section>
@@ -71,7 +71,7 @@ useHead(() => ({
 .website-name-content h1 {
   margin: 0.5rem 0 0;
   color: var(--tz-text-primary);
-  font-size: clamp(2rem, 4vw, 3.2rem);
+  font-size: var(--tz-type-website-title);
   font-weight: 800;
   letter-spacing: 0;
   line-height: 1.08;
@@ -93,7 +93,60 @@ useHead(() => ({
 }
 
 .website-name-content__body {
-  margin-top: 1.5rem !important;
+  max-width: 48rem;
+  margin-top: 1.5rem;
+  color: var(--tz-text-secondary);
+  font-size: 1.08rem;
+  line-height: 1.8;
+}
+
+.website-name-content__body :deep(p),
+.website-name-content__body :deep(ul),
+.website-name-content__body :deep(ol),
+.website-name-content__body :deep(blockquote) {
+  margin: 0 0 1rem;
+}
+
+.website-name-content__body :deep(h2),
+.website-name-content__body :deep(h3) {
+  margin: 1.5rem 0 0.65rem;
+  color: var(--tz-text-primary);
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+.website-name-content__body :deep(h2) {
+  font-size: 1.45rem;
+}
+
+.website-name-content__body :deep(h3) {
+  font-size: 1.2rem;
+}
+
+.website-name-content__body :deep(ul),
+.website-name-content__body :deep(ol) {
+  padding-left: 1.35rem;
+  list-style-position: outside;
+}
+
+.website-name-content__body :deep(ul) {
+  list-style-type: disc;
+}
+
+.website-name-content__body :deep(ol) {
+  list-style-type: decimal;
+}
+
+.website-name-content__body :deep(blockquote) {
+  margin-left: 0;
+  border-left: 3px solid var(--tz-text-accent);
+  padding-left: 1rem;
+  color: var(--tz-text-muted);
+}
+
+.website-name-content__body :deep(a) {
+  color: var(--tz-text-accent);
+  text-decoration: underline;
 }
 
 .website-name-content__note {
@@ -116,7 +169,7 @@ useHead(() => ({
   }
 
   .website-name-content h1 {
-    font-size: 1.8rem;
+    font-size: var(--tz-type-website-title-mobile);
   }
 }
 </style>

@@ -1,6 +1,6 @@
 # 收款渠道与支付风控域架构
 
-Last updated: 2026-08-20
+Last updated: 2026-09-09
 
 ## Status
 
@@ -59,7 +59,41 @@ Do not mix these two domains just because they both touch payment facts.
 Collection is about how money is accepted. Risk is about how money is
 controlled, reviewed, and disputed.
 
-## 3. Target Route Shape
+## 3. Payment Fact and Duplicate-Charge Boundary
+
+The payment ledger distinguishes two cases that must not be collapsed into one
+"duplicate webhook" path:
+
+- The same provider transaction ID is delivered again. This is an idempotent
+  webhook retry; it reuses the existing transaction row and does not create a
+  second refund.
+- A different provider transaction ID is verified after the order is already
+  paid. This is a real duplicate charge, not merely a repeated notification.
+  The system stores the second transaction with status `duplicate_paid`,
+  preserves its amount, currency, provider response, and transaction ID, and
+  creates one full-amount local `pending` refund linked to that transaction.
+
+The second case does not create another order-paid event and does not change the
+order back to unpaid. Webhook success is returned only after the transaction
+and the duplicate-paid refund record have been persisted. That response means
+the local record is durable; it does not mean the provider-side refund has
+already completed.
+
+The pending refund continues through the existing explicit admin refund
+execution workflow. The gateway API call, provider refund ID, execution audit,
+retry behavior, and final `completed` state are handled there. A local
+pending refund is therefore an automatic accounting and remediation record, not
+an automatic provider-side refund.
+
+### Financial order retention boundary
+
+An order, its payment transactions, refunds, disputes, and evidence package are one financial reconciliation and chargeback-defense chain. Once an order has a paid or refunded financial fact, the order record and its linked evidence must remain queryable for reconciliation and dispute response; removing it from an admin list must never mean physically deleting it.
+
+- The canonical admin action is `POST /api/admin/orders/:id/hide-unpaid-terminal`. It is limited to `cancelled + unpaid` and `payment_expired + expired`. Paid, refunded, or state-mismatched orders are retained and the action is rejected.
+- The current implementation uses GORM soft delete only for those never-paid terminal orders. Soft delete changes default query visibility; it is not a complete `Archived` order state, archive workflow, recovery contract, or permission model.
+- `DELETE /api/admin/orders/:id` is retained only for legacy client compatibility and invokes the same guarded soft-hide behavior. New clients must use the explicit POST route and call the action hide, not delete.
+
+## 4. Target Route Shape
 
 ```text
 顶级域（左侧两列）
@@ -100,7 +134,7 @@ If a provider grows enough, its subtree can later expand into a deeper route
 tree. A separate top-level installments domain should only exist if
 installments become truly shared across providers.
 
-## 4. Placeholder Strategy
+## 5. Placeholder Strategy
 
 Installments should not be dumped into a mixed settings bucket.
 
@@ -117,7 +151,7 @@ Recommended rollout:
 This keeps the future shape visible without pretending a shared abstraction
 already exists.
 
-## 5. Naming Rules
+## 6. Naming Rules
 
 - Use business names in visible labels: `收款方式`, `支付风控`, `Stripe`,
   `PayPal`, `微信支付`, `支付宝`.
@@ -125,7 +159,7 @@ already exists.
 - Treat `Settings.vue` as system-settings scaffolding only.
 - Do not keep legacy payment redirects in the active admin surface.
 
-## 6. Practical Implication
+## 7. Practical Implication
 
 The current `payment-risk` grouping is directionally correct. `人工保护` belongs
 there, not inside a provider collection domain.

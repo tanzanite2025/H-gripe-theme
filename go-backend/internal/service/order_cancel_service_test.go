@@ -9,6 +9,7 @@ import (
 	"commerce-platform/internal/domain/loyalty"
 	"commerce-platform/internal/domain/order"
 	"commerce-platform/internal/domain/product"
+	attributionpkg "commerce-platform/internal/pkg/attribution"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -46,7 +47,11 @@ func TestCancelOrderRejectsPaidOrderWithoutChangingStateOrStock(t *testing.T) {
 
 	var savedProduct product.Product
 	require.NoError(t, db.First(&savedProduct, productRecord.ID).Error)
-	assert.Equal(t, 4, savedProduct.Stock)
+	assert.Equal(t, 5, savedProduct.Stock)
+
+	var savedVariant product.ProductVariant
+	require.NoError(t, db.Where("product_id = ?", productRecord.ID).First(&savedVariant).Error)
+	assert.Equal(t, 4, savedVariant.Stock)
 }
 
 func TestCancelOrderByNumberRejectsPaidPaymentStatusEvenWhenOrderIsPending(t *testing.T) {
@@ -78,7 +83,11 @@ func TestCancelOrderByNumberRejectsPaidPaymentStatusEvenWhenOrderIsPending(t *te
 
 	var savedProduct product.Product
 	require.NoError(t, db.First(&savedProduct, productRecord.ID).Error)
-	assert.Equal(t, 4, savedProduct.Stock)
+	assert.Equal(t, 5, savedProduct.Stock)
+
+	var savedVariant product.ProductVariant
+	require.NoError(t, db.Where("product_id = ?", productRecord.ID).First(&savedVariant).Error)
+	assert.Equal(t, 4, savedVariant.Stock)
 }
 
 func TestCancelOrderRestoresStockForPendingUnpaidOrder(t *testing.T) {
@@ -110,6 +119,37 @@ func TestCancelOrderRestoresStockForPendingUnpaidOrder(t *testing.T) {
 	var savedProduct product.Product
 	require.NoError(t, db.First(&savedProduct, productRecord.ID).Error)
 	assert.Equal(t, 5, savedProduct.Stock)
+}
+
+func TestCancelMadeToOrderDoesNotRestoreStock(t *testing.T) {
+	db, orderService := newTestOrderService(t)
+	productRecord := seedProduct(t, db, 50, 0)
+	productRecord.FulfillmentMode = product.FulfillmentModeMadeToOrder
+	require.NoError(t, db.Save(&productRecord).Error)
+
+	createdOrder, err := orderService.CreateOrder(
+		context.Background(),
+		42,
+		[]order.OrderItem{{ProductID: productRecord.ID, Quantity: 1}},
+		testAddress(),
+		testAddress(),
+		"card",
+		"standard",
+		"",
+		0,
+	)
+	require.NoError(t, err)
+	require.Equal(t, order.FulfillmentModeMadeToOrder, createdOrder.FulfillmentMode)
+
+	require.NoError(t, orderService.CancelOrder(createdOrder.ID, 42))
+
+	var savedProduct product.Product
+	require.NoError(t, db.First(&savedProduct, productRecord.ID).Error)
+	assert.Equal(t, 0, savedProduct.Stock)
+
+	var savedVariant product.ProductVariant
+	require.NoError(t, db.Where("product_id = ?", productRecord.ID).First(&savedVariant).Error)
+	assert.Equal(t, 0, savedVariant.Stock)
 }
 
 func TestCancelOrderReversesCouponUsageWithoutDeletingAuditRecord(t *testing.T) {
@@ -161,6 +201,37 @@ func TestCancelOrderReversesCouponUsageWithoutDeletingAuditRecord(t *testing.T) 
 		0,
 	)
 	require.NoError(t, err)
+}
+
+func TestCancelOrderRestoresGiftCardUsage(t *testing.T) {
+	db, orderService := newTestOrderService(t)
+	productRecord := seedProduct(t, db, 100, 5)
+	giftCard := seedGiftCard(t, db, "CANCEL-GIFT-CARD", 42, "USD", 2500)
+
+	createdOrder, err := orderService.CreateOrderWithAttributionAndOptions(
+		context.Background(),
+		42,
+		[]order.OrderItem{{ProductID: productRecord.ID, Quantity: 1}},
+		testAddress(),
+		testAddress(),
+		"card",
+		"standard",
+		"",
+		0,
+		attributionpkg.Context{},
+		OrderCreationOptions{GiftCardCode: giftCard.Code},
+	)
+	require.NoError(t, err)
+	require.NoError(t, orderService.CancelOrder(createdOrder.ID, 42))
+
+	var savedGiftCard coupon.GiftCard
+	require.NoError(t, db.First(&savedGiftCard, giftCard.ID).Error)
+	assert.Equal(t, int64(2500), savedGiftCard.BalanceCents)
+	assert.Equal(t, "active", savedGiftCard.Status)
+
+	var restoration coupon.GiftCardTransaction
+	require.NoError(t, db.Where("gift_card_id = ? AND order_id = ? AND type = ?", giftCard.ID, createdOrder.ID, "refund").First(&restoration).Error)
+	assert.Equal(t, int64(2500), restoration.AmountCents)
 }
 
 func TestCancelOrderConcurrentRequestsRollbackOnlyOnce(t *testing.T) {

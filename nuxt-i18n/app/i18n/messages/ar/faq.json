@@ -12,6 +12,8 @@
     "noResults": "لم يتم العثور على FAQ تطابق \"{query}\"",
     "loadingAnswers": "جار تحميل الإجابات",
     "illustrationAlt": "صورة FAQ",
-    "selectQuestion": "Select a question to view the answer."
+    "selectQuestion": "Select a question to view the answer.",
+    "pagesAriaLabel": "FAQ pages",
+    "pagesLabel": "FAQ pages"
   }
 }

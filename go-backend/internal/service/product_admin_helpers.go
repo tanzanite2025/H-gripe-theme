@@ -300,7 +300,8 @@ func (s *ProductService) buildVariantOptionValues(productSpecificationTemplateID
 
 	definitions := make(map[uint]product.SpecDefinition)
 	for _, definition := range productSpecificationTemplate.SpecDefinitions {
-		if definition.IsVariantOption {
+		role := definition.RuntimeRole()
+		if role == "variant" || role == ProductSpecRoleCustomOption {
 			definitions[definition.ID] = definition
 		}
 	}
@@ -323,6 +324,26 @@ func (s *ProductService) buildVariantOptionValues(productSpecificationTemplateID
 		}
 		seen[uniqueKey] = struct{}{}
 
+		var templateOptionItem *product.ProductSpecOptionItem
+		for index := range definition.OptionItems {
+			candidate := &definition.OptionItems[index]
+			if candidate.ValueKey == valueKey {
+				templateOptionItem = candidate
+			}
+			if item.TemplateOptionItemID != nil && candidate.ID == *item.TemplateOptionItemID {
+				if candidate.ValueKey != valueKey {
+					return nil, fmt.Errorf("%w: template option item does not match value %s", ErrProductVariantInvalid, valueKey)
+				}
+				templateOptionItem = candidate
+			}
+		}
+		if item.TemplateOptionItemID != nil && templateOptionItem == nil {
+			return nil, fmt.Errorf("%w: template option item does not belong to specification %s", ErrProductVariantInvalid, definition.Slug)
+		}
+		if len(definition.OptionItems) > 0 && templateOptionItem == nil {
+			return nil, fmt.Errorf("%w: option value %s is not defined by specification %s", ErrProductVariantInvalid, valueKey, definition.Slug)
+		}
+
 		label := strings.TrimSpace(item.Label)
 		if label == "" {
 			label = valueKey
@@ -336,15 +357,51 @@ func (s *ProductService) buildVariantOptionValues(productSpecificationTemplateID
 			isEnabled = *item.IsEnabled
 		}
 
+		templateOptionItemID := item.TemplateOptionItemID
+		if templateOptionItem != nil {
+			id := templateOptionItem.ID
+			templateOptionItemID = &id
+		}
+		sourceTemplateRevision := item.SourceTemplateRevision
+		if sourceTemplateRevision <= 0 && templateOptionItem != nil {
+			sourceTemplateRevision = productSpecificationTemplate.Revision
+		}
 		optionValue := product.ProductVariantOptionValue{
-			SpecDefinitionID:   definition.ID,
-			ValueKey:           valueKey,
-			Label:              label,
-			ColorHex:           colorHex,
-			SwatchMediaAssetID: item.SwatchMediaAssetID,
-			SwatchURL:          strings.TrimSpace(item.SwatchURL),
-			SortOrder:          item.SortOrder,
-			IsEnabled:          isEnabled,
+			SpecDefinitionID:       definition.ID,
+			TemplateOptionItemID:   templateOptionItemID,
+			SourceTemplateRevision: sourceTemplateRevision,
+			ValueKey:               valueKey,
+			Label:                  label,
+			ColorHex:               colorHex,
+			SwatchMediaAssetID:     item.SwatchMediaAssetID,
+			SwatchURL:              strings.TrimSpace(item.SwatchURL),
+			SortOrder:              item.SortOrder,
+			IsEnabled:              isEnabled,
+		}
+		if definition.RuntimeRole() == ProductSpecRoleCustomOption {
+			inventoryPolicy := strings.TrimSpace(item.InventoryPolicy)
+			if inventoryPolicy == "" {
+				inventoryPolicy = ProductCustomOptionInventoryNone
+			}
+			if inventoryPolicy != ProductCustomOptionInventoryNone {
+				return nil, fmt.Errorf("%w: custom option %s only supports inventory policy none", ErrProductVariantInvalid, valueKey)
+			}
+			if item.PriceDeltaMinor != nil && *item.PriceDeltaMinor < 0 {
+				return nil, fmt.Errorf("%w: option price cannot be negative for %s", ErrProductVariantInvalid, valueKey)
+			}
+			if item.ComponentVariantID != nil || item.ComponentQuantity != 0 {
+				return nil, fmt.Errorf("%w: component inventory is not enabled for %s", ErrProductVariantInvalid, valueKey)
+			}
+			priceDelta := int64(0)
+			if item.PriceDeltaMinor != nil {
+				priceDelta = *item.PriceDeltaMinor
+			}
+			optionValue.CustomOptionPolicy = &product.ProductCustomOptionPolicy{
+				PriceDeltaMinor:   priceDelta,
+				IsDefault:         item.IsDefault,
+				InventoryPolicy:   inventoryPolicy,
+				ComponentQuantity: 0,
+			}
 		}
 		if item.ID != nil {
 			optionValue.ID = *item.ID
@@ -353,6 +410,74 @@ func (s *ProductService) buildVariantOptionValues(productSpecificationTemplateID
 	}
 
 	return values, nil
+}
+
+// materializeTemplateOptionValueInputs snapshots the current template
+// candidates for a newly created product. Product-level rows then own their
+// enabled state and pricing, so later template edits cannot change the
+// product silently.
+func (s *ProductService) materializeTemplateOptionValueInputs(productSpecificationTemplateID *uint) ([]ProductVariantOptionValueInput, error) {
+	if productSpecificationTemplateID == nil {
+		return nil, nil
+	}
+	template, err := s.productRepo.FindProductSpecificationTemplateByID(*productSpecificationTemplateID)
+	if err != nil {
+		if repository.IsRecordNotFound(err) {
+			return nil, ErrProductSpecificationTemplateNotFound
+		}
+		return nil, err
+	}
+	inputs := make([]ProductVariantOptionValueInput, 0)
+	for _, definition := range template.SpecDefinitions {
+		role := definition.RuntimeRole()
+		if role != "variant" && role != ProductSpecRoleCustomOption {
+			continue
+		}
+		for _, item := range definition.OptionItems {
+			itemID := item.ID
+			enabled := item.IsEnabledByDefault
+			input := ProductVariantOptionValueInput{
+				SpecDefinitionID:       definition.ID,
+				TemplateOptionItemID:   &itemID,
+				SourceTemplateRevision: template.Revision,
+				ValueKey:               item.ValueKey,
+				Label:                  item.DefaultLabel,
+				ColorHex:               item.ColorHex,
+				SwatchMediaAssetID:     item.SwatchMediaAssetID,
+				SwatchURL:              item.SwatchURL,
+				SortOrder:              item.SortOrder,
+				IsEnabled:              &enabled,
+			}
+			if role == ProductSpecRoleCustomOption {
+				input.PriceDeltaMinor = item.DefaultPriceDeltaMinor
+				input.IsDefault = item.IsDefault
+				input.InventoryPolicy = ProductCustomOptionInventoryNone
+			}
+			inputs = append(inputs, input)
+		}
+	}
+	return inputs, nil
+}
+
+func mergeTemplateOptionValueInputs(defaults, overrides []ProductVariantOptionValueInput) []ProductVariantOptionValueInput {
+	if len(defaults) == 0 {
+		return overrides
+	}
+	merged := append([]ProductVariantOptionValueInput(nil), defaults...)
+	indexes := make(map[string]int, len(merged))
+	for index, item := range merged {
+		indexes[fmt.Sprintf("%d:%s", item.SpecDefinitionID, strings.TrimSpace(item.ValueKey))] = index
+	}
+	for _, item := range overrides {
+		key := fmt.Sprintf("%d:%s", item.SpecDefinitionID, strings.TrimSpace(item.ValueKey))
+		if index, ok := indexes[key]; ok {
+			merged[index] = item
+			continue
+		}
+		indexes[key] = len(merged)
+		merged = append(merged, item)
+	}
+	return merged
 }
 
 func isValidColorHex(value string) bool {

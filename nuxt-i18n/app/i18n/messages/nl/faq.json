@@ -12,6 +12,8 @@
     "noResults": "Geen FAQ gevonden voor \"{query}\"",
     "loadingAnswers": "Antwoorden laden",
     "illustrationAlt": "FAQ-afbeelding",
-    "selectQuestion": "Select a question to view the answer."
+    "selectQuestion": "Select a question to view the answer.",
+    "pagesAriaLabel": "FAQ pages",
+    "pagesLabel": "FAQ pages"
   }
 }

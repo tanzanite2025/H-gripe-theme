@@ -240,7 +240,7 @@ const couponDialogMode = ref('create')
 const couponSubmitting = ref(false)
 const couponErrors = reactive<CouponErrors>({})
 const couponForm = reactive<CouponEditorForm>({
-  id: null, code: '', type: 'fixed', value: 0, description: '', min_amount: 0, max_discount: 0,
+  id: null, code: '', type: 'fixed', currency: 'USD', value: 0, description: '', min_amount: 0, max_discount: 0,
   usage_limit: 0, usage_limit_per_user: 0, start_date: '', end_date: '', applicable_products: '',
   excluded_products: '', applicable_categories: '', enabled: true
 })
@@ -454,7 +454,7 @@ const updateCouponPage = (page: number) => { couponPagination.page = page; fetch
 const updateCouponPageSize = (pageSize: number) => { couponPagination.pageSize = pageSize; couponPagination.page = 1; fetchCoupons() }
 const resetCouponForm = () => {
   Object.assign(couponForm, {
-    id: null, code: '', type: 'fixed', value: 0, description: '', min_amount: 0, max_discount: 0,
+    id: null, code: '', type: 'fixed', currency: 'USD', value: 0, description: '', min_amount: 0, max_discount: 0,
     usage_limit: 0, usage_limit_per_user: 0, start_date: '', end_date: '', applicable_products: '',
     excluded_products: '', applicable_categories: '', enabled: true
   })
@@ -467,7 +467,7 @@ const showEditCouponDialog = async (coupon: CouponRecord) => {
     const response = await axios.get(`/api/admin/marketing/coupons/${coupon.id}`)
     const data = apiData(response).coupon || coupon
     Object.assign(couponForm, {
-      id: data.id, code: data.code || '', type: data.type || 'fixed', value: Number(data.value || 0),
+      id: data.id, code: data.code || '', type: data.type || 'fixed', currency: data.currency || 'USD', value: Number(data.value || 0),
       description: data.description || '', min_amount: Number(data.min_amount || 0), max_discount: Number(data.max_discount || 0),
       usage_limit: Number(data.usage_limit || 0), usage_limit_per_user: Number(data.usage_limit_per_user || 0),
       start_date: toDateTimeLocal(data.start_date), end_date: toDateTimeLocal(data.end_date),
@@ -495,7 +495,7 @@ const submitCouponForm = async () => {
   if (!validateCoupon()) return
   couponSubmitting.value = true
   const payload = {
-    code: couponForm.code.trim().toUpperCase(), type: couponForm.type, value: Number(couponForm.value),
+    code: couponForm.code.trim().toUpperCase(), type: couponForm.type, currency: couponForm.currency.trim().toUpperCase(), value: Number(couponForm.value),
     description: couponForm.description, min_amount: Number(couponForm.min_amount || 0), max_discount: Number(couponForm.max_discount || 0),
     usage_limit: Number(couponForm.usage_limit || 0), usage_limit_per_user: Number(couponForm.usage_limit_per_user || 0),
     start_date: toISO(couponForm.start_date), end_date: toISO(couponForm.end_date), applicable_products: couponForm.applicable_products,

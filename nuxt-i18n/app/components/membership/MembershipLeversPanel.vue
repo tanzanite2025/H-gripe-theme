@@ -146,27 +146,6 @@ const purchaseEarnRuleDescription = computed(() => {
   )
 })
 
-const referralRuleDescription = computed(() => {
-  const referrer = props.loyaltyRules?.referral_referrer_points
-  const referee = props.loyaltyRules?.referral_referee_points
-  if (!hasRuleNumber(referrer) || !hasRuleNumber(referee)) return notConfiguredText.value
-  if (referrer <= 0 && referee <= 0) {
-    return t(
-      'resourcesMembershipLevers.points.referralDisabled',
-      'Referral points are not enabled',
-    )
-  }
-
-  return translateWithFallback(
-    'resourcesMembershipLevers.points.referralDisplayRule',
-    {
-      referrer: formatPoints(referrer),
-      referee: formatPoints(referee),
-    },
-    `Inviter gets ${formatPoints(referrer)}; invitee gets ${formatPoints(referee)}`,
-  )
-})
-
 const redemptionRuleDescription = computed(() => {
   const exchangeRate = props.loyaltyRules?.redemption_exchange_rate
   if (!hasRuleNumber(exchangeRate)) return notConfiguredText.value
@@ -238,11 +217,6 @@ const pointRuleItems = computed(() => [
     key: 'redemption',
     title: t('resourcesMembershipLevers.points.redeem', 'Redemption rate'),
     description: redemptionRuleDescription.value,
-  },
-  {
-    key: 'referral',
-    title: t('resourcesMembershipLevers.points.invite', 'Invite new users'),
-    description: referralRuleDescription.value,
   },
   {
     key: 'checkin',

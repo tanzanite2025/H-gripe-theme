@@ -10,11 +10,15 @@ import (
 	"testing"
 	"time"
 
+	"commerce-platform/internal/domain/payment"
+	"commerce-platform/internal/repository"
 	"github.com/alicebob/miniredis/v2"
 	"github.com/gin-gonic/gin"
+	"github.com/glebarez/sqlite"
 	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"gorm.io/gorm"
 )
 
 func TestIdempotencyReplaysCompletedResponse(t *testing.T) {
@@ -54,6 +58,77 @@ func TestIdempotencyReplaysCompletedResponse(t *testing.T) {
 	require.Equal(t, int32(1), atomic.LoadInt32(&calls))
 	assert.Equal(t, "true", second.Header().Get(idempotencyReplayHeader))
 	assert.Equal(t, first.Body.String(), second.Body.String())
+}
+
+func TestPaymentOperationIdempotencyReplaysFromDatabaseWhenRedisRecordIsMissing(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	require.NoError(t, err)
+	sqlDB, err := db.DB()
+	require.NoError(t, err)
+	sqlDB.SetMaxOpenConns(1)
+	t.Cleanup(func() { _ = sqlDB.Close() })
+	require.NoError(t, db.AutoMigrate(&payment.PaymentOperationIdempotency{}))
+
+	repo := repository.NewPaymentOperationIdempotencyRepository(db)
+	router := gin.New()
+	router.Use(func(c *gin.Context) {
+		c.Set("user_id", uint(7))
+		c.Next()
+	})
+	var calls int32
+	router.POST("/paypal/capture", PaymentOperationIdempotency(repo, "paypal_capture"), func(c *gin.Context) {
+		atomic.AddInt32(&calls, 1)
+		c.JSON(http.StatusOK, gin.H{"captured": true})
+	})
+
+	request := func() *httptest.ResponseRecorder {
+		recorder := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodPost, "/paypal/capture", strings.NewReader(`{"order_number":"ORD-1"}`))
+		req.Header.Set("Idempotency-Key", "capture-key")
+		router.ServeHTTP(recorder, req)
+		return recorder
+	}
+
+	first := request()
+	second := request()
+	require.Equal(t, http.StatusOK, first.Code)
+	require.Equal(t, http.StatusOK, second.Code)
+	require.Equal(t, "true", second.Header().Get(idempotencyReplayHeader))
+	require.Equal(t, int32(1), atomic.LoadInt32(&calls))
+}
+
+func TestPaymentOperationIdempotencyIsTheFallbackWhenRedisIsUnavailable(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	require.NoError(t, err)
+	require.NoError(t, db.AutoMigrate(&payment.PaymentOperationIdempotency{}))
+	repo := repository.NewPaymentOperationIdempotencyRepository(db)
+	router := gin.New()
+	router.Use(func(c *gin.Context) {
+		c.Set("user_id", uint(7))
+		c.Next()
+	})
+	var calls int32
+	router.POST("/paypal/capture", PaymentOperationIdempotency(repo, "paypal_capture"), Idempotency(nil), func(c *gin.Context) {
+		atomic.AddInt32(&calls, 1)
+		c.JSON(http.StatusOK, gin.H{"captured": true})
+	})
+
+	request := func() *httptest.ResponseRecorder {
+		recorder := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodPost, "/paypal/capture", strings.NewReader(`{"order_number":"ORD-1"}`))
+		req.Header.Set("Idempotency-Key", "capture-key")
+		router.ServeHTTP(recorder, req)
+		return recorder
+	}
+
+	first := request()
+	second := request()
+	require.Equal(t, http.StatusOK, first.Code)
+	require.Equal(t, http.StatusOK, second.Code)
+	require.Equal(t, "true", second.Header().Get(idempotencyReplayHeader))
+	require.Equal(t, int32(1), atomic.LoadInt32(&calls))
 }
 
 func TestIdempotencyRejectsSameKeyWithDifferentPayload(t *testing.T) {
