@@ -19,17 +19,17 @@
     <div v-else class="space-y-4 rounded-lg border bg-muted/15 p-4">
       <div class="grid gap-4 sm:grid-cols-[minmax(0,1fr)_140px]">
         <label class="block space-y-1.5">
-          <span class="field-label">PROPOSED AMOUNT / 申请金额</span>
+          <span class="field-label">PROPOSED AMOUNT MINOR / 申请金额（最小单位）</span>
           <Input
             v-model="refundForm.amount"
             type="number"
             min="0"
-            step="0.01"
-            :max="refundMaximumAmount || undefined"
+            step="1"
+            :max="refundMaximumAmountMinor || undefined"
             :disabled="!canEditRefundReview || refundSubmitting"
           />
           <span class="text-[11px] text-muted-foreground">
-            可审批上限 {{ formatMoney(record?.refund_review_maximum_amount, record?.refund_review_currency) }}
+            可审批上限 {{ formatMoney(record?.refund_review_maximum_amount_minor, record?.refund_review_currency) }}
           </span>
         </label>
         <div class="space-y-1.5">
@@ -100,7 +100,7 @@
 
       <div v-if="canCreatePendingRefund" class="space-y-3 border-t border-dashed pt-4">
         <div class="rounded-md border border-dashed bg-background/70 p-3 text-xs text-muted-foreground">
-          审批金额 {{ formatMoney(refundReview?.proposed_amount, refundReview?.currency) }} 将写入本地待处理退款单。
+          审批金额 {{ formatMoney(refundReview?.proposed_amount_minor, refundReview?.currency) }} 将写入本地待处理退款单。
         </div>
         <label class="flex items-start gap-2 rounded-md border border-dashed p-3 text-xs font-bold text-muted-foreground">
           <input v-model="refundForm.draftConfirmed" type="checkbox" class="mt-0.5 size-4 accent-primary" :disabled="refundSubmitting" />
@@ -133,6 +133,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import type { AfterSalesCase, AfterSalesRefundReview } from '@/api/afterSales'
 import { isAfterSalesRefundType } from '@/lib/afterSalesPresentation'
+import { formatMinorMoney } from '@/lib/dashboardPresentation'
 
 const props = withDefaults(defineProps<{
   record?: AfterSalesCase | null
@@ -152,7 +153,7 @@ const refundForm = reactive({ amount: '', requestNotes: '', decisionNotes: '', d
 
 const refundReview = computed<AfterSalesRefundReview | null>(() => props.record?.refund_review || null)
 const isRefundReviewCase = computed(() => isAfterSalesRefundType(props.record?.type))
-const refundMaximumAmount = computed(() => Number(props.record?.refund_review_maximum_amount || 0))
+const refundMaximumAmountMinor = computed(() => Number(props.record?.refund_review_maximum_amount_minor || 0))
 const canEditRefundReview = computed(() => (
   isRefundReviewCase.value &&
   props.record?.status === 'resolving' &&
@@ -169,7 +170,7 @@ const canDecide = computed(() => Boolean(refundForm.decisionNotes.trim()))
 const canSaveRefundReview = computed(() => (
   Number(refundForm.amount) > 0 &&
   Boolean(refundForm.requestNotes.trim()) &&
-  Number(refundForm.amount) <= refundMaximumAmount.value + 0.000001
+  Number(refundForm.amount) <= refundMaximumAmountMinor.value
 ))
 const refundReviewStatusLabel = computed(() => ({
   pending: '待审批',
@@ -184,16 +185,16 @@ const refundReviewStatusClass = computed(() => ({
   cancelled: 'status-gray',
 }[refundReview.value?.status || ''] || 'status-gray'))
 
-const formatMoney = (amount?: number | null, currency?: string | null): string => (
-  amount && currency ? `${currency} ${Number(amount).toFixed(currency === 'JPY' || currency === 'KRW' || currency === 'CLP' ? 0 : 2)}` : '-'
+const formatMoney = (amount?: number | string | null, currency?: string | null): string => (
+  amount != null && currency ? formatMinorMoney(amount, currency) : '-'
 )
 const operatorFallback = (id?: string | number | null): string => Number(id || 0) > 0 ? `账号 #${id}` : '尚未处理'
 
 const resetForm = (): void => {
-  refundForm.amount = props.record?.refund_review?.proposed_amount
-    ? String(props.record.refund_review.proposed_amount)
-    : props.record?.refund_review_maximum_amount
-      ? String(props.record.refund_review_maximum_amount)
+  refundForm.amount = props.record?.refund_review?.proposed_amount_minor
+    ? String(props.record.refund_review.proposed_amount_minor)
+    : props.record?.refund_review_maximum_amount_minor
+      ? String(props.record.refund_review_maximum_amount_minor)
       : ''
   refundForm.requestNotes = props.record?.refund_review?.request_notes || ''
   refundForm.decisionNotes = ''
@@ -221,7 +222,7 @@ const createPendingRefund = (): void => {
 }
 
 watch(
-  () => [props.record?.id, props.record?.status, props.record?.refund_review?.status, props.record?.refund_review?.proposed_amount],
+  () => [props.record?.id, props.record?.status, props.record?.refund_review?.status, props.record?.refund_review?.proposed_amount_minor],
   () => resetForm(),
   { immediate: true },
 )

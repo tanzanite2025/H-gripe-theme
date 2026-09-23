@@ -3,7 +3,7 @@ package payment
 import "testing"
 
 func TestBuildAlipayRefundRequestUsesProviderTradeNo(t *testing.T) {
-	req, err := buildAlipayRefundRequest("ALIPAY-TRADE-1", 12.34, "rf_1", RefundOptions{
+	req, err := buildAlipayRefundRequest("ALIPAY-TRADE-1", 1234, "rf_1", RefundOptions{
 		ProviderTransactionID: "ALIPAY-TRADE-1",
 		MerchantOrderNumber:   "ORD-1",
 		Reason:                "customer returned item",
@@ -29,7 +29,7 @@ func TestBuildAlipayRefundRequestUsesProviderTradeNo(t *testing.T) {
 }
 
 func TestBuildAlipayRefundRequestRequiresMerchantOrderNumber(t *testing.T) {
-	_, err := buildAlipayRefundRequest("ALIPAY-TRADE-1", 12.34, "rf_1", RefundOptions{
+	_, err := buildAlipayRefundRequest("ALIPAY-TRADE-1", 1234, "rf_1", RefundOptions{
 		ProviderTransactionID: "ALIPAY-TRADE-1",
 	})
 	if err == nil {

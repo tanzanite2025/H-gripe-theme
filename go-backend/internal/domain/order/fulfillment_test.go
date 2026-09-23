@@ -44,37 +44,37 @@ func TestResolveSignatureRequiredUsesUSDOrderFXSnapshot(t *testing.T) {
 		{
 			name:         "USD just below threshold",
 			totalAmount:  749.99,
-			fxSnapshot:   testOrderFXSnapshot("USD", "USD", 1),
+			fxSnapshot:   testOrderFXSnapshot("USD", "USD", "1"),
 			wantRequired: false,
 		},
 		{
 			name:         "USD at threshold",
 			totalAmount:  HighValueSignatureThresholdUSD,
-			fxSnapshot:   testOrderFXSnapshot("USD", "USD", 1),
+			fxSnapshot:   testOrderFXSnapshot("USD", "USD", "1"),
 			wantRequired: true,
 		},
 		{
 			name:         "USD above threshold",
 			totalAmount:  750.01,
-			fxSnapshot:   testOrderFXSnapshot("USD", "USD", 1),
+			fxSnapshot:   testOrderFXSnapshot("USD", "USD", "1"),
 			wantRequired: true,
 		},
 		{
 			name:         "foreign currency at converted threshold",
 			totalAmount:  675,
-			fxSnapshot:   testOrderFXSnapshot("USD", "EUR", 0.9),
+			fxSnapshot:   testOrderFXSnapshot("USD", "EUR", "0.9"),
 			wantRequired: true,
 		},
 		{
 			name:         "foreign currency just below converted threshold",
 			totalAmount:  674.99,
-			fxSnapshot:   testOrderFXSnapshot("USD", "EUR", 0.9),
+			fxSnapshot:   testOrderFXSnapshot("USD", "EUR", "0.9"),
 			wantRequired: false,
 		},
 		{
 			name:         "foreign currency above converted threshold",
 			totalAmount:  675.01,
-			fxSnapshot:   testOrderFXSnapshot("USD", "EUR", 0.9),
+			fxSnapshot:   testOrderFXSnapshot("USD", "EUR", "0.9"),
 			wantRequired: true,
 		},
 	}
@@ -99,12 +99,12 @@ func TestResolveSignatureRequiredUsesUSDOrderFXSnapshot(t *testing.T) {
 
 func TestResolveSignatureRequiredRejectsNonUSDOrInvalidSnapshots(t *testing.T) {
 	nonUSDBase := currency.OrderFXSnapshot{
-		Version:         currency.OrderFXSnapshotVersion,
-		BaseCurrency:    "CNY",
-		OrderCurrency:   "CNY",
-		BaseToOrderRate: 1,
-		Source:          "test",
-		CapturedAt:      time.Now().UTC(),
+		Version:       currency.OrderFXSnapshotVersion,
+		BaseCurrency:  "CNY",
+		OrderCurrency: "CNY",
+		RateDecimal:   "1",
+		Source:        "test",
+		CapturedAt:    time.Now().UTC(),
 	}
 	if ResolveSignatureRequired(money.MustNew(75000, "CNY"), nonUSDBase) {
 		t.Fatal("non-USD policy snapshots must not be treated as USD thresholds")
@@ -114,13 +114,13 @@ func TestResolveSignatureRequiredRejectsNonUSDOrInvalidSnapshots(t *testing.T) {
 	}
 }
 
-func testOrderFXSnapshot(baseCurrency, orderCurrency string, baseToOrderRate float64) currency.OrderFXSnapshot {
+func testOrderFXSnapshot(baseCurrency, orderCurrency, rateDecimal string) currency.OrderFXSnapshot {
 	return currency.OrderFXSnapshot{
-		Version:         currency.OrderFXSnapshotVersion,
-		BaseCurrency:    baseCurrency,
-		OrderCurrency:   orderCurrency,
-		BaseToOrderRate: baseToOrderRate,
-		Source:          "test",
-		CapturedAt:      time.Now().UTC(),
+		Version:       currency.OrderFXSnapshotVersion,
+		BaseCurrency:  baseCurrency,
+		OrderCurrency: orderCurrency,
+		RateDecimal:   rateDecimal,
+		Source:        "test",
+		CapturedAt:    time.Now().UTC(),
 	}
 }

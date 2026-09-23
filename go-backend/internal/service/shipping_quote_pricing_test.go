@@ -3,9 +3,43 @@ package service
 import (
 	"testing"
 
+	domainmoney "commerce-platform/internal/domain/money"
 	"commerce-platform/internal/domain/shipping"
 	shippingrating "commerce-platform/internal/domain/shipping/rating"
 )
+
+func TestTemplatePricingMoneyPathUsesMinorThresholdsWithoutFloatArithmetic(t *testing.T) {
+	template := &shipping.ShippingTemplate{
+		Type:            "price",
+		Currency:        "USD",
+		DefaultFeeMinor: 99,
+		Rules: []shipping.ShippingRule{{
+			Region:        "US",
+			MinValueMinor: 1001,
+			FeeMinor:      125,
+		}},
+	}
+
+	below, free, _, err := calculateTemplateShippingFeeWithDisplayPricesMoney(
+		template, "US", 0, 1, domainmoney.MustNew(1000, "USD"), domainmoney.MustNew(1000, "USD"),
+	)
+	if err != nil {
+		t.Fatalf("below-threshold pricing failed: %v", err)
+	}
+	if free || below.AmountMinor() != 99 {
+		t.Fatalf("below-threshold fee = %d/free=%v, want 99/false", below.AmountMinor(), free)
+	}
+
+	atThreshold, free, _, err := calculateTemplateShippingFeeWithDisplayPricesMoney(
+		template, "US", 0, 1, domainmoney.MustNew(1001, "USD"), domainmoney.MustNew(1001, "USD"),
+	)
+	if err != nil {
+		t.Fatalf("at-threshold pricing failed: %v", err)
+	}
+	if free || atThreshold.AmountMinor() != 125 {
+		t.Fatalf("at-threshold fee = %d/free=%v, want 125/false", atThreshold.AmountMinor(), free)
+	}
+}
 
 func TestShippingRuleMatchesCountrySupportsRegionMacros(t *testing.T) {
 	tests := []struct {
@@ -81,7 +115,7 @@ func TestCalculateRuleAdditionalUnitsUsesCarrierWeightSteps(t *testing.T) {
 		{name: "at first weight is free", ruleMinKg: 0.5, valueKg: 0.5, firstGrams: 500, stepGrams: 500, want: 0},
 	}
 
-	rule := shipping.ShippingRule{Additional: 1}
+	rule := shipping.ShippingRule{AdditionalMinor: 100}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			rule.MinValue = tt.ruleMinKg
@@ -97,7 +131,7 @@ func TestCalculateRuleAdditionalUnitsUsesCarrierWeightSteps(t *testing.T) {
 }
 
 func TestCalculateRuleAdditionalUnitsRequiresConfiguredWeightStep(t *testing.T) {
-	rule := shipping.ShippingRule{MinValue: 0, Additional: 1}
+	rule := shipping.ShippingRule{MinValue: 0, AdditionalMinor: 100}
 	if got := calculateRuleAdditionalUnits(rule, 1.01); got != 0 {
 		t.Fatalf("unconfigured additional units = %d, want 0", got)
 	}
@@ -105,8 +139,8 @@ func TestCalculateRuleAdditionalUnitsRequiresConfiguredWeightStep(t *testing.T) 
 
 func TestValidateTemplateWeightBillingRejectsUnconfiguredAdditionalStep(t *testing.T) {
 	template := &shipping.ShippingTemplate{
-		Type: "weight", Currency: "USD", DefaultFee: 0,
-		Rules: []shipping.ShippingRule{{Region: "US", MinValue: 0, MaxValue: 10, Fee: 5, Additional: 1}},
+		Type: "weight", Currency: "USD", DefaultFeeMinor: 0,
+		Rules: []shipping.ShippingRule{{Region: "US", MinValue: 0, MaxValue: 10, FeeMinor: 500, AdditionalMinor: 100}},
 	}
 	err := validateTemplateWeightBillingForValue(template, "US", 1.1)
 	if err == nil {

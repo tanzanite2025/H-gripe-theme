@@ -95,7 +95,7 @@ func seedProductQualityRequirementRepositoryProductWithSKU(t *testing.T, db *gor
 		Name:     sku,
 		Slug:     strings.ToLower(sku),
 		Currency: "USD",
-		Price:    100,
+		PriceMinor: 10000,
 		Stock:    5,
 	}
 	require.NoError(t, db.Create(&record).Error)
@@ -111,7 +111,7 @@ func seedProductQualityRequirementRepositoryVariant(t *testing.T, db *gorm.DB, p
 		Title:        "Default",
 		OptionValues: "{}",
 		Currency:     "USD",
-		Price:        100,
+		PriceMinor:   10000,
 		Stock:        5,
 		Weight:       9000,
 		IsDefault:    true,

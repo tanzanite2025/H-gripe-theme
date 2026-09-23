@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	seodomain "commerce-platform/internal/domain/seo"
@@ -19,6 +20,8 @@ type StorefrontRouteCatalogService struct {
 	internalBaseURL string
 	httpClient      *http.Client
 	issueReconciler storefrontRouteCatalogIssueReconciler
+	tasksMu         sync.RWMutex
+	checkTasks      map[string]*storefrontRouteCatalogCheckTask
 }
 
 type storefrontRouteCatalogIssueReconciler interface {
@@ -43,8 +46,9 @@ func NewStorefrontRouteCatalogService(
 		baseURL:         publicOrigin,
 		internalBaseURL: privateOrigin,
 		httpClient: &http.Client{
-			Timeout: 30 * time.Second,
+			Timeout: 5 * time.Second,
 		},
+		checkTasks: make(map[string]*storefrontRouteCatalogCheckTask),
 	}
 }
 
@@ -79,6 +83,35 @@ type StorefrontRouteCatalogCheckSummary struct {
 	Errors        int `json:"errors"`
 }
 
+const (
+	StorefrontRouteCatalogCheckTaskQueued    = "queued"
+	StorefrontRouteCatalogCheckTaskRunning   = "running"
+	StorefrontRouteCatalogCheckTaskCompleted = "completed"
+	StorefrontRouteCatalogCheckTaskFailed    = "failed"
+)
+
+// StorefrontRouteCatalogCheckTask is the process-local task projection used
+// by the admin polling API. Check evidence remains persisted in the catalog
+// repository, so a task restart cannot rewrite route history.
+type StorefrontRouteCatalogCheckTask struct {
+	ID        string                             `json:"task_id"`
+	Status    string                             `json:"status"`
+	StartedAt time.Time                          `json:"started_at"`
+	UpdatedAt time.Time                          `json:"updated_at"`
+	EndedAt   *time.Time                         `json:"ended_at,omitempty"`
+	Locale    string                             `json:"locale,omitempty"`
+	Checked   int                                `json:"checked"`
+	Eligible  int                                `json:"eligible"`
+	Remaining int                                `json:"remaining"`
+	Summary   StorefrontRouteCatalogCheckSummary `json:"summary"`
+	Error     string                             `json:"error,omitempty"`
+}
+
+type storefrontRouteCatalogCheckTask struct {
+	mu   sync.RWMutex
+	data StorefrontRouteCatalogCheckTask
+}
+
 func (s *StorefrontRouteCatalogService) List(filter repository.StorefrontRouteCatalogListFilter) ([]seodomain.StorefrontRouteCatalogEntry, int64, error) {
 	if s == nil || s.repository == nil {
 		return nil, 0, errors.New("storefront route catalog service is unavailable")
@@ -91,10 +124,14 @@ func (s *StorefrontRouteCatalogService) Stats() (seodomain.StorefrontRouteCatalo
 }
 
 func (s *StorefrontRouteCatalogService) StatsForLocale(locale string) (seodomain.StorefrontRouteCatalogStats, error) {
+	return s.StatsForLocaleAndScope(locale, "")
+}
+
+func (s *StorefrontRouteCatalogService) StatsForLocaleAndScope(locale, problemScope string) (seodomain.StorefrontRouteCatalogStats, error) {
 	if s == nil || s.repository == nil {
 		return seodomain.StorefrontRouteCatalogStats{}, errors.New("storefront route catalog service is unavailable")
 	}
-	return s.repository.StatsForLocale(locale)
+	return s.repository.StatsForLocaleAndScope(locale, problemScope)
 }
 
 func (s *StorefrontRouteCatalogService) Get(id uint) (*seodomain.StorefrontRouteCatalogEntry, error) {

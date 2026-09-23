@@ -304,9 +304,9 @@ const metaStateLabel = (state: SEOProductMetaFieldState): string => {
   return '无可用值'
 }
 
-const formatPrice = (price: number | null | undefined, currency: string): string => {
-  if (typeof price !== 'number' || !Number.isFinite(price) || !currency) return '未配置'
-  return `${price.toFixed(2)} ${currency}`
+const formatPrice = (price: string | null | undefined, currency: string): string => {
+  if (!price || !currency) return '未配置'
+  return `${price} ${currency}`
 }
 
 const availabilityLabel = (availability: string): string => {

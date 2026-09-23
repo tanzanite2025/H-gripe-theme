@@ -182,7 +182,8 @@ func (s *ShippingService) validateCarrierServiceWeightBilling(service *shipping.
 		return nil
 	}
 	for _, rule := range template.Rules {
-		if rule.Additional <= 0 {
+		additional, additionalErr := rule.AdditionalMoney(template.Currency)
+		if additionalErr != nil || additional.AmountMinor() <= 0 {
 			continue
 		}
 		return validateShippingWeightBilling(rule, shippingWeightBilling{
@@ -246,6 +247,10 @@ func (s *ShippingService) GetTrackingShipmentByTrackingNumber(trackingNumber str
 
 func (s *ShippingService) GetTrackingEventsByOrderID(orderID uint) ([]shipping.TrackingEvent, error) {
 	return s.shippingRepo.FindTrackingEventsByOrderID(orderID)
+}
+
+func (s *ShippingService) GetTrackingEventsByOrderIDAndTrackingNumber(orderID uint, trackingNumber string) ([]shipping.TrackingEvent, error) {
+	return s.shippingRepo.FindTrackingEventsByOrderIDAndTrackingNumber(orderID, trackingNumber)
 }
 
 func (s *ShippingService) ListPackagingRules() ([]shipping.PackagingRule, error) {

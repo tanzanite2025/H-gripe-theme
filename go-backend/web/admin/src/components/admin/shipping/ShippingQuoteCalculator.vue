@@ -110,7 +110,7 @@
         <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <div class="rounded-lg border bg-muted/35 p-3">
             <span class="text-[10px] font-black uppercase tracking-wider text-muted-foreground">运费</span>
-            <p class="mt-1 text-2xl font-black tracking-tighter">{{ formatMoney(quote.shipping_fee) }}</p>
+            <p class="mt-1 text-2xl font-black tracking-tighter">{{ formatMoney(quote.shipping_fee_minor, quote.currency) }}</p>
           </div>
           <div class="rounded-lg border bg-muted/35 p-3">
             <span class="text-[10px] font-black uppercase tracking-wider text-muted-foreground">币种</span>
@@ -177,10 +177,10 @@
                   <TableCell class="text-right font-mono text-xs">{{ plan.legs?.length || 0 }}</TableCell>
                   <TableCell class="text-right font-mono text-[10px] text-muted-foreground">
                     <div v-for="leg in plan.legs || []" :key="`fee-${leg.group_key || leg.template_id}`">
-                      {{ billingModeLabel(leg.billing_mode) }} · {{ formatGrams(leg.billable_weight_grams) }} · {{ formatMoney(leg.shipping_fee) }}
+                      {{ billingModeLabel(leg.billing_mode) }} · {{ formatGrams(leg.billable_weight_grams) }} · {{ formatMoney(leg.shipping_fee_minor, plan.currency || quote.currency) }}
                     </div>
                   </TableCell>
-                  <TableCell class="text-right text-sm font-black tabular-nums">{{ formatMoney(plan.shipping_fee) }}</TableCell>
+                  <TableCell class="text-right text-sm font-black tabular-nums">{{ formatMoney(plan.shipping_fee_minor, plan.currency || quote.currency) }}</TableCell>
                   <TableCell class="text-right text-xs tabular-nums">{{ formatEta(plan) }}</TableCell>
                 </TableRow>
               </TableBody>
@@ -214,7 +214,7 @@
  <span class="block text-[10px] text-muted-foreground">template_id={{ item.template_id || '-'}}</span>
                 </TableCell>
                 <TableCell class="text-right tabular-nums">{{ item.quantity || 0 }}</TableCell>
-                <TableCell class="text-right tabular-nums">{{ formatMoney(item.unit_price) }}</TableCell>
+                <TableCell class="text-right tabular-nums">{{ formatMoney(item.unit_price_minor, quote.currency) }}</TableCell>
                 <TableCell class="text-right tabular-nums">{{ formatGrams(item.weight_grams) }}</TableCell>
                 <TableCell>
  <span class="block text-xs font-bold">{{ item.packaging_rule_name || '未绑定包装'}}</span>
@@ -224,7 +224,7 @@
                   </span>
                 </TableCell>
                 <TableCell class="text-right tabular-nums">{{ formatGrams(item.charge_weight_grams || item.weight_grams) }}</TableCell>
-                <TableCell class="text-right tabular-nums">{{ formatMoney(item.shipping_fee) }}</TableCell>
+                <TableCell class="text-right tabular-nums">{{ formatMoney(item.shipping_fee_minor, quote.currency) }}</TableCell>
               </TableRow>
             </TableBody>
           </Table>
@@ -251,6 +251,7 @@ import type {
   ShippingQuotePlan,
   ShippingQuoteResult
 } from '@/modules/shipping/shippingTypes'
+import { formatMinorMoney } from '@/lib/dashboardPresentation'
 
 const form = reactive<ShippingQuoteForm>({
   country: 'US',
@@ -340,7 +341,7 @@ const submitQuote = async () => {
   }
 }
 
-const formatMoney = (value: unknown) => Number(value || 0).toFixed(2)
+const formatMoney = (value: unknown, currency?: string | null) => formatMinorMoney(value as number | string | null | undefined, currency)
 const formatGrams = (value: unknown) => `${Number(value || 0).toLocaleString()} g`
 const selectedPlanLabel = (plan?: ShippingQuotePlan | null) => {
   if (!plan) return '未命中方案'

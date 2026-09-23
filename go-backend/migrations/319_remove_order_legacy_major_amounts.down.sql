@@ -1,0 +1,3 @@
+-- Legacy major-unit amount columns are intentionally not restored. The
+-- deployment has no live compatibility requirement; rebuild projections from
+-- the exact minor-unit facts instead.

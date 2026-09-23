@@ -179,7 +179,7 @@ export function useProductDetailSeo(options: ProductDetailSeoOptions) {
       const displayPrice = validProductDisplayPrice(variant.display_price)
         || displayPriceSnapshotForCurrency(variant.display_prices, options.displayCurrency.value)
       return {
-        amount: displayPrice?.amount ?? Number(variant.sale_price ?? variant.price ?? 0),
+        amount: displayPrice?.amount_decimal ?? String(variant.sale_price_decimal ?? variant.price_decimal ?? ''),
         currency: displayPrice?.currency
           || normalizeProductCurrencyCode(variant.currency || product.currency)
           || 'USD',
@@ -225,7 +225,7 @@ export function useProductDetailSeo(options: ProductDetailSeoOptions) {
           ...options.productImages.value.map((image) => image.url),
         ],
         offer: {
-          price: options.currentDisplayPrice.value.amount,
+          price: String(options.currentDisplayPrice.value.amount),
           currency: options.currentDisplayPrice.value.currency,
           availability: options.selectedAvailability.value,
           sku: options.selectedVariant.value?.sku || product.sku,
@@ -332,7 +332,7 @@ export function useProductDetailSeo(options: ProductDetailSeoOptions) {
       ? seo.schema.offers
       : options.selectedVariant.value
         ? {
-            price: options.currentDisplayPrice.value.amount,
+            price: String(options.currentDisplayPrice.value.amount),
             priceCurrency: options.currentDisplayPrice.value.currency,
           }
         : seo?.schema?.['@type'] === 'ProductGroup'
@@ -341,7 +341,7 @@ export function useProductDetailSeo(options: ProductDetailSeoOptions) {
     if (seoOffer) {
       metaEntries.push({
         property: 'product:price:amount',
-        content: seoOffer.price.toFixed(2),
+        content: String(seoOffer.price),
       })
       metaEntries.push({
         property: 'product:price:currency',

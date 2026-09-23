@@ -2,8 +2,8 @@ import {
   storefrontHtmlCachePolicies,
   storefrontNoStorePagePaths,
   type StorefrontHtmlCachePolicy,
-} from './html-cache-policies'
-import { htmlRouteCacheStorageBase } from './html-cache-runtime'
+} from './html-cache-policies.js'
+import { htmlRouteCacheStorageBase } from './html-cache-runtime.js'
 
 type StorefrontRouteRule = {
   proxy?: string
@@ -147,6 +147,11 @@ export const buildStorefrontRouteRules = ({
   htmlCacheEnabled = true,
 }: BuildStorefrontRouteRulesOptions) => {
   const routeRules: StorefrontRouteRules = {
+    '/r/**': {
+      // Same-origin capture must preserve the backend's attribution cookie.
+      proxy: `${internalApiOrigin.replace(/\/$/, '')}/r/**`,
+      headers: noStoreHeaders,
+    },
     '/api/**': {
       proxy: `${internalApiOrigin.replace(/\/$/, '')}/api/**`,
       headers: noStoreHeaders,

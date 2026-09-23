@@ -9,6 +9,7 @@ import (
 	"commerce-platform/internal/service"
 	"encoding/csv"
 	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -21,10 +22,13 @@ func (h *MarketingHandler) ListReferralLedger(c *gin.Context) {
 		apierror.RespondInternalError(c, service.ErrReferralServiceUnavailable)
 		return
 	}
+	filters, err := parseReferralAdminFilters(c)
+	if err != nil {
+		apierror.RespondBadRequest(c, err.Error())
+		return
+	}
 	params := pagination.ParsePagination(c)
-	ledger, err := h.referralService.AdminLedger(repository.ReferralAdminFilters{
-		Status: strings.TrimSpace(c.Query("status")), Keyword: strings.TrimSpace(c.Query("keyword")),
-	}, params.Page, params.PageSize, time.Now().UTC())
+	ledger, err := h.referralService.AdminLedger(filters, params.Page, params.PageSize, time.Now().UTC())
 	if err != nil {
 		apierror.RespondInternalError(c, err)
 		return
@@ -135,7 +139,11 @@ func (h *MarketingHandler) ExportReferralLedger(c *gin.Context) {
 		apierror.RespondInternalError(c, service.ErrReferralServiceUnavailable)
 		return
 	}
-	filters := repository.ReferralAdminFilters{Status: strings.TrimSpace(c.Query("status")), Keyword: strings.TrimSpace(c.Query("keyword"))}
+	filters, err := parseReferralAdminFilters(c)
+	if err != nil {
+		apierror.RespondBadRequest(c, err.Error())
+		return
+	}
 	const exportPageSize = 100
 	items := make([]service.ReferralAdminItem, 0, exportPageSize)
 	for page := 1; ; page++ {
@@ -183,6 +191,41 @@ func (h *MarketingHandler) ExportReferralLedger(c *gin.Context) {
 	c.Data(200, "text/csv; charset=utf-8", body.Bytes())
 }
 
+func parseReferralAdminFilters(c *gin.Context) (repository.ReferralAdminFilters, error) {
+	filters := repository.ReferralAdminFilters{
+		Status:  strings.TrimSpace(c.Query("status")),
+		Keyword: strings.TrimSpace(c.Query("keyword")),
+	}
+	parseDate := func(name string, endExclusive bool) (*time.Time, error) {
+		raw := strings.TrimSpace(c.Query(name))
+		if raw == "" {
+			return nil, nil
+		}
+		value, err := time.Parse("2006-01-02", raw)
+		if err != nil {
+			return nil, fmt.Errorf("%s must use YYYY-MM-DD", name)
+		}
+		value = value.UTC()
+		if endExclusive {
+			value = value.AddDate(0, 0, 1)
+		}
+		return &value, nil
+	}
+	from, err := parseDate("from", false)
+	if err != nil {
+		return filters, err
+	}
+	to, err := parseDate("to", true)
+	if err != nil {
+		return filters, err
+	}
+	if from != nil && to != nil && !to.After(*from) {
+		return filters, errors.New("to must be on or after from")
+	}
+	filters.From, filters.To = from, to
+	return filters, nil
+}
+
 func formatReferralTime(value *time.Time) string {
 	if value == nil {
 		return ""
@@ -213,23 +256,24 @@ func (h *MarketingHandler) UpdateReferralProgramConfig(c *gin.Context) {
 		return
 	}
 	var req struct {
-		ExpectedVersion              int    `json:"expected_version" binding:"required,gt=0"`
-		Enabled                      bool   `json:"enabled"`
-		Currency                     string `json:"currency" binding:"required"`
-		MinOrderAmountMinor          int64  `json:"min_order_amount_minor" binding:"gte=0"`
-		ReferrerRewardPoints         int    `json:"referrer_reward_points" binding:"gte=0"`
-		RefereeBenefitType           string `json:"referee_benefit_type" binding:"required"`
-		RefereeBenefitValue          int64  `json:"referee_benefit_value" binding:"gte=0"`
-		RefereeBenefitMaxAmountMinor int64  `json:"referee_benefit_max_amount_minor" binding:"gte=0"`
-		CouponStackable              bool   `json:"coupon_stackable"`
-		VestingPeriodDays            int    `json:"vesting_period_days" binding:"gt=0"`
-		UndeliveredFallbackDays      int    `json:"undelivered_fallback_days" binding:"gt=0"`
-		AttributionTTLDays           int    `json:"attribution_ttl_days" binding:"gt=0"`
-		MonthlyCapPerReferrer        int    `json:"monthly_cap_per_referrer" binding:"gt=0"`
-		AntiFraudMode                string `json:"anti_fraud_mode" binding:"required"`
+		ExpectedVersion         int    `json:"expected_version" binding:"required,gt=0"`
+		Enabled                 bool   `json:"enabled"`
+		MinOrderAmountMinor     int64  `json:"min_order_amount_minor" binding:"gte=0"`
+		ReferrerRewardPoints    int    `json:"referrer_reward_points" binding:"gte=0"`
+		RefereeBenefitType      string `json:"referee_benefit_type" binding:"required"`
+		RefereeBenefitValue     int64  `json:"referee_benefit_value" binding:"gt=0"`
+		VestingPeriodDays       int    `json:"vesting_period_days" binding:"gt=0"`
+		UndeliveredFallbackDays int    `json:"undelivered_fallback_days" binding:"gt=0"`
+		AttributionTTLDays      int    `json:"attribution_ttl_days" binding:"gt=0"`
+		MonthlyCapPerReferrer   int    `json:"monthly_cap_per_referrer" binding:"gt=0"`
+		AntiFraudMode           string `json:"anti_fraud_mode" binding:"required"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		apierror.RespondValidationError(c, err.Error())
+		return
+	}
+	if strings.ToLower(strings.TrimSpace(req.RefereeBenefitType)) != "points" {
+		apierror.RespondBadRequest(c, "referral benefits must use points only")
 		return
 	}
 	var createdBy *uint
@@ -239,10 +283,9 @@ func (h *MarketingHandler) UpdateReferralProgramConfig(c *gin.Context) {
 		}
 	}
 	config, err := h.referralService.PublishAdminProgramConfig(service.ReferralProgramConfigInput{
-		Enabled: req.Enabled, Currency: req.Currency, MinOrderAmountMinor: req.MinOrderAmountMinor,
+		Enabled: req.Enabled, MinOrderAmountMinor: req.MinOrderAmountMinor,
 		ReferrerRewardPoints: req.ReferrerRewardPoints, RefereeBenefitType: req.RefereeBenefitType,
-		RefereeBenefitValue: req.RefereeBenefitValue, RefereeBenefitMaxAmountMinor: req.RefereeBenefitMaxAmountMinor,
-		CouponStackable: req.CouponStackable, VestingPeriodDays: req.VestingPeriodDays,
+		RefereeBenefitValue: req.RefereeBenefitValue, VestingPeriodDays: req.VestingPeriodDays,
 		UndeliveredFallbackDays: req.UndeliveredFallbackDays, AttributionTTLDays: req.AttributionTTLDays,
 		MonthlyCapPerReferrer: req.MonthlyCapPerReferrer, AntiFraudMode: req.AntiFraudMode, CreatedBy: createdBy,
 	}, req.ExpectedVersion)
@@ -281,22 +324,6 @@ func (h *MarketingHandler) ListLoyaltyTransactions(c *gin.Context) {
 	}
 
 	response.Paged(c, gin.H{"transactions": transactions}, params.Page, params.PageSize, total)
-}
-
-func (h *MarketingHandler) ListGiftCardRedemptions(c *gin.Context) {
-	params := pagination.ParsePagination(c)
-	userID, _ := strconv.ParseUint(c.Query("user_id"), 10, 32)
-	if userID == 0 {
-		apierror.RespondBadRequest(c, "please provide user_id")
-		return
-	}
-
-	redemptions, total, err := h.marketingService.ListGiftCardRedemptionsAdmin(uint(userID), params.Page, params.PageSize)
-	if err != nil {
-		apierror.RespondInternalError(c, err)
-		return
-	}
-	response.Paged(c, gin.H{"redemptions": redemptions}, params.Page, params.PageSize, total)
 }
 
 func (h *MarketingHandler) CreateLoyaltyTransaction(c *gin.Context) {

@@ -50,13 +50,13 @@ func (s *DashboardService) GetStats() map[string]interface{} {
 
 	return map[string]interface{}{
 		"orders": map[string]interface{}{
-			"total":         orderStats["total"],
-			"today":         orderStats["today"],
-			"pending":       orderStats["pending"],
-			"processing":    orderStats["processing"],
-			"completed":     orderStats["completed"],
-			"revenue":       orderStats["total_revenue"],
-			"today_revenue": orderStats["today_revenue"],
+			"total":                     orderStats["total"],
+			"today":                     orderStats["today"],
+			"pending":                   orderStats["pending"],
+			"processing":                orderStats["processing"],
+			"completed":                 orderStats["completed"],
+			"revenue_by_currency":       orderStats["total_revenue_by_currency"],
+			"today_revenue_by_currency": orderStats["today_revenue_by_currency"],
 		},
 		"users": map[string]interface{}{
 			"total": totalUsers,

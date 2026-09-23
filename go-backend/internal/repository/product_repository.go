@@ -63,6 +63,7 @@ func orderProductVariantOptionValues(db *gorm.DB) *gorm.DB {
 }
 
 func (r *ProductRepository) preloadProductVariantOptionValues(db *gorm.DB) *gorm.DB {
+	db = r.preloadProductOptionValueRelations(db)
 	if r.db.Migrator().HasTable(&product.ProductVariantOptionValue{}) {
 		query := db.Preload("VariantOptionValues", func(db *gorm.DB) *gorm.DB {
 			return orderProductVariantOptionValues(db)
@@ -73,6 +74,15 @@ func (r *ProductRepository) preloadProductVariantOptionValues(db *gorm.DB) *gorm
 		return query
 	}
 	return db
+}
+
+func (r *ProductRepository) preloadProductOptionValueRelations(db *gorm.DB) *gorm.DB {
+	if !r.db.Migrator().HasTable(&product.ProductOptionValueRelation{}) {
+		return db
+	}
+	return db.Preload("OptionValueRelations", func(db *gorm.DB) *gorm.DB {
+		return db.Order("product_option_value_relations.relation_type ASC, product_option_value_relations.source_option_value_id ASC, product_option_value_relations.target_option_value_id ASC")
+	})
 }
 
 func (r *ProductRepository) preloadProductCategory(db *gorm.DB) *gorm.DB {
@@ -107,7 +117,6 @@ func (r *ProductRepository) CreateWithSpecValuesVariantsOptionValuesAndMedia(
 	mediaItems []product.ProductMedia,
 ) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
-		syncProductSummaryFromVariants(p, variants)
 		if err := tx.Create(p).Error; err != nil {
 			return err
 		}
@@ -135,7 +144,7 @@ func (r *ProductRepository) CreateWithSpecValuesVariantsOptionValuesAndMedia(
 				variants[i].OptionGroupRules = nil
 				variants[i].OptionValueRules = nil
 			}
-			if err := tx.Create(&variants).Error; err != nil {
+			if err := tx.Omit("DisplayPriceData").Create(&variants).Error; err != nil {
 				return err
 			}
 			for i := range variants {
@@ -151,6 +160,11 @@ func (r *ProductRepository) CreateWithSpecValuesVariantsOptionValuesAndMedia(
 
 		if len(optionValues) > 0 {
 			if err := replaceProductVariantOptionValues(tx, p.ID, optionValues); err != nil {
+				return err
+			}
+		}
+		if p.OptionValueRelationsDirty {
+			if err := replaceProductOptionValueRelations(tx, p.ID, p.OptionValueRelations); err != nil {
 				return err
 			}
 		}
@@ -201,6 +215,9 @@ func (r *ProductRepository) FindByIDContext(ctx context.Context, id uint) (*prod
 	if err != nil {
 		return nil, err
 	}
+	if err := r.attachProductDisplayPriceSnapshot(&p); err != nil {
+		return nil, err
+	}
 	return &p, nil
 }
 
@@ -235,6 +252,9 @@ func (r *ProductRepository) FindBySlugContext(ctx context.Context, slug, locale 
 	if err != nil {
 		return nil, err
 	}
+	if err := r.attachProductDisplayPriceSnapshot(&p); err != nil {
+		return nil, err
+	}
 	return &p, nil
 }
 
@@ -245,8 +265,12 @@ func (r *ProductRepository) FindBySKU(sku string) (*product.Product, error) {
 		Preload("Variants", func(db *gorm.DB) *gorm.DB { return orderProductVariants(db) })
 	query = r.preloadProductVariantOptionValues(query)
 	err := query.Preload("AfterSalesTemplate").Preload("PackagingTemplate").Preload("CustomsClassificationProfile").
-		Where("sku = ?", sku).First(&p).Error
+		Joins("JOIN product_variants product_sku_lookup ON product_sku_lookup.product_id = products.id AND product_sku_lookup.deleted_at IS NULL AND product_sku_lookup.sku = ?", sku).
+		First(&p).Error
 	if err != nil {
+		return nil, err
+	}
+	if err := r.attachProductDisplayPriceSnapshot(&p); err != nil {
 		return nil, err
 	}
 	return &p, nil
@@ -260,7 +284,35 @@ func (r *ProductRepository) FindProductsByIDs(ids []uint) ([]product.Product, er
 	err := r.db.Preload("Brand").Preload("Variants", func(db *gorm.DB) *gorm.DB {
 		return orderProductVariants(db)
 	}).Where("id IN ?", ids).Find(&products).Error
-	return products, err
+	if err != nil {
+		return nil, err
+	}
+	if err := r.attachProductDisplayPriceSnapshots(products); err != nil {
+		return nil, err
+	}
+	return products, nil
+}
+
+// FindProductsByIDsForCustomerContext is a deliberately narrow projection
+// reader. It loads only public product fields needed for customer context
+// cards and does not expose supplier cost, inventory internals, or product
+// attributes.
+func (r *ProductRepository) FindProductsByIDsForCustomerContext(ids []uint) ([]product.Product, error) {
+	var products []product.Product
+	if len(ids) == 0 {
+		return products, nil
+	}
+	query := r.db.Select("id", "name", "currency", "price_minor", "sale_price_minor").
+		Preload("Media", func(db *gorm.DB) *gorm.DB {
+			return orderProductMedia(db)
+		}).
+		Preload("Variants", func(db *gorm.DB) *gorm.DB {
+			return orderProductVariants(db)
+		}).Where("id IN ?", ids)
+	if err := query.Find(&products).Error; err != nil {
+		return nil, err
+	}
+	return products, nil
 }
 
 // ListProductsForDisplayPriceRefresh loads only the source price fields needed
@@ -268,13 +320,19 @@ func (r *ProductRepository) FindProductsByIDs(ids []uint) ([]product.Product, er
 func (r *ProductRepository) ListProductsForDisplayPriceRefresh() ([]product.Product, error) {
 	var products []product.Product
 	query := r.db.
-		Select("id", "currency", "price_minor", "sale_price_minor", "price", "sale_price").
+		Select("id", "currency", "price_minor", "sale_price_minor").
 		Preload("Variants", func(db *gorm.DB) *gorm.DB {
 			return db.
-				Select("id", "product_id", "currency", "price_minor", "sale_price_minor", "price", "sale_price").
+				// StartingPriceVariant is part of the snapshot source fingerprint.
+				// Keep the fields it uses in this lightweight refresh projection so
+				// read-model hydration selects the same source as the refresh job.
+				Select("id", "product_id", "currency", "price_minor", "sale_price_minor", "is_active", "is_default", "sort_order").
 				Order("sort_order ASC, id ASC")
 		})
 	if err := query.Find(&products).Error; err != nil {
+		return nil, err
+	}
+	if err := r.attachProductDisplayPriceSnapshots(products); err != nil {
 		return nil, err
 	}
 	return products, nil
@@ -354,13 +412,6 @@ func (r *ProductRepository) UpdateDisplayPriceSnapshots(updates []ProductDisplay
 	return nil
 }
 
-func minorToLegacyMajor(minor int64, currencyCode string) float64 {
-	if currency.NormalizeCode(currencyCode) == "JPY" || currency.NormalizeCode(currencyCode) == "KRW" || currency.NormalizeCode(currencyCode) == "CLP" {
-		return float64(minor)
-	}
-	return float64(minor) / 100
-}
-
 func upsertProductDisplayPriceSnapshot(tx *gorm.DB, snapshot product.ProductDisplayPriceSnapshot, sourceMinor int64, sourceCurrency string, sourceSaleMinor *int64, variantID *uint) error {
 	var source struct {
 		PriceMinor     int64
@@ -371,6 +422,18 @@ func upsertProductDisplayPriceSnapshot(tx *gorm.DB, snapshot product.ProductDisp
 	if variantID == nil {
 		if err := query.Select("price_minor, sale_price_minor, currency").Where("id = ?", snapshot.ProductID).Scan(&source).Error; err != nil {
 			return err
+		}
+		// Product display snapshots use the same starting active variant as the
+		// refresh service. Validate that source fingerprint before persisting.
+		var variants []product.ProductVariant
+		if err := tx.Where("product_id = ? AND deleted_at IS NULL", snapshot.ProductID).
+			Select("id, product_id, currency, price_minor, sale_price_minor, is_active, is_default, sort_order").
+			Order("sort_order ASC, id ASC").Find(&variants).Error; err != nil {
+			return err
+		}
+		item := product.Product{ID: snapshot.ProductID, Currency: source.Currency, PriceMinor: source.PriceMinor, SalePriceMinor: source.SalePriceMinor, Variants: variants}
+		if starting := item.StartingPriceVariant(); starting != nil {
+			source.PriceMinor, source.SalePriceMinor, source.Currency = starting.PriceMinor, starting.SalePriceMinor, starting.Currency
 		}
 	} else {
 		if err := tx.Model(&product.ProductVariant{}).Select("price_minor, sale_price_minor, currency").Where("id = ? AND product_id = ?", *variantID, snapshot.ProductID).Scan(&source).Error; err != nil {
@@ -484,7 +547,7 @@ func (r *ProductRepository) Update(p *product.Product) error {
 	if p == nil || p.ID == 0 {
 		return gorm.ErrInvalidData
 	}
-	return r.db.Model(&product.Product{}).Where("id = ?", p.ID).Updates(productUpdateColumns(p, false)).Error
+	return r.db.Model(&product.Product{}).Where("id = ?", p.ID).Updates(productUpdateColumns(p)).Error
 }
 
 // UpdateSEO mutates only SEO columns. SEO writes must never persist a stale
@@ -499,7 +562,7 @@ func (r *ProductRepository) UpdateSEO(id uint, metaTitle, metaDescription string
 	}).Error
 }
 
-func productUpdateColumns(p *product.Product, includeInventory bool) map[string]interface{} {
+func productUpdateColumns(p *product.Product) map[string]interface{} {
 	columns := map[string]interface{}{
 		"product_specification_template_id": p.ProductSpecificationTemplateID,
 		"product_category_id":               p.ProductCategoryID,
@@ -512,7 +575,6 @@ func productUpdateColumns(p *product.Product, includeInventory bool) map[string]
 		"cn_code":                           p.CNCode,
 		"country_of_origin":                 p.CountryOfOrigin,
 		"customs_description":               p.CustomsDescription,
-		"sku":                               p.SKU,
 		"name":                              p.Name,
 		"slug":                              p.Slug,
 		"description":                       p.Description,
@@ -520,8 +582,6 @@ func productUpdateColumns(p *product.Product, includeInventory bool) map[string]
 		"currency":                          p.Currency,
 		"price_minor":                       p.PriceMinor,
 		"sale_price_minor":                  p.SalePriceMinor,
-		"price":                             p.Price,
-		"sale_price":                        p.SalePrice,
 		"fulfillment_mode":                  p.FulfillmentMode,
 		"status":                            p.Status,
 		"locale":                            p.Locale,
@@ -529,9 +589,6 @@ func productUpdateColumns(p *product.Product, includeInventory bool) map[string]
 		"featured":                          p.Featured,
 		"meta_title":                        p.MetaTitle,
 		"meta_desc":                         p.MetaDesc,
-	}
-	if includeInventory {
-		columns["stock"] = p.Stock
 	}
 	return columns
 }
@@ -564,10 +621,7 @@ func (r *ProductRepository) UpdateWithSpecValuesVariantsOptionValuesAndMedia(
 			groups []product.ProductOptionGroupVariantRule
 			values []product.ProductOptionValueVariantRule
 		}, len(variants))
-		if replaceVariants {
-			syncProductSummaryFromVariants(p, variants)
-		}
-		if err := tx.Model(&product.Product{}).Where("id = ?", p.ID).Updates(productUpdateColumns(p, replaceVariants)).Error; err != nil {
+		if err := tx.Model(&product.Product{}).Where("id = ?", p.ID).Updates(productUpdateColumns(p)).Error; err != nil {
 			return err
 		}
 		if p.ProductCategoryID == nil {
@@ -610,6 +664,11 @@ func (r *ProductRepository) UpdateWithSpecValuesVariantsOptionValuesAndMedia(
 
 		if replaceOptionValues {
 			if err := replaceProductVariantOptionValues(tx, p.ID, optionValues); err != nil {
+				return err
+			}
+		}
+		if p.OptionValueRelationsDirty {
+			if err := replaceProductOptionValueRelations(tx, p.ID, p.OptionValueRelations); err != nil {
 				return err
 			}
 		}
@@ -704,8 +763,6 @@ func (r *ProductRepository) GetStats() (map[string]interface{}, error) {
 	stats["featured"] = featuredCount
 
 	// Inventory statistics come from the active inventory-owning variants.
-	// products.stock is a compatibility summary and is intentionally not kept
-	// transactionally synchronized with checkout anymore.
 	var inventoryStats struct {
 		LowStock   int64 `gorm:"column:low_stock"`
 		OutOfStock int64 `gorm:"column:out_of_stock"`

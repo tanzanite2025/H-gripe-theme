@@ -29,7 +29,7 @@ export interface WorkbenchFeedTaggedProduct {
   variant_id?: number | null
   product_slug: string
   display_title: string
-  price: number
+  price_minor: number
   currency: string
   direct_action: 'detail_drawer'
   available: boolean
@@ -68,7 +68,7 @@ export interface WorkbenchFeedProductOption {
   product_name: string
   product_slug: string
   variant_title: string
-  price: number
+  price_minor: number
   currency: string
   available: boolean
 }
@@ -135,7 +135,7 @@ const readTaggedProduct = (value: unknown, endpoint: string): WorkbenchFeedTagge
   requireApiNumberField(product, 'product_id', endpoint)
   requireApiStringField(product, 'product_slug', endpoint)
   requireApiStringField(product, 'display_title', endpoint)
-  requireApiNumberField(product, 'price', endpoint)
+  requireApiNumberField(product, 'price_minor', endpoint)
   requireApiStringField(product, 'currency', endpoint)
   requireApiStringField(product, 'direct_action', endpoint)
   requireApiBooleanField(product, 'available', endpoint)
@@ -164,7 +164,7 @@ const readProductOption = (value: unknown, endpoint: string): WorkbenchFeedProdu
   requireApiStringField(option, 'product_name', endpoint)
   requireApiStringField(option, 'product_slug', endpoint)
   requireApiStringField(option, 'variant_title', endpoint)
-  requireApiNumberField(option, 'price', endpoint)
+  requireApiNumberField(option, 'price_minor', endpoint)
   requireApiStringField(option, 'currency', endpoint)
   requireApiBooleanField(option, 'available', endpoint)
   return option

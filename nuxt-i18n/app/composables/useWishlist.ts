@@ -9,8 +9,8 @@ export interface WishlistItem {
     id: number
     name: string
     slug: string
-    price: number
-    sale_price?: number | null
+    price_decimal: string
+    sale_price_decimal?: string | null
     availability: 'in_stock' | 'out_of_stock'
     thumbnail?: string
   }

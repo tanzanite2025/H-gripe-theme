@@ -7,10 +7,12 @@ import (
 	"time"
 
 	outboxdomain "commerce-platform/internal/domain/outbox"
+	"commerce-platform/internal/pkg/metrics"
 	"commerce-platform/internal/pkg/resilience"
 	"commerce-platform/internal/repository"
 
 	"github.com/glebarez/sqlite"
+	"github.com/prometheus/client_golang/prometheus/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gorm.io/datatypes"
@@ -405,6 +407,33 @@ func TestOutboxRepositoryCountsOnlyCustomerServiceRealtimeStatuses(t *testing.T)
 	assert.Zero(t, counts[outboxdomain.EventStatusProcessed])
 
 	require.NoError(t, service.RefreshCustomerServiceRealtimeMetrics())
+}
+
+func TestOutboxServiceRefreshesCustomerServiceRetentionCleanupMetrics(t *testing.T) {
+	db, service := newTestOutboxService(t)
+	now := time.Now().UTC()
+	for index, status := range []string{
+		outboxdomain.EventStatusPending,
+		outboxdomain.EventStatusFailed,
+		outboxdomain.EventStatusDeadLetter,
+		outboxdomain.EventStatusProcessed,
+	} {
+		require.NoError(t, db.Create(&outboxdomain.Event{
+			EventKey:      "retention-cleanup-status-" + status,
+			EventType:     outboxdomain.EventTypeCustomerServiceRetentionCleanup,
+			AggregateType: outboxdomain.AggregateTypeCustomerServiceConversation,
+			AggregateID:   string(rune('1' + index)),
+			Payload:       datatypes.JSON([]byte(`{"ticket_id":1}`)),
+			Status:        status,
+			AvailableAt:   now,
+		}).Error)
+	}
+
+	require.NoError(t, service.RefreshCustomerServiceRealtimeMetrics())
+	require.Equal(t, float64(1), testutil.ToFloat64(metrics.CustomerServiceRetentionCleanupOutboxEvents.WithLabelValues(outboxdomain.EventStatusPending)))
+	require.Equal(t, float64(1), testutil.ToFloat64(metrics.CustomerServiceRetentionCleanupOutboxEvents.WithLabelValues(outboxdomain.EventStatusFailed)))
+	require.Equal(t, float64(1), testutil.ToFloat64(metrics.CustomerServiceRetentionCleanupOutboxEvents.WithLabelValues(outboxdomain.EventStatusDeadLetter)))
+	require.Equal(t, float64(1), testutil.ToFloat64(metrics.CustomerServiceRetentionCleanupOutboxEvents.WithLabelValues(outboxdomain.EventStatusProcessed)))
 }
 
 func newTestOutboxService(t *testing.T) (*gorm.DB, *OutboxService) {

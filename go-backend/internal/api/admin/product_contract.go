@@ -1,7 +1,6 @@
 package admin
 
 import (
-	"commerce-platform/internal/domain/currency"
 	productdomain "commerce-platform/internal/domain/product"
 	"commerce-platform/internal/service"
 	"encoding/json"
@@ -13,59 +12,68 @@ import (
 )
 
 type productCreateRequest struct {
-	ProductSpecificationTemplateID *uint                              `json:"product_specification_template_id"`
-	ProductCategoryID              *uint                              `json:"product_category_id"`
-	BrandID                        *uint                              `json:"brand_id"`
-	ShippingTemplateID             *uint                              `json:"shipping_template_id"`
-	AfterSalesTemplateID           *uint                              `json:"after_sales_template_id"`
-	PackagingTemplateID            *uint                              `json:"packaging_template_id"`
-	CustomsClassificationProfileID *uint                              `json:"customs_classification_profile_id"`
-	HSCode                         string                             `json:"hs_code"`
-	CNCode                         string                             `json:"cn_code"`
-	CountryOfOrigin                string                             `json:"country_of_origin"`
-	CustomsDescription             string                             `json:"customs_description"`
-	Name                           string                             `json:"name" binding:"required"`
-	Slug                           string                             `json:"slug" binding:"required"`
-	Description                    string                             `json:"description"`
-	ShortDesc                      string                             `json:"short_description"`
-	Currency                       string                             `json:"currency"`
-	FulfillmentMode                string                             `json:"fulfillment_mode"`
-	Status                         string                             `json:"status" binding:"required,oneof=active inactive out_of_stock"`
-	Locale                         string                             `json:"locale"`
-	ParentID                       *uint                              `json:"parent_id"`
-	Featured                       bool                               `json:"featured"`
-	Specs                          map[string]interface{}             `json:"specs"`
-	Variants                       []productVariantRequest            `json:"variants"`
-	VariantOptionValues            []productVariantOptionValueRequest `json:"variant_option_values"`
-	Media                          []productMediaRequest              `json:"media"`
+	ProductSpecificationTemplateID *uint                               `json:"product_specification_template_id"`
+	ProductCategoryID              *uint                               `json:"product_category_id"`
+	BrandID                        *uint                               `json:"brand_id"`
+	ShippingTemplateID             *uint                               `json:"shipping_template_id"`
+	AfterSalesTemplateID           *uint                               `json:"after_sales_template_id"`
+	PackagingTemplateID            *uint                               `json:"packaging_template_id"`
+	CustomsClassificationProfileID *uint                               `json:"customs_classification_profile_id"`
+	HSCode                         string                              `json:"hs_code"`
+	CNCode                         string                              `json:"cn_code"`
+	CountryOfOrigin                string                              `json:"country_of_origin"`
+	CustomsDescription             string                              `json:"customs_description"`
+	Name                           string                              `json:"name" binding:"required"`
+	Slug                           string                              `json:"slug" binding:"required"`
+	Description                    string                              `json:"description"`
+	ShortDesc                      string                              `json:"short_description"`
+	Currency                       string                              `json:"currency"`
+	FulfillmentMode                string                              `json:"fulfillment_mode"`
+	Status                         string                              `json:"status" binding:"required,oneof=active inactive out_of_stock"`
+	Locale                         string                              `json:"locale"`
+	ParentID                       *uint                               `json:"parent_id"`
+	Featured                       bool                                `json:"featured"`
+	Specs                          map[string]interface{}              `json:"specs"`
+	Variants                       []productVariantRequest             `json:"variants"`
+	VariantOptionValues            []productVariantOptionValueRequest  `json:"variant_option_values"`
+	Media                          []productMediaRequest               `json:"media"`
+	OptionValueRelations           []productOptionValueRelationRequest `json:"option_value_relations"`
 }
 
 type productUpdateRequest struct {
-	ProductSpecificationTemplateID *uint                              `json:"product_specification_template_id"`
-	ProductCategoryID              *uint                              `json:"product_category_id"`
-	BrandID                        *uint                              `json:"brand_id"`
-	ShippingTemplateID             *uint                              `json:"shipping_template_id"`
-	AfterSalesTemplateID           *uint                              `json:"after_sales_template_id"`
-	PackagingTemplateID            *uint                              `json:"packaging_template_id"`
-	CustomsClassificationProfileID *uint                              `json:"customs_classification_profile_id"`
-	HSCode                         *string                            `json:"hs_code"`
-	CNCode                         *string                            `json:"cn_code"`
-	CountryOfOrigin                *string                            `json:"country_of_origin"`
-	CustomsDescription             *string                            `json:"customs_description"`
-	Name                           *string                            `json:"name" binding:"omitempty,min=1"`
-	Slug                           *string                            `json:"slug" binding:"omitempty,min=1"`
-	Description                    *string                            `json:"description"`
-	ShortDesc                      *string                            `json:"short_description"`
-	Currency                       *string                            `json:"currency"`
-	FulfillmentMode                *string                            `json:"fulfillment_mode"`
-	Status                         *string                            `json:"status" binding:"omitempty,oneof=active inactive out_of_stock"`
-	Locale                         *string                            `json:"locale"`
-	ParentID                       *uint                              `json:"parent_id"`
-	Featured                       *bool                              `json:"featured"`
-	Specs                          map[string]interface{}             `json:"specs"`
-	Variants                       []productVariantRequest            `json:"variants"`
-	VariantOptionValues            []productVariantOptionValueRequest `json:"variant_option_values"`
-	Media                          []productMediaRequest              `json:"media"`
+	ProductSpecificationTemplateID *uint                               `json:"product_specification_template_id"`
+	ProductCategoryID              *uint                               `json:"product_category_id"`
+	BrandID                        *uint                               `json:"brand_id"`
+	ShippingTemplateID             *uint                               `json:"shipping_template_id"`
+	AfterSalesTemplateID           *uint                               `json:"after_sales_template_id"`
+	PackagingTemplateID            *uint                               `json:"packaging_template_id"`
+	CustomsClassificationProfileID *uint                               `json:"customs_classification_profile_id"`
+	HSCode                         *string                             `json:"hs_code"`
+	CNCode                         *string                             `json:"cn_code"`
+	CountryOfOrigin                *string                             `json:"country_of_origin"`
+	CustomsDescription             *string                             `json:"customs_description"`
+	Name                           *string                             `json:"name" binding:"omitempty,min=1"`
+	Slug                           *string                             `json:"slug" binding:"omitempty,min=1"`
+	Description                    *string                             `json:"description"`
+	ShortDesc                      *string                             `json:"short_description"`
+	Currency                       *string                             `json:"currency"`
+	FulfillmentMode                *string                             `json:"fulfillment_mode"`
+	Status                         *string                             `json:"status" binding:"omitempty,oneof=active inactive out_of_stock"`
+	Locale                         *string                             `json:"locale"`
+	ParentID                       *uint                               `json:"parent_id"`
+	Featured                       *bool                               `json:"featured"`
+	Specs                          map[string]interface{}              `json:"specs"`
+	Variants                       []productVariantRequest             `json:"variants"`
+	VariantOptionValues            []productVariantOptionValueRequest  `json:"variant_option_values"`
+	Media                          []productMediaRequest               `json:"media"`
+	OptionValueRelations           []productOptionValueRelationRequest `json:"option_value_relations"`
+}
+
+type productOptionValueRelationRequest struct {
+	ID                  *uint  `json:"id"`
+	SourceOptionValueID uint   `json:"source_option_value_id" binding:"required"`
+	TargetOptionValueID uint   `json:"target_option_value_id" binding:"required"`
+	RelationType        string `json:"relation_type" binding:"required,oneof=requires conflicts"`
 }
 
 type productVariantRequest struct {
@@ -77,7 +85,6 @@ type productVariantRequest struct {
 	Currency           string                                 `json:"currency"`
 	PriceMinor         int64                                  `json:"price_minor" binding:"required"`
 	SalePriceMinor     *int64                                 `json:"sale_price_minor"`
-	DisplayPrices      []currency.DisplayPriceSnapshot        `json:"display_prices"`
 	Stock              int                                    `json:"stock"`
 	Weight             int                                    `json:"weight_grams"`
 	IsDefault          bool                                   `json:"is_default"`
@@ -122,22 +129,28 @@ type productMediaRequest struct {
 }
 
 type productVariantOptionValueRequest struct {
-	ID                     *uint  `json:"id"`
-	SpecDefinitionID       uint   `json:"spec_definition_id" binding:"required"`
-	TemplateOptionItemID   *uint  `json:"template_option_item_id"`
-	SourceTemplateRevision int    `json:"source_template_revision"`
-	ValueKey               string `json:"value_key"`
-	Label                  string `json:"label"`
-	ColorHex               string `json:"color_hex"`
-	SwatchMediaAssetID     *uint  `json:"swatch_media_asset_id"`
-	SwatchURL              string `json:"swatch_url"`
-	SortOrder              int    `json:"sort_order"`
-	IsEnabled              *bool  `json:"is_enabled"`
-	PriceDeltaMinor        *int64 `json:"price_delta_minor"`
-	IsDefault              bool   `json:"is_default"`
-	InventoryPolicy        string `json:"inventory_policy"`
-	ComponentVariantID     *uint  `json:"component_variant_id"`
-	ComponentQuantity      int    `json:"component_quantity"`
+	ID                        *uint  `json:"id"`
+	SpecDefinitionID          uint   `json:"spec_definition_id" binding:"required"`
+	TemplateOptionItemID      *uint  `json:"template_option_item_id"`
+	SourceTemplateRevision    int    `json:"source_template_revision"`
+	ValueKey                  string `json:"value_key"`
+	Label                     string `json:"label"`
+	ColorHex                  string `json:"color_hex"`
+	SwatchMediaAssetID        *uint  `json:"swatch_media_asset_id"`
+	SwatchURL                 string `json:"swatch_url"`
+	SortOrder                 int    `json:"sort_order"`
+	IsEnabled                 *bool  `json:"is_enabled"`
+	PriceDeltaMinor           *int64 `json:"price_delta_minor"`
+	WeightDeltaGrams          int    `json:"weight_delta_grams"`
+	PackagingWeightDeltaGrams int    `json:"packaging_weight_delta_grams"`
+	ProductionLeadTimeDays    int    `json:"production_lead_time_days"`
+	RequiresProduction        bool   `json:"requires_production"`
+	CancellationPolicy        string `json:"cancellation_policy"`
+	ReturnPolicy              string `json:"return_policy"`
+	IsDefault                 bool   `json:"is_default"`
+	InventoryPolicy           string `json:"inventory_policy"`
+	ComponentVariantID        *uint  `json:"component_variant_id"`
+	ComponentQuantity         int    `json:"component_quantity"`
 }
 
 func respondProductServiceError(c *gin.Context, err error, fallbackMessage string) {
@@ -152,6 +165,8 @@ func respondProductServiceError(c *gin.Context, err error, fallbackMessage strin
 		c.JSON(http.StatusConflict, gin.H{"error": "Translation already exists for this locale"})
 	case errors.Is(err, service.ErrProductSpecificationTemplateNotFound):
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Product specification template not found"})
+	case errors.Is(err, service.ErrProductTemplateSyncRevisionConflict):
+		c.JSON(http.StatusConflict, gin.H{"error": err.Error()})
 	case errors.Is(err, service.ErrProductBrandNotFound):
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Product brand not found"})
 	case errors.Is(err, service.ErrProductBrandInvalid):
@@ -165,6 +180,8 @@ func respondProductServiceError(c *gin.Context, err error, fallbackMessage strin
 	case errors.Is(err, service.ErrProductSpecInvalid):
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 	case errors.Is(err, service.ErrProductVariantInvalid):
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	case errors.Is(err, service.ErrProductOptionRelationInvalid):
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 	case errors.Is(err, service.ErrProductMediaInvalid):
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -231,7 +248,6 @@ func normalizeVariantRequests(raw []productVariantRequest) []service.ProductVari
 			Currency:           item.Currency,
 			PriceMinor:         item.PriceMinor,
 			SalePriceMinor:     item.SalePriceMinor,
-			DisplayPrices:      item.DisplayPrices,
 			Stock:              item.Stock,
 			Weight:             item.Weight,
 			IsDefault:          item.IsDefault,
@@ -301,6 +317,19 @@ func normalizeMediaRequests(raw []productMediaRequest) []service.ProductMediaInp
 	return items
 }
 
+func normalizeProductOptionValueRelationRequests(raw []productOptionValueRelationRequest) []service.ProductOptionValueRelationInput {
+	if len(raw) == 0 {
+		return nil
+	}
+	items := make([]service.ProductOptionValueRelationInput, 0, len(raw))
+	for _, item := range raw {
+		items = append(items, service.ProductOptionValueRelationInput{
+			ID: item.ID, SourceOptionValueID: item.SourceOptionValueID, TargetOptionValueID: item.TargetOptionValueID, RelationType: item.RelationType,
+		})
+	}
+	return items
+}
+
 func normalizeVariantOptionValueRequests(raw []productVariantOptionValueRequest) []service.ProductVariantOptionValueInput {
 	if len(raw) == 0 {
 		return nil
@@ -309,22 +338,28 @@ func normalizeVariantOptionValueRequests(raw []productVariantOptionValueRequest)
 	items := make([]service.ProductVariantOptionValueInput, 0, len(raw))
 	for _, item := range raw {
 		items = append(items, service.ProductVariantOptionValueInput{
-			ID:                     item.ID,
-			SpecDefinitionID:       item.SpecDefinitionID,
-			TemplateOptionItemID:   item.TemplateOptionItemID,
-			SourceTemplateRevision: item.SourceTemplateRevision,
-			ValueKey:               item.ValueKey,
-			Label:                  item.Label,
-			ColorHex:               item.ColorHex,
-			SwatchMediaAssetID:     item.SwatchMediaAssetID,
-			SwatchURL:              item.SwatchURL,
-			SortOrder:              item.SortOrder,
-			IsEnabled:              item.IsEnabled,
-			PriceDeltaMinor:        item.PriceDeltaMinor,
-			IsDefault:              item.IsDefault,
-			InventoryPolicy:        item.InventoryPolicy,
-			ComponentVariantID:     item.ComponentVariantID,
-			ComponentQuantity:      item.ComponentQuantity,
+			ID:                        item.ID,
+			SpecDefinitionID:          item.SpecDefinitionID,
+			TemplateOptionItemID:      item.TemplateOptionItemID,
+			SourceTemplateRevision:    item.SourceTemplateRevision,
+			ValueKey:                  item.ValueKey,
+			Label:                     item.Label,
+			ColorHex:                  item.ColorHex,
+			SwatchMediaAssetID:        item.SwatchMediaAssetID,
+			SwatchURL:                 item.SwatchURL,
+			SortOrder:                 item.SortOrder,
+			IsEnabled:                 item.IsEnabled,
+			PriceDeltaMinor:           item.PriceDeltaMinor,
+			WeightDeltaGrams:          item.WeightDeltaGrams,
+			PackagingWeightDeltaGrams: item.PackagingWeightDeltaGrams,
+			ProductionLeadTimeDays:    item.ProductionLeadTimeDays,
+			RequiresProduction:        item.RequiresProduction,
+			CancellationPolicy:        item.CancellationPolicy,
+			ReturnPolicy:              item.ReturnPolicy,
+			IsDefault:                 item.IsDefault,
+			InventoryPolicy:           item.InventoryPolicy,
+			ComponentVariantID:        item.ComponentVariantID,
+			ComponentQuantity:         item.ComponentQuantity,
 		})
 	}
 	return items

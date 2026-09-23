@@ -79,10 +79,6 @@ func (s *OrderEvidenceAttachmentService) Upload(
 	if orderID == 0 || itemID == 0 || uploadedBy == 0 {
 		return nil, errors.New("order id, evidence item id, and uploader are required")
 	}
-	if err := upload.ValidateFile(file, upload.WarrantyImageRule.FileRule); err != nil {
-		return nil, err
-	}
-
 	item, pkg, err := s.evidenceRepo.FindItemAndPackageByIDForOrder(itemID, orderID)
 	if repository.IsRecordNotFound(err) {
 		return nil, ErrOrderEvidenceAttachmentItemNotFound
@@ -91,6 +87,21 @@ func (s *OrderEvidenceAttachmentService) Upload(
 		return nil, err
 	}
 	if err := pkg.EnsureMutable(); err != nil {
+		return nil, err
+	}
+	validationRule := upload.WarrantyImageRule.FileRule
+	if item.ItemType == orderevidence.EvidenceItemTypeSignedPOD {
+		// Keep legacy signed-POD images valid, while accepting carrier-issued
+		// PDFs that can be forwarded to PayPal as official documents.
+		contentType, detectErr := upload.DetectContentType(file)
+		if detectErr != nil {
+			return nil, detectErr
+		}
+		if strings.EqualFold(strings.TrimSpace(contentType), "application/pdf") {
+			validationRule = upload.OrderEvidencePODDocumentRule
+		}
+	}
+	if err := upload.ValidateFile(file, validationRule); err != nil {
 		return nil, err
 	}
 

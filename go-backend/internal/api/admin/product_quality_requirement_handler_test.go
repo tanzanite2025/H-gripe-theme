@@ -84,7 +84,7 @@ func newProductQualityRequirementHandlerFixture(t *testing.T) (*gorm.DB, uint, u
 		Name:     "Requirement Handler First",
 		Slug:     "requirement-handler-first",
 		Currency: "USD",
-		Price:    100,
+		PriceMinor: 10000,
 		Stock:    5,
 	}
 	second := productdomain.Product{
@@ -92,7 +92,7 @@ func newProductQualityRequirementHandlerFixture(t *testing.T) (*gorm.DB, uint, u
 		Name:     "Requirement Handler Second",
 		Slug:     "requirement-handler-second",
 		Currency: "USD",
-		Price:    100,
+		PriceMinor: 10000,
 		Stock:    5,
 	}
 	require.NoError(t, db.Create(&first).Error)
@@ -104,7 +104,7 @@ func newProductQualityRequirementHandlerFixture(t *testing.T) (*gorm.DB, uint, u
 		Title:        "Second variant",
 		OptionValues: "{}",
 		Currency:     "USD",
-		Price:        100,
+		PriceMinor:   10000,
 		Stock:        5,
 		Weight:       9000,
 		IsDefault:    true,

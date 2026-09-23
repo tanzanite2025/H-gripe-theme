@@ -35,12 +35,12 @@ func TestOrderEvidenceSnapshotServiceFreezesRequirementHistory(t *testing.T) {
 	))
 
 	productRecord := productdomain.Product{
-		SKU:      "SKU-EVIDENCE-SERVICE",
-		Name:     "Configurable Product",
-		Slug:     "evidence-service-product",
-		Currency: "USD",
-		Price:    750,
-		Stock:    5,
+		SKU:        "SKU-EVIDENCE-SERVICE",
+		Name:       "Configurable Product",
+		Slug:       "evidence-service-product",
+		Currency:   "USD",
+		PriceMinor: 75000,
+		Stock:      5,
 	}
 	require.NoError(t, db.Create(&productRecord).Error)
 	variant := productdomain.ProductVariant{
@@ -49,7 +49,7 @@ func TestOrderEvidenceSnapshotServiceFreezesRequirementHistory(t *testing.T) {
 		Title:        "Configured",
 		OptionValues: `{"finish":"black"}`,
 		Currency:     "USD",
-		Price:        750,
+		PriceMinor:   75000,
 		Stock:        5,
 		Weight:       9000,
 		IsDefault:    true,
@@ -67,23 +67,23 @@ func TestOrderEvidenceSnapshotServiceFreezesRequirementHistory(t *testing.T) {
 	require.NoError(t, db.Create(&rule).Error)
 
 	orderRecord := order.Order{
-		OrderNumber:    "TZ-2026-SNAPSHOT-SERVICE",
-		Status:         "pending",
-		PaymentStatus:  "unpaid",
-		TotalAmount:    750,
-		Currency:       "USD",
-		FXSnapshotData: serviceTestFXSnapshot(),
+		OrderNumber:      "TZ-2026-SNAPSHOT-SERVICE",
+		Status:           "pending",
+		PaymentStatus:    "unpaid",
+		TotalAmountMinor: 75000,
+		Currency:         "USD",
+		FXSnapshotData:   serviceTestFXSnapshot(),
 		Items: []order.OrderItem{{
-			ProductID:   productRecord.ID,
-			VariantID:   &variant.ID,
-			ProductName: productRecord.Name,
-			SKU:         variant.SKU,
-			Quantity:    1,
-			Price:       750,
-			Subtotal:    750,
-			Total:       750,
-			Attributes:  variant.OptionValues,
-			WeightGrams: variant.Weight,
+			ProductID:                 productRecord.ID,
+			VariantID:                 &variant.ID,
+			ProductName:               productRecord.Name,
+			SKU:                       variant.SKU,
+			Quantity:                  1,
+			PriceMinor:                75000,
+			SubtotalMinor:             75000,
+			TotalMinor:                75000,
+			ConfigurationSnapshotData: datatypes.JSON([]byte(variant.OptionValues)),
+			WeightGrams:               variant.Weight,
 		}},
 	}
 	require.NoError(t, db.Create(&orderRecord).Error)
@@ -123,10 +123,10 @@ func TestOrderEvidenceSnapshotServiceFreezesRequirementHistory(t *testing.T) {
 func TestOrderEvidenceSnapshotServiceRequiresTransactionalStores(t *testing.T) {
 	service := NewOrderEvidenceSnapshotService()
 	orderRecord := &order.Order{
-		ID:             1,
-		TotalAmount:    100,
-		Currency:       "USD",
-		FXSnapshotData: serviceTestFXSnapshot(),
+		ID:               1,
+		TotalAmountMinor: 10000,
+		Currency:         "USD",
+		FXSnapshotData:   serviceTestFXSnapshot(),
 		Items: []order.OrderItem{{
 			ID:          2,
 			ProductID:   3,
@@ -147,12 +147,12 @@ func TestOrderEvidenceSnapshotServiceRequiresTransactionalStores(t *testing.T) {
 
 func serviceTestFXSnapshot() datatypes.JSON {
 	return currency.OrderFXSnapshotJSON(currency.OrderFXSnapshot{
-		Version:         currency.OrderFXSnapshotVersion,
-		BaseCurrency:    "USD",
-		OrderCurrency:   "USD",
-		BaseToOrderRate: 1,
-		Source:          "test",
-		CapturedAt:      time.Date(2026, 9, 4, 12, 0, 0, 0, time.UTC),
+		Version:       currency.OrderFXSnapshotVersion,
+		BaseCurrency:  "USD",
+		OrderCurrency: "USD",
+		RateDecimal:   "1",
+		Source:        "test",
+		CapturedAt:    time.Date(2026, 9, 4, 12, 0, 0, 0, time.UTC),
 	})
 }
 

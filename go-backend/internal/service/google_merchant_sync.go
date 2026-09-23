@@ -8,7 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"math"
+	"math/big"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"commerce-platform/internal/domain/merchant"
+	domainmoney "commerce-platform/internal/domain/money"
 	"commerce-platform/internal/domain/product"
 	"commerce-platform/internal/pkg/resilience"
 
@@ -592,13 +593,26 @@ func firstGoogleMerchantImage(baseURL string, media []product.ProductMedia, reso
 	return "", errors.New("source product requires a visible image")
 }
 
-func googleMerchantPriceMicros(value float64) (int64, error) {
-	if value <= 0 || math.IsNaN(value) || math.IsInf(value, 0) {
+func googleMerchantPriceMicros(value domainmoney.Money) (int64, error) {
+	if value.AmountMinor() <= 0 {
 		return 0, errors.New("price must be greater than zero")
 	}
-	micros := math.Round(value * 1_000_000)
-	if micros > math.MaxInt64 {
+	major, err := value.FormatMajor()
+	if err != nil {
+		return 0, err
+	}
+	rat, ok := new(big.Rat).SetString(major)
+	if !ok {
+		return 0, errors.New("invalid price")
+	}
+	rat.Mul(rat, big.NewRat(1_000_000, 1))
+	quotient, remainder := new(big.Int), new(big.Int)
+	quotient.QuoRem(rat.Num(), rat.Denom(), remainder)
+	if new(big.Int).Lsh(new(big.Int).Abs(remainder), 1).Cmp(rat.Denom()) >= 0 {
+		quotient.Add(quotient, big.NewInt(1))
+	}
+	if !quotient.IsInt64() {
 		return 0, errors.New("price is too large")
 	}
-	return int64(micros), nil
+	return quotient.Int64(), nil
 }

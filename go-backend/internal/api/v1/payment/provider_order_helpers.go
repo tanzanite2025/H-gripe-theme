@@ -73,7 +73,17 @@ func (h *Handler) loadProviderOrderForConfirmation(
 }
 
 func ensureOrderHasPayableAmount(c *gin.Context, orderRecord *orderdomain.Order) bool {
-	if orderRecord == nil || orderRecord.TotalAmount > 0 || orderRecord.PaymentAmount > 0 {
+	if orderRecord == nil {
+		apierror.RespondError(c, http.StatusBadRequest, "order_has_no_payable_amount", "Order has no payable amount")
+		return false
+	}
+	// Amounts on the transactional order are authoritative in minor units. The
+	// Money accessors retain a narrow historical-row fallback, but callers must
+	// never compare major-unit floats when deciding whether an order is payable.
+	if total, err := orderRecord.TotalMoney(); err == nil && total.AmountMinor() > 0 {
+		return true
+	}
+	if payment, err := orderRecord.PaymentMoney(); err == nil && payment.AmountMinor() > 0 {
 		return true
 	}
 	apierror.RespondError(c, http.StatusBadRequest, "order_has_no_payable_amount", "Order has no payable amount")
@@ -95,9 +105,12 @@ func strictProviderSettlement(orderRecord *orderdomain.Order) (domainmoney.Money
 	if !currency.IsValidCode(code) || !currency.IsCatalogCode(code) {
 		return domainmoney.Money{}, errors.New("order payable currency is not configured")
 	}
-	money, err := domainmoney.FromMajorFloat(orderRecord.PaymentAmount, code)
+	money, err := orderRecord.PaymentMoney()
 	if err != nil {
 		return domainmoney.Money{}, fmt.Errorf("invalid order payment amount: %w", err)
+	}
+	if money.Currency().String() != code {
+		return domainmoney.Money{}, fmt.Errorf("order payment currency does not match payment amount currency")
 	}
 	if money.AmountMinor() <= 0 {
 		return domainmoney.Money{}, errors.New("order payable amount must be greater than zero")
@@ -113,6 +126,23 @@ func paymentCustomerFromOrder(orderRecord *orderdomain.Order) *pgateway.Customer
 		Name:  strings.TrimSpace(orderRecord.ShippingAddress.FirstName + " " + orderRecord.ShippingAddress.LastName),
 		Email: strings.TrimSpace(orderRecord.ShippingAddress.Email),
 		Phone: strings.TrimSpace(orderRecord.ShippingAddress.Phone),
+	}
+}
+
+func paymentShippingAddressFromOrder(orderRecord *orderdomain.Order) *pgateway.ShippingAddress {
+	if orderRecord == nil {
+		return nil
+	}
+	address := orderRecord.ShippingAddress
+	return &pgateway.ShippingAddress{
+		Name:       strings.TrimSpace(address.FirstName + " " + address.LastName),
+		Line1:      strings.TrimSpace(address.Address1),
+		Line2:      strings.TrimSpace(address.Address2),
+		City:       strings.TrimSpace(address.City),
+		State:      strings.TrimSpace(address.State),
+		PostalCode: strings.TrimSpace(address.PostalCode),
+		Country:    strings.ToUpper(strings.TrimSpace(address.Country)),
+		Phone:      strings.TrimSpace(address.Phone),
 	}
 }
 
@@ -214,14 +244,17 @@ func gatewayTransactionID(paymentResponse *pgateway.PaymentResponse, fallback st
 }
 
 func providerPaymentResponseMoney(paymentResponse *pgateway.PaymentResponse, fallback domainmoney.Money) (domainmoney.Money, error) {
-	if paymentResponse == nil || paymentResponse.Amount <= 0 || strings.TrimSpace(paymentResponse.Currency) == "" {
+	if paymentResponse == nil || strings.TrimSpace(paymentResponse.Currency) == "" {
 		return fallback, nil
 	}
-	money, err := domainmoney.FromMajorFloat(paymentResponse.Amount, paymentResponse.Currency)
-	if err != nil {
-		return domainmoney.Money{}, fmt.Errorf("invalid provider payment amount: %w", err)
+	if paymentResponse.AmountMinor > 0 {
+		money, err := domainmoney.New(paymentResponse.AmountMinor, paymentResponse.Currency)
+		if err != nil {
+			return domainmoney.Money{}, fmt.Errorf("invalid provider payment amount: %w", err)
+		}
+		return money, nil
 	}
-	return money, nil
+	return fallback, nil
 }
 
 func providerTransactionID(paymentResponse *pgateway.PaymentResponse) string {

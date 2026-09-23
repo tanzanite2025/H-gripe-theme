@@ -172,3 +172,33 @@ func TestBindClearsTerminalAttributionCookie(t *testing.T) {
 	assert.Less(t, cookies[0].MaxAge, 0)
 	assert.True(t, cookies[0].HttpOnly)
 }
+
+func TestBindAcceptsExplicitReferralCodeWithoutAttributionCookie(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	handler := NewHandler(&stubReferralService{
+		createAttributionToken: func(code, source string) (string, int, error) {
+			assert.Equal(t, "FRIEND123", code)
+			assert.Equal(t, "manual_input", source)
+			return "signed.manual", 3600, nil
+		},
+		validateCode: func(string) (*service.ReferralValidation, error) { return nil, nil },
+		bindFromToken: func(userID uint, token, clientIP string) (*loyalty.ReferralRecord, error) {
+			assert.Equal(t, uint(42), userID)
+			assert.Equal(t, "signed.manual", token)
+			return &loyalty.ReferralRecord{ID: 7, Status: loyalty.ReferralStatusPending}, nil
+		},
+	}, securecookie.DefaultOptions())
+	router := gin.New()
+	router.POST("/bind", func(c *gin.Context) {
+		c.Set("user_id", uint(42))
+		c.Next()
+	}, handler.Bind)
+
+	response := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodPost, "/bind", strings.NewReader(`{"referral_code":"FRIEND123"}`))
+	request.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(response, request)
+
+	assert.Equal(t, http.StatusOK, response.Code)
+	assert.Contains(t, response.Body.String(), `"referral_id":7`)
+}

@@ -2,15 +2,17 @@
 
 > **文档路径**: `docs/security/form-honeypot-anti-spam-architecture.md`  
 > **适用场景**: 邮件订阅 (Newsletter)、客户留言 (Contact/Inquiry)、用户注册、质保初审等公开表单接口  
-> **设计哲学**: **“0 用户摩擦、0 页面延迟、0 隐私泄露 (GDPR 免申报)、0 SEO 干扰”**。用最轻量的工程手段，阻断 95% 以上的无脑自动化爬虫与垃圾邮件脚本。
+> **设计目标**: **“0 用户摩擦、尽量少的页面延迟、最小化数据收集、0 SEO 干扰”**。Honeypot 是低成本的第一层信号，不承诺拦截所有机器人，也不替代限流、邮件验证、账户保护或支付风控。
+
+> **当前项目基线（2026-09）**：Newsletter 和质保邮件验证已经接入 Cloudflare Turnstile、Redis/进程内限流及邮件挑战；反馈接口已经接入认证和 Redis 限流。Honeypot 将以叠加方式接入，第一阶段不删除现有防线。文档中的“0 第三方请求”和“天然符合 GDPR”不是默认事实，必须结合部署配置、数据处理协议和安全/合规评审确认。
 
 ---
 
 ## 目录
 
-1. [为什么放弃传统验证码，选择 Honeypot？](#1-为什么放弃传统验证码选择-honeypot)
+1. [为什么采用 Honeypot 作为第一层防线？](#1-为什么采用-honeypot-作为第一层防线)
 2. [Honeypot 蜜罐的核心工作原理](#2-honeypot-蜜罐的核心工作原理)
-3. [对搜索引擎爬虫 (Googlebot) 的 0 干扰证明](#3-对搜索引擎爬虫-googlebot-的-0-干扰证明)
+3. [对搜索引擎爬虫 (Googlebot) 的低干扰边界](#3-对搜索引擎爬虫-googlebot-的低干扰边界)
 4. [前端工业级诱饵埋设规范 (Vue 3 / Nuxt)](#4-前端工业级诱饵埋设规范-vue-3--nuxt)
 5. [后端 Go 校验机制与“静默丢弃 (Silent Drop)”准则](#5-后端-go-校验机制与静默丢弃-silent-drop-准则)
 6. [进阶防线：时间差陷阱 (Timestamp Trap)](#6-进阶防线时间差陷阱-timestamp-trap)
@@ -19,16 +21,18 @@
 
 ---
 
-## 1. 为什么放弃传统验证码，选择 Honeypot？
+## 1. 为什么采用 Honeypot 作为第一层防线？
 
 在高端自行车零配件独立站（高客单价 $500 ~ $3,000+）中，买家每前进一步都至关重要：
 
-| 对比维度 | 传统验证码 (reCAPTCHA / hCaptcha) | Honeypot 蜜罐方案 |
+| 对比维度 | 交互式验证码 (reCAPTCHA / hCaptcha / Turnstile) | Honeypot 蜜罐方案 |
 | :--- | :--- | :--- |
-| **买家体验** | 弹窗、找斑马线/红绿灯，挫败感极强，**导致 10%~20% 跳出** | **完全隐形，买家 100% 毫无察觉，0 摩擦感** |
-| **页面性能** | 加载 200KB+ 第三方 JS，多次网络往返，Lighthouse 跑分大跌 | **0 KB 额外体积，0 网络开销，页面秒开** |
-| **欧洲 GDPR 合规** | 回传用户设备指纹至境外，未授权弹窗前加载涉嫌违规 | **纯第一方内生逻辑，不收集任何隐私，天然符合 GDPR** |
-| **维护成本** | 依赖外部 API 密钥，第三方服务宕机时表单卡死 | **完全自主掌控，无任何外部网络依赖** |
+| **买家体验** | 可能出现弹窗、找斑马线/红绿灯，增加跳出风险 | 正常用户无需额外交互；仍需通过自动填充和无障碍回归验证 |
+| **页面性能** | 可能加载第三方 JS 并产生额外网络往返；是否加载取决于站点策略 | Honeypot 本身不需要额外脚本；若同时保留 Turnstile，仍会产生其网络开销 |
+| **隐私与合规** | 需要评估供应商、传输、Cookie/设备信号和法律依据 | 只提交一个空/非空字段，但日志、IP、邮箱仍需按站点隐私政策处理；不能据此自动宣称 GDPR 合规 |
+| **维护成本** | 依赖外部服务可用性、密钥和供应商策略 | 无第三方依赖，但容易被高级机器人识别，必须和限流、验证、监控联动 |
+
+Honeypot 的正确定位是“便宜且透明的第一道筛选”。对于会发送邮件、创建质保索赔、修改账户状态或涉及支付的接口，不能仅依赖 Honeypot。
 
 ---
 
@@ -62,14 +66,15 @@
 
 ---
 
-## 3. 对搜索引擎爬虫 (Googlebot) 的 0 干扰证明
+## 3. 对搜索引擎爬虫 (Googlebot) 的低干扰边界
 
 许多开发者担心：*“加了隐藏字段，会不会被 Google 认为是作弊甚至被降权惩罚？”*
 
-**答案：绝对不会，0 影响。** 理由如下：
-1. **Googlebot 只抓取，不填表**：Google 官方文档明确指出，Google 抓取蜘蛛只发起 HTTP `GET` 请求来解析超链接和文本内容，**Google 绝不会自动填写表单并发送 `POST` 请求**。
-2. **Google 明确认可 Honeypot 模式**：Google 官方多次确认，用于阻止垃圾邮件的屏幕阅读器可访问隐藏字段（Screen-reader accessible forms for spam prevention）属于行业标准做法，不属于 Cloaking（障眼法黑帽作弊）。
-3. **更利好 SEO**：由于垃圾脚本的大量无效请求在入口处被瞬时清空，保护了服务器 CPU 和数据库连接池，使得 Google 爬虫在抓取商品主页时响应速度更快。
+**预期不会影响正常抓取，但不能写成绝对保证。**
+1. 常规搜索引擎抓取主要通过 HTTP `GET` 解析页面和链接，不会因为一个不参与导航的隐藏输入框而改变页面正文或链接结构。
+2. Honeypot 不能通过给搜索引擎和用户展示不同内容来实现；字段必须是页面真实 DOM 的一部分，且不影响可见文案、结构化数据、链接和渲染结果。
+3. 应在发布前用 Lighthouse、axe/屏幕阅读器和真实 Googlebot/搜索控制台检查，确认没有布局偏移、键盘焦点、无障碍或抓取异常。
+4. 拦截 POST 只发生在 API 业务入口，不应对商品页面、sitemap、robots.txt 或公开 GET 资源加 Honeypot 逻辑。
 
 ---
 
@@ -79,7 +84,7 @@
 
 ### 4.1 字段命名规范（以假乱真）
 - ❌ **严禁使用低幼命名**：`honeypot`, `bot_trap`, `is_bot`, `hidden_field`
-- ✅ **推荐使用看似合法的 decoy 命名**：
+- ✅ **推荐使用看似合法且按表单区分的 decoy 命名**：
   - `corporate_website`（企业网址）
   - `fax_number`（传真号码）
   - `company_tax_id`（公司税号）
@@ -96,13 +101,13 @@
       <input id="email" v-model="form.email" type="email" required class="h-10 w-full rounded border px-3" />
     </div>
 
-    <!-- 工业级 Honeypot 诱饵 (人类肉眼不可见，无障碍屏幕阅读器忽略，脚本无脑填写) -->
+    <!-- 工业级 Honeypot 诱饵：真实 DOM 中存在，但不参与视觉布局和键盘导航 -->
     <div
       class="sr-only"
       aria-hidden="true"
       style="position: absolute; left: -9999px; top: -9999px; opacity: 0; pointer-events: none; width: 0; height: 0; overflow: hidden;"
     >
-      <label for="corporate_tax_number">Corporate Tax Number (Do not fill this field)</label>
+      <label for="corporate_tax_number">Corporate tax number</label>
       <input
         id="corporate_tax_number"
         v-model="form.corporate_tax_number"
@@ -137,10 +142,14 @@ const handleSubmit = async () => {
 </script>
 ```
 
+项目中的 `SubscriptionOptIn.vue` 当前还会在提交时按配置执行 Turnstile。第一阶段只增加 Honeypot，不删除 Turnstile；是否在后续把 Turnstile 改为高风险兜底，需要根据拦截指标、误判率和安全评审决定。
+
 #### 关键防死角参数：
 - `tabindex="-1"`：防止正常人类用 `Tab` 键切换光标时不小心移入该框。
-- `aria-hidden="true"`：告诉盲人读屏软件“忽略此元素”，不影响无障碍合规。
+- `aria-hidden="true"`：让读屏软件忽略诱饵区域；由于其中包含输入控件，必须同时用 `tabindex="-1"`，并通过 axe/实际读屏软件验证，避免出现“可聚焦元素位于 aria-hidden 区域”的无障碍问题。必要时补充 `inert`。
 - `autocomplete="off"`：防止浏览器密码管理器或自动填充插件（如 1Password、Chrome 自动保存）误填此框。
+
+不要把字段标签写成“Do not fill this field”并暴露给读屏软件；应使用中性的业务字段名和隐藏区域，并确认密码管理器、浏览器自动填充不会误填。字段默认值必须是空字符串，提交失败或重试时也不能残留上一次的诱饵值。
 
 ---
 
@@ -152,74 +161,74 @@ const handleSubmit = async () => {
 - 如果返回 `{"error": "Bot detected! Honeypot filled."}`，黑客只要看一眼报错，立刻就会修改爬虫脚本排除这个字段。
 
 ### ✅ 正确做法：静默假成功 (Silent Drop / Tarpit)
-- **直接返回 `HTTP 200 OK: {"code": 0, "message": "Success"}`**。
-- **但在程序内部**：直接退出逻辑，**不入数据库、不发任何通知邮件、不扣减发信配额**。
-- **同时记录审计日志与指标监控**：在 Prometheus / 日志中记录 `honeypot_dropped_total + 1`。
+- 命中后立即结束业务逻辑，**不入数据库、不发通知邮件、不上传文件、不扣减发信或验证配额**。
+- 返回该接口正常成功时使用的状态码和尽可能相同的通用响应。不要强制所有接口都返回 `200`：例如当前订阅和质保验证使用 `202`，反馈和质保索赔使用 `201`。
+- 在 Prometheus 和结构化日志中记录 `honeypot_blocked_total`；不得记录原始邮箱、IP 或完整请求体。
 
-### Go 核心实现示例：
+### 实现边界（必须遵守）
+
+不要把下面的逻辑直接做成一个无差别的全局 Middleware：
+
+1. `c.PostForm()` 只适用于表单/multipart，不能读取 JSON body。
+2. Middleware 读取 JSON body 后必须恢复 body，否则后续 Handler 无法再次绑定。
+3. multipart 质保索赔必须在对象存储上传之前检查诱饵字段。
+
+推荐在每个 Handler 完成 body 解析后，用共享 helper 判断字段，再调用该接口的成功响应函数：
 
 ```go
-package middleware
-
 import (
-	"net/http"
 	"strings"
 
-	"github.com/gin-gonic/gin"
+	"commerce-platform/internal/pkg/honeypot"
 )
 
-// HoneypotGuard 校验诱饵字段。如果包含任何内容，假装成功并静默截断。
-func HoneypotGuard(decoyFieldName string) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		// 仅针对表单 POST/PUT 请求
-		if c.Request.Method != http.MethodPost && c.Request.Method != http.MethodPut {
-			c.Next()
-			return
-		}
-
-		// 获取请求体中的诱饵值 (适用于 JSON 或 Form)
-		decoyValue := strings.TrimSpace(c.PostForm(decoyFieldName))
-		
-		// 若为 JSON 请求，由具体 Handler 或结构体校验
-		if decoyValue != "" {
-			// [CRITICAL] 识别出机器人：静默假成功并阻断后续执行
-			c.AbortWithStatusJSON(http.StatusOK, gin.H{
-				"code":    0,
-				"message": "Subscription received successfully",
-			})
-			return
-		}
-
-		c.Next()
-	}
-}
-```
-
-在请求体 DTO 中定义：
-```go
 type SubscribeRequest struct {
-    Email              string `json:"email" binding:"required,email"`
-    CorporateTaxNumber string `json:"corporate_tax_number"` // 诱饵字段
+	Email              string `json:"email"`
+	Source             string `json:"source"`
+	Locale             string `json:"locale"`
+	CorporateTaxNumber string `json:"corporate_tax_number"`
 }
 
-func (req *SubscribeRequest) IsBot() bool {
-    return strings.TrimSpace(req.CorporateTaxNumber) != ""
+func (req SubscribeRequest) IsDecoyFilled() bool {
+	return strings.TrimSpace(req.CorporateTaxNumber) != ""
+}
+
+func (h *Handler) Subscribe(c *gin.Context) {
+	var req SubscribeRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		// 真实字段仍按接口契约返回校验错误。
+		return
+	}
+	if req.IsDecoyFilled() {
+		honeypot.RecordBlocked("newsletter", "corporate_tax_number", c.Request.URL.Path)
+		acceptedSubscriptionResponse(c) // 当前接口为 202；不触发服务、邮件或配额逻辑
+		return
+	}
+	// 继续真实的验证、限流、入库和邮件流程。
 }
 ```
+
+对需要绑定校验的接口，应先解析不带 `binding:"required"` 的外层请求，优先识别诱饵，再对真实字段执行校验；否则机器人可能从 400 响应中获得额外特征。具体取舍需按接口风险和现有测试确定。
 
 ---
 
 ## 6. 进阶防线：时间差陷阱 (Timestamp Trap)
 
-为了防范稍微高级一点的爬虫，可以与“时间差检测”结合使用：
+时间差只能作为辅助信号，不能直接相信浏览器提交的 `_ts`：客户端可以任意修改时间戳，自动填充、重试和无障碍工具也可能让真人提交很快。
 
-- **基本事实**：一个正常人类用户打开网页、看懂文案、输入邮箱并点击提交，耗时**至少需要 3~5 秒以上**。
-- **机器人的特征**：脚本请求网页后，在 50~200 毫秒内即完成全自动 POST 提交。
+### 分阶段规则
 
-### 规则：
-- 前端页面加载表单时，写入一个当前时间戳 `_ts`（可做简单的 base64 或签名混淆）；
-- 提交给后端时，后端计算：`time_taken = NOW() - _ts`；
-- 如果 `time_taken < 1.5 秒`，判定为自动化脚本瞬间提交，同样采取**静默丢弃**策略。
+1. **观测阶段（当前实现）**：Newsletter 页面挂载后调用 `GET /api/v1/subscriptions/timing-token`。后端返回短期、不可缓存的服务端签名 token；提交时只回传 token，后端验证后记录耗时，不拦截请求。没有 token、token 过期或签名错误都不能阻塞真实用户。
+2. token 载荷为 `version + form + issued_at(Unix ms) + nonce`，签名为 HMAC-SHA256。优先使用服务端专用的 `HONEYPOT_TIMING_SECRET`；未配置时从 `JWT_SECRET` 派生域隔离密钥，浏览器永远不会拿到签名密钥。默认有效期为 900 秒，可由 `HONEYPOT_TIMING_TTL_SECONDS` 调整。
+3. 当前记录 `commerce_platform_honeypot_timing_evaluations_total{form,result}`（`valid` / `missing` / `malformed` / `invalid` / `expired`）、`commerce_platform_honeypot_timing_seconds{form}` 直方图，以及 Redis shadow 检查的 `commerce_platform_honeypot_timing_replays_total{form,result}`（`first_seen` / `reused` / `error`）。Redis 只保存 nonce 的哈希和短 TTL，重复 token 仍然放行；进入 enforce 前再评估是否把 `reused` 变成拒绝条件。Redis 故障对表单请求 fail-open，不记录邮箱、IP、原始 nonce 或请求体。
+4. `1.5 秒`只能作为初始观测阈值，必须按真实流量校准；不能单独用于账户锁定、质保拒绝或支付拒绝。未来若启用硬拦截，必须保留 `off / shadow / enforce` 回滚开关，并先在 Newsletter 小流量灰度。
+
+### 6.1 观测发布门槛
+
+- 先以 `shadow` 运行至少 7 天，并确认 Newsletter 有足够的真实样本（建议不少于 1,000 次有效 token 提交）。
+- 用 `commerce_platform_honeypot_timing_seconds` 的 P50/P95/P99 和 `valid/missing/expired` 比例建立正常基线；不要把单个浏览器、单个地区或单次极短提交当成阈值依据。
+- 检查 `honeypot_timing_replays_total{result="reused"}` 是否主要来自用户重试、多标签页或网络重放；Redis `error` 不得被误判为机器人。
+- 只有在误判率、Redis 可用性和正常订阅副作用回归均达标后，才允许小流量启用 enforce；任何异常都通过 `HONEYPOT_MODE=shadow` 或 `off` 回滚。
 
 ---
 
@@ -230,7 +239,7 @@ func (req *SubscribeRequest) IsBot() bool {
 | 业务场景 / 接口 | 第一防线 | 第二防线 | 应急后备防线 | 买家端感知度 |
 | :--- | :--- | :--- | :--- | :--- |
 | **商品浏览 / 列表 / 算法计算器** | Cloudflare CDN 边缘缓存 | Redis 令牌桶高频限流 | 无 | **0 摩擦（极速秒开）** |
-| **邮件订阅 / 质保留言 / 建议反馈** | **Honeypot 蜜罐诱饵** | 1.5 秒时间差防秒刷 | Redis 单 IP 日配额 | **0 摩擦（完全透明）** |
+| **邮件订阅 / 质保留言 / 建议反馈** | **Honeypot 蜜罐诱饵** | 现有限流、邮件挑战或认证 | Redis 单 IP/目标配额（按需增加） | **0 摩擦（完全透明）** |
 | **买家登录 / 注册** | Honeypot 蜜罐诱饵 | 密码重试次数冻结 (5次) | 账号锁定 15 分钟 | **0 摩擦** |
 | **找回密码 / 发送验证邮件** | Redis 验证码 60秒冷却 | Honeypot 蜜罐 | Cloudflare Turnstile (仅在连续发送失败时) | **0 摩擦** (除非恶意刷接口) |
 | **订单结算 / 信用卡支付创建** | 3DS 强责任转移 | Stripe 欺诈评分 Radar | 连续支付失败 3 次触发 Turnstile 阻断试卡 | **0 摩擦** (正常买家绝不弹窗) |
@@ -239,14 +248,22 @@ func (req *SubscribeRequest) IsBot() bool {
 
 ## 8. 落地方案与代码改造检查清单
 
-后续进行表单加固时，可对照以下清单逐项勾选实施：
+后续进行表单加固时，按以下阶段执行，不要一次性全站启用：
 
-- [ ] **表单字段埋设**：在 `SubscriptionOptIn.vue`（邮件订阅）中增加隐形 `corporate_tax_number` 诱饵字段；
-- [ ] **留言与反馈表单**：在意见反馈和客服离线工单表单中增加隐形 `fax_number` 诱饵字段；
-- [ ] **DTO 绑定与静默丢弃**：Go 后端在对应的 Request 结构体中解析诱饵值，若非空直接返回 `200 OK` 并打断逻辑；
-- [ ] **审计度量记录**：新增日志输出 `[HONEYPOT_BLOCKED]`，便于后续在控制台观察拦截成效；
-- [ ] **无障碍校验**：检查所有隐藏字段均具备 `tabindex="-1"` 与 `aria-hidden="true"`，保证残障人士读屏软件通过无误。
+- [x] **阶段 0：基线与开关**：确认现有 Turnstile、认证、邮件挑战和限流行为；增加 `anti_abuse.honeypot_mode`（`off` / `shadow` / `enforce`），支持观测和回滚。
+- [x] **阶段 1：共享能力**：增加前端 `HoneypotField`、Go helper、`honeypot_blocked_total` 指标和 `[HONEYPOT_BLOCKED]` 结构化日志。
+- [x] **阶段 2：Newsletter**：在 `SubscriptionOptIn.vue` 增加 `corporate_tax_number`，后端订阅 Handler 在邮件验证和入库前静默丢弃。
+- [x] **阶段 3：反馈**：页面反馈已增加 `fax_number`；建议反馈后端入口已增加 `company_tax_id`，待确认实际前端页面后再补埋设。
+- [x] **阶段 4：质保**：在验证和索赔 multipart 流程增加 `secondary_phone`，必须在对象存储上传前检查；保留邮件验证和 Turnstile。
+- [x] **阶段 5：认证**：最后在登录/注册增加 `corporate_website`，先观察误判，再决定是否拦截；Google 登录不套用普通表单字段。
+- [x] **时间差陷阱（shadow 实现）**：Newsletter 获取服务端签名 token，提交时验证并记录耗时；Redis 记录 nonce 的首次/重复状态；不信任裸客户端时间戳，不因 token 缺失/失效拦截。
+- [ ] **生产 enforce 签核**：用真实分布校准阈值，决定是否将 Redis shadow 记录升级为 nonce 一次性拒绝，并按 `off / shadow / enforce` 灰度。该项是上线策略验收，不是代码实现阻塞条件。
+- [ ] **测试与发布**：覆盖正常请求、副作用、静默响应、重复 token、附件上传、键盘导航、axe/读屏、构建和 SEO/GET 回归。
+
+第一批发布的验收条件：Newsletter 正常请求仍创建 pending 订阅并发送一次确认邮件；诱饵非空时返回原接口的成功状态，但数据库、邮件发送器和验证配额均无变化。
+
+本次已完成阶段 0 至阶段 5 的后端/已确认前端范围，并完成 Newsletter 时间差陷阱的 shadow 实现；suggestion-feedback 目前没有确认中的前端页面，因此只保护了后端创建入口。Newsletter、页面反馈、质保和登录/注册通过 `anti_abuse.honeypot_mode` 控制，默认 `enforce`，可切换到 `shadow` 观测或 `off` 回滚。时间 token 当前只观测，不参与业务拒绝；后端单测、路由回归、Redis shadow replay 检查、监控面板和前端类型检查已完成。剩余的 7 天/1,000 次有效提交是生产 enforce 的数据验收条件，真实浏览器的键盘/读屏/axe 回归仍需在发布环境执行。
 
 ---
 
-> **结语**：通过 Honeypot 蜜罐机制，我们用几行干净、优雅的第一方代码，在没有引入任何第三方臃肿脚本、没有触犯任何欧洲 GDPR 隐私条款、没有惊扰 Google 爬虫的前提下，筑起了一道坚固的静默防线。
+> **结语**：Honeypot 是低摩擦、低成本的第一方拦截信号。只有和现有限流、邮件挑战、认证、存储保护、监控及必要的第三方风控组合使用，才能形成可审计、可回滚、对正常买家透明的防刷防线。任何 GDPR、SEO 或拦截率结论都应以实际部署配置、测试证据和合规评审为准。

@@ -119,6 +119,43 @@
               <Input v-model="option.value_key" class="font-mono text-xs" placeholder="稳定值，如 xdr" />
               <Input v-model="option.label" class="text-xs" :placeholder="`${spec.name}显示名称`" />
               <Input v-model.number="option.price_delta_minor" type="number" min="0" step="1" placeholder="0" />
+              <div class="grid grid-cols-2 gap-2">
+                <Input v-model.number="option.weight_delta_grams" type="number" min="0" step="1" placeholder="增重（克）" />
+                <Input v-model.number="option.packaging_weight_delta_grams" type="number" min="0" step="1" placeholder="包装增重（克）" />
+              </div>
+              <Input v-model.number="option.production_lead_time_days" type="number" min="0" step="1" placeholder="生产周期（天）" />
+              <label class="flex items-center justify-between gap-2 text-xs"><span>需要生产</span><Switch v-model="option.requires_production" :aria-label="`${option.label || option.value_key || spec.name}需要生产`" /></label>
+              <Select v-model="option.cancellation_policy">
+                <SelectTrigger class="w-full text-xs"><SelectValue placeholder="取消策略" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="standard">标准取消</SelectItem>
+                  <SelectItem value="before_production">生产前可取消</SelectItem>
+                  <SelectItem value="never">不可取消</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select v-model="option.return_policy">
+                <SelectTrigger class="w-full text-xs"><SelectValue placeholder="退货策略" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="standard">标准退货</SelectItem>
+                  <SelectItem value="not_allowed">不可退货/换货</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select
+                :model-value="option.inventory_policy || 'none'"
+                @update:model-value="value => setInventoryPolicy(option, String(value || 'none'))"
+              >
+                <SelectTrigger class="w-full text-xs">
+                  <SelectValue placeholder="库存策略" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">无独立库存</SelectItem>
+                  <SelectItem value="component">绑定组件库存</SelectItem>
+                </SelectContent>
+              </Select>
+              <template v-if="option.inventory_policy === 'component'">
+                <Input v-model.number="option.component_variant_id" type="number" min="1" step="1" placeholder="组件变体 ID" />
+                <Input v-model.number="option.component_quantity" type="number" min="1" step="1" placeholder="每件所需数量" />
+              </template>
               <label class="flex items-center justify-between gap-2 text-xs"><span>默认选中</span><Switch v-model="option.is_default" :aria-label="`${option.label || option.value_key || spec.name}默认选中`" /></label>
               <label class="flex items-center justify-between gap-2 text-xs"><span>启用</span><Switch v-model="option.is_enabled" :aria-label="`${option.label || option.value_key || spec.name}启用`" /></label>
             </div>
@@ -128,21 +165,106 @@
       </div>
     </div>
 
+    <div class="space-y-3 rounded-lg border bg-muted/10 p-3">
+      <div class="flex flex-wrap items-start justify-between gap-2">
+        <div>
+          <h3 class="text-sm font-semibold text-foreground">选项依赖关系</h3>
+          <p class="mt-1 text-xs leading-5 text-muted-foreground">
+            “必须同时选择”用于组合要求，“不能同时选择”用于互斥选项。
+          </p>
+        </div>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          :disabled="!canAddOptionValueRelation"
+          @click="addOptionValueRelation"
+        >
+          <Plus class="size-3.5" />
+          添加关系
+        </Button>
+      </div>
+
+      <p v-if="!canConfigureOptionValueRelations" class="rounded-md border border-dashed px-3 py-3 text-center text-xs text-muted-foreground">
+        保存商品后，才能使用已生成 ID 的选项值配置依赖关系。
+      </p>
+      <p v-else-if="persistedOptionValues.length < 2" class="rounded-md border border-dashed px-3 py-3 text-center text-xs text-muted-foreground">
+        至少需要两个已保存的选项值才能配置依赖关系。
+      </p>
+      <template v-else>
+        <div v-if="optionValueRelations.length" class="divide-y rounded-md border bg-background">
+          <div
+            v-for="(relation, index) in optionValueRelations"
+            :key="relation.id || `option-relation-${index}`"
+            class="grid gap-2 p-2.5 lg:grid-cols-[minmax(0,1fr)_11rem_minmax(0,1fr)_2.25rem] lg:items-center"
+          >
+            <Select
+              :model-value="relationValue(relation.source_option_value_id)"
+              @update:model-value="value => setRelationOptionValue(relation, 'source_option_value_id', value)"
+            >
+              <SelectTrigger class="w-full text-xs"><SelectValue placeholder="来源选项" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem v-for="option in persistedOptionValues" :key="`source-${option.id}`" :value="String(option.id)">
+                  {{ relationOptionLabel(option) }}
+                </SelectItem>
+              </SelectContent>
+            </Select>
+            <Select
+              :model-value="relation.relation_type"
+              @update:model-value="value => setRelationType(relation, value)"
+            >
+              <SelectTrigger class="w-full text-xs"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="requires">必须同时选择</SelectItem>
+                <SelectItem value="conflicts">不能同时选择</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select
+              :model-value="relationValue(relation.target_option_value_id)"
+              @update:model-value="value => setRelationOptionValue(relation, 'target_option_value_id', value)"
+            >
+              <SelectTrigger class="w-full text-xs"><SelectValue placeholder="目标选项" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem
+                  v-for="option in persistedOptionValues"
+                  :key="`target-${option.id}`"
+                  :value="String(option.id)"
+                  :disabled="Number(option.id) === Number(relation.source_option_value_id)"
+                >
+                  {{ relationOptionLabel(option) }}
+                </SelectItem>
+              </SelectContent>
+            </Select>
+            <Tooltip>
+              <TooltipTrigger as-child>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  class="size-9 text-destructive hover:text-destructive"
+                  :aria-label="`删除选项关系 ${index + 1}`"
+                  @click="removeOptionValueRelation(index)"
+                >
+                  <Trash2 class="size-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>删除关系</TooltipContent>
+            </Tooltip>
+          </div>
+        </div>
+        <p v-else class="rounded-md border border-dashed px-3 py-3 text-center text-xs text-muted-foreground">
+          尚未配置选项依赖关系。
+        </p>
+        <p v-if="hasUnsavedOptionValues" class="text-[11px] leading-5 text-muted-foreground">
+          本次新增的选项值需要先保存商品，之后才能加入依赖关系。
+        </p>
+      </template>
+    </div>
+
     <div class="flex flex-wrap items-center justify-between gap-2 rounded-lg border bg-background px-3 py-2">
       <div class="text-xs leading-5 text-muted-foreground">
-        主价格按 {{ currency || 'USD' }} 录入；按钮会读取后台缓存汇率并填充本 SKU 的次展示价，随商品保存。
+        主价格按商品基准币种录入；展示价由独立读模型刷新任务生成。
       </div>
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        :disabled="displayPriceLoading || !hasFillableVariantPrices()"
-        @click="fillDisplayPrices"
-      >
-        <RefreshCw class="size-3.5" :class="{ 'animate-spin': displayPriceLoading }" />
-        {{ displayPriceLoading ? '填充中' : '按汇率填充次币种' }}
-      </Button>
-      <p v-if="displayPriceError" class="basis-full text-xs font-medium text-destructive">{{ displayPriceError }}</p>
     </div>
 
     <Table class="min-w-[1380px]">
@@ -155,7 +277,6 @@
           </TableHead>
           <TableHead class="w-32">价格</TableHead>
           <TableHead class="w-32">促销价</TableHead>
-          <TableHead class="w-56">次展示价</TableHead>
           <TableHead class="w-28">重量（克）</TableHead>
           <TableHead class="w-44">运费模板</TableHead>
           <TableHead class="w-24">库存</TableHead>
@@ -212,23 +333,10 @@
               <Input v-else v-model="variant.option_values[spec.slug]" :placeholder="spec.name" />
             </TableCell>
             <TableCell>
-              <Input v-model.number="variant.price" type="number" min="0" step="0.01" @input="clearVariantDisplayPrices(variant, index)" />
+              <Input v-model="variant.price" inputmode="decimal" type="text" min="0" step="0.01" />
             </TableCell>
             <TableCell>
-              <Input v-model.number="variant.sale_price" type="number" min="0" step="0.01" placeholder="可选" @input="clearVariantDisplayPrices(variant, index)" />
-            </TableCell>
-            <TableCell>
-              <div v-if="displayPricesForVariant(variant, index).length" class="flex max-w-56 flex-wrap gap-1.5">
-                <span
-                  v-for="price in displayPricesForVariant(variant, index)"
-                  :key="price.quote_currency || price.currency"
-                  class="rounded-md border px-1.5 py-0.5 font-mono text-[11px]"
- :class="price.fallback_reason ? 'border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-200': 'bg-muted/40 text-foreground'"
-                >
-                  {{ formatDisplayPriceResult(price) }}
-                </span>
-              </div>
-              <span v-else class="text-xs text-muted-foreground">未填充</span>
+              <Input v-model="variant.sale_price" inputmode="decimal" type="text" min="0" step="0.01" placeholder="可选" />
             </TableCell>
             <TableCell>
               <Input v-model.number="variant.weight_grams" type="number" min="0" step="1" placeholder="克" />
@@ -340,9 +448,8 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import axios from 'axios'
 import { toast } from 'vue-sonner'
-import { ImageUp, Info, LoaderCircle, Plus, RefreshCw, Trash2 } from '@lucide/vue'
+import { ImageUp, Info, LoaderCircle, Plus, Trash2 } from '@lucide/vue'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -354,7 +461,7 @@ import mediaApi from '@/api/media'
 import UploadSpecHint from '@/components/admin/UploadSpecHint.vue'
 import { uploadSpecAccept, validateUploadFile } from '@/lib/uploadSpecs'
 import type {
-  ProductDisplayPriceResult,
+  ProductOptionValueRelationForm,
   ProductSpecDefinition,
   ProductVariantForm,
   ProductVariantOptionValueForm,
@@ -367,18 +474,20 @@ const defaultRadioName = `product-variant-default-${Math.random().toString(36).s
 
 const props = withDefaults(defineProps<{
   variants: ProductVariantForm[]
-  currency?: string
   specDefinitions?: ProductSpecDefinition[]
   defaultIndex?: number
   shippingTemplates?: ShippingTemplateRecord[]
   optionValues?: ProductVariantOptionValueForm[]
+  optionValueRelations?: ProductOptionValueRelationForm[]
+  productId?: number | string | null
   customOptionDefinitions?: ProductSpecDefinition[]
 }>(), {
-  currency: 'USD',
   specDefinitions: () => [],
   defaultIndex: 0,
   shippingTemplates: () => [],
   optionValues: () => [],
+  optionValueRelations: () => [],
+  productId: null,
   customOptionDefinitions: () => [],
 })
 
@@ -389,14 +498,15 @@ const emit = defineEmits<{
   (event: 'set-active', index: number, active: boolean): void
 }>()
 
-const displayPriceRows = ref<Record<string, ProductDisplayPriceResult[]>>({})
-const displayPriceLoading = ref(false)
-const displayPriceError = ref('')
 const swatchUploadingKey = ref('')
 
 const presentableSpecDefinitions = computed(() => (
   props.specDefinitions.filter((spec) => spec?.presentation === 'color' || spec?.presentation === 'image')
 ))
+const persistedOptionValues = computed(() => props.optionValues.filter((option) => Number(option.id || 0) > 0))
+const hasUnsavedOptionValues = computed(() => props.optionValues.some((option) => Number(option.id || 0) <= 0))
+const canConfigureOptionValueRelations = computed(() => Number(props.productId || 0) > 0)
+const canAddOptionValueRelation = computed(() => canConfigureOptionValueRelations.value && persistedOptionValues.value.length >= 2)
 
 const specOptions = (spec: ProductSpecDefinition): unknown[] => {
   const configuredValues = props.optionValues
@@ -421,6 +531,47 @@ const optionLabel = (spec: ProductSpecDefinition, option: unknown): string => {
 }
 const optionKey = (option: ProductVariantOptionValueForm): string => `${option?.spec_definition_id || 'option'}:${option?.id || option?.local_key || option?.value_key || 'new'}`
 const optionsForSpec = (spec: ProductSpecDefinition): ProductVariantOptionValueForm[] => props.optionValues.filter((item) => Number(item?.spec_definition_id) === Number(spec?.id))
+const relationOptionLabel = (option: ProductVariantOptionValueForm): string => {
+  const definition = [...props.specDefinitions, ...props.customOptionDefinitions]
+    .find((spec) => Number(spec.id) === Number(option.spec_definition_id))
+  const valueLabel = option.label || option.value_key || `选项值 #${option.id}`
+  return definition?.name ? `${definition.name} / ${valueLabel}` : valueLabel
+}
+const relationValue = (value: number | string | null): string => Number(value || 0) > 0 ? String(value) : ''
+const setRelationOptionValue = (
+  relation: ProductOptionValueRelationForm,
+  field: 'source_option_value_id' | 'target_option_value_id',
+  value: unknown,
+): void => {
+  relation[field] = Number(value || 0) || null
+  if (field === 'source_option_value_id' && Number(relation.target_option_value_id) === Number(relation.source_option_value_id)) {
+    relation.target_option_value_id = null
+  }
+}
+const setRelationType = (relation: ProductOptionValueRelationForm, value: unknown): void => {
+  relation.relation_type = value === 'conflicts' ? 'conflicts' : 'requires'
+}
+const addOptionValueRelation = (): void => {
+  const [source, target] = persistedOptionValues.value
+  if (!source?.id || !target?.id) return
+  props.optionValueRelations.push({
+    id: null,
+    source_option_value_id: Number(source.id),
+    target_option_value_id: Number(target.id),
+    relation_type: 'requires',
+  })
+}
+const removeOptionValueRelation = (index: number): void => {
+  props.optionValueRelations.splice(index, 1)
+}
+const removeRelationsForOption = (optionID: number): void => {
+  for (let index = props.optionValueRelations.length - 1; index >= 0; index -= 1) {
+    const relation = props.optionValueRelations[index]
+    if (Number(relation.source_option_value_id) === optionID || Number(relation.target_option_value_id) === optionID) {
+      props.optionValueRelations.splice(index, 1)
+    }
+  }
+}
 const ensureGroupRule = (variant: ProductVariantForm, spec: ProductSpecDefinition): ProductOptionGroupVariantRuleForm => {
   variant.option_group_rules ||= []
   const existing = variant.option_group_rules.find(rule => Number(rule.spec_definition_id) === Number(spec.id))
@@ -463,12 +614,21 @@ const addOptionValue = (spec: ProductSpecDefinition): void => {
   })
 }
 const removeOptionValue = (option: ProductVariantOptionValueForm): void => {
+  const optionID = Number(option.id || 0)
+  if (optionID > 0) removeRelationsForOption(optionID)
   const index = props.optionValues.indexOf(option)
   if (index >= 0) props.optionValues.splice(index, 1)
 }
 const clearSwatch = (option: ProductVariantOptionValueForm): void => {
   option.swatch_media_asset_id = null
   option.swatch_url = ''
+}
+const setInventoryPolicy = (option: ProductVariantOptionValueForm, policy: string): void => {
+  option.inventory_policy = policy === 'component' ? 'component' : 'none'
+  if (option.inventory_policy !== 'component') {
+    option.component_variant_id = null
+    option.component_quantity = 0
+  }
 }
 const uploadSwatch = async (event: Event, option: ProductVariantOptionValueForm): Promise<void> => {
   const input = event.target as HTMLInputElement | null
@@ -502,89 +662,6 @@ const uploadSwatch = async (event: Event, option: ProductVariantOptionValueForm)
 const selectValue = (value: unknown): string => value === undefined || value === null || value === '' ? '__empty__' : String(value)
 const shippingTemplateSelectValue = (value: unknown): string => value === undefined || value === null || value === '' ? '__inherit__' : String(value)
 const checkboxValue = (event: Event): boolean => Boolean((event.target as HTMLInputElement | null)?.checked)
-const normalizeCurrencyCode = (value: unknown): string => {
-  const code = String(value || '').trim().toUpperCase()
-  return /^[A-Z]{3}$/.test(code) ? code : ''
-}
-
-const effectiveVariantPrice = (variant: ProductVariantForm): number => {
-  const salePrice = Number(variant?.sale_price || 0)
-  if (salePrice > 0) return salePrice
-  const price = Number(variant?.price || 0)
-  return Number.isFinite(price) ? price : 0
-}
-
-const displayPriceKey = (variant: ProductVariantForm, index: number): string => variant?.id ? `id:${variant.id}` : `index:${index}`
-const displayPricesForVariant = (variant: ProductVariantForm, index: number): ProductDisplayPriceResult[] => displayPriceRows.value[displayPriceKey(variant, index)] || variant?.display_prices || []
-const hasFillableVariantPrices = (): boolean => props.variants.some(variant => effectiveVariantPrice(variant) > 0)
-
-const clearVariantDisplayPrices = (variant: ProductVariantForm, index: number): void => {
-  if (!variant) return
-  variant.display_prices = []
-  const nextRows = { ...displayPriceRows.value }
-  delete nextRows[displayPriceKey(variant, index)]
-  displayPriceRows.value = nextRows
-}
-
-const fillDisplayPrices = async (): Promise<void> => {
-  displayPriceError.value = ''
-  const baseCurrency = normalizeCurrencyCode(props.currency) || 'USD'
-  const fillable = props.variants
-    .map((variant, index) => ({ variant, index, amount: effectiveVariantPrice(variant) }))
-    .filter(item => item.amount > 0)
-
-  if (!fillable.length) {
-    displayPriceError.value = '请先录入至少一个 SKU 主价格'
-    return
-  }
-
-  displayPriceLoading.value = true
-  try {
-    const entries = await Promise.all(fillable.map(async ({ variant, index, amount }) => {
-      const response = await axios.post('/api/admin/pricing/exchange-rates/convert', {
-        amount,
-        base_currency: baseCurrency
-      })
-      const data = response.data?.data || response.data || {}
-      const prices = Array.isArray(data.prices) ? data.prices : []
-      variant.display_prices = prices.filter(price => !price?.fallback_reason && price?.converted !== false)
-      return [displayPriceKey(variant, index), prices] as [string, ProductDisplayPriceResult[]]
-    }))
-    displayPriceRows.value = Object.fromEntries(entries)
-    toast.success('次展示价已按缓存汇率填充')
-  } catch (error) {
-    const message = errorMessage(error, '次展示价填充失败')
-    displayPriceError.value = message
-    toast.error(message)
-  } finally {
-    displayPriceLoading.value = false
-  }
-}
-
-interface ErrorLike {
-  response?: { data?: { message?: string; error?: string } }
-  message?: string
-}
-
-const errorMessage = (error: unknown, fallback: string): string => {
-  const value = error as ErrorLike
-  return value?.response?.data?.message || value?.response?.data?.error || value?.message || fallback
-}
-
-const formatDisplayPriceResult = (price: ProductDisplayPriceResult): string => {
-  const quoteCurrency = normalizeCurrencyCode(price?.quote_currency)
-  if (price?.fallback_reason) {
-    return `${quoteCurrency || normalizeCurrencyCode(price?.currency) || '---'} 缺汇率`
-  }
-  const currency = normalizeCurrencyCode(price?.currency) || quoteCurrency || 'USD'
-  const amount = Number(price?.amount || 0)
-  try {
-    return new Intl.NumberFormat('zh-CN', { style: 'currency', currency }).format(amount)
-  } catch {
-    return `${currency} ${amount.toFixed(2)}`
-  }
-}
-
 const setSelectValue = (variant: ProductVariantForm, slug: string, value: unknown): void => {
   variant.option_values[slug] = value === '__empty__' ? '' : value
 }

@@ -31,8 +31,6 @@
         :profile-info="profileInfo"
         :tier-info="tierInfo"
         :level-discounts="levelDiscounts"
-        :user-coupons="userCoupons"
-        :user-point-cards="userPointCards"
         @open-auth="openAuthForm"
         @logout="doLogout"
       />
@@ -43,20 +41,11 @@
         :loyalty-rules="loyaltyRules"
       />
 
-      <MembershipGiftCardExchangePanel
-        v-else-if="activeTab === 'exchange'"
-        :is-logged="isLogged"
-        :points="pointsNumber"
-        :redemption-exchange-rate="loyaltyRules?.redemption_exchange_rate"
-        :points-base-currency="loyaltyRules?.points_base_currency"
-        :available-giftcards="availableGiftcards"
-        :user-gift-cards="userGiftCards"
-        :loading="giftcardsLoading"
-        :error="giftcardsError"
-        :redeeming-card-id="redeemingCardId"
-        :redeem-message="redeemMessage"
-        :redeem-success="redeemSuccess"
-        @redeem="handleRedeemGiftcard"
+      <AccountReferralTab
+        v-else-if="activeTab === 'referral'"
+        :active="true"
+        :show-login-prompt="true"
+        @open-auth="openAuthForm"
       />
     </div>
 
@@ -77,7 +66,7 @@ import { useI18n } from '#imports'
 import { useMembership } from '~/composables/useMembership'
 import MembershipMyInfoPanel from '~/components/membership/MembershipMyInfoPanel.vue'
 import MembershipLeversPanel from '~/components/membership/MembershipLeversPanel.vue'
-import MembershipGiftCardExchangePanel from '~/components/membership/MembershipGiftCardExchangePanel.vue'
+import AccountReferralTab from '~/components/account/AccountReferralTab.vue'
 import { usePageSubNavigationTab } from '~/composables/usePageSubNavigationTab'
 import {
   membershipAndPointsTabs,
@@ -110,7 +99,7 @@ const { locale, t } = useI18n()
 const pageMessagesByTab = {
   myinfo: usePageMessages('resourcesMembershipMyInfo'),
   levers: usePageMessages('resourcesMembershipLevers'),
-  exchange: usePageMessages('resourcesMembershipExchange'),
+  referral: usePageMessages('resourcesMembershipReferral'),
 } as const
 
 const getPageMessageTab = (tabId: string): MembershipTabId =>
@@ -135,23 +124,11 @@ const {
   tierInfo,
   tierConfigs,
   levelDiscounts,
-  userCoupons,
-  userPointCards,
-  availableGiftcards,
-  userGiftCards,
   loyaltyRules,
-  giftcardsLoading,
-  giftcardsError,
-  redeemingCardId,
-  redeemMessage,
-  redeemSuccess,
-  handleRedeemGiftcard,
   doLogout,
   initMembership,
   refreshData
 } = useMembership()
-
-const pointsNumber = computed(() => Number(points.value ?? 0))
 
 const showAuthModal = ref(false)
 const authMode = ref<'login' | 'register'>('login')

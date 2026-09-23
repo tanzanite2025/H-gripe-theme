@@ -25,7 +25,7 @@ type PaymentRiskEventInput struct {
 	ChargeID          string
 	OrderID           *uint
 	TransactionID     *uint
-	Amount            float64
+	AmountMinor       int64
 	Currency          string
 	OccurredAt        time.Time
 	Payload           string
@@ -43,7 +43,7 @@ type PaymentRiskCheckoutDecisionInput struct {
 	RiskScore          int
 	PortfolioRiskLevel string
 	Reasons            []string
-	Amount             float64
+	AmountMinor        int64
 	Currency           string
 	OccurredAt         time.Time
 }
@@ -171,7 +171,7 @@ func (s *PaymentRiskMonitoringService) RecordEvent(input PaymentRiskEventInput) 
 		ChargeID:          strings.TrimSpace(input.ChargeID),
 		OrderID:           input.OrderID,
 		TransactionID:     input.TransactionID,
-		Amount:            input.Amount,
+		AmountMinor:       input.AmountMinor,
 		Currency:          strings.ToUpper(strings.TrimSpace(input.Currency)),
 		OccurredAt:        occurredAt,
 		Payload:           input.Payload,
@@ -224,7 +224,7 @@ func (s *PaymentRiskMonitoringService) RecordCheckoutDecision(input PaymentRiskC
 		RiskScore:          input.RiskScore,
 		PortfolioRiskLevel: portfolioRiskLevel,
 		ReasonsJSON:        reasonsJSON,
-		Amount:             input.Amount,
+		AmountMinor:        input.AmountMinor,
 		Currency:           strings.ToUpper(strings.TrimSpace(input.Currency)),
 		OccurredAt:         occurredAt.UTC(),
 	})
@@ -249,21 +249,21 @@ func (s *PaymentRiskMonitoringService) RecomputeProvider(ctx context.Context, pr
 		return nil, fmt.Errorf("count payment risk metrics: %w", err)
 	}
 	snapshot := s.policy.Evaluate(PaymentRiskMetrics{
-		Provider:                provider,
-		WindowDays:              s.config.WindowDays,
-		WindowStart:             windowStart,
-		WindowEnd:               now,
-		SuccessfulPaymentCount:  counts.SuccessfulPaymentCount,
-		SuccessfulPaymentAmount: counts.SuccessfulPaymentAmount,
-		DisputeCount:            counts.DisputeCount,
-		DisputeAmount:           counts.DisputeAmount,
-		EarlyFraudWarningCount:  counts.EarlyFraudWarningCount,
-		RefundCount:             counts.RefundCount,
-		RefundAmount:            counts.RefundAmount,
-		CheckoutAttemptCount:    counts.CheckoutAttemptCount,
-		ThreeDSUpgradeCount:     counts.ThreeDSUpgradeCount,
-		ThreeDSChallengeCount:   counts.ThreeDSChallengeCount,
-		ThreeDSExemptionCount:   counts.ThreeDSExemptionCount,
+		Provider:                               provider,
+		WindowDays:                             s.config.WindowDays,
+		WindowStart:                            windowStart,
+		WindowEnd:                              now,
+		SuccessfulPaymentCount:                 counts.SuccessfulPaymentCount,
+		SuccessfulPaymentAmountMinorByCurrency: counts.SuccessfulPaymentAmountMinorByCurrency,
+		DisputeCount:                           counts.DisputeCount,
+		DisputeAmountMinorByCurrency:           counts.DisputeAmountMinorByCurrency,
+		EarlyFraudWarningCount:                 counts.EarlyFraudWarningCount,
+		RefundCount:                            counts.RefundCount,
+		RefundAmountMinorByCurrency:            counts.RefundAmountMinorByCurrency,
+		CheckoutAttemptCount:                   counts.CheckoutAttemptCount,
+		ThreeDSUpgradeCount:                    counts.ThreeDSUpgradeCount,
+		ThreeDSChallengeCount:                  counts.ThreeDSChallengeCount,
+		ThreeDSExemptionCount:                  counts.ThreeDSExemptionCount,
 	}, now)
 	if _, err := s.repo.CreatePaymentRiskSnapshotWithAlert(snapshot, s.alertingEnabled); err != nil {
 		return nil, fmt.Errorf("store payment risk snapshot: %w", err)

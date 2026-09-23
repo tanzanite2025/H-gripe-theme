@@ -549,7 +549,6 @@
         "tax": "Tax",
         "pointsDiscount": "Points discount",
         "couponDiscount": "Coupon discount",
-        "giftCardDiscount": "Gift card discount",
         "total": "Total",
         "title": "Order summary"
       }

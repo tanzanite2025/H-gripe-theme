@@ -116,12 +116,12 @@ func TestMultiplyRatRoundsDecimalRateInMinorUnits(t *testing.T) {
 	require.Equal(t, int64(-18), negative.AmountMinor())
 }
 
-func TestConvertAtRateUsesTargetMinorUnits(t *testing.T) {
-	converted, err := MustNew(100, "USD").ConvertAtRate(150, "JPY")
+func TestConvertAtRatUsesTargetMinorUnits(t *testing.T) {
+	converted, err := MustNew(100, "USD").ConvertAtRat(new(big.Rat).SetInt64(150), "JPY")
 	require.NoError(t, err)
 	require.Equal(t, int64(150), converted.AmountMinor())
 
-	converted, err = MustNew(1, "JPY").ConvertAtRate(0.0067, "USD")
+	converted, err = MustNew(1, "JPY").ConvertAtRat(new(big.Rat).SetFrac64(67, 10000), "USD")
 	require.NoError(t, err)
 	require.Equal(t, int64(1), converted.AmountMinor())
 }

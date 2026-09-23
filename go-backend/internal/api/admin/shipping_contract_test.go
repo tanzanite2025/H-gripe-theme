@@ -50,21 +50,21 @@ func TestTrackingCarrierMappingRequestPreservesProviderCarrierCode(t *testing.T)
 
 func TestShippingTemplateRequestPersistsDisplayPriceSnapshotsByMoneyField(t *testing.T) {
 	req := shippingTemplateRequest{
-		Name:       "Display priced shipping",
-		Type:       "price",
-		DefaultFee: 20,
+		Name:            "Display priced shipping",
+		Type:            "price",
+		DefaultFeeMinor: 2000,
 		DisplayPriceSnapshots: map[string][]currency.DisplayPriceSnapshot{
-			"default_fee": {{Amount: 2.8, Currency: "USD", QuoteCurrency: "USD", Rate: 0.14, Source: "direct_rate", Converted: true}},
-			"fee":         {{Amount: 99, Currency: "USD", QuoteCurrency: "USD", Rate: 0.14, Source: "invalid_scope", Converted: true}},
+			"default_fee": {{AmountDecimal: "2.80", Currency: "USD", QuoteCurrency: "USD", Rate: 0.14, Source: "direct_rate", Converted: true}},
+			"fee":         {{AmountDecimal: "99.00", Currency: "USD", QuoteCurrency: "USD", Rate: 0.14, Source: "invalid_scope", Converted: true}},
 		},
 		Rules: []shippingRuleRequest{
 			{
-				Region:   "us",
-				MinValue: 100,
-				Fee:      15,
+				Region:        "us",
+				MinValueMinor: 10000,
+				FeeMinor:      1500,
 				DisplayPriceSnapshots: map[string][]currency.DisplayPriceSnapshot{
-					"min_value": {{Amount: 14, Currency: "USD", QuoteCurrency: "USD", Rate: 0.14, Source: "direct_rate", Converted: true}},
-					"fee":       {{Amount: 2.1, Currency: "USD", QuoteCurrency: "USD", Rate: 0.14, Source: "direct_rate", Converted: true}},
+					"min_value": {{AmountDecimal: "14.00", Currency: "USD", QuoteCurrency: "USD", Rate: 0.14, Source: "direct_rate", Converted: true}},
+					"fee":       {{AmountDecimal: "2.10", Currency: "USD", QuoteCurrency: "USD", Rate: 0.14, Source: "direct_rate", Converted: true}},
 				},
 			},
 		},
@@ -90,10 +90,10 @@ func TestShippingTemplateRequestDropsNonMoneyRuleThresholdSnapshots(t *testing.T
 			{
 				Region:   "us",
 				MinValue: 1,
-				Fee:      15,
+				FeeMinor: 1500,
 				DisplayPriceSnapshots: map[string][]currency.DisplayPriceSnapshot{
-					"min_value": {{Amount: 14, Currency: "USD", QuoteCurrency: "USD", Rate: 0.14, Source: "direct_rate", Converted: true}},
-					"fee":       {{Amount: 2.1, Currency: "USD", QuoteCurrency: "USD", Rate: 0.14, Source: "direct_rate", Converted: true}},
+					"min_value": {{AmountDecimal: "14.00", Currency: "USD", QuoteCurrency: "USD", Rate: 0.14, Source: "direct_rate", Converted: true}},
+					"fee":       {{AmountDecimal: "2.10", Currency: "USD", QuoteCurrency: "USD", Rate: 0.14, Source: "direct_rate", Converted: true}},
 				},
 			},
 		},

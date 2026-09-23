@@ -19,6 +19,9 @@ var ErrReferralLifecycleEventInvalid = errors.New("invalid referral lifecycle ev
 // ReferralLifecycleScanResult describes one bounded lifecycle sweep, including
 // the number of matured records settled through the idempotent reward path.
 type ReferralLifecycleScanResult struct {
+	// PendingScanned and Expired are retained for backwards-compatible worker
+	// metrics. Bound referral relationships are permanent, so the current
+	// scanner intentionally leaves both counters at zero.
 	PendingScanned           int
 	Expired                  int
 	OrderedScanned           int
@@ -50,52 +53,13 @@ func (s *ReferralService) ScanLifecycle(ctx context.Context, now time.Time, batc
 		batchLimit = 100
 	}
 
-	pending, err := s.repo.ListPendingExpired(now, batchLimit)
-	if err != nil {
-		return result, err
-	}
-	result.PendingScanned = len(pending)
-	for index := range pending {
-		if err := ctx.Err(); err != nil {
-			return result, err
-		}
-		record := pending[index]
-		err := s.txManager.WithinTx(func(repos repository.TxRepositories) error {
-			if repos.Referral == nil {
-				return ErrReferralServiceUnavailable
-			}
-			locked, findErr := repos.Referral.FindRecordByIDForUpdate(record.ID)
-			if repository.IsRecordNotFound(findErr) {
-				return nil
-			}
-			if findErr != nil {
-				return findErr
-			}
-			if locked.Status != loyalty.ReferralStatusPending || locked.ExpiresAt.After(now) {
-				return nil
-			}
-			expiredAt := locked.ExpiresAt.UTC()
-			if err := s.forfeitLockedRefereeBenefitInTx(repos, locked, expiredAt); err != nil {
-				return err
-			}
-			if err := transitionReferralRecord(
-				repos,
-				locked,
-				loyalty.ReferralStatusExpired,
-				"lifecycle_scan",
-				"attribution window expired",
-				fmt.Sprintf("referral.lifecycle.expired:%d", locked.ID),
-				map[string]any{"expired_at": expiredAt},
-			); err != nil {
-				return err
-			}
-			result.Expired++
-			return nil
-		})
-		if err != nil {
-			return result, err
-		}
-	}
+	// Attribution TTL applies only while a visitor has an unbound signed
+	// cookie. Once the account has accepted a referral code, the relationship
+	// is permanent and must not be expired by a background sweep. In
+	// particular, an account's registration points cannot be forfeited because
+	// the user has not placed an order within the cookie TTL. Keep the legacy
+	// ListPendingExpired repository method for historical data/reporting, but do
+	// not run a destructive expiration pass for newly bound records.
 
 	ordered, err := s.repo.ListOrderedCandidates(now, batchLimit)
 	if err != nil {
@@ -252,7 +216,7 @@ func (s *ReferralService) HandleOrderPaidOutbox(ctx context.Context, event outbo
 		if err != nil {
 			return err
 		}
-		signalUpdates, err := s.referralRiskSignalUpdates(repos.Order, repos.Referral, record, orderRecord)
+		signalUpdates, err := s.referralRiskSignalUpdates(repos.Order, repos.Referral, repos.Payment, record, orderRecord)
 		if err != nil {
 			return err
 		}
@@ -268,24 +232,14 @@ func (s *ReferralService) HandleOrderPaidOutbox(ctx context.Context, event outbo
 		if config.AntiFraudMode == loyalty.ReferralFraudModeStrict && referralRiskFlagsPresent(signalUpdates["risk_flags"]) {
 			commonUpdates["revoked_at"] = paidAt
 			commonUpdates["revoke_reason"] = "strict anti-fraud match"
-			if err := s.forfeitLockedRefereeBenefitInTx(repos, record, paidAt); err != nil {
-				return err
-			}
 			return transitionReferralRecord(repos, record, loyalty.ReferralStatusRevoked, "order_paid", "strict anti-fraud match", event.EventKey, commonUpdates)
 		}
-		if !record.ExpiresAt.After(paidAt) {
-			commonUpdates["expired_at"] = paidAt
-			if err := s.forfeitLockedRefereeBenefitInTx(repos, record, paidAt); err != nil {
-				return err
-			}
-			return transitionReferralRecord(repos, record, loyalty.ReferralStatusExpired, "order_paid", "attribution expired before payment", event.EventKey, commonUpdates)
-		}
+		// The signed cookie TTL was consumed when this account bound the code.
+		// A bound relationship does not expire, so an order paid months later is
+		// still evaluated by the normal first-order and anti-fraud rules below.
 		if orderRecord.PaidAt == nil || !strings.EqualFold(orderRecord.PaymentStatus, "paid") {
 			commonUpdates["revoked_at"] = paidAt
 			commonUpdates["revoke_reason"] = "order is no longer paid"
-			if err := s.forfeitLockedRefereeBenefitInTx(repos, record, paidAt); err != nil {
-				return err
-			}
 			return transitionReferralRecord(repos, record, loyalty.ReferralStatusRevoked, "order_paid", "order is no longer paid", event.EventKey, commonUpdates)
 		}
 		priorPaidOrders, err := repos.Order.CountEverPaidOrdersForUserBefore(payload.UserID, payload.OrderID)
@@ -295,17 +249,11 @@ func (s *ReferralService) HandleOrderPaidOutbox(ctx context.Context, event outbo
 		if priorPaidOrders > 0 {
 			commonUpdates["revoked_at"] = paidAt
 			commonUpdates["revoke_reason"] = "referee is not a first-time purchaser"
-			if err := s.forfeitLockedRefereeBenefitInTx(repos, record, paidAt); err != nil {
-				return err
-			}
 			return transitionReferralRecord(repos, record, loyalty.ReferralStatusRevoked, "order_paid", "referee is not a first-time purchaser", event.EventKey, commonUpdates)
 		}
 		if !strings.EqualFold(payload.Currency, config.Currency) || payload.AmountMinor < config.MinOrderAmountMinor {
 			commonUpdates["revoked_at"] = paidAt
 			commonUpdates["revoke_reason"] = "first order does not meet referral threshold"
-			if err := s.forfeitLockedRefereeBenefitInTx(repos, record, paidAt); err != nil {
-				return err
-			}
 			return transitionReferralRecord(repos, record, loyalty.ReferralStatusRevoked, "order_paid", "first order does not meet referral threshold", event.EventKey, commonUpdates)
 		}
 		monthStart := time.Date(paidAt.Year(), paidAt.Month(), 1, 0, 0, 0, 0, time.UTC)
@@ -317,9 +265,6 @@ func (s *ReferralService) HandleOrderPaidOutbox(ctx context.Context, event outbo
 		if convertedThisMonth >= int64(config.MonthlyCapPerReferrer) {
 			commonUpdates["revoked_at"] = paidAt
 			commonUpdates["revoke_reason"] = "monthly referral cap reached"
-			if err := s.forfeitLockedRefereeBenefitInTx(repos, record, paidAt); err != nil {
-				return err
-			}
 			return transitionReferralRecord(repos, record, loyalty.ReferralStatusRevoked, "order_paid", "monthly referral cap reached", event.EventKey, commonUpdates)
 		}
 
@@ -327,22 +272,9 @@ func (s *ReferralService) HandleOrderPaidOutbox(ctx context.Context, event outbo
 		if err := transitionReferralRecord(repos, record, loyalty.ReferralStatusOrdered, "order_paid", "", event.EventKey, commonUpdates); err != nil {
 			return err
 		}
-		if config.RefereeBenefitType == loyalty.ReferralBenefitFixedCoupon || config.RefereeBenefitType == loyalty.ReferralBenefitPercentCoupon {
-			usedReferralCoupon, couponErr := s.refereeCouponMatchesOrderInTx(repos, record, config, orderRecord)
-			if couponErr != nil {
-				return couponErr
-			}
-			if !usedReferralCoupon {
-				// A coupon benefit is a one-time alternative to another checkout
-				// coupon. Keep the audit row, but make the private coupon unusable
-				// once the qualifying order chose a different discount.
-				return s.forfeitLockedRefereeBenefitInTx(repos, record, paidAt)
-			}
-		}
-		// The referee benefit is earned by the qualifying first payment. It is
-		// issued in this same transaction so a retried outbox event cannot leave
-		// the lifecycle state and the benefit ledger out of sync.
-		return s.releaseRefereeBenefitInTx(repos, record, config, paidAt)
+		// Registration points were already credited during binding. Order events
+		// never issue, reverse, or otherwise inspect the referral points.
+		return nil
 	})
 }
 
@@ -371,6 +303,7 @@ type referralRiskSignal struct {
 func (s *ReferralService) referralRiskSignalUpdates(
 	orderRepo *repository.OrderRepository,
 	referralRepo *repository.ReferralRepository,
+	paymentRepo *repository.PaymentRepository,
 	record *loyalty.ReferralRecord,
 	orderRecord *order.Order,
 ) (map[string]any, error) {
@@ -386,35 +319,13 @@ func (s *ReferralService) referralRiskSignalUpdates(
 	if phoneHash != "" {
 		updates["shipping_phone_hash"] = phoneHash
 	}
-	if addressHash == "" && phoneHash == "" {
-		return updates, nil
-	}
-	historical, err := orderRepo.FindHistoricalShippingIdentitySignals(record.ReferrerID, orderRecord.ID)
-	if err != nil {
-		return nil, err
-	}
-	addressMatch, phoneMatch := false, false
-	for _, signal := range historical {
-		if addressHash != "" && addressHash == s.hashSensitiveValue("shipping-address", referralShippingIdentitySignalAddressKey(signal)) {
-			addressMatch = true
-		}
-		if phoneHash != "" && phoneHash == s.hashSensitiveValue("shipping-phone", referralShippingPhoneKey(signal.Phone)) {
-			phoneMatch = true
-		}
-		if addressMatch && phoneMatch {
-			break
-		}
-	}
-	if !addressMatch && !phoneMatch {
-		return updates, nil
-	}
-
 	var flags []map[string]any
 	if len(record.RiskFlags) > 0 {
 		if err := json.Unmarshal(record.RiskFlags, &flags); err != nil {
 			flags = nil
 		}
 	}
+	riskDetected := false
 	addFlag := func(flag referralRiskSignal) {
 		for _, existing := range flags {
 			if existingType, ok := existing["type"].(string); ok && existingType == flag.Type {
@@ -426,12 +337,71 @@ func (s *ReferralService) referralRiskSignalUpdates(
 			entry["dimensions"] = flag.Dimensions
 		}
 		flags = append(flags, entry)
+		riskDetected = true
+	}
+	historical, err := orderRepo.FindHistoricalShippingIdentitySignals(record.ReferrerID, orderRecord.ID)
+	if err != nil {
+		return nil, err
+	}
+	addressMatch, addressSimilar, phoneMatch := false, false, false
+	currentAddressKey := referralShippingAddressKey(orderRecord.ShippingAddress)
+	for _, signal := range historical {
+		historicalAddressKey := referralShippingIdentitySignalAddressKey(signal)
+		if addressHash != "" && addressHash == s.hashSensitiveValue("shipping-address", historicalAddressKey) {
+			addressMatch = true
+		}
+		if addressHash != "" && referralAddressSimilarity(currentAddressKey, historicalAddressKey) >= 0.88 {
+			addressSimilar = true
+		}
+		if phoneHash != "" && phoneHash == s.hashSensitiveValue("shipping-phone", referralShippingPhoneKey(signal.Phone)) {
+			phoneMatch = true
+		}
 	}
 	if addressMatch {
 		addFlag(referralRiskSignal{Type: "shipping_address_match", Level: "high", Source: "referrer_paid_order", Dimensions: []string{"shipping_address"}})
+	} else if addressSimilar {
+		addFlag(referralRiskSignal{Type: "shipping_address_similarity", Level: "medium", Source: "referrer_paid_order", Dimensions: []string{"shipping_address_levenshtein"}})
 	}
 	if phoneMatch {
 		addFlag(referralRiskSignal{Type: "shipping_phone_match", Level: "high", Source: "referrer_paid_order", Dimensions: []string{"shipping_phone"}})
+	}
+	if s.userRepo != nil && record.RefereeEmailHash != "" {
+		if referrer, findErr := s.userRepo.FindByID(record.ReferrerID); findErr == nil && referrer != nil &&
+			record.RefereeEmailHash == s.hashSensitiveValue("referee-email", referrer.Email) {
+			addFlag(referralRiskSignal{Type: "referee_email_match", Level: "critical", Source: "referrer_account", Dimensions: []string{"email"}})
+		}
+	}
+	if referrerRecord, recordErr := referralRepo.FindRecordByRefereeID(record.ReferrerID); recordErr == nil {
+		if record.DeviceFingerprintHash != "" && record.DeviceFingerprintHash == referrerRecord.DeviceFingerprintHash {
+			addFlag(referralRiskSignal{Type: "device_fingerprint_match", Level: "high", Source: "referrer_historical_attribution", Dimensions: []string{"device_fingerprint"}})
+		}
+	} else if recordErr != nil && !repository.IsRecordNotFound(recordErr) {
+		return nil, recordErr
+	}
+	if paymentRepo != nil {
+		transaction, transactionErr := paymentRepo.FindCompletedTransactionByOrderIDForUpdate(orderRecord.ID)
+		if transactionErr == nil {
+			if fingerprint := paymentFingerprintFromGatewayResponse(transaction.GatewayResponse); fingerprint != "" {
+				paymentHash := s.hashSensitiveValue("payment-fingerprint", fingerprint)
+				updates["payment_fingerprint_hash"] = paymentHash
+				historicalTransactions, historyErr := paymentRepo.FindCompletedTransactionsByUserID(record.ReferrerID, orderRecord.ID)
+				if historyErr != nil {
+					return nil, historyErr
+				}
+				for _, historicalTransaction := range historicalTransactions {
+					if historicalFingerprint := paymentFingerprintFromGatewayResponse(historicalTransaction.GatewayResponse); historicalFingerprint != "" &&
+						paymentHash == s.hashSensitiveValue("payment-fingerprint", historicalFingerprint) {
+						addFlag(referralRiskSignal{Type: "payment_fingerprint_match", Level: "critical", Source: "referrer_paid_order", Dimensions: []string{"payment_fingerprint"}})
+						break
+					}
+				}
+			}
+		} else if !repository.IsRecordNotFound(transactionErr) {
+			return nil, transactionErr
+		}
+	}
+	if !riskDetected && len(flags) == 0 {
+		return updates, nil
 	}
 	encoded, err := json.Marshal(flags)
 	if err != nil {
@@ -468,6 +438,86 @@ func referralShippingPhoneKey(phone string) string {
 		}
 	}
 	return digits.String()
+}
+
+func referralAddressSimilarity(left, right string) float64 {
+	left = strings.TrimSpace(left)
+	right = strings.TrimSpace(right)
+	if left == "" || right == "" {
+		return 0
+	}
+	if left == right {
+		return 1
+	}
+	leftRunes, rightRunes := []rune(left), []rune(right)
+	if len(leftRunes) == 0 || len(rightRunes) == 0 {
+		return 0
+	}
+	previous := make([]int, len(rightRunes)+1)
+	for index := range previous {
+		previous[index] = index
+	}
+	for i, leftRune := range leftRunes {
+		current := make([]int, len(rightRunes)+1)
+		current[0] = i + 1
+		for j, rightRune := range rightRunes {
+			cost := 0
+			if leftRune != rightRune {
+				cost = 1
+			}
+			current[j+1] = minReferralInt(current[j]+1, previous[j+1]+1, previous[j]+cost)
+		}
+		previous = current
+	}
+	distance := previous[len(rightRunes)]
+	maxLength := len(leftRunes)
+	if len(rightRunes) > maxLength {
+		maxLength = len(rightRunes)
+	}
+	return 1 - float64(distance)/float64(maxLength)
+}
+
+func minReferralInt(values ...int) int {
+	result := values[0]
+	for _, value := range values[1:] {
+		if value < result {
+			result = value
+		}
+	}
+	return result
+}
+
+func paymentFingerprintFromGatewayResponse(raw string) string {
+	var payload any
+	if strings.TrimSpace(raw) == "" || json.Unmarshal([]byte(raw), &payload) != nil {
+		return ""
+	}
+	var visit func(any) string
+	visit = func(value any) string {
+		switch node := value.(type) {
+		case map[string]any:
+			for key, child := range node {
+				if strings.EqualFold(strings.TrimSpace(key), "fingerprint") {
+					if fingerprint, ok := child.(string); ok && strings.TrimSpace(fingerprint) != "" {
+						return strings.TrimSpace(fingerprint)
+					}
+				}
+			}
+			for _, child := range node {
+				if fingerprint := visit(child); fingerprint != "" {
+					return fingerprint
+				}
+			}
+		case []any:
+			for _, child := range node {
+				if fingerprint := visit(child); fingerprint != "" {
+					return fingerprint
+				}
+			}
+		}
+		return ""
+	}
+	return visit(payload)
 }
 
 func (s *ReferralService) HandleOrderDeliveredOutbox(ctx context.Context, event outbox.Event) error {
@@ -554,22 +604,19 @@ func (s *ReferralService) HandleOrderInvalidatedOutbox(ctx context.Context, even
 		}
 		switch record.Status {
 		case loyalty.ReferralStatusPending, loyalty.ReferralStatusOrdered, loyalty.ReferralStatusVesting:
+			// This state transition is for the order-bound referral attribution
+			// and referrer settlement. It must not touch a referee's registration
+			// points; those already belong to the user's unified balance.
 			updates["revoked_at"] = occurredAt
 			updates["revoke_reason"] = reason
-			if err := s.reverseReleasedRefereeBenefitInTx(repos, record, occurredAt); err != nil {
-				return err
-			}
-			if err := s.forfeitLockedRefereeBenefitInTx(repos, record, occurredAt); err != nil {
-				return err
-			}
 			return transitionReferralRecord(repos, record, loyalty.ReferralStatusRevoked, "order_invalidated", reason, event.EventKey, updates)
 		case loyalty.ReferralStatusSettled:
 			if repos.Loyalty == nil {
 				return ErrReferralServiceUnavailable
 			}
-			if err := s.reverseReleasedRefereeBenefitInTx(repos, record, occurredAt); err != nil {
-				return err
-			}
+			// A settled record may have a referrer reward to reverse. The
+			// referee's registration points remain immutable and are handled as
+			// ordinary account points, independent of this order event.
 			rewardKey := fmt.Sprintf("referral:%d:referrer:points:v1", record.ID)
 			reward, rewardErr := repos.Referral.FindRewardByIdempotencyKey(rewardKey)
 			if rewardErr != nil && !repository.IsRecordNotFound(rewardErr) {

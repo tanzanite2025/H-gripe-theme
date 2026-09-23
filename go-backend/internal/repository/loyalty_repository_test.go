@@ -115,17 +115,17 @@ func TestApplyPointsDelta(t *testing.T) {
 		UsedPoints:      60,
 	}
 
-	applyPointsDelta(userLoyalty, 25, "earn")
+	applyPointsDelta(userLoyalty, 25, "earn", "order")
 	if userLoyalty.TotalPoints != 125 || userLoyalty.AvailablePoints != 65 || userLoyalty.UsedPoints != 60 {
 		t.Fatalf("earn delta = total %d available %d used %d", userLoyalty.TotalPoints, userLoyalty.AvailablePoints, userLoyalty.UsedPoints)
 	}
 
-	applyPointsDelta(userLoyalty, -30, "spend")
+	applyPointsDelta(userLoyalty, -30, "spend", "order")
 	if userLoyalty.TotalPoints != 125 || userLoyalty.AvailablePoints != 35 || userLoyalty.UsedPoints != 90 {
 		t.Fatalf("spend delta = total %d available %d used %d", userLoyalty.TotalPoints, userLoyalty.AvailablePoints, userLoyalty.UsedPoints)
 	}
 
-	applyPointsDelta(userLoyalty, 20, "refund")
+	applyPointsDelta(userLoyalty, 20, "refund", "refund_loyalty_points_return")
 	if userLoyalty.TotalPoints != 125 || userLoyalty.AvailablePoints != 55 || userLoyalty.UsedPoints != 70 {
 		t.Fatalf("refund delta = total %d available %d used %d", userLoyalty.TotalPoints, userLoyalty.AvailablePoints, userLoyalty.UsedPoints)
 	}
@@ -137,8 +137,49 @@ func TestApplyPointsDeltaRefundDoesNotMakeUsedNegative(t *testing.T) {
 		UsedPoints:      5,
 	}
 
-	applyPointsDelta(userLoyalty, 10, "refund")
+	applyPointsDelta(userLoyalty, 10, "refund", "refund_loyalty_points_return")
 	if userLoyalty.AvailablePoints != 20 || userLoyalty.UsedPoints != 0 {
 		t.Fatalf("refund clamp = available %d used %d", userLoyalty.AvailablePoints, userLoyalty.UsedPoints)
+	}
+}
+
+func TestApplyPointsDeltaReferralReversalCreatesAndRepaysDebt(t *testing.T) {
+	userLoyalty := &loyalty.UserLoyalty{TotalPoints: 1000, UsedPoints: 1000}
+
+	applyPointsDelta(userLoyalty, -1000, "adjust", "referral_reversal")
+	if userLoyalty.AvailablePoints != 0 || userLoyalty.DebtPoints != 1000 {
+		t.Fatalf("reversal = available %d debt %d", userLoyalty.AvailablePoints, userLoyalty.DebtPoints)
+	}
+
+	applyPointsDelta(userLoyalty, 600, "earn", "order")
+	if userLoyalty.AvailablePoints != 0 || userLoyalty.DebtPoints != 400 {
+		t.Fatalf("partial repayment = available %d debt %d", userLoyalty.AvailablePoints, userLoyalty.DebtPoints)
+	}
+
+	applyPointsDelta(userLoyalty, 500, "earn", "order")
+	if userLoyalty.AvailablePoints != 100 || userLoyalty.DebtPoints != 0 {
+		t.Fatalf("final repayment = available %d debt %d", userLoyalty.AvailablePoints, userLoyalty.DebtPoints)
+	}
+}
+
+func TestApplyPointsDeltaRefundCashRecoveryDebtPreservesAvailablePointsAndRepaysFromEarnings(t *testing.T) {
+	userLoyalty := &loyalty.UserLoyalty{
+		TotalPoints: 100,
+		UsedPoints:  80,
+	}
+
+	applyPointsDelta(userLoyalty, -15, "refund", "refund_loyalty_cash_recovery_debt")
+	if userLoyalty.AvailablePoints != 0 || userLoyalty.DebtPoints != 15 {
+		t.Fatalf("refund debt = available %d debt %d", userLoyalty.AvailablePoints, userLoyalty.DebtPoints)
+	}
+
+	applyPointsDelta(userLoyalty, 10, "earn", "order")
+	if userLoyalty.AvailablePoints != 0 || userLoyalty.DebtPoints != 5 {
+		t.Fatalf("partial repayment = available %d debt %d", userLoyalty.AvailablePoints, userLoyalty.DebtPoints)
+	}
+
+	applyPointsDelta(userLoyalty, 10, "earn", "order")
+	if userLoyalty.AvailablePoints != 5 || userLoyalty.DebtPoints != 0 {
+		t.Fatalf("final repayment = available %d debt %d", userLoyalty.AvailablePoints, userLoyalty.DebtPoints)
 	}
 }

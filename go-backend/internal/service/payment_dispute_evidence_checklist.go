@@ -166,7 +166,7 @@ func disputeTransactionObservedAt(transaction *paymentdomain.Transaction) *time.
 func buildDisputeEvidenceChecklist(
 	provider string,
 	orderRecord *orderdomain.Order,
-	shipment *shippingdomain.TrackingShipment,
+	shipments []shippingdomain.TrackingShipment,
 	events []shippingdomain.TrackingEvent,
 	communications []StripeDisputeCommunicationEvidence,
 	authentication *DisputePaymentAuthenticationEvidence,
@@ -177,9 +177,17 @@ func buildDisputeEvidenceChecklist(
 	provider = strings.ToLower(strings.TrimSpace(provider))
 	items := make([]DisputeEvidenceChecklistItem, 0, 7)
 
+	orderTotal := "0"
+	orderTotalMinor := int64(0)
+	if orderRecord != nil {
+		if totalMoney, err := orderRecord.TotalMoney(); err == nil {
+			orderTotalMinor = totalMoney.AmountMinor()
+			orderTotal, _ = totalMoney.FormatMajor()
+		}
+	}
 	orderReady := orderRecord != nil &&
 		strings.TrimSpace(orderRecord.OrderNumber) != "" &&
-		orderRecord.TotalAmount > 0 &&
+		orderTotalMinor > 0 &&
 		len(orderRecord.Items) > 0
 	orderSummary := "订单号、下单时间、商品明细和金额来自本地订单。"
 	orderReason := ""
@@ -187,10 +195,10 @@ func buildDisputeEvidenceChecklist(
 	if orderReady {
 		orderObservedAt = disputeTimePointer(orderRecord.CreatedAt)
 		orderSummary = fmt.Sprintf(
-			"订单 %s：%d 个商品明细，总额 %.2f %s。",
+			"订单 %s：%d 个商品明细，总额 %s %s。",
 			orderRecord.OrderNumber,
 			len(orderRecord.Items),
-			orderRecord.TotalAmount,
+			orderTotal,
 			orderRecord.Currency,
 		)
 	} else {
@@ -209,7 +217,7 @@ func buildDisputeEvidenceChecklist(
 		MissingReason: orderReason,
 	})
 
-	trackingNumber := disputeTrackingNumber(orderRecord, shipment)
+	trackingNumber := disputeTrackingNumber(orderRecord, shipments)
 	delivered := deliveredTrackingEvent(events)
 	signaturePOD := trackingSignaturePODEvent(events)
 	deliveryScanReady := trackingNumber != "" && delivered != nil
@@ -393,7 +401,7 @@ func buildDisputeEvidenceChecklist(
 		Status:         checklistStatus(customizationReady, DisputeEvidenceStatusMissing),
 		Required:       false,
 		ManualRequired: !customizationReady,
-		Source:         "order_items.attributes / spoke calculator",
+		Source:         "order_items.configuration_snapshot / spoke calculator",
 		ObservedAt:     customizationObservedAt,
 		Summary:        nonEmptyOr(customizationSummary, "没有找到与本订单关联的 Spoke 定制参数。"),
 		MissingReason:  customizationReason,
@@ -625,7 +633,7 @@ func disputeCustomizationEvidence(orderRecord *orderdomain.Order) (string, *time
 	}
 	markers := []string{"spoke", "erd", "flange", "lacing", "cross", "nipple", "wheel_type", "hub_model", "rim_model"}
 	for _, item := range orderRecord.Items {
-		raw := strings.TrimSpace(item.Attributes)
+		raw := strings.TrimSpace(item.ConfigurationEvidenceJSON())
 		if raw == "" {
 			continue
 		}

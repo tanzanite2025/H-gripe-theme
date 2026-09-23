@@ -92,6 +92,46 @@ func (h *ProductHandler) GetProduct(c *gin.Context) {
 	})
 }
 
+// PreviewProductTemplateSync returns the explicit changes that would be
+// applied when the product is synchronized with its current template.
+// GET /api/admin/products/:id/template-sync/preview
+func (h *ProductHandler) PreviewProductTemplateSync(c *gin.Context) {
+	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil || id == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid product ID"})
+		return
+	}
+	diff, err := h.productService.PreviewProductTemplateSync(uint(id))
+	if err != nil {
+		respondProductServiceError(c, err, "Failed to preview product template sync")
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"data": diff})
+}
+
+// SyncProductTemplate applies a reviewed template revision to the product.
+// POST /api/admin/products/:id/template-sync
+func (h *ProductHandler) SyncProductTemplate(c *gin.Context) {
+	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil || id == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid product ID"})
+		return
+	}
+	var request struct {
+		ExpectedRevision int `json:"expected_revision" binding:"required,min=1"`
+	}
+	if err := c.ShouldBindJSON(&request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	updated, diff, err := h.productService.SyncProductTemplate(uint(id), request.ExpectedRevision)
+	if err != nil {
+		respondProductServiceError(c, err, "Failed to synchronize product template")
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"product": updated, "data": diff})
+}
+
 // GetProductTranslations 获取商品翻译组
 // GET /api/admin/products/:id/translations
 func (h *ProductHandler) GetProductTranslations(c *gin.Context) {
@@ -188,6 +228,7 @@ func (h *ProductHandler) CreateProduct(c *gin.Context) {
 		Variants:                       normalizeVariantRequests(req.Variants),
 		VariantOptionValues:            normalizeVariantOptionValueRequests(req.VariantOptionValues),
 		Media:                          normalizeMediaRequests(req.Media),
+		OptionValueRelations:           normalizeProductOptionValueRelationRequests(req.OptionValueRelations),
 	})
 	if err != nil {
 		respondProductServiceError(c, err, "Failed to create product")
@@ -243,6 +284,7 @@ func (h *ProductHandler) UpdateProduct(c *gin.Context) {
 	_, updateVariants := raw["variants"]
 	_, updateVariantOptionValues := raw["variant_option_values"]
 	_, updateMedia := raw["media"]
+	_, updateOptionValueRelations := raw["option_value_relations"]
 	if updateProductSpecificationTemplateID && !updateSpecs {
 		updateSpecs = true
 	}
@@ -297,6 +339,8 @@ func (h *ProductHandler) UpdateProduct(c *gin.Context) {
 		UpdateVariantOptionValues:            updateVariantOptionValues,
 		Media:                                normalizeMediaRequests(req.Media),
 		UpdateMedia:                          updateMedia,
+		OptionValueRelations:                 normalizeProductOptionValueRelationRequests(req.OptionValueRelations),
+		UpdateOptionValueRelations:           updateOptionValueRelations,
 	})
 	if err != nil {
 		respondProductServiceError(c, err, "Failed to update product")

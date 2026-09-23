@@ -47,7 +47,7 @@ func (r *ShipmentRecordRepository) FindByOrderID(orderID uint) (*shippingdomain.
 	if IsRecordNotFound(err) {
 		attachment = nil
 	}
-	return buildShipmentRecord(orderRecord, attachment), nil
+	return r.buildShipmentRecordWithPackages(orderRecord, attachment)
 }
 
 func (r *ShipmentRecordRepository) FindByOrderNumber(orderNumber string) (*shippingdomain.ShipmentRecord, error) {
@@ -62,7 +62,7 @@ func (r *ShipmentRecordRepository) FindByOrderNumber(orderNumber string) (*shipp
 	if IsRecordNotFound(err) {
 		attachment = nil
 	}
-	return buildShipmentRecord(orderRecord, attachment), nil
+	return r.buildShipmentRecordWithPackages(orderRecord, attachment)
 }
 
 func (r *ShipmentRecordRepository) FindByOrderNumberForUser(orderNumber string, userID uint) (*shippingdomain.ShipmentRecord, error) {
@@ -77,7 +77,7 @@ func (r *ShipmentRecordRepository) FindByOrderNumberForUser(orderNumber string, 
 	if IsRecordNotFound(err) {
 		attachment = nil
 	}
-	return buildShipmentRecord(orderRecord, attachment), nil
+	return r.buildShipmentRecordWithPackages(orderRecord, attachment)
 }
 
 // FindAll lists shipped orders and left-joins the optional after-sales
@@ -119,6 +119,10 @@ func (r *ShipmentRecordRepository) FindAll(page, pageSize int, filter ShipmentRe
 	}
 
 	selected := filtered[start:end]
+	packages, err := r.loadTrackingPackages(orderIDs(selected))
+	if err != nil {
+		return nil, 0, err
+	}
 	fullOrders, err := r.loadOrdersWithItems(orderIDs(selected))
 	if err != nil {
 		return nil, 0, err
@@ -130,7 +134,9 @@ func (r *ShipmentRecordRepository) FindAll(page, pageSize int, filter ShipmentRe
 		if orderRecord == nil {
 			orderRecord = &selected[index]
 		}
-		records = append(records, *buildShipmentRecord(orderRecord, attachments[orderRecord.ID]))
+		record := buildShipmentRecord(orderRecord, attachments[orderRecord.ID])
+		record.TrackingShipments = packages[orderRecord.ID]
+		records = append(records, *record)
 	}
 	return records, total, nil
 }
@@ -210,7 +216,6 @@ func (r *ShipmentRecordRepository) UpsertDetailsForOrder(
 	}
 
 	customerName := orderCustomerName(orderRecord)
-	trackingNumber := strings.TrimSpace(orderRecord.TrackingNumber)
 	_, err = r.findAttachmentByOrderID(orderID)
 	if err != nil && !IsRecordNotFound(err) {
 		return nil, err
@@ -226,7 +231,6 @@ func (r *ShipmentRecordRepository) UpsertDetailsForOrder(
 		"user_id":           orderRecord.UserID,
 		"customer_name":     customerName,
 		"customer_email":    orderCustomerEmail(orderRecord),
-		"tracking_number":   trackingNumber,
 		"shipped_at":        orderShippedAt(orderRecord),
 		"items_snapshot":    itemsJSON,
 		"product_codes":     productCodesJSON,
@@ -246,7 +250,6 @@ func (r *ShipmentRecordRepository) UpsertDetailsForOrder(
 			UserID:          orderRecord.UserID,
 			CustomerName:    customerName,
 			CustomerEmail:   orderCustomerEmail(orderRecord),
-			TrackingNumber:  trackingNumber,
 			ShippedAt:       orderShippedAt(orderRecord),
 			ItemsSnapshot:   datatypes.JSON(itemsJSON),
 			ProductCodes:    productCodesJSON,
@@ -311,8 +314,8 @@ func (r *ShipmentRecordRepository) findShippedOrderHeaders(keyword string) ([]or
 	if keyword = strings.TrimSpace(keyword); keyword != "" {
 		like := "%" + strings.ToLower(keyword) + "%"
 		query = query.Where(
-			"(LOWER(orders.order_number) LIKE ? OR LOWER(orders.shipping_first_name) LIKE ? OR LOWER(orders.shipping_last_name) LIKE ? OR LOWER(orders.shipping_email) LIKE ? OR LOWER(orders.tracking_number) LIKE ? OR EXISTS (SELECT 1 FROM shipment_records sr WHERE sr.order_id = orders.id AND (LOWER(sr.tracking_number) LIKE ? OR LOWER(CAST(sr.product_codes AS TEXT)) LIKE ?)))",
-			like, like, like, like, like, like, like,
+			"(LOWER(orders.order_number) LIKE ? OR LOWER(orders.shipping_first_name) LIKE ? OR LOWER(orders.shipping_last_name) LIKE ? OR LOWER(orders.shipping_email) LIKE ? OR EXISTS (SELECT 1 FROM shipping_tracking_shipments sts WHERE sts.order_id = orders.id AND LOWER(sts.tracking_number) LIKE ? AND sts.deleted_at IS NULL) OR EXISTS (SELECT 1 FROM shipment_records sr WHERE sr.order_id = orders.id AND LOWER(CAST(sr.product_codes AS TEXT)) LIKE ?))",
+			like, like, like, like, like, like,
 		)
 	}
 	if err := query.
@@ -322,6 +325,38 @@ func (r *ShipmentRecordRepository) findShippedOrderHeaders(keyword string) ([]or
 		return nil, err
 	}
 	return orders, nil
+}
+
+func (r *ShipmentRecordRepository) buildShipmentRecordWithPackages(record *orderdomain.Order, attachment *shippingdomain.ShipmentRecord) (*shippingdomain.ShipmentRecord, error) {
+	packages, err := r.loadTrackingPackages([]uint{record.ID})
+	if err != nil {
+		return nil, err
+	}
+	result := buildShipmentRecord(record, attachment)
+	result.TrackingShipments = packages[record.ID]
+	return result, nil
+}
+
+func (r *ShipmentRecordRepository) loadTrackingPackages(ids []uint) (map[uint][]shippingdomain.ShipmentRecordPackage, error) {
+	result := make(map[uint][]shippingdomain.ShipmentRecordPackage, len(ids))
+	if len(ids) == 0 {
+		return result, nil
+	}
+	for _, id := range ids {
+		result[id] = []shippingdomain.ShipmentRecordPackage{}
+	}
+	var packages []shippingdomain.TrackingShipment
+	if err := r.db.Select("id", "order_id", "tracking_number", "provider_carrier_code", "enabled").
+		Where("order_id IN ?", ids).Order("id ASC").Find(&packages).Error; err != nil {
+		return nil, err
+	}
+	for _, parcel := range packages {
+		result[parcel.OrderID] = append(result[parcel.OrderID], shippingdomain.ShipmentRecordPackage{
+			ID: parcel.ID, TrackingNumber: parcel.TrackingNumber,
+			ProviderCarrierCode: parcel.ProviderCarrierCode, Enabled: parcel.Enabled,
+		})
+	}
+	return result, nil
 }
 
 func (r *ShipmentRecordRepository) loadAttachments(ids []uint) (map[uint]*shippingdomain.ShipmentRecord, error) {
@@ -372,11 +407,9 @@ func buildShipmentRecord(orderRecord *orderdomain.Order, attachment *shippingdom
 	shippingImages := datatypes.JSON([]byte("[]"))
 	productCodes := datatypes.JSON([]byte("[]"))
 	note := ""
-	var trackingShipmentID *uint
 	recordBound := false
 
 	if attachment != nil {
-		trackingShipmentID = attachment.TrackingShipmentID
 		recordBound = attachment.DetailsBound
 		note = attachment.ShippingNote
 		shippingImages = nonEmptyJSON(attachment.ShippingImages)
@@ -406,34 +439,27 @@ func buildShipmentRecord(orderRecord *orderdomain.Order, attachment *shippingdom
 		}
 	}
 
-	trackingNumber := strings.TrimSpace(orderRecord.TrackingNumber)
-	if trackingNumber == "" && attachment != nil {
-		trackingNumber = strings.TrimSpace(attachment.TrackingNumber)
-	}
-
 	return &shippingdomain.ShipmentRecord{
 		// The admin/public attachment API is keyed by order ID, including when
 		// the optional shipment_records row does not exist yet.
-		ID:                 orderRecord.ID,
-		OrderID:            orderRecord.ID,
-		OrderNumber:        orderRecord.OrderNumber,
-		UserID:             orderRecord.UserID,
-		CustomerName:       orderCustomerName(orderRecord),
-		CustomerEmail:      orderCustomerEmail(orderRecord),
-		TrackingShipmentID: trackingShipmentID,
-		TrackingNumber:     trackingNumber,
-		ShippedAt:          shippedAt,
-		ItemsSnapshot:      datatypes.JSON(itemsJSON),
-		ProductCodes:       productCodes,
-		ShippingNote:       note,
-		ShippingImages:     shippingImages,
-		WarrantyMonths:     warrantyMonths,
-		WarrantyStartAt:    warrantyStart,
-		WarrantyExpires:    warrantyExpires,
-		Status:             status,
-		RecordBound:        recordBound,
-		OrderStatus:        orderRecord.Status,
-		ShippingState:      orderRecord.ShippingStatus,
+		ID:              orderRecord.ID,
+		OrderID:         orderRecord.ID,
+		OrderNumber:     orderRecord.OrderNumber,
+		UserID:          orderRecord.UserID,
+		CustomerName:    orderCustomerName(orderRecord),
+		CustomerEmail:   orderCustomerEmail(orderRecord),
+		ShippedAt:       shippedAt,
+		ItemsSnapshot:   datatypes.JSON(itemsJSON),
+		ProductCodes:    productCodes,
+		ShippingNote:    note,
+		ShippingImages:  shippingImages,
+		WarrantyMonths:  warrantyMonths,
+		WarrantyStartAt: warrantyStart,
+		WarrantyExpires: warrantyExpires,
+		Status:          status,
+		RecordBound:     recordBound,
+		OrderStatus:     orderRecord.Status,
+		ShippingState:   orderRecord.ShippingStatus,
 	}
 }
 

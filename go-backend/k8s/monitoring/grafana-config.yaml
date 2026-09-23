@@ -101,6 +101,47 @@ data:
                 "legendFormat": "{{seed_id}} {{outcome}}"
               }
             ]
+          },
+          {
+            "id": 6,
+            "title": "Honeypot Timing Evaluations",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "sum(rate(commerce_platform_honeypot_timing_evaluations_total{job=\"commerce-platform-api\"}[5m])) by (form, result)",
+                "legendFormat": "{{form}} {{result}}"
+              }
+            ]
+          },
+          {
+            "id": 7,
+            "title": "Newsletter Form Fill Time",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "histogram_quantile(0.50, sum(rate(commerce_platform_honeypot_timing_seconds_bucket{job=\"commerce-platform-api\"}[5m])) by (le, form))",
+                "legendFormat": "{{form}} P50"
+              },
+              {
+                "expr": "histogram_quantile(0.95, sum(rate(commerce_platform_honeypot_timing_seconds_bucket{job=\"commerce-platform-api\"}[5m])) by (le, form))",
+                "legendFormat": "{{form}} P95"
+              }
+            ]
+          },
+          {
+            "id": 8,
+            "title": "Repeated Timing Tokens (Shadow)",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "sum(rate(commerce_platform_honeypot_timing_replays_total{job=\"commerce-platform-api\",result=\"reused\"}[5m])) by (form)",
+                "legendFormat": "{{form}} reused"
+              },
+              {
+                "expr": "sum(rate(commerce_platform_honeypot_timing_replays_total{job=\"commerce-platform-api\",result=\"error\"}[5m])) by (form)",
+                "legendFormat": "{{form}} Redis errors"
+              }
+            ]
           }
         ]
       }

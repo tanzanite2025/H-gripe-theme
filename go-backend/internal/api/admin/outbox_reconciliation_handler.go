@@ -52,6 +52,26 @@ type outboxUnknownEventResponse struct {
 	UpdatedAt      time.Time  `json:"updated_at"`
 }
 
+// outboxFailureEventResponse intentionally omits Payload. Canonical event
+// payloads can contain recipient addresses and order/after-sales snapshots;
+// operators need delivery metadata and the recorded error to act safely.
+type outboxFailureEventResponse struct {
+	ID            uint       `json:"id"`
+	EventKey      string     `json:"event_key"`
+	EventType     string     `json:"event_type"`
+	AggregateType string     `json:"aggregate_type"`
+	AggregateID   string     `json:"aggregate_id"`
+	Status        string     `json:"status"`
+	Attempts      int        `json:"attempts"`
+	MaxAttempts   int        `json:"max_attempts"`
+	AvailableAt   time.Time  `json:"available_at"`
+	LastAttemptAt *time.Time `json:"last_attempt_at,omitempty"`
+	LastError     string     `json:"last_error,omitempty"`
+	CreatedAt     time.Time  `json:"created_at"`
+	UpdatedAt     time.Time  `json:"updated_at"`
+	PayloadBytes  int        `json:"payload_bytes"`
+}
+
 func (h *OutboxReconciliationHandler) ListUnknown(c *gin.Context) {
 	if h == nil || h.outboxService == nil {
 		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "outbox reconciliation service is unavailable"})
@@ -79,6 +99,123 @@ func (h *OutboxReconciliationHandler) ListUnknown(c *gin.Context) {
 		items = append(items, toOutboxUnknownEventResponse(event))
 	}
 	response.Success(c, gin.H{"events": items, "count": len(items)})
+}
+
+func (h *OutboxReconciliationHandler) ListFailures(c *gin.Context) {
+	if h == nil || h.outboxService == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "outbox service is unavailable"})
+		return
+	}
+	limit := 100
+	if raw := strings.TrimSpace(c.Query("limit")); raw != "" {
+		parsed, err := strconv.Atoi(raw)
+		if err != nil || parsed <= 0 || parsed > 500 {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "limit must be between 1 and 500"})
+			return
+		}
+		limit = parsed
+	}
+	status := strings.TrimSpace(c.Query("status"))
+	statuses := []string{outbox.EventStatusFailed, outbox.EventStatusDeadLetter}
+	if status != "" {
+		if status != outbox.EventStatusFailed && status != outbox.EventStatusDeadLetter {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "status must be failed or dead_letter"})
+			return
+		}
+		statuses = []string{status}
+	}
+	events, err := h.outboxService.ListFailedEvents(repository.OutboxEventListOptions{
+		Statuses: statuses, EventType: strings.TrimSpace(c.Query("event_type")), Limit: limit,
+	})
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to list outbox failures"})
+		return
+	}
+	items := make([]outboxFailureEventResponse, 0, len(events))
+	for _, event := range events {
+		items = append(items, toOutboxFailureEventResponse(event))
+	}
+	response.Success(c, gin.H{"events": items, "count": len(items)})
+}
+
+func (h *OutboxReconciliationHandler) GetFailure(c *gin.Context) {
+	if h == nil || h.outboxService == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "outbox service is unavailable"})
+		return
+	}
+	id, ok := parseOutboxEventID(c)
+	if !ok {
+		return
+	}
+	event, err := h.outboxService.GetEvent(id)
+	if err != nil {
+		if errors.Is(err, repository.ErrOutboxEventNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "outbox event not found"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load outbox event"})
+		return
+	}
+	if !isFailedOutboxStatus(event.Status) {
+		c.JSON(http.StatusNotFound, gin.H{"error": "outbox failure not found"})
+		return
+	}
+	response.Success(c, toOutboxFailureEventResponse(*event))
+}
+
+func (h *OutboxReconciliationHandler) RetryFailure(c *gin.Context) {
+	h.mutateFailure(c, "retry", func(id uint, note string, now time.Time) error {
+		return h.outboxService.RetryFailedEvent(id, note, now)
+	})
+}
+
+func (h *OutboxReconciliationHandler) IgnoreFailure(c *gin.Context) {
+	h.mutateFailure(c, "ignore", func(id uint, note string, now time.Time) error {
+		return h.outboxService.IgnoreFailedEvent(id, note, now)
+	})
+}
+
+func (h *OutboxReconciliationHandler) mutateFailure(c *gin.Context, operation string, mutate func(uint, string, time.Time) error) {
+	startedAt := adminAuditStartedAt()
+	if h == nil || h.outboxService == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "outbox service is unavailable"})
+		return
+	}
+	id, ok := parseOutboxEventID(c)
+	if !ok {
+		return
+	}
+	var req outboxReconciliationRequest
+	if err := c.ShouldBindJSON(&req); err != nil || len(strings.TrimSpace(req.Note)) < 3 {
+		recordAdminAudit(h.auditRecorder, c, adminAuditEvent{StartedAt: startedAt, Action: adminAuditActionReconcile, Resource: "outbox_event", ResourceID: id, Status: adminAuditStatusFailed, ErrorMessage: "a reconciliation note is required"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "a reconciliation note is required"})
+		return
+	}
+	note := strings.TrimSpace(req.Note)
+	now := time.Now().UTC()
+	if err := mutate(id, note, now); err != nil {
+		recordAdminAudit(h.auditRecorder, c, adminAuditEvent{StartedAt: startedAt, Action: adminAuditActionReconcile, Resource: "outbox_event", ResourceID: id, Status: adminAuditStatusFailed, ErrorMessage: err.Error(), NewValue: map[string]string{"operation": operation, "note": note}})
+		if errors.Is(err, repository.ErrOutboxEventNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "outbox event not found"})
+			return
+		}
+		if errors.Is(err, repository.ErrOutboxInvalidTransition) {
+			c.JSON(http.StatusConflict, gin.H{"error": "outbox event is no longer an actionable failure"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update outbox event"})
+		return
+	}
+	recordAdminAudit(h.auditRecorder, c, adminAuditEvent{StartedAt: startedAt, Action: adminAuditActionReconcile, Resource: "outbox_event", ResourceID: id, Status: adminAuditStatusSuccess, NewValue: map[string]string{"operation": operation, "note": note}})
+	status := outbox.EventStatusPending
+	if operation == "ignore" {
+		status = outbox.EventStatusIgnored
+	}
+	response.Success(c, gin.H{"id": id, "status": status, "updated_at": now})
+}
+
+func isFailedOutboxStatus(status string) bool {
+	return status == outbox.EventStatusFailed || status == outbox.EventStatusDeadLetter
 }
 
 type outboxReconciliationRequest struct {
@@ -221,5 +358,16 @@ func toOutboxUnknownEventResponse(event outbox.Event) outboxUnknownEventResponse
 		LastError:      event.LastError,
 		CreatedAt:      event.CreatedAt,
 		UpdatedAt:      event.UpdatedAt,
+	}
+}
+
+func toOutboxFailureEventResponse(event outbox.Event) outboxFailureEventResponse {
+	return outboxFailureEventResponse{
+		ID: event.ID, EventKey: event.EventKey, EventType: event.EventType,
+		AggregateType: event.AggregateType, AggregateID: event.AggregateID,
+		Status: event.Status, Attempts: event.Attempts, MaxAttempts: event.MaxAttempts,
+		AvailableAt: event.AvailableAt, LastAttemptAt: event.LastAttemptAt,
+		LastError: event.LastError, CreatedAt: event.CreatedAt, UpdatedAt: event.UpdatedAt,
+		PayloadBytes: len(event.Payload),
 	}
 }

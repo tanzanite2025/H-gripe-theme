@@ -13,6 +13,13 @@ func (r *StorefrontRouteCatalogRepository) Stats() (seodomain.StorefrontRouteCat
 }
 
 func (r *StorefrontRouteCatalogRepository) StatsForLocale(locale string) (seodomain.StorefrontRouteCatalogStats, error) {
+	return r.StatsForLocaleAndScope(locale, "")
+}
+
+// StatsForLocaleAndScope returns aggregate metrics for the same logical scope
+// used by the route list. Keeping the problem scope in the aggregate query
+// prevents the Canonical view from displaying whole-catalog numbers.
+func (r *StorefrontRouteCatalogRepository) StatsForLocaleAndScope(locale, problemScope string) (seodomain.StorefrontRouteCatalogStats, error) {
 	if r == nil || r.db == nil {
 		return seodomain.StorefrontRouteCatalogStats{}, errors.New("storefront route catalog repository is unavailable")
 	}
@@ -20,6 +27,14 @@ func (r *StorefrontRouteCatalogRepository) StatsForLocale(locale string) (seodom
 	query := r.db.Model(&seodomain.StorefrontRouteCatalogEntry{})
 	if locale != "" && locale != "all" {
 		query = query.Where("locale = ?", locale)
+	}
+	if problemScope == "canonical" {
+		query = query.Where(
+			"(entry_status = ? OR last_check_status = ?) AND is_alias = ?",
+			seodomain.RouteEntryStatusDuplicate,
+			seodomain.RouteCheckStatusCanonicalMisfit,
+			false,
+		)
 	}
 
 	var latestEntry seodomain.StorefrontRouteCatalogEntry
@@ -82,8 +97,40 @@ func (r *StorefrontRouteCatalogRepository) StatsForLocale(locale string) (seodom
 	if err != nil {
 		return stats, err
 	}
+	// Sitemap export applies the exact route predicate in
+	// sitemapEligibleRouteEntry (including product canonical-path rules). The
+	// aggregate SQL above intentionally remains cheap for the other counters,
+	// while this metric reuses the export predicate so the card cannot drift.
+	stats.SitemapEligible, err = r.countSitemapEligible(locale, problemScope)
+	if err != nil {
+		return stats, err
+	}
 	if latestEntry.ID != 0 {
 		stats.LastSyncedAt = &latestEntry.LastSeenAt
 	}
 	return stats, err
+}
+
+func (r *StorefrontRouteCatalogRepository) countSitemapEligible(locale, problemScope string) (int64, error) {
+	query := r.db.Model(&seodomain.StorefrontRouteCatalogEntry{}).
+		Where("entry_status = ? AND is_alias = ? AND is_indexable = ?", seodomain.RouteEntryStatusActive, false, true).
+		Where("source_type <> ? OR path NOT LIKE ?", seodomain.RouteSourceProduct, "%/shop/%")
+	if locale != "" && locale != "all" {
+		query = query.Where("locale = ?", locale)
+	}
+	if problemScope == "canonical" {
+		query = query.Where("(entry_status = ? OR last_check_status = ?) AND is_alias = ?", seodomain.RouteEntryStatusDuplicate, seodomain.RouteCheckStatusCanonicalMisfit, false)
+	}
+
+	var entries []seodomain.StorefrontRouteCatalogEntry
+	if err := query.Find(&entries).Error; err != nil {
+		return 0, err
+	}
+	var count int64
+	for _, entry := range entries {
+		if sitemapEligibleRouteEntry(entry) {
+			count++
+		}
+	}
+	return count, nil
 }

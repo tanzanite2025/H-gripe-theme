@@ -3,6 +3,7 @@ package service
 import (
 	orderdomain "commerce-platform/internal/domain/order"
 	"commerce-platform/internal/domain/warranty"
+	"commerce-platform/internal/repository"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -19,6 +20,7 @@ var (
 	ErrWarrantyClaimAccessRequired  = errors.New("warranty claim access verification is required")
 	ErrWarrantyOrderItemMismatch    = errors.New("order item does not match warranty claim")
 	ErrWarrantyOrderItemUnavailable = errors.New("order item binding is unavailable")
+	ErrWarrantyExpired              = errors.New("the product warranty has expired")
 )
 
 var validWarrantyServiceTypes = map[string]struct{}{
@@ -57,12 +59,12 @@ const warrantyClaimAccessPurpose = "warranty:claim:view"
 const warrantyClaimAccessTokenTTL = 100 * 365 * 24 * time.Hour
 
 type WarrantyServiceRecordInput struct {
-	ServiceType string
-	Status      string
-	Summary     string
-	CostAmount  float64
-	Currency    string
-	PerformedAt *time.Time
+	ServiceType     string
+	Status          string
+	Summary         string
+	CostAmountMinor int64
+	Currency        string
+	PerformedAt     *time.Time
 }
 
 func (s *WarrantyService) VerifyWarrantyOrder(orderNumber, email string) (*orderdomain.Order, error) {
@@ -87,6 +89,9 @@ func (s *WarrantyService) VerifyWarrantyOrder(orderNumber, email string) (*order
 }
 
 func (s *WarrantyService) RequestWarrantyOrderVerification(orderNumber, email string) error {
+	if s == nil || s.txManager == nil {
+		return ErrEmailChallengeUnavailable
+	}
 	orderNumber = strings.TrimSpace(orderNumber)
 	email = normalizeWarrantyEmail(email)
 	if _, err := s.VerifyWarrantyOrder(orderNumber, email); err != nil {
@@ -96,51 +101,65 @@ func (s *WarrantyService) RequestWarrantyOrderVerification(orderNumber, email st
 		return err
 	}
 
-	token, err := issueEmailChallenge(
-		s.challengeRepo,
-		s.challengeSecret,
-		warrantyOrderChallengePurpose,
-		email,
-		warrantyOrderChallengeSubject(orderNumber, email),
-		24*time.Hour,
-	)
-	if err != nil {
+	challengeSubject := warrantyOrderChallengeSubject(orderNumber, email)
+	return s.txManager.WithinTx(func(repos repository.EmailChallengeTxRepositories) error {
+		_, err := issueEmailChallengeWithDelivery(
+			repos.EmailChallenge,
+			repos.Outbox,
+			s.challengeSecret,
+			warrantyOrderChallengePurpose,
+			email,
+			challengeSubject,
+			"Verify your warranty request",
+			func(token string) string {
+				link := fmt.Sprintf("%s/support/warranty?verification_token=%s#submit-warranty", s.baseURL, url.QueryEscape(token))
+				return fmt.Sprintf(
+					"Use this link to verify your warranty request:\n\n%s\n\nThe verification token expires in 24 hours and can only be used once when submitting the claim.",
+					link,
+				)
+			},
+			24*time.Hour,
+		)
 		return err
-	}
-	if s.emailSender == nil {
-		return ErrEmailChallengeUnavailable
-	}
-
-	link := fmt.Sprintf("%s/support/warranty?verification_token=%s#submit-warranty", s.baseURL, url.QueryEscape(token))
-	body := fmt.Sprintf(
-		"Use this link to verify your warranty request:\n\n%s\n\nThe verification token expires in 24 hours and can only be used once when submitting the claim.",
-		link,
-	)
-	return s.emailSender.SendEmail([]string{email}, "Verify your warranty request", body)
+	})
 }
 
 func (s *WarrantyService) ValidateWarrantyOrderToken(token string) error {
-	if _, err := validateEmailChallenge(s.challengeRepo, s.challengeSecret, token, warrantyOrderChallengePurpose); err != nil {
+	if s == nil || s.txManager == nil {
+		return ErrWarrantyVerificationRequired
+	}
+	var validationErr error
+	err := s.txManager.WithinTx(func(repos repository.EmailChallengeTxRepositories) error {
+		_, validationErr = validateEmailChallenge(repos.EmailChallenge, s.challengeSecret, token, warrantyOrderChallengePurpose)
+		return validationErr
+	})
+	if err != nil || validationErr != nil {
 		return ErrWarrantyVerificationRequired
 	}
 	return nil
 }
 
 func (s *WarrantyService) CreateWarrantyClaimForOrder(input WarrantyClaimByOrderInput) (*warranty.WarrantyClaim, error) {
+	if s == nil || s.txManager == nil {
+		return nil, ErrEmailChallengeUnavailable
+	}
 	orderNumber := strings.TrimSpace(input.OrderNumber)
 	email := normalizeWarrantyEmail(input.Email)
-	claims, err := consumeEmailChallenge(
-		s.challengeRepo,
-		s.challengeSecret,
-		input.VerificationToken,
-		warrantyOrderChallengePurpose,
-	)
+	var claims emailtoken.Claims
+	err := s.txManager.WithinTx(func(repos repository.EmailChallengeTxRepositories) error {
+		var err error
+		claims, err = validateEmailChallenge(repos.EmailChallenge, s.challengeSecret, input.VerificationToken, warrantyOrderChallengePurpose)
+		return err
+	})
 	if err != nil || claims.Email != email || claims.Subject != warrantyOrderChallengeSubject(orderNumber, email) {
 		return nil, ErrWarrantyVerificationRequired
 	}
 
 	order, err := s.VerifyWarrantyOrder(orderNumber, email)
 	if err != nil {
+		return nil, err
+	}
+	if err := s.validateWarrantyWindow(order); err != nil {
 		return nil, err
 	}
 
@@ -162,11 +181,56 @@ func (s *WarrantyService) CreateWarrantyClaimForOrder(input WarrantyClaimByOrder
 		Status:       "submitted",
 	}
 
-	if err := s.warrantyRepo.CreateWarrantyClaim(claim); err != nil {
+	err = s.txManager.WithinTx(func(repos repository.EmailChallengeTxRepositories) error {
+		if repos.Warranty == nil {
+			return repository.ErrEmailChallengeTransactionNotConfigured
+		}
+		consumedClaims, err := consumeEmailChallenge(
+			repos.EmailChallenge,
+			s.challengeSecret,
+			input.VerificationToken,
+			warrantyOrderChallengePurpose,
+		)
+		if err != nil || consumedClaims.Email != email || consumedClaims.Subject != warrantyOrderChallengeSubject(orderNumber, email) {
+			return ErrWarrantyVerificationRequired
+		}
+		return repos.Warranty.CreateWarrantyClaim(claim)
+	})
+	if err != nil {
 		return nil, err
 	}
 
 	return claim, nil
+}
+
+func (s *WarrantyService) validateWarrantyWindow(orderRecord *orderdomain.Order) error {
+	if orderRecord == nil {
+		return ErrWarrantyVerificationRequired
+	}
+	var expires time.Time
+	if s.shipmentRepo != nil {
+		shipment, err := s.shipmentRepo.FindByOrderID(orderRecord.ID)
+		if err == nil && shipment != nil {
+			expires = shipment.WarrantyExpires
+		} else if err != nil && !repository.IsRecordNotFound(err) {
+			// The shipment_records migration is optional for legacy installations;
+			// fall back to the order's shipped_at policy when it is not present yet.
+			message := strings.ToLower(err.Error())
+			if !strings.Contains(message, "no such table") && !strings.Contains(message, "doesn't exist") {
+				return err
+			}
+		}
+	}
+	// Keep legacy paid-order claims working when no shipment fact exists. Once
+	// a shipment timestamp is present, derive the default 12-month warranty
+	// boundary if the optional shipment record is unavailable.
+	if expires.IsZero() && orderRecord.ShippedAt != nil && !orderRecord.ShippedAt.IsZero() {
+		expires = orderRecord.ShippedAt.UTC().AddDate(1, 0, 0)
+	}
+	if !expires.IsZero() && time.Now().UTC().After(expires.UTC()) {
+		return ErrWarrantyExpired
+	}
+	return nil
 }
 
 // IssueWarrantyClaimAccessToken creates a long-lived, signed read token for a
@@ -404,7 +468,7 @@ func (s *WarrantyService) CreateWarrantyServiceRecord(claimID uint, input Warran
 	if _, ok := validWarrantyServiceStatuses[status]; !ok {
 		return nil, errors.New("invalid service record status")
 	}
-	if input.CostAmount < 0 {
+	if input.CostAmountMinor < 0 {
 		return nil, errors.New("service cost amount cannot be negative")
 	}
 
@@ -414,15 +478,15 @@ func (s *WarrantyService) CreateWarrantyServiceRecord(claimID uint, input Warran
 	}
 
 	record := &warranty.WarrantyServiceRecord{
-		ClaimID:     claim.ID,
-		ServiceType: serviceType,
-		Status:      status,
-		Summary:     summary,
-		CostAmount:  input.CostAmount,
-		Currency:    currency,
-		PerformedBy: createdBy,
-		CreatedBy:   createdBy,
-		PerformedAt: input.PerformedAt,
+		ClaimID:         claim.ID,
+		ServiceType:     serviceType,
+		Status:          status,
+		Summary:         summary,
+		CostAmountMinor: input.CostAmountMinor,
+		Currency:        currency,
+		PerformedBy:     createdBy,
+		CreatedBy:       createdBy,
+		PerformedAt:     input.PerformedAt,
 	}
 
 	if err := s.warrantyRepo.CreateWarrantyServiceRecord(record); err != nil {

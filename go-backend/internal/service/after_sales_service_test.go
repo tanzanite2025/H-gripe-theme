@@ -1,12 +1,17 @@
 package service
 
 import (
+	"encoding/json"
+	"fmt"
+	"strconv"
 	"testing"
 	"time"
 
 	"commerce-platform/internal/domain/aftersales"
 	coupondomain "commerce-platform/internal/domain/coupon"
+	domainmoney "commerce-platform/internal/domain/money"
 	"commerce-platform/internal/domain/order"
+	outboxdomain "commerce-platform/internal/domain/outbox"
 	paymentdomain "commerce-platform/internal/domain/payment"
 	"commerce-platform/internal/domain/user"
 	"commerce-platform/internal/repository"
@@ -14,6 +19,7 @@ import (
 	"github.com/glebarez/sqlite"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"gorm.io/datatypes"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 )
@@ -148,6 +154,7 @@ func TestAfterSalesServicePersistsAndValidatesReturnShipmentLifecycle(t *testing
 		Carrier:        "DHL",
 		TrackingNumber: "DHL-123",
 		TrackingURL:    "https://tracking.example/DHL-123",
+		LabelURL:       "https://labels.example/DHL-123.pdf",
 	})
 	require.NoError(t, err)
 
@@ -172,7 +179,153 @@ func TestAfterSalesServicePersistsAndValidatesReturnShipmentLifecycle(t *testing
 	require.Len(t, updated.ReturnShipments, 1)
 	assert.Equal(t, "DHL", updated.ReturnShipments[0].Carrier)
 	assert.Equal(t, "DHL-123", updated.ReturnShipments[0].TrackingNumber)
+	assert.Equal(t, "https://labels.example/DHL-123.pdf", updated.ReturnShipments[0].LabelURL)
 	assert.NotNil(t, updated.ReturnShipments[0].ReceivedAt)
+}
+
+func TestAfterSalesServiceFindsCaseByReturnTrackingNumber(t *testing.T) {
+	db, service := newAfterSalesService(t)
+	orderRecord := seedAfterSalesOrder(t, db, 1)
+	created, err := service.CreateCase(CreateAfterSalesCaseInput{
+		OrderID: orderRecord.ID,
+		Type:    aftersales.TypeReturnRefund,
+		Reason:  "Warehouse scan lookup",
+		Items: []AfterSalesCaseItemInput{{
+			OrderItemID: orderRecord.Items[0].ID,
+			Quantity:    1,
+		}},
+	})
+	require.NoError(t, err)
+	_, err = service.UpdateStatus(created.ID, aftersales.StatusReviewing, "Reviewed", 7)
+	require.NoError(t, err)
+	_, err = service.UpdateStatus(created.ID, aftersales.StatusApproved, "Approved", 7)
+	require.NoError(t, err)
+	_, err = service.UpdateStatusWithReturnShipment(created.ID, UpdateAfterSalesStatusInput{
+		Status:           aftersales.StatusAwaitingReturn,
+		UpdatedBy:        7,
+		WarehouseName:    "EU Returns Hub",
+		WarehouseAddress: "1 Returns Way",
+	})
+	require.NoError(t, err)
+	_, err = service.UpdateStatusWithReturnShipment(created.ID, UpdateAfterSalesStatusInput{
+		Status:         aftersales.StatusReturnInTransit,
+		UpdatedBy:      7,
+		Carrier:        "DHL",
+		TrackingNumber: "RET-SCAN-42",
+	})
+	require.NoError(t, err)
+
+	resolved, err := service.FindCaseByReturnTrackingNumber("  ret-scan-42 ")
+	require.NoError(t, err)
+	assert.Equal(t, created.ID, resolved.ID)
+	assert.Equal(t, aftersales.StatusReturnInTransit, resolved.Status)
+	require.Len(t, resolved.ReturnShipments, 1)
+	assert.Equal(t, "RET-SCAN-42", resolved.ReturnShipments[0].TrackingNumber)
+}
+
+func TestAfterSalesStatusTransitionQueuesCanonicalOutboxFact(t *testing.T) {
+	db, service := newAfterSalesService(t)
+	require.NoError(t, db.AutoMigrate(&outboxdomain.Event{}))
+	service.txManager.ConfigureOutboxRepository(repository.NewOutboxRepository(db))
+	orderRecord := seedAfterSalesOrder(t, db, 1)
+	created, err := service.CreateCase(CreateAfterSalesCaseInput{
+		OrderID: orderRecord.ID,
+		Type:    aftersales.TypeReturnRefund,
+		Reason:  "Package arrived damaged",
+		Items: []AfterSalesCaseItemInput{{
+			OrderItemID: orderRecord.Items[0].ID,
+			Quantity:    1,
+		}},
+	})
+	require.NoError(t, err)
+	_, err = service.UpdateStatus(created.ID, aftersales.StatusReviewing, "Review started", 7)
+	require.NoError(t, err)
+
+	var event outboxdomain.Event
+	require.NoError(t, db.Where(
+		"event_type = ? AND aggregate_id = ?",
+		outboxdomain.EventTypeAfterSalesStatusChanged,
+		fmt.Sprint(created.ID),
+	).Order("id DESC").First(&event).Error)
+	var payload outboxdomain.AfterSalesStatusChangedPayload
+	require.NoError(t, json.Unmarshal(event.Payload, &payload))
+	assert.Equal(t, created.ID, payload.CaseID)
+	assert.Equal(t, aftersales.StatusRequested, payload.PreviousStatus)
+	assert.Equal(t, aftersales.StatusReviewing, payload.NewStatus)
+	assert.NotZero(t, payload.TransitionID)
+}
+
+func TestAfterSalesReturnShipmentFieldsReachCanonicalOutboxSnapshot(t *testing.T) {
+	db, service := newAfterSalesService(t)
+	require.NoError(t, db.AutoMigrate(&outboxdomain.Event{}))
+	service.txManager.ConfigureOutboxRepository(repository.NewOutboxRepository(db))
+	orderRecord := seedAfterSalesOrder(t, db, 1)
+	created, err := service.CreateCase(CreateAfterSalesCaseInput{
+		OrderID: orderRecord.ID,
+		Type:    aftersales.TypeReturnRefund,
+		Reason:  "Return package tracking",
+		Items: []AfterSalesCaseItemInput{{
+			OrderItemID: orderRecord.Items[0].ID,
+			Quantity:    1,
+		}},
+	})
+	require.NoError(t, err)
+	_, err = service.UpdateStatus(created.ID, aftersales.StatusReviewing, "Reviewed", 7)
+	require.NoError(t, err)
+	_, err = service.UpdateStatus(created.ID, aftersales.StatusApproved, "Approved", 7)
+	require.NoError(t, err)
+	_, err = service.UpdateStatusWithReturnShipment(created.ID, UpdateAfterSalesStatusInput{
+		Status:           aftersales.StatusAwaitingReturn,
+		Resolution:       "Return instructions issued",
+		UpdatedBy:        7,
+		WarehouseName:    "EU Returns Hub",
+		WarehouseAddress: "1 Returns Way",
+		LabelURL:         "https://labels.example/return-1.pdf",
+	})
+	require.NoError(t, err)
+
+	var event outboxdomain.Event
+	require.NoError(t, db.Where(
+		"event_type = ? AND aggregate_id = ?",
+		outboxdomain.EventTypeAfterSalesStatusChanged,
+		fmt.Sprint(created.ID),
+	).Order("id DESC").First(&event).Error)
+	var payload outboxdomain.AfterSalesStatusChangedPayload
+	require.NoError(t, json.Unmarshal(event.Payload, &payload))
+	assert.Equal(t, aftersales.StatusAwaitingReturn, payload.NewStatus)
+	assert.Equal(t, "EU Returns Hub", payload.WarehouseName)
+	assert.Equal(t, "1 Returns Way", payload.WarehouseAddress)
+	assert.Equal(t, "https://labels.example/return-1.pdf", payload.LabelURL)
+}
+
+func TestAfterSalesCustomerRequestQueuesCreationOutboxFact(t *testing.T) {
+	db, service := newAfterSalesService(t)
+	require.NoError(t, db.AutoMigrate(&outboxdomain.Event{}))
+	service.txManager.ConfigureOutboxRepository(repository.NewOutboxRepository(db))
+	orderRecord := seedAfterSalesOrder(t, db, 1)
+
+	created, err := service.CreateCustomerRequest(CreateCustomerAfterSalesRequestInput{
+		OrderID:     orderRecord.ID,
+		Reason:      "Wrong valve color",
+		Description: "The delivered valve color does not match the order.",
+		Items:       []AfterSalesCaseItemInput{{OrderItemID: orderRecord.Items[0].ID, Quantity: 1}},
+		CreatedBy:   1,
+	})
+	require.NoError(t, err)
+
+	var event outboxdomain.Event
+	require.NoError(t, db.Where(
+		"event_type = ? AND aggregate_id = ?",
+		outboxdomain.EventTypeAfterSalesStatusChanged,
+		fmt.Sprint(created.ID),
+	).First(&event).Error)
+	var payload outboxdomain.AfterSalesStatusChangedPayload
+	require.NoError(t, json.Unmarshal(event.Payload, &payload))
+	assert.Equal(t, created.ID, payload.CaseID)
+	assert.Equal(t, aftersales.StatusRequested, payload.NewStatus)
+	assert.Empty(t, payload.PreviousStatus)
+	assert.NotZero(t, payload.TransitionID)
+	assert.Equal(t, orderRecord.OrderNumber, payload.OrderNumber)
 }
 
 func TestAfterSalesServiceCustomerRequestDoesNotConsumeCompletedCaseQuantity(t *testing.T) {
@@ -198,12 +351,13 @@ func TestAfterSalesServiceCustomerRequestDoesNotConsumeCompletedCaseQuantity(t *
 		OrderID:     orderRecord.ID,
 		Reason:      "Second wheelset support request",
 		Description: "The second wheelset now needs after-sales support.",
+		Items:       []AfterSalesCaseItemInput{{OrderItemID: orderRecord.Items[0].ID, Quantity: 1}},
 		CreatedBy:   1,
 	})
 	require.NoError(t, err)
 	require.Len(t, request.Items, 1)
 	assert.Equal(t, orderRecord.Items[0].ID, request.Items[0].OrderItemID)
-	assert.Equal(t, 2, request.Items[0].Quantity)
+	assert.Equal(t, 1, request.Items[0].Quantity)
 }
 
 func TestAfterSalesServiceCustomerRequestSnapshotDoesNotReserveEligibility(t *testing.T) {
@@ -215,10 +369,11 @@ func TestAfterSalesServiceCustomerRequestSnapshotDoesNotReserveEligibility(t *te
 		Reason:      "Valve color is wrong",
 		Description: "Please review the affected item.",
 		CreatedBy:   1,
+		Items:       []AfterSalesCaseItemInput{{OrderItemID: orderRecord.Items[0].ID, Quantity: 1}},
 	})
 	require.NoError(t, err)
 	require.Len(t, request.Items, 1)
-	assert.Equal(t, 2, request.Items[0].Quantity)
+	assert.Equal(t, 1, request.Items[0].Quantity)
 
 	// The customer snapshot contains the complete order for staff context, but
 	// it must not prevent a later operator-created case from selecting the
@@ -258,16 +413,14 @@ func TestAfterSalesServiceAllowsCustomerRequestAlongsideOperatorCase(t *testing.
 		OrderID:     orderRecord.ID,
 		Reason:      "The remaining wheelset needs support",
 		Description: "Please review the other item while the first return is in transit.",
+		Items:       []AfterSalesCaseItemInput{{OrderItemID: orderRecord.Items[0].ID, Quantity: 1}},
 		CreatedBy:   1,
 	})
 	require.NoError(t, err)
 	require.NotNil(t, customerCase)
 	assert.Equal(t, aftersales.TypeCustomerRequest, customerCase.Type)
 	require.Len(t, customerCase.Items, 1)
-	// Customer requests keep a complete order snapshot for staff context;
-	// operator-managed reservations are not subtracted from this informational
-	// snapshot.
-	assert.Equal(t, 2, customerCase.Items[0].Quantity)
+	assert.Equal(t, 1, customerCase.Items[0].Quantity)
 	assert.NotEqual(t, operatorCase.ID, customerCase.ID)
 }
 
@@ -279,6 +432,7 @@ func TestAfterSalesServiceListsCustomerCasesWithStatusHistory(t *testing.T) {
 		OrderID:     orderRecord.ID,
 		Reason:      "Need return instructions",
 		Description: "Please share the return address and next steps.",
+		Items:       []AfterSalesCaseItemInput{{OrderItemID: orderRecord.Items[0].ID, Quantity: 1}},
 		CreatedBy:   1,
 	})
 	require.NoError(t, err)
@@ -300,6 +454,7 @@ func TestAfterSalesServiceRejectsDuplicateActiveCustomerRequests(t *testing.T) {
 		OrderID:     orderRecord.ID,
 		Reason:      "Package arrived damaged",
 		Description: "The product needs support review.",
+		Items:       []AfterSalesCaseItemInput{{OrderItemID: orderRecord.Items[0].ID, Quantity: 1}},
 		CreatedBy:   1,
 	}
 
@@ -424,7 +579,7 @@ func TestAfterSalesServiceRefundReviewDraftAndDecision(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, aftersales.RefundReviewStatusPending, draft.Status)
 	assert.Equal(t, "USD", draft.Currency)
-	assert.Equal(t, 50.0, draft.ProposedAmount)
+	assert.Equal(t, int64(5000), draft.ProposedAmountMinor)
 
 	approved, err := service.DecideRefundReview(DecideAfterSalesRefundReviewInput{
 		CaseID:        created.ID,
@@ -501,8 +656,8 @@ func TestRefundReviewLimitAllocatesOrderDiscountAcrossSelectedItems(t *testing.T
 		TotalAmountMinor:    10000,
 		Currency:            "USD",
 		Items: []order.OrderItem{
-			{ID: 1, Quantity: 1, Currency: "USD", SubtotalMinor: 10000, TotalMinor: 10000},
-			{ID: 2, Quantity: 1, Currency: "USD", SubtotalMinor: 10000, TotalMinor: 10000},
+			{ID: 1, Quantity: 1, Currency: "USD", SubtotalMinor: 10000, TotalMinor: 10000, PricingSnapshotData: datatypes.JSON([]byte(`{"net_amount_minor":10000}`))},
+			{ID: 2, Quantity: 1, Currency: "USD", SubtotalMinor: 10000, TotalMinor: 10000, PricingSnapshotData: datatypes.JSON([]byte(`{"net_amount_minor":10000}`))},
 		},
 	}
 	caseRecord := &aftersales.AfterSalesCase{
@@ -524,8 +679,8 @@ func TestRefundReviewLimitKeepsUndiscountedAmountAndCapsAtOrderTotal(t *testing.
 		TotalAmountMinor:    3000,
 		Currency:            "USD",
 		Items: []order.OrderItem{
-			{ID: 1, Quantity: 1, Currency: "USD", SubtotalMinor: 10000, TotalMinor: 10000},
-			{ID: 2, Quantity: 1, Currency: "USD", SubtotalMinor: 10000, TotalMinor: 10000},
+			{ID: 1, Quantity: 1, Currency: "USD", SubtotalMinor: 10000, TotalMinor: 10000, PricingSnapshotData: datatypes.JSON([]byte(`{"net_amount_minor":10000}`))},
+			{ID: 2, Quantity: 1, Currency: "USD", SubtotalMinor: 10000, TotalMinor: 10000, PricingSnapshotData: datatypes.JSON([]byte(`{"net_amount_minor":10000}`))},
 		},
 	}
 	caseRecord := &aftersales.AfterSalesCase{
@@ -547,7 +702,7 @@ func TestAfterSalesServiceCreatesIdempotentPendingRefundFromApprovedReview(t *te
 		OrderID:       orderRecord.ID,
 		TransactionID: "as-refund-draft-transaction",
 		PaymentMethod: "stripe",
-		Amount:        100,
+		AmountMinor:   10000,
 		Currency:      "USD",
 		Status:        "completed",
 	}
@@ -592,8 +747,8 @@ func TestAfterSalesServiceCreatesIdempotentPendingRefundFromApprovedReview(t *te
 	assert.Equal(t, refund.ID, *review.LinkedRefundID)
 	assert.Equal(t, transaction.ID, refund.TransactionID)
 	assert.Equal(t, "pending", refund.Status)
-	assert.Equal(t, 50.0, refund.Amount)
-	assert.Equal(t, 50.0, refund.RequestedAmount)
+	assert.Equal(t, int64(5000), refund.AmountMinor)
+	assert.Equal(t, int64(5000), refund.RequestedAmountMinor)
 	require.Len(t, refund.LineItems, 1)
 	assert.Equal(t, orderRecord.Items[0].ID, refund.LineItems[0].OrderItemID)
 	assert.Equal(t, 1, refund.LineItems[0].Quantity)
@@ -628,7 +783,7 @@ func TestAfterSalesServiceCreatesPendingRefundForFullyApprovedOrderCouponRefund(
 		orderRecord.Items[0].VariantID,
 		1,
 		1000,
-		0,
+		100,
 		"USD",
 	)
 	require.NoError(t, db.Model(&order.OrderItem{}).Where("id = ?", orderRecord.Items[0].ID).Updates(map[string]interface{}{
@@ -641,16 +796,16 @@ func TestAfterSalesServiceCreatesPendingRefundForFullyApprovedOrderCouponRefund(
 		OrderID:       orderRecord.ID,
 		TransactionID: "as-coupon-refund-transaction",
 		PaymentMethod: "stripe",
-		Amount:        900,
+		AmountMinor:   90000,
 		Currency:      "USD",
 		Status:        "completed",
 	}).Error)
 	promo := seedAfterSalesCoupon(t, db, "SAVE100", "fixed", 100, 1000, 0)
 	require.NoError(t, db.Create(&coupondomain.CouponUsage{
-		CouponID: promo.ID,
-		UserID:   orderRecord.UserID,
-		OrderID:  orderRecord.ID,
-		Discount: 100,
+		CouponID:      promo.ID,
+		UserID:        orderRecord.UserID,
+		OrderID:       orderRecord.ID,
+		DiscountMinor: 10000,
 	}).Error)
 
 	created, err := service.CreateCase(CreateAfterSalesCaseInput{
@@ -687,11 +842,11 @@ func TestAfterSalesServiceCreatesPendingRefundForFullyApprovedOrderCouponRefund(
 	require.NoError(t, err)
 	require.NotNil(t, refund)
 	assert.Equal(t, "pending", refund.Status)
-	assert.InDelta(t, 1000, refund.RequestedAmount, 0.001)
-	assert.InDelta(t, 100, refund.DiscountClawbackAmount, 0.001)
-	assert.InDelta(t, 900, refund.Amount, 0.001)
+	assert.Equal(t, int64(90000), refund.RequestedAmountMinor)
+	assert.Equal(t, int64(0), refund.DiscountClawbackAmountMinor)
+	assert.Equal(t, int64(90000), refund.AmountMinor)
 	require.Len(t, refund.LineItems, 1)
-	assert.InDelta(t, 1000, refund.LineItems[0].LineTotalAmount, 0.001)
+	assert.Equal(t, int64(90000), refund.LineItems[0].LineTotalMinor)
 }
 
 func TestAfterSalesServiceDoesNotCreateRefundBeforeApproval(t *testing.T) {
@@ -701,7 +856,7 @@ func TestAfterSalesServiceDoesNotCreateRefundBeforeApproval(t *testing.T) {
 		OrderID:       orderRecord.ID,
 		TransactionID: "as-unapproved-refund-transaction",
 		PaymentMethod: "stripe",
-		Amount:        100,
+		AmountMinor:   10000,
 		Currency:      "USD",
 		Status:        "completed",
 	}).Error)
@@ -749,7 +904,6 @@ func newAfterSalesService(t *testing.T) (*gorm.DB, *AfterSalesService) {
 		&user.User{},
 		&coupondomain.Coupon{},
 		&coupondomain.CouponUsage{},
-		&coupondomain.GiftCardTransaction{},
 		&paymentdomain.Transaction{},
 		&paymentdomain.Refund{},
 		&paymentdomain.RefundLineItem{},
@@ -800,23 +954,23 @@ func seedAfterSalesOrder(t *testing.T, db *gorm.DB, quantity int) *order.Order {
 	t.Helper()
 
 	record := &order.Order{
-		OrderNumber:    "AS-TEST-" + t.Name() + "-" + string(rune(quantity+'0')),
-		UserID:         1,
-		Status:         "shipped",
-		PaymentStatus:  "paid",
-		ShippingStatus: "shipped",
-		SubtotalAmount: 100,
-		TotalAmount:    100,
-		Currency:       "USD",
+		OrderNumber:         "AS-TEST-" + t.Name() + "-" + string(rune(quantity+'0')),
+		UserID:              1,
+		Status:              "shipped",
+		PaymentStatus:       "paid",
+		ShippingStatus:      "shipped",
+		SubtotalAmountMinor: 10000,
+		TotalAmountMinor:    10000,
+		Currency:            "USD",
 		Items: []order.OrderItem{{
-			ProductID:   10,
-			VariantID:   uintPtrForAfterSalesTest(11),
-			ProductName: "Test product",
-			SKU:         "TEST-SKU",
-			Quantity:    quantity,
-			Price:       50,
-			Subtotal:    100,
-			Total:       100,
+			ProductID:     10,
+			VariantID:     uintPtrForAfterSalesTest(11),
+			ProductName:   "Test product",
+			SKU:           "TEST-SKU",
+			Quantity:      quantity,
+			PriceMinor:    5000,
+			SubtotalMinor: 10000,
+			TotalMinor:    10000,
 		}},
 	}
 	record.Items[0].PricingSnapshotData = refundPricingLineForTest(
@@ -824,8 +978,8 @@ func seedAfterSalesOrder(t *testing.T, db *gorm.DB, quantity int) *order.Order {
 		record.Items[0].ProductID,
 		record.Items[0].VariantID,
 		record.Items[0].Quantity,
-		record.Items[0].Price,
-		record.Items[0].Discount,
+		float64(record.Items[0].PriceMinor)/100,
+		float64(record.Items[0].DiscountMinor)/100,
 		record.Currency,
 	)
 	require.NoError(t, db.Create(record).Error)
@@ -837,17 +991,28 @@ func seedAfterSalesCoupon(t *testing.T, db *gorm.DB, code string, couponType str
 	t.Helper()
 
 	record := coupondomain.Coupon{
-		Code:        code,
-		Type:        couponType,
-		Value:       value,
-		MinAmount:   minAmount,
-		MaxDiscount: maxDiscount,
-		Enabled:     true,
-		StartDate:   time.Now().Add(-24 * time.Hour),
-		EndDate:     time.Now().Add(24 * time.Hour),
+		Code:      code,
+		Type:      couponType,
+		Enabled:   true,
+		StartDate: time.Now().Add(-24 * time.Hour),
+		EndDate:   time.Now().Add(24 * time.Hour),
 	}
+	if couponType == "percentage" {
+		record.ValueRateDecimal = strconv.FormatFloat(value, 'f', -1, 64)
+	} else {
+		record.ValueMinor = majorTestMinor(t, value, "USD")
+	}
+	record.MinAmountMinor = majorTestMinor(t, minAmount, "USD")
+	record.MaxDiscountMinor = majorTestMinor(t, maxDiscount, "USD")
 	require.NoError(t, db.Create(&record).Error)
 	return record
+}
+
+func majorTestMinor(t *testing.T, amount float64, code string) int64 {
+	t.Helper()
+	money, err := domainmoney.FromMajorFloat(amount, code)
+	require.NoError(t, err)
+	return money.AmountMinor()
 }
 
 func uintPtrForAfterSalesTest(value uint) *uint {

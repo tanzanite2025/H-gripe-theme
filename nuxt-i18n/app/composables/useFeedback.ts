@@ -37,6 +37,7 @@ export interface CreateFeedbackPayload {
   content: string
   name?: string
   email?: string
+  fax_number?: string
   locale?: string
   page_path?: string
   page_title?: string
@@ -100,12 +101,13 @@ export const useFeedback = (threadKey: string) => {
         content: payload.content,
         name: payload.name,
         email: payload.email,
+        fax_number: payload.fax_number,
         locale: payload.locale,
         page_path: payload.page_path,
         page_title: payload.page_title,
       }
 
-      const response = await auth.request<{ id: number; status: string; message?: string }>(
+      const response = await auth.request<{ id?: number; status: string; message?: string }>(
         '/feedback',
         {
           method: 'POST',

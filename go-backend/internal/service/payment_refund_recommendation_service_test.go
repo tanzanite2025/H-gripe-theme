@@ -29,7 +29,7 @@ func TestPaymentRefundRecommendationServiceEnqueuesIdempotently(t *testing.T) {
 		OrderID:       42,
 		TransactionID: "pi_123",
 		PaymentMethod: "stripe",
-		Amount:        120,
+		AmountMinor:   12000,
 		Currency:      "USD",
 		Status:        "completed",
 	}
@@ -40,7 +40,7 @@ func TestPaymentRefundRecommendationServiceEnqueuesIdempotently(t *testing.T) {
 		ExternalReference: "efw_123",
 		WebhookEventID:    "evt_123",
 		ProviderPaymentID: "pi_123",
-		Amount:            120,
+		AmountMinor:       12000,
 		Currency:          "USD",
 		OccurredAt:        now,
 		MetadataJSON:      "{}",
@@ -53,7 +53,7 @@ func TestPaymentRefundRecommendationServiceEnqueuesIdempotently(t *testing.T) {
 		ExternalReference: "efw_123",
 		WebhookEventID:    "evt_123",
 		ProviderPaymentID: "pi_123",
-		Amount:            120,
+		AmountMinor:       12000,
 		Currency:          "usd",
 		OccurredAt:        now,
 		Metadata:          map[string]string{"fraud_type": "card"},
@@ -92,7 +92,7 @@ func TestPaymentRefundRecommendationServiceCancelsNoLongerActionableDispute(t *t
 		ExternalReference: "PP-D-1",
 		WebhookEventID:    "WH-1",
 		ProviderPaymentID: "PAY-1",
-		Amount:            50,
+		AmountMinor:       5000,
 		Currency:          "USD",
 		OccurredAt:        time.Date(2026, time.August, 2, 9, 0, 0, 0, time.UTC),
 		Metadata:          map[string]string{"status": "WAITING_FOR_SELLER_RESPONSE", "reason": "unauthorized"},
@@ -117,7 +117,7 @@ func TestPaymentRefundRecommendationDecisionDoesNotCreateRefund(t *testing.T) {
 		ExternalReference: "efw_decision",
 		WebhookEventID:    "evt_decision",
 		ProviderPaymentID: "pi_decision",
-		Amount:            88,
+		AmountMinor:       8800,
 		Currency:          "USD",
 		OccurredAt:        time.Now().UTC(),
 		Metadata:          map[string]string{"fraud_type": "card"},
@@ -139,8 +139,8 @@ func TestPaymentRefundRecommendationDecisionDoesNotCreateRefund(t *testing.T) {
 func TestPaymentRefundRecommendationCreatesPendingRefundDraft(t *testing.T) {
 	db := newPaymentRefundRecommendationTestDB(t)
 	service := newPaymentRefundRecommendationWorkflowService(db)
-	orderRecord, transaction := createRefundRecommendationPaidOrder(t, db, 120)
-	recommendation := createRefundRecommendationRecord(t, db, orderRecord.ID, transaction.ID, 100)
+	orderRecord, transaction := createRefundRecommendationPaidOrder(t, db, 12000)
+	recommendation := createRefundRecommendationRecord(t, db, orderRecord.ID, transaction.ID, 10000)
 	requestedAmount := domainmoney.MustNew(8000, "USD")
 
 	updated, refund, err := service.CreatePendingRefundFromRecommendation(CreatePendingRefundFromRecommendationInput{
@@ -165,8 +165,8 @@ func TestPaymentRefundRecommendationCreatesPendingRefundDraft(t *testing.T) {
 	require.Equal(t, orderRecord.ID, refund.OrderID)
 	require.Equal(t, transaction.ID, refund.TransactionID)
 	require.Equal(t, "pending", refund.Status)
-	require.Equal(t, 80.0, refund.Amount)
-	require.Equal(t, 80.0, refund.RequestedAmount)
+	require.Equal(t, int64(8000), refund.AmountMinor)
+	require.Equal(t, int64(8000), refund.RequestedAmountMinor)
 	require.Equal(t, "manual risk review refund", refund.Reason)
 	require.Nil(t, refund.RefundID)
 	require.Empty(t, refund.GatewayResponse)
@@ -180,8 +180,8 @@ func TestPaymentRefundRecommendationCreatesPendingRefundDraft(t *testing.T) {
 func TestPaymentRefundRecommendationPendingRefundDraftIsIdempotent(t *testing.T) {
 	db := newPaymentRefundRecommendationTestDB(t)
 	service := newPaymentRefundRecommendationWorkflowService(db)
-	orderRecord, transaction := createRefundRecommendationPaidOrder(t, db, 75)
-	recommendation := createRefundRecommendationRecord(t, db, orderRecord.ID, transaction.ID, 75)
+	orderRecord, transaction := createRefundRecommendationPaidOrder(t, db, 7500)
+	recommendation := createRefundRecommendationRecord(t, db, orderRecord.ID, transaction.ID, 7500)
 
 	_, firstRefund, err := service.CreatePendingRefundFromRecommendation(CreatePendingRefundFromRecommendationInput{
 		RecommendationID: recommendation.ID,
@@ -206,8 +206,8 @@ func TestPaymentRefundRecommendationPendingRefundDraftIsIdempotent(t *testing.T)
 func TestPaymentRefundRecommendationRejectsInvalidExplicitMoney(t *testing.T) {
 	db := newPaymentRefundRecommendationTestDB(t)
 	service := newPaymentRefundRecommendationWorkflowService(db)
-	orderRecord, transaction := createRefundRecommendationPaidOrder(t, db, 100)
-	recommendation := createRefundRecommendationRecord(t, db, orderRecord.ID, transaction.ID, 100)
+	orderRecord, transaction := createRefundRecommendationPaidOrder(t, db, 10000)
+	recommendation := createRefundRecommendationRecord(t, db, orderRecord.ID, transaction.ID, 10000)
 
 	euroAmount := domainmoney.MustNew(5000, "EUR")
 	_, _, err := service.CreatePendingRefundFromRecommendation(CreatePendingRefundFromRecommendationInput{
@@ -250,10 +250,7 @@ func newPaymentRefundRecommendationTestDB(t *testing.T) *gorm.DB {
 		&orderdomain.OrderItem{},
 		&coupondomain.Coupon{},
 		&coupondomain.CouponUsage{},
-		&coupondomain.GiftCard{},
-		&coupondomain.GiftCardTransaction{},
 		&loyaltydomain.ProgramConfig{},
-		&loyaltydomain.ProgramRedeemOption{},
 		&loyaltydomain.UserLoyalty{},
 		&loyaltydomain.LoyaltyTransaction{},
 		&outboxdomain.Event{},
@@ -282,26 +279,26 @@ func newPaymentRefundRecommendationWorkflowService(db *gorm.DB) *PaymentRefundRe
 	return NewPaymentRefundRecommendationService(refundRecommendationRepo, txManager)
 }
 
-func createRefundRecommendationPaidOrder(t *testing.T, db *gorm.DB, amount float64) (orderdomain.Order, paymentdomain.Transaction) {
+func createRefundRecommendationPaidOrder(t *testing.T, db *gorm.DB, amountMinor int64) (orderdomain.Order, paymentdomain.Transaction) {
 	t.Helper()
 
 	orderRecord := orderdomain.Order{
-		OrderNumber:     "ORD-RISK-1",
-		UserID:          11,
-		Status:          "paid",
-		PaymentStatus:   "paid",
-		SubtotalAmount:  amount,
-		TotalAmount:     amount,
-		Currency:        "USD",
-		PaymentAmount:   amount,
-		PaymentCurrency: "USD",
+		OrderNumber:         "ORD-RISK-1",
+		UserID:              11,
+		Status:              "paid",
+		PaymentStatus:       "paid",
+		SubtotalAmountMinor: amountMinor,
+		TotalAmountMinor:    amountMinor,
+		Currency:            "USD",
+		PaymentAmountMinor:  amountMinor,
+		PaymentCurrency:     "USD",
 	}
 	require.NoError(t, db.Create(&orderRecord).Error)
 	transaction := paymentdomain.Transaction{
 		OrderID:       orderRecord.ID,
 		TransactionID: "pi_refund_draft",
 		PaymentMethod: "stripe",
-		Amount:        amount,
+		AmountMinor:   amountMinor,
 		Currency:      "USD",
 		Status:        "completed",
 	}
@@ -309,24 +306,24 @@ func createRefundRecommendationPaidOrder(t *testing.T, db *gorm.DB, amount float
 	return orderRecord, transaction
 }
 
-func createRefundRecommendationRecord(t *testing.T, db *gorm.DB, orderID uint, transactionID uint, amount float64) paymentdomain.PaymentRefundRecommendation {
+func createRefundRecommendationRecord(t *testing.T, db *gorm.DB, orderID uint, transactionID uint, amountMinor int64) paymentdomain.PaymentRefundRecommendation {
 	t.Helper()
 
 	recommendation := paymentdomain.PaymentRefundRecommendation{
-		Provider:           "stripe",
-		SourceKind:         paymentdomain.PaymentRiskEventEarlyFraudWarning,
-		ExternalReference:  "efw_refund_draft",
-		WebhookEventID:     "evt_refund_draft",
-		OrderID:            &orderID,
-		TransactionID:      &transactionID,
-		ProviderPaymentID:  "pi_refund_draft",
-		RecommendedAction:  paymentdomain.PaymentRefundRecommendationActionReviewRefundBeforeDispute,
-		RecommendedAmount:  amount,
-		Currency:           "USD",
-		Priority:           paymentdomain.PaymentRefundRecommendationPriorityHigh,
-		Status:             paymentdomain.PaymentRefundRecommendationStatusPending,
-		Reason:             "Early fraud warning received; review a local refund draft.",
-		SourceMetadataJSON: "{}",
+		Provider:               "stripe",
+		SourceKind:             paymentdomain.PaymentRiskEventEarlyFraudWarning,
+		ExternalReference:      "efw_refund_draft",
+		WebhookEventID:         "evt_refund_draft",
+		OrderID:                &orderID,
+		TransactionID:          &transactionID,
+		ProviderPaymentID:      "pi_refund_draft",
+		RecommendedAction:      paymentdomain.PaymentRefundRecommendationActionReviewRefundBeforeDispute,
+		RecommendedAmountMinor: amountMinor,
+		Currency:               "USD",
+		Priority:               paymentdomain.PaymentRefundRecommendationPriorityHigh,
+		Status:                 paymentdomain.PaymentRefundRecommendationStatusPending,
+		Reason:                 "Early fraud warning received; review a local refund draft.",
+		SourceMetadataJSON:     "{}",
 	}
 	require.NoError(t, db.Create(&recommendation).Error)
 	return recommendation

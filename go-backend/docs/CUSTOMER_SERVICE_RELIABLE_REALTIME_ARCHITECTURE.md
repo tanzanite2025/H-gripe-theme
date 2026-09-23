@@ -1,12 +1,14 @@
 # Customer-Service Reliable Realtime Architecture
 
-Last audited: 2026-08-16
+Last audited: 2026-09-17
 
 This document defines the durable data and realtime delivery design for Public
 Chat and the backoffice customer-service workspace. It supplements
 `nuxt-i18n/docs/notes/CHAT-SYSTEM-ANALYSIS.md`; that document remains the
 authority for storefront/admin ownership, customer access, and message
-presentation contracts.
+presentation contracts. Conversation lifecycle, per-recipient archive state,
+list views, and deletion/retention semantics are defined exclusively by
+`../../docs/design/customer-service-conversation-lifecycle-and-inbox-architecture.md`.
 
 ## 1. Decisions
 
@@ -143,14 +145,21 @@ the same database transaction. The current producer scope is:
   advances to a customer message;
 - `conversation.assigned` for an explicit backoffice transfer that changes the
   assigned user and resets that user's inbox cursor.
-- `conversation.status.changed` for the legacy same-owner transfer command
-  when it advances a conversation from `open`, `closed`, or another non-active
-  status to `in_progress` without creating a message or changing assignment.
+- `conversation.inbox_state.changed` for current-recipient archive/restore;
+  the inbox-state mutation and Outbox event commit in the same transaction.
+- `conversation.status.changed` for explicit lifecycle commands, lifecycle
+  changes caused by agent/customer messages, and the legacy same-owner transfer
+  path. Every changed status increments `tickets.status_version`; no-op commands
+  create no new event identity.
 
+`conversation.created` and `conversation.context.updated` are contract-level
+event types, but their complete transactional producers are still planned. They
+must not be treated as implemented until their commands and rollback tests
+exist.
 Captured customer-context updates remain explicitly deferred until their
-commands have matching transactional mutation identities. Status-only commands
-outside the implemented same-owner transfer path remain deferred until their
-write path also creates a durable mutation identity.
+commands have matching transactional mutation identities. New lifecycle write
+paths must use the implemented optimistic status command or its transactional
+message integration instead of directly updating `tickets.status`.
 The event key is deterministic for the mutation, for example:
 
 ```text
@@ -363,8 +372,8 @@ is deliberately incremental:
 - A backoffice transfer that changes owner resets the new owner's cursor and
   writes a compact `conversation.assigned` Outbox event in the same
   transaction. Reassigning to the current owner may retain its legacy status
-  transition, but does not fabricate an assignment event. When that command
-  actually changes status, it increments `tickets.status_version` and writes a
+  transition, but does not fabricate an assignment event. When a transfer
+  changes status, it increments `tickets.status_version` and writes a matching
   backoffice-only `conversation.status.changed` Outbox event in the same
   transaction. Repeating the command after the conversation is already active
   is a no-op and reuses no event identity.
@@ -372,8 +381,9 @@ is deliberately incremental:
 ### Phase 3: Cross-instance relay and replay
 
 Implemented for durable `conversation.message.created`, backoffice
-`conversation.messages.read`, backoffice `conversation.assigned`, and the
-backoffice same-owner-transfer `conversation.status.changed` events:
+`conversation.messages.read`, backoffice `conversation.assigned`, backoffice
+`conversation.inbox_state.changed`, and all backoffice
+`conversation.status.changed` producer paths:
 
 - `CUSTOMER_SERVICE_REALTIME_ENABLED=true` enables the Redis Stream relay.
   The production configuration and production environment template enable it
@@ -410,9 +420,9 @@ backoffice same-owner-transfer `conversation.status.changed` events:
   keys need that same slot for the atomic Lua operation.
 
 The following are intentionally still local, best-effort Hub events until
-their write commands have transactional Outbox producers: status changes
-outside the same-owner transfer command, context invalidations, typing, and
-presence. Do not write these request-end events directly to the Redis Stream,
+their write commands have transactional Outbox producers: context invalidations,
+typing, and presence. Do not write these request-end
+events directly to the Redis Stream,
 because doing so would falsely label them durable and replayable. Storefront
 customer-context capture is specifically local-only: its visitor-profile update
 is not yet in the same transaction as a customer-service Outbox write.
@@ -436,9 +446,10 @@ The client-to-server WebSocket frame contract is intentionally narrow:
 The server derives the conversation and actor from the authenticated socket;
 the client never chooses another conversation or audience through a frame.
 `ping` is the only other accepted application control frame and receives a
-`pong` frame. Durable message, transfer, read, and status mutations continue
-to use their existing HTTP commands and transactionally generated Outbox
-events.
+`pong` frame. Durable message, transfer, read, archive/restore, and the
+currently implemented status transition continue to use HTTP commands and
+transactionally generated Outbox events. Future explicit lifecycle commands
+must use the same path.
 
 ## 8. Operational Requirements
 
@@ -523,9 +534,10 @@ The next implemented operation scope is complete when:
    status transition, and new-assignee inbox state.
 5. Immediate local Hub notification and later Redis Stream delivery use the
    same event id, so browser reconciliation is not duplicated.
-6. A same-owner transfer that changes only status increments `status_version`
-   and writes one backoffice-only `conversation.status.changed` Outbox event;
-   a failed insert rolls back both the status and version.
+6. A transfer or explicit lifecycle command that changes status increments
+   `status_version` and writes one backoffice-only
+   `conversation.status.changed` Outbox event; a failed insert rolls back both
+   the status and version.
 
 ## 10. Explicit Non-Goals for Phase 1
 

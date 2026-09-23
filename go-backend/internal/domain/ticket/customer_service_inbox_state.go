@@ -17,6 +17,7 @@ type CustomerServiceInboxState struct {
 	UnreadCount       int            `gorm:"not null;default:0" json:"unread_count"`
 	AssignmentVersion uint           `gorm:"not null;default:1" json:"assignment_version"`
 	LastReadAt        *time.Time     `json:"last_read_at,omitempty"`
+	ArchivedAt        *time.Time     `json:"archived_at,omitempty"`
 	CreatedAt         time.Time      `json:"created_at"`
 	UpdatedAt         time.Time      `json:"updated_at"`
 	DeletedAt         gorm.DeletedAt `gorm:"index" json:"-"`

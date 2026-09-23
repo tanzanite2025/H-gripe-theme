@@ -19,12 +19,12 @@ import (
 const shippingQuoteLifetime = 15 * time.Minute
 
 type shippingQuoteHashItem struct {
-	ProductID   uint    `json:"product_id"`
-	VariantID   uint    `json:"variant_id"`
-	TemplateID  uint    `json:"template_id"`
-	Quantity    int     `json:"quantity"`
-	UnitPrice   float64 `json:"unit_price"`
-	WeightGrams int     `json:"weight_grams"`
+	ProductID      uint  `json:"product_id"`
+	VariantID      uint  `json:"variant_id"`
+	TemplateID     uint  `json:"template_id"`
+	Quantity       int   `json:"quantity"`
+	UnitPriceMinor int64 `json:"unit_price_minor"`
+	WeightGrams    int   `json:"weight_grams"`
 }
 
 type shippingQuoteHashInput struct {
@@ -124,9 +124,10 @@ func shippingQuoteRequestHash(input ShippingQuoteInput) string {
 		if item.ShippingTemplateID != nil {
 			templateID = *item.ShippingTemplateID
 		}
+		unitPriceMinor := item.UnitPriceMinor
 		items = append(items, shippingQuoteHashItem{
 			ProductID: item.ProductID, VariantID: variantID, TemplateID: templateID,
-			Quantity: item.Quantity, UnitPrice: item.UnitPrice, WeightGrams: item.WeightGrams,
+			Quantity: item.Quantity, UnitPriceMinor: unitPriceMinor, WeightGrams: item.WeightGrams,
 		})
 	}
 	sort.SliceStable(items, func(i, j int) bool {
@@ -142,8 +143,8 @@ func shippingQuoteRequestHash(input ShippingQuoteInput) string {
 		if items[i].Quantity != items[j].Quantity {
 			return items[i].Quantity < items[j].Quantity
 		}
-		if items[i].UnitPrice != items[j].UnitPrice {
-			return items[i].UnitPrice < items[j].UnitPrice
+		if items[i].UnitPriceMinor != items[j].UnitPriceMinor {
+			return items[i].UnitPriceMinor < items[j].UnitPriceMinor
 		}
 		return items[i].WeightGrams < items[j].WeightGrams
 	})

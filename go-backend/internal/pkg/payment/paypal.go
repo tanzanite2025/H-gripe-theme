@@ -71,7 +71,11 @@ func (g *paypalGatewayImpl) CreatePayment(ctx context.Context, req *PaymentReque
 	if err := ValidateGatewayCurrency(g.config.Type, req.Currency); err != nil {
 		return nil, fmt.Errorf("invalid payment request: %w", err)
 	}
-	amountValue, err := paymentMajorString(req.Amount, req.Currency)
+	amountMoney, err := PaymentRequestMoney(req)
+	if err != nil {
+		return nil, err
+	}
+	amountValue, err := amountMoney.FormatMajor()
 	if err != nil {
 		return nil, err
 	}
@@ -161,11 +165,16 @@ func (g *paypalGatewayImpl) CreatePayment(ctx context.Context, req *PaymentReque
 	}
 	metadata["order_id"] = req.OrderID
 	metadata["paypal_order_id"] = createdOrder.ID
+	responseAmount, err := amountMoney.FormatMajor()
+	if err != nil {
+		return nil, err
+	}
 
 	return &PaymentResponse{
 		ID:            createdOrder.ID,
 		Status:        createdOrder.Status,
-		Amount:        req.Amount,
+		Amount:        responseAmount,
+		AmountMinor:   amountMoney.AmountMinor(),
 		Currency:      req.Currency,
 		PaymentURL:    approvalURL,
 		TransactionID: createdOrder.ID,

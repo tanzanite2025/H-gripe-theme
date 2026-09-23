@@ -13,7 +13,6 @@ type TxManager struct {
 	programRepo                   *LoyaltyProgramRepository
 	referralRepo                  *ReferralRepository
 	referralProgramRepo           *ReferralProgramRepository
-	redemptionRepo                *GiftCardRedemptionRepository
 	paymentRepo                   *PaymentRepository
 	refundReviewRepo              *PaymentRefundRecommendationRepository
 	refundExecRepo                *PaymentRefundExecutionRepository
@@ -50,7 +49,6 @@ type TxRepositories struct {
 	Program                   *LoyaltyProgramRepository
 	Referral                  *ReferralRepository
 	ReferralProgram           *ReferralProgramRepository
-	Redemption                *GiftCardRedemptionRepository
 	Payment                   *PaymentRepository
 	RefundReview              *PaymentRefundRecommendationRepository
 	RefundExecution           *PaymentRefundExecutionRepository
@@ -91,10 +89,6 @@ func NewTxManager(
 		manager.shippingRepo = shippingRepo[0]
 	}
 	return manager
-}
-
-func (m *TxManager) ConfigureGiftCardRedemptionRepository(repo *GiftCardRedemptionRepository) {
-	m.redemptionRepo = repo
 }
 
 func (m *TxManager) ConfigureLoyaltyProgramRepository(repo *LoyaltyProgramRepository) {
@@ -179,10 +173,6 @@ func (m *TxManager) WithinTx(fn func(TxRepositories) error) error {
 		var shippingRepo *ShippingRepository
 		if m.shippingRepo != nil {
 			shippingRepo = m.shippingRepo.WithTx(tx)
-		}
-		var redemptionRepo *GiftCardRedemptionRepository
-		if m.redemptionRepo != nil {
-			redemptionRepo = m.redemptionRepo.WithTx(tx)
 		}
 		var programRepo *LoyaltyProgramRepository
 		if m.programRepo != nil {
@@ -274,7 +264,6 @@ func (m *TxManager) WithinTx(fn func(TxRepositories) error) error {
 			Program:                   programRepo,
 			Referral:                  referralRepo,
 			ReferralProgram:           referralProgramRepo,
-			Redemption:                redemptionRepo,
 			Payment:                   m.paymentRepo.WithTx(tx),
 			RefundReview:              refundReviewRepo,
 			RefundExecution:           refundExecRepo,

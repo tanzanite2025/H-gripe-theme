@@ -29,11 +29,11 @@ func TestProductServiceAdminProductCategoryBindingCanBeCleared(t *testing.T) {
 		Status:            "active",
 		Locale:            "en",
 		Variants: []ProductVariantInput{{
-			SKU:       "WHEELSET-001",
-			Price:     499,
-			Stock:     2,
-			IsDefault: true,
-			IsActive:  boolPtr(true),
+			SKU:        "WHEELSET-001",
+			PriceMinor: 499,
+			Stock:      2,
+			IsDefault:  true,
+			IsActive:   boolPtr(true),
 		}},
 	})
 	require.NoError(t, err)
@@ -93,11 +93,11 @@ func TestProductServiceSearchPublicFiltersByCategorySubtree(t *testing.T) {
 			Status:            "active",
 			Locale:            "en",
 			Variants: []ProductVariantInput{{
-				SKU:       sku + "-VAR",
-				Price:     100,
-				Stock:     2,
-				IsDefault: true,
-				IsActive:  boolPtr(true),
+				SKU:        sku + "-VAR",
+				PriceMinor: 100,
+				Stock:      2,
+				IsDefault:  true,
+				IsActive:   boolPtr(true),
 			}},
 		})
 		require.NoError(t, err)

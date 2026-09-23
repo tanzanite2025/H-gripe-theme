@@ -14,6 +14,11 @@ const (
 	SiteQualityJobKindManual    = "manual"
 	SiteQualityJobKindRecheck   = "recheck"
 
+	SiteQualityAuditScopeFull     = "full"
+	SiteQualityAuditScopeHeadings = "headings"
+	SiteQualityAuditScopeSchema   = "schema"
+	SiteQualityAuditScopeLinkText = "link_text"
+
 	SiteQualityJobStatusQueued     = "queued"
 	SiteQualityJobStatusProcessing = "processing"
 	SiteQualityJobStatusSucceeded  = "succeeded"
@@ -71,6 +76,7 @@ type SiteQualityJob struct {
 	TargetID              uint       `gorm:"not null;index" json:"target_id"`
 	FindingID             *uint      `gorm:"index" json:"finding_id,omitempty"`
 	Strategy              string     `gorm:"size:16;not null;index" json:"strategy"`
+	AuditScope            string     `gorm:"size:16;not null;default:'full';index" json:"audit_scope"`
 	Kind                  string     `gorm:"size:16;not null;index" json:"kind"`
 	Status                string     `gorm:"size:16;not null;index" json:"status"`
 	IdempotencyKey        string     `gorm:"size:255;not null;uniqueIndex" json:"idempotency_key"`

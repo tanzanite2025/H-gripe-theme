@@ -3,7 +3,6 @@ package service
 import (
 	"errors"
 	"fmt"
-	"math"
 	"strings"
 
 	"commerce-platform/internal/domain/currency"
@@ -34,17 +33,17 @@ type ProductSupplierCostRecordListInput struct {
 }
 
 type ProductSupplierCostRecordDetailsInput struct {
-	UnitCost                *float64
-	Currency                string
-	SupplierName            string
-	SupplierContactName     string
-	SupplierPhone           string
-	SupplierEmail           string
-	LeadTimeDays            int
-	MinimumOrderQuantity    int
-	InboundShippingUnitCost float64
-	PackagingUnitCost       float64
-	OtherUnitCost           float64
+	UnitCostMinor                *int64
+	Currency                     string
+	SupplierName                 string
+	SupplierContactName          string
+	SupplierPhone                string
+	SupplierEmail                string
+	LeadTimeDays                 int
+	MinimumOrderQuantity         int
+	InboundShippingUnitCostMinor int64
+	PackagingUnitCostMinor       int64
+	OtherUnitCostMinor           int64
 }
 
 type ProductSupplierCostRecordCreateInput struct {
@@ -259,18 +258,18 @@ func normalizeProductSupplierCostRecordFromInput(
 	input ProductSupplierCostRecordDetailsInput,
 ) (*suppliercostdomain.ProductSupplierCostRecord, error) {
 	record := &suppliercostdomain.ProductSupplierCostRecord{
-		ProductCode:             strings.TrimSpace(productCode),
-		ProductName:             strings.TrimSpace(productName),
-		Currency:                strings.TrimSpace(input.Currency),
-		SupplierName:            strings.TrimSpace(input.SupplierName),
-		SupplierContactName:     strings.TrimSpace(input.SupplierContactName),
-		SupplierPhone:           strings.TrimSpace(input.SupplierPhone),
-		SupplierEmail:           strings.TrimSpace(input.SupplierEmail),
-		LeadTimeDays:            input.LeadTimeDays,
-		MinimumOrderQuantity:    input.MinimumOrderQuantity,
-		InboundShippingUnitCost: input.InboundShippingUnitCost,
-		PackagingUnitCost:       input.PackagingUnitCost,
-		OtherUnitCost:           input.OtherUnitCost,
+		ProductCode:                  strings.TrimSpace(productCode),
+		ProductName:                  strings.TrimSpace(productName),
+		Currency:                     strings.TrimSpace(input.Currency),
+		SupplierName:                 strings.TrimSpace(input.SupplierName),
+		SupplierContactName:          strings.TrimSpace(input.SupplierContactName),
+		SupplierPhone:                strings.TrimSpace(input.SupplierPhone),
+		SupplierEmail:                strings.TrimSpace(input.SupplierEmail),
+		LeadTimeDays:                 input.LeadTimeDays,
+		MinimumOrderQuantity:         input.MinimumOrderQuantity,
+		InboundShippingUnitCostMinor: input.InboundShippingUnitCostMinor,
+		PackagingUnitCostMinor:       input.PackagingUnitCostMinor,
+		OtherUnitCostMinor:           input.OtherUnitCostMinor,
 	}
 	if record.Currency == "" {
 		record.Currency = suppliercostdomain.DefaultCurrency
@@ -291,23 +290,23 @@ func normalizeProductSupplierCostRecordFromInput(
 	if len(record.ProductName) > 255 {
 		return nil, fmt.Errorf("%w: product_name is too long", ErrProductSupplierCostRecordInvalid)
 	}
-	if input.UnitCost == nil {
+	if input.UnitCostMinor == nil {
 		return nil, fmt.Errorf("%w: unit_cost is required", ErrProductSupplierCostRecordInvalid)
 	}
-	record.UnitCost = *input.UnitCost
+	record.UnitCostMinor = *input.UnitCostMinor
 
 	costs := []struct {
 		name  string
-		value float64
+		value int64
 	}{
-		{name: "unit_cost", value: record.UnitCost},
-		{name: "inbound_shipping_unit_cost", value: record.InboundShippingUnitCost},
-		{name: "packaging_unit_cost", value: record.PackagingUnitCost},
-		{name: "other_unit_cost", value: record.OtherUnitCost},
+		{name: "unit_cost_minor", value: record.UnitCostMinor},
+		{name: "inbound_shipping_unit_cost_minor", value: record.InboundShippingUnitCostMinor},
+		{name: "packaging_unit_cost_minor", value: record.PackagingUnitCostMinor},
+		{name: "other_unit_cost_minor", value: record.OtherUnitCostMinor},
 	}
 	for _, cost := range costs {
-		if math.IsNaN(cost.value) || math.IsInf(cost.value, 0) || cost.value < 0 {
-			return nil, fmt.Errorf("%w: %s must be a finite non-negative amount", ErrProductSupplierCostRecordInvalid, cost.name)
+		if cost.value < 0 {
+			return nil, fmt.Errorf("%w: %s must be a non-negative minor amount", ErrProductSupplierCostRecordInvalid, cost.name)
 		}
 	}
 	if record.LeadTimeDays < 0 || record.LeadTimeDays > 3650 {
@@ -346,18 +345,18 @@ func (s *ProductSupplierCostRecordService) syncProfitabilitySnapshotInTx(tx *gor
 		return err
 	}
 
-	unitCost := record.UnitCost
+	unitCost := record.UnitCostMinor
 	result, err := suppliercostdomain.CalculateProfit(suppliercostdomain.ProfitCalculationInput{
-		ProductCode:             record.ProductCode,
-		ProductName:             record.ProductName,
-		SellingCurrency:         snapshot.Currency,
-		CostCurrency:            record.Currency,
-		ListPrice:               snapshot.ListPrice,
-		SalePrice:               snapshot.SalePrice,
-		UnitCost:                &unitCost,
-		InboundShippingUnitCost: record.InboundShippingUnitCost,
-		PackagingUnitCost:       record.PackagingUnitCost,
-		OtherUnitCost:           record.OtherUnitCost,
+		ProductCode:                  record.ProductCode,
+		ProductName:                  record.ProductName,
+		SellingCurrency:              snapshot.Currency,
+		CostCurrency:                 record.Currency,
+		ListPriceMinor:               snapshot.ListPriceMinor,
+		SalePriceMinor:               snapshot.SalePriceMinor,
+		UnitCostMinor:                &unitCost,
+		InboundShippingUnitCostMinor: record.InboundShippingUnitCostMinor,
+		PackagingUnitCostMinor:       record.PackagingUnitCostMinor,
+		OtherUnitCostMinor:           record.OtherUnitCostMinor,
 	})
 	if err != nil {
 		return err

@@ -43,22 +43,22 @@ func (r *PaymentRefundRecommendationRepository) UpsertRecommendation(
 	).First(&existing).Error
 	if err == nil {
 		updates := map[string]interface{}{
-			"webhook_event_id":     recommendation.WebhookEventID,
-			"risk_event_id":        recommendation.RiskEventID,
-			"order_id":             recommendation.OrderID,
-			"transaction_id":       recommendation.TransactionID,
-			"provider_payment_id":  recommendation.ProviderPaymentID,
-			"payment_intent_id":    recommendation.PaymentIntentID,
-			"charge_id":            recommendation.ChargeID,
-			"recommended_action":   recommendation.RecommendedAction,
-			"recommended_amount":   recommendation.RecommendedAmount,
-			"currency":             recommendation.Currency,
-			"priority":             recommendation.Priority,
-			"reason":               recommendation.Reason,
-			"provider_reason":      recommendation.ProviderReason,
-			"review_by":            recommendation.ReviewBy,
-			"source_metadata_json": recommendation.SourceMetadataJSON,
-			"updated_at":           time.Now().UTC(),
+			"webhook_event_id":         recommendation.WebhookEventID,
+			"risk_event_id":            recommendation.RiskEventID,
+			"order_id":                 recommendation.OrderID,
+			"transaction_id":           recommendation.TransactionID,
+			"provider_payment_id":      recommendation.ProviderPaymentID,
+			"payment_intent_id":        recommendation.PaymentIntentID,
+			"charge_id":                recommendation.ChargeID,
+			"recommended_action":       recommendation.RecommendedAction,
+			"recommended_amount_minor": recommendation.RecommendedAmountMinor,
+			"currency":                 recommendation.Currency,
+			"priority":                 recommendation.Priority,
+			"reason":                   recommendation.Reason,
+			"provider_reason":          recommendation.ProviderReason,
+			"review_by":                recommendation.ReviewBy,
+			"source_metadata_json":     recommendation.SourceMetadataJSON,
+			"updated_at":               time.Now().UTC(),
 		}
 		if err := r.db.Model(&paymentdomain.PaymentRefundRecommendation{}).
 			Where("id = ?", existing.ID).

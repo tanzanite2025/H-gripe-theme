@@ -8,6 +8,7 @@
     <div class="h-full w-1/3 animate-[admin-loading-bar_1.1s_ease-in-out_infinite] bg-primary" />
   </div>
   <router-view />
+  <URLCheckProgressIndicator />
   <Toaster rich-colors position="top-right" />
 </template>
 
@@ -15,6 +16,7 @@
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { toast } from 'vue-sonner'
 import { Toaster } from '@/components/ui/sonner'
+import URLCheckProgressIndicator from '@/components/admin/url-management/URLCheckProgressIndicator.vue'
 import { useAuthStore } from '@/stores/auth'
 import router from '@/router'
 import { useAdminI18n } from '@/i18n'

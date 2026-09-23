@@ -102,11 +102,11 @@
           </AdminFormField>
 
           <AdminFormField label="燃油附加 %">
-            <Input v-model.number="form.fuel_surcharge_percent" type="number" min="0" step="0.001" />
+            <Input v-model.trim="form.fuel_surcharge_percent_decimal" type="number" min="0" step="0.001" />
           </AdminFormField>
 
           <AdminFormField label="偏远附加费">
-            <Input v-model.number="form.remote_surcharge" type="number" min="0" step="0.01" />
+            <Input v-model.number="form.remote_surcharge_minor" type="number" min="0" step="1" />
           </AdminFormField>
 
           <AdminFormField

@@ -38,47 +38,37 @@ func (h *Handler) GetTaxRate(c *gin.Context) {
 
 func (h *Handler) CalculateTax(c *gin.Context) {
 	var req struct {
-		Amount     float64 `json:"amount" binding:"required,gt=0"`
-		Country    string  `json:"country" binding:"required"`
-		State      string  `json:"state"`
-		PostalCode string  `json:"postal_code"`
+		AmountMinor int64  `json:"amount_minor" binding:"required,gt=0"`
+		Country     string `json:"country" binding:"required"`
+		State       string `json:"state"`
+		PostalCode  string `json:"postal_code"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		apierror.RespondBadRequest(c, err.Error())
 		return
 	}
 
-	amountMoney, err := domainmoney.FromMajorFloat(req.Amount, currency.DefaultPrimaryCurrency)
+	amountMoney, err := domainmoney.New(req.AmountMinor, currency.DefaultPrimaryCurrency)
 	if err != nil {
 		apierror.RespondBadRequest(c, "invalid amount")
 		return
 	}
-	taxRate, taxMoney, err := h.paymentService.CalculateTaxMoney(amountMoney, req.Country, req.State, req.PostalCode)
+	taxRateDecimal, taxMoney, err := h.paymentService.CalculateTaxMoney(amountMoney, req.Country, req.State, req.PostalCode)
 	if err != nil {
 		apierror.RespondInternalError(c, err)
 		return
 	}
 
-	tax, err := taxMoney.MajorFloat()
-	if err != nil {
-		apierror.RespondInternalError(c, err)
-		return
-	}
 	totalMoney, err := amountMoney.Add(taxMoney)
 	if err != nil {
 		apierror.RespondInternalError(c, err)
 		return
 	}
-	total, err := totalMoney.MajorFloat()
-	if err != nil {
-		apierror.RespondInternalError(c, err)
-		return
-	}
-
 	response.Success(c, gin.H{
-		"amount":   req.Amount,
-		"tax_rate": taxRate,
-		"tax":      tax,
-		"total":    total,
+		"amount_minor":     req.AmountMinor,
+		"tax_rate_decimal": taxRateDecimal,
+		"tax_minor":        taxMoney.AmountMinor(),
+		"total_minor":      totalMoney.AmountMinor(),
+		"currency":         currency.DefaultPrimaryCurrency,
 	})
 }

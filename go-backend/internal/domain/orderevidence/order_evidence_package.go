@@ -3,7 +3,6 @@ package orderevidence
 import (
 	"errors"
 	"fmt"
-	"math"
 	"strings"
 	"time"
 
@@ -22,20 +21,20 @@ const (
 // OrderEvidencePackage is a versioned, order-scoped container for structured
 // fulfillment evidence. It is separate from the immutable order snapshot.
 type OrderEvidencePackage struct {
-	ID                    uint                `gorm:"primaryKey" json:"id"`
-	OrderID               uint                `gorm:"not null;index" json:"order_id"`
-	SnapshotID            uint                `gorm:"not null;index" json:"snapshot_id"`
-	PackageVersion        int                 `gorm:"not null" json:"package_version"`
-	Status                string              `gorm:"size:20;not null;index" json:"status"`
-	OrderTotalUSDSnapshot float64             `gorm:"column:order_total_usd_snapshot;not null" json:"order_total_usd_snapshot"`
-	IsHighValue           bool                `gorm:"not null;index" json:"is_high_value"`
-	HasSpokeTensionQC     bool                `gorm:"not null;index" json:"has_spoke_tension_qc"`
-	SchemaVersion         int                 `gorm:"not null" json:"schema_version"`
-	CreatedBy             uint                `gorm:"not null;default:0" json:"created_by"`
-	LockedAt              *time.Time          `json:"locked_at,omitempty"`
-	Items                 []OrderEvidenceItem `gorm:"foreignKey:PackageID" json:"items,omitempty"`
-	CreatedAt             time.Time           `json:"created_at"`
-	UpdatedAt             time.Time           `json:"updated_at"`
+	ID                         uint                `gorm:"primaryKey" json:"id"`
+	OrderID                    uint                `gorm:"not null;index" json:"order_id"`
+	SnapshotID                 uint                `gorm:"not null;index" json:"snapshot_id"`
+	PackageVersion             int                 `gorm:"not null" json:"package_version"`
+	Status                     string              `gorm:"size:20;not null;index" json:"status"`
+	OrderTotalUSDSnapshotMinor int64               `gorm:"column:order_total_usd_snapshot_minor;not null" json:"order_total_usd_snapshot_minor"`
+	IsHighValue                bool                `gorm:"not null;index" json:"is_high_value"`
+	HasSpokeTensionQC          bool                `gorm:"not null;index" json:"has_spoke_tension_qc"`
+	SchemaVersion              int                 `gorm:"not null" json:"schema_version"`
+	CreatedBy                  uint                `gorm:"not null;default:0" json:"created_by"`
+	LockedAt                   *time.Time          `json:"locked_at,omitempty"`
+	Items                      []OrderEvidenceItem `gorm:"foreignKey:PackageID" json:"items,omitempty"`
+	CreatedAt                  time.Time           `json:"created_at"`
+	UpdatedAt                  time.Time           `json:"updated_at"`
 }
 
 func (OrderEvidencePackage) TableName() string {
@@ -61,7 +60,7 @@ func (p OrderEvidencePackage) Validate() error {
 	if p.SchemaVersion != OrderEvidencePackageSchemaVersion {
 		return fmt.Errorf("unsupported order evidence package schema version %d", p.SchemaVersion)
 	}
-	if math.IsNaN(p.OrderTotalUSDSnapshot) || math.IsInf(p.OrderTotalUSDSnapshot, 0) || p.OrderTotalUSDSnapshot < 0 {
+	if p.OrderTotalUSDSnapshotMinor < 0 {
 		return errors.New("order evidence package order_total_usd_snapshot must be finite and non-negative")
 	}
 	if status == PackageStatusLocked && p.LockedAt == nil {

@@ -8,7 +8,7 @@
         :aria-label="inboxAriaLabel"
         aria-haspopup="dialog"
         :aria-expanded="inboxOpen"
-        @click="inboxOpen = true"
+        @click="openInbox"
       >
         <Headset class="size-6" aria-hidden="true" />
         <span
@@ -36,7 +36,10 @@ import { useRoute, useRouter } from 'vue-router'
 import customerServiceApi from '@/api/customerService'
 import CustomerServiceInboxDialog from '@/components/admin/customer-service/CustomerServiceInboxDialog.vue'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import { useCustomerServiceRealtime } from '@/composables/customerService/useCustomerServiceRealtime'
+import {
+  requestCustomerServiceNotificationPermission,
+  useCustomerServiceRealtime,
+} from '@/composables/customerService/useCustomerServiceRealtime'
 
 const route = useRoute()
 const router = useRouter()
@@ -60,6 +63,11 @@ const inboxAriaLabel = computed(() => (
     ? `打开客服会话，${unreadConversationCount.value} 个未读会话`
     : '打开客服会话'
 ))
+
+const openInbox = (): void => {
+  void requestCustomerServiceNotificationPermission()
+  inboxOpen.value = true
+}
 
 const refreshUnreadConversationCount = async () => {
   try {

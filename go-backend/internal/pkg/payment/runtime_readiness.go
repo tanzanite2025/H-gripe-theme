@@ -34,6 +34,10 @@ type GatewayRuntimeStatus struct {
 	RequiredFields        []string    `json:"required_fields"`
 	DocumentationLabel    string      `json:"documentation_label"`
 	DocumentationURL      string      `json:"documentation_url"`
+	RequiredWebhookEvents []string    `json:"required_webhook_events"`
+	WebhookEventChecklist []string    `json:"webhook_event_checklist"`
+	WebhookEventSetupURL  string      `json:"webhook_event_setup_url,omitempty"`
+	WebhookEventsVerified bool        `json:"webhook_events_verified"`
 }
 
 func BuildRuntimeReadiness(baseURL string) RuntimeReadiness {
@@ -81,6 +85,10 @@ func buildGatewayRuntimeStatus(gatewayType GatewayType, baseURL string) GatewayR
 		CallbackURL:           paymentWebhookURL(baseURL, gatewayType),
 		RuntimeSource:         "environment",
 		WebhookSupported:      true,
+		RequiredWebhookEvents: RequiredWebhookEvents(gatewayType),
+		WebhookEventChecklist: RequiredWebhookEventChecklist(gatewayType),
+		WebhookEventSetupURL:  WebhookEventSetupURL(gatewayType),
+		WebhookEventsVerified: false,
 		SecretStoreConfigured: PaymentConfigMasterKeyConfigured(),
 	}
 
@@ -182,6 +190,9 @@ func buildGatewayRuntimeStatus(gatewayType GatewayType, baseURL string) GatewayR
 	if len(status.Missing) > 0 {
 		status.Warnings = append(status.Warnings, "Missing runtime environment fields: "+strings.Join(status.Missing, ", "))
 	}
+	if len(status.RequiredWebhookEvents) > 0 {
+		status.Warnings = append(status.Warnings, "Provider webhook event subscriptions require explicit dashboard verification; use the required event checklist before production traffic.")
+	}
 
 	return status
 }
@@ -189,9 +200,9 @@ func buildGatewayRuntimeStatus(gatewayType GatewayType, baseURL string) GatewayR
 func paymentWebhookURL(baseURL string, gatewayType GatewayType) string {
 	baseURL = NormalizePublicBaseURL(baseURL)
 	if baseURL == "" {
-		return "/api/v1/payment/webhook/" + string(gatewayType)
+		return "/api/v1/payments/" + string(gatewayType) + "/webhook"
 	}
-	return baseURL + "/api/v1/payment/webhook/" + string(gatewayType)
+	return baseURL + "/api/v1/payments/" + string(gatewayType) + "/webhook"
 }
 
 func GatewayWebhookURL(baseURL string, gatewayType GatewayType) string {
@@ -265,6 +276,9 @@ func applySecureGatewayStatus(status *GatewayRuntimeStatus, secureStatus SecureG
 		status.Configured = containsString(secureStatus.ConfiguredFields, "mch_id") && containsString(secureStatus.ConfiguredFields, "app_id") && containsString(secureStatus.ConfiguredFields, "private_key_path") && containsString(secureStatus.ConfiguredFields, "merchant_serial")
 		status.WebhookConfigured = containsString(secureStatus.ConfiguredFields, "api_v3_key") && wechatPlatformVerifierConfigured
 		status.ProductionReady = status.Configured && status.WebhookConfigured
+	}
+	if len(status.RequiredWebhookEvents) > 0 {
+		status.Warnings = append(status.Warnings, "Provider webhook event subscriptions require explicit dashboard verification; use the required event checklist before production traffic.")
 	}
 }
 

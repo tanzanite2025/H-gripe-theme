@@ -104,8 +104,9 @@ func (h *SiteQualityHandler) CreateSiteQualityJob(c *gin.Context) {
 		return
 	}
 	var req struct {
-		URL      string `json:"url"`
-		Strategy string `json:"strategy"`
+		URL        string `json:"url"`
+		Strategy   string `json:"strategy"`
+		AuditScope string `json:"audit_scope"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		h.recordSiteQualityRunAudit(c, adminAuditEvent{
@@ -124,6 +125,7 @@ func (h *SiteQualityHandler) CreateSiteQualityJob(c *gin.Context) {
 		req.Strategy,
 		c.GetUint("user_id"),
 		sitequalitydomain.SiteQualityJobKindManual,
+		req.AuditScope,
 	)
 	if err != nil {
 		h.recordSiteQualityRunAudit(c, adminAuditEvent{
@@ -149,7 +151,7 @@ func (h *SiteQualityHandler) CreateSiteQualityJob(c *gin.Context) {
 		Resource:   adminAuditResourceSiteQualityRun,
 		ResourceID: job.ID,
 		Status:     adminAuditStatusSuccess,
-		Changes:    gin.H{"url": strings.TrimSpace(req.URL), "strategy": strings.TrimSpace(req.Strategy), "job_id": job.ID},
+		Changes:    gin.H{"url": strings.TrimSpace(req.URL), "strategy": strings.TrimSpace(req.Strategy), "audit_scope": strings.TrimSpace(req.AuditScope), "job_id": job.ID},
 		NewValue:   job,
 	})
 	c.JSON(http.StatusAccepted, response.Response{

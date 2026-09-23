@@ -23,6 +23,7 @@ export interface ProductFormRecord {
   variants: any[]
   media: any[]
   variant_option_values: ProductVariantOptionValueForm[]
+  option_value_relations: ProductOptionValueRelationForm[]
   [key: string]: any
 }
 
@@ -54,17 +55,48 @@ export interface ProductVariantForm {
   title?: string
   option_values: Record<string, any>
   currency?: string
-  price?: number | string
+  price?: string
   price_minor?: number | string
-  sale_price?: number | string
+  sale_price?: string | null
   sale_price_minor?: number | string | null
   weight_grams?: number | string
   shipping_template_id?: number | string | null
   stock?: number | string
   is_active?: boolean
-  display_prices?: ProductDisplayPriceResult[]
   option_group_rules?: ProductOptionGroupVariantRuleForm[]
   option_value_rules?: ProductOptionValueVariantRuleForm[]
+}
+
+export interface ProductTemplateSyncDiffItem {
+  spec_definition_id: number
+  group_slug: string
+  group_name: string
+  value_key: string
+  changes: string[]
+  current_label?: string
+  template_label?: string
+  current_enabled?: boolean
+  template_enabled?: boolean
+  current_price_delta_minor?: number | string | null
+  template_price_delta_minor?: number | string | null
+}
+
+export interface ProductTemplateSyncDiff {
+  product_id: number
+  template_id: number
+  materialized_revision: number
+  template_revision: number
+  revision_changed: boolean
+  has_changes: boolean
+  items: ProductTemplateSyncDiffItem[]
+  summary: {
+    added: number
+    disabled: number
+    enabled: number
+    label_changed: number
+    price_changed: number
+    removed: number
+  }
 }
 
 export interface ProductOptionGroupVariantRuleForm {
@@ -81,6 +113,15 @@ export interface ProductOptionValueVariantRuleForm {
   is_enabled: boolean
   price_delta_minor_override?: number | string | null
   unavailable_reason?: string
+}
+
+export type ProductOptionValueRelationType = 'requires' | 'conflicts'
+
+export interface ProductOptionValueRelationForm {
+  id?: number | string | null
+  source_option_value_id: number | string | null
+  target_option_value_id: number | string | null
+  relation_type: ProductOptionValueRelationType
 }
 
 export interface ProductVariantRecord extends ProductVariantForm {
@@ -109,6 +150,12 @@ export interface ProductVariantOptionValueForm {
   inventory_policy?: string
   component_variant_id?: number | string | null
   component_quantity?: number | string
+  weight_delta_grams?: number | string
+  packaging_weight_delta_grams?: number | string
+  production_lead_time_days?: number | string
+  requires_production?: boolean
+  cancellation_policy?: string
+  return_policy?: string
 }
 
 export interface ProductSpecDefinition {
@@ -132,21 +179,13 @@ export interface ShippingTemplateRecord {
   enabled?: boolean
 }
 
-export interface ProductDisplayPriceResult {
-  currency?: string
-  quote_currency?: string
-  amount?: number | string
-  fallback_reason?: string
-  converted?: boolean
-}
-
 export interface ProductRecord {
   id?: number | string
   sku?: string
   name?: string
   media?: unknown
-  sale_price?: number | string
-  price?: number | string
+  sale_price_decimal?: string
+  price_decimal?: string
   currency?: string
   stock?: number | string
   status?: string

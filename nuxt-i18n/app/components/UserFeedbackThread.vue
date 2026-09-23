@@ -95,6 +95,11 @@
 
       <!-- Form -->
       <form v-else @submit.prevent="handleSubmit" class="space-y-3">
+        <HoneypotField
+          v-model="faxNumber"
+          name="fax_number"
+          label="Fax number"
+        />
         <p class="text-sm tz-text-secondary">
           {{ $t('feedback.formIntro', 'Share your thoughts to help us improve this page.') }}
         </p>
@@ -175,6 +180,7 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useI18n, useRoute } from '#imports'
 import { useFeedback } from '~/composables/useFeedback'
 import { createOverlayInstanceId, useOverlayBackStack } from '~/composables/useOverlayBackStack'
+import HoneypotField from '~/components/security/HoneypotField.vue'
 
 const props = defineProps<{
   threadKey: string
@@ -211,6 +217,7 @@ const filteredItems = computed(() => {
 const message = ref('')
 const name = ref('')
 const email = ref('')
+const faxNumber = ref('')
 const submitMessage = ref('')
 const submitError = ref('')
 const showAuth = ref(false)
@@ -273,6 +280,7 @@ const handleSubmit = async () => {
     content,
     name: name.value || undefined,
     email: email.value || undefined,
+    fax_number: faxNumber.value,
     locale: locale.value,
     page_path: submissionPagePath.value,
     page_title: submissionPageTitle.value,
@@ -288,6 +296,7 @@ const handleSubmit = async () => {
   message.value = ''
   name.value = ''
   email.value = ''
+  faxNumber.value = ''
   submitMessage.value =
     result.message ||
     $t('feedback.pendingMessage', 'Submitted successfully. Your feedback will appear after it is reviewed.')

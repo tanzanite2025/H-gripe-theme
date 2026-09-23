@@ -87,14 +87,14 @@
             </TableCell>
             <TableCell>
               <span class="font-mono text-xs font-black tabular-nums">
-                {{ formatMoney(record.purchase_price, record.currency) }}
+                {{ formatMinorMoney(record.unit_cost_minor, record.currency) }}
               </span>
             </TableCell>
             <TableCell class="font-mono text-[10px] text-muted-foreground">
               <div class="space-y-0.5">
-                <p>运费 {{ formatMoney(record.inbound_shipping_unit_cost, record.currency) }}</p>
-                <p>包装 {{ formatMoney(record.packaging_unit_cost, record.currency) }}</p>
-                <p>其他 {{ formatMoney(record.other_unit_cost, record.currency) }}</p>
+                <p>运费 {{ formatMinorMoney(record.inbound_shipping_unit_cost_minor, record.currency) }}</p>
+                <p>包装 {{ formatMinorMoney(record.packaging_unit_cost_minor, record.currency) }}</p>
+                <p>其他 {{ formatMinorMoney(record.other_unit_cost_minor, record.currency) }}</p>
               </div>
             </TableCell>
             <TableCell class="font-mono text-xs font-bold tabular-nums">
@@ -225,7 +225,7 @@
             </div>
             <div class="grid gap-3 md:grid-cols-2">
               <AdminFormField label="单位成本价" required>
-                <Input v-model="form.unit_cost" :disabled="saving" type="number" min="0" step="0.01" />
+                <Input v-model="form.unit_cost_major" :disabled="saving" type="number" min="0" step="0.01" />
               </AdminFormField>
               <AdminFormField label="币种">
                 <Select v-model="form.currency" :disabled="saving">
@@ -281,13 +281,13 @@
             </div>
             <div class="grid gap-3 border-t border-border/60 pt-3 md:grid-cols-3">
               <AdminFormField label="入库运费 / 件">
-                <Input v-model="form.inbound_shipping_unit_cost" :disabled="saving" type="number" min="0" step="0.01" />
+                <Input v-model="form.inbound_shipping_unit_cost_major" :disabled="saving" type="number" min="0" step="0.01" />
               </AdminFormField>
               <AdminFormField label="包装 / 件">
-                <Input v-model="form.packaging_unit_cost" :disabled="saving" type="number" min="0" step="0.01" />
+                <Input v-model="form.packaging_unit_cost_major" :disabled="saving" type="number" min="0" step="0.01" />
               </AdminFormField>
               <AdminFormField label="其他 / 件">
-                <Input v-model="form.other_unit_cost" :disabled="saving" type="number" min="0" step="0.01" />
+                <Input v-model="form.other_unit_cost_major" :disabled="saving" type="number" min="0" step="0.01" />
               </AdminFormField>
             </div>
           </section>
@@ -416,13 +416,17 @@ import {
   LEGACY_PRODUCT_SUPPLIER_COST_DELETE_PERMISSION_CODE,
   LEGACY_PRODUCT_SUPPLIER_COST_EDIT_PERMISSION_CODE,
 } from '@/lib/productSupplierCostLegacyPermissionCodes'
+import { formatMinorMoney, minorUnitsForCurrency } from '@/lib/dashboardPresentation'
 import { useAuthStore } from '@/stores/auth'
 
-interface ProductSupplierCostForm extends Omit<ProductSupplierCostRecordDetailsPayload, 'unit_cost'> {
+interface ProductSupplierCostForm extends Omit<ProductSupplierCostRecordDetailsPayload, 'unit_cost_minor' | 'inbound_shipping_unit_cost_minor' | 'packaging_unit_cost_minor' | 'other_unit_cost_minor'> {
   id?: number
   sku: string
   product_name: string
-  unit_cost: string | number
+  unit_cost_major: string | number
+  inbound_shipping_unit_cost_major: string | number
+  packaging_unit_cost_major: string | number
+  other_unit_cost_major: string | number
 }
 
 const authStore = useAuthStore()
@@ -453,7 +457,7 @@ function emptyForm(): ProductSupplierCostForm {
   return {
     sku: '',
     product_name: '',
-    unit_cost: '',
+    unit_cost_major: '',
     currency: 'USD',
     supplier_name: '',
     supplier_contact_name: '',
@@ -461,9 +465,9 @@ function emptyForm(): ProductSupplierCostForm {
     supplier_email: '',
     lead_time_days: 0,
     minimum_order_quantity: 1,
-    inbound_shipping_unit_cost: 0,
-    packaging_unit_cost: 0,
-    other_unit_cost: 0,
+    inbound_shipping_unit_cost_major: 0,
+    packaging_unit_cost_major: 0,
+    other_unit_cost_major: 0,
   }
 }
 
@@ -476,7 +480,7 @@ const assignForm = (record?: ProductSupplierCostRecord): void => {
     id: record.id,
     sku: record.product_code,
     product_name: record.product_name,
-    unit_cost: record.purchase_price,
+    unit_cost_major: minorToMajor(record.unit_cost_minor, record.currency),
     currency: record.currency,
     supplier_name: record.supplier_name,
     supplier_contact_name: record.supplier_contact_name,
@@ -484,9 +488,9 @@ const assignForm = (record?: ProductSupplierCostRecord): void => {
     supplier_email: record.supplier_email,
     lead_time_days: record.lead_time_days,
     minimum_order_quantity: record.minimum_order_quantity,
-    inbound_shipping_unit_cost: record.inbound_shipping_unit_cost,
-    packaging_unit_cost: record.packaging_unit_cost,
-    other_unit_cost: record.other_unit_cost,
+    inbound_shipping_unit_cost_major: minorToMajor(record.inbound_shipping_unit_cost_minor, record.currency),
+    packaging_unit_cost_major: minorToMajor(record.packaging_unit_cost_minor, record.currency),
+    other_unit_cost_major: minorToMajor(record.other_unit_cost_minor, record.currency),
   })
 }
 
@@ -640,7 +644,7 @@ const openEdit = (record: ProductSupplierCostRecord): void => {
 
 const save = async (): Promise<void> => {
   if (!canEdit.value && !(!form.id && canCreate.value)) return
-  const rawUnitCost = String(form.unit_cost).trim()
+  const rawUnitCost = String(form.unit_cost_major).trim()
   const unitCost = rawUnitCost === ''
     ? null
     : Number(rawUnitCost)
@@ -651,7 +655,7 @@ const save = async (): Promise<void> => {
   saving.value = true
   try {
     const detailsPayload: ProductSupplierCostRecordDetailsPayload = {
-      unit_cost: unitCost,
+      unit_cost_minor: majorToMinor(unitCost, form.currency),
       currency: form.currency,
       supplier_name: form.supplier_name.trim(),
       supplier_contact_name: form.supplier_contact_name.trim(),
@@ -659,9 +663,9 @@ const save = async (): Promise<void> => {
       supplier_email: form.supplier_email.trim(),
       lead_time_days: Number(form.lead_time_days || 0),
       minimum_order_quantity: Number(form.minimum_order_quantity || 1),
-      inbound_shipping_unit_cost: Number(form.inbound_shipping_unit_cost || 0),
-      packaging_unit_cost: Number(form.packaging_unit_cost || 0),
-      other_unit_cost: Number(form.other_unit_cost || 0),
+      inbound_shipping_unit_cost_minor: majorToMinor(form.inbound_shipping_unit_cost_major, form.currency),
+      packaging_unit_cost_minor: majorToMinor(form.packaging_unit_cost_major, form.currency),
+      other_unit_cost_minor: majorToMinor(form.other_unit_cost_major, form.currency),
     }
     if (form.id) {
       await productSupplierCostApi.update(form.id, detailsPayload)
@@ -696,12 +700,14 @@ const removeRecord = async (record: ProductSupplierCostRecord): Promise<void> =>
   }
 }
 
-const formatMoney = (amount: number, currency: string): string => {
-  try {
-    return new Intl.NumberFormat('zh-CN', { style: 'currency', currency }).format(Number(amount || 0))
-  } catch {
-    return `${currency} ${Number(amount || 0).toFixed(2)}`
-  }
+const minorToMajor = (value: unknown, currency: string): number => {
+  const minor = Number(value)
+  return Number.isFinite(minor) ? minor / (10 ** minorUnitsForCurrency(currency)) : 0
+}
+
+const majorToMinor = (value: unknown, currency: string): number => {
+  const major = Number(value)
+  return Number.isFinite(major) ? Math.round(major * (10 ** minorUnitsForCurrency(currency))) : 0
 }
 
 const formatDate = (value?: string): string => value ? new Date(value).toLocaleString('zh-CN') : '-'

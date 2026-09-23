@@ -95,6 +95,9 @@ func (s *OrderService) expirePaymentOrderIfStillEligible(orderID uint, cutoff, n
 		if !claimedExpiration {
 			return nil
 		}
+		if err := enqueueOrderPaymentExpiredDomainEvent(repos.Outbox, orderRecord, now); err != nil {
+			return err
+		}
 		expiredTransactions, err = repos.Payment.ExpireOpenTransactionsByOrderID(orderRecord.ID, now)
 		if err != nil {
 			return err

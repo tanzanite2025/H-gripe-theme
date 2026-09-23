@@ -45,8 +45,8 @@ func respondVisualShowcaseError(c *gin.Context, err error) {
 	switch {
 	case errors.Is(err, service.ErrHomeVisualTileStorageUnavailable):
 		c.JSON(http.StatusServiceUnavailable, gin.H{"error": err.Error()})
-	case errors.Is(err, service.ErrHomeVisualTilePreviousDestroyFailed):
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	case errors.Is(err, service.ErrObjectStorageCleanupUnavailable):
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": err.Error()})
 	case errors.Is(err, service.ErrHomeVisualTileKeyRequired),
 		errors.Is(err, service.ErrHomeVisualTileLocaleRequired),
 		errors.Is(err, service.ErrHomeVisualTileItemLimit),

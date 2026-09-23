@@ -376,6 +376,45 @@ func TestSiteQualityJobCleanupDeletesOnlyTerminalJobs(t *testing.T) {
 	require.Equal(t, int64(3), stats.Total)
 }
 
+func TestSiteQualityFindingCleanupDeletesOnlyOldFindingsWithoutLiveRechecks(t *testing.T) {
+	db := newSiteQualityRepositoryTestDB(t)
+	findingRepo := NewSiteQualityFindingRepository(db)
+	cutoff := time.Date(2026, time.September, 1, 0, 0, 0, 0, time.UTC)
+	old := cutoff.Add(-time.Hour)
+	recent := cutoff.Add(time.Hour)
+	targetID := uint(1)
+	findings := []sitequalitydomain.SiteQualityFinding{
+		{TargetID: &targetID, TargetURL: "https://example.com/old", Strategy: "mobile", AuditID: "old", Severity: "high", State: "open", FirstDetectedAt: old, LastDetectedAt: old, LatestRunID: 10, UpdatedAt: old, CreatedAt: old},
+		{TargetID: &targetID, TargetURL: "https://example.com/recheck", Strategy: "mobile", AuditID: "live", Severity: "high", State: "open", FirstDetectedAt: old, LastDetectedAt: old, LatestRunID: 11, UpdatedAt: old, CreatedAt: old},
+		{TargetID: &targetID, TargetURL: "https://example.com/recent", Strategy: "mobile", AuditID: "recent", Severity: "high", State: "open", FirstDetectedAt: recent, LastDetectedAt: recent, LatestRunID: 12, UpdatedAt: recent, CreatedAt: recent},
+	}
+	for index := range findings {
+		require.NoError(t, db.Create(&findings[index]).Error)
+	}
+	liveJob := sitequalitydomain.SiteQualityJob{
+		TargetID: 1, FindingID: &findings[1].ID, Strategy: "mobile", Kind: sitequalitydomain.SiteQualityJobKindRecheck,
+		Status: sitequalitydomain.SiteQualityJobStatusProcessing, IdempotencyKey: "live-recheck", SampleCount: 1,
+		RequiredConfirmations: 1, MaxAttempts: 4, AvailableAt: old,
+	}
+	require.NoError(t, db.Create(&liveJob).Error)
+	event := sitequalitydomain.SiteQualityFindingEvent{FindingID: findings[0].ID, EventType: "detected", CreatedAt: old}
+	require.NoError(t, db.Create(&event).Error)
+
+	result, err := findingRepo.DeleteOld(cutoff)
+	require.NoError(t, err)
+	require.Equal(t, int64(1), result.Deleted)
+	require.Equal(t, int64(1), result.Skipped)
+
+	var remaining []sitequalitydomain.SiteQualityFinding
+	require.NoError(t, db.Order("id ASC").Find(&remaining).Error)
+	require.Len(t, remaining, 2)
+	require.Equal(t, "live", remaining[0].AuditID)
+	require.Equal(t, "recent", remaining[1].AuditID)
+	var eventCount int64
+	require.NoError(t, db.Model(&sitequalitydomain.SiteQualityFindingEvent{}).Count(&eventCount).Error)
+	require.Zero(t, eventCount)
+}
+
 func TestSiteQualityJobClaimSkipsJobsForDisabledTargets(t *testing.T) {
 	db := newSiteQualityRepositoryTestDB(t)
 	targetRepo := NewSiteQualityTargetRepository(db)

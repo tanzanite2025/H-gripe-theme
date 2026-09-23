@@ -41,7 +41,9 @@ func TestCustomerServiceAvatarUploadReplacesProfileReferenceAndQueuesCleanup(t *
 	require.NoError(t, err)
 	require.Equal(t, store.uploadURL, avatarURL)
 	require.Equal(t, CustomerServiceAvatarCacheControl, store.cacheControl)
-	require.Equal(t, []string{profile.Avatar}, store.deletedURLs)
+	// Physical cleanup is performed by the transactional outbox worker after
+	// the profile reference update commits.
+	require.Empty(t, store.deletedURLs)
 
 	var saved user.AgentProfile
 	require.NoError(t, db.First(&saved, profile.ID).Error)
@@ -90,7 +92,8 @@ func TestCustomerServiceAvatarRemoveClearsReferenceAndQueuesCleanup(t *testing.T
 	)
 
 	require.NoError(t, service.Remove(context.Background(), *profile.UserID))
-	require.Equal(t, []string{profile.Avatar}, store.deletedURLs)
+	// Physical cleanup is asynchronous and owned by the outbox worker.
+	require.Empty(t, store.deletedURLs)
 
 	var saved user.AgentProfile
 	require.NoError(t, db.First(&saved, profile.ID).Error)

@@ -1,10 +1,14 @@
 package service
 
 import (
+	"errors"
+	"fmt"
+	"math/big"
+
 	"commerce-platform/internal/domain/currency"
+	domainmoney "commerce-platform/internal/domain/money"
 	shippingdomain "commerce-platform/internal/domain/shipping"
 	"commerce-platform/internal/repository"
-	"errors"
 
 	"gorm.io/datatypes"
 )
@@ -38,7 +42,7 @@ func (s *ShippingService) RefreshDisplayPriceSnapshots(
 	}
 
 	quoteCurrencies = normalizeDisplayPriceRefreshQuotes(quoteCurrencies, baseCurrency)
-	ratesByQuote := displayPriceRatesByQuote(rates, baseCurrency)
+	ratesByQuote := displayPriceRatesByQuoteRat(rates, baseCurrency)
 	templates, err := s.shippingRepo.FindAllTemplates()
 	if err != nil {
 		return ShippingDisplayPriceRefreshResult{}, err
@@ -66,7 +70,10 @@ func (s *ShippingService) RefreshDisplayPriceSnapshots(
 			continue
 		}
 
-		templateFields := shippingTemplateDisplayPriceAmounts(template)
+		templateFields, fieldsErr := shippingTemplateDisplayPriceAmounts(template)
+		if fieldsErr != nil {
+			return result, fmt.Errorf("resolve display amounts for shipping template %d: %w", template.ID, fieldsErr)
+		}
 		templateDisplayPriceData := refreshShippingDisplayPriceMap(
 			template.DisplayPriceData,
 			templateFields,
@@ -87,7 +94,10 @@ func (s *ShippingService) RefreshDisplayPriceSnapshots(
 				continue
 			}
 
-			ruleFields := shippingRuleDisplayPriceAmounts(template.Type, rule)
+			ruleFields, fieldsErr := shippingRuleDisplayPriceAmounts(template.Type, template.Currency, rule)
+			if fieldsErr != nil {
+				return result, fmt.Errorf("resolve display amounts for shipping rule %d: %w", rule.ID, fieldsErr)
+			}
 			update.RuleUpdates = append(update.RuleUpdates, repository.ShippingRuleDisplayPriceSnapshotUpdate{
 				RuleID: rule.ID,
 				DisplayPriceData: refreshShippingDisplayPriceMap(
@@ -111,26 +121,53 @@ func (s *ShippingService) RefreshDisplayPriceSnapshots(
 	return result, nil
 }
 
-func shippingTemplateDisplayPriceAmounts(template *shippingdomain.ShippingTemplate) map[string]float64 {
+func shippingTemplateDisplayPriceAmounts(template *shippingdomain.ShippingTemplate) (map[string]domainmoney.Money, error) {
 	if template == nil {
-		return nil
+		return nil, errors.New("shipping template is required")
 	}
-	return map[string]float64{
-		shippingdomain.ShippingTemplateDisplayPriceFieldDefaultFee:    template.DefaultFee,
-		shippingdomain.ShippingTemplateDisplayPriceFieldFreeThreshold: template.FreeThreshold,
+	amounts := make(map[string]domainmoney.Money, 2)
+	defaultFee, err := template.DefaultFeeMoney()
+	if err != nil {
+		return nil, fmt.Errorf("default fee: %w", err)
 	}
+	freeThreshold, err := template.FreeThresholdMoney()
+	if err != nil {
+		return nil, fmt.Errorf("free threshold: %w", err)
+	}
+	amounts[shippingdomain.ShippingTemplateDisplayPriceFieldDefaultFee] = defaultFee
+	amounts[shippingdomain.ShippingTemplateDisplayPriceFieldFreeThreshold] = freeThreshold
+	return amounts, nil
 }
 
-func shippingRuleDisplayPriceAmounts(templateType string, rule shippingdomain.ShippingRule) map[string]float64 {
-	amounts := map[string]float64{
-		shippingdomain.ShippingRuleDisplayPriceFieldFee:        rule.Fee,
-		shippingdomain.ShippingRuleDisplayPriceFieldAdditional: rule.Additional,
+func shippingRuleDisplayPriceAmounts(templateType, templateCurrency string, rule shippingdomain.ShippingRule) (map[string]domainmoney.Money, error) {
+	code := rule.Currency
+	if code == "" {
+		code = templateCurrency
 	}
+	amounts := make(map[string]domainmoney.Money, 4)
+	fee, err := rule.FeeMoney(code)
+	if err != nil {
+		return nil, fmt.Errorf("fee: %w", err)
+	}
+	additional, err := rule.AdditionalMoney(code)
+	if err != nil {
+		return nil, fmt.Errorf("additional: %w", err)
+	}
+	amounts[shippingdomain.ShippingRuleDisplayPriceFieldFee] = fee
+	amounts[shippingdomain.ShippingRuleDisplayPriceFieldAdditional] = additional
 	if templateType == "price" {
-		amounts[shippingdomain.ShippingRuleDisplayPriceFieldMinValue] = rule.MinValue
-		amounts[shippingdomain.ShippingRuleDisplayPriceFieldMaxValue] = rule.MaxValue
+		minMoney, err := rule.MinValueMoney(code)
+		if err != nil {
+			return nil, fmt.Errorf("minimum value: %w", err)
+		}
+		maxMoney, err := rule.MaxValueMoney(code)
+		if err != nil {
+			return nil, fmt.Errorf("maximum value: %w", err)
+		}
+		amounts[shippingdomain.ShippingRuleDisplayPriceFieldMinValue] = minMoney
+		amounts[shippingdomain.ShippingRuleDisplayPriceFieldMaxValue] = maxMoney
 	}
-	return amounts
+	return amounts, nil
 }
 
 func shippingRuleDisplayPriceFieldsForType(templateType string) []string {
@@ -145,21 +182,21 @@ func shippingRuleDisplayPriceFieldsForType(templateType string) []string {
 
 func refreshShippingDisplayPriceMap(
 	raw datatypes.JSON,
-	amounts map[string]float64,
+	amounts map[string]domainmoney.Money,
 	baseCurrency string,
 	quoteCurrencies []string,
-	ratesByQuote map[string]float64,
+	ratesByQuote map[string]*big.Rat,
 	allowedFields []string,
 ) datatypes.JSON {
 	previous := currency.ParseDisplayPriceSnapshotMap(raw, allowedFields...)
 	next := make(map[string][]currency.DisplayPriceSnapshot, len(amounts))
 	for _, field := range allowedFields {
-		amount := amounts[field]
-		if amount <= 0 {
+		amount, ok := amounts[field]
+		if !ok || amount.AmountMinor() <= 0 {
 			continue
 		}
 
-		snapshotJSON := displayPriceSnapshotJSON(
+		snapshotJSON := displayPriceSnapshotMoneyJSON(
 			amount,
 			nil,
 			baseCurrency,

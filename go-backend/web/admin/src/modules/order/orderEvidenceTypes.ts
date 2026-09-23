@@ -106,9 +106,9 @@ export interface OrderEvidenceManualPOD {
 }
 
 export interface OrderEvidenceTrackingContext {
-  shipment?: OrderEvidenceTrackingShipment | null
-  latest_delivery_event?: OrderEvidenceDeliveryEvent | null
-  provider_pod_url?: string | null
+  shipments?: OrderEvidenceTrackingShipment[]
+  latest_delivery_events?: OrderEvidenceDeliveryEvent[]
+  provider_pod_urls?: string[]
   manual_pod?: OrderEvidenceManualPOD | null
 }
 

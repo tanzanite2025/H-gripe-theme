@@ -230,6 +230,30 @@ func (r *ReferralRepository) CountMonthlyConvertedByReferrer(referrerID uint, st
 	return count, err
 }
 
+// CountRecentBindingsByIPSubnetHash counts still-effective referral bindings
+// created in a rolling window. Expired, revoked, and reversed records do not
+// consume the anti-fraud allowance because they are no longer valid
+// attributions.
+func (r *ReferralRepository) CountRecentBindingsByIPSubnetHash(subnetHash string, since time.Time) (int64, error) {
+	if r == nil || r.db == nil || strings.TrimSpace(subnetHash) == "" {
+		return 0, nil
+	}
+	if since.IsZero() {
+		return 0, errors.New("invalid referral binding window")
+	}
+	var count int64
+	err := r.db.Model(&loyalty.ReferralRecord{}).
+		Where("client_ip_subnet_hash = ? AND created_at >= ?", strings.TrimSpace(subnetHash), since.UTC()).
+		Where("status IN ?", []string{
+			loyalty.ReferralStatusPending,
+			loyalty.ReferralStatusOrdered,
+			loyalty.ReferralStatusVesting,
+			loyalty.ReferralStatusSettled,
+		}).
+		Count(&count).Error
+	return count, err
+}
+
 func (r *ReferralRepository) ListRecordsByReferrerID(referrerID uint, page, pageSize int) ([]loyalty.ReferralRecord, int64, error) {
 	if r == nil || r.db == nil || referrerID == 0 {
 		return nil, 0, gorm.ErrRecordNotFound
@@ -262,6 +286,8 @@ type ReferralStats struct {
 type ReferralAdminFilters struct {
 	Status  string
 	Keyword string
+	From    *time.Time
+	To      *time.Time
 }
 
 type ReferralAdminStats struct {
@@ -287,13 +313,7 @@ func (r *ReferralRepository) ListAdminRecords(filters ReferralAdminFilters, page
 		Joins("LEFT JOIN users AS referrer_user ON referrer_user.id = referral_records.referrer_id").
 		Joins("LEFT JOIN users AS referee_user ON referee_user.id = referral_records.referee_id").
 		Joins("LEFT JOIN orders AS referral_order ON referral_order.id = referral_records.order_id")
-	if status := strings.TrimSpace(strings.ToLower(filters.Status)); status != "" {
-		query = query.Where("referral_records.status = ?", status)
-	}
-	if keyword := strings.TrimSpace(filters.Keyword); keyword != "" {
-		like := "%" + keyword + "%"
-		query = query.Where("LOWER(referral_records.referral_code_snapshot) LIKE LOWER(?) OR LOWER(referrer_user.email) LIKE LOWER(?) OR LOWER(referee_user.email) LIKE LOWER(?) OR LOWER(referral_order.order_number) LIKE LOWER(?)", like, like, like, like)
-	}
+	query = applyReferralAdminFilters(query, filters, "referral_records")
 	var total int64
 	if err := query.Count(&total).Error; err != nil {
 		return nil, 0, err
@@ -305,19 +325,46 @@ func (r *ReferralRepository) ListAdminRecords(filters ReferralAdminFilters, page
 	return records, total, nil
 }
 
-func (r *ReferralRepository) AdminStats() (ReferralAdminStats, error) {
+func applyReferralAdminFilters(query *gorm.DB, filters ReferralAdminFilters, recordAlias string) *gorm.DB {
+	if status := strings.TrimSpace(strings.ToLower(filters.Status)); status != "" {
+		query = query.Where(recordAlias+".status = ?", status)
+	}
+	if keyword := strings.TrimSpace(filters.Keyword); keyword != "" {
+		like := "%" + keyword + "%"
+		query = query.Where("LOWER("+recordAlias+".referral_code_snapshot) LIKE LOWER(?) OR LOWER(referrer_user.email) LIKE LOWER(?) OR LOWER(referee_user.email) LIKE LOWER(?) OR LOWER(referral_order.order_number) LIKE LOWER(?)", like, like, like, like)
+	}
+	if filters.From != nil {
+		query = query.Where(recordAlias+".created_at >= ?", filters.From.UTC())
+	}
+	if filters.To != nil {
+		query = query.Where(recordAlias+".created_at < ?", filters.To.UTC())
+	}
+	return query
+}
+
+// AdminStats accepts an optional filter for backwards compatibility with
+// callers that previously requested the unfiltered overview.
+func (r *ReferralRepository) AdminStats(filterArgs ...ReferralAdminFilters) (ReferralAdminStats, error) {
 	stats := ReferralAdminStats{}
 	if r == nil || r.db == nil {
 		return stats, gorm.ErrInvalidDB
 	}
-	row := r.db.Table("referral_records AS rr").
+	var filters ReferralAdminFilters
+	if len(filterArgs) > 0 {
+		filters = filterArgs[0]
+	}
+	query := r.db.Table("referral_records AS rr").
 		Select(`COUNT(*) AS total_referrals,
 			COALESCE(SUM(CASE WHEN rr.status IN ('ordered','vesting','settled','reversed') THEN 1 ELSE 0 END), 0) AS converted_orders,
 			COALESCE(SUM(CASE WHEN rr.status IN ('ordered','vesting','settled','reversed') THEN rr.order_amount_minor ELSE 0 END), 0) AS attributed_gmv_minor,
 			COALESCE(SUM(CASE WHEN rr.status IN ('ordered','vesting') THEN rpc.referrer_reward_points ELSE 0 END), 0) AS pending_vesting_points,
 			COALESCE(SUM(CASE WHEN rr.status = 'settled' THEN rpc.referrer_reward_points ELSE 0 END), 0) AS settled_points,
 			COALESCE(SUM(CASE WHEN CAST(rr.risk_flags AS TEXT) <> '[]' THEN 1 ELSE 0 END), 0) AS fraud_blocked_count`).
-		Joins("JOIN referral_program_configs AS rpc ON rpc.id = rr.program_config_id").Row()
+		Joins("JOIN referral_program_configs AS rpc ON rpc.id = rr.program_config_id").
+		Joins("LEFT JOIN users AS referrer_user ON referrer_user.id = rr.referrer_id").
+		Joins("LEFT JOIN users AS referee_user ON referee_user.id = rr.referee_id").
+		Joins("LEFT JOIN orders AS referral_order ON referral_order.id = rr.order_id")
+	row := applyReferralAdminFilters(query, filters, "rr").Row()
 	if err := row.Scan(&stats.TotalReferrals, &stats.ConvertedOrders, &stats.AttributedGMVMinor, &stats.PendingVestingPoints, &stats.SettledPoints, &stats.FraudBlockedCount); err != nil {
 		return ReferralAdminStats{}, err
 	}

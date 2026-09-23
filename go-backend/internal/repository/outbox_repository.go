@@ -12,9 +12,17 @@ import (
 )
 
 var (
-	ErrOutboxOwnershipLost   = errors.New("outbox event ownership lost")
-	ErrOutboxUnknownNotFound = errors.New("unknown outbox event not found")
+	ErrOutboxOwnershipLost     = errors.New("outbox event ownership lost")
+	ErrOutboxUnknownNotFound   = errors.New("unknown outbox event not found")
+	ErrOutboxEventNotFound     = errors.New("outbox event not found")
+	ErrOutboxInvalidTransition = errors.New("outbox event is not eligible for this transition")
 )
+
+type OutboxEventListOptions struct {
+	Statuses  []string
+	EventType string
+	Limit     int
+}
 
 type OutboxRepository struct {
 	db *gorm.DB
@@ -52,6 +60,109 @@ func (r *OutboxRepository) FindEventByKey(eventKey string) (*outbox.Event, error
 		return nil, err
 	}
 	return &event, nil
+}
+
+func (r *OutboxRepository) FindEventByID(id uint) (*outbox.Event, error) {
+	var event outbox.Event
+	if err := r.db.First(&event, id).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, ErrOutboxEventNotFound
+		}
+		return nil, err
+	}
+	return &event, nil
+}
+
+// FindFailedEvents returns operator-actionable failures without decoding or
+// exposing payloads. Payloads may contain customer data and are intentionally
+// kept behind the worker boundary.
+func (r *OutboxRepository) FindFailedEvents(options OutboxEventListOptions) ([]outbox.Event, error) {
+	limit := options.Limit
+	if limit <= 0 || limit > 500 {
+		limit = 100
+	}
+	statuses := options.Statuses
+	if len(statuses) == 0 {
+		statuses = []string{outbox.EventStatusFailed, outbox.EventStatusDeadLetter}
+	}
+	query := r.db.Where("status IN ?", statuses)
+	if eventType := strings.TrimSpace(options.EventType); eventType != "" {
+		query = query.Where("event_type = ?", eventType)
+	}
+	var events []outbox.Event
+	err := query.Order("updated_at DESC, id DESC").Limit(limit).Find(&events).Error
+	return events, err
+}
+
+func (r *OutboxRepository) RetryFailedEvent(id uint, note string, retriedAt time.Time) error {
+	if retriedAt.IsZero() {
+		retriedAt = time.Now().UTC()
+	} else {
+		retriedAt = retriedAt.UTC()
+	}
+	note = strings.TrimSpace(note)
+	if note == "" {
+		note = "manual retry requested"
+	}
+	result := r.db.Model(&outbox.Event{}).
+		Where("id = ? AND status IN ?", id, []string{outbox.EventStatusFailed, outbox.EventStatusDeadLetter}).
+		Updates(map[string]interface{}{
+			"status":          outbox.EventStatusPending,
+			"attempts":        0,
+			"available_at":    retriedAt,
+			"locked_at":       nil,
+			"locked_by":       "",
+			"processed_at":    nil,
+			"uncertain_at":    nil,
+			"reconcile_after": nil,
+			"last_error":      "manual retry: " + note,
+			"updated_at":      retriedAt,
+		})
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		var event outbox.Event
+		if err := r.db.First(&event, id).Error; errors.Is(err, gorm.ErrRecordNotFound) {
+			return ErrOutboxEventNotFound
+		}
+		return ErrOutboxInvalidTransition
+	}
+	return nil
+}
+
+func (r *OutboxRepository) IgnoreFailedEvent(id uint, note string, ignoredAt time.Time) error {
+	if ignoredAt.IsZero() {
+		ignoredAt = time.Now().UTC()
+	} else {
+		ignoredAt = ignoredAt.UTC()
+	}
+	note = strings.TrimSpace(note)
+	if note == "" {
+		note = "manual ignore requested"
+	}
+	result := r.db.Model(&outbox.Event{}).
+		Where("id = ? AND status IN ?", id, []string{outbox.EventStatusFailed, outbox.EventStatusDeadLetter}).
+		Updates(map[string]interface{}{
+			"status":          outbox.EventStatusIgnored,
+			"locked_at":       nil,
+			"locked_by":       "",
+			"uncertain_at":    nil,
+			"reconcile_after": nil,
+			"last_error":      "manually ignored: " + note,
+			"updated_at":      ignoredAt,
+		})
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		var event outbox.Event
+		if err := r.db.First(&event, id).Error; errors.Is(err, gorm.ErrRecordNotFound) {
+			return ErrOutboxEventNotFound
+		}
+		return ErrOutboxInvalidTransition
+	}
+	return nil
 }
 
 // CountEventsByStatus returns operational counts for one event type. It is
@@ -97,20 +208,33 @@ func (r *OutboxRepository) ClaimReadyEvents(now time.Time, workerID string, limi
 		workerID = "outbox-worker"
 	}
 
-	staleLockCutoff := now.Add(-lockTimeout)
 	claimableStatuses := []string{outbox.EventStatusPending, outbox.EventStatusFailed}
 
 	var claimed []outbox.Event
 	err := r.db.Transaction(func(tx *gorm.DB) error {
 		var events []outbox.Event
-		query := tx.Model(&outbox.Event{}).
-			Where(
+		query := tx.Model(&outbox.Event{})
+		if r.db.Dialector.Name() == "postgres" {
+			// Lease expiry must use the database server clock. Application clocks can
+			// jump backwards, making a stale lease appear newer than it is.
+			query = query.Where(
+				"(status IN ? AND available_at <= ? AND attempts < max_attempts) OR (status = ? AND locked_at IS NOT NULL AND locked_at <= NOW() - (CAST(? AS double precision) * INTERVAL '1 second') AND attempts < max_attempts)",
+				claimableStatuses,
+				now,
+				outbox.EventStatusProcessing,
+				lockTimeout.Seconds(),
+			)
+		} else {
+			staleLockCutoff := now.Add(-lockTimeout)
+			query = query.Where(
 				"(status IN ? AND available_at <= ? AND attempts < max_attempts) OR (status = ? AND locked_at IS NOT NULL AND locked_at <= ? AND attempts < max_attempts)",
 				claimableStatuses,
 				now,
 				outbox.EventStatusProcessing,
 				staleLockCutoff,
-			).
+			)
+		}
+		query = query.
 			Order("available_at ASC, id ASC").
 			Limit(limit)
 		if err := r.lockForClaim(query).Find(&events).Error; err != nil {

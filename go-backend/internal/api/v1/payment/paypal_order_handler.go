@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"strings"
 
-	domainmoney "commerce-platform/internal/domain/money"
+	"commerce-platform/internal/api/middleware"
 	orderdomain "commerce-platform/internal/domain/order"
 	"commerce-platform/internal/pkg/apierror"
 	pgateway "commerce-platform/internal/pkg/payment"
@@ -63,16 +63,14 @@ func (h *Handler) CreatePayPalOrder(c *gin.Context) {
 		return
 	}
 
-	orderCurrency, err := strictOrderCurrency(orderRecord)
+	// Charge the same immutable settlement snapshot that capture/webhook
+	// verification uses, rather than the buyer-facing order total.
+	orderAmountMoney, err := strictProviderSettlement(orderRecord)
 	if err != nil {
 		apierror.RespondInternalError(c, err)
 		return
 	}
-	orderAmountMoney, err := domainmoney.FromMajorFloat(orderRecord.TotalAmount, orderCurrency)
-	if err != nil {
-		apierror.RespondInternalError(c, err)
-		return
-	}
+	orderCurrency := orderAmountMoney.Currency().String()
 	if !ensureGatewayCurrency(c, pgateway.GatewayPayPal, orderCurrency) {
 		return
 	}
@@ -103,7 +101,7 @@ func (h *Handler) CreatePayPalOrder(c *gin.Context) {
 		return
 	}
 	paymentResponse, err := gateway.CreatePayment(c.Request.Context(), &pgateway.PaymentRequest{
-		Amount:         orderRecord.TotalAmount,
+		AmountMinor:    orderAmountMoney.AmountMinor(),
 		Currency:       orderCurrency,
 		OrderID:        orderRecord.OrderNumber,
 		Description:    fmt.Sprintf("Order %s", orderRecord.OrderNumber),
@@ -218,18 +216,28 @@ func (h *Handler) CapturePayPalOrder(c *gin.Context) {
 		)
 		return
 	}
-	paymentResponse, err := capturePayPalPayment(
-		c.Request.Context(),
-		gateway,
-		paypalOrderID,
-		pgateway.PayPalCaptureRequestID(paypalOrderID),
-	)
+	var paymentResponse *pgateway.PaymentResponse
+	if middleware.IsPaymentOperationReconciliation(c) {
+		paymentResponse, err = gateway.GetPayment(c.Request.Context(), paypalOrderID)
+	} else {
+		middleware.MarkPaymentOperationExternalCallStarted(c)
+		paymentResponse, err = capturePayPalPayment(
+			c.Request.Context(),
+			gateway,
+			paypalOrderID,
+			pgateway.PayPalCaptureRequestID(paypalOrderID),
+		)
+	}
 	if err != nil {
+		errorCode := "paypal_capture_failed"
+		if middleware.IsPaymentOperationReconciliation(c) {
+			errorCode = "paypal_capture_reconciliation_failed"
+		}
 		h.respondToPaymentGatewayOperationFailure(
 			c,
 			pgateway.GatewayPayPal,
 			http.StatusBadGateway,
-			"paypal_capture_failed",
+			errorCode,
 			err,
 		)
 		return
@@ -369,16 +377,28 @@ func (h *Handler) loadPayPalOrderForCapture(c *gin.Context, orderNumber string, 
 
 func completedPayPalPaymentResponse(paypalOrderID string, orderRecord *orderdomain.Order) *pgateway.PaymentResponse {
 	paypalOrderID = strings.TrimSpace(paypalOrderID)
+	amount := "0"
+	amountMinor := int64(0)
+	currency := ""
+	if orderRecord != nil {
+		if settlement, err := strictProviderSettlement(orderRecord); err == nil {
+			amount, _ = settlement.FormatMajor()
+			amountMinor = settlement.AmountMinor()
+			currency = settlement.Currency().String()
+		}
+	}
+	metadata := map[string]string{"paypal_order_id": paypalOrderID}
+	if orderRecord != nil {
+		metadata["order_number"] = orderRecord.OrderNumber
+	}
 	return &pgateway.PaymentResponse{
 		ID:            paypalOrderID,
 		Status:        "COMPLETED",
-		Amount:        orderRecord.TotalAmount,
-		Currency:      orderRecord.Currency,
+		Amount:        amount,
+		AmountMinor:   amountMinor,
+		Currency:      currency,
 		TransactionID: paypalOrderID,
-		Metadata: map[string]string{
-			"order_number":    orderRecord.OrderNumber,
-			"paypal_order_id": paypalOrderID,
-		},
+		Metadata:      metadata,
 	}
 }
 

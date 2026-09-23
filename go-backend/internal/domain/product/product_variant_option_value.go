@@ -2,6 +2,14 @@ package product
 
 import "time"
 
+const (
+	CustomOptionCancellationStandard         = "standard"
+	CustomOptionCancellationBeforeProduction = "before_production"
+	CustomOptionCancellationNever            = "never"
+	CustomOptionReturnStandard               = "standard"
+	CustomOptionReturnNotAllowed             = "not_allowed"
+)
+
 // ProductVariantOptionValue stores product-specific display metadata for a
 // variant option. The stable value_key is what product_variants.option_values
 // stores; labels and swatches are presentation data.
@@ -27,12 +35,18 @@ func (ProductVariantOptionValue) TableName() string {
 	return "product_variant_option_values"
 }
 
-// ProductCustomOptionPolicy stores transaction semantics for a materialized
-// custom option. The initial vertical slice only permits inventory_policy=none.
+// ProductCustomOptionPolicy stores transaction and fulfillment semantics for a
+// materialized custom option.
 type ProductCustomOptionPolicy struct {
 	ID                          uint      `gorm:"primarykey" json:"id"`
 	ProductVariantOptionValueID uint      `gorm:"not null;uniqueIndex" json:"product_variant_option_value_id"`
 	PriceDeltaMinor             int64     `gorm:"not null;default:0" json:"price_delta_minor"`
+	WeightDeltaGrams            int       `gorm:"not null;default:0" json:"weight_delta_grams"`
+	PackagingWeightDeltaGrams   int       `gorm:"not null;default:0" json:"packaging_weight_delta_grams"`
+	ProductionLeadTimeDays      int       `gorm:"not null;default:0" json:"production_lead_time_days"`
+	RequiresProduction          bool      `gorm:"not null;default:false" json:"requires_production"`
+	CancellationPolicy          string    `gorm:"type:varchar(32);not null;default:'standard'" json:"cancellation_policy"`
+	ReturnPolicy                string    `gorm:"type:varchar(32);not null;default:'standard'" json:"return_policy"`
 	IsDefault                   bool      `gorm:"not null;default:false" json:"is_default"`
 	InventoryPolicy             string    `gorm:"type:varchar(24);not null;default:'none'" json:"inventory_policy"`
 	ComponentVariantID          *uint     `gorm:"index" json:"component_variant_id,omitempty"`

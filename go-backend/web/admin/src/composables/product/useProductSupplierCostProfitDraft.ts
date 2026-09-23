@@ -10,7 +10,7 @@ import type { ProductVariantForm } from '@/modules/product/productEditorTypes'
 export interface ProductSupplierCostProfitDraft {
   productCode: string
   productName: string
-  unitCost: number | null
+  unitCostMinor: number | null
   unitCostKnown: boolean
   currency: string
   supplierName: string
@@ -19,9 +19,9 @@ export interface ProductSupplierCostProfitDraft {
   supplierEmail: string
   leadTimeDays: number
   minimumOrderQuantity: number
-  inboundShippingUnitCost: number
-  packagingUnitCost: number
-  otherUnitCost: number
+  inboundShippingUnitCostMinor: number
+  packagingUnitCostMinor: number
+  otherUnitCostMinor: number
 }
 
 interface DraftSaveResult {
@@ -42,6 +42,31 @@ const normalizeCurrency = (value: unknown): string => {
   return /^[A-Z]{3}$/.test(code) ? code : 'USD'
 }
 
+const minorUnitsForCurrency = (currency: unknown): number => {
+  const code = normalizeCurrency(currency)
+  if (['BHD', 'IQD', 'JOD', 'KWD', 'LYD', 'OMR', 'TND'].includes(code)) return 3
+  if (['BIF', 'CLP', 'DJF', 'GNF', 'ISK', 'JPY', 'KMF', 'KRW', 'MGA', 'PYG', 'RWF', 'UGX', 'UYI', 'VND', 'VUV', 'XAF', 'XOF', 'XPF'].includes(code)) return 0
+  return 2
+}
+
+const majorToMinor = (value: unknown, currency: unknown): number => {
+  const major = Number(value)
+  if (!Number.isFinite(major)) return 0
+  return Math.round(major * (10 ** minorUnitsForCurrency(currency)))
+}
+
+const variantPriceMinor = (
+  variant: ProductVariantForm,
+  field: 'price' | 'sale_price',
+  currency: string,
+): number | null => {
+  const minorField = field === 'price' ? 'price_minor' : 'sale_price_minor'
+  const explicitMinor = Number(variant[minorField])
+  if (variant[minorField] != null && Number.isFinite(explicitMinor)) return Math.trunc(explicitMinor)
+  if (field === 'sale_price' && (variant.sale_price == null || variant.sale_price === '')) return null
+  return majorToMinor(variant[field], currency)
+}
+
 const createEmptyDraft = (
   productCode: string,
   productName: string,
@@ -49,7 +74,7 @@ const createEmptyDraft = (
 ): ProductSupplierCostProfitDraft => ({
   productCode,
   productName,
-  unitCost: null,
+  unitCostMinor: null,
   unitCostKnown: false,
   currency: normalizeCurrency(currency),
   supplierName: '',
@@ -58,9 +83,9 @@ const createEmptyDraft = (
   supplierEmail: '',
   leadTimeDays: 0,
   minimumOrderQuantity: 1,
-  inboundShippingUnitCost: 0,
-  packagingUnitCost: 0,
-  otherUnitCost: 0,
+  inboundShippingUnitCostMinor: 0,
+  packagingUnitCostMinor: 0,
+  otherUnitCostMinor: 0,
 })
 
 const errorMessage = (error: unknown, fallback: string): string => {
@@ -180,7 +205,7 @@ export const useProductSupplierCostProfitDraft = () => {
       Object.assign(draft, {
         productCode: record.product_code,
         productName: record.product_name,
-        unitCost: Number(record.purchase_price),
+        unitCostMinor: Number(record.unit_cost_minor),
         unitCostKnown: true,
         currency: normalizeCurrency(record.currency),
         supplierName: record.supplier_name || '',
@@ -189,9 +214,9 @@ export const useProductSupplierCostProfitDraft = () => {
         supplierEmail: record.supplier_email || '',
         leadTimeDays: Number(record.lead_time_days || 0),
         minimumOrderQuantity: Math.max(1, Number(record.minimum_order_quantity || 1)),
-        inboundShippingUnitCost: Number(record.inbound_shipping_unit_cost || 0),
-        packagingUnitCost: Number(record.packaging_unit_cost || 0),
-        otherUnitCost: Number(record.other_unit_cost || 0),
+        inboundShippingUnitCostMinor: Number(record.inbound_shipping_unit_cost_minor || 0),
+        packagingUnitCostMinor: Number(record.packaging_unit_cost_minor || 0),
+        otherUnitCostMinor: Number(record.other_unit_cost_minor || 0),
       })
       draftsByKey[record.product_code] = draft
     })
@@ -203,15 +228,15 @@ export const useProductSupplierCostProfitDraft = () => {
       )
       const profit = profitabilityByCode.get(record.product_code)
       if (!draft.unitCostKnown && profit) {
-        draft.unitCost = Number(profit.purchase_price)
+        draft.unitCostMinor = Number(profit.unit_cost_minor)
         draft.unitCostKnown = true
       }
       draft.productCode = record.product_code
       draft.productName = record.product_name
       draft.currency = normalizeCurrency(record.currency)
-      draft.inboundShippingUnitCost = Number(record.inbound_shipping_unit_cost || 0)
-      draft.packagingUnitCost = Number(record.packaging_unit_cost || 0)
-      draft.otherUnitCost = Number(record.other_unit_cost || 0)
+      draft.inboundShippingUnitCostMinor = Number(record.inbound_shipping_unit_cost_minor || 0)
+      draft.packagingUnitCostMinor = Number(record.packaging_unit_cost_minor || 0)
+      draft.otherUnitCostMinor = Number(record.other_unit_cost_minor || 0)
       draftsByKey[record.product_code] = draft
     })
   }
@@ -266,17 +291,15 @@ export const useProductSupplierCostProfitDraft = () => {
           product_name: productName.trim(),
           currency: normalizeCurrency(currency),
           cost_currency: String(draft.currency || '').trim().toUpperCase() || normalizeCurrency(currency),
-          list_price: Number(variant.price || 0),
-          sale_price: variant.sale_price == null || variant.sale_price === ''
-            ? null
-            : Number(variant.sale_price),
-          unit_cost: draft.unitCostKnown && draft.unitCost != null
-            ? Number(draft.unitCost)
+          list_price_minor: variantPriceMinor(variant, 'price', currency) || 0,
+          sale_price_minor: variantPriceMinor(variant, 'sale_price', currency),
+          unit_cost_minor: draft.unitCostKnown && draft.unitCostMinor != null
+            ? Number(draft.unitCostMinor)
             : null,
-          unit_cost_known: draft.unitCostKnown && draft.unitCost != null,
-          inbound_shipping_unit_cost: Number(draft.inboundShippingUnitCost || 0),
-          packaging_unit_cost: Number(draft.packagingUnitCost || 0),
-          other_unit_cost: Number(draft.otherUnitCost || 0),
+          unit_cost_known: draft.unitCostKnown && draft.unitCostMinor != null,
+          inbound_shipping_unit_cost_minor: Number(draft.inboundShippingUnitCostMinor || 0),
+          packaging_unit_cost_minor: Number(draft.packagingUnitCostMinor || 0),
+          other_unit_cost_minor: Number(draft.otherUnitCostMinor || 0),
         }
         if (hasSupplierCostInput(draft)) item.supplier_cost_details = toSupplierCostDetailsPayload(draft)
         return item

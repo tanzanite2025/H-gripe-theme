@@ -77,7 +77,7 @@ func TestPaymentOperationIdempotencyReplaysFromDatabaseWhenRedisRecordIsMissing(
 		c.Next()
 	})
 	var calls int32
-	router.POST("/paypal/capture", PaymentOperationIdempotency(repo, "paypal_capture"), func(c *gin.Context) {
+	router.POST("/paypal/capture", PaymentOperationIdempotency(repo, "paypal_capture", PaymentOperationReconcileExpiredMutation), func(c *gin.Context) {
 		atomic.AddInt32(&calls, 1)
 		c.JSON(http.StatusOK, gin.H{"captured": true})
 	})
@@ -98,7 +98,7 @@ func TestPaymentOperationIdempotencyReplaysFromDatabaseWhenRedisRecordIsMissing(
 	require.Equal(t, int32(1), atomic.LoadInt32(&calls))
 }
 
-func TestPaymentOperationIdempotencyIsTheFallbackWhenRedisIsUnavailable(t *testing.T) {
+func TestPaymentOperationIdempotencyDoesNotDependOnRedis(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
 	require.NoError(t, err)
@@ -110,7 +110,7 @@ func TestPaymentOperationIdempotencyIsTheFallbackWhenRedisIsUnavailable(t *testi
 		c.Next()
 	})
 	var calls int32
-	router.POST("/paypal/capture", PaymentOperationIdempotency(repo, "paypal_capture"), Idempotency(nil), func(c *gin.Context) {
+	router.POST("/paypal/capture", PaymentOperationIdempotency(repo, "paypal_capture", PaymentOperationReconcileExpiredMutation), func(c *gin.Context) {
 		atomic.AddInt32(&calls, 1)
 		c.JSON(http.StatusOK, gin.H{"captured": true})
 	})
@@ -129,6 +129,142 @@ func TestPaymentOperationIdempotencyIsTheFallbackWhenRedisIsUnavailable(t *testi
 	require.Equal(t, http.StatusOK, second.Code)
 	require.Equal(t, "true", second.Header().Get(idempotencyReplayHeader))
 	require.Equal(t, int32(1), atomic.LoadInt32(&calls))
+}
+
+func TestPaymentOperationIdempotencyReclaimsExpiredReadOnlyQuery(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	require.NoError(t, err)
+	require.NoError(t, db.AutoMigrate(&payment.PaymentOperationIdempotency{}))
+	repo := repository.NewPaymentOperationIdempotencyRepository(db)
+
+	requestBody := `{"order_number":"ORD-WECHAT-1"}`
+	requestHash := requestIdempotencyHash(http.MethodPost, "/wechat/confirm", "", []byte(requestBody))
+	expiredAt := time.Now().UTC().Add(-time.Minute)
+	require.NoError(t, db.Create(&payment.PaymentOperationIdempotency{
+		UserID:         7,
+		Scope:          "wechat_confirm",
+		IdempotencyKey: "confirm-key",
+		RequestHash:    requestHash,
+		Status:         payment.PaymentOperationIdempotencyPending,
+		ClaimToken:     "dead-process",
+		LeaseExpiresAt: &expiredAt,
+	}).Error)
+
+	router := gin.New()
+	router.Use(func(c *gin.Context) {
+		c.Set("user_id", uint(7))
+		c.Next()
+	})
+	var calls int32
+	router.POST("/wechat/confirm", PaymentOperationIdempotency(repo, "wechat_confirm", PaymentOperationRetryExpiredQuery), func(c *gin.Context) {
+		require.False(t, IsPaymentOperationReconciliation(c))
+		atomic.AddInt32(&calls, 1)
+		c.JSON(http.StatusOK, gin.H{"paid": true})
+	})
+
+	recorder := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodPost, "/wechat/confirm", strings.NewReader(requestBody))
+	request.Header.Set(idempotencyKeyHeader, "confirm-key")
+	router.ServeHTTP(recorder, request)
+
+	require.Equal(t, http.StatusOK, recorder.Code)
+	require.Equal(t, int32(1), atomic.LoadInt32(&calls))
+	var saved payment.PaymentOperationIdempotency
+	require.NoError(t, db.First(&saved).Error)
+	require.Equal(t, payment.PaymentOperationIdempotencyCompleted, saved.Status)
+	require.Empty(t, saved.ClaimToken)
+	require.Nil(t, saved.LeaseExpiresAt)
+}
+
+func TestPaymentOperationIdempotencyReconcilesExpiredMutationWithoutReplayingIt(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	require.NoError(t, err)
+	require.NoError(t, db.AutoMigrate(&payment.PaymentOperationIdempotency{}))
+	repo := repository.NewPaymentOperationIdempotencyRepository(db)
+
+	requestBody := `{"order_number":"ORD-PAYPAL-1"}`
+	requestHash := requestIdempotencyHash(http.MethodPost, "/paypal/capture", "", []byte(requestBody))
+	expiredAt := time.Now().UTC().Add(-time.Minute)
+	require.NoError(t, db.Create(&payment.PaymentOperationIdempotency{
+		UserID:         7,
+		Scope:          "paypal_capture",
+		IdempotencyKey: "capture-key",
+		RequestHash:    requestHash,
+		Status:         payment.PaymentOperationIdempotencyPending,
+		ClaimToken:     "dead-process",
+		LeaseExpiresAt: &expiredAt,
+	}).Error)
+
+	router := gin.New()
+	router.Use(func(c *gin.Context) {
+		c.Set("user_id", uint(7))
+		c.Next()
+	})
+	router.POST("/paypal/capture", PaymentOperationIdempotency(repo, "paypal_capture", PaymentOperationReconcileExpiredMutation), func(c *gin.Context) {
+		require.True(t, IsPaymentOperationReconciliation(c))
+		c.JSON(http.StatusOK, gin.H{"reconciled": true})
+	})
+
+	recorder := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodPost, "/paypal/capture", strings.NewReader(requestBody))
+	request.Header.Set(idempotencyKeyHeader, "capture-key")
+	router.ServeHTTP(recorder, request)
+
+	require.Equal(t, http.StatusOK, recorder.Code)
+	var saved payment.PaymentOperationIdempotency
+	require.NoError(t, db.First(&saved).Error)
+	require.Equal(t, payment.PaymentOperationIdempotencyCompleted, saved.Status)
+	require.NotNil(t, saved.ReconciliationStartedAt)
+}
+
+func TestPaymentOperationIdempotencyMovesUncertainMutationToReconciliation(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	require.NoError(t, err)
+	require.NoError(t, db.AutoMigrate(&payment.PaymentOperationIdempotency{}))
+	repo := repository.NewPaymentOperationIdempotencyRepository(db)
+
+	router := gin.New()
+	router.Use(func(c *gin.Context) {
+		c.Set("user_id", uint(7))
+		c.Next()
+	})
+	var calls int32
+	router.POST("/paypal/capture", PaymentOperationIdempotency(repo, "paypal_capture", PaymentOperationReconcileExpiredMutation), func(c *gin.Context) {
+		call := atomic.AddInt32(&calls, 1)
+		if call == 1 {
+			require.False(t, IsPaymentOperationReconciliation(c))
+			MarkPaymentOperationExternalCallStarted(c)
+			c.JSON(http.StatusBadGateway, gin.H{"error": "gateway_timeout"})
+			return
+		}
+		require.True(t, IsPaymentOperationReconciliation(c))
+		c.JSON(http.StatusOK, gin.H{"captured": true})
+	})
+
+	request := func() *httptest.ResponseRecorder {
+		recorder := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodPost, "/paypal/capture", strings.NewReader(`{"order_number":"ORD-PAYPAL-1"}`))
+		req.Header.Set(idempotencyKeyHeader, "capture-key")
+		router.ServeHTTP(recorder, req)
+		return recorder
+	}
+
+	first := request()
+	require.Equal(t, http.StatusBadGateway, first.Code)
+	var uncertain payment.PaymentOperationIdempotency
+	require.NoError(t, db.First(&uncertain).Error)
+	require.Equal(t, payment.PaymentOperationIdempotencyReconciling, uncertain.Status)
+	require.Empty(t, uncertain.ClaimToken)
+
+	second := request()
+	require.Equal(t, http.StatusOK, second.Code)
+	require.Equal(t, int32(2), atomic.LoadInt32(&calls))
+	var completed payment.PaymentOperationIdempotency
+	require.NoError(t, db.First(&completed).Error)
+	require.Equal(t, payment.PaymentOperationIdempotencyCompleted, completed.Status)
 }
 
 func TestIdempotencyRejectsSameKeyWithDifferentPayload(t *testing.T) {

@@ -468,30 +468,30 @@ func seedAdminEvidenceOrderForHandler(
 ) (uint, uint) {
 	t.Helper()
 	record := &order.Order{
-		OrderNumber: orderNumber,
-		TotalAmount: 800,
-		Currency:    "USD",
+		OrderNumber:      orderNumber,
+		TotalAmountMinor: 80000,
+		Currency:         "USD",
 		FXSnapshotData: currency.OrderFXSnapshotJSON(currency.OrderFXSnapshot{
-			Version:         currency.OrderFXSnapshotVersion,
-			BaseCurrency:    "USD",
-			OrderCurrency:   "USD",
-			BaseToOrderRate: 1,
-			Source:          "handler-test",
-			CapturedAt:      time.Now().UTC(),
+			Version:       currency.OrderFXSnapshotVersion,
+			BaseCurrency:  "USD",
+			OrderCurrency: "USD",
+			RateDecimal:   "1",
+			Source:        "handler-test",
+			CapturedAt:    time.Now().UTC(),
 		}),
 	}
 	require.NoError(t, db.Create(record).Error)
 	variantID := uint(22)
 	item := order.OrderItem{
-		OrderID:     record.ID,
-		ProductID:   10,
-		VariantID:   &variantID,
-		ProductName: "Configured Product",
-		SKU:         orderNumber + "-SKU",
-		Quantity:    1,
-		Price:       800,
-		WeightGrams: 9000,
-		Attributes:  datatypes.JSON([]byte(`{"finish":"black"}`)).String(),
+		OrderID:                   record.ID,
+		ProductID:                 10,
+		VariantID:                 &variantID,
+		ProductName:               "Configured Product",
+		SKU:                       orderNumber + "-SKU",
+		Quantity:                  1,
+		PriceMinor:                80000,
+		WeightGrams:               9000,
+		ConfigurationSnapshotData: datatypes.JSON([]byte(`{"finish":"black"}`)),
 	}
 	require.NoError(t, db.Create(&item).Error)
 	record.Items = []order.OrderItem{item}

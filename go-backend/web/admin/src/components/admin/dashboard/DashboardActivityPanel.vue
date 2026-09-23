@@ -26,7 +26,7 @@
             <div v-for="order in recentOrders" :key="order.id" class="flex min-w-0 items-center justify-between gap-4 border-b border-dashed border-border/60 py-2.5">
               <div class="min-w-0">
                 <strong class="block truncate text-xs font-mono font-bold">#{{ order.order_number }}</strong>
-                <span class="mt-0.5 block truncate text-[11px] font-mono text-muted-foreground">¥{{ formatNumber(order.total_amount) }}</span>
+                <span class="mt-0.5 block truncate text-[11px] font-mono text-muted-foreground">{{ formatMoney(order.total_amount_minor, order.currency) }}</span>
               </div>
               <AdminStatusBadge :tone="orderStatusTone(order.status)">
                 {{ getOrderStatusName(order.status) }}
@@ -72,7 +72,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import type {
   DashboardActivity,
   DashboardLabelResolver,
-  DashboardNumberFormatter,
+  DashboardMoneyFormatter,
   DashboardRecentOrder,
   DashboardRecentUser,
   DashboardToneResolver
@@ -94,7 +94,7 @@ withDefaults(defineProps<{
   activeActivity?: DashboardActivity
   recentOrders?: DashboardRecentOrder[]
   recentUsers?: DashboardRecentUser[]
-  formatNumber: DashboardNumberFormatter
+  formatMoney: DashboardMoneyFormatter
   getOrderStatusName: DashboardLabelResolver
   orderStatusTone: DashboardToneResolver
   getRoleName: DashboardLabelResolver

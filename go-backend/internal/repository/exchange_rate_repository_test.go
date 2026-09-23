@@ -63,7 +63,7 @@ func TestExchangeRateUpsertMatchesSoftDeletePartialUniqueIndex(t *testing.T) {
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			base_currency TEXT NOT NULL,
 			quote_currency TEXT NOT NULL,
-			rate REAL NOT NULL,
+			rate_decimal NUMERIC(30,15) NOT NULL DEFAULT 0,
 			source TEXT NOT NULL DEFAULT '',
 			fetched_at DATETIME NOT NULL,
 			expires_at DATETIME,
@@ -83,21 +83,21 @@ func TestExchangeRateUpsertMatchesSoftDeletePartialUniqueIndex(t *testing.T) {
 	require.NoError(t, repo.UpsertRates([]currency.ExchangeRate{{
 		BaseCurrency:  "CNY",
 		QuoteCurrency: "USD",
-		Rate:          7.1,
+		RateDecimal:   "7.1",
 		Source:        "test",
 		FetchedAt:     fetchedAt,
 	}}))
 	require.NoError(t, repo.UpsertRates([]currency.ExchangeRate{{
 		BaseCurrency:  "CNY",
 		QuoteCurrency: "USD",
-		Rate:          7.2,
+		RateDecimal:   "7.2",
 		Source:        "test-refresh",
 		FetchedAt:     fetchedAt.Add(time.Hour),
 	}}))
 
 	var stored currency.ExchangeRate
 	require.NoError(t, db.First(&stored, "base_currency = ? AND quote_currency = ?", "CNY", "USD").Error)
-	require.Equal(t, 7.2, stored.Rate)
+	require.Equal(t, "7.2", stored.RateDecimal)
 	require.Equal(t, "test-refresh", stored.Source)
 
 	var count int64

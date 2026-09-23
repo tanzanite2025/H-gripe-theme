@@ -1,10 +1,10 @@
 /**
  * 购物车数据加载器
- * 负责从后端加载运费模板、税率配置、用户积分等数据
+ * 负责从后端加载税率配置和用户积分
  */
 import { ref } from 'vue'
 import { useAuth } from '~/composables/useAuth'
-import type { CartShippingTemplate, TaxRate, UserPoints } from './types/cart-calculation-types'
+import type { TaxRate, UserPoints } from './types/cart-calculation-types'
 
 const extractList = <T>(payload: unknown): T[] | null => {
   let current = payload
@@ -38,26 +38,8 @@ export const useCartDataLoader = () => {
   const { ensureSession, initialized, isAuthenticated, request } = useAuth()
 
   // 状态
-  const shippingTemplates = ref<CartShippingTemplate[]>([])
   const taxRates = ref<TaxRate[]>([])
   const userPoints = ref<UserPoints | null>(null)
-
-  /**
-   * 加载运费模板
-   */
-  const loadShippingTemplates = async () => {
-    try {
-      const response = await request<unknown>(
-        '/shipping/templates',
-        { headers: { accept: 'application/json' } }
-      )
-      const items = extractList<CartShippingTemplate>(response)
-      if (!items) throw new Error('[CRITICAL] shipping template list missing')
-      shippingTemplates.value = items
-    } catch (error) {
-      console.error('Failed to load shipping templates:', error)
-    }
-  }
 
   /**
    * 加载税率配置
@@ -106,7 +88,6 @@ export const useCartDataLoader = () => {
    */
   const initialize = async () => {
     await Promise.all([
-      loadShippingTemplates(),
       loadTaxRates(),
       loadUserPoints(),
     ])
@@ -114,12 +95,10 @@ export const useCartDataLoader = () => {
 
   return {
     // 状态
-    shippingTemplates,
     taxRates,
     userPoints,
 
     // 方法
-    loadShippingTemplates,
     loadTaxRates,
     loadUserPoints,
     initialize,

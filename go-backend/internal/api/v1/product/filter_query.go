@@ -8,13 +8,13 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func parseOptionalFloatQuery(c *gin.Context, key string) *float64 {
+func parseOptionalMinorQuery(c *gin.Context, key string) *int64 {
 	raw := strings.TrimSpace(c.Query(key))
 	if raw == "" {
 		return nil
 	}
 
-	value, err := strconv.ParseFloat(raw, 64)
+	value, err := strconv.ParseInt(raw, 10, 64)
 	if err != nil {
 		return nil
 	}

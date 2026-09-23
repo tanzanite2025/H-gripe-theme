@@ -124,6 +124,9 @@ func (s *CartService) AddToCartWithConfiguration(cartID, productID uint, variant
 		if requiresStock && existingItem.Quantity+quantity > availableStock {
 			return errors.New("insufficient stock")
 		}
+		if err := s.validateConfigurationInventory(configuration, existingItem.Quantity+quantity); err != nil {
+			return err
+		}
 		existingItem.Quantity += quantity
 		if err := existingItem.SetPriceMoney(priceMoney); err != nil {
 			return err
@@ -178,6 +181,9 @@ func (s *CartService) UpdateCartItemWithConfiguration(cartID, productID uint, va
 	}
 	if productRequiresStock(productRecord) && availableStock < quantity {
 		return errors.New("insufficient stock")
+	}
+	if err := s.validateConfigurationInventory(configuration, quantity); err != nil {
+		return err
 	}
 	priceMoney, err = priceMoney.Add(configuration.Delta)
 	if err != nil {
@@ -324,6 +330,9 @@ func (s *CartService) resolvePurchasableCartItemWithConfiguration(productID uint
 	if err != nil {
 		return domainmoney.Money{}, 0, nil, false, ProductConfigurationResult{}, err
 	}
+	if err := s.validateConfigurationInventory(configuration, quantity); err != nil {
+		return domainmoney.Money{}, 0, nil, false, ProductConfigurationResult{}, err
+	}
 	price, err = price.Add(configuration.Delta)
 	if err != nil {
 		return domainmoney.Money{}, 0, nil, false, ProductConfigurationResult{}, fmt.Errorf("calculate configured price: %w", err)
@@ -333,6 +342,20 @@ func (s *CartService) resolvePurchasableCartItemWithConfiguration(productID uint
 		return domainmoney.Money{}, 0, nil, requiresStock, ProductConfigurationResult{}, errors.New("insufficient stock")
 	}
 	return price, availableStock, resolvedVariantID, requiresStock, configuration, nil
+}
+
+func (s *CartService) validateConfigurationInventory(configuration ProductConfigurationResult, quantity int) error {
+	if quantity <= 0 || len(configuration.InventoryAllocations) == 0 {
+		return nil
+	}
+	items, err := ConfigurationInventoryQuantities(configuration, quantity)
+	if err != nil {
+		return err
+	}
+	if err := s.productRepo.ValidateVariantStocks(items); err != nil {
+		return fmt.Errorf("insufficient component stock: %w", err)
+	}
+	return nil
 }
 
 func productRequiresStock(item *product.Product) bool {

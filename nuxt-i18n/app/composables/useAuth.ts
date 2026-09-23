@@ -1,12 +1,13 @@
 import { useNuxtApp, useState } from 'nuxt/app'
 import { computed } from 'vue'
-import { ApiRequestError } from '~/composables/useApiRequest'
+import { ApiRequestError, type ApiRequestInit } from '~/composables/useApiRequest'
 import { hasBrowserCookie } from '~/utils/browserCookies'
 
 interface LoginPayload {
   username: string
   password: string
   remember?: boolean
+  corporate_website?: string
 }
 
 interface RegisterProfile {
@@ -22,7 +23,9 @@ interface RegisterPayload {
   username: string
   email: string
   password: string
+  corporate_website?: string
   profile?: RegisterProfile
+  referralCode?: string
 }
 
 interface AuthUser {
@@ -60,20 +63,32 @@ export function useAuth() {
   const loading = useState<boolean>('auth-loading', () => false)
   const error = useState<string | null>('auth-error', () => null)
   const referralBindingError = useState<string | null>('auth-referral-binding-error', () => null)
+  // Keep a manually entered code across the registration -> login hand-off.
+  // The register endpoint intentionally does not create a session, so the
+  // code is bound after the user completes their first login.
+  const pendingReferralCode = useState<string>('auth-pending-referral-code', () => '')
   const initialized = useState<boolean>('auth-initialized', () => false)
   const isAuthenticated = computed(() => !!user.value)
 
   const bindPendingReferral = async () => {
     referralBindingError.value = null
+    const manualCode = pendingReferralCode.value.trim()
     try {
-      await request('/customer/referral/bind', {
+      const init: ApiRequestInit = {
         method: 'POST',
         headers: { 'Accept': 'application/json' }
-      }, 'Unable to apply referral attribution')
+      }
+      if (manualCode) {
+        init.headers = { 'Accept': 'application/json', 'Content-Type': 'application/json' }
+        init.body = JSON.stringify({ referral_code: manualCode })
+      }
+      await request('/customer/referral/bind', init, 'Unable to apply referral attribution')
+      pendingReferralCode.value = ''
     } catch (err) {
       if (err instanceof ApiRequestError && err.code === 'referral_attribution_missing') {
         return
       }
+      pendingReferralCode.value = ''
       referralBindingError.value = err instanceof Error
         ? err.message
         : 'Unable to apply referral attribution'
@@ -159,6 +174,7 @@ export function useAuth() {
   const register = async (registration: RegisterPayload) => {
     loading.value = true
     error.value = null
+    pendingReferralCode.value = String(registration.referralCode || '').trim()
 
     try {
       const response = await request<{ message?: string, user?: AuthUser } | { data?: { message?: string, user?: AuthUser } }>(

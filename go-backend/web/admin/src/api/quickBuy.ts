@@ -119,11 +119,11 @@ export interface QuickBuyPreviewProduct {
   title?: string
   slug?: string
   sku?: string
-  price?: number
-  sale_price?: number | null
+	price_decimal?: string
+	sale_price_decimal?: string | null
   currency?: string
   display_price?: {
-    amount?: number
+		amount_decimal?: string
     currency?: string
   } | null
   media?: Array<{

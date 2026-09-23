@@ -19,7 +19,7 @@ func TestPayPalRefundUsesStoredCaptureIDDirectly(t *testing.T) {
 	}
 	gateway := &paypalGatewayImpl{config: &Config{Type: GatewayPayPal}, client: client}
 
-	response, err := gateway.RefundPaymentWithOptions(context.Background(), "CAPTURE-1", 25.5, RefundOptions{
+	response, err := gateway.RefundPaymentWithOptions(context.Background(), "CAPTURE-1", 2550, RefundOptions{
 		IdempotencyKey: "refund-key-1",
 		Currency:       "USD",
 	})
@@ -27,7 +27,7 @@ func TestPayPalRefundUsesStoredCaptureIDDirectly(t *testing.T) {
 	if err != nil {
 		t.Fatalf("RefundPaymentWithOptions() error = %v", err)
 	}
-	if response.ID != "PAYPAL-REFUND-1" || response.Amount != 25.5 {
+	if response.ID != "PAYPAL-REFUND-1" || response.AmountMinor != 2550 {
 		t.Fatalf("unexpected refund response: %#v", response)
 	}
 	if client.refundCaptureID != "CAPTURE-1" {
@@ -51,7 +51,7 @@ func TestPayPalRefundDoesNotResolveCaptureFromOrderID(t *testing.T) {
 	}
 	gateway := &paypalGatewayImpl{config: &Config{Type: GatewayPayPal}, client: client}
 
-	_, err := gateway.RefundPaymentWithOptions(context.Background(), "ORDER-1", 10, RefundOptions{Currency: "EUR"})
+	_, err := gateway.RefundPaymentWithOptions(context.Background(), "ORDER-1", 1000, RefundOptions{Currency: "EUR"})
 
 	if err == nil {
 		t.Fatalf("RefundPaymentWithOptions() expected error")
@@ -78,7 +78,7 @@ func TestPayPalCreatePaymentRetriesOnUnauthorized(t *testing.T) {
 	gateway := &paypalGatewayImpl{config: &Config{Type: GatewayPayPal}, client: client}
 
 	response, err := gateway.CreatePayment(context.Background(), &PaymentRequest{
-		Amount:      12.34,
+		AmountMinor: 1234,
 		Currency:    "USD",
 		OrderID:     "ORDER-1",
 		Description: "test order",
@@ -120,6 +120,48 @@ func TestPayPalCapturePaymentRetriesOnUnauthorized(t *testing.T) {
 	}
 	if response.ID != "ORDER-1" || response.Status != "PENDING" {
 		t.Fatalf("unexpected capture response: %#v", response)
+	}
+}
+
+func TestPayPalGetPaymentReturnsCompletedCaptureForReconciliation(t *testing.T) {
+	client := &fakePayPalCheckoutClient{
+		order: &paypal.Order{
+			ID:     "PAYPAL-ORDER-1",
+			Status: "COMPLETED",
+			PurchaseUnits: []paypal.PurchaseUnit{
+				{
+					ReferenceID: "ORD-1",
+					CustomID:    "ORD-1",
+					Amount:      &paypal.PurchaseUnitAmount{Currency: "USD", Value: "42.00"},
+					Payments: &paypal.CapturedPayments{Captures: []paypal.CaptureAmount{
+						{
+							ID:       "PAYPAL-CAPTURE-1",
+							Status:   "COMPLETED",
+							CustomID: "ORD-1",
+							Amount:   &paypal.PurchaseUnitAmount{Currency: "USD", Value: "42.00"},
+						},
+					}},
+				},
+			},
+		},
+	}
+	gateway := &paypalGatewayImpl{config: &Config{Type: GatewayPayPal}, client: client}
+
+	response, err := gateway.GetPayment(context.Background(), "PAYPAL-ORDER-1")
+	if err != nil {
+		t.Fatalf("GetPayment() error = %v", err)
+	}
+	if client.getOrderID != "PAYPAL-ORDER-1" {
+		t.Fatalf("expected PayPal order lookup, got %q", client.getOrderID)
+	}
+	if response.TransactionID != "PAYPAL-CAPTURE-1" {
+		t.Fatalf("expected capture transaction id, got %q", response.TransactionID)
+	}
+	if response.Amount != "42.00" || response.Currency != "USD" {
+		t.Fatalf("unexpected reconciled amount: %#v", response)
+	}
+	if response.Metadata["order_id"] != "ORD-1" || response.Metadata["paypal_capture_id"] != "PAYPAL-CAPTURE-1" {
+		t.Fatalf("unexpected reconciliation metadata: %#v", response.Metadata)
 	}
 }
 

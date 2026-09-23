@@ -15,6 +15,7 @@ import { shallowRef, ref } from 'vue'
 import { useI18n } from '#imports'
 import { storefrontFontFamilyForLocale, storefrontFontStylesheetUrl } from '~/utils/storefrontFonts'
 import { createStripeInstance } from '~/utils/security/stripeClient'
+import { majorToMinor } from '~/utils/money'
 
 export interface StripeExpressCheckoutLineItem {
   name: string
@@ -67,34 +68,13 @@ export interface StripeExpressCheckoutEventHandlers {
   onCancel?: () => void
 }
 
-const ZERO_DECIMAL_STRIPE_CURRENCIES = new Set([
-  'BIF',
-  'CLP',
-  'DJF',
-  'GNF',
-  'JPY',
-  'KMF',
-  'KRW',
-  'MGA',
-  'PYG',
-  'RWF',
-  'UGX',
-  'VND',
-  'VUV',
-  'XAF',
-  'XOF',
-  'XPF',
-])
-
 const normalizeCurrencyCode = (value: unknown) => {
   const currency = String(value || '').trim().toUpperCase()
   return /^[A-Z]{3}$/.test(currency) ? currency : ''
 }
 
 export const convertMajorAmountToStripeMinorAmount = (amount: number, currency: string) => {
-  const normalizedCurrency = normalizeCurrencyCode(currency)
-  const multiplier = ZERO_DECIMAL_STRIPE_CURRENCIES.has(normalizedCurrency) ? 1 : 100
-  return Math.max(0, Math.round(Number(amount || 0) * multiplier))
+  return Math.max(0, majorToMinor(amount, currency))
 }
 
 const buildStripeExpressCheckoutElementOptions = (

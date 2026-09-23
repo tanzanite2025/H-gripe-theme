@@ -154,6 +154,9 @@ func evaluateSiteQualityRuns(
 			if _, ok := siteQualityLookupAuditRule(issue.ID); !ok {
 				continue
 			}
+			if !siteQualityIssueMatchesScope(issue, job.AuditScope) {
+				continue
+			}
 			byAudit[issue.ID] = append(byAudit[issue.ID], issue)
 		}
 	}
@@ -202,7 +205,10 @@ func evaluateSiteQualityRuns(
 		observedSet[auditID] = struct{}{}
 	}
 	clean := make([]string, 0)
-	for auditID := range siteQualityActionableAuditRules {
+	for auditID, rule := range siteQualityActionableAuditRules {
+		if !siteQualityAuditMatchesScope(auditID, rule.Kind, job.AuditScope) {
+			continue
+		}
 		if _, ok := observedSet[auditID]; !ok {
 			clean = append(clean, auditID)
 		}
@@ -214,6 +220,23 @@ func evaluateSiteQualityRuns(
 		Observed:  observed,
 		Runs:      runIDs,
 	}, detections
+}
+
+func siteQualityIssueMatchesScope(issue LighthouseRunnerIssue, scope string) bool {
+	return siteQualityAuditMatchesScope(issue.ID, issue.Kind, scope)
+}
+
+func siteQualityAuditMatchesScope(auditID string, kind string, scope string) bool {
+	switch scope {
+	case sitequalitydomain.SiteQualityAuditScopeHeadings:
+		return kind == "headings"
+	case sitequalitydomain.SiteQualityAuditScopeSchema:
+		return kind == "schema"
+	case sitequalitydomain.SiteQualityAuditScopeLinkText:
+		return auditID == siteQualityLinkTextAuditID
+	default:
+		return true
+	}
 }
 
 func siteQualityDecisionFromIssues(

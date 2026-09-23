@@ -39,11 +39,11 @@ func TestProductSEOUpdateUsesDedicatedBoundaryWithoutMerchantEvent(t *testing.T)
 		Status: "active",
 		Locale: "en",
 		Variants: []ProductVariantInput{{
-			SKU:       "SEO-BOUNDARY-001",
-			Price:     99,
-			Stock:     1,
-			IsDefault: true,
-			IsActive:  boolPtr(true),
+			SKU:        "SEO-BOUNDARY-001",
+			PriceMinor: 99,
+			Stock:      1,
+			IsDefault:  true,
+			IsActive:   boolPtr(true),
 		}},
 	})
 	require.NoError(t, err)

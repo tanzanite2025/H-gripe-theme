@@ -52,12 +52,12 @@ func TestOrderEvidenceRepositoryCreatesAndReadsPackageGraph(t *testing.T) {
 		},
 	}
 	pkg := &orderevidence.OrderEvidencePackage{
-		OrderID:               orderRecord.ID,
-		SnapshotID:            snapshot.ID,
-		PackageVersion:        1,
-		Status:                orderevidence.PackageStatusIncomplete,
-		OrderTotalUSDSnapshot: 100,
-		SchemaVersion:         orderevidence.OrderEvidencePackageSchemaVersion,
+		OrderID:                    orderRecord.ID,
+		SnapshotID:                 snapshot.ID,
+		PackageVersion:             1,
+		Status:                     orderevidence.PackageStatusIncomplete,
+		OrderTotalUSDSnapshotMinor: 10000,
+		SchemaVersion:              orderevidence.OrderEvidencePackageSchemaVersion,
 	}
 	require.NoError(t, repo.CreatePackageWithItems(pkg, items))
 	require.NotZero(t, pkg.ID)
@@ -92,12 +92,12 @@ func TestOrderEvidenceRepositoryRejectsCrossOrderItems(t *testing.T) {
 	repo := NewOrderEvidenceRepository(db)
 
 	pkg := &orderevidence.OrderEvidencePackage{
-		OrderID:               orderRecord.ID,
-		SnapshotID:            snapshot.ID,
-		PackageVersion:        1,
-		Status:                orderevidence.PackageStatusIncomplete,
-		OrderTotalUSDSnapshot: 100,
-		SchemaVersion:         orderevidence.OrderEvidencePackageSchemaVersion,
+		OrderID:                    orderRecord.ID,
+		SnapshotID:                 snapshot.ID,
+		PackageVersion:             1,
+		Status:                     orderevidence.PackageStatusIncomplete,
+		OrderTotalUSDSnapshotMinor: 10000,
+		SchemaVersion:              orderevidence.OrderEvidencePackageSchemaVersion,
 	}
 	items := []orderevidence.OrderEvidenceItem{{
 		OrderID:        orderRecord.ID + 99,
@@ -116,9 +116,9 @@ func TestOrderEvidenceRepositoryListsOrdersWithAndWithoutEvidencePackages(t *tes
 	db := newOrderEvidenceRepositoryTestDB(t)
 	firstOrder, snapshot := seedOrderEvidenceRepositoryOrderAndSnapshot(t, db)
 	secondOrder := order.Order{
-		OrderNumber: "TZ-2026-REPOSITORY-NO-PACKAGE",
-		TotalAmount: 900,
-		Currency:    "USD",
+		OrderNumber:      "TZ-2026-REPOSITORY-NO-PACKAGE",
+		TotalAmountMinor: 90000,
+		Currency:         "USD",
 		ShippingAddress: order.Address{
 			Email: "second@example.com",
 		},
@@ -128,12 +128,12 @@ func TestOrderEvidenceRepositoryListsOrdersWithAndWithoutEvidencePackages(t *tes
 
 	repo := NewOrderEvidenceRepository(db)
 	pkg := &orderevidence.OrderEvidencePackage{
-		OrderID:               firstOrder.ID,
-		SnapshotID:            snapshot.ID,
-		PackageVersion:        1,
-		Status:                orderevidence.PackageStatusIncomplete,
-		OrderTotalUSDSnapshot: 100,
-		SchemaVersion:         orderevidence.OrderEvidencePackageSchemaVersion,
+		OrderID:                    firstOrder.ID,
+		SnapshotID:                 snapshot.ID,
+		PackageVersion:             1,
+		Status:                     orderevidence.PackageStatusIncomplete,
+		OrderTotalUSDSnapshotMinor: 10000,
+		SchemaVersion:              orderevidence.OrderEvidencePackageSchemaVersion,
 	}
 	items := []orderevidence.OrderEvidenceItem{
 		{
@@ -214,28 +214,28 @@ func seedOrderEvidenceRepositoryOrderAndSnapshot(
 ) (order.Order, orderevidence.OrderEvidenceSnapshot) {
 	t.Helper()
 	orderRecord := order.Order{
-		OrderNumber:    "TZ-2026-REPOSITORY-PACKAGE",
-		TotalAmount:    100,
-		Currency:       "USD",
-		FXSnapshotData: repositoryEvidenceFXSnapshot(),
+		OrderNumber:      "TZ-2026-REPOSITORY-PACKAGE",
+		TotalAmountMinor: 10000,
+		Currency:         "USD",
+		FXSnapshotData:   repositoryEvidenceFXSnapshot(),
 	}
 	require.NoError(t, db.Create(&orderRecord).Error)
 	snapshot := orderevidence.OrderEvidenceSnapshot{
-		OrderID:          orderRecord.ID,
-		SchemaVersion:    orderevidence.OrderEvidenceSnapshotSchemaVersion,
-		ConfirmedAt:      time.Now().UTC(),
-		Currency:         "USD",
-		OrderTotalAmount: 100,
-		OrderTotalUSD:    100,
-		SnapshotData:     datatypes.JSON([]byte(`{"schema_version":1,"items":[{}]}`)),
-		SnapshotSHA256:   repositoryEvidenceHash(`{"schema_version":1,"items":[{}]}`),
+		OrderID:               orderRecord.ID,
+		SchemaVersion:         orderevidence.OrderEvidenceSnapshotSchemaVersion,
+		ConfirmedAt:           time.Now().UTC(),
+		Currency:              "USD",
+		OrderTotalAmountMinor: 10000,
+		OrderTotalUSDMinor:    10000,
+		SnapshotData:          datatypes.JSON([]byte(`{"schema_version":1,"items":[{}]}`)),
+		SnapshotSHA256:        repositoryEvidenceHash(`{"schema_version":1,"items":[{}]}`),
 	}
 	require.NoError(t, db.Create(&snapshot).Error)
 	return orderRecord, snapshot
 }
 
 func repositoryEvidenceFXSnapshot() datatypes.JSON {
-	return datatypes.JSON([]byte(`{"version":1,"base_currency":"USD","order_currency":"USD","base_to_order_rate":1,"source":"test","captured_at":"2026-09-04T12:00:00Z"}`))
+	return datatypes.JSON([]byte(`{"version":1,"base_currency":"USD","order_currency":"USD","rate_decimal":"1","source":"test","captured_at":"2026-09-04T12:00:00Z"}`))
 }
 
 func repositoryEvidenceHash(value string) string {

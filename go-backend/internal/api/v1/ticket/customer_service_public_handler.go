@@ -75,10 +75,22 @@ func (h *Handler) EnsurePublicCustomerServiceConversation(c *gin.Context) {
 }
 
 func (h *Handler) HasPublicCustomerServiceConversation(c *gin.Context) {
-	hasConversation, conversationID, lastAgentID, err := h.ticketService.HasPublicCustomerServiceConversation(h.existingPublicCustomerOwner(c))
+	owner := h.existingPublicCustomerOwner(c)
+	hasConversation, conversationID, lastAgentID, err := h.ticketService.HasPublicCustomerServiceConversation(owner)
 	if err != nil {
 		writePublicCustomerServiceError(c, err)
 		return
+	}
+	if hasConversation && h.refreshExistingCustomerServiceVisitorProfile(c, owner) {
+		if conversation, lookupErr := h.ticketService.GetPublicCustomerServiceConversation(conversationID, owner); lookupErr == nil {
+			h.publishPublicCustomerServiceEventToAudience(
+				service.CustomerServiceEventContextUpdated,
+				conversation,
+				publicCustomerServiceRealtimeActor(owner),
+				service.CustomerServiceRealtimeAudienceBackoffice,
+				gin.H{"source": "visitor_timezone"},
+			)
+		}
 	}
 
 	c.JSON(http.StatusOK, gin.H{
@@ -439,7 +451,8 @@ func (h *Handler) GetPublicCustomerServiceMessages(c *gin.Context) {
 		return
 	}
 
-	messages, total, err := h.ticketService.GetPublicCustomerServiceMessagesPage(conversationID, h.existingPublicCustomerOwner(c), limit, offset)
+	owner := h.existingPublicCustomerOwner(c)
+	messages, total, err := h.ticketService.GetPublicCustomerServiceMessagesPage(conversationID, owner, limit, offset)
 	if err != nil {
 		writePublicCustomerServiceError(c, err)
 		return
@@ -447,6 +460,17 @@ func (h *Handler) GetPublicCustomerServiceMessages(c *gin.Context) {
 	if messages == nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "[CRITICAL] GetPublicCustomerServiceMessages returned nil"})
 		return
+	}
+	if h.refreshExistingCustomerServiceVisitorProfile(c, owner) {
+		if conversation, lookupErr := h.ticketService.GetPublicCustomerServiceConversation(conversationID, owner); lookupErr == nil {
+			h.publishPublicCustomerServiceEventToAudience(
+				service.CustomerServiceEventContextUpdated,
+				conversation,
+				publicCustomerServiceRealtimeActor(owner),
+				service.CustomerServiceRealtimeAudienceBackoffice,
+				gin.H{"source": "visitor_timezone"},
+			)
+		}
 	}
 
 	items := make([]gin.H, 0, len(messages))

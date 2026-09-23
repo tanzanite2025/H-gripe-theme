@@ -38,7 +38,7 @@ func TestExchangeRateHandlerConvertDisplayPricesUsesCachedRates(t *testing.T) {
 		{
 			BaseCurrency:  "CNY",
 			QuoteCurrency: "USD",
-			Rate:          0.14,
+			RateDecimal:   "0.14",
 			Source:        "test_cache",
 			FetchedAt:     time.Now().UTC(),
 		},
@@ -48,7 +48,7 @@ func TestExchangeRateHandlerConvertDisplayPricesUsesCachedRates(t *testing.T) {
 	router := gin.New()
 	router.POST("/convert", handler.ConvertDisplayPrices)
 
-	body := bytes.NewBufferString(`{"amount":699,"base_currency":"CNY","quote_currencies":["CNY","usd","USD"]}`)
+	body := bytes.NewBufferString(`{"amount_decimal":"699","base_currency":"CNY","quote_currencies":["CNY","usd","USD"]}`)
 	request := httptest.NewRequest(http.MethodPost, "/convert", body)
 	request.Header.Set("Content-Type", "application/json")
 	response := httptest.NewRecorder()
@@ -59,27 +59,23 @@ func TestExchangeRateHandlerConvertDisplayPricesUsesCachedRates(t *testing.T) {
 	var payload struct {
 		Code int `json:"code"`
 		Data struct {
-			Amount          float64  `json:"amount"`
+			AmountDecimal   string   `json:"amount_decimal"`
 			BaseCurrency    string   `json:"base_currency"`
 			QuoteCurrencies []string `json:"quote_currencies"`
 			Prices          []struct {
-				Amount    float64 `json:"amount"`
-				Currency  string  `json:"currency"`
-				Rate      float64 `json:"rate"`
-				Source    string  `json:"source"`
-				Converted bool    `json:"converted"`
+				AmountDecimal string `json:"amount_decimal"`
+				Currency      string `json:"currency"`
+				Converted     bool   `json:"converted"`
 			} `json:"prices"`
 		} `json:"data"`
 	}
 	require.NoError(t, json.Unmarshal(response.Body.Bytes(), &payload))
 	require.Equal(t, 0, payload.Code)
-	require.Equal(t, 699.0, payload.Data.Amount)
+	require.Equal(t, "699", payload.Data.AmountDecimal)
 	require.Equal(t, "CNY", payload.Data.BaseCurrency)
 	require.Equal(t, []string{"USD"}, payload.Data.QuoteCurrencies)
 	require.Len(t, payload.Data.Prices, 1)
-	require.Equal(t, 97.86, payload.Data.Prices[0].Amount)
+	require.Equal(t, "97.86", payload.Data.Prices[0].AmountDecimal)
 	require.Equal(t, "USD", payload.Data.Prices[0].Currency)
-	require.Equal(t, 0.14, payload.Data.Prices[0].Rate)
-	require.Equal(t, "direct_rate", payload.Data.Prices[0].Source)
 	require.True(t, payload.Data.Prices[0].Converted)
 }

@@ -54,11 +54,22 @@ func (r *HomeVisualTileRepository) CountItems(tileSetKey, locale string, publish
 	return count, err
 }
 
-func (r *HomeVisualTileRepository) ReplaceItems(tileSetKey, locale string, items []homevisualtile.Tile) error {
+func (r *HomeVisualTileRepository) ReplaceItems(
+	tileSetKey string,
+	locale string,
+	items []homevisualtile.Tile,
+	afterReplace func(tx *gorm.DB, previous []homevisualtile.Tile) error,
+) error {
 	key := strings.TrimSpace(tileSetKey)
 	normalizedLocale := strings.TrimSpace(locale)
 
 	return r.db.Transaction(func(tx *gorm.DB) error {
+		var previous []homevisualtile.Tile
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
+			Where("showcase_key = ? AND locale = ?", key, normalizedLocale).
+			Find(&previous).Error; err != nil {
+			return err
+		}
 		if err := tx.Where("showcase_key = ? AND locale = ?", key, normalizedLocale).
 			Delete(&homevisualtile.Tile{}).Error; err != nil {
 			return err
@@ -69,10 +80,15 @@ func (r *HomeVisualTileRepository) ReplaceItems(tileSetKey, locale string, items
 			items[index].TileSetKey = key
 			items[index].Locale = normalizedLocale
 		}
-		if len(items) == 0 {
-			return nil
+		if len(items) > 0 {
+			if err := tx.Create(&items).Error; err != nil {
+				return err
+			}
 		}
-		return tx.Create(&items).Error
+		if afterReplace != nil {
+			return afterReplace(tx, previous)
+		}
+		return nil
 	})
 }
 

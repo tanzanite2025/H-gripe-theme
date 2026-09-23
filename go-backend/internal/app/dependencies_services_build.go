@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"commerce-platform/internal/repository"
 	"commerce-platform/internal/service"
 	"commerce-platform/internal/workbenchfeed"
 )
@@ -12,6 +13,13 @@ func (b *dependencyServicesBuilder) build() error {
 	storageSvc := b.support.StorageSvc
 	siteLogoStorageSvc := b.support.SiteLogoStorageSvc
 	txManager := b.support.TxManager
+	emailChallengeTxManager := repository.NewEmailChallengeTxManager(
+		b.db,
+		b.repos.Subscription,
+		b.repos.Warranty,
+		b.repos.EmailChallenge,
+		b.repos.Outbox,
+	)
 	shippingService := b.support.ShippingService
 	outboundHTTPResilience := b.support.OutboundHTTPResilience
 	UGCShowcaseUploadProtectionService := b.support.UGCShowcaseUploadProtectionService
@@ -270,9 +278,11 @@ func (b *dependencyServicesBuilder) build() error {
 	loyaltyProgramService := service.NewLoyaltyProgramService(b.repos.LoyaltyProgram)
 	loyaltyProgramService.ConfigureCurrencyPolicy(currencyPolicyService)
 	afterSalesService := service.NewAfterSalesService(b.repos.AfterSales, b.repos.Order, b.repos.AfterSalesRefundReview)
+	afterSalesService.ConfigureReturnWindowDays(b.cfg.AfterSales.ReturnWindowDays)
 	afterSalesService.ConfigureUserRepository(b.repos.User)
 	afterSalesService.ConfigureTxManager(txManager)
 	afterSalesService.ConfigureAttachmentStorage(storageSvc)
+	b.support.ShippingService.ConfigureAfterSalesService(afterSalesService)
 	hotDataArchiveService := service.NewHotDataArchiveService(
 		b.repos.HotDataArchive,
 		b.cfg.Worker.HotDataArchiveBatchLimit,
@@ -340,7 +350,7 @@ func (b *dependencyServicesBuilder) build() error {
 		Gallery:                           service.NewGalleryService(b.repos.Gallery, b.repos.Media),
 		Media:                             mediaService,
 		SiteLogo:                          siteLogoService,
-		Warranty:                          service.NewWarrantyService(b.repos.Warranty, b.repos.Order),
+		Warranty:                          service.NewWarrantyService(emailChallengeTxManager, b.repos.Warranty, b.repos.Order, b.repos.ShipmentRecord),
 		ShipmentRecord:                    service.NewShipmentRecordService(b.repos.ShipmentRecord),
 		Checkout:                          service.NewCheckoutService(b.repos.Product, b.repos.Coupon, b.repos.Payment, b.repos.Loyalty, shippingService),
 		OrderEvidenceSnapshot:             orderEvidenceSnapshotService,
@@ -363,8 +373,9 @@ func (b *dependencyServicesBuilder) build() error {
 		Review:                       service.NewReviewService(b.repos.Review),
 		ReviewModeration:             service.NewReviewModerationService(b.repos.Review),
 		Ticket:                       service.NewTicketService(b.repos.Ticket, b.repos.User, b.repos.FAQ),
+		CustomerServiceRetention:     service.NewCustomerServiceRetentionService(b.repos.Ticket, b.repos.Order, b.repos.AfterSales, b.repos.Payment, b.repos.OrderEvidence, service.NewAuditService(b.repos.Audit)),
 		CustomerServiceEvents:        service.NewCustomerServiceEventHub(),
-		Subscription:                 service.NewSubscriptionService(b.repos.Subscription),
+		Subscription:                 service.NewSubscriptionService(emailChallengeTxManager, b.repos.Subscription),
 		Sitemap:                      service.NewSitemapServiceWithCatalog(b.repos.Post, b.repos.Product, b.repos.ProductCategory, b.cfg.Server.BaseURL),
 		StorefrontRouteCatalog:       storefrontRouteCatalogService,
 		StorefrontURLSearchProfiles:  storefrontURLSearchProfileService,
@@ -422,8 +433,10 @@ func (b *dependencyServicesBuilder) build() error {
 			b.repos.PaymentProtection,
 			b.cfg.PaymentProtection,
 		),
-		PaymentRefundReview: service.NewPaymentRefundRecommendationService(b.repos.PaymentRefundReview, txManager),
-		Outbox:              service.NewOutboxService(b.repos.Outbox),
+		PaymentRefundReview:                service.NewPaymentRefundRecommendationService(b.repos.PaymentRefundReview, txManager),
+		Outbox:                             service.NewOutboxService(b.repos.Outbox),
+		TransactionalNotificationTemplates: service.NewTransactionalNotificationTemplateService(b.repos.NotificationTemplates),
+		EmailProviders:                     b.support.EmailProviderSvc,
 	}
 	return nil
 }

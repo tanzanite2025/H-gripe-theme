@@ -7,6 +7,7 @@ import (
 	shippingrating "commerce-platform/internal/domain/shipping/rating"
 	"errors"
 	"fmt"
+	"math"
 )
 
 func (s *ShippingService) CalculateShipping(input ShippingCalculationInput) (*ShippingQuote, error) {
@@ -20,29 +21,51 @@ func (s *ShippingService) CalculateShipping(input ShippingCalculationInput) (*Sh
 		return nil, fmt.Errorf("%w: country must be an ISO alpha-2 code", ErrInvalidShippingDestination)
 	}
 	input.Country = country
-	if template.FreeShipping && input.Amount >= template.FreeThreshold {
-		return &ShippingQuote{ShippingFee: 0, FreeShipping: true}, nil
+	if input.AmountMinor < 0 {
+		return nil, errors.New("shipping amount cannot be negative")
+	}
+	if template.FreeShipping {
+		threshold, thresholdErr := template.FreeThresholdMoney()
+		amount, amountErr := domainmoney.New(input.AmountMinor, template.Currency)
+		if thresholdErr != nil || amountErr != nil {
+			if thresholdErr != nil {
+				return nil, thresholdErr
+			}
+			return nil, amountErr
+		}
+		if amount.AmountMinor() >= threshold.AmountMinor() {
+			return &ShippingQuote{ShippingFeeMinor: 0, Currency: template.Currency, FreeShipping: true}, nil
+		}
 	}
 
+	amountMoney, amountErr := domainmoney.New(input.AmountMinor, template.Currency)
+	if amountErr != nil {
+		return nil, amountErr
+	}
 	value := input.Weight
 	switch template.Type {
 	case "quantity":
 		value = float64(input.Quantity)
-	case "price", "amount":
-		value = input.Amount
 	}
 	if err := validateTemplateWeightBillingForValue(template, input.Country, value); err != nil {
 		return nil, err
 	}
 
-	shippingFee, freeShipping, _, err := calculateTemplateShippingFeeForValue(template, input.Country, value)
+	shippingFeeMoney, freeShipping, _, err := calculateTemplateShippingFeeWithDisplayPricesMoney(
+		template, input.Country, int(math.Round(input.Weight*1000)), input.Quantity, amountMoney, amountMoney,
+	)
 	if err != nil {
 		return nil, err
 	}
-
+	shippingFeeDecimal, feeErr := shippingFeeMoney.FormatMajor()
+	if feeErr != nil {
+		return nil, feeErr
+	}
 	return &ShippingQuote{
-		ShippingFee:  shippingFee,
-		FreeShipping: freeShipping,
+		ShippingFeeDecimal: shippingFeeDecimal,
+		ShippingFeeMinor:   shippingFeeMoney.AmountMinor(),
+		Currency:           template.Currency,
+		FreeShipping:       freeShipping,
 	}, nil
 }
 
@@ -59,7 +82,10 @@ func (s *ShippingService) QuoteCart(input ShippingQuoteInput) (*ShippingQuote, e
 	if !currency.IsCatalogCode(quoteCurrency) {
 		return nil, errors.New("shipping quote currency is required")
 	}
-	totalAmount, err := domainmoney.New(0, quoteCurrency)
+	totalAmount, initErr := domainmoney.New(0, quoteCurrency)
+	if initErr != nil {
+		return nil, initErr
+	}
 	for _, item := range input.Items {
 		if item.Quantity <= 0 {
 			return nil, fmt.Errorf("invalid quantity for product ID %d", item.ProductID)
@@ -72,8 +98,20 @@ func (s *ShippingService) QuoteCart(input ShippingQuoteInput) (*ShippingQuote, e
 		if variant == nil {
 			return nil, fmt.Errorf("product ID %d has no purchasable SKU", item.ProductID)
 		}
-		if variant.Weight <= 0 {
-			return nil, fmt.Errorf("shipping weight is missing for SKU %s", variant.SKU)
+		configuration := ProductConfigurationResult{}
+		if len(item.ConfigurationData) > 0 && string(item.ConfigurationData) != "{}" {
+			selectedOptions, configErr := SelectedOptionsFromConfiguration(item.ConfigurationData)
+			if configErr != nil {
+				return nil, fmt.Errorf("invalid configuration for SKU %s: %w", variant.SKU, configErr)
+			}
+			configuration, configErr = ResolveProductConfiguration(product, variant, selectedOptions)
+			if configErr != nil {
+				return nil, fmt.Errorf("configuration conflict for SKU %s: %w", variant.SKU, configErr)
+			}
+		}
+		configuredWeight := variant.Weight + configuration.WeightDeltaGrams
+		if configuredWeight <= 0 {
+			return nil, fmt.Errorf("shipping weight is missing for configured SKU %s", variant.SKU)
 		}
 
 		templateID, err := resolveProductShippingTemplateID(product, variant)
@@ -82,10 +120,22 @@ func (s *ShippingService) QuoteCart(input ShippingQuoteInput) (*ShippingQuote, e
 		}
 
 		resolvedVariantID := variant.ID
-		unitPrice := variant.EffectivePrice()
-		unitPriceMoney, err := domainmoney.FromMajorFloat(unitPrice, quoteCurrency)
+		// The quote currency is the explicit pricing boundary for this
+		// storefront request. The catalog minor snapshot is re-homed into that
+		// currency here; FX conversion is handled by the checkout pricing path.
+		unitPriceMoney, err := domainmoney.New(variant.PriceMinor, quoteCurrency)
 		if err != nil {
 			return nil, fmt.Errorf("invalid price for SKU %s: %w", variant.SKU, err)
+		}
+		if configuration.Delta.AmountMinor() != 0 {
+			deltaMoney, deltaErr := domainmoney.New(configuration.Delta.AmountMinor(), quoteCurrency)
+			if deltaErr != nil {
+				return nil, fmt.Errorf("calculate configured price delta for SKU %s: %w", variant.SKU, deltaErr)
+			}
+			unitPriceMoney, err = unitPriceMoney.Add(deltaMoney)
+			if err != nil {
+				return nil, fmt.Errorf("calculate configured price for SKU %s: %w", variant.SKU, err)
+			}
 		}
 		lineAmount, err := unitPriceMoney.MultiplyInt(int64(item.Quantity))
 		if err != nil {
@@ -101,16 +151,13 @@ func (s *ShippingService) QuoteCart(input ShippingQuoteInput) (*ShippingQuote, e
 			ProductSpecificationTemplateID: product.ProductSpecificationTemplateID,
 			ShippingTemplateID:             uintPtr(templateID),
 			Quantity:                       item.Quantity,
-			UnitPrice:                      unitPrice,
-			WeightGrams:                    variant.Weight,
+			UnitPriceMinor:                 unitPriceMoney.AmountMinor(),
+			WeightGrams:                    configuredWeight,
+			PackagingWeightDeltaGrams:      configuration.PackagingWeightDeltaGrams,
 		})
 	}
 
 	input.Items = items
-	input.Amount, err = totalAmount.MajorFloat()
-	if err != nil {
-		return nil, fmt.Errorf("format shipping quote amount: %w", err)
-	}
 	return s.QuoteResolvedItems(input)
 }
 
@@ -187,7 +234,7 @@ func (s *ShippingService) QuoteResolvedItems(input ShippingQuoteInput) (*Shippin
 			}
 		}
 
-		unitPriceMoney, err := domainmoney.FromMajorFloat(item.UnitPrice, quoteCurrency)
+		unitPriceMoney, err := domainmoney.New(item.UnitPriceMinor, quoteCurrency)
 		if err != nil {
 			return nil, fmt.Errorf("invalid shipping quote item price: %w", err)
 		}
@@ -196,7 +243,10 @@ func (s *ShippingService) QuoteResolvedItems(input ShippingQuoteInput) (*Shippin
 			return nil, fmt.Errorf("calculate shipping quote item amount: %w", err)
 		}
 		packagingRule := lookupPackagingRule(packagingRulesByProductAndVariant, item.ProductID, item.VariantID)
-		packagingWeightGrams := packagingRuleWeightGrams(packagingRule)
+		packagingWeightGrams := packagingRuleWeightGrams(packagingRule) + item.PackagingWeightDeltaGrams
+		if packagingWeightGrams < 0 {
+			return nil, fmt.Errorf("packaging weight cannot be negative for product ID %d", item.ProductID)
+		}
 		chargeWeightGrams := item.WeightGrams + packagingWeightGrams
 		resolvedItems = append(resolvedItems, resolvedShippingItem{
 			ShippingQuoteItemInput: item,
@@ -239,10 +289,11 @@ func (s *ShippingService) QuoteResolvedItems(input ShippingQuoteInput) (*Shippin
 			packagingRuleName = item.PackagingRule.RuleName
 		}
 
-		itemAmount, amountErr := item.Amount.MajorFloat()
-		if amountErr != nil {
-			return nil, fmt.Errorf("format shipping quote item amount: %w", amountErr)
+		unitPriceDecimal := ""
+		if value, moneyErr := domainmoney.New(item.UnitPriceMinor, quoteCurrency); moneyErr == nil {
+			unitPriceDecimal, _ = value.FormatMajor()
 		}
+		amountDecimal, _ := item.Amount.FormatMajor()
 		quoteItems[index] = ShippingQuoteItem{
 			ProductID:                      item.ProductID,
 			VariantID:                      item.VariantID,
@@ -252,8 +303,10 @@ func (s *ShippingService) QuoteResolvedItems(input ShippingQuoteInput) (*Shippin
 			PackagingRuleID:                packagingRuleID,
 			PackagingRuleName:              packagingRuleName,
 			Quantity:                       item.Quantity,
-			UnitPrice:                      item.UnitPrice,
-			Amount:                         itemAmount,
+			UnitPriceDecimal:               unitPriceDecimal,
+			UnitPriceMinor:                 item.UnitPriceMinor,
+			AmountDecimal:                  amountDecimal,
+			AmountMinor:                    item.Amount.AmountMinor(),
 			WeightGrams:                    item.WeightGrams,
 			PackagingWeightGrams:           item.PackagingWeightGrams,
 			ChargeWeightGrams:              item.ChargeWeightGrams,
@@ -262,24 +315,20 @@ func (s *ShippingService) QuoteResolvedItems(input ShippingQuoteInput) (*Shippin
 
 	groupRates := make(map[uint]shippingQuoteGroupRate, len(groups))
 	for _, group := range groups {
-		groupAmount, err := group.Amount.MajorFloat()
-		if err != nil {
-			return nil, fmt.Errorf("format shipping group amount: %w", err)
-		}
-		groupFee, groupFree, groupDisplayPrices, err := s.calculateTemplateShippingFeeForQuote(
+		groupFee, groupFree, groupDisplayPrices, err := s.calculateTemplateShippingFeeForQuoteMoney(
 			group.Template,
 			country,
 			group.TotalWeightGrams,
 			group.Quantity,
-			groupAmount,
-			groupAmount,
+			group.Amount,
+			group.Amount,
 			quoteCurrency,
 		)
 		if err != nil {
 			return nil, err
 		}
 		groupRates[group.Template.ID] = shippingQuoteGroupRate{
-			Fee: groupFee, FreeShipping: groupFree, DisplayPrices: groupDisplayPrices,
+			FeeMinor: groupFee.AmountMinor(), FreeShipping: groupFree, DisplayPrices: groupDisplayPrices,
 		}
 	}
 

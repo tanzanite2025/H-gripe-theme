@@ -84,7 +84,7 @@ export function runLighthouseInWorker(input, config) {
       }
     })
     worker.send({
-      input,
+        input,
       config: {
         timeoutMilliseconds: config?.timeoutMilliseconds,
         headingSettleMilliseconds: config?.headingSettleMilliseconds,
@@ -106,6 +106,7 @@ export function runLighthouseInWorker(input, config) {
         linkCheckTimeoutMilliseconds: config?.linkCheckTimeoutMilliseconds,
         linkCheckExternal: config?.linkCheckExternal,
         linkCheckMaxRedirects: config?.linkCheckMaxRedirects,
+        auditScope: input?.auditScope,
       },
     }, (error) => {
       if (error) {
@@ -138,8 +139,40 @@ export async function runLighthouse(input, config) {
   let timeoutHandle
   try {
     const startedAt = Date.now()
-    const runCount = normalizeLighthouseRunCount(input?.lighthouseRunCount ?? config?.lighthouseRunCount)
-    const renderedAuditBudgetMilliseconds = calculateRenderedAuditBudgetMilliseconds(input, config)
+    const auditScope = input?.auditScope || 'full'
+    if (auditScope === 'headings' || auditScope === 'schema') {
+      const renderedDocument = await captureRenderedDocumentAuditResult({
+        debuggingPort: chrome.port,
+        input,
+        timeoutMilliseconds: config.timeoutMilliseconds,
+        settleMilliseconds: Math.max(
+          input.headingSettleMilliseconds || config.headingSettleMilliseconds || 0,
+          input.structuredDataSettleMilliseconds || config.structuredDataSettleMilliseconds || 0,
+        ),
+        userAgent: '',
+      })
+      const finalUrl = renderedDocument.renderedHeadings?.finalUrl || renderedDocument.renderedStructuredData?.finalUrl || input.url
+      const headings = auditScope === 'headings'
+        ? renderedDocument.renderedHeadings
+        : { status: 'skipped', source: 'chrome-rendered-dom', finalUrl }
+      const structuredData = auditScope === 'schema'
+        ? renderedDocument.renderedStructuredData
+        : { status: 'skipped', source: 'chrome-rendered-dom', finalUrl }
+      return normalizeLighthouseReport(
+        { finalUrl, lighthouseVersion: '', configSettings: {}, categories: {}, audits: {} },
+        headings,
+        structuredData,
+        { status: 'skipped', source: 'chrome-rendered-dom', links: [] },
+        { status: 'skipped', source: 'chrome-rendered-dom', interactions: [] },
+        { status: 'skipped', source: 'chrome-rendered-dom', navigations: [] },
+      )
+    }
+    const runCount = auditScope === 'link_text'
+      ? 1
+      : normalizeLighthouseRunCount(input?.lighthouseRunCount ?? config?.lighthouseRunCount)
+    const renderedAuditBudgetMilliseconds = auditScope === 'link_text'
+      ? 0
+      : calculateRenderedAuditBudgetMilliseconds(input, config)
     const lighthouseTimeoutMilliseconds = Math.max(
       minimumLighthouseTimeoutMilliseconds,
       config.timeoutMilliseconds - renderedAuditBudgetMilliseconds,
@@ -148,7 +181,7 @@ export async function runLighthouse(input, config) {
       port: chrome.port,
       output: 'json',
       logLevel: 'error',
-      onlyCategories: ['performance', 'accessibility', 'best-practices', 'seo'],
+      onlyCategories: lighthouseCategoriesForScope(auditScope),
       disableFullPageScreenshot: true,
       formFactor: input.strategy,
       screenEmulation: input.strategy === 'mobile'
@@ -194,6 +227,16 @@ export async function runLighthouse(input, config) {
       linkCheckTimeoutMilliseconds: input.linkCheckTimeoutMilliseconds ?? config.linkCheckTimeoutMilliseconds,
       linkCheckExternal: input.linkCheckExternal ?? config.linkCheckExternal,
     })
+    if (auditScope === 'link_text') {
+      return normalizeLighthouseReport(
+        result.lhr,
+        { status: 'skipped', source: 'chrome-rendered-dom' },
+        { status: 'skipped', source: 'chrome-rendered-dom' },
+        { status: 'skipped', source: 'chrome-rendered-dom', links: [] },
+        { status: 'skipped', source: 'chrome-rendered-dom', interactions: [] },
+        { status: 'skipped', source: 'chrome-rendered-dom', navigations: [] },
+      )
+    }
     const remainingTimeoutMilliseconds = Math.max(
       1_000,
       config.timeoutMilliseconds - (Date.now() - startedAt),
@@ -304,6 +347,12 @@ export function selectMedianLighthouseResult(results) {
     return (a.sample.sampleIndex || 0) - (b.sample.sampleIndex || 0)
   })
   return scored[0].sample
+}
+
+export function lighthouseCategoriesForScope(auditScope = 'full') {
+  return auditScope === 'link_text'
+    ? ['seo']
+    : ['performance', 'accessibility', 'best-practices', 'seo']
 }
 
 export function calculateRenderedAuditBudgetMilliseconds(input = {}, config = {}) {

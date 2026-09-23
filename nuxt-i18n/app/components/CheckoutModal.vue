@@ -131,6 +131,10 @@
                       <span class="checkout-label">{{ t('checkout.stepper.shipping.city', 'City') }}</span>
                       <input v-model.trim="form.city" class="checkout-input" type="text" autocomplete="address-level2" />
                     </label>
+                    <label>
+                      <span class="checkout-label">{{ t('checkout.stepper.shipping.state', 'State / province') }}</span>
+                      <input v-model.trim="form.state" class="checkout-input" type="text" autocomplete="address-level1" />
+                    </label>
                     <label class="sm:col-span-2">
                       <span class="checkout-label">{{ t('checkout.stepper.shipping.address', 'Address') }}</span>
                       <input v-model.trim="form.address" class="checkout-input" type="text" autocomplete="street-address" />
@@ -179,7 +183,7 @@
                           </span>
                         </span>
                       </span>
-                      <span class="shrink-0 font-medium">{{ formatPrice(plan.shipping_fee, checkoutCurrency) }}</span>
+                      <span class="shrink-0 font-medium">{{ formatMinorPrice(plan.shipping_fee_minor, checkoutCurrency) }}</span>
                     </label>
                   </div>
                 </section>
@@ -212,6 +216,10 @@
                       <span class="checkout-label">{{ t('checkout.stepper.shipping.city', 'City') }}</span>
                       <input v-model.trim="billingForm.city" class="checkout-input" type="text" autocomplete="billing address-level2" />
                     </label>
+                    <label>
+                      <span class="checkout-label">{{ t('checkout.stepper.shipping.state', 'State / province') }}</span>
+                      <input v-model.trim="billingForm.state" class="checkout-input" type="text" autocomplete="billing address-level1" />
+                    </label>
                     <label class="sm:col-span-2">
                       <span class="checkout-label">{{ t('checkout.stepper.shipping.address', 'Address') }}</span>
                       <input v-model.trim="billingForm.address" class="checkout-input" type="text" autocomplete="billing street-address" />
@@ -233,20 +241,6 @@
                   </p>
                 </section>
 
-                <section class="border-t tz-border-subtle pt-5">
-                  <label>
-                    <span class="checkout-label">{{ t('checkout.stepper.review.giftCard', 'Gift card') }}</span>
-                    <input
-                      v-model.trim="giftCardCode"
-                      class="checkout-input"
-                      type="text"
-                      autocomplete="off"
-                      :disabled="isSubmitting"
-                      :placeholder="t('checkout.stepper.review.giftCardPlaceholder', 'Enter gift card code')"
-                    />
-                  </label>
-                </section>
-
                 <section v-if="stripePaymentSession" class="border-t tz-border-subtle pt-5">
                   <div class="mb-3">
                     <h3 class="text-sm font-semibold">{{ t('checkout.payment.stripe.title', 'Secure card payment') }}</h3>
@@ -256,6 +250,7 @@
                   </div>
                   <StripePaymentElement
                     :session="stripePaymentSession"
+                    :billing-details="stripeBillingDetails"
                     :return-url="stripeReturnUrl"
                     :confirm-label="t('checkout.payment.stripe.confirm', 'Confirm payment')"
                     :confirming-label="t('checkout.payment.stripe.confirming', 'Confirming...')"
@@ -321,7 +316,7 @@
                         <p class="truncate text-xs font-medium">{{ item.title }}</p>
                         <p class="mt-1 text-xs tz-text-primary/50">× {{ item.quantity }}</p>
                       </div>
-                      <span class="text-xs font-medium">{{ formatPrice(item.price * item.quantity, item.currency) }}</span>
+                      <span class="text-xs font-medium">{{ formatMinorPrice(item.price_minor * item.quantity, item.currency || checkoutCurrency) }}</span>
                     </article>
                   </div>
                 </div>
@@ -354,7 +349,7 @@
                 <div class="space-y-2 border-t tz-border-subtle pt-4 text-sm">
                   <div class="flex justify-between gap-3 tz-text-muted">
                     <span>{{ t('checkout.stepper.summary.subtotal', 'Subtotal') }}</span>
-                    <span>{{ formatPrice(orderTotals.subtotal, checkoutCurrency) }}</span>
+                    <span>{{ formatMinorPrice(orderTotals.subtotalMinor, checkoutCurrency) }}</span>
                   </div>
                   <div class="flex justify-between gap-3 tz-text-muted">
                     <span>{{ t('checkout.stepper.summary.shipping', 'Shipping') }}</span>
@@ -362,19 +357,15 @@
                   </div>
                   <div class="flex justify-between gap-3 tz-text-muted">
                     <span>{{ t('checkout.stepper.summary.tax', 'Tax') }}</span>
-                    <span>{{ checkoutAmountLabel(orderTotals.tax) }}</span>
+                    <span>{{ checkoutAmountLabel(orderTotals.taxMinor) }}</span>
                   </div>
-                  <div v-if="orderTotals.couponDiscount > 0" class="flex justify-between gap-3 tz-text-muted">
+                  <div v-if="orderTotals.couponDiscountMinor > 0" class="flex justify-between gap-3 tz-text-muted">
                     <span>{{ t('checkout.stepper.summary.couponDiscount', 'Coupon discount') }}</span>
-                    <span>-{{ formatPrice(orderTotals.couponDiscount, checkoutCurrency) }}</span>
-                  </div>
-                  <div v-if="orderTotals.giftCardDiscount > 0" class="flex justify-between gap-3 tz-text-muted">
-                    <span>{{ t('checkout.stepper.summary.giftCardDiscount', 'Gift card discount') }}</span>
-                    <span>-{{ formatPrice(orderTotals.giftCardDiscount, checkoutCurrency) }}</span>
+                    <span>-{{ formatMinorPrice(orderTotals.couponDiscountMinor, checkoutCurrency) }}</span>
                   </div>
                   <div class="flex justify-between gap-3 border-t tz-border-subtle pt-3 text-base font-semibold">
                     <span>{{ t('checkout.stepper.summary.total', 'Total') }}</span>
-                    <span>{{ checkoutAmountLabel(orderTotals.total) }}</span>
+                    <span>{{ checkoutAmountLabel(orderTotals.totalMinor) }}</span>
                   </div>
                 </div>
 
@@ -413,7 +404,16 @@ import { useAlipayPayment } from '~/composables/useAlipayPayment'
 import { usePayPalPayment } from '~/composables/usePayPalPayment'
 import { useWeChatPayment, type WeChatPaymentSession } from '~/composables/useWeChatPayment'
 import { useShippingValidation } from '~/composables/useShippingValidation'
-import type { StripeConfirmationResult, StripePaymentSession } from '~/composables/useStripePayment'
+import {
+  useShippingQuote,
+  type CheckoutQuoteResult,
+  type ShippingQuotePlan,
+} from '~/composables/useShippingQuote'
+import type {
+  StripeConfirmationResult,
+  StripePaymentBillingDetails,
+  StripePaymentSession,
+} from '~/composables/useStripePayment'
 import { ApiRequestError } from '~/composables/useApiRequest'
 import type { CheckoutPaymentOption, PaymentGatewayFallbackMethod } from '~/types/payment'
 import {
@@ -434,42 +434,13 @@ import {
   saveStripeReturnSession,
 } from '~/utils/stripeReturn'
 import StripePaymentElement from '~/components/StripePaymentElement.vue'
+import { formatMinorMoney, minorToMajor } from '~/utils/money'
 
 type ApiResponse<T> = T | { data?: T | { data?: T } }
 
-interface CheckoutQuote {
-	currency?: string
-  subtotal_amount?: number
-	  shipping_fee?: number
-	  tax_amount?: number
-	coupon_discount?: number
-	  gift_card_discount?: number
-  total_amount?: number
-  shipping_quote?: {
-    id: string
-    selected_plan?: CheckoutShippingPlan
-    plans: CheckoutShippingPlan[]
-  }
-}
-
-interface CheckoutShippingLeg {
-  carrier_service_id?: number
-  service_name?: string
-  service_code?: string
-  template_name?: string
-}
-
-interface CheckoutShippingPlan {
-  id: string
-  shipping_fee: number
-  eta_min_days?: number
-  eta_max_days?: number
-  legs: CheckoutShippingLeg[]
-}
-
 interface OrderResponse {
   order_number: string
-  total_amount?: number | string | null
+  total_minor?: number | string | null
   payment_status?: string | null
 }
 
@@ -479,19 +450,20 @@ interface CheckoutAddressForm {
   phone: string
   address: string
   city: string
+  state: string
   zip: string
 }
 
 const { t, locale } = useI18n()
 const localePath = useLocalePath()
 const auth = useAuth()
+const shippingQuoteApi = useShippingQuote()
 const {
   cartItems,
   cartCurrency,
   isCheckoutOpen,
   preferredCheckoutPaymentMethod,
   priceBreakdown,
-  formatPrice,
   clearCart,
   reloadCartFromBackend,
   closeCheckout,
@@ -507,7 +479,6 @@ const { createPayPalOrder, redirectToPayPal } = usePayPalPayment()
 const { createAlipayOrder, redirectToAlipay } = useAlipayPayment()
 const { createWeChatOrder } = useWeChatPayment()
 const {
-  loadShippingTemplates,
   validateShipping,
   getZipFormatHint: getShippingZipFormatHint,
 } = useShippingValidation()
@@ -519,11 +490,10 @@ const gatewayFallbackOptions = ref<CheckoutPaymentOption[]>([])
 const isSubmitting = ref(false)
 const showAuthModal = ref(false)
 const stripePaymentSession = ref<StripePaymentSession | null>(null)
-const checkoutQuote = ref<CheckoutQuote | null>(null)
+const checkoutQuote = ref<CheckoutQuoteResult | null>(null)
 const selectedQuotePlanID = ref<string | null>(null)
 const checkoutSubmissionKey = ref('')
 const policyDisclosureAcknowledged = ref(false)
-const giftCardCode = ref('')
 const billingSameAsShipping = ref(true)
 let quoteTimer: ReturnType<typeof setTimeout> | null = null
 
@@ -548,6 +518,7 @@ const form = ref<CheckoutAddressForm & { notes: string }>({
   phone: '',
   address: '',
   city: '',
+  state: '',
   zip: '',
   notes: '',
 })
@@ -558,6 +529,7 @@ const billingForm = ref<CheckoutAddressForm>({
   phone: '',
   address: '',
   city: '',
+  state: '',
   zip: '',
 })
 
@@ -615,35 +587,38 @@ const billingAddressComplete = computed(() => {
 })
 
 const orderTotals = computed(() => {
-  const local = priceBreakdown.value as {
-    subtotal?: number
-  }
+  const local = priceBreakdown.value as { subtotal_minor?: number; subtotal?: number }
   const quote = checkoutQuote.value
   return {
-    subtotal: Number(quote?.subtotal_amount ?? local.subtotal ?? 0),
-    shipping: quote ? Number(quote.shipping_fee ?? 0) : null,
-    tax: quote ? Number(quote.tax_amount ?? 0) : null,
-    couponDiscount: quote ? Number(quote.coupon_discount ?? 0) : 0,
-    giftCardDiscount: quote ? Number(quote.gift_card_discount ?? 0) : 0,
-    total: quote ? Number(quote.total_amount ?? 0) : null,
+    subtotalMinor: quote
+      ? Number(quote.subtotal_minor ?? 0)
+      : Number(local.subtotal_minor ?? local.subtotal ?? 0),
+    shippingMinor: quote ? Number(quote.shipping_fee_minor ?? 0) : null,
+    taxMinor: quote ? Number(quote.tax_minor ?? 0) : null,
+    couponDiscountMinor: quote ? Number(quote.coupon_discount_minor ?? 0) : 0,
+    totalMinor: quote ? Number(quote.total_minor ?? 0) : null,
   }
 })
 
 const checkoutCurrency = computed(() => String(
-  checkoutQuote.value?.currency || displayCurrency.value || cartCurrency.value || 'USD',
+  checkoutQuote.value?.currency || cartCurrency.value || displayCurrency.value || 'USD',
 ).trim().toUpperCase())
+
+const formatMinorPrice = (minor: number | string | null | undefined, currency: string) => (
+  formatMinorMoney(minor, currency)
+)
 
 const shippingLabel = computed(() => {
   if (!form.value.country) return t('checkout.stepper.shipping.state.selectCountry', 'Select country')
   if (checkoutQuote.value?.shipping_quote?.selected_plan) {
     return shippingPlanLabel(checkoutQuote.value.shipping_quote.selected_plan)
   }
-  return orderTotals.value.shipping !== null && orderTotals.value.shipping > 0
-    ? formatPrice(orderTotals.value.shipping, checkoutCurrency.value)
+  return orderTotals.value.shippingMinor !== null && orderTotals.value.shippingMinor > 0
+    ? formatMinorPrice(orderTotals.value.shippingMinor, checkoutCurrency.value)
     : t('checkout.stepper.shipping.state.calculating', 'Calculating...')
 })
 
-const shippingPlanLabel = (plan?: CheckoutShippingPlan | null) => {
+const shippingPlanLabel = (plan?: ShippingQuotePlan | null) => {
   const labels = (plan?.legs || []).map(leg => (
     leg.service_name || leg.service_code || leg.template_name || ''
   )).filter(Boolean)
@@ -658,17 +633,20 @@ const selectShippingPlan = (planID: string) => {
   scheduleQuoteRefresh()
 }
 
-const checkoutAmountLabel = (amount: number | null) =>
-  amount === null
+const checkoutAmountLabel = (amountMinor: number | null) =>
+  amountMinor === null
     ? t('cartDrawer.summary.calculatedAtCheckout', 'Calculated at checkout')
-    : formatPrice(amount, checkoutCurrency.value)
+    : formatMinorPrice(amountMinor, checkoutCurrency.value)
 
 const hasMadeToOrderItems = computed(() => cartItems.value.some(item => (
   isMadeToOrderFulfillment(item.fulfillment_mode)
 )))
 
 const signatureCheckAmount = computed(() => Number(
-  orderTotals.value.total ?? orderTotals.value.subtotal ?? 0,
+  minorToMajor(
+    orderTotals.value.totalMinor ?? orderTotals.value.subtotalMinor ?? 0,
+    checkoutCurrency.value,
+  ),
 ))
 
 const highValueSignatureRequired = computed(() => (
@@ -775,6 +753,7 @@ const addressPayloadFromForm = (addressForm: CheckoutAddressForm) => {
     last_name: nameParts.length > 1 ? nameParts.slice(1).join(' ') : 'User',
     address1: addressForm.address.trim(),
     city: addressForm.city.trim(),
+    state: addressForm.state.trim(),
     postal_code: addressForm.zip.trim(),
     country: addressForm.country.trim().toUpperCase(),
     phone: addressForm.phone.trim(),
@@ -788,6 +767,22 @@ const buildBillingAddressPayload = () => {
   if (billingSameAsShipping.value) return buildShippingAddressPayload()
   return addressPayloadFromForm(billingForm.value)
 }
+
+const stripeBillingDetails = computed<StripePaymentBillingDetails>(() => {
+  const addressForm = billingSameAsShipping.value ? form.value : billingForm.value
+  return {
+    name: addressForm.name.trim(),
+    email: checkoutEmail.value,
+    phone: addressForm.phone.trim(),
+    address: {
+      line1: addressForm.address.trim(),
+      city: addressForm.city.trim(),
+      ...(addressForm.state.trim() ? { state: addressForm.state.trim() } : {}),
+      postal_code: addressForm.zip.trim(),
+      country: addressForm.country.trim().toUpperCase(),
+    },
+  }
+})
 
 const shippingUnavailableMessage = () => t(
   'checkout.stepper.shipping.unavailableFallback',
@@ -811,23 +806,17 @@ const refreshCheckoutQuote = async () => {
   }
 
   try {
-    const response = await auth.request<ApiResponse<CheckoutQuote>>('/checkout/quote', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-      body: JSON.stringify({
-        shipping_address: buildShippingAddressPayload(),
-        display_currency: String(displayCurrency.value || '').trim().toUpperCase(),
-        payment_method: selectedMethod.value === 'card' ? 'card' : selectedMethod.value,
-        gift_card_code: giftCardCode.value.trim(),
-        ...(selectedQuotePlanID.value && checkoutQuote.value?.shipping_quote?.id
-          ? {
-              shipping_quote_id: checkoutQuote.value.shipping_quote.id,
-              selected_quote_plan_id: selectedQuotePlanID.value,
-            }
-          : {}),
-      }),
+    const nextQuote = await shippingQuoteApi.quoteCheckout({
+      shipping_address: buildShippingAddressPayload(),
+      display_currency: String(displayCurrency.value || '').trim().toUpperCase(),
+      payment_method: selectedMethod.value === 'card' ? 'card' : selectedMethod.value,
+      ...(selectedQuotePlanID.value && checkoutQuote.value?.shipping_quote?.id
+        ? {
+            shipping_quote_id: checkoutQuote.value.shipping_quote.id,
+            selected_quote_plan_id: selectedQuotePlanID.value,
+          }
+        : {}),
     })
-    const nextQuote = unwrapApiData<CheckoutQuote>(response)
     checkoutQuote.value = nextQuote
     if (checkoutError.value === shippingUnavailableMessage()) {
       checkoutError.value = ''
@@ -851,8 +840,7 @@ const scheduleQuoteRefresh = () => {
 
 const ensureCheckoutData = async () => {
   await Promise.all([
-    loadShippingTemplates(),
-    loadPaymentMethods(form.value.country || undefined),
+    loadPaymentMethods(form.value.country || undefined, checkoutCurrency.value),
   ])
 }
 
@@ -865,8 +853,8 @@ const requireAuthenticatedUser = async () => {
 }
 
 const createLocalOrder = async (idempotencyKey: string): Promise<OrderResponse> => {
-  const expectedTotal = Number(checkoutQuote.value?.total_amount)
-  if (!Number.isFinite(expectedTotal)) {
+  const expectedTotalMinor = Number(checkoutQuote.value?.total_minor)
+  if (!Number.isSafeInteger(expectedTotalMinor) || expectedTotalMinor < 0) {
     throw new Error(t('checkout.modal.messages.unableRefreshQuote', 'Unable to refresh checkout quote'))
   }
   const shippingQuoteID = checkoutQuote.value?.shipping_quote?.id
@@ -894,8 +882,7 @@ const createLocalOrder = async (idempotencyKey: string): Promise<OrderResponse> 
       shipping_method: 'standard',
       shipping_quote_id: shippingQuoteID,
       selected_quote_plan_id: selectedQuotePlanID.value,
-      expected_total: Number(expectedTotal.toFixed(2)),
-      gift_card_code: giftCardCode.value.trim(),
+      expected_total_minor: expectedTotalMinor,
       policy_disclosure_acknowledged: policyDisclosureAcknowledged.value,
     }),
   })
@@ -908,12 +895,12 @@ const isSettledOrder = (order: OrderResponse) => {
   const paymentStatus = String(order.payment_status || '').trim().toLowerCase()
   if (paymentStatus === 'paid') return true
 
-  if (order.total_amount === null || order.total_amount === undefined || order.total_amount === '') {
+  if (order.total_minor === null || order.total_minor === undefined || order.total_minor === '') {
     return false
   }
 
-  const totalAmount = Number(order.total_amount)
-  return Number.isFinite(totalAmount) && totalAmount <= 0
+  const totalMinor = Number(order.total_minor)
+  return Number.isSafeInteger(totalMinor) && totalMinor <= 0
 }
 
 const completeSettledOrder = async (orderNumber: string) => {
@@ -1129,11 +1116,6 @@ const submitOrder = async () => {
   }
 }
 
-watch(giftCardCode, () => {
-  resetCheckoutSubmissionKey()
-  scheduleQuoteRefresh()
-})
-
 watch(billingSameAsShipping, (same) => {
   if (!same) {
     billingForm.value = {
@@ -1142,6 +1124,7 @@ watch(billingSameAsShipping, (same) => {
       phone: form.value.phone,
       address: form.value.address,
       city: form.value.city,
+      state: form.value.state,
       zip: form.value.zip,
     }
   }
@@ -1155,6 +1138,7 @@ watch(
     billingForm.value.phone,
     billingForm.value.address,
     billingForm.value.city,
+    billingForm.value.state,
     billingForm.value.zip,
   ],
   () => {
@@ -1216,6 +1200,7 @@ watch(isCheckoutOpen, (open) => {
       phone: '',
       address: '',
       city: '',
+      state: '',
       zip: '',
     }
     resetCheckoutSubmissionKey()
@@ -1239,7 +1224,7 @@ watch(() => form.value.country, () => {
     selectedQuotePlanID.value = null
     checkoutQuote.value = null
     resetCheckoutSubmissionKey()
-    void loadPaymentMethods(form.value.country || undefined)
+    void loadPaymentMethods(form.value.country || undefined, checkoutCurrency.value)
     scheduleQuoteRefresh()
   }
 })

@@ -4,8 +4,36 @@ import (
 	"commerce-platform/internal/domain/setting"
 	"commerce-platform/internal/pkg/cache"
 	"commerce-platform/internal/repository"
+	"errors"
+	"fmt"
+	"gorm.io/gorm"
+	"strconv"
+	"strings"
 	"time"
 )
+
+func (s *SettingService) IsTransactionalNotificationEnabled(templateCode string) (bool, error) {
+	key := NotificationRuleToggleKey(templateCode)
+	if strings.TrimSpace(templateCode) == "" {
+		return true, nil
+	}
+	item, err := s.Get(key, "en")
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return true, nil
+		}
+		return false, err
+	}
+	value := strings.TrimSpace(item.Value)
+	if value == "" {
+		return true, nil
+	}
+	enabled, parseErr := strconv.ParseBool(value)
+	if parseErr != nil {
+		return false, fmt.Errorf("setting %s must be boolean", key)
+	}
+	return enabled, nil
+}
 
 type SettingService struct {
 	settingRepo *repository.SettingRepository

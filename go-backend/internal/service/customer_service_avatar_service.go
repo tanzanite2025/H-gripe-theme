@@ -70,7 +70,7 @@ func (s *CustomerServiceAvatarService) Upload(ctx context.Context, userID uint, 
 		return "", fmt.Errorf("upload customer-service avatar: %w", err)
 	}
 
-	previousAvatarURL, err := s.replaceAvatarReference(userID, avatarURL)
+	_, err = s.replaceAvatarReference(userID, avatarURL)
 	if err != nil {
 		if cleanupErr := s.cleanupUnattachedAvatar(ctx, profileID, avatarURL); cleanupErr != nil {
 			return "", errors.Join(err, cleanupErr)
@@ -78,9 +78,6 @@ func (s *CustomerServiceAvatarService) Upload(ctx context.Context, userID uint, 
 		return "", err
 	}
 
-	if previousAvatarURL != avatarURL {
-		s.deleteManagedAvatarNow(ctx, previousAvatarURL)
-	}
 	return avatarURL, nil
 }
 
@@ -101,11 +98,10 @@ func (s *CustomerServiceAvatarService) Remove(ctx context.Context, userID uint) 
 		return ErrCustomerServiceAvatarStorageUnavailable
 	}
 
-	previousAvatarURL, err := s.replaceAvatarReference(userID, "")
+	_, err := s.replaceAvatarReference(userID, "")
 	if err != nil {
 		return err
 	}
-	s.deleteManagedAvatarNow(ctx, previousAvatarURL)
 	return nil
 }
 
@@ -162,16 +158,6 @@ func (s *CustomerServiceAvatarService) cleanupUnattachedAvatar(ctx context.Conte
 		return fmt.Errorf("schedule unattached customer-service avatar cleanup: %w", err)
 	}
 	return nil
-}
-
-func (s *CustomerServiceAvatarService) deleteManagedAvatarNow(ctx context.Context, avatarURL string) {
-	if !s.isManagedAvatarURL(avatarURL) {
-		return
-	}
-	// The transactional outbox event already exists. A failed immediate delete
-	// therefore remains durable work for the dispatcher without affecting the
-	// successful avatar update response.
-	_ = s.storage.Delete(ctx, avatarURL)
 }
 
 func (s *CustomerServiceAvatarService) requireProfile(userID uint) (uint, error) {

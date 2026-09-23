@@ -28,7 +28,6 @@ const marketingRedirect = (to: RouteLocationNormalized): RouteLocationRaw => {
     ? (firstQueryValue(to.query.subtab) === 'rules' ? 'MarketingLoyaltyRules' : 'MarketingLoyaltyTransactions')
     : {
         coupons: 'MarketingCoupons',
-        giftcards: 'MarketingGiftCards',
         levels: 'MarketingLevels',
         risk: 'MarketingPromotionRisk',
         referrals: 'MarketingReferrals',
@@ -641,6 +640,12 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '客服对话', permission: 'ticket:view' }
       },
       {
+        path: 'support/retention',
+        name: 'SupportRetention',
+        component: () => import('@/components/admin/customer-service/CustomerServiceRetentionWorkbench.vue'),
+        meta: { title: '客服保留运维', permission: 'system:manage' }
+      },
+      {
         path: 'support/analytics',
         name: 'SupportAnalytics',
         component: () => import('@/views/CustomerServiceAnalytics.vue'),
@@ -688,12 +693,6 @@ const routes: RouteRecordRaw[] = [
         name: 'MarketingCoupons',
         component: () => import('@/views/Marketing.vue'),
         meta: { title: '优惠券', permission: 'marketing:view' }
-      },
-      {
-        path: 'marketing/giftcards',
-        name: 'MarketingGiftCards',
-        component: () => import('@/views/Marketing.vue'),
-        meta: { title: '礼品卡', permission: 'marketing:view' }
       },
       {
         path: 'marketing/loyalty/transactions',
@@ -981,6 +980,12 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '部署中心', permission: 'ops:deploy:view' }
       },
       {
+        path: 'ops/outbox-failures',
+        name: 'OpsOutboxFailures',
+        component: () => import('@/views/OpsOutboxFailures.vue'),
+        meta: { title: 'Outbox 失败事件', permission: 'ops:view' }
+      },
+      {
         path: 'settings',
         redirect: domainRedirect('SettingsEmail', {
           email: 'SettingsEmail',
@@ -997,6 +1002,12 @@ const routes: RouteRecordRaw[] = [
         name: 'SettingsEmail',
         component: () => import('@/views/Settings.vue'),
         meta: { title: '邮件', permission: 'settings:view' }
+      },
+      {
+        path: 'settings/email/templates',
+        name: 'SettingsEmailTemplates',
+        component: () => import('@/views/NotificationTemplates.vue'),
+        meta: { title: '邮件模板', permission: 'settings:view' }
       },
       {
         path: 'settings/social',

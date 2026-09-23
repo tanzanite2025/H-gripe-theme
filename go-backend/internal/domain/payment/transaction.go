@@ -23,9 +23,6 @@ type Transaction struct {
 	ProviderRequestKey string `gorm:"size:255;index" json:"-"`
 	PaymentMethod      string `gorm:"not null" json:"payment_method"`
 	AmountMinor        int64  `gorm:"column:amount_minor;not null;default:0" json:"amount_minor"`
-	// Amount is retained as a persistence read field while historical rows are
-	// backfilled. New payment logic must use AmountMoney/AmountMinor.
-	Amount           float64        `gorm:"not null" json:"-"`
 	Currency         string         `gorm:"not null" json:"currency"`
 	Status           string         `gorm:"index" json:"status"`               // pending, processing, requires_action, completed, duplicate_paid, failed, expired, refunded
 	GatewayResponse  string         `gorm:"type:text" json:"gateway_response"` // JSON格式
@@ -47,24 +44,25 @@ func (t *Transaction) BeforeSave(tx *gorm.DB) error {
 	if !currency.IsValidCode(t.Currency) || !currency.IsCatalogCode(t.Currency) {
 		return errors.New("payment transaction currency must be a supported ISO 4217 code")
 	}
-	if t.AmountMinor == 0 && t.Amount != 0 {
-		value, err := domainmoney.FromMajorFloat(t.Amount, t.Currency)
-		if err != nil {
-			return err
-		}
-		t.AmountMinor = value.AmountMinor()
-	}
 	if t.AmountMinor < 0 {
 		return errors.New("payment transaction amount cannot be negative")
 	}
 	return nil
 }
 
-// AmountMoney returns the transaction's exact settlement amount. The major
-// field fallback exists only for rows created before amount_minor migration.
+// AmountMoney returns the transaction's exact settlement amount.
 func (t Transaction) AmountMoney() (domainmoney.Money, error) {
-	if t.AmountMinor == 0 && t.Amount != 0 {
-		return domainmoney.FromMajorFloat(t.Amount, t.Currency)
-	}
 	return domainmoney.New(t.AmountMinor, t.Currency)
+}
+
+// AmountMoneyMustMinor exposes the canonical amount for invariant-preserving
+// callers and tests that already validated the transaction currency. It
+// panics only when the transaction itself is invalid, matching the usual
+// Must-style helper convention.
+func (t Transaction) AmountMoneyMustMinor() int64 {
+	money, err := t.AmountMoney()
+	if err != nil {
+		panic(err)
+	}
+	return money.AmountMinor()
 }

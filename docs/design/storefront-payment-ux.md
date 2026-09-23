@@ -42,9 +42,9 @@ Admin tools may still show exact gateway configuration states.
 ## Checkout Total Confirmation
 
 - The shared checkout must refresh the backend quote immediately before creating a local order.
-- The create-order request must include that quote's `total_amount` as `expected_total`.
-- The backend recomputes the quote inside the order-creation transaction and compares it with `expected_total`.
-- If the absolute difference is greater than `0.05` in the order currency, the backend returns HTTP `409` with code `order_total_changed`; it must not create the order, deduct stock, spend points, or start provider payment.
+- The create-order request must include that quote's exact `total_minor` as `expected_total_minor`.
+- The backend recomputes the quote inside the order-creation transaction and compares minor units exactly.
+- Any mismatch returns HTTP `409` with code `order_total_changed`; it must not create the order, deduct stock, spend points, or start provider payment.
 - The storefront refreshes the quote and asks the customer to review the updated total before retrying.
 
 ## Checkout Cart Consumption

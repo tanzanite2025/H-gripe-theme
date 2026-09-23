@@ -1,8 +1,8 @@
 package payment
 
 import (
+	domainmoney "commerce-platform/internal/domain/money"
 	"encoding/json"
-	"strconv"
 	"strings"
 	"time"
 
@@ -15,7 +15,7 @@ import (
 
 func (h *Handler) recordPayPalDisputeRiskEvent(c *gin.Context, event pgateway.PayPalWebhookEvent, payload []byte) (bool, error) {
 	eventType := strings.ToUpper(strings.TrimSpace(event.EventType))
-	if !strings.HasPrefix(eventType, "CUSTOMER.DISPUTE.") {
+	if !strings.HasPrefix(eventType, "CUSTOMER.DISPUTE.") && eventType != "RISK.DISPUTE.CREATED" {
 		return false, nil
 	}
 
@@ -32,6 +32,16 @@ func (h *Handler) recordPayPalDisputeRiskEvent(c *gin.Context, event pgateway.Pa
 	}
 	providerPaymentID := paypalDisputePaymentID(resource)
 	amount, currency := paypalDisputeAmount(resource)
+	amountMoney, amountErr := domainmoney.ParseMajor(amount, currency)
+	amountMinor := int64(0)
+	if amountErr == nil && amountMoney.AmountMinor() > 0 {
+		amountMinor = amountMoney.AmountMinor()
+	} else {
+		// Keep the dispute path usable when PayPal omits the amount: the service
+		// can recover it from the linked provider transaction. Never persist an
+		// unvalidated amount/currency in the risk event or dispute record.
+		currency = ""
+	}
 
 	metadata := map[string]string{
 		"event_type": eventType,
@@ -49,24 +59,26 @@ func (h *Handler) recordPayPalDisputeRiskEvent(c *gin.Context, event pgateway.Pa
 		ExternalReference: externalReference,
 		WebhookEventID:    event.ID,
 		ProviderPaymentID: providerPaymentID,
-		Amount:            amount,
+		AmountMinor:       amountMinor,
 		Currency:          currency,
 		OccurredAt:        paypalRiskOccurredAt(resource),
 		Payload:           string(payload),
 		Metadata:          metadata,
 	}
-	if err := h.recordAndRefreshPaymentRiskEvent(riskInput); err != nil {
-		return true, err
-	}
-	if err := h.enqueueRefundRecommendation(riskInput); err != nil {
-		return true, err
+	if amountMinor > 0 {
+		if err := h.recordAndRefreshPaymentRiskEvent(riskInput); err != nil {
+			return true, err
+		}
+		if err := h.enqueueRefundRecommendation(riskInput); err != nil {
+			return true, err
+		}
 	}
 
 	dispute, err := h.paymentService.RecordPayPalDispute(service.PayPalDisputeInput{
 		PayPalDisputeID:       externalReference,
 		ProviderPaymentID:     providerPaymentID,
 		OrderReference:        orderReference,
-		Amount:                amount,
+		AmountMinor:           amountMinor,
 		Currency:              currency,
 		Reason:                firstJSONPathString(resource, "reason"),
 		Status:                firstJSONPathString(resource, "status"),
@@ -153,26 +165,29 @@ func paypalDisputeOrderReference(resource map[string]interface{}) string {
 	return ""
 }
 
-func paypalDisputeAmount(resource map[string]interface{}) (float64, string) {
+func paypalDisputeAmount(resource map[string]interface{}) (string, string) {
 	for _, key := range []string{"dispute_amount", "amount"} {
 		value, ok := resource[key].(map[string]interface{})
 		if !ok {
 			continue
 		}
 		rawAmount, _ := value["value"].(string)
+		rawAmount = strings.TrimSpace(rawAmount)
 		if rawAmount == "" {
-			if numeric, ok := value["value"].(float64); ok {
-				rawAmount = strconv.FormatFloat(numeric, 'f', -1, 64)
-			}
-		}
-		amount, err := strconv.ParseFloat(strings.TrimSpace(rawAmount), 64)
-		if err != nil || amount <= 0 {
 			continue
 		}
-		currency := firstJSONPathString(value, "currency_code", "currency")
-		return amount, strings.ToUpper(currency)
+		currency := strings.ToUpper(firstJSONPathString(value, "currency_code", "currency"))
+		money, err := domainmoney.ParseMajor(rawAmount, currency)
+		if err != nil || money.AmountMinor() <= 0 {
+			continue
+		}
+		formatted, err := money.FormatMajor()
+		if err != nil {
+			continue
+		}
+		return formatted, currency
 	}
-	return 0, ""
+	return "0", ""
 }
 
 func paypalRiskOccurredAt(resource map[string]interface{}) time.Time {

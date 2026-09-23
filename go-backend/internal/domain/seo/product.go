@@ -33,21 +33,21 @@ type ProductStructuredDataBrand struct {
 }
 
 type ProductStructuredDataOffer struct {
-	Type          string  `json:"@type"`
-	Price         float64 `json:"price"`
-	PriceCurrency string  `json:"priceCurrency"`
-	Availability  string  `json:"availability"`
-	URL           string  `json:"url"`
+	Type          string `json:"@type"`
+	Price         string `json:"price"`
+	PriceCurrency string `json:"priceCurrency"`
+	Availability  string `json:"availability"`
+	URL           string `json:"url"`
 }
 
 type ProductStructuredDataVariant struct {
-	Type          string   `json:"@type"`
-	Name          string   `json:"name"`
-	SKU           string   `json:"sku,omitempty"`
-	Price         *float64 `json:"price,omitempty"`
-	PriceCurrency string   `json:"priceCurrency,omitempty"`
-	Availability  string   `json:"availability,omitempty"`
-	URL           string   `json:"url"`
+	Type          string  `json:"@type"`
+	Name          string  `json:"name"`
+	SKU           string  `json:"sku,omitempty"`
+	Price         *string `json:"price,omitempty"`
+	PriceCurrency string  `json:"priceCurrency,omitempty"`
+	Availability  string  `json:"availability,omitempty"`
+	URL           string  `json:"url"`
 }
 
 type ProductStructuredDataPreview struct {
@@ -91,7 +91,7 @@ type ProductSEOReadiness struct {
 	Brand              string                       `json:"brand"`
 	BrandConfigured    bool                         `json:"brand_configured"`
 	SKU                string                       `json:"sku"`
-	Price              *float64                     `json:"price,omitempty"`
+	Price              *string                      `json:"price,omitempty"`
 	Currency           string                       `json:"currency"`
 	Availability       string                       `json:"availability"`
 	ImageCount         int                          `json:"image_count"`
@@ -123,12 +123,17 @@ func BuildProductSEOReadiness(item productdomain.Product, brand, routePath strin
 	defaultVariant := item.DefaultVariant()
 
 	sku := strings.TrimSpace(item.SKU)
-	price := item.Price
+	price := "0"
+	if sourceMoney, err := item.PriceMoney(); err == nil {
+		price, _ = sourceMoney.FormatMajor()
+	}
 	currencyCode := currency.NormalizeCode(item.Currency)
 	stock := item.Stock
 	if defaultVariant != nil {
 		sku = strings.TrimSpace(defaultVariant.SKU)
-		price = defaultVariant.EffectivePrice()
+		if money, err := defaultVariant.EffectivePriceMoney(); err == nil {
+			price, _ = money.FormatMajor()
+		}
 		currencyCode = currency.NormalizeCode(defaultVariant.Currency)
 		stock = defaultVariant.Stock
 	}
@@ -164,7 +169,7 @@ func BuildProductSEOReadiness(item productdomain.Product, brand, routePath strin
 		Availability:       resolveProductAvailability(item.Status, stock, defaultVariant != nil),
 		ImageCount:         len(visibleImages),
 		HasImage:           len(visibleImages) > 0,
-		HasOffer:           price > 0 && currency.IsCatalogCode(currencyCode),
+		HasOffer:           price != "0" && currency.IsCatalogCode(currencyCode),
 		HasMetaTitle:       strings.TrimSpace(item.MetaTitle) != "",
 		HasMetaDescription: strings.TrimSpace(item.MetaDesc) != "",
 		ActiveVariantCount: len(activeVariants),
@@ -259,7 +264,7 @@ func buildProductStructuredDataPreview(
 	name,
 	description,
 	sku string,
-	price float64,
+	price string,
 	currencyCode,
 	availability string,
 	images []string,
@@ -285,7 +290,10 @@ func buildProductStructuredDataPreview(
 		preview.ProductGroupID = "product-" + strconv.FormatUint(uint64(item.ID), 10)
 		preview.HasVariant = make([]ProductStructuredDataVariant, 0, len(activeVariants))
 		for _, variant := range activeVariants {
-			variantPrice := variant.EffectivePrice()
+			variantPrice := "0"
+			if money, err := variant.EffectivePriceMoney(); err == nil {
+				variantPrice, _ = money.FormatMajor()
+			}
 			variantCurrency := currency.NormalizeCode(variant.Currency)
 			variantAvailability := "https://schema.org/OutOfStock"
 			if variant.Stock > 0 {
@@ -295,7 +303,7 @@ func buildProductStructuredDataPreview(
 				Type:          "Product",
 				Name:          firstNonEmpty(strings.TrimSpace(variant.Title), strings.TrimSpace(variant.SKU), name),
 				SKU:           strings.TrimSpace(variant.SKU),
-				Price:         positiveFloatPointer(variantPrice),
+				Price:         positiveStringPointer(variantPrice),
 				PriceCurrency: variantCurrency,
 				Availability:  variantAvailability,
 				URL:           variantLandingPath(routePath, variant.ID),
@@ -303,7 +311,7 @@ func buildProductStructuredDataPreview(
 		}
 		return preview
 	}
-	if price > 0 && currency.IsCatalogCode(currencyCode) && availability != "unknown" {
+	if price != "0" && currency.IsCatalogCode(currencyCode) && availability != "unknown" {
 		preview.Offers = &ProductStructuredDataOffer{
 			Type:          "Offer",
 			Price:         price,
@@ -383,8 +391,8 @@ func firstNonEmpty(values ...string) string {
 	return ""
 }
 
-func positiveFloatPointer(value float64) *float64 {
-	if value <= 0 {
+func positiveStringPointer(value string) *string {
+	if value == "" || value == "0" {
 		return nil
 	}
 	return &value

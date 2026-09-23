@@ -3,18 +3,18 @@
     <AdminPageHeader title="上线前检查 / 页面质量" description="H1 层级与 Schema 独立检查，仅手动触发">
       <template #actions>
         <Button
-          v-if="canManage && terminalJobCount > 0"
+          v-if="canManage"
           size="icon"
           variant="outline"
-          title="清理失败和历史死信任务"
-          aria-label="清理失败和历史死信任务"
-          :disabled="loading || targetOptionsLoading || cleaningJobs"
-          @click="cleanupTerminalJobs"
+          title="清理旧任务和上月及更早的问题"
+          aria-label="清理旧任务和上月及更早的问题"
+          :disabled="loading || targetOptionsLoading || cleaningJobs || cleaningFindings"
+          @click="cleanupSiteQualityHistory"
         >
           <LoaderCircle v-if="cleaningJobs" class="size-4 animate-spin" />
           <Trash2 v-else class="size-4 text-destructive" />
         </Button>
-        <Button size="icon" variant="outline" title="刷新页面质量检查" :disabled="loading || targetOptionsLoading || cleaningJobs" @click="refreshSiteQualityData">
+        <Button size="icon" variant="outline" title="刷新页面质量检查" :disabled="loading || targetOptionsLoading || cleaningJobs || cleaningFindings" @click="refreshSiteQualityData">
  <RefreshCw :class="['size-4', loading || targetOptionsLoading ? 'animate-spin': '']" />
         </Button>
       </template>
@@ -194,6 +194,7 @@ import preflightApi, {
   type SiteQualityJob,
   type SiteQualityOperationalSummary,
   type SiteQualityJobCleanupResult,
+  type SiteQualityFindingCleanupResult,
   type SiteQualityFinding,
   type SiteQualityFindingEvidence,
   type SiteQualityFindingEvent,
@@ -237,6 +238,7 @@ const cancellingJob = ref(false)
 const activeJobClock = ref(Date.now())
 let activeJobClockTimer: number | null = null
 const cleaningJobs = ref(false)
+const cleaningFindings = ref(false)
 const headingsLoading = ref(false)
 const headingFindings = ref<SiteQualityFinding[]>([])
 const headingStateFilter = ref<SiteQualityFindingStateFilter>('active')
@@ -518,7 +520,8 @@ const runInspection = async (): Promise<void> => {
   cancellingJob.value = false
   activeJobContext.value = { title: '页面质量检测', target: targetURL.value }
   try {
-    const jobPromise = enqueueInspection(targetURL.value, strategy.value, (job) => {
+    const auditScope = activeQualityTab.value === 'links' ? 'link_text' : activeQualityTab.value
+    const jobPromise = enqueueInspection(targetURL.value, strategy.value, auditScope, (job) => {
       activeJob.value = job
     })
     void loadRuns()
@@ -559,22 +562,28 @@ const cancelActiveJob = async (): Promise<void> => {
   }
 }
 
-const cleanupTerminalJobs = async (): Promise<void> => {
-  if (!canManage.value || cleaningJobs.value || terminalJobCount.value <= 0) return
+const cleanupSiteQualityHistory = async (): Promise<void> => {
+  if (!canManage.value || cleaningJobs.value || cleaningFindings.value) return
   const jobs = operationalSummary.value?.jobs
   const failed = jobs?.failed || 0
   const deadLetter = jobs?.dead_letter || 0
-  if (!window.confirm(`确定清理 ${failed} 个重试任务和 ${deadLetter} 个历史死信任务吗？历史 Run、Findings 和成功任务会保留。`)) return
+  if (!window.confirm(`清理 ${failed} 个失败任务、${deadLetter} 个死信任务，以及上月及更早未更新的问题项？本月更新的问题和进行中的复检会保留，原始 Run 记录和目标配置也会保留。`)) return
 
   cleaningJobs.value = true
+  cleaningFindings.value = true
   try {
-    const result: SiteQualityJobCleanupResult = await preflightApi.cleanupSiteQualityJobs()
-    toast.success(`已清理 ${result.deleted} 个旧任务（重试 ${result.failed}，死信 ${result.dead_letter}）`)
-    await loadRuns()
+    const [jobResult, findingResult]: [SiteQualityJobCleanupResult, SiteQualityFindingCleanupResult] = await Promise.all([
+      terminalJobCount.value > 0 ? preflightApi.cleanupSiteQualityJobs() : Promise.resolve({ deleted: 0, failed: 0, dead_letter: 0 }),
+      preflightApi.cleanupOldSiteQualityFindings(),
+    ])
+    const skippedMessage = findingResult.skipped > 0 ? `，${findingResult.skipped} 个复检中的问题保留` : ''
+    toast.success(`已清理任务 ${jobResult.deleted} 个、历史问题 ${findingResult.deleted} 个${skippedMessage}`)
+    await refreshSiteQualityData()
   } catch (error: any) {
     toast.error(error?.response?.data?.message || error?.response?.data?.error || '旧任务清理失败')
   } finally {
     cleaningJobs.value = false
+    cleaningFindings.value = false
   }
 }
 

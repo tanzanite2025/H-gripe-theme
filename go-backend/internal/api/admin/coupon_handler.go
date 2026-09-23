@@ -44,11 +44,12 @@ func (h *MarketingHandler) CreateCoupon(c *gin.Context) {
 	var req struct {
 		Code                 string    `json:"code" binding:"required"`
 		Type                 string    `json:"type" binding:"required,oneof=fixed percentage"`
-		Value                float64   `json:"value" binding:"required,gt=0"`
+		ValueMinor           int64     `json:"value_minor"`
+		ValueRateDecimal     string    `json:"value_rate_decimal"`
 		Currency             string    `json:"currency"`
 		Description          string    `json:"description"`
-		MinAmount            float64   `json:"min_amount"`
-		MaxDiscount          float64   `json:"max_discount"`
+		MinAmountMinor       int64     `json:"min_amount_minor"`
+		MaxDiscountMinor     int64     `json:"max_discount_minor"`
 		UsageLimit           int       `json:"usage_limit"`
 		UsageLimitPerUser    int       `json:"usage_limit_per_user"`
 		StartDate            time.Time `json:"start_date" binding:"required"`
@@ -72,11 +73,12 @@ func (h *MarketingHandler) CreateCoupon(c *gin.Context) {
 	cp, err := h.marketingService.CreateCouponAdmin(service.CouponCreateInput{
 		Code:                 req.Code,
 		Type:                 req.Type,
-		Value:                req.Value,
+		ValueMinor:           req.ValueMinor,
+		ValueRateDecimal:     req.ValueRateDecimal,
 		Currency:             req.Currency,
 		Description:          req.Description,
-		MinAmount:            req.MinAmount,
-		MaxDiscount:          req.MaxDiscount,
+		MinAmountMinor:       req.MinAmountMinor,
+		MaxDiscountMinor:     req.MaxDiscountMinor,
 		UsageLimit:           req.UsageLimit,
 		UsageLimitPerUser:    req.UsageLimitPerUser,
 		StartDate:            req.StartDate,
@@ -104,11 +106,12 @@ func (h *MarketingHandler) UpdateCoupon(c *gin.Context) {
 	var req struct {
 		Code                 *string    `json:"code"`
 		Type                 *string    `json:"type" binding:"omitempty,oneof=fixed percentage"`
-		Value                *float64   `json:"value" binding:"omitempty,gt=0"`
+		ValueMinor           *int64     `json:"value_minor" binding:"omitempty,gt=0"`
+		ValueRateDecimal     *string    `json:"value_rate_decimal"`
 		Currency             *string    `json:"currency"`
 		Description          *string    `json:"description"`
-		MinAmount            *float64   `json:"min_amount"`
-		MaxDiscount          *float64   `json:"max_discount"`
+		MinAmountMinor       *int64     `json:"min_amount_minor"`
+		MaxDiscountMinor     *int64     `json:"max_discount_minor"`
 		UsageLimit           *int       `json:"usage_limit"`
 		UsageLimitPerUser    *int       `json:"usage_limit_per_user"`
 		StartDate            *time.Time `json:"start_date"`
@@ -127,11 +130,12 @@ func (h *MarketingHandler) UpdateCoupon(c *gin.Context) {
 	cp, err := h.marketingService.UpdateCouponAdmin(uint(id), service.CouponUpdateInput{
 		Code:                 req.Code,
 		Type:                 req.Type,
-		Value:                req.Value,
+		ValueMinor:           req.ValueMinor,
+		ValueRateDecimal:     req.ValueRateDecimal,
 		Currency:             req.Currency,
 		Description:          req.Description,
-		MinAmount:            req.MinAmount,
-		MaxDiscount:          req.MaxDiscount,
+		MinAmountMinor:       req.MinAmountMinor,
+		MaxDiscountMinor:     req.MaxDiscountMinor,
 		UsageLimit:           req.UsageLimit,
 		UsageLimitPerUser:    req.UsageLimitPerUser,
 		StartDate:            req.StartDate,

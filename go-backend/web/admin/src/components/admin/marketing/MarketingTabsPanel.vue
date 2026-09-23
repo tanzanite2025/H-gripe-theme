@@ -12,6 +12,7 @@
         :coupon-value="couponValue"
         :coupon-status="couponStatus"
         :format-money="formatMoney"
+        :format-currency="formatCurrency"
         :format-date="formatDate"
         @filter-change="emit('coupon-filter-change')"
         @create="emit('create-coupon')"
@@ -19,34 +20,6 @@
         @delete="emit('delete-coupon', $event)"
         @update-page="emit('update-coupon-page', $event)"
         @update-page-size="emit('update-coupon-page-size', $event)"
-      />
-    </TabsContent>
-
-    <TabsContent value="giftcards" class="space-y-3">
-      <GiftCardRedeemOptionsPanel
-        :redeem-settings="redeemSettings"
-        :loading="loyaltyProgramLoading"
-        :saving="loyaltyProgramSaving"
-        :redeem-currency-options="redeemCurrencyOptions"
-        :redeem-currencies-loading="redeemCurrenciesLoading"
-        :can-edit="canEdit"
-        @refresh="emit('refresh-loyalty-program-config')"
-        @save="emit('save-loyalty-program-config')"
-      />
-
-      <GiftCardTablePanel
-        :loading="giftCardsLoading"
-        :gift-cards="giftCards"
-        :filters="giftCardFilters"
-        :pagination="giftCardPagination"
-        :format-currency="formatCurrency"
-        :format-date="formatDate"
-        :gift-card-status-name="giftCardStatusName"
-        :gift-card-status-tone="giftCardStatusTone"
-        @filter-change="emit('gift-card-filter-change')"
-        @view="emit('view-gift-card', $event)"
-        @update-page="emit('update-gift-card-page', $event)"
-        @update-page-size="emit('update-gift-card-page-size', $event)"
       />
     </TabsContent>
 
@@ -121,20 +94,14 @@
 
 <script setup lang="ts">
 import CouponTablePanel from '@/components/admin/marketing/CouponTablePanel.vue'
-import GiftCardRedeemOptionsPanel from '@/components/admin/marketing/GiftCardRedeemOptionsPanel.vue'
-import GiftCardTablePanel from '@/components/admin/marketing/GiftCardTablePanel.vue'
 import LoyaltyPanel from '@/components/admin/marketing/LoyaltyPanel.vue'
 import LoyaltyProgramSettingsPanel from '@/components/admin/marketing/LoyaltyProgramSettingsPanel.vue'
 import MemberLevelTablePanel from '@/components/admin/marketing/MemberLevelTablePanel.vue'
 import PromotionRiskAnalysisPanel from '@/components/admin/marketing/PromotionRiskAnalysisPanel.vue'
-import type { AdminStatusTone } from '@/components/admin/AdminStatusBadge.vue'
 import { Tabs, TabsContent } from '@/components/ui/tabs'
 import type {
   CouponFilters,
   CouponRecord,
-  GiftCardFilters,
-  GiftCardRecord,
-  GiftCardRedeemSettings,
   LoyaltyAdjustmentForm,
   LoyaltyErrors,
   LoyaltyFilters,
@@ -159,14 +126,8 @@ withDefaults(defineProps<{
   couponValue: (coupon: CouponRecord) => string
   couponStatus: (coupon: CouponRecord) => MarketingStatusDisplay
   formatMoney: (value: unknown) => string
-  formatDate: (value: unknown) => string
-  giftCardsLoading?: boolean
-  giftCards?: GiftCardRecord[]
-  giftCardFilters: GiftCardFilters
-  giftCardPagination: MarketingPagination
   formatCurrency: (value: unknown, currency?: string) => string
-  giftCardStatusName: (status?: string) => string
-  giftCardStatusTone: (status?: string) => AdminStatusTone
+  formatDate: (value: unknown) => string
   loyaltyLoading?: boolean
   loyaltyTransactions?: LoyaltyTransaction[]
   loyaltyFilters: LoyaltyFilters
@@ -176,13 +137,10 @@ withDefaults(defineProps<{
   loyaltySubmitting?: boolean
   loyaltyTypeName: (type?: string | null) => string
   loyaltySettings: LoyaltySettings
-  redeemSettings: GiftCardRedeemSettings
   pointsBaseCurrency?: string
   loyaltyProgramVersion?: number
   loyaltyProgramLoading?: boolean
   loyaltyProgramSaving?: boolean
-  redeemCurrencyOptions?: string[]
-  redeemCurrenciesLoading?: boolean
   levelsLoading?: boolean
   levels?: MemberLevel[]
   levelsUsingFallback?: boolean
@@ -198,8 +156,6 @@ withDefaults(defineProps<{
   canDelete: false,
   couponsLoading: false,
   coupons: () => [],
-  giftCardsLoading: false,
-  giftCards: () => [],
   loyaltyLoading: false,
   loyaltyTransactions: () => [],
   loyaltySubmitting: false,
@@ -207,8 +163,6 @@ withDefaults(defineProps<{
   loyaltyProgramVersion: 0,
   loyaltyProgramLoading: false,
   loyaltyProgramSaving: false,
-  redeemCurrencyOptions: () => [],
-  redeemCurrenciesLoading: false,
   levelsLoading: false,
   levels: () => [],
   levelsUsingFallback: false,
@@ -224,10 +178,6 @@ const emit = defineEmits<{
   (event: 'delete-coupon', coupon: CouponRecord): void
   (event: 'update-coupon-page', page: number): void
   (event: 'update-coupon-page-size', pageSize: number): void
-  (event: 'gift-card-filter-change'): void
-  (event: 'view-gift-card', giftCard: GiftCardRecord): void
-  (event: 'update-gift-card-page', page: number): void
-  (event: 'update-gift-card-page-size', pageSize: number): void
   (event: 'loyalty-filter-change'): void
   (event: 'update-loyalty-page', page: number): void
   (event: 'update-loyalty-page-size', pageSize: number): void

@@ -42,7 +42,7 @@ func TestProductServiceCreateAdminProductPersistsTemplateSpecs(t *testing.T) {
 			{
 				SKU:          "RIM-001-24H-DISC",
 				OptionValues: map[string]string{"brake_type": "disc"},
-				Price:        399,
+				PriceMinor:   399,
 				Stock:        5,
 				IsDefault:    true,
 				IsActive:     boolPtr(true),
@@ -55,8 +55,8 @@ func TestProductServiceCreateAdminProductPersistsTemplateSpecs(t *testing.T) {
 	assert.Equal(t, productSpecificationTemplate.ID, *createdProduct.ProductSpecificationTemplateID)
 	require.Len(t, createdProduct.SpecValues, 2)
 	require.Len(t, createdProduct.Variants, 1)
-	assert.Equal(t, "RIM-001-24H-DISC", createdProduct.SKU)
-	assert.Equal(t, 5, createdProduct.Stock)
+	assert.Equal(t, "RIM-001-24H-DISC", createdProduct.DisplaySKU())
+	assert.Equal(t, 5, createdProduct.TotalVariantStock())
 	assert.Equal(t, "true", findSavedSpecValue(t, createdProduct, "tubeless_ready"))
 	assert.Equal(t, "30.5", findSavedSpecValue(t, createdProduct, "outer_width_mm"))
 	assert.Equal(t, "RIM-001-24H-DISC", createdProduct.Variants[0].SKU)
@@ -73,11 +73,11 @@ func TestProductServiceNormalizesAdminProductSlugOnCreateAndUpdate(t *testing.T)
 		Locale: "en",
 		Variants: []ProductVariantInput{
 			{
-				SKU:       "SLUG-NORMALIZE-001",
-				Price:     399,
-				Stock:     5,
-				IsDefault: true,
-				IsActive:  boolPtr(true),
+				SKU:        "SLUG-NORMALIZE-001",
+				PriceMinor: 399,
+				Stock:      5,
+				IsDefault:  true,
+				IsActive:   boolPtr(true),
 			},
 		},
 	})
@@ -124,11 +124,11 @@ func TestProductServiceRejectsUnsafeAdminProductSlugs(t *testing.T) {
 				Locale: "en",
 				Variants: []ProductVariantInput{
 					{
-						SKU:       "UNSAFE-SLUG-" + strconv.Itoa(index),
-						Price:     100,
-						Stock:     1,
-						IsDefault: true,
-						IsActive:  boolPtr(true),
+						SKU:        "UNSAFE-SLUG-" + strconv.Itoa(index),
+						PriceMinor: 100,
+						Stock:      1,
+						IsDefault:  true,
+						IsActive:   boolPtr(true),
 					},
 				},
 			})
@@ -148,11 +148,11 @@ func TestProductServiceRejectsUnsafeAdminProductSlugUpdate(t *testing.T) {
 		Locale: "en",
 		Variants: []ProductVariantInput{
 			{
-				SKU:       "SAFE-SLUG-001",
-				Price:     100,
-				Stock:     1,
-				IsDefault: true,
-				IsActive:  boolPtr(true),
+				SKU:        "SAFE-SLUG-001",
+				PriceMinor: 100,
+				Stock:      1,
+				IsDefault:  true,
+				IsActive:   boolPtr(true),
 			},
 		},
 	})
@@ -190,7 +190,7 @@ func TestProductServiceListsOnlyWheelsetDynamicValuesForCategoryTree(t *testing.
 			{
 				SKU:          "WS-30",
 				OptionValues: map[string]string{"brake_type": "disc"},
-				Price:        399,
+				PriceMinor:   399,
 				Stock:        5,
 				IsDefault:    true,
 				IsActive:     boolPtr(true),
@@ -213,7 +213,7 @@ func TestProductServiceListsOnlyWheelsetDynamicValuesForCategoryTree(t *testing.
 			{
 				SKU:          "WS-45",
 				OptionValues: map[string]string{"brake_type": "rim"},
-				Price:        459,
+				PriceMinor:   459,
 				Stock:        3,
 				IsDefault:    true,
 				IsActive:     boolPtr(true),
@@ -236,7 +236,7 @@ func TestProductServiceListsOnlyWheelsetDynamicValuesForCategoryTree(t *testing.
 			{
 				SKU:          "TR-99",
 				OptionValues: map[string]string{"brake_type": "disc"},
-				Price:        109,
+				PriceMinor:   109,
 				Stock:        8,
 				IsDefault:    true,
 				IsActive:     boolPtr(true),
@@ -268,11 +268,11 @@ func TestProductServiceAdminProductPersistsCustomsInformation(t *testing.T) {
 		CustomsDescription: "Bicycle frame",
 		Variants: []ProductVariantInput{
 			{
-				SKU:       "CUSTOMS-001",
-				Price:     100,
-				Stock:     2,
-				IsDefault: true,
-				IsActive:  boolPtr(true),
+				SKU:        "CUSTOMS-001",
+				PriceMinor: 100,
+				Stock:      2,
+				IsDefault:  true,
+				IsActive:   boolPtr(true),
 			},
 		},
 	})
@@ -332,11 +332,11 @@ func TestProductServiceBindsCustomsProfileAndClearsOnManualOverride(t *testing.T
 		Status:                         "active",
 		Locale:                         "en",
 		Variants: []ProductVariantInput{{
-			SKU:       "CUSTOMS-BOUND-001",
-			Price:     100,
-			Stock:     2,
-			IsDefault: true,
-			IsActive:  boolPtr(true),
+			SKU:        "CUSTOMS-BOUND-001",
+			PriceMinor: 100,
+			Stock:      2,
+			IsDefault:  true,
+			IsActive:   boolPtr(true),
 		}},
 	})
 	require.NoError(t, err)
@@ -367,11 +367,11 @@ func TestProductServiceRejectsInvalidCustomsInformation(t *testing.T) {
 		CountryOfOrigin: "CHN",
 		Variants: []ProductVariantInput{
 			{
-				SKU:       "CUSTOMS-INVALID-001",
-				Price:     100,
-				Stock:     2,
-				IsDefault: true,
-				IsActive:  boolPtr(true),
+				SKU:        "CUSTOMS-INVALID-001",
+				PriceMinor: 100,
+				Stock:      2,
+				IsDefault:  true,
+				IsActive:   boolPtr(true),
 			},
 		},
 	})
@@ -382,13 +382,13 @@ func TestProductServiceRejectsInvalidCustomsInformation(t *testing.T) {
 func TestProductServiceGetByIDCoalescesConcurrentCacheMisses(t *testing.T) {
 	db, productService := newTestProductService(t)
 	record := product.Product{
-		SKU:      "SINGLEFLIGHT-001",
-		Name:     "SingleFlight Product",
-		Slug:     "singleflight-product",
-		Currency: "USD",
-		Price:    100,
-		Status:   "active",
-		Locale:   "en",
+		SKU:        "SINGLEFLIGHT-001",
+		Name:       "SingleFlight Product",
+		Slug:       "singleflight-product",
+		Currency:   "USD",
+		PriceMinor: 100,
+		Status:     "active",
+		Locale:     "en",
 	}
 	require.NoError(t, db.Create(&record).Error)
 
@@ -441,13 +441,13 @@ func TestProductServiceGetByIDCoalescesConcurrentCacheMisses(t *testing.T) {
 func TestProductServiceDistributedCacheMissesShareOneDatabaseLoad(t *testing.T) {
 	db, _ := newTestProductService(t)
 	record := product.Product{
-		SKU:      "DISTRIBUTED-SINGLEFLIGHT-001",
-		Name:     "Distributed SingleFlight Product",
-		Slug:     "distributed-singleflight-product",
-		Currency: "USD",
-		Price:    100,
-		Status:   "active",
-		Locale:   "en",
+		SKU:        "DISTRIBUTED-SINGLEFLIGHT-001",
+		Name:       "Distributed SingleFlight Product",
+		Slug:       "distributed-singleflight-product",
+		Currency:   "USD",
+		PriceMinor: 100,
+		Status:     "active",
+		Locale:     "en",
 	}
 	require.NoError(t, db.Create(&record).Error)
 
@@ -560,7 +560,7 @@ func TestProductServiceCreateAdminProductPersistsProductScopedVisualVariantOptio
 			{
 				SKU:          "VISUAL-RUBY-001",
 				OptionValues: map[string]string{"finish": "ruby_red"},
-				Price:        399,
+				PriceMinor:   399,
 				Stock:        5,
 				IsDefault:    true,
 				IsActive:     boolPtr(true),
@@ -615,7 +615,7 @@ func TestProductServiceCreateAdminProductRejectsMediaBoundToOtherProductVariantO
 			{
 				SKU:          "SOURCE-RIM-DISC",
 				OptionValues: map[string]string{"brake_type": "disc"},
-				Price:        399,
+				PriceMinor:   399,
 				Stock:        5,
 				IsDefault:    true,
 				IsActive:     boolPtr(true),
@@ -639,7 +639,7 @@ func TestProductServiceCreateAdminProductRejectsMediaBoundToOtherProductVariantO
 			{
 				SKU:          "BAD-MEDIA-BINDING-DISC",
 				OptionValues: map[string]string{"brake_type": "disc"},
-				Price:        399,
+				PriceMinor:   399,
 				Stock:        5,
 				IsDefault:    true,
 				IsActive:     boolPtr(true),
@@ -679,7 +679,7 @@ func TestProductServiceCreateAdminProductRejectsInvalidMediaLocale(t *testing.T)
 			{
 				SKU:          "BAD-MEDIA-LOCALE-DISC",
 				OptionValues: map[string]string{"brake_type": "disc"},
-				Price:        399,
+				PriceMinor:   399,
 				Stock:        5,
 				IsDefault:    true,
 				IsActive:     boolPtr(true),
@@ -715,7 +715,7 @@ func TestProductServiceCreateAdminProductNormalizesMediaLocaleAlias(t *testing.T
 			{
 				SKU:          "MEDIA-LOCALE-ALIAS-DISC",
 				OptionValues: map[string]string{"brake_type": "disc"},
-				Price:        399,
+				PriceMinor:   399,
 				Stock:        5,
 				IsDefault:    true,
 				IsActive:     boolPtr(true),
@@ -754,12 +754,12 @@ func TestProductServiceCreateAdminProductUsesPrimaryPricingCurrency(t *testing.T
 		Locale:   "en",
 		Variants: []ProductVariantInput{
 			{
-				SKU:       "RIM-CNY-001",
-				Currency:  "CNY",
-				Price:     699,
-				Stock:     5,
-				IsDefault: true,
-				IsActive:  boolPtr(true),
+				SKU:        "RIM-CNY-001",
+				Currency:   "CNY",
+				PriceMinor: 699,
+				Stock:      5,
+				IsDefault:  true,
+				IsActive:   boolPtr(true),
 			},
 		},
 	})
@@ -804,12 +804,12 @@ func TestProductServiceCreateAdminProductRejectsCrossCurrencyProductAndVariantPr
 				Locale:   "en",
 				Variants: []ProductVariantInput{
 					{
-						SKU:       "CROSS-CURRENCY-" + test.name,
-						Currency:  test.variantCurrency,
-						Price:     699,
-						Stock:     5,
-						IsDefault: true,
-						IsActive:  boolPtr(true),
+						SKU:        "CROSS-CURRENCY-" + test.name,
+						Currency:   test.variantCurrency,
+						PriceMinor: 699,
+						Stock:      5,
+						IsDefault:  true,
+						IsActive:   boolPtr(true),
 					},
 				},
 			})
@@ -820,7 +820,7 @@ func TestProductServiceCreateAdminProductRejectsCrossCurrencyProductAndVariantPr
 	}
 }
 
-func TestProductServiceCreateAdminProductPersistsDisplayPriceSnapshots(t *testing.T) {
+func TestProductServiceCreateAdminProductDoesNotAcceptDisplayPriceSnapshots(t *testing.T) {
 	db, productService := newTestProductService(t)
 	policy := NewCurrencyPolicyService(repository.NewSettingRepository(db))
 	_, err := policy.UpdatePolicy(currency.Policy{
@@ -838,30 +838,12 @@ func TestProductServiceCreateAdminProductPersistsDisplayPriceSnapshots(t *testin
 		Locale:   "en",
 		Variants: []ProductVariantInput{
 			{
-				SKU:       "RIM-DISPLAY-001",
-				Currency:  "CNY",
-				Price:     699,
-				Stock:     5,
-				IsDefault: true,
-				IsActive:  boolPtr(true),
-				DisplayPrices: []currency.DisplayPriceSnapshot{
-					{
-						Amount:        96.8,
-						Currency:      "USD",
-						QuoteCurrency: "USD",
-						Rate:          0.1385,
-						Source:        "direct_rate",
-						Converted:     true,
-					},
-					{
-						Amount:        699,
-						Currency:      "CNY",
-						QuoteCurrency: "CNY",
-						Rate:          1,
-						Source:        "base_currency",
-						Converted:     true,
-					},
-				},
+				SKU:        "RIM-DISPLAY-001",
+				Currency:   "CNY",
+				PriceMinor: 699,
+				Stock:      5,
+				IsDefault:  true,
+				IsActive:   boolPtr(true),
 			},
 		},
 	})
@@ -870,50 +852,40 @@ func TestProductServiceCreateAdminProductPersistsDisplayPriceSnapshots(t *testin
 	require.NotNil(t, createdProduct)
 	require.Len(t, createdProduct.Variants, 1)
 
-	variantSnapshots := currency.ParseDisplayPriceSnapshots(createdProduct.Variants[0].DisplayPriceData)
-	require.Len(t, variantSnapshots, 1)
-	assert.Equal(t, "USD", variantSnapshots[0].Currency)
-	assert.Equal(t, "USD", variantSnapshots[0].QuoteCurrency)
-	assert.InDelta(t, 96.8, variantSnapshots[0].Amount, 0.001)
-	assert.InDelta(t, 0.1385, variantSnapshots[0].Rate, 0.000001)
-	assert.Equal(t, "direct_rate", variantSnapshots[0].Source)
-	assert.True(t, variantSnapshots[0].Converted)
-
-	productSnapshots := currency.ParseDisplayPriceSnapshots(createdProduct.DisplayPriceData)
-	require.Len(t, productSnapshots, 1)
-	assert.Equal(t, variantSnapshots[0], productSnapshots[0])
+	assert.Empty(t, currency.ParseDisplayPriceSnapshots(createdProduct.Variants[0].DisplayPriceData))
+	assert.Empty(t, currency.ParseDisplayPriceSnapshots(createdProduct.DisplayPriceData))
 }
 
 func TestProductServiceAuditsBackendEntryCurrencyMismatches(t *testing.T) {
 	db, productService := newTestProductService(t)
 	matchingProduct := product.Product{
-		SKU:      "MATCH-USD",
-		Name:     "Matching USD Product",
-		Slug:     "matching-usd-product",
-		Currency: "USD",
-		Price:    100,
-		Status:   "active",
-		Locale:   "en",
+		SKU:        "MATCH-USD",
+		Name:       "Matching USD Product",
+		Slug:       "matching-usd-product",
+		Currency:   "USD",
+		PriceMinor: 100,
+		Status:     "active",
+		Locale:     "en",
 	}
 	require.NoError(t, db.Create(&matchingProduct).Error)
 	mismatchProduct := product.Product{
-		SKU:      "OLD-CNY",
-		Name:     "Old CNY Product",
-		Slug:     "old-cny-product",
-		Currency: "CNY",
-		Price:    699,
-		Status:   "active",
-		Locale:   "en",
+		SKU:        "OLD-CNY",
+		Name:       "Old CNY Product",
+		Slug:       "old-cny-product",
+		Currency:   "CNY",
+		PriceMinor: 699,
+		Status:     "active",
+		Locale:     "en",
 	}
 	require.NoError(t, db.Create(&mismatchProduct).Error)
 	require.NoError(t, db.Create(&product.ProductVariant{
-		ProductID: mismatchProduct.ID,
-		SKU:       "OLD-CNY-SKU",
-		Title:     "Old CNY SKU",
-		Currency:  "CNY",
-		Price:     699,
-		IsDefault: true,
-		IsActive:  true,
+		ProductID:  mismatchProduct.ID,
+		SKU:        "OLD-CNY-SKU",
+		Title:      "Old CNY SKU",
+		Currency:   "CNY",
+		PriceMinor: 699,
+		IsDefault:  true,
+		IsActive:   true,
 	}).Error)
 
 	audit, err := productService.AuditBackendEntryCurrencyConsistency("USD", 10)
@@ -947,7 +919,7 @@ func TestProductServiceCreateAdminProductRejectsInvalidTemplateSpec(t *testing.T
 			{
 				SKU:          "RIM-INVALID-CANTI",
 				OptionValues: map[string]string{"brake_type": "cantilever"},
-				Price:        399,
+				PriceMinor:   399,
 				Stock:        5,
 				IsDefault:    true,
 				IsActive:     boolPtr(true),
@@ -1087,7 +1059,7 @@ func TestProductServiceUpdateAdminProductPreservesInactiveVariantWhenAnotherVari
 				ID:           &variantID,
 				SKU:          createdProduct.Variants[0].SKU,
 				OptionValues: map[string]string{"brake_type": "disc"},
-				Price:        399,
+				PriceMinor:   399,
 				Stock:        5,
 				IsDefault:    true,
 				IsActive:     &inactive,
@@ -1095,7 +1067,7 @@ func TestProductServiceUpdateAdminProductPreservesInactiveVariantWhenAnotherVari
 			{
 				SKU:          "RIM-INACTIVE-ACTIVE-VAR",
 				OptionValues: map[string]string{"brake_type": "rim"},
-				Price:        419,
+				PriceMinor:   419,
 				Stock:        7,
 				IsDefault:    false,
 				IsActive:     boolPtr(true),
@@ -1143,7 +1115,7 @@ func TestProductServiceCreateAdminProductRejectsAllInactiveVariants(t *testing.T
 			{
 				SKU:          "RIM-ALL-INACTIVE-DISC",
 				OptionValues: map[string]string{"brake_type": "disc"},
-				Price:        399,
+				PriceMinor:   399,
 				Stock:        15,
 				IsDefault:    true,
 				IsActive:     &inactive,
@@ -1365,7 +1337,7 @@ func TestProductServicePublicCatalogRespectsProductLocale(t *testing.T) {
 			{
 				SKU:          "RIM-GLOBAL-VAR",
 				OptionValues: map[string]string{"brake_type": "disc"},
-				Price:        399,
+				PriceMinor:   399,
 				Stock:        5,
 				IsDefault:    true,
 				IsActive:     boolPtr(true),
@@ -1484,7 +1456,7 @@ func TestProductServiceValidatesProductTranslationRelationships(t *testing.T) {
 				{
 					SKU:          sku + "-VAR",
 					OptionValues: map[string]string{"brake_type": "disc"},
-					Price:        399,
+					PriceMinor:   399,
 					Stock:        5,
 					IsDefault:    true,
 					IsActive:     boolPtr(true),
@@ -1539,7 +1511,7 @@ func TestProductServiceCopyAdminProductTranslationCreatesGroupedCopyWithUniqueSl
 			{
 				SKU:          "RIM-COPY-DISC",
 				OptionValues: map[string]string{"brake_type": "disc"},
-				Price:        399,
+				PriceMinor:   399,
 				Stock:        5,
 				IsDefault:    true,
 				IsActive:     boolPtr(true),
@@ -1576,7 +1548,7 @@ func TestProductServiceCopyAdminProductTranslationCreatesGroupedCopyWithUniqueSl
 			{
 				SKU:          "RIM-COPY-DISC-fr",
 				OptionValues: map[string]string{"brake_type": "disc"},
-				Price:        399,
+				PriceMinor:   399,
 				Stock:        5,
 				IsDefault:    true,
 				IsActive:     boolPtr(true),
@@ -1593,7 +1565,7 @@ func TestProductServiceCopyAdminProductTranslationCreatesGroupedCopyWithUniqueSl
 	assert.Equal(t, source.ID, *translated.ParentID)
 	assert.Equal(t, "fr", translated.Locale)
 	assert.Equal(t, "translation-copy-rim-fr", translated.Slug)
-	assert.Equal(t, "RIM-COPY-DISC-fr-2", translated.SKU)
+	assert.Equal(t, "RIM-COPY-DISC-fr-2", translated.DisplaySKU())
 	require.Len(t, translated.SpecValues, 2)
 	require.Len(t, translated.Variants, 1)
 	require.Len(t, translated.VariantOptionValues, 2)
@@ -1634,7 +1606,7 @@ func TestProductServiceCopyAdminProductTranslationRejectsExistingGroupLocale(t *
 			{
 				SKU:          "RIM-COPY-EXISTS-FR-VAR",
 				OptionValues: map[string]string{"brake_type": "disc"},
-				Price:        399,
+				PriceMinor:   399,
 				Stock:        5,
 				IsDefault:    true,
 				IsActive:     boolPtr(true),
@@ -1776,7 +1748,7 @@ func createProductWithSpecs(t *testing.T, productService *ProductService, produc
 			{
 				SKU:          sku + "-VAR",
 				OptionValues: variantOptions,
-				Price:        399,
+				PriceMinor:   399,
 				Stock:        5,
 				IsDefault:    true,
 				IsActive:     boolPtr(true),

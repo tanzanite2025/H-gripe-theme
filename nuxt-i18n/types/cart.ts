@@ -3,13 +3,13 @@ export interface CartItem {
   product_id?: number
   variant_id?: number | null
   title: string
-  price: number
+  /** Authoritative unit price in the item's currency minor unit. */
+  price_minor: number
   currency?: string
   quantity: number
   slug?: string
   name?: string
   sku?: string
-  sale_price?: number | null
   thumbnail?: string
   image?: string
   weight?: number

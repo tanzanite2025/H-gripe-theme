@@ -17,7 +17,7 @@ import (
 )
 
 func TestPurchasablePriceStockUsesMoneyCurrencyAndRejectsInvalidCurrency(t *testing.T) {
-	variant := &product.ProductVariant{ID: 7, Price: 101, Currency: "JPY", Stock: 3}
+	variant := &product.ProductVariant{ID: 7, PriceMinor: 101, Currency: "JPY", Stock: 3}
 	price, stock, resolvedVariantID, err := purchasablePriceStock(variant)
 	require.NoError(t, err)
 	require.Equal(t, int64(101), price.AmountMinor())
@@ -64,11 +64,11 @@ func TestCartServiceKeepsProductVariantsAsSeparateLines(t *testing.T) {
 	db, cartService := newTestCartService(t)
 
 	productRecord := product.Product{
-		SKU:   "RIM-CART",
-		Name:  "Cart Rim",
-		Slug:  "cart-rim",
-		Price: 999,
-		Stock: 99,
+		SKU:        "RIM-CART",
+		Name:       "Cart Rim",
+		Slug:       "cart-rim",
+		PriceMinor: 99900,
+		Stock:      99,
 	}
 	require.NoError(t, db.Create(&productRecord).Error)
 
@@ -76,7 +76,7 @@ func TestCartServiceKeepsProductVariantsAsSeparateLines(t *testing.T) {
 		ProductID:    productRecord.ID,
 		SKU:          "RIM-CART-BLK-24H",
 		OptionValues: `{"color":"black","spoke_holes":"24"}`,
-		Price:        100,
+		PriceMinor:   10000,
 		Stock:        5,
 		IsDefault:    true,
 		IsActive:     true,
@@ -85,7 +85,7 @@ func TestCartServiceKeepsProductVariantsAsSeparateLines(t *testing.T) {
 		ProductID:    productRecord.ID,
 		SKU:          "RIM-CART-WHT-28H",
 		OptionValues: `{"color":"white","spoke_holes":"28"}`,
-		Price:        120,
+		PriceMinor:   12000,
 		Stock:        4,
 		IsActive:     true,
 	}
@@ -124,18 +124,18 @@ func TestCartServiceAllowsMadeToOrderVariantWithoutStock(t *testing.T) {
 		Name:            "Made To Order Cart Product",
 		Slug:            "mto-cart",
 		FulfillmentMode: product.FulfillmentModeMadeToOrder,
-		Price:           999,
+		PriceMinor:      99900,
 		Stock:           0,
 	}
 	require.NoError(t, db.Create(&productRecord).Error)
 
 	variant := product.ProductVariant{
-		ProductID: productRecord.ID,
-		SKU:       "MTO-CART-VAR",
-		Price:     999,
-		Stock:     0,
-		IsDefault: true,
-		IsActive:  true,
+		ProductID:  productRecord.ID,
+		SKU:        "MTO-CART-VAR",
+		PriceMinor: 99900,
+		Stock:      0,
+		IsDefault:  true,
+		IsActive:   true,
 	}
 	require.NoError(t, db.Create(&variant).Error)
 
@@ -169,14 +169,14 @@ func TestCartSummaryReadDoesNotCreateMissingAnonymousCart(t *testing.T) {
 func TestCartSummarySelfHealsInvalidVariantItems(t *testing.T) {
 	db, _ := newTestCartService(t)
 
-	firstProduct := product.Product{SKU: "SELF-HEAL-1", Name: "Self Heal One", Slug: "self-heal-one", Price: 10, Stock: 10}
-	secondProduct := product.Product{SKU: "SELF-HEAL-2", Name: "Self Heal Two", Slug: "self-heal-two", Price: 10, Stock: 10}
+	firstProduct := product.Product{SKU: "SELF-HEAL-1", Name: "Self Heal One", Slug: "self-heal-one", PriceMinor: 1000, Stock: 10}
+	secondProduct := product.Product{SKU: "SELF-HEAL-2", Name: "Self Heal Two", Slug: "self-heal-two", PriceMinor: 1000, Stock: 10}
 	require.NoError(t, db.Create(&firstProduct).Error)
 	require.NoError(t, db.Create(&secondProduct).Error)
-	validVariant := product.ProductVariant{ProductID: firstProduct.ID, SKU: "SELF-HEAL-VALID", OptionValues: `{"color":"valid"}`, Price: 10, Stock: 5, IsActive: true}
-	inactiveVariant := product.ProductVariant{ProductID: firstProduct.ID, SKU: "SELF-HEAL-INACTIVE", OptionValues: `{"color":"inactive"}`, Price: 10, Stock: 5, IsActive: false}
-	deletedVariant := product.ProductVariant{ProductID: firstProduct.ID, SKU: "SELF-HEAL-DELETED", OptionValues: `{"color":"deleted"}`, Price: 10, Stock: 5, IsActive: true}
-	mismatchVariant := product.ProductVariant{ProductID: firstProduct.ID, SKU: "SELF-HEAL-MISMATCH", OptionValues: `{"color":"mismatch"}`, Price: 10, Stock: 5, IsActive: true}
+	validVariant := product.ProductVariant{ProductID: firstProduct.ID, SKU: "SELF-HEAL-VALID", OptionValues: `{"color":"valid"}`, PriceMinor: 1000, Stock: 5, IsActive: true}
+	inactiveVariant := product.ProductVariant{ProductID: firstProduct.ID, SKU: "SELF-HEAL-INACTIVE", OptionValues: `{"color":"inactive"}`, PriceMinor: 1000, Stock: 5, IsActive: false}
+	deletedVariant := product.ProductVariant{ProductID: firstProduct.ID, SKU: "SELF-HEAL-DELETED", OptionValues: `{"color":"deleted"}`, PriceMinor: 1000, Stock: 5, IsActive: true}
+	mismatchVariant := product.ProductVariant{ProductID: firstProduct.ID, SKU: "SELF-HEAL-MISMATCH", OptionValues: `{"color":"mismatch"}`, PriceMinor: 1000, Stock: 5, IsActive: true}
 	require.NoError(t, db.Create(&[]product.ProductVariant{validVariant, inactiveVariant, deletedVariant, mismatchVariant}).Error)
 	require.NoError(t, db.Model(&product.ProductVariant{}).Where("sku = ?", inactiveVariant.SKU).Update("is_active", false).Error)
 	require.NoError(t, db.Where("sku = ?", deletedVariant.SKU).First(&deletedVariant).Error)

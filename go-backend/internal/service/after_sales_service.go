@@ -8,6 +8,7 @@ import (
 
 	"commerce-platform/internal/domain/aftersales"
 	"commerce-platform/internal/domain/order"
+	"commerce-platform/internal/domain/outbox"
 	"commerce-platform/internal/pkg/storage"
 	"commerce-platform/internal/repository"
 )
@@ -26,6 +27,8 @@ var (
 	ErrAfterSalesQuantityExceeded             = errors.New("after-sales item quantity exceeds the remaining eligible quantity")
 	ErrAfterSalesDescriptionRequired          = errors.New("after-sales case description is required")
 	ErrAfterSalesRequestAlreadyExists         = errors.New("an active after-sales request already exists for this order")
+	ErrAfterSalesReturnWindowExpired          = errors.New("the after-sales return window has expired")
+	ErrAfterSalesReturnNotAllowed             = errors.New("configured options do not allow returns or exchanges")
 	ErrAfterSalesReturnCarrierRequired        = errors.New("return carrier is required for in-transit returns")
 	ErrAfterSalesReturnTrackingRequired       = errors.New("return tracking number is required for in-transit returns")
 	ErrAfterSalesReturnWarehouseRequired      = errors.New("return warehouse and address are required before return transit")
@@ -49,13 +52,13 @@ type CreateAfterSalesCaseInput struct {
 	CreatedBy   uint
 }
 
-// CreateCustomerAfterSalesRequestInput is intentionally narrower than the
-// admin case input. Customer submissions never choose a resolution type,
-// refund amount, or item IDs.
+// CreateCustomerAfterSalesRequestInput keeps resolution decisions server-side,
+// while allowing the buyer to identify the affected order items and quantity.
 type CreateCustomerAfterSalesRequestInput struct {
 	OrderID     uint
 	Reason      string
 	Description string
+	Items       []AfterSalesCaseItemInput
 	Attachments []aftersales.AfterSalesCaseAttachment
 	CreatedBy   uint
 }
@@ -75,6 +78,29 @@ type AfterSalesService struct {
 	txManager         *repository.TxManager
 	userRepo          *repository.UserRepository
 	attachmentStorage storage.StorageService
+	returnWindowDays  int
+}
+
+type AfterSalesCarrierWebhookInput struct {
+	TrackingNumber string
+	Status         string
+	EventTime      time.Time
+	ReceivedBy     *uint
+}
+
+type AfterSalesCarrierWebhookResult struct {
+	CaseID         uint
+	ShipmentID     uint
+	TrackingNumber string
+	Status         string
+	Changed        bool
+}
+
+// ApplyCarrierTrackingFact records a normalized carrier fact for an existing
+// return parcel. Only delivered/signature facts may advance the case; all
+// other facts remain auditable without changing the customer-facing workflow.
+func (s *AfterSalesService) ApplyCarrierTrackingFact(input AfterSalesCarrierWebhookInput) (*AfterSalesCarrierWebhookResult, error) {
+	return s.ApplyCarrierWebhook(input)
 }
 
 func NewAfterSalesService(
@@ -90,7 +116,20 @@ func NewAfterSalesService(
 		caseRepo:         caseRepo,
 		orderRepo:        orderRepo,
 		refundReviewRepo: refundReviewRepo,
+		returnWindowDays: 30,
 	}
+}
+
+// ConfigureReturnWindowDays sets the customer return/after-sales window from
+// deployment policy. A non-positive value restores the conservative default.
+func (s *AfterSalesService) ConfigureReturnWindowDays(days int) {
+	if s == nil {
+		return
+	}
+	if days <= 0 {
+		days = 30
+	}
+	s.returnWindowDays = days
 }
 
 func (s *AfterSalesService) ConfigureTxManager(txManager *repository.TxManager) {
@@ -102,6 +141,76 @@ func (s *AfterSalesService) ConfigureTxManager(txManager *repository.TxManager) 
 func (s *AfterSalesService) ConfigureUserRepository(userRepo *repository.UserRepository) {
 	if s != nil {
 		s.userRepo = userRepo
+	}
+}
+
+// ApplyCarrierWebhook updates only an existing return shipment. It never
+// creates a parcel from an untrusted tracking number and only maps delivered
+// carrier facts to the received after-sales state.
+func (s *AfterSalesService) ApplyCarrierWebhook(input AfterSalesCarrierWebhookInput) (*AfterSalesCarrierWebhookResult, error) {
+	if s == nil || s.caseRepo == nil || s.txManager == nil {
+		return nil, errors.New("after-sales service is not configured")
+	}
+	trackingNumber := strings.TrimSpace(input.TrackingNumber)
+	if trackingNumber == "" {
+		return nil, ErrAfterSalesReturnTrackingRequired
+	}
+	status := normalizeAfterSalesCarrierStatus(input.Status)
+	if status == "" {
+		return nil, errors.New("unsupported carrier webhook status")
+	}
+	now := input.EventTime
+	if now.IsZero() {
+		now = time.Now().UTC()
+	} else {
+		now = now.UTC()
+	}
+	var result *AfterSalesCarrierWebhookResult
+	err := s.txManager.WithinTx(func(repos repository.TxRepositories) error {
+		shipment, err := repos.AfterSalesCase.FindReturnShipmentByTrackingNumber(trackingNumber)
+		if err != nil {
+			if repository.IsRecordNotFound(err) {
+				return ErrAfterSalesCaseNotFound
+			}
+			return err
+		}
+		caseRecord, err := repos.AfterSalesCase.FindByIDForUpdate(shipment.CaseID)
+		if err != nil {
+			return err
+		}
+		if status == "received" && caseRecord.Status != aftersales.StatusReceived {
+			if !caseRecord.CanTransitionTo(aftersales.StatusReceived) {
+				return fmt.Errorf("%w: cannot move from %s to received", ErrAfterSalesTransitionInvalid, caseRecord.Status)
+			}
+			transition, err := repos.AfterSalesCase.UpdateStatusAndSaveReturnShipmentIfCurrentInTx(
+				caseRecord.ID, caseRecord.Status, aftersales.StatusReceived,
+				"carrier webhook received", 0, shipment,
+			)
+			if err != nil {
+				return err
+			}
+			if transition == nil {
+				return nil
+			}
+			if err := enqueueAfterSalesStatusChangedDomainEvent(repos.Outbox, caseRecord, transition, shipment); err != nil {
+				return err
+			}
+			result = &AfterSalesCarrierWebhookResult{CaseID: caseRecord.ID, ShipmentID: shipment.ID, TrackingNumber: trackingNumber, Status: aftersales.StatusReceived, Changed: true}
+			return nil
+		}
+		result = &AfterSalesCarrierWebhookResult{CaseID: caseRecord.ID, ShipmentID: shipment.ID, TrackingNumber: trackingNumber, Status: caseRecord.Status, Changed: false}
+		return nil
+	})
+	return result, err
+}
+
+func normalizeAfterSalesCarrierStatus(value string) string {
+	value = strings.ToLower(strings.TrimSpace(value))
+	switch value {
+	case "delivered", "received", "signed", "signed_for", "pod":
+		return "received"
+	default:
+		return ""
 	}
 }
 
@@ -135,6 +244,18 @@ func (s *AfterSalesService) CreateCase(input CreateAfterSalesCaseInput) (*afters
 	}
 	if !eligibleForAfterSales(orderRecord) {
 		return nil, ErrAfterSalesOrderNotEligible
+	}
+	if err := validateAfterSalesReturnWindow(orderRecord, s.returnWindowDays); err != nil {
+		return nil, err
+	}
+	if input.Type == aftersales.TypeReturnRefund || input.Type == aftersales.TypeExchange {
+		_, nonReturnable, policyErr := orderConfigurationPolicies(orderRecord)
+		if policyErr != nil {
+			return nil, policyErr
+		}
+		if nonReturnable {
+			return nil, ErrAfterSalesReturnNotAllowed
+		}
 	}
 
 	orderItems := make(map[uint]order.OrderItem, len(orderRecord.Items))
@@ -186,6 +307,7 @@ func (s *AfterSalesService) CreateCase(input CreateAfterSalesCaseInput) (*afters
 
 	caseRecord := &aftersales.AfterSalesCase{
 		OrderID:     orderRecord.ID,
+		OrderNumber: orderRecord.OrderNumber,
 		Type:        input.Type,
 		Status:      aftersales.StatusRequested,
 		Reason:      input.Reason,
@@ -197,7 +319,29 @@ func (s *AfterSalesService) CreateCase(input CreateAfterSalesCaseInput) (*afters
 	if err := caseRecord.Validate(); err != nil {
 		return nil, err
 	}
-	if err := s.caseRepo.CreateWithItems(caseRecord, caseItems); err != nil {
+	if s.txManager != nil {
+		err = s.txManager.WithinTx(func(repos repository.TxRepositories) error {
+			if repos.AfterSalesCase == nil {
+				return errors.New("after-sales case transaction repository is not configured")
+			}
+			if err := repos.AfterSalesCase.CreateWithItemsAndAttachmentsInTx(caseRecord, caseItems, nil); err != nil {
+				return err
+			}
+			if len(caseRecord.Events) == 0 {
+				return errors.New("after-sales case creation transition was not persisted")
+			}
+			return enqueueAfterSalesStatusChangedDomainEvent(
+				repos.Outbox,
+				caseRecord,
+				&caseRecord.Events[0],
+				nil,
+				orderNotificationAudience(orderRecord),
+			)
+		})
+	} else {
+		err = s.caseRepo.CreateWithItems(caseRecord, caseItems)
+	}
+	if err != nil {
 		return nil, err
 	}
 	return s.GetCase(caseRecord.ID)
@@ -253,6 +397,9 @@ func (s *AfterSalesService) CreateCustomerRequest(input CreateCustomerAfterSales
 		if !eligibleForAfterSales(orderRecord) {
 			return ErrAfterSalesOrderNotEligible
 		}
+		if err := validateAfterSalesReturnWindow(orderRecord, s.returnWindowDays); err != nil {
+			return err
+		}
 
 		existingCases, err := repos.AfterSalesCase.FindByOrderID(orderRecord.ID, "")
 		if err != nil {
@@ -268,22 +415,38 @@ func (s *AfterSalesService) CreateCustomerRequest(input CreateCustomerAfterSales
 			}
 		}
 
-		caseItems := make([]aftersales.AfterSalesCaseItem, 0, len(orderRecord.Items))
-		for _, orderItem := range orderRecord.Items {
-			if orderItem.Quantity <= 0 {
-				continue
+		caseItems := make([]aftersales.AfterSalesCaseItem, 0, len(input.Items))
+		if len(input.Items) == 0 {
+			return ErrAfterSalesItemsRequired
+		}
+		orderItems := make(map[uint]*order.OrderItem, len(orderRecord.Items))
+		for index := range orderRecord.Items {
+			orderItems[orderRecord.Items[index].ID] = &orderRecord.Items[index]
+		}
+		seenItems := make(map[uint]struct{}, len(input.Items))
+		for _, requested := range input.Items {
+			if requested.Quantity <= 0 {
+				return ErrAfterSalesQuantityInvalid
 			}
-			// This is a support snapshot, not an item reservation. Include the
-			// full order even when another case has the item in transit so the
-			// customer can still contact support about that same case or order.
+			item, ok := orderItems[requested.OrderItemID]
+			if !ok {
+				return ErrAfterSalesItemNotFound
+			}
+			if _, duplicate := seenItems[item.ID]; duplicate {
+				return ErrAfterSalesQuantityInvalid
+			}
+			seenItems[item.ID] = struct{}{}
+			activeQuantity, err := repos.AfterSalesCase.SumActiveQuantity(item.ID)
+			if err != nil {
+				return err
+			}
+			if requested.Quantity > item.Quantity-activeQuantity {
+				return ErrAfterSalesQuantityExceeded
+			}
 			caseItems = append(caseItems, aftersales.AfterSalesCaseItem{
-				OrderID:     orderRecord.ID,
-				OrderItemID: orderItem.ID,
-				ProductID:   orderItem.ProductID,
-				VariantID:   orderItem.VariantID,
-				ProductName: orderItem.ProductName,
-				SKU:         orderItem.SKU,
-				Quantity:    orderItem.Quantity,
+				OrderID: orderRecord.ID, OrderItemID: item.ID, ProductID: item.ProductID,
+				VariantID: item.VariantID, ProductName: item.ProductName, SKU: item.SKU,
+				Quantity: requested.Quantity,
 			})
 		}
 		if len(caseItems) == 0 {
@@ -292,6 +455,7 @@ func (s *AfterSalesService) CreateCustomerRequest(input CreateCustomerAfterSales
 
 		caseRecord := &aftersales.AfterSalesCase{
 			OrderID:     orderRecord.ID,
+			OrderNumber: orderRecord.OrderNumber,
 			Type:        aftersales.TypeCustomerRequest,
 			Status:      aftersales.StatusRequested,
 			Reason:      input.Reason,
@@ -302,7 +466,19 @@ func (s *AfterSalesService) CreateCustomerRequest(input CreateCustomerAfterSales
 		if err := caseRecord.Validate(); err != nil {
 			return err
 		}
-		if err := repos.AfterSalesCase.CreateWithItemsAndAttachments(caseRecord, caseItems, input.Attachments); err != nil {
+		if err := repos.AfterSalesCase.CreateWithItemsAndAttachmentsInTx(caseRecord, caseItems, input.Attachments); err != nil {
+			return err
+		}
+		if len(caseRecord.Events) == 0 {
+			return errors.New("after-sales customer request transition was not persisted")
+		}
+		if err := enqueueAfterSalesStatusChangedDomainEvent(
+			repos.Outbox,
+			caseRecord,
+			&caseRecord.Events[0],
+			nil,
+			orderNotificationAudience(orderRecord),
+		); err != nil {
 			return err
 		}
 		caseID = caseRecord.ID
@@ -334,6 +510,26 @@ func (s *AfterSalesService) ListCasesByOrder(orderID uint, status string) ([]aft
 		return nil, err
 	}
 	return s.caseRepo.FindByOrderID(orderID, strings.TrimSpace(status))
+}
+
+// FindCaseByReturnTrackingNumber supports warehouse receiving/scanning flows
+// without exposing a broad case search endpoint.
+func (s *AfterSalesService) FindCaseByReturnTrackingNumber(trackingNumber string) (*aftersales.AfterSalesCase, error) {
+	if s == nil || s.caseRepo == nil {
+		return nil, errors.New("after-sales service is not configured")
+	}
+	if strings.TrimSpace(trackingNumber) == "" {
+		return nil, ErrAfterSalesReturnTrackingRequired
+	}
+	record, err := s.caseRepo.FindByReturnTrackingNumber(trackingNumber)
+	if err != nil {
+		if repository.IsRecordNotFound(err) {
+			return nil, ErrAfterSalesCaseNotFound
+		}
+		return nil, err
+	}
+	s.populateEventOperatorNames(record)
+	return record, nil
 }
 
 // ListCustomerCasesByOrder returns the customer's cases with their status
@@ -556,7 +752,36 @@ func (s *AfterSalesService) UpdateStatusWithReturnShipment(id uint, input Update
 			shipment.ReceivedAt = &now
 		}
 	}
-	updated, err := s.caseRepo.UpdateStatusAndSaveReturnShipmentIfCurrent(id, record.Status, status, resolution, input.UpdatedBy, shipment)
+	var updated bool
+	if s.txManager != nil {
+		var transition *aftersales.AfterSalesCaseEvent
+		err = s.txManager.WithinTx(func(repos repository.TxRepositories) error {
+			if repos.AfterSalesCase == nil {
+				return errors.New("after-sales case transaction repository is not configured")
+			}
+			audience := outbox.NotificationAudienceSnapshot{}
+			if repos.Order != nil {
+				orderRecord, orderErr := repos.Order.FindByIDBasic(record.OrderID)
+				if orderErr != nil {
+					return orderErr
+				}
+				audience = orderNotificationAudience(orderRecord)
+				if record.OrderNumber == "" {
+					record.OrderNumber = orderRecord.OrderNumber
+				}
+			}
+			transition, err = repos.AfterSalesCase.UpdateStatusAndSaveReturnShipmentIfCurrentInTx(
+				id, record.Status, status, resolution, input.UpdatedBy, shipment,
+			)
+			if err != nil || transition == nil {
+				return err
+			}
+			return enqueueAfterSalesStatusChangedDomainEvent(repos.Outbox, record, transition, shipment, audience)
+		})
+		updated = transition != nil
+	} else {
+		updated, err = s.caseRepo.UpdateStatusAndSaveReturnShipmentIfCurrent(id, record.Status, status, resolution, input.UpdatedBy, shipment)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -614,4 +839,23 @@ func eligibleForAfterSales(record *order.Order) bool {
 	default:
 		return false
 	}
+}
+
+func validateAfterSalesReturnWindow(record *order.Order, windowDays int) error {
+	if record == nil {
+		return ErrAfterSalesOrderNotEligible
+	}
+	// Orders that have not been delivered yet remain eligible for support. Once
+	// delivery is known, the policy is anchored to the authoritative delivered
+	// timestamp rather than order creation time.
+	if record.DeliveredAt == nil || record.DeliveredAt.IsZero() {
+		return nil
+	}
+	if windowDays <= 0 {
+		windowDays = 30
+	}
+	if time.Now().UTC().After(record.DeliveredAt.UTC().AddDate(0, 0, windowDays)) {
+		return ErrAfterSalesReturnWindowExpired
+	}
+	return nil
 }

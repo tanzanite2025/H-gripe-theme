@@ -38,6 +38,11 @@
       </div>
 
       <form @submit.prevent="submitClaim" class="space-y-4">
+        <HoneypotField
+          v-model="form.secondary_phone"
+          name="secondary_phone"
+          label="Secondary phone"
+        />
         <TurnstileChallenge ref="turnstileChallenge" action="warranty" />
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
@@ -213,6 +218,7 @@ import { onMounted, ref, watch } from 'vue'
 import { useI18n, useRoute } from '#imports'
 import { useAuth } from '~/composables/useAuth'
 import { usePageMessages } from '~/composables/usePageMessages'
+import HoneypotField from '~/components/security/HoneypotField.vue'
 import {
   uploadSpecAccept,
   uploadSpecHint,
@@ -234,6 +240,7 @@ const form = ref({
   order_number: '',
   email: '',
   verification_token: '',
+  secondary_phone: '',
   tire_pressure: '',
   is_tubeless: 'no',
   issue_description: '',
@@ -371,6 +378,7 @@ const verifyOrder = async () => {
         body: JSON.stringify({
           order_number: form.value.order_number,
           email: form.value.email,
+          secondary_phone: form.value.secondary_phone,
           captcha_token: captchaToken || '',
         }),
       },
@@ -503,6 +511,7 @@ const submitClaim = async () => {
     formData.append('order_number', form.value.order_number)
     formData.append('email', form.value.email)
     formData.append('verification_token', form.value.verification_token)
+    formData.append('secondary_phone', form.value.secondary_phone)
     formData.append('captcha_token', captchaToken || '')
     formData.append('tire_pressure', form.value.tire_pressure)
     formData.append('is_tubeless', form.value.is_tubeless === 'yes' ? 'yes' : 'no')
@@ -551,6 +560,7 @@ const submitClaim = async () => {
       order_number: '',
       email: '',
       verification_token: '',
+      secondary_phone: '',
       tire_pressure: '',
       is_tubeless: 'no',
       issue_description: '',

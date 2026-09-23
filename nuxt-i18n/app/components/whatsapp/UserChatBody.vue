@@ -65,8 +65,6 @@
           :points="points"
           :tier-info="tierInfo"
           :level-discounts="levelDiscounts"
-          :user-coupons="userCoupons"
-          :user-point-cards="userPointCards"
           @open-auth="$emit('openAuth', $event)"
         />
 
@@ -118,8 +116,6 @@ const props = defineProps<{
   points: number | string
   tierInfo: any
   levelDiscounts: any
-  userCoupons: number
-  userPointCards: number
   // Warranty Props
   isLoggedInForWarranty: boolean
 }>()

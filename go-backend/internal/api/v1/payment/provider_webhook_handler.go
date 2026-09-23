@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"strings"
 
+	"commerce-platform/internal/api/middleware"
 	"commerce-platform/internal/pkg/apierror"
 	pgateway "commerce-platform/internal/pkg/payment"
 	"commerce-platform/internal/pkg/response"
@@ -19,15 +20,18 @@ import (
 )
 
 const (
-	paypalCheckoutOrderCompleted = "CHECKOUT.ORDER.COMPLETED"
-	paypalPaymentCaptureRefunded = "PAYMENT.CAPTURE.REFUNDED"
-	alipayTradeStatusSuccess     = "TRADE_SUCCESS"
-	alipayTradeStatusFinished    = "TRADE_FINISHED"
-	wechatTradeStateSuccess      = "SUCCESS"
+	paypalCheckoutOrderCompleted  = "CHECKOUT.ORDER.COMPLETED"
+	paypalCheckoutOrderApproved   = "CHECKOUT.ORDER.APPROVED"
+	paypalPaymentCaptureCompleted = "PAYMENT.CAPTURE.COMPLETED"
+	paypalPaymentCaptureDenied    = "PAYMENT.CAPTURE.DENIED"
+	paypalPaymentCaptureRefunded  = "PAYMENT.CAPTURE.REFUNDED"
+	alipayTradeStatusSuccess      = "TRADE_SUCCESS"
+	alipayTradeStatusFinished     = "TRADE_FINISHED"
+	wechatTradeStateSuccess       = "SUCCESS"
 )
 
-func providerRefundAmountMajor(value domainmoney.Money) float64 {
-	amount, _ := value.MajorFloat()
+func providerRefundAmountMajor(value domainmoney.Money) string {
+	amount, _ := value.FormatMajor()
 	return amount
 }
 
@@ -36,8 +40,7 @@ type verifiedProviderPayment struct {
 	OrderNumber      string
 	TransactionID    string
 	PaymentMethod    string
-	Amount           float64
-	Currency         string
+	Amount           domainmoney.Money
 	GatewayResponse  string
 	LiabilityShifted *bool
 }
@@ -69,9 +72,23 @@ func (h *Handler) handlePayPalWebhook(c *gin.Context, payload []byte) {
 
 	event, err := pgateway.VerifyPayPalWebhook(c.Request.Context(), config, c.Request.Header, payload, nil)
 	if err != nil {
-		apierror.RespondUnauthorized(c)
+		respondPayPalWebhookVerificationError(c, err)
 		return
 	}
+	claimed, err := h.paymentService.ClaimPayPalWebhookEvent(event.ID, event.EventType, string(payload))
+	if err != nil {
+		apierror.RespondInternalError(c, err)
+		return
+	}
+	if !claimed {
+		response.SuccessWithMessage(c, "PayPal event already handled", gin.H{"event_id": event.ID, "event_type": event.EventType})
+		return
+	}
+	defer func() {
+		if c.Writer.Status() >= http.StatusBadRequest {
+			_ = h.paymentService.MarkPayPalWebhookEventFailed(event.ID, fmt.Errorf("paypal event handler returned HTTP %d", c.Writer.Status()))
+		}
+	}()
 
 	if riskHandled, riskErr := h.recordPayPalDisputeRiskEvent(c, event, payload); riskErr != nil {
 		apierror.RespondInternalError(c, riskErr)
@@ -134,6 +151,33 @@ func (h *Handler) handlePayPalWebhook(c *gin.Context, payload []byte) {
 		return
 	}
 
+	if strings.EqualFold(strings.TrimSpace(event.EventType), paypalPaymentCaptureDenied) {
+		response.SuccessWithMessage(c, "PayPal capture denial recorded", gin.H{
+			"event_id": event.ID, "event_type": event.EventType,
+		})
+		return
+	}
+	if strings.EqualFold(strings.TrimSpace(event.EventType), paypalCheckoutOrderApproved) {
+		payment, err := h.captureApprovedPayPalOrder(c, event, payload)
+		if err != nil {
+			apierror.RespondBadRequest(c, err.Error())
+			return
+		}
+		processed, result := h.recordVerifiedProviderPayment(c, payment)
+		if !processed {
+			return
+		}
+		message := "PayPal approved order captured successfully"
+		details := gin.H{"event_id": event.ID, "event_type": event.EventType, "order_number": payment.OrderNumber, "transaction_id": payment.TransactionID}
+		if result.DuplicatePaid {
+			message = "PayPal duplicate payment recorded; refund is pending"
+			details["duplicate_paid"] = true
+			details["refund_id"] = result.RefundID
+		}
+		response.SuccessWithMessage(c, message, details)
+		return
+	}
+
 	payment, handled, err := paypalVerifiedPaymentFromEvent(event, payload)
 	if err != nil {
 		apierror.RespondBadRequest(c, err.Error())
@@ -164,6 +208,80 @@ func (h *Handler) handlePayPalWebhook(c *gin.Context, payload []byte) {
 		details["refund_id"] = result.RefundID
 	}
 	response.SuccessWithMessage(c, message, details)
+}
+
+func respondPayPalWebhookVerificationError(c *gin.Context, err error) {
+	if errors.Is(err, pgateway.ErrPayPalWebhookVerificationUnavailable) {
+		apierror.RespondError(c, http.StatusServiceUnavailable, "paypal_webhook_verification_unavailable", "PayPal webhook verification is temporarily unavailable")
+		return
+	}
+	apierror.RespondUnauthorized(c)
+}
+
+// captureApprovedPayPalOrder is the browser-independent fallback for the
+// approval redirect. PayPal webhooks do not carry the storefront session.
+func (h *Handler) captureApprovedPayPalOrder(c *gin.Context, event pgateway.PayPalWebhookEvent, rawPayload []byte) (verifiedProviderPayment, error) {
+	var order paypal.Order
+	if err := json.Unmarshal(event.Resource, &order); err != nil {
+		return verifiedProviderPayment{}, fmt.Errorf("invalid paypal approved order resource: %w", err)
+	}
+	paypalOrderID := strings.TrimSpace(order.ID)
+	if paypalOrderID == "" {
+		return verifiedProviderPayment{}, errors.New("paypal approved order id is required")
+	}
+	orderNumber := ""
+	for _, unit := range order.PurchaseUnits {
+		orderNumber = firstNonBlank(unit.CustomID, unit.InvoiceID, unit.ReferenceID)
+		if orderNumber != "" {
+			break
+		}
+	}
+	if orderNumber == "" {
+		return verifiedProviderPayment{}, errors.New("paypal approved order does not contain order metadata")
+	}
+	orderRecord, err := h.orderService.GetOrderByNumberForPayment(orderNumber)
+	if err != nil {
+		return verifiedProviderPayment{}, service.ErrOrderNotFound
+	}
+	if pgateway.ProviderForPaymentMethod(orderRecord.PaymentMethod) != string(pgateway.GatewayPayPal) {
+		return verifiedProviderPayment{}, errors.New("paypal approved order payment method mismatch")
+	}
+	if orderRecord.PaymentStatus == "paid" {
+		return verifiedProviderPayment{}, errors.New("paypal order is already paid")
+	}
+	config, err := h.loadPaymentGatewayConfiguration(pgateway.GatewayPayPal)
+	if err != nil {
+		return verifiedProviderPayment{}, err
+	}
+	gateway, err := h.createPaymentGatewayFromConfiguration(config)
+	if err != nil {
+		return verifiedProviderPayment{}, err
+	}
+	middleware.MarkPaymentOperationExternalCallStarted(c)
+	resp, err := capturePayPalPayment(c.Request.Context(), gateway, paypalOrderID, pgateway.PayPalCaptureRequestID(paypalOrderID))
+	if err != nil {
+		return verifiedProviderPayment{}, fmt.Errorf("paypal capture failed: %w", err)
+	}
+	if !paypalResponseMatchesOrder(resp, orderNumber) {
+		return verifiedProviderPayment{}, errors.New("paypal order does not match local order")
+	}
+	if !strings.EqualFold(strings.TrimSpace(resp.Status), "COMPLETED") {
+		return verifiedProviderPayment{}, fmt.Errorf("paypal payment is not completed: %s", resp.Status)
+	}
+	transactionID := paypalTransactionID(resp)
+	if transactionID == "" {
+		return verifiedProviderPayment{}, errors.New("paypal capture id is missing")
+	}
+	amount, err := strictProviderSettlement(orderRecord)
+	if err != nil {
+		return verifiedProviderPayment{}, err
+	}
+	providerAmount, err := providerPaymentResponseMoney(resp, amount)
+	if err != nil {
+		return verifiedProviderPayment{}, err
+	}
+	gatewayResponse, _ := json.Marshal(resp)
+	return verifiedProviderPayment{Provider: pgateway.GatewayPayPal, OrderNumber: orderNumber, TransactionID: transactionID, PaymentMethod: "paypal", Amount: providerAmount, GatewayResponse: string(gatewayResponse), LiabilityShifted: paymentResponseLiabilityShifted(resp, gatewayResponse)}, nil
 }
 
 func (h *Handler) recordVerifiedGatewayRefund(c *gin.Context, refund service.VerifiedGatewayRefundInput) bool {
@@ -230,7 +348,8 @@ func (h *Handler) handleAlipayWebhook(c *gin.Context, payload []byte) {
 		return
 	}
 
-	amount, err := pgateway.ParsePaymentAmount("alipay total_amount", notification.TotalAmount)
+	currencyCode := firstNonBlank(notification.Currency, "CNY")
+	amount, err := domainmoney.ParseMajor(notification.TotalAmount, currencyCode)
 	if err != nil {
 		respondAlipayWebhookFailure(c, http.StatusBadRequest)
 		return
@@ -247,7 +366,6 @@ func (h *Handler) handleAlipayWebhook(c *gin.Context, payload []byte) {
 		TransactionID:   transactionID,
 		PaymentMethod:   "alipay",
 		Amount:          amount,
-		Currency:        notification.Currency,
 		GatewayResponse: string(payload),
 	}
 	result, err := h.recordVerifiedProviderPaymentResult(payment)
@@ -298,7 +416,7 @@ func (h *Handler) handleWechatWebhook(c *gin.Context, payload []byte) {
 	if currency == "" {
 		currency = "CNY"
 	}
-	amount, err := webhookMajorAmountFromMinor(transaction.Amount.Total, currency)
+	amount, err := domainmoney.New(transaction.Amount.Total, currency)
 	if err != nil {
 		respondWechatWebhookFailure(c, http.StatusBadRequest, "invalid payment amount")
 		return
@@ -315,7 +433,6 @@ func (h *Handler) handleWechatWebhook(c *gin.Context, payload []byte) {
 		TransactionID:   transactionID,
 		PaymentMethod:   "wechat",
 		Amount:          amount,
-		Currency:        currency,
 		GatewayResponse: string(payload),
 	}
 	if verified.Plaintext != "" {
@@ -403,16 +520,18 @@ func (h *Handler) recordVerifiedProviderPaymentResult(payment verifiedProviderPa
 	if strings.TrimSpace(payment.TransactionID) == "" {
 		return service.VerifiedGatewayPaymentResult{}, errors.New("transaction_id is required")
 	}
-	amount, err := domainmoney.FromMajorFloat(payment.Amount, payment.Currency)
-	if err != nil {
+	if err := payment.Amount.Validate(); err != nil {
 		return service.VerifiedGatewayPaymentResult{}, fmt.Errorf("invalid provider payment amount: %w", err)
+	}
+	if payment.Amount.AmountMinor() <= 0 {
+		return service.VerifiedGatewayPaymentResult{}, errors.New("invalid provider payment amount: must be greater than zero")
 	}
 	return h.paymentService.RecordVerifiedGatewayPaymentResult(service.VerifiedGatewayPaymentInput{
 		Provider:         string(payment.Provider),
 		OrderNumber:      payment.OrderNumber,
 		TransactionID:    payment.TransactionID,
 		PaymentMethod:    payment.PaymentMethod,
-		Amount:           amount,
+		Amount:           payment.Amount,
 		GatewayResponse:  payment.GatewayResponse,
 		LiabilityShifted: payment.LiabilityShifted,
 	})
@@ -581,7 +700,11 @@ func paypalCaptureIDFromURL(rawURL string) string {
 }
 
 func paypalVerifiedPaymentFromEvent(event pgateway.PayPalWebhookEvent, rawPayload []byte) (verifiedProviderPayment, bool, error) {
-	if !strings.EqualFold(strings.TrimSpace(event.EventType), paypalCheckoutOrderCompleted) {
+	eventType := strings.TrimSpace(event.EventType)
+	if strings.EqualFold(eventType, paypalPaymentCaptureCompleted) {
+		return paypalVerifiedCapturePaymentFromEvent(event, rawPayload)
+	}
+	if !strings.EqualFold(eventType, paypalCheckoutOrderCompleted) {
 		return verifiedProviderPayment{}, false, nil
 	}
 
@@ -620,8 +743,7 @@ func paypalVerifiedPaymentFromEvent(event pgateway.PayPalWebhookEvent, rawPayloa
 				if capture.Amount == nil {
 					return verifiedProviderPayment{}, true, fmt.Errorf("paypal completed capture does not contain amount")
 				}
-				payment.Currency = capture.Amount.Currency
-				amount, err := pgateway.ParsePaymentAmount("paypal capture amount", capture.Amount.Value)
+				amount, err := domainmoney.ParseMajor(capture.Amount.Value, capture.Amount.Currency)
 				if err != nil {
 					return verifiedProviderPayment{}, true, err
 				}
@@ -629,7 +751,7 @@ func paypalVerifiedPaymentFromEvent(event pgateway.PayPalWebhookEvent, rawPayloa
 				break
 			}
 		}
-		if payment.OrderNumber != "" && payment.TransactionID != "" && payment.Amount > 0 && payment.Currency != "" {
+		if payment.OrderNumber != "" && payment.TransactionID != "" && payment.Amount.AmountMinor() > 0 {
 			break
 		}
 	}
@@ -643,13 +765,47 @@ func paypalVerifiedPaymentFromEvent(event pgateway.PayPalWebhookEvent, rawPayloa
 	if payment.TransactionID == "" {
 		return verifiedProviderPayment{}, true, fmt.Errorf("paypal order resource does not contain a transaction id")
 	}
-	if payment.Amount <= 0 {
+	if payment.Amount.AmountMinor() <= 0 {
 		return verifiedProviderPayment{}, true, fmt.Errorf("paypal order resource does not contain a positive amount")
 	}
-	if strings.TrimSpace(payment.Currency) == "" {
-		return verifiedProviderPayment{}, true, fmt.Errorf("paypal order resource does not contain currency")
-	}
 	return payment, true, nil
+}
+
+func paypalVerifiedCapturePaymentFromEvent(event pgateway.PayPalWebhookEvent, rawPayload []byte) (verifiedProviderPayment, bool, error) {
+	var resource struct {
+		ID     string `json:"id"`
+		Status string `json:"status"`
+		Amount *struct {
+			CurrencyCode string `json:"currency_code"`
+			Value        string `json:"value"`
+		} `json:"amount"`
+		CustomID          string `json:"custom_id"`
+		InvoiceID         string `json:"invoice_id"`
+		SupplementaryData struct {
+			RelatedIDs struct {
+				OrderID string `json:"order_id"`
+			} `json:"related_ids"`
+		} `json:"supplementary_data"`
+	}
+	if err := json.Unmarshal(event.Resource, &resource); err != nil {
+		return verifiedProviderPayment{}, true, fmt.Errorf("invalid paypal capture resource: %w", err)
+	}
+	if !strings.EqualFold(resource.Status, "COMPLETED") {
+		return verifiedProviderPayment{}, false, nil
+	}
+	if resource.ID == "" || resource.Amount == nil {
+		return verifiedProviderPayment{}, true, errors.New("paypal completed capture resource is incomplete")
+	}
+	amount, err := domainmoney.ParseMajor(resource.Amount.Value, resource.Amount.CurrencyCode)
+	if err != nil {
+		return verifiedProviderPayment{}, true, err
+	}
+	return verifiedProviderPayment{
+		Provider: pgateway.GatewayPayPal, TransactionID: resource.ID,
+		OrderNumber:   firstNonBlank(resource.CustomID, resource.InvoiceID, resource.SupplementaryData.RelatedIDs.OrderID),
+		PaymentMethod: "paypal", Amount: amount, GatewayResponse: string(rawPayload),
+		LiabilityShifted: paypalLiabilityShiftedFromWebhookPayload(event.Resource, rawPayload),
+	}, true, nil
 }
 
 func firstNonBlank(values ...string) string {

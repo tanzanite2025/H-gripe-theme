@@ -23,17 +23,6 @@ regexes = [
 id = "generic-api-key"
 
   [[rules.allowlists]]
-  description = "False positive test idempotency key for loyalty gift-card redemption replay."
-  condition = "AND"
-  regexTarget = "line"
-  paths = [
-    '''(^|/)go-backend/internal/service/marketing_redeem_service_test\.go$''',
-  ]
-  regexes = [
-    '''IdempotencyKey:\s*"test-redemption-42"''',
-  ]
-
-  [[rules.allowlists]]
   description = "False positive WeChat Pay API v3 test key material."
   condition = "AND"
   regexTarget = "line"

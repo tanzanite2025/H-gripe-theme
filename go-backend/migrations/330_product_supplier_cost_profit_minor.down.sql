@@ -1,0 +1,2 @@
+-- Legacy major-unit supplier-cost and profitability projections are
+-- intentionally not restored. Minor units remain the sole source of truth.

@@ -49,7 +49,7 @@ export const normalizeProductCurrencyCode = (value: unknown) => {
 }
 
 export const validProductDisplayPrice = (displayPrice?: ProductDisplayPrice | null) => {
-  const amount = Number(displayPrice?.amount)
+  const amount = Number(displayPrice?.amount_decimal)
   const currency = normalizeProductCurrencyCode(displayPrice?.currency)
   if (!Number.isFinite(amount) || amount <= 0 || !currency) return null
   return { ...displayPrice, amount, currency }

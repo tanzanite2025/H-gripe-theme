@@ -60,12 +60,12 @@
           <div class="flex flex-wrap items-center justify-between gap-2">
             <div>
               <span class="field-label">ATTACHMENTS / 附件</span>
-              <p class="mt-1 text-[11px] text-muted-foreground">唯一编码照片、张力表扫描件和其他履约凭据保存在独立附件记录中。</p>
+              <p class="mt-1 text-[11px] text-muted-foreground">{{ isPODEvidence ? '上传承运商官方签字 POD PDF，提交 PayPal 争议时会作为 documents 附件发送。' : '唯一编码照片、张力表扫描件和其他履约凭据保存在独立附件记录中。' }}</p>
             </div>
             <input
               ref="fileInput"
               type="file"
-              accept="image/jpeg,image/png,image/webp,image/gif"
+              :accept="isPODEvidence ? 'application/pdf,image/jpeg,image/png,image/webp,image/gif' : 'image/jpeg,image/png,image/webp,image/gif'"
               class="hidden"
               :disabled="!canEdit || saving || uploadingAttachment || readOnly"
               @change="handleAttachmentChange"

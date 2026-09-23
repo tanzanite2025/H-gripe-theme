@@ -11,6 +11,20 @@ export interface StripePaymentSession {
   orderNumber?: string
 }
 
+export interface StripePaymentBillingDetails {
+  name?: string
+  email?: string
+  phone?: string
+  address: {
+    line1: string
+    line2?: string
+    city: string
+    state?: string
+    postal_code: string
+    country: string
+  }
+}
+
 export interface StripeConfirmationResult {
   status: string
   paymentIntentId?: string
@@ -42,7 +56,11 @@ export function useStripePayment() {
     stripe.value = null
   }
 
-  const mount = async (container: HTMLElement, session: StripePaymentSession) => {
+  const mount = async (
+    container: HTMLElement,
+    session: StripePaymentSession,
+    billingDetails?: StripePaymentBillingDetails,
+  ) => {
     if (!session.clientSecret || !session.publishableKey) {
       throw new Error('Stripe payment is not configured')
     }
@@ -86,6 +104,22 @@ export function useStripePayment() {
     })
     const mountedElement = loadedElements.create('payment', {
       layout: 'tabs',
+      fields: {
+        billingDetails: {
+          name: 'auto',
+          email: 'auto',
+          phone: 'auto',
+          address: {
+            line1: 'auto',
+            line2: 'auto',
+            city: 'auto',
+            state: 'auto',
+            postalCode: 'auto',
+            country: 'auto',
+          },
+        },
+      },
+      ...(billingDetails ? { defaultValues: { billingDetails } } : {}),
     })
 
     mountedElement.mount(container)
@@ -131,7 +165,10 @@ export function useStripePayment() {
     }
   }
 
-  const confirm = async (returnUrl: string): Promise<StripeConfirmationResult> => {
+  const confirm = async (
+    returnUrl: string,
+    billingDetails?: StripePaymentBillingDetails,
+  ): Promise<StripeConfirmationResult> => {
     if (!stripe.value || !elements.value) {
       throw new Error('Stripe payment form is not ready')
     }
@@ -140,6 +177,7 @@ export function useStripePayment() {
       elements: elements.value,
       confirmParams: {
         return_url: returnUrl,
+        ...(billingDetails ? { payment_method_data: { billing_details: billingDetails } } : {}),
       },
       redirect: 'if_required',
     })

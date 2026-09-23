@@ -14,6 +14,8 @@
           :selected-conversation="selectedConversation"
           :customer-context="customerContext"
           :loading="loading"
+          :context-error="contextError"
+          :context-last-updated-at="contextLastUpdatedAt"
         />
       </div>
     </DialogSecondaryContent>
@@ -31,11 +33,15 @@ const props = withDefaults(defineProps<{
   selectedConversation?: CustomerConversation | null
   customerContext?: CustomerContext | null
   loading?: boolean
+  contextError?: string | null
+  contextLastUpdatedAt?: Date | null
 }>(), {
   open: false,
   selectedConversation: null,
   customerContext: null,
   loading: false,
+  contextError: null,
+  contextLastUpdatedAt: null,
 })
 
 const emit = defineEmits<{

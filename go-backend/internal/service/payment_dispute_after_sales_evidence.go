@@ -70,17 +70,7 @@ func buildRefundEvidence(refunds []paymentdomain.Refund, currency string) []Disp
 	result := make([]DisputeRefundEvidence, 0, len(refunds))
 	for _, refund := range refunds {
 		amountMinor := refund.AmountMinor
-		if amountMinor == 0 && refund.Amount != 0 {
-			if value, err := refund.AmountMoney(); err == nil {
-				amountMinor = value.AmountMinor()
-			}
-		}
 		requestedMinor := refund.RequestedAmountMinor
-		if requestedMinor == 0 && refund.RequestedAmount != 0 {
-			if value, err := refund.RequestedAmountMoney(); err == nil {
-				requestedMinor = value.AmountMinor()
-			}
-		}
 		item := DisputeRefundEvidence{
 			ID:                   refund.ID,
 			ProviderRefundID:     strings.TrimSpace(disputeStringValue(refund.RefundID)),
@@ -99,11 +89,6 @@ func buildRefundEvidence(refunds []paymentdomain.Refund, currency string) []Disp
 		}
 		for _, line := range refund.LineItems {
 			lineTotalMinor := line.LineTotalMinor
-			if lineTotalMinor == 0 && line.LineTotalAmount != 0 {
-				if value, err := line.LineTotalMoney(); err == nil {
-					lineTotalMinor = value.AmountMinor()
-				}
-			}
 			item.LineItems = append(item.LineItems, DisputeRefundLineItemEvidence{
 				OrderItemID:    line.OrderItemID,
 				ProductName:    strings.TrimSpace(line.ProductName),

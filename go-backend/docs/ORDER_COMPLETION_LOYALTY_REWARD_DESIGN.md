@@ -223,7 +223,6 @@ Do not award points for:
 - Shipping fee.
 - Tax amount.
 - Fully discounted product amount.
-- Gift card value itself if gift cards later become purchasable products.
 
 ## Reward Calculation
 
@@ -352,12 +351,22 @@ The accounting fields have distinct meanings:
 - `refunds.loyalty_cash_deduction_amount` is the cash equivalent of earned
   points that were already unavailable.
 
-Referral welcome points are a separate account adjustment and are never part
-of the cash-refund calculation. If a referee spends referral points together
-with cash, a refund returns the order's `PointsUsed` in full (for a full cash
-refund) while the later referral invalidation event writes an independent
-`referral_referee_reversal` entry for the original welcome reward. The cash
-amount sent to the provider remains the actual cash amount paid for the order.
+Referral anti-fraud settlement is independent from the order-reward calculation,
+but referral points still live in the same unified loyalty balance:
+the referral service stores only HMACs for email, IP/network, device and
+provider payment fingerprints. A referral signal can revoke a referral
+attribution, but it cannot alter the provider cash refund amount. The referral
+lifecycle remains disabled in production until real delivery/refund/dispute
+events are verified.
+
+Referral welcome points are a normal account earn with `referral_referee` as an
+audit source label only; there is no separate referral-point wallet and no
+source-aware spending. Checkout always consumes the user's aggregate
+`AvailablePoints`. A refund returns only the order's actual `PointsUsed`; it
+does not claw back the points granted when the account was registered with a
+referral code. The cash amount sent to the provider remains the actual cash
+amount paid for the order. The referral module does not calculate or allocate
+refund amounts.
 
 For a partial refund, earned points are allocated by
 `floor(refund requested amount / order total amount * order points)`. Used
@@ -424,10 +433,15 @@ Before implementation, verify:
    - Update loyalty summary and member level.
 
 5. Add referral processor:
-   - Trigger existing referral completion only for qualifying first completed order.
+   - Bind the new customer at registration; release a configured referee points
+     benefit at bind time, while keeping coupon benefits locked until the
+     qualifying first order actually consumes the private coupon.
+   - Release the referrer reward only after delivery/cooling-off settlement.
 
 6. Add refund hook:
-   - For full refund, enqueue or process reward reversal.
+   - For full refund, enqueue or process reversal of points earned by that
+     order. This hook never reverses registration/referral welcome points;
+     those are ordinary account points and are not tied to an order.
    - Keep refund success independent from loyalty reversal failure.
 
 7. Add admin visibility:
@@ -464,7 +478,6 @@ Required migration checks:
 
 The refund clawback and partial-refund rules above are now fixed:
 
-- Should gift card purchases earn points?
 - Should manually completed orders award points immediately, or only after a delay?
 - Should reward points expire, and if so after how many days?
 

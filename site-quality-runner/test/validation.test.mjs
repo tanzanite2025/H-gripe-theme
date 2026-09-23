@@ -36,6 +36,28 @@ test('normalizes a same-origin mobile run', async () => {
   assert.equal(result.lighthouseRunCount, 3)
 })
 
+test('normalizes and validates a scoped audit run', async () => {
+  const result = await normalizeRunInput(
+    {
+      url: 'https://shop.example.com/support/warranty',
+      strategy: 'mobile',
+      audit_scope: 'headings',
+    },
+    config,
+    async () => [{ address: '203.0.113.20', family: 4 }],
+  )
+  assert.equal(result.auditScope, 'headings')
+
+  await assert.rejects(
+    () => normalizeRunInput(
+      { url: 'https://shop.example.com/', strategy: 'mobile', audit_scope: 'unknown' },
+      config,
+      async () => [{ address: '203.0.113.20', family: 4 }],
+    ),
+    RunnerInputError,
+  )
+})
+
 test('loads a bounded worker heap limit', () => {
   const defaultConfig = loadRunnerConfig({
     SITE_QUALITY_ALLOWED_ORIGIN: 'https://shop.example.com',

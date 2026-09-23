@@ -13,6 +13,9 @@
         <NuxtLink class="paypal-return-button paypal-return-button--primary" :to="localePath('/')">
           {{ t('checkout.paypalReturn.actions.continueShopping') }}
         </NuxtLink>
+        <button v-if="status === 'error'" class="paypal-return-button paypal-return-button--primary" type="button" @click="capture">
+          {{ t('checkout.paypalReturn.actions.retry') }}
+        </button>
         <button class="paypal-return-button" type="button" @click="openCart">
           {{ t('checkout.modal.actions.viewCart') }}
         </button>
@@ -24,14 +27,12 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useI18n, useLocalePath, useRoute } from '#imports'
-import { useAuth } from '~/composables/useAuth'
 import { useCart } from '~/composables/useCart'
 import { usePayPalPayment } from '~/composables/usePayPalPayment'
 
 const { t } = useI18n()
 const route = useRoute()
 const localePath = useLocalePath()
-const auth = useAuth()
 const { reloadCartFromBackend, openCart } = useCart()
 const { capturePayPalOrder } = usePayPalPayment()
 const status = ref<'loading' | 'success' | 'error'>('loading')
@@ -53,12 +54,9 @@ const statusIcon = computed(() => {
   return 'lucide:loader-circle'
 })
 
-onMounted(async () => {
+const capture = async () => {
+  if (status.value === 'loading') return
   try {
-    const user = await auth.ensureSession()
-    if (!user) {
-      throw new Error(t('checkout.paypalReturn.messages.loginRequired'))
-    }
     if (!orderNumber.value || !paypalOrderId.value) {
       throw new Error(t('checkout.paypalReturn.messages.missingData'))
     }
@@ -79,7 +77,9 @@ onMounted(async () => {
     status.value = 'error'
     message.value = error instanceof Error ? error.message : t('checkout.paypalReturn.messages.failed')
   }
-})
+}
+
+onMounted(() => void capture())
 </script>
 
 <style scoped>

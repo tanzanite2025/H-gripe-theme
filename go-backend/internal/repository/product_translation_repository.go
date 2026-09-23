@@ -70,7 +70,21 @@ func (r *ProductRepository) FindTranslationGroupMembers(rootIDs []uint) (map[uin
 
 	var records []productTranslationGroupRecord
 	if err := r.db.Model(&product.Product{}).
-		Select("id, parent_id, locale, name, slug, sku, status").
+		Select(`
+			products.id,
+			products.parent_id,
+			products.locale,
+			products.name,
+			products.slug,
+			COALESCE((
+				SELECT pv.sku
+				FROM product_variants pv
+				WHERE pv.product_id = products.id
+				  AND pv.deleted_at IS NULL
+				ORDER BY pv.is_default DESC, pv.sort_order ASC, pv.id ASC
+				LIMIT 1
+			), '') AS sku,
+			products.status`).
 		Where("id IN ? OR parent_id IN ?", rootIDs, rootIDs).
 		Order("locale ASC, id ASC").
 		Find(&records).Error; err != nil {
@@ -116,6 +130,8 @@ func (r *ProductRepository) CreateTranslatedCopy(source, target *product.Product
 			clonedVariant.ID = 0
 			clonedVariant.ProductID = 0
 			clonedVariant.DeletedAt = gorm.DeletedAt{}
+			clonedVariant.DisplayPriceData = nil
+			clonedVariant.DisplayPriceSnapshot = nil
 			clonedVariant.SKU = sku
 			// A translated variant is a localized presentation of the source
 			// variant. Inventory remains owned by the root variant.
@@ -127,9 +143,6 @@ func (r *ProductRepository) CreateTranslatedCopy(source, target *product.Product
 			variants = append(variants, clonedVariant)
 		}
 
-		if len(variants) > 0 {
-			syncProductSummaryFromVariants(target, variants)
-		}
 		if err := tx.Create(target).Error; err != nil {
 			return err
 		}
@@ -181,7 +194,7 @@ func (r *ProductRepository) CreateTranslatedCopy(source, target *product.Product
 				variants[index].ProductID = target.ID
 				variants[index].Stock = 0
 			}
-			if err := tx.Create(&variants).Error; err != nil {
+			if err := tx.Omit("DisplayPriceData").Create(&variants).Error; err != nil {
 				return err
 			}
 			for index, sourceVariant := range source.Variants {

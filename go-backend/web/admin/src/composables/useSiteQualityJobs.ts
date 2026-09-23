@@ -1,12 +1,13 @@
-import preflightApi, { type SiteQualityJob, type SiteQualityStrategy } from '@/api/preflight'
+import preflightApi, { type SiteQualityAuditScope, type SiteQualityJob, type SiteQualityStrategy } from '@/api/preflight'
 
 export const useSiteQualityJobs = () => {
   const enqueueInspection = async (
     url: string,
     strategy: SiteQualityStrategy,
+    auditScope: SiteQualityAuditScope = 'full',
     onUpdate?: (job: SiteQualityJob) => void,
   ): Promise<SiteQualityJob> => {
-    const queued = await preflightApi.createSiteQualityJob(url, strategy)
+    const queued = await preflightApi.createSiteQualityJob(url, strategy, auditScope)
     onUpdate?.(queued.job)
     return preflightApi.waitForSiteQualityJob(queued.job_id, { onUpdate })
   }

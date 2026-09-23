@@ -21,9 +21,6 @@ type ProductVariantInput struct {
 	Currency           string
 	PriceMinor         int64
 	SalePriceMinor     *int64
-	Price              float64
-	SalePrice          *float64
-	DisplayPrices      []currency.DisplayPriceSnapshot
 	Stock              int
 	Weight             int
 	IsDefault          bool
@@ -135,49 +132,22 @@ func (s *ProductService) buildVariants(productSpecificationTemplateID *uint, inp
 		if input.SKU == "" {
 			return nil, fmt.Errorf("%w: sku is required", ErrProductVariantInvalid)
 		}
-		if input.PriceMinor == 0 && input.Price != 0 {
-			priceMoney, conversionErr := domainmoney.FromMajorFloat(input.Price, variantCurrency)
-			if conversionErr != nil {
-				return nil, fmt.Errorf("%w: invalid price for %s", ErrProductVariantInvalid, input.SKU)
-			}
-			input.PriceMinor = priceMoney.AmountMinor()
-		}
 		if input.PriceMinor <= 0 {
 			return nil, fmt.Errorf("%w: price must be greater than zero for %s", ErrProductVariantInvalid, input.SKU)
 		}
 		if input.Stock < 0 {
 			return nil, fmt.Errorf("%w: stock cannot be negative for %s", ErrProductVariantInvalid, input.SKU)
 		}
-		if input.SalePriceMinor == nil && input.SalePrice != nil {
-			saleMoney, conversionErr := domainmoney.FromMajorFloat(*input.SalePrice, variantCurrency)
-			if conversionErr != nil {
-				return nil, fmt.Errorf("%w: invalid sale_price for %s", ErrProductVariantInvalid, input.SKU)
-			}
-			saleMinor := saleMoney.AmountMinor()
-			input.SalePriceMinor = &saleMinor
-		}
 		if input.SalePriceMinor != nil && *input.SalePriceMinor < 0 {
 			return nil, fmt.Errorf("%w: sale_price cannot be negative for %s", ErrProductVariantInvalid, input.SKU)
 		}
-		priceMajor, conversionErr := domainmoney.New(input.PriceMinor, variantCurrency)
-		if conversionErr != nil {
+		if _, conversionErr := domainmoney.New(input.PriceMinor, variantCurrency); conversionErr != nil {
 			return nil, fmt.Errorf("%w: invalid price for %s", ErrProductVariantInvalid, input.SKU)
 		}
-		priceFloat, conversionErr := priceMajor.MajorFloat()
-		if conversionErr != nil {
-			return nil, fmt.Errorf("%w: invalid price for %s", ErrProductVariantInvalid, input.SKU)
-		}
-		input.Price = priceFloat
 		if input.SalePriceMinor != nil {
-			saleMoney, saleErr := domainmoney.New(*input.SalePriceMinor, variantCurrency)
-			if saleErr != nil {
+			if _, saleErr := domainmoney.New(*input.SalePriceMinor, variantCurrency); saleErr != nil {
 				return nil, fmt.Errorf("%w: invalid sale_price for %s", ErrProductVariantInvalid, input.SKU)
 			}
-			saleFloat, saleErr := saleMoney.MajorFloat()
-			if saleErr != nil {
-				return nil, fmt.Errorf("%w: invalid sale_price for %s", ErrProductVariantInvalid, input.SKU)
-			}
-			input.SalePrice = &saleFloat
 		}
 		skuKey := strings.ToLower(input.SKU)
 		if _, exists := seenSKU[skuKey]; exists {
@@ -213,9 +183,6 @@ func (s *ProductService) buildVariants(productSpecificationTemplateID *uint, inp
 			Currency:           variantCurrency,
 			PriceMinor:         input.PriceMinor,
 			SalePriceMinor:     input.SalePriceMinor,
-			Price:              input.Price,
-			SalePrice:          input.SalePrice,
-			DisplayPriceData:   currency.DisplayPriceSnapshotsJSON(input.DisplayPrices, variantCurrency),
 			Stock:              input.Stock,
 			Weight:             input.Weight,
 			IsDefault:          input.IsDefault,
@@ -326,14 +293,6 @@ func validateVariantOptionRules(
 
 func (s *ProductService) ensureVariantSKUsAvailable(variants []product.ProductVariant, currentProductID uint) error {
 	for _, variant := range variants {
-		existingProduct, err := s.productRepo.FindBySKU(variant.SKU)
-		if err != nil && !repository.IsRecordNotFound(err) {
-			return err
-		}
-		if err == nil && existingProduct.ID != currentProductID {
-			return ErrProductSKUExists
-		}
-
 		existingVariant, err := s.productRepo.FindVariantBySKU(variant.SKU)
 		if err != nil {
 			if repository.IsRecordNotFound(err) {

@@ -40,11 +40,11 @@ func (h *Handler) GetTemplate(c *gin.Context) {
 
 func (h *Handler) CalculateShipping(c *gin.Context) {
 	var req struct {
-		TemplateID uint    `json:"template_id" binding:"required"`
-		Weight     float64 `json:"weight"`
-		Quantity   int     `json:"quantity"`
-		Amount     float64 `json:"amount"`
-		Country    string  `json:"country" binding:"required"`
+		TemplateID  uint    `json:"template_id" binding:"required"`
+		Weight      float64 `json:"weight"`
+		Quantity    int     `json:"quantity"`
+		AmountMinor int64   `json:"amount_minor"`
+		Country     string  `json:"country" binding:"required"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		apierror.RespondBadRequest(c, err.Error())
@@ -52,11 +52,11 @@ func (h *Handler) CalculateShipping(c *gin.Context) {
 	}
 
 	quote, err := h.shippingService.CalculateShipping(service.ShippingCalculationInput{
-		TemplateID: req.TemplateID,
-		Weight:     req.Weight,
-		Quantity:   req.Quantity,
-		Amount:     req.Amount,
-		Country:    req.Country,
+		TemplateID:  req.TemplateID,
+		Weight:      req.Weight,
+		Quantity:    req.Quantity,
+		AmountMinor: req.AmountMinor,
+		Country:     req.Country,
 	})
 	if err != nil {
 		if errors.Is(err, service.ErrInvalidShippingDestination) {

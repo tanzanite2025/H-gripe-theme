@@ -229,6 +229,12 @@ If a frontend build fails immediately after checkout, run `npm install` in that 
 - Admin app guide: `go-backend/web/admin/README.md`
 - Kubernetes manifests and notes: `go-backend/k8s/`
 - Distributed locks, task state machine, and idempotency architecture: `docs/design/distributed-lock-task-state-machine-idempotency-architecture.md`
+- Internal payment-provider cost accounting and profit snapshots: `docs/design/payment-provider-cost-accounting-architecture.md`
+- Multi-carrier logistics three-tier short-link architecture and carrier SPI: `docs/design/cross-border-logistics-three-tier-architecture.md`
+- Yanwen small-packet cross-border logistics implementation specification: `docs/design/yanwen-logistics-hub-integration-architecture.md`
+- 4PX bulky cross-border logistics and overseas warehouse implementation specification: `docs/design/4px-logistics-hub-integration-architecture.md`
+- Admin dashboard command center and operational intelligence architecture: `docs/design/admin-dashboard-command-center-architecture.md`
+- Nuxt storefront architecture and data link risk audit report: `docs/audit/nuxt-frontend-architecture-and-data-link-risk-report.md`
 - Historical reports: `docs/archive/`
 
 Historical reports are context only. Prefer the current code, this README, and area-specific README files when documents conflict.

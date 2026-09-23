@@ -233,7 +233,11 @@ func NormalizeThreeDSecureMode(value string) string {
 	case "any":
 		return "any"
 	case "challenge":
-		return "challenge"
+		// Stripe accepts only "automatic" and "any" for
+		// payment_method_options[card][request_three_d_secure]. Keep the
+		// stronger internal challenge policy, but request 3DS using Stripe's
+		// supported "any" value at the provider boundary.
+		return "any"
 	default:
 		return "automatic"
 	}

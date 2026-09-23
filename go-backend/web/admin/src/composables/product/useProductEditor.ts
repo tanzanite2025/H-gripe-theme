@@ -7,6 +7,8 @@ import { buildProductMediaFormValues } from '@/lib/productMedia'
 import axios from '@/utils/axios'
 import type {
   ProductFormRecord,
+  ProductOptionValueRelationForm,
+  ProductTemplateSyncDiff,
   ProductVariantOptionValueForm
 } from '@/modules/product/productEditorTypes'
 
@@ -34,9 +36,11 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
     if (['BIF', 'CLP', 'DJF', 'GNF', 'JPY', 'KMF', 'KRW', 'MGA', 'PYG', 'RWF', 'UGX', 'VND', 'VUV', 'XAF', 'XOF', 'XPF'].includes(code)) return 0
     return 2
   }
-  const majorFromMinor = (value: any, currency: any): number => {
+  const majorFromMinor = (value: any, currency: any): string => {
     const minor = Number(value)
-    return Number.isFinite(minor) ? minor / (10 ** minorUnitsForCurrency(currency)) : 0
+    if (!Number.isFinite(minor)) return ''
+    const units = minorUnitsForCurrency(currency)
+    return (minor / (10 ** units)).toFixed(units)
   }
   const minorFromMajor = (value: any, currency: any): number => {
     const major = Number(value)
@@ -55,6 +59,10 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
   const dialogMode = ref<'create' | 'edit'>('create')
   const submitting = ref(false)
   const formErrors = reactive<Record<string, string>>({})
+  const templateSyncDialogVisible = ref(false)
+  const templateSyncDiff = ref<ProductTemplateSyncDiff | null>(null)
+  const templateSyncLoading = ref(false)
+  const templateSyncApplying = ref(false)
 
   const productForm = reactive<ProductFormRecord>({
     id: null,
@@ -80,6 +88,7 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
     specs: {},
     variants: [],
     variant_option_values: [],
+    option_value_relations: [],
     media: []
   })
 
@@ -220,31 +229,6 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
     }
   }
 
-  const normalizeDisplayPrices = (values: any) => {
-    const list = Array.isArray(values) ? values : []
-    const seen = new Set<string>()
-    return list
-      .map((item: any) => {
-        const quoteCurrency = normalizeCurrencyCode(item?.quote_currency || item?.currency)
-        if (!/^[A-Z]{3}$/.test(quoteCurrency)) return null
-        return {
-          amount: Number(item?.amount || 0),
-          currency: quoteCurrency,
-          quote_currency: quoteCurrency,
-          rate: Number(item?.rate || 0),
-          source: String(item?.source || '').trim(),
-          converted: item?.converted !== false
-        }
-      })
-      .filter(Boolean)
-      .filter((item: any) => item.amount > 0 && item.currency !== primaryPriceCurrency())
-      .filter((item: any) => {
-        if (seen.has(item.currency)) return false
-        seen.add(item.currency)
-        return true
-      })
-  }
-
   const createEmptyVariant = (overrides: Record<string, any> = {}) => ({
     id: null,
     shipping_template_id: null,
@@ -252,9 +236,8 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
     title: '',
     option_values: {},
     currency: primaryPriceCurrency(),
-    price: 0,
-    sale_price: null,
-    display_prices: [],
+    price: '0.00',
+    sale_price: '',
     stock: 0,
     weight_grams: 0,
     is_default: false,
@@ -295,7 +278,22 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
       is_default: Boolean(item.is_default ?? item.custom_option_policy?.is_default),
       inventory_policy: item.inventory_policy || item.custom_option_policy?.inventory_policy || 'none',
       component_variant_id: item.component_variant_id ?? item.custom_option_policy?.component_variant_id ?? null,
-      component_quantity: item.component_quantity ?? item.custom_option_policy?.component_quantity ?? 0
+      component_quantity: item.component_quantity ?? item.custom_option_policy?.component_quantity ?? 0,
+      weight_delta_grams: item.weight_delta_grams ?? item.custom_option_policy?.weight_delta_grams ?? 0,
+      packaging_weight_delta_grams: item.packaging_weight_delta_grams ?? item.custom_option_policy?.packaging_weight_delta_grams ?? 0,
+      production_lead_time_days: item.production_lead_time_days ?? item.custom_option_policy?.production_lead_time_days ?? 0,
+      requires_production: Boolean(item.requires_production ?? item.custom_option_policy?.requires_production),
+      cancellation_policy: item.cancellation_policy ?? item.custom_option_policy?.cancellation_policy ?? '',
+      return_policy: item.return_policy ?? item.custom_option_policy?.return_policy ?? 'standard'
+    }))
+  )
+
+  const buildOptionValueRelationFormValues = (product: any): ProductOptionValueRelationForm[] => (
+    (product.option_value_relations || []).map((relation: any) => ({
+      id: relation.id || null,
+      source_option_value_id: Number(relation.source_option_value_id || 0),
+      target_option_value_id: Number(relation.target_option_value_id || 0),
+      relation_type: relation.relation_type === 'conflicts' ? 'conflicts' : 'requires'
     }))
   )
 
@@ -326,9 +324,22 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
         is_default: Boolean(item.is_default),
         inventory_policy: String(item.inventory_policy || 'none'),
         component_variant_id: item.component_variant_id == null ? undefined : Number(item.component_variant_id),
-        component_quantity: Number(item.component_quantity || 0)
+        component_quantity: Number(item.component_quantity || 0),
+        weight_delta_grams: Number(item.weight_delta_grams || 0),
+        packaging_weight_delta_grams: Number(item.packaging_weight_delta_grams || 0),
+        production_lead_time_days: Number(item.production_lead_time_days || 0),
+        requires_production: Boolean(item.requires_production),
+        cancellation_policy: String(item.cancellation_policy || ''),
+        return_policy: String(item.return_policy || 'standard')
       }))
   }
+
+  const normalizeOptionValueRelations = () => productForm.option_value_relations.map((relation) => ({
+    id: relation.id || undefined,
+    source_option_value_id: Number(relation.source_option_value_id || 0),
+    target_option_value_id: Number(relation.target_option_value_id || 0),
+    relation_type: relation.relation_type === 'conflicts' ? 'conflicts' : 'requires'
+  }))
 
   const materializeTemplateOptionValues = (template: any | null): void => {
     if (!template) {
@@ -356,7 +367,13 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
           is_default: definitionRole(definition) === 'custom_option' ? Boolean(item.is_default) : false,
           inventory_policy: definitionRole(definition) === 'custom_option' ? 'none' : undefined,
           component_variant_id: null,
-          component_quantity: 0
+          component_quantity: 0,
+          weight_delta_grams: 0,
+          packaging_weight_delta_grams: 0,
+          production_lead_time_days: 0,
+          requires_production: false,
+          cancellation_policy: '',
+          return_policy: 'standard'
         }))
       })
     })
@@ -371,11 +388,10 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
       title: variant.title || '',
       option_values: parseVariantOptions(variant),
       currency: validCurrencyCodeOrDefault(variant.currency || product.currency),
-      price_minor: Number.isFinite(Number(variant.price_minor)) ? Number(variant.price_minor) : minorFromMajor(variant.price, variant.currency || product.currency),
-      price: Number.isFinite(Number(variant.price_minor)) ? majorFromMinor(variant.price_minor, variant.currency || product.currency) : Number(variant.price || 0),
+      price_minor: Number.isFinite(Number(variant.price_minor)) ? Number(variant.price_minor) : 0,
+      price: majorFromMinor(Number.isFinite(Number(variant.price_minor)) ? Number(variant.price_minor) : 0, variant.currency || product.currency),
       sale_price_minor: variant.sale_price_minor == null ? null : Number(variant.sale_price_minor),
       sale_price: variant.sale_price_minor == null ? null : majorFromMinor(variant.sale_price_minor, variant.currency || product.currency),
-      display_prices: normalizeDisplayPrices(variant.display_prices),
       stock: Number(variant.stock || 0),
       weight_grams: variant.weight_grams ?? variant.weight ?? 0,
       is_default: Boolean(variant.is_default),
@@ -453,11 +469,10 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
         title: String(variant.title || '').trim(),
         option_values: optionValues,
         currency: validCurrencyCodeOrDefault(variant.currency || productForm.currency),
-        price: Number(variant.price || 0),
+        price: String(variant.price ?? ''),
         price_minor: minorFromMajor(variant.price, variant.currency || productForm.currency),
-        sale_price: variant.sale_price === '' || variant.sale_price == null ? null : Number(variant.sale_price),
+        sale_price: variant.sale_price === '' || variant.sale_price == null ? null : String(variant.sale_price),
         sale_price_minor: variant.sale_price === '' || variant.sale_price == null ? null : minorFromMajor(variant.sale_price, variant.currency || productForm.currency),
-        display_prices: normalizeDisplayPrices(variant.display_prices),
         stock: Number(variant.stock || 0),
         weight_grams: Number(variant.weight_grams || 0),
         is_default: Boolean(variant.is_default),
@@ -505,6 +520,7 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
     specs: { ...productForm.specs },
     variants: normalizeFormVariants(),
     variant_option_values: normalizeVariantOptionValues(),
+    option_value_relations: normalizeOptionValueRelations(),
     media: normalizeFormMedia()
   })
 
@@ -530,6 +546,32 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
     else if (payload.variants.some((variant: any) => Number(variant.price) <= 0)) formErrors.variants = '每个变体价格必须大于 0'
     else if (payload.variants.some((variant: any) => Number(variant.stock) < 0)) formErrors.variants = '变体库存不能为负数'
     else if (!payload.variants.some((variant: any) => variant.is_active !== false)) formErrors.variants = '请至少启用一个 SKU 变体'
+    const persistedOptionValueIDs = new Set(
+      payload.variant_option_values
+        .map((item: any) => Number(item.id || 0))
+        .filter((id: number) => id > 0)
+    )
+    const relationKeys = new Set<string>()
+    for (const relation of payload.option_value_relations) {
+      const sourceID = Number(relation.source_option_value_id || 0)
+      const targetID = Number(relation.target_option_value_id || 0)
+      if (!persistedOptionValueIDs.has(sourceID) || !persistedOptionValueIDs.has(targetID)) {
+        formErrors.option_value_relations = '选项关系只能使用已保存的选项值'
+        break
+      }
+      if (sourceID === targetID) {
+        formErrors.option_value_relations = '关系两端不能选择同一个选项值'
+        break
+      }
+      const relationKey = relation.relation_type === 'conflicts'
+        ? `conflicts:${Math.min(sourceID, targetID)}:${Math.max(sourceID, targetID)}`
+        : `requires:${sourceID}:${targetID}`
+      if (relationKeys.has(relationKey)) {
+        formErrors.option_value_relations = '不能重复添加相同的选项关系'
+        break
+      }
+      relationKeys.add(relationKey)
+    }
     if (productForm.media.some((item: any) => !String(item.url || '').trim())) formErrors.media = '媒体条目必须填写 URL，空条目请删除'
     else if (payload.media.filter((item: any) => item.media_type === 'image' && item.is_primary).length > 1) formErrors.media = '商品主图只能设置一张'
     if (Object.keys(formErrors).length > 0) {
@@ -553,6 +595,7 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
     productForm.specs = nextSpecs
     productForm.variants.forEach((variant: any) => { variant.option_values = {} })
     materializeTemplateOptionValues(selectedProductSpecTemplate.value)
+    productForm.option_value_relations = []
     clearFormErrors()
     if (hadTemplateValues) {
       toast.info('已切换商品规格模板，商品参数和 SKU 选项值已按新模板重置；SKU 价格、重量、库存和媒体已保留。')
@@ -584,6 +627,7 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
       specs: {},
       variants: [],
       variant_option_values: [],
+      option_value_relations: [],
       media: []
     })
     productForm.variants = [createEmptyVariant({ is_default: true })]
@@ -623,6 +667,8 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
     await fetchPrimaryPricingCurrency()
     dialogMode.value = 'create'
     resetForm()
+    templateSyncDialogVisible.value = false
+    templateSyncDiff.value = null
     await notifyProductLoaded(null, 'create')
     dialogVisible.value = true
   }
@@ -664,11 +710,44 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
       specs: buildSpecFormValues(detail),
       variants: buildVariantFormValues(detail),
       variant_option_values: buildVariantOptionValueFormValues(detail),
+      option_value_relations: buildOptionValueRelationFormValues(detail),
       media: buildProductMediaFormValues(detail)
     })
     clearFormErrors()
     await notifyProductLoaded(detail, 'edit')
     dialogVisible.value = true
+  }
+
+  const previewTemplateSync = async () => {
+    if (dialogMode.value !== 'edit' || !productForm.id || templateSyncLoading.value) return
+    templateSyncLoading.value = true
+    templateSyncDiff.value = null
+    try {
+      templateSyncDiff.value = await productApi.previewTemplateSync(productForm.id) as ProductTemplateSyncDiff
+      templateSyncDialogVisible.value = true
+    } catch (error: any) {
+      console.error('Failed to preview product template sync:', error)
+      toast.error(error?.response?.data?.error || '读取模板差异失败')
+    } finally {
+      templateSyncLoading.value = false
+    }
+  }
+
+  const confirmTemplateSync = async () => {
+    if (!productForm.id || !templateSyncDiff.value || templateSyncApplying.value) return
+    templateSyncApplying.value = true
+    try {
+      const payload = await productApi.syncTemplate(productForm.id, templateSyncDiff.value.template_revision)
+      templateSyncDialogVisible.value = false
+      templateSyncDiff.value = payload.data as ProductTemplateSyncDiff
+      await showEditDialog(payload.product)
+      toast.success('商品规格模板已同步')
+    } catch (error: any) {
+      console.error('Failed to synchronize product template:', error)
+      toast.error(error?.response?.data?.error || '同步商品规格模板失败，请重新预览')
+    } finally {
+      templateSyncApplying.value = false
+    }
   }
 
   const submitForm = async () => {
@@ -704,6 +783,10 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
     dialogVisible,
     dialogMode,
     submitting,
+    templateSyncDialogVisible,
+    templateSyncDiff,
+    templateSyncLoading,
+    templateSyncApplying,
     formErrors,
     productForm,
     uploadingMedia,
@@ -746,6 +829,8 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
     fetchProductSpecTemplates,
     showCreateDialog,
     showEditDialog,
+    previewTemplateSync,
+    confirmTemplateSync,
     submitForm,
     closeDialog
   }

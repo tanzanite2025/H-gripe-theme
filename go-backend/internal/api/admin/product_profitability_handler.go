@@ -31,19 +31,16 @@ type profitabilityItemRequest struct {
 	SellingCurrency string `json:"currency"`
 	CostCurrency    string `json:"cost_currency"`
 
-	ListPrice           float64  `json:"list_price"`
-	SalePrice           *float64 `json:"sale_price"`
-	UnitCost            *float64 `json:"unit_cost"`
-	UnitCostKnown       bool     `json:"unit_cost_known"`
-	LegacyUnitCost      *float64 `json:"purchase_price"`
-	LegacyUnitCostKnown bool     `json:"purchase_price_known"`
+	ListPriceMinor int64  `json:"list_price_minor"`
+	SalePriceMinor *int64 `json:"sale_price_minor"`
+	UnitCostMinor  *int64 `json:"unit_cost_minor"`
+	UnitCostKnown  bool   `json:"unit_cost_known"`
 
-	InboundShippingUnitCost float64 `json:"inbound_shipping_unit_cost"`
-	PackagingUnitCost       float64 `json:"packaging_unit_cost"`
-	OtherUnitCost           float64 `json:"other_unit_cost"`
+	InboundShippingUnitCostMinor int64 `json:"inbound_shipping_unit_cost_minor"`
+	PackagingUnitCostMinor       int64 `json:"packaging_unit_cost_minor"`
+	OtherUnitCostMinor           int64 `json:"other_unit_cost_minor"`
 
-	SupplierCostDetails               *profitabilitySupplierCostDetailsRequest `json:"supplier_cost_details"`
-	LegacySupplierCostDetailsEnvelope *profitabilitySupplierCostDetailsRequest `json:"procurement"`
+	SupplierCostDetails *profitabilitySupplierCostDetailsRequest `json:"supplier_cost_details"`
 }
 
 type profitabilityItemsRequest struct {
@@ -101,17 +98,17 @@ func toProfitabilityInputs(items []profitabilityItemRequest) []service.Profitabi
 	inputs := make([]service.ProfitabilityItemInput, 0, len(items))
 	for _, item := range items {
 		input := service.ProfitabilityItemInput{
-			ProductCode:             item.ProductCode,
-			ProductName:             item.ProductName,
-			SellingCurrency:         item.SellingCurrency,
-			CostCurrency:            item.CostCurrency,
-			ListPrice:               item.ListPrice,
-			SalePrice:               item.SalePrice,
-			UnitCost:                item.supplierUnitCost(),
-			UnitCostKnown:           item.supplierUnitCostKnown(),
-			InboundShippingUnitCost: item.InboundShippingUnitCost,
-			PackagingUnitCost:       item.PackagingUnitCost,
-			OtherUnitCost:           item.OtherUnitCost,
+			ProductCode:                  item.ProductCode,
+			ProductName:                  item.ProductName,
+			SellingCurrency:              item.SellingCurrency,
+			CostCurrency:                 item.CostCurrency,
+			ListPriceMinor:               item.ListPriceMinor,
+			SalePriceMinor:               item.SalePriceMinor,
+			UnitCostMinor:                item.UnitCostMinor,
+			UnitCostKnown:                item.UnitCostKnown,
+			InboundShippingUnitCostMinor: item.InboundShippingUnitCostMinor,
+			PackagingUnitCostMinor:       item.PackagingUnitCostMinor,
+			OtherUnitCostMinor:           item.OtherUnitCostMinor,
 		}
 		if supplierCostDetails := item.supplierCostDetails(); supplierCostDetails != nil {
 			input.SupplierCostDetails = &service.ProfitabilitySupplierCostDetailsInput{
@@ -129,21 +126,7 @@ func toProfitabilityInputs(items []profitabilityItemRequest) []service.Profitabi
 }
 
 func (item profitabilityItemRequest) supplierCostDetails() *profitabilitySupplierCostDetailsRequest {
-	if item.SupplierCostDetails != nil {
-		return item.SupplierCostDetails
-	}
-	return item.LegacySupplierCostDetailsEnvelope
-}
-
-func (item profitabilityItemRequest) supplierUnitCost() *float64 {
-	if item.UnitCost != nil {
-		return item.UnitCost
-	}
-	return item.LegacyUnitCost
-}
-
-func (item profitabilityItemRequest) supplierUnitCostKnown() bool {
-	return item.UnitCostKnown || item.LegacyUnitCostKnown
+	return item.SupplierCostDetails
 }
 
 func respondProductProfitabilityError(c *gin.Context, err error) {

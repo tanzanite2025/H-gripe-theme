@@ -18,22 +18,22 @@ import (
 
 func TestQuickBuySessionTotalsUsesCurrencyMinorUnits(t *testing.T) {
 	total, weight, err := quickBuySessionTotals([]quickbuy.SessionItem{{
-		Quantity:          2,
-		UnitPriceSnapshot: 10000,
-		CurrencySnapshot:  "JPY",
-		WeightSnapshotG:   300,
+		Quantity:               2,
+		UnitPriceSnapshotMinor: 10000,
+		CurrencySnapshot:       "JPY",
+		WeightSnapshotG:        300,
 	}})
 	require.NoError(t, err)
-	require.Equal(t, 20000.0, total)
+	require.Equal(t, int64(20000), total)
 	require.Equal(t, 600, weight)
 }
 
 func TestQuickBuySessionTotalsRejectsInvalidMoney(t *testing.T) {
 	total, weight, err := quickBuySessionTotals([]quickbuy.SessionItem{{
-		ID:                9,
-		Quantity:          1,
-		UnitPriceSnapshot: 10,
-		CurrencySnapshot:  "XXX",
+		ID:                     9,
+		Quantity:               1,
+		UnitPriceSnapshotMinor: 10,
+		CurrencySnapshot:       "XXX",
 	}})
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "price")
@@ -43,10 +43,10 @@ func TestQuickBuySessionTotalsRejectsInvalidMoney(t *testing.T) {
 
 func TestQuickBuySessionTotalsRejectsNonPositiveQuantity(t *testing.T) {
 	_, _, err := quickBuySessionTotals([]quickbuy.SessionItem{{
-		ID:                10,
-		Quantity:          0,
-		UnitPriceSnapshot: 10,
-		CurrencySnapshot:  "USD",
+		ID:                     10,
+		Quantity:               0,
+		UnitPriceSnapshotMinor: 10,
+		CurrencySnapshot:       "USD",
 	}})
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "quantity")
@@ -421,7 +421,7 @@ func TestQuickBuyServiceCreatesSessionAndStoresSelectionSnapshot(t *testing.T) {
 	require.Len(t, updated.Items, 1)
 	assert.Equal(t, productRecord.ID, updated.Items[0].ProductID)
 	assert.Equal(t, 2, updated.Items[0].Quantity)
-	assert.Equal(t, 180.0, updated.SubtotalSnapshot)
+	assert.Equal(t, "180.00", updated.SubtotalSnapshot)
 	assert.Equal(t, 820, updated.WeightSnapshotG)
 	assert.Equal(t, quickbuy.ValidationStatusValid, updated.ValidationStatus)
 	require.NotNil(t, updated.Validation)
@@ -450,6 +450,31 @@ func TestQuickBuyProductSnapshotCanonicalizesThumbnailURL(t *testing.T) {
 
 	assert.Contains(t, string(snapshot), `"thumbnail":"https://shop.example.test/uploads/quick-buy/thumb.webp"`)
 	assert.NotContains(t, string(snapshot), "media.internal")
+}
+
+func TestQuickBuyProductSnapshotUsesSelectedVariantSummary(t *testing.T) {
+	saleMinor := int64(11000)
+	variant := productdomain.ProductVariant{
+		ID:             12,
+		SKU:            "QB-VARIANT-12",
+		PriceMinor:     12500,
+		SalePriceMinor: &saleMinor,
+		Currency:       "USD",
+		IsActive:       true,
+		IsDefault:      true,
+	}
+	snapshot := quickBuyProductSnapshotForVariant(productdomain.Product{
+		ID:       91,
+		Name:     "Quick product",
+		Slug:     "quick-product",
+		Variants: []productdomain.ProductVariant{variant},
+	}, &variant)
+	var payload map[string]interface{}
+	require.NoError(t, json.Unmarshal(snapshot, &payload))
+	require.Equal(t, "QB-VARIANT-12", payload["sku"])
+	require.Equal(t, "125.00", payload["price"])
+	require.Equal(t, "110.00", payload["sale_price"])
+	require.Equal(t, 12.0, payload["variant_id"])
 }
 
 func TestQuickBuyServiceAllowsClearingAndReselectingStep(t *testing.T) {
@@ -822,23 +847,23 @@ func seedQuickBuyProductWithDetails(t *testing.T, db *gorm.DB, productSpecificat
 		Name:                           name,
 		Slug:                           slug,
 		Currency:                       "USD",
-		Price:                          price,
+		PriceMinor:                     int64(price * 100),
 		Stock:                          5,
 		Status:                         "active",
 		Locale:                         "en",
 	}
 	require.NoError(t, db.Create(&productRecord).Error)
 	variant := productdomain.ProductVariant{
-		ProductID: productRecord.ID,
-		SKU:       sku + "-DEFAULT",
-		Title:     "Default",
-		Currency:  "USD",
-		Price:     price - 10,
-		Stock:     5,
-		Weight:    410,
-		IsDefault: true,
-		IsActive:  true,
-		SortOrder: 10,
+		ProductID:  productRecord.ID,
+		SKU:        sku + "-DEFAULT",
+		Title:      "Default",
+		Currency:   "USD",
+		PriceMinor: int64((price - 10) * 100),
+		Stock:      5,
+		Weight:     410,
+		IsDefault:  true,
+		IsActive:   true,
+		SortOrder:  10,
 	}
 	require.NoError(t, db.Create(&variant).Error)
 	return productRecord

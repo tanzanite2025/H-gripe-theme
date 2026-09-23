@@ -2,6 +2,7 @@ package referral
 
 import (
 	"errors"
+	"io"
 	"net/http"
 	"net/url"
 	"strings"
@@ -111,10 +112,37 @@ func (h *Handler) Bind(c *gin.Context) {
 		apierror.RespondUnauthorized(c)
 		return
 	}
-	token, err := c.Cookie(referralcookie.CookieName)
-	if err != nil || strings.TrimSpace(token) == "" {
-		apierror.RespondError(c, http.StatusBadRequest, "referral_attribution_missing", "No valid referral attribution is available")
-		return
+	// A referral can arrive through the signed attribution cookie created by a
+	// share link, or as an explicit code entered during registration. The
+	// latter is converted into the same signed token path so both flows share
+	// the exact validation, anti-fraud, and idempotency rules.
+	var input struct {
+		ReferralCode string `json:"referral_code"`
+	}
+	manualCode := ""
+	contentType := strings.ToLower(strings.TrimSpace(c.GetHeader("Content-Type")))
+	if strings.HasPrefix(contentType, "application/json") {
+		if decodeErr := c.ShouldBindJSON(&input); decodeErr != nil && !errors.Is(decodeErr, io.EOF) {
+			apierror.RespondValidationError(c, decodeErr.Error())
+			return
+		}
+		manualCode = strings.TrimSpace(input.ReferralCode)
+	}
+
+	token := ""
+	var err error
+	if manualCode != "" {
+		token, _, err = h.service.CreateAttributionToken(manualCode, "manual_input")
+		if err != nil {
+			respondReferralError(c, err)
+			return
+		}
+	} else {
+		token, err = c.Cookie(referralcookie.CookieName)
+		if err != nil || strings.TrimSpace(token) == "" {
+			apierror.RespondError(c, http.StatusBadRequest, "referral_attribution_missing", "No valid referral attribution is available")
+			return
+		}
 	}
 	var record *loyalty.ReferralRecord
 	var bindErr error

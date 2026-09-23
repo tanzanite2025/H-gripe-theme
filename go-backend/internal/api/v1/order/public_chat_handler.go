@@ -110,13 +110,13 @@ func makePublicChatOrderItems(items []orderdomain.OrderItem) []gin.H {
 			"price_minor":      priceMinor,
 			"subtotal_minor":   subtotalMinor,
 			"total_minor":      totalMinor,
-			"attributes":       parsePublicChatOrderItemAttributes(item.Attributes),
+			"configuration":    parsePublicChatOrderItemConfiguration(item.ConfigurationEvidenceJSON()),
 		})
 	}
 	return result
 }
 
-func parsePublicChatOrderItemAttributes(value string) interface{} {
+func parsePublicChatOrderItemConfiguration(value string) interface{} {
 	value = strings.TrimSpace(value)
 	if value == "" {
 		return nil

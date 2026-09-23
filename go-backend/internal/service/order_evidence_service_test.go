@@ -172,23 +172,23 @@ func newOrderEvidenceServiceTestDB(t *testing.T) *gorm.DB {
 func servicePlanSnapshot(t *testing.T, db *gorm.DB, requiresQC bool) *orderevidence.OrderEvidenceSnapshot {
 	t.Helper()
 	orderRecord := order.Order{
-		OrderNumber:    "TZ-2026-PLAN-SERVICE",
-		TotalAmount:    800,
-		Currency:       "USD",
-		FXSnapshotData: servicePlanFXSnapshot(),
+		OrderNumber:      "TZ-2026-PLAN-SERVICE",
+		TotalAmountMinor: 80000,
+		Currency:         "USD",
+		FXSnapshotData:   servicePlanFXSnapshot(),
 	}
 	require.NoError(t, db.Create(&orderRecord).Error)
 	variantID := uint(22)
 	item := order.OrderItem{
-		OrderID:     orderRecord.ID,
-		ProductID:   10,
-		VariantID:   &variantID,
-		ProductName: "Configured Product",
-		SKU:         "SKU-PLAN-10",
-		Quantity:    1,
-		Price:       800,
-		WeightGrams: 9000,
-		Attributes:  `{"finish":"black"}`,
+		OrderID:                   orderRecord.ID,
+		ProductID:                 10,
+		VariantID:                 &variantID,
+		ProductName:               "Configured Product",
+		SKU:                       "SKU-PLAN-10",
+		Quantity:                  1,
+		PriceMinor:                80000,
+		WeightGrams:               9000,
+		ConfigurationSnapshotData: datatypes.JSON([]byte(`{"finish":"black"}`)),
 	}
 	require.NoError(t, db.Create(&item).Error)
 	orderRecord.Items = []order.OrderItem{item}
@@ -218,11 +218,11 @@ func servicePlanSnapshot(t *testing.T, db *gorm.DB, requiresQC bool) *orderevide
 
 func servicePlanFXSnapshot() datatypes.JSON {
 	return currency.OrderFXSnapshotJSON(currency.OrderFXSnapshot{
-		Version:         currency.OrderFXSnapshotVersion,
-		BaseCurrency:    "USD",
-		OrderCurrency:   "USD",
-		BaseToOrderRate: 1,
-		Source:          "test",
-		CapturedAt:      time.Now().UTC(),
+		Version:       currency.OrderFXSnapshotVersion,
+		BaseCurrency:  "USD",
+		OrderCurrency: "USD",
+		RateDecimal:   "1",
+		Source:        "test",
+		CapturedAt:    time.Now().UTC(),
 	})
 }

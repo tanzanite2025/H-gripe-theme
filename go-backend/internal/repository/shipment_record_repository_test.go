@@ -79,7 +79,10 @@ func newShipmentRecordTestDB(t *testing.T) *gorm.DB {
 	require.NoError(t, err)
 	sqlDB.SetMaxOpenConns(1)
 	t.Cleanup(func() { _ = sqlDB.Close() })
-	require.NoError(t, db.AutoMigrate(&orderdomain.Order{}, &orderdomain.OrderItem{}, &shippingdomain.ShipmentRecord{}))
+	require.NoError(t, db.AutoMigrate(
+		&orderdomain.Order{}, &orderdomain.OrderItem{}, &shippingdomain.ShipmentRecord{},
+		&shippingdomain.TrackingProviderConfig{}, &shippingdomain.TrackingShipment{},
+	))
 	return db
 }
 
@@ -92,8 +95,8 @@ func createShippedOrder(t *testing.T, db *gorm.DB, shippedAt time.Time) *orderdo
 		Status:         "shipped",
 		ShippingStatus: "shipped",
 		Currency:       "USD",
-		TotalAmount:    100,
-		SubtotalAmount: 100,
+		TotalAmountMinor:    10000,
+		SubtotalAmountMinor: 10000,
 		ShippingAddress: orderdomain.Address{
 			FirstName: "Test",
 			LastName:  "Buyer",

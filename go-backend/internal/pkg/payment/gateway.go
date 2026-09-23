@@ -1,6 +1,7 @@
 package payment
 
 import (
+	domainmoney "commerce-platform/internal/domain/money"
 	"context"
 	"fmt"
 	"time"
@@ -10,8 +11,10 @@ import (
 type PaymentGateway interface {
 	CreatePayment(ctx context.Context, req *PaymentRequest) (*PaymentResponse, error)
 	CapturePayment(ctx context.Context, paymentID string) (*PaymentResponse, error)
-	RefundPayment(ctx context.Context, paymentID string, amount float64) (*RefundResponse, error)
-	RefundPaymentWithOptions(ctx context.Context, paymentID string, amount float64, options RefundOptions) (*RefundResponse, error)
+	// amountMinor is expressed in the payment currency's smallest unit. A zero
+	// amount requests a full refund; positive values request a partial refund.
+	RefundPayment(ctx context.Context, paymentID string, amountMinor int64) (*RefundResponse, error)
+	RefundPaymentWithOptions(ctx context.Context, paymentID string, amountMinor int64, options RefundOptions) (*RefundResponse, error)
 	GetPayment(ctx context.Context, paymentID string) (*PaymentResponse, error)
 	VerifyWebhook(payload []byte, signature string) (bool, error)
 }
@@ -26,25 +29,40 @@ type CapturePaymentWithOptions interface {
 
 // PaymentRequest 支付请求
 type PaymentRequest struct {
-	Amount         float64           `json:"amount"`
-	Currency       string            `json:"currency"`
-	OrderID        string            `json:"order_id"`
-	Description    string            `json:"description"`
-	Customer       *Customer         `json:"customer"`
-	ReturnURL      string            `json:"return_url"`
-	CancelURL      string            `json:"cancel_url"`
-	NotifyURL      string            `json:"notify_url,omitempty"`
-	ThreeDSecure   string            `json:"three_ds_secure,omitempty"`
-	CardBIN        string            `json:"card_bin,omitempty"`
-	IdempotencyKey string            `json:"-"`
-	Metadata       map[string]string `json:"metadata"`
+	AmountMinor     int64             `json:"amount_minor"`
+	Currency        string            `json:"currency"`
+	OrderID         string            `json:"order_id"`
+	Description     string            `json:"description"`
+	Customer        *Customer         `json:"customer"`
+	ShippingAddress *ShippingAddress  `json:"shipping_address,omitempty"`
+	ReturnURL       string            `json:"return_url"`
+	CancelURL       string            `json:"cancel_url"`
+	NotifyURL       string            `json:"notify_url,omitempty"`
+	ThreeDSecure    string            `json:"three_ds_secure,omitempty"`
+	CardBIN         string            `json:"card_bin,omitempty"`
+	IdempotencyKey  string            `json:"-"`
+	Metadata        map[string]string `json:"metadata"`
+}
+
+// ShippingAddress contains the complete delivery address needed by providers
+// for fraud screening, AVS checks, and delivery-risk evaluation.
+type ShippingAddress struct {
+	Name       string `json:"name"`
+	Line1      string `json:"line1"`
+	Line2      string `json:"line2,omitempty"`
+	City       string `json:"city"`
+	State      string `json:"state,omitempty"`
+	PostalCode string `json:"postal_code"`
+	Country    string `json:"country"`
+	Phone      string `json:"phone,omitempty"`
 }
 
 // PaymentResponse 支付响应
 type PaymentResponse struct {
 	ID               string            `json:"id"`
 	Status           string            `json:"status"`
-	Amount           float64           `json:"amount"`
+	Amount           string            `json:"amount"`
+	AmountMinor      int64             `json:"amount_minor,omitempty"`
 	Currency         string            `json:"currency"`
 	ClientSecret     string            `json:"client_secret,omitempty"`
 	PublishableKey   string            `json:"publishable_key,omitempty"`
@@ -57,20 +75,56 @@ type PaymentResponse struct {
 
 // RefundResponse 退款响应
 type RefundResponse struct {
-	ID        string    `json:"id"`
-	PaymentID string    `json:"payment_id"`
-	Amount    float64   `json:"amount"`
-	Status    string    `json:"status"`
-	CreatedAt time.Time `json:"created_at"`
+	ID          string    `json:"id"`
+	PaymentID   string    `json:"payment_id"`
+	Amount      string    `json:"amount"`
+	AmountMinor int64     `json:"amount_minor,omitempty"`
+	Status      string    `json:"status"`
+	CreatedAt   time.Time `json:"created_at"`
+	// Settlement fields are populated when the provider returns a balance
+	// transaction. Amount is a positive minor-unit deduction from the
+	// merchant settlement balance, not the customer-facing refund amount.
+	SettlementAmountMinor          int64  `json:"settlement_amount_minor,omitempty"`
+	SettlementCurrency             string `json:"settlement_currency,omitempty"`
+	SettlementBalanceTransactionID string `json:"settlement_balance_transaction_id,omitempty"`
 }
 
 type RefundOptions struct {
-	IdempotencyKey        string  `json:"-"`
-	Reason                string  `json:"reason,omitempty"`
-	Currency              string  `json:"currency,omitempty"`
-	OriginalAmount        float64 `json:"original_amount,omitempty"`
-	MerchantOrderNumber   string  `json:"merchant_order_number,omitempty"`
-	ProviderTransactionID string  `json:"provider_transaction_id,omitempty"`
+	IdempotencyKey        string `json:"-"`
+	AmountMinor           int64  `json:"amount_minor,omitempty"`
+	OriginalAmountMinor   int64  `json:"original_amount_minor,omitempty"`
+	Reason                string `json:"reason,omitempty"`
+	Currency              string `json:"currency,omitempty"`
+	MerchantOrderNumber   string `json:"merchant_order_number,omitempty"`
+	ProviderTransactionID string `json:"provider_transaction_id,omitempty"`
+}
+
+// PaymentRequestMoney resolves the exact request amount at the provider
+// boundary. Payment requests are minor-unit-only; conversion from major units
+// belongs at the transport boundary before constructing PaymentRequest.
+func PaymentRequestMoney(req *PaymentRequest) (domainmoney.Money, error) {
+	if req == nil {
+		return domainmoney.Money{}, fmt.Errorf("payment request cannot be nil")
+	}
+	if req.AmountMinor <= 0 {
+		return domainmoney.Money{}, fmt.Errorf("payment amount minor must be greater than zero")
+	}
+	return domainmoney.New(req.AmountMinor, req.Currency)
+}
+
+// RefundOptionMoney resolves an exact refund amount when a provider adapter
+// receives a minor-unit amount from the refund execution worker.
+func RefundOptionMoney(amountMinor int64, options RefundOptions) (domainmoney.Money, error) {
+	if options.AmountMinor < 0 {
+		return domainmoney.Money{}, fmt.Errorf("refund minor amount cannot be negative")
+	}
+	if amountMinor < 0 {
+		return domainmoney.Money{}, fmt.Errorf("refund minor amount cannot be negative")
+	}
+	if options.AmountMinor > 0 {
+		amountMinor = options.AmountMinor
+	}
+	return domainmoney.New(amountMinor, options.Currency)
 }
 
 // Customer 客户信息

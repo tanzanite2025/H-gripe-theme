@@ -16,3 +16,18 @@ func (s *PaymentService) MarkStripeWebhookEventProcessed(eventID string) error {
 func (s *PaymentService) MarkStripeWebhookEventFailed(eventID string, processingErr error) error {
 	return s.paymentRepo.MarkStripeWebhookEventFailed(eventID, processingErr)
 }
+
+func (s *PaymentService) ClaimPayPalWebhookEvent(eventID, eventType, payload string) (bool, error) {
+	if s.paymentRepo == nil {
+		return false, errors.New("payment repository is unavailable")
+	}
+	return s.paymentRepo.ClaimPayPalWebhookEvent(eventID, eventType, payload)
+}
+
+func (s *PaymentService) MarkPayPalWebhookEventProcessed(eventID string) error {
+	return s.paymentRepo.MarkPayPalWebhookEventProcessed(eventID)
+}
+
+func (s *PaymentService) MarkPayPalWebhookEventFailed(eventID string, processingErr error) error {
+	return s.paymentRepo.MarkPayPalWebhookEventFailed(eventID, processingErr)
+}

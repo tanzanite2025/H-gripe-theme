@@ -21,6 +21,7 @@ type CustomerServiceConversationFilters struct {
 	AssignedTo      *uint
 	GroupID         *uint
 	RecipientUserID uint
+	View            string
 	Status          string
 	UnreadOnly      bool
 	Identity        string
@@ -105,17 +106,20 @@ func (r *TicketRepository) FindCustomerServiceConversations(page, pageSize int, 
 
 	query := baseQuery()
 	if filters.RecipientUserID > 0 {
-		query = query.Select(customerServiceConversationUnreadCountSelect())
+		query = query.Select(customerServiceConversationInboxProjection())
 	} else {
 		// A raw JOIN used by search filters makes GORM enumerate model fields.
 		// Keep the transient unread projection out of legacy, no-recipient reads.
 		query = query.Select("tickets.*")
 	}
+	if filters.RecipientUserID > 0 {
+		query = query.Order("CASE WHEN " + customerServiceUnreadMessageExistsCondition() + " THEN 0 ELSE 1 END")
+	}
 
 	offset := (page - 1) * pageSize
 	err := query.Preload("User").Preload("Messages", func(db *gorm.DB) *gorm.DB {
 		return db.Order("created_at ASC")
-	}).Order("tickets.updated_at DESC").Offset(offset).Limit(pageSize).Find(&tickets).Error
+	}).Order("tickets.updated_at DESC").Order("tickets.id DESC").Offset(offset).Limit(pageSize).Find(&tickets).Error
 
 	return tickets, total, err
 }
@@ -176,6 +180,20 @@ func applyCustomerServiceConversationFilters(query *gorm.DB, filters CustomerSer
 			filters.RecipientUserID,
 		)
 	}
+	if filters.RecipientUserID > 0 {
+		switch strings.ToLower(strings.TrimSpace(filters.View)) {
+		case "", "inbox":
+			query = query.Where("customer_service_inbox_state.archived_at IS NULL").Where("(tickets.status IN ? OR tickets.status = ?)", []string{"open", "pending", "in_progress", "active"}, "")
+		case "archived":
+			query = query.Where("customer_service_inbox_state.archived_at IS NOT NULL")
+		case "closed":
+			query = query.Where("tickets.status IN ?", []string{"resolved", "closed"})
+		case "all":
+			// Explicit all is an operator view; no inbox-state restriction.
+		}
+	} else if strings.EqualFold(strings.TrimSpace(filters.View), "closed") {
+		query = query.Where("tickets.status IN ?", []string{"resolved", "closed"})
+	}
 	if filters.AssignedTo != nil {
 		query = query.Where("tickets.assigned_to = ?", *filters.AssignedTo)
 	}
@@ -193,9 +211,9 @@ func applyCustomerServiceConversationFilters(query *gorm.DB, filters CustomerSer
 	}
 
 	switch strings.ToLower(strings.TrimSpace(filters.Status)) {
-	case "pending", "open":
+	case "open":
 		query = query.Where("(tickets.status = ? OR tickets.status = '')", "open")
-	case "active", "in_progress":
+	case "in_progress":
 		query = query.Where("tickets.status = ?", "in_progress")
 	case "closed":
 		query = query.Where("tickets.status IN ?", []string{"resolved", "closed"})
@@ -264,8 +282,8 @@ func applyCustomerServiceConversationFilters(query *gorm.DB, filters CustomerSer
 	return query
 }
 
-func customerServiceConversationUnreadCountSelect() string {
-	return `tickets.*, COALESCE((
+func customerServiceConversationInboxProjection() string {
+	return `tickets.*, customer_service_inbox_state.archived_at AS customer_service_inbox_archived_at, COALESCE((
 		SELECT COUNT(*)
 		FROM ticket_messages AS customer_service_unread_messages
 		WHERE customer_service_unread_messages.ticket_id = tickets.id
@@ -333,13 +351,22 @@ func (r *TicketRepository) UpdateTicket(t *ticket.Ticket) error {
 
 // UpdateTicketStatus 更新工单状态
 func (r *TicketRepository) UpdateTicketStatus(id uint, status string) error {
+	changedAt := time.Now().UTC()
 	updates := map[string]interface{}{
 		"status":         status,
 		"status_version": gorm.Expr("COALESCE(status_version, 1) + ?", 1),
 	}
 
-	if status == "resolved" || status == "closed" {
-		updates["resolved_at"] = gorm.Expr("NOW()")
+	switch status {
+	case "resolved":
+		updates["resolved_at"] = changedAt
+		updates["closed_at"] = nil
+	case "closed":
+		updates["resolved_at"] = gorm.Expr("COALESCE(resolved_at, ?)", changedAt)
+		updates["closed_at"] = changedAt
+	default:
+		updates["resolved_at"] = nil
+		updates["closed_at"] = nil
 	}
 
 	return r.db.Model(&ticket.Ticket{}).
@@ -365,12 +392,21 @@ func (r *TicketRepository) UpdateTicketStatusForUpdate(current *ticket.Ticket, s
 		currentVersion = 1
 	}
 	nextVersion := currentVersion + 1
+	changedAt := time.Now().UTC()
 	updates := map[string]interface{}{
 		"status":         status,
 		"status_version": nextVersion,
 	}
-	if status == "resolved" || status == "closed" {
-		updates["resolved_at"] = gorm.Expr("NOW()")
+	switch status {
+	case "resolved":
+		updates["resolved_at"] = changedAt
+		updates["closed_at"] = nil
+	case "closed":
+		updates["resolved_at"] = gorm.Expr("COALESCE(resolved_at, ?)", changedAt)
+		updates["closed_at"] = changedAt
+	default:
+		updates["resolved_at"] = nil
+		updates["closed_at"] = nil
 	}
 
 	result := r.db.Model(&ticket.Ticket{}).
@@ -500,11 +536,38 @@ func (r *TicketRepository) MarkMessagesAsRead(ticketID uint, isStaff bool) error
 // materialized unread count. The read cursor remains authoritative, so list
 // queries reconcile the count from ticket_messages when necessary.
 func (r *TicketRepository) RecordCustomerServiceInboxCustomerMessage(ticketID, recipientUserID, messageID uint) error {
-	if ticketID == 0 || recipientUserID == 0 || messageID == 0 {
-		return gorm.ErrInvalidData
+	_, _, err := r.RecordCustomerServiceInboxCustomerMessageWithState(ticketID, recipientUserID, messageID)
+	return err
+}
+
+// RecordCustomerServiceInboxCustomerMessageWithState is the state-aware form
+// used by lifecycle integrations that need to emit an archive-cleared event.
+func (r *TicketRepository) RecordCustomerServiceInboxCustomerMessageWithState(ticketID, recipientUserID, messageID uint) (ticket.CustomerServiceInboxState, bool, error) {
+	if ticketID == 0 || messageID == 0 {
+		return ticket.CustomerServiceInboxState{}, false, gorm.ErrInvalidData
+	}
+
+	// Serialize with archive/restore and transfer, which lock the same ticket
+	// row before mutating recipient inbox state. The locked assignment is the
+	// canonical recipient if a transfer raced with the customer message.
+	var conversation ticket.Ticket
+	if err := r.db.Select("id", "assigned_to").Clauses(clause.Locking{Strength: "UPDATE"}).First(&conversation, ticketID).Error; err != nil {
+		return ticket.CustomerServiceInboxState{}, false, err
+	}
+	if conversation.AssignedTo > 0 {
+		recipientUserID = conversation.AssignedTo
+	}
+	if recipientUserID == 0 {
+		return ticket.CustomerServiceInboxState{}, false, nil
 	}
 
 	now := time.Now().UTC()
+	var existing ticket.CustomerServiceInboxState
+	existingErr := r.db.Unscoped().Where("ticket_id = ? AND recipient_user_id = ?", ticketID, recipientUserID).First(&existing).Error
+	if existingErr != nil && !errors.Is(existingErr, gorm.ErrRecordNotFound) {
+		return ticket.CustomerServiceInboxState{}, false, existingErr
+	}
+	archiveCleared := existingErr == nil && existing.ArchivedAt != nil
 	state := ticket.CustomerServiceInboxState{
 		TicketID:          ticketID,
 		RecipientUserID:   recipientUserID,
@@ -513,7 +576,7 @@ func (r *TicketRepository) RecordCustomerServiceInboxCustomerMessage(ticketID, r
 		CreatedAt:         now,
 		UpdatedAt:         now,
 	}
-	return r.db.Clauses(clause.OnConflict{
+	if err := r.db.Clauses(clause.OnConflict{
 		Columns: []clause.Column{
 			{Name: "recipient_user_id"},
 			{Name: "ticket_id"},
@@ -523,10 +586,18 @@ func (r *TicketRepository) RecordCustomerServiceInboxCustomerMessage(ticketID, r
 				"CASE WHEN customer_service_inbox_states.last_read_message_id < ? THEN customer_service_inbox_states.unread_count + 1 ELSE customer_service_inbox_states.unread_count END",
 				messageID,
 			),
-			"deleted_at": nil,
-			"updated_at": now,
+			"deleted_at":  nil,
+			"archived_at": nil,
+			"updated_at":  now,
 		}),
-	}).Create(&state).Error
+	}).Create(&state).Error; err != nil {
+		return ticket.CustomerServiceInboxState{}, false, err
+	}
+	state = ticket.CustomerServiceInboxState{}
+	if err := r.db.Where("ticket_id = ? AND recipient_user_id = ?", ticketID, recipientUserID).First(&state).Error; err != nil {
+		return ticket.CustomerServiceInboxState{}, false, err
+	}
+	return state, archiveCleared, nil
 }
 
 // MarkCustomerServiceInboxRead advances only the requesting staff member's
@@ -603,6 +674,74 @@ func (r *TicketRepository) AdvanceCustomerServiceInboxRead(ticketID, recipientUs
 	return state, true, nil
 }
 
+// SetCustomerServiceInboxArchived changes only one recipient's inbox
+// visibility. It leaves lifecycle, assignment, read cursor, and messages
+// untouched. A missing state row is created with a reconciled unread count.
+func (r *TicketRepository) SetCustomerServiceInboxArchived(ticketID, recipientUserID uint, archived bool, changedAt time.Time) (ticket.CustomerServiceInboxState, bool, error) {
+	if ticketID == 0 || recipientUserID == 0 {
+		return ticket.CustomerServiceInboxState{}, false, gorm.ErrInvalidData
+	}
+	if changedAt.IsZero() {
+		changedAt = time.Now().UTC()
+	} else {
+		changedAt = changedAt.UTC()
+	}
+
+	var state ticket.CustomerServiceInboxState
+	err := r.db.Unscoped().Where("ticket_id = ? AND recipient_user_id = ?", ticketID, recipientUserID).First(&state).Error
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		return ticket.CustomerServiceInboxState{}, false, err
+	}
+	if err == nil {
+		currentlyArchived := state.ArchivedAt != nil
+		if !state.DeletedAt.Valid && currentlyArchived == archived {
+			return state, false, nil
+		}
+		updates := map[string]interface{}{"deleted_at": nil, "updated_at": changedAt}
+		if archived {
+			updates["archived_at"] = changedAt
+		} else {
+			updates["archived_at"] = nil
+		}
+		if updateErr := r.db.Unscoped().Model(&ticket.CustomerServiceInboxState{}).
+			Where("id = ?", state.ID).
+			Updates(updates).Error; updateErr != nil {
+			return ticket.CustomerServiceInboxState{}, false, updateErr
+		}
+		stateID := state.ID
+		state = ticket.CustomerServiceInboxState{}
+		if reloadErr := r.db.Where("id = ?", stateID).First(&state).Error; reloadErr != nil {
+			return ticket.CustomerServiceInboxState{}, false, reloadErr
+		}
+		return state, true, nil
+	}
+	if !archived {
+		return ticket.CustomerServiceInboxState{}, false, nil
+	}
+
+	var unreadCount int64
+	if countErr := r.db.Model(&ticket.TicketMessage{}).
+		Where("ticket_id = ? AND is_staff = ?", ticketID, false).
+		Count(&unreadCount).Error; countErr != nil {
+		return ticket.CustomerServiceInboxState{}, false, countErr
+	}
+	state = ticket.CustomerServiceInboxState{
+		TicketID:          ticketID,
+		RecipientUserID:   recipientUserID,
+		UnreadCount:       int(unreadCount),
+		AssignmentVersion: 1,
+		CreatedAt:         changedAt,
+		UpdatedAt:         changedAt,
+	}
+	if archived {
+		state.ArchivedAt = &changedAt
+	}
+	if createErr := r.db.Create(&state).Error; createErr != nil {
+		return ticket.CustomerServiceInboxState{}, false, createErr
+	}
+	return state, true, nil
+}
+
 // ResetCustomerServiceInboxAssignment gives a newly assigned support agent a
 // fresh cursor over the conversation. Assignment history remains in the row
 // through AssignmentVersion while old recipients keep their own read state.
@@ -650,6 +789,7 @@ func (r *TicketRepository) ResetCustomerServiceInboxAssignmentState(ticketID, re
 			"unread_count":         int(unreadCount),
 			"assignment_version":   gorm.Expr("customer_service_inbox_states.assignment_version + 1"),
 			"last_read_at":         nil,
+			"archived_at":          nil,
 			"deleted_at":           nil,
 			"updated_at":           assignedAt,
 		}),

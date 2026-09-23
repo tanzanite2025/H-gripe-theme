@@ -37,21 +37,21 @@ func TestGetProductAllowsNumericSlugWithoutIDLookup(t *testing.T) {
 	}
 
 	item := productdomain.Product{
-		SKU:    "NUMERIC-SLUG",
-		Name:   "Numeric Slug Product",
-		Slug:   "321313121",
-		Status: "active",
-		Locale: "en",
-		Price:  99,
-		Stock:  5,
+		SKU:        "NUMERIC-SLUG",
+		Name:       "Numeric Slug Product",
+		Slug:       "321313121",
+		Status:     "active",
+		Locale:     "en",
+		PriceMinor: 9900,
+		Stock:      5,
 		Variants: []productdomain.ProductVariant{
 			{
-				SKU:       "NUMERIC-SLUG-VAR",
-				Title:     "Default",
-				Price:     99,
-				Stock:     5,
-				IsActive:  true,
-				IsDefault: true,
+				SKU:        "NUMERIC-SLUG-VAR",
+				Title:      "Default",
+				PriceMinor: 9900,
+				Stock:      5,
+				IsActive:   true,
+				IsDefault:  true,
 			},
 		},
 	}
@@ -192,19 +192,19 @@ func TestListProductsFiltersFeaturedResultsByProductCategory(t *testing.T) {
 			Status:            "active",
 			Locale:            "en",
 			Featured:          featured,
-			Price:             100,
+			PriceMinor:        10000,
 		}
 		if err := db.Create(&item).Error; err != nil {
 			t.Fatalf("seed product %s: %v", slug, err)
 		}
 		if err := db.Create(&productdomain.ProductVariant{
-			ProductID: item.ID,
-			SKU:       strings.ToUpper(slug) + "-VAR",
-			Title:     "Default",
-			Price:     100,
-			Stock:     1,
-			IsDefault: true,
-			IsActive:  true,
+			ProductID:  item.ID,
+			SKU:        strings.ToUpper(slug) + "-VAR",
+			Title:      "Default",
+			PriceMinor: 10000,
+			Stock:      1,
+			IsDefault:  true,
+			IsActive:   true,
 		}).Error; err != nil {
 			t.Fatalf("seed product variant %s: %v", slug, err)
 		}
@@ -251,6 +251,7 @@ func TestListProductsSecondPageDoesNotSkipLookaheadItem(t *testing.T) {
 		&productdomain.Product{},
 		&productdomain.ProductMedia{},
 		&productdomain.ProductVariant{},
+		&productdomain.ProductDisplayPriceSnapshot{},
 	); err != nil {
 		t.Fatalf("migrate test db: %v", err)
 	}
@@ -305,6 +306,7 @@ func TestListPublicChatProductsCompactSecondPageDoesNotSkipLookaheadItem(t *test
 		&productdomain.Product{},
 		&productdomain.ProductMedia{},
 		&productdomain.ProductVariant{},
+		&productdomain.ProductDisplayPriceSnapshot{},
 	); err != nil {
 		t.Fatalf("migrate test db: %v", err)
 	}
@@ -358,13 +360,14 @@ func TestListPublicChatProductsIncludesDisplayCurrencyContextAndTotal(t *testing
 		&productdomain.Product{},
 		&productdomain.ProductMedia{},
 		&productdomain.ProductVariant{},
+		&productdomain.ProductDisplayPriceSnapshot{},
 	); err != nil {
 		t.Fatalf("migrate test db: %v", err)
 	}
 
 	displayPrices := currency.DisplayPriceSnapshotsJSON([]currency.DisplayPriceSnapshot{
 		{
-			Amount:        91.5,
+			AmountDecimal: "91.50",
 			Currency:      "EUR",
 			QuoteCurrency: "EUR",
 			Rate:          0.915,
@@ -379,14 +382,14 @@ func TestListPublicChatProductsIncludesDisplayCurrencyContextAndTotal(t *testing
 		Status:           "active",
 		Locale:           "en",
 		Currency:         "USD",
-		Price:            100,
+		PriceMinor:       10000,
 		DisplayPriceData: displayPrices,
 		Variants: []productdomain.ProductVariant{
 			{
 				SKU:              "CHAT-EUR-VAR",
 				Title:            "Default",
 				Currency:         "USD",
-				Price:            100,
+				PriceMinor:       10000,
 				DisplayPriceData: displayPrices,
 				Stock:            1,
 				IsDefault:        true,
@@ -396,6 +399,21 @@ func TestListPublicChatProductsIncludesDisplayCurrencyContextAndTotal(t *testing
 	}
 	if err := db.Create(&item).Error; err != nil {
 		t.Fatalf("seed chat product: %v", err)
+	}
+	variantID := item.Variants[0].ID
+	if err := db.Create(&productdomain.ProductDisplayPriceSnapshot{
+		ScopeKey:  "product:" + strconv.FormatUint(uint64(item.ID), 10),
+		ProductID: item.ID, SourceCurrency: "USD", SourcePriceMinor: 10000,
+		DisplayPriceData: displayPrices,
+	}).Error; err != nil {
+		t.Fatalf("seed product display snapshot: %v", err)
+	}
+	if err := db.Create(&productdomain.ProductDisplayPriceSnapshot{
+		ScopeKey:  "variant:" + strconv.FormatUint(uint64(variantID), 10),
+		ProductID: item.ID, VariantID: &variantID, SourceCurrency: "USD", SourcePriceMinor: 10000,
+		DisplayPriceData: displayPrices,
+	}).Error; err != nil {
+		t.Fatalf("seed variant display snapshot: %v", err)
 	}
 
 	router := gin.New()
@@ -418,13 +436,13 @@ func TestListPublicChatProductsIncludesDisplayCurrencyContextAndTotal(t *testing
 	var body struct {
 		Data []struct {
 			DisplayPrice *struct {
-				Amount   float64 `json:"amount"`
-				Currency string  `json:"currency"`
+				AmountDecimal string `json:"amount_decimal"`
+				Currency      string `json:"currency"`
 			} `json:"display_price"`
 			Variants []struct {
 				DisplayPrice *struct {
-					Amount   float64 `json:"amount"`
-					Currency string  `json:"currency"`
+					AmountDecimal string `json:"amount_decimal"`
+					Currency      string `json:"currency"`
 				} `json:"display_price"`
 			} `json:"variants"`
 		} `json:"data"`
@@ -450,7 +468,7 @@ func TestListPublicChatProductsIncludesDisplayCurrencyContextAndTotal(t *testing
 	if len(body.Data) != 1 || body.Data[0].DisplayPrice == nil {
 		t.Fatalf("expected product display_price in EUR, got %#v", body.Data)
 	}
-	if body.Data[0].DisplayPrice.Currency != "EUR" || body.Data[0].DisplayPrice.Amount != 91.5 {
+	if body.Data[0].DisplayPrice.Currency != "EUR" || body.Data[0].DisplayPrice.AmountDecimal != "91.50" {
 		t.Fatalf("unexpected product display_price: %#v", body.Data[0].DisplayPrice)
 	}
 	if len(body.Data[0].Variants) != 1 || body.Data[0].Variants[0].DisplayPrice == nil {
@@ -565,22 +583,22 @@ func seedPublicProductForHandlerTest(t *testing.T, db *gorm.DB, slug string, sta
 	t.Helper()
 
 	item := productdomain.Product{
-		SKU:       strings.ToUpper(slug),
-		Name:      slug,
-		Slug:      slug,
-		Status:    "active",
-		Locale:    "en",
-		Price:     100,
-		CreatedAt: stamp,
-		UpdatedAt: stamp,
+		SKU:        strings.ToUpper(slug),
+		Name:       slug,
+		Slug:       slug,
+		Status:     "active",
+		Locale:     "en",
+		PriceMinor: 10000,
+		CreatedAt:  stamp,
+		UpdatedAt:  stamp,
 		Variants: []productdomain.ProductVariant{
 			{
-				SKU:       strings.ToUpper(slug) + "-VAR",
-				Title:     "Default",
-				Price:     100,
-				Stock:     1,
-				IsDefault: true,
-				IsActive:  true,
+				SKU:        strings.ToUpper(slug) + "-VAR",
+				Title:      "Default",
+				PriceMinor: 10000,
+				Stock:      1,
+				IsDefault:  true,
+				IsActive:   true,
 			},
 		},
 	}

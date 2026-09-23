@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strings"
 	"testing"
 	"time"
 
@@ -12,6 +11,7 @@ import (
 	"commerce-platform/internal/domain/loyalty"
 	orderdomain "commerce-platform/internal/domain/order"
 	outboxdomain "commerce-platform/internal/domain/outbox"
+	paymentdomain "commerce-platform/internal/domain/payment"
 	shippingdomain "commerce-platform/internal/domain/shipping"
 	"commerce-platform/internal/domain/user"
 	"commerce-platform/internal/repository"
@@ -61,39 +61,52 @@ func TestReferralBindingCreatesPermanentPendingAttribution(t *testing.T) {
 	assert.Equal(t, int64(1), transitionCount)
 }
 
-func TestReferralBindingProvisionsLockedRefereeCoupon(t *testing.T) {
+func TestReferralDashboardUsesStorefrontURLForShareURL(t *testing.T) {
 	referralService, db := newReferralServiceFixture(t, true)
-	referrer := createReferralTestUser(t, db, "bind-coupon-referrer@example.test", "bind-coupon-referrer")
-	referee := createReferralTestUser(t, db, "bind-coupon-referee@example.test", "bind-coupon-referee")
+	referralService = NewReferralService(referralService.txManager, referralService.repo, referralService.programRepo,
+		referralService.userRepo, "http://api.test", "test-referral-service-secret", "https://shop.test")
+	referrer := createReferralTestUser(t, db, "share-url-referrer@example.test", "share-url-referrer")
+
+	dashboard, err := referralService.Dashboard(referrer.ID)
+	require.NoError(t, err)
+	require.NotEmpty(t, dashboard.ReferralCode)
+	assert.Equal(t, "https://shop.test/r/"+dashboard.ReferralCode, dashboard.ShareURL)
+}
+
+func TestReferralBindingReleasesRefereePointsAtRegistration(t *testing.T) {
+	referralService, db := newReferralServiceFixture(t, true)
+	referrer := createReferralTestUser(t, db, "bind-points-referrer@example.test", "bind-points-referrer")
+	referee := createReferralTestUser(t, db, "bind-points-referee@example.test", "bind-points-referee")
 	config := &loyalty.ReferralProgramConfig{}
 	require.NoError(t, db.First(config).Error)
-	config.RefereeBenefitType = loyalty.ReferralBenefitFixedCoupon
-	config.RefereeBenefitValue = 3000
+	config.RefereeBenefitType = loyalty.ReferralBenefitPoints
+	config.RefereeBenefitValue = 75
 	require.NoError(t, db.Save(config).Error)
 	dashboard, err := referralService.Dashboard(referrer.ID)
 	require.NoError(t, err)
 	token, _, err := referralService.CreateAttributionToken(dashboard.ReferralCode, "link")
 	require.NoError(t, err)
-	record, err := referralService.BindFromToken(referee.ID, token, "203.0.113.13")
+	record, err := referralService.BindFromToken(referee.ID, token, "203.0.113.14")
 	require.NoError(t, err)
 
 	var reward loyalty.ReferralReward
 	require.NoError(t, db.Where("referral_record_id = ? AND recipient_role = ?", record.ID, loyalty.ReferralRecipientReferee).First(&reward).Error)
-	assert.Equal(t, loyalty.ReferralRewardStatusLocked, reward.Status)
-	assert.Equal(t, loyalty.ReferralRewardTypeCoupon, reward.RewardType)
-	require.NotNil(t, reward.CouponID)
-	var issued coupondomain.Coupon
-	require.NoError(t, db.First(&issued, *reward.CouponID).Error)
-	assert.Equal(t, "fixed", issued.Type)
-	assert.InDelta(t, 30, issued.Value, 0.001)
-	checkout := &CheckoutService{}
-	autoCode, err := checkout.lockedRefereeCouponCode(checkoutRepositories{
-		couponRepo:          repository.NewCouponRepository(db),
-		referralRepo:        repository.NewReferralRepository(db),
-		referralProgramRepo: repository.NewReferralProgramRepository(db),
-	}, referee.ID)
+	assert.Equal(t, loyalty.ReferralRewardStatusReleased, reward.Status)
+	assert.Equal(t, loyalty.ReferralRewardTypePoints, reward.RewardType)
+	assert.Equal(t, 75, reward.PointsAmount)
+	var balance loyalty.UserLoyalty
+	require.NoError(t, db.Where("user_id = ?", referee.ID).First(&balance).Error)
+	assert.Equal(t, 75, balance.AvailablePoints)
+	var transactionCount int64
+	require.NoError(t, db.Model(&loyalty.LoyaltyTransaction{}).Where("source = ? AND source_id = ?", "referral_referee", record.ID).Count(&transactionCount).Error)
+	assert.Equal(t, int64(1), transactionCount)
+	loyaltyRepo := repository.NewLoyaltyRepository(db)
+	_, err = loyaltyRepo.AdjustUserPoints(referee.ID, 25, "earn", "order", 7001, "Order completion points")
 	require.NoError(t, err)
-	assert.Equal(t, issued.Code, autoCode)
+	_, err = loyaltyRepo.AdjustUserPoints(referee.ID, -80, "spend", "order", 7002, "Spent aggregate points")
+	require.NoError(t, err)
+	require.NoError(t, db.Where("user_id = ?", referee.ID).First(&balance).Error)
+	assert.Equal(t, 20, balance.AvailablePoints)
 }
 
 func TestPublishAdminReferralProgramConfigCreatesNewVersion(t *testing.T) {
@@ -102,10 +115,9 @@ func TestPublishAdminReferralProgramConfigCreatesNewVersion(t *testing.T) {
 
 	config, err := referralService.PublishAdminProgramConfig(ReferralProgramConfigInput{
 		Enabled:                 true,
-		Currency:                "usd",
 		MinOrderAmountMinor:     25000,
 		ReferrerRewardPoints:    1250,
-		RefereeBenefitType:      loyalty.ReferralBenefitPercentCoupon,
+		RefereeBenefitType:      loyalty.ReferralBenefitPoints,
 		RefereeBenefitValue:     500,
 		VestingPeriodDays:       30,
 		UndeliveredFallbackDays: 45,
@@ -128,9 +140,8 @@ func TestPublishAdminReferralProgramConfigCreatesNewVersion(t *testing.T) {
 func TestPublishAdminReferralProgramConfigRejectsInvalidWindows(t *testing.T) {
 	referralService, _ := newReferralServiceFixture(t, false)
 	_, err := referralService.PublishAdminProgramConfig(ReferralProgramConfigInput{
-		Currency:                "USD",
 		ReferrerRewardPoints:    1000,
-		RefereeBenefitType:      loyalty.ReferralBenefitNone,
+		RefereeBenefitType:      loyalty.ReferralBenefitPoints,
 		VestingPeriodDays:       45,
 		UndeliveredFallbackDays: 30,
 		AttributionTTLDays:      30,
@@ -154,14 +165,14 @@ func TestReferralBindingRejectsSelfAndFormerPurchaser(t *testing.T) {
 
 	paidAt := time.Now().UTC().Add(-24 * time.Hour)
 	require.NoError(t, db.Create(&orderdomain.Order{
-		OrderNumber:    "REF-PAID-1",
-		UserID:         formerCustomer.ID,
-		Status:         "refunded",
-		PaymentStatus:  "refunded",
-		SubtotalAmount: 250,
-		TotalAmount:    250,
-		Currency:       "USD",
-		PaidAt:         &paidAt,
+		OrderNumber:         "REF-PAID-1",
+		UserID:              formerCustomer.ID,
+		Status:              "refunded",
+		PaymentStatus:       "refunded",
+		SubtotalAmountMinor: 25000,
+		TotalAmountMinor:    25000,
+		Currency:            "USD",
+		PaidAt:              &paidAt,
 	}).Error)
 	_, err = service.BindFromToken(formerCustomer.ID, token, "203.0.113.12")
 	assert.ErrorIs(t, err, ErrRefereeNotEligible)
@@ -201,14 +212,14 @@ func TestReferralLifecycleOutboxRunsInShadowMode(t *testing.T) {
 
 	paidAt := time.Date(2026, 9, 14, 8, 0, 0, 0, time.UTC)
 	orderRecord := &orderdomain.Order{
-		OrderNumber:    "REF-LIFECYCLE-1",
-		UserID:         referee.ID,
-		Status:         "processing",
-		PaymentStatus:  "paid",
-		SubtotalAmount: 250,
-		TotalAmount:    250,
-		Currency:       "USD",
-		PaidAt:         &paidAt,
+		OrderNumber:         "REF-LIFECYCLE-1",
+		UserID:              referee.ID,
+		Status:              "processing",
+		PaymentStatus:       "paid",
+		SubtotalAmountMinor: 25000,
+		TotalAmountMinor:    25000,
+		Currency:            "USD",
+		PaidAt:              &paidAt,
 	}
 	require.NoError(t, db.Create(orderRecord).Error)
 
@@ -265,22 +276,28 @@ func TestReferralLifecycleOutboxRunsInShadowMode(t *testing.T) {
 	assert.Equal(t, int64(4), transitionCount)
 	var rewardCount int64
 	require.NoError(t, db.Model(&loyalty.ReferralReward{}).Count(&rewardCount).Error)
-	assert.Zero(t, rewardCount)
+	// Registration points are credited at binding and remain ordinary account
+	// points even when the order-side referral record is later revoked.
+	assert.Equal(t, int64(1), rewardCount)
 }
 
 func TestDeliveredTrackingUpdatePersistsTimestampAndReferralEventOnce(t *testing.T) {
 	referralService, db := newReferralServiceFixture(t, true)
 	account := createReferralTestUser(t, db, "delivery@example.test", "delivery")
+	now := time.Now().UTC()
+	createdAt := now.Add(-72 * time.Hour)
+	shippedAt := now.Add(-48 * time.Hour)
+	deliveredAt := now.Add(-24 * time.Hour)
 	orderRecord := &orderdomain.Order{
 		OrderNumber: "REF-DELIVERY-1", UserID: account.ID, Status: "processing", PaymentStatus: "paid",
-		SubtotalAmount: 250, TotalAmount: 250, Currency: "USD", ShippingStatus: "shipped",
+		SubtotalAmountMinor: 25000, TotalAmountMinor: 25000, Currency: "USD", ShippingStatus: "shipped",
+		CreatedAt: createdAt, ShippedAt: &shippedAt,
 	}
 	require.NoError(t, db.Create(orderRecord).Error)
 
 	shippingService := NewShippingService(nil)
 	shippingService.ConfigureOrderRepository(repository.NewOrderRepository(db))
 	shippingService.ConfigureTxManager(referralService.txManager)
-	deliveredAt := time.Date(2026, 9, 20, 9, 30, 0, 0, time.UTC)
 	events := []shippingdomain.TrackingEvent{{OrderID: orderRecord.ID, Status: "Delivered", EventTime: deliveredAt}}
 	require.NoError(t, shippingService.updateOrderShippingStatusIfDelivered(
 		orderRecord.ID, "TRACK-1", "carrier", "Delivered", 4, events, "tracking_webhook",
@@ -302,7 +319,56 @@ func TestDeliveredTrackingUpdatePersistsTimestampAndReferralEventOnce(t *testing
 	assert.Equal(t, int64(1), eventCount)
 }
 
-func TestReferralLifecycleScanExpiresPendingAndAdvancesDelivery(t *testing.T) {
+func TestDeliveredTrackingTimestampSanitizesFutureAndInvertedTimes(t *testing.T) {
+	referralService, db := newReferralServiceFixture(t, true)
+	account := createReferralTestUser(t, db, "delivery-boundary@example.test", "delivery-boundary")
+	now := time.Now().UTC()
+	createdAt := now.Add(-72 * time.Hour)
+	shippedAt := now.Add(-48 * time.Hour)
+	orderRecord := &orderdomain.Order{
+		OrderNumber: "REF-DELIVERY-BOUNDARY", UserID: account.ID, Status: "processing", PaymentStatus: "paid",
+		SubtotalAmountMinor: 25000, TotalAmountMinor: 25000, Currency: "USD", ShippingStatus: "shipped",
+		CreatedAt: createdAt, ShippedAt: &shippedAt,
+	}
+	require.NoError(t, db.Create(orderRecord).Error)
+
+	shippingService := NewShippingService(nil)
+	shippingService.ConfigureOrderRepository(repository.NewOrderRepository(db))
+	shippingService.ConfigureTxManager(referralService.txManager)
+
+	futureAt := time.Now().UTC().Add(4 * 24 * time.Hour)
+	require.NoError(t, shippingService.updateOrderShippingStatusIfDelivered(
+		orderRecord.ID, "TRACK-FUTURE", "carrier", "Delivered", 4,
+		[]shippingdomain.TrackingEvent{{OrderID: orderRecord.ID, Status: "Delivered", EventTime: futureAt}},
+		"tracking_webhook",
+	))
+
+	var savedOrder orderdomain.Order
+	require.NoError(t, db.First(&savedOrder, orderRecord.ID).Error)
+	require.NotNil(t, savedOrder.DeliveredAt)
+	assert.False(t, savedOrder.DeliveredAt.After(time.Now().UTC().Add(time.Hour)))
+
+	// A second order verifies the lower bound independently because delivery is
+	// persisted only once for each order.
+	secondOrder := &orderdomain.Order{
+		OrderNumber: "REF-DELIVERY-INVERTED", UserID: account.ID, Status: "processing", PaymentStatus: "paid",
+		SubtotalAmountMinor: 25000, TotalAmountMinor: 25000, Currency: "USD", ShippingStatus: "shipped",
+		CreatedAt: createdAt, ShippedAt: &shippedAt,
+	}
+	require.NoError(t, db.Create(secondOrder).Error)
+	require.NoError(t, shippingService.updateOrderShippingStatusIfDelivered(
+		secondOrder.ID, "TRACK-INVERTED", "carrier", "Delivered", 4,
+		[]shippingdomain.TrackingEvent{{OrderID: secondOrder.ID, Status: "Delivered", EventTime: createdAt.Add(-24 * time.Hour)}},
+		"tracking_webhook",
+	))
+
+	savedOrder = orderdomain.Order{}
+	require.NoError(t, db.First(&savedOrder, secondOrder.ID).Error)
+	require.NotNil(t, savedOrder.DeliveredAt)
+	assert.Equal(t, shippedAt.UTC(), savedOrder.DeliveredAt.UTC())
+}
+
+func TestReferralLifecycleScanKeepsBoundPendingPermanentAndAdvancesDelivery(t *testing.T) {
 	referralService, db := newReferralServiceFixture(t, true)
 	referrer := createReferralTestUser(t, db, "scan-referrer@example.test", "scan-referrer")
 	referee := createReferralTestUser(t, db, "scan-referee@example.test", "scan-referee")
@@ -316,7 +382,7 @@ func TestReferralLifecycleScanExpiresPendingAndAdvancesDelivery(t *testing.T) {
 	paidAt := time.Date(2026, 7, 1, 8, 0, 0, 0, time.UTC)
 	orderRecord := &orderdomain.Order{
 		OrderNumber: "REF-SCAN-DELIVERED", UserID: referee.ID, Status: "processing", PaymentStatus: "paid",
-		SubtotalAmount: 250, TotalAmount: 250, Currency: "USD", PaidAt: &paidAt,
+		SubtotalAmountMinor: 25000, TotalAmountMinor: 25000, Currency: "USD", PaidAt: &paidAt,
 		ShippingStatus: "delivered", DeliveredAt: referralPtrTime(paidAt.AddDate(0, 0, 2)),
 	}
 	require.NoError(t, db.Create(orderRecord).Error)
@@ -324,29 +390,31 @@ func TestReferralLifecycleScanExpiresPendingAndAdvancesDelivery(t *testing.T) {
 		"order_id": orderRecord.ID, "status": loyalty.ReferralStatusOrdered, "ordered_at": paidAt,
 	}).Error)
 
-	expiredReferee := createReferralTestUser(t, db, "scan-expired@example.test", "scan-expired")
-	expiredToken, _, err := referralService.CreateAttributionToken(dashboard.ReferralCode, "link")
+	permanentReferee := createReferralTestUser(t, db, "scan-permanent@example.test", "scan-permanent")
+	permanentToken, _, err := referralService.CreateAttributionToken(dashboard.ReferralCode, "link")
 	require.NoError(t, err)
-	expired, err := referralService.BindFromToken(expiredReferee.ID, expiredToken, "203.0.113.31")
+	permanent, err := referralService.BindFromToken(permanentReferee.ID, permanentToken, "203.0.113.31")
 	require.NoError(t, err)
-	require.NoError(t, db.Model(&loyalty.ReferralRecord{}).Where("id = ?", expired.ID).Update("expires_at", time.Date(2026, 8, 1, 0, 0, 0, 0, time.UTC)).Error)
+	// The persisted timestamp is retained as an audit snapshot of the signed
+	// cookie, but it must not expire a relationship after account binding.
+	require.NoError(t, db.Model(&loyalty.ReferralRecord{}).Where("id = ?", permanent.ID).Update("expires_at", time.Date(2026, 8, 1, 0, 0, 0, 0, time.UTC)).Error)
 
 	result, err := referralService.ScanLifecycle(context.Background(), time.Date(2026, 9, 15, 0, 0, 0, 0, time.UTC), 100)
 	require.NoError(t, err)
-	assert.Equal(t, 1, result.Expired)
+	assert.Equal(t, 0, result.Expired)
 	assert.Equal(t, 1, result.AdvancedToVesting)
 
-	var savedPending, savedExpired loyalty.ReferralRecord
+	var savedPending, savedPermanent loyalty.ReferralRecord
 	require.NoError(t, db.First(&savedPending, pending.ID).Error)
-	require.NoError(t, db.First(&savedExpired, expired.ID).Error)
+	require.NoError(t, db.First(&savedPermanent, permanent.ID).Error)
 	assert.Equal(t, loyalty.ReferralStatusSettled, savedPending.Status)
 	assert.Equal(t, orderRecord.DeliveredAt.UTC(), savedPending.DeliveredAt.UTC())
 	assert.Equal(t, orderRecord.DeliveredAt.UTC().AddDate(0, 0, 30), savedPending.VestingUntil.UTC())
-	assert.Equal(t, loyalty.ReferralStatusExpired, savedExpired.Status)
+	assert.Equal(t, loyalty.ReferralStatusPending, savedPermanent.Status)
 
 	var rewards int64
 	require.NoError(t, db.Model(&loyalty.ReferralReward{}).Count(&rewards).Error)
-	assert.Equal(t, int64(1), rewards)
+	assert.Equal(t, int64(3), rewards)
 }
 
 func TestReferralLifecycleScanUsesUndeliveredFallbackWithoutFabricatingDelivery(t *testing.T) {
@@ -363,7 +431,7 @@ func TestReferralLifecycleScanUsesUndeliveredFallbackWithoutFabricatingDelivery(
 	shippedAt := time.Date(2026, 7, 1, 8, 0, 0, 0, time.UTC)
 	orderRecord := &orderdomain.Order{
 		OrderNumber: "REF-SCAN-FALLBACK", UserID: referee.ID, Status: "processing", PaymentStatus: "paid",
-		SubtotalAmount: 250, TotalAmount: 250, Currency: "USD", PaidAt: referralPtrTime(shippedAt.Add(-24 * time.Hour)),
+		SubtotalAmountMinor: 25000, TotalAmountMinor: 25000, Currency: "USD", PaidAt: referralPtrTime(shippedAt.Add(-24 * time.Hour)),
 		ShippingStatus: "shipped", ShippedAt: &shippedAt,
 	}
 	require.NoError(t, db.Create(orderRecord).Error)
@@ -412,7 +480,7 @@ func TestReferralPaymentRiskSignalsMonitorModeDoesNotBlockOrder(t *testing.T) {
 	}
 	require.NoError(t, db.Create(&orderdomain.Order{
 		OrderNumber: "REF-RISK-REFERRER", UserID: referrer.ID, Status: "completed", PaymentStatus: "paid",
-		SubtotalAmount: 250, TotalAmount: 250, Currency: "USD", PaidAt: &priorPaidAt, ShippingAddress: sharedAddress,
+		SubtotalAmountMinor: 25000, TotalAmountMinor: 25000, Currency: "USD", PaidAt: &priorPaidAt, ShippingAddress: sharedAddress,
 	}).Error)
 
 	dashboard, err := referralService.Dashboard(referrer.ID)
@@ -427,7 +495,7 @@ func TestReferralPaymentRiskSignalsMonitorModeDoesNotBlockOrder(t *testing.T) {
 	paidAt := time.Date(2026, 9, 15, 8, 0, 0, 0, time.UTC)
 	orderRecord := &orderdomain.Order{
 		OrderNumber: "REF-RISK-REFEREE", UserID: referee.ID, Status: "processing", PaymentStatus: "paid",
-		SubtotalAmount: 250, TotalAmount: 250, Currency: "USD", PaidAt: &paidAt, ShippingAddress: sharedAddress,
+		SubtotalAmountMinor: 25000, TotalAmountMinor: 25000, Currency: "USD", PaidAt: &paidAt, ShippingAddress: sharedAddress,
 	}
 	require.NoError(t, db.Create(orderRecord).Error)
 
@@ -463,7 +531,7 @@ func TestReferralPaymentRiskSignalsStrictModeRevokesOrder(t *testing.T) {
 	priorPaidAt := time.Date(2026, 8, 1, 8, 0, 0, 0, time.UTC)
 	require.NoError(t, db.Create(&orderdomain.Order{
 		OrderNumber: "REF-STRICT-REFERRER", UserID: referrer.ID, Status: "completed", PaymentStatus: "paid",
-		SubtotalAmount: 250, TotalAmount: 250, Currency: "USD", PaidAt: &priorPaidAt, ShippingAddress: sharedAddress,
+		SubtotalAmountMinor: 25000, TotalAmountMinor: 25000, Currency: "USD", PaidAt: &priorPaidAt, ShippingAddress: sharedAddress,
 	}).Error)
 	dashboard, err := referralService.Dashboard(referrer.ID)
 	require.NoError(t, err)
@@ -475,7 +543,7 @@ func TestReferralPaymentRiskSignalsStrictModeRevokesOrder(t *testing.T) {
 	paidAt := time.Date(2026, 9, 15, 8, 0, 0, 0, time.UTC)
 	orderRecord := &orderdomain.Order{
 		OrderNumber: "REF-STRICT-REFEREE", UserID: referee.ID, Status: "processing", PaymentStatus: "paid",
-		SubtotalAmount: 250, TotalAmount: 250, Currency: "USD", PaidAt: &paidAt, ShippingAddress: sharedAddress,
+		SubtotalAmountMinor: 25000, TotalAmountMinor: 25000, Currency: "USD", PaidAt: &paidAt, ShippingAddress: sharedAddress,
 	}
 	require.NoError(t, db.Create(orderRecord).Error)
 	payload, err := json.Marshal(outboxdomain.ReferralOrderPaidPayload{OrderID: orderRecord.ID, UserID: referee.ID, AmountMinor: 25000, Currency: "USD", PaidAt: paidAt})
@@ -490,7 +558,7 @@ func TestReferralPaymentRiskSignalsStrictModeRevokesOrder(t *testing.T) {
 	assert.Contains(t, saved.RevokeReason, "strict anti-fraud")
 	var rewardCount int64
 	require.NoError(t, db.Model(&loyalty.ReferralReward{}).Where("referral_record_id = ?", record.ID).Count(&rewardCount).Error)
-	assert.Equal(t, int64(0), rewardCount)
+	assert.Equal(t, int64(1), rewardCount)
 }
 
 func TestReferralOrderPaidEnforcesMonthlyCap(t *testing.T) {
@@ -510,7 +578,7 @@ func TestReferralOrderPaidEnforcesMonthlyCap(t *testing.T) {
 	record := &loyalty.ReferralRecord{ReferralIdentityID: identity.ID, ProgramConfigID: config.ID, ReferrerID: referrer.ID, RefereeID: &referee.ID, ReferralCodeSnapshot: identity.ReferralCode, AttributionSource: "link", Currency: "USD", Status: loyalty.ReferralStatusPending, RecordVersion: 1, ExpiresAt: firstOrderedAt.AddDate(0, 0, 30)}
 	require.NoError(t, db.Create(record).Error)
 	paidAt := time.Date(2026, 9, 15, 8, 0, 0, 0, time.UTC)
-	orderRecord := &orderdomain.Order{OrderNumber: "REF-CAP-SECOND", UserID: referee.ID, Status: "processing", PaymentStatus: "paid", SubtotalAmount: 250, TotalAmount: 250, Currency: "USD", PaidAt: &paidAt}
+	orderRecord := &orderdomain.Order{OrderNumber: "REF-CAP-SECOND", UserID: referee.ID, Status: "processing", PaymentStatus: "paid", SubtotalAmountMinor: 25000, TotalAmountMinor: 25000, Currency: "USD", PaidAt: &paidAt}
 	require.NoError(t, db.Create(orderRecord).Error)
 	payload, err := json.Marshal(outboxdomain.ReferralOrderPaidPayload{OrderID: orderRecord.ID, UserID: referee.ID, AmountMinor: 25000, Currency: "USD", PaidAt: paidAt})
 	require.NoError(t, err)
@@ -536,6 +604,7 @@ func newReferralServiceFixture(t *testing.T, enabled bool) (*ReferralService, *g
 	require.NoError(t, db.AutoMigrate(
 		&user.User{},
 		&orderdomain.Order{},
+		&paymentdomain.Transaction{},
 		&coupondomain.Coupon{},
 		&coupondomain.CouponUsage{},
 		&loyalty.ReferralProgramConfig{},
@@ -603,7 +672,7 @@ func TestSettleReferralIsIdempotentAndReleasesPoints(t *testing.T) {
 	assert.Equal(t, int64(1), transactionCount)
 }
 
-func TestReferralOrderPaidReleasesRefereePointsIdempotently(t *testing.T) {
+func TestReferralOrderPaidDoesNotGrantRegistrationPoints(t *testing.T) {
 	referralService, db := newReferralServiceFixture(t, true)
 	referrer := createReferralTestUser(t, db, "paid-points-referrer@example.test", "paid-points-referrer")
 	referee := createReferralTestUser(t, db, "paid-points-referee@example.test", "paid-points-referee")
@@ -621,7 +690,7 @@ func TestReferralOrderPaidReleasesRefereePointsIdempotently(t *testing.T) {
 	}
 	require.NoError(t, db.Create(record).Error)
 	paidAt := time.Now().UTC()
-	orderRecord := &orderdomain.Order{OrderNumber: "REF-PAID-POINTS", UserID: referee.ID, Status: "processing", PaymentStatus: "paid", SubtotalAmount: 250, TotalAmount: 250, Currency: "USD", PaidAt: &paidAt}
+	orderRecord := &orderdomain.Order{OrderNumber: "REF-PAID-POINTS", UserID: referee.ID, Status: "processing", PaymentStatus: "paid", SubtotalAmountMinor: 25000, TotalAmountMinor: 25000, Currency: "USD", PaidAt: &paidAt}
 	require.NoError(t, db.Create(orderRecord).Error)
 	payload, err := json.Marshal(outboxdomain.ReferralOrderPaidPayload{OrderID: orderRecord.ID, UserID: referee.ID, AmountMinor: 25000, Currency: "USD", PaidAt: paidAt})
 	require.NoError(t, err)
@@ -629,20 +698,24 @@ func TestReferralOrderPaidReleasesRefereePointsIdempotently(t *testing.T) {
 	require.NoError(t, referralService.HandleOrderPaidOutbox(context.Background(), event))
 	require.NoError(t, referralService.HandleOrderPaidOutbox(context.Background(), event))
 
-	var reward loyalty.ReferralReward
-	require.NoError(t, db.Where("referral_record_id = ? AND recipient_role = ?", record.ID, loyalty.ReferralRecipientReferee).First(&reward).Error)
-	assert.Equal(t, loyalty.ReferralRewardTypePoints, reward.RewardType)
-	assert.Equal(t, 75, reward.PointsAmount)
-	assert.Equal(t, loyalty.ReferralRewardStatusReleased, reward.Status)
-	var transactionCount int64
-	require.NoError(t, db.Model(&loyalty.LoyaltyTransaction{}).Where("source = ? AND source_id = ?", "referral_referee", record.ID).Count(&transactionCount).Error)
-	assert.Equal(t, int64(1), transactionCount)
+	// Registration points are issued only by BindFromToken in the account
+	// binding transaction. A payment event must never create a missing reward
+	// row or credit points as a side effect (including when retried).
+	var rewardCount, transactionCount int64
+	require.NoError(t, db.Model(&loyalty.ReferralReward{}).
+		Where("referral_record_id = ? AND recipient_role = ?", record.ID, loyalty.ReferralRecipientReferee).
+		Count(&rewardCount).Error)
+	require.NoError(t, db.Model(&loyalty.LoyaltyTransaction{}).
+		Where("source = ? AND source_id = ?", "referral_referee", record.ID).
+		Count(&transactionCount).Error)
+	assert.Equal(t, int64(0), rewardCount)
+	assert.Equal(t, int64(0), transactionCount)
 	var balance loyalty.UserLoyalty
-	require.NoError(t, db.Where("user_id = ?", referee.ID).First(&balance).Error)
-	assert.Equal(t, 75, balance.AvailablePoints)
+	assert.ErrorIs(t, db.Where("user_id = ?", referee.ID).First(&balance).Error, gorm.ErrRecordNotFound)
+
 }
 
-func TestReferralOrderInvalidatedReversesReleasedRefereePoints(t *testing.T) {
+func TestReferralOrderInvalidatedDoesNotChangeRegistrationPoints(t *testing.T) {
 	referralService, db := newReferralServiceFixture(t, true)
 	referrer := createReferralTestUser(t, db, "invalidated-points-referrer@example.test", "invalidated-points-referrer")
 	referee := createReferralTestUser(t, db, "invalidated-points-referee@example.test", "invalidated-points-referee")
@@ -651,16 +724,14 @@ func TestReferralOrderInvalidatedReversesReleasedRefereePoints(t *testing.T) {
 	config.RefereeBenefitType = loyalty.ReferralBenefitPoints
 	config.RefereeBenefitValue = 75
 	require.NoError(t, db.Save(config).Error)
-	identity := &loyalty.ReferralIdentity{UserID: referrer.ID, ReferralCode: "INVPOINT234", IsActive: true}
-	require.NoError(t, db.Create(identity).Error)
-	record := &loyalty.ReferralRecord{
-		ReferralIdentityID: identity.ID, ProgramConfigID: config.ID, ReferrerID: referrer.ID, RefereeID: &referee.ID,
-		ReferralCodeSnapshot: identity.ReferralCode, AttributionSource: "link", Currency: "USD", Status: loyalty.ReferralStatusPending,
-		RecordVersion: 1, ExpiresAt: time.Now().UTC().Add(24 * time.Hour),
-	}
-	require.NoError(t, db.Create(record).Error)
+	dashboard, err := referralService.Dashboard(referrer.ID)
+	require.NoError(t, err)
+	token, _, err := referralService.CreateAttributionToken(dashboard.ReferralCode, "link")
+	require.NoError(t, err)
+	record, err := referralService.BindFromToken(referee.ID, token, "203.0.113.41")
+	require.NoError(t, err)
 	paidAt := time.Now().UTC()
-	orderRecord := &orderdomain.Order{OrderNumber: "REF-INVALIDATED-POINTS", UserID: referee.ID, Status: "processing", PaymentStatus: "paid", SubtotalAmount: 250, TotalAmount: 250, Currency: "USD", PaidAt: &paidAt}
+	orderRecord := &orderdomain.Order{OrderNumber: "REF-INVALIDATED-POINTS", UserID: referee.ID, Status: "processing", PaymentStatus: "paid", SubtotalAmountMinor: 25000, TotalAmountMinor: 25000, Currency: "USD", PaidAt: &paidAt}
 	require.NoError(t, db.Create(orderRecord).Error)
 	paidPayload, err := json.Marshal(outboxdomain.ReferralOrderPaidPayload{OrderID: orderRecord.ID, UserID: referee.ID, AmountMinor: 25000, Currency: "USD", PaidAt: paidAt})
 	require.NoError(t, err)
@@ -668,10 +739,10 @@ func TestReferralOrderInvalidatedReversesReleasedRefereePoints(t *testing.T) {
 		EventKey: "referral.order_paid:invalidated-points", EventType: outboxdomain.EventTypeReferralOrderPaid, Payload: paidPayload,
 	}))
 
-	// The referee spends part of the welcome reward on this order. The payment
+	// The referee spends aggregate account points on this order. The payment
 	// refund flow returns the order's 50 points before the referral invalidation
-	// event is handled, so the two independent ledgers can both settle without
-	// creating a negative balance.
+	// event is handled. The registration reward remains in that same aggregate
+	// balance; the source labels do not create separate wallets.
 	orderRecord.PointsUsed = 50
 	require.NoError(t, db.Save(orderRecord).Error)
 	loyaltyRepo := repository.NewLoyaltyRepository(db)
@@ -689,116 +760,132 @@ func TestReferralOrderInvalidatedReversesReleasedRefereePoints(t *testing.T) {
 
 	var reward loyalty.ReferralReward
 	require.NoError(t, db.Where("referral_record_id = ? AND recipient_role = ?", record.ID, loyalty.ReferralRecipientReferee).First(&reward).Error)
-	assert.Equal(t, loyalty.ReferralRewardStatusReversed, reward.Status)
+	assert.Equal(t, loyalty.ReferralRewardStatusReleased, reward.Status)
 	var balance loyalty.UserLoyalty
 	require.NoError(t, db.Where("user_id = ?", referee.ID).First(&balance).Error)
-	assert.Equal(t, 0, balance.AvailablePoints)
-	var reversalCount int64
-	require.NoError(t, db.Model(&loyalty.LoyaltyTransaction{}).Where("source = ? AND source_id = ?", referralRefereeReversalSource, record.ID).Count(&reversalCount).Error)
-	assert.Equal(t, int64(1), reversalCount)
+	assert.Equal(t, 75, balance.AvailablePoints)
 }
 
-func TestReferralOrderPaidCreatesRefereeCouponBenefits(t *testing.T) {
-	tests := []struct {
-		name        string
-		benefit     string
-		value       int64
-		couponType  string
-		couponValue float64
-	}{
-		{name: "percent", benefit: loyalty.ReferralBenefitPercentCoupon, value: 500, couponType: "percentage", couponValue: 5},
-		{name: "fixed", benefit: loyalty.ReferralBenefitFixedCoupon, value: 3000, couponType: "fixed", couponValue: 30},
-	}
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			referralService, db := newReferralServiceFixture(t, true)
-			referrer := createReferralTestUser(t, db, "paid-coupon-referrer-"+test.name+"@example.test", "paid-coupon-referrer-"+test.name)
-			referee := createReferralTestUser(t, db, "paid-coupon-referee-"+test.name+"@example.test", "paid-coupon-referee-"+test.name)
-			config := &loyalty.ReferralProgramConfig{}
-			require.NoError(t, db.First(config).Error)
-			config.RefereeBenefitType = test.benefit
-			config.RefereeBenefitValue = test.value
-			require.NoError(t, db.Save(config).Error)
-			identity := &loyalty.ReferralIdentity{UserID: referrer.ID, ReferralCode: "PAID" + strings.ToUpper(test.name[:1]) + "234", IsActive: true}
-			require.NoError(t, db.Create(identity).Error)
-			record := &loyalty.ReferralRecord{
-				ReferralIdentityID: identity.ID, ProgramConfigID: config.ID, ReferrerID: referrer.ID, RefereeID: &referee.ID,
-				ReferralCodeSnapshot: identity.ReferralCode, AttributionSource: "link", Currency: "USD", Status: loyalty.ReferralStatusPending,
-				RecordVersion: 1, ExpiresAt: time.Now().UTC().Add(24 * time.Hour),
-			}
-			require.NoError(t, db.Create(record).Error)
-			paidAt := time.Now().UTC()
-			orderRecord := &orderdomain.Order{OrderNumber: "REF-PAID-COUPON-" + test.name, UserID: referee.ID, Status: "processing", PaymentStatus: "paid", SubtotalAmount: 250, TotalAmount: 250, Currency: "USD", PaidAt: &paidAt}
-			require.NoError(t, db.Create(orderRecord).Error)
-			payload, err := json.Marshal(outboxdomain.ReferralOrderPaidPayload{OrderID: orderRecord.ID, UserID: referee.ID, AmountMinor: 25000, Currency: "USD", PaidAt: paidAt})
-			require.NoError(t, err)
-			event := outboxdomain.Event{EventKey: "referral.order_paid:coupon-" + test.name, EventType: outboxdomain.EventTypeReferralOrderPaid, Payload: payload}
-			require.NoError(t, referralService.HandleOrderPaidOutbox(context.Background(), event))
-			require.NoError(t, referralService.HandleOrderPaidOutbox(context.Background(), event))
-
-			var reward loyalty.ReferralReward
-			require.NoError(t, db.Where("referral_record_id = ? AND recipient_role = ?", record.ID, loyalty.ReferralRecipientReferee).First(&reward).Error)
-			assert.Equal(t, loyalty.ReferralRewardTypeCoupon, reward.RewardType)
-			assert.Equal(t, loyalty.ReferralRewardStatusReleased, reward.Status)
-			require.NotNil(t, reward.CouponID)
-			var issued coupondomain.Coupon
-			require.NoError(t, db.First(&issued, *reward.CouponID).Error)
-			assert.Equal(t, test.couponType, issued.Type)
-			assert.InDelta(t, test.couponValue, issued.Value, 0.001)
-			assert.Equal(t, 1, issued.UsageLimit)
-		})
-	}
-}
-
-func TestReferralOrderPaidForfeitsUnusedRefereeCoupon(t *testing.T) {
+func TestReferralBindingRejectsReferrerEmailAndStrictIPVelocity(t *testing.T) {
 	referralService, db := newReferralServiceFixture(t, true)
-	referrer := createReferralTestUser(t, db, "unused-coupon-referrer@example.test", "unused-coupon-referrer")
-	referee := createReferralTestUser(t, db, "unused-coupon-referee@example.test", "unused-coupon-referee")
+	referrer := createReferralTestUser(t, db, "strict-email@example.test", "strict-email-referrer")
 	config := &loyalty.ReferralProgramConfig{}
 	require.NoError(t, db.First(config).Error)
-	config.RefereeBenefitType = loyalty.ReferralBenefitFixedCoupon
-	config.RefereeBenefitValue = 3000
+	config.AntiFraudMode = loyalty.ReferralFraudModeStrict
 	require.NoError(t, db.Save(config).Error)
 
-	identity := &loyalty.ReferralIdentity{UserID: referrer.ID, ReferralCode: "UNUSED234", IsActive: true}
-	require.NoError(t, db.Create(identity).Error)
-	record := &loyalty.ReferralRecord{
-		ReferralIdentityID: identity.ID, ProgramConfigID: config.ID, ReferrerID: referrer.ID, RefereeID: &referee.ID,
-		ReferralCodeSnapshot: identity.ReferralCode, AttributionSource: "link", Currency: "USD", Status: loyalty.ReferralStatusPending,
-		RecordVersion: 1, ExpiresAt: time.Now().UTC().Add(24 * time.Hour),
-	}
-	require.NoError(t, db.Create(record).Error)
-	require.NoError(t, referralService.provisionLockedRefereeCouponInTx(repository.TxRepositories{
-		Referral: referralService.repo,
-		Coupon:   repository.NewCouponRepository(db),
-	}, record, config, time.Now().UTC()))
-
-	var lockedReward loyalty.ReferralReward
-	require.NoError(t, db.Where("referral_record_id = ? AND recipient_role = ?", record.ID, loyalty.ReferralRecipientReferee).First(&lockedReward).Error)
-	require.NotNil(t, lockedReward.CouponID)
-	var referralCoupon coupondomain.Coupon
-	require.NoError(t, db.First(&referralCoupon, *lockedReward.CouponID).Error)
-
-	paidAt := time.Now().UTC()
-	orderRecord := &orderdomain.Order{
-		OrderNumber: "REF-PAID-UNUSED-COUPON", UserID: referee.ID, Status: "processing", PaymentStatus: "paid",
-		SubtotalAmount: 250, TotalAmount: 250, Currency: "USD", CouponCode: "PUBLIC-SAVE10", PaidAt: &paidAt,
-	}
-	require.NoError(t, db.Create(orderRecord).Error)
-	payload, err := json.Marshal(outboxdomain.ReferralOrderPaidPayload{OrderID: orderRecord.ID, UserID: referee.ID, AmountMinor: 25000, Currency: "USD", PaidAt: paidAt})
+	dashboard, err := referralService.Dashboard(referrer.ID)
 	require.NoError(t, err)
-	event := outboxdomain.Event{EventKey: "referral.order_paid:unused-coupon", EventType: outboxdomain.EventTypeReferralOrderPaid, Payload: payload}
-	require.NoError(t, referralService.HandleOrderPaidOutbox(context.Background(), event))
+	token, _, err := referralService.CreateAttributionToken(dashboard.ReferralCode, "link")
+	require.NoError(t, err)
+	emailMatch := createReferralTestUser(t, db, "STRICT-EMAIL@example.test", "strict-email-referee")
+	_, err = referralService.BindFromTokenWithContext(emailMatch.ID, token, ReferralBindContext{RefereeEmail: emailMatch.Email, ClientIP: "203.0.113.99"})
+	assert.ErrorIs(t, err, ErrSelfReferralForbidden)
 
-	var savedRecord loyalty.ReferralRecord
-	require.NoError(t, db.First(&savedRecord, record.ID).Error)
-	assert.Equal(t, loyalty.ReferralStatusOrdered, savedRecord.Status)
-	var savedReward loyalty.ReferralReward
-	require.NoError(t, db.First(&savedReward, lockedReward.ID).Error)
-	assert.Equal(t, loyalty.ReferralRewardStatusForfeited, savedReward.Status)
-	var savedCoupon coupondomain.Coupon
-	require.NoError(t, db.First(&savedCoupon, referralCoupon.ID).Error)
-	assert.False(t, savedCoupon.Enabled)
+	for index := 0; index < 4; index++ {
+		referee := createReferralTestUser(t, db, fmt.Sprintf("strict-ip-%d@example.test", index), fmt.Sprintf("strict-ip-%d", index))
+		freshToken, _, tokenErr := referralService.CreateAttributionToken(dashboard.ReferralCode, "link")
+		require.NoError(t, tokenErr)
+		_, bindErr := referralService.BindFromTokenWithContext(referee.ID, freshToken, ReferralBindContext{
+			RefereeEmail: referee.Email,
+			ClientIP:     "203.0.113.99",
+		})
+		if index < 3 {
+			require.NoError(t, bindErr)
+		} else {
+			assert.ErrorIs(t, bindErr, ErrRefereeNotEligible)
+		}
+	}
+}
+
+func TestReferralBindingRejectsStrictDeviceCollisionWithReferrerHistory(t *testing.T) {
+	referralService, db := newReferralServiceFixture(t, true)
+	historicalReferrer := createReferralTestUser(t, db, "historical-referrer@example.test", "historical-referrer")
+	referrer := createReferralTestUser(t, db, "device-referrer@example.test", "device-referrer")
+	referee := createReferralTestUser(t, db, "device-referee@example.test", "device-referee")
+
+	historicalDashboard, err := referralService.Dashboard(historicalReferrer.ID)
+	require.NoError(t, err)
+	historicalToken, _, err := referralService.CreateAttributionToken(historicalDashboard.ReferralCode, "link")
+	require.NoError(t, err)
+	_, err = referralService.BindFromTokenWithContext(referrer.ID, historicalToken, ReferralBindContext{
+		RefereeEmail:      referee.Email,
+		DeviceFingerprint: "shared-device",
+		ClientIP:          "198.51.100.10",
+	})
+	require.NoError(t, err)
+
+	config := &loyalty.ReferralProgramConfig{}
+	require.NoError(t, db.First(config).Error)
+	config.AntiFraudMode = loyalty.ReferralFraudModeStrict
+	require.NoError(t, db.Save(config).Error)
+	referrerDashboard, err := referralService.Dashboard(referrer.ID)
+	require.NoError(t, err)
+	mainToken, _, err := referralService.CreateAttributionToken(referrerDashboard.ReferralCode, "link")
+	require.NoError(t, err)
+	newReferee := createReferralTestUser(t, db, "device-new-referee@example.test", "device-new-referee")
+	_, err = referralService.BindFromTokenWithContext(newReferee.ID, mainToken, ReferralBindContext{
+		RefereeEmail:      newReferee.Email,
+		DeviceFingerprint: "shared-device",
+		ClientIP:          "198.51.100.11",
+	})
+	assert.ErrorIs(t, err, ErrRefereeNotEligible)
+}
+
+func TestReferralPaymentFingerprintCollisionRevokesInStrictMode(t *testing.T) {
+	referralService, db := newReferralServiceFixture(t, true)
+	referrer := createReferralTestUser(t, db, "payment-referrer@example.test", "payment-referrer")
+	referee := createReferralTestUser(t, db, "payment-referee@example.test", "payment-referee")
+	config := &loyalty.ReferralProgramConfig{}
+	require.NoError(t, db.First(config).Error)
+	config.AntiFraudMode = loyalty.ReferralFraudModeStrict
+	require.NoError(t, db.Save(config).Error)
+
+	paidAt := time.Date(2026, 9, 15, 8, 0, 0, 0, time.UTC)
+	referrerOrder := &orderdomain.Order{
+		OrderNumber: "REF-FP-REFERRER", UserID: referrer.ID, Status: "completed", PaymentStatus: "paid",
+		SubtotalAmountMinor: 25000, TotalAmountMinor: 25000, Currency: "USD", PaidAt: &paidAt,
+	}
+	require.NoError(t, db.Create(referrerOrder).Error)
+	require.NoError(t, db.Create(&paymentdomain.Transaction{
+		OrderID: referrerOrder.ID, TransactionID: "txn_referrer_fp", PaymentMethod: "stripe",
+		AmountMinor: 25000, Currency: "USD", Status: "completed",
+		GatewayResponse: `{"payment_method_details":{"card":{"fingerprint":"fp-shared"}}}`,
+		CompletedAt:     &paidAt,
+	}).Error)
+
+	dashboard, err := referralService.Dashboard(referrer.ID)
+	require.NoError(t, err)
+	token, _, err := referralService.CreateAttributionToken(dashboard.ReferralCode, "link")
+	require.NoError(t, err)
+	record, err := referralService.BindFromTokenWithContext(referee.ID, token, ReferralBindContext{RefereeEmail: referee.Email, ClientIP: "192.0.2.10"})
+	require.NoError(t, err)
+
+	refereeOrder := &orderdomain.Order{
+		OrderNumber: "REF-FP-REFEREE", UserID: referee.ID, Status: "processing", PaymentStatus: "paid",
+		SubtotalAmountMinor: 25000, TotalAmountMinor: 25000, Currency: "USD", PaidAt: &paidAt,
+	}
+	require.NoError(t, db.Create(refereeOrder).Error)
+	require.NoError(t, db.Create(&paymentdomain.Transaction{
+		OrderID: refereeOrder.ID, TransactionID: "txn_referee_fp", PaymentMethod: "stripe",
+		AmountMinor: 25000, Currency: "USD", Status: "completed",
+		GatewayResponse: `{"payment_method_details":{"card":{"fingerprint":"fp-shared"}}}`,
+		CompletedAt:     &paidAt,
+	}).Error)
+
+	payload, err := json.Marshal(outboxdomain.ReferralOrderPaidPayload{
+		OrderID: refereeOrder.ID, UserID: referee.ID, AmountMinor: 25000, Currency: "USD", PaidAt: paidAt,
+	})
+	require.NoError(t, err)
+	require.NoError(t, referralService.HandleOrderPaidOutbox(context.Background(), outboxdomain.Event{
+		EventKey: "referral.order_paid:payment-fingerprint", EventType: outboxdomain.EventTypeReferralOrderPaid, Payload: payload,
+	}))
+
+	var saved loyalty.ReferralRecord
+	require.NoError(t, db.First(&saved, record.ID).Error)
+	assert.Equal(t, loyalty.ReferralStatusRevoked, saved.Status)
+	assert.Contains(t, string(saved.RiskFlags), "payment_fingerprint_match")
+	assert.NotEmpty(t, saved.PaymentFingerprintHash)
 }
 
 func TestRevokeReferralForfeitsLockedReward(t *testing.T) {
@@ -835,11 +922,14 @@ func TestSettledReferralRefundReversesRewardIdempotently(t *testing.T) {
 	identity := &loyalty.ReferralIdentity{UserID: referrer.ID, ReferralCode: "REVERSE234", IsActive: true}
 	require.NoError(t, db.Create(identity).Error)
 	paidAt := time.Date(2026, 9, 1, 8, 0, 0, 0, time.UTC)
-	orderRecord := &orderdomain.Order{OrderNumber: "REF-REVERSE-1", UserID: referee.ID, Status: "processing", PaymentStatus: "paid", SubtotalAmount: 250, TotalAmount: 250, Currency: "USD", PaidAt: &paidAt}
+	orderRecord := &orderdomain.Order{OrderNumber: "REF-REVERSE-1", UserID: referee.ID, Status: "processing", PaymentStatus: "paid", SubtotalAmountMinor: 25000, TotalAmountMinor: 25000, Currency: "USD", PaidAt: &paidAt}
 	require.NoError(t, db.Create(orderRecord).Error)
 	record := &loyalty.ReferralRecord{ReferralIdentityID: identity.ID, ProgramConfigID: config.ID, ReferrerID: referrer.ID, RefereeID: &referee.ID, ReferralCodeSnapshot: identity.ReferralCode, AttributionSource: "link", OrderID: &orderRecord.ID, Currency: "USD", OrderAmountMinor: 25000, Status: loyalty.ReferralStatusVesting, RecordVersion: 1, ExpiresAt: paidAt.AddDate(0, 0, 30), VestingUntil: referralPtrTime(paidAt.AddDate(0, 0, 30))}
 	require.NoError(t, db.Create(record).Error)
 	_, err := referralService.SettleReferral(record.ID, "vesting complete", nil)
+	require.NoError(t, err)
+	loyaltyRepo := repository.NewLoyaltyRepository(db)
+	_, err = loyaltyRepo.AdjustUserPoints(referrer.ID, -config.ReferrerRewardPoints, "spend", "redemption", record.ID, "Redeemed all referral points")
 	require.NoError(t, err)
 	invalidatedAt := paidAt.AddDate(0, 0, 35)
 	payload, err := json.Marshal(outboxdomain.ReferralOrderInvalidatedPayload{OrderID: orderRecord.ID, OccurredAt: invalidatedAt, Reason: "full refund", Source: "refund_webhook", Reference: "refund-reverse-1"})
@@ -850,12 +940,33 @@ func TestSettledReferralRefundReversesRewardIdempotently(t *testing.T) {
 	var saved loyalty.ReferralRecord
 	require.NoError(t, db.First(&saved, record.ID).Error)
 	assert.Equal(t, loyalty.ReferralStatusReversed, saved.Status)
+	var referrerBalance loyalty.UserLoyalty
+	require.NoError(t, db.Where("user_id = ?", referrer.ID).First(&referrerBalance).Error)
+	assert.Zero(t, referrerBalance.AvailablePoints)
+	assert.Equal(t, config.ReferrerRewardPoints, referrerBalance.DebtPoints)
+	_, err = loyaltyRepo.AdjustUserPoints(referrer.ID, -1, "spend", "redemption", record.ID+1, "Attempted redemption while in debt")
+	assert.ErrorIs(t, err, repository.ErrInsufficientPoints)
 	var reward loyalty.ReferralReward
 	require.NoError(t, db.Where("referral_record_id = ?", record.ID).First(&reward).Error)
 	assert.Equal(t, loyalty.ReferralRewardStatusReversed, reward.Status)
 	var reversalCount int64
 	require.NoError(t, db.Model(&loyalty.LoyaltyTransaction{}).Where("source = ? AND source_id = ?", "referral_reversal", record.ID).Count(&reversalCount).Error)
 	assert.Equal(t, int64(1), reversalCount)
+	var reversal loyalty.LoyaltyTransaction
+	require.NoError(t, db.Where("source = ? AND source_id = ?", "referral_reversal", record.ID).First(&reversal).Error)
+	assert.Equal(t, config.ReferrerRewardPoints, reversal.DebtBalance)
+
+	partialRepayment := config.ReferrerRewardPoints / 2
+	_, err = loyaltyRepo.AdjustUserPoints(referrer.ID, partialRepayment, "earn", "order", orderRecord.ID+10, "Future points repay referral debt")
+	require.NoError(t, err)
+	require.NoError(t, db.Where("user_id = ?", referrer.ID).First(&referrerBalance).Error)
+	assert.Equal(t, config.ReferrerRewardPoints-partialRepayment, referrerBalance.DebtPoints)
+	assert.Zero(t, referrerBalance.AvailablePoints)
+	_, err = loyaltyRepo.AdjustUserPoints(referrer.ID, partialRepayment+25, "earn", "order", orderRecord.ID+11, "Future points finish repaying referral debt")
+	require.NoError(t, err)
+	require.NoError(t, db.Where("user_id = ?", referrer.ID).First(&referrerBalance).Error)
+	assert.Zero(t, referrerBalance.DebtPoints)
+	assert.Equal(t, 25, referrerBalance.AvailablePoints)
 }
 
 func referralProgramConfigForServiceTest(enabled bool) *loyalty.ReferralProgramConfig {
@@ -866,7 +977,8 @@ func referralProgramConfigForServiceTest(enabled bool) *loyalty.ReferralProgramC
 		Currency:                "USD",
 		MinOrderAmountMinor:     20000,
 		ReferrerRewardPoints:    1000,
-		RefereeBenefitType:      loyalty.ReferralBenefitNone,
+		RefereeBenefitType:      loyalty.ReferralBenefitPoints,
+		RefereeBenefitValue:     50,
 		VestingPeriodDays:       30,
 		UndeliveredFallbackDays: 45,
 		AttributionTTLDays:      30,

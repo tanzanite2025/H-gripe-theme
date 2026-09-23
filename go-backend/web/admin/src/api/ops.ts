@@ -475,6 +475,23 @@ export interface OpsNetworkSummary {
   items: OpsNetworkSummaryItem[];
 }
 
+export interface OutboxFailureEvent {
+  id: number;
+  event_key: string;
+  event_type: string;
+  aggregate_type: string;
+  aggregate_id: string;
+  status: 'failed' | 'dead_letter';
+  attempts: number;
+  max_attempts: number;
+  available_at: string;
+  last_attempt_at?: string;
+  last_error?: string;
+  created_at: string;
+  updated_at: string;
+  payload_bytes: number;
+}
+
 const readPayload = (response: unknown, endpoint: string) =>
   unwrapApiPayload(response, endpoint);
 
@@ -618,6 +635,12 @@ const readAdminAccountResult = (response: unknown, endpoint: string) => {
   return payload;
 };
 
+const readOutboxFailuresPayload = (response: unknown, endpoint: string): OutboxFailureEvent[] => {
+  const payload = readObjectPayload(response, endpoint);
+  requireApiArrayField(payload, 'events', endpoint);
+  return payload.events as OutboxFailureEvent[];
+};
+
 export default {
   async getNetworkSummary(
     environment?: OpsEnvironment,
@@ -629,6 +652,23 @@ export default {
       }),
       endpoint,
     ) as OpsNetworkSummary;
+  },
+  async listOutboxFailures(params?: { status?: 'failed' | 'dead_letter'; event_type?: string; limit?: number }): Promise<OutboxFailureEvent[]> {
+    const endpoint = '/api/admin/ops/outbox/failures';
+    return readOutboxFailuresPayload(await axios.get(endpoint, { params }), endpoint);
+  },
+  async getOutboxFailure(id: number): Promise<OutboxFailureEvent> {
+    const endpoint = `/api/admin/ops/outbox/failures/${id}`;
+    const payload = readObjectPayload(await axios.get(endpoint), endpoint);
+    requireApiNumberField(payload, 'id', endpoint);
+    requireApiStringField(payload, 'status', endpoint);
+    return payload as OutboxFailureEvent;
+  },
+  async retryOutboxFailure(id: number, note: string): Promise<void> {
+    await axios.post(`/api/admin/ops/outbox/failures/${id}/retry`, { note });
+  },
+  async ignoreOutboxFailure(id: number, note: string): Promise<void> {
+    await axios.post(`/api/admin/ops/outbox/failures/${id}/ignore`, { note });
   },
   async listAdminAccounts(search = ""): Promise<OpsAdminAccount[]> {
     const endpoint = "/api/admin/ops/admin-accounts";

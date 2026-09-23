@@ -59,7 +59,11 @@
       </CardHeader>
 
       <CardContent class="grid min-h-0 flex-1 grid-rows-[minmax(0,1fr)_auto] gap-0 p-0">
-        <div class="relative min-h-0 overflow-y-auto px-4 py-4">
+        <div
+          ref="messageContainerRef"
+          class="relative min-h-0 overflow-y-auto px-4 py-4"
+          @scroll="handleMessageScroll"
+        >
           <div v-if="messagesLoading" class="absolute inset-0 z-10 flex items-center justify-center bg-card/75">
             <LoaderCircle class="size-5 animate-spin text-primary" />
           </div>
@@ -262,6 +266,7 @@
                     playsinline
                     preload="metadata"
                     :poster="videoPayload(message).thumbnail || ''"
+                    @loadedmetadata="handleMessageMediaLoad"
                   >
                     <source :src="videoPayload(message).url" />
                   </video>
@@ -277,14 +282,22 @@
               </div>
 
               <p v-else class="mt-2 whitespace-pre-wrap break-words leading-6">{{ message.content || message.message }}</p>
- <div v-if="message.message_type === 'image'&& messageAttachments(message).length" class="mt-2 grid gap-2">
-                <img
-                  v-for="attachmentUrl in messageAttachments(message)"
+              <div v-if="message.message_type === 'image' && messageAttachments(message).length" class="mt-2 grid gap-2">
+                <button
+                  v-for="(attachmentUrl, attachmentIndex) in messageAttachments(message)"
                   :key="attachmentUrl"
-                  :src="attachmentUrl"
-                  alt="客服图片附件"
-                  class="max-h-64 max-w-full rounded-xl object-contain"
-                />
+                  type="button"
+                  class="group block w-fit max-w-full cursor-zoom-in overflow-hidden rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                  :aria-label="`查看第 ${attachmentIndex + 1} 张客服图片`"
+                  @click="openImageLightbox(messageAttachments(message), attachmentIndex)"
+                >
+                  <img
+                    :src="attachmentUrl"
+                    alt="客服图片附件"
+                    class="max-h-64 max-w-full rounded-xl object-contain transition-opacity group-hover:opacity-85"
+                    @load="handleMessageMediaLoad"
+                  />
+                </button>
               </div>
               <a
                 v-if="message.message_type === 'link' && message.metadata?.url"
@@ -296,7 +309,19 @@
                 <span class="block font-black">{{ message.metadata.title || message.content || message.message }}</span>
                 <span class="mt-1 block truncate text-emerald-700/70">{{ message.metadata.url }}</span>
               </a>
+              <template v-if="message.message_type === 'image'">
+                <button
+                  v-for="(attachmentUrl, attachmentIndex) in messageAttachments(message)"
+                  :key="`lightbox-link-${attachmentUrl}`"
+                  type="button"
+                  class="mt-2 mr-3 inline-flex text-xs font-bold text-primary underline-offset-4 hover:underline"
+                  @click="openImageLightbox(messageAttachments(message), attachmentIndex)"
+                >
+                  查看大图
+                </button>
+              </template>
               <a
+                v-else
                 v-for="attachmentUrl in messageAttachments(message)"
                 :key="`link-${attachmentUrl}`"
                 class="mt-2 inline-flex text-xs font-bold text-primary underline-offset-4 hover:underline"
@@ -327,6 +352,8 @@
             class="min-h-24 resize-none"
             placeholder="输入回复内容，发送后客户侧可在原会话中看到"
             @input="emit('typing-input')"
+            @paste="handleReplyPaste"
+            @keydown="handleReplyKeydown"
           />
           <div class="mt-3 flex flex-wrap items-center gap-2">
             <div class="flex min-w-0 flex-1 flex-wrap items-center gap-2">
@@ -349,11 +376,11 @@
                 class="rounded-full"
                 :disabled="replying || attachmentUploading"
                 @click="openLocalImagePicker"
-                title="拍照或从本地选择图片并直接发送"
+                title="从本地选择图片并直接发送；移动设备可直接拍照"
               >
-                <Camera v-if="!attachmentUploading" class="size-3.5" />
+                <ImagePlus v-if="!attachmentUploading" class="size-3.5" />
                 <LoaderCircle v-else class="size-3.5 animate-spin" />
-                拍照
+                本地图片
               </Button>
               <Button
                 type="button"
@@ -374,11 +401,11 @@
                 class="rounded-full"
                 :disabled="replying || attachmentUploading"
                 @click="openLocalVideoPicker"
-                title="拍视频或从本地选择视频并直接发送"
+                title="从本地选择视频；移动设备可直接拍摄"
               >
                 <LoaderCircle v-if="attachmentUploading" class="size-3.5 animate-spin" />
                 <Video v-else class="size-3.5" />
-                拍视频
+                本地视频
               </Button>
               <Button
                 type="button"
@@ -445,13 +472,92 @@
       </p>
     </div>
   </Card>
+
+  <Teleport to="body">
+    <div
+      v-if="lightboxOpen"
+      class="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 p-4 sm:p-8"
+      role="dialog"
+      aria-modal="true"
+      aria-label="客服图片预览"
+      @click.self="closeImageLightbox"
+      @wheel.prevent="handleLightboxWheel"
+    >
+      <div class="flex max-h-full w-full max-w-7xl flex-col items-center gap-4">
+        <div class="flex w-full items-center justify-between gap-3 text-white">
+          <span class="text-sm font-bold tabular-nums">{{ lightboxIndex + 1 }} / {{ lightboxImages.length }}</span>
+          <div class="flex items-center gap-2">
+            <Button type="button" variant="ghost" size="icon" class="text-white hover:bg-white/15 hover:text-white" aria-label="缩小图片" title="缩小图片" @click="zoomOut">
+              <ZoomOut class="size-4" />
+            </Button>
+            <span class="min-w-12 text-center text-xs font-bold tabular-nums">{{ lightboxZoom }}%</span>
+            <Button type="button" variant="ghost" size="icon" class="text-white hover:bg-white/15 hover:text-white" aria-label="放大图片" title="放大图片" @click="zoomIn">
+              <ZoomIn class="size-4" />
+            </Button>
+            <Button type="button" variant="ghost" size="icon" class="text-white hover:bg-white/15 hover:text-white" aria-label="旋转图片" title="旋转图片" @click="rotateImage">
+              <RotateCw class="size-4" />
+            </Button>
+            <Button type="button" variant="ghost" size="icon" class="text-white hover:bg-white/15 hover:text-white" aria-label="关闭图片预览" title="关闭图片预览" @click="closeImageLightbox">
+              <X class="size-5" />
+            </Button>
+          </div>
+        </div>
+
+        <div class="relative flex min-h-0 w-full flex-1 items-center justify-center overflow-hidden">
+          <Button
+            v-if="lightboxImages.length > 1"
+            type="button"
+            variant="ghost"
+            size="icon"
+            class="absolute left-0 z-10 size-10 rounded-full bg-black/35 text-white hover:bg-black/60 hover:text-white sm:left-2"
+            aria-label="上一张图片"
+            title="上一张图片"
+            @click="showPreviousImage"
+          >
+            <ChevronLeft class="size-6" />
+          </Button>
+          <img
+            v-if="lightboxImages[lightboxIndex]"
+            :src="lightboxImages[lightboxIndex]"
+            alt="客服图片大图"
+            class="max-h-[calc(100vh-10rem)] max-w-[calc(100vw-6rem)] select-none object-contain transition-transform duration-150 sm:max-w-[calc(100vw-10rem)]"
+            :style="{ transform: `scale(${lightboxZoom / 100}) rotate(${lightboxRotation}deg)` }"
+            draggable="false"
+          />
+          <Button
+            v-if="lightboxImages.length > 1"
+            type="button"
+            variant="ghost"
+            size="icon"
+            class="absolute right-0 z-10 size-10 rounded-full bg-black/35 text-white hover:bg-black/60 hover:text-white sm:right-2"
+            aria-label="下一张图片"
+            title="下一张图片"
+            @click="showNextImage"
+          >
+            <ChevronRight class="size-6" />
+          </Button>
+            </div>
+          </div>
+          <Button
+            v-if="messages.length && !isNearBottom"
+            type="button"
+            variant="secondary"
+            size="sm"
+            class="sticky bottom-0 left-1/2 z-20 mt-3 -translate-x-1/2 rounded-full border shadow-sm"
+            @click="scrollMessagesToBottom(true)"
+          >
+            跳到最新消息
+          </Button>
+        </div>
+  </Teleport>
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import {
-  ArrowRightLeft,
-  Camera,
+	ArrowRightLeft,
+  ChevronLeft,
+	ChevronRight,
   Headset,
   Info,
   ImagePlus,
@@ -459,9 +565,13 @@ import {
   LoaderCircle,
   MessageCircleOff,
   Package,
-  Send,
-  ShoppingCart,
-  Video,
+	Send,
+	ShoppingCart,
+	RotateCw,
+	Video,
+	X,
+	ZoomIn,
+	ZoomOut,
 } from '@lucide/vue'
 import AdminStatusBadge from '@/components/admin/AdminStatusBadge.vue'
 import GalleryProductPickerDialog from '@/components/admin/gallery/GalleryProductPickerDialog.vue'
@@ -555,7 +665,15 @@ const orderPickerOpen = ref(false)
 const imageFileInput = ref<HTMLInputElement | null>(null)
 const videoFileInput = ref<HTMLInputElement | null>(null)
 const attachmentUploading = ref(false)
+const lightboxOpen = ref(false)
+const lightboxImages = ref<string[]>([])
+const lightboxIndex = ref(0)
+const lightboxZoom = ref(100)
+const lightboxRotation = ref(0)
 const authStore = useAuthStore()
+const messageContainerRef = ref<HTMLElement | null>(null)
+const isNearBottom = ref(true)
+let messageScrollInitialized = false
 
 const customerOrders = computed<CustomerOrderItem[]>(() => (
   Array.isArray(props.customerContext?.orders?.items)
@@ -575,6 +693,49 @@ const replyModel = computed<string>({
   set: (value: string) => emit('update:replyMessage', value),
 })
 
+const updateNearBottom = (): void => {
+  const container = messageContainerRef.value
+  if (!container) return
+  isNearBottom.value = container.scrollHeight - container.scrollTop - container.clientHeight <= 96
+}
+
+const handleMessageScroll = (): void => {
+  updateNearBottom()
+}
+
+const scrollMessagesToBottom = async (smooth = false): Promise<void> => {
+  await nextTick()
+  const container = messageContainerRef.value
+  if (!container) return
+  container.scrollTo({ top: container.scrollHeight, behavior: smooth ? 'smooth' : 'auto' })
+  isNearBottom.value = true
+}
+
+const handleMessageMediaLoad = (): void => {
+  if (isNearBottom.value) void scrollMessagesToBottom()
+}
+
+watch(
+  [() => props.selectedConversation?.id, () => props.messages.length],
+  async ([conversationID, messageCount], previous) => {
+    const [previousConversationID, previousMessageCount] = previous || []
+    const conversationChanged = String(conversationID || '') !== String(previousConversationID || '')
+    const messageCountChanged = Number(messageCount || 0) !== Number(previousMessageCount || 0)
+    if (conversationChanged) {
+      messageScrollInitialized = false
+      isNearBottom.value = true
+    }
+    if (conversationChanged || messageCountChanged) {
+      await nextTick()
+      if (conversationChanged || !messageScrollInitialized || isNearBottom.value) {
+        await scrollMessagesToBottom()
+      }
+      messageScrollInitialized = true
+      updateNearBottom()
+    }
+  },
+)
+
 const messageAttachments = (message: CustomerConversationMessage): string[] => {
   const attachments = Array.isArray(message?.attachments)
     ? message.attachments
@@ -586,6 +747,86 @@ const messageAttachments = (message: CustomerConversationMessage): string[] => {
   })
   return Array.from(unique)
 }
+
+const resetLightbox = (): void => {
+  lightboxImages.value = []
+  lightboxIndex.value = 0
+  lightboxZoom.value = 100
+  lightboxRotation.value = 0
+}
+
+const openImageLightbox = (images: string[], index = 0): void => {
+  const normalizedImages = images.map((image) => String(image || '').trim()).filter(Boolean)
+  if (!normalizedImages.length) return
+  lightboxImages.value = normalizedImages
+  lightboxIndex.value = Math.min(Math.max(index, 0), normalizedImages.length - 1)
+  lightboxZoom.value = 100
+  lightboxRotation.value = 0
+  lightboxOpen.value = true
+}
+
+const closeImageLightbox = (): void => {
+  lightboxOpen.value = false
+}
+
+const showPreviousImage = (): void => {
+  if (lightboxImages.value.length < 2) return
+  lightboxIndex.value = (lightboxIndex.value - 1 + lightboxImages.value.length) % lightboxImages.value.length
+  lightboxZoom.value = 100
+  lightboxRotation.value = 0
+}
+
+const showNextImage = (): void => {
+  if (lightboxImages.value.length < 2) return
+  lightboxIndex.value = (lightboxIndex.value + 1) % lightboxImages.value.length
+  lightboxZoom.value = 100
+  lightboxRotation.value = 0
+}
+
+const zoomIn = (): void => {
+  lightboxZoom.value = Math.min(300, lightboxZoom.value + 25)
+}
+
+const zoomOut = (): void => {
+  lightboxZoom.value = Math.max(50, lightboxZoom.value - 25)
+}
+
+const rotateImage = (): void => {
+  lightboxRotation.value = (lightboxRotation.value + 90) % 360
+}
+
+const handleLightboxWheel = (event: WheelEvent): void => {
+  if (event.deltaY < 0) zoomIn()
+  if (event.deltaY > 0) zoomOut()
+}
+
+const handleLightboxKeydown = (event: KeyboardEvent): void => {
+  if (!lightboxOpen.value) return
+  if (event.key === 'Escape') closeImageLightbox()
+  else if (event.key === 'ArrowLeft') showPreviousImage()
+  else if (event.key === 'ArrowRight') showNextImage()
+  else if (event.key === '+' || event.key === '=') zoomIn()
+  else if (event.key === '-' || event.key === '_') zoomOut()
+  else if (event.key.toLowerCase() === 'r') rotateImage()
+}
+
+watch(lightboxOpen, (open) => {
+  if (typeof document === 'undefined') return
+  if (open) {
+    document.addEventListener('keydown', handleLightboxKeydown)
+    document.body.style.overflow = 'hidden'
+  } else {
+    document.removeEventListener('keydown', handleLightboxKeydown)
+    document.body.style.overflow = ''
+    resetLightbox()
+  }
+})
+
+onBeforeUnmount(() => {
+  if (typeof document === 'undefined') return
+  document.removeEventListener('keydown', handleLightboxKeydown)
+  document.body.style.overflow = ''
+})
 
 const toPositiveNumber = (value: unknown): number | null => {
   const parsed = Number(value || 0)
@@ -600,7 +841,7 @@ const buildProductPath = (slug: string): string => {
 const buildProductMessageMetadata = (product: ProductRecord) => {
   const thumbnail = getProductThumbnail(product)
   const slug = String(product?.slug || '').trim()
-  const priceValue = Number(product?.sale_price ?? product?.price ?? 0)
+  const priceValue = Number(product?.sale_price_decimal ?? product?.price_decimal ?? 0)
   const normalizedPriceValue = Number.isFinite(priceValue) ? priceValue : 0
   const currency = String(product?.currency || '').trim().toUpperCase()
 
@@ -744,6 +985,26 @@ const sendUploadedAttachment = async (file: File, mediaType: 'image' | 'video'):
   } finally {
     attachmentUploading.value = false
   }
+}
+
+const handleReplyPaste = async (event: ClipboardEvent): Promise<void> => {
+  if (!props.selectedConversation || props.replying || attachmentUploading.value) return
+  const clipboardItems = Array.from(event.clipboardData?.items || [])
+  const imageItem = clipboardItems.find((item) => item.kind === 'file' && item.type.startsWith('image/'))
+  const imageFile = imageItem?.getAsFile()
+  if (!imageFile) return
+
+  event.preventDefault()
+  await sendUploadedAttachment(imageFile, 'image')
+}
+
+const handleReplyKeydown = (event: KeyboardEvent): void => {
+  if (event.key !== 'Enter' || event.isComposing || event.shiftKey) return
+  if (!props.selectedConversation || props.replying || attachmentUploading.value || !replyModel.value.trim()) return
+
+  // Enter and Ctrl/Cmd+Enter send; Shift+Enter remains available for a newline.
+  event.preventDefault()
+  emit('send-reply')
 }
 
 const handleLocalImageUpload = async (event: Event): Promise<void> => {

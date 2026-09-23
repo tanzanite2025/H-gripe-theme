@@ -20,24 +20,24 @@ func TestProductRepositoryDecrementVariantStocksUsesConditionalUpdate(t *testing
 	repo := NewProductRepository(db)
 
 	p := &product.Product{
-		SKU:      "LIMITED-RIM",
-		Name:     "Limited Rim",
-		Slug:     "limited-rim",
-		Currency: "USD",
-		Price:    199.99,
-		Stock:    1,
+		SKU:        "LIMITED-RIM",
+		Name:       "Limited Rim",
+		Slug:       "limited-rim",
+		Currency:   "USD",
+		PriceMinor: 19999,
+		Stock:      1,
 	}
 	require.NoError(t, repo.Create(p))
 
 	variant := product.ProductVariant{
-		ProductID: p.ID,
-		SKU:       "LIMITED-RIM-01",
-		Title:     "Limited Rim 01",
-		Currency:  "USD",
-		Price:     199.99,
-		Stock:     1,
-		IsActive:  true,
-		IsDefault: true,
+		ProductID:  p.ID,
+		SKU:        "LIMITED-RIM-01",
+		Title:      "Limited Rim 01",
+		Currency:   "USD",
+		PriceMinor: 19999,
+		Stock:      1,
+		IsActive:   true,
+		IsDefault:  true,
 	}
 	require.NoError(t, db.Create(&variant).Error)
 
@@ -52,7 +52,7 @@ func TestProductRepositoryDecrementVariantStocksUsesConditionalUpdate(t *testing
 
 	var storedProduct product.Product
 	require.NoError(t, db.First(&storedProduct, p.ID).Error)
-	require.Equal(t, 1, storedProduct.Stock, "inventory writes must not update the product compatibility summary")
+	require.Zero(t, storedProduct.Stock, "inventory writes must not persist a product compatibility summary")
 
 	_, err = repo.DecrementVariantStocks(map[uint]int{variant.ID: 1})
 	require.Error(t, err)
@@ -98,14 +98,14 @@ func TestProductRepositoryTranslatedVariantUsesMasterInventory(t *testing.T) {
 	db := newProductVariantTestDB(t)
 	repo := NewProductRepository(db)
 
-	root := &product.Product{SKU: "MASTER-RIM", Name: "Master Rim", Slug: "master-rim", Currency: "USD", Price: 100, Stock: 10}
+	root := &product.Product{SKU: "MASTER-RIM", Name: "Master Rim", Slug: "master-rim", Currency: "USD", PriceMinor: 10000, Stock: 10}
 	require.NoError(t, repo.Create(root))
-	master := product.ProductVariant{ProductID: root.ID, SKU: "MASTER-RIM-VAR", Currency: "USD", Price: 100, Stock: 10, IsActive: true, IsDefault: true}
+	master := product.ProductVariant{ProductID: root.ID, SKU: "MASTER-RIM-VAR", Currency: "USD", PriceMinor: 10000, Stock: 10, IsActive: true, IsDefault: true}
 	require.NoError(t, db.Create(&master).Error)
-	translated := &product.Product{SKU: "MASTER-RIM-FR", Name: "Master Rim FR", Slug: "master-rim-fr", Currency: "USD", Price: 100, Stock: 10}
+	translated := &product.Product{SKU: "MASTER-RIM-FR", Name: "Master Rim FR", Slug: "master-rim-fr", Currency: "USD", PriceMinor: 10000, Stock: 10}
 	require.NoError(t, repo.Create(translated))
 	masterID := master.ID
-	localized := product.ProductVariant{ProductID: translated.ID, MasterVariantID: &masterID, SKU: "MASTER-RIM-VAR-fr", Currency: "USD", Price: 100, Stock: 5, IsActive: true, IsDefault: true}
+	localized := product.ProductVariant{ProductID: translated.ID, MasterVariantID: &masterID, SKU: "MASTER-RIM-VAR-fr", Currency: "USD", PriceMinor: 10000, Stock: 5, IsActive: true, IsDefault: true}
 	require.NoError(t, db.Create(&localized).Error)
 
 	productIDs, err := repo.DecrementVariantStocks(map[uint]int{localized.ID: 3})
@@ -123,17 +123,17 @@ func TestProductRepositoryTranslatedVariantUsesMasterInventory(t *testing.T) {
 	var storedRootProduct, storedTranslatedProduct product.Product
 	require.NoError(t, db.First(&storedRootProduct, root.ID).Error)
 	require.NoError(t, db.First(&storedTranslatedProduct, translated.ID).Error)
-	assert.Equal(t, 10, storedRootProduct.Stock)
-	assert.Equal(t, 10, storedTranslatedProduct.Stock)
+	assert.Zero(t, storedRootProduct.Stock)
+	assert.Zero(t, storedTranslatedProduct.Stock)
 }
 
 func TestProductRepositoryIncrementVariantStockDoesNotWriteProductSummary(t *testing.T) {
 	db := newProductVariantTestDB(t)
 	repo := NewProductRepository(db)
 
-	record := &product.Product{SKU: "RESTOCK-RIM", Name: "Restock Rim", Slug: "restock-rim", Currency: "USD", Price: 100, Stock: 2}
+	record := &product.Product{SKU: "RESTOCK-RIM", Name: "Restock Rim", Slug: "restock-rim", Currency: "USD", PriceMinor: 10000, Stock: 2}
 	require.NoError(t, repo.Create(record))
-	variant := product.ProductVariant{ProductID: record.ID, SKU: "RESTOCK-RIM-VAR", Currency: "USD", Price: 100, Stock: 2, IsActive: true, IsDefault: true}
+	variant := product.ProductVariant{ProductID: record.ID, SKU: "RESTOCK-RIM-VAR", Currency: "USD", PriceMinor: 10000, Stock: 2, IsActive: true, IsDefault: true}
 	require.NoError(t, db.Create(&variant).Error)
 
 	productIDs, err := repo.IncrementVariantStock(variant.ID, 3)
@@ -145,24 +145,27 @@ func TestProductRepositoryIncrementVariantStockDoesNotWriteProductSummary(t *tes
 	require.Equal(t, 5, storedVariant.Stock)
 	var storedProduct product.Product
 	require.NoError(t, db.First(&storedProduct, record.ID).Error)
-	require.Equal(t, 2, storedProduct.Stock)
+	require.Zero(t, storedProduct.Stock)
 }
 
-func TestSyncProductSummaryUsesLowestEffectiveActiveVariantPrice(t *testing.T) {
-	salePrice := 75.0
-	item := &product.Product{}
-	variants := []product.ProductVariant{
-		{SKU: "DEFAULT", Currency: "USD", Price: 100, Stock: 3, IsActive: true, IsDefault: true},
-		{SKU: "SALE", Currency: "USD", Price: 120, SalePrice: &salePrice, Stock: 4, IsActive: true},
-		{SKU: "INACTIVE-CHEAP", Currency: "USD", Price: 10, Stock: 8, IsActive: false},
-	}
+func TestProductRepositoryComponentInventoryValidationAndBulkRestore(t *testing.T) {
+	db := newProductVariantTestDB(t)
+	repo := NewProductRepository(db)
+	productRecord := &product.Product{SKU: "COMPONENT-KIT", Name: "Component Kit", Slug: "component-kit", Currency: "USD", PriceMinor: 1000}
+	require.NoError(t, repo.Create(productRecord))
+	component := product.ProductVariant{ProductID: productRecord.ID, SKU: "COMPONENT-KIT-01", Currency: "USD", PriceMinor: 1000, Stock: 5, IsActive: true, IsDefault: true}
+	require.NoError(t, db.Create(&component).Error)
 
-	syncProductSummaryFromVariants(item, variants)
+	require.NoError(t, repo.ValidateVariantStocks(map[uint]int{component.ID: 3}))
+	require.Error(t, repo.ValidateVariantStocks(map[uint]int{component.ID: 6}))
+	require.NoError(t, repo.ValidateVariantStocks(map[uint]int{component.ID: 2, component.ID: 1}))
 
-	require.Equal(t, "DEFAULT", item.SKU)
-	require.Equal(t, 120.0, item.Price)
-	require.Equal(t, &salePrice, item.SalePrice)
-	require.Equal(t, 7, item.Stock)
+	productIDs, err := repo.IncrementVariantStocks(map[uint]int{component.ID: 2})
+	require.NoError(t, err)
+	require.Equal(t, []uint{productRecord.ID}, productIDs)
+	var stored product.ProductVariant
+	require.NoError(t, db.First(&stored, component.ID).Error)
+	require.Equal(t, 7, stored.Stock)
 }
 
 func newProductVariantTestDB(t *testing.T) *gorm.DB {

@@ -11,7 +11,6 @@ import (
 
 var domainManagedSettingGroups = map[string]struct{}{
 	"loyalty":              {},
-	"redeem":               {},
 	"currency":             {},
 	"payment_secret":       {},
 	"payment_installments": {},
@@ -30,7 +29,6 @@ func IsDomainManagedSettingGroup(group string) bool {
 func IsDomainManagedSettingKey(key string) bool {
 	normalized := strings.ToLower(strings.TrimSpace(key))
 	return strings.HasPrefix(normalized, "tz_loyalty_") ||
-		strings.HasPrefix(normalized, "tz_redeem_") ||
 		strings.HasPrefix(normalized, "currency_") ||
 		strings.HasPrefix(normalized, "payment_gateway_") ||
 		strings.HasPrefix(normalized, "payment_installments_") ||

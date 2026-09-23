@@ -3,10 +3,16 @@ import test from 'node:test'
 
 import {
   calculateRenderedAuditBudgetMilliseconds,
+  lighthouseCategoriesForScope,
   LighthouseExecutionError,
   runLighthouseSamples,
   selectMedianLighthouseResult,
 } from '../src/lighthouse.mjs'
+
+test('limits link text audits to Lighthouse SEO', () => {
+  assert.deepEqual(lighthouseCategoriesForScope('link_text'), ['seo'])
+  assert.deepEqual(lighthouseCategoriesForScope('headings'), ['performance', 'accessibility', 'best-practices', 'seo'])
+})
 
 test('selects the Lighthouse sample with the median performance score', () => {
   const samples = [

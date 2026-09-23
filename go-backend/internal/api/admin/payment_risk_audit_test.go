@@ -24,7 +24,7 @@ func TestPaymentRefundExecutionConfirmationFailureIsAuditLogged(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
 	auditRecorder := &fakePaymentAuditRecorder{}
-	handler := NewPaymentRefundExecutionHandler(service.NewPaymentService(nil, nil), nil)
+	handler := NewPaymentRefundExecutionHandler(service.NewPaymentService(nil, nil))
 	handler.ConfigureAuditService(auditRecorder)
 
 	recorder := httptest.NewRecorder()
@@ -35,7 +35,7 @@ func TestPaymentRefundExecutionConfirmationFailureIsAuditLogged(t *testing.T) {
 	context.Request = httptest.NewRequest(http.MethodPost, "/api/admin/payment/refunds/55/execute", strings.NewReader(`{}`))
 	context.Request.Header.Set("Content-Type", "application/json")
 
-	handler.ExecutePendingRefund(context)
+	handler.RequestPendingRefundExecution(context)
 
 	require.Equal(t, http.StatusBadRequest, recorder.Code)
 	require.Len(t, auditRecorder.logs, 1)
@@ -65,7 +65,7 @@ func TestPaymentRefundRecommendationPendingRefundAuditMasksOperatorText(t *testi
 	context.Request = httptest.NewRequest(
 		http.MethodPost,
 		"/api/admin/payment/risk/refund-recommendations/8/pending-refund",
-		strings.NewReader(`{"amount":25.5,"reason":"customer private note","decision_notes":"internal decision note"}`),
+		strings.NewReader(`{"amount_minor":2550,"reason":"customer private note","decision_notes":"internal decision note"}`),
 	)
 	context.Request.Header.Set("Content-Type", "application/json")
 
@@ -162,7 +162,7 @@ func TestPaymentCreateRefundAuditMasksReason(t *testing.T) {
 	context.Request = httptest.NewRequest(
 		http.MethodPost,
 		"/api/admin/payment/refunds",
-		strings.NewReader(`{"order_id":12,"transaction_id":34,"amount":19.99,"reason":"customer private refund reason"}`),
+		strings.NewReader(`{"order_id":12,"transaction_id":34,"amount_minor":1999,"reason":"customer private refund reason"}`),
 	)
 	context.Request.Header.Set("Content-Type", "application/json")
 
@@ -312,14 +312,15 @@ func TestPaymentMethodUpdateAuditMasksSettingsInChangesAndOldValue(t *testing.T)
 
 	newSettings := `{"api_key":"pm_secret_new","merchant_id":"merchant_private"}`
 	body := paymentMethodAuditRequestBody(t, map[string]interface{}{
-		"name":       "Credit Card Updated",
-		"code":       "card",
-		"fee_type":   "percentage",
-		"fee_value":  2.5,
-		"min_amount": 5,
-		"max_amount": 500,
-		"enabled":    false,
-		"settings":   newSettings,
+		"name":             "Credit Card Updated",
+		"code":             "card",
+		"fee_type":         "percentage",
+		"fee_value_minor":  250,
+		"fee_rate_decimal": "2.5",
+		"min_amount_minor": 500,
+		"max_amount_minor": 50000,
+		"enabled":          false,
+		"settings":         newSettings,
 	})
 
 	recorder := httptest.NewRecorder()

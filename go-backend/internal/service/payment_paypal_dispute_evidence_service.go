@@ -15,6 +15,7 @@ import (
 	"strings"
 	"time"
 
+	domainmoney "commerce-platform/internal/domain/money"
 	orderdomain "commerce-platform/internal/domain/order"
 	"commerce-platform/internal/domain/orderevidence"
 	paymentdomain "commerce-platform/internal/domain/payment"
@@ -44,6 +45,12 @@ type PayPalDisputeEvidenceSubmitter interface {
 type PayPalDisputeEvidenceDocumentStorage interface {
 	UploadFromReader(ctx context.Context, reader io.Reader, filename string) (string, error)
 }
+
+type PayPalDisputeEvidenceAttachmentURLProvider interface {
+	GetPresignedURL(ctx context.Context, key string, duration time.Duration) (string, error)
+}
+
+const paypalDisputeEvidenceAttachmentURLTTL = 2 * time.Hour
 
 type PayPalDisputeInvoiceSellerProfileProvider interface {
 	SellerProfile() (invoice.SellerProfile, error)
@@ -78,7 +85,7 @@ type PayPalDisputeEvidencePackage struct {
 	FulfillmentEvidence   *OrderEvidencePackageAssembly         `json:"fulfillment_evidence,omitempty"`
 	PolicyDisclosure      *DisputePolicyDisclosureEvidence      `json:"policy_disclosure,omitempty"`
 	Refunds               []DisputeRefundEvidence               `json:"refunds"`
-	Shipment              *shippingdomain.TrackingShipment      `json:"-"`
+	Shipments             []shippingdomain.TrackingShipment     `json:"-"`
 	TrackingEvents        []shippingdomain.TrackingEvent        `json:"-"`
 	TrackingContext       *OrderEvidenceTrackingContext         `json:"tracking_context,omitempty"`
 	TrackingEventEvidence []OrderEvidenceDeliveryEvent          `json:"tracking_events"`
@@ -209,12 +216,18 @@ func (s *PaymentService) BuildPayPalDisputeEvidencePackage(disputeID uint) (*Pay
 		pkg.Warnings = append(pkg.Warnings, "Order evidence package assembler is not configured; fulfillment evidence was not loaded.")
 	} else {
 		pkg.FulfillmentEvidence = fulfillmentEvidence
-		pkg.Shipment = fulfillmentEvidence.Shipment
+		pkg.Shipments = fulfillmentEvidence.Shipments
 		pkg.TrackingEvents = fulfillmentEvidence.TrackingEvents
 		pkg.TrackingContext = fulfillmentEvidence.TrackingContext
 		pkg.TrackingEventEvidence = projectOrderEvidenceDeliveryEvents(fulfillmentEvidence.TrackingEvents)
 		pkg.Warnings = append(pkg.Warnings, fulfillmentEvidence.Warnings...)
 	}
+	// Surface the exact carrier POD document that can be sent to PayPal in the
+	// preview. The URL is short-lived and is regenerated during submission, so
+	// previewing never makes the final provider request depend on a stale URL.
+	podDocuments, podWarnings := s.payPalDisputeCarrierPODDocuments(context.Background(), pkg)
+	pkg.Documents = append(pkg.Documents, podDocuments...)
+	pkg.Warnings = append(pkg.Warnings, podWarnings...)
 
 	if s.ticketRepo != nil {
 		messages, err := s.ticketRepo.FindDisputeCandidateMessages(repository.DisputeCommunicationFilter{
@@ -229,7 +242,7 @@ func (s *PaymentService) BuildPayPalDisputeEvidencePackage(disputeID uint) (*Pay
 		pkg.Communications = disputeCommunicationEvidence(messages)
 	}
 
-	if strings.TrimSpace(orderRecord.TrackingNumber) == "" && pkg.Shipment == nil {
+	if len(pkg.Shipments) == 0 {
 		pkg.Warnings = append(pkg.Warnings, "No tracking number is available on the order.")
 	}
 	if len(pkg.TrackingEvents) == 0 {
@@ -243,10 +256,6 @@ func (s *PaymentService) BuildPayPalDisputeEvidencePackage(disputeID uint) (*Pay
 	if len(pkg.Communications) == 0 {
 		pkg.Warnings = append(pkg.Warnings, "No linked customer communication was found by order number, customer account, or order email.")
 	}
-	if trackingSignaturePODEvent(pkg.TrackingEvents) == nil {
-		pkg.Warnings = append(pkg.Warnings, "Carrier official proof-of-delivery PDF attachment is not configured yet. PayPal will receive structured tracking, invoice, and communication notes.")
-	}
-
 	finalizePayPalDisputeEvidencePackage(pkg)
 	return pkg, nil
 }
@@ -358,6 +367,9 @@ func (s *PaymentService) loadPayPalEvidenceSubmissionSnapshot(
 		documents, documentWarnings = s.paypalDisputeEvidenceDocuments(ctx, pkg, lockedAt)
 	} else {
 		documentWarnings = append(documentWarnings, "Commercial invoice PDF auto-attachment is not enabled in the payment service configuration; structured PayPal evidence was submitted without the PDF document.")
+		podDocuments, podWarnings := s.payPalDisputeCarrierPODDocuments(ctx, pkg)
+		documents = append(documents, podDocuments...)
+		documentWarnings = append(documentWarnings, podWarnings...)
 	}
 	pkg.Documents = documents
 	pkg.Warnings = append(pkg.Warnings, documentWarnings...)
@@ -402,41 +414,82 @@ func (s *PaymentService) paypalDisputeEvidenceDocuments(ctx context.Context, pkg
 	}
 	if s == nil || s.paypalDisputeDocumentStorage == nil {
 		warnings = append(warnings, "Commercial invoice PDF storage is not configured; no invoice document was attached.")
-		return documents, warnings
+	} else {
+		document, options, err := s.paypalDisputeCommercialInvoice(pkg, generatedAt)
+		if err != nil {
+			warnings = append(warnings, "Commercial invoice PDF was not generated: "+err.Error())
+		} else {
+			pdfBytes, pdfWarnings, renderErr := s.paypalDisputeCommercialInvoiceAttachmentPDF(document, options)
+			warnings = append(warnings, pdfWarnings...)
+			if renderErr != nil {
+				warnings = append(warnings, "Commercial invoice PDF was not rendered: "+renderErr.Error())
+			} else if len(pdfBytes) > 0 {
+				name := paypalEvidenceDocumentName(document.DocumentNumber, "commercial-invoice")
+				uploadedURL, uploadErr := s.paypalDisputeDocumentStorage.UploadFromReader(ctx, bytes.NewReader(pdfBytes), name)
+				if uploadErr != nil {
+					warnings = append(warnings, "Commercial invoice PDF upload failed: "+uploadErr.Error())
+				} else if !paypalEvidenceDocumentURLUsable(uploadedURL) {
+					warnings = append(warnings, "Commercial invoice PDF URL is not a public HTTPS URL usable by PayPal; no invoice document was attached.")
+				} else {
+					documents = append(documents, PayPalDisputeEvidenceDocument{
+						Type: "commercial_invoice", Name: name, URL: uploadedURL,
+						SHA256: paypalEvidenceDocumentSHA256(pdfBytes),
+					})
+				}
+			}
+		}
 	}
 
-	document, options, err := s.paypalDisputeCommercialInvoice(pkg, generatedAt)
-	if err != nil {
-		warnings = append(warnings, "Commercial invoice PDF was not generated: "+err.Error())
-		return documents, warnings
-	}
-	pdfBytes, pdfWarnings, err := s.paypalDisputeCommercialInvoiceAttachmentPDF(document, options)
-	if err != nil {
-		warnings = append(warnings, "Commercial invoice PDF was not rendered: "+err.Error())
-		return documents, warnings
-	}
-	warnings = append(warnings, pdfWarnings...)
-	if len(pdfBytes) == 0 {
-		return documents, warnings
-	}
+	podDocuments, podWarnings := s.payPalDisputeCarrierPODDocuments(ctx, pkg)
+	documents = append(documents, podDocuments...)
+	warnings = append(warnings, podWarnings...)
+	return documents, warnings
+}
 
-	name := paypalEvidenceDocumentName(document.DocumentNumber, "commercial-invoice")
-	uploadedURL, err := s.paypalDisputeDocumentStorage.UploadFromReader(ctx, bytes.NewReader(pdfBytes), name)
-	if err != nil {
-		warnings = append(warnings, "Commercial invoice PDF upload failed: "+err.Error())
+func (s *PaymentService) payPalDisputeCarrierPODDocuments(ctx context.Context, pkg *PayPalDisputeEvidencePackage) ([]PayPalDisputeEvidenceDocument, []string) {
+	documents := []PayPalDisputeEvidenceDocument{}
+	warnings := []string{}
+	if pkg == nil || pkg.FulfillmentEvidence == nil || pkg.FulfillmentEvidence.Package == nil {
+		warnings = append(warnings, "Carrier official proof-of-delivery PDF is not attached to the signed_pod evidence item.")
 		return documents, warnings
 	}
-	if !paypalEvidenceDocumentURLUsable(uploadedURL) {
-		warnings = append(warnings, "Commercial invoice PDF URL is not a public HTTPS URL usable by PayPal; no invoice document was attached.")
+	if s == nil || s.paypalDisputeEvidenceAttachmentURLProvider == nil {
+		warnings = append(warnings, "Private evidence storage cannot issue an HTTPS URL for the carrier proof-of-delivery PDF.")
 		return documents, warnings
 	}
-
-	documents = append(documents, PayPalDisputeEvidenceDocument{
-		Type:   "commercial_invoice",
-		Name:   name,
-		URL:    uploadedURL,
-		SHA256: paypalEvidenceDocumentSHA256(pdfBytes),
-	})
+	for _, item := range pkg.FulfillmentEvidence.Package.Items {
+		if item.ItemType != orderevidence.EvidenceItemTypeSignedPOD {
+			continue
+		}
+		for _, attachment := range item.Attachments {
+			if !strings.EqualFold(strings.TrimSpace(attachment.MimeType), "application/pdf") {
+				continue
+			}
+			urlValue, err := s.paypalDisputeEvidenceAttachmentURLProvider.GetPresignedURL(ctx, attachment.StorageKey, paypalDisputeEvidenceAttachmentURLTTL)
+			if err != nil {
+				warnings = append(warnings, "Carrier official proof-of-delivery PDF URL generation failed: "+err.Error())
+				continue
+			}
+			if !paypalEvidenceDocumentURLUsable(urlValue) {
+				warnings = append(warnings, "Carrier official proof-of-delivery PDF URL is not an HTTPS URL usable by PayPal.")
+				continue
+			}
+			name := strings.TrimSpace(attachment.OriginalFilename)
+			if name == "" {
+				orderID := ""
+				if pkg.Order != nil {
+					orderID = fmt.Sprint(pkg.Order.ID)
+				}
+				name = paypalEvidenceDocumentName(orderID, "carrier-pod")
+			}
+			documents = append(documents, PayPalDisputeEvidenceDocument{
+				Type: "carrier_pod", Name: name, URL: urlValue, SHA256: strings.TrimSpace(attachment.SHA256),
+			})
+		}
+	}
+	if len(documents) == 0 {
+		warnings = append(warnings, "Carrier official proof-of-delivery PDF is not attached to the signed_pod evidence item.")
+	}
 	return documents, warnings
 }
 
@@ -505,9 +558,9 @@ func buildPayPalDisputeEvidenceDraft(pkg *PayPalDisputeEvidencePackage) PayPalDi
 		CustomerEmailAddress:   disputeCustomerEmail(orderRecord),
 		ShippingAddress:        formatDisputeAddress(orderRecord.ShippingAddress),
 		ProductDescription:     disputeProductDescription(orderRecord),
-		ShippingCarrier:        paypalDisputeShippingCarrier(orderRecord, pkg.Shipment),
+		ShippingCarrier:        paypalDisputeShippingCarrier(orderRecord, pkg.Shipments),
 		ShippingDate:           disputeShippingDate(orderRecord, pkg.TrackingEvents),
-		ShippingTrackingNumber: disputeTrackingNumber(orderRecord, pkg.Shipment),
+		ShippingTrackingNumber: disputeTrackingNumber(orderRecord, pkg.Shipments),
 		InvoiceSummary:         paypalDisputeInvoiceSummary(orderRecord),
 		CommunicationSummary:   disputeCommunicationSummary(pkg.Communications),
 	}
@@ -527,7 +580,7 @@ func finalizePayPalDisputeEvidencePackage(pkg *PayPalDisputeEvidencePackage) {
 	pkg.EvidenceChecklist = buildDisputeEvidenceChecklist(
 		"paypal",
 		pkg.Order,
-		pkg.Shipment,
+		pkg.Shipments,
 		pkg.TrackingEvents,
 		pkg.Communications,
 		pkg.Authentication,
@@ -605,9 +658,27 @@ func paypalDisputeInvoiceSummary(orderRecord *orderdomain.Order) string {
 	if orderRecord == nil {
 		return ""
 	}
+	formatOrderMoney := func(value domainmoney.Money) string {
+		formatted, err := value.FormatMajor()
+		if err != nil {
+			return "0"
+		}
+		return formatted
+	}
+	total, totalErr := orderRecord.TotalMoney()
+	if totalErr != nil {
+		return ""
+	}
+	subtotal, subtotalErr := orderRecord.SubtotalMoney()
+	shipping, shippingErr := orderRecord.ShippingFeeMoney()
+	tax, taxErr := orderRecord.TaxMoney()
+	discount, discountErr := orderRecord.DiscountMoney()
+	if subtotalErr != nil || shippingErr != nil || taxErr != nil || discountErr != nil {
+		return ""
+	}
 	lines := []string{
-		fmt.Sprintf("Invoice/order %s total %.2f %s.", orderRecord.OrderNumber, orderRecord.TotalAmount, orderRecord.Currency),
-		fmt.Sprintf("Subtotal %.2f; shipping %.2f; tax %.2f; discount %.2f.", orderRecord.SubtotalAmount, orderRecord.ShippingFee, orderRecord.TaxAmount, orderRecord.DiscountAmount),
+		fmt.Sprintf("Invoice/order %s total %s %s.", orderRecord.OrderNumber, formatOrderMoney(total), orderRecord.Currency),
+		fmt.Sprintf("Subtotal %s; shipping %s; tax %s; discount %s.", formatOrderMoney(subtotal), formatOrderMoney(shipping), formatOrderMoney(tax), formatOrderMoney(discount)),
 	}
 	if orderRecord.PaidAt != nil {
 		lines = append(lines, fmt.Sprintf("Paid at %s.", orderRecord.PaidAt.UTC().Format(time.RFC3339)))
@@ -616,24 +687,34 @@ func paypalDisputeInvoiceSummary(orderRecord *orderdomain.Order) string {
 		if strings.TrimSpace(item.ProductName) == "" {
 			continue
 		}
-		lines = append(lines, fmt.Sprintf("%s SKU %s x%d line total %.2f.", item.ProductName, item.SKU, item.Quantity, item.Total))
+		lineTotal, lineErr := item.TotalMoney()
+		if lineErr != nil {
+			continue
+		}
+		lines = append(lines, fmt.Sprintf("%s SKU %s x%d line total %s.", item.ProductName, item.SKU, item.Quantity, formatOrderMoney(lineTotal)))
 	}
 	return truncateEvidenceText(strings.Join(lines, " "), 1200)
 }
 
-func paypalDisputeShippingCarrier(orderRecord *orderdomain.Order, shipment *shippingdomain.TrackingShipment) string {
-	if shipment != nil {
-		if strings.TrimSpace(shipment.ProviderCarrierCode) != "" {
-			return strings.TrimSpace(shipment.ProviderCarrierCode)
+func paypalDisputeShippingCarrier(orderRecord *orderdomain.Order, shipments []shippingdomain.TrackingShipment) string {
+	values := make([]string, 0, len(shipments))
+	seen := make(map[string]struct{})
+	for _, shipment := range shipments {
+		value := strings.TrimSpace(shipment.ProviderCarrierCode)
+		if value == "" && shipment.Mapping != nil {
+			value = strings.TrimSpace(shipment.Mapping.ProviderCarrierName)
 		}
-		if shipment.Mapping != nil && strings.TrimSpace(shipment.Mapping.ProviderCarrierName) != "" {
-			return strings.TrimSpace(shipment.Mapping.ProviderCarrierName)
+		if value != "" {
+			if _, ok := seen[value]; !ok {
+				seen[value] = struct{}{}
+				values = append(values, value)
+			}
 		}
 	}
-	if orderRecord != nil && strings.TrimSpace(orderRecord.ProviderCarrierCode) != "" {
-		return strings.TrimSpace(orderRecord.ProviderCarrierCode)
+	if len(values) > 0 {
+		return strings.Join(values, ", ")
 	}
-	return disputeShippingCarrier(orderRecord, shipment)
+	return disputeShippingCarrier(orderRecord, shipments)
 }
 
 func paypalCarrierName(value string) string {

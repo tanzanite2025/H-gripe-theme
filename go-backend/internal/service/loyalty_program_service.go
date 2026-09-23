@@ -3,12 +3,10 @@ package service
 import (
 	"errors"
 	"fmt"
-	"math/big"
 	"time"
 
 	"commerce-platform/internal/domain/currency"
 	"commerce-platform/internal/domain/loyalty"
-	domainmoney "commerce-platform/internal/domain/money"
 	"commerce-platform/internal/repository"
 )
 
@@ -24,62 +22,33 @@ type LoyaltyProgramConfigInput struct {
 	Currency                  string
 	PurchaseEarnPointsPerUnit int
 	ExchangeRatePoints        int
-	MinRedeemPoints           int
-	MaxValuePerDayCents       int64
-	CardExpiryDays            int
 	ReferralReferrerPoints    int
 	ReferralRefereePoints     int
 	CheckInBasePoints         int
 	CheckInStreakIntervalDays int
 	CheckInStreakBonusPoints  int
 	CheckInMaxPoints          int
-	RedeemOptions             []LoyaltyProgramOptionInput
-	RedeemValuesCents         []int64
 	CreatedBy                 *uint
 }
 
-type LoyaltyProgramOptionInput struct {
-	ValueCents    int64
-	Currency      string
-	StockQuantity int64
-}
-
 type LoyaltyProgramConfigResponse struct {
-	ID                        uint                           `json:"id"`
-	Version                   int                            `json:"version"`
-	Status                    string                         `json:"status"`
-	Enabled                   bool                           `json:"enabled"`
-	Currency                  string                         `json:"currency"`
-	PointsBaseCurrency        string                         `json:"points_base_currency"`
-	PurchaseEarnPointsPerUnit int                            `json:"purchase_earn_points_per_currency_unit"`
-	ExchangeRatePoints        int                            `json:"exchange_rate_points"`
-	MinRedeemPoints           int                            `json:"min_redeem_points"`
-	MaxValuePerDayCents       int64                          `json:"max_value_per_day_cents"`
-	MaxValuePerDay            float64                        `json:"max_value_per_day"`
-	CardExpiryDays            int                            `json:"card_expiry_days"`
-	ReferralReferrerPoints    int                            `json:"referral_referrer_points"`
-	ReferralRefereePoints     int                            `json:"referral_referee_points"`
-	CheckInBasePoints         int                            `json:"checkin_base_points"`
-	CheckInStreakIntervalDays int                            `json:"checkin_streak_interval_days"`
-	CheckInStreakBonusPoints  int                            `json:"checkin_streak_bonus_points"`
-	CheckInMaxPoints          int                            `json:"checkin_max_points"`
-	RedeemOptions             []LoyaltyProgramOptionResponse `json:"redeem_options"`
-	AvailableCurrencies       []currency.CurrencyOption      `json:"available_currencies"`
-	CreatedAt                 time.Time                      `json:"created_at"`
-	UpdatedAt                 time.Time                      `json:"updated_at"`
-}
-
-type LoyaltyProgramOptionResponse struct {
-	ID                uint    `json:"id"`
-	ValueCents        int64   `json:"value_cents"`
-	Value             float64 `json:"value"`
-	Currency          string  `json:"currency"`
-	PointsRequired    int     `json:"points_required"`
-	StockQuantity     int64   `json:"stock_quantity"`
-	RedeemedQuantity  int64   `json:"redeemed_quantity"`
-	RemainingQuantity int64   `json:"remaining_quantity"`
-	Label             string  `json:"label"`
-	Status            string  `json:"status"`
+	ID                        uint                      `json:"id"`
+	Version                   int                       `json:"version"`
+	Status                    string                    `json:"status"`
+	Enabled                   bool                      `json:"enabled"`
+	Currency                  string                    `json:"currency"`
+	PointsBaseCurrency        string                    `json:"points_base_currency"`
+	PurchaseEarnPointsPerUnit int                       `json:"purchase_earn_points_per_currency_unit"`
+	ExchangeRatePoints        int                       `json:"exchange_rate_points"`
+	ReferralReferrerPoints    int                       `json:"referral_referrer_points"`
+	ReferralRefereePoints     int                       `json:"referral_referee_points"`
+	CheckInBasePoints         int                       `json:"checkin_base_points"`
+	CheckInStreakIntervalDays int                       `json:"checkin_streak_interval_days"`
+	CheckInStreakBonusPoints  int                       `json:"checkin_streak_bonus_points"`
+	CheckInMaxPoints          int                       `json:"checkin_max_points"`
+	AvailableCurrencies       []currency.CurrencyOption `json:"available_currencies"`
+	CreatedAt                 time.Time                 `json:"created_at"`
+	UpdatedAt                 time.Time                 `json:"updated_at"`
 }
 
 type LoyaltyProgramService struct {
@@ -122,9 +91,6 @@ func (s *LoyaltyProgramService) Update(input LoyaltyProgramConfigInput) (*loyalt
 		Currency:                  input.Currency,
 		PurchaseEarnPointsPerUnit: input.PurchaseEarnPointsPerUnit,
 		ExchangeRatePoints:        input.ExchangeRatePoints,
-		MinRedeemPoints:           input.MinRedeemPoints,
-		MaxValuePerDayCents:       input.MaxValuePerDayCents,
-		CardExpiryDays:            input.CardExpiryDays,
 		ReferralReferrerPoints:    input.ReferralReferrerPoints,
 		ReferralRefereePoints:     input.ReferralRefereePoints,
 		CheckInBasePoints:         input.CheckInBasePoints,
@@ -132,30 +98,6 @@ func (s *LoyaltyProgramService) Update(input LoyaltyProgramConfigInput) (*loyalt
 		CheckInStreakBonusPoints:  input.CheckInStreakBonusPoints,
 		CheckInMaxPoints:          input.CheckInMaxPoints,
 		CreatedBy:                 input.CreatedBy,
-	}
-
-	optionInputs := input.RedeemOptions
-	if len(optionInputs) == 0 {
-		for _, valueCents := range input.RedeemValuesCents {
-			optionInputs = append(optionInputs, LoyaltyProgramOptionInput{
-				ValueCents:    valueCents,
-				Currency:      input.Currency,
-				StockQuantity: 0,
-			})
-		}
-	}
-
-	for index, optionInput := range optionInputs {
-		optionCurrency := currency.NormalizeCode(optionInput.Currency)
-		if optionCurrency == "" {
-			optionCurrency = currency.NormalizeCode(input.Currency)
-		}
-		config.RedeemOptions = append(config.RedeemOptions, loyalty.ProgramRedeemOption{
-			ValueCents:    optionInput.ValueCents,
-			Currency:      optionCurrency,
-			StockQuantity: optionInput.StockQuantity,
-			SortOrder:     index,
-		})
 	}
 
 	if err := validateProgramConfig(config); err != nil {
@@ -185,9 +127,6 @@ func validateProgramConfig(config *loyalty.ProgramConfig) error {
 	if config.ExchangeRatePoints <= 0 {
 		return fmt.Errorf("%w: exchange rate must be greater than zero", ErrInvalidLoyaltyProgramConfig)
 	}
-	if config.MinRedeemPoints < 0 || config.MaxValuePerDayCents < 0 || config.CardExpiryDays < 0 {
-		return fmt.Errorf("%w: redemption limits cannot be negative", ErrInvalidLoyaltyProgramConfig)
-	}
 	if config.ReferralReferrerPoints < 0 || config.ReferralRefereePoints < 0 ||
 		config.CheckInBasePoints < 0 || config.CheckInStreakBonusPoints < 0 ||
 		config.CheckInMaxPoints < 0 {
@@ -199,70 +138,7 @@ func validateProgramConfig(config *loyalty.ProgramConfig) error {
 	if config.CheckInMaxPoints < config.CheckInBasePoints {
 		return fmt.Errorf("%w: check-in max points cannot be lower than base points", ErrInvalidLoyaltyProgramConfig)
 	}
-	if config.Enabled && len(config.RedeemOptions) == 0 {
-		return fmt.Errorf("%w: at least one redeem option is required", ErrInvalidLoyaltyProgramConfig)
-	}
-
-	seen := make(map[string]struct{}, len(config.RedeemOptions))
-	for index := range config.RedeemOptions {
-		option := &config.RedeemOptions[index]
-		if option.ValueCents <= 0 {
-			return fmt.Errorf("%w: redeem option value must be greater than zero", ErrInvalidLoyaltyProgramConfig)
-		}
-		option.Currency = currency.NormalizeCode(option.Currency)
-		if !currency.IsValidCode(option.Currency) || !currency.IsCatalogCode(option.Currency) {
-			return fmt.Errorf("%w: redeem option currency is unsupported", ErrInvalidLoyaltyProgramConfig)
-		}
-		if option.StockQuantity < 0 || option.RedeemedQuantity < 0 {
-			return fmt.Errorf("%w: redeem option stock cannot be negative", ErrInvalidLoyaltyProgramConfig)
-		}
-		if option.RedeemedQuantity > option.StockQuantity {
-			return fmt.Errorf("%w: redeemed quantity cannot exceed stock quantity", ErrInvalidLoyaltyProgramConfig)
-		}
-		key := redeemOptionKey(option.Currency, option.ValueCents)
-		if _, exists := seen[key]; exists {
-			return fmt.Errorf("%w: duplicate redeem option value", ErrInvalidLoyaltyProgramConfig)
-		}
-		seen[key] = struct{}{}
-		option.SortOrder = index
-	}
-
 	return nil
-}
-
-func redeemOptionKey(currencyCode string, valueCents int64) string {
-	return fmt.Sprintf("%s:%d", currency.NormalizeCode(currencyCode), valueCents)
-}
-
-// PointsForGiftCardMoney values a gift-card amount in its own currency's
-// minor-unit scale. The currency's ISO minor-unit precision determines the
-// major-unit conversion before applying the configured points rate.
-func PointsForGiftCardMoney(value domainmoney.Money, exchangeRatePoints int) (int, error) {
-	if err := value.Validate(); err != nil || value.AmountMinor() <= 0 || exchangeRatePoints <= 0 {
-		return 0, ErrInvalidLoyaltyProgramConfig
-	}
-	minorUnits, ok := currency.MinorUnits(value.Currency().String())
-	if !ok {
-		return 0, ErrInvalidLoyaltyProgramConfig
-	}
-	scale := new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(minorUnits)), nil)
-	product := new(big.Int).Mul(big.NewInt(value.AmountMinor()), big.NewInt(int64(exchangeRatePoints)))
-	quotient, remainder := new(big.Int), new(big.Int)
-	quotient.QuoRem(product, scale, remainder)
-	if remainder.Sign() != 0 {
-		twice := new(big.Int).Lsh(new(big.Int).Abs(remainder), 1)
-		if twice.Cmp(scale) >= 0 {
-			quotient.Add(quotient, big.NewInt(1))
-		}
-	}
-	if !quotient.IsInt64() || quotient.Sign() <= 0 {
-		return 0, fmt.Errorf("%w: calculated points are out of range", ErrInvalidLoyaltyProgramConfig)
-	}
-	maxInt := int64(^uint(0) >> 1)
-	if quotient.Int64() > maxInt {
-		return 0, fmt.Errorf("%w: calculated points are out of range", ErrInvalidLoyaltyProgramConfig)
-	}
-	return int(quotient.Int64()), nil
 }
 
 func programConfigResponse(config *loyalty.ProgramConfig) LoyaltyProgramConfigResponse {
@@ -275,74 +151,16 @@ func programConfigResponse(config *loyalty.ProgramConfig) LoyaltyProgramConfigRe
 		PointsBaseCurrency:        LoyaltyPointsBaseCurrency,
 		PurchaseEarnPointsPerUnit: config.PurchaseEarnPointsPerUnit,
 		ExchangeRatePoints:        config.ExchangeRatePoints,
-		MinRedeemPoints:           config.MinRedeemPoints,
-		MaxValuePerDayCents:       config.MaxValuePerDayCents,
-		MaxValuePerDay:            majorValueFromCents(config.MaxValuePerDayCents, config.Currency),
-		CardExpiryDays:            config.CardExpiryDays,
 		ReferralReferrerPoints:    config.ReferralReferrerPoints,
 		ReferralRefereePoints:     config.ReferralRefereePoints,
 		CheckInBasePoints:         config.CheckInBasePoints,
 		CheckInStreakIntervalDays: config.CheckInStreakIntervalDays,
 		CheckInStreakBonusPoints:  config.CheckInStreakBonusPoints,
 		CheckInMaxPoints:          config.CheckInMaxPoints,
-		RedeemOptions:             make([]LoyaltyProgramOptionResponse, 0, len(config.RedeemOptions)),
 		AvailableCurrencies:       currency.Catalog(),
 		CreatedAt:                 config.CreatedAt,
 		UpdatedAt:                 config.UpdatedAt,
 	}
 
-	for _, option := range config.RedeemOptions {
-		optionMoney, moneyErr := domainmoney.New(option.ValueCents, option.Currency)
-		pointsRequired := 0
-		if moneyErr == nil {
-			pointsRequired, _ = PointsForGiftCardMoney(optionMoney, config.ExchangeRatePoints)
-		}
-		value := majorValueFromCents(option.ValueCents, option.Currency)
-		label := giftCardValueLabel(option.ValueCents, option.Currency)
-		response.RedeemOptions = append(response.RedeemOptions, LoyaltyProgramOptionResponse{
-			ID:                option.ID,
-			ValueCents:        option.ValueCents,
-			Value:             value,
-			Currency:          option.Currency,
-			PointsRequired:    pointsRequired,
-			StockQuantity:     option.StockQuantity,
-			RedeemedQuantity:  option.RedeemedQuantity,
-			RemainingQuantity: option.RemainingQuantity(),
-			Label:             label,
-			Status:            redeemOptionPublicStatus(config, pointsRequired, option.RemainingQuantity()),
-		})
-	}
-
 	return response
-}
-
-func majorValueFromCents(valueCents int64, currencyCode string) float64 {
-	value, err := domainmoney.New(valueCents, currencyCode)
-	if err != nil {
-		return 0
-	}
-	major, err := value.MajorFloat()
-	if err != nil {
-		return 0
-	}
-	return major
-}
-
-func giftCardValueLabel(valueMinor int64, currencyCode string) string {
-	money, err := domainmoney.New(valueMinor, currencyCode)
-	if err != nil {
-		return fmt.Sprintf("%s Gift Card", currency.NormalizeCode(currencyCode))
-	}
-	formatted, err := money.FormatMajor()
-	if err != nil {
-		return fmt.Sprintf("%s Gift Card", currency.NormalizeCode(currencyCode))
-	}
-	return fmt.Sprintf("%s %s Gift Card", currency.NormalizeCode(currencyCode), formatted)
-}
-
-func redeemOptionPublicStatus(config *loyalty.ProgramConfig, pointsRequired int, remainingQuantity int64) string {
-	if config == nil || !config.Enabled || pointsRequired < config.MinRedeemPoints || remainingQuantity <= 0 {
-		return "inactive"
-	}
-	return "active"
 }

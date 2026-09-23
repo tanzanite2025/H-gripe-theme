@@ -27,8 +27,8 @@ type GoogleMerchantOffer struct {
 	ContentLanguage       string                  `gorm:"type:varchar(8)" json:"content_language"`
 	CurrencyCode          string                  `gorm:"type:varchar(3)" json:"currency_code"`
 	FeedLabel             string                  `gorm:"type:varchar(64)" json:"feed_label"`
-	PriceOverride         *float64                `gorm:"type:decimal(12,2)" json:"price_override"`
-	SalePriceOverride     *float64                `gorm:"type:decimal(12,2)" json:"sale_price_override"`
+	PriceOverrideMinor     *int64                 `gorm:"column:price_override_minor" json:"price_override_minor"`
+	SalePriceOverrideMinor *int64                 `gorm:"column:sale_price_override_minor" json:"sale_price_override_minor"`
 	PublicationStatus     string                  `gorm:"type:varchar(24);not null;default:'draft';index" json:"publication_status"`
 	SyncStatus            string                  `gorm:"type:varchar(24);not null;default:'not_synced';index" json:"sync_status"`
 	LastValidatedAt       *time.Time              `json:"last_validated_at"`

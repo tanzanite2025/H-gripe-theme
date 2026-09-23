@@ -126,7 +126,7 @@ func newShowcaseUploadEligibilityTestDB(t *testing.T) *gorm.DB {
 
 func createShowcaseEligibilityTestOrder(t *testing.T, db *gorm.DB, item order.Order) {
 	t.Helper()
-	item.TotalAmount = 100
+	item.TotalAmountMinor = 10000
 	item.Currency = "USD"
 	require.NoError(t, db.Create(&item).Error)
 }

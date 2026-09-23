@@ -31,7 +31,7 @@ func TestSEOResourceServiceCanonicalizesProductDiagnosticImages(t *testing.T) {
 		Slug:     "carbon-wheel",
 		Locale:   "en",
 		Status:   "active",
-		Price:    199,
+		PriceMinor: 19900,
 		Currency: "USD",
 		Stock:    1,
 		Media: []product.ProductMedia{{

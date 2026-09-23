@@ -105,6 +105,14 @@ var (
 		AllowedExtensions:   []string{".mp4", ".mov", ".webm"},
 		AllowedContentTypes: []string{"video/mp4", "video/quicktime", "video/webm"},
 	}
+	// OrderEvidencePODDocumentRule accepts only carrier-issued PDF files. It is
+	// intentionally separate from the image evidence rule so a PDF cannot be
+	// attached to unrelated fulfillment evidence items.
+	OrderEvidencePODDocumentRule = FileRule{
+		MaxSize:             10 << 20,
+		AllowedExtensions:   []string{".pdf"},
+		AllowedContentTypes: []string{"application/pdf"},
+	}
 	ProductImageRule = FileRule{
 		MaxSize:             12 << 20,
 		AllowedExtensions:   []string{".jpg", ".jpeg", ".png", ".webp"},

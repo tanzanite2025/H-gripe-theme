@@ -1,0 +1,2 @@
+-- Legacy coupon major-unit columns are intentionally not restored. Rebuild
+-- display projections from value_minor/min_amount_minor/max_discount_minor.

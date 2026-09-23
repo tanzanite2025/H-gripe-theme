@@ -46,16 +46,16 @@ type ProfitabilityItemInput struct {
 	SellingCurrency string
 	CostCurrency    string
 
-	ListPrice float64
-	SalePrice *float64
-	UnitCost  *float64
+	ListPriceMinor int64
+	SalePriceMinor *int64
+	UnitCostMinor  *int64
 	// UnitCostKnown distinguishes an explicit zero cost from an omitted
 	// cost. Unknown cost values are never persisted as a ready snapshot.
 	UnitCostKnown bool
 
-	InboundShippingUnitCost float64
-	PackagingUnitCost       float64
-	OtherUnitCost           float64
+	InboundShippingUnitCostMinor int64
+	PackagingUnitCostMinor       int64
+	OtherUnitCostMinor           int64
 
 	SupplierCostDetails *ProfitabilitySupplierCostDetailsInput
 }
@@ -220,7 +220,7 @@ func (s *ProductProfitabilityService) BulkUpsert(items []ProfitabilityItemInput)
 			})
 			continue
 		}
-		if result.UnitCost == nil {
+		if result.UnitCostMinor == nil {
 			issues = append(issues, ProfitabilityItemIssue{
 				Index:       index,
 				ProductCode: normalized.ProductCode,
@@ -237,8 +237,8 @@ func (s *ProductProfitabilityService) BulkUpsert(items []ProfitabilityItemInput)
 			ProductCode: normalized.ProductCode,
 			ProductName: normalized.ProductName,
 			ProductSupplierCostRecordDetailsInput: ProductSupplierCostRecordDetailsInput{
-				UnitCost: result.UnitCost,
-				Currency: costCurrency,
+				UnitCostMinor: result.UnitCostMinor,
+				Currency:      costCurrency,
 			},
 		}
 		if normalized.SupplierCostDetails != nil {
@@ -249,9 +249,9 @@ func (s *ProductProfitabilityService) BulkUpsert(items []ProfitabilityItemInput)
 			supplierCostRecordInput.LeadTimeDays = normalized.SupplierCostDetails.LeadTimeDays
 			supplierCostRecordInput.MinimumOrderQuantity = normalized.SupplierCostDetails.MinimumOrderQuantity
 		}
-		supplierCostRecordInput.InboundShippingUnitCost = normalized.InboundShippingUnitCost
-		supplierCostRecordInput.PackagingUnitCost = normalized.PackagingUnitCost
-		supplierCostRecordInput.OtherUnitCost = normalized.OtherUnitCost
+		supplierCostRecordInput.InboundShippingUnitCostMinor = normalized.InboundShippingUnitCostMinor
+		supplierCostRecordInput.PackagingUnitCostMinor = normalized.PackagingUnitCostMinor
+		supplierCostRecordInput.OtherUnitCostMinor = normalized.OtherUnitCostMinor
 		supplierCostRecord, supplierCostRecordErr := normalizeProductSupplierCostRecordSnapshotInput(supplierCostRecordInput)
 		if supplierCostRecordErr != nil {
 			issues = append(issues, ProfitabilityItemIssue{
@@ -315,9 +315,9 @@ func normalizeProfitabilityItem(input ProfitabilityItemInput) (ProfitabilityItem
 		return input, errors.New("product_name is too long")
 	}
 	if !input.UnitCostKnown {
-		input.UnitCost = nil
+		input.UnitCostMinor = nil
 	}
-	if input.UnitCostKnown && input.UnitCost == nil {
+	if input.UnitCostKnown && input.UnitCostMinor == nil {
 		return input, errors.New("unit_cost is required when unit_cost_known is true")
 	}
 	return input, nil
@@ -325,42 +325,42 @@ func normalizeProfitabilityItem(input ProfitabilityItemInput) (ProfitabilityItem
 
 func calculateProfitabilityItem(input ProfitabilityItemInput) (suppliercostdomain.ProfitCalculationResult, error) {
 	return suppliercostdomain.CalculateProfit(suppliercostdomain.ProfitCalculationInput{
-		ProductCode:             input.ProductCode,
-		ProductName:             input.ProductName,
-		SellingCurrency:         input.SellingCurrency,
-		CostCurrency:            input.CostCurrency,
-		ListPrice:               input.ListPrice,
-		SalePrice:               input.SalePrice,
-		UnitCost:                input.UnitCost,
-		InboundShippingUnitCost: input.InboundShippingUnitCost,
-		PackagingUnitCost:       input.PackagingUnitCost,
-		OtherUnitCost:           input.OtherUnitCost,
+		ProductCode:                  input.ProductCode,
+		ProductName:                  input.ProductName,
+		SellingCurrency:              input.SellingCurrency,
+		CostCurrency:                 input.CostCurrency,
+		ListPriceMinor:               input.ListPriceMinor,
+		SalePriceMinor:               input.SalePriceMinor,
+		UnitCostMinor:                input.UnitCostMinor,
+		InboundShippingUnitCostMinor: input.InboundShippingUnitCostMinor,
+		PackagingUnitCostMinor:       input.PackagingUnitCostMinor,
+		OtherUnitCostMinor:           input.OtherUnitCostMinor,
 	})
 }
 
 func profitCalculationRecord(result suppliercostdomain.ProfitCalculationResult) suppliercostdomain.ProductProfitCalculation {
 	record := suppliercostdomain.ProductProfitCalculation{
-		ProductCode:             result.ProductCode,
-		ProductName:             result.ProductName,
-		Currency:                result.Currency,
-		ListPrice:               result.ListPrice,
-		SalePrice:               result.SalePrice,
-		EffectiveSellingPrice:   result.EffectiveSellingPrice,
-		InboundShippingUnitCost: result.InboundShippingUnitCost,
-		PackagingUnitCost:       result.PackagingUnitCost,
-		OtherUnitCost:           result.OtherUnitCost,
-		CalculationStatus:       result.Status,
-		FormulaVersion:          result.FormulaVersion,
-		CalculatedAt:            time.Now().UTC(),
+		ProductCode:                  result.ProductCode,
+		ProductName:                  result.ProductName,
+		Currency:                     result.Currency,
+		ListPriceMinor:               result.ListPriceMinor,
+		SalePriceMinor:               result.SalePriceMinor,
+		EffectiveSellingPriceMinor:   result.EffectiveSellingPriceMinor,
+		InboundShippingUnitCostMinor: result.InboundShippingUnitCostMinor,
+		PackagingUnitCostMinor:       result.PackagingUnitCostMinor,
+		OtherUnitCostMinor:           result.OtherUnitCostMinor,
+		CalculationStatus:            result.Status,
+		FormulaVersion:               result.FormulaVersion,
+		CalculatedAt:                 time.Now().UTC(),
 	}
-	if result.UnitCost != nil {
-		record.UnitCost = *result.UnitCost
+	if result.UnitCostMinor != nil {
+		record.UnitCostMinor = *result.UnitCostMinor
 	}
-	if result.LandedCost != nil {
-		record.LandedCost = *result.LandedCost
+	if result.LandedCostMinor != nil {
+		record.LandedCostMinor = *result.LandedCostMinor
 	}
-	if result.GrossProfit != nil {
-		record.GrossProfit = *result.GrossProfit
+	if result.GrossProfitMinor != nil {
+		record.GrossProfitMinor = *result.GrossProfitMinor
 	}
 	if result.GrossMarginBPS != nil {
 		record.GrossMarginBPS = *result.GrossMarginBPS

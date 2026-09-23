@@ -168,30 +168,30 @@
             </AdminFormField>
 
             <AdminFormField
-              label="最小金额"
-              description="低于此金额时自动回退普通卡支付。0 表示不限制。"
+              label="最小金额（minor）"
+              description="按适用币种最小单位填写；低于此金额时自动回退普通卡支付。0 表示不限制。"
             >
               <Input
                 v-model="settings.min_amount_text"
                 type="number"
                 min="0"
-                step="0.01"
+                step="1"
                 :disabled="loading || saving || !canEdit"
-                placeholder="100.00"
+                placeholder="10000"
               />
             </AdminFormField>
 
             <AdminFormField
-              label="最大金额"
-              description="高于此金额时自动回退普通卡支付。0 表示不限制。"
+              label="最大金额（minor）"
+              description="按适用币种最小单位填写；高于此金额时自动回退普通卡支付。0 表示不限制。"
             >
               <Input
                 v-model="settings.max_amount_text"
                 type="number"
                 min="0"
-                step="0.01"
+                step="1"
                 :disabled="loading || saving || !canEdit"
-                placeholder="5000.00"
+                placeholder="500000"
               />
             </AdminFormField>
 
@@ -301,14 +301,14 @@ const splitCSV = (value: string): string[] =>
 const joinCSV = (values?: string[] | null): string =>
   Array.isArray(values) ? values.join(", ") : "";
 
-const formatAmount = (value?: number | null): string =>
-  typeof value === "number" && Number.isFinite(value) && value > 0
-    ? value.toFixed(2)
-    : "";
+const formatAmount = (value?: number | string | null): string => {
+  const amount = Number(value || 0);
+  return Number.isSafeInteger(amount) && amount > 0 ? String(amount) : "";
+};
 
 const parseAmount = (value: string): number => {
   const amount = Number(String(value || "").trim());
-  return Number.isFinite(amount) && amount > 0 ? amount : 0;
+  return Number.isSafeInteger(amount) && amount > 0 ? amount : 0;
 };
 
 type CsvField =
@@ -342,8 +342,8 @@ const assignSettings = (
   settings.payment_method_types_text = joinCSV(payload?.payment_method_types);
   settings.countries_text = joinCSV(payload?.countries);
   settings.currencies_text = joinCSV(payload?.currencies);
-  settings.min_amount_text = formatAmount(payload?.min_amount);
-  settings.max_amount_text = formatAmount(payload?.max_amount);
+  settings.min_amount_text = formatAmount(payload?.min_amount_minor);
+  settings.max_amount_text = formatAmount(payload?.max_amount_minor);
   settings.notes = String(payload?.notes || "");
 };
 
@@ -378,8 +378,8 @@ const buildPayload = () => ({
   currencies: splitCSV(settings.currencies_text).map((item) =>
     item.toUpperCase(),
   ),
-  min_amount: parseAmount(settings.min_amount_text),
-  max_amount: parseAmount(settings.max_amount_text),
+  min_amount_minor: parseAmount(settings.min_amount_text),
+  max_amount_minor: parseAmount(settings.max_amount_text),
   notes: String(settings.notes || "").trim(),
 });
 

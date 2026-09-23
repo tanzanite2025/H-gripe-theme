@@ -2,6 +2,7 @@ package repository
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	domainmoney "commerce-platform/internal/domain/money"
@@ -80,6 +81,28 @@ func (r *PaymentRepository) FindRefundsByOrderID(orderID uint) ([]payment.Refund
 	return refunds, err
 }
 
+// HasPendingRefundByOrderID reports whether an order has a refund intent that
+// may still move money at the gateway. The order row is locked by the caller
+// when this is used as a fulfillment gate, so the check and the subsequent
+// shipping mutation share the same serialization point.
+func (r *PaymentRepository) HasPendingRefundByOrderID(orderID uint) (bool, error) {
+	var count int64
+	err := r.db.Model(&payment.Refund{}).
+		Where("order_id = ? AND status = ?", orderID, "pending").
+		Count(&count).Error
+	if err != nil {
+		// SQLite unit fixtures may intentionally omit optional payment tables;
+		// production dialects fail closed so a missing refund migration can never
+		// silently allow fulfillment.
+		if r.db != nil && r.db.Dialector.Name() == "sqlite" &&
+			(strings.Contains(strings.ToLower(err.Error()), "no such table") || strings.Contains(strings.ToLower(err.Error()), "doesn't exist")) {
+			return false, nil
+		}
+		return false, err
+	}
+	return count > 0, nil
+}
+
 func (r *PaymentRepository) FindPendingRefundByTransactionAndAmount(transactionID uint, amount domainmoney.Money) (*payment.Refund, error) {
 	if err := amount.Validate(); err != nil {
 		return nil, fmt.Errorf("pending refund amount: %w", err)
@@ -95,22 +118,100 @@ func (r *PaymentRepository) FindPendingRefundByTransactionAndAmount(transactionI
 	}
 
 	for i := range refunds {
-		candidate, err := domainmoney.FromMajorFloat(refunds[i].Amount, amount.Currency().String())
+		candidate, err := refunds[i].AmountMoney()
+		if err == nil && candidate.Currency() != amount.Currency() {
+			err = domainmoney.ErrCurrencyMismatch
+		}
 		if err != nil {
 			return nil, fmt.Errorf("pending refund %d amount: %w", refunds[i].ID, err)
 		}
-		if candidate.AmountMinor() == amount.AmountMinor() {
+		if candidate.Currency() == amount.Currency() && candidate.AmountMinor() == amount.AmountMinor() {
 			return &refunds[i], nil
 		}
-		requested, err := domainmoney.FromMajorFloat(refunds[i].RequestedAmount, amount.Currency().String())
+		requested, err := refunds[i].RequestedAmountMoney()
+		if err == nil && requested.Currency() != amount.Currency() {
+			err = domainmoney.ErrCurrencyMismatch
+		}
 		if err != nil {
 			return nil, fmt.Errorf("pending refund %d requested amount: %w", refunds[i].ID, err)
 		}
-		if requested.AmountMinor() == amount.AmountMinor() {
+		if requested.Currency() == amount.Currency() && requested.AmountMinor() == amount.AmountMinor() {
 			return &refunds[i], nil
 		}
 	}
 	return nil, gorm.ErrRecordNotFound
+}
+
+func (r *PaymentRepository) sumRefundMinor(column string, filterColumn string, filterValue interface{}, statuses ...string) (int64, error) {
+	var total int64
+	query := r.db.Model(&payment.Refund{}).Where(filterColumn+" = ?", filterValue)
+	if len(statuses) > 0 {
+		query = query.Where("status IN ?", statuses)
+	}
+	if err := query.Select("COALESCE(SUM(" + column + "), 0)").Scan(&total).Error; err != nil {
+		return 0, err
+	}
+	return total, nil
+}
+
+func (r *PaymentRepository) SumRefundAmountMinorByTransactionID(transactionID uint, statuses ...string) (int64, error) {
+	return r.sumRefundMinor("amount_minor", "transaction_id", transactionID, statuses...)
+}
+
+func (r *PaymentRepository) SumRefundAmountMinorByOrderID(orderID uint, statuses ...string) (int64, error) {
+	return r.sumRefundMinor("amount_minor", "order_id", orderID, statuses...)
+}
+
+func (r *PaymentRepository) SumRefundRequestedAmountMinorByOrderID(orderID uint, statuses ...string) (int64, error) {
+	var total int64
+	query := r.db.Model(&payment.Refund{}).Where("order_id = ?", orderID)
+	if len(statuses) > 0 {
+		query = query.Where("status IN ?", statuses)
+	}
+	if err := query.Select("COALESCE(SUM(CASE WHEN requested_amount_minor > 0 THEN requested_amount_minor ELSE amount_minor END), 0)").Scan(&total).Error; err != nil {
+		return 0, err
+	}
+	return total, nil
+}
+
+func (r *PaymentRepository) SumRefundDiscountClawbackMinorByOrderID(orderID uint, statuses ...string) (int64, error) {
+	return r.sumRefundMinor("discount_clawback_amount_minor", "order_id", orderID, statuses...)
+}
+
+func (r *PaymentRepository) SumRefundTotalAmountMinorByTransactionID(transactionID uint, statuses ...string) (int64, error) {
+	return r.SumRefundAmountMinorByTransactionID(transactionID, statuses...)
+}
+
+func (r *PaymentRepository) SumRefundTotalAmountMinorByOrderID(orderID uint, statuses ...string) (int64, error) {
+	return r.SumRefundAmountMinorByOrderID(orderID, statuses...)
+}
+
+func (r *PaymentRepository) SumRefundedSubtotalMinorAmountByOrderID(orderID uint, statuses ...string) (int64, error) {
+	var lineSubtotal int64
+	lineQuery := r.db.Model(&payment.RefundLineItem{}).
+		Joins("JOIN refunds ON refunds.id = refund_line_items.refund_id").
+		Where("refund_line_items.order_id = ?", orderID).
+		Where("refunds.deleted_at IS NULL")
+	if len(statuses) > 0 {
+		lineQuery = lineQuery.Where("refunds.status IN ?", statuses)
+	}
+	if err := lineQuery.Select("COALESCE(SUM(refund_line_items.line_subtotal_minor), 0)").Scan(&lineSubtotal).Error; err != nil {
+		return 0, err
+	}
+	var amountOnly int64
+	amountQuery := r.db.Model(&payment.Refund{}).
+		Where("order_id = ?", orderID).
+		Where("NOT EXISTS (SELECT 1 FROM refund_line_items WHERE refund_line_items.refund_id = refunds.id)")
+	if len(statuses) > 0 {
+		amountQuery = amountQuery.Where("status IN ?", statuses)
+	}
+	if err := amountQuery.Select("COALESCE(SUM(CASE WHEN requested_amount_minor > 0 THEN requested_amount_minor ELSE amount_minor END), 0)").Scan(&amountOnly).Error; err != nil {
+		return 0, err
+	}
+	if amountOnly > 0 && lineSubtotal > int64(^uint64(0)>>1)-amountOnly {
+		return 0, fmt.Errorf("refunded subtotal overflows int64")
+	}
+	return lineSubtotal + amountOnly, nil
 }
 
 func (r *PaymentRepository) FindPendingRefundByTransactionIDForUpdate(transactionID uint) (*payment.Refund, error) {
@@ -118,6 +219,24 @@ func (r *PaymentRepository) FindPendingRefundByTransactionIDForUpdate(transactio
 	err := r.lockForUpdate(r.db).
 		Preload("LineItems").
 		Where("transaction_id = ? AND status = ?", transactionID, "pending").
+		Order("created_at ASC").
+		First(&rf).Error
+	if err != nil {
+		return nil, err
+	}
+	return &rf, nil
+}
+
+// FindFailedRefundByTransactionIDForUpdate finds a locally failed refund that
+// has not yet been associated with a provider refund identifier. Synchronous
+// gateway failures leave this retryable intent in that state; a later provider
+// failure webhook can then enrich the same refund instead of creating a second
+// failed intent for the transaction.
+func (r *PaymentRepository) FindFailedRefundByTransactionIDForUpdate(transactionID uint) (*payment.Refund, error) {
+	var rf payment.Refund
+	err := r.lockForUpdate(r.db).
+		Preload("LineItems").
+		Where("transaction_id = ? AND status = ? AND refund_id IS NULL", transactionID, "failed").
 		Order("created_at ASC").
 		First(&rf).Error
 	if err != nil {
@@ -139,112 +258,6 @@ func (r *PaymentRepository) FindRefundByTransactionIDAndReasonForUpdate(transact
 	return &rf, nil
 }
 
-func (r *PaymentRepository) SumRefundAmountByTransactionID(transactionID uint, statuses ...string) (float64, error) {
-	var total float64
-	query := r.db.Model(&payment.Refund{}).Where("transaction_id = ?", transactionID)
-	if len(statuses) > 0 {
-		query = query.Where("status IN ?", statuses)
-	}
-	err := query.Select("COALESCE(SUM(amount), 0)").Scan(&total).Error
-	return total, err
-}
-
-func (r *PaymentRepository) SumRefundAmountByOrderID(orderID uint, statuses ...string) (float64, error) {
-	var total float64
-	query := r.db.Model(&payment.Refund{}).Where("order_id = ?", orderID)
-	if len(statuses) > 0 {
-		query = query.Where("status IN ?", statuses)
-	}
-	err := query.Select("COALESCE(SUM(amount), 0)").Scan(&total).Error
-	return total, err
-}
-
-func (r *PaymentRepository) SumRefundTotalAmountByTransactionID(transactionID uint, currencyCode string, statuses ...string) (float64, error) {
-	var amount float64
-	var giftCardAmount float64
-	query := r.db.Model(&payment.Refund{}).Where("transaction_id = ?", transactionID)
-	if len(statuses) > 0 {
-		query = query.Where("status IN ?", statuses)
-	}
-	if err := query.Select("COALESCE(SUM(amount), 0)").Scan(&amount).Error; err != nil {
-		return 0, err
-	}
-	if err := query.Select("COALESCE(SUM(gift_card_refund_amount), 0)").Scan(&giftCardAmount).Error; err != nil {
-		return 0, err
-	}
-	amountMoney, err := domainmoney.FromMajorFloat(amount, currencyCode)
-	if err != nil {
-		return 0, err
-	}
-	giftCardMoney, err := domainmoney.FromMajorFloat(giftCardAmount, currencyCode)
-	if err != nil {
-		return 0, err
-	}
-	totalMoney, err := amountMoney.Add(giftCardMoney)
-	if err != nil {
-		return 0, err
-	}
-	return totalMoney.MajorFloat()
-}
-
-func (r *PaymentRepository) SumRefundTotalAmountByOrderID(orderID uint, currencyCode string, statuses ...string) (float64, error) {
-	var amount float64
-	var giftCardAmount float64
-	query := r.db.Model(&payment.Refund{}).Where("order_id = ?", orderID)
-	if len(statuses) > 0 {
-		query = query.Where("status IN ?", statuses)
-	}
-	if err := query.Select("COALESCE(SUM(amount), 0)").Scan(&amount).Error; err != nil {
-		return 0, err
-	}
-	if err := query.Select("COALESCE(SUM(gift_card_refund_amount), 0)").Scan(&giftCardAmount).Error; err != nil {
-		return 0, err
-	}
-	amountMoney, err := domainmoney.FromMajorFloat(amount, currencyCode)
-	if err != nil {
-		return 0, err
-	}
-	giftCardMoney, err := domainmoney.FromMajorFloat(giftCardAmount, currencyCode)
-	if err != nil {
-		return 0, err
-	}
-	totalMoney, err := amountMoney.Add(giftCardMoney)
-	if err != nil {
-		return 0, err
-	}
-	return totalMoney.MajorFloat()
-}
-
-func (r *PaymentRepository) SumRefundGiftCardAmountByOrderID(orderID uint, statuses ...string) (float64, error) {
-	var total float64
-	query := r.db.Model(&payment.Refund{}).Where("order_id = ?", orderID)
-	if len(statuses) > 0 {
-		query = query.Where("status IN ?", statuses)
-	}
-	err := query.Select("COALESCE(SUM(gift_card_refund_amount), 0)").Scan(&total).Error
-	return total, err
-}
-
-func (r *PaymentRepository) SumRefundRequestedAmountByOrderID(orderID uint, statuses ...string) (float64, error) {
-	var total float64
-	query := r.db.Model(&payment.Refund{}).Where("order_id = ?", orderID)
-	if len(statuses) > 0 {
-		query = query.Where("status IN ?", statuses)
-	}
-	err := query.Select("COALESCE(SUM(CASE WHEN requested_amount > 0 THEN requested_amount ELSE amount END), 0)").Scan(&total).Error
-	return total, err
-}
-
-func (r *PaymentRepository) SumRefundDiscountClawbackByOrderID(orderID uint, statuses ...string) (float64, error) {
-	var total float64
-	query := r.db.Model(&payment.Refund{}).Where("order_id = ?", orderID)
-	if len(statuses) > 0 {
-		query = query.Where("status IN ?", statuses)
-	}
-	err := query.Select("COALESCE(SUM(discount_clawback_amount), 0)").Scan(&total).Error
-	return total, err
-}
-
 func (r *PaymentRepository) SumRefundLoyaltyPointsClawbackByOrderID(orderID uint, statuses ...string) (int, error) {
 	var total int
 	query := r.db.Model(&payment.Refund{}).Where("order_id = ?", orderID)
@@ -252,6 +265,16 @@ func (r *PaymentRepository) SumRefundLoyaltyPointsClawbackByOrderID(orderID uint
 		query = query.Where("status IN ?", statuses)
 	}
 	err := query.Select("COALESCE(SUM(loyalty_points_clawback), 0)").Scan(&total).Error
+	return total, err
+}
+
+func (r *PaymentRepository) SumRefundLoyaltyPointsSettledByOrderID(orderID uint, statuses ...string) (int, error) {
+	var total int
+	query := r.db.Model(&payment.Refund{}).Where("order_id = ?", orderID)
+	if len(statuses) > 0 {
+		query = query.Where("status IN ?", statuses)
+	}
+	err := query.Select("COALESCE(SUM(loyalty_points_clawback + loyalty_points_cash_recovered + loyalty_points_debt), 0)").Scan(&total).Error
 	return total, err
 }
 
@@ -263,59 +286,6 @@ func (r *PaymentRepository) SumRefundLoyaltyPointsReturnedByOrderID(orderID uint
 	}
 	err := query.Select("COALESCE(SUM(loyalty_points_returned), 0)").Scan(&total).Error
 	return total, err
-}
-
-func (r *PaymentRepository) SumRefundedSubtotalAmountByOrderID(orderID uint, currencyCode string, statuses ...string) (float64, error) {
-	lineItemSubtotal, err := r.sumRefundLineItemSubtotalAmountByOrderID(orderID, currencyCode, statuses...)
-	if err != nil {
-		return 0, err
-	}
-
-	var amountOnlySubtotal float64
-	query := r.db.Model(&payment.Refund{}).
-		Where("order_id = ?", orderID).
-		Where("NOT EXISTS (SELECT 1 FROM refund_line_items WHERE refund_line_items.refund_id = refunds.id)")
-	if len(statuses) > 0 {
-		query = query.Where("status IN ?", statuses)
-	}
-	if err := query.Select("COALESCE(SUM(CASE WHEN requested_amount > 0 THEN requested_amount ELSE amount END), 0)").Scan(&amountOnlySubtotal).Error; err != nil {
-		return 0, err
-	}
-
-	lineItemMoney, err := domainmoney.FromMajorFloat(lineItemSubtotal, currencyCode)
-	if err != nil {
-		return 0, err
-	}
-	amountOnlyMoney, err := domainmoney.FromMajorFloat(amountOnlySubtotal, currencyCode)
-	if err != nil {
-		return 0, err
-	}
-	totalMoney, err := lineItemMoney.Add(amountOnlyMoney)
-	if err != nil {
-		return 0, err
-	}
-	return totalMoney.MajorFloat()
-}
-
-func (r *PaymentRepository) sumRefundLineItemSubtotalAmountByOrderID(orderID uint, currencyCode string, statuses ...string) (float64, error) {
-	var totalMinor int64
-	query := r.db.Model(&payment.RefundLineItem{}).
-		Joins("JOIN refunds ON refunds.id = refund_line_items.refund_id").
-		Where("refund_line_items.order_id = ?", orderID).
-		Where("UPPER(refund_line_items.currency) = UPPER(?)", currencyCode).
-		Where("refunds.deleted_at IS NULL")
-	if len(statuses) > 0 {
-		query = query.Where("refunds.status IN ?", statuses)
-	}
-	err := query.Select("COALESCE(SUM(refund_line_items.line_subtotal_minor), 0)").Scan(&totalMinor).Error
-	if err != nil {
-		return 0, err
-	}
-	money, err := domainmoney.New(totalMinor, currencyCode)
-	if err != nil {
-		return 0, err
-	}
-	return money.MajorFloat()
 }
 
 func (r *PaymentRepository) SumRefundLineItemQuantitiesByOrderID(orderID uint, statuses ...string) (map[uint]int, error) {

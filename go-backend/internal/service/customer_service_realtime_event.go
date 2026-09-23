@@ -11,14 +11,27 @@ import (
 )
 
 const (
-	CustomerServiceEventMessageCreated = "conversation.message.created"
-	CustomerServiceEventMessagesRead   = "conversation.messages.read"
-	CustomerServiceEventAssigned       = "conversation.assigned"
-	CustomerServiceEventStatusChanged  = "conversation.status.changed"
+	CustomerServiceEventConversationCreated = "conversation.created"
+	CustomerServiceEventMessageCreated      = "conversation.message.created"
+	CustomerServiceEventMessagesRead        = "conversation.messages.read"
+	CustomerServiceEventAssigned            = "conversation.assigned"
+	CustomerServiceEventStatusChanged       = "conversation.status.changed"
+	CustomerServiceEventInboxStateChanged   = "conversation.inbox_state.changed"
+	// Reserved contract name. There is intentionally no producer until a
+	// transactional customer-service context mutation command exists.
 	CustomerServiceEventContextUpdated = "conversation.context.updated"
 	CustomerServiceEventTyping         = "conversation.typing"
 	CustomerServiceEventHeartbeat      = "heartbeat"
 )
+
+func CustomerServiceConversationCreatedEventID(ticketID uint) string {
+	return fmt.Sprintf("customer_service.conversation.created:%d", ticketID)
+}
+
+type CustomerServiceConversationCreatedPayload struct {
+	Status     string `json:"status"`
+	AssignedTo uint   `json:"assigned_to,omitempty"`
+}
 
 type CustomerServiceRealtimeAudience string
 
@@ -85,6 +98,18 @@ func CustomerServiceConversationAssignedEventID(ticketID, recipientUserID, assig
 
 func CustomerServiceConversationStatusChangedEventID(ticketID, statusVersion uint) string {
 	return fmt.Sprintf("customer_service.conversation.status.changed:%d:%d", ticketID, statusVersion)
+}
+
+func CustomerServiceConversationInboxStateChangedEventID(ticketID, recipientUserID, assignmentVersion uint, archived bool, archivedAt time.Time) string {
+	state := "restored"
+	if archived {
+		state = "archived"
+	}
+	stamp := "0"
+	if !archivedAt.IsZero() {
+		stamp = archivedAt.UTC().Format(time.RFC3339Nano)
+	}
+	return fmt.Sprintf("customer_service.conversation.inbox_state.changed:%d:%d:%d:%s:%s", ticketID, recipientUserID, assignmentVersion, state, stamp)
 }
 
 // NewCustomerServiceMessageCreatedEvent is the sole producer for durable

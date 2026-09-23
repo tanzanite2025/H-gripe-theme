@@ -11,6 +11,7 @@ import { loadChatAgentDirectory, normalizeChatAgentOnlineStatus } from '~/compos
 import { useCustomerServiceChatSync } from '~/composables/chat/useCustomerServiceChatSync'
 import { useChatMessageComposer } from '~/composables/chat/useChatMessageComposer'
 import { validateStorefrontUploadFiles } from '~/utils/uploadSpecs'
+import { majorToMinor } from '~/utils/money'
 import {
   CHAT_STORAGE_EXPIRY_DAYS,
   createEmptyChatRoom,
@@ -40,8 +41,6 @@ export const useWhatsAppState = (
     points,
     tierInfo,
     levelDiscounts,
-    userCoupons,
-    userPointCards,
     initMembership,
     refreshData: refreshMembershipData,
   } = useMembership()
@@ -718,7 +717,7 @@ export const useWhatsAppState = (
       slug: product.slug,
       sku: selectedVariant?.sku || product.sku,
       thumbnail,
-      price: Number(product.priceValue || 0),
+      price_minor: majorToMinor(Number(product.priceValue || 0), product.currency),
       currency: product.currency,
     })
   
@@ -994,8 +993,6 @@ export const useWhatsAppState = (
     points,
     tierInfo,
     levelDiscounts,
-    userCoupons,
-    userPointCards,
     isLoggedInForWarranty,
     showAuthModal,
     authMode,

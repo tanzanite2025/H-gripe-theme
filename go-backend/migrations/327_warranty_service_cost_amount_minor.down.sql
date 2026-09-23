@@ -1,0 +1,1 @@
+-- Legacy major-unit warranty service costs are intentionally not restored.

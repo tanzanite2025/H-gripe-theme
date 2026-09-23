@@ -6,6 +6,7 @@ import (
 	"commerce-platform/internal/pkg/safehtml"
 	"commerce-platform/internal/repository"
 	"errors"
+	"fmt"
 )
 
 type ProductMediaInput struct {
@@ -27,22 +28,38 @@ type ProductMediaInput struct {
 }
 
 type ProductVariantOptionValueInput struct {
-	ID                     *uint
-	SpecDefinitionID       uint
-	TemplateOptionItemID   *uint
-	SourceTemplateRevision int
-	ValueKey               string
-	Label                  string
-	ColorHex               string
-	SwatchMediaAssetID     *uint
-	SwatchURL              string
-	SortOrder              int
-	IsEnabled              *bool
-	PriceDeltaMinor        *int64
-	IsDefault              bool
-	InventoryPolicy        string
-	ComponentVariantID     *uint
-	ComponentQuantity      int
+	ID                        *uint
+	SpecDefinitionID          uint
+	TemplateOptionItemID      *uint
+	SourceTemplateRevision    int
+	ValueKey                  string
+	Label                     string
+	ColorHex                  string
+	SwatchMediaAssetID        *uint
+	SwatchURL                 string
+	SortOrder                 int
+	IsEnabled                 *bool
+	PriceDeltaMinor           *int64
+	WeightDeltaGrams          int
+	PackagingWeightDeltaGrams int
+	ProductionLeadTimeDays    int
+	RequiresProduction        bool
+	CancellationPolicy        string
+	ReturnPolicy              string
+	IsDefault                 bool
+	InventoryPolicy           string
+	ComponentVariantID        *uint
+	ComponentQuantity         int
+}
+
+// ProductOptionValueRelationInput describes an explicit dependency between
+// two already-materialized option values of one product. Relations are
+// replace-all updates and therefore do not require an ID.
+type ProductOptionValueRelationInput struct {
+	ID                  *uint
+	SourceOptionValueID uint
+	TargetOptionValueID uint
+	RelationType        string
 }
 
 type ProductCreateInput struct {
@@ -71,6 +88,7 @@ type ProductCreateInput struct {
 	Variants                       []ProductVariantInput
 	VariantOptionValues            []ProductVariantOptionValueInput
 	Media                          []ProductMediaInput
+	OptionValueRelations           []ProductOptionValueRelationInput
 }
 
 type ProductUpdateInput struct {
@@ -117,6 +135,8 @@ type ProductUpdateInput struct {
 	UpdateVariantOptionValues            bool
 	Media                                []ProductMediaInput
 	UpdateMedia                          bool
+	OptionValueRelations                 []ProductOptionValueRelationInput
+	UpdateOptionValueRelations           bool
 }
 
 func (s *ProductService) ListAdmin(page, pageSize int, status, locale, search, featured, customsStatus, productSpecificationTemplateID string) ([]product.Product, int64, error) {
@@ -154,6 +174,9 @@ func (s *ProductService) ListFilterableSpecificationsWithDynamicValuesForCategor
 }
 
 func (s *ProductService) CreateAdminProduct(input ProductCreateInput) (*product.Product, error) {
+	if len(input.OptionValueRelations) > 0 {
+		return nil, fmt.Errorf("%w: save the product before configuring option value relations", ErrProductOptionRelationInvalid)
+	}
 	locale, err := requireSupportedLocale(input.Locale)
 	if err != nil {
 		return nil, err
@@ -508,6 +531,14 @@ func (s *ProductService) UpdateAdminProduct(id uint, input ProductUpdateInput) (
 			return nil, err
 		}
 		effectiveOptionValues = optionValues
+	}
+	if input.UpdateOptionValueRelations {
+		relations, relErr := s.buildOptionValueRelations(existingProduct.ID, effectiveOptionValues, input.OptionValueRelations)
+		if relErr != nil {
+			return nil, relErr
+		}
+		existingProduct.OptionValueRelations = relations
+		existingProduct.OptionValueRelationsDirty = true
 	}
 
 	var variants []product.ProductVariant

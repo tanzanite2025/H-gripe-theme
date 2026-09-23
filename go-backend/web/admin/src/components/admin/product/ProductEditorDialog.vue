@@ -85,7 +85,7 @@
                   locked-title="商品语言已锁定"
                 />
               </AdminFormField>
-              <AdminFormField label="主基准币种" required :error="errors.currency" description="商品和 SKU 的录入金额使用这个币种；次展示价格由后台汇率缓存填充。">
+              <AdminFormField label="主基准币种" required :error="errors.currency" description="商品和 SKU 的录入金额使用这个基准币种；展示价由独立读模型刷新任务生成。">
                 <Input v-model="form.currency" class="font-mono uppercase" disabled />
               </AdminFormField>
               <AdminFormField label="简短描述" class="md:col-span-3">
@@ -202,7 +202,7 @@
                     <p v-if="selectedProductSpecTemplate.description" class="line-clamp-2 text-xs leading-5 text-muted-foreground">
                       {{ selectedProductSpecTemplate.description }}
                     </p>
-                    <div class="flex flex-wrap gap-2">
+                   <div class="flex flex-wrap gap-2">
                       <span class="rounded-full bg-background px-2.5 py-1 text-[11px] font-black text-foreground">
                         商品字段 {{ selectedSpecDefinitions.length }}
                       </span>
@@ -212,8 +212,20 @@
                     </div>
                     <div v-if="templateScopedValuesTouched" class="rounded-xl border border-amber-500/25 bg-amber-500/10 px-3 py-2 text-xs leading-5 text-amber-800 dark:text-amber-200">
                       切换模板会清空旧模板下的字段值和 SKU 选项值；SKU 价格、重量、库存和商品媒体会保留。
-                    </div>
-                  </div>
+                     </div>
+                     <Button
+                       v-if="mode === 'edit' && form.id"
+                       type="button"
+                       variant="outline"
+                       size="sm"
+                       :disabled="templateSyncLoading"
+                       @click="emit('preview-template-sync')"
+                     >
+                       <LoaderCircle v-if="templateSyncLoading" class="size-3.5 animate-spin" />
+                       <Tags v-else class="size-3.5" />
+                       {{ templateSyncLoading ? '读取差异中' : '预览模板同步' }}
+                     </Button>
+                   </div>
 
                   <div class="grid min-w-0 gap-2 lg:grid-cols-2">
                     <div class="min-w-0 rounded-xl bg-background/70 p-2.5">
@@ -317,9 +329,10 @@
             <div class="min-w-0 rounded-lg border">
               <ProductVariantEditor
                 :variants="form.variants"
-                :currency="form.currency"
                 :spec-definitions="variantSpecDefinitions"
                 :option-values="form.variant_option_values"
+                :option-value-relations="form.option_value_relations"
+                :product-id="form.id"
                 :custom-option-definitions="customOptionDefinitions"
                 :default-index="defaultVariantIndex"
                 :shipping-templates="shippingTemplates"
@@ -331,6 +344,7 @@
               />
             </div>
             <p v-if="errors.variants" class="mt-2 text-xs font-medium text-destructive">{{ errors.variants }}</p>
+            <p v-if="errors.option_value_relations" class="mt-2 text-xs font-medium text-destructive">{{ errors.option_value_relations }}</p>
           </AdminFormSection>
 
           <ProductProfitabilitySection
@@ -432,6 +446,13 @@
       </form>
     </DialogContent>
   </Dialog>
+  <ProductTemplateSyncDialog
+    :open="templateSyncDialogVisible"
+    :diff="templateSyncDiff"
+    :applying="templateSyncApplying"
+    @update:open="emit('update-template-sync-open', $event)"
+    @confirm="emit('confirm-template-sync')"
+  />
 </template>
 
 <script setup lang="ts">
@@ -445,9 +466,10 @@ import StorefrontLocaleSelect from '@/components/admin/StorefrontLocaleSelect.vu
 import ProductDescriptionEditor from '@/components/admin/product/ProductDescriptionEditor.vue'
 import ProductMediaSection from '@/components/admin/product/ProductMediaSection.vue'
 import ProductProfitabilitySection from '@/components/admin/product/ProductProfitabilitySection.vue'
+import ProductTemplateSyncDialog from '@/components/admin/product/ProductTemplateSyncDialog.vue'
 import ProductVariantEditor from '@/components/admin/product/ProductVariantEditor.vue'
 import type { ProductSupplierCostProfitDraft } from '@/composables/product/useProductSupplierCostProfitDraft'
-import type { ProductFormRecord } from '@/modules/product/productEditorTypes'
+import type { ProductFormRecord, ProductTemplateSyncDiff } from '@/modules/product/productEditorTypes'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -571,6 +593,10 @@ defineProps({
   customsClassifications: { type: Array as PropType<CustomsClassificationRecord[]>, default: () => [] },
   customsClassificationSelectValue: { type: String, default: '__none__' },
   templateScopedValuesTouched: { type: Boolean, default: false },
+  templateSyncDialogVisible: { type: Boolean, default: false },
+  templateSyncDiff: { type: Object as PropType<ProductTemplateSyncDiff | null>, default: null },
+  templateSyncLoading: { type: Boolean, default: false },
+  templateSyncApplying: { type: Boolean, default: false },
   uploadingMedia: { type: Boolean, default: false },
   supplierCostVisible: { type: Boolean, default: false },
   supplierCostCanEdit: { type: Boolean, default: false },
@@ -592,6 +618,9 @@ const emit = defineEmits([
   'submit',
   'clear-error',
   'product-spec-template-select',
+  'preview-template-sync',
+  'update-template-sync-open',
+  'confirm-template-sync',
   'product-category-select',
   'product-brand-select',
   'product-shipping-template-select',

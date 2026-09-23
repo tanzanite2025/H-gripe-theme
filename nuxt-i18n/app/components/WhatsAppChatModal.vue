@@ -275,8 +275,6 @@
                 :points="points"
                 :tierInfo="tierInfo"
                 :levelDiscounts="levelDiscounts"
-                :userCoupons="userCoupons"
-                :userPointCards="userPointCards"
                 :isLoggedInForWarranty="isLoggedInForWarranty"
                 @sendMessage="handleSendMessage"
                 @update:visitorEmail="visitorEmail = $event"
@@ -588,8 +586,6 @@ const {
   points,
   tierInfo,
   levelDiscounts,
-  userCoupons,
-  userPointCards,
   isLoggedInForWarranty,
   showAuthModal,
   authMode,

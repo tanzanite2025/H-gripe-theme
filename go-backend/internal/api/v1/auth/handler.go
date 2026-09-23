@@ -2,6 +2,7 @@ package auth
 
 import (
 	"commerce-platform/internal/pkg/apierror"
+	"commerce-platform/internal/pkg/honeypot"
 	"commerce-platform/internal/pkg/logger"
 	"commerce-platform/internal/pkg/response"
 	"commerce-platform/internal/pkg/securecookie"
@@ -13,9 +14,16 @@ import (
 )
 
 type Handler struct {
-	authService   *service.AuthService
-	cartService   *service.CartService
-	cookieOptions securecookie.Options
+	authService    *service.AuthService
+	cartService    *service.CartService
+	cookieOptions  securecookie.Options
+	honeypotPolicy honeypot.Policy
+}
+
+func (h *Handler) ConfigureHoneypot(policy honeypot.Policy) {
+	if h != nil {
+		h.honeypotPolicy = policy
+	}
 }
 
 // ConfigureCartService wires the persistent cart merger used after an
@@ -47,8 +55,9 @@ func (h *Handler) mergeGuestCartOnLogin(c *gin.Context, userID uint) {
 
 func NewHandler(authService *service.AuthService, cookieOptions ...securecookie.Options) *Handler {
 	return &Handler{
-		authService:   authService,
-		cookieOptions: resolveCookieOptions(cookieOptions),
+		authService:    authService,
+		cookieOptions:  resolveCookieOptions(cookieOptions),
+		honeypotPolicy: honeypot.NewPolicy(honeypot.ModeEnforce),
 	}
 }
 
@@ -65,15 +74,17 @@ func resolveCookieOptions(cookieOptions []securecookie.Options) securecookie.Opt
 
 // RegisterRequest 注册请求
 type RegisterRequest struct {
-	Email    string `json:"email" binding:"required,email"`
-	Username string `json:"username" binding:"required,min=3,max=50"`
-	Password string `json:"password" binding:"required,min=6"`
+	Email            string `json:"email" binding:"required,email"`
+	Username         string `json:"username" binding:"required,min=3,max=50"`
+	Password         string `json:"password" binding:"required,min=6"`
+	CorporateWebsite string `json:"corporate_website"`
 }
 
 // LoginRequest 登录请求
 type LoginRequest struct {
-	EmailOrUsername string `json:"email_or_username" binding:"required"`
-	Password        string `json:"password" binding:"required"`
+	EmailOrUsername  string `json:"email_or_username" binding:"required"`
+	Password         string `json:"password" binding:"required"`
+	CorporateWebsite string `json:"corporate_website"`
 }
 
 type GoogleLoginRequest struct {
@@ -85,6 +96,12 @@ func (h *Handler) Register(c *gin.Context) {
 	var req RegisterRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		apierror.RespondValidationError(c, err.Error())
+		return
+	}
+	if h.honeypotPolicy.ShouldDrop(req.CorporateWebsite, "auth_register", "corporate_website", c.Request.URL.Path) {
+		response.Created(c, gin.H{
+			"message": "User registered successfully",
+		})
 		return
 	}
 
@@ -106,6 +123,10 @@ func (h *Handler) Login(c *gin.Context) {
 	var req LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		apierror.RespondValidationError(c, err.Error())
+		return
+	}
+	if h.honeypotPolicy.ShouldDrop(req.CorporateWebsite, "auth_login", "corporate_website", c.Request.URL.Path) {
+		response.Success(c, gin.H{"user": nil})
 		return
 	}
 

@@ -9,21 +9,21 @@ import (
 )
 
 type PaymentRiskMetrics struct {
-	Provider                string
-	WindowDays              int
-	WindowStart             time.Time
-	WindowEnd               time.Time
-	SuccessfulPaymentCount  int64
-	SuccessfulPaymentAmount float64
-	DisputeCount            int64
-	DisputeAmount           float64
-	EarlyFraudWarningCount  int64
-	RefundCount             int64
-	RefundAmount            float64
-	CheckoutAttemptCount    int64
-	ThreeDSUpgradeCount     int64
-	ThreeDSChallengeCount   int64
-	ThreeDSExemptionCount   int64
+	Provider                               string
+	WindowDays                             int
+	WindowStart                            time.Time
+	WindowEnd                              time.Time
+	SuccessfulPaymentCount                 int64
+	SuccessfulPaymentAmountMinorByCurrency paymentdomain.PaymentRiskAmountMinorByCurrency
+	DisputeCount                           int64
+	DisputeAmountMinorByCurrency           paymentdomain.PaymentRiskAmountMinorByCurrency
+	EarlyFraudWarningCount                 int64
+	RefundCount                            int64
+	RefundAmountMinorByCurrency            paymentdomain.PaymentRiskAmountMinorByCurrency
+	CheckoutAttemptCount                   int64
+	ThreeDSUpgradeCount                    int64
+	ThreeDSChallengeCount                  int64
+	ThreeDSExemptionCount                  int64
 }
 
 type PaymentRiskCheckoutPolicy struct {
@@ -40,24 +40,24 @@ type paymentRiskPolicy struct {
 
 func (p paymentRiskPolicy) Evaluate(metrics PaymentRiskMetrics, computedAt time.Time) *paymentdomain.PaymentRiskSnapshot {
 	snapshot := &paymentdomain.PaymentRiskSnapshot{
-		Provider:                metrics.Provider,
-		WindowDays:              metrics.WindowDays,
-		WindowStart:             metrics.WindowStart,
-		WindowEnd:               metrics.WindowEnd,
-		SuccessfulPaymentCount:  metrics.SuccessfulPaymentCount,
-		SuccessfulPaymentAmount: metrics.SuccessfulPaymentAmount,
-		DisputeCount:            metrics.DisputeCount,
-		DisputeAmount:           metrics.DisputeAmount,
-		EarlyFraudWarningCount:  metrics.EarlyFraudWarningCount,
-		RefundCount:             metrics.RefundCount,
-		RefundAmount:            metrics.RefundAmount,
-		CheckoutAttemptCount:    metrics.CheckoutAttemptCount,
-		ThreeDSUpgradeCount:     metrics.ThreeDSUpgradeCount,
-		ThreeDSChallengeCount:   metrics.ThreeDSChallengeCount,
-		ThreeDSExemptionCount:   metrics.ThreeDSExemptionCount,
-		Level:                   paymentdomain.PaymentRiskLevelNormal,
-		RecommendedAction:       "continue_monitoring",
-		ComputedAt:              computedAt,
+		Provider:                               metrics.Provider,
+		WindowDays:                             metrics.WindowDays,
+		WindowStart:                            metrics.WindowStart,
+		WindowEnd:                              metrics.WindowEnd,
+		SuccessfulPaymentCount:                 metrics.SuccessfulPaymentCount,
+		SuccessfulPaymentAmountMinorByCurrency: metrics.SuccessfulPaymentAmountMinorByCurrency,
+		DisputeCount:                           metrics.DisputeCount,
+		DisputeAmountMinorByCurrency:           metrics.DisputeAmountMinorByCurrency,
+		EarlyFraudWarningCount:                 metrics.EarlyFraudWarningCount,
+		RefundCount:                            metrics.RefundCount,
+		RefundAmountMinorByCurrency:            metrics.RefundAmountMinorByCurrency,
+		CheckoutAttemptCount:                   metrics.CheckoutAttemptCount,
+		ThreeDSUpgradeCount:                    metrics.ThreeDSUpgradeCount,
+		ThreeDSChallengeCount:                  metrics.ThreeDSChallengeCount,
+		ThreeDSExemptionCount:                  metrics.ThreeDSExemptionCount,
+		Level:                                  paymentdomain.PaymentRiskLevelNormal,
+		RecommendedAction:                      "continue_monitoring",
+		ComputedAt:                             computedAt,
 	}
 
 	if metrics.SuccessfulPaymentCount > 0 {

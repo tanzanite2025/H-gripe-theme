@@ -4,10 +4,12 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
+	"commerce-platform/internal/api/middleware"
 	orderdomain "commerce-platform/internal/domain/order"
 	paymentdomain "commerce-platform/internal/domain/payment"
 	pgateway "commerce-platform/internal/pkg/payment"
@@ -26,7 +28,7 @@ func TestCreatePayPalOrderRecordsPendingAttempt(t *testing.T) {
 		createResponse: &pgateway.PaymentResponse{
 			ID:            "PAYPAL-ORDER-1",
 			Status:        "CREATED",
-			Amount:        84,
+			AmountMinor:   84,
 			Currency:      "USD",
 			PaymentURL:    "https://paypal.example/approve",
 			TransactionID: "PAYPAL-ORDER-1",
@@ -53,7 +55,50 @@ func TestCreatePayPalOrderRecordsPendingAttempt(t *testing.T) {
 	require.NoError(t, db.Where("transaction_id = ?", "PAYPAL-ORDER-1").First(&transaction).Error)
 	require.Equal(t, "paypal", transaction.PaymentMethod)
 	require.Equal(t, "pending", transaction.Status)
-	require.InDelta(t, 84, transaction.Amount, 0.001)
+	require.Equal(t, int64(84), transaction.AmountMinor)
+}
+
+func TestCreatePayPalOrderUsesProviderSettlementSnapshot(t *testing.T) {
+	gateway := &fakePaymentGateway{
+		createResponse: &pgateway.PaymentResponse{
+			ID:            "PAYPAL-ORDER-SETTLEMENT",
+			Status:        "CREATED",
+			AmountMinor:   9876,
+			Currency:      "USD",
+			TransactionID: "PAYPAL-ORDER-SETTLEMENT",
+			Metadata:      map[string]string{"order_id": "ORD-PAYPAL-SETTLEMENT"},
+		},
+	}
+	db, handler := newPayPalHandlerTestHarness(t, gateway)
+	orderRecord := seedPayPalOrder(t, db, "ORD-PAYPAL-SETTLEMENT", 7, 12345, "pending", "unpaid")
+	// The buyer-facing quote is EUR, while the immutable provider snapshot is
+	// USD. The gateway request must use the latter.
+	require.NoError(t, db.Model(&orderdomain.Order{}).
+		Where("id = ?", orderRecord.ID).
+		Updates(map[string]interface{}{
+			"currency":             "EUR",
+			"total_amount_minor":   12345,
+			"payment_currency":     "USD",
+			"payment_amount_minor": 9876,
+		}).Error)
+
+	recorder := httptest.NewRecorder()
+	context, _ := gin.CreateTestContext(recorder)
+	context.Set("user_id", uint(7))
+	context.Request = httptest.NewRequest(
+		http.MethodPost,
+		"/api/v1/payment/paypal/orders",
+		bytes.NewBufferString(`{"order_number":"ORD-PAYPAL-SETTLEMENT"}`),
+	)
+	context.Request.Header.Set("Content-Type", "application/json")
+	context.Request.Header.Set("Idempotency-Key", "paypal-create-settlement")
+
+	handler.CreatePayPalOrder(context)
+
+	require.Equal(t, http.StatusOK, recorder.Code)
+	require.NotNil(t, gateway.createRequest)
+	require.Equal(t, int64(9876), gateway.createRequest.AmountMinor)
+	require.Equal(t, "USD", gateway.createRequest.Currency)
 }
 
 func TestCreatePayPalOrderRejectsZeroTotalBeforeGateway(t *testing.T) {
@@ -89,7 +134,7 @@ func TestCapturePayPalOrderMarksMatchingOrderPaid(t *testing.T) {
 		captureResponse: &pgateway.PaymentResponse{
 			ID:               "PAYPAL-ORDER-2",
 			Status:           "COMPLETED",
-			Amount:           92,
+			AmountMinor:      92,
 			Currency:         "USD",
 			TransactionID:    "PAYPAL-CAPTURE-2",
 			LiabilityShifted: &notShifted,
@@ -150,7 +195,7 @@ func TestCapturePayPalOrderAcknowledgesWebhookPaidOrder(t *testing.T) {
 	require.NoError(t, json.Unmarshal(recorder.Body.Bytes(), &payload))
 	require.Equal(t, "PAYPAL-ORDER-WEBHOOK-PAID", payload.Data.ID)
 	require.Equal(t, "COMPLETED", payload.Data.Status)
-	require.Equal(t, orderRecord.TotalAmount, payload.Data.Amount)
+	require.Equal(t, "15.00", payload.Data.Amount)
 	require.Equal(t, orderRecord.Currency, payload.Data.Currency)
 	require.Zero(t, gateway.captureCalls)
 }
@@ -161,7 +206,7 @@ func TestCapturePayPalOrderRecordsDuplicatePaidTransactionAndCreatesPendingFullR
 		captureResponse: &pgateway.PaymentResponse{
 			ID:            "PAYPAL-ORDER-WEBHOOK-RACE",
 			Status:        "COMPLETED",
-			Amount:        1500,
+			AmountMinor:   1500,
 			Currency:      "USD",
 			TransactionID: "PAYPAL-CAPTURE-WEBHOOK-RACE",
 			Metadata:      map[string]string{"order_id": "ORD-PAYPAL-WEBHOOK-RACE"},
@@ -210,15 +255,15 @@ func TestCapturePayPalOrderRecordsDuplicatePaidTransactionAndCreatesPendingFullR
 	var savedTransaction paymentdomain.Transaction
 	require.NoError(t, db.Where("transaction_id = ?", "PAYPAL-CAPTURE-WEBHOOK-RACE").First(&savedTransaction).Error)
 	require.Equal(t, paymentdomain.TransactionStatusDuplicatePaid, savedTransaction.Status)
-	require.InDelta(t, 1500, savedTransaction.Amount, 0.001)
+	require.Equal(t, int64(1500), savedTransaction.AmountMinor)
 	require.Equal(t, "USD", savedTransaction.Currency)
 
 	var savedRefund paymentdomain.Refund
 	require.NoError(t, db.Where("id = ?", payload.Data.RefundID).First(&savedRefund).Error)
 	require.Equal(t, savedTransaction.ID, savedRefund.TransactionID)
 	require.Equal(t, "pending", savedRefund.Status)
-	require.InDelta(t, 1500, savedRefund.Amount, 0.001)
-	require.InDelta(t, 1500, savedRefund.RequestedAmount, 0.001)
+	require.Equal(t, int64(1500), savedRefund.AmountMinor)
+	require.Equal(t, int64(1500), savedRefund.RequestedAmountMinor)
 }
 
 func TestCapturePayPalOrderRejectsMismatchedProviderOrderMetadata(t *testing.T) {
@@ -226,7 +271,7 @@ func TestCapturePayPalOrderRejectsMismatchedProviderOrderMetadata(t *testing.T) 
 		captureResponse: &pgateway.PaymentResponse{
 			ID:            "PAYPAL-ORDER-3",
 			Status:        "COMPLETED",
-			Amount:        60,
+			AmountMinor:   60,
 			Currency:      "USD",
 			TransactionID: "PAYPAL-CAPTURE-3",
 			Metadata:      map[string]string{"order_id": "OTHER-ORDER"},
@@ -253,12 +298,74 @@ func TestCapturePayPalOrderRejectsMismatchedProviderOrderMetadata(t *testing.T) 
 	require.Equal(t, "unpaid", savedOrder.PaymentStatus)
 }
 
+func TestCapturePayPalOrderReconcilesUnknownOutcomeWithoutSecondCapture(t *testing.T) {
+	gateway := &fakePaymentGateway{
+		captureErr: errors.New("capture response was lost"),
+		getResponse: &pgateway.PaymentResponse{
+			ID:            "PAYPAL-ORDER-RECONCILE",
+			Status:        "COMPLETED",
+			AmountMinor:   77,
+			Currency:      "USD",
+			TransactionID: "PAYPAL-CAPTURE-RECONCILE",
+			Metadata:      map[string]string{"order_id": "ORD-PAYPAL-RECONCILE"},
+		},
+	}
+	db, handler := newPayPalHandlerTestHarness(t, gateway)
+	require.NoError(t, db.AutoMigrate(&paymentdomain.PaymentOperationIdempotency{}))
+	orderRecord := seedPayPalOrder(t, db, "ORD-PAYPAL-RECONCILE", 7, 77, "pending", "unpaid")
+	repo := repository.NewPaymentOperationIdempotencyRepository(db)
+
+	router := gin.New()
+	router.Use(func(c *gin.Context) {
+		c.Set("user_id", uint(7))
+		c.Next()
+	})
+	router.POST(
+		"/api/v1/payment/paypal/orders/:paypal_order_id/capture",
+		middleware.PaymentOperationIdempotency(repo, "paypal_capture", middleware.PaymentOperationReconcileExpiredMutation),
+		handler.CapturePayPalOrder,
+	)
+
+	request := func() *httptest.ResponseRecorder {
+		recorder := httptest.NewRecorder()
+		req := httptest.NewRequest(
+			http.MethodPost,
+			"/api/v1/payment/paypal/orders/PAYPAL-ORDER-RECONCILE/capture",
+			bytes.NewBufferString(`{"order_number":"ORD-PAYPAL-RECONCILE"}`),
+		)
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Idempotency-Key", "paypal-reconcile-1")
+		router.ServeHTTP(recorder, req)
+		return recorder
+	}
+
+	first := request()
+	require.Equal(t, http.StatusBadGateway, first.Code)
+	require.Equal(t, 1, gateway.captureCalls)
+	require.Zero(t, gateway.getCalls)
+
+	second := request()
+	require.Equal(t, http.StatusOK, second.Code)
+	require.Equal(t, 1, gateway.captureCalls)
+	require.Equal(t, 1, gateway.getCalls)
+
+	var savedOrder orderdomain.Order
+	require.NoError(t, db.First(&savedOrder, orderRecord.ID).Error)
+	require.Equal(t, "paid", savedOrder.PaymentStatus)
+	var operation paymentdomain.PaymentOperationIdempotency
+	require.NoError(t, db.First(&operation).Error)
+	require.Equal(t, paymentdomain.PaymentOperationIdempotencyCompleted, operation.Status)
+}
+
 type fakePaymentGateway struct {
 	createResponse  *pgateway.PaymentResponse
 	captureResponse *pgateway.PaymentResponse
+	captureErr      error
 	getResponse     *pgateway.PaymentResponse
+	getErr          error
 	createRequest   *pgateway.PaymentRequest
 	captureCalls    int
+	getCalls        int
 	onCapture       func()
 }
 
@@ -272,19 +379,20 @@ func (g *fakePaymentGateway) CapturePayment(context.Context, string) (*pgateway.
 	if g.onCapture != nil {
 		g.onCapture()
 	}
-	return g.captureResponse, nil
+	return g.captureResponse, g.captureErr
 }
 
-func (g *fakePaymentGateway) RefundPayment(context.Context, string, float64) (*pgateway.RefundResponse, error) {
+func (g *fakePaymentGateway) RefundPayment(context.Context, string, int64) (*pgateway.RefundResponse, error) {
 	return nil, nil
 }
 
-func (g *fakePaymentGateway) RefundPaymentWithOptions(context.Context, string, float64, pgateway.RefundOptions) (*pgateway.RefundResponse, error) {
+func (g *fakePaymentGateway) RefundPaymentWithOptions(context.Context, string, int64, pgateway.RefundOptions) (*pgateway.RefundResponse, error) {
 	return nil, nil
 }
 
 func (g *fakePaymentGateway) GetPayment(context.Context, string) (*pgateway.PaymentResponse, error) {
-	return g.getResponse, nil
+	g.getCalls++
+	return g.getResponse, g.getErr
 }
 
 func (g *fakePaymentGateway) VerifyWebhook([]byte, string) (bool, error) {
@@ -333,20 +441,20 @@ func newPayPalHandlerTestHarness(t *testing.T, gateway pgateway.PaymentGateway) 
 	return db, handler
 }
 
-func seedPayPalOrder(t *testing.T, db *gorm.DB, orderNumber string, userID uint, total float64, status string, paymentStatus string) orderdomain.Order {
+func seedPayPalOrder(t *testing.T, db *gorm.DB, orderNumber string, userID uint, totalMinor int64, status string, paymentStatus string) orderdomain.Order {
 	t.Helper()
 	orderRecord := orderdomain.Order{
-		OrderNumber:     orderNumber,
-		UserID:          userID,
-		Status:          status,
-		PaymentMethod:   "paypal",
-		PaymentStatus:   paymentStatus,
-		ShippingMethod:  "standard",
-		ShippingStatus:  "pending",
-		TotalAmount:     total,
-		Currency:        "USD",
-		PaymentAmount:   total,
-		PaymentCurrency: "USD",
+		OrderNumber:        orderNumber,
+		UserID:             userID,
+		Status:             status,
+		PaymentMethod:      "paypal",
+		PaymentStatus:      paymentStatus,
+		ShippingMethod:     "standard",
+		ShippingStatus:     "pending",
+		TotalAmountMinor:   totalMinor,
+		Currency:           "USD",
+		PaymentAmountMinor: totalMinor,
+		PaymentCurrency:    "USD",
 		ShippingAddress: orderdomain.Address{
 			FirstName: "Ada",
 			LastName:  "Lovelace",

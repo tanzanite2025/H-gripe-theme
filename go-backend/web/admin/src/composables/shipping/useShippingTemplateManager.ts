@@ -52,7 +52,7 @@ export const useShippingTemplateManager = (options: Record<string, any> = {}) =>
         const quoteCurrency = normalizeCurrencyCode(item?.quote_currency || item?.currency)
         if (!quoteCurrency || item?.fallback_reason) return null
         return {
-          amount: Number(item?.amount || 0),
+          amount_decimal: String(item?.amount_decimal ?? item?.amount ?? '0'),
           currency: quoteCurrency,
           quote_currency: quoteCurrency,
           rate: Number(item?.rate || 0),
@@ -61,7 +61,7 @@ export const useShippingTemplateManager = (options: Record<string, any> = {}) =>
         }
       })
       .filter(Boolean)
-      .filter((item: any) => item.amount > 0 && item.converted !== false)
+      .filter((item: any) => Number(item.amount_decimal) > 0 && item.converted !== false)
       .filter((item: any) => {
         if (seen.has(item.currency)) return false
         seen.add(item.currency)
@@ -96,8 +96,8 @@ export const useShippingTemplateManager = (options: Record<string, any> = {}) =>
       ...defaultShippingTemplateForm(),
       ...template,
       currency: normalizeCurrencyCode(template.currency) || 'USD',
-      free_threshold: Number(template.free_threshold || 0),
-      default_fee: Number(template.default_fee || 0),
+      free_threshold_minor: Number(template.free_threshold_minor || 0),
+      default_fee_minor: Number(template.default_fee_minor || 0),
       display_price_snapshots: normalizeDisplayPriceSnapshotMap(template.display_price_snapshots, TEMPLATE_DISPLAY_PRICE_FIELDS),
       enabled: template.enabled !== false,
       rules: Array.isArray(template.rules) ? template.rules.map((rule: any) => ({
@@ -106,8 +106,10 @@ export const useShippingTemplateManager = (options: Record<string, any> = {}) =>
         currency: normalizeCurrencyCode(rule.currency) || normalizeCurrencyCode(template.currency) || 'USD',
         min_value: Number(rule.min_value || 0),
         max_value: Number(rule.max_value || 0),
-        fee: Number(rule.fee || 0),
-        additional: Number(rule.additional || 0),
+        min_value_minor: Number(rule.min_value_minor || 0),
+        max_value_minor: Number(rule.max_value_minor || 0),
+        fee_minor: Number(rule.fee_minor || 0),
+        additional_minor: Number(rule.additional_minor || 0),
         display_price_snapshots: normalizeDisplayPriceSnapshotMap(rule.display_price_snapshots, ruleDisplayPriceFieldsForType(template.type)),
       })) : [],
     })
@@ -119,10 +121,17 @@ export const useShippingTemplateManager = (options: Record<string, any> = {}) =>
     .map((rule: any) => ({
       region: String(rule.region || '').trim().toUpperCase(),
       currency: normalizeCurrencyCode(rule.currency) || normalizedTemplateCurrency(),
-      min_value: Number(rule.min_value || 0),
-      max_value: Number(rule.max_value || 0),
-      fee: Number(rule.fee || 0),
-      additional: Number(rule.additional || 0),
+      ...(templateForm.type === 'price'
+        ? {
+            min_value_minor: Number(rule.min_value_minor || 0),
+            max_value_minor: Number(rule.max_value_minor || 0),
+          }
+        : {
+            min_value: Number(rule.min_value || 0),
+            max_value: Number(rule.max_value || 0),
+          }),
+      fee_minor: Number(rule.fee_minor || 0),
+      additional_minor: Number(rule.additional_minor || 0),
       display_price_snapshots: normalizeDisplayPriceSnapshotMap(rule.display_price_snapshots, ruleDisplayPriceFieldsForType(templateForm.type)),
     }))
 
@@ -131,11 +140,13 @@ export const useShippingTemplateManager = (options: Record<string, any> = {}) =>
     if (!templateForm.name?.trim()) templateErrors.name = '请输入模板名称'
     if (!['weight', 'quantity', 'price'].includes(templateForm.type)) templateErrors.type = '请选择计费类型'
     if (!normalizeCurrencyCode(templateForm.currency)) templateErrors.currency = '请输入运费录入币种'
-    if (Number(templateForm.default_fee) < 0) templateErrors.default_fee = '默认运费不能小于 0'
+    if (Number(templateForm.default_fee_minor) < 0) templateErrors.default_fee_minor = '默认运费不能小于 0'
 
-    const invalidRule = normalizeTemplateRules().find((rule: any) =>
-      !rule.region || rule.min_value < 0 || rule.max_value < 0 || rule.fee < 0 || rule.additional < 0 || (rule.max_value > 0 && rule.max_value < rule.min_value)
-    )
+    const invalidRule = normalizeTemplateRules().find((rule: any) => {
+      const minValue = templateForm.type === 'price' ? rule.min_value_minor : rule.min_value
+      const maxValue = templateForm.type === 'price' ? rule.max_value_minor : rule.max_value
+      return !rule.region || minValue < 0 || maxValue < 0 || rule.fee_minor < 0 || rule.additional_minor < 0 || (maxValue > 0 && maxValue < minValue)
+    })
     if (invalidRule) {
       toast.error('请检查规则矩阵：Region 必填，数值不能小于 0，最大值不能小于最小值')
       return false
@@ -154,8 +165,8 @@ export const useShippingTemplateManager = (options: Record<string, any> = {}) =>
         type: templateForm.type,
         currency: normalizedTemplateCurrency(),
         free_shipping: Boolean(templateForm.free_shipping),
-        free_threshold: Number(templateForm.free_threshold || 0),
-        default_fee: Number(templateForm.default_fee || 0),
+        free_threshold_minor: Number(templateForm.free_threshold_minor || 0),
+        default_fee_minor: Number(templateForm.default_fee_minor || 0),
         display_price_snapshots: normalizeDisplayPriceSnapshotMap(templateForm.display_price_snapshots, TEMPLATE_DISPLAY_PRICE_FIELDS),
         description: templateForm.description || '',
         enabled: Boolean(templateForm.enabled),

@@ -19,8 +19,9 @@ type ProductSearchQuery struct {
 	ProductSpecificationTemplateSlug string
 	CategorySlug                     string
 	BrandSlug                        string
-	PriceMin                         *float64
-	PriceMax                         *float64
+	PriceMin                         *int64
+	PriceMax                         *int64
+	PriceCurrency                    string
 	SpecFilters                      map[string][]string
 	Offset                           int
 	Limit                            int
@@ -121,7 +122,12 @@ func applyQuickBuyCandidateScope(query *gorm.DB, input ProductQuickBuyCandidateQ
 		query = query.Joins("LEFT JOIN product_specification_templates quick_buy_product_specification_templates ON quick_buy_product_specification_templates.id = products.product_specification_template_id").
 			Where(`
 				LOWER(products.name) LIKE ?
-				OR LOWER(products.sku) LIKE ?
+				OR EXISTS (
+					SELECT 1 FROM product_variants pv_quick_buy_search
+					WHERE pv_quick_buy_search.product_id = products.id
+					  AND pv_quick_buy_search.deleted_at IS NULL
+					  AND LOWER(pv_quick_buy_search.sku) LIKE ?
+				)
 				OR LOWER(products.short_desc) LIKE ?
 				OR LOWER(products.description) LIKE ?
 				OR LOWER(quick_buy_product_specification_templates.name) LIKE ?
@@ -237,7 +243,13 @@ func (r *ProductRepository) List(locale, status string, featured bool, offset, l
 	}
 
 	err := query.Order("created_at DESC").Offset(offset).Limit(limit).Find(&products).Error
-	return products, total, err
+	if err != nil {
+		return nil, 0, err
+	}
+	if err := r.attachProductDisplayPriceSnapshots(products); err != nil {
+		return nil, 0, err
+	}
+	return products, total, nil
 }
 
 // FindPublished returns the complete set of storefront products that can be
@@ -262,6 +274,9 @@ func (r *ProductRepository) FindPublishedByLocale(locale string) ([]product.Prod
 		query = query.Where("products.locale = ?", strings.TrimSpace(locale))
 	}
 	if err := query.Order("products.locale ASC").Order("products.id ASC").Find(&products).Error; err != nil {
+		return nil, err
+	}
+	if err := r.attachProductDisplayPriceSnapshots(products); err != nil {
 		return nil, err
 	}
 	return products, nil
@@ -309,7 +324,13 @@ func (r *ProductRepository) ListPublicAvailable(locale string, offset, limit int
 		Offset(offset).
 		Limit(limit).
 		Find(&products).Error
-	return products, total, err
+	if err != nil {
+		return nil, 0, err
+	}
+	if err := r.attachProductDisplayPriceSnapshots(products); err != nil {
+		return nil, 0, err
+	}
+	return products, total, nil
 }
 
 func (r *ProductRepository) ListRecommendationCandidates(input ProductRecommendationQuery) ([]product.Product, int64, error) {
@@ -346,7 +367,12 @@ func (r *ProductRepository) ListRecommendationCandidates(input ProductRecommenda
 		query = query.Joins("LEFT JOIN product_specification_templates recommendation_product_specification_templates ON recommendation_product_specification_templates.id = products.product_specification_template_id").
 			Where(`
 				LOWER(products.name) LIKE ?
-				OR LOWER(products.sku) LIKE ?
+				OR EXISTS (
+					SELECT 1 FROM product_variants pv_recommendation_search
+					WHERE pv_recommendation_search.product_id = products.id
+					  AND pv_recommendation_search.deleted_at IS NULL
+					  AND LOWER(pv_recommendation_search.sku) LIKE ?
+				)
 				OR LOWER(products.short_desc) LIKE ?
 				OR LOWER(products.description) LIKE ?
 				OR LOWER(recommendation_product_specification_templates.name) LIKE ?
@@ -366,7 +392,13 @@ func (r *ProductRepository) ListRecommendationCandidates(input ProductRecommenda
 		Offset(input.Offset).
 		Limit(input.Limit).
 		Find(&products).Error
-	return products, total, err
+	if err != nil {
+		return nil, 0, err
+	}
+	if err := r.attachProductDisplayPriceSnapshots(products); err != nil {
+		return nil, 0, err
+	}
+	return products, total, nil
 }
 
 func (r *ProductRepository) ListQuickBuyCandidates(input ProductQuickBuyCandidateQuery) ([]product.Product, int64, error) {
@@ -403,7 +435,13 @@ func (r *ProductRepository) ListQuickBuyCandidates(input ProductQuickBuyCandidat
 		Offset(input.Offset).
 		Limit(input.Limit).
 		Find(&products).Error
-	return products, total, err
+	if err != nil {
+		return nil, 0, err
+	}
+	if err := r.attachProductDisplayPriceSnapshots(products); err != nil {
+		return nil, 0, err
+	}
+	return products, total, nil
 }
 
 func (r *ProductRepository) ListQuickBuyFilterValues(input ProductQuickBuyCandidateQuery, slugs []string) (map[string][]string, error) {
@@ -855,7 +893,13 @@ func (r *ProductRepository) SearchPublic(input ProductSearchQuery) ([]product.Pr
 	}
 
 	err = query.Distinct("products.*").Order("products.updated_at DESC, products.id DESC").Offset(input.Offset).Limit(input.Limit).Find(&products).Error
-	return products, total, err
+	if err != nil {
+		return nil, 0, err
+	}
+	if err := r.attachProductDisplayPriceSnapshots(products); err != nil {
+		return nil, 0, err
+	}
+	return products, total, nil
 }
 
 // SearchPublicCompact loads only the relations needed to render a product
@@ -886,7 +930,13 @@ func (r *ProductRepository) SearchPublicCompact(input ProductSearchQuery) ([]pro
 		Offset(input.Offset).
 		Limit(input.Limit).
 		Find(&products).Error
-	return products, err
+	if err != nil {
+		return nil, err
+	}
+	if err := r.attachProductDisplayPriceSnapshots(products); err != nil {
+		return nil, err
+	}
+	return products, nil
 }
 
 func applyPublicProductSearchFilters(query *gorm.DB, input ProductSearchQuery, dialect string) (*gorm.DB, error) {
@@ -928,8 +978,9 @@ func applyPublicProductSearchFilters(query *gorm.DB, input ProductSearchQuery, d
 			WHERE pv_price_min.product_id = products.id
 			  AND pv_price_min.deleted_at IS NULL
 			  AND pv_price_min.is_active = TRUE
-			  AND COALESCE(pv_price_min.sale_price, pv_price_min.price) >= ?
-		)`, *input.PriceMin)
+			AND UPPER(COALESCE(pv_price_min.currency, 'USD')) = UPPER(?)
+			AND COALESCE(pv_price_min.sale_price_minor, pv_price_min.price_minor) >= ?
+		)`, input.PriceCurrency, *input.PriceMin)
 	}
 	if input.PriceMax != nil {
 		query = query.Where(`EXISTS (
@@ -937,12 +988,23 @@ func applyPublicProductSearchFilters(query *gorm.DB, input ProductSearchQuery, d
 			WHERE pv_price_max.product_id = products.id
 			  AND pv_price_max.deleted_at IS NULL
 			  AND pv_price_max.is_active = TRUE
-			  AND COALESCE(pv_price_max.sale_price, pv_price_max.price) <= ?
-		)`, *input.PriceMax)
+			AND UPPER(COALESCE(pv_price_max.currency, 'USD')) = UPPER(?)
+			AND COALESCE(pv_price_max.sale_price_minor, pv_price_max.price_minor) <= ?
+		)`, input.PriceCurrency, *input.PriceMax)
 	}
 	if input.Keyword != "" {
 		pattern := "%" + strings.ToLower(input.Keyword) + "%"
-		query = query.Where("LOWER(products.name) LIKE ? OR LOWER(products.sku) LIKE ? OR LOWER(products.short_desc) LIKE ? OR LOWER(products.description) LIKE ?", pattern, pattern, pattern, pattern)
+		query = query.Where(`
+			LOWER(products.name) LIKE ?
+			OR EXISTS (
+				SELECT 1 FROM product_variants pv_search
+				WHERE pv_search.product_id = products.id
+				  AND pv_search.deleted_at IS NULL
+				  AND LOWER(pv_search.sku) LIKE ?
+			)
+			OR LOWER(products.short_desc) LIKE ?
+			OR LOWER(products.description) LIKE ?
+		`, pattern, pattern, pattern, pattern)
 	}
 
 	return applyProductSpecFilters(query, input.SpecFilters, dialect)
@@ -968,8 +1030,16 @@ func (r *ProductRepository) FindAllWithFilters(page, pageSize int, status, local
 		query = query.Where("product_specification_template_id = ?", productSpecificationTemplateID)
 	}
 	if search != "" {
-		query = query.Where("name LIKE ? OR sku LIKE ? OR description LIKE ?",
-			"%"+search+"%", "%"+search+"%", "%"+search+"%")
+		pattern := "%" + search + "%"
+		query = query.Where(`
+			name LIKE ?
+			OR description LIKE ?
+			OR EXISTS (
+				SELECT 1 FROM product_variants pv_admin_search
+				WHERE pv_admin_search.product_id = products.id
+				  AND pv_admin_search.deleted_at IS NULL
+				  AND pv_admin_search.sku LIKE ?
+			)`, pattern, pattern, pattern)
 	}
 	switch featured {
 	case "true":
@@ -998,8 +1068,13 @@ func (r *ProductRepository) FindAllWithFilters(page, pageSize int, status, local
 
 	offset := (page - 1) * pageSize
 	err := query.Offset(offset).Limit(pageSize).Order("created_at DESC").Find(&products).Error
-
-	return products, total, err
+	if err != nil {
+		return nil, 0, err
+	}
+	if err := r.attachProductDisplayPriceSnapshots(products); err != nil {
+		return nil, 0, err
+	}
+	return products, total, nil
 }
 
 type ProductCurrencyMismatchSample struct {
@@ -1039,7 +1114,10 @@ func (r *ProductRepository) ListProductsWithCurrencyMismatch(expectedCurrency st
 	}
 	var samples []ProductCurrencyMismatchSample
 	err := r.db.Model(&product.Product{}).
-		Select("id", "sku", "name", "currency").
+		Select(`products.id, products.name, products.currency,
+			COALESCE((SELECT pv.sku FROM product_variants pv
+				WHERE pv.product_id = products.id AND pv.deleted_at IS NULL
+				ORDER BY pv.is_default DESC, pv.sort_order ASC, pv.id ASC LIMIT 1), '') AS sku`).
 		Where("UPPER(COALESCE(currency, '')) <> ?", strings.ToUpper(strings.TrimSpace(expectedCurrency))).
 		Order("updated_at DESC").
 		Limit(limit).

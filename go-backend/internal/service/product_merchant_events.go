@@ -101,13 +101,13 @@ func merchantProductCoreChanged(previous, next *product.Product) bool {
 		previous.ShortDesc != next.ShortDesc ||
 		previous.Currency != next.Currency ||
 		previous.FulfillmentMode != next.FulfillmentMode ||
-		previous.Price != next.Price ||
-		!floatPointerEqual(previous.SalePrice, next.SalePrice) ||
+		previous.PriceMinor != next.PriceMinor ||
+		!int64PointerEqual(previous.SalePriceMinor, next.SalePriceMinor) ||
 		previous.Stock != next.Stock ||
 		previous.Status != next.Status
 }
 
-func floatPointerEqual(left, right *float64) bool {
+func int64PointerEqual(left, right *int64) bool {
 	if left == nil || right == nil {
 		return left == right
 	}

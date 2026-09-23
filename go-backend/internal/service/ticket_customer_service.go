@@ -3,8 +3,10 @@ package service
 import (
 	"commerce-platform/internal/domain/ticket"
 	"commerce-platform/internal/domain/user"
+	"commerce-platform/internal/pkg/metrics"
 	"commerce-platform/internal/repository"
 	"errors"
+	"sort"
 	"strings"
 	"time"
 
@@ -16,6 +18,20 @@ var (
 	ErrCustomerServiceConversationAccessDenied = errors.New("conversation access denied")
 	ErrCustomerServiceOwnerRequired            = errors.New("conversation owner is required")
 	ErrCustomerServiceAgentAccessDenied        = errors.New("agent conversation access denied")
+	ErrCustomerServiceInvalidStatus            = errors.New("invalid customer-service conversation status")
+	ErrCustomerServiceInvalidStatusTransition  = errors.New("invalid customer-service conversation status transition")
+	ErrCustomerServiceStatusVersionRequired    = errors.New("expected status version is required")
+	ErrCustomerServiceStatusReasonTooLong      = errors.New("customer-service status reason is too long")
+	ErrCustomerServiceBulkArchiveLimitExceeded = errors.New("customer-service bulk archive is limited to 100 conversations")
+)
+
+const (
+	customerServiceStatusReasonManualChange      = "manual_status_change"
+	customerServiceStatusReasonSameOwnerTransfer = "same_owner_transfer"
+	customerServiceStatusReasonCustomerMessage   = "customer_message"
+	customerServiceStatusReasonOperatorReopen    = "operator_reopen"
+	customerServiceStatusReasonOperatorResolve   = "operator_resolve"
+	customerServiceStatusReasonCloseAndArchive   = "operator_close_and_archive"
 )
 
 type CustomerServiceOwner struct {
@@ -26,17 +42,56 @@ type CustomerServiceOwner struct {
 type CustomerServiceConversationListInput struct {
 	AssignedTo *uint
 	GroupID    *uint
+	View       string
 	Status     string
 	UnreadOnly bool
 	Identity   string
 	Search     string
 }
 
-// CustomerServiceRealtimeMutation is the committed realtime invalidation for
-// one customer-service command. Handlers publish it locally for normal
-// latency; the matching Outbox row is the cross-instance recovery path.
+type CustomerServiceConversationStatusInput struct {
+	Status                string
+	ExpectedStatusVersion uint
+	Archive               *bool
+	ReasonCode            string
+	Reason                string
+}
+
+type CustomerServiceBulkArchiveResult struct {
+	ArchivedConversationIDs []uint
+	Mutation                *CustomerServiceRealtimeMutation
+}
+
+// CustomerServiceRealtimeMutation contains the committed realtime
+// invalidation(s) for one customer-service command. Event is retained as the
+// first-event compatibility field; handlers should publish RealtimeEvents so
+// compound commands fan out every durable invalidation.
 type CustomerServiceRealtimeMutation struct {
-	Event CustomerServiceRealtimeEvent
+	Event  CustomerServiceRealtimeEvent
+	Events []CustomerServiceRealtimeEvent
+}
+
+func newCustomerServiceRealtimeMutation(events ...CustomerServiceRealtimeEvent) *CustomerServiceRealtimeMutation {
+	if len(events) == 0 {
+		return nil
+	}
+	return &CustomerServiceRealtimeMutation{
+		Event:  events[0],
+		Events: append([]CustomerServiceRealtimeEvent(nil), events...),
+	}
+}
+
+func (m *CustomerServiceRealtimeMutation) RealtimeEvents() []CustomerServiceRealtimeEvent {
+	if m == nil {
+		return nil
+	}
+	if len(m.Events) > 0 {
+		return append([]CustomerServiceRealtimeEvent(nil), m.Events...)
+	}
+	if strings.TrimSpace(m.Event.EventID) == "" {
+		return nil
+	}
+	return []CustomerServiceRealtimeEvent{m.Event}
 }
 
 func (s *TicketService) GetCustomerServiceConversations(page, pageSize int) ([]ticket.Ticket, int64, error) {
@@ -52,6 +107,7 @@ func (s *TicketService) ListCustomerServiceConversationsForAgent(page, pageSize 
 		AssignedTo:      input.AssignedTo,
 		GroupID:         input.GroupID,
 		RecipientUserID: agentUserID,
+		View:            input.View,
 		Status:          input.Status,
 		UnreadOnly:      input.UnreadOnly,
 		Identity:        input.Identity,
@@ -115,17 +171,7 @@ func (s *TicketService) AddCustomerServiceAgentMessage(m *ticket.TicketMessage, 
 	m.IsStaff = true
 	m.MessageType = normalizeCustomerServiceMessageType(m.MessageType)
 	actorUserID := agentUserID
-	return s.persistCustomerServiceMessage(
-		t,
-		m,
-		CustomerServiceRealtimeActor{Kind: "agent", UserID: &actorUserID},
-		func(repo *repository.TicketRepository) error {
-			if t.Status == "closed" || t.Status == "open" || t.Status == "" {
-				return repo.UpdateTicketStatus(t.ID, "in_progress")
-			}
-			return repo.TouchTicket(t.ID, time.Now().UTC())
-		},
-	)
+	return s.persistCustomerServiceMessage(t, m, CustomerServiceRealtimeActor{Kind: "agent", UserID: &actorUserID})
 }
 
 func (s *TicketService) MarkCustomerServiceMessagesReadForAgent(ticketID uint, agentUserID uint, canViewAll bool) error {
@@ -235,7 +281,7 @@ func (s *TicketService) TransferCustomerServiceConversationForAgentWithRealtimeE
 					"previous_status": conversation.Status,
 					"status":          "in_progress",
 					"status_version":  statusVersion,
-					"reason":          "same_owner_transfer",
+					"reason_code":     customerServiceStatusReasonSameOwnerTransfer,
 				},
 			}
 			if err := enqueueCustomerServiceRealtimeOutboxEvent(s.customerServiceRealtimeOutbox.WithTx(tx), conversation, event); err != nil {
@@ -250,7 +296,8 @@ func (s *TicketService) TransferCustomerServiceConversationForAgentWithRealtimeE
 		if err := ticketRepo.AssignTicket(ticketID, toAgentUserID); err != nil {
 			return err
 		}
-		if err := ticketRepo.UpdateTicketStatus(ticketID, "in_progress"); err != nil {
+		statusVersion, statusChanged, err := ticketRepo.UpdateTicketStatusForUpdate(conversation, "in_progress")
+		if err != nil {
 			return err
 		}
 		assignedAt := time.Now().UTC()
@@ -277,13 +324,249 @@ func (s *TicketService) TransferCustomerServiceConversationForAgentWithRealtimeE
 		if err := enqueueCustomerServiceRealtimeOutboxEvent(s.customerServiceRealtimeOutbox.WithTx(tx), conversation, event); err != nil {
 			return err
 		}
-		mutation = &CustomerServiceRealtimeMutation{Event: event}
+		events := []CustomerServiceRealtimeEvent{event}
+		if statusChanged {
+			previousStatus, ok := canonicalCustomerServiceLifecycleStatus(conversation.Status)
+			if !ok {
+				previousStatus = strings.TrimSpace(conversation.Status)
+			}
+			statusEvent := newCustomerServiceStatusChangedEvent(
+				conversation,
+				previousStatus,
+				"in_progress",
+				statusVersion,
+				assignedAt,
+				CustomerServiceRealtimeActor{Kind: "agent", UserID: &fromAgentUserID},
+				"conversation_transfer",
+			)
+			if err := enqueueCustomerServiceRealtimeOutboxEvent(s.customerServiceRealtimeOutbox.WithTx(tx), conversation, statusEvent); err != nil {
+				return err
+			}
+			events = append(events, statusEvent)
+		}
+		mutation = newCustomerServiceRealtimeMutation(events...)
 		return nil
 	})
 	if err != nil {
 		return nil, err
 	}
 	return mutation, nil
+}
+
+// UpdateCustomerServiceConversationStatusForAgent applies one explicit
+// lifecycle command. An optional archive flag is committed in the same
+// transaction so "close and archive" and "reopen and restore" cannot split.
+func (s *TicketService) UpdateCustomerServiceConversationStatusForAgent(ticketID uint, agentUserID uint, canViewAll bool, input CustomerServiceConversationStatusInput) (*CustomerServiceRealtimeMutation, uint, error) {
+	if agentUserID == 0 {
+		return nil, 0, ErrCustomerServiceAgentAccessDenied
+	}
+	targetStatus, ok := canonicalCustomerServiceLifecycleStatus(input.Status)
+	if !ok {
+		return nil, 0, ErrCustomerServiceInvalidStatus
+	}
+	if input.ExpectedStatusVersion == 0 {
+		return nil, 0, ErrCustomerServiceStatusVersionRequired
+	}
+	reasonCode := strings.ToLower(strings.TrimSpace(input.ReasonCode))
+	if !isCustomerServiceStatusReasonCode(reasonCode) {
+		return nil, 0, ErrCustomerServiceInvalidStatus
+	}
+
+	var mutation *CustomerServiceRealtimeMutation
+	statusVersion := input.ExpectedStatusVersion
+	err := s.ticketRepo.WithinTx(func(ticketRepo *repository.TicketRepository, tx *gorm.DB) error {
+		conversation, err := ticketRepo.FindTicketByIDForUpdate(ticketID)
+		if err != nil {
+			return err
+		}
+		if err := validateAgentCustomerServiceConversation(conversation, agentUserID, canViewAll); err != nil {
+			return err
+		}
+
+		currentVersion := conversation.StatusVersion
+		if currentVersion == 0 {
+			currentVersion = 1
+		}
+		if currentVersion != input.ExpectedStatusVersion {
+			return repository.ErrTicketStatusVersionConflict
+		}
+		currentStatus, currentStatusOK := canonicalCustomerServiceLifecycleStatus(conversation.Status)
+		if !currentStatusOK {
+			currentStatus = strings.TrimSpace(conversation.Status)
+		}
+		if !isAllowedCustomerServiceStatusTransition(currentStatus, targetStatus) {
+			return ErrCustomerServiceInvalidStatusTransition
+		}
+		if s.customerServiceRealtimeOutbox == nil {
+			return errors.New("customer-service realtime outbox is unavailable")
+		}
+
+		changedAt := time.Now().UTC()
+		events := make([]CustomerServiceRealtimeEvent, 0, 2)
+		statusVersion = currentVersion
+		if conversation.Status != targetStatus {
+			nextVersion, changed, err := ticketRepo.UpdateTicketStatusForUpdate(conversation, targetStatus)
+			if err != nil {
+				return err
+			}
+			statusVersion = nextVersion
+			if changed {
+				if targetStatus == "open" {
+					metrics.CustomerServiceReopenedConversations.Inc()
+				}
+				event := newCustomerServiceStatusChangedEvent(conversation, currentStatus, targetStatus, nextVersion, changedAt, CustomerServiceRealtimeActor{Kind: "agent", UserID: &agentUserID}, reasonCode)
+				if err := enqueueCustomerServiceRealtimeOutboxEvent(s.customerServiceRealtimeOutbox.WithTx(tx), conversation, event); err != nil {
+					return err
+				}
+				events = append(events, event)
+			}
+		}
+
+		if input.Archive != nil {
+			event, changed, err := s.setCustomerServiceInboxArchivedInTx(ticketRepo, tx, conversation, agentUserID, *input.Archive, changedAt)
+			if err != nil {
+				return err
+			}
+			if changed {
+				events = append(events, event)
+			}
+		}
+
+		mutation = newCustomerServiceRealtimeMutation(events...)
+		return nil
+	})
+	if err != nil {
+		return nil, 0, err
+	}
+	return mutation, statusVersion, nil
+}
+
+// SetCustomerServiceConversationArchivedForAgent changes the current
+// recipient's inbox visibility without mutating the global lifecycle.
+func (s *TicketService) SetCustomerServiceConversationArchivedForAgent(ticketID uint, agentUserID uint, canViewAll bool, archived bool) (*CustomerServiceRealtimeMutation, error) {
+	if agentUserID == 0 {
+		return nil, ErrCustomerServiceAgentAccessDenied
+	}
+	var mutation *CustomerServiceRealtimeMutation
+	err := s.ticketRepo.WithinTx(func(ticketRepo *repository.TicketRepository, tx *gorm.DB) error {
+		conversation, err := ticketRepo.FindTicketByIDForUpdate(ticketID)
+		if err != nil {
+			return err
+		}
+		if err := validateAgentCustomerServiceConversation(conversation, agentUserID, canViewAll); err != nil {
+			return err
+		}
+		if s.customerServiceRealtimeOutbox == nil {
+			return errors.New("customer-service realtime outbox is unavailable")
+		}
+
+		event, changed, err := s.setCustomerServiceInboxArchivedInTx(ticketRepo, tx, conversation, agentUserID, archived, time.Now().UTC())
+		if err != nil {
+			return err
+		}
+		if !changed {
+			return nil
+		}
+		mutation = newCustomerServiceRealtimeMutation(event)
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return mutation, nil
+}
+
+// ArchiveCustomerServiceConversationsForAgent atomically archives a bounded,
+// de-duplicated selection. Ticket rows are locked in ascending order so two
+// bulk requests cannot deadlock by visiting the same conversations differently.
+func (s *TicketService) ArchiveCustomerServiceConversationsForAgent(ticketIDs []uint, agentUserID uint, canViewAll bool) (CustomerServiceBulkArchiveResult, error) {
+	if agentUserID == 0 {
+		return CustomerServiceBulkArchiveResult{}, ErrCustomerServiceAgentAccessDenied
+	}
+	if len(ticketIDs) == 0 {
+		return CustomerServiceBulkArchiveResult{}, nil
+	}
+	if len(ticketIDs) > 100 {
+		return CustomerServiceBulkArchiveResult{}, ErrCustomerServiceBulkArchiveLimitExceeded
+	}
+
+	uniqueIDs := make([]uint, 0, len(ticketIDs))
+	seen := make(map[uint]struct{}, len(ticketIDs))
+	for _, ticketID := range ticketIDs {
+		if ticketID == 0 {
+			continue
+		}
+		if _, exists := seen[ticketID]; exists {
+			continue
+		}
+		seen[ticketID] = struct{}{}
+		uniqueIDs = append(uniqueIDs, ticketID)
+	}
+	if len(uniqueIDs) == 0 {
+		return CustomerServiceBulkArchiveResult{}, nil
+	}
+	sort.Slice(uniqueIDs, func(i, j int) bool { return uniqueIDs[i] < uniqueIDs[j] })
+
+	result := CustomerServiceBulkArchiveResult{ArchivedConversationIDs: make([]uint, 0, len(uniqueIDs))}
+	err := s.ticketRepo.WithinTx(func(ticketRepo *repository.TicketRepository, tx *gorm.DB) error {
+		if s.customerServiceRealtimeOutbox == nil {
+			return errors.New("customer-service realtime outbox is unavailable")
+		}
+		events := make([]CustomerServiceRealtimeEvent, 0, len(uniqueIDs))
+		for _, ticketID := range uniqueIDs {
+			conversation, err := ticketRepo.FindTicketByIDForUpdate(ticketID)
+			if err != nil {
+				return err
+			}
+			if err := validateAgentCustomerServiceConversation(conversation, agentUserID, canViewAll); err != nil {
+				return err
+			}
+			event, changed, err := s.setCustomerServiceInboxArchivedInTx(ticketRepo, tx, conversation, agentUserID, true, time.Now().UTC())
+			if err != nil {
+				return err
+			}
+			if !changed {
+				continue
+			}
+			result.ArchivedConversationIDs = append(result.ArchivedConversationIDs, ticketID)
+			events = append(events, event)
+		}
+		result.Mutation = newCustomerServiceRealtimeMutation(events...)
+		return nil
+	})
+	if err != nil {
+		return CustomerServiceBulkArchiveResult{}, err
+	}
+	return result, nil
+}
+
+func (s *TicketService) setCustomerServiceInboxArchivedInTx(ticketRepo *repository.TicketRepository, tx *gorm.DB, conversation *ticket.Ticket, agentUserID uint, archived bool, changedAt time.Time) (CustomerServiceRealtimeEvent, bool, error) {
+	state, changed, err := ticketRepo.SetCustomerServiceInboxArchived(conversation.ID, agentUserID, archived, changedAt)
+	if err != nil || !changed {
+		return CustomerServiceRealtimeEvent{}, changed, err
+	}
+	event := CustomerServiceRealtimeEvent{
+		Type:           CustomerServiceEventInboxStateChanged,
+		EventID:        CustomerServiceConversationInboxStateChangedEventID(conversation.ID, agentUserID, state.AssignmentVersion, archived, changedAt),
+		Audience:       CustomerServiceRealtimeAudienceBackoffice,
+		TicketID:       conversation.ID,
+		ConversationID: ticketConversationID(conversation),
+		OccurredAt:     changedAt,
+		Actor:          CustomerServiceRealtimeActor{Kind: "agent", UserID: &agentUserID},
+		Payload: map[string]interface{}{
+			"recipient_user_id":  agentUserID,
+			"archived":           archived,
+			"archived_at":        state.ArchivedAt,
+			"assignment_version": state.AssignmentVersion,
+		},
+	}
+	if err := enqueueCustomerServiceRealtimeOutboxEvent(s.customerServiceRealtimeOutbox.WithTx(tx), conversation, event); err != nil {
+		return CustomerServiceRealtimeEvent{}, false, err
+	}
+	if archived {
+		metrics.CustomerServiceArchivedConversations.Inc()
+	}
+	return event, true, nil
 }
 
 func (s *TicketService) getAgentAccessibleCustomerServiceConversation(ticketID uint, agentUserID uint, canViewAll bool) (*ticket.Ticket, error) {
@@ -315,6 +598,84 @@ func validateAgentCustomerServiceConversation(t *ticket.Ticket, agentUserID uint
 		return nil
 	}
 	return ErrCustomerServiceAgentAccessDenied
+}
+
+func canonicalCustomerServiceLifecycleStatus(status string) (string, bool) {
+	switch strings.ToLower(strings.TrimSpace(status)) {
+	case "open", "pending", "":
+		return "open", true
+	case "in_progress", "active":
+		return "in_progress", true
+	case "resolved":
+		return "resolved", true
+	case "closed":
+		return "closed", true
+	default:
+		return "", false
+	}
+}
+
+func isAllowedCustomerServiceStatusTransition(from, to string) bool {
+	if from == to {
+		return true
+	}
+	switch from {
+	case "open":
+		return to == "in_progress" || to == "resolved" || to == "closed"
+	case "in_progress":
+		return to == "resolved" || to == "closed"
+	case "resolved":
+		return to == "closed" || to == "open"
+	case "closed":
+		return to == "open" || to == "in_progress"
+	default:
+		return false
+	}
+}
+
+func newCustomerServiceStatusChangedEvent(conversation *ticket.Ticket, previousStatus, status string, statusVersion uint, changedAt time.Time, actor CustomerServiceRealtimeActor, reasonCode string) CustomerServiceRealtimeEvent {
+	return CustomerServiceRealtimeEvent{
+		Type:           CustomerServiceEventStatusChanged,
+		EventID:        CustomerServiceConversationStatusChangedEventID(conversation.ID, statusVersion),
+		Audience:       CustomerServiceRealtimeAudienceBackoffice,
+		TicketID:       conversation.ID,
+		ConversationID: ticketConversationID(conversation),
+		OccurredAt:     changedAt,
+		Actor:          actor,
+		Payload: map[string]interface{}{
+			"previous_status": previousStatus,
+			"status":          status,
+			"status_version":  statusVersion,
+			"reason_code":     customerServiceStatusReasonCode(reasonCode),
+		},
+	}
+}
+
+func customerServiceStatusReasonCode(reason string) string {
+	switch strings.ToLower(strings.TrimSpace(reason)) {
+	case customerServiceStatusReasonSameOwnerTransfer,
+		customerServiceStatusReasonCustomerMessage,
+		customerServiceStatusReasonOperatorReopen,
+		customerServiceStatusReasonOperatorResolve,
+		customerServiceStatusReasonCloseAndArchive:
+		return strings.ToLower(strings.TrimSpace(reason))
+	default:
+		return customerServiceStatusReasonManualChange
+	}
+}
+
+func isCustomerServiceStatusReasonCode(reason string) bool {
+	switch strings.ToLower(strings.TrimSpace(reason)) {
+	case customerServiceStatusReasonManualChange,
+		customerServiceStatusReasonSameOwnerTransfer,
+		customerServiceStatusReasonCustomerMessage,
+		customerServiceStatusReasonOperatorReopen,
+		customerServiceStatusReasonOperatorResolve,
+		customerServiceStatusReasonCloseAndArchive:
+		return true
+	default:
+		return false
+	}
 }
 
 func (s *TicketService) HasPublicCustomerServiceConversation(owner CustomerServiceOwner) (bool, string, uint, error) {
@@ -392,7 +753,7 @@ func (s *TicketService) AddPublicCustomerServiceMessage(conversationID string, o
 		UserID:    owner.UserID,
 		Anonymous: owner.UserID == nil,
 	}
-	if err := s.persistCustomerServiceMessage(t, msg, actor, nil); err != nil {
+	if err := s.persistCustomerServiceMessage(t, msg, actor); err != nil {
 		return nil, nil, err
 	}
 
@@ -403,7 +764,6 @@ func (s *TicketService) persistCustomerServiceMessage(
 	conversation *ticket.Ticket,
 	message *ticket.TicketMessage,
 	actor CustomerServiceRealtimeActor,
-	afterCreate func(*repository.TicketRepository) error,
 ) error {
 	if s == nil || s.ticketRepo == nil {
 		return errors.New("customer-service ticket repository is unavailable")
@@ -417,33 +777,93 @@ func (s *TicketService) persistCustomerServiceMessage(
 	}
 
 	return s.ticketRepo.WithinTx(func(ticketRepo *repository.TicketRepository, tx *gorm.DB) error {
+		current, err := ticketRepo.FindTicketByIDForUpdate(conversation.ID)
+		if err != nil {
+			return err
+		}
+		if current.Category != customerServiceTicketCategory {
+			return ErrCustomerServiceConversationAccessDenied
+		}
 		if err := ticketRepo.CreateTicketMessage(message); err != nil {
 			return err
 		}
-		if actor.Kind == "customer" && conversation.AssignedTo > 0 {
-			if err := ticketRepo.RecordCustomerServiceInboxCustomerMessage(
-				conversation.ID,
-				conversation.AssignedTo,
+
+		changedAt := time.Now().UTC()
+		additionalEvents := make([]CustomerServiceRealtimeEvent, 0, 2)
+		if actor.Kind == "customer" && current.AssignedTo > 0 {
+			state, archiveCleared, err := ticketRepo.RecordCustomerServiceInboxCustomerMessageWithState(
+				current.ID,
+				current.AssignedTo,
 				message.ID,
-			); err != nil {
+			)
+			if err != nil {
 				return err
+			}
+			if archiveCleared {
+				event := CustomerServiceRealtimeEvent{
+					Type:           CustomerServiceEventInboxStateChanged,
+					EventID:        CustomerServiceConversationInboxStateChangedEventID(current.ID, current.AssignedTo, state.AssignmentVersion, false, changedAt),
+					Audience:       CustomerServiceRealtimeAudienceBackoffice,
+					TicketID:       current.ID,
+					ConversationID: ticketConversationID(current),
+					OccurredAt:     changedAt,
+					Actor:          actor,
+					Payload: map[string]interface{}{
+						"recipient_user_id":  current.AssignedTo,
+						"archived":           false,
+						"archived_at":        nil,
+						"assignment_version": state.AssignmentVersion,
+						"reason_code":        customerServiceStatusReasonCustomerMessage,
+					},
+				}
+				additionalEvents = append(additionalEvents, event)
 			}
 		}
 
-		if afterCreate != nil {
-			if err := afterCreate(ticketRepo); err != nil {
+		currentStatus, _ := canonicalCustomerServiceLifecycleStatus(current.Status)
+		targetStatus := ""
+		statusReasonCode := ""
+		switch actor.Kind {
+		case "customer":
+			if currentStatus == "resolved" || currentStatus == "closed" {
+				targetStatus = "open"
+				statusReasonCode = customerServiceStatusReasonCustomerMessage
+			}
+		case "agent":
+			if currentStatus == "open" || currentStatus == "closed" {
+				targetStatus = "in_progress"
+				statusReasonCode = customerServiceStatusReasonManualChange
+			}
+		}
+		if targetStatus != "" && current.Status != targetStatus {
+			statusVersion, changed, err := ticketRepo.UpdateTicketStatusForUpdate(current, targetStatus)
+			if err != nil {
 				return err
 			}
-		} else if err := ticketRepo.TouchTicket(conversation.ID, time.Now().UTC()); err != nil {
+			if changed {
+				if targetStatus == "open" {
+					metrics.CustomerServiceReopenedConversations.Inc()
+				}
+				additionalEvents = append(additionalEvents, newCustomerServiceStatusChangedEvent(current, currentStatus, targetStatus, statusVersion, changedAt, actor, statusReasonCode))
+			}
+		} else if err := ticketRepo.TouchTicket(current.ID, changedAt); err != nil {
 			return err
 		}
 
-		return enqueueCustomerServiceMessageCreatedOutboxEvent(
+		if err := enqueueCustomerServiceMessageCreatedOutboxEvent(
 			s.customerServiceRealtimeOutbox.WithTx(tx),
-			conversation,
+			current,
 			message,
 			actor,
-		)
+		); err != nil {
+			return err
+		}
+		for _, event := range additionalEvents {
+			if err := enqueueCustomerServiceRealtimeOutboxEvent(s.customerServiceRealtimeOutbox.WithTx(tx), current, event); err != nil {
+				return err
+			}
+		}
+		return nil
 	})
 }
 
@@ -576,10 +996,6 @@ func (s *TicketService) updateCustomerServiceConversationOwner(t *ticket.Ticket,
 		t.AssignedTo = agentID
 		changed = true
 		assignmentChanged = true
-	}
-	if t.Status == "" || t.Status == "closed" || t.Status == "resolved" {
-		t.Status = "open"
-		changed = true
 	}
 	if t.UserID == 0 {
 		persistedUserID, err := s.customerServicePersistedUserID(owner.UserID, agentID)

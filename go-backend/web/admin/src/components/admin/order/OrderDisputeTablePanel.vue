@@ -53,7 +53,7 @@
             <div v-if="dispute.needs_response" class="mt-1 text-[10px] font-bold text-rose-600">需响应</div>
           </TableCell>
           <TableCell class="text-right font-mono text-xs font-bold tabular-nums">
-            {{ formatMoney(dispute.amount, dispute.currency) }}
+            {{ formatMinorMoney(dispute.amount_minor, dispute.currency) }}
           </TableCell>
           <TableCell>
             <div class="text-xs font-black">
@@ -129,6 +129,7 @@ import { CreditCard, Eye, Mail, ShieldCheck } from '@lucide/vue'
 import AdminPagination from '@/components/admin/AdminPagination.vue'
 import AdminStatusBadge from '@/components/admin/AdminStatusBadge.vue'
 import AdminTablePanel from '@/components/admin/AdminTablePanel.vue'
+import { formatMinorMoney } from '@/lib/dashboardPresentation'
 import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableEmpty, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import type {

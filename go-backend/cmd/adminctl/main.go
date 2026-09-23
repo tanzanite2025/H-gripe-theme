@@ -1,6 +1,8 @@
 package main
 
 import (
+	"context"
+	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
@@ -9,6 +11,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"commerce-platform/internal/pkg/config"
 	"commerce-platform/internal/pkg/database"
@@ -33,6 +36,8 @@ func run(args []string, stdout, stderr io.Writer) error {
 	switch args[0] {
 	case "ensure-admin":
 		return runEnsureAdmin(args[1:], stdout, stderr)
+	case "audit-pricing-snapshots":
+		return runAuditPricingSnapshots(args[1:], stdout, stderr)
 	case "help", "-h", "--help":
 		printUsage(stdout)
 		return nil
@@ -40,6 +45,67 @@ func run(args []string, stdout, stderr io.Writer) error {
 		printUsage(stderr)
 		return fmt.Errorf("unknown command %q", args[0])
 	}
+}
+
+func runAuditPricingSnapshots(args []string, stdout, stderr io.Writer) error {
+	fs := flag.NewFlagSet("audit-pricing-snapshots", flag.ContinueOnError)
+	fs.SetOutput(stderr)
+	configPath := fs.String("config", "", "optional app config file")
+	batchSize := fs.Int("batch-size", 200, "orders loaded per read-only batch")
+	maxOrders := fs.Int("max-orders", 0, "maximum orders to scan; 0 means all")
+	fromOrderID := fs.Uint("from-order-id", 0, "scan orders with id greater than this value")
+	toOrderID := fs.Uint("to-order-id", 0, "scan orders up to and including this value; 0 means all")
+	maxIssues := fs.Int("max-issues", 1000, "maximum issue rows retained in the report")
+	format := fs.String("format", "text", "output format: text or json")
+	if err := fs.Parse(args); err != nil {
+		return err
+	}
+	if *batchSize <= 0 || *maxOrders < 0 || *maxIssues <= 0 {
+		return errors.New("batch-size must be positive; max-orders must not be negative; max-issues must be positive")
+	}
+	if *format != "text" && *format != "json" {
+		return errors.New("format must be text or json")
+	}
+
+	dbCfg, _, err := readRuntimeConfig(*configPath)
+	if err != nil {
+		return err
+	}
+	db, err := database.Init(dbCfg)
+	if err != nil {
+		return err
+	}
+	if sqlDB, dbErr := db.DB(); dbErr == nil {
+		defer sqlDB.Close()
+	}
+	report, err := service.NewOrderPricingSnapshotAuditService(db).Audit(context.Background(), service.OrderPricingSnapshotAuditOptions{
+		BatchSize: *batchSize, MaxOrders: *maxOrders, FromOrderID: uint(*fromOrderID), ToOrderID: uint(*toOrderID), MaxIssues: *maxIssues,
+	})
+	if err != nil {
+		return err
+	}
+	if *format == "json" {
+		encoder := json.NewEncoder(stdout)
+		encoder.SetIndent("", "  ")
+		return encoder.Encode(report)
+	}
+	fmt.Fprintf(stdout, "Pricing snapshot audit generated_at=%s orders=%d items=%d issues=%d\n", report.GeneratedAt.Format(time.RFC3339), report.OrdersScanned, report.ItemsScanned, report.TotalIssues)
+	fmt.Fprintf(stdout, "Orders: valid=%d missing=%d invalid=%d mismatched=%d\n", report.OrdersWithValidSnapshot, report.OrdersMissingSnapshot, report.OrdersInvalidSnapshot, report.OrdersMismatchedSnapshot)
+	fmt.Fprintf(stdout, "Items: valid=%d missing=%d invalid=%d mismatched=%d\n", report.ItemsWithValidSnapshot, report.ItemsMissingSnapshot, report.ItemsInvalidSnapshot, report.ItemsMismatchedSnapshot)
+	if report.OrdersTruncated || report.IssuesTruncated {
+		fmt.Fprintf(stdout, "Truncated: orders=%t issues=%t\n", report.OrdersTruncated, report.IssuesTruncated)
+	}
+	for _, issue := range report.Issues {
+		fmt.Fprintf(stdout, "%s %s order_id=%d", issue.Scope, issue.Code, issue.OrderID)
+		if issue.ItemID != 0 {
+			fmt.Fprintf(stdout, " item_id=%d", issue.ItemID)
+		}
+		if issue.OrderNumber != "" {
+			fmt.Fprintf(stdout, " order_number=%s", issue.OrderNumber)
+		}
+		fmt.Fprintf(stdout, " detail=%s\n", issue.Detail)
+	}
+	return nil
 }
 
 func runEnsureAdmin(args []string, stdout, stderr io.Writer) error {
@@ -187,6 +253,7 @@ func envIntDefaultAny(keys []string, fallback int) int {
 
 func printUsage(w io.Writer) {
 	fmt.Fprintln(w, "Usage: adminctl ensure-admin [-config path] [-operator label]")
+	fmt.Fprintln(w, "       adminctl audit-pricing-snapshots [-config path] [-batch-size N] [-max-orders N] [-format text|json]")
 	fmt.Fprintln(w, "")
 	fmt.Fprintln(w, "Required environment:")
 	fmt.Fprintln(w, "  ADMIN_EMAIL")

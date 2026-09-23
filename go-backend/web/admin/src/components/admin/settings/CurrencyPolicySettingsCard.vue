@@ -295,7 +295,7 @@ interface ExchangeRateConfig {
 interface ExchangeRateRecord {
   base_currency?: string
   quote_currency?: string
-  rate?: number
+  rate_decimal?: string
   source?: string
   fetched_at?: string
   expires_at?: string
@@ -586,7 +586,7 @@ const formatRate = (value: unknown): string => {
   return rate.toPrecision(5)
 }
 
-const rateValueLabel = (currency: string): string => formatRate(exchangeRateForCurrency(currency)?.rate)
+const rateValueLabel = (currency: string): string => formatRate(exchangeRateForCurrency(currency)?.rate_decimal)
 
 const formatDateTime = (value?: string): string => {
   if (!value) return '尚未同步'

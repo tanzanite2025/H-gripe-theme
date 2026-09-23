@@ -1,0 +1,1 @@
+-- Legacy major-unit projections are intentionally not restored.

@@ -3,6 +3,7 @@ package repository
 import (
 	"commerce-platform/internal/domain/shipping"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -15,6 +16,11 @@ import (
 type ShippingRepository struct {
 	db *gorm.DB
 }
+
+var (
+	ErrTrackingSyncLeaseUnavailable = errors.New("tracking shipment sync lease is already held")
+	ErrTrackingSyncLeaseLost        = errors.New("tracking shipment sync lease was lost")
+)
 
 type TrackingShipmentFilter struct {
 	SyncStatus          string
@@ -39,17 +45,97 @@ func (r *ShippingRepository) WithTx(tx *gorm.DB) *ShippingRepository {
 	return &ShippingRepository{db: tx}
 }
 
+// attachShippingDisplayPriceSnapshots hydrates the storefront read model in a
+// separate query. Transactional shipping rows never carry converted display
+// prices; stale snapshots are suppressed by comparing their source fingerprint
+// with the current template/rule amounts.
+func (r *ShippingRepository) attachShippingDisplayPriceSnapshots(templates []shipping.ShippingTemplate) error {
+	if len(templates) == 0 {
+		return nil
+	}
+	for i := range templates {
+		templates[i].DisplayPriceData = datatypes.JSON([]byte("{}"))
+		templates[i].DisplayPriceSnapshot = nil
+		for j := range templates[i].Rules {
+			templates[i].Rules[j].DisplayPriceData = datatypes.JSON([]byte("{}"))
+			templates[i].Rules[j].DisplayPriceSnapshot = nil
+		}
+	}
+	if !r.db.Migrator().HasTable(&shipping.ShippingDisplayPriceSnapshot{}) {
+		return nil
+	}
+
+	templateIDs := make([]uint, 0, len(templates))
+	templatesByID := make(map[uint]*shipping.ShippingTemplate, len(templates))
+	rulesByID := make(map[uint]*shipping.ShippingRule)
+	for i := range templates {
+		template := &templates[i]
+		templateIDs = append(templateIDs, template.ID)
+		templatesByID[template.ID] = template
+		for j := range template.Rules {
+			rulesByID[template.Rules[j].ID] = &template.Rules[j]
+		}
+	}
+
+	var snapshots []shipping.ShippingDisplayPriceSnapshot
+	if err := r.db.Where("template_id IN ?", templateIDs).Find(&snapshots).Error; err != nil {
+		return err
+	}
+	for i := range snapshots {
+		snapshot := &snapshots[i]
+		if snapshot.RuleID == nil {
+			template := templatesByID[snapshot.TemplateID]
+			if template != nil && shippingTemplateDisplaySnapshotMatchesSource(snapshot, template) {
+				template.DisplayPriceData = append(datatypes.JSON(nil), snapshot.DisplayPriceData...)
+				template.DisplayPriceSnapshot = snapshot
+			}
+			continue
+		}
+		rule := rulesByID[*snapshot.RuleID]
+		if rule != nil && shippingRuleDisplaySnapshotMatchesSource(snapshot, rule) {
+			rule.DisplayPriceData = append(datatypes.JSON(nil), snapshot.DisplayPriceData...)
+			rule.DisplayPriceSnapshot = snapshot
+		}
+	}
+	return nil
+}
+
+func shippingTemplateDisplaySnapshotMatchesSource(snapshot *shipping.ShippingDisplayPriceSnapshot, template *shipping.ShippingTemplate) bool {
+	return snapshot != nil && template != nil &&
+		strings.EqualFold(strings.TrimSpace(snapshot.SourceCurrency), strings.TrimSpace(template.Currency)) &&
+		int64PointerEqual(snapshot.SourceDefaultFeeMinor, template.DefaultFeeMinor) &&
+		int64PointerEqual(snapshot.SourceFreeThresholdMinor, template.FreeThresholdMinor)
+}
+
+func shippingRuleDisplaySnapshotMatchesSource(snapshot *shipping.ShippingDisplayPriceSnapshot, rule *shipping.ShippingRule) bool {
+	return snapshot != nil && rule != nil &&
+		strings.EqualFold(strings.TrimSpace(snapshot.SourceCurrency), strings.TrimSpace(rule.Currency)) &&
+		int64PointerEqual(snapshot.SourceMinValueMinor, rule.MinValueMinor) &&
+		int64PointerEqual(snapshot.SourceMaxValueMinor, rule.MaxValueMinor) &&
+		int64PointerEqual(snapshot.SourceFeeMinor, rule.FeeMinor) &&
+		int64PointerEqual(snapshot.SourceAdditionalMinor, rule.AdditionalMinor)
+}
+
+func int64PointerEqual(value *int64, expected int64) bool {
+	return value != nil && *value == expected
+}
+
 // ShippingTemplate 閻╃鍙ч弬瑙勭《
 
 // FindTemplateByID 閺嶈宓両D閺屻儲澹樺Ο鈩冩緲
 func (r *ShippingRepository) FindTemplateByID(id uint) (*shipping.ShippingTemplate, error) {
 	var t shipping.ShippingTemplate
 	err := r.db.Preload("Rules", func(db *gorm.DB) *gorm.DB {
-		return db.Order("min_value ASC, id ASC")
+		return db.Order("min_value_minor ASC, min_value ASC, id ASC")
 	}).First(&t, id).Error
 	if err != nil {
 		return nil, err
 	}
+	hydrated := []shipping.ShippingTemplate{t}
+	if err := r.attachShippingDisplayPriceSnapshots(hydrated); err != nil {
+		return nil, err
+	}
+	t = hydrated[0]
 	return &t, nil
 }
 
@@ -61,11 +147,17 @@ func (r *ShippingRepository) FindTemplatesByIDs(ids []uint) (map[uint]*shipping.
 
 	var templates []shipping.ShippingTemplate
 	if err := r.db.Preload("Rules", func(db *gorm.DB) *gorm.DB {
-		return db.Order("min_value ASC, id ASC")
+		return db.Order("min_value_minor ASC, min_value ASC, id ASC")
 	}).Where("id IN ?", ids).Find(&templates).Error; err != nil {
 		return nil, err
 	}
 
+	for i := range templates {
+		templatesByID[templates[i].ID] = &templates[i]
+	}
+	if err := r.attachShippingDisplayPriceSnapshots(templates); err != nil {
+		return nil, err
+	}
 	for i := range templates {
 		templatesByID[templates[i].ID] = &templates[i]
 	}
@@ -76,8 +168,11 @@ func (r *ShippingRepository) FindTemplatesByIDs(ids []uint) (map[uint]*shipping.
 func (r *ShippingRepository) FindAllTemplates() ([]shipping.ShippingTemplate, error) {
 	var templates []shipping.ShippingTemplate
 	err := r.db.Preload("Rules", func(db *gorm.DB) *gorm.DB {
-		return db.Order("min_value ASC, id ASC")
+		return db.Order("min_value_minor ASC, min_value ASC, id ASC")
 	}).Find(&templates).Error
+	if err == nil {
+		err = r.attachShippingDisplayPriceSnapshots(templates)
+	}
 	return templates, err
 }
 
@@ -104,23 +199,38 @@ func (r *ShippingRepository) CreateTemplateWithRules(template *shipping.Shipping
 				return err
 			}
 		}
+		if err := upsertShippingTemplateDisplayPriceSnapshot(tx, template); err != nil {
+			return err
+		}
+		for i := range rules {
+			if err := upsertShippingRuleDisplayPriceSnapshot(tx, &rules[i]); err != nil {
+				return err
+			}
+		}
 
-		return tx.Preload("Rules").First(template, template.ID).Error
+		if err := tx.Preload("Rules").First(template, template.ID).Error; err != nil {
+			return err
+		}
+		hydrated := []shipping.ShippingTemplate{*template}
+		if err := (&ShippingRepository{db: tx}).attachShippingDisplayPriceSnapshots(hydrated); err != nil {
+			return err
+		}
+		*template = hydrated[0]
+		return nil
 	})
 }
 
 func (r *ShippingRepository) UpdateTemplateWithRules(template *shipping.ShippingTemplate, rules []shipping.ShippingRule) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
 		updates := map[string]interface{}{
-			"name":                    template.Name,
-			"type":                    template.Type,
-			"currency":                template.Currency,
-			"free_shipping":           template.FreeShipping,
-			"free_threshold":          template.FreeThreshold,
-			"default_fee":             template.DefaultFee,
-			"display_price_snapshots": template.DisplayPriceData,
-			"description":             template.Description,
-			"enabled":                 template.Enabled,
+			"name":                 template.Name,
+			"type":                 template.Type,
+			"currency":             template.Currency,
+			"free_shipping":        template.FreeShipping,
+			"free_threshold_minor": template.FreeThresholdMinor,
+			"default_fee_minor":    template.DefaultFeeMinor,
+			"description":          template.Description,
+			"enabled":              template.Enabled,
 		}
 		if err := tx.Model(&shipping.ShippingTemplate{}).Where("id = ?", template.ID).Updates(updates).Error; err != nil {
 			return err
@@ -128,6 +238,11 @@ func (r *ShippingRepository) UpdateTemplateWithRules(template *shipping.Shipping
 
 		if err := tx.Where("template_id = ?", template.ID).Delete(&shipping.ShippingRule{}).Error; err != nil {
 			return err
+		}
+		if tx.Migrator().HasTable(&shipping.ShippingDisplayPriceSnapshot{}) {
+			if err := tx.Where("template_id = ?", template.ID).Delete(&shipping.ShippingDisplayPriceSnapshot{}).Error; err != nil {
+				return err
+			}
 		}
 
 		if len(rules) > 0 {
@@ -139,13 +254,34 @@ func (r *ShippingRepository) UpdateTemplateWithRules(template *shipping.Shipping
 				return err
 			}
 		}
+		if err := upsertShippingTemplateDisplayPriceSnapshot(tx, template); err != nil {
+			return err
+		}
+		for i := range rules {
+			if err := upsertShippingRuleDisplayPriceSnapshot(tx, &rules[i]); err != nil {
+				return err
+			}
+		}
 
-		return tx.Preload("Rules").First(template, template.ID).Error
+		if err := tx.Preload("Rules").First(template, template.ID).Error; err != nil {
+			return err
+		}
+		hydrated := []shipping.ShippingTemplate{*template}
+		if err := (&ShippingRepository{db: tx}).attachShippingDisplayPriceSnapshots(hydrated); err != nil {
+			return err
+		}
+		*template = hydrated[0]
+		return nil
 	})
 }
 
 func (r *ShippingRepository) DeleteTemplate(id uint) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
+		if tx.Migrator().HasTable(&shipping.ShippingDisplayPriceSnapshot{}) {
+			if err := tx.Where("template_id = ?", id).Delete(&shipping.ShippingDisplayPriceSnapshot{}).Error; err != nil {
+				return err
+			}
+		}
 		if err := tx.Where("template_id = ?", id).Delete(&shipping.ShippingRule{}).Error; err != nil {
 			return err
 		}
@@ -157,35 +293,57 @@ func (r *ShippingRepository) DeleteTemplate(id uint) error {
 
 // CreateRule 閸掓稑缂撴潻鎰瀭鐟欏嫬鍨?
 func (r *ShippingRepository) CreateRule(rule *shipping.ShippingRule) error {
-	return r.db.Create(rule).Error
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Create(rule).Error; err != nil {
+			return err
+		}
+		return upsertShippingRuleDisplayPriceSnapshot(tx, rule)
+	})
 }
 
 // FindRulesByTemplateID 閺嶈宓佸Ο鈩冩緲ID閺屻儲澹樼憴鍕灟
 func (r *ShippingRepository) FindRulesByTemplateID(templateID uint) ([]shipping.ShippingRule, error) {
 	var rules []shipping.ShippingRule
-	err := r.db.Where("template_id = ?", templateID).Order("min_value ASC").Find(&rules).Error
+	err := r.db.Where("template_id = ?", templateID).Order("min_value_minor ASC, min_value ASC, id ASC").Find(&rules).Error
+	if err == nil && len(rules) > 0 {
+		wrapped := shipping.ShippingTemplate{ID: templateID, Rules: rules}
+		if attachErr := r.attachShippingDisplayPriceSnapshots([]shipping.ShippingTemplate{wrapped}); attachErr != nil {
+			err = attachErr
+		} else {
+			rules = wrapped.Rules
+		}
+	}
 	return rules, err
 }
 
 // UpdateRule 閺囧瓨鏌婄憴鍕灟
 func (r *ShippingRepository) UpdateRule(rule *shipping.ShippingRule) error {
-	return r.db.Save(rule).Error
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Save(rule).Error; err != nil {
+			return err
+		}
+		return upsertShippingRuleDisplayPriceSnapshot(tx, rule)
+	})
 }
 
 func (r *ShippingRepository) UpdateRuleForTemplate(rule *shipping.ShippingRule) error {
 	updates := map[string]interface{}{
-		"region":                  rule.Region,
-		"currency":                rule.Currency,
-		"min_value":               rule.MinValue,
-		"max_value":               rule.MaxValue,
-		"fee":                     rule.Fee,
-		"additional":              rule.Additional,
-		"display_price_snapshots": rule.DisplayPriceData,
-		"template_id":             rule.TemplateID,
+		"region":           rule.Region,
+		"currency":         rule.Currency,
+		"min_value_minor":  rule.MinValueMinor,
+		"max_value_minor":  rule.MaxValueMinor,
+		"fee_minor":        rule.FeeMinor,
+		"additional_minor": rule.AdditionalMinor,
+		"template_id":      rule.TemplateID,
 	}
-	return r.db.Model(&shipping.ShippingRule{}).
-		Where("id = ? AND template_id = ?", rule.ID, rule.TemplateID).
-		Updates(updates).Error
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Model(&shipping.ShippingRule{}).
+			Where("id = ? AND template_id = ?", rule.ID, rule.TemplateID).
+			Updates(updates).Error; err != nil {
+			return err
+		}
+		return upsertShippingRuleDisplayPriceSnapshot(tx, rule)
+	})
 }
 
 type ShippingDisplayPriceSnapshotUpdate struct {
@@ -205,22 +363,29 @@ func (r *ShippingRepository) UpdateDisplayPriceSnapshots(updates []ShippingDispl
 	}
 
 	return r.db.Transaction(func(tx *gorm.DB) error {
+		if !tx.Migrator().HasTable(&shipping.ShippingDisplayPriceSnapshot{}) {
+			return nil
+		}
 		for _, update := range updates {
 			if update.TemplateID == 0 {
 				continue
 			}
-			if err := tx.Model(&shipping.ShippingTemplate{}).
-				Where("id = ?", update.TemplateID).
-				Update("display_price_snapshots", update.DisplayPriceData).Error; err != nil {
+			var template shipping.ShippingTemplate
+			if err := tx.First(&template, update.TemplateID).Error; err != nil {
+				return err
+			}
+			if err := upsertShippingTemplateDisplayPriceSnapshotWithData(tx, &template, update.DisplayPriceData); err != nil {
 				return err
 			}
 			for _, ruleUpdate := range update.RuleUpdates {
 				if ruleUpdate.RuleID == 0 {
 					continue
 				}
-				if err := tx.Model(&shipping.ShippingRule{}).
-					Where("id = ? AND template_id = ?", ruleUpdate.RuleID, update.TemplateID).
-					Update("display_price_snapshots", ruleUpdate.DisplayPriceData).Error; err != nil {
+				var rule shipping.ShippingRule
+				if err := tx.Where("id = ? AND template_id = ?", ruleUpdate.RuleID, update.TemplateID).First(&rule).Error; err != nil {
+					return err
+				}
+				if err := upsertShippingRuleDisplayPriceSnapshotWithData(tx, &rule, ruleUpdate.DisplayPriceData); err != nil {
 					return err
 				}
 			}
@@ -229,13 +394,109 @@ func (r *ShippingRepository) UpdateDisplayPriceSnapshots(updates []ShippingDispl
 	})
 }
 
+func upsertShippingTemplateDisplayPriceSnapshot(tx *gorm.DB, template *shipping.ShippingTemplate) error {
+	if template == nil || !tx.Migrator().HasTable(&shipping.ShippingDisplayPriceSnapshot{}) {
+		return nil
+	}
+	return upsertShippingTemplateDisplayPriceSnapshotWithData(tx, template, template.DisplayPriceData)
+}
+
+func upsertShippingTemplateDisplayPriceSnapshotWithData(tx *gorm.DB, template *shipping.ShippingTemplate, displayPriceData datatypes.JSON) error {
+	if template == nil || template.ID == 0 {
+		return nil
+	}
+	if len(displayPriceData) == 0 {
+		displayPriceData = datatypes.JSON([]byte("{}"))
+	}
+	snapshot := shipping.ShippingDisplayPriceSnapshot{
+		ScopeKey:                 fmt.Sprintf("template:%d", template.ID),
+		TemplateID:               template.ID,
+		SourceCurrency:           template.Currency,
+		SourceDefaultFeeMinor:    shippingInt64Ptr(template.DefaultFeeMinor),
+		SourceFreeThresholdMinor: shippingInt64Ptr(template.FreeThresholdMinor),
+		DisplayPriceData:         displayPriceData,
+	}
+	return upsertShippingDisplayPriceSnapshot(tx, snapshot)
+}
+
+func upsertShippingRuleDisplayPriceSnapshot(tx *gorm.DB, rule *shipping.ShippingRule) error {
+	if rule == nil || !tx.Migrator().HasTable(&shipping.ShippingDisplayPriceSnapshot{}) {
+		return nil
+	}
+	return upsertShippingRuleDisplayPriceSnapshotWithData(tx, rule, rule.DisplayPriceData)
+}
+
+func upsertShippingRuleDisplayPriceSnapshotWithData(tx *gorm.DB, rule *shipping.ShippingRule, displayPriceData datatypes.JSON) error {
+	if rule == nil || rule.ID == 0 {
+		return nil
+	}
+	if len(displayPriceData) == 0 {
+		displayPriceData = datatypes.JSON([]byte("{}"))
+	}
+	snapshot := shipping.ShippingDisplayPriceSnapshot{
+		ScopeKey:              fmt.Sprintf("rule:%d", rule.ID),
+		TemplateID:            rule.TemplateID,
+		RuleID:                shippingUintPtr(rule.ID),
+		SourceCurrency:        rule.Currency,
+		SourceMinValueMinor:   shippingInt64Ptr(rule.MinValueMinor),
+		SourceMaxValueMinor:   shippingInt64Ptr(rule.MaxValueMinor),
+		SourceFeeMinor:        shippingInt64Ptr(rule.FeeMinor),
+		SourceAdditionalMinor: shippingInt64Ptr(rule.AdditionalMinor),
+		DisplayPriceData:      displayPriceData,
+	}
+	return upsertShippingDisplayPriceSnapshot(tx, snapshot)
+}
+
+func upsertShippingDisplayPriceSnapshot(tx *gorm.DB, snapshot shipping.ShippingDisplayPriceSnapshot) error {
+	var existing shipping.ShippingDisplayPriceSnapshot
+	err := tx.Where("scope_key = ?", snapshot.ScopeKey).First(&existing).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return tx.Create(&snapshot).Error
+	}
+	if err != nil {
+		return err
+	}
+	return tx.Model(&shipping.ShippingDisplayPriceSnapshot{}).
+		Where("id = ?", existing.ID).
+		Updates(map[string]interface{}{
+			"template_id":                 snapshot.TemplateID,
+			"rule_id":                     snapshot.RuleID,
+			"source_currency":             snapshot.SourceCurrency,
+			"source_default_fee_minor":    snapshot.SourceDefaultFeeMinor,
+			"source_free_threshold_minor": snapshot.SourceFreeThresholdMinor,
+			"source_min_value_minor":      snapshot.SourceMinValueMinor,
+			"source_max_value_minor":      snapshot.SourceMaxValueMinor,
+			"source_fee_minor":            snapshot.SourceFeeMinor,
+			"source_additional_minor":     snapshot.SourceAdditionalMinor,
+			"display_prices":              snapshot.DisplayPriceData,
+		}).Error
+}
+
+func shippingInt64Ptr(value int64) *int64 { return &value }
+
+func shippingUintPtr(value uint) *uint { return &value }
+
 // DeleteRule 閸掔娀娅庣憴鍕灟
 func (r *ShippingRepository) DeleteRule(id uint) error {
-	return r.db.Delete(&shipping.ShippingRule{}, id).Error
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		if tx.Migrator().HasTable(&shipping.ShippingDisplayPriceSnapshot{}) {
+			if err := tx.Where("rule_id = ?", id).Delete(&shipping.ShippingDisplayPriceSnapshot{}).Error; err != nil {
+				return err
+			}
+		}
+		return tx.Delete(&shipping.ShippingRule{}, id).Error
+	})
 }
 
 func (r *ShippingRepository) DeleteRuleForTemplate(templateID uint, ruleID uint) error {
-	return r.db.Where("id = ? AND template_id = ?", ruleID, templateID).Delete(&shipping.ShippingRule{}).Error
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		if tx.Migrator().HasTable(&shipping.ShippingDisplayPriceSnapshot{}) {
+			if err := tx.Where("rule_id = ? AND template_id = ?", ruleID, templateID).Delete(&shipping.ShippingDisplayPriceSnapshot{}).Error; err != nil {
+				return err
+			}
+		}
+		return tx.Where("id = ? AND template_id = ?", ruleID, templateID).Delete(&shipping.ShippingRule{}).Error
+	})
 }
 
 // Carrier 閻╃鍙ч弬瑙勭《
@@ -449,14 +710,29 @@ func (r *ShippingRepository) DeleteTrackingCarrierMapping(id uint) error {
 	return r.db.Delete(&shipping.TrackingCarrierMapping{}, id).Error
 }
 
-func (r *ShippingRepository) FindTrackingShipmentByOrderID(orderID uint) (*shipping.TrackingShipment, error) {
-	var shipment shipping.TrackingShipment
+// FindTrackingShipmentsByOrderID returns every non-deleted package shipment
+// for an order, ordered by creation.
+func (r *ShippingRepository) FindTrackingShipmentsByOrderID(orderID uint) ([]shipping.TrackingShipment, error) {
+	var shipments []shipping.TrackingShipment
 	err := r.db.
 		Preload("Provider").
 		Preload("Carrier").
 		Preload("CarrierService").
 		Preload("Mapping").
 		Where("order_id = ?", orderID).
+		Order("id ASC").
+		Find(&shipments).Error
+	return shipments, err
+}
+
+func (r *ShippingRepository) FindTrackingShipmentByOrderIDAndTrackingNumber(orderID uint, trackingNumber string) (*shipping.TrackingShipment, error) {
+	var shipment shipping.TrackingShipment
+	err := r.db.
+		Preload("Provider").
+		Preload("Carrier").
+		Preload("CarrierService").
+		Preload("Mapping").
+		Where("order_id = ? AND tracking_number = ?", orderID, strings.TrimSpace(trackingNumber)).
 		First(&shipment).Error
 	if err != nil {
 		return nil, err
@@ -592,13 +868,17 @@ func (r *ShippingRepository) FindAllTrackingShipments(filter TrackingShipmentFil
 	}
 
 	if filter.DueOnly {
+		// Keep the application time location for SQLite compatibility; Postgres
+		// normalizes timestamptz comparisons itself.
 		now := time.Now()
 		query = query.Where(
-			"(sync_status = ? OR (sync_status = ? AND (next_sync_at IS NULL OR next_sync_at <= ?)) OR (sync_status = ? AND next_sync_at <= ?))",
+			"(sync_status = ? OR (sync_status = ? AND (next_sync_at IS NULL OR next_sync_at <= ?)) OR (sync_status = ? AND next_sync_at <= ?) OR (sync_status = ? AND (sync_lease_owner = '' OR sync_lease_expires_at IS NULL OR sync_lease_expires_at <= ?)))",
 			"pending",
 			"failed",
 			now,
 			"synced",
+			now,
+			"syncing",
 			now,
 		)
 	}
@@ -611,35 +891,170 @@ func (r *ShippingRepository) FindAllTrackingShipments(filter TrackingShipmentFil
 	return shipments, err
 }
 
-func (r *ShippingRepository) FindDueTrackingShipments(limit int, now time.Time) ([]shipping.TrackingShipment, error) {
-	var shipments []shipping.TrackingShipment
-	query := r.db.
-		Preload("Provider").
-		Preload("Carrier").
-		Preload("CarrierService").
-		Preload("Mapping").
-		Where("enabled = ?", true).
-		Where(
-			"(sync_status = ? OR (sync_status = ? AND (next_sync_at IS NULL OR next_sync_at <= ?)) OR (sync_status = ? AND next_sync_at <= ?))",
-			"pending",
-			"failed",
-			now,
-			"synced",
-			now,
-		).
-		Order("COALESCE(next_sync_at, created_at) ASC").
-		Order("id ASC")
-
-	if limit > 0 {
-		query = query.Limit(limit)
+func (r *ShippingRepository) ClaimDueTrackingShipments(limit int, now time.Time, owner string, leaseTimeout time.Duration) ([]shipping.TrackingShipment, error) {
+	if r == nil || r.db == nil {
+		return nil, gorm.ErrInvalidDB
+	}
+	owner = strings.TrimSpace(owner)
+	if owner == "" {
+		return nil, errors.New("tracking sync lease owner is required")
+	}
+	if now.IsZero() {
+		now = time.Now().UTC()
+	} else {
+		now = now.UTC()
+	}
+	if limit <= 0 || limit > 100 {
+		limit = 20
+	}
+	if leaseTimeout <= 0 {
+		leaseTimeout = 10 * time.Minute
 	}
 
-	err := query.Find(&shipments).Error
-	return shipments, err
+	claimed := make([]shipping.TrackingShipment, 0, limit)
+	err := r.db.Transaction(func(tx *gorm.DB) error {
+		var candidates []shipping.TrackingShipment
+		query := tx.
+			Preload("Provider").
+			Preload("Carrier").
+			Preload("CarrierService").
+			Preload("Mapping").
+			Where("enabled = ?", true).
+			Where(trackingShipmentDueForClaimSQL, trackingShipmentDueForClaimArgs(now)...).
+			Order("CASE WHEN sync_status = 'syncing' THEN 0 ELSE 1 END ASC").
+			Order("COALESCE(sync_lease_expires_at, next_sync_at, created_at) ASC").
+			Order("id ASC").
+			Limit(limit)
+		query = lockTrackingShipmentClaims(r.db, query)
+		if err := query.Find(&candidates).Error; err != nil {
+			return err
+		}
+
+		for index := range candidates {
+			candidate := &candidates[index]
+			expiresAt := now.Add(leaseTimeout)
+			result := tx.Model(&shipping.TrackingShipment{}).
+				Where("id = ? AND enabled = ?", candidate.ID, true).
+				Where(trackingShipmentDueForClaimSQL, trackingShipmentDueForClaimArgs(now)...).
+				Updates(map[string]interface{}{
+					"sync_status":           "syncing",
+					"sync_lease_owner":      owner,
+					"sync_lease_generation": gorm.Expr("sync_lease_generation + 1"),
+					"sync_lease_expires_at": expiresAt,
+					"last_error":            "",
+					"updated_at":            now,
+				})
+			if result.Error != nil {
+				return result.Error
+			}
+			if result.RowsAffected == 0 {
+				continue
+			}
+			candidate.SyncStatus = "syncing"
+			candidate.SyncLeaseOwner = owner
+			candidate.SyncLeaseGeneration++
+			candidate.SyncLeaseExpiresAt = &expiresAt
+			candidate.LastError = ""
+			candidate.UpdatedAt = now
+			claimed = append(claimed, *candidate)
+		}
+		return nil
+	})
+	return claimed, err
+}
+
+func (r *ShippingRepository) ClaimTrackingShipmentForSync(orderID uint, trackingNumber string, now time.Time, owner string, leaseTimeout time.Duration) (*shipping.TrackingShipment, error) {
+	if r == nil || r.db == nil {
+		return nil, gorm.ErrInvalidDB
+	}
+	trackingNumber = strings.TrimSpace(trackingNumber)
+	owner = strings.TrimSpace(owner)
+	if orderID == 0 || trackingNumber == "" || owner == "" {
+		return nil, errors.New("tracking sync claim input is incomplete")
+	}
+	if now.IsZero() {
+		now = time.Now().UTC()
+	} else {
+		now = now.UTC()
+	}
+	if leaseTimeout <= 0 {
+		leaseTimeout = 10 * time.Minute
+	}
+
+	var claimed *shipping.TrackingShipment
+	err := r.db.Transaction(func(tx *gorm.DB) error {
+		var candidate shipping.TrackingShipment
+		query := tx.
+			Preload("Provider").
+			Preload("Carrier").
+			Preload("CarrierService").
+			Preload("Mapping").
+			Where("order_id = ? AND tracking_number = ? AND enabled = ?", orderID, trackingNumber, true)
+		query = lockTrackingShipmentClaims(r.db, query)
+		if err := query.First(&candidate).Error; err != nil {
+			return err
+		}
+		if trackingShipmentHasActiveLease(&candidate, now) {
+			return ErrTrackingSyncLeaseUnavailable
+		}
+
+		expiresAt := now.Add(leaseTimeout)
+		result := tx.Model(&shipping.TrackingShipment{}).
+			Where("id = ? AND enabled = ?", candidate.ID, true).
+			Where("sync_status <> ? OR sync_lease_owner = '' OR sync_lease_expires_at IS NULL OR sync_lease_expires_at <= ?", "syncing", now).
+			Updates(map[string]interface{}{
+				"sync_status":           "syncing",
+				"sync_lease_owner":      owner,
+				"sync_lease_generation": gorm.Expr("sync_lease_generation + 1"),
+				"sync_lease_expires_at": expiresAt,
+				"last_error":            "",
+				"updated_at":            now,
+			})
+		if result.Error != nil {
+			return result.Error
+		}
+		if result.RowsAffected == 0 {
+			return ErrTrackingSyncLeaseUnavailable
+		}
+		candidate.SyncStatus = "syncing"
+		candidate.SyncLeaseOwner = owner
+		candidate.SyncLeaseGeneration++
+		candidate.SyncLeaseExpiresAt = &expiresAt
+		candidate.LastError = ""
+		candidate.UpdatedAt = now
+		claimed = &candidate
+		return nil
+	})
+	return claimed, err
+}
+
+const trackingShipmentDueForClaimSQL = "(sync_status = ? OR (sync_status = ? AND (next_sync_at IS NULL OR next_sync_at <= ?)) OR (sync_status = ? AND next_sync_at <= ?) OR (sync_status = ? AND (sync_lease_owner = '' OR sync_lease_expires_at IS NULL OR sync_lease_expires_at <= ?)))"
+
+func trackingShipmentDueForClaimArgs(now time.Time) []interface{} {
+	return []interface{}{"pending", "failed", now, "synced", now, "syncing", now}
+}
+
+func trackingShipmentHasActiveLease(shipment *shipping.TrackingShipment, now time.Time) bool {
+	return shipment != nil &&
+		shipment.SyncStatus == "syncing" &&
+		strings.TrimSpace(shipment.SyncLeaseOwner) != "" &&
+		shipment.SyncLeaseExpiresAt != nil &&
+		shipment.SyncLeaseExpiresAt.After(now)
+}
+
+func lockTrackingShipmentClaims(db *gorm.DB, query *gorm.DB) *gorm.DB {
+	switch db.Dialector.Name() {
+	case "postgres", "mysql":
+		return query.Clauses(clause.Locking{Strength: "UPDATE", Options: "SKIP LOCKED"})
+	case "sqlserver":
+		return query.Clauses(clause.Locking{Strength: "UPDATE"})
+	default:
+		return query
+	}
 }
 
 func (r *ShippingRepository) UpsertTrackingShipment(shipment *shipping.TrackingShipment) error {
-	existing, err := r.FindTrackingShipmentByOrderID(shipment.OrderID)
+	existing, err := r.FindTrackingShipmentByOrderIDAndTrackingNumber(shipment.OrderID, shipment.TrackingNumber)
 	if err != nil {
 		if IsRecordNotFound(err) {
 			return r.db.Create(shipment).Error
@@ -667,6 +1082,8 @@ func (r *ShippingRepository) UpsertTrackingShipment(shipment *shipping.TrackingS
 		updates["last_synced_at"] = shipment.LastSyncedAt
 		updates["next_sync_at"] = shipment.NextSyncAt
 		updates["last_error"] = shipment.LastError
+		updates["sync_lease_owner"] = ""
+		updates["sync_lease_expires_at"] = nil
 	}
 
 	return r.db.Transaction(func(tx *gorm.DB) error {
@@ -674,10 +1091,189 @@ func (r *ShippingRepository) UpsertTrackingShipment(shipment *shipping.TrackingS
 			return err
 		}
 		if !sourceUnchanged {
-			return tx.Where("order_id = ?", existing.OrderID).Delete(&shipping.TrackingEvent{}).Error
+			return tx.Where("order_id = ? AND tracking_number = ?", existing.OrderID, existing.TrackingNumber).Delete(&shipping.TrackingEvent{}).Error
 		}
 		return nil
 	})
+}
+
+func (r *ShippingRepository) RenewTrackingShipmentSyncLease(claim *shipping.TrackingShipment, now time.Time, leaseTimeout time.Duration) error {
+	if claim == nil || claim.ID == 0 || strings.TrimSpace(claim.SyncLeaseOwner) == "" || claim.SyncLeaseGeneration <= 0 {
+		return ErrTrackingSyncLeaseLost
+	}
+	if now.IsZero() {
+		now = time.Now().UTC()
+	} else {
+		now = now.UTC()
+	}
+	if leaseTimeout <= 0 {
+		leaseTimeout = 10 * time.Minute
+	}
+	expiresAt := now.Add(leaseTimeout)
+	result := r.db.Model(&shipping.TrackingShipment{}).
+		Where(
+			"id = ? AND sync_status = ? AND sync_lease_owner = ? AND sync_lease_generation = ? AND sync_lease_expires_at > ?",
+			claim.ID,
+			"syncing",
+			claim.SyncLeaseOwner,
+			claim.SyncLeaseGeneration,
+			now,
+		).
+		Updates(map[string]interface{}{
+			"sync_lease_expires_at": expiresAt,
+			"updated_at":            now,
+		})
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return ErrTrackingSyncLeaseLost
+	}
+	claim.SyncLeaseExpiresAt = &expiresAt
+	claim.UpdatedAt = now
+	return nil
+}
+
+func (r *ShippingRepository) CompleteTrackingShipmentSync(claim *shipping.TrackingShipment, eventCount int, lastEventAt *time.Time, nextSyncAt *time.Time, now time.Time) error {
+	if claim == nil || claim.ID == 0 || strings.TrimSpace(claim.SyncLeaseOwner) == "" || claim.SyncLeaseGeneration <= 0 {
+		return ErrTrackingSyncLeaseLost
+	}
+	if now.IsZero() {
+		now = time.Now().UTC()
+	} else {
+		now = now.UTC()
+	}
+	result := r.db.Model(&shipping.TrackingShipment{}).
+		Where(
+			"id = ? AND sync_status = ? AND sync_lease_owner = ? AND sync_lease_generation = ? AND sync_lease_expires_at > ?",
+			claim.ID,
+			"syncing",
+			claim.SyncLeaseOwner,
+			claim.SyncLeaseGeneration,
+			now,
+		).
+		Updates(map[string]interface{}{
+			"registration_status":   "registered",
+			"sync_status":           "synced",
+			"event_count":           eventCount,
+			"last_event_at":         lastEventAt,
+			"last_synced_at":        &now,
+			"next_sync_at":          nextSyncAt,
+			"last_error":            "",
+			"sync_lease_owner":      "",
+			"sync_lease_expires_at": nil,
+			"updated_at":            now,
+		})
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return ErrTrackingSyncLeaseLost
+	}
+	return nil
+}
+
+func (r *ShippingRepository) FailTrackingShipmentSync(claim *shipping.TrackingShipment, lastError string, nextSyncAt *time.Time, now time.Time) error {
+	if claim == nil || claim.ID == 0 || strings.TrimSpace(claim.SyncLeaseOwner) == "" || claim.SyncLeaseGeneration <= 0 {
+		return ErrTrackingSyncLeaseLost
+	}
+	if now.IsZero() {
+		now = time.Now().UTC()
+	} else {
+		now = now.UTC()
+	}
+	result := r.db.Model(&shipping.TrackingShipment{}).
+		Where(
+			"id = ? AND sync_status = ? AND sync_lease_owner = ? AND sync_lease_generation = ? AND sync_lease_expires_at > ?",
+			claim.ID,
+			"syncing",
+			claim.SyncLeaseOwner,
+			claim.SyncLeaseGeneration,
+			now,
+		).
+		Updates(map[string]interface{}{
+			"sync_status":           "failed",
+			"last_synced_at":        &now,
+			"next_sync_at":          nextSyncAt,
+			"last_error":            lastError,
+			"sync_lease_owner":      "",
+			"sync_lease_expires_at": nil,
+			"updated_at":            now,
+		})
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return ErrTrackingSyncLeaseLost
+	}
+	return nil
+}
+
+func (r *ShippingRepository) ApplyTrackingWebhookSyncSuccess(orderID uint, trackingNumber string, eventCount int, lastEventAt *time.Time, now time.Time) error {
+	if now.IsZero() {
+		now = time.Now().UTC()
+	} else {
+		now = now.UTC()
+	}
+	result := r.db.Model(&shipping.TrackingShipment{}).
+		Where("order_id = ? AND tracking_number = ?", orderID, strings.TrimSpace(trackingNumber)).
+		Updates(map[string]interface{}{
+			"registration_status":   "registered",
+			"sync_status":           "synced",
+			"event_count":           eventCount,
+			"last_event_at":         lastEventAt,
+			"last_synced_at":        &now,
+			"next_sync_at":          nil,
+			"last_error":            "",
+			"sync_lease_owner":      "",
+			"sync_lease_expires_at": nil,
+			"updated_at":            now,
+		})
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
+	return nil
+}
+
+func (r *ShippingRepository) UpdateTrackingShipmentRegistrationStatusForTracking(orderID uint, trackingNumber string, status string, lastError string) error {
+	now := time.Now().UTC()
+	return r.db.Model(&shipping.TrackingShipment{}).
+		Where("order_id = ? AND tracking_number = ?", orderID, strings.TrimSpace(trackingNumber)).
+		Updates(map[string]interface{}{"registration_status": status, "last_error": lastError, "updated_at": now}).Error
+}
+
+// AreAllTrackingShipmentsDelivered reports whether every package currently
+// registered for an order has a delivery event. An order with no package rows
+// is never considered delivered.
+func (r *ShippingRepository) AreAllTrackingShipmentsDelivered(orderID uint) (bool, error) {
+	shipments, err := r.FindTrackingShipmentsByOrderID(orderID)
+	if err != nil {
+		return false, err
+	}
+	if len(shipments) == 0 {
+		return false, nil
+	}
+	activeCount := 0
+	for _, shipment := range shipments {
+		if !shipment.Enabled {
+			continue
+		}
+		activeCount++
+		var count int64
+		if err := r.db.Model(&shipping.TrackingEvent{}).
+			Where("order_id = ? AND tracking_number = ?", orderID, shipment.TrackingNumber).
+			Where("LOWER(status) LIKE ? OR LOWER(status) LIKE ? OR status LIKE ? OR status LIKE ?", "%delivered%", "%signed%", "%妥投%", "%签收%").
+			Count(&count).Error; err != nil {
+			return false, err
+		}
+		if count == 0 {
+			return false, nil
+		}
+	}
+	return activeCount > 0, nil
 }
 
 func trackingShipmentExternalSourceUnchanged(existing *shipping.TrackingShipment, next *shipping.TrackingShipment) bool {
@@ -687,57 +1283,6 @@ func trackingShipmentExternalSourceUnchanged(existing *shipping.TrackingShipment
 	return existing.TrackingProviderID == next.TrackingProviderID &&
 		strings.TrimSpace(existing.TrackingNumber) == strings.TrimSpace(next.TrackingNumber) &&
 		strings.TrimSpace(existing.ProviderCarrierCode) == strings.TrimSpace(next.ProviderCarrierCode)
-}
-
-func (r *ShippingRepository) UpdateTrackingShipmentSyncing(orderID uint) error {
-	now := time.Now()
-	return r.db.Model(&shipping.TrackingShipment{}).
-		Where("order_id = ?", orderID).
-		Updates(map[string]interface{}{
-			"sync_status": "syncing",
-			"last_error":  "",
-			"updated_at":  now,
-		}).Error
-}
-
-func (r *ShippingRepository) UpdateTrackingShipmentSyncSuccess(orderID uint, eventCount int, lastEventAt *time.Time, nextSyncAt *time.Time) error {
-	now := time.Now()
-	return r.db.Model(&shipping.TrackingShipment{}).
-		Where("order_id = ?", orderID).
-		Updates(map[string]interface{}{
-			"registration_status": "registered",
-			"sync_status":         "synced",
-			"event_count":         eventCount,
-			"last_event_at":       lastEventAt,
-			"last_synced_at":      &now,
-			"next_sync_at":        nextSyncAt,
-			"last_error":          "",
-			"updated_at":          now,
-		}).Error
-}
-
-func (r *ShippingRepository) UpdateTrackingShipmentRegistrationStatus(orderID uint, status string, lastError string) error {
-	now := time.Now()
-	return r.db.Model(&shipping.TrackingShipment{}).
-		Where("order_id = ?", orderID).
-		Updates(map[string]interface{}{
-			"registration_status": status,
-			"last_error":          lastError,
-			"updated_at":          now,
-		}).Error
-}
-
-func (r *ShippingRepository) UpdateTrackingShipmentSyncFailure(orderID uint, lastError string, nextSyncAt *time.Time) error {
-	now := time.Now()
-	return r.db.Model(&shipping.TrackingShipment{}).
-		Where("order_id = ?", orderID).
-		Updates(map[string]interface{}{
-			"sync_status":    "failed",
-			"last_synced_at": &now,
-			"next_sync_at":   nextSyncAt,
-			"last_error":     lastError,
-			"updated_at":     now,
-		}).Error
 }
 
 func (r *ShippingRepository) FindAllCarrierServices(enabledOnly bool) ([]shipping.CarrierService, error) {
@@ -754,6 +1299,9 @@ func (r *ShippingRepository) FindAllCarrierServices(enabledOnly bool) ([]shippin
 	}
 
 	err := query.Find(&services).Error
+	if err == nil {
+		err = r.attachCarrierServiceTemplateSnapshots(services)
+	}
 	return services, err
 }
 
@@ -762,7 +1310,7 @@ func (r *ShippingRepository) FindEnabledCarrierServicesWithTemplates() ([]shippi
 	err := r.db.
 		Preload("Carrier").
 		Preload("Template.Rules", func(db *gorm.DB) *gorm.DB {
-			return db.Order("min_value ASC, id ASC")
+			return db.Order("min_value_minor ASC, min_value ASC, id ASC")
 		}).
 		Preload("Template").
 		Where("enabled = ?", true).
@@ -770,7 +1318,38 @@ func (r *ShippingRepository) FindEnabledCarrierServicesWithTemplates() ([]shippi
 		Order("sort_order ASC").
 		Order("id ASC").
 		Find(&services).Error
+	if err == nil {
+		err = r.attachCarrierServiceTemplateSnapshots(services)
+	}
 	return services, err
+}
+
+func (r *ShippingRepository) attachCarrierServiceTemplateSnapshots(services []shipping.CarrierService) error {
+	if len(services) == 0 {
+		return nil
+	}
+	templates := make([]shipping.ShippingTemplate, 0, len(services))
+	indexes := make(map[uint]int, len(services))
+	for i := range services {
+		if services[i].Template == nil || services[i].Template.ID == 0 {
+			continue
+		}
+		index := len(templates)
+		templates = append(templates, *services[i].Template)
+		indexes[services[i].Template.ID] = index
+	}
+	if err := r.attachShippingDisplayPriceSnapshots(templates); err != nil {
+		return err
+	}
+	for i := range services {
+		if services[i].Template == nil {
+			continue
+		}
+		if index, ok := indexes[services[i].Template.ID]; ok {
+			*services[i].Template = templates[index]
+		}
+	}
+	return nil
 }
 
 func (r *ShippingRepository) FindCarrierServiceByID(id uint) (*shipping.CarrierService, error) {
@@ -780,6 +1359,9 @@ func (r *ShippingRepository) FindCarrierServiceByID(id uint) (*shipping.CarrierS
 		Preload("Template").
 		First(&service, id).Error
 	if err != nil {
+		return nil, err
+	}
+	if err := r.attachCarrierServiceTemplateSnapshots([]shipping.CarrierService{service}); err != nil {
 		return nil, err
 	}
 	return &service, nil
@@ -801,26 +1383,26 @@ func (r *ShippingRepository) CreateCarrierService(service *shipping.CarrierServi
 
 func (r *ShippingRepository) UpdateCarrierService(service *shipping.CarrierService) error {
 	updates := map[string]interface{}{
-		"carrier_id":              service.CarrierID,
-		"template_id":             service.TemplateID,
-		"service_code":            service.ServiceCode,
-		"service_name":            service.ServiceName,
-		"route_name":              service.RouteName,
-		"countries":               service.Countries,
-		"currency":                service.Currency,
-		"billing_mode":            service.BillingMode,
-		"first_weight_grams":      service.FirstWeightGrams,
-		"additional_weight_grams": service.AdditionalWeightGrams,
-		"min_charge_weight_grams": service.MinChargeWeightGrams,
-		"volumetric_divisor":      service.VolumetricDivisor,
-		"fuel_surcharge_percent":  service.FuelSurchargePercent,
-		"remote_surcharge":        service.RemoteSurcharge,
-		"remote_postal_codes":     service.RemotePostalCodes,
-		"eta_min_days":            service.EtaMinDays,
-		"eta_max_days":            service.EtaMaxDays,
-		"enabled":                 service.Enabled,
-		"sort_order":              service.SortOrder,
-		"description":             service.Description,
+		"carrier_id":                     service.CarrierID,
+		"template_id":                    service.TemplateID,
+		"service_code":                   service.ServiceCode,
+		"service_name":                   service.ServiceName,
+		"route_name":                     service.RouteName,
+		"countries":                      service.Countries,
+		"currency":                       service.Currency,
+		"billing_mode":                   service.BillingMode,
+		"first_weight_grams":             service.FirstWeightGrams,
+		"additional_weight_grams":        service.AdditionalWeightGrams,
+		"min_charge_weight_grams":        service.MinChargeWeightGrams,
+		"volumetric_divisor":             service.VolumetricDivisor,
+		"fuel_surcharge_percent_decimal": service.FuelSurchargePercentDecimal,
+		"remote_surcharge_minor":         service.RemoteSurchargeMinor,
+		"remote_postal_codes":            service.RemotePostalCodes,
+		"eta_min_days":                   service.EtaMinDays,
+		"eta_max_days":                   service.EtaMaxDays,
+		"enabled":                        service.Enabled,
+		"sort_order":                     service.SortOrder,
+		"description":                    service.Description,
 	}
 	return r.db.Model(&shipping.CarrierService{}).Where("id = ?", service.ID).Updates(updates).Error
 }
@@ -842,6 +1424,12 @@ func (r *ShippingRepository) FindTrackingEventsByOrderID(orderID uint) ([]shippi
 func (r *ShippingRepository) FindTrackingEventsByTrackingNumber(trackingNumber string) ([]shipping.TrackingEvent, error) {
 	var events []shipping.TrackingEvent
 	err := r.db.Where("tracking_number = ?", trackingNumber).Order("event_time DESC").Find(&events).Error
+	return events, err
+}
+
+func (r *ShippingRepository) FindTrackingEventsByOrderIDAndTrackingNumber(orderID uint, trackingNumber string) ([]shipping.TrackingEvent, error) {
+	var events []shipping.TrackingEvent
+	err := r.db.Where("order_id = ? AND tracking_number = ?", orderID, strings.TrimSpace(trackingNumber)).Order("event_time DESC").Find(&events).Error
 	return events, err
 }
 

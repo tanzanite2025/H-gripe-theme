@@ -111,6 +111,21 @@ func TestRegisterHandler(t *testing.T) {
 	mockRepo.AssertExpectations(t)
 }
 
+func TestRegisterHoneypotSilentlyDropsBeforeAuthService(t *testing.T) {
+	handler := NewHandler(nil)
+	router := setupTestRouter()
+	router.POST("/register", handler.Register)
+
+	body := `{"email":"bot@example.test","username":"bot-user","password":"password123","corporate_website":"https://spam.example.test"}`
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequestWithContext(context.Background(), http.MethodPost, "/register", bytes.NewBufferString(body))
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusCreated, w.Code)
+	assert.Empty(t, w.Result().Cookies())
+}
+
 func TestLoginHandler(t *testing.T) {
 	mockRepo := new(MockUserRepository)
 	jwtCfg := config.JWTConfig{
@@ -157,6 +172,21 @@ func TestLoginHandler(t *testing.T) {
 	assert.NotNil(t, response["data"])
 	assert.NotEmpty(t, w.Result().Cookies())
 	mockRepo.AssertExpectations(t)
+}
+
+func TestLoginHoneypotSilentlyDropsBeforeAuthService(t *testing.T) {
+	handler := NewHandler(nil)
+	router := setupTestRouter()
+	router.POST("/login", handler.Login)
+
+	body := `{"email_or_username":"bot@example.test","password":"password123","corporate_website":"https://spam.example.test"}`
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequestWithContext(context.Background(), http.MethodPost, "/login", bytes.NewBufferString(body))
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Empty(t, w.Result().Cookies())
 }
 
 func TestLoginHandlerAllowsProductionTestUserInStorefront(t *testing.T) {

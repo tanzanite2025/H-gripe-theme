@@ -65,6 +65,25 @@ func (r *PaymentRepository) FindCompletedTransactionByOrderIDForUpdate(orderID u
 	return &transaction, nil
 }
 
+// FindCompletedTransactionsByUserID returns provider settlement payloads for
+// a user's historical paid orders. Callers must extract only provider-safe
+// fingerprints from GatewayResponse; the raw payload is never exposed by an
+// API response.
+func (r *PaymentRepository) FindCompletedTransactionsByUserID(userID, excludeOrderID uint) ([]payment.Transaction, error) {
+	if r == nil || r.db == nil || userID == 0 {
+		return []payment.Transaction{}, nil
+	}
+	query := r.db.Model(&payment.Transaction{}).
+		Joins("JOIN orders ON orders.id = transactions.order_id").
+		Where("orders.user_id = ? AND transactions.status = ?", userID, "completed")
+	if excludeOrderID > 0 {
+		query = query.Where("transactions.order_id <> ?", excludeOrderID)
+	}
+	var transactions []payment.Transaction
+	err := query.Order("transactions.created_at DESC, transactions.id DESC").Find(&transactions).Error
+	return transactions, err
+}
+
 // FindTransactionByTransactionID 根据交易ID查找
 func (r *PaymentRepository) FindTransactionByTransactionID(transactionID string) (*payment.Transaction, error) {
 	var t payment.Transaction

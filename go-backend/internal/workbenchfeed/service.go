@@ -283,7 +283,7 @@ func taggedProductModels(items []resolvedTaggedProduct) []TaggedProduct {
 			VariantID:    item.Option.VariantID,
 			ProductSlug:  strings.TrimSpace(item.Option.ProductSlug),
 			DisplayTitle: resolvedProductDisplayTitle(item.Option),
-			Price:        item.Option.Price,
+			PriceMinor:   item.Option.PriceMinor,
 			Currency:     normalizeCurrency(item.Option.Currency),
 			DirectAction: DirectActionDetailDrawer,
 			Available:    item.Option.Available,

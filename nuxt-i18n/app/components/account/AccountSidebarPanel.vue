@@ -66,8 +66,6 @@
           :points="pointsNumber"
           :tier-info="tierInfo"
           :level-discounts="levelDiscounts"
-          :coupons="userCoupons"
-          :point-cards="userPointCards"
           :loading="membershipLoading"
           @refresh="refreshData"
           @close="closeSidebar"
@@ -132,10 +130,7 @@ const {
   points,
   tierInfo,
   levelDiscounts,
-  userCoupons,
-  userPointCards,
   tierConfigsLoading,
-  assetsLoading,
   initMembership,
   refreshData,
   doLogout,
@@ -157,7 +152,7 @@ const tabs: Array<{ id: AccountTabId; icon: string; labelKey: string; label: str
 const isAuthenticated = computed(() => auth.isAuthenticated.value)
 const pointsNumber = computed(() => Number(points.value || 0))
 const wishlistCount = computed(() => wishlistItems.value.length)
-const membershipLoading = computed(() => tierConfigsLoading.value || assetsLoading.value || auth.loading.value)
+const membershipLoading = computed(() => tierConfigsLoading.value || auth.loading.value)
 
 const displayName = computed(() => {
   const user = auth.user.value

@@ -15,6 +15,7 @@ import (
 	"commerce-platform/internal/repository"
 
 	"github.com/google/uuid"
+	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
 )
 
@@ -169,25 +170,48 @@ func (s *OutboxService) recordCustomerServiceRealtimeOutboxOutcome(event outbox.
 	metrics.CustomerServiceRealtimeOutboxDeliveries.WithLabelValues(result).Inc()
 }
 
-// RefreshCustomerServiceRealtimeMetrics exposes only aggregate durable state
-// for the customer-service event type. The scheduler calls this after every
-// dispatch pass; it is also useful at startup before the first event arrives.
+// RefreshCustomerServiceRealtimeMetrics exposes aggregate durable state for
+// customer-service realtime and retention cleanup events. The scheduler calls
+// this after every dispatch pass; it is also useful at startup before the
+// first event arrives.
 func (s *OutboxService) RefreshCustomerServiceRealtimeMetrics() error {
 	if s == nil || s.repo == nil {
 		return nil
 	}
-	counts, err := s.repo.CountEventsByStatus(outbox.EventTypeCustomerServiceRealtime)
+	if err := s.refreshCustomerServiceOutboxGauge(
+		outbox.EventTypeCustomerServiceRealtime,
+		metrics.CustomerServiceRealtimeOutboxEvents,
+		[]string{
+			outbox.EventStatusPending,
+			outbox.EventStatusProcessing,
+			outbox.EventStatusFailed,
+			outbox.EventStatusUnknown,
+			outbox.EventStatusDeadLetter,
+		},
+	); err != nil {
+		return err
+	}
+	return s.refreshCustomerServiceOutboxGauge(
+		outbox.EventTypeCustomerServiceRetentionCleanup,
+		metrics.CustomerServiceRetentionCleanupOutboxEvents,
+		[]string{
+			outbox.EventStatusPending,
+			outbox.EventStatusProcessing,
+			outbox.EventStatusFailed,
+			outbox.EventStatusUnknown,
+			outbox.EventStatusDeadLetter,
+			outbox.EventStatusProcessed,
+		},
+	)
+}
+
+func (s *OutboxService) refreshCustomerServiceOutboxGauge(eventType string, gauge *prometheus.GaugeVec, statuses []string) error {
+	counts, err := s.repo.CountEventsByStatus(eventType)
 	if err != nil {
 		return err
 	}
-	for _, status := range []string{
-		outbox.EventStatusPending,
-		outbox.EventStatusProcessing,
-		outbox.EventStatusFailed,
-		outbox.EventStatusUnknown,
-		outbox.EventStatusDeadLetter,
-	} {
-		metrics.CustomerServiceRealtimeOutboxEvents.WithLabelValues(status).Set(float64(counts[status]))
+	for _, status := range statuses {
+		gauge.WithLabelValues(status).Set(float64(counts[status]))
 	}
 	return nil
 }
@@ -197,6 +221,34 @@ func (s *OutboxService) ListUnknownEvents(limit int) ([]outbox.Event, error) {
 		return nil, nil
 	}
 	return s.repo.FindUnknownEvents(limit)
+}
+
+func (s *OutboxService) ListFailedEvents(options repository.OutboxEventListOptions) ([]outbox.Event, error) {
+	if s == nil || s.repo == nil {
+		return nil, nil
+	}
+	return s.repo.FindFailedEvents(options)
+}
+
+func (s *OutboxService) GetEvent(id uint) (*outbox.Event, error) {
+	if s == nil || s.repo == nil {
+		return nil, repository.ErrOutboxEventNotFound
+	}
+	return s.repo.FindEventByID(id)
+}
+
+func (s *OutboxService) RetryFailedEvent(id uint, note string, retriedAt time.Time) error {
+	if s == nil || s.repo == nil {
+		return repository.ErrOutboxEventNotFound
+	}
+	return s.repo.RetryFailedEvent(id, note, retriedAt)
+}
+
+func (s *OutboxService) IgnoreFailedEvent(id uint, note string, ignoredAt time.Time) error {
+	if s == nil || s.repo == nil {
+		return repository.ErrOutboxEventNotFound
+	}
+	return s.repo.IgnoreFailedEvent(id, note, ignoredAt)
 }
 
 // ResumeUnknownEvent is an explicit reconciliation decision. It is not called

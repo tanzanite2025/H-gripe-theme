@@ -123,12 +123,14 @@ func validateCarrierService(service shippingdomain.CarrierService) error {
 		return errors.New("billing mode must be actual_weight, volumetric_weight or greater_of_actual_and_volumetric")
 	}
 
+	if _, err := service.FuelSurchargeRate(); err != nil {
+		return err
+	}
 	if service.FirstWeightGrams < 0 ||
 		service.AdditionalWeightGrams < 0 ||
 		service.MinChargeWeightGrams < 0 ||
 		service.VolumetricDivisor < 0 ||
-		service.FuelSurchargePercent < 0 ||
-		service.RemoteSurcharge < 0 ||
+		service.RemoteSurchargeMinor < 0 ||
 		service.EtaMinDays < 0 ||
 		service.EtaMaxDays < 0 {
 		return errors.New("carrier service numeric fields cannot be negative")

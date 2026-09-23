@@ -38,10 +38,10 @@ func TestRestoreConsumedOrderItemsToOriginalCheckoutCartUsesAtomicVariantUpsert(
 	err = repo.RestoreConsumedOrderItemsToOriginalCheckoutCart(
 		cart.ID,
 		[]order.OrderItem{{
-			ProductID: 3,
-			VariantID: &variantID,
-			Quantity:  2,
-			Price:     100,
+			ProductID:  3,
+			VariantID:  &variantID,
+			Quantity:   2,
+			PriceMinor: 10000,
 		}},
 		"USD",
 	)
@@ -142,11 +142,11 @@ func newCartRepositorySummaryTestDB(t *testing.T) *gorm.DB {
 		&product.Cart{},
 		&product.CartItem{},
 	))
-	productRecord := product.Product{SKU: "SUMMARY-PRODUCT", Name: "Summary Product", Slug: "summary-product", Price: 10}
+	productRecord := product.Product{SKU: "SUMMARY-PRODUCT", Name: "Summary Product", Slug: "summary-product", PriceMinor: 1000}
 	require.NoError(t, db.Create(&productRecord).Error)
 	variants := []product.ProductVariant{
-		{ProductID: productRecord.ID, SKU: "SUMMARY-VARIANT-1", OptionValues: `{"slot":"one"}`, Price: 10, IsActive: true},
-		{ProductID: productRecord.ID, SKU: "SUMMARY-VARIANT-2", OptionValues: `{"slot":"two"}`, Price: 10, IsActive: true},
+		{ProductID: productRecord.ID, SKU: "SUMMARY-VARIANT-1", OptionValues: `{"slot":"one"}`, PriceMinor: 1000, IsActive: true},
+		{ProductID: productRecord.ID, SKU: "SUMMARY-VARIANT-2", OptionValues: `{"slot":"two"}`, PriceMinor: 1000, IsActive: true},
 	}
 	require.NoError(t, db.Create(&variants).Error)
 	require.Equal(t, uint(1), productRecord.ID)

@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"commerce-platform/internal/domain/auth"
-	"commerce-platform/internal/domain/currency"
 	domainmoney "commerce-platform/internal/domain/money"
 	orderdomain "commerce-platform/internal/domain/order"
 	"commerce-platform/internal/pkg/antibot"
@@ -228,17 +227,16 @@ func (h *Handler) CreateStripePaymentIntent(c *gin.Context) {
 		return
 	}
 
-	orderCurrency, err := strictOrderCurrency(orderRecord)
+	// The provider must be charged from the immutable settlement snapshot,
+	// which is also the amount used by webhook/capture verification. The
+	// storefront currency/total may represent a different display currency.
+	orderAmountMoney, err := strictProviderSettlement(orderRecord)
 	if err != nil {
 		apierror.RespondInternalError(c, err)
 		return
 	}
-	orderAmountMoney, err := domainmoney.FromMajorFloat(orderRecord.TotalAmount, orderCurrency)
-	if err != nil {
-		apierror.RespondInternalError(c, err)
-		return
-	}
-	config.PaymentMethodTypes, err = h.resolveStripePaymentMethodTypes(orderRecord.ShippingAddress.Country, orderCurrency, orderRecord.TotalAmount, config.PaymentMethodTypes)
+	orderCurrency := orderAmountMoney.Currency().String()
+	config.PaymentMethodTypes, err = h.resolveStripePaymentMethodTypes(orderRecord.ShippingAddress.Country, orderCurrency, orderAmountMoney.AmountMinor(), config.PaymentMethodTypes)
 	if err != nil {
 		apierror.RespondInternalError(c, err)
 		return
@@ -280,7 +278,7 @@ func (h *Handler) CreateStripePaymentIntent(c *gin.Context) {
 		return
 	}
 	paymentResponse, err := gateway.CreatePayment(c.Request.Context(), &pgateway.PaymentRequest{
-		Amount:         orderRecord.TotalAmount,
+		AmountMinor:    orderAmountMoney.AmountMinor(),
 		Currency:       orderCurrency,
 		OrderID:        orderRecord.OrderNumber,
 		Description:    fmt.Sprintf("Order %s", orderRecord.OrderNumber),
@@ -292,7 +290,8 @@ func (h *Handler) CreateStripePaymentIntent(c *gin.Context) {
 			Email: orderRecord.ShippingAddress.Email,
 			Phone: orderRecord.ShippingAddress.Phone,
 		},
-		Metadata: metadata,
+		ShippingAddress: paymentShippingAddressFromOrder(orderRecord),
+		Metadata:        metadata,
 	})
 	if err != nil {
 		_ = h.paymentService.RecordGatewayPaymentAttempt(service.GatewayPaymentAttemptInput{
@@ -362,8 +361,8 @@ func (h *Handler) CreateStripePaymentIntent(c *gin.Context) {
 			RiskScore:          threeDSDecision.RiskScore,
 			PortfolioRiskLevel: threeDSDecision.PortfolioRiskLevel,
 			Reasons:            threeDSDecision.Reasons,
-			Amount:             paymentResponse.Amount,
-			Currency:           paymentResponse.Currency,
+			AmountMinor:        providerAmount.AmountMinor(),
+			Currency:           providerAmount.Currency().String(),
 			OccurredAt:         time.Now().UTC(),
 		}); err != nil {
 			logger.Warn("record Stripe checkout risk decision failed",
@@ -474,14 +473,19 @@ func (h *Handler) decideStripeThreeDS(
 		}
 	}
 
-	amountMoney, _ := domainmoney.FromMajorFloat(orderRecord.TotalAmount, normalizedOrderCurrency(orderRecord))
+	// 3DS thresholds and currency conversion must evaluate the same immutable
+	// settlement snapshot that is sent to Stripe. Using the buyer-facing total
+	// here can make the risk decision disagree with the amount actually charged.
+	amountMoney, amountErr := strictProviderSettlement(orderRecord)
+	if amountErr != nil {
+		amountMoney = domainmoney.Money{}
+	}
 	return h.threeDSPolicy.Decide(c.Request.Context(), service.PaymentThreeDSDecisionInput{
 		Provider:          string(pgateway.GatewayStripe),
 		UserID:            userID,
 		OrderID:           orderRecord.ID,
 		AmountMoney:       amountMoney,
-		Amount:            orderRecord.TotalAmount,
-		Currency:          normalizedOrderCurrency(orderRecord),
+		Currency:          amountMoney.Currency().String(),
 		BaseMode:          baseMode,
 		IPAddress:         c.ClientIP(),
 		DeviceFingerprint: stripeRequestDeviceFingerprint(c),
@@ -492,21 +496,6 @@ func (h *Handler) decideStripeThreeDS(
 		ShippingCountry:   orderRecord.ShippingAddress.Country,
 		PaymentMethod:     orderRecord.PaymentMethod,
 	})
-}
-
-func normalizedOrderCurrency(orderRecord *orderdomain.Order) string {
-	if orderRecord == nil {
-		return ""
-	}
-	return currency.NormalizeCode(orderRecord.Currency)
-}
-
-func strictOrderCurrency(orderRecord *orderdomain.Order) (string, error) {
-	value := normalizedOrderCurrency(orderRecord)
-	if !currency.IsValidCode(value) || !currency.IsCatalogCode(value) {
-		return "", fmt.Errorf("order currency is not configured")
-	}
-	return value, nil
 }
 
 func stripeRequestCountry(c *gin.Context) string {

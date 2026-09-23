@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"gorm.io/datatypes"
 )
 
 func TestOrderMoneyAccessorsUseMinorUnits(t *testing.T) {
@@ -39,17 +40,27 @@ func TestOrderMoneyAccessorsUseMinorUnits(t *testing.T) {
 	require.Equal(t, "CNY", payment.Currency().String())
 }
 
-func TestOrderBeforeCreateBackfillsMinorAmountsAtDomainBoundary(t *testing.T) {
+func TestConfigurationEvidenceUsesImmutableSnapshot(t *testing.T) {
+	item := OrderItem{
+		ConfigurationSnapshotData: datatypes.JSON([]byte(`{"schema_version":1,"selections":[]}`)),
+	}
+	require.JSONEq(t, `{"schema_version":1,"selections":[]}`, item.ConfigurationEvidenceJSON())
+
+	item.ConfigurationSnapshotData = datatypes.JSON([]byte(`{}`))
+	require.JSONEq(t, `{}`, item.ConfigurationEvidenceJSON())
+}
+
+func TestOrderBeforeCreateRequiresMinorAmounts(t *testing.T) {
 	orderRecord := Order{
-		OrderNumber:     "ORD-MONEY-1",
-		Currency:        "USD",
-		PaymentCurrency: "USD",
-		SubtotalAmount:  12.34,
-		ShippingFee:     1.25,
-		TaxAmount:       0.41,
-		DiscountAmount:  2.00,
-		TotalAmount:     12.00,
-		PaymentAmount:   12.00,
+		OrderNumber:         "ORD-MONEY-1",
+		Currency:            "USD",
+		PaymentCurrency:     "USD",
+		SubtotalAmountMinor: 1234,
+		ShippingFeeMinor:    125,
+		TaxAmountMinor:      41,
+		DiscountAmountMinor: 200,
+		TotalAmountMinor:    1200,
+		PaymentAmountMinor:  1200,
 	}
 	require.NoError(t, orderRecord.BeforeCreate(nil))
 	require.Equal(t, int64(1234), orderRecord.SubtotalAmountMinor)
@@ -59,7 +70,7 @@ func TestOrderBeforeCreateBackfillsMinorAmountsAtDomainBoundary(t *testing.T) {
 	require.Equal(t, int64(1200), orderRecord.TotalAmountMinor)
 	require.Equal(t, int64(1200), orderRecord.PaymentAmountMinor)
 
-	item := OrderItem{Currency: "JPY", Price: 1250, Subtotal: 2500, Total: 2500}
+	item := OrderItem{Currency: "JPY", PriceMinor: 1250, SubtotalMinor: 2500, TotalMinor: 2500}
 	require.NoError(t, item.BeforeCreate(nil))
 	require.Equal(t, int64(1250), item.PriceMinor)
 	require.Equal(t, int64(2500), item.SubtotalMinor)

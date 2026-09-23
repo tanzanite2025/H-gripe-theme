@@ -7,6 +7,8 @@ import (
 	"strings"
 	"testing"
 
+	pgateway "commerce-platform/internal/pkg/payment"
+
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/require"
 )
@@ -70,6 +72,27 @@ func TestProviderWebhookPersistenceErrorsAreNotAcknowledgedAsSuccess(t *testing.
 	require.Contains(t, recorder.Body.String(), "refund work item persistence failed")
 }
 
+func TestPayPalWebhookTransientVerificationErrorUsesRetryableStatus(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	recorder := httptest.NewRecorder()
+	context, _ := gin.CreateTestContext(recorder)
+
+	respondPayPalWebhookVerificationError(context, pgateway.ErrPayPalWebhookVerificationUnavailable)
+
+	require.Equal(t, http.StatusServiceUnavailable, recorder.Code)
+	require.Contains(t, recorder.Body.String(), "paypal_webhook_verification_unavailable")
+}
+
+func TestPayPalWebhookRejectedSignatureRemainsUnauthorized(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	recorder := httptest.NewRecorder()
+	context, _ := gin.CreateTestContext(recorder)
+
+	respondPayPalWebhookVerificationError(context, errors.New("paypal webhook signature verification rejected"))
+
+	require.Equal(t, http.StatusUnauthorized, recorder.Code)
+}
+
 func TestHandleWebhookRejectsOversizedPayloadBeforeProviderDispatch(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	recorder := httptest.NewRecorder()
@@ -77,7 +100,7 @@ func TestHandleWebhookRejectsOversizedPayloadBeforeProviderDispatch(t *testing.T
 	context.Params = gin.Params{{Key: "provider", Value: "paypal"}}
 	context.Request = httptest.NewRequest(
 		http.MethodPost,
-		"/api/v1/payment/webhook/paypal",
+		"/api/v1/payments/paypal/webhook",
 		strings.NewReader(strings.Repeat("x", paymentWebhookMaxBodyBytes+1)),
 	)
 

@@ -69,7 +69,7 @@
                   {{ item.title }}
                 </h3>
                 <p class="text-sm font-semibold tz-text-primary mt-2">
-                  {{ formatPrice(item.price, item.currency) }}
+                  {{ formatMinorMoney(item.price_minor, item.currency) }}
                 </p>
 
                 <!-- 数量控制 -->
@@ -149,12 +149,12 @@
           <div class="space-y-2 mb-4">
             <div class="flex justify-between text-sm">
               <span class="tz-text-secondary">{{ t('cartDrawer.summary.subtotal') }}</span>
-              <span class="font-medium tz-text-primary">{{ formatPrice(subtotal) }}</span>
+              <span class="font-medium tz-text-primary">{{ formatMinorMoney(subtotal, cartCurrency) }}</span>
             </div>
             <div class="flex justify-between text-sm">
               <span class="tz-text-secondary">{{ t('cartDrawer.summary.shipping') }}</span>
               <span class="font-medium tz-text-primary text-right">
-                {{ t('cartDrawer.summary.calculatedAtCheckout') }}
+                {{ cartShippingQuote ? formatMinorMoney(shipping, cartCurrency) : (isRefreshingCartShippingQuote ? t('checkout.stepper.shipping.state.calculating', 'Calculating...') : t('cartDrawer.summary.calculatedAtCheckout')) }}
               </span>
             </div>
             <div class="flex justify-between text-sm">
@@ -239,10 +239,9 @@ import { useCart } from '~/composables/useCart'
 import { useAuth } from '~/composables/useAuth'
 import { usePaymentMethods } from '~/composables/usePaymentMethods'
 import { useStripeExpressCheckoutOrder } from '~/composables/useStripeExpressCheckoutOrder'
-import {
-  convertMajorAmountToStripeMinorAmount,
-  type StripeExpressCheckoutAvailablePaymentMethods,
-} from '~/composables/useStripeExpressCheckout'
+import { useShippingQuote } from '~/composables/useShippingQuote'
+import { formatMinorMoney, minorToMajor } from '~/utils/money'
+import { type StripeExpressCheckoutAvailablePaymentMethods } from '~/composables/useStripeExpressCheckout'
 import { COUNTRIES } from '~/data/countries'
 import BrowsingHistoryDark from '~/components/BrowsingHistoryDark.vue'
 import StripeExpressCheckoutElement from '~/components/StripeExpressCheckoutElement.vue'
@@ -253,7 +252,10 @@ const {
   cartVariant,
   cartCount,
   subtotal,
+  shipping,
   cartCurrency,
+  cartShippingQuote,
+  isRefreshingCartShippingQuote,
   reloadCartFromBackend,
   closeCart,
   openCheckout,
@@ -267,7 +269,8 @@ const {
 const { addToWishlist } = useWishlist()
 const { t } = useI18n()
 const auth = useAuth()
-const { countryCode } = useStorefrontContext()
+const { countryCode, displayCurrency } = useStorefrontContext()
+const { quoteCheckout } = useShippingQuote()
 const {
   paymentMethodOptions,
   loadPaymentMethods,
@@ -288,15 +291,11 @@ const stripeExpressCheckoutElementRef = ref<{
   confirmExpressCheckoutPayment: (clientSecret: string, returnUrl: string) => Promise<{ status: string; paymentIntentId?: string }>
   resetExpressCheckoutPaymentState: () => void
 } | null>(null)
-
-const stripeExpressCheckoutAmount = computed(() => Number(subtotal.value || 0))
+const stripeExpressCheckoutAmount = computed(() => minorToMajor(subtotal.value, cartCurrency.value))
 const stripeExpressCheckoutLineItems = computed(() =>
   cartItems.value.map(item => ({
     name: item.title,
-    amount: convertMajorAmountToStripeMinorAmount(
-      Number(item.price || 0) * Math.max(1, Number(item.quantity || 1)),
-      cartCurrency.value,
-    ),
+    amount: Number(item.price_minor || 0) * Math.max(1, Number(item.quantity || 1)),
   })),
 )
 const stripeExpressCheckoutAllowedShippingCountries = computed(() =>
@@ -338,7 +337,7 @@ const prepareStripeExpressCheckout = async () => {
   const session = await auth.ensureSession()
   if (!session) return
 
-  await loadPaymentMethods(countryCode.value !== 'ZZ' ? countryCode.value : undefined)
+  await loadPaymentMethods(countryCode.value !== 'ZZ' ? countryCode.value : undefined, cartCurrency.value)
   if (!stripeCardPaymentAvailable.value) return
 
   try {
@@ -353,16 +352,6 @@ const handleStripeExpressCheckoutAvailability = (
   availablePaymentMethods: StripeExpressCheckoutAvailablePaymentMethods,
 ) => {
   isStripeExpressCheckoutWalletAvailable.value = availablePaymentMethods.applePay || availablePaymentMethods.googlePay
-}
-
-const unwrapCheckoutQuote = (payload: any) => {
-  let current = payload
-  for (let depth = 0; depth < 3; depth += 1) {
-    if (!current || typeof current !== 'object') return null
-    if (!('data' in current)) return current
-    current = current.data
-  }
-  return null
 }
 
 const handleStripeExpressCheckoutShippingAddressChange = async (
@@ -380,23 +369,12 @@ const handleStripeExpressCheckoutShippingAddressChange = async (
       String(session.email || ''),
       String(session.profile?.phone || ''),
     )
-    const quoteResponse = await auth.request('/checkout/quote', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-      body: JSON.stringify({
-        shipping_address: shippingAddress,
-        display_currency: cartCurrency.value,
-      }),
+    const quote = await quoteCheckout({
+      shipping_address: shippingAddress,
+      display_currency: String(displayCurrency.value || '').trim().toUpperCase(),
     })
-    const quote = unwrapCheckoutQuote(quoteResponse)
-    const shippingAmount = convertMajorAmountToStripeMinorAmount(
-      Number(quote?.shipping_fee || 0),
-      cartCurrency.value,
-    )
-    const taxAmount = convertMajorAmountToStripeMinorAmount(
-      Number(quote?.tax_amount || 0),
-      cartCurrency.value,
-    )
+    const shippingAmount = Number(quote?.shipping_fee_minor || 0)
+    const taxAmount = Number(quote?.tax_minor || 0)
     const lineItems = [
       ...stripeExpressCheckoutLineItems.value,
       ...(shippingAmount > 0 ? [{ name: t('checkout.stepper.summary.shipping', 'Shipping'), amount: shippingAmount }] : []),

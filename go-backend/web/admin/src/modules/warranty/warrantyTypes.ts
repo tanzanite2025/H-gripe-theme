@@ -64,7 +64,7 @@ export interface WarrantyShipmentRecord extends ApiShipmentRecord {
   user_id?: WarrantyID | null
   customer_name?: string | null
   customer_email?: string | null
-  tracking_number?: string | null
+  tracking_shipments?: ApiShipmentRecord['tracking_shipments']
   shipped_at?: string | null
   items_snapshot?: WarrantyShipmentItem[]
   product_codes?: string[]

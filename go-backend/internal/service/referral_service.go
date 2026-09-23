@@ -8,17 +8,18 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net"
 	"strings"
 	"time"
 
-	"commerce-platform/internal/domain/coupon"
 	"commerce-platform/internal/domain/currency"
 	"commerce-platform/internal/domain/loyalty"
-	domainmoney "commerce-platform/internal/domain/money"
 	"commerce-platform/internal/domain/order"
 	"commerce-platform/internal/domain/user"
 	referralcookie "commerce-platform/internal/pkg/referral"
 	"commerce-platform/internal/repository"
+
+	"gorm.io/datatypes"
 )
 
 var (
@@ -33,17 +34,12 @@ var (
 	ErrReferralReasonRequired       = errors.New("referral action reason is required")
 )
 
-const (
-	referralIdentityCreateAttempts = 8
-	referralRefereeReversalSource  = "referral_referee_reversal"
-)
-
 type ReferralValidation struct {
 	Valid                    bool   `json:"valid"`
 	ReferrerNameMask         string `json:"referrer_name_mask"`
 	RefereeBenefitType       string `json:"referee_benefit_type"`
 	RefereeBenefitValue      int64  `json:"referee_benefit_value"`
-	BenefitCurrency          string `json:"benefit_currency"`
+	BenefitIssuance          string `json:"benefit_issuance"`
 	MinOrderAmountMinor      int64  `json:"min_order_amount_minor"`
 	VestingPeriodDays        int    `json:"vesting_period_days"`
 	AttributionCookieTTLDays int    `json:"attribution_cookie_ttl_days"`
@@ -59,7 +55,6 @@ type ReferralDashboard struct {
 }
 
 type ReferralDashboardRules struct {
-	Currency                 string `json:"currency"`
 	MinOrderAmountMinor      int64  `json:"min_order_amount_minor"`
 	ReferrerRewardPoints     int    `json:"referrer_reward_points"`
 	RefereeBenefitType       string `json:"referee_benefit_type"`
@@ -124,20 +119,17 @@ type ReferralAdminLedger struct {
 // ReferralProgramConfigInput is the only mutable surface of the v2 referral
 // policy. A new input always becomes a new immutable version.
 type ReferralProgramConfigInput struct {
-	Enabled                      bool
-	Currency                     string
-	MinOrderAmountMinor          int64
-	ReferrerRewardPoints         int
-	RefereeBenefitType           string
-	RefereeBenefitValue          int64
-	RefereeBenefitMaxAmountMinor int64
-	CouponStackable              bool
-	VestingPeriodDays            int
-	UndeliveredFallbackDays      int
-	AttributionTTLDays           int
-	MonthlyCapPerReferrer        int
-	AntiFraudMode                string
-	CreatedBy                    *uint
+	Enabled                 bool
+	MinOrderAmountMinor     int64
+	ReferrerRewardPoints    int
+	RefereeBenefitType      string
+	RefereeBenefitValue     int64
+	VestingPeriodDays       int
+	UndeliveredFallbackDays int
+	AttributionTTLDays      int
+	MonthlyCapPerReferrer   int
+	AntiFraudMode           string
+	CreatedBy               *uint
 }
 
 type ReferralAdminDetail struct {
@@ -164,7 +156,7 @@ type ReferralService struct {
 	userRepo      *repository.UserRepository
 	cookieSigner  *referralcookie.Signer
 	hashKey       []byte
-	baseURL       string
+	invitations   *ReferralInvitationService
 	storefrontURL string
 	now           func() time.Time
 }
@@ -190,7 +182,7 @@ func NewReferralService(
 		userRepo:      userRepo,
 		cookieSigner:  signer,
 		hashKey:       []byte(strings.TrimSpace(secret)),
-		baseURL:       strings.TrimRight(strings.TrimSpace(baseURL), "/"),
+		invitations:   NewReferralInvitationService(repo, nil, StorefrontReferralInvitationLinks{StorefrontURL: resolvedStorefrontURL}),
 		storefrontURL: resolvedStorefrontURL,
 		now:           func() time.Time { return time.Now().UTC() },
 	}
@@ -201,6 +193,12 @@ func (s *ReferralService) StorefrontURL() string {
 		return ""
 	}
 	return s.storefrontURL
+}
+
+// ConfigureReferralInvitationService is a startup composition hook for code or
+// short-link providers. Existing identities remain persisted across upgrades.
+func (s *ReferralService) ConfigureReferralInvitationService(invitations *ReferralInvitationService) {
+	s.invitations = invitations
 }
 
 func (s *ReferralService) ValidateCode(code string) (*ReferralValidation, error) {
@@ -217,11 +215,18 @@ func (s *ReferralService) ValidateCode(code string) (*ReferralValidation, error)
 		ReferrerNameMask:         maskReferralName(referrer),
 		RefereeBenefitType:       config.RefereeBenefitType,
 		RefereeBenefitValue:      config.RefereeBenefitValue,
-		BenefitCurrency:          config.Currency,
+		BenefitIssuance:          referralBenefitIssuance(config.RefereeBenefitType),
 		MinOrderAmountMinor:      config.MinOrderAmountMinor,
 		VestingPeriodDays:        config.VestingPeriodDays,
 		AttributionCookieTTLDays: config.AttributionTTLDays,
 	}, nil
+}
+
+func referralBenefitIssuance(benefitType string) string {
+	if strings.EqualFold(strings.TrimSpace(benefitType), loyalty.ReferralBenefitPoints) {
+		return "points_on_registration"
+	}
+	return "none"
 }
 
 func (s *ReferralService) CreateAttributionToken(code, source string) (string, int, error) {
@@ -261,7 +266,7 @@ func (s *ReferralService) BindFromTokenWithContext(userID uint, token string, bi
 }
 
 func (s *ReferralService) Dashboard(userID uint) (*ReferralDashboard, error) {
-	if s == nil || s.programRepo == nil || s.repo == nil || userID == 0 {
+	if s == nil || s.programRepo == nil || s.repo == nil || s.invitations == nil || userID == 0 {
 		return nil, ErrReferralServiceUnavailable
 	}
 	config, err := s.programRepo.FindActive()
@@ -278,7 +283,7 @@ func (s *ReferralService) Dashboard(userID uint) (*ReferralDashboard, error) {
 	if !config.Enabled {
 		return dashboard, nil
 	}
-	identity, err := s.getOrCreateIdentity(userID)
+	identity, shareURL, err := s.invitations.GetOrCreateReferralInvitation(userID)
 	if err != nil {
 		return nil, err
 	}
@@ -288,7 +293,7 @@ func (s *ReferralService) Dashboard(userID uint) (*ReferralDashboard, error) {
 	}
 	dashboard.ReferralCode = identity.ReferralCode
 	dashboard.CustomSlug = identity.CustomSlug
-	dashboard.ShareURL = s.baseURL + "/r/" + identity.ReferralCode
+	dashboard.ShareURL = shareURL
 	dashboard.Stats = stats
 	return dashboard, nil
 }
@@ -359,7 +364,7 @@ func (s *ReferralService) AdminLedger(filters repository.ReferralAdminFilters, p
 	if err != nil {
 		return nil, err
 	}
-	overview, err := s.repo.AdminStats()
+	overview, err := s.repo.AdminStats(filters)
 	if err != nil {
 		return nil, err
 	}
@@ -539,12 +544,23 @@ func (s *ReferralService) PublishAdminProgramConfig(input ReferralProgramConfigI
 	if s == nil || s.programRepo == nil || expectedVersion <= 0 {
 		return nil, ErrInvalidReferralProgramConfig
 	}
+	// Referral benefits have exactly one type: points.
+	if strings.ToLower(strings.TrimSpace(input.RefereeBenefitType)) != loyalty.ReferralBenefitPoints {
+		return nil, fmt.Errorf("%w: referral benefits must use points", ErrInvalidReferralProgramConfig)
+	}
+	current, err := s.programRepo.FindActive()
+	if err != nil {
+		return nil, err
+	}
+	configuredCurrency := currency.NormalizeCode(current.Currency)
+	if configuredCurrency == "" {
+		return nil, ErrInvalidReferralProgramConfig
+	}
 	config := &loyalty.ReferralProgramConfig{
 		Version: expectedVersion + 1,
-		Enabled: input.Enabled, Currency: currency.NormalizeCode(input.Currency),
+		Enabled: input.Enabled, Currency: configuredCurrency,
 		MinOrderAmountMinor: input.MinOrderAmountMinor, ReferrerRewardPoints: input.ReferrerRewardPoints,
-		RefereeBenefitType: strings.ToLower(strings.TrimSpace(input.RefereeBenefitType)), RefereeBenefitValue: input.RefereeBenefitValue,
-		RefereeBenefitMaxAmountMinor: input.RefereeBenefitMaxAmountMinor, CouponStackable: input.CouponStackable,
+		RefereeBenefitType: loyalty.ReferralBenefitPoints, RefereeBenefitValue: input.RefereeBenefitValue,
 		VestingPeriodDays: input.VestingPeriodDays, UndeliveredFallbackDays: input.UndeliveredFallbackDays,
 		AttributionTTLDays: input.AttributionTTLDays, MonthlyCapPerReferrer: input.MonthlyCapPerReferrer,
 		AntiFraudMode: strings.ToLower(strings.TrimSpace(input.AntiFraudMode)), CreatedBy: input.CreatedBy,
@@ -558,10 +574,9 @@ func (s *ReferralService) PublishAdminProgramConfig(input ReferralProgramConfigI
 	return config, nil
 }
 
-// releaseRefereeBenefitInTx materializes the benefit promised by the active
-// referral policy after the referee's qualifying first payment. The reward log
-// is the idempotency boundary: retries reuse the same record and never issue a
-// second points transaction or coupon.
+// releaseRefereeBenefitInTx credits the new account's registration points. The
+// reward log is the idempotency boundary; this is ordinary unified loyalty
+// balance, not a referral-specific wallet.
 func (s *ReferralService) releaseRefereeBenefitInTx(
 	repos repository.TxRepositories,
 	record *loyalty.ReferralRecord,
@@ -572,15 +587,8 @@ func (s *ReferralService) releaseRefereeBenefitInTx(
 		return ErrReferralServiceUnavailable
 	}
 	benefitType := strings.ToLower(strings.TrimSpace(config.RefereeBenefitType))
-	if benefitType == loyalty.ReferralBenefitNone || config.RefereeBenefitValue <= 0 {
-		return nil
-	}
-	if benefitType != loyalty.ReferralBenefitPoints && benefitType != loyalty.ReferralBenefitPercentCoupon && benefitType != loyalty.ReferralBenefitFixedCoupon {
+	if benefitType != loyalty.ReferralBenefitPoints || config.RefereeBenefitValue <= 0 {
 		return ErrInvalidReferralProgramConfig
-	}
-	rewardType := loyalty.ReferralRewardTypePoints
-	if benefitType != loyalty.ReferralBenefitPoints {
-		rewardType = loyalty.ReferralRewardTypeCoupon
 	}
 	rewardKey := fmt.Sprintf("referral:%d:referee:%s:v1", record.ID, benefitType)
 	existing, err := repos.Referral.FindRewardByIdempotencyKey(rewardKey)
@@ -596,12 +604,9 @@ func (s *ReferralService) releaseRefereeBenefitInTx(
 	}
 
 	snapshot, err := json.Marshal(map[string]any{
-		"version":                          config.Version,
-		"currency":                         config.Currency,
-		"referee_benefit_type":             config.RefereeBenefitType,
-		"referee_benefit_value":            config.RefereeBenefitValue,
-		"referee_benefit_max_amount_minor": config.RefereeBenefitMaxAmountMinor,
-		"coupon_stackable":                 config.CouponStackable,
+		"version":               config.Version,
+		"referee_benefit_type":  config.RefereeBenefitType,
+		"referee_benefit_value": config.RefereeBenefitValue,
 	})
 	if err != nil {
 		return err
@@ -614,7 +619,7 @@ func (s *ReferralService) releaseRefereeBenefitInTx(
 			ProgramConfigID:  record.ProgramConfigID,
 			RecipientUserID:  *record.RefereeID,
 			RecipientRole:    loyalty.ReferralRecipientReferee,
-			RewardType:       rewardType,
+			RewardType:       loyalty.ReferralRewardTypePoints,
 			IdempotencyKey:   rewardKey,
 			Status:           loyalty.ReferralRewardStatusLocked,
 			RuleSnapshot:     snapshot,
@@ -647,27 +652,6 @@ func (s *ReferralService) releaseRefereeBenefitInTx(
 			return err
 		}
 		reward.LoyaltyTransactionID = &transaction.ID
-	} else {
-		if repos.Coupon == nil {
-			return ErrReferralServiceUnavailable
-		}
-		if reward.ID == 0 || reward.CouponID == nil {
-			couponRecord, couponErr := buildRefereeCoupon(record, config, releasedAt)
-			if couponErr != nil {
-				return couponErr
-			}
-			if reward.CouponID == nil {
-				if err := repos.Coupon.CreateCoupon(couponRecord); err != nil {
-					return err
-				}
-				reward.CouponID = &couponRecord.ID
-			}
-			if reward.ID == 0 {
-				if err := repos.Referral.CreateReward(reward); err != nil {
-					return err
-				}
-			}
-		}
 	}
 
 	if reward.ID == 0 {
@@ -686,283 +670,6 @@ func (s *ReferralService) releaseRefereeBenefitInTx(
 		return err
 	}
 	return nil
-}
-
-func (s *ReferralService) provisionLockedRefereeCouponInTx(
-	repos repository.TxRepositories,
-	record *loyalty.ReferralRecord,
-	config *loyalty.ReferralProgramConfig,
-	createdAt time.Time,
-) error {
-	if record == nil || config == nil || record.RefereeID == nil {
-		return ErrInvalidReferralProgramConfig
-	}
-	if config.RefereeBenefitType != loyalty.ReferralBenefitPercentCoupon && config.RefereeBenefitType != loyalty.ReferralBenefitFixedCoupon {
-		return nil
-	}
-	if repos.Referral == nil || repos.Coupon == nil {
-		return ErrReferralServiceUnavailable
-	}
-	rewardKey := fmt.Sprintf("referral:%d:referee:%s:v1", record.ID, config.RefereeBenefitType)
-	_, err := repos.Referral.FindRewardByIdempotencyKey(rewardKey)
-	if err == nil {
-		return nil
-	}
-	if !repository.IsRecordNotFound(err) {
-		return err
-	}
-	couponRecord, err := buildRefereeCoupon(record, config, createdAt)
-	if err != nil {
-		return err
-	}
-	if err := repos.Coupon.CreateCoupon(couponRecord); err != nil {
-		return err
-	}
-	snapshot, err := json.Marshal(map[string]any{
-		"version":                          config.Version,
-		"currency":                         config.Currency,
-		"referee_benefit_type":             config.RefereeBenefitType,
-		"referee_benefit_value":            config.RefereeBenefitValue,
-		"referee_benefit_max_amount_minor": config.RefereeBenefitMaxAmountMinor,
-		"coupon_stackable":                 config.CouponStackable,
-	})
-	if err != nil {
-		return err
-	}
-	return repos.Referral.CreateReward(&loyalty.ReferralReward{
-		ReferralRecordID: record.ID,
-		ProgramConfigID:  record.ProgramConfigID,
-		RecipientUserID:  *record.RefereeID,
-		RecipientRole:    loyalty.ReferralRecipientReferee,
-		RewardType:       loyalty.ReferralRewardTypeCoupon,
-		CouponID:         &couponRecord.ID,
-		IdempotencyKey:   rewardKey,
-		Status:           loyalty.ReferralRewardStatusLocked,
-		RuleSnapshot:     snapshot,
-	})
-}
-
-func (s *ReferralService) forfeitLockedRefereeBenefitInTx(repos repository.TxRepositories, record *loyalty.ReferralRecord, at time.Time) error {
-	if record == nil || repos.Referral == nil {
-		return ErrReferralServiceUnavailable
-	}
-	for _, benefitType := range []string{loyalty.ReferralBenefitFixedCoupon, loyalty.ReferralBenefitPercentCoupon, loyalty.ReferralBenefitPoints} {
-		key := fmt.Sprintf("referral:%d:referee:%s:v1", record.ID, benefitType)
-		reward, err := repos.Referral.FindRewardByIdempotencyKey(key)
-		if repository.IsRecordNotFound(err) {
-			continue
-		}
-		if err != nil {
-			return err
-		}
-		if reward.Status != loyalty.ReferralRewardStatusLocked {
-			continue
-		}
-		if err := repos.Referral.UpdateReward(reward.ID, map[string]any{
-			"status":       loyalty.ReferralRewardStatusForfeited,
-			"forfeited_at": at,
-			"updated_at":   at,
-		}); err != nil {
-			return err
-		}
-		if reward.CouponID != nil && repos.Coupon != nil {
-			couponRecord, findErr := repos.Coupon.FindCouponByIDForUpdate(*reward.CouponID)
-			if repository.IsRecordNotFound(findErr) {
-				continue
-			}
-			if findErr != nil {
-				return findErr
-			}
-			couponRecord.Enabled = false
-			if err := repos.Coupon.UpdateCoupon(couponRecord); err != nil {
-				return err
-			}
-		}
-	}
-	return nil
-}
-
-// reverseReleasedRefereeBenefitInTx claws back a referee benefit that was
-// released at payment time before the order was later invalidated. The
-// referral record lock serializes this with payment and settlement handlers;
-// the reversal ledger source makes retries idempotent.
-func (s *ReferralService) reverseReleasedRefereeBenefitInTx(repos repository.TxRepositories, record *loyalty.ReferralRecord, at time.Time) error {
-	if record == nil || repos.Referral == nil {
-		return ErrReferralServiceUnavailable
-	}
-	for _, benefitType := range []string{loyalty.ReferralBenefitFixedCoupon, loyalty.ReferralBenefitPercentCoupon, loyalty.ReferralBenefitPoints} {
-		key := fmt.Sprintf("referral:%d:referee:%s:v1", record.ID, benefitType)
-		reward, err := repos.Referral.FindRewardByIdempotencyKey(key)
-		if repository.IsRecordNotFound(err) {
-			continue
-		}
-		if err != nil {
-			return err
-		}
-		if reward.Status != loyalty.ReferralRewardStatusReleased {
-			continue
-		}
-
-		if reward.RewardType == loyalty.ReferralRewardTypePoints && reward.PointsAmount > 0 {
-			if repos.Loyalty == nil {
-				return ErrReferralServiceUnavailable
-			}
-			count, countErr := repos.Loyalty.CountTransactionsByUserTypeSourceAndSourceID(
-				reward.RecipientUserID,
-				"adjust",
-				referralRefereeReversalSource,
-				record.ID,
-			)
-			if countErr != nil {
-				return countErr
-			}
-			if count == 0 {
-				if _, adjustErr := repos.Loyalty.AdjustUserPointsInCurrentTxWithConfig(
-					reward.RecipientUserID,
-					-reward.PointsAmount,
-					"adjust",
-					referralRefereeReversalSource,
-					record.ID,
-					fmt.Sprintf("Referral referee reward reversal for record #%d", record.ID),
-					&record.ProgramConfigID,
-				); adjustErr != nil {
-					return adjustErr
-				}
-			}
-		}
-
-		if reward.CouponID != nil && repos.Coupon != nil {
-			couponRecord, findErr := repos.Coupon.FindCouponByIDForUpdate(*reward.CouponID)
-			if repository.IsRecordNotFound(findErr) {
-				continue
-			}
-			if findErr != nil {
-				return findErr
-			}
-			if couponRecord.Enabled {
-				couponRecord.Enabled = false
-				if updateErr := repos.Coupon.UpdateCoupon(couponRecord); updateErr != nil {
-					return updateErr
-				}
-			}
-		}
-
-		if updateErr := repos.Referral.UpdateReward(reward.ID, map[string]any{
-			"status":      loyalty.ReferralRewardStatusReversed,
-			"reversed_at": at,
-			"updated_at":  at,
-		}); updateErr != nil {
-			return updateErr
-		}
-	}
-	return nil
-}
-
-// refereeCouponMatchesOrderInTx verifies that a qualifying order actually
-// consumed the private coupon provisioned for this referral. The order is
-// already locked by the lifecycle handler; lock the reward coupon as well so
-// a concurrent coupon disable/use cannot race this decision.
-func (s *ReferralService) refereeCouponMatchesOrderInTx(
-	repos repository.TxRepositories,
-	record *loyalty.ReferralRecord,
-	config *loyalty.ReferralProgramConfig,
-	orderRecord *order.Order,
-) (bool, error) {
-	if record == nil || config == nil || orderRecord == nil || repos.Referral == nil || repos.Coupon == nil {
-		return false, ErrReferralServiceUnavailable
-	}
-	orderCouponCode := strings.TrimSpace(orderRecord.CouponCode)
-	rewardKey := fmt.Sprintf("referral:%d:referee:%s:v1", record.ID, config.RefereeBenefitType)
-	reward, err := repos.Referral.FindRewardByIdempotencyKey(rewardKey)
-	if repository.IsRecordNotFound(err) {
-		// Bind normally provisions the locked reward. If an older or manually
-		// repaired record lacks that row, allow the payment path to materialize
-		// the configured benefit only when no competing coupon was selected.
-		return orderCouponCode == "", nil
-	}
-	if err != nil {
-		return false, err
-	}
-	if orderCouponCode == "" || reward.CouponID == nil {
-		return false, nil
-	}
-	couponRecord, err := repos.Coupon.FindCouponByIDForUpdate(*reward.CouponID)
-	if repository.IsRecordNotFound(err) {
-		return false, nil
-	}
-	if err != nil {
-		return false, err
-	}
-	return strings.EqualFold(orderCouponCode, strings.TrimSpace(couponRecord.Code)), nil
-}
-
-func buildRefereeCoupon(record *loyalty.ReferralRecord, config *loyalty.ReferralProgramConfig, start time.Time) (*coupon.Coupon, error) {
-	if record == nil || config == nil {
-		return nil, ErrInvalidReferralProgramConfig
-	}
-	benefitCurrency := currency.NormalizeCode(config.Currency)
-	value := float64(config.RefereeBenefitValue)
-	typeName := "fixed"
-	if config.RefereeBenefitType == loyalty.ReferralBenefitPercentCoupon {
-		typeName = "percentage"
-		value /= 100
-	} else {
-		money, err := domainmoney.New(config.RefereeBenefitValue, benefitCurrency)
-		if err != nil {
-			return nil, err
-		}
-		value, err = money.MajorFloat()
-		if err != nil {
-			return nil, err
-		}
-	}
-	if value <= 0 {
-		return nil, ErrInvalidReferralProgramConfig
-	}
-	if start.IsZero() {
-		start = time.Now().UTC()
-	} else {
-		start = start.UTC()
-	}
-	couponValidityDays := config.AttributionTTLDays
-	if couponValidityDays <= 0 {
-		couponValidityDays = 30
-	}
-	end := start.AddDate(0, 0, couponValidityDays)
-	minimumMoney, err := domainmoney.New(config.MinOrderAmountMinor, benefitCurrency)
-	if err != nil {
-		return nil, err
-	}
-	minimum, err := minimumMoney.MajorFloat()
-	if err != nil {
-		return nil, err
-	}
-	maxDiscount := float64(0)
-	if config.RefereeBenefitMaxAmountMinor > 0 {
-		maxDiscountMoney, moneyErr := domainmoney.New(config.RefereeBenefitMaxAmountMinor, benefitCurrency)
-		if moneyErr != nil {
-			return nil, moneyErr
-		}
-		maxDiscount, err = maxDiscountMoney.MajorFloat()
-		if err != nil {
-			return nil, err
-		}
-	}
-	return &coupon.Coupon{
-		Code:                    fmt.Sprintf("REFERRAL-%d-%s", record.ID, strings.ToUpper(strings.TrimSuffix(config.RefereeBenefitType, "_coupon"))),
-		Type:                    typeName,
-		Value:                   value,
-		Currency:                benefitCurrency,
-		Description:             fmt.Sprintf("Referral welcome benefit for referral #%d", record.ID),
-		MinAmount:               minimum,
-		MaxDiscount:             maxDiscount,
-		UsageLimit:              1,
-		UsageLimitPerUser:       1,
-		ReferralRecipientUserID: record.RefereeID,
-		StartDate:               start.Add(-time.Minute),
-		EndDate:                 end,
-		Enabled:                 true,
-	}, nil
 }
 
 // SettleReferral releases the referrer points and closes the lifecycle record
@@ -1006,7 +713,7 @@ func (s *ReferralService) SettleReferral(id uint, reason string, actorID *uint) 
 		}
 		if reward == nil {
 			snapshot, marshalErr := json.Marshal(map[string]any{
-				"version": config.Version, "currency": config.Currency,
+				"version":                config.Version,
 				"referrer_reward_points": config.ReferrerRewardPoints,
 				"vesting_period_days":    config.VestingPeriodDays,
 			})
@@ -1083,9 +790,6 @@ func (s *ReferralService) RevokeReferral(id uint, reason string, actorID *uint) 
 				return rewardErr
 			}
 			revokedAt := s.now().UTC()
-			if err := s.forfeitLockedRefereeBenefitInTx(repos, record, revokedAt); err != nil {
-				return err
-			}
 			return transitionReferralRecordAs(repos, record, loyalty.ReferralStatusRevoked, "admin_revoke", strings.TrimSpace(reason), fmt.Sprintf("referral.admin.revoke:%d:%d", record.ID, revokedAt.UnixNano()), map[string]any{"revoked_at": revokedAt, "revoke_reason": strings.TrimSpace(reason)}, "admin", actorID)
 		case loyalty.ReferralStatusRevoked:
 			return nil
@@ -1161,32 +865,6 @@ func (s *ReferralService) activeIdentity(code string) (*loyalty.ReferralProgramC
 	return config, identity, nil
 }
 
-func (s *ReferralService) getOrCreateIdentity(userID uint) (*loyalty.ReferralIdentity, error) {
-	identity, err := s.repo.FindIdentityByUserID(userID)
-	if err == nil {
-		return identity, nil
-	}
-	if !repository.IsRecordNotFound(err) {
-		return nil, err
-	}
-	for attempt := 0; attempt < referralIdentityCreateAttempts; attempt++ {
-		code, generateErr := loyalty.GenerateReferralCode()
-		if generateErr != nil {
-			return nil, generateErr
-		}
-		identity = &loyalty.ReferralIdentity{UserID: userID, ReferralCode: code, IsActive: true}
-		if createErr := s.repo.CreateIdentity(identity); createErr == nil {
-			return identity, nil
-		} else if !repository.IsDuplicatedKey(createErr) {
-			return nil, createErr
-		}
-		if existing, findErr := s.repo.FindIdentityByUserID(userID); findErr == nil {
-			return existing, nil
-		}
-	}
-	return nil, errors.New("could not allocate a unique referral code")
-}
-
 func (s *ReferralService) bind(userID uint, claims referralcookie.Claims, bindContext ReferralBindContext) (*loyalty.ReferralRecord, error) {
 	if s == nil || s.txManager == nil || userID == 0 || len(s.hashKey) == 0 {
 		return nil, ErrReferralServiceUnavailable
@@ -1218,6 +896,16 @@ func (s *ReferralService) bind(userID uint, claims referralcookie.Claims, bindCo
 		if identity.UserID == userID {
 			return ErrSelfReferralForbidden
 		}
+		referrerEmail := ""
+		if s.userRepo != nil {
+			if referrer, findErr := s.userRepo.FindByID(identity.UserID); findErr == nil && referrer != nil {
+				referrerEmail = strings.ToLower(strings.TrimSpace(referrer.Email))
+			}
+		}
+		refereeEmail := strings.ToLower(strings.TrimSpace(bindContext.RefereeEmail))
+		if referrerEmail != "" && refereeEmail != "" && referrerEmail == refereeEmail {
+			return ErrSelfReferralForbidden
+		}
 		existing, err := repos.Referral.FindRecordByRefereeID(userID)
 		if err == nil {
 			if existing.ReferrerID == identity.UserID {
@@ -1241,7 +929,43 @@ func (s *ReferralService) bind(userID uint, claims referralcookie.Claims, bindCo
 		if !claims.ExpiresAt.After(now) {
 			return referralcookie.ErrInvalidCookie
 		}
+
+		clientIPHash := s.hashSensitiveValue("client-ip", bindContext.ClientIP)
+		clientIPSubnetHash := s.hashSensitiveValue("client-ip-subnet", referralIPSubnetKey(bindContext.ClientIP))
+		deviceFingerprintHash := s.hashSensitiveValue("device-fingerprint", bindContext.DeviceFingerprint)
+		var bindRiskFlags []map[string]any
+		addBindRiskFlag := func(flagType, level, source string) {
+			bindRiskFlags = append(bindRiskFlags, map[string]any{
+				"type": flagType, "level": level, "source": source,
+			})
+		}
+		if clientIPSubnetHash != "" {
+			recentBindings, countErr := repos.Referral.CountRecentBindingsByIPSubnetHash(clientIPSubnetHash, now.Add(-24*time.Hour))
+			if countErr != nil {
+				return countErr
+			}
+			if recentBindings >= 3 {
+				if config.AntiFraudMode == loyalty.ReferralFraudModeStrict {
+					return ErrRefereeNotEligible
+				}
+				addBindRiskFlag("ip_subnet_velocity", "high", "referral_binding_24h")
+			}
+		}
+		if deviceFingerprintHash != "" {
+			referrerRecord, recordErr := repos.Referral.FindRecordByRefereeID(identity.UserID)
+			if recordErr == nil && referrerRecord.DeviceFingerprintHash == deviceFingerprintHash {
+				if config.AntiFraudMode == loyalty.ReferralFraudModeStrict {
+					return ErrRefereeNotEligible
+				}
+				addBindRiskFlag("device_fingerprint_match", "high", "referrer_historical_attribution")
+			} else if recordErr != nil && !repository.IsRecordNotFound(recordErr) {
+				return recordErr
+			}
+		}
 		refereeID := userID
+		// Keep the signed token expiry as an audit snapshot only. The token has
+		// already been validated at bind time; after this point the referral
+		// relationship and any registration points are permanent.
 		record := &loyalty.ReferralRecord{
 			ReferralIdentityID:    identity.ID,
 			ProgramConfigID:       config.ID,
@@ -1250,13 +974,21 @@ func (s *ReferralService) bind(userID uint, claims referralcookie.Claims, bindCo
 			ReferralCodeSnapshot:  identity.ReferralCode,
 			AttributionSource:     claims.Source,
 			RefereeEmailHash:      s.hashSensitiveValue("referee-email", bindContext.RefereeEmail),
-			ClientIPHash:          s.hashSensitiveValue("client-ip", bindContext.ClientIP),
-			DeviceFingerprintHash: s.hashSensitiveValue("device-fingerprint", bindContext.DeviceFingerprint),
+			ClientIPHash:          clientIPHash,
+			ClientIPSubnetHash:    clientIPSubnetHash,
+			DeviceFingerprintHash: deviceFingerprintHash,
 			HashKeyVersion:        1,
 			Currency:              config.Currency,
 			Status:                loyalty.ReferralStatusPending,
 			RecordVersion:         1,
 			ExpiresAt:             claims.ExpiresAt.UTC(),
+		}
+		if len(bindRiskFlags) > 0 {
+			encodedRiskFlags, marshalErr := json.Marshal(bindRiskFlags)
+			if marshalErr != nil {
+				return marshalErr
+			}
+			record.RiskFlags = datatypes.JSON(encodedRiskFlags)
 		}
 		if err := repos.Referral.CreateRecord(record); err != nil {
 			if repository.IsDuplicatedKey(err) {
@@ -1276,8 +1008,10 @@ func (s *ReferralService) bind(userID uint, claims referralcookie.Claims, bindCo
 		}); err != nil {
 			return err
 		}
-		if err := s.provisionLockedRefereeCouponInTx(repos, record, config, now); err != nil {
-			return err
+		if config.RefereeBenefitType == loyalty.ReferralBenefitPoints {
+			if err := s.releaseRefereeBenefitInTx(repos, record, config, now); err != nil {
+				return err
+			}
 		}
 		bound = record
 		return nil
@@ -1301,21 +1035,29 @@ func (s *ReferralService) hashSensitiveValue(scope, value string) string {
 	return hex.EncodeToString(mac.Sum(nil))
 }
 
+// referralIPSubnetKey returns the comparison-only network identity used for
+// the rolling binding cap. IPv4 is grouped by /24 and IPv6 by /64. The raw IP
+// is never persisted; callers HMAC this value before storing it.
+func referralIPSubnetKey(raw string) string {
+	ip := net.ParseIP(strings.TrimSpace(raw))
+	if ip == nil {
+		return ""
+	}
+	if ipv4 := ip.To4(); ipv4 != nil {
+		return fmt.Sprintf("%d.%d.%d.0/24", ipv4[0], ipv4[1], ipv4[2])
+	}
+	mask := net.CIDRMask(64, 128)
+	return ip.Mask(mask).String() + "/64"
+}
+
 func validateReferralProgramConfig(config *loyalty.ReferralProgramConfig) error {
 	if config == nil || config.Version <= 0 || !currency.IsCatalogCode(config.Currency) ||
-		config.MinOrderAmountMinor < 0 || config.RefereeBenefitMaxAmountMinor < 0 ||
-		config.ReferrerRewardPoints < 0 || config.RefereeBenefitValue < 0 || config.VestingPeriodDays <= 0 ||
+		config.MinOrderAmountMinor < 0 || config.ReferrerRewardPoints < 0 || config.RefereeBenefitValue <= 0 || config.VestingPeriodDays <= 0 ||
 		config.UndeliveredFallbackDays < config.VestingPeriodDays || config.AttributionTTLDays <= 0 ||
 		config.AttributionTTLDays > 90 || config.MonthlyCapPerReferrer <= 0 {
 		return ErrInvalidReferralProgramConfig
 	}
-	switch config.RefereeBenefitType {
-	case loyalty.ReferralBenefitNone, loyalty.ReferralBenefitPoints, loyalty.ReferralBenefitFixedCoupon:
-	case loyalty.ReferralBenefitPercentCoupon:
-		if config.RefereeBenefitValue > 10000 {
-			return fmt.Errorf("%w: invalid referral percent benefit", ErrInvalidReferralProgramConfig)
-		}
-	default:
+	if config.RefereeBenefitType != loyalty.ReferralBenefitPoints {
 		return fmt.Errorf("%w: invalid referral benefit type", ErrInvalidReferralProgramConfig)
 	}
 	if config.AntiFraudMode != loyalty.ReferralFraudModeMonitor && config.AntiFraudMode != loyalty.ReferralFraudModeStrict {
@@ -1326,7 +1068,6 @@ func validateReferralProgramConfig(config *loyalty.ReferralProgramConfig) error 
 
 func referralDashboardRules(config *loyalty.ReferralProgramConfig) ReferralDashboardRules {
 	return ReferralDashboardRules{
-		Currency:                 config.Currency,
 		MinOrderAmountMinor:      config.MinOrderAmountMinor,
 		ReferrerRewardPoints:     config.ReferrerRewardPoints,
 		RefereeBenefitType:       config.RefereeBenefitType,

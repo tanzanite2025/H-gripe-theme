@@ -122,6 +122,7 @@ import type {
   RiskStrategyReports,
   RiskStrategySnapshot,
 } from '@/modules/payment/riskStrategyTypes'
+import { formatMinorAmountsByCurrency } from '@/lib/riskStrategyViewUtils'
 
 const props = withDefaults(defineProps<{
   reports?: RiskStrategyReports
@@ -150,12 +151,12 @@ const providers = computed(() => ['stripe', 'paypal'].map((key) => {
       {
         label: '成功支付',
         value: count(snapshot.successful_payment_count),
-        detail: `金额 ${amount(snapshot.successful_payment_amount)}`,
+        detail: `金额 ${formatMinorAmountsByCurrency(snapshot.successful_payment_amount_minor_by_currency)}`,
       },
       {
          label: '争议 / 拒付率',
         value: percent(snapshot.dispute_activity_rate),
-        detail: `${count(snapshot.dispute_count)} 笔 · 金额 ${amount(snapshot.dispute_amount)}`,
+        detail: `${count(snapshot.dispute_count)} 笔 · 金额 ${formatMinorAmountsByCurrency(snapshot.dispute_amount_minor_by_currency)}`,
       },
       {
          label: '早期欺诈预警率',
@@ -165,7 +166,7 @@ const providers = computed(() => ['stripe', 'paypal'].map((key) => {
       {
         label: '退款率',
         value: percent(snapshot.refund_rate),
-        detail: `${count(snapshot.refund_count)} 笔 · 金额 ${amount(snapshot.refund_amount)}`,
+        detail: `${count(snapshot.refund_count)} 笔 · 金额 ${formatMinorAmountsByCurrency(snapshot.refund_amount_minor_by_currency)}`,
       },
       {
          label: '3DS 要求认证率',
@@ -188,10 +189,6 @@ const numeric = (value: unknown): number => {
 const count = (value: unknown): string => numeric(value).toLocaleString('zh-CN')
 const percent = (value: unknown): string => `${(numeric(value) * 100).toFixed(2)}%`
 const threshold = (value: unknown): string => percent(value)
-const amount = (value: unknown): string => numeric(value).toLocaleString('zh-CN', {
-  minimumFractionDigits: 2,
-  maximumFractionDigits: 2,
-})
 const formatDateTime = (value: unknown): string => value ? new Date(value as string | number | Date).toLocaleString('zh-CN') : '-'
 const formatPeriod = (snapshot?: RiskStrategySnapshot | null): string => {
   if (!snapshot?.window_start || !snapshot?.window_end) return `${snapshot?.window_days || windowDays.value} 天窗口`

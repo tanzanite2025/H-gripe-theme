@@ -2,6 +2,7 @@ package feedback
 
 import (
 	domainfeedback "commerce-platform/internal/domain/feedback"
+	"commerce-platform/internal/pkg/honeypot"
 	"commerce-platform/internal/service"
 	"crypto/hmac"
 	"crypto/sha256"
@@ -19,10 +20,20 @@ const maxFeedbackCreateBodyBytes = 16 * 1024
 type Handler struct {
 	feedbackService  *service.FeedbackService
 	sourceHashSecret string
+	honeypotPolicy   honeypot.Policy
 }
 
 func NewHandler(feedbackService *service.FeedbackService) *Handler {
-	return &Handler{feedbackService: feedbackService}
+	return &Handler{
+		feedbackService: feedbackService,
+		honeypotPolicy:  honeypot.NewPolicy(honeypot.ModeEnforce),
+	}
+}
+
+func (h *Handler) ConfigureHoneypot(policy honeypot.Policy) {
+	if h != nil {
+		h.honeypotPolicy = policy
+	}
 }
 
 func (h *Handler) ConfigureSourceHashSecret(secret string) {
@@ -37,6 +48,7 @@ type createFeedbackRequest struct {
 	Content   string `json:"content" binding:"required"`
 	Name      string `json:"name"`
 	Email     string `json:"email"`
+	FaxNumber string `json:"fax_number"`
 	Locale    string `json:"locale"`
 	PagePath  string `json:"page_path"`
 	PageTitle string `json:"page_title"`
@@ -90,6 +102,13 @@ func (h *Handler) Create(c *gin.Context) {
 			return
 		}
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_payload", "message": err.Error()})
+		return
+	}
+	if h.honeypotPolicy.ShouldDrop(req.FaxNumber, "feedback", "fax_number", c.Request.URL.Path) {
+		c.JSON(http.StatusCreated, gin.H{
+			"message": "Feedback submitted, pending review.",
+			"status":  "pending",
+		})
 		return
 	}
 

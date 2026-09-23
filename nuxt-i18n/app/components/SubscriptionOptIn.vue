@@ -1,5 +1,10 @@
 <template>
   <form class="subscription-opt-in space-y-2" @submit.prevent="handleSubmit">
+    <HoneypotField
+      v-model="corporateTaxNumber"
+      name="corporate_tax_number"
+      label="Corporate tax number"
+    />
     <div ref="turnstileContainer" class="sr-only" aria-hidden="true"></div>
     <label v-if="label" class="block text-xs font-medium tz-text-secondary mb-2 tracking-wide uppercase text-center">
       {{ label }}
@@ -48,12 +53,18 @@
 
 <script setup lang="ts">
 import { loadTurnstileScript } from '~/utils/security/trustedScriptUrl'
+import HoneypotField from '~/components/security/HoneypotField.vue'
 
 interface SubscriptionSubmitResponse {
   message?: string
   data?: unknown
   error?: string
   success?: boolean
+}
+
+interface FormTimingTokenResponse {
+  token?: string
+  expires_in?: number
 }
 
 type TurnstileApi = {
@@ -102,15 +113,34 @@ const { request } = useApiRequest()
 const runtimeConfig = useRuntimeConfig()
 
 const email = ref('')
+const corporateTaxNumber = ref('')
 const loading = ref(false)
 const successMessage = ref('')
 const errorMessage = ref('')
+const timingToken = ref('')
 const turnstileContainer = ref<HTMLElement | null>(null)
 let turnstileWidgetId: string | number | null = null
 let turnstileLoadPromise: Promise<void> | null = null
 let pendingTurnstile: { resolve: (token: string) => void; reject: (error: Error) => void } | null = null
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+const loadTimingToken = async () => {
+  try {
+    const data = await request<FormTimingTokenResponse>('/subscriptions/timing-token', {
+      method: 'GET',
+      headers: { accept: 'application/json' },
+    }, 'Form timing service is unavailable')
+    timingToken.value = String(data?.token || '').trim()
+  } catch {
+    // Timing is observation-only. A token outage must never block a real user.
+    timingToken.value = ''
+  }
+}
+
+onMounted(() => {
+  void loadTimingToken()
+})
 
 const loadTurnstile = () => {
   if (!import.meta.client || typeof window === 'undefined') return Promise.resolve()
@@ -204,9 +234,11 @@ async function handleSubmit() {
       },
       body: JSON.stringify({
         email: value,
+        corporate_tax_number: corporateTaxNumber.value,
         source: 'website',
         locale: locale.value,
         captcha_token: captchaToken || '',
+        timing_token: timingToken.value,
       }),
     }, 'Subscription failed, please try again later')
 
@@ -216,6 +248,8 @@ async function handleSubmit() {
 
     successMessage.value = data?.message || '订阅成功，请前往邮箱确认'
     email.value = ''
+    corporateTaxNumber.value = ''
+	void loadTimingToken()
 
     emit('subscribed', data)
   } catch (error: unknown) {

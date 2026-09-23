@@ -1,6 +1,8 @@
 package service
 
 import (
+	"crypto/sha256"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/url"
@@ -8,8 +10,13 @@ import (
 	"strings"
 	"time"
 
+	domainmoney "commerce-platform/internal/domain/money"
 	orderdomain "commerce-platform/internal/domain/order"
+	"commerce-platform/internal/domain/outbox"
 	paymentdomain "commerce-platform/internal/domain/payment"
+	"commerce-platform/internal/repository"
+
+	"gorm.io/datatypes"
 )
 
 const orderDisputeScanLimit = 1000
@@ -45,7 +52,7 @@ type OrderDisputeCase struct {
 	PaymentStatus       string                        `json:"payment_status,omitempty"`
 	ShippingStatus      string                        `json:"shipping_status,omitempty"`
 	TrackingNumber      string                        `json:"tracking_number,omitempty"`
-	Amount              float64                       `json:"amount"`
+	AmountMinor         int64                         `json:"amount_minor"`
 	Currency            string                        `json:"currency"`
 	Reason              string                        `json:"reason,omitempty"`
 	Status              string                        `json:"status"`
@@ -127,7 +134,8 @@ type SendOrderDisputeContactEmailResult struct {
 	ProviderDisputeID string    `json:"provider_dispute_id"`
 	To                string    `json:"to"`
 	Subject           string    `json:"subject"`
-	SentAt            time.Time `json:"sent_at"`
+	Status            string    `json:"status"`
+	RequestedAt       time.Time `json:"requested_at"`
 }
 
 type orderDisputeCandidate struct {
@@ -225,7 +233,9 @@ func (s *OrderService) SendOrderDisputeContactEmail(input SendOrderDisputeContac
 	if !input.Confirm {
 		return nil, ErrOrderDisputeEmailConfirmRequired
 	}
-	if s == nil || s.emailSender == nil {
+	// The request transaction only persists the durable delivery intent. SMTP
+	// availability belongs to the Outbox worker and must not block enqueueing.
+	if s == nil || s.txManager == nil {
 		return nil, ErrOrderDisputeEmailNotConfigured
 	}
 	analysis, err := s.GetOrderDisputeAnalysis(input.OrderID)
@@ -257,7 +267,33 @@ func (s *OrderService) SendOrderDisputeContactEmail(input SendOrderDisputeContac
 		return nil, ErrOrderDisputeEmailBodyRequired
 	}
 
-	if err := s.emailSender.SendEmail([]string{to}, subject, body); err != nil {
+	requestedAt := time.Now().UTC()
+	if err := s.txManager.WithinTx(func(repos repository.TxRepositories) error {
+		if repos.Outbox == nil {
+			return ErrOrderDisputeEmailNotConfigured
+		}
+		payload, err := json.Marshal(outbox.OrderDisputeContactEmailPayload{
+			OrderID:           input.OrderID,
+			Provider:          provider,
+			DisputeID:         selected.DisputeID,
+			ProviderDisputeID: selected.ProviderDisputeID,
+			RecipientEmail:    to,
+			Subject:           subject,
+			Body:              body,
+			RequestedAt:       requestedAt,
+		})
+		if err != nil {
+			return fmt.Errorf("encode dispute contact email event: %w", err)
+		}
+		return repos.Outbox.CreateEvent(&outbox.Event{
+			EventKey:      orderDisputeContactEmailEventKey(input.OrderID, provider, selected.DisputeID, to, subject, body),
+			EventType:     outbox.EventTypeOrderDisputeContactEmail,
+			AggregateType: outbox.AggregateTypeOrder,
+			AggregateID:   fmt.Sprintf("%d", input.OrderID),
+			Payload:       datatypes.JSON(payload),
+			AvailableAt:   requestedAt,
+		})
+	}); err != nil {
 		return nil, err
 	}
 	return &SendOrderDisputeContactEmailResult{
@@ -267,8 +303,25 @@ func (s *OrderService) SendOrderDisputeContactEmail(input SendOrderDisputeContac
 		ProviderDisputeID: selected.ProviderDisputeID,
 		To:                to,
 		Subject:           subject,
-		SentAt:            time.Now().UTC(),
+		Status:            outbox.EventStatusPending,
+		RequestedAt:       requestedAt,
 	}, nil
+}
+
+// orderDisputeContactEmailEventKey is stable for an identical delivery
+// request. A wall-clock timestamp is deliberately excluded: retries of the
+// same admin command must hit the Outbox event_key uniqueness guard instead of
+// creating another email delivery.
+func orderDisputeContactEmailEventKey(orderID uint, provider string, disputeID uint, recipient, subject, body string) string {
+	fingerprint := sha256.Sum256([]byte(strings.Join([]string{
+		fmt.Sprintf("%d", orderID),
+		strings.TrimSpace(provider),
+		fmt.Sprintf("%d", disputeID),
+		strings.TrimSpace(recipient),
+		strings.TrimSpace(subject),
+		strings.TrimSpace(body),
+	}, "\x00")))
+	return fmt.Sprintf("%s:%d:%s:%d:%x", outbox.EventTypeOrderDisputeContactEmail, orderID, strings.TrimSpace(provider), disputeID, fingerprint)
 }
 
 func (s *OrderService) collectOrderDisputeCandidates(input OrderDisputeListInput) ([]orderDisputeCandidate, error) {
@@ -330,7 +383,7 @@ func (s *OrderService) orderDisputeCaseFromStripe(record *paymentdomain.StripeDi
 		ProviderDisputeID:   strings.TrimSpace(record.StripeDisputeID),
 		ProviderPaymentID:   strings.TrimSpace(record.PaymentIntentID),
 		OrderID:             record.OrderID,
-		Amount:              record.Amount,
+		AmountMinor:         record.AmountMinor,
 		Currency:            record.Currency,
 		Reason:              strings.TrimSpace(record.Reason),
 		Status:              strings.TrimSpace(record.Status),
@@ -359,7 +412,7 @@ func (s *OrderService) orderDisputeCaseFromPayPal(record *paymentdomain.PayPalDi
 		ProviderDisputeID:   strings.TrimSpace(record.PayPalDisputeID),
 		ProviderPaymentID:   strings.TrimSpace(record.ProviderPaymentID),
 		OrderID:             record.OrderID,
-		Amount:              record.Amount,
+		AmountMinor:         record.AmountMinor,
 		Currency:            record.Currency,
 		Reason:              strings.TrimSpace(record.Reason),
 		Status:              strings.TrimSpace(record.Status),
@@ -393,7 +446,6 @@ func (s *OrderService) decorateOrderDisputeCase(item *OrderDisputeCase, orderRec
 	item.OrderStatus = strings.TrimSpace(orderRecord.Status)
 	item.PaymentStatus = strings.TrimSpace(orderRecord.PaymentStatus)
 	item.ShippingStatus = strings.TrimSpace(orderRecord.ShippingStatus)
-	item.TrackingNumber = strings.TrimSpace(orderRecord.TrackingNumber)
 	if strings.EqualFold(orderRecord.ShippingStatus, "delivered") || strings.EqualFold(orderRecord.Status, "completed") {
 		item.HasDeliveredEvent = true
 		if orderRecord.CompletedAt != nil {
@@ -560,7 +612,8 @@ func buildOrderDisputeContactDraft(item OrderDisputeCase) OrderDisputeContactDra
 	if name == "" {
 		name = "there"
 	}
-	amount := fmt.Sprintf("%.2f %s", item.Amount, strings.ToUpper(strings.TrimSpace(item.Currency)))
+	amountText, _ := domainmoney.New(item.AmountMinor, item.Currency)
+	amount := fmt.Sprintf("%s %s", func() string { value, _ := amountText.FormatMajor(); return value }(), strings.ToUpper(strings.TrimSpace(item.Currency)))
 	subject := fmt.Sprintf("Please confirm your order %s", orderNumber)
 	bodyLines := []string{
 		fmt.Sprintf("Hi %s,", name),
@@ -685,7 +738,6 @@ func orderDisputeCandidateMatches(candidate orderDisputeCandidate, search string
 			candidate.order.OrderNumber,
 			disputeCustomerName(candidate.order),
 			disputeCustomerEmail(candidate.order),
-			candidate.order.TrackingNumber,
 		)
 	}
 	for _, value := range haystack {

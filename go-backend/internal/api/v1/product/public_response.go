@@ -34,8 +34,8 @@ type PublicProduct struct {
 	Description                  string                              `json:"description"`
 	ShortDesc                    string                              `json:"short_description"`
 	Currency                     string                              `json:"currency"`
-	Price                        float64                             `json:"price"`
-	SalePrice                    *float64                            `json:"sale_price"`
+	PriceDecimal                 string                              `json:"price_decimal"`
+	SalePriceDecimal             *string                             `json:"sale_price_decimal,omitempty"`
 	DisplayPrice                 *PublicDisplayPrice                 `json:"display_price,omitempty"`
 	DisplayPrices                []PublicDisplayPrice                `json:"display_prices,omitempty"`
 	FulfillmentMode              string                              `json:"fulfillment_mode,omitempty"`
@@ -50,6 +50,7 @@ type PublicProduct struct {
 	SpecValues                   []PublicProductSpecValue            `json:"spec_values,omitempty"`
 	Variants                     []PublicProductVariant              `json:"variants,omitempty"`
 	VariantOptionValues          []PublicVariantOptionValue          `json:"variant_option_values,omitempty"`
+	OptionValueRelations         []PublicProductOptionValueRelation  `json:"option_value_relations,omitempty"`
 	ReviewSummary                *PublicProductReviewSummary         `json:"review_summary,omitempty"`
 	ShippingDetails              *PublicProductShippingDetails       `json:"shipping_details,omitempty"`
 }
@@ -66,12 +67,12 @@ type PublicProductReviewSummary struct {
 }
 
 type PublicProductShippingDetails struct {
-	Country      string  `json:"country"`
-	Amount       float64 `json:"amount"`
-	Currency     string  `json:"currency"`
-	FreeShipping bool    `json:"free_shipping"`
-	EtaMinDays   int     `json:"eta_min_days"`
-	EtaMaxDays   int     `json:"eta_max_days"`
+	Country       string `json:"country"`
+	AmountDecimal string `json:"amount_decimal"`
+	Currency      string `json:"currency"`
+	FreeShipping  bool   `json:"free_shipping"`
+	EtaMinDays    int    `json:"eta_min_days"`
+	EtaMaxDays    int    `json:"eta_max_days"`
 }
 
 type PublicProductMedia struct {
@@ -167,8 +168,8 @@ type PublicProductVariant struct {
 	OptionValues     string                                `json:"option_values"`
 	WeightGrams      int                                   `json:"weight_grams,omitempty"`
 	Currency         string                                `json:"currency"`
-	Price            float64                               `json:"price"`
-	SalePrice        *float64                              `json:"sale_price"`
+	PriceDecimal     string                                `json:"price_decimal"`
+	SalePriceDecimal *string                               `json:"sale_price_decimal,omitempty"`
 	DisplayPrice     *PublicDisplayPrice                   `json:"display_price,omitempty"`
 	DisplayPrices    []PublicDisplayPrice                  `json:"display_prices,omitempty"`
 	IsDefault        bool                                  `json:"is_default"`
@@ -194,22 +195,35 @@ type PublicProductOptionValueVariantRule struct {
 }
 
 type PublicVariantOptionValue struct {
-	ID               uint   `json:"id"`
-	SpecDefinitionID uint   `json:"spec_definition_id"`
-	SpecSlug         string `json:"spec_slug"`
-	ValueKey         string `json:"value_key"`
-	Label            string `json:"label"`
-	ColorHex         string `json:"color_hex,omitempty"`
-	SwatchURL        string `json:"swatch_url,omitempty"`
-	SortOrder        int    `json:"sort_order"`
-	IsEnabled        bool   `json:"is_enabled"`
-	IsDefault        bool   `json:"is_default"`
-	PriceDeltaMinor  int64  `json:"price_delta_minor,omitempty"`
-	InventoryPolicy  string `json:"inventory_policy,omitempty"`
+	ID                        uint   `json:"id"`
+	SpecDefinitionID          uint   `json:"spec_definition_id"`
+	SpecSlug                  string `json:"spec_slug"`
+	ValueKey                  string `json:"value_key"`
+	Label                     string `json:"label"`
+	ColorHex                  string `json:"color_hex,omitempty"`
+	SwatchURL                 string `json:"swatch_url,omitempty"`
+	SortOrder                 int    `json:"sort_order"`
+	IsEnabled                 bool   `json:"is_enabled"`
+	IsDefault                 bool   `json:"is_default"`
+	PriceDeltaMinor           int64  `json:"price_delta_minor,omitempty"`
+	InventoryPolicy           string `json:"inventory_policy,omitempty"`
+	WeightDeltaGrams          int    `json:"weight_delta_grams,omitempty"`
+	PackagingWeightDeltaGrams int    `json:"packaging_weight_delta_grams,omitempty"`
+	ProductionLeadTimeDays    int    `json:"production_lead_time_days,omitempty"`
+	RequiresProduction        bool   `json:"requires_production,omitempty"`
+	CancellationPolicy        string `json:"cancellation_policy,omitempty"`
+	ReturnPolicy              string `json:"return_policy,omitempty"`
+}
+
+type PublicProductOptionValueRelation struct {
+	ID                  uint   `json:"id"`
+	SourceOptionValueID uint   `json:"source_option_value_id"`
+	TargetOptionValueID uint   `json:"target_option_value_id"`
+	RelationType        string `json:"relation_type"`
 }
 
 type PublicDisplayPrice struct {
-	Amount         float64 `json:"amount"`
+	AmountDecimal  string  `json:"amount_decimal"`
 	Currency       string  `json:"currency"`
 	QuoteCurrency  string  `json:"quote_currency,omitempty"`
 	Rate           float64 `json:"rate"`
@@ -333,25 +347,50 @@ func PublicProductFromDomainWithLocaleAndRoutes(item productdomain.Product, disp
 		}
 		var priceDeltaMinor int64
 		inventoryPolicy := ""
+		weightDeltaGrams := 0
+		packagingWeightDeltaGrams := 0
+		productionLeadTimeDays := 0
+		requiresProduction := false
+		cancellationPolicy := ""
+		returnPolicy := ""
 		if optionValue.CustomOptionPolicy != nil {
 			priceDeltaMinor = optionValue.CustomOptionPolicy.PriceDeltaMinor
 			inventoryPolicy = optionValue.CustomOptionPolicy.InventoryPolicy
+			weightDeltaGrams = optionValue.CustomOptionPolicy.WeightDeltaGrams
+			packagingWeightDeltaGrams = optionValue.CustomOptionPolicy.PackagingWeightDeltaGrams
+			productionLeadTimeDays = optionValue.CustomOptionPolicy.ProductionLeadTimeDays
+			requiresProduction = optionValue.CustomOptionPolicy.RequiresProduction
+			cancellationPolicy = optionValue.CustomOptionPolicy.CancellationPolicy
+			returnPolicy = optionValue.CustomOptionPolicy.ReturnPolicy
 		}
 		isDefault := optionValue.CustomOptionPolicy != nil && optionValue.CustomOptionPolicy.IsDefault
 		variantOptionValues = append(variantOptionValues, PublicVariantOptionValue{
-			ID:               optionValue.ID,
-			SpecDefinitionID: optionValue.SpecDefinitionID,
-			SpecSlug:         definition.Slug,
-			ValueKey:         optionValue.ValueKey,
-			Label:            optionValue.Label,
-			ColorHex:         optionValue.ColorHex,
-			SwatchURL:        publicmedia.URL(resolver, optionValue.SwatchURL),
-			SortOrder:        optionValue.SortOrder,
-			IsEnabled:        optionValue.IsEnabled,
-			IsDefault:        isDefault,
-			PriceDeltaMinor:  priceDeltaMinor,
-			InventoryPolicy:  inventoryPolicy,
+			ID:                        optionValue.ID,
+			SpecDefinitionID:          optionValue.SpecDefinitionID,
+			SpecSlug:                  definition.Slug,
+			ValueKey:                  optionValue.ValueKey,
+			Label:                     optionValue.Label,
+			ColorHex:                  optionValue.ColorHex,
+			SwatchURL:                 publicmedia.URL(resolver, optionValue.SwatchURL),
+			SortOrder:                 optionValue.SortOrder,
+			IsEnabled:                 optionValue.IsEnabled,
+			IsDefault:                 isDefault,
+			PriceDeltaMinor:           priceDeltaMinor,
+			InventoryPolicy:           inventoryPolicy,
+			WeightDeltaGrams:          weightDeltaGrams,
+			PackagingWeightDeltaGrams: packagingWeightDeltaGrams,
+			ProductionLeadTimeDays:    productionLeadTimeDays,
+			RequiresProduction:        requiresProduction,
+			CancellationPolicy:        cancellationPolicy,
+			ReturnPolicy:              returnPolicy,
 		})
+	}
+	optionValueRelations := make([]PublicProductOptionValueRelation, 0, len(item.OptionValueRelations))
+	for _, relation := range item.OptionValueRelations {
+		if relation.ID == 0 || !productdomain.IsValidOptionValueRelationType(relation.RelationType) {
+			continue
+		}
+		optionValueRelations = append(optionValueRelations, PublicProductOptionValueRelation{ID: relation.ID, SourceOptionValueID: relation.SourceOptionValueID, TargetOptionValueID: relation.TargetOptionValueID, RelationType: relation.RelationType})
 	}
 
 	specValues := make([]PublicProductSpecValue, 0, len(item.SpecValues))
@@ -375,8 +414,8 @@ func PublicProductFromDomainWithLocaleAndRoutes(item productdomain.Product, disp
 		Description:                  item.Description,
 		ShortDesc:                    item.ShortDesc,
 		Currency:                     priceCurrency,
-		Price:                        price,
-		SalePrice:                    salePrice,
+		PriceDecimal:                 price,
+		SalePriceDecimal:             salePrice,
 		DisplayPrice:                 displayPriceForCurrency(displayCurrency, displayPrices),
 		DisplayPrices:                displayPrices,
 		FulfillmentMode:              publicFulfillmentMode(fulfillmentMode),
@@ -391,6 +430,7 @@ func PublicProductFromDomainWithLocaleAndRoutes(item productdomain.Product, disp
 		SpecValues:                   specValues,
 		Variants:                     variants,
 		VariantOptionValues:          variantOptionValues,
+		OptionValueRelations:         optionValueRelations,
 	}
 }
 
@@ -481,10 +521,10 @@ func publicProductVariantFromDomainWithDisplayCurrency(item productdomain.Produc
 func publicProductVariantFromDomainWithFulfillmentMode(item productdomain.ProductVariant, productAvailable bool, displayCurrency, fulfillmentMode string) PublicProductVariant {
 	displayPrices := publicDisplayPricesFromSnapshots(item.DisplayPriceData)
 	priceMoney, _ := item.PriceMoney()
-	price, _ := priceMoney.MajorFloat()
-	var salePrice *float64
+	price, _ := priceMoney.FormatMajor()
+	var salePrice *string
 	if saleMoney, err := item.SalePriceMoney(); err == nil && saleMoney != nil {
-		if sale, saleErr := saleMoney.MajorFloat(); saleErr == nil {
+		if sale, saleErr := saleMoney.FormatMajor(); saleErr == nil {
 			salePrice = &sale
 		}
 	}
@@ -495,8 +535,8 @@ func publicProductVariantFromDomainWithFulfillmentMode(item productdomain.Produc
 		OptionValues:     item.OptionValues,
 		WeightGrams:      item.Weight,
 		Currency:         item.Currency,
-		Price:            price,
-		SalePrice:        salePrice,
+		PriceDecimal:     price,
+		SalePriceDecimal: salePrice,
 		DisplayPrice:     displayPriceForCurrency(displayCurrency, displayPrices),
 		DisplayPrices:    displayPrices,
 		IsDefault:        item.IsDefault,
@@ -548,7 +588,7 @@ func publicDisplayPricesFromSnapshots(raw []byte) []PublicDisplayPrice {
 	result := make([]PublicDisplayPrice, 0, len(snapshots))
 	for _, snapshot := range snapshots {
 		result = append(result, PublicDisplayPrice{
-			Amount:         snapshot.Amount,
+			AmountDecimal:  snapshot.AmountDecimal,
 			Currency:       snapshot.Currency,
 			QuoteCurrency:  snapshot.QuoteCurrency,
 			Rate:           snapshot.Rate,

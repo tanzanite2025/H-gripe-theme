@@ -2,6 +2,7 @@ package warranty
 
 import (
 	"commerce-platform/internal/pkg/antibot"
+	"commerce-platform/internal/pkg/honeypot"
 	"commerce-platform/internal/pkg/storage"
 	"commerce-platform/internal/service"
 )
@@ -11,6 +12,7 @@ type Handler struct {
 	shipmentSvc    *service.ShipmentRecordService
 	storageService storage.StorageService
 	antiBot        *antibot.Service
+	honeypotPolicy honeypot.Policy
 	mediaResolver  service.PublicMediaURLResolver
 }
 
@@ -23,6 +25,13 @@ func NewHandler(warrantySvc *service.WarrantyService, storageService storage.Sto
 		warrantySvc:    warrantySvc,
 		storageService: storageService,
 		antiBot:        antiBot,
+		honeypotPolicy: honeypot.NewPolicy(honeypot.ModeEnforce),
+	}
+}
+
+func (h *Handler) ConfigureHoneypot(policy honeypot.Policy) {
+	if h != nil {
+		h.honeypotPolicy = policy
 	}
 }
 

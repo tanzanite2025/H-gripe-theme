@@ -22,32 +22,32 @@ func TestProductSupplierCostRecordServiceCreatePersistsExtraCostFieldsFromCatalo
 	record, err := service.Create(ProductSupplierCostRecordCreateInput{
 		SKU: "SKU-PROC-EXTRA",
 		ProductSupplierCostRecordDetailsInput: ProductSupplierCostRecordDetailsInput{
-			UnitCost:                float64PointerForServiceTest(30),
-			Currency:                "USD",
-			SupplierName:            "Supplier X",
-			SupplierContactName:     "Alice",
-			SupplierPhone:           "+1-555-001",
-			SupplierEmail:           "alice@example.com",
-			LeadTimeDays:            12,
-			MinimumOrderQuantity:    8,
-			InboundShippingUnitCost: 2,
-			PackagingUnitCost:       4,
-			OtherUnitCost:           5,
+			UnitCostMinor:                int64PointerForServiceTest(3000),
+			Currency:                     "USD",
+			SupplierName:                 "Supplier X",
+			SupplierContactName:          "Alice",
+			SupplierPhone:                "+1-555-001",
+			SupplierEmail:                "alice@example.com",
+			LeadTimeDays:                 12,
+			MinimumOrderQuantity:         8,
+			InboundShippingUnitCostMinor: 200,
+			PackagingUnitCostMinor:       400,
+			OtherUnitCostMinor:           500,
 		},
 	})
 	require.NoError(t, err)
 	require.Equal(t, "SKU-PROC-EXTRA", record.ProductCode)
 	require.Equal(t, "Catalog extra item", record.ProductName)
-	require.Equal(t, 2.0, record.InboundShippingUnitCost)
-	require.Equal(t, 4.0, record.PackagingUnitCost)
-	require.Equal(t, 5.0, record.OtherUnitCost)
+	require.Equal(t, int64(200), record.InboundShippingUnitCostMinor)
+	require.Equal(t, int64(400), record.PackagingUnitCostMinor)
+	require.Equal(t, int64(500), record.OtherUnitCostMinor)
 
 	stored, err := repository.NewProductSupplierCostRecordRepository(db).FindByProductCode("SKU-PROC-EXTRA")
 	require.NoError(t, err)
 	require.Equal(t, record.ID, stored.ID)
-	require.Equal(t, 2.0, stored.InboundShippingUnitCost)
-	require.Equal(t, 4.0, stored.PackagingUnitCost)
-	require.Equal(t, 5.0, stored.OtherUnitCost)
+	require.Equal(t, int64(200), stored.InboundShippingUnitCostMinor)
+	require.Equal(t, int64(400), stored.PackagingUnitCostMinor)
+	require.Equal(t, int64(500), stored.OtherUnitCostMinor)
 }
 
 func TestProductSupplierCostRecordServiceUpdateKeepsIndependentSnapshot(t *testing.T) {
@@ -57,7 +57,7 @@ func TestProductSupplierCostRecordServiceUpdateKeepsIndependentSnapshot(t *testi
 	record, err := service.Create(ProductSupplierCostRecordCreateInput{
 		SKU: "SKU-PROC-UPDATE",
 		ProductSupplierCostRecordDetailsInput: ProductSupplierCostRecordDetailsInput{
-			UnitCost:             float64PointerForServiceTest(20),
+			UnitCostMinor:        int64PointerForServiceTest(2000),
 			Currency:             "USD",
 			SupplierName:         "Supplier A",
 			LeadTimeDays:         10,
@@ -68,31 +68,31 @@ func TestProductSupplierCostRecordServiceUpdateKeepsIndependentSnapshot(t *testi
 
 	updated, err := service.Update(record.ID, ProductSupplierCostRecordUpdateInput{
 		ProductSupplierCostRecordDetailsInput: ProductSupplierCostRecordDetailsInput{
-			UnitCost:                float64PointerForServiceTest(25),
-			Currency:                "USD",
-			SupplierName:            "Supplier B",
-			SupplierContactName:     "Bob",
-			SupplierPhone:           "+1-555-002",
-			SupplierEmail:           "bob@example.com",
-			LeadTimeDays:            18,
-			MinimumOrderQuantity:    3,
-			InboundShippingUnitCost: 1,
-			PackagingUnitCost:       3,
-			OtherUnitCost:           4,
+			UnitCostMinor:                int64PointerForServiceTest(2500),
+			Currency:                     "USD",
+			SupplierName:                 "Supplier B",
+			SupplierContactName:          "Bob",
+			SupplierPhone:                "+1-555-002",
+			SupplierEmail:                "bob@example.com",
+			LeadTimeDays:                 18,
+			MinimumOrderQuantity:         3,
+			InboundShippingUnitCostMinor: 100,
+			PackagingUnitCostMinor:       300,
+			OtherUnitCostMinor:           400,
 		},
 	})
 	require.NoError(t, err)
 	require.Equal(t, "SKU-PROC-UPDATE", updated.ProductCode)
 	require.Equal(t, "Catalog update item", updated.ProductName)
 	require.Equal(t, "Supplier B", updated.SupplierName)
-	require.Equal(t, 1.0, updated.InboundShippingUnitCost)
-	require.Equal(t, 3.0, updated.PackagingUnitCost)
-	require.Equal(t, 4.0, updated.OtherUnitCost)
+	require.Equal(t, int64(100), updated.InboundShippingUnitCostMinor)
+	require.Equal(t, int64(300), updated.PackagingUnitCostMinor)
+	require.Equal(t, int64(400), updated.OtherUnitCostMinor)
 
 	stored, err := repository.NewProductSupplierCostRecordRepository(db).FindByProductCode("SKU-PROC-UPDATE")
 	require.NoError(t, err)
 	require.Equal(t, "Catalog update item", stored.ProductName)
-	require.Equal(t, 25.0, stored.UnitCost)
+	require.Equal(t, int64(2500), stored.UnitCostMinor)
 	require.Equal(t, "Supplier B", stored.SupplierName)
 }
 
@@ -102,32 +102,32 @@ func TestProductSupplierCostRecordServiceSyncsAndClearsProfitSnapshotBySKU(t *te
 	service := newProductSupplierCostRecordServiceForTest(db)
 
 	require.NoError(t, profitRepo.BulkUpsert([]suppliercostdomain.ProductProfitCalculation{{
-		ProductCode:           "SKU-PROC-SYNC",
-		ProductName:           "Old name",
-		Currency:              "USD",
-		ListPrice:             100,
-		EffectiveSellingPrice: 100,
-		UnitCost:              20,
-		LandedCost:            20,
-		GrossProfit:           80,
-		GrossMarginBPS:        8000,
-		CalculationStatus:     suppliercostdomain.ProfitStatusReady,
-		FormulaVersion:        suppliercostdomain.ProfitFormulaVersion,
-		WarningsData:          datatypes.JSON([]byte(`[]`)),
-		CalculatedAt:          time.Now().UTC(),
+		ProductCode:                "SKU-PROC-SYNC",
+		ProductName:                "Old name",
+		Currency:                   "USD",
+		ListPriceMinor:             10000,
+		EffectiveSellingPriceMinor: 10000,
+		UnitCostMinor:              2000,
+		LandedCostMinor:            2000,
+		GrossProfitMinor:           8000,
+		GrossMarginBPS:             8000,
+		CalculationStatus:          suppliercostdomain.ProfitStatusReady,
+		FormulaVersion:             suppliercostdomain.ProfitFormulaVersion,
+		WarningsData:               datatypes.JSON([]byte(`[]`)),
+		CalculatedAt:               time.Now().UTC(),
 	}}))
 
 	created, err := service.Create(ProductSupplierCostRecordCreateInput{
 		SKU: "SKU-PROC-SYNC",
 		ProductSupplierCostRecordDetailsInput: ProductSupplierCostRecordDetailsInput{
-			UnitCost:                float64PointerForServiceTest(30),
-			Currency:                "USD",
-			SupplierName:            "Supplier Sync",
-			LeadTimeDays:            9,
-			MinimumOrderQuantity:    6,
-			InboundShippingUnitCost: 1,
-			PackagingUnitCost:       3,
-			OtherUnitCost:           4,
+			UnitCostMinor:                int64PointerForServiceTest(3000),
+			Currency:                     "USD",
+			SupplierName:                 "Supplier Sync",
+			LeadTimeDays:                 9,
+			MinimumOrderQuantity:         6,
+			InboundShippingUnitCostMinor: 100,
+			PackagingUnitCostMinor:       300,
+			OtherUnitCostMinor:           400,
 		},
 	})
 	require.NoError(t, err)
@@ -136,24 +136,24 @@ func TestProductSupplierCostRecordServiceSyncsAndClearsProfitSnapshotBySKU(t *te
 	profitRecord, err := profitRepo.FindByProductCode("SKU-PROC-SYNC")
 	require.NoError(t, err)
 	require.Equal(t, "Catalog sync item", profitRecord.ProductName)
-	require.Equal(t, 30.0, profitRecord.UnitCost)
-	require.Equal(t, 1.0, profitRecord.InboundShippingUnitCost)
-	require.Equal(t, 3.0, profitRecord.PackagingUnitCost)
-	require.Equal(t, 4.0, profitRecord.OtherUnitCost)
-	require.Equal(t, 38.0, profitRecord.LandedCost)
-	require.Equal(t, 62.0, profitRecord.GrossProfit)
+	require.Equal(t, int64(3000), profitRecord.UnitCostMinor)
+	require.Equal(t, int64(100), profitRecord.InboundShippingUnitCostMinor)
+	require.Equal(t, int64(300), profitRecord.PackagingUnitCostMinor)
+	require.Equal(t, int64(400), profitRecord.OtherUnitCostMinor)
+	require.Equal(t, int64(3800), profitRecord.LandedCostMinor)
+	require.Equal(t, int64(6200), profitRecord.GrossProfitMinor)
 	require.Equal(t, suppliercostdomain.ProfitStatusWarning, profitRecord.CalculationStatus)
 
 	updated, err := service.Update(created.ID, ProductSupplierCostRecordUpdateInput{
 		ProductSupplierCostRecordDetailsInput: ProductSupplierCostRecordDetailsInput{
-			UnitCost:                float64PointerForServiceTest(35),
-			Currency:                "USD",
-			SupplierName:            "Supplier Sync 2",
-			LeadTimeDays:            11,
-			MinimumOrderQuantity:    6,
-			InboundShippingUnitCost: 5,
-			PackagingUnitCost:       7,
-			OtherUnitCost:           8,
+			UnitCostMinor:                int64PointerForServiceTest(3500),
+			Currency:                     "USD",
+			SupplierName:                 "Supplier Sync 2",
+			LeadTimeDays:                 11,
+			MinimumOrderQuantity:         6,
+			InboundShippingUnitCostMinor: 500,
+			PackagingUnitCostMinor:       700,
+			OtherUnitCostMinor:           800,
 		},
 	})
 	require.NoError(t, err)
@@ -162,11 +162,11 @@ func TestProductSupplierCostRecordServiceSyncsAndClearsProfitSnapshotBySKU(t *te
 	profitRecord, err = profitRepo.FindByProductCode("SKU-PROC-SYNC")
 	require.NoError(t, err)
 	require.Equal(t, "Catalog sync item", profitRecord.ProductName)
-	require.Equal(t, 35.0, profitRecord.UnitCost)
-	require.Equal(t, 5.0, profitRecord.InboundShippingUnitCost)
-	require.Equal(t, 7.0, profitRecord.PackagingUnitCost)
-	require.Equal(t, 8.0, profitRecord.OtherUnitCost)
-	require.Equal(t, 45.0, profitRecord.GrossProfit)
+	require.Equal(t, int64(3500), profitRecord.UnitCostMinor)
+	require.Equal(t, int64(500), profitRecord.InboundShippingUnitCostMinor)
+	require.Equal(t, int64(700), profitRecord.PackagingUnitCostMinor)
+	require.Equal(t, int64(800), profitRecord.OtherUnitCostMinor)
+	require.Equal(t, int64(4500), profitRecord.GrossProfitMinor)
 
 	require.NoError(t, service.Delete(updated.ID))
 

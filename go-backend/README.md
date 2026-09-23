@@ -90,6 +90,7 @@ go test ./...
 - Blog i18n maintainability notes: `docs/MAINTAINABILITY_GUIDE.md`
 - Blog i18n quick reference: `docs/I18N_QUICK_REFERENCE.md`
 - Subscription quick reference: `docs/SUBSCRIPTION_QUICK_REFERENCE.md`
+- Internal payment-provider cost accounting and profit snapshots: `../docs/design/payment-provider-cost-accounting-architecture.md`
 - Admin console: `web/admin/README.md`
 
 ## Historical Reports

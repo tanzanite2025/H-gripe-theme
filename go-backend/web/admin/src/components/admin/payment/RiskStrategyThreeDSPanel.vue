@@ -107,7 +107,7 @@
               <dt class="font-semibold">AVS 交叉阈值</dt>
               <dd class="mt-1 text-[11px] leading-5 text-muted-foreground">账单国与收货国不一致且金额超过这个值时，直接请求 challenge。</dd>
             </div>
-            <dd class="text-right font-mono font-semibold">&gt; {{ money(threeDS.avs_billing_shipping_mismatch_high_value_threshold_usd) }}</dd>
+            <dd class="text-right font-mono font-semibold">&gt; {{ moneyUSDMinor(threeDS.avs_billing_shipping_mismatch_high_value_threshold_minor) }}</dd>
           </div>
           <div class="grid grid-cols-[minmax(0,1fr)_auto] gap-3 py-3">
             <div>
@@ -115,7 +115,7 @@
               <dd class="mt-1 text-[11px] leading-5 text-muted-foreground">低金额或老客条件只记录为候选，不保证银行免验证。</dd>
             </div>
             <dd class="text-right font-mono font-semibold">
-              {{ lowRiskMaxAmount > 0 ? `≤ ${lowRiskMaxAmount.toFixed(2)}` : '未设金额' }}
+              {{ lowRiskMaxAmountMinor > 0 ? `≤ ${(lowRiskMaxAmountMinor / 100).toFixed(2)}` : '未设金额' }}
             </dd>
           </div>
           <div class="grid grid-cols-[minmax(0,1fr)_auto] gap-3 py-3">
@@ -283,7 +283,7 @@ const configuration = computed(() => props.configuration || {})
 const threeDS = computed(() => configuration.value.three_ds || {})
 const monitoring = computed(() => configuration.value.monitoring || {})
 const protection = computed(() => configuration.value.protection || {})
-const lowRiskMaxAmount = computed(() => Number(threeDS.value.low_risk_max_amount || 0))
+const lowRiskMaxAmountMinor = computed(() => Number(threeDS.value.low_risk_max_amount_minor || 0))
 const stripeRuntime = computed<RiskStrategyGatewayRuntimeStatus | null>(() => (
   props.gatewayRuntime?.gateways?.find((gateway) => gateway.provider === 'stripe') || null
 ))
@@ -349,9 +349,9 @@ function number(value: unknown): string {
 }
 const count = (value: unknown): string => number(value)
 const percent = (value: unknown): string => `${(Number(value || 0) * 100).toFixed(2)}%`
-const money = (value: unknown): string => {
+const moneyUSDMinor = (value: unknown): string => {
   const parsed = Number(value || 0)
-  return Number.isFinite(parsed) && parsed > 0 ? `≤ ${parsed.toFixed(2)}（订单币种）` : '未设置'
+  return Number.isFinite(parsed) && parsed > 0 ? `${(parsed / 100).toFixed(2)} USD` : '未设置'
 }
 function modeLabel(mode: string): string {
   return ({

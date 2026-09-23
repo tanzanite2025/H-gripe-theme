@@ -49,7 +49,7 @@ func TestOrderServiceFulfillHighValueOrderRequiresSignatureConfirmation(t *testi
 		PaymentStatus:     "paid",
 		ShippingStatus:    "pending",
 		SignatureRequired: true,
-		TotalAmount:       order.HighValueSignatureThresholdUSD,
+		TotalAmountMinor:  order.HighValueSignatureThresholdUSDMinor,
 		Currency:          "USD",
 	}
 	require.NoError(t, db.Create(&orderRecord).Error)
@@ -66,7 +66,6 @@ func TestOrderServiceFulfillHighValueOrderRequiresSignatureConfirmation(t *testi
 	require.NoError(t, db.First(&unchanged, orderRecord.ID).Error)
 	assert.Equal(t, "processing", unchanged.Status)
 	assert.Equal(t, "pending", unchanged.ShippingStatus)
-	assert.Empty(t, unchanged.TrackingNumber)
 
 	var shipmentCount int64
 	require.NoError(t, db.Model(&shippingdomain.TrackingShipment{}).
@@ -84,7 +83,9 @@ func TestOrderServiceFulfillHighValueOrderRequiresSignatureConfirmation(t *testi
 	require.NotNil(t, result)
 	require.NotNil(t, result.Order)
 	assert.Equal(t, "shipped", result.Order.Status)
-	assert.Equal(t, mapping.ID, *result.Order.TrackingCarrierMappingID)
+	require.Len(t, result.TrackingShipments, 1)
+	require.NotNil(t, result.TrackingShipments[0].TrackingCarrierMappingID)
+	assert.Equal(t, mapping.ID, *result.TrackingShipments[0].TrackingCarrierMappingID)
 }
 
 func TestOrderServiceCreateMadeToOrderAllowsZeroStockAndDoesNotDeductInventory(t *testing.T) {

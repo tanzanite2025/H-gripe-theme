@@ -66,7 +66,7 @@ type TaggedProduct struct {
 	VariantID    *uint          `gorm:"index" json:"variant_id,omitempty"`
 	ProductSlug  string         `gorm:"size:255;not null;default:''" json:"product_slug"`
 	DisplayTitle string         `gorm:"size:255;not null" json:"display_title"`
-	Price        float64        `gorm:"type:numeric(12,2);not null;default:0" json:"price"`
+	PriceMinor   int64          `gorm:"column:price_minor;not null;default:0" json:"price_minor"`
 	Currency     string         `gorm:"size:3;not null;default:'USD'" json:"currency"`
 	DirectAction string         `gorm:"size:32;not null;default:'detail_drawer'" json:"direct_action"`
 	Available    bool           `gorm:"not null;default:true" json:"available"`
@@ -81,14 +81,14 @@ func (TaggedProduct) TableName() string {
 }
 
 type ProductCatalogOption struct {
-	ProductID    uint    `json:"product_id"`
-	VariantID    *uint   `json:"variant_id,omitempty"`
-	ProductName  string  `json:"product_name"`
-	ProductSlug  string  `json:"product_slug"`
-	VariantTitle string  `json:"variant_title"`
-	Price        float64 `json:"price"`
-	Currency     string  `json:"currency"`
-	Available    bool    `json:"available"`
+	ProductID    uint   `json:"product_id"`
+	VariantID    *uint  `json:"variant_id,omitempty"`
+	ProductName  string `json:"product_name"`
+	ProductSlug  string `json:"product_slug"`
+	VariantTitle string `json:"variant_title"`
+	PriceMinor   int64  `json:"price_minor"`
+	Currency     string `json:"currency"`
+	Available    bool   `json:"available"`
 }
 
 type ListInput struct {
@@ -114,7 +114,7 @@ type TaggedProductInput struct {
 	ProductID    uint
 	VariantID    *uint
 	DisplayTitle string
-	Price        float64
+	PriceMinor   int64
 	Currency     string
 	DirectAction string
 	Available    bool

@@ -33,9 +33,6 @@ func (s *ShippingService) UpdateTemplate(template *shipping.ShippingTemplate) er
 	if currency.NormalizeCode(template.Currency) == "" {
 		template.Currency = existing.Currency
 	}
-	if len(template.DisplayPriceData) == 0 {
-		template.DisplayPriceData = existing.DisplayPriceData
-	}
 	if err := s.prepareShippingTemplateCurrencies(template); err != nil {
 		return err
 	}

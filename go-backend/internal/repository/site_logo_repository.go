@@ -31,7 +31,10 @@ func (r *SiteLogoRepository) Current() (*sitelogodomain.Asset, error) {
 	return &asset, nil
 }
 
-func (r *SiteLogoRepository) ReplaceCurrent(asset *sitelogodomain.Asset) (*sitelogodomain.Asset, error) {
+func (r *SiteLogoRepository) ReplaceCurrent(
+	asset *sitelogodomain.Asset,
+	afterReplace func(tx *gorm.DB, previous *sitelogodomain.Asset) error,
+) (*sitelogodomain.Asset, error) {
 	if r == nil || r.db == nil {
 		return nil, gorm.ErrInvalidDB
 	}
@@ -54,10 +57,16 @@ func (r *SiteLogoRepository) ReplaceCurrent(asset *sitelogodomain.Asset) (*sitel
 			previous = &previousCopy
 		}
 
-		return tx.Clauses(clause.OnConflict{
+		if err := tx.Clauses(clause.OnConflict{
 			Columns:   []clause.Column{{Name: "id"}},
 			UpdateAll: true,
-		}).Create(asset).Error
+		}).Create(asset).Error; err != nil {
+			return err
+		}
+		if afterReplace != nil {
+			return afterReplace(tx, previous)
+		}
+		return nil
 	})
 	if err != nil {
 		return nil, err
@@ -65,7 +74,9 @@ func (r *SiteLogoRepository) ReplaceCurrent(asset *sitelogodomain.Asset) (*sitel
 	return previous, nil
 }
 
-func (r *SiteLogoRepository) DeleteCurrent() (*sitelogodomain.Asset, error) {
+func (r *SiteLogoRepository) DeleteCurrent(
+	afterDelete func(tx *gorm.DB, previous *sitelogodomain.Asset) error,
+) (*sitelogodomain.Asset, error) {
 	if r == nil || r.db == nil {
 		return nil, gorm.ErrInvalidDB
 	}
@@ -85,7 +96,13 @@ func (r *SiteLogoRepository) DeleteCurrent() (*sitelogodomain.Asset, error) {
 
 		previousCopy := current
 		previous = &previousCopy
-		return tx.Delete(&current).Error
+		if err := tx.Delete(&current).Error; err != nil {
+			return err
+		}
+		if afterDelete != nil {
+			return afterDelete(tx, previous)
+		}
+		return nil
 	})
 	if err != nil {
 		return nil, err

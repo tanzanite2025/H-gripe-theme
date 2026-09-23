@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"commerce-platform/internal/domain/media"
+	"commerce-platform/internal/domain/outbox"
 	"commerce-platform/internal/domain/product"
 	"commerce-platform/internal/pkg/storage"
 	"commerce-platform/internal/repository"
@@ -40,6 +41,10 @@ func TestMediaDeleteAssetPermanentlyRemovesUnreferencedAsset(t *testing.T) {
 	require.NoError(t, err)
 
 	require.NoError(t, service.DeleteAsset(context.Background(), asset.ID, MediaAssetDeleteConfirmation(asset.ID)))
+	var cleanupEvent outbox.Event
+	require.NoError(t, db.Where("event_type = ?", outbox.EventTypeObjectStorageCleanup).First(&cleanupEvent).Error)
+	handler := NewObjectStorageCleanupOutboxHandler(service, nil, nil, nil)
+	require.NoError(t, handler.Handle(context.Background(), cleanupEvent))
 	_, err = os.Stat(storedPath)
 	require.True(t, errors.Is(err, os.ErrNotExist))
 
@@ -68,7 +73,7 @@ func TestMediaDeleteAssetBlocksReferencedProductMedia(t *testing.T) {
 		SKU:   "MEDIA-DELETE-TEST",
 		Name:  "Media delete test product",
 		Slug:  "media-delete-test-product",
-		Price: 1,
+		PriceMinor: 100,
 	}
 	require.NoError(t, db.Create(&item).Error)
 	assetID := asset.ID
@@ -132,5 +137,8 @@ func newMediaDeleteTestService(t *testing.T, db *gorm.DB, uploadRoot string) *Me
 	})
 	require.NoError(t, err)
 
-	return NewMediaService(repository.NewMediaRepository(db), storageService, nil, "", 20<<30)
+	require.NoError(t, db.AutoMigrate(&outbox.Event{}))
+	service := NewMediaService(repository.NewMediaRepository(db), storageService, nil, "", 20<<30)
+	service.ConfigureObjectCleanupOutbox(repository.NewOutboxRepository(db))
+	return service
 }

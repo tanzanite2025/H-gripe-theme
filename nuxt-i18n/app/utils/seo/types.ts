@@ -1,7 +1,7 @@
 export type ProductSeoAvailability = 'in_stock' | 'made_to_order' | 'out_of_stock'
 
 export interface ProductSeoOfferInput {
-  price?: number | null
+  price?: string | null
   currency?: string | null
   availability?: ProductSeoAvailability | null
   sku?: string | null
@@ -25,7 +25,7 @@ export interface ProductSeoVariantInput {
   id?: number | string | null
   name?: string | null
   sku?: string | null
-  price?: number | null
+  price?: string | null
   currency?: string | null
   availability?: ProductSeoAvailability | null
   localizedPath?: string | null
@@ -58,7 +58,7 @@ export interface ProductSeoContext {
 
 export interface ProductSeoOffer {
   '@type': 'Offer'
-  price: number
+  price: string
   priceCurrency: string
   availability: `https://schema.org/${'InStock' | 'OutOfStock'}`
   url: string

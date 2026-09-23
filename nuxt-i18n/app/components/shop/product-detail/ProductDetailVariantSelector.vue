@@ -41,7 +41,7 @@
       <fieldset v-for="group in customOptionGroups" :key="`custom-${group.slug}`" class="variant-option-group">
         <legend>
           {{ group.name }}
-          <small v-if="group.isValid === false" class="custom-option-group__error">Select required options</small>
+          <small v-if="group.isValid === false" class="custom-option-group__error">{{ group.validationMessage || 'Select required options' }}</small>
         </legend>
         <div class="variant-option-buttons">
           <button
@@ -89,6 +89,7 @@
 </template>
 
 <script setup lang="ts">
+import { formatMinorMoney } from '~/utils/money'
 import type { ProductCustomOptionGroup, ProductVariantOptionGroup } from '~/types/productDetail'
 
 interface VariantChoice {
@@ -119,12 +120,7 @@ const handleVariantChange = (event: Event) => {
 const formatPriceDelta = (minor: number) => {
   const value = Number(minor || 0)
   if (!Number.isFinite(value) || value <= 0) return ''
-  const currencyCode = String(props.currency || 'USD').toUpperCase()
-  try {
-    return new Intl.NumberFormat(undefined, { style: 'currency', currency: currencyCode }).format(value / (['BHD', 'IQD', 'JOD', 'KWD', 'LYD', 'OMR', 'TND'].includes(currencyCode) ? 1000 : ['BIF', 'CLP', 'DJF', 'GNF', 'JPY', 'KMF', 'KRW', 'MGA', 'PYG', 'RWF', 'UGX', 'VND', 'VUV', 'XAF', 'XOF', 'XPF'].includes(currencyCode) ? 1 : 100))
-  } catch {
-    return String(value)
-  }
+  return formatMinorMoney(value, props.currency)
 }
 </script>
 

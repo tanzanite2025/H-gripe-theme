@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	domainmoney "commerce-platform/internal/domain/money"
 	paymentdomain "commerce-platform/internal/domain/payment"
 	"commerce-platform/internal/pkg/apierror"
 	"commerce-platform/internal/pkg/logger"
@@ -47,7 +48,7 @@ func (h *Handler) handleStripeEarlyFraudWarning(c *gin.Context, event stripe.Eve
 		ProviderPaymentID: paymentIntentID,
 		PaymentIntentID:   paymentIntentID,
 		ChargeID:          chargeID,
-		Amount:            amount,
+		AmountMinor:       amount,
 		Currency:          currency,
 		OccurredAt:        stripeRiskOccurredAt(warning.Created),
 		Payload:           string(payload),
@@ -132,7 +133,7 @@ func (h *Handler) enqueueRefundRecommendation(input service.PaymentRiskEventInpu
 	return err
 }
 
-func stripeEarlyFraudWarningAmount(warning stripe.RadarEarlyFraudWarning) (float64, string) {
+func stripeEarlyFraudWarningAmount(warning stripe.RadarEarlyFraudWarning) (int64, string) {
 	minorAmount := int64(0)
 	currency := ""
 	if warning.Charge != nil {
@@ -149,11 +150,11 @@ func stripeEarlyFraudWarningAmount(warning stripe.RadarEarlyFraudWarning) (float
 	if minorAmount <= 0 || strings.TrimSpace(currency) == "" {
 		return 0, strings.ToUpper(strings.TrimSpace(currency))
 	}
-	amount, err := webhookMajorAmountFromMinor(minorAmount, currency)
+	amount, err := domainmoney.New(minorAmount, currency)
 	if err != nil {
 		return 0, strings.ToUpper(strings.TrimSpace(currency))
 	}
-	return amount, strings.ToUpper(strings.TrimSpace(currency))
+	return amount.AmountMinor(), strings.ToUpper(strings.TrimSpace(currency))
 }
 
 func stripeRiskOccurredAt(unixSeconds int64) time.Time {

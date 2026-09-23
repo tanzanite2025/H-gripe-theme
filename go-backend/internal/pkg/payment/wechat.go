@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	domainmoney "commerce-platform/internal/domain/money"
+
 	"github.com/wechatpay-apiv3/wechatpay-go/core"
 	"github.com/wechatpay-apiv3/wechatpay-go/core/option"
 	"github.com/wechatpay-apiv3/wechatpay-go/services/payments/native"
@@ -90,7 +92,7 @@ func (g *wechatGatewayImpl) CreatePayment(ctx context.Context, req *PaymentReque
 	if notifyURL == "" {
 		return nil, fmt.Errorf("wechat notify_url is required")
 	}
-	amountMoney, err := paymentMoneyFromMajor(req.Amount, req.Currency)
+	amountMoney, err := PaymentRequestMoney(req)
 	if err != nil {
 		return nil, err
 	}
@@ -130,11 +132,16 @@ func (g *wechatGatewayImpl) CreatePayment(ctx context.Context, req *PaymentReque
 	}
 	metadata["order_id"] = req.OrderID
 	metadata["code_url"] = *resp.CodeUrl
+	responseAmount, err := amountMoney.FormatMajor()
+	if err != nil {
+		return nil, err
+	}
 
 	return &PaymentResponse{
 		ID:            req.OrderID,
 		Status:        "NOTPAY",
-		Amount:        req.Amount,
+		Amount:        responseAmount,
+		AmountMinor:   amountMoney.AmountMinor(),
 		Currency:      req.Currency,
 		PaymentURL:    *resp.CodeUrl, // 二维码链接
 		TransactionID: req.OrderID,
@@ -154,11 +161,11 @@ func (g *wechatGatewayImpl) CapturePayment(ctx context.Context, paymentID string
 }
 
 // RefundPayment 退款微信支付
-func (g *wechatGatewayImpl) RefundPayment(ctx context.Context, paymentID string, amount float64) (*RefundResponse, error) {
-	return g.RefundPaymentWithOptions(ctx, paymentID, amount, RefundOptions{})
+func (g *wechatGatewayImpl) RefundPayment(ctx context.Context, paymentID string, amountMinor int64) (*RefundResponse, error) {
+	return g.RefundPaymentWithOptions(ctx, paymentID, amountMinor, RefundOptions{})
 }
 
-func (g *wechatGatewayImpl) RefundPaymentWithOptions(ctx context.Context, paymentID string, amount float64, options RefundOptions) (*RefundResponse, error) {
+func (g *wechatGatewayImpl) RefundPaymentWithOptions(ctx context.Context, paymentID string, amountMinor int64, options RefundOptions) (*RefundResponse, error) {
 	ctx, cancel := paymentGatewayContext(ctx)
 	defer cancel()
 
@@ -176,7 +183,24 @@ func (g *wechatGatewayImpl) RefundPaymentWithOptions(ctx context.Context, paymen
 		refundNo = options.IdempotencyKey
 	}
 
-	refundReq, err := buildWechatRefundRequest(paymentID, amount, refundNo, options)
+	refundReq, err := buildWechatRefundRequest(paymentID, amountMinor, refundNo, options)
+	if err != nil {
+		return nil, err
+	}
+	refundCurrency := strings.ToUpper(strings.TrimSpace(options.Currency))
+	if refundCurrency == "" {
+		refundCurrency = "CNY"
+	}
+	var refundMoney domainmoney.Money
+	if options.AmountMinor > 0 {
+		refundMoney, err = domainmoney.New(options.AmountMinor, refundCurrency)
+	} else {
+		refundMoney, err = domainmoney.New(amountMinor, refundCurrency)
+	}
+	if err != nil {
+		return nil, err
+	}
+	refundAmount, err := refundMoney.FormatMajor()
 	if err != nil {
 		return nil, err
 	}
@@ -188,15 +212,16 @@ func (g *wechatGatewayImpl) RefundPaymentWithOptions(ctx context.Context, paymen
 	}
 
 	return &RefundResponse{
-		ID:        *resp.OutRefundNo,
-		PaymentID: paymentID,
-		Amount:    amount,
-		Status:    string(*resp.Status),
-		CreatedAt: time.Now(),
+		ID:          *resp.OutRefundNo,
+		PaymentID:   paymentID,
+		Amount:      refundAmount,
+		AmountMinor: refundMoney.AmountMinor(),
+		Status:      string(*resp.Status),
+		CreatedAt:   time.Now(),
 	}, nil
 }
 
-func buildWechatRefundRequest(paymentID string, amount float64, refundNo string, options RefundOptions) (refunddomestic.CreateRequest, error) {
+func buildWechatRefundRequest(paymentID string, amountMinor int64, refundNo string, options RefundOptions) (refunddomestic.CreateRequest, error) {
 	providerTransactionID := strings.TrimSpace(options.ProviderTransactionID)
 	merchantOrderNumber := strings.TrimSpace(options.MerchantOrderNumber)
 	if providerTransactionID == "" {
@@ -205,10 +230,10 @@ func buildWechatRefundRequest(paymentID string, amount float64, refundNo string,
 	if merchantOrderNumber == "" {
 		return refunddomestic.CreateRequest{}, fmt.Errorf("merchant order number is required for wechat refunds")
 	}
-	if amount <= 0 {
+	if options.AmountMinor <= 0 && amountMinor <= 0 {
 		return refunddomestic.CreateRequest{}, fmt.Errorf("refund amount must be greater than zero")
 	}
-	if options.OriginalAmount <= 0 {
+	if options.OriginalAmountMinor <= 0 {
 		return refunddomestic.CreateRequest{}, fmt.Errorf("original payment amount is required for wechat refunds")
 	}
 	if refundNo = strings.TrimSpace(refundNo); refundNo == "" {
@@ -218,11 +243,18 @@ func buildWechatRefundRequest(paymentID string, amount float64, refundNo string,
 	if currency == "" {
 		currency = "CNY"
 	}
-	refundMoney, err := paymentMoneyFromMajor(amount, currency)
+	var refundMoney domainmoney.Money
+	var err error
+	if options.AmountMinor > 0 {
+		refundMoney, err = domainmoney.New(options.AmountMinor, currency)
+	} else {
+		refundMoney, err = domainmoney.New(amountMinor, currency)
+	}
 	if err != nil {
 		return refunddomestic.CreateRequest{}, err
 	}
-	totalMoney, err := paymentMoneyFromMajor(options.OriginalAmount, currency)
+	var totalMoney domainmoney.Money
+	totalMoney, err = domainmoney.New(options.OriginalAmountMinor, currency)
 	if err != nil {
 		return refunddomestic.CreateRequest{}, err
 	}
@@ -266,9 +298,11 @@ func (g *wechatGatewayImpl) GetPayment(ctx context.Context, paymentID string) (*
 	}
 
 	// 提取金额
-	var amount float64
+	amount := "0"
+	var amountMinor int64
 	if resp.Amount != nil && resp.Amount.Total != nil {
-		amount, err = paymentMajorFloatFromMinor(*resp.Amount.Total, "CNY")
+		amountMinor = *resp.Amount.Total
+		amount, err = paymentMajorStringFromMinor(amountMinor, "CNY")
 		if err != nil {
 			return nil, err
 		}
@@ -287,6 +321,7 @@ func (g *wechatGatewayImpl) GetPayment(ctx context.Context, paymentID string) (*
 		ID:            *resp.OutTradeNo,
 		Status:        *resp.TradeState,
 		Amount:        amount,
+		AmountMinor:   amountMinor,
 		Currency:      "CNY",
 		TransactionID: getStringValue(resp.TransactionId),
 		CreatedAt:     time.Now(),

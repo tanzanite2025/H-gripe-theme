@@ -25,6 +25,7 @@ export interface SuggestionPayload {
   productCategory: string
   requestType: string
   message: string
+  company_tax_id?: string
   attachments: Array<{ name: string; url: string; size: number }>
   threadKey?: string
 }

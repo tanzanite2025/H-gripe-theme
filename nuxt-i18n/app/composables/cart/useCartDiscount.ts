@@ -65,20 +65,25 @@ export const useCartDiscount = (userPoints: ReturnType<typeof ref<UserPoints | n
     }
 
     const coupon = appliedCoupon.value
+    const divisor = ['JPY', 'KRW', 'CLP'].includes(String(coupon.currency || '').toUpperCase()) ? 1 : 100
+    const value = coupon.type === 'percentage'
+      ? Number(coupon.value_rate_decimal || 0)
+      : Number(coupon.value_minor || 0) / divisor
+    const minimum = Number(coupon.min_amount_minor || 0) / divisor
 
     // 检查最低消费
-    if (coupon.min_amount && subtotal < coupon.min_amount) {
+    if (minimum > 0 && subtotal < minimum) {
       return 0
     }
 
     switch (coupon.type) {
       case 'percentage':
-        return subtotal * (coupon.value / 100)
+        return subtotal * (value / 100)
       case 'fixed':
-        return Math.min(coupon.value, subtotal)
+        return Math.min(value, subtotal)
       case 'points':
         // 积分券：直接抵扣
-        return Math.min(coupon.value * 0.01, subtotal)
+        return Math.min(Number(coupon.value_minor || 0) * 0.01, subtotal)
       default:
         return 0
     }
@@ -87,12 +92,12 @@ export const useCartDiscount = (userPoints: ReturnType<typeof ref<UserPoints | n
   /**
    * 应用优惠券
    */
-  const applyCoupon = async (code: string, amount: number): Promise<{ success: boolean; message: string }> => {
+  const applyCoupon = async (code: string, amountMinor: number): Promise<{ success: boolean; message: string }> => {
     const normalizedCode = code.trim()
     if (!normalizedCode) {
       return { success: false, message: 'Coupon code is required' }
     }
-    if (!Number.isFinite(amount) || amount <= 0) {
+    if (!Number.isSafeInteger(amountMinor) || amountMinor <= 0) {
       return { success: false, message: 'Cart subtotal must be greater than zero' }
     }
 
@@ -101,7 +106,7 @@ export const useCartDiscount = (userPoints: ReturnType<typeof ref<UserPoints | n
         '/marketing/coupons/validate',
         {
           method: 'POST',
-          body: JSON.stringify({ code: normalizedCode, amount }),
+          body: JSON.stringify({ code: normalizedCode, amount_minor: amountMinor }),
           headers: { 'Content-Type': 'application/json', accept: 'application/json' }
         }
       )

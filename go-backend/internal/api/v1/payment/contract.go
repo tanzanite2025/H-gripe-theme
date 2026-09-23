@@ -13,9 +13,10 @@ type paymentMethodResponse struct {
 	Icon              string    `json:"icon"`
 	Description       string    `json:"description"`
 	FeeType           string    `json:"fee_type"`
-	FeeValue          float64   `json:"fee_value"`
-	MinAmount         float64   `json:"min_amount"`
-	MaxAmount         float64   `json:"max_amount"`
+	FeeValueMinor     int64     `json:"fee_value_minor"`
+	FeeRateDecimal    string    `json:"fee_rate_decimal"`
+	MinAmountMinor    int64     `json:"min_amount_minor"`
+	MaxAmountMinor    int64     `json:"max_amount_minor"`
 	Enabled           bool      `json:"enabled"`
 	Available         bool      `json:"available"`
 	UnavailableReason string    `json:"unavailable_reason,omitempty"`
@@ -40,21 +41,25 @@ type transactionResponse struct {
 }
 
 type refundResponse struct {
-	ID                    uint                     `json:"id"`
-	OrderID               uint                     `json:"order_id"`
-	TransactionID         uint                     `json:"transaction_id"`
-	RefundID              *string                  `json:"refund_id,omitempty"`
-	AmountMinor           int64                    `json:"amount_minor"`
-	GiftCardAmountMinor   int64                    `json:"gift_card_refund_amount_minor"`
-	RequestedAmountMinor  int64                    `json:"requested_amount_minor"`
-	DiscountClawbackMinor int64                    `json:"discount_clawback_amount_minor"`
-	Currency              string                   `json:"currency"`
-	LineItems             []refundLineItemResponse `json:"line_items,omitempty"`
-	Reason                string                   `json:"reason"`
-	Status                string                   `json:"status"`
-	CreatedAt             time.Time                `json:"created_at"`
-	UpdatedAt             time.Time                `json:"updated_at"`
-	CompletedAt           *time.Time               `json:"completed_at"`
+	ID                             uint                     `json:"id"`
+	OrderID                        uint                     `json:"order_id"`
+	TransactionID                  uint                     `json:"transaction_id"`
+	RefundID                       *string                  `json:"refund_id,omitempty"`
+	AmountMinor                    int64                    `json:"amount_minor"`
+	RequestedAmountMinor           int64                    `json:"requested_amount_minor"`
+	DiscountClawbackMinor          int64                    `json:"discount_clawback_amount_minor"`
+	Currency                       string                   `json:"currency"`
+	SettlementAmountMinor          int64                    `json:"settlement_amount_minor,omitempty"`
+	SettlementCurrency             string                   `json:"settlement_currency,omitempty"`
+	SettlementBalanceTransactionID string                   `json:"settlement_balance_transaction_id,omitempty"`
+	FXGainLossMinor                int64                    `json:"fx_gain_loss_minor,omitempty"`
+	FXGainLossCurrency             string                   `json:"fx_gain_loss_currency,omitempty"`
+	LineItems                      []refundLineItemResponse `json:"line_items,omitempty"`
+	Reason                         string                   `json:"reason"`
+	Status                         string                   `json:"status"`
+	CreatedAt                      time.Time                `json:"created_at"`
+	UpdatedAt                      time.Time                `json:"updated_at"`
+	CompletedAt                    *time.Time               `json:"completed_at"`
 }
 
 type refundLineItemResponse struct {
@@ -76,21 +81,22 @@ type refundLineItemResponse struct {
 
 func paymentMethodToResponse(method paymentdomain.PaymentMethod) paymentMethodResponse {
 	return paymentMethodResponse{
-		ID:          method.ID,
-		Name:        method.Name,
-		Code:        method.Code,
-		Provider:    paymentMethodProvider(method.Code),
-		Icon:        method.Icon,
-		Description: method.Description,
-		FeeType:     method.FeeType,
-		FeeValue:    method.FeeValue,
-		MinAmount:   method.MinAmount,
-		MaxAmount:   method.MaxAmount,
-		Enabled:     method.Enabled,
-		Available:   method.Enabled,
-		SortOrder:   method.SortOrder,
-		CreatedAt:   method.CreatedAt,
-		UpdatedAt:   method.UpdatedAt,
+		ID:             method.ID,
+		Name:           method.Name,
+		Code:           method.Code,
+		Provider:       paymentMethodProvider(method.Code),
+		Icon:           method.Icon,
+		Description:    method.Description,
+		FeeType:        method.FeeType,
+		FeeValueMinor:  method.FeeValueMinor,
+		FeeRateDecimal: method.FeeRateDecimal,
+		MinAmountMinor: method.MinAmountMinor,
+		MaxAmountMinor: method.MaxAmountMinor,
+		Enabled:        method.Enabled,
+		Available:      method.Enabled,
+		SortOrder:      method.SortOrder,
+		CreatedAt:      method.CreatedAt,
+		UpdatedAt:      method.UpdatedAt,
 	}
 }
 
@@ -104,11 +110,6 @@ func paymentMethodsToResponse(methods []paymentdomain.PaymentMethod) []paymentMe
 
 func transactionToResponse(transaction paymentdomain.Transaction) transactionResponse {
 	amountMinor := transaction.AmountMinor
-	if amountMinor == 0 && transaction.Amount != 0 {
-		if amount, err := transaction.AmountMoney(); err == nil {
-			amountMinor = amount.AmountMinor()
-		}
-	}
 	return transactionResponse{
 		ID:               transaction.ID,
 		OrderID:          transaction.OrderID,
@@ -137,32 +138,26 @@ func refundToResponse(refund paymentdomain.Refund) refundResponse {
 	amountMinor := refund.AmountMinor
 	requestedMinor := refund.RequestedAmountMinor
 	discountMinor := refund.DiscountClawbackAmountMinor
-	if amountMinor == 0 && refund.Amount != 0 {
-		if amount, err := refund.AmountMoney(); err == nil {
-			amountMinor = amount.AmountMinor()
-		}
-	}
-	if requestedMinor == 0 && refund.RequestedAmount != 0 {
-		if amount, err := refund.RequestedAmountMoney(); err == nil {
-			requestedMinor = amount.AmountMinor()
-		}
-	}
 	return refundResponse{
-		ID:                    refund.ID,
-		OrderID:               refund.OrderID,
-		TransactionID:         refund.TransactionID,
-		RefundID:              refund.RefundID,
-		AmountMinor:           amountMinor,
-		GiftCardAmountMinor:   refund.GiftCardRefundAmountMinor,
-		RequestedAmountMinor:  requestedMinor,
-		DiscountClawbackMinor: discountMinor,
-		Currency:              refund.Currency,
-		LineItems:             refundLineItemsToResponse(refund.LineItems),
-		Reason:                refund.Reason,
-		Status:                refund.Status,
-		CreatedAt:             refund.CreatedAt,
-		UpdatedAt:             refund.UpdatedAt,
-		CompletedAt:           refund.CompletedAt,
+		ID:                             refund.ID,
+		OrderID:                        refund.OrderID,
+		TransactionID:                  refund.TransactionID,
+		RefundID:                       refund.RefundID,
+		AmountMinor:                    amountMinor,
+		RequestedAmountMinor:           requestedMinor,
+		DiscountClawbackMinor:          discountMinor,
+		Currency:                       refund.Currency,
+		SettlementAmountMinor:          refund.SettlementAmountMinor,
+		SettlementCurrency:             refund.SettlementCurrency,
+		SettlementBalanceTransactionID: refund.SettlementBalanceTransactionID,
+		FXGainLossMinor:                refund.FXGainLossMinor,
+		FXGainLossCurrency:             refund.FXGainLossCurrency,
+		LineItems:                      refundLineItemsToResponse(refund.LineItems),
+		Reason:                         refund.Reason,
+		Status:                         refund.Status,
+		CreatedAt:                      refund.CreatedAt,
+		UpdatedAt:                      refund.UpdatedAt,
+		CompletedAt:                    refund.CompletedAt,
 	}
 }
 
@@ -173,35 +168,10 @@ func refundLineItemsToResponse(lineItems []paymentdomain.RefundLineItem) []refun
 	items := make([]refundLineItemResponse, 0, len(lineItems))
 	for _, item := range lineItems {
 		unitPriceMinor := item.UnitPriceMinor
-		if unitPriceMinor == 0 && item.UnitPrice != 0 {
-			if value, err := item.UnitPriceMoney(); err == nil {
-				unitPriceMinor = value.AmountMinor()
-			}
-		}
 		subtotalMinor := item.LineSubtotalMinor
-		if subtotalMinor == 0 && item.LineSubtotalAmount != 0 {
-			if value, err := item.LineSubtotalMoney(); err == nil {
-				subtotalMinor = value.AmountMinor()
-			}
-		}
 		taxMinor := item.LineTaxMinor
-		if taxMinor == 0 && item.LineTaxAmount != 0 {
-			if value, err := item.LineTaxMoney(); err == nil {
-				taxMinor = value.AmountMinor()
-			}
-		}
 		discountMinor := item.LineDiscountMinor
-		if discountMinor == 0 && item.LineDiscountAmount != 0 {
-			if value, err := item.LineDiscountMoney(); err == nil {
-				discountMinor = value.AmountMinor()
-			}
-		}
 		totalMinor := item.LineTotalMinor
-		if totalMinor == 0 && item.LineTotalAmount != 0 {
-			if value, err := item.LineTotalMoney(); err == nil {
-				totalMinor = value.AmountMinor()
-			}
-		}
 		items = append(items, refundLineItemResponse{
 			ID:                item.ID,
 			OrderItemID:       item.OrderItemID,

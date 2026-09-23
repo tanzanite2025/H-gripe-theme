@@ -60,7 +60,7 @@ func TestPublicAfterSalesCaseResponseExposesProgressWithoutInternalIDs(t *testin
 			ID:             31,
 			CaseID:         caseID,
 			Status:         aftersales.RefundReviewStatusApproved,
-			ProposedAmount: 900,
+			ProposedAmountMinor: 90000,
 			Currency:       "USD",
 			RequestNotes:   "Refund the paid amount.",
 			DecisionNotes:  "Approved.",

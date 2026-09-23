@@ -255,7 +255,7 @@ func newTestGoogleMerchantService(t *testing.T) (*gorm.DB, *GoogleMerchantServic
 		Name:        "Carbon Wheelset",
 		Slug:        "carbon-wheelset",
 		Description: "Fast carbon wheelset.",
-		Price:       1299,
+		PriceMinor:  129900,
 		Stock:       5,
 		Status:      "active",
 		Locale:      "en",
@@ -266,7 +266,7 @@ func newTestGoogleMerchantService(t *testing.T) (*gorm.DB, *GoogleMerchantServic
 	variantRecord := product.ProductVariant{
 		ProductID: productRecord.ID,
 		SKU:       "TZ-WHEEL-700C",
-		Price:     1299,
+		PriceMinor:  129900,
 		Stock:     5,
 		IsActive:  true,
 	}

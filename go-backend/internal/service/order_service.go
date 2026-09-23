@@ -36,10 +36,12 @@ var (
 	ErrOrderFulfillmentNotAllowed                    = errors.New("only paid, processing, or already shipped orders can be fulfilled")
 	ErrOrderFulfillmentPaymentRequired               = errors.New("only paid orders can be fulfilled")
 	ErrOrderFulfillmentOnHold                        = errors.New("order fulfillment is blocked while payment dispute or review is active")
+	ErrOrderFulfillmentBlockedByPendingRefund        = errors.New("order fulfillment is blocked while a refund is pending")
 	ErrOrderFulfillmentTransactionNeeded             = errors.New("order fulfillment transaction is not configured")
 	ErrOrderCustomsUpdateTransactionNeeded           = errors.New("order customs update transaction is not configured")
 	ErrOrderFulfillmentSignatureConfirmationRequired = errors.New("signature confirmation is required before fulfilling this order")
 	ErrOrderFulfillmentStatusManaged                 = errors.New("shipped status is managed by the fulfillment workflow")
+	ErrOrderShippingDeliveryNotReady                 = errors.New("order cannot be marked delivered until every enabled package has a delivery event")
 	ErrOrderCustomsUpdateLocked                      = errors.New("order customs declaration is locked after shipment")
 	ErrOrderProductionNotRequired                    = errors.New("order does not require production")
 	ErrOrderProductionPaymentRequired                = errors.New("only paid orders can enter production")
@@ -49,7 +51,10 @@ var (
 	ErrOrderProductionNotCompleted                   = errors.New("order production must be completed before fulfillment")
 	ErrOrderProductionTransactionNeeded              = errors.New("order production transaction is not configured")
 	ErrProductionStartedCancellationNotAllowed       = errors.New("custom orders cannot be cancelled after production has started")
+	ErrConfiguredOptionCancellationNotAllowed        = errors.New("configured options cannot be cancelled under their selected policy")
 	ErrTrackingNumberRequired                        = errors.New("tracking number is required")
+	ErrOrderTrackingTransactionNeeded                = errors.New("order tracking update transaction is not configured")
+	ErrTrackingRegistrationTransactionNeeded         = errors.New("tracking registration requires a transaction manager")
 	ErrOrderShippingNotConfigured                    = errors.New("order shipping service is not configured")
 	ErrOrderNumberNotConfigured                      = errors.New("order number generator is not configured")
 	ErrOrderItemNotFound                             = errors.New("order item not found")
@@ -61,7 +66,7 @@ var (
 	ErrOrderFulfillmentIdempotencyConflict           = errors.New("idempotency key was already used for a different fulfillment request")
 	ErrOrderFulfillmentIdempotencyInProgress         = errors.New("idempotent fulfillment request is already being processed")
 	ErrOrderEvidenceNotConfigured                    = errors.New("order evidence services are not configured")
-	ErrDeclaredValueInvalid                          = errors.New("declared value must be a finite non-negative number")
+	ErrDeclaredValueInvalid                          = errors.New("declared value must be a non-negative minor-unit integer")
 	ErrDeclaredValueConfirmationRequired             = errors.New("declared value is required when confirming")
 	ErrOrderCustomsDeclarationIncomplete             = errors.New("customs declared value must be a positive confirmed value for every order item")
 )
@@ -146,7 +151,7 @@ type OrderTrackingUpdateInput struct {
 
 type OrderFulfillmentResult struct {
 	Order                     *order.Order
-	TrackingShipment          *shippingdomain.TrackingShipment
+	TrackingShipments         []shippingdomain.TrackingShipment
 	TrackingRegistrationError string
 }
 

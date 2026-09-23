@@ -54,6 +54,19 @@ export const productApi = {
     return requireApiObjectField(readObjectPayload(await axios.get(path), path), 'product', path)
   },
 
+  async previewTemplateSync(id: number | string) {
+    const path = `/api/admin/products/${id}/template-sync/preview`
+    return requireApiObject(unwrapApiPayload(await axios.get(path), path), path)
+  },
+
+  async syncTemplate(id: number | string, expectedRevision: number) {
+    const path = `/api/admin/products/${id}/template-sync`
+    const payload = readObjectPayload(await axios.post(path, { expected_revision: expectedRevision }), path)
+    requireApiObjectField(payload, 'product', path)
+    requireApiObjectField(payload, 'data', path)
+    return payload
+  },
+
   async translations(id: number | string) {
     const path = `/api/admin/products/${id}/translations`
     return requireApiObjectField(readObjectPayload(await axios.get(path), path), 'translation_group', path)

@@ -63,7 +63,7 @@ func TestListTrackingEventsReturnsEventsForShipment(t *testing.T) {
 	handler := NewShippingHandler(shippingService)
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
-	c.Request = httptest.NewRequest(http.MethodGet, "/api/admin/shipping/tracking-shipments/1001/events", nil)
+	c.Request = httptest.NewRequest(http.MethodGet, "/api/admin/shipping/tracking-shipments/1001/events?tracking_number=1Z999", nil)
 	c.Params = gin.Params{{Key: "orderID", Value: "1001"}}
 
 	handler.ListTrackingEvents(c)

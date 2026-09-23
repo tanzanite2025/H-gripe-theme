@@ -24,12 +24,8 @@ const (
 	ReferralRecipientReferee  = "referee"
 
 	ReferralRewardTypePoints = "points"
-	ReferralRewardTypeCoupon = "coupon"
 
-	ReferralBenefitNone          = "none"
-	ReferralBenefitPoints        = "points"
-	ReferralBenefitPercentCoupon = "percent_coupon"
-	ReferralBenefitFixedCoupon   = "fixed_coupon"
+	ReferralBenefitPoints = "points"
 
 	ReferralFraudModeMonitor = "monitor"
 	ReferralFraudModeStrict  = "strict"
@@ -51,21 +47,20 @@ func (ReferralIdentity) TableName() string {
 	return "user_referral_identities"
 }
 
-// ReferralProgramConfig is an immutable referral-policy version. BenefitValue
-// means points, percentage basis points, or currency minor units according to
-// RefereeBenefitType.
+// ReferralProgramConfig is an immutable referral-policy version. The referral
+// benefit is always a points amount credited to the unified loyalty balance.
 type ReferralProgramConfig struct {
-	ID                           uint      `gorm:"primarykey" json:"id"`
-	Version                      int       `gorm:"not null;uniqueIndex" json:"version"`
-	Status                       string    `gorm:"size:16;not null;index" json:"status"`
-	Enabled                      bool      `gorm:"not null;default:false" json:"enabled"`
-	Currency                     string    `gorm:"size:3;not null;default:'USD'" json:"currency"`
+	ID      uint   `gorm:"primarykey" json:"id"`
+	Version int    `gorm:"not null;uniqueIndex" json:"version"`
+	Status  string `gorm:"size:16;not null;index" json:"status"`
+	Enabled bool   `gorm:"not null;default:false" json:"enabled"`
+	// Currency is used only by the order-qualification rule. It is not a
+	// property of referral points and is intentionally omitted from API JSON.
+	Currency                     string    `gorm:"size:3;not null;default:'USD'" json:"-"`
 	MinOrderAmountMinor          int64     `gorm:"not null;default:20000" json:"min_order_amount_minor"`
 	ReferrerRewardPoints         int       `gorm:"not null;default:1000" json:"referrer_reward_points"`
-	RefereeBenefitType           string    `gorm:"size:24;not null;default:'none'" json:"referee_benefit_type"`
-	RefereeBenefitValue          int64     `gorm:"not null;default:0" json:"referee_benefit_value"`
-	RefereeBenefitMaxAmountMinor int64     `gorm:"not null;default:0" json:"referee_benefit_max_amount_minor"`
-	CouponStackable              bool      `gorm:"not null;default:false" json:"coupon_stackable"`
+	RefereeBenefitType           string    `gorm:"size:24;not null;default:'points'" json:"referee_benefit_type"`
+	RefereeBenefitValue          int64     `gorm:"not null;default:50" json:"referee_benefit_value"`
 	VestingPeriodDays            int       `gorm:"not null;default:30" json:"vesting_period_days"`
 	UndeliveredFallbackDays      int       `gorm:"not null;default:45" json:"undelivered_fallback_days"`
 	AttributionTTLDays           int       `gorm:"not null;default:30" json:"attribution_ttl_days"`
@@ -92,10 +87,12 @@ type ReferralRecord struct {
 	AttributionSource      string         `gorm:"size:24;not null" json:"attribution_source"`
 	RefereeEmailHash       string         `gorm:"size:64;not null;default:''" json:"-"`
 	ClientIPHash           string         `gorm:"size:64;not null;default:''" json:"-"`
+	ClientIPSubnetHash     string         `gorm:"size:64;not null;default:'';index" json:"-"`
 	DeviceFingerprintHash  string         `gorm:"size:64;not null;default:''" json:"-"`
 	ShippingAddressHash    string         `gorm:"size:64;not null;default:''" json:"-"`
 	ShippingPhoneHash      string         `gorm:"size:64;not null;default:''" json:"-"`
 	PaymentFingerprintHash string         `gorm:"size:64;not null;default:''" json:"-"`
+	LegacyReferralID       *uint          `gorm:"index" json:"-"`
 	HashKeyVersion         int            `gorm:"not null;default:1" json:"-"`
 	OrderID                *uint          `gorm:"index" json:"order_id,omitempty"`
 	Currency               string         `gorm:"size:3;not null;default:'USD'" json:"currency"`
@@ -146,7 +143,6 @@ type ReferralReward struct {
 	RecipientRole        string         `gorm:"size:16;not null" json:"recipient_role"`
 	RewardType           string         `gorm:"size:16;not null" json:"reward_type"`
 	PointsAmount         int            `gorm:"not null;default:0" json:"points_amount"`
-	CouponID             *uint          `gorm:"index" json:"coupon_id,omitempty"`
 	LoyaltyTransactionID *uint          `gorm:"index" json:"loyalty_transaction_id,omitempty"`
 	IdempotencyKey       string         `gorm:"size:160;not null;uniqueIndex" json:"idempotency_key"`
 	Status               string         `gorm:"size:16;not null;index" json:"status"`

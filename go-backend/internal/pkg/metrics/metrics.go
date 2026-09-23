@@ -38,6 +38,39 @@ var (
 		},
 		[]string{"channel", "reason"},
 	)
+	HoneypotBlocked = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Namespace: "commerce_platform",
+			Name:      "honeypot_blocked_total",
+			Help:      "Form submissions silently dropped after a honeypot decoy was filled.",
+		},
+		[]string{"form", "field"},
+	)
+	HoneypotTimingEvaluations = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Namespace: "commerce_platform",
+			Name:      "honeypot_timing_evaluations_total",
+			Help:      "Server-signed form timing token evaluations by bounded result.",
+		},
+		[]string{"form", "result"},
+	)
+	HoneypotTimingSeconds = prometheus.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Namespace: "commerce_platform",
+			Name:      "honeypot_timing_seconds",
+			Help:      "Observed time from server timing token issuance to form submission.",
+			Buckets:   []float64{0.05, 0.1, 0.25, 0.5, 1, 1.5, 2, 3, 5, 10, 30, 60, 300, 600},
+		},
+		[]string{"form"},
+	)
+	HoneypotTimingReplays = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Namespace: "commerce_platform",
+			Name:      "honeypot_timing_replays_total",
+			Help:      "Redis-backed shadow checks for repeated server-signed timing tokens.",
+		},
+		[]string{"form", "result"},
+	)
 	PaymentAttempts = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Namespace: "commerce_platform",
@@ -180,6 +213,66 @@ var (
 		},
 		[]string{"status"},
 	)
+	CustomerServiceArchivedConversations = prometheus.NewCounter(
+		prometheus.CounterOpts{
+			Namespace: "commerce_platform",
+			Name:      "customer_service_archived_conversations_total",
+			Help:      "Customer-service conversation inbox archive transitions.",
+		},
+	)
+	CustomerServiceReopenedConversations = prometheus.NewCounter(
+		prometheus.CounterOpts{
+			Namespace: "commerce_platform",
+			Name:      "customer_service_reopened_conversations_total",
+			Help:      "Customer-service conversation transitions back to open/inbox.",
+		},
+	)
+	CustomerServiceRetentionSoftDeleted = prometheus.NewCounter(
+		prometheus.CounterOpts{
+			Namespace: "commerce_platform",
+			Name:      "customer_service_soft_deleted_conversations_total",
+			Help:      "Customer-service conversations soft-deleted by retention operations.",
+		},
+	)
+	CustomerServiceRetentionPurged = prometheus.NewCounter(
+		prometheus.CounterOpts{
+			Namespace: "commerce_platform",
+			Name:      "customer_service_purged_conversations_total",
+			Help:      "Customer-service conversations physically purged after retention checks.",
+		},
+	)
+	CustomerServiceRetentionEligibility = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Namespace: "commerce_platform",
+			Name:      "customer_service_retention_eligibility_total",
+			Help:      "Customer-service retention worker eligibility outcomes.",
+		},
+		[]string{"result"},
+	)
+	CustomerServiceRetentionAttachmentReferenceSkips = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Namespace: "commerce_platform",
+			Name:      "customer_service_retention_attachment_reference_skips_total",
+			Help:      "Customer-service retention attachment references skipped by bounded reason.",
+		},
+		[]string{"reason"},
+	)
+	CustomerServiceRetentionSearchIndexDeletes = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Namespace: "commerce_platform",
+			Name:      "customer_service_retention_search_index_deletes_total",
+			Help:      "Customer-service retention search-index deletion outcomes.",
+		},
+		[]string{"result"},
+	)
+	CustomerServiceRetentionCleanupOutboxEvents = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Namespace: "commerce_platform",
+			Name:      "customer_service_retention_cleanup_outbox_events",
+			Help:      "Customer-service retention cleanup Outbox events by durable status.",
+		},
+		[]string{"status"},
+	)
 )
 
 func init() {
@@ -209,6 +302,26 @@ func init() {
 	register(VerificationBudgetRejections, func(collector prometheus.Collector) {
 		if existing, ok := collector.(*prometheus.CounterVec); ok {
 			VerificationBudgetRejections = existing
+		}
+	})
+	register(HoneypotBlocked, func(collector prometheus.Collector) {
+		if existing, ok := collector.(*prometheus.CounterVec); ok {
+			HoneypotBlocked = existing
+		}
+	})
+	register(HoneypotTimingEvaluations, func(collector prometheus.Collector) {
+		if existing, ok := collector.(*prometheus.CounterVec); ok {
+			HoneypotTimingEvaluations = existing
+		}
+	})
+	register(HoneypotTimingSeconds, func(collector prometheus.Collector) {
+		if existing, ok := collector.(*prometheus.HistogramVec); ok {
+			HoneypotTimingSeconds = existing
+		}
+	})
+	register(HoneypotTimingReplays, func(collector prometheus.Collector) {
+		if existing, ok := collector.(*prometheus.CounterVec); ok {
+			HoneypotTimingReplays = existing
 		}
 	})
 	register(PaymentAttempts, func(collector prometheus.Collector) {
@@ -299,6 +412,46 @@ func init() {
 	register(CustomerServiceRealtimeOutboxEvents, func(collector prometheus.Collector) {
 		if existing, ok := collector.(*prometheus.GaugeVec); ok {
 			CustomerServiceRealtimeOutboxEvents = existing
+		}
+	})
+	register(CustomerServiceArchivedConversations, func(collector prometheus.Collector) {
+		if existing, ok := collector.(prometheus.Counter); ok {
+			CustomerServiceArchivedConversations = existing
+		}
+	})
+	register(CustomerServiceReopenedConversations, func(collector prometheus.Collector) {
+		if existing, ok := collector.(prometheus.Counter); ok {
+			CustomerServiceReopenedConversations = existing
+		}
+	})
+	register(CustomerServiceRetentionSoftDeleted, func(collector prometheus.Collector) {
+		if existing, ok := collector.(prometheus.Counter); ok {
+			CustomerServiceRetentionSoftDeleted = existing
+		}
+	})
+	register(CustomerServiceRetentionPurged, func(collector prometheus.Collector) {
+		if existing, ok := collector.(prometheus.Counter); ok {
+			CustomerServiceRetentionPurged = existing
+		}
+	})
+	register(CustomerServiceRetentionEligibility, func(collector prometheus.Collector) {
+		if existing, ok := collector.(*prometheus.CounterVec); ok {
+			CustomerServiceRetentionEligibility = existing
+		}
+	})
+	register(CustomerServiceRetentionAttachmentReferenceSkips, func(collector prometheus.Collector) {
+		if existing, ok := collector.(*prometheus.CounterVec); ok {
+			CustomerServiceRetentionAttachmentReferenceSkips = existing
+		}
+	})
+	register(CustomerServiceRetentionSearchIndexDeletes, func(collector prometheus.Collector) {
+		if existing, ok := collector.(*prometheus.CounterVec); ok {
+			CustomerServiceRetentionSearchIndexDeletes = existing
+		}
+	})
+	register(CustomerServiceRetentionCleanupOutboxEvents, func(collector prometheus.Collector) {
+		if existing, ok := collector.(*prometheus.GaugeVec); ok {
+			CustomerServiceRetentionCleanupOutboxEvents = existing
 		}
 	})
 }

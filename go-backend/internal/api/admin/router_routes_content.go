@@ -200,6 +200,12 @@ func registerContentRoutes(
 		customerServiceGroup.DELETE("/auto-reply/rules/:id", middleware.RequirePermission(auth.PermTicketDelete), autoReplyHandler.DeleteRule)
 		customerServiceGroup.GET("/analytics", ticketHandler.GetCustomerServiceAnalytics)
 		customerServiceGroup.GET("/conversations", ticketHandler.ListCustomerServiceConversations)
+		customerServiceGroup.GET("/conversations/retention/eligibility", middleware.AdminOnly(), ticketHandler.EvaluateCustomerServiceRetention)
+		customerServiceGroup.GET("/conversations/retention/config", middleware.AdminOnly(), ticketHandler.GetCustomerServiceRetentionConfig)
+		customerServiceGroup.PUT("/conversations/retention/config", middleware.AdminOnly(), ticketHandler.UpdateCustomerServiceRetentionConfig)
+		customerServiceGroup.POST("/conversations/retention/soft-delete", middleware.AdminOnly(), ticketHandler.SoftDeleteCustomerServiceConversations)
+		customerServiceGroup.POST("/conversations/retention/purge", middleware.AdminOnly(), ticketHandler.PurgeCustomerServiceConversations)
+		customerServiceGroup.POST("/conversations/bulk-archive", middleware.RequirePermission(auth.PermTicketEdit), ticketHandler.BulkArchiveCustomerServiceConversations)
 		customerServiceGroup.GET("/ws", middleware.RateLimit(10), ticketHandler.StreamCustomerServiceWebSocket)
 		customerServiceGroup.GET("/visitor-profiles", visitorProfileHandler.ListVisitorProfiles)
 		customerServiceGroup.GET("/visitor-profiles/stats", visitorProfileHandler.GetVisitorProfileStats)
@@ -216,6 +222,9 @@ func registerContentRoutes(
 		customerServiceGroup.POST("/conversations/:id/messages", middleware.RequirePermission(auth.PermTicketEdit), ticketHandler.CreateCustomerServiceConversationMessage)
 		customerServiceGroup.POST("/conversations/:id/messages/mark-read", ticketHandler.MarkCustomerServiceConversationMessagesRead)
 		customerServiceGroup.PATCH("/conversations/:id/transfer", middleware.RequirePermission(auth.PermTicketEdit), ticketHandler.TransferCustomerServiceConversation)
+		customerServiceGroup.PATCH("/conversations/:id/status", middleware.RequirePermission(auth.PermTicketEdit), ticketHandler.UpdateCustomerServiceConversationStatus)
+		customerServiceGroup.POST("/conversations/:id/archive", middleware.RequirePermission(auth.PermTicketEdit), ticketHandler.ArchiveCustomerServiceConversation)
+		customerServiceGroup.POST("/conversations/:id/restore", middleware.RequirePermission(auth.PermTicketEdit), ticketHandler.RestoreCustomerServiceConversation)
 	}
 
 	// 全局 IP/CIDR 封禁规则（访客画像或设置查看权限可查看，变更仅限管理员）

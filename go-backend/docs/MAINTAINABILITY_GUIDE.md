@@ -14,7 +14,7 @@ This guide captures the backend boundaries we want to preserve as the project gr
 
 - A transaction should cover a complete business invariant, not a single repository convenience call.
 - Do not validate balance/stock/coupon limits outside the transaction that mutates them.
-- Avoid async side effects for value-bearing deductions such as points, gift cards, coupons, or inventory.
+- Avoid async side effects for value-bearing deductions such as points, coupons, or inventory.
 - Prefer atomic SQL predicates or row locks for counters and balances.
 
 ## Handler Rules

@@ -26,6 +26,11 @@ const readPaged = <T = any>(response: unknown, path: string) => {
 }
 
 export const paymentRiskApi = {
+  async backfillHistoricalFXSnapshot(orderID: number | string, payload: Record<string, any>) {
+    const path = `/api/admin/payment/orders/${encodeURIComponent(String(orderID))}/fx-snapshot`
+    return readObjectPayload(await axios.post(path, payload), path)
+  },
+
   async getSummary(provider = '') {
     const path = '/api/admin/payment/risk/summary'
     const payload = readObjectPayload(await axios.get(path, {

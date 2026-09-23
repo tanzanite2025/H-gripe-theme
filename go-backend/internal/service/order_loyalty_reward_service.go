@@ -4,10 +4,10 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"time"
 
 	"commerce-platform/internal/domain/currency"
 	"commerce-platform/internal/domain/loyalty"
-	domainmoney "commerce-platform/internal/domain/money"
 	"commerce-platform/internal/domain/order"
 	"commerce-platform/internal/repository"
 )
@@ -24,7 +24,8 @@ func (s *OrderService) completeOrderWithLoyaltyReward(id uint) error {
 		if err := repos.Order.UpdateStatus(id, o.Status, "completed"); err != nil {
 			return err
 		}
-		return s.awardOrderCompletionPoints(repos, o)
+		completedAt := time.Now().UTC()
+		return enqueueOrderCompletedOutboxEvent(repos.Outbox, o, completedAt)
 	})
 }
 
@@ -105,11 +106,11 @@ func (s *OrderService) calculateOrderCompletionPoints(
 	if o == nil {
 		return 0, nil
 	}
-	subtotalMoney, err := domainmoney.FromMajorFloat(o.SubtotalAmount, o.Currency)
+	subtotalMoney, err := o.SubtotalMoney()
 	if err != nil {
 		return 0, nil
 	}
-	discountMoney, err := domainmoney.FromMajorFloat(o.DiscountAmount, o.Currency)
+	discountMoney, err := o.DiscountMoney()
 	if err != nil {
 		return 0, nil
 	}
@@ -136,7 +137,7 @@ func (s *OrderService) calculateOrderCompletionPoints(
 	}
 
 	// PurchaseEarnPointsPerUnit is points per whole USD unit. Keep the
-	// calculation in minor units so fractional cents cannot create points.
+	// calculation in minor units so fractional minor cannot create points.
 	pointsNumerator := new(big.Int).Mul(
 		big.NewInt(rewardableBaseMoney.AmountMinor()),
 		big.NewInt(int64(config.PurchaseEarnPointsPerUnit)),

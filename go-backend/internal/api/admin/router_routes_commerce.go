@@ -54,6 +54,7 @@ func registerCommerceRoutes(
 	afterSalesGroup.Use(middleware.RequirePermission(auth.PermOrderView))
 	{
 		afterSalesGroup.GET("", afterSalesHandler.List)
+		afterSalesGroup.GET("/return-shipments", afterSalesHandler.LookupByReturnTracking)
 		afterSalesGroup.GET("/:id", afterSalesHandler.Get)
 		afterSalesGroup.GET("/:id/attachments/:attachment_id", afterSalesHandler.ServeAttachment)
 		afterSalesGroup.PATCH("/:id/status", middleware.RequirePermission(auth.PermOrderEdit), afterSalesHandler.UpdateStatus)
@@ -70,8 +71,9 @@ func registerCommerceRoutes(
 		paymentGroup.GET("/orders/:order_id/transactions", paymentHandler.GetOrderTransactions)
 		paymentGroup.GET("/refunds/:id", paymentHandler.GetRefund)
 		paymentGroup.GET("/orders/:order_id/refunds", paymentHandler.GetOrderRefunds)
+		paymentGroup.POST("/orders/:order_id/fx-snapshot", middleware.RequirePermission(auth.PermOrderEdit), paymentHandler.BackfillHistoricalRefundFXSnapshot)
 		paymentGroup.POST("/refunds", middleware.RequirePermission(auth.PermOrderRefund), middleware.Idempotency(redisClient), paymentHandler.CreateRefund)
-		paymentGroup.POST("/refunds/:id/execute", middleware.RequirePermission(auth.PermOrderRefund), middleware.Idempotency(redisClient), paymentRefundExecutionHandler.ExecutePendingRefund)
+		paymentGroup.POST("/refunds/:id/execute", middleware.RequirePermission(auth.PermOrderRefund), middleware.Idempotency(redisClient), paymentRefundExecutionHandler.RequestPendingRefundExecution)
 		paymentGroup.GET("/disputes", paymentHandler.ListStripeDisputes)
 		paymentGroup.GET("/disputes/:id", paymentHandler.GetStripeDispute)
 		paymentGroup.GET("/disputes/:id/evidence", paymentHandler.GetStripeDisputeEvidence)

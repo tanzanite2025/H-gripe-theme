@@ -95,6 +95,8 @@ import {
 } from '~/composables/useShopProducts'
 import { useOverlayBackStack } from '~/composables/useOverlayBackStack'
 import { useShopSearchSheet, type ShopSearchFiltersPayload, type ShopSearchPayload } from '~/composables/useShopSearchSheet'
+import { useStorefrontContext } from '~/composables/useStorefrontContext'
+import { majorToMinor } from '~/utils/money'
 import { createSeoJsonLdScript } from '~/utils/seo/jsonLd'
 import { toAbsoluteSeoUrl } from '~/utils/seo/urls'
 
@@ -121,6 +123,7 @@ const {
   fetchPublicShopProducts,
 } = useShopProducts()
 const { pendingSearch } = useShopSearchSheet()
+const { baseCurrency } = useStorefrontContext()
 
 const defaultSearchPriceRange: [number, number] = [0, 5000]
 const currentSearch = ref<ShopSearchPayload | null>(null)
@@ -204,8 +207,9 @@ const buildProductQueryParams = (payload?: ShopSearchPayload) => {
     const priceRange = payload.filters?.priceRange
     if (Array.isArray(priceRange) && priceRange.length === 2) {
       const [min, max] = priceRange
-      params.price_min = min
-      params.price_max = max
+      params.price_min_minor = majorToMinor(min, baseCurrency.value)
+      params.price_max_minor = majorToMinor(max, baseCurrency.value)
+      params.price_currency = baseCurrency.value
     }
 
     const attrs = payload.filters?.attributes

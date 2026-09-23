@@ -228,8 +228,8 @@ func TestExternalWebhooksBypassCSRFProtection(t *testing.T) {
 		path string
 	}{
 		{
-			name: "payment webhook",
-			path: "/api/v1/payment/webhook/unsupported",
+			name: "canonical payment webhook",
+			path: "/api/v1/payments/unsupported/webhook",
 		},
 		{
 			name: "shipping webhook",

@@ -237,7 +237,7 @@ func TestPublicProductFromDomainExposesVariantOptionPresentationMetadata(t *test
 				ID:           72,
 				SKU:          "VISUAL-RUBY-001",
 				OptionValues: `{"finish":"ruby_red"}`,
-				Price:        399,
+				PriceMinor:   39900,
 				Stock:        5,
 				IsDefault:    true,
 				IsActive:     true,
@@ -341,26 +341,26 @@ func TestPublicProductFromDomainCanonicalizesFirstPartyMediaURLs(t *testing.T) {
 }
 
 func TestPublicProductDisplayPriceDoesNotUseRuntimeConversion(t *testing.T) {
-	salePrice := 80.0
+	salePrice := int64(8000)
 	item := productdomain.Product{
-		ID:       41,
-		SKU:      "DISPLAY-CURRENCY-PRODUCT",
-		Name:     "Display Currency Product",
-		Slug:     "display-currency-product",
-		Currency: "USD",
-		Price:    120,
-		Status:   "active",
+		ID:         41,
+		SKU:        "DISPLAY-CURRENCY-PRODUCT",
+		Name:       "Display Currency Product",
+		Slug:       "display-currency-product",
+		Currency:   "USD",
+		PriceMinor: 12000,
+		Status:     "active",
 		Variants: []productdomain.ProductVariant{
 			{
-				ID:        42,
-				SKU:       "DISPLAY-CURRENCY-VAR",
-				Title:     "Default",
-				Currency:  "EUR",
-				Price:     100,
-				SalePrice: &salePrice,
-				Stock:     4,
-				IsDefault: true,
-				IsActive:  true,
+				ID:             42,
+				SKU:            "DISPLAY-CURRENCY-VAR",
+				Title:          "Default",
+				Currency:       "EUR",
+				PriceMinor:     10000,
+				SalePriceMinor: &salePrice,
+				Stock:          4,
+				IsDefault:      true,
+				IsActive:       true,
 			},
 		},
 	}
@@ -370,16 +370,16 @@ func TestPublicProductDisplayPriceDoesNotUseRuntimeConversion(t *testing.T) {
 	if publicProduct.Currency != "EUR" {
 		t.Fatalf("expected public catalog currency to follow purchasable variant, got %q", publicProduct.Currency)
 	}
-	if publicProduct.Price != 100 {
-		t.Fatalf("expected public price to follow purchasable variant, got %.2f", publicProduct.Price)
+	if publicProduct.PriceDecimal != "100.00" {
+		t.Fatalf("expected public price to follow purchasable variant, got %q", publicProduct.PriceDecimal)
 	}
-	if publicProduct.SalePrice == nil || *publicProduct.SalePrice != 80 {
-		t.Fatalf("expected public sale price to follow purchasable variant, got %#v", publicProduct.SalePrice)
+	if publicProduct.SalePriceDecimal == nil || *publicProduct.SalePriceDecimal != "80.00" {
+		t.Fatalf("expected public sale price to follow purchasable variant, got %#v", publicProduct.SalePriceDecimal)
 	}
 	if publicProduct.DisplayPrice != nil {
 		t.Fatalf("expected product display price to require a stored snapshot, got %#v", publicProduct.DisplayPrice)
 	}
-	if publicProduct.Variants[0].Currency != "EUR" || publicProduct.Variants[0].Price != 100 {
+	if publicProduct.Variants[0].Currency != "EUR" || publicProduct.Variants[0].PriceDecimal != "100.00" {
 		t.Fatalf("expected variant truth price to remain unchanged, got %#v", publicProduct.Variants[0])
 	}
 	if publicProduct.Variants[0].DisplayPrice != nil {
@@ -390,7 +390,7 @@ func TestPublicProductDisplayPriceDoesNotUseRuntimeConversion(t *testing.T) {
 func TestPublicProductDisplayPriceUsesStoredSnapshotForRequestedCurrency(t *testing.T) {
 	displayPrices := currency.DisplayPriceSnapshotsJSON([]currency.DisplayPriceSnapshot{
 		{
-			Amount:        96.8,
+			AmountDecimal: "96.80",
 			Currency:      "USD",
 			QuoteCurrency: "USD",
 			Rate:          0.1385,
@@ -404,7 +404,7 @@ func TestPublicProductDisplayPriceUsesStoredSnapshotForRequestedCurrency(t *test
 		Name:             "Snapshot Product",
 		Slug:             "snapshot-product",
 		Currency:         "CNY",
-		Price:            699,
+		PriceMinor:       69900,
 		DisplayPriceData: displayPrices,
 		Status:           "active",
 		Variants: []productdomain.ProductVariant{
@@ -413,7 +413,7 @@ func TestPublicProductDisplayPriceUsesStoredSnapshotForRequestedCurrency(t *test
 				SKU:              "SNAPSHOT-VAR",
 				Title:            "Default",
 				Currency:         "CNY",
-				Price:            699,
+				PriceMinor:       69900,
 				DisplayPriceData: displayPrices,
 				Stock:            4,
 				IsDefault:        true,
@@ -427,7 +427,7 @@ func TestPublicProductDisplayPriceUsesStoredSnapshotForRequestedCurrency(t *test
 	if publicProduct.DisplayPrice == nil {
 		t.Fatal("expected product display price from stored snapshot")
 	}
-	if publicProduct.DisplayPrice.Currency != "USD" || publicProduct.DisplayPrice.Amount != 96.8 {
+	if publicProduct.DisplayPrice.Currency != "USD" || publicProduct.DisplayPrice.AmountDecimal != "96.80" {
 		t.Fatalf("expected stored USD display price, got %#v", publicProduct.DisplayPrice)
 	}
 	if len(publicProduct.DisplayPrices) != 1 || publicProduct.DisplayPrices[0].QuoteCurrency != "USD" {
@@ -436,26 +436,37 @@ func TestPublicProductDisplayPriceUsesStoredSnapshotForRequestedCurrency(t *test
 	if len(publicProduct.Variants) != 1 || publicProduct.Variants[0].DisplayPrice == nil {
 		t.Fatalf("expected variant display price from stored snapshot, got %#v", publicProduct.Variants)
 	}
-	if publicProduct.Variants[0].DisplayPrice.Currency != "USD" || publicProduct.Variants[0].DisplayPrice.Amount != 96.8 {
+	if publicProduct.Variants[0].DisplayPrice.Currency != "USD" || publicProduct.Variants[0].DisplayPrice.AmountDecimal != "96.80" {
 		t.Fatalf("expected variant stored USD display price, got %#v", publicProduct.Variants[0].DisplayPrice)
+	}
+	payload, err := json.Marshal(publicProduct)
+	if err != nil {
+		t.Fatalf("marshal display price response: %v", err)
+	}
+	body := string(payload)
+	if !strings.Contains(body, `"amount_decimal":"96.80"`) {
+		t.Fatalf("expected decimal display amount in public response: %s", body)
+	}
+	if strings.Contains(body, `"amount":`) {
+		t.Fatalf("public display price must not expose numeric amount: %s", body)
 	}
 }
 
 func TestPublicProductPriceAndSnapshotUseLowestEffectivePriceVariant(t *testing.T) {
 	defaultDisplayPrices := currency.DisplayPriceSnapshotsJSON([]currency.DisplayPriceSnapshot{
-		{Amount: 125, Currency: "USD", QuoteCurrency: "USD", Rate: 1.25, Source: "default_variant"},
+		{AmountDecimal: "125.00", Currency: "USD", QuoteCurrency: "USD", Rate: 1.25, Source: "default_variant"},
 	}, "EUR")
 	startingDisplayPrices := currency.DisplayPriceSnapshotsJSON([]currency.DisplayPriceSnapshot{
-		{Amount: 88, Currency: "USD", QuoteCurrency: "USD", Rate: 1.1, Source: "starting_variant"},
+		{AmountDecimal: "88.00", Currency: "USD", QuoteCurrency: "USD", Rate: 1.1, Source: "starting_variant"},
 	}, "CNY")
-	startingSalePrice := 80.0
+	startingSalePrice := int64(8000)
 	item := productdomain.Product{
 		ID:               61,
 		SKU:              "LEGACY-PRODUCT",
 		Name:             "Multi Variant Product",
 		Slug:             "multi-variant-product",
-		Currency:         "GBP",
-		Price:            999,
+		Currency:         "CNY",
+		PriceMinor:       99900,
 		DisplayPriceData: defaultDisplayPrices,
 		Status:           "active",
 		Variants: []productdomain.ProductVariant{
@@ -463,8 +474,8 @@ func TestPublicProductPriceAndSnapshotUseLowestEffectivePriceVariant(t *testing.
 				ID:               62,
 				SKU:              "DEFAULT-HIGHER",
 				Title:            "Default",
-				Currency:         "EUR",
-				Price:            100,
+				Currency:         "CNY",
+				PriceMinor:       10000,
 				DisplayPriceData: defaultDisplayPrices,
 				Stock:            4,
 				IsDefault:        true,
@@ -475,8 +486,8 @@ func TestPublicProductPriceAndSnapshotUseLowestEffectivePriceVariant(t *testing.
 				SKU:              "LOWEST-EFFECTIVE",
 				Title:            "Lowest effective price",
 				Currency:         "CNY",
-				Price:            90,
-				SalePrice:        &startingSalePrice,
+				PriceMinor:       9000,
+				SalePriceMinor:   &startingSalePrice,
 				DisplayPriceData: startingDisplayPrices,
 				Stock:            2,
 				IsActive:         true,
@@ -486,13 +497,13 @@ func TestPublicProductPriceAndSnapshotUseLowestEffectivePriceVariant(t *testing.
 
 	publicProduct := PublicProductFromDomainWithDisplayCurrency(item, "USD")
 
-	if publicProduct.Price != 90 || publicProduct.SalePrice == nil || *publicProduct.SalePrice != 80 {
-		t.Fatalf("expected product price fields from lowest effective price variant, got price=%v sale_price=%v", publicProduct.Price, publicProduct.SalePrice)
+	if publicProduct.PriceDecimal != "90.00" || publicProduct.SalePriceDecimal == nil || *publicProduct.SalePriceDecimal != "80.00" {
+		t.Fatalf("expected product price fields from lowest effective price variant, got price=%v sale_price=%v", publicProduct.PriceDecimal, publicProduct.SalePriceDecimal)
 	}
 	if publicProduct.Currency != "CNY" {
 		t.Fatalf("expected product currency from lowest effective price variant, got %q", publicProduct.Currency)
 	}
-	if publicProduct.DisplayPrice == nil || publicProduct.DisplayPrice.Amount != 88 || publicProduct.DisplayPrice.Source != "starting_variant" {
+	if publicProduct.DisplayPrice == nil || publicProduct.DisplayPrice.AmountDecimal != "88.00" || publicProduct.DisplayPrice.Source != "starting_variant" {
 		t.Fatalf("expected requested display price from lowest effective price variant snapshot, got %#v", publicProduct.DisplayPrice)
 	}
 	if len(publicProduct.DisplayPrices) != 1 || publicProduct.DisplayPrices[0].Source != "starting_variant" {

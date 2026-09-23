@@ -119,16 +119,16 @@
               </Select>
             </AdminFormField>
 
-            <AdminFormField :label="t('payment.feeValue')">
-              <Input v-model.number="form.fee_value" type="number" min="0" step="0.01" />
+            <AdminFormField :label="`${t('payment.feeValue')}（minor）`">
+              <Input v-model.number="form.fee_value_minor" type="number" min="0" step="1" />
             </AdminFormField>
 
-            <AdminFormField :label="t('payment.minimumAmount')">
-              <Input v-model.number="form.min_amount" type="number" min="0" step="0.01" />
+            <AdminFormField :label="`${t('payment.minimumAmount')}（minor）`">
+              <Input v-model.number="form.min_amount_minor" type="number" min="0" step="1" />
             </AdminFormField>
 
-            <AdminFormField :label="t('payment.maximumAmount')">
-              <Input v-model.number="form.max_amount" type="number" min="0" step="0.01" />
+            <AdminFormField :label="`${t('payment.maximumAmount')}（minor）`">
+              <Input v-model.number="form.max_amount_minor" type="number" min="0" step="1" />
             </AdminFormField>
 
             <AdminFormField :label="t('payment.sortOrder')">
@@ -209,9 +209,9 @@ const emptyForm = (): PaymentMethodForm => ({
   icon: '',
   description: '',
   fee_type: 'fixed',
-  fee_value: 0,
-  min_amount: 0,
-  max_amount: 0,
+  fee_value_minor: 0,
+  min_amount_minor: 0,
+  max_amount_minor: 0,
   enabled: true,
   sort_order: 0,
   settings: '',
@@ -237,9 +237,9 @@ const assignForm = (method: Partial<PaymentMethodRecord | PaymentMethodForm> = e
   Object.assign(form, emptyForm(), {
     ...method,
     fee_type: method.fee_type || 'fixed',
-    fee_value: Number(method.fee_value || 0),
-    min_amount: Number(method.min_amount || 0),
-    max_amount: Number(method.max_amount || 0),
+    fee_value_minor: Number(method.fee_value_minor || 0),
+    min_amount_minor: Number(method.min_amount_minor || 0),
+    max_amount_minor: Number(method.max_amount_minor || 0),
     enabled: method.enabled !== false,
     sort_order: Number(method.sort_order || 0),
     settings: method.settings || '',
@@ -278,9 +278,9 @@ const buildPayload = (): Omit<PaymentMethodForm, 'id'> => {
     icon: form.icon.trim(),
     description: form.description.trim(),
     fee_type: form.fee_type || 'fixed',
-    fee_value: Number(form.fee_value || 0),
-    min_amount: Number(form.min_amount || 0),
-    max_amount: Number(form.max_amount || 0),
+    fee_value_minor: Number(form.fee_value_minor || 0),
+    min_amount_minor: Number(form.min_amount_minor || 0),
+    max_amount_minor: Number(form.max_amount_minor || 0),
     enabled: form.enabled === true,
     sort_order: Number(form.sort_order || 0),
     settings: String(form.settings || '').trim(),

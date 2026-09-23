@@ -22,7 +22,7 @@ func TestAdminSettingsRejectsDomainManagedGroupsAndKeys(t *testing.T) {
 	require.True(t, errors.Is(err, ErrSettingManagedByDomainService))
 
 	_, err = adminSettings.UpdateSetting(settingdomain.UpdateSettingRequest{
-		Key:    "tz_redeem_exchange_rate",
+		Key:    "tz_loyalty_checkin_base_points",
 		Group:  "site",
 		Locale: "en",
 	})
@@ -97,7 +97,7 @@ func TestAdminSettingsFiltersDomainManagedSettingsFromGenericLists(t *testing.T)
 	require.NoError(t, settingService.BatchSet([]settingdomain.Setting{
 		{Key: "site_name", Value: "Commerce Platform", Locale: "en", Group: "site", IsPublic: true},
 		{Key: "tz_loyalty_checkin_base_points", Value: "10", Locale: "en", Group: "loyalty", IsPublic: true},
-		{Key: "tz_redeem_exchange_rate", Value: "100", Locale: "en", Group: "redeem", IsPublic: true},
+		{Key: "tz_loyalty_checkin_base_points", Value: "10", Locale: "en", Group: "loyalty", IsPublic: true},
 		{Key: "payment_gateway_stripe", Value: "encrypted", Locale: "global", Group: "payment_secret", IsPublic: false},
 	}))
 

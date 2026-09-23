@@ -58,7 +58,7 @@ interface LoyaltyRules {
   checkin_streak_interval_days: number | null
   checkin_streak_bonus_points: number | null
   checkin_max_points: number | null
-  redemption_exchange_rate: number | null
+  points_exchange_rate: number | null
 }
 
 const props = defineProps<{
@@ -147,7 +147,7 @@ const purchaseEarnRuleDescription = computed(() => {
 })
 
 const redemptionRuleDescription = computed(() => {
-  const exchangeRate = props.loyaltyRules?.redemption_exchange_rate
+  const exchangeRate = props.loyaltyRules?.points_exchange_rate
   if (!hasRuleNumber(exchangeRate)) return notConfiguredText.value
   if (exchangeRate <= 0) {
     return t(

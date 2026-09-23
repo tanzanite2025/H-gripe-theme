@@ -2,8 +2,19 @@ package repository
 
 import (
 	"commerce-platform/internal/domain/order"
+	"sort"
 	"time"
+
+	"gorm.io/gorm"
 )
+
+// RevenueByCurrency is an exact revenue aggregate. AmountMinor is always
+// expressed in the smallest unit of Currency; values from different
+// currencies must never be added together.
+type RevenueByCurrency struct {
+	Currency    string `json:"currency"`
+	AmountMinor int64  `json:"amount_minor"`
+}
 
 // GetOrderStats 获取订单统计
 func (r *OrderRepository) GetOrderStats(userID uint) (map[string]int64, error) {
@@ -59,19 +70,20 @@ func (r *OrderRepository) GetStats() (map[string]interface{}, error) {
 		stats[stat.Status] = stat.Count
 	}
 
-	// 总销售额
-	var totalRevenue float64
-	if err := r.db.Model(&order.Order{}).Where("status != ?", "cancelled").Select("COALESCE(SUM(total_amount), 0)").Scan(&totalRevenue).Error; err != nil {
+	// Revenue is grouped by currency and summed from the exact minor-unit
+	// column. Summing total_amount here would both reintroduce floating-point
+	// drift and silently produce nonsense for mixed-currency orders.
+	totalRevenue, err := r.revenueByCurrency(r.db.Model(&order.Order{}).Where("status != ?", "cancelled"))
+	if err != nil {
 		return nil, err
 	}
-	stats["total_revenue"] = totalRevenue
+	stats["total_revenue_by_currency"] = totalRevenue
 
-	// 今日销售额
-	var todayRevenue float64
-	if err := r.db.Model(&order.Order{}).Where("created_at >= ? AND status != ?", today, "cancelled").Select("COALESCE(SUM(total_amount), 0)").Scan(&todayRevenue).Error; err != nil {
+	todayRevenue, err := r.revenueByCurrency(r.db.Model(&order.Order{}).Where("created_at >= ? AND status != ?", today, "cancelled"))
+	if err != nil {
 		return nil, err
 	}
-	stats["today_revenue"] = todayRevenue
+	stats["today_revenue_by_currency"] = todayRevenue
 
 	return stats, nil
 }
@@ -79,31 +91,73 @@ func (r *OrderRepository) GetStats() (map[string]interface{}, error) {
 // GetSalesByDateRange 获取日期范围内的销售数据
 func (r *OrderRepository) GetSalesByDateRange(startDate, endDate time.Time) ([]map[string]interface{}, error) {
 	var results []struct {
-		Date   string
-		Count  int64
-		Amount float64
+		Date        string
+		Count       int64
+		Currency    string
+		AmountMinor int64
 	}
 
 	err := r.db.Model(&order.Order{}).
-		Select("DATE(created_at) as date, COUNT(*) as count, COALESCE(SUM(total_amount), 0) as amount").
+		Select("DATE(created_at) as date, currency, COUNT(*) as count, COALESCE(SUM(total_amount_minor), 0) as amount_minor").
 		Where("created_at BETWEEN ? AND ? AND status != ?", startDate, endDate, "cancelled").
-		Group("DATE(created_at)").
-		Order("date ASC").
+		Group("DATE(created_at), currency").
+		Order("date ASC, currency ASC").
 		Scan(&results).Error
 
 	if err != nil {
 		return nil, err
 	}
 
-	// 转换为 map 格式
-	data := make([]map[string]interface{}, len(results))
-	for i, result := range results {
-		data[i] = map[string]interface{}{
-			"date":   result.Date,
-			"count":  result.Count,
-			"amount": result.Amount,
+	// Merge one row per date while retaining a separate exact amount for each
+	// currency. This keeps the chart contract stable (one point per date)
+	// without ever adding incompatible currencies.
+	type dateAggregate struct {
+		count   int64
+		revenue []RevenueByCurrency
+	}
+	aggregates := make(map[string]*dateAggregate)
+	for _, result := range results {
+		aggregate := aggregates[result.Date]
+		if aggregate == nil {
+			aggregate = &dateAggregate{}
+			aggregates[result.Date] = aggregate
 		}
+		aggregate.count += result.Count
+		aggregate.revenue = append(aggregate.revenue, RevenueByCurrency{
+			Currency:    result.Currency,
+			AmountMinor: result.AmountMinor,
+		})
+	}
+
+	dates := make([]string, 0, len(aggregates))
+	for date := range aggregates {
+		dates = append(dates, date)
+	}
+	sort.Strings(dates)
+	data := make([]map[string]interface{}, 0, len(dates))
+	for _, date := range dates {
+		aggregate := aggregates[date]
+		data = append(data, map[string]interface{}{
+			"date":                date,
+			"count":               aggregate.count,
+			"revenue_by_currency": aggregate.revenue,
+		})
 	}
 
 	return data, nil
+}
+
+func (r *OrderRepository) revenueByCurrency(query *gorm.DB) ([]RevenueByCurrency, error) {
+	var rows []RevenueByCurrency
+	if err := query.
+		Select("currency, COALESCE(SUM(total_amount_minor), 0) as amount_minor").
+		Group("currency").
+		Order("currency ASC").
+		Scan(&rows).Error; err != nil {
+		return nil, err
+	}
+	if rows == nil {
+		rows = []RevenueByCurrency{}
+	}
+	return rows, nil
 }

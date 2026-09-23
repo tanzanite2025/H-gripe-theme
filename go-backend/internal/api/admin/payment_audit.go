@@ -17,6 +17,7 @@ const (
 
 	paymentAuditResourceGatewayConfig   = "payment_gateway_config"
 	paymentAuditResourceGatewayCallback = "payment_gateway_callback"
+	paymentAuditResourceFXSnapshot      = "historical_fx_snapshot"
 
 	paymentAuditStatusSuccess = adminAuditStatusSuccess
 	paymentAuditStatusFailed  = adminAuditStatusFailed

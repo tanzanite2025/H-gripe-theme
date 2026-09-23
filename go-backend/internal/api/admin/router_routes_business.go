@@ -52,19 +52,10 @@ func registerBusinessRoutes(
 			couponsGroup.DELETE("/:id", middleware.RequirePermission(auth.PermMarketingDelete), marketingHandler.DeleteCoupon)
 		}
 
-		// 礼品卡管理
-		giftCardsGroup := marketingGroup.Group("/gift-cards")
-		{
-			giftCardsGroup.GET("", marketingHandler.ListGiftCards)
-			giftCardsGroup.GET("/:id", marketingHandler.GetGiftCard)
-			giftCardsGroup.PATCH("/:id/status", middleware.RequirePermission(auth.PermMarketingEdit), marketingHandler.UpdateGiftCardStatus)
-		}
-
 		// 积分交易管理
 		loyaltyGroup := marketingGroup.Group("/loyalty")
 		{
 			loyaltyGroup.GET("/transactions", marketingHandler.ListLoyaltyTransactions)
-			loyaltyGroup.GET("/redemptions", marketingHandler.ListGiftCardRedemptions)
 			loyaltyGroup.POST("/transactions", middleware.RequirePermission(auth.PermMarketingCreate), marketingHandler.CreateLoyaltyTransaction)
 			loyaltyGroup.GET("/check-ins", marketingHandler.ListCheckIns)
 			loyaltyGroup.GET("/referrals", marketingHandler.ListReferrals)
@@ -114,6 +105,7 @@ func registerBusinessRoutes(
 	urlGroup.Use(middleware.RequirePermission(auth.PermURLView))
 	{
 		urlGroup.GET("/stats", urlRoutesHandler.Stats)
+		urlGroup.GET("/check/:task_id", urlRoutesHandler.CheckStatus)
 		urlGroup.GET("/routes", urlRoutesHandler.List)
 		urlGroup.GET("/routes/:id", urlRoutesHandler.Get)
 		urlGroup.GET("/routes/:id/history", urlRoutesHandler.History)

@@ -115,10 +115,8 @@ func respondSiteLogoError(c *gin.Context, err error) {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error(), "code": "upload_identity_required"})
 	case errors.Is(err, service.ErrSiteLogoUnavailable):
 		c.JSON(http.StatusServiceUnavailable, gin.H{"error": err.Error(), "code": "site_logo_unavailable"})
-	case errors.Is(err, service.ErrSiteLogoPreviousDestroyFailed):
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error(), "code": "previous_site_logo_destroy_failed"})
-	case errors.Is(err, service.ErrSiteLogoCurrentDestroyFailed):
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error(), "code": "current_site_logo_destroy_failed"})
+	case errors.Is(err, service.ErrObjectStorageCleanupUnavailable):
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": err.Error(), "code": "object_cleanup_unavailable"})
 	default:
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to upload site logo", "code": "site_logo_upload_failed"})
 	}

@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
-	"strconv"
 
 	"commerce-platform/internal/domain/currency"
 	"commerce-platform/internal/domain/money"
@@ -25,8 +24,8 @@ const HighValueSignatureThresholdUSDMinor int64 = 75000
 var highValueSignatureThreshold = money.MustNew(HighValueSignatureThresholdUSDMinor, currency.DefaultPrimaryCurrency)
 
 // OrderAmountToBaseMoney converts an order amount using the immutable FX
-// snapshot captured at checkout. The snapshot's float rate is parsed only at
-// this boundary; all arithmetic thereafter uses exact minor-unit integers.
+// snapshot captured at checkout. The captured decimal is parsed exactly and
+// all arithmetic thereafter uses exact minor-unit integers.
 func OrderAmountToBaseMoney(amount money.Money, fxSnapshot currency.OrderFXSnapshot) (money.Money, error) {
 	if err := fxSnapshot.Validate(fxSnapshot.OrderCurrency); err != nil {
 		return money.Money{}, err
@@ -40,8 +39,8 @@ func OrderAmountToBaseMoney(amount money.Money, fxSnapshot currency.OrderFXSnaps
 	if amount.AmountMinor() < 0 {
 		return money.Money{}, errors.New("order amount cannot be negative")
 	}
-	rate, ok := new(big.Rat).SetString(strconv.FormatFloat(fxSnapshot.BaseToOrderRate, 'f', -1, 64))
-	if !ok || rate.Sign() <= 0 {
+	rate, err := fxSnapshot.RateRat()
+	if err != nil {
 		return money.Money{}, errors.New("invalid order FX snapshot rate")
 	}
 	return amount.ConvertAtRat(new(big.Rat).Inv(rate), fxSnapshot.BaseCurrency)

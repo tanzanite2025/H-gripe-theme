@@ -35,6 +35,52 @@ func enqueuePaymentRefundPendingOutboxEvent(
 	return createPaymentRefundOutboxEvent(repo, eventKey, outbox.EventTypePaymentRefundPending, refund.ID, payload, occurredAt)
 }
 
+func enqueuePaymentRefundExecutionRequestedOutboxEvent(
+	repo *repository.OutboxRepository,
+	execution *payment.PaymentRefundExecution,
+	requestedProvider string,
+	occurredAt time.Time,
+) error {
+	if repo == nil {
+		return errors.New("outbox repository is not configured")
+	}
+	if execution == nil || execution.RefundID == 0 {
+		return errors.New("payment refund execution request requires a persisted execution")
+	}
+	provider := strings.TrimSpace(execution.Provider)
+	if provider == "" {
+		provider = strings.TrimSpace(requestedProvider)
+	}
+	if provider == "" {
+		return errors.New("payment refund execution provider is required")
+	}
+	if occurredAt.IsZero() {
+		occurredAt = time.Now().UTC()
+	} else {
+		occurredAt = occurredAt.UTC()
+	}
+	payload, err := json.Marshal(outbox.PaymentRefundExecutionRequestedPayload{
+		RefundID:       execution.RefundID,
+		AdminID:        execution.RequestedByID,
+		Provider:       provider,
+		Attempt:        execution.AttemptCount,
+		IdempotencyKey: execution.IdempotencyKey,
+		RequestedAt:    execution.RequestedAt,
+	})
+	if err != nil {
+		return fmt.Errorf("encode payment refund execution request: %w", err)
+	}
+	eventKey := fmt.Sprintf("%s:%d:%d", outbox.EventTypePaymentRefundExecutionRequested, execution.RefundID, execution.AttemptCount)
+	return repo.CreateEvent(&outbox.Event{
+		EventKey:      eventKey,
+		EventType:     outbox.EventTypePaymentRefundExecutionRequested,
+		AggregateType: outbox.AggregateTypePayment,
+		AggregateID:   strconv.FormatUint(uint64(execution.RefundID), 10),
+		Payload:       datatypes.JSON(payload),
+		AvailableAt:   occurredAt,
+	})
+}
+
 func enqueuePaymentRefundCompletedOutboxEvent(
 	repo *repository.OutboxRepository,
 	refund *payment.Refund,
@@ -43,6 +89,7 @@ func enqueuePaymentRefundCompletedOutboxEvent(
 	providerRefundID string,
 	executionStatus string,
 	occurredAt time.Time,
+	orderNumbers ...string,
 ) error {
 	if repo == nil {
 		return nil
@@ -52,7 +99,10 @@ func enqueuePaymentRefundCompletedOutboxEvent(
 		return err
 	}
 	eventKey := fmt.Sprintf("%s:%d", outbox.EventTypePaymentRefundCompleted, refund.ID)
-	return createPaymentRefundOutboxEvent(repo, eventKey, outbox.EventTypePaymentRefundCompleted, refund.ID, payload, occurredAt)
+	if err := createPaymentRefundOutboxEvent(repo, eventKey, outbox.EventTypePaymentRefundCompleted, refund.ID, payload, occurredAt); err != nil {
+		return err
+	}
+	return enqueueOrderRefundedDomainEvent(repo, refund, provider, providerRefundID, occurredAt, orderNumbers...)
 }
 
 func enqueuePaymentRefundFailedOutboxEvent(
@@ -97,10 +147,6 @@ func paymentRefundOutboxPayload(
 	if err != nil {
 		return outbox.PaymentRefundPayload{}, fmt.Errorf("refund amount: %w", err)
 	}
-	giftCardMoney, err := refund.GiftCardRefundMoney()
-	if err != nil {
-		return outbox.PaymentRefundPayload{}, fmt.Errorf("gift card refund amount: %w", err)
-	}
 	requestedMoney, err := refund.RequestedAmountMoney()
 	if err != nil {
 		return outbox.PaymentRefundPayload{}, fmt.Errorf("requested refund amount: %w", err)
@@ -119,7 +165,6 @@ func paymentRefundOutboxPayload(
 		RefundStatus:         strings.TrimSpace(refund.Status),
 		ExecutionStatus:      strings.TrimSpace(executionStatus),
 		AmountMinor:          amountMoney.AmountMinor(),
-		GiftCardAmountMinor:  giftCardMoney.AmountMinor(),
 		RequestedAmountMinor: requestedMoney.AmountMinor(),
 		Currency:             currencyCode,
 		Reason:               strings.TrimSpace(refund.Reason),
@@ -153,12 +198,4 @@ func createPaymentRefundOutboxEvent(
 		Payload:       datatypes.JSON(encoded),
 		AvailableAt:   availableAt,
 	})
-}
-
-func paymentAmountMinor(amount float64, currencyCode string) (int64, error) {
-	money, err := parseRefundMoney(amount, currencyCode)
-	if err != nil {
-		return 0, err
-	}
-	return money.AmountMinor(), nil
 }

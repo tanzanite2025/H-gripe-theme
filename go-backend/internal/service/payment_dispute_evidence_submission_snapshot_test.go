@@ -53,7 +53,6 @@ func TestStripeDisputeEvidenceRetryReusesLockedSnapshot(t *testing.T) {
 	require.NotEmpty(t, lockedPayload.Sources)
 	require.NotNil(t, lockedPayload.TrackingContext)
 
-	orderRecord.TrackingNumber = "DHL-SNAPSHOT-CHANGED"
 	require.NoError(t, db.Save(&orderRecord).Error)
 	fakeSubmitter.err = nil
 
@@ -112,7 +111,6 @@ func TestStripeDisputeEvidenceDraftDoesNotLockSnapshotAndFinalSubmitUsesCurrentE
 		Count(&snapshotCount).Error)
 	require.Equal(t, int64(0), snapshotCount)
 
-	orderRecord.TrackingNumber = "DHL-STAGE-CHANGED"
 	require.NoError(t, db.Save(&orderRecord).Error)
 	require.NoError(t, db.Model(&shippingdomain.TrackingShipment{}).
 		Where("order_id = ?", orderRecord.ID).
@@ -218,7 +216,6 @@ func TestPayPalDisputeEvidenceRetryReusesSnapshotAndDoesNotReuploadInvoice(t *te
 	require.ErrorIs(t, err, fakeSubmitter.err)
 	require.Equal(t, 1, fakeStorage.uploads)
 
-	orderRecord.TrackingNumber = "DHL-PAYPAL-SNAPSHOT-CHANGED"
 	require.NoError(t, db.Save(&orderRecord).Error)
 	fakeSubmitter.err = nil
 

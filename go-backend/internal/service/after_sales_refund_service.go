@@ -108,10 +108,6 @@ func (s *AfterSalesService) SaveRefundReview(
 	if maximumAmount.Validate() != nil || input.ProposedAmount.AmountMinor() > maximumAmount.AmountMinor() {
 		return nil, ErrAfterSalesRefundReviewAmountExceeded
 	}
-	amount, amountErr := input.ProposedAmount.MajorFloat()
-	if amountErr != nil {
-		return nil, ErrAfterSalesRefundReviewAmountInvalid
-	}
 
 	var saved *aftersales.AfterSalesRefundReview
 	err = s.refundReviewRepo.Transaction(func(txRepo *repository.AfterSalesRefundReviewRepository) error {
@@ -129,13 +125,13 @@ func (s *AfterSalesService) SaveRefundReview(
 		existing, err := txRepo.FindByCaseIDForUpdate(input.CaseID)
 		if repository.IsRecordNotFound(err) {
 			review := &aftersales.AfterSalesRefundReview{
-				CaseID:         input.CaseID,
-				Status:         aftersales.RefundReviewStatusPending,
-				ProposedAmount: amount,
-				Currency:       expectedCurrency,
-				RequestNotes:   input.RequestNotes,
-				CreatedBy:      input.UpdatedBy,
-				UpdatedBy:      input.UpdatedBy,
+				CaseID:              input.CaseID,
+				Status:              aftersales.RefundReviewStatusPending,
+				ProposedAmountMinor: input.ProposedAmount.AmountMinor(),
+				Currency:            expectedCurrency,
+				RequestNotes:        input.RequestNotes,
+				CreatedBy:           input.UpdatedBy,
+				UpdatedBy:           input.UpdatedBy,
 			}
 			if err := txRepo.Create(review); err != nil {
 				return err
@@ -150,7 +146,7 @@ func (s *AfterSalesService) SaveRefundReview(
 			return ErrAfterSalesRefundReviewFinalized
 		}
 
-		existing.ProposedAmount = amount
+		existing.ProposedAmountMinor = input.ProposedAmount.AmountMinor()
 		existing.Currency = expectedCurrency
 		existing.RequestNotes = input.RequestNotes
 		existing.UpdatedBy = input.UpdatedBy
@@ -302,7 +298,7 @@ func (s *AfterSalesService) CreatePendingRefundFromApprovedReview(
 		if !strings.EqualFold(expectedCurrency, review.Currency) {
 			return ErrAfterSalesRefundReviewCurrencyInvalid
 		}
-		proposedMoney, amountErr := domainmoney.FromMajorFloat(review.ProposedAmount, review.Currency)
+		proposedMoney, amountErr := domainmoney.New(review.ProposedAmountMinor, review.Currency)
 		if amountErr != nil || maximumAmount.Validate() != nil || proposedMoney.AmountMinor() <= 0 || proposedMoney.AmountMinor() > maximumAmount.AmountMinor() {
 			return ErrAfterSalesRefundReviewAmountExceeded
 		}
@@ -311,7 +307,7 @@ func (s *AfterSalesService) CreatePendingRefundFromApprovedReview(
 			OrderID:       caseRecord.OrderID,
 			TransactionID: transaction.ID,
 			Currency:      transaction.Currency,
-			Amount:        review.ProposedAmount,
+			AmountMinor:   review.ProposedAmountMinor,
 			Reason:        afterSalesRefundDraftReason(caseRecord.ID, review),
 		}
 		if proposedMoney.AmountMinor() >= maximumAmount.AmountMinor() {
@@ -322,7 +318,6 @@ func (s *AfterSalesService) CreatePendingRefundFromApprovedReview(
 			// once. Keeping the review's post-discount amount here would make the
 			// line-item amount consistency check reject every fully approved
 			// order-level coupon refund (for example, 900 vs. 1000).
-			refund.Amount = 0
 		}
 		if err := createAdminRefundInTx(repos, refund, input.AdminID); err != nil {
 			return err
@@ -354,7 +349,7 @@ func (s *AfterSalesService) populateRefundReviewDetails(record *aftersales.After
 		if err == nil {
 			maximumAmount := refundReviewLimit(record, orderRecord)
 			record.RefundReviewCurrency = maximumAmount.Currency().String()
-			record.RefundReviewMaximumAmount, _ = maximumAmount.MajorFloat()
+			record.RefundReviewMaximumAmountMinor = maximumAmount.AmountMinor()
 		}
 	}
 	s.populateRefundReviewOperatorNames(record.RefundReview)
@@ -420,6 +415,9 @@ func refundReviewLimit(
 		lineMoney, lineErr := item.TotalMoney()
 		if lineErr != nil {
 			continue
+		}
+		if len(item.PricingSnapshotData) == 0 || strings.TrimSpace(string(item.PricingSnapshotData)) == "{}" {
+			return domainmoney.Money{}
 		}
 		if lineMoney.Currency().String() != currencyCode {
 			return domainmoney.Money{}

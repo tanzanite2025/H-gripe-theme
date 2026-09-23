@@ -137,7 +137,6 @@ const isValidSummary = (summary: unknown): summary is PromotionRiskSummary => {
     && typeof candidate.max_member_discount_level_name === 'string'
     && typeof candidate.points_redemption_enabled === 'boolean'
     && typeof candidate.direct_points_discount_cap_rate === 'number'
-    && typeof candidate.max_redeem_gift_card_value === 'number'
 }
 
 const isValidRiskItem = (item: unknown): item is PromotionRiskItem => {
@@ -291,7 +290,8 @@ const thresholdLabel = (item: PromotionRiskItem) => {
   const threshold = item.kind === 'zero_total'
     ? item.full_cover_subtotal_threshold
     : item.gateway_minimum_threshold
-  if (!threshold || threshold <= 0) return '全部满足门槛的小计'
+  const thresholdValue = Number(threshold)
+  if (!Number.isFinite(thresholdValue) || thresholdValue <= 0) return '全部满足门槛的小计'
   return `≤ ${money(threshold)}`
 }
 

@@ -14,17 +14,17 @@ import (
 func TestBuildFromOrderCreatesCommercialInvoiceSnapshot(t *testing.T) {
 	paidAt := time.Date(2026, 8, 10, 12, 0, 0, 0, time.UTC)
 	orderRecord := &order.Order{
-		OrderNumber:    "ORD-1001",
-		PaymentMethod:  "paypal",
-		PaymentStatus:  "paid",
-		SubtotalAmount: 100,
-		ShippingFee:    15,
-		TaxAmount:      10,
-		DiscountAmount: 5,
-		TotalAmount:    120,
-		Currency:       "usd",
-		CreatedAt:      time.Date(2026, 8, 9, 9, 0, 0, 0, time.UTC),
-		PaidAt:         &paidAt,
+		OrderNumber:         "ORD-1001",
+		PaymentMethod:       "paypal",
+		PaymentStatus:       "paid",
+		SubtotalAmountMinor: 10000,
+		ShippingFeeMinor:    1500,
+		TaxAmountMinor:      1000,
+		DiscountAmountMinor: 500,
+		TotalAmountMinor:    12000,
+		Currency:            "usd",
+		CreatedAt:           time.Date(2026, 8, 9, 9, 0, 0, 0, time.UTC),
+		PaidAt:              &paidAt,
 		BillingAddress: order.Address{
 			FirstName:  "Jane",
 			LastName:   "Buyer",
@@ -44,12 +44,13 @@ func TestBuildFromOrderCreatesCommercialInvoiceSnapshot(t *testing.T) {
 			Country:    "US",
 		},
 		Items: []order.OrderItem{{
-			ProductName: "Carbon wheel",
-			SKU:         "CW-01",
-			Quantity:    2,
-			Price:       50,
-			Subtotal:    100,
-			Total:       100,
+			ProductName:   "Carbon wheel",
+			SKU:           "CW-01",
+			Quantity:      2,
+			Currency:      "USD",
+			PriceMinor:    5000,
+			SubtotalMinor: 10000,
+			TotalMinor:    10000,
 		}},
 	}
 
@@ -80,11 +81,11 @@ func TestRenderCommercialInvoicePDFProducesReadablePDF(t *testing.T) {
 			Description: "Carbon wheel",
 			SKU:         "CW-01",
 			Quantity:    2,
-			UnitPrice:   50,
-			Total:       100,
+			UnitPrice:   "50.00",
+			Total:       "100.00",
 		}},
-		Subtotal: 100,
-		Total:    100,
+		Subtotal: "100.00",
+		Total:    "100.00",
 	}
 
 	pdfBytes, err := RenderCommercialInvoicePDF(document, "")

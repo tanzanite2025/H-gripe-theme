@@ -1,11 +1,13 @@
 package order
 
 import (
+	"encoding/json"
 	"errors"
 	"mime"
 	"mime/multipart"
 	"net/http"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"commerce-platform/internal/domain/aftersales"
@@ -78,6 +80,11 @@ func (h *Handler) CreateAfterSalesRequest(c *gin.Context) {
 		apierror.RespondBadRequest(c, "Reason and description are required")
 		return
 	}
+	items, err := parseCustomerAfterSalesItems(c)
+	if err != nil {
+		apierror.RespondBadRequest(c, err.Error())
+		return
+	}
 
 	attachments, uploadedURLs, err := h.uploadAfterSalesEvidence(c)
 	if err != nil {
@@ -89,6 +96,7 @@ func (h *Handler) CreateAfterSalesRequest(c *gin.Context) {
 		OrderID:     orderRecord.ID,
 		Reason:      reason,
 		Description: description,
+		Items:       items,
 		Attachments: attachments,
 		CreatedBy:   userID,
 	})
@@ -99,6 +107,39 @@ func (h *Handler) CreateAfterSalesRequest(c *gin.Context) {
 	}
 
 	response.Created(c, record)
+}
+
+func parseCustomerAfterSalesItems(c *gin.Context) ([]service.AfterSalesCaseItemInput, error) {
+	var rawItems []struct {
+		OrderItemID uint `json:"order_item_id"`
+		Quantity    int  `json:"quantity"`
+	}
+	if value := strings.TrimSpace(c.PostForm("items")); value != "" {
+		if err := json.Unmarshal([]byte(value), &rawItems); err != nil {
+			return nil, errors.New("items must be valid JSON")
+		}
+	} else if value := strings.TrimSpace(c.PostForm("order_item_id")); value != "" {
+		id, err := strconv.ParseUint(value, 10, 64)
+		if err != nil || id == 0 {
+			return nil, errors.New("order_item_id is invalid")
+		}
+		quantity := 1
+		if rawQuantity := strings.TrimSpace(c.PostForm("quantity")); rawQuantity != "" {
+			quantity, err = strconv.Atoi(rawQuantity)
+			if err != nil {
+				return nil, errors.New("quantity is invalid")
+			}
+		}
+		rawItems = append(rawItems, struct {
+			OrderItemID uint `json:"order_item_id"`
+			Quantity    int  `json:"quantity"`
+		}{OrderItemID: uint(id), Quantity: quantity})
+	}
+	items := make([]service.AfterSalesCaseItemInput, 0, len(rawItems))
+	for _, item := range rawItems {
+		items = append(items, service.AfterSalesCaseItemInput{OrderItemID: item.OrderItemID, Quantity: item.Quantity})
+	}
+	return items, nil
 }
 
 // ListAfterSalesRequests returns the authenticated customer's after-sales
@@ -275,6 +316,8 @@ func respondAfterSalesRequestError(c *gin.Context, err error) {
 	case errors.Is(err, service.ErrAfterSalesOrderNotFound):
 		apierror.RespondNotFound(c, "Order")
 	case errors.Is(err, service.ErrAfterSalesOrderNotEligible),
+		errors.Is(err, service.ErrAfterSalesReturnWindowExpired),
+		errors.Is(err, service.ErrAfterSalesReturnNotAllowed),
 		errors.Is(err, service.ErrAfterSalesDescriptionRequired),
 		errors.Is(err, service.ErrAfterSalesItemsRequired),
 		errors.Is(err, service.ErrAfterSalesAttachmentKindInvalid),

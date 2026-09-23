@@ -26,7 +26,7 @@ func TestOrderEvidenceSnapshotRepositoryCreatesFindsAndProtectsSnapshot(t *testi
 
 	orderRecord := order.Order{
 		OrderNumber: "TZ-2026-REPOSITORY-EVIDENCE",
-		TotalAmount: 750,
+		TotalAmountMinor: 75000,
 		Currency:    "USD",
 	}
 	require.NoError(t, db.Create(&orderRecord).Error)
@@ -54,7 +54,7 @@ func TestOrderEvidenceSnapshotCannotBeUpdatedOrDeleted(t *testing.T) {
 
 	orderRecord := order.Order{
 		OrderNumber: "TZ-2026-REPOSITORY-IMMUTABLE",
-		TotalAmount: 100,
+		TotalAmountMinor: 10000,
 		Currency:    "USD",
 	}
 	require.NoError(t, db.Create(&orderRecord).Error)
@@ -82,15 +82,15 @@ func repositoryTestEvidenceSnapshot(orderID uint) *orderevidence.OrderEvidenceSn
 	data := datatypes.JSON([]byte(`{"items":[],"schema_version":1}`))
 	hash := sha256.Sum256(data)
 	return &orderevidence.OrderEvidenceSnapshot{
-		OrderID:           orderID,
-		SchemaVersion:     orderevidence.OrderEvidenceSnapshotSchemaVersion,
-		ConfirmedAt:       time.Date(2026, 9, 4, 12, 0, 0, 0, time.UTC),
-		Currency:          "USD",
-		OrderTotalAmount:  100,
-		OrderTotalUSD:     100,
-		IsHighValue:       false,
-		HasSpokeTensionQC: false,
-		SnapshotData:      data,
-		SnapshotSHA256:    hex.EncodeToString(hash[:]),
+		OrderID:               orderID,
+		SchemaVersion:         orderevidence.OrderEvidenceSnapshotSchemaVersion,
+		ConfirmedAt:           time.Date(2026, 9, 4, 12, 0, 0, 0, time.UTC),
+		Currency:              "USD",
+		OrderTotalAmountMinor: 10000,
+		OrderTotalUSDMinor:    10000,
+		IsHighValue:           false,
+		HasSpokeTensionQC:     false,
+		SnapshotData:          data,
+		SnapshotSHA256:        hex.EncodeToString(hash[:]),
 	}
 }

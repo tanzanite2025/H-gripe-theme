@@ -7,7 +7,7 @@ import (
 )
 
 func TestTransactionAmountMoneyUsesMinorSnapshot(t *testing.T) {
-	transaction := Transaction{AmountMinor: 12345, Amount: 999, Currency: "USD"}
+	transaction := Transaction{AmountMinor: 12345, Currency: "USD"}
 
 	amount, err := transaction.AmountMoney()
 
@@ -15,9 +15,13 @@ func TestTransactionAmountMoneyUsesMinorSnapshot(t *testing.T) {
 	require.Equal(t, int64(12345), amount.AmountMinor())
 }
 
-func TestTransactionBeforeSaveBackfillsMinorSnapshot(t *testing.T) {
-	transaction := Transaction{Amount: 12.34, Currency: "USD"}
+func TestTransactionBeforeSaveRequiresMinorSnapshot(t *testing.T) {
+	transaction := Transaction{Currency: "USD"}
 
 	require.NoError(t, transaction.BeforeSave(nil))
-	require.Equal(t, int64(1234), transaction.AmountMinor)
+	require.Zero(t, transaction.AmountMinor)
+
+	canonical := Transaction{AmountMinor: 1234, Currency: "USD"}
+	require.NoError(t, canonical.BeforeSave(nil))
+	require.Equal(t, int64(1234), canonical.AmountMoneyMustMinor())
 }

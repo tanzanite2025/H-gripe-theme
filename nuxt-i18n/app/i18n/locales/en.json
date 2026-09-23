@@ -52,9 +52,50 @@
       "cart": "Cart"
     },
     "tabs": {
-      "ariaLabel": "Account sections"
+      "ariaLabel": "Account sections",
+      "referral": "Refer a friend"
     },
     "memberTitle": "My account",
+    "referral": {
+      "loading": "Loading your referral center...",
+      "kicker": "Refer a friend",
+      "title": "Share your referral code",
+      "description": "Share your unique code with friends. Registration points are added to the new account's regular points balance.",
+      "yourCode": "Your referral code",
+      "codeGeneratedNote": "Your unique referral code is generated automatically for this account. Registration points are added to your regular points balance and are not tracked separately.",
+      "copy": "Copy referral link",
+      "share": "Invite a friend",
+      "invitationLink": "Your invitation link",
+      "copyFailed": "Select and copy the invitation link above to send it to a friend.",
+      "copied": "Referral link copied",
+      "invited": "Invited",
+      "successful": "Successful",
+      "pendingPoints": "Pending referrer reward",
+      "settledPoints": "Settled referrer reward",
+      "registrationPointsRule": "{points} pts are credited to a new account immediately at registration and remain regular points.",
+      "ruleSummary": "Earn {points} pts after delivery plus a {days}-day cooling-off period.",
+      "ruleFallback": "Rewards follow the current referral program rules.",
+      "historyKicker": "Activity",
+      "historyTitle": "Referral history",
+      "empty": "Your first referral will appear here.",
+      "newCustomer": "New customer",
+      "disabledTitle": "Referral center is paused",
+      "disabledDescription": "This program is not available right now. Your account and points remain unchanged.",
+      "signInTitle": "Sign in to view your referral code",
+      "signInDescription": "Your referral code and sharing link are available after you sign in.",
+      "signIn": "Sign in",
+      "loadFailed": "Referral data could not be loaded.",
+      "awaitingOrder": "Awaiting first order",
+      "status": {
+        "pending": "Pending",
+        "ordered": "Order paid",
+        "vesting": "Cooling off",
+        "settled": "Settled",
+        "expired": "Expired",
+        "revoked": "Revoked",
+        "reversed": "Reversed"
+      }
+    },
     "wishlist": {
       "eyebrow": "Saved products",
       "title": "Wishlist",
@@ -108,6 +149,9 @@
       "username": "Username",
       "email": "Email",
       "password": "Password",
+      "referralCode": "Referral code (optional)",
+      "referralCodePlaceholder": "Enter a friend's referral code",
+      "referralCodeHint": "The code is applied when you sign in after registration.",
       "rememberMe": "Remember me"
     },
     "actions": {
@@ -557,7 +601,6 @@
         "tax": "Tax",
         "pointsDiscount": "Points discount",
         "couponDiscount": "Coupon discount",
-        "giftCardDiscount": "Gift card discount",
         "total": "Total",
         "title": "Order summary"
       }
@@ -1397,7 +1440,8 @@
       "ariaLabel": "Membership sections",
       "myInfo": "My info",
       "levers": "Levers",
-      "exchange": "Exchange"
+      "exchange": "Exchange",
+      "referral": "Referral code"
     },
     "points": {
       "unit": "pts"

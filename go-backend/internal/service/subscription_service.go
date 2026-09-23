@@ -14,10 +14,9 @@ import (
 )
 
 type SubscriptionService struct {
+	txManager        *repository.EmailChallengeTxManager
 	subscriptionRepo *repository.SubscriptionRepository
-	challengeRepo    *repository.EmailChallengeRepository
 	challengeSecret  string
-	emailSender      EmailChallengeSender
 	baseURL          string
 }
 
@@ -33,161 +32,103 @@ const (
 	subscriptionStatusPurpose      = "subscription:status"
 )
 
-func NewSubscriptionService(subscriptionRepo *repository.SubscriptionRepository) *SubscriptionService {
+func NewSubscriptionService(txManager *repository.EmailChallengeTxManager, subscriptionRepo *repository.SubscriptionRepository) *SubscriptionService {
 	return &SubscriptionService{
+		txManager:        txManager,
 		subscriptionRepo: subscriptionRepo,
 	}
 }
 
-func (s *SubscriptionService) ConfigureEmailChallenges(
-	challengeRepo *repository.EmailChallengeRepository,
-	secret string,
-	senders ...EmailChallengeSender,
-) {
-	s.challengeRepo = challengeRepo
+func (s *SubscriptionService) ConfigureEmailChallenges(secret string) {
 	s.challengeSecret = secret
-	if len(senders) > 0 {
-		s.emailSender = senders[0]
-	}
 }
 
 func (s *SubscriptionService) ConfigureEmailBaseURL(baseURL string) {
 	s.baseURL = strings.TrimRight(strings.TrimSpace(baseURL), "/")
 }
 
-// Subscribe creates a pending subscription. It becomes active only after the
-// signed confirmation token is consumed.
-func (s *SubscriptionService) Subscribe(email, source, locale string, tags []string) (*subscription.Subscription, error) {
+// Subscribe creates the pending subscription and confirmation delivery event
+// atomically. It becomes active only after the signed token is consumed.
+func (s *SubscriptionService) Subscribe(email, source, locale string, tags []string) (*subscription.Subscription, string, error) {
+	if s == nil || s.txManager == nil {
+		return nil, "", ErrEmailChallengeUnavailable
+	}
 	email = normalizeSubscriptionEmail(email)
-	exists, err := s.subscriptionRepo.CheckEmailExists(email)
+	unsubToken, err := generateUnsubToken()
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
-	if exists {
-		return nil, errors.New("email already subscribed")
-	}
-
-	token, err := generateUnsubToken()
-	if err != nil {
-		return nil, err
-	}
-
-	existing, findErr := s.subscriptionRepo.FindByEmail(email)
-	if findErr == nil {
-		existing.Status = "pending"
-		existing.Locale = locale
-		existing.Source = source
-		existing.Tags = joinTags(tags)
-		existing.UnsubToken = token
-		if err := s.subscriptionRepo.Update(existing); err != nil {
-			return nil, err
+	var result *subscription.Subscription
+	var confirmationToken string
+	err = s.txManager.WithinTx(func(repos repository.EmailChallengeTxRepositories) error {
+		if repos.Subscription == nil {
+			return repository.ErrEmailChallengeTransactionNotConfigured
 		}
-		return existing, nil
-	}
-	if !repository.IsRecordNotFound(findErr) {
-		return nil, findErr
-	}
-
-	sub := &subscription.Subscription{
-		Email:        email,
-		Status:       "pending",
-		Locale:       locale,
-		Source:       source,
-		Tags:         joinTags(tags),
-		UnsubToken:   token,
-		SubscribedAt: time.Now(),
-	}
-	if err := s.subscriptionRepo.Create(sub); err != nil {
-		return nil, err
-	}
-
-	return sub, nil
-}
-
-func (s *SubscriptionService) IssueSubscriptionConfirmation(email string) (string, error) {
-	email = normalizeSubscriptionEmail(email)
-	sub, err := s.subscriptionRepo.FindByEmail(email)
-	if err != nil {
-		if repository.IsRecordNotFound(err) {
-			return "", nil
+		sub, findErr := repos.Subscription.FindByEmail(email)
+		switch {
+		case findErr == nil && sub.Status == "active":
+			return errors.New("email already subscribed")
+		case findErr == nil:
+			sub.Status = "pending"
+			sub.Locale = locale
+			sub.Source = source
+			sub.Tags = joinTags(tags)
+			sub.UnsubToken = unsubToken
+			if err := repos.Subscription.Update(sub); err != nil {
+				return err
+			}
+		case repository.IsRecordNotFound(findErr):
+			sub = &subscription.Subscription{
+				Email:        email,
+				Status:       "pending",
+				Locale:       locale,
+				Source:       source,
+				Tags:         joinTags(tags),
+				UnsubToken:   unsubToken,
+				SubscribedAt: time.Now().UTC(),
+			}
+			if err := repos.Subscription.Create(sub); err != nil {
+				return err
+			}
+		default:
+			return findErr
 		}
-		return "", err
-	}
-	if sub.Status == "active" {
-		return "", nil
-	}
-
-	token, err := issueEmailChallenge(
-		s.challengeRepo,
-		s.challengeSecret,
-		subscriptionConfirmPurpose,
-		email,
-		email,
-		24*time.Hour,
-	)
+		confirmationToken, err = issueEmailChallengeWithDelivery(
+			repos.EmailChallenge,
+			repos.Outbox,
+			s.challengeSecret,
+			subscriptionConfirmPurpose,
+			email,
+			email,
+			"Confirm your newsletter subscription",
+			func(token string) string {
+				return s.subscriptionChallengeBody("confirm", token)
+			},
+			24*time.Hour,
+		)
+		if err != nil {
+			return err
+		}
+		result = sub
+		return nil
+	})
 	if err != nil {
-		return "", err
+		return nil, "", err
 	}
-
-	return token, s.sendSubscriptionChallenge(
-		email,
-		"Confirm your newsletter subscription",
-		"confirm",
-		token,
-	)
+	return result, confirmationToken, nil
 }
 
 func (s *SubscriptionService) ConfirmSubscription(token string) error {
-	claims, err := consumeEmailChallenge(
-		s.challengeRepo,
-		s.challengeSecret,
-		token,
-		subscriptionConfirmPurpose,
-	)
-	if err != nil {
-		return ErrInvalidSubscriptionToken
-	}
-
-	sub, err := s.subscriptionRepo.FindByEmail(normalizeSubscriptionEmail(claims.Email))
-	if err != nil {
-		return ErrInvalidSubscriptionToken
-	}
-	if sub.Status == "active" {
-		return nil
-	}
-
-	sub.Status = "active"
-	sub.SubscribedAt = time.Now()
-	sub.UnsubscribedAt = nil
-	return s.subscriptionRepo.Update(sub)
+	return s.consumeChallengeAndSetStatus(token, subscriptionConfirmPurpose, "active")
 }
 
 func (s *SubscriptionService) ResubscribeByToken(token string) error {
-	claims, err := consumeEmailChallenge(
-		s.challengeRepo,
-		s.challengeSecret,
-		token,
-		subscriptionResubscribePurpose,
-	)
-	if err != nil {
-		return ErrInvalidSubscriptionToken
-	}
-	return s.setStatus(claims.Email, "active")
+	return s.consumeChallengeAndSetStatus(token, subscriptionResubscribePurpose, "active")
 }
 
 // Unsubscribe consumes a signed, single-use email token.
 func (s *SubscriptionService) Unsubscribe(token string) error {
-	claims, err := consumeEmailChallenge(
-		s.challengeRepo,
-		s.challengeSecret,
-		token,
-		subscriptionUnsubscribePurpose,
-	)
-	if err != nil {
-		return ErrInvalidSubscriptionToken
-	}
-
-	return s.setStatus(claims.Email, "unsubscribed")
+	return s.consumeChallengeAndSetStatus(token, subscriptionUnsubscribePurpose, "unsubscribed")
 }
 
 // UnsubscribeByEmail requests a signed email action; it does not mutate by email alone.
@@ -226,16 +167,25 @@ func (s *SubscriptionService) GetSubscription(email string) (*subscription.Subsc
 }
 
 func (s *SubscriptionService) GetSubscriptionByToken(token string) (*subscription.Subscription, error) {
-	claims, err := consumeEmailChallenge(
-		s.challengeRepo,
-		s.challengeSecret,
-		token,
-		subscriptionStatusPurpose,
-	)
-	if err != nil {
-		return nil, ErrInvalidSubscriptionToken
+	if s == nil || s.txManager == nil {
+		return nil, ErrEmailChallengeUnavailable
 	}
-	return s.GetSubscription(claims.Email)
+	var result *subscription.Subscription
+	err := s.txManager.WithinTx(func(repos repository.EmailChallengeTxRepositories) error {
+		if repos.Subscription == nil {
+			return repository.ErrEmailChallengeTransactionNotConfigured
+		}
+		claims, err := consumeEmailChallenge(repos.EmailChallenge, s.challengeSecret, token, subscriptionStatusPurpose)
+		if err != nil {
+			return ErrInvalidSubscriptionToken
+		}
+		result, err = repos.Subscription.FindByEmail(normalizeSubscriptionEmail(claims.Email))
+		if err != nil {
+			return ErrInvalidSubscriptionToken
+		}
+		return nil
+	})
+	return result, err
 }
 
 func (s *SubscriptionService) RequestStatus(email string) error {
@@ -297,7 +247,14 @@ func (s *SubscriptionService) GetActiveEmailsByTags(tags []string) ([]string, er
 }
 
 func (s *SubscriptionService) setStatus(email, status string) error {
-	sub, err := s.subscriptionRepo.FindByEmail(normalizeSubscriptionEmail(email))
+	return setSubscriptionStatus(s.subscriptionRepo, email, status)
+}
+
+func setSubscriptionStatus(repo *repository.SubscriptionRepository, email, status string) error {
+	if repo == nil {
+		return repository.ErrEmailChallengeTransactionNotConfigured
+	}
+	sub, err := repo.FindByEmail(normalizeSubscriptionEmail(email))
 	if err != nil {
 		return err
 	}
@@ -305,53 +262,79 @@ func (s *SubscriptionService) setStatus(email, status string) error {
 	sub.Status = status
 	switch status {
 	case "active":
-		sub.SubscribedAt = time.Now()
+		sub.SubscribedAt = time.Now().UTC()
 		sub.UnsubscribedAt = nil
 	case "unsubscribed":
-		now := time.Now()
+		now := time.Now().UTC()
 		sub.UnsubscribedAt = &now
 	}
-	return s.subscriptionRepo.Update(sub)
+	return repo.Update(sub)
+}
+
+func (s *SubscriptionService) consumeChallengeAndSetStatus(token, purpose, status string) error {
+	if s == nil || s.txManager == nil {
+		return ErrEmailChallengeUnavailable
+	}
+	return s.txManager.WithinTx(func(repos repository.EmailChallengeTxRepositories) error {
+		if repos.Subscription == nil {
+			return repository.ErrEmailChallengeTransactionNotConfigured
+		}
+		claims, err := consumeEmailChallenge(repos.EmailChallenge, s.challengeSecret, token, purpose)
+		if err != nil {
+			return ErrInvalidSubscriptionToken
+		}
+		if err := setSubscriptionStatus(repos.Subscription, claims.Email, status); err != nil {
+			if repository.IsRecordNotFound(err) {
+				return ErrInvalidSubscriptionToken
+			}
+			return err
+		}
+		return nil
+	})
 }
 
 func (s *SubscriptionService) requestSubscriptionAction(email, purpose, subject, action string) error {
-	email = normalizeSubscriptionEmail(email)
-	if _, err := s.subscriptionRepo.FindByEmail(email); err != nil {
-		if repository.IsRecordNotFound(err) {
-			return nil
-		}
-		return err
-	}
-
-	token, err := issueEmailChallenge(
-		s.challengeRepo,
-		s.challengeSecret,
-		purpose,
-		email,
-		email,
-		24*time.Hour,
-	)
-	if err != nil {
-		return err
-	}
-	return s.sendSubscriptionChallenge(email, subject, action, token)
-}
-
-func (s *SubscriptionService) sendSubscriptionChallenge(email, subject, action, token string) error {
-	if s.emailSender == nil {
+	if s == nil || s.txManager == nil {
 		return ErrEmailChallengeUnavailable
 	}
+	email = normalizeSubscriptionEmail(email)
+	return s.txManager.WithinTx(func(repos repository.EmailChallengeTxRepositories) error {
+		if repos.Subscription == nil {
+			return repository.ErrEmailChallengeTransactionNotConfigured
+		}
+		if _, err := repos.Subscription.FindByEmail(email); err != nil {
+			if repository.IsRecordNotFound(err) {
+				return nil
+			}
+			return err
+		}
+		_, err := issueEmailChallengeWithDelivery(
+			repos.EmailChallenge,
+			repos.Outbox,
+			s.challengeSecret,
+			purpose,
+			email,
+			email,
+			subject,
+			func(token string) string {
+				return s.subscriptionChallengeBody(action, token)
+			},
+			24*time.Hour,
+		)
+		return err
+	})
+}
 
+func (s *SubscriptionService) subscriptionChallengeBody(action, token string) string {
 	pathAction := action
 	if action == "status" {
 		pathAction = "status-token"
 	}
 	link := fmt.Sprintf("%s/api/v1/subscriptions/%s/%s", s.baseURL, pathAction, url.PathEscape(token))
-	body := fmt.Sprintf(
+	return fmt.Sprintf(
 		"Please use the following link to complete your newsletter request:\n\n%s\n\nThis link expires in 24 hours and can only be used once.",
 		link,
 	)
-	return s.emailSender.SendEmail([]string{email}, subject, body)
 }
 
 func normalizeSubscriptionEmail(email string) string {

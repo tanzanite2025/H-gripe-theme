@@ -126,6 +126,8 @@ import { useProductCategories } from '~/composables/useProductCategories'
 import type { ProductCategory } from '~/composables/useProductCategories'
 import { useShopSearchSheet, type ShopSearchFiltersPayload, type ShopSearchPayload } from '~/composables/useShopSearchSheet'
 import { useShopProducts } from '~/composables/useShopProducts'
+import { useStorefrontContext } from '~/composables/useStorefrontContext'
+import { majorToMinor } from '~/utils/money'
 import { useOverlayBackStack } from '~/composables/useOverlayBackStack'
 import type { ShopProduct } from '~/composables/useShopProducts'
 
@@ -138,6 +140,7 @@ const router = useRouter()
 const localePath = useLocalePath()
 const { t } = useI18n()
 const { fetchShopProducts } = useShopProducts()
+const { baseCurrency } = useStorefrontContext()
 
 const SHOP_PRODUCTS_PAGE_SIZE = 24
 const defaultSearchPriceRange: [number, number] = [0, 5000]
@@ -273,8 +276,9 @@ const buildProductQueryParams = (payload?: ShopSearchPayload) => {
     const priceRange = payload.filters?.priceRange
     if (Array.isArray(priceRange) && priceRange.length === 2) {
       const [min, max] = priceRange
-      params.price_min = min
-      params.price_max = max
+      params.price_min_minor = majorToMinor(min, baseCurrency.value)
+      params.price_max_minor = majorToMinor(max, baseCurrency.value)
+      params.price_currency = baseCurrency.value
     }
 
     const attrs = payload.filters?.attributes

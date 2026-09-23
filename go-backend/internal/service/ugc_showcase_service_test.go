@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"commerce-platform/internal/domain/order"
+	"commerce-platform/internal/domain/outbox"
 	"commerce-platform/internal/domain/ugcshowcase"
 	"commerce-platform/internal/domain/user"
 	"commerce-platform/internal/repository"
@@ -61,7 +62,7 @@ func TestShowcaseUploadPhotosDeletesUploadedImagesWhenCreateFails(t *testing.T) 
 		OrderNumber: "SHOWCASE-91",
 		Status:      "completed",
 		CompletedAt: &completedAt,
-		TotalAmount: 100,
+		TotalAmountMinor: 10000,
 		Currency:    "USD",
 	}).Error)
 	UGCShowcaseService.ConfigureUploadEligibility(NewUGCShowcaseUploadEligibilityService(repository.NewOrderRepository(db)))
@@ -93,7 +94,7 @@ func TestShowcaseUploadPhotosDeletesPreviousImagesWhenLaterUploadFails(t *testin
 		OrderNumber: "SHOWCASE-92",
 		Status:      "completed",
 		CompletedAt: &completedAt,
-		TotalAmount: 100,
+		TotalAmountMinor: 10000,
 		Currency:    "USD",
 	}).Error)
 	UGCShowcaseService.ConfigureUploadEligibility(NewUGCShowcaseUploadEligibilityService(repository.NewOrderRepository(db)))
@@ -123,7 +124,7 @@ func TestShowcaseUploadPhotosStoresPendingImageKeysOnly(t *testing.T) {
 		OrderNumber: "SHOWCASE-93",
 		Status:      "completed",
 		CompletedAt: &completedAt,
-		TotalAmount: 100,
+		TotalAmountMinor: 10000,
 		Currency:    "USD",
 	}).Error)
 	UGCShowcaseService.ConfigureUploadEligibility(NewUGCShowcaseUploadEligibilityService(repository.NewOrderRepository(db)))
@@ -187,7 +188,7 @@ func TestShowcaseUploadPhotosEnforcesPendingLimitAtCreateTime(t *testing.T) {
 		OrderNumber: "SHOWCASE-94",
 		Status:      "completed",
 		CompletedAt: &completedAt,
-		TotalAmount: 100,
+		TotalAmountMinor: 10000,
 		Currency:    "USD",
 	}).Error)
 	require.NoError(t, db.Create(&ugcshowcase.UGCShowcase{
@@ -348,6 +349,10 @@ func TestShowcaseApprovePublishesPendingImagesAndDeletesPendingSources(t *testin
 	assert.Equal(t, "showcase/pending/2026/08/13/source.webp", storage.copiedKeys[0][0])
 	assert.True(t, strings.HasPrefix(storage.copiedKeys[0][1], "showcase/approved/"))
 	assert.True(t, strings.HasSuffix(storage.copiedKeys[0][1], "/2026/08/13/source.webp"))
+	assert.Empty(t, storage.deletedURLs)
+	var cleanupEvent outbox.Event
+	require.NoError(t, db.Where("event_type = ?", outbox.EventTypeObjectStorageCleanup).First(&cleanupEvent).Error)
+	require.NoError(t, NewObjectStorageCleanupOutboxHandler(nil, nil, nil, UGCShowcaseService).Handle(context.Background(), cleanupEvent))
 	assert.Equal(t, []string{imageKey}, storage.deletedURLs)
 
 	var saved ugcshowcase.UGCShowcase
@@ -461,9 +466,11 @@ func TestShowcaseRejectOnlyDeletesPendingImages(t *testing.T) {
 	require.NoError(t, db.Create(item).Error)
 
 	require.NoError(t, UGCShowcaseService.Reject(context.Background(), item.ID, "not suitable"))
-	assert.Equal(t, []string{
-		"showcase/pending/2026/08/13/pending.webp",
-	}, storage.deletedURLs)
+	assert.Empty(t, storage.deletedURLs)
+	var cleanupEvent outbox.Event
+	require.NoError(t, db.Where("event_type = ?", outbox.EventTypeObjectStorageCleanup).First(&cleanupEvent).Error)
+	require.NoError(t, NewObjectStorageCleanupOutboxHandler(nil, nil, nil, UGCShowcaseService).Handle(context.Background(), cleanupEvent))
+	assert.Equal(t, []string{"showcase/pending/2026/08/13/pending.webp"}, storage.deletedURLs)
 }
 
 func TestShowcaseRejectDoesNotChangeStatusWhenImagesAreInvalid(t *testing.T) {
@@ -672,8 +679,10 @@ func newTestShowcaseService(t *testing.T) (*gorm.DB, *UGCShowcaseService) {
 		_ = sqlDB.Close()
 	})
 
-	require.NoError(t, db.AutoMigrate(&user.User{}, &order.Order{}, &ugcshowcase.UGCShowcase{}, &ugcshowcase.UGCShowcaseComment{}))
-	return db, NewUGCShowcaseService(repository.NewUGCShowcaseRepository(db), nil)
+	require.NoError(t, db.AutoMigrate(&user.User{}, &order.Order{}, &ugcshowcase.UGCShowcase{}, &ugcshowcase.UGCShowcaseComment{}, &outbox.Event{}))
+	service := NewUGCShowcaseService(repository.NewUGCShowcaseRepository(db), nil)
+	service.ConfigureObjectCleanupOutbox(repository.NewOutboxRepository(db))
+	return db, service
 }
 
 type fakeShowcaseStorage struct {

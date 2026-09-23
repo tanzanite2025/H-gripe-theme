@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net"
 	"net/url"
+	"strconv"
 	"strings"
 )
 
@@ -20,6 +21,24 @@ var supportedSocialSettingKeys = map[string]struct{}{
 	"x":         {},
 	"youtube":   {},
 	"reddit":    {},
+}
+
+var transactionalNotificationSettingKeys = map[string]struct{}{
+	NotificationRuleToggleKey(NotificationTemplateOrderConfirmation):         {},
+	NotificationRuleToggleKey(NotificationTemplateOrderPaymentExpired):       {},
+	NotificationRuleToggleKey(NotificationTemplateOrderCancelled):            {},
+	NotificationRuleToggleKey(NotificationTemplateOrderShippingNotification): {},
+	NotificationRuleToggleKey(NotificationTemplateOrderDelivered):            {},
+	NotificationRuleToggleKey(NotificationTemplateOrderCompleted):            {},
+	NotificationRuleToggleKey(NotificationTemplateOrderRefunded):             {},
+	NotificationRuleToggleKey(NotificationTemplateAfterSalesRequested):       {},
+	NotificationRuleToggleKey(NotificationTemplateAfterSalesApproved):        {},
+	NotificationRuleToggleKey(NotificationTemplateAfterSalesAwaitingReturn):  {},
+	NotificationRuleToggleKey(NotificationTemplateAfterSalesReturnInTransit): {},
+	NotificationRuleToggleKey(NotificationTemplateAfterSalesReceived):        {},
+	NotificationRuleToggleKey(NotificationTemplateAfterSalesResolving):       {},
+	NotificationRuleToggleKey(NotificationTemplateAfterSalesCompleted):       {},
+	NotificationRuleToggleKey(NotificationTemplateAfterSalesRejected):        {},
 }
 
 type AdminSettingsService struct {
@@ -163,6 +182,15 @@ func (s *AdminSettingsService) normalizeRequest(req setting.UpdateSettingRequest
 }
 
 func validateSettingRequest(req setting.UpdateSettingRequest) error {
+	if strings.EqualFold(strings.TrimSpace(req.Group), TransactionalNotificationSettingsGroup) {
+		if _, ok := transactionalNotificationSettingKeys[strings.TrimSpace(req.Key)]; !ok {
+			return fmt.Errorf("%w: unsupported transactional notification setting %q", ErrSettingInvalid, req.Key)
+		}
+		if _, err := strconv.ParseBool(strings.TrimSpace(req.Value)); err != nil {
+			return fmt.Errorf("%w: notification setting must be boolean", ErrSettingInvalid)
+		}
+		return nil
+	}
 	if strings.EqualFold(strings.TrimSpace(req.Group), "social") {
 		key := strings.ToLower(strings.TrimSpace(req.Key))
 		if _, ok := supportedSocialSettingKeys[key]; !ok {

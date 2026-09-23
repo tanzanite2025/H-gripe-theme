@@ -181,7 +181,7 @@ func buildAdminReview(item *reviewdomain.Review) AdminReview {
 		result.Product = &AdminReviewProduct{
 			ID:   item.Product.ID,
 			Name: item.Product.Name,
-			SKU:  item.Product.SKU,
+			SKU:  item.Product.DisplaySKU(),
 		}
 	}
 	if item.User != nil {

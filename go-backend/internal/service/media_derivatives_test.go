@@ -352,6 +352,30 @@ func TestMediaImageDimensionReconcileRepairsLegacyAsset(t *testing.T) {
 	require.Len(t, after.Items, 1)
 }
 
+func TestConfigureMediaDerivativeGenerationCapacityIsConfigurable(t *testing.T) {
+	mediaDerivativeGenerationSlotsMu.RLock()
+	originalCapacity := cap(mediaDerivativeGenerationSlots)
+	mediaDerivativeGenerationSlotsMu.RUnlock()
+	t.Cleanup(func() { ConfigureMediaDerivativeGenerationCapacity(originalCapacity) })
+
+	ConfigureMediaDerivativeGenerationCapacity(8)
+	mediaDerivativeGenerationSlotsMu.RLock()
+	configuredCapacity := cap(mediaDerivativeGenerationSlots)
+	mediaDerivativeGenerationSlotsMu.RUnlock()
+	if configuredCapacity != 8 {
+		t.Fatalf("configured derivative capacity = %d, want 8", configuredCapacity)
+	}
+
+	// Invalid values must not silently replace the live limiter.
+	ConfigureMediaDerivativeGenerationCapacity(0)
+	mediaDerivativeGenerationSlotsMu.RLock()
+	unchangedCapacity := cap(mediaDerivativeGenerationSlots)
+	mediaDerivativeGenerationSlotsMu.RUnlock()
+	if unchangedCapacity != 8 {
+		t.Fatalf("invalid capacity changed limiter to %d, want 8", unchangedCapacity)
+	}
+}
+
 func presetDefinitionByName(presets []MediaDerivativePresetDefinition, name string) MediaDerivativePresetDefinition {
 	for _, preset := range presets {
 		if preset.Name == name {

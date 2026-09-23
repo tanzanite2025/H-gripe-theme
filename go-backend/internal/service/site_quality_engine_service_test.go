@@ -85,3 +85,27 @@ func TestSiteQualityRecheckDecisionKeepsOnlyBoundFinding(t *testing.T) {
 	require.Len(t, detections, 1)
 	require.Equal(t, "audit-one", detections[0].AuditID)
 }
+
+func TestSiteQualityScopedEvaluationOnlyCleansSelectedAuditGroup(t *testing.T) {
+	target := sitequalitydomain.SiteQualityTarget{ID: 1, CanonicalURL: "https://example.com/"}
+	job := sitequalitydomain.SiteQualityJob{
+		Strategy:              sitequalitydomain.SiteQualityStrategyMobile,
+		AuditScope:            sitequalitydomain.SiteQualityAuditScopeHeadings,
+		SampleCount:           1,
+		RequiredConfirmations: 1,
+	}
+	decision, detections := evaluateSiteQualityRuns(target, job, []LighthouseRunnerRunView{{
+		ID: 12,
+		Issues: []LighthouseRunnerIssue{
+			{ID: siteQualityHeadingMissingH1AuditID, Kind: "headings", Title: "Missing H1"},
+			{ID: siteQualityStructuredDataMissingStructuredDataAuditID, Kind: "schema", Title: "Missing schema"},
+			{ID: siteQualityLinkTextAuditID, Kind: "links", Title: "Link text"},
+		},
+	}})
+
+	require.Len(t, detections, 1)
+	require.Equal(t, siteQualityHeadingMissingH1AuditID, detections[0].AuditID)
+	require.NotContains(t, decision.Clean, siteQualityStructuredDataMissingStructuredDataAuditID)
+	require.NotContains(t, decision.Clean, siteQualityLinkTextAuditID)
+	require.Contains(t, decision.Clean, siteQualityHeadingMultipleH1AuditID)
+}

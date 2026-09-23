@@ -10,18 +10,19 @@ import (
 )
 
 type ShippingService struct {
-	shippingRepo    *repository.ShippingRepository
-	productRepo     *repository.ProductRepository
-	orderRepo       *repository.OrderRepository
-	txManager       *repository.TxManager
-	currencyPolicy  *CurrencyPolicyService
-	exchangeRates   *ExchangeRateService
-	auditRecorder   AuditRecorder
-	trackingRun     TrackingPollingRunState
-	webhookRun      TrackingWebhookRunState
-	trackingMu      sync.RWMutex
-	trackingRetry   resilience.HTTPRetryPolicy
-	trackingBreaker resilience.CircuitController
+	shippingRepo      *repository.ShippingRepository
+	productRepo       *repository.ProductRepository
+	orderRepo         *repository.OrderRepository
+	txManager         *repository.TxManager
+	currencyPolicy    *CurrencyPolicyService
+	exchangeRates     *ExchangeRateService
+	auditRecorder     AuditRecorder
+	trackingRun       TrackingPollingRunState
+	webhookRun        TrackingWebhookRunState
+	trackingMu        sync.RWMutex
+	trackingRetry     resilience.HTTPRetryPolicy
+	trackingBreaker   resilience.CircuitController
+	afterSalesService *AfterSalesService
 }
 
 type TrackingCarrierResolutionInput struct {
@@ -50,6 +51,7 @@ type TrackingSyncInput struct {
 }
 
 type TrackingShipmentInput struct {
+	ID                       uint
 	OrderID                  uint
 	TrackingProviderID       uint
 	TrackingNumber           string
@@ -171,6 +173,7 @@ var (
 const (
 	trackingRegistrationPending = "pending"
 	trackingRegistrationFailed  = "failed"
+	trackingRegistrationUnknown = "unknown"
 	trackingRegistrationSynced  = "registered"
 
 	trackingSyncPending = "pending"
@@ -212,6 +215,12 @@ func (s *ShippingService) ConfigureTxManager(txManager *repository.TxManager) {
 		return
 	}
 	s.txManager = txManager
+}
+
+func (s *ShippingService) ConfigureAfterSalesService(afterSalesService *AfterSalesService) {
+	if s != nil {
+		s.afterSalesService = afterSalesService
+	}
 }
 
 func (s *ShippingService) ConfigureAuditRecorder(recorder AuditRecorder) {

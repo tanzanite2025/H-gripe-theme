@@ -53,7 +53,6 @@ func adminRefundResponse(refund paymentdomain.Refund) gin.H {
 		"transaction_id":                 refund.TransactionID,
 		"refund_id":                      refund.RefundID,
 		"amount_minor":                   refund.AmountMinor,
-		"gift_card_refund_amount_minor":  refund.GiftCardRefundAmountMinor,
 		"requested_amount_minor":         refund.RequestedAmountMinor,
 		"discount_clawback_amount_minor": refund.DiscountClawbackAmountMinor,
 		"currency":                       refund.Currency,
@@ -97,10 +96,10 @@ func (h *PaymentHandler) CreateRefund(c *gin.Context) {
 	}
 
 	var req struct {
-		OrderID       uint    `json:"order_id" binding:"required"`
-		TransactionID uint    `json:"transaction_id" binding:"required"`
-		Amount        float64 `json:"amount"`
-		Reason        string  `json:"reason"`
+		OrderID       uint   `json:"order_id" binding:"required"`
+		TransactionID uint   `json:"transaction_id" binding:"required"`
+		AmountMinor   int64  `json:"amount_minor"`
+		Reason        string `json:"reason"`
 		LineItems     []struct {
 			OrderItemID uint `json:"order_item_id" binding:"required"`
 			Quantity    int  `json:"quantity" binding:"required,gt=0"`
@@ -129,7 +128,7 @@ func (h *PaymentHandler) CreateRefund(c *gin.Context) {
 	refund := paymentdomain.Refund{
 		OrderID:       req.OrderID,
 		TransactionID: req.TransactionID,
-		Amount:        req.Amount,
+		AmountMinor:   req.AmountMinor,
 		Reason:        req.Reason,
 	}
 	if len(req.LineItems) > 0 {
@@ -154,7 +153,7 @@ func (h *PaymentHandler) CreateRefund(c *gin.Context) {
 			Changes: paymentRefundDraftAuditDetails(
 				req.OrderID,
 				req.TransactionID,
-				req.Amount,
+				req.AmountMinor,
 				req.Reason,
 				len(req.LineItems),
 				restockCount,
@@ -180,13 +179,16 @@ func (h *PaymentHandler) CreateRefund(c *gin.Context) {
 			Changes: paymentRefundDraftAuditDetails(
 				req.OrderID,
 				req.TransactionID,
-				req.Amount,
+				req.AmountMinor,
 				req.Reason,
 				len(req.LineItems),
 				restockCount,
 				&refund,
 			),
 		})
+		if respondHistoricalRefundFXSnapshotError(c, err) {
+			return
+		}
 		apierror.RespondBadRequest(c, err.Error())
 		return
 	}
@@ -200,7 +202,7 @@ func (h *PaymentHandler) CreateRefund(c *gin.Context) {
 		Changes: paymentRefundDraftAuditDetails(
 			req.OrderID,
 			req.TransactionID,
-			req.Amount,
+			req.AmountMinor,
 			req.Reason,
 			len(req.LineItems),
 			restockCount,

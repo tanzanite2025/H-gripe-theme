@@ -60,7 +60,7 @@
                  │ 1. 分享专属链接/码: "ALEX-RIDE"                      │
                  └─────────────────────────────────────────────────────>│
                                                                         │ 2. 访问/注册自动绑定
-                                                                        │    立得新客首单礼遇:
+                                                                        │    立得新客注册礼遇:
                                                                         │    【满 $500 减 $50 专享券】
                                                                         │
                                                                         │ 3. 选购轮组并成功完成首单
@@ -70,7 +70,8 @@
                                                              [ 订单发货并签收妥投 ]
                                                                         │
                                                                         │ 4. 触发 30 天质保冷静期 (Vesting)
-                                                                        │    期间若全额退款则返利作废
+                                                                        │    期间若全额退款则推荐人返利作废；
+                                                                        │    注册积分仅在注册时入账
                                                                         │
                  ┌──────────────────────────────────────────────────────┴
                  │ 5. 冷静期满，无退款/拒付
@@ -84,10 +85,10 @@
 
 | 参数项 | 默认基准值 | 说明 |
 | :--- | :--- | :--- |
-| **推荐体系全局开关 (Enable Program)** | true | 一键控制整站推荐与返利活动启用/暂停 |
+| **推荐体系全局开关 (Enable Program)** | false（默认关闭） | 一键控制整站推荐与返利活动启用/暂停；管理员发布并开启策略后，登录用户才会看到可用推荐码与分享链接 |
 | **被推荐人首单门槛 (Min Order Amount)** | $200 USD | 避免小配件甚至 1 美元虚拟商品刷单套利 |
-| **被推荐人礼遇 (Referee Benefit)** | 5% 折扣券 或 $30 抵扣 | 仅限首单结算使用，与常规全场活动券互斥 |
-| **推荐人返利点数 (Referrer Reward)** | 1000 积分 ($50 等值) | 存入推荐人积分账户，可用于兑换零件、水壶架或车架代金券 |
+| **被推荐人注册积分** | 50 积分 | 推荐码绑定成功时直接加入被推荐人的统一积分余额 |
+| **推荐人返利积分** | 1000 积分 | 推荐订单满足履约条件后加入推荐人的统一积分余额 |
 | **冷静期时长 (Vesting Period)** | 30 天 | 从订单 `delivered_at`（妥投时间）起算；未妥投按发货起 45 天兜底 |
 | **邀请码有效期 (Attribution TTL)** | 30 天 | 访客点击专属链接后，Cookie 暂存归因的最长保留天数 |
 | **单用户月度推荐上限 (Monthly Cap)** | 10 单 | 防止极端刷子或作弊脚本，超过后触发人工风控复核 |
@@ -123,14 +124,18 @@ erDiagram
         uint referrer_id FK "推荐人用户ID"
         uint referee_id FK "被推荐人用户ID (注册后锁定)"
         string referral_code "使用的邀请码"
-        string referee_email "被推荐人邮箱"
+        string referee_email_hash "被推荐人邮箱 HMAC"
         string attribution_source "归因渠道 (link/manual_input)"
         string client_ip_hash "首访 IP 哈希"
-        string device_fingerprint "设备特征指纹"
+        string client_ip_subnet_hash "IP 网段哈希 (/24 or /64)"
+        string device_fingerprint_hash "设备特征指纹 HMAC"
+        string shipping_address_hash "收货地址 HMAC"
+        string shipping_phone_hash "收货手机号 HMAC"
+        string payment_fingerprint_hash "支付指纹 HMAC"
         uint order_id FK "首单关联 OrderID"
         string currency "首单货币"
         int64 order_amount_minor "首单有效金额(分)"
-        string status "pending/vesting/settled/revoked"
+        string status "pending/ordered/vesting/settled/expired/revoked/reversed"
         datetime ordered_at "首单下单时间"
         datetime delivered_at "签收妥投时间"
         datetime vesting_until "冷静期解冻截止时间"
@@ -144,10 +149,9 @@ erDiagram
         uint referral_record_id FK
         uint recipient_user_id FK "奖励接收人"
         string recipient_role "referrer / referee"
-        string reward_type "points / coupon"
+        string reward_type "points"
         int points_amount "积分分值"
-        uint coupon_id "券ID(若发放优惠券)"
-        string status "locked / released / forfeited"
+        string status "locked / released / forfeited / reversed"
     }
 ```
 
@@ -161,7 +165,7 @@ erDiagram
        [ 访客点击链接/填码 ]
                  │
                  ▼
-        ( 1. PENDING ) ──────────────> [ 超出 30 天未下单 ] ───> ( EXPIRED )
+                ( 1. PENDING ) ──────────────> [ 订单/风控事件 ] ───────> ( REVOKED )
                  │
                  │ 买家完成首单支付 (order_paid)
                  ▼
@@ -181,10 +185,13 @@ erDiagram
 ```
 
 ### 状态迁移准则
-1. **`pending` -> `ordered`**：只有当被推荐人的订单金额满足门槛且完成 `paid` 状态时方可转换。
-2. **`ordered` -> `vesting`**：必须等待物流确认签收（`status = delivered`）并记录 `delivered_at`，系统自动计算 `vesting_until = delivered_at + 30 days`。
-3. **`vesting` -> `settled`**：后台 Cron 每天扫描 `vesting_until <= NOW() AND status = 'vesting'` 的记录，单事务内发放推荐积分并转为 `settled`。
-4. **`*` -> `revoked`**：在订单任何阶段发生全额退款（Refund）、欺诈撤单（Cancel）或争议拒付（Dispute），立刻转为 `revoked`，释放冻结收益并记录原因。
+1. **`pending` -> `ordered`**：只有当被推荐人的订单金额满足门槛且完成 `paid` 状态时方可转换。绑定成功后推荐关系永久保留；`attribution_ttl_days` 只限制尚未注册/绑定时的签名 Cookie，不会让已绑定关系自动失效。
+2. **`ordered` -> `vesting`**：优先等待物流确认签收（`status = delivered`）并记录 `delivered_at`，系统自动计算 `vesting_until = delivered_at + 30 days`；若超过“未妥投兜底天数”仍没有权威妥投事件，则只按订单发货时间进入兜底冷静期，保持 `delivered_at` 为空并写入审计原因，禁止伪造妥投时间。
+3. **`vesting` -> `settled`**：后台 Cron 每天扫描 `vesting_until <= NOW() AND status = 'vesting'` 的记录，单事务内发放订单履约奖励对应的推荐人积分并转为 `settled`；这不涉及被推荐人注册时已经到账的积分。
+4. **`*` -> `revoked`**：订单作废、欺诈撤单或争议拒付只影响需要订单履约结算的推荐人奖励状态；它们不会撤回被推荐人在注册时已经到账的积分。关系中的推荐人/被推荐人仍然保留，`revoked` 是该笔订单奖励状态，不是推荐码失效。
+5. **注册礼遇积分**：若被推荐人礼遇类型为 `points`，在注册填写推荐码并绑定成功的同一事务内，直接把配置的积分数加到统一积分账户。`referral_referee` 只是流水来源标签，不是独立积分池；后续购买、退款、拒付都不改变这笔注册积分。订单退款若使用过积分，只按订单自身的 `PointsUsed` 返还，和推荐注册积分没有关系。
+
+> 兼容说明：`expired` 状态仅保留给历史数据/旧版本记录的审计展示。当前绑定流程不会因为 `expires_at` 到期而自动迁移到 `expired`，也不会因订单事件给被推荐人补发或收回注册积分。
 
 ---
 
@@ -247,7 +254,7 @@ sequenceDiagram
         Loyalty->>Outbox: 写入 ReferralSettledEvent
     end
     Outbox->>Worker: 触发通知
-    Worker->>Referrer: 发送邮件 "您的好友已完成首单，50美元等值积分已到账！"
+    Worker->>Referrer: 发送邮件 "您的好友已完成首单，推荐积分已到账！"
 ```
 
 ---
@@ -264,12 +271,17 @@ sequenceDiagram
   {
     "code": 0,
     "data": {
+      "enabled": true,
       "referral_code": "ALEX8F",
       "custom_slug": "alex-gravel",
       "share_url": "https://tanzanite.com/r/ALEX8F",
       "reward_rules": {
-        "referee_discount_desc": "首单立减 5%",
-        "referrer_reward_desc": "每单奖励 1000 积分 ($50 抵扣)"
+        "min_order_amount_minor": 20000,
+        "referrer_reward_points": 1000,
+        "referee_benefit_type": "points",
+        "referee_benefit_value": 75,
+        "vesting_period_days": 30,
+        "attribution_cookie_ttl_days": 30
       },
       "stats": {
         "total_invited_count": 12,
@@ -319,18 +331,36 @@ sequenceDiagram
     "data": {
       "valid": true,
       "referrer_name_mask": "Alex ***",
-      "discount_type": "percent",
-      "discount_value": 5.0
+      "referee_benefit_type": "points",
+      "referee_benefit_value": 75,
+      "benefit_issuance": "points_on_registration",
+      "min_order_amount_minor": 20000,
+      "vesting_period_days": 30,
+      "attribution_cookie_ttl_days": 30
     }
   }
   ```
+
+#### 4. 注册后绑定推荐码
+- **Endpoint**: `POST /api/v1/customer/referral/bind`
+- **Auth**: 需要买家 JWT Token
+- **Request**（用户在注册表单中手动填写推荐码时）：
+  ```json
+  {
+    "referral_code": "ALEX8F"
+  }
+  ```
+- `referral_code` 为空时，接口继续读取分享链接写入的 HttpOnly 归因 Cookie；两种入口最终使用同一套签名、反作弊和幂等校验。Cookie 的 TTL 只作用于绑定前，绑定成功后记录中的 `expires_at` 仅作为签名过期时间审计快照，不会触发关系失效。
+- 当策略的 `referee_benefit_type=points` 时，绑定成功的同一事务会把 `referee_benefit_value` 加入被推荐人的统一积分余额，并写一条 `source=referral_referee` 的流水；该积分不建立独立余额，不因后续消费、购买、退款、拒付或推荐记录状态变化而冲正。
+- 注册接口本身不创建登录会话；Nuxt 注册表单暂存手动填写的推荐码，在注册后的首次登录（邮箱或 Google）调用此接口完成绑定。
 
 ---
 
 ### 7.2 管理后台 API 接口 (Admin Management API)
 
 #### 1. 推荐裂变台账多维查询 (含风控预警)
-- **Endpoint**: `GET /api/v1/admin/marketing/referrals?status=vesting&page=1&page_size=20&keyword=ALEX8F`
+- **Endpoint**: `GET /api/admin/marketing/referrals?status=vesting&page=1&page_size=20&keyword=ALEX8F&from=2026-09-01&to=2026-09-30`
+- `from` / `to` 使用 UTC 日历日期（`YYYY-MM-DD`）；两端均包含，服务端将 `to` 转换为次日 00:00 的 exclusive upper bound。列表、统计概览和 CSV 导出使用同一筛选条件。
 - **Auth**: 管理员 JWT，需具备 `marketing:read` 权限
 - **Response**:
   ```json
@@ -340,7 +370,7 @@ sequenceDiagram
       "overview": {
         "total_referrals": 142,
         "converted_orders": 86,
-        "attributed_gmv_usd": 128450.00,
+        "attributed_gmv_minor": 12845000,
         "pending_vesting_points": 18000,
         "settled_points": 68000,
         "fraud_blocked_count": 9
@@ -352,18 +382,17 @@ sequenceDiagram
           "referrer": {
             "id": 204,
             "name": "Alex Mercer",
-            "email": "alex@gravelcyclist.org"
+            "email_masked": "a***@gravelcyclist.org"
           },
           "referee": {
             "id": 1088,
             "name": "David Hansen",
-            "email": "david.h@ridetrail.com"
+            "email_masked": "d***@ridetrail.com"
           },
           "order": {
             "id": 4022,
             "order_number": "TZ-20260901-8841",
             "amount_minor": 185000,
-            "currency": "USD",
             "paid_at": "2026-09-01T10:15:00Z",
             "delivered_at": "2026-09-08T16:20:00Z"
           },
@@ -372,7 +401,7 @@ sequenceDiagram
           "vesting_until": "2026-10-08T16:20:00Z",
           "days_remaining": 25,
           "risk_flags": [
-            { "type": "ip_match", "level": "LOW", "detail": "IP address class-C matches referrer" }
+            { "type": "ip_match", "level": "LOW", "source": "referrer_paid_order", "dimensions": ["ip_subnet"] }
           ],
           "created_at": "2026-09-01T09:40:12Z"
         }
@@ -383,7 +412,7 @@ sequenceDiagram
   ```
 
 #### 2. 管理员手动提前解冻发放 (Manual Settle)
-- **Endpoint**: `POST /api/v1/admin/marketing/referrals/:id/settle`
+- **Endpoint**: `POST /api/admin/marketing/referrals/:id/settle`
 - **Request**:
   ```json
   {
@@ -392,7 +421,7 @@ sequenceDiagram
   ```
 
 #### 3. 管理员风控阻断作废 (Manual Revoke)
-- **Endpoint**: `POST /api/v1/admin/marketing/referrals/:id/revoke`
+- **Endpoint**: `POST /api/admin/marketing/referrals/:id/revoke`
 - **Request**:
   ```json
   {
@@ -401,20 +430,22 @@ sequenceDiagram
   ```
 
 #### 4. 获取与更新推荐返利全局策略配置
-- **Endpoint**: `GET /api/v1/admin/marketing/referral-config`
-- **Endpoint**: `PUT /api/v1/admin/marketing/referral-config`
+- **Endpoint**: `GET /api/admin/marketing/referral-config`
+- **Endpoint**: `PUT /api/admin/marketing/referral-config`
 - **Payload**:
   ```json
   {
-    "program_enabled": true,
-    "min_order_amount_usd": 200,
+    "expected_version": 1,
+    "enabled": true,
+    "min_order_amount_minor": 20000,
     "referrer_reward_points": 1000,
-    "referee_benefit_type": "percent_coupon",
-    "referee_benefit_value": 5,
+    "referee_benefit_type": "points",
+    "referee_benefit_value": 50,
     "vesting_period_days": 30,
-    "attribution_cookie_ttl_days": 30,
-    "monthly_cap_per_user": 10,
-    "anti_fraud_strict_mode": true
+    "undelivered_fallback_days": 45,
+    "attribution_ttl_days": 30,
+    "monthly_cap_per_referrer": 10,
+    "anti_fraud_mode": "strict"
   }
   ```
 
@@ -431,7 +462,6 @@ sequenceDiagram
 ```
 Marketing 营销管理模块 (ModuleTabbedLayout)
 ├── 优惠券管理 (Coupons)
-├── 礼品卡管理 (GiftCards)
 ├── 会员等级 (Levels)
 ├── 积分与流水 (Loyalty & Ledger)
 └── ★ 推荐裂变中台 (Referral Hub)  <-- [新增核心独立 Tab]
@@ -513,18 +543,16 @@ Marketing 营销管理模块 (ModuleTabbedLayout)
 
 ┌──[分组一：活动总控与参与门槛] ─────────────────────────────────────────────────────────┐
 │ • 推荐返利系统总开关: [ Switch: 开启 (ON) ]                                            │
-│ • 被推荐人首单最低实付金额 (USD): [ $200.00 ]                                          │
+│ • 被推荐人首单最低实付金额: [ 20000 分 ]                                              │
 │   (说明: 严格排除 $10 补差价链接或气嘴帽等小额刷单套利)                               │
 │ • 单用户每月最高成功返利单量: [ 10 单 ]                                                │
 │   (说明: 防止灰产或职业羊毛党使用脚本机器刷单)                                         │
 └────────────────────────────────────────────────────────────────────────────────────────┘
 
 ┌──[分组二：双向激励面额配置] ───────────────────────────────────────────────────────────┐
-│ • 老客户(推荐人)奖励类型: [ 下拉单选: 会员积分 (Loyalty Points) ]                      │
-│ • 推荐人每单奖励分值: [ 1000 积分 ] (等值 $50 抵扣金)                                  │
-│ • 新客户(被推荐人)首单礼遇: [ 下拉单选: 专属折扣券 (Coupon) ]                          │
-│ • 新客优惠券参数: [ 5% 折扣券 (最高减 $100) ]                                          │
-│ • 是否允许与其他全场促销券叠加: [ Switch: 严格互斥 (OFF) ]                             │
+│ • 推荐人每单奖励分值: [ 1000 积分 ]                                                   │
+│ • 被推荐人注册奖励分值: [ 50 积分 ]                                                   │
+│ • 推荐积分直接进入统一积分余额，不建立独立推荐积分钱包                              │
 └────────────────────────────────────────────────────────────────────────────────────────┘
 
 ┌──[分组三：履约冷静期与归因窗口 (核心财务安全防线)] ────────────────────────────────────┐
@@ -556,28 +584,48 @@ Marketing 营销管理模块 (ModuleTabbedLayout)
 3. **版本化与防并发覆盖**：
    - 保存时强校验 `version` 乐观锁，若后台已有其他管理员提交新配置，触发 `Fail Loudly` 报错拦截，禁止静默覆盖。
 
-### 8.3 当前实施状态（2026-09-15）
+### 8.3 当前实施状态（2026-09-16）
 
 本架构的后台治理部分已经进入代码实现，而不是仅停留在页面草图：
 
 - Admin 已提供推荐台账、状态筛选/关键词搜索、分页、统计、详情、风控信号、状态迁移审计和 CSV 导出；
-- Admin 已提供推荐规则配置页，支持启停、门槛、双向奖励、优惠券限制、妥投冷静期、未妥投兜底、归因 TTL、月度上限和反作弊模式；
+- Admin 已提供推荐规则配置页，支持启停、订单资格门槛、推荐人/被推荐人积分、妥投冷静期、未妥投兜底、归因 TTL、月度上限和反作弊模式；
 - 配置通过 `expected_version` 进行乐观锁发布，每次发布生成不可变的新策略版本，默认策略保持关闭；
-- 推荐专属优惠券绑定被推荐用户，公开优惠券列表、优惠券校验和结账路径均执行归属限制；
 - 支付、妥投、退款/拒付、生命周期扫描、推荐人结算、被推荐人奖励和审计迁移均使用事务与幂等键；
-- 推荐优惠券未被实际订单使用时会作废；订单后续退款/拒付时，已发放的被推荐人积分会写入幂等冲正流水，已发放的推荐优惠券会禁用并将奖励日志标记为 `reversed`。
+- 推荐积分礼遇在注册绑定时到账并进入统一积分余额，后续订单退款/拒付不会冲正这笔注册积分；推荐模块不创建、不发放、不检查任何优惠券。
+- 推荐绑定会保存邮箱、完整 IP 哈希、IP `/24`（IPv4）或 `/64`（IPv6）网络哈希和设备指纹哈希；严格模式会阻断同邮箱自推荐、同设备碰撞和 24 小时同网段超过 3 次的有效绑定，监控模式会保留风险标记。
+- 支付完成事件会从已保存的网关响应中提取 provider fingerprint 的 HMAC，并与推荐人的历史已支付交易比较；收货地址支持精确匹配和 Levenshtein 相似度风险标记。原始邮箱、地址、设备、支付指纹不会写入推荐表或后台响应。
+- 旧 `referrals` 表通过迁移 `295_referral_legacy_import` 幂等导入 v2 身份、记录和奖励日志，并保留 `legacy_referral_id` 作为内部审计映射；迁移不会删除旧表。
+- 买家端会员中心提供独立的“分享推荐码 / Invite a friend”按钮。按钮只分享后台返回的 `share_url`，不会复用商品分享函数，也不会拼接当前商品 URL；浏览器不支持原生分享时仅回退到复制该邀请链接。
+- 推荐码分配与邀请链接展示由独立的 `ReferralInvitationService` 负责。当前 Provider 生成 `/r/{code}` 捕获链接；后续接入短链平台时只替换 `ReferralInvitationLinkProvider`，不改变用户已有推荐码、归因 Cookie 或绑定关系。
+- Nuxt 将 `/r/**` 以不缓存代理转发到后端捕获接口；捕获接口写入签名 HttpOnly 归因 Cookie 后再跳转到 storefront，避免邀请链接绕过统一归因和反作弊绑定流程。
 
 上线前仍需完成一项运营与财务确认：
 
-1. 在生产环境完成真实物流妥投、退款和支付拒付事件的联调，确认事件键与权威时间戳来源符合本规格书。
+1. 在生产环境完成真实物流妥投、退款和支付拒付事件的联调，确认事件键与权威时间戳来源符合本规格书；确认无误后再将 `referral_lifecycle_enabled` 和当前推荐策略显式开启。生产配置目前仍保持关闭，避免未联调的奖励自动入账。
 
-被推荐人积分消费后发生退款时，积分与现金严格分账：订单实际使用的 `PointsUsed` 在退款中原额返还；原始推荐注册奖励通过独立的 `referral_referee_reversal` 负向流水全部冲正。现金退款只按支付网关实际收到的现金金额执行，不因推荐奖励冲正、订单奖励追回或其他积分流水而扣减。推荐奖励冲正事件在订单积分返还后处理，确保“75 推荐积分 - 50 订单消费 + 50 订单返还 - 75 推荐奖励冲正 = 0”可以在不制造负余额的前提下完成。
+被推荐人注册成功后，推荐积分直接进入整体积分账户，与购买商品所得积分、签到积分等完全同质；系统只在流水上记录 `referral_referee` 来源，绝不建立“推荐积分余额”，消费也不按来源扣减。用户使用统一积分和现金下单时，退款只返还该订单实际使用的 `PointsUsed`，现金只按支付网关实际支付金额退款；注册时赠送的推荐积分不会因为这笔订单、订单退款或推荐台账状态变化而被冲正。推荐模块不计算、不分摊任何退款金额。
 
 ---
 
 ## 9. 分阶段落地实施路线图 (Implementation Roadmap)
 
-本方案设计完全兼容现有数据库与积分底座，实施计划分四步走：
+本方案设计完全兼容现有数据库与积分底座，实施状态如下。日期路线图仍保留为历史计划，不能替代生产验收：
+
+| 阶段 | 状态 | 已完成/剩余 |
+| --- | --- | --- |
+| 底层与数据迁移 | 已完成代码实现 | v2 表、幂等状态机、反作弊字段和旧 `referrals` 导入迁移已存在；上线前需在生产副本执行并核对导入数量 |
+| 履约与状态机闭环 | 已完成代码实现 | 支付、妥投、退款、拒付 Outbox 和生命周期扫描已接入；生产 Cron 与真实事件联调仍关闭待验收 |
+| 反作弊矩阵 | 已完成核心规则 | 用户/邮箱/IP 网段/设备/地址/支付指纹规则已接入；支付网关是否提供可比较 fingerprint 需在各渠道联调确认 |
+| 后台与买家端 | 已完成基础版本 | 台账、配置、审计、买家端看板和按创建时间范围筛选已可用；完整证据对比视图属于后续 UI 增强 |
+
+### 9.1 推荐生产上线顺序（代码完成后的验收闸门）
+
+1. **先做生产副本演练**：备份数据库，在副本按顺序执行 294、295 迁移；核对旧 `referrals` 总数、成功导入数、跳过的重复被推荐人数量和奖励日志数量，并保存审计结果。
+2. **再做事件回放验收**：在 staging 使用真实支付、妥投、订单退款和拒付样例回放 Outbox，确认事件键幂等、统一积分余额正确、注册推荐积分不被订单事件冲正，现金退款金额也不受推荐积分影响。退款金额的计算与支付网关对账属于支付模块，不属于推荐积分规则。
+3. **影子风控观察**：保持 `referral_lifecycle_enabled=false` 或推荐策略关闭，先以 `anti_fraud_mode=monitor` 运行观测窗口，检查邮箱、设备、IP 网段、地址和支付指纹命中率及误报。
+4. **小流量启用**：完成财务、客服和风控签字后，先只开启严格限定比例/人群的推荐策略；每日核对台账、GMV、冻结积分、结算积分、冲正流水和拒付结果。
+5. **扩大范围或回滚**：连续观察周期无异常后再扩大流量；任何现金金额偏差、重复入账或无法解释的风控命中，立即关闭推荐策略并保留事件与审计数据，不删除历史记录。
 
 ```mermaid
 gantt

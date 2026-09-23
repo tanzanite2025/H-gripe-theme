@@ -34,6 +34,12 @@ type SiteQualityJobCleanupResult struct {
 	DeadLetter int64 `json:"dead_letter"`
 }
 
+type SiteQualityFindingCleanupResult struct {
+	Deleted int64     `json:"deleted"`
+	Cutoff  time.Time `json:"cutoff"`
+	Skipped int64     `json:"skipped"`
+}
+
 type SiteQualityProviderSlotStats struct {
 	Provider        string     `json:"provider"`
 	Configured      int        `json:"configured"`

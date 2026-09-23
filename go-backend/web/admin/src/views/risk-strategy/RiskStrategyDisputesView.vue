@@ -75,7 +75,7 @@
               <TableCell class="font-mono text-xs">#{{ dispute.id }}</TableCell>
               <TableCell class="max-w-[220px] truncate font-mono text-xs">{{ disputeReference(dispute) }}</TableCell>
               <TableCell><RiskStrategyStatusPill :status="dispute.status" /></TableCell>
-              <TableCell class="font-mono text-xs">{{ formatMoney(dispute.amount, dispute.currency) }}</TableCell>
+              <TableCell class="font-mono text-xs">{{ formatMinorMoney(dispute.amount_minor, dispute.currency) }}</TableCell>
               <TableCell class="text-xs">{{ dispute.reason || '-' }}</TableCell>
               <TableCell class="font-mono text-xs">{{ dispute.order_id ? `#${dispute.order_id}` : '-' }}</TableCell>
               <TableCell class="text-xs" :class="isEvidenceSoon(dispute.evidence_due_at) ? 'font-semibold text-rose-600' : 'text-muted-foreground'">
@@ -340,7 +340,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Textarea } from '@/components/ui/textarea'
 import { paymentRiskApi as riskStrategyApi } from '@/api/paymentRisk'
 import { getPaymentChannelLabel } from '@/lib/paymentChannels'
-import { applyPaged, formatDate, formatMoney, isEvidenceSoon, type RiskStrategyPagination } from '@/lib/riskStrategyViewUtils'
+import { applyPaged, formatDate, isEvidenceSoon, type RiskStrategyPagination } from '@/lib/riskStrategyViewUtils'
+import { formatMinorMoney } from '@/lib/dashboardPresentation'
 
 const props = withDefaults(defineProps<{
   defaultDisputeProvider?: string

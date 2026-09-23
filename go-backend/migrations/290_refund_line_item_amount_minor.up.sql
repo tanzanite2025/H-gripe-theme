@@ -7,10 +7,15 @@ ALTER TABLE refund_line_items
     ADD COLUMN IF NOT EXISTS line_total_minor BIGINT;
 
 UPDATE refund_line_items li
-SET currency = UPPER(COALESCE(NULLIF(li.currency, ''), r.currency, o.currency, 'USD'))
+SET currency = UPPER(COALESCE(
+    NULLIF(li.currency, ''),
+    r.currency,
+    (SELECT o.currency FROM orders o WHERE o.id = li.order_id),
+    'USD'
+))
 FROM refunds r
-LEFT JOIN orders o ON o.id = li.order_id
-WHERE r.id = li.refund_id AND (li.currency IS NULL OR li.currency = '');
+WHERE r.id = li.refund_id
+  AND (li.currency IS NULL OR li.currency = '');
 
 UPDATE refund_line_items li
 SET unit_price_minor = CASE WHEN UPPER(li.currency) IN ('JPY', 'KRW', 'CLP') THEN ROUND(li.unit_price)::BIGINT ELSE ROUND(li.unit_price * 100)::BIGINT END,

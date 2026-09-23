@@ -16,8 +16,8 @@ func TestFindPendingRefundByTransactionAndAmountMatchesExactMinorUnits(t *testin
 	repo := NewPaymentRepository(db)
 
 	require.NoError(t, db.Create(&[]paymentdomain.Refund{
-		{TransactionID: 10, Amount: 10.01, RequestedAmount: 12, Status: "pending"},
-		{TransactionID: 10, Amount: 10, RequestedAmount: 12, Status: "pending"},
+		{TransactionID: 10, Currency: "USD", AmountMinor: 1001, RequestedAmountMinor: 1200, Status: "pending"},
+		{TransactionID: 10, Currency: "USD", AmountMinor: 1000, RequestedAmountMinor: 1200, Status: "pending"},
 	}).Error)
 
 	refund, err := repo.FindPendingRefundByTransactionAndAmount(10, domainmoney.MustNew(1000, "USD"))
@@ -32,10 +32,11 @@ func TestFindPendingRefundByTransactionAndAmountUsesRequestedAmountWhenNetAmount
 	db := newPaymentRefundRepositoryTestDB(t)
 	repo := NewPaymentRepository(db)
 	require.NoError(t, db.Create(&paymentdomain.Refund{
-		TransactionID:   11,
-		Amount:          9.99,
-		RequestedAmount: 10,
-		Status:          "pending",
+		TransactionID:        11,
+		Currency:             "USD",
+		AmountMinor:          999,
+		RequestedAmountMinor: 1000,
+		Status:               "pending",
 	}).Error)
 
 	refund, err := repo.FindPendingRefundByTransactionAndAmount(11, domainmoney.MustNew(1000, "USD"))
@@ -48,7 +49,8 @@ func TestFindPendingRefundByTransactionAndAmountHonorsZeroMinorUnitCurrencies(t 
 	repo := NewPaymentRepository(db)
 	require.NoError(t, db.Create(&paymentdomain.Refund{
 		TransactionID: 12,
-		Amount:        1000,
+		Currency:      "JPY",
+		AmountMinor:   1000,
 		Status:        "pending",
 	}).Error)
 

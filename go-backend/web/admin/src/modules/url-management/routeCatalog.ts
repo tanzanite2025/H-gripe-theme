@@ -1,6 +1,6 @@
 import axios from '@/utils/axios'
 import type {
-  StorefrontRouteCatalogCheckSummary,
+  StorefrontRouteCatalogCheckTask,
   StorefrontRouteCatalogHistoryResponse,
   StorefrontRouteCatalogListParams,
   StorefrontRouteCatalogListResponse,
@@ -12,9 +12,13 @@ import type {
 } from './routeCatalogTypes'
 
 export const storefrontRouteCatalogApi = {
-  async stats(locale?: string): Promise<StorefrontRouteCatalogStats> {
+  async stats(locale?: string, problemScope?: 'canonical'): Promise<StorefrontRouteCatalogStats> {
+    const params = {
+      ...(locale ? { locale } : {}),
+      ...(problemScope ? { problem_scope: problemScope } : {}),
+    }
     const response = await axios.get('/api/admin/urls/stats', {
-      params: locale ? { locale } : undefined,
+      params: Object.keys(params).length ? params : undefined,
     })
     return response.data?.data || {}
   },
@@ -70,8 +74,13 @@ export const storefrontRouteCatalogApi = {
     return response.data?.data || {}
   },
 
-  async check(params: Omit<StorefrontRouteCatalogListParams, 'page' | 'page_size'> & { limit?: number }): Promise<StorefrontRouteCatalogCheckSummary> {
+  async startCheck(params: Omit<StorefrontRouteCatalogListParams, 'page' | 'page_size'> & { limit?: number }): Promise<StorefrontRouteCatalogCheckTask> {
     const response = await axios.post('/api/admin/urls/check', null, { params })
+    return response.data?.data || {}
+  },
+
+  async checkStatus(taskID: string): Promise<StorefrontRouteCatalogCheckTask> {
+    const response = await axios.get(`/api/admin/urls/check/${encodeURIComponent(taskID)}`)
     return response.data?.data || {}
   },
 }

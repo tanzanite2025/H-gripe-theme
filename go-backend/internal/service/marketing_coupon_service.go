@@ -7,17 +7,19 @@ import (
 	"commerce-platform/internal/repository"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 )
 
 type CouponCreateInput struct {
 	Code                 string
 	Type                 string
-	Value                float64
+	ValueMinor           int64
+	ValueRateDecimal     string
 	Currency             string
 	Description          string
-	MinAmount            float64
-	MaxDiscount          float64
+	MinAmountMinor       int64
+	MaxDiscountMinor     int64
 	UsageLimit           int
 	UsageLimitPerUser    int
 	StartDate            time.Time
@@ -31,11 +33,12 @@ type CouponCreateInput struct {
 type CouponUpdateInput struct {
 	Code                 *string
 	Type                 *string
-	Value                *float64
+	ValueMinor           *int64
+	ValueRateDecimal     *string
 	Currency             *string
 	Description          *string
-	MinAmount            *float64
-	MaxDiscount          *float64
+	MinAmountMinor       *int64
+	MaxDiscountMinor     *int64
 	UsageLimit           *int
 	UsageLimitPerUser    *int
 	StartDate            *time.Time
@@ -46,7 +49,10 @@ type CouponUpdateInput struct {
 	Enabled              *bool
 }
 
-func (s *MarketingService) ValidateCoupon(code string, userID uint, amount float64, emails ...string) (*coupon.Coupon, float64, error) {
+// ValidateCoupon validates a coupon against an amount expressed in the
+// coupon's canonical minor unit. No major-unit float is accepted in the
+// transactional coupon path.
+func (s *MarketingService) ValidateCoupon(code string, userID uint, amountMinor int64, emails ...string) (*coupon.Coupon, int64, error) {
 	c, err := s.couponRepo.FindCouponByCode(code)
 	if err != nil {
 		return nil, 0, errors.New("coupon not found")
@@ -79,11 +85,14 @@ func (s *MarketingService) ValidateCoupon(code string, userID uint, amount float
 		return nil, 0, err
 	}
 
-	amountMoney, err := domainmoney.FromMajorFloat(amount, couponCurrency)
+	if amountMinor < 0 {
+		return nil, 0, errors.New("amount cannot be negative")
+	}
+	amountMoney, err := domainmoney.New(amountMinor, couponCurrency)
 	if err != nil {
 		return nil, 0, fmt.Errorf("invalid amount: %w", err)
 	}
-	minimumMoney, err := domainmoney.FromMajorFloat(c.MinAmount, couponCurrency)
+	minimumMoney, err := domainmoney.New(c.MinAmountMinor, couponCurrency)
 	if err != nil {
 		return nil, 0, fmt.Errorf("invalid coupon minimum amount: %w", err)
 	}
@@ -96,11 +105,7 @@ func (s *MarketingService) ValidateCoupon(code string, userID uint, amount float
 	if err != nil {
 		return nil, 0, err
 	}
-	discount, err := discountMoney.MajorFloat()
-	if err != nil {
-		return nil, 0, fmt.Errorf("format coupon discount: %w", err)
-	}
-	return c, discount, nil
+	return c, discountMoney.AmountMinor(), nil
 }
 
 func validateCouponRecipient(c *coupon.Coupon, userID uint) error {
@@ -113,7 +118,7 @@ func validateCouponRecipient(c *coupon.Coupon, userID uint) error {
 	return nil
 }
 
-func (s *MarketingService) UseCoupon(couponID, userID, orderID uint, discountAmount float64, emails ...string) error {
+func (s *MarketingService) UseCoupon(couponID, userID, orderID uint, discountAmountMinor int64, emails ...string) error {
 	return s.txManager.WithinTx(func(repos repository.TxRepositories) error {
 		c, err := repos.Coupon.FindCouponByIDForUpdate(couponID)
 		if err != nil {
@@ -144,7 +149,15 @@ func (s *MarketingService) UseCoupon(couponID, userID, orderID uint, discountAmo
 			UserID:   userID,
 			Email:    coupon.NormalizeEmail(email),
 			OrderID:  orderID,
-			Discount: discountAmount,
+			Currency: c.Currency,
+		}
+		if discountAmountMinor < 0 {
+			return errors.New("coupon discount cannot be negative")
+		}
+		if discountMoney, moneyErr := domainmoney.New(discountAmountMinor, c.Currency); moneyErr != nil {
+			return moneyErr
+		} else {
+			usage.DiscountMinor = discountMoney.AmountMinor()
 		}
 
 		return repos.Coupon.CreateCouponUsage(usage)
@@ -219,11 +232,12 @@ func (s *MarketingService) CreateCouponAdmin(input CouponCreateInput) (*coupon.C
 	cp := &coupon.Coupon{
 		Code:                 input.Code,
 		Type:                 input.Type,
-		Value:                input.Value,
+		ValueMinor:           input.ValueMinor,
+		ValueRateDecimal:     input.ValueRateDecimal,
 		Currency:             couponCurrency,
 		Description:          input.Description,
-		MinAmount:            input.MinAmount,
-		MaxDiscount:          input.MaxDiscount,
+		MinAmountMinor:       input.MinAmountMinor,
+		MaxDiscountMinor:     input.MaxDiscountMinor,
 		UsageLimit:           input.UsageLimit,
 		UsageLimitPerUser:    input.UsageLimitPerUser,
 		StartDate:            input.StartDate,
@@ -233,7 +247,6 @@ func (s *MarketingService) CreateCouponAdmin(input CouponCreateInput) (*coupon.C
 		ApplicableCategories: input.ApplicableCategories,
 		Enabled:              input.Enabled,
 	}
-
 	if err := s.couponRepo.CreateCoupon(cp); err != nil {
 		return nil, err
 	}
@@ -253,27 +266,38 @@ func (s *MarketingService) UpdateCouponAdmin(id uint, input CouponUpdateInput) (
 		}
 		cp.Code = *input.Code
 	}
-	if input.Type != nil {
-		cp.Type = *input.Type
-	}
-	if input.Value != nil {
-		cp.Value = *input.Value
-	}
 	if input.Currency != nil {
-		couponCurrency, err := parseCouponCurrency(*input.Currency)
-		if err != nil {
-			return nil, err
+		couponCurrency, currencyErr := parseCouponCurrency(*input.Currency)
+		if currencyErr != nil {
+			return nil, currencyErr
+		}
+		if couponCurrency != cp.Currency && input.ValueMinor == nil && input.ValueRateDecimal == nil && input.MinAmountMinor == nil && input.MaxDiscountMinor == nil {
+			return nil, errors.New("changing coupon currency requires canonical monetary values")
 		}
 		cp.Currency = couponCurrency
+	}
+	if input.Type != nil {
+		cp.Type = *input.Type
+		if strings.EqualFold(*input.Type, "percentage") {
+			cp.ValueMinor = 0
+		} else if strings.EqualFold(*input.Type, "fixed") {
+			cp.ValueRateDecimal = ""
+		}
+	}
+	if input.ValueMinor != nil {
+		cp.ValueMinor = *input.ValueMinor
+	}
+	if input.ValueRateDecimal != nil {
+		cp.ValueRateDecimal = *input.ValueRateDecimal
 	}
 	if input.Description != nil {
 		cp.Description = *input.Description
 	}
-	if input.MinAmount != nil {
-		cp.MinAmount = *input.MinAmount
+	if input.MinAmountMinor != nil {
+		cp.MinAmountMinor = *input.MinAmountMinor
 	}
-	if input.MaxDiscount != nil {
-		cp.MaxDiscount = *input.MaxDiscount
+	if input.MaxDiscountMinor != nil {
+		cp.MaxDiscountMinor = *input.MaxDiscountMinor
 	}
 	if input.UsageLimit != nil {
 		cp.UsageLimit = *input.UsageLimit

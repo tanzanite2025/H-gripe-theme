@@ -1,6 +1,7 @@
 import { computed, reactive, ref } from 'vue'
 import { toast } from 'vue-sonner'
 import { storefrontRouteCatalogApi } from '@/modules/url-management/routeCatalog'
+import { storefrontURLIssuesApi, type StorefrontURLIssueStats } from '@/modules/url-management/urlIssues'
 import type { SEOResourcePagination } from '@/modules/seo/types'
 import type {
   StorefrontRouteCatalogEntry,
@@ -9,6 +10,7 @@ import type {
   StorefrontRouteCheckResult,
 } from '@/modules/url-management/routeCatalogTypes'
 import { checkLabel } from '@/modules/url-management/routeCatalogPresentation'
+import { useURLOperationStore } from '@/stores/urlOperation'
 
 export type RouteCatalogMode = 'catalog' | 'canonical'
 
@@ -70,12 +72,25 @@ const errorMessage = (error: unknown): string => {
 }
 
 export function useStorefrontRouteCatalog(canEdit: boolean) {
+  const urlOperationStore = useURLOperationStore()
   const stats = ref<StorefrontRouteCatalogStats>(defaultStorefrontRouteCatalogStats())
+  const issueStats = ref<StorefrontURLIssueStats>({
+    active: 0,
+    open: 0,
+    acknowledged: 0,
+    resolved: 0,
+    verified: 0,
+    suppressed: 0,
+    critical: 0,
+    high: 0,
+  })
   const items = ref<StorefrontRouteCatalogEntry[]>([])
   const loading = ref(false)
   const statsLoading = ref(false)
   const syncing = ref(false)
-  const checking = ref(false)
+  const checking = computed(() => urlOperationStore.running)
+  const checkingLocale = computed(() => urlOperationStore.locale)
+  const checkProgress = computed(() => urlOperationStore.progress)
   const detailLoading = ref(false)
   const historyLoading = ref(false)
   const checkingSelected = ref(false)
@@ -85,7 +100,9 @@ export function useStorefrontRouteCatalog(canEdit: boolean) {
 
   const filters = reactive<StorefrontRouteCatalogFilters>({
     search: '',
-    locale: 'zh_cn',
+    // The view resolves the default from the supported-language registry;
+    // keeping this empty avoids silently scoping operations to Chinese.
+    locale: '',
     source_type: 'all',
     entry_status: 'all',
     check_status: 'all',
@@ -103,9 +120,13 @@ export function useStorefrontRouteCatalog(canEdit: boolean) {
     page: pagination.page,
     page_size: pagination.page_size,
     ...(filters.search.trim() ? { search: filters.search.trim() } : {}),
-    ...(filters.locale !== 'all' ? { locale: filters.locale } : {}),
-    ...(filters.source_type !== 'all' ? { source_type: filters.source_type } : {}),
-    ...(filters.entry_status !== 'all' ? { entry_status: filters.entry_status } : {}),
+    ...(filters.locale && filters.locale !== 'all' ? { locale: filters.locale } : {}),
+    ...(filters.source_type !== 'all' && !(mode.value === 'canonical' && filters.source_type === 'alias')
+      ? { source_type: filters.source_type }
+      : {}),
+    ...(filters.entry_status !== 'all' && !(mode.value === 'canonical' && filters.entry_status === 'alias')
+      ? { entry_status: filters.entry_status }
+      : {}),
     ...(filters.check_status !== 'all' ? { check_status: filters.check_status } : {}),
     ...(filters.searchable !== 'all' ? { searchable: filters.searchable } : {}),
     ...(filters.search_profile_status !== 'all' ? { search_profile_status: filters.search_profile_status } : {}),
@@ -119,7 +140,7 @@ export function useStorefrontRouteCatalog(canEdit: boolean) {
       const locale = filters.locale !== 'all' ? filters.locale : undefined
       stats.value = {
         ...defaultStorefrontRouteCatalogStats(),
-        ...(await storefrontRouteCatalogApi.stats(locale)),
+        ...(await storefrontRouteCatalogApi.stats(locale, mode.value === 'canonical' ? 'canonical' : undefined)),
       }
     } catch (error) {
       console.error('Failed to load storefront route catalog stats:', error)
@@ -143,8 +164,20 @@ export function useStorefrontRouteCatalog(canEdit: boolean) {
     }
   }
 
+  const loadIssueStats = async (): Promise<void> => {
+    try {
+      // The issue queue is the human workflow source of truth for "待处理".
+      // Route observations remain useful for the other health counters, but
+      // must not make this card drift after an issue is suppressed/resolved.
+      issueStats.value = { ...issueStats.value, ...(await storefrontURLIssuesApi.summary()) }
+    } catch (error) {
+      console.error('Failed to load storefront URL issue stats:', error)
+      toast.error('URL 问题统计加载失败')
+    }
+  }
+
   const refreshAll = async (): Promise<void> => {
-    await Promise.all([loadStats(), load()])
+    await Promise.all([loadStats(), load(), loadIssueStats()])
   }
 
   const applyFilters = (): void => {
@@ -169,9 +202,15 @@ export function useStorefrontRouteCatalog(canEdit: boolean) {
     mode.value = nextMode
     filters.entry_status = 'all'
     filters.check_status = 'all'
-    filters.includeAliases = nextMode === 'canonical'
+    if (nextMode === 'canonical' && filters.source_type === 'alias') {
+      filters.source_type = 'all'
+    }
+    // Canonical conflicts are defined on canonical/duplicate entries; alias
+    // rows are intentionally excluded so an alias status cannot create an
+    // impossible `entry_status=alias AND problem_scope=canonical` query.
+    filters.includeAliases = false
     pagination.page = 1
-    if (reload) void load()
+    if (reload) void refreshAll()
   }
 
   const updatePage = (page: number): void => {
@@ -204,24 +243,11 @@ export function useStorefrontRouteCatalog(canEdit: boolean) {
 
   const checkCatalog = async (): Promise<void> => {
     if (!canEdit || checking.value) return
-    checking.value = true
-    try {
-      const summary = await storefrontRouteCatalogApi.check({
-        ...listParams(),
-        limit: 200,
-      })
-      const remaining = Number(summary.remaining || 0)
-      const batchMessage = remaining > 0
-        ? `本次处理 ${summary.checked || 0}/${summary.eligible || summary.checked || 0} 条，剩余 ${remaining} 条`
-        : `本次处理 ${summary.checked || 0} 条`
-      toast.success(`检查完成：${batchMessage}；${summary.ok || 0} 正常，${summary.not_found || 0} 个 404，${summary.errors || 0} 个失败`)
-      await refreshAll()
-    } catch (error) {
-      console.error('Failed to check storefront route catalog:', error)
-      toast.error('URL 检查失败')
-    } finally {
-      checking.value = false
-    }
+    const completed = await urlOperationStore.run(
+      { ...listParams(), limit: 200 },
+      filters.locale !== 'all' ? filters.locale : '',
+    )
+    if (completed) await refreshAll()
   }
 
   const loadDetail = async (id: number): Promise<void> => {
@@ -283,12 +309,16 @@ export function useStorefrontRouteCatalog(canEdit: boolean) {
   }
 
   return {
+    mode,
     stats,
+    issueStats,
     items,
     loading,
     statsLoading,
     syncing,
     checking,
+    checkingLocale,
+    checkProgress,
     detailLoading,
     historyLoading,
     checkingSelected,

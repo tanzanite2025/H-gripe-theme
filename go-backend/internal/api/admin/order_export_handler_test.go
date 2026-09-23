@@ -13,7 +13,7 @@ import (
 )
 
 func TestOrderCustomsExportRow(t *testing.T) {
-	declaredValue := 18.5
+	declaredValueMinor := int64(1850)
 	record := orderdomain.Order{
 		OrderNumber: "TZ-2026-ORDER",
 		ShippingAddress: orderdomain.Address{
@@ -28,11 +28,12 @@ func TestOrderCustomsExportRow(t *testing.T) {
 		ProductName:            "Wheel rim",
 		SKU:                    "RIM-001",
 		Quantity:               2,
+		Currency:               "USD",
 		HSCode:                 "871499",
 		CNCode:                 "87149990",
 		CountryOfOrigin:        "CN",
 		CustomsDescription:     "Bicycle parts",
-		DeclaredValue:          &declaredValue,
+		DeclaredValueMinor:     &declaredValueMinor,
 		DeclaredValueConfirmed: true,
 	}
 
@@ -61,12 +62,12 @@ func TestExportOrderCustomsRejectsIncompleteDeclaredValue(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	db, handler, _, _ := newOrderFulfillmentAuditHandler(t)
 	orderRecord := orderdomain.Order{
-		OrderNumber:   "ORDER-CUSTOMS-INCOMPLETE",
-		UserID:        42,
-		Status:        "processing",
-		PaymentStatus: "paid",
-		TotalAmount:   100,
-		Currency:      "USD",
+		OrderNumber:      "ORDER-CUSTOMS-INCOMPLETE",
+		UserID:           42,
+		Status:           "processing",
+		PaymentStatus:    "paid",
+		TotalAmountMinor: 10000,
+		Currency:         "USD",
 	}
 	require.NoError(t, db.Create(&orderRecord).Error)
 	variantID := uint(1)
@@ -77,9 +78,9 @@ func TestExportOrderCustomsRejectsIncompleteDeclaredValue(t *testing.T) {
 		ProductName:            "Customs export test product",
 		SKU:                    "CUSTOMS-EXPORT-SKU",
 		Quantity:               1,
-		Price:                  100,
-		Subtotal:               100,
-		Total:                  100,
+		PriceMinor:             10000,
+		SubtotalMinor:          10000,
+		TotalMinor:             10000,
 		DeclaredValueConfirmed: true,
 	}).Error)
 

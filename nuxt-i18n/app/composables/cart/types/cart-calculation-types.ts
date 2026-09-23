@@ -63,21 +63,22 @@ export interface UserPoints {
   tier: string
 }
 
-// 优惠券/礼品卡
+// 优惠券
 export interface Coupon {
   id?: number
   code: string
   type: 'percentage' | 'fixed' | 'points'
-  value: number
+  value_minor?: number
+  value_rate_decimal?: string
   currency?: string
-  min_amount?: number
-  max_discount?: number
+  min_amount_minor?: number
+  max_discount_minor?: number
 }
 
 export interface CouponValidationResponse {
   valid: boolean
   coupon: Coupon
-  discount: number
+  discount_minor: number
 }
 
 // 购物车商品
@@ -85,7 +86,7 @@ export interface CartItem {
   product_id?: number
   variant_id?: number | null
   product_specification_template_id?: number | null
-  price: number
+  price_minor: number
   currency?: string
   quantity: number
   weight?: number
@@ -94,27 +95,27 @@ export interface CartItem {
 
 // 运费计算结果
 export interface ShippingCalculationResult {
-  fee: number
+  fee_minor: number
   rule: CartShippingTemplate['rules'][0] | null
   template: CartShippingTemplate | null
 }
 
 // 总价计算结果
 export interface TotalCalculationResult {
-  subtotal: number
-  memberDiscount: number
+  subtotal_minor: number
+  member_discount_minor: number
   memberTier: MemberTier
-  couponDiscount: number
-  pointsDiscount: number
-  discountedSubtotal: number
-  shipping: number
-  tax: number
-  total: number
+  coupon_discount_minor: number
+  points_discount_minor: number
+  discounted_subtotal_minor: number
+  shipping_minor: number
+  tax_minor: number
+  total_minor: number
   breakdown: {
-    originalSubtotal: number
-    totalDiscount: number
-    shippingFee: number
-    taxFee: number
-    finalTotal: number
+    original_subtotal_minor: number
+    total_discount_minor: number
+    shipping_fee_minor: number
+    tax_fee_minor: number
+    final_total_minor: number
   }
 }

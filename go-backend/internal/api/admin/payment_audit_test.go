@@ -103,7 +103,7 @@ func TestPaymentCallbackProbeAuditRecordsReachabilityResult(t *testing.T) {
 	var changes map[string]interface{}
 	require.NoError(t, json.Unmarshal([]byte(log.Changes), &changes))
 	require.Equal(t, "paypal", changes["provider"])
-	require.Equal(t, "https://payments.example.com/api/v1/payment/webhook/paypal", changes["callback_url"])
+	require.Equal(t, "https://payments.example.com/api/v1/payments/paypal/webhook", changes["callback_url"])
 	require.Equal(t, true, changes["reachable"])
 	require.Equal(t, true, changes["route_reachable"])
 	require.Equal(t, true, changes["expected_signature_failure"])

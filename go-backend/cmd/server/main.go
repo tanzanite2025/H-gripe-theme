@@ -214,6 +214,13 @@ func main() {
 		logger.Info("visitor profile cleanup scheduler disabled")
 	}
 
+	var customerServiceRetentionScheduler *scheduler.CustomerServiceRetentionScheduler
+	// The scheduler is always started, but performs no work while the
+	// administrator-controlled database setting is disabled. This allows the
+	// retention policy to be changed from the admin workbench without a restart.
+	customerServiceRetentionScheduler = scheduler.NewCustomerServiceRetentionScheduler(deps.Services.CustomerServiceRetention, cfg.Worker)
+	customerServiceRetentionScheduler.Start(context.Background())
+
 	var behaviorEventCleanupScheduler *scheduler.BehaviorEventCleanupScheduler
 	if cfg.Worker.BehaviorEventCleanupEnabled {
 		behaviorEventCleanupScheduler = scheduler.NewBehaviorEventCleanupScheduler(deps.Services.BehaviorEvents, cfg.Worker)
@@ -228,6 +235,14 @@ func main() {
 		quickBuyAbandonmentScheduler.Start(context.Background())
 	} else {
 		logger.Info("quick-buy abandonment scheduler disabled")
+	}
+
+	var shippingQuoteCleanupScheduler *scheduler.ShippingQuoteCleanupScheduler
+	if cfg.Worker.ShippingQuoteCleanupEnabled {
+		shippingQuoteCleanupScheduler = scheduler.NewShippingQuoteCleanupScheduler(deps.Services.Shipping, cfg.Worker)
+		shippingQuoteCleanupScheduler.Start(context.Background())
+	} else {
+		logger.Info("shipping quote cleanup scheduler disabled")
 	}
 
 	var ugcShowcaseCleanupScheduler *scheduler.UGCShowcaseCleanupScheduler
@@ -362,11 +377,17 @@ func main() {
 	if visitorProfileCleanupScheduler != nil {
 		visitorProfileCleanupScheduler.Stop()
 	}
+	if customerServiceRetentionScheduler != nil {
+		customerServiceRetentionScheduler.Stop()
+	}
 	if behaviorEventCleanupScheduler != nil {
 		behaviorEventCleanupScheduler.Stop()
 	}
 	if quickBuyAbandonmentScheduler != nil {
 		quickBuyAbandonmentScheduler.Stop()
+	}
+	if shippingQuoteCleanupScheduler != nil {
+		shippingQuoteCleanupScheduler.Stop()
 	}
 	if ugcShowcaseCleanupScheduler != nil {
 		ugcShowcaseCleanupScheduler.Stop()

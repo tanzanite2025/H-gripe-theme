@@ -14,7 +14,7 @@ import (
 	"gorm.io/datatypes"
 )
 
-func quickBuySessionTotals(items []quickbuy.SessionItem) (float64, int, error) {
+func quickBuySessionTotals(items []quickbuy.SessionItem) (int64, int, error) {
 	var subtotalMoney domainmoney.Money
 	initialized := false
 	var weightG int
@@ -23,7 +23,10 @@ func quickBuySessionTotals(items []quickbuy.SessionItem) (float64, int, error) {
 		if quantity <= 0 {
 			return 0, weightG, fmt.Errorf("quick buy session item %d quantity must be greater than zero", item.ID)
 		}
-		unitMoney, err := domainmoney.FromMajorFloat(item.UnitPriceSnapshot, item.CurrencySnapshot)
+		if item.UnitPriceSnapshotMinor < 0 {
+			return 0, weightG, fmt.Errorf("quick buy session item %d price cannot be negative", item.ID)
+		}
+		unitMoney, err := domainmoney.New(item.UnitPriceSnapshotMinor, item.CurrencySnapshot)
 		if err != nil {
 			return 0, weightG, fmt.Errorf("quick buy session item %d price: %w", item.ID, err)
 		}
@@ -45,11 +48,19 @@ func quickBuySessionTotals(items []quickbuy.SessionItem) (float64, int, error) {
 	if !initialized {
 		return 0, weightG, nil
 	}
-	subtotal, err := subtotalMoney.MajorFloat()
+	return subtotalMoney.AmountMinor(), weightG, nil
+}
+
+func quickBuyMajorDisplay(amountMinor int64, currency string) string {
+	value, err := domainmoney.New(amountMinor, currency)
 	if err != nil {
-		return 0, weightG, fmt.Errorf("format quick buy session subtotal: %w", err)
+		return "0"
 	}
-	return subtotal, weightG, nil
+	major, err := value.FormatMajor()
+	if err != nil {
+		return "0"
+	}
+	return major
 }
 
 func quickBuySessionView(session quickbuy.Session, validation *QuickBuySessionValidationResult, resolvers ...PublicMediaURLResolver) *QuickBuySessionView {
@@ -62,7 +73,7 @@ func quickBuySessionView(session quickbuy.Session, validation *QuickBuySessionVa
 			ProductID:         item.ProductID,
 			VariantID:         item.VariantID,
 			Quantity:          item.Quantity,
-			UnitPriceSnapshot: item.UnitPriceSnapshot,
+			UnitPriceSnapshot: quickBuyMajorDisplay(item.UnitPriceSnapshotMinor, item.CurrencySnapshot),
 			CurrencySnapshot:  item.CurrencySnapshot,
 			WeightSnapshotG:   item.WeightSnapshotG,
 			ProductSnapshot:   quickBuyPublicProductSnapshot(item.ProductSnapshot, resolver),
@@ -84,7 +95,7 @@ func quickBuySessionView(session quickbuy.Session, validation *QuickBuySessionVa
 		Currency:         session.Currency,
 		Status:           session.Status,
 		ValidationStatus: session.ValidationStatus,
-		SubtotalSnapshot: session.SubtotalSnapshot,
+		SubtotalSnapshot: quickBuyMajorDisplay(session.SubtotalSnapshotMinor, session.Currency),
 		WeightSnapshotG:  session.WeightSnapshotG,
 		ExpiresAt:        session.ExpiresAt,
 		Flow:             flow,
@@ -113,19 +124,50 @@ func quickBuyPublicProductSnapshot(raw datatypes.JSON, resolver PublicMediaURLRe
 }
 
 func quickBuyProductSnapshot(item productdomain.Product, resolvers ...PublicMediaURLResolver) datatypes.JSON {
+	return quickBuyProductSnapshotForVariant(item, nil, resolvers...)
+}
+
+func quickBuyProductSnapshotForVariant(item productdomain.Product, selectedVariant *productdomain.ProductVariant, resolvers ...PublicMediaURLResolver) datatypes.JSON {
 	thumbnail := quickBuyProductThumbnail(item, resolvers...)
+	variant := item.StartingPriceVariant()
+	if selectedVariant != nil {
+		variant = selectedVariant
+	}
+	var sku string
+	price := "0"
+	var salePrice *string
+	var variantID uint
+	if variant != nil {
+		sku = variant.SKU
+		if priceMoney, err := variant.PriceMoney(); err == nil {
+			price, _ = priceMoney.FormatMajor()
+		}
+		variantID = variant.ID
+		if saleMoney, err := variant.SalePriceMoney(); err == nil && saleMoney != nil {
+			value, valueErr := saleMoney.FormatMajor()
+			if valueErr == nil {
+				salePrice = &value
+			}
+		}
+	}
 	return quickBuyJSON(map[string]interface{}{
 		"id":                                item.ID,
 		"product_specification_template_id": item.ProductSpecificationTemplateID,
-		"sku":                               item.SKU,
+		"sku":                               sku,
+		"variant_id":                        variantID,
 		"name":                              item.Name,
 		"slug":                              item.Slug,
 		"thumbnail":                         thumbnail,
 		"featured_image":                    thumbnail,
-		"currency":                          item.Currency,
-		"price":                             item.Price,
-		"sale_price":                        item.SalePrice,
-		"status":                            item.Status,
+		"currency": func() string {
+			if variant != nil && variant.Currency != "" {
+				return variant.Currency
+			}
+			return item.DisplayPriceCurrency()
+		}(),
+		"price":      price,
+		"sale_price": salePrice,
+		"status":     item.Status,
 	})
 }
 
@@ -151,14 +193,25 @@ func quickBuyProductThumbnail(item productdomain.Product, resolvers ...PublicMed
 }
 
 func quickBuyVariantSnapshot(item productdomain.ProductVariant) datatypes.JSON {
+	price := "0"
+	if priceMoney, err := item.PriceMoney(); err == nil {
+		price, _ = priceMoney.FormatMajor()
+	}
+	var salePrice *string
+	if saleMoney, err := item.SalePriceMoney(); err == nil && saleMoney != nil {
+		value, valueErr := saleMoney.FormatMajor()
+		if valueErr == nil {
+			salePrice = &value
+		}
+	}
 	return quickBuyJSON(map[string]interface{}{
 		"id":            item.ID,
 		"product_id":    item.ProductID,
 		"sku":           item.SKU,
 		"title":         item.Title,
 		"currency":      item.Currency,
-		"price":         item.Price,
-		"sale_price":    item.SalePrice,
+		"price":         price,
+		"sale_price":    salePrice,
 		"stock":         item.Stock,
 		"weight_grams":  item.Weight,
 		"is_default":    item.IsDefault,

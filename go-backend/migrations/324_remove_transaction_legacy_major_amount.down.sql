@@ -1,0 +1,2 @@
+-- Legacy transaction major-unit amount is intentionally not restored.
+-- Rebuild display values from amount_minor at the API boundary.

@@ -241,7 +241,7 @@ type QuickBuySessionView struct {
 	Currency         string                           `json:"currency"`
 	Status           string                           `json:"status"`
 	ValidationStatus string                           `json:"validation_status"`
-	SubtotalSnapshot float64                          `json:"subtotal_snapshot"`
+	SubtotalSnapshot string                           `json:"subtotal_snapshot"`
 	WeightSnapshotG  int                              `json:"weight_snapshot_g"`
 	ExpiresAt        *time.Time                       `json:"expires_at,omitempty"`
 	Flow             *QuickBuyPublicFlowView          `json:"flow,omitempty"`
@@ -257,7 +257,7 @@ type QuickBuySessionItemView struct {
 	ProductID         uint           `json:"product_id"`
 	VariantID         *uint          `json:"variant_id,omitempty"`
 	Quantity          int            `json:"quantity"`
-	UnitPriceSnapshot float64        `json:"unit_price_snapshot"`
+	UnitPriceSnapshot string         `json:"unit_price_snapshot"`
 	CurrencySnapshot  string         `json:"currency_snapshot"`
 	WeightSnapshotG   int            `json:"weight_snapshot_g"`
 	ProductSnapshot   datatypes.JSON `json:"product_snapshot"`

@@ -6,16 +6,9 @@ import type { CartItem } from '~~/types/cart'
 import { useAuth } from '~/composables/useAuth'
 import { createIdempotencyKey } from '~/utils/idempotency'
 import { useStorefrontContext } from '~/composables/useStorefrontContext'
+import { useShippingQuote } from '~/composables/useShippingQuote'
 
 type ApiResponse<T> = T | { data?: T | { data?: T } }
-
-interface CheckoutQuoteResponse {
-  total_amount?: number | string | null
-  shipping_quote?: {
-    id?: string
-    selected_plan?: { id?: string }
-  }
-}
 
 export interface StripeExpressCheckoutOrderSession {
   orderNumber: string
@@ -93,6 +86,7 @@ const buildOrderAddressFromStripeExpressCheckoutDetails = (
 
 export function useStripeExpressCheckoutOrder() {
   const auth = useAuth()
+  const shippingQuoteApi = useShippingQuote()
   const { displayCurrency } = useStorefrontContext()
 
   const loadStripeExpressCheckoutPublishableKey = async () => {
@@ -146,17 +140,12 @@ export function useStripeExpressCheckoutOrder() {
       }
     }
 
-    const quoteResponse = await auth.request<ApiResponse<CheckoutQuoteResponse>>('/checkout/quote', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
-      },
-      body: JSON.stringify({ shipping_address: shippingAddress, display_currency: String(displayCurrency.value || '').trim().toUpperCase() }),
-    }, 'Express Checkout quote refresh failed')
-    const quote = unwrapApiData<CheckoutQuoteResponse>(quoteResponse)
-    const expectedTotal = Number(quote?.total_amount)
-    if (!Number.isFinite(expectedTotal)) {
+    const quote = await shippingQuoteApi.quoteCheckout({
+      shipping_address: shippingAddress,
+      display_currency: String(displayCurrency.value || '').trim().toUpperCase(),
+    })
+    const expectedTotalMinor = Number(quote?.total_minor)
+    if (!Number.isSafeInteger(expectedTotalMinor) || expectedTotalMinor < 0) {
       throw new Error('Express Checkout quote did not include a valid total')
     }
     const shippingQuoteID = String(quote?.shipping_quote?.id || '').trim()
@@ -184,7 +173,7 @@ export function useStripeExpressCheckoutOrder() {
         shipping_method: 'standard',
         shipping_quote_id: shippingQuoteID,
         selected_quote_plan_id: selectedQuotePlanID,
-        expected_total: Number(expectedTotal.toFixed(2)),
+        expected_total_minor: expectedTotalMinor,
         display_currency: String(displayCurrency.value || '').trim().toUpperCase(),
       }),
     }, 'Express Checkout order creation failed')

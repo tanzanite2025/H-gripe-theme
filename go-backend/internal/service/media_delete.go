@@ -3,14 +3,19 @@ package service
 import (
 	"bytes"
 	"commerce-platform/internal/domain/media"
+	"commerce-platform/internal/domain/outbox"
+	"commerce-platform/internal/repository"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"time"
+
+	"gorm.io/gorm"
 )
 
 var (
@@ -34,34 +39,85 @@ func MediaAssetDeleteConfirmation(id uint) string {
 	return fmt.Sprintf("DELETE %d", id)
 }
 
-// DeleteAsset permanently removes an unreferenced asset from storage and the
-// database. The reference check is repeated here so the client-side dialog
-// cannot bypass safety rules.
+// DeleteAsset atomically hides an unreferenced asset and records durable object
+// cleanup. Physical deletion happens after commit and is retried by Outbox.
 func (s *MediaService) DeleteAsset(ctx context.Context, id uint, confirmation string) error {
-	asset, err := s.GetAsset(id)
-	if err != nil {
-		return err
-	}
 	if !isMediaDeleteConfirmationValid(id, confirmation) {
 		return ErrMediaDeleteConfirmationRequired
 	}
+	if s == nil || s.repo == nil || s.storage == nil {
+		return ErrMediaStorageUnavailable
+	}
+	if s.objectCleanupOutbox == nil {
+		return ErrObjectStorageCleanupUnavailable
+	}
 
-	references, err := s.repo.FindAssetReferences(asset)
+	err := s.repo.WithTransaction(func(repo *repository.MediaRepository, tx *gorm.DB) error {
+		asset, err := repo.FindAssetByIDForUpdate(id)
+		if err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return ErrMediaAssetNotFound
+			}
+			return err
+		}
+		references, err := repo.FindAssetReferences(asset)
+		if err != nil {
+			return err
+		}
+		if len(references) > 0 {
+			return &MediaAssetInUseError{References: references}
+		}
+
+		objectKeys := make([]string, 0, len(asset.Derivatives)+1)
+		if key := storageObjectKey(s.storage, asset.URL); key != "" {
+			objectKeys = append(objectKeys, key)
+		}
+		for _, derivative := range asset.Derivatives {
+			if key := storageObjectKey(s.storage, derivative.URL); key != "" {
+				objectKeys = append(objectKeys, key)
+			}
+		}
+		event, err := newObjectStorageCleanupEvent(
+			objectCleanupResourceMediaAsset,
+			strconv.FormatUint(uint64(asset.ID), 10),
+			outbox.AggregateTypeMediaAsset,
+			strconv.FormatUint(uint64(asset.ID), 10),
+			objectKeys,
+		)
+		if err != nil {
+			return err
+		}
+		if err := repo.DeleteAsset(asset.ID); err != nil {
+			return fmt.Errorf("mark media asset deleted: %w", err)
+		}
+		return s.objectCleanupOutbox.WithTx(tx).CreateEvent(event)
+	})
 	if err != nil {
 		return err
 	}
-	if len(references) > 0 {
-		return &MediaAssetInUseError{References: references}
+	// Durable cleanup is the correctness path; immediate cleanup only reduces
+	// object-store retention latency and is safe to repeat by the worker.
+	_ = s.cleanupDeletedAsset(ctx, id)
+
+	return nil
+}
+
+func (s *MediaService) cleanupDeletedAsset(ctx context.Context, id uint) error {
+	if s == nil || s.repo == nil || s.storage == nil {
+		return ErrObjectStorageCleanupUnavailable
 	}
-	if s.storage == nil {
-		return ErrMediaStorageUnavailable
+	asset, err := s.repo.FindAssetByIDUnscoped(id)
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil
+	}
+	if err != nil {
+		return fmt.Errorf("load deleted media asset: %w", err)
+	}
+	if !asset.DeletedAt.Valid {
+		return nil
 	}
 
-	derivatives, err := s.repo.FindAssetDerivatives(asset.ID)
-	if err != nil {
-		return fmt.Errorf("list media derivatives: %w", err)
-	}
-	for _, derivative := range derivatives {
+	for _, derivative := range asset.Derivatives {
 		if strings.TrimSpace(derivative.URL) == "" {
 			continue
 		}
@@ -69,15 +125,17 @@ func (s *MediaService) DeleteAsset(ctx context.Context, id uint, confirmation st
 			return fmt.Errorf("delete media derivative object: %w", err)
 		}
 	}
-	if err := s.storage.Delete(ctx, asset.URL); err != nil {
-		return fmt.Errorf("delete media object: %w", err)
+	if strings.TrimSpace(asset.URL) != "" {
+		if err := s.storage.Delete(ctx, asset.URL); err != nil {
+			return fmt.Errorf("delete media object: %w", err)
+		}
 	}
 	if err := s.repo.HardDeleteAsset(id); err != nil {
 		return fmt.Errorf("delete media asset record: %w", err)
 	}
 	if s.cdnPurger != nil {
 		s.cdnPurger.PurgeAsync(s.CanonicalPublicMediaURL(asset.URL))
-		for _, derivative := range derivatives {
+		for _, derivative := range asset.Derivatives {
 			s.cdnPurger.PurgeAsync(s.CanonicalPublicMediaURL(derivative.URL))
 		}
 	}
@@ -127,4 +185,37 @@ func (p *mediaCDNPurger) PurgeAsync(reference string) {
 
 func isMediaDeleteConfirmationValid(id uint, confirmation string) bool {
 	return strings.TrimSpace(confirmation) == MediaAssetDeleteConfirmation(id)
+}
+
+// customerServiceAttachmentReferencedElsewhere protects shared media-library
+// objects during conversation retention. A media asset may be attached to
+// several messages or to an unrelated domain; only an object with no
+// references outside the purged ticket can be physically removed by the
+// retention service.
+func (s *MediaService) customerServiceAttachmentReferencedElsewhere(reference string, ticketID uint) (bool, error) {
+	if s == nil || s.repo == nil || s.storage == nil {
+		return false, nil
+	}
+	key, err := s.storage.ObjectKey(reference)
+	if err != nil || strings.TrimSpace(key) == "" {
+		return false, nil
+	}
+	asset, err := s.repo.FindAssetByStorageKey(key)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return false, nil
+		}
+		return false, err
+	}
+	references, err := s.repo.FindAssetReferences(asset)
+	if err != nil {
+		return false, err
+	}
+	for _, item := range references {
+		if item.ResourceType == "ticket_message" && item.ParentResourceID == ticketID {
+			continue
+		}
+		return true, nil
+	}
+	return false, nil
 }

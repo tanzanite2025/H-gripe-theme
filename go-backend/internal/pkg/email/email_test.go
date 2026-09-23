@@ -14,8 +14,8 @@ func TestEmbeddedTemplateRendersWithoutPhysicalFiles(t *testing.T) {
 	}
 
 	emailService := service.(*emailService)
-	body, isHTML, err := emailService.renderTemplate("order_confirmation.html", "Order confirmation", map[string]string{
-		"order_number": "TAN-1001",
+	body, isHTML, err := emailService.renderTemplate("welcome.html", "Welcome", map[string]string{
+		"customer_name": "Taylor",
 	})
 	if err != nil {
 		t.Fatalf("renderTemplate() error = %v", err)
@@ -23,8 +23,8 @@ func TestEmbeddedTemplateRendersWithoutPhysicalFiles(t *testing.T) {
 	if !isHTML {
 		t.Fatal("renderTemplate() rendered fallback text, want HTML")
 	}
-	if !strings.Contains(body, "TAN-1001") {
-		t.Fatalf("rendered body does not contain order number: %s", body)
+	if !strings.Contains(body, "Taylor") {
+		t.Fatalf("rendered body does not contain customer name: %s", body)
 	}
 }
 
@@ -97,10 +97,45 @@ func TestSendEmailTimesOutWhenSMTPServerDoesNotRespond(t *testing.T) {
 
 func TestLoadConfigFromEnvParsesSMTPTimeout(t *testing.T) {
 	t.Setenv("SMTP_TIMEOUT", "250ms")
+	t.Setenv("SMTP_REPLY_TO", "support@example.com")
+	t.Setenv("SMTP_ENCRYPTION", "tls")
 
 	config := LoadConfigFromEnv()
 	if config.Timeout != 250*time.Millisecond {
 		t.Fatalf("Timeout = %s, want 250ms", config.Timeout)
+	}
+	if config.ReplyTo != "support@example.com" {
+		t.Fatalf("ReplyTo = %q, want support@example.com", config.ReplyTo)
+	}
+	if config.EncryptionType != "tls" {
+		t.Fatalf("EncryptionType = %q, want tls", config.EncryptionType)
+	}
+}
+
+func TestBuildMessageIncludesReplyTo(t *testing.T) {
+	service, err := NewEmailService(&SMTPConfig{
+		Host: "smtp.example.com", Port: 587, From: "noreply@example.com",
+		FromName: "Store Support", ReplyTo: "support@example.com",
+	})
+	if err != nil {
+		t.Fatalf("NewEmailService() error = %v", err)
+	}
+	message := service.(*emailService).buildMessage([]string{"customer@example.com"}, "Subject", "Body", false)
+	if !strings.Contains(string(message), "Reply-To: support@example.com\r\n") {
+		t.Fatalf("message does not contain Reply-To header: %s", message)
+	}
+}
+
+func TestSMTPEncryptionTypeNoneDoesNotRequireSTARTTLS(t *testing.T) {
+	service, err := NewEmailService(&SMTPConfig{
+		Host: "smtp.example.com", Port: 25, From: "noreply@example.com",
+		FromName: "Store Support", EncryptionType: "none",
+	})
+	if err != nil {
+		t.Fatalf("NewEmailService() error = %v", err)
+	}
+	if service.(*emailService).config.EncryptionType != "none" {
+		t.Fatalf("EncryptionType = %q, want none", service.(*emailService).config.EncryptionType)
 	}
 }
 

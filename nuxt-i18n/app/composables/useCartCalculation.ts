@@ -3,11 +3,10 @@
  * 集成 site settings 配置
  * 
  * 功能：
- * - 从后端获取运费模板
  * - 从后端获取税率配置
  * - 计算会员等级折扣
  * - 计算积分抵扣
- * - 支持礼品卡/优惠券
+ * - 支持优惠券
  */
 
 // 导出类型定义
@@ -29,7 +28,6 @@ export { MEMBER_TIERS } from './cart/config/member-tiers'
 // 导入模块化composables
 import { useCartDataLoader } from './cart/useCartDataLoader'
 import { useCartDiscount } from './cart/useCartDiscount'
-import { useCartShipping } from './cart/useCartShipping'
 import { useCartTax } from './cart/useCartTax'
 import type { CartItem, TotalCalculationResult } from './cart/types/cart-calculation-types'
 
@@ -37,10 +35,8 @@ export const useCartCalculation = () => {
   // 1. 数据加载模块
   const dataLoader = useCartDataLoader()
   const {
-    shippingTemplates,
     taxRates,
     userPoints,
-    loadShippingTemplates,
     loadTaxRates,
     loadUserPoints,
   } = dataLoader
@@ -62,15 +58,7 @@ export const useCartCalculation = () => {
     loadLoyaltyProgramConfig,
   } = discount
 
-  // 3. 运费计算模块
-  const shipping = useCartShipping(shippingTemplates)
-  const {
-    selectedShippingTemplate,
-    calculateShipping,
-    calculateShippingByRegion,
-  } = shipping
-
-  // 4. 税费计算模块
+  // 3. 税费计算模块
   const tax = useCartTax(taxRates)
   const {
     selectedTaxRates,
@@ -83,13 +71,13 @@ export const useCartCalculation = () => {
    * 计算商品小计
    */
   const calculateSubtotal = (items: CartItem[]) => {
-    return items.reduce((sum, item) => sum + item.price * item.quantity, 0)
+    return items.reduce((sum, item) => sum + item.price_minor * item.quantity, 0)
   }
 
   /**
    * 完整计算购物车总价
    */
-  const calculateTotal = (items: CartItem[]): TotalCalculationResult => {
+  const calculateTotal = (items: CartItem[], shippingFeeMinor = 0): TotalCalculationResult => {
     // 1. 商品小计
     const subtotal = calculateSubtotal(items)
 
@@ -109,7 +97,7 @@ export const useCartCalculation = () => {
     )
 
     // 6. 运费
-    const shippingFee = calculateShipping(items, discountedSubtotal)
+    const shippingFee = Math.max(0, Number(shippingFeeMinor) || 0)
 
     // 7. 税费（基于折扣后的小计 + 运费）
     const taxFee = calculateTax(discountedSubtotal, shippingFee)
@@ -118,21 +106,21 @@ export const useCartCalculation = () => {
     const total = discountedSubtotal + shippingFee + taxFee
 
     return {
-      subtotal,
-      memberDiscount,
+      subtotal_minor: subtotal,
+      member_discount_minor: memberDiscount,
       memberTier: getUserTier.value,
-      couponDiscount,
-      pointsDiscount,
-      discountedSubtotal,
-      shipping: shippingFee,
-      tax: taxFee,
-      total,
+      coupon_discount_minor: couponDiscount,
+      points_discount_minor: pointsDiscount,
+      discounted_subtotal_minor: discountedSubtotal,
+      shipping_minor: shippingFee,
+      tax_minor: taxFee,
+      total_minor: total,
       breakdown: {
-        originalSubtotal: subtotal,
-        totalDiscount: memberDiscount + couponDiscount + pointsDiscount,
-        shippingFee,
-        taxFee,
-        finalTotal: total,
+        original_subtotal_minor: subtotal,
+        total_discount_minor: memberDiscount + couponDiscount + pointsDiscount,
+        shipping_fee_minor: shippingFee,
+        tax_fee_minor: taxFee,
+        final_total_minor: total,
       }
     }
   }
@@ -149,14 +137,12 @@ export const useCartCalculation = () => {
 
   return {
     // 状态
-    shippingTemplates,
     taxRates,
     userPoints,
     appliedCoupon,
     usePointsDiscount,
     pointsToUse,
     loyaltyPointRedemptionEnabled,
-    selectedShippingTemplate,
     selectedTaxRates,
     shippingAddress,
     
@@ -164,15 +150,12 @@ export const useCartCalculation = () => {
     getUserTier,
     
     // 方法
-    loadShippingTemplates,
     loadTaxRates,
     loadUserPoints,
     calculateSubtotal,
     calculateMemberDiscount,
     calculatePointsDiscount,
     calculateCouponDiscount,
-    calculateShipping,
-    calculateShippingByRegion,
     calculateTax,
     calculateTotal,
     autoSelectTaxRates,

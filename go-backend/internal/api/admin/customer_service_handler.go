@@ -10,10 +10,18 @@ type TicketHandler struct {
 	ticketService            *service.TicketService
 	customerServiceContext   *service.CustomerServiceContextService
 	customerServiceAnalytics *service.CustomerServiceAnalyticsService
+	customerServiceRetention *service.CustomerServiceRetentionService
 	customerServiceEvents    *service.CustomerServiceEventHub
 	mediaService             *service.MediaService
 	allowedOrigins           []string
 	webSocketLimiter         *realtime.CustomerServiceWebSocketLimiter
+}
+
+func (h *TicketHandler) ConfigureCustomerServiceRetention(retention *service.CustomerServiceRetentionService) {
+	if h == nil {
+		return
+	}
+	h.customerServiceRetention = retention
 }
 
 func (h *TicketHandler) ConfigureAllowedOrigins(allowedOrigins []string) {

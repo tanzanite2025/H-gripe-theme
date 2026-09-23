@@ -7,16 +7,33 @@
     />
 
     <div class="min-h-0 flex-1 overflow-auto">
-      <div class="space-y-6">
-        <PaymentGatewayRuntimePanel
-          v-model:selected-gateway="selectedGateway"
-          :runtime="paymentRuntime"
-          :loading="loadingPaymentRuntime"
-          :can-edit="canEdit"
-          :providers="visibleProviders"
-          @refresh="fetchPaymentRuntime"
-        />
-      </div>
+      <Tabs v-model="activeTab" class="space-y-4">
+        <TabsList variant="line" class="h-10 w-full justify-start border-b bg-transparent p-0">
+          <TabsTrigger value="runtime" class="gap-2 rounded-none px-3 text-xs font-black">
+            {{ t('payment.runtimeTab') }}
+          </TabsTrigger>
+          <TabsTrigger value="guide" class="gap-2 rounded-none px-3 text-xs font-black">
+            {{ t('payment.onboardingGuide.tab') }}
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="runtime" class="mt-0 space-y-6">
+          <PaymentGatewayRuntimePanel
+            v-model:selected-gateway="selectedGateway"
+            :runtime="paymentRuntime"
+            :loading="loadingPaymentRuntime"
+            :can-edit="canEdit"
+            :providers="visibleProviders"
+            @refresh="fetchPaymentRuntime"
+          />
+        </TabsContent>
+        <TabsContent value="guide" class="mt-0">
+          <PaymentGatewayOnboardingGuideTab
+            :selected-gateway="selectedGateway"
+            :status="selectedRuntimeStatus"
+          />
+        </TabsContent>
+      </Tabs>
     </div>
   </div>
 </template>
@@ -25,6 +42,8 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import AdminPageHeader from '@/components/admin/AdminPageHeader.vue'
 import PaymentGatewayRuntimePanel from '@/components/admin/settings/PaymentGatewayRuntimePanel.vue'
+import PaymentGatewayOnboardingGuideTab from '@/components/admin/settings/PaymentGatewayOnboardingGuideTab.vue'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useAdminI18n } from '@/i18n'
 import { getPaymentChannelLabel, normalizePaymentChannelKey } from '@/lib/paymentChannels'
 import { useAuthStore } from '@/stores/auth'
@@ -43,6 +62,7 @@ const { t } = useAdminI18n()
 const paymentRuntime = ref<PaymentGatewayRuntime | null>(null)
 const loadingPaymentRuntime = ref(false)
 const selectedGateway = ref('stripe')
+const activeTab = ref<'runtime' | 'guide'>('runtime')
 
 const canEdit = computed(() => authStore.hasPermission('settings:edit'))
 const providerKey = computed(() => {
@@ -50,6 +70,9 @@ const providerKey = computed(() => {
 })
 const providerLabel = computed(() => getPaymentChannelLabel(providerKey.value))
 const visibleProviders = computed(() => (providerKey.value ? [providerKey.value] : []))
+const selectedRuntimeStatus = computed(() => (
+  paymentRuntime.value?.gateways?.find((gateway) => gateway.provider === selectedGateway.value) || null
+))
 const pageTitle = computed(() => providerKey.value ? `${providerLabel.value} 接入` : t('settings.paymentTitle'))
 const pageDescription = computed(() => (
   providerKey.value

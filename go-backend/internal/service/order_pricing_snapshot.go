@@ -48,56 +48,51 @@ func marshalOrderPricingSnapshot(quote *CheckoutQuote) (datatypes.JSON, error) {
 	if quote == nil {
 		return nil, errors.New("checkout quote is required")
 	}
-	fromMajor := func(value float64) (domainmoney.Money, error) {
-		return domainmoney.FromMajorFloat(value, quote.Currency)
+	fromMinor := func(value int64) (domainmoney.Money, error) {
+		return domainmoney.New(value, quote.Currency)
 	}
-	subtotal, err := fromMajor(quote.SubtotalAmount)
+	subtotal, err := fromMinor(quote.SubtotalMinor)
 	if err != nil {
 		return nil, err
 	}
-	shipping, err := fromMajor(quote.ShippingFee)
+	shipping, err := fromMinor(quote.ShippingFeeMinor)
 	if err != nil {
 		return nil, err
 	}
-	tax, err := fromMajor(quote.TaxAmount)
+	tax, err := fromMinor(quote.TaxMinor)
 	if err != nil {
 		return nil, err
 	}
-	member, err := fromMajor(quote.MemberDiscount)
+	member, err := fromMinor(quote.MemberDiscountMinor)
 	if err != nil {
 		return nil, err
 	}
-	coupon, err := fromMajor(quote.CouponDiscount)
+	coupon, err := fromMinor(quote.CouponDiscountMinor)
 	if err != nil {
 		return nil, err
 	}
-	points, err := fromMajor(quote.PointsDiscount)
+	points, err := fromMinor(quote.PointsDiscountMinor)
 	if err != nil {
 		return nil, err
 	}
-	giftCard, err := fromMajor(quote.GiftCardDiscount)
+	discount, err := fromMinor(quote.DiscountMinor)
 	if err != nil {
 		return nil, err
 	}
-	discount, err := fromMajor(quote.DiscountAmount)
-	if err != nil {
-		return nil, err
-	}
-	total, err := fromMajor(quote.TotalAmount)
+	total, err := fromMinor(quote.TotalMinor)
 	if err != nil {
 		return nil, err
 	}
 	raw, err := domainpricing.MarshalOrderPricingSnapshot(domainpricing.OrderPricingSnapshotInput{
-		Currency:         quote.Currency,
-		Subtotal:         subtotal,
-		Shipping:         shipping,
-		Tax:              tax,
-		MemberDiscount:   member,
-		CouponDiscount:   coupon,
-		PointsDiscount:   points,
-		GiftCardDiscount: giftCard,
-		DiscountTotal:    discount,
-		Total:            total,
+		Currency:       quote.Currency,
+		Subtotal:       subtotal,
+		Shipping:       shipping,
+		Tax:            tax,
+		MemberDiscount: member,
+		CouponDiscount: coupon,
+		PointsDiscount: points,
+		DiscountTotal:  discount,
+		Total:          total,
 	})
 	if err != nil {
 		return nil, err

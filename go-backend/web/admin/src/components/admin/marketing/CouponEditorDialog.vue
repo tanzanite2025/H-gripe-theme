@@ -28,17 +28,17 @@
           </AdminFormField>
           <AdminFormField label="折扣值" required :error="errors.value">
             <div class="relative">
-              <Input v-model.number="form.value" type="number" min="0" step="0.01" class="pr-10" @input="emit('clear-error', 'value')" />
+              <Input v-model="form.value" type="text" inputmode="decimal" class="pr-10" @input="emit('clear-error', 'value')" />
               <span class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
                 {{ form.type === 'percentage' ? '%' : '元' }}
               </span>
             </div>
           </AdminFormField>
           <AdminFormField label="最低消费">
-            <Input v-model.number="form.min_amount" type="number" min="0" step="0.01" />
+            <Input v-model="form.min_amount" type="text" inputmode="decimal" />
           </AdminFormField>
           <AdminFormField label="最大折扣" description="0 表示不限制">
-            <Input v-model.number="form.max_discount" type="number" min="0" step="0.01" />
+            <Input v-model="form.max_discount" type="text" inputmode="decimal" />
           </AdminFormField>
           <AdminFormField label="总使用次数" description="0 表示不限制">
             <Input v-model.number="form.usage_limit" type="number" min="0" step="1" />
@@ -105,9 +105,9 @@ export interface CouponForm {
   code: string
   type: 'fixed' | 'percentage' | string
   currency: string
-  value: number | string
-  min_amount: number | string
-  max_discount: number | string
+  value: string
+  min_amount: string
+  max_discount: string
   usage_limit: number | string
   usage_limit_per_user: number | string
   enabled: boolean

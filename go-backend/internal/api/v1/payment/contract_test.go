@@ -50,12 +50,19 @@ func TestTransactionResponseOmitsGatewayResponse(t *testing.T) {
 }
 
 func TestRefundResponseOmitsGatewayResponse(t *testing.T) {
+	providerRefundID := "re_contract_1"
 	body, err := json.Marshal(refundToResponse(paymentdomain.Refund{
-		ID:                  1,
-		OrderID:             2,
-		TransactionID:       3,
-		GatewayResponse:     `{"secret":"refund_secret"}`,
-		CalculationSnapshot: `{"internal":"refund_policy"}`,
+		ID:                             1,
+		OrderID:                        2,
+		TransactionID:                  3,
+		RefundID:                       &providerRefundID,
+		SettlementAmountMinor:          115000,
+		SettlementCurrency:             "USD",
+		SettlementBalanceTransactionID: "txn_contract_1",
+		FXGainLossMinor:                10000,
+		FXGainLossCurrency:             "USD",
+		GatewayResponse:                `{"secret":"refund_secret"}`,
+		CalculationSnapshot:            `{"internal":"refund_policy"}`,
 	}))
 	if err != nil {
 		t.Fatalf("marshal refund response: %v", err)
@@ -64,6 +71,11 @@ func TestRefundResponseOmitsGatewayResponse(t *testing.T) {
 	payload := string(body)
 	if strings.Contains(payload, "gateway_response") || strings.Contains(payload, "refund_secret") || strings.Contains(payload, "calculation_snapshot") || strings.Contains(payload, "refund_policy") {
 		t.Fatalf("refund response leaked gateway response: %s", payload)
+	}
+	for _, fragment := range []string{`"settlement_amount_minor":115000`, `"settlement_currency":"USD"`, `"settlement_balance_transaction_id":"txn_contract_1"`, `"fx_gain_loss_minor":10000`, `"fx_gain_loss_currency":"USD"`} {
+		if !strings.Contains(payload, fragment) {
+			t.Fatalf("refund response missing settlement field %s: %s", fragment, payload)
+		}
 	}
 }
 
@@ -77,8 +89,6 @@ func TestRefundLineItemResponseUsesMinorUnitsOnly(t *testing.T) {
 			LineTaxMinor:      200,
 			LineDiscountMinor: 100,
 			LineTotalMinor:    2568,
-			UnitPrice:         999,
-			LineTotalAmount:   999,
 		}},
 	}))
 	if err != nil {

@@ -4,11 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"testing"
 	"time"
 
 	aftersalesdomain "commerce-platform/internal/domain/aftersales"
-	coupondomain "commerce-platform/internal/domain/coupon"
 	currencydomain "commerce-platform/internal/domain/currency"
 	loyaltydomain "commerce-platform/internal/domain/loyalty"
 	domainmoney "commerce-platform/internal/domain/money"
@@ -23,270 +23,25 @@ import (
 	"gorm.io/gorm"
 )
 
-func seedRefundGiftCardPayment(
-	t *testing.T,
-	db *gorm.DB,
-	orderID uint,
-	code string,
-	usedCents int64,
-) coupondomain.GiftCard {
-	t.Helper()
-
-	card := coupondomain.GiftCard{
-		Code:         code,
-		InitialCents: usedCents,
-		BalanceCents: 0,
-		Currency:     "USD",
-		Status:       "used",
-	}
-	require.NoError(t, db.Create(&card).Error)
-	require.NoError(t, db.Create(&coupondomain.GiftCardTransaction{
-		GiftCardID:   card.ID,
-		OrderID:      orderID,
-		Currency:     "USD",
-		Type:         "use",
-		AmountCents:  -usedCents,
-		BalanceCents: 0,
-		Note:         "Gift card payment",
-	}).Error)
-	return card
-}
-
-func TestPaymentServiceAdminRefundSplitsMixedGiftCardAndGatewayPayment(t *testing.T) {
+func TestPaymentServiceRefundExecutionOutboxCompletesLocalRefund(t *testing.T) {
 	db := newPaymentRefundRecommendationTestDB(t)
 	service := newPaymentServiceWithRefundExecution(db)
-	orderRecord, transaction := createRefundRecommendationPaidOrder(t, db, 1000)
-	transaction.Amount = 700
-	require.NoError(t, db.Save(&transaction).Error)
-	card := seedRefundGiftCardPayment(t, db, orderRecord.ID, "GC-PAY-03-MIXED", 30000)
-
-	refund := paymentdomain.Refund{
-		OrderID:       orderRecord.ID,
-		TransactionID: transaction.ID,
-		Amount:        1000,
-		Reason:        "full mixed-payment refund",
-	}
-	require.NoError(t, service.CreateAdminRefund(&refund, 12))
-	assertPaymentRefundOutboxEvent(t, db, outboxdomain.EventTypePaymentRefundPending, 1, func(payload outboxdomain.PaymentRefundPayload) {
-		require.Equal(t, int64(70000), payload.AmountMinor)
-		require.Equal(t, int64(30000), payload.GiftCardAmountMinor)
-		require.Equal(t, int64(100000), payload.RequestedAmountMinor)
-		require.Equal(t, "USD", payload.Currency)
-	})
-	require.InDelta(t, 700, refund.Amount, 0.001)
-	require.InDelta(t, 300, refund.GiftCardRefundAmount, 0.001)
-	require.InDelta(t, 1000, refund.RequestedAmount, 0.001)
-
-	gateway := &recordingRefundGateway{
-		response: &pgateway.RefundResponse{
-			ID:        "re_pay_03_mixed",
-			PaymentID: transaction.TransactionID,
-			Amount:    700,
-			Status:    "succeeded",
-			CreatedAt: time.Now().UTC(),
-		},
-	}
-	completedRefund, _, err := service.ExecutePendingRefund(context.Background(), ExecutePendingRefundInput{
-		RefundID: refund.ID,
-		AdminID:  12,
-		Provider: "stripe",
-		Gateway:  gateway,
-	})
-	require.NoError(t, err)
-	assertPaymentRefundOutboxEvent(t, db, outboxdomain.EventTypePaymentRefundCompleted, 1, func(payload outboxdomain.PaymentRefundPayload) {
-		require.Equal(t, int64(70000), payload.AmountMinor)
-		require.Equal(t, int64(30000), payload.GiftCardAmountMinor)
-		require.Equal(t, int64(100000), payload.RequestedAmountMinor)
-		require.Equal(t, "USD", payload.Currency)
-	})
-	require.InDelta(t, 700, gateway.amount, 0.001)
-	require.InDelta(t, 300, completedRefund.GiftCardRefundAmount, 0.001)
-
-	var savedCard coupondomain.GiftCard
-	require.NoError(t, db.First(&savedCard, card.ID).Error)
-	require.Equal(t, int64(30000), savedCard.BalanceCents)
-	require.Equal(t, "active", savedCard.Status)
-
-	var restorationCount int64
-	require.NoError(t, db.Model(&coupondomain.GiftCardTransaction{}).
-		Where("refund_id = ? AND type = ?", refund.ID, "refund").
-		Count(&restorationCount).Error)
-	require.Equal(t, int64(1), restorationCount)
-
-	var savedOrder orderdomain.Order
-	require.NoError(t, db.First(&savedOrder, orderRecord.ID).Error)
-	require.Equal(t, "refunded", savedOrder.Status)
-	require.Equal(t, "refunded", savedOrder.PaymentStatus)
-}
-
-func TestPaymentServiceExecutePendingRefundRestoresGiftCardWithoutGateway(t *testing.T) {
-	db := newPaymentRefundRecommendationTestDB(t)
-	service := newPaymentServiceWithRefundExecution(db)
-	orderRecord, transaction := createRefundRecommendationPaidOrder(t, db, 300)
-	transaction.Amount = 0
-	require.NoError(t, db.Save(&transaction).Error)
-	card := seedRefundGiftCardPayment(t, db, orderRecord.ID, "GC-PAY-03-FULL", 30000)
-	refund := paymentdomain.Refund{
-		OrderID:              orderRecord.ID,
-		TransactionID:        transaction.ID,
-		Amount:               0,
-		GiftCardRefundAmount: 300,
-		RequestedAmount:      300,
-		Status:               "pending",
-		Reason:               "full gift-card refund",
-		RefundedBy:           12,
-	}
-	require.NoError(t, db.Create(&refund).Error)
-
-	gateway := &recordingRefundGateway{}
-	completedRefund, _, err := service.ExecutePendingRefund(context.Background(), ExecutePendingRefundInput{
-		RefundID: refund.ID,
-		AdminID:  12,
-		Provider: "stripe",
-		Gateway:  nil,
-	})
-	require.NoError(t, err)
-	require.Equal(t, 0, gateway.refundCallCount)
-	require.InDelta(t, 0, completedRefund.Amount, 0.001)
-
-	var savedCard coupondomain.GiftCard
-	require.NoError(t, db.First(&savedCard, card.ID).Error)
-	require.Equal(t, int64(30000), savedCard.BalanceCents)
-
-	var savedOrder orderdomain.Order
-	require.NoError(t, db.First(&savedOrder, orderRecord.ID).Error)
-	require.Equal(t, "refunded", savedOrder.Status)
-	require.Equal(t, "refunded", savedOrder.PaymentStatus)
-}
-
-func TestPaymentServicePartialGiftCardRefundDoesNotMarkTransactionFullyRefunded(t *testing.T) {
-	db := newPaymentRefundRecommendationTestDB(t)
-	service := newPaymentServiceWithRefundExecution(db)
-	orderRecord, transaction := createRefundRecommendationPaidOrder(t, db, 300)
-	transaction.Amount = 0
-	require.NoError(t, db.Save(&transaction).Error)
-	card := seedRefundGiftCardPayment(t, db, orderRecord.ID, "GC-PAY-03-PARTIAL", 30000)
-	refund := paymentdomain.Refund{
-		OrderID:              orderRecord.ID,
-		TransactionID:        transaction.ID,
-		Amount:               0,
-		GiftCardRefundAmount: 100,
-		RequestedAmount:      100,
-		Status:               "pending",
-		Reason:               "partial gift-card refund",
-		RefundedBy:           12,
-	}
-	require.NoError(t, db.Create(&refund).Error)
-
-	_, _, err := service.ExecutePendingRefund(context.Background(), ExecutePendingRefundInput{
-		RefundID: refund.ID,
-		AdminID:  12,
-		Provider: "stripe",
-	})
-	require.NoError(t, err)
-
-	var savedTransaction paymentdomain.Transaction
-	require.NoError(t, db.First(&savedTransaction, transaction.ID).Error)
-	require.Equal(t, "completed", savedTransaction.Status)
-
-	var savedCard coupondomain.GiftCard
-	require.NoError(t, db.First(&savedCard, card.ID).Error)
-	require.Equal(t, int64(10000), savedCard.BalanceCents)
-}
-
-func TestPaymentServiceExecutePendingRefundDoesNotRestoreGiftCardWhenGatewayFails(t *testing.T) {
-	db := newPaymentRefundRecommendationTestDB(t)
-	service := newPaymentServiceWithRefundExecution(db)
-	orderRecord, transaction := createRefundRecommendationPaidOrder(t, db, 1000)
-	transaction.Amount = 700
-	require.NoError(t, db.Save(&transaction).Error)
-	card := seedRefundGiftCardPayment(t, db, orderRecord.ID, "GC-PAY-03-FAIL", 30000)
-	refund := paymentdomain.Refund{
-		OrderID:              orderRecord.ID,
-		TransactionID:        transaction.ID,
-		Amount:               700,
-		GiftCardRefundAmount: 300,
-		RequestedAmount:      1000,
-		Status:               "pending",
-		Reason:               "failed mixed-payment refund",
-		RefundedBy:           12,
-	}
-	require.NoError(t, db.Create(&refund).Error)
-
-	_, _, err := service.ExecutePendingRefund(context.Background(), ExecutePendingRefundInput{
-		RefundID: refund.ID,
-		AdminID:  12,
-		Provider: "stripe",
-		Gateway:  &recordingRefundGateway{err: errors.New("gateway unavailable")},
-	})
-	require.Error(t, err)
-
-	var savedCard coupondomain.GiftCard
-	require.NoError(t, db.First(&savedCard, card.ID).Error)
-	require.Equal(t, int64(0), savedCard.BalanceCents)
-
-	var restorationCount int64
-	require.NoError(t, db.Model(&coupondomain.GiftCardTransaction{}).
-		Where("refund_id = ? AND type = ?", refund.ID, "refund").
-		Count(&restorationCount).Error)
-	require.Zero(t, restorationCount)
-}
-
-func TestRecordVerifiedGatewayRefundRestoresMixedGiftCardPaymentIdempotently(t *testing.T) {
-	db := newPaymentRefundRecommendationTestDB(t)
-	service := newPaymentServiceWithRefundExecution(db)
-	orderRecord, transaction := createRefundRecommendationPaidOrder(t, db, 1000)
-	transaction.Amount = 700
-	require.NoError(t, db.Save(&transaction).Error)
-	card := seedRefundGiftCardPayment(t, db, orderRecord.ID, "GC-PAY-03-WEBHOOK", 30000)
-	refund := createPendingRefundRecord(t, db, orderRecord.ID, transaction.ID, 700)
-	refund.GiftCardRefundAmount = 300
-	refund.RequestedAmount = 1000
-	require.NoError(t, db.Save(&refund).Error)
-
-	input := VerifiedGatewayRefundInput{
-		Provider:              "stripe",
-		OrderNumber:           orderRecord.OrderNumber,
-		TransactionID:         transaction.TransactionID,
-		RefundID:              "re_pay_03_webhook",
-		ProviderRefundAmount:  mustTestMoney(t, 700, "USD"),
-		RequestedRefundAmount: mustTestMoney(t, 1000, "USD"),
-	}
-	require.NoError(t, service.RecordVerifiedGatewayRefund(input))
-	require.NoError(t, service.RecordVerifiedGatewayRefund(input))
-
-	var savedCard coupondomain.GiftCard
-	require.NoError(t, db.First(&savedCard, card.ID).Error)
-	require.Equal(t, int64(30000), savedCard.BalanceCents)
-
-	var restorationCount int64
-	require.NoError(t, db.Model(&coupondomain.GiftCardTransaction{}).
-		Where("refund_id = ? AND type = ?", refund.ID, "refund").
-		Count(&restorationCount).Error)
-	require.Equal(t, int64(1), restorationCount)
-
-	var savedOrder orderdomain.Order
-	require.NoError(t, db.First(&savedOrder, orderRecord.ID).Error)
-	require.Equal(t, "refunded", savedOrder.Status)
-	require.Equal(t, "refunded", savedOrder.PaymentStatus)
-}
-
-func TestPaymentServiceExecutePendingRefundCompletesLocalRefund(t *testing.T) {
-	db := newPaymentRefundRecommendationTestDB(t)
-	service := newPaymentServiceWithRefundExecution(db)
-	orderRecord, transaction := createRefundRecommendationPaidOrder(t, db, 120)
+	orderRecord, transaction := createRefundRecommendationPaidOrder(t, db, 12000)
 	refund := createPendingRefundRecord(t, db, orderRecord.ID, transaction.ID, 80)
 	gateway := &recordingRefundGateway{
 		response: &pgateway.RefundResponse{
-			ID:        "re_gateway_1",
-			PaymentID: transaction.TransactionID,
-			Amount:    80,
-			Status:    "succeeded",
-			CreatedAt: time.Now().UTC(),
+			ID:                             "re_gateway_1",
+			PaymentID:                      transaction.TransactionID,
+			Amount:                         "80.00",
+			Status:                         "succeeded",
+			SettlementAmountMinor:          8000,
+			SettlementCurrency:             "USD",
+			SettlementBalanceTransactionID: "txn_refund_1",
+			CreatedAt:                      time.Now().UTC(),
 		},
 	}
 
-	completedRefund, execution, err := service.ExecutePendingRefund(context.Background(), ExecutePendingRefundInput{
+	completedRefund, execution, err := executeRefundViaOutbox(t, service, db, context.Background(), executePendingRefundTestInput{
 		RefundID: refund.ID,
 		AdminID:  12,
 		Provider: "stripe",
@@ -295,7 +50,6 @@ func TestPaymentServiceExecutePendingRefundCompletesLocalRefund(t *testing.T) {
 	require.NoError(t, err)
 	assertPaymentRefundOutboxEvent(t, db, outboxdomain.EventTypePaymentRefundCompleted, 1, func(payload outboxdomain.PaymentRefundPayload) {
 		require.Equal(t, int64(8000), payload.AmountMinor)
-		require.Equal(t, int64(0), payload.GiftCardAmountMinor)
 		require.Equal(t, int64(8000), payload.RequestedAmountMinor)
 		require.Equal(t, "USD", payload.Currency)
 	})
@@ -308,13 +62,17 @@ func TestPaymentServiceExecutePendingRefundCompletesLocalRefund(t *testing.T) {
 	require.Equal(t, paymentdomain.PaymentRefundExecutionStatusSucceeded, execution.Status)
 	require.Equal(t, "re_gateway_1", execution.ProviderRefundID)
 	require.Equal(t, "succeeded", execution.ProviderStatus)
+	require.Equal(t, int64(8000), execution.SettlementAmountMinor)
+	require.Equal(t, "USD", execution.SettlementCurrency)
+	require.Equal(t, "txn_refund_1", execution.SettlementBalanceTransactionID)
+	require.Zero(t, execution.FXGainLossMinor)
 	require.Equal(t, refundExecutionIdempotencyKey(refund.ID), gateway.options.IdempotencyKey)
 	require.Equal(t, transaction.Currency, gateway.options.Currency)
-	require.Equal(t, transaction.Amount, gateway.options.OriginalAmount)
+	require.Equal(t, int64(12000), gateway.options.OriginalAmountMinor)
 	require.Equal(t, orderRecord.OrderNumber, gateway.options.MerchantOrderNumber)
 	require.Equal(t, transaction.TransactionID, gateway.options.ProviderTransactionID)
 	require.Equal(t, transaction.TransactionID, gateway.paymentID)
-	require.Equal(t, 80.0, gateway.amount)
+	require.Equal(t, int64(8000), gateway.amountMinor)
 	require.Equal(t, orderRecord.OrderNumber, execution.MerchantOrderNumber)
 	require.Equal(t, transaction.TransactionID, execution.ProviderTransactionID)
 
@@ -323,25 +81,26 @@ func TestPaymentServiceExecutePendingRefundCompletesLocalRefund(t *testing.T) {
 	require.Equal(t, "completed", updatedTransaction.Status)
 }
 
-func TestPaymentServiceExecutePendingRefundCompletesZeroNetRefundLocally(t *testing.T) {
+func TestPaymentServiceRefundExecutionOutboxCompletesZeroNetRefundLocally(t *testing.T) {
 	db := newPaymentRefundRecommendationTestDB(t)
 	service := newPaymentServiceWithRefundExecution(db)
-	orderRecord, transaction := createRefundRecommendationPaidOrder(t, db, 100)
+	orderRecord, transaction := createRefundRecommendationPaidOrder(t, db, 10000)
 	refund := paymentdomain.Refund{
-		OrderID:                orderRecord.ID,
-		TransactionID:          transaction.ID,
-		Amount:                 0,
-		RequestedAmount:        150,
-		DiscountClawbackAmount: 150,
-		CalculationSnapshot:    `{"net_refund_amount":0,"discount_clawback_amount":150}`,
-		Status:                 "pending",
-		Reason:                 "zero net promotional refund",
-		RefundedBy:             7,
+		OrderID:                     orderRecord.ID,
+		TransactionID:               transaction.ID,
+		AmountMinor:                 0,
+		RequestedAmountMinor:        majorTestMinor(t, 150, "USD"),
+		DiscountClawbackAmountMinor: majorTestMinor(t, 150, "USD"),
+		Currency:                    "USD",
+		CalculationSnapshot:         `{"net_refund_amount_minor":0,"discount_clawback_amount_minor":15000}`,
+		Status:                      "pending",
+		Reason:                      "zero net promotional refund",
+		RefundedBy:                  7,
 	}
 	require.NoError(t, db.Create(&refund).Error)
 	gateway := &recordingRefundGateway{}
 
-	completedRefund, execution, err := service.ExecutePendingRefund(context.Background(), ExecutePendingRefundInput{
+	completedRefund, execution, err := executeRefundViaOutbox(t, service, db, context.Background(), executePendingRefundTestInput{
 		RefundID: refund.ID,
 		AdminID:  12,
 		Provider: "stripe",
@@ -352,7 +111,7 @@ func TestPaymentServiceExecutePendingRefundCompletesZeroNetRefundLocally(t *test
 	require.Equal(t, "completed", completedRefund.Status)
 	require.NotNil(t, completedRefund.RefundID)
 	require.Equal(t, localZeroRefundID(refund.ID), *completedRefund.RefundID)
-	require.InDelta(t, 0, completedRefund.Amount, 0.001)
+	require.Zero(t, completedRefund.AmountMinor)
 	require.Contains(t, completedRefund.GatewayResponse, localZeroRefundID(refund.ID))
 	require.Equal(t, paymentdomain.PaymentRefundExecutionStatusSucceeded, execution.Status)
 	require.Equal(t, localZeroRefundID(refund.ID), execution.ProviderRefundID)
@@ -376,16 +135,17 @@ func TestPaymentServiceExecuteZeroNetRefundCompletesLinkedAfterSalesCase(t *test
 	service := newPaymentServiceWithRefundExecution(db)
 	service.txManager.ConfigureAfterSalesCaseRepository(repository.NewAfterSalesCaseRepository(db))
 	service.txManager.ConfigureAfterSalesRefundReviewRepository(repository.NewAfterSalesRefundReviewRepository(db))
-	orderRecord, transaction := createRefundRecommendationPaidOrder(t, db, 100)
+	orderRecord, transaction := createRefundRecommendationPaidOrder(t, db, 10000)
 	refund := paymentdomain.Refund{
-		OrderID:                orderRecord.ID,
-		TransactionID:          transaction.ID,
-		Amount:                 0,
-		RequestedAmount:        150,
-		DiscountClawbackAmount: 150,
-		Status:                 "pending",
-		Reason:                 "zero net after-sales refund",
-		RefundedBy:             7,
+		OrderID:                     orderRecord.ID,
+		TransactionID:               transaction.ID,
+		AmountMinor:                 0,
+		RequestedAmountMinor:        majorTestMinor(t, 150, "USD"),
+		DiscountClawbackAmountMinor: majorTestMinor(t, 150, "USD"),
+		Currency:                    "USD",
+		Status:                      "pending",
+		Reason:                      "zero net after-sales refund",
+		RefundedBy:                  7,
 	}
 	require.NoError(t, db.Create(&refund).Error)
 	caseRecord := aftersalesdomain.AfterSalesCase{
@@ -398,17 +158,17 @@ func TestPaymentServiceExecuteZeroNetRefundCompletesLinkedAfterSalesCase(t *test
 	}
 	require.NoError(t, db.Create(&caseRecord).Error)
 	review := aftersalesdomain.AfterSalesRefundReview{
-		CaseID:         caseRecord.ID,
-		Status:         aftersalesdomain.RefundReviewStatusApproved,
-		ProposedAmount: 150,
-		Currency:       "USD",
-		CreatedBy:      7,
-		UpdatedBy:      7,
-		LinkedRefundID: &refund.ID,
+		CaseID:              caseRecord.ID,
+		Status:              aftersalesdomain.RefundReviewStatusApproved,
+		ProposedAmountMinor: majorTestMinor(t, 150, "USD"),
+		Currency:            "USD",
+		CreatedBy:           7,
+		UpdatedBy:           7,
+		LinkedRefundID:      &refund.ID,
 	}
 	require.NoError(t, db.Create(&review).Error)
 
-	_, _, err := service.ExecutePendingRefund(context.Background(), ExecutePendingRefundInput{
+	_, _, err := executeRefundViaOutbox(t, service, db, context.Background(), executePendingRefundTestInput{
 		RefundID: refund.ID,
 		AdminID:  12,
 		Provider: "stripe",
@@ -439,7 +199,7 @@ func TestRecordVerifiedGatewayRefundReconcilesTimedOutExecutionAndCompletesLinke
 	service := newPaymentServiceWithRefundExecution(db)
 	service.txManager.ConfigureAfterSalesCaseRepository(repository.NewAfterSalesCaseRepository(db))
 	service.txManager.ConfigureAfterSalesRefundReviewRepository(repository.NewAfterSalesRefundReviewRepository(db))
-	orderRecord, transaction := createRefundRecommendationPaidOrder(t, db, 100)
+	orderRecord, transaction := createRefundRecommendationPaidOrder(t, db, 10000)
 	refund := createPendingRefundRecord(t, db, orderRecord.ID, transaction.ID, 100)
 
 	caseRecord := aftersalesdomain.AfterSalesCase{
@@ -452,13 +212,13 @@ func TestRecordVerifiedGatewayRefundReconcilesTimedOutExecutionAndCompletesLinke
 	}
 	require.NoError(t, db.Create(&caseRecord).Error)
 	review := aftersalesdomain.AfterSalesRefundReview{
-		CaseID:         caseRecord.ID,
-		Status:         aftersalesdomain.RefundReviewStatusApproved,
-		ProposedAmount: 100,
-		Currency:       "USD",
-		CreatedBy:      7,
-		UpdatedBy:      7,
-		LinkedRefundID: &refund.ID,
+		CaseID:              caseRecord.ID,
+		Status:              aftersalesdomain.RefundReviewStatusApproved,
+		ProposedAmountMinor: majorTestMinor(t, 100, "USD"),
+		Currency:            "USD",
+		CreatedBy:           7,
+		UpdatedBy:           7,
+		LinkedRefundID:      &refund.ID,
 	}
 	require.NoError(t, db.Create(&review).Error)
 	execution := paymentdomain.PaymentRefundExecution{
@@ -469,7 +229,7 @@ func TestRecordVerifiedGatewayRefundReconcilesTimedOutExecutionAndCompletesLinke
 		ProviderPaymentID:     transaction.TransactionID,
 		MerchantOrderNumber:   orderRecord.OrderNumber,
 		ProviderTransactionID: transaction.TransactionID,
-		Amount:                100,
+		AmountMinor:           majorTestMinor(t, 100, "USD"),
 		Currency:              "USD",
 		Status:                paymentdomain.PaymentRefundExecutionStatusFailed,
 		IdempotencyKey:        refundExecutionIdempotencyKey(refund.ID),
@@ -514,6 +274,16 @@ func TestRecordVerifiedGatewayRefundReconcilesTimedOutExecutionAndCompletesLinke
 	assert.Equal(t, aftersalesdomain.StatusResolving, event.FromStatus)
 	assert.Equal(t, aftersalesdomain.StatusCompleted, event.ToStatus)
 	assert.Equal(t, uint(12), event.UpdatedBy)
+	var domainEvent outboxdomain.Event
+	require.NoError(t, db.Where(
+		"event_type = ? AND aggregate_id = ?",
+		outboxdomain.EventTypeAfterSalesStatusChanged,
+		fmt.Sprint(caseRecord.ID),
+	).Order("id DESC").First(&domainEvent).Error)
+	var domainPayload outboxdomain.AfterSalesStatusChangedPayload
+	require.NoError(t, json.Unmarshal(domainEvent.Payload, &domainPayload))
+	assert.Equal(t, aftersalesdomain.StatusCompleted, domainPayload.NewStatus)
+	assert.Equal(t, orderRecord.OrderNumber, domainPayload.OrderNumber)
 }
 
 func TestRecordVerifiedGatewayRefundRepairsAlreadyCompletedRefundExecutionOnReplay(t *testing.T) {
@@ -528,16 +298,17 @@ func TestRecordVerifiedGatewayRefundRepairsAlreadyCompletedRefundExecutionOnRepl
 	service := newPaymentServiceWithRefundExecution(db)
 	service.txManager.ConfigureAfterSalesCaseRepository(repository.NewAfterSalesCaseRepository(db))
 	service.txManager.ConfigureAfterSalesRefundReviewRepository(repository.NewAfterSalesRefundReviewRepository(db))
-	orderRecord, transaction := createRefundRecommendationPaidOrder(t, db, 100)
+	orderRecord, transaction := createRefundRecommendationPaidOrder(t, db, 10000)
 	providerRefundID := "re_already_completed_replay"
 	refund := paymentdomain.Refund{
-		OrderID:         orderRecord.ID,
-		TransactionID:   transaction.ID,
-		RefundID:        &providerRefundID,
-		Amount:          100,
-		RequestedAmount: 100,
-		Status:          "completed",
-		CompletedAt:     func() *time.Time { value := time.Now().UTC().Add(-time.Minute); return &value }(),
+		OrderID:              orderRecord.ID,
+		TransactionID:        transaction.ID,
+		RefundID:             &providerRefundID,
+		AmountMinor:          majorTestMinor(t, 100, "USD"),
+		RequestedAmountMinor: majorTestMinor(t, 100, "USD"),
+		Currency:             "USD",
+		Status:               "completed",
+		CompletedAt:          func() *time.Time { value := time.Now().UTC().Add(-time.Minute); return &value }(),
 	}
 	require.NoError(t, db.Create(&refund).Error)
 
@@ -551,13 +322,13 @@ func TestRecordVerifiedGatewayRefundRepairsAlreadyCompletedRefundExecutionOnRepl
 	}
 	require.NoError(t, db.Create(&caseRecord).Error)
 	review := aftersalesdomain.AfterSalesRefundReview{
-		CaseID:         caseRecord.ID,
-		Status:         aftersalesdomain.RefundReviewStatusApproved,
-		ProposedAmount: 100,
-		Currency:       "USD",
-		CreatedBy:      7,
-		UpdatedBy:      7,
-		LinkedRefundID: &refund.ID,
+		CaseID:              caseRecord.ID,
+		Status:              aftersalesdomain.RefundReviewStatusApproved,
+		ProposedAmountMinor: majorTestMinor(t, 100, "USD"),
+		Currency:            "USD",
+		CreatedBy:           7,
+		UpdatedBy:           7,
+		LinkedRefundID:      &refund.ID,
 	}
 	require.NoError(t, db.Create(&review).Error)
 	execution := paymentdomain.PaymentRefundExecution{
@@ -568,7 +339,7 @@ func TestRecordVerifiedGatewayRefundRepairsAlreadyCompletedRefundExecutionOnRepl
 		ProviderPaymentID:     transaction.TransactionID,
 		MerchantOrderNumber:   orderRecord.OrderNumber,
 		ProviderTransactionID: transaction.TransactionID,
-		Amount:                100,
+		AmountMinor:           majorTestMinor(t, 100, "USD"),
 		Currency:              "USD",
 		Status:                paymentdomain.PaymentRefundExecutionStatusFailed,
 		IdempotencyKey:        refundExecutionIdempotencyKey(refund.ID),
@@ -597,39 +368,40 @@ func TestRecordVerifiedGatewayRefundRepairsAlreadyCompletedRefundExecutionOnRepl
 	assert.Equal(t, aftersalesdomain.StatusCompleted, savedCase.Status)
 }
 
-func TestPaymentServiceExecutePendingRefundInvalidatesRestockedProductCache(t *testing.T) {
+func TestPaymentServiceRefundExecutionOutboxInvalidatesRestockedProductCache(t *testing.T) {
 	db := newPaymentRefundRecommendationTestDB(t)
 	service := newPaymentServiceWithRefundExecution(db)
 	cacheInvalidator := &recordingProductCacheInvalidator{}
 	service.ConfigureProductCacheInvalidator(cacheInvalidator)
 	variant := seedPaymentProductVariant(t, db, 4)
-	orderRecord, transaction := createRefundRecommendationPaidOrder(t, db, 120)
+	orderRecord, transaction := createRefundRecommendationPaidOrder(t, db, 12000)
 	orderItem := seedPaymentOrderItemWithVariant(t, db, orderRecord.ID, variant.ProductID, variant.ID, 1, 120, 120, 0, 0, 120)
 	refund := createPendingRefundRecord(t, db, orderRecord.ID, transaction.ID, 120)
 	require.NoError(t, db.Create(&paymentdomain.RefundLineItem{
-		RefundID:        refund.ID,
-		OrderID:         orderRecord.ID,
-		OrderItemID:     orderItem.ID,
-		ProductID:       variant.ProductID,
-		VariantID:       &variant.ID,
-		ProductName:     "Carbon component",
-		SKU:             variant.SKU,
-		Quantity:        1,
-		UnitPrice:       120,
-		LineTotalAmount: 120,
-		Restock:         true,
+		RefundID:       refund.ID,
+		OrderID:        orderRecord.ID,
+		OrderItemID:    orderItem.ID,
+		ProductID:      variant.ProductID,
+		VariantID:      &variant.ID,
+		ProductName:    "Carbon component",
+		SKU:            variant.SKU,
+		Quantity:       1,
+		Currency:       "USD",
+		UnitPriceMinor: majorTestMinor(t, 120, "USD"),
+		LineTotalMinor: majorTestMinor(t, 120, "USD"),
+		Restock:        true,
 	}).Error)
 	gateway := &recordingRefundGateway{
 		response: &pgateway.RefundResponse{
 			ID:        "re_gateway_restock",
 			PaymentID: transaction.TransactionID,
-			Amount:    120,
+			Amount:    "120.00",
 			Status:    "succeeded",
 			CreatedAt: time.Now().UTC(),
 		},
 	}
 
-	_, _, err := service.ExecutePendingRefund(context.Background(), ExecutePendingRefundInput{
+	_, _, err := executeRefundViaOutbox(t, service, db, context.Background(), executePendingRefundTestInput{
 		RefundID: refund.ID,
 		AdminID:  12,
 		Provider: "stripe",
@@ -640,14 +412,14 @@ func TestPaymentServiceExecutePendingRefundInvalidatesRestockedProductCache(t *t
 	assert.Equal(t, []uint{variant.ProductID}, cacheInvalidator.productIDs)
 }
 
-func TestPaymentServiceExecutePendingRefundRecordsGatewayFailure(t *testing.T) {
+func TestPaymentServiceRefundExecutionOutboxRecordsGatewayFailure(t *testing.T) {
 	db := newPaymentRefundRecommendationTestDB(t)
 	service := newPaymentServiceWithRefundExecution(db)
-	orderRecord, transaction := createRefundRecommendationPaidOrder(t, db, 90)
+	orderRecord, transaction := createRefundRecommendationPaidOrder(t, db, 9000)
 	refund := createPendingRefundRecord(t, db, orderRecord.ID, transaction.ID, 40)
 	gateway := &recordingRefundGateway{err: errors.New("gateway unavailable")}
 
-	_, execution, err := service.ExecutePendingRefund(context.Background(), ExecutePendingRefundInput{
+	_, execution, err := executeRefundViaOutbox(t, service, db, context.Background(), executePendingRefundTestInput{
 		RefundID: refund.ID,
 		AdminID:  12,
 		Provider: "stripe",
@@ -660,7 +432,6 @@ func TestPaymentServiceExecutePendingRefundRecordsGatewayFailure(t *testing.T) {
 	require.Contains(t, execution.ErrorMessage, "gateway unavailable")
 	assertPaymentRefundOutboxEvent(t, db, outboxdomain.EventTypePaymentRefundFailed, 1, func(payload outboxdomain.PaymentRefundPayload) {
 		require.Equal(t, int64(4000), payload.AmountMinor)
-		require.Equal(t, int64(0), payload.GiftCardAmountMinor)
 		require.Equal(t, int64(4000), payload.RequestedAmountMinor)
 		require.Equal(t, "USD", payload.Currency)
 		require.Equal(t, paymentdomain.PaymentRefundExecutionStatusFailed, payload.ExecutionStatus)
@@ -669,22 +440,25 @@ func TestPaymentServiceExecutePendingRefundRecordsGatewayFailure(t *testing.T) {
 
 	storedRefund, err := repository.NewPaymentRepository(db).FindRefundByID(refund.ID)
 	require.NoError(t, err)
-	require.Equal(t, "pending", storedRefund.Status)
+	require.Equal(t, "failed", storedRefund.Status)
 	require.Nil(t, storedRefund.RefundID)
 	require.Nil(t, storedRefund.CompletedAt)
+	reservedAmount, err := repository.NewPaymentRepository(db).SumRefundAmountMinorByTransactionID(transaction.ID, "pending", "completed")
+	require.NoError(t, err)
+	require.Zero(t, reservedAmount)
 }
 
 func TestPaymentServiceGatewayRefundFailureWebhookIsIdempotentAndRetryable(t *testing.T) {
 	db := newPaymentRefundRecommendationTestDB(t)
 	service := newPaymentServiceWithRefundExecution(db)
-	orderRecord, transaction := createRefundRecommendationPaidOrder(t, db, 90)
+	orderRecord, transaction := createRefundRecommendationPaidOrder(t, db, 9000)
 	refund := createPendingRefundRecord(t, db, orderRecord.ID, transaction.ID, 40)
 
 	// A synchronous attempt can fail before the provider's asynchronous failure
 	// notification arrives. Keep that execution row so the webhook can enrich
 	// the same audit record.
 	firstGateway := &recordingRefundGateway{err: errors.New("gateway unavailable")}
-	_, _, err := service.ExecutePendingRefund(context.Background(), ExecutePendingRefundInput{
+	_, _, err := executeRefundViaOutbox(t, service, db, context.Background(), executePendingRefundTestInput{
 		RefundID: refund.ID,
 		AdminID:  12,
 		Provider: "stripe",
@@ -725,10 +499,10 @@ func TestPaymentServiceGatewayRefundFailureWebhookIsIdempotentAndRetryable(t *te
 	retryGateway := &recordingRefundGateway{response: &pgateway.RefundResponse{
 		ID:        "re_provider_retry",
 		PaymentID: transaction.TransactionID,
-		Amount:    40,
+		Amount:    "40.00",
 		Status:    "succeeded",
 	}}
-	completed, execution, err := service.ExecutePendingRefund(context.Background(), ExecutePendingRefundInput{
+	completed, execution, err := executeRefundViaOutbox(t, service, db, context.Background(), executePendingRefundTestInput{
 		RefundID: refund.ID,
 		AdminID:  12,
 		Provider: "stripe",
@@ -752,7 +526,7 @@ func TestPaymentServiceExecuteDuplicatePaidCompensationRefundRetriesAndPreserves
 	db := newPaymentRefundRecommendationTestDB(t)
 	service := newPaymentServiceWithRefundExecution(db)
 	config := seedRefundLoyaltyProgramConfig(t, db, 10)
-	orderRecord, _ := createRefundRecommendationPaidOrder(t, db, 100)
+	orderRecord, _ := createRefundRecommendationPaidOrder(t, db, 10000)
 	seedRefundOrderLoyalty(t, db, orderRecord, config, 100, 25, 0)
 
 	result, err := service.RecordVerifiedGatewayPaymentResult(VerifiedGatewayPaymentInput{
@@ -771,36 +545,39 @@ func TestPaymentServiceExecuteDuplicatePaidCompensationRefundRetriesAndPreserves
 		response: &pgateway.RefundResponse{
 			ID:        "REFUND-DUPLICATE-1",
 			PaymentID: "CAPTURE-DUPLICATE-1",
-			Amount:    100,
+			Amount:    "100.00",
 			Status:    "COMPLETED",
 			CreatedAt: time.Now().UTC(),
 		},
 	}
-	input := ExecutePendingRefundInput{
+	input := executePendingRefundTestInput{
 		RefundID: result.RefundID,
 		AdminID:  12,
 		Provider: "paypal",
 		Gateway:  gateway,
 	}
 
-	_, failedExecution, err := service.ExecutePendingRefund(context.Background(), input)
+	_, failedExecution, err := executeRefundViaOutbox(t, service, db, context.Background(), input)
 	require.Error(t, err)
 	require.Equal(t, paymentdomain.PaymentRefundExecutionStatusFailed, failedExecution.Status)
 	require.Equal(t, 1, failedExecution.AttemptCount)
+	var failedRefund paymentdomain.Refund
+	require.NoError(t, db.First(&failedRefund, result.RefundID).Error)
+	require.Equal(t, "failed", failedRefund.Status)
 
-	_, succeededExecution, err := service.ExecutePendingRefund(context.Background(), input)
+	_, succeededExecution, err := executeRefundViaOutbox(t, service, db, context.Background(), input)
 	require.NoError(t, err)
 	require.Equal(t, paymentdomain.PaymentRefundExecutionStatusSucceeded, succeededExecution.Status)
 	require.Equal(t, 2, succeededExecution.AttemptCount)
 	require.Equal(t, "REFUND-DUPLICATE-1", succeededExecution.ProviderRefundID)
 	require.Equal(t, refundExecutionIdempotencyKey(result.RefundID), gateway.options.IdempotencyKey)
-	require.Equal(t, 100.0, gateway.amount)
+	require.Equal(t, int64(10000), gateway.amountMinor)
 
 	var savedRefund paymentdomain.Refund
 	require.NoError(t, db.First(&savedRefund, result.RefundID).Error)
 	require.Equal(t, "completed", savedRefund.Status)
 	require.Equal(t, duplicatePaidRefundReason, savedRefund.Reason)
-	require.InDelta(t, 100, savedRefund.Amount, 0.001)
+	require.Equal(t, majorTestMinor(t, 100, "USD"), savedRefund.AmountMinor)
 	require.False(t, savedRefund.LoyaltySettlementPrepared)
 
 	var savedTransaction paymentdomain.Transaction
@@ -819,24 +596,24 @@ func TestPaymentServiceExecuteDuplicatePaidCompensationRefundRetriesAndPreserves
 	require.Zero(t, loyaltyTransactionCount)
 }
 
-func TestPaymentServiceExecutePendingRefundKeepsLoyaltyReservationForMismatchedProviderAmount(t *testing.T) {
+func TestPaymentServiceRefundExecutionOutboxKeepsLoyaltyReservationForMismatchedProviderAmount(t *testing.T) {
 	db := newPaymentRefundRecommendationTestDB(t)
 	service := newPaymentServiceWithRefundExecution(db)
 	config := seedRefundLoyaltyProgramConfig(t, db, 10)
-	orderRecord, transaction := createRefundRecommendationPaidOrder(t, db, 100)
+	orderRecord, transaction := createRefundRecommendationPaidOrder(t, db, 10000)
 	seedRefundOrderLoyalty(t, db, orderRecord, config, 100, 25, 0)
 	refund := createPendingRefundRecord(t, db, orderRecord.ID, transaction.ID, 100)
 	gateway := &recordingRefundGateway{
 		response: &pgateway.RefundResponse{
-			ID:        "re_amount_mismatch",
-			PaymentID: transaction.TransactionID,
-			Amount:    80,
-			Status:    "succeeded",
-			CreatedAt: time.Now().UTC(),
+			ID:          "re_amount_mismatch",
+			PaymentID:   transaction.TransactionID,
+			AmountMinor: 8000,
+			Status:      "succeeded",
+			CreatedAt:   time.Now().UTC(),
 		},
 	}
 
-	_, _, err := service.ExecutePendingRefund(context.Background(), ExecutePendingRefundInput{
+	_, _, err := executeRefundViaOutbox(t, service, db, context.Background(), executePendingRefundTestInput{
 		RefundID: refund.ID,
 		AdminID:  12,
 		Provider: "stripe",
@@ -850,8 +627,8 @@ func TestPaymentServiceExecutePendingRefundKeepsLoyaltyReservationForMismatchedP
 	require.Equal(t, "pending", savedRefund.Status)
 	require.True(t, savedRefund.LoyaltySettlementPrepared)
 	require.Equal(t, 25, savedRefund.LoyaltyPointsClawback)
-	require.InDelta(t, 92.5, savedRefund.Amount, 0.001)
-	require.InDelta(t, 7.5, savedRefund.LoyaltyCashDeductionAmount, 0.001)
+	require.Equal(t, majorTestMinor(t, 92.5, "USD"), savedRefund.AmountMinor)
+	require.Equal(t, majorTestMinor(t, 7.5, "USD"), savedRefund.LoyaltyCashDeductionAmountMinor)
 
 	var savedExecution paymentdomain.PaymentRefundExecution
 	require.NoError(t, db.Where("refund_id = ?", refund.ID).First(&savedExecution).Error)
@@ -865,41 +642,41 @@ func TestPaymentServiceExecutePendingRefundKeepsLoyaltyReservationForMismatchedP
 	require.Equal(t, 0, userLoyalty.AvailablePoints)
 }
 
-func TestPaymentServiceExecutePendingRefundPersistsHistoricalFXSnapshot(t *testing.T) {
+func TestPaymentServiceRefundExecutionOutboxPersistsHistoricalFXSnapshot(t *testing.T) {
 	db := newPaymentRefundRecommendationTestDB(t)
 	service := newPaymentServiceWithRefundExecution(db)
 
 	fetchedAt := time.Date(2026, time.August, 6, 9, 0, 0, 0, time.UTC)
 	capturedAt := time.Date(2026, time.August, 6, 10, 0, 0, 0, time.UTC)
 	fxSnapshot := currencydomain.OrderFXSnapshot{
-		Version:         currencydomain.OrderFXSnapshotVersion,
-		BaseCurrency:    "USD",
-		OrderCurrency:   "EUR",
-		BaseToOrderRate: 0.9,
-		Source:          "historical_order_quote",
-		CapturedAt:      capturedAt,
-		RateFetchedAt:   &fetchedAt,
+		Version:       currencydomain.OrderFXSnapshotVersion,
+		BaseCurrency:  "USD",
+		OrderCurrency: "EUR",
+		RateDecimal:   "0.9",
+		Source:        "historical_order_quote",
+		CapturedAt:    capturedAt,
+		RateFetchedAt: &fetchedAt,
 	}
 
 	orderRecord := orderdomain.Order{
-		OrderNumber:     "ORD-RFX-1",
-		UserID:          11,
-		Status:          "paid",
-		PaymentStatus:   "paid",
-		TotalAmount:     90,
-		Currency:        "EUR",
-		PaymentAmount:   90,
-		PaymentCurrency: "EUR",
-		FXSnapshotData:  currencydomain.OrderFXSnapshotJSON(fxSnapshot),
-		ShippingAddress: orderdomain.Address{Country: "DE"},
-		BillingAddress:  orderdomain.Address{Country: "DE"},
+		OrderNumber:        "ORD-RFX-1",
+		UserID:             11,
+		Status:             "paid",
+		PaymentStatus:      "paid",
+		TotalAmountMinor:   majorTestMinor(t, 90, "EUR"),
+		Currency:           "EUR",
+		PaymentAmountMinor: majorTestMinor(t, 90, "EUR"),
+		PaymentCurrency:    "EUR",
+		FXSnapshotData:     currencydomain.OrderFXSnapshotJSON(fxSnapshot),
+		ShippingAddress:    orderdomain.Address{Country: "DE"},
+		BillingAddress:     orderdomain.Address{Country: "DE"},
 	}
 	require.NoError(t, db.Create(&orderRecord).Error)
 	transaction := paymentdomain.Transaction{
 		OrderID:       orderRecord.ID,
 		TransactionID: "pi_rfx_1",
 		PaymentMethod: "stripe",
-		Amount:        90,
+		AmountMinor:   majorTestMinor(t, 90, "EUR"),
 		Currency:      "EUR",
 		Status:        "completed",
 	}
@@ -909,13 +686,13 @@ func TestPaymentServiceExecutePendingRefundPersistsHistoricalFXSnapshot(t *testi
 		response: &pgateway.RefundResponse{
 			ID:        "re_rfx_1",
 			PaymentID: transaction.TransactionID,
-			Amount:    30,
+			Amount:    "30.00",
 			Status:    "succeeded",
 			CreatedAt: time.Now().UTC(),
 		},
 	}
 
-	completedRefund, execution, err := service.ExecutePendingRefund(context.Background(), ExecutePendingRefundInput{
+	completedRefund, execution, err := executeRefundViaOutbox(t, service, db, context.Background(), executePendingRefundTestInput{
 		RefundID: refund.ID,
 		AdminID:  12,
 		Provider: "stripe",
@@ -931,32 +708,74 @@ func TestPaymentServiceExecutePendingRefundPersistsHistoricalFXSnapshot(t *testi
 	require.NoError(t, err)
 	require.Equal(t, fxSnapshot.BaseCurrency, persistedSnapshot.BaseCurrency)
 	require.Equal(t, fxSnapshot.OrderCurrency, persistedSnapshot.OrderCurrency)
-	require.InDelta(t, fxSnapshot.BaseToOrderRate, persistedSnapshot.BaseToOrderRate, 0.0001)
+	require.Equal(t, fxSnapshot.RateDecimal, persistedSnapshot.RateDecimal)
 	require.Equal(t, fxSnapshot.Source, persistedSnapshot.Source)
 	require.NotNil(t, persistedSnapshot.RateFetchedAt)
 	require.True(t, fetchedAt.Equal(*persistedSnapshot.RateFetchedAt))
 }
 
-func TestPaymentServiceExecutePendingRefundRejectsMissingHistoricalFXSnapshot(t *testing.T) {
+func TestPaymentServiceRefundExecutionOutboxCompletesNonUSDFXSettlementAboveHistoricalValue(t *testing.T) {
+	db := newPaymentRefundRecommendationTestDB(t)
+	service := newPaymentServiceWithRefundExecution(db)
+	fxSnapshot := currencydomain.OrderFXSnapshot{
+		Version:       currencydomain.OrderFXSnapshotVersion,
+		BaseCurrency:  "USD",
+		OrderCurrency: "EUR",
+		RateDecimal:   "0.9",
+		Source:        "historical_order_quote",
+		CapturedAt:    time.Date(2026, time.August, 6, 10, 0, 0, 0, time.UTC),
+	}
+	orderRecord := orderdomain.Order{
+		OrderNumber: "ORD-RFX-SETTLEMENT", UserID: 11, Status: "paid", PaymentStatus: "paid",
+		TotalAmountMinor: majorTestMinor(t, 90, "EUR"), Currency: "EUR",
+		PaymentAmountMinor: majorTestMinor(t, 90, "EUR"), PaymentCurrency: "EUR",
+		FXSnapshotData: currencydomain.OrderFXSnapshotJSON(fxSnapshot),
+	}
+	require.NoError(t, db.Create(&orderRecord).Error)
+	transaction := paymentdomain.Transaction{
+		OrderID: orderRecord.ID, TransactionID: "pi_rfx_settlement", PaymentMethod: "stripe",
+		AmountMinor: majorTestMinor(t, 90, "EUR"), Currency: "EUR", Status: "completed",
+	}
+	require.NoError(t, db.Create(&transaction).Error)
+	refund := createPendingRefundRecord(t, db, orderRecord.ID, transaction.ID, 90)
+	gateway := &recordingRefundGateway{response: &pgateway.RefundResponse{
+		ID: "re_rfx_settlement", PaymentID: transaction.TransactionID, AmountMinor: 11000,
+		Status: "succeeded", SettlementAmountMinor: 11000, SettlementCurrency: "USD",
+		SettlementBalanceTransactionID: "txn_rfx_settlement", CreatedAt: time.Now().UTC(),
+	}}
+
+	completedRefund, execution, err := executeRefundViaOutbox(t, service, db, context.Background(), executePendingRefundTestInput{
+		RefundID: refund.ID, AdminID: 12, Provider: "stripe", Gateway: gateway,
+	})
+	require.NoError(t, err)
+	require.Equal(t, "completed", completedRefund.Status)
+	require.Equal(t, paymentdomain.PaymentRefundExecutionStatusSucceeded, execution.Status)
+	require.Equal(t, int64(11000), completedRefund.SettlementAmountMinor)
+	require.Equal(t, "USD", completedRefund.SettlementCurrency)
+	require.Equal(t, int64(1000), completedRefund.FXGainLossMinor)
+	require.Equal(t, "USD", completedRefund.FXGainLossCurrency)
+}
+
+func TestPaymentServiceRefundExecutionOutboxRejectsMissingHistoricalFXSnapshot(t *testing.T) {
 	db := newPaymentRefundRecommendationTestDB(t)
 	service := newPaymentServiceWithRefundExecution(db)
 
 	orderRecord := orderdomain.Order{
-		OrderNumber:     "ORD-RFX-MISSING",
-		UserID:          11,
-		Status:          "paid",
-		PaymentStatus:   "paid",
-		TotalAmount:     90,
-		Currency:        "EUR",
-		PaymentAmount:   90,
-		PaymentCurrency: "EUR",
+		OrderNumber:        "ORD-RFX-MISSING",
+		UserID:             11,
+		Status:             "paid",
+		PaymentStatus:      "paid",
+		TotalAmountMinor:   majorTestMinor(t, 90, "EUR"),
+		Currency:           "EUR",
+		PaymentAmountMinor: majorTestMinor(t, 90, "EUR"),
+		PaymentCurrency:    "EUR",
 	}
 	require.NoError(t, db.Create(&orderRecord).Error)
 	transaction := paymentdomain.Transaction{
 		OrderID:       orderRecord.ID,
 		TransactionID: "pi_rfx_missing",
 		PaymentMethod: "stripe",
-		Amount:        90,
+		AmountMinor:   majorTestMinor(t, 90, "EUR"),
 		Currency:      "EUR",
 		Status:        "completed",
 	}
@@ -964,7 +783,7 @@ func TestPaymentServiceExecutePendingRefundRejectsMissingHistoricalFXSnapshot(t 
 	refund := createPendingRefundRecord(t, db, orderRecord.ID, transaction.ID, 30)
 	gateway := &recordingRefundGateway{}
 
-	_, _, err := service.ExecutePendingRefund(context.Background(), ExecutePendingRefundInput{
+	_, _, err := executeRefundViaOutbox(t, service, db, context.Background(), executePendingRefundTestInput{
 		RefundID: refund.ID,
 		AdminID:  12,
 		Provider: "stripe",
@@ -979,11 +798,62 @@ func TestPaymentServiceExecutePendingRefundRejectsMissingHistoricalFXSnapshot(t 
 	require.Equal(t, "{}", string(storedRefund.FXSnapshotData))
 }
 
-func TestPaymentServiceExecutePendingRefundSettlesFullLoyaltyEffectsIdempotently(t *testing.T) {
+func TestPaymentServiceRefundExecutionOutboxRejectsNonUSDRefundAboveHistoricalFXCap(t *testing.T) {
+	db := newPaymentRefundRecommendationTestDB(t)
+	service := newPaymentServiceWithRefundExecution(db)
+
+	fxSnapshot := currencydomain.OrderFXSnapshot{
+		Version:       currencydomain.OrderFXSnapshotVersion,
+		BaseCurrency:  "USD",
+		OrderCurrency: "EUR",
+		RateDecimal:   "0.9",
+		Source:        "historical_order_quote",
+		CapturedAt:    time.Date(2026, time.August, 6, 10, 0, 0, 0, time.UTC),
+	}
+	orderRecord := orderdomain.Order{
+		OrderNumber:        "ORD-RFX-CAP",
+		UserID:             11,
+		Status:             "paid",
+		PaymentStatus:      "paid",
+		TotalAmountMinor:   majorTestMinor(t, 90, "EUR"),
+		Currency:           "EUR",
+		PaymentAmountMinor: majorTestMinor(t, 90, "EUR"),
+		PaymentCurrency:    "EUR",
+		FXSnapshotData:     currencydomain.OrderFXSnapshotJSON(fxSnapshot),
+	}
+	require.NoError(t, db.Create(&orderRecord).Error)
+	transaction := paymentdomain.Transaction{
+		OrderID:       orderRecord.ID,
+		TransactionID: "pi_rfx_cap",
+		PaymentMethod: "stripe",
+		AmountMinor:   majorTestMinor(t, 90, "EUR"),
+		Currency:      "EUR",
+		Status:        "completed",
+	}
+	require.NoError(t, db.Create(&transaction).Error)
+	refund := createPendingRefundRecord(t, db, orderRecord.ID, transaction.ID, 100)
+	gateway := &recordingRefundGateway{}
+
+	_, _, err := executeRefundViaOutbox(t, service, db, context.Background(), executePendingRefundTestInput{
+		RefundID: refund.ID,
+		AdminID:  12,
+		Provider: "stripe",
+		Gateway:  gateway,
+	})
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "historical FX cap")
+	require.Empty(t, gateway.paymentID)
+
+	storedRefund, err := repository.NewPaymentRepository(db).FindRefundByID(refund.ID)
+	require.NoError(t, err)
+	require.Equal(t, "pending", storedRefund.Status)
+}
+
+func TestPaymentServiceRefundExecutionOutboxSettlesFullLoyaltyEffectsIdempotently(t *testing.T) {
 	db := newPaymentRefundRecommendationTestDB(t)
 	service := newPaymentServiceWithRefundExecution(db)
 	config := seedRefundLoyaltyProgramConfig(t, db, 100)
-	orderRecord, transaction := createRefundRecommendationPaidOrder(t, db, 100)
+	orderRecord, transaction := createRefundRecommendationPaidOrder(t, db, 10000)
 	orderRecord.PointsUsed = 20
 	require.NoError(t, db.Save(&orderRecord).Error)
 	seedRefundOrderLoyalty(t, db, orderRecord, config, 100, 100, 20)
@@ -992,13 +862,13 @@ func TestPaymentServiceExecutePendingRefundSettlesFullLoyaltyEffectsIdempotently
 		response: &pgateway.RefundResponse{
 			ID:        "re_loyalty_full",
 			PaymentID: transaction.TransactionID,
-			Amount:    100,
+			Amount:    "100.00",
 			Status:    "succeeded",
 			CreatedAt: time.Now().UTC(),
 		},
 	}
 
-	completedRefund, _, err := service.ExecutePendingRefund(context.Background(), ExecutePendingRefundInput{
+	completedRefund, _, err := executeRefundViaOutbox(t, service, db, context.Background(), executePendingRefundTestInput{
 		RefundID: refund.ID,
 		AdminID:  12,
 		Provider: "stripe",
@@ -1007,7 +877,7 @@ func TestPaymentServiceExecutePendingRefundSettlesFullLoyaltyEffectsIdempotently
 	require.NoError(t, err)
 	require.Equal(t, 100, completedRefund.LoyaltyPointsClawback)
 	require.Equal(t, 20, completedRefund.LoyaltyPointsReturned)
-	require.Zero(t, completedRefund.LoyaltyCashDeductionAmount)
+	require.Zero(t, completedRefund.LoyaltyCashDeductionAmountMinor)
 
 	var userLoyalty loyaltydomain.UserLoyalty
 	require.NoError(t, db.Where("user_id = ?", orderRecord.UserID).First(&userLoyalty).Error)
@@ -1045,19 +915,19 @@ func TestPaymentServiceExecutePendingRefundSettlesFullLoyaltyEffectsIdempotently
 	require.Equal(t, int64(1), returnedCount)
 }
 
-func TestPaymentServiceRefundKeepsReferralPointsSeparateFromCashAndReturnsOrderPoints(t *testing.T) {
+func TestPaymentServiceRefundReturnsUnifiedPointsAndKeepsReferralGrantUntouched(t *testing.T) {
 	db := newPaymentRefundRecommendationTestDB(t)
 	service := newPaymentServiceWithRefundExecution(db)
 	config := seedRefundLoyaltyProgramConfig(t, db, 10)
-	orderRecord, transaction := createRefundRecommendationPaidOrder(t, db, 150)
+	orderRecord, transaction := createRefundRecommendationPaidOrder(t, db, 15000)
 	orderRecord.PointsUsed = 50
-	orderRecord.PaymentAmount = 100
+	orderRecord.PaymentAmountMinor = majorTestMinor(t, 100, "USD")
 	orderRecord.PaymentAmountMinor = 10000
 	require.NoError(t, db.Save(&orderRecord).Error)
 
-	// The referee received 75 referral points, then spent 50 of them on this
-	// order and paid the remaining 100 USD through the gateway. The referral
-	// credit is deliberately not an order-earned reward.
+	// The referee received 75 ordinary account points at registration, then
+	// spent 50 aggregate points on this order and paid the remaining 100 USD
+	// through the gateway. The referral source is an audit label only.
 	require.NoError(t, db.Create(&loyaltydomain.UserLoyalty{
 		UserID:          orderRecord.UserID,
 		TotalPoints:     75,
@@ -1089,24 +959,24 @@ func TestPaymentServiceRefundKeepsReferralPointsSeparateFromCashAndReturnsOrderP
 		response: &pgateway.RefundResponse{
 			ID:        "re_referral_points_cash_separate",
 			PaymentID: transaction.TransactionID,
-			Amount:    100,
+			Amount:    "100.00",
 			Status:    "succeeded",
 			CreatedAt: time.Now().UTC(),
 		},
 	}
 
-	completedRefund, _, err := service.ExecutePendingRefund(context.Background(), ExecutePendingRefundInput{
+	completedRefund, _, err := executeRefundViaOutbox(t, service, db, context.Background(), executePendingRefundTestInput{
 		RefundID: refund.ID,
 		AdminID:  12,
 		Provider: "stripe",
 		Gateway:  gateway,
 	})
 	require.NoError(t, err)
-	require.InDelta(t, 100, gateway.amount, 0.001)
-	require.InDelta(t, 100, completedRefund.Amount, 0.001)
+	require.Equal(t, int64(10000), gateway.amountMinor)
+	require.Equal(t, majorTestMinor(t, 100, "USD"), completedRefund.AmountMinor)
 	require.Equal(t, 0, completedRefund.LoyaltyPointsClawback)
 	require.Equal(t, 50, completedRefund.LoyaltyPointsReturned)
-	require.Zero(t, completedRefund.LoyaltyCashDeductionAmount)
+	require.Zero(t, completedRefund.LoyaltyCashDeductionAmountMinor)
 
 	var balance loyaltydomain.UserLoyalty
 	require.NoError(t, db.Where("user_id = ?", orderRecord.UserID).First(&balance).Error)
@@ -1120,21 +990,13 @@ func TestPaymentServiceRefundKeepsReferralPointsSeparateFromCashAndReturnsOrderP
 		Scan(&returnedPoints).Error)
 	require.Equal(t, 50, returnedPoints)
 
-	var referralReversalPoints int
-	require.NoError(t, db.Model(&loyaltydomain.LoyaltyTransaction{}).
-		Where("source = ?", referralRefereeReversalSource).
-		Select("COALESCE(SUM(points), 0)").
-		Scan(&referralReversalPoints).Error)
-	// The referral reward is reversed by the referral invalidation outbox
-	// handler, independently of this payment refund transaction.
-	require.Zero(t, referralReversalPoints)
 }
 
-func TestPaymentServiceExecutePendingRefundAllocatesPartialLoyaltyEffectsAcrossRefunds(t *testing.T) {
+func TestPaymentServiceRefundExecutionOutboxReturnsOrderPointsOnceAcrossRefundRequests(t *testing.T) {
 	db := newPaymentRefundRecommendationTestDB(t)
 	service := newPaymentServiceWithRefundExecution(db)
 	config := seedRefundLoyaltyProgramConfig(t, db, 100)
-	orderRecord, transaction := createRefundRecommendationPaidOrder(t, db, 100)
+	orderRecord, transaction := createRefundRecommendationPaidOrder(t, db, 10000)
 	orderRecord.PointsUsed = 20
 	require.NoError(t, db.Save(&orderRecord).Error)
 	seedRefundOrderLoyalty(t, db, orderRecord, config, 100, 100, 20)
@@ -1144,12 +1006,12 @@ func TestPaymentServiceExecutePendingRefundAllocatesPartialLoyaltyEffectsAcrossR
 		response: &pgateway.RefundResponse{
 			ID:        "re_loyalty_partial_1",
 			PaymentID: transaction.TransactionID,
-			Amount:    40,
+			Amount:    "40.00",
 			Status:    "succeeded",
 			CreatedAt: time.Now().UTC(),
 		},
 	}
-	_, _, err := service.ExecutePendingRefund(context.Background(), ExecutePendingRefundInput{
+	_, _, err := executeRefundViaOutbox(t, service, db, context.Background(), executePendingRefundTestInput{
 		RefundID: firstRefund.ID,
 		AdminID:  12,
 		Provider: "stripe",
@@ -1162,12 +1024,12 @@ func TestPaymentServiceExecutePendingRefundAllocatesPartialLoyaltyEffectsAcrossR
 		response: &pgateway.RefundResponse{
 			ID:        "re_loyalty_partial_2",
 			PaymentID: transaction.TransactionID,
-			Amount:    60,
+			Amount:    "60.00",
 			Status:    "succeeded",
 			CreatedAt: time.Now().UTC(),
 		},
 	}
-	_, _, err = service.ExecutePendingRefund(context.Background(), ExecutePendingRefundInput{
+	_, _, err = executeRefundViaOutbox(t, service, db, context.Background(), executePendingRefundTestInput{
 		RefundID: secondRefund.ID,
 		AdminID:  12,
 		Provider: "stripe",
@@ -1179,9 +1041,12 @@ func TestPaymentServiceExecutePendingRefundAllocatesPartialLoyaltyEffectsAcrossR
 	require.NoError(t, db.First(&savedFirst, firstRefund.ID).Error)
 	require.NoError(t, db.First(&savedSecond, secondRefund.ID).Error)
 	require.Equal(t, 40, savedFirst.LoyaltyPointsClawback)
-	require.Equal(t, 8, savedFirst.LoyaltyPointsReturned)
+	// Points are a separate tender: the first successful refund returns the
+	// order's full PointsUsed, while a later cash refund cannot return them a
+	// second time.
+	require.Equal(t, 20, savedFirst.LoyaltyPointsReturned)
 	require.Equal(t, 60, savedSecond.LoyaltyPointsClawback)
-	require.Equal(t, 12, savedSecond.LoyaltyPointsReturned)
+	require.Zero(t, savedSecond.LoyaltyPointsReturned)
 
 	var userLoyalty loyaltydomain.UserLoyalty
 	require.NoError(t, db.Where("user_id = ?", orderRecord.UserID).First(&userLoyalty).Error)
@@ -1201,35 +1066,35 @@ func TestPaymentServiceExecutePendingRefundAllocatesPartialLoyaltyEffectsAcrossR
 	require.Equal(t, 20, returnedPoints)
 }
 
-func TestPaymentServiceExecutePendingRefundDeductsCashWhenEarnedPointsWereSpent(t *testing.T) {
+func TestPaymentServiceRefundExecutionOutboxDeductsCashWhenEarnedPointsWereSpent(t *testing.T) {
 	db := newPaymentRefundRecommendationTestDB(t)
 	service := newPaymentServiceWithRefundExecution(db)
 	config := seedRefundLoyaltyProgramConfig(t, db, 10)
-	orderRecord, transaction := createRefundRecommendationPaidOrder(t, db, 100)
+	orderRecord, transaction := createRefundRecommendationPaidOrder(t, db, 10000)
 	seedRefundOrderLoyalty(t, db, orderRecord, config, 100, 25, 0)
 	refund := createPendingRefundRecord(t, db, orderRecord.ID, transaction.ID, 100)
 	gateway := &recordingRefundGateway{
 		response: &pgateway.RefundResponse{
 			ID:        "re_loyalty_cash_recovery",
 			PaymentID: transaction.TransactionID,
-			Amount:    92.5,
+			Amount:    "92.50",
 			Status:    "succeeded",
 			CreatedAt: time.Now().UTC(),
 		},
 	}
 
-	completedRefund, _, err := service.ExecutePendingRefund(context.Background(), ExecutePendingRefundInput{
+	completedRefund, _, err := executeRefundViaOutbox(t, service, db, context.Background(), executePendingRefundTestInput{
 		RefundID: refund.ID,
 		AdminID:  12,
 		Provider: "stripe",
 		Gateway:  gateway,
 	})
 	require.NoError(t, err)
-	require.InDelta(t, 92.5, gateway.amount, 0.001)
-	require.InDelta(t, 92.5, completedRefund.Amount, 0.001)
+	require.Equal(t, int64(9250), gateway.amountMinor)
+	require.Equal(t, majorTestMinor(t, 92.5, "USD"), completedRefund.AmountMinor)
 	require.Equal(t, 25, completedRefund.LoyaltyPointsClawback)
 	require.Zero(t, completedRefund.LoyaltyPointsReturned)
-	require.InDelta(t, 7.5, completedRefund.LoyaltyCashDeductionAmount, 0.001)
+	require.Equal(t, majorTestMinor(t, 7.5, "USD"), completedRefund.LoyaltyCashDeductionAmountMinor)
 
 	var userLoyalty loyaltydomain.UserLoyalty
 	require.NoError(t, db.Where("user_id = ?", orderRecord.UserID).First(&userLoyalty).Error)
@@ -1237,16 +1102,70 @@ func TestPaymentServiceExecutePendingRefundDeductsCashWhenEarnedPointsWereSpent(
 	require.Equal(t, 25, userLoyalty.UsedPoints)
 }
 
-func TestPaymentServiceExecutePendingRefundReleasesLoyaltyReservationWhenGatewayFails(t *testing.T) {
+func TestPaymentServiceRefundExecutionCapsLoyaltyCashRecoveryAndTracksDebt(t *testing.T) {
 	db := newPaymentRefundRecommendationTestDB(t)
 	service := newPaymentServiceWithRefundExecution(db)
 	config := seedRefundLoyaltyProgramConfig(t, db, 10)
-	orderRecord, transaction := createRefundRecommendationPaidOrder(t, db, 100)
+	orderRecord, transaction := createRefundRecommendationPaidOrder(t, db, 10000)
+	seedRefundOrderLoyalty(t, db, orderRecord, config, 2000, 0, 2000)
+	refund := createPendingRefundRecord(t, db, orderRecord.ID, transaction.ID, 15)
+
+	completedRefund, execution, err := executeRefundViaOutbox(t, service, db, context.Background(), executePendingRefundTestInput{
+		RefundID: refund.ID,
+		AdminID:  12,
+		Provider: "stripe",
+	})
+	require.NoError(t, err)
+	require.Equal(t, "completed", completedRefund.Status)
+	require.Zero(t, completedRefund.AmountMinor)
+	require.Equal(t, majorTestMinor(t, 15, "USD"), completedRefund.LoyaltyCashDeductionAmountMinor)
+	require.Equal(t, 150, completedRefund.LoyaltyPointsCashRecovered)
+	require.Equal(t, 150, completedRefund.LoyaltyPointsDebt)
+	require.Equal(t, paymentdomain.PaymentRefundExecutionStatusSucceeded, execution.Status)
+	require.Equal(t, localZeroRefundStatus, execution.ProviderStatus)
+	require.Equal(t, localZeroRefundID(refund.ID), execution.ProviderRefundID)
+
+	var userLoyalty loyaltydomain.UserLoyalty
+	require.NoError(t, db.Where("user_id = ?", orderRecord.UserID).First(&userLoyalty).Error)
+	require.Equal(t, 150, userLoyalty.DebtPoints)
+
+	var debtTransaction loyaltydomain.LoyaltyTransaction
+	require.NoError(t, db.Where(
+		"user_id = ? AND type = ? AND source = ? AND source_id = ?",
+		orderRecord.UserID,
+		"refund",
+		refundLoyaltyCashRecoveryDebtSource,
+		refund.ID,
+	).First(&debtTransaction).Error)
+	require.Equal(t, -150, debtTransaction.Points)
+	require.Equal(t, 150, debtTransaction.DebtBalance)
+
+	secondRefund := createPendingRefundRecord(t, db, orderRecord.ID, transaction.ID, 10)
+	secondCompletedRefund, _, err := executeRefundViaOutbox(t, service, db, context.Background(), executePendingRefundTestInput{
+		RefundID: secondRefund.ID,
+		AdminID:  12,
+		Provider: "stripe",
+	})
+	require.NoError(t, err)
+	require.Zero(t, secondCompletedRefund.AmountMinor)
+	require.Equal(t, majorTestMinor(t, 10, "USD"), secondCompletedRefund.LoyaltyCashDeductionAmountMinor)
+	require.Equal(t, 100, secondCompletedRefund.LoyaltyPointsCashRecovered)
+	require.Equal(t, 100, secondCompletedRefund.LoyaltyPointsDebt)
+
+	require.NoError(t, db.Where("user_id = ?", orderRecord.UserID).First(&userLoyalty).Error)
+	require.Equal(t, 250, userLoyalty.DebtPoints)
+}
+
+func TestPaymentServiceRefundExecutionOutboxReleasesLoyaltyReservationWhenGatewayFails(t *testing.T) {
+	db := newPaymentRefundRecommendationTestDB(t)
+	service := newPaymentServiceWithRefundExecution(db)
+	config := seedRefundLoyaltyProgramConfig(t, db, 10)
+	orderRecord, transaction := createRefundRecommendationPaidOrder(t, db, 10000)
 	seedRefundOrderLoyalty(t, db, orderRecord, config, 100, 25, 0)
 	refund := createPendingRefundRecord(t, db, orderRecord.ID, transaction.ID, 100)
 	gateway := &recordingRefundGateway{err: errors.New("gateway unavailable")}
 
-	_, _, err := service.ExecutePendingRefund(context.Background(), ExecutePendingRefundInput{
+	_, _, err := executeRefundViaOutbox(t, service, db, context.Background(), executePendingRefundTestInput{
 		RefundID: refund.ID,
 		AdminID:  12,
 		Provider: "stripe",
@@ -1256,10 +1175,10 @@ func TestPaymentServiceExecutePendingRefundReleasesLoyaltyReservationWhenGateway
 
 	var savedRefund paymentdomain.Refund
 	require.NoError(t, db.First(&savedRefund, refund.ID).Error)
-	require.InDelta(t, 100, savedRefund.Amount, 0.001)
+	require.Equal(t, majorTestMinor(t, 100, "USD"), savedRefund.AmountMinor)
 	require.False(t, savedRefund.LoyaltySettlementPrepared)
 	require.Zero(t, savedRefund.LoyaltyPointsClawback)
-	require.Zero(t, savedRefund.LoyaltyCashDeductionAmount)
+	require.Zero(t, savedRefund.LoyaltyCashDeductionAmountMinor)
 
 	var userLoyalty loyaltydomain.UserLoyalty
 	require.NoError(t, db.Where("user_id = ?", orderRecord.UserID).First(&userLoyalty).Error)
@@ -1277,7 +1196,7 @@ func TestRecordVerifiedGatewayRefundSettlesLoyaltyEffectsOnlyOnce(t *testing.T) 
 	db := newPaymentRefundRecommendationTestDB(t)
 	service := newPaymentServiceWithRefundExecution(db)
 	config := seedRefundLoyaltyProgramConfig(t, db, 10)
-	orderRecord, transaction := createRefundRecommendationPaidOrder(t, db, 100)
+	orderRecord, transaction := createRefundRecommendationPaidOrder(t, db, 10000)
 	orderRecord.PointsUsed = 10
 	require.NoError(t, db.Save(&orderRecord).Error)
 	seedRefundOrderLoyalty(t, db, orderRecord, config, 100, 0, 0)
@@ -1295,10 +1214,10 @@ func TestRecordVerifiedGatewayRefundSettlesLoyaltyEffectsOnlyOnce(t *testing.T) 
 
 	var savedRefund paymentdomain.Refund
 	require.NoError(t, db.First(&savedRefund, refund.ID).Error)
-	require.InDelta(t, 90, savedRefund.Amount, 0.001)
+	require.Equal(t, majorTestMinor(t, 90, "USD"), savedRefund.AmountMinor)
 	require.Equal(t, 0, savedRefund.LoyaltyPointsClawback)
 	require.Equal(t, 10, savedRefund.LoyaltyPointsReturned)
-	require.InDelta(t, 10, savedRefund.LoyaltyCashDeductionAmount, 0.001)
+	require.Equal(t, majorTestMinor(t, 10, "USD"), savedRefund.LoyaltyCashDeductionAmountMinor)
 
 	var userLoyalty loyaltydomain.UserLoyalty
 	require.NoError(t, db.Where("user_id = ?", orderRecord.UserID).First(&userLoyalty).Error)
@@ -1315,7 +1234,7 @@ func TestRecordVerifiedGatewayRefundWithoutPendingRefundUsesExplicitRequestedAmo
 	db := newPaymentRefundRecommendationTestDB(t)
 	service := newPaymentServiceWithRefundExecution(db)
 	config := seedRefundLoyaltyProgramConfig(t, db, 10)
-	orderRecord, transaction := createRefundRecommendationPaidOrder(t, db, 100)
+	orderRecord, transaction := createRefundRecommendationPaidOrder(t, db, 10000)
 	seedRefundOrderLoyalty(t, db, orderRecord, config, 100, 25, 0)
 
 	err := service.RecordVerifiedGatewayRefund(VerifiedGatewayRefundInput{
@@ -1331,9 +1250,9 @@ func TestRecordVerifiedGatewayRefundWithoutPendingRefundUsesExplicitRequestedAmo
 	var savedRefund paymentdomain.Refund
 	require.NoError(t, db.Where("refund_id = ?", "re_external_refund").First(&savedRefund).Error)
 	require.Equal(t, "completed", savedRefund.Status)
-	require.InDelta(t, 100, savedRefund.RequestedAmount, 0.001)
-	require.InDelta(t, 92.5, savedRefund.Amount, 0.001)
-	require.InDelta(t, 7.5, savedRefund.LoyaltyCashDeductionAmount, 0.001)
+	require.Equal(t, majorTestMinor(t, 100, "USD"), savedRefund.RequestedAmountMinor)
+	require.Equal(t, majorTestMinor(t, 92.5, "USD"), savedRefund.AmountMinor)
+	require.Equal(t, majorTestMinor(t, 7.5, "USD"), savedRefund.LoyaltyCashDeductionAmountMinor)
 	require.True(t, savedRefund.LoyaltySettlementPrepared)
 }
 
@@ -1347,9 +1266,6 @@ func seedRefundLoyaltyProgramConfig(t *testing.T, db *gorm.DB, exchangeRatePoint
 		Currency:                  "USD",
 		PurchaseEarnPointsPerUnit: 1,
 		ExchangeRatePoints:        exchangeRatePoints,
-		MinRedeemPoints:           1,
-		MaxValuePerDayCents:       50000,
-		CardExpiryDays:            365,
 		ReferralReferrerPoints:    100,
 		ReferralRefereePoints:     50,
 		CheckInBasePoints:         10,
@@ -1408,18 +1324,85 @@ func newPaymentServiceWithRefundExecution(db *gorm.DB) *PaymentService {
 
 func createPendingRefundRecord(t *testing.T, db *gorm.DB, orderID uint, transactionID uint, amount float64) paymentdomain.Refund {
 	t.Helper()
+	var orderRecord orderdomain.Order
+	require.NoError(t, db.First(&orderRecord, orderID).Error)
+	currency := orderRecord.Currency
+	if currency == "" {
+		currency = "USD"
+	}
 
 	refund := paymentdomain.Refund{
-		OrderID:         orderID,
-		TransactionID:   transactionID,
-		Amount:          amount,
-		RequestedAmount: amount,
-		Status:          "pending",
-		Reason:          "manual pending refund",
-		RefundedBy:      7,
+		OrderID:              orderID,
+		TransactionID:        transactionID,
+		AmountMinor:          majorTestMinor(t, amount, currency),
+		RequestedAmountMinor: majorTestMinor(t, amount, currency),
+		Currency:             currency,
+		Status:               "pending",
+		Reason:               "manual pending refund",
+		RefundedBy:           7,
 	}
 	require.NoError(t, db.Create(&refund).Error)
 	return refund
+}
+
+type executePendingRefundTestInput struct {
+	RefundID uint
+	AdminID  uint
+	Provider string
+	Gateway  pgateway.PaymentGateway
+}
+
+// executeRefundViaOutbox models the production boundary: the request records
+// the local intent and command, then the worker consumes that command and
+// performs the provider call. Tests inject a recording gateway at the worker
+// boundary so no network credentials or calls are required.
+func executeRefundViaOutbox(
+	t *testing.T,
+	service *PaymentService,
+	db *gorm.DB,
+	ctx context.Context,
+	input executePendingRefundTestInput,
+) (*paymentdomain.Refund, *paymentdomain.PaymentRefundExecution, error) {
+	t.Helper()
+	_, _, requestErr := service.RequestPendingRefundExecution(ctx, RequestPendingRefundExecutionInput{
+		RefundID: input.RefundID,
+		AdminID:  input.AdminID,
+		Provider: input.Provider,
+	})
+	if requestErr != nil {
+		return nil, nil, requestErr
+	}
+
+	var event outboxdomain.Event
+	require.NoError(t, db.Where(
+		"event_type = ? AND aggregate_id = ?",
+		outboxdomain.EventTypePaymentRefundExecutionRequested,
+		fmt.Sprint(input.RefundID),
+	).Order("id DESC").First(&event).Error)
+	var payload outboxdomain.PaymentRefundExecutionRequestedPayload
+	require.NoError(t, json.Unmarshal(event.Payload, &payload))
+	require.Equal(t, input.RefundID, payload.RefundID)
+	require.Equal(t, input.AdminID, payload.AdminID)
+	require.Equal(t, input.Provider, payload.Provider)
+	require.NotEmpty(t, payload.IdempotencyKey)
+	worker := NewPaymentRefundExecutionOutboxHandler(
+		service,
+		nil,
+		func(_ *pgateway.Config) (pgateway.PaymentGateway, error) {
+			return input.Gateway, nil
+		},
+	)
+	workerErr := worker.Handle(ctx, event)
+
+	refund, refundErr := repository.NewPaymentRepository(db).FindRefundByID(input.RefundID)
+	if refundErr != nil {
+		return nil, nil, refundErr
+	}
+	execution, executionErr := repository.NewPaymentRefundExecutionRepository(db).FindByRefundIDForUpdate(input.RefundID)
+	if executionErr != nil {
+		return refund, nil, executionErr
+	}
+	return refund, execution, workerErr
 }
 
 func assertPaymentRefundOutboxEvent(
@@ -1443,7 +1426,7 @@ func assertPaymentRefundOutboxEvent(
 
 type recordingRefundGateway struct {
 	paymentID       string
-	amount          float64
+	amountMinor     int64
 	options         pgateway.RefundOptions
 	response        *pgateway.RefundResponse
 	err             error
@@ -1459,14 +1442,14 @@ func (g *recordingRefundGateway) CapturePayment(ctx context.Context, paymentID s
 	return nil, errors.New("not implemented")
 }
 
-func (g *recordingRefundGateway) RefundPayment(ctx context.Context, paymentID string, amount float64) (*pgateway.RefundResponse, error) {
-	return g.RefundPaymentWithOptions(ctx, paymentID, amount, pgateway.RefundOptions{})
+func (g *recordingRefundGateway) RefundPayment(ctx context.Context, paymentID string, amountMinor int64) (*pgateway.RefundResponse, error) {
+	return g.RefundPaymentWithOptions(ctx, paymentID, amountMinor, pgateway.RefundOptions{})
 }
 
-func (g *recordingRefundGateway) RefundPaymentWithOptions(ctx context.Context, paymentID string, amount float64, options pgateway.RefundOptions) (*pgateway.RefundResponse, error) {
+func (g *recordingRefundGateway) RefundPaymentWithOptions(ctx context.Context, paymentID string, amountMinor int64, options pgateway.RefundOptions) (*pgateway.RefundResponse, error) {
 	g.refundCallCount++
 	g.paymentID = paymentID
-	g.amount = amount
+	g.amountMinor = amountMinor
 	g.options = options
 	if g.err != nil {
 		err := g.err

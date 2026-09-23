@@ -2,8 +2,8 @@
 
 > **文档路径**: `docs/design/product-template-and-options-architecture.md`  
 > **面向场景**: 轮组 (Wheelset)、花鼓 (Hub)、轮圈 (Rim) 等专业自行车零部件与定制商品的模板化上架与前端动态选配  
-> **文档状态**: Accepted ADR，阶段一、阶段二已完成，阶段三进行中，阶段四核心闭环已完成  
-> **最后校正**: 2026-09-15，已按当前实现补充模板候选值、商品物化和后台配置状态  
+> **文档状态**: Accepted ADR，阶段一至阶段五已完成；选项依赖已支持显式 `requires / conflicts`，通用规则表达式引擎仍未实现
+> **最后校正**: 2026-09-18，已按当前实现补充商品级选项值关系、服务端裁决、订单快照、公共 API、后台编辑器和前台交互验收
 > **核心目标**: 确立面向未来 3~5 年的长期“黄金三角”产品模型，解决“传统变体笛卡尔积爆炸、多选配件无法表达、后台录入繁琐、前台选配僵硬”等问题，同时保持服务端计价、库存归属和订单证据链只有一个事实来源。
 
 ---
@@ -37,6 +37,7 @@
 6. **配置具有稳定身份**：服务端规范化选择并计算 `configuration_hash`。同一 SKU 的不同配置必须是不同购物车行。
 7. **订单保存版本化不可变快照**：选配快照负责履约证据，现有 `pricing_snapshot` 负责金额证据，两者必须在下单事务中交叉校验并保持不可变。
 8. **物理选配不等于无库存选配**：塔基、轴承、备用辐条等可以作为配置交互，但若需要独立库存或影响重量/交期，必须声明相应履约策略，不能只保存价格差。
+9. **依赖关系使用显式商品级事实**：`requires` 表示选择源值时必须同时选择目标值，`conflicts` 表示两个值不能同时选择；关系两端必须引用同一商品的物化选项值 ID，不能依赖标签或模板候选值 ID。
 
 ---
 
@@ -79,10 +80,10 @@
 ### 2.2 现有架构中需要继续纠正的 3 个问题
 
 #### 问题 1：商品表仍保留遗留 SKU 汇总字段
-- **现状**：`products` 仍包含 `sku`, `price`, `sale_price`, `stock`，同时关联 `variants []ProductVariant`。不过当前购物车与结算已经重新加载可购买变体，并以变体价格和库存作为交易依据，因此这不是一次需要推倒重来的 SPU/SKU 重构。
+- **现状**：`products` 已通过一次性迁移移除 `sku`, `price`, `sale_price`, `stock` 汇总列，同时关联 `variants []ProductVariant`。购物车与结算重新加载可购买变体，以变体价格和库存作为唯一交易依据。
 - **仍需纠正**：
   - `products.price` 当前同步的是默认变体价格，并非本文要求的最低有效变体价（Starting From Price）。
-  - `products.stock` 是兼容旧读取路径的汇总字段，不应继续在下单、取消和退款事务中同步维护。
+  - 商品级库存不再存在可写汇总字段；低库存、缺货和可售性全部由活动变体聚合计算。
   - 当前扣减/返还变体库存后仍会聚合并更新 `products.stock`，会产生不必要的热点行竞争和事务延长。它是明确的性能与一致性风险，但在没有锁等待证据前不应直接表述为已发生的“死锁”。
   - 后台低库存/缺货统计仍读取 `products.stock`，必须先迁移到变体聚合查询，才能停止同步写入。
 
@@ -104,7 +105,7 @@
 1. **可购买变体解析**：购物车和结算均通过 `FindPurchasableVariant` 解析实际变体，不接受客户端价格作为最终价格。
 2. **精确金额模型**：`internal/domain/money` 已提供按币种最小单位计算的 `Money`，新增选配价格不得恢复为业务层 `float64` 运算。
 3. **定价快照**：`order_items.pricing_snapshot` 已保存版本化行级价格快照，并由数据库触发器阻止写后修改。
-4. **订单属性证据**：`order_items.attributes` 已被订单证据和争议材料读取。当前仍由服务端从结构化配置快照生成兼容内容；在本项目正式运营前，所有消费者迁移完成后删除该旧写入路径。
+4. **订单配置证据**：`order_items.configuration_snapshot` 是订单证据、客服和争议材料的唯一新事实来源；旧的 `order_items.attributes` 已完成消费者迁移，并由 `298_remove_order_item_legacy_attributes` 在正式运营前删除。
 5. **多语言主库存**：翻译变体通过 `master_variant_id` 共享物理库存。选配配置按本地化商品物化并共享稳定 Key，库存仍只扣主变体或明确绑定的组件库存。
 
 ---
@@ -295,8 +296,8 @@
 
 ### 前端状态管理原则：
 1. **联动即时性**：买家切换 38mm ➔ 50mm 时，基础价格实时刷新；如果勾选了加价选配（如备用辐条包 +$15），总价自动变为 `$1,264.00`。
-2. **互斥守卫**：若某选项在当前变体不可用（例如某轮组不支持 6孔刹车），对应按钮置灰不可选并展示服务端提供的原因。
-3. **完整性守卫**：所有必选组满足最小选择数后才允许加入购物车；切换变体时清除已不适用的选择，不得偷偷选择新的默认值。
+2. **互斥守卫**：若某选项在当前变体不可用，或与当前选择存在显式 `conflicts` 关系，对应按钮置灰不可选并展示原因。
+3. **完整性守卫**：所有必选组满足最小选择数，且当前选择满足显式 `requires` 关系后才允许加入购物车；切换变体时清除已不适用的选择，不得偷偷选择新的默认值。
 4. **价格边界**：公共 API 同时返回选项的目录币种加价和请求展示币种快照。前端可在本地即时求和改善交互，但加入购物车与结算时仍以服务端按目录币种重新计算和统一换汇的结果为准。
 5. **可访问性**：单选使用 Radio 语义，多选使用 Checkbox 语义，色块/图片同时提供可读标签、选中态和不可用原因。
 
@@ -325,7 +326,7 @@
 请求中禁止接受 `group_name`、`value_label`、`price_delta`、最终价格、是否默认或库存状态等可伪造字段。服务端必须完成：
 
 1. 校验商品、变体、模板角色和商品级选项均处于可售状态；
-2. 校验组与值 Key 的归属关系、变体适用性、单选/多选基数和必选组；
+2. 校验组与值 Key 的归属关系、变体适用性、单选/多选基数、必选组及显式 `requires / conflicts` 关系；
 3. 去重并按 `group_slug + value_key` 排序，得到规范化选择；
 4. 从商品级配置读取价格增量，并使用 `Money` 计算最终单价；
 5. 将 `schema_version` 与规范化选择编码为确定性 JSON，并计算 SHA-256 `configuration_hash`。
@@ -383,6 +384,15 @@ cart_id + product_id + variant_id + configuration_hash
       ]
     }
   ],
+  "option_relations": [
+    {
+      "relation_type": "requires",
+      "source_option_value_id": 503,
+      "target_option_value_id": 501,
+      "source_value_key": "spare_spokes",
+      "target_value_key": "tape"
+    }
+  ],
   "price_breakdown": {
     "base_unit_price_minor": 124900,
     "options_unit_price_minor": 1500,
@@ -391,11 +401,11 @@ cart_id + product_id + variant_id + configuration_hash
 }
 ```
 
-`configuration_snapshot.price_breakdown.final_unit_price_minor` 必须等于现有行级 `pricing_snapshot.unit_price_minor`。优惠、积分、税费和整单金额仍由现有 Pricing Pipeline 与订单价格快照负责，不在配置快照中重复计算。
+`configuration_snapshot.option_relations` 只固化本次选择实际触发且已满足的关系（当前为 `requires`），保存关系类型、两端商品选项值 ID 和稳定 Key，供履约与争议解释。`configuration_snapshot.price_breakdown.final_unit_price_minor` 必须等于现有行级 `pricing_snapshot.unit_price_minor`。优惠、积分、税费和整单金额仍由现有 Pricing Pipeline 与订单价格快照负责，不在配置快照中重复计算。
 
 首个版本将选配加价视为订单行商品价格的一部分，与基础变体使用相同的优惠、税务和退款分摊规则。未来若出现“不可优惠服务费”等需求，应作为新的显式定价组成部分进入 Pricing Pipeline，不得在配置器内部暗中绕过现有折扣规则。
 
-当前阶段 `order_items.attributes` 仍由服务端根据配置快照生成兼容 JSON，供尚未迁移的订单证据、客服和争议材料读取；由于项目尚未正式运营，所有消费者迁移完成后直接删除该旧写入路径。`configuration_snapshot` 与 `pricing_snapshot` 都必须受数据库不可变约束保护。
+订单证据、客服和争议材料现在优先读取不可变的 `configuration_snapshot`；历史订单若快照为空，运行时只允许有限回退到旧属性字段。新订单不再写入 `order_items.attributes`，迁移 `298_remove_order_item_legacy_attributes` 会在上线前删除该列。`configuration_snapshot` 与 `pricing_snapshot` 都必须受数据库不可变约束保护。
 
 ### 8.4 商家与客服视图
 
@@ -469,7 +479,7 @@ component_quantity INT NOT NULL DEFAULT 0
 created_at / updated_at
 ```
 
-`price_delta_minor` 必须非负，币种继承选项值所属商品的价格币种；降价与促销仍进入现有 Pricing Pipeline，不通过负选项价格实现。只有 `role = custom_option` 的商品选项值允许存在 Policy。`inventory_policy = component` 时必须提供组件变体与正数量，并在订单事务内与主变体一起预占/扣减。首个切片只开放 `inventory_policy = none`。
+`price_delta_minor` 必须非负，币种继承选项值所属商品的价格币种；降价与促销仍进入现有 Pricing Pipeline，不通过负选项价格实现。只有 `role = custom_option` 的商品选项值允许存在 Policy。`inventory_policy = component` 时必须提供组件变体与正数量，并在订单事务内与主变体一起预占/扣减。`weight_delta_grams` 与 `packaging_weight_delta_grams` 必须为非负克数，分别进入订单行净重和运费计费重量。
 
 Go 领域类型后续可从 `ProductVariantOptionValue` 泛化为 `ProductOptionValue`，但首批迁移不重命名物理表，降低兼容风险。
 
@@ -495,7 +505,25 @@ product_option_value_variant_rules
 
 服务层必须验证变体和选项值属于同一商品、规格定义属于该商品模板。`is_applicable = false` 的组不得出现在客户端提交或订单快照中。
 
-### 9.4 购物车和订单扩展
+### 9.4 商品级选项值关系
+
+新增 `product_option_value_relations` 保存第一版显式依赖关系：
+
+```text
+id
+product_id
+source_option_value_id
+target_option_value_id
+relation_type VARCHAR(16)  -- requires / conflicts
+created_at / updated_at
+UNIQUE(product_id, source_option_value_id, target_option_value_id, relation_type)
+```
+
+`requires` 是有向关系：选中源值时必须同时选中目标值。`conflicts` 是无向关系，保存前按选项值 ID 排序为固定方向，避免同一互斥关系被反向重复创建。关系两端必须是同一商品的物化选项值，不允许自关联、跨商品引用、未知关系类型或 `requires` 环依赖。
+
+后台商品编辑器只对已经持久化并取得 ID 的商品选项值开放关系配置。服务端在商品更新时统一规范化和替换关系；公共商品 API 返回关系供 PDP 即时置灰和完整性提示，但加购、购物车更新与 Checkout 仍必须重新执行服务端校验。
+
+### 9.5 购物车和订单扩展
 
 `cart_items` 增加：
 
@@ -520,7 +548,7 @@ configuration_snapshot JSONB NOT NULL DEFAULT '{}'
 
 新增与 `pricing_snapshot` 同等级别的写后不可变触发器。快照没有到活动目录表的外键，确保商品或选项后续修改不会破坏历史订单。
 
-### 9.5 关系概览
+### 9.6 关系概览
 
 ```mermaid
 erDiagram
@@ -529,16 +557,19 @@ erDiagram
     products ||--o{ product_variant_option_values : "物化本地化商品选项值"
     product_spec_option_items ||--o{ product_variant_option_values : "可追踪模板来源"
     product_variant_option_values ||--o| product_custom_option_policies : "保存交易规则"
+    products ||--o{ product_option_value_relations : "声明商品级选项依赖"
+    product_variant_option_values ||--o{ product_option_value_relations : "作为关系两端"
     product_variants ||--o{ product_option_group_variant_rules : "覆盖组选用规则"
     product_variants ||--o{ product_option_value_variant_rules : "覆盖值可用与加价"
     carts ||--o{ cart_items : "按配置哈希区分行"
     orders ||--o{ order_items : "保存配置与价格快照"
 ```
 
-### 9.6 发布与删除约束
+### 9.7 发布与删除约束
 
 - 同一规格定义下 `value_key` 唯一；同一商品下稳定 Key 不得因翻译而变化。
 - 单选默认值最多一个；默认选择必须启用并满足对应变体的适用规则。
+- 商品级关系只引用已物化的选项值；`conflicts` 必须规范化方向并去重，`requires` 不得形成环。
 - 发布时必须验证每个可售变体都至少存在一套满足全部必选组的配置。
 - 已物化或已下单的模板项优先禁用，不做硬删除；订单快照永远不依赖目录外键。
 - 所有商品配置写入与缓存/渠道失效事件在同一事务中提交。
@@ -553,7 +584,7 @@ erDiagram
 2. 确认首个轮组选项是否确实不独立扣库存、不改变重量、运费和生产周期。
 3. 为角色回填、配置规范化、哈希、价格交叉校验和数据库约束先写契约测试。
 
-阶段零已完成：第 0、8、9、11 节的交易边界已经固定；首个纵向切片仍以“不独立扣库存、不改变重量、运费和生产周期”的轮组塔基单选为前提。若真实业务不满足该前提，必须先切换到第 9.4 节定义的组件库存与履约扩展模型，不得把这些影响压缩为普通加价项。
+阶段零已完成：第 0、8、9、11 节的交易边界已经固定；纵向切片已扩展为支持组件库存、重量/包装增量、生产周期、售后策略和显式 `requires / conflicts` 关系。更复杂的规则仍需独立建模，不得把这些影响压缩为普通加价项。
 
 ### 阶段一：先消除库存与商品汇总耦合
 
@@ -561,15 +592,15 @@ erDiagram
 2. 保留“受影响商品 ID”解析，用于主商品和多语言商品的缓存、页面与渠道失效；该查询不得写商品行。
 3. 将后台低库存、缺货统计和其他遗留读取迁移到主变体库存聚合。
 4. 将 `products.price` 纠正为最低有效变体展示价；交易路径继续只信任具体变体价。
-5. 暂不删除 `products.sku/price/stock`，先将其降级为兼容读模型并标注非交易事实来源。
+5. 在所有读取方迁移后直接删除 `products.sku/price/sale_price/stock`，不建立长期兼容双写契约。
 
 **实施状态（2026-09-14）：已完成。**
 
 - 订单扣减、取消、支付过期和退款返库只原子更新库存所属变体；多语言变体统一解析到 `master_variant_id`，不再在交易内写 `products.stock`。
 - 库存变化仍返回主商品及所有引用同一主变体的多语言商品 ID，供缓存与渠道失效使用；该解析过程只读商品数据。
 - 后台低库存与缺货统计按活动变体聚合，并排除 `made_to_order`；多语言商品使用主变体库存。
-- 商品起售价、币种和展示价格快照统一来自最低有效成交价的活动变体；同价时稳定优先默认变体，商品 SKU 仍锚定默认变体。
-- `products.stock` 仅在后台创建或显式替换变体时刷新为兼容汇总，不再作为下单、取消或退款的交易事实来源。本阶段无数据库结构迁移。
+- 商品起售价、币种和展示价格快照统一来自最低有效成交价的活动变体；同价时稳定优先默认变体。
+- `products.sku/price/sale_price/stock` 已由 `297_remove_product_legacy_summary_columns` 移除；Go 域对象中的同名字段仅作非持久化兼容字段，后台/公共响应从活动变体派生展示值，不建立双写契约。
 - 已覆盖领域价格选择、商品汇总、库存统计、主/多语言库存写入、公共商品响应及订单全生命周期测试；`go test ./...` 全量通过。
 
 ### 阶段二：完成一个后端纵向切片
@@ -584,14 +615,14 @@ erDiagram
 6. OrderCreate 同时固化 `configuration_snapshot` 与现有 `pricing_snapshot`，并验证最终单价一致。
 7. 后台订单详情、出库单和订单证据优先读取新快照。
 
-**实施状态（2026-09-15，首个后端切片已完成）：**
+**实施状态（2026-09-16，首个后端切片已完成）：**
 
-- 已增加规格定义角色、single/multiple 选择规则、模板 revision、商品物化值来源字段和 `product_custom_option_policies`；首批只接受 `custom_option + inventory_policy=none`。
+- 已增加规格定义角色、single/multiple 选择规则、模板 revision、商品物化值来源字段和 `product_custom_option_policies`；首批支持 `custom_option` 的价格、组件库存和重量策略。
 - 已增加 `cart_items.configuration/configuration_hash` 与 `order_items.configuration_snapshot`，历史空配置使用固定规范化 JSON 和 SHA-256 哈希；购物车唯一身份升级为商品、变体和配置哈希。
 - 已实现服务端配置解析、必选组/单选多选/重复值/启用状态/库存策略校验，选项加价使用 `domain/money` minor unit 计算，客户端标签和价格不会进入定价事实。
 - 加购、更新、同步、游客登录合并、Checkout、订单创建、取消/支付过期恢复均携带配置；Checkout 会重新读取目录并在变更时返回配置冲突，订单保存包含标签、选择模式、服务端加价和最终单价的配置快照。
 - 公共商品、购物车和订单响应已暴露经过服务端处理的配置数据；迁移 contract test、解析器测试和相关服务/仓储/API 测试已通过。
-- 组件库存、重量/运费/生产周期变化和通用依赖表达式仍未实现，按路线图留在后续阶段；变体级覆盖矩阵与前台配置器已在阶段三、阶段四完成。
+- 生产周期、取消策略、退货策略和显式 `requires / conflicts` 关系已经进入配置解析、订单配置快照、订单履约模式、取消/售后门禁、公共商品 API 和后台编辑器；通用规则表达式引擎仍未实现。
 
 ### 阶段三：后台模板物化与商品配置
 
@@ -600,14 +631,14 @@ erDiagram
 3. 增加变体级适用矩阵，保证花鼓前/后/整对等条件能够配置。
 4. 商品翻译流程复制稳定 Key 和本地化标签，并继续共享 `master_variant_id` 主库存。
 
-**实施状态（2026-09-15，进行中）：**
+**实施状态（2026-09-16，已完成）：**
 
 - 已完成模板角色、单选/多选基数、展示方式和候选值管理；候选值独立存储在 `product_spec_option_items`，模板 revision 自动递增。
 - 已完成新商品绑定模板时的候选值物化；商品级值记录 `template_option_item_id`、来源 revision、启停状态、展示元数据和 custom option 价格策略。
 - 已完成后台商品编辑器的变体/选配角色分区、商品级价格增量和默认/启用控制；翻译商品复制稳定 Key、本地化标签和 custom option policy。
 - 已建立变体级组选用和值覆盖表及服务端解析规则；无覆盖记录时继承商品级配置，覆盖记录可禁用组/值或覆盖选择数与加价。
 - 已完成后台变体矩阵编辑器：支持组选用、最小/最大选择数覆盖、值启停、不可用原因和价格增量覆盖；服务端校验规则归属并保证 `false` 覆盖值不会被数据库默认值吞掉。
-- 显式“同步模板”差异预览仍未完成，后续需展示新增/禁用候选值、标签或价格变化及 revision 差异，经运营确认后再物化。
+- 已完成显式“同步模板”差异预览与确认接口/后台弹窗：展示新增、禁用、启用、移除、标签和价格变化及 revision 差异；确认请求必须携带预览时的模板 revision，revision 变化时返回冲突，不会静默物化。
 
 ### 阶段四：前台配置器与所有购买入口
 
@@ -616,16 +647,32 @@ erDiagram
 3. 同步升级快速购买、底部商品详情、普通购物车、立即购买和 Stripe Express Checkout，避免绕过选配校验。
 4. 增加桌面端、移动端、键盘与屏幕阅读器测试。
 
-**实施状态（2026-09-15，核心闭环已完成）：**
+**实施状态（2026-09-18，核心闭环与专项验收已完成；真实商品链路待补数后复跑）：**
 
 - `useProductDetailVariants` 已统一解析商品级选配和变体级矩阵，支持单选、多选、必选校验、默认值、禁用原因、按币种显示加价和即时价格。
 - PDP 的加购、立即购买和 Express Checkout 均复用同一选配校验；普通购物车和 Checkout 继续提交服务端可验证的 `selected_options`，不会信任客户端标签或价格。
-- 公共商品/Quick Buy 契约已改为使用 `role` 和物化候选值；Nuxt 不再读取旧的 `is_variant_option` 或 `options` 字段。
-- 桌面端、移动端、键盘与屏幕阅读器的专项端到端测试仍需补齐；组件库存、重量与履约变化继续留在阶段五。
+- 公共商品/Quick Buy 契约已改为使用 `role` 和物化候选值；Nuxt 不再读取旧的 `is_variant_option` 或 `options` 字段。Quick Buy 商品快照的 SKU、价格和币种也改为从选中变体派生。
+- 已使用 mock 商品数据完成桌面配置交互、单选/多选与即时价格、键盘 Tab 聚焦、ARIA pressed/disabled 状态和 375px 移动端无横向溢出验收；真实后端当前没有可售商品数据，真实商品链路需补数后复跑。前端配置器已接入显式关系：`conflicts` 值随当前选择置灰，未满足的 `requires` 会阻止提交；服务端继续执行最终校验。
 
 ### 阶段五：扩展履约能力
 
-在基础闭环稳定后，再逐项引入组件库存、重量/包装增量、定制生产周期、取消退货限制和复杂选项依赖。每项能力都必须进入订单快照与履约证据，不得只改 PDP 展示。
+在基础闭环稳定后，再逐项引入组件库存、重量/包装增量、定制生产周期、取消退货限制和选项依赖。每项能力都必须进入订单快照与履约证据，不得只改 PDP 展示。
+
+**实施状态（2026-09-18，阶段五已完成）：**
+
+- `inventory_policy = component` 选项现在必须绑定组件变体和正数量；后台商品编辑器可配置库存策略、组件变体 ID 和每件用量。
+- 配置解析会按组件变体聚合每单位需求，并把组件分配写入 `configuration_snapshot.inventory_allocations`；组件 ID、数量和选择值会随订单快照固化。
+- 加购、购物车数量更新和 Checkout 会校验组件库存；下单事务按稳定变体 ID 顺序将主 SKU 与组件库存一起条件扣减，支持多语言主变体归属。
+- 取消、支付过期和退款返库会读取订单配置快照，按实际退款数量恢复组件库存，并与主 SKU 一起触发商品缓存失效。
+- 选配值可声明净重和包装重量增量；Checkout 将净重写入订单行，运费报价把包装增量计入计费重量，订单配置快照同时保存两类增量。
+- 选配值支持生产周期、需要生产标志、取消策略和退货策略；空策略由服务端归一化，生产周期大于 0 自动进入定制生产语义。
+- Checkout 会将需要生产的订单行标记为 `made_to_order`；订单创建继续沿用现有生产状态、生产完成和发货前门禁。
+- 取消和售后服务读取订单配置快照：`never` 禁止取消，`not_allowed` 禁止退货/换货，但保留退款和客服请求处理路径。
+- 公共商品 API、后台商品编辑器和模板同步均保留并暴露这些策略；迁移、解析、服务、API 和管理端类型检查已通过。
+- 已新增商品级物化选项值关系：`requires` 要求源值选中时目标值也被选中，`conflicts` 禁止两端同时被选中；后台商品编辑器可配置并删除关系。
+- 关系保存会校验同商品归属、自关联、类型、重复项和 `requires` 环依赖，并将 `conflicts` 规范化为固定方向；公共 API、PDP 可用性与完整性判断、服务端配置解析均使用同一关系事实。
+- 服务端在加购、购物车更新和 Checkout 中拒绝违反关系的配置；订单配置快照保存实际命中的已满足关系，确保下单后的履约证据不依赖活动目录。
+- 当前关系模型只覆盖两个商品选项值之间的显式 `requires / conflicts`，通用条件表达式、嵌套布尔组合和动态计算规则不属于本阶段实现。
 
 ---
 
@@ -644,17 +691,22 @@ erDiagram
 | 取消订单或支付过期后恢复购物车 | 原配置哈希和选择完整保留 |
 | 多语言商品购买同一主变体 | 只扣一次 `master_variant_id` 库存，并失效所有相关商品缓存 |
 | 两个变体并发下单 | 不写 `products.stock` 热点行，库存不为负 |
-| 组件库存选项未完成实现 | 后台禁止以 `inventory_policy = component` 发布 |
+| 组件库存选项 | 必须绑定有效组件变体和正数量；库存不足时加购/结算/下单失败，取消或退款按快照返库 |
+| 选配重量/包装增量 | 以克为单位由服务端计入订单行净重和运费计费重量，并写入配置快照 |
+| 选配生产与售后策略 | 生产周期和策略写入订单快照；需要生产的订单行进入 `made_to_order`；取消/退货门禁按快照执行 |
+| `requires` 关系 | 选择源值但未选择目标值时，前端阻止提交且服务端拒绝；满足的关系写入订单配置快照 |
+| `conflicts` 关系 | 当前选择使冲突值在前端不可用；伪造请求同时提交两端时服务端仍拒绝 |
+| 关系配置规范化 | 自关联、跨商品引用、未知类型和 `requires` 环依赖不能保存；重复关系去重，反向 `conflicts` 统一规范化 |
 
 ### 11.2 本轮明确不做
 
 - 不自动猜测并迁移现有变体中的塔基、颜色等字段；先产出审计报告，再由运营确认哪些字段降级为选配项。
 - 不信任客户端价格、标签、默认值、兼容性或配置哈希。
 - 不让模板修改自动级联到已发布商品。
-- `products.sku/price/stock` 仍作为短期兼容读模型，但项目尚未正式运营；完成低库存、渠道和后台统计调用方迁移后，直接删除这些遗留汇总字段，不为其建立长期交易写入契约。
-- `product_spec_definitions.is_variant_option/options` 已完成一次性回填和调用方迁移，并由 `292_remove_legacy_product_spec_definition_fields` 直接删除；不建立兼容双读双写层。
-- 不在首个切片中实现通用规则表达式引擎；先用明确的变体级关系表覆盖真实业务。
-- 不把组件库存、重量变化或生产周期伪装成纯展示选项。
+- `products.sku/price/sale_price/stock` 已完成读取方迁移并由 `297_remove_product_legacy_summary_columns` 直接删除；不建立兼容双读双写层。
+- `product_spec_definitions.is_variant_option/options` 已完成一次性回填和调用方迁移，并由 `293_remove_legacy_product_spec_definition_fields` 直接删除；不建立兼容双读双写层。
+- 不实现通用规则表达式引擎、嵌套布尔组合或任意条件脚本；当前以商品级物化选项值之间明确的 `requires / conflicts` 关系覆盖真实业务。
+- 不把重量变化或生产周期伪装成纯展示选项；组件库存选项必须经过服务端库存校验和订单事务扣减。
 
 ---
 

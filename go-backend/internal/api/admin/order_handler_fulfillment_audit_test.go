@@ -47,13 +47,13 @@ func TestFulfillOrderRecordsSuccessfulFulfillmentAudit(t *testing.T) {
 	handler.ConfigureAuditService(auditRecorder)
 
 	orderRecord := orderdomain.Order{
-		OrderNumber:    "ORDER-FULFILL-AUDIT-SUCCESS",
-		UserID:         42,
-		Status:         "processing",
-		PaymentStatus:  "paid",
-		ShippingStatus: "pending",
-		Currency:       "USD",
-		TotalAmount:    1200,
+		OrderNumber:      "ORDER-FULFILL-AUDIT-SUCCESS",
+		UserID:           42,
+		Status:           "processing",
+		PaymentStatus:    "paid",
+		ShippingStatus:   "pending",
+		Currency:         "USD",
+		TotalAmountMinor: 120000,
 	}
 	require.NoError(t, db.Create(&orderRecord).Error)
 	seedReadyFulfillmentEvidenceForAdminTest(t, db, &orderRecord)
@@ -90,13 +90,13 @@ func TestFulfillOrderRecordsFailedFulfillmentAuditWithoutChangingOrder(t *testin
 	handler.ConfigureAuditService(auditRecorder)
 
 	orderRecord := orderdomain.Order{
-		OrderNumber:    "ORDER-FULFILL-AUDIT-FAILED",
-		UserID:         42,
-		Status:         "processing",
-		PaymentStatus:  "pending",
-		ShippingStatus: "pending",
-		Currency:       "USD",
-		TotalAmount:    1200,
+		OrderNumber:      "ORDER-FULFILL-AUDIT-FAILED",
+		UserID:           42,
+		Status:           "processing",
+		PaymentStatus:    "pending",
+		ShippingStatus:   "pending",
+		Currency:         "USD",
+		TotalAmountMinor: 120000,
 	}
 	require.NoError(t, db.Create(&orderRecord).Error)
 
@@ -147,13 +147,13 @@ func TestUpdateTrackingInfoRecordsTrackingCorrectionAudit(t *testing.T) {
 	handler.ConfigureAuditService(auditRecorder)
 
 	orderRecord := orderdomain.Order{
-		OrderNumber:    "ORDER-TRACKING-CORRECTION-AUDIT",
-		UserID:         42,
-		Status:         "processing",
-		PaymentStatus:  "paid",
-		ShippingStatus: "pending",
-		Currency:       "USD",
-		TotalAmount:    100,
+		OrderNumber:      "ORDER-TRACKING-CORRECTION-AUDIT",
+		UserID:           42,
+		Status:           "processing",
+		PaymentStatus:    "paid",
+		ShippingStatus:   "pending",
+		Currency:         "USD",
+		TotalAmountMinor: 10000,
 	}
 	require.NoError(t, db.Create(&orderRecord).Error)
 	seedReadyFulfillmentEvidenceForAdminTest(t, db, &orderRecord)
@@ -185,9 +185,8 @@ func TestUpdateTrackingInfoRecordsTrackingCorrectionAudit(t *testing.T) {
 	assert.Equal(t, adminAuditResourceOrderTracking, log.Resource)
 	assert.Equal(t, orderRecord.ID, log.ResourceID)
 	assert.Equal(t, adminAuditStatusSuccess, log.Status)
-	assert.Contains(t, log.Changes, `"operation":"tracking_correction"`)
-	assert.Contains(t, log.OldValue, `"tracking_number":"TRACK-AUDIT-ORIGINAL"`)
-	assert.Contains(t, log.NewValue, `"tracking_number":"TRACK-AUDIT-CORRECTED"`)
+	assert.Contains(t, log.Changes, `"operation":"tracking_package_upsert"`)
+	assert.Contains(t, log.Changes, `"tracking_number":"TRACK-AUDIT-CORRECTED"`)
 	assert.NotContains(t, log.Changes, "api_key")
 	assert.NotContains(t, log.Changes, "webhook_secret")
 }
@@ -282,12 +281,12 @@ func seedReadyFulfillmentEvidenceForAdminTest(t *testing.T, db *gorm.DB, orderRe
 	require.NoError(t, db.Preload("Items").First(&storedOrder, orderRecord.ID).Error)
 	storedOrder.Currency = "USD"
 	storedOrder.FXSnapshotData = currency.OrderFXSnapshotJSON(currency.OrderFXSnapshot{
-		Version:         currency.OrderFXSnapshotVersion,
-		BaseCurrency:    "USD",
-		OrderCurrency:   "USD",
-		BaseToOrderRate: 1,
-		Source:          "admin-fulfillment-test",
-		CapturedAt:      time.Now().UTC(),
+		Version:       currency.OrderFXSnapshotVersion,
+		BaseCurrency:  "USD",
+		OrderCurrency: "USD",
+		RateDecimal:   "1",
+		Source:        "admin-fulfillment-test",
+		CapturedAt:    time.Now().UTC(),
 	})
 	require.NoError(t, db.Model(&orderdomain.Order{}).
 		Where("id = ?", storedOrder.ID).
@@ -298,19 +297,19 @@ func seedReadyFulfillmentEvidenceForAdminTest(t *testing.T, db *gorm.DB, orderRe
 
 	variantID := uint(1)
 	item := orderdomain.OrderItem{
-		OrderID:                storedOrder.ID,
-		ProductID:              1,
-		VariantID:              &variantID,
-		ProductName:            "Fulfillment audit product",
-		SKU:                    fmt.Sprintf("FULFILL-AUDIT-%d", storedOrder.ID),
-		Quantity:               1,
-		Price:                  storedOrder.TotalAmount,
-		Subtotal:               storedOrder.TotalAmount,
-		Total:                  storedOrder.TotalAmount,
-		Attributes:             "{}",
-		WeightGrams:            1000,
-		DeclaredValue:          float64PtrForAdminFulfillmentTest(storedOrder.TotalAmount),
-		DeclaredValueConfirmed: true,
+		OrderID:                   storedOrder.ID,
+		ProductID:                 1,
+		VariantID:                 &variantID,
+		ProductName:               "Fulfillment audit product",
+		SKU:                       fmt.Sprintf("FULFILL-AUDIT-%d", storedOrder.ID),
+		Quantity:                  1,
+		PriceMinor:                storedOrder.TotalAmountMinor,
+		SubtotalMinor:             storedOrder.TotalAmountMinor,
+		TotalMinor:                storedOrder.TotalAmountMinor,
+		ConfigurationSnapshotData: datatypes.JSON([]byte("{}")),
+		WeightGrams:               1000,
+		DeclaredValueMinor:        func() *int64 { v := storedOrder.TotalAmountMinor; return &v }(),
+		DeclaredValueConfirmed:    true,
 	}
 	require.NoError(t, db.Create(&item).Error)
 	storedOrder.Items = []orderdomain.OrderItem{item}

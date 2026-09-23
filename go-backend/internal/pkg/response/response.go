@@ -75,6 +75,14 @@ func Created(c *gin.Context, data interface{}) {
 	})
 }
 
+// Accepted reports that an asynchronous command has been durably queued.
+func Accepted(c *gin.Context, data interface{}) {
+	c.JSON(202, Response{
+		Code: 0,
+		Data: data,
+	})
+}
+
 // NoContent 无内容响应（204）
 // 常用于删除操作
 func NoContent(c *gin.Context) {

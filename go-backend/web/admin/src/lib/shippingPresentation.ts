@@ -1,4 +1,5 @@
 import { adminApiUrl } from '@/lib/adminUrl'
+import { formatMinorMoney } from '@/lib/dashboardPresentation'
 
 export const templateTypeLabel = (type: string) => {
   const labels: Record<string, string> = {
@@ -9,14 +10,19 @@ export const templateTypeLabel = (type: string) => {
   return labels[type] || type || '-'
 }
 
-export const formatMoney = (value: any) => Number(value || 0).toFixed(2)
+export const formatMoney = (valueMinor: any, currency?: string | null) => formatMinorMoney(valueMinor, currency)
 export const formatDate = (value: any) => value ? new Date(value).toLocaleString('zh-CN') : '-'
 
-export const formatRuleSummary = (rules: any[] = []) => {
+export const formatRuleSummary = (rules: any[] = [], type?: string | null, currency?: string | null) => {
   if (!Array.isArray(rules) || rules.length === 0) return '无规则，使用默认运费'
   return rules
     .slice(0, 4)
-    .map((rule) => `${rule.region || '-'} ${Number(rule.min_value || 0)}-${Number(rule.max_value || 0) || '∞'}: ${formatMoney(rule.fee)}`)
+    .map((rule) => {
+      const min = type === 'price' ? formatMoney(rule.min_value_minor, currency) : Number(rule.min_value || 0)
+      const maxValue = type === 'price' ? Number(rule.max_value_minor || 0) : Number(rule.max_value || 0)
+      const max = maxValue > 0 ? (type === 'price' ? formatMoney(maxValue, currency) : maxValue) : '∞'
+      return `${rule.region || '-'} ${min}-${max}: ${formatMoney(rule.fee_minor, currency)}`
+    })
     .join('；')
 }
 
@@ -135,12 +141,12 @@ export const formatServiceWeightStep = (service: any) => {
 
 export const formatVolumetricDivisor = (service: any) => {
   const divisor = Number(service.volumetric_divisor || 0)
-  const surcharge = Number(service.fuel_surcharge_percent || 0)
-  const remote = Number(service.remote_surcharge || 0)
+  const surcharge = Number(service.fuel_surcharge_percent_decimal || 0)
+  const remoteMinor = Number(service.remote_surcharge_minor || 0)
   const parts: string[] = []
   if (divisor > 0) parts.push(`÷${divisor}`)
   if (surcharge > 0) parts.push(`燃油 ${surcharge.toFixed(3)}%`)
-  if (remote > 0) parts.push(`偏远 ${formatMoney(remote)}`)
+  if (remoteMinor > 0) parts.push(`偏远 ${formatMinorMoney(remoteMinor, service.currency)}`)
   return parts.length ? parts.join(' / ') : '未设置'
 }
 

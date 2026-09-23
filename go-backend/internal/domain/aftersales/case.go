@@ -116,8 +116,8 @@ type AfterSalesCase struct {
 	ReturnShipments []AfterSalesReturnShipment `gorm:"foreignKey:CaseID" json:"return_shipments"`
 	RefundReview    *AfterSalesRefundReview    `gorm:"foreignKey:CaseID" json:"refund_review,omitempty"`
 
-	RefundReviewMaximumAmount float64 `gorm:"-" json:"refund_review_maximum_amount"`
-	RefundReviewCurrency      string  `gorm:"-" json:"refund_review_currency"`
+	RefundReviewMaximumAmountMinor int64  `gorm:"-" json:"refund_review_maximum_amount_minor"`
+	RefundReviewCurrency           string `gorm:"-" json:"refund_review_currency"`
 
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`

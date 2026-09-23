@@ -1,12 +1,25 @@
 <template>
   <AdminFilterPanel>
-    <form class="grid gap-3 lg:grid-cols-4 lg:gap-2 xl:grid-cols-[minmax(240px,1.4fr)_repeat(4,minmax(120px,1fr))_auto_auto] xl:gap-3" @submit.prevent="emit('apply')">
+    <form class="grid gap-3 lg:grid-cols-4 lg:gap-2 xl:grid-cols-[minmax(220px,1.4fr)_repeat(5,minmax(110px,1fr))_auto_auto] xl:gap-3" @submit.prevent="emit('apply')">
       <label class="block min-w-0 space-y-1 lg:col-span-2">
         <span class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70 block">SEARCH / 搜索</span>
         <div class="relative">
           <Search class="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground/60" />
           <Input v-model="filters.search" class="h-9 w-full pl-9" placeholder="客户、邮箱、会话 ID、消息内容" />
         </div>
+      </label>
+
+      <label class="block space-y-1 min-w-0">
+        <span class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70 block">VIEW / 队列</span>
+        <Select v-model="filters.view">
+          <SelectTrigger class="h-9 w-full"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="inbox">收件箱</SelectItem>
+            <SelectItem value="closed">已关闭</SelectItem>
+            <SelectItem value="archived">已归档</SelectItem>
+            <SelectItem value="all">全部</SelectItem>
+          </SelectContent>
+        </Select>
       </label>
 
       <label class="block space-y-1 min-w-0">
@@ -73,6 +86,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 
 interface CustomerServiceFiltersState {
   search: string
+  view: string
   status: string
   identity: string
   unread: string

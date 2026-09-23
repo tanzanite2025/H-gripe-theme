@@ -13,66 +13,21 @@ func (r *ProductRepository) FindVariantBySKU(sku string) (*product.ProductVarian
 	if err := r.db.Where("sku = ?", sku).First(&variant).Error; err != nil {
 		return nil, err
 	}
+	if err := r.attachVariantDisplayPriceSnapshot(&variant); err != nil {
+		return nil, err
+	}
 	return &variant, nil
 }
 
-func syncProductSummaryFromVariants(p *product.Product, variants []product.ProductVariant) {
-	if len(variants) == 0 {
-		return
+func (r *ProductRepository) FindVariantByID(id uint) (*product.ProductVariant, error) {
+	var variant product.ProductVariant
+	if err := r.db.Where("id = ?", id).First(&variant).Error; err != nil {
+		return nil, err
 	}
-
-	defaultIndex := -1
-	startingPriceIndex := -1
-	totalStock := 0
-	for i, variant := range variants {
-		if variant.IsActive {
-			totalStock += variant.Stock
-			if startingPriceIndex == -1 || variant.EffectivePrice() < variants[startingPriceIndex].EffectivePrice() {
-				startingPriceIndex = i
-			}
-		}
-		if variant.IsActive && variant.IsDefault {
-			defaultIndex = i
-		}
+	if err := r.attachVariantDisplayPriceSnapshot(&variant); err != nil {
+		return nil, err
 	}
-	if defaultIndex == -1 {
-		for i, variant := range variants {
-			if variant.IsActive {
-				defaultIndex = i
-				break
-			}
-		}
-	}
-	if defaultIndex == -1 {
-		defaultIndex = 0
-	}
-	if startingPriceIndex == -1 {
-		startingPriceIndex = defaultIndex
-	}
-	if variants[defaultIndex].EffectivePrice() == variants[startingPriceIndex].EffectivePrice() {
-		startingPriceIndex = defaultIndex
-	}
-
-	defaultVariant := variants[defaultIndex]
-	startingPriceVariant := variants[startingPriceIndex]
-	p.SKU = defaultVariant.SKU
-	p.Currency = startingPriceVariant.Currency
-	if p.Currency == "" {
-		p.Currency = product.DefaultPriceCurrency
-	}
-	p.Price = startingPriceVariant.Price
-	p.SalePrice = startingPriceVariant.SalePrice
-	if priceMoney, err := startingPriceVariant.PriceMoney(); err == nil {
-		p.PriceMinor = priceMoney.AmountMinor()
-	}
-	if saleMoney, err := startingPriceVariant.SalePriceMoney(); err == nil && saleMoney != nil {
-		minor := saleMoney.AmountMinor()
-		p.SalePriceMinor = &minor
-	} else {
-		p.SalePriceMinor = nil
-	}
-	p.DisplayPriceData = startingPriceVariant.DisplayPriceData
-	p.Stock = totalStock
+	return &variant, nil
 }
 
 func replaceProductVariants(tx *gorm.DB, productID uint, variants []product.ProductVariant) error {
@@ -108,7 +63,9 @@ func replaceProductVariants(tx *gorm.DB, productID uint, variants []product.Prod
 				variants[i].MasterVariantID = existing.MasterVariantID
 				variants[i].Stock = 0
 			}
-			if err := tx.Save(&variants[i]).Error; err != nil {
+			// Display prices belong to the independent read model. Omit the
+			// legacy column so catalog writes cannot reintroduce a stale snapshot.
+			if err := tx.Omit("DisplayPriceData").Save(&variants[i]).Error; err != nil {
 				return err
 			}
 			keepIDs = append(keepIDs, variants[i].ID)
@@ -116,7 +73,7 @@ func replaceProductVariants(tx *gorm.DB, productID uint, variants []product.Prod
 		}
 
 		isActive := variants[i].IsActive
-		if err := tx.Create(&variants[i]).Error; err != nil {
+		if err := tx.Omit("DisplayPriceData").Create(&variants[i]).Error; err != nil {
 			return err
 		}
 		if !isActive {
@@ -249,20 +206,79 @@ func (r *ProductRepository) DecrementVariantStocks(items map[uint]int) ([]uint, 
 	return r.findAffectedProductIDsForInventoryVariants(uintMapKeys(resolvedItems))
 }
 
+// ValidateVariantStocks checks the inventory owned by the supplied variants
+// (including translated variants that point at a master row) without mutating
+// it. Callers must still perform the conditional decrement in the order
+// transaction because this check is advisory under concurrency.
+func (r *ProductRepository) ValidateVariantStocks(items map[uint]int) error {
+	if len(items) == 0 {
+		return nil
+	}
+	resolvedItems := make(map[uint]int, len(items))
+	for _, variantID := range uintMapKeys(items) {
+		quantity := items[variantID]
+		if quantity <= 0 {
+			return fmt.Errorf("invalid stock quantity %d for variant %d", quantity, variantID)
+		}
+		masterID, active, err := r.masterVariantID(variantID)
+		if err != nil {
+			return err
+		}
+		if !active {
+			return fmt.Errorf("insufficient stock for variant %d or variant not found", variantID)
+		}
+		resolvedItems[masterID] += quantity
+	}
+	for _, masterID := range uintMapKeys(resolvedItems) {
+		var row struct {
+			IsActive bool
+			Stock    int
+		}
+		if err := r.db.Model(&product.ProductVariant{}).Select("is_active, stock").Where("id = ?", masterID).First(&row).Error; err != nil {
+			return err
+		}
+		if !row.IsActive || row.Stock < resolvedItems[masterID] {
+			return fmt.Errorf("insufficient stock for inventory variant %d or variant not found", masterID)
+		}
+	}
+	return nil
+}
+
+// IncrementVariantStocks restores several inventory variants in a stable
+// order. Quantities are aggregated first so a component selected by multiple
+// option values is restored exactly once.
+func (r *ProductRepository) IncrementVariantStocks(items map[uint]int) ([]uint, error) {
+	if len(items) == 0 {
+		return nil, nil
+	}
+	resolvedItems := make(map[uint]int, len(items))
+	for _, variantID := range uintMapKeys(items) {
+		quantity := items[variantID]
+		if quantity <= 0 {
+			return nil, fmt.Errorf("invalid stock quantity %d for variant %d", quantity, variantID)
+		}
+		masterID, _, err := r.masterVariantID(variantID)
+		if err != nil {
+			return nil, err
+		}
+		resolvedItems[masterID] += quantity
+	}
+	for _, masterID := range uintMapKeys(resolvedItems) {
+		quantity := resolvedItems[masterID]
+		res := r.db.Model(&product.ProductVariant{}).Where("id = ?", masterID).
+			UpdateColumn("stock", gorm.Expr("stock + ?", quantity))
+		if res.Error != nil {
+			return nil, res.Error
+		}
+		if res.RowsAffected == 0 {
+			return nil, gorm.ErrRecordNotFound
+		}
+	}
+	return r.findAffectedProductIDsForInventoryVariants(uintMapKeys(resolvedItems))
+}
+
 func (r *ProductRepository) IncrementVariantStock(variantID uint, quantity int) ([]uint, error) {
-	masterID, _, err := r.masterVariantID(variantID)
-	if err != nil {
-		return nil, err
-	}
-	res := r.db.Model(&product.ProductVariant{}).Where("id = ?", masterID).
-		UpdateColumn("stock", gorm.Expr("stock + ?", quantity))
-	if res.Error != nil {
-		return nil, res.Error
-	}
-	if res.RowsAffected == 0 {
-		return nil, gorm.ErrRecordNotFound
-	}
-	return r.findAffectedProductIDsForInventoryVariants([]uint{masterID})
+	return r.IncrementVariantStocks(map[uint]int{variantID: quantity})
 }
 
 func (r *ProductRepository) masterVariantID(variantID uint) (uint, bool, error) {

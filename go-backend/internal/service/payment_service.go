@@ -16,22 +16,23 @@ import (
 )
 
 type PaymentService struct {
-	txManager                                 *repository.TxManager
-	paymentRepo                               *repository.PaymentRepository
-	orderRepo                                 *repository.OrderRepository
-	policyDisclosureRepo                      *repository.OrderPolicyDisclosureRepository
-	ticketRepo                                *repository.TicketRepository
-	orderEvidenceAssembler                    *OrderEvidencePackageAssembler
-	orderEvidenceSubmissionRepo               *repository.OrderEvidenceSubmissionSnapshotRepository
-	risk                                      *antifraud.Service
-	stripeDisputeEvidenceSubmitter            stripeDisputeEvidenceSubmitter
-	paypalDisputeEvidenceSubmitter            PayPalDisputeEvidenceSubmitter
-	paypalDisputeDocumentStorage              PayPalDisputeEvidenceDocumentStorage
-	paypalDisputeInvoiceOptions               PayPalDisputeInvoiceOptions
-	paypalDisputeInvoiceSellerProfileProvider PayPalDisputeInvoiceSellerProfileProvider
-	paypalDisputeCommercialInvoiceRenderer    paypalDisputeCommercialInvoiceRendererFunc
-	productCache                              ProductCacheInvalidator
-	productCacheEvents                        ProductCacheEventPublisher
+	txManager                                  *repository.TxManager
+	paymentRepo                                *repository.PaymentRepository
+	orderRepo                                  *repository.OrderRepository
+	policyDisclosureRepo                       *repository.OrderPolicyDisclosureRepository
+	ticketRepo                                 *repository.TicketRepository
+	orderEvidenceAssembler                     *OrderEvidencePackageAssembler
+	orderEvidenceSubmissionRepo                *repository.OrderEvidenceSubmissionSnapshotRepository
+	risk                                       *antifraud.Service
+	stripeDisputeEvidenceSubmitter             stripeDisputeEvidenceSubmitter
+	paypalDisputeEvidenceSubmitter             PayPalDisputeEvidenceSubmitter
+	paypalDisputeDocumentStorage               PayPalDisputeEvidenceDocumentStorage
+	paypalDisputeEvidenceAttachmentURLProvider PayPalDisputeEvidenceAttachmentURLProvider
+	paypalDisputeInvoiceOptions                PayPalDisputeInvoiceOptions
+	paypalDisputeInvoiceSellerProfileProvider  PayPalDisputeInvoiceSellerProfileProvider
+	paypalDisputeCommercialInvoiceRenderer     paypalDisputeCommercialInvoiceRendererFunc
+	productCache                               ProductCacheInvalidator
+	productCacheEvents                         ProductCacheEventPublisher
 }
 
 func (s *PaymentService) ConfigureRisk(orderRepo *repository.OrderRepository, risk *antifraud.Service) {
@@ -109,6 +110,16 @@ func (s *PaymentService) ConfigurePayPalDisputeEvidenceDocumentStorage(storage P
 		return
 	}
 	s.paypalDisputeDocumentStorage = storage
+}
+
+// ConfigurePayPalDisputeEvidenceAttachmentURLProvider supplies short-lived
+// HTTPS URLs for private carrier POD objects. PayPal fetches evidence
+// documents server-to-server, so private storage keys cannot be submitted.
+func (s *PaymentService) ConfigurePayPalDisputeEvidenceAttachmentURLProvider(provider PayPalDisputeEvidenceAttachmentURLProvider) {
+	if s == nil {
+		return
+	}
+	s.paypalDisputeEvidenceAttachmentURLProvider = provider
 }
 
 func (s *PaymentService) ConfigurePayPalDisputeInvoiceOptions(options PayPalDisputeInvoiceOptions) {
@@ -236,15 +247,13 @@ func (s *PaymentService) EnsureGatewayPaymentAttempt(input EnsureGatewayPaymentA
 			return errors.New("payment attempt amount must be greater than zero")
 		}
 		if input.Amount.AmountMinor() != expectedSettlement.AmountMinor() {
-			actualAmount, _ := input.Amount.MajorFloat()
-			expectedAmount, _ := expectedSettlement.MajorFloat()
-			return fmt.Errorf("payment amount %.2f does not match payable amount %.2f", actualAmount, expectedAmount)
+			actualAmount, actualErr := input.Amount.FormatMajor()
+			expectedAmount, expectedErr := expectedSettlement.FormatMajor()
+			if actualErr != nil || expectedErr != nil {
+				return fmt.Errorf("payment amount does not match payable amount")
+			}
+			return fmt.Errorf("payment amount %s does not match payable amount %s", actualAmount, expectedAmount)
 		}
-		inputAmount, amountErr := input.Amount.MajorFloat()
-		if amountErr != nil {
-			return amountErr
-		}
-
 		input.AttemptKey = NormalizePaymentAttemptKey(input.AttemptKey)
 		if input.AttemptKey == "" {
 			return errors.New("payment attempt key is required")
@@ -267,7 +276,6 @@ func (s *PaymentService) EnsureGatewayPaymentAttempt(input EnsureGatewayPaymentA
 			ProviderRequestKey: input.ProviderRequestKey,
 			PaymentMethod:      input.PaymentMethod,
 			AmountMinor:        input.Amount.AmountMinor(),
-			Amount:             inputAmount,
 			Currency:           expectedCurrency,
 			Status:             "pending",
 			CreatedAt:          now,
@@ -324,10 +332,6 @@ func (s *PaymentService) RecordGatewayPaymentAttempt(input GatewayPaymentAttempt
 			return err
 		}
 		expectedCurrency := expectedSettlement.Currency().String()
-		expectedAmount, err := expectedSettlement.MajorFloat()
-		if err != nil {
-			return err
-		}
 		amountMoney := input.Amount
 		if amountMoney.Currency().String() == "" || amountMoney.AmountMinor() <= 0 {
 			amountMoney = expectedSettlement
@@ -335,14 +339,13 @@ func (s *PaymentService) RecordGatewayPaymentAttempt(input GatewayPaymentAttempt
 			return fmt.Errorf("payment amount currency %s does not match order currency %s", amountMoney.Currency().String(), expectedCurrency)
 		}
 		if amountMoney.AmountMinor() != expectedSettlement.AmountMinor() {
-			actualAmount, _ := amountMoney.MajorFloat()
-			return fmt.Errorf("payment amount %.2f does not match payable amount %.2f", actualAmount, expectedAmount)
+			actualAmount, actualErr := amountMoney.FormatMajor()
+			expectedAmount, expectedErr := expectedSettlement.FormatMajor()
+			if actualErr != nil || expectedErr != nil {
+				return fmt.Errorf("payment amount does not match payable amount")
+			}
+			return fmt.Errorf("payment amount %s does not match payable amount %s", actualAmount, expectedAmount)
 		}
-		amount, amountErr := amountMoney.MajorFloat()
-		if amountErr != nil {
-			return amountErr
-		}
-
 		var existing *payment.Transaction
 		if input.AttemptKey != "" {
 			input.AttemptKey = NormalizePaymentAttemptKey(input.AttemptKey)
@@ -376,7 +379,6 @@ func (s *PaymentService) RecordGatewayPaymentAttempt(input GatewayPaymentAttempt
 			existing.OrderID = o.ID
 			existing.PaymentMethod = input.PaymentMethod
 			existing.AmountMinor = amountMoney.AmountMinor()
-			existing.Amount = amount
 			existing.Currency = expectedCurrency
 			existing.Status = input.Status
 			existing.GatewayResponse = input.GatewayResponse
@@ -391,7 +393,6 @@ func (s *PaymentService) RecordGatewayPaymentAttempt(input GatewayPaymentAttempt
 			ProviderRequestKey: input.ProviderRequestKey,
 			PaymentMethod:      input.PaymentMethod,
 			AmountMinor:        amountMoney.AmountMinor(),
-			Amount:             amount,
 			Currency:           expectedCurrency,
 			Status:             input.Status,
 			GatewayResponse:    input.GatewayResponse,

@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
+	"strings"
 	"time"
 
 	sitequalitydomain "commerce-platform/internal/domain/sitequality"
@@ -55,12 +56,25 @@ func (s *SiteQualityEngineService) EnqueueManualTarget(
 	strategy string,
 	actorUserID uint,
 	kind string,
+	auditScopes ...string,
 ) (*sitequalitydomain.SiteQualityJob, error) {
 	if s == nil || s.targets == nil || s.jobs == nil || s.lighthouseRunner == nil {
 		return nil, errors.New("site quality engine is unavailable")
 	}
 	if kind == "" {
 		kind = sitequalitydomain.SiteQualityJobKindManual
+	}
+	auditScope := sitequalitydomain.SiteQualityAuditScopeFull
+	if len(auditScopes) > 0 {
+		auditScope = strings.TrimSpace(auditScopes[0])
+	}
+	if auditScope == "" {
+		auditScope = sitequalitydomain.SiteQualityAuditScopeFull
+	}
+	switch auditScope {
+	case sitequalitydomain.SiteQualityAuditScopeFull, sitequalitydomain.SiteQualityAuditScopeHeadings, sitequalitydomain.SiteQualityAuditScopeSchema, sitequalitydomain.SiteQualityAuditScopeLinkText:
+	default:
+		return nil, fmt.Errorf("%w: audit_scope must be full, headings, schema, or link_text", ErrInvalidSiteQualityRun)
 	}
 	normalizedURL, normalizedStrategy, err := s.lighthouseRunner.normalizeRunInput(LighthouseRunnerRunInput{
 		URL:      targetURL,
@@ -91,7 +105,7 @@ func (s *SiteQualityEngineService) EnqueueManualTarget(
 	if !target.Enabled {
 		return nil, fmt.Errorf("%w: Site Quality target is disabled", ErrInvalidSiteQualityRun)
 	}
-	return s.enqueuePriorityJob(*target, normalizedStrategy, actorUserID, kind, nil, now)
+	return s.enqueuePriorityJob(*target, normalizedStrategy, actorUserID, kind, nil, auditScope, now)
 }
 
 func (s *SiteQualityEngineService) EnqueueRecheckFinding(
@@ -113,7 +127,7 @@ func (s *SiteQualityEngineService) EnqueueRecheckFinding(
 			return nil, fmt.Errorf("%w: Site Quality target is disabled", ErrInvalidSiteQualityRun)
 		}
 		findingID := finding.ID
-		return s.enqueuePriorityJob(*target, finding.Strategy, actorUserID, sitequalitydomain.SiteQualityJobKindRecheck, &findingID, time.Now().UTC())
+		return s.enqueuePriorityJob(*target, finding.Strategy, actorUserID, sitequalitydomain.SiteQualityJobKindRecheck, &findingID, sitequalitydomain.SiteQualityAuditScopeFull, time.Now().UTC())
 	}
 	return nil, errors.New("SiteQuality finding is not bound to a target")
 }
@@ -261,6 +275,7 @@ func (s *SiteQualityEngineService) processJob(
 			TargetSourceType: target.SourceType,
 			TargetTitle:      target.Title,
 			TargetLocale:     target.Locale,
+			AuditScope:       job.AuditScope,
 		}, func() error {
 			return s.jobs.UpdateProgress(
 				job.ID,
@@ -387,20 +402,31 @@ func (s *SiteQualityEngineService) enqueuePriorityJob(
 	actorUserID uint,
 	kind string,
 	findingID *uint,
+	auditScope string,
 	now time.Time,
 ) (*sitequalitydomain.SiteQualityJob, error) {
 	if now.IsZero() {
 		now = time.Now().UTC()
 	}
+	if strings.TrimSpace(auditScope) == "" {
+		auditScope = sitequalitydomain.SiteQualityAuditScopeFull
+	}
+	sampleCount := s.cfg.SampleCount
+	requiredConfirmations := s.cfg.RequiredConfirmations
+	if auditScope != sitequalitydomain.SiteQualityAuditScopeFull {
+		sampleCount = 1
+		requiredConfirmations = 1
+	}
 	job := sitequalitydomain.SiteQualityJob{
 		TargetID:              target.ID,
 		FindingID:             findingID,
 		Strategy:              strategy,
+		AuditScope:            auditScope,
 		Kind:                  kind,
 		Status:                sitequalitydomain.SiteQualityJobStatusQueued,
 		IdempotencyKey:        siteQualityManualJobKey(target.ID, strategy, kind, findingID, now),
-		SampleCount:           s.cfg.SampleCount,
-		RequiredConfirmations: s.cfg.RequiredConfirmations,
+		SampleCount:           sampleCount,
+		RequiredConfirmations: requiredConfirmations,
 		MaxAttempts:           s.cfg.MaxAttempts,
 		AvailableAt:           now,
 		InitiatedByUserID:     actorUserID,

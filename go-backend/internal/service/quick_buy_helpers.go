@@ -202,7 +202,10 @@ func (s *QuickBuyService) sessionItemFromSelection(session quickbuy.Session, ver
 	}
 
 	variantID := variant.ID
-	price := variant.EffectivePrice()
+	priceMoney, err := variant.EffectivePriceMoney()
+	if err != nil {
+		return nil, false, fmt.Errorf("%w: product %d price is invalid: %v", ErrQuickBuyInvalid, selection.ProductID, err)
+	}
 	rawCurrency := strings.TrimSpace(variant.Currency)
 	if rawCurrency == "" {
 		rawCurrency = productItem.DisplayPriceCurrency()
@@ -222,17 +225,17 @@ func (s *QuickBuyService) sessionItemFromSelection(session quickbuy.Session, ver
 		return nil, false, fmt.Errorf("%w: product currency %s does not match quick-buy session currency %s", ErrQuickBuyInvalid, currency, sessionCurrency)
 	}
 	return &quickbuy.SessionItem{
-		StepID:            step.ID,
-		StepKey:           step.StepKey,
-		ProductID:         productItem.ID,
-		VariantID:         &variantID,
-		Quantity:          quantity,
-		UnitPriceSnapshot: price,
-		CurrencySnapshot:  currency,
-		WeightSnapshotG:   variant.Weight,
-		ProductSnapshot:   quickBuyProductSnapshot(*productItem, s.mediaURLResolver),
-		VariantSnapshot:   quickBuyVariantSnapshot(*variant),
-		SortOrder:         step.SortOrder*100 + index + 1,
+		StepID:                 step.ID,
+		StepKey:                step.StepKey,
+		ProductID:              productItem.ID,
+		VariantID:              &variantID,
+		Quantity:               quantity,
+		UnitPriceSnapshotMinor: priceMoney.AmountMinor(),
+		CurrencySnapshot:       currency,
+		WeightSnapshotG:        variant.Weight,
+		ProductSnapshot:        quickBuyProductSnapshotForVariant(*productItem, variant, s.mediaURLResolver),
+		VariantSnapshot:        quickBuyVariantSnapshot(*variant),
+		SortOrder:              step.SortOrder*100 + index + 1,
 	}, false, nil
 }
 

@@ -1,6 +1,6 @@
 # Nuxt storefront documentation hub
 
-Last updated: 2026-07-25
+Last updated: 2026-09-17
 
 This folder is the live documentation hub for the Nuxt storefront. Active notes stay in `notes/`. Superseded implementation plans and old checklists stay in `archive/notes/` and should not be used as the current source of truth.
 
@@ -9,6 +9,7 @@ This folder is the live documentation hub for the Nuxt storefront. Active notes 
 - i18n status and workflow: `notes/I18N-CURRENT-STATUS.md`
 - FAQ ownership and current backend/frontend boundary: `../../go-backend/docs/FAQ_MANAGEMENT_SOURCE.md`
 - Chat and customer-service flow: `notes/CHAT-SYSTEM-ANALYSIS.md`
+- Customer-service lifecycle and inbox archive contract: `../../docs/design/customer-service-conversation-lifecycle-and-inbox-architecture.md`
 - Chat product configuration confirmation flow: `notes/CHAT_CONFIG_CONFIRM_DESIGN.md`
 - Storefront light-theme color tokens: `../../docs/design/emerald-light-theme-palette.md`
 - Shop category layout: `notes/SHOP_CATEGORY_LAYOUT.zh-CN.md`
@@ -27,7 +28,7 @@ This folder is the live documentation hub for the Nuxt storefront. Active notes 
 
 - FAQ: keep `FAQ_MANAGEMENT_SOURCE.md` synchronized whenever FAQ admin, route-based insertion, `PageFaqSlot`, static fallback, rich answer rendering, or FAQ loading styling changes. Route-based insertion is now single-source: storefront pages no longer retain duplicated page-level `<PageFaq />`; current products/support layout route coverage is seeded by migration `031`, and the formal product detail lookup is `/products/:slug`. `/shop/...` remains the category namespace and does not resolve product FAQs. FAQ aggregation pages skip auto-inserting a second FAQ block, and `PageFaqSlot` now uses a unified FAQ skeleton loading state instead of bare `LOAD` text.
 - Chat: `config_confirm` and `order` messages now persist through the customer-service ticket source and render as cards in both Nuxt customer chat and Admin staff chat. Remaining work is real non-SKU configurable fields from the final product/SKU contract and optional history-order-to-configuration refill.
-- Chat realtime: current transport is confirmed in `notes/CHAT-SYSTEM-ANALYSIS.md`. HTTP remains the durable source of truth; SSE is wired for admin inbox and Nuxt customer chat refresh/invalidation. Scoped typing indicators now use HTTP publish endpoints plus SSE delivery. The Go WebSocket route remains only a guarded keepalive foundation and must not be treated as the active chat protocol.
+- Chat realtime: current transport is confirmed in `notes/CHAT-SYSTEM-ANALYSIS.md`. HTTP remains the durable source of truth and WebSocket is the sole browser realtime transport for admin inbox and Nuxt customer chat refresh/invalidation. Scoped typing indicators use WebSocket control frames; there is no SSE or EventSource fallback.
 - i18n: static key coverage is clean, but long-tail locale wording still needs native-language review before marketing-sensitive production use.
 - Warranty: current Nuxt + Go backend boundary is documented in `notes/PRODUCT-WARRANTY-SYSTEM.md`. Admin backend ownership, public upload validation, admin UI consumption, order-number lookup, order-item claim linkage, and service records are closed; remaining work is richer claim processing UX and e2e tests.
 - Shop categories: current implementation is documented in `notes/SHOP_CATEGORY_LAYOUT.zh-CN.md`. DEV fallback policy and empty-state copy are closed; remaining work is verification against real product-specification-template data and future backend-owned i18n handling for dynamic category names.

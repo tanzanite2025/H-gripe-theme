@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"math/big"
 	"sort"
-	"strconv"
 	"strings"
 )
 
@@ -40,10 +39,6 @@ func (s *ShippingService) quoteShipmentPlans(
 		if group == nil {
 			continue
 		}
-		groupAmount, err := group.Amount.MajorFloat()
-		if err != nil {
-			return nil, fmt.Errorf("format shipping group amount: %w", err)
-		}
 		leg, ok, err := s.buildCarrierServiceQuoteLeg(
 			carrierService,
 			group,
@@ -52,7 +47,7 @@ func (s *ShippingService) quoteShipmentPlans(
 			postalCode,
 			quoteCurrency,
 			displayCurrency,
-			groupAmount,
+			group.Amount,
 		)
 		if err != nil {
 			return nil, err
@@ -92,16 +87,26 @@ func (s *ShippingService) quoteShipmentPlans(
 				ActualWeightGrams:   group.TotalWeightGrams,
 				ChargeWeightGrams:   group.TotalWeightGrams,
 				BillableWeightGrams: group.TotalWeightGrams,
-				BaseFee:             rate.Fee,
-				ShippingFee:         rate.Fee,
-				DisplayPrices:       rate.DisplayPrices,
-				DisplayPrice:        displayPriceForCurrency(displayCurrency, rate.DisplayPrices),
-				FreeShipping:        rate.FreeShipping,
+				BaseFeeDecimal: func() string {
+					m, _ := domainmoney.New(rate.FeeMinor, quoteCurrency)
+					v, _ := m.FormatMajor()
+					return v
+				}(),
+				ShippingFeeDecimal: func() string {
+					m, _ := domainmoney.New(rate.FeeMinor, quoteCurrency)
+					v, _ := m.FormatMajor()
+					return v
+				}(),
+				BaseFeeMinor:     rate.FeeMinor,
+				ShippingFeeMinor: rate.FeeMinor,
+				DisplayPrices:    rate.DisplayPrices,
+				DisplayPrice:     displayPriceForCurrency(displayCurrency, rate.DisplayPrices),
+				FreeShipping:     rate.FreeShipping,
 			}}
 		}
 		sort.SliceStable(legs, func(i, j int) bool {
-			if legs[i].ShippingFee != legs[j].ShippingFee {
-				return legs[i].ShippingFee < legs[j].ShippingFee
+			if legs[i].ShippingFeeMinor != legs[j].ShippingFeeMinor {
+				return legs[i].ShippingFeeMinor < legs[j].ShippingFeeMinor
 			}
 			if legs[i].SortOrder != legs[j].SortOrder {
 				return legs[i].SortOrder < legs[j].SortOrder
@@ -128,8 +133,8 @@ func (s *ShippingService) quoteShipmentPlans(
 	}
 
 	sort.SliceStable(plans, func(i, j int) bool {
-		if plans[i].ShippingFee != plans[j].ShippingFee {
-			return plans[i].ShippingFee < plans[j].ShippingFee
+		if plans[i].ShippingFeeMinor != plans[j].ShippingFeeMinor {
+			return plans[i].ShippingFeeMinor < plans[j].ShippingFeeMinor
 		}
 		if plans[i].EtaMaxDays != plans[j].EtaMaxDays {
 			return plans[i].EtaMaxDays < plans[j].EtaMaxDays
@@ -147,7 +152,7 @@ func (s *ShippingService) buildCarrierServiceQuoteLeg(
 	postalCode string,
 	quoteCurrencyInput string,
 	displayCurrency string,
-	groupAmount float64,
+	groupAmount domainmoney.Money,
 ) (ShippingQuoteLeg, bool, error) {
 	if group == nil || service.Template == nil || !service.Enabled || !service.Template.Enabled {
 		return ShippingQuoteLeg{}, false, nil
@@ -185,7 +190,7 @@ func (s *ShippingService) buildCarrierServiceQuoteLeg(
 	}
 
 	billableWeightGrams := carrierServiceBillableWeightGrams(chargeWeightGrams, service)
-	baseFee, freeShipping, baseDisplayPrices, err := s.calculateTemplateShippingFeeForQuote(
+	baseFee, freeShipping, baseDisplayPrices, err := s.calculateTemplateShippingFeeForQuoteMoney(
 		service.Template,
 		country,
 		billableWeightGrams,
@@ -202,113 +207,96 @@ func (s *ShippingService) buildCarrierServiceQuoteLeg(
 		return ShippingQuoteLeg{}, false, err
 	}
 
-	fuelSurcharge := 0.0
-	remoteSurcharge, err := carrierServiceRemoteSurcharge(service, postalCode)
+	remoteSurcharge, err := carrierServiceRemoteSurchargeMoney(service, postalCode)
 	if err != nil {
 		return ShippingQuoteLeg{}, false, err
 	}
-	var shippingFee float64
 	if freeShipping {
-		shippingFee = 0
-	} else {
-		if serviceCurrency != quoteCurrency {
-			remoteSurcharge, err = s.convertShippingAmount(remoteSurcharge, serviceCurrency, quoteCurrency)
-			if err != nil {
-				return ShippingQuoteLeg{}, false, err
-			}
-		}
-		fuelSurcharge, err = calculateShippingPercentageAmount(baseFee, service.FuelSurchargePercent, quoteCurrency)
+		remoteSurcharge, err = domainmoney.New(0, quoteCurrency)
 		if err != nil {
 			return ShippingQuoteLeg{}, false, err
 		}
-		remoteSurcharge, err = roundShippingAmount(remoteSurcharge, quoteCurrency)
+	} else if serviceCurrency != quoteCurrency {
+		remoteSurcharge, err = s.convertShippingMoney(remoteSurcharge, quoteCurrency)
 		if err != nil {
 			return ShippingQuoteLeg{}, false, err
 		}
-		baseFeeMoney, baseErr := domainmoney.FromMajorFloat(baseFee, quoteCurrency)
-		if baseErr != nil {
-			return ShippingQuoteLeg{}, false, baseErr
+	}
+	shippingFeeMoney, feeErr := domainmoney.New(0, quoteCurrency)
+	if feeErr != nil {
+		return ShippingQuoteLeg{}, false, feeErr
+	}
+	fuelMoney, fuelErr := domainmoney.New(0, quoteCurrency)
+	if fuelErr != nil {
+		return ShippingQuoteLeg{}, false, fuelErr
+	}
+	if !freeShipping {
+		fuelRate, rateErr := service.FuelSurchargeRate()
+		if rateErr != nil {
+			return ShippingQuoteLeg{}, false, rateErr
 		}
-		fuelMoney, fuelErr := domainmoney.FromMajorFloat(fuelSurcharge, quoteCurrency)
+		fuelMoney, fuelErr = calculateShippingPercentageMoney(baseFee, fuelRate)
 		if fuelErr != nil {
 			return ShippingQuoteLeg{}, false, fuelErr
 		}
-		remoteMoney, remoteErr := domainmoney.FromMajorFloat(remoteSurcharge, quoteCurrency)
-		if remoteErr != nil {
-			return ShippingQuoteLeg{}, false, remoteErr
+		shippingFeeMoney, feeErr = baseFee.Add(fuelMoney)
+		if feeErr == nil {
+			shippingFeeMoney, feeErr = shippingFeeMoney.Add(remoteSurcharge)
 		}
-		shippingFeeMoney, sumErr := baseFeeMoney.Add(fuelMoney)
-		if sumErr != nil {
-			return ShippingQuoteLeg{}, false, sumErr
-		}
-		shippingFeeMoney, sumErr = shippingFeeMoney.Add(remoteMoney)
-		if sumErr != nil {
-			return ShippingQuoteLeg{}, false, sumErr
-		}
-		shippingFee, err = shippingFeeMoney.MajorFloat()
-		if err != nil {
-			return ShippingQuoteLeg{}, false, err
+		if feeErr != nil {
+			return ShippingQuoteLeg{}, false, feeErr
 		}
 	}
-	displayPrices := deriveCarrierServiceDisplayPrices(baseDisplayPrices, baseFee, fuelSurcharge, remoteSurcharge, freeShipping)
+	displayPrices := deriveCarrierServiceDisplayPrices(baseDisplayPrices, baseFee, fuelMoney, remoteSurcharge, freeShipping)
+	baseFeeDecimal, _ := baseFee.FormatMajor()
+	fuelSurchargeDecimal, _ := fuelMoney.FormatMajor()
+	remoteSurchargeDecimal, _ := remoteSurcharge.FormatMajor()
+	shippingFeeDecimal, _ := shippingFeeMoney.FormatMajor()
 
 	return ShippingQuoteLeg{
-		GroupKey:              shippingQuoteGroupKey(group.Template.ID),
-		ItemIndexes:           append([]int(nil), group.ItemIndexes...),
-		AllocationBasis:       group.Template.Type,
-		CarrierID:             service.Carrier.ID,
-		CarrierName:           service.Carrier.Name,
-		CarrierCode:           service.Carrier.Code,
-		CarrierServiceID:      service.ID,
-		ServiceCode:           service.ServiceCode,
-		ServiceName:           service.ServiceName,
-		RouteName:             service.RouteName,
-		TemplateID:            service.Template.ID,
-		TemplateName:          service.Template.Name,
-		Currency:              quoteCurrency,
-		BillingMode:           service.BillingMode,
-		ActualWeightGrams:     actualWeightGrams,
-		VolumetricWeightGrams: volumetricWeightGrams,
-		ChargeWeightGrams:     chargeWeightGrams,
-		BillableWeightGrams:   billableWeightGrams,
-		BaseFee:               baseFee,
-		FuelSurcharge:         fuelSurcharge,
-		RemoteSurcharge:       remoteSurcharge,
-		ShippingFee:           shippingFee,
-		DisplayPrice:          displayPriceForCurrency(displayCurrency, displayPrices),
-		DisplayPrices:         displayPrices,
-		FreeShipping:          freeShipping,
-		EtaMinDays:            service.EtaMinDays,
-		EtaMaxDays:            service.EtaMaxDays,
-		SortOrder:             service.SortOrder,
+		GroupKey:               shippingQuoteGroupKey(group.Template.ID),
+		ItemIndexes:            append([]int(nil), group.ItemIndexes...),
+		AllocationBasis:        group.Template.Type,
+		CarrierID:              service.Carrier.ID,
+		CarrierName:            service.Carrier.Name,
+		CarrierCode:            service.Carrier.Code,
+		CarrierServiceID:       service.ID,
+		ServiceCode:            service.ServiceCode,
+		ServiceName:            service.ServiceName,
+		RouteName:              service.RouteName,
+		TemplateID:             service.Template.ID,
+		TemplateName:           service.Template.Name,
+		Currency:               quoteCurrency,
+		BillingMode:            service.BillingMode,
+		ActualWeightGrams:      actualWeightGrams,
+		VolumetricWeightGrams:  volumetricWeightGrams,
+		ChargeWeightGrams:      chargeWeightGrams,
+		BillableWeightGrams:    billableWeightGrams,
+		BaseFeeDecimal:         baseFeeDecimal,
+		FuelSurchargeDecimal:   fuelSurchargeDecimal,
+		RemoteSurchargeDecimal: remoteSurchargeDecimal,
+		ShippingFeeDecimal:     shippingFeeDecimal,
+		BaseFeeMinor:           baseFee.AmountMinor(),
+		FuelSurchargeMinor:     fuelMoney.AmountMinor(),
+		RemoteSurchargeMinor:   remoteSurcharge.AmountMinor(),
+		ShippingFeeMinor:       shippingFeeMoney.AmountMinor(),
+		DisplayPrice:           displayPriceForCurrency(displayCurrency, displayPrices),
+		DisplayPrices:          displayPrices,
+		FreeShipping:           freeShipping,
+		EtaMinDays:             service.EtaMinDays,
+		EtaMaxDays:             service.EtaMaxDays,
+		SortOrder:              service.SortOrder,
 	}, true, nil
 }
 
-func calculateShippingPercentageAmount(baseAmount, percentage float64, currencyCode string) (float64, error) {
-	baseMoney, err := domainmoney.FromMajorFloat(baseAmount, currencyCode)
-	if err != nil {
-		return 0, err
+func calculateShippingPercentageMoney(baseAmount domainmoney.Money, percentageRate *big.Rat) (domainmoney.Money, error) {
+	if percentageRate == nil || percentageRate.Sign() < 0 || percentageRate.Cmp(big.NewRat(100, 1)) > 0 {
+		return domainmoney.Money{}, fmt.Errorf("invalid shipping surcharge percentage")
 	}
-	rate, ok := new(big.Rat).SetString(strconv.FormatFloat(percentage, 'f', -1, 64))
-	if !ok || rate.Sign() < 0 {
-		return 0, fmt.Errorf("invalid shipping surcharge percentage %v", percentage)
-	}
+	rate := new(big.Rat).Set(percentageRate)
 	rate.Quo(rate, big.NewRat(100, 1))
-	value, err := baseMoney.MultiplyRat(rate)
-	if err != nil {
-		return 0, err
-	}
-	return value.MajorFloat()
+	return baseAmount.MultiplyRat(rate)
 }
-
-func roundShippingAmount(amount float64, currencyCode string) (float64, error) {
-	value, err := domainmoney.FromMajorFloat(amount, currencyCode)
-	if err != nil {
-		return 0, err
-	}
-	return value.MajorFloat()
-}
-
 func shippingQuoteGroupItems(group *shippingQuoteGroup, resolvedItems []resolvedShippingItem) []resolvedShippingItem {
 	if group == nil {
 		return nil

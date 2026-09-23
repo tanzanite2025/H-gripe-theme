@@ -94,7 +94,7 @@ func (c *Catalog) optionQuery() *gorm.DB {
 			p.name AS product_name,
 			p.slug AS product_slug,
 			COALESCE(pv.title, '') AS variant_title,
-			COALESCE(pv.sale_price, pv.price, p.sale_price, p.price) AS price,
+			COALESCE(pv.sale_price_minor, pv.price_minor, p.sale_price_minor, p.price_minor)::bigint AS price_minor,
 			COALESCE(NULLIF(pv.currency, ''), p.currency, 'USD') AS currency,
 			(p.status = 'active' AND (pv.id IS NULL OR pv.is_active = TRUE)) AS available
 		`).

@@ -85,6 +85,22 @@ export interface StorefrontRouteCatalogCheckSummary {
   errors: number
 }
 
+export type StorefrontRouteCatalogCheckTaskStatus = 'queued' | 'running' | 'completed' | 'failed'
+
+export interface StorefrontRouteCatalogCheckTask {
+  task_id: string
+  status: StorefrontRouteCatalogCheckTaskStatus
+  started_at: string
+  updated_at: string
+  ended_at?: string | null
+  locale?: string
+  checked: number
+  eligible: number
+  remaining: number
+  summary: StorefrontRouteCatalogCheckSummary
+  error?: string
+}
+
 export interface StorefrontRouteCatalogStats {
   total: number
   active: number

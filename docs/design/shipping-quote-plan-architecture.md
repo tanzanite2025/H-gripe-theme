@@ -374,7 +374,7 @@ shipping_quote_plan_id  varchar(36)
 shipping_plan_snapshot  jsonb not null default '{}'
 ```
 
-订单不对短期 Snapshot 建外键，因为过期快照可以在未来被清理，而订单中的 Plan JSON 是长期审计事实。当前代码阻止过期快照继续使用，但没有实现自动物理清理任务；未来增加清理器时只能删除已过期 Snapshot，不能修改订单快照。
+订单不对短期 Snapshot 建外键，因为过期快照可以在未来被清理，而订单中的 Plan JSON 是长期审计事实。当前代码阻止过期快照继续使用，并由 `ShippingQuoteCleanupScheduler` 按批次物理删除已过期 Snapshot；清理器只能删除短期快照，不能修改订单快照。清理任务由 `worker.shipping_quote_cleanup_enabled` 控制，间隔和批量上限分别由 `shipping_quote_cleanup_interval_seconds`、`shipping_quote_cleanup_batch_limit` 配置。
 
 ## 7. 修改守则
 

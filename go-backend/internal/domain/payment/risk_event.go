@@ -2,6 +2,15 @@ package payment
 
 import "time"
 
+import (
+	"errors"
+
+	"commerce-platform/internal/domain/currency"
+	domainmoney "commerce-platform/internal/domain/money"
+
+	"gorm.io/gorm"
+)
+
 type PaymentRiskProvider string
 
 const (
@@ -30,13 +39,28 @@ type PaymentRiskEvent struct {
 	ChargeID          string               `gorm:"index" json:"charge_id"`
 	OrderID           *uint                `gorm:"index" json:"order_id,omitempty"`
 	TransactionID     *uint                `gorm:"index" json:"transaction_id,omitempty"`
-	Amount            float64              `gorm:"not null;default:0" json:"amount"`
-	Currency          string               `gorm:"not null;default:''" json:"currency"`
-	OccurredAt        time.Time            `gorm:"index;not null" json:"occurred_at"`
-	Payload           string               `gorm:"type:text" json:"-"`
-	MetadataJSON      string               `gorm:"type:text" json:"-"`
-	CreatedAt         time.Time            `json:"created_at"`
-	UpdatedAt         time.Time            `json:"updated_at"`
+	AmountMinor       int64                `gorm:"column:amount_minor;not null;default:0" json:"amount_minor"`
+	Currency     string    `gorm:"not null;default:''" json:"currency"`
+	OccurredAt   time.Time `gorm:"index;not null" json:"occurred_at"`
+	Payload      string    `gorm:"type:text" json:"-"`
+	MetadataJSON string    `gorm:"type:text" json:"-"`
+	CreatedAt    time.Time `json:"created_at"`
+	UpdatedAt    time.Time `json:"updated_at"`
+}
+
+func (e *PaymentRiskEvent) BeforeSave(tx *gorm.DB) error {
+	e.Currency = currency.NormalizeCode(e.Currency)
+	if e.Currency != "" && !currency.IsCatalogCode(e.Currency) {
+		return errors.New("payment risk event currency must be a supported ISO 4217 code")
+	}
+	if e.AmountMinor < 0 {
+		return errors.New("payment risk event amount cannot be negative")
+	}
+	return nil
+}
+
+func (e PaymentRiskEvent) AmountMoney() (domainmoney.Money, error) {
+	return domainmoney.New(e.AmountMinor, e.Currency)
 }
 
 func (PaymentRiskEvent) TableName() string {

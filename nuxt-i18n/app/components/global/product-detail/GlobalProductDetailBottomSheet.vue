@@ -317,6 +317,7 @@ import { useProductDetailLookup } from '~/composables/useProductDetailLookup'
 import { useCart } from '~/composables/useCart'
 import { useShopProducts, type ShopProduct, type ShopProductVariant } from '~/composables/useShopProducts'
 import { useStorefrontContext } from '~/composables/useStorefrontContext'
+import { majorToMinor } from '~/utils/money'
 import type { GoProduct } from '~/types/productDetail'
 
 interface ProductMediaItem {
@@ -619,7 +620,7 @@ const createGlobalProductDetailBottomSheetCartItem = () => {
   const sourcePrice = selectedProductSourcePrice.value
   return toCartItem(product.value, {
     variantId: variant?.id || null,
-    price: sourcePrice.amount,
+    priceMinor: majorToMinor(sourcePrice.amount, sourcePrice.currency),
     currency: sourcePrice.currency,
     title: product.value.title,
     weightGrams: variant?.weightGrams || null,

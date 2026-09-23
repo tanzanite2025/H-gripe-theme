@@ -37,6 +37,7 @@ type MediaService struct {
 	repo                     *repository.MediaRepository
 	derivativePresets        *repository.MediaDerivativePresetRepository
 	derivativeRebuildJobs    *repository.MediaDerivativeRebuildJobRepository
+	objectCleanupOutbox      *repository.OutboxRepository
 	storage                  storage.StorageService
 	settings                 *SettingService
 	siteURL                  string
@@ -79,4 +80,11 @@ func (s *MediaService) ConfigureDerivativeRebuildJobRepository(repo *repository.
 		return
 	}
 	s.derivativeRebuildJobs = repo
+}
+
+func (s *MediaService) ConfigureObjectCleanupOutbox(repo *repository.OutboxRepository) {
+	if s == nil {
+		return
+	}
+	s.objectCleanupOutbox = repo
 }

@@ -1,0 +1,3 @@
+-- Intentional non-restoration: the removed columns were derived summaries and
+-- their historical values are not a source of truth. Reintroducing them would
+-- recreate the dual-write contract this migration eliminates.

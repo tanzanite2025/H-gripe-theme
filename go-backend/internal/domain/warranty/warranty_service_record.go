@@ -13,7 +13,7 @@ type WarrantyServiceRecord struct {
 	ServiceType string         `gorm:"size:80;not null;default:'inspection'" json:"service_type"`
 	Status      string         `gorm:"size:50;not null;default:'open';index" json:"status"`
 	Summary     string         `gorm:"type:text;not null" json:"summary"`
-	CostAmount  float64        `gorm:"type:numeric(12,2);default:0" json:"cost_amount"`
+	CostAmountMinor int64      `gorm:"column:cost_amount_minor;not null;default:0" json:"cost_amount_minor"`
 	Currency    string         `gorm:"size:8;not null" json:"currency"`
 	PerformedBy uint           `gorm:"index" json:"performed_by"`
 	CreatedBy   uint           `gorm:"index" json:"created_by"`

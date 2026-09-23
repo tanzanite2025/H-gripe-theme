@@ -15,7 +15,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func TestCreateOrderRequestRequiresExpectedTotal(t *testing.T) {
+func TestCreateOrderRequestRequiresExpectedTotalMinor(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	context, _ := gin.CreateTestContext(httptest.NewRecorder())
 	context.Request = httptest.NewRequest(
@@ -55,14 +55,14 @@ func TestCreateOrderRequestRequiresExpectedTotal(t *testing.T) {
 	err := context.ShouldBindJSON(&req)
 
 	if err == nil {
-		t.Fatal("expected missing expected_total to fail request validation")
+		t.Fatal("expected missing expected_total_minor to fail request validation")
 	}
-	if req.ExpectedTotal != nil {
-		t.Fatal("expected_total should remain nil when the field is omitted")
+	if req.ExpectedTotalMinor != nil {
+		t.Fatal("expected_total_minor should remain nil when the field is omitted")
 	}
 }
 
-func TestCreateOrderRequestAcceptsZeroExpectedTotal(t *testing.T) {
+func TestCreateOrderRequestAcceptsZeroExpectedTotalMinor(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	context, _ := gin.CreateTestContext(httptest.NewRecorder())
 	context.Request = httptest.NewRequest(
@@ -92,10 +92,9 @@ func TestCreateOrderRequestAcceptsZeroExpectedTotal(t *testing.T) {
 			},
 			"payment_method":"card",
 			"shipping_method":"standard",
-			"expected_total":0,
+			"expected_total_minor":0,
 			"shipping_quote_id":"00000000-0000-0000-0000-000000000001",
-			"selected_quote_plan_id":"00000000-0000-0000-0000-000000000002",
-			"gift_card_code":"REDEEM-EXAMPLE"
+			"selected_quote_plan_id":"00000000-0000-0000-0000-000000000002"
 		}`),
 	)
 	context.Request.Header.Set("Content-Type", "application/json")
@@ -104,16 +103,13 @@ func TestCreateOrderRequestAcceptsZeroExpectedTotal(t *testing.T) {
 	err := context.ShouldBindJSON(&req)
 
 	if err != nil {
-		t.Fatalf("expected valid zero expected_total request to bind, got %v", err)
+		t.Fatalf("expected valid zero expected_total_minor request to bind, got %v", err)
 	}
-	if req.ExpectedTotal == nil {
-		t.Fatal("expected_total should bind as a non-nil pointer for zero")
+	if req.ExpectedTotalMinor == nil {
+		t.Fatal("expected_total_minor should bind as a non-nil pointer for zero")
 	}
-	if *req.ExpectedTotal != 0 {
-		t.Fatalf("expected_total = %v, want 0", *req.ExpectedTotal)
-	}
-	if req.GiftCardCode != "REDEEM-EXAMPLE" {
-		t.Fatalf("gift_card_code = %q, want REDEEM-EXAMPLE", req.GiftCardCode)
+	if *req.ExpectedTotalMinor != 0 {
+		t.Fatalf("expected_total_minor = %v, want 0", *req.ExpectedTotalMinor)
 	}
 }
 
@@ -137,7 +133,7 @@ func TestCreateOrderRequestDefaultsBillingAddressToShippingAddress(t *testing.T)
 			},
 			"payment_method":"card",
 			"shipping_method":"standard",
-			"expected_total":84,
+			"expected_total_minor":8400,
 			"shipping_quote_id":"00000000-0000-0000-0000-000000000001",
 			"selected_quote_plan_id":"00000000-0000-0000-0000-000000000002"
 		}`),
@@ -189,7 +185,7 @@ func TestCreateOrderRequestAcceptsIndependentBillingAddress(t *testing.T) {
 			},
 			"payment_method":"card",
 			"shipping_method":"standard",
-			"expected_total":84,
+			"expected_total_minor":8400,
 			"shipping_quote_id":"00000000-0000-0000-0000-000000000001",
 			"selected_quote_plan_id":"00000000-0000-0000-0000-000000000002"
 		}`),
@@ -231,7 +227,7 @@ func TestCreateOrderRequestRejectsIncompleteBillingAddress(t *testing.T) {
 			"billing_address":{},
 			"payment_method":"card",
 			"shipping_method":"standard",
-			"expected_total":84,
+			"expected_total_minor":8400,
 			"shipping_quote_id":"00000000-0000-0000-0000-000000000001",
 			"selected_quote_plan_id":"00000000-0000-0000-0000-000000000002"
 		}`),

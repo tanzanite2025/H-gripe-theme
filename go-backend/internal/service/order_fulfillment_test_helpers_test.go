@@ -31,12 +31,12 @@ func seedReadyFulfillmentEvidenceForTest(t *testing.T, db *gorm.DB, orderRecord 
 	}
 	if len(storedOrder.FXSnapshotData) == 0 || string(storedOrder.FXSnapshotData) == "{}" {
 		storedOrder.FXSnapshotData = currency.OrderFXSnapshotJSON(currency.OrderFXSnapshot{
-			Version:         currency.OrderFXSnapshotVersion,
-			BaseCurrency:    "USD",
-			OrderCurrency:   "USD",
-			BaseToOrderRate: 1,
-			Source:          "fulfillment-test",
-			CapturedAt:      time.Now().UTC(),
+			Version:       currency.OrderFXSnapshotVersion,
+			BaseCurrency:  "USD",
+			OrderCurrency: "USD",
+			RateDecimal:   "1",
+			Source:        "fulfillment-test",
+			CapturedAt:    time.Now().UTC(),
 		})
 	}
 	require.NoError(t, db.Model(&order.Order{}).
@@ -47,43 +47,43 @@ func seedReadyFulfillmentEvidenceForTest(t *testing.T, db *gorm.DB, orderRecord 
 		}).Error)
 
 	if len(storedOrder.Items) == 0 {
-		itemPrice := storedOrder.TotalAmount
+		itemPrice := storedOrder.TotalAmountMinor
 		if itemPrice <= 0 {
-			itemPrice = 1
+			itemPrice = 100
 		}
 		variantID := uint(1)
 		item := order.OrderItem{
-			OrderID:         storedOrder.ID,
-			ProductID:       1,
-			VariantID:       &variantID,
-			ProductName:     "Fulfillment test product",
-			SKU:             fmt.Sprintf("FULFILL-TEST-%d", storedOrder.ID),
-			Quantity:        1,
-			Price:           itemPrice,
-			Subtotal:        itemPrice,
-			Total:           itemPrice,
-			Attributes:      "{}",
-			WeightGrams:     1000,
-			FulfillmentMode: order.FulfillmentModeStock,
+			OrderID:                   storedOrder.ID,
+			ProductID:                 1,
+			VariantID:                 &variantID,
+			ProductName:               "Fulfillment test product",
+			SKU:                       fmt.Sprintf("FULFILL-TEST-%d", storedOrder.ID),
+			Quantity:                  1,
+			PriceMinor:                itemPrice,
+			SubtotalMinor:             itemPrice,
+			TotalMinor:                itemPrice,
+			ConfigurationSnapshotData: datatypes.JSON([]byte("{}")),
+			WeightGrams:               1000,
+			FulfillmentMode:           order.FulfillmentModeStock,
 		}
 		require.NoError(t, db.Create(&item).Error)
 		storedOrder.Items = []order.OrderItem{item}
 	}
 
 	for i := range storedOrder.Items {
-		declaredValue := storedOrder.Items[i].Total
+		declaredValue := storedOrder.Items[i].TotalMinor
 		if declaredValue <= 0 {
-			declaredValue = storedOrder.Items[i].Price
+			declaredValue = storedOrder.Items[i].PriceMinor
 		}
 		if declaredValue <= 0 {
-			declaredValue = 1
+			declaredValue = 100
 		}
-		storedOrder.Items[i].DeclaredValue = &declaredValue
+		storedOrder.Items[i].DeclaredValueMinor = &declaredValue
 		storedOrder.Items[i].DeclaredValueConfirmed = true
 		require.NoError(t, db.Model(&order.OrderItem{}).
 			Where("id = ?", storedOrder.Items[i].ID).
 			Updates(map[string]interface{}{
-				"declared_value":           declaredValue,
+				"declared_value_minor":     declaredValue,
 				"declared_value_confirmed": true,
 			}).Error)
 	}

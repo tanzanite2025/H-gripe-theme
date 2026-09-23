@@ -70,6 +70,9 @@ func (r *ExchangeRateRepository) UpsertRates(rates []currency.ExchangeRate) erro
 	for i := range rates {
 		rates[i].BaseCurrency = strings.ToUpper(strings.TrimSpace(rates[i].BaseCurrency))
 		rates[i].QuoteCurrency = strings.ToUpper(strings.TrimSpace(rates[i].QuoteCurrency))
+		if err := rates[i].NormalizeRateDecimal(); err != nil {
+			return err
+		}
 		rates[i].UpdatedAt = now
 	}
 
@@ -87,7 +90,7 @@ func (r *ExchangeRateRepository) UpsertRates(rates []currency.ExchangeRate) erro
 			},
 		},
 		DoUpdates: clause.AssignmentColumns([]string{
-			"rate",
+			"rate_decimal",
 			"source",
 			"fetched_at",
 			"expires_at",

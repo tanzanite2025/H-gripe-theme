@@ -6,12 +6,16 @@ import (
 	"fmt"
 	"mime/multipart"
 	"path"
+	"strconv"
 	"strings"
 
+	"commerce-platform/internal/domain/outbox"
 	sitelogodomain "commerce-platform/internal/domain/site_logo"
 	"commerce-platform/internal/pkg/storage"
 	"commerce-platform/internal/pkg/upload"
 	"commerce-platform/internal/repository"
+
+	"gorm.io/gorm"
 )
 
 const SiteLogoStoragePrefix = "site-logo"
@@ -21,14 +25,20 @@ var (
 	ErrSiteLogoUploadFileRequired     = errors.New("site logo upload file is required")
 	ErrSiteLogoUploadIdentityRequired = errors.New("site logo upload identity is required")
 	ErrSiteLogoStorageKeyUnavailable  = errors.New("site logo storage key is unavailable")
-	ErrSiteLogoPreviousDestroyFailed  = errors.New("previous site logo could not be destroyed")
-	ErrSiteLogoCurrentDestroyFailed   = errors.New("current site logo could not be destroyed")
 )
 
 type SiteLogoService struct {
 	repo    *repository.SiteLogoRepository
 	storage storage.StorageService
 	siteURL string
+	outbox  *repository.OutboxRepository
+}
+
+func (s *SiteLogoService) ConfigureObjectCleanupOutbox(repo *repository.OutboxRepository) {
+	if s == nil {
+		return
+	}
+	s.outbox = repo
 }
 
 func NewSiteLogoService(repo *repository.SiteLogoRepository, storageSvc storage.StorageService, siteURL string) *SiteLogoService {
@@ -89,15 +99,29 @@ func (s *SiteLogoService) UploadCurrent(ctx context.Context, file *multipart.Fil
 		UploaderID:       uploaderID,
 	}
 
-	previous, err := s.repo.ReplaceCurrent(asset)
+	_, err = s.repo.ReplaceCurrent(asset, func(tx *gorm.DB, previous *sitelogodomain.Asset) error {
+		if previous == nil || strings.TrimSpace(previous.StorageKey) == "" || previous.StorageKey == asset.StorageKey {
+			return nil
+		}
+		if s.outbox == nil {
+			return ErrObjectStorageCleanupUnavailable
+		}
+		event, eventErr := newObjectStorageCleanupEvent(
+			objectCleanupResourceSiteLogo,
+			strconv.FormatUint(uint64(previous.ID), 10),
+			outbox.AggregateTypeSiteLogo,
+			strconv.FormatUint(uint64(previous.ID), 10),
+			[]string{previous.StorageKey},
+		)
+		if eventErr != nil {
+			return eventErr
+		}
+		return s.outbox.WithTx(tx).CreateEvent(event)
+	})
 	if err != nil {
 		_ = s.storage.Delete(ctx, url)
 		return nil, err
 	}
-	if err := s.destroyPrevious(ctx, previous, asset.StorageKey); err != nil {
-		return asset, err
-	}
-
 	asset.URL = s.CanonicalPublicURL(asset.URL)
 	return asset, nil
 }
@@ -107,15 +131,27 @@ func (s *SiteLogoService) DeleteCurrent(ctx context.Context) error {
 		return ErrSiteLogoUnavailable
 	}
 
-	previous, err := s.repo.DeleteCurrent()
+	_, err := s.repo.DeleteCurrent(func(tx *gorm.DB, previous *sitelogodomain.Asset) error {
+		if previous == nil || strings.TrimSpace(previous.StorageKey) == "" {
+			return nil
+		}
+		if s.outbox == nil {
+			return ErrObjectStorageCleanupUnavailable
+		}
+		event, eventErr := newObjectStorageCleanupEvent(
+			objectCleanupResourceSiteLogo,
+			strconv.FormatUint(uint64(previous.ID), 10),
+			outbox.AggregateTypeSiteLogo,
+			strconv.FormatUint(uint64(previous.ID), 10),
+			[]string{previous.StorageKey},
+		)
+		if eventErr != nil {
+			return eventErr
+		}
+		return s.outbox.WithTx(tx).CreateEvent(event)
+	})
 	if err != nil {
 		return err
-	}
-	if previous == nil || strings.TrimSpace(previous.URL) == "" {
-		return nil
-	}
-	if err := s.storage.Delete(ctx, previous.URL); err != nil {
-		return fmt.Errorf("%w: %v", ErrSiteLogoCurrentDestroyFailed, err)
 	}
 	return nil
 }
@@ -173,16 +209,6 @@ func (s *SiteLogoService) CanServePublicLogo(_ context.Context, key string) (boo
 		return false, nil
 	}
 	return current.StorageKey == normalizedKey, nil
-}
-
-func (s *SiteLogoService) destroyPrevious(ctx context.Context, previous *sitelogodomain.Asset, currentStorageKey string) error {
-	if previous == nil || strings.TrimSpace(previous.StorageKey) == "" || previous.StorageKey == currentStorageKey {
-		return nil
-	}
-	if err := s.storage.Delete(ctx, previous.URL); err != nil {
-		return fmt.Errorf("%w: %v", ErrSiteLogoPreviousDestroyFailed, err)
-	}
-	return nil
 }
 
 func (s *SiteLogoService) current() (*sitelogodomain.Asset, bool) {

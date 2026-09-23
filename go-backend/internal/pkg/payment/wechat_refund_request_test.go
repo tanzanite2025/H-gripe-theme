@@ -3,10 +3,10 @@ package payment
 import "testing"
 
 func TestBuildWechatRefundRequestUsesProviderTransactionID(t *testing.T) {
-	req, err := buildWechatRefundRequest("WX-TXN-1", 12.34, "rf_1", RefundOptions{
+	req, err := buildWechatRefundRequest("WX-TXN-1", 1234, "rf_1", RefundOptions{
 		ProviderTransactionID: "WX-TXN-1",
 		MerchantOrderNumber:   "ORD-1",
-		OriginalAmount:        99.99,
+		OriginalAmountMinor:   9999,
 		Currency:              "CNY",
 		Reason:                "customer returned item",
 	})
@@ -34,7 +34,7 @@ func TestBuildWechatRefundRequestUsesProviderTransactionID(t *testing.T) {
 }
 
 func TestBuildWechatRefundRequestRequiresOriginalAmount(t *testing.T) {
-	_, err := buildWechatRefundRequest("WX-TXN-1", 12.34, "rf_1", RefundOptions{
+	_, err := buildWechatRefundRequest("WX-TXN-1", 1234, "rf_1", RefundOptions{
 		ProviderTransactionID: "WX-TXN-1",
 		MerchantOrderNumber:   "ORD-1",
 		Currency:              "CNY",

@@ -24,15 +24,15 @@ func TestProductProfitabilityServicePreviewDoesNotWriteDatabase(t *testing.T) {
 		ProductCode:     "SKU-PREVIEW",
 		ProductName:     "Preview item",
 		SellingCurrency: "USD",
-		ListPrice:       100,
-		SalePrice:       float64PointerForServiceTest(90),
-		UnitCost:        float64PointerForServiceTest(50),
+		ListPriceMinor:  10000,
+		SalePriceMinor:  int64PointerForServiceTest(9000),
+		UnitCostMinor:   int64PointerForServiceTest(5000),
 		UnitCostKnown:   true,
 	}})
 	require.NoError(t, err)
 	require.Len(t, results, 1)
 	require.Equal(t, suppliercostdomain.ProfitStatusReady, results[0].Status)
-	require.Equal(t, 40.0, *results[0].GrossProfit)
+	require.Equal(t, int64(4000), *results[0].GrossProfitMinor)
 
 	var count int64
 	require.NoError(t, db.Model(&suppliercostdomain.ProductProfitCalculation{}).Count(&count).Error)
@@ -51,14 +51,14 @@ func TestProductProfitabilityServiceBulkUpsertSkipsUnknownPurchaseAndPersistsExp
 			ProductCode:     "SKU-MISSING",
 			ProductName:     "Missing cost",
 			SellingCurrency: "USD",
-			ListPrice:       100,
+			ListPriceMinor:  10000,
 		},
 		{
 			ProductCode:     "SKU-ZERO",
 			ProductName:     "Zero cost",
 			SellingCurrency: "USD",
-			ListPrice:       100,
-			UnitCost:        float64PointerForServiceTest(0),
+			ListPriceMinor:  10000,
+			UnitCostMinor:   int64PointerForServiceTest(0),
 			UnitCostKnown:   true,
 		},
 	})
@@ -68,8 +68,8 @@ func TestProductProfitabilityServiceBulkUpsertSkipsUnknownPurchaseAndPersistsExp
 	require.Equal(t, "SKU-MISSING", result.Skipped[0].ProductCode)
 	require.Equal(t, suppliercostdomain.ProfitStatusMissingUnitCost, result.Skipped[0].Status)
 	require.Equal(t, "SKU-ZERO", result.Records[0].ProductCode)
-	require.Equal(t, 0.0, result.Records[0].UnitCost)
-	require.Equal(t, 100.0, result.Records[0].GrossProfit)
+	require.Equal(t, int64(0), result.Records[0].UnitCostMinor)
+	require.Equal(t, int64(10000), result.Records[0].GrossProfitMinor)
 
 	_, err = repository.NewProductProfitCalculationRepository(db).FindByProductCode("SKU-MISSING")
 	require.ErrorIs(t, err, gorm.ErrRecordNotFound)
@@ -86,8 +86,8 @@ func TestProductProfitabilityServiceClearsOldSnapshotWhenUnitCostBecomesUnknown(
 		ProductCode:     "SKU-CLEAR",
 		ProductName:     "Clear cost",
 		SellingCurrency: "USD",
-		ListPrice:       100,
-		UnitCost:        float64PointerForServiceTest(40),
+		ListPriceMinor:  10000,
+		UnitCostMinor:   int64PointerForServiceTest(4000),
 		UnitCostKnown:   true,
 		SupplierCostDetails: &ProfitabilitySupplierCostDetailsInput{
 			SupplierName:         "Clear supplier",
@@ -101,7 +101,7 @@ func TestProductProfitabilityServiceClearsOldSnapshotWhenUnitCostBecomesUnknown(
 		ProductCode:     "SKU-CLEAR",
 		ProductName:     "Clear cost",
 		SellingCurrency: "USD",
-		ListPrice:       100,
+		ListPriceMinor:  10000,
 	}})
 	require.NoError(t, err)
 	require.Len(t, result.Records, 0)
@@ -122,41 +122,41 @@ func TestProductProfitabilityServiceBulkUpsertUpdatesSameSKU(t *testing.T) {
 	)
 
 	first, err := service.BulkUpsert([]ProfitabilityItemInput{{
-		ProductCode:             "SKU-UPDATE",
-		ProductName:             "First name",
-		SellingCurrency:         "USD",
-		ListPrice:               100,
-		UnitCost:                float64PointerForServiceTest(60),
-		UnitCostKnown:           true,
-		InboundShippingUnitCost: 1,
-		PackagingUnitCost:       3,
-		OtherUnitCost:           4,
+		ProductCode:                  "SKU-UPDATE",
+		ProductName:                  "First name",
+		SellingCurrency:              "USD",
+		ListPriceMinor:               10000,
+		UnitCostMinor:                int64PointerForServiceTest(6000),
+		UnitCostKnown:                true,
+		InboundShippingUnitCostMinor: 100,
+		PackagingUnitCostMinor:       300,
+		OtherUnitCostMinor:           400,
 	}})
 	require.NoError(t, err)
 	require.Len(t, first.Records, 1)
 	firstID := first.Records[0].ID
 
 	second, err := service.BulkUpsert([]ProfitabilityItemInput{{
-		ProductCode:             "SKU-UPDATE",
-		ProductName:             "Second name",
-		SellingCurrency:         "USD",
-		ListPrice:               100,
-		SalePrice:               float64PointerForServiceTest(90),
-		UnitCost:                float64PointerForServiceTest(40),
-		UnitCostKnown:           true,
-		InboundShippingUnitCost: 5,
-		PackagingUnitCost:       7,
-		OtherUnitCost:           8,
+		ProductCode:                  "SKU-UPDATE",
+		ProductName:                  "Second name",
+		SellingCurrency:              "USD",
+		ListPriceMinor:               10000,
+		SalePriceMinor:               int64PointerForServiceTest(9000),
+		UnitCostMinor:                int64PointerForServiceTest(4000),
+		UnitCostKnown:                true,
+		InboundShippingUnitCostMinor: 500,
+		PackagingUnitCostMinor:       700,
+		OtherUnitCostMinor:           800,
 	}})
 	require.NoError(t, err)
 	require.Len(t, second.Records, 1)
 	require.Equal(t, firstID, second.Records[0].ID)
 	require.Equal(t, "Second name", second.Records[0].ProductName)
-	require.Equal(t, 30.0, second.Records[0].GrossProfit)
-	require.Equal(t, 5.0, second.Records[0].InboundShippingUnitCost)
-	require.Equal(t, 7.0, second.Records[0].PackagingUnitCost)
-	require.Equal(t, 8.0, second.Records[0].OtherUnitCost)
-	require.Equal(t, 60.0, second.Records[0].LandedCost)
+	require.Equal(t, int64(3000), second.Records[0].GrossProfitMinor)
+	require.Equal(t, int64(500), second.Records[0].InboundShippingUnitCostMinor)
+	require.Equal(t, int64(700), second.Records[0].PackagingUnitCostMinor)
+	require.Equal(t, int64(800), second.Records[0].OtherUnitCostMinor)
+	require.Equal(t, int64(6000), second.Records[0].LandedCostMinor)
 
 	var count int64
 	require.NoError(t, db.Model(&suppliercostdomain.ProductProfitCalculation{}).
@@ -177,8 +177,8 @@ func TestProductProfitabilityServiceInvalidBatchDoesNotWriteValidItems(t *testin
 			ProductCode:     "SKU-VALID",
 			ProductName:     "Valid item",
 			SellingCurrency: "USD",
-			ListPrice:       100,
-			UnitCost:        float64PointerForServiceTest(40),
+			ListPriceMinor:  10000,
+			UnitCostMinor:   int64PointerForServiceTest(4000),
 			UnitCostKnown:   true,
 		},
 		{
@@ -186,8 +186,8 @@ func TestProductProfitabilityServiceInvalidBatchDoesNotWriteValidItems(t *testin
 			ProductName:     "Invalid item",
 			SellingCurrency: "USD",
 			CostCurrency:    "CNY",
-			ListPrice:       100,
-			UnitCost:        float64PointerForServiceTest(40),
+			ListPriceMinor:  10000,
+			UnitCostMinor:   int64PointerForServiceTest(4000),
 			UnitCostKnown:   true,
 		},
 	})
@@ -211,16 +211,16 @@ func TestProductProfitabilityServiceRejectsDuplicateCodesWithoutWriting(t *testi
 			ProductCode:     "SKU-DUPLICATE",
 			ProductName:     "First item",
 			SellingCurrency: "USD",
-			ListPrice:       100,
-			UnitCost:        float64PointerForServiceTest(40),
+			ListPriceMinor:  10000,
+			UnitCostMinor:   int64PointerForServiceTest(4000),
 			UnitCostKnown:   true,
 		},
 		{
 			ProductCode:     " SKU-DUPLICATE ",
 			ProductName:     "Second item",
 			SellingCurrency: "USD",
-			ListPrice:       100,
-			UnitCost:        float64PointerForServiceTest(35),
+			ListPriceMinor:  10000,
+			UnitCostMinor:   int64PointerForServiceTest(3500),
 			UnitCostKnown:   true,
 		},
 	})
@@ -244,13 +244,13 @@ func TestProductProfitabilityServicePreviewTreatsUnmarkedUnitCostAsUnknown(t *te
 		ProductCode:     "SKU-MISSING-FLAG",
 		ProductName:     "Missing flag",
 		SellingCurrency: "USD",
-		ListPrice:       100,
-		UnitCost:        float64PointerForServiceTest(20),
+		ListPriceMinor:  10000,
+		UnitCostMinor:   int64PointerForServiceTest(2000),
 	}})
 	require.NoError(t, err)
 	require.Len(t, results, 1)
 	require.Equal(t, suppliercostdomain.ProfitStatusMissingUnitCost, results[0].Status)
-	require.Nil(t, results[0].GrossProfit)
+	require.Nil(t, results[0].GrossProfitMinor)
 }
 
 func TestProductProfitabilityServiceBulkUpsertPersistsSupplierCostRecordAndProfitSnapshotTogether(t *testing.T) {
@@ -261,15 +261,15 @@ func TestProductProfitabilityServiceBulkUpsertPersistsSupplierCostRecordAndProfi
 	)
 
 	result, err := service.BulkUpsert([]ProfitabilityItemInput{{
-		ProductCode:             "SKU-SUPPLIER-COST-ATOMIC",
-		ProductName:             "Atomic supplier cost item",
-		SellingCurrency:         "USD",
-		ListPrice:               100,
-		UnitCost:                float64PointerForServiceTest(40),
-		UnitCostKnown:           true,
-		InboundShippingUnitCost: 2,
-		PackagingUnitCost:       4,
-		OtherUnitCost:           5,
+		ProductCode:                  "SKU-SUPPLIER-COST-ATOMIC",
+		ProductName:                  "Atomic supplier cost item",
+		SellingCurrency:              "USD",
+		ListPriceMinor:               10000,
+		UnitCostMinor:                int64PointerForServiceTest(4000),
+		UnitCostKnown:                true,
+		InboundShippingUnitCostMinor: 200,
+		PackagingUnitCostMinor:       400,
+		OtherUnitCostMinor:           500,
 		SupplierCostDetails: &ProfitabilitySupplierCostDetailsInput{
 			SupplierName:         "Atomic Supplier",
 			SupplierContactName:  "Lina",
@@ -285,16 +285,16 @@ func TestProductProfitabilityServiceBulkUpsertPersistsSupplierCostRecordAndProfi
 	supplierCostRecord, err := repository.NewProductSupplierCostRecordRepository(db).FindByProductCode("SKU-SUPPLIER-COST-ATOMIC")
 	require.NoError(t, err)
 	require.Equal(t, "Atomic Supplier", supplierCostRecord.SupplierName)
-	require.Equal(t, 40.0, supplierCostRecord.UnitCost)
-	require.Equal(t, 2.0, supplierCostRecord.InboundShippingUnitCost)
-	require.Equal(t, 4.0, supplierCostRecord.PackagingUnitCost)
-	require.Equal(t, 5.0, supplierCostRecord.OtherUnitCost)
+	require.Equal(t, int64(4000), supplierCostRecord.UnitCostMinor)
+	require.Equal(t, int64(200), supplierCostRecord.InboundShippingUnitCostMinor)
+	require.Equal(t, int64(400), supplierCostRecord.PackagingUnitCostMinor)
+	require.Equal(t, int64(500), supplierCostRecord.OtherUnitCostMinor)
 	require.Equal(t, 14, supplierCostRecord.LeadTimeDays)
 	require.Equal(t, 20, supplierCostRecord.MinimumOrderQuantity)
 
 	profitRecord, err := repository.NewProductProfitCalculationRepository(db).FindByProductCode("SKU-SUPPLIER-COST-ATOMIC")
 	require.NoError(t, err)
-	require.Equal(t, 49.0, profitRecord.GrossProfit)
+	require.Equal(t, int64(4900), profitRecord.GrossProfitMinor)
 }
 
 func TestProductProfitabilityServiceBulkUpsertRollsBackProfitSnapshotWhenSupplierCostRecordWriteFails(t *testing.T) {
@@ -316,8 +316,8 @@ func TestProductProfitabilityServiceBulkUpsertRollsBackProfitSnapshotWhenSupplie
 		ProductCode:     "SKU-SUPPLIER-COST-ROLLBACK",
 		ProductName:     "Rollback item",
 		SellingCurrency: "USD",
-		ListPrice:       100,
-		UnitCost:        float64PointerForServiceTest(40),
+		ListPriceMinor:  10000,
+		UnitCostMinor:   int64PointerForServiceTest(4000),
 		UnitCostKnown:   true,
 		SupplierCostDetails: &ProfitabilitySupplierCostDetailsInput{
 			SupplierName: "Unavailable supplier",
@@ -341,15 +341,15 @@ func TestProductProfitabilityServiceBulkUpsertUpdatesSupplierCostRecordBySKU(t *
 	)
 
 	first, err := service.BulkUpsert([]ProfitabilityItemInput{{
-		ProductCode:             "SKU-SUPPLIER-COST-UPDATE",
-		ProductName:             "First item",
-		SellingCurrency:         "USD",
-		ListPrice:               100,
-		UnitCost:                float64PointerForServiceTest(60),
-		UnitCostKnown:           true,
-		InboundShippingUnitCost: 1,
-		PackagingUnitCost:       3,
-		OtherUnitCost:           4,
+		ProductCode:                  "SKU-SUPPLIER-COST-UPDATE",
+		ProductName:                  "First item",
+		SellingCurrency:              "USD",
+		ListPriceMinor:               10000,
+		UnitCostMinor:                int64PointerForServiceTest(6000),
+		UnitCostKnown:                true,
+		InboundShippingUnitCostMinor: 100,
+		PackagingUnitCostMinor:       300,
+		OtherUnitCostMinor:           400,
 		SupplierCostDetails: &ProfitabilitySupplierCostDetailsInput{
 			SupplierName: "First supplier",
 		},
@@ -358,15 +358,15 @@ func TestProductProfitabilityServiceBulkUpsertUpdatesSupplierCostRecordBySKU(t *
 	require.Len(t, first.Records, 1)
 
 	second, err := service.BulkUpsert([]ProfitabilityItemInput{{
-		ProductCode:             "SKU-SUPPLIER-COST-UPDATE",
-		ProductName:             "Second item",
-		SellingCurrency:         "USD",
-		ListPrice:               100,
-		UnitCost:                float64PointerForServiceTest(50),
-		UnitCostKnown:           true,
-		InboundShippingUnitCost: 5,
-		PackagingUnitCost:       7,
-		OtherUnitCost:           8,
+		ProductCode:                  "SKU-SUPPLIER-COST-UPDATE",
+		ProductName:                  "Second item",
+		SellingCurrency:              "USD",
+		ListPriceMinor:               10000,
+		UnitCostMinor:                int64PointerForServiceTest(5000),
+		UnitCostKnown:                true,
+		InboundShippingUnitCostMinor: 500,
+		PackagingUnitCostMinor:       700,
+		OtherUnitCostMinor:           800,
 		SupplierCostDetails: &ProfitabilitySupplierCostDetailsInput{
 			SupplierName: "Second supplier",
 			LeadTimeDays: 7,
@@ -378,9 +378,9 @@ func TestProductProfitabilityServiceBulkUpsertUpdatesSupplierCostRecordBySKU(t *
 	supplierCostRecord, err := repository.NewProductSupplierCostRecordRepository(db).FindByProductCode("SKU-SUPPLIER-COST-UPDATE")
 	require.NoError(t, err)
 	require.Equal(t, "Second supplier", supplierCostRecord.SupplierName)
-	require.Equal(t, 5.0, supplierCostRecord.InboundShippingUnitCost)
-	require.Equal(t, 7.0, supplierCostRecord.PackagingUnitCost)
-	require.Equal(t, 8.0, supplierCostRecord.OtherUnitCost)
+	require.Equal(t, int64(500), supplierCostRecord.InboundShippingUnitCostMinor)
+	require.Equal(t, int64(700), supplierCostRecord.PackagingUnitCostMinor)
+	require.Equal(t, int64(800), supplierCostRecord.OtherUnitCostMinor)
 	require.Equal(t, 7, supplierCostRecord.LeadTimeDays)
 
 	var count int64
@@ -407,5 +407,9 @@ func newProductProfitabilityServiceTestDB(t *testing.T) *gorm.DB {
 }
 
 func float64PointerForServiceTest(value float64) *float64 {
+	return &value
+}
+
+func int64PointerForServiceTest(value int64) *int64 {
 	return &value
 }

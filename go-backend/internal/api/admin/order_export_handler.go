@@ -1,6 +1,7 @@
 package admin
 
 import (
+	"commerce-platform/internal/domain/money"
 	orderdomain "commerce-platform/internal/domain/order"
 	"encoding/csv"
 	"net/http"
@@ -36,8 +37,10 @@ func orderCustomsExportRow(record orderdomain.Order, item orderdomain.OrderItem)
 		record.ShippingAddress.LastName,
 	}, " "))
 	declaredValue := ""
-	if item.DeclaredValue != nil {
-		declaredValue = strconv.FormatFloat(*item.DeclaredValue, 'f', 2, 64)
+	if item.DeclaredValueMinor != nil {
+		if value, err := money.New(*item.DeclaredValueMinor, item.Currency); err == nil {
+			declaredValue, _ = value.FormatMajor()
+		}
 	}
 	confirmed := "pending"
 	if item.DeclaredValueConfirmed {
@@ -114,13 +117,17 @@ func (h *OrderHandler) ExportOrders(c *gin.Context) {
 	// CSV 数据
 	for _, order := range orders {
 		customerName := order.ShippingAddress.FirstName + " " + order.ShippingAddress.LastName
+		totalAmount := "0"
+		if totalMoney, totalErr := order.TotalMoney(); totalErr == nil {
+			totalAmount, _ = totalMoney.FormatMajor()
+		}
 		row := []string{
 			order.OrderNumber,
 			customerName,
 			order.Status,
 			order.PaymentStatus,
 			order.ShippingStatus,
-			strconv.FormatFloat(order.TotalAmount, 'f', 2, 64),
+			totalAmount,
 			order.CreatedAt.Format("2006-01-02 15:04:05"),
 		}
 		if err := writer.Write(sanitizeCSVRow(row)); err != nil {

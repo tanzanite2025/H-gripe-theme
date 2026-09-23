@@ -33,7 +33,7 @@ func TestListExchangeRatesReturnsCachedBackendRates(t *testing.T) {
 	require.NoError(t, db.Create(&currencydomain.ExchangeRate{
 		BaseCurrency:  "USD",
 		QuoteCurrency: "EUR",
-		Rate:          0.91,
+		RateDecimal:   "0.91",
 		Source:        "test-provider",
 		FetchedAt:     fetchedAt,
 	}).Error)
@@ -52,7 +52,7 @@ func TestListExchangeRatesReturnsCachedBackendRates(t *testing.T) {
 	require.Equal(t, http.StatusOK, response.Code, response.Body.String())
 	require.Contains(t, response.Body.String(), `"base_currency":"USD"`)
 	require.Contains(t, response.Body.String(), `"quote_currency":"EUR"`)
-	require.Contains(t, response.Body.String(), `"rate":0.91`)
+	require.Contains(t, response.Body.String(), `"rate_decimal":"0.91"`)
 	require.Contains(t, response.Body.String(), `"provider":"ExchangeRate-API"`)
 }
 
@@ -77,7 +77,7 @@ func TestListExchangeRatesDefaultsToPrimaryPricingCurrency(t *testing.T) {
 	require.NoError(t, db.Create(&currencydomain.ExchangeRate{
 		BaseCurrency:  "CNY",
 		QuoteCurrency: "USD",
-		Rate:          0.14,
+		RateDecimal:   "0.14",
 		Source:        "test-provider",
 		FetchedAt:     time.Date(2026, 8, 6, 12, 0, 0, 0, time.UTC),
 	}).Error)

@@ -7,6 +7,7 @@ import {
   normalizeStorefrontMediaUrl,
   type StorefrontMediaContext,
 } from '~/utils/storefrontMedia'
+import { majorToMinor } from '~/utils/money'
 import { buildProductPath } from '~/utils/seo/urls'
 
 export type ShopProductFulfillmentMode = 'stock' | 'made_to_order'
@@ -108,9 +109,9 @@ export interface ShopProductVariant {
   image?: string
   priceNumber: number
   currency: string
-  price?: number
+  price_decimal?: string
   salePriceNumber: number | null
-  sale_price?: number | null
+  sale_price_decimal?: string | null
   displayPrices: ShopProductDisplayPrice[]
   availability: ShopProductAvailability
   weightGrams?: number
@@ -132,8 +133,7 @@ export type ShopProductRequestOptions = Pick<RequestInit, 'signal'>
 
 export interface ShopProductCartOptions {
   variantId?: number | null
-  price?: number
-  salePrice?: number | null
+  priceMinor?: number
   sku?: string
   currency?: string
   title?: string
@@ -237,7 +237,7 @@ const normalizeReviewSummary = (value: any, fallbackProductId: number): ShopProd
 }
 
 const normalizeDisplayPrice = (value: any, fallbackAmount: number, fallbackCurrency: string): ShopProductDisplayPrice => {
-  const amount = toFiniteNumber(value?.amount, fallbackAmount)
+  const amount = toFiniteNumber(value?.amount_decimal, fallbackAmount)
   const currency = normalizeCurrencyCode(value?.currency) || fallbackCurrency
   return {
     amount,
@@ -437,8 +437,8 @@ const normalizeVariant = (
   const sku = String(variant?.sku || '').trim()
   if (!id) return null
 
-  const regular = toFiniteNumber(variant?.price)
-  const sale = toOptionalNumber(variant?.sale_price)
+  const regular = toFiniteNumber(variant?.price_decimal)
+  const sale = toOptionalNumber(variant?.sale_price_decimal)
   const salePriceNumber = sale && sale > 0 ? sale : null
   const priceNumber = salePriceNumber ?? regular
   const variantCurrency = normalizeCurrencyCode(variant?.currency) || normalizeCurrencyCode(fallbackCurrency) || 'USD'
@@ -456,9 +456,9 @@ const normalizeVariant = (
     ...media,
     priceNumber,
     currency: variantCurrency,
-    price: regular,
+    price_decimal: String(variant?.price_decimal ?? ''),
     salePriceNumber,
-    sale_price: salePriceNumber,
+    sale_price_decimal: variant?.sale_price_decimal == null ? null : String(variant.sale_price_decimal),
     displayPrices,
     availability: normalizeAvailability(variant?.availability),
     ...(weightGrams ? { weightGrams } : {}),
@@ -478,11 +478,11 @@ export const normalizeShopProduct = (
   const defaultVariant = variants.find((variant) => variant.isDefault) || variants[0] || null
   const regular = toFiniteNumber(
     item?.prices?.regular,
-    toFiniteNumber(defaultVariant?.price, toFiniteNumber(item?.price))
+    toFiniteNumber(defaultVariant?.price_decimal, toFiniteNumber(item?.price_decimal))
   )
   const sale = toFiniteNumber(
     item?.prices?.sale,
-    toFiniteNumber(defaultVariant?.sale_price, toFiniteNumber(item?.sale_price))
+    toFiniteNumber(defaultVariant?.sale_price_decimal, toFiniteNumber(item?.sale_price_decimal))
   )
   const priceNumber = sale > 0 ? sale : regular > 0 ? regular : 0
   const productCurrency = normalizeCurrencyCode(defaultVariant?.currency || item?.currency) || normalizeCurrencyCode(fallbackCurrency) || 'USD'
@@ -652,11 +652,11 @@ export function useShopProducts() {
     const selectedVariant = variantId
       ? product.variants.find(variant => Number(variant.id) === Number(variantId)) || null
       : product.variants.find(variant => variant.isDefault) || product.variants[0] || null
-    const price = options.price ?? product.priceNumber
-    const salePrice =
-      options.salePrice === undefined
-        ? product.prices.sale > 0 ? product.prices.sale : null
-        : options.salePrice
+    const currency = normalizeCurrencyCode(options.currency || selectedVariant?.currency || product.currency) || baseCurrency.value || 'USD'
+    const priceMinor = options.priceMinor ?? majorToMinor(
+      product.prices.sale > 0 ? product.prices.sale : product.priceNumber,
+      currency,
+    )
     const variantThumbnail = selectedVariant?.thumbnail || selectedVariant?.image
     const thumbnail = normalizeStorefrontMediaUrl(
       options.thumbnail ?? variantThumbnail ?? product.thumbnail,
@@ -664,7 +664,6 @@ export function useShopProducts() {
     ) || undefined
     const title = options.title ?? product.title
     const sku = options.sku ?? selectedVariant?.sku ?? product.sku
-    const currency = normalizeCurrencyCode(options.currency || selectedVariant?.currency || product.currency) || baseCurrency.value || 'USD'
     const weightGrams = options.weightGrams ?? selectedVariant?.weightGrams ?? null
     const fulfillmentMode = options.fulfillmentMode ?? product.fulfillmentMode
 
@@ -676,9 +675,8 @@ export function useShopProducts() {
       name: title,
       slug: product.slug,
       sku: sku || undefined,
-      price,
+      price_minor: priceMinor,
       currency,
-      sale_price: salePrice,
       image: thumbnail,
       thumbnail,
       weight_grams: weightGrams || undefined,

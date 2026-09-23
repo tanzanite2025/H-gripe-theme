@@ -28,46 +28,47 @@
           <DetailItem label="物流状态"><AdminStatusBadge :tone="shippingStatusTone(currentOrder.shipping_status)">{{ shippingStatusName(currentOrder.shipping_status) }}</AdminStatusBadge></DetailItem>
           <DetailItem label="支付方式">{{ currentOrder.payment_method || '-' }}</DetailItem>
           <DetailItem label="物流方式">{{ currentOrder.shipping_method || '-' }}</DetailItem>
-          <DetailItem label="物流单号">{{ currentOrder.tracking_number || '-' }}</DetailItem>
-          <DetailItem label="本地承运商">{{ orderCarrierLabel(currentOrder) }}</DetailItem>
-          <DetailItem label="线路服务">{{ orderCarrierServiceLabel(currentOrder) }}</DetailItem>
-          <DetailItem label="Provider Code">{{ currentOrder.provider_carrier_code || '-' }}</DetailItem>
+          <DetailItem label="包裹数量">{{ currentTrackingShipments.length }}</DetailItem>
           <DetailItem label="创建时间">{{ formatDate(currentOrder.created_at) }}</DetailItem>
           <DetailItem label="支付时间">{{ currentOrder.paid_at ? formatDate(currentOrder.paid_at) : '-' }}</DetailItem>
         </dl>
-        <div v-if="currentOrder.tracking_number" class="rounded-xl border bg-muted/30 p-3">
+        <div v-if="currentTrackingShipments.length" class="space-y-3 rounded-xl border bg-muted/30 p-3">
           <div class="flex flex-wrap items-center justify-between gap-2">
             <div>
-              <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70">TRACKING SYNC / 轨迹同步</p>
-              <p class="mt-1 text-xs text-muted-foreground">来自订单发货信息的追踪状态记录，后续自动轮询和 webhook 都会围绕这里更新。</p>
+              <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70">PACKAGE SHIPMENTS / 包裹发货</p>
+              <p class="mt-1 text-xs text-muted-foreground">每个运单都是独立包裹；订单只有所有启用包裹妥投后才会显示为已送达。</p>
             </div>
-            <AdminStatusBadge :tone="trackingSyncStatusTone(currentTrackingShipment?.sync_status)">
-              {{ trackingSyncStatusName(currentTrackingShipment?.sync_status) }}
-            </AdminStatusBadge>
           </div>
-          <dl class="mt-3 grid gap-2 text-xs sm:grid-cols-4">
-            <div class="rounded-lg bg-background/80 p-2">
-              <dt class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70">登记状态</dt>
-              <dd class="mt-1 font-bold">{{ trackingRegistrationStatusName(currentTrackingShipment?.registration_status) }}</dd>
-            </div>
-            <div class="rounded-lg bg-background/80 p-2">
-              <dt class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70">事件数量</dt>
-              <dd class="mt-1 font-mono font-bold">{{ currentTrackingShipment?.event_count ?? currentTrackingEvents.length }}</dd>
-            </div>
-            <div class="rounded-lg bg-background/80 p-2">
-              <dt class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70">最后同步</dt>
-              <dd class="mt-1 font-mono text-[10px] font-bold">{{ formatDate(currentTrackingShipment?.last_synced_at) }}</dd>
-            </div>
-            <div class="rounded-lg bg-background/80 p-2">
-              <dt class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70">下次自动同步</dt>
-              <dd class="mt-1 font-mono text-[10px] font-bold">{{ formatDate(currentTrackingShipment?.next_sync_at) }}</dd>
-            </div>
-          </dl>
-          <p v-if="currentTrackingShipment?.last_error" class="mt-2 rounded-lg border border-destructive/20 bg-destructive/10 px-3 py-2 text-xs font-medium text-destructive">
-            {{ currentTrackingShipment.last_error }}
-          </p>
+          <div class="grid gap-2">
+            <button
+              v-for="shipment in currentTrackingShipments"
+              :key="shipment.id || shipment.tracking_number"
+              type="button"
+              class="rounded-lg border bg-background/80 p-3 text-left transition hover:border-primary/50"
+              :class="selectedTrackingNumber === shipment.tracking_number ? 'border-primary ring-1 ring-primary/30' : 'border-border'"
+              @click="emit('select-tracking', shipment.tracking_number || '')"
+            >
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <span class="font-mono text-xs font-bold">{{ shipment.tracking_number || '-' }}</span>
+                <AdminStatusBadge :tone="trackingSyncStatusTone(shipment.sync_status)">
+                  {{ trackingSyncStatusName(shipment.sync_status) }}
+                </AdminStatusBadge>
+              </div>
+              <div class="mt-2 grid gap-2 text-[10px] text-muted-foreground sm:grid-cols-4">
+                <span>登记：{{ trackingRegistrationStatusName(shipment.registration_status) }}</span>
+                <span>事件：{{ shipment.event_count ?? 0 }}</span>
+                <span>最后同步：{{ formatDate(shipment.last_synced_at) }}</span>
+                <span>Provider：{{ shipment.provider?.provider_name || shipment.provider?.provider_code || shipment.tracking_provider_id || '-' }}</span>
+                <span>承运商：{{ shipment.carrier?.name || shipment.carrier?.code || shipment.carrier_id || '-' }}</span>
+                <span>线路：{{ shipment.carrier_service?.service_name || shipment.carrier_service?.service_code || shipment.carrier_service_id || '-' }}</span>
+              </div>
+              <p v-if="shipment.last_error" class="mt-2 rounded-lg border border-destructive/20 bg-destructive/10 px-3 py-2 text-xs font-medium text-destructive">
+                {{ shipment.last_error }}
+              </p>
+            </button>
+          </div>
         </div>
-        <div v-if="currentOrder.tracking_number && canEdit" class="flex justify-end">
+        <div v-if="selectedTrackingNumber && canEdit" class="flex justify-end">
           <Button variant="outline" size="sm" class="rounded-full" :disabled="syncingTracking" @click="emit('sync-tracking')">
  <RefreshCw :class="['size-3.5', syncingTracking ? 'animate-spin': '']" />
             {{ syncingTracking ? '同步中' : '同步轨迹' }}
@@ -87,6 +88,29 @@
           <DetailItem label="国家">{{ currentOrder.shipping_address?.country || '-' }}</DetailItem>
         </dl>
       </OrderDetailSection>
+
+      <OrderDetailSection v-if="historicalFXBackfillVisible" title="历史汇率快照补录">
+        <div class="space-y-3 rounded-xl border border-amber-500/30 bg-amber-500/5 p-3">
+          <p class="text-xs leading-relaxed text-muted-foreground">
+            退款提示历史 FX snapshot 缺失或无效时，在此补录。请由财务根据订单时点的支付/结算凭证核实汇率和来源；不要用当前汇率估算。保存后重新发起退款；已有有效快照不会被覆盖。
+          </p>
+          <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+            <label class="space-y-1"><span class="field-label">基准币种</span><Input v-model="fxBackfill.base_currency" class="h-9 font-mono" /></label>
+            <label class="space-y-1"><span class="field-label">订单币种</span><Input v-model="fxBackfill.order_currency" class="h-9 font-mono" /></label>
+            <label class="space-y-1"><span class="field-label">历史汇率</span><Input v-model="fxBackfill.rate_decimal" class="h-9 font-mono" placeholder="例如 0.92" /></label>
+            <label class="space-y-1"><span class="field-label">来源</span><Input v-model="fxBackfill.source" class="h-9" placeholder="例如 provider_statement" /></label>
+            <label class="space-y-1"><span class="field-label">采集时间</span><Input v-model="fxBackfill.captured_at" type="datetime-local" class="h-9" /></label>
+          </div>
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <span v-if="fxBackfillResult" class="text-xs text-emerald-700">已写入 {{ fxBackfillResult }}</span>
+            <span v-else class="text-[11px] text-muted-foreground">按“1 基准币种 = N 订单币种”填写。客服无财务凭证或订单编辑权限时，请转交财务/管理员处理。</span>
+            <Button v-if="canEdit" type="button" size="sm" variant="outline" :disabled="fxBackfillSaving" @click="backfillHistoricalFXSnapshot">
+              <Save :class="['size-3.5', fxBackfillSaving ? 'animate-pulse' : '']" />
+              {{ fxBackfillSaving ? '保存中' : '补录历史快照' }}
+            </Button>
+          </div>
+        </div>
+      </OrderDetailSection>
       </TabsContent>
 
       <TabsContent value="items" class="space-y-6">
@@ -103,16 +127,24 @@
             <TableRow>
               <TableHead>商品名称</TableHead>
               <TableHead>SKU</TableHead>
+              <TableHead>配置快照</TableHead>
               <TableHead class="text-right">单价</TableHead>
               <TableHead class="text-right">数量</TableHead>
               <TableHead class="text-right">小计</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            <TableEmpty v-if="!currentOrder.items?.length" :colspan="5">暂无商品明细</TableEmpty>
+            <TableEmpty v-if="!currentOrder.items?.length" :colspan="6">暂无商品明细</TableEmpty>
             <TableRow v-for="item in currentOrder.items || []" :key="item.id || item.sku">
               <TableCell class="font-medium">{{ item.product_name }}</TableCell>
               <TableCell class="font-mono text-xs">{{ item.sku }}</TableCell>
+              <TableCell class="max-w-80 align-top">
+                <details v-if="hasConfigurationSnapshot(item)" class="text-xs">
+                  <summary class="cursor-pointer font-medium text-primary">查看下单配置</summary>
+                  <pre class="mt-2 max-h-48 overflow-auto whitespace-pre-wrap break-words rounded-lg bg-muted/50 p-2 font-mono text-[10px] leading-relaxed">{{ formatConfigurationSnapshot(item.configuration_snapshot) }}</pre>
+                </details>
+                <span v-else class="text-muted-foreground">-</span>
+              </TableCell>
               <TableCell class="text-right tabular-nums">¥{{ formatMoney(item.price) }}</TableCell>
               <TableCell class="text-right tabular-nums">{{ item.quantity }}</TableCell>
               <TableCell class="text-right font-medium tabular-nums">¥{{ formatMoney(item.total) }}</TableCell>
@@ -213,6 +245,10 @@
 
       <TabsContent value="tracking" class="space-y-6">
       <OrderDetailSection title="物流轨迹">
+        <div class="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-dashed p-3 text-xs">
+          <span class="text-muted-foreground">当前包裹</span>
+          <span class="font-mono font-bold">{{ selectedTrackingNumber || '请选择上方包裹' }}</span>
+        </div>
         <Table>
           <TableHeader>
             <TableRow>
@@ -302,7 +338,7 @@
             </div>
 
             <dl class="mt-4 grid overflow-hidden rounded-lg border text-xs sm:grid-cols-3">
-              <DetailItem label="金额">{{ disputeMoney(dispute.amount, dispute.currency) }}</DetailItem>
+              <DetailItem label="金额">{{ disputeMoney(dispute.amount_minor, dispute.currency) }}</DetailItem>
               <DetailItem label="原因">{{ dispute.reason || '-' }}</DetailItem>
               <DetailItem label="截止/提交">{{ disputeDeadline(dispute) }}</DetailItem>
               <DetailItem label="客户邮箱">{{ dispute.customer_email || '-' }}</DetailItem>
@@ -350,8 +386,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed, defineComponent, h, reactive, watch } from 'vue'
+import { computed, defineComponent, h, reactive, ref, watch } from 'vue'
 import { CreditCard, Download, Mail, RefreshCw, RotateCcw, Save } from '@lucide/vue'
+import { toast } from 'vue-sonner'
 import AdminStatusBadge from '@/components/admin/AdminStatusBadge.vue'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -366,8 +403,9 @@ import { Input } from '@/components/ui/input'
 import { Table, TableBody, TableCell, TableEmpty, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
+import { formatMinorMoney } from '@/lib/dashboardPresentation'
+import { paymentRiskApi } from '@/api/paymentRisk'
 import type {
-  OrderCarrierLabelResolver,
   OrderDateFormatter,
   OrderDisputeAnalysis,
   OrderDisputeCase,
@@ -420,7 +458,8 @@ const AmountRow = defineComponent({
 const props = withDefaults(defineProps<{
   currentOrder?: OrderRecord | null
   currentTrackingEvents?: TrackingEvent[]
-  currentTrackingShipment?: TrackingShipment | null
+  currentTrackingShipments?: TrackingShipment[]
+  selectedTrackingNumber?: string
   disputeAnalysis?: OrderDisputeAnalysis | null
   disputeAnalysisLoading?: boolean
   adminNote?: string
@@ -441,12 +480,11 @@ const props = withDefaults(defineProps<{
   formatMoney: OrderMoneyFormatter
   shippingName: OrderShippingNameResolver
   shippingAddressLine: OrderShippingAddressLineResolver
-  orderCarrierLabel: OrderCarrierLabelResolver
-  orderCarrierServiceLabel: OrderCarrierLabelResolver
 }>(), {
   currentOrder: null,
   currentTrackingEvents: () => [],
-  currentTrackingShipment: null,
+  currentTrackingShipments: () => [],
+  selectedTrackingNumber: '',
   disputeAnalysis: null,
   disputeAnalysisLoading: false,
   adminNote: '',
@@ -459,6 +497,7 @@ const props = withDefaults(defineProps<{
 const emit = defineEmits<{
   (event: 'update:adminNote', value: string): void
   (event: 'sync-tracking'): void
+  (event: 'select-tracking', trackingNumber: string): void
   (event: 'update-note'): void
   (event: 'update-customs', orderItemId: OrderID, declaredValue: number | null, declaredValueConfirmed: boolean): void
   (event: 'export-customs'): void
@@ -471,6 +510,63 @@ const adminNoteModel = computed<string>({
   get: () => props.adminNote,
   set: (value: string) => emit('update:adminNote', value),
 })
+
+const fxBackfill = reactive({
+  base_currency: 'USD',
+  order_currency: '',
+  rate_decimal: '',
+  source: 'admin_backfill',
+  captured_at: '',
+})
+const fxBackfillSaving = ref(false)
+const fxBackfillResult = ref('')
+
+const historicalFXBackfillVisible = computed(() => {
+  const currency = String(props.currentOrder?.currency || '').trim().toUpperCase()
+  return Boolean(currency && currency !== 'USD')
+})
+
+const localDateTimeValue = (value?: string | null): string => {
+  if (!value) return ''
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return ''
+  const pad = (number: number): string => String(number).padStart(2, '0')
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`
+}
+
+const initializeFXBackfill = (order?: OrderRecord | null): void => {
+  const currency = String(order?.currency || '').trim().toUpperCase()
+  fxBackfill.order_currency = currency
+  fxBackfill.captured_at = localDateTimeValue(order?.created_at)
+  fxBackfill.rate_decimal = ''
+  fxBackfillResult.value = ''
+}
+
+watch(() => props.currentOrder, initializeFXBackfill, { immediate: true })
+
+const backfillHistoricalFXSnapshot = async (): Promise<void> => {
+  if (!props.currentOrder?.id || !historicalFXBackfillVisible.value || fxBackfillSaving.value) return
+  if (!fxBackfill.rate_decimal.trim() || !fxBackfill.source.trim() || !fxBackfill.captured_at) {
+    toast.error('请完整填写历史汇率、来源和采集时间')
+    return
+  }
+  fxBackfillSaving.value = true
+  try {
+    const result = await paymentRiskApi.backfillHistoricalFXSnapshot(props.currentOrder.id, {
+      base_currency: fxBackfill.base_currency.trim().toUpperCase(),
+      order_currency: fxBackfill.order_currency.trim().toUpperCase(),
+      rate_decimal: fxBackfill.rate_decimal.trim(),
+      source: fxBackfill.source.trim(),
+      captured_at: new Date(fxBackfill.captured_at).toISOString(),
+    })
+    fxBackfillResult.value = String(result?.snapshot?.captured_at || '保存成功')
+    toast.success('历史 FX snapshot 已补录')
+  } catch (error) {
+    toast.error(error instanceof Error ? error.message : '历史 FX snapshot 补录失败')
+  } finally {
+    fxBackfillSaving.value = false
+  }
+}
 
 const canCreateAfterSales = computed(() => {
   const order = props.currentOrder
@@ -488,6 +584,29 @@ const declaredValueDrafts = reactive<Record<string, string>>({})
 const declaredValueConfirmedDrafts = reactive<Record<string, boolean>>({})
 
 const customsKey = (item: OrderItem): string => String(item.id ?? item.sku ?? item.product_name ?? '')
+
+const hasConfigurationSnapshot = (item: OrderItem): boolean => {
+  const snapshot = item.configuration_snapshot
+  if (snapshot == null) return false
+  if (typeof snapshot === 'string') return snapshot.trim() !== '' && snapshot.trim() !== '{}'
+  return typeof snapshot === 'object' ? Object.keys(snapshot as Record<string, unknown>).length > 0 : true
+}
+
+const formatConfigurationSnapshot = (snapshot: unknown): string => {
+  if (snapshot == null) return ''
+  if (typeof snapshot === 'string') {
+    try {
+      return JSON.stringify(JSON.parse(snapshot), null, 2)
+    } catch {
+      return snapshot
+    }
+  }
+  try {
+    return JSON.stringify(snapshot, null, 2)
+  } catch {
+    return String(snapshot)
+  }
+}
 
 const initializeCustomsDrafts = (order?: OrderRecord | null): void => {
   Object.keys(declaredValueDrafts).forEach((key) => delete declaredValueDrafts[key])
@@ -546,7 +665,7 @@ const assessmentTone = (level?: string | null): OrderStatusTone => {
   return 'gray'
 }
 
-const disputeMoney = (amount?: number | string | null, currency?: string | null): string => props.formatMoney(amount, currency)
+const disputeMoney = (amount?: number | string | null, currency?: string | null): string => formatMinorMoney(amount, currency)
 
 const formatDeclaredValue = (value?: number | string | null): string => {
   if (value == null || value === '') return '未填写'

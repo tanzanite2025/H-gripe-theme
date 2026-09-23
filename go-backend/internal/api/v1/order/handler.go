@@ -165,17 +165,12 @@ func (h *Handler) CreateOrder(c *gin.Context) {
 			apierror.RespondBadRequest(c, priceErr.Error())
 			return
 		}
-		price, priceErr := priceMoney.MajorFloat()
-		if priceErr != nil {
-			apierror.RespondBadRequest(c, priceErr.Error())
-			return
-		}
 		items[i] = order.OrderItem{
 			ProductID:         item.ProductID,
 			VariantID:         item.VariantID,
 			Quantity:          item.Quantity,
 			Currency:          priceMoney.Currency().String(),
-			Price:             price,
+			PriceMinor:        priceMoney.AmountMinor(),
 			ConfigurationData: append([]byte(nil), item.ConfigurationData...),
 			ConfigurationHash: item.ConfigurationHash,
 		}
@@ -211,11 +206,10 @@ func (h *Handler) CreateOrder(c *gin.Context) {
 			PolicySource:                 "checkout_order_creation",
 			IdempotencyKey:               middleware.GetIdempotencyKey(c),
 			IdempotencyRequestHash:       middleware.GetIdempotencyRequestHash(c),
-			ExpectedTotal:                req.ExpectedTotal,
+			ExpectedTotalMinor:           req.ExpectedTotalMinor,
 			ShippingQuoteID:              req.ShippingQuoteID,
 			SelectedQuotePlanID:          req.SelectedQuotePlanID,
 			CheckoutCartID:               cart.ID,
-			GiftCardCode:                 req.GiftCardCode,
 			DisplayCurrency:              req.DisplayCurrency,
 		},
 	)
@@ -381,7 +375,21 @@ func (h *Handler) GetOrder(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, publicOrderResponse(*o))
+	public := publicOrderResponse(*o)
+	if shipments, shipmentErr := h.orderService.GetOrderTrackingShipments(o.ID); shipmentErr == nil {
+		public.TrackingShipments = make([]PublicTrackingShipment, 0, len(shipments))
+		for _, shipment := range shipments {
+			public.TrackingShipments = append(public.TrackingShipments, PublicTrackingShipment{
+				TrackingNumber:      shipment.TrackingNumber,
+				ProviderCarrierCode: shipment.ProviderCarrierCode,
+				RegistrationStatus:  shipment.RegistrationStatus,
+				SyncStatus:          shipment.SyncStatus,
+				LastEventAt:         shipment.LastEventAt,
+				Enabled:             shipment.Enabled,
+			})
+		}
+	}
+	response.Success(c, public)
 }
 
 // ListOrders 获取订单列表
@@ -434,6 +442,10 @@ func (h *Handler) CancelOrder(c *gin.Context) {
 	if err := h.orderService.CancelOrderByNumber(orderNumber, userID.(uint)); err != nil {
 		if errors.Is(err, service.ErrPaidOrderCancellationNotAllowed) {
 			apierror.RespondError(c, http.StatusConflict, "paid_order_cancellation_not_allowed", err.Error())
+			return
+		}
+		if errors.Is(err, service.ErrConfiguredOptionCancellationNotAllowed) || errors.Is(err, service.ErrProductionStartedCancellationNotAllowed) {
+			apierror.RespondError(c, http.StatusConflict, "configured_option_cancellation_not_allowed", err.Error())
 			return
 		}
 		if errors.Is(err, service.ErrOrderCancellationConflict) {

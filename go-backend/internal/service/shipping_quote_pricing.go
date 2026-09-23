@@ -119,27 +119,37 @@ func packagingRuleWeightGrams(rule *shipping.PackagingRule) int {
 	return int(math.Round(rule.BoxWeight * 1000))
 }
 
-func calculateTemplateShippingFeeWithDisplayPrices(
+// calculateTemplateShippingFeeWithDisplayPricesMoney is the money-native
+// pricing entry point. All monetary thresholds and fees stay in minor units;
+// float64 is used only for dimensional (weight/quantity) rule values and for
+// display snapshots at the boundary.
+func calculateTemplateShippingFeeWithDisplayPricesMoney(
 	template *shipping.ShippingTemplate,
 	country string,
 	totalWeightGrams int,
 	quantity int,
-	amount float64,
-	cartAmount float64,
+	amount domainmoney.Money,
+	cartAmount domainmoney.Money,
 	weightBilling ...shippingWeightBilling,
-) (float64, bool, []currency.DisplayPriceSnapshot, error) {
+) (domainmoney.Money, bool, []currency.DisplayPriceSnapshot, error) {
 	if template == nil {
-		return 0, false, nil, errors.New("shipping template is required")
+		return domainmoney.Money{}, false, nil, errors.New("shipping template is required")
 	}
 
-	freeThresholdReached := cartAmount >= template.FreeThreshold
+	freeThresholdMoney, thresholdErr := template.FreeThresholdMoney()
+	if thresholdErr != nil {
+		return domainmoney.Money{}, false, nil, thresholdErr
+	}
+	if amount.Currency().String() != currency.NormalizeCode(template.Currency) || cartAmount.Currency().String() != currency.NormalizeCode(template.Currency) {
+		return domainmoney.Money{}, false, nil, domainmoney.ErrCurrencyMismatch
+	}
+	freeThresholdReached := cartAmount.AmountMinor() >= freeThresholdMoney.AmountMinor()
 	if template.Type == "price" || template.Type == "amount" {
-		if reached, ok := majorAmountAtLeast(cartAmount, template.FreeThreshold, template.Currency); ok {
-			freeThresholdReached = reached
-		}
+		freeThresholdReached = cartAmount.AmountMinor() >= freeThresholdMoney.AmountMinor()
 	}
 	if template.FreeShipping && freeThresholdReached {
-		return 0, true, nil, nil
+		zero, err := domainmoney.New(0, template.Currency)
+		return zero, true, nil, err
 	}
 
 	value := float64(totalWeightGrams) / 1000
@@ -147,52 +157,157 @@ func calculateTemplateShippingFeeWithDisplayPrices(
 	case "quantity", "items":
 		value = float64(quantity)
 	case "price", "amount":
-		value = amount
+		// Price/amount rules stay entirely in Money/minor units. The scalar
+		// value is only used by dimensional (weight/quantity) rules.
+		value = 0
 	}
-	return calculateTemplateShippingFeeForValue(template, country, value, weightBilling...)
+	return calculateTemplateShippingFeeForMoneyValue(template, country, value, amount, weightBilling...)
 }
 
-// calculateTemplateShippingFeeForQuote evaluates thresholds in the template's
-// source currency and returns the resulting fee in the checkout currency.
-func (s *ShippingService) calculateTemplateShippingFeeForQuote(
+// calculateTemplateShippingFeeForMoneyValue evaluates a template while
+// retaining the exact price/amount value as Money. Weight and quantity remain
+// scalar dimensions; only their rule thresholds are non-monetary values.
+func calculateTemplateShippingFeeForMoneyValue(
+	template *shipping.ShippingTemplate,
+	country string,
+	value float64,
+	amount domainmoney.Money,
+	weightBilling ...shippingWeightBilling,
+) (domainmoney.Money, bool, []currency.DisplayPriceSnapshot, error) {
+	if template == nil {
+		return domainmoney.Money{}, false, nil, errors.New("shipping template is required")
+	}
+	defaultFeeMoney, err := template.DefaultFeeMoney()
+	if err != nil {
+		return domainmoney.Money{}, false, nil, err
+	}
+	displayPrices := templateFeeDisplayPrices(template)
+	matchedRule := false
+	countryMatched := false
+	ruleWeightBilling := weightBilling
+	if template.Type != "weight" {
+		ruleWeightBilling = nil
+	}
+	for _, rule := range template.Rules {
+		regionMatches := shippingrating.MatchesRegion(rule.Region, country)
+		if regionMatches {
+			countryMatched = true
+		}
+		matched := false
+		if regionMatches {
+			if template.Type == "price" || template.Type == "amount" {
+				matched = shippingRuleMatchesTemplateMoneyValue(template.Currency, rule, amount)
+			} else {
+				matched = shippingRuleMatchesTemplateValue(template.Type, template.Currency, rule, value)
+			}
+		}
+		if !matched {
+			continue
+		}
+		if len(ruleWeightBilling) > 0 {
+			if err := validateShippingWeightBilling(rule, ruleWeightBilling[0]); err != nil {
+				return domainmoney.Money{}, false, nil, err
+			}
+		}
+		feeMoney := calculateRuleFeeMoney(template.Type, template.Currency, rule, value, &amount, ruleWeightBilling...)
+		if feeMoney.Validate() != nil {
+			return domainmoney.Money{}, false, nil, fmt.Errorf("invalid shipping fee for rule ID %d", rule.ID)
+		}
+		displayPrices = ruleFeeDisplayPrices(template.Type, template.Currency, rule, value, &amount, ruleWeightBilling...)
+		defaultFeeMoney = feeMoney
+		matchedRule = true
+		break
+	}
+	if !matchedRule && defaultFeeMoney.AmountMinor() <= 0 {
+		cause := ErrShippingRateUnavailable
+		if !countryMatched {
+			cause = ErrCountryNotSupported
+		}
+		return domainmoney.Money{}, false, nil, fmt.Errorf(
+			"%w: shipping template %q (ID %d) has no applicable rule for country %s and charge value %.2f, and no positive default fee",
+			cause,
+			template.Name,
+			template.ID,
+			strings.ToUpper(strings.TrimSpace(country)),
+			value,
+		)
+	}
+	return defaultFeeMoney, false, displayPrices, nil
+}
+
+func shippingRuleMatchesTemplateMoneyValue(templateCurrency string, rule shipping.ShippingRule, value domainmoney.Money) bool {
+	code := currency.NormalizeCode(templateCurrency)
+	if value.Currency().String() != code {
+		return false
+	}
+	minMoney, err := rule.MinValueMoney(code)
+	if err != nil || value.AmountMinor() < minMoney.AmountMinor() {
+		return false
+	}
+	maxMoney, err := rule.MaxValueMoney(code)
+	if err != nil || maxMoney.AmountMinor() <= 0 {
+		return true
+	}
+	return value.AmountMinor() <= maxMoney.AmountMinor()
+}
+
+// calculateTemplateShippingFeeForQuoteMoney converts the exact quote amounts
+// into the template currency, evaluates the template, then converts the fee
+// back to the checkout currency. No major-unit arithmetic is performed.
+func (s *ShippingService) calculateTemplateShippingFeeForQuoteMoney(
 	template *shipping.ShippingTemplate,
 	country string,
 	totalWeightGrams int,
 	quantity int,
-	amount float64,
-	cartAmount float64,
+	amount domainmoney.Money,
+	cartAmount domainmoney.Money,
 	quoteCurrency string,
 	weightBilling ...shippingWeightBilling,
-) (float64, bool, []currency.DisplayPriceSnapshot, error) {
+) (domainmoney.Money, bool, []currency.DisplayPriceSnapshot, error) {
 	if template == nil {
-		return 0, false, nil, errors.New("shipping template is required")
+		return domainmoney.Money{}, false, nil, errors.New("shipping template is required")
 	}
 
 	sourceCurrency := currency.NormalizeCode(template.Currency)
 	quoteCurrency = currency.NormalizeCode(quoteCurrency)
 	if !currency.IsCatalogCode(sourceCurrency) {
-		return 0, false, nil, fmt.Errorf("shipping template ID %d has invalid source currency", template.ID)
+		return domainmoney.Money{}, false, nil, fmt.Errorf("shipping template ID %d has invalid source currency", template.ID)
 	}
 	if !currency.IsCatalogCode(quoteCurrency) {
-		return 0, false, nil, fmt.Errorf("shipping quote currency %s is invalid", quoteCurrency)
+		return domainmoney.Money{}, false, nil, fmt.Errorf("shipping quote currency %s is invalid", quoteCurrency)
+	}
+	if amount.Currency().String() != quoteCurrency || cartAmount.Currency().String() != quoteCurrency {
+		return domainmoney.Money{}, false, nil, domainmoney.ErrCurrencyMismatch
 	}
 
 	sourceAmount := amount
 	sourceCartAmount := cartAmount
 	var err error
 	if sourceCurrency != quoteCurrency && (template.Type == "price" || template.Type == "amount") {
-		sourceAmount, err = s.convertShippingAmount(amount, quoteCurrency, sourceCurrency)
+		sourceAmount, err = s.convertShippingMoney(amount, sourceCurrency)
 		if err != nil {
-			return 0, false, nil, err
+			return domainmoney.Money{}, false, nil, err
+		}
+	} else if sourceCurrency != quoteCurrency {
+		// Weight/quantity templates do not inspect merchandise amount, but the
+		// money-native evaluator still requires a value in the template currency.
+		sourceAmount, err = domainmoney.New(0, sourceCurrency)
+		if err != nil {
+			return domainmoney.Money{}, false, nil, err
 		}
 	}
-	if sourceCurrency != quoteCurrency && template.FreeShipping && template.FreeThreshold > 0 {
-		sourceCartAmount, err = s.convertShippingAmount(cartAmount, quoteCurrency, sourceCurrency)
+	if sourceCurrency != quoteCurrency && template.FreeShipping && template.FreeThresholdMinor > 0 {
+		sourceCartAmount, err = s.convertShippingMoney(cartAmount, sourceCurrency)
 		if err != nil {
-			return 0, false, nil, err
+			return domainmoney.Money{}, false, nil, err
+		}
+	} else if sourceCurrency != quoteCurrency {
+		sourceCartAmount, err = domainmoney.New(0, sourceCurrency)
+		if err != nil {
+			return domainmoney.Money{}, false, nil, err
 		}
 	}
-	fee, freeShipping, displayPrices, err := calculateTemplateShippingFeeWithDisplayPrices(
+	fee, freeShipping, displayPrices, err := calculateTemplateShippingFeeWithDisplayPricesMoney(
 		template,
 		country,
 		totalWeightGrams,
@@ -202,122 +317,74 @@ func (s *ShippingService) calculateTemplateShippingFeeForQuote(
 		weightBilling...,
 	)
 	if err != nil {
-		return 0, false, nil, err
+		return domainmoney.Money{}, false, nil, err
 	}
-	if sourceCurrency == quoteCurrency || fee <= 0 {
-		return roundMoney(fee, quoteCurrency), freeShipping, displayPrices, nil
+	if sourceCurrency == quoteCurrency || fee.AmountMinor() <= 0 {
+		if sourceCurrency == quoteCurrency {
+			return fee, freeShipping, displayPrices, nil
+		}
+		converted, convertErr := s.convertShippingMoney(fee, quoteCurrency)
+		return converted, freeShipping, displayPrices, convertErr
 	}
-
-	fee, err = s.convertShippingAmount(fee, sourceCurrency, quoteCurrency)
+	converted, err := s.convertShippingMoney(fee, quoteCurrency)
 	if err != nil {
-		return 0, false, nil, err
+		return domainmoney.Money{}, false, nil, err
 	}
-	return roundMoney(fee, quoteCurrency), freeShipping, displayPrices, nil
+	return converted, freeShipping, displayPrices, nil
 }
 
-func (s *ShippingService) convertShippingAmount(amount float64, fromCurrency string, toCurrency string) (float64, error) {
-	fromCurrency = currency.NormalizeCode(fromCurrency)
+func (s *ShippingService) convertShippingMoney(amount domainmoney.Money, toCurrency string) (domainmoney.Money, error) {
+	if err := amount.Validate(); err != nil {
+		return domainmoney.Money{}, err
+	}
 	toCurrency = currency.NormalizeCode(toCurrency)
-	if amount == 0 || fromCurrency == toCurrency {
-		return roundMoney(amount, toCurrency), nil
+	if !currency.IsCatalogCode(toCurrency) {
+		return domainmoney.Money{}, fmt.Errorf("shipping target currency %s is invalid", toCurrency)
 	}
-	if amount < 0 {
-		return 0, fmt.Errorf("shipping amount cannot be negative")
+	if amount.AmountMinor() == 0 || amount.Currency().String() == toCurrency {
+		return domainmoney.New(amount.AmountMinor(), toCurrency)
 	}
-	if !currency.IsCatalogCode(fromCurrency) || !currency.IsCatalogCode(toCurrency) {
-		return 0, fmt.Errorf("shipping currency conversion from %s to %s is invalid", fromCurrency, toCurrency)
+	if amount.AmountMinor() < 0 {
+		return domainmoney.Money{}, fmt.Errorf("shipping amount cannot be negative")
 	}
 	if s == nil || s.exchangeRates == nil {
-		return 0, fmt.Errorf("%w: exchange rate unavailable for %s to %s shipping conversion", ErrShippingRateUnavailable, fromCurrency, toCurrency)
+		return domainmoney.Money{}, fmt.Errorf("%w: exchange rate unavailable for %s to %s shipping conversion", ErrShippingRateUnavailable, amount.Currency(), toCurrency)
 	}
-
-	amountMoney, amountErr := domainmoney.FromMajorFloat(amount, fromCurrency)
-	if amountErr != nil {
-		return 0, amountErr
+	converted, err := s.exchangeRates.ConvertMoneyStrict(amount, toCurrency)
+	if err != nil {
+		return domainmoney.Money{}, fmt.Errorf("%w: exchange rate unavailable for %s to %s shipping conversion: %w", ErrShippingRateUnavailable, amount.Currency(), toCurrency, err)
 	}
-	convertedMoney, conversionErr := s.exchangeRates.ConvertMoneyStrict(amountMoney, toCurrency)
-	if conversionErr != nil {
-		return 0, fmt.Errorf("%w: exchange rate unavailable for %s to %s shipping conversion: %w", ErrShippingRateUnavailable, fromCurrency, toCurrency, conversionErr)
-	}
-	return convertedMoney.MajorFloat()
+	return converted, nil
 }
 
-func calculateTemplateShippingFeeForValue(
-	template *shipping.ShippingTemplate,
-	country string,
-	value float64,
-	weightBilling ...shippingWeightBilling,
-) (float64, bool, []currency.DisplayPriceSnapshot, error) {
-	if template == nil {
-		return 0, false, nil, errors.New("shipping template is required")
+func validateShippingWeightBilling(rule shipping.ShippingRule, billing shippingWeightBilling) error {
+	additionalFee := 0.0
+	if rule.AdditionalMinor > 0 {
+		additionalFee = 1
 	}
-	shippingFee := template.DefaultFee
-	displayPrices := templateFeeDisplayPrices(template)
-	matchedRule := false
-	countryMatched := false
-	ruleWeightBilling := weightBilling
-	if template.Type != "weight" {
-		ruleWeightBilling = nil
-	}
-	for _, rule := range template.Rules {
-		if shippingrating.MatchesRegion(rule.Region, country) {
-			countryMatched = true
-		}
-		if shippingrating.MatchesRegion(rule.Region, country) && shippingRuleMatchesTemplateValue(template.Type, template.Currency, rule, value) {
-			if len(ruleWeightBilling) > 0 {
-				if err := validateShippingWeightBilling(rule, ruleWeightBilling[0]); err != nil {
-					return 0, false, nil, err
-				}
-			}
-			shippingFee = calculateRuleFee(template.Type, template.Currency, rule, value, ruleWeightBilling...)
-			displayPrices = ruleFeeDisplayPrices(template.Type, template.Currency, rule, value, ruleWeightBilling...)
-			matchedRule = true
-			break
-		}
-	}
-	if !matchedRule && template.DefaultFee <= 0 {
-		cause := ErrShippingRateUnavailable
-		if !countryMatched {
-			cause = ErrCountryNotSupported
-		}
-		return 0, false, nil, fmt.Errorf(
-			"%w: shipping template %q (ID %d) has no applicable rule for country %s and charge value %.2f, and no positive default fee",
-			cause,
-			template.Name,
-			template.ID,
-			strings.ToUpper(strings.TrimSpace(country)),
-			value,
+	if err := shippingrating.ValidateWeightScale(additionalFee, shippingrating.WeightScale{
+		FirstWeightGrams: billing.firstWeightGrams, AdditionalWeightGrams: billing.additionalWeightGrams,
+	}); err != nil {
+		return fmt.Errorf(
+			"%w: weight rule ID %d requires positive carrier first/additional weight configuration",
+			ErrShippingRateConfigurationInvalid,
+			rule.ID,
 		)
 	}
-
-	shippingFee = roundMoney(shippingFee, template.Currency)
-	if shippingFee <= 0 {
-		return shippingFee, matchedRule, nil, nil
-	}
-	return shippingFee, false, displayPrices, nil
+	return nil
 }
 
 func shippingRuleMatchesValue(rule shipping.ShippingRule, value float64) bool {
 	return value >= rule.MinValue && (rule.MaxValue == 0 || value <= rule.MaxValue)
 }
 
-func shippingRuleMatchesTemplateValue(templateType, templateCurrency string, rule shipping.ShippingRule, value float64) bool {
-	if templateType != "price" && templateType != "amount" {
-		return shippingRuleMatchesValue(rule, value)
-	}
-	valueMoney, err := domainmoney.FromMajorFloat(value, templateCurrency)
-	if err != nil {
+func shippingRuleMatchesTemplateValue(templateType, _ string, rule shipping.ShippingRule, value float64) bool {
+	// Monetary templates use shippingRuleMatchesTemplateMoneyValue. This
+	// helper is only for dimensional weight/quantity thresholds.
+	if templateType == "price" || templateType == "amount" {
 		return false
 	}
-	minMoney, err := domainmoney.FromMajorFloat(rule.MinValue, templateCurrency)
-	if err != nil || valueMoney.AmountMinor() < minMoney.AmountMinor() {
-		return false
-	}
-	if rule.MaxValue <= 0 {
-		return true
-	}
-	maxMoney, err := domainmoney.FromMajorFloat(rule.MaxValue, templateCurrency)
-	return err == nil && valueMoney.AmountMinor() <= maxMoney.AmountMinor()
+	return shippingRuleMatchesValue(rule, value)
 }
 
 func validateTemplateWeightBillingForValue(
@@ -333,7 +400,8 @@ func validateTemplateWeightBillingForValue(
 		if !shippingrating.MatchesRegion(rule.Region, country) || !shippingRuleMatchesTemplateValue(template.Type, template.Currency, rule, value) {
 			continue
 		}
-		if rule.Additional <= 0 {
+		additionalMoney, additionalErr := rule.AdditionalMoney(template.Currency)
+		if additionalErr != nil || additionalMoney.AmountMinor() <= 0 {
 			return nil
 		}
 		if len(weightBilling) == 0 {
@@ -348,19 +416,6 @@ func validateTemplateWeightBillingForValue(
 	return nil
 }
 
-func validateShippingWeightBilling(rule shipping.ShippingRule, billing shippingWeightBilling) error {
-	if err := shippingrating.ValidateWeightScale(rule.Additional, shippingrating.WeightScale{
-		FirstWeightGrams: billing.firstWeightGrams, AdditionalWeightGrams: billing.additionalWeightGrams,
-	}); err != nil {
-		return fmt.Errorf(
-			"%w: weight rule ID %d requires positive carrier first/additional weight configuration",
-			ErrShippingRateConfigurationInvalid,
-			rule.ID,
-		)
-	}
-	return nil
-}
-
 // shippingWeightBilling carries the carrier-specific weight scale. Weight
 // rules with an additional fee must receive this configuration explicitly.
 type shippingWeightBilling struct {
@@ -368,55 +423,64 @@ type shippingWeightBilling struct {
 	additionalWeightGrams int
 }
 
-func calculateRuleFee(templateType, templateCurrency string, rule shipping.ShippingRule, value float64, weightBilling ...shippingWeightBilling) float64 {
+// calculateRuleFeeMoney performs all fee composition in minor units. The
+// optional amount is supplied for price/amount rules so additional-unit
+// calculations never round-trip through float64.
+func calculateRuleFeeMoney(templateType, templateCurrency string, rule shipping.ShippingRule, value float64, amount *domainmoney.Money, weightBilling ...shippingWeightBilling) domainmoney.Money {
 	feeCurrency := currency.NormalizeCode(rule.Currency)
 	if feeCurrency == "" {
 		feeCurrency = currency.NormalizeCode(templateCurrency)
 	}
 	if feeCurrency != currency.NormalizeCode(templateCurrency) {
-		return 0
+		return domainmoney.Money{}
 	}
-	feeMoney, err := domainmoney.FromMajorFloat(rule.Fee, feeCurrency)
+	feeMoney, err := rule.FeeMoney(feeCurrency)
 	if err != nil {
-		return 0
+		return domainmoney.Money{}
 	}
-	additionalUnits := calculateRuleAdditionalUnitsForTemplate(templateType, templateCurrency, rule, value, weightBilling...)
+	additionalUnits := 0
+	if (templateType == "price" || templateType == "amount") && amount != nil {
+		additionalUnits = calculateRuleAdditionalUnitsForMoneyTemplate(templateCurrency, rule, *amount)
+	} else {
+		additionalUnits = calculateRuleAdditionalUnitsForTemplate(templateType, templateCurrency, rule, value, weightBilling...)
+	}
 	if additionalUnits > 0 {
-		additionalMoney, addErr := domainmoney.FromMajorFloat(rule.Additional, feeCurrency)
+		additionalMoney, addErr := rule.AdditionalMoney(feeCurrency)
 		if addErr != nil {
-			return 0
+			return domainmoney.Money{}
 		}
 		additionalMoney, addErr = additionalMoney.MultiplyInt(int64(additionalUnits))
 		if addErr != nil {
-			return 0
+			return domainmoney.Money{}
 		}
 		feeMoney, addErr = feeMoney.Add(additionalMoney)
 		if addErr != nil {
-			return 0
+			return domainmoney.Money{}
 		}
 	}
-	fee, err := feeMoney.MajorFloat()
-	if err != nil {
-		return 0
-	}
-	return fee
+	return feeMoney
 }
 
-func majorAmountAtLeast(value, threshold float64, code string) (bool, bool) {
-	valueMoney, err := domainmoney.FromMajorFloat(value, code)
-	if err != nil {
-		return false, false
+func calculateRuleAdditionalUnitsForMoneyTemplate(templateCurrency string, rule shipping.ShippingRule, value domainmoney.Money) int {
+	feeCurrency := currency.NormalizeCode(rule.Currency)
+	if feeCurrency == "" {
+		feeCurrency = currency.NormalizeCode(templateCurrency)
 	}
-	thresholdMoney, err := domainmoney.FromMajorFloat(threshold, code)
-	if err != nil {
-		return false, false
+	if feeCurrency != value.Currency().String() {
+		return 0
 	}
-	return valueMoney.AmountMinor() >= thresholdMoney.AmountMinor(), true
+	minMoney, err := rule.MinValueMoney(feeCurrency)
+	additionalMoney, additionalErr := rule.AdditionalMoney(feeCurrency)
+	if err != nil || additionalErr != nil || additionalMoney.AmountMinor() <= 0 || value.AmountMinor() <= minMoney.AmountMinor() {
+		return 0
+	}
+	excess := value.AmountMinor() - minMoney.AmountMinor()
+	return int((excess + additionalMoney.AmountMinor() - 1) / additionalMoney.AmountMinor())
 }
 
 func calculateRuleAdditionalUnitsForTemplate(
 	templateType string,
-	templateCurrency string,
+	_ string,
 	rule shipping.ShippingRule,
 	value float64,
 	weightBilling ...shippingWeightBilling,
@@ -424,25 +488,11 @@ func calculateRuleAdditionalUnitsForTemplate(
 	if templateType == "weight" {
 		return calculateRuleAdditionalUnits(rule, value, weightBilling...)
 	}
-	if templateType == "price" || templateType == "amount" {
-		feeCurrency := currency.NormalizeCode(rule.Currency)
-		if feeCurrency == "" {
-			feeCurrency = currency.NormalizeCode(templateCurrency)
-		}
-		minMoney, err := domainmoney.FromMajorFloat(rule.MinValue, feeCurrency)
-		valueMoney, valueErr := domainmoney.FromMajorFloat(value, feeCurrency)
-		additionalMoney, additionalErr := domainmoney.FromMajorFloat(rule.Additional, feeCurrency)
-		if err != nil || valueErr != nil || additionalErr != nil || additionalMoney.AmountMinor() <= 0 || valueMoney.AmountMinor() <= minMoney.AmountMinor() {
-			return 0
-		}
-		excess := valueMoney.AmountMinor() - minMoney.AmountMinor()
-		units := (excess + additionalMoney.AmountMinor() - 1) / additionalMoney.AmountMinor()
-		if units <= 0 {
-			return 0
-		}
-		return int(units)
+	additionalFee := 0.0
+	if rule.AdditionalMinor > 0 {
+		additionalFee = 1
 	}
-	return shippingrating.AdditionalWholeUnits(rule.MinValue, value, rule.Additional)
+	return shippingrating.AdditionalWholeUnits(rule.MinValue, value, additionalFee)
 }
 
 func calculateRuleAdditionalUnits(rule shipping.ShippingRule, value float64, weightBilling ...shippingWeightBilling) int {
@@ -451,7 +501,11 @@ func calculateRuleAdditionalUnits(rule shipping.ShippingRule, value float64, wei
 	}
 	billing := weightBilling[0]
 	valueGrams := int(math.Round(value * 1000))
-	units, err := shippingrating.AdditionalWeightUnits(valueGrams, rule.Additional, shippingrating.WeightScale{
+	additionalFee := 0.0
+	if rule.AdditionalMinor > 0 {
+		additionalFee = 1
+	}
+	units, err := shippingrating.AdditionalWeightUnits(valueGrams, additionalFee, shippingrating.WeightScale{
 		FirstWeightGrams: billing.firstWeightGrams, AdditionalWeightGrams: billing.additionalWeightGrams,
 	})
 	if err != nil {
