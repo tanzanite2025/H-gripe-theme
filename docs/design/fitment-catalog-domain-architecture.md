@@ -1,6 +1,7 @@
 # 车型前叉花鼓适配资料库设计
 
-最后更新：2026-08-26
+最后更新：2026-08-26  
+> **关联实施方案**: 传动系统与塔基飞轮适配引擎实施方案见 [drivetrain-freehub-fitment-engine-specification.md](./drivetrain-freehub-fitment-engine-specification.md)。
 
 ## 1. 决策
 

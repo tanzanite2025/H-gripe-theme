@@ -4,6 +4,7 @@
 > **文档版本**: `v1.0-Engineering`  
 > **文档位置**: `docs/design/technical-algorithm-engineering-standards.md`  
 > **适用范围**: 轮组微观力学白皮书、花鼓几何受力动态仿真、碳辐条参数化动态求解看板、外胎气压/滚阻计算引擎及未来扩展的所有深度技术算法页面。  
+> **专项方案索引**: 传动系统与塔基飞轮适配引擎实施方案见 [drivetrain-freehub-fitment-engine-specification.md](./drivetrain-freehub-fitment-engine-specification.md)。  
 > **核心目标**: 规范高精尖自研技术资产在**算法产权防护**、**SEO/AI 爬虫可解析性**、**前后端架构解耦**、**计算数值鲁棒性**以及**生产履约质检闭环**五大维度的严谨工程配套方案，确保自研技术既能最大化建立专业权威，又具备坚固的工程防御体系。
 
 ---
