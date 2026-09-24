@@ -33,7 +33,7 @@
       </div>
 
       <div class="website-statement__body">
-        <div v-html="copy.statementBody"></div>
+        <SafeRichText :html="copy.statementBody" />
       </div>
     </section>
 

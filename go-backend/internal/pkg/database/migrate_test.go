@@ -176,12 +176,14 @@ func TestPrepareSchemaAgainstFreshPostgres(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create migration runner: %v", err)
 	}
-	if err := migrator.Migrate(110); err != nil {
-		t.Fatalf("roll back migrations to version 110: %v", err)
+	// Migration 343 permanently retires gift-card data, so exercise the reversible
+	// migrations after that boundary without pretending the removed schema can return.
+	if err := migrator.Migrate(343); err != nil {
+		t.Fatalf("roll back migrations to version 343: %v", err)
 	}
-	assertMigrationState(ctx, t, testDB, 110, false)
+	assertMigrationState(ctx, t, testDB, 343, false)
 	if err := migrator.Up(); err != nil && err != migrate.ErrNoChange {
-		t.Fatalf("reapply migrations after version 110: %v", err)
+		t.Fatalf("reapply migrations after version 343: %v", err)
 	}
 	if err := PrepareSchema(ctx, gormDB, &cfg, "release"); err != nil {
 		t.Fatalf("prepare existing PostgreSQL schema: %v", err)
@@ -437,13 +439,14 @@ func assertRefundAndPolicyMigrationState(ctx context.Context, t *testing.T, db *
 	t.Helper()
 
 	assertPostgresColumns(ctx, t, db, "refunds", map[string]string{
-		"requested_amount":            "numeric",
-		"discount_clawback_amount":    "numeric",
-		"loyalty_settlement_prepared": "bool",
-		"loyalty_points_clawback":     "int4",
-		"loyalty_points_debt":         "int4",
-		"calculation_snapshot":        "text",
-		"fx_snapshot":                 "jsonb",
+		"amount_minor":                   "int8",
+		"requested_amount_minor":         "int8",
+		"discount_clawback_amount_minor": "int8",
+		"loyalty_settlement_prepared":    "bool",
+		"loyalty_points_clawback":        "int4",
+		"loyalty_points_debt":            "int4",
+		"calculation_snapshot":           "text",
+		"fx_snapshot":                    "jsonb",
 	})
 	assertPostgresColumns(ctx, t, db, "refund_line_items", map[string]string{
 		"refund_id":     "int8",

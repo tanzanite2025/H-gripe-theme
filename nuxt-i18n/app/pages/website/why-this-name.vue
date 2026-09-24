@@ -9,7 +9,7 @@
 
       <div v-if="copy.intro || copy.body || copy.note" class="website-name-content__copy">
         <p v-if="copy.intro" class="website-name-content__intro">{{ copy.intro }}</p>
-        <div v-if="copy.body" class="website-name-content__body" v-html="copy.body"></div>
+        <SafeRichText v-if="copy.body" class="website-name-content__body" :html="copy.body" />
         <span v-if="copy.note" class="website-name-content__note">{{ copy.note }}</span>
       </div>
     </section>

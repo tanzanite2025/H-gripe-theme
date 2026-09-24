@@ -37,6 +37,20 @@ id = "generic-api-key"
   ]
 
   [[rules.allowlists]]
+  description = "Synthetic idempotency value used only in a historical redemption unit test."
+  condition = "AND"
+  regexTarget = "line"
+  commits = [
+    '''f0a52e38d8b4d69c0b1a4c7aaad864f5f3b4f441''',
+  ]
+  paths = [
+    '''(^|/)go-backend/internal/service/marketing_redeem_service_test\.go$''',
+  ]
+  regexes = [
+    '''IdempotencyKey:\s*"test-redemption-42"''',
+  ]
+
+  [[rules.allowlists]]
   description = "False positive object storage key prefix comparison."
   condition = "AND"
   regexTarget = "line"
@@ -59,4 +73,18 @@ id = "linkedin-client-id"
   ]
   regexes = [
     '''linkedin:\s*['"]SocialLinkedIn['"]''',
+  ]
+
+[[rules]]
+id = "stripe-access-token"
+
+  [[rules.allowlists]]
+  description = "Fixed Stripe test token used by the settlement snapshot unit test."
+  condition = "AND"
+  regexTarget = "line"
+  paths = [
+    '''(^|/)go-backend/internal/api/v1/payment/wallet_order_handler_test\.go$''',
+  ]
+  regexes = [
+    '''t\.Setenv\("STRIPE_SECRET_KEY",\s*"sk_test_settlement"\)''',
   ]

@@ -32,7 +32,7 @@
 
 | 环境 | HTTP API 根地址 | 账号凭证规范 |
 | :--- | :--- | :--- |
-| **测试沙箱 (FAT)** | `https://open-fat.yw56.com.cn/api/order` | 客户号 `user_id: 100000`<br>制单秘钥 `apitoken: [REDACTED]` |
+| **测试沙箱 (FAT)** | `https://open-fat.yw56.com.cn/api/order` | 客户号和制单秘钥由燕文单独分配，请通过受控密钥存储配置 |
 | **正式生产 (PRD)** | `https://open.yw56.com.cn/api/order` | 商务签约分配的唯一客户商户号及正式 `apitoken` |
 | **独立轨迹端点** | `http://api.track.yw56.com.cn/api/tracking` | Header 携带 `Authorization: 商户号/制单账号`，GET 模式，单次最多 30 个单号 |
 
