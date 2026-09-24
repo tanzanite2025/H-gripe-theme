@@ -22,26 +22,31 @@ type refundPromotionAdjustment struct {
 }
 
 type refundPromotionAdjustmentSnapshot struct {
-	Version                          int     `json:"version"`
-	Policy                           string  `json:"policy"`
-	Reason                           string  `json:"reason,omitempty"`
-	RequestedAmount                  float64 `json:"requested_amount"`
-	RequestedSubtotalAmount          float64 `json:"requested_subtotal_amount"`
-	NetRefundAmount                  float64 `json:"net_refund_amount"`
-	DiscountClawbackAmount           float64 `json:"discount_clawback_amount"`
-	OrderSubtotalAmount              float64 `json:"order_subtotal_amount"`
-	PreviousRefundedSubtotalAmount   float64 `json:"previous_refunded_subtotal_amount"`
-	PreviousDiscountClawbackAmount   float64 `json:"previous_discount_clawback_amount"`
-	RemainingSubtotalBeforeRefund    float64 `json:"remaining_subtotal_before_refund"`
-	RemainingSubtotalAfterRefund     float64 `json:"remaining_subtotal_after_refund"`
-	OriginalCouponDiscountAmount     float64 `json:"original_coupon_discount_amount"`
-	RecalculatedCouponDiscountAmount float64 `json:"recalculated_coupon_discount_amount"`
-	CouponID                         uint    `json:"coupon_id,omitempty"`
-	CouponCode                       string  `json:"coupon_code,omitempty"`
-	CouponType                       string  `json:"coupon_type,omitempty"`
-	CouponValue                      float64 `json:"coupon_value,omitempty"`
-	CouponMinAmount                  float64 `json:"coupon_min_amount,omitempty"`
-	CouponMaxDiscount                float64 `json:"coupon_max_discount,omitempty"`
+	Version int    `json:"version"`
+	Policy  string `json:"policy"`
+	Reason  string `json:"reason,omitempty"`
+
+	// Transactional evidence is persisted in the currency's smallest unit.
+	// Percentage coupon values remain exact decimal strings because they are
+	// rates rather than monetary amounts.
+	RequestedAmountMinor                  int64  `json:"requested_amount_minor"`
+	RequestedSubtotalAmountMinor          int64  `json:"requested_subtotal_amount_minor"`
+	NetRefundAmountMinor                  int64  `json:"net_refund_amount_minor"`
+	DiscountClawbackAmountMinor           int64  `json:"discount_clawback_amount_minor"`
+	OrderSubtotalAmountMinor              int64  `json:"order_subtotal_amount_minor"`
+	PreviousRefundedSubtotalAmountMinor   int64  `json:"previous_refunded_subtotal_amount_minor"`
+	PreviousDiscountClawbackAmountMinor   int64  `json:"previous_discount_clawback_amount_minor"`
+	RemainingSubtotalBeforeRefundMinor    int64  `json:"remaining_subtotal_before_refund_minor"`
+	RemainingSubtotalAfterRefundMinor     int64  `json:"remaining_subtotal_after_refund_minor"`
+	OriginalCouponDiscountAmountMinor     int64  `json:"original_coupon_discount_amount_minor"`
+	RecalculatedCouponDiscountAmountMinor int64  `json:"recalculated_coupon_discount_amount_minor"`
+	CouponID                              uint   `json:"coupon_id,omitempty"`
+	CouponCode                            string `json:"coupon_code,omitempty"`
+	CouponType                            string `json:"coupon_type,omitempty"`
+	CouponValueRateDecimal                string `json:"coupon_value_rate_decimal,omitempty"`
+	CouponValueMinor                      int64  `json:"coupon_value_minor,omitempty"`
+	CouponMinAmountMinor                  int64  `json:"coupon_min_amount_minor,omitempty"`
+	CouponMaxDiscountMinor                int64  `json:"coupon_max_discount_minor,omitempty"`
 }
 
 var errInvalidOrderPricingSnapshot = errors.New("invalid order pricing snapshot")
@@ -98,7 +103,7 @@ func calculateRefundPromotionAdjustment(
 	if err != nil {
 		return refundPromotionAdjustment{}, err
 	}
-	orderSubtotal, err := parseRefundMoney(o.SubtotalAmount, currencyCode)
+	orderSubtotal, err := o.SubtotalMoney()
 	if err != nil {
 		return refundPromotionAdjustment{}, fmt.Errorf("order subtotal: %w", err)
 	}
@@ -121,7 +126,7 @@ func calculateRefundPromotionAdjustment(
 		}
 		return refundPromotionAdjustment{}, err
 	}
-	persistedCouponDiscount, err := parseRefundMoney(usage.Discount, currencyCode)
+	persistedCouponDiscount, err := usage.DiscountMoney(currencyCode)
 	if err != nil {
 		return refundPromotionAdjustment{}, fmt.Errorf("original coupon discount: %w", err)
 	}
@@ -148,19 +153,19 @@ func calculateRefundPromotionAdjustment(
 		return refundPromotionAdjustment{}, err
 	}
 
-	previousRefundedSubtotalMajor, err := repos.Payment.SumRefundedSubtotalAmountByOrderID(o.ID, o.Currency, "pending", "completed")
+	previousRefundedSubtotalMinor, err := repos.Payment.SumRefundedSubtotalMinorAmountByOrderID(o.ID, "pending", "completed")
 	if err != nil {
 		return refundPromotionAdjustment{}, err
 	}
-	previousRefundedSubtotal, err := parseRefundMoney(previousRefundedSubtotalMajor, currencyCode)
+	previousRefundedSubtotal, err := domainmoney.New(previousRefundedSubtotalMinor, currencyCode)
 	if err != nil {
 		return refundPromotionAdjustment{}, fmt.Errorf("previous refunded subtotal: %w", err)
 	}
-	previousDiscountClawbackMajor, err := repos.Payment.SumRefundDiscountClawbackByOrderID(o.ID, "pending", "completed")
+	previousDiscountClawbackMinor, err := repos.Payment.SumRefundDiscountClawbackMinorByOrderID(o.ID, "pending", "completed")
 	if err != nil {
 		return refundPromotionAdjustment{}, err
 	}
-	previousDiscountClawback, err := parseRefundMoney(previousDiscountClawbackMajor, currencyCode)
+	previousDiscountClawback, err := domainmoney.New(previousDiscountClawbackMinor, currencyCode)
 	if err != nil {
 		return refundPromotionAdjustment{}, fmt.Errorf("previous discount clawback: %w", err)
 	}
@@ -175,6 +180,56 @@ func calculateRefundPromotionAdjustment(
 		originalCouponDiscount,
 		previousRefundedSubtotal,
 		previousDiscountClawback,
+	)
+}
+
+// calculateRefundPromotionAdjustmentFromPersistedPricing is the refund path
+// for orders whose line snapshot already contains the coupon allocation. The
+// checkout pipeline has permanently decided the net line amount, so a refund
+// must not reverse-engineer an order-level coupon from the remaining subtotal
+// (which can produce a different result after a partial return).
+func calculateRefundPromotionAdjustmentFromPersistedPricing(
+	o *order.Order,
+	requestedAmount domainmoney.Money,
+	requestedSubtotalAmount domainmoney.Money,
+	originalCouponDiscount domainmoney.Money,
+) (refundPromotionAdjustment, error) {
+	if o == nil {
+		return refundPromotionAdjustment{}, errors.New("order is required")
+	}
+	currencyCode := currencydomain.NormalizeCode(o.Currency)
+	if currencyCode == "" {
+		currencyCode = currencydomain.DefaultPrimaryCurrency
+	}
+	for label, value := range map[string]domainmoney.Money{
+		"requested refund amount":   requestedAmount,
+		"requested subtotal amount": requestedSubtotalAmount,
+		"original coupon discount":  originalCouponDiscount,
+	} {
+		if err := validateRefundAdjustmentMoney(value, currencyCode, label); err != nil {
+			return refundPromotionAdjustment{}, err
+		}
+	}
+	orderSubtotal, err := o.SubtotalMoney()
+	if err != nil {
+		return refundPromotionAdjustment{}, fmt.Errorf("order subtotal: %w", err)
+	}
+	zero := zeroRefundMoney(currencyCode)
+	return newRefundPromotionAdjustmentSnapshot(
+		nil,
+		nil,
+		requestedAmount,
+		requestedSubtotalAmount,
+		requestedAmount,
+		zero,
+		orderSubtotal,
+		zero,
+		zero,
+		zero,
+		zero,
+		originalCouponDiscount,
+		"persisted_line_pricing",
+		nil,
 	)
 }
 
@@ -283,10 +338,6 @@ func applyRefundPromotionClawback(
 	)
 }
 
-func parseRefundMoney(value float64, currency string) (domainmoney.Money, error) {
-	return domainmoney.FromMajorFloat(value, currency)
-}
-
 func zeroRefundMoney(currency string) domainmoney.Money {
 	return domainmoney.MustNew(0, currency)
 }
@@ -329,48 +380,46 @@ func newRefundPromotionAdjustmentSnapshot(
 		remainingAfter,
 		originalCouponDiscount,
 	}
-	major := make([]float64, len(amounts))
+	minor := make([]int64, len(amounts))
 	for index, amount := range amounts {
-		value, err := amount.MajorFloat()
-		if err != nil {
-			return refundPromotionAdjustment{}, fmt.Errorf("format refund promotion snapshot amount: %w", err)
+		if err := amount.Validate(); err != nil {
+			return refundPromotionAdjustment{}, fmt.Errorf("validate refund promotion snapshot amount: %w", err)
 		}
-		major[index] = value
+		minor[index] = amount.AmountMinor()
 	}
 	snapshot := refundPromotionAdjustmentSnapshot{
-		Version:                        1,
-		Policy:                         "remaining-subtotal-coupon-recalculation",
-		Reason:                         reason,
-		RequestedAmount:                major[0],
-		RequestedSubtotalAmount:        major[1],
-		NetRefundAmount:                major[2],
-		DiscountClawbackAmount:         major[3],
-		OrderSubtotalAmount:            major[4],
-		PreviousRefundedSubtotalAmount: major[5],
-		PreviousDiscountClawbackAmount: major[6],
-		RemainingSubtotalBeforeRefund:  major[7],
-		RemainingSubtotalAfterRefund:   major[8],
+		Version:                             2,
+		Policy:                              "minor-unit-coupon-recalculation",
+		Reason:                              reason,
+		RequestedAmountMinor:                minor[0],
+		RequestedSubtotalAmountMinor:        minor[1],
+		NetRefundAmountMinor:                minor[2],
+		DiscountClawbackAmountMinor:         minor[3],
+		OrderSubtotalAmountMinor:            minor[4],
+		PreviousRefundedSubtotalAmountMinor: minor[5],
+		PreviousDiscountClawbackAmountMinor: minor[6],
+		RemainingSubtotalBeforeRefundMinor:  minor[7],
+		RemainingSubtotalAfterRefundMinor:   minor[8],
 	}
 	if usage != nil {
-		snapshot.OriginalCouponDiscountAmount = major[9]
+		snapshot.OriginalCouponDiscountAmountMinor = minor[9]
 	}
 	if couponRecord != nil {
 		snapshot.CouponID = couponRecord.ID
 		snapshot.CouponCode = couponRecord.Code
 		snapshot.CouponType = couponRecord.Type
-		snapshot.CouponValue = couponRecord.Value
-		snapshot.CouponMinAmount = couponRecord.MinAmount
-		snapshot.CouponMaxDiscount = couponRecord.MaxDiscount
+		if couponRecord.Type == "percentage" {
+			snapshot.CouponValueRateDecimal = strings.TrimSpace(couponRecord.ValueRateDecimal)
+		}
+		snapshot.CouponValueMinor = couponRecord.ValueMinor
+		snapshot.CouponMinAmountMinor = couponRecord.MinAmountMinor
+		snapshot.CouponMaxDiscountMinor = couponRecord.MaxDiscountMinor
 		if recalculatedCouponMoney != nil {
 			recalculated := *recalculatedCouponMoney
 			if recalculated.AmountMinor() > originalCouponDiscount.AmountMinor() {
 				recalculated = originalCouponDiscount
 			}
-			value, err := recalculated.MajorFloat()
-			if err != nil {
-				return refundPromotionAdjustment{}, fmt.Errorf("format recalculated coupon amount: %w", err)
-			}
-			snapshot.RecalculatedCouponDiscountAmount = value
+			snapshot.RecalculatedCouponDiscountAmountMinor = recalculated.AmountMinor()
 		}
 	}
 
@@ -394,16 +443,4 @@ func validateRefundAdjustmentMoney(value domainmoney.Money, currencyCode string,
 		return fmt.Errorf("%s: %w", label, domainmoney.ErrCurrencyMismatch)
 	}
 	return nil
-}
-
-func roundRefundMoney(value float64, currencyCode string) float64 {
-	money, err := domainmoney.FromMajorFloat(value, currencydomain.NormalizeCode(currencyCode))
-	if err != nil {
-		return 0
-	}
-	major, err := money.MajorFloat()
-	if err != nil {
-		return 0
-	}
-	return major
 }

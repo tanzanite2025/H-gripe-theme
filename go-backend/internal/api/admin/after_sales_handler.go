@@ -48,9 +48,9 @@ type updateAfterSalesStatusRequest struct {
 }
 
 type saveAfterSalesRefundReviewRequest struct {
-	ProposedAmount float64 `json:"proposed_amount" binding:"required"`
-	Currency       string  `json:"currency" binding:"required"`
-	RequestNotes   string  `json:"request_notes" binding:"required"`
+	ProposedAmountMinor int64  `json:"proposed_amount_minor" binding:"required"`
+	Currency            string `json:"currency" binding:"required"`
+	RequestNotes        string `json:"request_notes" binding:"required"`
 }
 
 type decideAfterSalesRefundReviewRequest struct {
@@ -89,6 +89,22 @@ func (h *AfterSalesHandler) Get(c *gin.Context) {
 	}
 
 	record, err := h.service.GetCase(caseID)
+	if err != nil {
+		respondAfterSalesError(c, err)
+		return
+	}
+	response.Success(c, record)
+}
+
+// LookupByReturnTracking resolves a warehouse scan to its after-sales case.
+// GET /api/admin/after-sales/return-shipments?tracking_number=...
+func (h *AfterSalesHandler) LookupByReturnTracking(c *gin.Context) {
+	trackingNumber := strings.TrimSpace(c.Query("tracking_number"))
+	if trackingNumber == "" {
+		apierror.RespondBadRequest(c, "tracking_number is required")
+		return
+	}
+	record, err := h.service.FindCaseByReturnTrackingNumber(trackingNumber)
 	if err != nil {
 		respondAfterSalesError(c, err)
 		return
@@ -247,7 +263,7 @@ func (h *AfterSalesHandler) SaveRefundReview(c *gin.Context) {
 		apierror.RespondValidationError(c, err.Error())
 		return
 	}
-	proposedAmount, err := domainmoney.FromMajorFloat(req.ProposedAmount, req.Currency)
+	proposedAmount, err := domainmoney.New(req.ProposedAmountMinor, req.Currency)
 	if err != nil {
 		apierror.RespondValidationError(c, "proposed_amount and currency must form a valid monetary amount")
 		return
@@ -359,6 +375,8 @@ func respondAfterSalesError(c *gin.Context, err error) {
 		errors.Is(err, service.ErrAfterSalesReturnWarehouseRequired),
 		errors.Is(err, service.ErrAfterSalesReturnReceiverRequired),
 		errors.Is(err, service.ErrAfterSalesOrderNotEligible),
+		errors.Is(err, service.ErrAfterSalesReturnWindowExpired),
+		errors.Is(err, service.ErrAfterSalesReturnNotAllowed),
 		errors.Is(err, service.ErrAfterSalesItemsRequired),
 		errors.Is(err, service.ErrAfterSalesItemNotFound),
 		errors.Is(err, service.ErrAfterSalesItemOrderMismatch),

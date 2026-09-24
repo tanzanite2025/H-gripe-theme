@@ -78,8 +78,7 @@ export interface ShipmentRecord {
   user_id?: APIID | null
   customer_name?: string | null
   customer_email?: string | null
-  tracking_shipment_id?: APIID | null
-  tracking_number?: string | null
+  tracking_shipments?: ShipmentRecordPackage[]
   shipped_at?: string | null
   items_snapshot?: ShipmentItemSnapshot[]
   product_codes?: string[]
@@ -95,6 +94,13 @@ export interface ShipmentRecord {
   created_at?: string | null
   updated_at?: string | null
   [key: string]: unknown
+}
+
+export interface ShipmentRecordPackage {
+  id?: APIID | null
+  tracking_number?: string | null
+  provider_carrier_code?: string | null
+  enabled?: boolean
 }
 
 const readObjectPayload = (response: unknown, endpoint: string): any => (

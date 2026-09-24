@@ -26,7 +26,7 @@
       v-model:active-activity="activeActivity"
       :recent-orders="recentOrders"
       :recent-users="recentUsers"
-      :format-number="formatNumber"
+      :format-money="formatMinorMoney"
       :get-order-status-name="getOrderStatusName"
       :order-status-tone="orderStatusTone"
       :get-role-name="getRoleName"
@@ -66,7 +66,8 @@ import type {
 import {
   buildSalesChartOption,
   currentDashboardDate,
-  formatNumber,
+  formatRevenueByCurrency,
+  formatMinorMoney,
   getOrderStatusName,
   getRoleName,
   metricToneClass,
@@ -112,9 +113,9 @@ const metricCards = computed<DashboardMetricCard[]>(() => [
   {
     key: 'revenue',
     label: '总销售额',
-    value: '¥' + formatNumber(stats.value.orders?.revenue || 0),
+    value: formatRevenueByCurrency(stats.value.orders?.revenue_by_currency),
     detailLabel: '今日销售',
-    detailValue: '¥' + formatNumber(stats.value.orders?.today_revenue || 0),
+    detailValue: formatRevenueByCurrency(stats.value.orders?.today_revenue_by_currency),
     icon: WalletCards,
     tone: 'amber',
     path: '/orders'

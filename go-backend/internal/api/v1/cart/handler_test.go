@@ -288,7 +288,7 @@ func seedPurchasableProduct(t *testing.T, db *gorm.DB) product.Product {
 		SKU:   "CART-HANDLER-RIM",
 		Name:  "Cart Handler Rim",
 		Slug:  "cart-handler-rim",
-		Price: 100,
+		PriceMinor: 10000,
 		Stock: 10,
 	}
 	require.NoError(t, db.Create(&productRecord).Error)
@@ -297,7 +297,7 @@ func seedPurchasableProduct(t *testing.T, db *gorm.DB) product.Product {
 		ProductID:    productRecord.ID,
 		SKU:          "CART-HANDLER-RIM-DEFAULT",
 		OptionValues: "{}",
-		Price:        100,
+		PriceMinor:   10000,
 		Stock:        10,
 		IsDefault:    true,
 		IsActive:     true,

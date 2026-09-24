@@ -21,7 +21,7 @@ var (
 	ErrExcessPrecision   = errors.New("amount has more fractional digits than the currency supports")
 )
 
-// Money stores an amount in the smallest unit of Currency (for example cents
+// Money stores an amount in the smallest unit of Currency (for example minor
 // for USD and whole units for JPY). AmountMinor may be negative for signed
 // adjustments; callers that model payments or balances should reject negative
 // values at their own domain boundary.
@@ -299,28 +299,7 @@ func (m Money) MultiplyRat(ratio *big.Rat) (Money, error) {
 	return Money{amountMinor: minor, currency: m.currency}, nil
 }
 
-// ConvertAtRate converts this amount using a captured decimal FX rate. The
-// rate is parsed into a rational number at this boundary and the result is
-// rounded once to the target currency's minor-unit scale.
-func (m Money) ConvertAtRate(rate float64, targetCurrency string) (Money, error) {
-	if err := m.Validate(); err != nil {
-		return Money{}, err
-	}
-	if math.IsNaN(rate) || math.IsInf(rate, 0) || rate <= 0 {
-		return Money{}, errors.New("money conversion rate must be positive and finite")
-	}
-	_, err := currency.ParseCode(targetCurrency)
-	if err != nil {
-		return Money{}, err
-	}
-	rateRat, ok := new(big.Rat).SetString(strconv.FormatFloat(rate, 'f', -1, 64))
-	if !ok || rateRat.Sign() <= 0 {
-		return Money{}, errors.New("invalid money conversion rate")
-	}
-	return m.ConvertAtRat(rateRat, targetCurrency)
-}
-
-// ConvertAtRat is the exact-rational counterpart of ConvertAtRate. It is used
+// ConvertAtRat converts this amount using an exact captured rational rate. It is used
 // when a rate originated from a decimal persistence value and must not be
 // converted through another binary floating-point approximation.
 func (m Money) ConvertAtRat(rate *big.Rat, targetCurrency string) (Money, error) {

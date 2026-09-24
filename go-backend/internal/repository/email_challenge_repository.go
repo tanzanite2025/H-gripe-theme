@@ -19,6 +19,10 @@ func NewEmailChallengeRepository(db *gorm.DB) *EmailChallengeRepository {
 	return &EmailChallengeRepository{db: db}
 }
 
+func (r *EmailChallengeRepository) WithTx(tx *gorm.DB) *EmailChallengeRepository {
+	return &EmailChallengeRepository{db: tx}
+}
+
 func (r *EmailChallengeRepository) Create(challenge *verification.EmailChallenge) error {
 	return r.db.Create(challenge).Error
 }

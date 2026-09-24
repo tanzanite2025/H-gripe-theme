@@ -127,7 +127,7 @@ func paymentRefundExecutionAuditDetails(
 func paymentRefundDraftAuditDetails(
 	orderID uint,
 	transactionID uint,
-	requestedAmount float64,
+	requestedAmountMinor int64,
 	reason string,
 	lineItemCount int,
 	restockCount int,
@@ -136,7 +136,7 @@ func paymentRefundDraftAuditDetails(
 	details := map[string]interface{}{
 		"order_id":                orderID,
 		"transaction_id":          transactionID,
-		"requested_amount":        requestedAmount,
+		"requested_amount_minor":  requestedAmountMinor,
 		"reason_present":          strings.TrimSpace(reason) != "",
 		"reason_length":           len(strings.TrimSpace(reason)),
 		"line_item_count":         lineItemCount,
@@ -253,9 +253,10 @@ func paymentMethodAuditDetails(methodID uint, method paymentdomain.PaymentMethod
 		"description_present": strings.TrimSpace(method.Description) != "",
 		"description_length":  len(strings.TrimSpace(method.Description)),
 		"fee_type":            strings.ToLower(strings.TrimSpace(method.FeeType)),
-		"fee_value":           method.FeeValue,
-		"min_amount":          method.MinAmount,
-		"max_amount":          method.MaxAmount,
+		"fee_value_minor":     method.FeeValueMinor,
+		"fee_rate_decimal":    method.FeeRateDecimal,
+		"min_amount_minor":    method.MinAmountMinor,
+		"max_amount_minor":    method.MaxAmountMinor,
 		"enabled":             method.Enabled,
 		"sort_order":          method.SortOrder,
 		"settings_present":    strings.TrimSpace(method.Settings) != "",
@@ -294,7 +295,7 @@ func paymentRefundRecommendationAuditDetails(
 		details["provider"] = recommendation.Provider
 		details["source_kind"] = string(recommendation.SourceKind)
 		details["recommended_action"] = recommendation.RecommendedAction
-		details["recommended_amount"] = recommendation.RecommendedAmount
+		details["recommended_amount_minor"] = recommendation.RecommendedAmountMinor
 		details["currency"] = recommendation.Currency
 		details["priority"] = recommendation.Priority
 		details["status"] = recommendation.Status
@@ -310,7 +311,8 @@ func paymentRefundRecommendationAuditDetails(
 	}
 	if refund != nil {
 		details["refund_id"] = refund.ID
-		details["refund_amount"] = refund.Amount
+		details["refund_amount_minor"] = refund.AmountMinor
+		details["currency"] = refund.Currency
 		details["refund_status"] = refund.Status
 		details["order_id"] = refund.OrderID
 		details["transaction_id"] = refund.TransactionID

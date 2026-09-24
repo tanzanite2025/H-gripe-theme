@@ -2,8 +2,10 @@ package admin
 
 import (
 	"commerce-platform/internal/pkg/apierror"
+	"commerce-platform/internal/pkg/resilience"
 	"commerce-platform/internal/pkg/response"
 	"commerce-platform/internal/service"
+	"errors"
 	"strconv"
 	"strings"
 
@@ -52,14 +54,19 @@ func (h *ShippingHandler) ListTrackingEvents(c *gin.Context) {
 		apierror.RespondBadRequest(c, "invalid order ID")
 		return
 	}
+	trackingNumber := strings.TrimSpace(c.Query("tracking_number"))
+	if trackingNumber == "" {
+		apierror.RespondBadRequest(c, "tracking_number is required")
+		return
+	}
 
-	shipment, err := h.shippingService.GetTrackingShipmentByOrderID(uint(orderID))
+	shipment, err := h.shippingService.GetTrackingShipmentByOrderIDAndTrackingNumber(uint(orderID), trackingNumber)
 	if err != nil {
 		apierror.RespondNotFound(c, "Tracking shipment")
 		return
 	}
 
-	events, err := h.shippingService.GetTrackingEventsByOrderID(shipment.OrderID)
+	events, err := h.shippingService.GetTrackingEventsByOrderIDAndTrackingNumber(shipment.OrderID, shipment.TrackingNumber)
 	if err != nil {
 		apierror.RespondInternalError(c, err)
 		return
@@ -107,32 +114,28 @@ func (h *ShippingHandler) RegisterTrackingShipment(c *gin.Context) {
 		return
 	}
 
-	shipment, err := h.shippingService.GetTrackingShipmentByOrderID(uint(orderID))
-	if err != nil {
-		apierror.RespondNotFound(c, "Tracking shipment")
+	trackingNumber := strings.TrimSpace(c.Query("tracking_number"))
+	if trackingNumber == "" {
+		apierror.RespondBadRequest(c, "tracking_number is required")
 		return
 	}
-
-	if err := h.shippingService.RegisterTrackingShipment(c.Request.Context(), service.TrackingSyncInput{
-		OrderID:                  shipment.OrderID,
-		ProviderID:               shipment.TrackingProviderID,
-		TrackingNumber:           shipment.TrackingNumber,
-		ProviderCarrierCode:      shipment.ProviderCarrierCode,
-		CarrierID:                shipment.CarrierID,
-		CarrierServiceID:         shipment.CarrierServiceID,
-		TrackingCarrierMappingID: shipment.TrackingCarrierMappingID,
-	}); err != nil {
-		apierror.RespondBadRequest(c, err.Error())
-		return
-	}
-
-	updatedShipment, err := h.shippingService.GetTrackingShipmentByOrderID(uint(orderID))
+	shipment, err := h.shippingService.RequestTrackingShipmentRegistration(c.Request.Context(), uint(orderID), trackingNumber)
 	if err != nil {
+		if service.IsRecordNotFound(err) {
+			apierror.RespondNotFound(c, "Tracking shipment")
+			return
+		}
+		if errors.Is(err, resilience.ErrExternalOutcomeUnknown) {
+			apierror.RespondConflict(c, "Tracking registration requires reconciliation before another attempt")
+			return
+		}
 		apierror.RespondInternalError(c, err)
 		return
 	}
-
-	response.Success(c, gin.H{"shipment": updatedShipment})
+	response.Accepted(c, gin.H{
+		"message":  "Tracking registration has been queued",
+		"shipment": shipment,
+	})
 }
 
 func (h *ShippingHandler) SyncTrackingShipment(c *gin.Context) {
@@ -142,7 +145,12 @@ func (h *ShippingHandler) SyncTrackingShipment(c *gin.Context) {
 		return
 	}
 
-	shipment, err := h.shippingService.GetTrackingShipmentByOrderID(uint(orderID))
+	trackingNumber := strings.TrimSpace(c.Query("tracking_number"))
+	if trackingNumber == "" {
+		apierror.RespondBadRequest(c, "tracking_number is required")
+		return
+	}
+	shipment, err := h.shippingService.GetTrackingShipmentByOrderIDAndTrackingNumber(uint(orderID), trackingNumber)
 	if err != nil {
 		apierror.RespondNotFound(c, "Tracking shipment")
 		return

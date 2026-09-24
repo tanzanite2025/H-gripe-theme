@@ -43,12 +43,12 @@
             <Switch v-model="form.enabled" aria-label="启用运费模板" />
           </div>
 
-          <AdminFormField label="默认运费" required :error="errors.default_fee">
-            <Input v-model.number="form.default_fee" type="number" min="0" step="0.01" @input="handleDefaultFeeInput" />
+          <AdminFormField label="默认运费（minor）" required :error="errors.default_fee_minor">
+            <Input v-model.number="form.default_fee_minor" type="number" min="0" step="1" @input="handleDefaultFeeInput" />
           </AdminFormField>
 
-          <AdminFormField label="免运门槛">
-            <Input v-model.number="form.free_threshold" type="number" min="0" step="0.01" @input="clearTemplateDisplayPrice('free_threshold')" />
+          <AdminFormField label="免运门槛（minor）">
+            <Input v-model.number="form.free_threshold_minor" type="number" min="0" step="1" @input="clearTemplateDisplayPrice('free_threshold')" />
           </AdminFormField>
 
           <div class="flex items-end justify-between gap-3 rounded-lg border px-3 py-2.5">
@@ -123,16 +123,32 @@
               <Input v-model.trim="rule.region" class="font-mono uppercase" placeholder="US" />
             </AdminFormField>
             <AdminFormField label="最小值" class="lg:col-span-2">
-              <Input v-model.number="rule.min_value" type="number" min="0" step="0.001" @input="clearRuleDisplayPrice(rule, 'min_value')" />
+              <Input
+                v-if="form.type === 'price'"
+                v-model.number="rule.min_value_minor"
+                type="number"
+                min="0"
+                step="1"
+                @input="clearRuleDisplayPrice(rule, 'min_value')"
+              />
+              <Input v-else v-model.number="rule.min_value" type="number" min="0" step="0.001" />
             </AdminFormField>
             <AdminFormField label="最大值" class="lg:col-span-2">
-              <Input v-model.number="rule.max_value" type="number" min="0" step="0.001" @input="clearRuleDisplayPrice(rule, 'max_value')" />
+              <Input
+                v-if="form.type === 'price'"
+                v-model.number="rule.max_value_minor"
+                type="number"
+                min="0"
+                step="1"
+                @input="clearRuleDisplayPrice(rule, 'max_value')"
+              />
+              <Input v-else v-model.number="rule.max_value" type="number" min="0" step="0.001" />
             </AdminFormField>
-            <AdminFormField label="运费" class="lg:col-span-2">
-              <Input v-model.number="rule.fee" type="number" min="0" step="0.01" @input="clearRuleDisplayPrice(rule, 'fee')" />
+            <AdminFormField label="运费（minor）" class="lg:col-span-2">
+              <Input v-model.number="rule.fee_minor" type="number" min="0" step="1" @input="clearRuleDisplayPrice(rule, 'fee')" />
             </AdminFormField>
-            <AdminFormField label="续费" class="lg:col-span-2">
-              <Input v-model.number="rule.additional" type="number" min="0" step="0.01" @input="clearRuleDisplayPrice(rule, 'additional')" />
+            <AdminFormField label="续费（minor）" class="lg:col-span-2">
+              <Input v-model.number="rule.additional_minor" type="number" min="0" step="1" @input="clearRuleDisplayPrice(rule, 'additional')" />
             </AdminFormField>
             <div class="flex items-end justify-end lg:col-span-2">
               <Button type="button" variant="ghost" size="icon-sm" class="text-destructive hover:text-destructive" @click="removeRule(index)">
@@ -166,6 +182,7 @@ import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
+import { minorUnitsForCurrency } from '@/lib/dashboardPresentation'
 import axios from '@/utils/axios'
 
 const props = defineProps({
@@ -202,8 +219,10 @@ const addRule = () => {
     region: '',
     min_value: 0,
     max_value: 0,
-    fee: 0,
-    additional: 0,
+    min_value_minor: 0,
+    max_value_minor: 0,
+    fee_minor: 0,
+    additional_minor: 0,
     currency: sourceBaseCurrency.value,
     display_price_snapshots: {},
   })
@@ -245,7 +264,7 @@ const normalizeDisplayPrices = (values) => {
       const quoteCurrency = normalizeCurrencyCode(price?.quote_currency || price?.currency)
       if (!quoteCurrency || price?.fallback_reason) return null
       return {
-        amount: Number(price?.amount || 0),
+        amount_decimal: String(price?.amount_decimal ?? price?.amount ?? '0'),
         currency: quoteCurrency,
         quote_currency: quoteCurrency,
         rate: Number(price?.rate || 0),
@@ -254,7 +273,7 @@ const normalizeDisplayPrices = (values) => {
       }
     })
     .filter(Boolean)
-    .filter(price => price.amount > 0 && price.converted !== false)
+    .filter(price => Number(price.amount_decimal) > 0 && price.converted !== false)
     .filter((price) => {
       if (seen.has(price.currency)) return false
       seen.add(price.currency)
@@ -289,7 +308,13 @@ const clearRuleDisplayPrice = (rule, field) => {
 
 const handleDefaultFeeInput = () => {
   clearTemplateDisplayPrice('default_fee')
-  emit('clear-error', 'default_fee')
+  emit('clear-error', 'default_fee_minor')
+}
+
+// Exchange-rate conversion is a display-only boundary and accepts major units.
+const displayMajorFromMinor = (value) => {
+  const amountMinor = Number(value || 0)
+  return Number.isFinite(amountMinor) ? amountMinor / (10 ** minorUnitsForCurrency(sourceBaseCurrency.value)) : 0
 }
 
 const clearAllDisplayPrices = () => {
@@ -313,23 +338,23 @@ const handleTemplateCurrencyInput = () => {
 
 const shippingAmountEntries = () => {
   const entries = []
-  const defaultFee = numericAmount(props.form.default_fee)
+  const defaultFee = numericAmount(displayMajorFromMinor(props.form.default_fee_minor))
   if (defaultFee > 0) entries.push({ key: 'default_fee', target: 'template', field: 'default_fee', label: '默认运费', amount: defaultFee })
-  const freeThreshold = numericAmount(props.form.free_threshold)
+  const freeThreshold = numericAmount(displayMajorFromMinor(props.form.free_threshold_minor))
   if (freeThreshold > 0) entries.push({ key: 'free_threshold', target: 'template', field: 'free_threshold', label: '免运门槛', amount: freeThreshold })
 
   if (Array.isArray(props.form.rules)) {
     props.form.rules.forEach((rule, index) => {
       const region = String(rule.region || `规则 ${index + 1}`).toUpperCase()
       if (props.form.type === 'price') {
-        const minValue = numericAmount(rule.min_value)
-        const maxValue = numericAmount(rule.max_value)
+        const minValue = numericAmount(displayMajorFromMinor(rule.min_value_minor))
+        const maxValue = numericAmount(displayMajorFromMinor(rule.max_value_minor))
         if (minValue > 0) entries.push({ key: `rule_${index}_min_value`, target: 'rule', ruleIndex: index, field: 'min_value', label: `${region} 最小订单金额`, amount: minValue })
         if (maxValue > 0) entries.push({ key: `rule_${index}_max_value`, target: 'rule', ruleIndex: index, field: 'max_value', label: `${region} 最大订单金额`, amount: maxValue })
       }
-      const fee = numericAmount(rule.fee)
+      const fee = numericAmount(displayMajorFromMinor(rule.fee_minor))
       if (fee > 0) entries.push({ key: `rule_${index}_fee`, target: 'rule', ruleIndex: index, field: 'fee', label: `${region} 运费`, amount: fee })
-      const additional = numericAmount(rule.additional)
+      const additional = numericAmount(displayMajorFromMinor(rule.additional_minor))
       if (additional > 0) entries.push({ key: `rule_${index}_additional`, target: 'rule', ruleIndex: index, field: 'additional', label: `${region} 续费`, amount: additional })
     })
   }
@@ -375,7 +400,7 @@ const fillShippingDisplayPrices = async () => {
   try {
     const rows = await Promise.all(entries.map(async (entry) => {
       const response = await axios.post('/api/admin/pricing/exchange-rates/convert', {
-        amount: entry.amount,
+        amount_decimal: String(entry.amount),
         base_currency: sourceBaseCurrency.value
       })
       const data = response.data?.data || response.data || {}
@@ -405,7 +430,7 @@ const formatDisplayPriceResult = (price) => {
     return `${quoteCurrency || normalizeCurrencyCode(price?.currency) || '---'} 缺汇率`
   }
   const currency = normalizeCurrencyCode(price?.currency) || quoteCurrency || 'USD'
-  const amount = Number(price?.amount || 0)
+  const amount = Number(price?.amount_decimal ?? price?.amount ?? 0)
   try {
     return new Intl.NumberFormat('zh-CN', { style: 'currency', currency }).format(amount)
   } catch {

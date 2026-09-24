@@ -206,7 +206,7 @@ func (r *QuickBuyRepository) MarkStaleSessions(now time.Time, abandonedAfter tim
 	return affected, nil
 }
 
-func (r *QuickBuyRepository) ReplaceSessionItems(sessionID uint, items []quickbuy.SessionItem, status, validationStatus string, subtotal float64, weightG int) error {
+func (r *QuickBuyRepository) ReplaceSessionItems(sessionID uint, items []quickbuy.SessionItem, status, validationStatus string, subtotalMinor int64, weightG int) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
 		if err := tx.Where("session_id = ?", sessionID).Delete(&quickbuy.SessionItem{}).Error; err != nil {
 			return err
@@ -222,10 +222,10 @@ func (r *QuickBuyRepository) ReplaceSessionItems(sessionID uint, items []quickbu
 		return tx.Model(&quickbuy.Session{}).
 			Where("id = ?", sessionID).
 			Updates(map[string]interface{}{
-				"status":            status,
-				"validation_status": validationStatus,
-				"subtotal_snapshot": subtotal,
-				"weight_snapshot_g": weightG,
+				"status":                  status,
+				"validation_status":       validationStatus,
+				"subtotal_snapshot_minor": subtotalMinor,
+				"weight_snapshot_g":       weightG,
 			}).Error
 	})
 }

@@ -43,6 +43,7 @@ require (
 )
 
 require (
+	github.com/kylelemons/godebug v1.1.0 // indirect
 	github.com/mattn/go-sqlite3 v1.14.22 // indirect
 	github.com/richardlehane/mscfb v1.0.7 // indirect
 	github.com/richardlehane/msoleps v1.0.6 // indirect

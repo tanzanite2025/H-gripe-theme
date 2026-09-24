@@ -74,7 +74,7 @@
               </TableCell>
               <TableCell>
                 <span class="block max-w-44 truncate font-mono text-xs font-bold">
-                  {{ shipment.tracking_number || '无物流单号' }}
+                  {{ trackingLabel(shipment) }}
                 </span>
                 <span class="block text-[10px] text-muted-foreground/70">
                   {{ shipment.order_status || '-' }} / {{ shipment.shipping_status || '-' }}
@@ -149,7 +149,7 @@
                 <DetailItem label="客户">{{ selectedShipment.customer_name || '-' }}</DetailItem>
                 <DetailItem label="订单 ID">#{{ selectedShipment.order_id || '-' }}</DetailItem>
                 <DetailItem label="邮箱" class="col-span-2">{{ selectedShipment.customer_email || '-' }}</DetailItem>
-                <DetailItem label="物流单号" class="col-span-2">{{ selectedShipment.tracking_number || '-' }}</DetailItem>
+                <DetailItem label="物流包裹" class="col-span-2">{{ trackingLabel(selectedShipment) }}</DetailItem>
                 <DetailItem label="发货时间">{{ formatDateTime(selectedShipment.shipped_at) }}</DetailItem>
                 <DetailItem label="保修到期">{{ formatDate(selectedShipment.warranty_expires) }}</DetailItem>
               </dl>
@@ -414,6 +414,12 @@ const firstItemLabel = (shipment: WarrantyShipmentRecord): string => {
 const itemCountLabel = (shipment: WarrantyShipmentRecord): string => {
   const quantity = (shipment.items_snapshot || []).reduce((total, item) => total + Number(item.quantity || 0), 0)
   return `${shipment.items_snapshot?.length || 0} 个商品行 · 数量 ${quantity || 0}`
+}
+
+const trackingLabel = (shipment: WarrantyShipmentRecord): string => {
+  const packages = shipment.tracking_shipments || []
+  if (!packages.length) return '无物流单号'
+  return packages.map((parcel) => String(parcel.tracking_number || '-')).join('、')
 }
 
 </script>

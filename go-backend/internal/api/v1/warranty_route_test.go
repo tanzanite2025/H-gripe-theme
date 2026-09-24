@@ -14,6 +14,7 @@ import (
 
 	"commerce-platform/internal/app"
 	domainorder "commerce-platform/internal/domain/order"
+	"commerce-platform/internal/domain/outbox"
 	"commerce-platform/internal/domain/verification"
 	"commerce-platform/internal/domain/warranty"
 	"commerce-platform/internal/pkg/config"
@@ -46,7 +47,7 @@ func TestGuestWarrantyClaimCanBeViewedAfterSubmission(t *testing.T) {
 		UserID:        0,
 		Status:        "paid",
 		PaymentStatus: "paid",
-		TotalAmount:   199,
+		TotalAmountMinor: 19900,
 		Currency:      "USD",
 	}
 	order.ShippingAddress.Email = "guest@example.test"
@@ -54,6 +55,7 @@ func TestGuestWarrantyClaimCanBeViewedAfterSubmission(t *testing.T) {
 
 	verifyResponse := warrantyJSONRequest(t, router, http.MethodPost, "/api/v1/warranty/verify-order", `{"order_number":"TZ-WARRANTY-GUEST-ROUTE","email":"guest@example.test"}`)
 	require.Equal(t, http.StatusAccepted, verifyResponse.Code, verifyResponse.Body.String())
+	processWarrantyEmailOutbox(t, db, emailSender)
 	verificationToken := emailSender.LastLink(t).Query().Get("verification_token")
 	require.NotEmpty(t, verificationToken)
 
@@ -111,7 +113,7 @@ func TestWarrantyRoutesCompleteEmailVerificationAndClaimSubmission(t *testing.T)
 		UserID:        7,
 		Status:        "paid",
 		PaymentStatus: "paid",
-		TotalAmount:   199,
+		TotalAmountMinor: 19900,
 		Currency:      "USD",
 	}
 	order.ShippingAddress.Email = "rider@example.test"
@@ -125,6 +127,7 @@ func TestWarrantyRoutesCompleteEmailVerificationAndClaimSubmission(t *testing.T)
 		`{"order_number":"TZ-WARRANTY-ROUTE","email":"rider@example.test"}`,
 	)
 	require.Equal(t, http.StatusAccepted, verifyResponse.Code, verifyResponse.Body.String())
+	processWarrantyEmailOutbox(t, db, emailSender)
 	require.Contains(t, verifyResponse.Body.String(), "If the order can be verified")
 	require.Len(t, emailSender.bodies, 1)
 
@@ -176,6 +179,41 @@ func TestWarrantyRoutesCompleteEmailVerificationAndClaimSubmission(t *testing.T)
 	var claimCount int64
 	require.NoError(t, db.Model(&warranty.WarrantyClaim{}).Count(&claimCount).Error)
 	require.Equal(t, int64(1), claimCount)
+}
+
+func TestWarrantyHoneypotsSilentlyDropBeforeEmailOrClaimSideEffects(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	db, warrantyService, emailSender := newWarrantyRouteFixture(t)
+	router := gin.New()
+	RegisterRoutes(router, &app.Dependencies{
+		Services: app.Services{
+			Warranty: warrantyService,
+		},
+	}, &config.Config{
+		CORS: config.CORSConfig{},
+		JWT:  config.JWTConfig{Secret: "test-email-secret"},
+	})
+
+	verifyResponse := warrantyJSONRequest(
+		t,
+		router,
+		http.MethodPost,
+		"/api/v1/warranty/verify-order",
+		`{"order_number":"TZ-WARRANTY-BOT","email":"bot@example.test","secondary_phone":"+1 555 0100"}`,
+	)
+	require.Equal(t, http.StatusAccepted, verifyResponse.Code, verifyResponse.Body.String())
+	require.Empty(t, emailSender.bodies)
+
+	claimResponse := warrantyClaimRequest(t, router, map[string]string{
+		"secondary_phone": "010-555-0100",
+	})
+	require.Equal(t, http.StatusCreated, claimResponse.Code, claimResponse.Body.String())
+	require.Contains(t, claimResponse.Body.String(), `"success":true`)
+
+	var claimCount int64
+	require.NoError(t, db.Model(&warranty.WarrantyClaim{}).Count(&claimCount).Error)
+	require.Zero(t, claimCount)
 }
 
 func TestWarrantyOrderVerificationDoesNotEnumerateUnknownOrders(t *testing.T) {
@@ -254,21 +292,34 @@ func newWarrantyRouteFixture(t *testing.T) (*gorm.DB, *service.WarrantyService, 
 		&warranty.WarrantyClaim{},
 		&warranty.WarrantyServiceRecord{},
 		&verification.EmailChallenge{},
+		&outbox.Event{},
 	))
 
 	emailSender := &recordingWarrantyEmailSender{}
+	warrantyRepo := repository.NewWarrantyRepository(db)
+	emailChallengeTxManager := repository.NewEmailChallengeTxManager(
+		db,
+		repository.NewSubscriptionRepository(db),
+		warrantyRepo,
+		repository.NewEmailChallengeRepository(db),
+		repository.NewOutboxRepository(db),
+	)
 	warrantyService := service.NewWarrantyService(
-		repository.NewWarrantyRepository(db),
+		emailChallengeTxManager,
+		warrantyRepo,
 		repository.NewOrderRepository(db),
 	)
-	warrantyService.ConfigureEmailChallenges(
-		repository.NewEmailChallengeRepository(db),
-		"test-email-secret",
-		emailSender,
-	)
+	warrantyService.ConfigureEmailChallenges("test-email-secret")
 	warrantyService.ConfigureEmailBaseURL("https://storefront.example.test")
 
 	return db, warrantyService, emailSender
+}
+
+func processWarrantyEmailOutbox(t *testing.T, db *gorm.DB, sender service.EmailChallengeSender) {
+	t.Helper()
+	var event outbox.Event
+	require.NoError(t, db.Where("event_type = ?", outbox.EventTypeEmailChallengeDelivery).Order("id DESC").First(&event).Error)
+	require.NoError(t, service.NewEmailChallengeDeliveryOutboxHandler(sender, nil, "test-email-secret").Handle(context.Background(), event))
 }
 
 func warrantyJSONRequest(t *testing.T, router *gin.Engine, method, path, body string) *httptest.ResponseRecorder {

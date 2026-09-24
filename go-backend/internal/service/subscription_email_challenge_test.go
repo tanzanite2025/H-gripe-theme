@@ -5,8 +5,10 @@ import (
 	"strings"
 	"testing"
 
+	"commerce-platform/internal/domain/outbox"
 	domainsubscription "commerce-platform/internal/domain/subscription"
 	"commerce-platform/internal/domain/verification"
+	"commerce-platform/internal/pkg/emailtoken"
 	"commerce-platform/internal/repository"
 
 	"github.com/glebarez/sqlite"
@@ -18,22 +20,19 @@ import (
 
 func TestSubscriptionRequiresConfirmationAndConsumesTokensOnce(t *testing.T) {
 	db := newEmailChallengeTestDB(t)
-	subscriptionService := NewSubscriptionService(repository.NewSubscriptionRepository(db))
+	subscriptionService := NewSubscriptionService(newTestEmailChallengeTxManager(db), repository.NewSubscriptionRepository(db))
 	emailSender := &recordingEmailSender{}
-	subscriptionService.ConfigureEmailChallenges(
-		repository.NewEmailChallengeRepository(db),
-		"test-email-secret",
-		emailSender,
-	)
+	subscriptionService.ConfigureEmailChallenges("test-email-secret")
 	subscriptionService.ConfigureEmailBaseURL("https://api.example.test")
 
-	sub, err := subscriptionService.Subscribe("Rider@Example.test", "website", "en", nil)
+	sub, createdToken, err := subscriptionService.Subscribe("Rider@Example.test", "website", "en", nil)
 	require.NoError(t, err)
 	assert.Equal(t, "pending", sub.Status)
-
-	createdToken, err := subscriptionService.IssueSubscriptionConfirmation(sub.Email)
-	require.NoError(t, err)
 	require.NotEmpty(t, createdToken)
+	var deliveryEvent outbox.Event
+	require.NoError(t, db.Where("event_type = ?", outbox.EventTypeEmailChallengeDelivery).First(&deliveryEvent).Error)
+	require.NotContains(t, string(deliveryEvent.Payload), createdToken)
+	processEmailChallengeDelivery(t, db, emailSender)
 	require.Len(t, emailSender.bodies, 1)
 
 	pending, err := subscriptionService.GetSubscription(sub.Email)
@@ -48,24 +47,55 @@ func TestSubscriptionRequiresConfirmationAndConsumesTokensOnce(t *testing.T) {
 	require.ErrorIs(t, subscriptionService.ConfirmSubscription(createdToken), ErrInvalidSubscriptionToken)
 }
 
+func TestSubscriptionRollsBackWhenOutboxWriteFails(t *testing.T) {
+	db := newEmailChallengeTestDB(t)
+	require.NoError(t, db.Migrator().DropTable(&outbox.Event{}))
+
+	service := NewSubscriptionService(newTestEmailChallengeTxManager(db), repository.NewSubscriptionRepository(db))
+	service.ConfigureEmailChallenges("test-email-secret")
+	service.ConfigureEmailBaseURL("https://api.example.test")
+
+	_, _, err := service.Subscribe("rollback@example.test", "website", "en", nil)
+	require.Error(t, err)
+
+	var subscriptionCount int64
+	require.NoError(t, db.Model(&domainsubscription.Subscription{}).Count(&subscriptionCount).Error)
+	require.Zero(t, subscriptionCount)
+	var challengeCount int64
+	require.NoError(t, db.Model(&verification.EmailChallenge{}).Count(&challengeCount).Error)
+	require.Zero(t, challengeCount)
+}
+
+func TestSubscriptionStatusFailureDoesNotConsumeChallenge(t *testing.T) {
+	db := newEmailChallengeTestDB(t)
+	service := NewSubscriptionService(newTestEmailChallengeTxManager(db), repository.NewSubscriptionRepository(db))
+	service.ConfigureEmailChallenges("test-email-secret")
+	service.ConfigureEmailBaseURL("https://api.example.test")
+
+	_, token, err := service.Subscribe("retry@example.test", "website", "en", nil)
+	require.NoError(t, err)
+	require.NoError(t, db.Migrator().DropTable(&domainsubscription.Subscription{}))
+	require.Error(t, service.ConfirmSubscription(token))
+
+	challenge, err := repository.NewEmailChallengeRepository(db).Find(emailtoken.Hash(token), subscriptionConfirmPurpose)
+	require.NoError(t, err)
+	require.Nil(t, challenge.UsedAt)
+}
+
 func TestSubscriptionEmailActionDoesNotMutateByEmailAlone(t *testing.T) {
 	db := newEmailChallengeTestDB(t)
-	subscriptionService := NewSubscriptionService(repository.NewSubscriptionRepository(db))
+	subscriptionService := NewSubscriptionService(newTestEmailChallengeTxManager(db), repository.NewSubscriptionRepository(db))
 	emailSender := &recordingEmailSender{}
-	subscriptionService.ConfigureEmailChallenges(
-		repository.NewEmailChallengeRepository(db),
-		"test-email-secret",
-		emailSender,
-	)
+	subscriptionService.ConfigureEmailChallenges("test-email-secret")
 	subscriptionService.ConfigureEmailBaseURL("https://api.example.test")
 
-	sub, err := subscriptionService.Subscribe("rider@example.test", "website", "en", nil)
+	sub, confirmToken, err := subscriptionService.Subscribe("rider@example.test", "website", "en", nil)
 	require.NoError(t, err)
-	confirmToken, err := subscriptionService.IssueSubscriptionConfirmation(sub.Email)
-	require.NoError(t, err)
+	processEmailChallengeDelivery(t, db, emailSender)
 	require.NoError(t, subscriptionService.ConfirmSubscription(confirmToken))
 
 	require.NoError(t, subscriptionService.UnsubscribeByEmail(sub.Email))
+	processEmailChallengeDelivery(t, db, emailSender)
 	stillActive, err := subscriptionService.GetSubscription(sub.Email)
 	require.NoError(t, err)
 	assert.Equal(t, "active", stillActive.Status)
@@ -98,6 +128,7 @@ func newEmailChallengeTestDB(t *testing.T) *gorm.DB {
 	require.NoError(t, db.AutoMigrate(
 		&domainsubscription.Subscription{},
 		&verification.EmailChallenge{},
+		&outbox.Event{},
 	))
 	return db
 }

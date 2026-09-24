@@ -24,12 +24,21 @@ func (g *wechatGatewayImpl) CreateWechatJSAPIPayment(
 	// 需要使用 jsapi.JsapiApiService
 	// 这里提供接口定义，实际实现类似Native支付
 
+	amountMoney, err := PaymentRequestMoney(req)
+	if err != nil {
+		return nil, err
+	}
+	amount, err := amountMoney.FormatMajor()
+	if err != nil {
+		return nil, err
+	}
 	return &PaymentResponse{
-		ID:        req.OrderID,
-		Status:    "NOTPAY",
-		Amount:    req.Amount,
-		Currency:  "CNY",
-		CreatedAt: time.Now(),
+		ID:          req.OrderID,
+		Status:      "NOTPAY",
+		Amount:      amount,
+		AmountMinor: amountMoney.AmountMinor(),
+		Currency:    "CNY",
+		CreatedAt:   time.Now(),
 	}, nil
 }
 
@@ -46,12 +55,21 @@ func (g *wechatGatewayImpl) CreateWechatAppPayment(
 	// 需要使用 app.AppApiService
 	// 这里提供接口定义
 
+	amountMoney, err := PaymentRequestMoney(req)
+	if err != nil {
+		return nil, err
+	}
+	amount, err := amountMoney.FormatMajor()
+	if err != nil {
+		return nil, err
+	}
 	return &PaymentResponse{
-		ID:        req.OrderID,
-		Status:    "NOTPAY",
-		Amount:    req.Amount,
-		Currency:  "CNY",
-		CreatedAt: time.Now(),
+		ID:          req.OrderID,
+		Status:      "NOTPAY",
+		Amount:      amount,
+		AmountMinor: amountMoney.AmountMinor(),
+		Currency:    "CNY",
+		CreatedAt:   time.Now(),
 	}, nil
 }
 
@@ -69,12 +87,21 @@ func (g *wechatGatewayImpl) CreateWechatH5Payment(
 	// 需要使用 h5.H5ApiService
 	// 这里提供接口定义
 
+	amountMoney, err := PaymentRequestMoney(req)
+	if err != nil {
+		return nil, err
+	}
+	amount, err := amountMoney.FormatMajor()
+	if err != nil {
+		return nil, err
+	}
 	return &PaymentResponse{
-		ID:        req.OrderID,
-		Status:    "NOTPAY",
-		Amount:    req.Amount,
-		Currency:  "CNY",
-		CreatedAt: time.Now(),
+		ID:          req.OrderID,
+		Status:      "NOTPAY",
+		Amount:      amount,
+		AmountMinor: amountMoney.AmountMinor(),
+		Currency:    "CNY",
+		CreatedAt:   time.Now(),
 	}, nil
 }
 

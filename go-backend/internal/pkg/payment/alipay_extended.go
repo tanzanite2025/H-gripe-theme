@@ -18,7 +18,14 @@ func (g *alipayGatewayImpl) CreateAlipayAppPayment(ctx context.Context, req *Pay
 	var p = alipay.TradeAppPay{}
 	p.OutTradeNo = req.OrderID
 	p.Subject = req.Description
-	p.TotalAmount = fmt.Sprintf("%.2f", req.Amount)
+	amountMoney, err := PaymentRequestMoney(req)
+	if err != nil {
+		return nil, err
+	}
+	p.TotalAmount, err = amountMoney.FormatMajor()
+	if err != nil {
+		return nil, err
+	}
 	p.ProductCode = "QUICK_MSECURITY_PAY"
 
 	// 生成支付字符串（给APP使用）
@@ -27,10 +34,15 @@ func (g *alipayGatewayImpl) CreateAlipayAppPayment(ctx context.Context, req *Pay
 		return nil, fmt.Errorf("failed to create alipay app payment: %w", err)
 	}
 
+	responseAmount, err := amountMoney.FormatMajor()
+	if err != nil {
+		return nil, err
+	}
 	return &PaymentResponse{
 		ID:            req.OrderID,
 		Status:        "WAIT_BUYER_PAY",
-		Amount:        req.Amount,
+		Amount:        responseAmount,
+		AmountMinor:   amountMoney.AmountMinor(),
 		Currency:      req.Currency,
 		PaymentURL:    paymentString, // APP端使用这个字符串调起支付
 		TransactionID: req.OrderID,
@@ -49,7 +61,14 @@ func (g *alipayGatewayImpl) CreateAlipayWapPayment(ctx context.Context, req *Pay
 	var p = alipay.TradeWapPay{}
 	p.OutTradeNo = req.OrderID
 	p.Subject = req.Description
-	p.TotalAmount = fmt.Sprintf("%.2f", req.Amount)
+	amountMoney, err := PaymentRequestMoney(req)
+	if err != nil {
+		return nil, err
+	}
+	p.TotalAmount, err = amountMoney.FormatMajor()
+	if err != nil {
+		return nil, err
+	}
 	p.ProductCode = "QUICK_WAP_WAY"
 
 	if req.ReturnURL != "" {
@@ -68,10 +87,15 @@ func (g *alipayGatewayImpl) CreateAlipayWapPayment(ctx context.Context, req *Pay
 		return nil, fmt.Errorf("failed to create alipay wap payment: %w", err)
 	}
 
+	responseAmount, err := amountMoney.FormatMajor()
+	if err != nil {
+		return nil, err
+	}
 	return &PaymentResponse{
 		ID:            req.OrderID,
 		Status:        "WAIT_BUYER_PAY",
-		Amount:        req.Amount,
+		Amount:        responseAmount,
+		AmountMinor:   amountMoney.AmountMinor(),
 		Currency:      req.Currency,
 		PaymentURL:    paymentURL.String(),
 		TransactionID: req.OrderID,

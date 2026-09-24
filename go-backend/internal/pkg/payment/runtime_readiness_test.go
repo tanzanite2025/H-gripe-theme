@@ -15,8 +15,14 @@ func TestBuildRuntimeReadinessMarksStripeReadyWhenEnvConfigured(t *testing.T) {
 	if !stripeStatus.Configured || !stripeStatus.WebhookConfigured {
 		t.Fatalf("expected Stripe credentials and webhook to be configured")
 	}
-	if stripeStatus.CallbackURL != "https://shop.example.com/api/v1/payment/webhook/stripe" {
+	if stripeStatus.CallbackURL != "https://shop.example.com/api/v1/payments/stripe/webhook" {
 		t.Fatalf("unexpected callback URL: %s", stripeStatus.CallbackURL)
+	}
+	if len(stripeStatus.RequiredWebhookEvents) != 15 || len(stripeStatus.WebhookEventChecklist) != 14 {
+		t.Fatalf("unexpected Stripe webhook event counts: concrete=%d checklist=%d", len(stripeStatus.RequiredWebhookEvents), len(stripeStatus.WebhookEventChecklist))
+	}
+	if !containsString(stripeStatus.WebhookEventChecklist, "review.opened / review.closed") {
+		t.Fatalf("expected grouped Stripe review checklist item")
 	}
 }
 

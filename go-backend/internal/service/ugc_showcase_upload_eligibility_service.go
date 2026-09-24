@@ -14,14 +14,14 @@ const showcaseUploadOrderListLimit = 100
 // UGCShowcaseUploadOrderOption is the minimal order contract needed by the
 // Picture Warehouse upload form. It excludes addresses and line items.
 type UGCShowcaseUploadOrderOption struct {
-	ID             uint       `json:"id"`
-	OrderNumber    string     `json:"order_number"`
-	Status         string     `json:"status"`
-	ShippingStatus string     `json:"shipping_status"`
-	CompletedAt    *time.Time `json:"completed_at,omitempty"`
-	TotalAmount    float64    `json:"total_amount"`
-	Currency       string     `json:"currency"`
-	Eligible       bool       `json:"eligible"`
+	ID               uint       `json:"id"`
+	OrderNumber      string     `json:"order_number"`
+	Status           string     `json:"status"`
+	ShippingStatus   string     `json:"shipping_status"`
+	CompletedAt      *time.Time `json:"completed_at,omitempty"`
+	TotalAmountMinor int64      `json:"total_amount_minor"`
+	Currency         string     `json:"currency"`
+	Eligible         bool       `json:"eligible"`
 }
 
 // UGCShowcaseUploadEligibilityService owns the business rule that a Picture
@@ -79,15 +79,19 @@ func (s *UGCShowcaseUploadEligibilityService) RequireEligibleOrder(ctx context.C
 }
 
 func ugcShowcaseUploadOrderOption(item order.Order) UGCShowcaseUploadOrderOption {
+	totalAmountMinor := int64(0)
+	if totalMoney, err := item.TotalMoney(); err == nil {
+		totalAmountMinor = totalMoney.AmountMinor()
+	}
 	return UGCShowcaseUploadOrderOption{
-		ID:             item.ID,
-		OrderNumber:    item.OrderNumber,
-		Status:         item.Status,
-		ShippingStatus: item.ShippingStatus,
-		CompletedAt:    item.CompletedAt,
-		TotalAmount:    item.TotalAmount,
-		Currency:       item.Currency,
-		Eligible:       isCompletedShowcaseUploadOrder(item),
+		ID:               item.ID,
+		OrderNumber:      item.OrderNumber,
+		Status:           item.Status,
+		ShippingStatus:   item.ShippingStatus,
+		CompletedAt:      item.CompletedAt,
+		TotalAmountMinor: totalAmountMinor,
+		Currency:         item.Currency,
+		Eligible:         isCompletedShowcaseUploadOrder(item),
 	}
 }
 

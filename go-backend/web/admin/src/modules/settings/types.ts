@@ -72,9 +72,9 @@ export interface PaymentMethodRecord {
   icon?: string
   description?: string
   fee_type?: string
-  fee_value?: number | string
-  min_amount?: number | string
-  max_amount?: number | string
+  fee_value_minor?: number | string
+  min_amount_minor?: number | string
+  max_amount_minor?: number | string
   enabled?: boolean
   sort_order?: number | string
   settings?: string
@@ -87,9 +87,9 @@ export interface PaymentMethodForm {
   icon: string
   description: string
   fee_type: string
-  fee_value: number | string
-  min_amount: number | string
-  max_amount: number | string
+  fee_value_minor: number | string
+  min_amount_minor: number | string
+  max_amount_minor: number | string
   enabled: boolean
   sort_order: number | string
   settings: string
@@ -148,6 +148,10 @@ export interface PaymentGatewayRuntimeStatus {
   warnings?: string[]
   documentation_url?: string
   documentation_label?: string
+  required_webhook_events?: string[]
+  webhook_event_checklist?: string[]
+  webhook_event_setup_url?: string
+  webhook_events_verified?: boolean
   admin_config_configured?: boolean
   admin_config_readable?: boolean
 }

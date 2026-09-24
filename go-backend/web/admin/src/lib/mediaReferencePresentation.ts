@@ -27,8 +27,6 @@ export const mediaReferenceTypeLabel = (type?: string | null): string => {
       return '图库图片'
     case 'post':
       return '文章内容'
-    case 'gift_card':
-      return '礼品卡'
     case 'showcase':
       return '买家秀'
     case 'review':

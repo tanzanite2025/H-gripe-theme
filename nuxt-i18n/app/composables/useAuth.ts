@@ -1,12 +1,13 @@
 import { useNuxtApp, useState } from 'nuxt/app'
 import { computed } from 'vue'
-import { ApiRequestError } from '~/composables/useApiRequest'
+import { ApiRequestError, type ApiRequestInit } from '~/composables/useApiRequest'
 import { hasBrowserCookie } from '~/utils/browserCookies'
 
 interface LoginPayload {
   username: string
   password: string
   remember?: boolean
+  corporate_website?: string
 }
 
 interface RegisterProfile {
@@ -22,7 +23,9 @@ interface RegisterPayload {
   username: string
   email: string
   password: string
+  corporate_website?: string
   profile?: RegisterProfile
+  referralCode?: string
 }
 
 interface AuthUser {
@@ -60,20 +63,34 @@ export function useAuth() {
   const loading = useState<boolean>('auth-loading', () => false)
   const error = useState<string | null>('auth-error', () => null)
   const referralBindingError = useState<string | null>('auth-referral-binding-error', () => null)
+  // Keep a manually entered code across the registration -> login hand-off.
+  // The register endpoint intentionally does not create a session, so the
+  // code is bound after the user completes their first login.
+  const pendingReferralCode = useState<string>('auth-pending-referral-code', () => '')
   const initialized = useState<boolean>('auth-initialized', () => false)
+  const sessionVersion = useState<number>('auth-session-version', () => 0)
+  const logoutInFlight = useState<boolean>('auth-logout-in-flight', () => false)
   const isAuthenticated = computed(() => !!user.value)
 
   const bindPendingReferral = async () => {
     referralBindingError.value = null
+    const manualCode = pendingReferralCode.value.trim()
     try {
-      await request('/customer/referral/bind', {
+      const init: ApiRequestInit = {
         method: 'POST',
         headers: { 'Accept': 'application/json' }
-      }, 'Unable to apply referral attribution')
+      }
+      if (manualCode) {
+        init.headers = { 'Accept': 'application/json', 'Content-Type': 'application/json' }
+        init.body = JSON.stringify({ referral_code: manualCode })
+      }
+      await request('/customer/referral/bind', init, 'Unable to apply referral attribution')
+      pendingReferralCode.value = ''
     } catch (err) {
       if (err instanceof ApiRequestError && err.code === 'referral_attribution_missing') {
         return
       }
+      pendingReferralCode.value = ''
       referralBindingError.value = err instanceof Error
         ? err.message
         : 'Unable to apply referral attribution'
@@ -81,6 +98,11 @@ export function useAuth() {
   }
 
   const ensureSession = async (force = false) => {
+    if (logoutInFlight.value) {
+      user.value = null
+      initialized.value = true
+      return null
+    }
     if (!baseURL) {
       initialized.value = true
       return null
@@ -101,18 +123,26 @@ export function useAuth() {
       return null
     }
 
+    const requestVersion = sessionVersion.value
     const sessionRequest = (async () => {
       try {
         const response = await request<AuthUser | { data?: AuthUser }>('/auth/profile', { headers: { 'Accept': 'application/json' } }, 'Unable to fetch session')
         const data = unwrapData<AuthUser>(response)
+        if (sessionVersion.value !== requestVersion) {
+          return null
+        }
         user.value = data
         error.value = null
         return data
       } catch (_) {
-        user.value = null
+        if (sessionVersion.value === requestVersion) {
+          user.value = null
+        }
         return null
       } finally {
-        initialized.value = true
+        if (sessionVersion.value === requestVersion) {
+          initialized.value = true
+        }
       }
     })()
 
@@ -128,6 +158,7 @@ export function useAuth() {
   }
 
   const login = async (credentials: LoginPayload) => {
+    sessionVersion.value += 1
     loading.value = true
     error.value = null
 
@@ -157,8 +188,10 @@ export function useAuth() {
   }
 
   const register = async (registration: RegisterPayload) => {
+    sessionVersion.value += 1
     loading.value = true
     error.value = null
+    pendingReferralCode.value = String(registration.referralCode || '').trim()
 
     try {
       const response = await request<{ message?: string, user?: AuthUser } | { data?: { message?: string, user?: AuthUser } }>(
@@ -185,8 +218,16 @@ export function useAuth() {
   }
 
   const logout = async () => {
+    // Invalidate in-flight session checks and clear local identity immediately.
+    const logoutVersion = sessionVersion.value + 1
+    sessionVersion.value = logoutVersion
+    logoutInFlight.value = true
+    sessionRequests.delete(nuxtApp)
+    user.value = null
+    initialized.value = false
+
     if (!baseURL) {
-      user.value = null
+      logoutInFlight.value = false
       return
     }
 
@@ -195,7 +236,13 @@ export function useAuth() {
     } catch (err) {
       console.warn('Logout request failed:', err)
     } finally {
-      user.value = null
+      logoutInFlight.value = false
+      sessionRequests.delete(nuxtApp)
+      if (sessionVersion.value === logoutVersion) {
+        user.value = null
+        initialized.value = false
+      }
+      sessionVersion.value += 1
     }
   }
 
@@ -204,6 +251,7 @@ export function useAuth() {
    * @param idToken - Google Identity Services 返回的 JWT token
    */
   const loginWithGoogle = async (idToken: string) => {
+    sessionVersion.value += 1
     loading.value = true
     error.value = null
 

@@ -171,12 +171,12 @@ func (h *WarrantyHandler) CreateWarrantyServiceRecord(c *gin.Context) {
 	}
 
 	var req struct {
-		ServiceType string  `json:"service_type"`
-		Status      string  `json:"status"`
-		Summary     string  `json:"summary" binding:"required"`
-		CostAmount  float64 `json:"cost_amount"`
-		Currency    string  `json:"currency"`
-		PerformedAt string  `json:"performed_at"`
+		ServiceType     string `json:"service_type"`
+		Status          string `json:"status"`
+		Summary         string `json:"summary" binding:"required"`
+		CostAmountMinor int64  `json:"cost_amount_minor"`
+		Currency        string `json:"currency"`
+		PerformedAt     string `json:"performed_at"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		apierror.RespondValidationError(c, err.Error())
@@ -195,12 +195,12 @@ func (h *WarrantyHandler) CreateWarrantyServiceRecord(c *gin.Context) {
 	}
 
 	record, err := h.warrantyService.CreateWarrantyServiceRecord(uint(id), service.WarrantyServiceRecordInput{
-		ServiceType: req.ServiceType,
-		Status:      req.Status,
-		Summary:     req.Summary,
-		CostAmount:  req.CostAmount,
-		Currency:    req.Currency,
-		PerformedAt: performedAt,
+		ServiceType:     req.ServiceType,
+		Status:          req.Status,
+		Summary:         req.Summary,
+		CostAmountMinor: req.CostAmountMinor,
+		Currency:        req.Currency,
+		PerformedAt:     performedAt,
 	}, createdBy)
 	if err != nil {
 		respondAdminWarrantyError(c, err)

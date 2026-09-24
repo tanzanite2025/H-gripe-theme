@@ -1,37 +1,40 @@
 package service
 
 import (
+	"commerce-platform/internal/domain/currency"
+	domainmoney "commerce-platform/internal/domain/money"
 	"commerce-platform/internal/domain/shipping"
 	"encoding/json"
 	"strings"
 )
 
-// carrierServiceRemoteSurcharge applies the configured surcharge only to a
-// matching postal-code rule. An empty rule list keeps the service-wide
-// surcharge behavior for configurations without postal-code restrictions.
-func carrierServiceRemoteSurcharge(service shipping.CarrierService, postalCode string) (float64, error) {
-	if service.RemoteSurcharge <= 0 {
-		return 0, nil
+func carrierServiceRemoteSurchargeMoney(service shipping.CarrierService, postalCode string) (domainmoney.Money, error) {
+	surchargeMoney, err := service.RemoteSurchargeMoney()
+	if err != nil {
+		return domainmoney.Money{}, err
+	}
+	if surchargeMoney.AmountMinor() <= 0 {
+		return surchargeMoney, nil
 	}
 	rulesValue := strings.TrimSpace(service.RemotePostalCodes)
 	if rulesValue == "" || rulesValue == "[]" || rulesValue == "null" {
-		return service.RemoteSurcharge, nil
+		return surchargeMoney, nil
 	}
 
 	postalCode = normalizeShippingPostalCode(postalCode)
 	if postalCode == "" {
-		return 0, nil
+		return domainmoney.New(0, currency.NormalizeCode(service.Currency))
 	}
 	matched, ok := remotePostalCodeRulesMatch(postalCode, rulesValue)
 	if !ok {
 		// Invalid configuration must not turn into a surcharge for every
 		// destination. Treat it as no match until an administrator fixes it.
-		return 0, nil
+		return domainmoney.New(0, currency.NormalizeCode(service.Currency))
 	}
 	if matched {
-		return service.RemoteSurcharge, nil
+		return surchargeMoney, nil
 	}
-	return 0, nil
+	return domainmoney.New(0, currency.NormalizeCode(service.Currency))
 }
 
 func normalizeShippingPostalCode(value string) string {

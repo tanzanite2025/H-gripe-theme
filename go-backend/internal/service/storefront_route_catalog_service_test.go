@@ -81,6 +81,41 @@ func TestStorefrontRouteCatalogCheckUsesInternalOrigin(t *testing.T) {
 	}
 }
 
+func TestStorefrontRouteCatalogCheckClassifiesRedirectBeforeCanonical(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		if request.URL.Path == "/products/legacy" {
+			http.Redirect(writer, request, "/", http.StatusMovedPermanently)
+			return
+		}
+		writer.Header().Set("Content-Type", "text/html")
+		_, _ = writer.Write([]byte(`<html><head><link rel="canonical" href="/"></head><body>home</body></html>`))
+	}))
+	defer server.Close()
+
+	catalog := &StorefrontRouteCatalogService{
+		internalBaseURL: server.URL,
+		httpClient:      server.Client(),
+	}
+	result := catalog.checkEntry(context.Background(), seodomain.StorefrontRouteCatalogEntry{
+		Path:          "/products/legacy",
+		CanonicalPath: "/products/legacy",
+		IsCheckable:   true,
+	})
+
+	if result.Status != seodomain.RouteCheckStatusRedirect {
+		t.Fatalf("route status = %q, want %q (error: %s)", result.Status, seodomain.RouteCheckStatusRedirect, result.ErrorMessage)
+	}
+	if result.RedirectCount != 1 {
+		t.Fatalf("redirect count = %d, want 1", result.RedirectCount)
+	}
+	if result.CanonicalURL != "" {
+		t.Fatalf("canonical URL = %q, want empty for redirected response", result.CanonicalURL)
+	}
+	if result.FinalURL != server.URL+"/" {
+		t.Fatalf("final URL = %q, want redirect destination", result.FinalURL)
+	}
+}
+
 func TestNewStorefrontRouteCatalogServiceDoesNotFallbackToPublicOrigin(t *testing.T) {
 	catalog := NewStorefrontRouteCatalogService(
 		nil,

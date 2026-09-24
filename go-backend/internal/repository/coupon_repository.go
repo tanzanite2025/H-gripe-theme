@@ -2,7 +2,6 @@ package repository
 
 import (
 	"commerce-platform/internal/domain/coupon"
-	domainmoney "commerce-platform/internal/domain/money"
 	"errors"
 	"time"
 
@@ -15,8 +14,7 @@ type CouponRepository struct {
 }
 
 var (
-	ErrCouponUsageLimitReached     = errors.New("coupon usage limit reached")
-	ErrGiftCardInsufficientBalance = errors.New("insufficient gift card balance")
+	ErrCouponUsageLimitReached = errors.New("coupon usage limit reached")
 )
 
 func NewCouponRepository(db *gorm.DB) *CouponRepository {
@@ -253,135 +251,4 @@ func (r *CouponRepository) CountEmailCouponUsage(email string, couponID uint) (i
 		Where("email = ? AND coupon_id = ? AND status = ?", coupon.NormalizeEmail(email), couponID, coupon.CouponUsageStatusApplied).
 		Count(&count).Error
 	return count, err
-}
-
-// GiftCard 相关方法
-
-// CreateGiftCard 创建礼品卡
-func (r *CouponRepository) CreateGiftCard(g *coupon.GiftCard) error {
-	return r.db.Create(g).Error
-}
-
-// FindGiftCardByID 根据ID查找礼品卡
-func (r *CouponRepository) FindGiftCardByID(id uint) (*coupon.GiftCard, error) {
-	var g coupon.GiftCard
-	err := r.db.First(&g, id).Error
-	if err != nil {
-		return nil, err
-	}
-	return &g, nil
-}
-
-func (r *CouponRepository) FindGiftCardByIDForUpdate(id uint) (*coupon.GiftCard, error) {
-	var g coupon.GiftCard
-	err := r.db.Clauses(clause.Locking{Strength: "UPDATE"}).First(&g, id).Error
-	if err != nil {
-		return nil, err
-	}
-	return &g, nil
-}
-
-// FindGiftCardByCode 根据代码查找礼品卡
-func (r *CouponRepository) FindGiftCardByCode(code string) (*coupon.GiftCard, error) {
-	var g coupon.GiftCard
-	err := r.db.Where("code = ?", code).First(&g).Error
-	if err != nil {
-		return nil, err
-	}
-	return &g, nil
-}
-
-func (r *CouponRepository) FindGiftCardByCodeForUpdate(code string) (*coupon.GiftCard, error) {
-	var g coupon.GiftCard
-	err := r.db.Clauses(clause.Locking{Strength: "UPDATE"}).Where("code = ?", code).First(&g).Error
-	if err != nil {
-		return nil, err
-	}
-	return &g, nil
-}
-
-func (r *CouponRepository) FindAllGiftCards(page, pageSize int, status string) ([]coupon.GiftCard, int64, error) {
-	var cards []coupon.GiftCard
-	var total int64
-
-	query := r.db.Model(&coupon.GiftCard{})
-	if status != "" && status != "all" {
-		query = query.Where("status = ?", status)
-	}
-
-	if err := query.Count(&total).Error; err != nil {
-		return nil, 0, err
-	}
-
-	offset := (page - 1) * pageSize
-	err := query.Order("created_at DESC").Offset(offset).Limit(pageSize).Find(&cards).Error
-
-	return cards, total, err
-}
-
-func (r *CouponRepository) FindGiftCardsByOwnerID(userID uint, page, pageSize int) ([]coupon.GiftCard, int64, error) {
-	var cards []coupon.GiftCard
-	var total int64
-
-	query := r.db.Model(&coupon.GiftCard{}).Where("owner_user_id = ?", userID)
-	if err := query.Count(&total).Error; err != nil {
-		return nil, 0, err
-	}
-
-	offset := (page - 1) * pageSize
-	err := query.Order("created_at DESC").Offset(offset).Limit(pageSize).Find(&cards).Error
-	return cards, total, err
-}
-
-func (r *CouponRepository) CountGiftCardsByOwnerID(userID uint) (int64, error) {
-	var total int64
-	err := r.db.Model(&coupon.GiftCard{}).Where("owner_user_id = ?", userID).Count(&total).Error
-	return total, err
-}
-
-// UpdateGiftCard 更新礼品卡
-func (r *CouponRepository) UpdateGiftCard(g *coupon.GiftCard) error {
-	return r.db.Save(g).Error
-}
-
-// UpdateGiftCardBalance applies a minor-unit delta after validating its
-// currency against the ledger row.
-func (r *CouponRepository) UpdateGiftCardBalance(id uint, amount domainmoney.Money) error {
-	if err := amount.Validate(); err != nil {
-		return err
-	}
-	amountMinor := amount.AmountMinor()
-	query := r.db.Model(&coupon.GiftCard{}).Where("id = ? AND currency = ?", id, amount.Currency().String())
-	if amountMinor < 0 {
-		query = query.Where("balance_cents >= ?", -amountMinor)
-	}
-	tx := query.UpdateColumn("balance_cents", gorm.Expr("balance_cents + ?", amountMinor))
-	if tx.Error != nil {
-		return tx.Error
-	}
-	if amountMinor < 0 && tx.RowsAffected == 0 {
-		return ErrGiftCardInsufficientBalance
-	}
-	return nil
-}
-
-// GiftCardTransaction 相关方法
-
-// CreateGiftCardTransaction 创建礼品卡交易记录
-func (r *CouponRepository) CreateGiftCardTransaction(t *coupon.GiftCardTransaction) error {
-	return r.db.Create(t).Error
-}
-
-// FindGiftCardTransactionsByCardID 查找礼品卡的交易记录
-func (r *CouponRepository) FindGiftCardTransactionsByCardID(cardID uint) ([]coupon.GiftCardTransaction, error) {
-	var transactions []coupon.GiftCardTransaction
-	err := r.db.Where("gift_card_id = ?", cardID).Order("created_at DESC").Find(&transactions).Error
-	return transactions, err
-}
-
-// FindGiftCardTransactionByOrderID 根据订单ID查找交易
-func (r *CouponRepository) FindGiftCardTransactionByOrderID(orderID uint) ([]coupon.GiftCardTransaction, error) {
-	var transactions []coupon.GiftCardTransaction
-	err := r.db.Where("order_id = ?", orderID).Order("id ASC").Find(&transactions).Error
-	return transactions, err
 }

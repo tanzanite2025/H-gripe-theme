@@ -105,7 +105,7 @@ func seedOrderTrackingAuthOrder(t *testing.T, db *gorm.DB, userID uint) orderdom
 	item := orderdomain.Order{
 		OrderNumber: "ORDER-TRACK-AUTH",
 		UserID:      userID,
-		TotalAmount: 100,
+		TotalAmountMinor: 10000,
 		Currency:    "USD",
 	}
 	require.NoError(t, db.Create(&item).Error)

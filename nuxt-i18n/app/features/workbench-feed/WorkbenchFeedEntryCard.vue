@@ -47,7 +47,7 @@
       >
         <span class="workbench-feed-entry__product-dot" aria-hidden="true"></span>
         <span class="workbench-feed-entry__product-title">{{ product.display_title }}</span>
-        <span class="workbench-feed-entry__product-price">{{ formatPrice(product.price, product.currency) }}</span>
+        <span class="workbench-feed-entry__product-price">{{ formatPrice(product.price_minor, product.currency) }}</span>
       </button>
     </footer>
   </article>
@@ -55,6 +55,7 @@
 
 <script setup lang="ts">
 import type { WorkbenchFeedEntry, WorkbenchTaggedProduct } from './types'
+import { formatMinorMoney } from '~/utils/money'
 
 defineEmits<{
   (event: 'open-media', value: { entry: WorkbenchFeedEntry; index: number }): void
@@ -73,17 +74,7 @@ const formatDate = (value: string, locale: string) => {
   }).format(date)
 }
 
-const formatPrice = (value: number, currency: string) => {
-  try {
-    return new Intl.NumberFormat(undefined, {
-      style: 'currency',
-      currency: /^[A-Z]{3}$/.test(currency) ? currency : 'USD',
-      maximumFractionDigits: 2,
-    }).format(Number(value || 0))
-  } catch {
-    return `${currency || 'USD'} ${Number(value || 0).toFixed(2)}`
-  }
-}
+const formatPrice = (valueMinor: number, currency: string) => formatMinorMoney(valueMinor, currency)
 </script>
 
 <style scoped>

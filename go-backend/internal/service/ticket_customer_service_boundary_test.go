@@ -4,6 +4,7 @@ import (
 	"commerce-platform/internal/domain/outbox"
 	"encoding/json"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -124,6 +125,406 @@ func TestCustomerServiceConversationFallsBackToActiveSupportUserWithoutProfile(t
 	assert.Nil(t, message.UserID)
 }
 
+func TestCustomerServiceInboxArchiveIsRecipientScopedAndRecoverable(t *testing.T) {
+	db, ticketService := newTestTicketBoundaryService(t)
+	agent := createTicketBoundaryUser(t, db, "archive-agent@example.test", "archive-agent", "support")
+	owner := CustomerServiceOwner{VisitorSessionHash: "archive-visitor-hash"}
+	conversation, err := ticketService.GetOrCreatePublicCustomerServiceConversation(owner, agent.ID)
+	require.NoError(t, err)
+	_, _, err = ticketService.AddPublicCustomerServiceMessage(ticketConversationID(conversation), owner, "archive me", agent.ID, "text", "", "")
+	require.NoError(t, err)
+
+	mutation, err := ticketService.SetCustomerServiceConversationArchivedForAgent(conversation.ID, agent.ID, false, true)
+	require.NoError(t, err)
+	require.NotNil(t, mutation)
+	assert.Equal(t, CustomerServiceEventInboxStateChanged, mutation.Event.Type)
+	assert.Equal(t, CustomerServiceRealtimeAudienceBackoffice, mutation.Event.Audience)
+	var archiveEvent outbox.Event
+	require.NoError(t, db.Where("event_key = ?", mutation.Event.EventID).First(&archiveEvent).Error)
+
+	var state ticket.CustomerServiceInboxState
+	require.NoError(t, db.Where("ticket_id = ? AND recipient_user_id = ?", conversation.ID, agent.ID).First(&state).Error)
+	require.NotNil(t, state.ArchivedAt)
+
+	inbox, total, err := ticketService.ListCustomerServiceConversationsForAgent(1, 20, agent.ID, false, CustomerServiceConversationListInput{View: "inbox"})
+	require.NoError(t, err)
+	assert.Zero(t, total)
+	assert.Empty(t, inbox)
+
+	archived, total, err := ticketService.ListCustomerServiceConversationsForAgent(1, 20, agent.ID, false, CustomerServiceConversationListInput{View: "archived"})
+	require.NoError(t, err)
+	require.EqualValues(t, 1, total)
+	require.Len(t, archived, 1)
+	require.NotNil(t, archived[0].CustomerServiceInboxArchivedAt)
+
+	restoreMutation, err := ticketService.SetCustomerServiceConversationArchivedForAgent(conversation.ID, agent.ID, false, false)
+	require.NoError(t, err)
+	require.NotNil(t, restoreMutation)
+	var restoreEvent outbox.Event
+	require.NoError(t, db.Where("event_key = ?", restoreMutation.Event.EventID).First(&restoreEvent).Error)
+	state = ticket.CustomerServiceInboxState{}
+	require.NoError(t, db.Where("ticket_id = ? AND recipient_user_id = ?", conversation.ID, agent.ID).First(&state).Error)
+	assert.Nil(t, state.ArchivedAt)
+}
+
+func TestCustomerMessageReturnsArchivedConversationToInbox(t *testing.T) {
+	db, ticketService := newTestTicketBoundaryService(t)
+	agent := createTicketBoundaryUser(t, db, "reopen-archive-agent@example.test", "reopen-archive-agent", "support")
+	owner := CustomerServiceOwner{VisitorSessionHash: "reopen-archive-visitor-hash"}
+	conversation, err := ticketService.GetOrCreatePublicCustomerServiceConversation(owner, agent.ID)
+	require.NoError(t, err)
+	_, _, err = ticketService.AddPublicCustomerServiceMessage(ticketConversationID(conversation), owner, "first", agent.ID, "text", "", "")
+	require.NoError(t, err)
+	archive := true
+	mutation, statusVersion, err := ticketService.UpdateCustomerServiceConversationStatusForAgent(
+		conversation.ID,
+		agent.ID,
+		false,
+		CustomerServiceConversationStatusInput{
+			Status:                "closed",
+			ExpectedStatusVersion: 1,
+			Archive:               &archive,
+			ReasonCode:            "operator_close_and_archive",
+		},
+	)
+	require.NoError(t, err)
+	require.NotNil(t, mutation)
+	require.Len(t, mutation.RealtimeEvents(), 2)
+	assert.Equal(t, uint(2), statusVersion)
+
+	_, _, err = ticketService.AddPublicCustomerServiceMessage(ticketConversationID(conversation), owner, "customer followed up", agent.ID, "text", "", "")
+	require.NoError(t, err)
+
+	var persisted ticket.Ticket
+	require.NoError(t, db.First(&persisted, conversation.ID).Error)
+	assert.Equal(t, "open", persisted.Status)
+	assert.Equal(t, uint(3), persisted.StatusVersion)
+	assert.Nil(t, persisted.ClosedAt)
+	assert.Nil(t, persisted.ResolvedAt)
+
+	var state ticket.CustomerServiceInboxState
+	require.NoError(t, db.Where("ticket_id = ? AND recipient_user_id = ?", conversation.ID, agent.ID).First(&state).Error)
+	assert.Nil(t, state.ArchivedAt)
+	var reopenedEvent outbox.Event
+	require.NoError(t, db.Where("event_key = ?", CustomerServiceConversationStatusChangedEventID(conversation.ID, 3)).First(&reopenedEvent).Error)
+	var restoredEvents int64
+	require.NoError(t, db.Model(&outbox.Event{}).
+		Where("aggregate_id = ? AND event_key LIKE ?", strconv.FormatUint(uint64(conversation.ID), 10), "%:restored:%").
+		Count(&restoredEvents).Error)
+	assert.EqualValues(t, 1, restoredEvents)
+	inbox, total, err := ticketService.ListCustomerServiceConversationsForAgent(1, 20, agent.ID, false, CustomerServiceConversationListInput{View: "inbox"})
+	require.NoError(t, err)
+	require.EqualValues(t, 1, total)
+	require.Len(t, inbox, 1)
+}
+
+func TestCustomerServiceCloseArchiveAndReopenRestoreUseOneVersionedTransaction(t *testing.T) {
+	db, ticketService := newTestTicketBoundaryService(t)
+	agent := createTicketBoundaryUser(t, db, "status-agent@example.test", "status-agent", "support")
+	owner := CustomerServiceOwner{VisitorSessionHash: "status-visitor-hash"}
+	conversation, err := ticketService.GetOrCreatePublicCustomerServiceConversation(owner, agent.ID)
+	require.NoError(t, err)
+
+	archive := true
+	closeMutation, statusVersion, err := ticketService.UpdateCustomerServiceConversationStatusForAgent(
+		conversation.ID,
+		agent.ID,
+		false,
+		CustomerServiceConversationStatusInput{
+			Status:                "closed",
+			ExpectedStatusVersion: 1,
+			Archive:               &archive,
+			ReasonCode:            "operator_close_and_archive",
+		},
+	)
+	require.NoError(t, err)
+	require.NotNil(t, closeMutation)
+	require.Len(t, closeMutation.RealtimeEvents(), 2)
+	assert.Equal(t, CustomerServiceEventStatusChanged, closeMutation.RealtimeEvents()[0].Type)
+	assert.Equal(t, CustomerServiceEventInboxStateChanged, closeMutation.RealtimeEvents()[1].Type)
+	assert.Equal(t, uint(2), statusVersion)
+
+	var closed ticket.Ticket
+	require.NoError(t, db.First(&closed, conversation.ID).Error)
+	assert.Equal(t, "closed", closed.Status)
+	assert.Equal(t, uint(2), closed.StatusVersion)
+	assert.NotNil(t, closed.ResolvedAt)
+	assert.NotNil(t, closed.ClosedAt)
+
+	var archivedState ticket.CustomerServiceInboxState
+	require.NoError(t, db.Where("ticket_id = ? AND recipient_user_id = ?", conversation.ID, agent.ID).First(&archivedState).Error)
+	assert.NotNil(t, archivedState.ArchivedAt)
+
+	restore := false
+	reopenMutation, statusVersion, err := ticketService.UpdateCustomerServiceConversationStatusForAgent(
+		conversation.ID,
+		agent.ID,
+		false,
+		CustomerServiceConversationStatusInput{
+			Status:                "open",
+			ExpectedStatusVersion: 2,
+			Archive:               &restore,
+			ReasonCode:            "operator_reopen",
+		},
+	)
+	require.NoError(t, err)
+	require.NotNil(t, reopenMutation)
+	require.Len(t, reopenMutation.RealtimeEvents(), 2)
+	assert.Equal(t, uint(3), statusVersion)
+
+	var reopened ticket.Ticket
+	require.NoError(t, db.First(&reopened, conversation.ID).Error)
+	assert.Equal(t, "open", reopened.Status)
+	assert.Equal(t, uint(3), reopened.StatusVersion)
+	assert.Nil(t, reopened.ResolvedAt)
+	assert.Nil(t, reopened.ClosedAt)
+	archivedState = ticket.CustomerServiceInboxState{}
+	require.NoError(t, db.Where("ticket_id = ? AND recipient_user_id = ?", conversation.ID, agent.ID).First(&archivedState).Error)
+	assert.Nil(t, archivedState.ArchivedAt)
+
+	noopMutation, statusVersion, err := ticketService.UpdateCustomerServiceConversationStatusForAgent(
+		conversation.ID,
+		agent.ID,
+		false,
+		CustomerServiceConversationStatusInput{
+			Status:                "open",
+			ExpectedStatusVersion: 3,
+			Archive:               &restore,
+			ReasonCode:            "manual_status_change",
+		},
+	)
+	require.NoError(t, err)
+	assert.Nil(t, noopMutation)
+	assert.Equal(t, uint(3), statusVersion)
+
+	var eventCount int64
+	require.NoError(t, db.Model(&outbox.Event{}).Where("aggregate_id = ?", strconv.FormatUint(uint64(conversation.ID), 10)).Count(&eventCount).Error)
+	assert.EqualValues(t, 5, eventCount)
+}
+
+func TestCustomerServiceStatusRejectsMissingReasonCode(t *testing.T) {
+	db, ticketService := newTestTicketBoundaryService(t)
+	agent := createTicketBoundaryUser(t, db, "reason-code-agent@example.test", "reason-code-agent", "support")
+	conversation, err := ticketService.GetOrCreatePublicCustomerServiceConversation(CustomerServiceOwner{VisitorSessionHash: "reason-code-visitor"}, agent.ID)
+	require.NoError(t, err)
+
+	_, _, err = ticketService.UpdateCustomerServiceConversationStatusForAgent(conversation.ID, agent.ID, false, CustomerServiceConversationStatusInput{
+		Status:                "resolved",
+		ExpectedStatusVersion: 1,
+	})
+	require.Error(t, err)
+	assert.ErrorIs(t, err, ErrCustomerServiceInvalidStatus)
+}
+
+func TestCustomerServiceStatusCommandRejectsStaleVersionAndInvalidTransition(t *testing.T) {
+	db, ticketService := newTestTicketBoundaryService(t)
+	agent := createTicketBoundaryUser(t, db, "status-conflict-agent@example.test", "status-conflict-agent", "support")
+	owner := CustomerServiceOwner{VisitorSessionHash: "status-conflict-visitor"}
+	conversation, err := ticketService.GetOrCreatePublicCustomerServiceConversation(owner, agent.ID)
+	require.NoError(t, err)
+
+	mutation, statusVersion, err := ticketService.UpdateCustomerServiceConversationStatusForAgent(
+		conversation.ID,
+		agent.ID,
+		false,
+		CustomerServiceConversationStatusInput{Status: "in_progress", ExpectedStatusVersion: 1, ReasonCode: "manual_status_change"},
+	)
+	require.NoError(t, err)
+	require.NotNil(t, mutation)
+	assert.Equal(t, uint(2), statusVersion)
+
+	mutation, statusVersion, err = ticketService.UpdateCustomerServiceConversationStatusForAgent(
+		conversation.ID,
+		agent.ID,
+		false,
+		CustomerServiceConversationStatusInput{Status: "closed", ExpectedStatusVersion: 1, ReasonCode: "operator_close_and_archive"},
+	)
+	assert.ErrorIs(t, err, repository.ErrTicketStatusVersionConflict)
+	assert.Nil(t, mutation)
+	assert.Zero(t, statusVersion)
+
+	mutation, statusVersion, err = ticketService.UpdateCustomerServiceConversationStatusForAgent(
+		conversation.ID,
+		agent.ID,
+		false,
+		CustomerServiceConversationStatusInput{Status: "open", ExpectedStatusVersion: 2, ReasonCode: "operator_reopen"},
+	)
+	assert.ErrorIs(t, err, ErrCustomerServiceInvalidStatusTransition)
+	assert.Nil(t, mutation)
+	assert.Zero(t, statusVersion)
+
+	var persisted ticket.Ticket
+	require.NoError(t, db.First(&persisted, conversation.ID).Error)
+	assert.Equal(t, "in_progress", persisted.Status)
+	assert.Equal(t, uint(2), persisted.StatusVersion)
+}
+
+func TestCustomerServiceResolveThenClosePreservesResolutionTimestamp(t *testing.T) {
+	db, ticketService := newTestTicketBoundaryService(t)
+	agent := createTicketBoundaryUser(t, db, "resolve-agent@example.test", "resolve-agent", "support")
+	owner := CustomerServiceOwner{VisitorSessionHash: "resolve-visitor"}
+	conversation, err := ticketService.GetOrCreatePublicCustomerServiceConversation(owner, agent.ID)
+	require.NoError(t, err)
+
+	_, resolvedVersion, err := ticketService.UpdateCustomerServiceConversationStatusForAgent(
+		conversation.ID,
+		agent.ID,
+		false,
+		CustomerServiceConversationStatusInput{Status: "resolved", ExpectedStatusVersion: 1, ReasonCode: "operator_resolve"},
+	)
+	require.NoError(t, err)
+	assert.Equal(t, uint(2), resolvedVersion)
+
+	var resolved ticket.Ticket
+	require.NoError(t, db.First(&resolved, conversation.ID).Error)
+	require.NotNil(t, resolved.ResolvedAt)
+	assert.Nil(t, resolved.ClosedAt)
+	resolutionTime := *resolved.ResolvedAt
+
+	_, closedVersion, err := ticketService.UpdateCustomerServiceConversationStatusForAgent(
+		conversation.ID,
+		agent.ID,
+		false,
+		CustomerServiceConversationStatusInput{Status: "closed", ExpectedStatusVersion: 2, ReasonCode: "operator_close_and_archive"},
+	)
+	require.NoError(t, err)
+	assert.Equal(t, uint(3), closedVersion)
+
+	var closed ticket.Ticket
+	require.NoError(t, db.First(&closed, conversation.ID).Error)
+	require.NotNil(t, closed.ResolvedAt)
+	require.NotNil(t, closed.ClosedAt)
+	assert.Equal(t, resolutionTime, *closed.ResolvedAt)
+}
+
+func TestCustomerServiceCloseAndArchiveRollsBackWhenOutboxWriteFails(t *testing.T) {
+	db, ticketService := newTestTicketBoundaryService(t)
+	agent := createTicketBoundaryUser(t, db, "status-rollback-agent@example.test", "status-rollback-agent", "support")
+	owner := CustomerServiceOwner{VisitorSessionHash: "status-rollback-visitor"}
+	conversation, err := ticketService.GetOrCreatePublicCustomerServiceConversation(owner, agent.ID)
+	require.NoError(t, err)
+	require.NoError(t, db.Migrator().DropTable(&outbox.Event{}))
+
+	archive := true
+	mutation, statusVersion, err := ticketService.UpdateCustomerServiceConversationStatusForAgent(
+		conversation.ID,
+		agent.ID,
+		false,
+		CustomerServiceConversationStatusInput{Status: "closed", ExpectedStatusVersion: 1, Archive: &archive},
+	)
+	require.Error(t, err)
+	assert.Nil(t, mutation)
+	assert.Zero(t, statusVersion)
+
+	var persisted ticket.Ticket
+	require.NoError(t, db.First(&persisted, conversation.ID).Error)
+	assert.Equal(t, "open", persisted.Status)
+	assert.Equal(t, uint(1), persisted.StatusVersion)
+	assert.Nil(t, persisted.ResolvedAt)
+	assert.Nil(t, persisted.ClosedAt)
+
+	var stateCount int64
+	require.NoError(t, db.Model(&ticket.CustomerServiceInboxState{}).
+		Where("ticket_id = ? AND recipient_user_id = ?", conversation.ID, agent.ID).
+		Count(&stateCount).Error)
+	assert.Zero(t, stateCount)
+}
+
+func TestCustomerServiceBulkArchiveIsAtomicAndDeduplicated(t *testing.T) {
+	db, ticketService := newTestTicketBoundaryService(t)
+	agent := createTicketBoundaryUser(t, db, "bulk-archive-agent@example.test", "bulk-archive-agent", "support")
+	firstConversationID := "bulk-archive-first"
+	secondConversationID := "bulk-archive-second"
+	first := ticket.Ticket{
+		TicketNumber:       "TK-BULK-ARCHIVE-1",
+		UserID:             agent.ID,
+		ConversationID:     &firstConversationID,
+		VisitorSessionHash: "bulk-archive-first-owner",
+		Subject:            "Bulk archive first",
+		Category:           customerServiceTicketCategory,
+		Status:             "open",
+		AssignedTo:         agent.ID,
+	}
+	second := ticket.Ticket{
+		TicketNumber:       "TK-BULK-ARCHIVE-2",
+		UserID:             agent.ID,
+		ConversationID:     &secondConversationID,
+		VisitorSessionHash: "bulk-archive-second-owner",
+		Subject:            "Bulk archive second",
+		Category:           customerServiceTicketCategory,
+		Status:             "open",
+		AssignedTo:         agent.ID,
+	}
+	require.NoError(t, db.Create(&first).Error)
+	require.NoError(t, db.Create(&second).Error)
+
+	result, err := ticketService.ArchiveCustomerServiceConversationsForAgent([]uint{second.ID, first.ID, second.ID}, agent.ID, false)
+	require.NoError(t, err)
+	assert.Equal(t, []uint{first.ID, second.ID}, result.ArchivedConversationIDs)
+	require.NotNil(t, result.Mutation)
+	require.Len(t, result.Mutation.RealtimeEvents(), 2)
+
+	for _, conversationID := range []uint{first.ID, second.ID} {
+		var state ticket.CustomerServiceInboxState
+		require.NoError(t, db.Where("ticket_id = ? AND recipient_user_id = ?", conversationID, agent.ID).First(&state).Error)
+		assert.NotNil(t, state.ArchivedAt)
+	}
+
+	var eventCount int64
+	require.NoError(t, db.Model(&outbox.Event{}).Count(&eventCount).Error)
+	assert.EqualValues(t, 2, eventCount)
+}
+
+func TestCustomerServiceDefaultInboxExcludesClosedHistory(t *testing.T) {
+	db, ticketService := newTestTicketBoundaryService(t)
+	agent := createTicketBoundaryUser(t, db, "closed-view-agent@example.test", "closed-view-agent", "support")
+	owner := CustomerServiceOwner{VisitorSessionHash: "closed-view-visitor-hash"}
+	conversation, err := ticketService.GetOrCreatePublicCustomerServiceConversation(owner, agent.ID)
+	require.NoError(t, err)
+	_, _, err = ticketService.AddPublicCustomerServiceMessage(ticketConversationID(conversation), owner, "close this history", agent.ID, "text", "", "")
+	require.NoError(t, err)
+	closedAt := time.Now().UTC()
+	require.NoError(t, db.Model(&ticket.Ticket{}).Where("id = ?", conversation.ID).Updates(map[string]interface{}{
+		"status":    "closed",
+		"closed_at": closedAt,
+	}).Error)
+
+	inbox, total, err := ticketService.ListCustomerServiceConversationsForAgent(1, 20, agent.ID, false, CustomerServiceConversationListInput{})
+	require.NoError(t, err)
+	assert.Zero(t, total)
+	assert.Empty(t, inbox)
+
+	closed, total, err := ticketService.ListCustomerServiceConversationsForAgent(1, 20, agent.ID, false, CustomerServiceConversationListInput{View: "closed"})
+	require.NoError(t, err)
+	require.EqualValues(t, 1, total)
+	require.Len(t, closed, 1)
+	assert.Equal(t, "closed", closed[0].Status)
+}
+
+func TestCustomerServiceDefaultInboxIncludesLegacyOpenAndActiveAliases(t *testing.T) {
+	db, ticketService := newTestTicketBoundaryService(t)
+	agent := createTicketBoundaryUser(t, db, "legacy-status-agent@example.test", "legacy-status-agent", "support")
+
+	owner := CustomerServiceOwner{VisitorSessionHash: "legacy-status-visitor-hash"}
+	conversation, err := ticketService.GetOrCreatePublicCustomerServiceConversation(owner, agent.ID)
+	require.NoError(t, err)
+	_, _, err = ticketService.AddPublicCustomerServiceMessage(ticketConversationID(conversation), owner, "legacy status message", agent.ID, "text", "", "")
+	require.NoError(t, err)
+
+	for _, status := range []string{"pending", "active"} {
+		require.NoError(t, db.Model(&ticket.Ticket{}).Where("id = ?", conversation.ID).Update("status", status).Error)
+		inbox, total, err := ticketService.ListCustomerServiceConversationsForAgent(1, 20, agent.ID, false, CustomerServiceConversationListInput{View: "inbox"})
+		require.NoError(t, err)
+		assert.EqualValues(t, 1, total)
+		assert.Len(t, inbox, 1)
+	}
+
+	inbox, total, err := ticketService.ListCustomerServiceConversationsForAgent(1, 20, agent.ID, false, CustomerServiceConversationListInput{View: "inbox"})
+	require.NoError(t, err)
+	assert.EqualValues(t, 1, total)
+	assert.Len(t, inbox, 1)
+}
+
 func TestCustomerServiceMessagesCreateRealtimeOutboxEvents(t *testing.T) {
 	db, ticketService := newTestTicketBoundaryService(t)
 	agent := createTicketBoundaryUser(t, db, "outbox-agent@example.test", "outbox-agent", "support")
@@ -147,7 +548,7 @@ func TestCustomerServiceMessagesCreateRealtimeOutboxEvents(t *testing.T) {
 	require.NoError(t, ticketService.AddCustomerServiceAgentMessage(agentMessage, agent.ID, false))
 
 	var events []outbox.Event
-	require.NoError(t, db.Where("event_type = ?", outbox.EventTypeCustomerServiceRealtime).Order("id ASC").Find(&events).Error)
+	require.NoError(t, db.Where("event_type = ? AND event_key LIKE ?", outbox.EventTypeCustomerServiceRealtime, "customer_service.message.created:%").Order("id ASC").Find(&events).Error)
 	require.Len(t, events, 2)
 
 	expectedActors := map[uint]string{
@@ -303,10 +704,18 @@ func TestCustomerServiceReadCreatesRealtimeOutboxEventAndSkipsNoop(t *testing.T)
 
 	var events []outbox.Event
 	require.NoError(t, db.Where("event_type = ?", outbox.EventTypeCustomerServiceRealtime).Order("id ASC").Find(&events).Error)
-	require.Len(t, events, 2)
+	require.Len(t, events, 3)
 
 	var payload outbox.CustomerServiceRealtimePayload
-	require.NoError(t, json.Unmarshal(events[1].Payload, &payload))
+	var readEvent outbox.Event
+	for _, event := range events {
+		if event.EventKey == mutation.Event.EventID {
+			readEvent = event
+			break
+		}
+	}
+	require.NotEmpty(t, readEvent.EventKey)
+	require.NoError(t, json.Unmarshal(readEvent.Payload, &payload))
 	assert.Equal(t, CustomerServiceEventMessagesRead, payload.Type)
 	assert.Equal(t, mutation.Event.EventID, payload.EventID)
 	assert.Equal(t, conversation.ID, payload.TicketID)
@@ -330,7 +739,7 @@ func TestCustomerServiceReadCreatesRealtimeOutboxEventAndSkipsNoop(t *testing.T)
 
 	var eventCount int64
 	require.NoError(t, db.Model(&outbox.Event{}).Where("event_type = ?", outbox.EventTypeCustomerServiceRealtime).Count(&eventCount).Error)
-	assert.EqualValues(t, 2, eventCount)
+	assert.EqualValues(t, 3, eventCount)
 }
 
 func TestCustomerServiceReadAfterReassignmentUsesNewRealtimeEventID(t *testing.T) {
@@ -360,7 +769,7 @@ func TestCustomerServiceReadAfterReassignmentUsesNewRealtimeEventID(t *testing.T
 
 	var eventCount int64
 	require.NoError(t, db.Model(&outbox.Event{}).Where("event_type = ?", outbox.EventTypeCustomerServiceRealtime).Count(&eventCount).Error)
-	assert.EqualValues(t, 5, eventCount)
+	assert.EqualValues(t, 7, eventCount)
 }
 
 func TestCustomerServiceReadRollsBackWhenRealtimeOutboxWriteFails(t *testing.T) {
@@ -470,6 +879,8 @@ func TestCustomerServiceTransferCreatesVersionedRealtimeOutboxEvents(t *testing.
 	require.NotNil(t, toB)
 	assert.Equal(t, CustomerServiceEventAssigned, toB.Event.Type)
 	assert.Equal(t, CustomerServiceConversationAssignedEventID(conversation.ID, agentB.ID, 1), toB.Event.EventID)
+	require.Len(t, toB.RealtimeEvents(), 2)
+	assert.Equal(t, CustomerServiceEventStatusChanged, toB.RealtimeEvents()[1].Type)
 
 	toA, err := ticketService.TransferCustomerServiceConversationForAgentWithRealtimeEvent(conversation.ID, agentB.ID, false, agentA.ID)
 	require.NoError(t, err)
@@ -478,10 +889,18 @@ func TestCustomerServiceTransferCreatesVersionedRealtimeOutboxEvents(t *testing.
 
 	var events []outbox.Event
 	require.NoError(t, db.Where("event_type = ?", outbox.EventTypeCustomerServiceRealtime).Order("id ASC").Find(&events).Error)
-	require.Len(t, events, 3)
+	require.Len(t, events, 5)
 
 	var assignmentPayload outbox.CustomerServiceRealtimePayload
-	require.NoError(t, json.Unmarshal(events[1].Payload, &assignmentPayload))
+	var assignmentEvent outbox.Event
+	for _, event := range events {
+		if strings.Contains(event.EventKey, "conversation.assigned") && strings.Contains(event.EventKey, ":2:1") {
+			assignmentEvent = event
+			break
+		}
+	}
+	require.NotEmpty(t, assignmentEvent.EventKey)
+	require.NoError(t, json.Unmarshal(assignmentEvent.Payload, &assignmentPayload))
 	assert.Equal(t, CustomerServiceEventAssigned, assignmentPayload.Type)
 	assert.Equal(t, toB.Event.EventID, assignmentPayload.EventID)
 
@@ -528,11 +947,18 @@ func TestCustomerServiceSameOwnerTransferCreatesVersionedStatusRealtimeEvent(t *
 
 	var events []outbox.Event
 	require.NoError(t, db.Where("event_type = ?", outbox.EventTypeCustomerServiceRealtime).Order("id ASC").Find(&events).Error)
-	require.Len(t, events, 1)
-	assert.Equal(t, mutation.Event.EventID, events[0].EventKey)
+	require.Len(t, events, 2)
+	var statusEvent outbox.Event
+	for _, event := range events {
+		if event.EventKey == mutation.Event.EventID {
+			statusEvent = event
+			break
+		}
+	}
+	require.NotEmpty(t, statusEvent.EventKey)
 
 	var payload outbox.CustomerServiceRealtimePayload
-	require.NoError(t, json.Unmarshal(events[0].Payload, &payload))
+	require.NoError(t, json.Unmarshal(statusEvent.Payload, &payload))
 	assert.Equal(t, CustomerServiceEventStatusChanged, payload.Type)
 	assert.Equal(t, string(CustomerServiceRealtimeAudienceBackoffice), payload.Audience)
 	assert.Equal(t, mutation.Event.EventID, payload.EventID)
@@ -541,13 +967,13 @@ func TestCustomerServiceSameOwnerTransferCreatesVersionedStatusRealtimeEvent(t *
 		PreviousStatus string `json:"previous_status"`
 		Status         string `json:"status"`
 		StatusVersion  uint   `json:"status_version"`
-		Reason         string `json:"reason"`
+		ReasonCode     string `json:"reason_code"`
 	}
 	require.NoError(t, json.Unmarshal(payload.Payload, &statusPayload))
 	assert.Equal(t, "open", statusPayload.PreviousStatus)
 	assert.Equal(t, "in_progress", statusPayload.Status)
 	assert.Equal(t, uint(2), statusPayload.StatusVersion)
-	assert.Equal(t, "same_owner_transfer", statusPayload.Reason)
+	assert.Equal(t, "same_owner_transfer", statusPayload.ReasonCode)
 
 	mutation, err = ticketService.TransferCustomerServiceConversationForAgentWithRealtimeEvent(
 		conversation.ID,
@@ -560,7 +986,7 @@ func TestCustomerServiceSameOwnerTransferCreatesVersionedStatusRealtimeEvent(t *
 
 	var eventCount int64
 	require.NoError(t, db.Model(&outbox.Event{}).Where("event_type = ?", outbox.EventTypeCustomerServiceRealtime).Count(&eventCount).Error)
-	assert.EqualValues(t, 1, eventCount)
+	assert.EqualValues(t, 2, eventCount)
 }
 
 func TestCustomerServiceSameOwnerTransferRollsBackStatusWhenRealtimeOutboxWriteFails(t *testing.T) {
@@ -667,7 +1093,9 @@ func TestCustomerServiceMessageRollsBackWhenInboxStateWriteFails(t *testing.T) {
 
 	var eventCount int64
 	require.NoError(t, db.Model(&outbox.Event{}).Where("aggregate_id = ?", strconv.FormatUint(uint64(conversation.ID), 10)).Count(&eventCount).Error)
-	assert.Zero(t, eventCount)
+	// Conversation creation is a separate durable event; the failed message
+	// transaction must not add any additional event.
+	assert.EqualValues(t, 1, eventCount)
 }
 
 func TestCustomerServiceConversationListFiltersUseBackendSource(t *testing.T) {
@@ -758,17 +1186,17 @@ func TestCustomerServiceConversationListFiltersUseBackendSource(t *testing.T) {
 	require.Len(t, visitorChats, 1)
 	assert.Equal(t, anonymousChat.ID, visitorChats[0].ID)
 
-	pendingChats, total, err := ticketService.ListCustomerServiceConversationsForAgent(1, 20, 0, true, CustomerServiceConversationListInput{Status: "pending"})
+	openChats, total, err := ticketService.ListCustomerServiceConversationsForAgent(1, 20, 0, true, CustomerServiceConversationListInput{Status: "open"})
 	require.NoError(t, err)
 	assert.EqualValues(t, 1, total)
-	require.Len(t, pendingChats, 1)
-	assert.Equal(t, memberChat.ID, pendingChats[0].ID)
+	require.Len(t, openChats, 1)
+	assert.Equal(t, memberChat.ID, openChats[0].ID)
 
-	activeChats, total, err := ticketService.ListCustomerServiceConversationsForAgent(1, 20, 0, true, CustomerServiceConversationListInput{Status: "active"})
+	inProgressChats, total, err := ticketService.ListCustomerServiceConversationsForAgent(1, 20, 0, true, CustomerServiceConversationListInput{Status: "in_progress"})
 	require.NoError(t, err)
 	assert.EqualValues(t, 1, total)
-	require.Len(t, activeChats, 1)
-	assert.Equal(t, anonymousChat.ID, activeChats[0].ID)
+	require.Len(t, inProgressChats, 1)
+	assert.Equal(t, anonymousChat.ID, inProgressChats[0].ID)
 
 	forcedAssignee := agentB.ID
 	scopedChats, total, err := ticketService.ListCustomerServiceConversationsForAgent(1, 20, agentA.ID, false, CustomerServiceConversationListInput{AssignedTo: &forcedAssignee})

@@ -24,12 +24,12 @@ func TestMarkPaymentExpiredReportsWhetherPendingUnpaidOrderWasClaimed(t *testing
 
 	repo := NewOrderRepository(db)
 	orderRecord := order.Order{
-		OrderNumber:   "ORD-MARK-PAYMENT-EXPIRED",
-		UserID:        42,
-		Status:        "pending",
-		PaymentStatus: "unpaid",
-		TotalAmount:   100,
-		Currency:      "USD",
+		OrderNumber:      "ORD-MARK-PAYMENT-EXPIRED",
+		UserID:           42,
+		Status:           "pending",
+		PaymentStatus:    "unpaid",
+		TotalAmountMinor: 10000,
+		Currency:         "USD",
 	}
 	require.NoError(t, db.Create(&orderRecord).Error)
 
@@ -49,6 +49,35 @@ func TestMarkPaymentExpiredReportsWhetherPendingUnpaidOrderWasClaimed(t *testing
 	require.Equal(t, expiredAt, savedOrder.CancelledAt.UTC())
 }
 
+func TestCreateOrderWritesCanonicalOrderItemConfigurationSnapshot(t *testing.T) {
+	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	require.NoError(t, err)
+	sqlDB, err := db.DB()
+	require.NoError(t, err)
+	sqlDB.SetMaxOpenConns(1)
+	t.Cleanup(func() { _ = sqlDB.Close() })
+	require.NoError(t, db.AutoMigrate(&order.Order{}, &order.OrderItem{}))
+
+	repo := NewOrderRepository(db)
+	orderRecord := &order.Order{
+		OrderNumber: "ORD-NO-ATTRIBUTES",
+		Currency:    "USD",
+		Status:      "pending",
+		Items: []order.OrderItem{{
+			ProductID: 1, VariantID: uintPtr(2), ProductName: "Demo",
+			Quantity: 1, Currency: "USD", PriceMinor: 1000, SubtotalMinor: 1000, TotalMinor: 1000,
+			ConfigurationSnapshotData: []byte(`{"schema_version":1,"selections":[]}`),
+		}},
+	}
+	require.NoError(t, repo.Create(orderRecord))
+	require.NotZero(t, orderRecord.ID)
+	var stored order.OrderItem
+	require.NoError(t, db.First(&stored, "order_id = ?", orderRecord.ID).Error)
+	require.JSONEq(t, `{"schema_version":1,"selections":[]}`, string(stored.ConfigurationSnapshotData))
+}
+
+func uintPtr(value uint) *uint { return &value }
+
 func TestUpdateStatusUsesExpectedStatusAsAtomicCAS(t *testing.T) {
 	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
 	require.NoError(t, err)
@@ -60,12 +89,12 @@ func TestUpdateStatusUsesExpectedStatusAsAtomicCAS(t *testing.T) {
 
 	repo := NewOrderRepository(db)
 	orderRecord := order.Order{
-		OrderNumber:   "ORD-STATUS-CAS",
-		UserID:        42,
-		Status:        "pending",
-		PaymentStatus: "unpaid",
-		TotalAmount:   100,
-		Currency:      "USD",
+		OrderNumber:      "ORD-STATUS-CAS",
+		UserID:           42,
+		Status:           "pending",
+		PaymentStatus:    "unpaid",
+		TotalAmountMinor: 10000,
+		Currency:         "USD",
 	}
 	require.NoError(t, db.Create(&orderRecord).Error)
 
@@ -89,13 +118,13 @@ func TestReleasePaymentLiabilityReviewHoldRequiresNoActiveReviewOrDispute(t *tes
 
 	repo := NewOrderRepository(db)
 	orderRecord := order.Order{
-		OrderNumber:     "ORD-RELEASE-LIABILITY-HOLD",
-		UserID:          42,
-		Status:          "needs_review",
-		PaymentStatus:   "paid",
-		FulfillmentHold: true,
-		TotalAmount:     2500,
-		Currency:        "USD",
+		OrderNumber:      "ORD-RELEASE-LIABILITY-HOLD",
+		UserID:           42,
+		Status:           "needs_review",
+		PaymentStatus:    "paid",
+		FulfillmentHold:  true,
+		TotalAmountMinor: 250000,
+		Currency:         "USD",
 	}
 	require.NoError(t, db.Create(&orderRecord).Error)
 
@@ -157,12 +186,12 @@ func TestSoftDeleteUnpaidCancelledOrPaymentExpiredOrderRecordGuardsFinancialOrde
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
 			orderRecord := order.Order{
-				OrderNumber:   "ORD-REPOSITORY-HIDE-" + strings.ReplaceAll(testCase.name, " ", "-"),
-				UserID:        42,
-				Status:        testCase.status,
-				PaymentStatus: testCase.paymentStatus,
-				TotalAmount:   100,
-				Currency:      "USD",
+				OrderNumber:      "ORD-REPOSITORY-HIDE-" + strings.ReplaceAll(testCase.name, " ", "-"),
+				UserID:           42,
+				Status:           testCase.status,
+				PaymentStatus:    testCase.paymentStatus,
+				TotalAmountMinor: 10000,
+				Currency:         "USD",
 			}
 			require.NoError(t, db.Create(&orderRecord).Error)
 

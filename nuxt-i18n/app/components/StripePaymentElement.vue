@@ -23,10 +23,16 @@
 
 <script setup lang="ts">
 import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { useStripePayment, type StripeConfirmationResult, type StripePaymentSession } from '~/composables/useStripePayment'
+import {
+  useStripePayment,
+  type StripeConfirmationResult,
+  type StripePaymentBillingDetails,
+  type StripePaymentSession,
+} from '~/composables/useStripePayment'
 
 const props = defineProps<{
   session: StripePaymentSession
+  billingDetails: StripePaymentBillingDetails
   returnUrl: string
   confirmLabel: string
   confirmingLabel: string
@@ -42,7 +48,7 @@ const paymentContainer = ref<HTMLElement | null>(null)
 const isReady = ref(false)
 const isConfirming = ref(false)
 const errorMessage = ref('')
-const { mount, confirm, destroy } = useStripePayment()
+const { mount, confirm, destroy, paymentElement } = useStripePayment()
 
 const mountPaymentElement = async () => {
   if (!paymentContainer.value) return
@@ -50,7 +56,7 @@ const mountPaymentElement = async () => {
   isReady.value = false
   errorMessage.value = ''
   try {
-    await mount(paymentContainer.value, props.session)
+    await mount(paymentContainer.value, props.session, props.billingDetails)
     isReady.value = true
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unable to load secure payment form'
@@ -65,7 +71,7 @@ const confirmPayment = async () => {
   isConfirming.value = true
   errorMessage.value = ''
   try {
-    const result = await confirm(props.returnUrl)
+    const result = await confirm(props.returnUrl, props.billingDetails)
     emit('confirmed', result)
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Stripe payment could not be confirmed'
@@ -83,6 +89,14 @@ watch(
     await mountPaymentElement()
   },
   { immediate: true },
+)
+
+watch(
+  () => props.billingDetails,
+  (billingDetails) => {
+    paymentElement.value?.update({ defaultValues: { billingDetails } })
+  },
+  { deep: true },
 )
 
 onMounted(() => {

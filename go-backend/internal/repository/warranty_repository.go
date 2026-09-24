@@ -15,6 +15,10 @@ func NewWarrantyRepository(db *gorm.DB) *WarrantyRepository {
 	return &WarrantyRepository{db: db}
 }
 
+func (r *WarrantyRepository) WithTx(tx *gorm.DB) *WarrantyRepository {
+	return &WarrantyRepository{db: tx}
+}
+
 // CreateWarrantyClaim 创建保修申请
 func (r *WarrantyRepository) CreateWarrantyClaim(claim *warranty.WarrantyClaim) error {
 	return r.db.Create(claim).Error
@@ -32,6 +36,23 @@ func (r *WarrantyRepository) FindWarrantyClaimByID(id uint) (*warranty.WarrantyC
 		return nil, err
 	}
 	return &claim, nil
+}
+
+// FindWarrantyClaimsByUserID returns the bounded, read-only warranty facts
+// shown beside a customer-service conversation. Full descriptions and image
+// payloads are intentionally not loaded into this projection.
+func (r *WarrantyRepository) FindWarrantyClaimsByUserID(userID uint, limit int) ([]warranty.WarrantyClaim, error) {
+	var claims []warranty.WarrantyClaim
+	if userID == 0 {
+		return claims, nil
+	}
+	if limit <= 0 || limit > 100 {
+		limit = 100
+	}
+	err := r.db.Select("id, order_item_id, user_id, issue_type, order_number, tire_pressure, is_tubeless, status, resolution, processed_by, created_at, updated_at").
+		Where("user_id = ?", userID).
+		Order("created_at DESC, id DESC").Limit(limit).Find(&claims).Error
+	return claims, err
 }
 
 // FindAllWarrantyClaims 查找所有保修申请（管理员）

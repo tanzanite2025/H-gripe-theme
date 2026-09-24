@@ -21,6 +21,11 @@ func replaceProductVariantOptionValues(tx *gorm.DB, productID uint, values []pro
 	keepIDs := make([]uint, 0, len(values))
 	for i := range values {
 		values[i].ProductID = productID
+		policy := values[i].CustomOptionPolicy
+		// Save the option row without its has-one association. The policy is
+		// persisted explicitly below so GORM cannot auto-create a duplicate
+		// policy before saveCustomOptionPolicy resolves the existing row.
+		values[i].CustomOptionPolicy = nil
 		if values[i].ID != 0 {
 			if _, ok := existingByID[values[i].ID]; !ok {
 				return fmt.Errorf("%w: variant option value %d does not belong to product %d", ErrProductVariantOptionValueReferenceInvalid, values[i].ID, productID)
@@ -28,6 +33,7 @@ func replaceProductVariantOptionValues(tx *gorm.DB, productID uint, values []pro
 			if err := tx.Save(&values[i]).Error; err != nil {
 				return err
 			}
+			values[i].CustomOptionPolicy = policy
 			if err := saveCustomOptionPolicy(tx, &values[i]); err != nil {
 				return err
 			}
@@ -38,6 +44,7 @@ func replaceProductVariantOptionValues(tx *gorm.DB, productID uint, values []pro
 		if err := tx.Create(&values[i]).Error; err != nil {
 			return err
 		}
+		values[i].CustomOptionPolicy = policy
 		if err := saveCustomOptionPolicy(tx, &values[i]); err != nil {
 			return err
 		}

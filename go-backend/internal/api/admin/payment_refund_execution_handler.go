@@ -4,32 +4,26 @@ import (
 	"errors"
 	"net/http"
 	"strconv"
-	"strings"
 
-	paymentdomain "commerce-platform/internal/domain/payment"
 	"commerce-platform/internal/pkg/apierror"
 	pgateway "commerce-platform/internal/pkg/payment"
-	"commerce-platform/internal/pkg/response"
-	"commerce-platform/internal/repository"
 	"commerce-platform/internal/service"
 
 	"github.com/gin-gonic/gin"
 )
 
 type PaymentRefundExecutionHandler struct {
-	paymentService  *service.PaymentService
-	settingsService *service.AdminSettingsService
-	auditService    paymentAuditRecorder
+	paymentService *service.PaymentService
+	auditService   paymentAuditRecorder
 }
 
-func NewPaymentRefundExecutionHandler(paymentService *service.PaymentService, settingsService *service.AdminSettingsService) *PaymentRefundExecutionHandler {
+func NewPaymentRefundExecutionHandler(paymentService *service.PaymentService) *PaymentRefundExecutionHandler {
 	return &PaymentRefundExecutionHandler{
-		paymentService:  paymentService,
-		settingsService: settingsService,
+		paymentService: paymentService,
 	}
 }
 
-func (h *PaymentRefundExecutionHandler) ExecutePendingRefund(c *gin.Context) {
+func (h *PaymentRefundExecutionHandler) RequestPendingRefundExecution(c *gin.Context) {
 	if h == nil {
 		apierror.RespondInternalError(c, errors.New("payment service is not configured"))
 		return
@@ -151,48 +145,10 @@ func (h *PaymentRefundExecutionHandler) ExecutePendingRefund(c *gin.Context) {
 		apierror.RespondBadRequest(c, err.Error())
 		return
 	}
-	var gateway pgateway.PaymentGateway
-	refundMoney, err := refund.AmountMoney()
-	if err != nil {
-		apierror.RespondBadRequest(c, err.Error())
-		return
-	}
-	if refundMoney.AmountMinor() > 0 {
-		config, err := h.gatewayConfig(provider)
-		if err != nil {
-			h.recordRefundExecutionAudit(c, paymentAdminAuditEvent{
-				StartedAt:    startedAt,
-				Action:       paymentAuditActionExecute,
-				Resource:     paymentAuditResourceRefundExecution,
-				ResourceID:   refundID,
-				Status:       paymentAuditStatusFailed,
-				ErrorMessage: err.Error(),
-				Changes:      paymentRefundExecutionAuditDetails(refundID, string(provider), refund, transaction, nil),
-			})
-			apierror.RespondBadRequest(c, err.Error())
-			return
-		}
-		gateway, err = pgateway.NewPaymentGateway(config)
-		if err != nil {
-			h.recordRefundExecutionAudit(c, paymentAdminAuditEvent{
-				StartedAt:    startedAt,
-				Action:       paymentAuditActionExecute,
-				Resource:     paymentAuditResourceRefundExecution,
-				ResourceID:   refundID,
-				Status:       paymentAuditStatusFailed,
-				ErrorMessage: err.Error(),
-				Changes:      paymentRefundExecutionAuditDetails(refundID, string(provider), refund, transaction, nil),
-			})
-			apierror.RespondBadRequest(c, err.Error())
-			return
-		}
-	}
-
-	completedRefund, execution, err := h.paymentService.ExecutePendingRefund(c.Request.Context(), service.ExecutePendingRefundInput{
+	requestedRefund, execution, err := h.paymentService.RequestPendingRefundExecution(c.Request.Context(), service.RequestPendingRefundExecutionInput{
 		RefundID: refundID,
 		AdminID:  adminID,
 		Provider: string(provider),
-		Gateway:  gateway,
 	})
 	if err != nil {
 		h.recordRefundExecutionAudit(c, paymentAdminAuditEvent{
@@ -208,11 +164,7 @@ func (h *PaymentRefundExecutionHandler) ExecutePendingRefund(c *gin.Context) {
 			apierror.RespondBadRequest(c, "refund execution is already in progress")
 			return
 		}
-		if execution != nil && execution.Status == paymentdomain.PaymentRefundExecutionStatusFailed {
-			c.JSON(http.StatusBadGateway, gin.H{
-				"error":   "payment_gateway_refund_failed",
-				"message": err.Error(),
-			})
+		if respondHistoricalRefundFXSnapshotError(c, err) {
 			return
 		}
 		apierror.RespondBadRequest(c, err.Error())
@@ -225,52 +177,11 @@ func (h *PaymentRefundExecutionHandler) ExecutePendingRefund(c *gin.Context) {
 		Resource:   paymentAuditResourceRefundExecution,
 		ResourceID: refundID,
 		Status:     paymentAuditStatusSuccess,
-		Changes:    paymentRefundExecutionAuditDetails(refundID, string(provider), completedRefund, transaction, execution),
+		Changes:    paymentRefundExecutionAuditDetails(refundID, string(provider), requestedRefund, transaction, execution),
 	})
-	response.Success(c, gin.H{
-		"refund":    completedRefund,
+	c.JSON(http.StatusAccepted, gin.H{
+		"refund":    requestedRefund,
 		"execution": execution,
+		"status":    "processing",
 	})
-}
-
-func (h *PaymentRefundExecutionHandler) gatewayConfig(provider pgateway.GatewayType) (*pgateway.Config, error) {
-	if h.settingsService != nil {
-		config, found, err := readAdminSecureGatewayConfig(h.settingsService, provider)
-		if err != nil {
-			return nil, err
-		}
-		if found {
-			gatewayConfig := pgateway.GatewayConfigFromSecureConfig(config)
-			if strings.TrimSpace(gatewayConfig.APIKey) == "" {
-				return nil, errors.New(string(provider) + " API key is not configured")
-			}
-			return gatewayConfig, nil
-		}
-	}
-	config := pgateway.LoadConfigFromEnv(provider)
-	if strings.TrimSpace(config.APIKey) == "" {
-		return nil, errors.New(string(provider) + " API key is not configured")
-	}
-	return config, nil
-}
-
-func readAdminSecureGatewayConfig(
-	settingsService *service.AdminSettingsService,
-	provider pgateway.GatewayType,
-) (pgateway.SecureGatewayConfig, bool, error) {
-	if settingsService == nil {
-		return pgateway.SecureGatewayConfig{}, false, errors.New("payment settings service is unavailable")
-	}
-	st, err := settingsService.GetDomainManagedSetting(pgateway.SecureGatewaySettingKey(provider), "global")
-	if err != nil {
-		if !repository.IsRecordNotFound(err) {
-			return pgateway.SecureGatewayConfig{}, false, err
-		}
-		return pgateway.SecureGatewayConfig{}, false, nil
-	}
-	config, err := pgateway.DecodeStoredSecureGatewayConfig(st.Value, provider)
-	if err != nil {
-		return pgateway.SecureGatewayConfig{}, true, err
-	}
-	return config, true, nil
 }

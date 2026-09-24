@@ -11,10 +11,11 @@ export interface CouponRecord {
   code: string
   type: string
   currency?: string
-  value?: number | string
+  value_minor?: number | string
+  value_rate_decimal?: number | string
   description?: string
-  min_amount?: number | string
-  max_discount?: number | string
+  min_amount_minor?: number | string
+  max_discount_minor?: number | string
   used_count?: number | string
   usage_limit?: number | string
   start_date?: string
@@ -29,23 +30,6 @@ export interface CouponFilters {
 export interface MarketingStatusDisplay {
   label: string
   tone: AdminStatusTone
-}
-
-export interface GiftCardRecord {
-  id: string | number
-  code: string
-  initial_value?: number | string
-  balance?: number | string
-  currency?: string
-  recipient_name?: string
-  recipient_email?: string
-  status?: string
-  expires_at?: string
-  created_at?: string
-}
-
-export interface GiftCardFilters {
-  status: string
 }
 
 export interface LoyaltyTransaction {
@@ -81,32 +65,13 @@ export interface LoyaltySettings {
   tz_loyalty_checkin_max_points: number | string
 }
 
-export interface GiftCardRedeemOption {
-  key?: string
-  value: number | string
-  currency: string
-  stock_quantity: number | string
-  redeemed_quantity?: number | string
-  remaining_quantity?: number | string
-}
-
-export interface GiftCardRedeemSettings {
-  tz_redeem_enabled: boolean
-  tz_redeem_currency: string
-  tz_redeem_exchange_rate: number | string
-  tz_redeem_min_points: number | string
-  tz_redeem_max_value_per_day: number | string
-  tz_redeem_card_expiry_days: number | string
-  options?: GiftCardRedeemOption[]
-}
-
 export interface MemberLevel {
   id?: string | number | null
   name?: string
   color?: string
   min_points?: number | string
   max_points?: number | string
-  discount_rate?: number | string
+  discount_rate_decimal?: string
   benefits?: string
   sort_order?: number | string
 }
@@ -120,9 +85,6 @@ export interface PromotionRiskSummary {
   member_level_count?: number
   max_member_discount_rate?: number
   max_member_discount_level_name?: string
-  points_redemption_enabled?: boolean
-  direct_points_discount_cap_rate?: number
-  max_redeem_gift_card_value?: number
 }
 
 export interface PromotionRiskItem {
@@ -133,21 +95,21 @@ export interface PromotionRiskItem {
   coupon_code?: string
   coupon_type?: string
   coupon_status?: string
-  coupon_value?: number
-  coupon_min_amount?: number
-  coupon_max_discount?: number
+  coupon_value?: string
+  coupon_min_amount?: string
+  coupon_max_discount?: string
   member_level_id?: string | number
   member_level_name?: string
   member_discount_rate?: number
   points_discount_rate?: number
-  full_cover_subtotal_threshold?: number
-  gateway_minimum_threshold?: number
-  estimated_subtotal?: number
-  estimated_coupon_discount?: number
-  estimated_member_discount?: number
-  estimated_points_discount?: number
-  estimated_discount_amount?: number
-  estimated_payable_amount?: number
+  full_cover_subtotal_threshold?: string
+  gateway_minimum_threshold?: string
+  estimated_subtotal?: string
+  estimated_coupon_discount?: string
+  estimated_member_discount?: string
+  estimated_points_discount?: string
+  estimated_discount_amount?: string
+  estimated_payable_amount?: string
   factors?: string[]
   recommendation?: string
   starts_at?: string
@@ -157,7 +119,7 @@ export interface PromotionRiskItem {
 export interface PromotionRiskAnalysis {
   generated_at?: string
   currency?: string
-  gateway_minimum_amount?: number
+  gateway_minimum_amount?: string
   summary?: PromotionRiskSummary
   items?: PromotionRiskItem[]
 }

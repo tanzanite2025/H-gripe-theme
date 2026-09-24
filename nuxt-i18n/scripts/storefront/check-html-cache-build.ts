@@ -138,13 +138,12 @@ if (runtimeConfig) {
   assertNoStore(routeRules, '/api/**')
   assertNoStore(routeRules, '/_internal/**')
   assertNoStore(routeRules, '/shop')
-
-  assertHtmlCache(routeRules, '/products/**', 300, 3600)
+  assertNoStore(routeRules, '/products/**')
 
   for (const locale of locales) {
     const code = String(locale.code || '')
     if (!code || code === 'en') continue
-    assertHtmlCache(routeRules, `/${code}/products/**`, 300, 3600)
+    assertNoStore(routeRules, `/${code}/products/**`)
   }
 
   assertHtmlCache(routeRules, '/support/shipping', 86400, 604800)

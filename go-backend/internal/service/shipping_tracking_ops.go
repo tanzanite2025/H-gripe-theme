@@ -2,13 +2,63 @@ package service
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"strings"
 	"time"
 
 	"commerce-platform/internal/domain/shipping"
+	"commerce-platform/internal/pkg/resilience"
 	"commerce-platform/internal/pkg/tracking"
 	"commerce-platform/internal/repository"
+
+	"github.com/google/uuid"
 )
+
+const trackingSyncLeaseDuration = 10 * time.Minute
+
+// RequestTrackingShipmentRegistration records an idempotent registration
+// command in the same database transaction that reads the current shipment.
+// The external provider is contacted only by the outbox worker.
+func (s *ShippingService) RequestTrackingShipmentRegistration(ctx context.Context, orderID uint, trackingNumber string) (*shipping.TrackingShipment, error) {
+	if orderID == 0 {
+		return nil, ErrTrackingOrderRequired
+	}
+	trackingNumber = strings.TrimSpace(trackingNumber)
+	if trackingNumber == "" {
+		return nil, ErrTrackingNumberRequired
+	}
+	if s == nil || s.txManager == nil {
+		return nil, ErrTrackingRegistrationTransactionNeeded
+	}
+	var shipment *shipping.TrackingShipment
+	err := s.txManager.WithinTx(func(repos repository.TxRepositories) error {
+		if repos.Shipping == nil || repos.Outbox == nil {
+			return ErrOrderShippingNotConfigured
+		}
+		current, err := repos.Shipping.FindTrackingShipmentByOrderIDAndTrackingNumber(orderID, trackingNumber)
+		if err != nil {
+			return err
+		}
+		shipment = current
+		if current.RegistrationStatus == trackingRegistrationSynced {
+			return nil
+		}
+		if current.RegistrationStatus == trackingRegistrationUnknown {
+			return fmt.Errorf("%w: tracking shipment registration requires reconciliation", resilience.ErrExternalOutcomeUnknown)
+		}
+		return enqueueTrackingShipmentRegistrationOutboxEvent(repos.Outbox, TrackingShipmentInput{
+			OrderID:                  current.OrderID,
+			TrackingProviderID:       current.TrackingProviderID,
+			TrackingNumber:           current.TrackingNumber,
+			ProviderCarrierCode:      current.ProviderCarrierCode,
+			CarrierID:                current.CarrierID,
+			CarrierServiceID:         current.CarrierServiceID,
+			TrackingCarrierMappingID: current.TrackingCarrierMappingID,
+		}, time.Now().UTC())
+	})
+	return shipment, err
+}
 
 func (s *ShippingService) NewTrackingClientForProvider(providerID uint) (tracking.TrackingService, error) {
 	if providerID == 0 {
@@ -22,11 +72,21 @@ func (s *ShippingService) NewTrackingClientForProvider(providerID uint) (trackin
 	return s.newTrackingClientFromProvider(provider)
 }
 
-func (s *ShippingService) GetTrackingShipmentByOrderID(orderID uint) (*shipping.TrackingShipment, error) {
+func (s *ShippingService) GetTrackingShipmentsByOrderID(orderID uint) ([]shipping.TrackingShipment, error) {
 	if orderID == 0 {
 		return nil, ErrTrackingOrderRequired
 	}
-	return s.shippingRepo.FindTrackingShipmentByOrderID(orderID)
+	return s.shippingRepo.FindTrackingShipmentsByOrderID(orderID)
+}
+
+func (s *ShippingService) GetTrackingShipmentByOrderIDAndTrackingNumber(orderID uint, trackingNumber string) (*shipping.TrackingShipment, error) {
+	if orderID == 0 {
+		return nil, ErrTrackingOrderRequired
+	}
+	if strings.TrimSpace(trackingNumber) == "" {
+		return nil, ErrTrackingNumberRequired
+	}
+	return s.shippingRepo.FindTrackingShipmentByOrderIDAndTrackingNumber(orderID, trackingNumber)
 }
 
 func (s *ShippingService) ListTrackingShipments(filter TrackingShipmentListFilter) ([]shipping.TrackingShipment, error) {
@@ -61,7 +121,12 @@ func (s *ShippingService) SyncDueTrackingShipments(ctx context.Context, limit in
 		limit = 100
 	}
 
-	shipments, err := s.shippingRepo.FindDueTrackingShipments(limit, time.Now())
+	shipments, err := s.shippingRepo.ClaimDueTrackingShipments(
+		limit,
+		time.Now().UTC(),
+		"tracking-poll-"+uuid.NewString(),
+		trackingSyncLeaseDuration,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -71,8 +136,9 @@ func (s *ShippingService) SyncDueTrackingShipments(ctx context.Context, limit in
 		Results: make([]TrackingSyncResult, 0, len(shipments)),
 		Errors:  make([]TrackingShipmentSyncFailure, 0),
 	}
-	for _, shipment := range shipments {
-		result, err := s.SyncTracking(ctx, TrackingSyncInput{
+	for index := range shipments {
+		shipment := &shipments[index]
+		result, err := s.syncClaimedTracking(ctx, TrackingSyncInput{
 			OrderID:                  shipment.OrderID,
 			ProviderID:               shipment.TrackingProviderID,
 			TrackingNumber:           shipment.TrackingNumber,
@@ -80,7 +146,7 @@ func (s *ShippingService) SyncDueTrackingShipments(ctx context.Context, limit in
 			CarrierID:                shipment.CarrierID,
 			CarrierServiceID:         shipment.CarrierServiceID,
 			TrackingCarrierMappingID: shipment.TrackingCarrierMappingID,
-		})
+		}, shipment, shipment.Provider)
 		if err != nil {
 			batch.Failed++
 			batch.Errors = append(batch.Errors, TrackingShipmentSyncFailure{
@@ -121,11 +187,17 @@ func (s *ShippingService) ApplyTrackingWebhook(input TrackingWebhookInput) (*Tra
 	if err := s.shippingRepo.UpsertTrackingEvents(shipment.OrderID, trackingNumber, events); err != nil {
 		return nil, err
 	}
-	persistedEvents, err := s.shippingRepo.FindTrackingEventsByOrderID(shipment.OrderID)
+	persistedEvents, err := s.shippingRepo.FindTrackingEventsByOrderIDAndTrackingNumber(shipment.OrderID, trackingNumber)
 	if err != nil {
 		return nil, err
 	}
-	if err := s.shippingRepo.UpdateTrackingShipmentSyncSuccess(shipment.OrderID, len(persistedEvents), latestTrackingEventTime(persistedEvents), nil); err != nil {
+	if err := s.shippingRepo.ApplyTrackingWebhookSyncSuccess(
+		shipment.OrderID,
+		trackingNumber,
+		len(persistedEvents),
+		latestTrackingEventTime(persistedEvents),
+		time.Now().UTC(),
+	); err != nil {
 		return nil, err
 	}
 	if err := s.updateOrderShippingStatusIfDelivered(
@@ -139,8 +211,17 @@ func (s *ShippingService) ApplyTrackingWebhook(input TrackingWebhookInput) (*Tra
 	); err != nil {
 		return nil, err
 	}
+	if s.afterSalesService != nil && isReturnDeliveryWebhook(input.Status, input.Events) {
+		if _, err := s.afterSalesService.ApplyCarrierWebhook(AfterSalesCarrierWebhookInput{
+			TrackingNumber: trackingNumber,
+			Status:         input.Status,
+			EventTime:      latestTrackingWebhookEventTime(input.Events),
+		}); err != nil && !errors.Is(err, ErrAfterSalesCaseNotFound) {
+			return nil, err
+		}
+	}
 
-	updatedShipment, err := s.GetTrackingShipmentByOrderID(shipment.OrderID)
+	updatedShipment, err := s.GetTrackingShipmentByOrderIDAndTrackingNumber(shipment.OrderID, trackingNumber)
 	if err != nil {
 		return nil, err
 	}
@@ -149,6 +230,28 @@ func (s *ShippingService) ApplyTrackingWebhook(input TrackingWebhookInput) (*Tra
 		Shipment: updatedShipment,
 		Events:   events,
 	}, nil
+}
+
+func isReturnDeliveryWebhook(status string, events []TrackingWebhookEventInput) bool {
+	if normalizeAfterSalesCarrierStatus(status) != "" {
+		return true
+	}
+	for _, event := range events {
+		if normalizeAfterSalesCarrierStatus(event.Status) != "" {
+			return true
+		}
+	}
+	return false
+}
+
+func latestTrackingWebhookEventTime(events []TrackingWebhookEventInput) time.Time {
+	var latest time.Time
+	for _, event := range events {
+		if event.EventTime.After(latest) {
+			latest = event.EventTime
+		}
+	}
+	return latest
 }
 
 func (s *ShippingService) UpsertTrackingShipment(input TrackingShipmentInput) (*shipping.TrackingShipment, error) {
@@ -186,35 +289,7 @@ func (s *ShippingService) UpsertTrackingShipment(input TrackingShipmentInput) (*
 	if err := s.shippingRepo.UpsertTrackingShipment(shipment); err != nil {
 		return nil, err
 	}
-	return s.GetTrackingShipmentByOrderID(input.OrderID)
-}
-
-func (s *ShippingService) UpsertAndMaybeRegisterTrackingShipment(ctx context.Context, input TrackingShipmentInput) (*shipping.TrackingShipment, error) {
-	shipment, err := s.UpsertTrackingShipment(input)
-	if err != nil {
-		return nil, err
-	}
-
-	provider, err := s.GetTrackingProviderConfig(input.TrackingProviderID)
-	if err != nil {
-		return nil, err
-	}
-	if !provider.AutoRegister {
-		return shipment, nil
-	}
-
-	if err := s.RegisterTrackingShipment(ctx, TrackingSyncInput{
-		OrderID:                  input.OrderID,
-		ProviderID:               input.TrackingProviderID,
-		TrackingNumber:           input.TrackingNumber,
-		ProviderCarrierCode:      input.ProviderCarrierCode,
-		CarrierID:                input.CarrierID,
-		CarrierServiceID:         input.CarrierServiceID,
-		TrackingCarrierMappingID: input.TrackingCarrierMappingID,
-	}); err != nil {
-		return nil, err
-	}
-	return s.GetTrackingShipmentByOrderID(input.OrderID)
+	return s.GetTrackingShipmentByOrderIDAndTrackingNumber(input.OrderID, trackingNumber)
 }
 
 func (s *ShippingService) RegisterTrackingShipment(ctx context.Context, input TrackingSyncInput) error {
@@ -234,7 +309,7 @@ func (s *ShippingService) RegisterTrackingShipment(ctx context.Context, input Tr
 		return ErrTrackingCarrierCodeRequired
 	}
 
-	existing, err := s.GetTrackingShipmentByOrderID(input.OrderID)
+	existing, err := s.GetTrackingShipmentByOrderIDAndTrackingNumber(input.OrderID, trackingNumber)
 	if err == nil &&
 		existing.TrackingProviderID == input.ProviderID &&
 		existing.TrackingNumber == trackingNumber &&
@@ -242,27 +317,34 @@ func (s *ShippingService) RegisterTrackingShipment(ctx context.Context, input Tr
 		existing.RegistrationStatus == trackingRegistrationSynced {
 		return nil
 	}
+	if err == nil && existing.RegistrationStatus == trackingRegistrationUnknown {
+		return fmt.Errorf("%w: tracking shipment registration requires reconciliation", resilience.ErrExternalOutcomeUnknown)
+	}
 	if err != nil && !repository.IsRecordNotFound(err) {
 		return err
 	}
 
 	client, err := s.NewTrackingClientForProvider(input.ProviderID)
 	if err != nil {
-		_ = s.shippingRepo.UpdateTrackingShipmentRegistrationStatus(input.OrderID, trackingRegistrationFailed, err.Error())
+		_ = s.shippingRepo.UpdateTrackingShipmentRegistrationStatusForTracking(input.OrderID, trackingNumber, trackingRegistrationFailed, err.Error())
 		return err
 	}
 
 	registrar, ok := client.(tracking.TrackingRegistrar)
 	if !ok {
-		return nil
+		return s.shippingRepo.UpdateTrackingShipmentRegistrationStatusForTracking(input.OrderID, trackingNumber, trackingRegistrationSynced, "")
 	}
 
 	if err := registrar.RegisterTrackings(ctx, []tracking.TrackingRequest{{TrackingNumber: trackingNumber, Carrier: providerCarrierCode}}); err != nil {
-		_ = s.shippingRepo.UpdateTrackingShipmentRegistrationStatus(input.OrderID, trackingRegistrationFailed, err.Error())
+		status := trackingRegistrationFailed
+		if errors.Is(err, resilience.ErrExternalOutcomeUnknown) {
+			status = trackingRegistrationUnknown
+		}
+		_ = s.shippingRepo.UpdateTrackingShipmentRegistrationStatusForTracking(input.OrderID, trackingNumber, status, err.Error())
 		return err
 	}
 
-	return s.shippingRepo.UpdateTrackingShipmentRegistrationStatus(input.OrderID, trackingRegistrationSynced, "")
+	return s.shippingRepo.UpdateTrackingShipmentRegistrationStatusForTracking(input.OrderID, trackingNumber, trackingRegistrationSynced, "")
 }
 
 func (s *ShippingService) SyncTracking(ctx context.Context, input TrackingSyncInput) (*TrackingSyncResult, error) {
@@ -286,39 +368,73 @@ func (s *ShippingService) SyncTracking(ctx context.Context, input TrackingSyncIn
 	if _, err := s.ensureTrackingShipmentForSync(input, trackingNumber, providerCarrierCode); err != nil {
 		return nil, err
 	}
-	if provider.AutoRegister {
-		if err := s.RegisterTrackingShipment(ctx, input); err != nil {
-			_ = s.shippingRepo.UpdateTrackingShipmentSyncFailure(input.OrderID, err.Error(), nextTrackingSyncAt(provider, time.Now()))
-			return nil, err
+	claim, err := s.shippingRepo.ClaimTrackingShipmentForSync(
+		input.OrderID,
+		trackingNumber,
+		time.Now().UTC(),
+		"tracking-manual-"+uuid.NewString(),
+		trackingSyncLeaseDuration,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return s.syncClaimedTracking(ctx, input, claim, provider)
+}
+
+func (s *ShippingService) syncClaimedTracking(
+	ctx context.Context,
+	input TrackingSyncInput,
+	claim *shipping.TrackingShipment,
+	provider *shipping.TrackingProviderConfig,
+) (*TrackingSyncResult, error) {
+	trackingNumber := strings.TrimSpace(input.TrackingNumber)
+	providerCarrierCode := strings.TrimSpace(input.ProviderCarrierCode)
+	if claim == nil || claim.SyncStatus != "syncing" || strings.TrimSpace(claim.SyncLeaseOwner) == "" {
+		return nil, repository.ErrTrackingSyncLeaseLost
+	}
+	if provider == nil {
+		var err error
+		provider, err = s.GetTrackingProviderConfig(input.ProviderID)
+		if err != nil {
+			return nil, s.failClaimedTracking(claim, nil, err)
 		}
 	}
-	if err := s.shippingRepo.UpdateTrackingShipmentSyncing(input.OrderID); err != nil {
+	if provider.AutoRegister && claim.RegistrationStatus != trackingRegistrationSynced {
+		return nil, s.failClaimedTracking(claim, provider, errors.New("tracking registration is not complete"))
+	}
+	if err := s.shippingRepo.RenewTrackingShipmentSyncLease(claim, time.Now().UTC(), trackingSyncLeaseDuration); err != nil {
 		return nil, err
 	}
 
 	client, err := s.newTrackingClientFromProvider(provider)
 	if err != nil {
-		_ = s.shippingRepo.UpdateTrackingShipmentSyncFailure(input.OrderID, err.Error(), nextTrackingSyncAt(provider, time.Now()))
-		return nil, err
+		return nil, s.failClaimedTracking(claim, provider, err)
 	}
 
 	info, err := client.Track(ctx, trackingNumber, providerCarrierCode)
 	if err != nil {
-		_ = s.shippingRepo.UpdateTrackingShipmentSyncFailure(input.OrderID, err.Error(), nextTrackingSyncAt(provider, time.Now()))
+		return nil, s.failClaimedTracking(claim, provider, err)
+	}
+	if err := s.shippingRepo.RenewTrackingShipmentSyncLease(claim, time.Now().UTC(), trackingSyncLeaseDuration); err != nil {
 		return nil, err
 	}
 
 	events := trackingInfoToDomainEvents(input.OrderID, trackingNumber, providerCarrierCode, info)
 	if err := s.shippingRepo.UpsertTrackingEvents(input.OrderID, trackingNumber, events); err != nil {
-		_ = s.shippingRepo.UpdateTrackingShipmentSyncFailure(input.OrderID, err.Error(), nextTrackingSyncAt(provider, time.Now()))
-		return nil, err
+		return nil, s.failClaimedTracking(claim, provider, err)
 	}
-	persistedEvents, err := s.shippingRepo.FindTrackingEventsByOrderID(input.OrderID)
+	persistedEvents, err := s.shippingRepo.FindTrackingEventsByOrderIDAndTrackingNumber(input.OrderID, trackingNumber)
 	if err != nil {
-		_ = s.shippingRepo.UpdateTrackingShipmentSyncFailure(input.OrderID, err.Error(), nextTrackingSyncAt(provider, time.Now()))
-		return nil, err
+		return nil, s.failClaimedTracking(claim, provider, err)
 	}
-	if err := s.shippingRepo.UpdateTrackingShipmentSyncSuccess(input.OrderID, len(persistedEvents), latestTrackingEventTime(persistedEvents), nextTrackingSyncAt(provider, time.Now())); err != nil {
+	completedAt := time.Now().UTC()
+	if err := s.shippingRepo.CompleteTrackingShipmentSync(
+		claim,
+		len(persistedEvents),
+		latestTrackingEventTime(persistedEvents),
+		nextTrackingSyncAt(provider, completedAt),
+		completedAt,
+	); err != nil {
 		return nil, err
 	}
 	if info != nil {
@@ -333,8 +449,17 @@ func (s *ShippingService) SyncTracking(ctx context.Context, input TrackingSyncIn
 		); err != nil {
 			return nil, err
 		}
+		if s.afterSalesService != nil {
+			if _, err := s.afterSalesService.ApplyCarrierTrackingFact(AfterSalesCarrierWebhookInput{
+				TrackingNumber: trackingNumber,
+				Status:         info.Status,
+				EventTime:      trackingFactEventTime(events),
+			}); err != nil && !errors.Is(err, ErrAfterSalesCaseNotFound) {
+				return nil, err
+			}
+		}
 	}
-	shipment, err := s.GetTrackingShipmentByOrderID(input.OrderID)
+	shipment, err := s.GetTrackingShipmentByOrderIDAndTrackingNumber(input.OrderID, trackingNumber)
 	if err != nil {
 		return nil, err
 	}
@@ -359,4 +484,19 @@ func (s *ShippingService) SyncTracking(ctx context.Context, input TrackingSyncIn
 	}
 
 	return result, nil
+}
+
+func trackingFactEventTime(events []shipping.TrackingEvent) time.Time {
+	if latest := latestTrackingEventTime(events); latest != nil {
+		return *latest
+	}
+	return time.Now().UTC()
+}
+
+func (s *ShippingService) failClaimedTracking(claim *shipping.TrackingShipment, provider *shipping.TrackingProviderConfig, cause error) error {
+	now := time.Now().UTC()
+	if err := s.shippingRepo.FailTrackingShipmentSync(claim, cause.Error(), nextTrackingSyncAt(provider, now), now); err != nil {
+		return errors.Join(cause, err)
+	}
+	return cause
 }

@@ -164,7 +164,7 @@ func TestListPaymentMethodsDoesNotRequireCurrencyPolicy(t *testing.T) {
 	require.Equal(t, "gateway_not_configured", byCode["wechat_pay"].UnavailableReason)
 }
 
-func TestListPaymentMethodsIgnoresDisplayAndOrderCurrencyForButtonExposure(t *testing.T) {
+func TestListPaymentMethodsUsesOrderCurrencyForButtonExposure(t *testing.T) {
 	db := newPaymentMethodAvailabilityTestDB(t)
 	require.NoError(t, db.Create(&paymentdomain.PaymentMethod{Name: "Card", Code: "card", Enabled: true}).Error)
 	require.NoError(t, db.Create(&paymentdomain.PaymentMethod{Name: "Alipay", Code: "alipay", Enabled: true}).Error)
@@ -196,10 +196,34 @@ func TestListPaymentMethodsIgnoresDisplayAndOrderCurrencyForButtonExposure(t *te
 	require.False(t, byCode["card"].Available)
 	require.False(t, byCode["alipay"].Available)
 	require.False(t, byCode["wechat_pay"].Available)
-	require.Equal(t, "gateway_not_configured", byCode["wechat_pay"].UnavailableReason)
+	require.Equal(t, "currency_not_supported", byCode["wechat_pay"].UnavailableReason)
 	require.NotContains(t, recorder.Body.String(), "market_code")
-	require.NotContains(t, recorder.Body.String(), "currency")
+	require.Contains(t, recorder.Body.String(), "currency_not_supported")
 	require.NotContains(t, recorder.Body.String(), "supported_currencies")
+}
+
+func TestListPaymentMethodsFiltersCNYOnlyGatewaysByCurrency(t *testing.T) {
+	db := newPaymentMethodAvailabilityTestDB(t)
+	require.NoError(t, db.Create(&paymentdomain.PaymentMethod{Name: "Alipay", Code: "alipay", Enabled: true}).Error)
+	require.NoError(t, db.Create(&paymentdomain.PaymentMethod{Name: "WeChat Pay", Code: "wechat_pay", Enabled: true}).Error)
+
+	gin.SetMode(gin.TestMode)
+	recorder := httptest.NewRecorder()
+	context, _ := gin.CreateTestContext(recorder)
+	context.Request = httptest.NewRequest(http.MethodGet, "/api/v1/payment/methods?currency=USD", nil)
+	handler := &Handler{paymentService: service.NewPaymentService(nil, repository.NewPaymentRepository(db))}
+	handler.ListPaymentMethods(context)
+	require.Equal(t, http.StatusOK, recorder.Code)
+	var payload struct {
+		Data struct {
+			Data []paymentMethodResponse `json:"data"`
+		} `json:"data"`
+	}
+	require.NoError(t, json.Unmarshal(recorder.Body.Bytes(), &payload))
+	for _, item := range payload.Data.Data {
+		require.False(t, item.Available)
+		require.Equal(t, "currency_not_supported", item.UnavailableReason)
+	}
 }
 
 func newPaymentMethodAvailabilityTestDB(t *testing.T) *gorm.DB {

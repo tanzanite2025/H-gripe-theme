@@ -4,6 +4,7 @@ import (
 	"commerce-platform/internal/domain/ticket"
 	userdomain "commerce-platform/internal/domain/user"
 	"commerce-platform/internal/pkg/apierror"
+	"commerce-platform/internal/repository"
 	"commerce-platform/internal/service"
 	"encoding/json"
 	"errors"
@@ -32,6 +33,7 @@ func parseAdminCustomerServiceConversationID(c *gin.Context) (uint, bool) {
 
 func parseAdminCustomerServiceConversationFilters(c *gin.Context) (service.CustomerServiceConversationListInput, bool) {
 	input := service.CustomerServiceConversationListInput{
+		View:       normalizeAdminCustomerServiceView(c.Query("view")),
 		Status:     normalizeAdminCustomerServiceFilterValue(c.Query("status")),
 		Identity:   normalizeAdminCustomerServiceFilterValue(c.Query("identity")),
 		Search:     strings.TrimSpace(c.Query("search")),
@@ -42,12 +44,33 @@ func parseAdminCustomerServiceConversationFilters(c *gin.Context) (service.Custo
 		apierror.RespondBadRequest(c, "Invalid customer-service conversation status filter")
 		return input, false
 	}
+	if !validAdminCustomerServiceViewFilter(input.View) {
+		apierror.RespondBadRequest(c, "Invalid customer-service conversation view")
+		return input, false
+	}
 	if !validAdminCustomerServiceIdentityFilter(input.Identity) {
 		apierror.RespondBadRequest(c, "Invalid customer-service customer identity filter")
 		return input, false
 	}
 
 	return input, true
+}
+
+func validAdminCustomerServiceViewFilter(view string) bool {
+	switch view {
+	case "", "inbox", "closed", "archived", "all":
+		return true
+	default:
+		return false
+	}
+}
+
+func normalizeAdminCustomerServiceView(value string) string {
+	value = strings.ToLower(strings.TrimSpace(value))
+	if value == "" {
+		return ""
+	}
+	return value
 }
 
 func normalizeAdminCustomerServiceFilterValue(value string) string {
@@ -69,7 +92,7 @@ func parseAdminCustomerServiceBoolQuery(value string) bool {
 
 func validAdminCustomerServiceStatusFilter(status string) bool {
 	switch status {
-	case "", "pending", "open", "active", "in_progress", "closed", "resolved":
+	case "", "open", "in_progress", "closed", "resolved":
 		return true
 	default:
 		return false
@@ -97,11 +120,19 @@ func adminCustomerServiceConversationFilterResponse(input service.CustomerServic
 	}
 
 	return gin.H{
+		"view":     valueOrDefault(input.View, "inbox"),
 		"search":   input.Search,
 		"status":   status,
 		"identity": identity,
 		"unread":   input.UnreadOnly,
 	}
+}
+
+func valueOrDefault(value, fallback string) string {
+	if strings.TrimSpace(value) == "" {
+		return fallback
+	}
+	return value
 }
 
 func adminCustomerServiceGroupsResponse(groups []userdomain.AgentGroup) []gin.H {
@@ -157,6 +188,15 @@ func respondAdminCustomerServiceError(c *gin.Context, err error) {
 	switch {
 	case errors.Is(err, service.ErrCustomerServiceAgentAccessDenied):
 		apierror.RespondForbidden(c)
+	case errors.Is(err, repository.ErrTicketStatusVersionConflict):
+		apierror.RespondConflict(c, "Conversation status changed; refresh and try again")
+	case errors.Is(err, service.ErrCustomerServiceInvalidStatusTransition):
+		apierror.RespondConflict(c, err.Error())
+	case errors.Is(err, service.ErrCustomerServiceInvalidStatus),
+		errors.Is(err, service.ErrCustomerServiceStatusVersionRequired),
+		errors.Is(err, service.ErrCustomerServiceStatusReasonTooLong),
+		errors.Is(err, service.ErrCustomerServiceBulkArchiveLimitExceeded):
+		apierror.RespondBadRequest(c, err.Error())
 	case service.IsRecordNotFound(err):
 		apierror.RespondNotFound(c, "Conversation")
 	default:
@@ -201,8 +241,11 @@ func adminCustomerServiceConversationResponse(item ticket.Ticket, summary *servi
 		"customer_summary":  customerSummary,
 		"assigned_to":       item.AssignedTo,
 		"status":            item.Status,
+		"status_version":    item.StatusVersion,
 		"display_status":    adminCustomerServiceDisplayStatus(item.Status),
 		"unread_count":      unreadCount,
+		"inbox_archived":    item.CustomerServiceInboxArchivedAt != nil,
+		"archived_at":       item.CustomerServiceInboxArchivedAt,
 		"last_message":      lastMessage,
 		"last_message_time": lastMessageTime,
 		"created_at":        item.CreatedAt,

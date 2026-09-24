@@ -6,10 +6,15 @@ ALTER TABLE refunds
     ADD COLUMN IF NOT EXISTS discount_clawback_amount_minor BIGINT;
 
 UPDATE refunds r
-SET currency = UPPER(COALESCE(NULLIF(r.currency, ''), t.currency, o.currency, 'USD'))
+SET currency = UPPER(COALESCE(
+    NULLIF(r.currency, ''),
+    t.currency,
+    (SELECT o.currency FROM orders o WHERE o.id = r.order_id),
+    'USD'
+))
 FROM transactions t
-LEFT JOIN orders o ON o.id = r.order_id
-WHERE t.id = r.transaction_id AND (r.currency IS NULL OR r.currency = '');
+WHERE t.id = r.transaction_id
+  AND (r.currency IS NULL OR r.currency = '');
 
 UPDATE refunds r
 SET currency = UPPER(COALESCE(NULLIF(r.currency, ''), o.currency, 'USD'))

@@ -104,6 +104,7 @@ type LighthouseRunnerRunInput struct {
 // provider sample. A capture never changes finding state by itself.
 type LighthouseRunnerCaptureInput struct {
 	LighthouseRunnerRunInput
+	AuditScope       string `json:"audit_scope,omitempty"`
 	TargetID         *uint  `json:"-"`
 	JobID            *uint  `json:"-"`
 	LeaseWorkerID    string `json:"-"`
@@ -499,7 +500,7 @@ func (s *LighthouseRunnerService) Capture(
 	if err != nil {
 		return nil, err
 	}
-	rawResponse, result, requestErr := s.request(ctx, targetURL, strategy, input.ReleaseID)
+	rawResponse, result, requestErr := s.request(ctx, targetURL, strategy, input.ReleaseID, input.AuditScope)
 	canonicalURL := strings.TrimSpace(input.CanonicalURL)
 	if canonicalURL == "" {
 		canonicalURL = publicTargetURL
@@ -527,9 +528,10 @@ func (s *LighthouseRunnerService) Capture(
 		return &view, requestErr
 	}
 
-	applySiteQualityResult(
+	applySiteQualityResultForScope(
 		&run,
 		result,
+		input.AuditScope,
 		siteQualityStructuredDataPageIntent{
 			Source:     input.TargetSource,
 			SourceType: input.TargetSourceType,
@@ -731,6 +733,7 @@ func (s *LighthouseRunnerService) request(
 	targetURL string,
 	strategy string,
 	releaseID string,
+	auditScope string,
 ) (json.RawMessage, *siteQualityAPIResponse, error) {
 	if s == nil {
 		return nil, nil, errors.New("Lighthouse runner service is unavailable")
@@ -746,6 +749,7 @@ func (s *LighthouseRunnerService) request(
 		URL                           string `json:"url"`
 		Strategy                      string `json:"strategy"`
 		ReleaseID                     string `json:"release_id,omitempty"`
+		AuditScope                    string `json:"audit_scope,omitempty"`
 		ThrottlingMethod              string `json:"throttling_method,omitempty"`
 		LighthouseRunCount            int    `json:"lighthouse_run_count,omitempty"`
 		RenderWaitSelector            string `json:"render_wait_selector,omitempty"`
@@ -769,6 +773,7 @@ func (s *LighthouseRunnerService) request(
 		URL:                           targetURL,
 		Strategy:                      strategy,
 		ReleaseID:                     strings.TrimSpace(releaseID),
+		AuditScope:                    strings.TrimSpace(auditScope),
 		ThrottlingMethod:              s.accuracy.ThrottlingMethod,
 		LighthouseRunCount:            s.accuracy.LighthouseRunCount,
 		RenderWaitSelector:            s.accuracy.RenderWaitSelector,
@@ -832,7 +837,9 @@ func (s *LighthouseRunnerService) request(
 	if err := json.Unmarshal(body, &result); err != nil {
 		return raw, nil, errors.New("internal Lighthouse runner response was not valid JSON")
 	}
-	if len(result.LighthouseResult.Audits) == 0 {
+	if len(result.LighthouseResult.Audits) == 0 &&
+		result.LighthouseResult.RenderedHeadings == nil &&
+		result.LighthouseResult.RenderedStructuredData == nil {
 		return raw, nil, errors.New("internal Lighthouse runner returned no Lighthouse audits")
 	}
 	if err := s.validateFinalURL(result.LighthouseResult.FinalURL); err != nil {
@@ -959,6 +966,15 @@ func applySiteQualityResult(
 	result *siteQualityAPIResponse,
 	intents ...siteQualityStructuredDataPageIntent,
 ) {
+	applySiteQualityResultForScope(run, result, sitequalitydomain.SiteQualityAuditScopeFull, intents...)
+}
+
+func applySiteQualityResultForScope(
+	run *sitequalitydomain.SiteQualityRun,
+	result *siteQualityAPIResponse,
+	auditScope string,
+	intents ...siteQualityStructuredDataPageIntent,
+) {
 	if run == nil || result == nil {
 		return
 	}
@@ -988,24 +1004,28 @@ func applySiteQualityResult(
 		run.ErrorMessage = fmt.Sprintf("normalize Lighthouse runner response: %v", err)
 		return
 	}
-	issues = removeSiteQualityRenderedHeadingManagedIssues(issues)
-	issues = removeSiteQualityRenderedStructuredDataManagedIssues(issues)
-	headingIssues := siteQualityRenderedHeadingAuditIssues(
-		run.TargetURL,
-		result.LighthouseResult.FinalURL,
-		result.LighthouseResult.RenderedHeadings,
-	)
-	issues = append(issues, headingIssues...)
-	structuredDataIssues := siteQualityRenderedStructuredDataAuditIssues(
-		run.TargetURL,
-		result.LighthouseResult.FinalURL,
-		result.LighthouseResult.RenderedStructuredData,
-		intents...,
-	)
-	issues = append(issues, structuredDataIssues...)
-	issues = append(issues, siteQualityRenderedLinkAuditIssues(result.LighthouseResult.RenderedLinks)...)
-	issues = append(issues, siteQualityInteractionAuditIssues(result.LighthouseResult.InteractionAudit)...)
-	issues = append(issues, siteQualitySoftNavigationAuditIssues(result.LighthouseResult.SoftNavigationAudit)...)
+	if auditScope == "" || auditScope == sitequalitydomain.SiteQualityAuditScopeFull || auditScope == sitequalitydomain.SiteQualityAuditScopeHeadings {
+		issues = removeSiteQualityRenderedHeadingManagedIssues(issues)
+		issues = append(issues, siteQualityRenderedHeadingAuditIssues(
+			run.TargetURL,
+			result.LighthouseResult.FinalURL,
+			result.LighthouseResult.RenderedHeadings,
+		)...)
+	}
+	if auditScope == "" || auditScope == sitequalitydomain.SiteQualityAuditScopeFull || auditScope == sitequalitydomain.SiteQualityAuditScopeSchema {
+		issues = removeSiteQualityRenderedStructuredDataManagedIssues(issues)
+		issues = append(issues, siteQualityRenderedStructuredDataAuditIssues(
+			run.TargetURL,
+			result.LighthouseResult.FinalURL,
+			result.LighthouseResult.RenderedStructuredData,
+			intents...,
+		)...)
+	}
+	if auditScope == "" || auditScope == sitequalitydomain.SiteQualityAuditScopeFull {
+		issues = append(issues, siteQualityRenderedLinkAuditIssues(result.LighthouseResult.RenderedLinks)...)
+		issues = append(issues, siteQualityInteractionAuditIssues(result.LighthouseResult.InteractionAudit)...)
+		issues = append(issues, siteQualitySoftNavigationAuditIssues(result.LighthouseResult.SoftNavigationAudit)...)
+	}
 	decorateSiteQualityIssueIDs(issues)
 	sortSiteQualityIssues(issues)
 	encoded, err := json.Marshal(issues)

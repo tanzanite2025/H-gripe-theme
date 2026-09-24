@@ -122,38 +122,3 @@ func (r *MediaRepository) galleryReferences(query mediaAssetReferenceQuery) ([]m
 	}
 	return references, nil
 }
-
-func (r *MediaRepository) giftCardReferences(query mediaAssetReferenceQuery) ([]media.AssetReference, error) {
-	if !r.hasTable("gift_cards") {
-		return []media.AssetReference{}, nil
-	}
-
-	type row struct {
-		ID   uint
-		Code string
-	}
-	var rows []row
-	if err := r.db.Table("gift_cards").
-		Select("id, code").
-		Where("deleted_at IS NULL AND cover_image IN ?", query.URLs).
-		Find(&rows).Error; err != nil {
-		return nil, err
-	}
-
-	references := make([]media.AssetReference, 0, len(rows))
-	for _, item := range rows {
-		label := fmt.Sprintf("礼品卡 #%d", item.ID)
-		if strings.TrimSpace(item.Code) != "" {
-			label = fmt.Sprintf("礼品卡 #%d：%s", item.ID, item.Code)
-		}
-		references = append(references, newMediaReference(
-			media.ReferenceCategoryCatalog,
-			"gift_card",
-			item.ID,
-			0,
-			label,
-			"cover_image",
-		))
-	}
-	return references, nil
-}

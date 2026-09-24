@@ -25,10 +25,10 @@ func TestRefreshDisplayPriceSnapshotsPreservesMismatchedSourceAmounts(t *testing
 	productService := NewProductService(productRepo, nil, 0)
 
 	oldProductSnapshot := currency.DisplayPriceSnapshotsJSON([]currency.DisplayPriceSnapshot{
-		{Amount: 100, Currency: "USD", QuoteCurrency: "USD", Rate: 0.1, Source: "old_rate", Converted: true},
+		{AmountDecimal: "100.00", Currency: "USD", QuoteCurrency: "USD", Rate: 0.1, Source: "old_rate", Converted: true},
 	}, "CNY")
 	oldVariantSnapshot := currency.DisplayPriceSnapshotsJSON([]currency.DisplayPriceSnapshot{
-		{Amount: 101, Currency: "USD", QuoteCurrency: "USD", Rate: 0.1, Source: "old_rate", Converted: true},
+		{AmountDecimal: "101.00", Currency: "USD", QuoteCurrency: "USD", Rate: 0.1, Source: "old_rate", Converted: true},
 	}, "CNY")
 
 	productOne := product.Product{
@@ -38,7 +38,7 @@ func TestRefreshDisplayPriceSnapshotsPreservesMismatchedSourceAmounts(t *testing
 		Locale:           "en",
 		Status:           "active",
 		Currency:         "CNY",
-		Price:            699,
+		PriceMinor:       69900,
 		DisplayPriceData: oldProductSnapshot,
 	}
 	productTwo := product.Product{
@@ -48,7 +48,7 @@ func TestRefreshDisplayPriceSnapshotsPreservesMismatchedSourceAmounts(t *testing
 		Locale:           "en",
 		Status:           "active",
 		Currency:         "USD",
-		Price:            10,
+		PriceMinor:       1000,
 		DisplayPriceData: oldProductSnapshot,
 	}
 	productThree := product.Product{
@@ -58,24 +58,24 @@ func TestRefreshDisplayPriceSnapshotsPreservesMismatchedSourceAmounts(t *testing
 		Locale:           "en",
 		Status:           "active",
 		Currency:         "CNY",
-		Price:            200,
+		PriceMinor:       20000,
 		DisplayPriceData: oldProductSnapshot,
 	}
 	require.NoError(t, db.Create(&productOne).Error)
 	require.NoError(t, db.Create(&productTwo).Error)
 	require.NoError(t, db.Create(&productThree).Error)
-	var coreBefore struct {
-		UpdatedAt     time.Time
-		DisplayPrices []byte `gorm:"column:display_prices"`
-	}
-	require.NoError(t, db.Model(&product.Product{}).Select("updated_at, display_prices").Where("id = ?", productOne.ID).Scan(&coreBefore).Error)
+	seedProductDisplaySnapshot(t, db, productOne.ID, nil, productOne.PriceMinor, productOne.Currency, productOne.SalePriceMinor, oldProductSnapshot)
+	seedProductDisplaySnapshot(t, db, productTwo.ID, nil, productTwo.PriceMinor, productTwo.Currency, productTwo.SalePriceMinor, oldProductSnapshot)
+	seedProductDisplaySnapshot(t, db, productThree.ID, nil, productThree.PriceMinor, productThree.Currency, productThree.SalePriceMinor, oldProductSnapshot)
+	var coreBefore struct{ UpdatedAt time.Time }
+	require.NoError(t, db.Model(&product.Product{}).Select("updated_at").Where("id = ?", productOne.ID).Scan(&coreBefore).Error)
 
 	variantOne := product.ProductVariant{
 		ProductID:        productOne.ID,
 		SKU:              "CNY-001-V",
 		OptionValues:     "{}",
 		Currency:         "CNY",
-		Price:            699,
+		PriceMinor:       69900,
 		DisplayPriceData: oldVariantSnapshot,
 		Stock:            1,
 		IsDefault:        true,
@@ -86,7 +86,7 @@ func TestRefreshDisplayPriceSnapshotsPreservesMismatchedSourceAmounts(t *testing
 		SKU:              "USD-001-V",
 		OptionValues:     "{}",
 		Currency:         "CNY",
-		Price:            100,
+		PriceMinor:       10000,
 		DisplayPriceData: oldVariantSnapshot,
 		Stock:            1,
 		IsDefault:        true,
@@ -97,7 +97,7 @@ func TestRefreshDisplayPriceSnapshotsPreservesMismatchedSourceAmounts(t *testing
 		SKU:              "CNY-002-V",
 		OptionValues:     "{}",
 		Currency:         "USD",
-		Price:            200,
+		PriceMinor:       20000,
 		DisplayPriceData: oldVariantSnapshot,
 		Stock:            1,
 		IsDefault:        true,
@@ -106,11 +106,14 @@ func TestRefreshDisplayPriceSnapshotsPreservesMismatchedSourceAmounts(t *testing
 	require.NoError(t, db.Create(&variantOne).Error)
 	require.NoError(t, db.Create(&variantTwo).Error)
 	require.NoError(t, db.Create(&variantThree).Error)
+	seedProductDisplaySnapshot(t, db, variantOne.ProductID, &variantOne.ID, variantOne.PriceMinor, variantOne.Currency, variantOne.SalePriceMinor, oldVariantSnapshot)
+	seedProductDisplaySnapshot(t, db, variantTwo.ProductID, &variantTwo.ID, variantTwo.PriceMinor, variantTwo.Currency, variantTwo.SalePriceMinor, oldVariantSnapshot)
+	seedProductDisplaySnapshot(t, db, variantThree.ProductID, &variantThree.ID, variantThree.PriceMinor, variantThree.Currency, variantThree.SalePriceMinor, oldVariantSnapshot)
 
 	result, err := productService.RefreshDisplayPriceSnapshots(
 		"CNY",
 		[]string{"USD"},
-		[]currency.ExchangeRate{{BaseCurrency: "CNY", QuoteCurrency: "USD", Rate: 0.14}},
+		[]currency.ExchangeRate{{BaseCurrency: "CNY", QuoteCurrency: "USD", RateDecimal: "0.14"}},
 	)
 
 	require.NoError(t, err)
@@ -124,36 +127,32 @@ func TestRefreshDisplayPriceSnapshotsPreservesMismatchedSourceAmounts(t *testing
 	require.NoError(t, db.First(&storedProductOne, productOne.ID).Error)
 	require.NoError(t, db.First(&storedProductTwo, productTwo.ID).Error)
 	require.NoError(t, db.First(&storedProductThree, productThree.ID).Error)
-	require.Equal(t, 699.0, storedProductOne.Price)
+	require.Equal(t, int64(69900), storedProductOne.PriceMinor)
 	require.Equal(t, "CNY", storedProductOne.Currency)
-	require.Equal(t, 10.0, storedProductTwo.Price)
+	require.Equal(t, int64(1000), storedProductTwo.PriceMinor)
 	require.Equal(t, "USD", storedProductTwo.Currency)
-	require.Equal(t, 200.0, storedProductThree.Price)
+	require.Equal(t, int64(20000), storedProductThree.PriceMinor)
 	require.Equal(t, "CNY", storedProductThree.Currency)
-	require.Equal(t, 97.86, displaySnapshotAmount(storedProductOne.DisplayPriceData, "USD"))
-	require.Equal(t, 100.0, displaySnapshotAmount(storedProductTwo.DisplayPriceData, "USD"))
-	require.Equal(t, 28.0, displaySnapshotAmount(storedProductThree.DisplayPriceData, "USD"))
+	require.Equal(t, 97.86, displaySnapshotAmount(loadProductDisplaySnapshot(t, db, productOne.ID, nil), "USD"))
+	require.Equal(t, 100.0, displaySnapshotAmount(loadProductDisplaySnapshot(t, db, productTwo.ID, nil), "USD"))
+	require.Equal(t, 100.0, displaySnapshotAmount(loadProductDisplaySnapshot(t, db, productThree.ID, nil), "USD"))
 
 	var storedVariantOne, storedVariantTwo, storedVariantThree product.ProductVariant
 	require.NoError(t, db.First(&storedVariantOne, variantOne.ID).Error)
 	require.NoError(t, db.First(&storedVariantTwo, variantTwo.ID).Error)
 	require.NoError(t, db.First(&storedVariantThree, variantThree.ID).Error)
-	require.Equal(t, 699.0, storedVariantOne.Price)
+	require.Equal(t, int64(69900), storedVariantOne.PriceMinor)
 	require.Equal(t, "CNY", storedVariantOne.Currency)
-	require.Equal(t, 97.86, displaySnapshotAmount(storedVariantOne.DisplayPriceData, "USD"))
-	require.Equal(t, 100.0, storedVariantTwo.Price)
+	require.Equal(t, 97.86, displaySnapshotAmount(loadProductDisplaySnapshot(t, db, variantOne.ProductID, &variantOne.ID), "USD"))
+	require.Equal(t, int64(10000), storedVariantTwo.PriceMinor)
 	require.Equal(t, "CNY", storedVariantTwo.Currency)
-	require.Equal(t, 14.0, displaySnapshotAmount(storedVariantTwo.DisplayPriceData, "USD"))
-	require.Equal(t, 200.0, storedVariantThree.Price)
+	require.Equal(t, 14.0, displaySnapshotAmount(loadProductDisplaySnapshot(t, db, variantTwo.ProductID, &variantTwo.ID), "USD"))
+	require.Equal(t, int64(20000), storedVariantThree.PriceMinor)
 	require.Equal(t, "USD", storedVariantThree.Currency)
-	require.Equal(t, 101.0, displaySnapshotAmount(storedVariantThree.DisplayPriceData, "USD"))
-	var coreAfter struct {
-		UpdatedAt     time.Time
-		DisplayPrices []byte `gorm:"column:display_prices"`
-	}
-	require.NoError(t, db.Model(&product.Product{}).Select("updated_at, display_prices").Where("id = ?", productOne.ID).Scan(&coreAfter).Error)
+	require.Equal(t, 101.0, displaySnapshotAmount(loadProductDisplaySnapshot(t, db, variantThree.ProductID, &variantThree.ID), "USD"))
+	var coreAfter struct{ UpdatedAt time.Time }
+	require.NoError(t, db.Model(&product.Product{}).Select("updated_at").Where("id = ?", productOne.ID).Scan(&coreAfter).Error)
 	require.Equal(t, coreBefore.UpdatedAt, coreAfter.UpdatedAt)
-	require.JSONEq(t, string(coreBefore.DisplayPrices), string(coreAfter.DisplayPrices))
 	var snapshot product.ProductDisplayPriceSnapshot
 	require.NoError(t, db.Where("scope_key = ?", "product:"+strconv.FormatUint(uint64(productOne.ID), 10)).First(&snapshot).Error)
 	require.Equal(t, int64(69900), snapshot.SourcePriceMinor)
@@ -175,7 +174,7 @@ func TestExchangeRateSyncRefreshesProductDisplayPriceSnapshots(t *testing.T) {
 	require.NoError(t, err)
 
 	oldSnapshot := currency.DisplayPriceSnapshotsJSON([]currency.DisplayPriceSnapshot{
-		{Amount: 100, Currency: "USD", QuoteCurrency: "USD", Rate: 0.1, Source: "old_rate", Converted: true},
+		{AmountDecimal: "100.00", Currency: "USD", QuoteCurrency: "USD", Rate: 0.1, Source: "old_rate", Converted: true},
 	}, "CNY")
 	storedProduct := product.Product{
 		SKU:              "SYNC-001",
@@ -184,7 +183,7 @@ func TestExchangeRateSyncRefreshesProductDisplayPriceSnapshots(t *testing.T) {
 		Locale:           "en",
 		Status:           "active",
 		Currency:         "CNY",
-		Price:            100,
+		PriceMinor:       10000,
 		DisplayPriceData: oldSnapshot,
 	}
 	require.NoError(t, db.Create(&storedProduct).Error)
@@ -215,17 +214,17 @@ func TestExchangeRateSyncRefreshesProductDisplayPriceSnapshots(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, result.DisplayPriceRefresh)
 	require.Equal(t, 1, result.DisplayPriceRefresh.ProductsUpdated)
-	require.Equal(t, 100.0, storedProduct.Price)
+	require.Equal(t, int64(10000), storedProduct.PriceMinor)
 
 	var refreshed product.Product
 	require.NoError(t, db.First(&refreshed, storedProduct.ID).Error)
-	require.Equal(t, 100.0, refreshed.Price)
+	require.Equal(t, int64(10000), refreshed.PriceMinor)
 	require.Equal(t, "CNY", refreshed.Currency)
-	require.Equal(t, 14.0, displaySnapshotAmount(refreshed.DisplayPriceData, "USD"))
+	require.Equal(t, 14.0, displaySnapshotAmount(loadProductDisplaySnapshot(t, db, storedProduct.ID, nil), "USD"))
 
 	rate, err := exchangeRateRepo.Find("CNY", "USD")
 	require.NoError(t, err)
-	require.Equal(t, 0.14, rate.Rate)
+	require.Equal(t, "0.14", rate.RateDecimal)
 }
 
 func newDisplayPriceRefreshTestDB(t *testing.T) *gorm.DB {
@@ -250,8 +249,38 @@ func displaySnapshotAmount(raw []byte, quoteCurrency string) float64 {
 	}
 	for _, snapshot := range snapshots {
 		if currency.NormalizeCode(snapshot.Currency) == currency.NormalizeCode(quoteCurrency) {
-			return snapshot.Amount
+			parsed, err := strconv.ParseFloat(snapshot.AmountDecimal, 64)
+			if err == nil {
+				return parsed
+			}
+			return 0
 		}
 	}
 	return 0
+}
+
+func seedProductDisplaySnapshot(t *testing.T, db *gorm.DB, productID uint, variantID *uint, sourcePriceMinor int64, sourceCurrency string, sourceSalePriceMinor *int64, displayPrices []byte) {
+	t.Helper()
+	scopeKey := "product:" + strconv.FormatUint(uint64(productID), 10)
+	if variantID != nil {
+		scopeKey = "variant:" + strconv.FormatUint(uint64(*variantID), 10)
+	}
+	require.NoError(t, db.Create(&product.ProductDisplayPriceSnapshot{
+		ScopeKey: scopeKey, ProductID: productID, VariantID: variantID,
+		SourceCurrency: sourceCurrency, SourcePriceMinor: sourcePriceMinor,
+		SourceSalePriceMinor: sourceSalePriceMinor, DisplayPriceData: displayPrices,
+	}).Error)
+}
+
+func loadProductDisplaySnapshot(t *testing.T, db *gorm.DB, productID uint, variantID *uint) []byte {
+	t.Helper()
+	query := db.Where("product_id = ?", productID)
+	if variantID == nil {
+		query = query.Where("variant_id IS NULL")
+	} else {
+		query = query.Where("variant_id = ?", *variantID)
+	}
+	var snapshot product.ProductDisplayPriceSnapshot
+	require.NoError(t, query.First(&snapshot).Error)
+	return snapshot.DisplayPriceData
 }

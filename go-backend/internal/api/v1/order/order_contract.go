@@ -14,13 +14,12 @@ type CreateOrderRequest struct {
 	BillingAddress               *AddressRequest    `json:"billing_address,omitempty" binding:"omitempty"`
 	PaymentMethod                string             `json:"payment_method" binding:"required"`
 	ShippingMethod               string             `json:"shipping_method" binding:"required"`
-	ExpectedTotal                *float64           `json:"expected_total" binding:"required"`
+	ExpectedTotalMinor           *int64             `json:"expected_total_minor" binding:"required"`
 	ShippingQuoteID              string             `json:"shipping_quote_id" binding:"required"`
 	SelectedQuotePlanID          string             `json:"selected_quote_plan_id" binding:"required"`
 	CouponCode                   string             `json:"coupon_code"`
-	GiftCardCode                 string             `json:"gift_card_code"`
+	Notes                        string             `json:"notes"`
 	DisplayCurrency              string             `json:"display_currency"`
-	PointsToUse                  int                `json:"points_to_use"`
 	PolicyDisclosureAcknowledged bool               `json:"policy_disclosure_acknowledged"`
 	ClientRisk                   *ClientRiskRequest `json:"client_risk,omitempty"`
 }
@@ -56,47 +55,55 @@ type AddressRequest struct {
 // omits database IDs so browser clients use order_number as the only order
 // reference.
 type PublicOrderResponse struct {
-	OrderNumber           string              `json:"order_number"`
-	Status                string              `json:"status"`
-	PaymentMethod         string              `json:"payment_method"`
-	PaymentStatus         string              `json:"payment_status"`
-	ShippingMethod        string              `json:"shipping_method"`
-	ShippingStatus        string              `json:"shipping_status"`
-	FulfillmentMode       string              `json:"fulfillment_mode"`
-	ProductionStatus      string              `json:"production_status"`
-	SignatureRequired     bool                `json:"signature_required"`
-	TrackingNumber        string              `json:"tracking_number"`
-	ProviderCarrierCode   string              `json:"provider_carrier_code"`
-	ProviderCarrierName   string              `json:"provider_carrier_name"`
-	SubtotalMinor         int64               `json:"subtotal_minor"`
-	ShippingFeeMinor      int64               `json:"shipping_fee_minor"`
-	TaxMinor              int64               `json:"tax_minor"`
-	DiscountMinor         int64               `json:"discount_minor"`
-	TotalMinor            int64               `json:"total_minor"`
-	Currency              string              `json:"currency"`
-	CouponCode            string              `json:"coupon_code"`
-	PointsUsed            int                 `json:"points_used"`
-	PointsValueMinor      int64               `json:"points_value_minor"`
-	ShippingAddress       orderdomain.Address `json:"shipping_address"`
-	BillingAddress        orderdomain.Address `json:"billing_address"`
-	CustomerNote          string              `json:"customer_note"`
-	Items                 []PublicOrderItem   `json:"items"`
-	CreatedAt             time.Time           `json:"created_at"`
-	UpdatedAt             time.Time           `json:"updated_at"`
-	PaidAt                *time.Time          `json:"paid_at"`
-	ShippedAt             *time.Time          `json:"shipped_at"`
-	CompletedAt           *time.Time          `json:"completed_at"`
-	CancelledAt           *time.Time          `json:"cancelled_at"`
-	ProductionStartedAt   *time.Time          `json:"production_started_at"`
-	ProductionCompletedAt *time.Time          `json:"production_completed_at"`
+	OrderNumber           string                   `json:"order_number"`
+	Status                string                   `json:"status"`
+	PaymentMethod         string                   `json:"payment_method"`
+	PaymentStatus         string                   `json:"payment_status"`
+	ShippingMethod        string                   `json:"shipping_method"`
+	ShippingStatus        string                   `json:"shipping_status"`
+	FulfillmentMode       string                   `json:"fulfillment_mode"`
+	ProductionStatus      string                   `json:"production_status"`
+	SignatureRequired     bool                     `json:"signature_required"`
+	SubtotalMinor         int64                    `json:"subtotal_minor"`
+	ShippingFeeMinor      int64                    `json:"shipping_fee_minor"`
+	TaxMinor              int64                    `json:"tax_minor"`
+	DiscountMinor         int64                    `json:"discount_minor"`
+	TotalMinor            int64                    `json:"total_minor"`
+	Currency              string                   `json:"currency"`
+	CouponCode            string                   `json:"coupon_code"`
+	ShippingAddress       orderdomain.Address      `json:"shipping_address"`
+	BillingAddress        orderdomain.Address      `json:"billing_address"`
+	CustomerNote          string                   `json:"customer_note"`
+	Items                 []PublicOrderItem        `json:"items"`
+	CreatedAt             time.Time                `json:"created_at"`
+	UpdatedAt             time.Time                `json:"updated_at"`
+	PaidAt                *time.Time               `json:"paid_at"`
+	ShippedAt             *time.Time               `json:"shipped_at"`
+	CompletedAt           *time.Time               `json:"completed_at"`
+	CancelledAt           *time.Time               `json:"cancelled_at"`
+	ProductionStartedAt   *time.Time               `json:"production_started_at"`
+	ProductionCompletedAt *time.Time               `json:"production_completed_at"`
+	TrackingShipments     []PublicTrackingShipment `json:"tracking_shipments,omitempty"`
+}
+
+type PublicTrackingShipment struct {
+	TrackingNumber      string     `json:"tracking_number"`
+	ProviderCarrierCode string     `json:"provider_carrier_code"`
+	RegistrationStatus  string     `json:"registration_status"`
+	SyncStatus          string     `json:"sync_status"`
+	LastEventAt         *time.Time `json:"last_event_at,omitempty"`
+	Enabled             bool       `json:"enabled"`
 }
 
 type PublicOrderItem struct {
+	// ItemIndex is the stable zero-based position in the public order payload.
+	// It lets customer workflows refer to an order line without exposing the
+	// internal database order-item ID.
+	ItemIndex       int             `json:"item_index"`
 	ProductID       uint            `json:"product_id"`
 	VariantID       *uint           `json:"variant_id"`
 	ProductName     string          `json:"product_name"`
 	SKU             string          `json:"sku"`
-	Attributes      string          `json:"attributes"`
 	Configuration   json.RawMessage `json:"configuration,omitempty"`
 	FulfillmentMode string          `json:"fulfillment_mode"`
 	Quantity        int             `json:"quantity"`
@@ -148,9 +155,6 @@ func publicOrderResponse(item orderdomain.Order) PublicOrderResponse {
 		FulfillmentMode:       fulfillmentMode,
 		ProductionStatus:      productionStatus,
 		SignatureRequired:     item.SignatureRequired,
-		TrackingNumber:        item.TrackingNumber,
-		ProviderCarrierCode:   item.ProviderCarrierCode,
-		ProviderCarrierName:   item.ProviderCarrierName,
 		SubtotalMinor:         subtotalMinor,
 		ShippingFeeMinor:      shippingMinor,
 		TaxMinor:              taxMinor,
@@ -158,8 +162,6 @@ func publicOrderResponse(item orderdomain.Order) PublicOrderResponse {
 		TotalMinor:            totalMinor,
 		Currency:              item.Currency,
 		CouponCode:            item.CouponCode,
-		PointsUsed:            item.PointsUsed,
-		PointsValueMinor:      item.PointsValueMinor,
 		ShippingAddress:       item.ShippingAddress,
 		BillingAddress:        item.BillingAddress,
 		CustomerNote:          item.CustomerNote,
@@ -185,7 +187,7 @@ func publicOrderResponses(items []orderdomain.Order) []PublicOrderResponse {
 
 func publicOrderItems(items []orderdomain.OrderItem) []PublicOrderItem {
 	result := make([]PublicOrderItem, 0, len(items))
-	for _, item := range items {
+	for itemIndex, item := range items {
 		priceMinor := int64(0)
 		if value, err := item.PriceMoney(); err == nil {
 			priceMinor = value.AmountMinor()
@@ -207,11 +209,11 @@ func publicOrderItems(items []orderdomain.OrderItem) []PublicOrderItem {
 			totalMinor = value.AmountMinor()
 		}
 		result = append(result, PublicOrderItem{
+			ItemIndex:       itemIndex,
 			ProductID:       item.ProductID,
 			VariantID:       item.VariantID,
 			ProductName:     item.ProductName,
 			SKU:             item.SKU,
-			Attributes:      item.Attributes,
 			Configuration:   append(json.RawMessage(nil), item.ConfigurationSnapshotData...),
 			FulfillmentMode: item.FulfillmentMode,
 			Quantity:        item.Quantity,

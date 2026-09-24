@@ -130,6 +130,11 @@
 
                   <!-- 登录表单 -->
                   <form v-if="mode === 'login'" @submit.prevent="handleLogin" class="space-y-3">
+                    <HoneypotField
+                      v-model="loginForm.corporate_website"
+                      name="corporate_website"
+                      label="Corporate website"
+                    />
                     <div>
                       <label class="block text-sm font-medium tz-text-secondary mb-1">{{ t('authModal.fields.email') }}</label>
                       <input
@@ -168,6 +173,11 @@
 
                   <!-- 注册表单 -->
                   <form v-else @submit.prevent="handleRegister" class="space-y-3">
+                    <HoneypotField
+                      v-model="registerForm.corporate_website"
+                      name="corporate_website"
+                      label="Corporate website"
+                    />
                     <div>
                       <label class="block text-sm font-medium tz-text-secondary mb-1">{{ t('authModal.fields.username') }}</label>
                       <input type="text" v-model="registerForm.username" required class="form-input" autocomplete="username" />
@@ -179,6 +189,18 @@
                     <div>
                       <label class="block text-sm font-medium tz-text-secondary mb-1">{{ t('authModal.fields.password') }}</label>
                       <input type="password" v-model="registerForm.password" required class="form-input" autocomplete="new-password" />
+                    </div>
+                    <div>
+                      <label class="block text-sm font-medium tz-text-secondary mb-1">{{ t('authModal.fields.referralCode') }}</label>
+                      <input
+                        type="text"
+                        v-model="registerForm.referralCode"
+                        class="form-input"
+                        autocomplete="off"
+                        maxlength="64"
+                        :placeholder="t('authModal.fields.referralCodePlaceholder')"
+                      />
+                      <p class="mt-1 text-xs tz-text-muted">{{ t('authModal.fields.referralCodeHint') }}</p>
                     </div>
                     <button type="submit" :disabled="registerForm.loading" class="primary-btn w-full">
                       {{ registerForm.loading ? t('authModal.actions.signingUp') : t('authModal.actions.signUp') }}
@@ -229,6 +251,7 @@ import { useI18n } from '#imports'
 import { useAuth } from '~/composables/useAuth'
 import { useGoogleAuth } from '~/composables/useGoogleAuth'
 import { createOverlayInstanceId, useOverlayBackStack } from '~/composables/useOverlayBackStack'
+import HoneypotField from '~/components/security/HoneypotField.vue'
 import { z } from 'zod'
 import { useFocusTrap } from '@vueuse/integrations/useFocusTrap'
 
@@ -272,8 +295,8 @@ const containerPlacementClass = computed(() => {
 })
 
 const mode = ref<'login' | 'register'>(props.defaultMode)
-const loginForm = ref({ username: '', password: '', remember: false, loading: false, error: '' })
-const registerForm = ref({ username: '', email: '', password: '', loading: false, error: '' })
+const loginForm = ref({ username: '', password: '', remember: false, corporate_website: '', loading: false, error: '' })
+const registerForm = ref({ username: '', email: '', password: '', referralCode: '', corporate_website: '', loading: false, error: '' })
 type CompletionState = {
   type: 'login' | 'register'
   title: string
@@ -319,8 +342,8 @@ onBeforeUnmount(() => {
 })
 
 const resetForms = () => {
-  loginForm.value = { username: '', password: '', remember: false, loading: false, error: '' }
-  registerForm.value = { username: '', email: '', password: '', loading: false, error: '' }
+  loginForm.value = { username: '', password: '', remember: false, corporate_website: '', loading: false, error: '' }
+  registerForm.value = { username: '', email: '', password: '', referralCode: '', corporate_website: '', loading: false, error: '' }
   completionState.value = null
 }
 
@@ -407,7 +430,8 @@ const handleLogin = async () => {
     await auth.login({
       username: loginForm.value.username,
       password: loginForm.value.password,
-      remember: loginForm.value.remember
+      remember: loginForm.value.remember,
+      corporate_website: loginForm.value.corporate_website,
     })
     await auth.ensureSession?.()
     completionState.value = {
@@ -441,7 +465,9 @@ const handleRegister = async () => {
     await auth.register({
       username: registerForm.value.username,
       email: registerForm.value.email,
-      password: registerForm.value.password
+      password: registerForm.value.password,
+      referralCode: registerForm.value.referralCode,
+      corporate_website: registerForm.value.corporate_website,
     })
     await auth.ensureSession?.()
     completionState.value = {

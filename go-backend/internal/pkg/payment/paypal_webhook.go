@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"net"
 	"net/http"
 	"strings"
 	"time"
@@ -12,7 +14,16 @@ import (
 	"github.com/plutov/paypal/v4"
 )
 
+// Keep the verifier deadline bounded for request handling. PayPal's
+// transmission-time freshness is checked by PayPal itself; this timeout is
+// only the outbound verification call and must not be used as a timestamp
+// replay window.
 const paypalWebhookVerificationTimeout = 5 * time.Second
+
+// ErrPayPalWebhookVerificationUnavailable marks a transient failure while
+// asking PayPal to verify a webhook. Callers must return a 5xx response so
+// PayPal retries the event; it must not be treated as an invalid signature.
+var ErrPayPalWebhookVerificationUnavailable = errors.New("paypal webhook verification temporarily unavailable")
 
 // VerifyWebhook 验证PayPal Webhook签名
 func (g *paypalGatewayImpl) VerifyWebhook(payload []byte, signature string) (bool, error) {
@@ -66,6 +77,9 @@ func VerifyPayPalWebhook(ctx context.Context, config *Config, headers http.Heade
 
 	verification, err := verifier.VerifyWebhookSignature(verificationCtx, req, config.WebhookSecret)
 	if err != nil {
+		if isTransientPayPalWebhookVerificationError(err) {
+			return PayPalWebhookEvent{}, fmt.Errorf("%w: %v", ErrPayPalWebhookVerificationUnavailable, err)
+		}
 		return PayPalWebhookEvent{}, fmt.Errorf("paypal webhook signature verification failed: %w", err)
 	}
 	if verification == nil || !strings.EqualFold(verification.VerificationStatus, paypalWebhookVerificationStatusSuccess) {
@@ -87,6 +101,21 @@ func VerifyPayPalWebhook(ctx context.Context, config *Config, headers http.Heade
 		return PayPalWebhookEvent{}, fmt.Errorf("paypal webhook event_type is required")
 	}
 	return event, nil
+}
+
+func isTransientPayPalWebhookVerificationError(err error) bool {
+	if err == nil {
+		return false
+	}
+	if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
+		return true
+	}
+	var netErr net.Error
+	if errors.As(err, &netErr) {
+		return true
+	}
+	var paypalErr *paypal.ErrorResponse
+	return errors.As(err, &paypalErr) && paypalErr != nil && paypalErr.Response != nil && paypalErr.Response.StatusCode >= http.StatusInternalServerError
 }
 
 func newPayPalVerificationClient(config *Config) (*paypal.Client, error) {

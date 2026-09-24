@@ -14,7 +14,7 @@ import (
 
 func TestOrderServiceHighValueUsesFinalOrderTotalAfterDiscounts(t *testing.T) {
 	db, orderService := newTestOrderService(t)
-	productRecord := seedHighValuePolicyProduct(t, db, "SKU-HIGH-VALUE-DISCOUNT", "High value product", 800, 5)
+	productRecord := seedHighValuePolicyProduct(t, db, "SKU-HIGH-VALUE-DISCOUNT", "High value product", 80000, 5)
 	seedCoupon(t, db, "HIGH-VALUE-100", "fixed", 100, 1)
 	seedCoupon(t, db, "HIGH-VALUE-50", "fixed", 50, 1)
 
@@ -27,11 +27,10 @@ func TestOrderServiceHighValueUsesFinalOrderTotalAfterDiscounts(t *testing.T) {
 		"card",
 		"standard",
 		"HIGH-VALUE-100",
-		0,
 	)
 	require.NoError(t, err)
 	require.NotNil(t, belowThreshold)
-	assert.InDelta(t, 700, belowThreshold.TotalAmount, 0.001)
+	assert.Equal(t, int64(70000), belowThreshold.TotalAmountMinor)
 	assert.False(t, belowThreshold.SignatureRequired)
 
 	atThreshold, err := orderService.CreateOrder(
@@ -43,11 +42,10 @@ func TestOrderServiceHighValueUsesFinalOrderTotalAfterDiscounts(t *testing.T) {
 		"card",
 		"standard",
 		"HIGH-VALUE-50",
-		0,
 	)
 	require.NoError(t, err)
 	require.NotNil(t, atThreshold)
-	assert.InDelta(t, 750, atThreshold.TotalAmount, 0.001)
+	assert.Equal(t, int64(75000), atThreshold.TotalAmountMinor)
 	assert.True(t, atThreshold.SignatureRequired)
 
 	var savedBelowThreshold order.Order
@@ -61,8 +59,8 @@ func TestOrderServiceHighValueUsesFinalOrderTotalAfterDiscounts(t *testing.T) {
 
 func TestOrderServiceHighValueIsBasedOnOrderTotalAcrossMultipleItems(t *testing.T) {
 	db, orderService := newTestOrderService(t)
-	firstProduct := seedHighValuePolicyProduct(t, db, "SKU-HIGH-VALUE-FIRST", "First item", 400, 5)
-	secondProduct := seedHighValuePolicyProduct(t, db, "SKU-HIGH-VALUE-SECOND", "Second item", 350, 5)
+	firstProduct := seedHighValuePolicyProduct(t, db, "SKU-HIGH-VALUE-FIRST", "First item", 40000, 5)
+	secondProduct := seedHighValuePolicyProduct(t, db, "SKU-HIGH-VALUE-SECOND", "Second item", 35000, 5)
 
 	createdOrder, err := orderService.CreateOrder(
 		context.Background(),
@@ -76,19 +74,18 @@ func TestOrderServiceHighValueIsBasedOnOrderTotalAcrossMultipleItems(t *testing.
 		"card",
 		"standard",
 		"",
-		0,
 	)
 
 	require.NoError(t, err)
 	require.NotNil(t, createdOrder)
-	assert.InDelta(t, 750, createdOrder.TotalAmount, 0.001)
+	assert.Equal(t, int64(75000), createdOrder.TotalAmountMinor)
 	assert.True(t, createdOrder.SignatureRequired)
 
 	var savedOrder order.Order
 	require.NoError(t, db.Preload("Items").First(&savedOrder, createdOrder.ID).Error)
 	require.Len(t, savedOrder.Items, 2)
-	assert.InDelta(t, 400, savedOrder.Items[0].Total, 0.001)
-	assert.InDelta(t, 350, savedOrder.Items[1].Total, 0.001)
+	assert.Equal(t, int64(40000), savedOrder.Items[0].TotalMinor)
+	assert.Equal(t, int64(35000), savedOrder.Items[1].TotalMinor)
 	assert.True(t, savedOrder.SignatureRequired)
 }
 
@@ -114,7 +111,7 @@ func TestOrderServiceHighValueIgnoresProductNameAndCategory(t *testing.T) {
 		db,
 		"SKU-HIGH-VALUE-WHEEL",
 		"Custom Wheelset Configuration",
-		750,
+		75000,
 		5,
 		wheelCategory.ID,
 	)
@@ -123,7 +120,7 @@ func TestOrderServiceHighValueIgnoresProductNameAndCategory(t *testing.T) {
 		db,
 		"SKU-HIGH-VALUE-ORDINARY",
 		"Standard Accessory",
-		750,
+		75000,
 		5,
 		ordinaryCategory.ID,
 	)
@@ -138,12 +135,11 @@ func TestOrderServiceHighValueIgnoresProductNameAndCategory(t *testing.T) {
 			"card",
 			"standard",
 			"",
-			0,
 		)
 
 		require.NoError(t, err)
 		require.NotNil(t, createdOrder)
-		assert.InDelta(t, 750, createdOrder.TotalAmount, 0.001)
+		assert.Equal(t, int64(75000), createdOrder.TotalAmountMinor)
 		assert.True(t, createdOrder.SignatureRequired, "product %q should use the same order-total policy", productRecord.Name)
 	}
 }
@@ -153,10 +149,10 @@ func seedHighValuePolicyProduct(
 	db *gorm.DB,
 	sku string,
 	name string,
-	price float64,
+	priceMinor int64,
 	stock int,
 ) productdomain.Product {
-	return seedHighValuePolicyProductWithCategory(t, db, sku, name, price, stock, 0)
+	return seedHighValuePolicyProductWithCategory(t, db, sku, name, priceMinor, stock, 0)
 }
 
 func seedHighValuePolicyProductWithCategory(
@@ -164,7 +160,7 @@ func seedHighValuePolicyProductWithCategory(
 	db *gorm.DB,
 	sku string,
 	name string,
-	price float64,
+	priceMinor int64,
 	stock int,
 	categoryID uint,
 ) productdomain.Product {
@@ -178,7 +174,7 @@ func seedHighValuePolicyProductWithCategory(
 		Name:               name,
 		Slug:               slugForHighValuePolicyTest(sku),
 		Currency:           "USD",
-		Price:              price,
+		PriceMinor:         priceMinor,
 		Stock:              stock,
 		Status:             "active",
 		Locale:             "en",
@@ -193,7 +189,7 @@ func seedHighValuePolicyProductWithCategory(
 		Title:        "Default",
 		OptionValues: "{}",
 		Currency:     "USD",
-		Price:        price,
+		PriceMinor:   priceMinor,
 		Stock:        stock,
 		Weight:       9000,
 		IsDefault:    true,

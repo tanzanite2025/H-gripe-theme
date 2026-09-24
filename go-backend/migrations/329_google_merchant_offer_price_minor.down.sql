@@ -1,0 +1,1 @@
+-- Legacy major-unit merchant overrides are intentionally not restored.

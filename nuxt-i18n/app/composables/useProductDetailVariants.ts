@@ -1,5 +1,6 @@
 import { computed, ref, watch, type Ref } from 'vue'
 import { useI18n, useRoute } from '#imports'
+import { majorToMinor, minorToMajor } from '~/utils/money'
 import {
   PRODUCT_DETAIL_HIDDEN_SPEC_SLUGS,
   displayPriceSnapshotForCurrency,
@@ -92,6 +93,18 @@ export function useProductDetailVariants(
 
   const selectedCustomOptions = ref<Record<string, string[]>>({})
 
+  const selectedOptionValueIDs = computed(() => {
+    const ids = new Set<number>()
+    const values = product.value?.variant_option_values || []
+    Object.entries(selectedCustomOptions.value).forEach(([slug, valueKeys]) => {
+      valueKeys.forEach(valueKey => {
+        const value = values.find(option => option.spec_slug === slug && option.value_key === valueKey)
+        if (value) ids.add(Number(value.id))
+      })
+    })
+    return ids
+  })
+
   watch([product, selectedVariant], () => {
     const next: Record<string, string[]> = {}
     const valueRules = new Map((selectedVariant.value?.option_value_rules || []).map(rule => [Number(rule.product_variant_option_value_id), rule]))
@@ -117,17 +130,47 @@ export function useProductDetailVariants(
       .filter(option => option.spec_slug === definition.slug && option.is_enabled !== false)
       .map(option => {
         const rule = valueRules.get(Number(option.id))
+        const conflicts = (product.value?.option_value_relations || []).find(relation => (
+          relation.relation_type === 'conflicts'
+          && Number(relation.source_option_value_id) === Number(option.id)
+          && selectedOptionValueIDs.value.has(Number(relation.target_option_value_id))
+        ) || (product.value?.option_value_relations || []).find(relation => (
+          relation.relation_type === 'conflicts'
+          && Number(relation.target_option_value_id) === Number(option.id)
+          && selectedOptionValueIDs.value.has(Number(relation.source_option_value_id))
+        )))
+        const selected = (selectedCustomOptions.value[definition.slug] || []).includes(option.value_key)
         return {
           value: option.value_key,
           label: option.label,
           colorHex: option.color_hex || '',
           swatchUrl: option.swatch_url || '',
-          selected: (selectedCustomOptions.value[definition.slug] || []).includes(option.value_key),
-          available: rule?.is_enabled !== false,
-          unavailableReason: rule?.unavailable_reason || '',
+          selected,
+          available: rule?.is_enabled !== false && (!conflicts || selected),
+          unavailableReason: rule?.unavailable_reason || (conflicts && !selected
+            ? (locale.value === 'zh_cn' ? '与当前选项冲突' : 'Conflicts with the current selection')
+            : ''),
           priceDeltaMinor: rule?.price_delta_minor_override ?? option.price_delta_minor ?? 0,
         }
       })
+    const groupOptionIDs = new Set((product.value?.variant_option_values || [])
+      .filter(option => option.spec_slug === definition.slug)
+      .map(option => Number(option.id)))
+    const dependencyInvalid = (product.value?.option_value_relations || []).some(relation => (
+      relation.relation_type === 'requires'
+      && groupOptionIDs.has(Number(relation.source_option_value_id))
+      && selectedOptionValueIDs.value.has(Number(relation.source_option_value_id))
+      && !selectedOptionValueIDs.value.has(Number(relation.target_option_value_id))
+    ))
+    const missingDependency = (product.value?.option_value_relations || []).find(relation => (
+      relation.relation_type === 'requires'
+      && groupOptionIDs.has(Number(relation.source_option_value_id))
+      && selectedOptionValueIDs.value.has(Number(relation.source_option_value_id))
+      && !selectedOptionValueIDs.value.has(Number(relation.target_option_value_id))
+    ))
+    const requiredOption = missingDependency
+      ? (product.value?.variant_option_values || []).find(option => Number(option.id) === Number(missingDependency.target_option_value_id))
+      : undefined
     return {
       slug: definition.slug,
       name: definition.name,
@@ -137,8 +180,11 @@ export function useProductDetailVariants(
       presentation: definition.presentation || 'text',
       options: values,
       selectedCount: selectedCustomOptions.value[definition.slug]?.length || 0,
-      isValid: (selectedCustomOptions.value[definition.slug]?.length || 0) >= minSelections
+      isValid: !dependencyInvalid && (selectedCustomOptions.value[definition.slug]?.length || 0) >= minSelections
         && (maxSelections == null || (selectedCustomOptions.value[definition.slug]?.length || 0) <= maxSelections),
+      validationMessage: dependencyInvalid
+        ? (locale.value === 'zh_cn' ? `需要同时选择 ${requiredOption?.label || requiredOption?.value_key || ''}` : `Requires ${requiredOption?.label || requiredOption?.value_key || 'another option'}`)
+        : '',
     }
   }))
 
@@ -157,7 +203,15 @@ export function useProductDetailVariants(
   const customOptionsValid = computed(() => customOptionGroups.value.every((group) => {
     const count = selectedCustomOptions.value[group.slug]?.length || 0
     return count >= group.minSelections && (group.maxSelections == null || count <= group.maxSelections)
-  }))
+  }) && (() => {
+    return (product.value?.option_value_relations || []).every(relation => {
+      const sourceSelected = selectedOptionValueIDs.value.has(Number(relation.source_option_value_id))
+      const targetSelected = selectedOptionValueIDs.value.has(Number(relation.target_option_value_id))
+      if (relation.relation_type === 'requires') return !sourceSelected || targetSelected
+      if (relation.relation_type === 'conflicts') return !(sourceSelected && targetSelected)
+      return true
+    })
+  })())
 
   const specDefinitionsBySlug = computed(() => {
     const entries = (product.value?.product_specification_template?.spec_definitions || [])
@@ -307,31 +361,27 @@ export function useProductDetailVariants(
       .reduce((subtotal, option) => subtotal + Number(option.priceDeltaMinor || 0), 0)
   ), 0))
 
-  const minorUnitsForCurrency = (value: string) => {
-    const code = normalizeProductCurrencyCode(value)
-    if (['BHD', 'IQD', 'JOD', 'KWD', 'LYD', 'OMR', 'TND'].includes(code)) return 3
-    if (['BIF', 'CLP', 'DJF', 'GNF', 'JPY', 'KMF', 'KRW', 'MGA', 'PYG', 'RWF', 'UGX', 'VND', 'VUV', 'XAF', 'XOF', 'XPF'].includes(code)) return 0
-    return 2
-  }
-
-  const customOptionPriceDeltaMajor = computed(() => (
-    selectedCustomOptionPriceDeltaMinor.value / (10 ** minorUnitsForCurrency(currentCurrency.value))
-  ))
-
-  const effectivePrice = computed(() => {
-    const basePrice = selectedVariant.value?.sale_price
-      ?? selectedVariant.value?.price
-      ?? product.value?.sale_price
-      ?? product.value?.price
-      ?? 0
-    return Number(basePrice || 0) + customOptionPriceDeltaMajor.value
-  })
-
   const currentCurrency = computed(() => {
     return normalizeProductCurrencyCode(
       selectedVariant.value?.currency || product.value?.currency,
     ) || 'USD'
   })
+
+  const effectivePriceMinor = computed(() => {
+    const basePrice = selectedVariant.value?.sale_price_decimal
+      ?? selectedVariant.value?.price_decimal
+      ?? product.value?.sale_price_decimal
+      ?? product.value?.price_decimal
+      ?? 0
+    return majorToMinor(basePrice, currentCurrency.value) + selectedCustomOptionPriceDeltaMinor.value
+  })
+
+  const effectivePrice = computed(() => minorToMajor(effectivePriceMinor.value, currentCurrency.value))
+
+  const customOptionPriceDeltaMajor = computed(() => minorToMajor(
+    selectedCustomOptionPriceDeltaMinor.value,
+    currentCurrency.value,
+  ))
 
   const currentDisplayPrice = computed(() => {
     const selectedVariantDisplayPrice =
@@ -414,6 +464,7 @@ export function useProductDetailVariants(
     parseVariantOptions: parseProductVariantOptions,
     variantLabel,
     selectVariantOption,
+    effectivePriceMinor,
     effectivePrice,
     selectedCustomOptionPriceDeltaMinor,
     currentCurrency,

@@ -207,7 +207,6 @@
       "tax": "Tax",
       "pointsDiscount": "Points discount",
       "couponDiscount": "Coupon discount",
-      "giftCardDiscount": "Gift card discount",
       "total": "Total",
       "title": "Order summary"
     }
@@ -229,14 +228,14 @@
     },
     "messages": {
       "capturing": "Please wait while we confirm the payment with PayPal.",
-      "loginRequired": "Please sign in with the account that placed this order.",
       "missingData": "PayPal returned without the required order data.",
       "incomplete": "PayPal payment is not complete yet.",
       "success": "Your payment has been confirmed. We are preparing your order.",
       "failed": "Unable to confirm this PayPal payment."
     },
     "actions": {
-      "continueShopping": "Continue shopping"
+      "continueShopping": "Continue shopping",
+      "retry": "Retry payment confirmation"
     }
   },
   "paypalCancel": {

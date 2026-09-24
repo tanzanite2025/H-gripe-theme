@@ -7,7 +7,7 @@ import (
 	"commerce-platform/internal/repository"
 )
 
-func (h *Handler) resolveStripePaymentMethodTypes(orderCountry, orderCurrency string, orderAmount float64, fallback []string) ([]string, error) {
+func (h *Handler) resolveStripePaymentMethodTypes(orderCountry, orderCurrency string, orderAmountMinor int64, fallback []string) ([]string, error) {
 	defaultTypes := finalizeStripePaymentMethodTypes(fallback, orderCurrency)
 	if h == nil || h.settingsService == nil {
 		return defaultTypes, nil
@@ -34,10 +34,10 @@ func (h *Handler) resolveStripePaymentMethodTypes(orderCountry, orderCurrency st
 	if len(settings.Currencies) > 0 && !containsNormalizedString(settings.Currencies, orderCurrency, true) {
 		return defaultTypes, nil
 	}
-	if settings.MinAmount > 0 && orderAmount < settings.MinAmount {
+	if settings.MinAmountMinor > 0 && orderAmountMinor < settings.MinAmountMinor {
 		return defaultTypes, nil
 	}
-	if settings.MaxAmount > 0 && orderAmount > settings.MaxAmount {
+	if settings.MaxAmountMinor > 0 && orderAmountMinor > settings.MaxAmountMinor {
 		return defaultTypes, nil
 	}
 

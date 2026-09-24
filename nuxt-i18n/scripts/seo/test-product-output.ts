@@ -63,7 +63,7 @@ if (seo.schema?.['@type'] !== 'Product') {
 }
 assert.deepEqual(seo.schema.image, ['https://example.com/media/demo.jpg'])
 assert.equal(seo.schema.sku, 'SKU-001')
-assert.equal(seo.schema.offers?.price, 123.45)
+assert.equal(seo.schema.offers?.price, '123.45')
 assert.equal(seo.schema.offers?.priceCurrency, 'USD')
 assert.equal(seo.schema.offers?.availability, 'https://schema.org/InStock')
 assert.deepEqual(seo.schema.aggregateRating, {

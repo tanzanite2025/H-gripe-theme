@@ -26,14 +26,6 @@
         <span>{{ t('member.brief.discountRate', 'Discount Rate') }}</span>
         <strong>{{ discountText }}</strong>
       </div>
-      <div class="points-card">
-        <span>{{ t('member.coupons', 'Coupons') }}</span>
-        <strong>{{ coupons }}</strong>
-      </div>
-      <div class="points-card">
-        <span>{{ t('member.pointCards', 'Point Cards') }}</span>
-        <strong>{{ pointCards }}</strong>
-      </div>
     </div>
 
     <div class="points-actions">
@@ -59,14 +51,10 @@ const props = withDefaults(defineProps<{
   levelDiscounts?: {
     discountRate?: number
   }
-  coupons?: number
-  pointCards?: number
   loading?: boolean
 }>(), {
   levelName: '—',
   points: 0,
-  coupons: 0,
-  pointCards: 0,
   loading: false,
 })
 

@@ -192,7 +192,7 @@ func newShippingTrackingRouteFixture(t *testing.T) (*gorm.DB, *shippingTrackingR
 	order := orderdomain.Order{
 		OrderNumber: "ORDER-TRACK-ROUTE",
 		UserID:      10,
-		TotalAmount: 100,
+		TotalAmountMinor: 10000,
 		Currency:    "USD",
 	}
 	require.NoError(t, db.Create(&order).Error)

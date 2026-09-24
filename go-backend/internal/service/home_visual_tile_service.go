@@ -9,23 +9,25 @@ import (
 	"strings"
 
 	"commerce-platform/internal/domain/homevisualtile"
+	"commerce-platform/internal/domain/outbox"
 	"commerce-platform/internal/pkg/storage"
 	"commerce-platform/internal/pkg/upload"
 	"commerce-platform/internal/repository"
+
+	"gorm.io/gorm"
 )
 
 var (
-	ErrHomeVisualTileKeyRequired           = errors.New("visual showcase key is required")
-	ErrHomeVisualTileLocaleRequired        = errors.New("visual showcase locale is required")
-	ErrHomeVisualTileItemLimit             = errors.New("visual showcase item limit exceeded")
-	ErrHomeVisualTileTitleRequired         = errors.New("visual showcase item title is required")
-	ErrHomeVisualTileAltTextRequired       = errors.New("visual showcase item alt text is required")
-	ErrHomeVisualTileImageRequired         = errors.New("visual showcase item image is required")
-	ErrHomeVisualTileImageInvalid          = errors.New("visual showcase item image is not a visual showcase upload")
-	ErrHomeVisualTileStorageUnavailable    = errors.New("visual showcase storage is unavailable")
-	ErrHomeVisualTileUploadFileRequired    = errors.New("visual showcase upload file is required")
-	ErrHomeVisualTileAspectRatioInvalid    = errors.New("visual showcase image aspect ratio is invalid")
-	ErrHomeVisualTilePreviousDestroyFailed = errors.New("previous visual showcase image could not be destroyed")
+	ErrHomeVisualTileKeyRequired        = errors.New("visual showcase key is required")
+	ErrHomeVisualTileLocaleRequired     = errors.New("visual showcase locale is required")
+	ErrHomeVisualTileItemLimit          = errors.New("visual showcase item limit exceeded")
+	ErrHomeVisualTileTitleRequired      = errors.New("visual showcase item title is required")
+	ErrHomeVisualTileAltTextRequired    = errors.New("visual showcase item alt text is required")
+	ErrHomeVisualTileImageRequired      = errors.New("visual showcase item image is required")
+	ErrHomeVisualTileImageInvalid       = errors.New("visual showcase item image is not a visual showcase upload")
+	ErrHomeVisualTileStorageUnavailable = errors.New("visual showcase storage is unavailable")
+	ErrHomeVisualTileUploadFileRequired = errors.New("visual showcase upload file is required")
+	ErrHomeVisualTileAspectRatioInvalid = errors.New("visual showcase image aspect ratio is invalid")
 )
 
 const (
@@ -72,10 +74,18 @@ type HomeVisualTilePublishedResult struct {
 type HomeVisualTileService struct {
 	repo    *repository.HomeVisualTileRepository
 	storage storage.StorageService
+	outbox  *repository.OutboxRepository
 }
 
 func NewHomeVisualTileService(repo *repository.HomeVisualTileRepository, storageSvc storage.StorageService) *HomeVisualTileService {
 	return &HomeVisualTileService{repo: repo, storage: storageSvc}
+}
+
+func (s *HomeVisualTileService) ConfigureObjectCleanupOutbox(repo *repository.OutboxRepository) {
+	if s == nil {
+		return
+	}
+	s.outbox = repo
 }
 
 func (s *HomeVisualTileService) GetPublishedItems(tileSetKey, locale string) ([]homevisualtile.Tile, error) {
@@ -216,11 +226,6 @@ func (s *HomeVisualTileService) ReplaceAdminItems(
 		return nil, ErrHomeVisualTileItemLimit
 	}
 
-	previousItems, err := s.repo.ListItems(key, normalizedLocale, false)
-	if err != nil {
-		return nil, err
-	}
-
 	retainedStorageKeys := make(map[string]struct{}, len(inputs))
 	items := make([]homevisualtile.Tile, 0, len(inputs))
 	for index, input := range inputs {
@@ -300,32 +305,40 @@ func (s *HomeVisualTileService) ReplaceAdminItems(
 		})
 	}
 
-	if err := s.repo.ReplaceItems(key, normalizedLocale, items); err != nil {
-		return nil, err
-	}
-	if err := s.destroyUnreferencedVisualShowcaseImages(ctx, previousItems, retainedStorageKeys); err != nil {
+	var previousItems []homevisualtile.Tile
+	if err := s.repo.ReplaceItems(key, normalizedLocale, items, func(tx *gorm.DB, previous []homevisualtile.Tile) error {
+		previousItems = append(previousItems[:0], previous...)
+		removedKeys := homeVisualTileRemovedStorageKeys(s, previous, retainedStorageKeys)
+		if len(removedKeys) == 0 {
+			return nil
+		}
+		if s.outbox == nil {
+			return ErrObjectStorageCleanupUnavailable
+		}
+		aggregateID := key + ":" + normalizedLocale
+		event, eventErr := newObjectStorageCleanupEvent(
+			objectCleanupResourceHomeVisualTile,
+			aggregateID,
+			outbox.AggregateTypeHomeVisualTileSet,
+			aggregateID,
+			removedKeys,
+		)
+		if eventErr != nil {
+			return eventErr
+		}
+		return s.outbox.WithTx(tx).CreateEvent(event)
+	}); err != nil {
 		return nil, err
 	}
 	return s.repo.ListItems(key, normalizedLocale, false)
 }
 
-func (s *HomeVisualTileService) uploadVisualShowcaseImage(ctx context.Context, tileSetKey string, locale string, file *multipart.FileHeader) (string, error) {
-	prefix := homeVisualTileStoragePrefix(tileSetKey, locale)
-	if cacheControlled, ok := s.storage.(storage.CacheControlledObjectUploader); ok {
-		return cacheControlled.UploadWithPrefixAndCacheControl(ctx, file, prefix, homeVisualTileImageCacheControl)
-	}
-	return s.storage.UploadWithPrefix(ctx, file, prefix)
-}
-
-func (s *HomeVisualTileService) destroyUnreferencedVisualShowcaseImages(
-	ctx context.Context,
+func homeVisualTileRemovedStorageKeys(
+	s *HomeVisualTileService,
 	previousItems []homevisualtile.Tile,
 	retainedStorageKeys map[string]struct{},
-) error {
-	if s == nil || s.storage == nil {
-		return nil
-	}
-
+) []string {
+	removed := make([]string, 0, len(previousItems))
 	for _, item := range previousItems {
 		storageKey := s.visualShowcaseStorageKeyFromInput(item.StorageKey, item.ImageURL)
 		if storageKey == "" {
@@ -334,18 +347,17 @@ func (s *HomeVisualTileService) destroyUnreferencedVisualShowcaseImages(
 		if _, retained := retainedStorageKeys[storageKey]; retained {
 			continue
 		}
-		remainingReferences, err := s.repo.CountItemsByStorageKey(storageKey)
-		if err != nil {
-			return err
-		}
-		if remainingReferences > 0 {
-			continue
-		}
-		if err := s.storage.Delete(ctx, storageKey); err != nil {
-			return fmt.Errorf("%w: %v", ErrHomeVisualTilePreviousDestroyFailed, err)
-		}
+		removed = append(removed, storageKey)
 	}
-	return nil
+	return normalizeObjectCleanupKeys(removed)
+}
+
+func (s *HomeVisualTileService) uploadVisualShowcaseImage(ctx context.Context, tileSetKey string, locale string, file *multipart.FileHeader) (string, error) {
+	prefix := homeVisualTileStoragePrefix(tileSetKey, locale)
+	if cacheControlled, ok := s.storage.(storage.CacheControlledObjectUploader); ok {
+		return cacheControlled.UploadWithPrefixAndCacheControl(ctx, file, prefix, homeVisualTileImageCacheControl)
+	}
+	return s.storage.UploadWithPrefix(ctx, file, prefix)
 }
 
 func (s *HomeVisualTileService) visualShowcaseStorageKeyFromInput(inputStorageKey string, imageURL string) string {

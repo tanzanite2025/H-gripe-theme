@@ -1,20 +1,20 @@
 package service
 
 import (
-	"commerce-platform/internal/domain/coupon"
 	"commerce-platform/internal/domain/loyalty"
 	"commerce-platform/internal/repository"
 	"errors"
+	"math/big"
+	"strings"
 	"time"
 )
 
 type MarketingService struct {
-	txManager      *repository.TxManager
-	couponRepo     *repository.CouponRepository
-	loyaltyRepo    *repository.LoyaltyRepository
-	redemptionRepo *repository.GiftCardRedemptionRepository
-	setting        *SettingService
-	program        *LoyaltyProgramService
+	txManager   *repository.TxManager
+	couponRepo  *repository.CouponRepository
+	loyaltyRepo *repository.LoyaltyRepository
+	setting     *SettingService
+	program     *LoyaltyProgramService
 }
 
 func isDefaultMemberLevelName(name string) bool {
@@ -36,25 +36,25 @@ var (
 )
 
 type MemberLevelCreateInput struct {
-	Name         string
-	MinPoints    int
-	MaxPoints    int
-	DiscountRate float64
-	Benefits     string
-	Icon         string
-	Color        string
-	SortOrder    int
+	Name                string
+	MinPoints           int
+	MaxPoints           int
+	DiscountRateDecimal string
+	Benefits            string
+	Icon                string
+	Color               string
+	SortOrder           int
 }
 
 type MemberLevelUpdateInput struct {
-	Name         *string
-	MinPoints    *int
-	MaxPoints    *int
-	DiscountRate *float64
-	Benefits     *string
-	Icon         *string
-	Color        *string
-	SortOrder    *int
+	Name                *string
+	MinPoints           *int
+	MaxPoints           *int
+	DiscountRateDecimal *string
+	Benefits            *string
+	Icon                *string
+	Color               *string
+	SortOrder           *int
 }
 
 func NewMarketingService(
@@ -76,10 +76,6 @@ func NewMarketingService(
 
 func (s *MarketingService) ConfigureLoyaltyProgram(program *LoyaltyProgramService) {
 	s.program = program
-}
-
-func (s *MarketingService) ConfigureGiftCardRedemptions(repo *repository.GiftCardRedemptionRepository) {
-	s.redemptionRepo = repo
 }
 
 func (s *MarketingService) ConfigureCurrencyPolicy(policy *CurrencyPolicyService) {
@@ -117,19 +113,23 @@ func (s *MarketingService) GetMemberLevel(id uint) (*loyalty.MemberLevel, error)
 }
 
 func (s *MarketingService) CreateMemberLevelAdmin(input MemberLevelCreateInput) (*loyalty.MemberLevel, error) {
-	if err := s.validateMemberLevelInput(0, input.MinPoints, input.MaxPoints, input.DiscountRate); err != nil {
+	discountRate, err := normalizeMemberLevelDiscountRate(input.DiscountRateDecimal)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.validateMemberLevelInput(0, input.MinPoints, input.MaxPoints, discountRate); err != nil {
 		return nil, err
 	}
 
 	level := &loyalty.MemberLevel{
-		Name:         input.Name,
-		MinPoints:    input.MinPoints,
-		MaxPoints:    input.MaxPoints,
-		DiscountRate: input.DiscountRate,
-		Benefits:     input.Benefits,
-		Icon:         input.Icon,
-		Color:        input.Color,
-		SortOrder:    input.SortOrder,
+		Name:                input.Name,
+		MinPoints:           input.MinPoints,
+		MaxPoints:           input.MaxPoints,
+		DiscountRateDecimal: discountRate,
+		Benefits:            input.Benefits,
+		Icon:                input.Icon,
+		Color:               input.Color,
+		SortOrder:           input.SortOrder,
 	}
 	if err := s.loyaltyRepo.CreateMemberLevel(level); err != nil {
 		return nil, err
@@ -149,13 +149,22 @@ func (s *MarketingService) UpdateMemberLevelAdmin(id uint, input MemberLevelUpda
 	if input.MaxPoints != nil {
 		level.MaxPoints = *input.MaxPoints
 	}
-	if input.DiscountRate != nil {
-		level.DiscountRate = *input.DiscountRate
+	if input.DiscountRateDecimal != nil {
+		discountRate, normalizeErr := normalizeMemberLevelDiscountRate(*input.DiscountRateDecimal)
+		if normalizeErr != nil {
+			return nil, normalizeErr
+		}
+		level.DiscountRateDecimal = discountRate
 	}
 	if input.Benefits != nil {
 		level.Benefits = *input.Benefits
 	}
-	if err := s.validateMemberLevelInput(level.ID, level.MinPoints, level.MaxPoints, level.DiscountRate); err != nil {
+	discountRate, normalizeErr := normalizeMemberLevelDiscountRate(level.DiscountRateDecimal)
+	if normalizeErr != nil {
+		return nil, normalizeErr
+	}
+	level.DiscountRateDecimal = discountRate
+	if err := s.validateMemberLevelInput(level.ID, level.MinPoints, level.MaxPoints, discountRate); err != nil {
 		return nil, err
 	}
 
@@ -177,11 +186,11 @@ func (s *MarketingService) DeleteMemberLevelAdmin(id uint) error {
 	return s.loyaltyRepo.DeleteMemberLevel(id)
 }
 
-func (s *MarketingService) validateMemberLevelInput(excludeID uint, minPoints, maxPoints int, discountRate float64) error {
+func (s *MarketingService) validateMemberLevelInput(excludeID uint, minPoints, maxPoints int, discountRateDecimal string) error {
 	if minPoints < 0 || maxPoints < minPoints {
 		return ErrInvalidMemberLevel
 	}
-	if discountRate < 0 || discountRate > 100 {
+	if _, err := normalizeMemberLevelDiscountRate(discountRateDecimal); err != nil {
 		return ErrInvalidMemberLevel
 	}
 	overlaps, err := s.loyaltyRepo.CountOverlappingMemberLevels(excludeID, minPoints, maxPoints)
@@ -192,6 +201,33 @@ func (s *MarketingService) validateMemberLevelInput(excludeID uint, minPoints, m
 		return ErrInvalidMemberLevel
 	}
 	return nil
+}
+
+// normalizeMemberLevelDiscountRate validates the exact percentage string used
+// by the member-level pricing path. Rates are intentionally parsed with
+// big.Rat rather than float64 so values such as 5.555555555555555 remain
+// lossless through validation and persistence.
+func normalizeMemberLevelDiscountRate(value string) (string, error) {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		value = "0"
+	}
+	// NUMERIC does not accept fractional literals (for example "5/2"); only
+	// decimal/exponent notation is a valid API representation.
+	if strings.Contains(value, "/") {
+		return "", ErrInvalidMemberLevel
+	}
+	rate, ok := new(big.Rat).SetString(value)
+	if !ok || rate.Sign() < 0 || rate.Cmp(big.NewRat(100, 1)) > 0 {
+		return "", ErrInvalidMemberLevel
+	}
+	// The database column is NUMERIC(30,15). Reject values that would be
+	// rounded on persistence instead of silently changing the configured rate.
+	scaled := new(big.Rat).Mul(rate, new(big.Rat).SetInt64(1_000_000_000_000_000))
+	if scaled.Denom().Cmp(big.NewInt(1)) != 0 {
+		return "", ErrInvalidMemberLevel
+	}
+	return value, nil
 }
 
 func (s *MarketingService) GetMarketingStats() (map[string]interface{}, error) {
@@ -310,21 +346,6 @@ func (s *MarketingService) GetUserLoyalty(userID uint) (*loyalty.UserLoyalty, er
 	return s.loyaltyRepo.FindUserLoyaltyByUserID(userID)
 }
 
-func (s *MarketingService) CountRedeemedGiftCards(userID uint) (int64, error) {
-	return s.couponRepo.CountGiftCardsByOwnerID(userID)
-}
-
-func (s *MarketingService) ListUserGiftCards(userID uint, page, pageSize int) ([]coupon.GiftCard, int64, error) {
-	return s.couponRepo.FindGiftCardsByOwnerID(userID, page, pageSize)
-}
-
-func (s *MarketingService) ListGiftCardRedemptionsAdmin(userID uint, page, pageSize int) ([]coupon.GiftCardRedemption, int64, error) {
-	if s.redemptionRepo == nil {
-		return nil, 0, errors.New("gift card redemption repository is unavailable")
-	}
-	return s.redemptionRepo.FindByUserID(userID, page, pageSize)
-}
-
 // 辅助方法
 
 func normalizeMarketingError(err error) error {
@@ -359,11 +380,11 @@ func (s *MarketingService) ListMemberLevels() ([]loyalty.MemberLevel, error) {
 
 func defaultMemberLevels() []loyalty.MemberLevel {
 	return []loyalty.MemberLevel{
-		{Name: "Ordinary", MinPoints: 0, MaxPoints: 499, DiscountRate: 0, Benefits: "[]", Icon: "circle", Color: "#f8fafc", SortOrder: 0},
-		{Name: "Bronze", MinPoints: 500, MaxPoints: 1999, DiscountRate: 0, Benefits: "[]", Icon: "medal", Color: "#b87333", SortOrder: 10},
-		{Name: "Silver", MinPoints: 2000, MaxPoints: 4999, DiscountRate: 0, Benefits: "[]", Icon: "medal", Color: "#c0c0c0", SortOrder: 20},
-		{Name: "Gold", MinPoints: 5000, MaxPoints: 9999, DiscountRate: 0, Benefits: "[]", Icon: "medal", Color: "#d4af37", SortOrder: 30},
-		{Name: "Platinum", MinPoints: 10000, MaxPoints: 19999, DiscountRate: 0, Benefits: "[]", Icon: "gem", Color: "#e5e4e2", SortOrder: 40},
-		{Name: "Diamond", MinPoints: 20000, MaxPoints: 999999999, DiscountRate: 0, Benefits: "[]", Icon: "gem", Color: "#b9f2ff", SortOrder: 50},
+		{Name: "Ordinary", MinPoints: 0, MaxPoints: 499, DiscountRateDecimal: "0", Benefits: "[]", Icon: "circle", Color: "#f8fafc", SortOrder: 0},
+		{Name: "Bronze", MinPoints: 500, MaxPoints: 1999, DiscountRateDecimal: "0", Benefits: "[]", Icon: "medal", Color: "#b87333", SortOrder: 10},
+		{Name: "Silver", MinPoints: 2000, MaxPoints: 4999, DiscountRateDecimal: "0", Benefits: "[]", Icon: "medal", Color: "#c0c0c0", SortOrder: 20},
+		{Name: "Gold", MinPoints: 5000, MaxPoints: 9999, DiscountRateDecimal: "0", Benefits: "[]", Icon: "medal", Color: "#d4af37", SortOrder: 30},
+		{Name: "Platinum", MinPoints: 10000, MaxPoints: 19999, DiscountRateDecimal: "0", Benefits: "[]", Icon: "gem", Color: "#e5e4e2", SortOrder: 40},
+		{Name: "Diamond", MinPoints: 20000, MaxPoints: 999999999, DiscountRateDecimal: "0", Benefits: "[]", Icon: "gem", Color: "#b9f2ff", SortOrder: 50},
 	}
 }

@@ -101,6 +101,10 @@
       :customs-classifications="availableCustomsClassifications"
       :customs-classification-select-value="customsClassificationSelectValue"
       :template-scoped-values-touched="templateScopedValuesTouched"
+      :template-sync-dialog-visible="templateSyncDialogVisible"
+      :template-sync-diff="templateSyncDiff"
+      :template-sync-loading="templateSyncLoading"
+      :template-sync-applying="templateSyncApplying"
       :uploading-media="uploadingMedia"
       :supplier-cost-visible="canViewSupplierCost"
       :supplier-cost-can-edit="canEditSupplierCost"
@@ -118,6 +122,9 @@
       @submit="submitForm"
       @clear-error="clearFieldError"
       @product-spec-template-select="handleProductSpecTemplateSelect"
+      @preview-template-sync="previewTemplateSync"
+      @update-template-sync-open="setTemplateSyncDialogOpen"
+      @confirm-template-sync="confirmTemplateSync"
       @product-category-select="setProductCategory"
       @product-brand-select="setProductBrand"
       @product-shipping-template-select="setProductShippingTemplate"
@@ -284,6 +291,10 @@ const {
   afterSalesTemplateSelectValue,
   packagingTemplateSelectValue,
   templateScopedValuesTouched,
+  templateSyncDialogVisible,
+  templateSyncDiff,
+  templateSyncLoading,
+  templateSyncApplying,
   parseSpecOptions,
   formatSpecOption,
   getSpecLabel,
@@ -309,6 +320,8 @@ const {
   fetchProductSpecTemplates,
   showCreateDialog,
   showEditDialog,
+  previewTemplateSync,
+  confirmTemplateSync,
   submitForm
 } = useProductEditor({
   refreshProducts,
@@ -336,6 +349,11 @@ const {
     return {}
   },
 })
+
+const setTemplateSyncDialogOpen = (open: boolean) => {
+  templateSyncDialogVisible.value = open
+  if (!open) templateSyncDiff.value = null
+}
 
 const supplierCostDraftRows = computed(() => supplierCostRowsForVariants(
   productForm.variants,

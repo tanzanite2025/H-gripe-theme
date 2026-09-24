@@ -56,23 +56,27 @@ func (TrackingCarrierMapping) TableName() string {
 	return "shipping_tracking_carrier_mappings"
 }
 
-// TrackingShipment tracks the sync lifecycle for an order tracking number.
-// Order fields remain the source for provider/carrier selection; this table stores operational status only.
+// TrackingShipment tracks the sync lifecycle for one package/tracking number
+// belonging to an order. An order may have multiple tracking shipments; the
+// shipment rows are the sole source of fulfillment tracking facts.
 type TrackingShipment struct {
 	ID                       uint                    `gorm:"primarykey" json:"id"`
-	OrderID                  uint                    `gorm:"not null;index;uniqueIndex:idx_shipping_tracking_shipments_order" json:"order_id"`
+	OrderID                  uint                    `gorm:"not null;index;uniqueIndex:idx_shipping_tracking_shipments_order_number,priority:1" json:"order_id"`
 	TrackingProviderID       uint                    `gorm:"not null;index" json:"tracking_provider_id"`
-	TrackingNumber           string                  `gorm:"type:varchar(120);not null;index" json:"tracking_number"`
+	TrackingNumber           string                  `gorm:"type:varchar(120);not null;index;uniqueIndex:idx_shipping_tracking_shipments_order_number,priority:2" json:"tracking_number"`
 	ProviderCarrierCode      string                  `gorm:"type:varchar(120);not null;index" json:"provider_carrier_code"`
 	CarrierID                *uint                   `gorm:"index" json:"carrier_id"`
 	CarrierServiceID         *uint                   `gorm:"index" json:"carrier_service_id"`
 	TrackingCarrierMappingID *uint                   `gorm:"index" json:"tracking_carrier_mapping_id"`
-	RegistrationStatus       string                  `gorm:"type:varchar(40);default:'pending';not null;index" json:"registration_status"` // pending, registered, failed
+	RegistrationStatus       string                  `gorm:"type:varchar(40);default:'pending';not null;index" json:"registration_status"` // pending, registered, failed, unknown
 	SyncStatus               string                  `gorm:"type:varchar(40);default:'pending';not null;index" json:"sync_status"`         // pending, syncing, synced, failed
 	EventCount               int                     `gorm:"default:0;not null" json:"event_count"`
 	LastEventAt              *time.Time              `gorm:"index" json:"last_event_at"`
 	LastSyncedAt             *time.Time              `gorm:"index" json:"last_synced_at"`
 	NextSyncAt               *time.Time              `gorm:"index" json:"next_sync_at"`
+	SyncLeaseOwner           string                  `gorm:"type:varchar(128);not null;default:'';index" json:"-"`
+	SyncLeaseGeneration      int64                   `gorm:"not null;default:0;index" json:"-"`
+	SyncLeaseExpiresAt       *time.Time              `gorm:"index" json:"-"`
 	LastError                string                  `gorm:"type:text" json:"last_error"`
 	Enabled                  bool                    `gorm:"default:true;not null;index" json:"enabled"`
 	Provider                 *TrackingProviderConfig `gorm:"foreignKey:TrackingProviderID" json:"provider,omitempty"`

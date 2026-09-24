@@ -1,6 +1,7 @@
 package v1
 
 import (
+	"strings"
 	"time"
 
 	"commerce-platform/internal/api/middleware"
@@ -43,6 +44,7 @@ import (
 	"commerce-platform/internal/app"
 	attributionpkg "commerce-platform/internal/pkg/attribution"
 	"commerce-platform/internal/pkg/config"
+	"commerce-platform/internal/pkg/honeypot"
 	"commerce-platform/internal/pkg/securecookie"
 
 	"github.com/gin-gonic/gin"
@@ -87,6 +89,7 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 		Names:    securecookie.StorefrontCookieNames(),
 	}
 	authHandler := auth.NewHandler(authService, cookieOptions)
+	authHandler.ConfigureHoneypot(honeypot.NewPolicy(cfg.AntiAbuse.HoneypotMode))
 	authHandler.ConfigureCartService(cartService)
 	browsingHistoryHandler := auth.NewBrowsingHistoryHandler(services.User)
 	contentHandler := content.NewHandler(postService, faqService, services.Media)
@@ -131,7 +134,6 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 	checkoutHandler := checkout.NewHandler(checkoutService, cartService)
 	marketingHandler := marketing.NewHandler(marketingService, settingService, services.LoyaltyProgram)
 	referralHandler := referralapi.NewHandler(services.Referral, cookieOptions, services.Referral.StorefrontURL())
-	marketingHandler.ConfigureMediaService(services.Media)
 	reviewHandler := review.NewHandler(reviewService)
 	ticketHandler := ticket.NewHandler(ticketService, ticket.Options{
 		MediaService:          services.Media,
@@ -163,9 +165,20 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 	shippingHandler := shipping.NewHandler(services.Shipping, orderService)
 	galleryHandler := gallery.NewGalleryHandler(galleryService, services.Media)
 	warrantyHandler := warranty.NewHandler(warrantyService, storageSvc, deps.AntiBot)
+	warrantyHandler.ConfigureHoneypot(honeypot.NewPolicy(cfg.AntiAbuse.HoneypotMode))
 	warrantyHandler.ConfigureMediaService(services.Media)
 	warrantyHandler.ConfigureShipmentRecordService(services.ShipmentRecord)
 	subscriptionHandler := subscription.NewHandler(subscriptionService, deps.AntiBot)
+	subscriptionHandler.ConfigureHoneypot(honeypot.NewPolicy(cfg.AntiAbuse.HoneypotMode))
+	timingTokenKey := strings.TrimSpace(cfg.AntiAbuse.HoneypotTimingSecret)
+	if timingTokenKey == "" {
+		timingTokenKey = honeypot.DeriveTimingKey(cfg.JWT.Secret)
+	}
+	subscriptionHandler.ConfigureTimingToken(
+		timingTokenKey,
+		time.Duration(cfg.AntiAbuse.HoneypotTimingTTLSeconds)*time.Second,
+	)
+	subscriptionHandler.ConfigureTimingReplay(honeypot.NewTimingReplayObserver(deps.RedisClient))
 	i18nHandler := i18n.NewHandler(postService, sitemapService)
 	ugcShowcaseHandler := ugcshowcase.NewUGCShowcaseHandler(ugcShowcaseService)
 	ugcShowcaseHandler.ConfigureUploadProtection(services.UGCShowcaseUploadProtection)
@@ -173,8 +186,10 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 	homeVisualTileHandler := homevisualtileapi.NewHandler(services.HomeVisualTiles, services.Media)
 	wishlistHandler := wishlist.NewHandler(wishlistService, services.Media)
 	feedbackHandler := feedback.NewHandler(feedbackService)
+	feedbackHandler.ConfigureHoneypot(honeypot.NewPolicy(cfg.AntiAbuse.HoneypotMode))
 	feedbackHandler.ConfigureSourceHashSecret(cfg.JWT.Secret)
 	suggestionFeedbackHandler := suggestionfeedback.NewHandler(suggestionFeedbackService, storageSvc, services.Media)
+	suggestionFeedbackHandler.ConfigureHoneypot(honeypot.NewPolicy(cfg.AntiAbuse.HoneypotMode))
 	spokeHandler := spoke.NewHandler(services.Spoke)
 	behaviorEventHandler := behavior.NewHandler(services.BehaviorEvents)
 	recommendationHandler := recommendation.NewHandler(services.Recommendations)
@@ -188,9 +203,9 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 	// 第三方平台（支付网关、17TRACK 等）不会携带浏览器 CSRF token，安全边界由各自 handler 内的签名验签负责。
 	webhookV1 := r.Group("/api/v1")
 	{
-		paymentWebhookGroup := webhookV1.Group("/payment")
+		paymentWebhooksGroup := webhookV1.Group("/payments")
 		{
-			paymentWebhookGroup.POST("/webhook/:provider", paymentHandler.HandleWebhook)
+			paymentWebhooksGroup.POST("/:provider/webhook", paymentHandler.HandleWebhook)
 		}
 
 		shippingWebhookGroup := webhookV1.Group("/shipping")
@@ -414,7 +429,6 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 			// 等级配置（公开）
 			marketingGroup.GET("/loyalty/levels", marketingHandler.ListMemberLevels)
 			marketingGroup.GET("/loyalty/config", marketingHandler.GetLoyaltyProgramConfig)
-			marketingGroup.GET("/loyalty/redeem-options", marketingHandler.ListRedeemGiftCardOptions)
 			marketingGroup.GET("/loyalty/rules", marketingHandler.GetLoyaltyRules)
 
 			// 需要认证的营销功能
@@ -425,13 +439,10 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 				authMarketing.POST("/coupons/validate", middleware.RateLimitByUser(3), marketingHandler.ValidateCoupon)
 
 				// 积分和会员
-				authMarketing.GET("/loyalty/assets", marketingHandler.GetUserAssets)
-				authMarketing.GET("/loyalty/gift-cards", marketingHandler.ListUserGiftCards)
 				authMarketing.GET("/loyalty/points", marketingHandler.GetPoints)
 				authMarketing.GET("/loyalty/info", marketingHandler.GetLoyaltyInfo)
 				authMarketing.POST("/loyalty/checkin", middleware.RateLimitByUser(1), marketingHandler.CheckIn)
 				authMarketing.POST("/loyalty/referral", middleware.RateLimitByUser(2), marketingHandler.CreateReferral)
-				authMarketing.POST("/loyalty/redeem", middleware.RateLimitByUser(1), marketingHandler.RedeemPointsToGiftCard)
 			}
 		}
 
@@ -534,6 +545,7 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 		subscriptionGroup := v1.Group("/subscriptions")
 		{
 			// 公开端点
+			subscriptionGroup.GET("/timing-token", middleware.RateLimit(10), subscriptionHandler.IssueTimingToken)
 			subscriptionGroup.POST("", middleware.RateLimit(2), subscriptionHandler.Subscribe)
 			subscriptionGroup.GET("/confirm/:token", middleware.RateLimit(5), subscriptionHandler.ConfirmSubscription)
 			subscriptionGroup.GET("/unsubscribe/:token", middleware.RateLimit(5), subscriptionHandler.Unsubscribe)
@@ -565,11 +577,11 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 				authPayment.GET("/orders/:order_id/refunds", paymentHandler.GetOrderRefunds)
 				authPayment.POST("/stripe/payment-intents", middleware.Idempotency(deps.RedisClient), middleware.RateLimitByUser(3), paymentHandler.CreateStripePaymentIntent)
 				authPayment.POST("/paypal/orders", middleware.Idempotency(deps.RedisClient), middleware.RateLimitByUser(3), paymentHandler.CreatePayPalOrder)
-				authPayment.POST("/paypal/orders/:paypal_order_id/capture", middleware.PaymentOperationIdempotency(deps.Repositories.PaymentOperationIdempotency, "paypal_capture"), middleware.Idempotency(deps.RedisClient), middleware.RateLimitByUser(5), paymentHandler.CapturePayPalOrder)
+				authPayment.POST("/paypal/orders/:paypal_order_id/capture", middleware.PaymentOperationIdempotency(deps.Repositories.PaymentOperationIdempotency, "paypal_capture", middleware.PaymentOperationReconcileExpiredMutation), middleware.RateLimitByUser(5), paymentHandler.CapturePayPalOrder)
 				authPayment.POST("/alipay/orders", middleware.Idempotency(deps.RedisClient), middleware.RateLimitByUser(3), paymentHandler.CreateAlipayOrder)
-				authPayment.POST("/alipay/orders/:order_number/confirm", middleware.PaymentOperationIdempotency(deps.Repositories.PaymentOperationIdempotency, "alipay_confirm"), middleware.Idempotency(deps.RedisClient), middleware.RateLimitByUser(5), paymentHandler.ConfirmAlipayOrder)
+				authPayment.POST("/alipay/orders/:order_number/confirm", middleware.PaymentOperationIdempotency(deps.Repositories.PaymentOperationIdempotency, "alipay_confirm", middleware.PaymentOperationRetryExpiredQuery), middleware.RateLimitByUser(5), paymentHandler.ConfirmAlipayOrder)
 				authPayment.POST("/wechat/orders", middleware.Idempotency(deps.RedisClient), middleware.RateLimitByUser(3), paymentHandler.CreateWechatOrder)
-				authPayment.POST("/wechat/orders/:order_number/confirm", middleware.PaymentOperationIdempotency(deps.Repositories.PaymentOperationIdempotency, "wechat_confirm"), middleware.Idempotency(deps.RedisClient), middleware.RateLimitByUser(5), paymentHandler.ConfirmWechatOrder)
+				authPayment.POST("/wechat/orders/:order_number/confirm", middleware.PaymentOperationIdempotency(deps.Repositories.PaymentOperationIdempotency, "wechat_confirm", middleware.PaymentOperationRetryExpiredQuery), middleware.RateLimitByUser(5), paymentHandler.ConfirmWechatOrder)
 			}
 		}
 

@@ -165,7 +165,7 @@ func TestProductServiceMaterializesTemplateOptionItemsOnProductCreate(t *testing
 	created, err := productService.CreateAdminProduct(ProductCreateInput{
 		ProductSpecificationTemplateID: &template.ID,
 		Name:                           "Materialized Wheelset", Slug: "materialized-wheelset", Status: "active", Locale: "en",
-		Variants: []ProductVariantInput{{SKU: "MAT-WHEELSET-001", Price: 499, Stock: 3, IsDefault: true, IsActive: boolPtr(true)}},
+		Variants: []ProductVariantInput{{SKU: "MAT-WHEELSET-001", PriceMinor: 499, Stock: 3, IsDefault: true, IsActive: boolPtr(true)}},
 	})
 	require.NoError(t, err)
 	require.Len(t, created.VariantOptionValues, 1)

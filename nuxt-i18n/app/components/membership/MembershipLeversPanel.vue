@@ -58,7 +58,6 @@ interface LoyaltyRules {
   checkin_streak_interval_days: number | null
   checkin_streak_bonus_points: number | null
   checkin_max_points: number | null
-  redemption_exchange_rate: number | null
 }
 
 const props = defineProps<{
@@ -146,27 +145,6 @@ const purchaseEarnRuleDescription = computed(() => {
   )
 })
 
-const redemptionRuleDescription = computed(() => {
-  const exchangeRate = props.loyaltyRules?.redemption_exchange_rate
-  if (!hasRuleNumber(exchangeRate)) return notConfiguredText.value
-  if (exchangeRate <= 0) {
-    return t(
-      'resourcesMembershipLevers.points.redemptionDisabled',
-      'Points redemption is not enabled',
-    )
-  }
-
-  return translateWithFallback(
-    'resourcesMembershipLevers.points.redemptionDisplayRule',
-    {
-      points: formatPoints(exchangeRate),
-      amount: 1,
-      currency: pointsBaseCurrency.value,
-    },
-    `${formatPoints(exchangeRate)} = ${pointsBaseCurrency.value} 1`,
-  )
-})
-
 const checkInRuleDescription = computed(() => {
   const base = props.loyaltyRules?.checkin_base_points
   if (!hasRuleNumber(base)) return notConfiguredText.value
@@ -212,11 +190,6 @@ const pointRuleItems = computed(() => [
     key: 'purchase',
     title: t('resourcesMembershipLevers.points.purchaseEarn', 'Order completion'),
     description: purchaseEarnRuleDescription.value,
-  },
-  {
-    key: 'redemption',
-    title: t('resourcesMembershipLevers.points.redeem', 'Redemption rate'),
-    description: redemptionRuleDescription.value,
   },
   {
     key: 'checkin',

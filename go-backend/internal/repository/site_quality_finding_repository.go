@@ -117,6 +117,49 @@ func (r *SiteQualityFindingRepository) Stats() (sitequalitydomain.SiteQualityFin
 	return stats, err
 }
 
+func (r *SiteQualityFindingRepository) DeleteOld(cutoff time.Time) (SiteQualityFindingCleanupResult, error) {
+	var result SiteQualityFindingCleanupResult
+	if r == nil || r.db == nil {
+		return result, errors.New("SiteQuality finding repository is unavailable")
+	}
+	if cutoff.IsZero() {
+		cutoff = time.Now().UTC().Add(-30 * 24 * time.Hour)
+	} else {
+		cutoff = cutoff.UTC()
+	}
+	result.Cutoff = cutoff
+	err := r.db.Transaction(func(tx *gorm.DB) error {
+		var ids []uint
+		query := tx.Model(&sitequalitydomain.SiteQualityFinding{}).
+			Where("updated_at < ?", cutoff).
+			Where("NOT EXISTS (SELECT 1 FROM site_quality_jobs WHERE site_quality_jobs.finding_id = site_quality_findings.id AND site_quality_jobs.status IN ?)", []string{
+				sitequalitydomain.SiteQualityJobStatusQueued,
+				sitequalitydomain.SiteQualityJobStatusProcessing,
+			})
+		if err := query.Pluck("id", &ids).Error; err != nil {
+			return err
+		}
+		var eligible int64
+		if err := tx.Model(&sitequalitydomain.SiteQualityFinding{}).Where("updated_at < ?", cutoff).Count(&eligible).Error; err != nil {
+			return err
+		}
+		result.Skipped = eligible - int64(len(ids))
+		if len(ids) == 0 {
+			return nil
+		}
+		if err := tx.Where("finding_id IN ?", ids).Delete(&sitequalitydomain.SiteQualityFindingEvent{}).Error; err != nil {
+			return err
+		}
+		deleted := tx.Where("id IN ?", ids).Delete(&sitequalitydomain.SiteQualityFinding{})
+		if deleted.Error != nil {
+			return deleted.Error
+		}
+		result.Deleted = deleted.RowsAffected
+		return nil
+	})
+	return result, err
+}
+
 func (r *SiteQualityFindingRepository) FindByID(
 	id uint,
 ) (*sitequalitydomain.SiteQualityFinding, error) {

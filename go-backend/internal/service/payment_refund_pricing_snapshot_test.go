@@ -24,20 +24,15 @@ func TestBuildRefundLineItemSnapshotUsesPersistedPricingAllocation(t *testing.T)
 		DiscountMinor:       100,
 		TaxAmountMinor:      30,
 		TotalMinor:          230,
-		Price:               1,
-		Subtotal:            3,
-		Discount:            1,
-		TaxAmount:           0.30,
-		Total:               2.30,
 		PricingSnapshotData: line,
 	}
 
 	refunded, allocation, err := buildRefundLineItemSnapshot(item, 0, 1, false, "USD")
 	require.NoError(t, err)
-	require.Equal(t, 1.0, refunded.LineSubtotalAmount)
-	require.Equal(t, 0.33, refunded.LineDiscountAmount)
-	require.Equal(t, 0.10, refunded.LineTaxAmount)
-	require.Equal(t, 0.77, refunded.LineTotalAmount)
+	require.Equal(t, int64(100), refunded.LineSubtotalMinor)
+	require.Equal(t, int64(33), refunded.LineDiscountMinor)
+	require.Equal(t, int64(10), refunded.LineTaxMinor)
+	require.Equal(t, int64(77), refunded.LineTotalMinor)
 	require.Equal(t, int64(100), allocation.LineSubtotalAmount.AmountMinor())
 	require.Equal(t, int64(33), allocation.LineDiscountAmount.AmountMinor())
 	require.Equal(t, int64(10), allocation.LineTaxAmount.AmountMinor())
@@ -56,11 +51,6 @@ func TestBuildRefundLineItemSnapshotPreservesRemaindersAcrossPartialRefunds(t *t
 		DiscountMinor:       100,
 		TaxAmountMinor:      1,
 		TotalMinor:          201,
-		Price:               1,
-		Subtotal:            3,
-		Discount:            1,
-		TaxAmount:           0.01,
-		Total:               2.01,
 		PricingSnapshotData: persistedPricingLine(t, 3, 100, 100),
 	}
 
@@ -81,13 +71,13 @@ func TestBuildRefundLineItemSnapshotPreservesRemaindersAcrossPartialRefunds(t *t
 }
 
 func TestBuildRefundLineItemSnapshotRejectsMissingPricingSnapshot(t *testing.T) {
-	item := order.OrderItem{Quantity: 2, Price: 1.25, Subtotal: 2.5, Discount: 0.25, Total: 2.25}
+	item := order.OrderItem{Quantity: 2, PriceMinor: 125, SubtotalMinor: 250, DiscountMinor: 25, TotalMinor: 225}
 	_, _, err := buildRefundLineItemSnapshot(item, 0, 1, false, "USD")
 	require.ErrorIs(t, err, errInvalidOrderItemPricingSnapshot)
 }
 
 func TestBuildRefundLineItemSnapshotRejectsCorruptPersistedSnapshot(t *testing.T) {
-	item := order.OrderItem{Quantity: 1, Subtotal: 1, Total: 1, PricingSnapshotData: []byte(`{"schema_version":1,"key":"broken"}`)}
+	item := order.OrderItem{Quantity: 1, SubtotalMinor: 1, TotalMinor: 1, PricingSnapshotData: []byte(`{"schema_version":1,"key":"broken"}`)}
 	_, _, err := buildRefundLineItemSnapshot(item, 0, 1, false, "USD")
 	require.ErrorIs(t, err, errInvalidOrderItemPricingSnapshot)
 }
@@ -113,26 +103,39 @@ func TestRefundAmountsEqualInMinorUnitsUsesCurrencyPrecision(t *testing.T) {
 	require.False(t, equal)
 }
 
-func TestRoundRefundMoneyUsesExplicitCurrencyPrecision(t *testing.T) {
-	require.Equal(t, 1.0, roundRefundMoney(1.49, "JPY"))
-	require.Equal(t, 1.49, roundRefundMoney(1.494, "USD"))
+func TestOptionalRefundMoneyPreservesMinorUnits(t *testing.T) {
+	input := money.MustNew(123, "JPY")
+
+	parsed, currencyCode, err := optionalRefundMoney(input)
+	require.NoError(t, err)
+	require.Equal(t, "JPY", currencyCode)
+	require.Equal(t, int64(123), parsed.AmountMinor())
+	require.Equal(t, input.Currency(), parsed.Currency())
+
+	omitted, currencyCode, err := optionalRefundMoney(money.Money{})
+	require.NoError(t, err)
+	require.Equal(t, "", currencyCode)
+	require.Equal(t, int64(0), omitted.AmountMinor())
+}
+
+func TestFormatRefundMoneyUsesCurrencyMinorUnits(t *testing.T) {
+	require.Equal(t, "1", formatRefundMoney(money.MustNew(1, "JPY")))
+	require.Equal(t, "1.49", formatRefundMoney(money.MustNew(149, "USD")))
 }
 
 func TestReadOrderPricingRefundBaselinePrefersPersistedMinorUnits(t *testing.T) {
 	raw, err := pricing.MarshalOrderPricingSnapshot(pricing.OrderPricingSnapshotInput{
-		Currency:         "USD",
-		Subtotal:         money.MustNew(12345, "USD"),
-		Shipping:         money.MustNew(0, "USD"),
-		Tax:              money.MustNew(0, "USD"),
-		MemberDiscount:   money.MustNew(0, "USD"),
-		CouponDiscount:   money.MustNew(2345, "USD"),
-		PointsDiscount:   money.MustNew(0, "USD"),
-		GiftCardDiscount: money.MustNew(0, "USD"),
-		DiscountTotal:    money.MustNew(2345, "USD"),
-		Total:            money.MustNew(10000, "USD"),
+		Currency:       "USD",
+		Subtotal:       money.MustNew(12345, "USD"),
+		Shipping:       money.MustNew(0, "USD"),
+		Tax:            money.MustNew(0, "USD"),
+		MemberDiscount: money.MustNew(0, "USD"),
+		CouponDiscount: money.MustNew(2345, "USD"),
+		DiscountTotal:  money.MustNew(2345, "USD"),
+		Total:          money.MustNew(10000, "USD"),
 	})
 	require.NoError(t, err)
-	o := &order.Order{Currency: "USD", SubtotalAmount: 999, PricingSnapshotData: raw}
+	o := &order.Order{Currency: "USD", SubtotalAmountMinor: 99900, PricingSnapshotData: raw}
 	subtotal, couponDiscount, present, err := readOrderPricingRefundBaseline(o)
 	require.NoError(t, err)
 	require.True(t, present)
@@ -145,16 +148,14 @@ func TestReadOrderPricingRefundBaselineRejectsCorruptOrMismatchedSnapshot(t *tes
 	require.ErrorIs(t, err, errInvalidOrderPricingSnapshot)
 
 	raw, err := pricing.MarshalOrderPricingSnapshot(pricing.OrderPricingSnapshotInput{
-		Currency:         "EUR",
-		Subtotal:         money.MustNew(100, "EUR"),
-		Shipping:         money.MustNew(0, "EUR"),
-		Tax:              money.MustNew(0, "EUR"),
-		MemberDiscount:   money.MustNew(0, "EUR"),
-		CouponDiscount:   money.MustNew(0, "EUR"),
-		PointsDiscount:   money.MustNew(0, "EUR"),
-		GiftCardDiscount: money.MustNew(0, "EUR"),
-		DiscountTotal:    money.MustNew(0, "EUR"),
-		Total:            money.MustNew(100, "EUR"),
+		Currency:       "EUR",
+		Subtotal:       money.MustNew(100, "EUR"),
+		Shipping:       money.MustNew(0, "EUR"),
+		Tax:            money.MustNew(0, "EUR"),
+		MemberDiscount: money.MustNew(0, "EUR"),
+		CouponDiscount: money.MustNew(0, "EUR"),
+		DiscountTotal:  money.MustNew(0, "EUR"),
+		Total:          money.MustNew(100, "EUR"),
 	})
 	require.NoError(t, err)
 	_, _, _, err = readOrderPricingRefundBaseline(&order.Order{Currency: "USD", PricingSnapshotData: raw})
@@ -162,9 +163,9 @@ func TestReadOrderPricingRefundBaselineRejectsCorruptOrMismatchedSnapshot(t *tes
 }
 
 func TestApplyRefundPromotionClawbackUsesZeroDecimalCurrency(t *testing.T) {
-	o := &order.Order{Currency: "JPY", SubtotalAmount: 1200}
-	couponRecord := &coupon.Coupon{ID: 7, Code: "JPY200", Type: "fixed", Value: 200, MinAmount: 1000}
-	usage := &coupon.CouponUsage{CouponID: couponRecord.ID, Discount: 200}
+	o := &order.Order{Currency: "JPY", SubtotalAmountMinor: 1200}
+	couponRecord := &coupon.Coupon{ID: 7, Code: "JPY200", Type: "fixed", Currency: "JPY", ValueMinor: 200, MinAmountMinor: 1000}
+	usage := &coupon.CouponUsage{CouponID: couponRecord.ID, Currency: "JPY", DiscountMinor: 200}
 
 	adjustment, err := applyRefundPromotionClawback(
 		o,

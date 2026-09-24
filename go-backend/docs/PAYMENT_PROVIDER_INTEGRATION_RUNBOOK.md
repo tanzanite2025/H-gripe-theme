@@ -32,15 +32,15 @@ Storefront checkout creates a local order first, then creates a provider order/s
 
 | Provider | Create Endpoint | Confirm/Capture Endpoint | Webhook/Notify Endpoint |
 | --- | --- | --- | --- |
-| Stripe | `POST /api/v1/payment/stripe/payment-intents` | Payment Element confirm on client | `POST /api/v1/payment/webhook/stripe` |
-| PayPal | `POST /api/v1/payment/paypal/orders` | `POST /api/v1/payment/paypal/orders/:paypal_order_id/capture` | `POST /api/v1/payment/webhook/paypal` |
-| Alipay | `POST /api/v1/payment/alipay/orders` | `POST /api/v1/payment/alipay/orders/:order_number/confirm` | `POST /api/v1/payment/webhook/alipay` |
-| WeChat Pay | `POST /api/v1/payment/wechat/orders` | `POST /api/v1/payment/wechat/orders/:order_number/confirm` | `POST /api/v1/payment/webhook/wechat` |
+| Stripe | `POST /api/v1/payment/stripe/payment-intents` | Payment Element confirm on client | `POST /api/v1/payments/stripe/webhook` |
+| PayPal | `POST /api/v1/payment/paypal/orders` | `POST /api/v1/payment/paypal/orders/:paypal_order_id/capture` | `POST /api/v1/payments/paypal/webhook` |
+| Alipay | `POST /api/v1/payment/alipay/orders` | `POST /api/v1/payment/alipay/orders/:order_number/confirm` | `POST /api/v1/payments/alipay/webhook` |
+| WeChat Pay | `POST /api/v1/payment/wechat/orders` | `POST /api/v1/payment/wechat/orders/:order_number/confirm` | `POST /api/v1/payments/wechat/webhook` |
 
 Before the local order is created, the storefront sends the latest backend quote
-as `expected_total` in `POST /api/v1/orders`. The order service recomputes the
-quote inside the creation transaction. A difference greater than `0.05` in the
-order currency returns HTTP `409` with `code=order_total_changed`; no order,
+as exact `expected_total_minor` (copied from `total_minor`) in `POST /api/v1/orders`.
+The order service recomputes the quote inside the creation transaction. Any
+minor-unit mismatch returns HTTP `409` with `code=order_total_changed`; no order,
 stock deduction, loyalty spend, or provider payment is started. The storefront
 refreshes the quote and asks the customer to review the updated total.
 
@@ -134,10 +134,13 @@ The admin callback reachability probe sends a minimal unsigned `POST` to the sel
 - `WECHAT_PRIVATE_KEY_PATH`
 - `WECHAT_MERCHANT_SERIAL`
 - `WECHAT_API_V3_KEY`
-- One verifier option:
-  - `WECHAT_PAY_PLATFORM_CERTIFICATE`, or
-  - `WECHAT_PAY_PLATFORM_PUBLIC_KEY` plus `WECHAT_PAY_PLATFORM_PUBLIC_KEY_ID`
+- Recommended callback verifier: `WECHAT_PAY_PLATFORM_PUBLIC_KEY` plus its matching `WECHAT_PAY_PLATFORM_PUBLIC_KEY_ID` from the WeChat Pay merchant platform.
+- Legacy fallback only: `WECHAT_PAY_PLATFORM_CERTIFICATE`. The verifier uses the public-key pair whenever a public key is configured; it uses the certificate only when no public key is configured.
 - `WECHAT_ENVIRONMENT=production`
+
+The platform public key is the preferred API v3 notification verification mode; it replaces the static platform-certificate mode for this integration, but it is not an unmanaged, never-rotating key. Follow WeChat Pay's official key lifecycle notices and update the public key and matching ID together. This application does not automatically download or rotate either verifier material. A configured public key with a missing ID or invalid PEM fails verification and does not fall back to the certificate.
+
+When migrating from a platform certificate, obtain the current **WeChat Pay platform public key** and its exact ID from the merchant platform, save both in the encrypted admin WeChat Pay settings, and confirm runtime readiness. Before enabling or resuming production callbacks, test both a payment-success notification and a refund-success notification with valid signed provider test payloads. Confirm each is accepted and processed once; also verify an invalid signature is rejected. Repeat the checks after every key rotation. Keep the certificate only as a temporary compatibility fallback while migrating, and track its expiry if it remains configured.
 
 ## Admin Encrypted Config Fields
 
@@ -162,7 +165,7 @@ provider partner/platform approval where applicable.
 | Stripe | `api_key`, `publishable_key`, `webhook_secret` |
 | PayPal | `client_id`, `secret`, `webhook_id` |
 | Alipay | `app_id`, `private_key`, `public_key` |
-| WeChat Pay | `mch_id`, `app_id`, `private_key_path`, `merchant_serial`, `api_v3_key`, plus platform certificate or platform public key pair |
+| WeChat Pay | `mch_id`, `app_id`, `private_key_path`, `merchant_serial`, `api_v3_key`, and preferably `platform_public_key` + matching `platform_public_key_id`; `platform_certificate` is a legacy fallback |
 
 Use the runtime readiness panel before enabling a provider. Production readiness should be green only when both active payment creation and webhook verification credentials are present.
 
@@ -247,15 +250,14 @@ Duplicate successful payments have a separate ledger rule:
 Refund loyalty settlement has one shared accounting boundary:
 
 - `refunds.requested_amount` is the original refund request; `refunds.amount`
-  is the net amount sent to the provider after coupon and loyalty deductions.
+  is the amount sent to the provider and is never reduced by loyalty points.
 - Completed-order reward points are clawed back proportionally to the
-  cumulative requested refund amount. Points spent as an order discount are
-  returned by the same proportion.
+  cumulative requested refund amount. Points are not a payment tender.
 - If the customer's available balance cannot cover the earned-point clawback,
-  the missing points are converted with the active `ExchangeRatePoints` and
-  deducted from the provider refund before the gateway call.
+  the missing points are recorded as points debt; the provider refund remains
+  unchanged.
 - The refund ID is the idempotency key for the clawback, reversal, and
-  used-point-return ledger entries. Repeated provider notifications do not
+  points-debt ledger entries. Repeated provider notifications do not
   apply them twice.
 - A provider call failure before a provider refund ID is returned releases the
   reservation. A provider response with a refund ID but a mismatched amount is

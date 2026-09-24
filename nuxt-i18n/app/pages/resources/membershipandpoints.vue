@@ -48,7 +48,7 @@ const activeTab = computed<PageSubNavigationTab>(() => {
 const pageMessagesByTab = {
   myinfo: usePageMessages('resourcesMembershipMyInfo'),
   levers: usePageMessages('resourcesMembershipLevers'),
-  exchange: usePageMessages('resourcesMembershipExchange'),
+  referral: usePageMessages('resourcesMembershipReferral'),
 } as const
 
 const loadActiveTabMessages = async (requestedLocale: string) => {

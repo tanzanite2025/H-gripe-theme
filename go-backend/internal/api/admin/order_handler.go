@@ -82,15 +82,15 @@ func (h *OrderHandler) GetOrder(c *gin.Context) {
 		respondOrderServiceError(c, err, "Failed to fetch order", http.StatusInternalServerError)
 		return
 	}
-	trackingShipment, err := h.orderService.GetAdminOrderTrackingShipment(uint(id))
+	trackingShipments, err := h.orderService.GetAdminOrderTrackingShipments(uint(id))
 	if err != nil {
-		respondOrderServiceError(c, err, "Failed to fetch order tracking status", http.StatusInternalServerError)
+		respondOrderServiceError(c, err, "Failed to fetch order tracking shipments", http.StatusInternalServerError)
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"order":             order,
-		"tracking_shipment": trackingShipment,
+		"order":              order,
+		"tracking_shipments": trackingShipments,
 	})
 }
 
@@ -189,10 +189,11 @@ func (h *OrderHandler) SendDisputeContactEmail(c *gin.Context) {
 			"provider_dispute_id": result.ProviderDisputeID,
 			"to":                  result.To,
 			"subject":             result.Subject,
-			"sent_at":             result.SentAt.Format(time.RFC3339),
+			"status":              result.Status,
+			"requested_at":        result.RequestedAt.Format(time.RFC3339),
 		},
 	})
-	response.Success(c, result)
+	c.JSON(http.StatusAccepted, response.Response{Code: 0, Data: result})
 }
 
 // UpdateOrderStatus 更新订单状态
@@ -373,7 +374,7 @@ func (h *OrderHandler) FulfillOrder(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"message":                     "Order fulfilled successfully",
 		"order":                       result.Order,
-		"tracking_shipment":           result.TrackingShipment,
+		"tracking_shipments":          result.TrackingShipments,
 		"tracking_registration_error": result.TrackingRegistrationError,
 	})
 }
@@ -495,7 +496,8 @@ func (h *OrderHandler) SyncTrackingInfo(c *gin.Context) {
 		return
 	}
 
-	result, err := h.orderService.SyncOrderTracking(c.Request.Context(), uint(id))
+	trackingNumber := c.Query("tracking_number")
+	result, err := h.orderService.SyncOrderTracking(c.Request.Context(), uint(id), trackingNumber)
 	if err != nil {
 		respondOrderServiceError(c, err, "Failed to sync tracking info", http.StatusInternalServerError)
 		return
@@ -552,15 +554,15 @@ func (h *OrderHandler) UpdateOrderItemCustoms(c *gin.Context) {
 		return
 	}
 
-	if err := h.orderService.UpdateOrderItemCustoms(uint(orderID), uint(orderItemID), req.DeclaredValue, req.DeclaredValueConfirmed); err != nil {
+	if err := h.orderService.UpdateOrderItemCustoms(uint(orderID), uint(orderItemID), req.DeclaredValueMinor, req.DeclaredValueConfirmed); err != nil {
 		respondOrderServiceError(c, err, "Failed to update order item customs", http.StatusInternalServerError)
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"message":                  "Order item customs updated successfully",
-		"declared_value":           req.DeclaredValue,
-		"declared_value_confirmed": req.DeclaredValueConfirmed && req.DeclaredValue != nil,
+		"declared_value_minor":     req.DeclaredValueMinor,
+		"declared_value_confirmed": req.DeclaredValueConfirmed && req.DeclaredValueMinor != nil,
 	})
 }
 

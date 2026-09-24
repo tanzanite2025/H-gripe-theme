@@ -24,27 +24,27 @@ type OrderEvidenceAdminListQuery struct {
 }
 
 type OrderEvidenceAdminListRow struct {
-	OrderID               uint      `gorm:"column:order_id"`
-	OrderNumber           string    `gorm:"column:order_number"`
-	CustomerFirstName     string    `gorm:"column:customer_first_name"`
-	CustomerLastName      string    `gorm:"column:customer_last_name"`
-	CustomerEmail         string    `gorm:"column:customer_email"`
-	OrderStatus           string    `gorm:"column:order_status"`
-	PaymentStatus         string    `gorm:"column:payment_status"`
-	ShippingStatus        string    `gorm:"column:shipping_status"`
-	TotalAmount           float64   `gorm:"column:total_amount"`
-	Currency              string    `gorm:"column:currency"`
-	CreatedAt             time.Time `gorm:"column:created_at"`
-	PackageID             uint      `gorm:"column:package_id"`
-	PackageVersion        int       `gorm:"column:package_version"`
-	PackageStatus         string    `gorm:"column:package_status"`
-	OrderTotalUSDSnapshot float64   `gorm:"column:order_total_usd_snapshot"`
-	IsHighValue           bool      `gorm:"column:is_high_value"`
-	HasSpokeTensionQC     bool      `gorm:"column:has_spoke_tension_qc"`
-	TotalEvidenceItems    int       `gorm:"column:total_evidence_items"`
-	CompleteEvidenceItems int       `gorm:"column:complete_evidence_items"`
-	WaivedEvidenceItems   int       `gorm:"column:waived_evidence_items"`
-	PendingEvidenceItems  int       `gorm:"column:pending_evidence_items"`
+	OrderID                    uint      `gorm:"column:order_id"`
+	OrderNumber                string    `gorm:"column:order_number"`
+	CustomerFirstName          string    `gorm:"column:customer_first_name"`
+	CustomerLastName           string    `gorm:"column:customer_last_name"`
+	CustomerEmail              string    `gorm:"column:customer_email"`
+	OrderStatus                string    `gorm:"column:order_status"`
+	PaymentStatus              string    `gorm:"column:payment_status"`
+	ShippingStatus             string    `gorm:"column:shipping_status"`
+	TotalAmountMinor           int64     `gorm:"column:total_amount_minor"`
+	Currency                   string    `gorm:"column:currency"`
+	CreatedAt                  time.Time `gorm:"column:created_at"`
+	PackageID                  uint      `gorm:"column:package_id"`
+	PackageVersion             int       `gorm:"column:package_version"`
+	PackageStatus              string    `gorm:"column:package_status"`
+	OrderTotalUSDSnapshotMinor int64     `gorm:"column:order_total_usd_snapshot_minor"`
+	IsHighValue                bool      `gorm:"column:is_high_value"`
+	HasSpokeTensionQC          bool      `gorm:"column:has_spoke_tension_qc"`
+	TotalEvidenceItems         int       `gorm:"column:total_evidence_items"`
+	CompleteEvidenceItems      int       `gorm:"column:complete_evidence_items"`
+	WaivedEvidenceItems        int       `gorm:"column:waived_evidence_items"`
+	PendingEvidenceItems       int       `gorm:"column:pending_evidence_items"`
 }
 
 func NewOrderEvidenceRepository(db *gorm.DB) *OrderEvidenceRepository {
@@ -141,13 +141,13 @@ func (r *OrderEvidenceRepository) ListAdminOrders(
 			orders.status AS order_status,
 			orders.payment_status AS payment_status,
 			orders.shipping_status AS shipping_status,
-			orders.total_amount AS total_amount,
+			orders.total_amount_minor AS total_amount_minor,
 			orders.currency AS currency,
 			orders.created_at AS created_at,
 			COALESCE(latest_package.id, 0) AS package_id,
 			COALESCE(latest_package.package_version, 0) AS package_version,
 			COALESCE(latest_package.status, '') AS package_status,
-			COALESCE(latest_package.order_total_usd_snapshot, 0) AS order_total_usd_snapshot,
+			COALESCE(latest_package.order_total_usd_snapshot_minor, 0) AS order_total_usd_snapshot_minor,
 			COALESCE(latest_package.is_high_value, false) AS is_high_value,
 			COALESCE(latest_package.has_spoke_tension_qc, false) AS has_spoke_tension_qc,
 			COUNT(evidence_items.id) AS total_evidence_items,
@@ -169,13 +169,13 @@ func (r *OrderEvidenceRepository) ListAdminOrders(
 			orders.status,
 			orders.payment_status,
 			orders.shipping_status,
-			orders.total_amount,
+			orders.total_amount_minor,
 			orders.currency,
 			orders.created_at,
 			latest_package.id,
 			latest_package.package_version,
 			latest_package.status,
-			latest_package.order_total_usd_snapshot,
+			latest_package.order_total_usd_snapshot_minor,
 			latest_package.is_high_value,
 			latest_package.has_spoke_tension_qc
 		`).

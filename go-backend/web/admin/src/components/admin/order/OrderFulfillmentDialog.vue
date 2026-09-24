@@ -481,10 +481,12 @@ const initialize = (): void => {
   if (!order?.id || !result?.package?.id) return
 
   clearDrafts()
-  trackingNumber.value = String(order.tracking_number || '')
-  trackingProviderId.value = order.tracking_provider_id ? String(order.tracking_provider_id) : 'none'
-  carrierId.value = order.carrier_id ? String(order.carrier_id) : 'none'
-  carrierServiceId.value = order.carrier_service_id ? String(order.carrier_service_id) : 'none'
+  // Every fulfillment submission creates or updates one explicit package shipment.
+  // Do not infer a package from order-level tracking state.
+  trackingNumber.value = ''
+  trackingProviderId.value = 'none'
+  carrierId.value = 'none'
+  carrierServiceId.value = 'none'
   signatureConfirmed.value = false
   validationError.value = ''
 

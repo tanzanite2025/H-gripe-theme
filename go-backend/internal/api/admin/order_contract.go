@@ -40,8 +40,8 @@ type adminNoteRequest struct {
 }
 
 type orderItemCustomsRequest struct {
-	DeclaredValue          *float64 `json:"declared_value"`
-	DeclaredValueConfirmed bool     `json:"declared_value_confirmed"`
+	DeclaredValueMinor     *int64 `json:"declared_value_minor"`
+	DeclaredValueConfirmed bool   `json:"declared_value_confirmed"`
 }
 
 type orderDisputeContactEmailRequest struct {
@@ -93,9 +93,12 @@ func respondOrderServiceError(c *gin.Context, err error, fallbackMessage string,
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Order dispute contact email is not configured"})
 	case errors.Is(err, service.ErrPaidOrderCancellationNotAllowed),
 		errors.Is(err, service.ErrProductionStartedCancellationNotAllowed),
+		errors.Is(err, service.ErrConfiguredOptionCancellationNotAllowed),
 		errors.Is(err, service.ErrOrderCancellationConflict),
 		errors.Is(err, service.ErrOrderStatusConflict),
-		errors.Is(err, service.ErrOrderFulfillmentOnHold):
+		errors.Is(err, service.ErrOrderFulfillmentOnHold),
+		errors.Is(err, service.ErrOrderFulfillmentBlockedByPendingRefund),
+		errors.Is(err, service.ErrOrderShippingDeliveryNotReady):
 		c.JSON(http.StatusConflict, gin.H{"error": err.Error()})
 	case errors.Is(err, service.ErrSystemManagedOrderStatus):
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -116,8 +119,6 @@ func respondOrderServiceError(c *gin.Context, err error, fallbackMessage string,
 		errors.Is(err, service.ErrOrderProductionNotAllowed),
 		errors.Is(err, service.ErrOrderProductionNotStarted):
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-	case errors.Is(err, service.ErrOrderFulfillmentTrackingConflict):
-		c.JSON(http.StatusConflict, gin.H{"error": err.Error()})
 	case errors.Is(err, service.ErrOrderFulfillmentEvidenceIncomplete):
 		var evidenceErr *service.OrderFulfillmentEvidenceError
 		if errors.As(err, &evidenceErr) {

@@ -20,16 +20,16 @@ func TestBuildOrderEvidenceSnapshotFreezesOrderAndRequirementFacts(t *testing.T)
 	variantID := uint(22)
 	orderRecord := testEvidenceOrder(750)
 	orderRecord.Items = []order.OrderItem{{
-		ID:          501,
-		OrderID:     orderRecord.ID,
-		ProductID:   10,
-		VariantID:   &variantID,
-		ProductName: "Wheelset Configuration",
-		SKU:         "WHEEL-22H",
-		Quantity:    1,
-		Price:       750,
-		WeightGrams: 9200,
-		Attributes:  ` { "spoke_holes":  "22", "color": "black" } `,
+		ID:                        501,
+		OrderID:                   orderRecord.ID,
+		ProductID:                 10,
+		VariantID:                 &variantID,
+		ProductName:               "Wheelset Configuration",
+		SKU:                       "WHEEL-22H",
+		Quantity:                  1,
+		PriceMinor:                75000,
+		WeightGrams:               9200,
+		ConfigurationSnapshotData: datatypes.JSON([]byte(` { "spoke_holes":  "22", "color": "black" } `)),
 	}}
 	confirmedAt := time.Date(2026, 9, 4, 12, 30, 0, 0, time.UTC)
 	ruleID := uint(901)
@@ -52,7 +52,7 @@ func TestBuildOrderEvidenceSnapshotFreezesOrderAndRequirementFacts(t *testing.T)
 	assert.Equal(t, orderRecord.ID, snapshot.OrderID)
 	assert.Equal(t, OrderEvidenceSnapshotSchemaVersion, snapshot.SchemaVersion)
 	assert.Equal(t, confirmedAt, snapshot.ConfirmedAt)
-	assert.InDelta(t, 750, snapshot.OrderTotalUSD, 0.0001)
+	assert.Equal(t, int64(75000), snapshot.OrderTotalUSDMinor)
 	assert.True(t, snapshot.IsHighValue)
 	assert.True(t, snapshot.HasSpokeTensionQC)
 	require.NoError(t, snapshot.VerifyIntegrity())
@@ -72,16 +72,16 @@ func TestBuildOrderEvidenceSnapshotUsesOnlyFinalOrderTotalForHighValue(t *testin
 	variantID := uint(22)
 	orderRecord := testEvidenceOrder(750)
 	item := order.OrderItem{
-		ID:          502,
-		OrderID:     orderRecord.ID,
-		ProductID:   11,
-		VariantID:   &variantID,
-		ProductName: "Ordinary Accessory",
-		SKU:         "ACCESSORY",
-		Quantity:    1,
-		Price:       5,
-		WeightGrams: 100,
-		Attributes:  "{}",
+		ID:                        502,
+		OrderID:                   orderRecord.ID,
+		ProductID:                 11,
+		VariantID:                 &variantID,
+		ProductName:               "Ordinary Accessory",
+		SKU:                       "ACCESSORY",
+		Quantity:                  1,
+		PriceMinor:                500,
+		WeightGrams:               100,
+		ConfigurationSnapshotData: datatypes.JSON([]byte("{}")),
 	}
 
 	snapshot, err := BuildOrderEvidenceSnapshot(orderRecord, []SnapshotItemInput{{
@@ -91,7 +91,7 @@ func TestBuildOrderEvidenceSnapshotUsesOnlyFinalOrderTotalForHighValue(t *testin
 	assert.True(t, snapshot.IsHighValue)
 	assert.False(t, snapshot.HasSpokeTensionQC)
 
-	orderRecord.TotalAmount = 749.99
+	orderRecord.TotalAmountMinor = 74999
 	belowThreshold, err := BuildOrderEvidenceSnapshot(orderRecord, []SnapshotItemInput{{
 		Item: item,
 	}}, time.Time{})
@@ -103,12 +103,12 @@ func TestBuildOrderEvidenceSnapshotRejectsMissingFacts(t *testing.T) {
 	variantID := uint(22)
 	orderRecord := testEvidenceOrder(100)
 	item := order.OrderItem{
-		ID:         503,
-		OrderID:    orderRecord.ID,
-		ProductID:  10,
-		VariantID:  &variantID,
-		Quantity:   1,
-		Attributes: datatypes.JSON([]byte("{}")).String(),
+		ID:                        503,
+		OrderID:                   orderRecord.ID,
+		ProductID:                 10,
+		VariantID:                 &variantID,
+		Quantity:                  1,
+		ConfigurationSnapshotData: datatypes.JSON([]byte("{}")),
 	}
 
 	_, err := BuildOrderEvidenceSnapshot(orderRecord, []SnapshotItemInput{{Item: item}}, time.Time{})
@@ -118,17 +118,17 @@ func TestBuildOrderEvidenceSnapshotRejectsMissingFacts(t *testing.T) {
 
 func testEvidenceOrder(total float64) *order.Order {
 	return &order.Order{
-		ID:          1001,
-		OrderNumber: "TZ-2026-EVIDENCE-TEST",
-		TotalAmount: total,
-		Currency:    "USD",
+		ID:               1001,
+		OrderNumber:      "TZ-2026-EVIDENCE-TEST",
+		TotalAmountMinor: int64(total * 100),
+		Currency:         "USD",
 		FXSnapshotData: currency.OrderFXSnapshotJSON(currency.OrderFXSnapshot{
-			Version:         currency.OrderFXSnapshotVersion,
-			BaseCurrency:    "USD",
-			OrderCurrency:   "USD",
-			BaseToOrderRate: 1,
-			Source:          "test",
-			CapturedAt:      time.Date(2026, 9, 4, 12, 0, 0, 0, time.UTC),
+			Version:       currency.OrderFXSnapshotVersion,
+			BaseCurrency:  "USD",
+			OrderCurrency: "USD",
+			RateDecimal:   "1",
+			Source:        "test",
+			CapturedAt:    time.Date(2026, 9, 4, 12, 0, 0, 0, time.UTC),
 		}),
 	}
 }

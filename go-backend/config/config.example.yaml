@@ -210,9 +210,20 @@ worker:
   tracking_polling_interval_seconds: 300
   tracking_polling_batch_limit: 20
   visitor_profile_ip_address_retention_days: 30
+  # Destructive customer-service retention purge is opt-in and admin-policy gated.
+  customer_service_retention_enabled: false
+  customer_service_retention_interval_seconds: 86400
+  customer_service_retention_minimum_months: 24
+  # Set to a positive value to override minimum_months with an exact day count.
+  customer_service_retention_minimum_days: 0
+  customer_service_retention_recovery_window_days: 30
+  customer_service_retention_batch_limit: 100
   quick_buy_abandonment_enabled: false
   quick_buy_abandonment_interval_seconds: 3600
   quick_buy_abandonment_after_seconds: 86400
+  shipping_quote_cleanup_enabled: true
+  shipping_quote_cleanup_interval_seconds: 3600
+  shipping_quote_cleanup_batch_limit: 500
   outbox_dispatch_enabled: false
   outbox_dispatch_interval_seconds: 10
   outbox_dispatch_batch_limit: 100
@@ -260,6 +271,21 @@ site_quality:
   render_wait_timeout_ms: 3000
   heading_settle_ms: 1500
   structured_data_settle_ms: 1500
+
+# Anti-abuse form protection. Honeypot modes: off, shadow, enforce.
+anti_abuse:
+  honeypot_mode: enforce
+  # Optional dedicated server-only key; when empty, a domain-separated key is derived from jwt.secret.
+  honeypot_timing_secret: ""
+  honeypot_timing_ttl_seconds: 900
+  turnstile_required: false
+  turnstile_secret_key: ""
+  verification_ip_window_seconds: 60
+  verification_destination_window_seconds: 60
+  verification_daily_limit: 8
+  verification_global_window_seconds: 60
+  verification_global_limit: 100
+  verification_circuit_seconds: 300
 
 order_abuse:
   enabled: false
@@ -332,11 +358,15 @@ payment_protection:
 
 payment_3ds:
   adaptive_enabled: true
-  low_risk_max_amount: 100.0
+  low_risk_max_amount_minor: 10000
+  avs_billing_shipping_mismatch_high_value_threshold_minor: 80000
   trusted_paid_orders: 1
   visitor_risk_lookback_days: 30
   step_up_risk_score: 20
   challenge_risk_score: 60
+
+after_sales:
+  return_window_days: 30
 
 log:
   level: "info"  # debug, info, warn, error

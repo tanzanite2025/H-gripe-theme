@@ -1,0 +1,1 @@
+-- Legacy major-unit refund review amount is intentionally not restored.

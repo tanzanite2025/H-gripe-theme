@@ -1,10 +1,13 @@
-import { ref, computed, watch } from 'vue'
+import { ref, computed, effectScope, watch, type EffectScope } from 'vue'
 import { useCookie, useRuntimeConfig } from '#imports'
 import type { CartItem, CartSelectedOption } from '~~/types/cart'
 import { useAuth } from '~/composables/useAuth'
 import { useCartCalculation } from '~/composables/useCartCalculation'
 import { useBehaviorEvents } from '~/composables/useBehaviorEvents'
 import { useOverlayBackStack } from '~/composables/useOverlayBackStack'
+import { useShippingQuote, type ShippingQuoteResult } from '~/composables/useShippingQuote'
+import { useStorefrontContext } from '~/composables/useStorefrontContext'
+import { formatMinorMoney } from '~/utils/money'
 import { activateStorefrontClientOverlays } from '~/utils/clientOverlays'
 import { isExpectedAnonymousApiMiss, logUnexpectedApiError } from '~/utils/storefrontApiFailures'
 import {
@@ -29,6 +32,19 @@ const cartVariant = ref<'default' | 'checkout-bottom' | 'lever-bottom' | 'chat-b
 const preferredCheckoutPaymentMethod = ref('')
 const shippingAddress = ref<ShippingAddress | null>(null)
 const isLoadingCart = ref(false)
+const cartShippingQuote = ref<ShippingQuoteResult | null>(null)
+const isRefreshingCartShippingQuote = ref(false)
+let cartShippingQuoteRevision = 0
+let cartShippingQuoteRefreshTimer: ReturnType<typeof setTimeout> | null = null
+let cartShippingQuoteExpiryTimer: ReturnType<typeof setTimeout> | null = null
+let pendingCartShippingQuoteRefresh: (() => Promise<ShippingQuoteResult | null>) | null = null
+let cartShippingQuoteWatchScope: EffectScope | null = null
+
+const invalidateCartShippingQuote = () => {
+  cartShippingQuoteRevision += 1
+  cartShippingQuote.value = null
+  isRefreshingCartShippingQuote.value = false
+}
 
 let eventListenersAdded = false
 let cartBackendLoaded = false
@@ -139,9 +155,8 @@ const normalizeBackendCartItem = (
     name: product.name || 'Unknown Product',
     title: product.name || 'Unknown Product',
     slug: product.slug || '',
-    price: item.price,
+    price_minor: Number(item.price_minor ?? item.price ?? 0),
     currency: itemCurrency,
-    sale_price: product.sale_price,
     quantity: item.quantity,
     image: thumbnail,
     thumbnail,
@@ -157,6 +172,8 @@ export const useCart = () => {
   const mediaContext = createStorefrontMediaContext(runtimeConfig)
   const auth = useAuth()
   const calculation = useCartCalculation()
+  const shippingQuoteApi = useShippingQuote()
+  const { countryCode, displayCurrency } = useStorefrontContext()
   const { track: trackBehaviorEvent } = useBehaviorEvents()
   const displayCurrencyCookie = useCookie<string | null>('display_currency')
   const baseCurrency = computed(() => normalizeCurrencyCode(displayCurrencyCookie.value) || 'USD')
@@ -166,11 +183,13 @@ export const useCart = () => {
     isLoadingCart.value = true
     try {
       const summary = await auth.request<any>('/cart/summary')
+      invalidateCartShippingQuote()
       cartItems.value = extractCartSummaryItems(summary)
         .map((item: any) => normalizeBackendCartItem(item, baseCurrency.value, mediaContext))
       cartBackendLoaded = true
     } catch (e) {
       if (isExpectedAnonymousApiMiss(e)) {
+        invalidateCartShippingQuote()
         cartItems.value = []
         cartBackendLoaded = true
         return
@@ -186,6 +205,7 @@ export const useCart = () => {
   }
 
   const loadCartForInteraction = async () => {
+    if (!import.meta.client) return
     if (cartBackendLoaded || isLoadingCart.value) return
     if (!auth.initialized.value) {
       await auth.ensureSession()
@@ -330,6 +350,7 @@ export const useCart = () => {
         await loadCartFromBackend()
       }
     } else if (!newVal && oldVal) {
+      invalidateCartShippingQuote()
       cartItems.value = []
       cartBackendLoaded = false
     }
@@ -337,14 +358,78 @@ export const useCart = () => {
 
   const cartCount = computed(() => cartItems.value.reduce((sum, item) => sum + item.quantity, 0))
   const subtotal = computed(() => calculation.calculateSubtotal(cartItems.value))
-  const shipping = computed(() => calculation.calculateShipping(cartItems.value, subtotal.value))
-  const tax = computed(() => calculation.calculateTax(subtotal.value, shipping.value))
-  const total = computed(() => calculation.calculateTotal(cartItems.value).total)
-  const priceBreakdown = computed(() => calculation.calculateTotal(cartItems.value))
   const cartCurrency = computed(() => {
     const firstCurrency = cartItems.value.map(item => normalizeCurrencyCode(item.currency)).find(Boolean)
     return firstCurrency || baseCurrency.value || 'USD'
   })
+  const shipping = computed(() => Number(
+    cartShippingQuote.value?.selected_plan?.shipping_fee_minor
+      ?? cartShippingQuote.value?.shipping_fee_minor
+      ?? 0,
+  ))
+
+  const refreshShippingQuote = async () => {
+    const currentRevision = ++cartShippingQuoteRevision
+    const addressCountry = String(shippingAddress.value?.country || '').trim().toUpperCase()
+    const marketCountry = String(countryCode.value || '').trim().toUpperCase()
+    const destinationCountry = addressCountry && addressCountry !== 'ZZ' ? addressCountry : marketCountry
+    if (!cartItems.value.length || !destinationCountry || destinationCountry === 'ZZ') {
+      cartShippingQuote.value = null
+      isRefreshingCartShippingQuote.value = false
+      return null
+    }
+
+    isRefreshingCartShippingQuote.value = true
+    const result = await shippingQuoteApi.quoteCartItems(
+      cartItems.value,
+      destinationCountry,
+      cartCurrency.value,
+      displayCurrency.value,
+      shippingAddress.value?.zip,
+    )
+    if (currentRevision !== cartShippingQuoteRevision) return null
+    cartShippingQuote.value = result
+    isRefreshingCartShippingQuote.value = false
+    return result
+  }
+
+  const scheduleShippingQuoteRefresh = () => {
+    if (!import.meta.client) return
+    invalidateCartShippingQuote()
+    pendingCartShippingQuoteRefresh = refreshShippingQuote
+    if (cartShippingQuoteRefreshTimer) clearTimeout(cartShippingQuoteRefreshTimer)
+    cartShippingQuoteRefreshTimer = setTimeout(() => {
+      cartShippingQuoteRefreshTimer = null
+      const refresh = pendingCartShippingQuoteRefresh
+      pendingCartShippingQuoteRefresh = null
+      if (refresh) void refresh()
+    }, 300)
+  }
+
+  if (import.meta.client && !cartShippingQuoteWatchScope) {
+    cartShippingQuoteWatchScope = effectScope(true)
+    cartShippingQuoteWatchScope.run(() => {
+      watch(
+        [cartItems, countryCode, displayCurrency, cartCurrency],
+        scheduleShippingQuoteRefresh,
+        { deep: true, immediate: true },
+      )
+      watch(cartShippingQuote, (quote) => {
+        if (cartShippingQuoteExpiryTimer) clearTimeout(cartShippingQuoteExpiryTimer)
+        if (!quote) return
+
+        const expiresAt = Date.parse(quote.expires_at)
+        if (!Number.isFinite(expiresAt)) return
+        cartShippingQuoteExpiryTimer = setTimeout(
+          scheduleShippingQuoteRefresh,
+          Math.max(0, Math.min(expiresAt - Date.now() + 1, 2_147_483_647)),
+        )
+      })
+      watch(isCartOpen, (open) => {
+        if (open) scheduleShippingQuoteRefresh()
+      })
+    })
+  }
 
   const addToCart = (product: Omit<CartItem, 'quantity'>, quantity = 1) => {
     const productId = Number(product.product_id || product.id)
@@ -371,6 +456,7 @@ export const useCart = () => {
       weight: product.weight ?? (product.weight_grams ? product.weight_grams / 1000 : undefined),
     }
     let syncPromise: Promise<void>
+    invalidateCartShippingQuote()
 
     if (existingItem) {
       existingItem.quantity += quantityToAdd
@@ -401,6 +487,7 @@ export const useCart = () => {
       removeFromCart(id)
       return
     }
+    invalidateCartShippingQuote()
     item.quantity = quantity
     syncAction('update', Number(item.product_id || item.id), quantity, item.variant_id || null, item.selected_options, item.configuration_hash)
   }
@@ -408,6 +495,7 @@ export const useCart = () => {
   const incrementQuantity = (id: number | string) => {
     const item = cartItems.value.find(item => item.id === id)
     if (!item) return
+    invalidateCartShippingQuote()
     item.quantity++
     syncAction('update', Number(item.product_id || item.id), item.quantity, item.variant_id || null, item.selected_options, item.configuration_hash)
     return { success: true }
@@ -420,6 +508,7 @@ export const useCart = () => {
       removeFromCart(id)
       return
     }
+    invalidateCartShippingQuote()
     item.quantity--
     syncAction('update', Number(item.product_id || item.id), item.quantity, item.variant_id || null, item.selected_options, item.configuration_hash)
   }
@@ -429,12 +518,14 @@ export const useCart = () => {
     if (index > -1) {
       const item = cartItems.value[index]
       if (!item) return
+      invalidateCartShippingQuote()
       cartItems.value.splice(index, 1)
       syncAction('remove', Number(item.product_id || item.id), undefined, item.variant_id || null, item.selected_options, item.configuration_hash)
     }
   }
 
   const clearCart = async () => {
+    invalidateCartShippingQuote()
     cartItems.value = []
     if (import.meta.client) {
       localStorage.removeItem('commerce_platform_cart')
@@ -523,7 +614,11 @@ export const useCart = () => {
     overlayBackStack.open('cart-drawer', closeCartState, { mode: 'push' })
   }
 
-  const setShippingAddress = (address: ShippingAddress) => { shippingAddress.value = address }
+  const setShippingAddress = (address: ShippingAddress) => {
+    invalidateCartShippingQuote()
+    shippingAddress.value = address
+    scheduleShippingQuoteRefresh()
+  }
 
   const formatPrice = (price: number, currency = cartCurrency.value || baseCurrency.value || 'USD') => {
     try {
@@ -532,6 +627,10 @@ export const useCart = () => {
     } catch {
       return `${currency || ''} ${Number(price || 0).toFixed(2)}`.trim()
     }
+  }
+
+  const formatMinorPrice = (priceMinor: number | string | null | undefined, currency = cartCurrency.value || baseCurrency.value || 'USD') => {
+    return formatMinorMoney(priceMinor, currency)
   }
 
   return {
@@ -546,10 +645,10 @@ export const useCart = () => {
     cartCount,
     subtotal,
     shipping,
-    tax,
-    total,
-    priceBreakdown,
     cartCurrency,
+    cartShippingQuote,
+    isRefreshingCartShippingQuote,
+    refreshShippingQuote,
     calculation,
     reloadCartFromBackend,
 
@@ -572,5 +671,6 @@ export const useCart = () => {
 
     setShippingAddress,
     formatPrice,
+    formatMinorPrice,
   }
 }

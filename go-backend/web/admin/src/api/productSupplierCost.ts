@@ -15,7 +15,7 @@ export interface ProductSupplierCostRecord {
   id: number
   product_code: string
   product_name: string
-  purchase_price: number
+  unit_cost_minor: number
   currency: string
   supplier_name: string
   supplier_contact_name: string
@@ -23,15 +23,15 @@ export interface ProductSupplierCostRecord {
   supplier_email: string
   lead_time_days: number
   minimum_order_quantity: number
-  inbound_shipping_unit_cost: number
-  packaging_unit_cost: number
-  other_unit_cost: number
+  inbound_shipping_unit_cost_minor: number
+  packaging_unit_cost_minor: number
+  other_unit_cost_minor: number
   created_at?: string
   updated_at?: string
 }
 
 export interface ProductSupplierCostRecordDetailsPayload {
-  unit_cost: number | null
+  unit_cost_minor: number | null
   currency: string
   supplier_name: string
   supplier_contact_name: string
@@ -39,9 +39,9 @@ export interface ProductSupplierCostRecordDetailsPayload {
   supplier_email: string
   lead_time_days: number
   minimum_order_quantity: number
-  inbound_shipping_unit_cost: number
-  packaging_unit_cost: number
-  other_unit_cost: number
+  inbound_shipping_unit_cost_minor: number
+  packaging_unit_cost_minor: number
+  other_unit_cost_minor: number
 }
 
 export interface ProductSupplierCostRecordCreatePayload extends ProductSupplierCostRecordDetailsPayload {
@@ -74,7 +74,7 @@ const readRecord = (value: unknown, endpoint: string): ProductSupplierCostRecord
   requireApiNumberField(record, 'id', endpoint)
   requireApiStringField(record, 'product_code', endpoint)
   requireApiStringField(record, 'product_name', endpoint)
-  requireApiNumberField(record, 'purchase_price', endpoint)
+  requireApiNumberField(record, 'unit_cost_minor', endpoint)
   requireApiStringField(record, 'currency', endpoint)
   requireApiStringField(record, 'supplier_name', endpoint)
   requireApiStringField(record, 'supplier_contact_name', endpoint)
@@ -82,9 +82,9 @@ const readRecord = (value: unknown, endpoint: string): ProductSupplierCostRecord
   requireApiStringField(record, 'supplier_email', endpoint)
   requireApiNumberField(record, 'lead_time_days', endpoint)
   requireApiNumberField(record, 'minimum_order_quantity', endpoint)
-  requireApiNumberField(record, 'inbound_shipping_unit_cost', endpoint)
-  requireApiNumberField(record, 'packaging_unit_cost', endpoint)
-  requireApiNumberField(record, 'other_unit_cost', endpoint)
+  requireApiNumberField(record, 'inbound_shipping_unit_cost_minor', endpoint)
+  requireApiNumberField(record, 'packaging_unit_cost_minor', endpoint)
+  requireApiNumberField(record, 'other_unit_cost_minor', endpoint)
   return record
 }
 
@@ -99,8 +99,8 @@ const readProductOption = (value: unknown, endpoint: string): ProductSupplierCos
 
 export const productSupplierCostApi = {
   async list(params: Record<string, unknown> = {}): Promise<ProductSupplierCostRecordListPayload> {
-    // The backend path is a legacy compatibility route. This client exposes it
-    // as product supplier cost and never as supplier-side operations.
+    // The endpoint is the product supplier-cost aggregate, not a supplier-side
+    // ordering or receiving workflow.
     const endpoint = '/api/admin/procurement/records'
     const body = requireApiObject(readApiBody(await axios.get(endpoint, { params }), endpoint), endpoint, 'response body')
     const records = requireApiArrayField<ProductSupplierCostRecord>(body, 'records', endpoint).map((record) => readRecord(record, endpoint))
@@ -138,16 +138,12 @@ export const productSupplierCostApi = {
   },
 
   async create(payload: ProductSupplierCostRecordCreatePayload): Promise<ProductSupplierCostRecord> {
-    // New callers send unit_cost; the backend still accepts historical
-    // purchase_price for compatibility with older admin clients.
     const endpoint = '/api/admin/procurement/records'
     const body = requireApiObject(readApiBody(await axios.post(endpoint, payload), endpoint), endpoint, 'response body')
     return readRecord(requireApiObjectField(body, 'record', endpoint), endpoint)
   },
 
   async update(id: number | string, payload: ProductSupplierCostRecordUpdatePayload): Promise<ProductSupplierCostRecord> {
-    // New callers send unit_cost; the persisted response still includes the
-    // historical purchase_price key.
     const endpoint = `/api/admin/procurement/records/${id}`
     const body = requireApiObject(readApiBody(await axios.put(endpoint, payload), endpoint), endpoint, 'response body')
     return readRecord(requireApiObjectField(body, 'record', endpoint), endpoint)

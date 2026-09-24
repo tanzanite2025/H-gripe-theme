@@ -20,15 +20,15 @@ import (
 func TestStartAndCompleteProductionForMadeToOrder(t *testing.T) {
 	db, orderService := newTestOrderService(t)
 	orderRecord := order.Order{
-		OrderNumber:      "ORD-PRODUCTION-1",
-		UserID:           42,
-		Status:           "processing",
-		PaymentStatus:    "paid",
-		FulfillmentMode:  order.FulfillmentModeMadeToOrder,
-		ProductionStatus: order.ProductionStatusNotStarted,
-		SubtotalAmount:   120,
-		TotalAmount:      120,
-		Currency:         "USD",
+		OrderNumber:         "ORD-PRODUCTION-1",
+		UserID:              42,
+		Status:              "processing",
+		PaymentStatus:       "paid",
+		FulfillmentMode:     order.FulfillmentModeMadeToOrder,
+		ProductionStatus:    order.ProductionStatusNotStarted,
+		SubtotalAmountMinor: 12000,
+		TotalAmountMinor:    12000,
+		Currency:            "USD",
 	}
 	require.NoError(t, db.Create(&orderRecord).Error)
 
@@ -95,7 +95,7 @@ func TestCompleteProductionDoesNotInferSpokeQCFromHighValueOrder(t *testing.T) {
 		PaymentStatus:    "paid",
 		FulfillmentMode:  order.FulfillmentModeMadeToOrder,
 		ProductionStatus: order.ProductionStatusStarted,
-		TotalAmount:      1200,
+		TotalAmountMinor: 120000,
 		Currency:         "USD",
 		FXSnapshotData:   productionEvidenceFXSnapshot(),
 	}
@@ -103,16 +103,16 @@ func TestCompleteProductionDoesNotInferSpokeQCFromHighValueOrder(t *testing.T) {
 
 	variantID := uint(23)
 	orderItem := order.OrderItem{
-		OrderID:     orderRecord.ID,
-		ProductID:   11,
-		VariantID:   &variantID,
-		ProductName: "High-value component",
-		SKU:         "SKU-HIGH-VALUE-COMPONENT",
-		Quantity:    1,
-		Price:       1200,
-		Subtotal:    1200,
-		Total:       1200,
-		WeightGrams: 1000,
+		OrderID:       orderRecord.ID,
+		ProductID:     11,
+		VariantID:     &variantID,
+		ProductName:   "High-value component",
+		SKU:           "SKU-HIGH-VALUE-COMPONENT",
+		Quantity:      1,
+		PriceMinor:    120000,
+		SubtotalMinor: 120000,
+		TotalMinor:    120000,
+		WeightGrams:   1000,
 	}
 	require.NoError(t, db.Create(&orderItem).Error)
 	orderRecord.Items = []order.OrderItem{orderItem}
@@ -142,13 +142,13 @@ func TestCompleteProductionDoesNotInferSpokeQCFromHighValueOrder(t *testing.T) {
 func TestProductionWorkflowRejectsStockAndUnpaidOrders(t *testing.T) {
 	db, orderService := newTestOrderService(t)
 	stockOrder := order.Order{
-		OrderNumber:     "ORD-PRODUCTION-STOCK",
-		UserID:          42,
-		Status:          "processing",
-		PaymentStatus:   "paid",
-		FulfillmentMode: order.FulfillmentModeStock,
-		TotalAmount:     100,
-		Currency:        "USD",
+		OrderNumber:      "ORD-PRODUCTION-STOCK",
+		UserID:           42,
+		Status:           "processing",
+		PaymentStatus:    "paid",
+		FulfillmentMode:  order.FulfillmentModeStock,
+		TotalAmountMinor: 10000,
+		Currency:         "USD",
 	}
 	require.NoError(t, db.Create(&stockOrder).Error)
 	_, err := orderService.StartProduction(stockOrder.ID)
@@ -161,7 +161,7 @@ func TestProductionWorkflowRejectsStockAndUnpaidOrders(t *testing.T) {
 		PaymentStatus:    "unpaid",
 		FulfillmentMode:  order.FulfillmentModeMadeToOrder,
 		ProductionStatus: order.ProductionStatusNotStarted,
-		TotalAmount:      100,
+		TotalAmountMinor: 10000,
 		Currency:         "USD",
 	}
 	require.NoError(t, db.Create(&unpaidOrder).Error)
@@ -178,7 +178,7 @@ func TestMadeToOrderFulfillmentRequiresCompletedProduction(t *testing.T) {
 		PaymentStatus:    "paid",
 		FulfillmentMode:  order.FulfillmentModeMadeToOrder,
 		ProductionStatus: order.ProductionStatusStarted,
-		TotalAmount:      100,
+		TotalAmountMinor: 10000,
 		Currency:         "USD",
 	}
 	require.NoError(t, db.Create(&orderRecord).Error)
@@ -196,7 +196,7 @@ func TestMadeToOrderCancellationIsBlockedAfterProductionStarts(t *testing.T) {
 		PaymentStatus:    "paid",
 		FulfillmentMode:  order.FulfillmentModeMadeToOrder,
 		ProductionStatus: order.ProductionStatusStarted,
-		TotalAmount:      100,
+		TotalAmountMinor: 10000,
 		Currency:         "USD",
 	}
 	require.NoError(t, db.Create(&orderRecord).Error)
@@ -213,7 +213,7 @@ func seedProductionEvidenceOrder(t *testing.T, db *gorm.DB) (order.Order, ordere
 		PaymentStatus:    "paid",
 		FulfillmentMode:  order.FulfillmentModeMadeToOrder,
 		ProductionStatus: order.ProductionStatusStarted,
-		TotalAmount:      800,
+		TotalAmountMinor: 80000,
 		Currency:         "USD",
 		FXSnapshotData:   productionEvidenceFXSnapshot(),
 	}
@@ -221,17 +221,17 @@ func seedProductionEvidenceOrder(t *testing.T, db *gorm.DB) (order.Order, ordere
 
 	variantID := uint(22)
 	orderItem := order.OrderItem{
-		OrderID:     orderRecord.ID,
-		ProductID:   10,
-		VariantID:   &variantID,
-		ProductName: "Assembly Product",
-		SKU:         "SKU-PRODUCTION-TENSION",
-		Quantity:    1,
-		Price:       800,
-		Subtotal:    800,
-		Total:       800,
-		WeightGrams: 9000,
-		Attributes:  `{"assembly":"wheelset"}`,
+		OrderID:                   orderRecord.ID,
+		ProductID:                 10,
+		VariantID:                 &variantID,
+		ProductName:               "Assembly Product",
+		SKU:                       "SKU-PRODUCTION-TENSION",
+		Quantity:                  1,
+		PriceMinor:                80000,
+		SubtotalMinor:             80000,
+		TotalMinor:                80000,
+		WeightGrams:               9000,
+		ConfigurationSnapshotData: datatypes.JSON([]byte(`{"assembly":"wheelset"}`)),
 	}
 	require.NoError(t, db.Create(&orderItem).Error)
 	orderRecord.Items = []order.OrderItem{orderItem}
@@ -272,11 +272,11 @@ func seedProductionEvidenceOrder(t *testing.T, db *gorm.DB) (order.Order, ordere
 
 func productionEvidenceFXSnapshot() datatypes.JSON {
 	return currency.OrderFXSnapshotJSON(currency.OrderFXSnapshot{
-		Version:         currency.OrderFXSnapshotVersion,
-		BaseCurrency:    "USD",
-		OrderCurrency:   "USD",
-		BaseToOrderRate: 1,
-		Source:          "production-test",
-		CapturedAt:      time.Now().UTC(),
+		Version:       currency.OrderFXSnapshotVersion,
+		BaseCurrency:  "USD",
+		OrderCurrency: "USD",
+		RateDecimal:   "1",
+		Source:        "production-test",
+		CapturedAt:    time.Now().UTC(),
 	})
 }

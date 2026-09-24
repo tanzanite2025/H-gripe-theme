@@ -8,7 +8,10 @@ import (
 	"github.com/stripe/stripe-go/v76/webhook"
 )
 
-const stripeWebhookReplayTolerance = 5 * time.Minute
+// A short NTP skew must not turn a provider retry into a permanent 400. The
+// provider's event ID remains the durable replay/idempotency guard, so the
+// signature tolerance can safely cover ordinary VM clock corrections.
+const stripeWebhookReplayTolerance = 15 * time.Minute
 
 // VerifyWebhook 验证Stripe Webhook签名
 func (g *stripeGatewayImpl) VerifyWebhook(payload []byte, signature string) (bool, error) {

@@ -185,9 +185,20 @@ worker:
   tracking_polling_interval_seconds: 300
   tracking_polling_batch_limit: 20
   visitor_profile_ip_address_retention_days: 30
+  # Keep physical conversation purge explicitly opt-in per deployment.
+  customer_service_retention_enabled: false
+  customer_service_retention_interval_seconds: 86400
+  customer_service_retention_minimum_months: 24
+  # Set to a positive value to override minimum_months with an exact day count.
+  customer_service_retention_minimum_days: 0
+  customer_service_retention_recovery_window_days: 30
+  customer_service_retention_batch_limit: 100
   quick_buy_abandonment_enabled: true
   quick_buy_abandonment_interval_seconds: 3600
   quick_buy_abandonment_after_seconds: 86400
+  shipping_quote_cleanup_enabled: true
+  shipping_quote_cleanup_interval_seconds: 3600
+  shipping_quote_cleanup_batch_limit: 500
   # This scheduler is independent from worker.enabled and is required by the
   # durable customer-service Relay as well as the other Outbox consumers.
   outbox_dispatch_enabled: true
@@ -239,6 +250,9 @@ log:
   output: stdout
 
 anti_abuse:
+  honeypot_mode: enforce
+  honeypot_timing_secret: ""
+  honeypot_timing_ttl_seconds: 900
   turnstile_required: false
   turnstile_secret_key: ""
   verification_ip_window_seconds: 60
@@ -315,11 +329,15 @@ payment_protection:
 
 payment_3ds:
   adaptive_enabled: true
-  low_risk_max_amount: 100.0
+  low_risk_max_amount_minor: 10000
+  avs_billing_shipping_mismatch_high_value_threshold_minor: 80000
   trusted_paid_orders: 1
   visitor_risk_lookback_days: 30
   step_up_risk_score: 20
   challenge_risk_score: 60
+
+after_sales:
+  return_window_days: 30
 
 request_signing:
   enabled: false

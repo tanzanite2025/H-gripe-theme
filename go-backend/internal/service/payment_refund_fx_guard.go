@@ -3,8 +3,8 @@ package service
 import (
 	"errors"
 	"fmt"
+	"math"
 	"math/big"
-	"strconv"
 	"strings"
 
 	currencydomain "commerce-platform/internal/domain/currency"
@@ -44,12 +44,12 @@ func ensureRefundFXSnapshot(
 	// current exchange rate.
 	if strings.EqualFold(strings.TrimSpace(transactionCurrency), currencydomain.DefaultPrimaryCurrency) {
 		snapshot := currencydomain.OrderFXSnapshot{
-			Version:         currencydomain.OrderFXSnapshotVersion,
-			BaseCurrency:    currencydomain.DefaultPrimaryCurrency,
-			OrderCurrency:   currencydomain.DefaultPrimaryCurrency,
-			BaseToOrderRate: 1,
-			Source:          "legacy_same_currency",
-			CapturedAt:      orderRecord.CreatedAt.UTC(),
+			Version:       currencydomain.OrderFXSnapshotVersion,
+			BaseCurrency:  currencydomain.DefaultPrimaryCurrency,
+			OrderCurrency: currencydomain.DefaultPrimaryCurrency,
+			RateDecimal:   "1",
+			Source:        "legacy_same_currency",
+			CapturedAt:    orderRecord.CreatedAt.UTC(),
 		}
 		if snapshot.CapturedAt.IsZero() {
 			snapshot.CapturedAt = orderRecord.UpdatedAt.UTC()
@@ -114,8 +114,8 @@ func validateHistoricalRefundFXCap(
 	if remainingMoney.AmountMinor() < 0 {
 		remainingMoney, _ = domainmoney.New(0, transaction.Currency)
 	}
-	rate, ok := new(big.Rat).SetString(strconv.FormatFloat(snapshot.BaseToOrderRate, 'f', -1, 64))
-	if !ok || rate.Sign() <= 0 {
+	rate, err := snapshot.RateRat()
+	if err != nil {
 		return errors.New("order FX snapshot rate is invalid")
 	}
 	orderToBase := new(big.Rat).Inv(rate)
@@ -139,4 +139,48 @@ func validateHistoricalRefundFXCap(
 		)
 	}
 	return nil
+}
+
+// calculateRefundFXGainLoss compares the provider's actual settlement
+// deduction with the historical base-currency value used by the local refund
+// cap. The signed result is intentionally loss-positive: a positive value
+// means the provider deducted more base-currency minor units than the books
+// expected, while a negative value is an FX gain. When a provider settles in
+// another currency, the fact is still stored but no incomparable adjustment is
+// posted here; that account requires a separate settlement-currency ledger.
+func calculateRefundFXGainLoss(
+	snapshot currencydomain.OrderFXSnapshot,
+	refundAmount domainmoney.Money,
+	settlementAmountMinor int64,
+	settlementCurrency string,
+) (int64, string, error) {
+	if settlementAmountMinor == 0 || strings.TrimSpace(settlementCurrency) == "" {
+		return 0, "", nil
+	}
+	if settlementAmountMinor == math.MinInt64 {
+		return 0, "", errors.New("provider settlement amount overflows")
+	}
+	if err := snapshot.Validate(refundAmount.Currency().String()); err != nil {
+		return 0, "", err
+	}
+	settlementCode, err := currencydomain.ParseCode(settlementCurrency)
+	if err != nil {
+		return 0, "", fmt.Errorf("invalid settlement currency: %w", err)
+	}
+	base := currencydomain.NormalizeCode(snapshot.BaseCurrency)
+	if settlementCode.String() != base {
+		return 0, "", nil
+	}
+	rate, err := snapshot.RateRat()
+	if err != nil {
+		return 0, "", errors.New("order FX snapshot rate is invalid")
+	}
+	historicalBase, err := refundAmount.ConvertAtRat(new(big.Rat).Inv(rate), base)
+	if err != nil {
+		return 0, "", fmt.Errorf("convert historical refund amount to base currency: %w", err)
+	}
+	if settlementAmountMinor < 0 {
+		settlementAmountMinor = -settlementAmountMinor
+	}
+	return settlementAmountMinor - historicalBase.AmountMinor(), base, nil
 }

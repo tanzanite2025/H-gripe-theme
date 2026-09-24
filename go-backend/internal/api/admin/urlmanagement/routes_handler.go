@@ -23,7 +23,11 @@ func NewRoutesHandler(catalog *service.StorefrontRouteCatalogService) *RoutesHan
 }
 
 func (h *RoutesHandler) Stats(c *gin.Context) {
-	stats, err := h.catalog.StatsForLocale(strings.TrimSpace(c.Query("locale")))
+	problemScope := strings.ToLower(strings.TrimSpace(c.Query("problem_scope")))
+	if problemScope != "canonical" {
+		problemScope = ""
+	}
+	stats, err := h.catalog.StatsForLocaleAndScope(strings.TrimSpace(c.Query("locale")), problemScope)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -157,12 +161,26 @@ func (h *RoutesHandler) CheckOne(c *gin.Context) {
 
 func (h *RoutesHandler) Check(c *gin.Context) {
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "100"))
-	summary, err := h.catalog.Check(contextOrBackground(c), routeCatalogFilter(c), limit)
+	task, err := h.catalog.StartCheck(routeCatalogFilter(c), limit)
 	if err != nil {
-		c.JSON(http.StatusBadGateway, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"data": summary})
+	c.JSON(http.StatusAccepted, gin.H{"data": task})
+}
+
+func (h *RoutesHandler) CheckStatus(c *gin.Context) {
+	taskID := strings.TrimSpace(c.Param("task_id"))
+	if taskID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "task_id is required"})
+		return
+	}
+	task, err := h.catalog.GetCheckTask(taskID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"data": task})
 }
 
 func routeCatalogFilter(c *gin.Context) repository.StorefrontRouteCatalogListFilter {

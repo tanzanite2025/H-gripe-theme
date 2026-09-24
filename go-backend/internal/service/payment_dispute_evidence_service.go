@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	domainmoney "commerce-platform/internal/domain/money"
 	orderdomain "commerce-platform/internal/domain/order"
 	"commerce-platform/internal/domain/orderevidence"
 	paymentdomain "commerce-platform/internal/domain/payment"
@@ -46,7 +47,7 @@ type StripeDisputeEvidencePackage struct {
 	FulfillmentEvidence   *OrderEvidencePackageAssembly         `json:"fulfillment_evidence,omitempty"`
 	PolicyDisclosure      *DisputePolicyDisclosureEvidence      `json:"policy_disclosure,omitempty"`
 	Refunds               []DisputeRefundEvidence               `json:"refunds"`
-	Shipment              *shippingdomain.TrackingShipment      `json:"-"`
+	Shipments             []shippingdomain.TrackingShipment     `json:"-"`
 	TrackingEvents        []shippingdomain.TrackingEvent        `json:"-"`
 	TrackingContext       *OrderEvidenceTrackingContext         `json:"tracking_context,omitempty"`
 	TrackingEventEvidence []OrderEvidenceDeliveryEvent          `json:"tracking_events"`
@@ -180,7 +181,7 @@ func (s *PaymentService) BuildStripeDisputeEvidencePackage(disputeID uint) (*Str
 		pkg.Warnings = append(pkg.Warnings, "Order evidence package assembler is not configured; fulfillment evidence was not loaded.")
 	} else {
 		pkg.FulfillmentEvidence = fulfillmentEvidence
-		pkg.Shipment = fulfillmentEvidence.Shipment
+		pkg.Shipments = fulfillmentEvidence.Shipments
 		pkg.TrackingEvents = fulfillmentEvidence.TrackingEvents
 		pkg.TrackingContext = fulfillmentEvidence.TrackingContext
 		pkg.TrackingEventEvidence = projectOrderEvidenceDeliveryEvents(fulfillmentEvidence.TrackingEvents)
@@ -200,7 +201,7 @@ func (s *PaymentService) BuildStripeDisputeEvidencePackage(disputeID uint) (*Str
 		pkg.Communications = disputeCommunicationEvidence(messages)
 	}
 
-	if strings.TrimSpace(orderRecord.TrackingNumber) == "" && pkg.Shipment == nil {
+	if len(pkg.Shipments) == 0 {
 		pkg.Warnings = append(pkg.Warnings, "No tracking number is available on the order.")
 	}
 	if len(pkg.TrackingEvents) == 0 {
@@ -364,9 +365,9 @@ func buildStripeDisputeEvidenceDraft(pkg *StripeDisputeEvidencePackage) StripeDi
 		BillingAddress:         formatDisputeAddress(orderRecord.BillingAddress),
 		ShippingAddress:        formatDisputeAddress(orderRecord.ShippingAddress),
 		ProductDescription:     disputeProductDescription(orderRecord),
-		ShippingCarrier:        disputeShippingCarrier(orderRecord, pkg.Shipment),
+		ShippingCarrier:        disputeShippingCarrier(orderRecord, pkg.Shipments),
 		ShippingDate:           disputeShippingDate(orderRecord, pkg.TrackingEvents),
-		ShippingTrackingNumber: disputeTrackingNumber(orderRecord, pkg.Shipment),
+		ShippingTrackingNumber: disputeTrackingNumber(orderRecord, pkg.Shipments),
 		CommunicationSummary:   disputeCommunicationSummary(pkg.Communications),
 	}
 	draft.UncategorizedText = disputeUncategorizedText(orderRecord, pkg.Dispute, pkg.TrackingEvents, pkg.PolicyDisclosure, pkg.Refunds)
@@ -381,7 +382,7 @@ func finalizeStripeDisputeEvidencePackage(pkg *StripeDisputeEvidencePackage) {
 	pkg.EvidenceChecklist = buildDisputeEvidenceChecklist(
 		"stripe",
 		pkg.Order,
-		pkg.Shipment,
+		pkg.Shipments,
 		pkg.TrackingEvents,
 		pkg.Communications,
 		pkg.Authentication,
@@ -406,9 +407,21 @@ func disputeProductDescription(orderRecord *orderdomain.Order) string {
 		if sku != "" {
 			sku = " SKU: " + sku
 		}
-		lines = append(lines, fmt.Sprintf("- %s%s x%d, line total %.2f", item.ProductName, sku, item.Quantity, item.Total))
+		lineTotal := "0"
+		if value, err := item.TotalMoney(); err == nil {
+			if formatted, formatErr := value.FormatMajor(); formatErr == nil {
+				lineTotal = formatted
+			}
+		}
+		lines = append(lines, fmt.Sprintf("- %s%s x%d, line total %s", item.ProductName, sku, item.Quantity, lineTotal))
 	}
-	lines = append(lines, fmt.Sprintf("Order total: %.2f.", orderRecord.TotalAmount))
+	orderTotal := "0"
+	if value, err := orderRecord.TotalMoney(); err == nil {
+		if formatted, formatErr := value.FormatMajor(); formatErr == nil {
+			orderTotal = formatted
+		}
+	}
+	lines = append(lines, fmt.Sprintf("Order total: %s.", orderTotal))
 	return truncateEvidenceText(strings.Join(lines, "\n"), 20000)
 }
 
@@ -432,7 +445,13 @@ func disputeUncategorizedText(orderRecord *orderdomain.Order, disputeRecord *pay
 		lines = append(lines, fmt.Sprintf("Completed at: %s", orderRecord.CompletedAt.UTC().Format(time.RFC3339)))
 	}
 	if disputeRecord != nil {
-		lines = append(lines, fmt.Sprintf("Stripe dispute reason: %s; disputed amount: %.2f %s.", disputeRecord.Reason, disputeRecord.Amount, disputeRecord.Currency))
+		amount := "invalid"
+		if money, amountErr := domainmoney.New(disputeRecord.AmountMinor, disputeRecord.Currency); amountErr == nil {
+			if formatted, formatErr := money.FormatMajor(); formatErr == nil {
+				amount = formatted
+			}
+		}
+		lines = append(lines, fmt.Sprintf("Stripe dispute reason: %s; disputed amount: %s %s.", disputeRecord.Reason, amount, disputeRecord.Currency))
 	}
 	if policyDisclosure != nil {
 		lines = append(lines, fmt.Sprintf(
@@ -568,25 +587,28 @@ func formatDisputeAddress(address orderdomain.Address) string {
 	return strings.Join(result, ", ")
 }
 
-func disputeShippingCarrier(orderRecord *orderdomain.Order, shipment *shippingdomain.TrackingShipment) string {
-	if shipment != nil {
-		if shipment.Carrier != nil && strings.TrimSpace(shipment.Carrier.Name) != "" {
-			return strings.TrimSpace(shipment.Carrier.Name)
+func disputeShippingCarrier(orderRecord *orderdomain.Order, shipments []shippingdomain.TrackingShipment) string {
+	values := make([]string, 0, len(shipments))
+	seen := make(map[string]struct{})
+	for _, shipment := range shipments {
+		value := ""
+		if shipment.Carrier != nil {
+			value = strings.TrimSpace(shipment.Carrier.Name)
 		}
-		if shipment.Mapping != nil && strings.TrimSpace(shipment.Mapping.ProviderCarrierName) != "" {
-			return strings.TrimSpace(shipment.Mapping.ProviderCarrierName)
+		if value == "" && shipment.Mapping != nil {
+			value = strings.TrimSpace(shipment.Mapping.ProviderCarrierName)
 		}
-		if strings.TrimSpace(shipment.ProviderCarrierCode) != "" {
-			return strings.TrimSpace(shipment.ProviderCarrierCode)
+		if value == "" {
+			value = strings.TrimSpace(shipment.ProviderCarrierCode)
+		}
+		if value != "" {
+			if _, ok := seen[value]; !ok {
+				seen[value] = struct{}{}
+				values = append(values, value)
+			}
 		}
 	}
-	if orderRecord == nil {
-		return ""
-	}
-	if strings.TrimSpace(orderRecord.ProviderCarrierName) != "" {
-		return strings.TrimSpace(orderRecord.ProviderCarrierName)
-	}
-	return strings.TrimSpace(orderRecord.ProviderCarrierCode)
+	return strings.Join(values, ", ")
 }
 
 func disputeShippingDate(orderRecord *orderdomain.Order, events []shippingdomain.TrackingEvent) string {
@@ -608,14 +630,14 @@ func disputeShippingDate(orderRecord *orderdomain.Order, events []shippingdomain
 	return oldest.UTC().Format("2006-01-02")
 }
 
-func disputeTrackingNumber(orderRecord *orderdomain.Order, shipment *shippingdomain.TrackingShipment) string {
-	if shipment != nil && strings.TrimSpace(shipment.TrackingNumber) != "" {
-		return strings.TrimSpace(shipment.TrackingNumber)
+func disputeTrackingNumber(orderRecord *orderdomain.Order, shipments []shippingdomain.TrackingShipment) string {
+	values := make([]string, 0, len(shipments))
+	for _, shipment := range shipments {
+		if trackingNumber := strings.TrimSpace(shipment.TrackingNumber); trackingNumber != "" {
+			values = append(values, trackingNumber)
+		}
 	}
-	if orderRecord == nil {
-		return ""
-	}
-	return strings.TrimSpace(orderRecord.TrackingNumber)
+	return strings.Join(values, ", ")
 }
 
 func deliveredTrackingEvent(events []shippingdomain.TrackingEvent) *shippingdomain.TrackingEvent {

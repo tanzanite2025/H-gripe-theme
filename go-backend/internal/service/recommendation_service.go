@@ -2,7 +2,6 @@ package service
 
 import (
 	"errors"
-	"fmt"
 	"sort"
 	"strings"
 	"time"
@@ -546,7 +545,7 @@ func (s *RecommendationService) makeRecommendationProduct(
 		Title:         strings.TrimSpace(item.Name),
 		URL:           seodomain.BuildProductRoute(item.Locale, item.Slug).Path,
 		Thumbnail:     canonicalPublicMediaURL(s.mediaResolver, primaryRecommendationImage(item)),
-		PriceLabel:    formatRecommendationPrice(price),
+		PriceLabel:    price,
 		WeightGrams:   weightGrams,
 		ReviewSummary: summary,
 		Slot:          normalizeRecommendationLabel(slot, "trending_available"),
@@ -572,13 +571,6 @@ func primaryRecommendationImage(item product.Product) string {
 		}
 	}
 	return ""
-}
-
-func formatRecommendationPrice(price float64) string {
-	if price <= 0 {
-		return ""
-	}
-	return fmt.Sprintf("$%s", strings.TrimRight(strings.TrimRight(fmt.Sprintf("%.2f", price), "0"), "."))
 }
 
 func normalizeRecommendationExclusions(input RecommendationRequest) map[uint]struct{} {

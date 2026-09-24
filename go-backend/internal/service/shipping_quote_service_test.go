@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"commerce-platform/internal/domain/currency"
+	domainmoney "commerce-platform/internal/domain/money"
 	productdomain "commerce-platform/internal/domain/product"
 	shippingdomain "commerce-platform/internal/domain/shipping"
 	"commerce-platform/internal/repository"
@@ -20,8 +21,8 @@ import (
 func TestShippingServicePublicCatalogFiltersDisabledResources(t *testing.T) {
 	_, shippingService := newTestShippingQuoteService(t)
 
-	enabledTemplate := shippingdomain.ShippingTemplate{Name: "Enabled", Type: "weight", DefaultFee: 10, Enabled: true}
-	disabledTemplate := shippingdomain.ShippingTemplate{Name: "Disabled", Type: "weight", DefaultFee: 20, Enabled: false}
+	enabledTemplate := shippingdomain.ShippingTemplate{Name: "Enabled", Type: "weight", DefaultFeeMinor: 1000, Enabled: true}
+	disabledTemplate := shippingdomain.ShippingTemplate{Name: "Disabled", Type: "weight", DefaultFeeMinor: 2000, Enabled: false}
 	require.NoError(t, shippingService.CreateTemplate(&enabledTemplate))
 	require.NoError(t, shippingService.CreateTemplate(&disabledTemplate))
 
@@ -45,17 +46,17 @@ func TestCalculateShippingRequiresCarrierWeightStepForAdditionalFee(t *testing.T
 	_, shippingService := newTestShippingQuoteService(t)
 
 	template := shippingdomain.ShippingTemplate{
-		Name:       "First unit shipping",
-		Type:       "weight",
-		DefaultFee: 99,
-		Enabled:    true,
+		Name:            "First unit shipping",
+		Type:            "weight",
+		DefaultFeeMinor: 9900,
+		Enabled:         true,
 		Rules: []shippingdomain.ShippingRule{
 			{
-				Region:     "US",
-				MinValue:   0,
-				MaxValue:   10,
-				Fee:        15,
-				Additional: 5,
+				Region:          "US",
+				MinValue:        0,
+				MaxValue:        10,
+				FeeMinor:        1500,
+				AdditionalMinor: 500,
 			},
 		},
 	}
@@ -72,13 +73,13 @@ func TestCalculateShippingRequiresCarrierWeightStepForAdditionalFee(t *testing.T
 func TestQuoteCartChargesCarrierSpecificAdditionalWeightStep(t *testing.T) {
 	db, shippingService := newTestShippingQuoteService(t)
 	template := shippingdomain.ShippingTemplate{
-		Name:       "500g carrier shipping",
-		Type:       "weight",
-		Currency:   "USD",
-		DefaultFee: 99,
-		Enabled:    true,
+		Name:            "500g carrier shipping",
+		Type:            "weight",
+		Currency:        "USD",
+		DefaultFeeMinor: 9900,
+		Enabled:         true,
 		Rules: []shippingdomain.ShippingRule{{
-			Region: "US", MinValue: 0, MaxValue: 10, Fee: 15, Additional: 5,
+			Region: "US", MinValue: 0, MaxValue: 10, FeeMinor: 1500, AdditionalMinor: 500,
 		}},
 	}
 	require.NoError(t, shippingService.CreateTemplate(&template))
@@ -103,15 +104,15 @@ func TestQuoteCartChargesCarrierSpecificAdditionalWeightStep(t *testing.T) {
 	leg := requireSelectedQuoteLeg(t, quote)
 	assert.Equal(t, service.ID, leg.CarrierServiceID)
 	assert.Equal(t, 1000, leg.BillableWeightGrams)
-	assert.Equal(t, 20.0, leg.ShippingFee)
-	assert.Equal(t, 20.0, quote.ShippingFee)
+	assert.Equal(t, "20.00", leg.ShippingFeeDecimal)
+	assert.Equal(t, "20.00", quote.ShippingFeeDecimal)
 }
 
 func TestQuoteCartRejectsAdditionalWeightRuleWithoutCarrierScale(t *testing.T) {
 	db, shippingService := newTestShippingQuoteService(t)
 	template := shippingdomain.ShippingTemplate{
-		Name: "Unconfigured weight scale", Type: "weight", Currency: "USD", DefaultFee: 99, Enabled: true,
-		Rules: []shippingdomain.ShippingRule{{Region: "US", MinValue: 0, MaxValue: 10, Fee: 15, Additional: 5}},
+		Name: "Unconfigured weight scale", Type: "weight", Currency: "USD", DefaultFeeMinor: 9900, Enabled: true,
+		Rules: []shippingdomain.ShippingRule{{Region: "US", MinValue: 0, MaxValue: 10, FeeMinor: 1500, AdditionalMinor: 500}},
 	}
 	require.NoError(t, shippingService.CreateTemplate(&template))
 	record, variant := seedQuoteProduct(t, db, 50, 800, template.ID)
@@ -128,8 +129,8 @@ func TestQuoteCartRejectsAdditionalWeightRuleWithoutCarrierScale(t *testing.T) {
 func TestCreateCarrierServiceRejectsMissingWeightScaleForAdditionalRule(t *testing.T) {
 	db, shippingService := newTestShippingQuoteService(t)
 	template := shippingdomain.ShippingTemplate{
-		Name: "Carrier scale required", Type: "weight", Currency: "USD", DefaultFee: 99, Enabled: true,
-		Rules: []shippingdomain.ShippingRule{{Region: "US", MinValue: 0, MaxValue: 10, Fee: 15, Additional: 5}},
+		Name: "Carrier scale required", Type: "weight", Currency: "USD", DefaultFeeMinor: 9900, Enabled: true,
+		Rules: []shippingdomain.ShippingRule{{Region: "US", MinValue: 0, MaxValue: 10, FeeMinor: 1500, AdditionalMinor: 500}},
 	}
 	require.NoError(t, shippingService.CreateTemplate(&template))
 	carrier := seedQuoteCarrier(t, db, "Configuration Carrier", "CONFIG")
@@ -145,8 +146,8 @@ func TestCreateCarrierServiceRejectsMissingWeightScaleForAdditionalRule(t *testi
 func TestCalculateShippingRejectsUnmatchedCountryWithoutPositiveDefaultFee(t *testing.T) {
 	_, shippingService := newTestShippingQuoteService(t)
 	template := shippingdomain.ShippingTemplate{
-		Name: "Core markets only", Type: "weight", DefaultFee: 0, Enabled: true,
-		Rules: []shippingdomain.ShippingRule{{Region: "US", MinValue: 0, MaxValue: 10, Fee: 20}},
+		Name: "Core markets only", Type: "weight", DefaultFeeMinor: 0, Enabled: true,
+		Rules: []shippingdomain.ShippingRule{{Region: "US", MinValue: 0, MaxValue: 10, FeeMinor: 2000}},
 	}
 	require.NoError(t, shippingService.CreateTemplate(&template))
 
@@ -165,8 +166,8 @@ func TestCalculateShippingRejectsUnmatchedCountryWithoutPositiveDefaultFee(t *te
 func TestQuoteCartRejectsUnmatchedCountryWithoutPositiveDefaultFee(t *testing.T) {
 	db, shippingService := newTestShippingQuoteService(t)
 	template := shippingdomain.ShippingTemplate{
-		Name: "Core markets only", Type: "weight", DefaultFee: 0, Enabled: true,
-		Rules: []shippingdomain.ShippingRule{{Region: "US", MinValue: 0, MaxValue: 10, Fee: 20}},
+		Name: "Core markets only", Type: "weight", DefaultFeeMinor: 0, Enabled: true,
+		Rules: []shippingdomain.ShippingRule{{Region: "US", MinValue: 0, MaxValue: 10, FeeMinor: 2000}},
 	}
 	require.NoError(t, shippingService.CreateTemplate(&template))
 	record, variant := seedQuoteProduct(t, db, 1200, 900, template.ID)
@@ -185,8 +186,8 @@ func TestQuoteCartRejectsUnmatchedCountryWithoutPositiveDefaultFee(t *testing.T)
 func TestQuoteCartUsesPositiveDefaultFeeForUnmatchedCountry(t *testing.T) {
 	db, shippingService := newTestShippingQuoteService(t)
 	template := shippingdomain.ShippingTemplate{
-		Name: "Worldwide fallback", Type: "weight", DefaultFee: 75, Enabled: true,
-		Rules: []shippingdomain.ShippingRule{{Region: "US", MinValue: 0, MaxValue: 10, Fee: 20}},
+		Name: "Worldwide fallback", Type: "weight", DefaultFeeMinor: 7500, Enabled: true,
+		Rules: []shippingdomain.ShippingRule{{Region: "US", MinValue: 0, MaxValue: 10, FeeMinor: 2000}},
 	}
 	require.NoError(t, shippingService.CreateTemplate(&template))
 	record, variant := seedQuoteProduct(t, db, 1200, 900, template.ID)
@@ -199,15 +200,15 @@ func TestQuoteCartUsesPositiveDefaultFeeForUnmatchedCountry(t *testing.T) {
 
 	require.NoError(t, err)
 	require.NotNil(t, quote)
-	assert.Equal(t, 75.0, quote.ShippingFee)
+	assert.Equal(t, "75.00", quote.ShippingFeeDecimal)
 	assert.False(t, quote.FreeShipping)
 }
 
 func TestQuoteCartAllowsExplicitZeroFeeRule(t *testing.T) {
 	db, shippingService := newTestShippingQuoteService(t)
 	template := shippingdomain.ShippingTemplate{
-		Name: "Explicit Brazil promotion", Type: "weight", DefaultFee: 0, Enabled: true,
-		Rules: []shippingdomain.ShippingRule{{Region: "BR", MinValue: 0, MaxValue: 10, Fee: 0}},
+		Name: "Explicit Brazil promotion", Type: "weight", DefaultFeeMinor: 0, Enabled: true,
+		Rules: []shippingdomain.ShippingRule{{Region: "BR", MinValue: 0, MaxValue: 10, FeeMinor: 0}},
 	}
 	require.NoError(t, shippingService.CreateTemplate(&template))
 	record, variant := seedQuoteProduct(t, db, 1200, 900, template.ID)
@@ -220,15 +221,15 @@ func TestQuoteCartAllowsExplicitZeroFeeRule(t *testing.T) {
 
 	require.NoError(t, err)
 	require.NotNil(t, quote)
-	assert.Zero(t, quote.ShippingFee)
+	assert.Equal(t, "0.00", quote.ShippingFeeDecimal)
 	assert.True(t, quote.FreeShipping)
 }
 
 func TestShippingServicePublicCarrierServicesRequireVisibleAssociations(t *testing.T) {
 	_, shippingService := newTestShippingQuoteService(t)
 
-	enabledTemplate := shippingdomain.ShippingTemplate{Name: "Enabled", Type: "weight", DefaultFee: 10, Enabled: true}
-	disabledTemplate := shippingdomain.ShippingTemplate{Name: "Disabled", Type: "weight", DefaultFee: 20, Enabled: false}
+	enabledTemplate := shippingdomain.ShippingTemplate{Name: "Enabled", Type: "weight", DefaultFeeMinor: 1000, Enabled: true}
+	disabledTemplate := shippingdomain.ShippingTemplate{Name: "Disabled", Type: "weight", DefaultFeeMinor: 2000, Enabled: false}
 	require.NoError(t, shippingService.CreateTemplate(&enabledTemplate))
 	require.NoError(t, shippingService.CreateTemplate(&disabledTemplate))
 
@@ -278,32 +279,32 @@ func TestShippingServicePersistsDisplayPriceSnapshotsByMoneyField(t *testing.T) 
 	_, shippingService := newTestShippingQuoteService(t)
 
 	template := shippingdomain.ShippingTemplate{
-		Name:          "Display priced shipping",
-		Type:          "price",
-		DefaultFee:    20,
-		FreeThreshold: 100,
-		Enabled:       true,
+		Name:               "Display priced shipping",
+		Type:               "price",
+		DefaultFeeMinor:    2000,
+		FreeThresholdMinor: 10000,
+		Enabled:            true,
 		DisplayPriceData: shippingdomain.TemplateDisplayPriceSnapshotsJSON(map[string][]currency.DisplayPriceSnapshot{
 			shippingdomain.ShippingTemplateDisplayPriceFieldDefaultFee: {
-				{Amount: 2.8, Currency: "USD", QuoteCurrency: "USD", Rate: 0.14, Source: "direct_rate", Converted: true},
+				{AmountDecimal: "2.80", Currency: "USD", QuoteCurrency: "USD", Rate: 0.14, Source: "direct_rate", Converted: true},
 			},
 			shippingdomain.ShippingTemplateDisplayPriceFieldFreeThreshold: {
-				{Amount: 14, Currency: "USD", QuoteCurrency: "USD", Rate: 0.14, Source: "direct_rate", Converted: true},
+				{AmountDecimal: "14.00", Currency: "USD", QuoteCurrency: "USD", Rate: 0.14, Source: "direct_rate", Converted: true},
 			},
 		}),
 		Rules: []shippingdomain.ShippingRule{
 			{
-				Region:     "US",
-				MinValue:   100,
-				MaxValue:   300,
-				Fee:        15,
-				Additional: 2,
+				Region:          "US",
+				MinValueMinor:   10000,
+				MaxValue:        300,
+				FeeMinor:        1500,
+				AdditionalMinor: 200,
 				DisplayPriceData: shippingdomain.RuleDisplayPriceSnapshotsJSON(map[string][]currency.DisplayPriceSnapshot{
 					shippingdomain.ShippingRuleDisplayPriceFieldMinValue: {
-						{Amount: 14, Currency: "USD", QuoteCurrency: "USD", Rate: 0.14, Source: "direct_rate", Converted: true},
+						{AmountDecimal: "14.00", Currency: "USD", QuoteCurrency: "USD", Rate: 0.14, Source: "direct_rate", Converted: true},
 					},
 					shippingdomain.ShippingRuleDisplayPriceFieldFee: {
-						{Amount: 2.1, Currency: "USD", QuoteCurrency: "USD", Rate: 0.14, Source: "direct_rate", Converted: true},
+						{AmountDecimal: "2.10", Currency: "USD", QuoteCurrency: "USD", Rate: 0.14, Source: "direct_rate", Converted: true},
 					},
 				}),
 			},
@@ -317,27 +318,27 @@ func TestShippingServicePersistsDisplayPriceSnapshotsByMoneyField(t *testing.T) 
 	templateSnapshots := currency.ParseDisplayPriceSnapshotMap(found.DisplayPriceData, shippingdomain.ShippingTemplateDisplayPriceFields...)
 	require.Len(t, templateSnapshots, 2)
 	require.Len(t, templateSnapshots[shippingdomain.ShippingTemplateDisplayPriceFieldDefaultFee], 1)
-	assert.InDelta(t, 2.8, templateSnapshots[shippingdomain.ShippingTemplateDisplayPriceFieldDefaultFee][0].Amount, 0.001)
+	assert.Equal(t, "2.80", templateSnapshots[shippingdomain.ShippingTemplateDisplayPriceFieldDefaultFee][0].AmountDecimal)
 
 	require.Len(t, found.Rules, 1)
 	ruleSnapshots := currency.ParseDisplayPriceSnapshotMap(found.Rules[0].DisplayPriceData, shippingdomain.ShippingRuleDisplayPriceFields...)
 	require.Len(t, ruleSnapshots, 2)
 	require.Len(t, ruleSnapshots[shippingdomain.ShippingRuleDisplayPriceFieldFee], 1)
-	assert.InDelta(t, 2.1, ruleSnapshots[shippingdomain.ShippingRuleDisplayPriceFieldFee][0].Amount, 0.001)
+	assert.Equal(t, "2.10", ruleSnapshots[shippingdomain.ShippingRuleDisplayPriceFieldFee][0].AmountDecimal)
 
-	found.DefaultFee = 25
+	found.DefaultFeeMinor = 2500
 	found.DisplayPriceData = shippingdomain.TemplateDisplayPriceSnapshotsJSON(map[string][]currency.DisplayPriceSnapshot{
 		shippingdomain.ShippingTemplateDisplayPriceFieldDefaultFee: {
-			{Amount: 3.5, Currency: "USD", QuoteCurrency: "USD", Rate: 0.14, Source: "direct_rate", Converted: true},
+			{AmountDecimal: "3.50", Currency: "USD", QuoteCurrency: "USD", Rate: 0.14, Source: "direct_rate", Converted: true},
 		},
 	})
 	found.Rules = []shippingdomain.ShippingRule{
 		{
-			Region: "US",
-			Fee:    18,
+			Region:   "US",
+			FeeMinor: 1800,
 			DisplayPriceData: shippingdomain.RuleDisplayPriceSnapshotsJSON(map[string][]currency.DisplayPriceSnapshot{
 				shippingdomain.ShippingRuleDisplayPriceFieldFee: {
-					{Amount: 2.52, Currency: "USD", QuoteCurrency: "USD", Rate: 0.14, Source: "direct_rate", Converted: true},
+					{AmountDecimal: "2.52", Currency: "USD", QuoteCurrency: "USD", Rate: 0.14, Source: "direct_rate", Converted: true},
 				},
 			}),
 		},
@@ -348,36 +349,36 @@ func TestShippingServicePersistsDisplayPriceSnapshotsByMoneyField(t *testing.T) 
 	require.NoError(t, err)
 	updatedTemplateSnapshots := currency.ParseDisplayPriceSnapshotMap(updated.DisplayPriceData, shippingdomain.ShippingTemplateDisplayPriceFields...)
 	require.Len(t, updatedTemplateSnapshots[shippingdomain.ShippingTemplateDisplayPriceFieldDefaultFee], 1)
-	assert.InDelta(t, 3.5, updatedTemplateSnapshots[shippingdomain.ShippingTemplateDisplayPriceFieldDefaultFee][0].Amount, 0.001)
+	assert.Equal(t, "3.50", updatedTemplateSnapshots[shippingdomain.ShippingTemplateDisplayPriceFieldDefaultFee][0].AmountDecimal)
 	require.Len(t, updated.Rules, 1)
 	updatedRuleSnapshots := currency.ParseDisplayPriceSnapshotMap(updated.Rules[0].DisplayPriceData, shippingdomain.ShippingRuleDisplayPriceFields...)
 	require.Len(t, updatedRuleSnapshots[shippingdomain.ShippingRuleDisplayPriceFieldFee], 1)
-	assert.InDelta(t, 2.52, updatedRuleSnapshots[shippingdomain.ShippingRuleDisplayPriceFieldFee][0].Amount, 0.001)
+	assert.Equal(t, "2.52", updatedRuleSnapshots[shippingdomain.ShippingRuleDisplayPriceFieldFee][0].AmountDecimal)
 }
 
 func TestQuoteCartReturnsDisplayPriceFromStoredShippingSnapshots(t *testing.T) {
 	db, shippingService := newTestShippingQuoteService(t)
 
 	template := shippingdomain.ShippingTemplate{
-		Name:       "Stored display quote template",
-		Type:       "weight",
-		Currency:   "CNY",
-		DefaultFee: 99,
-		Enabled:    true,
+		Name:            "Stored display quote template",
+		Type:            "weight",
+		Currency:        "CNY",
+		DefaultFeeMinor: 9900,
+		Enabled:         true,
 		Rules: []shippingdomain.ShippingRule{
 			{
-				Region:     "US",
-				Currency:   "CNY",
-				MinValue:   0,
-				MaxValue:   10,
-				Fee:        5,
-				Additional: 2,
+				Region:          "US",
+				Currency:        "CNY",
+				MinValue:        0,
+				MaxValue:        10,
+				FeeMinor:        500,
+				AdditionalMinor: 200,
 				DisplayPriceData: shippingdomain.RuleDisplayPriceSnapshotsJSON(map[string][]currency.DisplayPriceSnapshot{
 					shippingdomain.ShippingRuleDisplayPriceFieldFee: {
-						{Amount: 0.7, Currency: "USD", QuoteCurrency: "USD", Rate: 0.14, Source: "direct_rate", Converted: true},
+						{AmountDecimal: "0.70", Currency: "USD", QuoteCurrency: "USD", Rate: 0.14, Source: "direct_rate", Converted: true},
 					},
 					shippingdomain.ShippingRuleDisplayPriceFieldAdditional: {
-						{Amount: 0.28, Currency: "USD", QuoteCurrency: "USD", Rate: 0.14, Source: "direct_rate", Converted: true},
+						{AmountDecimal: "0.28", Currency: "USD", QuoteCurrency: "USD", Rate: 0.14, Source: "direct_rate", Converted: true},
 					},
 				}),
 			},
@@ -401,34 +402,34 @@ func TestQuoteCartReturnsDisplayPriceFromStoredShippingSnapshots(t *testing.T) {
 	})
 
 	require.NoError(t, err)
-	assert.Equal(t, 9.0, quote.ShippingFee)
+	assert.Equal(t, "9.00", quote.ShippingFeeDecimal)
 	require.NotNil(t, quote.DisplayPrice)
 	assert.Equal(t, "USD", quote.DisplayPrice.Currency)
-	assert.InDelta(t, 1.26, quote.DisplayPrice.Amount, 0.001)
+	assert.Equal(t, "1.26", quote.DisplayPrice.AmountDecimal)
 	require.Len(t, quote.DisplayPrices, 1)
-	assert.InDelta(t, 1.26, quote.DisplayPrices[0].Amount, 0.001)
+	assert.Equal(t, "1.26", quote.DisplayPrices[0].AmountDecimal)
 }
 
 func TestQuoteCartOmitsIncompleteShippingDisplayPrice(t *testing.T) {
 	db, shippingService := newTestShippingQuoteService(t)
 
 	template := shippingdomain.ShippingTemplate{
-		Name:       "Incomplete display quote template",
-		Type:       "weight",
-		Currency:   "CNY",
-		DefaultFee: 99,
-		Enabled:    true,
+		Name:            "Incomplete display quote template",
+		Type:            "weight",
+		Currency:        "CNY",
+		DefaultFeeMinor: 9900,
+		Enabled:         true,
 		Rules: []shippingdomain.ShippingRule{
 			{
-				Region:     "US",
-				Currency:   "CNY",
-				MinValue:   0,
-				MaxValue:   10,
-				Fee:        5,
-				Additional: 2,
+				Region:          "US",
+				Currency:        "CNY",
+				MinValue:        0,
+				MaxValue:        10,
+				FeeMinor:        500,
+				AdditionalMinor: 200,
 				DisplayPriceData: shippingdomain.RuleDisplayPriceSnapshotsJSON(map[string][]currency.DisplayPriceSnapshot{
 					shippingdomain.ShippingRuleDisplayPriceFieldFee: {
-						{Amount: 0.7, Currency: "USD", QuoteCurrency: "USD", Rate: 0.14, Source: "direct_rate", Converted: true},
+						{AmountDecimal: "0.70", Currency: "USD", QuoteCurrency: "USD", Rate: 0.14, Source: "direct_rate", Converted: true},
 					},
 				}),
 			},
@@ -452,7 +453,7 @@ func TestQuoteCartOmitsIncompleteShippingDisplayPrice(t *testing.T) {
 	})
 
 	require.NoError(t, err)
-	assert.Equal(t, 9.0, quote.ShippingFee)
+	assert.Equal(t, "9.00", quote.ShippingFeeDecimal)
 	assert.Nil(t, quote.DisplayPrice)
 	assert.Empty(t, quote.DisplayPrices)
 }
@@ -472,7 +473,7 @@ func TestQuoteCartUsesSkuWeightWhenNoPackagingRule(t *testing.T) {
 
 	require.NoError(t, err)
 	require.Len(t, quote.Items, 1)
-	assert.Equal(t, 5.0, quote.ShippingFee)
+	assert.Equal(t, "5.00", quote.ShippingFeeDecimal)
 	assert.Equal(t, 900, quote.Items[0].WeightGrams)
 	assert.Equal(t, 0, quote.Items[0].PackagingWeightGrams)
 	assert.Equal(t, 900, quote.Items[0].ChargeWeightGrams)
@@ -512,8 +513,26 @@ func TestQuoteCartAddsPackagingWeightToChargeWeight(t *testing.T) {
 	assert.Equal(t, 900, item.WeightGrams)
 	assert.Equal(t, 200, item.PackagingWeightGrams)
 	assert.Equal(t, 1100, item.ChargeWeightGrams)
-	assert.Equal(t, 9.0, quote.ShippingFee)
-	assert.Equal(t, 9.0, item.ShippingFee)
+	assert.Equal(t, "9.00", quote.ShippingFeeDecimal)
+	assert.Equal(t, "9.00", item.ShippingFeeDecimal)
+}
+
+func TestQuoteResolvedItemsAddsConfiguredPackagingWeightDelta(t *testing.T) {
+	db, shippingService := newTestShippingQuoteService(t)
+	template := seedWeightQuoteTemplate(t, db)
+	record, variant := seedQuoteProduct(t, db, 50, 900, template.ID)
+
+	quote, err := shippingService.QuoteResolvedItems(ShippingQuoteInput{
+		Country: "US", Currency: "USD",
+		Items: []ShippingQuoteItemInput{{
+			ProductID: record.ID, VariantID: &variant.ID, ShippingTemplateID: &template.ID,
+			Quantity: 1, UnitPriceMinor: 5000, WeightGrams: 900, PackagingWeightDeltaGrams: 75,
+		}},
+	})
+	require.NoError(t, err)
+	require.Len(t, quote.Items, 1)
+	assert.Equal(t, 75, quote.Items[0].PackagingWeightGrams)
+	assert.Equal(t, 975, quote.Items[0].ChargeWeightGrams)
 }
 
 func TestQuoteCartUsesLowestCarrierServiceOptionWhenAvailable(t *testing.T) {
@@ -523,15 +542,15 @@ func TestQuoteCartUsesLowestCarrierServiceOptionWhenAvailable(t *testing.T) {
 	carrier := seedQuoteCarrier(t, db, "DHL", "DHL")
 
 	expensiveService := seedQuoteCarrierService(t, db, carrier.ID, template.ID, shippingdomain.CarrierService{
-		ServiceCode:           "DHL-EXP",
-		ServiceName:           "DHL Express",
-		Countries:             `["US"]`,
-		BillingMode:           "actual_weight",
-		FirstWeightGrams:      500,
-		AdditionalWeightGrams: 500,
-		FuelSurchargePercent:  10,
-		RemoteSurcharge:       1,
-		SortOrder:             2,
+		ServiceCode:                 "DHL-EXP",
+		ServiceName:                 "DHL Express",
+		Countries:                   `["US"]`,
+		BillingMode:                 "actual_weight",
+		FirstWeightGrams:            500,
+		AdditionalWeightGrams:       500,
+		FuelSurchargePercentDecimal: "10",
+		RemoteSurchargeMinor:        100,
+		SortOrder:                   2,
 	})
 	cheapService := seedQuoteCarrierService(t, db, carrier.ID, template.ID, shippingdomain.CarrierService{
 		ServiceCode:           "DHL-STD",
@@ -555,18 +574,18 @@ func TestQuoteCartUsesLowestCarrierServiceOptionWhenAvailable(t *testing.T) {
 	require.Len(t, quote.Plans, 2)
 	leg := requireSelectedQuoteLeg(t, quote)
 	assert.Equal(t, cheapService.ID, leg.CarrierServiceID)
-	assert.Equal(t, 5.0, leg.ShippingFee)
-	assert.Equal(t, 5.0, quote.ShippingFee)
-	assert.Equal(t, 5.0, quote.Items[0].ShippingFee)
+	assert.Equal(t, "5.00", leg.ShippingFeeDecimal)
+	assert.Equal(t, "5.00", quote.ShippingFeeDecimal)
+	assert.Equal(t, "5.00", quote.Items[0].ShippingFeeDecimal)
 
 	require.Len(t, quote.Plans[1].Legs, 1)
 	expensiveLeg := quote.Plans[1].Legs[0]
 	assert.Equal(t, expensiveService.ID, expensiveLeg.CarrierServiceID)
 	assert.Equal(t, 1000, expensiveLeg.BillableWeightGrams)
-	assert.Equal(t, 5.0, expensiveLeg.BaseFee)
-	assert.Equal(t, 0.5, expensiveLeg.FuelSurcharge)
-	assert.Equal(t, 1.0, expensiveLeg.RemoteSurcharge)
-	assert.Equal(t, 6.5, expensiveLeg.ShippingFee)
+	assert.Equal(t, "5.00", expensiveLeg.BaseFeeDecimal)
+	assert.Equal(t, "0.50", expensiveLeg.FuelSurchargeDecimal)
+	assert.Equal(t, "1.00", expensiveLeg.RemoteSurchargeDecimal)
+	assert.Equal(t, "6.50", expensiveLeg.ShippingFeeDecimal)
 }
 
 func TestQuoteCartUsesRequestedCarrierServiceOption(t *testing.T) {
@@ -578,7 +597,7 @@ func TestQuoteCartUsesRequestedCarrierServiceOption(t *testing.T) {
 		ServiceCode: "DHL-STD", ServiceName: "DHL Standard", Countries: `["US"]`, BillingMode: "actual_weight", FirstWeightGrams: 500, AdditionalWeightGrams: 500,
 	})
 	expressService := seedQuoteCarrierService(t, db, carrier.ID, template.ID, shippingdomain.CarrierService{
-		ServiceCode: "DHL-EXP", ServiceName: "DHL Express", Countries: `["US"]`, BillingMode: "actual_weight", FirstWeightGrams: 500, AdditionalWeightGrams: 500, RemoteSurcharge: 100,
+		ServiceCode: "DHL-EXP", ServiceName: "DHL Express", Countries: `["US"]`, BillingMode: "actual_weight", FirstWeightGrams: 500, AdditionalWeightGrams: 500, RemoteSurchargeMinor: 10000,
 	})
 
 	quote, err := shippingService.QuoteCart(ShippingQuoteInput{
@@ -596,8 +615,8 @@ func TestQuoteCartUsesRequestedCarrierServiceOption(t *testing.T) {
 	require.NoError(t, err)
 	leg := requireSelectedQuoteLeg(t, selectedQuote)
 	assert.Equal(t, expressService.ID, leg.CarrierServiceID)
-	assert.Equal(t, 105.0, selectedQuote.ShippingFee)
-	assert.Equal(t, 5.0, quote.Plans[0].ShippingFee)
+	assert.Equal(t, "105.00", selectedQuote.ShippingFeeDecimal)
+	assert.Equal(t, "5.00", quote.Plans[0].ShippingFeeDecimal)
 	assert.Equal(t, cheapService.ID, quote.Plans[0].Legs[0].CarrierServiceID)
 }
 
@@ -643,24 +662,24 @@ func TestQuoteCartRestoresLockedPlanAfterRateChange(t *testing.T) {
 	require.NotEmpty(t, quote.RateVersion)
 	require.True(t, quote.ExpiresAt.After(time.Now()))
 	require.NotNil(t, quote.SelectedPlan)
-	lockedFee := quote.ShippingFee
+	lockedFee := quote.ShippingFeeDecimal
 
 	require.NoError(t, db.Model(&shippingdomain.ShippingRule{}).
 		Where("template_id = ? AND min_value = ?", template.ID, 0).
-		Update("fee", 50).Error)
+		Update("fee_minor", 5000).Error)
 	input.ShippingQuoteID = quote.ID
 	input.SelectedQuotePlanID = quote.SelectedPlan.ID
 	restored, err := shippingService.QuoteCart(input)
 	require.NoError(t, err)
 	assert.Equal(t, quote.ID, restored.ID)
 	assert.Equal(t, quote.RateVersion, restored.RateVersion)
-	assert.Equal(t, lockedFee, restored.ShippingFee)
+	assert.Equal(t, lockedFee, restored.ShippingFeeDecimal)
 
 	input.ShippingQuoteID = ""
 	input.SelectedQuotePlanID = ""
 	fresh, err := shippingService.QuoteCart(input)
 	require.NoError(t, err)
-	assert.Equal(t, 50.0, fresh.ShippingFee)
+	assert.Equal(t, "50.00", fresh.ShippingFeeDecimal)
 }
 
 func TestQuoteCartRejectsSnapshotForChangedItems(t *testing.T) {
@@ -720,7 +739,7 @@ func TestQuoteCartBuildsCompleteCarrierPlanCombinations(t *testing.T) {
 	} {
 		seedQuoteCarrierService(t, db, carrier.ID, serviceInput.templateID, shippingdomain.CarrierService{
 			ServiceCode: serviceInput.code, ServiceName: serviceInput.code, Countries: `["US"]`,
-			BillingMode: "actual_weight", RemoteSurcharge: serviceInput.surcharge,
+			BillingMode: "actual_weight", RemoteSurchargeMinor: int64(serviceInput.surcharge * 100),
 		})
 	}
 
@@ -733,11 +752,11 @@ func TestQuoteCartBuildsCompleteCarrierPlanCombinations(t *testing.T) {
 	})
 	require.NoError(t, err)
 	require.Len(t, quote.Plans, 4)
-	assert.Equal(t, []float64{10, 11, 12, 13}, []float64{
-		quote.Plans[0].ShippingFee,
-		quote.Plans[1].ShippingFee,
-		quote.Plans[2].ShippingFee,
-		quote.Plans[3].ShippingFee,
+	assert.Equal(t, []string{"10.00", "11.00", "12.00", "13.00"}, []string{
+		quote.Plans[0].ShippingFeeDecimal,
+		quote.Plans[1].ShippingFeeDecimal,
+		quote.Plans[2].ShippingFeeDecimal,
+		quote.Plans[3].ShippingFeeDecimal,
 	})
 	for _, plan := range quote.Plans {
 		require.Len(t, plan.Legs, 2)
@@ -755,14 +774,13 @@ func TestQuoteCartKeepsCarrierOptionsForMultipleShippingTemplates(t *testing.T) 
 	require.NoError(t, db.Save(&smallTemplate).Error)
 	largeProduct, largeVariant := seedQuoteProduct(t, db, 50, 900, largeTemplate.ID)
 	smallProduct, smallVariant := seedQuoteProduct(t, db, 10, 100, smallTemplate.ID)
-	require.NoError(t, db.Model(&productdomain.Product{}).Where("id = ?", smallProduct.ID).Updates(map[string]interface{}{"sku": "SKU-QUOTE-ACCESSORY", "slug": "quote-accessory"}).Error)
 	require.NoError(t, db.Model(&productdomain.ProductVariant{}).Where("id = ?", smallVariant.ID).Update("sku", "SKU-QUOTE-ACCESSORY").Error)
 	carrier := seedQuoteCarrier(t, db, "DHL", "DHL")
 	largeService := seedQuoteCarrierService(t, db, carrier.ID, largeTemplate.ID, shippingdomain.CarrierService{
-		ServiceCode: "DHL-LARGE", ServiceName: "DHL Large", Countries: `["US"]`, BillingMode: "actual_weight", FirstWeightGrams: 500, AdditionalWeightGrams: 500, RemoteSurcharge: 4,
+		ServiceCode: "DHL-LARGE", ServiceName: "DHL Large", Countries: `["US"]`, BillingMode: "actual_weight", FirstWeightGrams: 500, AdditionalWeightGrams: 500, RemoteSurchargeMinor: 400,
 	})
 	smallService := seedQuoteCarrierService(t, db, carrier.ID, smallTemplate.ID, shippingdomain.CarrierService{
-		ServiceCode: "DHL-SMALL", ServiceName: "DHL Small", Countries: `["US"]`, BillingMode: "actual_weight", FirstWeightGrams: 500, AdditionalWeightGrams: 500, RemoteSurcharge: 1,
+		ServiceCode: "DHL-SMALL", ServiceName: "DHL Small", Countries: `["US"]`, BillingMode: "actual_weight", FirstWeightGrams: 500, AdditionalWeightGrams: 500, RemoteSurchargeMinor: 100,
 	})
 
 	quote, err := shippingService.QuoteCart(ShippingQuoteInput{
@@ -779,9 +797,9 @@ func TestQuoteCartKeepsCarrierOptionsForMultipleShippingTemplates(t *testing.T) 
 	require.Len(t, quote.SelectedPlan.Legs, 2)
 	assert.Equal(t, largeService.ID, quote.SelectedPlan.Legs[0].CarrierServiceID)
 	assert.Equal(t, smallService.ID, quote.SelectedPlan.Legs[1].CarrierServiceID)
-	assert.Equal(t, 15.0, quote.ShippingFee)
-	assert.Equal(t, 9.0, quote.Items[0].ShippingFee)
-	assert.Equal(t, 6.0, quote.Items[1].ShippingFee)
+	assert.Equal(t, "15.00", quote.ShippingFeeDecimal)
+	assert.Equal(t, "9.00", quote.Items[0].ShippingFeeDecimal)
+	assert.Equal(t, "6.00", quote.Items[1].ShippingFeeDecimal)
 
 	selectedQuote, err := shippingService.QuoteCart(ShippingQuoteInput{
 		Country:             "US",
@@ -797,43 +815,46 @@ func TestQuoteCartKeepsCarrierOptionsForMultipleShippingTemplates(t *testing.T) 
 	require.NoError(t, err)
 	require.NotNil(t, selectedQuote.SelectedPlan)
 	assert.Equal(t, quote.SelectedPlan.ID, selectedQuote.SelectedPlan.ID)
-	assert.Equal(t, 15.0, selectedQuote.ShippingFee)
-	assert.Equal(t, 9.0, selectedQuote.Items[0].ShippingFee)
-	assert.Equal(t, 6.0, selectedQuote.Items[1].ShippingFee)
+	assert.Equal(t, "15.00", selectedQuote.ShippingFeeDecimal)
+	assert.Equal(t, "9.00", selectedQuote.Items[0].ShippingFeeDecimal)
+	assert.Equal(t, "6.00", selectedQuote.Items[1].ShippingFeeDecimal)
 }
 
 func TestQuoteCartOmitsPartialCarrierDisplayPriceAcrossTemplates(t *testing.T) {
 	db, shippingService := newTestShippingQuoteService(t)
 	largeTemplate := shippingdomain.ShippingTemplate{
-		Name: "Large item display template", Type: "weight", Currency: "CNY", DefaultFee: 99, Enabled: true,
+		Name: "Large item display template", Type: "weight", Currency: "CNY", DefaultFeeMinor: 9900, Enabled: true,
 		Rules: []shippingdomain.ShippingRule{{
-			Region: "US", Currency: "CNY", MinValue: 0, MaxValue: 1, Fee: 5,
+			Region: "US", Currency: "CNY", MinValue: 0, MaxValue: 1, FeeMinor: 500,
 			DisplayPriceData: shippingdomain.RuleDisplayPriceSnapshotsJSON(map[string][]currency.DisplayPriceSnapshot{
 				shippingdomain.ShippingRuleDisplayPriceFieldFee: {
-					{Amount: 0.7, Currency: "USD", QuoteCurrency: "USD", Rate: 0.14, Source: "direct_rate", Converted: true},
+					{AmountDecimal: "0.70", Currency: "USD", QuoteCurrency: "USD", Rate: 0.14, Source: "direct_rate", Converted: true},
 				},
 			}),
 		}},
 	}
 	smallTemplate := shippingdomain.ShippingTemplate{
-		Name: "Accessory display template", Type: "weight", Currency: "CNY", DefaultFee: 99, Enabled: true,
+		Name: "Accessory display template", Type: "weight", Currency: "CNY", DefaultFeeMinor: 9900, Enabled: true,
 		Rules: []shippingdomain.ShippingRule{{
-			Region: "US", Currency: "CNY", MinValue: 0, MaxValue: 1, Fee: 5,
+			Region: "US", Currency: "CNY", MinValue: 0, MaxValue: 1, FeeMinor: 500,
 			DisplayPriceData: shippingdomain.RuleDisplayPriceSnapshotsJSON(map[string][]currency.DisplayPriceSnapshot{
 				shippingdomain.ShippingRuleDisplayPriceFieldFee: {
-					{Amount: 0.7, Currency: "USD", QuoteCurrency: "USD", Rate: 0.14, Source: "direct_rate", Converted: true},
+					{AmountDecimal: "0.70", Currency: "USD", QuoteCurrency: "USD", Rate: 0.14, Source: "direct_rate", Converted: true},
 				},
 			}),
 		}},
 	}
-	require.NoError(t, db.Create(&largeTemplate).Error)
-	require.NoError(t, db.Create(&smallTemplate).Error)
+	shippingRepo := repository.NewShippingRepository(db)
+	largeTemplateRules := append([]shippingdomain.ShippingRule(nil), largeTemplate.Rules...)
+	smallTemplateRules := append([]shippingdomain.ShippingRule(nil), smallTemplate.Rules...)
+	require.NoError(t, shippingRepo.CreateTemplateWithRules(&largeTemplate, largeTemplateRules))
+	require.NoError(t, shippingRepo.CreateTemplateWithRules(&smallTemplate, smallTemplateRules))
 	largeProduct, largeVariant := seedQuoteProduct(t, db, 50, 900, largeTemplate.ID)
 	smallProduct, smallVariant := seedQuoteProduct(t, db, 10, 100, smallTemplate.ID)
 	carrier := seedQuoteCarrier(t, db, "DHL", "DHL")
 	seedQuoteCarrierService(t, db, carrier.ID, largeTemplate.ID, shippingdomain.CarrierService{
 		ServiceCode: "DHL-REMOTE", ServiceName: "DHL Remote", Countries: `["US"]`, Currency: "CNY",
-		BillingMode: "actual_weight", FirstWeightGrams: 500, AdditionalWeightGrams: 500, RemoteSurcharge: 1,
+		BillingMode: "actual_weight", FirstWeightGrams: 500, AdditionalWeightGrams: 500, RemoteSurchargeMinor: 100,
 	})
 
 	quote, err := shippingService.QuoteCart(ShippingQuoteInput{
@@ -846,14 +867,14 @@ func TestQuoteCartOmitsPartialCarrierDisplayPriceAcrossTemplates(t *testing.T) {
 
 	require.NoError(t, err)
 	require.Len(t, quote.Plans, 1)
-	assert.Equal(t, 11.0, quote.ShippingFee)
+	assert.Equal(t, "11.00", quote.ShippingFeeDecimal)
 	// Remote surcharge is now included in the stored display snapshot instead
 	// of suppressing all multi-currency prices.
 	require.NotNil(t, quote.DisplayPrice)
-	assert.InDelta(t, 1.54, quote.DisplayPrice.Amount, 0.001)
+	assert.Equal(t, "1.54", quote.DisplayPrice.AmountDecimal)
 	require.Len(t, quote.DisplayPrices, 1)
 	require.NotNil(t, quote.Plans[0].DisplayPrice)
-	assert.InDelta(t, 1.54, quote.Plans[0].DisplayPrice.Amount, 0.001)
+	assert.Equal(t, "1.54", quote.Plans[0].DisplayPrice.AmountDecimal)
 	require.Len(t, quote.Plans[0].DisplayPrices, 1)
 }
 
@@ -867,7 +888,7 @@ func TestQuoteCartUsesVariantPackagingRuleBeforeProductDefault(t *testing.T) {
 		Title:        "Second variant",
 		OptionValues: `{"size":"large"}`,
 		Currency:     "USD",
-		Price:        50,
+		PriceMinor:   5000,
 		Weight:       900,
 		Stock:        10,
 		IsActive:     true,
@@ -907,7 +928,7 @@ func TestQuoteCartAppliesRemoteSurchargeOnlyForConfiguredPostalRange(t *testing.
 	carrier := seedQuoteCarrier(t, db, "Postal Carrier", "POSTAL")
 	service := seedQuoteCarrierService(t, db, carrier.ID, template.ID, shippingdomain.CarrierService{
 		ServiceCode: "POSTAL-REMOTE", ServiceName: "Postal Remote", Countries: `["US"]`,
-		RemoteSurcharge: 7, RemotePostalCodes: `["10000-10009"]`,
+		RemoteSurchargeMinor: 700, RemotePostalCodes: `["10000-10009"]`,
 	})
 
 	quote, err := shippingService.QuoteCart(ShippingQuoteInput{
@@ -917,8 +938,8 @@ func TestQuoteCartAppliesRemoteSurchargeOnlyForConfiguredPostalRange(t *testing.
 	require.NoError(t, err)
 	leg := requireSelectedQuoteLeg(t, quote)
 	assert.Equal(t, service.ID, leg.CarrierServiceID)
-	assert.Equal(t, 12.0, leg.ShippingFee)
-	assert.Equal(t, 7.0, leg.RemoteSurcharge)
+	assert.Equal(t, "12.00", leg.ShippingFeeDecimal)
+	assert.Equal(t, "7.00", leg.RemoteSurchargeDecimal)
 
 	quote, err = shippingService.QuoteCart(ShippingQuoteInput{
 		Country: "US", PostalCode: "10020", Currency: "USD",
@@ -926,19 +947,19 @@ func TestQuoteCartAppliesRemoteSurchargeOnlyForConfiguredPostalRange(t *testing.
 	})
 	require.NoError(t, err)
 	leg = requireSelectedQuoteLeg(t, quote)
-	assert.Equal(t, 5.0, leg.ShippingFee)
-	assert.Zero(t, leg.RemoteSurcharge)
+	assert.Equal(t, "5.00", leg.ShippingFeeDecimal)
+	assert.Equal(t, "0.00", leg.RemoteSurchargeDecimal)
 }
 
 func TestQuoteResolvedItemsKeepsFreeShippingThresholdWithinTemplateGroup(t *testing.T) {
 	db, shippingService := newTestShippingQuoteService(t)
 	primaryTemplate := shippingdomain.ShippingTemplate{
-		Name: "Primary free template", Type: "weight", Currency: "USD", DefaultFee: 20,
-		FreeShipping: true, FreeThreshold: 100, Enabled: true,
+		Name: "Primary free template", Type: "weight", Currency: "USD", DefaultFeeMinor: 2000,
+		FreeShipping: true, FreeThresholdMinor: 10000, Enabled: true,
 	}
 	accessoryTemplate := shippingdomain.ShippingTemplate{
-		Name: "Accessory free template", Type: "weight", Currency: "USD", DefaultFee: 5,
-		FreeShipping: true, FreeThreshold: 50, Enabled: true,
+		Name: "Accessory free template", Type: "weight", Currency: "USD", DefaultFeeMinor: 500,
+		FreeShipping: true, FreeThresholdMinor: 5000, Enabled: true,
 	}
 	require.NoError(t, db.Create(&primaryTemplate).Error)
 	require.NoError(t, db.Create(&accessoryTemplate).Error)
@@ -953,10 +974,10 @@ func TestQuoteResolvedItemsKeepsFreeShippingThresholdWithinTemplateGroup(t *test
 		},
 	})
 	require.NoError(t, err)
-	assert.Equal(t, 5.0, quote.ShippingFee)
+	assert.Equal(t, "5.00", quote.ShippingFeeDecimal)
 	assert.True(t, quote.Items[0].FreeShipping)
 	assert.False(t, quote.Items[1].FreeShipping)
-	assert.Equal(t, 5.0, quote.Items[1].ShippingFee)
+	assert.Equal(t, "5.00", quote.Items[1].ShippingFeeDecimal)
 }
 
 func TestQuoteCartUsesPackagingDimensionsForVolumetricCarrierService(t *testing.T) {
@@ -1003,17 +1024,17 @@ func TestQuoteCartUsesPackagingDimensionsForVolumetricCarrierService(t *testing.
 	assert.Equal(t, 12000, leg.VolumetricWeightGrams)
 	assert.Equal(t, 12000, leg.ChargeWeightGrams)
 	assert.Equal(t, 12000, leg.BillableWeightGrams)
-	assert.Equal(t, 99.0, leg.ShippingFee)
-	assert.Equal(t, 99.0, quote.ShippingFee)
+	assert.Equal(t, "99.00", leg.ShippingFeeDecimal)
+	assert.Equal(t, "99.00", quote.ShippingFeeDecimal)
 }
 
 func TestQuoteCartKeepsKnownVolumetricWeightWhenAccessoryLacksPackagingRule(t *testing.T) {
 	db, shippingService := newTestShippingQuoteService(t)
 	template := shippingdomain.ShippingTemplate{
-		Name: "DHL wheelset rates", Type: "weight", Currency: "USD", DefaultFee: 999, Enabled: true,
+		Name: "DHL wheelset rates", Type: "weight", Currency: "USD", DefaultFeeMinor: 99900, Enabled: true,
 		Rules: []shippingdomain.ShippingRule{
-			{Region: "US", MinValue: 0, MaxValue: 2, Fee: 18},
-			{Region: "US", MinValue: 20, MaxValue: 21, Fee: 160},
+			{Region: "US", MinValue: 0, MaxValue: 2, FeeMinor: 1800},
+			{Region: "US", MinValue: 20, MaxValue: 21, FeeMinor: 16000},
 		},
 	}
 	require.NoError(t, db.Create(&template).Error)
@@ -1059,15 +1080,15 @@ func TestQuoteCartKeepsKnownVolumetricWeightWhenAccessoryLacksPackagingRule(t *t
 	assert.Equal(t, 20319, leg.VolumetricWeightGrams)
 	assert.Equal(t, 20339, leg.ChargeWeightGrams)
 	assert.Equal(t, 20339, leg.BillableWeightGrams)
-	assert.Equal(t, 160.0, leg.ShippingFee)
-	assert.Equal(t, 160.0, quote.ShippingFee)
+	assert.Equal(t, "160.00", leg.ShippingFeeDecimal)
+	assert.Equal(t, "160.00", quote.ShippingFeeDecimal)
 }
 
 func TestQuoteCartOmitsVolumetricOnlyCarrierServiceWhenAccessoryLacksPackagingRule(t *testing.T) {
 	db, shippingService := newTestShippingQuoteService(t)
 	template := shippingdomain.ShippingTemplate{
-		Name: "Volumetric-only rates", Type: "weight", Currency: "USD", DefaultFee: 999, Enabled: true,
-		Rules: []shippingdomain.ShippingRule{{Region: "US", MinValue: 0, MaxValue: 2, Fee: 18}},
+		Name: "Volumetric-only rates", Type: "weight", Currency: "USD", DefaultFeeMinor: 99900, Enabled: true,
+		Rules: []shippingdomain.ShippingRule{{Region: "US", MinValue: 0, MaxValue: 2, FeeMinor: 1800}},
 	}
 	require.NoError(t, db.Create(&template).Error)
 	wheelset, wheelsetVariant := seedQuoteProduct(t, db, 1200, 1350, template.ID)
@@ -1109,7 +1130,7 @@ func TestQuoteCartOmitsVolumetricOnlyCarrierServiceWhenAccessoryLacksPackagingRu
 	leg := requireSelectedQuoteLeg(t, quote)
 	assert.Zero(t, leg.CarrierServiceID)
 	assert.Equal(t, "template", leg.BillingMode)
-	assert.Equal(t, 18.0, quote.ShippingFee)
+	assert.Equal(t, "18.00", quote.ShippingFeeDecimal)
 }
 
 func TestQuoteCartFallsBackToActualWeightWhenGreaterOfLacksVolumetricWeight(t *testing.T) {
@@ -1142,8 +1163,8 @@ func TestQuoteCartFallsBackToActualWeightWhenGreaterOfLacksVolumetricWeight(t *t
 	assert.Equal(t, 0, leg.VolumetricWeightGrams)
 	assert.Equal(t, 900, leg.ChargeWeightGrams)
 	assert.Equal(t, 900, leg.BillableWeightGrams)
-	assert.Equal(t, 5.0, leg.ShippingFee)
-	assert.Equal(t, 5.0, quote.ShippingFee)
+	assert.Equal(t, "5.00", leg.ShippingFeeDecimal)
+	assert.Equal(t, "5.00", quote.ShippingFeeDecimal)
 }
 
 func TestCreatePackagingRuleApplyRejectsSecondRuleForProduct(t *testing.T) {
@@ -1231,6 +1252,7 @@ func newTestShippingQuoteService(t *testing.T) (*gorm.DB, *ShippingService) {
 		&productdomain.ProductVariant{},
 		&shippingdomain.ShippingTemplate{},
 		&shippingdomain.ShippingRule{},
+		&shippingdomain.ShippingDisplayPriceSnapshot{},
 		&shippingdomain.Carrier{},
 		&shippingdomain.CarrierService{},
 		&shippingdomain.QuoteSnapshot{},
@@ -1245,6 +1267,8 @@ func newTestShippingQuoteService(t *testing.T) (*gorm.DB, *ShippingService) {
 
 func seedQuoteProduct(t *testing.T, db *gorm.DB, price float64, weightGrams int, shippingTemplateIDs ...uint) (productdomain.Product, productdomain.ProductVariant) {
 	t.Helper()
+	priceMoney, err := domainmoney.FromMajorFloat(price, "USD")
+	require.NoError(t, err)
 
 	var shippingTemplateID *uint
 	if len(shippingTemplateIDs) > 0 {
@@ -1261,7 +1285,7 @@ func seedQuoteProduct(t *testing.T, db *gorm.DB, price float64, weightGrams int,
 		SKU:                "SKU-QUOTE" + suffix,
 		Name:               "Quote Product",
 		Slug:               "quote-product" + suffix,
-		Price:              price,
+		PriceMinor:         priceMoney.AmountMinor(),
 		Stock:              10,
 		Status:             "active",
 	}
@@ -1272,7 +1296,7 @@ func seedQuoteProduct(t *testing.T, db *gorm.DB, price float64, weightGrams int,
 		SKU:          "SKU-QUOTE-DEFAULT" + suffix,
 		Title:        "Default",
 		OptionValues: "{}",
-		Price:        price,
+		PriceMinor:   priceMoney.AmountMinor(),
 		Stock:        10,
 		Weight:       weightGrams,
 		IsDefault:    true,
@@ -1287,13 +1311,13 @@ func seedWeightQuoteTemplate(t *testing.T, db *gorm.DB) shippingdomain.ShippingT
 	t.Helper()
 
 	template := shippingdomain.ShippingTemplate{
-		Name:       "Weight quote template",
-		Type:       "weight",
-		DefaultFee: 99,
-		Enabled:    true,
+		Name:            "Weight quote template",
+		Type:            "weight",
+		DefaultFeeMinor: 9900,
+		Enabled:         true,
 		Rules: []shippingdomain.ShippingRule{
-			{Region: "US", MinValue: 0, MaxValue: 1, Fee: 5},
-			{Region: "US", MinValue: 1, MaxValue: 2, Fee: 9},
+			{Region: "US", MinValue: 0, MaxValue: 1, FeeMinor: 500},
+			{Region: "US", MinValue: 1, MaxValue: 2, FeeMinor: 900},
 		},
 	}
 	require.NoError(t, db.Create(&template).Error)

@@ -3,7 +3,7 @@ export type ShippingDialogMode = 'create' | 'edit'
 export type ShippingErrorMap = Record<string, string | undefined>
 
 export interface ShippingDisplayPrice {
-  amount?: number | string | null
+  amount_decimal?: string | null
   currency?: string | null
   quote_currency?: string | null
   rate?: number | string | null
@@ -20,8 +20,10 @@ export interface ShippingTemplateRule {
   currency?: string | null
   min_value?: number | string | null
   max_value?: number | string | null
-  fee?: number | string | null
-  additional?: number | string | null
+  min_value_minor?: number | string | null
+  max_value_minor?: number | string | null
+  fee_minor?: number | string | null
+  additional_minor?: number | string | null
   display_price_snapshots?: ShippingDisplayPriceSnapshots
 }
 
@@ -31,8 +33,8 @@ export interface ShippingTemplate {
   type?: string | null
   currency?: string | null
   free_shipping?: boolean
-  free_threshold?: number | string | null
-  default_fee?: number | string | null
+  free_threshold_minor?: number | string | null
+  default_fee_minor?: number | string | null
   display_price_snapshots?: ShippingDisplayPriceSnapshots
   description?: string | null
   enabled?: boolean
@@ -45,8 +47,8 @@ export interface ShippingTemplateForm {
   type: string
   currency: string
   free_shipping: boolean
-  free_threshold: number
-  default_fee: number
+  free_threshold_minor: number
+  default_fee_minor: number
   display_price_snapshots: ShippingDisplayPriceSnapshots
   description: string
   enabled: boolean
@@ -110,8 +112,8 @@ export interface ShippingCarrierService {
   additional_weight_grams?: number | string | null
   min_charge_weight_grams?: number | string | null
   volumetric_divisor?: number | string | null
-  fuel_surcharge_percent?: number | string | null
-  remote_surcharge?: number | string | null
+  fuel_surcharge_percent_decimal?: string | null
+  remote_surcharge_minor?: number | string | null
   remote_postal_codes?: string | null
   eta_min_days?: number | string | null
   eta_max_days?: number | string | null
@@ -132,8 +134,8 @@ export interface ShippingCarrierServiceForm {
   additional_weight_grams: number
   min_charge_weight_grams: number
   volumetric_divisor: number
-  fuel_surcharge_percent: number
-  remote_surcharge: number
+  fuel_surcharge_percent_decimal: string
+  remote_surcharge_minor: number
   remote_postal_codes: string
   eta_min_days: number
   eta_max_days: number
@@ -261,10 +263,10 @@ export interface ShippingQuoteLeg {
   actual_weight_grams?: number | string | null
   volumetric_weight_grams?: number | string | null
   billable_weight_grams?: number | string | null
-  base_fee?: number | string | null
-  fuel_surcharge?: number | string | null
-  remote_surcharge?: number | string | null
-  shipping_fee?: number | string | null
+  base_fee_minor?: number | string | null
+  fuel_surcharge_minor?: number | string | null
+  remote_surcharge_minor?: number | string | null
+  shipping_fee_minor?: number | string | null
   eta_min_days?: number | string | null
   eta_max_days?: number | string | null
 }
@@ -272,7 +274,7 @@ export interface ShippingQuoteLeg {
 export interface ShippingQuotePlan {
   id?: string | null
   currency?: string | null
-  shipping_fee?: number | string | null
+  shipping_fee_minor?: number | string | null
   free_shipping?: boolean
   eta_min_days?: number | string | null
   eta_max_days?: number | string | null
@@ -285,20 +287,20 @@ export interface ShippingQuoteItemResult {
   template_id?: ShippingID | null
   template_name?: string | null
   quantity?: number | string | null
-  unit_price?: number | string | null
+  unit_price_minor?: number | string | null
   weight_grams?: number | string | null
   packaging_rule_id?: ShippingID | null
   packaging_rule_name?: string | null
   packaging_weight_grams?: number | string | null
   charge_weight_grams?: number | string | null
-  shipping_fee?: number | string | null
+  shipping_fee_minor?: number | string | null
 }
 
 export interface ShippingQuoteResult {
   id?: string | null
   rate_version?: string | null
   expires_at?: string | number | Date | null
-  shipping_fee?: number | string | null
+  shipping_fee_minor?: number | string | null
   currency?: string | null
   free_shipping?: boolean
   selected_plan?: ShippingQuotePlan | null

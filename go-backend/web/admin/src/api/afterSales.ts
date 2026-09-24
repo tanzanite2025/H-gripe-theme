@@ -57,7 +57,7 @@ export interface AfterSalesRefundReview {
   id?: AfterSalesCaseID
   case_id?: AfterSalesCaseID
   status?: 'pending' | 'approved' | 'rejected' | 'cancelled' | string | null
-  proposed_amount?: number | null
+  proposed_amount_minor?: number | string | null
   currency?: string | null
   request_notes?: string | null
   decision_notes?: string | null
@@ -86,14 +86,14 @@ export interface AfterSalesCase {
   attachments?: AfterSalesCaseAttachment[]
   return_shipments?: AfterSalesReturnShipment[]
   refund_review?: AfterSalesRefundReview | null
-  refund_review_maximum_amount?: number | null
+  refund_review_maximum_amount_minor?: number | string | null
   refund_review_currency?: string | null
   created_at?: string | null
   updated_at?: string | null
 }
 
 export interface SaveAfterSalesRefundReviewInput {
-  proposed_amount: number
+  proposed_amount_minor: number
   currency: string
   request_notes: string
 }
@@ -103,8 +103,8 @@ export interface AfterSalesPendingRefundResult {
   refund: {
     id: AfterSalesCaseID
     status?: string | null
-    amount?: number | null
-    requested_amount?: number | null
+    amount_minor?: number | string | null
+    requested_amount_minor?: number | string | null
   }
 }
 
@@ -181,6 +181,12 @@ export const afterSalesApi = {
   async get(caseID: AfterSalesCaseID): Promise<AfterSalesCase> {
     const path = `/api/admin/after-sales/${caseID}`
     return readObjectPayload<AfterSalesCase>(await axios.get(path), path)
+  },
+
+  async lookupByReturnTrackingNumber(trackingNumber: string): Promise<AfterSalesCase> {
+    const path = '/api/admin/after-sales/return-shipments'
+    const response = await axios.get(path, { params: { tracking_number: trackingNumber } })
+    return readObjectPayload<AfterSalesCase>(response, path)
   },
 
   async updateStatus(

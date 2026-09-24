@@ -46,7 +46,7 @@
             <TableCell>{{ coupon.type === 'fixed' ? '固定金额' : '百分比' }}</TableCell>
             <TableCell class="text-right font-medium tabular-nums">{{ couponValue(coupon) }}</TableCell>
  <TableCell class="max-w-64 truncate text-muted-foreground">{{ coupon.description || '-'}}</TableCell>
-            <TableCell class="text-right tabular-nums">¥{{ formatMoney(coupon.min_amount) }}</TableCell>
+            <TableCell class="text-right tabular-nums">{{ formatCurrency(Number(coupon.min_amount_minor || 0) / (['JPY', 'KRW', 'CLP'].includes(String(coupon.currency || '').toUpperCase()) ? 1 : 100), coupon.currency || 'USD') }}</TableCell>
  <TableCell class="tabular-nums">{{ coupon.used_count || 0 }} / {{ coupon.usage_limit || '不限'}}</TableCell>
             <TableCell class="text-xs text-muted-foreground">
               {{ formatDate(coupon.start_date) }}<br />{{ formatDate(coupon.end_date) }}
@@ -114,9 +114,11 @@ interface CouponRecord {
   id: string | number
   code: string
   type: string
-  value?: number | string
+  value_minor?: number | string
+  value_rate_decimal?: number | string
+  currency?: string
   description?: string
-  min_amount?: number | string
+  min_amount_minor?: number | string
   used_count?: number | string
   usage_limit?: number | string
   start_date?: string
@@ -150,6 +152,7 @@ const props = withDefaults(defineProps<{
   couponValue: (coupon: CouponRecord) => string
   couponStatus: (coupon: CouponRecord) => StatusDisplay
   formatMoney: (value: unknown) => string
+  formatCurrency: (value: unknown, currency?: string) => string
   formatDate: (value: unknown) => string
 }>(), {
   loading: false,

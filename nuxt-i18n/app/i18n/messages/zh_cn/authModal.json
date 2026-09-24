@@ -11,6 +11,9 @@
     "username": "用户名",
     "email": "邮箱",
     "password": "密码",
+    "referralCode": "推荐码（可选）",
+    "referralCodePlaceholder": "填写朋友的推荐码",
+    "referralCodeHint": "注册后登录时会绑定此推荐码。",
     "rememberMe": "记住我"
   },
   "actions": {

@@ -77,8 +77,8 @@ export interface ProductVariant {
   title?: string
   option_values?: string | Record<string, string>
   currency?: string
-  price: number
-  sale_price?: number | null
+  price_decimal: string
+  sale_price_decimal?: string | null
   display_price?: ProductDisplayPrice
   display_prices?: ProductDisplayPrice[]
   weight_grams?: number | null
@@ -125,6 +125,13 @@ export interface ProductVariantOptionValue {
   inventory_policy?: string
 }
 
+export interface ProductOptionValueRelation {
+  id: number
+  source_option_value_id: number
+  target_option_value_id: number
+  relation_type: 'requires' | 'conflicts' | string
+}
+
 export interface ProductInformationTemplate {
   id: number
   kind: 'after_sales' | 'packaging' | string
@@ -147,7 +154,7 @@ export interface ProductBrand {
 }
 
 export interface ProductDisplayPrice {
-  amount: number
+  amount_decimal: string
   currency: string
   rate?: number
   source?: string
@@ -200,8 +207,8 @@ export interface GoProduct {
   description?: string
   sku?: string
   currency?: string
-  price: number
-  sale_price?: number
+  price_decimal: string
+  sale_price_decimal?: string | null
   display_price?: ProductDisplayPrice
   display_prices?: ProductDisplayPrice[]
   availability?: ProductAvailability
@@ -216,6 +223,7 @@ export interface GoProduct {
   spec_values?: ProductSpecValue[]
   variants?: ProductVariant[]
   variant_option_values?: ProductVariantOptionValue[]
+  option_value_relations?: ProductOptionValueRelation[]
   review_summary?: ProductReviewSummary | null
   shipping_details?: ProductShippingDetails | null
   breadcrumb?: ProductBreadcrumb | null
@@ -266,6 +274,7 @@ export interface ProductCustomOptionGroup {
   maxSelections: number | null
   selectedCount?: number
   isValid?: boolean
+  validationMessage?: string
   presentation: string
   options: Array<{
     value: string

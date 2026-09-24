@@ -5,7 +5,7 @@
         <p>{{ t('accountSidebar.cart.eyebrow', 'Ready to pay') }}</p>
         <h3>{{ t('accountSidebar.cart.title', 'Cart') }} · {{ cartCount }}</h3>
       </div>
-      <strong>{{ formatPrice(total) }}</strong>
+      <strong>{{ formatMinorMoney(subtotal, cartCurrency) }}</strong>
     </div>
 
     <div v-if="isLoadingCart" class="account-loading">
@@ -32,7 +32,7 @@
           <div class="account-cart-item__body">
             <div class="account-cart-item__title">{{ item.title }}</div>
             <div class="account-cart-item__meta">
-              <span>{{ formatPrice(item.price, item.currency) }}</span>
+              <span>{{ formatMinorMoney(item.price_minor, item.currency) }}</span>
             </div>
             <div class="account-cart-item__actions">
               <button type="button" @click="decrementQuantity(item.id)">
@@ -53,15 +53,15 @@
       <div class="account-cart-summary">
         <div>
           <span>{{ t('cartDrawer.summary.subtotal', 'Subtotal') }}</span>
-          <strong>{{ formatPrice(subtotal) }}</strong>
+          <strong>{{ formatMinorMoney(subtotal, cartCurrency) }}</strong>
         </div>
         <div>
           <span>{{ t('cartDrawer.summary.tax', 'Tax') }}</span>
-          <strong>{{ formatPrice(tax) }}</strong>
+          <strong>{{ t('cartDrawer.summary.calculatedAtCheckout', 'Calculated at checkout') }}</strong>
         </div>
         <div class="account-cart-summary__total">
           <span>{{ t('cartDrawer.summary.estimatedTotal', 'Estimated total') }}</span>
-          <strong>{{ formatPrice(total) }}</strong>
+          <strong>{{ t('cartDrawer.summary.calculatedAtCheckout', 'Calculated at checkout') }}</strong>
         </div>
       </div>
 
@@ -73,6 +73,7 @@
 import { useI18n, useLocalePath } from '#imports'
 import type { CartItem } from '~~/types/cart'
 import { useCart } from '~/composables/useCart'
+import { formatMinorMoney } from '~/utils/money'
 
 const { t } = useI18n()
 const localePath = useLocalePath()
@@ -81,13 +82,11 @@ const {
   cartItems,
   cartCount,
   subtotal,
-  tax,
-  total,
+  cartCurrency,
   isLoadingCart,
   incrementQuantity,
   decrementQuantity,
   removeFromCart,
-  formatPrice,
 } = useCart()
 
 const emit = defineEmits<{
@@ -344,4 +343,3 @@ const cartImage = (item: CartItem) => item.thumbnail || item.image || ''
   }
 }
 </style>
-

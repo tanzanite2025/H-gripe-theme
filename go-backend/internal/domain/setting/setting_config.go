@@ -19,16 +19,6 @@ type SiteSettings struct {
 	AdminHTMLTitle    string `json:"admin_html_title"`
 }
 
-// RedeemSettings 积分兑换配置
-type RedeemSettings struct {
-	Enabled        bool      `json:"enabled"`
-	ExchangeRate   int       `json:"exchange_rate"`
-	MinPoints      int       `json:"min_points"`
-	MaxValuePerDay float64   `json:"max_value_per_day"`
-	CardExpiryDays int       `json:"card_expiry_days"`
-	PresetValues   []float64 `json:"preset_values"`
-}
-
 // LoyaltySettings 积分获取规则配置。
 type LoyaltySettings struct {
 	ReferralReferrerPoints    int `json:"referral_referrer_points"`

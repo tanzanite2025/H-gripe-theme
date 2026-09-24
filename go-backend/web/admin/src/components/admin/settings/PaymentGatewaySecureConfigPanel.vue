@@ -275,9 +275,9 @@ const fieldDefinitions: Record<string, PaymentGatewayCredentialField[]> = {
     { key: 'private_key_path', label: 'Private Key Path', placeholder: '服务端私钥文件路径' },
     { key: 'merchant_serial', label: 'Merchant Serial', placeholder: '商户证书序列号' },
     { key: 'api_v3_key', label: 'API v3 Key', placeholder: 'APIv3 密钥', description: '用于回调 resource 解密。' },
-    { key: 'platform_certificate', label: 'Platform Certificate', placeholder: '微信支付平台证书 PEM；与平台公钥二选一', description: '用于 API v3 回调验签。填写平台证书时可不填平台公钥。', multiline: true },
-    { key: 'platform_public_key', label: 'Platform Public Key', placeholder: '微信支付平台公钥 PEM；与平台证书二选一', description: '用于 API v3 回调验签。填写平台公钥时必须同时填写 Platform Public Key ID。', multiline: true },
-    { key: 'platform_public_key_id', label: 'Platform Public Key ID', placeholder: 'PUB_KEY_ID_...', description: '仅在使用微信支付平台公钥时必填。' },
+    { key: 'platform_public_key', label: 'Platform Public Key (Recommended)', placeholder: '微信支付公钥 PEM', description: '推荐使用微信支付公钥进行 API v3 回调验签。必须同时填写对应的 Platform Public Key ID；请按微信支付官方通知维护密钥轮换。', multiline: true },
+    { key: 'platform_public_key_id', label: 'Platform Public Key ID', placeholder: 'PUB_KEY_ID_...', description: '必填：填写与上方微信支付公钥对应的 ID。' },
+    { key: 'platform_certificate', label: 'Platform Certificate (Legacy Fallback)', placeholder: '微信支付平台证书 PEM（兼容回退）', description: '仅在未配置平台公钥时用于 API v3 回调验签。证书有有效期且本系统不自动下载/轮换；请避免作为长期首选。', multiline: true },
   ],
 }
 

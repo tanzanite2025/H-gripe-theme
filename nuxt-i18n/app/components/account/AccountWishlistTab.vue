@@ -67,6 +67,7 @@ import { useAuth } from '~/composables/useAuth'
 import { useCart } from '~/composables/useCart'
 import { useWishlist, type WishlistItem } from '~/composables/useWishlist'
 import { buildProductPath } from '~/utils/seo/urls'
+import { majorToMinor } from '~/utils/money'
 
 const props = defineProps<{
   active: boolean
@@ -81,9 +82,9 @@ interface ProductLike {
   name?: string
   slug?: string
   thumbnail?: string
-  price?: number | string
+  price_decimal?: string
   currency?: string
-  sale_price?: number | string | null
+  sale_price_decimal?: string | null
 }
 
 const { t } = useI18n()
@@ -130,7 +131,7 @@ const productPath = (item: WishlistItem) => {
 
 const rawPrice = (item: WishlistItem) => {
   const product = productOf(item)
-  return toNumber(product.sale_price ?? product.price)
+  return toNumber(product.sale_price_decimal ?? product.price_decimal)
 }
 
 const displayPrice = (item: WishlistItem) => {
@@ -161,9 +162,8 @@ const addWishlistItemToCart = (item: WishlistItem) => {
     title: productTitle(item),
     name: productTitle(item),
     slug: product.slug || '',
-    price,
+    price_minor: majorToMinor(price, product.currency),
     currency: product.currency,
-    sale_price: toNumber(product.sale_price),
     thumbnail: productImage(item),
     image: productImage(item),
   })

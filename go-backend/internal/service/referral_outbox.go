@@ -6,7 +6,6 @@ import (
 	"strings"
 	"time"
 
-	domainmoney "commerce-platform/internal/domain/money"
 	"commerce-platform/internal/domain/order"
 	"commerce-platform/internal/domain/outbox"
 	"commerce-platform/internal/repository"
@@ -23,7 +22,7 @@ func enqueueReferralOrderPaidOutboxEvent(
 	if repo == nil || orderRecord == nil {
 		return nil
 	}
-	amount, err := domainmoney.FromMajorFloat(orderRecord.TotalAmount, orderRecord.Currency)
+	amount, err := orderRecord.TotalMoney()
 	if err != nil {
 		return err
 	}

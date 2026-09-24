@@ -20,23 +20,23 @@ import (
 func TestPaymentThreeDSPolicyMarksLowAmountAsExemptionCandidate(t *testing.T) {
 	policy := newTestPaymentThreeDSPolicy(
 		config.PaymentThreeDSConfig{
-			AdaptiveEnabled:     true,
-			LowRiskMaxAmount:    100,
-			TrustedPaidOrders:   1,
-			VisitorRiskLookback: 30,
-			StepUpRiskScore:     20,
-			ChallengeRiskScore:  60,
+			AdaptiveEnabled:       true,
+			LowRiskMaxAmountMinor: 10000,
+			TrustedPaidOrders:     1,
+			VisitorRiskLookback:   30,
+			StepUpRiskScore:       20,
+			ChallengeRiskScore:    60,
 		},
 	)
 
 	decision := policy.Decide(context.Background(), PaymentThreeDSDecisionInput{
-		UserID:    10,
-		OrderID:   99,
-		Amount:    80,
-		Currency:  "USD",
-		BaseMode:  PaymentThreeDSModeAutomatic,
-		IPAddress: "203.0.113.10",
-		UserAgent: "Mozilla/5.0",
+		UserID:      10,
+		OrderID:     99,
+		AmountMoney: domainmoney.MustNew(8000, "USD"),
+		Currency:    "USD",
+		BaseMode:    PaymentThreeDSModeAutomatic,
+		IPAddress:   "203.0.113.10",
+		UserAgent:   "Mozilla/5.0",
 	})
 
 	require.Equal(t, PaymentThreeDSModeAutomatic, decision.Mode)
@@ -48,24 +48,24 @@ func TestPaymentThreeDSPolicyMarksLowAmountAsExemptionCandidate(t *testing.T) {
 func TestPaymentThreeDSPolicyMarksTrustedCustomerAsExemptionCandidate(t *testing.T) {
 	policy := newTestPaymentThreeDSPolicy(
 		config.PaymentThreeDSConfig{
-			AdaptiveEnabled:     true,
-			LowRiskMaxAmount:    100,
-			TrustedPaidOrders:   2,
-			VisitorRiskLookback: 30,
-			StepUpRiskScore:     20,
-			ChallengeRiskScore:  60,
+			AdaptiveEnabled:       true,
+			LowRiskMaxAmountMinor: 10000,
+			TrustedPaidOrders:     2,
+			VisitorRiskLookback:   30,
+			StepUpRiskScore:       20,
+			ChallengeRiskScore:    60,
 		},
 	)
 	policy.orderHistory.(*fakeThreeDSOrderHistory).count = 2
 
 	decision := policy.Decide(context.Background(), PaymentThreeDSDecisionInput{
-		UserID:    10,
-		OrderID:   99,
-		Amount:    800,
-		Currency:  "USD",
-		BaseMode:  PaymentThreeDSModeAutomatic,
-		IPAddress: "203.0.113.10",
-		UserAgent: "Mozilla/5.0",
+		UserID:      10,
+		OrderID:     99,
+		AmountMoney: domainmoney.MustNew(80000, "USD"),
+		Currency:    "USD",
+		BaseMode:    PaymentThreeDSModeAutomatic,
+		IPAddress:   "203.0.113.10",
+		UserAgent:   "Mozilla/5.0",
 	})
 
 	require.Equal(t, PaymentThreeDSModeAutomatic, decision.Mode)
@@ -74,22 +74,69 @@ func TestPaymentThreeDSPolicyMarksTrustedCustomerAsExemptionCandidate(t *testing
 	require.Contains(t, decision.Reasons, "trusted_customer")
 }
 
+func TestPaymentThreeDSPolicyForces3DSAboveFiveHundredUSD(t *testing.T) {
+	policy := newTestPaymentThreeDSPolicy(config.PaymentThreeDSConfig{
+		AdaptiveEnabled: true,
+	})
+
+	decision := policy.Decide(context.Background(), PaymentThreeDSDecisionInput{
+		Provider:        "stripe",
+		UserID:          10,
+		OrderID:         99,
+		AmountMoney:     domainmoney.MustNew(50001, "USD"),
+		Currency:        "USD",
+		BaseMode:        PaymentThreeDSModeAutomatic,
+		IPAddress:       "203.0.113.10",
+		UserAgent:       "Mozilla/5.0",
+		BillingCountry:  "US",
+		ShippingCountry: "US",
+	})
+
+	require.Equal(t, PaymentThreeDSModeAny, decision.Mode)
+	require.Equal(t, "adaptive_default", decision.Strategy)
+	require.Contains(t, decision.Reasons, paymentThreeDSHighValueForce3DSReason)
+	require.False(t, decision.ExemptionCandidate)
+}
+
+func TestPaymentThreeDSPolicyForces3DSForHighValueNonUSDUsingConversion(t *testing.T) {
+	policy := newTestPaymentThreeDSPolicy(config.PaymentThreeDSConfig{AdaptiveEnabled: true})
+	policy.ConfigureExchangeRateService(&fakeThreeDSCurrencyConverter{
+		conversion: domainmoney.MustNew(50100, "USD"),
+	})
+
+	decision := policy.Decide(context.Background(), PaymentThreeDSDecisionInput{
+		Provider:        "stripe",
+		UserID:          10,
+		OrderID:         99,
+		AmountMoney:     domainmoney.MustNew(45000, "EUR"),
+		Currency:        "EUR",
+		BaseMode:        PaymentThreeDSModeAutomatic,
+		IPAddress:       "203.0.113.10",
+		UserAgent:       "Mozilla/5.0",
+		BillingCountry:  "FR",
+		ShippingCountry: "DE",
+	})
+
+	require.Equal(t, PaymentThreeDSModeAny, decision.Mode)
+	require.Contains(t, decision.Reasons, paymentThreeDSHighValueForce3DSReason)
+}
+
 func TestPaymentThreeDSPolicyIgnoresHighValueAvsRuleWhenCountriesMatch(t *testing.T) {
 	policy := newTestPaymentThreeDSPolicy(
 		config.PaymentThreeDSConfig{
-			AdaptiveEnabled:     true,
-			LowRiskMaxAmount:    0,
-			TrustedPaidOrders:   1,
-			VisitorRiskLookback: 30,
-			StepUpRiskScore:     20,
-			ChallengeRiskScore:  60,
+			AdaptiveEnabled:       true,
+			LowRiskMaxAmountMinor: 0,
+			TrustedPaidOrders:     1,
+			VisitorRiskLookback:   30,
+			StepUpRiskScore:       20,
+			ChallengeRiskScore:    60,
 		},
 	)
 
 	decision := policy.Decide(context.Background(), PaymentThreeDSDecisionInput{
 		UserID:          10,
 		OrderID:         99,
-		Amount:          1000,
+		AmountMoney:     domainmoney.MustNew(100000, "USD"),
 		Currency:        "USD",
 		BaseMode:        PaymentThreeDSModeAutomatic,
 		IPAddress:       "203.0.113.10",
@@ -106,9 +153,9 @@ func TestPaymentThreeDSPolicyIgnoresHighValueAvsRuleWhenCountriesMatch(t *testin
 func TestPaymentThreeDSPolicyHonorsConfiguredAvsThreshold(t *testing.T) {
 	policy := newTestPaymentThreeDSPolicy(
 		config.PaymentThreeDSConfig{
-			AdaptiveEnabled:  true,
-			LowRiskMaxAmount: 0,
-			AVSBillingShippingMismatchHighValueThresholdUSD: 1000,
+			AdaptiveEnabled:       true,
+			LowRiskMaxAmountMinor: 0,
+			AVSBillingShippingMismatchHighValueThresholdMinor: 100000,
 			TrustedPaidOrders:   1,
 			VisitorRiskLookback: 30,
 			StepUpRiskScore:     20,
@@ -119,7 +166,7 @@ func TestPaymentThreeDSPolicyHonorsConfiguredAvsThreshold(t *testing.T) {
 	decision := policy.Decide(context.Background(), PaymentThreeDSDecisionInput{
 		UserID:          10,
 		OrderID:         99,
-		Amount:          800,
+		AmountMoney:     domainmoney.MustNew(80000, "USD"),
 		Currency:        "USD",
 		BaseMode:        PaymentThreeDSModeAutomatic,
 		IPAddress:       "203.0.113.10",
@@ -143,7 +190,7 @@ func TestPaymentThreeDSPolicyChallengesHighValueAvsMismatchEvenWhenAdaptiveRiskI
 	decision := policy.Decide(context.Background(), PaymentThreeDSDecisionInput{
 		UserID:          10,
 		OrderID:         99,
-		Amount:          801,
+		AmountMoney:     domainmoney.MustNew(80100, "USD"),
 		Currency:        "USD",
 		BaseMode:        PaymentThreeDSModeAutomatic,
 		IPAddress:       "203.0.113.10",
@@ -176,19 +223,13 @@ func TestPaymentThreeDSPolicyChallengesHighValueAvsMismatchUsingUSDEquivalent(t 
 			policy := newTestPaymentThreeDSPolicy(config.PaymentThreeDSConfig{
 				AdaptiveEnabled: false,
 			})
-			converter := &fakeThreeDSCurrencyConverter{
-				conversion: CurrencyConversion{
-					Amount:    test.usdValue,
-					Currency:  "USD",
-					Converted: true,
-				},
-			}
+			converter := &fakeThreeDSCurrencyConverter{conversion: domainmoney.MustNew(int64(test.usdValue*100), "USD")}
 			policy.ConfigureExchangeRateService(converter)
 
 			decision := policy.Decide(context.Background(), PaymentThreeDSDecisionInput{
 				UserID:          10,
 				OrderID:         99,
-				Amount:          test.amount,
+				AmountMoney:     domainmoney.MustNew(int64(test.amount*100), test.currency),
 				Currency:        test.currency,
 				BaseMode:        PaymentThreeDSModeAutomatic,
 				IPAddress:       "203.0.113.10",
@@ -211,17 +252,13 @@ func TestPaymentThreeDSPolicyDoesNotChallengeNonUSDAvsMismatchBelowUSDThreshold(
 		AdaptiveEnabled: false,
 	})
 	policy.ConfigureExchangeRateService(&fakeThreeDSCurrencyConverter{
-		conversion: CurrencyConversion{
-			Amount:    799,
-			Currency:  "USD",
-			Converted: true,
-		},
+		conversion: domainmoney.MustNew(79900, "USD"),
 	})
 
 	decision := policy.Decide(context.Background(), PaymentThreeDSDecisionInput{
 		UserID:          10,
 		OrderID:         99,
-		Amount:          700,
+		AmountMoney:     domainmoney.MustNew(70000, "EUR"),
 		Currency:        "EUR",
 		BaseMode:        PaymentThreeDSModeAutomatic,
 		IPAddress:       "203.0.113.10",
@@ -242,7 +279,7 @@ func TestPaymentThreeDSPolicyChallengesWhenNonUSDCurrencyConversionIsUnavailable
 	decision := policy.Decide(context.Background(), PaymentThreeDSDecisionInput{
 		UserID:          10,
 		OrderID:         99,
-		Amount:          2500,
+		AmountMoney:     domainmoney.MustNew(250000, "EUR"),
 		Currency:        "EUR",
 		BaseMode:        PaymentThreeDSModeAutomatic,
 		IPAddress:       "203.0.113.10",
@@ -258,12 +295,12 @@ func TestPaymentThreeDSPolicyChallengesWhenNonUSDCurrencyConversionIsUnavailable
 func TestPaymentThreeDSPolicyChallengesHighPaymentRisk(t *testing.T) {
 	policy := newTestPaymentThreeDSPolicy(
 		config.PaymentThreeDSConfig{
-			AdaptiveEnabled:     true,
-			LowRiskMaxAmount:    100,
-			TrustedPaidOrders:   1,
-			VisitorRiskLookback: 30,
-			StepUpRiskScore:     20,
-			ChallengeRiskScore:  60,
+			AdaptiveEnabled:       true,
+			LowRiskMaxAmountMinor: 10000,
+			TrustedPaidOrders:     1,
+			VisitorRiskLookback:   30,
+			StepUpRiskScore:       20,
+			ChallengeRiskScore:    60,
 		},
 	)
 	policy.paymentRisk.(*fakeThreeDSPaymentRisk).decision = antifraud.Decision{
@@ -272,13 +309,13 @@ func TestPaymentThreeDSPolicyChallengesHighPaymentRisk(t *testing.T) {
 	}
 
 	decision := policy.Decide(context.Background(), PaymentThreeDSDecisionInput{
-		UserID:    10,
-		OrderID:   99,
-		Amount:    80,
-		Currency:  "USD",
-		BaseMode:  PaymentThreeDSModeAutomatic,
-		IPAddress: "203.0.113.10",
-		UserAgent: "Mozilla/5.0",
+		UserID:      10,
+		OrderID:     99,
+		AmountMoney: domainmoney.MustNew(8000, "USD"),
+		Currency:    "USD",
+		BaseMode:    PaymentThreeDSModeAutomatic,
+		IPAddress:   "203.0.113.10",
+		UserAgent:   "Mozilla/5.0",
 	})
 
 	require.Equal(t, PaymentThreeDSModeChallenge, decision.Mode)
@@ -290,12 +327,12 @@ func TestPaymentThreeDSPolicyChallengesHighPaymentRisk(t *testing.T) {
 func TestPaymentThreeDSPolicyStepsUpVisitorWatchDecision(t *testing.T) {
 	policy := newTestPaymentThreeDSPolicy(
 		config.PaymentThreeDSConfig{
-			AdaptiveEnabled:     true,
-			LowRiskMaxAmount:    100,
-			TrustedPaidOrders:   1,
-			VisitorRiskLookback: 30,
-			StepUpRiskScore:     20,
-			ChallengeRiskScore:  60,
+			AdaptiveEnabled:       true,
+			LowRiskMaxAmountMinor: 10000,
+			TrustedPaidOrders:     1,
+			VisitorRiskLookback:   30,
+			StepUpRiskScore:       20,
+			ChallengeRiskScore:    60,
 		},
 	)
 	policy.visitorRisk.(*fakeThreeDSVisitorRisk).assessment = VisitorRiskIdentityAssessment{
@@ -305,13 +342,13 @@ func TestPaymentThreeDSPolicyStepsUpVisitorWatchDecision(t *testing.T) {
 	}
 
 	decision := policy.Decide(context.Background(), PaymentThreeDSDecisionInput{
-		UserID:    10,
-		OrderID:   99,
-		Amount:    80,
-		Currency:  "USD",
-		BaseMode:  PaymentThreeDSModeAutomatic,
-		IPAddress: "203.0.113.10",
-		UserAgent: "Mozilla/5.0",
+		UserID:      10,
+		OrderID:     99,
+		AmountMoney: domainmoney.MustNew(8000, "USD"),
+		Currency:    "USD",
+		BaseMode:    PaymentThreeDSModeAutomatic,
+		IPAddress:   "203.0.113.10",
+		UserAgent:   "Mozilla/5.0",
 	})
 
 	require.Equal(t, PaymentThreeDSModeAny, decision.Mode)
@@ -323,12 +360,12 @@ func TestPaymentThreeDSPolicyStepsUpVisitorWatchDecision(t *testing.T) {
 func TestPaymentThreeDSPolicyForwardsDeviceFingerprintToVisitorRisk(t *testing.T) {
 	policy := newTestPaymentThreeDSPolicy(
 		config.PaymentThreeDSConfig{
-			AdaptiveEnabled:     true,
-			LowRiskMaxAmount:    100,
-			TrustedPaidOrders:   1,
-			VisitorRiskLookback: 30,
-			StepUpRiskScore:     20,
-			ChallengeRiskScore:  60,
+			AdaptiveEnabled:       true,
+			LowRiskMaxAmountMinor: 10000,
+			TrustedPaidOrders:     1,
+			VisitorRiskLookback:   30,
+			StepUpRiskScore:       20,
+			ChallengeRiskScore:    60,
 		},
 	)
 	visitorRisk := policy.visitorRisk.(*fakeThreeDSVisitorRisk)
@@ -336,7 +373,7 @@ func TestPaymentThreeDSPolicyForwardsDeviceFingerprintToVisitorRisk(t *testing.T
 	decision := policy.Decide(context.Background(), PaymentThreeDSDecisionInput{
 		UserID:            10,
 		OrderID:           99,
-		Amount:            200,
+		AmountMoney:       domainmoney.MustNew(20000, "USD"),
 		Currency:          "USD",
 		BaseMode:          PaymentThreeDSModeAutomatic,
 		IPAddress:         "203.0.113.10",
@@ -352,12 +389,12 @@ func TestPaymentThreeDSPolicyForwardsDeviceFingerprintToVisitorRisk(t *testing.T
 func TestPaymentThreeDSPolicyChallengesVisitorBlockCandidate(t *testing.T) {
 	policy := newTestPaymentThreeDSPolicy(
 		config.PaymentThreeDSConfig{
-			AdaptiveEnabled:     true,
-			LowRiskMaxAmount:    100,
-			TrustedPaidOrders:   1,
-			VisitorRiskLookback: 30,
-			StepUpRiskScore:     20,
-			ChallengeRiskScore:  60,
+			AdaptiveEnabled:       true,
+			LowRiskMaxAmountMinor: 10000,
+			TrustedPaidOrders:     1,
+			VisitorRiskLookback:   30,
+			StepUpRiskScore:       20,
+			ChallengeRiskScore:    60,
 		},
 	)
 	policy.visitorRisk.(*fakeThreeDSVisitorRisk).assessment = VisitorRiskIdentityAssessment{
@@ -367,13 +404,13 @@ func TestPaymentThreeDSPolicyChallengesVisitorBlockCandidate(t *testing.T) {
 	}
 
 	decision := policy.Decide(context.Background(), PaymentThreeDSDecisionInput{
-		UserID:    10,
-		OrderID:   99,
-		Amount:    80,
-		Currency:  "USD",
-		BaseMode:  PaymentThreeDSModeAutomatic,
-		IPAddress: "203.0.113.10",
-		UserAgent: "Mozilla/5.0",
+		UserID:      10,
+		OrderID:     99,
+		AmountMoney: domainmoney.MustNew(8000, "USD"),
+		Currency:    "USD",
+		BaseMode:    PaymentThreeDSModeAutomatic,
+		IPAddress:   "203.0.113.10",
+		UserAgent:   "Mozilla/5.0",
 	})
 
 	require.Equal(t, PaymentThreeDSModeChallenge, decision.Mode)
@@ -392,12 +429,12 @@ func TestPaymentThreeDSPolicyStepsUpWhenRiskServiceUnavailable(t *testing.T) {
 
 	policy := newTestPaymentThreeDSPolicy(
 		config.PaymentThreeDSConfig{
-			AdaptiveEnabled:     true,
-			LowRiskMaxAmount:    100,
-			TrustedPaidOrders:   1,
-			VisitorRiskLookback: 30,
-			StepUpRiskScore:     20,
-			ChallengeRiskScore:  60,
+			AdaptiveEnabled:       true,
+			LowRiskMaxAmountMinor: 10000,
+			TrustedPaidOrders:     1,
+			VisitorRiskLookback:   30,
+			StepUpRiskScore:       20,
+			ChallengeRiskScore:    60,
 		},
 	)
 	alerts := &fakeThreeDSFailOpenAlerts{}
@@ -405,14 +442,14 @@ func TestPaymentThreeDSPolicyStepsUpWhenRiskServiceUnavailable(t *testing.T) {
 	policy.paymentRisk.(*fakeThreeDSPaymentRisk).err = errors.New("redis unavailable")
 
 	decision := policy.Decide(context.Background(), PaymentThreeDSDecisionInput{
-		Provider:  "Stripe",
-		UserID:    10,
-		OrderID:   99,
-		Amount:    80,
-		Currency:  "USD",
-		BaseMode:  PaymentThreeDSModeAutomatic,
-		IPAddress: "203.0.113.10",
-		UserAgent: "Mozilla/5.0",
+		Provider:    "Stripe",
+		UserID:      10,
+		OrderID:     99,
+		AmountMoney: domainmoney.MustNew(8000, "USD"),
+		Currency:    "USD",
+		BaseMode:    PaymentThreeDSModeAutomatic,
+		IPAddress:   "203.0.113.10",
+		UserAgent:   "Mozilla/5.0",
 	})
 
 	require.Equal(t, PaymentThreeDSModeAny, decision.Mode)
@@ -439,12 +476,12 @@ func TestPaymentThreeDSPolicyStepsUpWhenRiskServiceUnavailable(t *testing.T) {
 func TestPaymentThreeDSPolicyStepsUpForProviderPortfolioRisk(t *testing.T) {
 	policy := newTestPaymentThreeDSPolicy(
 		config.PaymentThreeDSConfig{
-			AdaptiveEnabled:     true,
-			LowRiskMaxAmount:    100,
-			TrustedPaidOrders:   1,
-			VisitorRiskLookback: 30,
-			StepUpRiskScore:     20,
-			ChallengeRiskScore:  60,
+			AdaptiveEnabled:       true,
+			LowRiskMaxAmountMinor: 10000,
+			TrustedPaidOrders:     1,
+			VisitorRiskLookback:   30,
+			StepUpRiskScore:       20,
+			ChallengeRiskScore:    60,
 		},
 	)
 	policy.ConfigureRiskMonitoring(&fakeThreeDSPortfolioRisk{
@@ -456,14 +493,14 @@ func TestPaymentThreeDSPolicyStepsUpForProviderPortfolioRisk(t *testing.T) {
 	})
 
 	decision := policy.Decide(context.Background(), PaymentThreeDSDecisionInput{
-		Provider:  string(paymentdomain.PaymentRiskProviderStripe),
-		UserID:    10,
-		OrderID:   99,
-		Amount:    80,
-		Currency:  "USD",
-		BaseMode:  PaymentThreeDSModeAutomatic,
-		IPAddress: "203.0.113.10",
-		UserAgent: "Mozilla/5.0",
+		Provider:    string(paymentdomain.PaymentRiskProviderStripe),
+		UserID:      10,
+		OrderID:     99,
+		AmountMoney: domainmoney.MustNew(8000, "USD"),
+		Currency:    "USD",
+		BaseMode:    PaymentThreeDSModeAutomatic,
+		IPAddress:   "203.0.113.10",
+		UserAgent:   "Mozilla/5.0",
 	})
 
 	require.Equal(t, PaymentThreeDSModeAny, decision.Mode)
@@ -498,7 +535,7 @@ func TestPaymentThreeDSPolicyAppliesManualForce3DSWhenAdaptiveRiskIsDisabled(t *
 		BaseMode:       PaymentThreeDSModeAutomatic,
 		BillingCountry: "US",
 		PaymentMethod:  "card",
-		Amount:         80,
+		AmountMoney:    domainmoney.MustNew(8000, "USD"),
 		Currency:       "USD",
 		IPAddress:      "203.0.113.10",
 		UserAgent:      "Mozilla/5.0",
@@ -516,12 +553,12 @@ func TestPaymentThreeDSPolicyAppliesManualForce3DSWhenAdaptiveRiskIsDisabled(t *
 func TestPaymentThreeDSPolicyPreservesManualProtectionStrategyWithAdaptiveRiskEnabled(t *testing.T) {
 	policy := newTestPaymentThreeDSPolicy(
 		config.PaymentThreeDSConfig{
-			AdaptiveEnabled:     true,
-			LowRiskMaxAmount:    100,
-			TrustedPaidOrders:   1,
-			VisitorRiskLookback: 30,
-			StepUpRiskScore:     20,
-			ChallengeRiskScore:  60,
+			AdaptiveEnabled:       true,
+			LowRiskMaxAmountMinor: 10000,
+			TrustedPaidOrders:     1,
+			VisitorRiskLookback:   30,
+			StepUpRiskScore:       20,
+			ChallengeRiskScore:    60,
 		},
 	)
 	protection := &fakeThreeDSPaymentProtection{
@@ -537,7 +574,7 @@ func TestPaymentThreeDSPolicyPreservesManualProtectionStrategyWithAdaptiveRiskEn
 		BaseMode:       PaymentThreeDSModeAutomatic,
 		BillingCountry: "US",
 		PaymentMethod:  "card",
-		Amount:         800,
+		AmountMoney:    domainmoney.MustNew(80000, "USD"),
 		Currency:       "USD",
 		IPAddress:      "203.0.113.10",
 		UserAgent:      "Mozilla/5.0",
@@ -615,7 +652,7 @@ func (f *fakeThreeDSPaymentRisk) Evaluate(ctx context.Context, key string, signa
 }
 
 type fakeThreeDSCurrencyConverter struct {
-	conversion    CurrencyConversion
+	conversion    domainmoney.Money
 	err           error
 	amount        float64
 	baseCurrency  string
@@ -629,10 +666,10 @@ func (f *fakeThreeDSCurrencyConverter) ConvertMoneyStrict(amount domainmoney.Mon
 	if f.err != nil {
 		return domainmoney.Money{}, f.err
 	}
-	if !f.conversion.Converted || f.conversion.Amount <= 0 {
+	if f.conversion.AmountMinor() <= 0 {
 		return domainmoney.Money{}, errors.New("conversion unavailable")
 	}
-	return domainmoney.FromMajorFloat(f.conversion.Amount, quoteCurrency)
+	return f.conversion, nil
 }
 
 type fakeThreeDSPortfolioRisk struct {

@@ -9,7 +9,7 @@ export interface UploadOrderOption {
   status: string
   shipping_status: string
   completed_at?: string
-  total_amount: number
+  total_amount_minor: number | string
   currency: string
   eligible: boolean
 }

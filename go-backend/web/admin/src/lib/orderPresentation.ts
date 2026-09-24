@@ -1,4 +1,6 @@
 type StatusTone = 'gray' | 'green' | 'amber' | 'blue' | 'coral'
+export { formatMinorMoney, formatRevenueByCurrency } from '@/lib/dashboardPresentation'
+export type { RevenueByCurrency } from '@/lib/dashboardPresentation'
 
 interface StatusOption {
   label: string

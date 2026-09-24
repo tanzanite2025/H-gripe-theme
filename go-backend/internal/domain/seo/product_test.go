@@ -9,17 +9,16 @@ import (
 )
 
 func TestBuildProductSEOReadinessUsesSourceDataAndFallbacks(t *testing.T) {
-	price := 1299.0
 	item := productdomain.Product{
-		ID:        42,
-		Name:      "C50 Disc Carbon Wheelset",
-		Slug:      "c50-disc-carbon-wheelset",
-		ShortDesc: "A fast carbon wheelset.",
-		SKU:       "C50",
-		Currency:  "USD",
-		Price:     price,
-		Stock:     1,
-		Status:    "active",
+		ID:         42,
+		Name:       "C50 Disc Carbon Wheelset",
+		Slug:       "c50-disc-carbon-wheelset",
+		ShortDesc:  "A fast carbon wheelset.",
+		SKU:        "C50",
+		Currency:   "USD",
+		PriceMinor: 129900,
+		Stock:      1,
+		Status:     "active",
 		Media: []productdomain.ProductMedia{{
 			URL:       "/media/c50.jpg",
 			MediaType: "image",
@@ -44,15 +43,15 @@ func TestBuildProductSEOReadinessUsesSourceDataAndFallbacks(t *testing.T) {
 
 func TestBuildProductSEOReadinessUsesProductGroupForActiveVariants(t *testing.T) {
 	item := productdomain.Product{
-		ID:       7,
-		Name:     "Variant Wheelset",
-		Slug:     "variant-wheelset",
-		Currency: "USD",
-		Price:    100,
-		Status:   "active",
+		ID:         7,
+		Name:       "Variant Wheelset",
+		Slug:       "variant-wheelset",
+		Currency:   "USD",
+		PriceMinor: 10000,
+		Status:     "active",
 		Variants: []productdomain.ProductVariant{
-			{ID: 10, SKU: "VAR-10", Title: "50 mm", Currency: "USD", Price: 100, Stock: 2, IsActive: true},
-			{ID: 11, SKU: "VAR-11", Title: "60 mm", Currency: "USD", Price: 120, Stock: 0, IsActive: true},
+			{ID: 10, SKU: "VAR-10", Title: "50 mm", Currency: "USD", PriceMinor: 10000, Stock: 2, IsActive: true},
+			{ID: 11, SKU: "VAR-11", Title: "60 mm", Currency: "USD", PriceMinor: 12000, Stock: 0, IsActive: true},
 		},
 		Media: []productdomain.ProductMedia{{
 			URL:       "https://cdn.example.test/variant.jpg",
@@ -73,10 +72,10 @@ func TestBuildProductSEOReadinessUsesProductGroupForActiveVariants(t *testing.T)
 
 func TestBuildProductSEOReadinessBlocksInactiveProductAndMissingImage(t *testing.T) {
 	item := productdomain.Product{
-		Name:     "Unpublished",
-		Currency: "USD",
-		Price:    10,
-		Status:   "inactive",
+		Name:       "Unpublished",
+		Currency:   "USD",
+		PriceMinor: 1000,
+		Status:     "inactive",
 	}
 
 	diagnostics := BuildProductSEOReadiness(item, "Brand", "/products/unpublished")

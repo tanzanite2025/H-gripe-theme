@@ -27,9 +27,91 @@ func mapProductRepositoryMutationError(err error) error {
 		return fmt.Errorf("%w: %v", ErrProductMediaInvalid, err)
 	case errors.Is(err, repository.ErrProductVariantOptionValueReferenceInvalid):
 		return fmt.Errorf("%w: %v", ErrProductVariantInvalid, err)
+	case errors.Is(err, repository.ErrProductOptionValueRelationInvalid):
+		return fmt.Errorf("%w: %v", ErrProductOptionRelationInvalid, err)
 	default:
 		return err
 	}
+}
+
+func (s *ProductService) buildOptionValueRelations(productID uint, optionValues []product.ProductVariantOptionValue, input []ProductOptionValueRelationInput) ([]product.ProductOptionValueRelation, error) {
+	if len(input) == 0 {
+		return nil, nil
+	}
+	owned := make(map[uint]struct{}, len(optionValues))
+	for _, value := range optionValues {
+		if value.ID != 0 {
+			owned[value.ID] = struct{}{}
+		}
+	}
+	result := make([]product.ProductOptionValueRelation, 0, len(input))
+	seen := make(map[string]struct{}, len(input))
+	for index, item := range input {
+		relationType := strings.ToLower(strings.TrimSpace(item.RelationType))
+		if !product.IsValidOptionValueRelationType(relationType) {
+			return nil, fmt.Errorf("%w: relation %d has unsupported relation type %q", ErrProductOptionRelationInvalid, index+1, item.RelationType)
+		}
+		if item.SourceOptionValueID == 0 || item.TargetOptionValueID == 0 {
+			return nil, fmt.Errorf("%w: relation %d requires source and target option value IDs", ErrProductOptionRelationInvalid, index+1)
+		}
+		if item.SourceOptionValueID == item.TargetOptionValueID {
+			return nil, fmt.Errorf("%w: relation %d cannot relate an option value to itself", ErrProductOptionRelationInvalid, index+1)
+		}
+		if _, ok := owned[item.SourceOptionValueID]; !ok {
+			return nil, fmt.Errorf("%w: source option value %d does not belong to product %d", ErrProductOptionRelationInvalid, item.SourceOptionValueID, productID)
+		}
+		if _, ok := owned[item.TargetOptionValueID]; !ok {
+			return nil, fmt.Errorf("%w: target option value %d does not belong to product %d", ErrProductOptionRelationInvalid, item.TargetOptionValueID, productID)
+		}
+		sourceID, targetID := item.SourceOptionValueID, item.TargetOptionValueID
+		if relationType == product.OptionValueRelationConflicts && sourceID > targetID {
+			sourceID, targetID = targetID, sourceID
+		}
+		key := fmt.Sprintf("%s:%d:%d", relationType, sourceID, targetID)
+		if _, exists := seen[key]; exists {
+			continue
+		}
+		seen[key] = struct{}{}
+		relationID := uint(0)
+		if item.ID != nil {
+			relationID = *item.ID
+		}
+		result = append(result, product.ProductOptionValueRelation{ID: relationID, ProductID: productID, SourceOptionValueID: sourceID, TargetOptionValueID: targetID, RelationType: relationType})
+	}
+	// Requires relationships are deliberately kept acyclic. This prevents a
+	// configuration from being unsatisfiable through a direct dependency loop
+	// while avoiding a general expression engine in the first release.
+	graph := make(map[uint][]uint)
+	for _, relation := range result {
+		if relation.RelationType == product.OptionValueRelationRequires {
+			graph[relation.SourceOptionValueID] = append(graph[relation.SourceOptionValueID], relation.TargetOptionValueID)
+		}
+	}
+	visiting, visited := make(map[uint]bool), make(map[uint]bool)
+	var visit func(uint) bool
+	visit = func(node uint) bool {
+		if visiting[node] {
+			return true
+		}
+		if visited[node] {
+			return false
+		}
+		visiting[node] = true
+		for _, next := range graph[node] {
+			if visit(next) {
+				return true
+			}
+		}
+		delete(visiting, node)
+		visited[node] = true
+		return false
+	}
+	for node := range graph {
+		if visit(node) {
+			return nil, fmt.Errorf("%w: requires relations cannot contain a cycle", ErrProductOptionRelationInvalid)
+		}
+	}
+	return result, nil
 }
 
 func normalizeAdminProductSlug(value string) (string, error) {
@@ -341,7 +423,13 @@ func (s *ProductService) buildVariantOptionValues(productSpecificationTemplateID
 			return nil, fmt.Errorf("%w: template option item does not belong to specification %s", ErrProductVariantInvalid, definition.Slug)
 		}
 		if len(definition.OptionItems) > 0 && templateOptionItem == nil {
-			return nil, fmt.Errorf("%w: option value %s is not defined by specification %s", ErrProductVariantInvalid, valueKey, definition.Slug)
+			// An explicitly synchronized product may retain a removed candidate
+			// as a disabled historical row so old cart/order references remain
+			// inspectable. Detached values can never be enabled or purchased.
+			isEnabled := item.IsEnabled == nil || *item.IsEnabled
+			if isEnabled || item.TemplateOptionItemID != nil {
+				return nil, fmt.Errorf("%w: option value %s is not defined by specification %s", ErrProductVariantInvalid, valueKey, definition.Slug)
+			}
 		}
 
 		label := strings.TrimSpace(item.Label)
@@ -383,24 +471,60 @@ func (s *ProductService) buildVariantOptionValues(productSpecificationTemplateID
 			if inventoryPolicy == "" {
 				inventoryPolicy = ProductCustomOptionInventoryNone
 			}
-			if inventoryPolicy != ProductCustomOptionInventoryNone {
-				return nil, fmt.Errorf("%w: custom option %s only supports inventory policy none", ErrProductVariantInvalid, valueKey)
+			if inventoryPolicy != ProductCustomOptionInventoryNone && inventoryPolicy != ProductCustomOptionInventoryComponent {
+				return nil, fmt.Errorf("%w: unsupported inventory policy %s for %s", ErrProductVariantInvalid, inventoryPolicy, valueKey)
 			}
 			if item.PriceDeltaMinor != nil && *item.PriceDeltaMinor < 0 {
 				return nil, fmt.Errorf("%w: option price cannot be negative for %s", ErrProductVariantInvalid, valueKey)
 			}
-			if item.ComponentVariantID != nil || item.ComponentQuantity != 0 {
-				return nil, fmt.Errorf("%w: component inventory is not enabled for %s", ErrProductVariantInvalid, valueKey)
+			if item.WeightDeltaGrams < 0 || item.PackagingWeightDeltaGrams < 0 {
+				return nil, fmt.Errorf("%w: option weight deltas cannot be negative for %s", ErrProductVariantInvalid, valueKey)
+			}
+			if item.ProductionLeadTimeDays < 0 {
+				return nil, fmt.Errorf("%w: option production lead time cannot be negative for %s", ErrProductVariantInvalid, valueKey)
+			}
+			requiresProduction := item.RequiresProduction || item.ProductionLeadTimeDays > 0
+			cancellationPolicy, policyErr := normalizeCustomOptionCancellationPolicy(item.CancellationPolicy, requiresProduction)
+			if policyErr != nil {
+				return nil, fmt.Errorf("%w: %v for %s", ErrProductVariantInvalid, policyErr, valueKey)
+			}
+			returnPolicy, policyErr := normalizeCustomOptionReturnPolicy(item.ReturnPolicy)
+			if policyErr != nil {
+				return nil, fmt.Errorf("%w: %v for %s", ErrProductVariantInvalid, policyErr, valueKey)
+			}
+			if inventoryPolicy == ProductCustomOptionInventoryComponent {
+				if item.ComponentVariantID == nil || *item.ComponentVariantID == 0 || item.ComponentQuantity <= 0 {
+					return nil, fmt.Errorf("%w: component inventory requires a variant and positive quantity for %s", ErrProductVariantInvalid, valueKey)
+				}
+				componentVariant, componentErr := s.productRepo.FindVariantByID(*item.ComponentVariantID)
+				if componentErr != nil {
+					if repository.IsRecordNotFound(componentErr) {
+						return nil, fmt.Errorf("%w: component variant %d does not exist for %s", ErrProductVariantInvalid, *item.ComponentVariantID, valueKey)
+					}
+					return nil, componentErr
+				}
+				if !componentVariant.IsActive {
+					return nil, fmt.Errorf("%w: component variant %d is inactive for %s", ErrProductVariantInvalid, *item.ComponentVariantID, valueKey)
+				}
+			} else if item.ComponentVariantID != nil || item.ComponentQuantity != 0 {
+				return nil, fmt.Errorf("%w: component fields require inventory policy component for %s", ErrProductVariantInvalid, valueKey)
 			}
 			priceDelta := int64(0)
 			if item.PriceDeltaMinor != nil {
 				priceDelta = *item.PriceDeltaMinor
 			}
 			optionValue.CustomOptionPolicy = &product.ProductCustomOptionPolicy{
-				PriceDeltaMinor:   priceDelta,
-				IsDefault:         item.IsDefault,
-				InventoryPolicy:   inventoryPolicy,
-				ComponentQuantity: 0,
+				PriceDeltaMinor:           priceDelta,
+				WeightDeltaGrams:          item.WeightDeltaGrams,
+				PackagingWeightDeltaGrams: item.PackagingWeightDeltaGrams,
+				ProductionLeadTimeDays:    item.ProductionLeadTimeDays,
+				RequiresProduction:        requiresProduction,
+				CancellationPolicy:        cancellationPolicy,
+				ReturnPolicy:              returnPolicy,
+				IsDefault:                 item.IsDefault,
+				InventoryPolicy:           inventoryPolicy,
+				ComponentVariantID:        item.ComponentVariantID,
+				ComponentQuantity:         item.ComponentQuantity,
 			}
 		}
 		if item.ID != nil {

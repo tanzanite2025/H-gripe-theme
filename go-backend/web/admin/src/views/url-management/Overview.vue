@@ -57,11 +57,11 @@
         </div>
         <div class="rounded-xl border bg-background/70 p-3">
           <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">可索引</p>
-          <p class="mt-1 text-sm font-black text-foreground">{{ sitemapOverview.entries ?? stats.sitemap_eligible }}</p>
+          <p class="mt-1 text-sm font-black text-foreground">{{ sitemapOverview.indexable ?? stats.indexable }}</p>
         </div>
         <div class="rounded-xl border bg-background/70 p-3">
           <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">总映射</p>
-          <p class="mt-1 text-sm font-black text-foreground">{{ sitemapOverview.indexable ?? stats.indexable }}</p>
+          <p class="mt-1 text-sm font-black text-foreground">{{ sitemapOverview.entries ?? stats.sitemap_eligible }}</p>
         </div>
       </div>
     </section>
@@ -70,7 +70,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { ExternalLink, ListChecks, RefreshCw, Route, TriangleAlert } from '@lucide/vue'
+import { CircleCheck, ExternalLink, ListChecks, RefreshCw, Route, TriangleAlert, UserCheck } from '@lucide/vue'
 import { toast } from 'vue-sonner'
 import AdminPageHeader from '@/components/admin/AdminPageHeader.vue'
 import AdminStatsGrid from '@/components/admin/AdminStatsGrid.vue'
@@ -151,11 +151,11 @@ const syncSitemap = async (): Promise<void> => {
 
 const statItems = computed(() => [
   { key: 'total', label: 'URL 总量', value: stats.value.total, icon: Route, tone: 'blue' },
-  { key: 'attention', label: '待处理', value: issueStats.value.active, icon: TriangleAlert, tone: issueStats.value.active ? 'coral' : 'gray' },
-  { key: 'redirects', label: '兼容跳转', value: stats.value.redirects, icon: Route, tone: stats.value.redirects ? 'amber' : 'gray' },
-  { key: 'canonical', label: 'Canonical', value: stats.value.canonical_mismatch, icon: TriangleAlert, tone: stats.value.canonical_mismatch ? 'amber' : 'gray' },
+  { key: 'ok', label: '正常路由', value: stats.value.ok, icon: CircleCheck, tone: 'green' },
+  { key: 'needs-attention', label: '待优化路由', value: stats.value.needs_attention, icon: TriangleAlert, tone: stats.value.needs_attention ? 'amber' : 'gray' },
   { key: 'not-found', label: '404', value: stats.value.not_found, icon: TriangleAlert, tone: stats.value.not_found ? 'coral' : 'gray' },
-  { key: 'unchecked', label: '未检查', value: stats.value.unchecked, icon: RefreshCw, tone: stats.value.unchecked ? 'amber' : 'gray' },
+  { key: 'active-issues', label: '待处理工单', value: issueStats.value.active, icon: RefreshCw, tone: issueStats.value.active ? 'coral' : 'gray' },
+  { key: 'open-issues', label: '未认领工单', value: issueStats.value.open, icon: UserCheck, tone: issueStats.value.open ? 'amber' : 'gray' },
 ])
 
 onMounted(() => {

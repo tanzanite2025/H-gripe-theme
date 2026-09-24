@@ -10,6 +10,26 @@ import {
 } from '@/utils/apiResponse'
 import { adminApiBaseUrl } from '@/lib/adminUrl'
 
+export interface CustomerServiceRetentionEligibility {
+  ticket_id: number
+  eligible: boolean
+  action: string
+  reason?: string
+  lifecycle_status?: string
+  last_activity_at?: string | null
+  eligible_after?: string | null
+  soft_deleted_at?: string | null
+  purge_after?: string | null
+}
+
+export interface CustomerServiceRetentionRuntimeConfig {
+  enabled: boolean
+  interval_seconds: number
+  minimum_retention_days: number
+  recovery_window_days: number
+  batch_limit: number
+}
+
 const readObjectPayload = (response: unknown, path: string) => (
   requireApiObject(unwrapApiPayload(response, path), path)
 )
@@ -141,7 +161,74 @@ export const customerServiceApi = {
   async transferConversation(conversationId: number | string, assignedTo: number) {
     const path = `/api/admin/customer-service/conversations/${conversationId}/transfer`
     return requireApiAcknowledgement(await axios.patch(path, { assigned_to: assignedTo }), path)
-  }
+  },
+
+  async archiveConversation(conversationId: number | string) {
+    const path = `/api/admin/customer-service/conversations/${conversationId}/archive`
+    return requireApiAcknowledgement(await axios.post(path), path)
+  },
+
+  async restoreConversation(conversationId: number | string) {
+	const path = `/api/admin/customer-service/conversations/${conversationId}/restore`
+	return requireApiAcknowledgement(await axios.post(path), path)
+  },
+
+  async updateConversationStatus(
+    conversationId: number | string,
+    status: 'open' | 'in_progress' | 'resolved' | 'closed',
+    expectedStatusVersion: number,
+    options: { archive?: boolean; reasonCode?: string } = {},
+  ) {
+    const path = `/api/admin/customer-service/conversations/${conversationId}/status`
+    const payload = readObjectPayload(await axios.patch(path, {
+      status,
+      expected_status_version: expectedStatusVersion,
+      ...(typeof options.archive === 'boolean' ? { archive: options.archive } : {}),
+      reason_code: String(options.reasonCode || '').trim() || 'manual_status_change',
+    }, { suppressGlobalErrorToast: true }), path)
+    return requireApiObjectField(payload, 'conversation', path)
+  },
+
+  async bulkArchiveConversations(conversationIds: Array<number | string>) {
+    const path = '/api/admin/customer-service/conversations/bulk-archive'
+    return readObjectPayload(await axios.post(path, {
+      conversation_ids: conversationIds.map((id) => Number(id)),
+    }), path)
+  },
+
+  async evaluateRetention(conversationIds: Array<number | string>) {
+    const path = '/api/admin/customer-service/conversations/retention/eligibility'
+    const payload = readObjectPayload(await axios.get(path, {
+      params: { conversation_ids: conversationIds.map((id) => Number(id)).join(',') },
+    }), path)
+    return requireApiArrayField<CustomerServiceRetentionEligibility>(payload, 'eligibility', path)
+  },
+  async getRetentionConfig(): Promise<CustomerServiceRetentionRuntimeConfig> {
+    const path = '/api/admin/customer-service/conversations/retention/config'
+    return requireApiObjectField<CustomerServiceRetentionRuntimeConfig>(readObjectPayload(await axios.get(path), path), 'config', path)
+  },
+  async updateRetentionConfig(config: CustomerServiceRetentionRuntimeConfig): Promise<CustomerServiceRetentionRuntimeConfig> {
+    const path = '/api/admin/customer-service/conversations/retention/config'
+    return requireApiObjectField<CustomerServiceRetentionRuntimeConfig>(readObjectPayload(await axios.put(path, config), path), 'config', path)
+  },
+
+  async softDeleteRetention(conversationIds: Array<number | string>, reason: string) {
+    const path = '/api/admin/customer-service/conversations/retention/soft-delete'
+    const payload = readObjectPayload(await axios.post(path, {
+      conversation_ids: conversationIds.map((id) => Number(id)),
+      reason,
+    }, { suppressGlobalErrorToast: true }), path)
+    return requireApiArrayField<CustomerServiceRetentionEligibility>(payload, 'eligibility', path)
+  },
+
+  async purgeRetention(conversationIds: Array<number | string>, reason: string) {
+    const path = '/api/admin/customer-service/conversations/retention/purge'
+    const payload = readObjectPayload(await axios.post(path, {
+      conversation_ids: conversationIds.map((id) => Number(id)),
+      reason,
+    }, { suppressGlobalErrorToast: true }), path)
+    return requireApiArrayField<CustomerServiceRetentionEligibility>(payload, 'eligibility', path)
+  },
 }
 
 export default customerServiceApi

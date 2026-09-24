@@ -170,7 +170,7 @@ func TestSyncTrackingMarksOrderDeliveredFromProviderStatus(t *testing.T) {
 	assert.Contains(t, auditRecorder.logs[0].Changes, `"source":"tracking_sync"`)
 }
 
-func TestSyncTrackingAutoRegistersProviderBeforeSync(t *testing.T) {
+func TestSyncTrackingRequiresCompletedAsyncRegistration(t *testing.T) {
 	db, shippingService := newTestShippingTrackingService(t)
 	provider := shippingdomain.TrackingProviderConfig{
 		ProviderCode:   "mock",
@@ -188,12 +188,13 @@ func TestSyncTrackingAutoRegistersProviderBeforeSync(t *testing.T) {
 		ProviderCarrierCode: "DHL",
 	})
 
-	require.NoError(t, err)
-	require.NotNil(t, result)
-	require.NotNil(t, result.Shipment)
-	assert.Equal(t, "registered", result.Shipment.RegistrationStatus)
-	assert.Equal(t, "synced", result.Shipment.SyncStatus)
-	assert.NotNil(t, result.Shipment.NextSyncAt)
+	require.Error(t, err)
+	assert.Nil(t, result)
+	assert.Contains(t, err.Error(), "tracking registration is not complete")
+	shipment, findErr := shippingService.GetTrackingShipmentByOrderIDAndTrackingNumber(89, "MOCK123489")
+	require.NoError(t, findErr)
+	assert.Equal(t, "pending", shipment.RegistrationStatus)
+	assert.Equal(t, "failed", shipment.SyncStatus)
 }
 
 func TestUpsertTrackingShipmentPreservesOperationalStateWhenSourceUnchanged(t *testing.T) {
@@ -296,7 +297,8 @@ func TestUpsertTrackingShipmentResetsOperationalStateWhenSourceChanges(t *testin
 
 	events, err := shippingService.GetTrackingEventsByOrderID(91)
 	require.NoError(t, err)
-	assert.Empty(t, events)
+	require.Len(t, events, 1)
+	assert.Equal(t, "TRACK-UP-OLD", events[0].TrackingNumber)
 }
 
 func TestSyncDueTrackingShipmentsProcessesPendingShipments(t *testing.T) {
@@ -325,7 +327,7 @@ func TestSyncDueTrackingShipmentsProcessesPendingShipments(t *testing.T) {
 	assert.Equal(t, 1, result.Synced)
 	assert.Equal(t, 0, result.Failed)
 
-	shipment, err := shippingService.GetTrackingShipmentByOrderID(99)
+	shipment, err := shippingService.GetTrackingShipmentByOrderIDAndTrackingNumber(99, "MOCK123499")
 	require.NoError(t, err)
 	assert.Equal(t, "synced", shipment.SyncStatus)
 	assert.Equal(t, 2, shipment.EventCount)
@@ -645,6 +647,44 @@ func TestApplyTrackingWebhookRejectsAmbiguousTrackingNumberFallback(t *testing.T
 	require.Error(t, err)
 	assert.Nil(t, result)
 	assert.Contains(t, err.Error(), "multiple tracking shipments")
+}
+
+func TestApplyTrackingWebhookMarksOrderDeliveredOnlyAfterAllPackagesArrive(t *testing.T) {
+	db, shippingService := newTestShippingTrackingService(t)
+	provider := shippingdomain.TrackingProviderConfig{
+		ProviderCode: "17TRACK",
+		ProviderName: "17TRACK",
+		Enabled:      true,
+	}
+	require.NoError(t, db.Create(&provider).Error)
+	require.NoError(t, db.Create(&orderdomain.Order{
+		ID:             104,
+		OrderNumber:    "ORDER-SPLIT-DELIVERY",
+		ShippingStatus: "shipped",
+		Currency:       "USD",
+	}).Error)
+	require.NoError(t, db.Create(&[]shippingdomain.TrackingShipment{
+		{OrderID: 104, TrackingProviderID: provider.ID, TrackingNumber: "SPLIT-WHEELSET", ProviderCarrierCode: "DHL", Enabled: true},
+		{OrderID: 104, TrackingProviderID: provider.ID, TrackingNumber: "SPLIT-FRAME", ProviderCarrierCode: "DHL", Enabled: true},
+	}).Error)
+
+	for _, trackingNumber := range []string{"SPLIT-WHEELSET", "SPLIT-FRAME"} {
+		_, err := shippingService.ApplyTrackingWebhook(TrackingWebhookInput{
+			ProviderID:          provider.ID,
+			TrackingNumber:      trackingNumber,
+			ProviderCarrierCode: "DHL",
+			Status:              "Delivered",
+			Events:              []TrackingWebhookEventInput{{Status: "Delivered", EventTime: time.Now().UTC()}},
+		})
+		require.NoError(t, err)
+		var order orderdomain.Order
+		require.NoError(t, db.First(&order, 104).Error)
+		if trackingNumber == "SPLIT-WHEELSET" {
+			assert.Equal(t, "shipped", order.ShippingStatus)
+		} else {
+			assert.Equal(t, "delivered", order.ShippingStatus)
+		}
+	}
 }
 
 func newTestShippingTrackingService(t *testing.T) (*gorm.DB, *ShippingService) {

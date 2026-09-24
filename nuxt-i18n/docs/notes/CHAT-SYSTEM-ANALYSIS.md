@@ -1,6 +1,6 @@
 # Public Chat / customer-service architecture
 
-Last audited: 2026-08-16
+Last audited: 2026-09-17
 
 This document is the current source for our Public Chat boundary. Update it whenever chat routes, ownership rules, message payloads, or frontend/admin component responsibilities change.
 
@@ -8,6 +8,7 @@ Related implementation design:
 
 - `CHAT-ATTACHMENT-HUB.md`: `+` button Attachment Hub for phone image, camera capture, order reference, and product reference flows.
 - `go-backend/docs/CUSTOMER_SERVICE_RELIABLE_REALTIME_ARCHITECTURE.md`: durable customer-service event, Outbox, WebSocket-only delivery, and cross-instance relay.
+- `../../../docs/design/customer-service-conversation-lifecycle-and-inbox-architecture.md`: canonical lifecycle, per-staff archive, list views, retention, and delete boundary. This document must not redefine those semantics.
 
 ## Hard boundary
 
@@ -54,18 +55,21 @@ These routes are consumed by the admin UI:
 | Publish staff typing state | WebSocket `{"type":"typing","is_typing":true}` control frame on a conversation socket |
 | Mark messages read | `POST /api/admin/customer-service/conversations/:id/messages/mark-read` |
 | Transfer conversation | `PATCH /api/admin/customer-service/conversations/:id/transfer` |
+| Archive for current staff inbox | `POST /api/admin/customer-service/conversations/:id/archive` |
+| Restore to current staff inbox | `POST /api/admin/customer-service/conversations/:id/restore` |
 | List visitor profiles | `GET /api/admin/customer-service/visitor-profiles` |
 | Visitor profile stats | `GET /api/admin/customer-service/visitor-profiles/stats` |
 
 Admin and manager roles can see all customer-service conversations. Support users only see conversations assigned to their own backend user id.
 
-Conversation listing filters are applied in the Go API/repository layer, not by filtering only the current frontend page. Supported query parameters:
+Conversation listing filters are applied in the Go API/repository layer, not by filtering only the current frontend page. The lifecycle and inbox-visibility contract is defined by `../../../docs/design/customer-service-conversation-lifecycle-and-inbox-architecture.md`. Supported query parameters:
 
 - `search`: conversation id, ticket number, logged-in customer email/name, captured visitor email/cart session, visitor hash, or message content.
 - `status`: `pending`/`open`, `active`/`in_progress`, `closed`/`resolved`.
 - `identity`: `account`/`member`/`user` or `anonymous`/`visitor`/`guest`.
 - `assigned_to`: backend user id of the assigned customer-service agent. Admin/manager users can use this filter; support users are always forced to their own backend user id.
 - `unread`: `true`/`1`/`yes` for conversations with unread customer messages.
+- `view`: `inbox` (default), `closed`, `archived`, or explicit `all`.
 
 `/api/v1/customer-service/agent/*` has been removed. Any new staff UI must use the admin route namespace.
 
@@ -256,6 +260,8 @@ If a future phase adds a GeoIP provider, it must still output only coarse locati
   - optional email from the customer chat email field or authenticated account;
   - locale and coarse region only when captured from request headers/CDN headers.
 - Operations inspection:
+  - Admin conversation rows show `Visitor`/`Member`, member tier when present,
+    and coarse region with an unknown fallback.
   - `/visitor-profiles` in admin lists the `visitor_profiles` fact source without exposing raw IP or raw User-Agent.
   - Search covers visitor profile id, user id, email, Public Chat visitor hash, cart session, locale, country, region, and city.
   - Filters cover member/anonymous identity, email captured/missing, cart session linked/missing, Public Chat visitor linked/missing, country, locale, and last seen window.
@@ -263,7 +269,7 @@ If a future phase adds a GeoIP provider, it must still output only coarse locati
 ### Not resolved yet
 
 - GeoIP quality. The backend stores coarse country/region headers when present, but there is no dedicated GeoIP provider, consent/audit UI, or enrichment job yet. The next safe step is not precision; it is a clear admin display contract for broad region, source, and unknown-state handling.
-- Admin conversation-list identity/tier display. The customer context resolver can expose logged-in customer facts, but the list UI still needs a compact `Visitor`/`Member` badge and member points-tier icon for logged-in customers.
+- Conversation lifecycle commands. Per-staff archive/restore, view-aware listing, explicit resolve/close/reopen commands, server-backed undo, bounded batch archive, administrator retention eligibility, soft-delete/purge, dependency checks, audit evidence, and the structured status-reason taxonomy are implemented. Remaining lifecycle work is operational rollout: run the retention drill, then explicitly approve worker enablement, monitoring, and rollback before production use. An external search-index deletion contract is optional and only needs staging verification if a separate search projection is deployed. See the canonical lifecycle design and retention runbook.
 
 The current `visitor_profiles` source binds signed Public Chat visitor cookie, cart session id, optional captured email, locale, coarse region, and request hashes without guessing. Any future expansion must keep raw IP out of the table unless a privacy/legal decision explicitly changes that boundary.
 
@@ -339,7 +345,7 @@ are only `{"type":"ping"}` and `{"type":"typing","is_typing":true}`;
 the server derives conversation, actor, audience, and display name from the
 authorized socket rather than accepting them from the client.
 
-Current event types:
+Event contract types (producer status noted below):
 
 - `conversation.message.created`
   - Payload: `message_id` only. It is a display-safe invalidation; clients
@@ -350,9 +356,14 @@ Current event types:
 - `conversation.assigned`
   - Payload: `assigned_to`, `assigned_to_name`, `assigned_by_user_id`.
 - `conversation.status.changed`
-  - Payload: `status` and `display_status`.
+  - Payload: `previous_status`, `status`, `status_version`, and `reason`.
+  - Durable for explicit lifecycle commands, lifecycle changes caused by
+    agent/customer messages, and the legacy same-owner transfer transition.
+- `conversation.inbox_state.changed`
+  - Payload: `recipient_user_id`, `archived`, `archived_at`, and `assignment_version`.
 - `conversation.context.updated`
   - Payload: minimal invalidation only, not a full customer context snapshot. Clients should refetch `/context`.
+  - Its complete transactional Outbox producer is pending.
 - `conversation.typing`
   - Payload: `is_typing`, `display_name`, and `expires_at`.
   - This is transient UI state only. It is not stored in `ticket_messages` and must not trigger HTTP message refreshes.
@@ -363,11 +374,14 @@ Current event types:
 - Message-created events must use the canonical minimal invalidation payload;
   rich HTTP response DTOs, message bodies, attachments, and metadata do not
   travel through the realtime event contract.
-- Missing realtime must never block chat. Nuxt/admin clients keep HTTP send/read and use reconnect with polling fallback.
+- Missing realtime must never block chat. Nuxt/admin clients keep HTTP send/read
+  and reconcile on reconnect, browser visibility, and explicit refresh. There is
+  no second realtime transport or EventSource fallback.
 - Do not broadcast raw visitor IP, raw user-agent, or hidden profile hashes. Only send display-safe ids and values already exposed by HTTP.
 - Do not let clients send arbitrary chat events. The current WebSocket controls
-  are only scoped `ping` and `typing`; message, read, transfer, and status
-  commands remain HTTP with their existing authorization and idempotency paths.
+  are only scoped `ping` and `typing`; message, read, transfer, archive/restore,
+  and the currently implemented status transition remain HTTP. Future explicit
+  status commands must follow the same authorization and idempotency path.
 
 ### Implementation order
 
@@ -378,7 +392,9 @@ Current event types:
    - staff reply;
    - mark-read;
    - transfer assignment;
-   - visitor email/customer context invalidation.
+   - per-staff archive/restore;
+   - visitor email/customer context invalidation (planned until its transactional
+     producer is implemented; it is not currently a durable event).
 3. The admin `MainLayout` hosts a global bottom-right customer-service launcher.
    While the dialog is closed it owns the inbox socket and updates the unread
    badge/toast; opening the dialog transfers inbox ownership to the workbench.
@@ -397,11 +413,7 @@ Current event types:
 ## Next implementation order
 
 1. Revisit real product/SKU configurable fields after the product/SKU contract is final, then populate `config_confirm.metadata.selections`.
-2. Add the admin conversation-list customer summary:
-   - `Visitor`/`Member` display label;
-   - member points-tier icon for logged-in customers;
-   - coarse region display with `Unknown` fallback;
-   - no raw IP/User-Agent/hash exposure.
+2. Complete the lifecycle retention rollout in `../../../docs/design/customer-service-conversation-lifecycle-and-inbox-architecture.md` and `../../../docs/ops/customer-service-retention-runbook.md`: run the retention drill in staging, then record monitoring and rollback approval before enabling the worker in production. Verify an external search-index deletion contract only if that projection is deployed.
 3. Add today's coarse-region operations stats for Public Chat, then connect the aggregate region signal to product-interest facts already present in chat/cart/wishlist/product cards.
 4. Add GeoIP provider, consent, audit, or enrichment jobs only after the broad-region contract proves useful and the privacy/legal boundary is explicitly confirmed.
 5. Keep WebSocket as the sole browser realtime contract. Any delivery issue

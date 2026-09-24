@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	domainmoney "commerce-platform/internal/domain/money"
+
 	"github.com/plutov/paypal/v4"
 )
 
@@ -42,7 +44,8 @@ func (g *paypalGatewayImpl) CapturePaymentWithOptions(ctx context.Context, payme
 	}
 
 	// 提取金额和货币
-	var amount float64
+	amount := "0"
+	var amountMinor int64
 	var currency string
 	transactionID := ""
 	metadata := map[string]string{
@@ -63,10 +66,15 @@ func (g *paypalGatewayImpl) CapturePaymentWithOptions(ctx context.Context, payme
 				metadata["order_id"] = orderID
 			}
 			if capture.Amount != nil {
-				amount, err = parsePaymentAmount("paypal capture amount", capture.Amount.Value)
+				captureMoney, moneyErr := domainmoney.ParseMajor(capture.Amount.Value, capture.Amount.Currency)
+				if moneyErr != nil {
+					return nil, fmt.Errorf("invalid paypal capture amount: %w", moneyErr)
+				}
+				amount, err = captureMoney.FormatMajor()
 				if err != nil {
 					return nil, err
 				}
+				amountMinor = captureMoney.AmountMinor()
 				currency = capture.Amount.Currency
 			}
 		}
@@ -75,7 +83,7 @@ func (g *paypalGatewayImpl) CapturePaymentWithOptions(ctx context.Context, payme
 		if transactionID == "" {
 			return nil, fmt.Errorf("paypal capture response did not include a completed capture id")
 		}
-		if amount <= 0 {
+		if amountMinor <= 0 {
 			return nil, fmt.Errorf("paypal capture response did not include a positive captured amount")
 		}
 		if strings.TrimSpace(currency) == "" {
@@ -87,6 +95,7 @@ func (g *paypalGatewayImpl) CapturePaymentWithOptions(ctx context.Context, payme
 		ID:            capturedOrder.ID,
 		Status:        capturedOrder.Status,
 		Amount:        amount,
+		AmountMinor:   amountMinor,
 		Currency:      currency,
 		TransactionID: transactionID,
 		CreatedAt:     time.Now(),
@@ -100,20 +109,20 @@ func PayPalCaptureRequestID(paymentID string) string {
 }
 
 // RefundPayment 退款PayPal支付
-func (g *paypalGatewayImpl) RefundPayment(ctx context.Context, paymentID string, amount float64) (*RefundResponse, error) {
-	return g.RefundPaymentWithOptions(ctx, paymentID, amount, RefundOptions{})
+func (g *paypalGatewayImpl) RefundPayment(ctx context.Context, paymentID string, amountMinor int64) (*RefundResponse, error) {
+	return g.RefundPaymentWithOptions(ctx, paymentID, amountMinor, RefundOptions{})
 }
 
-func (g *paypalGatewayImpl) RefundPaymentWithOptions(ctx context.Context, paymentID string, amount float64, options RefundOptions) (*RefundResponse, error) {
+func (g *paypalGatewayImpl) RefundPaymentWithOptions(ctx context.Context, paymentID string, amountMinor int64, options RefundOptions) (*RefundResponse, error) {
 	paymentID = strings.TrimSpace(paymentID)
 	if paymentID == "" {
 		return nil, fmt.Errorf("payment ID is required")
 	}
 
-	return g.refundPayPalCapture(ctx, paymentID, paymentID, amount, options)
+	return g.refundPayPalCapture(ctx, paymentID, paymentID, amountMinor, options)
 }
 
-func (g *paypalGatewayImpl) refundPayPalCapture(ctx context.Context, paymentReference string, captureID string, amount float64, options RefundOptions) (*RefundResponse, error) {
+func (g *paypalGatewayImpl) refundPayPalCapture(ctx context.Context, paymentReference string, captureID string, amountMinor int64, options RefundOptions) (*RefundResponse, error) {
 	ctx, cancel := paymentGatewayContext(ctx)
 	defer cancel()
 
@@ -124,12 +133,20 @@ func (g *paypalGatewayImpl) refundPayPalCapture(ctx context.Context, paymentRefe
 
 	// 构建退款请求
 	refundReq := paypal.RefundCaptureRequest{}
-	if amount > 0 {
+	if options.AmountMinor > 0 || amountMinor > 0 {
 		currency := firstPayPalNonBlank(options.Currency)
 		if currency == "" {
 			return nil, fmt.Errorf("paypal refund currency is required for partial refunds")
 		}
-		refundAmount, err := paymentMajorString(amount, currency)
+		refundMinor := amountMinor
+		if options.AmountMinor > 0 {
+			refundMinor = options.AmountMinor
+		}
+		refundMoney, err := domainmoney.New(refundMinor, currency)
+		if err != nil {
+			return nil, err
+		}
+		refundAmount, err := refundMoney.FormatMajor()
 		if err != nil {
 			return nil, err
 		}
@@ -146,22 +163,42 @@ func (g *paypalGatewayImpl) refundPayPalCapture(ctx context.Context, paymentRefe
 	}
 
 	// 解析退款金额
-	var refundAmount float64
+	refundAmount := "0"
+	var refundAmountMinor int64
 	if refundResp.Amount != nil {
-		refundAmount, err = parsePaymentAmount("paypal refund amount", refundResp.Amount.Value)
+		refundMoney, moneyErr := domainmoney.ParseMajor(refundResp.Amount.Value, refundResp.Amount.Currency)
+		if moneyErr != nil {
+			return nil, fmt.Errorf("invalid paypal refund amount: %w", moneyErr)
+		}
+		refundAmount, err = refundMoney.FormatMajor()
 		if err != nil {
 			return nil, err
 		}
+		refundAmountMinor = refundMoney.AmountMinor()
 	} else {
-		refundAmount = amount
+		refundAmountMinor = amountMinor
+		if options.AmountMinor > 0 {
+			refundAmountMinor = options.AmountMinor
+		}
+		if refundAmountMinor > 0 {
+			refundMoney, moneyErr := domainmoney.New(refundAmountMinor, firstPayPalNonBlank(options.Currency, "USD"))
+			if moneyErr != nil {
+				return nil, moneyErr
+			}
+			refundAmount, moneyErr = refundMoney.FormatMajor()
+			if moneyErr != nil {
+				return nil, moneyErr
+			}
+		}
 	}
 
 	return &RefundResponse{
-		ID:        refundResp.ID,
-		PaymentID: paymentReference,
-		Amount:    refundAmount,
-		Status:    refundResp.Status,
-		CreatedAt: time.Now(),
+		ID:          refundResp.ID,
+		PaymentID:   paymentReference,
+		Amount:      refundAmount,
+		AmountMinor: refundAmountMinor,
+		Status:      refundResp.Status,
+		CreatedAt:   time.Now(),
 	}, nil
 }
 
@@ -181,15 +218,64 @@ func (g *paypalGatewayImpl) GetPayment(ctx context.Context, paymentID string) (*
 	}
 
 	// 提取金额和货币
-	var amount float64
+	amount := "0"
+	var amountMinor int64
 	var currency string
+	transactionID := ""
+	metadata := map[string]string{
+		"paypal_order_id": strings.TrimSpace(order.ID),
+	}
 	if len(order.PurchaseUnits) > 0 {
-		if order.PurchaseUnits[0].Amount != nil {
-			amount, err = parsePaymentAmount("paypal order amount", order.PurchaseUnits[0].Amount.Value)
+		purchaseUnit := order.PurchaseUnits[0]
+		if orderID := firstPayPalNonBlank(purchaseUnit.CustomID, purchaseUnit.ReferenceID); orderID != "" {
+			metadata["order_id"] = orderID
+			metadata["custom_id"] = orderID
+		}
+		if purchaseUnit.Amount != nil {
+			orderMoney, moneyErr := domainmoney.ParseMajor(purchaseUnit.Amount.Value, purchaseUnit.Amount.Currency)
+			if moneyErr != nil {
+				return nil, fmt.Errorf("invalid paypal order amount: %w", moneyErr)
+			}
+			amount, err = orderMoney.FormatMajor()
 			if err != nil {
 				return nil, err
 			}
-			currency = order.PurchaseUnits[0].Amount.Currency
+			amountMinor = orderMoney.AmountMinor()
+			currency = purchaseUnit.Amount.Currency
+		}
+		if purchaseUnit.Payments != nil {
+			var captured *paypal.CaptureAmount
+			for index := range purchaseUnit.Payments.Captures {
+				candidate := &purchaseUnit.Payments.Captures[index]
+				if captured == nil || strings.EqualFold(strings.TrimSpace(candidate.Status), "COMPLETED") {
+					captured = candidate
+				}
+				if strings.EqualFold(strings.TrimSpace(candidate.Status), "COMPLETED") {
+					break
+				}
+			}
+			if captured != nil {
+				transactionID = strings.TrimSpace(captured.ID)
+				if transactionID != "" {
+					metadata["paypal_capture_id"] = transactionID
+				}
+				if orderID := strings.TrimSpace(captured.CustomID); orderID != "" {
+					metadata["order_id"] = orderID
+					metadata["custom_id"] = orderID
+				}
+				if captured.Amount != nil {
+					captureMoney, moneyErr := domainmoney.ParseMajor(captured.Amount.Value, captured.Amount.Currency)
+					if moneyErr != nil {
+						return nil, fmt.Errorf("invalid paypal capture amount: %w", moneyErr)
+					}
+					amount, err = captureMoney.FormatMajor()
+					if err != nil {
+						return nil, err
+					}
+					amountMinor = captureMoney.AmountMinor()
+					currency = captured.Amount.Currency
+				}
+			}
 		}
 	}
 
@@ -197,9 +283,11 @@ func (g *paypalGatewayImpl) GetPayment(ctx context.Context, paymentID string) (*
 		ID:            order.ID,
 		Status:        order.Status,
 		Amount:        amount,
+		AmountMinor:   amountMinor,
 		Currency:      currency,
-		TransactionID: order.ID,
+		TransactionID: transactionID,
 		CreatedAt:     time.Now(),
+		Metadata:      metadata,
 	}, nil
 }
 

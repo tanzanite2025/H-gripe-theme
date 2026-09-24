@@ -66,10 +66,14 @@
           :points="pointsNumber"
           :tier-info="tierInfo"
           :level-discounts="levelDiscounts"
-          :coupons="userCoupons"
-          :point-cards="userPointCards"
           :loading="membershipLoading"
           @refresh="refreshData"
+          @close="closeSidebar"
+        />
+
+        <AccountOrdersTab
+          v-show="activeTab === 'orders'"
+          :active="activeTab === 'orders'"
           @close="closeSidebar"
         />
 
@@ -114,6 +118,7 @@ import AccountAddressesTab from '~/components/account/AccountAddressesTab.vue'
 import AccountCartTab from '~/components/account/AccountCartTab.vue'
 import AccountLoginPrompt from '~/components/account/AccountLoginPrompt.vue'
 import AccountPointsTab from '~/components/account/AccountPointsTab.vue'
+import AccountOrdersTab from '~/components/account/AccountOrdersTab.vue'
 import AccountReferralTab from '~/components/account/AccountReferralTab.vue'
 import AccountWishlistTab from '~/components/account/AccountWishlistTab.vue'
 import { useAuth } from '~/composables/useAuth'
@@ -121,7 +126,7 @@ import { useCart } from '~/composables/useCart'
 import { useMembership } from '~/composables/useMembership'
 import { useWishlist } from '~/composables/useWishlist'
 
-type AccountTabId = 'points' | 'wishlist' | 'cart' | 'addresses' | 'referral'
+type AccountTabId = 'points' | 'orders' | 'wishlist' | 'cart' | 'addresses' | 'referral'
 
 const { t } = useI18n()
 const auth = useAuth()
@@ -132,10 +137,7 @@ const {
   points,
   tierInfo,
   levelDiscounts,
-  userCoupons,
-  userPointCards,
   tierConfigsLoading,
-  assetsLoading,
   initMembership,
   refreshData,
   doLogout,
@@ -148,6 +150,7 @@ const activeTab = ref<AccountTabId>('points')
 
 const tabs: Array<{ id: AccountTabId; icon: string; labelKey: string; label: string }> = [
   { id: 'points', icon: 'lucide:gem', labelKey: 'accountSidebar.tabs.points', label: 'Points' },
+  { id: 'orders', icon: 'lucide:receipt-text', labelKey: 'accountSidebar.tabs.orders', label: 'Orders' },
   { id: 'wishlist', icon: 'lucide:heart', labelKey: 'accountSidebar.tabs.wishlist', label: 'Wishlist' },
   { id: 'cart', icon: 'lucide:shopping-cart', labelKey: 'accountSidebar.tabs.cart', label: 'Cart' },
   { id: 'addresses', icon: 'lucide:map-pin', labelKey: 'accountSidebar.tabs.addresses', label: 'Address' },
@@ -157,7 +160,7 @@ const tabs: Array<{ id: AccountTabId; icon: string; labelKey: string; label: str
 const isAuthenticated = computed(() => auth.isAuthenticated.value)
 const pointsNumber = computed(() => Number(points.value || 0))
 const wishlistCount = computed(() => wishlistItems.value.length)
-const membershipLoading = computed(() => tierConfigsLoading.value || assetsLoading.value || auth.loading.value)
+const membershipLoading = computed(() => tierConfigsLoading.value || auth.loading.value)
 
 const displayName = computed(() => {
   const user = auth.user.value
@@ -319,7 +322,7 @@ watch(
 .account-sidebar__tabs {
   display: grid;
   flex: 0 0 auto;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 0.42rem;
   border-radius: 1.25rem;
   border: 1px solid var(--tz-border-subtle);
@@ -395,4 +398,3 @@ watch(
   }
 }
 </style>
-

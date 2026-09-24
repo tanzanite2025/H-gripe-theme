@@ -2,6 +2,10 @@ package payment
 
 import (
 	"context"
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/x509"
+	"encoding/pem"
 	"errors"
 	"net/http"
 	"strings"
@@ -78,6 +82,13 @@ func TestVerifyPayPalWebhookFailsClosedWhenOfficialVerifierRejects(t *testing.T)
 		t.Fatalf("expected PayPal verifier error, got %v", err)
 	}
 
+}
+
+func TestVerifyPayPalWebhookMarksTransientVerifierTimeoutAsRetryable(t *testing.T) {
+	_, err := VerifyPayPalWebhook(context.Background(), &Config{WebhookSecret: "webhook-id"}, validPayPalWebhookHeaders(), []byte(`{"id":"evt_1","event_type":"CHECKOUT.ORDER.COMPLETED"}`), &fakePayPalWebhookVerifier{err: context.DeadlineExceeded})
+	if !errors.Is(err, ErrPayPalWebhookVerificationUnavailable) {
+		t.Fatalf("expected transient verification sentinel, got %v", err)
+	}
 }
 
 func TestVerifyPayPalWebhookUsesFiveSecondTimeout(t *testing.T) {
@@ -191,6 +202,32 @@ func TestVerifyWechatWebhookFailsClosedWithoutRequiredHeadersOrVerifierMaterial(
 		t.Fatalf("expected missing WeChat platform verifier error, got %v", err)
 	}
 
+}
+
+func TestWechatPlatformPublicKeyTakesPrecedenceOverCertificate(t *testing.T) {
+	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		t.Fatalf("generate RSA key: %v", err)
+	}
+	encodedPublicKey, err := x509.MarshalPKIXPublicKey(&privateKey.PublicKey)
+	if err != nil {
+		t.Fatalf("marshal RSA public key: %v", err)
+	}
+	publicKeyPEM := pem.EncodeToMemory(&pem.Block{Type: "PUBLIC KEY", Bytes: encodedPublicKey})
+
+	config := &Config{
+		WechatPayPlatformPublicKey:   string(publicKeyPEM),
+		WechatPayPlatformPublicKeyID: "PUB_KEY_ID_123",
+		WechatPayPlatformCertificate: "invalid legacy certificate PEM",
+	}
+	if _, err := newWechatPayVerifier(config); err != nil {
+		t.Fatalf("expected configured platform public key to take precedence over certificate: %v", err)
+	}
+
+	config.WechatPayPlatformPublicKeyID = ""
+	if _, err := newWechatPayVerifier(config); err == nil || !strings.Contains(err.Error(), "platform_public_key_id is required") {
+		t.Fatalf("expected missing public key ID to fail closed instead of falling back to certificate, got %v", err)
+	}
 }
 
 func TestValidateWechatWebhookMerchantIdentity(t *testing.T) {

@@ -11,7 +11,7 @@ import (
 const maxShippingQuotePlans = 128
 
 type shippingQuoteGroupRate struct {
-	Fee           float64
+	FeeMinor      int64
 	FreeShipping  bool
 	DisplayPrices []currency.DisplayPriceSnapshot
 }
@@ -30,7 +30,7 @@ func finalizeShippingQuotePlan(plan ShippingQuotePlan, displayCurrency string) (
 	plan.EtaMaxDays = 0
 	displayPriceSets := make([][]currency.DisplayPriceSnapshot, 0, len(plan.Legs))
 	for _, leg := range plan.Legs {
-		legFee, feeErr := domainmoney.FromMajorFloat(leg.ShippingFee, planCurrency)
+		legFee, feeErr := domainmoney.New(leg.ShippingFeeMinor, planCurrency)
 		if feeErr != nil {
 			return ShippingQuotePlan{}, fmt.Errorf("leg shipping fee: %w", feeErr)
 		}
@@ -48,10 +48,8 @@ func finalizeShippingQuotePlan(plan ShippingQuotePlan, displayCurrency string) (
 			plan.EtaMaxDays = leg.EtaMaxDays
 		}
 	}
-	plan.ShippingFee, err = totalFee.MajorFloat()
-	if err != nil {
-		return ShippingQuotePlan{}, fmt.Errorf("format plan shipping fee: %w", err)
-	}
+	plan.ShippingFeeMinor = totalFee.AmountMinor()
+	plan.ShippingFeeDecimal, _ = totalFee.FormatMajor()
 	plan.FreeShipping = totalFee.AmountMinor() <= 0
 	plan.DisplayPrices = combineDisplayPriceSets(displayPriceSets)
 	plan.DisplayPrice = displayPriceForCurrency(displayCurrency, plan.DisplayPrices)
@@ -71,14 +69,14 @@ func applyShippingQuotePlan(quote *ShippingQuote, plan *ShippingQuotePlan) {
 		return
 	}
 	for index := range quote.Items {
-		quote.Items[index].ShippingFee = 0
+		quote.Items[index].ShippingFeeMinor = 0
 		quote.Items[index].FreeShipping = false
 	}
 	for _, leg := range plan.Legs {
 		distributeShippingQuoteItemFee(
 			leg.ItemIndexes,
 			quote.Items,
-			leg.ShippingFee,
+			leg.ShippingFeeMinor,
 			leg.FreeShipping,
 			leg.AllocationBasis,
 			quote.Currency,
@@ -86,7 +84,8 @@ func applyShippingQuotePlan(quote *ShippingQuote, plan *ShippingQuotePlan) {
 	}
 	selected := *plan
 	quote.SelectedPlan = &selected
-	quote.ShippingFee = plan.ShippingFee
+	quote.ShippingFeeDecimal, _ = domainmoney.MustNew(plan.ShippingFeeMinor, quote.Currency).FormatMajor()
+	quote.ShippingFeeMinor = plan.ShippingFeeMinor
 	quote.FreeShipping = plan.FreeShipping
 	quote.DisplayPrice = plan.DisplayPrice
 	quote.DisplayPrices = append([]currency.DisplayPriceSnapshot(nil), plan.DisplayPrices...)
@@ -95,7 +94,7 @@ func applyShippingQuotePlan(quote *ShippingQuote, plan *ShippingQuotePlan) {
 func distributeShippingQuoteItemFee(
 	itemIndexes []int,
 	items []ShippingQuoteItem,
-	fee float64,
+	feeMinor int64,
 	free bool,
 	basis string,
 	currencyCode string,
@@ -103,7 +102,7 @@ func distributeShippingQuoteItemFee(
 	if len(itemIndexes) == 0 {
 		return
 	}
-	feeMoney, err := domainmoney.FromMajorFloat(fee, currencyCode)
+	feeMoney, err := domainmoney.New(feeMinor, currencyCode)
 	if err != nil || feeMoney.AmountMinor() < 0 {
 		return
 	}
@@ -134,11 +133,8 @@ func distributeShippingQuoteItemFee(
 		return
 	}
 	for i, index := range validIndexes {
-		itemFee, feeErr := allocations[i].MajorFloat()
-		if feeErr != nil {
-			return
-		}
-		items[index].ShippingFee = itemFee
+		items[index].ShippingFeeDecimal, _ = allocations[i].FormatMajor()
+		items[index].ShippingFeeMinor = allocations[i].AmountMinor()
 		items[index].FreeShipping = free
 	}
 }
@@ -148,11 +144,7 @@ func shippingQuoteItemDistributionBasis(templateType string, item ShippingQuoteI
 	case "quantity", "items":
 		return int64(item.Quantity), nil
 	case "price", "amount":
-		amount, err := domainmoney.FromMajorFloat(item.Amount, currencyCode)
-		if err != nil {
-			return 0, err
-		}
-		return amount.AmountMinor(), nil
+		return item.AmountMinor, nil
 	default:
 		return int64(item.ChargeWeightGrams * item.Quantity), nil
 	}

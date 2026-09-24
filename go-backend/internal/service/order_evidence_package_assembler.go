@@ -40,7 +40,7 @@ type OrderEvidencePackageAssembly struct {
 	Sources         []OrderEvidenceSourceReference      `json:"sources"`
 	Warnings        []string                            `json:"warnings,omitempty"`
 	AssembledAt     time.Time                           `json:"assembled_at"`
-	Shipment        *shipping.TrackingShipment          `json:"-"`
+	Shipments       []shipping.TrackingShipment         `json:"-"`
 	TrackingEvents  []shipping.TrackingEvent            `json:"-"`
 }
 
@@ -126,8 +126,8 @@ func (s *OrderEvidencePackageAssembler) Assemble(
 		return result, nil
 	}
 
-	shipment, err := s.shippingRepo.FindTrackingShipmentByOrderID(orderID)
-	if err != nil && !repository.IsRecordNotFound(err) {
+	shipments, err := s.shippingRepo.FindTrackingShipmentsByOrderID(orderID)
+	if err != nil {
 		return nil, err
 	}
 	events, err := s.shippingRepo.FindTrackingEventsByOrderID(orderID)
@@ -135,22 +135,31 @@ func (s *OrderEvidencePackageAssembler) Assemble(
 		return nil, err
 	}
 
-	currentTrackingNumber := ""
-	if shipment != nil {
-		currentTrackingNumber = strings.TrimSpace(shipment.TrackingNumber)
-		result.Shipment = shipment
+	result.Shipments = shipments
+	for index := range shipments {
+		shipment := &shipments[index]
 		result.Sources = append(result.Sources, OrderEvidenceSourceReference{
 			SourceType: "tracking_shipment",
 			SourceID:   shipment.ID,
 			Status:     shipment.SyncStatus,
 		})
-	} else {
+	}
+	if len(shipments) == 0 {
 		result.Warnings = append(result.Warnings,
 			"no current tracking shipment is recorded for this order.",
 		)
 	}
 
-	result.TrackingEvents = filterTrackingEventsForShipment(events, currentTrackingNumber)
+	knownTrackingNumbers := make(map[string]struct{}, len(shipments))
+	for _, shipment := range shipments {
+		knownTrackingNumbers[strings.ToLower(strings.TrimSpace(shipment.TrackingNumber))] = struct{}{}
+	}
+	result.TrackingEvents = make([]shipping.TrackingEvent, 0, len(events))
+	for _, event := range events {
+		if _, ok := knownTrackingNumbers[strings.ToLower(strings.TrimSpace(event.TrackingNumber))]; ok {
+			result.TrackingEvents = append(result.TrackingEvents, event)
+		}
+	}
 	for _, event := range result.TrackingEvents {
 		result.Sources = append(result.Sources, OrderEvidenceSourceReference{
 			SourceType: "tracking_event",
@@ -160,7 +169,7 @@ func (s *OrderEvidencePackageAssembler) Assemble(
 		})
 	}
 	result.TrackingContext = buildOrderEvidenceTrackingContextFromSources(
-		shipment,
+		result.Shipments,
 		result.TrackingEvents,
 		assemblyEvidenceItems(result),
 	)

@@ -11,6 +11,7 @@ import (
 	"runtime"
 	"testing"
 
+	"commerce-platform/internal/domain/outbox"
 	sitelogodomain "commerce-platform/internal/domain/site_logo"
 	"commerce-platform/internal/pkg/storage"
 	"commerce-platform/internal/repository"
@@ -33,6 +34,7 @@ func TestSiteLogoUploadCurrentReplacesAndDestroysPrevious(t *testing.T) {
 	}
 
 	logos := NewSiteLogoService(repository.NewSiteLogoRepository(db), storageService, "https://shop.example.test")
+	logos.ConfigureObjectCleanupOutbox(repository.NewOutboxRepository(db))
 	first, err := logos.UploadCurrent(context.Background(), siteLogoTestFileHeader(t, "first.webp"), 11)
 	if err != nil {
 		t.Fatalf("upload first logo: %v", err)
@@ -49,8 +51,15 @@ func TestSiteLogoUploadCurrentReplacesAndDestroysPrevious(t *testing.T) {
 	if first.StorageKey == second.StorageKey {
 		t.Fatal("expected replacement logo to use a new storage key")
 	}
+	var cleanupEvent outbox.Event
+	if err := db.Where("event_type = ?", outbox.EventTypeObjectStorageCleanup).First(&cleanupEvent).Error; err != nil {
+		t.Fatalf("load logo cleanup event: %v", err)
+	}
+	if err := NewObjectStorageCleanupOutboxHandler(nil, logos, nil, nil).Handle(context.Background(), cleanupEvent); err != nil {
+		t.Fatalf("deliver logo cleanup event: %v", err)
+	}
 	if _, err := os.Stat(firstPath); !os.IsNotExist(err) {
-		t.Fatalf("expected previous logo object to be destroyed, got %v", err)
+		t.Fatalf("expected previous logo object to be destroyed by outbox worker, got %v", err)
 	}
 
 	var count int64
@@ -86,6 +95,7 @@ func TestSiteLogoDeleteCurrentDestroysObjectAndRow(t *testing.T) {
 	}
 
 	logos := NewSiteLogoService(repository.NewSiteLogoRepository(db), storageService, "https://shop.example.test")
+	logos.ConfigureObjectCleanupOutbox(repository.NewOutboxRepository(db))
 	current, err := logos.UploadCurrent(context.Background(), siteLogoTestFileHeader(t, "current.webp"), 11)
 	if err != nil {
 		t.Fatalf("upload current logo: %v", err)
@@ -95,8 +105,15 @@ func TestSiteLogoDeleteCurrentDestroysObjectAndRow(t *testing.T) {
 	if err := logos.DeleteCurrent(context.Background()); err != nil {
 		t.Fatalf("delete current logo: %v", err)
 	}
+	var cleanupEvent outbox.Event
+	if err := db.Where("event_type = ?", outbox.EventTypeObjectStorageCleanup).First(&cleanupEvent).Error; err != nil {
+		t.Fatalf("load logo cleanup event: %v", err)
+	}
+	if err := NewObjectStorageCleanupOutboxHandler(nil, logos, nil, nil).Handle(context.Background(), cleanupEvent); err != nil {
+		t.Fatalf("deliver logo cleanup event: %v", err)
+	}
 	if _, err := os.Stat(currentPath); !os.IsNotExist(err) {
-		t.Fatalf("expected current logo object to be destroyed, got %v", err)
+		t.Fatalf("expected current logo object to be destroyed by outbox worker, got %v", err)
 	}
 
 	stored, err := repository.NewSiteLogoRepository(db).Current()
@@ -118,7 +135,7 @@ func TestPublicUploadAccessAllowsOnlyCurrentSiteLogo(t *testing.T) {
 		MimeType:   "image/webp",
 		Width:      512,
 		Height:     512,
-	})
+	}, nil)
 	if err != nil {
 		t.Fatalf("seed current logo: %v", err)
 	}
@@ -158,7 +175,7 @@ func newSiteLogoTestDB(t *testing.T) *gorm.DB {
 		_ = sqlDB.Close()
 	})
 
-	if err := db.AutoMigrate(&sitelogodomain.Asset{}); err != nil {
+	if err := db.AutoMigrate(&sitelogodomain.Asset{}, &outbox.Event{}); err != nil {
 		t.Fatalf("migrate site logo assets: %v", err)
 	}
 	return db

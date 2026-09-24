@@ -6,21 +6,22 @@ import type { CartItem } from '~~/types/cart'
 import { useAuth } from '~/composables/useAuth'
 import { createIdempotencyKey } from '~/utils/idempotency'
 import { useStorefrontContext } from '~/composables/useStorefrontContext'
+import { useShippingQuote } from '~/composables/useShippingQuote'
 
 type ApiResponse<T> = T | { data?: T | { data?: T } }
-
-interface CheckoutQuoteResponse {
-  total_amount?: number | string | null
-  shipping_quote?: {
-    id?: string
-    selected_plan?: { id?: string }
-  }
-}
 
 export interface StripeExpressCheckoutOrderSession {
   orderNumber: string
   clientSecret: string
   publishableKey: string
+  amountMinor: number
+  currency: string
+}
+
+export interface StripeExpressCheckoutOrderOptions {
+  couponCode?: string
+  shippingQuoteID?: string
+  selectedQuotePlanID?: string
 }
 
 interface StripeExpressCheckoutAddress {
@@ -93,6 +94,7 @@ const buildOrderAddressFromStripeExpressCheckoutDetails = (
 
 export function useStripeExpressCheckoutOrder() {
   const auth = useAuth()
+  const shippingQuoteApi = useShippingQuote()
   const { displayCurrency } = useStorefrontContext()
 
   const loadStripeExpressCheckoutPublishableKey = async () => {
@@ -114,6 +116,7 @@ export function useStripeExpressCheckoutOrder() {
     cartItems: CartItem[],
     ensureCartReady?: () => Promise<void>,
     idempotencyKey?: string,
+    options: StripeExpressCheckoutOrderOptions = {},
   ) => {
     const session = await auth.ensureSession()
     if (!session) {
@@ -146,23 +149,37 @@ export function useStripeExpressCheckoutOrder() {
       }
     }
 
-    const quoteResponse = await auth.request<ApiResponse<CheckoutQuoteResponse>>('/checkout/quote', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
-      },
-      body: JSON.stringify({ shipping_address: shippingAddress, display_currency: String(displayCurrency.value || '').trim().toUpperCase() }),
-    }, 'Express Checkout quote refresh failed')
-    const quote = unwrapApiData<CheckoutQuoteResponse>(quoteResponse)
-    const expectedTotal = Number(quote?.total_amount)
-    if (!Number.isFinite(expectedTotal)) {
+    const quote = await shippingQuoteApi.quoteCheckout({
+      shipping_address: shippingAddress,
+      display_currency: String(displayCurrency.value || '').trim().toUpperCase(),
+      payment_method: 'card',
+      ...(String(options.couponCode || '').trim()
+        ? { coupon_code: String(options.couponCode || '').trim() }
+        : {}),
+      ...(String(options.shippingQuoteID || '').trim()
+        ? { shipping_quote_id: String(options.shippingQuoteID || '').trim() }
+        : {}),
+      ...(String(options.selectedQuotePlanID || '').trim()
+        ? { selected_quote_plan_id: String(options.selectedQuotePlanID || '').trim() }
+        : {}),
+    })
+    const expectedTotalMinor = Number(quote?.total_minor)
+    if (!Number.isSafeInteger(expectedTotalMinor) || expectedTotalMinor < 0) {
       throw new Error('Express Checkout quote did not include a valid total')
     }
     const shippingQuoteID = String(quote?.shipping_quote?.id || '').trim()
     const selectedQuotePlanID = String(quote?.shipping_quote?.selected_plan?.id || '').trim()
     if (!shippingQuoteID || !selectedQuotePlanID) {
       throw new Error('Express Checkout quote did not include a shipping plan')
+    }
+    const quoteCurrency = String(quote?.currency || '').trim().toUpperCase()
+    if (!/^[A-Z]{3}$/.test(quoteCurrency)) {
+      throw new Error('Express Checkout quote did not include a valid currency')
+    }
+    const paymentAmountMinor = Number(quote?.payment_amount_minor ?? expectedTotalMinor)
+    const paymentCurrency = String(quote?.payment_currency || quoteCurrency).trim().toUpperCase()
+    if (!Number.isSafeInteger(paymentAmountMinor) || paymentAmountMinor <= 0 || !/^[A-Z]{3}$/.test(paymentCurrency)) {
+      throw new Error('Express Checkout quote did not include a valid payment amount')
     }
 
     const response = await auth.request<ApiResponse<{ order_number?: string }>>('/orders', {
@@ -184,8 +201,11 @@ export function useStripeExpressCheckoutOrder() {
         shipping_method: 'standard',
         shipping_quote_id: shippingQuoteID,
         selected_quote_plan_id: selectedQuotePlanID,
-        expected_total: Number(expectedTotal.toFixed(2)),
+        expected_total_minor: expectedTotalMinor,
         display_currency: String(displayCurrency.value || '').trim().toUpperCase(),
+        ...(String(quote?.coupon_code || options.couponCode || '').trim()
+          ? { coupon_code: String(quote?.coupon_code || options.couponCode || '').trim() }
+          : {}),
       }),
     }, 'Express Checkout order creation failed')
     const order = unwrapApiData<{ order_number?: string }>(response)
@@ -195,6 +215,9 @@ export function useStripeExpressCheckoutOrder() {
     return {
       orderNumber: order.order_number,
       shippingAddress,
+      quote,
+      amountMinor: paymentAmountMinor,
+      currency: paymentCurrency,
     }
   }
 
@@ -231,6 +254,7 @@ export function useStripeExpressCheckoutOrder() {
     confirmationEvent: StripeExpressCheckoutElementConfirmEvent,
     cartItems: CartItem[],
     ensureCartReady?: () => Promise<void>,
+    options: StripeExpressCheckoutOrderOptions = {},
   ): Promise<StripeExpressCheckoutOrderSession> => {
     const idempotencyKey = createIdempotencyKey('stripe-express-checkout')
     const order = await createLocalOrderFromStripeExpressCheckoutConfirmation(
@@ -238,6 +262,7 @@ export function useStripeExpressCheckoutOrder() {
       cartItems,
       ensureCartReady,
       idempotencyKey,
+      options,
     )
     const payment = await createStripePaymentIntentForExpressCheckoutOrder(order.orderNumber, idempotencyKey)
     const publishableKey = payment.publishableKey || await loadStripeExpressCheckoutPublishableKey()
@@ -245,6 +270,8 @@ export function useStripeExpressCheckoutOrder() {
       orderNumber: order.orderNumber,
       clientSecret: payment.clientSecret,
       publishableKey,
+      amountMinor: order.amountMinor,
+      currency: order.currency,
     }
   }
 

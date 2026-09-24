@@ -194,8 +194,8 @@ onBeforeUnmount(() => {
 const displayPrice = (item: any) => {
   const product = item?.product
   if (!product) return ''
-  if (product.sale_price && product.sale_price > 0) return `$${product.sale_price}`
-  if (product.price && product.price > 0) return `$${product.price}`
+  if (product.sale_price_decimal && Number(product.sale_price_decimal) > 0) return `$${product.sale_price_decimal}`
+  if (product.price_decimal && Number(product.price_decimal) > 0) return `$${product.price_decimal}`
   return ''
 }
 

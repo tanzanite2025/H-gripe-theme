@@ -28,7 +28,7 @@
             <Input v-model.number="form.max_points" type="number" min="0" step="1" @input="emit('clear-error', 'max_points')" />
           </AdminFormField>
           <AdminFormField label="折扣率（%）">
-            <Input v-model.number="form.discount_rate" type="number" min="0" max="100" step="0.01" />
+            <Input v-model="form.discount_rate_decimal" inputmode="decimal" placeholder="例如 5.5" />
           </AdminFormField>
           <AdminFormField label="权益说明" class="sm:col-span-2">
             <Textarea v-model="form.benefits" class="min-h-24" />
@@ -58,7 +58,7 @@ export interface MemberLevelForm {
   name: string
   min_points: number | string
   max_points: number | string
-  discount_rate: number | string
+  discount_rate_decimal: string
   benefits: string
 }
 

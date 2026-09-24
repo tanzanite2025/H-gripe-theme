@@ -85,7 +85,7 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 	paymentHandler := NewPaymentHandler(paymentService, services.AdminSettings, services.PayPalDisputeInvoiceSellerProfile)
 	paymentHandler.ConfigurePublicBaseURL(cfg.Server.BaseURL)
 	paymentHandler.ConfigureAuditService(services.Audit)
-	paymentRefundExecutionHandler := NewPaymentRefundExecutionHandler(paymentService, services.AdminSettings)
+	paymentRefundExecutionHandler := NewPaymentRefundExecutionHandler(paymentService)
 	paymentRefundExecutionHandler.ConfigureAuditService(services.Audit)
 	paymentRiskMonitoringHandler := NewPaymentRiskMonitoringHandler(services.PaymentRiskMonitoring)
 	paymentRiskMonitoringHandler.ConfigureRiskConfiguration(
@@ -106,6 +106,7 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 	galleryHandler := NewGalleryHandler(services.Gallery)
 	subscriptionHandler := NewSubscriptionHandler(services.Subscription)
 	ticketHandler := NewTicketHandler(services.Ticket, services.CustomerServiceContext, services.CustomerServiceAnalytics, services.CustomerServiceEvents, services.Media)
+	ticketHandler.ConfigureCustomerServiceRetention(services.CustomerServiceRetention)
 	ticketHandler.ConfigureAllowedOrigins(cfg.CORS.AllowedOrigins)
 	ticketHandler.ConfigureCustomerServiceWebSocketLimiter(realtime.NewCustomerServiceWebSocketLimiter(
 		deps.RedisClient,
@@ -121,6 +122,8 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 	globalIPBlockHandler.ConfigureAuditService(services.Audit)
 	marketingHandler := NewMarketingHandlerWithReferral(marketingService, services.LoyaltyProgram, services.Referral)
 	settingsHandler := NewSettingsHandler(services.AdminSettings)
+	emailProviderHandler := NewEmailProviderHandler(services.EmailProviders)
+	notificationTemplateHandler := NewNotificationTemplateHandler(services.TransactionalNotificationTemplates)
 	refundCancellationPolicyHandler := NewRefundCancellationPolicyHandler(services.RefundCancellationPolicy)
 	siteLogoHandler := NewSiteLogoHandler(services.SiteLogo, services.AdminSettings)
 	homeVisualTileHandler := NewHomeVisualTileHandler(services.HomeVisualTiles)
@@ -229,6 +232,8 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 	}
 
 	registerAuthenticatedCoreRoutes(authenticated, authHandler, dashboardHandler, userHandler, customerHandler)
+	registerEmailProviderRoutes(authenticated, emailProviderHandler)
+	registerNotificationTemplateRoutes(authenticated, notificationTemplateHandler)
 	registerProductRoutes(
 		authenticated,
 		productHandler,

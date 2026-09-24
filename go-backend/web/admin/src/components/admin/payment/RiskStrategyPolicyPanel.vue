@@ -77,7 +77,7 @@
             </div>
             <div class="bg-card p-3">
               <dt class="text-[10px] font-black uppercase tracking-widest text-muted-foreground">AVS 金额阈值</dt>
-              <dd class="mt-1 font-mono text-sm font-semibold">&gt; {{ money(threeDS.avs_billing_shipping_mismatch_high_value_threshold_usd) }}</dd>
+              <dd class="mt-1 font-mono text-sm font-semibold">&gt; {{ moneyUSDMinor(threeDS.avs_billing_shipping_mismatch_high_value_threshold_minor) }}</dd>
               <p class="mt-1 text-[11px] text-muted-foreground">账单国与收货国不一致时强制 challenge</p>
             </div>
           </dl>
@@ -192,7 +192,7 @@
         <dl class="mt-3 space-y-2 text-xs">
           <div class="flex items-start justify-between gap-3 border-b border-dashed border-border/70 pb-2">
             <dt class="text-muted-foreground">低金额上限</dt>
-            <dd class="font-mono font-semibold">{{ money(threeDS.low_risk_max_amount) }}</dd>
+            <dd class="font-mono font-semibold">{{ moneyMinor(threeDS.low_risk_max_amount_minor) }}</dd>
           </div>
           <div class="flex items-start justify-between gap-3 border-b border-dashed border-border/70 pb-2">
             <dt class="text-muted-foreground">老客已支付订单</dt>
@@ -509,6 +509,14 @@ const seconds = (value: unknown): string => {
 const money = (value: unknown): string => {
   const parsed = Number(value || 0)
   return Number.isFinite(parsed) && parsed > 0 ? `≤ ${parsed.toFixed(2)}（订单币种）` : '未设置'
+}
+const moneyMinor = (value: unknown): string => {
+  const parsed = Number(value || 0)
+  return Number.isFinite(parsed) && parsed > 0 ? `≤ ${(parsed / 100).toFixed(2)}（订单币种）` : '未设置'
+}
+const moneyUSDMinor = (value: unknown): string => {
+  const parsed = Number(value || 0)
+  return Number.isFinite(parsed) && parsed > 0 ? `${(parsed / 100).toFixed(2)} USD` : '未设置'
 }
 const statusClass = (enabled: boolean): string => (
   enabled

@@ -80,6 +80,24 @@ func TestValidateConfigAllowsShortJWTSecretInDebug(t *testing.T) {
 	}
 }
 
+func TestValidateConfigRejectsNegativeHoneypotTimingTTL(t *testing.T) {
+	cfg := validTestConfig()
+	cfg.AntiAbuse.HoneypotTimingTTLSeconds = -1
+
+	if err := validateConfig(cfg); err == nil {
+		t.Fatal("validateConfig should reject a negative honeypot timing TTL")
+	}
+}
+
+func TestValidateConfigRejectsShortHoneypotTimingSecretInRelease(t *testing.T) {
+	cfg := validReleaseConfig()
+	cfg.AntiAbuse.HoneypotTimingSecret = "short-secret"
+
+	if err := validateConfig(cfg); err == nil {
+		t.Fatal("validateConfig should reject a short dedicated honeypot timing secret in release mode")
+	}
+}
+
 func TestValidateConfigRejectsInvalidPaymentExpirationConfig(t *testing.T) {
 	cfg := validTestConfig()
 	cfg.Worker.PaymentExpirationEnabled = true
@@ -100,6 +118,33 @@ func TestValidateConfigRejectsNonPositiveVisitorProfileIPAddressRetentionWhenCle
 
 	if err := validateConfig(cfg); err == nil {
 		t.Fatal("validateConfig should reject a non-positive visitor profile IP address retention period")
+	}
+}
+
+func TestValidateConfigAllowsCustomerServiceRetentionDaysOverride(t *testing.T) {
+	cfg := validTestConfig()
+	cfg.Worker.CustomerServiceRetentionEnabled = true
+	cfg.Worker.CustomerServiceRetentionIntervalSeconds = 86400
+	cfg.Worker.CustomerServiceRetentionMinimumMonths = 24
+	cfg.Worker.CustomerServiceRetentionMinimumDays = 730
+	cfg.Worker.CustomerServiceRetentionRecoveryWindowDays = 30
+	cfg.Worker.CustomerServiceRetentionBatchLimit = 100
+
+	if err := validateConfig(cfg); err != nil {
+		t.Fatalf("validateConfig should allow days to override the month default: %v", err)
+	}
+}
+
+func TestValidateConfigRejectsInvalidCustomerServiceRetentionWorker(t *testing.T) {
+	cfg := validTestConfig()
+	cfg.Worker.CustomerServiceRetentionEnabled = true
+	cfg.Worker.CustomerServiceRetentionIntervalSeconds = 0
+	cfg.Worker.CustomerServiceRetentionMinimumMonths = 24
+	cfg.Worker.CustomerServiceRetentionRecoveryWindowDays = 30
+	cfg.Worker.CustomerServiceRetentionBatchLimit = 100
+
+	if err := validateConfig(cfg); err == nil {
+		t.Fatal("validateConfig should reject a non-positive customer-service retention interval")
 	}
 }
 
@@ -449,6 +494,11 @@ func TestLoadEnablesPaymentExpirationByDefault(t *testing.T) {
 	if cfg.Worker.PaymentExpirationBatchLimit != 100 {
 		t.Fatalf("payment expiration batch limit = %d, want 100", cfg.Worker.PaymentExpirationBatchLimit)
 	}
+	if cfg.Worker.CustomerServiceRetentionMinimumMonths != 24 ||
+		cfg.Worker.CustomerServiceRetentionRecoveryWindowDays != 30 ||
+		cfg.Worker.CustomerServiceRetentionBatchLimit != 100 {
+		t.Fatalf("customer-service retention defaults not applied: %+v", cfg.Worker)
+	}
 }
 
 func TestValidateConfigRejectsShortPreviousOrderNumberSecretInRelease(t *testing.T) {
@@ -465,9 +515,9 @@ func TestValidateConfigRejectsShortPreviousOrderNumberSecretInRelease(t *testing
 func TestValidateConfigRejectsInvalidPaymentThreeDSConfig(t *testing.T) {
 	cfg := validTestConfig()
 	cfg.PaymentThreeDS = PaymentThreeDSConfig{
-		AdaptiveEnabled:  true,
-		LowRiskMaxAmount: 100,
-		AVSBillingShippingMismatchHighValueThresholdUSD: 800,
+		AdaptiveEnabled:       true,
+		LowRiskMaxAmountMinor: 10000,
+		AVSBillingShippingMismatchHighValueThresholdMinor: 80000,
 		TrustedPaidOrders:   0,
 		VisitorRiskLookback: 30,
 		StepUpRiskScore:     80,
@@ -482,9 +532,9 @@ func TestValidateConfigRejectsInvalidPaymentThreeDSConfig(t *testing.T) {
 func TestValidateConfigRejectsInvalidPaymentThreeDSAvsThreshold(t *testing.T) {
 	cfg := validTestConfig()
 	cfg.PaymentThreeDS = PaymentThreeDSConfig{
-		AdaptiveEnabled:  true,
-		LowRiskMaxAmount: 100,
-		AVSBillingShippingMismatchHighValueThresholdUSD: 0,
+		AdaptiveEnabled:       true,
+		LowRiskMaxAmountMinor: 10000,
+		AVSBillingShippingMismatchHighValueThresholdMinor: 0,
 		TrustedPaidOrders:   1,
 		VisitorRiskLookback: 30,
 		StepUpRiskScore:     20,
@@ -838,7 +888,7 @@ func validTestConfig() *Config {
 			AccountStorageQuotaBytes: 20 << 30,
 		},
 		PaymentThreeDS: PaymentThreeDSConfig{
-			AVSBillingShippingMismatchHighValueThresholdUSD: 800,
+			AVSBillingShippingMismatchHighValueThresholdMinor: 80000,
 		},
 		CustomerServiceRealtime: CustomerServiceRealtimeConfig{
 			WebSocketMaxConnectionsPerIP:    5,

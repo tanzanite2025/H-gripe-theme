@@ -23,6 +23,7 @@ type dependencySupport struct {
 	StorageSvc                          storage.StorageService
 	SiteLogoStorageSvc                  storage.StorageService
 	EmailSvc                            email.EmailService
+	EmailProviderSvc                    *service.EmailProviderService
 	TxManager                           *repository.TxManager
 	ShippingService                     *service.ShippingService
 	OutboundHTTPResilience              outboundHTTPResilience
@@ -60,13 +61,17 @@ func newDependencySupport(
 	if err != nil {
 		return nil, fmt.Errorf("initialize site logo storage: %w", err)
 	}
-	emailSvc, err := email.NewEmailService(email.LoadConfigFromEnv())
+	envEmailSvc, err := email.NewEmailService(email.LoadConfigFromEnv())
 	if err != nil {
 		return nil, fmt.Errorf("initialize email service: %w", err)
 	}
+	emailProviderSvc := service.NewEmailProviderService(repos.EmailProviders)
+	// Provider selection is resolved for every send so an admin change takes
+	// effect without a process restart. With no active default row we preserve
+	// the deployment's environment SMTP fallback.
+	emailSvc := service.NewRuntimeEmailService(emailProviderSvc, envEmailSvc)
 	txManager := repository.NewTxManager(db, repos.Order, repos.Product, repos.Coupon, repos.Loyalty, repos.Payment, repos.Shipping)
 	txManager.ConfigureCartRepository(repos.Cart)
-	txManager.ConfigureGiftCardRedemptionRepository(repos.GiftCardRedemption)
 	txManager.ConfigureLoyaltyProgramRepository(repos.LoyaltyProgram)
 	txManager.ConfigureReferralRepositories(repos.Referral, repos.ReferralProgram)
 	txManager.ConfigureOutboxRepository(repos.Outbox)
@@ -89,6 +94,8 @@ func newDependencySupport(
 	shippingService := service.NewShippingService(repos.Shipping, repos.Product)
 	shippingService.ConfigureOrderRepository(repos.Order)
 	shippingService.ConfigureTxManager(txManager)
+	// Wired after the AfterSalesService is constructed in the service builder;
+	// this reference is completed there before routes and workers start.
 	outboundHTTPResilience := newOutboundHTTPResilience(
 		redisCache.Client(),
 		cfg.OutboundHTTPResilience,
@@ -128,6 +135,7 @@ func newDependencySupport(
 		StorageSvc:                          storageSvc,
 		SiteLogoStorageSvc:                  siteLogoStorageSvc,
 		EmailSvc:                            emailSvc,
+		EmailProviderSvc:                    emailProviderSvc,
 		TxManager:                           txManager,
 		ShippingService:                     shippingService,
 		OutboundHTTPResilience:              outboundHTTPResilience,

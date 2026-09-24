@@ -98,6 +98,70 @@ func TestPaymentRiskSnapshotDoesNotCreateEventsWhileAlertingIsDisabled(t *testin
 	require.Equal(t, int64(1), eventCount)
 }
 
+func TestCountPaymentRiskMetricsAggregatesExactMinorAmountsByCurrency(t *testing.T) {
+	db := newPaymentRiskRepositoryTestDB(t)
+	require.NoError(t, db.AutoMigrate(
+		&paymentdomain.Transaction{},
+		&paymentdomain.Refund{},
+		&paymentdomain.StripeDispute{},
+		&paymentdomain.PaymentRiskEvent{},
+		&paymentdomain.PaymentRiskCheckoutDecision{},
+	))
+	repo := NewPaymentRiskRepository(db)
+	now := time.Date(2026, time.July, 31, 12, 0, 0, 0, time.UTC)
+	completedAt := now.Add(-time.Hour)
+
+	transactions := []paymentdomain.Transaction{
+		{OrderID: 1, TransactionID: "tx-usd-1", PaymentMethod: "stripe", AmountMinor: 1234, Currency: "USD", Status: "completed", CompletedAt: &completedAt},
+		{OrderID: 2, TransactionID: "tx-usd-2", PaymentMethod: "stripe", AmountMinor: 567, Currency: "USD", Status: "completed", CompletedAt: &completedAt},
+		{OrderID: 3, TransactionID: "tx-jpy-1", PaymentMethod: "stripe", AmountMinor: 500, Currency: "JPY", Status: "completed", CompletedAt: &completedAt},
+		{OrderID: 4, TransactionID: "tx-usd-pending", PaymentMethod: "stripe", AmountMinor: 9999, Currency: "USD", Status: "pending", CreatedAt: completedAt},
+	}
+	require.NoError(t, db.Create(&transactions).Error)
+
+	refundCompletedAt := now.Add(-30 * time.Minute)
+	refunds := []paymentdomain.Refund{
+		{OrderID: 1, TransactionID: transactions[0].ID, Currency: "USD", AmountMinor: 234, Status: "completed", CompletedAt: &refundCompletedAt},
+		{OrderID: 2, TransactionID: transactions[1].ID, Currency: "USD", AmountMinor: 111, Status: "completed", CompletedAt: &refundCompletedAt},
+		{OrderID: 3, TransactionID: transactions[2].ID, Currency: "JPY", AmountMinor: 100, Status: "completed", CompletedAt: &refundCompletedAt},
+		{OrderID: 1, TransactionID: transactions[0].ID, Currency: "USD", AmountMinor: 999, Status: "pending", CreatedAt: refundCompletedAt},
+	}
+	require.NoError(t, db.Create(&refunds).Error)
+
+	disputes := []paymentdomain.StripeDispute{
+		{StripeDisputeID: "dp-usd", AmountMinor: 300, Currency: "USD", Status: "needs_response", CreatedAt: completedAt},
+		{StripeDisputeID: "dp-jpy", AmountMinor: 40, Currency: "JPY", Status: "needs_response", CreatedAt: completedAt},
+	}
+	require.NoError(t, db.Create(&disputes).Error)
+
+	counts, err := repo.CountPaymentRiskMetrics("stripe", now.Add(-24*time.Hour), now.Add(time.Hour))
+	require.NoError(t, err)
+	require.Equal(t, int64(3), counts.SuccessfulPaymentCount)
+	require.Equal(t, paymentdomain.PaymentRiskAmountMinorByCurrency{"USD": 1801, "JPY": 500}, counts.SuccessfulPaymentAmountMinorByCurrency)
+	require.Equal(t, paymentdomain.PaymentRiskAmountMinorByCurrency{"USD": 300, "JPY": 40}, counts.DisputeAmountMinorByCurrency)
+	require.Equal(t, int64(3), counts.RefundCount)
+	require.Equal(t, paymentdomain.PaymentRiskAmountMinorByCurrency{"USD": 345, "JPY": 100}, counts.RefundAmountMinorByCurrency)
+}
+
+func TestPaymentRiskSnapshotPersistsMinorAmountsByCurrency(t *testing.T) {
+	db := newPaymentRiskRepositoryTestDB(t)
+	repo := NewPaymentRiskRepository(db)
+	now := time.Date(2026, time.July, 31, 12, 0, 0, 0, time.UTC)
+	snapshot := newPaymentRiskTestSnapshot(paymentdomain.PaymentRiskLevelNormal, now)
+	snapshot.SuccessfulPaymentAmountMinorByCurrency = paymentdomain.PaymentRiskAmountMinorByCurrency{"usd": 1234, "JPY": 500}
+	snapshot.DisputeAmountMinorByCurrency = paymentdomain.PaymentRiskAmountMinorByCurrency{"USD": 12}
+	snapshot.RefundAmountMinorByCurrency = paymentdomain.PaymentRiskAmountMinorByCurrency{"JPY": 9}
+	result, err := repo.CreatePaymentRiskSnapshotWithAlert(snapshot, false)
+	require.NoError(t, err)
+	require.False(t, result.LevelChanged)
+
+	loaded, err := repo.FindLatestPaymentRiskSnapshot("stripe")
+	require.NoError(t, err)
+	require.Equal(t, paymentdomain.PaymentRiskAmountMinorByCurrency{"USD": 1234, "JPY": 500}, loaded.SuccessfulPaymentAmountMinorByCurrency)
+	require.Equal(t, paymentdomain.PaymentRiskAmountMinorByCurrency{"USD": 12}, loaded.DisputeAmountMinorByCurrency)
+	require.Equal(t, paymentdomain.PaymentRiskAmountMinorByCurrency{"JPY": 9}, loaded.RefundAmountMinorByCurrency)
+}
+
 func newPaymentRiskRepositoryTestDB(t *testing.T) *gorm.DB {
 	t.Helper()
 

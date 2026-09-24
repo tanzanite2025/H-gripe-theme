@@ -5,8 +5,8 @@ import (
 	shippingdomain "commerce-platform/internal/domain/shipping"
 	"commerce-platform/internal/repository"
 	"context"
+	"errors"
 	"fmt"
-	"math"
 	"strings"
 	"time"
 )
@@ -15,22 +15,21 @@ func (s *OrderService) GetAdminOrder(id uint) (*order.Order, error) {
 	return s.findOrder(id)
 }
 
-func (s *OrderService) GetAdminOrderTrackingShipment(id uint) (*shippingdomain.TrackingShipment, error) {
+func (s *OrderService) GetAdminOrderTrackingShipments(id uint) ([]shippingdomain.TrackingShipment, error) {
 	if _, err := s.findOrder(id); err != nil {
 		return nil, err
 	}
 	if s.shipping == nil {
 		return nil, ErrOrderShippingNotConfigured
 	}
+	return s.shipping.GetTrackingShipmentsByOrderID(id)
+}
 
-	shipment, err := s.shipping.GetTrackingShipmentByOrderID(id)
-	if err != nil {
-		if repository.IsRecordNotFound(err) {
-			return nil, nil
-		}
-		return nil, err
+func (s *OrderService) GetOrderTrackingShipments(id uint) ([]shippingdomain.TrackingShipment, error) {
+	if s.shipping == nil {
+		return nil, ErrOrderShippingNotConfigured
 	}
-	return shipment, nil
+	return s.shipping.GetTrackingShipmentsByOrderID(id)
 }
 
 func (s *OrderService) GetAllOrders(page, pageSize int, status string) ([]order.Order, int64, error) {
@@ -77,12 +76,42 @@ func (s *OrderService) UpdateShippingStatus(id uint, shippingStatus string) erro
 	if shippingStatus == "shipped" {
 		return ErrOrderFulfillmentStatusManaged
 	}
+	if shippingStatus == "delivered" && s.shipping == nil {
+		return ErrOrderShippingNotConfigured
+	}
 
 	if s.txManager != nil {
 		return s.txManager.WithinTx(func(repos repository.TxRepositories) error {
-			_, err := repos.Order.FindByIDForUpdate(id)
+			orderRecord, err := repos.Order.FindByIDForUpdate(id)
 			if err != nil {
 				return normalizeOrderError(err)
+			}
+			if shippingStatus == "delivered" {
+				if repos.Shipping == nil {
+					return ErrOrderShippingNotConfigured
+				}
+				allDelivered, err := repos.Shipping.AreAllTrackingShipmentsDelivered(id)
+				if err != nil {
+					return err
+				}
+				if !allDelivered {
+					return ErrOrderShippingDeliveryNotReady
+				}
+			}
+			if shippingStatus == "delivered" {
+				deliveredAt := time.Now().UTC()
+				updated, err := repos.Order.MarkDeliveredAtIfNeeded(id, deliveredAt)
+				if err != nil || !updated {
+					return err
+				}
+				return enqueueOrderDeliveredDomainEvent(
+					repos.Outbox,
+					orderRecord,
+					"",
+					orderRecord.ShippingStatus,
+					deliveredAt,
+					"admin_manual_update",
+				)
 			}
 			if err := repos.Order.UpdateShippingStatus(id, shippingStatus); err != nil {
 				return err
@@ -91,14 +120,32 @@ func (s *OrderService) UpdateShippingStatus(id uint, shippingStatus string) erro
 		})
 	}
 
-	if _, err := s.findOrder(id); err != nil {
+	_, err := s.findOrder(id)
+	if err != nil {
 		return err
+	}
+	if shippingStatus == "delivered" {
+		if s.shipping == nil || s.shipping.shippingRepo == nil {
+			return ErrOrderShippingNotConfigured
+		}
+		allDelivered, err := s.shipping.shippingRepo.AreAllTrackingShipmentsDelivered(id)
+		if err != nil {
+			return err
+		}
+		if !allDelivered {
+			return ErrOrderShippingDeliveryNotReady
+		}
+		deliveredAt := time.Now().UTC()
+		updated, err := s.orderRepo.MarkDeliveredAtIfNeeded(id, deliveredAt)
+		if err != nil || !updated {
+			return err
+		}
+		return nil
 	}
 	return s.orderRepo.UpdateShippingStatus(id, shippingStatus)
 }
 
 type resolvedOrderTrackingUpdate struct {
-	trackingInfo        order.TrackingInfoUpdate
 	trackingShipment    TrackingShipmentInput
 	carrierName         string
 	trackingURLTemplate string
@@ -157,15 +204,6 @@ func resolveOrderTrackingUpdate(
 	}
 
 	return &resolvedOrderTrackingUpdate{
-		trackingInfo: order.TrackingInfoUpdate{
-			TrackingNumber:           trackingNumber,
-			TrackingProviderID:       uintPtr(resolution.Provider.ID),
-			CarrierID:                carrierID,
-			CarrierServiceID:         carrierServiceID,
-			TrackingCarrierMappingID: uintPtr(resolution.Mapping.ID),
-			ProviderCarrierCode:      resolution.ProviderCarrierCode,
-			ProviderCarrierName:      resolution.ProviderCarrierName,
-		},
 		trackingShipment: TrackingShipmentInput{
 			TrackingProviderID:       resolution.Provider.ID,
 			TrackingNumber:           trackingNumber,
@@ -190,46 +228,53 @@ func (s *OrderService) UpdateTrackingInfo(ctx context.Context, id uint, input Or
 		return err
 	}
 	resolvedTracking.trackingShipment.OrderID = id
+	// Tracking facts and any registration command must commit atomically. Every
+	// update therefore goes through the transaction manager.
+	if s.txManager == nil {
+		return ErrOrderTrackingTransactionNeeded
+	}
 
 	if s.txManager != nil {
 		if err := s.txManager.WithinTx(func(repos repository.TxRepositories) error {
-			if repos.Shipping == nil {
+			if repos.Shipping == nil || repos.Order == nil {
 				return ErrOrderShippingNotConfigured
 			}
-			if err := repos.Order.UpdateTrackingInfo(id, resolvedTracking.trackingInfo); err != nil {
+			if resolvedTracking.autoRegister && repos.Outbox == nil {
+				return errors.New("tracking registration outbox is not configured")
+			}
+			orderRecord, err := repos.Order.FindByIDForUpdate(id)
+			if err != nil {
 				return err
 			}
 
 			shippingService := NewShippingService(repos.Shipping)
-			_, err := shippingService.UpsertTrackingShipment(resolvedTracking.trackingShipment)
+			_, existingShipmentErr := repos.Shipping.FindTrackingShipmentByOrderIDAndTrackingNumber(id, resolvedTracking.trackingShipment.TrackingNumber)
+			if existingShipmentErr != nil && !repository.IsRecordNotFound(existingShipmentErr) {
+				return existingShipmentErr
+			}
+			shipment, err := shippingService.UpsertTrackingShipment(resolvedTracking.trackingShipment)
 			if err != nil {
 				return err
+			}
+			resolvedTracking.trackingShipment.ID = shipment.ID
+			if repository.IsRecordNotFound(existingShipmentErr) && orderRecord.ShippingStatus == "delivered" {
+				if err := repos.Order.ReopenShippingStatusForAdditionalShipment(id); err != nil {
+					return err
+				}
+			}
+			if resolvedTracking.autoRegister {
+				if err := enqueueTrackingShipmentRegistrationOutboxEvent(
+					repos.Outbox,
+					resolvedTracking.trackingShipment,
+					time.Now().UTC(),
+				); err != nil {
+					return err
+				}
 			}
 			return nil
 		}); err != nil {
 			return err
 		}
-	} else {
-		if err := s.orderRepo.UpdateTrackingInfo(id, resolvedTracking.trackingInfo); err != nil {
-			return err
-		}
-		trackingShipment, err := s.shipping.UpsertTrackingShipment(resolvedTracking.trackingShipment)
-		if err != nil {
-			return err
-		}
-		_ = trackingShipment
-	}
-
-	if resolvedTracking.autoRegister {
-		return s.shipping.RegisterTrackingShipment(ctx, TrackingSyncInput{
-			OrderID:                  id,
-			ProviderID:               resolvedTracking.trackingShipment.TrackingProviderID,
-			TrackingNumber:           resolvedTracking.trackingShipment.TrackingNumber,
-			ProviderCarrierCode:      resolvedTracking.trackingShipment.ProviderCarrierCode,
-			CarrierID:                resolvedTracking.trackingShipment.CarrierID,
-			CarrierServiceID:         resolvedTracking.trackingShipment.CarrierServiceID,
-			TrackingCarrierMappingID: resolvedTracking.trackingShipment.TrackingCarrierMappingID,
-		})
 	}
 
 	return nil
@@ -318,6 +363,16 @@ func (s *OrderService) FulfillOrderWithIdempotency(
 		if o.FulfillmentHold {
 			return ErrOrderFulfillmentOnHold
 		}
+		if repos.Payment == nil {
+			return ErrOrderFulfillmentOnHold
+		}
+		pendingRefund, err := repos.Payment.HasPendingRefundByOrderID(id)
+		if err != nil {
+			return err
+		}
+		if pendingRefund {
+			return ErrOrderFulfillmentBlockedByPendingRefund
+		}
 		activeStripeDispute, err := repos.Payment.HasActiveStripeDisputeByOrderID(id)
 		if err != nil {
 			return err
@@ -334,16 +389,48 @@ func (s *OrderService) FulfillOrderWithIdempotency(
 			return ErrOrderFulfillmentOnHold
 		}
 		if o.Status == "shipped" {
+			if o.PaymentStatus != "paid" {
+				return ErrOrderFulfillmentPaymentRequired
+			}
 			txShippingService := NewShippingService(repos.Shipping)
 			resolvedTracking, err = resolveOrderTrackingUpdate(txShippingService, input)
 			if err != nil {
 				return err
 			}
 			resolvedTracking.trackingShipment.OrderID = id
-			if !sameOrderFulfillmentTracking(o, resolvedTracking) {
-				return ErrOrderFulfillmentTrackingConflict
+			_, existingShipmentErr := repos.Shipping.FindTrackingShipmentByOrderIDAndTrackingNumber(id, resolvedTracking.trackingShipment.TrackingNumber)
+			if existingShipmentErr != nil && !repository.IsRecordNotFound(existingShipmentErr) {
+				return existingShipmentErr
 			}
-			resolvedTracking = nil
+			shipment, err := txShippingService.UpsertTrackingShipment(resolvedTracking.trackingShipment)
+			if err != nil {
+				return err
+			}
+			resolvedTracking.trackingShipment.ID = shipment.ID
+			if repository.IsRecordNotFound(existingShipmentErr) && o.ShippingStatus == "delivered" {
+				if err := repos.Order.ReopenShippingStatusForAdditionalShipment(id); err != nil {
+					return err
+				}
+			}
+			shippedAt := time.Now().UTC()
+			if o.ShippedAt != nil && !o.ShippedAt.IsZero() {
+				shippedAt = o.ShippedAt.UTC()
+			}
+			if err := enqueueOrderShippedDomainEvent(
+				repos.Outbox,
+				o,
+				resolvedTracking,
+				o.Status,
+				o.ShippingStatus,
+				shippedAt,
+			); err != nil {
+				return err
+			}
+			if resolvedTracking.autoRegister {
+				if err := enqueueTrackingShipmentRegistrationOutboxEvent(repos.Outbox, resolvedTracking.trackingShipment, shippedAt); err != nil {
+					return err
+				}
+			}
 			if idempotencyRecord != nil {
 				if err := repos.OrderIdempotency.BindOrderID(idempotencyRecord.ID, id); err != nil {
 					return err
@@ -378,12 +465,11 @@ func (s *OrderService) FulfillOrderWithIdempotency(
 		}
 		resolvedTracking.trackingShipment.OrderID = id
 
-		if err := repos.Order.UpdateTrackingInfo(id, resolvedTracking.trackingInfo); err != nil {
+		shipment, err := txShippingService.UpsertTrackingShipment(resolvedTracking.trackingShipment)
+		if err != nil {
 			return err
 		}
-		if _, err := txShippingService.UpsertTrackingShipment(resolvedTracking.trackingShipment); err != nil {
-			return err
-		}
+		resolvedTracking.trackingShipment.ID = shipment.ID
 
 		shippedAt := time.Now().UTC()
 		if o.ShippedAt != nil && !o.ShippedAt.IsZero() {
@@ -391,6 +477,8 @@ func (s *OrderService) FulfillOrderWithIdempotency(
 		} else {
 			o.ShippedAt = &shippedAt
 		}
+		previousOrderStatus := o.Status
+		previousShippingStatus := o.ShippingStatus
 		if o.Status != "shipped" {
 			if err := repos.Order.UpdateStatus(id, o.Status, "shipped"); err != nil {
 				return err
@@ -401,13 +489,20 @@ func (s *OrderService) FulfillOrderWithIdempotency(
 				return err
 			}
 		}
-		if err := enqueueOrderShippingNotificationEmailOutboxEvent(
+		if err := enqueueOrderShippedDomainEvent(
 			repos.Outbox,
 			o,
 			resolvedTracking,
+			previousOrderStatus,
+			previousShippingStatus,
 			shippedAt,
 		); err != nil {
 			return err
+		}
+		if resolvedTracking.autoRegister {
+			if err := enqueueTrackingShipmentRegistrationOutboxEvent(repos.Outbox, resolvedTracking.trackingShipment, shippedAt); err != nil {
+				return err
+			}
 		}
 		if idempotencyRecord != nil {
 			if err := repos.OrderIdempotency.BindOrderID(idempotencyRecord.ID, id); err != nil {
@@ -420,30 +515,17 @@ func (s *OrderService) FulfillOrderWithIdempotency(
 	}
 
 	result := &OrderFulfillmentResult{}
-	if resolvedTracking != nil && resolvedTracking.autoRegister {
-		if err := s.shipping.RegisterTrackingShipment(ctx, TrackingSyncInput{
-			OrderID:                  id,
-			ProviderID:               resolvedTracking.trackingShipment.TrackingProviderID,
-			TrackingNumber:           resolvedTracking.trackingShipment.TrackingNumber,
-			ProviderCarrierCode:      resolvedTracking.trackingShipment.ProviderCarrierCode,
-			CarrierID:                resolvedTracking.trackingShipment.CarrierID,
-			CarrierServiceID:         resolvedTracking.trackingShipment.CarrierServiceID,
-			TrackingCarrierMappingID: resolvedTracking.trackingShipment.TrackingCarrierMappingID,
-		}); err != nil {
-			result.TrackingRegistrationError = err.Error()
-		}
-	}
 
 	fulfilledOrder, err := s.GetAdminOrder(id)
 	if err != nil {
 		return nil, err
 	}
-	trackingShipment, err := s.GetAdminOrderTrackingShipment(id)
+	trackingShipments, err := s.GetAdminOrderTrackingShipments(id)
 	if err != nil {
 		return nil, err
 	}
 	result.Order = fulfilledOrder
-	result.TrackingShipment = trackingShipment
+	result.TrackingShipments = trackingShipments
 	return result, nil
 }
 
@@ -454,11 +536,9 @@ func ValidateOrderCustomsDeclaredValuesAreConfirmed(orderRecord *order.Order) er
 		return ErrOrderCustomsDeclarationIncomplete
 	}
 	for _, item := range orderRecord.Items {
-		if item.DeclaredValue == nil ||
+		if item.DeclaredValueMinor == nil ||
 			!item.DeclaredValueConfirmed ||
-			math.IsNaN(*item.DeclaredValue) ||
-			math.IsInf(*item.DeclaredValue, 0) ||
-			*item.DeclaredValue <= 0 {
+			*item.DeclaredValueMinor <= 0 {
 			itemReference := strings.TrimSpace(item.SKU)
 			if itemReference == "" {
 				itemReference = fmt.Sprintf("order_item_id=%d", item.ID)
@@ -474,7 +554,7 @@ func ValidateOrderCustomsDeclaredValuesAreConfirmed(orderRecord *order.Order) er
 	return nil
 }
 
-func (s *OrderService) SyncOrderTracking(ctx context.Context, id uint) (*TrackingSyncResult, error) {
+func (s *OrderService) SyncOrderTracking(ctx context.Context, id uint, trackingNumber string) (*TrackingSyncResult, error) {
 	o, err := s.findOrder(id)
 	if err != nil {
 		return nil, err
@@ -482,24 +562,23 @@ func (s *OrderService) SyncOrderTracking(ctx context.Context, id uint) (*Trackin
 	if s.shipping == nil {
 		return nil, ErrOrderShippingNotConfigured
 	}
-	if strings.TrimSpace(o.TrackingNumber) == "" {
+	trackingNumber = strings.TrimSpace(trackingNumber)
+	if trackingNumber == "" {
 		return nil, ErrTrackingNumberRequired
 	}
-	if !hasPositiveID(o.TrackingProviderID) {
-		return nil, ErrTrackingProviderRequired
-	}
-	if strings.TrimSpace(o.ProviderCarrierCode) == "" {
-		return nil, ErrTrackingCarrierCodeRequired
+	shipment, err := s.shipping.GetTrackingShipmentByOrderIDAndTrackingNumber(o.ID, trackingNumber)
+	if err != nil {
+		return nil, err
 	}
 
 	return s.shipping.SyncTracking(ctx, TrackingSyncInput{
 		OrderID:                  o.ID,
-		ProviderID:               *o.TrackingProviderID,
-		TrackingNumber:           o.TrackingNumber,
-		ProviderCarrierCode:      o.ProviderCarrierCode,
-		CarrierID:                o.CarrierID,
-		CarrierServiceID:         o.CarrierServiceID,
-		TrackingCarrierMappingID: o.TrackingCarrierMappingID,
+		ProviderID:               shipment.TrackingProviderID,
+		TrackingNumber:           shipment.TrackingNumber,
+		ProviderCarrierCode:      shipment.ProviderCarrierCode,
+		CarrierID:                shipment.CarrierID,
+		CarrierServiceID:         shipment.CarrierServiceID,
+		TrackingCarrierMappingID: shipment.TrackingCarrierMappingID,
 	})
 }
 
@@ -513,11 +592,13 @@ func (s *OrderService) UpdateAdminNote(id uint, adminNote string) error {
 	return s.orderRepo.Update(o)
 }
 
-func (s *OrderService) UpdateOrderItemCustoms(orderID, orderItemID uint, declaredValue *float64, confirmed bool) error {
+// UpdateOrderItemCustoms updates the customs declaration in the order item's
+// currency smallest unit. Major-unit values are not accepted at this boundary.
+func (s *OrderService) UpdateOrderItemCustoms(orderID, orderItemID uint, declaredValue *int64, confirmed bool) error {
 	if orderID == 0 || orderItemID == 0 {
 		return ErrOrderItemNotFound
 	}
-	if declaredValue != nil && (math.IsNaN(*declaredValue) || math.IsInf(*declaredValue, 0) || *declaredValue < 0) {
+	if declaredValue != nil && *declaredValue < 0 {
 		return ErrDeclaredValueInvalid
 	}
 	if confirmed && declaredValue == nil {

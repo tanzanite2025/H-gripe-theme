@@ -62,6 +62,44 @@ func TestEnsurePublicCustomerServiceConversationTouchesVisitorTimezone(t *testin
 	assert.NotEmpty(t, profile.CustomerServiceVisitorHash)
 }
 
+func TestHasPublicCustomerServiceConversationBackfillsExistingVisitorTimezone(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	db, handler := newPublicCustomerServiceHandlerTestEnv(t)
+	supportUser := seedPublicCustomerServiceSupportUser(t, db)
+
+	router := gin.New()
+	router.POST("/conversations", handler.EnsurePublicCustomerServiceConversation)
+	router.GET("/has-conversation", handler.HasPublicCustomerServiceConversation)
+
+	createRecorder := httptest.NewRecorder()
+	createBody := []byte(`{"agent_id":"` + itoaUint(supportUser.ID) + `","locale":"en"}`)
+	createRequest := httptest.NewRequest(http.MethodPost, "/conversations", bytes.NewReader(createBody))
+	createRequest.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(createRecorder, createRequest)
+	require.Equal(t, http.StatusOK, createRecorder.Code)
+	require.NotEmpty(t, createRecorder.Result().Cookies())
+
+	var profile visitor.Profile
+	require.NoError(t, db.First(&profile).Error)
+	assert.Empty(t, profile.Timezone)
+	qualityBefore := profile.ProfileQualityScore
+	meaningfulSeenBefore := profile.LastMeaningfulSeenAt
+
+	hasRecorder := httptest.NewRecorder()
+	hasRequest := httptest.NewRequest(http.MethodGet, "/has-conversation", nil)
+	hasRequest.Header.Set("X-Timezone", "Asia/Shanghai")
+	for _, cookie := range createRecorder.Result().Cookies() {
+		hasRequest.AddCookie(cookie)
+	}
+	router.ServeHTTP(hasRecorder, hasRequest)
+	require.Equal(t, http.StatusOK, hasRecorder.Code)
+
+	require.NoError(t, db.First(&profile, profile.ID).Error)
+	assert.Equal(t, "Asia/Shanghai", profile.Timezone)
+	assert.Equal(t, qualityBefore, profile.ProfileQualityScore)
+	assert.Equal(t, meaningfulSeenBefore, profile.LastMeaningfulSeenAt)
+}
+
 func newPublicCustomerServiceHandlerTestEnv(t *testing.T) (*gorm.DB, *Handler) {
 	t.Helper()
 

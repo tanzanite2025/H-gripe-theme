@@ -6,10 +6,8 @@ import (
 	"testing"
 
 	"commerce-platform/internal/domain/coupon"
-	"commerce-platform/internal/domain/loyalty"
 	"commerce-platform/internal/domain/order"
 	"commerce-platform/internal/domain/product"
-	attributionpkg "commerce-platform/internal/pkg/attribution"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -28,7 +26,6 @@ func TestCancelOrderRejectsPaidOrderWithoutChangingStateOrStock(t *testing.T) {
 		"card",
 		"standard",
 		"",
-		0,
 	)
 	require.NoError(t, err)
 	require.NoError(t, db.Model(&order.Order{}).Where("id = ?", createdOrder.ID).Updates(map[string]interface{}{
@@ -44,10 +41,6 @@ func TestCancelOrderRejectsPaidOrderWithoutChangingStateOrStock(t *testing.T) {
 	require.NoError(t, db.First(&savedOrder, createdOrder.ID).Error)
 	assert.Equal(t, "paid", savedOrder.Status)
 	assert.Equal(t, "paid", savedOrder.PaymentStatus)
-
-	var savedProduct product.Product
-	require.NoError(t, db.First(&savedProduct, productRecord.ID).Error)
-	assert.Equal(t, 5, savedProduct.Stock)
 
 	var savedVariant product.ProductVariant
 	require.NoError(t, db.Where("product_id = ?", productRecord.ID).First(&savedVariant).Error)
@@ -67,7 +60,6 @@ func TestCancelOrderByNumberRejectsPaidPaymentStatusEvenWhenOrderIsPending(t *te
 		"card",
 		"standard",
 		"",
-		0,
 	)
 	require.NoError(t, err)
 	require.NoError(t, db.Model(&order.Order{}).Where("id = ?", createdOrder.ID).Update("payment_status", "paid").Error)
@@ -80,10 +72,6 @@ func TestCancelOrderByNumberRejectsPaidPaymentStatusEvenWhenOrderIsPending(t *te
 	require.NoError(t, db.First(&savedOrder, createdOrder.ID).Error)
 	assert.Equal(t, "pending", savedOrder.Status)
 	assert.Equal(t, "paid", savedOrder.PaymentStatus)
-
-	var savedProduct product.Product
-	require.NoError(t, db.First(&savedProduct, productRecord.ID).Error)
-	assert.Equal(t, 5, savedProduct.Stock)
 
 	var savedVariant product.ProductVariant
 	require.NoError(t, db.Where("product_id = ?", productRecord.ID).First(&savedVariant).Error)
@@ -103,7 +91,6 @@ func TestCancelOrderRestoresStockForPendingUnpaidOrder(t *testing.T) {
 		"card",
 		"standard",
 		"",
-		0,
 	)
 	require.NoError(t, err)
 	require.Equal(t, "pending", createdOrder.Status)
@@ -116,9 +103,9 @@ func TestCancelOrderRestoresStockForPendingUnpaidOrder(t *testing.T) {
 	assert.Equal(t, "cancelled", savedOrder.Status)
 	assert.Equal(t, "unpaid", savedOrder.PaymentStatus)
 
-	var savedProduct product.Product
-	require.NoError(t, db.First(&savedProduct, productRecord.ID).Error)
-	assert.Equal(t, 5, savedProduct.Stock)
+	var savedVariant product.ProductVariant
+	require.NoError(t, db.Where("product_id = ?", productRecord.ID).First(&savedVariant).Error)
+	assert.Equal(t, 5, savedVariant.Stock)
 }
 
 func TestCancelMadeToOrderDoesNotRestoreStock(t *testing.T) {
@@ -136,16 +123,11 @@ func TestCancelMadeToOrderDoesNotRestoreStock(t *testing.T) {
 		"card",
 		"standard",
 		"",
-		0,
 	)
 	require.NoError(t, err)
 	require.Equal(t, order.FulfillmentModeMadeToOrder, createdOrder.FulfillmentMode)
 
 	require.NoError(t, orderService.CancelOrder(createdOrder.ID, 42))
-
-	var savedProduct product.Product
-	require.NoError(t, db.First(&savedProduct, productRecord.ID).Error)
-	assert.Equal(t, 0, savedProduct.Stock)
 
 	var savedVariant product.ProductVariant
 	require.NoError(t, db.Where("product_id = ?", productRecord.ID).First(&savedVariant).Error)
@@ -167,14 +149,13 @@ func TestCancelOrderReversesCouponUsageWithoutDeletingAuditRecord(t *testing.T) 
 		"card",
 		"standard",
 		"CANCEL10",
-		0,
 	)
 	require.NoError(t, err)
 
 	var usage coupon.CouponUsage
 	require.NoError(t, db.Where("order_id = ?", createdOrder.ID).First(&usage).Error)
 	assert.Equal(t, coupon.CouponUsageStatusApplied, usage.Status)
-	assert.Equal(t, float64(10), usage.Discount)
+	assert.Equal(t, int64(1000), usage.DiscountMinor)
 
 	require.NoError(t, orderService.CancelOrder(createdOrder.ID, 42))
 
@@ -198,40 +179,8 @@ func TestCancelOrderReversesCouponUsageWithoutDeletingAuditRecord(t *testing.T) 
 		"card",
 		"standard",
 		"CANCEL10",
-		0,
 	)
 	require.NoError(t, err)
-}
-
-func TestCancelOrderRestoresGiftCardUsage(t *testing.T) {
-	db, orderService := newTestOrderService(t)
-	productRecord := seedProduct(t, db, 100, 5)
-	giftCard := seedGiftCard(t, db, "CANCEL-GIFT-CARD", 42, "USD", 2500)
-
-	createdOrder, err := orderService.CreateOrderWithAttributionAndOptions(
-		context.Background(),
-		42,
-		[]order.OrderItem{{ProductID: productRecord.ID, Quantity: 1}},
-		testAddress(),
-		testAddress(),
-		"card",
-		"standard",
-		"",
-		0,
-		attributionpkg.Context{},
-		OrderCreationOptions{GiftCardCode: giftCard.Code},
-	)
-	require.NoError(t, err)
-	require.NoError(t, orderService.CancelOrder(createdOrder.ID, 42))
-
-	var savedGiftCard coupon.GiftCard
-	require.NoError(t, db.First(&savedGiftCard, giftCard.ID).Error)
-	assert.Equal(t, int64(2500), savedGiftCard.BalanceCents)
-	assert.Equal(t, "active", savedGiftCard.Status)
-
-	var restoration coupon.GiftCardTransaction
-	require.NoError(t, db.Where("gift_card_id = ? AND order_id = ? AND type = ?", giftCard.ID, createdOrder.ID, "refund").First(&restoration).Error)
-	assert.Equal(t, int64(2500), restoration.AmountCents)
 }
 
 func TestCancelOrderConcurrentRequestsRollbackOnlyOnce(t *testing.T) {
@@ -247,20 +196,8 @@ func TestCancelOrderConcurrentRequestsRollbackOnlyOnce(t *testing.T) {
 		"card",
 		"standard",
 		"",
-		0,
 	)
 	require.NoError(t, err)
-	require.NoError(t, db.Create(&loyalty.UserLoyalty{
-		UserID:          42,
-		TotalPoints:     1000,
-		AvailablePoints: 900,
-		UsedPoints:      100,
-	}).Error)
-	require.NoError(t, db.Model(&order.Order{}).Where("id = ?", createdOrder.ID).Updates(map[string]interface{}{
-		"points_used":  100,
-		"points_value": 1,
-	}).Error)
-
 	results := make(chan error, 2)
 	var waitGroup sync.WaitGroup
 	waitGroup.Add(2)
@@ -286,17 +223,8 @@ func TestCancelOrderConcurrentRequestsRollbackOnlyOnce(t *testing.T) {
 	require.Len(t, cancellationErrors, 1)
 	require.ErrorIs(t, cancellationErrors[0], ErrOrderCancellationConflict)
 
-	var savedProduct product.Product
-	require.NoError(t, db.First(&savedProduct, productRecord.ID).Error)
-	assert.Equal(t, 5, savedProduct.Stock)
+	var savedVariant product.ProductVariant
+	require.NoError(t, db.Where("product_id = ?", productRecord.ID).First(&savedVariant).Error)
+	assert.Equal(t, 5, savedVariant.Stock)
 
-	var savedLoyalty loyalty.UserLoyalty
-	require.NoError(t, db.Where("user_id = ?", 42).First(&savedLoyalty).Error)
-	assert.Equal(t, 1000, savedLoyalty.AvailablePoints)
-	assert.Equal(t, 0, savedLoyalty.UsedPoints)
-
-	var refundTransactions []loyalty.LoyaltyTransaction
-	require.NoError(t, db.Where("user_id = ? AND type = ? AND source = ? AND source_id = ?", 42, "refund", "order", createdOrder.ID).Find(&refundTransactions).Error)
-	require.Len(t, refundTransactions, 1)
-	assert.Equal(t, 100, refundTransactions[0].Points)
 }

@@ -271,6 +271,31 @@ func TestStorefrontRouteCatalogRepositoryStatsFiltersByLocale(t *testing.T) {
 	require.Equal(t, int64(1), zhStats.Stale)
 }
 
+func TestStatsForLocaleAndScopeRestrictsCanonicalMetrics(t *testing.T) {
+	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{Logger: logger.Default.LogMode(logger.Silent)})
+	require.NoError(t, err)
+	require.NoError(t, db.AutoMigrate(&seodomain.StorefrontRouteCatalogEntry{}))
+	now := time.Now().UTC()
+	require.NoError(t, db.Create(&[]seodomain.StorefrontRouteCatalogEntry{
+		{RouteKey: "canonical:en:mismatch", Path: "/en/mismatch", Locale: "en", SourceType: seodomain.RouteSourceStatic, EntryStatus: seodomain.RouteEntryStatusActive, LastCheckStatus: seodomain.RouteCheckStatusCanonicalMisfit, LastSeenAt: now},
+		{RouteKey: "canonical:en:duplicate", Path: "/en/duplicate", Locale: "en", SourceType: seodomain.RouteSourceStatic, EntryStatus: seodomain.RouteEntryStatusDuplicate, LastSeenAt: now},
+		{RouteKey: "canonical:en:healthy", Path: "/en/healthy", Locale: "en", SourceType: seodomain.RouteSourceStatic, EntryStatus: seodomain.RouteEntryStatusActive, LastCheckStatus: seodomain.RouteCheckStatusOK, LastSeenAt: now},
+		{RouteKey: "canonical:zh:mismatch", Path: "/zh_cn/mismatch", Locale: "zh_cn", SourceType: seodomain.RouteSourceStatic, EntryStatus: seodomain.RouteEntryStatusActive, LastCheckStatus: seodomain.RouteCheckStatusCanonicalMisfit, LastSeenAt: now},
+	}).Error)
+
+	repo := NewStorefrontRouteCatalogRepository(db)
+	stats, err := repo.StatsForLocaleAndScope("en", "canonical")
+	require.NoError(t, err)
+	require.Equal(t, int64(2), stats.Total)
+	require.Equal(t, int64(1), stats.CanonicalMismatch)
+	require.Equal(t, int64(1), stats.Duplicate)
+	require.Equal(t, int64(2), stats.NeedsAttention)
+
+	allStats, err := repo.StatsForLocale("en")
+	require.NoError(t, err)
+	require.Equal(t, int64(3), allStats.Total)
+}
+
 func TestUpsertSnapshotClearsCurrentCheckProjectionAndPreservesHistory(t *testing.T) {
 	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Silent),

@@ -23,7 +23,6 @@ func (fn googleMerchantRoundTripper) RoundTrip(request *http.Request) (*http.Res
 
 func TestBuildGoogleMerchantProductInputUsesOneSKUAndStorefrontFields(t *testing.T) {
 	identifierExists := true
-	salePrice := 1199.99
 	offer := &merchant.GoogleMerchantOffer{
 		OfferID:               "tz-wheel-700",
 		Brand:                 "Commerce Platform",
@@ -46,13 +45,13 @@ func TestBuildGoogleMerchantProductInputUsesOneSKUAndStorefrontFields(t *testing
 			}},
 		},
 		Variant: &product.ProductVariant{
-			ID:        700,
-			SKU:       "TZ-700",
-			Currency:  "USD",
-			Price:     1299.99,
-			SalePrice: &salePrice,
-			Stock:     3,
-			IsActive:  true,
+			ID:             700,
+			SKU:            "TZ-700",
+			Currency:       "USD",
+			PriceMinor:     129999,
+			SalePriceMinor: func() *int64 { v := int64(119999); return &v }(),
+			Stock:          3,
+			IsActive:       true,
 		},
 	}
 
@@ -87,7 +86,6 @@ func TestBuildGoogleMerchantProductInputUsesOneSKUAndStorefrontFields(t *testing
 
 func TestBuildGoogleMerchantProductInputRejectsUnconvertedCrossCurrencyPrices(t *testing.T) {
 	identifierExists := false
-	salePrice := 1200.0
 	offer := &merchant.GoogleMerchantOffer{
 		OfferID:               "tz-wheel-jp",
 		Brand:                 "Commerce Platform",
@@ -108,13 +106,13 @@ func TestBuildGoogleMerchantProductInputRejectsUnconvertedCrossCurrencyPrices(t 
 			}},
 		},
 		Variant: &product.ProductVariant{
-			ID:        700,
-			SKU:       "TZ-700",
-			Currency:  "USD",
-			Price:     1500,
-			SalePrice: &salePrice,
-			Stock:     3,
-			IsActive:  true,
+			ID:             700,
+			SKU:            "TZ-700",
+			Currency:       "USD",
+			PriceMinor:     150000,
+			SalePriceMinor: func() *int64 { v := int64(120000); return &v }(),
+			Stock:          3,
+			IsActive:       true,
 		},
 	}
 	service := &GoogleMerchantService{}
@@ -123,14 +121,14 @@ func TestBuildGoogleMerchantProductInputRejectsUnconvertedCrossCurrencyPrices(t 
 		t.Fatalf("buildGoogleMerchantProductInput() error = %v, want JPY price override requirement", err)
 	}
 
-	priceOverride := 230000.0
-	offer.PriceOverride = &priceOverride
+	priceOverride := int64(230000)
+	offer.PriceOverrideMinor = &priceOverride
 	if _, err := service.buildGoogleMerchantProductInput(offer, "https://example.com"); err == nil || !strings.Contains(err.Error(), "sale_price_override in JPY") {
 		t.Fatalf("buildGoogleMerchantProductInput() error = %v, want JPY sale price override requirement", err)
 	}
 
-	salePriceOverride := 184000.0
-	offer.SalePriceOverride = &salePriceOverride
+	salePriceOverride := int64(184000)
+	offer.SalePriceOverrideMinor = &salePriceOverride
 	input, err := service.buildGoogleMerchantProductInput(offer, "https://example.com")
 	if err != nil {
 		t.Fatalf("buildGoogleMerchantProductInput() error = %v", err)
@@ -145,7 +143,6 @@ func TestBuildGoogleMerchantProductInputRejectsUnconvertedCrossCurrencyPrices(t 
 
 func TestBuildGoogleMerchantProductInputUsesConvertedDisplayPriceSnapshot(t *testing.T) {
 	identifierExists := false
-	salePrice := 1200.0
 	offer := &merchant.GoogleMerchantOffer{
 		OfferID:               "tz-wheel-jp-snapshot",
 		Brand:                 "Commerce Platform",
@@ -166,13 +163,13 @@ func TestBuildGoogleMerchantProductInputUsesConvertedDisplayPriceSnapshot(t *tes
 			}},
 		},
 		Variant: &product.ProductVariant{
-			ID:        701,
-			SKU:       "TZ-701",
-			Currency:  "USD",
-			Price:     1500,
-			SalePrice: &salePrice,
+			ID:             701,
+			SKU:            "TZ-701",
+			Currency:       "USD",
+			PriceMinor:     150000,
+			SalePriceMinor: func() *int64 { v := int64(120000); return &v }(),
 			DisplayPriceData: currency.DisplayPriceSnapshotsJSON([]currency.DisplayPriceSnapshot{{
-				Amount:        230000,
+				AmountDecimal: "230000",
 				Currency:      "JPY",
 				QuoteCurrency: "JPY",
 				Rate:          153.333333,
@@ -218,10 +215,10 @@ func TestBuildGoogleMerchantProductInputMapsOutOfStockSKU(t *testing.T) {
 			}},
 		},
 		Variant: &product.ProductVariant{
-			Currency: "USD",
-			Price:    99.99,
-			Stock:    0,
-			IsActive: true,
+			Currency:   "USD",
+			PriceMinor: 9999,
+			Stock:      0,
+			IsActive:   true,
 		},
 	}
 
@@ -257,11 +254,11 @@ func TestBuildGoogleMerchantProductInputResolvesRelativeImageAndLocaleURL(t *tes
 			}},
 		},
 		Variant: &product.ProductVariant{
-			ID:       701,
-			Currency: "EUR",
-			Price:    999.99,
-			Stock:    5,
-			IsActive: true,
+			ID:         701,
+			Currency:   "EUR",
+			PriceMinor: 99999,
+			Stock:      5,
+			IsActive:   true,
 		},
 	}
 
@@ -299,11 +296,11 @@ func TestBuildGoogleMerchantProductInputCanonicalizesFirstPartyImage(t *testing.
 			}},
 		},
 		Variant: &product.ProductVariant{
-			ID:       702,
-			Currency: "USD",
-			Price:    999.99,
-			Stock:    5,
-			IsActive: true,
+			ID:         702,
+			Currency:   "USD",
+			PriceMinor: 99999,
+			Stock:      5,
+			IsActive:   true,
 		},
 	}
 	service := &GoogleMerchantService{}

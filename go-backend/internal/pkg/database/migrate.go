@@ -15,6 +15,7 @@ import (
 	marketdomain "commerce-platform/internal/domain/market"
 	"commerce-platform/internal/domain/media"
 	"commerce-platform/internal/domain/merchant"
+	"commerce-platform/internal/domain/notification"
 	"commerce-platform/internal/domain/ops"
 	orderdomain "commerce-platform/internal/domain/order"
 	"commerce-platform/internal/domain/orderevidence"
@@ -87,6 +88,7 @@ func AutoMigrate(db *gorm.DB, serverMode string) error {
 		&product.ProductDisplayPriceSnapshot{},
 		&product.ProductVariantOptionValue{},
 		&product.ProductCustomOptionPolicy{},
+		&product.ProductOptionValueRelation{},
 		&product.ProductOptionGroupVariantRule{},
 		&product.ProductOptionValueVariantRule{},
 		&product.Cart{},
@@ -100,6 +102,7 @@ func AutoMigrate(db *gorm.DB, serverMode string) error {
 		&merchant.GoogleMerchantOffer{},
 		&social.OAuthConnection{},
 		&social.OAuthSession{},
+		&notification.EmailProviderConfig{},
 		&ops.DomainBinding{},
 		&ops.Connector{},
 		&ops.VPSBinding{},
@@ -133,6 +136,7 @@ func AutoMigrate(db *gorm.DB, serverMode string) error {
 		&payment.Refund{},
 		&payment.RefundLineItem{},
 		&payment.StripeWebhookEvent{},
+		&payment.PayPalWebhookEvent{},
 		&payment.StripeDispute{},
 		&payment.PaymentReview{},
 		&payment.PaymentRiskEvent{},
@@ -146,6 +150,7 @@ func AutoMigrate(db *gorm.DB, serverMode string) error {
 		&currency.ExchangeRateSyncLease{},
 		&shipping.ShippingTemplate{},
 		&shipping.ShippingRule{},
+		&shipping.ShippingDisplayPriceSnapshot{},
 		&shipping.Carrier{},
 		&shipping.CarrierService{},
 		&shipping.QuoteSnapshot{},
@@ -159,12 +164,8 @@ func AutoMigrate(db *gorm.DB, serverMode string) error {
 		&shipping.PackagingRuleApply{},
 		&coupon.Coupon{},
 		&coupon.CouponUsage{},
-		&coupon.GiftCard{},
-		&coupon.GiftCardTransaction{},
-		&coupon.GiftCardRedemption{},
 		&loyalty.LoyaltyTransaction{},
 		&loyalty.ProgramConfig{},
-		&loyalty.ProgramRedeemOption{},
 		&loyalty.CheckIn{},
 		&loyalty.Referral{},
 		&loyalty.ReferralProgramConfig{},
@@ -188,6 +189,7 @@ func AutoMigrate(db *gorm.DB, serverMode string) error {
 		&ticket.Ticket{},
 		&ticket.TicketMessage{},
 		&ticket.CustomerServiceInboxState{},
+		&ticket.CustomerServiceRetentionPolicy{},
 		&ticket.AutoReplyRule{},
 		&visitor.Profile{},
 		&visitor.RiskDailyFact{},

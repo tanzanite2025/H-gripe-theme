@@ -21,7 +21,7 @@
         </div>
         <div class="rounded-xl bg-muted/40 p-3">
           <dt class="font-black uppercase text-muted-foreground">Amount</dt>
-          <dd class="mt-1 font-mono">{{ formatMoney(recommendation.recommended_amount, recommendation.currency) }}</dd>
+          <dd class="mt-1 font-mono">{{ formatMinorMoney(recommendation.recommended_amount_minor, recommendation.currency) }}</dd>
         </div>
         <div class="rounded-xl bg-muted/40 p-3">
           <dt class="font-black uppercase text-muted-foreground">Order</dt>
@@ -144,7 +144,7 @@
               </div>
               <div class="rounded-xl bg-muted/40 p-3">
                 <p class="font-black uppercase">Amount</p>
-                <p class="mt-1 font-mono">{{ formatMoney(recommendation.recommended_amount, recommendation.currency) }}</p>
+                <p class="mt-1 font-mono">{{ formatMinorMoney(recommendation.recommended_amount_minor, recommendation.currency) }}</p>
               </div>
             </div>
             <label class="flex items-start gap-2 rounded-2xl border border-dashed border-rose-500/30 bg-rose-500/10 p-3 font-bold text-rose-700">
@@ -186,6 +186,7 @@ import type {
   PaymentRefundExecutionPayload,
   PaymentRefundRecommendation,
 } from '@/modules/payment/riskStrategyTypes'
+import { formatMinorMoney, minorUnitsForCurrency } from '@/lib/dashboardPresentation'
 
 const StatusPill = defineComponent({
   props: { status: { type: String, default: '' } },
@@ -250,25 +251,49 @@ const canCreateDraft = computed(() => {
 })
 
 const recommendedAmountPlaceholder = computed(() => {
-  const amount = Number(props.recommendation?.recommended_amount || 0)
-  return amount > 0 ? amount.toFixed(2) : '输入退款金额'
+  const amount = minorToMajorInput(
+    props.recommendation?.recommended_amount_minor,
+    props.recommendation?.currency,
+  )
+  return amount || '输入退款金额'
 })
 
 const formatDate = (dateString: unknown): string => dateString ? new Date(dateString as string | number | Date).toLocaleString('zh-CN') : '-'
-const formatMoney = (amount: unknown, currency = ''): string => {
-  const value = Number(amount || 0)
-  const normalizedCurrency = String(currency || '').trim().toUpperCase()
+
+const minorToMajorInput = (value: unknown, currency?: string): string => {
+  const raw = String(value ?? '').trim()
+  if (!/^-?\d+$/.test(raw)) return ''
+  const units = minorUnitsForCurrency(currency)
+  const negative = raw.startsWith('-')
+  const digits = (negative ? raw.slice(1) : raw).replace(/^0+(?=\d)/, '') || '0'
+  if (units === 0) return `${negative && digits !== '0' ? '-' : ''}${digits}`
+  const padded = digits.padStart(units + 1, '0')
+  const split = padded.length - units
+  return `${negative && digits !== '0' ? '-' : ''}${padded.slice(0, split)}.${padded.slice(split)}`
+}
+
+const majorToMinor = (value: unknown, currency?: string): number => {
+  const raw = String(value ?? '').trim()
+  const match = raw.match(/^([+-]?)(\d+)(?:\.(\d+))?$/)
+  if (!match) return 0
+  const units = minorUnitsForCurrency(currency)
+  const fraction = match[3] || ''
+  if (fraction.length > units && /[^0]/.test(fraction.slice(units))) return 0
+  const minorDigits = `${match[2]}${fraction.slice(0, units).padEnd(units, '0')}`
   try {
-    if (!normalizedCurrency) throw new Error('missing currency')
-    return new Intl.NumberFormat('zh-CN', { style: 'currency', currency: normalizedCurrency }).format(value)
+    const minor = BigInt(minorDigits || '0') * (match[1] === '-' ? -1n : 1n)
+    const numeric = Number(minor)
+    return Number.isSafeInteger(numeric) ? numeric : 0
   } catch {
-    return `${normalizedCurrency || '币种缺失'} ${value.toFixed(2)}`
+    return 0
   }
 }
 
 const resetDraftForm = (): void => {
-  const amount = Number(props.recommendation?.recommended_amount || 0)
-  draftAmount.value = amount > 0 ? amount.toFixed(2) : ''
+  draftAmount.value = minorToMajorInput(
+    props.recommendation?.recommended_amount_minor,
+    props.recommendation?.currency,
+  )
   draftReason.value = ''
   draftConfirmed.value = false
 }
@@ -282,7 +307,7 @@ const openDraftDialog = (): void => {
 const submitDraft = (): void => {
   if (!canCreateDraft.value || !draftConfirmed.value) return
   emit('create-draft', {
-    amount: Number(draftAmount.value || 0),
+    amount_minor: majorToMinor(draftAmount.value, props.recommendation?.currency),
     reason: draftReason.value.trim(),
     decision_notes: props.decisionNotes,
     confirm: true,

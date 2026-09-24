@@ -111,48 +111,34 @@ type Order struct {
 	PaymentStatus string `gorm:"index;default:'unpaid'" json:"payment_status"` // unpaid, paid, expired, refunded
 	// Provider-settlement payable facts may differ from the storefront order
 	// currency for domestic channels such as Alipay and WeChat Pay.
-	PaymentCurrency          string  `gorm:"size:3;index" json:"payment_currency"`
-	PaymentAmountMinor       int64   `gorm:"column:payment_amount_minor;not null;default:0" json:"payment_amount_minor"`
-	PaymentAmount            float64 `gorm:"type:numeric(18,2);default:0" json:"payment_amount"`
-	ShippingMethod           string  `json:"shipping_method"`
-	ShippingStatus           string  `gorm:"index;default:'pending'" json:"shipping_status"` // pending, processing, shipped, delivered
-	FulfillmentHold          bool    `gorm:"not null;default:false;index" json:"fulfillment_hold"`
-	DisputePreviousStatus    string  `gorm:"size:32" json:"-"`
-	DisputePreviousHold      bool    `gorm:"not null;default:false" json:"-"`
-	FulfillmentMode          string  `gorm:"size:20;not null;default:'stock';index" json:"fulfillment_mode"`
-	ProductionStatus         string  `gorm:"size:20;not null;default:'not_applicable';index" json:"production_status"`
-	SignatureRequired        bool    `gorm:"not null;default:false;index" json:"signature_required"`
-	TrackingNumber           string  `json:"tracking_number"`
-	TrackingProviderID       *uint   `gorm:"index" json:"tracking_provider_id"`
-	CarrierID                *uint   `gorm:"index" json:"carrier_id"`
-	CarrierServiceID         *uint   `gorm:"index" json:"carrier_service_id"`
-	ShippingQuoteID          string  `gorm:"type:varchar(36);index" json:"shipping_quote_id,omitempty"`
-	ShippingQuotePlanID      string  `gorm:"type:varchar(36)" json:"shipping_quote_plan_id,omitempty"`
-	TrackingCarrierMappingID *uint   `gorm:"index" json:"tracking_carrier_mapping_id"`
-	ProviderCarrierCode      string  `json:"provider_carrier_code"`
-	ProviderCarrierName      string  `json:"provider_carrier_name"`
+	PaymentCurrency       string `gorm:"size:3;index" json:"payment_currency"`
+	PaymentAmountMinor    int64  `gorm:"column:payment_amount_minor;not null;default:0" json:"payment_amount_minor"`
+	ShippingMethod        string `json:"shipping_method"`
+	ShippingStatus        string `gorm:"index;default:'pending'" json:"shipping_status"` // pending, processing, shipped, delivered
+	FulfillmentHold       bool   `gorm:"not null;default:false;index" json:"fulfillment_hold"`
+	DisputePreviousStatus string `gorm:"size:32" json:"-"`
+	DisputePreviousHold   bool   `gorm:"not null;default:false" json:"-"`
+	FulfillmentMode       string `gorm:"size:20;not null;default:'stock';index" json:"fulfillment_mode"`
+	ProductionStatus      string `gorm:"size:20;not null;default:'not_applicable';index" json:"production_status"`
+	SignatureRequired     bool   `gorm:"not null;default:false;index" json:"signature_required"`
+	ShippingQuoteID       string `gorm:"type:varchar(36);index" json:"shipping_quote_id,omitempty"`
+	ShippingQuotePlanID   string `gorm:"type:varchar(36)" json:"shipping_quote_plan_id,omitempty"`
 	// CheckoutCartID records the cart consumed to create this order so an
 	// unpaid cancellation or payment expiration can restore its contents.
 	CheckoutCartID *uint `gorm:"index" json:"-"`
 
 	// 金额相关
-	SubtotalAmountMinor int64   `gorm:"column:subtotal_amount_minor;not null;default:0" json:"subtotal_amount_minor"`
-	ShippingFeeMinor    int64   `gorm:"column:shipping_fee_minor;not null;default:0" json:"shipping_fee_minor"`
-	TaxAmountMinor      int64   `gorm:"column:tax_amount_minor;not null;default:0" json:"tax_amount_minor"`
-	DiscountAmountMinor int64   `gorm:"column:discount_amount_minor;not null;default:0" json:"discount_amount_minor"`
-	TotalAmountMinor    int64   `gorm:"column:total_amount_minor;not null;default:0" json:"total_amount_minor"`
-	PointsValueMinor    int64   `gorm:"column:points_value_minor;not null;default:0" json:"points_value_minor"`
-	SubtotalAmount      float64 `gorm:"type:numeric(18,2);not null" json:"subtotal_amount"`
-	ShippingFee         float64 `gorm:"type:numeric(18,2);default:0" json:"shipping_fee"`
-	TaxAmount           float64 `gorm:"type:numeric(18,2);default:0" json:"tax_amount"`
-	DiscountAmount      float64 `gorm:"type:numeric(18,2);default:0" json:"discount_amount"`
-	TotalAmount         float64 `gorm:"type:numeric(18,2);not null" json:"total_amount"`
-	Currency            string  `gorm:"not null;index" json:"currency"`
+	SubtotalAmountMinor int64 `gorm:"column:subtotal_amount_minor;not null;default:0" json:"subtotal_amount_minor"`
+	ShippingFeeMinor    int64 `gorm:"column:shipping_fee_minor;not null;default:0" json:"shipping_fee_minor"`
+	TaxAmountMinor      int64 `gorm:"column:tax_amount_minor;not null;default:0" json:"tax_amount_minor"`
+	DiscountAmountMinor int64 `gorm:"column:discount_amount_minor;not null;default:0" json:"discount_amount_minor"`
+	TotalAmountMinor    int64 `gorm:"column:total_amount_minor;not null;default:0" json:"total_amount_minor"`
+	// Monetary totals are stored in minor units. Loyalty points are earned
+	// separately and are never a payment tender.
+	Currency string `gorm:"not null;index" json:"currency"`
 
 	// 优惠信息
 	CouponCode               string         `json:"coupon_code"`
-	PointsUsed               int            `gorm:"default:0" json:"points_used"`
-	PointsValue              float64        `gorm:"type:numeric(18,2);default:0" json:"points_value"`
 	FXSnapshotData           datatypes.JSON `gorm:"column:fx_snapshot;type:jsonb;not null;default:'{}'" json:"-"`
 	ShippingPlanSnapshotData datatypes.JSON `gorm:"column:shipping_plan_snapshot;type:jsonb;not null;default:'{}'" json:"shipping_plan_snapshot,omitempty"`
 	PricingSnapshotData      datatypes.JSON `gorm:"column:pricing_snapshot;type:jsonb;not null;default:'{}'" json:"-"`
@@ -196,18 +182,6 @@ type Address struct {
 	Email      string `json:"email"`
 }
 
-// TrackingInfoUpdate is the normalized logistics payload stored on an order.
-// Local carrier/service IDs are the editable source; provider carrier code is a resolved snapshot.
-type TrackingInfoUpdate struct {
-	TrackingNumber           string
-	TrackingProviderID       *uint
-	CarrierID                *uint
-	CarrierServiceID         *uint
-	TrackingCarrierMappingID *uint
-	ProviderCarrierCode      string
-	ProviderCarrierName      string
-}
-
 // TableName 指定表名
 func (Order) TableName() string {
 	return "orders"
@@ -243,33 +217,34 @@ func (o *Order) BeforeCreate(tx *gorm.DB) error {
 	if !currency.IsValidCode(o.Currency) || !currency.IsCatalogCode(o.Currency) {
 		return errors.New("order currency must be a supported ISO 4217 code")
 	}
-	if err := o.populateMinorAmounts(); err != nil {
+	if err := o.validateMinorAmounts(); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (o *Order) populateMinorAmounts() error {
-	fields := []struct {
-		major float64
-		minor *int64
-	}{
-		{major: o.SubtotalAmount, minor: &o.SubtotalAmountMinor},
-		{major: o.ShippingFee, minor: &o.ShippingFeeMinor},
-		{major: o.TaxAmount, minor: &o.TaxAmountMinor},
-		{major: o.DiscountAmount, minor: &o.DiscountAmountMinor},
-		{major: o.TotalAmount, minor: &o.TotalAmountMinor},
-		{major: o.PointsValue, minor: &o.PointsValueMinor},
+// BeforeSave keeps update paths subject to the same exact-money invariants as
+// inserts. Major-unit projection fields are ignored by persistence and cannot
+// be used to repair an invalid minor snapshot.
+func (o *Order) BeforeSave(tx *gorm.DB) error {
+	// GORM partial Updates hydrate only the changed columns; leave financial
+	// validation to BeforeCreate/full Save when the currency is absent.
+	if strings.TrimSpace(o.Currency) == "" {
+		return nil
 	}
-	for _, field := range fields {
-		if *field.minor == 0 && field.major != 0 {
-			value, err := money.FromMajorFloat(field.major, o.Currency)
-			if err != nil {
-				return err
-			}
-			*field.minor = value.AmountMinor()
-		}
-		if *field.minor < 0 {
+	o.Currency = currency.NormalizeCode(o.Currency)
+	if !currency.IsValidCode(o.Currency) || !currency.IsCatalogCode(o.Currency) {
+		return errors.New("order currency must be a supported ISO 4217 code")
+	}
+	if err := o.validateMinorAmounts(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (o *Order) validateMinorAmounts() error {
+	for _, amount := range []int64{o.SubtotalAmountMinor, o.ShippingFeeMinor, o.TaxAmountMinor, o.DiscountAmountMinor, o.TotalAmountMinor} {
+		if amount < 0 {
 			return errors.New("order monetary amounts cannot be negative")
 		}
 	}
@@ -280,13 +255,6 @@ func (o *Order) populateMinorAmounts() error {
 	if !currency.IsCatalogCode(paymentCurrency) {
 		return errors.New("order payment currency must be a supported ISO 4217 code")
 	}
-	if o.PaymentAmountMinor == 0 && o.PaymentAmount != 0 {
-		value, err := money.FromMajorFloat(o.PaymentAmount, paymentCurrency)
-		if err != nil {
-			return err
-		}
-		o.PaymentAmountMinor = value.AmountMinor()
-	}
 	if o.PaymentAmountMinor < 0 {
 		return errors.New("order payment amount cannot be negative")
 	}
@@ -294,37 +262,22 @@ func (o *Order) populateMinorAmounts() error {
 }
 
 func (o Order) SubtotalMoney() (money.Money, error) {
-	if o.SubtotalAmountMinor == 0 && o.SubtotalAmount != 0 {
-		return money.FromMajorFloat(o.SubtotalAmount, o.Currency)
-	}
 	return money.New(o.SubtotalAmountMinor, o.Currency)
 }
 
 func (o Order) ShippingFeeMoney() (money.Money, error) {
-	if o.ShippingFeeMinor == 0 && o.ShippingFee != 0 {
-		return money.FromMajorFloat(o.ShippingFee, o.Currency)
-	}
 	return money.New(o.ShippingFeeMinor, o.Currency)
 }
 
 func (o Order) TaxMoney() (money.Money, error) {
-	if o.TaxAmountMinor == 0 && o.TaxAmount != 0 {
-		return money.FromMajorFloat(o.TaxAmount, o.Currency)
-	}
 	return money.New(o.TaxAmountMinor, o.Currency)
 }
 
 func (o Order) DiscountMoney() (money.Money, error) {
-	if o.DiscountAmountMinor == 0 && o.DiscountAmount != 0 {
-		return money.FromMajorFloat(o.DiscountAmount, o.Currency)
-	}
 	return money.New(o.DiscountAmountMinor, o.Currency)
 }
 
 func (o Order) TotalMoney() (money.Money, error) {
-	if o.TotalAmountMinor == 0 && o.TotalAmount != 0 {
-		return money.FromMajorFloat(o.TotalAmount, o.Currency)
-	}
 	return money.New(o.TotalAmountMinor, o.Currency)
 }
 
@@ -332,9 +285,6 @@ func (o Order) PaymentMoney() (money.Money, error) {
 	code := o.PaymentCurrency
 	if code == "" {
 		code = o.Currency
-	}
-	if o.PaymentAmountMinor == 0 && o.PaymentAmount != 0 {
-		return money.FromMajorFloat(o.PaymentAmount, code)
 	}
 	return money.New(o.PaymentAmountMinor, code)
 }

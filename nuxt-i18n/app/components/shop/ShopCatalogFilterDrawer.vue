@@ -97,6 +97,8 @@ import ShopProductQuickSearchForm from '~/components/shop/ShopProductQuickSearch
 import ShopCategoryVerticalMenu from '~/components/shop/ShopCategoryVerticalMenu.vue'
 import type { ProductCategory } from '~/composables/useProductCategories'
 import type { ShopSearchFiltersPayload, ShopSearchPayload } from '~/composables/useShopSearchSheet'
+import { useStorefrontContext } from '~/composables/useStorefrontContext'
+import { defaultPriceRangeForCurrency } from '~/utils/money'
 
 type ShopCatalogFilterPanel = 'search' | 'categories'
 
@@ -113,7 +115,7 @@ const props = withDefaults(defineProps<{
   loading: false,
   error: null,
   initialQuery: '',
-  initialPriceRange: () => [0, 5000] as [number, number],
+  initialPriceRange: undefined,
   initialPanel: 'search',
 })
 
@@ -124,12 +126,13 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+const { displayCurrency } = useStorefrontContext()
 const activePanel = ref<ShopCatalogFilterPanel>(props.initialPanel)
 
 const cloneFilters = (filters?: ShopSearchFiltersPayload): ShopSearchFiltersPayload => ({
   priceRange: Array.isArray(filters?.priceRange)
     ? [...filters!.priceRange] as [number, number]
-    : [...props.initialPriceRange] as [number, number],
+    : [...(props.initialPriceRange || defaultPriceRangeForCurrency(displayCurrency.value))] as [number, number],
   currency: filters?.currency,
   attributes: { ...(filters?.attributes || {}) },
 })

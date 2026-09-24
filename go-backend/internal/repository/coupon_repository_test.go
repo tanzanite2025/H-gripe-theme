@@ -1,7 +1,6 @@
 package repository
 
 import (
-	domainmoney "commerce-platform/internal/domain/money"
 	"errors"
 	"regexp"
 	"testing"
@@ -86,23 +85,6 @@ func TestFindCouponByIDForUpdateUsesRowLock(t *testing.T) {
 	}
 	if coupon.ID != 42 {
 		t.Fatalf("expected coupon ID 42, got %d", coupon.ID)
-	}
-	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Fatalf("unmet sql expectations: %v", err)
-	}
-}
-
-func TestUpdateGiftCardBalanceRequiresSufficientBalanceForDebit(t *testing.T) {
-	repo, mock, cleanup := newMockCouponRepository(t)
-	defer cleanup()
-
-	mock.ExpectExec(regexp.QuoteMeta(`UPDATE "gift_cards" SET "balance_cents"=balance_cents + $1 WHERE (id = $2 AND currency = $3) AND balance_cents >= $4 AND "gift_cards"."deleted_at" IS NULL`)).
-		WithArgs(int64(-800), sqlmock.AnyArg(), "USD", int64(800)).
-		WillReturnResult(sqlmock.NewResult(0, 0))
-
-	err := repo.UpdateGiftCardBalance(42, domainmoney.MustNew(-800, "USD"))
-	if !errors.Is(err, ErrGiftCardInsufficientBalance) {
-		t.Fatalf("expected ErrGiftCardInsufficientBalance, got %v", err)
 	}
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Fatalf("unmet sql expectations: %v", err)

@@ -33,7 +33,11 @@ type VisitorProfileListFilters struct {
 
 func (r *VisitorProfileRepository) FindByCustomerServiceVisitorHash(hash string) (*visitor.Profile, error) {
 	var profile visitor.Profile
-	err := r.db.Where("customer_service_visitor_hash = ?", strings.TrimSpace(hash)).First(&profile).Error
+	// Historical imports and concurrent first touches can leave duplicate
+	// rows for one visitor hash. Prefer the freshest row so a newly captured
+	// timezone is not shadowed by an older empty profile.
+	err := r.db.Where("customer_service_visitor_hash = ?", strings.TrimSpace(hash)).
+		Order("updated_at DESC").Order("id DESC").First(&profile).Error
 	if err != nil {
 		return nil, err
 	}

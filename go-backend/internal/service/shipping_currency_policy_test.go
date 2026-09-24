@@ -20,12 +20,12 @@ func TestShippingServiceDefaultsNewSourceCurrenciesToBackendEntryCurrency(t *tes
 	require.NoError(t, err)
 
 	template := shippingdomain.ShippingTemplate{
-		Name:       "Policy default shipping",
-		Type:       "weight",
-		DefaultFee: 10,
-		Enabled:    true,
+		Name:            "Policy default shipping",
+		Type:            "weight",
+		DefaultFeeMinor: 1000,
+		Enabled:         true,
 		Rules: []shippingdomain.ShippingRule{
-			{Region: "US", Fee: 5},
+			{Region: "US", FeeMinor: 500},
 		},
 	}
 	require.NoError(t, shippingService.CreateTemplate(&template))
@@ -56,25 +56,25 @@ func TestShippingServicePreservesExistingCurrencyWhenUpdateOmitsIt(t *testing.T)
 	require.NoError(t, err)
 
 	template := shippingdomain.ShippingTemplate{
-		Name:       "Historical USD shipping",
-		Type:       "weight",
-		Currency:   "USD",
-		DefaultFee: 10,
-		Enabled:    true,
+		Name:            "Historical USD shipping",
+		Type:            "weight",
+		Currency:        "USD",
+		DefaultFeeMinor: 1000,
+		Enabled:         true,
 		Rules: []shippingdomain.ShippingRule{
-			{Region: "US", Currency: "USD", Fee: 5},
+			{Region: "US", Currency: "USD", FeeMinor: 500},
 		},
 	}
 	require.NoError(t, shippingService.CreateTemplate(&template))
 
 	updated := shippingdomain.ShippingTemplate{
-		ID:         template.ID,
-		Name:       "Historical USD shipping updated",
-		Type:       "weight",
-		DefaultFee: 12,
-		Enabled:    true,
+		ID:              template.ID,
+		Name:            "Historical USD shipping updated",
+		Type:            "weight",
+		DefaultFeeMinor: 1200,
+		Enabled:         true,
 		Rules: []shippingdomain.ShippingRule{
-			{Region: "US", Fee: 6},
+			{Region: "US", FeeMinor: 600},
 		},
 	}
 	require.NoError(t, shippingService.UpdateTemplate(&updated))

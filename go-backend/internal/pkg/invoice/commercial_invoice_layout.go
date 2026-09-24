@@ -89,7 +89,7 @@ func drawItemRow(pdf *fpdf.Fpdf, item LineItem, text pdfTextFunc, setFont pdfFon
 
 	pdf.SetDrawColor(220, 224, 230)
 	pdf.SetFillColor(255, 255, 255)
-	pdf.Rect(pdf.GetX(), y, sumFloat64(widths), rowHeight, "D")
+	pdf.Rect(pdf.GetX(), y, sumFloat(widths), rowHeight, "D")
 	setFont("", 8)
 	pdf.SetTextColor(42, 48, 58)
 	pdf.MultiCell(widths[0], 4.5, strings.Join(byteLinesToStrings(descriptionLines), "\n"), "L", "L", false)
@@ -107,12 +107,12 @@ func drawTotals(pdf *fpdf.Fpdf, document CommercialInvoice, text pdfTextFunc, se
 	valueWidth := 54.0
 	rows := []struct {
 		label string
-		value float64
+		value string
 	}{
 		{"Subtotal", document.Subtotal},
 		{"Shipping", document.Shipping},
 		{"Tax", document.Tax},
-		{"Discount", -document.Discount},
+		{"Discount", signedDisplayAmount(document.Discount)},
 	}
 	setFont("", 9)
 	pdf.SetTextColor(70, 78, 88)
@@ -129,8 +129,11 @@ func drawTotals(pdf *fpdf.Fpdf, document CommercialInvoice, text pdfTextFunc, se
 	pdf.CellFormat(valueWidth, 7, text(formatMoney(document.Total, document.Currency)), "", 1, "R", false, 0, "")
 }
 
-func formatMoney(amount float64, currency string) string {
-	value := fmt.Sprintf("%.2f", amount)
+func formatMoney(amount string, currency string) string {
+	value := strings.TrimSpace(amount)
+	if value == "" {
+		value = "0"
+	}
 	if strings.TrimSpace(currency) == "" {
 		return value
 	}
@@ -147,7 +150,18 @@ func joinNonEmpty(separator string, values ...string) string {
 	return strings.Join(parts, separator)
 }
 
-func sumFloat64(values []float64) float64 {
+func signedDisplayAmount(value string) string {
+	value = strings.TrimSpace(value)
+	if value == "" || value == "0" {
+		return "0"
+	}
+	if strings.HasPrefix(value, "-") {
+		return value[1:]
+	}
+	return "-" + value
+}
+
+func sumFloat(values []float64) float64 {
 	var total float64
 	for _, value := range values {
 		total += value

@@ -41,6 +41,8 @@ export interface OrderItem {
   id?: OrderID | null
   product_name?: string | null
   sku?: string | null
+  /** Immutable order-time product configuration snapshot. */
+  configuration_snapshot?: unknown | null
   price?: number | string | null
   quantity?: number | string | null
   total?: number | string | null
@@ -61,20 +63,20 @@ export interface OrderRecord {
   payment_method?: string | null
   signature_required?: boolean | null
   shipping_method?: string | null
-  tracking_number?: string | null
-  tracking_provider_id?: OrderID | null
-  carrier_id?: OrderID | null
-  carrier_service_id?: OrderID | null
-  provider_carrier_code?: string | null
   created_at?: string | null
   paid_at?: string | null
   shipping_address?: OrderShippingAddress | null
   items?: OrderItem[]
   subtotal_amount?: number | string | null
+  subtotal_amount_minor?: number | string | null
   shipping_fee?: number | string | null
+  shipping_fee_minor?: number | string | null
   tax_amount?: number | string | null
+  tax_amount_minor?: number | string | null
   discount_amount?: number | string | null
+  discount_amount_minor?: number | string | null
   total_amount?: number | string | null
+  total_amount_minor?: number | string | null
   currency?: string | null
   customer_note?: string | null
   admin_note?: string | null
@@ -83,8 +85,13 @@ export interface OrderRecord {
 export interface OrderStats {
   total?: number
   today?: number
-  total_revenue?: number | string | null
-  today_revenue?: number | string | null
+  total_revenue_by_currency?: RevenueByCurrency[] | null
+  today_revenue_by_currency?: RevenueByCurrency[] | null
+}
+
+export interface RevenueByCurrency {
+  currency: string
+  amount_minor: number | string
 }
 
 export interface OrderStatItem {
@@ -145,6 +152,18 @@ export interface TrackingEvent {
 }
 
 export interface TrackingShipment {
+  id?: OrderID | null
+  order_id?: OrderID | null
+  tracking_number?: string | null
+  tracking_provider_id?: OrderID | null
+  provider_carrier_code?: string | null
+  provider_carrier_name?: string | null
+  carrier_id?: OrderID | null
+  carrier_service_id?: OrderID | null
+  tracking_carrier_mapping_id?: OrderID | null
+  provider?: TrackingProvider | null
+  carrier?: ShippingCarrier | null
+  carrier_service?: ShippingCarrierService | null
   sync_status?: string | null
   registration_status?: string | null
   event_count?: number | null
@@ -205,7 +224,7 @@ export interface OrderDisputeCase {
   payment_status?: string | null
   shipping_status?: string | null
   tracking_number?: string | null
-  amount?: number | string | null
+  amount_minor?: number | string | null
   currency?: string | null
   reason?: string | null
   status?: string | null
@@ -257,4 +276,3 @@ export type OrderMoneyFormatter = (amount?: number | string | null, currency?: s
 export type OrderDateFormatter = (value?: string | number | Date | null) => string
 export type OrderShippingNameResolver = (address?: OrderShippingAddress | null) => string
 export type OrderShippingAddressLineResolver = (address?: OrderShippingAddress | null) => string
-export type OrderCarrierLabelResolver = (order?: OrderRecord | null) => string

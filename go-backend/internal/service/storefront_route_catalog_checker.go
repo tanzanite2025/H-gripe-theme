@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"sync"
 	"time"
 
 	seodomain "commerce-platform/internal/domain/seo"
@@ -20,6 +21,7 @@ import (
 )
 
 const routeCheckBodyLimit = 4 * 1024 * 1024
+const routeCheckConcurrency = 6
 
 func (s *StorefrontRouteCatalogService) CheckEntry(ctx context.Context, id uint) (seodomain.StorefrontRouteCheckResult, error) {
 	if s == nil || s.repository == nil {
@@ -56,6 +58,17 @@ func (s *StorefrontRouteCatalogService) CheckEntry(ctx context.Context, id uint)
 }
 
 func (s *StorefrontRouteCatalogService) Check(ctx context.Context, filter repository.StorefrontRouteCatalogListFilter, limit int) (StorefrontRouteCatalogCheckSummary, error) {
+	return s.checkBatch(ctx, filter, limit, nil)
+}
+
+type storefrontRouteCatalogCheckProgress func(StorefrontRouteCatalogCheckSummary)
+
+func (s *StorefrontRouteCatalogService) checkBatch(
+	ctx context.Context,
+	filter repository.StorefrontRouteCatalogListFilter,
+	limit int,
+	progress storefrontRouteCatalogCheckProgress,
+) (StorefrontRouteCatalogCheckSummary, error) {
 	if s == nil || s.repository == nil {
 		return StorefrontRouteCatalogCheckSummary{}, errors.New("storefront route catalog service is unavailable")
 	}
@@ -71,31 +84,79 @@ func (s *StorefrontRouteCatalogService) Check(ctx context.Context, filter reposi
 	filter.Page = 1
 	filter.PageSize = limit
 
-	entries, total, err := s.repository.List(filter)
+	entries, _, err := s.repository.List(filter)
 	if err != nil {
 		return StorefrontRouteCatalogCheckSummary{}, err
 	}
 
-	summary := StorefrontRouteCatalogCheckSummary{
-		Eligible:  int(total),
-		Remaining: int(total),
-	}
+	checkableEntries := make([]seodomain.StorefrontRouteCatalogEntry, 0, len(entries))
 	for _, entry := range entries {
-		if !routeEntryCanBeChecked(entry) {
-			continue
+		if routeEntryCanBeChecked(entry) {
+			checkableEntries = append(checkableEntries, entry)
 		}
-		result := s.checkEntry(ctx, entry)
-		if err := s.repository.SaveCheck(&result); err != nil {
-			return summary, fmt.Errorf("save URL check for %s: %w", entry.Path, err)
+	}
+
+	// The repository's total is the coarse SQL count. Keep task progress tied
+	// to the entries that can actually be checked after the same guard used by
+	// the worker, otherwise stale rows would make `remaining` never reach zero.
+	summary := StorefrontRouteCatalogCheckSummary{
+		Eligible:  len(checkableEntries),
+		Remaining: len(checkableEntries),
+	}
+	if progress != nil {
+		progress(summary)
+	}
+
+	workerCount := routeCheckConcurrency
+	if len(checkableEntries) < workerCount {
+		workerCount = len(checkableEntries)
+	}
+	if workerCount == 0 {
+		return summary, nil
+	}
+
+	type checkResult struct {
+		entry  seodomain.StorefrontRouteCatalogEntry
+		result seodomain.StorefrontRouteCheckResult
+	}
+	jobs := make(chan seodomain.StorefrontRouteCatalogEntry)
+	results := make(chan checkResult, len(checkableEntries))
+	var wg sync.WaitGroup
+	for worker := 0; worker < workerCount; worker++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for entry := range jobs {
+				results <- checkResult{entry: entry, result: s.checkEntry(ctx, entry)}
+			}
+		}()
+	}
+	go func() {
+		defer close(jobs)
+		for _, entry := range checkableEntries {
+			jobs <- entry
+		}
+	}()
+	go func() {
+		wg.Wait()
+		close(results)
+	}()
+
+	for checked := range results {
+		if err := s.repository.SaveCheck(&checked.result); err != nil {
+			return summary, fmt.Errorf("save URL check for %s: %w", checked.entry.Path, err)
 		}
 		if s.issueReconciler != nil {
-			if err := s.issueReconciler.ReconcileEntry(ctx, entry.ID, &result.ID); err != nil {
-				return summary, fmt.Errorf("reconcile URL issue for %s: %w", entry.Path, err)
+			if err := s.issueReconciler.ReconcileEntry(ctx, checked.entry.ID, &checked.result.ID); err != nil {
+				return summary, fmt.Errorf("reconcile URL issue for %s: %w", checked.entry.Path, err)
 			}
 		}
 		summary.Checked++
 		summary.Remaining--
-		incrementRouteCatalogCheckSummary(&summary, result.Status)
+		incrementRouteCatalogCheckSummary(&summary, checked.result.Status)
+		if progress != nil {
+			progress(summary)
+		}
 	}
 	return summary, nil
 }
@@ -170,9 +231,17 @@ func (s *StorefrontRouteCatalogService) checkEntry(ctx context.Context, entry se
 
 	sum := sha256.Sum256(body)
 	result.ContentHash = hex.EncodeToString(sum[:])
-	result.CanonicalURL = extractCanonicalURL(body)
+	if redirectCount == 0 && response.StatusCode == http.StatusOK {
+		result.CanonicalURL = extractCanonicalURL(body)
+	}
 
 	switch {
+	case redirectCount > 0 && entry.IsAlias && canonicalPath(result.FinalURL) != normalizeCatalogRoutePath(entry.CanonicalPath):
+		result.Status = seodomain.RouteCheckStatusRedirectTarget
+	case redirectCount > 1 && entry.IsAlias:
+		result.Status = seodomain.RouteCheckStatusRedirectChain
+	case redirectCount > 0:
+		result.Status = seodomain.RouteCheckStatusRedirect
 	case response.StatusCode == http.StatusNotFound:
 		result.Status = seodomain.RouteCheckStatusNotFound
 	case response.StatusCode >= http.StatusInternalServerError:
@@ -181,14 +250,12 @@ func (s *StorefrontRouteCatalogService) checkEntry(ctx context.Context, entry se
 		result.Status = seodomain.RouteCheckStatusRedirect
 	case entry.IsAlias && redirectCount == 0:
 		result.Status = seodomain.RouteCheckStatusRedirectTarget
-	case entry.IsAlias && canonicalPath(result.FinalURL) != normalizeCatalogRoutePath(entry.CanonicalPath):
-		result.Status = seodomain.RouteCheckStatusRedirectTarget
-	case entry.IsAlias && redirectCount > 1:
-		result.Status = seodomain.RouteCheckStatusRedirectChain
-	case result.CanonicalURL != "" && canonicalPath(result.CanonicalURL) != normalizeCatalogRoutePath(entry.CanonicalPath):
+	// A direct 200 is the only response for which the HTML canonical belongs
+	// to this route. If the request redirected, the cases above classify that
+	// redirect first; otherwise the destination page's canonical could be
+	// reported as a false mismatch for the original URL.
+	case response.StatusCode == http.StatusOK && result.CanonicalURL != "" && canonicalPath(result.CanonicalURL) != normalizeCatalogRoutePath(entry.CanonicalPath):
 		result.Status = seodomain.RouteCheckStatusCanonicalMisfit
-	case redirectCount > 0:
-		result.Status = seodomain.RouteCheckStatusRedirect
 	case response.StatusCode >= http.StatusOK && response.StatusCode < http.StatusMultipleChoices:
 		result.Status = seodomain.RouteCheckStatusOK
 	default:

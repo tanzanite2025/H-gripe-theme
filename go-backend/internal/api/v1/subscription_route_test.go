@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"commerce-platform/internal/app"
+	"commerce-platform/internal/domain/outbox"
 	domainsubscription "commerce-platform/internal/domain/subscription"
 	"commerce-platform/internal/domain/verification"
 	"commerce-platform/internal/pkg/config"
@@ -25,7 +26,7 @@ import (
 func TestSubscriptionEmailLinksReachPublicRoutes(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
-	subscriptionService, emailSender := newSubscriptionRouteFixture(t)
+	db, subscriptionService, emailSender := newSubscriptionRouteFixture(t)
 	router := gin.New()
 	RegisterRoutes(router, &app.Dependencies{
 		Services: app.Services{
@@ -35,6 +36,8 @@ func TestSubscriptionEmailLinksReachPublicRoutes(t *testing.T) {
 		CORS: config.CORSConfig{},
 		JWT:  config.JWTConfig{Secret: "test-secret"},
 	})
+	timingResponse := subscriptionRouteRequest(t, router, http.MethodGet, "/api/v1/subscriptions/timing-token", "")
+	require.Equal(t, http.StatusOK, timingResponse.Code, timingResponse.Body.String())
 
 	subscribeResponse := subscriptionRouteRequest(
 		t,
@@ -44,6 +47,7 @@ func TestSubscriptionEmailLinksReachPublicRoutes(t *testing.T) {
 		`{"email":"rider@example.test","source":"website","locale":"en","tags":["newsletter"]}`,
 	)
 	require.Equal(t, http.StatusAccepted, subscribeResponse.Code, subscribeResponse.Body.String())
+	processSubscriptionEmailOutbox(t, db, emailSender)
 
 	subscription, err := subscriptionService.GetSubscription("rider@example.test")
 	require.NoError(t, err)
@@ -72,6 +76,7 @@ func TestSubscriptionEmailLinksReachPublicRoutes(t *testing.T) {
 		`{"email":"rider@example.test"}`,
 	)
 	require.Equal(t, http.StatusAccepted, unsubscribeResponse.Code, unsubscribeResponse.Body.String())
+	processSubscriptionEmailOutbox(t, db, emailSender)
 
 	unsubscribeLink := emailSender.LastLink(t)
 	require.True(t, strings.HasPrefix(unsubscribeLink.Path, "/api/v1/subscriptions/unsubscribe/"))
@@ -90,6 +95,7 @@ func TestSubscriptionEmailLinksReachPublicRoutes(t *testing.T) {
 		`{"email":"rider@example.test"}`,
 	)
 	require.Equal(t, http.StatusAccepted, resubscribeResponse.Code, resubscribeResponse.Body.String())
+	processSubscriptionEmailOutbox(t, db, emailSender)
 
 	resubscribeLink := emailSender.LastLink(t)
 	require.True(t, strings.HasPrefix(resubscribeLink.Path, "/api/v1/subscriptions/resubscribe/"))
@@ -104,6 +110,7 @@ func TestSubscriptionEmailLinksReachPublicRoutes(t *testing.T) {
 		"",
 	)
 	require.Equal(t, http.StatusAccepted, statusRequest.Code, statusRequest.Body.String())
+	processSubscriptionEmailOutbox(t, db, emailSender)
 
 	statusLink := emailSender.LastLink(t)
 	require.True(t, strings.HasPrefix(statusLink.Path, "/api/v1/subscriptions/status-token/"))
@@ -116,6 +123,34 @@ func TestSubscriptionEmailLinksReachPublicRoutes(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, "active", subscription.Status)
 
+}
+
+func TestSubscriptionHoneypotSilentlyDropsWithoutSideEffects(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	_, subscriptionService, emailSender := newSubscriptionRouteFixture(t)
+	router := gin.New()
+	RegisterRoutes(router, &app.Dependencies{
+		Services: app.Services{
+			Subscription: subscriptionService,
+		},
+	}, &config.Config{
+		CORS: config.CORSConfig{},
+		JWT:  config.JWTConfig{Secret: "test-secret"},
+	})
+
+	response := subscriptionRouteRequest(
+		t,
+		router,
+		http.MethodPost,
+		"/api/v1/subscriptions",
+		`{"email":"bot@example.test","corporate_tax_number":"https://spam.example.test"}`,
+	)
+	require.Equal(t, http.StatusAccepted, response.Code, response.Body.String())
+	require.Empty(t, emailSender.bodies)
+
+	_, err := subscriptionService.GetSubscription("bot@example.test")
+	require.Error(t, err)
 }
 
 type recordingSubscriptionEmailSender struct {
@@ -147,7 +182,7 @@ func (s *recordingSubscriptionEmailSender) LastLink(t *testing.T) *url.URL {
 	return nil
 }
 
-func newSubscriptionRouteFixture(t *testing.T) (*service.SubscriptionService, *recordingSubscriptionEmailSender) {
+func newSubscriptionRouteFixture(t *testing.T) (*gorm.DB, *service.SubscriptionService, *recordingSubscriptionEmailSender) {
 	t.Helper()
 
 	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{
@@ -165,18 +200,30 @@ func newSubscriptionRouteFixture(t *testing.T) (*service.SubscriptionService, *r
 	require.NoError(t, db.AutoMigrate(
 		&domainsubscription.Subscription{},
 		&verification.EmailChallenge{},
+		&outbox.Event{},
 	))
 
 	emailSender := &recordingSubscriptionEmailSender{}
-	subscriptionService := service.NewSubscriptionService(repository.NewSubscriptionRepository(db))
-	subscriptionService.ConfigureEmailChallenges(
+	subscriptionRepo := repository.NewSubscriptionRepository(db)
+	emailChallengeTxManager := repository.NewEmailChallengeTxManager(
+		db,
+		subscriptionRepo,
+		repository.NewWarrantyRepository(db),
 		repository.NewEmailChallengeRepository(db),
-		"test-email-secret",
-		emailSender,
+		repository.NewOutboxRepository(db),
 	)
+	subscriptionService := service.NewSubscriptionService(emailChallengeTxManager, subscriptionRepo)
+	subscriptionService.ConfigureEmailChallenges("test-email-secret")
 	subscriptionService.ConfigureEmailBaseURL("https://storefront.example.test")
 
-	return subscriptionService, emailSender
+	return db, subscriptionService, emailSender
+}
+
+func processSubscriptionEmailOutbox(t *testing.T, db *gorm.DB, sender service.EmailChallengeSender) {
+	t.Helper()
+	var event outbox.Event
+	require.NoError(t, db.Where("event_type = ?", outbox.EventTypeEmailChallengeDelivery).Order("id DESC").First(&event).Error)
+	require.NoError(t, service.NewEmailChallengeDeliveryOutboxHandler(sender, nil, "test-email-secret").Handle(context.Background(), event))
 }
 
 func subscriptionRouteRequest(t *testing.T, router *gin.Engine, method, path, body string) *httptest.ResponseRecorder {

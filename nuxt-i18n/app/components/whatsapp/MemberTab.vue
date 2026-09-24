@@ -31,12 +31,6 @@
             {{ isMemberLogged ? formatDiscountRate(levelDiscounts.discountRate) : '—' }}
           </div>
         </div>
-        <div class="member-tab-metric rounded-xl px-2.5 md:px-3 py-2">
-          <div class="tz-text-muted">Coupons / Cards</div>
-          <div class="text-sm font-semibold tz-text-primary">
-            {{ isMemberLogged ? `× ${userCoupons} / × ${userPointCards}` : '—' }}
-          </div>
-        </div>
       </div>
 
       <!-- 等级进度条 -->
@@ -92,8 +86,6 @@ defineProps<{
   levelDiscounts: {
     discountRate?: number
   }
-  userCoupons: number
-  userPointCards: number
 }>()
 
 defineEmits<{

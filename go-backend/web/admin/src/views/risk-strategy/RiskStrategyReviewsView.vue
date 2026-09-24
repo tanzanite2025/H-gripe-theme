@@ -83,7 +83,7 @@
       <aside class="h-full min-h-[420px] min-w-0 overflow-y-auto overscroll-contain rounded-[24px] border border-dashed border-border/80 bg-card p-5">
         <div class="mb-4">
           <h2 class="text-sm font-black uppercase tracking-tight">复核处理</h2>
-          <p class="mt-1 text-xs text-muted-foreground">仅记录人工判断，不直接改变 Stripe 或订单支付状态。</p>
+          <p class="mt-1 text-xs text-muted-foreground">普通风控复核仅记录人工判断；逾期付款复核会创建退款意图并保持履约冻结。</p>
         </div>
 
         <div v-if="selectedReview" class="space-y-3">
@@ -110,9 +110,12 @@
             <span class="block text-[10px] font-black uppercase tracking-widest text-muted-foreground/70">DECISION / 处理结果</span>
             <select v-model="decision.status" class="h-9 w-full rounded-md border border-dashed border-border bg-background px-3 text-sm" :disabled="selectedReview.status !== 'pending'">
               <option value="pending">保持待复核</option>
-              <option value="approved">通过</option>
-              <option value="rejected">拒绝</option>
-              <option value="cancelled">取消</option>
+              <option v-if="isLatePaymentReview" value="approved">退款并结案</option>
+              <template v-else>
+                <option value="approved">通过</option>
+                <option value="rejected">拒绝</option>
+                <option value="cancelled">取消</option>
+              </template>
             </select>
           </label>
           <label class="block space-y-1">
@@ -170,6 +173,12 @@ const filters = reactive({ status: 'pending' })
 const pagination = reactive<RiskStrategyPagination>({ page: 1, page_size: 20, total: 0, total_pages: 0 })
 const decision = reactive({ status: 'pending', notes: '' })
 const manualReview = reactive({ orderId: '', paymentIntentId: '', reason: '', notes: '' })
+
+const isLatePaymentReview = computed(() => [
+  'payment_succeeded_after_cancellation',
+  'payment_succeeded_after_expiration',
+  'payment_succeeded_after_refund',
+].includes(String(selectedReview.value?.reason || '').trim()))
 
 const pendingReviews = computed(() => reviews.value.filter((item) => item.status === 'pending').length)
 const approvedReviews = computed(() => reviews.value.filter((item) => item.status === 'approved').length)

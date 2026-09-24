@@ -97,29 +97,29 @@ func TestEvaluateOrderFulfillmentEvidenceAllowsWaivedPhysicalEvidence(t *testing
 func TestOrderEvidenceServiceCheckFulfillmentReadinessAllowsMissingPOD(t *testing.T) {
 	db := newOrderEvidenceServiceTestDB(t)
 	orderRecord := order.Order{
-		OrderNumber:   "ORD-DISPATCH-EVIDENCE-GATE",
-		UserID:        42,
-		Status:        "processing",
-		PaymentStatus: "paid",
-		TotalAmount:   100,
-		Currency:      "USD",
+		OrderNumber:      "ORD-DISPATCH-EVIDENCE-GATE",
+		UserID:           42,
+		Status:           "processing",
+		PaymentStatus:    "paid",
+		TotalAmountMinor: 10000,
+		Currency:         "USD",
 	}
 	if err := db.Create(&orderRecord).Error; err != nil {
 		t.Fatal(err)
 	}
 	orderItemID := uint(11)
 	orderItem := order.OrderItem{
-		ID:          orderItemID,
-		OrderID:     orderRecord.ID,
-		ProductID:   1,
-		VariantID:   uintPtrForEvidenceTest(2),
-		ProductName: "Dispatch item",
-		SKU:         "DISPATCH-ITEM",
-		Quantity:    1,
-		Price:       100,
-		Subtotal:    100,
-		Total:       100,
-		WeightGrams: 1000,
+		ID:            orderItemID,
+		OrderID:       orderRecord.ID,
+		ProductID:     1,
+		VariantID:     uintPtrForEvidenceTest(2),
+		ProductName:   "Dispatch item",
+		SKU:           "DISPATCH-ITEM",
+		Quantity:      1,
+		PriceMinor:    10000,
+		SubtotalMinor: 10000,
+		TotalMinor:    10000,
+		WeightGrams:   1000,
 	}
 	if err := db.Create(&orderItem).Error; err != nil {
 		t.Fatal(err)
@@ -127,14 +127,14 @@ func TestOrderEvidenceServiceCheckFulfillmentReadinessAllowsMissingPOD(t *testin
 	orderRecord.Items = []order.OrderItem{orderItem}
 
 	snapshot := orderevidence.OrderEvidenceSnapshot{
-		OrderID:          orderRecord.ID,
-		SchemaVersion:    orderevidence.OrderEvidenceSnapshotSchemaVersion,
-		ConfirmedAt:      time.Now().UTC(),
-		Currency:         "USD",
-		OrderTotalAmount: 100,
-		OrderTotalUSD:    100,
-		SnapshotData:     []byte(`{"schema_version":1,"items":[{"order_item_id":11}]}`),
-		SnapshotSHA256:   evidenceHashForTest(`{"schema_version":1,"items":[{"order_item_id":11}]}`),
+		OrderID:               orderRecord.ID,
+		SchemaVersion:         orderevidence.OrderEvidenceSnapshotSchemaVersion,
+		ConfirmedAt:           time.Now().UTC(),
+		Currency:              "USD",
+		OrderTotalAmountMinor: 10000,
+		OrderTotalUSDMinor:    10000,
+		SnapshotData:          []byte(`{"schema_version":1,"items":[{"order_item_id":11}]}`),
+		SnapshotSHA256:        evidenceHashForTest(`{"schema_version":1,"items":[{"order_item_id":11}]}`),
 	}
 	if err := db.Create(&snapshot).Error; err != nil {
 		t.Fatal(err)
@@ -142,12 +142,12 @@ func TestOrderEvidenceServiceCheckFulfillmentReadinessAllowsMissingPOD(t *testin
 
 	evidenceRepo := repository.NewOrderEvidenceRepository(db)
 	pkg := orderevidence.OrderEvidencePackage{
-		OrderID:               orderRecord.ID,
-		SnapshotID:            snapshot.ID,
-		PackageVersion:        1,
-		Status:                orderevidence.PackageStatusIncomplete,
-		OrderTotalUSDSnapshot: 100,
-		SchemaVersion:         orderevidence.OrderEvidencePackageSchemaVersion,
+		OrderID:                    orderRecord.ID,
+		SnapshotID:                 snapshot.ID,
+		PackageVersion:             1,
+		Status:                     orderevidence.PackageStatusIncomplete,
+		OrderTotalUSDSnapshotMinor: 10000,
+		SchemaVersion:              orderevidence.OrderEvidencePackageSchemaVersion,
 	}
 	if err := db.Create(&pkg).Error; err != nil {
 		t.Fatal(err)

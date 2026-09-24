@@ -285,6 +285,7 @@ import type {
   QuickBuySpecFilter,
   QuickBuyStep,
 } from '~/utils/quickBuy/types'
+import { majorToMinor } from '~/utils/money'
 
 type Maybe<T> = T | null | undefined
 
@@ -592,7 +593,7 @@ const addSelectedProductsToCart = () => {
       sku: item.sku,
       thumbnail: item.thumbnail,
       image: item.thumbnail,
-      price: item.unitPrice,
+      price_minor: majorToMinor(item.unitPrice, item.currency),
       currency: item.currency,
       weight_grams: item.weightGrams,
     }, item.quantity)

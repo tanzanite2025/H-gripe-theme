@@ -164,7 +164,7 @@ func validCreateOrderBody(paymentMethod string, country string) string {
 		"shipping_method": "standard",
 		"shipping_quote_id": "00000000-0000-0000-0000-000000000001",
 		"selected_quote_plan_id": "00000000-0000-0000-0000-000000000002",
-		"expected_total": 0
+		"expected_total_minor": 0
 	}`
 }
 

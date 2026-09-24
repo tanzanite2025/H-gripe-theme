@@ -5,12 +5,14 @@
       description="围绕已发现的 URL 问题进行认领、处理、复检和验证"
     >
       <template #actions>
-        <Button variant="outline" :disabled="loading" @click="load">
+        <Button variant="outline" :disabled="loading" @click="refreshAll">
  <RefreshCw :class="['size-4', loading ? 'animate-spin': '']" />
           刷新
         </Button>
       </template>
     </AdminPageHeader>
+
+    <AdminStatsGrid :items="statItems" />
 
  <div class="flex flex-wrap items-center gap-2 border-y border-dashed border-border/70 py-3">
       <Select v-model="stateFilter">
@@ -326,11 +328,13 @@ import {
   GitBranch,
   MessageSquarePlus,
   RefreshCw,
+  ShieldAlert,
   UserCheck,
 } from '@lucide/vue'
 import { toast } from 'vue-sonner'
 import { useRouter } from 'vue-router'
 import AdminPageHeader from '@/components/admin/AdminPageHeader.vue'
+import AdminStatsGrid from '@/components/admin/AdminStatsGrid.vue'
 import AdminPagination from '@/components/admin/AdminPagination.vue'
 import AdminStatusBadge, { type AdminStatusTone } from '@/components/admin/AdminStatusBadge.vue'
 import AdminTablePanel from '@/components/admin/AdminTablePanel.vue'
@@ -348,6 +352,7 @@ import {
   type StorefrontURLIssueSeverity,
   type StorefrontURLIssueState,
   type StorefrontURLIssueStateFilter,
+  type StorefrontURLIssueStats,
 } from '@/modules/url-management/urlIssues'
 import type { SEOResourcePagination } from '@/modules/seo/types'
 import { useAuthStore } from '@/stores/auth'
@@ -371,6 +376,16 @@ const resolutionType = ref('runtime_fixed')
 const resolutionNote = ref('')
 const suppressionReason = ref('')
 const suppressedUntil = ref('')
+const issueStats = ref<StorefrontURLIssueStats>({
+  active: 0,
+  open: 0,
+  acknowledged: 0,
+  resolved: 0,
+  verified: 0,
+  suppressed: 0,
+  critical: 0,
+  high: 0,
+})
 
 const issueLabel = (value: string): string => ({
   redirect_chain: '重定向链',
@@ -448,6 +463,22 @@ const canCreateRedirect = computed(() => (
   selectedIssue.value?.issue_type === 'stale_route'
 ))
 
+const statItems = computed(() => [
+  { key: 'active', label: '待处理工单', value: issueStats.value.active, icon: RefreshCw, tone: issueStats.value.active ? 'amber' : 'gray' },
+  { key: 'open', label: '未认领', value: issueStats.value.open, icon: UserCheck, tone: issueStats.value.open ? 'coral' : 'gray' },
+  { key: 'acknowledged', label: '处理中', value: issueStats.value.acknowledged, icon: RefreshCw, tone: issueStats.value.acknowledged ? 'blue' : 'gray' },
+  { key: 'resolved', label: '待验证', value: issueStats.value.resolved, icon: BadgeCheck, tone: issueStats.value.resolved ? 'blue' : 'gray' },
+  { key: 'critical', label: '严重等级', value: issueStats.value.critical, icon: ShieldAlert, tone: issueStats.value.critical ? 'coral' : 'gray' },
+])
+
+const loadSummary = async (): Promise<void> => {
+  try {
+    issueStats.value = { ...issueStats.value, ...(await storefrontURLIssuesApi.summary()) }
+  } catch (error) {
+    console.error('Failed to load storefront URL issue summary:', error)
+  }
+}
+
 const load = async (): Promise<void> => {
   loading.value = true
   try {
@@ -465,6 +496,10 @@ const load = async (): Promise<void> => {
   } finally {
     loading.value = false
   }
+}
+
+const refreshAll = async (): Promise<void> => {
+  await Promise.all([load(), loadSummary()])
 }
 
 const loadEvents = async (issueID: number): Promise<void> => {
@@ -502,7 +537,7 @@ const openDetail = async (issueID: number): Promise<void> => {
 
 const refreshSelectedIssue = async (issue: StorefrontURLIssue): Promise<void> => {
   selectedIssue.value = issue
-  await Promise.all([load(), loadEvents(issue.id)])
+  await Promise.all([load(), loadEvents(issue.id), loadSummary()])
 }
 
 const withAction = async (
@@ -620,6 +655,6 @@ const updatePageSize = (pageSize: number): void => {
 }
 
 onMounted(() => {
-  void load()
+  void refreshAll()
 })
 </script>

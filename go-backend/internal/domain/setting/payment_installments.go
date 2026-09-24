@@ -20,9 +20,9 @@ type PaymentProviderInstallmentsSettings struct {
 	PaymentMethodTypes []string `json:"payment_method_types,omitempty"`
 	Countries          []string `json:"countries,omitempty"`
 	Currencies         []string `json:"currencies,omitempty"`
-	MinAmount          float64  `json:"min_amount,omitempty"`
-	MaxAmount          float64  `json:"max_amount,omitempty"`
-	Notes              string   `json:"notes,omitempty"`
+	MinAmountMinor     int64    `json:"min_amount_minor,omitempty"`
+	MaxAmountMinor     int64    `json:"max_amount_minor,omitempty"`
+	Notes     string  `json:"notes,omitempty"`
 }
 
 type PaymentProviderInstallmentsUpdateRequest struct {
@@ -30,8 +30,8 @@ type PaymentProviderInstallmentsUpdateRequest struct {
 	PaymentMethodTypes []string `json:"payment_method_types"`
 	Countries          []string `json:"countries"`
 	Currencies         []string `json:"currencies"`
-	MinAmount          float64  `json:"min_amount"`
-	MaxAmount          float64  `json:"max_amount"`
+	MinAmountMinor     int64    `json:"min_amount_minor"`
+	MaxAmountMinor     int64    `json:"max_amount_minor"`
 	Notes              string   `json:"notes"`
 }
 
@@ -67,7 +67,7 @@ func normalizeInstallmentsList(values []string, upper bool) []string {
 	return items
 }
 
-func normalizeInstallmentsAmount(value float64) float64 {
+func normalizeInstallmentsAmount(value int64) int64 {
 	if value < 0 {
 		return 0
 	}
@@ -122,8 +122,8 @@ func (request PaymentProviderInstallmentsUpdateRequest) Settings(provider string
 		PaymentMethodTypes: normalizeInstallmentsPaymentMethodTypes(normalizedProvider, request.PaymentMethodTypes),
 		Countries:          normalizeInstallmentsList(request.Countries, true),
 		Currencies:         normalizeInstallmentsList(request.Currencies, true),
-		MinAmount:          normalizeInstallmentsAmount(request.MinAmount),
-		MaxAmount:          normalizeInstallmentsAmount(request.MaxAmount),
+		MinAmountMinor:     normalizeInstallmentsAmount(request.MinAmountMinor),
+		MaxAmountMinor:     normalizeInstallmentsAmount(request.MaxAmountMinor),
 		Notes:              strings.TrimSpace(request.Notes),
 	}
 }
@@ -133,8 +133,8 @@ func (settings PaymentProviderInstallmentsSettings) Normalize() PaymentProviderI
 	settings.PaymentMethodTypes = normalizeInstallmentsPaymentMethodTypes(settings.Provider, settings.PaymentMethodTypes)
 	settings.Countries = normalizeInstallmentsList(settings.Countries, true)
 	settings.Currencies = normalizeInstallmentsList(settings.Currencies, true)
-	settings.MinAmount = normalizeInstallmentsAmount(settings.MinAmount)
-	settings.MaxAmount = normalizeInstallmentsAmount(settings.MaxAmount)
+	settings.MinAmountMinor = normalizeInstallmentsAmount(settings.MinAmountMinor)
+	settings.MaxAmountMinor = normalizeInstallmentsAmount(settings.MaxAmountMinor)
 	settings.Notes = strings.TrimSpace(settings.Notes)
 	return settings
 }
@@ -145,8 +145,8 @@ func (settings PaymentProviderInstallmentsSettings) Configured() bool {
 		len(settings.PaymentMethodTypes) > 0 ||
 		len(settings.Countries) > 0 ||
 		len(settings.Currencies) > 0 ||
-		settings.MinAmount > 0 ||
-		settings.MaxAmount > 0 ||
+		settings.MinAmountMinor > 0 ||
+		settings.MaxAmountMinor > 0 ||
 		settings.Notes != ""
 }
 

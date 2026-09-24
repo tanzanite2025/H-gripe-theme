@@ -384,6 +384,7 @@ export const adminNavigationItems: AdminNavigationItem[] = [
     children: [
       { id: 'support-analytics', path: '/support/analytics', routeName: 'SupportAnalytics', label: '客服分析', permission: 'ticket:view' },
       { id: 'support-auto-replies', path: '/support/auto-replies', routeName: 'SupportAutoReplies', label: '自动回复', permission: 'ticket:view' },
+      { id: 'support-retention', path: '/support/retention', routeName: 'SupportRetention', label: '保留运维', permission: 'system:manage' },
       { id: 'support-public-chat', path: '/support/public-chat', routeName: 'SupportPublicChat', label: 'Public Chat', permission: 'settings:view' },
     ],
   },
@@ -405,7 +406,6 @@ export const adminNavigationItems: AdminNavigationItem[] = [
     icon: Megaphone,
     children: [
       { id: 'marketing-coupons', path: '/marketing/coupons', routeName: 'MarketingCoupons', label: '优惠券', permission: 'marketing:view' },
-      { id: 'marketing-giftcards', path: '/marketing/giftcards', routeName: 'MarketingGiftCards', label: '礼品卡', permission: 'marketing:view' },
       { id: 'marketing-loyalty-transactions', path: '/marketing/loyalty/transactions', routeName: 'MarketingLoyaltyTransactions', label: '积分流水', permission: 'marketing:view' },
       { id: 'marketing-loyalty-rules', path: '/marketing/loyalty/rules', routeName: 'MarketingLoyaltyRules', label: '积分规则', permission: 'marketing:view' },
       { id: 'marketing-levels', path: '/marketing/levels', routeName: 'MarketingLevels', label: '会员等级', permission: 'marketing:view' },
@@ -439,6 +439,7 @@ export const adminNavigationItems: AdminNavigationItem[] = [
       { id: 'ops-vps', path: '/ops/vps', routeName: 'OpsVPS', label: 'VPS 中心', permission: 'ops:vps:view' },
       { id: 'ops-projects', path: '/ops/projects', routeName: 'OpsProjects', label: '项目中心', permission: 'ops:project:view' },
       { id: 'ops-deployments', path: '/ops/deployments', routeName: 'OpsDeployments', label: '部署中心', icon: Rocket, permission: 'ops:deploy:view' },
+      { id: 'ops-outbox-failures', path: '/ops/outbox-failures', routeName: 'OpsOutboxFailures', label: 'Outbox 失败事件', icon: ShieldAlert, permission: 'ops:view' },
     ],
   },
   {

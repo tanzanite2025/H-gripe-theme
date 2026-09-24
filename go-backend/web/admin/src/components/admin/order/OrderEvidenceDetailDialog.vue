@@ -137,27 +137,26 @@
         <section class="grid gap-3 sm:grid-cols-2">
           <div class="rounded-2xl border border-dashed border-border/80 p-3">
             <span class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70">DELIVERY CONTEXT / 物流上下文</span>
-            <div v-if="result.tracking_context?.shipment" class="mt-2 space-y-1 text-xs">
-              <p class="font-bold">
-                {{ result.tracking_context.shipment.tracking_number || '-' }}
-                <span v-if="result.tracking_context.shipment.provider_name" class="font-normal text-muted-foreground">
-                  · {{ result.tracking_context.shipment.provider_name }}
-                </span>
-              </p>
-              <p class="text-muted-foreground">
-                同步 {{ result.tracking_context.shipment.sync_status || '-' }}
-                · 事件 {{ result.tracking_context.shipment.event_count }}
-              </p>
-              <p v-if="result.tracking_context.latest_delivery_event" class="text-muted-foreground">
-                最新交付：{{ result.tracking_context.latest_delivery_event.status || '-' }}
-                · {{ formatDate(result.tracking_context.latest_delivery_event.event_time) }}
-              </p>
-              <p v-if="result.tracking_context.latest_delivery_event?.location" class="text-muted-foreground">
-                {{ result.tracking_context.latest_delivery_event.location }}
-              </p>
+            <div v-if="result.tracking_context?.shipments?.length" class="mt-2 space-y-2 text-xs">
+              <div v-for="shipment in result.tracking_context.shipments" :key="String(shipment.id)" class="rounded-lg border border-dashed p-2">
+                <p class="font-bold">
+                  {{ shipment.tracking_number || '-' }}
+                  <span v-if="shipment.provider_name" class="font-normal text-muted-foreground">
+                    · {{ shipment.provider_name }}
+                  </span>
+                </p>
+                <p class="text-muted-foreground">
+                  同步 {{ shipment.sync_status || '-' }} · 事件 {{ shipment.event_count }}
+                </p>
+                <p v-for="event in (result.tracking_context.latest_delivery_events || []).filter((candidate) => candidate.tracking_number === shipment.tracking_number)" :key="String(event.id)" class="text-muted-foreground">
+                  最新交付：{{ event.status || '-' }} · {{ formatDate(event.event_time) }}
+                  <span v-if="event.location"> · {{ event.location }}</span>
+                </p>
+              </div>
               <a
-                v-if="result.tracking_context.provider_pod_url"
-                :href="result.tracking_context.provider_pod_url"
+                v-for="url in result.tracking_context.provider_pod_urls || []"
+                :key="url"
+                :href="url"
                 target="_blank"
                 rel="noreferrer"
                 class="inline-flex text-primary underline underline-offset-2"

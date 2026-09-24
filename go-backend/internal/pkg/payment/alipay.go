@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	domainmoney "commerce-platform/internal/domain/money"
+
 	"github.com/smartwalle/alipay/v3"
 )
 
@@ -60,7 +62,14 @@ func (g *alipayGatewayImpl) CreatePayment(ctx context.Context, req *PaymentReque
 	var p = alipay.TradePagePay{}
 	p.OutTradeNo = req.OrderID
 	p.Subject = req.Description
-	p.TotalAmount = fmt.Sprintf("%.2f", req.Amount)
+	amountMoney, err := PaymentRequestMoney(req)
+	if err != nil {
+		return nil, err
+	}
+	p.TotalAmount, err = amountMoney.FormatMajor()
+	if err != nil {
+		return nil, err
+	}
 	p.ProductCode = "FAST_INSTANT_TRADE_PAY"
 
 	// 设置返回URL
@@ -89,11 +98,16 @@ func (g *alipayGatewayImpl) CreatePayment(ctx context.Context, req *PaymentReque
 	}
 	metadata["order_id"] = req.OrderID
 	metadata["out_trade_no"] = req.OrderID
+	responseAmount, err := amountMoney.FormatMajor()
+	if err != nil {
+		return nil, err
+	}
 
 	return &PaymentResponse{
 		ID:            req.OrderID, // 支付宝使用商户订单号作为ID
 		Status:        "WAIT_BUYER_PAY",
-		Amount:        req.Amount,
+		Amount:        responseAmount,
+		AmountMinor:   amountMoney.AmountMinor(),
 		Currency:      req.Currency,
 		PaymentURL:    paymentURL.String(),
 		TransactionID: req.OrderID,
@@ -125,15 +139,20 @@ func (g *alipayGatewayImpl) CapturePayment(ctx context.Context, paymentID string
 	}
 
 	// 解析金额 - using direct fields from response
-	amount, err := parsePaymentAmount("alipay total amount", rsp.TotalAmount)
-	if err != nil {
-		return nil, err
+	totalMoney, moneyErr := domainmoney.ParseMajor(rsp.TotalAmount, "CNY")
+	if moneyErr != nil {
+		return nil, moneyErr
+	}
+	totalAmount, moneyErr := totalMoney.FormatMajor()
+	if moneyErr != nil {
+		return nil, moneyErr
 	}
 
 	return &PaymentResponse{
 		ID:            rsp.OutTradeNo,
 		Status:        string(rsp.TradeStatus),
-		Amount:        amount,
+		Amount:        totalAmount,
+		AmountMinor:   totalMoney.AmountMinor(),
 		Currency:      "CNY",
 		TransactionID: rsp.TradeNo,
 		CreatedAt:     time.Now(),
@@ -141,11 +160,11 @@ func (g *alipayGatewayImpl) CapturePayment(ctx context.Context, paymentID string
 }
 
 // RefundPayment 退款支付宝支付
-func (g *alipayGatewayImpl) RefundPayment(ctx context.Context, paymentID string, amount float64) (*RefundResponse, error) {
-	return g.RefundPaymentWithOptions(ctx, paymentID, amount, RefundOptions{})
+func (g *alipayGatewayImpl) RefundPayment(ctx context.Context, paymentID string, amountMinor int64) (*RefundResponse, error) {
+	return g.RefundPaymentWithOptions(ctx, paymentID, amountMinor, RefundOptions{})
 }
 
-func (g *alipayGatewayImpl) RefundPaymentWithOptions(ctx context.Context, paymentID string, amount float64, options RefundOptions) (*RefundResponse, error) {
+func (g *alipayGatewayImpl) RefundPaymentWithOptions(ctx context.Context, paymentID string, amountMinor int64, options RefundOptions) (*RefundResponse, error) {
 	ctx, cancel := paymentGatewayContext(ctx)
 	defer cancel()
 
@@ -160,7 +179,7 @@ func (g *alipayGatewayImpl) RefundPaymentWithOptions(ctx context.Context, paymen
 		refundNo = options.IdempotencyKey
 	}
 
-	p, err := buildAlipayRefundRequest(paymentID, amount, refundNo, options)
+	p, err := buildAlipayRefundRequest(paymentID, amountMinor, refundNo, options)
 	if err != nil {
 		return nil, err
 	}
@@ -176,21 +195,26 @@ func (g *alipayGatewayImpl) RefundPaymentWithOptions(ctx context.Context, paymen
 	}
 
 	// 解析退款金额 - using direct fields from response
-	refundAmount, err := parsePaymentAmount("alipay refund amount", rsp.RefundFee)
-	if err != nil {
-		return nil, err
+	refundMoney, moneyErr := domainmoney.ParseMajor(rsp.RefundFee, "CNY")
+	if moneyErr != nil {
+		return nil, moneyErr
+	}
+	refundAmount, moneyErr := refundMoney.FormatMajor()
+	if moneyErr != nil {
+		return nil, moneyErr
 	}
 
 	return &RefundResponse{
-		ID:        refundNo,
-		PaymentID: paymentID,
-		Amount:    refundAmount,
-		Status:    "REFUND_SUCCESS",
-		CreatedAt: time.Now(),
+		ID:          refundNo,
+		PaymentID:   paymentID,
+		Amount:      refundAmount,
+		AmountMinor: refundMoney.AmountMinor(),
+		Status:      "REFUND_SUCCESS",
+		CreatedAt:   time.Now(),
 	}, nil
 }
 
-func buildAlipayRefundRequest(paymentID string, amount float64, refundNo string, options RefundOptions) (alipay.TradeRefund, error) {
+func buildAlipayRefundRequest(paymentID string, amountMinor int64, refundNo string, options RefundOptions) (alipay.TradeRefund, error) {
 	providerTradeNo := strings.TrimSpace(options.ProviderTransactionID)
 	merchantOrderNumber := strings.TrimSpace(options.MerchantOrderNumber)
 	if providerTradeNo == "" {
@@ -199,13 +223,23 @@ func buildAlipayRefundRequest(paymentID string, amount float64, refundNo string,
 	if merchantOrderNumber == "" {
 		return alipay.TradeRefund{}, fmt.Errorf("merchant order number is required for alipay refunds")
 	}
-	if amount <= 0 {
+	if options.AmountMinor <= 0 && amountMinor <= 0 {
 		return alipay.TradeRefund{}, fmt.Errorf("refund amount must be greater than zero")
 	}
 	if refundNo = strings.TrimSpace(refundNo); refundNo == "" {
 		return alipay.TradeRefund{}, fmt.Errorf("refund request id is required")
 	}
-	refundAmount, err := paymentMajorString(amount, "CNY")
+	var refundMoney domainmoney.Money
+	var err error
+	refundMinor := amountMinor
+	if options.AmountMinor > 0 {
+		refundMinor = options.AmountMinor
+	}
+	refundMoney, err = domainmoney.New(refundMinor, "CNY")
+	if err != nil {
+		return alipay.TradeRefund{}, err
+	}
+	refundAmount, err := refundMoney.FormatMajor()
 	if err != nil {
 		return alipay.TradeRefund{}, err
 	}
@@ -244,9 +278,13 @@ func (g *alipayGatewayImpl) GetPayment(ctx context.Context, paymentID string) (*
 	}
 
 	// 解析金额 - using direct fields from response
-	amount, err := parsePaymentAmount("alipay total amount", rsp.TotalAmount)
-	if err != nil {
-		return nil, err
+	totalMoney, moneyErr := domainmoney.ParseMajor(rsp.TotalAmount, "CNY")
+	if moneyErr != nil {
+		return nil, moneyErr
+	}
+	totalAmount, moneyErr := totalMoney.FormatMajor()
+	if moneyErr != nil {
+		return nil, moneyErr
 	}
 
 	// 构建元数据
@@ -260,7 +298,8 @@ func (g *alipayGatewayImpl) GetPayment(ctx context.Context, paymentID string) (*
 	return &PaymentResponse{
 		ID:            rsp.OutTradeNo,
 		Status:        string(rsp.TradeStatus),
-		Amount:        amount,
+		Amount:        totalAmount,
+		AmountMinor:   totalMoney.AmountMinor(),
 		Currency:      "CNY",
 		TransactionID: rsp.TradeNo,
 		CreatedAt:     time.Now(),

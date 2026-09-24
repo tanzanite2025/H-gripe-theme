@@ -53,9 +53,9 @@
           <span v-if="variant.title" class="min-w-0 truncate text-xs text-muted-foreground">{{ variant.title }}</span>
         </div>
         <div class="flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
-          <span>商品售价 {{ formatMoney(effectiveSellingPrice(variant), currency) }}</span>
+          <span>商品售价 {{ formatMinorMoney(effectiveSellingPriceMinor(variant, currency), currency) }}</span>
           <span v-if="calculationFor(index).status === 'ready' || calculationFor(index).status === 'warning'" class="font-semibold text-emerald-700 dark:text-emerald-300">
-            预计毛利 {{ formatMoney(calculationFor(index).grossProfit, currency) }}
+            预计毛利 {{ formatMinorMoney(calculationFor(index).grossProfitMinor, currency) }}
           </span>
         </div>
       </div>
@@ -65,7 +65,7 @@
           <div class="grid gap-3 sm:grid-cols-2">
             <AdminFormField label="单位成本价" description="空值不会按零成本计算">
               <Input
-                :model-value="drafts[index].unitCost ?? undefined"
+                :model-value="drafts[index].unitCostMinor == null ? undefined : minorToMajor(drafts[index].unitCostMinor, drafts[index].currency)"
                 type="number"
                 min="0"
                 step="0.01"
@@ -84,13 +84,34 @@
               />
             </AdminFormField>
             <AdminFormField label="入库运费 / 件">
-              <Input v-model.number="drafts[index].inboundShippingUnitCost" type="number" min="0" step="0.01" :disabled="!canEdit" />
+              <Input
+                :model-value="minorToMajor(drafts[index].inboundShippingUnitCostMinor, drafts[index].currency)"
+                type="number"
+                min="0"
+                step="0.01"
+                :disabled="!canEdit"
+                @update:model-value="setDraftAmount(drafts[index], 'inboundShippingUnitCostMinor', $event)"
+              />
             </AdminFormField>
             <AdminFormField label="包装成本 / 件">
-              <Input v-model.number="drafts[index].packagingUnitCost" type="number" min="0" step="0.01" :disabled="!canEdit" />
+              <Input
+                :model-value="minorToMajor(drafts[index].packagingUnitCostMinor, drafts[index].currency)"
+                type="number"
+                min="0"
+                step="0.01"
+                :disabled="!canEdit"
+                @update:model-value="setDraftAmount(drafts[index], 'packagingUnitCostMinor', $event)"
+              />
             </AdminFormField>
             <AdminFormField label="其他成本 / 件">
-              <Input v-model.number="drafts[index].otherUnitCost" type="number" min="0" step="0.01" :disabled="!canEdit" />
+              <Input
+                :model-value="minorToMajor(drafts[index].otherUnitCostMinor, drafts[index].currency)"
+                type="number"
+                min="0"
+                step="0.01"
+                :disabled="!canEdit"
+                @update:model-value="setDraftAmount(drafts[index], 'otherUnitCostMinor', $event)"
+              />
             </AdminFormField>
           </div>
 
@@ -128,9 +149,9 @@
           </div>
 
           <div class="grid grid-cols-2 gap-2 sm:grid-cols-4">
-            <Metric label="常规售价" :value="formatMoney(Number(variant.price || 0), currency)" />
-            <Metric label="实际售价" :value="formatMoney(effectiveSellingPrice(variant), currency)" />
-            <Metric label="含附加成本" :value="calculationFor(index).landedCost == null ? '待填写' : formatMoney(calculationFor(index).landedCost, currency)" />
+            <Metric label="常规售价" :value="formatMinorMoney(listPriceMinor(variant, currency), currency)" />
+            <Metric label="实际售价" :value="formatMinorMoney(effectiveSellingPriceMinor(variant, currency), currency)" />
+            <Metric label="含附加成本" :value="calculationFor(index).landedCostMinor == null ? '待填写' : formatMinorMoney(calculationFor(index).landedCostMinor, currency)" />
             <Metric label="预计毛利率" :value="calculationFor(index).grossMargin == null ? '待填写' : `${calculationFor(index).grossMargin.toFixed(2)}%`" />
           </div>
 
@@ -139,10 +160,10 @@
               <div>
                 <p class="text-xs text-muted-foreground">预计单位毛利</p>
                 <p
-                  :class="calculationFor(index).grossProfit != null && calculationFor(index).grossProfit < 0 ? 'text-destructive' : 'text-emerald-700 dark:text-emerald-300'"
+                  :class="calculationFor(index).grossProfitMinor != null && calculationFor(index).grossProfitMinor < 0 ? 'text-destructive' : 'text-emerald-700 dark:text-emerald-300'"
                   class="mt-1 text-2xl font-black tabular-nums"
                 >
-                  {{ calculationFor(index).grossProfit == null ? '待填写' : formatMoney(calculationFor(index).grossProfit, currency) }}
+                  {{ calculationFor(index).grossProfitMinor == null ? '待填写' : formatMinorMoney(calculationFor(index).grossProfitMinor, currency) }}
                 </p>
               </div>
               <div v-if="calculationFor(index).currencyMismatch" class="max-w-xs text-right text-xs leading-5 text-amber-700 dark:text-amber-300">
@@ -170,6 +191,7 @@ import AdminFormField from '@/components/admin/AdminFormField.vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import type { ProductSupplierCostProfitDraft } from '@/composables/product/useProductSupplierCostProfitDraft'
+import { formatMinorMoney, minorUnitsForCurrency } from '@/lib/dashboardPresentation'
 import type { ProductVariantForm } from '@/modules/product/productEditorTypes'
 
 const props = withDefaults(defineProps<{
@@ -196,23 +218,12 @@ const emit = defineEmits<{
   (event: 'retry'): void
 }>()
 
-const currencyMinorUnits: Record<string, number> = {
-  BHD: 3,
-  JOD: 3,
-  KWD: 3,
-  OMR: 3,
-  TND: 3,
-  JPY: 0,
-  KRW: 0,
-  VND: 0,
-}
-
 type CalculationStatus = 'ready' | 'warning' | 'missing_unit_cost' | 'currency_mismatch' | 'invalid'
 
 interface LocalCalculation {
   status: CalculationStatus
-  landedCost: number | null
-  grossProfit: number | null
+  landedCostMinor: number | null
+  grossProfitMinor: number | null
   grossMargin: number | null
   currencyMismatch: boolean
   warnings: string[]
@@ -225,12 +236,6 @@ const normalizeCurrency = (value: unknown): string => {
 
 const enteredCurrency = (value: unknown): string => String(value || '').trim().toUpperCase()
 
-const roundMoney = (value: number, currency: string): number => {
-  const units = currencyMinorUnits[normalizeCurrency(currency)] ?? 2
-  const scale = 10 ** units
-  return Math.round(value * scale) / scale
-}
-
 const finiteNumber = (value: unknown): number | null => {
   const number = Number(value)
   return Number.isFinite(number) ? number : null
@@ -239,7 +244,7 @@ const finiteNumber = (value: unknown): number | null => {
 const draftAt = (index: number): ProductSupplierCostProfitDraft => props.drafts[index] || {
   productCode: '',
   productName: '',
-  unitCost: null,
+  unitCostMinor: null,
   unitCostKnown: false,
   currency: props.currency,
   supplierName: '',
@@ -248,16 +253,33 @@ const draftAt = (index: number): ProductSupplierCostProfitDraft => props.drafts[
   supplierEmail: '',
   leadTimeDays: 0,
   minimumOrderQuantity: 1,
-  inboundShippingUnitCost: 0,
-  packagingUnitCost: 0,
-  otherUnitCost: 0,
+  inboundShippingUnitCostMinor: 0,
+  packagingUnitCostMinor: 0,
+  otherUnitCostMinor: 0,
 }
 
-const effectiveSellingPrice = (variant: ProductVariantForm): number => {
-  const salePrice = finiteNumber(variant.sale_price)
-  if (salePrice != null) return salePrice
-  return finiteNumber(variant.price) || 0
+const majorToMinor = (value: unknown, currency: string): number => {
+  const major = finiteNumber(value)
+  return major == null ? 0 : Math.round(major * (10 ** minorUnitsForCurrency(currency)))
 }
+
+const minorToMajor = (value: unknown, currency: string): number => {
+  const minor = finiteNumber(value)
+  return minor == null ? 0 : minor / (10 ** minorUnitsForCurrency(currency))
+}
+
+const priceMinor = (variant: ProductVariantForm, field: 'price' | 'sale_price', currency: string): number | null => {
+  const minorField = field === 'price' ? 'price_minor' : 'sale_price_minor'
+  const explicitMinor = finiteNumber(variant[minorField])
+  if (variant[minorField] != null && explicitMinor != null) return Math.trunc(explicitMinor)
+  if (field === 'sale_price' && (variant.sale_price == null || variant.sale_price === '')) return null
+  return majorToMinor(variant[field], currency)
+}
+
+const listPriceMinor = (variant: ProductVariantForm, currency: string): number => priceMinor(variant, 'price', currency) || 0
+const effectiveSellingPriceMinor = (variant: ProductVariantForm, currency: string): number => (
+  priceMinor(variant, 'sale_price', currency) ?? listPriceMinor(variant, currency)
+)
 
 const calculationFor = (index: number): LocalCalculation => {
   const draft = draftAt(index)
@@ -266,41 +288,41 @@ const calculationFor = (index: number): LocalCalculation => {
   const costCurrency = rawCostCurrency || currency
   const warnings: string[] = []
   const variant = props.variants[index] as ProductVariantForm | undefined
-  const listPrice = finiteNumber(variant?.price) || 0
-  const salePrice = finiteNumber(variant?.sale_price)
-  const sellingPrice = variant ? roundMoney(effectiveSellingPrice(variant), currency) : 0
+  const listPrice = variant ? listPriceMinor(variant, currency) : 0
+  const salePrice = variant ? priceMinor(variant, 'sale_price', currency) : null
+  const sellingPrice = variant ? effectiveSellingPriceMinor(variant, currency) : 0
 
   if (salePrice == null) warnings.push('sale_price_missing')
   if (salePrice != null && salePrice > listPrice) warnings.push('sale_price_above_list_price')
   if (!/^[A-Z]{3}$/.test(costCurrency)) {
-    return { status: 'invalid', landedCost: null, grossProfit: null, grossMargin: null, currencyMismatch: false, warnings: [...warnings, 'invalid_currency'] }
+    return { status: 'invalid', landedCostMinor: null, grossProfitMinor: null, grossMargin: null, currencyMismatch: false, warnings: [...warnings, 'invalid_currency'] }
   }
   if (currency !== costCurrency) {
     warnings.push('currency_mismatch')
-    return { status: 'currency_mismatch', landedCost: null, grossProfit: null, grossMargin: null, currencyMismatch: true, warnings }
+    return { status: 'currency_mismatch', landedCostMinor: null, grossProfitMinor: null, grossMargin: null, currencyMismatch: true, warnings }
   }
-  if (sellingPrice <= 0) return { status: 'invalid', landedCost: null, grossProfit: null, grossMargin: null, currencyMismatch: false, warnings: ['invalid_selling_price'] }
-  if (!draft.unitCostKnown || draft.unitCost == null) {
-    return { status: 'missing_unit_cost', landedCost: null, grossProfit: null, grossMargin: null, currencyMismatch: false, warnings: [...warnings, 'missing_unit_cost'] }
+  if (sellingPrice <= 0) return { status: 'invalid', landedCostMinor: null, grossProfitMinor: null, grossMargin: null, currencyMismatch: false, warnings: ['invalid_selling_price'] }
+  if (!draft.unitCostKnown || draft.unitCostMinor == null) {
+    return { status: 'missing_unit_cost', landedCostMinor: null, grossProfitMinor: null, grossMargin: null, currencyMismatch: false, warnings: [...warnings, 'missing_unit_cost'] }
   }
 
   const costValues = [
-    finiteNumber(draft.unitCost),
-    finiteNumber(draft.inboundShippingUnitCost),
-    finiteNumber(draft.packagingUnitCost),
-    finiteNumber(draft.otherUnitCost),
+    finiteNumber(draft.unitCostMinor),
+    finiteNumber(draft.inboundShippingUnitCostMinor),
+    finiteNumber(draft.packagingUnitCostMinor),
+    finiteNumber(draft.otherUnitCostMinor),
   ]
   if (costValues.some((value) => value == null || value < 0)) {
-    return { status: 'invalid', landedCost: null, grossProfit: null, grossMargin: null, currencyMismatch: false, warnings: [...warnings, 'invalid_cost'] }
+    return { status: 'invalid', landedCostMinor: null, grossProfitMinor: null, grossMargin: null, currencyMismatch: false, warnings: [...warnings, 'invalid_cost'] }
   }
-  const landedCost = roundMoney(costValues.reduce((total, value) => total + (value || 0), 0), currency)
-  const grossProfit = roundMoney(sellingPrice - landedCost, currency)
-  const grossMargin = grossProfit / sellingPrice * 100
-  if (grossProfit < 0) warnings.push('negative_gross_profit')
+  const landedCostMinor = costValues.reduce((total, value) => total + (value || 0), 0)
+  const grossProfitMinor = sellingPrice - landedCostMinor
+  const grossMargin = grossProfitMinor / sellingPrice * 100
+  if (grossProfitMinor < 0) warnings.push('negative_gross_profit')
   return {
     status: warnings.length ? 'warning' : 'ready',
-    landedCost,
-    grossProfit,
+    landedCostMinor,
+    grossProfitMinor,
     grossMargin,
     currencyMismatch: false,
     warnings,
@@ -336,15 +358,6 @@ const warningLabel = (warning: string): string => ({
   invalid_currency: '成本币种必须填写有效的三位字母币种代码。',
 }[warning] || warning)
 
-const formatMoney = (value: number, currency: string): string => {
-  const code = normalizeCurrency(currency)
-  try {
-    return new Intl.NumberFormat('zh-CN', { style: 'currency', currency: code }).format(value)
-  } catch {
-    return `${code} ${value.toFixed(2)}`
-  }
-}
-
 const formatSavedAt = (value: string): string => {
   const timestamp = new Date(value)
   if (Number.isNaN(timestamp.getTime())) return value
@@ -354,8 +367,19 @@ const formatSavedAt = (value: string): string => {
 const setUnitCost = (draft: ProductSupplierCostProfitDraft, value: string | number): void => {
   const rawValue = String(value ?? '').trim()
   const parsedValue = rawValue === '' ? null : Number(rawValue)
-  draft.unitCost = parsedValue != null && Number.isFinite(parsedValue) ? parsedValue : null
-  draft.unitCostKnown = draft.unitCost != null
+  draft.unitCostMinor = parsedValue != null && Number.isFinite(parsedValue)
+    ? majorToMinor(parsedValue, draft.currency)
+    : null
+  draft.unitCostKnown = draft.unitCostMinor != null
+}
+
+const setDraftAmount = (
+  draft: ProductSupplierCostProfitDraft,
+  field: 'inboundShippingUnitCostMinor' | 'packagingUnitCostMinor' | 'otherUnitCostMinor',
+  value: string | number,
+): void => {
+  const parsedValue = Number(String(value ?? '').trim())
+  draft[field] = Number.isFinite(parsedValue) ? majorToMinor(parsedValue, draft.currency) : 0
 }
 
 const setDraftCurrency = (draft: ProductSupplierCostProfitDraft, value: string | number): void => {

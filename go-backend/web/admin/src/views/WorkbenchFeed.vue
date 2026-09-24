@@ -274,7 +274,7 @@
                 <div class="min-w-0 flex-1">
                   <p class="truncate text-xs font-black">{{ product.display_title }}</p>
                   <p class="mt-1 truncate font-mono text-[10px] text-muted-foreground">
-                    {{ product.product_slug }} · {{ formatMoney(product.price, product.currency) }}
+                    {{ product.product_slug }} · {{ formatMoney(product.price_minor, product.currency) }}
                   </p>
                 </div>
                 <Button
@@ -363,7 +363,7 @@
                     <span class="mt-1 block truncate font-mono text-[10px] text-muted-foreground">{{ option.product_slug }}</span>
                   </span>
                   <span class="shrink-0 text-right">
-                    <span class="block font-mono text-xs font-black">{{ formatMoney(option.price, option.currency) }}</span>
+                    <span class="block font-mono text-xs font-black">{{ formatMoney(option.price_minor, option.currency) }}</span>
                     <span v-if="isProductSelected(option)" class="mt-1 block text-[10px] font-bold text-emerald-600">已关联</span>
                   </span>
                 </span>
@@ -689,7 +689,7 @@ const selectProduct = (option: WorkbenchFeedProductOption) => {
     display_title: option.variant_title && option.variant_title !== option.product_name
       ? `${option.product_name} · ${option.variant_title}`
       : option.product_name,
-    price: option.price,
+    price_minor: option.price_minor,
     currency: option.currency,
     direct_action: 'detail_drawer',
     available: option.available,
@@ -794,11 +794,15 @@ const formatDate = (value?: string) => {
   return Number.isNaN(date.getTime()) ? '-' : date.toLocaleString('zh-CN', { dateStyle: 'medium', timeStyle: 'short' })
 }
 
-const formatMoney = (amount: number, currency: string) => {
+const formatMoney = (amountMinor: number, currency: string) => {
+  const normalizedCurrency = /^[A-Z]{3}$/.test(currency) ? currency : 'USD'
+  const majorUnits = ['JPY', 'KRW', 'CLP'].includes(normalizedCurrency)
+    ? Number(amountMinor || 0)
+    : Number(amountMinor || 0) / 100
   try {
-    return new Intl.NumberFormat('zh-CN', { style: 'currency', currency }).format(Number(amount || 0))
+    return new Intl.NumberFormat('zh-CN', { style: 'currency', currency: normalizedCurrency }).format(majorUnits)
   } catch {
-    return `${currency || 'USD'} ${Number(amount || 0).toFixed(2)}`
+    return `${normalizedCurrency} ${majorUnits}`
   }
 }
 

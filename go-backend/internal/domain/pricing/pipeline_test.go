@@ -21,11 +21,6 @@ func TestPipelineAppliesCanonicalStagesUsingPreviousNetAmounts(t *testing.T) {
 			Reference: "SAVE30",
 			Amount:    money.MustNew(30, "USD"),
 		},
-		DiscountInput{
-			Kind:      DiscountKindPoints,
-			Reference: "redemption-1",
-			Amount:    money.MustNew(10, "USD"),
-		},
 	)
 	require.NoError(t, err)
 
@@ -34,12 +29,12 @@ func TestPipelineAppliesCanonicalStagesUsingPreviousNetAmounts(t *testing.T) {
 		{Key: "b", Quantity: 1, UnitPrice: money.MustNew(100, "USD")},
 	})
 	require.NoError(t, err)
-	require.Equal(t, []int64{37, 23}, lineAmounts(snapshot.Lines(), LineSnapshot.DiscountTotal))
-	require.Equal(t, []int64{63, 77}, lineAmounts(snapshot.Lines(), LineSnapshot.NetSubtotal))
-	require.Equal(t, int64(60), snapshot.DiscountTotal().AmountMinor())
-	require.Equal(t, int64(140), snapshot.NetTotal().AmountMinor())
+	require.Equal(t, []int64{33, 17}, lineAmounts(snapshot.Lines(), LineSnapshot.DiscountTotal))
+	require.Equal(t, []int64{67, 83}, lineAmounts(snapshot.Lines(), LineSnapshot.NetSubtotal))
+	require.Equal(t, int64(50), snapshot.DiscountTotal().AmountMinor())
+	require.Equal(t, int64(150), snapshot.NetTotal().AmountMinor())
 	require.Equal(t,
-		[]DiscountKind{DiscountKindMember, DiscountKindCoupon, DiscountKindPoints},
+		[]DiscountKind{DiscountKindMember, DiscountKindCoupon},
 		allocationKinds(snapshot.Lines()[0].DiscountAllocations()),
 	)
 }

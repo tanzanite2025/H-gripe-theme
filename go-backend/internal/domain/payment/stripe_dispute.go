@@ -5,19 +5,20 @@ import (
 	"time"
 
 	"commerce-platform/internal/domain/currency"
+	domainmoney "commerce-platform/internal/domain/money"
 
 	"gorm.io/gorm"
 )
 
 // StripeDispute is the local operational record for a Stripe chargeback.
 type StripeDispute struct {
-	ID                        uint           `gorm:"primarykey" json:"id"`
-	StripeDisputeID           string         `gorm:"uniqueIndex;not null" json:"stripe_dispute_id"`
-	StripeChargeID            string         `gorm:"index" json:"stripe_charge_id"`
-	PaymentIntentID           string         `gorm:"index" json:"payment_intent_id"`
-	OrderID                   *uint          `gorm:"index" json:"order_id,omitempty"`
-	TransactionID             *uint          `gorm:"index" json:"transaction_id,omitempty"`
-	Amount                    float64        `gorm:"not null" json:"amount"`
+	ID              uint   `gorm:"primarykey" json:"id"`
+	StripeDisputeID string `gorm:"uniqueIndex;not null" json:"stripe_dispute_id"`
+	StripeChargeID  string `gorm:"index" json:"stripe_charge_id"`
+	PaymentIntentID string `gorm:"index" json:"payment_intent_id"`
+	OrderID         *uint  `gorm:"index" json:"order_id,omitempty"`
+	TransactionID   *uint  `gorm:"index" json:"transaction_id,omitempty"`
+	AmountMinor     int64  `gorm:"column:amount_minor;not null;default:0" json:"amount_minor"`
 	Currency                  string         `gorm:"not null" json:"currency"`
 	Reason                    string         `gorm:"index" json:"reason"`
 	Status                    string         `gorm:"index;not null" json:"status"` // needs_response, warning_needs_response, under_review, won, lost, closed
@@ -40,5 +41,12 @@ func (d *StripeDispute) BeforeSave(tx *gorm.DB) error {
 	if !currency.IsValidCode(d.Currency) || !currency.IsCatalogCode(d.Currency) {
 		return errors.New("stripe dispute currency must be a supported ISO 4217 code")
 	}
+	if d.AmountMinor < 0 {
+		return errors.New("stripe dispute amount cannot be negative")
+	}
 	return nil
+}
+
+func (d StripeDispute) AmountMoney() (domainmoney.Money, error) {
+	return domainmoney.New(d.AmountMinor, d.Currency)
 }

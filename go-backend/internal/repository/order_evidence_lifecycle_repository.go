@@ -196,15 +196,15 @@ func (r *OrderEvidenceRepository) CreateRevision(
 		}
 
 		revision = orderevidence.OrderEvidencePackage{
-			OrderID:               source.OrderID,
-			SnapshotID:            source.SnapshotID,
-			PackageVersion:        source.PackageVersion + 1,
-			Status:                orderevidence.PackageStatusIncomplete,
-			OrderTotalUSDSnapshot: source.OrderTotalUSDSnapshot,
-			IsHighValue:           source.IsHighValue,
-			HasSpokeTensionQC:     source.HasSpokeTensionQC,
-			SchemaVersion:         source.SchemaVersion,
-			CreatedBy:             createdBy,
+			OrderID:                    source.OrderID,
+			SnapshotID:                 source.SnapshotID,
+			PackageVersion:             source.PackageVersion + 1,
+			Status:                     orderevidence.PackageStatusIncomplete,
+			OrderTotalUSDSnapshotMinor: source.OrderTotalUSDSnapshotMinor,
+			IsHighValue:                source.IsHighValue,
+			HasSpokeTensionQC:          source.HasSpokeTensionQC,
+			SchemaVersion:              source.SchemaVersion,
+			CreatedBy:                  createdBy,
 		}
 		copiedItems := make([]orderevidence.OrderEvidenceItem, 0, len(source.Items))
 		type attachmentCopies struct {

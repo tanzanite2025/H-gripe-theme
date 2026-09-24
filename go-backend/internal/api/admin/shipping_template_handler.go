@@ -111,7 +111,12 @@ func (h *ShippingHandler) CreateTemplateRule(c *gin.Context) {
 		return
 	}
 
-	rule := req.toDomain()
+	template, templateErr := h.shippingService.GetTemplate(templateID)
+	if templateErr != nil {
+		apierror.RespondNotFound(c, "Shipping template")
+		return
+	}
+	rule := req.toDomainForTemplateTypeWithCurrency(template.Type, template.Currency)
 	if err := validateShippingRule(rule); err != nil {
 		apierror.RespondBadRequest(c, err.Error())
 		return
@@ -142,7 +147,12 @@ func (h *ShippingHandler) UpdateTemplateRule(c *gin.Context) {
 		return
 	}
 
-	rule := req.toDomain()
+	template, templateErr := h.shippingService.GetTemplate(templateID)
+	if templateErr != nil {
+		apierror.RespondNotFound(c, "Shipping template")
+		return
+	}
+	rule := req.toDomainForTemplateTypeWithCurrency(template.Type, template.Currency)
 	rule.ID = ruleID
 	if err := validateShippingRule(rule); err != nil {
 		apierror.RespondBadRequest(c, err.Error())
@@ -197,7 +207,7 @@ func validateShippingTemplate(template shippingdomain.ShippingTemplate) error {
 	default:
 		return errors.New("template type must be weight, quantity or price")
 	}
-	if template.FreeThreshold < 0 || template.DefaultFee < 0 {
+	if template.FreeThresholdMinor < 0 || template.DefaultFeeMinor < 0 {
 		return errors.New("fees and thresholds cannot be negative")
 	}
 	for _, rule := range template.Rules {
@@ -215,10 +225,13 @@ func validateShippingRule(rule shippingdomain.ShippingRule) error {
 	if rule.Currency != "" && !currency.IsCatalogCode(rule.Currency) {
 		return errors.New("rule source currency is required")
 	}
-	if rule.MinValue < 0 || rule.MaxValue < 0 || rule.Fee < 0 || rule.Additional < 0 {
+	if rule.MinValue < 0 || rule.MaxValue < 0 || rule.MinValueMinor < 0 || rule.MaxValueMinor < 0 || rule.FeeMinor < 0 || rule.AdditionalMinor < 0 {
 		return errors.New("rule values and fees cannot be negative")
 	}
 	if rule.MaxValue > 0 && rule.MaxValue < rule.MinValue {
+		return errors.New("rule max value cannot be less than min value")
+	}
+	if rule.MaxValueMinor > 0 && rule.MaxValueMinor < rule.MinValueMinor {
 		return errors.New("rule max value cannot be less than min value")
 	}
 	return nil

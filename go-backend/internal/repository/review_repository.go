@@ -80,7 +80,12 @@ func (r *ReviewRepository) FindReviewsForAdmin(options ReviewAdminListOptions) (
 			LOWER(reviews.title) LIKE ?
 			OR LOWER(reviews.content) LIKE ?
 			OR LOWER(products.name) LIKE ?
-			OR LOWER(products.sku) LIKE ?
+			OR EXISTS (
+				SELECT 1 FROM product_variants pv_review_search
+				WHERE pv_review_search.product_id = products.id
+				  AND pv_review_search.deleted_at IS NULL
+				  AND LOWER(pv_review_search.sku) LIKE ?
+			)
 			OR LOWER(users.username) LIKE ?
 			OR LOWER(users.email) LIKE ?
 		`, pattern, pattern, pattern, pattern, pattern, pattern)

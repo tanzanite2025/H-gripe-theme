@@ -178,11 +178,12 @@ func (r *LoyaltyRepository) AdjustUserPointsInCurrentTxWithConfig(
 		return nil, err
 	}
 
-	if points < 0 && userLoyalty.AvailablePoints+points < 0 {
+	allowDebt := source == "referral_reversal" || source == "refund_loyalty_cash_recovery_debt"
+	if points < 0 && userLoyalty.AvailablePoints+points < 0 && !allowDebt {
 		return nil, ErrInsufficientPoints
 	}
 
-	applyPointsDelta(userLoyalty, points, transactionType)
+	applyPointsDelta(userLoyalty, points, transactionType, source)
 
 	if err := r.db.Save(userLoyalty).Error; err != nil {
 		return nil, fmt.Errorf("failed to update user loyalty: %w", err)
@@ -193,6 +194,7 @@ func (r *LoyaltyRepository) AdjustUserPointsInCurrentTxWithConfig(
 		Type:            transactionType,
 		Points:          points,
 		Balance:         userLoyalty.AvailablePoints,
+		DebtBalance:     userLoyalty.DebtPoints,
 		Source:          source,
 		SourceID:        sourceID,
 		ProgramConfigID: programConfigID,
@@ -234,9 +236,11 @@ func findOrCreateUserLoyaltyForUpdate(tx *gorm.DB, userID uint) (*loyalty.UserLo
 	return &userLoyalty, nil
 }
 
-func applyPointsDelta(userLoyalty *loyalty.UserLoyalty, points int, transactionType string) {
+func applyPointsDelta(userLoyalty *loyalty.UserLoyalty, points int, transactionType, source string) {
 	if points > 0 {
-		userLoyalty.AvailablePoints += points
+		debtRepayment := min(points, userLoyalty.DebtPoints)
+		userLoyalty.DebtPoints -= debtRepayment
+		userLoyalty.AvailablePoints += points - debtRepayment
 		if transactionType == "refund" {
 			userLoyalty.UsedPoints -= points
 			if userLoyalty.UsedPoints < 0 {
@@ -245,6 +249,21 @@ func applyPointsDelta(userLoyalty *loyalty.UserLoyalty, points int, transactionT
 			return
 		}
 		userLoyalty.TotalPoints += points
+		return
+	}
+
+	if source == "referral_reversal" || source == "refund_loyalty_cash_recovery_debt" {
+		pointsToRecover := -points
+		recoveredFromAvailable := min(pointsToRecover, userLoyalty.AvailablePoints)
+		userLoyalty.AvailablePoints -= recoveredFromAvailable
+		userLoyalty.DebtPoints += pointsToRecover - recoveredFromAvailable
+		userLoyalty.UsedPoints += pointsToRecover
+		return
+	}
+	if source == "refund_loyalty_cash_recovery_debt" {
+		pointsToRecover := -points
+		userLoyalty.DebtPoints += pointsToRecover
+		userLoyalty.UsedPoints += pointsToRecover
 		return
 	}
 

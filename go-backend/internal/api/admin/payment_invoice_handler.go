@@ -1,6 +1,7 @@
 package admin
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -31,11 +32,37 @@ type paypalCommercialInvoicePreviewRequest struct {
 	PaymentStatus    string                         `json:"payment_status"`
 	PaymentDate      string                         `json:"payment_date"`
 	PaymentReference string                         `json:"payment_reference"`
-	Subtotal         float64                        `json:"subtotal"`
-	Shipping         float64                        `json:"shipping"`
-	Tax              float64                        `json:"tax"`
-	Discount         float64                        `json:"discount"`
-	Total            float64                        `json:"total"`
+	Subtotal         string                         `json:"subtotal"`
+	Shipping         string                         `json:"shipping"`
+	Tax              string                         `json:"tax"`
+	Discount         string                         `json:"discount"`
+	Total            string                         `json:"total"`
+}
+
+// parse accepts decimal strings at the API boundary.
+func (r *paypalCommercialInvoicePreviewRequest) UnmarshalJSON(data []byte) error {
+	type alias paypalCommercialInvoicePreviewRequest
+	var raw alias
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return err
+	}
+	*r = paypalCommercialInvoicePreviewRequest(raw)
+	if r.Subtotal == "" {
+		r.Subtotal = "0"
+	}
+	if r.Shipping == "" {
+		r.Shipping = "0"
+	}
+	if r.Tax == "" {
+		r.Tax = "0"
+	}
+	if r.Discount == "" {
+		r.Discount = "0"
+	}
+	if r.Total == "" {
+		r.Total = "0"
+	}
+	return nil
 }
 
 type paypalInvoicePreviewSeller struct {
@@ -61,14 +88,21 @@ type paypalInvoicePreviewAddress struct {
 }
 
 type paypalInvoicePreviewLineItem struct {
-	Description string  `json:"description"`
-	SKU         string  `json:"sku"`
-	Quantity    int     `json:"quantity"`
-	UnitPrice   float64 `json:"unit_price"`
-	Subtotal    float64 `json:"subtotal"`
-	Tax         float64 `json:"tax"`
-	Discount    float64 `json:"discount"`
-	Total       float64 `json:"total"`
+	Description string `json:"description"`
+	SKU         string `json:"sku"`
+	Quantity    int    `json:"quantity"`
+	UnitPrice   string `json:"unit_price"`
+	Subtotal    string `json:"subtotal"`
+	Tax         string `json:"tax"`
+	Discount    string `json:"discount"`
+	Total       string `json:"total"`
+}
+
+func normalizeInvoiceAmount(value string) string {
+	if strings.TrimSpace(value) == "" {
+		return "0"
+	}
+	return value
 }
 
 func (r paypalCommercialInvoicePreviewRequest) commercialInvoice() (invoice.CommercialInvoice, error) {
@@ -80,16 +114,20 @@ func (r paypalCommercialInvoicePreviewRequest) commercialInvoice() (invoice.Comm
 	if err != nil {
 		return invoice.CommercialInvoice{}, fmt.Errorf("invalid invoice currency: %w", err)
 	}
-	toMoney := func(amount float64) (domainmoney.Money, error) {
-		return domainmoney.FromMajorFloat(amount, currencyCode.String())
+	toMoney := func(amount string) (domainmoney.Money, error) {
+		return domainmoney.ParseMajor(amount, currencyCode.String())
 	}
-	toMajor := func(amount domainmoney.Money) (float64, error) {
-		return amount.MajorFloat()
+	formatMoney := func(amount domainmoney.Money) (string, error) {
+		return amount.FormatMajor()
 	}
-
 	items := make([]invoice.LineItem, 0, len(r.Items))
 	calculatedSubtotal := domainmoney.MustNew(0, currencyCode.String())
 	for _, item := range r.Items {
+		item.UnitPrice = normalizeInvoiceAmount(item.UnitPrice)
+		item.Subtotal = normalizeInvoiceAmount(item.Subtotal)
+		item.Tax = normalizeInvoiceAmount(item.Tax)
+		item.Discount = normalizeInvoiceAmount(item.Discount)
+		item.Total = normalizeInvoiceAmount(item.Total)
 		quantity := item.Quantity
 		if quantity <= 0 {
 			quantity = 1
@@ -102,7 +140,7 @@ func (r paypalCommercialInvoicePreviewRequest) commercialInvoice() (invoice.Comm
 		if err != nil {
 			return invoice.CommercialInvoice{}, err
 		}
-		if item.Subtotal == 0 && item.UnitPrice != 0 {
+		if item.Subtotal == "0" && item.UnitPrice != "0" {
 			subtotalMoney, err = unitPriceMoney.MultiplyInt(int64(quantity))
 			if err != nil {
 				return invoice.CommercialInvoice{}, err
@@ -120,7 +158,7 @@ func (r paypalCommercialInvoicePreviewRequest) commercialInvoice() (invoice.Comm
 		if err != nil {
 			return invoice.CommercialInvoice{}, err
 		}
-		if item.Total == 0 {
+		if item.Total == "0" {
 			totalMoney, err = subtotalMoney.Add(taxMoney)
 			if err == nil {
 				totalMoney, err = totalMoney.Subtract(discountMoney)
@@ -133,23 +171,23 @@ func (r paypalCommercialInvoicePreviewRequest) commercialInvoice() (invoice.Comm
 		if err != nil {
 			return invoice.CommercialInvoice{}, err
 		}
-		unitPrice, err := toMajor(unitPriceMoney)
+		unitPrice, err := formatMoney(unitPriceMoney)
 		if err != nil {
 			return invoice.CommercialInvoice{}, err
 		}
-		subtotal, err := toMajor(subtotalMoney)
+		subtotal, err := formatMoney(subtotalMoney)
 		if err != nil {
 			return invoice.CommercialInvoice{}, err
 		}
-		tax, err := toMajor(taxMoney)
+		tax, err := formatMoney(taxMoney)
 		if err != nil {
 			return invoice.CommercialInvoice{}, err
 		}
-		discount, err := toMajor(discountMoney)
+		discount, err := formatMoney(discountMoney)
 		if err != nil {
 			return invoice.CommercialInvoice{}, err
 		}
-		total, err := toMajor(totalMoney)
+		total, err := formatMoney(totalMoney)
 		if err != nil {
 			return invoice.CommercialInvoice{}, err
 		}
@@ -169,7 +207,7 @@ func (r paypalCommercialInvoicePreviewRequest) commercialInvoice() (invoice.Comm
 	if err != nil {
 		return invoice.CommercialInvoice{}, err
 	}
-	if r.Subtotal == 0 {
+	if r.Subtotal == "0" {
 		subtotalMoney = calculatedSubtotal
 	}
 	shippingMoney, err := toMoney(r.Shipping)
@@ -188,7 +226,7 @@ func (r paypalCommercialInvoicePreviewRequest) commercialInvoice() (invoice.Comm
 	if err != nil {
 		return invoice.CommercialInvoice{}, err
 	}
-	if r.Total == 0 {
+	if r.Total == "0" {
 		totalMoney, err = subtotalMoney.Add(shippingMoney)
 		if err == nil {
 			totalMoney, err = totalMoney.Add(taxMoney)
@@ -200,15 +238,26 @@ func (r paypalCommercialInvoicePreviewRequest) commercialInvoice() (invoice.Comm
 			return invoice.CommercialInvoice{}, err
 		}
 	}
-	subtotal, err := toMajor(subtotalMoney)
+	subtotal, err := formatMoney(subtotalMoney)
 	if err != nil {
 		return invoice.CommercialInvoice{}, err
 	}
-	total, err := toMajor(totalMoney)
+	shipping, err := formatMoney(shippingMoney)
 	if err != nil {
 		return invoice.CommercialInvoice{}, err
 	}
-
+	tax, err := formatMoney(taxMoney)
+	if err != nil {
+		return invoice.CommercialInvoice{}, err
+	}
+	discount, err := formatMoney(discountMoney)
+	if err != nil {
+		return invoice.CommercialInvoice{}, err
+	}
+	total, err := formatMoney(totalMoney)
+	if err != nil {
+		return invoice.CommercialInvoice{}, err
+	}
 	var paymentDate *time.Time
 	if strings.TrimSpace(r.PaymentDate) != "" {
 		parsed, err := parseInvoicePreviewDate(r.PaymentDate, time.Time{})
@@ -238,9 +287,9 @@ func (r paypalCommercialInvoicePreviewRequest) commercialInvoice() (invoice.Comm
 		PaymentDate:      paymentDate,
 		PaymentReference: r.PaymentReference,
 		Subtotal:         subtotal,
-		Shipping:         r.Shipping,
-		Tax:              r.Tax,
-		Discount:         r.Discount,
+		Shipping:         shipping,
+		Tax:              tax,
+		Discount:         discount,
 		Total:            total,
 	}, nil
 }

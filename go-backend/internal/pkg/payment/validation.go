@@ -39,8 +39,11 @@ func ValidatePaymentRequest(req *PaymentRequest) error {
 		return fmt.Errorf("payment request cannot be nil")
 	}
 
-	if req.Amount <= 0 {
+	if req.AmountMinor <= 0 {
 		return fmt.Errorf("amount must be greater than 0")
+	}
+	if req.AmountMinor < 0 {
+		return fmt.Errorf("minor amount cannot be negative")
 	}
 
 	if req.Currency == "" {
@@ -50,6 +53,13 @@ func ValidatePaymentRequest(req *PaymentRequest) error {
 
 	if !currency.IsValidCode(req.Currency) || !currency.IsCatalogCode(req.Currency) {
 		return fmt.Errorf("unsupported currency code")
+	}
+	resolved, err := PaymentRequestMoney(req)
+	if err != nil {
+		return fmt.Errorf("invalid amount: %w", err)
+	}
+	if resolved.AmountMinor() <= 0 {
+		return fmt.Errorf("amount must resolve to at least one minor unit")
 	}
 
 	if req.OrderID == "" {
@@ -97,13 +107,16 @@ func NormalizeCardBIN(value string) (string, error) {
 	return value, nil
 }
 
-// ValidateRefundAmount 验证退款金额
-func ValidateRefundAmount(amount, originalAmount float64) error {
-	if amount <= 0 {
+// ValidateRefundAmount 验证退款金额（最小货币单位）
+func ValidateRefundAmount(amountMinor, originalAmountMinor int64) error {
+	if amountMinor <= 0 {
 		return fmt.Errorf("refund amount must be greater than 0")
 	}
 
-	if amount > originalAmount {
+	if originalAmountMinor < 0 {
+		return fmt.Errorf("original payment amount cannot be negative")
+	}
+	if amountMinor > originalAmountMinor {
 		return fmt.Errorf("refund amount cannot exceed original payment amount")
 	}
 

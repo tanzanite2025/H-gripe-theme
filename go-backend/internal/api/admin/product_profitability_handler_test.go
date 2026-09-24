@@ -34,9 +34,9 @@ func TestProductProfitabilityHandlerPreviewDoesNotWriteDatabase(t *testing.T) {
 			"product_code": "SKU-HANDLER-PREVIEW",
 			"product_name": "Handler preview",
 			"currency": "USD",
-			"list_price": 100,
-			"sale_price": 90,
-			"unit_cost": 50,
+			"list_price_minor": 10000,
+			"sale_price_minor": 9000,
+			"unit_cost_minor": 5000,
 			"unit_cost_known": true
 		}]
 	}`)
@@ -44,13 +44,13 @@ func TestProductProfitabilityHandlerPreviewDoesNotWriteDatabase(t *testing.T) {
 
 	var payload struct {
 		Items []struct {
-			GrossProfit *float64 `json:"gross_profit"`
+			GrossProfitMinor *int64 `json:"gross_profit_minor"`
 		} `json:"items"`
 	}
 	require.NoError(t, json.Unmarshal(response.Body.Bytes(), &payload))
 	require.Len(t, payload.Items, 1)
-	require.NotNil(t, payload.Items[0].GrossProfit)
-	require.Equal(t, 40.0, *payload.Items[0].GrossProfit)
+	require.NotNil(t, payload.Items[0].GrossProfitMinor)
+	require.Equal(t, int64(4000), *payload.Items[0].GrossProfitMinor)
 
 	var count int64
 	require.NoError(t, db.Model(&suppliercostdomain.ProductProfitCalculation{}).Count(&count).Error)
@@ -73,8 +73,8 @@ func TestProductProfitabilityHandlerBulkUpsertRejectsInvalidBatchWithoutPartialW
 				"product_code": "SKU-HANDLER-VALID",
 				"product_name": "Valid item",
 				"currency": "USD",
-				"list_price": 100,
-				"unit_cost": 40,
+				"list_price_minor": 10000,
+				"unit_cost_minor": 4000,
 				"unit_cost_known": true
 			},
 			{
@@ -115,8 +115,8 @@ func TestProductProfitabilityHandlerBulkUpsertAcceptsNestedSupplierCostDetails(t
 			"product_code": "SKU-HANDLER-SUPPLIER-COST",
 			"product_name": "Handler supplier cost item",
 			"currency": "USD",
-			"list_price": 100,
-			"unit_cost": 40,
+			"list_price_minor": 10000,
+			"unit_cost_minor": 4000,
 			"unit_cost_known": true,
 			"supplier_cost_details": {
 				"supplier_name": "Nested Supplier",
@@ -138,7 +138,7 @@ func TestProductProfitabilityHandlerBulkUpsertAcceptsNestedSupplierCostDetails(t
 	require.Equal(t, 5, supplierCostRecord.MinimumOrderQuantity)
 }
 
-func TestProductProfitabilityHandlerAcceptsHistoricalLegacyCostAndSupplierDetailsEnvelopeAsSupplierCostCompatibility(t *testing.T) {
+func TestProductProfitabilityHandlerAcceptsCanonicalSupplierCostDetailsEnvelope(t *testing.T) {
 	db := newProductProfitabilityHandlerTestDB(t)
 	handler := NewProductProfitabilityHandler(
 		service.NewProductProfitabilityServiceWithSupplierCostRecords(
@@ -156,10 +156,10 @@ func TestProductProfitabilityHandlerAcceptsHistoricalLegacyCostAndSupplierDetail
 			"product_code": "SKU-HANDLER-LEGACY-SUPPLIER-COST",
 			"product_name": "Handler legacy supplier cost item",
 			"currency": "USD",
-			"list_price": 100,
-			"purchase_price": 40,
-			"purchase_price_known": true,
-			"procurement": {
+			"list_price_minor": 10000,
+			"unit_cost_minor": 4000,
+			"unit_cost_known": true,
+			"supplier_cost_details": {
 				"supplier_name": "Legacy Supplier",
 				"supplier_contact_name": "Ming",
 				"lead_time_days": 12,

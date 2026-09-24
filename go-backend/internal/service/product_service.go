@@ -219,8 +219,9 @@ type ProductSearchInput struct {
 	ProductSpecificationTemplateSlug string
 	CategorySlug                     string
 	BrandSlug                        string
-	PriceMin                         *float64
-	PriceMax                         *float64
+	PriceMin                         *int64
+	PriceMax                         *int64
+	PriceCurrency                    string
 	SpecFilters                      map[string][]string
 	Page                             int
 	PageSize                         int
@@ -599,6 +600,7 @@ func (s *ProductService) SearchPublic(input ProductSearchInput) ([]product.Produ
 		BrandSlug:                        input.BrandSlug,
 		PriceMin:                         input.PriceMin,
 		PriceMax:                         input.PriceMax,
+		PriceCurrency:                    input.PriceCurrency,
 		SpecFilters:                      input.SpecFilters,
 		Offset:                           offset,
 		Limit:                            limit,
@@ -623,6 +625,7 @@ func (s *ProductService) SearchPublicCompact(input ProductSearchInput) ([]produc
 		BrandSlug:                        input.BrandSlug,
 		PriceMin:                         input.PriceMin,
 		PriceMax:                         input.PriceMax,
+		PriceCurrency:                    input.PriceCurrency,
 		SpecFilters:                      input.SpecFilters,
 		Offset:                           offset,
 		Limit:                            limit,

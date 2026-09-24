@@ -4,9 +4,11 @@ import (
 	"errors"
 	"net/http"
 	"strings"
+	"time"
 
 	domainsubscription "commerce-platform/internal/domain/subscription"
 	"commerce-platform/internal/pkg/antibot"
+	"commerce-platform/internal/pkg/honeypot"
 	"commerce-platform/internal/service"
 
 	"github.com/gin-gonic/gin"
@@ -15,6 +17,11 @@ import (
 type Handler struct {
 	subscriptionService *service.SubscriptionService
 	antiBot             *antibot.Service
+	honeypotPolicy      honeypot.Policy
+	timingTokenKey      string
+	timingTokenTTL      time.Duration
+	timingReplay        *honeypot.TimingReplayObserver
+	now                 func() time.Time
 }
 
 func NewHandler(subscriptionService *service.SubscriptionService, antiBotServices ...*antibot.Service) *Handler {
@@ -25,6 +32,31 @@ func NewHandler(subscriptionService *service.SubscriptionService, antiBotService
 	return &Handler{
 		subscriptionService: subscriptionService,
 		antiBot:             antiBot,
+		honeypotPolicy:      honeypot.NewPolicy(honeypot.ModeEnforce),
+		timingTokenTTL:      honeypot.DefaultTimingTokenTTL(),
+		now:                 time.Now,
+	}
+}
+
+func (h *Handler) ConfigureHoneypot(policy honeypot.Policy) {
+	if h != nil {
+		h.honeypotPolicy = policy
+	}
+}
+
+func (h *Handler) ConfigureTimingToken(key string, ttl time.Duration) {
+	if h == nil {
+		return
+	}
+	h.timingTokenKey = strings.TrimSpace(key)
+	if ttl > 0 {
+		h.timingTokenTTL = ttl
+	}
+}
+
+func (h *Handler) ConfigureTimingReplay(observer *honeypot.TimingReplayObserver) {
+	if h != nil {
+		h.timingReplay = observer
 	}
 }
 
@@ -32,13 +64,32 @@ func acceptedSubscriptionResponse(c *gin.Context) {
 	c.JSON(http.StatusAccepted, gin.H{"message": "If the email can be subscribed, the request has been accepted."})
 }
 
+func (h *Handler) IssueTimingToken(c *gin.Context) {
+	if h == nil || h.timingTokenKey == "" {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "form timing service is unavailable"})
+		return
+	}
+	token, err := honeypot.IssueTimingToken("newsletter", h.timingTokenKey, h.now())
+	if err != nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "form timing service is unavailable"})
+		return
+	}
+	c.Header("Cache-Control", "no-store")
+	c.JSON(http.StatusOK, gin.H{
+		"token":      token,
+		"expires_in": int64(h.timingTokenTTL / time.Second),
+	})
+}
+
 func (h *Handler) Subscribe(c *gin.Context) {
 	var req struct {
-		Email        string   `json:"email" binding:"required,email"`
-		Source       string   `json:"source"`
-		Locale       string   `json:"locale"`
-		Tags         []string `json:"tags"`
-		CaptchaToken string   `json:"captcha_token"`
+		Email              string   `json:"email" binding:"required,email"`
+		Source             string   `json:"source"`
+		Locale             string   `json:"locale"`
+		Tags               []string `json:"tags"`
+		CaptchaToken       string   `json:"captcha_token"`
+		CorporateTaxNumber string   `json:"corporate_tax_number"`
+		TimingToken        string   `json:"timing_token"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -51,6 +102,15 @@ func (h *Handler) Subscribe(c *gin.Context) {
 	if req.Locale == "" {
 		req.Locale = "en"
 	}
+	now := h.now()
+	timingObservation := honeypot.ObserveTimingTokenDetailed(req.TimingToken, "newsletter", h.timingTokenKey, now, h.timingTokenTTL)
+	if timingObservation.Valid && h.timingReplay != nil {
+		h.timingReplay.Observe(c.Request.Context(), timingObservation.Claims.Form, timingObservation.Claims, now, h.timingTokenTTL)
+	}
+	if h.honeypotPolicy.ShouldDrop(req.CorporateTaxNumber, "newsletter", "corporate_tax_number", c.Request.URL.Path) {
+		acceptedSubscriptionResponse(c)
+		return
+	}
 	if h.subscriptionService == nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "subscription service is unavailable"})
 		return
@@ -59,7 +119,7 @@ func (h *Handler) Subscribe(c *gin.Context) {
 		return
 	}
 
-	_, err := h.subscriptionService.Subscribe(req.Email, req.Source, req.Locale, req.Tags)
+	_, _, err := h.subscriptionService.Subscribe(req.Email, req.Source, req.Locale, req.Tags)
 	if err != nil {
 		if err.Error() == "email already subscribed" {
 			acceptedSubscriptionResponse(c)
@@ -67,17 +127,6 @@ func (h *Handler) Subscribe(c *gin.Context) {
 		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
-	}
-
-	if _, err := h.subscriptionService.IssueSubscriptionConfirmation(req.Email); err != nil {
-		if h.antiBot != nil {
-			h.antiBot.RecordDeliveryResult("email", false)
-		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "unable to send subscription confirmation"})
-		return
-	}
-	if h.antiBot != nil {
-		h.antiBot.RecordDeliveryResult("email", true)
 	}
 
 	acceptedSubscriptionResponse(c)
@@ -131,14 +180,8 @@ func (h *Handler) UnsubscribeByEmail(c *gin.Context) {
 	}
 	if h.subscriptionService != nil {
 		if err := h.subscriptionService.UnsubscribeByEmail(req.Email); err != nil {
-			if h.antiBot != nil {
-				h.antiBot.RecordDeliveryResult("email", false)
-			}
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "unable to send subscription action email"})
 			return
-		}
-		if h.antiBot != nil {
-			h.antiBot.RecordDeliveryResult("email", true)
 		}
 	}
 	c.JSON(http.StatusAccepted, gin.H{"message": "If the subscription exists, the request has been accepted."})
@@ -158,14 +201,8 @@ func (h *Handler) Resubscribe(c *gin.Context) {
 	}
 	if h.subscriptionService != nil {
 		if err := h.subscriptionService.Resubscribe(req.Email); err != nil {
-			if h.antiBot != nil {
-				h.antiBot.RecordDeliveryResult("email", false)
-			}
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "unable to send subscription action email"})
 			return
-		}
-		if h.antiBot != nil {
-			h.antiBot.RecordDeliveryResult("email", true)
 		}
 	}
 	c.JSON(http.StatusAccepted, gin.H{"message": "If the subscription exists, the request has been accepted."})
@@ -210,13 +247,7 @@ func (h *Handler) GetSubscription(c *gin.Context) {
 		if !h.allowDelivery(c, email, c.Query("captcha_token")) {
 			return
 		}
-		if err := h.subscriptionService.RequestStatus(email); err != nil {
-			if h.antiBot != nil {
-				h.antiBot.RecordDeliveryResult("email", false)
-			}
-		} else if h.antiBot != nil {
-			h.antiBot.RecordDeliveryResult("email", true)
-		}
+		_ = h.subscriptionService.RequestStatus(email)
 	}
 	c.JSON(http.StatusAccepted, gin.H{"message": "If the subscription exists, the request has been accepted."})
 }

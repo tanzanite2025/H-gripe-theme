@@ -67,11 +67,6 @@ func (h *Handler) CreateAlipayOrder(c *gin.Context) {
 		apierror.RespondInternalError(c, err)
 		return
 	}
-	orderAmount, err := settlement.MajorFloat()
-	if err != nil {
-		apierror.RespondInternalError(c, err)
-		return
-	}
 	orderCurrency := settlement.Currency().String()
 	if !ensureGatewayCurrency(c, pgateway.GatewayAlipay, orderCurrency) {
 		return
@@ -103,7 +98,7 @@ func (h *Handler) CreateAlipayOrder(c *gin.Context) {
 		return
 	}
 	paymentResponse, err := gateway.CreatePayment(c.Request.Context(), &pgateway.PaymentRequest{
-		Amount:         orderAmount,
+		AmountMinor:    settlement.AmountMinor(),
 		Currency:       orderCurrency,
 		OrderID:        orderRecord.OrderNumber,
 		Description:    fmt.Sprintf("Order %s", orderRecord.OrderNumber),
@@ -194,7 +189,7 @@ func (h *Handler) ConfirmAlipayOrder(c *gin.Context) {
 		return
 	}
 	if orderRecord.PaymentStatus == "paid" {
-		orderAmount, err := settlement.MajorFloat()
+		orderAmount, err := settlement.FormatMajor()
 		if err != nil {
 			apierror.RespondInternalError(c, err)
 			return

@@ -72,19 +72,19 @@ func TestPreviewPayPalCommercialInvoicePDFUsesAdHocInput(t *testing.T) {
 			"seller":{"name":"Sample Seller","address":"1 Seller Street\nAustin, TX 78701\nUS"},
 			"bill_to":{"name":"Sample Customer","line1":"9 Buyer Avenue","city":"Seattle","state":"WA","postal_code":"98101","country":"US"},
 			"ship_to":{"name":"Sample Customer","line1":"9 Buyer Avenue","city":"Seattle","state":"WA","postal_code":"98101","country":"US"},
-			"items":[{"description":"Sample product","sku":"SKU-001","quantity":2,"unit_price":50,"total":100}],
+			"items":[{"description":"Sample product","sku":"SKU-001","quantity":2,"unit_price":"50.00","total":"100.00"}],
 			"payment_method":"PayPal",
 			"payment_status":"paid",
 			"payment_reference":"SAMPLE-CAPTURE",
-			"subtotal":100,
-			"shipping":10,
-			"total":110
+			"subtotal":"100.00",
+			"shipping":"10.00",
+			"total":"110.00"
 		}`),
 	)
 	context.Request.Header.Set("Content-Type", "application/json")
 
 	handler.PreviewPayPalCommercialInvoicePDF(context)
-
+	if recorder.Code != http.StatusOK { t.Logf("preview response: %s", recorder.Body.String()) }
 	require.Equal(t, http.StatusOK, recorder.Code)
 	require.Contains(t, recorder.Header().Get("Content-Type"), "application/pdf")
 	require.Contains(t, recorder.Header().Get("Content-Disposition"), "CI-SAMPLE-001")
@@ -138,9 +138,9 @@ func seedAdminPayPalDisputeOrder(t *testing.T, db *gorm.DB, orderNumber string) 
 		PaymentMethod:  "paypal",
 		PaymentStatus:  "paid",
 		ShippingStatus: "delivered",
-		SubtotalAmount: 249.90,
-		ShippingFee:    20,
-		TotalAmount:    269.90,
+		SubtotalAmountMinor: 24990,
+		ShippingFeeMinor:    2000,
+		TotalAmountMinor:    26990,
 		Currency:       "USD",
 		PaidAt:         &paidAt,
 		ShippingAddress: orderdomain.Address{
@@ -170,9 +170,9 @@ func seedAdminPayPalDisputeOrder(t *testing.T, db *gorm.DB, orderNumber string) 
 				ProductName: "Carbon wheelset",
 				SKU:         "C50-DT240",
 				Quantity:    1,
-				Price:       249.90,
-				Subtotal:    249.90,
-				Total:       249.90,
+				PriceMinor:    24990,
+				SubtotalMinor: 24990,
+				TotalMinor:    24990,
 			},
 		},
 	}
@@ -186,7 +186,7 @@ func seedAdminPayPalDispute(t *testing.T, db *gorm.DB, paypalID string, orderID 
 		PayPalDisputeID:   paypalID,
 		OrderID:           &orderID,
 		ProviderPaymentID: "PAYPAL-CAPTURE-ADMIN-1",
-		Amount:            269.90,
+		AmountMinor:       26990,
 		Currency:          "USD",
 		Reason:            "MERCHANDISE_OR_SERVICE_NOT_RECEIVED",
 		Status:            "WAITING_FOR_SELLER_RESPONSE",

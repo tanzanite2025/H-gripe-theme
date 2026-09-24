@@ -106,7 +106,8 @@
       v-model:admin-note="adminNoteForm.admin_note"
       :current-order="currentOrder"
       :current-tracking-events="currentTrackingEvents"
-      :current-tracking-shipment="currentTrackingShipment"
+      :current-tracking-shipments="currentTrackingShipments"
+      :selected-tracking-number="selectedTrackingNumber"
       :dispute-analysis="currentDisputeAnalysis"
       :dispute-analysis-loading="disputeAnalysisLoading"
       :syncing-tracking="syncingTracking"
@@ -126,9 +127,8 @@
       :format-money="formatMoney"
       :shipping-name="shippingName"
       :shipping-address-line="shippingAddressLine"
-      :order-carrier-label="orderCarrierLabel"
-      :order-carrier-service-label="orderCarrierServiceLabel"
       @sync-tracking="syncCurrentOrderTracking"
+      @select-tracking="selectTrackingShipment"
       @update-note="updateAdminNote"
       @update-customs="updateOrderItemCustoms"
       @export-customs="exportOrderCustoms"
@@ -231,6 +231,7 @@ import {
   editableShippingStatusOptions,
   formatDate,
   formatMoney,
+  formatRevenueByCurrency,
   getOrderStatusName,
   getPaymentStatusName,
   getShippingStatusName,
@@ -239,7 +240,6 @@ import {
   orderStatusTone,
   paymentStatusOptions,
   paymentStatusTone,
-  selectValueFromID,
   shippingAddressLine,
   shippingName,
   shippingStatusOptions,
@@ -283,7 +283,7 @@ interface OrderListResponse {
 
 interface OrderDetailResponse {
   order?: OrderRecord | null
-  tracking_shipment?: TrackingShipment | null
+  tracking_shipments?: TrackingShipment[]
 }
 
 interface TrackingEventsResponse {
@@ -322,7 +322,8 @@ const fulfillmentEvidenceResult = ref<OrderEvidencePackageResult | null>(null)
 const disputeEmailOrderID = ref<OrderID | null>(null)
 const currentDisputeAnalysis = ref<OrderDisputeAnalysis | null>(null)
 const currentTrackingEvents = ref<TrackingEvent[]>([])
-const currentTrackingShipment = ref<TrackingShipment | null>(null)
+const currentTrackingShipments = ref<TrackingShipment[]>([])
+const selectedTrackingNumber = ref('')
 const stats = ref<OrderStats>({})
 const carriers = ref<ShippingCarrier[]>([])
 const carrierServices = ref<ShippingCarrierService[]>([])
@@ -378,8 +379,8 @@ const confirmation = reactive<OrderConfirmation>({
 const statItems = computed<OrderStatItem[]>(() => [
   { key: 'total', label: '总订单数', value: stats.value.total || 0, icon: ShoppingBag, tone: 'gray' },
   { key: 'today', label: '今日订单', value: stats.value.today || 0, icon: CalendarCheck2, tone: 'blue' },
-  { key: 'revenue', label: '总销售额', value: `¥${formatMoney(stats.value.total_revenue)}`, icon: Banknote, tone: 'green' },
-  { key: 'today-revenue', label: '今日销售额', value: `¥${formatMoney(stats.value.today_revenue)}`, icon: TrendingUp, tone: 'amber' }
+  { key: 'revenue', label: '总销售额', value: formatRevenueByCurrency(stats.value.total_revenue_by_currency), icon: Banknote, tone: 'green' },
+  { key: 'today-revenue', label: '今日销售额', value: formatRevenueByCurrency(stats.value.today_revenue_by_currency), icon: TrendingUp, tone: 'amber' }
 ])
 const activeOrderTab = computed<'list' | 'disputes'>(() => route.name === 'OrdersDisputes' ? 'disputes' : 'list')
 const activeStatItems = computed<OrderStatItem[]>(() => {
@@ -467,24 +468,6 @@ const providerValueForLocalShippingSource = (
 
   return defaultTrackingProviderValue()
 }
-const defaultTrackingProviderForOrder = (order: OrderRecord | null): string => {
-  const storedProvider = selectValueFromID(order?.tracking_provider_id)
-  if (storedProvider !== 'none') return storedProvider
-  return providerValueForLocalShippingSource(order?.carrier_id, order?.carrier_service_id)
-}
-const orderCarrierLabel = (order: OrderRecord | null): string => {
-  const carrierID = Number(order?.carrier_id)
-  if (!Number.isFinite(carrierID) || carrierID <= 0) return '-'
-  const carrier = carriers.value.find((item) => Number(item.id) === carrierID)
-  return carrier ? `${carrier.name} / ${carrier.code}` : `Carrier #${carrierID}`
-}
-const orderCarrierServiceLabel = (order: OrderRecord | null): string => {
-  const serviceID = Number(order?.carrier_service_id)
-  if (!Number.isFinite(serviceID) || serviceID <= 0) return '-'
-  const service = carrierServices.value.find((item) => Number(item.id) === serviceID)
-  return service ? `${service.service_name} / ${service.service_code}` : `Carrier service #${serviceID}`
-}
-
 const buildFilterParams = (): Record<string, string> => ({
   ...(filters.search.trim() ? { search: filters.search.trim() } : {}),
   ...(filters.status !== 'all' ? { status: filters.status } : {}),
@@ -566,14 +549,20 @@ const unwrapTrackingEvents = (response: { data?: TrackingEventsResponse | Tracki
   return []
 }
 
-const fetchOrderTrackingEvents = async (orderID: OrderID | null | undefined): Promise<void> => {
-  if (!orderID) {
+const fetchOrderTrackingEvents = async (
+  orderID: OrderID | null | undefined,
+  trackingNumber: string | null | undefined,
+): Promise<void> => {
+  const normalizedTrackingNumber = trackingNumber?.trim() || ''
+  if (!orderID || !normalizedTrackingNumber) {
     currentTrackingEvents.value = []
     return
   }
 
   try {
-    const response = await axios.get<TrackingEventsResponse>(`/api/v1/shipping/orders/${orderID}/tracking`)
+    const response = await axios.get<TrackingEventsResponse>(`/api/admin/shipping/tracking-shipments/${orderID}/events`, {
+      params: { tracking_number: normalizedTrackingNumber },
+    })
     currentTrackingEvents.value = unwrapTrackingEvents(response)
   } catch (error) {
     currentTrackingEvents.value = []
@@ -617,16 +606,19 @@ const fetchOrderDisputeAnalysis = async (orderID: OrderID): Promise<void> => {
 
 const showOrderDetail = async (order: OrderRecord): Promise<void> => {
   try {
-    currentTrackingShipment.value = null
+    currentTrackingShipments.value = []
+    currentTrackingEvents.value = []
+    selectedTrackingNumber.value = ''
     currentDisputeAnalysis.value = null
     const [response] = await Promise.all([
       axios.get<OrderDetailResponse>(`/api/admin/orders/${order.id}`),
       fetchShippingLookups(),
-      fetchOrderTrackingEvents(order.id),
       fetchOrderDisputeAnalysis(order.id)
     ])
     currentOrder.value = response.data.order || null
-    currentTrackingShipment.value = response.data.tracking_shipment || null
+    currentTrackingShipments.value = response.data.tracking_shipments || []
+    // No package is promoted to an order-level default. The operator selects
+    // the exact shipment whose events or sync task should be inspected.
     adminNoteForm.admin_note = currentOrder.value.admin_note || ''
     detailDialogVisible.value = true
   } catch (error) {
@@ -640,6 +632,13 @@ const showDisputeOrderDetail = (dispute: OrderDisputeCase): void => {
     id: dispute.order_id,
     order_number: dispute.order_number || undefined
   })
+}
+
+const selectTrackingShipment = async (trackingNumber: string): Promise<void> => {
+  const normalizedTrackingNumber = trackingNumber.trim()
+  if (!normalizedTrackingNumber || normalizedTrackingNumber === selectedTrackingNumber.value) return
+  selectedTrackingNumber.value = normalizedTrackingNumber
+  await fetchOrderTrackingEvents(currentOrder.value?.id, normalizedTrackingNumber)
 }
 
 const openAfterSalesDialog = (): void => {
@@ -701,7 +700,7 @@ const submitDisputeContactEmail = async (): Promise<void> => {
   disputeEmailSending.value = true
   try {
     await ordersApi.sendDisputeContactEmail(orderID, disputeEmailForm)
-    toast.success('客户联系邮件已发送')
+    toast.success('客户联系邮件已进入发送队列')
     disputeEmailDialogVisible.value = false
     if (currentOrder.value?.id === orderID) {
       await fetchOrderDisputeAnalysis(orderID)
@@ -729,10 +728,10 @@ const initializeStatusForm = (
     order_number: order.order_number,
     status: isFulfillment ? 'shipped' : order.status,
     shipping_status: isFulfillment ? 'shipped' : order.shipping_status,
-    tracking_number: order.tracking_number || '',
-    tracking_provider_id: defaultTrackingProviderForOrder(order),
-    carrier_id: selectValueFromID(order.carrier_id),
-    carrier_service_id: selectValueFromID(order.carrier_service_id)
+    tracking_number: '',
+    tracking_provider_id: 'none',
+    carrier_id: 'none',
+    carrier_service_id: 'none'
   })
 }
 
@@ -957,13 +956,24 @@ const submitStatus = async (): Promise<void> => {
 }
 
 const syncCurrentOrderTracking = async (): Promise<void> => {
-  if (!currentOrder.value?.id) return
+  const orderID = currentOrder.value?.id
+  const trackingNumber = selectedTrackingNumber.value.trim()
+  if (!orderID || !trackingNumber) {
+    toast.error('请先选择要同步的包裹')
+    return
+  }
 
   syncingTracking.value = true
   try {
-    const response = await axios.post(`/api/admin/orders/${currentOrder.value.id}/tracking/sync`)
+    const response = await axios.post(`/api/admin/orders/${orderID}/tracking/sync`, null, {
+      params: { tracking_number: trackingNumber },
+    })
     currentTrackingEvents.value = response.data?.tracking?.events || []
-    currentTrackingShipment.value = response.data?.tracking?.shipment || currentTrackingShipment.value
+    const syncedShipment = response.data?.tracking?.shipment as TrackingShipment | undefined
+    if (syncedShipment) {
+      const index = currentTrackingShipments.value.findIndex((shipment) => shipment.tracking_number === trackingNumber)
+      if (index >= 0) currentTrackingShipments.value[index] = syncedShipment
+    }
     toast.success(`物流轨迹已同步：${currentTrackingEvents.value.length} 条`)
   } catch (error) {
     console.error('Failed to sync tracking info:', error)

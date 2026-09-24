@@ -10,9 +10,9 @@ FROM products translated_product
 JOIN products root_product ON root_product.id = translated_product.parent_id
 JOIN product_variants master
   ON master.product_id = root_product.id
- AND master.option_values = translated.option_values
 WHERE translated.product_id = translated_product.id
   AND translated_product.parent_id IS NOT NULL
+  AND master.option_values = translated.option_values
   AND translated.id <> master.id
   AND translated.master_variant_id IS NULL;
 

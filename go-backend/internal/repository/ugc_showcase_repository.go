@@ -28,9 +28,9 @@ func (r *UGCShowcaseRepository) Create(item *ugcshowcase.UGCShowcase) error {
 	return r.db.Create(item).Error
 }
 
-func (r *UGCShowcaseRepository) WithTransaction(fn func(repo *UGCShowcaseRepository) error) error {
+func (r *UGCShowcaseRepository) WithTransaction(fn func(repo *UGCShowcaseRepository, tx *gorm.DB) error) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
-		return fn(r.WithTx(tx))
+		return fn(r.WithTx(tx), tx)
 	})
 }
 

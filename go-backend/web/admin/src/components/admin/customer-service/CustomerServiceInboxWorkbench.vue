@@ -35,13 +35,26 @@
       :can-edit="hasPermission('ticket:edit')"
       :customer-context="customerContext"
       :context-loading="contextLoading"
+      :context-error="contextError"
+      :context-last-updated-at="contextLastUpdatedAt"
+      :selected-conversation-ids="selectedConversationIds"
+      :batch-archiving="batchArchiving"
       @apply="applyFilters"
       @reset="resetFilters"
       @select="selectConversation"
+      @archive="archiveConversation"
+      @restore="restoreConversation"
+      @close-and-archive="closeAndArchiveConversation"
+      @resolve="resolveConversation"
+      @reopen="reopenConversation"
+      @toggle-selection="toggleConversationSelection"
+      @toggle-page-selection="togglePageSelection"
+      @bulk-archive="bulkArchiveConversations"
       @change-page="changePage"
       @transfer="transferConversation"
       @send-reply="sendReply"
       @send-message="sendCustomerServiceMessage"
+      @refresh-context="refreshSelectedContext"
       @typing-input="handleReplyTypingInput"
     />
   </div>
@@ -49,6 +62,7 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { isAxiosError } from 'axios'
 import { toast } from 'vue-sonner'
 import {
   Clock3,
@@ -63,7 +77,10 @@ import CustomerServiceInboxWorkspace from '@/components/admin/customer-service/C
 import { Button } from '@/components/ui/button'
 import customerServiceApi from '@/api/customerService'
 import { useCustomerServiceInbox } from '@/composables/customerService/useCustomerServiceInbox'
-import { useCustomerServiceRealtime } from '@/composables/customerService/useCustomerServiceRealtime'
+import {
+  useCustomerServiceNotificationSettings,
+  useCustomerServiceRealtime,
+} from '@/composables/customerService/useCustomerServiceRealtime'
 import { useCustomerServiceTyping } from '@/composables/customerService/useCustomerServiceTyping'
 import { useAuthStore } from '@/stores/auth'
 import { statusDisplayValue } from '@/lib/customerServicePresentation'
@@ -84,13 +101,18 @@ withDefaults(defineProps<{
 const authStore = useAuthStore()
 const replying = ref(false)
 const transferring = ref(false)
+const batchArchiving = ref(false)
+const selectedConversationIds = ref<string[]>([])
 
 const hasPermission = (permission) => authStore.hasPermission(permission)
+const { suppressDesktopWhenFocused } = useCustomerServiceNotificationSettings()
 
 const {
   loading,
   messagesLoading,
   contextLoading,
+  contextError,
+  contextLastUpdatedAt,
   conversations,
   messages,
   customerContext,
@@ -110,6 +132,7 @@ const {
   changePage,
   applyFilters,
   resetFilters,
+  clearCurrentDraft,
 } = useCustomerServiceInbox()
 
 const statItems = computed(() => {
@@ -137,6 +160,13 @@ const {
     return customerServiceApi.buildWebSocketUrl('conversation', conversationId, lastEventId)
   },
   connectionKey: () => `conversation:${selectedConversation.value?.id || ''}`,
+  shouldSilenceDesktopNotification: (event: Record<string, any>) => {
+    if (!suppressDesktopWhenFocused.value || typeof document === 'undefined') return false
+    if (document.visibilityState !== 'visible' || !document.hasFocus()) return false
+    const selectedID = String(selectedConversation.value?.id || '').trim()
+    const eventConversationID = String(event.ticket_id || event.conversation_id || '').trim()
+    return Boolean(selectedID && eventConversationID && selectedID === eventConversationID)
+  },
   onConnected: async () => {
     const conversationID = selectedConversation.value?.id
     if (!conversationID) return
@@ -171,6 +201,13 @@ const {
 } = useCustomerServiceRealtime({
   buildWebSocketUrl: (lastEventId: string) => customerServiceApi.buildWebSocketUrl('inbox', undefined, lastEventId),
   connectionKey: () => 'inbox',
+  shouldSilenceDesktopNotification: (event: Record<string, any>) => {
+    if (!suppressDesktopWhenFocused.value || typeof document === 'undefined') return false
+    if (document.visibilityState !== 'visible' || !document.hasFocus()) return false
+    const selectedID = String(selectedConversation.value?.id || '').trim()
+    const eventConversationID = String(event.ticket_id || event.conversation_id || '').trim()
+    return Boolean(selectedID && eventConversationID && selectedID === eventConversationID)
+  },
   onTyping: handleCustomerTypingEvent,
   onConnected: refreshInbox,
   onRefresh: async (event) => {
@@ -183,7 +220,7 @@ const {
     if (event.type === 'conversation.message.created') {
       await fetchMessages(selectedConversation.value.id)
     }
-    if (['conversation.context.updated', 'conversation.assigned'].includes(event.type)) {
+    if (event.type === 'conversation.assigned') {
       await fetchContext(selectedConversation.value.id)
     }
   }
@@ -222,7 +259,7 @@ const sendCustomerServiceMessage = async (payload: CustomerServiceSendMessagePay
     })
 
     if (payload.clearReplyMessage) {
-      replyMessage.value = ''
+      clearCurrentDraft(conversationID)
     }
 
     toast.success(payload.toastLabel || getCustomerServiceMessageToastLabel(payload.messageType))
@@ -241,6 +278,11 @@ const sendCustomerServiceMessage = async (payload: CustomerServiceSendMessagePay
 const selectConversation = async (conversation: CustomerConversation): Promise<void> => {
   resetAgentTypingState()
   await selectInboxConversation(conversation)
+}
+
+const refreshSelectedContext = () => {
+  if (!selectedConversation.value?.id) return
+  void fetchContext(selectedConversation.value.id)
 }
 
 watch(
@@ -278,6 +320,197 @@ const transferConversation = async () => {
     transferring.value = false
   }
 }
+
+const archiveConversation = async (conversation: CustomerConversation) => {
+  try {
+    await customerServiceApi.archiveConversation(conversation.id)
+    await fetchConversations()
+    toast.success('会话已归档，可在“已归档”中恢复', {
+      duration: 8000,
+      action: {
+        label: '撤销',
+        onClick: () => {
+          void restoreConversation(conversation)
+        },
+      },
+    })
+  } catch (error) {
+    console.error('Failed to archive customer-service conversation:', error)
+  }
+}
+
+const restoreConversation = async (conversation: CustomerConversation) => {
+  try {
+    await customerServiceApi.restoreConversation(conversation.id)
+    toast.success('会话已恢复到收件箱')
+    await fetchConversations()
+  } catch (error) {
+    console.error('Failed to restore customer-service conversation:', error)
+  }
+}
+
+const conversationStatusVersion = (conversation: CustomerConversation): number => {
+  const version = Number(conversation.status_version || 0)
+  return Number.isInteger(version) && version > 0 ? version : 0
+}
+
+const handleStatusMutationError = async (error: unknown) => {
+  console.error('Failed to update customer-service conversation status:', error)
+  if (isAxiosError(error) && error.response?.status === 409) {
+    await fetchConversations()
+    toast.warning('会话状态已被其他客服更新，列表已刷新，请重试')
+    return
+  }
+  toast.error('会话状态更新失败，请稍后重试')
+}
+
+const reopenConversation = async (conversation: CustomerConversation) => {
+  const expectedStatusVersion = conversationStatusVersion(conversation)
+  if (!expectedStatusVersion) {
+    await fetchConversations()
+    toast.warning('会话版本已刷新，请重试')
+    return
+  }
+  try {
+    await customerServiceApi.updateConversationStatus(conversation.id, 'open', expectedStatusVersion, {
+      archive: false,
+      reasonCode: 'operator_reopen',
+    })
+    toast.success('会话已重新打开并恢复到收件箱')
+    await fetchConversations()
+  } catch (error) {
+    await handleStatusMutationError(error)
+  }
+}
+
+const closeAndArchiveConversation = async (conversation: CustomerConversation) => {
+  const expectedStatusVersion = conversationStatusVersion(conversation)
+  if (!expectedStatusVersion) {
+    await fetchConversations()
+    toast.warning('会话版本已刷新，请重试')
+    return
+  }
+  try {
+    const updated = await customerServiceApi.updateConversationStatus(conversation.id, 'closed', expectedStatusVersion, {
+      archive: true,
+      reasonCode: 'operator_close_and_archive',
+    })
+    const closedVersion = Number(updated.status_version || expectedStatusVersion + 1)
+    await fetchConversations()
+    toast.success('会话已关闭并归档', {
+      duration: 8000,
+      action: {
+        label: '撤销',
+        onClick: () => {
+          void reopenConversation({
+            ...conversation,
+            status: 'closed',
+            status_version: closedVersion,
+            inbox_archived: true,
+          })
+        },
+      },
+    })
+  } catch (error) {
+    await handleStatusMutationError(error)
+  }
+}
+
+const resolveConversation = async (conversation: CustomerConversation) => {
+  const expectedStatusVersion = conversationStatusVersion(conversation)
+  if (!expectedStatusVersion) {
+    await fetchConversations()
+    toast.warning('会话版本已刷新，请重试')
+    return
+  }
+  try {
+    const updated = await customerServiceApi.updateConversationStatus(conversation.id, 'resolved', expectedStatusVersion, {
+      reasonCode: 'operator_resolve',
+    })
+    const resolvedVersion = Number(updated.status_version || expectedStatusVersion + 1)
+    await fetchConversations()
+    toast.success('会话已标记为已解决', {
+      duration: 8000,
+      action: {
+        label: '撤销',
+        onClick: () => {
+          void reopenConversation({
+            ...conversation,
+            status: 'resolved',
+            status_version: resolvedVersion,
+          })
+        },
+      },
+    })
+  } catch (error) {
+    await handleStatusMutationError(error)
+  }
+}
+
+const normalizeConversationID = (id: string | number): string => String(id)
+
+const toggleConversationSelection = (conversation: CustomerConversation, selected: boolean) => {
+  const id = normalizeConversationID(conversation.id)
+  const next = new Set(selectedConversationIds.value)
+  if (selected) next.add(id)
+  else next.delete(id)
+  selectedConversationIds.value = Array.from(next)
+}
+
+const togglePageSelection = (items: CustomerConversation[], selected: boolean) => {
+  const next = new Set(selectedConversationIds.value)
+  items.forEach((conversation) => {
+    const id = normalizeConversationID(conversation.id)
+    if (selected) next.add(id)
+    else next.delete(id)
+  })
+  selectedConversationIds.value = Array.from(next)
+}
+
+const bulkArchiveConversations = async () => {
+  if (selectedConversationIds.value.length === 0 || batchArchiving.value) return
+  const ids = [...selectedConversationIds.value]
+  batchArchiving.value = true
+  try {
+    const result = await customerServiceApi.bulkArchiveConversations(ids)
+    const archivedCount = Number(result.archived_count || ids.length)
+    selectedConversationIds.value = []
+    await fetchConversations()
+    toast.success(`已归档 ${archivedCount} 个会话`, {
+      duration: 8000,
+      action: {
+        label: '撤销',
+        onClick: () => {
+          void Promise.all(ids.map((id) => customerServiceApi.restoreConversation(id)))
+            .then(async () => {
+              await fetchConversations()
+              toast.success('批量归档已撤销')
+            })
+            .catch((error) => {
+              console.error('Failed to undo bulk archive:', error)
+              toast.error('批量归档撤销失败，请到“已归档”中逐条恢复')
+            })
+        },
+      },
+    })
+  } catch (error) {
+    console.error('Failed to bulk archive customer-service conversations:', error)
+  } finally {
+    batchArchiving.value = false
+  }
+}
+
+watch(
+  () => conversations.value.map((conversation) => `${normalizeConversationID(conversation.id)}:${conversation.inbox_archived ? 1 : 0}`).join('|'),
+  () => {
+    const selectableIDs = new Set(
+      conversations.value
+        .filter((conversation) => !conversation.inbox_archived)
+        .map((conversation) => normalizeConversationID(conversation.id)),
+    )
+    selectedConversationIds.value = selectedConversationIds.value.filter((id) => selectableIDs.has(id))
+  },
+)
 
 onMounted(async () => {
   await refreshInbox()

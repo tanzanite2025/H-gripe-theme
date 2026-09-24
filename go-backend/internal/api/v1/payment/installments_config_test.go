@@ -32,7 +32,7 @@ func TestResolveStripePaymentMethodTypesUsesProviderInstallmentsSettings(t *test
 	})
 	require.NoError(t, err)
 
-	methodTypes, err := handler.resolveStripePaymentMethodTypes("US", "USD", 250, []string{"card"})
+	methodTypes, err := handler.resolveStripePaymentMethodTypes("US", "USD", 25000, []string{"card"})
 	require.NoError(t, err)
 	require.Equal(t, []string{"card", "klarna"}, methodTypes)
 }
@@ -40,7 +40,7 @@ func TestResolveStripePaymentMethodTypesUsesProviderInstallmentsSettings(t *test
 func TestResolveStripePaymentMethodTypesFallsBackToCard(t *testing.T) {
 	handler := NewHandler(nil, nil, nil, nil, nil, nil, nil, nil, nil)
 
-	methodTypes, err := handler.resolveStripePaymentMethodTypes("US", "USD", 250, nil)
+	methodTypes, err := handler.resolveStripePaymentMethodTypes("US", "USD", 25000, nil)
 	require.NoError(t, err)
 	require.Equal(t, []string{"card"}, methodTypes)
 }
@@ -69,7 +69,7 @@ func TestResolveStripePaymentMethodTypesKeepsCardWhenSettingsOmitIt(t *testing.T
 	})
 	require.NoError(t, err)
 
-	methodTypes, err := handler.resolveStripePaymentMethodTypes("US", "USD", 250, []string{"card"})
+	methodTypes, err := handler.resolveStripePaymentMethodTypes("US", "USD", 25000, []string{"card"})
 	require.NoError(t, err)
 	require.Equal(t, []string{"card", "affirm"}, methodTypes)
 }
@@ -97,7 +97,7 @@ func TestResolveStripePaymentMethodTypesFiltersUnsupportedCurrencyMethods(t *tes
 	})
 	require.NoError(t, err)
 
-	methodTypes, err := handler.resolveStripePaymentMethodTypes("DE", "EUR", 250, []string{"card"})
+	methodTypes, err := handler.resolveStripePaymentMethodTypes("DE", "EUR", 25000, []string{"card"})
 	require.NoError(t, err)
 	require.Equal(t, []string{"card", "klarna"}, methodTypes)
 }
@@ -111,8 +111,8 @@ func TestResolveStripePaymentMethodTypesFallsBackOutsideAmountThresholds(t *test
 		Enabled:            true,
 		PaymentMethodTypes: []string{"klarna"},
 		Currencies:         []string{"USD"},
-		MinAmount:          100,
-		MaxAmount:          5000,
+		MinAmountMinor:     10000,
+		MaxAmountMinor:     500000,
 	}.Value()
 	require.NoError(t, err)
 
@@ -127,15 +127,15 @@ func TestResolveStripePaymentMethodTypesFallsBackOutsideAmountThresholds(t *test
 	})
 	require.NoError(t, err)
 
-	methodTypes, err := handler.resolveStripePaymentMethodTypes("US", "USD", 5, []string{"card"})
+	methodTypes, err := handler.resolveStripePaymentMethodTypes("US", "USD", 500, []string{"card"})
 	require.NoError(t, err)
 	require.Equal(t, []string{"card"}, methodTypes)
 
-	methodTypes, err = handler.resolveStripePaymentMethodTypes("US", "USD", 250, []string{"card"})
+	methodTypes, err = handler.resolveStripePaymentMethodTypes("US", "USD", 25000, []string{"card"})
 	require.NoError(t, err)
 	require.Equal(t, []string{"card", "klarna"}, methodTypes)
 
-	methodTypes, err = handler.resolveStripePaymentMethodTypes("US", "USD", 6000, []string{"card"})
+	methodTypes, err = handler.resolveStripePaymentMethodTypes("US", "USD", 600000, []string{"card"})
 	require.NoError(t, err)
 	require.Equal(t, []string{"card"}, methodTypes)
 }

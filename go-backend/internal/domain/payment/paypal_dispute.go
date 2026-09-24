@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"commerce-platform/internal/domain/currency"
+	domainmoney "commerce-platform/internal/domain/money"
 
 	"gorm.io/gorm"
 )
@@ -16,7 +17,7 @@ type PayPalDispute struct {
 	OrderID                   *uint          `gorm:"index" json:"order_id,omitempty"`
 	TransactionID             *uint          `gorm:"index" json:"transaction_id,omitempty"`
 	ProviderPaymentID         string         `gorm:"index" json:"provider_payment_id"`
-	Amount                    float64        `gorm:"not null" json:"amount"`
+	AmountMinor               int64          `gorm:"column:amount_minor;not null;default:0" json:"amount_minor"`
 	Currency                  string         `gorm:"not null" json:"currency"`
 	Reason                    string         `gorm:"index" json:"reason"`
 	Status                    string         `gorm:"index;not null" json:"status"`
@@ -40,5 +41,12 @@ func (d *PayPalDispute) BeforeSave(tx *gorm.DB) error {
 	if !currency.IsValidCode(d.Currency) || !currency.IsCatalogCode(d.Currency) {
 		return errors.New("paypal dispute currency must be a supported ISO 4217 code")
 	}
+	if d.AmountMinor < 0 {
+		return errors.New("paypal dispute amount cannot be negative")
+	}
 	return nil
+}
+
+func (d PayPalDispute) AmountMoney() (domainmoney.Money, error) {
+	return domainmoney.New(d.AmountMinor, d.Currency)
 }

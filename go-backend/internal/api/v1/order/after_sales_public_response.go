@@ -58,14 +58,14 @@ type PublicAfterSalesAttachment struct {
 }
 
 type PublicAfterSalesRefundReview struct {
-	Status         string     `json:"status"`
-	ProposedAmount float64    `json:"proposed_amount"`
-	Currency       string     `json:"currency"`
-	RequestNotes   string     `json:"request_notes"`
-	DecisionNotes  string     `json:"decision_notes"`
-	ReviewedAt     *time.Time `json:"reviewed_at,omitempty"`
-	CreatedAt      time.Time  `json:"created_at"`
-	UpdatedAt      time.Time  `json:"updated_at"`
+	Status              string     `json:"status"`
+	ProposedAmountMinor int64      `json:"proposed_amount_minor"`
+	Currency            string     `json:"currency"`
+	RequestNotes        string     `json:"request_notes"`
+	DecisionNotes       string     `json:"decision_notes"`
+	ReviewedAt          *time.Time `json:"reviewed_at,omitempty"`
+	CreatedAt           time.Time  `json:"created_at"`
+	UpdatedAt           time.Time  `json:"updated_at"`
 }
 
 func publicAfterSalesCaseFromDomain(record aftersales.AfterSalesCase) PublicAfterSalesCaseResponse {
@@ -122,14 +122,14 @@ func publicAfterSalesCaseFromDomain(record aftersales.AfterSalesCase) PublicAfte
 	}
 	if record.RefundReview != nil {
 		result.RefundReview = &PublicAfterSalesRefundReview{
-			Status:         record.RefundReview.Status,
-			ProposedAmount: record.RefundReview.ProposedAmount,
-			Currency:       record.RefundReview.Currency,
-			RequestNotes:   record.RefundReview.RequestNotes,
-			DecisionNotes:  record.RefundReview.DecisionNotes,
-			ReviewedAt:     record.RefundReview.ReviewedAt,
-			CreatedAt:      record.RefundReview.CreatedAt,
-			UpdatedAt:      record.RefundReview.UpdatedAt,
+			Status:              record.RefundReview.Status,
+			ProposedAmountMinor: record.RefundReview.ProposedAmountMinor,
+			Currency:            record.RefundReview.Currency,
+			RequestNotes:        record.RefundReview.RequestNotes,
+			DecisionNotes:       record.RefundReview.DecisionNotes,
+			ReviewedAt:          record.RefundReview.ReviewedAt,
+			CreatedAt:           record.RefundReview.CreatedAt,
+			UpdatedAt:           record.RefundReview.UpdatedAt,
 		}
 	}
 	return result

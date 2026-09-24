@@ -12,6 +12,7 @@ func registerSiteQualityRoutes(group *gin.RouterGroup, handler *SiteQualityHandl
 	group.GET("/targets", handler.ListSiteQualityTargets)
 	group.POST("/jobs", middleware.RequirePermission(managePermission), handler.CreateSiteQualityJob)
 	group.POST("/jobs/cleanup", middleware.RequirePermission(managePermission), handler.CleanupSiteQualityJobs)
+	group.POST("/findings/cleanup", middleware.RequirePermission(managePermission), handler.CleanupOldSiteQualityFindings)
 	group.GET("/jobs/:id", handler.GetSiteQualityJob)
 	group.POST("/jobs/:id/cancel", middleware.RequirePermission(managePermission), handler.CancelSiteQualityJob)
 	group.GET("/findings", handler.ListSiteQualityFindings)

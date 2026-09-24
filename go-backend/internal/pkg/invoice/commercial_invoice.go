@@ -48,11 +48,11 @@ type LineItem struct {
 	Description string
 	SKU         string
 	Quantity    int
-	UnitPrice   float64
-	Subtotal    float64
-	Tax         float64
-	Discount    float64
-	Total       float64
+	UnitPrice   string
+	Subtotal    string
+	Tax         string
+	Discount    string
+	Total       string
 }
 
 // CommercialInvoice is an immutable invoice/receipt snapshot for evidence.
@@ -68,11 +68,11 @@ type CommercialInvoice struct {
 	PaymentStatus    string
 	PaymentDate      *time.Time
 	PaymentReference string
-	Subtotal         float64
-	Shipping         float64
-	Tax              float64
-	Discount         float64
-	Total            float64
+	Subtotal         string
+	Shipping         string
+	Tax              string
+	Discount         string
+	Total            string
 	Disclaimer       string
 }
 
@@ -103,19 +103,101 @@ func BuildFromOrder(orderRecord *orderdomain.Order, seller SellerProfile, paymen
 	}
 
 	items := make([]LineItem, 0, len(orderRecord.Items))
+	formatMoney := func(value interface{ FormatMajor() (string, error) }) (string, error) {
+		return value.FormatMajor()
+	}
 	for _, item := range orderRecord.Items {
+		unitPrice, err := item.PriceMoney()
+		if err != nil {
+			return CommercialInvoice{}, fmt.Errorf("invoice unit price: %w", err)
+		}
+		subtotal, err := item.SubtotalMoney()
+		if err != nil {
+			return CommercialInvoice{}, fmt.Errorf("invoice subtotal: %w", err)
+		}
+		tax, err := item.TaxAmountMoney()
+		if err != nil {
+			return CommercialInvoice{}, fmt.Errorf("invoice tax: %w", err)
+		}
+		discount, err := item.DiscountMoney()
+		if err != nil {
+			return CommercialInvoice{}, fmt.Errorf("invoice discount: %w", err)
+		}
+		total, err := item.TotalMoney()
+		if err != nil {
+			return CommercialInvoice{}, fmt.Errorf("invoice total: %w", err)
+		}
+		unitPriceDisplay, err := formatMoney(unitPrice)
+		if err != nil {
+			return CommercialInvoice{}, fmt.Errorf("invoice unit price display: %w", err)
+		}
+		subtotalDisplay, err := formatMoney(subtotal)
+		if err != nil {
+			return CommercialInvoice{}, fmt.Errorf("invoice subtotal display: %w", err)
+		}
+		taxDisplay, err := formatMoney(tax)
+		if err != nil {
+			return CommercialInvoice{}, fmt.Errorf("invoice tax display: %w", err)
+		}
+		discountDisplay, err := formatMoney(discount)
+		if err != nil {
+			return CommercialInvoice{}, fmt.Errorf("invoice discount display: %w", err)
+		}
+		totalDisplay, err := formatMoney(total)
+		if err != nil {
+			return CommercialInvoice{}, fmt.Errorf("invoice total display: %w", err)
+		}
 		items = append(items, LineItem{
 			Description: item.ProductName,
 			SKU:         item.SKU,
 			Quantity:    item.Quantity,
-			UnitPrice:   item.Price,
-			Subtotal:    item.Subtotal,
-			Tax:         item.TaxAmount,
-			Discount:    item.Discount,
-			Total:       item.Total,
+			UnitPrice:   unitPriceDisplay,
+			Subtotal:    subtotalDisplay,
+			Tax:         taxDisplay,
+			Discount:    discountDisplay,
+			Total:       totalDisplay,
 		})
 	}
-
+	subtotal, err := orderRecord.SubtotalMoney()
+	if err != nil {
+		return CommercialInvoice{}, fmt.Errorf("invoice order subtotal: %w", err)
+	}
+	shipping, err := orderRecord.ShippingFeeMoney()
+	if err != nil {
+		return CommercialInvoice{}, fmt.Errorf("invoice shipping: %w", err)
+	}
+	tax, err := orderRecord.TaxMoney()
+	if err != nil {
+		return CommercialInvoice{}, fmt.Errorf("invoice order tax: %w", err)
+	}
+	discount, err := orderRecord.DiscountMoney()
+	if err != nil {
+		return CommercialInvoice{}, fmt.Errorf("invoice order discount: %w", err)
+	}
+	total, err := orderRecord.TotalMoney()
+	if err != nil {
+		return CommercialInvoice{}, fmt.Errorf("invoice order total: %w", err)
+	}
+	subtotalDisplay, err := formatMoney(subtotal)
+	if err != nil {
+		return CommercialInvoice{}, fmt.Errorf("invoice order subtotal display: %w", err)
+	}
+	shippingDisplay, err := formatMoney(shipping)
+	if err != nil {
+		return CommercialInvoice{}, fmt.Errorf("invoice shipping display: %w", err)
+	}
+	taxDisplay, err := formatMoney(tax)
+	if err != nil {
+		return CommercialInvoice{}, fmt.Errorf("invoice order tax display: %w", err)
+	}
+	discountDisplay, err := formatMoney(discount)
+	if err != nil {
+		return CommercialInvoice{}, fmt.Errorf("invoice order discount display: %w", err)
+	}
+	totalDisplay, err := formatMoney(total)
+	if err != nil {
+		return CommercialInvoice{}, fmt.Errorf("invoice order total display: %w", err)
+	}
 	document := CommercialInvoice{
 		DocumentNumber:   commercialInvoiceNumber(orderRecord.OrderNumber),
 		DocumentDate:     documentDate.UTC(),
@@ -128,11 +210,11 @@ func BuildFromOrder(orderRecord *orderdomain.Order, seller SellerProfile, paymen
 		PaymentStatus:    orderRecord.PaymentStatus,
 		PaymentDate:      orderRecord.PaidAt,
 		PaymentReference: strings.TrimSpace(paymentReference),
-		Subtotal:         orderRecord.SubtotalAmount,
-		Shipping:         orderRecord.ShippingFee,
-		Tax:              orderRecord.TaxAmount,
-		Discount:         orderRecord.DiscountAmount,
-		Total:            orderRecord.TotalAmount,
+		Subtotal:         subtotalDisplay,
+		Shipping:         shippingDisplay,
+		Tax:              taxDisplay,
+		Discount:         discountDisplay,
+		Total:            totalDisplay,
 		Disclaimer:       "Commercial invoice / order receipt prepared for payment dispute evidence. This document is not a statutory tax invoice unless the seller's applicable tax requirements are satisfied.",
 	}
 	if document.Currency == "" {

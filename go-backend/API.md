@@ -476,8 +476,7 @@ Content-Type: application/json
 {
   "shipping_address": {"country": "US"},
   "display_currency": "USD",
-  "coupon_code": "",
-  "points_to_use": 0
+  "coupon_code": ""
 }
 ```
 

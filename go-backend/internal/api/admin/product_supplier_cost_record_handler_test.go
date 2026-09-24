@@ -82,7 +82,7 @@ func TestProductSupplierCostRecordHandlerCreateUsesCatalogSnapshotAndRejectsManu
 
 	response = performProductSupplierCostRecordJSONRequest(t, router, http.MethodPost, "/records", `{
 		"sku": "SKU-HANDLER-OPTION",
-		"unit_cost": 12,
+		"unit_cost_minor": 1200,
 		"currency": "USD"
 	}`)
 	require.Equal(t, http.StatusCreated, response.Code)
@@ -106,7 +106,7 @@ func TestProductSupplierCostRecordHandlerUpdateKeepsStoredProductSnapshot(t *tes
 
 	createResponse := performProductSupplierCostRecordJSONRequest(t, router, http.MethodPost, "/records", `{
 		"sku": "SKU-HANDLER-OPTION",
-		"unit_cost": 12,
+		"unit_cost_minor": 1200,
 		"currency": "USD"
 	}`)
 	require.Equal(t, http.StatusCreated, createResponse.Code)
@@ -121,7 +121,7 @@ func TestProductSupplierCostRecordHandlerUpdateKeepsStoredProductSnapshot(t *tes
 	legacyUpdateResponse := performProductSupplierCostRecordJSONRequest(t, router, http.MethodPut, "/records/1", `{
 		"product_code": "SKU-MANUAL-REWRITE",
 		"product_name": "Manually supplied name",
-		"purchase_price": 18,
+		"purchase_price_minor": 1800,
 		"currency": "USD"
 	}`)
 	require.Equal(t, http.StatusBadRequest, legacyUpdateResponse.Code)
@@ -131,7 +131,7 @@ func TestProductSupplierCostRecordHandlerUpdateKeepsStoredProductSnapshot(t *tes
 		router,
 		http.MethodPut,
 		"/records/"+strconv.FormatUint(uint64(created.Record.ID), 10),
-		`{"unit_cost":18,"currency":"USD"}`,
+		`{"unit_cost_minor":1800,"currency":"USD"}`,
 	)
 	require.Equal(t, http.StatusOK, updateResponse.Code)
 	require.Contains(t, updateResponse.Body.String(), `"product_code":"SKU-HANDLER-OPTION"`)
@@ -139,7 +139,7 @@ func TestProductSupplierCostRecordHandlerUpdateKeepsStoredProductSnapshot(t *tes
 	require.NotContains(t, updateResponse.Body.String(), "Manually supplied name")
 }
 
-func TestProductSupplierCostRecordHandlerAcceptsHistoricalLegacyCostJSONFieldAsUnitCostCompatibility(t *testing.T) {
+func TestProductSupplierCostRecordHandlerAcceptsCanonicalUnitCostMinor(t *testing.T) {
 	db := newProductSupplierCostRecordOptionsHandlerTestDB(t)
 	supplierCostRecordService := service.NewProductSupplierCostRecordServiceWithProfitability(
 		repository.NewProductSupplierCostRecordRepository(db),
@@ -154,7 +154,7 @@ func TestProductSupplierCostRecordHandlerAcceptsHistoricalLegacyCostJSONFieldAsU
 
 	response := performProductSupplierCostRecordJSONRequest(t, router, http.MethodPost, "/records", `{
 		"sku": "SKU-HANDLER-OPTION",
-		"purchase_price": 12,
+		"unit_cost_minor": 1200,
 		"currency": "USD"
 	}`)
 	require.Equal(t, http.StatusCreated, response.Code)

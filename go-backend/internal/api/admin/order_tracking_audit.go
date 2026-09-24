@@ -14,15 +14,10 @@ func orderTrackingAuditValue(record *orderdomain.Order) map[string]interface{} {
 	}
 
 	return map[string]interface{}{
-		"order_number":          strings.TrimSpace(record.OrderNumber),
-		"status":                strings.TrimSpace(record.Status),
-		"shipping_status":       strings.TrimSpace(record.ShippingStatus),
-		"tracking_number":       strings.TrimSpace(record.TrackingNumber),
-		"tracking_provider_id":  auditUintPointerValue(record.TrackingProviderID),
-		"carrier_id":            auditUintPointerValue(record.CarrierID),
-		"carrier_service_id":    auditUintPointerValue(record.CarrierServiceID),
-		"provider_carrier_code": strings.TrimSpace(record.ProviderCarrierCode),
-		"shipped_at_present":    record.ShippedAt != nil && !record.ShippedAt.IsZero(),
+		"order_number":       strings.TrimSpace(record.OrderNumber),
+		"status":             strings.TrimSpace(record.Status),
+		"shipping_status":    strings.TrimSpace(record.ShippingStatus),
+		"shipped_at_present": record.ShippedAt != nil && !record.ShippedAt.IsZero(),
 	}
 }
 
@@ -32,6 +27,6 @@ func orderTrackingAuditChanges(request trackingInfoRequest) map[string]interface
 		"tracking_provider_id": request.TrackingProviderID,
 		"carrier_id":           auditUintPointerValue(request.CarrierID),
 		"carrier_service_id":   auditUintPointerValue(request.CarrierServiceID),
-		"operation":            "tracking_correction",
+		"operation":            "tracking_package_upsert",
 	}
 }

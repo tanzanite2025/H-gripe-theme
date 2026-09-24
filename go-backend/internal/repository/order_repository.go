@@ -6,6 +6,7 @@ import (
 
 	"commerce-platform/internal/domain/order"
 
+	"gorm.io/datatypes"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
@@ -33,6 +34,16 @@ type ShippingIdentitySignal struct {
 
 func NewOrderRepository(db *gorm.DB) *OrderRepository {
 	return &OrderRepository{db: db}
+}
+
+// ShipmentRecordRepository exposes the order repository's database handle to
+// services that need the optional order-backed shipment facts. Keeping the
+// construction here avoids leaking the GORM handle itself.
+func (r *OrderRepository) ShipmentRecordRepository() *ShipmentRecordRepository {
+	if r == nil || r.db == nil {
+		return nil
+	}
+	return NewShipmentRecordRepository(r.db)
 }
 
 // WithTx 复用事务 db 实例
@@ -130,7 +141,10 @@ func (r *OrderRepository) FindByOrderNumberForVerification(orderNumber string) (
 // duplicate payment that must be refunded.
 func (r *OrderRepository) FindByOrderNumberForVerificationForUpdate(orderNumber string) (*order.Order, error) {
 	var o order.Order
-	err := r.lockForUpdate(r.db).Where("order_number = ?", orderNumber).First(&o).Error
+	// Payment verification also enqueues the immutable order confirmation
+	// snapshot. Load line items here so downstream outbox payloads never need to
+	// resolve configuration from the mutable product catalog.
+	err := r.lockForUpdate(r.db).Preload("Items").Where("order_number = ?", orderNumber).First(&o).Error
 	if err != nil {
 		return nil, err
 	}
@@ -147,11 +161,11 @@ func (r *OrderRepository) FindOrderItemByID(id uint) (*order.OrderItem, error) {
 	return &item, nil
 }
 
-func (r *OrderRepository) UpdateOrderItemCustoms(orderID, orderItemID uint, declaredValue *float64, confirmed bool) error {
+func (r *OrderRepository) UpdateOrderItemCustoms(orderID, orderItemID uint, declaredValueMinor *int64, confirmed bool) error {
 	return r.db.Model(&order.OrderItem{}).
 		Where("id = ? AND order_id = ?", orderItemID, orderID).
 		Updates(map[string]interface{}{
-			"declared_value":           declaredValue,
+			"declared_value_minor":     declaredValueMinor,
 			"declared_value_confirmed": confirmed,
 		}).Error
 }
@@ -159,6 +173,16 @@ func (r *OrderRepository) UpdateOrderItemCustoms(orderID, orderItemID uint, decl
 // Update 更新订单
 func (r *OrderRepository) Update(o *order.Order) error {
 	return r.db.Save(o).Error
+}
+
+// UpdateFXSnapshot stores a manually reviewed historical conversion contract.
+// Callers must perform validation and hold the order row lock in their
+// transaction before calling this method.
+func (r *OrderRepository) UpdateFXSnapshot(id uint, snapshot datatypes.JSON) error {
+	if r == nil || r.db == nil {
+		return gorm.ErrInvalidDB
+	}
+	return r.db.Model(&order.Order{}).Where("id = ?", id).Update("fx_snapshot", snapshot).Error
 }
 
 // UpdateStatus updates an order status using an atomic compare-and-swap.
@@ -361,6 +385,13 @@ func (r *OrderRepository) UpdatePaymentStatus(id uint, paymentStatus string) err
 	return r.db.Model(&order.Order{}).Where("id = ?", id).Updates(updates).Error
 }
 
+// SetFulfillmentHold changes only the operational hold projection. Callers
+// that need to preserve another hold reason must perform that decision while
+// holding the order row in their surrounding transaction.
+func (r *OrderRepository) SetFulfillmentHold(id uint, held bool) error {
+	return r.db.Model(&order.Order{}).Where("id = ?", id).Update("fulfillment_hold", held).Error
+}
+
 // UpdateShippingStatus 更新物流状态
 func (r *OrderRepository) UpdateShippingStatus(id uint, shippingStatus string) error {
 	updates := map[string]interface{}{
@@ -404,9 +435,21 @@ func (r *OrderRepository) MarkDeliveredAtIfNeeded(id uint, deliveredAt time.Time
 		Updates(map[string]interface{}{
 			"shipping_status": "delivered",
 			"delivered_at":    deliveredAt,
-			"updated_at":      deliveredAt,
+			// updated_at is system metadata, never a carrier business timestamp.
+			"updated_at": time.Now().UTC(),
 		})
 	return result.RowsAffected == 1, result.Error
+}
+
+// ReopenShippingStatusForAdditionalShipment clears an aggregate delivery
+// projection when a new package is registered after an earlier package was
+// delivered. The order remains shipped until every package is delivered.
+func (r *OrderRepository) ReopenShippingStatusForAdditionalShipment(id uint) error {
+	return r.db.Model(&order.Order{}).Where("id = ?", id).Updates(map[string]interface{}{
+		"shipping_status": "shipped",
+		"delivered_at":    nil,
+		"updated_at":      time.Now().UTC(),
+	}).Error
 }
 
 func (r *OrderRepository) MarkProductionStarted(id uint, startedAt time.Time) (bool, error) {
@@ -449,21 +492,6 @@ func (r *OrderRepository) MarkProductionCompleted(id uint, completedAt time.Time
 			"updated_at":              completedAt,
 		})
 	return result.RowsAffected == 1, result.Error
-}
-
-// UpdateTrackingInfo 更新物流追踪信息
-func (r *OrderRepository) UpdateTrackingInfo(id uint, info order.TrackingInfoUpdate) error {
-	updates := map[string]interface{}{
-		"tracking_number":             info.TrackingNumber,
-		"tracking_provider_id":        info.TrackingProviderID,
-		"carrier_id":                  info.CarrierID,
-		"carrier_service_id":          info.CarrierServiceID,
-		"tracking_carrier_mapping_id": info.TrackingCarrierMappingID,
-		"provider_carrier_code":       info.ProviderCarrierCode,
-		"provider_carrier_name":       info.ProviderCarrierName,
-	}
-
-	return r.db.Model(&order.Order{}).Where("id = ?", id).Updates(updates).Error
 }
 
 func (r *OrderRepository) FindPaymentExpirationCandidates(cutoff time.Time, limit int) ([]order.Order, error) {

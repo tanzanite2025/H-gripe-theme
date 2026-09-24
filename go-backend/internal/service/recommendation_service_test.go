@@ -188,7 +188,7 @@ func seedRecommendationProduct(
 		Locale:    locale,
 		Featured:  featured,
 		ViewCount: viewCount,
-		Price:     399,
+		PriceMinor: 39900,
 	}
 	require.NoError(t, db.Create(&item).Error)
 
@@ -196,7 +196,7 @@ func seedRecommendationProduct(
 		ProductID: item.ID,
 		SKU:       slug + "-variant",
 		Title:     name,
-		Price:     399,
+		PriceMinor: 39900,
 		Stock:     stock,
 		IsActive:  active,
 		IsDefault: true,

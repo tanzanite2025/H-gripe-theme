@@ -17,7 +17,7 @@ func TestProductSupplierCostRecordRepositoryFindByProductCodesUsesSKUAsStableKey
 	require.NoError(t, repo.Create(&suppliercostdomain.ProductSupplierCostRecord{
 		ProductCode:          "SKU-PROC-002",
 		ProductName:          "Second item",
-		UnitCost:             20,
+		UnitCostMinor:        2000,
 		Currency:             "USD",
 		SupplierName:         "Supplier B",
 		MinimumOrderQuantity: 1,
@@ -25,7 +25,7 @@ func TestProductSupplierCostRecordRepositoryFindByProductCodesUsesSKUAsStableKey
 	require.NoError(t, repo.Create(&suppliercostdomain.ProductSupplierCostRecord{
 		ProductCode:          "SKU-PROC-001",
 		ProductName:          "First item",
-		UnitCost:             10,
+		UnitCostMinor:        1000,
 		Currency:             "USD",
 		SupplierName:         "Supplier A",
 		MinimumOrderQuantity: 1,

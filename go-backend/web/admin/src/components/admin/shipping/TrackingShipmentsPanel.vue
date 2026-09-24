@@ -300,7 +300,7 @@
                   v-if="canEdit"
                   variant="outline"
                   size="sm"
-                  :disabled="isRegisteringTrackingShipment(shipment)"
+                    :disabled="isRegisteringTrackingShipment(shipment) || shipment.registration_status === 'unknown'"
                   @click="registerTrackingShipment(shipment)"
                 >
                   <RefreshCw :class="['size-3.5', { 'animate-spin': isRegisteringTrackingShipment(shipment) }]" />
@@ -449,8 +449,8 @@ const trackingEvents = ref<TrackingEvent[]>([])
 const selectedTrackingShipment = ref<TrackingShipment | null>(null)
 const eventDialogOpen = ref(false)
 const syncingDueTrackingShipments = ref(false)
-const registeringTrackingShipmentIds = ref<Set<number>>(new Set())
-const syncingTrackingShipmentIds = ref<Set<number>>(new Set())
+const registeringTrackingShipmentIds = ref<Set<string>>(new Set())
+const syncingTrackingShipmentIds = ref<Set<string>>(new Set())
 const filters = reactive<TrackingShipmentFilters>(defaultFilters())
 const loading = reactive<TrackingShipmentLoadingState>({
   trackingShipments: false,
@@ -501,6 +501,9 @@ const trackingShipmentStatusCards = computed(() => {
     if (shipment.registration_status === 'failed') {
       acc.registrationFailed = (acc.registrationFailed || 0) + 1
     }
+    if (shipment.registration_status === 'unknown') {
+      acc.registrationUnknown = (acc.registrationUnknown || 0) + 1
+    }
     if (isTrackingShipmentDue(shipment)) {
       acc.due = (acc.due || 0) + 1
     }
@@ -513,6 +516,7 @@ const trackingShipmentStatusCards = computed(() => {
     { key: 'synced', label: '已同步', value: counts.synced || 0 },
     { key: 'failed', label: '同步失败', value: counts.failed || 0 },
     { key: 'registrationFailed', label: '登记失败', value: counts.registrationFailed || 0 },
+    { key: 'registrationUnknown', label: '登记待对账', value: counts.registrationUnknown || 0 },
     { key: 'due', label: '到期轮询', value: counts.due || 0 },
   ]
 })
@@ -615,14 +619,15 @@ const fetchTrackingWebhookState = async () => {
 
 const fetchTrackingEvents = async (shipment?: TrackingShipment | null) => {
   const orderId = Number(shipment?.order_id || 0)
-  if (!orderId) {
+  const trackingNumber = String(shipment?.tracking_number || '').trim()
+  if (!orderId || !trackingNumber) {
     trackingEvents.value = []
     return
   }
 
   loading.trackingEvents = true
   try {
-    trackingEvents.value = await shippingApi.listTrackingEvents(orderId)
+    trackingEvents.value = await shippingApi.listTrackingEvents(orderId, trackingNumber)
   } catch (error) {
     console.error('Failed to fetch tracking events:', error)
     trackingEvents.value = []
@@ -677,17 +682,22 @@ const syncDueTrackingShipments = async () => {
   }
 }
 
-const isRegisteringTrackingShipment = (shipment: TrackingShipment) => registeringTrackingShipmentIds.value.has(Number(shipment.order_id))
-const isSyncingTrackingShipment = (shipment: TrackingShipment) => syncingTrackingShipmentIds.value.has(Number(shipment.order_id))
+const trackingShipmentKey = (shipment: TrackingShipment): string => (
+  `${String(shipment.order_id || '')}:${String(shipment.tracking_number || '').trim()}`
+)
+const isRegisteringTrackingShipment = (shipment: TrackingShipment) => registeringTrackingShipmentIds.value.has(trackingShipmentKey(shipment))
+const isSyncingTrackingShipment = (shipment: TrackingShipment) => syncingTrackingShipmentIds.value.has(trackingShipmentKey(shipment))
 
 const registerTrackingShipment = async (shipment: TrackingShipment) => {
   const orderId = Number(shipment?.order_id || 0)
-  if (!orderId || isRegisteringTrackingShipment(shipment)) return
+  const trackingNumber = String(shipment?.tracking_number || '').trim()
+  const key = trackingShipmentKey(shipment)
+  if (!orderId || !trackingNumber || isRegisteringTrackingShipment(shipment)) return
 
-  registeringTrackingShipmentIds.value = new Set(registeringTrackingShipmentIds.value).add(orderId)
+  registeringTrackingShipmentIds.value = new Set(registeringTrackingShipmentIds.value).add(key)
   try {
-    await shippingApi.registerTrackingShipment(orderId)
-    toast.success(`订单 #${orderId} 运单已登记到 Provider`)
+    await shippingApi.registerTrackingShipment(orderId, trackingNumber)
+    toast.success(`订单 #${orderId} / ${trackingNumber} 登记请求已入队`)
     await fetchTrackingShipments()
   } catch (error) {
     console.error('Failed to register tracking shipment:', error)
@@ -695,18 +705,20 @@ const registerTrackingShipment = async (shipment: TrackingShipment) => {
     await fetchTrackingShipments()
   } finally {
     const next = new Set(registeringTrackingShipmentIds.value)
-    next.delete(orderId)
+    next.delete(key)
     registeringTrackingShipmentIds.value = next
   }
 }
 
 const syncTrackingShipment = async (shipment: TrackingShipment) => {
   const orderId = Number(shipment?.order_id || 0)
-  if (!orderId || isSyncingTrackingShipment(shipment)) return
+  const trackingNumber = String(shipment?.tracking_number || '').trim()
+  const key = trackingShipmentKey(shipment)
+  if (!orderId || !trackingNumber || isSyncingTrackingShipment(shipment)) return
 
-  syncingTrackingShipmentIds.value = new Set(syncingTrackingShipmentIds.value).add(orderId)
+  syncingTrackingShipmentIds.value = new Set(syncingTrackingShipmentIds.value).add(key)
   try {
-    const result = await shippingApi.syncTrackingShipment(orderId)
+    const result = await shippingApi.syncTrackingShipment(orderId, trackingNumber)
     const eventCount = result.tracking?.events?.length ?? result.tracking?.shipment?.event_count ?? 0
     toast.success(`订单 #${orderId} 轨迹已同步：${eventCount} 条事件`)
     await fetchTrackingShipments()
@@ -716,7 +728,7 @@ const syncTrackingShipment = async (shipment: TrackingShipment) => {
     await fetchTrackingShipments()
   } finally {
     const next = new Set(syncingTrackingShipmentIds.value)
-    next.delete(orderId)
+    next.delete(key)
     syncingTrackingShipmentIds.value = next
   }
 }
@@ -746,6 +758,7 @@ const trackingShipmentRegistrationLabel = (status?: string | null) => {
     pending: '待登记',
     registered: '已登记',
     failed: '登记失败',
+    unknown: '结果未知，需对账',
   }
   return labels[status] || status || '未登记'
 }
@@ -755,6 +768,7 @@ const trackingShipmentRegistrationTone = (status?: string | null) => {
     pending: 'gray',
     registered: 'green',
     failed: 'coral',
+    unknown: 'amber',
   }
   return tones[status] || 'gray'
 }

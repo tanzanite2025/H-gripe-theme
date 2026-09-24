@@ -23,13 +23,16 @@ import ShopProductQuickSearchForm from '~/components/shop/ShopProductQuickSearch
 import { useShopSearchSheet, type ShopSearchFiltersPayload } from '~/composables/useShopSearchSheet'
 import { useShopCategories, type ShopCategory } from '~/composables/useShopCategories'
 import { useBehaviorEvents } from '~/composables/useBehaviorEvents'
+import { useStorefrontContext } from '~/composables/useStorefrontContext'
+import { defaultPriceRangeForCurrency } from '~/utils/money'
 
 const emit = defineEmits<{
   (e: 'search', payload: { query: string; filters: ShopSearchFiltersPayload; chipCategorySlug?: string }): void
 }>()
+const { displayCurrency } = useStorefrontContext()
 
 const createDefaultSearchFilters = (): ShopSearchFiltersPayload => ({
-  priceRange: [0, 5000],
+  priceRange: defaultPriceRangeForCurrency(displayCurrency.value),
   attributes: {},
 })
 

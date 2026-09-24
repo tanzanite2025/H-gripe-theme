@@ -21,11 +21,10 @@ type ProductVariant struct {
 	Currency           string `gorm:"size:3;not null;default:'USD';index" json:"currency"`
 	PriceMinor         int64  `gorm:"column:price_minor;not null;default:0" json:"price_minor"`
 	SalePriceMinor     *int64 `gorm:"column:sale_price_minor" json:"sale_price_minor,omitempty"`
-	// Price and SalePrice are legacy source columns. New pricing code must use
-	// PriceMoney and EffectivePriceMoney.
-	Price                float64                         `gorm:"not null" json:"-"`
-	SalePrice            *float64                        `json:"-"`
-	DisplayPriceData     datatypes.JSON                  `gorm:"column:display_prices;type:json;not null;default:'[]'" json:"display_prices,omitempty"`
+	// DisplayPriceData is hydrated from ProductDisplayPriceSnapshot by the
+	// repository read model loader. It is intentionally not persisted on the
+	// transactional product_variants table.
+	DisplayPriceData     datatypes.JSON                  `gorm:"-" json:"-"`
 	DisplayPriceSnapshot *ProductDisplayPriceSnapshot    `gorm:"-" json:"-"`
 	Stock                int                             `gorm:"default:0;not null" json:"stock"`
 	Weight               int                             `gorm:"column:weight_grams" json:"weight_grams"`
@@ -43,35 +42,25 @@ func (ProductVariant) TableName() string {
 	return "product_variants"
 }
 
-func (v *ProductVariant) EffectivePrice() float64 {
+func (v *ProductVariant) EffectivePrice() string {
 	value, err := v.EffectivePriceMoney()
 	if err != nil {
-		return 0
+		return ""
 	}
-	major, err := value.MajorFloat()
+	major, err := value.FormatMajor()
 	if err != nil {
-		return 0
+		return ""
 	}
 	return major
 }
 
 func (v *ProductVariant) PriceMoney() (domainmoney.Money, error) {
-	if v.PriceMinor == 0 && v.Price != 0 {
-		return domainmoney.FromMajorFloat(v.Price, v.Currency)
-	}
 	return domainmoney.New(v.PriceMinor, v.Currency)
 }
 
 func (v *ProductVariant) SalePriceMoney() (*domainmoney.Money, error) {
 	if v.SalePriceMinor == nil {
-		if v.SalePrice == nil {
-			return nil, nil
-		}
-		value, err := domainmoney.FromMajorFloat(*v.SalePrice, v.Currency)
-		if err != nil {
-			return nil, err
-		}
-		return &value, nil
+		return nil, nil
 	}
 	value, err := domainmoney.New(*v.SalePriceMinor, v.Currency)
 	if err != nil {
@@ -83,9 +72,6 @@ func (v *ProductVariant) SalePriceMoney() (*domainmoney.Money, error) {
 func (v *ProductVariant) EffectivePriceMoney() (domainmoney.Money, error) {
 	if v.SalePriceMinor != nil {
 		return domainmoney.New(*v.SalePriceMinor, v.Currency)
-	}
-	if v.SalePrice != nil {
-		return domainmoney.FromMajorFloat(*v.SalePrice, v.Currency)
 	}
 	return v.PriceMoney()
 }
@@ -104,9 +90,6 @@ func (v *ProductVariant) BeforeSave(tx *gorm.DB) error {
 // AfterFind exposes the inventory owned by the master variant while retaining
 // the translated row's identity, SKU, price, and option metadata.
 func (v *ProductVariant) AfterFind(tx *gorm.DB) error {
-	if err := v.loadDisplayPriceSnapshot(tx); err != nil {
-		return err
-	}
 	if v.MasterVariantID == nil || *v.MasterVariantID == 0 {
 		return nil
 	}
@@ -128,26 +111,8 @@ func (v *ProductVariant) normalizeCurrency() error {
 	if !currency.IsValidCode(v.Currency) || !currency.IsCatalogCode(v.Currency) {
 		return gorm.ErrInvalidData
 	}
-	if v.PriceMinor == 0 && v.Price != 0 {
-		value, err := domainmoney.FromMajorFloat(v.Price, v.Currency)
-		if err != nil {
-			return err
-		}
-		v.PriceMinor = value.AmountMinor()
-	}
-	if v.SalePriceMinor == nil && v.SalePrice != nil {
-		value, err := domainmoney.FromMajorFloat(*v.SalePrice, v.Currency)
-		if err != nil {
-			return err
-		}
-		minor := value.AmountMinor()
-		v.SalePriceMinor = &minor
-	}
 	if v.PriceMinor < 0 || (v.SalePriceMinor != nil && *v.SalePriceMinor < 0) {
 		return gorm.ErrInvalidData
-	}
-	if len(v.DisplayPriceData) == 0 {
-		v.DisplayPriceData = datatypes.JSON([]byte("[]"))
 	}
 	return nil
 }

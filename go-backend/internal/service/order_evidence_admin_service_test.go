@@ -169,16 +169,19 @@ func TestOrderEvidenceAdminServiceProjectsTrackingContextWithoutProviderSecrets(
 	result, err := adminService.GetPackage(orderRecord.ID)
 	require.NoError(t, err)
 	require.NotNil(t, result.TrackingContext)
-	require.NotNil(t, result.TrackingContext.Shipment)
-	require.NotNil(t, result.TrackingContext.LatestDeliveryEvent)
+	require.Len(t, result.TrackingContext.Shipments, 1)
+	require.Len(t, result.TrackingContext.LatestDeliveryEvents, 1)
 	require.NotNil(t, result.TrackingContext.ManualPOD)
 
-	assert.Equal(t, "TRACK-ADMIN-100", result.TrackingContext.Shipment.TrackingNumber)
-	assert.Equal(t, "mock", result.TrackingContext.Shipment.ProviderCode)
-	assert.Equal(t, "Mock Tracking", result.TrackingContext.Shipment.ProviderName)
-	assert.Equal(t, "delivered", result.TrackingContext.LatestDeliveryEvent.Status)
-	assert.Equal(t, "Seattle", result.TrackingContext.LatestDeliveryEvent.Location)
-	assert.Equal(t, "https://provider.test/pod/latest", result.TrackingContext.ProviderPODURL)
+	assert.Equal(t, "TRACK-ADMIN-100", result.TrackingContext.Shipments[0].TrackingNumber)
+	assert.Equal(t, "mock", result.TrackingContext.Shipments[0].ProviderCode)
+	assert.Equal(t, "Mock Tracking", result.TrackingContext.Shipments[0].ProviderName)
+	assert.Equal(t, "delivered", result.TrackingContext.LatestDeliveryEvents[0].Status)
+	assert.Equal(t, "Seattle", result.TrackingContext.LatestDeliveryEvents[0].Location)
+	assert.ElementsMatch(t, []string{
+		"https://provider.test/pod/latest",
+		"https://provider.test/pod/older",
+	}, result.TrackingContext.ProviderPODURLs)
 	assert.Equal(t, orderevidence.EvidenceItemStatusMissing, result.TrackingContext.ManualPOD.Status)
 	assert.Equal(t, 0, result.TrackingContext.ManualPOD.AttachmentCount)
 
@@ -211,23 +214,23 @@ func seedAdminEvidenceOrder(
 ) (*order.Order, *orderevidence.OrderEvidenceSnapshot) {
 	t.Helper()
 	record := &order.Order{
-		OrderNumber:    orderNumber,
-		TotalAmount:    800,
-		Currency:       "USD",
-		FXSnapshotData: servicePlanFXSnapshot(),
+		OrderNumber:      orderNumber,
+		TotalAmountMinor: 80000,
+		Currency:         "USD",
+		FXSnapshotData:   servicePlanFXSnapshot(),
 	}
 	require.NoError(t, db.Create(record).Error)
 	variantID := uint(22)
 	item := order.OrderItem{
-		OrderID:     record.ID,
-		ProductID:   10,
-		VariantID:   &variantID,
-		ProductName: "Configured Product",
-		SKU:         orderNumber + "-SKU",
-		Quantity:    1,
-		Price:       800,
-		WeightGrams: 9000,
-		Attributes:  `{"finish":"black"}`,
+		OrderID:                   record.ID,
+		ProductID:                 10,
+		VariantID:                 &variantID,
+		ProductName:               "Configured Product",
+		SKU:                       orderNumber + "-SKU",
+		Quantity:                  1,
+		PriceMinor:                80000,
+		WeightGrams:               9000,
+		ConfigurationSnapshotData: datatypes.JSON([]byte(`{"finish":"black"}`)),
 	}
 	require.NoError(t, db.Create(&item).Error)
 	record.Items = []order.OrderItem{item}

@@ -93,6 +93,26 @@ func TestOrderEvidenceAttachmentServiceUploadsAndScopesObject(t *testing.T) {
 	require.ErrorIs(t, err, ErrOrderEvidenceAttachmentItemNotFound)
 }
 
+func TestOrderEvidenceAttachmentServiceAcceptsCarrierPODPDF(t *testing.T) {
+	db := newOrderEvidenceServiceTestDB(t)
+	snapshot := servicePlanSnapshot(t, db, false)
+	evidenceRepo := repository.NewOrderEvidenceRepository(db)
+	pkg, err := NewOrderEvidenceService().CreateInitialPackage(repository.TxRepositories{OrderEvidence: evidenceRepo}, snapshot)
+	require.NoError(t, err)
+	items, err := evidenceRepo.ListItemsByPackageID(pkg.ID)
+	require.NoError(t, err)
+	pod := findEvidenceItemByType(items, orderevidence.EvidenceItemTypeSignedPOD)
+	require.NotZero(t, pod.ID)
+	txManager := newOrderEvidenceAdminServiceForTest(db, evidenceRepo).txManager
+	storageService, err := storage.NewStorageService(&storage.Config{Type: storage.StorageTypeLocal, LocalPath: t.TempDir(), BaseURL: "http://evidence.test"})
+	require.NoError(t, err)
+	attachmentService := NewConfiguredOrderEvidenceAttachmentService(txManager, evidenceRepo, storageService)
+
+	attachment, err := attachmentService.Upload(context.Background(), snapshot.OrderID, pod.ID, newEvidencePDFFileHeader(t, "carrier-pod.pdf"), 7)
+	require.NoError(t, err)
+	require.Equal(t, "application/pdf", attachment.MimeType)
+}
+
 func TestOrderEvidenceAttachmentServiceDeletesReferenceRetainsObjectAndRejectsLockedPackage(t *testing.T) {
 	db := newOrderEvidenceServiceTestDB(t)
 	snapshot := servicePlanSnapshot(t, db, false)
@@ -181,6 +201,24 @@ func newEvidencePNGFileHeader(t *testing.T, filename string) *multipart.FileHead
 	part, err := writer.CreateFormFile("file", filename)
 	require.NoError(t, err)
 	require.NoError(t, png.Encode(part, image.NewRGBA(image.Rect(0, 0, 4, 4))))
+	require.NoError(t, writer.Close())
+
+	request := httptest.NewRequest("POST", "/", &body)
+	request.Header.Set("Content-Type", writer.FormDataContentType())
+	require.NoError(t, request.ParseMultipartForm(int64(body.Len()+1024)))
+	files := request.MultipartForm.File["file"]
+	require.Len(t, files, 1)
+	return files[0]
+}
+
+func newEvidencePDFFileHeader(t *testing.T, filename string) *multipart.FileHeader {
+	t.Helper()
+	var body bytes.Buffer
+	writer := multipart.NewWriter(&body)
+	part, err := writer.CreateFormFile("file", filename)
+	require.NoError(t, err)
+	_, err = part.Write([]byte("%PDF-1.4\n1 0 obj\n<<>>\nendobj\n%%EOF\n"))
+	require.NoError(t, err)
 	require.NoError(t, writer.Close())
 
 	request := httptest.NewRequest("POST", "/", &body)

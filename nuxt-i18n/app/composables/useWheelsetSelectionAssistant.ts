@@ -1,5 +1,5 @@
 import { computed, ref, watch } from 'vue'
-import { useI18n } from '#imports'
+import { useAsyncData, useI18n } from '#imports'
 import { useApiRequest } from '~/composables/useApiRequest'
 import type {
   WheelsetSelectionAnswers,
@@ -192,13 +192,12 @@ export const useWheelsetSelectionAssistant = (
     rebuildFromPath()
   }
 
-  const load = async () => {
-    loading.value = true
-    error.value = null
-    try {
-      const endpoint = flowSlug === WHEELSET_SELECTION_ASSISTANT_SLUG
-        ? '/wheelset-fit-questionnaire/current'
-        : `/selection-assistant/flows/${encodeURIComponent(flowSlug)}`
+  const endpoint = flowSlug === WHEELSET_SELECTION_ASSISTANT_SLUG
+    ? '/wheelset-fit-questionnaire/current'
+    : `/selection-assistant/flows/${encodeURIComponent(flowSlug)}`
+  const { data: initialFlow, pending: initialFlowPending, error: initialFlowError, refresh } = useAsyncData<WheelsetSelectionAssistantFlow | null>(
+    `wheelset-selection-assistant:${flowSlug}`,
+    async () => {
       const response = await request<{ data: WheelsetSelectionAssistantFlow }>(
         endpoint,
         {},
@@ -208,26 +207,46 @@ export const useWheelsetSelectionAssistant = (
       if (!nextFlow?.version?.config?.nodes?.length) {
         throw new Error('Published selection assistant is empty.')
       }
-      flow.value = nextFlow
-      reset()
-    } catch (cause: any) {
+      return nextFlow
+    },
+    { server: true, lazy: false, default: () => null, dedupe: 'defer' },
+  )
+
+  const applyFlow = (nextFlow: WheelsetSelectionAssistantFlow | null, cause?: unknown) => {
+    if (!nextFlow) {
       flow.value = null
       currentNodeKey.value = ''
-      error.value = toUserFacingApiError(
-        cause,
-        t(
-          'wheelsetSelectionAssistant.states.unavailable',
-          'The fit service is temporarily unavailable. Please try again.',
-        ),
-      )
-    } finally {
-      loading.value = false
+      if (cause) {
+        error.value = toUserFacingApiError(
+          cause,
+          t(
+            'wheelsetSelectionAssistant.states.unavailable',
+            'The fit service is temporarily unavailable. Please try again.',
+          ),
+        )
+      }
+      return
     }
+    error.value = null
+    flow.value = nextFlow
+    reset()
   }
 
-  watch(() => flowSlug, () => {
-    void load()
+  watch(initialFlow, nextFlow => {
+    applyFlow(nextFlow, initialFlowError.value)
   }, { immediate: true })
+  watch(initialFlowError, cause => {
+    if (cause) applyFlow(null, cause)
+  }, { immediate: true })
+  watch(initialFlowPending, pending => {
+    loading.value = pending
+  }, { immediate: true })
+
+  const load = async () => {
+    error.value = null
+    await refresh()
+    applyFlow(initialFlow.value, initialFlowError.value)
+  }
 
   return {
     flow,

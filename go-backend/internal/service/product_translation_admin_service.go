@@ -103,11 +103,6 @@ func (s *ProductService) CopyAdminProductTranslation(id uint, targetLocale strin
 		variantSKUs[sourceVariant.ID] = sku
 		usedSKUs[strings.ToLower(sku)] = struct{}{}
 	}
-	targetSKU, err := s.nextAvailableProductSKU(source.SKU, locale, usedSKUs)
-	if err != nil {
-		return nil, nil, err
-	}
-
 	parentID := rootID
 	target := &product.Product{
 		ProductSpecificationTemplateID: source.ProductSpecificationTemplateID,
@@ -121,26 +116,19 @@ func (s *ProductService) CopyAdminProductTranslation(id uint, targetLocale strin
 		CNCode:                         source.CNCode,
 		CountryOfOrigin:                source.CountryOfOrigin,
 		CustomsDescription:             source.CustomsDescription,
-		SKU:                            targetSKU,
 		Name:                           source.Name,
 		Slug:                           slug,
 		Description:                    source.Description,
 		ShortDesc:                      source.ShortDesc,
 		Currency:                       source.Currency,
-		Price:                          source.Price,
-		SalePrice:                      source.SalePrice,
-		DisplayPriceData:               append([]byte(nil), source.DisplayPriceData...),
-		Stock:                          source.Stock,
 		Status:                         source.Status,
 		Locale:                         locale,
 		ParentID:                       &parentID,
 		Featured:                       source.Featured,
 	}
 	if len(source.Variants) > 0 {
-		target.SKU = ""
-		// The translated rows do not own stock, but the product-level summary
-		// must still expose the source inventory to storefront consumers.
-		target.Stock = source.TotalVariantStock()
+		// The translated rows do not own stock; inventory remains on the master
+		// variants cloned below.
 	}
 
 	if err := s.productRepo.CreateTranslatedCopy(source, target, variantSKUs); err != nil {
@@ -248,15 +236,7 @@ func (s *ProductService) nextAvailableProductSKU(sourceSKU, locale string, used 
 			continue
 		}
 
-		_, err := s.productRepo.FindBySKU(candidate)
-		if err != nil && !repository.IsRecordNotFound(err) {
-			return "", err
-		}
-		if err == nil {
-			continue
-		}
-
-		_, err = s.productRepo.FindVariantBySKU(candidate)
+		_, err := s.productRepo.FindVariantBySKU(candidate)
 		if err != nil && !repository.IsRecordNotFound(err) {
 			return "", err
 		}

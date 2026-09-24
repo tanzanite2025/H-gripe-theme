@@ -75,7 +75,7 @@
               <TableCell class="font-mono text-xs uppercase">{{ item.provider || '-' }}</TableCell>
               <TableCell><RiskStrategyStatusPill :status="item.status" /></TableCell>
               <TableCell class="text-xs">{{ refundRecommendationSourceLabel(item.source_kind) }}</TableCell>
-              <TableCell class="font-mono text-xs">{{ formatMoney(item.recommended_amount, item.currency) }}</TableCell>
+              <TableCell class="font-mono text-xs">{{ formatMinorMoney(item.recommended_amount_minor, item.currency) }}</TableCell>
               <TableCell class="font-mono text-xs">{{ item.order_id ? `#${item.order_id}` : '-' }}</TableCell>
               <TableCell class="max-w-[180px] truncate font-mono text-xs">{{ item.provider_payment_id || item.payment_intent_id || item.charge_id || '-' }}</TableCell>
               <TableCell class="text-xs" :class="isEvidenceSoon(item.review_by) ? 'font-semibold text-rose-600' : 'text-muted-foreground'">{{ formatDate(item.review_by) }}</TableCell>
@@ -124,11 +124,11 @@ import { paymentRiskApi as riskStrategyApi } from '@/api/paymentRisk'
 import {
   applyPaged,
   formatDate,
-  formatMoney,
   isEvidenceSoon,
   refundRecommendationSourceLabel,
   type RiskStrategyPagination,
 } from '@/lib/riskStrategyViewUtils'
+import { formatMinorMoney } from '@/lib/dashboardPresentation'
 
 const loading = ref(false)
 const saving = ref(false)

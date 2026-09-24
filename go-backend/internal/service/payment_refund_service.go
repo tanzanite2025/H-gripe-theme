@@ -38,10 +38,8 @@ type refundLineItemTotals struct {
 }
 
 type refundPaymentSplit struct {
-	GatewayAmount     domainmoney.Money
-	GiftCardAmount    domainmoney.Money
-	TotalAvailable    domainmoney.Money
-	GiftCardAvailable domainmoney.Money
+	GatewayAmount  domainmoney.Money
+	TotalAvailable domainmoney.Money
 }
 
 type VerifiedGatewayRefundInput struct {
@@ -52,23 +50,62 @@ type VerifiedGatewayRefundInput struct {
 	ProviderStatus        string            // provider status carried by the verified webhook resource
 	ProviderRefundAmount  domainmoney.Money // actual net amount confirmed by the payment provider
 	RequestedRefundAmount domainmoney.Money // original refund request before coupon or loyalty deductions
-	ErrorMessage          string            // provider-declared failure/exception detail
-	GatewayResponse       string
+	// SettlementAmountMinor is the positive net amount deducted from the
+	// provider's settlement balance. It is usually the absolute value of a
+	// Stripe BalanceTransaction.Net and may be absent for providers that do not
+	// expose a settlement transaction in the webhook.
+	SettlementAmountMinor          int64
+	SettlementCurrency             string
+	SettlementBalanceTransactionID string
+	ErrorMessage                   string // provider-declared failure/exception detail
+	GatewayResponse                string
 }
 
-func optionalRefundMoneyMajor(value domainmoney.Money) (float64, string, error) {
+func applyRefundSettlementFacts(
+	refund *payment.Refund,
+	snapshot currencydomain.OrderFXSnapshot,
+	refundMoney domainmoney.Money,
+	settlementAmountMinor int64,
+	settlementCurrency string,
+	settlementBalanceTransactionID string,
+) error {
+	if refund == nil || settlementAmountMinor == 0 || strings.TrimSpace(settlementCurrency) == "" {
+		return nil
+	}
+	if settlementAmountMinor < 0 {
+		if settlementAmountMinor == -1<<63 {
+			return errors.New("provider settlement amount overflows")
+		}
+		settlementAmountMinor = -settlementAmountMinor
+	}
+	settlementCode, err := currencydomain.ParseCode(settlementCurrency)
+	if err != nil {
+		return fmt.Errorf("invalid settlement currency: %w", err)
+	}
+	refund.SettlementAmountMinor = settlementAmountMinor
+	refund.SettlementCurrency = settlementCode.String()
+	refund.SettlementBalanceTransactionID = strings.TrimSpace(settlementBalanceTransactionID)
+	fxGainLoss, fxCurrency, err := calculateRefundFXGainLoss(snapshot, refundMoney, settlementAmountMinor, settlementCode.String())
+	if err != nil {
+		return err
+	}
+	refund.FXGainLossMinor = fxGainLoss
+	refund.FXGainLossCurrency = fxCurrency
+	return nil
+}
+
+// optionalRefundMoney validates an optional Money input without serializing it
+// through a major-unit float. The zero-value Money is used to represent an
+// omitted requested amount at this service boundary.
+func optionalRefundMoney(value domainmoney.Money) (domainmoney.Money, string, error) {
 	code := strings.TrimSpace(value.Currency().String())
 	if code == "" {
-		return 0, "", nil
+		return domainmoney.Money{}, "", nil
 	}
 	if err := value.Validate(); err != nil {
-		return 0, "", err
+		return domainmoney.Money{}, "", err
 	}
-	amount, err := value.MajorFloat()
-	if err != nil {
-		return 0, "", err
-	}
-	return amount, normalizePaymentCurrency(code), nil
+	return value, normalizePaymentCurrency(code), nil
 }
 
 func (s *PaymentService) GetRefund(id uint) (*payment.Refund, error) {
@@ -164,7 +201,7 @@ func validateAdminRefundInput(refund *payment.Refund) error {
 	if refund.TransactionID == 0 {
 		return errors.New("transaction_id is required")
 	}
-	if refund.Amount <= 0 && len(refund.LineItems) == 0 {
+	if refund.AmountMinor <= 0 && len(refund.LineItems) == 0 {
 		return errors.New("amount must be greater than zero")
 	}
 	return nil
@@ -182,6 +219,14 @@ func createAdminRefundInTx(repos repository.TxRepositories, refund *payment.Refu
 	if err := validateAdminRefundInput(refund); err != nil {
 		return err
 	}
+	// Serialize refund creation with fulfillment on the order row first. The
+	// fulfillment workflow takes this same lock before checking pending refunds;
+	// locking the transaction first would allow a shipment to pass the check
+	// while this refund intent is still being created.
+	o, err := repos.Order.FindByIDForUpdateWithItems(refund.OrderID)
+	if err != nil {
+		return normalizeOrderError(err)
+	}
 	transaction, err := repos.Payment.FindTransactionByIDForUpdate(refund.TransactionID)
 	if err != nil {
 		if repository.IsRecordNotFound(err) {
@@ -196,10 +241,6 @@ func createAdminRefundInTx(repos repository.TxRepositories, refund *payment.Refu
 		return errors.New("transaction is not refundable")
 	}
 
-	o, err := repos.Order.FindByIDForUpdateWithItems(refund.OrderID)
-	if err != nil {
-		return normalizeOrderError(err)
-	}
 	if o.PaymentStatus != "paid" {
 		return errors.New("order is not paid")
 	}
@@ -207,11 +248,12 @@ func createAdminRefundInTx(repos repository.TxRepositories, refund *payment.Refu
 		return errors.New("order is already refunded")
 	}
 
-	requestedAmount, err := parseRefundMoney(refund.Amount, o.Currency)
+	requestedAmount, err := domainmoney.New(refund.AmountMinor, o.Currency)
 	if err != nil {
 		return fmt.Errorf("parse refund amount: %w", err)
 	}
 	requestedSubtotalAmount := requestedAmount
+	linePricingIncludesCoupon := false
 	if len(refund.LineItems) > 0 {
 		lineItems, totals, err := buildRefundLineItems(repos, o, refund.LineItems)
 		if err != nil {
@@ -223,17 +265,59 @@ func createAdminRefundInTx(repos repository.TxRepositories, refund *payment.Refu
 				return fmt.Errorf("compare refund amount with selected line item total: %w", compareErr)
 			}
 			if !equal {
-				requestedMajor, _ := majorAmount(requestedAmount)
-				totalAmount, _ := majorAmount(totals.LineTotalAmount)
-				return fmt.Errorf("refund amount %.2f does not match selected line item total %.2f", requestedMajor, totalAmount)
+				return fmt.Errorf(
+					"refund amount %s does not match selected line item total %s",
+					formatRefundMoney(requestedAmount),
+					formatRefundMoney(totals.LineTotalAmount),
+				)
 			}
 		}
 		refund.LineItems = lineItems
 		requestedAmount = totals.LineTotalAmount
 		requestedSubtotalAmount = totals.LineSubtotalAmount
+		// A pricing snapshot is the source of truth for order-level discount
+		// allocation. Once a selected line carries a coupon allocation, do not
+		// recalculate the coupon against the post-refund subtotal below.
+		for _, lineItem := range lineItems {
+			for _, orderItem := range o.Items {
+				if orderItem.ID != lineItem.OrderItemID {
+					continue
+				}
+				lineSnapshot, snapshotErr := parseOrderItemPricingSnapshot(orderItem)
+				if snapshotErr != nil {
+					return snapshotErr
+				}
+				for _, allocation := range lineSnapshot.DiscountAllocations() {
+					if allocation.Kind() == domainpricing.DiscountKindCoupon && allocation.Amount().AmountMinor() > 0 {
+						linePricingIncludesCoupon = true
+						break
+					}
+				}
+				break
+			}
+			if linePricingIncludesCoupon {
+				break
+			}
+		}
 	}
 
-	adjustment, err := calculateRefundPromotionAdjustment(repos, o, requestedAmount, requestedSubtotalAmount)
+	var adjustment refundPromotionAdjustment
+	if linePricingIncludesCoupon {
+		originalCouponDiscount := zeroRefundMoney(o.Currency)
+		if _, couponDiscount, present, snapshotErr := readOrderPricingRefundBaseline(o); snapshotErr != nil {
+			return snapshotErr
+		} else if present {
+			originalCouponDiscount = couponDiscount
+		}
+		adjustment, err = calculateRefundPromotionAdjustmentFromPersistedPricing(
+			o,
+			requestedAmount,
+			requestedSubtotalAmount,
+			originalCouponDiscount,
+		)
+	} else {
+		adjustment, err = calculateRefundPromotionAdjustment(repos, o, requestedAmount, requestedSubtotalAmount)
+	}
 	if err != nil {
 		return err
 	}
@@ -241,7 +325,7 @@ func createAdminRefundInTx(repos repository.TxRepositories, refund *payment.Refu
 	if err != nil {
 		return err
 	}
-	reservedAmount, err := repos.Payment.SumRefundAmountByTransactionID(transaction.ID, "pending", "completed")
+	reservedAmountMinor, err := repos.Payment.SumRefundAmountMinorByTransactionID(transaction.ID, "pending", "completed")
 	if err != nil {
 		return err
 	}
@@ -249,13 +333,11 @@ func createAdminRefundInTx(repos repository.TxRepositories, refund *payment.Refu
 	if err != nil {
 		return err
 	}
-	reservedGatewayMoney, err := parseRefundMoney(reservedAmount, transaction.Currency)
+	reservedGatewayMoney, err := domainmoney.New(reservedAmountMinor, transaction.Currency)
 	if err != nil {
 		return err
 	}
 	split, err := calculateRefundPaymentSplit(
-		repos,
-		o.ID,
 		adjustment.NetAmount,
 		transactionMoney,
 		reservedGatewayMoney,
@@ -263,30 +345,15 @@ func createAdminRefundInTx(repos repository.TxRepositories, refund *payment.Refu
 	if err != nil {
 		return err
 	}
-	gatewayAmount, err := split.GatewayAmount.MajorFloat()
-	if err != nil {
-		return err
-	}
-	giftCardAmount, err := split.GiftCardAmount.MajorFloat()
-	if err != nil {
-		return err
-	}
 	if err := validateHistoricalRefundFXCap(fxSnapshot, transaction, split.GatewayAmount, reservedGatewayMoney); err != nil {
 		return err
 	}
 
-	requestedAmountMajor, err := adjustment.RequestedAmount.MajorFloat()
-	if err != nil {
-		return err
-	}
-	discountClawbackAmount, err := adjustment.DiscountClawbackAmount.MajorFloat()
-	if err != nil {
-		return err
-	}
-	refund.RequestedAmount = requestedAmountMajor
-	refund.Amount = gatewayAmount
-	refund.GiftCardRefundAmount = giftCardAmount
-	refund.DiscountClawbackAmount = discountClawbackAmount
+	// Persist the exact pricing-pipeline result in minor units. Refund caps,
+	// idempotency, and gateway settlement all compare these canonical values.
+	refund.RequestedAmountMinor = adjustment.RequestedAmount.AmountMinor()
+	refund.AmountMinor = split.GatewayAmount.AmountMinor()
+	refund.DiscountClawbackAmountMinor = adjustment.DiscountClawbackAmount.AmountMinor()
 	refund.Currency = transaction.Currency
 	refund.CalculationSnapshot = adjustment.CalculationSnapshot
 	refund.FXSnapshotData = currencydomain.OrderFXSnapshotJSON(fxSnapshot)
@@ -297,6 +364,12 @@ func createAdminRefundInTx(repos repository.TxRepositories, refund *payment.Refu
 	refund.RefundedBy = adminUserID
 
 	if err := repos.Payment.CreateRefund(refund); err != nil {
+		return err
+	}
+	// A pending gateway refund is a financial hold. Keep it on the order until
+	// the pending intent is completed or failed so warehouse fulfillment cannot
+	// race the provider's asynchronous money movement.
+	if err := repos.Order.SetFulfillmentHold(refund.OrderID, true); err != nil {
 		return err
 	}
 	return enqueuePaymentRefundPendingOutboxEvent(
@@ -310,9 +383,47 @@ func createAdminRefundInTx(repos repository.TxRepositories, refund *payment.Refu
 	)
 }
 
+// releaseRefundPendingHoldIfClear drops the refund-created hold only after no
+// pending intents remain. Dispute and payment-review projections are
+// deliberately preserved through their terminal order statuses.
+func releaseRefundPendingHoldIfClear(repos repository.TxRepositories, orderID uint) error {
+	if repos.Order == nil || repos.Payment == nil {
+		return nil
+	}
+	pending, err := repos.Payment.HasPendingRefundByOrderID(orderID)
+	if err != nil || pending {
+		return err
+	}
+	orderRecord, err := repos.Order.FindByIDForUpdate(orderID)
+	if err != nil {
+		return err
+	}
+	if orderRecord.Status == "disputed" || orderRecord.Status == "needs_review" ||
+		orderRecord.Status == "shipped" || orderRecord.Status == "completed" ||
+		orderRecord.ShippingStatus == "shipped" || orderRecord.ShippingStatus == "delivered" {
+		return nil
+	}
+	// Disputes and payment reviews project their own terminal status onto the
+	// order ("disputed"/"needs_review") before setting this shared flag. The
+	// status guard above therefore avoids a second set of cross-table reads in
+	// this cleanup path and remains compatible with older schemas.
+	return repos.Order.SetFulfillmentHold(orderID, false)
+}
+
+func refundCanRestockPhysicalItems(orderRecord *order.Order) bool {
+	if orderRecord == nil {
+		return false
+	}
+	// A gateway refund does not prove that goods came back. Once a parcel has
+	// entered physical fulfillment, inventory is restored only by the returns
+	// receiving workflow after warehouse inspection.
+	return orderRecord.Status != "shipped" && orderRecord.Status != "completed" &&
+		orderRecord.ShippingStatus != "shipped" && orderRecord.ShippingStatus != "delivered" &&
+		(orderRecord.DeliveredAt == nil || orderRecord.DeliveredAt.IsZero()) &&
+		(orderRecord.ShippedAt == nil || orderRecord.ShippedAt.IsZero())
+}
+
 func calculateRefundPaymentSplit(
-	repos repository.TxRepositories,
-	orderID uint,
 	totalRefund domainmoney.Money,
 	transactionTotal domainmoney.Money,
 	reservedGateway domainmoney.Money,
@@ -338,85 +449,6 @@ func calculateRefundPaymentSplit(
 		}
 	}
 
-	transactions, err := repos.Coupon.FindGiftCardTransactionByOrderID(orderID)
-	if err != nil {
-		return refundPaymentSplit{}, fmt.Errorf("load gift card payment history for order %d: %w", orderID, err)
-	}
-
-	cardCurrency := currencydomain.DefaultPrimaryCurrency
-	if len(transactions) > 0 && transactions[0].Currency != "" {
-		cardCurrency = transactions[0].Currency
-	}
-	if len(transactions) == 0 {
-		cardCurrency = transactionCurrency
-	}
-	if len(transactions) > 0 && currencydomain.NormalizeCode(cardCurrency) != transactionCurrency {
-		return refundPaymentSplit{}, fmt.Errorf("gift card currency %s does not match transaction currency %s", cardCurrency, transactionCurrency)
-	}
-	usedGiftCard, err := domainmoney.New(0, cardCurrency)
-	if err != nil {
-		return refundPaymentSplit{}, err
-	}
-	refundedGiftCard, err := domainmoney.New(0, cardCurrency)
-	if err != nil {
-		return refundPaymentSplit{}, err
-	}
-	for _, transaction := range transactions {
-		transactionCurrency := currencydomain.NormalizeCode(transaction.Currency)
-		if transactionCurrency == "" {
-			transactionCurrency = currencydomain.NormalizeCode(cardCurrency)
-		}
-		if transactionCurrency != currencydomain.NormalizeCode(cardCurrency) {
-			return refundPaymentSplit{}, fmt.Errorf(
-				"gift card ledger currency %s does not match %s",
-				transactionCurrency,
-				cardCurrency,
-			)
-		}
-		ledgerAmount, err := domainmoney.New(transaction.AmountCents, transactionCurrency)
-		if err != nil {
-			return refundPaymentSplit{}, fmt.Errorf("invalid gift card ledger amount: %w", err)
-		}
-		ledgerAmount, err = ledgerAmount.Abs()
-		if err != nil {
-			return refundPaymentSplit{}, fmt.Errorf("invalid gift card ledger amount: %w", err)
-		}
-		switch transaction.Type {
-		case "use":
-			usedGiftCard, err = usedGiftCard.Add(ledgerAmount)
-			if err != nil {
-				return refundPaymentSplit{}, fmt.Errorf("aggregate gift card usage: %w", err)
-			}
-		case "refund":
-			refundedGiftCard, err = refundedGiftCard.Add(ledgerAmount)
-			if err != nil {
-				return refundPaymentSplit{}, fmt.Errorf("aggregate gift card refunds: %w", err)
-			}
-		}
-	}
-
-	reservedGiftCardAmount, err := repos.Payment.SumRefundGiftCardAmountByOrderID(orderID, "pending")
-	if err != nil {
-		return refundPaymentSplit{}, err
-	}
-	reservedGiftCard, err := domainmoney.FromMajorFloat(reservedGiftCardAmount, cardCurrency)
-	if err != nil {
-		return refundPaymentSplit{}, fmt.Errorf("invalid reserved gift card amount: %w", err)
-	}
-	availableGiftCard, err := usedGiftCard.Subtract(refundedGiftCard)
-	if err != nil {
-		return refundPaymentSplit{}, err
-	}
-	availableGiftCard, err = availableGiftCard.Subtract(reservedGiftCard)
-	if err != nil {
-		return refundPaymentSplit{}, err
-	}
-	if availableGiftCard.AmountMinor() < 0 {
-		availableGiftCard, err = domainmoney.New(0, cardCurrency)
-		if err != nil {
-			return refundPaymentSplit{}, err
-		}
-	}
 	remainingGateway, err := transactionTotal.Subtract(reservedGateway)
 	if err != nil {
 		return refundPaymentSplit{}, err
@@ -427,37 +459,16 @@ func calculateRefundPaymentSplit(
 			return refundPaymentSplit{}, err
 		}
 	}
-	giftCardAmountMinor := totalRefund.AmountMinor()
-	if giftCardAmountMinor > availableGiftCard.AmountMinor() {
-		giftCardAmountMinor = availableGiftCard.AmountMinor()
-	}
-	if giftCardAmountMinor < 0 {
-		giftCardAmountMinor = 0
-	}
-	giftCardAmount, err := domainmoney.New(giftCardAmountMinor, transactionCurrency)
-	if err != nil {
-		return refundPaymentSplit{}, err
-	}
-	gatewayAmount, err := totalRefund.Subtract(giftCardAmount)
-	if err != nil {
-		return refundPaymentSplit{}, err
-	}
-	totalAvailable, err := remainingGateway.Add(availableGiftCard)
-	if err != nil {
-		return refundPaymentSplit{}, err
-	}
-	if gatewayAmount.AmountMinor() > remainingGateway.AmountMinor() {
+	if totalRefund.AmountMinor() > remainingGateway.AmountMinor() {
 		return refundPaymentSplit{}, fmt.Errorf(
 			"refund amount %s exceeds refundable amount %s",
 			formatRefundMoney(totalRefund),
-			formatRefundMoney(totalAvailable),
+			formatRefundMoney(remainingGateway),
 		)
 	}
 	return refundPaymentSplit{
-		GatewayAmount:     gatewayAmount,
-		GiftCardAmount:    giftCardAmount,
-		TotalAvailable:    totalAvailable,
-		GiftCardAvailable: availableGiftCard,
+		GatewayAmount:  totalRefund,
+		TotalAvailable: remainingGateway,
 	}, nil
 }
 
@@ -604,46 +615,21 @@ func buildRefundLineItemSnapshot(
 	if err != nil {
 		return payment.RefundLineItem{}, refundLineItemTotals{}, err
 	}
-	unitPrice, err := majorAmount(snapshot.UnitPrice())
-	if err != nil {
-		return payment.RefundLineItem{}, refundLineItemTotals{}, err
-	}
-	lineSubtotalMajor, err := majorAmount(lineSubtotal)
-	if err != nil {
-		return payment.RefundLineItem{}, refundLineItemTotals{}, err
-	}
-	lineTaxMajor, err := majorAmount(lineTax)
-	if err != nil {
-		return payment.RefundLineItem{}, refundLineItemTotals{}, err
-	}
-	lineDiscountMajor, err := majorAmount(lineDiscount)
-	if err != nil {
-		return payment.RefundLineItem{}, refundLineItemTotals{}, err
-	}
-	lineTotalMajor, err := majorAmount(lineTotal)
-	if err != nil {
-		return payment.RefundLineItem{}, refundLineItemTotals{}, err
-	}
 	lineItem := payment.RefundLineItem{
-		OrderID:            item.OrderID,
-		OrderItemID:        item.ID,
-		ProductID:          item.ProductID,
-		VariantID:          item.VariantID,
-		ProductName:        item.ProductName,
-		SKU:                item.SKU,
-		Quantity:           quantity,
-		Currency:           currencyCode,
-		UnitPriceMinor:     snapshot.UnitPrice().AmountMinor(),
-		LineSubtotalMinor:  lineSubtotal.AmountMinor(),
-		LineTaxMinor:       lineTax.AmountMinor(),
-		LineDiscountMinor:  lineDiscount.AmountMinor(),
-		LineTotalMinor:     lineTotal.AmountMinor(),
-		UnitPrice:          unitPrice,
-		LineSubtotalAmount: lineSubtotalMajor,
-		LineTaxAmount:      lineTaxMajor,
-		LineDiscountAmount: lineDiscountMajor,
-		LineTotalAmount:    lineTotalMajor,
-		Restock:            restock,
+		OrderID:           item.OrderID,
+		OrderItemID:       item.ID,
+		ProductID:         item.ProductID,
+		VariantID:         item.VariantID,
+		ProductName:       item.ProductName,
+		SKU:               item.SKU,
+		Quantity:          quantity,
+		Currency:          currencyCode,
+		UnitPriceMinor:    snapshot.UnitPrice().AmountMinor(),
+		LineSubtotalMinor: lineSubtotal.AmountMinor(),
+		LineTaxMinor:      lineTax.AmountMinor(),
+		LineDiscountMinor: lineDiscount.AmountMinor(),
+		LineTotalMinor:    lineTotal.AmountMinor(),
+		Restock:           restock,
 	}
 	allocation := refundLineItemTotals{
 		Quantity:           quantity,
@@ -707,14 +693,6 @@ func allocateRefundLineAmounts(
 		return domainmoney.Money{}, domainmoney.Money{}, domainmoney.Money{}, fmt.Errorf("calculate net subtotal: %w", err)
 	}
 	return base, discount, net, nil
-}
-
-func majorAmount(value domainmoney.Money) (float64, error) {
-	amount, err := value.MajorFloat()
-	if err != nil {
-		return 0, fmt.Errorf("format money amount: %w", err)
-	}
-	return amount, nil
 }
 
 func allocateRefundMoneyRange(
@@ -807,8 +785,15 @@ func validateRefundMoneyOperand(value domainmoney.Money, name string) error {
 	return nil
 }
 
-func restoreRefundLineItemStock(repos repository.TxRepositories, lineItems []payment.RefundLineItem, restockedAt time.Time) ([]uint, error) {
+func restoreRefundLineItemStock(repos repository.TxRepositories, orderRecord *order.Order, lineItems []payment.RefundLineItem, restockedAt time.Time) ([]uint, error) {
 	var affectedProductIDs []uint
+	variantItemsMap := make(map[uint]int)
+	orderItemsByID := make(map[uint]order.OrderItem)
+	if orderRecord != nil {
+		for _, orderItem := range orderRecord.Items {
+			orderItemsByID[orderItem.ID] = orderItem
+		}
+	}
 	for _, item := range lineItems {
 		if !item.Restock || item.Quantity <= 0 || item.VariantID == nil {
 			continue
@@ -821,9 +806,24 @@ func restoreRefundLineItemStock(repos repository.TxRepositories, lineItems []pay
 		if !claimed {
 			continue
 		}
-		productIDs, err := repos.Product.IncrementVariantStock(*item.VariantID, item.Quantity)
+		variantItemsMap[*item.VariantID] += item.Quantity
+		if orderItem, ok := orderItemsByID[item.OrderItemID]; ok && len(orderItem.ConfigurationSnapshotData) > 0 && string(orderItem.ConfigurationSnapshotData) != "{}" {
+			var configuration ProductConfigurationSnapshot
+			if err := json.Unmarshal(orderItem.ConfigurationSnapshotData, &configuration); err != nil {
+				return nil, fmt.Errorf("[CRITICAL] Failed to parse configuration snapshot for refunded order item %d: %w", item.OrderItemID, err)
+			}
+			for _, allocation := range configuration.InventoryAllocations {
+				if allocation.VariantID == 0 || allocation.Quantity <= 0 {
+					return nil, fmt.Errorf("[CRITICAL] Invalid component inventory allocation for refunded order item %d", item.OrderItemID)
+				}
+				variantItemsMap[allocation.VariantID] += allocation.Quantity * item.Quantity
+			}
+		}
+	}
+	if len(variantItemsMap) > 0 {
+		productIDs, err := repos.Product.IncrementVariantStocks(variantItemsMap)
 		if err != nil {
-			return nil, fmt.Errorf("[CRITICAL] Failed to restore stock for refunded variant %d: %w", *item.VariantID, err)
+			return nil, fmt.Errorf("[CRITICAL] Failed to restore stock for refunded variants: %w", err)
 		}
 		affectedProductIDs = append(affectedProductIDs, productIDs...)
 	}
@@ -857,14 +857,14 @@ func (s *PaymentService) RecordVerifiedGatewayRefund(input VerifiedGatewayRefund
 	if err := input.ProviderRefundAmount.Validate(); err != nil {
 		return err
 	}
-	providerRefundAmount, providerCurrency, amountErr := optionalRefundMoneyMajor(input.ProviderRefundAmount)
+	providerRefundMoney, providerCurrency, amountErr := optionalRefundMoney(input.ProviderRefundAmount)
 	if amountErr != nil {
 		return amountErr
 	}
-	if input.ProviderRefundAmount.AmountMinor() <= 0 || providerCurrency == "" {
+	if providerRefundMoney.AmountMinor() <= 0 || providerCurrency == "" {
 		return errors.New("provider refund amount must be greater than zero")
 	}
-	requestedRefundAmount, requestedCurrency, amountErr := optionalRefundMoneyMajor(input.RequestedRefundAmount)
+	requestedRefundMoney, requestedCurrency, amountErr := optionalRefundMoney(input.RequestedRefundAmount)
 	if amountErr != nil {
 		return amountErr
 	}
@@ -874,11 +874,22 @@ func (s *PaymentService) RecordVerifiedGatewayRefund(input VerifiedGatewayRefund
 
 	var affectedProductIDs []uint
 	err := s.txManager.WithinTx(func(repos repository.TxRepositories) error {
-		transaction, err := repos.Payment.FindTransactionByTransactionIDForUpdate(input.TransactionID)
+		// Resolve the transaction without locking it so we can acquire the order
+		// serialization point first. Admin refund creation and fulfillment use
+		// this same order-first lock ordering.
+		transaction, err := repos.Payment.FindTransactionByTransactionID(input.TransactionID)
 		if err != nil {
 			if repository.IsRecordNotFound(err) {
 				return errors.New("transaction not found")
 			}
+			return err
+		}
+		o, err := repos.Order.FindByIDForUpdate(transaction.OrderID)
+		if err != nil {
+			return normalizeOrderError(err)
+		}
+		transaction, err = repos.Payment.FindTransactionByTransactionIDForUpdate(input.TransactionID)
+		if err != nil {
 			return err
 		}
 		// Recheck after locking the transaction so concurrent deliveries
@@ -898,10 +909,6 @@ func (s *PaymentService) RecordVerifiedGatewayRefund(input VerifiedGatewayRefund
 			return fmt.Errorf("refund currency %s does not match transaction currency %s", providerCurrency, transaction.Currency)
 		}
 
-		o, err := repos.Order.FindByIDForUpdate(transaction.OrderID)
-		if err != nil {
-			return normalizeOrderError(err)
-		}
 		if input.OrderNumber != "" && o.OrderNumber != input.OrderNumber {
 			return errors.New("refund order_number does not match transaction order")
 		}
@@ -917,7 +924,7 @@ func (s *PaymentService) RecordVerifiedGatewayRefund(input VerifiedGatewayRefund
 		if err != nil {
 			return err
 		}
-		reservedAmount, err := repos.Payment.SumRefundAmountByTransactionID(transaction.ID, "pending", "completed")
+		reservedAmountMinor, err := repos.Payment.SumRefundAmountMinorByTransactionID(transaction.ID, "pending", "completed")
 		if err != nil {
 			return err
 		}
@@ -931,30 +938,24 @@ func (s *PaymentService) RecordVerifiedGatewayRefund(input VerifiedGatewayRefund
 		if err != nil && !repository.IsRecordNotFound(err) {
 			return err
 		}
-		reservedBeforeCurrent := reservedAmount
-		if pendingRefund != nil {
-			reservedMoney, moneyErr := parseRefundMoney(reservedAmount, transaction.Currency)
-			if moneyErr != nil {
-				return moneyErr
-			}
-			pendingMoney, moneyErr := parseRefundMoney(pendingRefund.Amount, transaction.Currency)
-			if moneyErr != nil {
-				return moneyErr
-			}
-			reservedBeforeCurrentMoney, moneyErr := subtractRefundAmounts(reservedMoney, pendingMoney)
-			if moneyErr != nil {
-				return moneyErr
-			}
-			reservedBeforeCurrent, err = majorAmount(reservedBeforeCurrentMoney)
-			if err != nil {
-				return err
-			}
-		}
-		transactionMoney, moneyErr := transaction.AmountMoney()
+		reservedBeforeCurrentMoney, moneyErr := domainmoney.New(reservedAmountMinor, transaction.Currency)
 		if moneyErr != nil {
 			return moneyErr
 		}
-		reservedBeforeCurrentMoney, moneyErr := parseRefundMoney(reservedBeforeCurrent, transaction.Currency)
+		if pendingRefund != nil {
+			pendingMoney, moneyErr := pendingRefund.AmountMoney()
+			if moneyErr != nil {
+				return moneyErr
+			}
+			if !strings.EqualFold(pendingMoney.Currency().String(), transaction.Currency) {
+				return fmt.Errorf("pending refund currency %s does not match transaction currency %s", pendingMoney.Currency(), transaction.Currency)
+			}
+			reservedBeforeCurrentMoney, moneyErr = subtractRefundAmounts(reservedBeforeCurrentMoney, pendingMoney)
+			if moneyErr != nil {
+				return moneyErr
+			}
+		}
+		transactionMoney, moneyErr := transaction.AmountMoney()
 		if moneyErr != nil {
 			return moneyErr
 		}
@@ -962,31 +963,30 @@ func (s *PaymentService) RecordVerifiedGatewayRefund(input VerifiedGatewayRefund
 		if remainingErr != nil {
 			return remainingErr
 		}
-		remainingAmount, remainingAmountErr := majorAmount(remainingAmountMoney)
-		if remainingAmountErr != nil {
-			return remainingAmountErr
-		}
-		providerRefundMoney := input.ProviderRefundAmount
 		exceeds, compareErr := refundAmountExceedsInMinorUnits(providerRefundMoney, remainingAmountMoney)
 		if compareErr != nil {
 			return compareErr
 		}
 		if exceeds {
-			return fmt.Errorf("provider refund amount %.2f exceeds refundable amount %.2f", providerRefundAmount, remainingAmount)
+			return fmt.Errorf(
+				"provider refund amount %s exceeds refundable amount %s",
+				formatRefundMoney(providerRefundMoney),
+				formatRefundMoney(remainingAmountMoney),
+			)
 		}
 		if err := validateHistoricalRefundFXCap(fxSnapshot, transaction, providerRefundMoney, reservedBeforeCurrentMoney); err != nil {
 			return err
 		}
 		if pendingRefund != nil {
 			wasCompleted := pendingRefund.Status == "completed"
-			requestedMoney := input.RequestedRefundAmount
-			if requestedRefundAmount <= 0 {
+			requestedMoney := requestedRefundMoney
+			if requestedRefundMoney.AmountMinor() <= 0 {
 				requestedMoney, err = domainmoney.New(0, transaction.Currency)
 				if err != nil {
 					return err
 				}
 			}
-			pendingRequestedMoney, moneyErr := parseRefundMoney(pendingRefund.RequestedAmount, transaction.Currency)
+			pendingRequestedMoney, moneyErr := pendingRefund.RequestedAmountMoney()
 			if moneyErr != nil {
 				return moneyErr
 			}
@@ -994,17 +994,17 @@ func (s *PaymentService) RecordVerifiedGatewayRefund(input VerifiedGatewayRefund
 			if compareErr != nil {
 				return compareErr
 			}
-			if requestedRefundAmount > 0 && !requestedMismatch {
+			if requestedRefundMoney.AmountMinor() > 0 && !requestedMismatch {
 				return fmt.Errorf(
-					"requested refund amount %.2f does not match local requested refund amount %.2f",
-					requestedRefundAmount,
-					pendingRefund.RequestedAmount,
+					"requested refund amount %s does not match local requested refund amount %s",
+					formatRefundMoney(requestedRefundMoney),
+					formatRefundMoney(pendingRequestedMoney),
 				)
 			}
 			if err := prepareRefundLoyaltySettlementInTx(repos, o, pendingRefund); err != nil {
 				return err
 			}
-			pendingAmountMoney, moneyErr := parseRefundMoney(pendingRefund.Amount, transaction.Currency)
+			pendingAmountMoney, moneyErr := pendingRefund.AmountMoney()
 			if moneyErr != nil {
 				return moneyErr
 			}
@@ -1013,30 +1013,35 @@ func (s *PaymentService) RecordVerifiedGatewayRefund(input VerifiedGatewayRefund
 				return compareErr
 			}
 			if !amountMismatch {
-				return fmt.Errorf("provider refund amount %.2f does not match local net refund amount %.2f", providerRefundAmount, pendingRefund.Amount)
+				return fmt.Errorf(
+					"provider refund amount %s does not match local net refund amount %s",
+					formatRefundMoney(providerRefundMoney),
+					formatRefundMoney(pendingAmountMoney),
+				)
 			}
 			pendingRefund.Status = "completed"
 			pendingRefund.RefundID = &refundID
 			pendingRefund.GatewayResponse = input.GatewayResponse
 			pendingRefund.CompletedAt = &now
 			pendingRefund.FXSnapshotData = currencydomain.OrderFXSnapshotJSON(fxSnapshot)
+			if err := applyRefundSettlementFacts(
+				pendingRefund,
+				fxSnapshot,
+				providerRefundMoney,
+				input.SettlementAmountMinor,
+				input.SettlementCurrency,
+				input.SettlementBalanceTransactionID,
+			); err != nil {
+				return err
+			}
 			if err := repos.Payment.UpdateRefund(pendingRefund); err != nil {
 				return err
 			}
 			if err := finalizeRefundLoyaltySettlementInTx(repos, o, pendingRefund); err != nil {
 				return err
 			}
-			if err := restoreGiftCardRefundInTx(
-				repos.Coupon,
-				pendingRefund.OrderID,
-				pendingRefund.ID,
-				pendingRefund.GiftCardRefundAmount,
-				"gateway refund webhook completed",
-			); err != nil {
-				return err
-			}
-			if !wasCompleted {
-				productIDs, err := restoreRefundLineItemStock(repos, pendingRefund.LineItems, now)
+			if !wasCompleted && refundCanRestockPhysicalItems(o) {
+				productIDs, err := restoreRefundLineItemStock(repos, o, pendingRefund.LineItems, now)
 				if err != nil {
 					return err
 				}
@@ -1081,22 +1086,26 @@ func (s *PaymentService) RecordVerifiedGatewayRefund(input VerifiedGatewayRefund
 					return execution.Status
 				}(),
 				now,
+				o.OrderNumber,
 			); err != nil {
 				return err
 			}
+			if err := releaseRefundPendingHoldIfClear(repos, pendingRefund.OrderID); err != nil {
+				return err
+			}
 		} else {
-			requestedAmount := roundRefundMoney(requestedRefundAmount, transaction.Currency)
-			if requestedAmount <= 0 {
-				requestedAmount = roundRefundMoney(providerRefundAmount, transaction.Currency)
+			requestedMoney := requestedRefundMoney
+			if requestedMoney.AmountMinor() <= 0 {
+				requestedMoney = providerRefundMoney
 			}
 			refund := &payment.Refund{
-				OrderID:         transaction.OrderID,
-				TransactionID:   transaction.ID,
-				Currency:        transaction.Currency,
-				RefundID:        nil,
-				Amount:          roundRefundMoney(providerRefundAmount, transaction.Currency),
-				RequestedAmount: requestedAmount,
-				Status:          "completed",
+				OrderID:              transaction.OrderID,
+				TransactionID:        transaction.ID,
+				Currency:             transaction.Currency,
+				RefundID:             nil,
+				AmountMinor:          providerRefundMoney.AmountMinor(),
+				RequestedAmountMinor: providerRefundMoney.AmountMinor(),
+				Status:               "completed",
 				Reason: func() string {
 					if duplicatePaidRefund {
 						return duplicatePaidRefundReason
@@ -1107,22 +1116,22 @@ func (s *PaymentService) RecordVerifiedGatewayRefund(input VerifiedGatewayRefund
 				FXSnapshotData:  currencydomain.OrderFXSnapshotJSON(fxSnapshot),
 				CompletedAt:     &now,
 			}
-			if requestedRefundAmount > 0 {
-				requestedMoney, moneyErr := parseRefundMoney(requestedRefundAmount, transaction.Currency)
-				if moneyErr != nil {
-					return moneyErr
-				}
+			refund.AmountMinor = providerRefundMoney.AmountMinor()
+			refund.RequestedAmountMinor = providerRefundMoney.AmountMinor()
+			if requestedMoney.AmountMinor() > 0 {
 				transactionMoney, moneyErr := transaction.AmountMoney()
 				if moneyErr != nil {
 					return moneyErr
 				}
-				reservedMoney, moneyErr := parseRefundMoney(reservedAmount, transaction.Currency)
+				reservedMinor, queryErr := repos.Payment.SumRefundAmountMinorByTransactionID(transaction.ID, "pending", "completed")
+				if queryErr != nil {
+					return queryErr
+				}
+				reservedMoney, moneyErr := domainmoney.New(reservedMinor, transaction.Currency)
 				if moneyErr != nil {
 					return moneyErr
 				}
 				split, err := calculateRefundPaymentSplit(
-					repos,
-					o.ID,
 					requestedMoney,
 					transactionMoney,
 					reservedMoney,
@@ -1130,16 +1139,20 @@ func (s *PaymentService) RecordVerifiedGatewayRefund(input VerifiedGatewayRefund
 				if err != nil {
 					return err
 				}
-				gatewayAmount, amountErr := split.GatewayAmount.MajorFloat()
-				if amountErr != nil {
-					return amountErr
-				}
-				giftCardAmount, amountErr := split.GiftCardAmount.MajorFloat()
-				if amountErr != nil {
-					return amountErr
-				}
-				refund.Amount = gatewayAmount
-				refund.GiftCardRefundAmount = giftCardAmount
+				refund.RequestedAmountMinor = requestedMoney.AmountMinor()
+				refund.AmountMinor = split.GatewayAmount.AmountMinor()
+			}
+			if refundMoney, moneyErr := refund.AmountMoney(); moneyErr != nil {
+				return moneyErr
+			} else if err := applyRefundSettlementFacts(
+				refund,
+				fxSnapshot,
+				refundMoney,
+				input.SettlementAmountMinor,
+				input.SettlementCurrency,
+				input.SettlementBalanceTransactionID,
+			); err != nil {
+				return err
 			}
 			if err := repos.Payment.CreateRefund(refund); err != nil {
 				return err
@@ -1147,7 +1160,7 @@ func (s *PaymentService) RecordVerifiedGatewayRefund(input VerifiedGatewayRefund
 			if err := prepareRefundLoyaltySettlementInTx(repos, o, refund); err != nil {
 				return err
 			}
-			refundAmountMoney, moneyErr := parseRefundMoney(refund.Amount, transaction.Currency)
+			refundAmountMoney, moneyErr := refund.AmountMoney()
 			if moneyErr != nil {
 				return moneyErr
 			}
@@ -1157,9 +1170,9 @@ func (s *PaymentService) RecordVerifiedGatewayRefund(input VerifiedGatewayRefund
 			}
 			if !amountMismatch {
 				return fmt.Errorf(
-					"provider refund amount %.2f does not match loyalty-adjusted local net refund amount %.2f",
-					providerRefundAmount,
-					refund.Amount,
+					"provider refund amount %s does not match local net refund amount %s",
+					formatRefundMoney(providerRefundMoney),
+					formatRefundMoney(refundAmountMoney),
 				)
 			}
 			refund.RefundID = &refundID
@@ -1167,15 +1180,6 @@ func (s *PaymentService) RecordVerifiedGatewayRefund(input VerifiedGatewayRefund
 				return err
 			}
 			if err := finalizeRefundLoyaltySettlementInTx(repos, o, refund); err != nil {
-				return err
-			}
-			if err := restoreGiftCardRefundInTx(
-				repos.Coupon,
-				refund.OrderID,
-				refund.ID,
-				refund.GiftCardRefundAmount,
-				"gateway refund webhook completed",
-			); err != nil {
 				return err
 			}
 			if err := enqueuePaymentRefundCompletedOutboxEvent(
@@ -1186,16 +1190,16 @@ func (s *PaymentService) RecordVerifiedGatewayRefund(input VerifiedGatewayRefund
 				input.RefundID,
 				"",
 				now,
+				o.OrderNumber,
 			); err != nil {
+				return err
+			}
+			if err := releaseRefundPendingHoldIfClear(repos, refund.OrderID); err != nil {
 				return err
 			}
 		}
 
-		completedAmount, err := repos.Payment.SumRefundTotalAmountByTransactionID(transaction.ID, transaction.Currency, "completed")
-		if err != nil {
-			return err
-		}
-		giftCardPaymentAmount, err := sumGiftCardUsageForOrderInTx(repos.Coupon, o.ID)
+		completedAmountMinor, err := repos.Payment.SumRefundTotalAmountMinorByTransactionID(transaction.ID, "completed")
 		if err != nil {
 			return err
 		}
@@ -1203,19 +1207,11 @@ func (s *PaymentService) RecordVerifiedGatewayRefund(input VerifiedGatewayRefund
 		if err != nil {
 			return err
 		}
-		giftCardPaymentMoney, err := parseRefundMoney(giftCardPaymentAmount, transaction.Currency)
+		completedMoney, err := domainmoney.New(completedAmountMinor, transaction.Currency)
 		if err != nil {
 			return err
 		}
-		transactionRefundTarget, err := addRefundAmounts(transactionMoney, giftCardPaymentMoney)
-		if err != nil {
-			return err
-		}
-		completedMoney, err := parseRefundMoney(completedAmount, transaction.Currency)
-		if err != nil {
-			return err
-		}
-		transactionFullyRefunded, compareErr := refundAmountAtLeastInMinorUnits(completedMoney, transactionRefundTarget)
+		transactionFullyRefunded, compareErr := refundAmountAtLeastInMinorUnits(completedMoney, transactionMoney)
 		if compareErr != nil {
 			return compareErr
 		}
@@ -1227,15 +1223,15 @@ func (s *PaymentService) RecordVerifiedGatewayRefund(input VerifiedGatewayRefund
 		}
 
 		if !duplicatePaidRefund {
-			orderRefundedAmount, err := repos.Payment.SumRefundTotalAmountByOrderID(o.ID, o.Currency, "completed")
+			orderRefundedAmountMinor, err := repos.Payment.SumRefundTotalAmountMinorByOrderID(o.ID, "completed")
 			if err != nil {
 				return err
 			}
-			orderRefundedMoney, err := parseRefundMoney(orderRefundedAmount, o.Currency)
+			orderRefundedMoney, err := domainmoney.New(orderRefundedAmountMinor, o.Currency)
 			if err != nil {
 				return err
 			}
-			orderTotalMoney, err := parseRefundMoney(o.TotalAmount, o.Currency)
+			orderTotalMoney, err := o.TotalMoney()
 			if err != nil {
 				return err
 			}
@@ -1247,8 +1243,10 @@ func (s *PaymentService) RecordVerifiedGatewayRefund(input VerifiedGatewayRefund
 				if err := repos.Order.UpdatePaymentStatus(o.ID, "refunded"); err != nil {
 					return err
 				}
-				if err := repos.Order.UpdateStatus(o.ID, o.Status, "refunded"); err != nil {
-					return err
+				if refundCanRestockPhysicalItems(o) {
+					if err := repos.Order.UpdateStatus(o.ID, o.Status, "refunded"); err != nil {
+						return err
+					}
 				}
 				return enqueueReferralOrderInvalidatedOutboxEvent(
 					repos.Outbox,
@@ -1294,9 +1292,8 @@ func (s *PaymentService) RecordGatewayRefundFailure(input VerifiedGatewayRefundI
 	if message == "" {
 		message = "payment provider reported a refund failure"
 	}
-	providerRefundAmount, _, amountErr := optionalRefundMoneyMajor(input.ProviderRefundAmount)
-	if amountErr != nil {
-		return amountErr
+	if err := input.ProviderRefundAmount.Validate(); err != nil {
+		return err
 	}
 
 	return s.txManager.WithinTx(func(repos repository.TxRepositories) error {
@@ -1323,6 +1320,13 @@ func (s *PaymentService) RecordGatewayRefundFailure(input VerifiedGatewayRefundI
 		now := time.Now().UTC()
 		var refund *payment.Refund
 		refund, err = repos.Payment.FindPendingRefundByTransactionIDForUpdate(transaction.ID)
+		if repository.IsRecordNotFound(err) {
+			// A synchronous gateway failure now marks the local intent failed so
+			// its amount is released. If the provider reports that same failure
+			// asynchronously, enrich the failed intent instead of creating a
+			// duplicate refund row.
+			refund, err = repos.Payment.FindFailedRefundByTransactionIDForUpdate(transaction.ID)
+		}
 		if err == nil {
 			if err := releaseRefundLoyaltyReservationInTx(repos, o, refund); err != nil {
 				return err
@@ -1359,6 +1363,9 @@ func (s *PaymentService) RecordGatewayRefundFailure(input VerifiedGatewayRefundI
 			if err := repos.Payment.UpdateRefund(refund); err != nil {
 				return err
 			}
+			if err := releaseRefundPendingHoldIfClear(repos, refund.OrderID); err != nil {
+				return err
+			}
 			attempt := 0
 			if repos.RefundExecution != nil {
 				if execution, executionErr := repos.RefundExecution.FindByRefundIDForUpdate(refund.ID); executionErr == nil {
@@ -1393,16 +1400,16 @@ func (s *PaymentService) RecordGatewayRefundFailure(input VerifiedGatewayRefundI
 		}
 		providerRefundID := input.RefundID
 		failedRefund := &payment.Refund{
-			OrderID:         transaction.OrderID,
-			TransactionID:   transaction.ID,
-			Currency:        transaction.Currency,
-			RefundID:        &providerRefundID,
-			Amount:          roundRefundMoney(providerRefundAmount, transaction.Currency),
-			RequestedAmount: roundRefundMoney(providerRefundAmount, transaction.Currency),
-			Reason:          fmt.Sprintf("provider refund failure: %s", message),
-			Status:          "failed",
-			GatewayResponse: input.GatewayResponse,
-			FXSnapshotData:  currencydomain.OrderFXSnapshotJSON(fxSnapshot),
+			OrderID:              transaction.OrderID,
+			TransactionID:        transaction.ID,
+			Currency:             transaction.Currency,
+			RefundID:             &providerRefundID,
+			AmountMinor:          input.ProviderRefundAmount.AmountMinor(),
+			RequestedAmountMinor: input.ProviderRefundAmount.AmountMinor(),
+			Reason:               fmt.Sprintf("provider refund failure: %s", message),
+			Status:               "failed",
+			GatewayResponse:      input.GatewayResponse,
+			FXSnapshotData:       currencydomain.OrderFXSnapshotJSON(fxSnapshot),
 		}
 		if err := repos.Payment.CreateRefund(failedRefund); err != nil {
 			return err
@@ -1424,7 +1431,7 @@ func (s *PaymentService) RecordGatewayRefundFailure(input VerifiedGatewayRefundI
 // reconcileExistingGatewayRefund repairs the local execution/after-sales
 // state when a duplicate provider webhook arrives after an earlier webhook
 // already completed the refund row. This is intentionally idempotent: it
-// does not re-run loyalty, gift-card, stock, transaction, or order effects.
+// does not re-run loyalty, stock, transaction, or order effects.
 func (s *PaymentService) reconcileExistingGatewayRefund(
 	input VerifiedGatewayRefundInput,
 	refund *payment.Refund,
@@ -1442,6 +1449,47 @@ func (s *PaymentService) reconcileExistingGatewayRefund(
 		}
 		if lockedRefund.Status != "completed" {
 			return nil
+		}
+		// A replay can contain an expanded balance transaction that was absent
+		// from the first webhook delivery. Enrich the already-completed refund
+		// without rerunning any monetary side effects. Older rows may not have a
+		// historical snapshot; those still retain the provider settlement fact,
+		// while FX gain/loss remains zero because it cannot be reconstructed.
+		if input.SettlementAmountMinor != 0 && strings.TrimSpace(input.SettlementCurrency) != "" {
+			refundMoney, moneyErr := lockedRefund.AmountMoney()
+			if moneyErr != nil {
+				return moneyErr
+			}
+			if snapshot, snapshotErr := currencydomain.ParseOrderFXSnapshot(lockedRefund.FXSnapshotData); snapshotErr == nil {
+				if err := applyRefundSettlementFacts(
+					lockedRefund,
+					snapshot,
+					refundMoney,
+					input.SettlementAmountMinor,
+					input.SettlementCurrency,
+					input.SettlementBalanceTransactionID,
+				); err != nil {
+					return err
+				}
+			} else {
+				settlementCode, codeErr := currencydomain.ParseCode(input.SettlementCurrency)
+				if codeErr != nil {
+					return fmt.Errorf("invalid settlement currency: %w", codeErr)
+				}
+				settlementAmount := input.SettlementAmountMinor
+				if settlementAmount < 0 {
+					if settlementAmount == -1<<63 {
+						return errors.New("provider settlement amount overflows")
+					}
+					settlementAmount = -settlementAmount
+				}
+				lockedRefund.SettlementAmountMinor = settlementAmount
+				lockedRefund.SettlementCurrency = settlementCode.String()
+				lockedRefund.SettlementBalanceTransactionID = strings.TrimSpace(input.SettlementBalanceTransactionID)
+			}
+			if err := repos.Payment.UpdateRefund(lockedRefund); err != nil {
+				return err
+			}
 		}
 		execution, err := markRefundExecutionSucceededInTx(
 			repos,

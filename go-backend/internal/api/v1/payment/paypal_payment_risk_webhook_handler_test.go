@@ -8,7 +8,6 @@ import (
 	"testing"
 	"time"
 
-	coupondomain "commerce-platform/internal/domain/coupon"
 	orderdomain "commerce-platform/internal/domain/order"
 	"commerce-platform/internal/domain/orderevidence"
 	paymentdomain "commerce-platform/internal/domain/payment"
@@ -42,7 +41,7 @@ func TestPayPalDisputeHelpersReadTransactionAmountAndTimestamp(t *testing.T) {
 
 	amount, currency := paypalDisputeAmount(resource)
 
-	require.InDelta(t, 249.90, amount, 0.000001)
+	require.Equal(t, "249.90", amount)
 	require.Equal(t, "USD", currency)
 	require.Equal(t, "7AB12345CD678901E", paypalDisputePaymentID(resource))
 	require.Equal(t, "ORD-PAYPAL-1", paypalDisputeOrderReference(resource))
@@ -55,8 +54,8 @@ func TestPayPalDisputeHelpersReadTransactionAmountAndTimestamp(t *testing.T) {
 
 func TestRecordPayPalDisputeRiskEventOnlyRecordsAndQueuesManualEvidenceReview(t *testing.T) {
 	db, handler, submitter := newPayPalDisputeWebhookHarness(t)
-	orderRecord := seedPayPalDisputeWebhookOrder(t, db, "ORD-PAYPAL-WEBHOOK-1", 249.90, "DHL999")
-	seedPayPalDisputeWebhookTransaction(t, db, orderRecord.ID, "PAYPAL-CAPTURE-WEBHOOK-1", 249.90)
+	orderRecord := seedPayPalDisputeWebhookOrder(t, db, "ORD-PAYPAL-WEBHOOK-1", 24990, "DHL999")
+	seedPayPalDisputeWebhookTransaction(t, db, orderRecord.ID, "PAYPAL-CAPTURE-WEBHOOK-1", 24990)
 	seedPayPalDisputeWebhookTracking(t, db, orderRecord.ID, "DHL999")
 
 	resource := map[string]interface{}{
@@ -89,7 +88,7 @@ func TestRecordPayPalDisputeRiskEventOnlyRecordsAndQueuesManualEvidenceReview(t 
 
 	recorder := httptest.NewRecorder()
 	context, _ := gin.CreateTestContext(recorder)
-	context.Request = httptest.NewRequest(http.MethodPost, "/api/v1/payment/webhooks/paypal", nil)
+	context.Request = httptest.NewRequest(http.MethodPost, "/api/v1/payments/paypal/webhook", nil)
 
 	handled, err := handler.recordPayPalDisputeRiskEvent(context, event, payload)
 
@@ -152,8 +151,6 @@ func newPayPalDisputeWebhookHarness(t *testing.T) (*gorm.DB, *Handler, *fakePayP
 	require.NoError(t, db.AutoMigrate(
 		&orderdomain.Order{},
 		&orderdomain.OrderItem{},
-		&coupondomain.GiftCard{},
-		&coupondomain.GiftCardTransaction{},
 		&paymentdomain.Transaction{},
 		&paymentdomain.Refund{},
 		&paymentdomain.RefundLineItem{},
@@ -185,7 +182,7 @@ func newPayPalDisputeWebhookHarness(t *testing.T) (*gorm.DB, *Handler, *fakePayP
 	return db, handler, submitter
 }
 
-func seedPayPalDisputeWebhookOrder(t *testing.T, db *gorm.DB, orderNumber string, total float64, trackingNumber string) orderdomain.Order {
+func seedPayPalDisputeWebhookOrder(t *testing.T, db *gorm.DB, orderNumber string, totalMinor int64, trackingNumber string) orderdomain.Order {
 	t.Helper()
 	paidAt := time.Date(2026, time.July, 29, 9, 0, 0, 0, time.UTC)
 	shippedAt := time.Date(2026, time.July, 30, 9, 0, 0, 0, time.UTC)
@@ -198,13 +195,10 @@ func seedPayPalDisputeWebhookOrder(t *testing.T, db *gorm.DB, orderNumber string
 		PaymentStatus:       "paid",
 		ShippingMethod:      "standard",
 		ShippingStatus:      "delivered",
-		TrackingNumber:      trackingNumber,
-		ProviderCarrierCode: "DHL",
-		ProviderCarrierName: "DHL",
-		SubtotalAmount:      total,
-		TotalAmount:         total,
+		SubtotalAmountMinor: totalMinor,
+		TotalAmountMinor:    totalMinor,
 		Currency:            "USD",
-		PaymentAmount:       total,
+		PaymentAmountMinor:  totalMinor,
 		PaymentCurrency:     "USD",
 		PaidAt:              &paidAt,
 		ShippedAt:           &shippedAt,
@@ -230,14 +224,14 @@ func seedPayPalDisputeWebhookOrder(t *testing.T, db *gorm.DB, orderNumber string
 		},
 		Items: []orderdomain.OrderItem{
 			{
-				ProductID:   1,
-				VariantID:   &variantID,
-				ProductName: "Carbon wheelset",
-				SKU:         "C50-DT240",
-				Quantity:    1,
-				Price:       total,
-				Subtotal:    total,
-				Total:       total,
+				ProductID:     1,
+				VariantID:     &variantID,
+				ProductName:   "Carbon wheelset",
+				SKU:           "C50-DT240",
+				Quantity:      1,
+				PriceMinor:    totalMinor,
+				SubtotalMinor: totalMinor,
+				TotalMinor:    totalMinor,
 			},
 		},
 	}
@@ -245,14 +239,14 @@ func seedPayPalDisputeWebhookOrder(t *testing.T, db *gorm.DB, orderNumber string
 	return orderRecord
 }
 
-func seedPayPalDisputeWebhookTransaction(t *testing.T, db *gorm.DB, orderID uint, transactionID string, amount float64) {
+func seedPayPalDisputeWebhookTransaction(t *testing.T, db *gorm.DB, orderID uint, transactionID string, amountMinor int64) {
 	t.Helper()
 	completedAt := time.Date(2026, time.July, 29, 9, 1, 0, 0, time.UTC)
 	require.NoError(t, db.Create(&paymentdomain.Transaction{
 		OrderID:       orderID,
 		TransactionID: transactionID,
 		PaymentMethod: "paypal",
-		Amount:        amount,
+		AmountMinor:   amountMinor,
 		Currency:      "USD",
 		Status:        "completed",
 		CompletedAt:   &completedAt,

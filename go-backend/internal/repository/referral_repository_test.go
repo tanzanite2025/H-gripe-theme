@@ -106,10 +106,12 @@ func TestReferralAdminLedgerFiltersAndStats(t *testing.T) {
 	require.NoError(t, db.Create(identity).Error)
 	flags, err := json.Marshal([]map[string]any{{"type": "shipping_address_match", "level": "high"}})
 	require.NoError(t, err)
+	createdAt := time.Date(2026, 9, 10, 12, 0, 0, 0, time.UTC)
 	record := &loyalty.ReferralRecord{
 		ReferralIdentityID: identity.ID, ProgramConfigID: config.ID, ReferrerID: referrer.ID, RefereeID: &referee.ID,
 		ReferralCodeSnapshot: identity.ReferralCode, AttributionSource: "link", Currency: "USD", OrderAmountMinor: 24000,
 		Status: loyalty.ReferralStatusVesting, RecordVersion: 1, ExpiresAt: time.Now().UTC().Add(24 * time.Hour), RiskFlags: flags,
+		CreatedAt: createdAt,
 	}
 	require.NoError(t, db.Create(record).Error)
 	repo := NewReferralRepository(db)
@@ -119,13 +121,59 @@ func TestReferralAdminLedgerFiltersAndStats(t *testing.T) {
 	require.Len(t, items, 1)
 	assert.Equal(t, record.ID, items[0].ID)
 
-	stats, err := repo.AdminStats()
+	stats, err := repo.AdminStats(ReferralAdminFilters{})
 	require.NoError(t, err)
 	assert.Equal(t, int64(1), stats.TotalReferrals)
 	assert.Equal(t, int64(1), stats.ConvertedOrders)
 	assert.Equal(t, int64(24000), stats.AttributedGMVMinor)
 	assert.Equal(t, int64(1250), stats.PendingVestingPoints)
 	assert.Equal(t, int64(1), stats.FraudBlockedCount)
+
+	from := createdAt.Add(-time.Minute)
+	to := createdAt.Add(time.Minute)
+	items, total, err = repo.ListAdminRecords(ReferralAdminFilters{From: &from, To: &to}, 1, 20)
+	require.NoError(t, err)
+	assert.Equal(t, int64(1), total)
+	assert.Len(t, items, 1)
+
+	outsideFrom := createdAt.Add(time.Minute)
+	filteredStats, err := repo.AdminStats(ReferralAdminFilters{From: &outsideFrom})
+	require.NoError(t, err)
+	assert.Equal(t, int64(0), filteredStats.TotalReferrals)
+	assert.Equal(t, int64(0), filteredStats.AttributedGMVMinor)
+}
+
+func TestCountRecentBindingsByIPSubnetHashExcludesInvalidatedRecords(t *testing.T) {
+	db := newReferralRepositoryTestDB(t)
+	require.NoError(t, db.AutoMigrate(&loyalty.ReferralRecord{}))
+	now := time.Date(2026, 9, 10, 12, 0, 0, 0, time.UTC)
+	for index, status := range []string{
+		loyalty.ReferralStatusPending,
+		loyalty.ReferralStatusOrdered,
+		loyalty.ReferralStatusVesting,
+		loyalty.ReferralStatusSettled,
+		loyalty.ReferralStatusExpired,
+		loyalty.ReferralStatusRevoked,
+		loyalty.ReferralStatusReversed,
+	} {
+		record := &loyalty.ReferralRecord{
+			ReferralIdentityID:   uint(index + 1),
+			ProgramConfigID:      1,
+			ReferrerID:           1,
+			ReferralCodeSnapshot: fmt.Sprintf("TEST%04d", index),
+			AttributionSource:    "link",
+			ClientIPSubnetHash:   "subnet-hash",
+			Currency:             "USD",
+			Status:               status,
+			RecordVersion:        1,
+			ExpiresAt:            now.Add(time.Hour),
+			CreatedAt:            now,
+		}
+		require.NoError(t, db.Create(record).Error)
+	}
+	count, err := NewReferralRepository(db).CountRecentBindingsByIPSubnetHash("subnet-hash", now.Add(-time.Hour))
+	require.NoError(t, err)
+	assert.Equal(t, int64(4), count)
 }
 
 func newReferralRepositoryTestDB(t *testing.T) *gorm.DB {
@@ -144,7 +192,8 @@ func referralProgramConfigFixture(version int) *loyalty.ReferralProgramConfig {
 		Currency:                "USD",
 		MinOrderAmountMinor:     20000,
 		ReferrerRewardPoints:    1000,
-		RefereeBenefitType:      loyalty.ReferralBenefitNone,
+		RefereeBenefitType:      loyalty.ReferralBenefitPoints,
+		RefereeBenefitValue:     50,
 		VestingPeriodDays:       30,
 		UndeliveredFallbackDays: 45,
 		AttributionTTLDays:      30,

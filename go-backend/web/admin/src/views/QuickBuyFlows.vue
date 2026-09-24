@@ -687,7 +687,7 @@ const previewProductImage = (product: QuickBuyPreviewProduct) => {
 const previewProductName = (product: QuickBuyPreviewProduct) => product.name || product.title || product.sku || `#${product.id}`
 
 const previewProductPrice = (product: QuickBuyPreviewProduct) => {
-  const amount = Number(product.display_price?.amount ?? product.sale_price ?? product.price ?? 0)
+  const amount = Number(product.display_price?.amount_decimal ?? product.sale_price_decimal ?? product.price_decimal ?? 0)
   const currency = String(product.display_price?.currency || product.currency || 'USD')
   if (!amount) return ''
   try {

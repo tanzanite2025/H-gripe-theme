@@ -18,18 +18,17 @@ type ProductSupplierCostRecordHandler struct {
 }
 
 type productSupplierCostRecordDetailsRequest struct {
-	UnitCost                *float64 `json:"unit_cost"`
-	LegacyUnitCost          *float64 `json:"purchase_price"`
-	Currency                string   `json:"currency"`
-	SupplierName            string   `json:"supplier_name"`
-	SupplierContactName     string   `json:"supplier_contact_name"`
-	SupplierPhone           string   `json:"supplier_phone"`
-	SupplierEmail           string   `json:"supplier_email"`
-	LeadTimeDays            int      `json:"lead_time_days"`
-	MinimumOrderQuantity    int      `json:"minimum_order_quantity"`
-	InboundShippingUnitCost float64  `json:"inbound_shipping_unit_cost"`
-	PackagingUnitCost       float64  `json:"packaging_unit_cost"`
-	OtherUnitCost           float64  `json:"other_unit_cost"`
+	UnitCostMinor                *int64 `json:"unit_cost_minor"`
+	Currency                     string `json:"currency"`
+	SupplierName                 string `json:"supplier_name"`
+	SupplierContactName          string `json:"supplier_contact_name"`
+	SupplierPhone                string `json:"supplier_phone"`
+	SupplierEmail                string `json:"supplier_email"`
+	LeadTimeDays                 int    `json:"lead_time_days"`
+	MinimumOrderQuantity         int    `json:"minimum_order_quantity"`
+	InboundShippingUnitCostMinor int64  `json:"inbound_shipping_unit_cost_minor"`
+	PackagingUnitCostMinor       int64  `json:"packaging_unit_cost_minor"`
+	OtherUnitCostMinor           int64  `json:"other_unit_cost_minor"`
 }
 
 type productSupplierCostRecordCreateRequest struct {
@@ -206,25 +205,18 @@ func toProductSupplierCostRecordUpdateInput(request productSupplierCostRecordUpd
 
 func toProductSupplierCostRecordDetailsInput(request productSupplierCostRecordDetailsRequest) service.ProductSupplierCostRecordDetailsInput {
 	return service.ProductSupplierCostRecordDetailsInput{
-		UnitCost:                request.supplierUnitCost(),
-		Currency:                request.Currency,
-		SupplierName:            request.SupplierName,
-		SupplierContactName:     request.SupplierContactName,
-		SupplierPhone:           request.SupplierPhone,
-		SupplierEmail:           request.SupplierEmail,
-		LeadTimeDays:            request.LeadTimeDays,
-		MinimumOrderQuantity:    request.MinimumOrderQuantity,
-		InboundShippingUnitCost: request.InboundShippingUnitCost,
-		PackagingUnitCost:       request.PackagingUnitCost,
-		OtherUnitCost:           request.OtherUnitCost,
+		UnitCostMinor:                request.UnitCostMinor,
+		Currency:                     request.Currency,
+		SupplierName:                 request.SupplierName,
+		SupplierContactName:          request.SupplierContactName,
+		SupplierPhone:                request.SupplierPhone,
+		SupplierEmail:                request.SupplierEmail,
+		LeadTimeDays:                 request.LeadTimeDays,
+		MinimumOrderQuantity:         request.MinimumOrderQuantity,
+		InboundShippingUnitCostMinor: request.InboundShippingUnitCostMinor,
+		PackagingUnitCostMinor:       request.PackagingUnitCostMinor,
+		OtherUnitCostMinor:           request.OtherUnitCostMinor,
 	}
-}
-
-func (request productSupplierCostRecordDetailsRequest) supplierUnitCost() *float64 {
-	if request.UnitCost != nil {
-		return request.UnitCost
-	}
-	return request.LegacyUnitCost
 }
 
 func respondProductSupplierCostRecordError(c *gin.Context, err error) {

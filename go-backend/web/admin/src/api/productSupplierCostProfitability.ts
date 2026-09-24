@@ -14,15 +14,15 @@ export interface ProfitabilityRecord {
   product_code: string
   product_name: string
   currency: string
-  list_price: number
-  sale_price?: number
-  effective_selling_price: number
-  purchase_price: number
-  inbound_shipping_unit_cost: number
-  packaging_unit_cost: number
-  other_unit_cost: number
-  landed_cost: number
-  gross_profit: number
+  list_price_minor: number
+  sale_price_minor?: number
+  effective_selling_price_minor: number
+  unit_cost_minor: number
+  inbound_shipping_unit_cost_minor: number
+  packaging_unit_cost_minor: number
+  other_unit_cost_minor: number
+  landed_cost_minor: number
+  gross_profit_minor: number
   gross_margin_bps: number
   calculation_status: string
   formula_version: string
@@ -46,13 +46,13 @@ export interface ProfitabilityItemPayload {
   product_name: string
   currency: string
   cost_currency?: string
-  list_price: number
-  sale_price?: number | null
-  unit_cost?: number | null
+  list_price_minor: number
+  sale_price_minor?: number | null
+  unit_cost_minor?: number | null
   unit_cost_known: boolean
-  inbound_shipping_unit_cost: number
-  packaging_unit_cost: number
-  other_unit_cost: number
+  inbound_shipping_unit_cost_minor: number
+  packaging_unit_cost_minor: number
+  other_unit_cost_minor: number
   supplier_cost_details?: ProfitabilitySupplierCostDetailsPayload
 }
 
@@ -64,15 +64,15 @@ export interface ProfitabilityPreviewResult {
   status: string
   formula_version: string
   warnings: string[]
-  list_price: number
-  sale_price?: number
-  effective_selling_price: number
-  purchase_price?: number
-  inbound_shipping_unit_cost: number
-  packaging_unit_cost: number
-  other_unit_cost: number
-  landed_cost?: number
-  gross_profit?: number
+  list_price_minor: number
+  sale_price_minor?: number
+  effective_selling_price_minor: number
+  unit_cost_minor?: number
+  inbound_shipping_unit_cost_minor: number
+  packaging_unit_cost_minor: number
+  other_unit_cost_minor: number
+  landed_cost_minor?: number
+  gross_profit_minor?: number
   gross_margin_bps?: number
   gross_margin_percent?: number
 }
@@ -98,14 +98,14 @@ const readProfitabilityRecord = (value: unknown, endpoint: string): Profitabilit
   requireApiStringField(record, 'product_code', endpoint)
   requireApiStringField(record, 'product_name', endpoint)
   requireApiStringField(record, 'currency', endpoint)
-  requireApiNumberField(record, 'list_price', endpoint)
-  requireApiNumberField(record, 'effective_selling_price', endpoint)
-  requireApiNumberField(record, 'purchase_price', endpoint)
-  requireApiNumberField(record, 'inbound_shipping_unit_cost', endpoint)
-  requireApiNumberField(record, 'packaging_unit_cost', endpoint)
-  requireApiNumberField(record, 'other_unit_cost', endpoint)
-  requireApiNumberField(record, 'landed_cost', endpoint)
-  requireApiNumberField(record, 'gross_profit', endpoint)
+  requireApiNumberField(record, 'list_price_minor', endpoint)
+  requireApiNumberField(record, 'effective_selling_price_minor', endpoint)
+  requireApiNumberField(record, 'unit_cost_minor', endpoint)
+  requireApiNumberField(record, 'inbound_shipping_unit_cost_minor', endpoint)
+  requireApiNumberField(record, 'packaging_unit_cost_minor', endpoint)
+  requireApiNumberField(record, 'other_unit_cost_minor', endpoint)
+  requireApiNumberField(record, 'landed_cost_minor', endpoint)
+  requireApiNumberField(record, 'gross_profit_minor', endpoint)
   requireApiNumberField(record, 'gross_margin_bps', endpoint)
   requireApiStringField(record, 'calculation_status', endpoint)
   requireApiStringField(record, 'formula_version', endpoint)
@@ -123,11 +123,11 @@ const readPreviewResult = (value: unknown, endpoint: string): ProfitabilityPrevi
   requireApiStringField(result, 'cost_currency', endpoint)
   requireApiStringField(result, 'status', endpoint)
   requireApiStringField(result, 'formula_version', endpoint)
-  requireApiNumberField(result, 'list_price', endpoint)
-  requireApiNumberField(result, 'effective_selling_price', endpoint)
-  requireApiNumberField(result, 'inbound_shipping_unit_cost', endpoint)
-  requireApiNumberField(result, 'packaging_unit_cost', endpoint)
-  requireApiNumberField(result, 'other_unit_cost', endpoint)
+  requireApiNumberField(result, 'list_price_minor', endpoint)
+  requireApiNumberField(result, 'effective_selling_price_minor', endpoint)
+  requireApiNumberField(result, 'inbound_shipping_unit_cost_minor', endpoint)
+  requireApiNumberField(result, 'packaging_unit_cost_minor', endpoint)
+  requireApiNumberField(result, 'other_unit_cost_minor', endpoint)
   return {
     ...result,
     warnings: readWarnings(result.warnings),
@@ -165,8 +165,6 @@ export const productSupplierCostProfitabilityApi = {
   },
 
   async preview(items: ProfitabilityItemPayload[]): Promise<ProfitabilityPreviewResult[]> {
-    // Legacy route name is retained by the backend, but payload semantics are
-    // supplier unit cost plus profitability inputs.
     const endpoint = '/api/admin/procurement/profitability/preview'
     const body = requireApiObject(readApiBody(await axios.post(endpoint, { items }), endpoint), endpoint, 'response body')
     return requireApiArrayField(body, 'items', endpoint)
@@ -177,8 +175,6 @@ export const productSupplierCostProfitabilityApi = {
     items: ProfitabilityItemPayload[],
     requestId = '',
   ): Promise<ProfitabilityBulkUpsertResult> {
-    // Use supplier_cost_details and unit_cost. The backend accepts legacy
-    // procurement/purchase_price fields only as backwards compatibility.
     const endpoint = '/api/admin/procurement/profitability/bulk-upsert'
     const body = requireApiObject(readApiBody(await axios.post(endpoint, {
       request_id: requestId,

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"commerce-platform/internal/domain/currency"
+	domainmoney "commerce-platform/internal/domain/money"
 	paymentdomain "commerce-platform/internal/domain/payment"
 	"commerce-platform/internal/repository"
 )
@@ -22,7 +23,7 @@ type StripeDisputeInput struct {
 	StripeChargeID  string
 	PaymentIntentID string
 	OrderID         *uint
-	Amount          float64
+	AmountMinor     int64
 	Currency        string
 	Reason          string
 	Status          string
@@ -34,7 +35,7 @@ type PayPalDisputeInput struct {
 	PayPalDisputeID       string
 	ProviderPaymentID     string
 	OrderReference        string
-	Amount                float64
+	AmountMinor           int64
 	Currency              string
 	Reason                string
 	Status                string
@@ -50,7 +51,7 @@ func (s *PaymentService) RecordStripeDispute(input StripeDisputeInput) (*payment
 	if input.StripeDisputeID == "" {
 		return nil, errors.New("stripe dispute id is required")
 	}
-	if input.Amount <= 0 {
+	if input.AmountMinor <= 0 {
 		return nil, errors.New("dispute amount must be greater than zero")
 	}
 	input.Currency = currency.NormalizeCode(input.Currency)
@@ -59,6 +60,10 @@ func (s *PaymentService) RecordStripeDispute(input StripeDisputeInput) (*payment
 	}
 	if !currency.IsValidCode(input.Currency) || !currency.IsCatalogCode(input.Currency) {
 		return nil, errors.New("dispute currency must be a supported ISO 4217 code")
+	}
+	amountMoney, err := domainmoney.New(input.AmountMinor, input.Currency)
+	if err != nil || amountMoney.AmountMinor() <= 0 {
+		return nil, errors.New("dispute amount must be a valid positive monetary amount")
 	}
 	if strings.TrimSpace(input.Status) == "" {
 		input.Status = "needs_response"
@@ -69,7 +74,7 @@ func (s *PaymentService) RecordStripeDispute(input StripeDisputeInput) (*payment
 	}
 
 	var record *paymentdomain.StripeDispute
-	err := s.txManager.WithinTx(func(repos repository.TxRepositories) error {
+	err = s.txManager.WithinTx(func(repos repository.TxRepositories) error {
 		var existing *paymentdomain.StripeDispute
 		if found, err := repos.Payment.FindStripeDisputeByStripeID(input.StripeDisputeID); err == nil {
 			existing = found
@@ -130,7 +135,7 @@ func (s *PaymentService) RecordStripeDispute(input StripeDisputeInput) (*payment
 			PaymentIntentID: input.PaymentIntentID,
 			OrderID:         orderID,
 			TransactionID:   transactionID,
-			Amount:          input.Amount,
+			AmountMinor:     amountMoney.AmountMinor(),
 			Currency:        input.Currency,
 			Reason:          input.Reason,
 			Status:          input.Status,
@@ -203,6 +208,7 @@ func (s *PaymentService) RecordPayPalDispute(input PayPalDisputeInput) (*payment
 
 	var record *paymentdomain.PayPalDispute
 	err := s.txManager.WithinTx(func(repos repository.TxRepositories) error {
+		var paypalAmountMinor int64
 		var orderID *uint
 		var existing *paymentdomain.PayPalDispute
 		if found, err := repos.Payment.FindPayPalDisputeByPayPalID(input.PayPalDisputeID); err == nil {
@@ -222,8 +228,8 @@ func (s *PaymentService) RecordPayPalDispute(input PayPalDisputeInput) (*payment
 			if input.DisputeLifeCycleStage == "" {
 				input.DisputeLifeCycleStage = found.DisputeLifeCycleStage
 			}
-			if input.Amount <= 0 {
-				input.Amount = found.Amount
+			if input.AmountMinor <= 0 {
+				paypalAmountMinor = found.AmountMinor
 			}
 			if strings.TrimSpace(input.Currency) == "" {
 				input.Currency = found.Currency
@@ -244,8 +250,8 @@ func (s *PaymentService) RecordPayPalDispute(input PayPalDisputeInput) (*payment
 				} else if *orderID != transaction.OrderID {
 					return fmt.Errorf("paypal dispute order does not match payment transaction")
 				}
-				if input.Amount <= 0 {
-					input.Amount = transaction.Amount
+				if input.AmountMinor <= 0 {
+					paypalAmountMinor = transaction.AmountMinor
 				}
 				if strings.TrimSpace(input.Currency) == "" {
 					input.Currency = transaction.Currency
@@ -278,8 +284,8 @@ func (s *PaymentService) RecordPayPalDispute(input PayPalDisputeInput) (*payment
 				} else if *orderID != transaction.OrderID {
 					return fmt.Errorf("paypal dispute order does not match payment transaction")
 				}
-				if input.Amount <= 0 {
-					input.Amount = transaction.Amount
+				if input.AmountMinor <= 0 {
+					paypalAmountMinor = transaction.AmountMinor
 				}
 				if strings.TrimSpace(input.Currency) == "" {
 					input.Currency = transaction.Currency
@@ -291,7 +297,7 @@ func (s *PaymentService) RecordPayPalDispute(input PayPalDisputeInput) (*payment
 		if transactionID == nil && existing != nil {
 			transactionID = existing.TransactionID
 		}
-		if input.Amount <= 0 {
+		if input.AmountMinor <= 0 && paypalAmountMinor <= 0 {
 			return errors.New("paypal dispute amount must be greater than zero")
 		}
 		input.Currency = currency.NormalizeCode(input.Currency)
@@ -305,12 +311,19 @@ func (s *PaymentService) RecordPayPalDispute(input PayPalDisputeInput) (*payment
 			input.Status = "WAITING_FOR_SELLER_RESPONSE"
 		}
 
+		if input.AmountMinor > 0 {
+			paypalAmountMoney, amountErr := domainmoney.New(input.AmountMinor, input.Currency)
+			if amountErr != nil || paypalAmountMoney.AmountMinor() <= 0 {
+				return errors.New("paypal dispute amount must be a valid positive monetary amount")
+			}
+			paypalAmountMinor = paypalAmountMoney.AmountMinor()
+		}
 		record = &paymentdomain.PayPalDispute{
 			PayPalDisputeID:       input.PayPalDisputeID,
 			OrderID:               orderID,
 			TransactionID:         transactionID,
 			ProviderPaymentID:     input.ProviderPaymentID,
-			Amount:                input.Amount,
+			AmountMinor:           paypalAmountMinor,
 			Currency:              input.Currency,
 			Reason:                strings.TrimSpace(input.Reason),
 			Status:                strings.TrimSpace(input.Status),

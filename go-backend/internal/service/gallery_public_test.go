@@ -112,10 +112,10 @@ func TestGalleryServiceAdminProductLinksOnlyAllowActiveProducts(t *testing.T) {
 	enableGalleryProductLinkTestTables(t, db)
 
 	require.NoError(t, db.Exec(`
-		INSERT INTO products (id, sku, name, slug, locale, status, price, currency, display_prices, deleted_at)
+		INSERT INTO products (id, name, slug, locale, status, currency, deleted_at)
 		VALUES
-			(101, 'ACTIVE-101', 'Active Product', 'active-product', 'en', 'active', 100, 'USD', '[]', NULL),
-			(202, 'INACTIVE-202', 'Inactive Product', 'inactive-product', 'en', 'inactive', 100, 'USD', '[]', NULL)
+			(101, 'Active Product', 'active-product', 'en', 'active', 'USD', NULL),
+			(202, 'Inactive Product', 'inactive-product', 'en', 'inactive', 'USD', NULL)
 	`).Error)
 
 	created, err := galleryService.CreateAdminGallery(GalleryAdminCreateInput{
@@ -229,14 +229,11 @@ func enableGalleryProductLinkTestTables(t *testing.T, db *gorm.DB) {
 	require.NoError(t, db.Exec(`
 		CREATE TABLE products (
 			id INTEGER PRIMARY KEY,
-			sku TEXT,
 			name TEXT,
 			slug TEXT,
 			locale TEXT,
 			status TEXT,
-			price REAL NOT NULL DEFAULT 0,
 			currency TEXT NOT NULL DEFAULT 'USD',
-			display_prices TEXT NOT NULL DEFAULT '[]',
 			deleted_at DATETIME
 		)
 	`).Error)

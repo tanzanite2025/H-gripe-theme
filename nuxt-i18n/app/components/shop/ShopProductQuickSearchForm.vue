@@ -19,12 +19,12 @@
 
     <div
       class="shop-price-range"
-      :aria-label="`${$t('filter.priceRange', 'Price Range')} (${baseCurrency})`"
+      :aria-label="`${$t('filter.priceRange', 'Price Range')} (${displayCurrency})`"
     >
       <span class="shop-price-range__heading">
         <span class="shop-price-range__label">{{ $t('filter.price', 'Price') }}</span>
-        <span class="shop-price-range__currency" :aria-label="`Currency: ${baseCurrency}`">
-          {{ baseCurrency }}
+        <span class="shop-price-range__currency" :aria-label="`Currency: ${displayCurrency}`">
+          {{ displayCurrency }}
         </span>
       </span>
       <label class="shop-price-field">
@@ -72,8 +72,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useStorefrontContext } from '~/composables/useStorefrontContext'
+import { defaultPriceRangeForCurrency } from '~/utils/money'
 
 type SearchDensity = 'page' | 'drawer'
 
@@ -94,7 +95,7 @@ const props = withDefaults(defineProps<{
   density?: SearchDensity
 }>(), {
   initialQuery: '',
-  initialPriceRange: () => [0, 5000] as [number, number],
+  initialPriceRange: undefined,
   showFilterButton: false,
   density: 'page',
 })
@@ -104,14 +105,19 @@ const emit = defineEmits<{
   (e: 'filter-click'): void
 }>()
 
-const { baseCurrency } = useStorefrontContext()
+const { displayCurrency } = useStorefrontContext()
+const defaultPriceRange = computed<[number, number]>(() => (
+  defaultPriceRangeForCurrency(displayCurrency.value)
+))
 const freeTextQuery = ref('')
 const quickPriceMin = ref<number | null>(0)
-const quickPriceMax = ref<number | null>(5000)
+const quickPriceMax = ref<number | null>(defaultPriceRange.value[1])
 
 const normalizePriceRange = (range?: [number, number]): [number, number] => {
-  const source = Array.isArray(range) && range.length === 2 ? range : props.initialPriceRange
-  const fallback: [number, number] = [0, 5000]
+  const source = Array.isArray(range) && range.length === 2
+    ? range
+    : props.initialPriceRange || defaultPriceRange.value
+  const fallback = defaultPriceRange.value
   const rawMin = Number(source?.[0])
   const rawMax = Number(source?.[1])
   const min = Number.isFinite(rawMin) ? Math.max(0, rawMin) : fallback[0]
@@ -147,6 +153,13 @@ watch(() => props.initialPriceRange, (range) => {
   quickPriceMin.value = min
   quickPriceMax.value = max
 }, { immediate: true, deep: true })
+
+watch(defaultPriceRange, (range, previousRange) => {
+  if (quickPriceMin.value === previousRange?.[0] && quickPriceMax.value === previousRange?.[1]) {
+    quickPriceMin.value = range[0]
+    quickPriceMax.value = range[1]
+  }
+})
 </script>
 
 <style scoped>

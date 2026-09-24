@@ -48,7 +48,7 @@ func TestStripePaymentIntentSucceededWithoutOrderMetadataFailsInboxAndDoesNotAck
 	context.Params = gin.Params{{Key: "provider", Value: "stripe"}}
 	context.Request = httptest.NewRequest(
 		http.MethodPost,
-		"/api/v1/payment/webhook/stripe",
+		"/api/v1/payments/stripe/webhook",
 		bytes.NewReader(payload),
 	)
 	context.Request.Header.Set("Stripe-Signature", signed.Header)

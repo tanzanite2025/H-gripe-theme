@@ -54,25 +54,25 @@ func (s *PaymentRefundRecommendationService) EnqueueFromRiskEvent(
 	}
 	riskEventID := s.riskEventID(normalized)
 	recommendation := &paymentdomain.PaymentRefundRecommendation{
-		Provider:           normalized.Provider,
-		SourceKind:         normalized.Kind,
-		ExternalReference:  normalized.ExternalReference,
-		WebhookEventID:     normalized.WebhookEventID,
-		RiskEventID:        riskEventID,
-		OrderID:            normalized.OrderID,
-		TransactionID:      normalized.TransactionID,
-		ProviderPaymentID:  normalized.ProviderPaymentID,
-		PaymentIntentID:    normalized.PaymentIntentID,
-		ChargeID:           normalized.ChargeID,
-		RecommendedAction:  plan.Action,
-		RecommendedAmount:  normalized.Amount,
-		Currency:           normalized.Currency,
-		Priority:           plan.Priority,
-		Status:             paymentdomain.PaymentRefundRecommendationStatusPending,
-		Reason:             plan.Reason,
-		ProviderReason:     plan.ProviderReason,
-		ReviewBy:           plan.ReviewBy,
-		SourceMetadataJSON: string(metadataJSON),
+		Provider:               normalized.Provider,
+		SourceKind:             normalized.Kind,
+		ExternalReference:      normalized.ExternalReference,
+		WebhookEventID:         normalized.WebhookEventID,
+		RiskEventID:            riskEventID,
+		OrderID:                normalized.OrderID,
+		TransactionID:          normalized.TransactionID,
+		ProviderPaymentID:      normalized.ProviderPaymentID,
+		PaymentIntentID:        normalized.PaymentIntentID,
+		ChargeID:               normalized.ChargeID,
+		RecommendedAction:      plan.Action,
+		RecommendedAmountMinor: normalized.AmountMinor,
+		Currency:               normalized.Currency,
+		Priority:               plan.Priority,
+		Status:                 paymentdomain.PaymentRefundRecommendationStatusPending,
+		Reason:                 plan.Reason,
+		ProviderReason:         plan.ProviderReason,
+		ReviewBy:               plan.ReviewBy,
+		SourceMetadataJSON:     string(metadataJSON),
 	}
 	record, _, err := s.repo.UpsertRecommendation(recommendation)
 	return record, err
@@ -190,7 +190,7 @@ func (s *PaymentRefundRecommendationService) CreatePendingRefundFromRecommendati
 			return errors.New("refund recommendation is missing transaction linkage")
 		}
 
-		recommendedMoney, moneyErr := parseRefundMoney(recommendation.RecommendedAmount, recommendation.Currency)
+		recommendedMoney, moneyErr := domainmoney.New(recommendation.RecommendedAmountMinor, recommendation.Currency)
 		if moneyErr != nil {
 			return moneyErr
 		}
@@ -218,16 +218,11 @@ func (s *PaymentRefundRecommendationService) CreatePendingRefundFromRecommendati
 				formatRefundMoney(recommendedMoney),
 			)
 		}
-		amount, moneyErr := amountMoney.MajorFloat()
-		if moneyErr != nil {
-			return fmt.Errorf("format refund recommendation amount: %w", moneyErr)
-		}
-
 		refund := &paymentdomain.Refund{
 			OrderID:       *recommendation.OrderID,
 			TransactionID: *recommendation.TransactionID,
 			Currency:      recommendation.Currency,
-			Amount:        amount,
+			AmountMinor:   amountMoney.AmountMinor(),
 			Reason:        refundRecommendationDraftReason(recommendation, input.Reason),
 		}
 		if err := createAdminRefundInTx(repos, refund, input.AdminID); err != nil {

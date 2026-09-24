@@ -1,6 +1,7 @@
 import { ref } from 'vue'
 import { useAuth } from '~/composables/useAuth'
 import { isSimplifiedChineseStorefrontLocale } from '~/utils/storefrontLocales'
+import { warrantyResultFromResponse } from '~/utils/warrantyResponse'
 
 interface WarrantyRemaining {
   months: number
@@ -32,8 +33,11 @@ interface WarrantyResult {
 }
 
 interface WarrantyCheckResponse {
-  success: boolean
-  data?: WarrantyResult
+  code: number
+  data?: {
+    success: boolean
+    data?: WarrantyResult
+  }
 }
 
 // Warranty check composable: shared logic for querying warranty status
@@ -65,8 +69,9 @@ export const useWarrantyCheck = () => {
         'Warranty record not found'
       )
 
-      if (response.success && response.data) {
-        result.value = response.data
+      const warrantyResult = warrantyResultFromResponse(response)
+      if (warrantyResult) {
+        result.value = warrantyResult
       } else {
         error.value = true
       }

@@ -172,9 +172,9 @@ export const shippingApi = {
     return readDataArray(await axios.get(endpoint, { params }), endpoint)
   },
 
-  async listTrackingEvents(orderId: APIID) {
+  async listTrackingEvents(orderId: APIID, trackingNumber: string) {
     const endpoint = `/api/admin/shipping/tracking-shipments/${orderId}/events`
-    return readDataArray(await axios.get(endpoint), endpoint)
+    return readDataArray(await axios.get(endpoint, { params: { tracking_number: trackingNumber } }), endpoint)
   },
 
   async getTrackingPollingState() {
@@ -192,14 +192,14 @@ export const shippingApi = {
     return readObjectPayload(await axios.post(endpoint, null, { params }), endpoint)
   },
 
-  async registerTrackingShipment(orderId: APIID) {
+  async registerTrackingShipment(orderId: APIID, trackingNumber: string) {
     const endpoint = `/api/admin/shipping/tracking-shipments/${orderId}/register`
-    return readNamedObject(await axios.post(endpoint), endpoint, 'shipment')
+    return readNamedObject(await axios.post(endpoint, null, { params: { tracking_number: trackingNumber } }), endpoint, 'shipment')
   },
 
-  async syncTrackingShipment(orderId: APIID) {
+  async syncTrackingShipment(orderId: APIID, trackingNumber: string) {
     const endpoint = `/api/admin/shipping/tracking-shipments/${orderId}/sync`
-    return readNamedObject(await axios.post(endpoint), endpoint, 'tracking')
+    return readNamedObject(await axios.post(endpoint, null, { params: { tracking_number: trackingNumber } }), endpoint, 'tracking')
   },
 
   async listCarrierServices(params: APIParams = {}) {

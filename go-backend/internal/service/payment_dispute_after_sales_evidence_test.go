@@ -31,16 +31,17 @@ func TestDisputeEvidenceUsesOrderPolicySnapshotAndRefundFacts(t *testing.T) {
 		Source:          "checkout_test",
 	}).Error)
 	require.NoError(t, db.Create(&paymentdomain.Refund{
-		OrderID:             orderRecord.ID,
-		TransactionID:       1,
-		RefundID:            stringPointer("re_after_sales_1"),
-		Amount:              120,
-		RequestedAmount:     125,
-		CalculationSnapshot: `{"requested_amount":125,"net_amount":120}`,
-		Reason:              "customer_return",
-		Status:              "completed",
-		CreatedAt:           disclosedAt.Add(24 * time.Hour),
-		CompletedAt:         timePointer(disclosedAt.Add(48 * time.Hour)),
+		OrderID:              orderRecord.ID,
+		TransactionID:        1,
+		RefundID:             stringPointer("re_after_sales_1"),
+		Currency:             "USD",
+		AmountMinor:          12000,
+		RequestedAmountMinor: 12500,
+		CalculationSnapshot:  `{"requested_amount":125,"net_amount":120}`,
+		Reason:               "customer_return",
+		Status:               "completed",
+		CreatedAt:            disclosedAt.Add(24 * time.Hour),
+		CompletedAt:          timePointer(disclosedAt.Add(48 * time.Hour)),
 	}).Error)
 
 	stripeDispute := seedStripeDispute(t, db, "dp_after_sales_1", orderRecord.ID, "needs_response")
@@ -68,22 +69,22 @@ func TestDisputeEvidenceUsesOrderPolicySnapshotAndRefundFacts(t *testing.T) {
 
 func TestPayPalSignatureRequirementUsesOnlyOrderShippingPolicy(t *testing.T) {
 	dispute := &paymentdomain.PayPalDispute{
-		Reason:   "INR",
-		Amount:   1000,
-		Currency: "USD",
+		Reason:      "INR",
+		AmountMinor: 100000,
+		Currency:    "USD",
 	}
 	snapshot := currencydomain.OrderFXSnapshot{
-		Version:         currencydomain.OrderFXSnapshotVersion,
-		BaseCurrency:    "USD",
-		OrderCurrency:   "USD",
-		BaseToOrderRate: 1,
-		Source:          "test",
-		CapturedAt:      time.Now().UTC(),
+		Version:       currencydomain.OrderFXSnapshotVersion,
+		BaseCurrency:  "USD",
+		OrderCurrency: "USD",
+		RateDecimal:   "1",
+		Source:        "test",
+		CapturedAt:    time.Now().UTC(),
 	}
 	orderRecord := &order.Order{
-		TotalAmount:    1000,
-		Currency:       "USD",
-		FXSnapshotData: currencydomain.OrderFXSnapshotJSON(snapshot),
+		TotalAmountMinor: 100000,
+		Currency:         "USD",
+		FXSnapshotData:   currencydomain.OrderFXSnapshotJSON(snapshot),
 	}
 
 	require.False(t, paypalDisputeRequiresSignaturePOD(dispute, orderRecord))
@@ -94,12 +95,12 @@ func TestPayPalSignatureRequirementUsesOnlyOrderShippingPolicy(t *testing.T) {
 
 func TestPayPalSignatureRequirementDoesNotUseDisputeAmountFallback(t *testing.T) {
 	dispute := &paymentdomain.PayPalDispute{
-		Reason:   "INR",
-		Amount:   1000,
-		Currency: "USD",
+		Reason:      "INR",
+		AmountMinor: 100000,
+		Currency:    "USD",
 	}
 	orderRecord := &order.Order{
-		TotalAmount:       700,
+		TotalAmountMinor:  70000,
 		Currency:          "USD",
 		SignatureRequired: false,
 	}

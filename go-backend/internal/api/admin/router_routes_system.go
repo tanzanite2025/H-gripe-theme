@@ -94,7 +94,6 @@ func registerSystemRoutes(
 		settingsGroup.GET("/payment", settingsHandler.GetPaymentSettings)
 		settingsGroup.GET("/api", settingsHandler.GetAPISettings)
 		settingsGroup.GET("/loyalty", settingsHandler.GetLoyaltySettings)
-		settingsGroup.GET("/redeem", settingsHandler.GetRedeemSettings)
 		settingsGroup.GET("/:key", settingsHandler.GetSetting)
 	}
 

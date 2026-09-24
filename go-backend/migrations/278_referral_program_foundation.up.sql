@@ -9,10 +9,8 @@ CREATE TABLE IF NOT EXISTS referral_program_configs (
     currency VARCHAR(3) NOT NULL DEFAULT 'USD',
     min_order_amount_minor BIGINT NOT NULL DEFAULT 20000,
     referrer_reward_points INTEGER NOT NULL DEFAULT 1000,
-    referee_benefit_type VARCHAR(24) NOT NULL DEFAULT 'none',
+    referee_benefit_type VARCHAR(24) NOT NULL DEFAULT 'points',
     referee_benefit_value BIGINT NOT NULL DEFAULT 0,
-    referee_benefit_max_amount_minor BIGINT NOT NULL DEFAULT 0,
-    coupon_stackable BOOLEAN NOT NULL DEFAULT FALSE,
     vesting_period_days INTEGER NOT NULL DEFAULT 30,
     undelivered_fallback_days INTEGER NOT NULL DEFAULT 45,
     attribution_ttl_days INTEGER NOT NULL DEFAULT 30,
@@ -27,11 +25,9 @@ CREATE TABLE IF NOT EXISTS referral_program_configs (
         min_order_amount_minor >= 0
         AND referrer_reward_points >= 0
         AND referee_benefit_value >= 0
-        AND referee_benefit_max_amount_minor >= 0
     ),
     CONSTRAINT referral_program_configs_benefit_valid CHECK (
-        referee_benefit_type IN ('none', 'points', 'percent_coupon', 'fixed_coupon')
-        AND (referee_benefit_type <> 'percent_coupon' OR referee_benefit_value <= 10000)
+        referee_benefit_type = 'points'
     ),
     CONSTRAINT referral_program_configs_windows_valid CHECK (
         vesting_period_days > 0
@@ -220,7 +216,7 @@ SELECT
     'USD',
     20000,
     active.referral_referrer_points,
-    CASE WHEN active.referral_referee_points > 0 THEN 'points' ELSE 'none' END,
+    'points',
     active.referral_referee_points,
     30,
     45,
@@ -249,5 +245,5 @@ INSERT INTO referral_program_configs (
     monthly_cap_per_referrer,
     anti_fraud_mode
 )
-SELECT 1, 'active', FALSE, 'USD', 20000, 1000, 'none', 0, 30, 45, 30, 10, 'monitor'
+SELECT 1, 'active', FALSE, 'USD', 20000, 1000, 'points', 50, 30, 45, 30, 10, 'monitor'
 WHERE NOT EXISTS (SELECT 1 FROM referral_program_configs);

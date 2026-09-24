@@ -65,7 +65,7 @@ export interface SEOProductStructuredDataVariant {
   '@type': string
   name: string
   sku?: string
-  price?: number
+  price?: string
   priceCurrency?: string
   availability?: string
   url: string
@@ -85,7 +85,7 @@ export interface SEOProductStructuredDataPreview {
   url: string
   offers?: {
     '@type': string
-    price: number
+    price: string
     priceCurrency: string
     availability: string
     url: string
@@ -121,7 +121,7 @@ export interface SEOProductDiagnostics {
   brand: string
   brand_configured: boolean
   sku: string
-  price?: number | null
+  price?: string | null
   currency: string
   availability: string
   image_count: number

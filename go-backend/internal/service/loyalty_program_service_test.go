@@ -5,7 +5,6 @@ import (
 
 	"commerce-platform/internal/domain/currency"
 	"commerce-platform/internal/domain/loyalty"
-	domainmoney "commerce-platform/internal/domain/money"
 	"commerce-platform/internal/domain/setting"
 	"commerce-platform/internal/repository"
 
@@ -15,21 +14,6 @@ import (
 	"gorm.io/gorm/logger"
 )
 
-func TestPointsForGiftCardMoneyUsesCurrencyMinorUnits(t *testing.T) {
-	usd, err := domainmoney.New(1000, "USD")
-	require.NoError(t, err)
-	points, err := PointsForGiftCardMoney(usd, 100)
-	require.NoError(t, err)
-	require.Equal(t, 1000, points)
-
-	jpy, err := domainmoney.New(1000, "JPY")
-	require.NoError(t, err)
-	points, err = PointsForGiftCardMoney(jpy, 100)
-	require.NoError(t, err)
-	require.Equal(t, 100000, points)
-	require.Equal(t, "JPY 1000 Gift Card", giftCardValueLabel(1000, "JPY"))
-}
-
 func TestLoyaltyProgramServiceCreatesImmutableVersions(t *testing.T) {
 	db := openLoyaltyProgramTestDB(t)
 	service := newTestLoyaltyProgramService(t, db)
@@ -37,17 +21,13 @@ func TestLoyaltyProgramServiceCreatesImmutableVersions(t *testing.T) {
 	first, err := service.Update(LoyaltyProgramConfigInput{
 		Enabled:                   true,
 		Currency:                  "usd",
-		ExchangeRatePoints:        100,
-		MinRedeemPoints:           1000,
-		MaxValuePerDayCents:       50000,
-		CardExpiryDays:            365,
+		PurchaseEarnPointsPerUnit: 1,
 		ReferralReferrerPoints:    100,
 		ReferralRefereePoints:     50,
 		CheckInBasePoints:         10,
 		CheckInStreakIntervalDays: 7,
 		CheckInStreakBonusPoints:  5,
 		CheckInMaxPoints:          50,
-		RedeemValuesCents:         []int64{1000, 5000},
 	})
 	require.NoError(t, err)
 	require.Equal(t, "USD", first.Currency)
@@ -56,17 +36,13 @@ func TestLoyaltyProgramServiceCreatesImmutableVersions(t *testing.T) {
 	second, err := service.Update(LoyaltyProgramConfigInput{
 		Enabled:                   false,
 		Currency:                  "USD",
-		ExchangeRatePoints:        80,
-		MinRedeemPoints:           800,
-		MaxValuePerDayCents:       25000,
-		CardExpiryDays:            90,
+		PurchaseEarnPointsPerUnit: 2,
 		ReferralReferrerPoints:    120,
 		ReferralRefereePoints:     60,
 		CheckInBasePoints:         8,
 		CheckInStreakIntervalDays: 5,
 		CheckInStreakBonusPoints:  3,
 		CheckInMaxPoints:          30,
-		RedeemValuesCents:         []int64{1000, 2500},
 	})
 	require.NoError(t, err)
 	require.Equal(t, 2, second.Version)
@@ -79,89 +55,31 @@ func TestLoyaltyProgramServiceCreatesImmutableVersions(t *testing.T) {
 	var archived loyalty.ProgramConfig
 	require.NoError(t, db.Where("id = ?", first.ID).First(&archived).Error)
 	require.Equal(t, "archived", archived.Status)
-	require.Equal(t, 100, archived.ExchangeRatePoints)
 }
 
-func TestLoyaltyProgramServiceDoesNotCarryRedeemedQuantitiesToNewVersion(t *testing.T) {
-	db := openLoyaltyProgramTestDB(t)
-	service := newTestLoyaltyProgramService(t, db)
-
-	first, err := service.Update(LoyaltyProgramConfigInput{
-		Enabled:                   true,
-		Currency:                  "USD",
-		ExchangeRatePoints:        100,
-		MinRedeemPoints:           1000,
-		MaxValuePerDayCents:       50000,
-		CardExpiryDays:            365,
-		ReferralReferrerPoints:    100,
-		ReferralRefereePoints:     50,
-		CheckInBasePoints:         10,
-		CheckInStreakIntervalDays: 7,
-		CheckInStreakBonusPoints:  5,
-		CheckInMaxPoints:          50,
-		RedeemOptions: []LoyaltyProgramOptionInput{
-			{ValueCents: 1000, Currency: "USD", StockQuantity: 5},
-		},
-	})
-	require.NoError(t, err)
-	require.Len(t, first.RedeemOptions, 1)
-	require.NoError(t, db.Model(&loyalty.ProgramRedeemOption{}).
-		Where("id = ?", first.RedeemOptions[0].ID).
-		Update("redeemed_quantity", 3).Error)
-
-	second, err := service.Update(LoyaltyProgramConfigInput{
-		Enabled:                   true,
-		Currency:                  "USD",
-		ExchangeRatePoints:        100,
-		MinRedeemPoints:           1000,
-		MaxValuePerDayCents:       50000,
-		CardExpiryDays:            365,
-		ReferralReferrerPoints:    100,
-		ReferralRefereePoints:     50,
-		CheckInBasePoints:         10,
-		CheckInStreakIntervalDays: 7,
-		CheckInStreakBonusPoints:  5,
-		CheckInMaxPoints:          50,
-		RedeemOptions: []LoyaltyProgramOptionInput{
-			{ValueCents: 1000, Currency: "USD", StockQuantity: 1},
-		},
-	})
-	require.NoError(t, err)
-	require.Len(t, second.RedeemOptions, 1)
-	require.Equal(t, int64(0), second.RedeemOptions[0].RedeemedQuantity)
-	require.Equal(t, int64(1), second.RedeemOptions[0].StockQuantity)
-}
-
-func TestLoyaltyProgramPublicConfigMarksUnavailableOptionsInactive(t *testing.T) {
+func TestLoyaltyProgramPublicConfigContainsOnlyCurrentProgramRules(t *testing.T) {
 	db := openLoyaltyProgramTestDB(t)
 	service := newTestLoyaltyProgramService(t, db)
 
 	_, err := service.Update(LoyaltyProgramConfigInput{
 		Enabled:                   true,
 		Currency:                  "USD",
-		ExchangeRatePoints:        100,
-		MinRedeemPoints:           1000,
-		MaxValuePerDayCents:       50000,
-		CardExpiryDays:            365,
+		PurchaseEarnPointsPerUnit: 1,
 		ReferralReferrerPoints:    100,
 		ReferralRefereePoints:     50,
 		CheckInBasePoints:         10,
 		CheckInStreakIntervalDays: 7,
 		CheckInStreakBonusPoints:  5,
 		CheckInMaxPoints:          50,
-		RedeemOptions: []LoyaltyProgramOptionInput{
-			{ValueCents: 500, Currency: "USD", StockQuantity: 0},
-			{ValueCents: 1000, Currency: "USD", StockQuantity: 2},
-		},
 	})
 	require.NoError(t, err)
 
 	response, err := service.GetPublicConfig()
 	require.NoError(t, err)
 	require.Equal(t, LoyaltyPointsBaseCurrency, response.PointsBaseCurrency)
-	require.Len(t, response.RedeemOptions, 2)
-	require.Equal(t, "inactive", response.RedeemOptions[0].Status)
-	require.Equal(t, "active", response.RedeemOptions[1].Status)
+	require.Equal(t, "USD", response.Currency)
+	require.Equal(t, 1, response.PurchaseEarnPointsPerUnit)
+	require.NotNil(t, response.AvailableCurrencies)
 }
 
 func openLoyaltyProgramTestDB(t *testing.T) *gorm.DB {
@@ -181,7 +99,6 @@ func openLoyaltyProgramTestDB(t *testing.T) *gorm.DB {
 	require.NoError(t, db.AutoMigrate(
 		&setting.Setting{},
 		&loyalty.ProgramConfig{},
-		&loyalty.ProgramRedeemOption{},
 	))
 	return db
 }

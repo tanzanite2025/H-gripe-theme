@@ -164,6 +164,10 @@ export async function normalizeRunInput(input, config, lookup = dns.lookup) {
   if (strategy !== 'mobile' && strategy !== 'desktop') {
     throw new RunnerInputError('strategy must be mobile or desktop')
   }
+  const auditScope = String(input.audit_scope || 'full').trim().toLowerCase()
+  if (!['full', 'headings', 'schema', 'link_text'].includes(auditScope)) {
+    throw new RunnerInputError('audit_scope must be full, headings, schema, or link_text')
+  }
   const throttlingMethod = normalizeOptionalThrottlingMethod(input.throttling_method, config?.throttlingMethod)
 
   const records = await lookup(target.hostname, { all: true, verbatim: true })
@@ -177,6 +181,7 @@ export async function normalizeRunInput(input, config, lookup = dns.lookup) {
   return {
     url: target.toString(),
     strategy,
+    auditScope,
     releaseID: typeof input.release_id === 'string' ? input.release_id.trim().slice(0, 128) : '',
     renderWaitSelector: normalizeOptionalString(input.render_wait_selector, 256) || config?.renderWaitSelector || '',
     renderWaitTimeoutMilliseconds: normalizeOptionalInt(

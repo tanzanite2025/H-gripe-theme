@@ -226,7 +226,7 @@ func (r *CartRepository) RestoreConsumedOrderItemsToOriginalCheckoutCart(cartID 
 			ConfigurationData: product.DefaultConfigurationJSONBytes(),
 			ConfigurationHash: product.DefaultConfigurationHash,
 		}
-		priceMoney, priceErr := domainmoney.FromMajorFloat(item.Price, cartItem.Currency)
+		priceMoney, priceErr := domainmoney.New(item.PriceMinor, cartItem.Currency)
 		if priceErr != nil {
 			return fmt.Errorf("order item price: %w", priceErr)
 		}
@@ -314,13 +314,8 @@ func (r *CartRepository) GetSummary(cartID uint) (*product.CartSummary, error) {
 	}
 	if initialized {
 		summary.TotalMoney = totalMoney
-		summary.Total, err = totalMoney.MajorFloat()
-		if err != nil {
-			return nil, fmt.Errorf("format cart total: %w", err)
-		}
 	} else {
 		summary.TotalMoney = domainmoney.MustNew(0, product.DefaultPriceCurrency)
-		summary.Total = 0
 	}
 
 	return summary, nil

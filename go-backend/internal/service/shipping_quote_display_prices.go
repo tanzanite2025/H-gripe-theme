@@ -11,19 +11,32 @@ import (
 )
 
 func templateFeeDisplayPrices(template *shipping.ShippingTemplate) []currency.DisplayPriceSnapshot {
-	if template == nil || template.DefaultFee <= 0 {
+	if template == nil {
+		return nil
+	}
+	fee, err := template.DefaultFeeMoney()
+	if err != nil || fee.AmountMinor() <= 0 {
 		return nil
 	}
 	snapshots := currency.ParseDisplayPriceSnapshotMap(template.DisplayPriceData, shipping.ShippingTemplateDisplayPriceFields...)
 	return roundDisplayPriceSnapshots(snapshots[shipping.ShippingTemplateDisplayPriceFieldDefaultFee])
 }
 
-func ruleFeeDisplayPrices(templateType, templateCurrency string, rule shipping.ShippingRule, value float64, weightBilling ...shippingWeightBilling) []currency.DisplayPriceSnapshot {
+func ruleFeeDisplayPrices(templateType, templateCurrency string, rule shipping.ShippingRule, value float64, amount *domainmoney.Money, weightBilling ...shippingWeightBilling) []currency.DisplayPriceSnapshot {
 	snapshots := currency.ParseDisplayPriceSnapshotMap(rule.DisplayPriceData, shipping.ShippingRuleDisplayPriceFields...)
-	additionalUnits := calculateRuleAdditionalUnitsForTemplate(templateType, templateCurrency, rule, value, weightBilling...)
+	additionalUnits := 0
+	if templateType == "price" || templateType == "amount" {
+		if amount != nil {
+			additionalUnits = calculateRuleAdditionalUnitsForMoneyTemplate(templateCurrency, rule, *amount)
+		}
+	} else {
+		additionalUnits = calculateRuleAdditionalUnitsForTemplate(templateType, templateCurrency, rule, value, weightBilling...)
+	}
 
-	needsFee := rule.Fee > 0
-	needsAdditional := additionalUnits > 0 && rule.Additional > 0
+	feeMoney, feeErr := rule.FeeMoney(templateCurrency)
+	additionalMoney, additionalErr := rule.AdditionalMoney(templateCurrency)
+	needsFee := feeErr == nil && feeMoney.AmountMinor() > 0
+	needsAdditional := additionalUnits > 0 && additionalErr == nil && additionalMoney.AmountMinor() > 0
 	if !needsFee && !needsAdditional {
 		return nil
 	}
@@ -54,7 +67,7 @@ func ruleFeeDisplayPrices(templateType, templateCurrency string, rule shipping.S
 			if !ok {
 				continue
 			}
-			feeMoney, err := domainmoney.FromMajorFloat(feeSnapshot.Amount, code)
+			feeMoney, err := domainmoney.ParseMajor(feeSnapshot.AmountDecimal, code)
 			if err != nil {
 				continue
 			}
@@ -68,7 +81,7 @@ func ruleFeeDisplayPrices(templateType, templateCurrency string, rule shipping.S
 			if !ok {
 				continue
 			}
-			additionalMoney, err := domainmoney.FromMajorFloat(additionalSnapshot.Amount, code)
+			additionalMoney, err := domainmoney.ParseMajor(additionalSnapshot.AmountDecimal, code)
 			if err != nil {
 				continue
 			}
@@ -91,7 +104,7 @@ func ruleFeeDisplayPrices(templateType, templateCurrency string, rule shipping.S
 		if !amountInitialized || amount.AmountMinor() <= 0 || !initialized {
 			continue
 		}
-		combined.Amount, _ = amount.MajorFloat()
+		combined.AmountDecimal, _ = amount.FormatMajor()
 		combined.Currency = code
 		combined.QuoteCurrency = code
 		result = append(result, combined)
@@ -110,7 +123,7 @@ func combineDisplayPriceSets(sets [][]currency.DisplayPriceSnapshot) []currency.
 	for _, set := range sets {
 		for code, snapshot := range displayPriceSnapshotsByCurrency(set) {
 			total, exists := totals[code]
-			value, err := domainmoney.FromMajorFloat(snapshot.Amount, code)
+			value, err := domainmoney.ParseMajor(snapshot.AmountDecimal, code)
 			if err != nil {
 				continue
 			}
@@ -124,7 +137,7 @@ func combineDisplayPriceSets(sets [][]currency.DisplayPriceSnapshot) []currency.
 				total = snapshot
 			}
 			amounts[code] = value
-			total.Amount, _ = value.MajorFloat()
+			total.AmountDecimal, _ = value.FormatMajor()
 			total.Currency = code
 			total.QuoteCurrency = code
 			totals[code] = total
@@ -148,8 +161,8 @@ func combineDisplayPriceSets(sets [][]currency.DisplayPriceSnapshot) []currency.
 		if !ok || value.AmountMinor() <= 0 {
 			continue
 		}
-		snapshot.Amount, _ = value.MajorFloat()
-		if snapshot.Amount > 0 {
+		snapshot.AmountDecimal, _ = value.FormatMajor()
+		if value.AmountMinor() > 0 {
 			result = append(result, snapshot)
 		}
 	}
@@ -158,33 +171,25 @@ func combineDisplayPriceSets(sets [][]currency.DisplayPriceSnapshot) []currency.
 
 func deriveCarrierServiceDisplayPrices(
 	baseDisplayPrices []currency.DisplayPriceSnapshot,
-	baseFee float64,
-	fuelSurcharge float64,
-	remoteSurcharge float64,
+	baseFee domainmoney.Money,
+	fuelSurcharge domainmoney.Money,
+	remoteSurcharge domainmoney.Money,
 	freeShipping bool,
 ) []currency.DisplayPriceSnapshot {
-	if freeShipping || baseFee <= 0 {
+	if freeShipping || baseFee.AmountMinor() <= 0 {
 		return nil
 	}
 
-	baseRat, err := majorFloatRat(baseFee)
-	if err != nil || baseRat.Sign() <= 0 {
-		return nil
-	}
+	baseRat := big.NewRat(baseFee.AmountMinor(), 1)
 	multiplier := big.NewRat(1, 1)
-	if fuelSurcharge > 0 {
-		fuelRat, fuelErr := majorFloatRat(fuelSurcharge)
-		if fuelErr != nil {
-			return nil
-		}
+	if fuelSurcharge.AmountMinor() > 0 {
+		fuelRat := big.NewRat(fuelSurcharge.AmountMinor(), 1)
 		multiplier.Add(multiplier, new(big.Rat).Quo(fuelRat, baseRat))
 	}
 	remoteRatio := (*big.Rat)(nil)
-	if remoteSurcharge > 0 {
-		remoteRat, remoteErr := majorFloatRat(remoteSurcharge)
-		if remoteErr == nil {
-			remoteRatio = new(big.Rat).Quo(remoteRat, baseRat)
-		}
+	if remoteSurcharge.AmountMinor() > 0 {
+		remoteRat := big.NewRat(remoteSurcharge.AmountMinor(), 1)
+		remoteRatio = new(big.Rat).Quo(remoteRat, baseRat)
 	}
 
 	result := make([]currency.DisplayPriceSnapshot, 0, len(baseDisplayPrices))
@@ -193,7 +198,7 @@ func deriveCarrierServiceDisplayPrices(
 		if code == "" {
 			code = currency.NormalizeCode(snapshot.QuoteCurrency)
 		}
-		snapshotMoney, moneyErr := domainmoney.FromMajorFloat(snapshot.Amount, code)
+		snapshotMoney, moneyErr := domainmoney.ParseMajor(snapshot.AmountDecimal, code)
 		if moneyErr != nil {
 			continue
 		}
@@ -201,7 +206,7 @@ func deriveCarrierServiceDisplayPrices(
 		if moneyErr != nil {
 			continue
 		}
-		if remoteRatio != nil && snapshot.Amount > 0 {
+		if remoteRatio != nil && snapshotMoney.AmountMinor() > 0 {
 			remoteDisplay, remoteErr := snapshotMoney.MultiplyRat(remoteRatio)
 			if remoteErr != nil {
 				continue
@@ -210,11 +215,8 @@ func deriveCarrierServiceDisplayPrices(
 			if remoteErr != nil {
 				continue
 			}
-		} else if remoteSurcharge > 0 && snapshot.Rate > 0 {
-			remoteRat, remoteErr := majorFloatRat(remoteSurcharge)
-			if remoteErr != nil {
-				continue
-			}
+		} else if remoteSurcharge.AmountMinor() > 0 && snapshot.Rate > 0 {
+			remoteRat := big.NewRat(remoteSurcharge.AmountMinor(), 1)
 			rateRat, rateErr := majorFloatRat(snapshot.Rate)
 			if rateErr != nil {
 				continue
@@ -229,11 +231,11 @@ func deriveCarrierServiceDisplayPrices(
 				continue
 			}
 		}
-		amount, amountErr := amountMoney.MajorFloat()
-		if amountErr != nil || amount <= 0 || code == "" {
+		amountDecimal, amountErr := amountMoney.FormatMajor()
+		if amountErr != nil || amountMoney.AmountMinor() <= 0 || code == "" {
 			continue
 		}
-		snapshot.Amount = amount
+		snapshot.AmountDecimal = amountDecimal
 		snapshot.Currency = code
 		snapshot.QuoteCurrency = code
 		result = append(result, snapshot)
@@ -272,11 +274,11 @@ func roundDisplayPriceSnapshots(snapshots []currency.DisplayPriceSnapshot) []cur
 		if code == "" {
 			code = currency.NormalizeCode(snapshot.QuoteCurrency)
 		}
-		amount := roundMoney(snapshot.Amount, code)
-		if amount <= 0 || code == "" {
+		amount, err := domainmoney.ParseMajor(snapshot.AmountDecimal, code)
+		if err != nil || amount.AmountMinor() <= 0 || code == "" {
 			continue
 		}
-		snapshot.Amount = amount
+		snapshot.AmountDecimal, _ = amount.FormatMajor()
 		snapshot.Currency = code
 		snapshot.QuoteCurrency = code
 		result = append(result, snapshot)
@@ -291,11 +293,11 @@ func displayPriceSnapshotsByCurrency(snapshots []currency.DisplayPriceSnapshot) 
 		if code == "" {
 			code = currency.NormalizeCode(snapshot.QuoteCurrency)
 		}
-		amount := roundMoney(snapshot.Amount, code)
-		if amount <= 0 || code == "" {
+		amount, err := domainmoney.ParseMajor(snapshot.AmountDecimal, code)
+		if err != nil || amount.AmountMinor() <= 0 || code == "" {
 			continue
 		}
-		snapshot.Amount = amount
+		snapshot.AmountDecimal, _ = amount.FormatMajor()
 		snapshot.Currency = code
 		snapshot.QuoteCurrency = code
 		if _, exists := result[code]; !exists {
@@ -330,16 +332,4 @@ func sortedDisplayPriceCurrencyCodes(values map[string]struct{}) []string {
 	}
 	sort.Strings(codes)
 	return codes
-}
-
-func roundMoney(value float64, currencyCode string) float64 {
-	money, err := domainmoney.FromMajorFloat(value, currencyCode)
-	if err != nil {
-		return 0
-	}
-	amount, err := money.MajorFloat()
-	if err != nil {
-		return 0
-	}
-	return amount
 }

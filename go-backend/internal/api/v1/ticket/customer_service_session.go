@@ -93,6 +93,41 @@ func (h *Handler) touchCustomerServiceVisitorProfile(c *gin.Context, owner servi
 	}
 }
 
+// refreshExistingCustomerServiceVisitorProfile backfills newly introduced
+// request facts (notably the browser timezone) for conversations that already
+// existed before those facts were collected. Passive chat reads must never
+// create a visitor profile, but they should keep an existing profile current.
+func (h *Handler) refreshExistingCustomerServiceVisitorProfile(c *gin.Context, owner service.CustomerServiceOwner) bool {
+	if h.visitorProfileService == nil {
+		return false
+	}
+
+	previousTimezone := ""
+	if strings.TrimSpace(owner.VisitorSessionHash) != "" {
+		if profile, err := h.visitorProfileService.FindByCustomerServiceVisitorHash(owner.VisitorSessionHash); err == nil && profile != nil {
+			previousTimezone = strings.TrimSpace(profile.Timezone)
+		}
+	}
+	if previousTimezone == "" && owner.UserID != nil && *owner.UserID > 0 {
+		if profile, err := h.visitorProfileService.FindByUserID(*owner.UserID); err == nil && profile != nil {
+			previousTimezone = strings.TrimSpace(profile.Timezone)
+		}
+	}
+
+	input := visitorcapture.BuildVisitorProfileTouchInput(c, visitorcapture.TouchOptions{
+		UserID:                     owner.UserID,
+		CustomerServiceVisitorHash: owner.VisitorSessionHash,
+		CartSessionID:              visitorcapture.ExistingCartSessionID(c),
+	})
+	profile, err := h.visitorProfileService.TouchPassiveSeen(input)
+	if err != nil || profile == nil {
+		return false
+	}
+
+	currentTimezone := strings.TrimSpace(profile.Timezone)
+	return currentTimezone != "" && currentTimezone != previousTimezone
+}
+
 func firstNonEmptyCustomerServiceValue(values ...string) string {
 	for _, value := range values {
 		if trimmed := strings.TrimSpace(value); trimmed != "" {

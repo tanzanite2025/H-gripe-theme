@@ -2,13 +2,14 @@ package currency
 
 import (
 	"encoding/json"
+	"math/big"
 	"strings"
 
 	"gorm.io/datatypes"
 )
 
 type DisplayPriceSnapshot struct {
-	Amount         float64 `json:"amount"`
+	AmountDecimal  string  `json:"amount_decimal"`
 	Currency       string  `json:"currency"`
 	QuoteCurrency  string  `json:"quote_currency,omitempty"`
 	Rate           float64 `json:"rate,omitempty"`
@@ -25,12 +26,13 @@ func NormalizeDisplayPriceSnapshots(values []DisplayPriceSnapshot, baseCurrency 
 	result := make([]DisplayPriceSnapshot, 0, len(values))
 
 	for _, value := range values {
-		if value.Amount <= 0 || strings.TrimSpace(value.FallbackReason) != "" {
-			continue
-		}
 		code := NormalizeCode(value.QuoteCurrency)
 		if code == "" {
 			code = NormalizeCode(value.Currency)
+		}
+		amount, ok := normalizeDisplayAmountDecimal(value.AmountDecimal, code)
+		if !ok || strings.TrimSpace(value.FallbackReason) != "" {
+			continue
 		}
 		if code == "" || code == baseCurrency || !IsCatalogCode(code) {
 			continue
@@ -40,7 +42,7 @@ func NormalizeDisplayPriceSnapshots(values []DisplayPriceSnapshot, baseCurrency 
 		}
 		seen[code] = struct{}{}
 		result = append(result, DisplayPriceSnapshot{
-			Amount:        value.Amount,
+			AmountDecimal: amount,
 			Currency:      code,
 			QuoteCurrency: code,
 			Rate:          value.Rate,
@@ -50,6 +52,60 @@ func NormalizeDisplayPriceSnapshots(values []DisplayPriceSnapshot, baseCurrency 
 	}
 
 	return result
+}
+
+// normalizeDisplayAmountDecimal keeps read-model amounts decimal-only. It
+// validates the value against the quote currency scale without converting it
+// through binary floating point.
+func normalizeDisplayAmountDecimal(raw, code string) (string, bool) {
+	raw = strings.TrimSpace(raw)
+	if raw == "" || strings.HasPrefix(raw, "+") || strings.HasPrefix(raw, "-") {
+		return "", false
+	}
+	units, ok := MinorUnits(code)
+	if !ok || strings.Count(raw, ".") > 1 {
+		return "", false
+	}
+	major, fraction := raw, ""
+	if dot := strings.IndexByte(raw, '.'); dot >= 0 {
+		major, fraction = raw[:dot], raw[dot+1:]
+	}
+	if major == "" || !allDecimalDigits(major) || (fraction != "" && !allDecimalDigits(fraction)) {
+		return "", false
+	}
+	fraction = strings.TrimRight(fraction, "0")
+	if len(fraction) > units {
+		return "", false
+	}
+	fraction += strings.Repeat("0", units-len(fraction))
+	major = strings.TrimLeft(major, "0")
+	if major == "" {
+		major = "0"
+	}
+	digits := strings.TrimLeft(major+fraction, "0")
+	if digits == "" {
+		return "", false
+	}
+	parsed, ok := new(big.Int).SetString(digits, 10)
+	if !ok || parsed.Sign() <= 0 {
+		return "", false
+	}
+	if units == 0 {
+		return major, true
+	}
+	return major + "." + fraction, true
+}
+
+func allDecimalDigits(value string) bool {
+	if value == "" {
+		return false
+	}
+	for _, r := range value {
+		if r < '0' || r > '9' {
+			return false
+		}
+	}
+	return true
 }
 
 func NormalizeDisplayPriceSnapshotMap(values map[string][]DisplayPriceSnapshot, baseCurrency string, allowedKeys ...string) DisplayPriceSnapshotMap {

@@ -39,11 +39,11 @@
             </TableCell>
             <TableCell>{{ templateTypeLabel(template.type) }}</TableCell>
             <TableCell class="font-mono font-bold">{{ template.currency || '-' }}</TableCell>
-            <TableCell class="text-right tabular-nums">{{ formatMoney(template.default_fee) }}</TableCell>
+            <TableCell class="text-right tabular-nums">{{ formatMoney(template.default_fee_minor, template.currency) }}</TableCell>
             <TableCell class="text-right tabular-nums">
-              {{ template.free_shipping ? formatMoney(template.free_threshold) : '未开启' }}
+              {{ template.free_shipping ? formatMoney(template.free_threshold_minor, template.currency) : '未开启' }}
             </TableCell>
-            <TableCell class="max-w-[28rem] truncate text-xs text-muted-foreground">{{ formatRuleSummary(template.rules) }}</TableCell>
+            <TableCell class="max-w-[28rem] truncate text-xs text-muted-foreground">{{ formatRuleSummary(template.rules, template.type, template.currency) }}</TableCell>
             <TableCell>
               <AdminStatusBadge :tone="template.enabled ? 'green' : 'gray'">
                 {{ template.enabled ? '启用' : '停用' }}

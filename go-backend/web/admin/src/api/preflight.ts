@@ -180,6 +180,12 @@ export interface SiteQualityJobCleanupResult {
   dead_letter: number
 }
 
+export interface SiteQualityFindingCleanupResult {
+  deleted: number
+  skipped: number
+  cutoff: string
+}
+
 export interface SiteQualityProviderSlotStats {
   provider: string
   configured: number
@@ -290,12 +296,14 @@ export interface SiteQualityTargetList {
 }
 
 export type SiteQualityJobStatus = 'queued' | 'processing' | 'succeeded' | 'failed' | 'dead_letter' | 'cancelled'
+export type SiteQualityAuditScope = 'full' | 'headings' | 'schema' | 'link_text'
 
 export interface SiteQualityJob {
   id: number
   target_id: number
   finding_id?: number
   strategy: SiteQualityStrategy
+  audit_scope: SiteQualityAuditScope
   kind: 'scheduled' | 'manual' | 'recheck'
   status: SiteQualityJobStatus
   idempotency_key: string
@@ -652,6 +660,17 @@ const readSiteQualityJobCleanupPayload = (
   return payload as SiteQualityJobCleanupResult
 }
 
+const readSiteQualityFindingCleanupPayload = (
+  response: unknown,
+  endpoint: string,
+): SiteQualityFindingCleanupResult => {
+  const payload = readObjectPayload(response, endpoint)
+  requireApiNumberField(payload, 'deleted', endpoint)
+  requireApiNumberField(payload, 'skipped', endpoint)
+  requireApiStringField(payload, 'cutoff', endpoint)
+  return payload as SiteQualityFindingCleanupResult
+}
+
 const readFontPreflightPayload = (response: unknown, endpoint: string): FontPreflightReport => {
   const payload = readObjectPayload(response, endpoint)
   requireApiNumberField(payload, 'schema_version', endpoint)
@@ -758,9 +777,9 @@ export const preflightApi = {
     return readSiteQualityTargetsPayload(await axios.get(endpoint), endpoint)
   },
 
-  async createSiteQualityJob(url: string, strategy: SiteQualityStrategy): Promise<{ job_id: number; job: SiteQualityJob }> {
+  async createSiteQualityJob(url: string, strategy: SiteQualityStrategy, auditScope: SiteQualityAuditScope = 'full'): Promise<{ job_id: number; job: SiteQualityJob }> {
     const endpoint = '/api/admin/preflight/site-quality/jobs'
-    const payload = readObjectPayload(await axios.post(endpoint, { url, strategy }), endpoint)
+    const payload = readObjectPayload(await axios.post(endpoint, { url, strategy, audit_scope: auditScope }), endpoint)
     requireApiNumberField(payload, 'job_id', endpoint)
     return {
       job_id: payload.job_id as number,
@@ -771,6 +790,11 @@ export const preflightApi = {
   async cleanupSiteQualityJobs(): Promise<SiteQualityJobCleanupResult> {
     const endpoint = '/api/admin/preflight/site-quality/jobs/cleanup'
     return readSiteQualityJobCleanupPayload(await axios.post(endpoint), endpoint)
+  },
+
+  async cleanupOldSiteQualityFindings(): Promise<SiteQualityFindingCleanupResult> {
+    const endpoint = '/api/admin/preflight/site-quality/findings/cleanup'
+    return readSiteQualityFindingCleanupPayload(await axios.post(endpoint), endpoint)
   },
 
   async getSiteQualityJob(id: number): Promise<SiteQualityJob> {

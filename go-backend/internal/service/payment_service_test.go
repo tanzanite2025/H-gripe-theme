@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -96,7 +97,7 @@ func TestRecordVerifiedGatewayPaymentCreatesLedgerAndMarksOrderPaid(t *testing.T
 	assert.Equal(t, orderRecord.ID, payload.OrderID)
 	assert.Equal(t, orderRecord.OrderNumber, payload.OrderNumber)
 	assert.Equal(t, "txn_123", payload.PaymentTransactionID)
-	assert.InDelta(t, 84, payload.Amount, 0.001)
+	assert.Equal(t, int64(8400), payload.AmountMinor)
 
 	var referralEvent outboxdomain.Event
 	require.NoError(t, db.Where(
@@ -113,21 +114,22 @@ func TestRecordVerifiedGatewayPaymentCreatesLedgerAndMarksOrderPaid(t *testing.T
 	var confirmation outboxdomain.Event
 	require.NoError(t, db.Where(
 		"event_key = ?",
-		fmt.Sprintf("%s:%d:%s", outboxdomain.EventTypeOrderConfirmationEmail, orderRecord.ID, "txn_123"),
+		fmt.Sprintf("%s:%d:%s", outboxdomain.EventTypeOrderPaymentSucceeded, orderRecord.ID, "txn_123"),
 	).First(&confirmation).Error)
-	assert.Equal(t, outboxdomain.EventTypeOrderConfirmationEmail, confirmation.EventType)
+	assert.Equal(t, outboxdomain.EventTypeOrderPaymentSucceeded, confirmation.EventType)
 	assert.Equal(t, outboxdomain.AggregateTypeOrder, confirmation.AggregateType)
 	assert.Equal(t, outboxdomain.EventStatusPending, confirmation.Status)
 
-	var confirmationPayload outboxdomain.OrderConfirmationEmailPayload
+	var confirmationPayload outboxdomain.OrderPaymentSucceededPayload
 	require.NoError(t, json.Unmarshal([]byte(confirmation.Payload), &confirmationPayload))
 	assert.Equal(t, "ada.rider@example.test", confirmationPayload.RecipientEmail)
 	assert.Equal(t, "Ada Rider", confirmationPayload.CustomerName)
 	assert.Equal(t, orderRecord.ID, confirmationPayload.OrderID)
 	assert.Equal(t, orderRecord.OrderNumber, confirmationPayload.OrderNumber)
-	assert.InDelta(t, 84, confirmationPayload.Amount, 0.001)
+	assert.Equal(t, int64(8400), confirmationPayload.AmountMinor)
 	assert.Equal(t, "USD", confirmationPayload.Currency)
-	assert.False(t, confirmationPayload.PaidAt.IsZero())
+	assert.Equal(t, "payment_transaction:txn_123", confirmationPayload.IdempotencyKey)
+	assert.False(t, confirmationPayload.OccurredAt.IsZero())
 
 	var outboxCount int64
 	require.NoError(t, db.Model(&outboxdomain.Event{}).Where("event_key = ?", event.EventKey).Count(&outboxCount).Error)
@@ -158,15 +160,15 @@ func TestRecordVerifiedGatewayPaymentRecordsDuplicatePaidTransactionAndCreatesFu
 	var duplicateTransaction paymentdomain.Transaction
 	require.NoError(t, db.Where("transaction_id = ?", "txn_provider_later_event").First(&duplicateTransaction).Error)
 	assert.Equal(t, paymentdomain.TransactionStatusDuplicatePaid, duplicateTransaction.Status)
-	assert.InDelta(t, 1500, duplicateTransaction.Amount, 0.001)
+	assert.Equal(t, int64(150000), duplicateTransaction.AmountMinor)
 	assert.Equal(t, "USD", duplicateTransaction.Currency)
 
 	var refunds []paymentdomain.Refund
 	require.NoError(t, db.Where("transaction_id = ?", duplicateTransaction.ID).Find(&refunds).Error)
 	require.Len(t, refunds, 1)
 	assert.Equal(t, "pending", refunds[0].Status)
-	assert.InDelta(t, 1500, refunds[0].Amount, 0.001)
-	assert.InDelta(t, 1500, refunds[0].RequestedAmount, 0.001)
+	assert.Equal(t, int64(150000), refunds[0].AmountMinor)
+	assert.Equal(t, int64(150000), refunds[0].RequestedAmountMinor)
 	assert.Equal(t, uint(0), refunds[0].RefundedBy)
 	assert.Contains(t, refunds[0].Reason, duplicatePaidRefundReasonCode)
 
@@ -614,7 +616,7 @@ func TestRecordVerifiedGatewayPaymentCreatesReviewForExpiredOrderLateSuccess(t *
 		OrderID:       orderRecord.ID,
 		TransactionID: "pi_late_success",
 		PaymentMethod: "stripe",
-		Amount:        84,
+		AmountMinor:   8400,
 		Currency:      "USD",
 		Status:        "expired",
 	}).Error)
@@ -669,6 +671,15 @@ func TestRecordVerifiedGatewayPaymentCreatesReviewForCancelledOrderLateSuccess(t
 	assert.Equal(t, "pending", review.Status)
 	require.NotNil(t, review.TransactionID)
 	assert.Equal(t, savedTransaction.ID, *review.TransactionID)
+	var refund paymentdomain.Refund
+	require.NoError(t, db.Where("transaction_id = ? AND reason = ?", savedTransaction.ID, "late_payment_refund:payment_succeeded_after_cancellation").First(&refund).Error)
+	assert.Equal(t, "pending", refund.Status)
+	var execution paymentdomain.PaymentRefundExecution
+	require.NoError(t, db.Where("refund_id = ?", refund.ID).First(&execution).Error)
+	assert.Equal(t, paymentdomain.PaymentRefundExecutionStatusProcessing, execution.Status)
+	var executionEvent outboxdomain.Event
+	require.NoError(t, db.Where("event_type = ? AND aggregate_id = ?", outboxdomain.EventTypePaymentRefundExecutionRequested, fmt.Sprint(refund.ID)).First(&executionEvent).Error)
+	assert.Equal(t, outboxdomain.EventStatusPending, executionEvent.Status)
 
 	var reviewCount int64
 	require.NoError(t, db.Model(&paymentdomain.PaymentReview{}).
@@ -698,6 +709,62 @@ func TestApproveLatePaymentReviewCreatesPendingRefund(t *testing.T) {
 	require.Len(t, refunds, 1)
 	assert.Equal(t, "pending", refunds[0].Status)
 	assert.Equal(t, "late_payment_refund:payment_succeeded_after_cancellation", refunds[0].Reason)
+}
+
+func TestRejectLatePaymentReviewCreatesPendingRefundAndKeepsOrderHeld(t *testing.T) {
+	db, paymentService := newTestPaymentService(t)
+	orderRecord := seedPaymentOrder(t, db, "ORD-PAY-CANCELLED-REVIEW-REJECT", 84, "cancelled", "unpaid")
+	transaction := seedCompletedTransaction(t, db, orderRecord.ID, "capture_cancelled_review_reject", 84, "USD")
+	review := paymentdomain.PaymentReview{
+		OrderID:         &orderRecord.ID,
+		TransactionID:   &transaction.ID,
+		PaymentIntentID: transaction.TransactionID,
+		Status:          "pending",
+		Reason:          "payment_succeeded_after_cancellation",
+		Source:          "webhook",
+	}
+	require.NoError(t, db.Create(&review).Error)
+
+	_, err := paymentService.UpdatePaymentReview(review.ID, "rejected", "Refund and close", 7)
+	require.NoError(t, err)
+
+	var refunds []paymentdomain.Refund
+	require.NoError(t, db.Where("transaction_id = ?", transaction.ID).Find(&refunds).Error)
+	require.Len(t, refunds, 1)
+	assert.Equal(t, "pending", refunds[0].Status)
+	assert.Equal(t, "late_payment_refund:payment_succeeded_after_cancellation", refunds[0].Reason)
+
+	var savedOrder order.Order
+	require.NoError(t, db.First(&savedOrder, orderRecord.ID).Error)
+	assert.True(t, savedOrder.FulfillmentHold)
+
+	var savedReview paymentdomain.PaymentReview
+	require.NoError(t, db.First(&savedReview, review.ID).Error)
+	assert.Equal(t, "rejected", savedReview.Status)
+}
+
+func TestLatePaymentReviewDecisionRollsBackWhenTransactionIsMissing(t *testing.T) {
+	db, paymentService := newTestPaymentService(t)
+	orderRecord := seedPaymentOrder(t, db, "ORD-PAY-CANCELLED-REVIEW-MISSING-TXN", 84, "cancelled", "unpaid")
+	review := paymentdomain.PaymentReview{
+		OrderID: &orderRecord.ID,
+		Status:  "pending",
+		Reason:  "payment_succeeded_after_cancellation",
+		Source:  "webhook",
+	}
+	require.NoError(t, db.Create(&review).Error)
+
+	_, err := paymentService.UpdatePaymentReview(review.ID, "rejected", "Refund and close", 7)
+	require.ErrorContains(t, err, "late payment review is missing transaction reference")
+
+	var savedReview paymentdomain.PaymentReview
+	require.NoError(t, db.First(&savedReview, review.ID).Error)
+	assert.Equal(t, "pending", savedReview.Status)
+	assert.Nil(t, savedReview.ReviewedAt)
+
+	var refundCount int64
+	require.NoError(t, db.Model(&paymentdomain.Refund{}).Where("order_id = ?", orderRecord.ID).Count(&refundCount).Error)
+	assert.Zero(t, refundCount)
 }
 
 func TestRecordVerifiedGatewayPaymentCreatesReviewForRefundedOrderLateSuccess(t *testing.T) {
@@ -810,7 +877,7 @@ func TestRecordVerifiedGatewayPaymentUsesProviderSettlementSnapshot(t *testing.T
 func TestRecordVerifiedGatewayPaymentRejectsMissingCrossCurrencySnapshot(t *testing.T) {
 	db, paymentService := newTestPaymentService(t)
 	orderRecord := seedPaymentOrder(t, db, "ORD-PAY-CNY-NO-SNAPSHOT", 1500, "pending", "unpaid")
-	orderRecord.PaymentAmount = 0
+	orderRecord.PaymentAmountMinor = 0
 	orderRecord.PaymentCurrency = ""
 	require.NoError(t, db.Save(&orderRecord).Error)
 
@@ -832,7 +899,8 @@ func TestCreateAdminRefundReservesPendingAmount(t *testing.T) {
 	refund := paymentdomain.Refund{
 		OrderID:       orderRecord.ID,
 		TransactionID: transaction.ID,
-		Amount:        60,
+		AmountMinor:   majorTestMinor(t, 60, "USD"),
+		Currency:      "USD",
 		Reason:        "customer request",
 	}
 	require.NoError(t, paymentService.CreateAdminRefund(&refund, 7))
@@ -844,7 +912,8 @@ func TestCreateAdminRefundReservesPendingAmount(t *testing.T) {
 	excessRefund := paymentdomain.Refund{
 		OrderID:       orderRecord.ID,
 		TransactionID: transaction.ID,
-		Amount:        50,
+		AmountMinor:   majorTestMinor(t, 50, "USD"),
+		Currency:      "USD",
 	}
 	require.Error(t, paymentService.CreateAdminRefund(&excessRefund, 7))
 
@@ -862,7 +931,8 @@ func TestCreateAdminRefundWithIdempotencyReplaysDurableRefund(t *testing.T) {
 		&paymentdomain.Refund{
 			OrderID:       orderRecord.ID,
 			TransactionID: transaction.ID,
-			Amount:        60,
+			AmountMinor:   majorTestMinor(t, 60, "USD"),
+			Currency:      "USD",
 			Reason:        "customer request",
 		},
 		7,
@@ -875,7 +945,8 @@ func TestCreateAdminRefundWithIdempotencyReplaysDurableRefund(t *testing.T) {
 		&paymentdomain.Refund{
 			OrderID:       orderRecord.ID,
 			TransactionID: transaction.ID,
-			Amount:        60,
+			AmountMinor:   majorTestMinor(t, 60, "USD"),
+			Currency:      "USD",
 			Reason:        "customer request",
 		},
 		7,
@@ -895,7 +966,8 @@ func TestCreateAdminRefundWithIdempotencyReplaysDurableRefund(t *testing.T) {
 		&paymentdomain.Refund{
 			OrderID:       orderRecord.ID,
 			TransactionID: transaction.ID,
-			Amount:        40,
+			AmountMinor:   majorTestMinor(t, 40, "USD"),
+			Currency:      "USD",
 			Reason:        "different request",
 		},
 		7,
@@ -921,14 +993,14 @@ func TestCreateAdminRefundCreatesItemLevelRefundAndPreventsOverRefundQuantity(t 
 	}
 	require.NoError(t, paymentService.CreateAdminRefund(&refund, 7))
 
-	assert.InDelta(t, 150, refund.RequestedAmount, 0.001)
-	assert.InDelta(t, 150, refund.Amount, 0.001)
+	assert.Equal(t, int64(15000), refund.RequestedAmountMinor)
+	assert.Equal(t, int64(15000), refund.AmountMinor)
 	require.Len(t, refund.LineItems, 1)
 	assert.Equal(t, orderItem.ID, refund.LineItems[0].OrderItemID)
 	assert.Equal(t, 1, refund.LineItems[0].Quantity)
 	assert.True(t, refund.LineItems[0].Restock)
-	assert.InDelta(t, 150, refund.LineItems[0].LineSubtotalAmount, 0.001)
-	assert.InDelta(t, 150, refund.LineItems[0].LineTotalAmount, 0.001)
+	assert.Equal(t, int64(15000), refund.LineItems[0].LineSubtotalMinor)
+	assert.Equal(t, int64(15000), refund.LineItems[0].LineTotalMinor)
 
 	secondRefund := paymentdomain.Refund{
 		OrderID:       orderRecord.ID,
@@ -954,7 +1026,8 @@ func TestCreateAdminRefundAllowsItemLevelRefundAfterAmountOnlyRefund(t *testing.
 	amountRefund := paymentdomain.Refund{
 		OrderID:       orderRecord.ID,
 		TransactionID: transaction.ID,
-		Amount:        30,
+		AmountMinor:   3000,
+		Currency:      "USD",
 		Reason:        "repair compensation",
 	}
 	require.NoError(t, paymentService.CreateAdminRefund(&amountRefund, 7))
@@ -969,8 +1042,8 @@ func TestCreateAdminRefundAllowsItemLevelRefundAfterAmountOnlyRefund(t *testing.
 	}
 	require.NoError(t, paymentService.CreateAdminRefund(&itemRefund, 7))
 
-	assert.InDelta(t, 30, amountRefund.RequestedAmount, 0.001)
-	assert.InDelta(t, 150, itemRefund.RequestedAmount, 0.001)
+	assert.Equal(t, int64(3000), amountRefund.RequestedAmountMinor)
+	assert.Equal(t, int64(15000), itemRefund.RequestedAmountMinor)
 }
 
 func TestCreateAdminRefundAllowsAmountOnlyRefundAfterItemLevelRefund(t *testing.T) {
@@ -992,13 +1065,14 @@ func TestCreateAdminRefundAllowsAmountOnlyRefundAfterItemLevelRefund(t *testing.
 	amountRefund := paymentdomain.Refund{
 		OrderID:       orderRecord.ID,
 		TransactionID: transaction.ID,
-		Amount:        30,
+		AmountMinor:   3000,
+		Currency:      "USD",
 		Reason:        "repair compensation",
 	}
 	require.NoError(t, paymentService.CreateAdminRefund(&amountRefund, 7))
 
-	assert.InDelta(t, 150, itemRefund.RequestedAmount, 0.001)
-	assert.InDelta(t, 30, amountRefund.RequestedAmount, 0.001)
+	assert.Equal(t, int64(15000), itemRefund.RequestedAmountMinor)
+	assert.Equal(t, int64(3000), amountRefund.RequestedAmountMinor)
 }
 
 func TestRecordVerifiedGatewayRefundMixedTypesRestocksOnlyItemLevelRefund(t *testing.T) {
@@ -1011,7 +1085,8 @@ func TestRecordVerifiedGatewayRefundMixedTypesRestocksOnlyItemLevelRefund(t *tes
 	amountRefund := paymentdomain.Refund{
 		OrderID:       orderRecord.ID,
 		TransactionID: transaction.ID,
-		Amount:        30,
+		AmountMinor:   3000,
+		Currency:      "USD",
 		Reason:        "repair compensation",
 	}
 	require.NoError(t, paymentService.CreateAdminRefund(&amountRefund, 7))
@@ -1063,9 +1138,9 @@ func TestCreateAdminRefundClawsBackCouponDiscountUsingItemSubtotal(t *testing.T)
 	db, paymentService := newTestPaymentService(t)
 	orderRecord := seedPaymentOrder(t, db, "ORD-REF-LINE-COUPON", 1000, "processing", "paid")
 	require.NoError(t, db.Model(&order.Order{}).Where("id = ?", orderRecord.ID).Updates(map[string]interface{}{
-		"subtotal_amount": 1100.0,
-		"discount_amount": 100.0,
-		"coupon_code":     "SAVE100",
+		"subtotal_amount_minor": int64(110000),
+		"discount_amount_minor": int64(10000),
+		"coupon_code":           "SAVE100",
 	}).Error)
 	transaction := seedCompletedTransaction(t, db, orderRecord.ID, "txn_ref_line_coupon", 1000, "USD")
 	mainItem := seedPaymentOrderItem(t, db, orderRecord.ID, 1, 950, 950, 0, 0, 950)
@@ -1074,10 +1149,10 @@ func TestCreateAdminRefundClawsBackCouponDiscountUsingItemSubtotal(t *testing.T)
 
 	promo := seedPaymentCoupon(t, db, "SAVE100", "fixed", 100, 1000, 0)
 	require.NoError(t, db.Create(&coupon.CouponUsage{
-		CouponID: promo.ID,
-		UserID:   orderRecord.UserID,
-		OrderID:  orderRecord.ID,
-		Discount: 100,
+		CouponID:      promo.ID,
+		UserID:        orderRecord.UserID,
+		OrderID:       orderRecord.ID,
+		DiscountMinor: majorTestMinor(t, 100, "USD"),
 	}).Error)
 
 	refund := paymentdomain.Refund{
@@ -1089,58 +1164,59 @@ func TestCreateAdminRefundClawsBackCouponDiscountUsingItemSubtotal(t *testing.T)
 	}
 	require.NoError(t, paymentService.CreateAdminRefund(&refund, 7))
 
-	assert.InDelta(t, 150, refund.RequestedAmount, 0.001)
-	assert.InDelta(t, 100, refund.DiscountClawbackAmount, 0.001)
-	assert.InDelta(t, 50, refund.Amount, 0.001)
-	assert.Contains(t, refund.CalculationSnapshot, `"requested_subtotal_amount":150`)
+	assert.Equal(t, int64(15000), refund.RequestedAmountMinor)
+	assert.Equal(t, int64(10000), refund.DiscountClawbackAmountMinor)
+	assert.Equal(t, int64(5000), refund.AmountMinor)
+	assert.Contains(t, refund.CalculationSnapshot, `"requested_subtotal_amount_minor":15000`)
 }
 
 func TestCreateAdminRefundClawsBackCouponDiscountWhenPartialRefundBreaksThreshold(t *testing.T) {
 	db, paymentService := newTestPaymentService(t)
 	orderRecord := seedPaymentOrder(t, db, "ORD-REF-COUPON-1", 1000, "processing", "paid")
 	require.NoError(t, db.Model(&order.Order{}).Where("id = ?", orderRecord.ID).Updates(map[string]interface{}{
-		"subtotal_amount": 1100.0,
-		"discount_amount": 100.0,
-		"coupon_code":     "SAVE100",
+		"subtotal_amount_minor": int64(110000),
+		"discount_amount_minor": int64(10000),
+		"coupon_code":           "SAVE100",
 	}).Error)
 	transaction := seedCompletedTransaction(t, db, orderRecord.ID, "txn_ref_coupon_1", 1000, "USD")
 
 	promo := seedPaymentCoupon(t, db, "SAVE100", "fixed", 100, 1000, 0)
 	require.NoError(t, db.Create(&coupon.CouponUsage{
-		CouponID: promo.ID,
-		UserID:   orderRecord.UserID,
-		OrderID:  orderRecord.ID,
-		Discount: 100,
+		CouponID:      promo.ID,
+		UserID:        orderRecord.UserID,
+		OrderID:       orderRecord.ID,
+		DiscountMinor: majorTestMinor(t, 100, "USD"),
 	}).Error)
 
 	refund := paymentdomain.Refund{
 		OrderID:       orderRecord.ID,
 		TransactionID: transaction.ID,
-		Amount:        150,
+		AmountMinor:   15000,
+		Currency:      "USD",
 		Reason:        "return accessories",
 	}
 	require.NoError(t, paymentService.CreateAdminRefund(&refund, 7))
 
 	assert.Equal(t, "pending", refund.Status)
-	assert.InDelta(t, 150, refund.RequestedAmount, 0.001)
-	assert.InDelta(t, 100, refund.DiscountClawbackAmount, 0.001)
-	assert.InDelta(t, 50, refund.Amount, 0.001)
+	assert.Equal(t, int64(15000), refund.RequestedAmountMinor)
+	assert.Equal(t, int64(10000), refund.DiscountClawbackAmountMinor)
+	assert.Equal(t, int64(5000), refund.AmountMinor)
 	assert.Contains(t, refund.CalculationSnapshot, "coupon_recalculation")
 
 	var savedRefund paymentdomain.Refund
 	require.NoError(t, db.First(&savedRefund, refund.ID).Error)
-	assert.InDelta(t, 150, savedRefund.RequestedAmount, 0.001)
-	assert.InDelta(t, 100, savedRefund.DiscountClawbackAmount, 0.001)
-	assert.InDelta(t, 50, savedRefund.Amount, 0.001)
+	assert.Equal(t, int64(15000), savedRefund.RequestedAmountMinor)
+	assert.Equal(t, int64(10000), savedRefund.DiscountClawbackAmountMinor)
+	assert.Equal(t, int64(5000), savedRefund.AmountMinor)
 }
 
 func TestCreateAdminRefundAllowsZeroNetRefundAfterCouponClawback(t *testing.T) {
 	db, paymentService := newTestPaymentService(t)
 	orderRecord := seedPaymentOrder(t, db, "ORD-REF-COUPON-ZERO", 1450, "processing", "paid")
 	require.NoError(t, db.Model(&order.Order{}).Where("id = ?", orderRecord.ID).Updates(map[string]interface{}{
-		"subtotal_amount": 1650.0,
-		"discount_amount": 200.0,
-		"coupon_code":     "SAVE200",
+		"subtotal_amount_minor": int64(165000),
+		"discount_amount_minor": int64(20000),
+		"coupon_code":           "SAVE200",
 	}).Error)
 	transaction := seedCompletedTransaction(t, db, orderRecord.ID, "txn_ref_coupon_zero", 1450, "USD")
 	seedPaymentOrderItem(t, db, orderRecord.ID, 1, 1500, 1500, 0, 0, 1500)
@@ -1148,10 +1224,10 @@ func TestCreateAdminRefundAllowsZeroNetRefundAfterCouponClawback(t *testing.T) {
 
 	promo := seedPaymentCoupon(t, db, "SAVE200", "fixed", 200, 1600, 0)
 	require.NoError(t, db.Create(&coupon.CouponUsage{
-		CouponID: promo.ID,
-		UserID:   orderRecord.UserID,
-		OrderID:  orderRecord.ID,
-		Discount: 200,
+		CouponID:      promo.ID,
+		UserID:        orderRecord.UserID,
+		OrderID:       orderRecord.ID,
+		DiscountMinor: majorTestMinor(t, 200, "USD"),
 	}).Error)
 
 	refund := paymentdomain.Refund{
@@ -1165,56 +1241,58 @@ func TestCreateAdminRefundAllowsZeroNetRefundAfterCouponClawback(t *testing.T) {
 	require.NoError(t, paymentService.CreateAdminRefund(&refund, 7))
 
 	assert.Equal(t, "pending", refund.Status)
-	assert.InDelta(t, 150, refund.RequestedAmount, 0.001)
-	assert.InDelta(t, 150, refund.DiscountClawbackAmount, 0.001)
-	assert.InDelta(t, 0, refund.Amount, 0.001)
-	assert.Contains(t, refund.CalculationSnapshot, `"net_refund_amount":0`)
+	assert.Equal(t, int64(15000), refund.RequestedAmountMinor)
+	assert.Equal(t, int64(15000), refund.DiscountClawbackAmountMinor)
+	assert.Zero(t, refund.AmountMinor)
+	assert.Contains(t, refund.CalculationSnapshot, `"net_refund_amount_minor":0`)
 
 	var savedRefund paymentdomain.Refund
 	require.NoError(t, db.First(&savedRefund, refund.ID).Error)
 	assert.Equal(t, "pending", savedRefund.Status)
-	assert.InDelta(t, 150, savedRefund.RequestedAmount, 0.001)
-	assert.InDelta(t, 150, savedRefund.DiscountClawbackAmount, 0.001)
-	assert.InDelta(t, 0, savedRefund.Amount, 0.001)
+	assert.Equal(t, int64(15000), savedRefund.RequestedAmountMinor)
+	assert.Equal(t, int64(15000), savedRefund.DiscountClawbackAmountMinor)
+	assert.Zero(t, savedRefund.AmountMinor)
 }
 
 func TestCreateAdminRefundDoesNotDoubleClawBackCouponDiscount(t *testing.T) {
 	db, paymentService := newTestPaymentService(t)
 	orderRecord := seedPaymentOrder(t, db, "ORD-REF-COUPON-2", 1000, "processing", "paid")
 	require.NoError(t, db.Model(&order.Order{}).Where("id = ?", orderRecord.ID).Updates(map[string]interface{}{
-		"subtotal_amount": 1100.0,
-		"discount_amount": 100.0,
-		"coupon_code":     "SAVE100",
+		"subtotal_amount_minor": int64(110000),
+		"discount_amount_minor": int64(10000),
+		"coupon_code":           "SAVE100",
 	}).Error)
 	transaction := seedCompletedTransaction(t, db, orderRecord.ID, "txn_ref_coupon_2", 1000, "USD")
 
 	promo := seedPaymentCoupon(t, db, "SAVE100", "fixed", 100, 1000, 0)
 	require.NoError(t, db.Create(&coupon.CouponUsage{
-		CouponID: promo.ID,
-		UserID:   orderRecord.UserID,
-		OrderID:  orderRecord.ID,
-		Discount: 100,
+		CouponID:      promo.ID,
+		UserID:        orderRecord.UserID,
+		OrderID:       orderRecord.ID,
+		DiscountMinor: majorTestMinor(t, 100, "USD"),
 	}).Error)
 	require.NoError(t, db.Create(&paymentdomain.Refund{
-		OrderID:                orderRecord.ID,
-		TransactionID:          transaction.ID,
-		Amount:                 50,
-		RequestedAmount:        150,
-		DiscountClawbackAmount: 100,
-		Status:                 "completed",
+		OrderID:                     orderRecord.ID,
+		TransactionID:               transaction.ID,
+		AmountMinor:                 5000,
+		RequestedAmountMinor:        15000,
+		DiscountClawbackAmountMinor: 10000,
+		Currency:                    "USD",
+		Status:                      "completed",
 	}).Error)
 
 	secondRefund := paymentdomain.Refund{
 		OrderID:       orderRecord.ID,
 		TransactionID: transaction.ID,
-		Amount:        50,
+		AmountMinor:   5000,
+		Currency:      "USD",
 		Reason:        "second partial return",
 	}
 	require.NoError(t, paymentService.CreateAdminRefund(&secondRefund, 7))
 
-	assert.InDelta(t, 50, secondRefund.RequestedAmount, 0.001)
-	assert.InDelta(t, 0, secondRefund.DiscountClawbackAmount, 0.001)
-	assert.InDelta(t, 50, secondRefund.Amount, 0.001)
+	assert.Equal(t, int64(5000), secondRefund.RequestedAmountMinor)
+	assert.Zero(t, secondRefund.DiscountClawbackAmountMinor)
+	assert.Equal(t, int64(5000), secondRefund.AmountMinor)
 }
 
 func TestRecordVerifiedGatewayRefundCompletesPendingRefund(t *testing.T) {
@@ -1224,7 +1302,8 @@ func TestRecordVerifiedGatewayRefundCompletesPendingRefund(t *testing.T) {
 	refund := paymentdomain.Refund{
 		OrderID:       orderRecord.ID,
 		TransactionID: transaction.ID,
-		Amount:        84,
+		AmountMinor:   8400,
+		Currency:      "USD",
 	}
 	require.NoError(t, paymentService.CreateAdminRefund(&refund, 7))
 
@@ -1279,12 +1358,13 @@ func TestRecordVerifiedGatewayRefundReplayByRefundIDDoesNotCreateDuplicatePartia
 	transaction := seedCompletedTransaction(t, db, orderRecord.ID, "txn_ref_idempotent_partial", 100, "USD")
 	refundID := "rf_idempotent_partial"
 	require.NoError(t, db.Create(&paymentdomain.Refund{
-		OrderID:         orderRecord.ID,
-		TransactionID:   transaction.ID,
-		RefundID:        &refundID,
-		Amount:          40,
-		RequestedAmount: 40,
-		Status:          "completed",
+		OrderID:              orderRecord.ID,
+		TransactionID:        transaction.ID,
+		RefundID:             &refundID,
+		AmountMinor:          4000,
+		RequestedAmountMinor: 4000,
+		Currency:             "USD",
+		Status:               "completed",
 	}).Error)
 
 	require.NoError(t, paymentService.RecordVerifiedGatewayRefund(VerifiedGatewayRefundInput{
@@ -1334,10 +1414,6 @@ func TestRecordVerifiedGatewayRefundRestocksItemLevelRefundOnce(t *testing.T) {
 	require.NoError(t, db.First(&savedVariant, variant.ID).Error)
 	assert.Equal(t, 6, savedVariant.Stock)
 
-	var savedProduct productdomain.Product
-	require.NoError(t, db.First(&savedProduct, variant.ProductID).Error)
-	assert.Equal(t, 5, savedProduct.Stock)
-
 	var savedLineItem paymentdomain.RefundLineItem
 	require.NoError(t, db.Where("refund_id = ?", refund.ID).First(&savedLineItem).Error)
 	assert.NotNil(t, savedLineItem.RestockedAt)
@@ -1362,10 +1438,11 @@ func TestCreateAdminRefundIgnoresSoftDeletedLineItemRefundQuantity(t *testing.T)
 	deletedRefund := paymentdomain.Refund{
 		OrderID:       orderRecord.ID,
 		TransactionID: transaction.ID,
-		Amount:        300,
+		AmountMinor:   30000,
+		Currency:      "USD",
 		Status:        "completed",
 		LineItems: []paymentdomain.RefundLineItem{
-			{OrderItemID: orderItem.ID, Quantity: 1, ProductID: orderItem.ProductID, VariantID: orderItem.VariantID, ProductName: orderItem.ProductName, SKU: orderItem.SKU, UnitPrice: 300, LineSubtotalAmount: 300, LineTotalAmount: 300},
+			{OrderItemID: orderItem.ID, Quantity: 1, ProductID: orderItem.ProductID, VariantID: orderItem.VariantID, ProductName: orderItem.ProductName, SKU: orderItem.SKU, Currency: "USD", UnitPriceMinor: 30000, LineSubtotalMinor: 30000, LineTotalMinor: 30000},
 		},
 	}
 	require.NoError(t, repository.NewPaymentRepository(db).CreateRefund(&deletedRefund))
@@ -1379,7 +1456,7 @@ func TestCreateAdminRefundIgnoresSoftDeletedLineItemRefundQuantity(t *testing.T)
 		},
 	}
 	require.NoError(t, paymentService.CreateAdminRefund(&refund, 7))
-	assert.InDelta(t, 300, refund.Amount, 0.001)
+	assert.Equal(t, int64(30000), refund.AmountMinor)
 }
 
 func TestRecordVerifiedGatewayRefundRejectsOverRefund(t *testing.T) {
@@ -1406,18 +1483,18 @@ func TestPaymentServicePublicTaxRatesOnlyReturnEnabledRates(t *testing.T) {
 	db, paymentService := newTestPaymentService(t)
 
 	enabledRate := paymentdomain.TaxRate{
-		Name:    "Enabled",
-		Country: "US",
-		State:   "CA",
-		Rate:    7.5,
-		Enabled: true,
+		Name:        "Enabled",
+		Country:     "US",
+		State:       "CA",
+		RateDecimal: "7.5",
+		Enabled:     true,
 	}
 	disabledRate := paymentdomain.TaxRate{
-		Name:    "Disabled",
-		Country: "US",
-		State:   "NY",
-		Rate:    8.5,
-		Enabled: false,
+		Name:        "Disabled",
+		Country:     "US",
+		State:       "NY",
+		RateDecimal: "8.5",
+		Enabled:     false,
 	}
 	require.NoError(t, db.Create(&enabledRate).Error)
 	require.NoError(t, db.Create(&disabledRate).Error)
@@ -1436,19 +1513,19 @@ func TestPaymentServiceCalculateTaxPrefersPostalCodeAndFallsBackToDefault(t *tes
 	db, paymentService := newTestPaymentService(t)
 
 	defaultRate := paymentdomain.TaxRate{
-		Name:    "California default",
-		Country: "US",
-		State:   "CA",
-		Rate:    7.25,
-		Enabled: true,
+		Name:        "California default",
+		Country:     "US",
+		State:       "CA",
+		RateDecimal: "7.25",
+		Enabled:     true,
 	}
 	postalRate := paymentdomain.TaxRate{
-		Name:       "Beverly Hills",
-		Country:    "US",
-		State:      "CA",
-		PostalCode: "90210",
-		Rate:       9.5,
-		Enabled:    true,
+		Name:        "Beverly Hills",
+		Country:     "US",
+		State:       "CA",
+		PostalCode:  "90210",
+		RateDecimal: "9.5",
+		Enabled:     true,
 	}
 	require.NoError(t, db.Create(&defaultRate).Error)
 	require.NoError(t, db.Create(&postalRate).Error)
@@ -1459,14 +1536,14 @@ func TestPaymentServiceCalculateTaxPrefersPostalCodeAndFallsBackToDefault(t *tes
 	require.NoError(t, err)
 	tax, err := taxMoney.MajorFloat()
 	require.NoError(t, err)
-	assert.InDelta(t, 9.5, rate, 0.001)
+	assert.Equal(t, "9.5", rate)
 	assert.InDelta(t, 9.5, tax, 0.001)
 
 	rate, taxMoney, err = paymentService.CalculateTaxMoney(amount, "US", "CA", "10001")
 	require.NoError(t, err)
 	tax, err = taxMoney.MajorFloat()
 	require.NoError(t, err)
-	assert.InDelta(t, 7.25, rate, 0.001)
+	assert.Equal(t, "7.25", rate)
 	assert.InDelta(t, 7.25, tax, 0.001)
 }
 
@@ -1582,7 +1659,7 @@ func TestRecordStripeDisputeCreatesReviewWhenResponseNeeded(t *testing.T) {
 	dispute, err := paymentService.RecordStripeDispute(StripeDisputeInput{
 		StripeDisputeID: "dp_1",
 		PaymentIntentID: transaction.TransactionID,
-		Amount:          100,
+		AmountMinor:     10000,
 		Currency:        "USD",
 		Reason:          "fraudulent",
 		Status:          "needs_response",
@@ -1617,7 +1694,7 @@ func TestRecordStripeDisputePreservesEvidenceSubmissionAudit(t *testing.T) {
 	dispute, err := paymentService.RecordStripeDispute(StripeDisputeInput{
 		StripeDisputeID: "dp_preserve_evidence",
 		PaymentIntentID: transaction.TransactionID,
-		Amount:          120,
+		AmountMinor:     12000,
 		Currency:        "USD",
 		Reason:          "product_not_received",
 		Status:          "needs_response",
@@ -1637,7 +1714,7 @@ func TestRecordStripeDisputePreservesEvidenceSubmissionAudit(t *testing.T) {
 	updated, err := paymentService.RecordStripeDispute(StripeDisputeInput{
 		StripeDisputeID: "dp_preserve_evidence",
 		PaymentIntentID: transaction.TransactionID,
-		Amount:          120,
+		AmountMinor:     12000,
 		Currency:        "USD",
 		Reason:          "product_not_received",
 		Status:          "lost",
@@ -1666,7 +1743,7 @@ func TestRecordStripeDisputeRestoresPreDisputeShippingStateWhenWon(t *testing.T)
 	dispute, err := paymentService.RecordStripeDispute(StripeDisputeInput{
 		StripeDisputeID: "dp_restore",
 		PaymentIntentID: transaction.TransactionID,
-		Amount:          100,
+		AmountMinor:     10000,
 		Currency:        "USD",
 		Status:          "needs_response",
 	})
@@ -1680,7 +1757,7 @@ func TestRecordStripeDisputeRestoresPreDisputeShippingStateWhenWon(t *testing.T)
 	_, err = paymentService.RecordStripeDispute(StripeDisputeInput{
 		StripeDisputeID: "dp_restore",
 		PaymentIntentID: transaction.TransactionID,
-		Amount:          100,
+		AmountMinor:     10000,
 		Currency:        "USD",
 		Status:          "won",
 	})
@@ -1718,7 +1795,8 @@ func TestBuildStripeDisputeEvidencePackageCollectsOrderShippingAndCommunication(
 	require.Len(t, pkg.TrackingEventEvidence, 1)
 	assert.Equal(t, "DHL123", pkg.TrackingEventEvidence[0].TrackingNumber)
 	assert.NotNil(t, pkg.TrackingContext)
-	assert.NotNil(t, pkg.TrackingContext.LatestDeliveryEvent)
+	require.Len(t, pkg.TrackingContext.LatestDeliveryEvents, 1)
+	assert.Equal(t, "DHL123", pkg.TrackingContext.LatestDeliveryEvents[0].TrackingNumber)
 
 	payload, err := json.Marshal(pkg)
 	require.NoError(t, err)
@@ -1806,10 +1884,7 @@ func newTestPaymentService(t *testing.T) (*gorm.DB, *PaymentService) {
 		&userdomain.User{},
 		&coupon.Coupon{},
 		&coupon.CouponUsage{},
-		&coupon.GiftCard{},
-		&coupon.GiftCardTransaction{},
 		&loyalty.ProgramConfig{},
-		&loyalty.ProgramRedeemOption{},
 		&loyalty.UserLoyalty{},
 		&loyalty.LoyaltyTransaction{},
 		&productdomain.Product{},
@@ -1826,6 +1901,7 @@ func newTestPaymentService(t *testing.T) (*gorm.DB, *PaymentService) {
 		&outboxdomain.Event{},
 		&paymentdomain.Transaction{},
 		&paymentdomain.Refund{},
+		&paymentdomain.PaymentRefundExecution{},
 		&paymentdomain.RefundIdempotency{},
 		&paymentdomain.RefundLineItem{},
 		&paymentdomain.TaxRate{},
@@ -1854,6 +1930,7 @@ func newTestPaymentService(t *testing.T) (*gorm.DB, *PaymentService) {
 	txManager.ConfigureOutboxRepository(outboxRepo)
 	txManager.ConfigureOrderAttributionRepository(repository.NewOrderAttributionRepository(db))
 	txManager.ConfigurePaymentRefundIdempotencyRepository(repository.NewPaymentRefundIdempotencyRepository(db))
+	txManager.ConfigurePaymentRefundExecutionRepository(repository.NewPaymentRefundExecutionRepository(db))
 	txManager.ConfigureOrderEvidenceSubmissionSnapshotRepository(orderEvidenceSubmissionRepo)
 	policyDisclosureRepo := repository.NewOrderPolicyDisclosureRepository(db)
 
@@ -1875,14 +1952,14 @@ func seedPaymentOrder(t *testing.T, db *gorm.DB, orderNumber string, total float
 	t.Helper()
 
 	record := order.Order{
-		OrderNumber:     orderNumber,
-		UserID:          42,
-		Status:          status,
-		PaymentStatus:   paymentStatus,
-		TotalAmount:     total,
-		Currency:        "USD",
-		PaymentAmount:   total,
-		PaymentCurrency: "USD",
+		OrderNumber:        orderNumber,
+		UserID:             42,
+		Status:             status,
+		PaymentStatus:      paymentStatus,
+		TotalAmountMinor:   int64(total * 100),
+		Currency:           "USD",
+		PaymentAmountMinor: int64(total * 100),
+		PaymentCurrency:    "USD",
 	}
 	require.NoError(t, db.Create(&record).Error)
 	return record
@@ -1896,7 +1973,7 @@ func seedCompletedTransaction(t *testing.T, db *gorm.DB, orderID uint, transacti
 		OrderID:       orderID,
 		TransactionID: transactionID,
 		PaymentMethod: "stripe",
-		Amount:        amount,
+		AmountMinor:   int64(amount * 100),
 		Currency:      currency,
 		Status:        "completed",
 		CompletedAt:   &completedAt,
@@ -1916,17 +1993,17 @@ func seedPaymentOrderItemWithVariant(t *testing.T, db *gorm.DB, orderID uint, pr
 	t.Helper()
 
 	record := order.OrderItem{
-		OrderID:     orderID,
-		ProductID:   productID,
-		VariantID:   &variantID,
-		ProductName: "Carbon component",
-		SKU:         "TEST-SKU",
-		Quantity:    quantity,
-		Price:       price,
-		Subtotal:    subtotal,
-		TaxAmount:   taxAmount,
-		Discount:    discount,
-		Total:       total,
+		OrderID:        orderID,
+		ProductID:      productID,
+		VariantID:      &variantID,
+		ProductName:    "Carbon component",
+		SKU:            "TEST-SKU",
+		Quantity:       quantity,
+		PriceMinor:     int64(price * 100),
+		SubtotalMinor:  int64(subtotal * 100),
+		TaxAmountMinor: int64(taxAmount * 100),
+		DiscountMinor:  int64(discount * 100),
+		TotalMinor:     int64(total * 100),
 	}
 	record.PricingSnapshotData = refundPricingLineForTest(t, productID, &variantID, quantity, price, discount, "USD")
 	require.NoError(t, db.Create(&record).Error)
@@ -1937,13 +2014,13 @@ func seedPaymentProductVariant(t *testing.T, db *gorm.DB, stock int) productdoma
 	t.Helper()
 
 	productRecord := productdomain.Product{
-		SKU:    "TEST-PRODUCT",
-		Name:   "Test Product",
-		Slug:   "test-product",
-		Price:  150,
-		Stock:  stock,
-		Status: "active",
-		Locale: "en",
+		SKU:        "TEST-PRODUCT",
+		Name:       "Test Product",
+		Slug:       "test-product",
+		PriceMinor: 15000,
+		Stock:      stock,
+		Status:     "active",
+		Locale:     "en",
 	}
 	require.NoError(t, db.Create(&productRecord).Error)
 
@@ -1952,7 +2029,7 @@ func seedPaymentProductVariant(t *testing.T, db *gorm.DB, stock int) productdoma
 		SKU:          "TEST-VARIANT",
 		Title:        "Test Variant",
 		OptionValues: `{"size":"test"}`,
-		Price:        150,
+		PriceMinor:   15000,
 		Stock:        stock,
 		IsDefault:    true,
 		IsActive:     true,
@@ -1965,15 +2042,19 @@ func seedPaymentCoupon(t *testing.T, db *gorm.DB, code string, couponType string
 	t.Helper()
 
 	record := coupon.Coupon{
-		Code:        code,
-		Type:        couponType,
-		Value:       value,
-		MinAmount:   minAmount,
-		MaxDiscount: maxDiscount,
-		Enabled:     true,
-		StartDate:   time.Now().Add(-24 * time.Hour),
-		EndDate:     time.Now().Add(24 * time.Hour),
+		Code:      code,
+		Type:      couponType,
+		Enabled:   true,
+		StartDate: time.Now().Add(-24 * time.Hour),
+		EndDate:   time.Now().Add(24 * time.Hour),
 	}
+	if couponType == "percentage" {
+		record.ValueRateDecimal = strconv.FormatFloat(value, 'f', -1, 64)
+	} else {
+		record.ValueMinor = int64(value * 100)
+	}
+	record.MinAmountMinor = int64(minAmount * 100)
+	record.MaxDiscountMinor = int64(maxDiscount * 100)
 	require.NoError(t, db.Create(&record).Error)
 	return record
 }
@@ -1999,7 +2080,7 @@ func (f *fakeStripeDisputeEvidenceSubmitter) Update(id string, params *stripe.Di
 func TestRecordPayPalDisputeLinksTransactionAndOrder(t *testing.T) {
 	db, paymentService := newTestPaymentService(t)
 	orderRecord := seedDisputeEvidenceOrder(t, db, "ORD-PAYPAL-DP-1", 42)
-	transaction := seedCompletedTransaction(t, db, orderRecord.ID, "PAYPAL-CAPTURE-1", orderRecord.TotalAmount, "USD")
+	transaction := seedCompletedTransaction(t, db, orderRecord.ID, "PAYPAL-CAPTURE-1", float64(orderRecord.TotalAmountMinor)/100, "USD")
 	transaction.PaymentMethod = "paypal"
 	require.NoError(t, db.Save(&transaction).Error)
 
@@ -2016,7 +2097,7 @@ func TestRecordPayPalDisputeLinksTransactionAndOrder(t *testing.T) {
 	require.NotNil(t, dispute.TransactionID)
 	assert.Equal(t, orderRecord.ID, *dispute.OrderID)
 	assert.Equal(t, transaction.ID, *dispute.TransactionID)
-	assert.Equal(t, orderRecord.TotalAmount, dispute.Amount)
+	assert.Equal(t, orderRecord.TotalAmountMinor, dispute.AmountMinor)
 	assert.Equal(t, "USD", dispute.Currency)
 
 	var savedOrder order.Order
@@ -2051,7 +2132,7 @@ func TestBuildPayPalDisputeEvidencePackageCollectsTrackingInvoiceAndCommunicatio
 	require.NoError(t, err)
 	require.NotNil(t, pkg.Order)
 	require.NotNil(t, pkg.FulfillmentEvidence)
-	require.NotNil(t, pkg.FulfillmentEvidence.Shipment)
+	require.Len(t, pkg.FulfillmentEvidence.Shipments, 1)
 	assert.True(t, pkg.CanSubmit)
 	assert.Equal(t, "DHL777", pkg.Evidence.ShippingTrackingNumber)
 	assert.Equal(t, "DHL", pkg.Evidence.ShippingCarrier)
@@ -2077,11 +2158,11 @@ func TestBuildPayPalDisputeEvidencePackageWarnsOrderPolicySignatureWithoutSignat
 	pkg, err := paymentService.BuildPayPalDisputeEvidencePackage(disputeRecord.ID)
 
 	require.NoError(t, err)
-	assert.Equal(t, float64(1235), orderRecord.TotalAmount)
+	assert.Equal(t, int64(123500), orderRecord.TotalAmountMinor)
 	assert.True(t, orderRecord.SignatureRequired)
 	require.True(t, pkg.CanSubmit)
 	require.NotNil(t, pkg.FulfillmentEvidence)
-	require.NotNil(t, pkg.FulfillmentEvidence.Shipment)
+	require.Len(t, pkg.FulfillmentEvidence.Shipments, 1)
 	require.True(t, pkg.SubmissionCheck.Ready)
 	require.False(t, pkg.SubmissionCheck.OverrideRequired)
 	assert.Empty(t, pkg.SubmissionCheck.Blockers)
@@ -2232,6 +2313,27 @@ func TestSubmitPayPalDisputeEvidenceAttachesCommercialInvoicePDF(t *testing.T) {
 	assert.Contains(t, saved.EvidenceSubmissionPayload, "https://cdn.example.test/evidence/commercial-invoice.pdf")
 }
 
+func TestPayPalDisputeEvidenceAttachesCarrierPODPDFFromPrivateStorage(t *testing.T) {
+	_, paymentService := newTestPaymentService(t)
+	paymentService.ConfigurePayPalDisputeEvidenceAttachmentURLProvider(fakePayPalPODURLProvider{url: "https://evidence.example.test/pod.pdf?sig=1"})
+	items := []orderevidence.OrderEvidenceItem{{
+		ItemType: orderevidence.EvidenceItemTypeSignedPOD,
+		Attachments: []orderevidence.OrderEvidenceAttachment{{
+			StorageKey: "order-evidence/44/7/carrier-pod.pdf", OriginalFilename: "carrier-pod.pdf", MimeType: "application/pdf", SHA256: strings.Repeat("a", 64),
+		}},
+	}}
+	pkg := &PayPalDisputeEvidencePackage{
+		Order:               &order.Order{ID: 44},
+		FulfillmentEvidence: &OrderEvidencePackageAssembly{Package: &orderevidence.OrderEvidencePackage{Items: items}},
+	}
+
+	documents, warnings := paymentService.payPalDisputeCarrierPODDocuments(context.Background(), pkg)
+	require.Len(t, documents, 1)
+	assert.Equal(t, "carrier_pod", documents[0].Type)
+	assert.Equal(t, "carrier-pod.pdf", documents[0].Name)
+	assert.Empty(t, warnings)
+}
+
 func TestSubmitPayPalDisputeEvidenceUsesCompactInvoiceWhenCommercialInvoiceExceedsBudget(t *testing.T) {
 	db, paymentService := newTestPaymentService(t)
 	customer := seedPaymentUser(t, db, 50, "paypal-invoice-budget@example.test")
@@ -2283,9 +2385,6 @@ func TestSubmitPayPalDisputeEvidenceAllowsMissingTrackingWithoutWarningOverride(
 	db, paymentService := newTestPaymentService(t)
 	customer := seedPaymentUser(t, db, 46, "paypal-no-track@example.test")
 	orderRecord := seedDisputeEvidenceOrder(t, db, "ORD-PAYPAL-EVIDENCE-3", customer.ID)
-	orderRecord.TrackingNumber = ""
-	orderRecord.ProviderCarrierCode = ""
-	orderRecord.ProviderCarrierName = ""
 	require.NoError(t, db.Save(&orderRecord).Error)
 	disputeRecord := seedPayPalDispute(t, db, "PP-D-NO-TRACK-1", orderRecord.ID, "WAITING_FOR_SELLER_RESPONSE", "REQUIRED_ACTION")
 	fakeSubmitter := &fakePayPalDisputeEvidenceSubmitter{}
@@ -2330,6 +2429,12 @@ type fakePayPalDisputeDocumentStorage struct {
 	uploads  int
 }
 
+type fakePayPalPODURLProvider struct{ url string }
+
+func (f fakePayPalPODURLProvider) GetPresignedURL(context.Context, string, time.Duration) (string, error) {
+	return f.url, nil
+}
+
 func (f *fakePayPalDisputeDocumentStorage) UploadFromReader(_ context.Context, reader io.Reader, filename string) (string, error) {
 	f.filename = filename
 	f.uploads++
@@ -2370,12 +2475,9 @@ func seedDisputeEvidenceOrder(t *testing.T, db *gorm.DB, orderNumber string, use
 		Status:              "shipped",
 		PaymentStatus:       "paid",
 		ShippingStatus:      "delivered",
-		TrackingNumber:      "DHL123",
-		ProviderCarrierCode: "DHL",
-		ProviderCarrierName: "DHL Express",
-		SubtotalAmount:      1200,
-		ShippingFee:         35,
-		TotalAmount:         1235,
+		SubtotalAmountMinor: 120000,
+		ShippingFeeMinor:    3500,
+		TotalAmountMinor:    123500,
 		Currency:            "USD",
 		PaidAt:              &paidAt,
 		ShippedAt:           &shippedAt,
@@ -2401,14 +2503,14 @@ func seedDisputeEvidenceOrder(t *testing.T, db *gorm.DB, orderNumber string, use
 		},
 		Items: []order.OrderItem{
 			{
-				ProductID:   1,
-				VariantID:   &variantID,
-				ProductName: "Carbon wheelset",
-				SKU:         "C50-DT240",
-				Quantity:    1,
-				Price:       1200,
-				Subtotal:    1200,
-				Total:       1200,
+				ProductID:     1,
+				VariantID:     &variantID,
+				ProductName:   "Carbon wheelset",
+				SKU:           "C50-DT240",
+				Quantity:      1,
+				PriceMinor:    120000,
+				SubtotalMinor: 120000,
+				TotalMinor:    120000,
 			},
 		},
 	}
@@ -2424,7 +2526,7 @@ func seedStripeDispute(t *testing.T, db *gorm.DB, stripeID string, orderID uint,
 		StripeDisputeID: stripeID,
 		OrderID:         &orderID,
 		PaymentIntentID: "pi_" + stripeID,
-		Amount:          1235,
+		AmountMinor:     123500,
 		Currency:        "USD",
 		Reason:          "fraudulent",
 		Status:          status,
@@ -2441,7 +2543,7 @@ func seedPayPalDispute(t *testing.T, db *gorm.DB, paypalID string, orderID uint,
 		PayPalDisputeID:       paypalID,
 		OrderID:               &orderID,
 		ProviderPaymentID:     "capture_" + paypalID,
-		Amount:                1235,
+		AmountMinor:           123500,
 		Currency:              "USD",
 		Reason:                "MERCHANDISE_OR_SERVICE_NOT_RECEIVED",
 		Status:                status,
@@ -2526,15 +2628,16 @@ func seedPayPalDisputeEvidenceOrderItems(t *testing.T, db *gorm.DB, orderID uint
 	variantID := uint(1)
 	for i := 0; i < count; i++ {
 		require.NoError(t, db.Create(&order.OrderItem{
-			OrderID:     orderID,
-			ProductID:   uint(100 + i),
-			VariantID:   &variantID,
-			ProductName: fmt.Sprintf("Accessory %d", i+1),
-			SKU:         fmt.Sprintf("ACC-%d", i+1),
-			Quantity:    1,
-			Price:       1,
-			Subtotal:    1,
-			Total:       1,
+			OrderID:       orderID,
+			ProductID:     uint(100 + i),
+			VariantID:     &variantID,
+			ProductName:   fmt.Sprintf("Accessory %d", i+1),
+			SKU:           fmt.Sprintf("ACC-%d", i+1),
+			Quantity:      1,
+			Currency:      "USD",
+			PriceMinor:    100,
+			SubtotalMinor: 100,
+			TotalMinor:    100,
 		}).Error)
 	}
 }

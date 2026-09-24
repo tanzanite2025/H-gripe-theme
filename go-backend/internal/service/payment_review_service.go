@@ -347,7 +347,16 @@ func (s *PaymentService) UpdatePaymentReview(id uint, status, notes string, admi
 		if err := repos.Payment.UpdatePaymentReview(record); err != nil {
 			return err
 		}
-		if status == "approved" && lateReview && record.OrderID != nil {
+		// A late-payment review is not a normal liability approval. The order is
+		// already terminal while the gateway capture succeeded, so every terminal
+		// operator decision must first create the durable refund intent. In
+		// particular, "rejected" means refund-and-close here; allowing it to
+		// finalize without a refund would strand the captured funds on a cancelled
+		// order. Missing references fail the transaction, leaving the review pending.
+		if status != "pending" && lateReview {
+			if record.OrderID == nil {
+				return errors.New("late payment review is missing order reference")
+			}
 			transactionID := record.TransactionID
 			if transactionID == nil && strings.TrimSpace(record.PaymentIntentID) != "" {
 				transaction, lookupErr := repos.Payment.FindTransactionByTransactionIDForUpdate(record.PaymentIntentID)
@@ -367,7 +376,7 @@ func (s *PaymentService) UpdatePaymentReview(id uint, status, notes string, admi
 			if err != nil {
 				return err
 			}
-			if err := createLatePaymentRefundInTx(repos, orderRecord, transaction, latePaymentRefundReason(record.Reason)); err != nil {
+			if err := s.createLatePaymentRefundInTx(repos, orderRecord, transaction, latePaymentRefundReason(record.Reason)); err != nil {
 				return err
 			}
 		}

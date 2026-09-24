@@ -6,20 +6,6 @@ import (
 	domainmoney "commerce-platform/internal/domain/money"
 )
 
-func TestPaymentMajorStringRoundsBeforeFormatting(t *testing.T) {
-	got, err := paymentMajorString(199.99999999999997, "USD")
-	if err != nil || got != "200.00" {
-		t.Fatalf("formatted amount = %q, err=%v; want 200.00", got, err)
-	}
-}
-
-func TestPaymentMajorStringUsesZeroDecimalCurrency(t *testing.T) {
-	got, err := paymentMajorString(1000.4, "JPY")
-	if err != nil || got != "1000" {
-		t.Fatalf("formatted amount = %q, err=%v; want 1000", got, err)
-	}
-}
-
 func TestMoneyParserDoesNotUseBinaryFloatingPoint(t *testing.T) {
 	money, err := domainmoney.ParseMajor("199.99", "USD")
 	if err != nil || money.AmountMinor() != 19999 {

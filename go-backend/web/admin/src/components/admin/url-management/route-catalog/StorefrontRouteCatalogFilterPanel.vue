@@ -29,7 +29,7 @@
             <SelectItem value="static">静态页面</SelectItem>
             <SelectItem value="product">产品</SelectItem>
             <SelectItem value="blog">Blog</SelectItem>
-            <SelectItem value="alias">兼容路由</SelectItem>
+            <SelectItem v-if="mode !== 'canonical'" value="alias">兼容路由</SelectItem>
           </SelectContent>
         </Select>
       </label>
@@ -41,7 +41,7 @@
           <SelectContent>
             <SelectItem value="all">全部台账状态</SelectItem>
             <SelectItem value="active">有效</SelectItem>
-            <SelectItem value="alias">兼容</SelectItem>
+            <SelectItem v-if="mode !== 'canonical'" value="alias">兼容</SelectItem>
             <SelectItem value="duplicate">重复</SelectItem>
             <SelectItem value="stale">失效</SelectItem>
           </SelectContent>
@@ -90,7 +90,7 @@
     </form>
 
  <div class="mt-4 flex flex-col gap-3 border-t border-dashed border-border/70 pt-3 text-xs sm:flex-row sm:items-center sm:justify-between">
- <label class="flex items-center gap-2">
+      <label v-if="mode !== 'canonical'" class="flex items-center gap-2">
         <Switch v-model="filters.includeAliases" size="sm" />
         <span>显示兼容路由</span>
  <span class="text-muted-foreground">如 /faq、旧产品路径</span>
@@ -117,6 +117,7 @@ defineProps<{
   stats: StorefrontRouteCatalogStats
   paginationTotal: number
   localeLabel: string
+  mode?: 'catalog' | 'canonical'
   loading?: boolean
 }>()
 

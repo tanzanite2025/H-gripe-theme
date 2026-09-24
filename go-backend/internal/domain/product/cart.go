@@ -79,7 +79,6 @@ func (i *CartItem) SetPriceMoney(value domainmoney.Money) error {
 // CartSummary 购物车摘要
 type CartSummary struct {
 	ItemCount  int               `json:"item_count"`
-	Total      float64           `json:"total"`
 	TotalMoney domainmoney.Money `json:"-"`
 	Items      []CartItem        `json:"items"`
 }

@@ -5,7 +5,7 @@
         <UserRound class="size-4 text-primary" />
         客户上下文
       </CardTitle>
-      <CardDescription>只读事实源：账号、购物车、心愿单、订单和浏览记录</CardDescription>
+      <CardDescription>只读事实源：账号、订单履约/价格、售后退款、购物车、心愿单和浏览记录</CardDescription>
     </CardHeader>
 
     <CardContent class="min-h-0 flex-1 space-y-4 overflow-y-auto p-4">
@@ -18,8 +18,20 @@
         <LoaderCircle class="size-5 animate-spin" />
       </div>
 
+      <div v-else-if="contextError && customerContext" class="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4 text-xs leading-6 text-amber-800 dark:text-amber-200">
+        <p class="font-bold">上下文刷新失败，当前显示的是上次成功读取的数据。</p>
+        <p class="mt-1">{{ contextError }}</p>
+        <p v-if="contextLastUpdatedAt" class="mt-1 text-[11px] opacity-80">上次更新：{{ formatDate(contextLastUpdatedAt) }}</p>
+      </div>
+
+      <div v-else-if="contextError" class="rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-xs leading-6 text-red-800 dark:text-red-200">
+        <p class="font-bold">无法读取客户上下文</p>
+        <p class="mt-1">{{ contextError }}</p>
+        <p class="mt-1">消息仍可正常收发，请稍后重试。</p>
+      </div>
+
       <div v-else-if="!customerContext" class="rounded-2xl border border-dashed p-4 text-xs leading-6 text-muted-foreground">
-        暂时无法读取客户上下文。消息仍可正常收发。
+        暂无客户上下文数据。若客户未采集时区，时区会明确显示为“未采集时区”。
       </div>
 
       <template v-else>
@@ -41,6 +53,7 @@
             <div class="min-w-0 text-right text-[11px]">
               <p class="truncate font-mono font-bold text-foreground">{{ customerTimezoneValid ? customerContact.timezone : '未采集时区' }}</p>
               <p class="mt-1 truncate text-muted-foreground">{{ customerTimezoneSourceLabel }}</p>
+              <p v-if="customerTimezoneValid && customerTimezoneDifference" class="mt-1 truncate text-muted-foreground">{{ customerTimezoneDifference }}</p>
             </div>
           </div>
           <p class="mt-3 rounded-xl bg-background/70 px-3 py-2 text-xs leading-5 text-muted-foreground">
@@ -107,6 +120,115 @@
         </section>
 
         <section class="rounded-2xl border bg-card p-3">
+          <div class="mb-3 flex items-center justify-between gap-2">
+            <h3 class="flex items-center gap-2 text-xs font-black uppercase tracking-wider">
+              <MapPin class="size-3.5 text-primary" />
+              最近收货地址
+            </h3>
+            <AdminStatusBadge :tone="factTone(customerShippingAddress.status, customerShippingAddress.available)">
+              {{ factStatusLabel(customerShippingAddress.status, customerShippingAddress.available) }}
+            </AdminStatusBadge>
+          </div>
+          <p v-if="!customerShippingAddress.available" class="rounded-xl bg-muted/45 p-3 text-xs leading-6 text-muted-foreground">
+            {{ customerShippingAddress.reason || '暂无可用收货地址。' }}
+          </p>
+          <div v-else class="space-y-2 text-xs">
+            <div class="rounded-xl bg-muted/45 p-3">
+              <div class="flex items-center justify-between gap-2">
+                <strong>{{ customerShippingAddress.recipient_name || '未填写收件人' }}</strong>
+                <span class="font-mono text-[11px] text-muted-foreground">{{ customerShippingAddress.source_order_number || '-' }}</span>
+              </div>
+              <p class="mt-1 leading-5 text-muted-foreground">
+                {{ customerShippingAddress.address_line || '-' }}
+                <span v-if="customerShippingAddress.city"> · {{ customerShippingAddress.city }}</span>
+                <span v-if="customerShippingAddress.state"> · {{ customerShippingAddress.state }}</span>
+              </p>
+              <p class="mt-1 text-[11px] text-muted-foreground">
+                {{ customerShippingAddress.postal_code || '-' }} · {{ customerShippingAddress.country || '-' }}
+                <span v-if="customerShippingAddress.phone_present"> · 已留电话</span>
+              </p>
+            </div>
+            <p class="text-[11px] text-muted-foreground">电话和邮箱不会进入客服上下文。</p>
+          </div>
+        </section>
+
+        <section class="rounded-2xl border bg-card p-3">
+          <div class="mb-3 flex items-center justify-between gap-2">
+            <h3 class="flex items-center gap-2 text-xs font-black uppercase tracking-wider">
+              <RotateCcw class="size-3.5 text-primary" />
+              售后 / RMA
+            </h3>
+            <AdminStatusBadge :tone="factTone(customerAfterSales.status, customerAfterSales.available)">
+              {{ factStatusLabel(customerAfterSales.status, customerAfterSales.available) }}
+            </AdminStatusBadge>
+          </div>
+          <p v-if="!customerAfterSales.available" class="rounded-xl bg-muted/45 p-3 text-xs leading-6 text-muted-foreground">
+            {{ customerAfterSales.reason || '暂无售后事实。' }}
+          </p>
+          <div v-else class="space-y-2">
+            <p v-if="!customerAfterSales.items?.length" class="rounded-xl border border-dashed p-3 text-xs text-muted-foreground">
+              {{ customerAfterSales.reason || '暂无售后请求' }}
+            </p>
+            <article v-for="item in customerAfterSales.items" :key="item.id" class="rounded-xl border p-2 text-xs">
+              <div class="flex items-center justify-between gap-2">
+                <strong class="truncate">{{ item.type || '售后请求' }}</strong>
+                <AdminStatusBadge :tone="statusTone(item.status)">{{ item.status || '-' }}</AdminStatusBadge>
+              </div>
+              <p class="mt-1 text-[11px] text-muted-foreground">
+                {{ item.order_number || `订单 ${item.order_id || '-'}` }} · {{ formatShortDate(item.updated_at || item.created_at) }}
+              </p>
+              <p v-if="item.reason" class="mt-1 text-xs leading-5 text-muted-foreground">{{ item.reason }}</p>
+              <p v-if="item.item_summary" class="mt-1 text-[11px] text-muted-foreground">{{ item.item_summary }}</p>
+              <p v-if="item.current_handler_name || item.current_handler_id" class="mt-1 text-[11px] text-muted-foreground">当前处理人：{{ item.current_handler_name || `客服 ${item.current_handler_id}` }}</p>
+              <p v-if="item.resolution" class="mt-1 text-[11px] text-muted-foreground">处理结果：{{ item.resolution }}</p>
+            </article>
+            <p v-if="customerAfterSales.refund_status !== 'available'" class="rounded-xl bg-muted/45 p-2 text-[11px] text-muted-foreground">退款明细：{{ customerAfterSales.refund_reason || '暂无数据' }}</p>
+            <article v-for="refund in customerAfterSales.refunds" :key="refund.id" class="rounded-xl border p-2 text-xs">
+              <div class="flex items-center justify-between gap-2"><strong>退款 {{ refund.order_number || refund.order_id }}</strong><AdminStatusBadge :tone="statusTone(refund.status)">{{ refund.status || '-' }}</AdminStatusBadge></div>
+              <p class="mt-1 text-[11px] text-muted-foreground">{{ formatMoney(refund.amount) }} {{ refund.currency || '' }} · {{ formatShortDate(refund.completed_at || refund.created_at) }}</p>
+            </article>
+            <p v-if="customerAfterSales.warranty_status !== 'available'" class="rounded-xl bg-muted/45 p-2 text-[11px] text-muted-foreground">保修明细：{{ customerAfterSales.warranty_reason || '暂无数据' }}</p>
+            <article v-for="claim in customerAfterSales.warranty_claims" :key="claim.id" class="rounded-xl border p-2 text-xs">
+              <div class="flex items-center justify-between gap-2"><strong>保修 {{ claim.order_number || '-' }}</strong><AdminStatusBadge :tone="statusTone(claim.status)">{{ claim.status || '-' }}</AdminStatusBadge></div>
+              <p class="mt-1 text-[11px] text-muted-foreground">{{ claim.issue_type || '问题未记录' }}<span v-if="claim.tire_pressure"> · 胎压 {{ claim.tire_pressure }}</span><span v-if="claim.is_tubeless"> · 无内胎</span></p>
+            </article>
+          </div>
+        </section>
+
+        <section class="rounded-2xl border bg-card p-3">
+          <div class="mb-3 flex items-center justify-between gap-2">
+            <h3 class="flex items-center gap-2 text-xs font-black uppercase tracking-wider">
+              <ShieldAlert class="size-3.5 text-primary" />
+              支付争议
+            </h3>
+            <AdminStatusBadge :tone="factTone(customerDisputes.status, customerDisputes.available)">
+              {{ factStatusLabel(customerDisputes.status, customerDisputes.available) }}
+            </AdminStatusBadge>
+          </div>
+          <p v-if="!customerDisputes.available" class="rounded-xl bg-muted/45 p-3 text-xs leading-6 text-muted-foreground">
+            {{ customerDisputes.reason || '暂无支付争议事实。' }}
+          </p>
+          <div v-else class="space-y-2">
+            <p v-if="!customerDisputes.items?.length" class="rounded-xl border border-dashed p-3 text-xs text-muted-foreground">
+              {{ customerDisputes.reason || '暂无支付争议' }}
+            </p>
+            <article v-for="item in customerDisputes.items" :key="`${item.provider}-${item.order_id}-${item.evidence_due_at || item.status}`" class="rounded-xl border p-2 text-xs">
+              <div class="flex items-center justify-between gap-2">
+                <strong class="uppercase">{{ item.provider || '支付渠道' }}</strong>
+                <AdminStatusBadge :tone="statusTone(item.status)">{{ item.status || '-' }}</AdminStatusBadge>
+              </div>
+              <p class="mt-1 text-[11px] text-muted-foreground">
+                {{ item.order_number || `订单 ${item.order_id || '-'}` }} · {{ formatMoney(item.amount) }} {{ item.currency || '' }}
+              </p>
+              <p v-if="item.reason" class="mt-1 text-xs leading-5 text-muted-foreground">{{ item.reason }}</p>
+              <p v-if="item.evidence_due_at" class="mt-1 text-[11px] text-amber-700">证据截止：{{ formatDate(item.evidence_due_at) }}</p>
+              <p v-else-if="item.evidence_submitted_at" class="mt-1 text-[11px] text-muted-foreground">证据已提交：{{ formatDate(item.evidence_submitted_at) }}</p>
+            </article>
+            <p class="text-[11px] text-muted-foreground">仅显示争议摘要，不展示支付凭证或支付提供商 ID。</p>
+          </div>
+        </section>
+
+        <section class="rounded-2xl border bg-card p-3">
           <h3 class="mb-3 flex items-center gap-2 text-xs font-black uppercase tracking-wider">
             <Mail class="size-3.5 text-primary" />
             联系与地区
@@ -143,7 +265,7 @@
               购物车
             </h3>
             <AdminStatusBadge :tone="customerCart.available ? 'green' : 'amber'">
-              {{ customerCart.available ? `${customerCart.item_count || 0} 件` : '未绑定' }}
+              {{ factStatusLabel(customerCart.status, customerCart.available) }}
             </AdminStatusBadge>
           </div>
           <p v-if="!customerCart.available" class="rounded-xl bg-muted/45 p-3 text-xs leading-6 text-muted-foreground">
@@ -152,8 +274,9 @@
           <div v-else class="space-y-2">
             <div class="flex items-center justify-between rounded-xl bg-muted/45 p-3 text-xs">
               <span>合计</span>
-              <strong>{{ formatMoney(customerCart.total) }}</strong>
+              <strong>{{ formatMoneyWithCurrency(customerCart.total, customerCart.currency) }}</strong>
             </div>
+            <p class="text-[11px] text-muted-foreground">价格口径：购物车项目保存的价格快照；当前上下文不代表已锁定库存。</p>
             <p v-if="!customerCart.items?.length" class="rounded-xl border border-dashed p-3 text-xs text-muted-foreground">购物车为空</p>
             <article v-for="item in customerCart.items" :key="item.id" class="flex gap-2 rounded-xl border p-2">
               <div class="size-12 shrink-0 overflow-hidden rounded-lg bg-muted">
@@ -162,7 +285,8 @@
               <div class="min-w-0 flex-1 text-xs">
                 <p class="truncate font-bold">{{ item.name }}</p>
  <p class="mt-0.5 truncate text-[11px] text-muted-foreground">{{ item.sku || item.variant_name || '无 SKU'}}</p>
-                <p class="mt-1 font-mono text-[11px]">x{{ item.quantity }} · {{ formatMoney(item.line_total) }}</p>
+                <p class="mt-1 font-mono text-[11px]">{{ formatMoneyWithCurrency(item.price, item.currency || customerCart.currency) }} × {{ item.quantity }} = {{ formatMoneyWithCurrency(item.line_total, item.currency || customerCart.currency) }}</p>
+                <p class="mt-1 text-[11px] text-muted-foreground">库存快照：{{ item.inventory_snapshot === 'not_captured' ? '未采集' : (item.inventory_snapshot || '未知') }}</p>
               </div>
             </article>
           </div>
@@ -175,7 +299,7 @@
               心愿单
             </h3>
             <AdminStatusBadge :tone="customerWishlist.available ? 'green' : 'amber'">
-              {{ customerWishlist.available ? `${customerWishlist.count || 0} 个` : '不可读' }}
+              {{ factStatusLabel(customerWishlist.status, customerWishlist.available) }}
             </AdminStatusBadge>
           </div>
           <p v-if="!customerWishlist.available" class="rounded-xl bg-muted/45 p-3 text-xs leading-6 text-muted-foreground">
@@ -202,7 +326,7 @@
               最近订单
             </h3>
             <AdminStatusBadge :tone="customerOrders.available ? 'green' : 'amber'">
-              {{ customerOrders.available ? `${customerOrders.total || 0} 单` : '不可读' }}
+              {{ factStatusLabel(customerOrders.status, customerOrders.available) }}
             </AdminStatusBadge>
           </div>
           <p v-if="!customerOrders.available" class="rounded-xl bg-muted/45 p-3 text-xs leading-6 text-muted-foreground">
@@ -213,11 +337,27 @@
             <article v-for="item in customerOrders.items" :key="item.id" class="rounded-xl border p-2 text-xs">
               <div class="flex items-center justify-between gap-2">
                 <strong class="truncate">{{ item.order_number }}</strong>
-                <span class="font-mono">{{ formatMoney(item.total_amount) }}</span>
+                <span class="font-mono">{{ formatMoney(item.total_amount) }} {{ item.currency || '' }}</span>
               </div>
               <p class="mt-1 text-[11px] text-muted-foreground">
                 {{ item.status }} / {{ item.payment_status }} / {{ item.shipping_status }} · {{ formatShortDate(item.created_at) }}
               </p>
+              <p class="mt-1 text-[11px] text-muted-foreground">
+                小计 {{ formatMoney(item.subtotal_amount) }} · 折扣后 {{ formatMoney(item.discounted_subtotal_amount) }} · 运费 {{ formatMoney(item.shipping_fee) }} · 税费 {{ formatMoney(item.tax_amount) }}
+              </p>
+              <div v-if="item.shipments?.length" class="mt-2 space-y-1">
+                <div v-for="shipment in item.shipments" :key="shipment.id" class="flex items-center justify-between gap-2 rounded-lg bg-muted/45 px-2 py-1.5 text-[11px]">
+                  <span class="truncate">{{ shipment.carrier || '承运商未记录' }}<span v-if="shipment.carrier_service"> · {{ shipment.carrier_service }}</span></span>
+                  <button type="button" class="shrink-0 font-mono underline underline-offset-2" :title="shipment.tracking_number ? '点击复制追踪号' : undefined" @click="copyValue(shipment.tracking_number)">{{ shipment.tracking_number || '无追踪号' }}</button>
+                </div>
+              </div>
+              <div v-if="item.items?.length" class="mt-2 space-y-1">
+                <div v-for="line in item.items" :key="line.id" class="flex items-center gap-2 text-[11px]">
+                  <img v-if="line.thumbnail" :src="line.thumbnail" :alt="line.name" class="size-7 rounded object-cover" />
+                  <span class="min-w-0 flex-1 truncate">{{ line.name || `产品 ${line.product_id}` }} × {{ line.quantity }}</span>
+                  <span class="font-mono">{{ formatMoney(line.total_amount) }}</span>
+                </div>
+              </div>
             </article>
           </div>
         </section>
@@ -229,7 +369,7 @@
               浏览历史
             </h3>
             <AdminStatusBadge :tone="customerBrowsing.available ? 'green' : 'amber'">
-              {{ customerBrowsing.available ? `${customerBrowsing.count || 0} 条` : '不可读' }}
+              {{ factStatusLabel(customerBrowsing.status, customerBrowsing.available) }}
             </AdminStatusBadge>
           </div>
           <p v-if="!customerBrowsing.available" class="rounded-xl bg-muted/45 p-3 text-xs leading-6 text-muted-foreground">
@@ -239,9 +379,17 @@
             <p v-if="!customerBrowsing.items?.length" class="rounded-xl border border-dashed p-3 text-xs text-muted-foreground">暂无浏览历史</p>
             <article v-for="item in customerBrowsing.items" :key="item.product_id" class="rounded-xl border p-2 text-xs">
               <div class="flex items-center justify-between gap-2">
-                <strong>产品 {{ item.product_id }}</strong>
-                <span class="font-mono">{{ item.view_count }} 次</span>
+                <div class="flex min-w-0 items-center gap-2">
+                  <img v-if="item.thumbnail" :src="item.thumbnail" :alt="item.name || `产品 ${item.product_id}`" class="size-8 shrink-0 rounded object-cover" />
+                  <strong class="truncate">{{ item.name || `产品 ${item.product_id}` }}</strong>
+                </div>
+                <span class="shrink-0 font-mono">{{ item.view_count }} 次</span>
               </div>
+              <p v-if="item.sku || item.price" class="mt-1 text-[11px] text-muted-foreground">
+                <span v-if="item.sku">SKU {{ item.sku }}</span>
+                <span v-if="item.sku && item.price"> · </span>
+                <span v-if="item.price">{{ item.currency || '' }} {{ item.price }}</span>
+              </p>
               <p class="mt-1 text-[11px] text-muted-foreground">最后浏览：{{ formatDate(item.last_viewed_at) }}</p>
             </article>
           </div>
@@ -271,7 +419,7 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
-import { Clock3, Heart, History, Info, LoaderCircle, Mail, MapPin, PackageCheck, ShoppingCart, UserCheck, UserRound } from '@lucide/vue'
+import { Clock3, Heart, History, Info, LoaderCircle, Mail, MapPin, PackageCheck, RotateCcw, ShieldAlert, ShoppingCart, UserCheck, UserRound } from '@lucide/vue'
 import AdminStatusBadge from '@/components/admin/AdminStatusBadge.vue'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import {
@@ -279,12 +427,15 @@ import {
   formatCustomerLocalDate,
   formatCustomerLocalTime,
   formatMoney,
+  formatMoneyWithCurrency,
   formatShortDate,
   customerLocalTimeHint as getCustomerLocalTimeHint,
   customerLocalTimePhase as getCustomerLocalTimePhase,
+  customerTimezoneDifference as getCustomerTimezoneDifference,
   customerTimezoneSourceLabel as getCustomerTimezoneSourceLabel,
   isValidCustomerTimezone,
   signalTone,
+  statusTone,
   tierStyle,
 } from '@/lib/customerServicePresentation'
 import type {
@@ -295,7 +446,10 @@ import type {
   CustomerContact,
   CustomerContext,
   CustomerConversation,
+  CustomerAfterSales,
   CustomerOrders,
+  CustomerPaymentDisputes,
+  CustomerShippingAddress,
   CustomerSignal,
   CustomerWishlist,
 } from '@/modules/customer-service/customerServiceTypes'
@@ -304,10 +458,14 @@ const props = withDefaults(defineProps<{
   selectedConversation?: CustomerConversation | null
   customerContext?: CustomerContext | null
   loading?: boolean
+  contextError?: string | null
+  contextLastUpdatedAt?: Date | null
 }>(), {
   selectedConversation: null,
   customerContext: null,
   loading: false,
+  contextError: null,
+  contextLastUpdatedAt: null,
 })
 
 const customerAccount = computed<CustomerAccount | null>(() => props.customerContext?.customer?.account || null)
@@ -317,6 +475,9 @@ const customerClockNow = ref(new Date())
 const customerCart = computed<CustomerCart>(() => props.customerContext?.cart || { available: false, items: [] })
 const customerWishlist = computed<CustomerWishlist>(() => props.customerContext?.wishlist || { available: false, items: [] })
 const customerOrders = computed<CustomerOrders>(() => props.customerContext?.orders || { available: false, items: [] })
+const customerShippingAddress = computed<CustomerShippingAddress>(() => props.customerContext?.shipping_address || { available: false, status: 'unavailable' })
+const customerAfterSales = computed<CustomerAfterSales>(() => props.customerContext?.after_sales || { available: false, status: 'unavailable', items: [] })
+const customerDisputes = computed<CustomerPaymentDisputes>(() => props.customerContext?.payment_disputes || { available: false, status: 'unavailable', items: [] })
 const customerBrowsing = computed<CustomerBrowsing>(() => props.customerContext?.browsing || { available: false, items: [] })
 const customerTimezoneValid = computed(() => isValidCustomerTimezone(customerContact.value.timezone))
 const customerLocalTime = computed(() => formatCustomerLocalTime(customerClockNow.value, customerContact.value.timezone))
@@ -324,6 +485,27 @@ const customerLocalDate = computed(() => formatCustomerLocalDate(customerClockNo
 const customerLocalTimePhase = computed(() => getCustomerLocalTimePhase(customerClockNow.value, customerContact.value.timezone))
 const customerLocalTimeHint = computed(() => getCustomerLocalTimeHint(customerClockNow.value, customerContact.value.timezone))
 const customerTimezoneSourceLabel = computed(() => getCustomerTimezoneSourceLabel(customerContact.value.timezone_source))
+const customerTimezoneDifference = computed(() => getCustomerTimezoneDifference(customerClockNow.value, customerContact.value.timezone))
+const copyValue = async (value?: string) => {
+  const normalized = String(value || '').trim()
+  if (!normalized || !navigator.clipboard) return
+  try {
+    await navigator.clipboard.writeText(normalized)
+  } catch {
+    // Clipboard permission is optional; the tracking number remains visible.
+  }
+}
+const factStatusLabel = (status: string | undefined, available: boolean): string => {
+  if (status === 'error') return '读取失败'
+  if (status === 'permission_denied') return '无权限'
+  if (available || status === 'available') return '可用'
+  return '暂无数据'
+}
+const factTone = (status: string | undefined, available: boolean): 'green' | 'amber' | 'coral' | 'gray' => {
+  if (status === 'error') return 'coral'
+  if (status === 'permission_denied' || !available) return 'amber'
+  return 'green'
+}
 interface SignalItem extends CustomerSignal {
   key: string
   label: string

@@ -32,8 +32,6 @@ type QuoteRequest struct {
 	ShippingQuoteID     string         `json:"shipping_quote_id"`
 	SelectedQuotePlanID string         `json:"selected_quote_plan_id"`
 	CouponCode          string         `json:"coupon_code"`
-	GiftCardCode        string         `json:"gift_card_code"`
-	PointsToUse         int            `json:"points_to_use"`
 }
 
 type AddressRequest struct {
@@ -81,17 +79,12 @@ func (h *Handler) Quote(c *gin.Context) {
 			apierror.RespondBadRequest(c, priceErr.Error())
 			return
 		}
-		price, priceErr := priceMoney.MajorFloat()
-		if priceErr != nil {
-			apierror.RespondBadRequest(c, priceErr.Error())
-			return
-		}
 		items[i] = order.OrderItem{
 			ProductID:         item.ProductID,
 			VariantID:         item.VariantID,
 			Quantity:          item.Quantity,
 			Currency:          priceMoney.Currency().String(),
-			Price:             price,
+			PriceMinor:        priceMoney.AmountMinor(),
 			ConfigurationData: append([]byte(nil), item.ConfigurationData...),
 			ConfigurationHash: item.ConfigurationHash,
 		}
@@ -106,8 +99,6 @@ func (h *Handler) Quote(c *gin.Context) {
 		ShippingQuoteID:     req.ShippingQuoteID,
 		SelectedQuotePlanID: req.SelectedQuotePlanID,
 		CouponCode:          req.CouponCode,
-		GiftCardCode:        req.GiftCardCode,
-		PointsToUse:         req.PointsToUse,
 	})
 	if err != nil {
 		if errors.Is(err, service.ErrProductConfigurationPriceChanged) {

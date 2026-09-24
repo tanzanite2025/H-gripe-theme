@@ -14,8 +14,8 @@ import (
 )
 
 func (s *ShippingService) ensureTrackingShipmentForSync(input TrackingSyncInput, trackingNumber string, providerCarrierCode string) (*shipping.TrackingShipment, error) {
-	existing, err := s.GetTrackingShipmentByOrderID(input.OrderID)
-	if err == nil && existing.TrackingProviderID == input.ProviderID && existing.TrackingNumber == trackingNumber && existing.ProviderCarrierCode == providerCarrierCode {
+	existing, err := s.GetTrackingShipmentByOrderIDAndTrackingNumber(input.OrderID, trackingNumber)
+	if err == nil && existing.TrackingProviderID == input.ProviderID && existing.ProviderCarrierCode == providerCarrierCode {
 		return existing, nil
 	}
 	if err != nil && !repository.IsRecordNotFound(err) {
@@ -83,19 +83,46 @@ func (s *ShippingService) updateOrderShippingStatusIfDelivered(
 			if repos.Order == nil {
 				return errors.New("order repository is not configured")
 			}
+			shippingRepo := repos.Shipping
 			currentOrder, err = repos.Order.FindByIDForUpdate(orderID)
 			if err != nil {
 				return err
 			}
+			if shippingRepo != nil {
+				allDelivered, err := shippingRepo.AreAllTrackingShipmentsDelivered(orderID)
+				if err != nil || !allDelivered {
+					return err
+				}
+			}
+			deliveredAt = sanitizeDeliveryTime(deliveredAt, currentOrder, time.Now().UTC())
 			updated, err = repos.Order.MarkDeliveredAtIfNeeded(orderID, deliveredAt)
 			if err != nil || !updated {
 				return err
 			}
-			return enqueueReferralOrderDeliveredOutboxEvent(repos.Outbox, orderID, deliveredAt, source)
+			if err := enqueueReferralOrderDeliveredOutboxEvent(repos.Outbox, orderID, deliveredAt, source); err != nil {
+				return err
+			}
+			return enqueueOrderDeliveredDomainEvent(
+				repos.Outbox,
+				currentOrder,
+				trackingNumber,
+				currentOrder.ShippingStatus,
+				deliveredAt,
+				source,
+			)
 		})
 	} else {
 		currentOrder, err = s.orderRepo.FindByIDBasic(orderID)
+		if err == nil && s.shippingRepo != nil {
+			allDelivered, deliveryErr := s.shippingRepo.AreAllTrackingShipmentsDelivered(orderID)
+			if deliveryErr != nil {
+				err = deliveryErr
+			} else if !allDelivered {
+				return nil
+			}
+		}
 		if err == nil {
+			deliveredAt = sanitizeDeliveryTime(deliveredAt, currentOrder, time.Now().UTC())
 			updated, err = s.orderRepo.MarkDeliveredAtIfNeeded(orderID, deliveredAt)
 		}
 	}
@@ -149,7 +176,41 @@ func referralDeliveryTime(events []shipping.TrackingEvent) time.Time {
 	if deliveredAt.IsZero() {
 		deliveredAt = time.Now().UTC()
 	}
+	// Keep provider clock errors from injecting an arbitrarily distant business
+	// timestamp. The order-specific lower bound is applied by sanitizeDeliveryTime.
+	now := time.Now().UTC()
+	if deliveredAt.After(now.Add(time.Hour)) {
+		deliveredAt = now
+	}
 	return deliveredAt.UTC()
+}
+
+func sanitizeDeliveryTime(candidate time.Time, record *order.Order, now time.Time) time.Time {
+	if now.IsZero() {
+		now = time.Now().UTC()
+	}
+	value := candidate.UTC()
+	if value.IsZero() || value.After(now.Add(time.Hour)) {
+		value = now
+	}
+	lowerBound := recordCreatedAt(record)
+	if record != nil && record.ShippedAt != nil && !record.ShippedAt.IsZero() && record.ShippedAt.After(lowerBound) {
+		lowerBound = record.ShippedAt.UTC()
+	}
+	if lowerBound.After(now.Add(time.Hour)) {
+		lowerBound = now.Add(time.Hour)
+	}
+	if !lowerBound.IsZero() && value.Before(lowerBound) {
+		value = lowerBound
+	}
+	return value.UTC()
+}
+
+func recordCreatedAt(record *order.Order) time.Time {
+	if record == nil {
+		return time.Time{}
+	}
+	return record.CreatedAt.UTC()
 }
 
 func deliveryTrackingStatusForAudit(status string, statusCode int, events []shipping.TrackingEvent) string {
@@ -319,6 +380,19 @@ func trackingInfoToDomainEvents(orderID uint, trackingNumber string, carrierCode
 			Description:         strings.TrimSpace(info.Status),
 			EventTime:           eventTime,
 		})
+	} else if len(events) == 0 && info.StatusCode == 4 {
+		eventTime := info.UpdatedAt
+		if eventTime.IsZero() {
+			eventTime = syncTime
+		}
+		events = append(events, shipping.TrackingEvent{
+			OrderID:             orderID,
+			TrackingNumber:      effectiveTrackingNumber,
+			ProviderCarrierCode: effectiveCarrier,
+			Status:              "delivered",
+			Description:         "Delivered",
+			EventTime:           eventTime,
+		})
 	}
 
 	return events
@@ -352,6 +426,15 @@ func trackingWebhookEventsToDomainEvents(orderID uint, trackingNumber string, ca
 			ProviderCarrierCode: carrierCode,
 			Status:              strings.TrimSpace(input.Status),
 			Description:         strings.TrimSpace(input.Status),
+			EventTime:           syncTime,
+		})
+	} else if len(events) == 0 && input.StatusCode == 4 {
+		events = append(events, shipping.TrackingEvent{
+			OrderID:             orderID,
+			TrackingNumber:      trackingNumber,
+			ProviderCarrierCode: carrierCode,
+			Status:              "delivered",
+			Description:         "Delivered",
 			EventTime:           syncTime,
 		})
 	}

@@ -79,8 +79,8 @@
               <div class="grid gap-2 sm:grid-cols-2">
                 <Input v-model="item.sku" placeholder="SKU" />
                 <Input v-model.number="item.quantity" type="number" min="1" placeholder="Qty" />
-                <Input v-model.number="item.unit_price" type="number" min="0" step="0.01" placeholder="Unit price" />
-                <Input v-model.number="item.total" type="number" min="0" step="0.01" placeholder="Line total" />
+                <Input v-model="item.unit_price" type="text" inputmode="decimal" placeholder="Unit price" />
+                <Input v-model="item.total" type="text" inputmode="decimal" placeholder="Line total" />
               </div>
             </div>
           </section>
@@ -88,11 +88,11 @@
           <section class="space-y-3">
             <h3 class="text-xs font-black uppercase tracking-widest text-muted-foreground">Totals</h3>
             <div class="grid gap-3 sm:grid-cols-2">
-              <Input v-model.number="form.subtotal" type="number" min="0" step="0.01" placeholder="Subtotal" />
-              <Input v-model.number="form.shipping" type="number" min="0" step="0.01" placeholder="Shipping" />
-              <Input v-model.number="form.tax" type="number" min="0" step="0.01" placeholder="Tax" />
-              <Input v-model.number="form.discount" type="number" min="0" step="0.01" placeholder="Discount" />
-              <Input v-model.number="form.total" type="number" min="0" step="0.01" placeholder="Total" />
+              <Input v-model="form.subtotal" type="text" inputmode="decimal" placeholder="Subtotal" />
+              <Input v-model="form.shipping" type="text" inputmode="decimal" placeholder="Shipping" />
+              <Input v-model="form.tax" type="text" inputmode="decimal" placeholder="Tax" />
+              <Input v-model="form.discount" type="text" inputmode="decimal" placeholder="Discount" />
+              <Input v-model="form.total" type="text" inputmode="decimal" placeholder="Total" />
             </div>
           </section>
 
@@ -135,8 +135,8 @@ const createItem = () => ({
   description: 'Carbon wheelset',
   sku: 'C50-DT240',
   quantity: 1,
-  unit_price: 249.9,
-  total: 249.9,
+  unit_price: '249.90',
+  total: '249.90',
 })
 
 const form = reactive({
@@ -175,11 +175,11 @@ const form = reactive({
     country: 'US',
   },
   items: [createItem()],
-  subtotal: 249.9,
-  shipping: 20,
-  tax: 0,
-  discount: 0,
-  total: 269.9,
+  subtotal: '249.90',
+  shipping: '20.00',
+  tax: '0.00',
+  discount: '0.00',
+  total: '269.90',
 })
 
 const loading = ref(false)
@@ -192,6 +192,13 @@ const addItem = () => {
 
 const removeItem = (index: number) => {
   form.items.splice(index, 1)
+}
+
+const multiplyDecimal = (value: string, quantity: number) => {
+  const [whole, fraction = ''] = String(value || '0').trim().split('.')
+  const scale = 10 ** Math.max(2, fraction.length)
+  const minor = (Number(whole || 0) * scale) + Number((fraction + '0'.repeat(Math.max(0, Math.ceil(Math.log10(scale)) - fraction.length))).slice(0, Math.ceil(Math.log10(scale))) || 0)
+  return ((minor * Math.max(0, quantity)) / scale).toFixed(2)
 }
 
 const releasePDF = () => {
@@ -207,10 +214,10 @@ const renderPreview = async () => {
       ...form,
       items: form.items.map((item) => ({
         ...item,
-        subtotal: Number(item.unit_price || 0) * Number(item.quantity || 1),
-        tax: 0,
-        discount: 0,
-        total: Number(item.total || 0),
+        subtotal: multiplyDecimal(item.unit_price, Number(item.quantity || 1)),
+        tax: '0.00',
+        discount: '0.00',
+        total: String(item.total || '0.00'),
       })),
       payment_date: form.document_date,
     })

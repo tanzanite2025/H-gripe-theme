@@ -44,27 +44,27 @@ type OrderEvidenceAdminListInput struct {
 }
 
 type OrderEvidenceAdminListItem struct {
-	OrderID               uint      `json:"order_id"`
-	OrderNumber           string    `json:"order_number"`
-	CustomerFirstName     string    `json:"customer_first_name"`
-	CustomerLastName      string    `json:"customer_last_name"`
-	CustomerEmail         string    `json:"customer_email"`
-	OrderStatus           string    `json:"order_status"`
-	PaymentStatus         string    `json:"payment_status"`
-	ShippingStatus        string    `json:"shipping_status"`
-	TotalAmount           float64   `json:"total_amount"`
-	Currency              string    `json:"currency"`
-	CreatedAt             time.Time `json:"created_at"`
-	PackageID             uint      `json:"package_id"`
-	PackageVersion        int       `json:"package_version"`
-	PackageStatus         string    `json:"package_status"`
-	OrderTotalUSDSnapshot float64   `json:"order_total_usd_snapshot"`
-	IsHighValue           bool      `json:"is_high_value"`
-	HasSpokeTensionQC     bool      `json:"has_spoke_tension_qc"`
-	TotalEvidenceItems    int       `json:"total_evidence_items"`
-	CompleteEvidenceItems int       `json:"complete_evidence_items"`
-	WaivedEvidenceItems   int       `json:"waived_evidence_items"`
-	PendingEvidenceItems  int       `json:"pending_evidence_items"`
+	OrderID                    uint      `json:"order_id"`
+	OrderNumber                string    `json:"order_number"`
+	CustomerFirstName          string    `json:"customer_first_name"`
+	CustomerLastName           string    `json:"customer_last_name"`
+	CustomerEmail              string    `json:"customer_email"`
+	OrderStatus                string    `json:"order_status"`
+	PaymentStatus              string    `json:"payment_status"`
+	ShippingStatus             string    `json:"shipping_status"`
+	TotalAmountMinor           int64     `json:"total_amount_minor"`
+	Currency                   string    `json:"currency"`
+	CreatedAt                  time.Time `json:"created_at"`
+	PackageID                  uint      `json:"package_id"`
+	PackageVersion             int       `json:"package_version"`
+	PackageStatus              string    `json:"package_status"`
+	OrderTotalUSDSnapshotMinor int64     `json:"order_total_usd_snapshot_minor"`
+	IsHighValue                bool      `json:"is_high_value"`
+	HasSpokeTensionQC          bool      `json:"has_spoke_tension_qc"`
+	TotalEvidenceItems         int       `json:"total_evidence_items"`
+	CompleteEvidenceItems      int       `json:"complete_evidence_items"`
+	WaivedEvidenceItems        int       `json:"waived_evidence_items"`
+	PendingEvidenceItems       int       `json:"pending_evidence_items"`
 }
 
 type OrderEvidenceAdminListResult struct {
@@ -137,27 +137,27 @@ func (s *OrderEvidenceAdminService) ListOrders(
 	items := make([]OrderEvidenceAdminListItem, 0, len(rows))
 	for _, row := range rows {
 		items = append(items, OrderEvidenceAdminListItem{
-			OrderID:               row.OrderID,
-			OrderNumber:           row.OrderNumber,
-			CustomerFirstName:     row.CustomerFirstName,
-			CustomerLastName:      row.CustomerLastName,
-			CustomerEmail:         row.CustomerEmail,
-			OrderStatus:           row.OrderStatus,
-			PaymentStatus:         row.PaymentStatus,
-			ShippingStatus:        row.ShippingStatus,
-			TotalAmount:           row.TotalAmount,
-			Currency:              row.Currency,
-			CreatedAt:             row.CreatedAt,
-			PackageID:             row.PackageID,
-			PackageVersion:        row.PackageVersion,
-			PackageStatus:         row.PackageStatus,
-			OrderTotalUSDSnapshot: row.OrderTotalUSDSnapshot,
-			IsHighValue:           row.IsHighValue,
-			HasSpokeTensionQC:     row.HasSpokeTensionQC,
-			TotalEvidenceItems:    row.TotalEvidenceItems,
-			CompleteEvidenceItems: row.CompleteEvidenceItems,
-			WaivedEvidenceItems:   row.WaivedEvidenceItems,
-			PendingEvidenceItems:  row.PendingEvidenceItems,
+			OrderID:                    row.OrderID,
+			OrderNumber:                row.OrderNumber,
+			CustomerFirstName:          row.CustomerFirstName,
+			CustomerLastName:           row.CustomerLastName,
+			CustomerEmail:              row.CustomerEmail,
+			OrderStatus:                row.OrderStatus,
+			PaymentStatus:              row.PaymentStatus,
+			ShippingStatus:             row.ShippingStatus,
+			TotalAmountMinor:           row.TotalAmountMinor,
+			Currency:                   row.Currency,
+			CreatedAt:                  row.CreatedAt,
+			PackageID:                  row.PackageID,
+			PackageVersion:             row.PackageVersion,
+			PackageStatus:              row.PackageStatus,
+			OrderTotalUSDSnapshotMinor: row.OrderTotalUSDSnapshotMinor,
+			IsHighValue:                row.IsHighValue,
+			HasSpokeTensionQC:          row.HasSpokeTensionQC,
+			TotalEvidenceItems:         row.TotalEvidenceItems,
+			CompleteEvidenceItems:      row.CompleteEvidenceItems,
+			WaivedEvidenceItems:        row.WaivedEvidenceItems,
+			PendingEvidenceItems:       row.PendingEvidenceItems,
 		})
 	}
 	return &OrderEvidenceAdminListResult{

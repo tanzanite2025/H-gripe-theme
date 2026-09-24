@@ -12,8 +12,8 @@ type shippingTemplateRequest struct {
 	Type                  string                                     `json:"type" binding:"required"`
 	Currency              string                                     `json:"currency"`
 	FreeShipping          bool                                       `json:"free_shipping"`
-	FreeThreshold         float64                                    `json:"free_threshold"`
-	DefaultFee            float64                                    `json:"default_fee"`
+	FreeThresholdMinor    int64                                      `json:"free_threshold_minor"`
+	DefaultFeeMinor       int64                                      `json:"default_fee_minor"`
 	DisplayPriceSnapshots map[string][]currency.DisplayPriceSnapshot `json:"display_price_snapshots"`
 	Description           string                                     `json:"description"`
 	Enabled               *bool                                      `json:"enabled"`
@@ -21,13 +21,17 @@ type shippingTemplateRequest struct {
 }
 
 type shippingRuleRequest struct {
-	ID                    uint                                       `json:"id"`
-	Region                string                                     `json:"region"`
-	Currency              string                                     `json:"currency"`
+	ID       uint   `json:"id"`
+	Region   string `json:"region"`
+	Currency string `json:"currency"`
+	// min_value/max_value remain dimensional thresholds for weight/quantity
+	// templates. Price templates use the canonical minor-unit fields below.
 	MinValue              float64                                    `json:"min_value"`
 	MaxValue              float64                                    `json:"max_value"`
-	Fee                   float64                                    `json:"fee"`
-	Additional            float64                                    `json:"additional"`
+	MinValueMinor         int64                                      `json:"min_value_minor"`
+	MaxValueMinor         int64                                      `json:"max_value_minor"`
+	FeeMinor              int64                                      `json:"fee_minor"`
+	AdditionalMinor       int64                                      `json:"additional_minor"`
 	DisplayPriceSnapshots map[string][]currency.DisplayPriceSnapshot `json:"display_price_snapshots"`
 }
 
@@ -40,26 +44,26 @@ type shippingZoneRequest struct {
 }
 
 type shippingCarrierServiceRequest struct {
-	CarrierID             uint    `json:"carrier_id" binding:"required"`
-	TemplateID            *uint   `json:"template_id"`
-	ServiceCode           string  `json:"service_code" binding:"required"`
-	ServiceName           string  `json:"service_name" binding:"required"`
-	RouteName             string  `json:"route_name"`
-	Countries             string  `json:"countries"`
-	Currency              string  `json:"currency"`
-	BillingMode           string  `json:"billing_mode"`
-	FirstWeightGrams      int     `json:"first_weight_grams"`
-	AdditionalWeightGrams int     `json:"additional_weight_grams"`
-	MinChargeWeightGrams  int     `json:"min_charge_weight_grams"`
-	VolumetricDivisor     int     `json:"volumetric_divisor"`
-	FuelSurchargePercent  float64 `json:"fuel_surcharge_percent"`
-	RemoteSurcharge       float64 `json:"remote_surcharge"`
-	RemotePostalCodes     string  `json:"remote_postal_codes"`
-	EtaMinDays            int     `json:"eta_min_days"`
-	EtaMaxDays            int     `json:"eta_max_days"`
-	Enabled               *bool   `json:"enabled"`
-	SortOrder             int     `json:"sort_order"`
-	Description           string  `json:"description"`
+	CarrierID                   uint   `json:"carrier_id" binding:"required"`
+	TemplateID                  *uint  `json:"template_id"`
+	ServiceCode                 string `json:"service_code" binding:"required"`
+	ServiceName                 string `json:"service_name" binding:"required"`
+	RouteName                   string `json:"route_name"`
+	Countries                   string `json:"countries"`
+	Currency                    string `json:"currency"`
+	BillingMode                 string `json:"billing_mode"`
+	FirstWeightGrams            int    `json:"first_weight_grams"`
+	AdditionalWeightGrams       int    `json:"additional_weight_grams"`
+	MinChargeWeightGrams        int    `json:"min_charge_weight_grams"`
+	VolumetricDivisor           int    `json:"volumetric_divisor"`
+	FuelSurchargePercentDecimal string `json:"fuel_surcharge_percent_decimal"`
+	RemoteSurchargeMinor        int64  `json:"remote_surcharge_minor"`
+	RemotePostalCodes           string `json:"remote_postal_codes"`
+	EtaMinDays                  int    `json:"eta_min_days"`
+	EtaMaxDays                  int    `json:"eta_max_days"`
+	Enabled                     *bool  `json:"enabled"`
+	SortOrder                   int    `json:"sort_order"`
+	Description                 string `json:"description"`
 }
 
 type shippingTrackingProviderRequest struct {
@@ -119,20 +123,23 @@ func (r shippingTemplateRequest) toDomain() shippingdomain.ShippingTemplate {
 
 	templateType := strings.TrimSpace(r.Type)
 	templateCurrency := currency.NormalizeCode(r.Currency)
+	if templateCurrency == "" {
+		templateCurrency = currency.DefaultPrimaryCurrency
+	}
 	template := shippingdomain.ShippingTemplate{
-		Name:             strings.TrimSpace(r.Name),
-		Type:             templateType,
-		Currency:         templateCurrency,
-		FreeShipping:     r.FreeShipping,
-		FreeThreshold:    r.FreeThreshold,
-		DefaultFee:       r.DefaultFee,
-		DisplayPriceData: shippingdomain.TemplateDisplayPriceSnapshotsJSON(r.DisplayPriceSnapshots),
-		Description:      strings.TrimSpace(r.Description),
-		Enabled:          enabled,
+		Name:               strings.TrimSpace(r.Name),
+		Type:               templateType,
+		Currency:           templateCurrency,
+		FreeShipping:       r.FreeShipping,
+		FreeThresholdMinor: r.FreeThresholdMinor,
+		DefaultFeeMinor:    r.DefaultFeeMinor,
+		DisplayPriceData:   shippingdomain.TemplateDisplayPriceSnapshotsJSON(r.DisplayPriceSnapshots),
+		Description:        strings.TrimSpace(r.Description),
+		Enabled:            enabled,
 	}
 
 	for _, rule := range r.Rules {
-		domainRule := rule.toDomainForTemplateType(templateType)
+		domainRule := rule.toDomainForTemplateTypeWithCurrency(templateType, templateCurrency)
 		if currency.NormalizeCode(domainRule.Currency) == "" {
 			domainRule.Currency = templateCurrency
 		}
@@ -147,26 +154,55 @@ func (r shippingRuleRequest) toDomain() shippingdomain.ShippingRule {
 }
 
 func (r shippingRuleRequest) toDomainForTemplateType(templateType string) shippingdomain.ShippingRule {
+	return r.toDomainForTemplateTypeWithCurrency(templateType, "")
+}
+
+func (r shippingRuleRequest) toDomainForTemplateTypeWithCurrency(templateType, fallbackCurrency string) shippingdomain.ShippingRule {
 	if strings.TrimSpace(templateType) == "price" {
-		return r.toDomainWithDisplayPriceFields(shippingdomain.ShippingRuleDisplayPriceFields)
+		return r.toDomainWithDisplayPriceFieldsAndCurrency(shippingdomain.ShippingRuleDisplayPriceFields, fallbackCurrency)
 	}
-	return r.toDomainWithDisplayPriceFields([]string{
+	return r.toDomainWithDisplayPriceFieldsAndCurrency([]string{
 		shippingdomain.ShippingRuleDisplayPriceFieldFee,
 		shippingdomain.ShippingRuleDisplayPriceFieldAdditional,
-	})
+	}, fallbackCurrency)
 }
 
 func (r shippingRuleRequest) toDomainWithDisplayPriceFields(fields []string) shippingdomain.ShippingRule {
+	return r.toDomainWithDisplayPriceFieldsAndCurrency(fields, "")
+}
+
+func (r shippingRuleRequest) toDomainWithDisplayPriceFieldsAndCurrency(fields []string, fallbackCurrency string) shippingdomain.ShippingRule {
+	ruleCurrency := currency.NormalizeCode(r.Currency)
+	isPriceRule := containsShippingPriceFields(fields)
+	minValue, maxValue := r.MinValue, r.MaxValue
+	minValueMinor, maxValueMinor := int64(0), int64(0)
+	if isPriceRule {
+		// Price thresholds are canonical minor amounts; dimensional fields are
+		// deliberately ignored for this template type.
+		minValue, maxValue = 0, 0
+		minValueMinor, maxValueMinor = r.MinValueMinor, r.MaxValueMinor
+	}
 	return shippingdomain.ShippingRule{
 		ID:               r.ID,
 		Region:           strings.ToUpper(strings.TrimSpace(r.Region)),
-		Currency:         currency.NormalizeCode(r.Currency),
-		MinValue:         r.MinValue,
-		MaxValue:         r.MaxValue,
-		Fee:              r.Fee,
-		Additional:       r.Additional,
+		Currency:         ruleCurrency,
+		MinValue:         minValue,
+		MaxValue:         maxValue,
+		MinValueMinor:    minValueMinor,
+		MaxValueMinor:    maxValueMinor,
+		FeeMinor:         r.FeeMinor,
+		AdditionalMinor:  r.AdditionalMinor,
 		DisplayPriceData: currency.DisplayPriceSnapshotMapJSON(r.DisplayPriceSnapshots, "", fields...),
 	}
+}
+
+func containsShippingPriceFields(fields []string) bool {
+	for _, field := range fields {
+		if field == shippingdomain.ShippingRuleDisplayPriceFieldMinValue {
+			return true
+		}
+	}
+	return false
 }
 
 func (r shippingCarrierServiceRequest) toDomain() shippingdomain.CarrierService {
@@ -187,27 +223,32 @@ func (r shippingCarrierServiceRequest) toDomain() shippingdomain.CarrierService 
 		volumetricDivisor = 6000
 	}
 
+	fuelSurchargePercentDecimal := strings.TrimSpace(r.FuelSurchargePercentDecimal)
+	if fuelSurchargePercentDecimal == "" {
+		fuelSurchargePercentDecimal = "0"
+	}
+
 	return shippingdomain.CarrierService{
-		CarrierID:             r.CarrierID,
-		TemplateID:            r.TemplateID,
-		ServiceCode:           strings.ToUpper(strings.TrimSpace(r.ServiceCode)),
-		ServiceName:           strings.TrimSpace(r.ServiceName),
-		RouteName:             strings.TrimSpace(r.RouteName),
-		Countries:             strings.TrimSpace(r.Countries),
-		Currency:              currency,
-		BillingMode:           billingMode,
-		FirstWeightGrams:      r.FirstWeightGrams,
-		AdditionalWeightGrams: r.AdditionalWeightGrams,
-		MinChargeWeightGrams:  r.MinChargeWeightGrams,
-		VolumetricDivisor:     volumetricDivisor,
-		FuelSurchargePercent:  r.FuelSurchargePercent,
-		RemoteSurcharge:       r.RemoteSurcharge,
-		RemotePostalCodes:     strings.TrimSpace(r.RemotePostalCodes),
-		EtaMinDays:            r.EtaMinDays,
-		EtaMaxDays:            r.EtaMaxDays,
-		Enabled:               enabled,
-		SortOrder:             r.SortOrder,
-		Description:           strings.TrimSpace(r.Description),
+		CarrierID:                   r.CarrierID,
+		TemplateID:                  r.TemplateID,
+		ServiceCode:                 strings.ToUpper(strings.TrimSpace(r.ServiceCode)),
+		ServiceName:                 strings.TrimSpace(r.ServiceName),
+		RouteName:                   strings.TrimSpace(r.RouteName),
+		Countries:                   strings.TrimSpace(r.Countries),
+		Currency:                    currency,
+		BillingMode:                 billingMode,
+		FirstWeightGrams:            r.FirstWeightGrams,
+		AdditionalWeightGrams:       r.AdditionalWeightGrams,
+		MinChargeWeightGrams:        r.MinChargeWeightGrams,
+		VolumetricDivisor:           volumetricDivisor,
+		FuelSurchargePercentDecimal: fuelSurchargePercentDecimal,
+		RemoteSurchargeMinor:        r.RemoteSurchargeMinor,
+		RemotePostalCodes:           strings.TrimSpace(r.RemotePostalCodes),
+		EtaMinDays:                  r.EtaMinDays,
+		EtaMaxDays:                  r.EtaMaxDays,
+		Enabled:                     enabled,
+		SortOrder:                   r.SortOrder,
+		Description:                 strings.TrimSpace(r.Description),
 	}
 }
 

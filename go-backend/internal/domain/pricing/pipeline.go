@@ -12,8 +12,7 @@ var (
 )
 
 // Pipeline is an immutable, ordered pricing calculation. Discount stages may
-// be omitted, but when present their canonical order is member, coupon, then
-// points. This makes the discount base for every stage explicit and stable.
+// be omitted, but when present their canonical order is member then coupon.
 type Pipeline struct {
 	stages []DiscountInput
 }
@@ -77,8 +76,6 @@ func discountStageOrder(kind DiscountKind) (int, bool) {
 		return 1, true
 	case DiscountKindCoupon:
 		return 2, true
-	case DiscountKindPoints:
-		return 3, true
 	default:
 		return 0, false
 	}

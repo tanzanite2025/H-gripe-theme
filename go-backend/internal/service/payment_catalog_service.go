@@ -32,9 +32,10 @@ func (s *PaymentService) UpdatePaymentMethod(method *payment.PaymentMethod) erro
 	existing.Icon = method.Icon
 	existing.Description = method.Description
 	existing.FeeType = method.FeeType
-	existing.FeeValue = method.FeeValue
-	existing.MinAmount = method.MinAmount
-	existing.MaxAmount = method.MaxAmount
+	existing.FeeValueMinor = method.FeeValueMinor
+	existing.FeeRateDecimal = method.FeeRateDecimal
+	existing.MinAmountMinor = method.MinAmountMinor
+	existing.MaxAmountMinor = method.MaxAmountMinor
 	existing.Enabled = method.Enabled
 	existing.SortOrder = method.SortOrder
 	existing.Settings = method.Settings
@@ -71,23 +72,23 @@ func (s *PaymentService) GetPublicTaxRate(id uint) (*payment.TaxRate, error) {
 
 // CalculateTaxMoney is the transactional tax path. It keeps the taxable
 // amount and computed tax in one currency-specific minor-unit model.
-func (s *PaymentService) CalculateTaxMoney(amountMoney domainmoney.Money, country, state string, postalCodes ...string) (float64, domainmoney.Money, error) {
+func (s *PaymentService) CalculateTaxMoney(amountMoney domainmoney.Money, country, state string, postalCodes ...string) (string, domainmoney.Money, error) {
 	if err := amountMoney.Validate(); err != nil {
-		return 0, domainmoney.Money{}, fmt.Errorf("invalid tax amount: %w", err)
+		return "0", domainmoney.Money{}, fmt.Errorf("invalid tax amount: %w", err)
 	}
 	taxRate, err := s.paymentRepo.FindTaxRateByLocation(country, state, postalCodes...)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return 0, domainmoney.MustNew(0, amountMoney.Currency().String()), nil
+			return "0", domainmoney.MustNew(0, amountMoney.Currency().String()), nil
 		}
-		return 0, domainmoney.Money{}, fmt.Errorf("failed to load tax rate for %s/%s: %w", country, state, err)
+		return "0", domainmoney.Money{}, fmt.Errorf("failed to load tax rate for %s/%s: %w", country, state, err)
 	}
 	if taxRate == nil {
-		return 0, domainmoney.Money{}, errors.New("tax rate lookup returned no result")
+		return "0", domainmoney.Money{}, errors.New("tax rate lookup returned no result")
 	}
 	taxMoney, err := taxRate.CalculateTaxMoney(amountMoney)
 	if err != nil {
-		return 0, domainmoney.Money{}, err
+		return "0", domainmoney.Money{}, err
 	}
-	return taxRate.Rate, taxMoney, nil
+	return taxRate.RateDecimal, taxMoney, nil
 }

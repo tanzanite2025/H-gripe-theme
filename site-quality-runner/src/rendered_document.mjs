@@ -55,14 +55,19 @@ export async function captureRenderedDocumentAudit({
       waitTimeoutMilliseconds: input.renderWaitTimeoutMilliseconds,
       timeoutMilliseconds: remaining,
     })
+    const auditScope = input.auditScope || 'full'
     const [headings, structuredData] = await Promise.all([
-      page.evaluate(snapshotRenderedHeadings),
-      page.evaluate(snapshotRenderedStructuredData),
+      auditScope === 'schema' ? Promise.resolve([]) : page.evaluate(snapshotRenderedHeadings),
+      auditScope === 'headings' ? Promise.resolve({}) : page.evaluate(snapshotRenderedStructuredData),
     ])
     const finalUrl = page.url()
     const runtimeAuditOptions = { deadlineAt }
-    const renderedLinks = await captureRenderedLinkAudit(page, input, runtimeAuditOptions)
-    const interactionAudit = await captureInteractionAudit(page, input, runtimeAuditOptions)
+    const renderedLinks = auditScope === 'full'
+      ? await captureRenderedLinkAudit(page, input, runtimeAuditOptions)
+      : { status: 'skipped', source: 'chrome-rendered-dom', links: [] }
+    const interactionAudit = auditScope === 'full'
+      ? await captureInteractionAudit(page, input, runtimeAuditOptions)
+      : { status: 'skipped', source: 'chrome-rendered-dom', interactions: [] }
     if (shouldResetBeforeSoftNavigation(input)) {
       if (!runtimeAuditDeadlineReached(runtimeAuditOptions)) {
         const resetTimeout = Math.min(navigationTimeout, runtimeAuditBudgetRemaining(runtimeAuditOptions))
@@ -82,17 +87,19 @@ export async function captureRenderedDocumentAudit({
         }
       }
     }
-    const softNavigationAudit = await captureSoftNavigationAudit(page, input, runtimeAuditOptions)
+    const softNavigationAudit = auditScope === 'full'
+      ? await captureSoftNavigationAudit(page, input, runtimeAuditOptions)
+      : { status: 'skipped', source: 'chrome-rendered-dom', navigations: [] }
 
     return {
       renderedHeadings: {
-        status: 'complete',
+        status: auditScope === 'schema' ? 'skipped' : 'complete',
         source: 'chrome-rendered-dom',
         finalUrl,
         headings,
       },
       renderedStructuredData: {
-        status: 'complete',
+        status: auditScope === 'headings' ? 'skipped' : 'complete',
         source: 'chrome-rendered-dom',
         finalUrl,
         ...structuredData,

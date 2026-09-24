@@ -1,9 +1,12 @@
 import type { Component } from 'vue'
-import type { DashboardTone, SalesChartPoint } from '@/lib/dashboardPresentation'
+import type { DashboardTone, RevenueByCurrency, SalesChartPoint } from '@/lib/dashboardPresentation'
 
 export type DashboardActivity = 'orders' | 'users'
 export type DashboardMetricToneClass = (tone?: string | null) => string
-export type DashboardNumberFormatter = (value?: number | string | null) => string
+export type DashboardMoneyFormatter = (
+  amountMinor?: number | string | bigint | null,
+  currency?: string | null,
+) => string
 export type DashboardLabelResolver = (value?: string | null) => string
 export type DashboardToneResolver = (value?: string | null) => DashboardTone
 
@@ -29,7 +32,8 @@ export interface DashboardQuickAction {
 export interface DashboardRecentOrder {
   id: number | string
   order_number?: string
-  total_amount?: number | string | null
+  total_amount_minor: number | string
+  currency: string
   status?: string | null
 }
 
@@ -44,8 +48,8 @@ export interface DashboardStats {
   orders?: {
     total?: number
     today?: number
-    revenue?: number | string | null
-    today_revenue?: number | string | null
+    revenue_by_currency?: RevenueByCurrency[] | null
+    today_revenue_by_currency?: RevenueByCurrency[] | null
   }
   users?: {
     total?: number

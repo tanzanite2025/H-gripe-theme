@@ -6,18 +6,11 @@ export interface StorefrontHtmlCachePolicy {
   staleMaxAge: number
 }
 
-const minute = 60
-const hour = 60 * minute
+const hour = 60 * 60
 const day = 24 * hour
 const week = 7 * day
 
 export const storefrontHtmlCacheDurations = {
-  productDetail: {
-    // Product HTML may contain price/stock snapshots. Keep the fresh TTL short;
-    // cart and checkout APIs remain the source of truth for transactional data.
-    maxAge: 5 * minute,
-    staleMaxAge: hour,
-  },
   contentPage: {
     maxAge: hour,
     staleMaxAge: day,
@@ -29,12 +22,6 @@ export const storefrontHtmlCacheDurations = {
 } as const
 
 export const storefrontHtmlCachePolicies: StorefrontHtmlCachePolicy[] = [
-  {
-    name: 'product-detail',
-    description: 'Individual product detail pages with short-lived SSR HTML.',
-    paths: ['/products/**'],
-    ...storefrontHtmlCacheDurations.productDetail,
-  },
   {
     name: 'content',
     description: 'Editorial and guide pages that change less frequently than product data.',
@@ -60,6 +47,9 @@ export const storefrontNoStorePagePaths = [
   // Home HTML carries build-specific modulepreload links. Keep localized home pages
   // out of stale HTML cache so deploys cannot reference retired _nuxt assets.
   '/',
+  // Product HTML contains price, exchange-rate, configuration, and availability
+  // snapshots. Transactional APIs must be consulted before a purchase.
+  '/products/**',
   // Query/search/filter state lives in the URL, but the list is data-heavy and
   // changes frequently. Keep it uncached until a query-aware cache strategy is added.
   '/shop',

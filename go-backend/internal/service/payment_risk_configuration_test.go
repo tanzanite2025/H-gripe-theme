@@ -14,9 +14,9 @@ func TestPaymentThreeDSPolicyViewIncludesAvsThreshold(t *testing.T) {
 		&fakeThreeDSVisitorRisk{},
 		&fakeThreeDSPaymentRisk{},
 		config.PaymentThreeDSConfig{
-			AdaptiveEnabled:  true,
-			LowRiskMaxAmount: 100,
-			AVSBillingShippingMismatchHighValueThresholdUSD: 900,
+			AdaptiveEnabled:       true,
+			LowRiskMaxAmountMinor: 10000,
+			AVSBillingShippingMismatchHighValueThresholdMinor: 90000,
 			TrustedPaidOrders:   1,
 			VisitorRiskLookback: 30,
 			StepUpRiskScore:     20,
@@ -24,7 +24,7 @@ func TestPaymentThreeDSPolicyViewIncludesAvsThreshold(t *testing.T) {
 		},
 	)
 
-	require.Equal(t, 900.0, policy.PolicyView().AVSBillingShippingMismatchHighValueThresholdUSD)
+	require.Equal(t, int64(90000), policy.PolicyView().AVSBillingShippingMismatchHighValueThresholdMinor)
 }
 
 func TestBuildPaymentRiskConfigurationViewIncludesAvsThreshold(t *testing.T) {
@@ -33,9 +33,9 @@ func TestBuildPaymentRiskConfigurationViewIncludesAvsThreshold(t *testing.T) {
 		&fakeThreeDSVisitorRisk{},
 		&fakeThreeDSPaymentRisk{},
 		config.PaymentThreeDSConfig{
-			AdaptiveEnabled:  true,
-			LowRiskMaxAmount: 100,
-			AVSBillingShippingMismatchHighValueThresholdUSD: 900,
+			AdaptiveEnabled:       true,
+			LowRiskMaxAmountMinor: 10000,
+			AVSBillingShippingMismatchHighValueThresholdMinor: 90000,
 			TrustedPaidOrders:   1,
 			VisitorRiskLookback: 30,
 			StepUpRiskScore:     20,
@@ -45,5 +45,5 @@ func TestBuildPaymentRiskConfigurationViewIncludesAvsThreshold(t *testing.T) {
 
 	view := BuildPaymentRiskConfigurationView(nil, nil, policy, nil, nil)
 
-	require.Equal(t, 900.0, view.ThreeDS.AVSBillingShippingMismatchHighValueThresholdUSD)
+	require.Equal(t, int64(90000), view.ThreeDS.AVSBillingShippingMismatchHighValueThresholdMinor)
 }

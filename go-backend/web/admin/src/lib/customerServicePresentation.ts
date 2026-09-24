@@ -54,6 +54,18 @@ export const formatDate = (dateString: any) => dateString ? new Date(dateString)
 export const formatShortDate = (dateString: any) => dateString ? new Date(dateString).toLocaleDateString('zh-CN') : '-'
 export const formatMoney = (value: any) => `$${Number(value || 0).toFixed(2)}`
 
+export const formatMoneyWithCurrency = (value: any, currency: any) => {
+  const amount = Number(value || 0)
+  const code = String(currency || '').trim().toUpperCase()
+  if (!Number.isFinite(amount)) return code || '-'
+  if (!code) return amount.toFixed(2)
+  try {
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: code }).format(amount)
+  } catch {
+    return `${code} ${amount.toFixed(2)}`
+  }
+}
+
 export const isValidCustomerTimezone = (timezone: any) => {
   const normalized = String(timezone || '').trim()
   if (!normalized) return false
@@ -77,6 +89,60 @@ const customerTimezoneHour = (dateValue: any, timezone: any) => {
   }).formatToParts(date).find((part) => part.type === 'hour')
   const hour = Number(hourPart?.value)
   return Number.isFinite(hour) ? hour % 24 : null
+}
+
+const timezoneOffsetMinutes = (dateValue: any, timezone: any): number | null => {
+  const normalized = String(timezone || '').trim()
+  const date = dateValue instanceof Date ? dateValue : new Date(dateValue)
+  if (!isValidCustomerTimezone(normalized) || Number.isNaN(date.getTime())) return null
+
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: normalized,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hourCycle: 'h23',
+  }).formatToParts(date)
+  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]))
+  const localAsUTC = Date.UTC(
+    Number(values.year),
+    Number(values.month) - 1,
+    Number(values.day),
+    Number(values.hour),
+    Number(values.minute),
+    Number(values.second),
+  )
+  if (!Number.isFinite(localAsUTC)) return null
+  return Math.round((localAsUTC - date.getTime()) / 60_000)
+}
+
+export const browserTimezone = () => {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || ''
+  } catch {
+    return ''
+  }
+}
+
+export const customerTimezoneDifference = (dateValue: any, customerTimezone: any, agentTimezone = browserTimezone()) => {
+  const customerOffset = timezoneOffsetMinutes(dateValue, customerTimezone)
+  const agentOffset = timezoneOffsetMinutes(dateValue, agentTimezone)
+  if (customerOffset === null || agentOffset === null) return ''
+
+  const difference = customerOffset - agentOffset
+  if (difference === 0) return '与客服同一时区'
+
+  const direction = difference > 0 ? '快' : '慢'
+  const absoluteMinutes = Math.abs(difference)
+  const hours = Math.floor(absoluteMinutes / 60)
+  const minutes = absoluteMinutes % 60
+  const parts: string[] = []
+  if (hours > 0) parts.push(`${hours} 小时`)
+  if (minutes > 0) parts.push(`${minutes} 分钟`)
+  return `客户比客服${direction} ${parts.join(' ')}`
 }
 
 export const formatCustomerLocalTime = (dateValue: any, timezone: any) => {
@@ -183,7 +249,7 @@ export const formatOrderTotal = (order: any) => {
 }
 
 export const formatProductPrice = (product: any) => {
-  const priceText = String(product?.price || '').trim()
+  const priceText = String(product?.price_decimal || product?.price || '').trim()
   const currency = String(product?.currency || '').trim().toUpperCase()
   if (priceText) {
     if (currency && !priceText.toUpperCase().startsWith(currency)) {

@@ -27,21 +27,19 @@ func TestBuildCheckoutPricingSnapshotAllocatesDiscountsByEligibleLine(t *testing
 			ApplicableProducts: "[1]",
 			ExcludedProducts:   "[2]",
 		},
-		PointsDiscount:      money.MustNew(200, "USD"),
-		PointsToUse:         200,
-		MerchandiseNetTotal: money.MustNew(2100, "USD"),
+		MerchandiseNetTotal: money.MustNew(2300, "USD"),
 	})
 	require.NoError(t, err)
 	require.Equal(t, int64(3000), snapshot.BaseTotal().AmountMinor())
-	require.Equal(t, int64(900), snapshot.DiscountTotal().AmountMinor())
-	require.Equal(t, int64(2100), snapshot.NetTotal().AmountMinor())
-	require.Equal(t, []int64{722, 178}, checkoutLineDiscountMinor(snapshot))
+	require.Equal(t, int64(700), snapshot.DiscountTotal().AmountMinor())
+	require.Equal(t, int64(2300), snapshot.NetTotal().AmountMinor())
+	require.Equal(t, []int64{600, 100}, checkoutLineDiscountMinor(snapshot))
 	require.Equal(t,
-		[]pricing.DiscountKind{pricing.DiscountKindMember, pricing.DiscountKindCoupon, pricing.DiscountKindPoints},
+		[]pricing.DiscountKind{pricing.DiscountKindMember, pricing.DiscountKindCoupon},
 		checkoutAllocationKinds(snapshot.Lines()[0].DiscountAllocations()),
 	)
 	require.Equal(t,
-		[]pricing.DiscountKind{pricing.DiscountKindMember, pricing.DiscountKindPoints},
+		[]pricing.DiscountKind{pricing.DiscountKindMember},
 		checkoutAllocationKinds(snapshot.Lines()[1].DiscountAllocations()),
 	)
 }
@@ -55,7 +53,6 @@ func TestBuildCheckoutPricingSnapshotRejectsLegacyLineRoundingDrift(t *testing.T
 		Subtotal:            money.MustNew(1000, "USD"),
 		MemberDiscount:      money.MustNew(0, "USD"),
 		CouponDiscount:      money.MustNew(0, "USD"),
-		PointsDiscount:      money.MustNew(0, "USD"),
 		MerchandiseNetTotal: money.MustNew(1000, "USD"),
 	})
 	require.ErrorIs(t, err, ErrCheckoutPricingSnapshotInvalid)
@@ -71,7 +68,6 @@ func TestBuildCheckoutPricingSnapshotAcceptsExactFractionalUnitSubtotal(t *testi
 		Subtotal:            money.MustNew(999, "USD"),
 		MemberDiscount:      money.MustNew(0, "USD"),
 		CouponDiscount:      money.MustNew(0, "USD"),
-		PointsDiscount:      money.MustNew(0, "USD"),
 		MerchandiseNetTotal: money.MustNew(999, "USD"),
 	})
 	require.NoError(t, err)
@@ -88,7 +84,6 @@ func TestBuildCheckoutPricingSnapshotUsesCurrencyMinorUnits(t *testing.T) {
 		Subtotal:            money.MustNew(202, "JPY"),
 		MemberDiscount:      money.MustNew(1, "JPY"),
 		CouponDiscount:      money.MustNew(0, "JPY"),
-		PointsDiscount:      money.MustNew(0, "JPY"),
 		MerchandiseNetTotal: money.MustNew(201, "JPY"),
 	})
 	require.NoError(t, err)
@@ -109,7 +104,6 @@ func TestBuildCheckoutPricingSnapshotRejectsMixedMoneyCurrency(t *testing.T) {
 		Subtotal:            money.MustNew(1000, "USD"),
 		MemberDiscount:      money.MustNew(0, "USD"),
 		CouponDiscount:      money.MustNew(0, "USD"),
-		PointsDiscount:      money.MustNew(0, "USD"),
 		MerchandiseNetTotal: money.MustNew(1000, "USD"),
 	})
 	require.ErrorIs(t, err, ErrCheckoutPricingSnapshotInvalid)

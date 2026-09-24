@@ -12,8 +12,10 @@ import (
 	"gorm.io/gorm/logger"
 
 	orderdomain "commerce-platform/internal/domain/order"
+	"commerce-platform/internal/domain/outbox"
 	"commerce-platform/internal/domain/verification"
 	"commerce-platform/internal/domain/warranty"
+	"commerce-platform/internal/pkg/emailtoken"
 	"commerce-platform/internal/repository"
 )
 
@@ -44,20 +46,20 @@ func TestWarrantyServiceRecordValidationAndCreation(t *testing.T) {
 	assert.EqualError(t, err, "invalid service record status")
 
 	_, err = warrantyService.CreateWarrantyServiceRecord(claim.ID, WarrantyServiceRecordInput{
-		ServiceType: "inspection",
-		Status:      "open",
-		Summary:     "checked",
-		CostAmount:  -1,
+		ServiceType:     "inspection",
+		Status:          "open",
+		Summary:         "checked",
+		CostAmountMinor: -1,
 	}, 42)
 	require.Error(t, err)
 	assert.EqualError(t, err, "service cost amount cannot be negative")
 
 	record, err := warrantyService.CreateWarrantyServiceRecord(claim.ID, WarrantyServiceRecordInput{
-		ServiceType: "Repair",
-		Status:      "Processing",
-		Summary:     " replaced bearing ",
-		CostAmount:  12.5,
-		Currency:    "usd",
+		ServiceType:     "Repair",
+		Status:          "Processing",
+		Summary:         " replaced bearing ",
+		CostAmountMinor: 1250,
+		Currency:        "usd",
 	}, 42)
 	require.NoError(t, err)
 	assert.Equal(t, claim.ID, record.ClaimID)
@@ -95,11 +97,7 @@ func TestBindWarrantyClaimOrderItemRequiresMatchingOrderAndUser(t *testing.T) {
 func TestWarrantyOrderClaimRequiresVerifiedEmailChallenge(t *testing.T) {
 	db, warrantyService := newTestWarrantyService(t)
 	emailSender := &recordingEmailSender{}
-	warrantyService.ConfigureEmailChallenges(
-		repository.NewEmailChallengeRepository(db),
-		"test-email-secret",
-		emailSender,
-	)
+	warrantyService.ConfigureEmailChallenges("test-email-secret")
 	warrantyService.ConfigureEmailBaseURL("https://api.example.test")
 
 	order := orderdomain.Order{
@@ -107,7 +105,7 @@ func TestWarrantyOrderClaimRequiresVerifiedEmailChallenge(t *testing.T) {
 		UserID:        7,
 		Status:        "paid",
 		PaymentStatus: "paid",
-		TotalAmount:   199,
+		TotalAmountMinor: 19900,
 		Currency:      "USD",
 	}
 	order.ShippingAddress.Email = "rider@example.test"
@@ -120,6 +118,7 @@ func TestWarrantyOrderClaimRequiresVerifiedEmailChallenge(t *testing.T) {
 	require.ErrorIs(t, err, ErrWarrantyVerificationRequired)
 
 	require.NoError(t, warrantyService.RequestWarrantyOrderVerification(order.OrderNumber, order.ShippingAddress.Email))
+	processEmailChallengeDelivery(t, db, emailSender)
 	require.Len(t, emailSender.bodies, 1)
 	verificationURL := strings.TrimSpace(strings.Split(emailSender.bodies[0], "\n\n")[1])
 	parsedVerificationURL, err := url.Parse(verificationURL)
@@ -146,12 +145,46 @@ func TestWarrantyOrderClaimRequiresVerifiedEmailChallenge(t *testing.T) {
 	require.ErrorIs(t, err, ErrWarrantyVerificationRequired)
 }
 
+func TestWarrantyClaimWriteFailureDoesNotConsumeChallenge(t *testing.T) {
+	db, warrantyService := newTestWarrantyService(t)
+	emailSender := &recordingEmailSender{}
+	warrantyService.ConfigureEmailChallenges("test-email-secret")
+	warrantyService.ConfigureEmailBaseURL("https://api.example.test")
+
+	orderRecord := orderdomain.Order{
+		OrderNumber:   "TZ-WARRANTY-ROLLBACK",
+		UserID:        7,
+		Status:        "paid",
+		PaymentStatus: "paid",
+		TotalAmountMinor: 19900,
+		Currency:      "USD",
+	}
+	orderRecord.ShippingAddress.Email = "rollback@example.test"
+	require.NoError(t, db.Create(&orderRecord).Error)
+	require.NoError(t, warrantyService.RequestWarrantyOrderVerification(orderRecord.OrderNumber, orderRecord.ShippingAddress.Email))
+	processEmailChallengeDelivery(t, db, emailSender)
+	verificationURL, err := url.Parse(strings.TrimSpace(strings.Split(emailSender.bodies[0], "\n\n")[1]))
+	require.NoError(t, err)
+	token := verificationURL.Query().Get("verification_token")
+	require.NotEmpty(t, token)
+
+	require.NoError(t, db.Migrator().DropTable(&warranty.WarrantyClaim{}))
+	_, err = warrantyService.CreateWarrantyClaimForOrder(WarrantyClaimByOrderInput{
+		OrderNumber:       orderRecord.OrderNumber,
+		Email:             orderRecord.ShippingAddress.Email,
+		VerificationToken: token,
+		Description:       "retryable failure",
+	})
+	require.Error(t, err)
+
+	challenge, err := repository.NewEmailChallengeRepository(db).Find(emailtoken.Hash(token), warrantyOrderChallengePurpose)
+	require.NoError(t, err)
+	require.Nil(t, challenge.UsedAt)
+}
+
 func TestGuestWarrantyClaimCanBeViewedWithAccessTokenOrMatchingAccountEmail(t *testing.T) {
 	db, warrantyService := newTestWarrantyService(t)
-	warrantyService.ConfigureEmailChallenges(
-		repository.NewEmailChallengeRepository(db),
-		"test-email-secret",
-	)
+	warrantyService.ConfigureEmailChallenges("test-email-secret")
 
 	guestClaim := seedWarrantyClaim(t, db, "TZ-WARRANTY-GUEST", 0)
 	guestClaim.Email = "guest@example.com"
@@ -198,9 +231,11 @@ func newTestWarrantyService(t *testing.T) (*gorm.DB, *WarrantyService) {
 		&warranty.WarrantyClaim{},
 		&warranty.WarrantyServiceRecord{},
 		&verification.EmailChallenge{},
+		&outbox.Event{},
 	))
 
 	return db, NewWarrantyService(
+		newTestEmailChallengeTxManager(db),
 		repository.NewWarrantyRepository(db),
 		repository.NewOrderRepository(db),
 	)
@@ -229,7 +264,7 @@ func seedWarrantyOrderItem(t *testing.T, db *gorm.DB, orderNumber string, userID
 		UserID:        userID,
 		Status:        "paid",
 		PaymentStatus: "paid",
-		TotalAmount:   199,
+		TotalAmountMinor: 19900,
 		Currency:      "USD",
 	}
 	require.NoError(t, db.Create(&order).Error)
@@ -242,9 +277,9 @@ func seedWarrantyOrderItem(t *testing.T, db *gorm.DB, orderNumber string, userID
 		ProductName: "Carbon Wheel",
 		SKU:         "CW-001",
 		Quantity:    1,
-		Price:       199,
-		Subtotal:    199,
-		Total:       199,
+		PriceMinor:    19900,
+		SubtotalMinor: 19900,
+		TotalMinor:    19900,
 	}
 	require.NoError(t, db.Create(&item).Error)
 	return item

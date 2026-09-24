@@ -11,7 +11,7 @@ import type {
   StripeExpressCheckoutElementShippingAddressChangeEvent,
   StripeExpressCheckoutElementShippingRateChangeEvent,
 } from '@stripe/stripe-js'
-import { navigateTo, useI18n, useLocalePath } from '#imports'
+import { navigateTo, useI18n, useLocalePath, useRequestURL } from '#imports'
 import { COUNTRIES } from '~/data/countries'
 import { useAuth } from '~/composables/useAuth'
 import { useCart } from '~/composables/useCart'
@@ -20,7 +20,6 @@ import { useShopProducts, type ShopProduct } from '~/composables/useShopProducts
 import { useStorefrontContext } from '~/composables/useStorefrontContext'
 import { useStripeExpressCheckoutOrder } from '~/composables/useStripeExpressCheckoutOrder'
 import {
-  convertMajorAmountToStripeMinorAmount,
   type StripeExpressCheckoutAvailablePaymentMethods,
 } from '~/composables/useStripeExpressCheckout'
 import {
@@ -41,6 +40,7 @@ import {
 import {
   normalizeProductCurrencyCode,
 } from '~/utils/productDetail'
+import { majorToMinor, minorToMajor } from '~/utils/money'
 import type {
   GoProduct,
   ProductAvailability,
@@ -53,6 +53,7 @@ export interface ProductDetailPurchaseOptions {
   selectedVariant: MaybeRefOrGetter<ProductVariant | null>
   selectedVariantWeight: MaybeRefOrGetter<number | null>
   selectedCartTitle: MaybeRefOrGetter<string>
+  effectivePriceMinor?: MaybeRefOrGetter<number>
   effectivePrice: MaybeRefOrGetter<number>
   currentCurrency: MaybeRefOrGetter<string>
   selectedAvailability: MaybeRefOrGetter<ProductAvailability>
@@ -64,6 +65,7 @@ export interface ProductDetailPurchaseOptions {
 export function useProductDetailPurchase(options: ProductDetailPurchaseOptions) {
   const { t } = useI18n()
   const localePath = useLocalePath()
+  const requestUrl = useRequestURL()
   const auth = useAuth()
   const {
     addToCart,
@@ -98,6 +100,14 @@ export function useProductDetailPurchase(options: ProductDetailPurchaseOptions) 
   const selectedCartTitle = computed(() => toValue(options.selectedCartTitle) || '')
   const effectivePrice = computed(() => Number(toValue(options.effectivePrice) || 0))
   const currentCurrency = computed(() => toValue(options.currentCurrency) || 'USD')
+  const effectivePriceMinor = computed(() => {
+    const provided = options.effectivePriceMinor == null
+      ? null
+      : Number(toValue(options.effectivePriceMinor))
+    return provided != null && Number.isFinite(provided)
+      ? Math.round(provided)
+      : majorToMinor(effectivePrice.value, currentCurrency.value)
+  })
   const selectedAvailability = computed<ProductAvailability>(() => toValue(options.selectedAvailability) || 'out_of_stock')
   const primaryMediaThumbnail = computed(() => toValue(options.primaryMediaThumbnail) || '')
   const selectedOptions = computed(() => toValue(options.selectedOptions) || [])
@@ -222,8 +232,7 @@ export function useProductDetailPurchase(options: ProductDetailPurchaseOptions) 
     return {
       ...toCartItem(shopProduct.value, {
         variantId: selectedVariant.value?.id || null,
-        price: effectivePrice.value,
-        salePrice: selectedVariant.value?.sale_price ?? product.value.sale_price ?? null,
+        priceMinor: effectivePriceMinor.value,
         sku: selectedVariant.value?.sku || product.value.sku || '',
         currency: currentCurrency.value,
         title: selectedCartTitle.value,
@@ -258,19 +267,16 @@ export function useProductDetailPurchase(options: ProductDetailPurchaseOptions) 
   })
 
   const stripeExpressCheckoutAmount = computed(() => (
-    stripeExpressCheckoutCartItems.value.reduce(
-      (total, item) => total + Number(item.price || 0) * Math.max(1, Number(item.quantity || 1)),
+    minorToMajor(stripeExpressCheckoutCartItems.value.reduce(
+      (total, item) => total + Number(item.price_minor || 0) * Math.max(1, Number(item.quantity || 1)),
       0,
-    )
+    ), cartCurrency.value)
   ))
 
   const stripeExpressCheckoutLineItems = computed(() => (
     stripeExpressCheckoutCartItems.value.map(item => ({
       name: item.title,
-      amount: convertMajorAmountToStripeMinorAmount(
-        Number(item.price || 0) * Math.max(1, Number(item.quantity || 1)),
-        cartCurrency.value,
-      ),
+      amount: Number(item.price_minor || 0) * Math.max(1, Number(item.quantity || 1)),
     }))
   ))
 
@@ -311,8 +317,7 @@ export function useProductDetailPurchase(options: ProductDetailPurchaseOptions) 
 
     return addToCart(toCartItem(shopProduct.value, {
       variantId: selectedVariant.value?.id || null,
-      price: effectivePrice.value,
-      salePrice: selectedVariant.value?.sale_price ?? product.value.sale_price ?? null,
+      priceMinor: effectivePriceMinor.value,
       sku: selectedVariant.value?.sku || product.value.sku || '',
       currency: normalizeProductCurrencyCode(currentCurrency.value) || 'USD',
       title: selectedCartTitle.value,
@@ -339,7 +344,7 @@ export function useProductDetailPurchase(options: ProductDetailPurchaseOptions) 
     const marketCountry = countryCode.value && countryCode.value !== 'ZZ'
       ? countryCode.value
       : undefined
-    await loadPaymentMethods(marketCountry)
+    await loadPaymentMethods(marketCountry, cartCurrency.value)
   }
 
   const prepareStripeExpressCheckout = async () => {
@@ -358,7 +363,7 @@ export function useProductDetailPurchase(options: ProductDetailPurchaseOptions) 
       const marketCountry = countryCode.value && countryCode.value !== 'ZZ'
         ? countryCode.value
         : undefined
-      await loadPaymentMethods(marketCountry)
+      await loadPaymentMethods(marketCountry, cartCurrency.value)
       if (!stripeCardPaymentAvailable.value) return
 
       stripeExpressCheckoutPublishableKey.value = await loadStripeExpressCheckoutPublishableKey()
@@ -438,12 +443,13 @@ export function useProductDetailPurchase(options: ProductDetailPurchaseOptions) 
         confirmationEvent,
         cartItems.value,
       )
+      await expressCheckoutElement.updateExpressCheckoutPaymentAmount(session.amountMinor, session.currency)
       saveStripeReturnSession({
         orderNumber: session.orderNumber,
         clientSecret: session.clientSecret,
         publishableKey: session.publishableKey,
       })
-      const returnUrl = new URL(localePath(STRIPE_RETURN_PATH), window.location.origin)
+      const returnUrl = new URL(localePath(STRIPE_RETURN_PATH), requestUrl.origin)
       returnUrl.searchParams.set('order_number', session.orderNumber)
       const result = await expressCheckoutElement.confirmExpressCheckoutPayment(
         session.clientSecret,

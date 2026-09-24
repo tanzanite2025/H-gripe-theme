@@ -48,6 +48,7 @@ type Config struct {
 	FeedbackRateLimit            FeedbackRateLimitConfig            `mapstructure:"feedback_rate_limit"`
 	MediaUpload                  MediaUploadConfig                  `mapstructure:"media_upload"`
 	ShowcaseUploadProtection     ShowcaseUploadProtectionConfig     `mapstructure:"showcase_upload_protection"`
+	AfterSales                   AfterSalesConfig                   `mapstructure:"after_sales"`
 }
 
 // MinimumPaymentGatewayHalfOpenProbeTimeoutSeconds is intentionally longer
@@ -185,47 +186,56 @@ type LogConfig struct {
 }
 
 type WorkerConfig struct {
-	Enabled                               bool `mapstructure:"enabled"`
-	DistributedLockTTLSeconds             int  `mapstructure:"distributed_lock_ttl_seconds"`
-	TrackingPollingEnabled                bool `mapstructure:"tracking_polling_enabled"`
-	TrackingPollingIntervalSeconds        int  `mapstructure:"tracking_polling_interval_seconds"`
-	TrackingPollingBatchLimit             int  `mapstructure:"tracking_polling_batch_limit"`
-	VisitorProfileCleanupEnabled          bool `mapstructure:"visitor_profile_cleanup_enabled"`
-	VisitorProfileCleanupIntervalSeconds  int  `mapstructure:"visitor_profile_cleanup_interval_seconds"`
-	VisitorProfileIPAddressRetentionDays  int  `mapstructure:"visitor_profile_ip_address_retention_days"`
-	BehaviorEventCleanupEnabled           bool `mapstructure:"behavior_event_cleanup_enabled"`
-	BehaviorEventCleanupIntervalSeconds   int  `mapstructure:"behavior_event_cleanup_interval_seconds"`
-	QuickBuyAbandonmentEnabled            bool `mapstructure:"quick_buy_abandonment_enabled"`
-	QuickBuyAbandonmentIntervalSeconds    int  `mapstructure:"quick_buy_abandonment_interval_seconds"`
-	QuickBuyAbandonmentAfterSeconds       int  `mapstructure:"quick_buy_abandonment_after_seconds"`
-	OutboxDispatchEnabled                 bool `mapstructure:"outbox_dispatch_enabled"`
-	OutboxDispatchIntervalSeconds         int  `mapstructure:"outbox_dispatch_interval_seconds"`
-	OutboxDispatchBatchLimit              int  `mapstructure:"outbox_dispatch_batch_limit"`
-	OutboxDispatchLockTimeoutSeconds      int  `mapstructure:"outbox_dispatch_lock_timeout_seconds"`
-	ReferralLifecycleEnabled              bool `mapstructure:"referral_lifecycle_enabled"`
-	ReferralLifecycleIntervalSeconds      int  `mapstructure:"referral_lifecycle_interval_seconds"`
-	ReferralLifecycleBatchLimit           int  `mapstructure:"referral_lifecycle_batch_limit"`
-	PaymentExpirationEnabled              bool `mapstructure:"payment_expiration_enabled"`
-	PaymentExpirationIntervalSeconds      int  `mapstructure:"payment_expiration_interval_seconds"`
-	PaymentPendingTTLSeconds              int  `mapstructure:"payment_pending_ttl_seconds"`
-	PaymentExpirationBatchLimit           int  `mapstructure:"payment_expiration_batch_limit"`
-	PaymentRiskMonitoringEnabled          bool `mapstructure:"payment_risk_monitoring_enabled"`
-	PaymentRiskMonitoringIntervalSeconds  int  `mapstructure:"payment_risk_monitoring_interval_seconds"`
-	ExchangeRateSyncEnabled               bool `mapstructure:"exchange_rate_sync_enabled"`
-	ExchangeRateSyncIntervalSeconds       int  `mapstructure:"exchange_rate_sync_interval_seconds"`
-	SiteQualityEnabled                    bool `mapstructure:"site_quality_enabled"`
-	SiteQualityAutoScanEnabled            bool `mapstructure:"site_quality_auto_scan_enabled"`
-	SiteQualityDispatchIntervalSeconds    int  `mapstructure:"site_quality_dispatch_interval_seconds"`
-	SiteQualityBatchLimit                 int  `mapstructure:"site_quality_batch_limit"`
-	SiteQualityLeaseTimeoutSeconds        int  `mapstructure:"site_quality_lease_timeout_seconds"`
-	SiteQualitySampleCount                int  `mapstructure:"site_quality_sample_count"`
-	SiteQualityConfirmations              int  `mapstructure:"site_quality_confirmations"`
-	SiteQualityCleanEvaluations           int  `mapstructure:"site_quality_clean_evaluations"`
-	SiteQualityProviderConcurrency        int  `mapstructure:"site_quality_provider_concurrency"`
-	SiteQualityProviderSpacingSeconds     int  `mapstructure:"site_quality_provider_spacing_seconds"`
-	MediaDerivativeRebuildEnabled         bool `mapstructure:"media_derivative_rebuild_enabled"`
-	MediaDerivativeRebuildIntervalSeconds int  `mapstructure:"media_derivative_rebuild_interval_seconds"`
-	MediaDerivativeRebuildBatchLimit      int  `mapstructure:"media_derivative_rebuild_batch_limit"`
+	Enabled                                    bool `mapstructure:"enabled"`
+	DistributedLockTTLSeconds                  int  `mapstructure:"distributed_lock_ttl_seconds"`
+	TrackingPollingEnabled                     bool `mapstructure:"tracking_polling_enabled"`
+	TrackingPollingIntervalSeconds             int  `mapstructure:"tracking_polling_interval_seconds"`
+	TrackingPollingBatchLimit                  int  `mapstructure:"tracking_polling_batch_limit"`
+	VisitorProfileCleanupEnabled               bool `mapstructure:"visitor_profile_cleanup_enabled"`
+	VisitorProfileCleanupIntervalSeconds       int  `mapstructure:"visitor_profile_cleanup_interval_seconds"`
+	VisitorProfileIPAddressRetentionDays       int  `mapstructure:"visitor_profile_ip_address_retention_days"`
+	CustomerServiceRetentionEnabled            bool `mapstructure:"customer_service_retention_enabled"`
+	CustomerServiceRetentionIntervalSeconds    int  `mapstructure:"customer_service_retention_interval_seconds"`
+	CustomerServiceRetentionMinimumMonths      int  `mapstructure:"customer_service_retention_minimum_months"`
+	CustomerServiceRetentionMinimumDays        int  `mapstructure:"customer_service_retention_minimum_days"`
+	CustomerServiceRetentionRecoveryWindowDays int  `mapstructure:"customer_service_retention_recovery_window_days"`
+	CustomerServiceRetentionBatchLimit         int  `mapstructure:"customer_service_retention_batch_limit"`
+	BehaviorEventCleanupEnabled                bool `mapstructure:"behavior_event_cleanup_enabled"`
+	BehaviorEventCleanupIntervalSeconds        int  `mapstructure:"behavior_event_cleanup_interval_seconds"`
+	QuickBuyAbandonmentEnabled                 bool `mapstructure:"quick_buy_abandonment_enabled"`
+	QuickBuyAbandonmentIntervalSeconds         int  `mapstructure:"quick_buy_abandonment_interval_seconds"`
+	QuickBuyAbandonmentAfterSeconds            int  `mapstructure:"quick_buy_abandonment_after_seconds"`
+	ShippingQuoteCleanupEnabled                bool `mapstructure:"shipping_quote_cleanup_enabled"`
+	ShippingQuoteCleanupIntervalSeconds        int  `mapstructure:"shipping_quote_cleanup_interval_seconds"`
+	ShippingQuoteCleanupBatchLimit             int  `mapstructure:"shipping_quote_cleanup_batch_limit"`
+	OutboxDispatchEnabled                      bool `mapstructure:"outbox_dispatch_enabled"`
+	OutboxDispatchIntervalSeconds              int  `mapstructure:"outbox_dispatch_interval_seconds"`
+	OutboxDispatchBatchLimit                   int  `mapstructure:"outbox_dispatch_batch_limit"`
+	OutboxDispatchLockTimeoutSeconds           int  `mapstructure:"outbox_dispatch_lock_timeout_seconds"`
+	ReferralLifecycleEnabled                   bool `mapstructure:"referral_lifecycle_enabled"`
+	ReferralLifecycleIntervalSeconds           int  `mapstructure:"referral_lifecycle_interval_seconds"`
+	ReferralLifecycleBatchLimit                int  `mapstructure:"referral_lifecycle_batch_limit"`
+	PaymentExpirationEnabled                   bool `mapstructure:"payment_expiration_enabled"`
+	PaymentExpirationIntervalSeconds           int  `mapstructure:"payment_expiration_interval_seconds"`
+	PaymentPendingTTLSeconds                   int  `mapstructure:"payment_pending_ttl_seconds"`
+	PaymentExpirationBatchLimit                int  `mapstructure:"payment_expiration_batch_limit"`
+	PaymentRiskMonitoringEnabled               bool `mapstructure:"payment_risk_monitoring_enabled"`
+	PaymentRiskMonitoringIntervalSeconds       int  `mapstructure:"payment_risk_monitoring_interval_seconds"`
+	ExchangeRateSyncEnabled                    bool `mapstructure:"exchange_rate_sync_enabled"`
+	ExchangeRateSyncIntervalSeconds            int  `mapstructure:"exchange_rate_sync_interval_seconds"`
+	SiteQualityEnabled                         bool `mapstructure:"site_quality_enabled"`
+	SiteQualityAutoScanEnabled                 bool `mapstructure:"site_quality_auto_scan_enabled"`
+	SiteQualityDispatchIntervalSeconds         int  `mapstructure:"site_quality_dispatch_interval_seconds"`
+	SiteQualityBatchLimit                      int  `mapstructure:"site_quality_batch_limit"`
+	SiteQualityLeaseTimeoutSeconds             int  `mapstructure:"site_quality_lease_timeout_seconds"`
+	SiteQualitySampleCount                     int  `mapstructure:"site_quality_sample_count"`
+	SiteQualityConfirmations                   int  `mapstructure:"site_quality_confirmations"`
+	SiteQualityCleanEvaluations                int  `mapstructure:"site_quality_clean_evaluations"`
+	SiteQualityProviderConcurrency             int  `mapstructure:"site_quality_provider_concurrency"`
+	SiteQualityProviderSpacingSeconds          int  `mapstructure:"site_quality_provider_spacing_seconds"`
+	MediaDerivativeRebuildEnabled              bool `mapstructure:"media_derivative_rebuild_enabled"`
+	MediaDerivativeRebuildIntervalSeconds      int  `mapstructure:"media_derivative_rebuild_interval_seconds"`
+	MediaDerivativeRebuildBatchLimit           int  `mapstructure:"media_derivative_rebuild_batch_limit"`
 	// MediaDerivativeGenerationCapacity bounds concurrent image decode/resize
 	// jobs. It is separate from the rebuild batch size because uploads and
 	// backfills share the same process-wide conversion pool.
@@ -291,6 +301,9 @@ type BehaviorEventsConfig struct {
 }
 
 type AntiAbuseConfig struct {
+	HoneypotMode                         string `mapstructure:"honeypot_mode"`
+	HoneypotTimingSecret                 string `mapstructure:"honeypot_timing_secret"`
+	HoneypotTimingTTLSeconds             int    `mapstructure:"honeypot_timing_ttl_seconds"`
 	TurnstileRequired                    bool   `mapstructure:"turnstile_required"`
 	TurnstileSecretKey                   string `mapstructure:"turnstile_secret_key"`
 	VerificationIPWindowSeconds          int    `mapstructure:"verification_ip_window_seconds"`
@@ -386,13 +399,13 @@ type PaymentProtectionConfig struct {
 }
 
 type PaymentThreeDSConfig struct {
-	AdaptiveEnabled                                 bool    `mapstructure:"adaptive_enabled"`
-	LowRiskMaxAmount                                float64 `mapstructure:"low_risk_max_amount"`
-	AVSBillingShippingMismatchHighValueThresholdUSD float64 `mapstructure:"avs_billing_shipping_mismatch_high_value_threshold_usd"`
-	TrustedPaidOrders                               int     `mapstructure:"trusted_paid_orders"`
-	VisitorRiskLookback                             int     `mapstructure:"visitor_risk_lookback_days"`
-	StepUpRiskScore                                 int     `mapstructure:"step_up_risk_score"`
-	ChallengeRiskScore                              int     `mapstructure:"challenge_risk_score"`
+	AdaptiveEnabled                                   bool  `mapstructure:"adaptive_enabled"`
+	LowRiskMaxAmountMinor                             int64 `mapstructure:"low_risk_max_amount_minor"`
+	AVSBillingShippingMismatchHighValueThresholdMinor int64 `mapstructure:"avs_billing_shipping_mismatch_high_value_threshold_minor"`
+	TrustedPaidOrders                                 int   `mapstructure:"trusted_paid_orders"`
+	VisitorRiskLookback                               int   `mapstructure:"visitor_risk_lookback_days"`
+	StepUpRiskScore                                   int   `mapstructure:"step_up_risk_score"`
+	ChallengeRiskScore                                int   `mapstructure:"challenge_risk_score"`
 }
 
 type VisitorRiskConfig struct {
@@ -450,6 +463,10 @@ type ShowcaseUploadProtectionConfig struct {
 	MaxFailuresPerUser           int   `mapstructure:"max_failures_per_user"`
 	MaxFailuresPerIP             int   `mapstructure:"max_failures_per_ip"`
 	BlockDurationSeconds         int   `mapstructure:"block_duration_seconds"`
+}
+
+type AfterSalesConfig struct {
+	ReturnWindowDays int `mapstructure:"return_window_days"`
 }
 
 // Load 加载配置文件
@@ -634,11 +651,20 @@ func setDefaults() {
 	viper.SetDefault("worker.visitor_profile_cleanup_enabled", false)
 	viper.SetDefault("worker.visitor_profile_cleanup_interval_seconds", 86400)
 	viper.SetDefault("worker.visitor_profile_ip_address_retention_days", DefaultVisitorProfileIPAddressRetentionDays)
+	viper.SetDefault("worker.customer_service_retention_enabled", false)
+	viper.SetDefault("worker.customer_service_retention_interval_seconds", 86400)
+	viper.SetDefault("worker.customer_service_retention_minimum_months", 24)
+	viper.SetDefault("worker.customer_service_retention_minimum_days", 0)
+	viper.SetDefault("worker.customer_service_retention_recovery_window_days", 30)
+	viper.SetDefault("worker.customer_service_retention_batch_limit", 100)
 	viper.SetDefault("worker.behavior_event_cleanup_enabled", false)
 	viper.SetDefault("worker.behavior_event_cleanup_interval_seconds", 86400)
 	viper.SetDefault("worker.quick_buy_abandonment_enabled", false)
 	viper.SetDefault("worker.quick_buy_abandonment_interval_seconds", 3600)
 	viper.SetDefault("worker.quick_buy_abandonment_after_seconds", 86400)
+	viper.SetDefault("worker.shipping_quote_cleanup_enabled", true)
+	viper.SetDefault("worker.shipping_quote_cleanup_interval_seconds", 3600)
+	viper.SetDefault("worker.shipping_quote_cleanup_batch_limit", 500)
 	viper.SetDefault("worker.outbox_dispatch_enabled", false)
 	viper.SetDefault("worker.outbox_dispatch_interval_seconds", 10)
 	viper.SetDefault("worker.outbox_dispatch_batch_limit", 100)
@@ -712,6 +738,9 @@ func setDefaults() {
 	viper.SetDefault("behavior_events.high_intent_retention_days", 180)
 	viper.SetDefault("behavior_events.cleanup_batch_limit", 5000)
 
+	viper.SetDefault("anti_abuse.honeypot_mode", "enforce")
+	viper.SetDefault("anti_abuse.honeypot_timing_secret", "")
+	viper.SetDefault("anti_abuse.honeypot_timing_ttl_seconds", 900)
 	viper.SetDefault("anti_abuse.turnstile_required", false)
 	viper.SetDefault("anti_abuse.turnstile_secret_key", "")
 	viper.SetDefault("anti_abuse.verification_ip_window_seconds", 60)
@@ -779,8 +808,8 @@ func setDefaults() {
 	viper.SetDefault("payment_protection.max_global_pause_payment_duration_hours", 2)
 
 	viper.SetDefault("payment_3ds.adaptive_enabled", true)
-	viper.SetDefault("payment_3ds.low_risk_max_amount", 100.0)
-	viper.SetDefault("payment_3ds.avs_billing_shipping_mismatch_high_value_threshold_usd", 800.0)
+	viper.SetDefault("payment_3ds.low_risk_max_amount_minor", int64(10000))
+	viper.SetDefault("payment_3ds.avs_billing_shipping_mismatch_high_value_threshold_minor", int64(80000))
 	viper.SetDefault("payment_3ds.trusted_paid_orders", 1)
 	viper.SetDefault("payment_3ds.visitor_risk_lookback_days", 30)
 	viper.SetDefault("payment_3ds.step_up_risk_score", 20)
@@ -792,6 +821,7 @@ func setDefaults() {
 	viper.SetDefault("visitor_risk.max_pending_facts", 5000)
 	viper.SetDefault("visitor_risk.sample_path_limit", 8)
 	viper.SetDefault("visitor_risk.retention_days", 365)
+	viper.SetDefault("after_sales.return_window_days", 30)
 
 	viper.SetDefault("request_signing.enabled", false)
 	viper.SetDefault("request_signing.key", "")
@@ -923,11 +953,20 @@ func bindEnvironment() {
 	_ = viper.BindEnv("worker.visitor_profile_cleanup_enabled", "WORKER_VISITOR_PROFILE_CLEANUP_ENABLED", "VISITOR_PROFILE_CLEANUP_ENABLED")
 	_ = viper.BindEnv("worker.visitor_profile_cleanup_interval_seconds", "WORKER_VISITOR_PROFILE_CLEANUP_INTERVAL_SECONDS", "VISITOR_PROFILE_CLEANUP_INTERVAL_SECONDS")
 	_ = viper.BindEnv("worker.visitor_profile_ip_address_retention_days", "WORKER_VISITOR_PROFILE_IP_ADDRESS_RETENTION_DAYS", "VISITOR_PROFILE_IP_ADDRESS_RETENTION_DAYS")
+	_ = viper.BindEnv("worker.customer_service_retention_enabled", "WORKER_CUSTOMER_SERVICE_RETENTION_ENABLED", "CUSTOMER_SERVICE_RETENTION_ENABLED")
+	_ = viper.BindEnv("worker.customer_service_retention_interval_seconds", "WORKER_CUSTOMER_SERVICE_RETENTION_INTERVAL_SECONDS", "CUSTOMER_SERVICE_RETENTION_INTERVAL_SECONDS")
+	_ = viper.BindEnv("worker.customer_service_retention_minimum_months", "WORKER_CUSTOMER_SERVICE_RETENTION_MINIMUM_MONTHS", "CUSTOMER_SERVICE_RETENTION_MINIMUM_MONTHS")
+	_ = viper.BindEnv("worker.customer_service_retention_minimum_days", "WORKER_CUSTOMER_SERVICE_RETENTION_MINIMUM_DAYS", "CUSTOMER_SERVICE_RETENTION_MINIMUM_DAYS")
+	_ = viper.BindEnv("worker.customer_service_retention_recovery_window_days", "WORKER_CUSTOMER_SERVICE_RETENTION_RECOVERY_WINDOW_DAYS", "CUSTOMER_SERVICE_RETENTION_RECOVERY_WINDOW_DAYS")
+	_ = viper.BindEnv("worker.customer_service_retention_batch_limit", "WORKER_CUSTOMER_SERVICE_RETENTION_BATCH_LIMIT", "CUSTOMER_SERVICE_RETENTION_BATCH_LIMIT")
 	_ = viper.BindEnv("worker.behavior_event_cleanup_enabled", "WORKER_BEHAVIOR_EVENT_CLEANUP_ENABLED", "BEHAVIOR_EVENT_CLEANUP_ENABLED")
 	_ = viper.BindEnv("worker.behavior_event_cleanup_interval_seconds", "WORKER_BEHAVIOR_EVENT_CLEANUP_INTERVAL_SECONDS", "BEHAVIOR_EVENT_CLEANUP_INTERVAL_SECONDS")
 	_ = viper.BindEnv("worker.quick_buy_abandonment_enabled", "WORKER_QUICK_BUY_ABANDONMENT_ENABLED", "QUICK_BUY_ABANDONMENT_ENABLED")
 	_ = viper.BindEnv("worker.quick_buy_abandonment_interval_seconds", "WORKER_QUICK_BUY_ABANDONMENT_INTERVAL_SECONDS", "QUICK_BUY_ABANDONMENT_INTERVAL_SECONDS")
 	_ = viper.BindEnv("worker.quick_buy_abandonment_after_seconds", "WORKER_QUICK_BUY_ABANDONMENT_AFTER_SECONDS", "QUICK_BUY_ABANDONMENT_AFTER_SECONDS")
+	_ = viper.BindEnv("worker.shipping_quote_cleanup_enabled", "WORKER_SHIPPING_QUOTE_CLEANUP_ENABLED", "SHIPPING_QUOTE_CLEANUP_ENABLED")
+	_ = viper.BindEnv("worker.shipping_quote_cleanup_interval_seconds", "WORKER_SHIPPING_QUOTE_CLEANUP_INTERVAL_SECONDS", "SHIPPING_QUOTE_CLEANUP_INTERVAL_SECONDS")
+	_ = viper.BindEnv("worker.shipping_quote_cleanup_batch_limit", "WORKER_SHIPPING_QUOTE_CLEANUP_BATCH_LIMIT", "SHIPPING_QUOTE_CLEANUP_BATCH_LIMIT")
 	_ = viper.BindEnv("worker.outbox_dispatch_enabled", "WORKER_OUTBOX_DISPATCH_ENABLED", "OUTBOX_DISPATCH_ENABLED")
 	_ = viper.BindEnv("worker.outbox_dispatch_interval_seconds", "WORKER_OUTBOX_DISPATCH_INTERVAL_SECONDS", "OUTBOX_DISPATCH_INTERVAL_SECONDS")
 	_ = viper.BindEnv("worker.outbox_dispatch_batch_limit", "WORKER_OUTBOX_DISPATCH_BATCH_LIMIT", "OUTBOX_DISPATCH_BATCH_LIMIT")
@@ -1001,6 +1040,9 @@ func bindEnvironment() {
 	_ = viper.BindEnv("behavior_events.high_intent_retention_days", "BEHAVIOR_EVENTS_HIGH_INTENT_RETENTION_DAYS")
 	_ = viper.BindEnv("behavior_events.cleanup_batch_limit", "BEHAVIOR_EVENTS_CLEANUP_BATCH_LIMIT")
 
+	_ = viper.BindEnv("anti_abuse.honeypot_mode", "HONEYPOT_MODE")
+	_ = viper.BindEnv("anti_abuse.honeypot_timing_secret", "HONEYPOT_TIMING_SECRET")
+	_ = viper.BindEnv("anti_abuse.honeypot_timing_ttl_seconds", "HONEYPOT_TIMING_TTL_SECONDS")
 	_ = viper.BindEnv("anti_abuse.turnstile_required", "TURNSTILE_REQUIRED")
 	_ = viper.BindEnv("anti_abuse.turnstile_secret_key", "TURNSTILE_SECRET_KEY")
 	_ = viper.BindEnv("anti_abuse.verification_ip_window_seconds", "VERIFICATION_IP_WINDOW_SECONDS")
@@ -1065,8 +1107,8 @@ func bindEnvironment() {
 	_ = viper.BindEnv("payment_protection.max_global_pause_payment_duration_hours", "PAYMENT_PROTECTION_MAX_GLOBAL_PAUSE_PAYMENT_DURATION_HOURS")
 
 	_ = viper.BindEnv("payment_3ds.adaptive_enabled", "PAYMENT_3DS_ADAPTIVE_ENABLED")
-	_ = viper.BindEnv("payment_3ds.low_risk_max_amount", "PAYMENT_3DS_LOW_RISK_MAX_AMOUNT")
-	_ = viper.BindEnv("payment_3ds.avs_billing_shipping_mismatch_high_value_threshold_usd", "PAYMENT_3DS_AVS_BILLING_SHIPPING_MISMATCH_HIGH_VALUE_THRESHOLD_USD")
+	_ = viper.BindEnv("payment_3ds.low_risk_max_amount_minor", "PAYMENT_3DS_LOW_RISK_MAX_AMOUNT_MINOR")
+	_ = viper.BindEnv("payment_3ds.avs_billing_shipping_mismatch_high_value_threshold_minor", "PAYMENT_3DS_AVS_BILLING_SHIPPING_MISMATCH_HIGH_VALUE_THRESHOLD_MINOR")
 	_ = viper.BindEnv("payment_3ds.trusted_paid_orders", "PAYMENT_3DS_TRUSTED_PAID_ORDERS")
 	_ = viper.BindEnv("payment_3ds.visitor_risk_lookback_days", "PAYMENT_3DS_VISITOR_RISK_LOOKBACK_DAYS")
 	_ = viper.BindEnv("payment_3ds.step_up_risk_score", "PAYMENT_3DS_STEP_UP_RISK_SCORE")
@@ -1078,6 +1120,7 @@ func bindEnvironment() {
 	_ = viper.BindEnv("visitor_risk.max_pending_facts", "VISITOR_RISK_MAX_PENDING_FACTS")
 	_ = viper.BindEnv("visitor_risk.sample_path_limit", "VISITOR_RISK_SAMPLE_PATH_LIMIT")
 	_ = viper.BindEnv("visitor_risk.retention_days", "VISITOR_RISK_RETENTION_DAYS")
+	_ = viper.BindEnv("after_sales.return_window_days", "AFTER_SALES_RETURN_WINDOW_DAYS")
 
 	_ = viper.BindEnv("request_signing.enabled", "REQUEST_SIGNING_ENABLED")
 	_ = viper.BindEnv("request_signing.key", "REQUEST_SIGNING_KEY")
@@ -1362,6 +1405,18 @@ func validateConfig(cfg *Config) error {
 	if err := validateRedisConfig(cfg.Redis); err != nil {
 		return err
 	}
+	switch strings.ToLower(strings.TrimSpace(cfg.AntiAbuse.HoneypotMode)) {
+	case "", "off", "shadow", "enforce":
+	default:
+		return fmt.Errorf("anti-abuse honeypot mode must be one of off, shadow, or enforce")
+	}
+	if cfg.AntiAbuse.HoneypotTimingTTLSeconds < 0 {
+		return fmt.Errorf("anti-abuse honeypot timing token TTL must not be negative")
+	}
+	timingSecret := strings.TrimSpace(cfg.AntiAbuse.HoneypotTimingSecret)
+	if releaseMode && timingSecret != "" && len(timingSecret) < 32 {
+		return fmt.Errorf("HONEYPOT_TIMING_SECRET must be at least 32 characters in release mode when configured")
+	}
 
 	if cfg.AntiAbuse.TurnstileRequired {
 		if strings.TrimSpace(cfg.AntiAbuse.TurnstileSecretKey) == "" {
@@ -1453,7 +1508,7 @@ func validateConfig(cfg *Config) error {
 		}
 	}
 	if cfg.PaymentThreeDS.AdaptiveEnabled {
-		if cfg.PaymentThreeDS.LowRiskMaxAmount < 0 ||
+		if cfg.PaymentThreeDS.LowRiskMaxAmountMinor < 0 ||
 			cfg.PaymentThreeDS.TrustedPaidOrders <= 0 ||
 			cfg.PaymentThreeDS.VisitorRiskLookback <= 0 ||
 			cfg.PaymentThreeDS.StepUpRiskScore <= 0 ||
@@ -1462,7 +1517,7 @@ func validateConfig(cfg *Config) error {
 			return fmt.Errorf("payment 3DS configuration is invalid")
 		}
 	}
-	if cfg.PaymentThreeDS.AVSBillingShippingMismatchHighValueThresholdUSD <= 0 {
+	if cfg.PaymentThreeDS.AVSBillingShippingMismatchHighValueThresholdMinor <= 0 {
 		return fmt.Errorf("payment 3DS configuration is invalid")
 	}
 	if cfg.PaymentProtection.Enabled {
@@ -1483,11 +1538,26 @@ func validateConfig(cfg *Config) error {
 		(cfg.Worker.VisitorProfileCleanupEnabled && cfg.Worker.VisitorProfileIPAddressRetentionDays <= 0) {
 		return fmt.Errorf("visitor profile IP address retention days must be positive when cleanup is enabled")
 	}
+	if cfg.Worker.CustomerServiceRetentionMinimumMonths < 0 || cfg.Worker.CustomerServiceRetentionMinimumDays < 0 ||
+		cfg.Worker.CustomerServiceRetentionRecoveryWindowDays < 0 {
+		return fmt.Errorf("customer-service retention durations cannot be negative")
+	}
+	if cfg.Worker.CustomerServiceRetentionEnabled {
+		if cfg.Worker.CustomerServiceRetentionIntervalSeconds <= 0 ||
+			(cfg.Worker.CustomerServiceRetentionMinimumMonths <= 0 && cfg.Worker.CustomerServiceRetentionMinimumDays <= 0) ||
+			cfg.Worker.CustomerServiceRetentionRecoveryWindowDays <= 0 ||
+			cfg.Worker.CustomerServiceRetentionBatchLimit <= 0 {
+			return fmt.Errorf("customer-service retention worker configuration is invalid")
+		}
+	}
 	if cfg.Worker.BehaviorEventCleanupEnabled && cfg.Worker.BehaviorEventCleanupIntervalSeconds <= 0 {
 		return fmt.Errorf("behavior event cleanup interval must be positive when cleanup is enabled")
 	}
 	if cfg.Worker.QuickBuyAbandonmentEnabled && (cfg.Worker.QuickBuyAbandonmentIntervalSeconds <= 0 || cfg.Worker.QuickBuyAbandonmentAfterSeconds <= 0) {
 		return fmt.Errorf("quick buy abandonment scheduler configuration is invalid")
+	}
+	if cfg.Worker.ShippingQuoteCleanupEnabled && (cfg.Worker.ShippingQuoteCleanupIntervalSeconds <= 0 || cfg.Worker.ShippingQuoteCleanupBatchLimit <= 0) {
+		return fmt.Errorf("shipping quote cleanup scheduler configuration is invalid")
 	}
 	if cfg.Worker.OutboxDispatchEnabled {
 		if cfg.Worker.OutboxDispatchIntervalSeconds <= 0 ||

@@ -78,9 +78,9 @@ func TestApplySecureGatewayStatusesOverridesStripeRuntimeSource(t *testing.T) {
 	}
 }
 
-func TestNormalizeThreeDSecureModeSupportsChallenge(t *testing.T) {
-	if got := NormalizeThreeDSecureMode("challenge"); got != "challenge" {
-		t.Fatalf("NormalizeThreeDSecureMode(challenge) = %q, want challenge", got)
+func TestNormalizeThreeDSecureModeMapsChallengeToStripeAny(t *testing.T) {
+	if got := NormalizeThreeDSecureMode("challenge"); got != "any" {
+		t.Fatalf("NormalizeThreeDSecureMode(challenge) = %q, want any", got)
 	}
 }
 

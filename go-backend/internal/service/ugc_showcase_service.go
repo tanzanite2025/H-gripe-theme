@@ -1,6 +1,7 @@
 package service
 
 import (
+	"commerce-platform/internal/domain/outbox"
 	"commerce-platform/internal/domain/ugcshowcase"
 	"commerce-platform/internal/pkg/storage"
 	"commerce-platform/internal/repository"
@@ -9,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"mime/multipart"
+	"strconv"
 	"time"
 
 	"gorm.io/datatypes"
@@ -18,8 +20,16 @@ import (
 type UGCShowcaseService struct {
 	repo              *repository.UGCShowcaseRepository
 	storage           storage.StorageService
+	outbox            *repository.OutboxRepository
 	uploadEligibility *UGCShowcaseUploadEligibilityService
 	pendingLimit      int
+}
+
+func (s *UGCShowcaseService) ConfigureObjectCleanupOutbox(repo *repository.OutboxRepository) {
+	if s == nil {
+		return
+	}
+	s.outbox = repo
 }
 
 func NewUGCShowcaseService(repo *repository.UGCShowcaseRepository, st storage.StorageService) *UGCShowcaseService {
@@ -120,7 +130,7 @@ func (s *UGCShowcaseService) createPendingSubmission(item *ugcshowcase.UGCShowca
 	if s.pendingLimit <= 0 {
 		return s.repo.Create(item)
 	}
-	return s.repo.WithTransaction(func(repo *repository.UGCShowcaseRepository) error {
+	return s.repo.WithTransaction(func(repo *repository.UGCShowcaseRepository, _ *gorm.DB) error {
 		if err := repo.LockUserForSubmissionLimit(item.UserID); err != nil {
 			if repository.IsRecordNotFound(err) {
 				return ErrShowcaseUploadOrderNotEligible
@@ -196,16 +206,21 @@ func (s *UGCShowcaseService) Approve(ctx context.Context, id uint) error {
 		deleteUploadedShowcaseImagesBestEffort(ctx, s.storage, publication.CopiedObjectKeys)
 		return fmt.Errorf("failed to encode published images: %w", err)
 	}
-	updated, err := s.repo.UpdatePendingImagesAndStatus(id, datatypes.JSON(imagesJSON), ugcshowcase.StatusApproved, "")
+	cleanupKeys := s.showcasePendingCleanupKeys(publication.PendingSourceReferences)
+	err = s.repo.WithTransaction(func(repo *repository.UGCShowcaseRepository, tx *gorm.DB) error {
+		updated, updateErr := repo.UpdatePendingImagesAndStatus(id, datatypes.JSON(imagesJSON), ugcshowcase.StatusApproved, "")
+		if updateErr != nil {
+			return updateErr
+		}
+		if !updated {
+			return ErrShowcaseInvalidTransition
+		}
+		return s.enqueueShowcaseCleanup(tx, id, cleanupKeys)
+	})
 	if err != nil {
 		deleteUploadedShowcaseImagesBestEffort(ctx, s.storage, publication.CopiedObjectKeys)
 		return err
 	}
-	if !updated {
-		deleteUploadedShowcaseImagesBestEffort(ctx, s.storage, publication.CopiedObjectKeys)
-		return ErrShowcaseInvalidTransition
-	}
-	deleteUploadedShowcaseImagesBestEffort(ctx, s.storage, publication.PendingSourceReferences)
 	return nil
 }
 
@@ -232,18 +247,56 @@ func (s *UGCShowcaseService) Reject(ctx context.Context, id uint, reason string)
 		}
 	}
 
-	updated, err := s.repo.UpdatePendingStatus(id, ugcshowcase.StatusRejected, reason)
+	cleanupKeys := s.showcasePendingCleanupKeys(pendingImageReferences)
+	err = s.repo.WithTransaction(func(repo *repository.UGCShowcaseRepository, tx *gorm.DB) error {
+		updated, updateErr := repo.UpdatePendingStatus(id, ugcshowcase.StatusRejected, reason)
+		if updateErr != nil {
+			return updateErr
+		}
+		if !updated {
+			return ErrShowcaseInvalidTransition
+		}
+		return s.enqueueShowcaseCleanup(tx, id, cleanupKeys)
+	})
 	if err != nil {
 		return err
 	}
-	if !updated {
-		return ErrShowcaseInvalidTransition
-	}
-
-	if len(pendingImageReferences) > 0 {
-		deleteUploadedShowcaseImagesBestEffort(ctx, s.storage, pendingImageReferences)
-	}
 	return nil
+}
+
+func (s *UGCShowcaseService) showcasePendingCleanupKeys(references []string) []string {
+	if s == nil || s.storage == nil {
+		return nil
+	}
+	keys := make([]string, 0, len(references))
+	for _, reference := range references {
+		key, err := s.storage.ObjectKey(reference)
+		if err == nil && showcaseStorageKeyIsPending(key) {
+			keys = append(keys, key)
+		}
+	}
+	return normalizeObjectCleanupKeys(keys)
+}
+
+func (s *UGCShowcaseService) enqueueShowcaseCleanup(tx *gorm.DB, id uint, keys []string) error {
+	if len(keys) == 0 {
+		return nil
+	}
+	if s == nil || s.outbox == nil {
+		return ErrObjectStorageCleanupUnavailable
+	}
+	resourceID := strconv.FormatUint(uint64(id), 10)
+	event, err := newObjectStorageCleanupEvent(
+		objectCleanupResourceUGCShowcase,
+		resourceID,
+		outbox.AggregateTypeUGCShowcase,
+		resourceID,
+		keys,
+	)
+	if err != nil {
+		return err
+	}
+	return s.outbox.WithTx(tx).CreateEvent(event)
 }
 
 func (s *UGCShowcaseService) AddComment(showcaseID uint, userID uint, author string, content string, location string) (*ugcshowcase.UGCShowcaseComment, error) {

@@ -56,7 +56,7 @@ func (r *OrderRepository) FindByUserIDForShowcaseUpload(userID uint, limit int) 
 	}
 
 	err := r.db.Model(&order.Order{}).
-		Select("id, user_id, order_number, status, shipping_status, total_amount, currency, completed_at, created_at").
+		Select("id, user_id, order_number, status, shipping_status, total_amount_minor, currency, completed_at, created_at").
 		Where("user_id = ?", userID).
 		Order("created_at DESC").
 		Limit(limit).
@@ -69,7 +69,7 @@ func (r *OrderRepository) FindByUserIDForShowcaseUpload(userID uint, limit int) 
 func (r *OrderRepository) FindByIDAndUserIDForShowcaseUpload(id, userID uint) (*order.Order, error) {
 	var item order.Order
 	err := r.db.Model(&order.Order{}).
-		Select("id, user_id, order_number, status, shipping_status, total_amount, currency, completed_at, created_at").
+		Select("id, user_id, order_number, status, shipping_status, total_amount_minor, currency, completed_at, created_at").
 		Where("id = ? AND user_id = ?", id, userID).
 		First(&item).Error
 	if err != nil {

@@ -13,7 +13,7 @@ type AfterSalesRefundReview struct {
 	ID             uint       `gorm:"primarykey" json:"id"`
 	CaseID         uint       `gorm:"not null;uniqueIndex" json:"case_id"`
 	Status         string     `gorm:"not null;index" json:"status"`
-	ProposedAmount float64    `gorm:"type:numeric(18,2);not null" json:"proposed_amount"`
+	ProposedAmountMinor int64 `gorm:"column:proposed_amount_minor;not null;default:0" json:"proposed_amount_minor"`
 	Currency       string     `gorm:"size:8;not null" json:"currency"`
 	RequestNotes   string     `gorm:"type:text;not null;default:''" json:"request_notes"`
 	DecisionNotes  string     `gorm:"type:text;not null;default:''" json:"decision_notes"`

@@ -18,7 +18,6 @@ type DiscountKind string
 const (
 	DiscountKindMember DiscountKind = "member"
 	DiscountKindCoupon DiscountKind = "coupon"
-	DiscountKindPoints DiscountKind = "points"
 )
 
 var (
@@ -313,7 +312,7 @@ func cloneLines(lines []LineSnapshot) []LineSnapshot {
 
 func validDiscountKind(kind DiscountKind) bool {
 	switch kind {
-	case DiscountKindMember, DiscountKindCoupon, DiscountKindPoints:
+	case DiscountKindMember, DiscountKindCoupon:
 		return true
 	default:
 		return false

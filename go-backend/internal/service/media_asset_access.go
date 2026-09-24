@@ -125,7 +125,7 @@ func (s *MediaService) PublicUploadAssetAccess(key string) (PublicUploadAssetAcc
 	}
 	return PublicUploadAssetAccess{
 		Found:   true,
-		Allowed: asset.Status == "active" && asset.Visibility == "public",
+		Allowed: !asset.DeletedAt.Valid && asset.Status == "active" && asset.Visibility == "public",
 	}, nil
 }
 

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"math/big"
 	"net/http"
 	"os"
@@ -69,55 +70,8 @@ type ExchangeRateSyncResult struct {
 	ShippingDisplayPriceRefresh *ShippingDisplayPriceRefreshResult `json:"shipping_display_price_refresh,omitempty"`
 }
 
-type CurrencyConversion struct {
-	Amount         float64    `json:"amount"`
-	Currency       string     `json:"currency"`
-	Rate           float64    `json:"rate"`
-	Source         string     `json:"source"`
-	Converted      bool       `json:"converted"`
-	FetchedAt      *time.Time `json:"fetched_at,omitempty"`
-	ExpiresAt      *time.Time `json:"expires_at,omitempty"`
-	FallbackReason string     `json:"fallback_reason,omitempty"`
-}
-
-// ConvertStrict is the money-path conversion API. It never returns a 1:1
-// catalog fallback when a rate is missing or stale; callers must handle the
-// error and stop the operation.
-func (s *ExchangeRateService) ConvertStrict(amount float64, baseCurrency string, quoteCurrency string) (CurrencyConversion, error) {
-	base := currency.NormalizeCode(baseCurrency)
-	quote := currency.NormalizeCode(quoteCurrency)
-	if amount < 0 || base == "" || quote == "" || !currency.IsCatalogCode(base) || !currency.IsCatalogCode(quote) {
-		return CurrencyConversion{}, fmt.Errorf("invalid currency conversion %s to %s", base, quote)
-	}
-	amountMoney, err := domainmoney.FromMajorFloat(amount, base)
-	if err != nil {
-		return CurrencyConversion{}, fmt.Errorf("invalid currency conversion amount: %w", err)
-	}
-	if base == quote {
-		convertedAmount, formatErr := amountMoney.MajorFloat()
-		if formatErr != nil {
-			return CurrencyConversion{}, formatErr
-		}
-		return CurrencyConversion{Amount: convertedAmount, Currency: quote, Rate: 1, Source: "same_currency", Converted: true}, nil
-	}
-	if s == nil || s.repo == nil {
-		return CurrencyConversion{}, fmt.Errorf("%w: exchange-rate service unavailable", ErrExchangeRateMissing)
-	}
-	if converted, ok := s.directConversion(amountMoney, base, quote); ok {
-		return converted, nil
-	}
-	if converted, ok := s.reverseConversion(amountMoney, base, quote); ok {
-		return converted, nil
-	}
-	if converted, ok := s.crossConversion(amountMoney, base, quote); ok {
-		return converted, nil
-	}
-	return CurrencyConversion{}, fmt.Errorf("%w for %s to %s", ErrExchangeRateMissing, base, quote)
-}
-
 // ConvertMoneyStrict converts an exact Money value using a fresh exchange-rate
-// record. Multiplication and minor-unit rounding remain inside Money; the
-// float-based ConvertStrict API is reserved for display/administrative calls.
+// record. Multiplication and minor-unit rounding remain inside Money.
 func (s *ExchangeRateService) ConvertMoneyStrict(amount domainmoney.Money, quoteCurrency string) (domainmoney.Money, error) {
 	base := currency.NormalizeCode(amount.Currency().String())
 	quote := currency.NormalizeCode(quoteCurrency)
@@ -131,15 +85,15 @@ func (s *ExchangeRateService) ConvertMoneyStrict(amount domainmoney.Money, quote
 		return domainmoney.Money{}, fmt.Errorf("%w: exchange-rate service unavailable", ErrExchangeRateMissing)
 	}
 	now := time.Now().UTC()
-	if rate, err := s.repo.FindFresh(base, quote, now); err == nil && rate != nil && rate.Rate > 0 {
-		rat, parseErr := exchangeRateRat(rate.Rate)
+	if rate, err := s.repo.FindFresh(base, quote, now); err == nil && rate != nil {
+		rat, parseErr := exchangeRateRatRecord(rate)
 		if parseErr != nil {
 			return domainmoney.Money{}, parseErr
 		}
 		return amount.ConvertAtRat(rat, quote)
 	}
-	if rate, err := s.repo.FindFresh(quote, base, now); err == nil && rate != nil && rate.Rate > 0 {
-		rat, parseErr := exchangeRateRat(rate.Rate)
+	if rate, err := s.repo.FindFresh(quote, base, now); err == nil && rate != nil {
+		rat, parseErr := exchangeRateRatRecord(rate)
 		if parseErr != nil {
 			return domainmoney.Money{}, parseErr
 		}
@@ -151,9 +105,9 @@ func (s *ExchangeRateService) ConvertMoneyStrict(amount domainmoney.Money, quote
 		if anchor != "" && anchor != base && anchor != quote {
 			baseRate, baseErr := s.repo.FindFresh(anchor, base, now)
 			quoteRate, quoteErr := s.repo.FindFresh(anchor, quote, now)
-			if baseErr == nil && quoteErr == nil && baseRate != nil && quoteRate != nil && baseRate.Rate > 0 && quoteRate.Rate > 0 {
-				baseRat, baseParseErr := exchangeRateRat(baseRate.Rate)
-				quoteRat, quoteParseErr := exchangeRateRat(quoteRate.Rate)
+			if baseErr == nil && quoteErr == nil && baseRate != nil && quoteRate != nil {
+				baseRat, baseParseErr := exchangeRateRatRecord(baseRate)
+				quoteRat, quoteParseErr := exchangeRateRatRecord(quoteRate)
 				if baseParseErr != nil {
 					return domainmoney.Money{}, baseParseErr
 				}
@@ -167,23 +121,41 @@ func (s *ExchangeRateService) ConvertMoneyStrict(amount domainmoney.Money, quote
 	return domainmoney.Money{}, fmt.Errorf("%w for %s to %s", ErrExchangeRateMissing, base, quote)
 }
 
-func exchangeRateRat(rate float64) (*big.Rat, error) {
-	if rate <= 0 {
-		return nil, errors.New("exchange rate must be positive")
+func exchangeRateRatRecord(record *currency.ExchangeRate) (*big.Rat, error) {
+	if record == nil {
+		return nil, errors.New("exchange rate is required")
 	}
-	rat, ok := new(big.Rat).SetString(strconv.FormatFloat(rate, 'f', -1, 64))
-	if !ok || rat.Sign() <= 0 {
-		return nil, errors.New("invalid exchange rate")
+	if value := strings.TrimSpace(record.RateDecimal); value != "" && value != "0" {
+		rat, ok := new(big.Rat).SetString(value)
+		if !ok || rat.Sign() <= 0 {
+			return nil, errors.New("invalid exchange rate decimal")
+		}
+		return rat, nil
 	}
-	return rat, nil
+	return nil, errors.New("exchange rate decimal is required")
+}
+
+// exchangeRateFloatRecord converts the canonical decimal rate only at a
+// display/snapshot boundary that still exposes a float64 contract. Core rate
+// storage and conversion always use RateDecimal through exchangeRateRatRecord.
+func exchangeRateFloatRecord(record *currency.ExchangeRate) (float64, error) {
+	rat, err := exchangeRateRatRecord(record)
+	if err != nil {
+		return 0, err
+	}
+	value, _ := rat.Float64()
+	if value <= 0 || math.IsInf(value, 0) || math.IsNaN(value) {
+		return 0, errors.New("exchange rate overflows float64")
+	}
+	return value, nil
 }
 
 type exchangeRateAPIResponse struct {
-	Result             string             `json:"result"`
-	BaseCode           string             `json:"base_code"`
-	ConversionRates    map[string]float64 `json:"conversion_rates"`
-	TimeLastUpdateUnix int64              `json:"time_last_update_unix"`
-	ErrorType          string             `json:"error-type"`
+	Result             string                 `json:"result"`
+	BaseCode           string                 `json:"base_code"`
+	ConversionRates    map[string]json.Number `json:"conversion_rates"`
+	TimeLastUpdateUnix int64                  `json:"time_last_update_unix"`
+	ErrorType          string                 `json:"error-type"`
 }
 
 func NewExchangeRateService(repo *repository.ExchangeRateRepository, settings *repository.SettingRepository) *ExchangeRateService {
@@ -379,20 +351,21 @@ func (s *ExchangeRateService) Sync() (*ExchangeRateSyncResult, error) {
 	rates = append(rates, currency.ExchangeRate{
 		BaseCurrency:  config.BaseCurrency,
 		QuoteCurrency: config.BaseCurrency,
-		Rate:          1,
+		RateDecimal:   "1",
 		Source:        config.Provider,
 		FetchedAt:     fetchedAt,
 		ExpiresAt:     &expiresAt,
 	})
 	for _, quote := range config.QuoteCurrencies {
-		rate := apiResponse.ConversionRates[quote]
-		if rate <= 0 {
+		rateValue := strings.TrimSpace(apiResponse.ConversionRates[quote].String())
+		rateRat, ok := new(big.Rat).SetString(rateValue)
+		if !ok || rateRat.Sign() <= 0 {
 			continue
 		}
 		rates = append(rates, currency.ExchangeRate{
 			BaseCurrency:  config.BaseCurrency,
 			QuoteCurrency: quote,
-			Rate:          rate,
+			RateDecimal:   rateValue,
 			Source:        config.Provider,
 			FetchedAt:     fetchedAt,
 			ExpiresAt:     &expiresAt,
@@ -439,59 +412,6 @@ func (s *ExchangeRateService) List(baseCurrency string) ([]currency.ExchangeRate
 	return s.repo.List(currency.NormalizeCode(baseCurrency))
 }
 
-func (s *ExchangeRateService) directConversion(amount domainmoney.Money, base string, quote string) (CurrencyConversion, bool) {
-	rate, err := s.repo.FindFresh(base, quote, time.Now().UTC())
-	if err != nil || rate.Rate <= 0 {
-		return CurrencyConversion{}, false
-	}
-	rateRat, err := exchangeRateRat(rate.Rate)
-	if err != nil {
-		return CurrencyConversion{}, false
-	}
-	return conversionFromMoneyRate(amount, quote, rateRat, "direct_rate", rate)
-}
-
-func (s *ExchangeRateService) reverseConversion(amount domainmoney.Money, base string, quote string) (CurrencyConversion, bool) {
-	rate, err := s.repo.FindFresh(quote, base, time.Now().UTC())
-	if err != nil || rate.Rate <= 0 {
-		return CurrencyConversion{}, false
-	}
-	rateRat, err := exchangeRateRat(rate.Rate)
-	if err != nil {
-		return CurrencyConversion{}, false
-	}
-	return conversionFromMoneyRate(amount, quote, new(big.Rat).Inv(rateRat), "reverse_rate", rate)
-}
-
-func (s *ExchangeRateService) crossConversion(amount domainmoney.Money, base string, quote string) (CurrencyConversion, bool) {
-	config, err := s.GetConfig()
-	if err != nil {
-		return CurrencyConversion{}, false
-	}
-	anchor := currency.NormalizeCode(config.BaseCurrency)
-	if anchor == "" || anchor == base || anchor == quote {
-		return CurrencyConversion{}, false
-	}
-	now := time.Now().UTC()
-	baseRate, err := s.repo.FindFresh(anchor, base, now)
-	if err != nil || baseRate.Rate <= 0 {
-		return CurrencyConversion{}, false
-	}
-	quoteRate, err := s.repo.FindFresh(anchor, quote, now)
-	if err != nil || quoteRate.Rate <= 0 {
-		return CurrencyConversion{}, false
-	}
-	baseRat, err := exchangeRateRat(baseRate.Rate)
-	if err != nil {
-		return CurrencyConversion{}, false
-	}
-	quoteRat, err := exchangeRateRat(quoteRate.Rate)
-	if err != nil {
-		return CurrencyConversion{}, false
-	}
-	return conversionFromMoneyRate(amount, quote, new(big.Rat).Quo(quoteRat, baseRat), "cross_rate", quoteRate)
-}
-
 func (s *ExchangeRateService) fetch(config ExchangeRateConfig) (*exchangeRateAPIResponse, error) {
 	endpoint := strings.ReplaceAll(config.Endpoint, "{apiKey}", config.apiKey)
 	endpoint = strings.ReplaceAll(endpoint, "{base}", config.BaseCurrency)
@@ -523,33 +443,6 @@ func (s *ExchangeRateService) fetch(config ExchangeRateConfig) (*exchangeRateAPI
 		return nil, fmt.Errorf("exchange rate API returned unexpected base %s", payload.BaseCode)
 	}
 	return &payload, nil
-}
-
-func conversionFromMoneyRate(amount domainmoney.Money, currencyCode string, rate *big.Rat, source string, record *currency.ExchangeRate) (CurrencyConversion, bool) {
-	convertedMoney, err := amount.ConvertAtRat(rate, currencyCode)
-	if err != nil {
-		return CurrencyConversion{}, false
-	}
-	convertedAmount, err := convertedMoney.MajorFloat()
-	if err != nil {
-		return CurrencyConversion{}, false
-	}
-	rateFloat, err := strconv.ParseFloat(rate.FloatString(15), 64)
-	if err != nil {
-		return CurrencyConversion{}, false
-	}
-	result := CurrencyConversion{
-		Amount:    convertedAmount,
-		Currency:  currencyCode,
-		Rate:      rateFloat,
-		Source:    source,
-		Converted: true,
-	}
-	if record != nil {
-		result.FetchedAt = &record.FetchedAt
-		result.ExpiresAt = record.ExpiresAt
-	}
-	return result, true
 }
 
 func parseSettingBool(value string) bool {

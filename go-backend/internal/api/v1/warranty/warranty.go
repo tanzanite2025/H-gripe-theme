@@ -25,12 +25,19 @@ var errWarrantyStorageUnavailable = errors.New("file storage is unavailable")
 
 func (h *Handler) VerifyWarrantyOrder(c *gin.Context) {
 	var req struct {
-		OrderNumber  string `json:"order_number" binding:"required"`
-		Email        string `json:"email" binding:"required,email"`
-		CaptchaToken string `json:"captcha_token"`
+		OrderNumber    string `json:"order_number" binding:"required"`
+		Email          string `json:"email" binding:"required,email"`
+		SecondaryPhone string `json:"secondary_phone"`
+		CaptchaToken   string `json:"captcha_token"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		apierror.RespondValidationError(c, err.Error())
+		return
+	}
+	if h.honeypotPolicy.ShouldDrop(req.SecondaryPhone, "warranty_verification", "secondary_phone", c.Request.URL.Path) {
+		c.JSON(http.StatusAccepted, gin.H{
+			"message": "If the order can be verified, a confirmation email has been sent.",
+		})
 		return
 	}
 	if !h.allowDelivery(c, req.Email, req.CaptchaToken) {
@@ -38,14 +45,8 @@ func (h *Handler) VerifyWarrantyOrder(c *gin.Context) {
 	}
 
 	if err := h.warrantySvc.RequestWarrantyOrderVerification(req.OrderNumber, req.Email); err != nil {
-		if h.antiBot != nil {
-			h.antiBot.RecordDeliveryResult("email", false)
-		}
 		apierror.RespondInternalError(c, err)
 		return
-	}
-	if h.antiBot != nil {
-		h.antiBot.RecordDeliveryResult("email", true)
 	}
 
 	c.JSON(http.StatusAccepted, gin.H{
@@ -87,7 +88,15 @@ func (h *Handler) SubmitWarrantyClaim(c *gin.Context) {
 	orderNumber := strings.TrimSpace(c.PostForm("order_number"))
 	email := strings.TrimSpace(c.PostForm("email"))
 	verificationToken := strings.TrimSpace(c.PostForm("verification_token"))
+	secondaryPhone := strings.TrimSpace(c.PostForm("secondary_phone"))
 	captchaToken := strings.TrimSpace(c.PostForm("captcha_token"))
+	if h.honeypotPolicy.ShouldDrop(secondaryPhone, "warranty_claim", "secondary_phone", c.Request.URL.Path) {
+		response.Created(c, gin.H{
+			"success": true,
+			"message": "Claim submitted successfully",
+		})
+		return
+	}
 	if orderNumber == "" || email == "" {
 		apierror.RespondBadRequest(c, "Order Number and Email are required")
 		return

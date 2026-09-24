@@ -99,8 +99,8 @@ func (s *PaymentService) RecordVerifiedGatewayPaymentResult(input VerifiedGatewa
 				return nil
 			}
 			if reason, ok := latePaymentReviewReason(o.Status); ok {
-				return createLatePaymentReview(
-					repos.Payment,
+				return s.createLatePaymentReview(
+					repos,
 					o.ID,
 					existingTransaction.ID,
 					existingTransaction.TransactionID,
@@ -131,11 +131,6 @@ func (s *PaymentService) RecordVerifiedGatewayPaymentResult(input VerifiedGatewa
 		if inputCurrency != expectedCurrency {
 			return fmt.Errorf("transaction currency %s does not match order currency %s", inputCurrency, expectedCurrency)
 		}
-		inputAmount, amountErr := input.Amount.MajorFloat()
-		if amountErr != nil {
-			return amountErr
-		}
-
 		if o.PaymentStatus == "paid" {
 			completedAt := time.Now().UTC()
 			duplicateTransaction, err := saveVerifiedGatewayTransaction(repos.Payment, existingTransaction, completedAt, payment.Transaction{
@@ -143,7 +138,6 @@ func (s *PaymentService) RecordVerifiedGatewayPaymentResult(input VerifiedGatewa
 				TransactionID:    input.TransactionID,
 				PaymentMethod:    input.PaymentMethod,
 				AmountMinor:      input.Amount.AmountMinor(),
-				Amount:           inputAmount,
 				Currency:         inputCurrency,
 				Status:           payment.TransactionStatusDuplicatePaid,
 				GatewayResponse:  input.GatewayResponse,
@@ -166,8 +160,12 @@ func (s *PaymentService) RecordVerifiedGatewayPaymentResult(input VerifiedGatewa
 		}
 
 		if expectedSettlement.AmountMinor() != input.Amount.AmountMinor() {
-			expectedAmount, _ := expectedSettlement.MajorFloat()
-			return fmt.Errorf("payment amount %.2f does not match payable amount %.2f", inputAmount, expectedAmount)
+			actualAmount, actualErr := input.Amount.FormatMajor()
+			expectedAmount, expectedErr := expectedSettlement.FormatMajor()
+			if actualErr != nil || expectedErr != nil {
+				return fmt.Errorf("payment amount does not match payable amount")
+			}
+			return fmt.Errorf("payment amount %s does not match payable amount %s", actualAmount, expectedAmount)
 		}
 
 		completedAt := time.Now().UTC()
@@ -176,7 +174,6 @@ func (s *PaymentService) RecordVerifiedGatewayPaymentResult(input VerifiedGatewa
 			TransactionID:    input.TransactionID,
 			PaymentMethod:    input.PaymentMethod,
 			AmountMinor:      input.Amount.AmountMinor(),
-			Amount:           inputAmount,
 			Currency:         inputCurrency,
 			Status:           "completed",
 			GatewayResponse:  input.GatewayResponse,
@@ -187,8 +184,8 @@ func (s *PaymentService) RecordVerifiedGatewayPaymentResult(input VerifiedGatewa
 			return err
 		}
 		if reason, ok := latePaymentReviewReason(o.Status); ok {
-			return createLatePaymentReview(
-				repos.Payment,
+			return s.createLatePaymentReview(
+				repos,
 				o.ID,
 				completedTransaction.ID,
 				input.TransactionID,
@@ -203,9 +200,15 @@ func (s *PaymentService) RecordVerifiedGatewayPaymentResult(input VerifiedGatewa
 		if err != nil {
 			return err
 		}
+		newOrderStatus := o.Status
 		if requiresLiabilityReview {
 			if err := repos.Order.MarkPaymentLiabilityReviewHold(o.ID); err != nil {
 				return err
+			}
+			newOrderStatus = "needs_review"
+			orderAmountMoney, amountErr := o.TotalMoney()
+			if amountErr != nil {
+				return amountErr
 			}
 			if err := createHighValueLiabilityReview(
 				repos.Payment,
@@ -213,7 +216,7 @@ func (s *PaymentService) RecordVerifiedGatewayPaymentResult(input VerifiedGatewa
 				completedTransaction.ID,
 				input.TransactionID,
 				o.OrderNumber,
-				o.TotalAmount,
+				orderAmountMoney,
 				o.Currency,
 				orderTotalUSD,
 				input.LiabilityShifted,
@@ -224,11 +227,12 @@ func (s *PaymentService) RecordVerifiedGatewayPaymentResult(input VerifiedGatewa
 			if err := repos.Order.UpdateStatus(o.ID, o.Status, "processing"); err != nil {
 				return err
 			}
+			newOrderStatus = "processing"
 		}
 		if err := enqueueOrderPaidOutboxEvent(repos.Outbox, o, input, completedAt); err != nil {
 			return err
 		}
-		if err := enqueueOrderConfirmationEmailOutboxEvent(repos.Outbox, o, input, completedAt); err != nil {
+		if err := enqueueOrderPaymentSucceededDomainEvent(repos.Outbox, o, input, o.Status, newOrderStatus, completedAt); err != nil {
 			return err
 		}
 		return enqueueVerifiedConversionOutboxEvent(repos.Outbox, repos.OrderAttribution, o, input, completedAt)
@@ -249,17 +253,12 @@ func enqueueVerifiedConversionOutboxEvent(
 	if outboxRepo == nil || o == nil {
 		return nil
 	}
-	amount, err := input.Amount.MajorFloat()
-	if err != nil {
-		return err
-	}
 	inputCurrency := input.Amount.Currency().String()
-
 	payload := outbox.VerifiedConversionPayload{
-		OrderID:    o.ID,
-		Amount:     amount,
-		Currency:   inputCurrency,
-		VerifiedAt: verifiedAt.UTC(),
+		OrderID:     o.ID,
+		AmountMinor: input.Amount.AmountMinor(),
+		Currency:    inputCurrency,
+		VerifiedAt:  verifiedAt.UTC(),
 	}
 	if attributionRepo != nil {
 		value, err := attributionRepo.FindByOrderID(o.ID)
@@ -299,17 +298,13 @@ func enqueueOrderPaidOutboxEvent(repo *repository.OutboxRepository, o *order.Ord
 		strings.TrimSpace(o.ShippingAddress.FirstName),
 		strings.TrimSpace(o.ShippingAddress.LastName),
 	}, " "))
-	amount, err := input.Amount.MajorFloat()
-	if err != nil {
-		return err
-	}
 	payload, err := json.Marshal(outbox.OrderPaidPayload{
 		OrderID:              o.ID,
 		OrderNumber:          o.OrderNumber,
 		UserID:               o.UserID,
 		PaymentTransactionID: input.TransactionID,
 		PaymentMethod:        input.PaymentMethod,
-		Amount:               amount,
+		AmountMinor:          input.Amount.AmountMinor(),
 		Currency:             input.Amount.Currency().String(),
 		PaidAt:               paidAt.UTC(),
 		CustomerEmail:        strings.TrimSpace(o.ShippingAddress.Email),
@@ -341,7 +336,6 @@ func saveVerifiedGatewayTransaction(repo *repository.PaymentRepository, existing
 	existing.OrderID = next.OrderID
 	existing.PaymentMethod = next.PaymentMethod
 	existing.AmountMinor = next.AmountMinor
-	existing.Amount = next.Amount
 	existing.Currency = next.Currency
 	existing.Status = next.Status
 	existing.GatewayResponse = next.GatewayResponse
@@ -395,11 +389,11 @@ func createDuplicatePaidRefundInTx(
 	if err != nil {
 		return nil, err
 	}
-	refundAmount, err := majorAmount(duplicateAmount)
+	refundAmount, err := duplicateAmount.FormatMajor()
 	if err != nil {
 		return nil, err
 	}
-	reservedAmount, err := repos.Payment.SumRefundAmountByTransactionID(
+	reservedAmountMinor, err := repos.Payment.SumRefundAmountMinorByTransactionID(
 		duplicateTransaction.ID,
 		"pending",
 		"completed",
@@ -411,7 +405,7 @@ func createDuplicatePaidRefundInTx(
 	if moneyErr != nil {
 		return nil, moneyErr
 	}
-	reservedMoney, moneyErr := parseRefundMoney(reservedAmount, duplicateTransaction.Currency)
+	reservedMoney, moneyErr := domainmoney.New(reservedAmountMinor, duplicateTransaction.Currency)
 	if moneyErr != nil {
 		return nil, moneyErr
 	}
@@ -419,21 +413,18 @@ func createDuplicatePaidRefundInTx(
 	if remainingErr != nil {
 		return nil, remainingErr
 	}
-	remainingAmount, moneyErr := majorAmount(remainingAmountMoney)
+	remainingAmount, moneyErr := remainingAmountMoney.FormatMajor()
 	if moneyErr != nil {
 		return nil, moneyErr
 	}
-	refundAmountMoney, moneyErr := parseRefundMoney(refundAmount, duplicateTransaction.Currency)
-	if moneyErr != nil {
-		return nil, moneyErr
-	}
+	refundAmountMoney := duplicateAmount
 	exceeds, compareErr := refundAmountExceedsInMinorUnits(refundAmountMoney, remainingAmountMoney)
 	if compareErr != nil {
 		return nil, compareErr
 	}
 	if exceeds {
 		return nil, fmt.Errorf(
-			"duplicate paid refund amount %.2f exceeds refundable amount %.2f",
+			"duplicate paid refund amount %s exceeds refundable amount %s",
 			refundAmount,
 			remainingAmount,
 		)
@@ -448,28 +439,30 @@ func createDuplicatePaidRefundInTx(
 	}
 
 	refund := &payment.Refund{
-		OrderID:                orderRecord.ID,
-		TransactionID:          duplicateTransaction.ID,
-		Currency:               duplicateTransaction.Currency,
-		Amount:                 refundAmount,
-		RequestedAmount:        refundAmount,
-		DiscountClawbackAmount: 0,
-		FXSnapshotData:         currencydomain.OrderFXSnapshotJSON(fxSnapshot),
-		Reason:                 duplicatePaidRefundReason,
-		Status:                 "pending",
-		RefundedBy:             0,
-		RefundID:               nil,
-		GatewayResponse:        "",
-		CompletedAt:            nil,
+		OrderID:              orderRecord.ID,
+		TransactionID:        duplicateTransaction.ID,
+		Currency:             duplicateTransaction.Currency,
+		AmountMinor:          refundAmountMoney.AmountMinor(),
+		RequestedAmountMinor: refundAmountMoney.AmountMinor(),
+		FXSnapshotData:       currencydomain.OrderFXSnapshotJSON(fxSnapshot),
+		Reason:               duplicatePaidRefundReason,
+		Status:               "pending",
+		RefundedBy:           0,
+		RefundID:             nil,
+		GatewayResponse:      "",
+		CompletedAt:          nil,
 	}
 	if err := repos.Payment.CreateRefund(refund); err != nil {
+		return nil, err
+	}
+	if err := repos.Order.SetFulfillmentHold(orderRecord.ID, true); err != nil {
 		return nil, err
 	}
 	return refund, nil
 }
 
-func createLatePaymentReview(repo *repository.PaymentRepository, orderID, transactionID uint, paymentIntentID, orderNumber, reason string) error {
-	review, err := repo.FindPendingPaymentReviewByPaymentIntentIDAndReason(paymentIntentID, reason)
+func (s *PaymentService) createLatePaymentReview(repos repository.TxRepositories, orderID, transactionID uint, paymentIntentID, orderNumber, reason string) error {
+	review, err := repos.Payment.FindPendingPaymentReviewByPaymentIntentIDAndReason(paymentIntentID, reason)
 	if err == nil {
 		changed := false
 		if review.OrderID == nil {
@@ -481,15 +474,17 @@ func createLatePaymentReview(repo *repository.PaymentRepository, orderID, transa
 			changed = true
 		}
 		if changed {
-			return repo.UpdatePaymentReview(review)
+			if err := repos.Payment.UpdatePaymentReview(review); err != nil {
+				return err
+			}
 		}
-		return nil
+		return s.ensureLatePaymentRefundExecutionInTx(repos, orderID, transactionID, reason)
 	}
 	if !repository.IsRecordNotFound(err) {
 		return err
 	}
 
-	return repo.CreatePaymentReview(&payment.PaymentReview{
+	if err := repos.Payment.CreatePaymentReview(&payment.PaymentReview{
 		OrderID:         &orderID,
 		TransactionID:   &transactionID,
 		PaymentIntentID: paymentIntentID,
@@ -497,13 +492,39 @@ func createLatePaymentReview(repo *repository.PaymentRepository, orderID, transa
 		Reason:          reason,
 		Source:          "webhook",
 		Notes:           fmt.Sprintf("Payment succeeded after order %s was marked %s. Review payment and refund before fulfillment.", orderNumber, latePaymentOrderStatus(reason)),
-	})
+	}); err != nil {
+		return err
+	}
+	return s.ensureLatePaymentRefundExecutionInTx(repos, orderID, transactionID, reason)
+}
+
+// ensureLatePaymentRefundExecutionInTx creates the full-amount refund intent
+// immediately when a terminal order receives a verified late charge. The
+// review remains pending for audit, while the provider request is dispatched
+// asynchronously through the normal refund execution Outbox workflow.
+func (s *PaymentService) ensureLatePaymentRefundExecutionInTx(
+	repos repository.TxRepositories,
+	orderID, transactionID uint,
+	reason string,
+) error {
+	if s == nil || repos.Payment == nil || repos.Order == nil {
+		return errors.New("late payment refund dependencies are not configured")
+	}
+	transaction, err := repos.Payment.FindTransactionByIDForUpdate(transactionID)
+	if err != nil {
+		return err
+	}
+	orderRecord, err := repos.Order.FindByIDForUpdate(orderID)
+	if err != nil {
+		return normalizeOrderError(err)
+	}
+	return s.createLatePaymentRefundInTx(repos, orderRecord, transaction, latePaymentRefundReason(reason))
 }
 
 // createLatePaymentRefundInTx turns an operator-approved late payment into a
 // durable refund intent. Provider execution remains in the normal refund
 // execution workflow and is therefore retryable and auditable.
-func createLatePaymentRefundInTx(
+func (s *PaymentService) createLatePaymentRefundInTx(
 	repos repository.TxRepositories,
 	o *order.Order,
 	transaction *payment.Transaction,
@@ -522,8 +543,12 @@ func createLatePaymentRefundInTx(
 	if transactionAmount.AmountMinor() <= 0 {
 		return errors.New("late payment refund amount must be greater than zero")
 	}
-	if _, err := repos.Payment.FindRefundByTransactionIDAndReasonForUpdate(transaction.ID, reason); err == nil {
-		return nil
+	refund, err := repos.Payment.FindRefundByTransactionIDAndReasonForUpdate(transaction.ID, reason)
+	if err == nil {
+		if refund.Status != "pending" {
+			return nil
+		}
+		return s.enqueueLatePaymentRefundExecutionInTx(repos, refund, transaction)
 	} else if !repository.IsRecordNotFound(err) {
 		return err
 	}
@@ -532,66 +557,104 @@ func createLatePaymentRefundInTx(
 	if err != nil {
 		return err
 	}
-	transactionMajor, err := majorAmount(transactionAmount)
+	refund = &payment.Refund{
+		OrderID:              o.ID,
+		TransactionID:        transaction.ID,
+		Currency:             transaction.Currency,
+		AmountMinor:          transactionAmount.AmountMinor(),
+		RequestedAmountMinor: transactionAmount.AmountMinor(),
+		Reason:               reason,
+		Status:               "pending",
+		FXSnapshotData:       currencydomain.OrderFXSnapshotJSON(fxSnapshot),
+	}
+	if err := repos.Payment.CreateRefund(refund); err != nil {
+		return err
+	}
+	if err := repos.Order.SetFulfillmentHold(o.ID, true); err != nil {
+		return err
+	}
+	return s.enqueueLatePaymentRefundExecutionInTx(repos, refund, transaction)
+}
+
+func (s *PaymentService) enqueueLatePaymentRefundExecutionInTx(
+	repos repository.TxRepositories,
+	refund *payment.Refund,
+	transaction *payment.Transaction,
+) error {
+	// Lightweight test repositories may omit the execution projection. The
+	// durable intent is still created; production wiring always includes both
+	// repositories and therefore gets automatic provider execution.
+	if repos.RefundExecution == nil || repos.Outbox == nil {
+		return nil
+	}
+	existingExecution, executionErr := repos.RefundExecution.FindByRefundIDForUpdate(refund.ID)
+	if executionErr == nil {
+		if existingExecution.Status == payment.PaymentRefundExecutionStatusProcessing ||
+			existingExecution.Status == payment.PaymentRefundExecutionStatusSucceeded {
+			return nil
+		}
+	} else if !repository.IsRecordNotFound(executionErr) {
+		return executionErr
+	}
+	plan, err := s.beginPendingRefundExecutionInTx(repos, RequestPendingRefundExecutionInput{
+		RefundID: refund.ID,
+		Provider: transaction.PaymentMethod,
+	}, time.Now().UTC())
 	if err != nil {
 		return err
 	}
-	return repos.Payment.CreateRefund(&payment.Refund{
-		OrderID:         o.ID,
-		TransactionID:   transaction.ID,
-		Currency:        transaction.Currency,
-		Amount:          transactionMajor,
-		RequestedAmount: transactionMajor,
-		Reason:          reason,
-		Status:          "pending",
-		FXSnapshotData:  currencydomain.OrderFXSnapshotJSON(fxSnapshot),
-	})
+	return enqueuePaymentRefundExecutionRequestedOutboxEvent(
+		repos.Outbox,
+		plan.Execution,
+		transaction.PaymentMethod,
+		time.Now().UTC(),
+	)
 }
 
-func highValueLiabilityReviewRequired(o *order.Order, liabilityShifted *bool) (bool, float64, error) {
+func highValueLiabilityReviewRequired(o *order.Order, liabilityShifted *bool) (bool, domainmoney.Money, error) {
 	if o == nil {
-		return false, 0, errors.New("order is required for liability review")
+		return false, domainmoney.Money{}, errors.New("order is required for liability review")
 	}
 	if liabilityShifted != nil && *liabilityShifted {
-		return false, 0, nil
+		return false, domainmoney.Money{}, nil
 	}
 
 	snapshot, err := currencydomain.ParseOrderFXSnapshot(o.FXSnapshotData)
 	if err == nil {
-		totalMoney, totalErr := domainmoney.FromMajorFloat(o.TotalAmount, o.Currency)
+		totalMoney, totalErr := o.TotalMoney()
 		if totalErr != nil {
-			return false, 0, totalErr
+			return false, domainmoney.Money{}, totalErr
 		}
 		evaluation, evaluationErr := order.EvaluateHighValueOrder(totalMoney, snapshot)
 		if evaluationErr != nil {
-			return false, 0, evaluationErr
+			return false, domainmoney.Money{}, evaluationErr
 		}
-		orderTotalUSD, conversionErr := evaluation.OrderTotalUSD.MajorFloat()
-		if conversionErr != nil {
-			return false, 0, conversionErr
-		}
-		return evaluation.IsHighValue, orderTotalUSD, nil
+		return evaluation.IsHighValue, evaluation.OrderTotalUSD, nil
 	}
 
 	// Legacy USD orders may predate the persisted FX snapshot. USD is already
 	// the policy base currency, so applying the threshold directly is safe.
 	if currency.NormalizeCode(o.Currency) == currencydomain.DefaultPrimaryCurrency {
-		return o.TotalAmount >= order.HighValueSignatureThresholdUSD, o.TotalAmount, nil
+		totalMoney, totalErr := o.TotalMoney()
+		if totalErr != nil {
+			return false, domainmoney.Money{}, totalErr
+		}
+		return totalMoney.AmountMinor() >= order.HighValueSignatureThresholdUSDMinor, totalMoney, nil
 	}
 
 	// A non-USD order without its immutable snapshot cannot be proven below the
 	// threshold. Hold it conservatively instead of allowing an unknown-risk
 	// payment to reach fulfillment.
-	return true, 0, nil
+	return true, domainmoney.Money{}, nil
 }
 
 func createHighValueLiabilityReview(
 	repo *repository.PaymentRepository,
 	orderID, transactionID uint,
 	transactionReference, orderNumber string,
-	orderAmount float64,
+	orderAmount domainmoney.Money,
 	orderCurrency string,
-	orderTotalUSD float64,
+	orderTotalUSD domainmoney.Money,
 	liabilityShifted *bool,
 ) error {
 	review, err := repo.FindPendingPaymentReviewByOrderIDAndReasonForUpdate(orderID, highValueLiabilityReviewReason)
@@ -636,32 +699,34 @@ func createHighValueLiabilityReview(
 func highValueLiabilityReviewNotes(
 	orderNumber,
 	transactionReference string,
-	orderAmount float64,
+	orderAmount domainmoney.Money,
 	orderCurrency string,
-	orderTotalUSD float64,
+	orderTotalUSD domainmoney.Money,
 	liabilityShifted *bool,
 ) string {
 	liabilityState := "unknown"
 	if liabilityShifted != nil {
 		liabilityState = fmt.Sprintf("%t", *liabilityShifted)
 	}
-	if orderTotalUSD > 0 {
+	orderAmountText, _ := orderAmount.FormatMajor()
+	orderTotalUSDText, orderTotalUSDErr := orderTotalUSD.FormatMajor()
+	if orderTotalUSDErr == nil && orderTotalUSD.AmountMinor() > 0 {
 		return fmt.Sprintf(
-			"Order %s payment %s requires manual identity or wire-transfer verification before fulfillment: order_total=%s %.2f, order_total_usd=%.2f, liability_shifted=%s.",
+			"Order %s payment %s requires manual identity or wire-transfer verification before fulfillment: order_total=%s %s, order_total_usd=%s, liability_shifted=%s.",
 			orderNumber,
 			transactionReference,
 			currency.NormalizeCode(orderCurrency),
-			orderAmount,
-			orderTotalUSD,
+			orderAmountText,
+			orderTotalUSDText,
 			liabilityState,
 		)
 	}
 	return fmt.Sprintf(
-		"Order %s payment %s requires manual identity or wire-transfer verification before fulfillment: order_total=%s %.2f, order_total_usd=unknown, liability_shifted=%s.",
+		"Order %s payment %s requires manual identity or wire-transfer verification before fulfillment: order_total=%s %s, order_total_usd=unknown, liability_shifted=%s.",
 		orderNumber,
 		transactionReference,
 		currency.NormalizeCode(orderCurrency),
-		orderAmount,
+		orderAmountText,
 		liabilityState,
 	)
 }

@@ -51,9 +51,50 @@
     "cart": "Cart"
   },
   "tabs": {
-    "ariaLabel": "Account sections"
+    "ariaLabel": "账户分区",
+    "referral": "推荐好友"
   },
   "memberTitle": "My account",
+  "referral": {
+    "loading": "正在加载推荐中心...",
+    "kicker": "推荐好友",
+    "title": "分享您的推荐码",
+    "description": "将您的专属推荐码分享给朋友。注册积分会加入新账户的普通积分余额。",
+    "yourCode": "您的推荐码",
+    "codeGeneratedNote": "系统会为此账户自动生成唯一推荐码。注册获得的积分会加入普通积分余额，不会单独追踪。",
+    "copy": "复制推荐链接",
+    "share": "分享推荐码",
+    "invitationLink": "您的注册邀请链接",
+    "copyFailed": "自动复制失败，请选中上方邀请链接，复制后发送给好友。",
+    "copied": "推荐链接已复制",
+    "invited": "已邀请",
+    "successful": "已成功",
+    "pendingPoints": "推荐人待结算奖励",
+    "settledPoints": "推荐人已结算奖励",
+    "registrationPointsRule": "新用户注册时立即获得 {points} 积分，该积分与普通积分完全相同。",
+    "ruleSummary": "好友完成订单并通过妥投及 {days} 天冷静期后，您可获得 {points} 积分。",
+    "ruleFallback": "奖励按照当前推荐计划规则处理。",
+    "historyKicker": "活动",
+    "historyTitle": "推荐记录",
+    "empty": "您的第一条推荐记录会显示在这里。",
+    "newCustomer": "新客户",
+    "disabledTitle": "推荐中心已暂停",
+    "disabledDescription": "当前暂不可用。您的账户和积分不会受到影响。",
+    "signInTitle": "登录后查看推荐码",
+    "signInDescription": "登录后即可查看您的推荐码和分享链接。",
+    "signIn": "登录",
+    "loadFailed": "无法加载推荐数据。",
+    "awaitingOrder": "等待首单",
+    "status": {
+      "pending": "待处理",
+      "ordered": "订单已支付",
+      "vesting": "冷静期",
+      "settled": "已结算",
+      "expired": "已过期",
+      "revoked": "已撤销",
+      "reversed": "已冲正"
+    }
+  },
   "wishlist": {
     "eyebrow": "Saved products",
     "title": "Wishlist",

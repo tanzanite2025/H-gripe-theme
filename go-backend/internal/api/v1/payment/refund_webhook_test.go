@@ -27,6 +27,11 @@ func TestStripeVerifiedRefundInputUsesPaymentIntentAndMinorAmount(t *testing.T) 
 		"amount": 5000,
 		"currency": "usd",
 		"payment_intent": "pi_stripe_1",
+		"balance_transaction": {
+			"id": "txn_refund_1",
+			"net": -5750,
+			"currency": "usd"
+		},
 		"metadata": {"order_number": "ORD-STRIPE-1"}
 	}`)
 	require.NoError(t, json.Unmarshal(refundJSON, refund))
@@ -40,6 +45,9 @@ func TestStripeVerifiedRefundInputUsesPaymentIntentAndMinorAmount(t *testing.T) 
 	require.Equal(t, "re_stripe_1", input.RefundID)
 	require.Equal(t, int64(5000), input.ProviderRefundAmount.AmountMinor())
 	require.Equal(t, "USD", input.ProviderRefundAmount.Currency().String())
+	require.Equal(t, int64(5750), input.SettlementAmountMinor)
+	require.Equal(t, "USD", input.SettlementCurrency)
+	require.Equal(t, "txn_refund_1", input.SettlementBalanceTransactionID)
 }
 
 func TestStripeChargeRefundedInputUsesExpandedRefundAndPaymentIntent(t *testing.T) {
@@ -150,9 +158,9 @@ func TestAlipayVerifiedRefundNotificationCarriesFailureStatus(t *testing.T) {
 
 func TestStripeRefundCreatedHandlerPersistsExternalRefund(t *testing.T) {
 	db, handler, _ := newPayPalDisputeWebhookHarness(t)
-	orderRecord := seedPayPalDisputeWebhookOrder(t, db, "ORD-STRIPE-REFUND-WEBHOOK", 84, "DHL-STRIPE")
+	orderRecord := seedPayPalDisputeWebhookOrder(t, db, "ORD-STRIPE-REFUND-WEBHOOK", 8400, "DHL-STRIPE")
 	require.NoError(t, db.Model(&orderdomain.Order{}).Where("id = ?", orderRecord.ID).Update("user_id", 0).Error)
-	seedPayPalDisputeWebhookTransaction(t, db, orderRecord.ID, "pi_stripe_refund_webhook", 84)
+	seedPayPalDisputeWebhookTransaction(t, db, orderRecord.ID, "pi_stripe_refund_webhook", 8400)
 
 	refundJSON := []byte(`{
 		"id": "re_stripe_webhook",
@@ -175,12 +183,12 @@ func TestStripeRefundCreatedHandlerPersistsExternalRefund(t *testing.T) {
 	var refund paymentdomain.Refund
 	require.NoError(t, db.Where("refund_id = ?", "re_stripe_webhook").First(&refund).Error)
 	require.Equal(t, "completed", refund.Status)
-	require.InDelta(t, 84, refund.Amount, 0.001)
+	require.Equal(t, int64(8400), refund.AmountMinor)
 }
 
 func TestStripePaymentIntentSucceededResolvesRequiresActionReview(t *testing.T) {
 	db, handler, _ := newPayPalDisputeWebhookHarness(t)
-	orderRecord := seedPayPalDisputeWebhookOrder(t, db, "ORD-STRIPE-3DS-SUCCESS", 84, "DHL-STRIPE-3DS")
+	orderRecord := seedPayPalDisputeWebhookOrder(t, db, "ORD-STRIPE-3DS-SUCCESS", 8400, "DHL-STRIPE-3DS")
 	require.NoError(t, db.Model(&orderdomain.Order{}).
 		Where("id = ?", orderRecord.ID).
 		Updates(map[string]interface{}{
@@ -234,9 +242,9 @@ func TestStripeRefundCreatedWebhookRouteClaimsAndFinalizesInbox(t *testing.T) {
 
 	db, handler, _ := newPayPalDisputeWebhookHarness(t)
 	require.NoError(t, db.AutoMigrate(&paymentdomain.StripeWebhookEvent{}))
-	orderRecord := seedPayPalDisputeWebhookOrder(t, db, "ORD-STRIPE-ROUTE-REFUND", 84, "DHL-STRIPE-ROUTE")
+	orderRecord := seedPayPalDisputeWebhookOrder(t, db, "ORD-STRIPE-ROUTE-REFUND", 8400, "DHL-STRIPE-ROUTE")
 	require.NoError(t, db.Model(&orderdomain.Order{}).Where("id = ?", orderRecord.ID).Update("user_id", 0).Error)
-	seedPayPalDisputeWebhookTransaction(t, db, orderRecord.ID, "pi_stripe_route_refund", 84)
+	seedPayPalDisputeWebhookTransaction(t, db, orderRecord.ID, "pi_stripe_route_refund", 8400)
 
 	payload := []byte(`{
 		"id": "evt_stripe_route_refund",
@@ -265,7 +273,7 @@ func TestStripeRefundCreatedWebhookRouteClaimsAndFinalizesInbox(t *testing.T) {
 	context.Params = gin.Params{{Key: "provider", Value: "stripe"}}
 	context.Request = httptest.NewRequest(
 		http.MethodPost,
-		"/api/v1/payment/webhook/stripe",
+		"/api/v1/payments/stripe/webhook",
 		bytes.NewReader(payload),
 	)
 	context.Request.Header.Set("Stripe-Signature", signed.Header)
@@ -282,9 +290,9 @@ func TestStripeRefundCreatedWebhookRouteClaimsAndFinalizesInbox(t *testing.T) {
 
 func TestStripeChargeRefundedHandlerPersistsExpandedRefund(t *testing.T) {
 	db, handler, _ := newPayPalDisputeWebhookHarness(t)
-	orderRecord := seedPayPalDisputeWebhookOrder(t, db, "ORD-STRIPE-CHARGE-REFUND", 84, "DHL-STRIPE-CHARGE")
+	orderRecord := seedPayPalDisputeWebhookOrder(t, db, "ORD-STRIPE-CHARGE-REFUND", 8400, "DHL-STRIPE-CHARGE")
 	require.NoError(t, db.Model(&orderdomain.Order{}).Where("id = ?", orderRecord.ID).Update("user_id", 0).Error)
-	seedPayPalDisputeWebhookTransaction(t, db, orderRecord.ID, "pi_stripe_charge_refund", 84)
+	seedPayPalDisputeWebhookTransaction(t, db, orderRecord.ID, "pi_stripe_charge_refund", 8400)
 
 	chargeJSON := []byte(`{
 		"id": "ch_stripe_refund_webhook",
@@ -314,14 +322,14 @@ func TestStripeChargeRefundedHandlerPersistsExpandedRefund(t *testing.T) {
 	var refund paymentdomain.Refund
 	require.NoError(t, db.Where("refund_id = ?", "re_stripe_charge_webhook").First(&refund).Error)
 	require.Equal(t, "completed", refund.Status)
-	require.InDelta(t, 84, refund.Amount, 0.001)
+	require.Equal(t, int64(8400), refund.AmountMinor)
 }
 
 func TestPayPalRefundWebhookPersistsExternalRefund(t *testing.T) {
 	db, handler, _ := newPayPalDisputeWebhookHarness(t)
-	orderRecord := seedPayPalDisputeWebhookOrder(t, db, "ORD-PAYPAL-REFUND-WEBHOOK", 84, "DHL-PAYPAL")
+	orderRecord := seedPayPalDisputeWebhookOrder(t, db, "ORD-PAYPAL-REFUND-WEBHOOK", 8400, "DHL-PAYPAL")
 	require.NoError(t, db.Model(&orderdomain.Order{}).Where("id = ?", orderRecord.ID).Update("user_id", 0).Error)
-	seedPayPalDisputeWebhookTransaction(t, db, orderRecord.ID, "CAPTURE-PAYPAL-REFUND", 84)
+	seedPayPalDisputeWebhookTransaction(t, db, orderRecord.ID, "CAPTURE-PAYPAL-REFUND", 8400)
 
 	input, handled, err := paypalVerifiedRefundFromEvent(pgateway.PayPalWebhookEvent{
 		ID:        "WH-PAYPAL-REFUND-1",
@@ -343,5 +351,5 @@ func TestPayPalRefundWebhookPersistsExternalRefund(t *testing.T) {
 	var refund paymentdomain.Refund
 	require.NoError(t, db.Where("refund_id = ?", "REFUND-PAYPAL-WEBHOOK").First(&refund).Error)
 	require.Equal(t, "completed", refund.Status)
-	require.InDelta(t, 84, refund.Amount, 0.001)
+	require.Equal(t, int64(8400), refund.AmountMinor)
 }

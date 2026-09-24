@@ -16,20 +16,18 @@ type ProductProfitCalculation struct {
 	ProductName string `gorm:"size:255;not null" json:"product_name"`
 	Currency    string `gorm:"size:3;not null" json:"currency"`
 
-	ListPrice             float64  `gorm:"type:numeric(14,2);not null" json:"list_price"`
-	SalePrice             *float64 `gorm:"type:numeric(14,2)" json:"sale_price,omitempty"`
-	EffectiveSellingPrice float64  `gorm:"type:numeric(14,2);not null" json:"effective_selling_price"`
+	ListPriceMinor             int64  `gorm:"column:list_price_minor;not null" json:"list_price_minor"`
+	SalePriceMinor             *int64 `gorm:"column:sale_price_minor" json:"sale_price_minor,omitempty"`
+	EffectiveSellingPriceMinor int64  `gorm:"column:effective_selling_price_minor;not null" json:"effective_selling_price_minor"`
 
-	// UnitCost keeps the historical purchase_price storage/API field for
-	// compatibility; it does not indicate a supplier-side workflow.
-	UnitCost                float64 `gorm:"column:purchase_price;type:numeric(14,2);not null" json:"purchase_price"`
-	InboundShippingUnitCost float64 `gorm:"type:numeric(14,2);not null;default:0" json:"inbound_shipping_unit_cost"`
-	PackagingUnitCost       float64 `gorm:"type:numeric(14,2);not null;default:0" json:"packaging_unit_cost"`
-	OtherUnitCost           float64 `gorm:"type:numeric(14,2);not null;default:0" json:"other_unit_cost"`
+	UnitCostMinor                int64 `gorm:"column:purchase_price_minor;not null;default:0" json:"unit_cost_minor"`
+	InboundShippingUnitCostMinor int64 `gorm:"column:inbound_shipping_unit_cost_minor;not null;default:0" json:"inbound_shipping_unit_cost_minor"`
+	PackagingUnitCostMinor       int64 `gorm:"column:packaging_unit_cost_minor;not null;default:0" json:"packaging_unit_cost_minor"`
+	OtherUnitCostMinor           int64 `gorm:"column:other_unit_cost_minor;not null;default:0" json:"other_unit_cost_minor"`
 
-	LandedCost     float64 `gorm:"type:numeric(14,2);not null" json:"landed_cost"`
-	GrossProfit    float64 `gorm:"type:numeric(14,2);not null" json:"gross_profit"`
-	GrossMarginBPS int     `gorm:"not null" json:"gross_margin_bps"`
+	LandedCostMinor  int64 `gorm:"column:landed_cost_minor;not null;default:0" json:"landed_cost_minor"`
+	GrossProfitMinor int64 `gorm:"column:gross_profit_minor;not null;default:0" json:"gross_profit_minor"`
+	GrossMarginBPS          int      `gorm:"not null" json:"gross_margin_bps"`
 
 	CalculationStatus string         `gorm:"size:40;not null;default:'ready'" json:"calculation_status"`
 	FormulaVersion    string         `gorm:"size:32;not null" json:"formula_version"`

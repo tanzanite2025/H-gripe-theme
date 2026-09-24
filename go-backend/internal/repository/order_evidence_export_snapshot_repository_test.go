@@ -137,19 +137,19 @@ func newOrderEvidenceExportSnapshotRepositoryFixture(t *testing.T) (*gorm.DB, ui
 
 	orderRecord := &order.Order{
 		OrderNumber: "TZ-2026-EXPORT-REPOSITORY",
-		TotalAmount: 800,
+		TotalAmountMinor: 80000,
 		Currency:    "USD",
 	}
 	require.NoError(t, db.Create(orderRecord).Error)
 	lockedAt := time.Date(2026, 9, 5, 12, 0, 0, 0, time.UTC)
 	pkg := &orderevidence.OrderEvidencePackage{
-		OrderID:               orderRecord.ID,
-		SnapshotID:            1,
-		PackageVersion:        1,
-		Status:                orderevidence.PackageStatusLocked,
-		OrderTotalUSDSnapshot: 800,
-		SchemaVersion:         orderevidence.OrderEvidencePackageSchemaVersion,
-		LockedAt:              &lockedAt,
+		OrderID:                    orderRecord.ID,
+		SnapshotID:                 1,
+		PackageVersion:             1,
+		Status:                     orderevidence.PackageStatusLocked,
+		OrderTotalUSDSnapshotMinor: 80000,
+		SchemaVersion:              orderevidence.OrderEvidencePackageSchemaVersion,
+		LockedAt:                   &lockedAt,
 	}
 	require.NoError(t, db.Create(pkg).Error)
 	return db, orderRecord.ID, pkg.ID

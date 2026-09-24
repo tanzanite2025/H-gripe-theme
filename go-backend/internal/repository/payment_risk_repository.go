@@ -27,17 +27,17 @@ func (r *PaymentRiskRepository) WithTx(tx *gorm.DB) *PaymentRiskRepository {
 }
 
 type PaymentRiskMetricCounts struct {
-	SuccessfulPaymentCount  int64
-	SuccessfulPaymentAmount float64
-	DisputeCount            int64
-	DisputeAmount           float64
-	EarlyFraudWarningCount  int64
-	RefundCount             int64
-	RefundAmount            float64
-	CheckoutAttemptCount    int64
-	ThreeDSUpgradeCount     int64
-	ThreeDSChallengeCount   int64
-	ThreeDSExemptionCount   int64
+	SuccessfulPaymentCount                 int64
+	SuccessfulPaymentAmountMinorByCurrency paymentdomain.PaymentRiskAmountMinorByCurrency
+	DisputeCount                           int64
+	DisputeAmountMinorByCurrency           paymentdomain.PaymentRiskAmountMinorByCurrency
+	EarlyFraudWarningCount                 int64
+	RefundCount                            int64
+	RefundAmountMinorByCurrency            paymentdomain.PaymentRiskAmountMinorByCurrency
+	CheckoutAttemptCount                   int64
+	ThreeDSUpgradeCount                    int64
+	ThreeDSChallengeCount                  int64
+	ThreeDSExemptionCount                  int64
 }
 
 type PaymentRiskSnapshotPersistResult struct {
@@ -50,28 +50,37 @@ type PaymentRiskSnapshotPersistResult struct {
 // only. Customer, order, payment and raw provider-event identifiers stay out
 // of external alert delivery.
 type PaymentRiskLevelChangedPayload struct {
-	Provider               string                         `json:"provider"`
-	PreviousLevel          paymentdomain.PaymentRiskLevel `json:"previous_level"`
-	CurrentLevel           paymentdomain.PaymentRiskLevel `json:"current_level"`
-	WindowDays             int                            `json:"window_days"`
-	SuccessfulPaymentCount int64                          `json:"successful_payment_count"`
-	DisputeCount           int64                          `json:"dispute_count"`
-	EarlyFraudWarningCount int64                          `json:"early_fraud_warning_count"`
-	RefundCount            int64                          `json:"refund_count"`
-	CheckoutAttemptCount   int64                          `json:"checkout_attempt_count"`
-	ThreeDSUpgradeCount    int64                          `json:"three_ds_upgrade_count"`
-	ThreeDSChallengeCount  int64                          `json:"three_ds_challenge_count"`
-	ThreeDSExemptionCount  int64                          `json:"three_ds_exemption_count"`
-	DisputeActivityRate    float64                        `json:"dispute_activity_rate"`
-	EarlyFraudWarningRate  float64                        `json:"early_fraud_warning_rate"`
-	RefundRate             float64                        `json:"refund_rate"`
-	ThreeDSUpgradeRate     float64                        `json:"three_ds_upgrade_rate"`
-	Reasons                []string                       `json:"reasons"`
-	RecommendedAction      string                         `json:"recommended_action"`
-	ComputedAt             time.Time                      `json:"computed_at"`
+	Provider                               string                                         `json:"provider"`
+	PreviousLevel                          paymentdomain.PaymentRiskLevel                 `json:"previous_level"`
+	CurrentLevel                           paymentdomain.PaymentRiskLevel                 `json:"current_level"`
+	WindowDays                             int                                            `json:"window_days"`
+	SuccessfulPaymentCount                 int64                                          `json:"successful_payment_count"`
+	DisputeCount                           int64                                          `json:"dispute_count"`
+	EarlyFraudWarningCount                 int64                                          `json:"early_fraud_warning_count"`
+	RefundCount                            int64                                          `json:"refund_count"`
+	SuccessfulPaymentAmountMinorByCurrency paymentdomain.PaymentRiskAmountMinorByCurrency `json:"successful_payment_amount_minor_by_currency"`
+	DisputeAmountMinorByCurrency           paymentdomain.PaymentRiskAmountMinorByCurrency `json:"dispute_amount_minor_by_currency"`
+	RefundAmountMinorByCurrency            paymentdomain.PaymentRiskAmountMinorByCurrency `json:"refund_amount_minor_by_currency"`
+	CheckoutAttemptCount                   int64                                          `json:"checkout_attempt_count"`
+	ThreeDSUpgradeCount                    int64                                          `json:"three_ds_upgrade_count"`
+	ThreeDSChallengeCount                  int64                                          `json:"three_ds_challenge_count"`
+	ThreeDSExemptionCount                  int64                                          `json:"three_ds_exemption_count"`
+	DisputeActivityRate                    float64                                        `json:"dispute_activity_rate"`
+	EarlyFraudWarningRate                  float64                                        `json:"early_fraud_warning_rate"`
+	RefundRate                             float64                                        `json:"refund_rate"`
+	ThreeDSUpgradeRate                     float64                                        `json:"three_ds_upgrade_rate"`
+	Reasons                                []string                                       `json:"reasons"`
+	RecommendedAction                      string                                         `json:"recommended_action"`
+	ComputedAt                             time.Time                                      `json:"computed_at"`
 }
 
 func (r *PaymentRiskRepository) UpsertPaymentRiskEvent(event *paymentdomain.PaymentRiskEvent) error {
+	if event == nil {
+		return gorm.ErrInvalidData
+	}
+	if err := event.BeforeSave(r.db); err != nil {
+		return err
+	}
 	var existing paymentdomain.PaymentRiskEvent
 	err := r.db.Where(
 		"provider = ? AND kind = ? AND external_reference = ?",
@@ -90,7 +99,7 @@ func (r *PaymentRiskRepository) UpsertPaymentRiskEvent(event *paymentdomain.Paym
 				"charge_id":           event.ChargeID,
 				"order_id":            event.OrderID,
 				"transaction_id":      event.TransactionID,
-				"amount":              event.Amount,
+				"amount_minor":        event.AmountMinor,
 				"currency":            event.Currency,
 				"occurred_at":         event.OccurredAt,
 				"payload":             event.Payload,
@@ -107,6 +116,9 @@ func (r *PaymentRiskRepository) UpsertPaymentRiskEvent(event *paymentdomain.Paym
 func (r *PaymentRiskRepository) UpsertPaymentRiskCheckoutDecision(decision *paymentdomain.PaymentRiskCheckoutDecision) error {
 	if decision == nil {
 		return gorm.ErrInvalidData
+	}
+	if err := decision.BeforeSave(r.db); err != nil {
+		return err
 	}
 	decision.Provider = strings.ToLower(strings.TrimSpace(decision.Provider))
 	decision.ProviderPaymentID = strings.TrimSpace(decision.ProviderPaymentID)
@@ -133,7 +145,7 @@ func (r *PaymentRiskRepository) UpsertPaymentRiskCheckoutDecision(decision *paym
 				"risk_score":           decision.RiskScore,
 				"portfolio_risk_level": decision.PortfolioRiskLevel,
 				"reasons_json":         decision.ReasonsJSON,
-				"amount":               decision.Amount,
+				"amount_minor":         decision.AmountMinor,
 				"currency":             decision.Currency,
 				"occurred_at":          decision.OccurredAt,
 			}).Error
@@ -240,8 +252,10 @@ func (r *PaymentRiskRepository) CountPaymentRiskMetrics(provider string, start, 
 	if err := successQuery.Count(&counts.SuccessfulPaymentCount).Error; err != nil {
 		return PaymentRiskMetricCounts{}, err
 	}
-	if err := successQuery.Select("COALESCE(SUM(amount), 0)").Scan(&counts.SuccessfulPaymentAmount).Error; err != nil {
-		return PaymentRiskMetricCounts{}, err
+	var amountErr error
+	counts.SuccessfulPaymentAmountMinorByCurrency, amountErr = sumPaymentRiskAmountMinorByCurrency(successQuery, "amount_minor", "currency")
+	if amountErr != nil {
+		return PaymentRiskMetricCounts{}, amountErr
 	}
 
 	if provider == string(paymentdomain.PaymentRiskProviderStripe) {
@@ -250,8 +264,9 @@ func (r *PaymentRiskRepository) CountPaymentRiskMetrics(provider string, start, 
 		if err := disputeQuery.Count(&counts.DisputeCount).Error; err != nil {
 			return PaymentRiskMetricCounts{}, err
 		}
-		if err := disputeQuery.Select("COALESCE(SUM(amount), 0)").Scan(&counts.DisputeAmount).Error; err != nil {
-			return PaymentRiskMetricCounts{}, err
+		counts.DisputeAmountMinorByCurrency, amountErr = sumPaymentRiskAmountMinorByCurrency(disputeQuery, "amount_minor", "currency")
+		if amountErr != nil {
+			return PaymentRiskMetricCounts{}, amountErr
 		}
 	}
 
@@ -279,8 +294,13 @@ func (r *PaymentRiskRepository) CountPaymentRiskMetrics(provider string, start, 
 	if err := refundQuery.Count(&counts.RefundCount).Error; err != nil {
 		return PaymentRiskMetricCounts{}, err
 	}
-	if err := refundQuery.Select("COALESCE(SUM(refunds.amount), 0)").Scan(&counts.RefundAmount).Error; err != nil {
-		return PaymentRiskMetricCounts{}, err
+	counts.RefundAmountMinorByCurrency, amountErr = sumPaymentRiskAmountMinorByCurrency(
+		refundQuery,
+		"refunds.amount_minor",
+		"COALESCE(NULLIF(refunds.currency, ''), transactions.currency)",
+	)
+	if amountErr != nil {
+		return PaymentRiskMetricCounts{}, amountErr
 	}
 
 	checkoutDecisionBase := func() *gorm.DB {
@@ -306,6 +326,33 @@ func (r *PaymentRiskRepository) CountPaymentRiskMetrics(provider string, start, 
 		return PaymentRiskMetricCounts{}, err
 	}
 	return counts, nil
+}
+
+// sumPaymentRiskAmountMinorByCurrency returns exact totals without ever
+// converting to major-unit floating point values. amountExpr and currencyExpr
+// are internal SQL fragments supplied by this repository only.
+func sumPaymentRiskAmountMinorByCurrency(query *gorm.DB, amountExpr, currencyExpr string) (paymentdomain.PaymentRiskAmountMinorByCurrency, error) {
+	type amountRow struct {
+		Currency    string `gorm:"column:currency"`
+		AmountMinor int64  `gorm:"column:amount_minor"`
+	}
+	rows := make([]amountRow, 0)
+	if err := query.
+		Select("UPPER(" + currencyExpr + ") AS currency, COALESCE(SUM(" + amountExpr + "), 0) AS amount_minor").
+		Where("NULLIF(TRIM(" + currencyExpr + "), '') IS NOT NULL").
+		Group("UPPER(" + currencyExpr + ")").
+		Scan(&rows).Error; err != nil {
+		return nil, err
+	}
+	totals := make(paymentdomain.PaymentRiskAmountMinorByCurrency, len(rows))
+	for _, row := range rows {
+		code := strings.ToUpper(strings.TrimSpace(row.Currency))
+		if code == "" || row.AmountMinor == 0 {
+			continue
+		}
+		totals[code] += row.AmountMinor
+	}
+	return totals, nil
 }
 
 func (r *PaymentRiskRepository) FindTransactionByProviderPaymentID(providerPaymentID string) (*paymentdomain.Transaction, error) {
@@ -352,25 +399,28 @@ func newPaymentRiskLevelChangedOutboxEvent(
 		}
 	}
 	payload, err := json.Marshal(PaymentRiskLevelChangedPayload{
-		Provider:               snapshot.Provider,
-		PreviousLevel:          previousLevel,
-		CurrentLevel:           snapshot.Level,
-		WindowDays:             snapshot.WindowDays,
-		SuccessfulPaymentCount: snapshot.SuccessfulPaymentCount,
-		DisputeCount:           snapshot.DisputeCount,
-		EarlyFraudWarningCount: snapshot.EarlyFraudWarningCount,
-		RefundCount:            snapshot.RefundCount,
-		CheckoutAttemptCount:   snapshot.CheckoutAttemptCount,
-		ThreeDSUpgradeCount:    snapshot.ThreeDSUpgradeCount,
-		ThreeDSChallengeCount:  snapshot.ThreeDSChallengeCount,
-		ThreeDSExemptionCount:  snapshot.ThreeDSExemptionCount,
-		DisputeActivityRate:    snapshot.DisputeActivityRate,
-		EarlyFraudWarningRate:  snapshot.EarlyFraudWarningRate,
-		RefundRate:             snapshot.RefundRate,
-		ThreeDSUpgradeRate:     snapshot.ThreeDSUpgradeRate,
-		Reasons:                reasons,
-		RecommendedAction:      snapshot.RecommendedAction,
-		ComputedAt:             snapshot.ComputedAt.UTC(),
+		Provider:                               snapshot.Provider,
+		PreviousLevel:                          previousLevel,
+		CurrentLevel:                           snapshot.Level,
+		WindowDays:                             snapshot.WindowDays,
+		SuccessfulPaymentCount:                 snapshot.SuccessfulPaymentCount,
+		DisputeCount:                           snapshot.DisputeCount,
+		EarlyFraudWarningCount:                 snapshot.EarlyFraudWarningCount,
+		RefundCount:                            snapshot.RefundCount,
+		SuccessfulPaymentAmountMinorByCurrency: snapshot.SuccessfulPaymentAmountMinorByCurrency,
+		DisputeAmountMinorByCurrency:           snapshot.DisputeAmountMinorByCurrency,
+		RefundAmountMinorByCurrency:            snapshot.RefundAmountMinorByCurrency,
+		CheckoutAttemptCount:                   snapshot.CheckoutAttemptCount,
+		ThreeDSUpgradeCount:                    snapshot.ThreeDSUpgradeCount,
+		ThreeDSChallengeCount:                  snapshot.ThreeDSChallengeCount,
+		ThreeDSExemptionCount:                  snapshot.ThreeDSExemptionCount,
+		DisputeActivityRate:                    snapshot.DisputeActivityRate,
+		EarlyFraudWarningRate:                  snapshot.EarlyFraudWarningRate,
+		RefundRate:                             snapshot.RefundRate,
+		ThreeDSUpgradeRate:                     snapshot.ThreeDSUpgradeRate,
+		Reasons:                                reasons,
+		RecommendedAction:                      snapshot.RecommendedAction,
+		ComputedAt:                             snapshot.ComputedAt.UTC(),
 	})
 	if err != nil {
 		return outbox.Event{}, fmt.Errorf("encode payment risk alert payload: %w", err)

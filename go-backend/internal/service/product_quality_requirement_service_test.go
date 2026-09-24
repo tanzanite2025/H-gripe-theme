@@ -193,12 +193,12 @@ func seedProductQualityRequirementServiceProductWithSKU(
 	t.Helper()
 
 	record := productdomain.Product{
-		SKU:      sku,
-		Name:     sku,
-		Slug:     "slug-" + strings.ToLower(sku),
-		Currency: "USD",
-		Price:    100,
-		Stock:    5,
+		SKU:        sku,
+		Name:       sku,
+		Slug:       "slug-" + strings.ToLower(sku),
+		Currency:   "USD",
+		PriceMinor: 10000,
+		Stock:      5,
 	}
 	require.NoError(t, db.Create(&record).Error)
 	variantID := seedProductQualityRequirementServiceVariant(t, db, record.ID, sku+"-VARIANT")
@@ -219,7 +219,7 @@ func seedProductQualityRequirementServiceVariant(
 		Title:        "Default",
 		OptionValues: "{}",
 		Currency:     "USD",
-		Price:        100,
+		PriceMinor:   10000,
 		Stock:        5,
 		Weight:       9000,
 		IsDefault:    true,

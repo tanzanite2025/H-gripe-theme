@@ -1,0 +1,2 @@
+-- Intentionally irreversible retirement. Historical gift-card data, settings,
+-- tables, and refund columns must not be recreated on rollback.

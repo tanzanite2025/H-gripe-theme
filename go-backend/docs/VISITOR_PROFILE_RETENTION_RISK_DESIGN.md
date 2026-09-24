@@ -1,8 +1,14 @@
 # Visitor Profile Retention and Risk Design
 
-Last updated: 2026-07-28
+Last updated: 2026-09-17
 
 This document defines how Commerce Platform should retain visitor profile data, behavior events, and risk telemetry without letting low-value traffic fill the database. It is intentionally written as a long-term implementation guide so the work can pause and resume without re-deciding the same boundaries.
+
+The `visitor_profiles.profile_status` value `archived` is visitor-profile
+retention state only. It is independent from a staff member archiving a chat
+conversation in `customer_service_inbox_states.archived_at`; neither state may
+implicitly mutate the other. Chat lifecycle and inbox archive semantics live in
+`../../docs/design/customer-service-conversation-lifecycle-and-inbox-architecture.md`.
 
 ## Goal
 
@@ -515,7 +521,7 @@ Partially implemented on 2026-07-28:
   - `BindIdentityFact()` records identity linkage as meaningful data.
   - `TouchPassiveSeen()` updates only an existing profile and does not create a row.
 - Cart profile touches are explicitly marked as `cart_action`.
-- Public Chat no longer touches visitor profiles from the owner helper itself. Passive checks such as "has conversation", message reads, typing, and SSE now use existing owner identity rather than creating a fresh visitor profile. A profile is touched after a customer message is successfully saved.
+- Public Chat no longer touches visitor profiles from the owner helper itself. Passive checks such as "has conversation", message reads, typing, and WebSocket subscription now use existing owner identity rather than creating a fresh visitor profile. A profile is touched after a customer message is successfully saved.
 - Admin visitor profile APIs and panels expose status, quality score, meaningful action times, retention timestamp, and default to active profiles.
 - Manual retention cleanup is available from the admin visitor profile page and API:
   - expired `candidate` profiles are soft-deleted

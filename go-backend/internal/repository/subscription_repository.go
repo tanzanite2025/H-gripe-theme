@@ -15,6 +15,10 @@ func NewSubscriptionRepository(db *gorm.DB) *SubscriptionRepository {
 	return &SubscriptionRepository{db: db}
 }
 
+func (r *SubscriptionRepository) WithTx(tx *gorm.DB) *SubscriptionRepository {
+	return &SubscriptionRepository{db: tx}
+}
+
 // Create 创建订阅
 func (r *SubscriptionRepository) Create(sub *subscription.Subscription) error {
 	return r.db.Create(sub).Error

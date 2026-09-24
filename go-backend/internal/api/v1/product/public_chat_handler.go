@@ -21,8 +21,8 @@ func (h *Handler) ListPublicChatProducts(c *gin.Context) {
 	productSpecificationTemplateSlug := strings.TrimSpace(c.Query("product_specification_template"))
 	categorySlug := strings.TrimSpace(c.Query("product_category"))
 	brandSlug := strings.TrimSpace(c.Query("brand"))
-	priceMin := parseOptionalFloatQuery(c, "price_min")
-	priceMax := parseOptionalFloatQuery(c, "price_max")
+	priceMin := parseOptionalMinorQuery(c, "price_min_minor")
+	priceMax := parseOptionalMinorQuery(c, "price_max_minor")
 	specFilters := parseSpecFilterQuery(c)
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	pageSize, _ := strconv.Atoi(c.DefaultQuery("per_page", c.DefaultQuery("page_size", "20")))
@@ -46,6 +46,7 @@ func (h *Handler) ListPublicChatProducts(c *gin.Context) {
 		BrandSlug:                        brandSlug,
 		PriceMin:                         priceMin,
 		PriceMax:                         priceMax,
+		PriceCurrency:                    publicContext.DisplayCurrency,
 		SpecFilters:                      specFilters,
 		Page:                             page,
 		PageSize:                         pageSize,

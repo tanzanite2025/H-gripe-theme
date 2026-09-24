@@ -35,7 +35,7 @@ func TestPaymentRuntimeStatusUsesConfiguredPublicBaseURL(t *testing.T) {
 	require.Equal(t, 0, body.Code)
 
 	wechatStatus := findAdminRuntimeStatus(t, body.Data, pgateway.GatewayWechat)
-	require.Equal(t, "https://payments.example.com/api/v1/payment/webhook/wechat", wechatStatus.CallbackURL)
+	require.Equal(t, "https://payments.example.com/api/v1/payments/wechat/webhook", wechatStatus.CallbackURL)
 	require.NotContains(t, wechatStatus.CallbackURL, "spoofed.example.test")
 }
 

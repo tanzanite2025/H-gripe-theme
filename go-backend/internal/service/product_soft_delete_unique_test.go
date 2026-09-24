@@ -14,11 +14,11 @@ func TestProductServiceReusesSoftDeletedProductAndVariantIdentifiers(t *testing.
 		Status: "active",
 		Locale: "en",
 		Variants: []ProductVariantInput{{
-			SKU:       "SOFT-DELETE-REUSE-VAR",
-			Price:     99,
-			Stock:     2,
-			IsDefault: true,
-			IsActive:  boolPtr(true),
+			SKU:        "SOFT-DELETE-REUSE-VAR",
+			PriceMinor: 99,
+			Stock:      2,
+			IsDefault:  true,
+			IsActive:   boolPtr(true),
 		}},
 	})
 	require.NoError(t, err)
@@ -33,11 +33,11 @@ func TestProductServiceReusesSoftDeletedProductAndVariantIdentifiers(t *testing.
 		Status: "active",
 		Locale: "en",
 		Variants: []ProductVariantInput{{
-			SKU:       "SOFT-DELETE-REUSE-VAR",
-			Price:     99,
-			Stock:     3,
-			IsDefault: true,
-			IsActive:  boolPtr(true),
+			SKU:        "SOFT-DELETE-REUSE-VAR",
+			PriceMinor: 99,
+			Stock:      3,
+			IsDefault:  true,
+			IsActive:   boolPtr(true),
 		}},
 	})
 	require.NoError(t, err)

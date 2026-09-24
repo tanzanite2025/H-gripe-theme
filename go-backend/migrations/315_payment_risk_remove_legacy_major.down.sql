@@ -1,0 +1,5 @@
+ALTER TABLE payment_risk_snapshots
+    ADD COLUMN IF NOT EXISTS successful_payment_amount NUMERIC(18,2) NOT NULL DEFAULT 0,
+    ADD COLUMN IF NOT EXISTS dispute_amount NUMERIC(18,2) NOT NULL DEFAULT 0,
+    ADD COLUMN IF NOT EXISTS refund_amount NUMERIC(18,2) NOT NULL DEFAULT 0;
+

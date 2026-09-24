@@ -4,16 +4,16 @@ export interface RiskStrategySnapshot {
   window_end?: string | number | Date | null
   window_days?: number | string
   successful_payment_count?: number | string
-  successful_payment_amount?: number | string
+  successful_payment_amount_minor_by_currency?: Record<string, number | string>
   dispute_activity_rate?: number | string
   early_fraud_warning_rate?: number | string
   refund_rate?: number | string
   three_ds_upgrade_rate?: number | string
   dispute_count?: number | string
-  dispute_amount?: number | string
+  dispute_amount_minor_by_currency?: Record<string, number | string>
   early_fraud_warning_count?: number | string
   refund_count?: number | string
-  refund_amount?: number | string
+  refund_amount_minor_by_currency?: Record<string, number | string>
   checkout_attempt_count?: number | string
   three_ds_upgrade_count?: number | string
   three_ds_challenge_count?: number | string
@@ -53,8 +53,8 @@ export interface RiskStrategyConfiguration {
     enabled?: boolean
     runtime_available?: boolean
     adaptive_enabled?: boolean
-    low_risk_max_amount?: number | string
-    avs_billing_shipping_mismatch_high_value_threshold_usd?: number | string
+    low_risk_max_amount_minor?: number | string
+    avs_billing_shipping_mismatch_high_value_threshold_minor?: number | string
     trusted_paid_orders?: number | string
     visitor_risk_lookback_days?: number | string
     step_up_risk_score?: number | string
@@ -203,7 +203,7 @@ export interface PaymentRefundRecommendation {
   id: string | number
   status?: string
   provider?: string
-  recommended_amount?: number | string
+  recommended_amount_minor?: number | string
   currency?: string
   order_id?: string | number | null
   linked_refund_id?: string | number | null
@@ -216,7 +216,7 @@ export interface PaymentRefundRecommendation {
 }
 
 export interface PaymentRefundDraftPayload {
-  amount: number
+  amount_minor: number
   reason: string
   decision_notes: string
   confirm: boolean

@@ -13,10 +13,10 @@ import (
 // workbench. It deliberately projects shipping data instead of exposing the
 // provider aggregate, which may contain credentials and endpoint settings.
 type OrderEvidenceTrackingContext struct {
-	Shipment            *OrderEvidenceTrackingShipment `json:"shipment,omitempty"`
-	LatestDeliveryEvent *OrderEvidenceDeliveryEvent    `json:"latest_delivery_event,omitempty"`
-	ProviderPODURL      string                         `json:"provider_pod_url,omitempty"`
-	ManualPOD           *OrderEvidenceManualPOD        `json:"manual_pod,omitempty"`
+	Shipments            []OrderEvidenceTrackingShipment `json:"shipments,omitempty"`
+	LatestDeliveryEvents []OrderEvidenceDeliveryEvent    `json:"latest_delivery_events,omitempty"`
+	ProviderPODURLs      []string                        `json:"provider_pod_urls,omitempty"`
+	ManualPOD            *OrderEvidenceManualPOD         `json:"manual_pod,omitempty"`
 }
 
 type OrderEvidenceTrackingShipment struct {
@@ -57,23 +57,32 @@ type OrderEvidenceManualPOD struct {
 }
 
 func buildOrderEvidenceTrackingContextFromSources(
-	shipment *shipping.TrackingShipment,
+	shipments []shipping.TrackingShipment,
 	events []shipping.TrackingEvent,
 	items []orderevidence.OrderEvidenceItem,
 ) *OrderEvidenceTrackingContext {
-	currentTrackingNumber := ""
-	if shipment != nil {
-		currentTrackingNumber = strings.TrimSpace(shipment.TrackingNumber)
+	trackingNumbers := make(map[string]struct{}, len(shipments))
+	projectedShipments := make([]OrderEvidenceTrackingShipment, 0, len(shipments))
+	for index := range shipments {
+		trackingNumber := strings.TrimSpace(shipments[index].TrackingNumber)
+		if trackingNumber == "" {
+			continue
+		}
+		trackingNumbers[strings.ToLower(trackingNumber)] = struct{}{}
+		projectedShipments = append(projectedShipments, *projectOrderEvidenceTrackingShipment(&shipments[index]))
 	}
-	events = filterTrackingEventsForShipment(events, currentTrackingNumber)
+	events = filterTrackingEventsForShipments(events, trackingNumbers)
 	result := &OrderEvidenceTrackingContext{
-		ManualPOD: manualPODContext(items, shipment),
+		Shipments: projectedShipments,
+		ManualPOD: manualPODContext(items, shipments),
 	}
-	if shipment != nil {
-		result.Shipment = projectOrderEvidenceTrackingShipment(shipment)
+	for _, shipment := range shipments {
+		shipmentEvents := filterTrackingEventsForShipment(events, strings.TrimSpace(shipment.TrackingNumber))
+		if latest := projectLatestDeliveryEvent(shipmentEvents); latest != nil {
+			result.LatestDeliveryEvents = append(result.LatestDeliveryEvents, *latest)
+		}
 	}
-	result.LatestDeliveryEvent = projectLatestDeliveryEvent(events)
-	result.ProviderPODURL = latestProviderPODURL(events)
+	result.ProviderPODURLs = trackingProviderPODURLs(events)
 	return result
 }
 
@@ -173,7 +182,7 @@ func latestProviderPODURL(events []shipping.TrackingEvent) string {
 
 func manualPODContext(
 	items []orderevidence.OrderEvidenceItem,
-	shipment *shipping.TrackingShipment,
+	shipments []shipping.TrackingShipment,
 ) *OrderEvidenceManualPOD {
 	for _, item := range items {
 		if item.ItemType != orderevidence.EvidenceItemTypeSignedPOD {
@@ -181,10 +190,9 @@ func manualPODContext(
 		}
 		manualTrackingNumber := manualPODTrackingNumber(item.DataJSON)
 		associationStatus := "not_recorded"
-		if shipment == nil {
+		if len(shipments) == 0 {
 			associationStatus = "shipment_unavailable"
-		} else if manualTrackingNumber != "" &&
-			strings.EqualFold(manualTrackingNumber, strings.TrimSpace(shipment.TrackingNumber)) {
+		} else if manualTrackingNumber != "" && trackingNumberMatchesShipment(manualTrackingNumber, shipments) {
 			associationStatus = "matched"
 		} else if manualTrackingNumber != "" {
 			associationStatus = "mismatch"
@@ -218,6 +226,42 @@ func filterTrackingEventsForShipment(
 		}
 	}
 	return filtered
+}
+
+func filterTrackingEventsForShipments(events []shipping.TrackingEvent, trackingNumbers map[string]struct{}) []shipping.TrackingEvent {
+	filtered := make([]shipping.TrackingEvent, 0, len(events))
+	for _, event := range events {
+		if _, ok := trackingNumbers[strings.ToLower(strings.TrimSpace(event.TrackingNumber))]; ok {
+			filtered = append(filtered, event)
+		}
+	}
+	return filtered
+}
+
+func trackingNumberMatchesShipment(trackingNumber string, shipments []shipping.TrackingShipment) bool {
+	for _, shipment := range shipments {
+		if strings.EqualFold(strings.TrimSpace(trackingNumber), strings.TrimSpace(shipment.TrackingNumber)) {
+			return true
+		}
+	}
+	return false
+}
+
+func trackingProviderPODURLs(events []shipping.TrackingEvent) []string {
+	seen := make(map[string]struct{})
+	urls := make([]string, 0)
+	for _, event := range events {
+		url := strings.TrimSpace(event.ProofOfDeliveryURL)
+		if url == "" {
+			continue
+		}
+		if _, ok := seen[url]; ok {
+			continue
+		}
+		seen[url] = struct{}{}
+		urls = append(urls, url)
+	}
+	return urls
 }
 
 func manualPODTrackingNumber(data []byte) string {

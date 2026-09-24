@@ -46,7 +46,7 @@
         <div class="space-y-1.5 text-xs leading-relaxed text-muted-foreground">
           <p><span class="font-bold text-foreground">触发时间：</span>后台把订单状态改为“已完成”后自动入账。</p>
           <p><span class="font-bold text-foreground">计算口径：</span>积分 = USD 商品成交金额 × 当前比例，向下取整。</p>
-          <p><span class="font-bold text-foreground">币种基准：</span>积分规则只以 USD 为基准；礼品卡币种只影响兑换面额。</p>
+          <p><span class="font-bold text-foreground">币种基准：</span>积分规则只以 USD 为基准。</p>
         </div>
       </div>
     </ProgramSection>
@@ -96,6 +96,7 @@ import { LoaderCircle, RefreshCw, Save } from '@lucide/vue'
 import AdminFormField from '@/components/admin/AdminFormField.vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Switch } from '@/components/ui/switch'
 import type { LoyaltySettings } from '@/modules/marketing/marketingTypes'
 
 const props = withDefaults(defineProps<{
@@ -136,4 +137,3 @@ const ProgramSection = defineComponent({
   },
 })
 </script>
-

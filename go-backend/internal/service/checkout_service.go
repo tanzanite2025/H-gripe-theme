@@ -3,7 +3,6 @@ package service
 import (
 	"commerce-platform/internal/domain/coupon"
 	"commerce-platform/internal/domain/currency"
-	"commerce-platform/internal/domain/loyalty"
 	domainmoney "commerce-platform/internal/domain/money"
 	"commerce-platform/internal/domain/order"
 	domainpricing "commerce-platform/internal/domain/pricing"
@@ -15,7 +14,6 @@ import (
 	"fmt"
 	"math"
 	"math/big"
-	"strconv"
 	"strings"
 	"time"
 
@@ -30,62 +28,39 @@ type CheckoutService struct {
 	referralRepo        *repository.ReferralRepository
 	referralProgramRepo *repository.ReferralProgramRepository
 	shippingService     *ShippingService
-	loyaltyProgram      *LoyaltyProgramService
 	currencyPolicy      *CurrencyPolicyService
 	exchangeRates       *repository.ExchangeRateRepository
 }
 
 type CheckoutQuoteInput struct {
-	UserID               uint
-	Items                []order.OrderItem
-	ShippingAddress      order.Address
-	DisplayCurrency      string
-	PaymentMethod        string
-	ShippingQuoteID      string
-	SelectedQuotePlanID  string
-	CouponCode           string
-	GiftCardCode         string
-	PointsToUse          int
-	LoyaltyProgramConfig *loyalty.ProgramConfig
+	UserID              uint
+	Items               []order.OrderItem
+	ShippingAddress     order.Address
+	DisplayCurrency     string
+	PaymentMethod       string
+	ShippingQuoteID     string
+	SelectedQuotePlanID string
+	CouponCode          string
 }
 
 type CheckoutQuote struct {
-	Items                 []order.OrderItem        `json:"items"`
-	SubtotalMinor         int64                    `json:"subtotal_minor"`
-	ShippingFeeMinor      int64                    `json:"shipping_fee_minor"`
-	TaxMinor              int64                    `json:"tax_minor"`
-	MemberDiscountMinor   int64                    `json:"member_discount_minor"`
-	PointsDiscountMinor   int64                    `json:"points_discount_minor"`
-	CouponDiscountMinor   int64                    `json:"coupon_discount_minor"`
-	GiftCardDiscountMinor int64                    `json:"gift_card_discount_minor"`
-	DiscountMinor         int64                    `json:"discount_minor"`
-	TotalMinor            int64                    `json:"total_minor"`
-	SubtotalAmount        float64                  `json:"subtotal_amount"`
-	ShippingFee           float64                  `json:"shipping_fee"`
-	ShippingQuote         *ShippingQuote           `json:"shipping_quote,omitempty"`
-	TaxAmount             float64                  `json:"tax_amount"`
-	MemberDiscount        float64                  `json:"member_discount"`
-	PointsDiscount        float64                  `json:"points_discount"`
-	CouponDiscount        float64                  `json:"coupon_discount"`
-	GiftCardDiscount      float64                  `json:"gift_card_discount"`
-	DiscountAmount        float64                  `json:"discount_amount"`
-	TotalAmount           float64                  `json:"total_amount"`
-	CouponCode            string                   `json:"coupon_code"`
-	GiftCardCode          string                   `json:"gift_card_code"`
-	PointsToUse           int                      `json:"points_to_use"`
-	ProgramConfigID       *uint                    `json:"loyalty_program_config_id,omitempty"`
-	Coupon                *coupon.Coupon           `json:"coupon,omitempty"`
-	Currency              string                   `json:"currency"`
-	PaymentCurrency       string                   `json:"payment_currency,omitempty"`
-	PaymentAmountMinor    int64                    `json:"payment_amount_minor,omitempty"`
-	PaymentAmount         float64                  `json:"payment_amount,omitempty"`
-	FXSnapshot            currency.OrderFXSnapshot `json:"-"`
-	GiftCard              *coupon.GiftCard         `json:"-"`
-	GiftCardDiscountCents int64                    `json:"-"`
-	PricingSnapshot       domainpricing.Snapshot   `json:"-"`
+	Items               []order.OrderItem        `json:"items"`
+	SubtotalMinor       int64                    `json:"subtotal_minor"`
+	ShippingFeeMinor    int64                    `json:"shipping_fee_minor"`
+	TaxMinor            int64                    `json:"tax_minor"`
+	MemberDiscountMinor int64                    `json:"member_discount_minor"`
+	CouponDiscountMinor int64                    `json:"coupon_discount_minor"`
+	DiscountMinor       int64                    `json:"discount_minor"`
+	TotalMinor          int64                    `json:"total_minor"`
+	ShippingQuote       *ShippingQuote           `json:"shipping_quote,omitempty"`
+	CouponCode          string                   `json:"coupon_code"`
+	Coupon              *coupon.Coupon           `json:"coupon,omitempty"`
+	Currency            string                   `json:"currency"`
+	PaymentCurrency     string                   `json:"payment_currency,omitempty"`
+	PaymentAmountMinor  int64                    `json:"payment_amount_minor,omitempty"`
+	FXSnapshot          currency.OrderFXSnapshot `json:"-"`
+	PricingSnapshot     domainpricing.Snapshot   `json:"-"`
 }
-
-const checkoutMaxPointsDiscountSubtotalRate = 0.5
 
 type checkoutRepositories struct {
 	productRepo         *repository.ProductRepository
@@ -117,10 +92,6 @@ func NewCheckoutService(
 		checkoutService.shippingService = shippingServices[0]
 	}
 	return checkoutService
-}
-
-func (s *CheckoutService) ConfigureLoyaltyProgram(program *LoyaltyProgramService) {
-	s.loyaltyProgram = program
 }
 
 func (s *CheckoutService) ConfigureCurrencyPolicy(policy *CurrencyPolicyService) {
@@ -180,55 +151,6 @@ func (s *CheckoutService) QuoteWithRepositories(input CheckoutQuoteInput, repos 
 	})
 }
 
-// lockedRefereeCouponCode returns the one-time coupon provisioned when a
-// customer accepted a referral. It is intentionally only considered while the
-// referral is still pending; after payment the outbox handler releases the
-// reward log and subsequent quotes must not reuse it.
-func (s *CheckoutService) lockedRefereeCouponCode(repos checkoutRepositories, userID uint) (string, error) {
-	if userID == 0 || repos.referralRepo == nil || repos.referralProgramRepo == nil {
-		return "", nil
-	}
-	record, err := repos.referralRepo.FindRecordByRefereeID(userID)
-	if repository.IsRecordNotFound(err) {
-		return "", nil
-	}
-	if err != nil {
-		return "", err
-	}
-	if record.Status != loyalty.ReferralStatusPending || record.OrderID != nil {
-		return "", nil
-	}
-	config, err := repos.referralProgramRepo.FindByID(record.ProgramConfigID)
-	if err != nil {
-		return "", err
-	}
-	if config.RefereeBenefitType != loyalty.ReferralBenefitPercentCoupon && config.RefereeBenefitType != loyalty.ReferralBenefitFixedCoupon {
-		return "", nil
-	}
-	rewardKey := fmt.Sprintf("referral:%d:referee:%s:v1", record.ID, config.RefereeBenefitType)
-	reward, err := repos.referralRepo.FindRewardByIdempotencyKey(rewardKey)
-	if repository.IsRecordNotFound(err) {
-		return "", nil
-	}
-	if err != nil {
-		return "", err
-	}
-	if reward.Status != loyalty.ReferralRewardStatusLocked || reward.CouponID == nil || reward.RecipientUserID != userID {
-		return "", nil
-	}
-	if repos.couponRepo == nil {
-		return "", errors.New("coupon repository is not configured")
-	}
-	couponRecord, err := repos.couponRepo.FindCouponByID(*reward.CouponID)
-	if repository.IsRecordNotFound(err) {
-		return "", nil
-	}
-	if err != nil {
-		return "", err
-	}
-	return strings.TrimSpace(couponRecord.Code), nil
-}
-
 func (s *CheckoutService) quote(input CheckoutQuoteInput, repos checkoutRepositories) (*CheckoutQuote, error) {
 	if len(input.Items) == 0 {
 		return nil, errors.New("cart is empty")
@@ -263,6 +185,15 @@ func (s *CheckoutService) quote(input CheckoutQuoteInput, repos checkoutReposito
 		if configErr != nil {
 			return nil, fmt.Errorf("configuration conflict for product ID %d: %w", item.ProductID, configErr)
 		}
+		componentStock, inventoryErr := ConfigurationInventoryQuantities(configuration, item.Quantity)
+		if inventoryErr != nil {
+			return nil, fmt.Errorf("invalid component inventory for product ID %d: %w", item.ProductID, inventoryErr)
+		}
+		if len(componentStock) > 0 {
+			if inventoryErr := repos.productRepo.ValidateVariantStocks(componentStock); inventoryErr != nil {
+				return nil, fmt.Errorf("insufficient component stock for product ID %d: %w", item.ProductID, inventoryErr)
+			}
+		}
 
 		resolvedVariantID := variant.ID
 		variantID := &resolvedVariantID
@@ -296,8 +227,7 @@ func (s *CheckoutService) quote(input CheckoutQuoteInput, repos checkoutReposito
 			return nil, fmt.Errorf("%w: configuration hash for SKU %s does not match the catalog", ErrProductConfigurationConflict, variant.SKU)
 		}
 		if hasStoredConfiguration {
-			expectedMoney, expectedErr := domainmoney.FromMajorFloat(item.Price, itemCurrency)
-			if expectedErr != nil || expectedMoney.AmountMinor() != priceMoney.AmountMinor() {
+			if item.PriceMinor == 0 || item.PriceMinor != priceMoney.AmountMinor() {
 				return nil, fmt.Errorf("%w: SKU %s", ErrProductConfigurationPriceChanged, variant.SKU)
 			}
 		}
@@ -320,10 +250,6 @@ func (s *CheckoutService) quote(input CheckoutQuoteInput, repos checkoutReposito
 		if priceMoney.Currency().String() != quoteCurrency {
 			return nil, fmt.Errorf("converted price currency mismatch for SKU %s", variant.SKU)
 		}
-		price, err := priceMoney.MajorFloat()
-		if err != nil {
-			return nil, fmt.Errorf("format price for SKU %s: %w", variant.SKU, err)
-		}
 		configuration.Snapshot.ProductID = product.ID
 		configuration.Snapshot.VariantID = variant.ID
 		configuration.Snapshot.ProductName = product.Name
@@ -342,10 +268,6 @@ func (s *CheckoutService) quote(input CheckoutQuoteInput, repos checkoutReposito
 		if err != nil {
 			return nil, fmt.Errorf("calculate subtotal for SKU %s: %w", variant.SKU, err)
 		}
-		lineSubtotal, err := lineSubtotalMoney.MajorFloat()
-		if err != nil {
-			return nil, fmt.Errorf("format subtotal for SKU %s: %w", variant.SKU, err)
-		}
 		if !subtotalMoneyInitialized {
 			subtotalMoney, err = domainmoney.New(0, quoteCurrency)
 			if err != nil {
@@ -358,9 +280,11 @@ func (s *CheckoutService) quote(input CheckoutQuoteInput, repos checkoutReposito
 			return nil, fmt.Errorf("accumulate checkout subtotal: %w", err)
 		}
 		sku := variant.SKU
-		attributes := variant.OptionValues
 		availableStock := variant.Stock
 		fulfillmentMode := productdomain.NormalizeFulfillmentMode(product.FulfillmentMode)
+		if configuration.RequiresProduction {
+			fulfillmentMode = productdomain.FulfillmentModeMadeToOrder
+		}
 		if fulfillmentMode == productdomain.FulfillmentModeStock && availableStock < item.Quantity {
 			return nil, fmt.Errorf("insufficient stock for product ID %d", item.ProductID)
 		}
@@ -375,19 +299,16 @@ func (s *CheckoutService) quote(input CheckoutQuoteInput, repos checkoutReposito
 		if product.ProductCategory != nil {
 			items[i].ProductCategorySlug = product.ProductCategory.Slug
 		}
-		items[i].Price = price
 		items[i].PriceMinor = priceMoney.AmountMinor()
-		items[i].Subtotal = lineSubtotal
 		items[i].SubtotalMinor = lineSubtotalMoney.AmountMinor()
 		items[i].ProductName = product.Name
 		items[i].SKU = sku
-		items[i].Attributes = attributes
-		items[i].WeightGrams = variant.Weight
+		configuredWeightGrams := variant.Weight + configuration.WeightDeltaGrams
+		items[i].WeightGrams = configuredWeightGrams
 		items[i].FulfillmentMode = fulfillmentMode
 		if !productdomain.IsValidFulfillmentMode(items[i].FulfillmentMode) {
 			return nil, fmt.Errorf("invalid fulfillment mode for product ID %d", product.ID)
 		}
-		items[i].Total = items[i].Subtotal
 		items[i].TotalMinor = items[i].SubtotalMinor
 		items[i].HSCode = product.HSCode
 		items[i].CNCode = product.CNCode
@@ -402,9 +323,9 @@ func (s *CheckoutService) quote(input CheckoutQuoteInput, repos checkoutReposito
 			UnitPrice:           priceMoney,
 			Subtotal:            lineSubtotalMoney,
 		}
-		items[i].DeclaredValue = nil
+		items[i].DeclaredValueMinor = nil
 		items[i].DeclaredValueConfirmed = false
-		if variant.Weight <= 0 {
+		if configuredWeightGrams <= 0 {
 			return nil, fmt.Errorf("shipping weight is missing for SKU %s", variant.SKU)
 		}
 		shippingTemplateID, err := resolveProductShippingTemplateID(product, variant)
@@ -417,45 +338,17 @@ func (s *CheckoutService) quote(input CheckoutQuoteInput, repos checkoutReposito
 			ProductSpecificationTemplateID: product.ProductSpecificationTemplateID,
 			ShippingTemplateID:             uintPtr(shippingTemplateID),
 			Quantity:                       item.Quantity,
-			UnitPrice:                      price,
-			WeightGrams:                    variant.Weight,
+			UnitPriceMinor:                 priceMoney.AmountMinor(),
+			WeightGrams:                    configuredWeightGrams,
+			PackagingWeightDeltaGrams:      configuration.PackagingWeightDeltaGrams,
 		})
 	}
 	if quoteCurrency == "" {
 		return nil, errors.New("product price currency is required")
 	}
-	subtotal, err := subtotalMoney.MajorFloat()
-	if err != nil {
-		return nil, fmt.Errorf("format checkout subtotal: %w", err)
-	}
-
-	// Capture the order-time FX contract before valuing loyalty points. The
-	// redemption rate is defined in the configured points currency, while the
-	// quote and its discount cap are expressed in order currency.
 	fxSnapshot, err := s.resolveOrderFXSnapshot(quoteCurrency, repos.currencyPolicy, repos.exchangeRates)
 	if err != nil {
 		return nil, err
-	}
-	loyaltyConfig := input.LoyaltyProgramConfig
-	pointsFXSnapshot := fxSnapshot
-	if input.PointsToUse > 0 {
-		if loyaltyConfig == nil {
-			loyaltyConfig, err = s.currentLoyaltyProgramConfig()
-			if err != nil {
-				return nil, err
-			}
-			if loyaltyConfig == nil {
-				return nil, ErrLoyaltyProgramConfigNotFound
-			}
-		}
-		pointsFXSnapshot, err = s.resolvePointsFXSnapshot(
-			quoteCurrency,
-			loyaltyConfig.Currency,
-			repos.exchangeRates,
-		)
-		if err != nil {
-			return nil, err
-		}
 	}
 
 	if repos.shippingService == nil {
@@ -464,7 +357,6 @@ func (s *CheckoutService) quote(input CheckoutQuoteInput, repos checkoutReposito
 	shippingQuote, err := repos.shippingService.QuoteResolvedItems(ShippingQuoteInput{
 		Country:             input.ShippingAddress.Country,
 		PostalCode:          input.ShippingAddress.PostalCode,
-		Amount:              subtotal,
 		Currency:            quoteCurrency,
 		DisplayCurrency:     input.DisplayCurrency,
 		ShippingQuoteID:     input.ShippingQuoteID,
@@ -474,13 +366,9 @@ func (s *CheckoutService) quote(input CheckoutQuoteInput, repos checkoutReposito
 	if err != nil {
 		return nil, err
 	}
-	shippingFeeMoney, err := domainmoney.FromMajorFloat(shippingQuote.ShippingFee, quoteCurrency)
+	shippingFeeMoney, err := domainmoney.New(shippingQuote.ShippingFeeMinor, quoteCurrency)
 	if err != nil {
 		return nil, fmt.Errorf("invalid shipping fee: %w", err)
-	}
-	shippingFee, err := shippingFeeMoney.MajorFloat()
-	if err != nil {
-		return nil, fmt.Errorf("format shipping fee: %w", err)
 	}
 	memberDiscountMoney, err := s.calculateMemberDiscountMoney(repos.loyaltyRepo, input.UserID, subtotalMoney)
 	if err != nil {
@@ -488,10 +376,6 @@ func (s *CheckoutService) quote(input CheckoutQuoteInput, repos checkoutReposito
 	}
 	if memberDiscountMoney.AmountMinor() > subtotalMoney.AmountMinor() {
 		memberDiscountMoney = subtotalMoney
-	}
-	memberDiscount, err := memberDiscountMoney.MajorFloat()
-	if err != nil {
-		return nil, fmt.Errorf("format member discount: %w", err)
 	}
 	remainingMerchandiseMoney, err := subtotalMoney.Subtract(memberDiscountMoney)
 	if err != nil {
@@ -502,14 +386,7 @@ func (s *CheckoutService) quote(input CheckoutQuoteInput, repos checkoutReposito
 	if err != nil {
 		return nil, fmt.Errorf("initialize coupon discount: %w", err)
 	}
-	couponDiscount := 0.0
 	couponCode := strings.TrimSpace(input.CouponCode)
-	if couponCode == "" {
-		couponCode, err = s.lockedRefereeCouponCode(repos, input.UserID)
-		if err != nil {
-			return nil, fmt.Errorf("resolve referral benefit: %w", err)
-		}
-	}
 	if couponCode != "" {
 		targetCoupon, couponDiscountMoney, err = s.validateCouponWithFXMoney(
 			repos.couponRepo,
@@ -527,38 +404,12 @@ func (s *CheckoutService) quote(input CheckoutQuoteInput, repos checkoutReposito
 		if couponDiscountMoney.AmountMinor() > remainingMerchandiseMoney.AmountMinor() {
 			couponDiscountMoney = remainingMerchandiseMoney
 		}
-		couponDiscount, err = couponDiscountMoney.MajorFloat()
-		if err != nil {
-			return nil, fmt.Errorf("format coupon discount: %w", err)
-		}
 		remainingMerchandiseMoney, err = remainingMerchandiseMoney.Subtract(couponDiscountMoney)
 		if err != nil {
 			return nil, fmt.Errorf("calculate remaining merchandise after coupon discount: %w", err)
 		}
 	}
 
-	pointsToUse, pointsDiscountMoney, programConfigID, err := s.calculatePointsDiscountMoney(
-		repos.loyaltyRepo,
-		input.UserID,
-		input.PointsToUse,
-		remainingMerchandiseMoney,
-		loyaltyConfig,
-		pointsFXSnapshot,
-	)
-	if err != nil {
-		return nil, err
-	}
-	if pointsDiscountMoney.AmountMinor() > remainingMerchandiseMoney.AmountMinor() {
-		pointsDiscountMoney = remainingMerchandiseMoney
-	}
-	pointsDiscount, err := pointsDiscountMoney.MajorFloat()
-	if err != nil {
-		return nil, fmt.Errorf("format points discount: %w", err)
-	}
-	remainingMerchandiseMoney, err = remainingMerchandiseMoney.Subtract(pointsDiscountMoney)
-	if err != nil {
-		return nil, fmt.Errorf("calculate remaining merchandise after points discount: %w", err)
-	}
 	pricingSnapshot, err := buildCheckoutPricingSnapshot(checkoutPricingInput{
 		Items:               pricingItems,
 		Currency:            quoteCurrency,
@@ -566,9 +417,6 @@ func (s *CheckoutService) quote(input CheckoutQuoteInput, repos checkoutReposito
 		MemberDiscount:      memberDiscountMoney,
 		CouponDiscount:      couponDiscountMoney,
 		Coupon:              targetCoupon,
-		PointsDiscount:      pointsDiscountMoney,
-		PointsToUse:         pointsToUse,
-		ProgramConfigID:     programConfigID,
 		MerchandiseNetTotal: remainingMerchandiseMoney,
 	})
 	if err != nil {
@@ -589,14 +437,6 @@ func (s *CheckoutService) quote(input CheckoutQuoteInput, repos checkoutReposito
 	if err != nil {
 		return nil, fmt.Errorf("allocate checkout tax across pricing lines: %w", err)
 	}
-	taxAmount, err := taxMoney.MajorFloat()
-	if err != nil {
-		return nil, fmt.Errorf("format tax amount: %w", err)
-	}
-
-	giftCardCode := strings.TrimSpace(input.GiftCardCode)
-	var giftCard *coupon.GiftCard
-	giftCardDiscountCents := int64(0)
 	grossMoney, err := subtotalMoney.Add(shippingFeeMoney)
 	if err != nil {
 		return nil, fmt.Errorf("calculate checkout gross amount: %w", err)
@@ -609,43 +449,11 @@ func (s *CheckoutService) quote(input CheckoutQuoteInput, repos checkoutReposito
 	if err != nil {
 		return nil, fmt.Errorf("calculate remaining checkout amount: %w", err)
 	}
-	remainingAmountMoney, err = remainingAmountMoney.Subtract(pointsDiscountMoney)
-	if err != nil {
-		return nil, fmt.Errorf("calculate remaining checkout amount: %w", err)
-	}
 	remainingAmountMoney, err = remainingAmountMoney.Subtract(couponDiscountMoney)
 	if err != nil {
 		return nil, fmt.Errorf("calculate remaining checkout amount: %w", err)
 	}
-	if giftCardCode != "" {
-		giftCard, err = s.validateGiftCard(
-			repos.couponRepo,
-			giftCardCode,
-			input.UserID,
-			quoteCurrency,
-			repos.lockCoupon,
-		)
-		if err != nil {
-			return nil, fmt.Errorf("failed to apply gift card: %w", err)
-		}
-
-		if remainingAmountMoney.AmountMinor() > 0 {
-			giftCardDiscountCents = minInt64(giftCard.BalanceCents, remainingAmountMoney.AmountMinor())
-		}
-	}
-	giftCardDiscountMoney, err := domainmoney.New(giftCardDiscountCents, quoteCurrency)
-	if err != nil {
-		return nil, fmt.Errorf("calculate gift card discount: %w", err)
-	}
-	discountAmountMoney, err := memberDiscountMoney.Add(pointsDiscountMoney)
-	if err != nil {
-		return nil, fmt.Errorf("calculate checkout discount total: %w", err)
-	}
-	discountAmountMoney, err = discountAmountMoney.Add(couponDiscountMoney)
-	if err != nil {
-		return nil, fmt.Errorf("calculate checkout discount total: %w", err)
-	}
-	discountAmountMoney, err = discountAmountMoney.Add(giftCardDiscountMoney)
+	discountAmountMoney, err := memberDiscountMoney.Add(couponDiscountMoney)
 	if err != nil {
 		return nil, fmt.Errorf("calculate checkout discount total: %w", err)
 	}
@@ -659,21 +467,7 @@ func (s *CheckoutService) quote(input CheckoutQuoteInput, repos checkoutReposito
 			return nil, fmt.Errorf("clamp checkout total: %w", err)
 		}
 	}
-	giftCardDiscount, err := giftCardDiscountMoney.MajorFloat()
-	if err != nil {
-		return nil, fmt.Errorf("format gift card discount: %w", err)
-	}
-	discountAmount, err := discountAmountMoney.MajorFloat()
-	if err != nil {
-		return nil, fmt.Errorf("format checkout discount total: %w", err)
-	}
-	totalAmount, err := totalMoney.MajorFloat()
-	if err != nil {
-		return nil, fmt.Errorf("format checkout total: %w", err)
-	}
-
 	paymentCurrency := quoteCurrency
-	paymentAmount := totalAmount
 	paymentAmountMinor := totalMoney.AmountMinor()
 	if provider := paymentpkg.ProviderForPaymentMethod(input.PaymentMethod); provider == string(paymentpkg.GatewayAlipay) || provider == string(paymentpkg.GatewayWechat) {
 		paymentCurrency = "CNY"
@@ -687,48 +481,27 @@ func (s *CheckoutService) quote(input CheckoutQuoteInput, repos checkoutReposito
 			if conversionErr != nil {
 				return nil, fmt.Errorf("exchange rate unavailable for %s to %s payment settlement: %w", quoteCurrency, paymentCurrency, conversionErr)
 			}
-			paymentAmount, err = convertedMoney.MajorFloat()
-			if err != nil {
-				return nil, fmt.Errorf("format payment settlement amount: %w", err)
-			}
 			paymentAmountMinor = convertedMoney.AmountMinor()
 		}
 	}
 
 	return &CheckoutQuote{
-		Items:                 items,
-		SubtotalMinor:         subtotalMoney.AmountMinor(),
-		ShippingFeeMinor:      shippingFeeMoney.AmountMinor(),
-		TaxMinor:              taxMoney.AmountMinor(),
-		MemberDiscountMinor:   memberDiscountMoney.AmountMinor(),
-		PointsDiscountMinor:   pointsDiscountMoney.AmountMinor(),
-		CouponDiscountMinor:   couponDiscountMoney.AmountMinor(),
-		GiftCardDiscountMinor: giftCardDiscountMoney.AmountMinor(),
-		DiscountMinor:         discountAmountMoney.AmountMinor(),
-		TotalMinor:            totalMoney.AmountMinor(),
-		SubtotalAmount:        subtotal,
-		ShippingFee:           shippingFee,
-		ShippingQuote:         shippingQuote,
-		TaxAmount:             taxAmount,
-		MemberDiscount:        memberDiscount,
-		PointsDiscount:        pointsDiscount,
-		CouponDiscount:        couponDiscount,
-		GiftCardDiscount:      giftCardDiscount,
-		DiscountAmount:        discountAmount,
-		TotalAmount:           totalAmount,
-		CouponCode:            couponCode,
-		GiftCardCode:          giftCardCode,
-		PointsToUse:           pointsToUse,
-		ProgramConfigID:       programConfigID,
-		Coupon:                targetCoupon,
-		Currency:              quoteCurrency,
-		PaymentCurrency:       paymentCurrency,
-		PaymentAmount:         paymentAmount,
-		PaymentAmountMinor:    paymentAmountMinor,
-		FXSnapshot:            fxSnapshot,
-		GiftCard:              giftCard,
-		GiftCardDiscountCents: giftCardDiscountCents,
-		PricingSnapshot:       pricingSnapshot,
+		Items:               items,
+		SubtotalMinor:       subtotalMoney.AmountMinor(),
+		ShippingFeeMinor:    shippingFeeMoney.AmountMinor(),
+		TaxMinor:            taxMoney.AmountMinor(),
+		MemberDiscountMinor: memberDiscountMoney.AmountMinor(),
+		CouponDiscountMinor: couponDiscountMoney.AmountMinor(),
+		DiscountMinor:       discountAmountMoney.AmountMinor(),
+		TotalMinor:          totalMoney.AmountMinor(),
+		ShippingQuote:       shippingQuote,
+		CouponCode:          couponCode,
+		Coupon:              targetCoupon,
+		Currency:            quoteCurrency,
+		PaymentCurrency:     paymentCurrency,
+		PaymentAmountMinor:  paymentAmountMinor,
+		FXSnapshot:          fxSnapshot,
+		PricingSnapshot:     pricingSnapshot,
 	}, nil
 }
 
@@ -755,42 +528,47 @@ func (s *CheckoutService) resolveOrderFXSnapshot(
 	capturedAt := time.Now().UTC()
 	if baseCurrency == orderCurrency {
 		return currency.OrderFXSnapshot{
-			Version:         currency.OrderFXSnapshotVersion,
-			BaseCurrency:    baseCurrency,
-			OrderCurrency:   orderCurrency,
-			BaseToOrderRate: 1,
-			Source:          "same_currency",
-			CapturedAt:      capturedAt,
+			Version:       currency.OrderFXSnapshotVersion,
+			BaseCurrency:  baseCurrency,
+			OrderCurrency: orderCurrency,
+			RateDecimal:   "1",
+			Source:        "same_currency",
+			CapturedAt:    capturedAt,
 		}, nil
 	}
 
 	if exchangeRates != nil {
 		now := time.Now().UTC()
-		if record, err := exchangeRates.FindFresh(baseCurrency, orderCurrency, now); err == nil && record.Rate > 0 {
-			return currency.OrderFXSnapshot{
-				Version:         currency.OrderFXSnapshotVersion,
-				BaseCurrency:    baseCurrency,
-				OrderCurrency:   orderCurrency,
-				BaseToOrderRate: record.Rate,
-				Source:          nonEmptyFXSource(record.Source, "cached_exchange_rate"),
-				CapturedAt:      capturedAt,
-				RateFetchedAt:   snapshotTimePtr(record.FetchedAt),
-			}, nil
-		}
-		if record, err := exchangeRates.FindFresh(orderCurrency, baseCurrency, now); err == nil && record.Rate > 0 {
-			inverseRate, inverseErr := invertExchangeRate(record.Rate)
-			if inverseErr != nil {
-				return currency.OrderFXSnapshot{}, inverseErr
+		if record, err := exchangeRates.FindFresh(baseCurrency, orderCurrency, now); err == nil {
+			rate, rateErr := exchangeRateDecimalRecord(record)
+			if rateErr == nil {
+				return currency.OrderFXSnapshot{
+					Version:       currency.OrderFXSnapshotVersion,
+					BaseCurrency:  baseCurrency,
+					OrderCurrency: orderCurrency,
+					RateDecimal:   rate,
+					Source:        nonEmptyFXSource(record.Source, "cached_exchange_rate"),
+					CapturedAt:    capturedAt,
+					RateFetchedAt: snapshotTimePtr(record.FetchedAt),
+				}, nil
 			}
-			return currency.OrderFXSnapshot{
-				Version:         currency.OrderFXSnapshotVersion,
-				BaseCurrency:    baseCurrency,
-				OrderCurrency:   orderCurrency,
-				BaseToOrderRate: inverseRate,
-				Source:          nonEmptyFXSource(record.Source, "cached_exchange_rate_reverse"),
-				CapturedAt:      capturedAt,
-				RateFetchedAt:   snapshotTimePtr(record.FetchedAt),
-			}, nil
+		}
+		if record, err := exchangeRates.FindFresh(orderCurrency, baseCurrency, now); err == nil {
+			rate, rateErr := exchangeRateDecimalRecord(record)
+			if rateErr == nil {
+				inverseRate, inverseErr := invertExchangeRate(rate)
+				if inverseErr == nil {
+					return currency.OrderFXSnapshot{
+						Version:       currency.OrderFXSnapshotVersion,
+						BaseCurrency:  baseCurrency,
+						OrderCurrency: orderCurrency,
+						RateDecimal:   inverseRate,
+						Source:        nonEmptyFXSource(record.Source, "cached_exchange_rate_reverse"),
+						CapturedAt:    capturedAt,
+						RateFetchedAt: snapshotTimePtr(record.FetchedAt),
+					}, nil
+				}
+			}
 		}
 	}
 
@@ -800,75 +578,6 @@ func (s *CheckoutService) resolveOrderFXSnapshot(
 	return currency.OrderFXSnapshot{}, fmt.Errorf(
 		"historical FX snapshot is unavailable for %s to %s order",
 		baseCurrency,
-		orderCurrency,
-	)
-}
-
-func (s *CheckoutService) resolvePointsFXSnapshot(
-	orderCurrency string,
-	pointsCurrency string,
-	exchangeRates *repository.ExchangeRateRepository,
-) (currency.OrderFXSnapshot, error) {
-	orderCurrency = currency.NormalizeCode(orderCurrency)
-	pointsCurrency = currency.NormalizeCode(pointsCurrency)
-	if !currency.IsCatalogCode(orderCurrency) {
-		return currency.OrderFXSnapshot{}, fmt.Errorf("unsupported order currency %s", orderCurrency)
-	}
-	if !currency.IsCatalogCode(pointsCurrency) {
-		return currency.OrderFXSnapshot{}, fmt.Errorf("unsupported loyalty points currency %s", pointsCurrency)
-	}
-
-	capturedAt := time.Now().UTC()
-	if pointsCurrency == orderCurrency {
-		return currency.OrderFXSnapshot{
-			Version:         currency.OrderFXSnapshotVersion,
-			BaseCurrency:    pointsCurrency,
-			OrderCurrency:   orderCurrency,
-			BaseToOrderRate: 1,
-			Source:          "same_currency",
-			CapturedAt:      capturedAt,
-		}, nil
-	}
-
-	if exchangeRates == nil {
-		return currency.OrderFXSnapshot{}, fmt.Errorf(
-			"historical FX snapshot is unavailable for %s to %s points redemption",
-			pointsCurrency,
-			orderCurrency,
-		)
-	}
-
-	now := time.Now().UTC()
-	if record, err := exchangeRates.FindFresh(pointsCurrency, orderCurrency, now); err == nil && record.Rate > 0 {
-		return currency.OrderFXSnapshot{
-			Version:         currency.OrderFXSnapshotVersion,
-			BaseCurrency:    pointsCurrency,
-			OrderCurrency:   orderCurrency,
-			BaseToOrderRate: record.Rate,
-			Source:          nonEmptyFXSource(record.Source, "cached_exchange_rate"),
-			CapturedAt:      capturedAt,
-			RateFetchedAt:   snapshotTimePtr(record.FetchedAt),
-		}, nil
-	}
-	if record, err := exchangeRates.FindFresh(orderCurrency, pointsCurrency, now); err == nil && record.Rate > 0 {
-		inverseRate, inverseErr := invertExchangeRate(record.Rate)
-		if inverseErr != nil {
-			return currency.OrderFXSnapshot{}, inverseErr
-		}
-		return currency.OrderFXSnapshot{
-			Version:         currency.OrderFXSnapshotVersion,
-			BaseCurrency:    pointsCurrency,
-			OrderCurrency:   orderCurrency,
-			BaseToOrderRate: inverseRate,
-			Source:          nonEmptyFXSource(record.Source, "cached_exchange_rate_reverse"),
-			CapturedAt:      capturedAt,
-			RateFetchedAt:   snapshotTimePtr(record.FetchedAt),
-		}, nil
-	}
-
-	return currency.OrderFXSnapshot{}, fmt.Errorf(
-		"historical FX snapshot is unavailable for %s to %s points redemption",
-		pointsCurrency,
 		orderCurrency,
 	)
 }
@@ -885,23 +594,43 @@ func snapshotTimePtr(value time.Time) *time.Time {
 	return &value
 }
 
-func invertExchangeRate(rate float64) (float64, error) {
-	rateRat, err := exchangeRateRat(rate)
-	if err != nil {
-		return 0, err
+func exchangeRateDecimalRecord(record *currency.ExchangeRate) (string, error) {
+	if record == nil {
+		return "", errors.New("exchange rate is required")
+	}
+	value := strings.TrimSpace(record.RateDecimal)
+	if value == "" || strings.Contains(value, "/") {
+		return "", errors.New("exchange rate decimal is required")
+	}
+	rate, ok := new(big.Rat).SetString(value)
+	if !ok || rate.Sign() <= 0 {
+		return "", errors.New("invalid exchange rate decimal")
+	}
+	return value, nil
+}
+
+func invertExchangeRate(rate string) (string, error) {
+	rate = strings.TrimSpace(rate)
+	if rate == "" || strings.Contains(rate, "/") {
+		return "", errors.New("invalid exchange rate decimal")
+	}
+	rateRat, ok := new(big.Rat).SetString(rate)
+	if !ok || rateRat.Sign() <= 0 {
+		return "", errors.New("invalid exchange rate decimal")
 	}
 	inverse := new(big.Rat).Inv(rateRat)
-	value, _ := inverse.Float64()
-	if value <= 0 || math.IsInf(value, 0) || math.IsNaN(value) {
-		return 0, errors.New("inverse exchange rate overflows float64")
+	// Exchange-rate persistence is NUMERIC(30,15); keep the inversion decimal
+	// within that precision without passing through float64.
+	value := inverse.FloatString(15)
+	if parsed, parsedOK := new(big.Rat).SetString(value); !parsedOK || parsed.Sign() <= 0 {
+		return "", errors.New("inverse exchange rate is below decimal precision")
 	}
 	return value, nil
 }
 
 // calculateMemberDiscountMoney computes the member discount directly in the
-// order currency's minor units. DiscountRate remains a persistence field for
-// now, but is parsed into an exact rational at this boundary so no floating
-// point arithmetic participates in pricing.
+// order currency's minor units. The configured percentage is parsed into an
+// exact rational so no floating-point arithmetic participates in pricing.
 func (s *CheckoutService) calculateMemberDiscountMoney(
 	loyaltyRepo *repository.LoyaltyRepository,
 	userID uint,
@@ -920,117 +649,18 @@ func (s *CheckoutService) calculateMemberDiscountMoney(
 		return zero, nil
 	}
 	level, err := loyaltyRepo.FindMemberLevelByPoints(userLoyalty.TotalPoints)
-	if err != nil || level == nil || level.DiscountRate <= 0 {
+	if err != nil || level == nil || strings.TrimSpace(level.DiscountRateDecimal) == "" || level.DiscountRateDecimal == "0" {
 		return zero, nil
 	}
-	if level.DiscountRate >= 100 {
-		return subtotal, nil
-	}
-
-	rate, ok := new(big.Rat).SetString(strconv.FormatFloat(level.DiscountRate, 'f', -1, 64))
+	rate, ok := new(big.Rat).SetString(strings.TrimSpace(level.DiscountRateDecimal))
 	if !ok || rate.Sign() < 0 {
-		return domainmoney.Money{}, fmt.Errorf("invalid member discount rate %v", level.DiscountRate)
+		return domainmoney.Money{}, fmt.Errorf("invalid member discount rate %s", level.DiscountRateDecimal)
+	}
+	if rate.Cmp(big.NewRat(100, 1)) >= 0 {
+		return subtotal, nil
 	}
 	rate.Quo(rate, big.NewRat(100, 1))
 	return subtotal.MultiplyRat(rate)
-}
-
-// calculatePointsDiscountMoney keeps the checkout path in minor units.
-func (s *CheckoutService) calculatePointsDiscountMoney(
-	loyaltyRepo *repository.LoyaltyRepository,
-	userID uint,
-	requestedPoints int,
-	subtotal domainmoney.Money,
-	config *loyalty.ProgramConfig,
-	fxSnapshot currency.OrderFXSnapshot,
-) (int, domainmoney.Money, *uint, error) {
-	zero, err := domainmoney.New(0, subtotal.Currency().String())
-	if err != nil {
-		return 0, domainmoney.Money{}, nil, err
-	}
-	if requestedPoints <= 0 {
-		return 0, zero, nil, nil
-	}
-	if config == nil {
-		config, err = s.currentLoyaltyProgramConfig()
-		if err != nil {
-			return 0, domainmoney.Money{}, nil, err
-		}
-		if config == nil {
-			return 0, domainmoney.Money{}, nil, ErrLoyaltyProgramConfigNotFound
-		}
-	}
-	if !config.Enabled {
-		return 0, domainmoney.Money{}, nil, errors.New("point redemption is disabled")
-	}
-	pointsCurrency := currency.NormalizeCode(config.Currency)
-	if !currency.IsCatalogCode(pointsCurrency) {
-		return 0, domainmoney.Money{}, nil, errors.New("point redemption currency is invalid")
-	}
-	if config.ExchangeRatePoints <= 0 {
-		return 0, domainmoney.Money{}, nil, errors.New("point redemption exchange rate is invalid")
-	}
-	if currency.NormalizeCode(fxSnapshot.BaseCurrency) != pointsCurrency {
-		return 0, domainmoney.Money{}, nil, fmt.Errorf("point redemption FX base currency must be %s", pointsCurrency)
-	}
-	if err := fxSnapshot.Validate(subtotal.Currency().String()); err != nil {
-		return 0, domainmoney.Money{}, nil, fmt.Errorf("point redemption FX snapshot is invalid: %w", err)
-	}
-	userLoyalty, err := loyaltyRepo.FindUserLoyaltyByUserID(userID)
-	if err != nil || userLoyalty == nil {
-		return 0, domainmoney.Money{}, nil, fmt.Errorf("[CRITICAL] Insufficient points: available %d, requested %d", 0, requestedPoints)
-	}
-	if userLoyalty.AvailablePoints < requestedPoints {
-		return 0, domainmoney.Money{}, nil, fmt.Errorf("[CRITICAL] Insufficient points: available %d, requested %d", userLoyalty.AvailablePoints, requestedPoints)
-	}
-	rate, ok := new(big.Rat).SetString(strconv.FormatFloat(fxSnapshot.BaseToOrderRate, 'f', -1, 64))
-	if !ok || rate.Sign() <= 0 {
-		return 0, domainmoney.Money{}, nil, errors.New("point redemption FX rate is invalid")
-	}
-	calculate := func(points int64) (domainmoney.Money, error) {
-		value := new(big.Rat).SetFrac(big.NewInt(points), big.NewInt(int64(config.ExchangeRatePoints)))
-		value.Mul(value, rate)
-		return domainmoney.FromMajorRat(value, subtotal.Currency().String())
-	}
-	pointsToUse := requestedPoints
-	pointsDiscount, err := calculate(int64(pointsToUse))
-	if err != nil {
-		return 0, domainmoney.Money{}, nil, fmt.Errorf("calculate points discount: %w", err)
-	}
-	maxDiscount, err := subtotal.MultiplyRatio(1, 2)
-	if err != nil {
-		return 0, domainmoney.Money{}, nil, fmt.Errorf("calculate points discount cap: %w", err)
-	}
-	if pointsDiscount.AmountMinor() > maxDiscount.AmountMinor() {
-		// Find the largest whole-point redemption whose rounded minor-unit value
-		// remains within the 50% merchandise cap.
-		low, high := int64(0), int64(requestedPoints)
-		for low < high {
-			mid := low + (high-low+1)/2
-			candidate, candidateErr := calculate(mid)
-			if candidateErr != nil {
-				return 0, domainmoney.Money{}, nil, fmt.Errorf("calculate capped points discount: %w", candidateErr)
-			}
-			if candidate.AmountMinor() <= maxDiscount.AmountMinor() {
-				low = mid
-			} else {
-				high = mid - 1
-			}
-		}
-		pointsToUse = int(low)
-		pointsDiscount, err = calculate(low)
-		if err != nil {
-			return 0, domainmoney.Money{}, nil, fmt.Errorf("calculate capped points discount: %w", err)
-		}
-	}
-	return pointsToUse, pointsDiscount, programConfigID(config), nil
-}
-
-func (s *CheckoutService) currentLoyaltyProgramConfig() (*loyalty.ProgramConfig, error) {
-	if s.loyaltyProgram != nil {
-		return s.loyaltyProgram.GetActive()
-	}
-	return nil, ErrLoyaltyProgramConfigNotFound
 }
 
 func (s *CheckoutService) validateCouponWithFXMoney(
@@ -1121,7 +751,7 @@ func (s *CheckoutService) validateCouponWithFXMoney(
 		return nil, domainmoney.Money{}, err
 	}
 	couponCurrency := couponCurrencyForSnapshot(c, fxSnapshot)
-	minimumMoney, err := domainmoney.FromMajorFloat(c.MinAmount, couponCurrency)
+	minimumMoney, err := couponMoneyFromMinor(c.MinAmountMinor, couponCurrency)
 	if err != nil {
 		return nil, domainmoney.Money{}, fmt.Errorf("invalid coupon minimum amount: %w", err)
 	}
@@ -1137,7 +767,7 @@ func (s *CheckoutService) validateCouponWithFXMoney(
 	}
 	discount := zero
 	if c.Type == "percentage" {
-		rate, ok := new(big.Rat).SetString(strconv.FormatFloat(c.Value, 'f', -1, 64))
+		rate, ok := new(big.Rat).SetString(strings.TrimSpace(c.ValueRateDecimal))
 		if !ok || rate.Sign() < 0 {
 			return nil, domainmoney.Money{}, errors.New("invalid coupon percentage")
 		}
@@ -1146,8 +776,8 @@ func (s *CheckoutService) validateCouponWithFXMoney(
 		if err != nil {
 			return nil, domainmoney.Money{}, fmt.Errorf("calculate coupon percentage discount: %w", err)
 		}
-		if c.MaxDiscount > 0 {
-			maxMoney, maxErr := domainmoney.FromMajorFloat(c.MaxDiscount, couponCurrency)
+		if c.MaxDiscountMinor > 0 {
+			maxMoney, maxErr := couponMoneyFromMinor(c.MaxDiscountMinor, couponCurrency)
 			if maxErr != nil {
 				return nil, domainmoney.Money{}, fmt.Errorf("invalid coupon max discount: %w", maxErr)
 			}
@@ -1162,7 +792,7 @@ func (s *CheckoutService) validateCouponWithFXMoney(
 			}
 		}
 	} else {
-		discount, err = domainmoney.FromMajorFloat(c.Value, couponCurrency)
+		discount, err = couponMoneyFromMinor(c.ValueMinor, couponCurrency)
 		if err != nil {
 			return nil, domainmoney.Money{}, fmt.Errorf("invalid coupon value: %w", err)
 		}
@@ -1172,8 +802,8 @@ func (s *CheckoutService) validateCouponWithFXMoney(
 				return nil, domainmoney.Money{}, fmt.Errorf("convert coupon value: %w", err)
 			}
 		}
-		if c.MaxDiscount > 0 {
-			maxMoney, maxErr := domainmoney.FromMajorFloat(c.MaxDiscount, couponCurrency)
+		if c.MaxDiscountMinor > 0 {
+			maxMoney, maxErr := couponMoneyFromMinor(c.MaxDiscountMinor, couponCurrency)
 			if maxErr != nil {
 				return nil, domainmoney.Money{}, fmt.Errorf("invalid coupon max discount: %w", maxErr)
 			}
@@ -1196,6 +826,12 @@ func (s *CheckoutService) validateCouponWithFXMoney(
 
 func parseCouponProductIDs(raw string) (map[uint]struct{}, error) {
 	return parseCouponIDs(raw, "product IDs")
+}
+
+// couponMoneyFromMinor constructs canonical coupon amounts for transactional
+// arithmetic. Display major units never enter this path.
+func couponMoneyFromMinor(minor int64, code string) (domainmoney.Money, error) {
+	return domainmoney.New(minor, code)
 }
 
 func parseCouponIDs(raw, label string) (map[uint]struct{}, error) {
@@ -1347,47 +983,11 @@ func couponConversionRateRat(c *coupon.Coupon, snapshot currency.OrderFXSnapshot
 	if couponCurrency != base {
 		return nil, fmt.Errorf("coupon currency %s is incompatible with order FX base %s", couponCurrency, base)
 	}
-	rate, ok := new(big.Rat).SetString(strconv.FormatFloat(snapshot.BaseToOrderRate, 'f', -1, 64))
-	if !ok || rate.Sign() <= 0 {
+	rate, err := snapshot.RateRat()
+	if err != nil {
 		return nil, errors.New("coupon FX conversion rate is invalid")
 	}
 	return rate, nil
-}
-
-func (s *CheckoutService) validateGiftCard(
-	couponRepo *repository.CouponRepository,
-	code string,
-	userID uint,
-	orderCurrency string,
-	lockForUpdate bool,
-) (*coupon.GiftCard, error) {
-	var card *coupon.GiftCard
-	var err error
-	if lockForUpdate {
-		card, err = couponRepo.FindGiftCardByCodeForUpdate(code)
-	} else {
-		card, err = couponRepo.FindGiftCardByCode(code)
-	}
-	if err != nil {
-		return nil, errors.New("gift card not found")
-	}
-	if !card.IsValid() {
-		return nil, errors.New("gift card is not active or has no available balance")
-	}
-	if card.OwnerUserID != nil && *card.OwnerUserID != userID {
-		return nil, errors.New("gift card does not belong to this customer")
-	}
-	if currency.NormalizeCode(card.Currency) != currency.NormalizeCode(orderCurrency) {
-		return nil, errors.New("gift card currency does not match the order currency")
-	}
-	return card, nil
-}
-
-func minInt64(left, right int64) int64 {
-	if left < right {
-		return left
-	}
-	return right
 }
 
 func (s *CheckoutService) calculateTaxMoney(
@@ -1415,18 +1015,9 @@ func (s *CheckoutService) calculateTaxMoney(
 	if taxRate == nil {
 		return domainmoney.Money{}, errors.New("tax rate lookup returned no result")
 	}
-	rate, ok := new(big.Rat).SetString(strconv.FormatFloat(taxRate.Rate, 'f', -1, 64))
-	if !ok {
-		return domainmoney.Money{}, errors.New("tax rate is invalid")
+	tax, err := taxRate.CalculateTaxMoney(amount)
+	if err != nil {
+		return domainmoney.Money{}, fmt.Errorf("calculate tax from exact rate: %w", err)
 	}
-	rate.Quo(rate, big.NewRat(100, 1))
-	scale := int64(1)
-	if minorUnits, exists := currency.MinorUnits(currencyCode); exists {
-		for i := 0; i < minorUnits; i++ {
-			scale *= 10
-		}
-	}
-	baseMajor := new(big.Rat).SetFrac(big.NewInt(amount.AmountMinor()), big.NewInt(scale))
-	baseMajor.Mul(baseMajor, rate)
-	return domainmoney.FromMajorRat(baseMajor, currencyCode)
+	return tax, nil
 }

@@ -95,14 +95,14 @@ func TestOrderEvidencePackageAssemblerIncludesAttachmentHashAndCurrentTracking(t
 	require.NoError(t, err)
 	require.NotNil(t, assembly)
 	require.NotNil(t, assembly.Package)
-	require.NotNil(t, assembly.Shipment)
+	require.Len(t, assembly.Shipments, 1)
 	require.NotNil(t, assembly.TrackingContext)
 	require.Len(t, assembly.TrackingEvents, 1)
 
-	assert.Equal(t, "CURRENT-TRACKING", assembly.Shipment.TrackingNumber)
+	assert.Equal(t, "CURRENT-TRACKING", assembly.Shipments[0].TrackingNumber)
 	assert.Equal(t, "current shipment", assembly.TrackingEvents[0].Description)
-	assert.Equal(t, "CURRENT-TRACKING", assembly.TrackingContext.LatestDeliveryEvent.TrackingNumber)
-	assert.Equal(t, "https://carrier.example.test/current-pod.pdf", assembly.TrackingContext.ProviderPODURL)
+	assert.Equal(t, "CURRENT-TRACKING", assembly.TrackingContext.LatestDeliveryEvents[0].TrackingNumber)
+	assert.Equal(t, []string{"https://carrier.example.test/current-pod.pdf"}, assembly.TrackingContext.ProviderPODURLs)
 	assert.Contains(t, sourceHashes(assembly.Sources), attachmentSHA256)
 
 	payload, err := json.Marshal(assembly)
@@ -138,8 +138,8 @@ func TestOrderEvidencePackageAssemblerDoesNotUseTrackingEventsWithoutShipment(t 
 	require.NotNil(t, assembly.TrackingContext)
 
 	assert.Empty(t, assembly.TrackingEvents)
-	assert.Nil(t, assembly.TrackingContext.LatestDeliveryEvent)
-	assert.Empty(t, assembly.TrackingContext.ProviderPODURL)
+	assert.Empty(t, assembly.TrackingContext.LatestDeliveryEvents)
+	assert.Empty(t, assembly.TrackingContext.ProviderPODURLs)
 	assert.Contains(t, strings.Join(assembly.Warnings, "\n"), "no current tracking shipment")
 }
 

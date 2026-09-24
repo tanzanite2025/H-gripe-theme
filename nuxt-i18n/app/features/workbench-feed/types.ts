@@ -14,7 +14,7 @@ export interface WorkbenchTaggedProduct {
   variant_id?: number | null
   product_slug: string
   display_title: string
-  price: number
+  price_minor: number
   currency: string
   direct_action: 'detail_drawer'
   available: boolean

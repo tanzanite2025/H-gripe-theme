@@ -46,14 +46,14 @@ func (s *OrderEvidenceService) CreateInitialPackage(
 	}
 
 	pkg := &orderevidence.OrderEvidencePackage{
-		OrderID:               snapshot.OrderID,
-		SnapshotID:            snapshot.ID,
-		PackageVersion:        1,
-		Status:                orderevidence.PackageStatusIncomplete,
-		OrderTotalUSDSnapshot: snapshot.OrderTotalUSD,
-		IsHighValue:           snapshot.IsHighValue,
-		HasSpokeTensionQC:     snapshot.HasSpokeTensionQC,
-		SchemaVersion:         orderevidence.OrderEvidencePackageSchemaVersion,
+		OrderID:                    snapshot.OrderID,
+		SnapshotID:                 snapshot.ID,
+		PackageVersion:             1,
+		Status:                     orderevidence.PackageStatusIncomplete,
+		OrderTotalUSDSnapshotMinor: snapshot.OrderTotalUSDMinor,
+		IsHighValue:                snapshot.IsHighValue,
+		HasSpokeTensionQC:          snapshot.HasSpokeTensionQC,
+		SchemaVersion:              orderevidence.OrderEvidencePackageSchemaVersion,
 	}
 	items := buildInitialEvidenceItems(snapshot, payload, now)
 	if err := repos.OrderEvidence.CreatePackageWithItems(pkg, items); err != nil {

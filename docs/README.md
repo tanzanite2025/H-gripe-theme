@@ -11,6 +11,7 @@ This directory is a project-level documentation hub. It is not the source of tru
 - Backend deployment notes: `../go-backend/DEPLOYMENT.md`
 - Current production readiness status: `ops/production-readiness-status.md`
 - CDN/WAF and responsive image cache runbook: `../deployment/EDGE_SECURITY_RUNBOOK.md`
+- Cross-border email delivery and domain reputation guide: `ops/cross-border-email-delivery-and-domain-reputation-guide.md`
 - Backend module notes: `../go-backend/docs/`
 - Backend security follow-ups: `../go-backend/docs/SECURITY_FOLLOW_UPS.md`
 - Form Honeypot anti-spam architecture: `security/form-honeypot-anti-spam-architecture.md`
@@ -18,6 +19,8 @@ This directory is a project-level documentation hub. It is not the source of tru
 - Admin console guide: `../go-backend/web/admin/README.md`
 - Distributed locks, task state machine, and idempotency architecture: `design/distributed-lock-task-state-machine-idempotency-architecture.md`
 - Payment channel and risk architecture: `design/payment-channel-domain-architecture.md`
+- Internal payment-provider cost accounting and profit snapshots: `design/payment-provider-cost-accounting-architecture.md`
+- Payment gateway onboarding and multi-currency settlement guide: `design/payment-gateway-onboarding-and-settlement-guide.md`
 - Storefront hub: `../nuxt-i18n/docs/README.md`
 - Storefront active notes: `../nuxt-i18n/docs/notes/`
 - Storefront archive: `../nuxt-i18n/docs/archive/`
@@ -36,9 +39,21 @@ This directory is a project-level documentation hub. It is not the source of tru
 - Product template and configurable options architecture: `design/product-template-and-options-architecture.md`
 - Referral and loyalty reward system architecture: `design/referral-reward-system-longterm-architecture.md`
 - Shipping quote, route plan, and price-lock architecture: `design/shipping-quote-plan-architecture.md`
+- Multi-carrier logistics three-tier short-link architecture and carrier SPI: `design/cross-border-logistics-three-tier-architecture.md`
+- Yanwen small-packet cross-border logistics implementation specification: `design/yanwen-logistics-hub-integration-architecture.md`
+- 4PX bulky cross-border logistics and overseas warehouse implementation specification: `design/4px-logistics-hub-integration-architecture.md`
+- Admin dashboard command center and operational intelligence architecture: `design/admin-dashboard-command-center-architecture.md`
+- Money, pricing pipeline, display/read model, and Outbox implementation status: `design/money-pricing-display-outbox-status.md`
 - SEO architecture: `seo/SEO_SYSTEM_ARCHITECTURE.md`
 - E-commerce URL and SEO target architecture: `seo/ECOMMERCE_URL_ARCHITECTURE.md`
 - SEO documentation index: `seo/README.md`
+- URL management domain architecture, diagnostic fixes, and performance optimization spec: `design/url-management-domain-architecture-and-fix-guide.md`
+- Customer service workbench deep interaction bugs and UX/DX remediation spec: `design/customer-service-workbench-deep-bugs-and-interaction-spec.md`
+- Customer-service conversation lifecycle and inbox archive architecture: `design/customer-service-conversation-lifecycle-and-inbox-architecture.md`
+- Customer-service retention operations runbook: `ops/customer-service-retention-runbook.md`
+- Transactional email, template engine, and after-sales notification architecture: `design/transactional-email-and-notification-architecture.md`
+- Order status, domain-event, and email-template contract: `design/order-status-event-template-contract.md`
+- Transactional email and after-sales implementation status: `design/transactional-email-notification-status.md`
 
 ## Archive
 
@@ -61,4 +76,4 @@ Archived files are historical context only. They should not be used to claim pro
 - Prefer one source of truth for each area: backend docs under `go-backend/`, storefront notes under `nuxt-i18n/`, project-level docs under `docs/`.
 - Remove legacy WordPress compatibility docs unless they describe an explicit migration-only tool.
 
-Last updated: 2026-09-11.
+Last updated: 2026-09-21.

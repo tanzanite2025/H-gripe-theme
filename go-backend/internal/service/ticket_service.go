@@ -1,8 +1,14 @@
 package service
 
 import (
+	"commerce-platform/internal/domain/outbox"
 	"commerce-platform/internal/domain/ticket"
 	"commerce-platform/internal/repository"
+	"encoding/json"
+	"gorm.io/datatypes"
+	"gorm.io/gorm"
+	"strconv"
+	"time"
 )
 
 const customerServiceTicketCategory = "customer_service"
@@ -38,7 +44,36 @@ func NewTicketService(ticketRepo *repository.TicketRepository, userRepo *reposit
 func (s *TicketService) createTicket(t *ticket.Ticket) error {
 	t.Status = "open"
 	t.Priority = "medium"
-	return s.ticketRepo.CreateTicket(t)
+	if s.customerServiceRealtimeOutbox == nil || t.Category != customerServiceTicketCategory {
+		return s.ticketRepo.CreateTicket(t)
+	}
+	return s.ticketRepo.WithinTx(func(ticketRepo *repository.TicketRepository, tx *gorm.DB) error {
+		if err := ticketRepo.CreateTicket(t); err != nil {
+			return err
+		}
+		conversationID := ""
+		if t.ConversationID != nil {
+			conversationID = *t.ConversationID
+		}
+		event := NewCustomerServiceRealtimeEventWithIDAndAudience(
+			CustomerServiceConversationCreatedEventID(t.ID),
+			CustomerServiceEventConversationCreated,
+			t.ID,
+			conversationID,
+			CustomerServiceRealtimeActor{Kind: "system"},
+			CustomerServiceRealtimeAudienceBoth,
+			CustomerServiceConversationCreatedPayload{Status: t.Status, AssignedTo: t.AssignedTo},
+		)
+		payload, err := json.Marshal(event.Payload)
+		if err != nil {
+			return err
+		}
+		return s.customerServiceRealtimeOutbox.WithTx(tx).CreateEvent(&outbox.Event{
+			EventKey: event.EventID, EventType: outbox.EventTypeCustomerServiceRealtime,
+			AggregateType: outbox.AggregateTypeCustomerServiceConversation,
+			AggregateID:   strconv.FormatUint(uint64(t.ID), 10), Payload: datatypes.JSON(payload), AvailableAt: time.Now().UTC(),
+		})
+	})
 }
 
 func (s *TicketService) assignTicket(id, assignedTo uint) error {

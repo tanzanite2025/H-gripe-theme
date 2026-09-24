@@ -20,6 +20,30 @@ export const formatMoney = (amount: unknown, currency = ''): string => {
   }
 }
 
+// Risk snapshots expose exact minor-unit totals grouped by currency. Keep the
+// display conversion string-based so large int64 values never pass through a
+// lossy JavaScript Number.
+export const formatMinorAmountsByCurrency = (amounts: unknown): string => {
+  if (!amounts || typeof amounts !== 'object' || Array.isArray(amounts)) return '-'
+  const entries = Object.entries(amounts as Record<string, unknown>)
+    .map(([currency, value]) => [currency.trim().toUpperCase(), value] as const)
+    .filter(([currency, value]) => currency && /^-?\d+$/.test(String(value ?? '')))
+    .sort(([left], [right]) => left.localeCompare(right))
+  if (entries.length === 0) return '-'
+
+  return entries.map(([currency, value]) => {
+    const raw = String(value)
+    const negative = raw.startsWith('-')
+    const digits = (negative ? raw.slice(1) : raw).replace(/^0+(?=\d)/, '') || '0'
+    const minorUnits = ['JPY', 'KRW', 'CLP'].includes(currency) ? 0 : 2
+    const sign = negative && digits !== '0' ? '-' : ''
+    if (minorUnits === 0) return `${currency} ${sign}${digits}`
+    const padded = digits.padStart(minorUnits + 1, '0')
+    const split = padded.length - minorUnits
+    return `${currency} ${sign}${padded.slice(0, split)}.${padded.slice(split)}`
+  }).join(' · ')
+}
+
 export const isEvidenceSoon = (dateString: unknown): boolean => {
   if (!dateString) return false
   const due = new Date(dateString as string | number | Date).getTime()

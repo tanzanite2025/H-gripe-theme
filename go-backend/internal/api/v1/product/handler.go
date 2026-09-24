@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"commerce-platform/internal/api/middleware"
+	domainmoney "commerce-platform/internal/domain/money"
 	productdomain "commerce-platform/internal/domain/product"
 	"commerce-platform/internal/pkg/apierror"
 	"commerce-platform/internal/pkg/pagination"
@@ -100,11 +101,12 @@ func (h *Handler) ListProducts(c *gin.Context) {
 			featuredFilter = &featured
 		}
 		products, total, err = h.productService.SearchPublic(service.ProductSearchInput{
-			Locale:       locale,
-			Featured:     featuredFilter,
-			CategorySlug: categorySlug,
-			Page:         params.Page,
-			PageSize:     params.PageSize,
+			Locale:        locale,
+			Featured:      featuredFilter,
+			CategorySlug:  categorySlug,
+			PriceCurrency: publicContext.DisplayCurrency,
+			Page:          params.Page,
+			PageSize:      params.PageSize,
 		})
 	}
 	if err != nil {
@@ -234,10 +236,13 @@ func (h *Handler) resolvePublicShippingDetails(item productdomain.Product, publi
 		return nil
 	}
 
-	amount := plan.ShippingFee
+	amountDecimal := "0"
 	amountCurrency := plan.Currency
+	if feeMoney, feeErr := domainmoney.New(plan.ShippingFeeMinor, plan.Currency); feeErr == nil {
+		amountDecimal, _ = feeMoney.FormatMajor()
+	}
 	if plan.DisplayPrice != nil {
-		amount = plan.DisplayPrice.Amount
+		amountDecimal = plan.DisplayPrice.AmountDecimal
 		amountCurrency = plan.DisplayPrice.Currency
 	}
 	if strings.TrimSpace(amountCurrency) == "" {
@@ -245,12 +250,12 @@ func (h *Handler) resolvePublicShippingDetails(item productdomain.Product, publi
 	}
 
 	return &PublicProductShippingDetails{
-		Country:      country,
-		Amount:       amount,
-		Currency:     strings.ToUpper(strings.TrimSpace(amountCurrency)),
-		FreeShipping: plan.FreeShipping,
-		EtaMinDays:   plan.EtaMinDays,
-		EtaMaxDays:   plan.EtaMaxDays,
+		Country:       country,
+		AmountDecimal: amountDecimal,
+		Currency:      strings.ToUpper(strings.TrimSpace(amountCurrency)),
+		FreeShipping:  plan.FreeShipping,
+		EtaMinDays:    plan.EtaMinDays,
+		EtaMaxDays:    plan.EtaMaxDays,
 	}
 }
 

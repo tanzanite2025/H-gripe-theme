@@ -15,7 +15,7 @@ import (
 const (
 	refundLoyaltyClawbackSource         = "refund_loyalty_clawback"
 	refundLoyaltyClawbackReversalSource = "refund_loyalty_clawback_reversal"
-	refundLoyaltyPointsReturnSource     = "refund_loyalty_points_return"
+	refundLoyaltyCashRecoveryDebtSource = "refund_loyalty_cash_recovery_debt"
 )
 
 // prepareRefundLoyaltySettlementInTx reserves the points that can be clawed
@@ -39,11 +39,16 @@ func prepareRefundLoyaltySettlementInTx(
 		currencyCode = currencydomain.DefaultPrimaryCurrency
 	}
 
-	currentRequestedAmount := refund.RequestedAmount
-	if currentRequestedAmount <= 0 {
-		currentRequestedAmount = refund.Amount
+	currentRequestedMoney, err := refund.RequestedAmountMoney()
+	if err != nil || currentRequestedMoney.AmountMinor() <= 0 || currentRequestedMoney.Currency().String() != currencyCode {
+		// Historical pending rows may not have carried Currency yet. Resolve
+		// their legacy projection only at this boundary, then keep all further
+		// calculations in Money.
+		currentRequestedMoney, err = refund.RequestedAmountMoney()
+		if err != nil || currentRequestedMoney.AmountMinor() <= 0 {
+			currentRequestedMoney, err = refund.AmountMoney()
+		}
 	}
-	currentRequestedMoney, err := parseRefundMoney(currentRequestedAmount, currencyCode)
 	if err != nil {
 		return fmt.Errorf("invalid current refund amount for loyalty settlement: %w", err)
 	}
@@ -51,11 +56,11 @@ func prepareRefundLoyaltySettlementInTx(
 		return errors.New("refund amount must be greater than zero for loyalty settlement")
 	}
 
-	previousRequestedAmount, err := repos.Payment.SumRefundRequestedAmountByOrderID(orderRecord.ID, "pending", "completed")
+	previousRequestedAmountMinor, err := repos.Payment.SumRefundRequestedAmountMinorByOrderID(orderRecord.ID, "pending", "completed")
 	if err != nil {
 		return err
 	}
-	previousRequestedMoney, err := parseRefundMoney(previousRequestedAmount, currencyCode)
+	previousRequestedMoney, err := domainmoney.New(previousRequestedAmountMinor, currencyCode)
 	if err != nil {
 		return fmt.Errorf("invalid previous refund amount for loyalty settlement: %w", err)
 	}
@@ -72,7 +77,7 @@ func prepareRefundLoyaltySettlementInTx(
 		previousRequestedMoney = zeroRefundMoney(currencyCode)
 	}
 
-	orderRefundBaseMoney, err := parseRefundMoney(orderRecord.TotalAmount, currencyCode)
+	orderRefundBaseMoney, err := orderRecord.TotalMoney()
 	if err != nil {
 		return fmt.Errorf("invalid order refund base amount: %w", err)
 	}
@@ -107,45 +112,18 @@ func prepareRefundLoyaltySettlementInTx(
 	// excluded: they are settled in their own ledger flow and must never
 	// change the cash amount returned by the payment provider.
 
-	previousClawbackPoints, err := repos.Payment.SumRefundLoyaltyPointsClawbackByOrderID(orderRecord.ID, "pending", "completed")
+	previousSettledPoints, err := repos.Payment.SumRefundLoyaltyPointsSettledByOrderID(orderRecord.ID, "pending", "completed")
 	if err != nil {
 		return err
 	}
-	previousClawbackPoints -= refund.LoyaltyPointsClawback
-	if previousClawbackPoints < 0 {
-		previousClawbackPoints = 0
+	previousSettledPoints -= refund.LoyaltyPointsClawback + refund.LoyaltyPointsDebt
+	if previousSettledPoints < 0 {
+		previousSettledPoints = 0
 	}
 	targetClawbackPoints := proportionalRefundPoints(earnedPoints, cumulativeRequestedMoney, orderRefundBaseMoney)
-	pointsToReserve := targetClawbackPoints - previousClawbackPoints
+	pointsToReserve := targetClawbackPoints - previousSettledPoints
 	if pointsToReserve < 0 {
 		pointsToReserve = 0
-	}
-
-	previousReturnedPoints, err := repos.Payment.SumRefundLoyaltyPointsReturnedByOrderID(orderRecord.ID, "pending", "completed")
-	if err != nil {
-		return err
-	}
-	previousReturnedPoints -= refund.LoyaltyPointsReturned
-	if previousReturnedPoints < 0 {
-		previousReturnedPoints = 0
-	}
-	// A refund that covers the entire cash amount actually paid for the order
-	// returns every point used on that order. Points are a separate tender and
-	// must not be prorated against the merchandise total when the cash leg is
-	// fully refunded. Partial cash refunds retain the proportional fallback.
-	orderCashMoney, cashErr := orderRecord.PaymentMoney()
-	if cashErr != nil || currencydomain.NormalizeCode(string(orderCashMoney.Currency())) != currencyCode || orderCashMoney.AmountMinor() <= 0 {
-		orderCashMoney = orderRefundBaseMoney
-	}
-	var targetReturnedPoints int
-	if cumulativeRequestedMoney.AmountMinor() >= orderCashMoney.AmountMinor() {
-		targetReturnedPoints = orderRecord.PointsUsed
-	} else {
-		targetReturnedPoints = proportionalRefundPoints(orderRecord.PointsUsed, cumulativeRequestedMoney, orderCashMoney)
-	}
-	pointsToReturn := targetReturnedPoints - previousReturnedPoints
-	if pointsToReturn < 0 {
-		pointsToReturn = 0
 	}
 
 	userLoyalty, err := repos.Loyalty.FindOrCreateUserLoyaltyForUpdate(orderRecord.UserID)
@@ -161,48 +139,11 @@ func prepareRefundLoyaltySettlementInTx(
 	}
 	missingPoints := pointsToReserve - reservedPoints
 
-	var programConfigID *uint
-	cashDeduction := 0.0
-	var cashDeductionMoney domainmoney.Money
-	if missingPoints > 0 && refund.Amount > 0 {
-		if repos.Program == nil {
-			return errors.New("loyalty program repository is required to value unrecovered refund points")
-		}
-		config, err := repos.Program.FindActive()
-		if err != nil {
-			if repository.IsRecordNotFound(err) {
-				return errors.New("active loyalty program is required to value unrecovered refund points")
-			}
-			return err
-		}
-		if config.ExchangeRatePoints <= 0 {
-			return errors.New("loyalty exchange rate must be greater than zero")
-		}
-		programConfigID = &config.ID
-		cashMajor := new(big.Rat).SetFrac(big.NewInt(int64(missingPoints)), big.NewInt(int64(config.ExchangeRatePoints)))
-		cashMoney, err := domainmoney.FromMajorRat(cashMajor, currencyCode)
-		if err != nil {
-			return fmt.Errorf("invalid loyalty cash deduction: %w", err)
-		}
-		refundMoney, err := parseRefundMoney(refund.Amount, currencyCode)
-		if err != nil {
-			return fmt.Errorf("invalid refund amount for loyalty settlement: %w", err)
-		}
-		if cashMoney.AmountMinor() >= refundMoney.AmountMinor() {
-			cashAmount, _ := cashMoney.MajorFloat()
-			refundAmount, _ := refundMoney.MajorFloat()
-			return fmt.Errorf(
-				"loyalty cash recovery %.2f consumes the full gateway refund %.2f",
-				cashAmount,
-				refundAmount,
-			)
-		}
-		cashDeduction, err = cashMoney.MajorFloat()
-		if err != nil {
-			return fmt.Errorf("format loyalty cash deduction: %w", err)
-		}
-		cashDeductionMoney = cashMoney
-	}
+	// Earned points are a loyalty balance, never a payment tender. If some
+	// earned points were already spent, record the unrecovered amount as a
+	// points debt; do not convert it into a cash deduction or consult an
+	// exchange-rate configuration.
+	var loyaltyPointsDebt = missingPoints
 
 	if reservedPoints > 0 {
 		if _, err := repos.Loyalty.AdjustUserPointsInCurrentTxWithConfig(
@@ -212,7 +153,7 @@ func prepareRefundLoyaltySettlementInTx(
 			refundLoyaltyClawbackSource,
 			refund.ID,
 			fmt.Sprintf("Reserved %d earned points for refund #%d clawback", reservedPoints, refund.ID),
-			programConfigID,
+			nil,
 		); err != nil {
 			return fmt.Errorf("failed to reserve refund loyalty clawback: %w", err)
 		}
@@ -220,25 +161,7 @@ func prepareRefundLoyaltySettlementInTx(
 
 	refund.LoyaltySettlementPrepared = true
 	refund.LoyaltyPointsClawback = reservedPoints
-	refund.LoyaltyPointsReturned = pointsToReturn
-	refund.LoyaltyCashDeductionAmount = cashDeduction
-	if cashDeduction > 0 {
-		refundMoney, err := parseRefundMoney(refund.Amount, currencyCode)
-		if err != nil {
-			return fmt.Errorf("invalid refund amount for loyalty deduction: %w", err)
-		}
-		remainingMoney, err := refundMoney.Subtract(cashDeductionMoney)
-		if err != nil {
-			return fmt.Errorf("subtract loyalty cash deduction: %w", err)
-		}
-		refund.Amount, err = remainingMoney.MajorFloat()
-		if err != nil {
-			return fmt.Errorf("format loyalty-adjusted refund amount: %w", err)
-		}
-		if refund.Amount <= 0 {
-			return errors.New("loyalty settlement leaves no gateway refund amount")
-		}
-	}
+	refund.LoyaltyPointsDebt = loyaltyPointsDebt
 	return repos.Payment.UpdateRefund(refund)
 }
 
@@ -271,11 +194,11 @@ func finalizeRefundLoyaltySettlementInTx(
 		}
 	}
 
-	if refund.LoyaltyPointsReturned > 0 {
+	if refund.LoyaltyPointsDebt > 0 {
 		count, err := repos.Loyalty.CountTransactionsByUserTypeSourceAndSourceID(
 			orderRecord.UserID,
 			"refund",
-			refundLoyaltyPointsReturnSource,
+			refundLoyaltyCashRecoveryDebtSource,
 			refund.ID,
 		)
 		if err != nil {
@@ -284,14 +207,14 @@ func finalizeRefundLoyaltySettlementInTx(
 		if count == 0 {
 			if _, err := repos.Loyalty.AdjustUserPointsInCurrentTxWithConfig(
 				orderRecord.UserID,
-				refund.LoyaltyPointsReturned,
+				-refund.LoyaltyPointsDebt,
 				"refund",
-				refundLoyaltyPointsReturnSource,
+				refundLoyaltyCashRecoveryDebtSource,
 				refund.ID,
-				fmt.Sprintf("Returned %d points used on refund #%d", refund.LoyaltyPointsReturned, refund.ID),
+				fmt.Sprintf("Recorded %d unrecovered earned points as refund debt #%d", refund.LoyaltyPointsDebt, refund.ID),
 				nil,
 			); err != nil {
-				return fmt.Errorf("failed to return points used on refund: %w", err)
+				return fmt.Errorf("failed to record refund loyalty points debt: %w", err)
 			}
 		}
 	}
@@ -340,26 +263,16 @@ func releaseRefundLoyaltyReservationInTx(
 	if currencyCode == "" {
 		currencyCode = currencydomain.DefaultPrimaryCurrency
 	}
-	refundMoney, err := parseRefundMoney(refund.Amount, currencyCode)
+	refundMoney, err := refund.AmountMoney()
+	if err != nil || refundMoney.Currency().String() != currencyCode {
+		refundMoney, err = refund.AmountMoney()
+	}
 	if err != nil {
 		return fmt.Errorf("invalid refund amount for loyalty release: %w", err)
 	}
-	cashMoney, err := parseRefundMoney(refund.LoyaltyCashDeductionAmount, currencyCode)
-	if err != nil {
-		return fmt.Errorf("invalid loyalty cash deduction for release: %w", err)
-	}
-	restoredMoney, err := refundMoney.Add(cashMoney)
-	if err != nil {
-		return fmt.Errorf("restore loyalty cash deduction: %w", err)
-	}
-	refund.Amount, err = restoredMoney.MajorFloat()
-	if err != nil {
-		return fmt.Errorf("format restored refund amount: %w", err)
-	}
 	refund.LoyaltySettlementPrepared = false
 	refund.LoyaltyPointsClawback = 0
-	refund.LoyaltyPointsReturned = 0
-	refund.LoyaltyCashDeductionAmount = 0
+	refund.LoyaltyPointsDebt = 0
 	return repos.Payment.UpdateRefund(refund)
 }
 

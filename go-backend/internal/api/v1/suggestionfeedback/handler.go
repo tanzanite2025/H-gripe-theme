@@ -2,6 +2,7 @@ package suggestionfeedback
 
 import (
 	domainsuggestion "commerce-platform/internal/domain/suggestionfeedback"
+	"commerce-platform/internal/pkg/honeypot"
 	"commerce-platform/internal/pkg/storage"
 	"commerce-platform/internal/pkg/upload"
 	"commerce-platform/internal/service"
@@ -27,6 +28,7 @@ type Handler struct {
 	suggestionService *service.SuggestionFeedbackService
 	storageService    storage.StorageService
 	mediaService      *service.MediaService
+	honeypotPolicy    honeypot.Policy
 	quotaMu           sync.Mutex
 	quotas            map[uint]*suggestionUploadQuota
 }
@@ -45,6 +47,7 @@ type createSuggestionRequest struct {
 	ProductCategory string                        `json:"productCategory"`
 	RequestType     string                        `json:"requestType"`
 	Message         string                        `json:"message" binding:"required"`
+	CompanyTaxID    string                        `json:"company_tax_id"`
 	Attachments     []domainsuggestion.Attachment `json:"attachments"`
 	ThreadKey       string                        `json:"threadKey"`
 }
@@ -58,7 +61,14 @@ func NewHandler(suggestionService *service.SuggestionFeedbackService, storageSer
 		suggestionService: suggestionService,
 		storageService:    storageService,
 		mediaService:      mediaService,
+		honeypotPolicy:    honeypot.NewPolicy(honeypot.ModeEnforce),
 		quotas:            make(map[uint]*suggestionUploadQuota),
+	}
+}
+
+func (h *Handler) ConfigureHoneypot(policy honeypot.Policy) {
+	if h != nil {
+		h.honeypotPolicy = policy
 	}
 }
 
@@ -173,6 +183,13 @@ func (h *Handler) Create(c *gin.Context) {
 	var req createSuggestionRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_payload", "message": err.Error()})
+		return
+	}
+	if h.honeypotPolicy.ShouldDrop(req.CompanyTaxID, "suggestion_feedback", "company_tax_id", c.Request.URL.Path) {
+		c.JSON(http.StatusCreated, gin.H{
+			"status":  "new",
+			"message": "Feedback submitted. Customer service will review it soon.",
+		})
 		return
 	}
 

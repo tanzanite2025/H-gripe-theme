@@ -13,7 +13,6 @@ Domain files must be named after the business fact, aggregate, or contract they 
 - `shipping_template.go`
 - `tracking.go`
 - `warranty_claim.go`
-- `gift_card.go`
 - `member_level.go`
 - `ticket_message.go`
 
@@ -28,7 +27,7 @@ Large domains now use multiple files by responsibility:
 - `product`: product, media, variants, specs, product specification templates, attributes, cart, response contracts.
 - `shipping`: templates, carrier services, tracking, zones, packaging rules, template bindings.
 - `warranty`: order-backed warranty claims and warranty service records.
-- `coupon`: coupons and gift cards are separate facts.
+- `coupon`: coupons, usage records, and validation rules.
 - `loyalty`: transactions, check-ins, referrals, member levels, user balances.
 - `ticket`: ticket, ticket message, auto-reply rule.
 

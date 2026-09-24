@@ -26,7 +26,7 @@
             </div>
           </TableCell>
           <TableCell class="tabular-nums">{{ level.min_points }} - {{ level.max_points }}</TableCell>
-          <TableCell class="text-right tabular-nums">{{ formatRate(level.discount_rate) }}</TableCell>
+          <TableCell class="text-right tabular-nums">{{ formatRate(level.discount_rate_decimal) }}</TableCell>
  <TableCell class="max-w-72 truncate text-muted-foreground">{{ level.benefits || '-'}}</TableCell>
           <TableCell class="text-right tabular-nums">{{ level.sort_order || 0 }}</TableCell>
           <TableCell class="text-right">
@@ -82,7 +82,7 @@ interface MemberLevel {
   color?: string
   min_points?: number | string
   max_points?: number | string
-  discount_rate?: number | string
+  discount_rate_decimal?: string
   benefits?: string
   sort_order?: number | string
 }

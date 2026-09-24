@@ -412,26 +412,27 @@ const save = async (): Promise<void> => {
 }
 
 const statItems = computed(() => {
-  const currentProfiles = items.value
-    .map((entry) => profileFor(entry))
-    .filter(Boolean) as StorefrontURLSearchProfile[]
-  const configuredCount = currentProfiles.length
-  const enabledCount = currentProfiles.filter((profile) => profile.enabled).length
-  const keywordCount = currentProfiles.reduce((total, profile) => total + profile.keywords.length, 0)
+  // Profiles are loaded for the complete selected locale. Do not derive
+  // site-level metrics from the paginated table, otherwise every page would
+  // report a different configured/missing count.
+  const configuredCount = profiles.value.length
+  const enabledCount = profiles.value.filter((profile) => profile.enabled).length
+  const keywordCount = profiles.value.reduce((total, profile) => total + profile.keywords.length, 0)
+  const missingCount = Math.max(0, stats.value.total - configuredCount)
 
   return [
     { key: 'total', label: 'URL 总量', value: stats.value.total, icon: RefreshCw, tone: 'blue' },
     { key: 'configured', label: '已配置', value: configuredCount, icon: PencilLine, tone: configuredCount ? 'green' : 'gray' },
     { key: 'enabled', label: '已启用', value: enabledCount, icon: RefreshCw, tone: enabledCount ? 'green' : 'gray' },
     { key: 'keywords', label: '关键词', value: keywordCount, icon: PencilLine, tone: keywordCount ? 'amber' : 'gray' },
-    { key: 'missing', label: '未配置', value: items.value.length - configuredCount, icon: RefreshCw, tone: (items.value.length - configuredCount) ? 'amber' : 'gray' },
+    { key: 'missing', label: '未配置', value: missingCount, icon: RefreshCw, tone: missingCount ? 'amber' : 'gray' },
   ]
 })
 
 onMounted(() => {
   void (async () => {
     await supportedLanguages.fetchLanguages()
-    if (filters.locale === 'all' && supportedLanguages.defaultLocale.value) {
+    if ((!filters.locale || filters.locale === 'all') && supportedLanguages.defaultLocale.value) {
       filters.locale = supportedLanguages.defaultLocale.value
     }
     await reloadAll()

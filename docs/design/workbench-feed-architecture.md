@@ -126,7 +126,7 @@ TaggedProduct
 ├── variant_id: uint?           // optional logical reference
 ├── product_slug: string        // current detail-sheet lookup key
 ├── display_title: string       // snapshot used on the tag
-├── price: decimal               // snapshot used on the tag
+├── price_minor: int64           // snapshot in the currency's smallest unit
 ├── currency: string
 ├── direct_action: detail_drawer
 └── available: bool              // latest catalog state at write time

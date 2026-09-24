@@ -53,8 +53,8 @@ export function useQuickBuySelectionState(
     const productId = Number(item.productId)
     const variantId = item.variantId ? Number(item.variantId) : null
     const unitPrice = Number(item.unitPriceSnapshot)
-      || snapshotNumber(variantSnapshot, 'sale_price', 'price')
-      || snapshotNumber(productSnapshot, 'sale_price', 'price')
+      || snapshotNumber(variantSnapshot, 'sale_price_decimal', 'price_decimal')
+      || snapshotNumber(productSnapshot, 'sale_price_decimal', 'price_decimal')
 
     return {
       productId,

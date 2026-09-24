@@ -13,7 +13,6 @@ import (
 	"commerce-platform/internal/pkg/antifraud"
 	"commerce-platform/internal/pkg/config"
 	appLogger "commerce-platform/internal/pkg/logger"
-	pgateway "commerce-platform/internal/pkg/payment"
 
 	"go.uber.org/zap"
 )
@@ -27,7 +26,10 @@ const (
 const (
 	paymentThreeDSBillingShippingMismatchReason                    = "avs_billing_shipping_mismatch_high_value"
 	paymentThreeDSBillingShippingMismatchCurrencyUnavailableReason = "avs_billing_shipping_mismatch_currency_conversion_unavailable"
-	paymentThreeDSBillingShippingMismatchThresholdUSD              = 800.0
+	paymentThreeDSHighValueForce3DSReason                          = "high_value_force_3ds"
+	paymentThreeDSHighValueCurrencyUnavailableReason               = "high_value_force_3ds_currency_conversion_unavailable"
+	paymentThreeDSBillingShippingMismatchThresholdMinor            = int64(80000)
+	paymentThreeDSHighValueForce3DSThresholdUSDMinor               = int64(50000)
 )
 
 type paymentThreeDSVisitorAssessor interface {
@@ -66,14 +68,10 @@ type PaymentThreeDSPolicyService struct {
 }
 
 type PaymentThreeDSDecisionInput struct {
-	Provider string
-	UserID   uint
-	OrderID  uint
-	// AmountMoney is the canonical transactional amount. Amount remains a
-	// transport fallback for callers that have not yet materialized Money at
-	// their boundary.
+	Provider          string
+	UserID            uint
+	OrderID           uint
 	AmountMoney       domainmoney.Money
-	Amount            float64
 	Currency          string
 	BaseMode          string
 	IPAddress         string
@@ -97,13 +95,13 @@ type PaymentThreeDSDecision struct {
 }
 
 type PaymentThreeDSConfigurationView struct {
-	AdaptiveEnabled                                 bool    `json:"adaptive_enabled"`
-	LowRiskMaxAmount                                float64 `json:"low_risk_max_amount"`
-	AVSBillingShippingMismatchHighValueThresholdUSD float64 `json:"avs_billing_shipping_mismatch_high_value_threshold_usd"`
-	TrustedPaidOrders                               int     `json:"trusted_paid_orders"`
-	VisitorRiskLookbackDays                         int     `json:"visitor_risk_lookback_days"`
-	StepUpRiskScore                                 int     `json:"step_up_risk_score"`
-	ChallengeRiskScore                              int     `json:"challenge_risk_score"`
+	AdaptiveEnabled                                   bool  `json:"adaptive_enabled"`
+	LowRiskMaxAmountMinor                             int64 `json:"low_risk_max_amount_minor"`
+	AVSBillingShippingMismatchHighValueThresholdMinor int64 `json:"avs_billing_shipping_mismatch_high_value_threshold_minor"`
+	TrustedPaidOrders                                 int   `json:"trusted_paid_orders"`
+	VisitorRiskLookbackDays                           int   `json:"visitor_risk_lookback_days"`
+	StepUpRiskScore                                   int   `json:"step_up_risk_score"`
+	ChallengeRiskScore                                int   `json:"challenge_risk_score"`
 }
 
 func NewPaymentThreeDSPolicyService(
@@ -154,9 +152,9 @@ func (s *PaymentThreeDSPolicyService) PolicyView() PaymentThreeDSConfigurationVi
 	}
 	cfg := normalizePaymentThreeDSConfig(s.cfg)
 	return PaymentThreeDSConfigurationView{
-		AdaptiveEnabled:  cfg.AdaptiveEnabled,
-		LowRiskMaxAmount: cfg.LowRiskMaxAmount,
-		AVSBillingShippingMismatchHighValueThresholdUSD: cfg.AVSBillingShippingMismatchHighValueThresholdUSD,
+		AdaptiveEnabled:       cfg.AdaptiveEnabled,
+		LowRiskMaxAmountMinor: cfg.LowRiskMaxAmountMinor,
+		AVSBillingShippingMismatchHighValueThresholdMinor: cfg.AVSBillingShippingMismatchHighValueThresholdMinor,
 		TrustedPaidOrders:       cfg.TrustedPaidOrders,
 		VisitorRiskLookbackDays: cfg.VisitorRiskLookback,
 		StepUpRiskScore:         cfg.StepUpRiskScore,
@@ -191,6 +189,9 @@ func (s *PaymentThreeDSPolicyService) Decide(ctx context.Context, input PaymentT
 	avsApplied := false
 	if s != nil {
 		avsApplied = s.applyBillingShippingMismatchHighValueRule(&decision, input)
+	}
+	if s != nil {
+		s.applyHighValueForce3DSRule(&decision, input)
 	}
 	if s == nil || !s.cfg.AdaptiveEnabled {
 		decision.Reasons = append(decision.Reasons, "adaptive_3ds_disabled")
@@ -253,6 +254,48 @@ func (s *PaymentThreeDSPolicyService) Decide(ctx context.Context, input PaymentT
 		decision.Reasons = append(decision.Reasons, "stripe_automatic_sca_handling")
 	}
 	return decision
+}
+
+// applyHighValueForce3DSRule is the application-side backstop for Stripe's
+// Radar rule `Request 3D Secure if :amount_in_usd: > 500`. Keeping this rule
+// here protects against dashboard drift and ensures the amount evaluated is
+// the same immutable provider settlement amount sent to Stripe.
+func (s *PaymentThreeDSPolicyService) applyHighValueForce3DSRule(
+	decision *PaymentThreeDSDecision,
+	input PaymentThreeDSDecisionInput,
+) {
+	if s == nil || decision == nil {
+		return
+	}
+	if !strings.EqualFold(strings.TrimSpace(input.Provider), "stripe") {
+		return
+	}
+	amount, err := paymentThreeDSInputMoney(input)
+	if err != nil || amount.AmountMinor() <= 0 {
+		return
+	}
+	amountUSD := amount
+	currencyCode := amount.Currency().String()
+	if currencyCode != "USD" {
+		if s.currency == nil {
+			s.applyHighValueForce3DS(decision, paymentThreeDSHighValueCurrencyUnavailableReason)
+			return
+		}
+		amountUSD, err = s.currency.ConvertMoneyStrict(amount, "USD")
+		if err != nil {
+			s.applyHighValueForce3DS(decision, paymentThreeDSHighValueCurrencyUnavailableReason)
+			return
+		}
+	}
+	if amountUSD.Currency().String() == "USD" && amountUSD.AmountMinor() > paymentThreeDSHighValueForce3DSThresholdUSDMinor {
+		s.applyHighValueForce3DS(decision, paymentThreeDSHighValueForce3DSReason)
+	}
+}
+
+func (s *PaymentThreeDSPolicyService) applyHighValueForce3DS(decision *PaymentThreeDSDecision, reason string) {
+	decision.Mode = strongerThreeDSMode(decision.Mode, PaymentThreeDSModeAny)
+	decision.ExemptionCandidate = false
+	decision.Reasons = append(decision.Reasons, reason)
 }
 
 func (s *PaymentThreeDSPolicyService) evaluateManualProtection(
@@ -328,9 +371,9 @@ func (s *PaymentThreeDSPolicyService) alertPaymentRiskFailOpen(ctx context.Conte
 		fallbackAction = "step_up_3ds_any"
 	)
 
-	loggedAmount := input.Amount
+	loggedAmount := "0"
 	if amountMoney, amountErr := paymentThreeDSInputMoney(input); amountErr == nil {
-		if value, valueErr := amountMoney.MajorFloat(); valueErr == nil {
+		if value, valueErr := amountMoney.FormatMajor(); valueErr == nil {
 			loggedAmount = value
 		}
 	}
@@ -346,7 +389,7 @@ func (s *PaymentThreeDSPolicyService) alertPaymentRiskFailOpen(ctx context.Conte
 		zap.String("fallback_action", fallbackAction),
 		zap.Uint("order_id", input.OrderID),
 		zap.Uint("user_id", input.UserID),
-		zap.Float64("amount", loggedAmount),
+		zap.String("amount_decimal", loggedAmount),
 		zap.String("currency", strings.ToUpper(strings.TrimSpace(input.Currency))),
 	)
 	if s == nil || s.failOpenAlerts == nil {
@@ -410,11 +453,8 @@ func (s *PaymentThreeDSPolicyService) applyBillingShippingMismatchHighValueRule(
 	}
 	amountMoney, amountErr := paymentThreeDSInputMoney(input)
 	if amountErr != nil {
-		if input.Amount > 0 {
-			s.applyBillingShippingMismatchChallenge(decision, paymentThreeDSBillingShippingMismatchCurrencyUnavailableReason)
-			return true
-		}
-		return false
+		s.applyBillingShippingMismatchChallenge(decision, paymentThreeDSBillingShippingMismatchCurrencyUnavailableReason)
+		return true
 	}
 	if amountMoney.AmountMinor() <= 0 {
 		return false
@@ -436,8 +476,7 @@ func (s *PaymentThreeDSPolicyService) applyBillingShippingMismatchHighValueRule(
 			return true
 		}
 	}
-	threshold, thresholdErr := domainmoney.FromMajorFloat(s.cfg.AVSBillingShippingMismatchHighValueThresholdUSD, "USD")
-	if thresholdErr != nil || amountUSD.AmountMinor() <= threshold.AmountMinor() {
+	if s.cfg.AVSBillingShippingMismatchHighValueThresholdMinor <= 0 || amountUSD.Currency().String() != "USD" || amountUSD.AmountMinor() <= s.cfg.AVSBillingShippingMismatchHighValueThresholdMinor {
 		return false
 	}
 
@@ -536,34 +575,30 @@ func (s *PaymentThreeDSPolicyService) lowRiskExemptionCandidate(
 }
 
 func (s *PaymentThreeDSPolicyService) lowRiskAmountQualified(input PaymentThreeDSDecisionInput) bool {
-	if s == nil || s.cfg.LowRiskMaxAmount <= 0 {
+	if s == nil || s.cfg.LowRiskMaxAmountMinor <= 0 {
 		return false
 	}
 	amount, err := paymentThreeDSInputMoney(input)
 	if err != nil {
 		return false
 	}
-	limit, err := domainmoney.FromMajorFloat(s.cfg.LowRiskMaxAmount, amount.Currency().String())
+	limit, err := domainmoney.New(s.cfg.LowRiskMaxAmountMinor, amount.Currency().String())
 	return err == nil && amount.AmountMinor() <= limit.AmountMinor()
 }
 
 func paymentThreeDSInputMoney(input PaymentThreeDSDecisionInput) (domainmoney.Money, error) {
-	if input.AmountMoney.Validate() == nil {
-		return input.AmountMoney, nil
+	if err := input.AmountMoney.Validate(); err != nil {
+		return domainmoney.Money{}, err
 	}
-	code := strings.ToUpper(strings.TrimSpace(input.Currency))
-	if code == "" {
-		code = "USD"
-	}
-	return domainmoney.FromMajorFloat(input.Amount, code)
+	return input.AmountMoney, nil
 }
 
 func normalizePaymentThreeDSConfig(cfg config.PaymentThreeDSConfig) config.PaymentThreeDSConfig {
-	if cfg.LowRiskMaxAmount < 0 {
-		cfg.LowRiskMaxAmount = 0
+	if cfg.LowRiskMaxAmountMinor < 0 {
+		cfg.LowRiskMaxAmountMinor = 0
 	}
-	if cfg.AVSBillingShippingMismatchHighValueThresholdUSD <= 0 {
-		cfg.AVSBillingShippingMismatchHighValueThresholdUSD = paymentThreeDSBillingShippingMismatchThresholdUSD
+	if cfg.AVSBillingShippingMismatchHighValueThresholdMinor <= 0 {
+		cfg.AVSBillingShippingMismatchHighValueThresholdMinor = paymentThreeDSBillingShippingMismatchThresholdMinor
 	}
 	if cfg.TrustedPaidOrders <= 0 {
 		cfg.TrustedPaidOrders = 1
@@ -584,7 +619,17 @@ func normalizePaymentThreeDSConfig(cfg config.PaymentThreeDSConfig) config.Payme
 }
 
 func normalizePaymentThreeDSMode(value string) string {
-	return pgateway.NormalizeThreeDSecureMode(value)
+	switch strings.ToLower(strings.TrimSpace(value)) {
+	case PaymentThreeDSModeAny:
+		return PaymentThreeDSModeAny
+	case PaymentThreeDSModeChallenge:
+		// Keep the internal risk decision distinct from Stripe's transport
+		// value. The Stripe adapter maps this mode to its supported "any"
+		// request_three_d_secure value.
+		return PaymentThreeDSModeChallenge
+	default:
+		return PaymentThreeDSModeAutomatic
+	}
 }
 
 func strongerThreeDSMode(current, next string) string {

@@ -4,7 +4,8 @@
       :admin-note="adminNote"
       :current-order="currentOrder"
       :current-tracking-events="currentTrackingEvents"
-      :current-tracking-shipment="currentTrackingShipment"
+      :current-tracking-shipments="currentTrackingShipments"
+      :selected-tracking-number="selectedTrackingNumber"
       :dispute-analysis="disputeAnalysis"
       :dispute-analysis-loading="disputeAnalysisLoading"
       :syncing-tracking="syncingTracking"
@@ -24,10 +25,9 @@
       :format-money="formatMoney"
       :shipping-name="shippingName"
       :shipping-address-line="shippingAddressLine"
-      :order-carrier-label="orderCarrierLabel"
-      :order-carrier-service-label="orderCarrierServiceLabel"
       @update:admin-note="emit('update:adminNote', $event)"
       @sync-tracking="emit('sync-tracking')"
+      @select-tracking="emit('select-tracking', $event)"
       @update-note="emit('update-note')"
       @update-customs="forwardCustomsUpdate"
       @export-customs="emit('export-customs')"
@@ -42,7 +42,6 @@
 import OrderDetailPanel from '@/components/admin/order/OrderDetailPanel.vue'
 import { Dialog } from '@/components/ui/dialog'
 import type {
-  OrderCarrierLabelResolver,
   OrderDateFormatter,
   OrderDisputeAnalysis,
   OrderDisputeCase,
@@ -62,7 +61,8 @@ withDefaults(defineProps<{
   adminNote?: string
   currentOrder?: OrderRecord | null
   currentTrackingEvents?: TrackingEvent[]
-  currentTrackingShipment?: TrackingShipment | null
+  currentTrackingShipments?: TrackingShipment[]
+  selectedTrackingNumber?: string
   disputeAnalysis?: OrderDisputeAnalysis | null
   disputeAnalysisLoading?: boolean
   syncingTracking?: boolean
@@ -82,14 +82,13 @@ withDefaults(defineProps<{
   formatMoney: OrderMoneyFormatter
   shippingName: OrderShippingNameResolver
   shippingAddressLine: OrderShippingAddressLineResolver
-  orderCarrierLabel: OrderCarrierLabelResolver
-  orderCarrierServiceLabel: OrderCarrierLabelResolver
 }>(), {
   open: false,
   adminNote: '',
   currentOrder: null,
   currentTrackingEvents: () => [],
-  currentTrackingShipment: null,
+  currentTrackingShipments: () => [],
+  selectedTrackingNumber: '',
   disputeAnalysis: null,
   disputeAnalysisLoading: false,
   syncingTracking: false,
@@ -102,6 +101,7 @@ const emit = defineEmits<{
   (event: 'update:open', value: boolean): void
   (event: 'update:adminNote', value: string): void
   (event: 'sync-tracking'): void
+  (event: 'select-tracking', trackingNumber: string): void
   (event: 'update-note'): void
   (event: 'update-customs', orderItemId: OrderID, declaredValue: number | null, declaredValueConfirmed: boolean): void
   (event: 'export-customs'): void

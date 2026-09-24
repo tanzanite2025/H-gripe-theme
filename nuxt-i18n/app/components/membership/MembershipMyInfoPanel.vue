@@ -80,22 +80,6 @@
               </div>
             </div>
 
-            <div class="member-assets">
-              <div class="asset-item">
-                <Icon name="lucide:ticket-percent" class="asset-icon" aria-hidden="true" />
-                <div class="asset-content">
-                  <span class="asset-label">{{ t('resourcesMembershipMyInfo.benefits.coupons', 'Coupons') }}</span>
-                  <span class="asset-value">{{ isLogged ? `× ${userCoupons}` : '?' }}</span>
-                </div>
-              </div>
-              <div class="asset-item">
-                <Icon name="lucide:credit-card" class="asset-icon" aria-hidden="true" />
-                <div class="asset-content">
-                  <span class="asset-label">{{ t('resourcesMembershipMyInfo.benefits.giftCards', 'Gift Cards') }}</span>
-                  <span class="asset-value">{{ isLogged ? `× ${userPointCards}` : '?' }}</span>
-                </div>
-              </div>
-            </div>
 
             <div v-if="isLogged" class="tier-progress">
               <div class="progress-bar">
@@ -172,8 +156,6 @@ const props = withDefaults(defineProps<{
   profileInfo?: ProfileInfo | null
   tierInfo: TierInfo
   levelDiscounts: LevelDiscounts
-  userCoupons: number
-  userPointCards: number
 }>(), {
   isModal: false,
   profileInfo: null,

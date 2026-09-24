@@ -26,6 +26,10 @@ func (b *dependencyServicesBuilder) wire() error {
 	services.GoogleMerchant.ConfigureMediaService(services.Media)
 	services.Ticket.ConfigureCustomerServiceRealtimeOutbox(repos.Outbox)
 	services.CustomerServiceAvatar = service.NewCustomerServiceAvatarService(repos.User, support.StorageSvc, repos.Outbox)
+	services.Media.ConfigureObjectCleanupOutbox(repos.Outbox)
+	services.SiteLogo.ConfigureObjectCleanupOutbox(repos.Outbox)
+	services.HomeVisualTiles.ConfigureObjectCleanupOutbox(repos.Outbox)
+	services.UGCShowcase.ConfigureObjectCleanupOutbox(repos.Outbox)
 	services.PublicUploadAccess = service.NewPublicUploadAccessService(services.Media, services.UGCShowcase, services.CustomerServiceAvatar)
 	services.PublicUploadAccess.ConfigureSiteLogoService(services.SiteLogo)
 	services.FAQ.ConfigureMediaService(services.Media)
@@ -35,9 +39,7 @@ func (b *dependencyServicesBuilder) wire() error {
 		services.UGCShowcase.ConfigurePendingSubmissionLimit(cfg.ShowcaseUploadProtection.MaxPendingSubmissionsPerUser)
 	}
 	services.Marketing.ConfigureLoyaltyProgram(b.services.LoyaltyProgram)
-	services.Marketing.ConfigureGiftCardRedemptions(repos.GiftCardRedemption)
 	services.Marketing.ConfigureCurrencyPolicy(services.CurrencyPolicy)
-	services.Checkout.ConfigureLoyaltyProgram(b.services.LoyaltyProgram)
 	services.Checkout.ConfigureCurrencyPolicy(services.CurrencyPolicy)
 	services.Checkout.ConfigureExchangeRateRepository(repos.ExchangeRate)
 	services.Checkout.ConfigureReferralRepositories(repos.Referral, repos.ReferralProgram)
@@ -61,9 +63,9 @@ func (b *dependencyServicesBuilder) wire() error {
 	services.ExchangeRate.ConfigureProductService(services.Product)
 	services.ExchangeRate.ConfigureShippingService(support.ShippingService)
 	support.ShippingService.ConfigureExchangeRateService(services.ExchangeRate)
-	services.Warranty.ConfigureEmailChallenges(repos.EmailChallenge, cfg.JWT.Secret, support.EmailSvc)
+	services.Warranty.ConfigureEmailChallenges(cfg.JWT.Secret)
 	services.Warranty.ConfigureEmailBaseURL(support.StorefrontBaseURL)
-	services.Subscription.ConfigureEmailChallenges(repos.EmailChallenge, cfg.JWT.Secret, support.EmailSvc)
+	services.Subscription.ConfigureEmailChallenges(cfg.JWT.Secret)
 	services.Subscription.ConfigureEmailBaseURL(support.StorefrontBaseURL)
 	services.Product.SetStorefrontHTMLCacheInvalidator(support.StorefrontHTMLCacheInvalidator)
 	services.ProductBrand.SetStorefrontHTMLCacheInvalidator(support.StorefrontHTMLCacheInvalidator)
@@ -82,7 +84,29 @@ func (b *dependencyServicesBuilder) wire() error {
 		repos.Loyalty,
 		services.VisitorProfile,
 	)
+	services.CustomerServiceContext.ConfigureFactRepositories(repos.AfterSales, repos.Payment)
+	services.CustomerServiceContext.ConfigureFulfillmentRepositories(repos.Product, repos.Shipping, repos.Warranty)
+	services.CustomerServiceContext.ConfigureAuditService(services.Audit)
 	services.CustomerServiceContext.ConfigureMediaService(services.Media)
+	minimumRetentionAge := time.Duration(cfg.Worker.CustomerServiceRetentionMinimumDays) * 24 * time.Hour
+	if minimumRetentionAge <= 0 && cfg.Worker.CustomerServiceRetentionMinimumMonths > 0 {
+		minimumRetentionAge = time.Duration(cfg.Worker.CustomerServiceRetentionMinimumMonths) * 30 * 24 * time.Hour
+	}
+	recoveryWindow := time.Duration(cfg.Worker.CustomerServiceRetentionRecoveryWindowDays) * 24 * time.Hour
+	services.CustomerServiceRetention.ConfigureWindows(minimumRetentionAge, recoveryWindow)
+	services.CustomerServiceRetention.ConfigureLegacyWorker(cfg.Worker.CustomerServiceRetentionEnabled)
+	services.CustomerServiceRetention.ConfigurePolicyRepository(repos.CustomerServiceRetentionPolicy)
+	services.CustomerServiceRetention.ConfigureAttachmentStorage(support.StorageSvc)
+	services.CustomerServiceRetention.ConfigureMediaService(services.Media)
+	services.CustomerServiceRetention.ConfigureCleanupOutbox(repos.Outbox)
+	if searchIndex, err := service.NewCustomerServiceHTTPSearchIndexFromEnv(
+		support.OutboundHTTPResilience.retry,
+		support.OutboundHTTPResilience.breaker,
+	); err != nil {
+		return fmt.Errorf("configure customer-service search index: %w", err)
+	} else if searchIndex != nil {
+		services.CustomerServiceRetention.ConfigureSearchIndex(searchIndex)
+	}
 	services.CustomerServiceAnalytics = service.NewCustomerServiceAnalyticsService(
 		services.Ticket,
 		services.CustomerServiceContext,
@@ -111,6 +135,9 @@ func (b *dependencyServicesBuilder) wire() error {
 	services.Payment.ConfigureOrderEvidenceSubmissionSnapshotRepository(repos.OrderEvidenceSubmission)
 	services.Payment.ConfigurePolicyDisclosureRepository(repos.OrderPolicyDisclosure)
 	services.Payment.ConfigurePayPalDisputeEvidenceDocumentStorage(support.StorageSvc)
+	if podURLProvider, ok := support.StorageSvc.(service.PayPalDisputeEvidenceAttachmentURLProvider); ok {
+		services.Payment.ConfigurePayPalDisputeEvidenceAttachmentURLProvider(podURLProvider)
+	}
 	services.Payment.ConfigurePayPalDisputeInvoiceSellerProfileProvider(services.PayPalDisputeInvoiceSellerProfile)
 	services.Payment.ConfigurePayPalDisputeInvoiceOptions(service.PayPalDisputeInvoiceOptions{
 		AutoAttachPDF: envBoolDefault("PAYPAL_DISPUTE_AUTO_ATTACH_INVOICE_PDF", true),
@@ -151,12 +178,30 @@ func (b *dependencyServicesBuilder) wire() error {
 		support.OutboundHTTPResilience.breaker,
 	)
 	services.Outbox.RegisterHandler(outbox.EventTypeOrderPaid, orderPaidWebhookHandler.Handle)
+	orderCompletionHandler := service.NewOrderCompletionOutboxHandler(services.Order, services.TransactionalNotificationTemplates)
+	orderCompletionHandler.ConfigureTransactionalNotificationSender(support.EmailSvc)
+	services.Outbox.RegisterHandler(outbox.EventTypeOrderCompleted, orderCompletionHandler.Handle)
+	canonicalDomainEventHandler := service.NewCanonicalDomainEventOutboxHandlerWithSender(
+		services.TransactionalNotificationTemplates,
+		support.EmailSvc,
+	)
+	canonicalDomainEventHandler.ConfigureNotificationSettings(services.Setting)
+	services.Outbox.RegisterHandler(outbox.EventTypeOrderPaymentSucceeded, canonicalDomainEventHandler.Handle)
+	services.Outbox.RegisterHandler(outbox.EventTypeOrderPaymentExpired, canonicalDomainEventHandler.Handle)
+	services.Outbox.RegisterHandler(outbox.EventTypeOrderCancelled, canonicalDomainEventHandler.Handle)
+	services.Outbox.RegisterHandler(outbox.EventTypeOrderShipped, canonicalDomainEventHandler.Handle)
+	services.Outbox.RegisterHandler(outbox.EventTypeOrderDelivered, canonicalDomainEventHandler.Handle)
+	services.Outbox.RegisterHandler(outbox.EventTypeOrderRefunded, canonicalDomainEventHandler.Handle)
+	services.Outbox.RegisterHandler(outbox.EventTypeAfterSalesStatusChanged, canonicalDomainEventHandler.Handle)
 	services.Outbox.RegisterHandler(outbox.EventTypeReferralOrderPaid, services.Referral.HandleOrderPaidOutbox)
 	services.Outbox.RegisterHandler(outbox.EventTypeReferralOrderDelivered, services.Referral.HandleOrderDeliveredOutbox)
 	services.Outbox.RegisterHandler(outbox.EventTypeReferralOrderInvalidated, services.Referral.HandleOrderInvalidatedOutbox)
-	orderTransactionalEmailHandler := service.NewOrderTransactionalEmailOutboxHandler(support.EmailSvc)
-	services.Outbox.RegisterHandler(outbox.EventTypeOrderConfirmationEmail, orderTransactionalEmailHandler.Handle)
-	services.Outbox.RegisterHandler(outbox.EventTypeOrderShippingNotificationEmail, orderTransactionalEmailHandler.Handle)
+	orderDisputeContactEmailHandler := service.NewOrderDisputeContactEmailOutboxHandler(support.EmailSvc)
+	services.Outbox.RegisterHandler(outbox.EventTypeOrderDisputeContactEmail, orderDisputeContactEmailHandler.Handle)
+	emailChallengeDeliveryHandler := service.NewEmailChallengeDeliveryOutboxHandler(support.EmailSvc, support.AntiBotService, cfg.JWT.Secret)
+	services.Outbox.RegisterHandler(outbox.EventTypeEmailChallengeDelivery, emailChallengeDeliveryHandler.Handle)
+	trackingRegistrationHandler := service.NewTrackingShipmentRegistrationOutboxHandler(support.ShippingService)
+	services.Outbox.RegisterHandler(outbox.EventTypeTrackingShipmentRegistration, trackingRegistrationHandler.Handle)
 	verifiedConversionWebhookHandler := service.NewVerifiedConversionOutboxWebhookHandlerFromEnvWithResilience(
 		support.OutboundHTTPResilience.retry,
 		support.OutboundHTTPResilience.breaker,
@@ -183,6 +228,14 @@ func (b *dependencyServicesBuilder) wire() error {
 		services.Outbox.RegisterHandler(outbox.EventTypePaymentRefundCompleted, paymentRefundWebhookHandler.Handle)
 		services.Outbox.RegisterHandler(outbox.EventTypePaymentRefundFailed, paymentRefundWebhookHandler.Handle)
 	}
+	paymentRefundExecutionOutboxHandler := service.NewPaymentRefundExecutionOutboxHandler(
+		services.Payment,
+		services.AdminSettings,
+	)
+	services.Outbox.RegisterHandler(
+		outbox.EventTypePaymentRefundExecutionRequested,
+		paymentRefundExecutionOutboxHandler.Handle,
+	)
 	merchantOutboxHandler := service.NewGoogleMerchantOutboxHandler(services.GoogleMerchant)
 	services.Outbox.RegisterHandler(outbox.EventTypeMerchantProductUpsert, merchantOutboxHandler.Handle)
 	services.Outbox.RegisterHandler(outbox.EventTypeMerchantProductWithdraw, merchantOutboxHandler.Handle)
@@ -193,6 +246,17 @@ func (b *dependencyServicesBuilder) wire() error {
 	services.Outbox.RegisterHandler(outbox.EventTypeCustomerServiceRealtime, customerServiceRealtimeOutboxHandler.Handle)
 	customerServiceAvatarCleanupHandler := service.NewCustomerServiceAvatarCleanupHandler(repos.User, support.StorageSvc)
 	services.Outbox.RegisterHandler(outbox.EventTypeCustomerServiceAvatarCleanup, customerServiceAvatarCleanupHandler.Handle)
+	services.Outbox.RegisterHandler(
+		outbox.EventTypeCustomerServiceRetentionCleanup,
+		services.CustomerServiceRetention.HandleCustomerServiceRetentionCleanup,
+	)
+	objectStorageCleanupHandler := service.NewObjectStorageCleanupOutboxHandler(
+		services.Media,
+		services.SiteLogo,
+		services.HomeVisualTiles,
+		services.UGCShowcase,
+	)
+	services.Outbox.RegisterHandler(outbox.EventTypeObjectStorageCleanup, objectStorageCleanupHandler.Handle)
 	services.Outbox.RegisterHandler(
 		outbox.EventTypeStorefrontRouteCatalogChanged,
 		service.NewSiteQualityRouteCatalogOutboxHandler(services.SiteQualityEngine).Handle,

@@ -10,7 +10,8 @@ import (
 )
 
 type paymentMethodAvailabilityContext struct {
-	Country string
+	Country  string
+	Currency string
 }
 
 func (h *Handler) paymentMethodsToAvailabilityResponse(
@@ -45,6 +46,11 @@ func (h *Handler) paymentMethodToAvailabilityResponse(
 	}
 
 	if provider := strings.TrimSpace(item.Provider); provider != "" {
+		if context.Currency != "" && !pgateway.GatewaySupportsCurrency(pgateway.GatewayType(provider), context.Currency) {
+			item.Available = false
+			item.UnavailableReason = "currency_not_supported"
+			return item, nil
+		}
 		available, reason := h.checkPaymentGatewayConfigurationAvailability(pgateway.GatewayType(provider))
 		if !available {
 			item.Available = false
@@ -126,7 +132,23 @@ func (h *Handler) checkPaymentGatewayConfigurationAvailability(provider pgateway
 }
 
 func (h *Handler) resolvePaymentMethodAvailabilityContext(c *gin.Context) (paymentMethodAvailabilityContext, error) {
-	return paymentMethodAvailabilityContext{Country: paymentMethodAvailabilityCountry(c)}, nil
+	return paymentMethodAvailabilityContext{
+		Country:  paymentMethodAvailabilityCountry(c),
+		Currency: paymentMethodAvailabilityCurrency(c),
+	}, nil
+}
+
+func paymentMethodAvailabilityCurrency(c *gin.Context) string {
+	if c == nil {
+		return ""
+	}
+	for _, value := range []string{c.Query("currency"), c.Query("order_currency"), c.GetHeader("X-Currency")} {
+		value = strings.ToUpper(strings.TrimSpace(value))
+		if value != "" {
+			return value
+		}
+	}
+	return ""
 }
 
 func paymentMethodAvailabilityCountry(c *gin.Context) string {

@@ -32,11 +32,11 @@ func TestNormalizeCardBIN(t *testing.T) {
 
 func TestValidatePaymentRequestNormalizesCardBIN(t *testing.T) {
 	req := &PaymentRequest{
-		Amount:   10,
-		Currency: "USD",
-		OrderID:  "ORD-001",
-		CardBIN:  "4111-1111",
-		Customer: &Customer{Email: "test@example.com"},
+		AmountMinor: 1000,
+		Currency:    "USD",
+		OrderID:     "ORD-001",
+		CardBIN:     "4111-1111",
+		Customer:    &Customer{Email: "test@example.com"},
 	}
 	if err := ValidatePaymentRequest(req); err != nil {
 		t.Fatalf("ValidatePaymentRequest() error = %v", err)

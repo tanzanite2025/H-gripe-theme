@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type MediaRepository struct {
@@ -15,6 +16,19 @@ type MediaRepository struct {
 
 func NewMediaRepository(db *gorm.DB) *MediaRepository {
 	return &MediaRepository{db: db}
+}
+
+func (r *MediaRepository) WithTx(tx *gorm.DB) *MediaRepository {
+	return &MediaRepository{db: tx}
+}
+
+func (r *MediaRepository) WithTransaction(fn func(repo *MediaRepository, tx *gorm.DB) error) error {
+	if r == nil || r.db == nil {
+		return gorm.ErrInvalidDB
+	}
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		return fn(r.WithTx(tx), tx)
+	})
 }
 
 func (r *MediaRepository) CreateAsset(asset *media.MediaAsset) error {
@@ -215,6 +229,30 @@ func (r *MediaRepository) FindAssetByID(id uint) (*media.MediaAsset, error) {
 	query := r.db
 	if r.hasAssetDerivativesTable() {
 		query = query.Preload("Derivatives")
+	}
+	if err := query.First(&asset, id).Error; err != nil {
+		return nil, err
+	}
+	return &asset, nil
+}
+
+func (r *MediaRepository) FindAssetByIDForUpdate(id uint) (*media.MediaAsset, error) {
+	var asset media.MediaAsset
+	query := r.db.Clauses(clause.Locking{Strength: "UPDATE"})
+	if r.hasAssetDerivativesTable() {
+		query = query.Preload("Derivatives")
+	}
+	if err := query.First(&asset, id).Error; err != nil {
+		return nil, err
+	}
+	return &asset, nil
+}
+
+func (r *MediaRepository) FindAssetByIDUnscoped(id uint) (*media.MediaAsset, error) {
+	var asset media.MediaAsset
+	query := r.db.Unscoped()
+	if r.hasAssetDerivativesTable() {
+		query = query.Preload("Derivatives", func(db *gorm.DB) *gorm.DB { return db.Unscoped() })
 	}
 	if err := query.First(&asset, id).Error; err != nil {
 		return nil, err

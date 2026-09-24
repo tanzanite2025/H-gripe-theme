@@ -298,7 +298,7 @@ const saveRefundReview = async (
   refundSubmittingCaseID.value = record.id
   try {
     const review = await afterSalesApi.saveRefundReview(record.id, {
-      proposed_amount: proposedAmount,
+      proposed_amount_minor: proposedAmount,
       currency,
       request_notes: requestNotes,
     })

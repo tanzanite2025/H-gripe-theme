@@ -39,20 +39,20 @@ type OrderEvidenceExportSnapshotPayload struct {
 }
 
 type OrderEvidenceExportPackage struct {
-	ID                    uint                      `json:"id"`
-	OrderID               uint                      `json:"order_id"`
-	SnapshotID            uint                      `json:"snapshot_id"`
-	PackageVersion        int                       `json:"package_version"`
-	Status                string                    `json:"status"`
-	OrderTotalUSDSnapshot float64                   `json:"order_total_usd_snapshot"`
-	IsHighValue           bool                      `json:"is_high_value"`
-	HasSpokeTensionQC     bool                      `json:"has_spoke_tension_qc"`
-	SchemaVersion         int                       `json:"schema_version"`
-	CreatedBy             uint                      `json:"created_by"`
-	LockedAt              *time.Time                `json:"locked_at,omitempty"`
-	CreatedAt             time.Time                 `json:"created_at"`
-	UpdatedAt             time.Time                 `json:"updated_at"`
-	Items                 []OrderEvidenceExportItem `json:"items"`
+	ID                         uint                      `json:"id"`
+	OrderID                    uint                      `json:"order_id"`
+	SnapshotID                 uint                      `json:"snapshot_id"`
+	PackageVersion             int                       `json:"package_version"`
+	Status                     string                    `json:"status"`
+	OrderTotalUSDSnapshotMinor int64                     `json:"order_total_usd_snapshot_minor"`
+	IsHighValue                bool                      `json:"is_high_value"`
+	HasSpokeTensionQC          bool                      `json:"has_spoke_tension_qc"`
+	SchemaVersion              int                       `json:"schema_version"`
+	CreatedBy                  uint                      `json:"created_by"`
+	LockedAt                   *time.Time                `json:"locked_at,omitempty"`
+	CreatedAt                  time.Time                 `json:"created_at"`
+	UpdatedAt                  time.Time                 `json:"updated_at"`
+	Items                      []OrderEvidenceExportItem `json:"items"`
 }
 
 type OrderEvidenceExportItem struct {
@@ -229,20 +229,20 @@ func orderEvidenceExportPackage(pkg *orderevidence.OrderEvidencePackage) *OrderE
 		return nil
 	}
 	result := &OrderEvidenceExportPackage{
-		ID:                    pkg.ID,
-		OrderID:               pkg.OrderID,
-		SnapshotID:            pkg.SnapshotID,
-		PackageVersion:        pkg.PackageVersion,
-		Status:                pkg.Status,
-		OrderTotalUSDSnapshot: pkg.OrderTotalUSDSnapshot,
-		IsHighValue:           pkg.IsHighValue,
-		HasSpokeTensionQC:     pkg.HasSpokeTensionQC,
-		SchemaVersion:         pkg.SchemaVersion,
-		CreatedBy:             pkg.CreatedBy,
-		LockedAt:              copyTimePointer(pkg.LockedAt),
-		CreatedAt:             pkg.CreatedAt,
-		UpdatedAt:             pkg.UpdatedAt,
-		Items:                 make([]OrderEvidenceExportItem, 0, len(pkg.Items)),
+		ID:                         pkg.ID,
+		OrderID:                    pkg.OrderID,
+		SnapshotID:                 pkg.SnapshotID,
+		PackageVersion:             pkg.PackageVersion,
+		Status:                     pkg.Status,
+		OrderTotalUSDSnapshotMinor: pkg.OrderTotalUSDSnapshotMinor,
+		IsHighValue:                pkg.IsHighValue,
+		HasSpokeTensionQC:          pkg.HasSpokeTensionQC,
+		SchemaVersion:              pkg.SchemaVersion,
+		CreatedBy:                  pkg.CreatedBy,
+		LockedAt:                   copyTimePointer(pkg.LockedAt),
+		CreatedAt:                  pkg.CreatedAt,
+		UpdatedAt:                  pkg.UpdatedAt,
+		Items:                      make([]OrderEvidenceExportItem, 0, len(pkg.Items)),
 	}
 	for _, item := range pkg.Items {
 		exportItem := OrderEvidenceExportItem{

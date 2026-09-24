@@ -102,6 +102,36 @@ func TestCreateStoresHMACSourceHashInsteadOfRawIP(t *testing.T) {
 	}
 }
 
+func TestCreateHoneypotSilentlyDropsWithoutSideEffects(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	handler, db := newTestFeedbackHandler(t)
+	router := gin.New()
+	router.POST("/feedback", func(c *gin.Context) {
+		c.Set("user_id", uint(7))
+	}, handler.Create)
+
+	request := httptest.NewRequest(
+		http.MethodPost,
+		"/feedback",
+		strings.NewReader(`{"thread":"support-payment","content":"spam","fax_number":"+1 555 0100"}`),
+	)
+	request.Header.Set("Content-Type", "application/json")
+	recorder := httptest.NewRecorder()
+	router.ServeHTTP(recorder, request)
+
+	if recorder.Code != http.StatusCreated {
+		t.Fatalf("Create() status = %d, want %d: %s", recorder.Code, http.StatusCreated, recorder.Body.String())
+	}
+	var count int64
+	if err := db.Model(&domainfeedback.Feedback{}).Count(&count).Error; err != nil {
+		t.Fatalf("count feedback: %v", err)
+	}
+	if count != 0 {
+		t.Fatalf("honeypot request created %d feedback rows, want 0", count)
+	}
+}
+
 func TestListPublicResponseDoesNotExposeUserID(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 

@@ -6,8 +6,10 @@ import (
 	"embed"
 	"fmt"
 	"html/template"
+	"mime/multipart"
 	"net"
 	"net/smtp"
+	"net/textproto"
 	"os"
 	"reflect"
 	"regexp"
@@ -25,8 +27,6 @@ var embeddedTemplates embed.FS
 type EmailService interface {
 	SendEmail(to []string, subject, body string) error
 	SendHTMLEmail(to []string, subject, templateName string, data interface{}) error
-	SendOrderConfirmation(to string, orderData interface{}) error
-	SendShippingNotification(to string, shippingData interface{}) error
 	SendPasswordReset(to string, resetData interface{}) error
 	SendWelcomeEmail(to string, userData interface{}) error
 }
@@ -39,7 +39,12 @@ type SMTPConfig struct {
 	Password string
 	From     string
 	FromName string
-	Timeout  time.Duration
+	ReplyTo  string
+	// EncryptionType accepts none, starttls, or tls. An empty value keeps the
+	// legacy behavior: implicit TLS on port 465 and opportunistic STARTTLS on
+	// other ports.
+	EncryptionType string
+	Timeout        time.Duration
 }
 
 // emailService 邮件服务实现
@@ -81,6 +86,21 @@ func (s *emailService) SendEmail(to []string, subject, body string) error {
 	return s.send(to, message)
 }
 
+// SendRenderedEmail sends an already-rendered transactional message. The
+// template service owns placeholder validation and escaping; this method only
+// packages the resulting HTML and text alternatives for the configured SMTP
+// transport.
+func (s *emailService) SendRenderedEmail(to []string, subject, htmlBody, textBody string) error {
+	if err := validateEmailAddresses(to); err != nil {
+		return err
+	}
+	message, err := s.buildRenderedMessage(to, subject, htmlBody, textBody)
+	if err != nil {
+		return err
+	}
+	return s.send(to, message)
+}
+
 // SendHTMLEmail 发送 HTML 邮件
 func (s *emailService) SendHTMLEmail(to []string, subject, templateName string, data interface{}) error {
 	// 验证邮件地址
@@ -99,26 +119,6 @@ func (s *emailService) SendHTMLEmail(to []string, subject, templateName string, 
 
 	// 发送邮件
 	return s.send(to, message)
-}
-
-// SendOrderConfirmation 发送订单确认邮件
-func (s *emailService) SendOrderConfirmation(to string, orderData interface{}) error {
-	return s.SendHTMLEmail(
-		[]string{to},
-		"Order confirmation",
-		"order_confirmation.html",
-		orderData,
-	)
-}
-
-// SendShippingNotification 发送发货通知邮件
-func (s *emailService) SendShippingNotification(to string, shippingData interface{}) error {
-	return s.SendHTMLEmail(
-		[]string{to},
-		"Your order has shipped",
-		"shipping_notification.html",
-		shippingData,
-	)
 }
 
 // SendPasswordReset 发送密码重置邮件
@@ -149,6 +149,9 @@ func (s *emailService) buildMessage(to []string, subject, body string, isHTML bo
 	fmt.Fprintf(&buf, "From: %s <%s>\r\n", s.config.FromName, s.config.From)
 	fmt.Fprintf(&buf, "To: %s\r\n", strings.Join(to, ", "))
 	fmt.Fprintf(&buf, "Subject: %s\r\n", subject)
+	if replyTo := strings.TrimSpace(s.config.ReplyTo); replyTo != "" {
+		fmt.Fprintf(&buf, "Reply-To: %s\r\n", replyTo)
+	}
 	buf.WriteString("MIME-Version: 1.0\r\n")
 
 	if isHTML {
@@ -161,6 +164,46 @@ func (s *emailService) buildMessage(to []string, subject, body string, isHTML bo
 	buf.WriteString(body)
 
 	return buf.Bytes()
+}
+
+func (s *emailService) buildRenderedMessage(to []string, subject, htmlBody, textBody string) ([]byte, error) {
+	var buf bytes.Buffer
+	fmt.Fprintf(&buf, "From: %s <%s>\r\n", s.config.FromName, s.config.From)
+	fmt.Fprintf(&buf, "To: %s\r\n", strings.Join(to, ", "))
+	fmt.Fprintf(&buf, "Subject: %s\r\n", subject)
+	if replyTo := strings.TrimSpace(s.config.ReplyTo); replyTo != "" {
+		fmt.Fprintf(&buf, "Reply-To: %s\r\n", replyTo)
+	}
+	buf.WriteString("MIME-Version: 1.0\r\n")
+
+	writer := multipart.NewWriter(&buf)
+	fmt.Fprintf(&buf, "Content-Type: multipart/alternative; boundary=%q\r\n", writer.Boundary())
+	buf.WriteString("\r\n")
+
+	textHeader := make(textproto.MIMEHeader)
+	textHeader.Set("Content-Type", "text/plain; charset=UTF-8")
+	textPart, err := writer.CreatePart(textHeader)
+	if err != nil {
+		return nil, fmt.Errorf("create transactional text part: %w", err)
+	}
+	if _, err := textPart.Write([]byte(textBody)); err != nil {
+		return nil, fmt.Errorf("write transactional text part: %w", err)
+	}
+
+	htmlHeader := make(textproto.MIMEHeader)
+	htmlHeader.Set("Content-Type", "text/html; charset=UTF-8")
+	htmlPart, err := writer.CreatePart(htmlHeader)
+	if err != nil {
+		return nil, fmt.Errorf("create transactional HTML part: %w", err)
+	}
+	if _, err := htmlPart.Write([]byte(htmlBody)); err != nil {
+		return nil, fmt.Errorf("write transactional HTML part: %w", err)
+	}
+
+	if err := writer.Close(); err != nil {
+		return nil, fmt.Errorf("close transactional MIME message: %w", err)
+	}
+	return buf.Bytes(), nil
 }
 
 func (s *emailService) renderTemplate(templateName, subject string, data interface{}) (string, bool, error) {
@@ -184,10 +227,6 @@ func buildPlainTextFallback(subject, templateName string, data interface{}) stri
 	}
 
 	switch templateName {
-	case "order_confirmation.html":
-		lines = append(lines, "Thank you for your order. We have received it and will send another update when it ships.")
-	case "shipping_notification.html":
-		lines = append(lines, "Your order has shipped. Please check your account or the carrier tracking page for the latest delivery status.")
 	case "password_reset.html":
 		resetURL := templateField(data, "ResetURL", "ResetLink", "URL", "Link", "reset_url", "reset_link")
 		if resetURL != "" {
@@ -230,7 +269,9 @@ func (s *emailService) send(to []string, message []byte) error {
 	}
 
 	clientConn := conn
-	if s.config.Port == 465 {
+	encryptionType := strings.ToLower(strings.TrimSpace(s.config.EncryptionType))
+	implicitTLS := encryptionType == "tls" || (encryptionType == "" && s.config.Port == 465)
+	if implicitTLS {
 		tlsConn := tls.Client(conn, smtpTLSConfig(s.config.Host))
 		if err := tlsConn.Handshake(); err != nil {
 			return fmt.Errorf("failed smtp tls handshake: %w", err)
@@ -244,7 +285,7 @@ func (s *emailService) send(to []string, message []byte) error {
 	}
 	defer client.Close()
 
-	if s.config.Port != 465 {
+	if !implicitTLS && encryptionType != "none" {
 		if ok, _ := client.Extension("STARTTLS"); ok {
 			if err := setDeadline(conn, timeout); err != nil {
 				return fmt.Errorf("failed to set smtp deadline: %w", err)
@@ -252,6 +293,8 @@ func (s *emailService) send(to []string, message []byte) error {
 			if err := client.StartTLS(smtpTLSConfig(s.config.Host)); err != nil {
 				return fmt.Errorf("failed to start smtp tls: %w", err)
 			}
+		} else if encryptionType == "starttls" {
+			return fmt.Errorf("smtp server does not advertise STARTTLS")
 		}
 	}
 
@@ -328,13 +371,15 @@ func setDeadline(conn net.Conn, timeout time.Duration) error {
 // LoadConfigFromEnv 从环境变量加载配置
 func LoadConfigFromEnv() *SMTPConfig {
 	return &SMTPConfig{
-		Host:     getEnv("SMTP_HOST", "smtp.gmail.com"),
-		Port:     getEnvInt("SMTP_PORT", 587),
-		Username: getEnv("SMTP_USERNAME", ""),
-		Password: getEnv("SMTP_PASSWORD", ""),
-		From:     getEnv("SMTP_FROM", "noreply@example.com"),
-		FromName: getEnv("SMTP_FROM_NAME", "Store Support"),
-		Timeout:  getEnvDuration("SMTP_TIMEOUT", defaultSMTPTimeout),
+		Host:           getEnv("SMTP_HOST", "smtp.gmail.com"),
+		Port:           getEnvInt("SMTP_PORT", 587),
+		Username:       getEnv("SMTP_USERNAME", ""),
+		Password:       getEnv("SMTP_PASSWORD", ""),
+		From:           getEnv("SMTP_FROM", "noreply@example.com"),
+		FromName:       getEnv("SMTP_FROM_NAME", "Store Support"),
+		ReplyTo:        getEnv("SMTP_REPLY_TO", ""),
+		EncryptionType: getEnv("SMTP_ENCRYPTION", "starttls"),
+		Timeout:        getEnvDuration("SMTP_TIMEOUT", defaultSMTPTimeout),
 	}
 }
 

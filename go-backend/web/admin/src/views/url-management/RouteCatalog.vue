@@ -49,6 +49,7 @@
       :stats="stats"
       :pagination-total="pagination.total"
       :locale-label="selectedLocaleLabel"
+      :mode="mode"
       :loading="loading"
  @apply="applyFilters"
       @reset="resetFilters"
@@ -87,6 +88,7 @@ import {
   Eye,
   RefreshCw,
   Search,
+  TriangleAlert,
 } from '@lucide/vue'
 import AdminPageHeader from '@/components/admin/AdminPageHeader.vue'
 import AdminStatsGrid from '@/components/admin/AdminStatsGrid.vue'
@@ -112,6 +114,8 @@ const canEdit = authStore.hasPermission('url:edit')
 
 const {
   stats,
+  issueStats,
+  mode,
   items,
   loading,
   statsLoading,
@@ -152,14 +156,24 @@ const pageMeta = computed(() => ({
   },
 }[props.mode]))
 
-const statItems = computed(() => [
-  { key: 'total', label: 'URL 总量', value: stats.value.total, icon: Eye, tone: 'blue' },
-  { key: 'healthy', label: '正常可用', value: stats.value.ok, icon: CircleCheck, tone: 'green' },
-  { key: 'attention', label: '需要处理', value: stats.value.needs_attention, icon: RefreshCw, tone: stats.value.needs_attention ? 'coral' : 'gray' },
-  { key: 'not-found', label: '404', value: stats.value.not_found, icon: Search, tone: stats.value.not_found ? 'coral' : 'gray' },
-  { key: 'unchecked', label: '未检查', value: stats.value.unchecked, icon: RefreshCw, tone: stats.value.unchecked ? 'amber' : 'gray' },
-  { key: 'duplicate', label: '路径重复', value: stats.value.duplicate, icon: Eye, tone: stats.value.duplicate ? 'amber' : 'gray' },
-])
+const statItems = computed(() => props.mode === 'canonical'
+  ? [
+      { key: 'total', label: '冲突 URL', value: stats.value.total, icon: Eye, tone: 'blue' },
+      { key: 'canonical', label: 'Canonical 不一致', value: stats.value.canonical_mismatch, icon: TriangleAlert, tone: stats.value.canonical_mismatch ? 'amber' : 'gray' },
+      { key: 'duplicate', label: '路径重复', value: stats.value.duplicate, icon: Eye, tone: stats.value.duplicate ? 'amber' : 'gray' },
+      { key: 'issues', label: '待处理工单', value: issueStats.value.active, icon: RefreshCw, tone: issueStats.value.active ? 'coral' : 'gray' },
+      { key: 'checked', label: '已检查', value: stats.value.checked, icon: CircleCheck, tone: 'green' },
+      { key: 'unchecked', label: '未检查', value: stats.value.unchecked, icon: RefreshCw, tone: stats.value.unchecked ? 'amber' : 'gray' },
+    ]
+  : [
+      { key: 'total', label: 'URL 总量', value: stats.value.total, icon: Eye, tone: 'blue' },
+      { key: 'healthy', label: '正常可用', value: stats.value.ok, icon: CircleCheck, tone: 'green' },
+      { key: 'attention', label: '待优化路由', value: stats.value.needs_attention, icon: TriangleAlert, tone: stats.value.needs_attention ? 'amber' : 'gray' },
+      { key: 'issues', label: '待处理工单', value: issueStats.value.active, icon: RefreshCw, tone: issueStats.value.active ? 'coral' : 'gray' },
+      { key: 'not-found', label: '404', value: stats.value.not_found, icon: Search, tone: stats.value.not_found ? 'coral' : 'gray' },
+      { key: 'unchecked', label: '未检查', value: stats.value.unchecked, icon: RefreshCw, tone: stats.value.unchecked ? 'amber' : 'gray' },
+      { key: 'duplicate', label: '路径重复', value: stats.value.duplicate, icon: Eye, tone: stats.value.duplicate ? 'amber' : 'gray' },
+    ])
 const selectedLocaleLabel = computed(() => supportedLanguages.localeName(filters.locale))
 
 const selectLocale = (locale: string | number): void => {

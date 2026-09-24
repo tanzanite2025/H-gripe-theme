@@ -7,6 +7,7 @@ import (
 
 var (
 	ErrUnsupportedLocale                    = errors.New("unsupported locale")
+	ErrProductOptionRelationInvalid         = errors.New("product option value relation invalid")
 	ErrPostLocaleImmutable                  = errors.New("post locale cannot be changed after creation")
 	ErrFAQNotFound                          = errors.New("faq not found")
 	ErrFAQLocaleImmutable                   = errors.New("FAQ locale cannot be changed after creation")

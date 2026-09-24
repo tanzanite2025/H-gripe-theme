@@ -85,7 +85,7 @@ export const usePaymentMethods = () => {
     return availability ? availability.available : false
   }
 
-  const loadPaymentMethods = async (country?: string) => {
+  const loadPaymentMethods = async (country?: string, currency?: string) => {
     if (paymentMethodsLoading.value) return paymentMethods.value
 
     paymentMethodsLoading.value = true
@@ -94,6 +94,9 @@ export const usePaymentMethods = () => {
       const query = new URLSearchParams()
       if (country?.trim()) {
         query.set('country', country.trim().toUpperCase())
+      }
+      if (currency?.trim()) {
+        query.set('currency', currency.trim().toUpperCase())
       }
       const path = `/payment/methods${query.toString() ? `?${query.toString()}` : ''}`
       const response = await request<unknown>(path, { method: 'GET' }, 'Failed to load payment methods')

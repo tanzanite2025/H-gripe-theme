@@ -1,0 +1,3 @@
+-- Intentional non-restoration: order_items.attributes was an ambiguous,
+-- mutable compatibility payload. Historical evidence is preserved in
+-- configuration_snapshot and cannot be reconstructed safely from this column.

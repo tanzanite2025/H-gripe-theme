@@ -30,7 +30,7 @@
     <AdminStatsGrid :items="statItems" compact />
 
     <AdminFilterPanel>
-      <form class="grid grid-cols-1 gap-3 md:grid-cols-[minmax(220px,1fr)_160px_auto]" @submit.prevent="applyFilters">
+      <form class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-[minmax(220px,1fr)_160px_160px_160px_auto]" @submit.prevent="applyFilters">
         <label class="block space-y-1">
           <span class="block text-[10px] font-black uppercase tracking-widest text-muted-foreground/70">搜索</span>
           <Input v-model="filters.keyword" class="h-9" placeholder="邀请码、邮箱或订单号" />
@@ -41,6 +41,14 @@
             <option value="">全部</option>
             <option v-for="option in statusOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
           </select>
+        </label>
+        <label class="block space-y-1">
+          <span class="block text-[10px] font-black uppercase tracking-widest text-muted-foreground/70">开始日期（UTC）</span>
+          <Input v-model="filters.from" type="date" :max="filters.to || undefined" class="h-9" />
+        </label>
+        <label class="block space-y-1">
+          <span class="block text-[10px] font-black uppercase tracking-widest text-muted-foreground/70">结束日期（UTC）</span>
+          <Input v-model="filters.to" type="date" :min="filters.from || undefined" class="h-9" />
         </label>
         <div class="flex items-end gap-2">
           <Button type="submit" class="h-9">查询</Button>
@@ -114,7 +122,7 @@
             <div>
               <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70">Referral Incentive Policy</p>
               <h2 class="mt-1 text-base font-black tracking-tight">推荐返利经济模型与全局规则</h2>
-              <p class="mt-1 text-xs leading-relaxed text-muted-foreground">发布会生成不可变的新版本。当前系统仍处于影子风控阶段，奖励发放保持关闭。</p>
+              <p class="mt-1 text-xs leading-relaxed text-muted-foreground">发布会生成不可变的新版本。被推荐人积分在注册绑定时进入统一积分余额；推荐人订单奖励仍按订单履约规则结算。</p>
             </div>
             <div class="rounded-full border border-border/70 bg-muted/40 px-3 py-1 text-xs text-muted-foreground">
               当前版本 <span class="font-mono font-black text-foreground">v{{ config.version || '—' }}</span>
@@ -128,16 +136,13 @@
                 <Switch v-model:checked="config.enabled" :disabled="!canEdit || configSaving" aria-label="启用推荐返利系统" />
                 启用推荐返利系统
               </label>
-              <label class="space-y-1 text-xs font-bold"><span>币种</span><Input v-model="config.currency" maxlength="3" :disabled="!canEdit || configSaving" class="font-mono uppercase" /></label>
               <label class="space-y-1 text-xs font-bold"><span>首单最低实付（分）</span><Input v-model.number="config.min_order_amount_minor" type="number" min="0" :disabled="!canEdit || configSaving" /></label>
               <label class="space-y-1 text-xs font-bold"><span>单用户月度上限</span><Input v-model.number="config.monthly_cap_per_referrer" type="number" min="1" :disabled="!canEdit || configSaving" /></label>
             </div>
             <div class="grid gap-4 rounded-xl border border-border/70 p-4 md:grid-cols-2">
               <label class="space-y-1 text-xs font-bold"><span>推荐人奖励积分</span><Input v-model.number="config.referrer_reward_points" type="number" min="0" :disabled="!canEdit || configSaving" /></label>
-              <label class="space-y-1 text-xs font-bold"><span>被推荐人礼遇类型</span><select v-model="config.referee_benefit_type" :disabled="!canEdit || configSaving" class="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"><option value="none">无</option><option value="points">积分</option><option value="fixed_coupon">固定金额优惠券</option><option value="percent_coupon">百分比优惠券</option></select></label>
-              <label class="space-y-1 text-xs font-bold"><span>被推荐人礼遇值</span><Input v-model.number="config.referee_benefit_value" type="number" min="0" :disabled="!canEdit || configSaving" /></label>
-              <label class="space-y-1 text-xs font-bold"><span>优惠券最高减免（分）</span><Input v-model.number="config.referee_benefit_max_amount_minor" type="number" min="0" :disabled="!canEdit || configSaving" /></label>
-              <label class="flex items-center gap-3 text-xs font-bold md:col-span-2"><Switch v-model:checked="config.coupon_stackable" :disabled="!canEdit || configSaving" aria-label="允许优惠券叠加" />允许与其他优惠券叠加</label>
+              <label class="space-y-1 text-xs font-bold"><span>被推荐人注册积分</span><Input v-model.number="config.referee_benefit_value" type="number" min="1" :disabled="!canEdit || configSaving" /></label>
+              <p class="text-xs leading-relaxed text-muted-foreground md:col-span-2">推荐积分直接进入统一积分余额，消费时与账户内其他积分使用同一套规则。</p>
             </div>
             <div class="grid gap-4 rounded-xl border border-border/70 p-4 md:grid-cols-2 lg:grid-cols-4">
               <label class="space-y-1 text-xs font-bold"><span>妥投后冷静期（天）</span><Input v-model.number="config.vesting_period_days" type="number" min="1" :disabled="!canEdit || configSaving" /></label>
@@ -219,13 +224,9 @@ interface ReferralItem {
 interface ReferralConfig {
   version: number
   enabled: boolean
-  currency: string
   min_order_amount_minor: number
   referrer_reward_points: number
-  referee_benefit_type: string
   referee_benefit_value: number
-  referee_benefit_max_amount_minor: number
-  coupon_stackable: boolean
   vesting_period_days: number
   undelivered_fallback_days: number
   attribution_ttl_days: number
@@ -239,9 +240,9 @@ interface ReferralDetail {
   rewards: Array<Record<string, unknown>>
 }
 
-const filters = reactive({ keyword: '', status: '' })
+const filters = reactive({ keyword: '', status: '', from: '', to: '' })
 const items = ref<ReferralItem[]>([])
-const overview = reactive({ total_referrals: 0, converted_orders: 0, pending_vesting_points: 0, settled_points: 0, fraud_blocked_count: 0 })
+const overview = reactive({ total_referrals: 0, converted_orders: 0, attributed_gmv_minor: 0, pending_vesting_points: 0, settled_points: 0, fraud_blocked_count: 0 })
 const pagination = reactive({ page: 1, pageSize: 20, total: 0 })
 const loading = ref(false)
 const exportLoading = ref(false)
@@ -251,8 +252,8 @@ const configLoading = ref(false)
 const configSaving = ref(false)
 const configError = ref('')
 const config = reactive<ReferralConfig>({
-  version: 0, enabled: false, currency: 'USD', min_order_amount_minor: 20000, referrer_reward_points: 1000,
-  referee_benefit_type: 'none', referee_benefit_value: 0, referee_benefit_max_amount_minor: 0, coupon_stackable: false,
+  version: 0, enabled: false, min_order_amount_minor: 20000, referrer_reward_points: 1000,
+  referee_benefit_value: 50,
   vesting_period_days: 30, undelivered_fallback_days: 45, attribution_ttl_days: 30, monthly_cap_per_referrer: 10, anti_fraud_mode: 'monitor'
 })
 const detailOpen = ref(false)
@@ -271,6 +272,7 @@ const statusOptions = [
 const statItems = computed(() => [
   { key: 'total', label: '推荐记录', value: overview.total_referrals, icon: UsersRound, tone: 'blue' },
   { key: 'converted', label: '转化订单', value: overview.converted_orders, icon: ShoppingCart, tone: 'green' },
+  { key: 'gmv', label: '裂变 GMV', value: formatMoney(overview.attributed_gmv_minor), icon: WalletCards, tone: 'blue' },
   { key: 'pending', label: '在途积分', value: overview.pending_vesting_points, icon: WalletCards, tone: 'amber' },
   { key: 'settled', label: '已结算积分', value: overview.settled_points, icon: WalletCards, tone: 'green' },
   { key: 'risk', label: '风控标记', value: overview.fraud_blocked_count, icon: ShieldAlert, tone: 'coral' },
@@ -319,7 +321,19 @@ const saveConfig = async () => {
   if (!canEdit.value || !config.version) return
   configSaving.value = true; configError.value = ''
   try {
-    const response = await axios.put('/api/admin/marketing/referral-config', { ...config, expected_version: config.version })
+    const response = await axios.put('/api/admin/marketing/referral-config', {
+      enabled: config.enabled,
+      min_order_amount_minor: config.min_order_amount_minor,
+      referrer_reward_points: config.referrer_reward_points,
+      referee_benefit_type: 'points',
+      referee_benefit_value: config.referee_benefit_value,
+      vesting_period_days: config.vesting_period_days,
+      undelivered_fallback_days: config.undelivered_fallback_days,
+      attribution_ttl_days: config.attribution_ttl_days,
+      monthly_cap_per_referrer: config.monthly_cap_per_referrer,
+      anti_fraud_mode: config.anti_fraud_mode,
+      expected_version: config.version,
+    })
     const data = apiData(response)
     if (!data.config) throw new Error('推荐规则接口未返回新版本')
     Object.assign(config, data.config)
@@ -364,7 +378,7 @@ const executeAction = async () => {
   } finally { actionLoading.value = false }
 }
 const applyFilters = () => { pagination.page = 1; fetchLedger() }
-const resetFilters = () => { filters.keyword = ''; filters.status = ''; applyFilters() }
+const resetFilters = () => { filters.keyword = ''; filters.status = ''; filters.from = ''; filters.to = ''; applyFilters() }
 const updatePage = (page: number) => { pagination.page = page; fetchLedger() }
 const statusLabel = (status: string) => statusOptions.find(option => option.value === status)?.label || status
 const statusClass = (status: string) => ({ pending: 'bg-amber-100 text-amber-800', ordered: 'bg-blue-100 text-blue-800', vesting: 'bg-amber-100 text-amber-800', settled: 'bg-emerald-100 text-emerald-800', expired: 'bg-slate-100 text-slate-700', revoked: 'bg-rose-100 text-rose-800', reversed: 'bg-rose-100 text-rose-800' }[status] || 'bg-muted text-muted-foreground')

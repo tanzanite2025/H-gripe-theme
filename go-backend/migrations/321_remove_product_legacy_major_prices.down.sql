@@ -1,0 +1,2 @@
+-- Legacy product major-unit price columns are intentionally not restored.
+-- Rebuild source prices from price_minor/sale_price_minor at a display boundary.

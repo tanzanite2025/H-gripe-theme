@@ -68,3 +68,36 @@ func (r *PaymentRepository) MarkStripeWebhookEventFailed(eventID string, process
 			"error_message": message,
 		}).Error
 }
+
+func (r *PaymentRepository) ClaimPayPalWebhookEvent(eventID, eventType, payload string) (bool, error) {
+	event := &payment.PayPalWebhookEvent{EventID: eventID, EventType: eventType, Status: "processing", Payload: payload}
+	result := r.db.Clauses(clause.OnConflict{DoNothing: true}).Create(event)
+	if result.Error != nil {
+		return false, result.Error
+	}
+	if result.RowsAffected > 0 {
+		return true, nil
+	}
+	var existing payment.PayPalWebhookEvent
+	if err := r.db.Where("event_id = ?", eventID).First(&existing).Error; err != nil {
+		return false, err
+	}
+	if existing.Status == "processed" || existing.Status == "processing" {
+		return false, nil
+	}
+	result = r.db.Model(&payment.PayPalWebhookEvent{}).Where("event_id = ? AND status = ?", eventID, "failed").Updates(map[string]interface{}{"status": "processing", "payload": payload, "error_message": "", "processed_at": nil})
+	return result.RowsAffected > 0, result.Error
+}
+
+func (r *PaymentRepository) MarkPayPalWebhookEventProcessed(eventID string) error {
+	now := time.Now()
+	return r.db.Model(&payment.PayPalWebhookEvent{}).Where("event_id = ?", eventID).Updates(map[string]interface{}{"status": "processed", "error_message": "", "processed_at": &now}).Error
+}
+
+func (r *PaymentRepository) MarkPayPalWebhookEventFailed(eventID string, processingErr error) error {
+	message := ""
+	if processingErr != nil {
+		message = processingErr.Error()
+	}
+	return r.db.Model(&payment.PayPalWebhookEvent{}).Where("event_id = ?", eventID).Updates(map[string]interface{}{"status": "failed", "error_message": message}).Error
+}

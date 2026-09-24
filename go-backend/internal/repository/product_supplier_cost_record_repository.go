@@ -108,17 +108,17 @@ func (r *ProductSupplierCostRecordRepository) Update(record *suppliercostdomain.
 	return r.db.Model(&suppliercostdomain.ProductSupplierCostRecord{}).
 		Where("id = ?", record.ID).
 		Updates(map[string]interface{}{
-			"purchase_price":             record.UnitCost,
-			"currency":                   record.Currency,
-			"supplier_name":              record.SupplierName,
-			"supplier_contact_name":      record.SupplierContactName,
-			"supplier_phone":             record.SupplierPhone,
-			"supplier_email":             record.SupplierEmail,
-			"lead_time_days":             record.LeadTimeDays,
-			"minimum_order_quantity":     record.MinimumOrderQuantity,
-			"inbound_shipping_unit_cost": record.InboundShippingUnitCost,
-			"packaging_unit_cost":        record.PackagingUnitCost,
-			"other_unit_cost":            record.OtherUnitCost,
+			"purchase_price_minor":             record.UnitCostMinor,
+			"currency":                         record.Currency,
+			"supplier_name":                    record.SupplierName,
+			"supplier_contact_name":            record.SupplierContactName,
+			"supplier_phone":                   record.SupplierPhone,
+			"supplier_email":                   record.SupplierEmail,
+			"lead_time_days":                   record.LeadTimeDays,
+			"minimum_order_quantity":           record.MinimumOrderQuantity,
+			"inbound_shipping_unit_cost_minor": record.InboundShippingUnitCostMinor,
+			"packaging_unit_cost_minor":        record.PackagingUnitCostMinor,
+			"other_unit_cost_minor":            record.OtherUnitCostMinor,
 		}).Error
 }
 
@@ -136,7 +136,7 @@ func (r *ProductSupplierCostRecordRepository) UpsertInTx(tx *gorm.DB, records []
 			Columns: []clause.Column{{Name: "product_code"}},
 			DoUpdates: clause.AssignmentColumns([]string{
 				"product_name",
-				"purchase_price",
+				"purchase_price_minor",
 				"currency",
 				"supplier_name",
 				"supplier_contact_name",
@@ -144,9 +144,9 @@ func (r *ProductSupplierCostRecordRepository) UpsertInTx(tx *gorm.DB, records []
 				"supplier_email",
 				"lead_time_days",
 				"minimum_order_quantity",
-				"inbound_shipping_unit_cost",
-				"packaging_unit_cost",
-				"other_unit_cost",
+				"inbound_shipping_unit_cost_minor",
+				"packaging_unit_cost_minor",
+				"other_unit_cost_minor",
 				"updated_at",
 			}),
 		}).

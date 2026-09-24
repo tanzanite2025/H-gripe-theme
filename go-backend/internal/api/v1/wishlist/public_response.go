@@ -2,6 +2,7 @@ package wishlist
 
 import (
 	"commerce-platform/internal/api/v1/publicmedia"
+	domainmoney "commerce-platform/internal/domain/money"
 	productdomain "commerce-platform/internal/domain/product"
 	wishlistdomain "commerce-platform/internal/domain/wishlist"
 )
@@ -16,13 +17,13 @@ type PublicWishlistItem struct {
 }
 
 type PublicWishlistProduct struct {
-	ID           uint     `json:"id"`
-	Name         string   `json:"name"`
-	Slug         string   `json:"slug"`
-	Price        float64  `json:"price"`
-	SalePrice    *float64 `json:"sale_price"`
-	Availability string   `json:"availability"`
-	Thumbnail    string   `json:"thumbnail,omitempty"`
+	ID               uint    `json:"id"`
+	Name             string  `json:"name"`
+	Slug             string  `json:"slug"`
+	PriceDecimal     string  `json:"price_decimal"`
+	SalePriceDecimal *string `json:"sale_price_decimal,omitempty"`
+	Availability     string  `json:"availability"`
+	Thumbnail        string  `json:"thumbnail,omitempty"`
 }
 
 func publicWishlistResponses(items []wishlistdomain.Item, resolvers ...publicmedia.Resolver) []PublicWishlistItem {
@@ -43,17 +44,49 @@ func publicWishlistResponse(item wishlistdomain.Item, resolvers ...publicmedia.R
 	}
 
 	resolver := publicmediaResolver(resolvers)
-	price, salePrice := item.Product.DisplayPrices()
+	priceDecimal, salePriceDecimal := wishlistPriceDecimals(*item.Product)
 	response.Product = &PublicWishlistProduct{
-		ID:           item.Product.ID,
-		Name:         item.Product.Name,
-		Slug:         item.Product.Slug,
-		Price:        price,
-		SalePrice:    salePrice,
-		Availability: string(wishlistAvailabilityForProduct(*item.Product)),
-		Thumbnail:    wishlistThumbnail(*item.Product, resolver),
+		ID:               item.Product.ID,
+		Name:             item.Product.Name,
+		Slug:             item.Product.Slug,
+		PriceDecimal:     priceDecimal,
+		SalePriceDecimal: salePriceDecimal,
+		Availability:     string(wishlistAvailabilityForProduct(*item.Product)),
+		Thumbnail:        wishlistThumbnail(*item.Product, resolver),
 	}
 	return response
+}
+
+func wishlistPriceDecimals(item productdomain.Product) (string, *string) {
+	variant := item.StartingPriceVariant()
+	if variant != nil {
+		price, err := variant.PriceMoney()
+		if err != nil {
+			return "", nil
+		}
+		formatted, err := price.FormatMajor()
+		if err != nil {
+			return "", nil
+		}
+		sale, err := variant.SalePriceMoney()
+		if err != nil || sale == nil {
+			return formatted, nil
+		}
+		saleFormatted, err := sale.FormatMajor()
+		if err != nil {
+			return formatted, nil
+		}
+		return formatted, &saleFormatted
+	}
+	price, err := domainmoney.New(item.PriceMinor, item.Currency)
+	if err != nil {
+		return "", nil
+	}
+	formatted, err := price.FormatMajor()
+	if err != nil {
+		return "", nil
+	}
+	return formatted, nil
 }
 
 func wishlistAvailabilityForProduct(item productdomain.Product) wishlistAvailability {

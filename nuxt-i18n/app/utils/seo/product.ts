@@ -145,7 +145,7 @@ export const buildProductJsonLd = (
   if (!images.length) return null
 
   const productSku = cleanText(input.offer?.sku) || cleanText(input.sku)
-  const price = Number(input.offer?.price)
+  const price = cleanText(input.offer?.price)
   const currency = normalizeCurrency(input.offer?.currency)
   const availability = input.offer?.availability
   const aggregateRating = buildAggregateRating(input.aggregateRating)
@@ -170,7 +170,7 @@ export const buildProductJsonLd = (
   if (description) schema.description = description
   if (productSku) schema.sku = productSku
 
-  if (Number.isFinite(price) && price > 0 && currency && availability) {
+  if (/^\d+(?:\.\d+)?$/.test(price) && Number(price) > 0 && currency && availability) {
     schema.offers = {
       '@type': 'Offer',
       price,
@@ -190,7 +190,7 @@ export const buildProductJsonLd = (
 }
 
 const variantOfferInput = (variant: ProductSeoVariantInput) => ({
-  price: variant.price,
+  price: String(variant.price ?? ''),
   currency: variant.currency,
   availability: variant.availability,
   sku: variant.sku,

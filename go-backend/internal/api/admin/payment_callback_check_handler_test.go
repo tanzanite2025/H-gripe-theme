@@ -61,7 +61,7 @@ func TestPaymentGatewayCallbackCheckUsesConfiguredPublicBaseURL(t *testing.T) {
 	require.Equal(t, http.StatusOK, recorder.Code)
 	require.NotNil(t, probeClient.request)
 	require.Equal(t, http.MethodPost, probeClient.request.Method)
-	require.Equal(t, "https://payments.example.com/api/v1/payment/webhook/stripe", probeClient.request.URL.String())
+	require.Equal(t, "https://payments.example.com/api/v1/payments/stripe/webhook", probeClient.request.URL.String())
 	require.Equal(t, "PaymentCallbackReachabilityProbe/1.0", probeClient.request.UserAgent())
 
 	var body struct {
