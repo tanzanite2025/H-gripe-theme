@@ -3,7 +3,6 @@ package service
 import (
 	"errors"
 	"fmt"
-	"strconv"
 	"strings"
 
 	"commerce-platform/internal/domain/coupon"
@@ -34,9 +33,6 @@ type checkoutPricingInput struct {
 	MemberDiscount      domainmoney.Money
 	CouponDiscount      domainmoney.Money
 	Coupon              *coupon.Coupon
-	PointsDiscount      domainmoney.Money
-	PointsToUse         int
-	ProgramConfigID     *uint
 	MerchandiseNetTotal domainmoney.Money
 }
 
@@ -94,21 +90,6 @@ func buildCheckoutPricingSnapshot(input checkoutPricingInput) (domainpricing.Sna
 			Reference:        input.Coupon.Code,
 			Amount:           couponDiscount,
 			EligibleLineKeys: eligibleKeys,
-		})
-	}
-
-	pointsDiscount := input.PointsDiscount
-	if err := validateCheckoutPricingMoney(pointsDiscount, input.Currency, "points discount"); err != nil {
-		return domainpricing.Snapshot{}, err
-	}
-	if input.PointsToUse > 0 || pointsDiscount.AmountMinor() > 0 {
-		if input.PointsToUse <= 0 {
-			return domainpricing.Snapshot{}, fmt.Errorf("%w: points discount has no redeemed points", ErrCheckoutPricingSnapshotInvalid)
-		}
-		stages = append(stages, domainpricing.DiscountInput{
-			Kind:      domainpricing.DiscountKindPoints,
-			Reference: checkoutPointsReference(input.PointsToUse, input.ProgramConfigID),
-			Amount:    pointsDiscount,
 		})
 	}
 
@@ -242,11 +223,4 @@ func orderItemVariantID(item order.OrderItem) uint {
 		return 0
 	}
 	return *item.VariantID
-}
-
-func checkoutPointsReference(points int, programConfigID *uint) string {
-	if programConfigID == nil {
-		return "points:" + strconv.Itoa(points)
-	}
-	return "program:" + strconv.FormatUint(uint64(*programConfigID), 10) + ":points:" + strconv.Itoa(points)
 }

@@ -36,6 +36,7 @@ type OrderCreationOptions struct {
 	SelectedQuotePlanID          string
 	CheckoutCartID               uint
 	DisplayCurrency              string
+	CustomerNote                 string
 }
 
 var ErrOrderPolicyDisclosureFailure = errors.New("order policy disclosure capture failed")
@@ -54,7 +55,6 @@ type orderMoneyFields struct {
 	TaxAmountMinor      int64
 	DiscountAmountMinor int64
 	TotalAmountMinor    int64
-	PointsValueMinor    int64
 }
 
 func populateOrderItemMoneyFields(items []order.OrderItem, orderCurrency string) error {
@@ -144,9 +144,6 @@ func buildOrderMoneyFields(quote *CheckoutQuote, orderCurrency, paymentCurrency 
 	if result.TotalAmountMinor, err = resolveExactMinor(quote.TotalMinor, orderCurrency); err != nil {
 		return orderMoneyFields{}, fmt.Errorf("total amount: %w", err)
 	}
-	if result.PointsValueMinor, err = resolveExactMinor(quote.PointsDiscountMinor, orderCurrency); err != nil {
-		return orderMoneyFields{}, fmt.Errorf("points value: %w", err)
-	}
 	return result, nil
 }
 
@@ -159,7 +156,6 @@ func (s *OrderService) CreateOrder(
 	paymentMethod string,
 	shippingMethod string,
 	couponCode string,
-	pointsToUse int,
 ) (*order.Order, error) {
 	return s.CreateOrderWithAttribution(
 		ctx,
@@ -170,7 +166,6 @@ func (s *OrderService) CreateOrder(
 		paymentMethod,
 		shippingMethod,
 		couponCode,
-		pointsToUse,
 		attributionpkg.Context{},
 	)
 }
@@ -184,7 +179,6 @@ func (s *OrderService) CreateOrderWithAttribution(
 	paymentMethod string,
 	shippingMethod string,
 	couponCode string,
-	pointsToUse int,
 	attributionContext attributionpkg.Context,
 ) (*order.Order, error) {
 	return s.CreateOrderWithAttributionAndOptions(
@@ -196,7 +190,6 @@ func (s *OrderService) CreateOrderWithAttribution(
 		paymentMethod,
 		shippingMethod,
 		couponCode,
-		pointsToUse,
 		attributionContext,
 		OrderCreationOptions{},
 	)
@@ -211,7 +204,6 @@ func (s *OrderService) CreateOrderWithAttributionAndOptions(
 	paymentMethod string,
 	shippingMethod string,
 	couponCode string,
-	pointsToUse int,
 	attributionContext attributionpkg.Context,
 	options OrderCreationOptions,
 ) (*order.Order, error) {
@@ -243,14 +235,6 @@ func (s *OrderService) CreateOrderWithAttributionAndOptions(
 		CouponCode:          couponCode,
 		DisplayCurrency:     options.DisplayCurrency,
 		PaymentMethod:       paymentMethod,
-		PointsToUse:         pointsToUse,
-	}
-	if pointsToUse > 0 {
-		config, err := s.checkout.currentLoyaltyProgramConfig()
-		if err != nil {
-			return nil, err
-		}
-		quoteInput.LoyaltyProgramConfig = config
 	}
 
 	var createdOrder *order.Order
@@ -455,8 +439,7 @@ func (s *OrderService) CreateOrderWithAttributionAndOptions(
 			DiscountAmountMinor:      orderMoneyFields.DiscountAmountMinor,
 			Currency:                 orderCurrency,
 			CouponCode:               quote.CouponCode,
-			PointsUsed:               quote.PointsToUse,
-			PointsValueMinor:         orderMoneyFields.PointsValueMinor,
+			CustomerNote:             strings.TrimSpace(options.CustomerNote),
 			FXSnapshotData:           currency.OrderFXSnapshotJSON(quote.FXSnapshot),
 			PricingSnapshotData:      orderPricingSnapshot,
 			Items:                    quote.Items,
@@ -546,20 +529,6 @@ func (s *OrderService) CreateOrderWithAttributionAndOptions(
 		}
 		if err := persistOrderAttribution(repos.OrderAttribution, o.ID, attributionContext); err != nil {
 			return fmt.Errorf("[CRITICAL] Failed to save order attribution: %w", err)
-		}
-
-		if quote.PointsToUse > 0 {
-			if _, err := repos.Loyalty.AdjustUserPointsInCurrentTxWithConfig(
-				userID,
-				-quote.PointsToUse,
-				"spend",
-				"order",
-				o.ID,
-				fmt.Sprintf("Spent %d points on order #%s", quote.PointsToUse, o.OrderNumber),
-				quote.ProgramConfigID,
-			); err != nil {
-				return fmt.Errorf("[CRITICAL] Failed to deduct points for order ID %d: %w", o.ID, err)
-			}
 		}
 
 		if quote.Coupon != nil {

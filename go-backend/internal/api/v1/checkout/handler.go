@@ -32,7 +32,6 @@ type QuoteRequest struct {
 	ShippingQuoteID     string         `json:"shipping_quote_id"`
 	SelectedQuotePlanID string         `json:"selected_quote_plan_id"`
 	CouponCode          string         `json:"coupon_code"`
-	PointsToUse         int            `json:"points_to_use"`
 }
 
 type AddressRequest struct {
@@ -100,7 +99,6 @@ func (h *Handler) Quote(c *gin.Context) {
 		ShippingQuoteID:     req.ShippingQuoteID,
 		SelectedQuotePlanID: req.SelectedQuotePlanID,
 		CouponCode:          req.CouponCode,
-		PointsToUse:         req.PointsToUse,
 	})
 	if err != nil {
 		if errors.Is(err, service.ErrProductConfigurationPriceChanged) {

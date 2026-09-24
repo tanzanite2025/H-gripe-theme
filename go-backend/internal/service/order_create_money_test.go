@@ -8,13 +8,12 @@ import (
 
 func TestBuildOrderMoneyFieldsUsesPricingPipelineMinorSnapshot(t *testing.T) {
 	quote := &CheckoutQuote{
-		Currency:            "USD",
-		SubtotalMinor:       1001,
-		ShippingFeeMinor:    99,
-		TaxMinor:            17,
-		DiscountMinor:       113,
-		TotalMinor:          1004,
-		PointsDiscountMinor: 3,
+		Currency:         "USD",
+		SubtotalMinor:    1001,
+		ShippingFeeMinor: 99,
+		TaxMinor:         17,
+		DiscountMinor:    113,
+		TotalMinor:       1004,
 	}
 
 	fields, err := buildOrderMoneyFields(quote, "USD", "USD", 1004)
@@ -26,7 +25,6 @@ func TestBuildOrderMoneyFieldsUsesPricingPipelineMinorSnapshot(t *testing.T) {
 		TaxAmountMinor:      17,
 		DiscountAmountMinor: 113,
 		TotalAmountMinor:    1004,
-		PointsValueMinor:    3,
 	}, fields)
 }
 

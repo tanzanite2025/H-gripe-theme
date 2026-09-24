@@ -34,7 +34,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue'
-import { useI18n, useLocalePath, useRoute } from '#imports'
+import { navigateTo, useI18n, useLocalePath, useRoute } from '#imports'
 import { ApiRequestError } from '~/composables/useApiRequest'
 import { useAuth } from '~/composables/useAuth'
 import { useCart } from '~/composables/useCart'
@@ -44,7 +44,7 @@ const { t } = useI18n()
 const route = useRoute()
 const localePath = useLocalePath()
 const auth = useAuth()
-const { reloadCartFromBackend } = useCart()
+const { clearCart, reloadCartFromBackend } = useCart()
 const { createWeChatOrder, confirmWeChatOrder, createWeChatQrDataUrl } = useWeChatPayment()
 
 const status = ref<'loading' | 'waiting' | 'success' | 'error'>('loading')
@@ -98,10 +98,15 @@ const isPaidStatus = (value: string) => String(value || '').toUpperCase() === 'S
 
 const completePayment = async () => {
   clearStoredSession()
+  await clearCart()
   await reloadCartFromBackend()
   status.value = 'success'
   message.value = t('checkout.wechatPay.messages.success')
   stopPolling()
+  await navigateTo({
+    path: localePath('/checkout/success'),
+    query: { order_number: orderNumber.value },
+  }, { replace: true })
 }
 
 const pollPayment = async (): Promise<boolean> => {

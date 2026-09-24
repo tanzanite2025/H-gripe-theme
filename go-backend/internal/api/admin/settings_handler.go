@@ -149,10 +149,6 @@ func (h *SettingsHandler) GetLoyaltySettings(c *gin.Context) {
 	h.writeDomainManagedSettingsGroupError(c)
 }
 
-func (h *SettingsHandler) GetRedeemSettings(c *gin.Context) {
-	h.writeDomainManagedSettingsGroupError(c)
-}
-
 func (h *SettingsHandler) writeSettingsGroup(c *gin.Context, group, errorMessage string) {
 	locale := c.DefaultQuery("locale", "en")
 	settings, err := h.settingsService.GetByGroup(group, locale)

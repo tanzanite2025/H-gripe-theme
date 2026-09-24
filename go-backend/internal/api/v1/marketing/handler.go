@@ -167,8 +167,6 @@ func (h *Handler) GetLoyaltyRules(c *gin.Context) {
 		"version":                                config.Version,
 		"currency":                               service.LoyaltyPointsBaseCurrency,
 		"points_base_currency":                   service.LoyaltyPointsBaseCurrency,
-		"points_redemption_enabled":              config.Enabled,
-		"points_exchange_rate":                  config.ExchangeRatePoints,
 		"purchase_earn_points_per_currency_unit": config.PurchaseEarnPointsPerUnit,
 		"purchase_earn_trigger":                  "order_completed",
 		"purchase_earn_amount_basis":             "order_subtotal_minus_discounts",

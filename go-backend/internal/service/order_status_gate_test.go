@@ -16,13 +16,13 @@ import (
 func TestOrderStatusUpdatesCannotSetShippedOutsideFulfillment(t *testing.T) {
 	db, orderService := newTestOrderService(t)
 	orderRecord := order.Order{
-		OrderNumber:    "ORD-SHIPPED-STATUS-GATE",
-		UserID:         42,
-		Status:         "processing",
-		PaymentStatus:  "paid",
-		ShippingStatus: "pending",
+		OrderNumber:      "ORD-SHIPPED-STATUS-GATE",
+		UserID:           42,
+		Status:           "processing",
+		PaymentStatus:    "paid",
+		ShippingStatus:   "pending",
 		TotalAmountMinor: 10000,
-		Currency:       "USD",
+		Currency:         "USD",
 	}
 	require.NoError(t, db.Create(&orderRecord).Error)
 
@@ -38,13 +38,13 @@ func TestOrderStatusUpdatesCannotSetShippedOutsideFulfillment(t *testing.T) {
 func TestOrderShippingStatusCannotBeDeliveredBeforeAllPackagesArrive(t *testing.T) {
 	db, orderService := newTestOrderService(t)
 	orderRecord := order.Order{
-		OrderNumber:    "ORD-SPLIT-DELIVERY-STATUS-GATE",
-		UserID:         42,
-		Status:         "shipped",
-		PaymentStatus:  "paid",
-		ShippingStatus: "shipped",
+		OrderNumber:      "ORD-SPLIT-DELIVERY-STATUS-GATE",
+		UserID:           42,
+		Status:           "shipped",
+		PaymentStatus:    "paid",
+		ShippingStatus:   "shipped",
 		TotalAmountMinor: 10000,
-		Currency:       "USD",
+		Currency:         "USD",
 	}
 	require.NoError(t, db.Create(&orderRecord).Error)
 

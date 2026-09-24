@@ -15,7 +15,7 @@
 
 ## 为什么要做这层结构
 
-Nuxt SSR 页面在高流量时会消耗 Node.js CPU。热门商品详情页、指南页、政策页如果每次请求都重新渲染 HTML，会让 Node 渲染进程先于 Go API 成为瓶颈。
+Nuxt SSR 页面在高流量时会消耗 Node.js CPU。指南页、政策页等公开内容如果每次请求都重新渲染 HTML，会让 Node 渲染进程先于 Go API 成为瓶颈；商品详情页因为包含交易快照而明确保持 `no-store`。
 
 长期方案是：
 
@@ -79,10 +79,9 @@ Nuxt SSR 页面在高流量时会消耗 Node.js CPU。热门商品详情页、�
 ### 商品详情页
 
 - 路由：`/products/**` 和对应语言前缀，例如 `/fr/products/**`、`/zh_cn/products/**`
-- fresh TTL：300 秒
-- stale TTL：3600 秒
+- HTML：`no-store`
 
-说明：商品详情页可能包含价格和库存快照，所以 fresh TTL 不能太长。购物车、结账、库存确认仍然必须以 API 为事实源。
+说明：商品详情页包含价格、汇率、配置和可售状态快照。为避免 CDN/Nitro 在交易前继续提供过期信息，详情 HTML 不进入共享缓存；购物车、结账、库存确认仍然必须以 API 为事实源。
 
 ### 分类页
 
@@ -200,7 +199,7 @@ STOREFRONT_HTML_CACHE_PURGE_DEBOUNCE_MS=500
 
 | 页面范围 | SSR HTML 中的数据源 | 当前失效责任 |
 | --- | --- | --- |
-| `/products/**` | Go 商品详情、商品媒体、SKU 等公开数据 | 商品和商品规格模板写操作触发 HTML purge |
+| `/products/**` | Go 商品详情、商品媒体、SKU 等公开数据 | 不缓存 HTML；购物车和结账 API 实时校验价格、配置和库存 |
 | `/blog/**` | Go 文章列表和文章详情，失败时回退本地 mock | 文章写操作触发 HTML purge |
 | `/support/faqs` 和各页面 `PageFaq` | Go FAQ，失败时回退本地 FAQ 文件 | FAQ 写操作、排序操作触发 HTML purge |
 | `/guides/**` | 静态指南内容 + `PageFaq`；商品搜索抽屉是用户点击后才请求 API | FAQ 写操作触发 HTML purge；点击后搜索结果不进 HTML cache |
@@ -252,14 +251,14 @@ npm run smoke:html-cache
 - `check:html-cache` 是否通过。
 - Nitro 产物中是否包含目标 `routeRules`。
 - `/shop`、`/api/**`、`/_internal/**` 仍然是 `no-store`。
-- `/products/**` 和各语言前缀商品详情页仍然使用 `/cache/html`。
+- `/products/**` 和各语言前缀商品详情页必须保持 `no-store`。
 - `/shop/**` 只作为分类路由处理，不得被误判为商品详情缓存。
 - purge 端点产物仍然按 `/cache/html` 列 key、删 key，并返回 `purgedKeys`。
 - `smoke:html-cache` 是否能启动本地 preview，并实际缓存一个页面后通过 purge 删除至少 1 个 HTML key。
 - Redis cache driver 是否先连接并 ping 同一个 client，然后才挂载到 Nitro `cache` storage。
 - Redis 不可用时 Nuxt 仍能启动并 warning 回退内存缓存。
 
-部署前还应在接近生产的环境里请求同一个热门商品详情页两次，确认第二次命中共享缓存，且 Redis 中出现对应 `NUXT_HTML_CACHE_PREFIX` key。
+部署前还应在接近生产的环境里请求商品详情页，确认响应带有 `cache-control: no-store`，并验证结账 API 在价格、配置或库存变化后返回可识别的冲突码。
 
 生产部署脚本 `deploy.sh` 会在拉取镜像前校验：
 

@@ -25,6 +25,16 @@ export const currencyMinorUnits = (value: unknown) => {
   return 2
 }
 
+/**
+ * Default storefront price filters are entered in major units. Keep the
+ * familiar USD-sized range for two-decimal currencies, while giving
+ * zero-decimal currencies enough headroom for their larger face values.
+ */
+export const defaultPriceRangeForCurrency = (currency: unknown): [number, number] => {
+  const max = 5000 * (10 ** Math.max(0, 2 - currencyMinorUnits(currency)))
+  return [0, max] as [number, number]
+}
+
 /** Convert a display-only major amount into a minor integer at an input boundary. */
 export const majorToMinor = (value: unknown, currency: unknown) => {
   const amount = Number(value)
@@ -56,4 +66,3 @@ export const formatMinorMoney = (
     return `${normalizedCurrency} ${amount}`
   }
 }
-

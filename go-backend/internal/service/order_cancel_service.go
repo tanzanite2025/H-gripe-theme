@@ -149,20 +149,6 @@ func rollbackOrderReservationsInTx(repos repository.TxRepositories, o *order.Ord
 		affectedProductIDs = append(affectedProductIDs, productIDs...)
 	}
 
-	if o.PointsUsed > 0 {
-		_, err := repos.Loyalty.AdjustUserPointsInCurrentTx(
-			o.UserID,
-			o.PointsUsed,
-			"refund",
-			"order",
-			o.ID,
-			fmt.Sprintf("Order #%s %s points refund", o.OrderNumber, reason),
-		)
-		if err != nil {
-			return nil, fmt.Errorf("[CRITICAL] Failed to refund points: %w", err)
-		}
-	}
-
 	if o.CouponCode != "" {
 		cp, err := repos.Coupon.FindCouponByCode(o.CouponCode)
 		if err != nil {

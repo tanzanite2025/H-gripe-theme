@@ -28,7 +28,6 @@ interface LoyaltyRules {
   checkin_streak_interval_days: number | null
   checkin_streak_bonus_points: number | null
   checkin_max_points: number | null
-  points_exchange_rate: number | null
 }
 
 type LoyaltyRecord = Record<string, unknown>
@@ -68,7 +67,6 @@ const normalizeLoyaltyRules = (raw: any): LoyaltyRules | null => {
     checkin_streak_interval_days: toNullableNumber(raw.checkin_streak_interval_days),
     checkin_streak_bonus_points: toNullableNumber(raw.checkin_streak_bonus_points),
     checkin_max_points: toNullableNumber(raw.checkin_max_points),
-    points_exchange_rate: toNullableNumber(raw.points_exchange_rate ?? raw.exchange_rate_points)
   }
 }
 
@@ -224,14 +222,17 @@ export function useMembership() {
   const doLogout = async () => {
     try {
       await auth.logout()
-    } catch { }
+    } catch (error) {
+      console.error('Membership logout failed:', error)
+    }
   }
 
   // ========== 初始化 ==========
   const initMembership = async (options: MembershipLoadOptions = {}) => {
     try {
       await auth.ensureSession()
-    } catch {
+    } catch (error) {
+      console.error('Failed to initialize membership session:', error)
     }
 
     const tasks: Promise<unknown>[] = []
@@ -251,7 +252,8 @@ export function useMembership() {
   const refreshData = async () => {
     try {
       await auth.ensureSession()
-    } catch {
+    } catch (error) {
+      console.error('Failed to refresh membership session:', error)
     }
 
     const tasks: Promise<unknown>[] = []

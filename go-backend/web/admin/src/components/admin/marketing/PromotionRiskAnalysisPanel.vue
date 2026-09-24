@@ -64,7 +64,6 @@
               </TableCell>
               <TableCell class="text-xs text-muted-foreground">
                 <div>{{ item.member_level_name || '-' }} · {{ formatRate(item.member_discount_rate) }}</div>
-                <div>积分直抵 · {{ formatRate(item.points_discount_rate) }}</div>
               </TableCell>
               <TableCell class="text-right text-xs tabular-nums">
                 <div>{{ thresholdLabel(item) }}</div>
@@ -135,8 +134,6 @@ const isValidSummary = (summary: unknown): summary is PromotionRiskSummary => {
     && typeof candidate.member_level_count === 'number'
     && typeof candidate.max_member_discount_rate === 'number'
     && typeof candidate.max_member_discount_level_name === 'string'
-    && typeof candidate.points_redemption_enabled === 'boolean'
-    && typeof candidate.direct_points_discount_cap_rate === 'number'
 }
 
 const isValidRiskItem = (item: unknown): item is PromotionRiskItem => {
@@ -224,13 +221,6 @@ const statItems = computed(() => [
     icon: Crown,
     tone: Number(summary.value?.max_member_discount_rate ?? 0) > 0 ? 'green' : 'gray',
   },
-  {
-    key: 'points',
-    label: '积分直抵上限',
-    value: props.formatRate(summary.value?.direct_points_discount_cap_rate ?? 0),
-    icon: Coins,
-    tone: summary.value?.points_redemption_enabled ? 'amber' : 'gray',
-  },
 ])
 
 const summaryTone = (severity?: string): string => {
@@ -276,7 +266,6 @@ const factorLabel = (factor: string) => {
   if (factor === 'fixed_coupon') return '固定券'
   if (factor === 'percentage_coupon') return '百分比券'
   if (factor === 'member_level_discount') return '会员折扣'
-  if (factor === 'direct_points_discount') return '积分直抵'
   return factor
 }
 

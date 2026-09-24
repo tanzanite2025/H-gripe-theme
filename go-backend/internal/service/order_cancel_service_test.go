@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"commerce-platform/internal/domain/coupon"
-	"commerce-platform/internal/domain/loyalty"
 	"commerce-platform/internal/domain/order"
 	"commerce-platform/internal/domain/product"
 
@@ -27,7 +26,6 @@ func TestCancelOrderRejectsPaidOrderWithoutChangingStateOrStock(t *testing.T) {
 		"card",
 		"standard",
 		"",
-		0,
 	)
 	require.NoError(t, err)
 	require.NoError(t, db.Model(&order.Order{}).Where("id = ?", createdOrder.ID).Updates(map[string]interface{}{
@@ -62,7 +60,6 @@ func TestCancelOrderByNumberRejectsPaidPaymentStatusEvenWhenOrderIsPending(t *te
 		"card",
 		"standard",
 		"",
-		0,
 	)
 	require.NoError(t, err)
 	require.NoError(t, db.Model(&order.Order{}).Where("id = ?", createdOrder.ID).Update("payment_status", "paid").Error)
@@ -94,7 +91,6 @@ func TestCancelOrderRestoresStockForPendingUnpaidOrder(t *testing.T) {
 		"card",
 		"standard",
 		"",
-		0,
 	)
 	require.NoError(t, err)
 	require.Equal(t, "pending", createdOrder.Status)
@@ -127,7 +123,6 @@ func TestCancelMadeToOrderDoesNotRestoreStock(t *testing.T) {
 		"card",
 		"standard",
 		"",
-		0,
 	)
 	require.NoError(t, err)
 	require.Equal(t, order.FulfillmentModeMadeToOrder, createdOrder.FulfillmentMode)
@@ -154,7 +149,6 @@ func TestCancelOrderReversesCouponUsageWithoutDeletingAuditRecord(t *testing.T) 
 		"card",
 		"standard",
 		"CANCEL10",
-		0,
 	)
 	require.NoError(t, err)
 
@@ -185,7 +179,6 @@ func TestCancelOrderReversesCouponUsageWithoutDeletingAuditRecord(t *testing.T) 
 		"card",
 		"standard",
 		"CANCEL10",
-		0,
 	)
 	require.NoError(t, err)
 }
@@ -203,20 +196,8 @@ func TestCancelOrderConcurrentRequestsRollbackOnlyOnce(t *testing.T) {
 		"card",
 		"standard",
 		"",
-		0,
 	)
 	require.NoError(t, err)
-	require.NoError(t, db.Create(&loyalty.UserLoyalty{
-		UserID:          42,
-		TotalPoints:     1000,
-		AvailablePoints: 900,
-		UsedPoints:      100,
-	}).Error)
-	require.NoError(t, db.Model(&order.Order{}).Where("id = ?", createdOrder.ID).Updates(map[string]interface{}{
-		"points_used":        100,
-		"points_value_minor": 100,
-	}).Error)
-
 	results := make(chan error, 2)
 	var waitGroup sync.WaitGroup
 	waitGroup.Add(2)
@@ -246,13 +227,4 @@ func TestCancelOrderConcurrentRequestsRollbackOnlyOnce(t *testing.T) {
 	require.NoError(t, db.Where("product_id = ?", productRecord.ID).First(&savedVariant).Error)
 	assert.Equal(t, 5, savedVariant.Stock)
 
-	var savedLoyalty loyalty.UserLoyalty
-	require.NoError(t, db.Where("user_id = ?", 42).First(&savedLoyalty).Error)
-	assert.Equal(t, 1000, savedLoyalty.AvailablePoints)
-	assert.Equal(t, 0, savedLoyalty.UsedPoints)
-
-	var refundTransactions []loyalty.LoyaltyTransaction
-	require.NoError(t, db.Where("user_id = ? AND type = ? AND source = ? AND source_id = ?", 42, "refund", "order", createdOrder.ID).Find(&refundTransactions).Error)
-	require.Len(t, refundTransactions, 1)
-	assert.Equal(t, 100, refundTransactions[0].Points)
 }

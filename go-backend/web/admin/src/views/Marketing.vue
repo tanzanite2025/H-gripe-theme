@@ -157,7 +157,6 @@ interface LoyaltyProgramConfig {
   checkin_max_points?: number | string
   enabled?: boolean
   currency?: string
-  exchange_rate_points?: number | string
 }
 
 const authStore = useAuthStore()
@@ -207,9 +206,6 @@ const loyaltySubmitting = ref(false)
 const loyaltyErrors = reactive<LoyaltyErrors>({})
 const loyaltyForm = reactive<LoyaltyAdjustmentForm>({ user_id: '', points: 0, description: '' })
 const loyaltySettings = reactive({
-  points_redemption_enabled: true,
-  points_redemption_currency: 'USD',
-  points_exchange_rate: 100,
   tz_loyalty_purchase_earn_points_per_currency_unit: 1,
   tz_loyalty_referral_referrer_points: 100,
   tz_loyalty_referral_referee_points: 50,
@@ -476,9 +472,6 @@ const applyLoyaltyProgramConfig = (config?: LoyaltyProgramConfig) => {
   loyaltyProgramVersion.value = Number(config.version || 0)
   pointsBaseCurrency.value = normalizeCurrencyCode(config.points_base_currency || 'USD') || 'USD'
   Object.assign(loyaltySettings, {
-    points_redemption_enabled: Boolean(config.enabled),
-    points_redemption_currency: normalizeCurrencyCode(config.currency || 'USD') || 'USD',
-    points_exchange_rate: Number(config.exchange_rate_points || 100),
     tz_loyalty_purchase_earn_points_per_currency_unit: Number(config.purchase_earn_points_per_currency_unit ?? 1),
     tz_loyalty_referral_referrer_points: Number(config.referral_referrer_points || 0),
     tz_loyalty_referral_referee_points: Number(config.referral_referee_points || 0),
@@ -506,22 +499,17 @@ const fetchLoyaltyProgramConfig = async (force = false) => {
 const refreshLoyaltyProgramConfig = () => fetchLoyaltyProgramConfig(true)
 
 const saveLoyaltyProgramConfig = async () => {
-  const pointsCurrency = normalizeCurrencyCode(loyaltySettings.points_redemption_currency)
+  const pointsCurrency = pointsBaseCurrency.value
   if (!/^[A-Z]{3}$/.test(pointsCurrency)) {
-    toast.error('请输入有效的积分抵扣币种')
-    return
-  }
-  if (Number(loyaltySettings.points_exchange_rate) <= 0) {
-    toast.error('积分抵扣比例必须大于 0')
+    toast.error('请输入有效的积分基准货币')
     return
   }
 
   loyaltyProgramSaving.value = true
   try {
     const response = await axios.put('/api/admin/marketing/loyalty/program-config', {
-      enabled: Boolean(loyaltySettings.points_redemption_enabled),
+      enabled: true,
       currency: pointsCurrency,
-      exchange_rate_points: Number(loyaltySettings.points_exchange_rate),
       purchase_earn_points_per_currency_unit: Number(loyaltySettings.tz_loyalty_purchase_earn_points_per_currency_unit),
       referral_referrer_points: Number(loyaltySettings.tz_loyalty_referral_referrer_points),
       referral_referee_points: Number(loyaltySettings.tz_loyalty_referral_referee_points),
@@ -677,4 +665,3 @@ onMounted(() => Promise.all([
   ensureActiveTabLoaded()
 ]))
 </script>
-

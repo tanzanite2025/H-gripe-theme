@@ -2,9 +2,7 @@ package service
 
 import (
 	"testing"
-	"time"
 
-	"commerce-platform/internal/domain/currency"
 	"commerce-platform/internal/domain/loyalty"
 	domainmoney "commerce-platform/internal/domain/money"
 	"commerce-platform/internal/domain/order"
@@ -18,126 +16,6 @@ import (
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
-
-func TestCheckoutCalculatePointsDiscountConvertsUSDValueToOrderCurrency(t *testing.T) {
-	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
-	require.NoError(t, err)
-	sqlDB, err := db.DB()
-	require.NoError(t, err)
-	t.Cleanup(func() { _ = sqlDB.Close() })
-	require.NoError(t, db.AutoMigrate(&loyalty.UserLoyalty{}))
-	require.NoError(t, db.Create(&loyalty.UserLoyalty{UserID: 7, AvailablePoints: 100, TotalPoints: 100}).Error)
-
-	checkoutService := &CheckoutService{}
-	pointsToUse, discount, _, err := checkoutService.calculatePointsDiscountMoney(
-		repository.NewLoyaltyRepository(db),
-		7,
-		100,
-		domainmoney.MustNew(2000, "JPY"),
-		&loyalty.ProgramConfig{ID: 3, Enabled: true, Currency: "USD", ExchangeRatePoints: 100},
-		currency.OrderFXSnapshot{
-			Version:       currency.OrderFXSnapshotVersion,
-			BaseCurrency:  "USD",
-			OrderCurrency: "JPY",
-			RateDecimal:   "150",
-			Source:        "test",
-			CapturedAt:    time.Now().UTC(),
-		},
-	)
-
-	require.NoError(t, err)
-	assert.Equal(t, 100, pointsToUse)
-	assert.Equal(t, int64(150), discount.AmountMinor())
-}
-
-func TestCheckoutCalculatePointsDiscountCapsAfterFXConversion(t *testing.T) {
-	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
-	require.NoError(t, err)
-	sqlDB, err := db.DB()
-	require.NoError(t, err)
-	t.Cleanup(func() { _ = sqlDB.Close() })
-	require.NoError(t, db.AutoMigrate(&loyalty.UserLoyalty{}))
-	require.NoError(t, db.Create(&loyalty.UserLoyalty{UserID: 7, AvailablePoints: 100000, TotalPoints: 100000}).Error)
-
-	_, discount, _, err := (&CheckoutService{}).calculatePointsDiscountMoney(
-		repository.NewLoyaltyRepository(db),
-		7,
-		100000,
-		domainmoney.MustNew(2000, "JPY"),
-		&loyalty.ProgramConfig{ID: 3, Enabled: true, Currency: "USD", ExchangeRatePoints: 100},
-		currency.OrderFXSnapshot{
-			Version:       currency.OrderFXSnapshotVersion,
-			BaseCurrency:  "USD",
-			OrderCurrency: "JPY",
-			RateDecimal:   "150",
-			Source:        "test",
-			CapturedAt:    time.Now().UTC(),
-		},
-	)
-
-	require.NoError(t, err)
-	assert.LessOrEqual(t, discount.AmountMinor(), int64(1000))
-	assert.Equal(t, int64(999), discount.AmountMinor())
-}
-
-func TestCheckoutCalculatePointsDiscountUsesConfiguredPointsCurrency(t *testing.T) {
-	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
-	require.NoError(t, err)
-	sqlDB, err := db.DB()
-	require.NoError(t, err)
-	t.Cleanup(func() { _ = sqlDB.Close() })
-	require.NoError(t, db.AutoMigrate(&loyalty.UserLoyalty{}))
-	require.NoError(t, db.Create(&loyalty.UserLoyalty{UserID: 7, AvailablePoints: 100, TotalPoints: 100}).Error)
-
-	_, discount, _, err := (&CheckoutService{}).calculatePointsDiscountMoney(
-		repository.NewLoyaltyRepository(db),
-		7,
-		100,
-		domainmoney.MustNew(10000, "USD"),
-		&loyalty.ProgramConfig{ID: 3, Enabled: true, Currency: "JPY", ExchangeRatePoints: 100},
-		currency.OrderFXSnapshot{
-			Version:       currency.OrderFXSnapshotVersion,
-			BaseCurrency:  "JPY",
-			OrderCurrency: "USD",
-			RateDecimal:   "0.0067",
-			Source:        "test",
-			CapturedAt:    time.Now().UTC(),
-		},
-	)
-
-	require.NoError(t, err)
-	assert.Equal(t, int64(1), discount.AmountMinor())
-}
-
-func TestCheckoutCalculatePointsDiscountMoneyRoundsOnlyAtOrderCurrencyBoundary(t *testing.T) {
-	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
-	require.NoError(t, err)
-	sqlDB, err := db.DB()
-	require.NoError(t, err)
-	t.Cleanup(func() { _ = sqlDB.Close() })
-	require.NoError(t, db.AutoMigrate(&loyalty.UserLoyalty{}))
-	require.NoError(t, db.Create(&loyalty.UserLoyalty{UserID: 7, AvailablePoints: 100, TotalPoints: 100}).Error)
-
-	subtotal := domainmoney.MustNew(10000, "USD")
-	pointsToUse, discount, _, err := (&CheckoutService{}).calculatePointsDiscountMoney(
-		repository.NewLoyaltyRepository(db),
-		7,
-		100,
-		subtotal,
-		&loyalty.ProgramConfig{ID: 3, Enabled: true, Currency: "JPY", ExchangeRatePoints: 100},
-		currency.OrderFXSnapshot{
-			Version:       currency.OrderFXSnapshotVersion,
-			BaseCurrency:  "JPY",
-			OrderCurrency: "USD",
-			RateDecimal:   "0.0067",
-			Source:        "test",
-			CapturedAt:    time.Now().UTC(),
-		},
-	)
-	require.NoError(t, err)
-	require.Equal(t, 100, pointsToUse)
-	require.Equal(t, int64(1), discount.AmountMinor())
-}
 
 func TestCheckoutMemberDiscountUsesExactMinorUnitRounding(t *testing.T) {
 	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
@@ -190,33 +68,29 @@ func TestCheckoutQuoteAppliesMerchandiseDiscountsBeforeShippingAndTax(t *testing
 		Items:           []order.OrderItem{{ProductID: productRecord.ID, Quantity: 1}},
 		ShippingAddress: testAddress(),
 		CouponCode:      "WATERFALL-900",
-		PointsToUse:     100000,
 	})
 	require.NoError(t, err)
 
 	assert.Equal(t, int64(5000), quote.MemberDiscountMinor)
 	assert.Equal(t, int64(90000), quote.CouponDiscountMinor)
-	assert.Equal(t, int64(2500), quote.PointsDiscountMinor)
-	assert.Equal(t, 2500, quote.PointsToUse)
 	assert.Equal(t, int64(1000), quote.ShippingFeeMinor)
-	assert.Equal(t, int64(250), quote.TaxMinor)
-	assert.Equal(t, int64(3750), quote.TotalMinor)
-	assert.LessOrEqual(t, quote.MemberDiscountMinor+quote.CouponDiscountMinor+quote.PointsDiscountMinor, quote.SubtotalMinor)
+	assert.Equal(t, int64(500), quote.TaxMinor)
+	assert.Equal(t, int64(6500), quote.TotalMinor)
+	assert.LessOrEqual(t, quote.MemberDiscountMinor+quote.CouponDiscountMinor, quote.SubtotalMinor)
 	assert.Equal(t, int64(100000), quote.PricingSnapshot.BaseTotal().AmountMinor())
-	assert.Equal(t, int64(97500), quote.PricingSnapshot.DiscountTotal().AmountMinor())
-	assert.Equal(t, int64(2500), quote.PricingSnapshot.NetTotal().AmountMinor())
+	assert.Equal(t, int64(95000), quote.PricingSnapshot.DiscountTotal().AmountMinor())
+	assert.Equal(t, int64(5000), quote.PricingSnapshot.NetTotal().AmountMinor())
 	lineTaxes := quote.PricingSnapshot.Lines()
 	require.Len(t, lineTaxes, 1)
-	assert.Equal(t, int64(250), lineTaxes[0].Tax().AmountMinor())
+	assert.Equal(t, int64(500), lineTaxes[0].Tax().AmountMinor())
 	assert.Equal(t, int64(100000), quote.SubtotalMinor)
 	assert.Equal(t, int64(1000), quote.ShippingFeeMinor)
-	assert.Equal(t, int64(250), quote.TaxMinor)
+	assert.Equal(t, int64(500), quote.TaxMinor)
 	assert.Equal(t, int64(5000), quote.MemberDiscountMinor)
 	assert.Equal(t, int64(90000), quote.CouponDiscountMinor)
-	assert.Equal(t, int64(2500), quote.PointsDiscountMinor)
-	assert.Equal(t, int64(97500), quote.DiscountMinor)
-	assert.Equal(t, int64(3750), quote.TotalMinor)
-	assert.Equal(t, int64(3750), quote.PaymentAmountMinor)
+	assert.Equal(t, int64(95000), quote.DiscountMinor)
+	assert.Equal(t, int64(6500), quote.TotalMinor)
+	assert.Equal(t, int64(6500), quote.PaymentAmountMinor)
 
 	var lineBase, lineDiscount, lineNet, lineTax int64
 	for _, line := range quote.PricingSnapshot.Lines() {

@@ -18,8 +18,8 @@ type CreateOrderRequest struct {
 	ShippingQuoteID              string             `json:"shipping_quote_id" binding:"required"`
 	SelectedQuotePlanID          string             `json:"selected_quote_plan_id" binding:"required"`
 	CouponCode                   string             `json:"coupon_code"`
+	Notes                        string             `json:"notes"`
 	DisplayCurrency              string             `json:"display_currency"`
-	PointsToUse                  int                `json:"points_to_use"`
 	PolicyDisclosureAcknowledged bool               `json:"policy_disclosure_acknowledged"`
 	ClientRisk                   *ClientRiskRequest `json:"client_risk,omitempty"`
 }
@@ -71,8 +71,6 @@ type PublicOrderResponse struct {
 	TotalMinor            int64                    `json:"total_minor"`
 	Currency              string                   `json:"currency"`
 	CouponCode            string                   `json:"coupon_code"`
-	PointsUsed            int                      `json:"points_used"`
-	PointsValueMinor      int64                    `json:"points_value_minor"`
 	ShippingAddress       orderdomain.Address      `json:"shipping_address"`
 	BillingAddress        orderdomain.Address      `json:"billing_address"`
 	CustomerNote          string                   `json:"customer_note"`
@@ -98,6 +96,10 @@ type PublicTrackingShipment struct {
 }
 
 type PublicOrderItem struct {
+	// ItemIndex is the stable zero-based position in the public order payload.
+	// It lets customer workflows refer to an order line without exposing the
+	// internal database order-item ID.
+	ItemIndex       int             `json:"item_index"`
 	ProductID       uint            `json:"product_id"`
 	VariantID       *uint           `json:"variant_id"`
 	ProductName     string          `json:"product_name"`
@@ -160,8 +162,6 @@ func publicOrderResponse(item orderdomain.Order) PublicOrderResponse {
 		TotalMinor:            totalMinor,
 		Currency:              item.Currency,
 		CouponCode:            item.CouponCode,
-		PointsUsed:            item.PointsUsed,
-		PointsValueMinor:      item.PointsValueMinor,
 		ShippingAddress:       item.ShippingAddress,
 		BillingAddress:        item.BillingAddress,
 		CustomerNote:          item.CustomerNote,
@@ -187,7 +187,7 @@ func publicOrderResponses(items []orderdomain.Order) []PublicOrderResponse {
 
 func publicOrderItems(items []orderdomain.OrderItem) []PublicOrderItem {
 	result := make([]PublicOrderItem, 0, len(items))
-	for _, item := range items {
+	for itemIndex, item := range items {
 		priceMinor := int64(0)
 		if value, err := item.PriceMoney(); err == nil {
 			priceMinor = value.AmountMinor()
@@ -209,6 +209,7 @@ func publicOrderItems(items []orderdomain.OrderItem) []PublicOrderItem {
 			totalMinor = value.AmountMinor()
 		}
 		result = append(result, PublicOrderItem{
+			ItemIndex:       itemIndex,
 			ProductID:       item.ProductID,
 			VariantID:       item.VariantID,
 			ProductName:     item.ProductName,

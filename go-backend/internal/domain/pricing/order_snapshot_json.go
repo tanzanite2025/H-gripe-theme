@@ -21,7 +21,6 @@ type OrderPricingSnapshotInput struct {
 	Tax            money.Money
 	MemberDiscount money.Money
 	CouponDiscount money.Money
-	PointsDiscount money.Money
 	DiscountTotal  money.Money
 	Total          money.Money
 }
@@ -34,7 +33,6 @@ type OrderPricingSnapshotPayload struct {
 	TaxMinor            int64  `json:"tax_minor"`
 	MemberDiscountMinor int64  `json:"member_discount_minor"`
 	CouponDiscountMinor int64  `json:"coupon_discount_minor"`
-	PointsDiscountMinor int64  `json:"points_discount_minor"`
 	DiscountTotalMinor  int64  `json:"discount_total_minor"`
 	TotalMinor          int64  `json:"total_minor"`
 }
@@ -50,7 +48,7 @@ func MarshalOrderPricingSnapshot(input OrderPricingSnapshotInput) ([]byte, error
 func (input OrderPricingSnapshotInput) Payload() (OrderPricingSnapshotPayload, error) {
 	values := []money.Money{
 		input.Subtotal, input.Shipping, input.Tax,
-		input.MemberDiscount, input.CouponDiscount, input.PointsDiscount,
+		input.MemberDiscount, input.CouponDiscount,
 		input.DiscountTotal, input.Total,
 	}
 	for _, value := range values {
@@ -65,10 +63,6 @@ func (input OrderPricingSnapshotInput) Payload() (OrderPricingSnapshotPayload, e
 		}
 	}
 	discountSum, err := input.MemberDiscount.Add(input.CouponDiscount)
-	if err != nil {
-		return OrderPricingSnapshotPayload{}, fmt.Errorf("%w: discount total overflows", ErrInvalidOrderSnapshot)
-	}
-	discountSum, err = discountSum.Add(input.PointsDiscount)
 	if err != nil {
 		return OrderPricingSnapshotPayload{}, fmt.Errorf("%w: discount total overflows", ErrInvalidOrderSnapshot)
 	}
@@ -104,7 +98,6 @@ func (input OrderPricingSnapshotInput) Payload() (OrderPricingSnapshotPayload, e
 		TaxMinor:            input.Tax.AmountMinor(),
 		MemberDiscountMinor: input.MemberDiscount.AmountMinor(),
 		CouponDiscountMinor: input.CouponDiscount.AmountMinor(),
-		PointsDiscountMinor: input.PointsDiscount.AmountMinor(),
 		DiscountTotalMinor:  input.DiscountTotal.AmountMinor(),
 		TotalMinor:          input.Total.AmountMinor(),
 	}, nil
@@ -140,10 +133,6 @@ func ParseOrderPricingSnapshot(raw []byte) (OrderPricingSnapshotPayload, error) 
 		return OrderPricingSnapshotPayload{}, ErrInvalidOrderSnapshot
 	}
 	input.CouponDiscount, err = money.New(payload.CouponDiscountMinor, payload.Currency)
-	if err != nil {
-		return OrderPricingSnapshotPayload{}, ErrInvalidOrderSnapshot
-	}
-	input.PointsDiscount, err = money.New(payload.PointsDiscountMinor, payload.Currency)
 	if err != nil {
 		return OrderPricingSnapshotPayload{}, ErrInvalidOrderSnapshot
 	}

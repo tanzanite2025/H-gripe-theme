@@ -461,13 +461,14 @@ const shippingQuoteApi = useShippingQuote()
 const {
   cartItems,
   cartCurrency,
+  subtotal,
   isCheckoutOpen,
   preferredCheckoutPaymentMethod,
-  priceBreakdown,
   clearCart,
   reloadCartFromBackend,
   closeCheckout,
   backToCart,
+  calculation,
 } = useCart()
 const {
   paymentMethodOptions,
@@ -587,12 +588,11 @@ const billingAddressComplete = computed(() => {
 })
 
 const orderTotals = computed(() => {
-  const local = priceBreakdown.value as { subtotal_minor?: number; subtotal?: number }
   const quote = checkoutQuote.value
   return {
     subtotalMinor: quote
       ? Number(quote.subtotal_minor ?? 0)
-      : Number(local.subtotal_minor ?? local.subtotal ?? 0),
+      : subtotal.value,
     shippingMinor: quote ? Number(quote.shipping_fee_minor ?? 0) : null,
     taxMinor: quote ? Number(quote.tax_minor ?? 0) : null,
     couponDiscountMinor: quote ? Number(quote.coupon_discount_minor ?? 0) : 0,
@@ -603,6 +603,10 @@ const orderTotals = computed(() => {
 const checkoutCurrency = computed(() => String(
   checkoutQuote.value?.currency || cartCurrency.value || displayCurrency.value || 'USD',
 ).trim().toUpperCase())
+
+const checkoutCouponCode = computed(() => String(
+  calculation.appliedCoupon.value?.code || checkoutQuote.value?.coupon_code || '',
+).trim())
 
 const formatMinorPrice = (minor: number | string | null | undefined, currency: string) => (
   formatMinorMoney(minor, currency)
@@ -810,6 +814,9 @@ const refreshCheckoutQuote = async () => {
       shipping_address: buildShippingAddressPayload(),
       display_currency: String(displayCurrency.value || '').trim().toUpperCase(),
       payment_method: selectedMethod.value === 'card' ? 'card' : selectedMethod.value,
+      ...(checkoutCouponCode.value
+        ? { coupon_code: checkoutCouponCode.value }
+        : {}),
       ...(selectedQuotePlanID.value && checkoutQuote.value?.shipping_quote?.id
         ? {
             shipping_quote_id: checkoutQuote.value.shipping_quote.id,
@@ -827,6 +834,18 @@ const refreshCheckoutQuote = async () => {
     }
   } catch (error) {
     checkoutQuote.value = null
+    if (error instanceof ApiRequestError && (
+      error.code === 'order_total_changed'
+      || error.code === 'product_configuration_price_changed'
+    )) {
+      resetCheckoutSubmissionKey()
+      await reloadCartFromBackend()
+      checkoutError.value = t(
+        'checkout.modal.messages.priceUpdated',
+        'The price or configuration has changed. We loaded the latest total. Please review it and continue when ready.',
+      )
+      return
+    }
     if (error instanceof ApiRequestError && error.code === 'shipping_rate_unavailable') {
       checkoutError.value = shippingUnavailableMessage()
     }
@@ -877,6 +896,10 @@ const createLocalOrder = async (idempotencyKey: string): Promise<OrderResponse> 
       })),
       shipping_address: buildShippingAddressPayload(),
       billing_address: buildBillingAddressPayload(),
+      ...(checkoutCouponCode.value
+        ? { coupon_code: checkoutCouponCode.value }
+        : {}),
+      notes: form.value.notes.trim(),
       payment_method: selectedMethod.value === 'card' ? 'card' : selectedMethod.value,
       display_currency: String(displayCurrency.value || '').trim().toUpperCase(),
       shipping_method: 'standard',
@@ -1090,12 +1113,17 @@ const submitOrder = async () => {
         'checkout.payment.gatewayFallback.error',
         'The selected payment provider is temporarily unavailable. Please choose another available payment method.',
       )
-    } else if (error instanceof ApiRequestError && error.code === 'order_total_changed') {
+    } else if (error instanceof ApiRequestError && (
+      error.code === 'order_total_changed'
+      || error.code === 'product_configuration_price_changed'
+    )) {
       resetCheckoutSubmissionKey()
+      checkoutQuote.value = null
+      await reloadCartFromBackend()
       await refreshCheckoutQuote()
-      checkoutError.value = error.message || t(
+      checkoutError.value = t(
         'checkout.modal.messages.priceUpdated',
-        'The price has been updated. Please review the new order total.',
+        'The price or configuration has changed. We loaded the latest total. Please review it and continue when ready.',
       )
     } else if (error instanceof ApiRequestError && error.code === 'checkout_cart_already_consumed') {
       await reloadCartFromBackend()
@@ -1236,6 +1264,14 @@ watch(selectedMethod, () => {
     resetCheckoutSubmissionKey()
     scheduleQuoteRefresh()
   }
+})
+
+watch(checkoutCouponCode, () => {
+  if (!isCheckoutOpen.value) return
+  selectedQuotePlanID.value = null
+  checkoutQuote.value = null
+  resetCheckoutSubmissionKey()
+  scheduleQuoteRefresh()
 })
 
 watch(

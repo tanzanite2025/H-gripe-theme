@@ -1170,7 +1170,7 @@ func (s *PaymentService) RecordVerifiedGatewayRefund(input VerifiedGatewayRefund
 			}
 			if !amountMismatch {
 				return fmt.Errorf(
-					"provider refund amount %s does not match loyalty-adjusted local net refund amount %s",
+					"provider refund amount %s does not match local net refund amount %s",
 					formatRefundMoney(providerRefundMoney),
 					formatRefundMoney(refundAmountMoney),
 				)

@@ -250,15 +250,14 @@ Duplicate successful payments have a separate ledger rule:
 Refund loyalty settlement has one shared accounting boundary:
 
 - `refunds.requested_amount` is the original refund request; `refunds.amount`
-  is the net amount sent to the provider after coupon and loyalty deductions.
+  is the amount sent to the provider and is never reduced by loyalty points.
 - Completed-order reward points are clawed back proportionally to the
-  cumulative requested refund amount. Points spent as an order discount are
-  returned by the same proportion.
+  cumulative requested refund amount. Points are not a payment tender.
 - If the customer's available balance cannot cover the earned-point clawback,
-  the missing points are converted with the active `ExchangeRatePoints` and
-  deducted from the provider refund before the gateway call.
+  the missing points are recorded as points debt; the provider refund remains
+  unchanged.
 - The refund ID is the idempotency key for the clawback, reversal, and
-  used-point-return ledger entries. Repeated provider notifications do not
+  points-debt ledger entries. Repeated provider notifications do not
   apply them twice.
 - A provider call failure before a provider refund ID is returned releases the
   reservation. A provider response with a refund ID but a mismatched amount is

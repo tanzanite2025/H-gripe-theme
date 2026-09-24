@@ -205,6 +205,7 @@ export const useCart = () => {
   }
 
   const loadCartForInteraction = async () => {
+    if (!import.meta.client) return
     if (cartBackendLoaded || isLoadingCart.value) return
     if (!auth.initialized.value) {
       await auth.ensureSession()
@@ -366,9 +367,6 @@ export const useCart = () => {
       ?? cartShippingQuote.value?.shipping_fee_minor
       ?? 0,
   ))
-  const tax = computed(() => calculation.calculateTax(subtotal.value, shipping.value))
-  const priceBreakdown = computed(() => calculation.calculateTotal(cartItems.value, shipping.value))
-  const total = computed(() => priceBreakdown.value.total_minor)
 
   const refreshShippingQuote = async () => {
     const currentRevision = ++cartShippingQuoteRevision
@@ -647,9 +645,6 @@ export const useCart = () => {
     cartCount,
     subtotal,
     shipping,
-    tax,
-    total,
-    priceBreakdown,
     cartCurrency,
     cartShippingQuote,
     isRefreshingCartShippingQuote,

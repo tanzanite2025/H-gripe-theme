@@ -73,18 +73,77 @@
           <span class="ml-1">{{ optionFreehub(activeOption) }}</span>
         </p>
         <p
-          v-if="activeOption.notesKey"
+          v-if="activeOption.notesKey && !activeOption.factId"
           class="mt-0.5 tz-caption tz-text-muted"
         >
           {{ optionNotes(activeOption) }}
         </p>
       </div>
     </div>
+
+    <section
+      v-if="activeOption"
+      class="freehub-groupset-helper__facts"
+      :aria-label="t('wheelsetFreehubHelper.facts.heading')"
+    >
+      <div
+        ref="factRail"
+        class="freehub-groupset-helper__fact-rail"
+        role="region"
+        :aria-label="t('wheelsetFreehubHelper.facts.heading')"
+        @scroll.passive="updateActiveFact"
+      >
+        <article
+          v-for="(fact, index) in compatibilityFacts"
+          :key="fact.id"
+          :id="`${helperId}-fact-panel-${index}`"
+          :data-freehub-fact-index="index"
+          :aria-labelledby="`${helperId}-fact-tab-${index}`"
+          class="freehub-groupset-helper__fact"
+          :class="[
+            `freehub-groupset-helper__fact--${fact.id}`,
+            { 'is-relevant': isFactRelevant(fact.id) },
+          ]"
+          role="tabpanel"
+        >
+          <div class="freehub-groupset-helper__fact-heading">
+            <span class="freehub-groupset-helper__fact-label">{{ t(fact.labelKey) }}</span>
+            <h4>{{ t(fact.titleKey) }}</h4>
+          </div>
+          <p class="freehub-groupset-helper__fact-callout">
+            {{ t(fact.calloutKey) }}
+          </p>
+          <p class="freehub-groupset-helper__fact-copy">
+            {{ t(fact.bodyKey) }}
+          </p>
+        </article>
+      </div>
+
+      <div
+        class="tz-carousel-pagination freehub-groupset-helper__pagination"
+        role="tablist"
+        :aria-label="t('wheelsetFreehubHelper.facts.pagination')"
+      >
+        <button
+          v-for="(fact, index) in compatibilityFacts"
+          :key="`${fact.id}-dot`"
+          :id="`${helperId}-fact-tab-${index}`"
+          type="button"
+          class="tz-carousel-pagination__dot"
+          :class="{ 'is-active': activeFactIndex === index }"
+          :aria-label="t('wheelsetFreehubHelper.facts.showFact', { fact: index + 1 })"
+          :aria-controls="`${helperId}-fact-panel-${index}`"
+          :aria-selected="activeFactIndex === index"
+          role="tab"
+          @click="scrollToFact(index)"
+        />
+      </div>
+    </section>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, ref, useId, watch } from 'vue'
+import { computed, nextTick, ref, useId, watch } from 'vue'
 import { useI18n } from '#imports'
 import { usePageMessages } from '~/composables/usePageMessages'
 
@@ -102,7 +161,10 @@ interface FreehubOption {
   labelKey: string
   freehubKey: string
   notesKey?: string
+  factId?: CompatibilityFactId
 }
+
+type CompatibilityFactId = 'xdr-xd' | 'shimano-road-12-speed'
 // NOTE / 说明：
 // 如果后续要增加更多套件 → 塔基类型的对应关系，直接在下面的 FREEHUB_OPTIONS 数组中追加一条对象即可。
 // 不需要改其他文件；品牌下拉会根据 brand 字段自动生成，套件下拉会根据 brand 自动过滤。
@@ -156,6 +218,15 @@ const FREEHUB_OPTIONS: FreehubOption[] = [
     labelKey: 'options.shimano105Di2R7100.label',
     freehubKey: 'options.shimano105Di2R7100.freehub',
     notesKey: 'options.shimano105Di2R7100.notes',
+    factId: 'shimano-road-12-speed',
+  },
+  {
+    id: 'shimano-ultegra-di2-r8100',
+    brand: 'Shimano',
+    labelKey: 'options.shimanoUltegraDi2R8100.label',
+    freehubKey: 'options.shimanoUltegraDi2R8100.freehub',
+    notesKey: 'options.shimanoUltegraDi2R8100.notes',
+    factId: 'shimano-road-12-speed',
   },
   {
     id: 'sram-gx-eagle',
@@ -163,12 +234,14 @@ const FREEHUB_OPTIONS: FreehubOption[] = [
     labelKey: 'options.sramGxEagle.label',
     freehubKey: 'options.sramGxEagle.freehub',
     notesKey: 'options.sramGxEagle.notes',
+    factId: 'xdr-xd',
   },
   {
     id: 'sram-x01-eagle',
     brand: 'SRAM',
     labelKey: 'options.sramX01Eagle.label',
     freehubKey: 'options.sramX01Eagle.freehub',
+    factId: 'xdr-xd',
   },
   {
     id: 'sram-nx-eagle',
@@ -181,12 +254,14 @@ const FREEHUB_OPTIONS: FreehubOption[] = [
     brand: 'SRAM',
     labelKey: 'options.sramForceEtapAxs.label',
     freehubKey: 'options.sramForceEtapAxs.freehub',
+    factId: 'xdr-xd',
   },
   {
     id: 'sram-red-etap-axs',
     brand: 'SRAM',
     labelKey: 'options.sramRedEtapAxs.label',
     freehubKey: 'options.sramRedEtapAxs.freehub',
+    factId: 'xdr-xd',
   },
   {
     id: 'campagnolo-ekar-13',
@@ -214,8 +289,27 @@ watch(locale, (nextLocale) => {
 const selectedBrand = ref<string>('')
 const selectedGroupsetId = ref<string>('')
 const helperId = useId()
+const factRail = ref<HTMLElement | null>(null)
+const activeFactIndex = ref(0)
 const brandSelectId = computed(() => `${helperId}-freehub-brand`)
 const groupsetSelectId = computed(() => `${helperId}-freehub-groupset`)
+
+const compatibilityFacts = [
+  {
+    id: 'xdr-xd',
+    labelKey: 'wheelsetFreehubHelper.facts.xdrXd.label',
+    titleKey: 'wheelsetFreehubHelper.facts.xdrXd.title',
+    calloutKey: 'wheelsetFreehubHelper.facts.xdrXd.callout',
+    bodyKey: 'wheelsetFreehubHelper.facts.xdrXd.body',
+  },
+  {
+    id: 'shimano-road-12-speed',
+    labelKey: 'wheelsetFreehubHelper.facts.shimano12.label',
+    titleKey: 'wheelsetFreehubHelper.facts.shimano12.title',
+    calloutKey: 'wheelsetFreehubHelper.facts.shimano12.callout',
+    bodyKey: 'wheelsetFreehubHelper.facts.shimano12.body',
+  },
+] as const
 
 const brands = computed(() => {
   const unique = new Set<string>()
@@ -235,6 +329,22 @@ const activeOption = computed(() => {
   return FREEHUB_OPTIONS.find((option) => option.id === selectedGroupsetId.value) ?? null
 })
 
+watch(selectedBrand, () => {
+  selectedGroupsetId.value = ''
+})
+
+const isFactRelevant = (factId: CompatibilityFactId) => (
+  activeOption.value?.factId === factId
+)
+
+watch(activeOption, async () => {
+  const relevantIndex = compatibilityFacts.findIndex((fact) => isFactRelevant(fact.id))
+  const index = relevantIndex >= 0 ? relevantIndex : 0
+  activeFactIndex.value = index
+  await nextTick()
+  scrollToFact(index)
+})
+
 const optionLabel = (option: FreehubOption) => (
   t(`wheelsetFreehubHelper.${option.labelKey}`)
 )
@@ -244,6 +354,36 @@ const optionFreehub = (option: FreehubOption) => (
 const optionNotes = (option: FreehubOption) => (
   option.notesKey ? t(`wheelsetFreehubHelper.${option.notesKey}`) : ''
 )
+
+const scrollToFact = (index: number) => {
+  const currentRail = factRail.value
+  const card = currentRail?.querySelector<HTMLElement>(
+    `[data-freehub-fact-index="${index}"]`,
+  )
+  if (!currentRail || !card) return
+
+  currentRail.scrollTo({ left: card.offsetLeft, behavior: 'smooth' })
+  activeFactIndex.value = index
+}
+
+const updateActiveFact = () => {
+  const currentRail = factRail.value
+  if (!currentRail) return
+
+  const center = currentRail.scrollLeft + currentRail.clientWidth / 2
+  const cards = Array.from(
+    currentRail.querySelectorAll<HTMLElement>('[data-freehub-fact-index]'),
+  )
+  if (!cards.length) return
+  const nearestCard = cards.reduce((nearest, card) => (
+    Math.abs(card.offsetLeft + card.offsetWidth / 2 - center)
+      < Math.abs(nearest.offsetLeft + nearest.offsetWidth / 2 - center)
+      ? card
+      : nearest
+  ))
+
+  activeFactIndex.value = Number(nearestCard.dataset.freehubFactIndex || 0)
+}
 </script>
 
 <style scoped>
@@ -261,6 +401,98 @@ const optionNotes = (option: FreehubOption) => (
 
 .freehub-groupset-helper__status {
   margin-top: 0.75rem;
+}
+
+.freehub-groupset-helper__facts {
+  margin-top: 0.875rem;
+}
+
+.freehub-groupset-helper__fact-rail {
+  display: grid;
+  grid-auto-columns: 100%;
+  grid-auto-flow: column;
+  gap: 0.625rem;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+}
+
+.freehub-groupset-helper__fact-rail::-webkit-scrollbar {
+  display: none;
+}
+
+.freehub-groupset-helper__fact {
+  min-width: 0;
+  padding: 0.75rem;
+  border: 1px solid var(--tz-border-subtle);
+  border-radius: 0.5rem;
+  background: var(--tz-surface-panel);
+  scroll-snap-align: start;
+}
+
+.freehub-groupset-helper__fact--xdr-xd {
+  border-color: #d6a23d;
+  background: #fffaf0;
+}
+
+.freehub-groupset-helper__fact--shimano-road-12-speed {
+  border-color: #5aa88e;
+  background: #f2fbf7;
+}
+
+.freehub-groupset-helper__fact-heading h4 {
+  margin-top: 0.25rem;
+  color: var(--tz-text-primary);
+  font-size: 0.75rem;
+  font-weight: 650;
+  line-height: 1.35;
+}
+
+.freehub-groupset-helper__fact-label {
+  color: var(--tz-text-muted);
+  font-size: 0.625rem;
+  font-weight: 600;
+}
+
+.freehub-groupset-helper__fact-callout {
+  margin-top: 0.5rem;
+  color: var(--tz-text-primary);
+  font-size: 0.7rem;
+  font-weight: 650;
+  line-height: 1.45;
+}
+
+.freehub-groupset-helper__fact--xdr-xd .freehub-groupset-helper__fact-callout {
+  color: #a16207;
+}
+
+.freehub-groupset-helper__fact--shimano-road-12-speed .freehub-groupset-helper__fact-callout {
+  color: #047857;
+}
+
+.freehub-groupset-helper__fact-copy {
+  margin-top: 0.25rem;
+  color: var(--tz-text-secondary);
+  font-size: 0.675rem;
+  line-height: 1.5;
+}
+
+.freehub-groupset-helper__pagination {
+  margin-top: 0.5rem;
+}
+
+@media (min-width: 768px) {
+  .freehub-groupset-helper__fact-rail {
+    grid-auto-columns: minmax(0, 1fr);
+    grid-auto-flow: initial;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
+    overflow: visible;
+  }
+
+  .freehub-groupset-helper__pagination {
+    display: none;
+  }
 }
 
 .freehub-groupset-helper select {

@@ -5,7 +5,6 @@ import (
 	"commerce-platform/internal/domain/currency"
 	"commerce-platform/internal/domain/loyalty"
 	domainmoney "commerce-platform/internal/domain/money"
-	"errors"
 	"math"
 	"math/big"
 	"sort"
@@ -32,16 +31,14 @@ type MarketingPromotionRiskAnalysis struct {
 }
 
 type MarketingPromotionRiskSummary struct {
-	Severity                    string  `json:"severity"`
-	CandidateCouponCount        int     `json:"candidate_coupon_count"`
-	RiskItemCount               int     `json:"risk_item_count"`
-	ZeroTotalRiskCount          int     `json:"zero_total_risk_count"`
-	GatewayMinimumRiskCount     int     `json:"gateway_minimum_risk_count"`
-	MemberLevelCount            int     `json:"member_level_count"`
-	MaxMemberDiscountRate       float64 `json:"max_member_discount_rate"`
-	MaxMemberDiscountLevelName  string  `json:"max_member_discount_level_name"`
-	PointsRedemptionEnabled     bool    `json:"points_redemption_enabled"`
-	DirectPointsDiscountCapRate float64 `json:"direct_points_discount_cap_rate"`
+	Severity                   string  `json:"severity"`
+	CandidateCouponCount       int     `json:"candidate_coupon_count"`
+	RiskItemCount              int     `json:"risk_item_count"`
+	ZeroTotalRiskCount         int     `json:"zero_total_risk_count"`
+	GatewayMinimumRiskCount    int     `json:"gateway_minimum_risk_count"`
+	MemberLevelCount           int     `json:"member_level_count"`
+	MaxMemberDiscountRate      float64 `json:"max_member_discount_rate"`
+	MaxMemberDiscountLevelName string  `json:"max_member_discount_level_name"`
 }
 
 type MarketingPromotionRiskItem struct {
@@ -58,13 +55,11 @@ type MarketingPromotionRiskItem struct {
 	MemberLevelID              uint      `json:"member_level_id,omitempty"`
 	MemberLevelName            string    `json:"member_level_name,omitempty"`
 	MemberDiscountRate         float64   `json:"member_discount_rate"`
-	PointsDiscountRate         float64   `json:"points_discount_rate"`
 	FullCoverSubtotalThreshold string    `json:"full_cover_subtotal_threshold,omitempty"`
 	GatewayMinimumThreshold    string    `json:"gateway_minimum_threshold,omitempty"`
 	EstimatedSubtotal          string    `json:"estimated_subtotal"`
 	EstimatedCouponDiscount    string    `json:"estimated_coupon_discount"`
 	EstimatedMemberDiscount    string    `json:"estimated_member_discount"`
-	EstimatedPointsDiscount    string    `json:"estimated_points_discount"`
 	EstimatedDiscountAmount    string    `json:"estimated_discount_amount"`
 	EstimatedPayableAmount     string    `json:"estimated_payable_amount"`
 	Factors                    []string  `json:"factors"`
@@ -104,22 +99,12 @@ func (s *MarketingService) AnalyzePromotionStackingRisk() (*MarketingPromotionRi
 	maxLevel := promotionRiskMaxMemberLevel(levels)
 	memberRate := memberLevelDiscountRateFraction(maxLevel)
 
-	config, err := s.promotionRiskProgramConfig()
-	if err != nil {
-		return nil, err
-	}
-	pointsEnabled := config != nil && config.Enabled && config.ExchangeRatePoints > 0
-	pointsRate := new(big.Rat)
-	if pointsEnabled {
-		pointsRate = big.NewRat(1, 2)
-	}
-
 	items := make([]MarketingPromotionRiskItem, 0, len(coupons))
-	if noCouponItem, ok := analyzeNoCouponPromotionRisk(maxLevel, pointsRate); ok {
+	if noCouponItem, ok := analyzeNoCouponPromotionRisk(maxLevel); ok {
 		items = append(items, noCouponItem)
 	}
 	for _, cp := range coupons {
-		if item, ok := analyzeCouponPromotionRisk(cp, maxLevel, pointsRate); ok {
+		if item, ok := analyzeCouponPromotionRisk(cp, maxLevel); ok {
 			items = append(items, item)
 		}
 	}
@@ -137,13 +122,11 @@ func (s *MarketingService) AnalyzePromotionStackingRisk() (*MarketingPromotionRi
 	})
 
 	summary := MarketingPromotionRiskSummary{
-		Severity:                    "info",
-		CandidateCouponCount:        len(coupons),
-		RiskItemCount:               len(items),
-		MemberLevelCount:            len(levels),
-		MaxMemberDiscountRate:       promotionRiskRatePercent(memberRate),
-		PointsRedemptionEnabled:     pointsEnabled,
-		DirectPointsDiscountCapRate: promotionRiskRatePercent(pointsRate),
+		Severity:              "info",
+		CandidateCouponCount:  len(coupons),
+		RiskItemCount:         len(items),
+		MemberLevelCount:      len(levels),
+		MaxMemberDiscountRate: promotionRiskRatePercent(memberRate),
 	}
 	if maxLevel != nil {
 		summary.MaxMemberDiscountLevelName = maxLevel.Name
@@ -171,21 +154,7 @@ func (s *MarketingService) AnalyzePromotionStackingRisk() (*MarketingPromotionRi
 	}, nil
 }
 
-func (s *MarketingService) promotionRiskProgramConfig() (*loyalty.ProgramConfig, error) {
-	if s.program == nil {
-		return nil, nil
-	}
-	config, err := s.program.GetActive()
-	if err != nil {
-		if errors.Is(err, ErrLoyaltyProgramConfigNotFound) {
-			return nil, nil
-		}
-		return nil, err
-	}
-	return config, nil
-}
-
-func analyzeCouponPromotionRisk(cp coupon.Coupon, maxLevel *loyalty.MemberLevel, pointsRate *big.Rat) (MarketingPromotionRiskItem, bool) {
+func analyzeCouponPromotionRisk(cp coupon.Coupon, maxLevel *loyalty.MemberLevel) (MarketingPromotionRiskItem, bool) {
 	// Risk analysis is emitted in the primary settlement currency. A coupon
 	// denominated in another currency cannot be safely compared without an
 	// explicit FX rate, so leave it out instead of treating its minor units as
@@ -195,7 +164,7 @@ func analyzeCouponPromotionRisk(cp coupon.Coupon, maxLevel *loyalty.MemberLevel,
 		return MarketingPromotionRiskItem{}, false
 	}
 	memberRate := memberLevelDiscountRateFraction(maxLevel)
-	baseRate := promotionRiskAddRates(memberRate, pointsRate)
+	baseRate := memberRate
 	shapes := couponRiskDiscountShapes(cp, baseRate)
 
 	var selected MarketingPromotionRiskItem
@@ -206,7 +175,7 @@ func analyzeCouponPromotionRisk(cp coupon.Coupon, maxLevel *loyalty.MemberLevel,
 			continue
 		}
 
-		item := promotionRiskItemFromCoupon(cp, maxLevel, shape, threshold, memberRate, pointsRate)
+		item := promotionRiskItemFromCoupon(cp, maxLevel, shape, threshold, memberRate)
 		if !found ||
 			promotionRiskSeverityRank(item.Severity) > promotionRiskSeverityRank(selected.Severity) ||
 			(promotionRiskSeverityRank(item.Severity) == promotionRiskSeverityRank(selected.Severity) && item.EstimatedPayableAmount < selected.EstimatedPayableAmount) {
@@ -217,9 +186,9 @@ func analyzeCouponPromotionRisk(cp coupon.Coupon, maxLevel *loyalty.MemberLevel,
 	return selected, found
 }
 
-func analyzeNoCouponPromotionRisk(maxLevel *loyalty.MemberLevel, pointsRate *big.Rat) (MarketingPromotionRiskItem, bool) {
+func analyzeNoCouponPromotionRisk(maxLevel *loyalty.MemberLevel) (MarketingPromotionRiskItem, bool) {
 	memberRate := memberLevelDiscountRateFraction(maxLevel)
-	rate := promotionRiskAddRates(memberRate, pointsRate)
+	rate := memberRate
 	if rate.Cmp(big.NewRat(1, 1)) < 0 {
 		return MarketingPromotionRiskItem{}, false
 	}
@@ -235,10 +204,10 @@ func analyzeNoCouponPromotionRisk(maxLevel *loyalty.MemberLevel, pointsRate *big
 		return MarketingPromotionRiskItem{}, false
 	}
 
-	item := promotionRiskItemFromCoupon(coupon.Coupon{}, maxLevel, shape, threshold, memberRate, pointsRate)
+	item := promotionRiskItemFromCoupon(coupon.Coupon{}, maxLevel, shape, threshold, memberRate)
 	item.Scenario = "member_points"
 	item.CouponStatus = ""
-	item.Factors = promotionRiskFactors("", "", maxLevel, memberRate, pointsRate)
+	item.Factors = promotionRiskFactors("", "", maxLevel, memberRate)
 	item.Recommendation = promotionRiskRecommendation(item.Kind, "")
 	return item, true
 }
@@ -371,7 +340,6 @@ func promotionRiskItemFromCoupon(
 	shape promotionDiscountShape,
 	threshold promotionRiskThreshold,
 	memberRate *big.Rat,
-	pointsRate *big.Rat,
 ) MarketingPromotionRiskItem {
 	estimateMoney := promotionRiskMaxMoney(threshold.estimate, promotionRiskMinimumSubtotalMoney)
 	couponDiscountMoney := domainmoney.MustNew(0, currency.DefaultPrimaryCurrency)
@@ -382,13 +350,8 @@ func promotionRiskItemFromCoupon(
 		}
 	}
 	memberMoney := promotionRiskRateAmount(estimateMoney, memberRate)
-	pointsMoney := promotionRiskRateAmount(estimateMoney, pointsRate)
 	memberDiscount := promotionRiskMoneyMajor(memberMoney)
-	pointsDiscount := promotionRiskMoneyMajor(pointsMoney)
 	totalMoney, totalErr := couponDiscountMoney.Add(memberMoney)
-	if totalErr == nil {
-		totalMoney, totalErr = totalMoney.Add(pointsMoney)
-	}
 	if totalErr != nil {
 		totalMoney = estimateMoney
 	}
@@ -416,16 +379,14 @@ func promotionRiskItemFromCoupon(
 		CouponMinAmount:            couponRiskDisplayMoney(cp.MinAmountMinor),
 		CouponMaxDiscount:          couponRiskDisplayMoney(cp.MaxDiscountMinor),
 		MemberDiscountRate:         promotionRiskRatePercent(memberRate),
-		PointsDiscountRate:         promotionRiskRatePercent(pointsRate),
 		FullCoverSubtotalThreshold: promotionRiskMoneyMajor(threshold.fullCover),
 		GatewayMinimumThreshold:    promotionRiskMoneyMajor(threshold.gatewayFloor),
 		EstimatedSubtotal:          estimateSubtotal,
 		EstimatedCouponDiscount:    couponDiscount,
 		EstimatedMemberDiscount:    memberDiscount,
-		EstimatedPointsDiscount:    pointsDiscount,
 		EstimatedDiscountAmount:    totalDiscount,
 		EstimatedPayableAmount:     payable,
-		Factors:                    promotionRiskFactors(cp.Code, cp.Type, maxLevel, memberRate, pointsRate),
+		Factors:                    promotionRiskFactors(cp.Code, cp.Type, maxLevel, memberRate),
 		Recommendation:             promotionRiskRecommendation(threshold.kind, cp.Code),
 		StartsAt:                   cp.StartDate,
 		EndsAt:                     cp.EndDate,
@@ -561,7 +522,7 @@ func memberLevelDiscountRateFraction(level *loyalty.MemberLevel) *big.Rat {
 	return promotionRiskBoundedFraction(rate)
 }
 
-func promotionRiskFactors(couponCode string, couponType string, maxLevel *loyalty.MemberLevel, memberRate *big.Rat, pointsRate *big.Rat) []string {
+func promotionRiskFactors(couponCode string, couponType string, maxLevel *loyalty.MemberLevel, memberRate *big.Rat) []string {
 	factors := make([]string, 0, 3)
 	if couponCode != "" {
 		if couponType == "percentage" {
@@ -572,9 +533,6 @@ func promotionRiskFactors(couponCode string, couponType string, maxLevel *loyalt
 	}
 	if maxLevel != nil && memberRate != nil && memberRate.Sign() > 0 {
 		factors = append(factors, "member_level_discount")
-	}
-	if pointsRate != nil && pointsRate.Sign() > 0 {
-		factors = append(factors, "direct_points_discount")
 	}
 	return factors
 }

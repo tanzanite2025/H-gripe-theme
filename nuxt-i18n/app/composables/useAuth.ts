@@ -68,6 +68,8 @@ export function useAuth() {
   // code is bound after the user completes their first login.
   const pendingReferralCode = useState<string>('auth-pending-referral-code', () => '')
   const initialized = useState<boolean>('auth-initialized', () => false)
+  const sessionVersion = useState<number>('auth-session-version', () => 0)
+  const logoutInFlight = useState<boolean>('auth-logout-in-flight', () => false)
   const isAuthenticated = computed(() => !!user.value)
 
   const bindPendingReferral = async () => {
@@ -96,6 +98,11 @@ export function useAuth() {
   }
 
   const ensureSession = async (force = false) => {
+    if (logoutInFlight.value) {
+      user.value = null
+      initialized.value = true
+      return null
+    }
     if (!baseURL) {
       initialized.value = true
       return null
@@ -116,18 +123,26 @@ export function useAuth() {
       return null
     }
 
+    const requestVersion = sessionVersion.value
     const sessionRequest = (async () => {
       try {
         const response = await request<AuthUser | { data?: AuthUser }>('/auth/profile', { headers: { 'Accept': 'application/json' } }, 'Unable to fetch session')
         const data = unwrapData<AuthUser>(response)
+        if (sessionVersion.value !== requestVersion) {
+          return null
+        }
         user.value = data
         error.value = null
         return data
       } catch (_) {
-        user.value = null
+        if (sessionVersion.value === requestVersion) {
+          user.value = null
+        }
         return null
       } finally {
-        initialized.value = true
+        if (sessionVersion.value === requestVersion) {
+          initialized.value = true
+        }
       }
     })()
 
@@ -143,6 +158,7 @@ export function useAuth() {
   }
 
   const login = async (credentials: LoginPayload) => {
+    sessionVersion.value += 1
     loading.value = true
     error.value = null
 
@@ -172,6 +188,7 @@ export function useAuth() {
   }
 
   const register = async (registration: RegisterPayload) => {
+    sessionVersion.value += 1
     loading.value = true
     error.value = null
     pendingReferralCode.value = String(registration.referralCode || '').trim()
@@ -201,8 +218,16 @@ export function useAuth() {
   }
 
   const logout = async () => {
+    // Invalidate in-flight session checks and clear local identity immediately.
+    const logoutVersion = sessionVersion.value + 1
+    sessionVersion.value = logoutVersion
+    logoutInFlight.value = true
+    sessionRequests.delete(nuxtApp)
+    user.value = null
+    initialized.value = false
+
     if (!baseURL) {
-      user.value = null
+      logoutInFlight.value = false
       return
     }
 
@@ -211,7 +236,13 @@ export function useAuth() {
     } catch (err) {
       console.warn('Logout request failed:', err)
     } finally {
-      user.value = null
+      logoutInFlight.value = false
+      sessionRequests.delete(nuxtApp)
+      if (sessionVersion.value === logoutVersion) {
+        user.value = null
+        initialized.value = false
+      }
+      sessionVersion.value += 1
     }
   }
 
@@ -220,6 +251,7 @@ export function useAuth() {
    * @param idToken - Google Identity Services 返回的 JWT token
    */
   const loginWithGoogle = async (idToken: string) => {
+    sessionVersion.value += 1
     loading.value = true
     error.value = null
 

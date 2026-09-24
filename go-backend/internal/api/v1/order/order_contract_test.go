@@ -62,6 +62,23 @@ func TestCreateOrderRequestRequiresExpectedTotalMinor(t *testing.T) {
 	}
 }
 
+func TestCreateOrderRequestBindsNotesAndCouponCode(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	context, _ := gin.CreateTestContext(httptest.NewRecorder())
+	context.Request = httptest.NewRequest(
+		http.MethodPost,
+		"/api/v1/orders",
+		bytes.NewBufferString(`{"items":[{"product_id":1,"quantity":1}],"shipping_address":{"first_name":"Test","last_name":"Buyer","address1":"1 Test Street","city":"Austin","postal_code":"78701","country":"US","phone":"+15555550123","email":"buyer@example.com"},"payment_method":"card","shipping_method":"standard","expected_total_minor":0,"shipping_quote_id":"quote","selected_quote_plan_id":"plan","coupon_code":"SAVE10","notes":"Leave at the side door"}`),
+	)
+	context.Request.Header.Set("Content-Type", "application/json")
+
+	var req CreateOrderRequest
+	requireNoBindError(t, context.ShouldBindJSON(&req))
+	if req.CouponCode != "SAVE10" || req.Notes != "Leave at the side door" {
+		t.Fatalf("request fields = coupon %q, notes %q; want coupon SAVE10 and notes preserved", req.CouponCode, req.Notes)
+	}
+}
+
 func TestCreateOrderRequestAcceptsZeroExpectedTotalMinor(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	context, _ := gin.CreateTestContext(httptest.NewRecorder())
@@ -356,7 +373,7 @@ func TestPublicOrderResponseOmitsInternalDatabaseIDs(t *testing.T) {
 	if orderNumber != "TZ-2026-ABCDEFGHIJKLMNOPQRST" {
 		t.Fatalf("public order response order_number = %q", orderNumber)
 	}
-	for _, required := range []string{"subtotal_minor", "shipping_fee_minor", "tax_minor", "discount_minor", "total_minor", "points_value_minor"} {
+	for _, required := range []string{"subtotal_minor", "shipping_fee_minor", "tax_minor", "discount_minor", "total_minor"} {
 		if _, exists := decoded[required]; !exists {
 			t.Fatalf("public order response missing %s: %s", required, payload)
 		}

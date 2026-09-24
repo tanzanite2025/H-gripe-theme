@@ -612,15 +612,20 @@ export function useShopProducts() {
   }
 
   const fetchPublicShopProducts = async (params: ShopProductQueryParams): Promise<ShopProductsResult> => {
+    const requestParams: ShopProductQueryParams = {
+      status: 'active',
+      page_size: 12,
+      country: countryCode.value !== 'ZZ' ? countryCode.value : undefined,
+      ...params,
+      currency: displayCurrency.value,
+    }
+    if (requestParams.price_min_minor !== undefined || requestParams.price_max_minor !== undefined) {
+      requestParams.price_currency = displayCurrency.value
+    }
+
     const response = await request<any>('/products', {
       headers: productRequestHeaders(),
-      params: {
-        status: 'active',
-        page_size: 12,
-        currency: displayCurrency.value,
-        country: countryCode.value !== 'ZZ' ? countryCode.value : undefined,
-        ...params,
-      },
+      params: requestParams,
     }, 'Failed to load public shop products')
     const items = extractProductItems(response).map((item: any) => (
       normalizeShopProduct(item, baseCurrency.value, mediaContext)

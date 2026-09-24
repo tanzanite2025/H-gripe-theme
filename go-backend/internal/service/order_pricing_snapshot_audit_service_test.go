@@ -23,7 +23,7 @@ func TestOrderPricingSnapshotAuditIsReadOnlyAndReportsIssues(t *testing.T) {
 	validOrderSnapshot, err := pricing.MarshalOrderPricingSnapshot(pricing.OrderPricingSnapshotInput{
 		Currency: "USD", Subtotal: money.MustNew(1000, "USD"), Shipping: money.MustNew(100, "USD"),
 		Tax: money.MustNew(100, "USD"), MemberDiscount: money.MustNew(50, "USD"), CouponDiscount: money.MustNew(40, "USD"),
-		PointsDiscount: money.MustNew(30, "USD"), DiscountTotal: money.MustNew(120, "USD"), Total: money.MustNew(1080, "USD"),
+		DiscountTotal: money.MustNew(90, "USD"), Total: money.MustNew(1110, "USD"),
 	})
 	require.NoError(t, err)
 	lineSnapshot, err := pricing.NewSnapshot([]pricing.LineInput{{Key: "0:10:20", ProductID: 10, VariantID: 20, Quantity: 2, UnitPrice: money.MustNew(500, "USD")}})
@@ -33,7 +33,7 @@ func TestOrderPricingSnapshotAuditIsReadOnlyAndReportsIssues(t *testing.T) {
 	variantID := uint(20)
 	require.NoError(t, db.Create(&order.Order{
 		ID: 1, OrderNumber: "ORD-VALID", Currency: "USD", SubtotalAmountMinor: 1000, ShippingFeeMinor: 100, TaxAmountMinor: 100,
-		DiscountAmountMinor: 120, TotalAmountMinor: 1080, PointsValueMinor: 30, PricingSnapshotData: validOrderSnapshot,
+		DiscountAmountMinor: 90, TotalAmountMinor: 1110, PricingSnapshotData: validOrderSnapshot,
 		Items: []order.OrderItem{{ID: 11, ProductID: 10, VariantID: &variantID, Currency: "USD", Quantity: 2, PriceMinor: 500, SubtotalMinor: 1000, TotalMinor: 1000, PricingSnapshotData: lineRaw}},
 	}).Error)
 	require.NoError(t, db.Create(&order.Order{ID: 2, OrderNumber: "ORD-MISSING", Currency: "USD"}).Error)

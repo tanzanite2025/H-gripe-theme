@@ -71,28 +71,17 @@ func (s *OrderService) awardOrderCompletionPoints(repos repository.TxRepositorie
 }
 
 func (s *OrderService) currentOrderRewardProgramConfig(repos repository.TxRepositories) (*loyalty.ProgramConfig, error) {
-	if repos.Program != nil {
-		config, err := repos.Program.FindActive()
-		if err != nil {
-			if repository.IsRecordNotFound(err) {
-				return nil, nil
-			}
-			return nil, err
-		}
-		if err := validateProgramConfig(config); err != nil {
-			return nil, err
-		}
-		return config, nil
-	}
-
-	if s == nil || s.checkout == nil {
+	if repos.Program == nil {
 		return nil, nil
 	}
-	config, err := s.checkout.currentLoyaltyProgramConfig()
+	config, err := repos.Program.FindActive()
 	if err != nil {
-		if errors.Is(err, ErrLoyaltyProgramConfigNotFound) {
+		if repository.IsRecordNotFound(err) {
 			return nil, nil
 		}
+		return nil, err
+	}
+	if err := validateProgramConfig(config); err != nil {
 		return nil, err
 	}
 	return config, nil

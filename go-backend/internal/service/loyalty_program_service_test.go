@@ -22,7 +22,6 @@ func TestLoyaltyProgramServiceCreatesImmutableVersions(t *testing.T) {
 		Enabled:                   true,
 		Currency:                  "usd",
 		PurchaseEarnPointsPerUnit: 1,
-		ExchangeRatePoints:        100,
 		ReferralReferrerPoints:    100,
 		ReferralRefereePoints:     50,
 		CheckInBasePoints:         10,
@@ -38,7 +37,6 @@ func TestLoyaltyProgramServiceCreatesImmutableVersions(t *testing.T) {
 		Enabled:                   false,
 		Currency:                  "USD",
 		PurchaseEarnPointsPerUnit: 2,
-		ExchangeRatePoints:        80,
 		ReferralReferrerPoints:    120,
 		ReferralRefereePoints:     60,
 		CheckInBasePoints:         8,
@@ -57,7 +55,6 @@ func TestLoyaltyProgramServiceCreatesImmutableVersions(t *testing.T) {
 	var archived loyalty.ProgramConfig
 	require.NoError(t, db.Where("id = ?", first.ID).First(&archived).Error)
 	require.Equal(t, "archived", archived.Status)
-	require.Equal(t, 100, archived.ExchangeRatePoints)
 }
 
 func TestLoyaltyProgramPublicConfigContainsOnlyCurrentProgramRules(t *testing.T) {
@@ -68,7 +65,6 @@ func TestLoyaltyProgramPublicConfigContainsOnlyCurrentProgramRules(t *testing.T)
 		Enabled:                   true,
 		Currency:                  "USD",
 		PurchaseEarnPointsPerUnit: 1,
-		ExchangeRatePoints:        100,
 		ReferralReferrerPoints:    100,
 		ReferralRefereePoints:     50,
 		CheckInBasePoints:         10,
@@ -82,7 +78,6 @@ func TestLoyaltyProgramPublicConfigContainsOnlyCurrentProgramRules(t *testing.T)
 	require.NoError(t, err)
 	require.Equal(t, LoyaltyPointsBaseCurrency, response.PointsBaseCurrency)
 	require.Equal(t, "USD", response.Currency)
-	require.Equal(t, 100, response.ExchangeRatePoints)
 	require.Equal(t, 1, response.PurchaseEarnPointsPerUnit)
 	require.NotNil(t, response.AvailableCurrencies)
 }

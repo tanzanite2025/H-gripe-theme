@@ -5,7 +5,7 @@
         <p>{{ t('accountSidebar.cart.eyebrow', 'Ready to pay') }}</p>
         <h3>{{ t('accountSidebar.cart.title', 'Cart') }} · {{ cartCount }}</h3>
       </div>
-      <strong>{{ formatMinorMoney(total, cartCurrency) }}</strong>
+      <strong>{{ formatMinorMoney(subtotal, cartCurrency) }}</strong>
     </div>
 
     <div v-if="isLoadingCart" class="account-loading">
@@ -57,11 +57,11 @@
         </div>
         <div>
           <span>{{ t('cartDrawer.summary.tax', 'Tax') }}</span>
-          <strong>{{ formatMinorMoney(tax, cartCurrency) }}</strong>
+          <strong>{{ t('cartDrawer.summary.calculatedAtCheckout', 'Calculated at checkout') }}</strong>
         </div>
         <div class="account-cart-summary__total">
           <span>{{ t('cartDrawer.summary.estimatedTotal', 'Estimated total') }}</span>
-          <strong>{{ formatMinorMoney(total, cartCurrency) }}</strong>
+          <strong>{{ t('cartDrawer.summary.calculatedAtCheckout', 'Calculated at checkout') }}</strong>
         </div>
       </div>
 
@@ -82,8 +82,6 @@ const {
   cartItems,
   cartCount,
   subtotal,
-  tax,
-  total,
   cartCurrency,
   isLoadingCart,
   incrementQuantity,
@@ -345,4 +343,3 @@ const cartImage = (item: CartItem) => item.thumbnail || item.image || ''
   }
 }
 </style>
-

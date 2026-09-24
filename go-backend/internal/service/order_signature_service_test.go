@@ -25,7 +25,6 @@ func TestOrderServiceCreateOrderSnapshotsHighValueSignatureRequirement(t *testin
 		"card",
 		"standard",
 		"",
-		0,
 	)
 
 	require.NoError(t, err)
@@ -103,7 +102,6 @@ func TestOrderServiceCreateMadeToOrderAllowsZeroStockAndDoesNotDeductInventory(t
 		"card",
 		"standard",
 		"",
-		0,
 	)
 	require.NoError(t, err)
 	require.NotNil(t, createdOrder)

@@ -244,6 +244,27 @@ export function useStripeExpressCheckout() {
     }
   }
 
+  const updatePaymentAmount = async (amountMinor: number, currency: string) => {
+    if (!elements.value) {
+      throw new Error('Stripe Express Checkout is not ready')
+    }
+
+    const normalizedAmount = Number(amountMinor)
+    if (!Number.isSafeInteger(normalizedAmount) || normalizedAmount <= 0) {
+      throw new Error('Stripe Express Checkout amount must be a positive minor-unit integer')
+    }
+
+    const normalizedCurrency = normalizeCurrencyCode(currency)
+    if (!normalizedCurrency) {
+      throw new Error('Stripe Express Checkout currency is invalid')
+    }
+
+    await elements.value.update({
+      amount: normalizedAmount,
+      currency: normalizedCurrency.toLowerCase(),
+    })
+  }
+
   const confirmPayment = async (
     clientSecret: string,
     returnUrl: string,
@@ -286,6 +307,7 @@ export function useStripeExpressCheckout() {
     hasResolvedAvailability,
     availablePaymentMethods,
     mount,
+    updatePaymentAmount,
     submit,
     confirmPayment,
     destroy,

@@ -33,7 +33,6 @@ func (h *MarketingHandler) UpdateLoyaltyProgramConfig(c *gin.Context) {
 		Enabled                   bool   `json:"enabled"`
 		Currency                  string `json:"currency" binding:"required"`
 		PurchaseEarnPointsPerUnit int    `json:"purchase_earn_points_per_currency_unit" binding:"gte=0"`
-		ExchangeRatePoints        int    `json:"exchange_rate_points" binding:"required,gt=0"`
 		ReferralReferrerPoints    int    `json:"referral_referrer_points" binding:"gte=0"`
 		ReferralRefereePoints     int    `json:"referral_referee_points" binding:"gte=0"`
 		CheckInBasePoints         int    `json:"checkin_base_points" binding:"gte=0"`
@@ -57,7 +56,6 @@ func (h *MarketingHandler) UpdateLoyaltyProgramConfig(c *gin.Context) {
 		Enabled:                   req.Enabled,
 		Currency:                  req.Currency,
 		PurchaseEarnPointsPerUnit: req.PurchaseEarnPointsPerUnit,
-		ExchangeRatePoints:        req.ExchangeRatePoints,
 		ReferralReferrerPoints:    req.ReferralReferrerPoints,
 		ReferralRefereePoints:     req.ReferralRefereePoints,
 		CheckInBasePoints:         req.CheckInBasePoints,

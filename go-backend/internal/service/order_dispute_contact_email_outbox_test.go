@@ -26,8 +26,8 @@ func (s *recordingDisputeEmailSender) SendEmail(to []string, subject, body strin
 func (s *recordingDisputeEmailSender) SendHTMLEmail([]string, string, string, interface{}) error {
 	return nil
 }
-func (s *recordingDisputeEmailSender) SendPasswordReset(string, interface{}) error        { return nil }
-func (s *recordingDisputeEmailSender) SendWelcomeEmail(string, interface{}) error         { return nil }
+func (s *recordingDisputeEmailSender) SendPasswordReset(string, interface{}) error { return nil }
+func (s *recordingDisputeEmailSender) SendWelcomeEmail(string, interface{}) error  { return nil }
 
 func TestOrderDisputeContactEmailOutboxHandlerSendsPayload(t *testing.T) {
 	sender := &recordingDisputeEmailSender{}

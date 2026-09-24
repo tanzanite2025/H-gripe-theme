@@ -13,22 +13,19 @@ import (
 
 // Refund 退款记录
 type Refund struct {
-	ID                              uint           `gorm:"primarykey" json:"id"`
-	OrderID                         uint           `gorm:"not null;index" json:"order_id"`
-	TransactionID                   uint           `gorm:"index" json:"transaction_id"`
-	RefundID                        *string        `gorm:"uniqueIndex" json:"refund_id,omitempty"`
-	Currency                        string         `gorm:"size:3;not null;default:'USD'" json:"currency"`
-	AmountMinor                     int64          `gorm:"column:amount_minor;not null;default:0" json:"amount_minor"`
-	RequestedAmountMinor            int64          `gorm:"column:requested_amount_minor;not null;default:0" json:"requested_amount_minor"`
-	DiscountClawbackAmountMinor     int64          `gorm:"column:discount_clawback_amount_minor;not null;default:0" json:"discount_clawback_amount_minor"`
-	LoyaltySettlementPrepared       bool           `gorm:"not null;default:false" json:"-"`
-	LoyaltyPointsClawback           int            `gorm:"not null;default:0" json:"-"`
-	LoyaltyPointsReturned           int            `gorm:"not null;default:0" json:"-"`
-	LoyaltyPointsCashRecovered      int            `gorm:"column:loyalty_points_cash_recovered;not null;default:0" json:"-"`
-	LoyaltyPointsDebt               int            `gorm:"column:loyalty_points_debt;not null;default:0" json:"-"`
-	LoyaltyCashDeductionAmountMinor int64          `gorm:"column:loyalty_cash_deduction_amount_minor;not null;default:0" json:"loyalty_cash_deduction_amount_minor"`
-	CalculationSnapshot             string         `gorm:"type:text" json:"calculation_snapshot"`
-	FXSnapshotData                  datatypes.JSON `gorm:"column:fx_snapshot;type:jsonb;not null;default:'{}'" json:"-"`
+	ID                          uint           `gorm:"primarykey" json:"id"`
+	OrderID                     uint           `gorm:"not null;index" json:"order_id"`
+	TransactionID               uint           `gorm:"index" json:"transaction_id"`
+	RefundID                    *string        `gorm:"uniqueIndex" json:"refund_id,omitempty"`
+	Currency                    string         `gorm:"size:3;not null;default:'USD'" json:"currency"`
+	AmountMinor                 int64          `gorm:"column:amount_minor;not null;default:0" json:"amount_minor"`
+	RequestedAmountMinor        int64          `gorm:"column:requested_amount_minor;not null;default:0" json:"requested_amount_minor"`
+	DiscountClawbackAmountMinor int64          `gorm:"column:discount_clawback_amount_minor;not null;default:0" json:"discount_clawback_amount_minor"`
+	LoyaltySettlementPrepared   bool           `gorm:"not null;default:false" json:"-"`
+	LoyaltyPointsClawback       int            `gorm:"not null;default:0" json:"-"`
+	LoyaltyPointsDebt           int            `gorm:"column:loyalty_points_debt;not null;default:0" json:"-"`
+	CalculationSnapshot         string         `gorm:"type:text" json:"calculation_snapshot"`
+	FXSnapshotData              datatypes.JSON `gorm:"column:fx_snapshot;type:jsonb;not null;default:'{}'" json:"-"`
 	// Provider settlement facts are separate from the customer-facing refund
 	// amount because a gateway may convert the deduction at refund time.
 	SettlementAmountMinor          int64  `gorm:"column:settlement_amount_minor;not null;default:0" json:"settlement_amount_minor"`
@@ -71,9 +68,6 @@ func (r *Refund) BeforeSave(tx *gorm.DB) error {
 	if r.FXGainLossMinor != 0 && !currency.IsCatalogCode(r.FXGainLossCurrency) {
 		return errors.New("refund FX gain/loss currency must be a supported ISO 4217 code")
 	}
-	if r.LoyaltyCashDeductionAmountMinor < 0 {
-		return errors.New("refund loyalty cash deduction cannot be negative")
-	}
 	for _, amount := range []int64{r.AmountMinor, r.RequestedAmountMinor, r.DiscountClawbackAmountMinor} {
 		if amount < 0 {
 			return errors.New("refund monetary amounts cannot be negative")
@@ -92,10 +86,6 @@ func (r Refund) RequestedAmountMoney() (domainmoney.Money, error) {
 
 func (r Refund) DiscountClawbackMoney() (domainmoney.Money, error) {
 	return domainmoney.New(r.DiscountClawbackAmountMinor, r.Currency)
-}
-
-func (r Refund) LoyaltyCashDeductionMoney() (domainmoney.Money, error) {
-	return domainmoney.New(r.LoyaltyCashDeductionAmountMinor, r.Currency)
 }
 
 // TableName 指定表名

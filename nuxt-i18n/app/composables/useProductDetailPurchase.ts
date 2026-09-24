@@ -11,7 +11,7 @@ import type {
   StripeExpressCheckoutElementShippingAddressChangeEvent,
   StripeExpressCheckoutElementShippingRateChangeEvent,
 } from '@stripe/stripe-js'
-import { navigateTo, useI18n, useLocalePath } from '#imports'
+import { navigateTo, useI18n, useLocalePath, useRequestURL } from '#imports'
 import { COUNTRIES } from '~/data/countries'
 import { useAuth } from '~/composables/useAuth'
 import { useCart } from '~/composables/useCart'
@@ -65,6 +65,7 @@ export interface ProductDetailPurchaseOptions {
 export function useProductDetailPurchase(options: ProductDetailPurchaseOptions) {
   const { t } = useI18n()
   const localePath = useLocalePath()
+  const requestUrl = useRequestURL()
   const auth = useAuth()
   const {
     addToCart,
@@ -442,12 +443,13 @@ export function useProductDetailPurchase(options: ProductDetailPurchaseOptions) 
         confirmationEvent,
         cartItems.value,
       )
+      await expressCheckoutElement.updateExpressCheckoutPaymentAmount(session.amountMinor, session.currency)
       saveStripeReturnSession({
         orderNumber: session.orderNumber,
         clientSecret: session.clientSecret,
         publishableKey: session.publishableKey,
       })
-      const returnUrl = new URL(localePath(STRIPE_RETURN_PATH), window.location.origin)
+      const returnUrl = new URL(localePath(STRIPE_RETURN_PATH), requestUrl.origin)
       returnUrl.searchParams.set('order_number', session.orderNumber)
       const result = await expressCheckoutElement.confirmExpressCheckoutPayment(
         session.clientSecret,

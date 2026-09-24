@@ -45,7 +45,6 @@ func TestCreateOrderCapturesHistoricalRefundCancellationPolicyDisclosure(t *test
 		"card",
 		"standard",
 		"",
-		0,
 		attributionpkg.Context{},
 		OrderCreationOptions{
 			PolicyLocale:                 "en",

@@ -27,7 +27,6 @@ func TestOrderServiceHighValueUsesFinalOrderTotalAfterDiscounts(t *testing.T) {
 		"card",
 		"standard",
 		"HIGH-VALUE-100",
-		0,
 	)
 	require.NoError(t, err)
 	require.NotNil(t, belowThreshold)
@@ -43,7 +42,6 @@ func TestOrderServiceHighValueUsesFinalOrderTotalAfterDiscounts(t *testing.T) {
 		"card",
 		"standard",
 		"HIGH-VALUE-50",
-		0,
 	)
 	require.NoError(t, err)
 	require.NotNil(t, atThreshold)
@@ -76,7 +74,6 @@ func TestOrderServiceHighValueIsBasedOnOrderTotalAcrossMultipleItems(t *testing.
 		"card",
 		"standard",
 		"",
-		0,
 	)
 
 	require.NoError(t, err)
@@ -138,7 +135,6 @@ func TestOrderServiceHighValueIgnoresProductNameAndCategory(t *testing.T) {
 			"card",
 			"standard",
 			"",
-			0,
 		)
 
 		require.NoError(t, err)

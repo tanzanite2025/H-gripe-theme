@@ -96,7 +96,7 @@ import {
 import { useOverlayBackStack } from '~/composables/useOverlayBackStack'
 import { useShopSearchSheet, type ShopSearchFiltersPayload, type ShopSearchPayload } from '~/composables/useShopSearchSheet'
 import { useStorefrontContext } from '~/composables/useStorefrontContext'
-import { majorToMinor } from '~/utils/money'
+import { defaultPriceRangeForCurrency, majorToMinor } from '~/utils/money'
 import { createSeoJsonLdScript } from '~/utils/seo/jsonLd'
 import { toAbsoluteSeoUrl } from '~/utils/seo/urls'
 
@@ -123,9 +123,11 @@ const {
   fetchPublicShopProducts,
 } = useShopProducts()
 const { pendingSearch } = useShopSearchSheet()
-const { baseCurrency } = useStorefrontContext()
+const { displayCurrency } = useStorefrontContext()
 
-const defaultSearchPriceRange: [number, number] = [0, 5000]
+const defaultSearchPriceRange = computed<[number, number]>(() => (
+  defaultPriceRangeForCurrency(displayCurrency.value)
+))
 const currentSearch = ref<ShopSearchPayload | null>(null)
 const categorySidebarOpen = ref(false)
 
@@ -160,14 +162,14 @@ const categoryPath = (item: ProductCategory) => {
 }
 
 const createDefaultSearchFilters = (): ShopSearchFiltersPayload => ({
-  priceRange: [...defaultSearchPriceRange] as [number, number],
+  priceRange: [...defaultSearchPriceRange.value] as [number, number],
   attributes: {},
 })
 
 const cloneSearchFilters = (filters?: ShopSearchFiltersPayload): ShopSearchFiltersPayload => ({
   priceRange: Array.isArray(filters?.priceRange)
     ? [...filters!.priceRange] as [number, number]
-    : [...defaultSearchPriceRange] as [number, number],
+    : [...defaultSearchPriceRange.value] as [number, number],
   currency: filters?.currency,
   attributes: { ...(filters?.attributes || {}) },
 })
@@ -207,9 +209,9 @@ const buildProductQueryParams = (payload?: ShopSearchPayload) => {
     const priceRange = payload.filters?.priceRange
     if (Array.isArray(priceRange) && priceRange.length === 2) {
       const [min, max] = priceRange
-      params.price_min_minor = majorToMinor(min, baseCurrency.value)
-      params.price_max_minor = majorToMinor(max, baseCurrency.value)
-      params.price_currency = baseCurrency.value
+      params.price_min_minor = majorToMinor(min, displayCurrency.value)
+      params.price_max_minor = majorToMinor(max, displayCurrency.value)
+      params.price_currency = displayCurrency.value
     }
 
     const attrs = payload.filters?.attributes

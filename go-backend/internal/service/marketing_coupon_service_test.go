@@ -228,7 +228,6 @@ func TestMarketingServiceAnalyzePromotionStackingRiskFlagsZeroTotalStacks(t *tes
 		Enabled:                   true,
 		Currency:                  "USD",
 		PurchaseEarnPointsPerUnit: 1,
-		ExchangeRatePoints:        100,
 		ReferralReferrerPoints:    0,
 		ReferralRefereePoints:     0,
 		CheckInBasePoints:         0,
@@ -246,8 +245,6 @@ func TestMarketingServiceAnalyzePromotionStackingRiskFlagsZeroTotalStacks(t *tes
 	assert.Equal(t, "critical", analysis.Summary.Severity)
 	assert.Equal(t, 1, analysis.Summary.CandidateCouponCount)
 	assert.Equal(t, 20.0, analysis.Summary.MaxMemberDiscountRate)
-	assert.Equal(t, 50.0, analysis.Summary.DirectPointsDiscountCapRate)
-	assert.Equal(t, 50.0, analysis.Summary.DirectPointsDiscountCapRate)
 	require.NotEmpty(t, analysis.Items)
 
 	item := analysis.Items[0]
@@ -258,7 +255,6 @@ func TestMarketingServiceAnalyzePromotionStackingRiskFlagsZeroTotalStacks(t *tes
 	assert.Equal(t, "0.00", item.EstimatedPayableAmount)
 	assert.Contains(t, item.Factors, "fixed_coupon")
 	assert.Contains(t, item.Factors, "member_level_discount")
-	assert.Contains(t, item.Factors, "direct_points_discount")
 }
 
 // newTestMarketingService builds the minimal transactional graph required by

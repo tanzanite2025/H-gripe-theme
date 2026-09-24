@@ -39,7 +39,6 @@ export interface CheckoutQuoteRequest {
   shipping_quote_id?: string
   selected_quote_plan_id?: string
   coupon_code?: string
-  points_to_use?: number
 }
 
 export interface ShippingDisplayPrice {
@@ -134,10 +133,10 @@ export interface CheckoutQuoteResult {
   shipping_fee_minor: number | string
   tax_minor: number | string
   member_discount_minor: number | string
-  points_discount_minor: number | string
   coupon_discount_minor: number | string
   discount_minor: number | string
   total_minor: number | string
+  coupon_code?: string
   payment_currency?: string
   payment_amount_minor?: number | string
   shipping_quote?: ShippingQuoteResult | null

@@ -197,7 +197,6 @@ func (h *Handler) CreateOrder(c *gin.Context) {
 		req.PaymentMethod,
 		req.ShippingMethod,
 		req.CouponCode,
-		req.PointsToUse,
 		attributionContext,
 		service.OrderCreationOptions{
 			PolicyLocale:                 middleware.GetLocale(c),
@@ -211,6 +210,7 @@ func (h *Handler) CreateOrder(c *gin.Context) {
 			SelectedQuotePlanID:          req.SelectedQuotePlanID,
 			CheckoutCartID:               cart.ID,
 			DisplayCurrency:              req.DisplayCurrency,
+			CustomerNote:                 req.Notes,
 		},
 	)
 	if err != nil {

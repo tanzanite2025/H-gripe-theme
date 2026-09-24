@@ -3,7 +3,6 @@ package service
 import (
 	"commerce-platform/internal/domain/coupon"
 	"commerce-platform/internal/domain/currency"
-	"commerce-platform/internal/domain/loyalty"
 	domainmoney "commerce-platform/internal/domain/money"
 	"commerce-platform/internal/domain/order"
 	domainpricing "commerce-platform/internal/domain/pricing"
@@ -29,22 +28,19 @@ type CheckoutService struct {
 	referralRepo        *repository.ReferralRepository
 	referralProgramRepo *repository.ReferralProgramRepository
 	shippingService     *ShippingService
-	loyaltyProgram      *LoyaltyProgramService
 	currencyPolicy      *CurrencyPolicyService
 	exchangeRates       *repository.ExchangeRateRepository
 }
 
 type CheckoutQuoteInput struct {
-	UserID               uint
-	Items                []order.OrderItem
-	ShippingAddress      order.Address
-	DisplayCurrency      string
-	PaymentMethod        string
-	ShippingQuoteID      string
-	SelectedQuotePlanID  string
-	CouponCode           string
-	PointsToUse          int
-	LoyaltyProgramConfig *loyalty.ProgramConfig
+	UserID              uint
+	Items               []order.OrderItem
+	ShippingAddress     order.Address
+	DisplayCurrency     string
+	PaymentMethod       string
+	ShippingQuoteID     string
+	SelectedQuotePlanID string
+	CouponCode          string
 }
 
 type CheckoutQuote struct {
@@ -53,14 +49,11 @@ type CheckoutQuote struct {
 	ShippingFeeMinor    int64                    `json:"shipping_fee_minor"`
 	TaxMinor            int64                    `json:"tax_minor"`
 	MemberDiscountMinor int64                    `json:"member_discount_minor"`
-	PointsDiscountMinor int64                    `json:"points_discount_minor"`
 	CouponDiscountMinor int64                    `json:"coupon_discount_minor"`
 	DiscountMinor       int64                    `json:"discount_minor"`
 	TotalMinor          int64                    `json:"total_minor"`
 	ShippingQuote       *ShippingQuote           `json:"shipping_quote,omitempty"`
 	CouponCode          string                   `json:"coupon_code"`
-	PointsToUse         int                      `json:"points_to_use"`
-	ProgramConfigID     *uint                    `json:"loyalty_program_config_id,omitempty"`
 	Coupon              *coupon.Coupon           `json:"coupon,omitempty"`
 	Currency            string                   `json:"currency"`
 	PaymentCurrency     string                   `json:"payment_currency,omitempty"`
@@ -99,10 +92,6 @@ func NewCheckoutService(
 		checkoutService.shippingService = shippingServices[0]
 	}
 	return checkoutService
-}
-
-func (s *CheckoutService) ConfigureLoyaltyProgram(program *LoyaltyProgramService) {
-	s.loyaltyProgram = program
 }
 
 func (s *CheckoutService) ConfigureCurrencyPolicy(policy *CurrencyPolicyService) {
@@ -357,33 +346,9 @@ func (s *CheckoutService) quote(input CheckoutQuoteInput, repos checkoutReposito
 	if quoteCurrency == "" {
 		return nil, errors.New("product price currency is required")
 	}
-	// Capture the order-time FX contract before valuing loyalty points. The
-	// redemption rate is defined in the configured points currency, while the
-	// quote and its discount cap are expressed in order currency.
 	fxSnapshot, err := s.resolveOrderFXSnapshot(quoteCurrency, repos.currencyPolicy, repos.exchangeRates)
 	if err != nil {
 		return nil, err
-	}
-	loyaltyConfig := input.LoyaltyProgramConfig
-	pointsFXSnapshot := fxSnapshot
-	if input.PointsToUse > 0 {
-		if loyaltyConfig == nil {
-			loyaltyConfig, err = s.currentLoyaltyProgramConfig()
-			if err != nil {
-				return nil, err
-			}
-			if loyaltyConfig == nil {
-				return nil, ErrLoyaltyProgramConfigNotFound
-			}
-		}
-		pointsFXSnapshot, err = s.resolvePointsFXSnapshot(
-			quoteCurrency,
-			loyaltyConfig.Currency,
-			repos.exchangeRates,
-		)
-		if err != nil {
-			return nil, err
-		}
 	}
 
 	if repos.shippingService == nil {
@@ -445,24 +410,6 @@ func (s *CheckoutService) quote(input CheckoutQuoteInput, repos checkoutReposito
 		}
 	}
 
-	pointsToUse, pointsDiscountMoney, programConfigID, err := s.calculatePointsDiscountMoney(
-		repos.loyaltyRepo,
-		input.UserID,
-		input.PointsToUse,
-		remainingMerchandiseMoney,
-		loyaltyConfig,
-		pointsFXSnapshot,
-	)
-	if err != nil {
-		return nil, err
-	}
-	if pointsDiscountMoney.AmountMinor() > remainingMerchandiseMoney.AmountMinor() {
-		pointsDiscountMoney = remainingMerchandiseMoney
-	}
-	remainingMerchandiseMoney, err = remainingMerchandiseMoney.Subtract(pointsDiscountMoney)
-	if err != nil {
-		return nil, fmt.Errorf("calculate remaining merchandise after points discount: %w", err)
-	}
 	pricingSnapshot, err := buildCheckoutPricingSnapshot(checkoutPricingInput{
 		Items:               pricingItems,
 		Currency:            quoteCurrency,
@@ -470,9 +417,6 @@ func (s *CheckoutService) quote(input CheckoutQuoteInput, repos checkoutReposito
 		MemberDiscount:      memberDiscountMoney,
 		CouponDiscount:      couponDiscountMoney,
 		Coupon:              targetCoupon,
-		PointsDiscount:      pointsDiscountMoney,
-		PointsToUse:         pointsToUse,
-		ProgramConfigID:     programConfigID,
 		MerchandiseNetTotal: remainingMerchandiseMoney,
 	})
 	if err != nil {
@@ -505,19 +449,11 @@ func (s *CheckoutService) quote(input CheckoutQuoteInput, repos checkoutReposito
 	if err != nil {
 		return nil, fmt.Errorf("calculate remaining checkout amount: %w", err)
 	}
-	remainingAmountMoney, err = remainingAmountMoney.Subtract(pointsDiscountMoney)
-	if err != nil {
-		return nil, fmt.Errorf("calculate remaining checkout amount: %w", err)
-	}
 	remainingAmountMoney, err = remainingAmountMoney.Subtract(couponDiscountMoney)
 	if err != nil {
 		return nil, fmt.Errorf("calculate remaining checkout amount: %w", err)
 	}
-	discountAmountMoney, err := memberDiscountMoney.Add(pointsDiscountMoney)
-	if err != nil {
-		return nil, fmt.Errorf("calculate checkout discount total: %w", err)
-	}
-	discountAmountMoney, err = discountAmountMoney.Add(couponDiscountMoney)
+	discountAmountMoney, err := memberDiscountMoney.Add(couponDiscountMoney)
 	if err != nil {
 		return nil, fmt.Errorf("calculate checkout discount total: %w", err)
 	}
@@ -555,14 +491,11 @@ func (s *CheckoutService) quote(input CheckoutQuoteInput, repos checkoutReposito
 		ShippingFeeMinor:    shippingFeeMoney.AmountMinor(),
 		TaxMinor:            taxMoney.AmountMinor(),
 		MemberDiscountMinor: memberDiscountMoney.AmountMinor(),
-		PointsDiscountMinor: pointsDiscountMoney.AmountMinor(),
 		CouponDiscountMinor: couponDiscountMoney.AmountMinor(),
 		DiscountMinor:       discountAmountMoney.AmountMinor(),
 		TotalMinor:          totalMoney.AmountMinor(),
 		ShippingQuote:       shippingQuote,
 		CouponCode:          couponCode,
-		PointsToUse:         pointsToUse,
-		ProgramConfigID:     programConfigID,
 		Coupon:              targetCoupon,
 		Currency:            quoteCurrency,
 		PaymentCurrency:     paymentCurrency,
@@ -649,80 +582,6 @@ func (s *CheckoutService) resolveOrderFXSnapshot(
 	)
 }
 
-func (s *CheckoutService) resolvePointsFXSnapshot(
-	orderCurrency string,
-	pointsCurrency string,
-	exchangeRates *repository.ExchangeRateRepository,
-) (currency.OrderFXSnapshot, error) {
-	orderCurrency = currency.NormalizeCode(orderCurrency)
-	pointsCurrency = currency.NormalizeCode(pointsCurrency)
-	if !currency.IsCatalogCode(orderCurrency) {
-		return currency.OrderFXSnapshot{}, fmt.Errorf("unsupported order currency %s", orderCurrency)
-	}
-	if !currency.IsCatalogCode(pointsCurrency) {
-		return currency.OrderFXSnapshot{}, fmt.Errorf("unsupported loyalty points currency %s", pointsCurrency)
-	}
-
-	capturedAt := time.Now().UTC()
-	if pointsCurrency == orderCurrency {
-		return currency.OrderFXSnapshot{
-			Version:       currency.OrderFXSnapshotVersion,
-			BaseCurrency:  pointsCurrency,
-			OrderCurrency: orderCurrency,
-			RateDecimal:   "1",
-			Source:        "same_currency",
-			CapturedAt:    capturedAt,
-		}, nil
-	}
-
-	if exchangeRates == nil {
-		return currency.OrderFXSnapshot{}, fmt.Errorf(
-			"historical FX snapshot is unavailable for %s to %s points redemption",
-			pointsCurrency,
-			orderCurrency,
-		)
-	}
-
-	now := time.Now().UTC()
-	if record, err := exchangeRates.FindFresh(pointsCurrency, orderCurrency, now); err == nil {
-		rate, rateErr := exchangeRateDecimalRecord(record)
-		if rateErr == nil {
-			return currency.OrderFXSnapshot{
-				Version:       currency.OrderFXSnapshotVersion,
-				BaseCurrency:  pointsCurrency,
-				OrderCurrency: orderCurrency,
-				RateDecimal:   rate,
-				Source:        nonEmptyFXSource(record.Source, "cached_exchange_rate"),
-				CapturedAt:    capturedAt,
-				RateFetchedAt: snapshotTimePtr(record.FetchedAt),
-			}, nil
-		}
-	}
-	if record, err := exchangeRates.FindFresh(orderCurrency, pointsCurrency, now); err == nil {
-		rate, rateErr := exchangeRateDecimalRecord(record)
-		if rateErr == nil {
-			inverseRate, inverseErr := invertExchangeRate(rate)
-			if inverseErr == nil {
-				return currency.OrderFXSnapshot{
-					Version:       currency.OrderFXSnapshotVersion,
-					BaseCurrency:  pointsCurrency,
-					OrderCurrency: orderCurrency,
-					RateDecimal:   inverseRate,
-					Source:        nonEmptyFXSource(record.Source, "cached_exchange_rate_reverse"),
-					CapturedAt:    capturedAt,
-					RateFetchedAt: snapshotTimePtr(record.FetchedAt),
-				}, nil
-			}
-		}
-	}
-
-	return currency.OrderFXSnapshot{}, fmt.Errorf(
-		"historical FX snapshot is unavailable for %s to %s points redemption",
-		pointsCurrency,
-		orderCurrency,
-	)
-}
-
 func nonEmptyFXSource(value, fallback string) string {
 	if value = strings.TrimSpace(value); value != "" {
 		return value
@@ -802,104 +661,6 @@ func (s *CheckoutService) calculateMemberDiscountMoney(
 	}
 	rate.Quo(rate, big.NewRat(100, 1))
 	return subtotal.MultiplyRat(rate)
-}
-
-// calculatePointsDiscountMoney keeps the checkout path in minor units.
-func (s *CheckoutService) calculatePointsDiscountMoney(
-	loyaltyRepo *repository.LoyaltyRepository,
-	userID uint,
-	requestedPoints int,
-	subtotal domainmoney.Money,
-	config *loyalty.ProgramConfig,
-	fxSnapshot currency.OrderFXSnapshot,
-) (int, domainmoney.Money, *uint, error) {
-	zero, err := domainmoney.New(0, subtotal.Currency().String())
-	if err != nil {
-		return 0, domainmoney.Money{}, nil, err
-	}
-	if requestedPoints <= 0 {
-		return 0, zero, nil, nil
-	}
-	if config == nil {
-		config, err = s.currentLoyaltyProgramConfig()
-		if err != nil {
-			return 0, domainmoney.Money{}, nil, err
-		}
-		if config == nil {
-			return 0, domainmoney.Money{}, nil, ErrLoyaltyProgramConfigNotFound
-		}
-	}
-	if !config.Enabled {
-		return 0, domainmoney.Money{}, nil, errors.New("point redemption is disabled")
-	}
-	pointsCurrency := currency.NormalizeCode(config.Currency)
-	if !currency.IsCatalogCode(pointsCurrency) {
-		return 0, domainmoney.Money{}, nil, errors.New("point redemption currency is invalid")
-	}
-	if config.ExchangeRatePoints <= 0 {
-		return 0, domainmoney.Money{}, nil, errors.New("point redemption exchange rate is invalid")
-	}
-	if currency.NormalizeCode(fxSnapshot.BaseCurrency) != pointsCurrency {
-		return 0, domainmoney.Money{}, nil, fmt.Errorf("point redemption FX base currency must be %s", pointsCurrency)
-	}
-	if err := fxSnapshot.Validate(subtotal.Currency().String()); err != nil {
-		return 0, domainmoney.Money{}, nil, fmt.Errorf("point redemption FX snapshot is invalid: %w", err)
-	}
-	userLoyalty, err := loyaltyRepo.FindUserLoyaltyByUserID(userID)
-	if err != nil || userLoyalty == nil {
-		return 0, domainmoney.Money{}, nil, fmt.Errorf("[CRITICAL] Insufficient points: available %d, requested %d", 0, requestedPoints)
-	}
-	if userLoyalty.AvailablePoints < requestedPoints {
-		return 0, domainmoney.Money{}, nil, fmt.Errorf("[CRITICAL] Insufficient points: available %d, requested %d", userLoyalty.AvailablePoints, requestedPoints)
-	}
-	rate, err := fxSnapshot.RateRat()
-	if err != nil {
-		return 0, domainmoney.Money{}, nil, errors.New("point redemption FX rate is invalid")
-	}
-	calculate := func(points int64) (domainmoney.Money, error) {
-		value := new(big.Rat).SetFrac(big.NewInt(points), big.NewInt(int64(config.ExchangeRatePoints)))
-		value.Mul(value, rate)
-		return domainmoney.FromMajorRat(value, subtotal.Currency().String())
-	}
-	pointsToUse := requestedPoints
-	pointsDiscount, err := calculate(int64(pointsToUse))
-	if err != nil {
-		return 0, domainmoney.Money{}, nil, fmt.Errorf("calculate points discount: %w", err)
-	}
-	maxDiscount, err := subtotal.MultiplyRatio(1, 2)
-	if err != nil {
-		return 0, domainmoney.Money{}, nil, fmt.Errorf("calculate points discount cap: %w", err)
-	}
-	if pointsDiscount.AmountMinor() > maxDiscount.AmountMinor() {
-		// Find the largest whole-point redemption whose rounded minor-unit value
-		// remains within the 50% merchandise cap.
-		low, high := int64(0), int64(requestedPoints)
-		for low < high {
-			mid := low + (high-low+1)/2
-			candidate, candidateErr := calculate(mid)
-			if candidateErr != nil {
-				return 0, domainmoney.Money{}, nil, fmt.Errorf("calculate capped points discount: %w", candidateErr)
-			}
-			if candidate.AmountMinor() <= maxDiscount.AmountMinor() {
-				low = mid
-			} else {
-				high = mid - 1
-			}
-		}
-		pointsToUse = int(low)
-		pointsDiscount, err = calculate(low)
-		if err != nil {
-			return 0, domainmoney.Money{}, nil, fmt.Errorf("calculate capped points discount: %w", err)
-		}
-	}
-	return pointsToUse, pointsDiscount, programConfigID(config), nil
-}
-
-func (s *CheckoutService) currentLoyaltyProgramConfig() (*loyalty.ProgramConfig, error) {
-	if s.loyaltyProgram != nil {
-		return s.loyaltyProgram.GetActive()
-	}
-	return nil, ErrLoyaltyProgramConfigNotFound
 }
 
 func (s *CheckoutService) validateCouponWithFXMoney(

@@ -56,9 +56,6 @@ export interface LoyaltyAdjustmentForm {
 export type LoyaltyErrors = Partial<Record<keyof LoyaltyAdjustmentForm, string>>
 
 export interface LoyaltySettings {
-  points_redemption_enabled: boolean
-  points_redemption_currency: string
-  points_exchange_rate: number | string
   tz_loyalty_purchase_earn_points_per_currency_unit: number | string
   tz_loyalty_referral_referrer_points: number | string
   tz_loyalty_referral_referee_points: number | string
@@ -88,8 +85,6 @@ export interface PromotionRiskSummary {
   member_level_count?: number
   max_member_discount_rate?: number
   max_member_discount_level_name?: string
-  points_redemption_enabled?: boolean
-  direct_points_discount_cap_rate?: number
 }
 
 export interface PromotionRiskItem {

@@ -743,7 +743,6 @@ func TestReferralOrderInvalidatedDoesNotChangeRegistrationPoints(t *testing.T) {
 	// refund flow returns the order's 50 points before the referral invalidation
 	// event is handled. The registration reward remains in that same aggregate
 	// balance; the source labels do not create separate wallets.
-	orderRecord.PointsUsed = 50
 	require.NoError(t, db.Save(orderRecord).Error)
 	loyaltyRepo := repository.NewLoyaltyRepository(db)
 	_, err = loyaltyRepo.AdjustUserPoints(referee.ID, -50, "spend", "order", orderRecord.ID, "Spent referral points on order")

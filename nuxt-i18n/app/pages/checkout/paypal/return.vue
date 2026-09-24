@@ -13,7 +13,13 @@
         <NuxtLink class="paypal-return-button paypal-return-button--primary" :to="localePath('/')">
           {{ t('checkout.paypalReturn.actions.continueShopping') }}
         </NuxtLink>
-        <button v-if="status === 'error'" class="paypal-return-button paypal-return-button--primary" type="button" @click="capture">
+        <button
+          v-if="status === 'error'"
+          class="paypal-return-button paypal-return-button--primary"
+          type="button"
+          :disabled="isCapturing"
+          @click="capture"
+        >
           {{ t('checkout.paypalReturn.actions.retry') }}
         </button>
         <button class="paypal-return-button" type="button" @click="openCart">
@@ -26,17 +32,20 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { useI18n, useLocalePath, useRoute } from '#imports'
+import { navigateTo, useI18n, useLocalePath, useRoute } from '#imports'
+import { useAuth } from '~/composables/useAuth'
 import { useCart } from '~/composables/useCart'
 import { usePayPalPayment } from '~/composables/usePayPalPayment'
 
 const { t } = useI18n()
 const route = useRoute()
 const localePath = useLocalePath()
-const { reloadCartFromBackend, openCart } = useCart()
+const auth = useAuth()
+const { clearCart, reloadCartFromBackend, openCart } = useCart()
 const { capturePayPalOrder } = usePayPalPayment()
 const status = ref<'loading' | 'success' | 'error'>('loading')
 const message = ref(t('checkout.paypalReturn.messages.capturing'))
+const isCapturing = ref(false)
 
 const firstQueryValue = (value: unknown) => Array.isArray(value) ? String(value[0] || '') : String(value || '')
 const orderNumber = computed(() => firstQueryValue(route.query.order_number).trim())
@@ -55,8 +64,17 @@ const statusIcon = computed(() => {
 })
 
 const capture = async () => {
-  if (status.value === 'loading') return
+  if (isCapturing.value || status.value === 'success') return
+
+  isCapturing.value = true
+  status.value = 'loading'
+  message.value = t('checkout.paypalReturn.messages.capturing')
+
   try {
+    const user = await auth.ensureSession()
+    if (!user) {
+      throw new Error(t('checkout.paypalReturn.messages.loginRequired'))
+    }
     if (!orderNumber.value || !paypalOrderId.value) {
       throw new Error(t('checkout.paypalReturn.messages.missingData'))
     }
@@ -70,12 +88,19 @@ const capture = async () => {
       throw new Error(t('checkout.paypalReturn.messages.incomplete'))
     }
 
+    await clearCart()
     await reloadCartFromBackend()
     status.value = 'success'
     message.value = t('checkout.paypalReturn.messages.success')
+    await navigateTo({
+      path: localePath('/checkout/success'),
+      query: { order_number: orderNumber.value },
+    }, { replace: true })
   } catch (error) {
     status.value = 'error'
     message.value = error instanceof Error ? error.message : t('checkout.paypalReturn.messages.failed')
+  } finally {
+    isCapturing.value = false
   }
 }
 

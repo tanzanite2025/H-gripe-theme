@@ -27,7 +27,6 @@ func TestCreateOrderWithIdempotencyReplaysDurableOrder(t *testing.T) {
 		"card",
 		"standard",
 		"",
-		0,
 		attributionpkg.Context{},
 		options,
 	)
@@ -42,7 +41,6 @@ func TestCreateOrderWithIdempotencyReplaysDurableOrder(t *testing.T) {
 		"card",
 		"standard",
 		"",
-		0,
 		attributionpkg.Context{},
 		options,
 	)
@@ -76,7 +74,6 @@ func TestCreateOrderWithIdempotencyRejectsDifferentPayloadHash(t *testing.T) {
 		"card",
 		"standard",
 		"",
-		0,
 		attributionpkg.Context{},
 		base,
 	)
@@ -93,7 +90,6 @@ func TestCreateOrderWithIdempotencyRejectsDifferentPayloadHash(t *testing.T) {
 		"card",
 		"standard",
 		"",
-		0,
 		attributionpkg.Context{},
 		conflicting,
 	)

@@ -35,7 +35,6 @@ func TestOrderServiceExpiresStaleUnpaidOrderForNonCardPaymentMethod(t *testing.T
 		"paypal",
 		"standard",
 		"",
-		0,
 	)
 	require.NoError(t, err)
 
@@ -80,7 +79,6 @@ func TestOrderServiceDoesNotRollbackReservationsAgainWhenPaymentExpirationIsRepe
 		"card",
 		"standard",
 		"EXPIRE-ONCE",
-		100,
 	)
 	require.NoError(t, err)
 
@@ -144,7 +142,6 @@ func TestOrderServicePaymentExpirationRestoresConsumedCheckoutCart(t *testing.T)
 		"paypal",
 		"standard",
 		"",
-		0,
 		attributionpkg.Context{},
 		OrderCreationOptions{CheckoutCartID: cart.ID},
 	)
@@ -187,7 +184,6 @@ func TestOrderServicePaymentExpirationDoesNotRestoreCartForPaidOrder(t *testing.
 		"paypal",
 		"standard",
 		"",
-		0,
 		attributionpkg.Context{},
 		OrderCreationOptions{CheckoutCartID: cart.ID},
 	)
@@ -251,7 +247,6 @@ func TestOrderServicePaymentExpirationThenLateSuccessKeepsOrderExpiredAndRefunds
 		"paypal",
 		"standard",
 		"",
-		0,
 	)
 	require.NoError(t, err)
 	staleAt := now.Add(-45 * time.Minute)

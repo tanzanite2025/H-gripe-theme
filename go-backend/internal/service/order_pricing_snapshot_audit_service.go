@@ -100,7 +100,7 @@ func (s *OrderPricingSnapshotAuditService) Audit(ctx context.Context, options Or
 
 		var orders []order.Order
 		query := s.db.WithContext(ctx).Model(&order.Order{}).
-			Select("id, order_number, currency, subtotal_amount_minor, shipping_fee_minor, tax_amount_minor, discount_amount_minor, total_amount_minor, points_value_minor, pricing_snapshot").
+			Select("id, order_number, currency, subtotal_amount_minor, shipping_fee_minor, tax_amount_minor, discount_amount_minor, total_amount_minor, pricing_snapshot").
 			Where("id > ?", lastID).
 			Order("id ASC").
 			Limit(batchSize)
@@ -193,9 +193,6 @@ func auditPricingOrder(report *OrderPricingSnapshotAuditReport, record order.Ord
 	}
 	if payload.DiscountTotalMinor != record.DiscountAmountMinor {
 		mismatches = append(mismatches, "discount_total_minor")
-	}
-	if payload.PointsDiscountMinor != record.PointsValueMinor {
-		mismatches = append(mismatches, "points_discount_minor")
 	}
 	if payload.TotalMinor != record.TotalAmountMinor {
 		mismatches = append(mismatches, "total_minor")

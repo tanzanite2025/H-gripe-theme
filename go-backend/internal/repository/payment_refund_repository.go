@@ -274,17 +274,7 @@ func (r *PaymentRepository) SumRefundLoyaltyPointsSettledByOrderID(orderID uint,
 	if len(statuses) > 0 {
 		query = query.Where("status IN ?", statuses)
 	}
-	err := query.Select("COALESCE(SUM(loyalty_points_clawback + loyalty_points_cash_recovered + loyalty_points_debt), 0)").Scan(&total).Error
-	return total, err
-}
-
-func (r *PaymentRepository) SumRefundLoyaltyPointsReturnedByOrderID(orderID uint, statuses ...string) (int, error) {
-	var total int
-	query := r.db.Model(&payment.Refund{}).Where("order_id = ?", orderID)
-	if len(statuses) > 0 {
-		query = query.Where("status IN ?", statuses)
-	}
-	err := query.Select("COALESCE(SUM(loyalty_points_returned), 0)").Scan(&total).Error
+	err := query.Select("COALESCE(SUM(loyalty_points_clawback + loyalty_points_debt), 0)").Scan(&total).Error
 	return total, err
 }
 

@@ -71,10 +71,6 @@ func marshalOrderPricingSnapshot(quote *CheckoutQuote) (datatypes.JSON, error) {
 	if err != nil {
 		return nil, err
 	}
-	points, err := fromMinor(quote.PointsDiscountMinor)
-	if err != nil {
-		return nil, err
-	}
 	discount, err := fromMinor(quote.DiscountMinor)
 	if err != nil {
 		return nil, err
@@ -90,7 +86,6 @@ func marshalOrderPricingSnapshot(quote *CheckoutQuote) (datatypes.JSON, error) {
 		Tax:            tax,
 		MemberDiscount: member,
 		CouponDiscount: coupon,
-		PointsDiscount: points,
 		DiscountTotal:  discount,
 		Total:          total,
 	})

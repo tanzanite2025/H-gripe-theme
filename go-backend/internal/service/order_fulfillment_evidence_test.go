@@ -109,17 +109,17 @@ func TestOrderEvidenceServiceCheckFulfillmentReadinessAllowsMissingPOD(t *testin
 	}
 	orderItemID := uint(11)
 	orderItem := order.OrderItem{
-		ID:          orderItemID,
-		OrderID:     orderRecord.ID,
-		ProductID:   1,
-		VariantID:   uintPtrForEvidenceTest(2),
-		ProductName: "Dispatch item",
-		SKU:         "DISPATCH-ITEM",
-		Quantity:    1,
-		PriceMinor:  10000,
+		ID:            orderItemID,
+		OrderID:       orderRecord.ID,
+		ProductID:     1,
+		VariantID:     uintPtrForEvidenceTest(2),
+		ProductName:   "Dispatch item",
+		SKU:           "DISPATCH-ITEM",
+		Quantity:      1,
+		PriceMinor:    10000,
 		SubtotalMinor: 10000,
 		TotalMinor:    10000,
-		WeightGrams: 1000,
+		WeightGrams:   1000,
 	}
 	if err := db.Create(&orderItem).Error; err != nil {
 		t.Fatal(err)

@@ -21,7 +21,6 @@ type LoyaltyProgramConfigInput struct {
 	Enabled                   bool
 	Currency                  string
 	PurchaseEarnPointsPerUnit int
-	ExchangeRatePoints        int
 	ReferralReferrerPoints    int
 	ReferralRefereePoints     int
 	CheckInBasePoints         int
@@ -39,7 +38,6 @@ type LoyaltyProgramConfigResponse struct {
 	Currency                  string                    `json:"currency"`
 	PointsBaseCurrency        string                    `json:"points_base_currency"`
 	PurchaseEarnPointsPerUnit int                       `json:"purchase_earn_points_per_currency_unit"`
-	ExchangeRatePoints        int                       `json:"exchange_rate_points"`
 	ReferralReferrerPoints    int                       `json:"referral_referrer_points"`
 	ReferralRefereePoints     int                       `json:"referral_referee_points"`
 	CheckInBasePoints         int                       `json:"checkin_base_points"`
@@ -90,7 +88,6 @@ func (s *LoyaltyProgramService) Update(input LoyaltyProgramConfigInput) (*loyalt
 		Enabled:                   input.Enabled,
 		Currency:                  input.Currency,
 		PurchaseEarnPointsPerUnit: input.PurchaseEarnPointsPerUnit,
-		ExchangeRatePoints:        input.ExchangeRatePoints,
 		ReferralReferrerPoints:    input.ReferralReferrerPoints,
 		ReferralRefereePoints:     input.ReferralRefereePoints,
 		CheckInBasePoints:         input.CheckInBasePoints,
@@ -124,9 +121,6 @@ func validateProgramConfig(config *loyalty.ProgramConfig) error {
 	if config.PurchaseEarnPointsPerUnit < 0 {
 		return fmt.Errorf("%w: purchase earn points cannot be negative", ErrInvalidLoyaltyProgramConfig)
 	}
-	if config.ExchangeRatePoints <= 0 {
-		return fmt.Errorf("%w: exchange rate must be greater than zero", ErrInvalidLoyaltyProgramConfig)
-	}
 	if config.ReferralReferrerPoints < 0 || config.ReferralRefereePoints < 0 ||
 		config.CheckInBasePoints < 0 || config.CheckInStreakBonusPoints < 0 ||
 		config.CheckInMaxPoints < 0 {
@@ -150,7 +144,6 @@ func programConfigResponse(config *loyalty.ProgramConfig) LoyaltyProgramConfigRe
 		Currency:                  config.Currency,
 		PointsBaseCurrency:        LoyaltyPointsBaseCurrency,
 		PurchaseEarnPointsPerUnit: config.PurchaseEarnPointsPerUnit,
-		ExchangeRatePoints:        config.ExchangeRatePoints,
 		ReferralReferrerPoints:    config.ReferralReferrerPoints,
 		ReferralRefereePoints:     config.ReferralRefereePoints,
 		CheckInBasePoints:         config.CheckInBasePoints,

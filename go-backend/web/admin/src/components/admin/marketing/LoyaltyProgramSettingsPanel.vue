@@ -51,31 +51,6 @@
       </div>
     </ProgramSection>
 
-    <ProgramSection title="订单积分抵扣" description="会员在结算时可用积分抵扣订单金额。">
-      <div class="grid gap-4 md:grid-cols-3">
-        <AdminFormField label="启用积分抵扣">
-          <Switch v-model="loyaltySettings.points_redemption_enabled" :disabled="!canEdit" aria-label="启用积分抵扣" />
-        </AdminFormField>
-        <AdminFormField label="积分基准币种" description="使用 ISO 三位货币代码，例如 USD。">
-          <Input
-            v-model.trim="loyaltySettings.points_redemption_currency"
-            class="font-mono uppercase"
-            maxlength="3"
-            :disabled="!canEdit"
-          />
-        </AdminFormField>
-        <AdminFormField label="积分抵扣比例" description="例如 100 表示 100 积分抵扣 1 个基准币种单位。">
-          <Input
-            v-model.number="loyaltySettings.points_exchange_rate"
-            type="number"
-            min="1"
-            step="1"
-            :disabled="!canEdit"
-          />
-        </AdminFormField>
-      </div>
-    </ProgramSection>
-
     <ProgramSection title="签到积分" description="推荐计划升级期间，推荐奖励改由独立配置管理且保持关闭。">
       <div class="grid gap-4 md:grid-cols-2">
         <AdminFormField label="每日签到基础积分" description="会员每天第一次签到获得的基础积分。">
@@ -162,4 +137,3 @@ const ProgramSection = defineComponent({
   },
 })
 </script>
-

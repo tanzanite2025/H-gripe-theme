@@ -63,6 +63,7 @@ const {
   hasResolvedAvailability,
   availablePaymentMethods,
   mount,
+  updatePaymentAmount,
   submit,
   confirmPayment,
   destroy,
@@ -126,6 +127,10 @@ const submitExpressCheckoutPayment = async () => {
   }
 }
 
+const updateExpressCheckoutPaymentAmount = async (amountMinor: number, currency: string) => {
+  await updatePaymentAmount(amountMinor, currency)
+}
+
 const confirmExpressCheckoutPayment = async (clientSecret: string, returnUrl: string) => {
   try {
     const result = await confirmPayment(clientSecret, returnUrl)
@@ -169,6 +174,7 @@ onBeforeUnmount(() => {
 
 defineExpose({
   submitExpressCheckoutPayment,
+  updateExpressCheckoutPaymentAmount,
   confirmExpressCheckoutPayment,
   resetExpressCheckoutPaymentState,
   isReady,

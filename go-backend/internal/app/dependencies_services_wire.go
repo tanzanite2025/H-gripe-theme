@@ -40,7 +40,6 @@ func (b *dependencyServicesBuilder) wire() error {
 	}
 	services.Marketing.ConfigureLoyaltyProgram(b.services.LoyaltyProgram)
 	services.Marketing.ConfigureCurrencyPolicy(services.CurrencyPolicy)
-	services.Checkout.ConfigureLoyaltyProgram(b.services.LoyaltyProgram)
 	services.Checkout.ConfigureCurrencyPolicy(services.CurrencyPolicy)
 	services.Checkout.ConfigureExchangeRateRepository(repos.ExchangeRate)
 	services.Checkout.ConfigureReferralRepositories(repos.Referral, repos.ReferralProgram)

@@ -54,7 +54,6 @@ func TestOrderServiceCreateOrderRejectsChangedExpectedTotalMinorBeforeStockDeduc
 		"card",
 		"standard",
 		"",
-		0,
 		attributionpkg.Context{},
 		OrderCreationOptions{ExpectedTotalMinor: &expectedTotalMinor},
 	)
@@ -85,7 +84,6 @@ func TestOrderServiceCreateOrderRejectsExpectedTotalMinorDifference(t *testing.T
 		"card",
 		"standard",
 		"",
-		0,
 		attributionpkg.Context{},
 		OrderCreationOptions{ExpectedTotalMinor: &expectedTotalMinor},
 	)
@@ -142,7 +140,6 @@ func TestOrderServiceCreateOrderUsesRequestedCarrierServiceForExpectedTotalMinor
 		"card",
 		"standard",
 		"",
-		0,
 		attributionpkg.Context{},
 		OrderCreationOptions{
 			ExpectedTotalMinor:  &expectedTotalMinor,
@@ -180,7 +177,6 @@ func TestOrderServiceRejectsUnavailableShippingRateBeforeStockDeduction(t *testi
 		"card",
 		"standard",
 		"",
-		0,
 		attributionpkg.Context{},
 		OrderCreationOptions{},
 	)
@@ -212,7 +208,6 @@ func TestOrderServiceCreateOrderConsumesCheckoutCartAndStoresConsumedCartReferen
 		"paypal",
 		"standard",
 		"",
-		0,
 		attributionpkg.Context{},
 		OrderCreationOptions{CheckoutCartID: cart.ID},
 	)
@@ -254,7 +249,6 @@ func TestOrderServiceCreateOrderRejectsSecondCheckoutAgainstConsumedCart(t *test
 		"paypal",
 		"standard",
 		"",
-		0,
 		attributionpkg.Context{},
 		OrderCreationOptions{CheckoutCartID: cart.ID},
 	)
@@ -269,7 +263,6 @@ func TestOrderServiceCreateOrderRejectsSecondCheckoutAgainstConsumedCart(t *test
 		"card",
 		"standard",
 		"",
-		0,
 		attributionpkg.Context{},
 		OrderCreationOptions{CheckoutCartID: cart.ID},
 	)
@@ -307,7 +300,6 @@ func TestOrderServiceConcurrentCheckoutAgainstSameCartCreatesOnlyOneOrder(t *tes
 				"paypal",
 				"standard",
 				"",
-				0,
 				attributionpkg.Context{},
 				OrderCreationOptions{CheckoutCartID: cart.ID},
 			)
@@ -369,7 +361,6 @@ func TestOrderServiceCheckoutTransactionFailureRestoresCartConsumption(t *testin
 		"paypal",
 		"standard",
 		"",
-		0,
 		attributionpkg.Context{},
 		OrderCreationOptions{CheckoutCartID: cart.ID},
 	)
@@ -406,7 +397,6 @@ func TestOrderServiceCancelUnpaidCheckoutOrderRestoresCartExactlyOnce(t *testing
 		"paypal",
 		"standard",
 		"",
-		0,
 		attributionpkg.Context{},
 		OrderCreationOptions{CheckoutCartID: cart.ID},
 	)
@@ -458,17 +448,14 @@ func TestOrderServiceCreateOrderPersistsPricingAndAdjustments(t *testing.T) {
 		"card",
 		"standard",
 		"SAVE10",
-		100,
 	)
 
 	require.NoError(t, err)
 	require.NotNil(t, createdOrder)
 	require.NotZero(t, createdOrder.ID)
 	assert.Equal(t, int64(10000), createdOrder.SubtotalAmountMinor)
-	assert.Equal(t, int64(1600), createdOrder.DiscountAmountMinor)
-	assert.Equal(t, int64(8400), createdOrder.TotalAmountMinor)
-	assert.Equal(t, 100, createdOrder.PointsUsed)
-	assert.Equal(t, int64(100), createdOrder.PointsValueMinor)
+	assert.Equal(t, int64(1500), createdOrder.DiscountAmountMinor)
+	assert.Equal(t, int64(8500), createdOrder.TotalAmountMinor)
 	assert.Equal(t, "SAVE10", createdOrder.CouponCode)
 
 	var savedOrder order.Order
@@ -478,7 +465,7 @@ func TestOrderServiceCreateOrderPersistsPricingAndAdjustments(t *testing.T) {
 	assert.Equal(t, productRecord.Name, savedOrder.Items[0].ProductName)
 	assert.Equal(t, productRecord.SKU, savedOrder.Items[0].SKU)
 	assert.Equal(t, int64(10000), savedOrder.Items[0].SubtotalMinor)
-	assert.Equal(t, int64(8400), savedOrder.Items[0].TotalMinor)
+	assert.Equal(t, int64(8500), savedOrder.Items[0].TotalMinor)
 	assert.Equal(t, "871499", savedOrder.Items[0].HSCode)
 	assert.Equal(t, "87149990", savedOrder.Items[0].CNCode)
 	assert.Equal(t, "CN", savedOrder.Items[0].CountryOfOrigin)
@@ -499,16 +486,6 @@ func TestOrderServiceCreateOrderPersistsPricingAndAdjustments(t *testing.T) {
 	var savedVariant product.ProductVariant
 	require.NoError(t, db.Where("product_id = ?", productRecord.ID).First(&savedVariant).Error)
 	assert.Equal(t, 3, savedVariant.Stock)
-
-	var savedLoyalty loyalty.UserLoyalty
-	require.NoError(t, db.Where("user_id = ?", userID).First(&savedLoyalty).Error)
-	assert.Equal(t, 900, savedLoyalty.AvailablePoints)
-	assert.Equal(t, 100, savedLoyalty.UsedPoints)
-
-	var pointTransaction loyalty.LoyaltyTransaction
-	require.NoError(t, db.Where("user_id = ? AND source = ? AND source_id = ?", userID, "order", createdOrder.ID).First(&pointTransaction).Error)
-	assert.Equal(t, -100, pointTransaction.Points)
-	assert.Equal(t, 900, pointTransaction.Balance)
 
 	var savedCoupon coupon.Coupon
 	require.NoError(t, db.Where("code = ?", "SAVE10").First(&savedCoupon).Error)
@@ -534,7 +511,6 @@ func TestOrderServiceCreateOrderSettlesZeroTotalDiscountOrder(t *testing.T) {
 		"card",
 		"standard",
 		"FREE100",
-		0,
 	)
 
 	require.NoError(t, err)
@@ -584,7 +560,6 @@ func TestOrderServiceCreateOrderSnapshotsMadeToOrderFulfillment(t *testing.T) {
 		"card",
 		"standard",
 		"",
-		0,
 	)
 	require.NoError(t, err)
 	require.NotNil(t, createdOrder)
@@ -628,7 +603,6 @@ func TestOrderServiceCreateOrderRejectsCouponPerUserUsageLimit(t *testing.T) {
 		"card",
 		"standard",
 		"WELCOME20",
-		0,
 	)
 
 	require.ErrorIs(t, err, ErrCouponPerUserUsageLimitReached)
@@ -669,7 +643,6 @@ func TestOrderServiceCreateOrderEnforcesGuestCouponUsageLimitByNormalizedEmail(t
 		"card",
 		"standard",
 		"GUESTWELCOME",
-		0,
 	)
 	require.NoError(t, err)
 	require.NotNil(t, createdOrder)
@@ -689,7 +662,6 @@ func TestOrderServiceCreateOrderEnforcesGuestCouponUsageLimitByNormalizedEmail(t
 		"card",
 		"standard",
 		"GUESTWELCOME",
-		0,
 	)
 	require.ErrorIs(t, err, ErrCouponPerUserUsageLimitReached)
 }
@@ -707,7 +679,6 @@ func TestOrderServiceUpdateOrderItemCustoms(t *testing.T) {
 		"card",
 		"standard",
 		"",
-		0,
 	)
 	require.NoError(t, err)
 
@@ -768,7 +739,6 @@ func TestOrderServiceUpdateOrderItemCustomsRejectsPostShipmentChanges(t *testing
 				"card",
 				"standard",
 				"",
-				0,
 			)
 			require.NoError(t, err)
 
@@ -807,50 +777,6 @@ func TestOrderServiceUpdateOrderItemCustomsRejectsPostShipmentChanges(t *testing
 	}
 }
 
-func TestOrderServiceCreateOrderUsesVersionedLoyaltyExchangeRate(t *testing.T) {
-	db, orderService := newTestOrderService(t)
-	programService := newTestLoyaltyProgramService(t, db)
-	config, err := programService.Update(LoyaltyProgramConfigInput{
-		Enabled:                   true,
-		Currency:                  "USD",
-		ExchangeRatePoints:        80,
-		ReferralReferrerPoints:    100,
-		ReferralRefereePoints:     50,
-		CheckInBasePoints:         10,
-		CheckInStreakIntervalDays: 7,
-		CheckInStreakBonusPoints:  5,
-		CheckInMaxPoints:          50,
-	})
-	require.NoError(t, err)
-	orderService.checkout.ConfigureLoyaltyProgram(programService)
-
-	userID := uint(43)
-	productRecord := seedProduct(t, db, 100, 5)
-	seedUserLoyalty(t, db, userID, 1000)
-
-	createdOrder, err := orderService.CreateOrder(
-		context.Background(),
-		userID,
-		[]order.OrderItem{{ProductID: productRecord.ID, Quantity: 1}},
-		testAddress(),
-		testAddress(),
-		"card",
-		"standard",
-		"",
-		800,
-	)
-
-	require.NoError(t, err)
-	require.NotNil(t, createdOrder)
-	assert.Equal(t, 800, createdOrder.PointsUsed)
-	assert.Equal(t, int64(1000), createdOrder.PointsValueMinor)
-
-	var pointTransaction loyalty.LoyaltyTransaction
-	require.NoError(t, db.Where("user_id = ? AND source = ? AND source_id = ?", userID, "order", createdOrder.ID).First(&pointTransaction).Error)
-	require.NotNil(t, pointTransaction.ProgramConfigID)
-	assert.Equal(t, config.ID, *pointTransaction.ProgramConfigID)
-}
-
 func TestOrderServiceCreateOrderUsesVariantPricingAndStock(t *testing.T) {
 	db, orderService := newTestOrderService(t)
 	userID := uint(42)
@@ -880,7 +806,6 @@ func TestOrderServiceCreateOrderUsesVariantPricingAndStock(t *testing.T) {
 		"card",
 		"standard",
 		"",
-		0,
 	)
 
 	require.NoError(t, err)
@@ -930,7 +855,6 @@ func TestOrderServiceCreateOrderInvalidatesWarmedProductDetailCache(t *testing.T
 		"card",
 		"standard",
 		"",
-		0,
 	)
 	require.NoError(t, err)
 	require.NotNil(t, createdOrder)
@@ -978,7 +902,6 @@ func TestOrderServiceCreateOrderPersistsSelectedCarrierService(t *testing.T) {
 		"card",
 		"standard",
 		"",
-		0,
 	)
 
 	require.NoError(t, err)
@@ -1006,7 +929,6 @@ func TestOrderServiceCreateOrderRollsBackWhenStockIsInsufficient(t *testing.T) {
 		"card",
 		"standard",
 		"",
-		0,
 	)
 
 	require.Error(t, err)
@@ -1045,7 +967,6 @@ func TestOrderServiceCreateOrderPersistsImmutableEvidenceSnapshot(t *testing.T) 
 		"card",
 		"standard",
 		"",
-		0,
 	)
 	require.NoError(t, err)
 	require.NotNil(t, createdOrder)
@@ -1138,7 +1059,6 @@ func TestOrderServiceCreateOrderUsesVariantRequirementOverrideAndFreezesSnapshot
 		"card",
 		"standard",
 		"",
-		0,
 	)
 	require.NoError(t, err)
 	require.NotNil(t, createdOrder)
@@ -1203,7 +1123,6 @@ func TestOrderServiceEvidenceSeparatesHighValueFromSpokeTensionRequirement(t *te
 		"card",
 		"standard",
 		"",
-		0,
 	)
 	require.NoError(t, err)
 	highValueSnapshot, err := repository.NewOrderEvidenceSnapshotRepository(db).FindByOrderID(highValueOrder.ID)
@@ -1227,7 +1146,6 @@ func TestOrderServiceEvidenceSeparatesHighValueFromSpokeTensionRequirement(t *te
 		"card",
 		"standard",
 		"",
-		0,
 	)
 	require.NoError(t, err)
 	lowValueSnapshot, err := repository.NewOrderEvidenceSnapshotRepository(db).FindByOrderID(lowValueOrder.ID)
@@ -1269,7 +1187,6 @@ func TestOrderServiceCreateOrderRollsBackWhenEvidenceRuleIsAmbiguous(t *testing.
 		"card",
 		"standard",
 		"",
-		0,
 	)
 	require.Error(t, err)
 	assert.Nil(t, createdOrder)
@@ -1301,7 +1218,6 @@ func TestOrderServiceCreateOrderRequiresCompleteEvidenceConfiguration(t *testing
 		"card",
 		"standard",
 		"",
-		0,
 	)
 	require.ErrorIs(t, err, ErrOrderEvidenceNotConfigured)
 	assert.Nil(t, createdOrder)
@@ -1329,7 +1245,6 @@ func TestOrderServiceCreateOrderRejectsProductWithoutVariant(t *testing.T) {
 		"card",
 		"standard",
 		"",
-		0,
 	)
 
 	require.Error(t, err)
@@ -1360,7 +1275,6 @@ func TestOrderServiceExpireStalePendingPaymentsReleasesReservations(t *testing.T
 		"card",
 		"standard",
 		"EXPIRE10",
-		100,
 	)
 	require.NoError(t, err)
 
@@ -1431,7 +1345,6 @@ func TestOrderServiceExpireStalePendingPaymentsSkipsRecentPaymentActivity(t *tes
 		"stripe",
 		"standard",
 		"",
-		0,
 	)
 	require.NoError(t, err)
 
@@ -1666,7 +1579,6 @@ func TestOrderServiceCreateOrderUsesProductPriceCurrency(t *testing.T) {
 		"card",
 		"standard",
 		"",
-		0,
 	)
 
 	require.NoError(t, err)
@@ -1698,7 +1610,6 @@ func TestOrderServiceCreateOrderPersistsDomesticProviderSettlementForCrossCurren
 		"wechat",
 		"standard",
 		"",
-		0,
 	)
 
 	require.NoError(t, err)
@@ -1729,7 +1640,6 @@ func TestOrderServiceCreateOrderAcceptsSupportedPaymentCurrency(t *testing.T) {
 		"wechat",
 		"standard",
 		"",
-		0,
 	)
 
 	require.NoError(t, err)
@@ -1751,7 +1661,6 @@ func TestOrderServiceCreateOrderPersistsHistoricalFXSnapshot(t *testing.T) {
 		"wechat",
 		"standard",
 		"",
-		0,
 	)
 
 	require.NoError(t, err)
@@ -2238,7 +2147,6 @@ func newTestOrderService(t *testing.T) (*gorm.DB, *OrderService) {
 		Enabled:                   true,
 		Currency:                  "USD",
 		PurchaseEarnPointsPerUnit: 1,
-		ExchangeRatePoints:        100,
 		ReferralReferrerPoints:    100,
 		ReferralRefereePoints:     50,
 		CheckInBasePoints:         10,
@@ -2247,7 +2155,6 @@ func newTestOrderService(t *testing.T) (*gorm.DB, *OrderService) {
 		CheckInMaxPoints:          50,
 	})
 	require.NoError(t, err)
-	checkoutService.ConfigureLoyaltyProgram(programService)
 	numberGenerator, err := ordernumber.NewGenerator("test-order-number-secret", 0)
 	require.NoError(t, err)
 

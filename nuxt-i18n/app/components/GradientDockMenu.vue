@@ -206,7 +206,7 @@ const calculateUnreadCount = () => {
 let unreadInterval: ReturnType<typeof setInterval> | null = null
 let cancelUnreadWarmup: (() => void) | null = null
 
-const { cartCount, total, cartCurrency, openCart } = useCart()
+const { cartCount, subtotal, cartCurrency, openCart } = useCart()
 const itemsCount = computed(() => cartCount.value)
 
 const priceDisplay = computed(() => {
@@ -214,13 +214,13 @@ const priceDisplay = computed(() => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: cartCurrency.value || 'USD',
-    }).formatToParts(total.value)
+    }).formatToParts(subtotal.value)
       .filter(part => part.type !== 'currency' && part.type !== 'literal')
       .map(part => part.value)
       .join('')
       .trim()
   } catch {
-    return Number(total.value || 0).toFixed(2)
+    return Number(subtotal.value || 0).toFixed(2)
   }
 })
 

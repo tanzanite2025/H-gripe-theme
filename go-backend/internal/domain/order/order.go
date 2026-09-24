@@ -111,18 +111,18 @@ type Order struct {
 	PaymentStatus string `gorm:"index;default:'unpaid'" json:"payment_status"` // unpaid, paid, expired, refunded
 	// Provider-settlement payable facts may differ from the storefront order
 	// currency for domestic channels such as Alipay and WeChat Pay.
-	PaymentCurrency    string `gorm:"size:3;index" json:"payment_currency"`
-	PaymentAmountMinor int64  `gorm:"column:payment_amount_minor;not null;default:0" json:"payment_amount_minor"`
-	ShippingMethod        string  `json:"shipping_method"`
-	ShippingStatus        string  `gorm:"index;default:'pending'" json:"shipping_status"` // pending, processing, shipped, delivered
-	FulfillmentHold       bool    `gorm:"not null;default:false;index" json:"fulfillment_hold"`
-	DisputePreviousStatus string  `gorm:"size:32" json:"-"`
-	DisputePreviousHold   bool    `gorm:"not null;default:false" json:"-"`
-	FulfillmentMode       string  `gorm:"size:20;not null;default:'stock';index" json:"fulfillment_mode"`
-	ProductionStatus      string  `gorm:"size:20;not null;default:'not_applicable';index" json:"production_status"`
-	SignatureRequired     bool    `gorm:"not null;default:false;index" json:"signature_required"`
-	ShippingQuoteID       string  `gorm:"type:varchar(36);index" json:"shipping_quote_id,omitempty"`
-	ShippingQuotePlanID   string  `gorm:"type:varchar(36)" json:"shipping_quote_plan_id,omitempty"`
+	PaymentCurrency       string `gorm:"size:3;index" json:"payment_currency"`
+	PaymentAmountMinor    int64  `gorm:"column:payment_amount_minor;not null;default:0" json:"payment_amount_minor"`
+	ShippingMethod        string `json:"shipping_method"`
+	ShippingStatus        string `gorm:"index;default:'pending'" json:"shipping_status"` // pending, processing, shipped, delivered
+	FulfillmentHold       bool   `gorm:"not null;default:false;index" json:"fulfillment_hold"`
+	DisputePreviousStatus string `gorm:"size:32" json:"-"`
+	DisputePreviousHold   bool   `gorm:"not null;default:false" json:"-"`
+	FulfillmentMode       string `gorm:"size:20;not null;default:'stock';index" json:"fulfillment_mode"`
+	ProductionStatus      string `gorm:"size:20;not null;default:'not_applicable';index" json:"production_status"`
+	SignatureRequired     bool   `gorm:"not null;default:false;index" json:"signature_required"`
+	ShippingQuoteID       string `gorm:"type:varchar(36);index" json:"shipping_quote_id,omitempty"`
+	ShippingQuotePlanID   string `gorm:"type:varchar(36)" json:"shipping_quote_plan_id,omitempty"`
 	// CheckoutCartID records the cart consumed to create this order so an
 	// unpaid cancellation or payment expiration can restore its contents.
 	CheckoutCartID *uint `gorm:"index" json:"-"`
@@ -133,12 +133,12 @@ type Order struct {
 	TaxAmountMinor      int64 `gorm:"column:tax_amount_minor;not null;default:0" json:"tax_amount_minor"`
 	DiscountAmountMinor int64 `gorm:"column:discount_amount_minor;not null;default:0" json:"discount_amount_minor"`
 	TotalAmountMinor    int64 `gorm:"column:total_amount_minor;not null;default:0" json:"total_amount_minor"`
-	PointsValueMinor    int64 `gorm:"column:points_value_minor;not null;default:0" json:"points_value_minor"`
-	Currency       string  `gorm:"not null;index" json:"currency"`
+	// Monetary totals are stored in minor units. Loyalty points are earned
+	// separately and are never a payment tender.
+	Currency string `gorm:"not null;index" json:"currency"`
 
 	// 优惠信息
 	CouponCode               string         `json:"coupon_code"`
-	PointsUsed               int            `gorm:"default:0" json:"points_used"`
 	FXSnapshotData           datatypes.JSON `gorm:"column:fx_snapshot;type:jsonb;not null;default:'{}'" json:"-"`
 	ShippingPlanSnapshotData datatypes.JSON `gorm:"column:shipping_plan_snapshot;type:jsonb;not null;default:'{}'" json:"shipping_plan_snapshot,omitempty"`
 	PricingSnapshotData      datatypes.JSON `gorm:"column:pricing_snapshot;type:jsonb;not null;default:'{}'" json:"-"`
@@ -243,7 +243,7 @@ func (o *Order) BeforeSave(tx *gorm.DB) error {
 }
 
 func (o *Order) validateMinorAmounts() error {
-	for _, amount := range []int64{o.SubtotalAmountMinor, o.ShippingFeeMinor, o.TaxAmountMinor, o.DiscountAmountMinor, o.TotalAmountMinor, o.PointsValueMinor} {
+	for _, amount := range []int64{o.SubtotalAmountMinor, o.ShippingFeeMinor, o.TaxAmountMinor, o.DiscountAmountMinor, o.TotalAmountMinor} {
 		if amount < 0 {
 			return errors.New("order monetary amounts cannot be negative")
 		}

@@ -11,7 +11,6 @@ type ProgramConfig struct {
 	Enabled                   bool      `gorm:"not null;default:true" json:"enabled"`
 	Currency                  string    `gorm:"not null" json:"currency"`
 	PurchaseEarnPointsPerUnit int       `gorm:"column:purchase_earn_points_per_currency_unit;not null;default:1" json:"purchase_earn_points_per_currency_unit"`
-	ExchangeRatePoints        int       `gorm:"not null" json:"exchange_rate_points"`
 	ReferralReferrerPoints    int       `gorm:"not null" json:"referral_referrer_points"`
 	ReferralRefereePoints     int       `gorm:"not null" json:"referral_referee_points"`
 	CheckInBasePoints         int       `gorm:"column:checkin_base_points;not null" json:"checkin_base_points"`

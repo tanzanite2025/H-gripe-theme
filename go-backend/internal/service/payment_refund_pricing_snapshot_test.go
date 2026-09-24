@@ -125,15 +125,14 @@ func TestFormatRefundMoneyUsesCurrencyMinorUnits(t *testing.T) {
 
 func TestReadOrderPricingRefundBaselinePrefersPersistedMinorUnits(t *testing.T) {
 	raw, err := pricing.MarshalOrderPricingSnapshot(pricing.OrderPricingSnapshotInput{
-		Currency:         "USD",
-		Subtotal:         money.MustNew(12345, "USD"),
-		Shipping:         money.MustNew(0, "USD"),
-		Tax:              money.MustNew(0, "USD"),
-		MemberDiscount:   money.MustNew(0, "USD"),
-		CouponDiscount:   money.MustNew(2345, "USD"),
-		PointsDiscount:   money.MustNew(0, "USD"),
-		DiscountTotal:    money.MustNew(2345, "USD"),
-		Total:            money.MustNew(10000, "USD"),
+		Currency:       "USD",
+		Subtotal:       money.MustNew(12345, "USD"),
+		Shipping:       money.MustNew(0, "USD"),
+		Tax:            money.MustNew(0, "USD"),
+		MemberDiscount: money.MustNew(0, "USD"),
+		CouponDiscount: money.MustNew(2345, "USD"),
+		DiscountTotal:  money.MustNew(2345, "USD"),
+		Total:          money.MustNew(10000, "USD"),
 	})
 	require.NoError(t, err)
 	o := &order.Order{Currency: "USD", SubtotalAmountMinor: 99900, PricingSnapshotData: raw}
@@ -149,15 +148,14 @@ func TestReadOrderPricingRefundBaselineRejectsCorruptOrMismatchedSnapshot(t *tes
 	require.ErrorIs(t, err, errInvalidOrderPricingSnapshot)
 
 	raw, err := pricing.MarshalOrderPricingSnapshot(pricing.OrderPricingSnapshotInput{
-		Currency:         "EUR",
-		Subtotal:         money.MustNew(100, "EUR"),
-		Shipping:         money.MustNew(0, "EUR"),
-		Tax:              money.MustNew(0, "EUR"),
-		MemberDiscount:   money.MustNew(0, "EUR"),
-		CouponDiscount:   money.MustNew(0, "EUR"),
-		PointsDiscount:   money.MustNew(0, "EUR"),
-		DiscountTotal:    money.MustNew(0, "EUR"),
-		Total:            money.MustNew(100, "EUR"),
+		Currency:       "EUR",
+		Subtotal:       money.MustNew(100, "EUR"),
+		Shipping:       money.MustNew(0, "EUR"),
+		Tax:            money.MustNew(0, "EUR"),
+		MemberDiscount: money.MustNew(0, "EUR"),
+		CouponDiscount: money.MustNew(0, "EUR"),
+		DiscountTotal:  money.MustNew(0, "EUR"),
+		Total:          money.MustNew(100, "EUR"),
 	})
 	require.NoError(t, err)
 	_, _, _, err = readOrderPricingRefundBaseline(&order.Order{Currency: "USD", PricingSnapshotData: raw})

@@ -33,12 +33,14 @@ import StripeExpressCheckoutElement from '~/components/StripeExpressCheckoutElem
 
 interface StripeExpressCheckoutElementExposed {
   submitExpressCheckoutPayment: () => Promise<void>
+  updateExpressCheckoutPaymentAmount: (amountMinor: number, currency: string) => Promise<void>
   confirmExpressCheckoutPayment: (clientSecret: string, returnUrl: string) => Promise<{ status: string; paymentIntentId?: string }>
   resetExpressCheckoutPaymentState: () => void
 }
 
 export interface ProductDetailExpressCheckoutExposed {
   submitExpressCheckoutPayment: () => Promise<void>
+  updateExpressCheckoutPaymentAmount: (amountMinor: number, currency: string) => Promise<void>
   confirmExpressCheckoutPayment: (clientSecret: string, returnUrl: string) => Promise<{ status: string; paymentIntentId?: string }>
   resetExpressCheckoutPaymentState: () => void
 }
@@ -67,6 +69,12 @@ const stripeExpressCheckoutElementRef = ref<StripeExpressCheckoutElementExposed 
 defineExpose<ProductDetailExpressCheckoutExposed>({
   submitExpressCheckoutPayment: async () => {
     await stripeExpressCheckoutElementRef.value?.submitExpressCheckoutPayment()
+  },
+  updateExpressCheckoutPaymentAmount: async (amountMinor, currency) => {
+    if (!stripeExpressCheckoutElementRef.value) {
+      throw new Error('Express Checkout is not ready')
+    }
+    await stripeExpressCheckoutElementRef.value.updateExpressCheckoutPaymentAmount(amountMinor, currency)
   },
   confirmExpressCheckoutPayment: async (clientSecret, returnUrl) => {
     if (!stripeExpressCheckoutElementRef.value) {
