@@ -47,3 +47,5 @@ deployment/production.env
 
 # Release boundary evidence is retained outside Git
 release-evidence/
+/docs/
+/html资料/
