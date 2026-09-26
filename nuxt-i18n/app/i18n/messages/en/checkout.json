@@ -24,7 +24,9 @@
       "paymentPending": "Payment is not complete yet. Please check your order status later.",
       "orderSuccess": "Order submitted successfully!",
       "orderFailed": "Order submission failed, please try again",
-      "emailRequired": "Add an email address to your account before checkout."
+      "emailRequired": "Add an email address to your account before checkout.",
+      "priceUpdated": "The price or configuration has changed. We loaded the latest total. Please review it and continue when ready.",
+      "checkoutAlreadySubmitted": "This cart was already submitted as an order. Please check your order status before trying again."
     }
   },
   "order": {
@@ -178,7 +180,9 @@
         "calculating": "Calculating...",
         "free": "Free"
       },
-      "zip": "Postal code"
+      "zip": "Postal code",
+      "method": "Delivery method",
+      "stateLabel": "State / province"
     },
     "review": {
       "backToShipping": "Back to shipping",
@@ -208,7 +212,16 @@
       "pointsDiscount": "Points discount",
       "couponDiscount": "Coupon discount",
       "total": "Total",
-      "title": "Order summary"
+      "title": "Order summary",
+      "memberDiscount": "Member discount",
+      "discount": "Discount",
+      "adjustment": "Order adjustment"
+    },
+    "billing": {
+      "sameAsShipping": "Billing address is the same as shipping address",
+      "countryRegion": "Billing country / region",
+      "recipient": "Billing name",
+      "completeAddress": "Please complete your billing address before continuing."
     }
   },
   "fields": {
@@ -231,7 +244,8 @@
       "missingData": "PayPal returned without the required order data.",
       "incomplete": "PayPal payment is not complete yet.",
       "success": "Your payment has been confirmed. We are preparing your order.",
-      "failed": "Unable to confirm this PayPal payment."
+      "failed": "Unable to confirm this PayPal payment.",
+      "loginRequired": "Please sign in with the account that placed this order."
     },
     "actions": {
       "continueShopping": "Continue shopping",
@@ -290,5 +304,21 @@
   },
   "product": {
     "buyNow": "Buy now"
+  },
+  "stripeReturn": {
+    "messages": {
+      "confirming": "Please wait while we confirm your Stripe payment.",
+      "loginRequired": "Please sign in with the account that placed this order.",
+      "missingData": "Stripe returned without the required payment data.",
+      "incomplete": "Stripe payment was not completed.",
+      "mismatch": "The returned payment does not match this order.",
+      "success": "Your payment has been confirmed. We are preparing your order.",
+      "failed": "Unable to confirm this Stripe payment."
+    },
+    "title": {
+      "success": "Payment confirmed",
+      "error": "Payment could not be confirmed",
+      "loading": "Confirming Stripe payment"
+    }
   }
 }

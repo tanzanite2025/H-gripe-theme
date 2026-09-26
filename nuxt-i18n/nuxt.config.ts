@@ -231,6 +231,15 @@ export default defineNuxtConfig({
 
   // Centralized route policy: API proxy, immutable assets, public HTML cache, and no-store pages.
   routeRules: {
+    '/robots.txt': {
+      cache: {
+        maxAge: 3600,
+        staleMaxAge: 86400,
+      },
+      headers: {
+        'content-type': 'text/plain; charset=utf-8',
+      },
+    },
     ...buildStorefrontRouteRules({
       internalApiOrigin,
       localeCodes: storefrontI18nLocales.map(locale => locale.code),

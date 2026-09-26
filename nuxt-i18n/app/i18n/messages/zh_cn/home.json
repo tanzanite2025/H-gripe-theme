@@ -104,61 +104,61 @@
     }
   },
   "whyChooseUs": {
-    "title": "Why Choose Us",
-    "subtitle": "Factory-built carbon rims and hand-built wheelsets with documented processes, consistent quality, and OEM-ready support.",
+    "title": "为什么选择我们",
+    "subtitle": "工厂直造碳纤维轮圈与手工编制轮组，流程透明、品质稳定，并提供面向 OEM 的支持。",
     "items": {
       "0": {
-        "title": "OEM-Ready Manufacturing",
-        "description": "Built for brands and builders who need stable output, clear communication, and repeatable results.",
+        "title": "OEM 级制造",
+        "description": "为需要稳定产出、清晰沟通和可重复结果的品牌与车轮制造商打造。",
         "bullets": {
-          "0": "OEM/ODM support for rims and wheelsets",
-          "1": "Spec-driven production and revision control",
-          "2": "Consistent finishes across batches"
+          "0": "支持轮圈和轮组的 OEM/ODM 项目",
+          "1": "按规格生产并进行版本变更控制",
+          "2": "确保不同批次拥有一致的表面处理"
         }
       },
       "1": {
-        "title": "Documented QC Workflow",
-        "description": "Quality is a process. We run checkpoints that help catch issues early and keep consistency high.",
+        "title": "可追溯的质量检验流程",
+        "description": "质量来自流程。通过关键检查点及早发现问题，保持品质稳定。",
         "bullets": {
-          "0": "Incoming material checks and in-process inspection",
-          "1": "Final inspection before packing and shipment",
-          "2": "Records and traceability for key steps"
+          "0": "来料检查与生产过程检验",
+          "1": "包装发货前的最终检验",
+          "2": "关键工序记录与可追溯管理"
         }
       },
       "2": {
-        "title": "Custom Layup & Finishes",
-        "description": "Choose stiffness targets, ride feel, and brand look—without compromising reliability.",
+        "title": "定制铺层与表面处理",
+        "description": "可根据目标刚度、骑行感受和品牌风格进行选择，同时兼顾可靠性。",
         "bullets": {
-          "0": "Layup tuning for road, gravel, and MTB use cases",
-          "1": "Finish options: decal, paint, and surface treatments",
-          "2": "Clear spec confirmation before production"
+          "0": "针对公路、Gravel 与 MTB 场景调整铺层",
+          "1": "支持贴花、喷涂和表面处理等外观方案",
+          "2": "生产前确认完整规格"
         }
       },
       "3": {
-        "title": "Tested Standards & Lead Times",
-        "description": "We validate performance and provide lead time ranges upfront so you can plan builds and launches.",
+        "title": "经过测试的标准与交期",
+        "description": "我们验证产品性能并提前提供交期范围，方便规划组装与上市。",
         "bullets": {
-          "0": "Testing equipment and internal standards",
-          "1": "Clear quoting for sampling and production schedules",
-          "2": "Packaging and shipping practices built for transit safety"
+          "0": "测试设备与内部标准",
+          "1": "样品及量产排期的清晰报价",
+          "2": "针对运输安全设计的包装与发货流程"
         }
       },
       "4": {
-        "title": "Precision Wheel Building",
-        "description": "Carbon wheelsets built by experienced builders—focused on balance, durability, and a clean final finish.",
+        "title": "精准轮组编制",
+        "description": "由经验丰富的技师手工编制碳纤维轮组，注重平衡、耐用性与整洁的最终质感。",
         "bullets": {
-          "0": "Spoke tension balancing and stress-relief steps",
-          "1": "Support for popular hubs and multiple lacing patterns",
-          "2": "Build consistency designed for real riding conditions"
+          "0": "辐条张力平衡与应力释放步骤",
+          "1": "支持主流花鼓及多种编法",
+          "2": "为真实骑行环境打造的一致编制品质"
         }
       },
       "5": {
-        "title": "Tools, Standards & Benchmarking",
-        "description": "We use modern equipment and hands-on know-how from top-tier hub and wheelset teardowns.",
+        "title": "工具、标准与对标",
+        "description": "我们使用现代化设备，并借鉴对高端花鼓和轮组拆解研究积累的实践经验。",
         "bullets": {
-          "0": "Calibrated truing and tension measurement tools",
-          "1": "Build standards informed by premium component teardown experience",
-          "2": "Process discipline that improves repeatability at scale"
+          "0": "经过校准的校圈和张力测量工具",
+          "1": "参考高端零部件拆解经验制定编制标准",
+          "2": "以流程纪律提升规模化生产的可重复性"
         }
       }
     }

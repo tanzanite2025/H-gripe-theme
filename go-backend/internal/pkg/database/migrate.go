@@ -32,6 +32,7 @@ import (
 	seodomain "commerce-platform/internal/domain/seo"
 	"commerce-platform/internal/domain/setting"
 	"commerce-platform/internal/domain/shipping"
+	sitefavicondomain "commerce-platform/internal/domain/site_favicon"
 	sitequalitydomain "commerce-platform/internal/domain/sitequality"
 	"commerce-platform/internal/domain/social"
 	"commerce-platform/internal/domain/spoke"
@@ -186,6 +187,7 @@ func AutoMigrate(db *gorm.DB, serverMode string) error {
 		&review.ReviewSummary{},
 		&selectionconfigurationdomain.SelectionConfigurationKey{},
 		&setting.Setting{},
+		&sitefavicondomain.Asset{},
 		&ticket.Ticket{},
 		&ticket.TicketMessage{},
 		&ticket.CustomerServiceInboxState{},

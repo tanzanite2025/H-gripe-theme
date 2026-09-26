@@ -209,7 +209,7 @@ watch(locale, (nextLocale) => {
 })
 
 // Match SizeChartsTabId from parent
-type GuideTabId = 'size' | 'match' | 'tubeless' | 'installation' | 'choose' | 'rims' | 'tube'
+type GuideTabId = 'size' | 'match' | 'tubeless' | 'installation' | 'choose' | 'tire-pressure' | 'tube'
 
 defineEmits<{
   (e: 'changeTab', tab: GuideTabId): void

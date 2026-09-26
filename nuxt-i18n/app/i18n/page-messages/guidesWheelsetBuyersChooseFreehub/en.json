@@ -3,6 +3,27 @@
     "title": "Select Your Freehub Body",
     "body": "A comprehensive guide to matching your freehub with your drivetrain cassettes (Shimano, SRAM, Campagnolo)."
   },
+  "guideIntro": {
+    "title": "How to choose the right freehub",
+    "body": "Follow these steps before choosing a wheelset freehub. The cassette standard and smallest cog are more important than the rear derailleur brand.",
+    "step1": {
+      "title": "Identify the drivetrain brand",
+      "body": "Choose the brand printed on the cassette or groupset, such as Shimano, SRAM, Campagnolo, L-TWOO, SENSAH, microSHIFT, SUNSHINE, ZTTO or Wheeltop."
+    },
+    "step2": {
+      "title": "Choose the cassette specification",
+      "body": "Match the speed and tooth range, especially the smallest cog: 10T, 11T or 9T. The smallest cog determines which freehub standards can physically fit."
+    },
+    "step3": {
+      "title": "Read the result",
+      "body": "Check the recommended freehub, spacer or adapter requirement, and the mechanical note before selecting a wheelset configuration."
+    },
+    "identifyTitle": "Where to find the cassette information",
+    "identifyBody": "Look for the brand, model, speed and tooth range stamped on the back of the cassette or lockring, or printed on the cassette packaging. The engraving may be small and difficult to read.",
+    "photoTitle": "If the marking is difficult to read",
+    "photoBody": "Take a clear photo of the cassette from the side and rear, including the lockring and largest cog. Support can help identify the specification before you choose a freehub.",
+    "chatButton": "Ask support about my cassette"
+  },
   "ecosystems": {
     "shimano": {
       "title": "Shimano Ecosystem",
@@ -70,6 +91,18 @@
       }
     }
   },
+  "seo": {
+    "title": "Bicycle Freehub Body Compatibility Guide: HG-11, Micro Spline, XD, XDR and N3W",
+    "description": "Check Shimano, SRAM, Campagnolo and third-party cassette compatibility, 1.85 mm spacer requirements, and mechanical fitment rules before choosing a wheelset freehub body.",
+    "howToName": "How to verify a bicycle cassette and freehub body fit",
+    "howToStep1Name": "Identify the cassette",
+    "howToStep1Text": "Confirm the cassette brand, speed, smallest cog and largest cog from the cassette label or manufacturer specification.",
+    "howToStep2Name": "Match the freehub standard",
+    "howToStep2Text": "Use the compatibility matrix to match HG-11, HG, Micro Spline, XD, XDR, N3W or Campagnolo Classic to the cassette.",
+    "howToStep3Name": "Install the required spacer or adapter",
+    "howToStep3Text": "Install the specified spacer at the freehub inner base, or use the AC21-N3W adapter sleeve and extended lockring when the rule requires it.",
+    "datasetDescription": "A versioned dataset of {count} bicycle cassette, freehub body and spacer compatibility rules."
+  },
   "reference": {
     "standardsTitle": "Technical Reference: Freehub Standards & Groupsets",
     "standardsHeaders": {
@@ -119,8 +152,12 @@
       "brand": "Brand",
       "freehub": "Freehub Body",
       "cassette": "Cassette",
-      "spacer": "Spacer Needed?"
+      "spacer": "Spacer Needed?",
+      "mechanicalFact": "Mechanical fitment note",
+      "source": "Source"
     },
+    "sourceLabel": "Manufacturer reference",
+    "knowledgeAsOf": "Compatibility rules verified through {date}. This is a versioned knowledge base, not a live manufacturer lookup.",
     "matrixRows": [
       {
         "brand": "Shimano",

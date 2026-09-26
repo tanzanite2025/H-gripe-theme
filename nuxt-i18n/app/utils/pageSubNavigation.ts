@@ -9,6 +9,10 @@ import {
   virtualPageSubNavigationEntries,
 } from './pageSubNavigationData'
 import {
+  resolvePageSubNavigationBreadcrumb,
+  type PageSubNavigationBreadcrumbMatch,
+} from './pageSubNavigationBreadcrumb'
+import {
   normalizePrimaryMegaNavPath,
   primaryMegaNavPathMatches,
   primaryMegaNavSections,
@@ -198,6 +202,13 @@ export const getPageSubNavigationTabFromPath = <Tabs extends readonly PageSubNav
   }
 
   return null
+}
+
+export const getPageSubNavigationBreadcrumbMatch = (
+  path: string,
+  localeCodes: string[] = [],
+): PageSubNavigationBreadcrumbMatch | null => {
+  return resolvePageSubNavigationBreadcrumb(path, pageSubNavigationEntries, localeCodes)
 }
 
 const belongsToSection = (

@@ -35,7 +35,7 @@
     },
     "lowerPressure": {
       "title": "Lower Pressure",
-      "description": "Road setups can run around 80 psi or lower for better grip and comfort without pinch flats."
+      "description": "Hooked road setups can run around 80 psi or lower for better grip and comfort without pinch flats. Hookless rims with tubeless tires have an absolute ceiling of 73 PSI / 5.0 bar; follow any lower manufacturer limit."
     },
     "rollingResistance": {
       "title": "Rolling Resistance",
@@ -50,7 +50,7 @@
     },
     "pressure": {
       "title": "Pressure Check",
-      "description": "Find optimal PSI for tubeless",
+      "description": "Check tire, rim, load, and source-limit inputs",
       "button": "Check Pressure"
     }
   }

@@ -6,8 +6,31 @@
   "groupset": "套件",
   "selectGroupset": "选择套件",
   "chooseBrandFirst": "请先选择品牌",
+  "loading": "正在加载适配规则…",
+  "loadError": "适配规则暂时不可用，请稍后重试。",
   "empty": "选择品牌和套件后查看建议的塔基类型。",
   "recommended": "建议塔基：",
+  "recommendedShort": "推荐",
+  "resultHeading": "塔基适配结果",
+  "directInstall": "直接安装，无需垫圈或适配套件。",
+  "spacerRequired": "请按说明安装 {thickness} mm 垫圈。",
+  "facts": {
+    "heading": "兼容性事实",
+    "pagination": "兼容性事实导航",
+    "showFact": "查看兼容性事实 {fact}",
+    "xdrXd": {
+      "label": "XD / XDR",
+      "title": "XD 与 XDR 的塔基长度不同",
+      "callout": "XD 飞轮安装到 XDR 塔基时，需要加装 1.85 mm 垫圈。",
+      "body": "XD 飞轮安装在 XD 塔基上可以直接安装。XDR 比 XD 长 1.85 mm，垫圈应放在飞轮后方的塔基根部。"
+    },
+    "shimano12": {
+      "label": "Shimano 12 速公路",
+      "title": "Shimano 12 速公路飞轮可兼容 HG-11",
+      "callout": "11T 起跳的 Shimano 公路飞轮安装到兼容的 HG-11 塔基上无需垫圈。",
+      "body": "Shimano 12 速公路飞轮采用 11T 最小齿，设计上兼容标准 11 速公路 HG 花键接口。"
+    }
+  },
   "options": {
     "shimanoDeoreM6100": {
       "label": "Deore M6100（12 速山地）",

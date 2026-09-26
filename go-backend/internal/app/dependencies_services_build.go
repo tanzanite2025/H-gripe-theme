@@ -220,6 +220,8 @@ func (b *dependencyServicesBuilder) build() error {
 		mediaService,
 	)
 	siteLogoService := service.NewSiteLogoService(b.repos.SiteLogo, siteLogoStorageSvc, storefrontBaseURL)
+	siteFaviconService := service.NewSiteFaviconService(b.repos.SiteFavicon, storageSvc, storefrontBaseURL)
+	siteFaviconService.ConfigureSettingService(settingService)
 	productService.ConfigureMediaService(mediaService)
 	seoResourceService.ConfigureMediaService(mediaService)
 	seoResourceService.ConfigureCanonicalBaseURL(storefrontBaseURL)
@@ -350,6 +352,7 @@ func (b *dependencyServicesBuilder) build() error {
 		Gallery:                           service.NewGalleryService(b.repos.Gallery, b.repos.Media),
 		Media:                             mediaService,
 		SiteLogo:                          siteLogoService,
+		SiteFavicon:                       siteFaviconService,
 		Warranty:                          service.NewWarrantyService(emailChallengeTxManager, b.repos.Warranty, b.repos.Order, b.repos.ShipmentRecord),
 		ShipmentRecord:                    service.NewShipmentRecordService(b.repos.ShipmentRecord),
 		Checkout:                          service.NewCheckoutService(b.repos.Product, b.repos.Coupon, b.repos.Payment, b.repos.Loyalty, shippingService),

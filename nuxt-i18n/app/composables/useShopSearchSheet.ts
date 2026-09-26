@@ -1,5 +1,6 @@
-import { useLocalePath, useRoute, useRouter, useState } from '#imports'
+import { useState } from '#imports'
 import { useOverlayBackStack } from '~/composables/useOverlayBackStack'
+import { useShopSearchNavigation } from '~/composables/useShopSearchNavigation'
 import { activateStorefrontClientOverlays } from '~/utils/clientOverlays'
 
 export type ShopSearchFiltersPayload = Record<string, any> & {
@@ -21,14 +22,11 @@ export interface ShopSearchOpenOptions {
 
 export const useShopSearchSheet = () => {
   const isOpen = useState<boolean>('shopSearchSheetOpen', () => false)
-  const pendingSearch = useState<ShopSearchPayload | null>('shopSearchSheetPending', () => null)
   const presetCategorySlug = useState<string | null>('shopSearchSheetPresetCategory', () => null)
   const presetKeywords = useState<string[]>('shopSearchSheetPresetKeywords', () => [])
 
-  const localePath = useLocalePath()
-  const router = useRouter()
-  const route = useRoute()
   const overlayBackStack = useOverlayBackStack()
+  const { pendingSearch, submit: navigateToSearch } = useShopSearchNavigation()
 
   const closeState = () => {
     isOpen.value = false
@@ -58,19 +56,8 @@ export const useShopSearchSheet = () => {
   }
 
   const submit = async (payload: ShopSearchPayload) => {
-    pendingSearch.value = payload
     await close()
-
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('ui:shop-search-submit', { detail: payload }))
-    }
-    const shopPath = localePath('/shop')
-    const chipCategorySlug = String(payload?.chipCategorySlug || '').trim()
-    const query = chipCategorySlug ? { product_specification_template: chipCategorySlug } : undefined
-
-    if (route.path !== shopPath || String(route.query.product_specification_template || '') !== chipCategorySlug) {
-      await router.push(query ? { path: shopPath, query } : shopPath)
-    }
+    await navigateToSearch(payload)
   }
 
   const consumePending = () => {

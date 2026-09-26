@@ -15,6 +15,7 @@ type Handler struct {
 	websiteNameService    *service.WebsiteNameService
 	mediaService          *service.MediaService
 	siteLogoService       *service.SiteLogoService
+	siteFaviconService    *service.SiteFaviconService
 }
 
 func NewHandler(settingService *service.SettingService, websiteProfileServices ...*service.WebsiteProfileService) *Handler {
@@ -41,6 +42,13 @@ func (h *Handler) ConfigureSiteLogoService(siteLogoService *service.SiteLogoServ
 		return
 	}
 	h.siteLogoService = siteLogoService
+}
+
+func (h *Handler) ConfigureSiteFaviconService(siteFaviconService *service.SiteFaviconService) {
+	if h == nil {
+		return
+	}
+	h.siteFaviconService = siteFaviconService
 }
 
 func (h *Handler) ConfigureWebsiteNameService(websiteNameService *service.WebsiteNameService) {
@@ -162,7 +170,11 @@ func (h *Handler) publicSiteSettings(settings *settingdomain.SiteSettings) *sett
 		publicSettings.SiteLogoHeight = height
 	}
 	publicSettings.SiteLogo = h.publicSiteLogoURL(publicSettings.SiteLogo)
-	publicSettings.SiteFavicon = h.publicMediaURL(publicSettings.SiteFavicon)
+	if h.siteFaviconService != nil {
+		publicSettings.SiteFavicon = h.siteFaviconService.CurrentPublicURL()
+	} else {
+		publicSettings.SiteFavicon = h.publicMediaURL(publicSettings.SiteFavicon)
+	}
 	return &publicSettings
 }
 

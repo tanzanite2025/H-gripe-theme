@@ -32,17 +32,19 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { navigateTo, useI18n, useLocalePath, useRoute } from '#imports'
+import { useI18n, useLocalePath, useRoute } from '#imports'
 import { useAuth } from '~/composables/useAuth'
 import { useCart } from '~/composables/useCart'
+import { usePaymentReturnCompletion } from '~/composables/usePaymentReturnCompletion'
 import { usePayPalPayment } from '~/composables/usePayPalPayment'
 
 const { t } = useI18n()
 const route = useRoute()
 const localePath = useLocalePath()
 const auth = useAuth()
-const { clearCart, reloadCartFromBackend, openCart } = useCart()
+const { openCart } = useCart()
 const { capturePayPalOrder } = usePayPalPayment()
+const { completePaymentReturn } = usePaymentReturnCompletion()
 const status = ref<'loading' | 'success' | 'error'>('loading')
 const message = ref(t('checkout.paypalReturn.messages.capturing'))
 const isCapturing = ref(false)
@@ -88,14 +90,9 @@ const capture = async () => {
       throw new Error(t('checkout.paypalReturn.messages.incomplete'))
     }
 
-    await clearCart()
-    await reloadCartFromBackend()
     status.value = 'success'
     message.value = t('checkout.paypalReturn.messages.success')
-    await navigateTo({
-      path: localePath('/checkout/success'),
-      query: { order_number: orderNumber.value },
-    }, { replace: true })
+    await completePaymentReturn(orderNumber.value)
   } catch (error) {
     status.value = 'error'
     message.value = error instanceof Error ? error.message : t('checkout.paypalReturn.messages.failed')

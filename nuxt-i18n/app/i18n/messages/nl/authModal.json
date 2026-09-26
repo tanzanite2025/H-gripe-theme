@@ -11,7 +11,10 @@
     "username": "Username",
     "email": "Email",
     "password": "Password",
-    "rememberMe": "Remember me"
+    "rememberMe": "Remember me",
+    "referralCode": "Referral code (optional)",
+    "referralCodePlaceholder": "Enter a friend's referral code",
+    "referralCodeHint": "The code is applied when you sign in after registration."
   },
   "actions": {
     "close": "Close sign-in dialog",

@@ -53,6 +53,7 @@
         @upload-site-logo="uploadSiteLogo"
         @clear-site-logo="clearSiteLogo"
         @upload-site-favicon="uploadSiteFavicon"
+        @clear-site-favicon="clearSiteFavicon"
         @refund-cancellation-locale-change="changeRefundCancellationPolicyLocale"
         @save-refund-cancellation-policy="saveRefundCancellationPolicy"
         @upload-refund-cancellation-image="uploadRefundCancellationImage"
@@ -734,12 +735,11 @@ const uploadSiteFavicon = async (file) => {
 
   uploadingSiteFavicon.value = true
   try {
-      const formData = new FormData()
-      formData.append('file', file)
-      formData.append('media_type', 'image')
-      formData.append('image_purpose', 'site_favicon')
-    const asset = await mediaApi.uploadAsset(formData)
-    const faviconURL = String(assetAccessURL(asset) || asset?.url || '').trim()
+    const formData = new FormData()
+    formData.append('file', file)
+    const response = await axios.post('/api/admin/settings/site-favicon', formData)
+    const asset = response.data?.data?.favicon || response.data?.favicon || {}
+    const faviconURL = String(asset?.url || asset?.access_url || '').trim()
     if (!faviconURL) {
       toast.error('上传成功但没有返回 Favicon 地址')
       return
@@ -754,6 +754,21 @@ const uploadSiteFavicon = async (file) => {
   }
 }
 
+const clearSiteFavicon = async () => {
+  if (!siteSettings.site_favicon || uploadingSiteFavicon.value) return
+  uploadingSiteFavicon.value = true
+  try {
+    await axios.delete('/api/admin/settings/site-favicon')
+    siteSettings.site_favicon = ''
+    toast.success('站点 Favicon 已删除')
+  } catch (error) {
+    console.error('Failed to delete site favicon:', error)
+    toast.error(error?.response?.data?.error || '站点 Favicon 删除失败')
+  } finally {
+    uploadingSiteFavicon.value = false
+  }
+}
+
 const saveSettings = async () => {
   const group = activeTab.value
   const definition = groupDefinitions[group]
@@ -761,7 +776,9 @@ const saveSettings = async () => {
   if (group === 'api') {
     applyTimezoneDefaults(true)
   }
-  const settings = Object.entries(definition.fields).map(([key, metadata]) => ({
+  const settings = Object.entries(definition.fields)
+    .filter(([key]) => !(group === 'site' && key === 'site_favicon'))
+    .map(([key, metadata]) => ({
     key,
     value: String(definition.target[key] ?? ''),
     type: metadata.type,
@@ -769,7 +786,7 @@ const saveSettings = async () => {
     locale: 'en',
     is_public: metadata.public,
     description: metadata.description
-  }))
+    }))
   saving.value = true
   try {
     const response = await axios.post('/api/admin/settings/batch', { settings })

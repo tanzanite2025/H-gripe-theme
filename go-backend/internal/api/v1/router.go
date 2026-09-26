@@ -16,6 +16,7 @@ import (
 	"commerce-platform/internal/api/v1/faq"
 	"commerce-platform/internal/api/v1/feedback"
 	fitmentcatalogapi "commerce-platform/internal/api/v1/fitmentcatalog"
+	fitmentdrivetrainapi "commerce-platform/internal/api/v1/fitmentdrivetrain"
 	"commerce-platform/internal/api/v1/gallery"
 	homevisualtileapi "commerce-platform/internal/api/v1/homevisualtile"
 	"commerce-platform/internal/api/v1/i18n"
@@ -36,6 +37,7 @@ import (
 	"commerce-platform/internal/api/v1/subscription"
 	"commerce-platform/internal/api/v1/suggestionfeedback"
 	"commerce-platform/internal/api/v1/ticket"
+	tirepressureapi "commerce-platform/internal/api/v1/tirepressure"
 	"commerce-platform/internal/api/v1/ugcshowcase"
 	"commerce-platform/internal/api/v1/warranty"
 	wheelsetfitapi "commerce-platform/internal/api/v1/wheelsetfit"
@@ -110,6 +112,8 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 		services.ForkFitmentEntry,
 		services.FitmentHubSpecification,
 	)
+	fitmentDrivetrainHandler := fitmentdrivetrainapi.NewDefaultHandler()
+	tirePressureHandler := tirepressureapi.NewHandler()
 	workbenchFeedHandler := workbenchfeedapi.NewHandler(services.WorkbenchFeed)
 	cartHandler := cart.NewHandler(cartService, cart.Options{
 		MediaService:          services.Media,
@@ -119,6 +123,7 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 	settingsHandler := settings.NewHandler(settingService, services.WebsiteProfile)
 	settingsHandler.ConfigureMediaService(services.Media)
 	settingsHandler.ConfigureSiteLogoService(services.SiteLogo)
+	settingsHandler.ConfigureSiteFaviconService(services.SiteFavicon)
 	settingsHandler.ConfigureWebsiteNameService(services.WebsiteName)
 	seoHomeHandler := seohomeapi.NewHandler(services.SEO)
 	analyticsHandler := analyticsapi.NewHandler(services.Analytics)
@@ -212,6 +217,14 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 		{
 			shippingWebhookGroup.POST("/webhook/:provider", shippingHandler.HandleTrackingWebhook)
 		}
+	}
+
+	// Anonymous read-only engineering calculators. This endpoint has no
+	// browser-auth cookie side effect; keep calculator rate limiting applied.
+	tirePressureGroup := r.Group("/api/v1/engineering/tire-pressure")
+	tirePressureGroup.Use(middleware.SpokeRateLimit(deps.RedisClient))
+	{
+		tirePressureHandler.RegisterRoutes(tirePressureGroup)
 	}
 
 	// API v1 路由组
@@ -325,6 +338,11 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 		fitmentCatalogGroup := v1.Group("/fitment-catalog")
 		{
 			fitmentCatalogHandler.RegisterRoutes(fitmentCatalogGroup)
+		}
+
+		fitmentDrivetrainGroup := v1.Group("/fitment/drivetrain")
+		{
+			fitmentDrivetrainHandler.RegisterRoutes(fitmentDrivetrainGroup)
 		}
 
 		homeVisualTileGroup := v1.Group("/visual-showcases")

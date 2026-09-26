@@ -11,6 +11,7 @@ type PublicUploadAccessService struct {
 	showcase              *UGCShowcaseService
 	customerServiceAvatar *CustomerServiceAvatarService
 	siteLogo              *SiteLogoService
+	siteFavicon           *SiteFaviconService
 }
 
 func NewPublicUploadAccessService(
@@ -34,6 +35,13 @@ func (s *PublicUploadAccessService) ConfigureSiteLogoService(siteLogoService *Si
 		return
 	}
 	s.siteLogo = siteLogoService
+}
+
+func (s *PublicUploadAccessService) ConfigureSiteFaviconService(siteFaviconService *SiteFaviconService) {
+	if s == nil {
+		return
+	}
+	s.siteFavicon = siteFaviconService
 }
 
 func (s *PublicUploadAccessService) CanServePublicUpload(ctx context.Context, key string) (bool, error) {
@@ -79,6 +87,12 @@ func (s *PublicUploadAccessService) CanServePublicUpload(ctx context.Context, ke
 			return false, nil
 		}
 		return s.siteLogo.CanServePublicLogo(ctx, normalizedKey)
+	}
+	if IsSiteFaviconStorageKey(normalizedKey) {
+		if s == nil || s.siteFavicon == nil {
+			return false, nil
+		}
+		return s.siteFavicon.CanServePublicFavicon(ctx, normalizedKey)
 	}
 
 	if s != nil && s.media != nil {

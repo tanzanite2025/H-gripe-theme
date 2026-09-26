@@ -97,6 +97,7 @@ type Repositories struct {
 	Gallery                        *repository.GalleryRepository
 	Media                          *repository.MediaRepository
 	SiteLogo                       *repository.SiteLogoRepository
+	SiteFavicon                    *repository.SiteFaviconRepository
 	MediaDerivativePresets         *repository.MediaDerivativePresetRepository
 	MediaDerivativeRebuildJobs     *repository.MediaDerivativeRebuildJobRepository
 	StorefrontMarket               *repository.StorefrontMarketRepository
@@ -165,6 +166,7 @@ type Services struct {
 	Gallery                            *service.GalleryService
 	Media                              *service.MediaService
 	SiteLogo                           *service.SiteLogoService
+	SiteFavicon                        *service.SiteFaviconService
 	Warranty                           *service.WarrantyService
 	ShipmentRecord                     *service.ShipmentRecordService
 	Checkout                           *service.CheckoutService

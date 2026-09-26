@@ -80,6 +80,7 @@ func newDependencyRepositories(db *gorm.DB) (Repositories, error) {
 		Gallery:                        repository.NewGalleryRepository(db),
 		Media:                          repository.NewMediaRepository(db),
 		SiteLogo:                       repository.NewSiteLogoRepository(db),
+		SiteFavicon:                    repository.NewSiteFaviconRepository(db),
 		MediaDerivativePresets:         repository.NewMediaDerivativePresetRepository(db),
 		MediaDerivativeRebuildJobs:     repository.NewMediaDerivativeRebuildJobRepository(db),
 		StorefrontMarket:               repository.NewStorefrontMarketRepository(db),

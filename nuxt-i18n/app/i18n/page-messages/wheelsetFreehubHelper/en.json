@@ -6,8 +6,31 @@
   "groupset": "Groupset",
   "selectGroupset": "Select groupset",
   "chooseBrandFirst": "Choose brand first",
+  "loading": "Loading compatibility rules...",
+  "loadError": "Compatibility rules are temporarily unavailable. Please try again later.",
   "empty": "Choose a brand and groupset to see a suggested freehub body type.",
   "recommended": "Recommended freehub body:",
+  "recommendedShort": "recommended",
+  "resultHeading": "Freehub fitment result",
+  "directInstall": "Install directly; no spacer or adapter is required.",
+  "spacerRequired": "Install a {thickness} mm spacer as instructed.",
+  "facts": {
+    "heading": "Compatibility facts",
+    "pagination": "Compatibility fact navigation",
+    "showFact": "Show compatibility fact {fact}",
+    "xdrXd": {
+      "label": "XD / XDR",
+      "title": "XD and XDR are different freehub lengths",
+      "callout": "Use a 1.85 mm spacer when an XD cassette is installed on an XDR body.",
+      "body": "An XD cassette installs directly on an XD body. XDR is 1.85 mm longer, so the spacer belongs at the inner base behind the cassette."
+    },
+    "shimano12": {
+      "label": "Shimano 12-speed road",
+      "title": "12-speed road cassettes can fit HG-11",
+      "callout": "11T-start Shimano road cassettes do not require a spacer on a compatible HG-11 body.",
+      "body": "Shimano 12-speed road cassettes use an 11T smallest cog and are designed to fit the standard 11-speed road HG interface."
+    }
+  },
   "options": {
     "shimanoDeoreM6100": {
       "label": "Deore M6100 (12-speed MTB)",

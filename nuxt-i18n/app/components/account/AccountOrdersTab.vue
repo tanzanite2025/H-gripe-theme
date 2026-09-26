@@ -170,6 +170,7 @@ import { useI18n, useLocalePath } from '#imports'
 import { ApiRequestError } from '~/composables/useApiRequest'
 import { useAuth } from '~/composables/useAuth'
 import { formatMinorMoney } from '~/utils/money'
+import { unwrapApiEnvelope, type ApiEnvelope } from '~/utils/apiEnvelope'
 
 interface OrderItem {
   product_id?: number
@@ -249,11 +250,9 @@ const trackingErrors = ref<Record<string, string>>({})
 
 const totalPages = computed(() => Math.max(1, Math.ceil(total.value / pageSize)))
 
-const unwrap = <T>(payload: T | { data?: T } | null | undefined): T | null => {
-  if (payload && typeof payload === 'object' && 'data' in payload && (payload as { data?: T }).data !== undefined) {
-    return (payload as { data: T }).data
-  }
-  return (payload as T) || null
+interface OrderListEnvelope {
+  data?: Order[]
+  pagination?: { total?: number }
 }
 
 const loadOrders = async () => {
@@ -261,10 +260,12 @@ const loadOrders = async () => {
   loading.value = true
   error.value = ''
   try {
-    const response = await auth.request<Order[] | { data?: Order[]; pagination?: { total?: number } }>(`/orders?page=${page.value}&page_size=${pageSize}`)
-    const payload = unwrap<Order[]>(response)
+    const response = await auth.request<Order[] | OrderListEnvelope>(`/orders?page=${page.value}&page_size=${pageSize}`)
+    const payload = unwrapApiEnvelope<Order[]>(response)
     orders.value = Array.isArray(payload) ? payload : []
-    const envelope = response && typeof response === 'object' && !Array.isArray(response) ? response : null
+    const envelope = response && typeof response === 'object' && !Array.isArray(response)
+      ? response as OrderListEnvelope
+      : null
     total.value = Number(envelope?.pagination?.total || orders.value.length)
   } catch (err) {
     error.value = err instanceof ApiRequestError ? err.message : t('accountSidebar.orders.loadFailed', 'Orders could not be loaded.')
@@ -278,9 +279,9 @@ const loadDetail = async (orderNumber: string) => {
   detailLoading.value = orderNumber
   detailError.value = ''
   try {
-    const response = await auth.request<Order | { data?: Order }>(`/orders/${encodeURIComponent(orderNumber)}`)
+    const response = await auth.request<ApiEnvelope<Order>>(`/orders/${encodeURIComponent(orderNumber)}`)
     if (requestId === detailRequestId) {
-      selectedOrder.value = unwrap<Order>(response)
+      selectedOrder.value = unwrapApiEnvelope<Order>(response)
       await loadAfterSales(orderNumber)
     }
   } catch (err) {
@@ -312,8 +313,8 @@ const loadAfterSales = async (orderNumber: string) => {
   afterSalesLoading.value = true
   afterSalesError.value = ''
   try {
-    const response = await auth.request<{ cases?: AfterSalesCase[] } | { data?: { cases?: AfterSalesCase[] } }>(`/orders/${encodeURIComponent(orderNumber)}/after-sales`)
-    const payload = unwrap<{ cases?: AfterSalesCase[] }>(response)
+    const response = await auth.request<ApiEnvelope<{ cases?: AfterSalesCase[] }>>(`/orders/${encodeURIComponent(orderNumber)}/after-sales`)
+    const payload = unwrapApiEnvelope<{ cases?: AfterSalesCase[] }>(response)
     afterSalesCases.value = payload?.cases || []
   } catch (err) {
     afterSalesCases.value = []
@@ -347,9 +348,8 @@ const loadTracking = async (trackingNumber: string) => {
   trackingLoading.value = trackingNumber
   trackingErrors.value = { ...trackingErrors.value, [trackingNumber]: '' }
   try {
-    const response = await auth.request<TrackingEvent[] | { data?: TrackingEvent[] | { data?: TrackingEvent[] } }>(`/shipping/track/${encodeURIComponent(trackingNumber)}`)
-    const firstPayload = unwrap<TrackingEvent[] | { data?: TrackingEvent[] }>(response)
-    const events = Array.isArray(firstPayload) ? firstPayload : (firstPayload?.data || [])
+    const response = await auth.request<ApiEnvelope<TrackingEvent[]>>(`/shipping/track/${encodeURIComponent(trackingNumber)}`)
+    const events = unwrapApiEnvelope<TrackingEvent[]>(response) || []
     trackingEvents.value = { ...trackingEvents.value, [trackingNumber]: Array.isArray(events) ? events : [] }
   } catch (err) {
     trackingErrors.value = {

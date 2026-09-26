@@ -54,11 +54,11 @@
 
       <!-- Tire pressure -->
       <section
-        v-show="activeTab === 'rims'"
-        id="rims"
+        v-show="activeTab === 'tire-pressure'"
+        id="tire-pressure"
         class="sizecharts-section"
       >
-        <TirePressureGuide v-if="activeTab === 'rims'" @open-tire-products="openTireProductsDrawer" />
+        <TirePressureGuide v-if="activeTab === 'tire-pressure'" @open-tire-products="openTireProductsDrawer" />
       </section>
 
       <!-- Inner Tube -->
@@ -133,6 +133,7 @@ const { activeTab, setActiveTab } = usePageSubNavigationTab({
   defaultValue: 'tubeless',
   redirectBasePathToDefaultTab: true,
 })
+
 const { request } = useApiRequest()
 
 // Tire products drawer

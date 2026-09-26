@@ -22,6 +22,7 @@ import (
 const (
 	objectCleanupResourceMediaAsset      = "media_asset"
 	objectCleanupResourceSiteLogo        = "site_logo"
+	objectCleanupResourceSiteFavicon     = "site_favicon"
 	objectCleanupResourceHomeVisualTile  = "home_visual_tile"
 	objectCleanupResourceUGCShowcase     = "ugc_showcase"
 	objectStorageCleanupMaxAttempts      = 1_000_000
@@ -94,10 +95,11 @@ func normalizeObjectCleanupKeys(values []string) []string {
 // delete. This makes delayed events safe when an object key becomes current or
 // referenced again before the worker receives it.
 type ObjectStorageCleanupOutboxHandler struct {
-	media      *MediaService
-	siteLogo   *SiteLogoService
-	homeVisual *HomeVisualTileService
-	showcase   *UGCShowcaseService
+	media       *MediaService
+	siteLogo    *SiteLogoService
+	siteFavicon *SiteFaviconService
+	homeVisual  *HomeVisualTileService
+	showcase    *UGCShowcaseService
 }
 
 func NewObjectStorageCleanupOutboxHandler(
@@ -111,6 +113,12 @@ func NewObjectStorageCleanupOutboxHandler(
 		siteLogo:   siteLogoService,
 		homeVisual: homeVisualService,
 		showcase:   showcaseService,
+	}
+}
+
+func (h *ObjectStorageCleanupOutboxHandler) ConfigureSiteFaviconService(service *SiteFaviconService) {
+	if h != nil {
+		h.siteFavicon = service
 	}
 }
 
@@ -138,6 +146,8 @@ func (h *ObjectStorageCleanupOutboxHandler) Handle(ctx context.Context, event ou
 		return h.cleanupMediaAsset(ctx, payload.ResourceID)
 	case objectCleanupResourceSiteLogo:
 		return h.cleanupSiteLogo(ctx, payload.ObjectKeys)
+	case objectCleanupResourceSiteFavicon:
+		return h.cleanupSiteFavicon(ctx, payload.ObjectKeys)
 	case objectCleanupResourceHomeVisualTile:
 		return h.cleanupHomeVisualTiles(ctx, payload.ObjectKeys)
 	case objectCleanupResourceUGCShowcase:
@@ -145,6 +155,25 @@ func (h *ObjectStorageCleanupOutboxHandler) Handle(ctx context.Context, event ou
 	default:
 		return fmt.Errorf("unsupported object storage cleanup resource %q", payload.ResourceType)
 	}
+}
+
+func (h *ObjectStorageCleanupOutboxHandler) cleanupSiteFavicon(ctx context.Context, keys []string) error {
+	if h == nil || h.siteFavicon == nil || h.siteFavicon.repo == nil || h.siteFavicon.storage == nil {
+		return ErrObjectStorageCleanupUnavailable
+	}
+	current, err := h.siteFavicon.repo.Current()
+	if err != nil {
+		return fmt.Errorf("load current site favicon before cleanup: %w", err)
+	}
+	for _, key := range keys {
+		if !IsSiteFaviconStorageKey(key) || (current != nil && current.StorageKey == key) {
+			continue
+		}
+		if err := h.siteFavicon.storage.Delete(ctx, key); err != nil {
+			return fmt.Errorf("delete retired site favicon %s: %w", key, err)
+		}
+	}
+	return nil
 }
 
 func (h *ObjectStorageCleanupOutboxHandler) cleanupMediaAsset(ctx context.Context, resourceID string) error {

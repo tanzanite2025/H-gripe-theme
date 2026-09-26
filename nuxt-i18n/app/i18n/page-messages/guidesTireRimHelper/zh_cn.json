@@ -7,6 +7,7 @@
   "hookless": "无钩（TSS）",
   "hooked": "有钩（TC）",
   "empty": "输入轮胎宽度后查看建议的车圈内宽范围。",
+  "hooklessSafetyWarning": "ETRTO 规范禁止在 Hookless 轮圈上安装 28mm 以下轮胎",
   "recommended": "建议车圈内宽：",
   "sweetSpot": "适宜中心约为 {width} mm。激烈或技术型骑行时，建议靠近范围的较宽一端。",
   "search": "搜索合适内宽的车圈"

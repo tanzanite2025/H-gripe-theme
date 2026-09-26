@@ -20,11 +20,7 @@
           <option disabled value="">
             {{ t('wheelsetFreehubHelper.selectBrand') }}
           </option>
-          <option
-            v-for="brand in brands"
-            :key="brand"
-            :value="brand"
-          >
+          <option v-for="brand in brands" :key="brand" :value="brand">
             {{ brand }}
           </option>
         </select>
@@ -36,53 +32,78 @@
         </label>
         <select
           :id="groupsetSelectId"
-          v-model="selectedGroupsetId"
-          :disabled="!selectedBrand"
+          v-model="selectedCassetteSpec"
+          :disabled="!selectedBrand || isLoading"
           class="freehub-groupset-helper__select mt-1 w-full rounded-md border tz-border-strong tz-surface-panel px-2 py-1.5 text-xs tz-text-secondary shadow-md outline-none focus:border-emerald-600 focus:ring-0 disabled:cursor-not-allowed disabled:border-[var(--tz-border-subtle)] disabled:tz-text-muted"
         >
           <option disabled value="">
-            {{ selectedBrand
-              ? t('wheelsetFreehubHelper.selectGroupset')
-              : t('wheelsetFreehubHelper.chooseBrandFirst') }}
+            {{ isLoading
+              ? t('wheelsetFreehubHelper.loading')
+              : selectedBrand
+                ? t('wheelsetFreehubHelper.selectGroupset')
+                : t('wheelsetFreehubHelper.chooseBrandFirst') }}
           </option>
-          <option
-            v-for="option in filteredGroupsets"
-            :key="option.id"
-            :value="option.id"
-          >
-            {{ optionLabel(option) }}
+          <option v-for="rule in filteredRules" :key="rule.cassette_spec" :value="rule.cassette_spec">
+            {{ optionLabel(rule) }}
           </option>
         </select>
       </div>
     </div>
 
+    <p v-if="matrixError" class="mt-3 text-xs text-amber-700">
+      {{ t('wheelsetFreehubHelper.loadError') }}
+    </p>
+
     <div class="freehub-groupset-helper__status">
-      <p
-        v-if="!activeOption"
-        class="text-xs tz-text-muted"
-      >
+      <p v-if="!activeRule" class="text-xs tz-text-muted">
         {{ t('wheelsetFreehubHelper.empty') }}
       </p>
 
-      <div
-        v-else
-        class="text-xs tz-text-secondary"
-      >
+      <div v-else class="text-xs tz-text-secondary">
         <p class="font-semibold text-emerald-700">
           {{ t('wheelsetFreehubHelper.recommended') }}
-          <span class="ml-1">{{ optionFreehub(activeOption) }}</span>
+          <span class="ml-1">{{ recommendedOption ? optionDisplayName(recommendedOption) : activeRule.recommended_freehub }}</span>
         </p>
-        <p
-          v-if="activeOption.notesKey && !activeOption.factId"
-          class="mt-0.5 tz-caption tz-text-muted"
-        >
-          {{ optionNotes(activeOption) }}
+        <p class="mt-0.5 tz-caption tz-text-muted">
+          {{ ruleDisplayName(activeRule) }} · {{ ruleHintGroupsets(activeRule) }}
         </p>
       </div>
     </div>
 
+    <section v-if="activeRule" class="freehub-groupset-helper__results" :aria-label="t('wheelsetFreehubHelper.resultHeading')">
+      <article
+        v-for="option in activeRule.fitment_options"
+        :key="`${activeRule.cassette_spec}-${option.standard}`"
+        class="freehub-groupset-helper__result"
+        :class="{ 'is-recommended': option.standard === activeRule.recommended_freehub }"
+      >
+        <GuideImage
+          v-if="option.image_src"
+          :src="option.image_src"
+          :alt="optionDisplayName(option)"
+          :zoomOnClick="true"
+          :caption="optionDisplayName(option)"
+          class="freehub-groupset-helper__result-image rounded-lg"
+        />
+        <div class="freehub-groupset-helper__result-copy">
+          <p class="font-semibold tz-text-primary">
+            {{ optionDisplayName(option) }}
+            <span v-if="option.standard === activeRule.recommended_freehub" class="text-emerald-700">
+              ({{ t('wheelsetFreehubHelper.recommendedShort') }})
+            </span>
+          </p>
+          <p class="mt-1 tz-caption tz-text-secondary">
+            {{ spacerDescription(option.spacer) }}
+          </p>
+          <p v-if="optionNotes(option)" class="mt-1 tz-caption tz-text-muted">
+            {{ optionNotes(option) }}
+          </p>
+        </div>
+      </article>
+    </section>
+
     <section
-      v-if="activeOption"
+      v-if="activeRule"
       class="freehub-groupset-helper__facts"
       :aria-label="t('wheelsetFreehubHelper.facts.heading')"
     >
@@ -110,12 +131,8 @@
             <span class="freehub-groupset-helper__fact-label">{{ t(fact.labelKey) }}</span>
             <h4>{{ t(fact.titleKey) }}</h4>
           </div>
-          <p class="freehub-groupset-helper__fact-callout">
-            {{ t(fact.calloutKey) }}
-          </p>
-          <p class="freehub-groupset-helper__fact-copy">
-            {{ t(fact.bodyKey) }}
-          </p>
+          <p class="freehub-groupset-helper__fact-callout">{{ t(fact.calloutKey) }}</p>
+          <p class="freehub-groupset-helper__fact-copy">{{ t(fact.bodyKey) }}</p>
         </article>
       </div>
 
@@ -144,150 +161,36 @@
 
 <script setup lang="ts">
 import { computed, nextTick, ref, useId, watch } from 'vue'
-import { useI18n } from '#imports'
+import { useAsyncData, useI18n } from '#imports'
+import GuideImage from '~/components/GuideImage.vue'
+import { useDrivetrainFitmentApi } from '~/composables/useDrivetrainFitmentApi'
 import { usePageMessages } from '~/composables/usePageMessages'
+import type { DrivetrainCassetteRule, DrivetrainSpacerRequirement } from '~/types/drivetrainFitment'
+import {
+  localizedFreehubName,
+  localizedOptionNotes,
+  localizedRuleDisplayName,
+  localizedRuleHintGroupsets,
+  localizedSpacerDescription,
+} from '~/utils/drivetrainFitmentLocalization'
 
-withDefaults(defineProps<{
-  title?: string
-  description?: string
-}>(), {
-  title: '',
-  description: '',
-})
-
-interface FreehubOption {
-  id: string
-  brand: string
-  labelKey: string
-  freehubKey: string
-  notesKey?: string
-  factId?: CompatibilityFactId
-}
-
-type CompatibilityFactId = 'xdr-xd' | 'shimano-road-12-speed'
-// NOTE / 说明：
-// 如果后续要增加更多套件 → 塔基类型的对应关系，直接在下面的 FREEHUB_OPTIONS 数组中追加一条对象即可。
-// 不需要改其他文件；品牌下拉会根据 brand 字段自动生成，套件下拉会根据 brand 自动过滤。
-const FREEHUB_OPTIONS: FreehubOption[] = [
-  {
-    id: 'shimano-deore-m6100',
-    brand: 'Shimano',
-    labelKey: 'options.shimanoDeoreM6100.label',
-    freehubKey: 'options.shimanoDeoreM6100.freehub',
-    notesKey: 'options.shimanoDeoreM6100.notes',
-  },
-  {
-    id: 'shimano-slx-m7100',
-    brand: 'Shimano',
-    labelKey: 'options.shimanoSlxM7100.label',
-    freehubKey: 'options.shimanoSlxM7100.freehub',
-  },
-  {
-    id: 'shimano-xt-m8100',
-    brand: 'Shimano',
-    labelKey: 'options.shimanoXtM8100.label',
-    freehubKey: 'options.shimanoXtM8100.freehub',
-  },
-  {
-    id: 'shimano-xtr-m9100',
-    brand: 'Shimano',
-    labelKey: 'options.shimanoXtrM9100.label',
-    freehubKey: 'options.shimanoXtrM9100.freehub',
-  },
-  {
-    id: 'shimano-105-r7000',
-    brand: 'Shimano',
-    labelKey: 'options.shimano105R7000.label',
-    freehubKey: 'options.shimano105R7000.freehub',
-  },
-  {
-    id: 'shimano-ultegra-r8000',
-    brand: 'Shimano',
-    labelKey: 'options.shimanoUltegraR8000.label',
-    freehubKey: 'options.shimanoUltegraR8000.freehub',
-  },
-  {
-    id: 'shimano-duraace-r9100',
-    brand: 'Shimano',
-    labelKey: 'options.shimanoDuraAceR9100.label',
-    freehubKey: 'options.shimanoDuraAceR9100.freehub',
-  },
-  {
-    id: 'shimano-105-di2-r7100',
-    brand: 'Shimano',
-    labelKey: 'options.shimano105Di2R7100.label',
-    freehubKey: 'options.shimano105Di2R7100.freehub',
-    notesKey: 'options.shimano105Di2R7100.notes',
-    factId: 'shimano-road-12-speed',
-  },
-  {
-    id: 'shimano-ultegra-di2-r8100',
-    brand: 'Shimano',
-    labelKey: 'options.shimanoUltegraDi2R8100.label',
-    freehubKey: 'options.shimanoUltegraDi2R8100.freehub',
-    notesKey: 'options.shimanoUltegraDi2R8100.notes',
-    factId: 'shimano-road-12-speed',
-  },
-  {
-    id: 'sram-gx-eagle',
-    brand: 'SRAM',
-    labelKey: 'options.sramGxEagle.label',
-    freehubKey: 'options.sramGxEagle.freehub',
-    notesKey: 'options.sramGxEagle.notes',
-    factId: 'xdr-xd',
-  },
-  {
-    id: 'sram-x01-eagle',
-    brand: 'SRAM',
-    labelKey: 'options.sramX01Eagle.label',
-    freehubKey: 'options.sramX01Eagle.freehub',
-    factId: 'xdr-xd',
-  },
-  {
-    id: 'sram-nx-eagle',
-    brand: 'SRAM',
-    labelKey: 'options.sramNxEagle.label',
-    freehubKey: 'options.sramNxEagle.freehub',
-  },
-  {
-    id: 'sram-force-etap-axs',
-    brand: 'SRAM',
-    labelKey: 'options.sramForceEtapAxs.label',
-    freehubKey: 'options.sramForceEtapAxs.freehub',
-    factId: 'xdr-xd',
-  },
-  {
-    id: 'sram-red-etap-axs',
-    brand: 'SRAM',
-    labelKey: 'options.sramRedEtapAxs.label',
-    freehubKey: 'options.sramRedEtapAxs.freehub',
-    factId: 'xdr-xd',
-  },
-  {
-    id: 'campagnolo-ekar-13',
-    brand: 'Campagnolo',
-    labelKey: 'options.campagnoloEkar13.label',
-    freehubKey: 'options.campagnoloEkar13.freehub',
-  },
-  {
-    id: 'campagnolo-super-record-11',
-    brand: 'Campagnolo',
-    labelKey: 'options.campagnoloSuperRecord11.label',
-    freehubKey: 'options.campagnoloSuperRecord11.freehub',
-  },
-]
+withDefaults(defineProps<{ title?: string; description?: string }>(), { title: '', description: '' })
 
 const { locale, t } = useI18n()
 const { loadPageMessages } = usePageMessages('wheelsetFreehubHelper')
+const { fetchMatrix } = useDrivetrainFitmentApi()
 
 await loadPageMessages(locale.value)
+watch(locale, (nextLocale) => void loadPageMessages(nextLocale))
 
-watch(locale, (nextLocale) => {
-  void loadPageMessages(nextLocale)
-})
+const { data: matrixResponse, error: matrixError, pending: isLoading } = await useAsyncData(
+  'drivetrain-fitment-matrix',
+  fetchMatrix,
+)
 
-const selectedBrand = ref<string>('')
-const selectedGroupsetId = ref<string>('')
+const rules = computed<DrivetrainCassetteRule[]>(() => matrixResponse.value?.data?.rules || [])
+const selectedBrand = ref('')
+const selectedCassetteSpec = ref('')
 const helperId = useId()
 const factRail = ref<HTMLElement | null>(null)
 const activeFactIndex = ref(0)
@@ -311,57 +214,54 @@ const compatibilityFacts = [
   },
 ] as const
 
-const brands = computed(() => {
-  const unique = new Set<string>()
-  for (const option of FREEHUB_OPTIONS) {
-    unique.add(option.brand)
-  }
-  return Array.from(unique)
-})
+type CompatibilityFactId = (typeof compatibilityFacts)[number]['id']
 
-const filteredGroupsets = computed(() => {
-  if (!selectedBrand.value) return []
-  return FREEHUB_OPTIONS.filter((option) => option.brand === selectedBrand.value)
-})
+const brands = computed(() => Array.from(new Set(rules.value.map(rule => rule.brand))))
+const filteredRules = computed(() => selectedBrand.value
+  ? rules.value.filter(rule => rule.brand === selectedBrand.value)
+  : [])
+const activeRule = computed(() => rules.value.find(rule => rule.cassette_spec === selectedCassetteSpec.value) || null)
+const recommendedOption = computed(() => activeRule.value?.fitment_options.find(
+  option => option.standard === activeRule.value?.recommended_freehub,
+) || activeRule.value?.fitment_options[0] || null)
 
-const activeOption = computed(() => {
-  if (!selectedGroupsetId.value) return null
-  return FREEHUB_OPTIONS.find((option) => option.id === selectedGroupsetId.value) ?? null
-})
+watch(selectedBrand, () => { selectedCassetteSpec.value = '' })
 
-watch(selectedBrand, () => {
-  selectedGroupsetId.value = ''
-})
-
-const isFactRelevant = (factId: CompatibilityFactId) => (
-  activeOption.value?.factId === factId
+const optionLabel = (rule: DrivetrainCassetteRule) => (
+  rule.hint_groupsets ? `${ruleDisplayName(rule)} (${ruleHintGroupsets(rule)})` : ruleDisplayName(rule)
 )
 
-watch(activeOption, async () => {
-  const relevantIndex = compatibilityFacts.findIndex((fact) => isFactRelevant(fact.id))
+const ruleDisplayName = (rule: DrivetrainCassetteRule) => localizedRuleDisplayName(rule, locale.value)
+const ruleHintGroupsets = (rule: DrivetrainCassetteRule) => localizedRuleHintGroupsets(rule, locale.value)
+const optionDisplayName = (option: DrivetrainCassetteRule['fitment_options'][number]) => localizedFreehubName(option, locale.value)
+const optionNotes = (option: DrivetrainCassetteRule['fitment_options'][number]) => localizedOptionNotes(option, locale.value)
+const spacerDescription = (spacer: DrivetrainSpacerRequirement) => {
+  const localized = localizedSpacerDescription(spacer, locale.value)
+  if (localized) return localized
+  if (!spacer.required) return t('wheelsetFreehubHelper.directInstall')
+  return t('wheelsetFreehubHelper.spacerRequired', { thickness: spacer.thickness_mm })
+}
+
+const relevantFactId = computed<CompatibilityFactId | null>(() => {
+  if (activeRule.value?.brand === 'SRAM' && activeRule.value.min_cog_teeth <= 10) return 'xdr-xd'
+  if (activeRule.value?.brand === 'Shimano' && activeRule.value.speed === 12 && activeRule.value.min_cog_teeth === 11) return 'shimano-road-12-speed'
+  return null
+})
+
+const isFactRelevant = (factId: CompatibilityFactId) => relevantFactId.value === factId
+
+watch(activeRule, async () => {
+  const relevantIndex = compatibilityFacts.findIndex(fact => isFactRelevant(fact.id))
   const index = relevantIndex >= 0 ? relevantIndex : 0
   activeFactIndex.value = index
   await nextTick()
   scrollToFact(index)
 })
 
-const optionLabel = (option: FreehubOption) => (
-  t(`wheelsetFreehubHelper.${option.labelKey}`)
-)
-const optionFreehub = (option: FreehubOption) => (
-  t(`wheelsetFreehubHelper.${option.freehubKey}`)
-)
-const optionNotes = (option: FreehubOption) => (
-  option.notesKey ? t(`wheelsetFreehubHelper.${option.notesKey}`) : ''
-)
-
 const scrollToFact = (index: number) => {
   const currentRail = factRail.value
-  const card = currentRail?.querySelector<HTMLElement>(
-    `[data-freehub-fact-index="${index}"]`,
-  )
+  const card = currentRail?.querySelector<HTMLElement>(`[data-freehub-fact-index="${index}"]`)
   if (!currentRail || !card) return
-
   currentRail.scrollTo({ left: card.offsetLeft, behavior: 'smooth' })
   activeFactIndex.value = index
 }
@@ -369,144 +269,45 @@ const scrollToFact = (index: number) => {
 const updateActiveFact = () => {
   const currentRail = factRail.value
   if (!currentRail) return
-
   const center = currentRail.scrollLeft + currentRail.clientWidth / 2
-  const cards = Array.from(
-    currentRail.querySelectorAll<HTMLElement>('[data-freehub-fact-index]'),
-  )
+  const cards = Array.from(currentRail.querySelectorAll<HTMLElement>('[data-freehub-fact-index]'))
   if (!cards.length) return
   const nearestCard = cards.reduce((nearest, card) => (
     Math.abs(card.offsetLeft + card.offsetWidth / 2 - center)
-      < Math.abs(nearest.offsetLeft + nearest.offsetWidth / 2 - center)
-      ? card
-      : nearest
+      < Math.abs(nearest.offsetLeft + nearest.offsetWidth / 2 - center) ? card : nearest
   ))
-
   activeFactIndex.value = Number(nearestCard.dataset.freehubFactIndex || 0)
 }
 </script>
 
 <style scoped>
-.freehub-groupset-helper__fields {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 0.75rem;
-  align-items: end;
-}
-
-.freehub-groupset-helper__field,
-.freehub-groupset-helper__select {
-  min-width: 0;
-}
-
-.freehub-groupset-helper__status {
-  margin-top: 0.75rem;
-}
-
-.freehub-groupset-helper__facts {
-  margin-top: 0.875rem;
-}
-
-.freehub-groupset-helper__fact-rail {
-  display: grid;
-  grid-auto-columns: 100%;
-  grid-auto-flow: column;
-  gap: 0.625rem;
-  overflow-x: auto;
-  overscroll-behavior-inline: contain;
-  scroll-snap-type: x mandatory;
-  scrollbar-width: none;
-}
-
-.freehub-groupset-helper__fact-rail::-webkit-scrollbar {
-  display: none;
-}
-
-.freehub-groupset-helper__fact {
-  min-width: 0;
-  padding: 0.75rem;
-  border: 1px solid var(--tz-border-subtle);
-  border-radius: 0.5rem;
-  background: var(--tz-surface-panel);
-  scroll-snap-align: start;
-}
-
-.freehub-groupset-helper__fact--xdr-xd {
-  border-color: #d6a23d;
-  background: #fffaf0;
-}
-
-.freehub-groupset-helper__fact--shimano-road-12-speed {
-  border-color: #5aa88e;
-  background: #f2fbf7;
-}
-
-.freehub-groupset-helper__fact-heading h4 {
-  margin-top: 0.25rem;
-  color: var(--tz-text-primary);
-  font-size: 0.75rem;
-  font-weight: 650;
-  line-height: 1.35;
-}
-
-.freehub-groupset-helper__fact-label {
-  color: var(--tz-text-muted);
-  font-size: 0.625rem;
-  font-weight: 600;
-}
-
-.freehub-groupset-helper__fact-callout {
-  margin-top: 0.5rem;
-  color: var(--tz-text-primary);
-  font-size: 0.7rem;
-  font-weight: 650;
-  line-height: 1.45;
-}
-
-.freehub-groupset-helper__fact--xdr-xd .freehub-groupset-helper__fact-callout {
-  color: #a16207;
-}
-
-.freehub-groupset-helper__fact--shimano-road-12-speed .freehub-groupset-helper__fact-callout {
-  color: #047857;
-}
-
-.freehub-groupset-helper__fact-copy {
-  margin-top: 0.25rem;
-  color: var(--tz-text-secondary);
-  font-size: 0.675rem;
-  line-height: 1.5;
-}
-
-.freehub-groupset-helper__pagination {
-  margin-top: 0.5rem;
-}
-
+.freehub-groupset-helper__fields { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0.75rem; align-items: end; }
+.freehub-groupset-helper__field, .freehub-groupset-helper__select { min-width: 0; }
+.freehub-groupset-helper__status { margin-top: 0.75rem; }
+.freehub-groupset-helper__results { display: grid; gap: 0.625rem; margin-top: 0.875rem; }
+.freehub-groupset-helper__result { display: grid; grid-template-columns: minmax(5rem, 7rem) minmax(0, 1fr); gap: 0.75rem; padding: 0.75rem; border: 1px solid var(--tz-border-subtle); border-radius: 0.5rem; background: var(--tz-surface-panel); }
+.freehub-groupset-helper__result.is-recommended { border-color: #5aa88e; }
+.freehub-groupset-helper__result-image { width: 100%; aspect-ratio: 1; object-fit: cover; }
+.freehub-groupset-helper__result-copy { align-self: center; }
+.freehub-groupset-helper__facts { margin-top: 0.875rem; }
+.freehub-groupset-helper__fact-rail { display: grid; grid-auto-columns: 100%; grid-auto-flow: column; gap: 0.625rem; overflow-x: auto; overscroll-behavior-inline: contain; scroll-snap-type: x mandatory; scrollbar-width: none; }
+.freehub-groupset-helper__fact-rail::-webkit-scrollbar { display: none; }
+.freehub-groupset-helper__fact { min-width: 0; padding: 0.75rem; border: 1px solid var(--tz-border-subtle); border-radius: 0.5rem; background: var(--tz-surface-panel); scroll-snap-align: start; }
+.freehub-groupset-helper__fact--xdr-xd { border-color: #d6a23d; background: #fffaf0; }
+.freehub-groupset-helper__fact--shimano-road-12-speed { border-color: #5aa88e; background: #f2fbf7; }
+.freehub-groupset-helper__fact-heading h4 { margin-top: 0.25rem; color: var(--tz-text-primary); font-size: 0.75rem; font-weight: 650; line-height: 1.35; }
+.freehub-groupset-helper__fact-label { color: var(--tz-text-muted); font-size: 0.625rem; font-weight: 600; }
+.freehub-groupset-helper__fact-callout { margin-top: 0.5rem; color: var(--tz-text-primary); font-size: 0.7rem; font-weight: 650; line-height: 1.45; }
+.freehub-groupset-helper__fact--xdr-xd .freehub-groupset-helper__fact-callout { color: #a16207; }
+.freehub-groupset-helper__fact--shimano-road-12-speed .freehub-groupset-helper__fact-callout { color: #047857; }
+.freehub-groupset-helper__fact-copy { margin-top: 0.25rem; color: var(--tz-text-secondary); font-size: 0.675rem; line-height: 1.5; }
+.freehub-groupset-helper__pagination { margin-top: 0.5rem; }
 @media (min-width: 768px) {
-  .freehub-groupset-helper__fact-rail {
-    grid-auto-columns: minmax(0, 1fr);
-    grid-auto-flow: initial;
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
-    overflow: visible;
-  }
-
-  .freehub-groupset-helper__pagination {
-    display: none;
-  }
+  .freehub-groupset-helper__fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .freehub-groupset-helper__fact-rail { grid-auto-columns: minmax(0, 1fr); grid-auto-flow: initial; grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr)); overflow: visible; }
+  .freehub-groupset-helper__pagination { display: none; }
 }
-
-.freehub-groupset-helper select {
-  color-scheme: light;
-}
-
-.freehub-groupset-helper select option {
-  background-color: var(--tz-form-control-surface);
-  color: var(--tz-text-primary);
-}
-
-.freehub-groupset-helper select option:disabled {
-  color: var(--tz-text-muted);
-}
-
+.freehub-groupset-helper select { color-scheme: light; }
+.freehub-groupset-helper select option { background-color: var(--tz-form-control-surface); color: var(--tz-text-primary); }
+.freehub-groupset-helper select option:disabled { color: var(--tz-text-muted); }
 </style>
-

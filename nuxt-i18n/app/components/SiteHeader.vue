@@ -509,8 +509,8 @@ import {
   type PrimaryMegaNavSection,
 } from '~/utils/primaryMegaNav'
 import {
+  getPageSubNavigationBreadcrumbMatch,
   getPageSubNavigationForPath,
-  getPageSubNavigationTabFromPath,
   pageSubNavigationChildPath,
   pageSubNavigationEntries,
   type PageSubNavigationEntry,
@@ -1396,26 +1396,16 @@ const pageSubNavigationTabLabel = (tab: PageSubNavigationTab) => {
 const getBreadcrumbPageSubNavigationTab = (
   targetPath: string
 ): { entry: PageSubNavigationEntry; tab: PageSubNavigationTab } | null => {
-  const normalizedTargetPath = normalizeBreadcrumbPath(targetPath)
-
-  for (const entry of pageSubNavigationEntries) {
-    const tabId = getPageSubNavigationTabFromPath(entry.tabs, entry.path, normalizedTargetPath, {
-      localeCodes: getAllLocaleCodes(),
-      match: 'exact',
-    })
-    if (!tabId) continue
-
-    const tab = entry.tabs.find(item => item.id === tabId)
-    if (tab) return { entry, tab }
-  }
-
-  return null
+  const match = getPageSubNavigationBreadcrumbMatch(targetPath, getAllLocaleCodes())
+  return match?.kind === 'tab' ? match : null
 }
 
 const getPageSubNavigationBreadcrumbSubNavigation = (
   targetPath: string
 ): BreadcrumbSubNavigation | undefined => {
   const normalizedTargetPath = normalizeBreadcrumbPath(targetPath)
+  // A canonical second-level page can own third-level navigation. Keep that
+  // navigation attached after switching between second-level siblings.
   const baseEntry = pageSubNavigationEntries.find(entry => (
     normalizeBreadcrumbPath(entry.path) === normalizedTargetPath
   ))

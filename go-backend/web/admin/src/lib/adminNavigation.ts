@@ -40,6 +40,8 @@ import {
   Zap,
 } from '@lucide/vue'
 import { LEGACY_PRODUCT_SUPPLIER_COST_VIEW_PERMISSION_CODE } from '@/lib/productSupplierCostLegacyPermissionCodes'
+import type { LogisticsTabDefinition } from '@/lib/logisticsDomainRegistry'
+import { fpxLogisticsTabs, logisticsDomains, yanwenLogisticsTabs } from '@/lib/logisticsDomainRegistry'
 
 export interface AdminNavigationItem {
   id: string
@@ -59,6 +61,14 @@ export interface ActiveNavigationEntry {
 }
 
 type PermissionChecker = (permission: string) => boolean
+
+const logisticsTabNavigation = (tabs: readonly LogisticsTabDefinition[], viewPermission: string): AdminNavigationItem[] => tabs.map((tab) => ({
+  id: tab.id,
+  path: tab.path,
+  routeName: tab.routeName,
+  label: tab.label,
+  ...(tab.permission !== viewPermission ? { permission: tab.permission } : {}),
+}))
 
 export const adminNavigationItems: AdminNavigationItem[] = [
   { id: 'dashboard', path: '/', routeName: 'Dashboard', code: 'DASHBOARD', label: '仪表板', icon: LayoutDashboard },
@@ -309,6 +319,24 @@ export const adminNavigationItems: AdminNavigationItem[] = [
       { id: 'shipping-tracking', path: '/shipping/tracking', routeName: 'ShippingTracking', label: '追踪配置' },
       { id: 'shipping-tracking-shipments', path: '/shipping/trackingshipments', routeName: 'ShippingTrackingShipments', label: '追踪任务' },
     ],
+  },
+  {
+    id: logisticsDomains.fpx.id,
+    code: logisticsDomains.fpx.code,
+    label: logisticsDomains.fpx.label,
+    path: logisticsDomains.fpx.path,
+    icon: Globe2,
+    permission: logisticsDomains.fpx.permission,
+    children: logisticsTabNavigation(fpxLogisticsTabs, logisticsDomains.fpx.permission),
+  },
+  {
+    id: logisticsDomains.yanwen.id,
+    code: logisticsDomains.yanwen.code,
+    label: logisticsDomains.yanwen.label,
+    path: logisticsDomains.yanwen.path,
+    icon: Waypoints,
+    permission: logisticsDomains.yanwen.permission,
+    children: logisticsTabNavigation(yanwenLogisticsTabs, logisticsDomains.yanwen.permission),
   },
   {
     id: 'access',

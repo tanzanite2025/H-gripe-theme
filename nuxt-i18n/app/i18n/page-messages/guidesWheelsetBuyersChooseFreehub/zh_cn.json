@@ -3,6 +3,27 @@
     "title": "选择塔基",
     "body": "这是一份用于匹配塔基与传动系统飞轮的综合指南（Shimano、SRAM、Campagnolo）。"
   },
+  "guideIntro": {
+    "title": "如何选择正确的塔基",
+    "body": "选择轮组塔基前，按下面步骤核对。比后拨品牌更重要的是飞轮接口和最小齿片。",
+    "step1": {
+      "title": "先确认传动品牌",
+      "body": "选择飞轮或套件上标注的品牌，例如 Shimano、SRAM、Campagnolo、L-TWOO、SENSAH、microSHIFT、SUNSHINE、ZTTO 或 Wheeltop。"
+    },
+    "step2": {
+      "title": "再选择飞轮规格",
+      "body": "根据速别和齿比范围选择，尤其要确认最小齿片是 10T、11T 还是 9T。最小齿片决定哪些塔基在物理上可以安装。"
+    },
+    "step3": {
+      "title": "最后查看结果",
+      "body": "查看推荐塔基、是否需要垫圈或适配套件，以及机械适配说明，再选择轮组配置。"
+    },
+    "identifyTitle": "在哪里查看飞轮信息",
+    "identifyBody": "可以查看飞轮背面或后侧、锁环，以及包装上的品牌、型号、速别和齿比钢印。飞轮上的钢印通常较小，确实不容易看清。",
+    "photoTitle": "钢印看不清怎么办",
+    "photoBody": "从侧面和背面拍摄清晰照片，尽量包含锁环和最大齿片。选择塔基前，可以让客服协助确认飞轮规格。",
+    "chatButton": "咨询我的飞轮规格"
+  },
   "ecosystems": {
     "shimano": {
       "title": "Shimano 生态",
@@ -70,6 +91,18 @@
       }
     }
   },
+  "seo": {
+    "title": "自行车塔基兼容性指南：HG-11、Micro Spline、XD、XDR 与 N3W",
+    "description": "查询 Shimano、SRAM、Campagnolo 及第三方飞轮的塔基兼容性、1.85 mm 垫圈要求和物理适配规则，再选择轮组塔基规格。",
+    "howToName": "如何核对自行车飞轮与塔基兼容性",
+    "howToStep1Name": "确认飞轮规格",
+    "howToStep1Text": "从飞轮标识或厂商资料确认品牌、速别、最小齿和最大齿规格。",
+    "howToStep2Name": "匹配塔基标准",
+    "howToStep2Text": "使用兼容矩阵匹配 HG-11、HG、Micro Spline、XD、XDR、N3W 或 Campagnolo Classic 塔基。",
+    "howToStep3Name": "安装所需垫圈或适配套件",
+    "howToStep3Text": "按规则将垫圈安装在塔基内侧底座；需要时使用 AC21-N3W 套筒和加长锁环。",
+    "datasetDescription": "包含 {count} 条自行车飞轮、塔基和垫圈兼容规则的版本化数据集。"
+  },
   "reference": {
     "standardsTitle": "技术参考：塔基标准与套件",
     "standardsHeaders": {
@@ -119,8 +152,12 @@
       "brand": "品牌",
       "freehub": "塔基",
       "cassette": "飞轮",
-      "spacer": "是否需要垫圈？"
+      "spacer": "是否需要垫圈？",
+      "mechanicalFact": "机械适配说明",
+      "source": "来源"
     },
+    "sourceLabel": "厂商参考资料",
+    "knowledgeAsOf": "适配规则核验截至 {date}。这是版本化知识库，不是实时查询品牌官网。",
     "matrixRows": [
       {
         "brand": "Shimano",

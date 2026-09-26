@@ -6,6 +6,7 @@ This folder is the live documentation hub for the Nuxt storefront. Active notes 
 
 ## Current active sources
 
+- [轮胎指南外胎分类与专用产品搜索抽屉实施契约](../../docs/design/tire-guide-product-category-and-drawer-contract.md)
 - i18n status and workflow: `notes/I18N-CURRENT-STATUS.md`
 - FAQ ownership and current backend/frontend boundary: `../../go-backend/docs/FAQ_MANAGEMENT_SOURCE.md`
 - Chat and customer-service flow: `notes/CHAT-SYSTEM-ANALYSIS.md`

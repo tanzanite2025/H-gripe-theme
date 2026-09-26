@@ -97,3 +97,55 @@ func TestProductCategoryUpdateProtectsWheelsetIdentity(t *testing.T) {
 		t.Fatalf("expected protected category error for disabling, got %v", err)
 	}
 }
+
+func TestProductCategoryUpdateProtectsWheelComponentsTreePosition(t *testing.T) {
+	service, db := newProductCategoryProtectionTestService(t)
+	root := product.ProductCategory{
+		Name:      "Wheel Components",
+		Slug:      SystemProductCategoryWheelComponentsSlug,
+		Depth:     1,
+		IsEnabled: true,
+	}
+	if err := db.Create(&root).Error; err != nil {
+		t.Fatalf("create root category: %v", err)
+	}
+	tire := product.ProductCategory{
+		ParentID:  &root.ID,
+		Name:      "Tires",
+		Slug:      SystemProductCategoryTireSlug,
+		Depth:     2,
+		IsEnabled: true,
+	}
+	if err := db.Create(&tire).Error; err != nil {
+		t.Fatalf("create tire category: %v", err)
+	}
+	otherRoot := product.ProductCategory{
+		Name:      "Other",
+		Slug:      "other",
+		Depth:     1,
+		IsEnabled: true,
+	}
+	if err := db.Create(&otherRoot).Error; err != nil {
+		t.Fatalf("create other root category: %v", err)
+	}
+
+	_, err := service.Update(tire.ID, ProductCategoryInput{
+		ParentID:  nil,
+		Name:      "Tires",
+		Slug:      SystemProductCategoryTireSlug,
+		IsEnabled: true,
+	})
+	if !errors.Is(err, ErrProductCategorySystemProtected) {
+		t.Fatalf("expected tire parent protection error, got %v", err)
+	}
+
+	_, err = service.Update(root.ID, ProductCategoryInput{
+		ParentID:  &otherRoot.ID,
+		Name:      "Wheel Components",
+		Slug:      SystemProductCategoryWheelComponentsSlug,
+		IsEnabled: true,
+	})
+	if !errors.Is(err, ErrProductCategorySystemProtected) {
+		t.Fatalf("expected wheel components root protection error, got %v", err)
+	}
+}

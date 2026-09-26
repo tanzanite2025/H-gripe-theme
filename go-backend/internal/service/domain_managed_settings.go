@@ -38,7 +38,8 @@ func IsDomainManagedSettingKey(key string) bool {
 		normalized == seodomain.HomeKeys.MetaTitle ||
 		normalized == seodomain.HomeKeys.MetaDescription ||
 		normalized == "google_analytics" ||
-		normalized == "google_tag_manager"
+		normalized == "google_tag_manager" ||
+		normalized == "site_favicon"
 }
 
 func FilterDomainManagedSettings(settings []setting.Setting) []setting.Setting {

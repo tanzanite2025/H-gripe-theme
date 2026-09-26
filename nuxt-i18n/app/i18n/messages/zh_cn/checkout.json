@@ -24,7 +24,9 @@
       "paymentPending": "支付暂未完成，请稍后查看订单状态。",
       "orderSuccess": "订单提交成功！",
       "orderFailed": "订单提交失败，请重试",
-      "emailRequired": "Add an email address to your account before checkout."
+      "emailRequired": "Add an email address to your account before checkout.",
+      "priceUpdated": "The price or configuration has changed. We loaded the latest total. Please review it and continue when ready.",
+      "checkoutAlreadySubmitted": "This cart was already submitted as an order. Please check your order status before trying again."
     }
   },
   "order": {
@@ -178,7 +180,9 @@
         "calculating": "正在计算...",
         "free": "免费"
       },
-      "zip": "Postal code"
+      "zip": "Postal code",
+      "method": "Delivery method",
+      "stateLabel": "State / province"
     },
     "review": {
       "backToShipping": "返回配送信息",
@@ -208,7 +212,16 @@
       "pointsDiscount": "积分抵扣",
       "couponDiscount": "优惠券抵扣",
       "total": "总计",
-      "title": "Order summary"
+      "title": "Order summary",
+      "memberDiscount": "Member discount",
+      "discount": "Discount",
+      "adjustment": "Order adjustment"
+    },
+    "billing": {
+      "sameAsShipping": "Billing address is the same as shipping address",
+      "countryRegion": "Billing country / region",
+      "recipient": "Billing name",
+      "completeAddress": "Please complete your billing address before continuing."
     }
   },
   "fields": {
@@ -235,7 +248,8 @@
       "failed": "无法确认这笔 PayPal 支付。"
     },
     "actions": {
-      "continueShopping": "继续购物"
+      "continueShopping": "继续购物",
+      "retry": "Retry payment confirmation"
     }
   },
   "paypalCancel": {
@@ -290,5 +304,21 @@
   },
   "product": {
     "buyNow": "Buy now"
+  },
+  "stripeReturn": {
+    "messages": {
+      "confirming": "Please wait while we confirm your Stripe payment.",
+      "loginRequired": "Please sign in with the account that placed this order.",
+      "missingData": "Stripe returned without the required payment data.",
+      "incomplete": "Stripe payment was not completed.",
+      "mismatch": "The returned payment does not match this order.",
+      "success": "Your payment has been confirmed. We are preparing your order.",
+      "failed": "Unable to confirm this Stripe payment."
+    },
+    "title": {
+      "success": "Payment confirmed",
+      "error": "Payment could not be confirmed",
+      "loading": "Confirming Stripe payment"
+    }
   }
 }

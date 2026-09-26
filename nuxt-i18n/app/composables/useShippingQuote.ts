@@ -1,7 +1,7 @@
 import { ref } from 'vue'
 import type { CartItem } from '~~/types/cart'
+import { unwrapApiEnvelope, type ApiEnvelope } from '~/utils/apiEnvelope'
 
-type ApiResponse<T> = T | { data?: T }
 
 export interface ShippingQuoteItemInput {
   product_id: number
@@ -142,18 +142,6 @@ export interface CheckoutQuoteResult {
   shipping_quote?: ShippingQuoteResult | null
 }
 
-const unwrapApiData = <T>(payload: ApiResponse<T> | null | undefined): T | null => {
-  let current: unknown = payload
-  for (let depth = 0; depth < 3; depth += 1) {
-    if (!current || typeof current !== 'object' || Array.isArray(current)) {
-      return (current as T) || null
-    }
-    if (!('data' in current)) return current as T
-    current = (current as { data?: unknown }).data
-  }
-  return null
-}
-
 const cartItemToQuoteItem = (item: CartItem): ShippingQuoteItemInput | null => {
   const productId = Number(item.product_id || item.id || 0)
   if (!productId) return null
@@ -212,7 +200,7 @@ export const useShippingQuote = () => {
     isLoading.value = true
     error.value = null
     try {
-      const response = await request<ApiResponse<ShippingQuoteResult>>('/shipping/quote', {
+      const response = await request<ApiEnvelope<ShippingQuoteResult>>('/shipping/quote', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
         body: JSON.stringify({
@@ -225,7 +213,7 @@ export const useShippingQuote = () => {
           items,
         }),
       })
-      const data = unwrapApiData<ShippingQuoteResult>(response)
+      const data = unwrapApiEnvelope<ShippingQuoteResult>(response)
       if (!data) throw new Error('Invalid shipping quote response')
       if (currentRequestVersion === requestVersion) quote.value = data
       return data
@@ -242,12 +230,12 @@ export const useShippingQuote = () => {
   }
 
   const quoteCheckout = async (payload: CheckoutQuoteRequest): Promise<CheckoutQuoteResult> => {
-    const response = await request<ApiResponse<CheckoutQuoteResult>>('/checkout/quote', {
+    const response = await request<ApiEnvelope<CheckoutQuoteResult>>('/checkout/quote', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
       body: JSON.stringify(payload),
     })
-    const data = unwrapApiData<CheckoutQuoteResult>(response)
+    const data = unwrapApiEnvelope<CheckoutQuoteResult>(response)
     if (!data) throw new Error('Invalid checkout quote response')
     return data
   }

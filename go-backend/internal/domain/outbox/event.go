@@ -69,6 +69,7 @@ const (
 	AggregateTypeCustomerServiceAgentProfile  = "customer_service_agent_profile"
 	AggregateTypeMediaAsset                   = "media_asset"
 	AggregateTypeSiteLogo                     = "site_logo"
+	AggregateTypeSiteFavicon                  = "site_favicon"
 	AggregateTypeHomeVisualTileSet            = "home_visual_tile_set"
 	AggregateTypeUGCShowcase                  = "ugc_showcase"
 	AggregateTypeStorefrontRouteCatalogEntry  = "storefront_route_catalog_entry"

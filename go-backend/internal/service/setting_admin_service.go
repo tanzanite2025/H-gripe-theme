@@ -3,6 +3,8 @@ package service
 import (
 	"commerce-platform/internal/domain/setting"
 	"encoding/json"
+	"fmt"
+	"gorm.io/gorm"
 )
 
 func (s *SettingService) Set(key, value, settingType, group, locale string) error {
@@ -100,6 +102,22 @@ func (s *SettingService) BatchSet(settings []setting.Setting) error {
 		s.invalidateSettingCaches(st.Key, st.Group, st.Locale)
 	}
 
+	return nil
+}
+
+// BatchSetTx persists settings inside an existing transaction. Domain
+// services use this when a setting is the durable public reference for a
+// resource whose metadata is being changed in the same transaction.
+func (s *SettingService) BatchSetTx(tx *gorm.DB, settings []setting.Setting) error {
+	if s == nil || s.settingRepo == nil || tx == nil {
+		return fmt.Errorf("setting transaction is unavailable")
+	}
+	if err := s.settingRepo.WithTx(tx).BatchSet(settings); err != nil {
+		return err
+	}
+	for _, st := range settings {
+		s.invalidateSettingCaches(st.Key, st.Group, st.Locale)
+	}
 	return nil
 }
 

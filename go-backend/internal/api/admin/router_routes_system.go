@@ -20,7 +20,12 @@ func registerSystemRoutes(
 	websiteProfileHandler *WebsiteProfileHandler,
 	websiteNameHandler *WebsiteNameHandler,
 	shippingHandler *ShippingHandler,
+	siteFaviconHandlers ...*SiteFaviconHandler,
 ) {
+	var siteFaviconHandler *SiteFaviconHandler
+	if len(siteFaviconHandlers) > 0 {
+		siteFaviconHandler = siteFaviconHandlers[0]
+	}
 	// 设置管理（需要设置管理权限）
 	settingsGroup := authenticated.Group("/settings")
 	settingsGroup.Use(middleware.RequirePermission(auth.PermSettingsView))
@@ -43,6 +48,20 @@ func registerSystemRoutes(
 			middleware.RateLimitByUserPerMinute(3, 2),
 			customerServiceAvatarHandler.DeleteAvatar,
 		)
+		if siteFaviconHandler != nil {
+			settingsGroup.POST(
+				"/site-favicon",
+				middleware.RequirePermission(auth.PermSettingsEdit),
+				middleware.RateLimitByUserPerMinute(3, 2),
+				siteFaviconHandler.Upload,
+			)
+			settingsGroup.DELETE(
+				"/site-favicon",
+				middleware.RequirePermission(auth.PermSettingsEdit),
+				middleware.RateLimitByUserPerMinute(3, 2),
+				siteFaviconHandler.Delete,
+			)
+		}
 		settingsGroup.GET("/public-chat-groups", publicChatAgentHandler.ListPublicChatGroups)
 		settingsGroup.POST("/public-chat-groups", middleware.RequirePermission(auth.PermSettingsEdit), publicChatAgentHandler.UpsertPublicChatGroup)
 		settingsGroup.PUT("/public-chat-groups/:id", middleware.RequirePermission(auth.PermSettingsEdit), publicChatAgentHandler.UpdatePublicChatGroup)

@@ -132,6 +132,16 @@ const (
 	PermShippingDelete   Permission = "shipping:delete"
 	PermShippingTracking Permission = "shipping:tracking"
 
+	PermFPXView   Permission = "logistics:fpx:view"
+	PermFPXShip   Permission = "logistics:fpx:ship"
+	PermFPXCancel Permission = "logistics:fpx:cancel"
+	PermFPXManage Permission = "logistics:fpx:manage"
+
+	PermYanwenView   Permission = "logistics:yanwen:view"
+	PermYanwenShip   Permission = "logistics:yanwen:ship"
+	PermYanwenCancel Permission = "logistics:yanwen:cancel"
+	PermYanwenManage Permission = "logistics:yanwen:manage"
+
 	PermSettingsView  Permission = "settings:view"
 	PermSettingsEdit  Permission = "settings:edit"
 	PermSEOView       Permission = "seo:view"
@@ -190,6 +200,8 @@ var RolePermissions = map[Role][]Permission{
 		PermMarketingView, PermMarketingCreate, PermMarketingEdit, PermMarketingDelete,
 		PermMerchantView, PermMerchantEdit, PermMerchantSync,
 		PermShippingView, PermShippingCreate, PermShippingEdit, PermShippingDelete, PermShippingTracking,
+		PermFPXView, PermFPXShip, PermFPXCancel, PermFPXManage,
+		PermYanwenView, PermYanwenShip, PermYanwenCancel, PermYanwenManage,
 		PermSettingsView, PermSettingsEdit,
 		PermSEOView, PermSEOEdit, PermURLView, PermURLEdit, PermAnalyticsView, PermAnalyticsEdit,
 		PermLogsView,
@@ -218,6 +230,8 @@ var RolePermissions = map[Role][]Permission{
 		PermMarketingView, PermMarketingCreate, PermMarketingEdit, PermMarketingDelete,
 		PermMerchantView, PermMerchantEdit, PermMerchantSync,
 		PermShippingView, PermShippingCreate, PermShippingEdit, PermShippingTracking,
+		PermFPXView, PermFPXShip, PermFPXCancel, PermFPXManage,
+		PermYanwenView, PermYanwenShip, PermYanwenCancel, PermYanwenManage,
 		PermSettingsView,
 		PermSEOView, PermURLView, PermURLEdit, PermAnalyticsView,
 		PermLogsView,
@@ -234,6 +248,8 @@ var RolePermissions = map[Role][]Permission{
 		PermSupplierCostView, PermSupplierCostCreate, PermSupplierCostEdit,
 		PermFitmentCatalogView, PermFitmentCatalogCreate, PermFitmentCatalogEdit,
 		PermShippingView,
+		PermFPXView,
+		PermYanwenView,
 		PermContentView, PermContentCreate, PermContentEdit,
 		PermReviewView, PermReviewModerate,
 		PermFAQView, PermFAQCreate, PermFAQEdit,
@@ -251,6 +267,8 @@ var RolePermissions = map[Role][]Permission{
 		PermMediaView,
 		PermSubscriptionView,
 		PermShippingView, PermShippingTracking,
+		PermFPXView,
+		PermYanwenView,
 	},
 	RoleViewer: {
 		PermProductView,
@@ -267,6 +285,8 @@ var RolePermissions = map[Role][]Permission{
 		PermMarketingView,
 		PermSEOView, PermURLView, PermAnalyticsView,
 		PermShippingView,
+		PermFPXView,
+		PermYanwenView,
 		PermSettingsView,
 		PermWorkbenchFeedView,
 	},

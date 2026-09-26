@@ -53,6 +53,44 @@ func TestRegisterRoutesExposesCustomerAfterSalesReadRoute(t *testing.T) {
 	t.Fatal("customer after-sales GET route is not registered")
 }
 
+func TestRegisterRoutesExposesTirePressureSolveRoute(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	router := gin.New()
+	cfg := &config.Config{
+		CORS: config.CORSConfig{},
+		JWT:  config.JWTConfig{Secret: "test-secret"},
+	}
+	RegisterRoutes(router, &app.Dependencies{}, cfg)
+
+	for _, route := range router.Routes() {
+		if route.Method == http.MethodPost && route.Path == "/api/v1/engineering/tire-pressure/solve" {
+			return
+		}
+	}
+	t.Fatal("tire pressure solve route is not registered")
+}
+
+func TestTirePressureSolveRouteIsReachableWithoutCSRFToken(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	router := gin.New()
+	cfg := &config.Config{
+		CORS: config.CORSConfig{},
+		JWT:  config.JWTConfig{Secret: "test-secret"},
+	}
+	RegisterRoutes(router, &app.Dependencies{}, cfg)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequestWithContext(context.Background(), http.MethodPost, "/api/v1/engineering/tire-pressure/solve", strings.NewReader(`{"rider_weight_kg":70,"bike_weight_kg":8,"nominal_tire_width_mm":32,"inner_rim_width_mm":25,"rim_system":"HOOKLESS","riding_position":"ENDURANCE"}`))
+	req.Header.Set("Sec-Fetch-Site", "cross-site")
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusUnprocessableEntity || !strings.Contains(w.Body.String(), "LIMIT_UNVERIFIED") {
+		t.Fatalf("expected tire pressure validation response without CSRF rejection, got %d: %s", w.Code, w.Body.String())
+	}
+}
+
 func TestAnonymousProfileProbeReturnsNoContent(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 

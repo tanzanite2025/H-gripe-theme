@@ -125,7 +125,7 @@
            <button
              type="button"
               class="rounded-full bg-[var(--tz-card-surface)] border tz-border-subtle px-6 py-2 text-xs font-bold uppercase tracking-wider tz-text-primary shadow-md transition-colors hover:border-[rgba(5, 150, 105,0.28)] hover:tz-surface-subtle hover:text-[var(--tz-site-accent)]"
-             @click="$emit('changeTab', 'choose')"
+             @click="$emit('changeTab', 'tire-pressure')"
            >
              {{ t('guidesTireTubeless.navigation.pressure.button') }}
            </button>
@@ -150,7 +150,7 @@ watch(locale, (nextLocale) => {
 })
 
 // Match SizeChartsTabId from parent
-type GuideTabId = 'size' | 'match' | 'tubeless' | 'installation' | 'choose' | 'rims' | 'tube'
+type GuideTabId = 'size' | 'match' | 'tubeless' | 'installation' | 'choose' | 'tire-pressure' | 'tube'
 
 defineEmits<{
   (e: 'changeTab', tab: GuideTabId): void

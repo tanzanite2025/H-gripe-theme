@@ -6,22 +6,13 @@
       :initial-query="drawerSearchQuery"
       @submit="searchProducts"
     />
-
-    <SmartRecommendationPanel
-      :categories="displayedCategoryCards"
-      :categories-loading="categoriesLoading"
-      @category-click="goToCategory"
-      @view-all="close"
-    />
   </section>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue'
-import SmartRecommendationPanel from '~/components/SmartRecommendationPanel.vue'
 import ShopProductQuickSearchForm from '~/components/shop/ShopProductQuickSearchForm.vue'
 import { useShopSearchSheet, type ShopSearchFiltersPayload } from '~/composables/useShopSearchSheet'
-import { useShopCategories, type ShopCategory } from '~/composables/useShopCategories'
 import { useBehaviorEvents } from '~/composables/useBehaviorEvents'
 import { useStorefrontContext } from '~/composables/useStorefrontContext'
 import { defaultPriceRangeForCurrency } from '~/utils/money'
@@ -40,14 +31,8 @@ const drawerSearchQuery = ref('')
 const lastSearchFilters = ref<ShopSearchFiltersPayload>(createDefaultSearchFilters())
 const searchingProducts = ref(false)
 
-const { presetKeywords, close } = useShopSearchSheet()
+const { presetKeywords } = useShopSearchSheet()
 const { track: trackBehaviorEvent } = useBehaviorEvents()
-const {
-  categories: displayedCategoryCards,
-  loading: categoriesLoading,
-  source: categorySource,
-  loadCategories,
-} = useShopCategories()
 
 const cloneFilters = (filters: ShopSearchFiltersPayload): ShopSearchFiltersPayload => ({
   ...filters,
@@ -71,27 +56,6 @@ const buildChipCategorySlug = (query: string) => {
     return 'inner-tube'
   }
   return undefined
-}
-
-const goToCategory = (category: ShopCategory) => {
-  const categoryId = Number(category.id)
-  if (categorySource.value === 'api' && Number.isInteger(categoryId) && categoryId > 0) {
-    trackBehaviorEvent({
-      eventType: 'category_navigation_click',
-      categoryId,
-      metadata: {
-        surface: 'shop_search_drawer',
-        target_type: 'category',
-        category_slug: category.slug,
-        category_source: categorySource.value,
-      },
-    })
-  }
-  emit('search', {
-    query: '',
-    filters: cloneFilters(lastSearchFilters.value),
-    chipCategorySlug: category.slug,
-  })
 }
 
 const searchProducts = async (payload: { query: string; filters: ShopSearchFiltersPayload }) => {
@@ -124,7 +88,6 @@ const searchProducts = async (payload: { query: string; filters: ShopSearchFilte
 
 onMounted(() => {
   syncPresetQuery()
-  loadCategories()
 })
 
 watch(presetKeywords, () => {

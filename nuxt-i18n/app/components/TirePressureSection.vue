@@ -11,6 +11,8 @@
         {{ t('guidesTirePressure.intro.etrto') }}
       </p>
 
+      <TirePressureCalculator />
+
       <p class="guide-section__cta-wrapper">
         <button
           type="button"
@@ -117,6 +119,9 @@
           <li>{{ t('guidesTirePressure.sections.warnings.high') }}</li>
           <li>{{ t('guidesTirePressure.sections.warnings.low') }}</li>
           <li>{{ t('guidesTirePressure.sections.warnings.neglect') }}</li>
+          <li class="tire-pressure-section__safety-warning">
+            {{ t('guidesTirePressure.sections.warnings.hookless') }}
+          </li>
         </ul>
       </div>
     </div>
@@ -167,6 +172,7 @@
 import { watch } from 'vue'
 import { useI18n } from '#imports'
 import { usePageMessages } from '~/composables/usePageMessages'
+import TirePressureCalculator from '~/components/tireguides/tirepressure/TirePressureCalculator.vue'
 
 const { locale, t } = useI18n()
 const { loadPageMessages } = usePageMessages('guidesTirePressure')
@@ -202,6 +208,106 @@ const emit = defineEmits<{
   background: var(--tz-action-primary-hover);
   box-shadow: 0 0.5rem 1.35rem -0.5rem rgba(0, 0, 0, 0.9);
   transform: translateY(-1px);
+}
+
+.tire-pressure-section__calculator {
+  margin-top: 1rem;
+  border: 1px solid var(--tz-border-subtle);
+  border-radius: 0.75rem;
+  background: var(--tz-form-panel-surface);
+  padding: 1rem;
+}
+
+.tire-pressure-section__calculator-description {
+  margin: 0.45rem auto 0;
+  max-width: 48rem;
+  color: var(--tz-text-secondary);
+  font-size: 0.75rem;
+  line-height: 1.5;
+  text-align: center;
+}
+
+.tire-pressure-section__calculator-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  justify-content: center;
+  gap: 0.65rem;
+  margin-top: 0.85rem;
+  color: var(--tz-text-secondary);
+  font-size: 0.75rem;
+}
+
+.tire-pressure-section__calculator-controls label,
+.tire-pressure-section__calculator-system-label {
+  display: block;
+  font-weight: 600;
+}
+
+.tire-pressure-section__calculator-controls input {
+  width: 8rem;
+  border: 1px solid var(--tz-form-control-border);
+  border-radius: 0.4rem;
+  background: var(--tz-form-control-surface);
+  color: var(--tz-text-primary);
+  padding: 0.4rem 0.55rem;
+  font-size: 0.75rem;
+  outline: none;
+}
+
+.tire-pressure-section__calculator-controls input:focus {
+  border-color: var(--tz-site-accent);
+}
+
+.tire-pressure-section__toggle-group {
+  display: inline-flex;
+  gap: 0.25rem;
+  border-radius: 999px;
+  background: var(--tz-form-control-surface);
+  padding: 0.2rem;
+}
+
+.tire-pressure-section__toggle-group button {
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--tz-text-secondary);
+  cursor: pointer;
+  padding: 0.35rem 0.7rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+.tire-pressure-section__toggle-group button:hover,
+.tire-pressure-section__toggle-group button:focus-visible {
+  border-color: var(--tz-site-accent);
+  outline: none;
+}
+
+.tire-pressure-section__toggle-group button.tire-pressure-section__toggle--active {
+  border-color: var(--tz-site-accent);
+  background: var(--tz-site-accent);
+  color: #ffffff;
+}
+
+.tire-pressure-section__calculator-result {
+  margin: 0.85rem 0 0;
+  color: var(--tz-text-primary);
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+.tire-pressure-section__safety-warning {
+  color: #b91c1c;
+  font-weight: 700;
+}
+
+.tire-pressure-section__calculator .tire-pressure-section__safety-warning {
+  margin: 0.45rem 0 0;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  text-align: center;
 }
 
 .tire-pressure-section__heading {

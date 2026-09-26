@@ -173,10 +173,8 @@ export const useCart = () => {
   const auth = useAuth()
   const calculation = useCartCalculation()
   const shippingQuoteApi = useShippingQuote()
-  const { countryCode, displayCurrency } = useStorefrontContext()
+  const { countryCode, baseCurrency, displayCurrency } = useStorefrontContext()
   const { track: trackBehaviorEvent } = useBehaviorEvents()
-  const displayCurrencyCookie = useCookie<string | null>('display_currency')
-  const baseCurrency = computed(() => normalizeCurrencyCode(displayCurrencyCookie.value) || 'USD')
   const overlayBackStack = useOverlayBackStack()
 
   const loadCartFromBackend = async () => {

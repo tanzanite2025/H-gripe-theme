@@ -241,6 +241,98 @@ func TestListProductsFiltersFeaturedResultsByProductCategory(t *testing.T) {
 	}
 }
 
+func TestListProductsTireGuideCategoryUsesCategoryTreeInsteadOfKeywordOrTemplate(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	if err != nil {
+		t.Fatalf("open test db: %v", err)
+	}
+	if err := db.AutoMigrate(
+		&productdomain.ProductCategory{},
+		&productdomain.ProductSpecificationTemplate{},
+		&productdomain.SpecDefinition{},
+		&productdomain.Product{},
+		&productdomain.ProductMedia{},
+		&productdomain.ProductVariant{},
+	); err != nil {
+		t.Fatalf("migrate test db: %v", err)
+	}
+
+	wheelComponents := productdomain.ProductCategory{
+		Name: "Wheel Components", Slug: "wheel-components", Depth: 1, IsEnabled: true,
+	}
+	if err := db.Create(&wheelComponents).Error; err != nil {
+		t.Fatalf("seed wheel components category: %v", err)
+	}
+	tireCategory := productdomain.ProductCategory{
+		ParentID: &wheelComponents.ID, Name: "Tires", Slug: "tire", Depth: 2, IsEnabled: true,
+	}
+	rimCategory := productdomain.ProductCategory{
+		ParentID: &wheelComponents.ID, Name: "Rims", Slug: "rim", Depth: 2, IsEnabled: true,
+	}
+	if err := db.Create(&tireCategory).Error; err != nil {
+		t.Fatalf("seed tire category: %v", err)
+	}
+	if err := db.Create(&rimCategory).Error; err != nil {
+		t.Fatalf("seed rim category: %v", err)
+	}
+	template := productdomain.ProductSpecificationTemplate{
+		Name: "Tire template", Slug: "tire-template", IsEnabled: true,
+	}
+	if err := db.Create(&template).Error; err != nil {
+		t.Fatalf("seed template: %v", err)
+	}
+
+	createProduct := func(categoryID uint, slug string, name string) {
+		categoryIDCopy := categoryID
+		item := productdomain.Product{
+			ProductCategoryID:              &categoryIDCopy,
+			ProductSpecificationTemplateID: &template.ID,
+			SKU:                            strings.ToUpper(slug), Name: name, Slug: slug,
+			Status: "active", Locale: "en", PriceMinor: 10000,
+		}
+		if err := db.Create(&item).Error; err != nil {
+			t.Fatalf("seed product %s: %v", slug, err)
+		}
+		if err := db.Create(&productdomain.ProductVariant{
+			ProductID: item.ID, SKU: strings.ToUpper(slug) + "-VAR",
+			Title: "Default", PriceMinor: 10000, Stock: 1,
+			IsDefault: true, IsActive: true,
+		}).Error; err != nil {
+			t.Fatalf("seed product variant %s: %v", slug, err)
+		}
+	}
+
+	createProduct(tireCategory.ID, "tire-category-product", "Road tire")
+	createProduct(rimCategory.ID, "rim-category-product", "Tire branded rim")
+
+	router := gin.New()
+	router.Use(func(c *gin.Context) {
+		c.Set("locale", "en")
+		c.Next()
+	})
+	handler := NewHandler(service.NewProductService(repository.NewProductRepository(db), nil, 0))
+	router.GET("/products", handler.ListProducts)
+
+	response := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodGet, "/products?product_category=tire&keyword=tire", nil)
+	router.ServeHTTP(response, request)
+
+	if response.Code != http.StatusOK {
+		t.Fatalf("expected tire category response to return 200, got %d: %s", response.Code, response.Body.String())
+	}
+	body := response.Body.String()
+	if !strings.Contains(body, "\"slug\":\"tire-category-product\"") {
+		t.Fatalf("expected tire category product in response, got %s", body)
+	}
+	if strings.Contains(body, "\"slug\":\"rim-category-product\"") {
+		t.Fatalf("keyword/template matching bypassed tire category filter: %s", body)
+	}
+	if !strings.Contains(body, "\"total\":1") {
+		t.Fatalf("expected exactly one tire result, got %s", body)
+	}
+}
+
 func TestListProductsSecondPageDoesNotSkipLookaheadItem(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})

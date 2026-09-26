@@ -65,6 +65,9 @@ func registerLocalUploadsRoute(router *gin.Engine, deps *app.Dependencies) {
 			fileServer = siteLogoFileServer
 			c.Header("Cache-Control", "public, max-age=31536000, immutable")
 		}
+		if service.IsSiteFaviconStorageKey(key) {
+			c.Header("Cache-Control", "public, max-age=31536000, immutable")
+		}
 		if fileServer == nil {
 			c.Status(http.StatusNotFound)
 			return

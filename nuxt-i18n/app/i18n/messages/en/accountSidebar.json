@@ -12,7 +12,8 @@
   },
   "actions": {
     "goShop": "Go to shop",
-    "refresh": "Refresh"
+    "refresh": "Refresh",
+    "retry": "Retry"
   },
   "loginPrompt": {
     "eyebrow": "Private account area",
@@ -103,5 +104,47 @@
     "missingProduct": "This saved product needs product data before adding to cart.",
     "added": "Added to cart",
     "addedAll": "Wishlist products added to cart"
+  },
+  "orders": {
+    "eyebrow": "Purchase history",
+    "title": "My orders",
+    "loading": "Loading orders...",
+    "emptyTitle": "No orders yet",
+    "emptyDescription": "Completed purchases will appear here with their delivery details.",
+    "item": "item",
+    "items": "items",
+    "loadingDetail": "Loading order details...",
+    "shippingAddress": "Shipping address",
+    "delivery": "Delivery",
+    "product": "Product",
+    "tracking": "Tracking",
+    "loadingTracking": "Loading...",
+    "viewTracking": "View updates",
+    "trackingUpdate": "Tracking update",
+    "afterSales": "After-sales support",
+    "loadingAfterSales": "Loading...",
+    "refreshAfterSales": "Refresh",
+    "resolution": "Resolution",
+    "returnTracking": "Return tracking",
+    "afterSalesItem": "Item",
+    "quantity": "Quantity",
+    "reason": "Reason",
+    "description": "Description",
+    "submitting": "Submitting...",
+    "submitRequest": "Submit request",
+    "cancelling": "Cancelling...",
+    "cancel": "Cancel order",
+    "previous": "Previous page",
+    "next": "Next page",
+    "loadFailed": "Orders could not be loaded.",
+    "detailFailed": "Order details could not be loaded.",
+    "afterSalesLoadFailed": "After-sales requests could not be loaded.",
+    "afterSalesSubmitFailed": "The after-sales request could not be submitted.",
+    "trackingFailed": "Tracking updates are not available yet.",
+    "cancelConfirm": "Cancel this order?",
+    "cancelFailed": "This order could not be cancelled.",
+    "status": {
+      "pending": "Pending"
+    }
   }
 }

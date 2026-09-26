@@ -78,7 +78,7 @@ export const tireGuideTabs = [
     description: 'Selection tips for terrain, clearance, and use case.',
   },
   {
-    id: 'rims',
+    id: 'tire-pressure',
     labelKey: 'guidesTireguides.tabs.pressure.label',
     fallback: 'Tire pressure',
     descriptionKey: 'guidesTireguides.tabs.pressure.description',

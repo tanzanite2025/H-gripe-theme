@@ -6,3 +6,5 @@ Disallow: /
 
 User-Agent: *
 Disallow:
+
+Sitemap: https://learn.gripe/sitemap.xml

@@ -80,6 +80,8 @@ func (s *SettingService) GetSiteSettings(locale string) (*setting.SiteSettings, 
 		case "site_logo":
 			siteSettings.SiteLogo = st.Value
 		case "site_favicon":
+			// The public settings handler resolves this through the managed
+			// favicon asset service. Keep the legacy setting for migration only.
 			siteSettings.SiteFavicon = st.Value
 		case "contact_email":
 			siteSettings.ContactEmail = st.Value

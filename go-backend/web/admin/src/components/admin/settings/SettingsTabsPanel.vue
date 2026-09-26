@@ -28,7 +28,7 @@
           </AdminFormField>
           <AdminFormField :label="t('settings.siteFavicon')" description="用于浏览器 TAB、收藏夹和 PWA 图标；支持直接填写图片 URL 或上传图标。">
             <div class="flex min-w-0 items-center gap-2">
-              <Input v-model="siteSettings.site_favicon" type="url" placeholder="Favicon URL" :disabled="uploadingSiteFavicon" />
+              <Input :model-value="siteSettings.site_favicon" type="text" placeholder="尚未上传站点 Favicon" readonly :disabled="uploadingSiteFavicon" />
               <Button type="button" variant="outline" size="icon" :disabled="!canEdit || uploadingSiteFavicon" :title="t('settings.uploadFavicon')" @click="chooseSiteFavicon">
                 <LoaderCircle v-if="uploadingSiteFavicon" class="size-4 animate-spin" />
                 <ImagePlus v-else class="size-4" />
@@ -241,6 +241,7 @@ const emit = defineEmits([
   'upload-site-logo',
   'clear-site-logo',
   'upload-site-favicon',
+  'clear-site-favicon',
   'open-agent-dialog',
   'open-group-dialog',
   'edit-group',
@@ -289,7 +290,7 @@ const clearSiteLogo = () => {
 
 const clearSiteFavicon = () => {
   if (props.uploadingSiteFavicon) return
-  props.siteSettings.site_favicon = ''
+  emit('clear-site-favicon')
 }
 
 const SettingsSection = defineComponent({

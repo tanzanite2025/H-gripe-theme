@@ -7,6 +7,7 @@ export interface Coupon {
   currency?: string
   min_amount_minor?: number
   max_discount_minor?: number
+  discount_minor?: number
 }
 
 export interface CouponValidationResponse {

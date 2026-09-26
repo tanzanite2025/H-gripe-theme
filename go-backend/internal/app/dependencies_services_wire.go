@@ -28,10 +28,12 @@ func (b *dependencyServicesBuilder) wire() error {
 	services.CustomerServiceAvatar = service.NewCustomerServiceAvatarService(repos.User, support.StorageSvc, repos.Outbox)
 	services.Media.ConfigureObjectCleanupOutbox(repos.Outbox)
 	services.SiteLogo.ConfigureObjectCleanupOutbox(repos.Outbox)
+	services.SiteFavicon.ConfigureObjectCleanupOutbox(repos.Outbox)
 	services.HomeVisualTiles.ConfigureObjectCleanupOutbox(repos.Outbox)
 	services.UGCShowcase.ConfigureObjectCleanupOutbox(repos.Outbox)
 	services.PublicUploadAccess = service.NewPublicUploadAccessService(services.Media, services.UGCShowcase, services.CustomerServiceAvatar)
 	services.PublicUploadAccess.ConfigureSiteLogoService(services.SiteLogo)
+	services.PublicUploadAccess.ConfigureSiteFaviconService(services.SiteFavicon)
 	services.FAQ.ConfigureMediaService(services.Media)
 	services.Review.ConfigureMediaService(services.Media)
 	services.UGCShowcase.ConfigureUploadEligibility(services.UGCShowcaseUploadEligibility)
@@ -256,6 +258,7 @@ func (b *dependencyServicesBuilder) wire() error {
 		services.HomeVisualTiles,
 		services.UGCShowcase,
 	)
+	objectStorageCleanupHandler.ConfigureSiteFaviconService(services.SiteFavicon)
 	services.Outbox.RegisterHandler(outbox.EventTypeObjectStorageCleanup, objectStorageCleanupHandler.Handle)
 	services.Outbox.RegisterHandler(
 		outbox.EventTypeStorefrontRouteCatalogChanged,

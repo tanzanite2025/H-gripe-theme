@@ -2,6 +2,20 @@
 
 Last updated: 2026-07-24
 
+## Required breadcrumb contract
+
+- A canonical second-level page registered in `pageSubNavigationEntries` owns
+  its configured third-level navigation. Switching between second-level
+  siblings must not remove that navigation from the destination breadcrumb.
+- An exact third-level tab route resolves to the same owning entry and marks
+  only the matching tab active.
+- Locale prefixes, query strings, and trailing slashes must not change either
+  result.
+- Unknown tabs, deeper descendants, prefix lookalikes, and unrelated paths
+  must not inherit another page's third-level navigation.
+- Changes to breadcrumb ownership must keep
+  `scripts/breadcrumb-navigation-contract.test.ts` passing.
+
 This note defines how Nuxt storefront breadcrumbs should represent pages that use slash child routes for in-page tabs, such as `/guides/tireguides/choose`.
 
 ## Current problem
@@ -50,6 +64,23 @@ If there is no valid child route segment, breadcrumb stays at the canonical page
 ```text
 Home / Guides / Tire Guides
 ```
+### Canonical and tab route contract
+
+Breadcrumb sub-navigation uses an explicit two-way route classification:
+
+1. If the current path exactly equals a registered PageSubNavigationEntry.path,
+   it is a canonical page. Its expandable menu must come from the parent
+   route's sibling pages (for example /guides/tireguides expands to Tire
+   Guides and Wheelset Buyers Guide). It must not open its own tabs.
+2. Only an exact match for a registered tab target (<entry.path>/<tab-id>) or
+   a tab's explicit to is a tab route. That route may open the owning page's
+   internal tab list (for example /guides/tireguides/installation).
+3. Prefix or nested matches are not tab matches. Unknown tab IDs and deeper
+   descendants must not open the internal tab list.
+
+The pure resolver is app/utils/pageSubNavigationBreadcrumb.ts. Its contract
+is covered by npm run test:breadcrumb-navigation.
+
 
 ## Interaction rule
 

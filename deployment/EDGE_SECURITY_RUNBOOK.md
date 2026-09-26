@@ -99,6 +99,32 @@ still consumes bandwidth and temporary storage before the request is rejected.
 
 ## Deployment Verification
 
+### Public SEO/GEO crawler contract
+
+The storefront origin must return `200` for `/robots.txt`, `/sitemap.xml`, and
+public guide routes when requested without cookies or an allow-listed browser
+session. Do not apply the admin/commercial-intelligence bot deny rule to the
+storefront server: it would block legitimate indexing and answer engines before
+they can read SSR HTML. Bot restrictions may remain on the admin hostname.
+
+Run these probes through the real CDN hostname after every edge or WAF change:
+
+```text
+GET /robots.txt       User-Agent: Googlebot
+GET /robots.txt       User-Agent: GPTBot
+GET /sitemap.xml      User-Agent: Bingbot
+GET /guides/wheelset-buyers/choose-freehub
+                      User-Agent: PerplexityBot
+```
+
+Require `200`, a `Sitemap:` line pointing at the canonical production host,
+and guide HTML containing `TechArticle`, `HowTo`, `Dataset`, canonical, and
+hreflang markup. A `403` from any of these public probes is a release blocker.
+
+The storefront robots policy may still disallow commercial intelligence
+crawlers such as AhrefsBot or SemrushBot in `robots.txt`; that advisory policy
+must not be implemented as a blanket Nginx `return 403` on the storefront.
+
 Before opening public DNS:
 
 - Confirm the origin address is not reachable from an unrelated public network.

@@ -366,7 +366,70 @@
         <h2 class="sizecharts-section__title">
           {{ t('guidesWheelsetBuyers.tabs.chooseFreehub.label') }}
         </h2>
-        <WheelsetChooseFreehubSection />
+        <WheelsetChooseFreehubSection>
+          <template #after-helper>
+            <section class="wheelset-freehub-guide-intro" aria-labelledby="freehub-guide-intro-title">
+              <div class="wheelset-freehub-guide-intro__copy">
+                <h3 id="freehub-guide-intro-title" class="wheelset-freehub-guide-intro__title">
+                  {{ t('guidesWheelsetBuyersChooseFreehub.guideIntro.title') }}
+                </h3>
+                <p class="wheelset-guide-step__body">
+                  {{ t('guidesWheelsetBuyersChooseFreehub.guideIntro.body') }}
+                </p>
+              </div>
+
+              <div class="wheelset-freehub-guide-intro__steps wheelset-freehub-guide-intro__steps--desktop">
+                <article
+                  v-for="(step, index) in freehubGuideSteps"
+                  :key="step.title"
+                  class="wheelset-guide-step"
+                >
+                  <div class="wheelset-guide-step__number">{{ index + 1 }}</div>
+                  <div class="wheelset-guide-step__content">
+                    <h4 class="wheelset-guide-step__title">{{ step.title }}</h4>
+                    <p class="wheelset-guide-step__body">{{ step.body }}</p>
+                  </div>
+                </article>
+              </div>
+
+              <div class="wheelset-freehub-guide-intro__steps wheelset-freehub-guide-intro__steps--mobile">
+                <SmartAccordion>
+                  <AccordionItem
+                    v-for="(step, index) in freehubGuideSteps"
+                    :id="`freehub-guide-step-${index + 1}`"
+                    :key="step.title"
+                    :title="`${index + 1}. ${step.title}`"
+                  >
+                    <p class="wheelset-guide-step__body">{{ step.body }}</p>
+                  </AccordionItem>
+                </SmartAccordion>
+              </div>
+
+              <div class="wheelset-guide-panel-grid wheelset-freehub-guide-intro__help">
+                <div class="wheelset-guide-panel">
+                  <strong>{{ t('guidesWheelsetBuyersChooseFreehub.guideIntro.identifyTitle') }}</strong>
+                  <p>{{ t('guidesWheelsetBuyersChooseFreehub.guideIntro.identifyBody') }}</p>
+                </div>
+                <div class="wheelset-guide-panel">
+                  <strong>{{ t('guidesWheelsetBuyersChooseFreehub.guideIntro.photoTitle') }}</strong>
+                  <p>{{ t('guidesWheelsetBuyersChooseFreehub.guideIntro.photoBody') }}</p>
+                </div>
+              </div>
+
+              <div class="wheelset-guide-actions wheelset-freehub-guide-intro__actions">
+                <button
+                  type="button"
+                  class="wheelset-guide-button wheelset-guide-button--solid"
+                  :aria-label="t('guidesWheelsetBuyersChooseFreehub.guideIntro.chatButton')"
+                  @click="openFreehubSupportChat"
+                >
+                  <Icon name="lucide:message-circle" class="h-4 w-4" aria-hidden="true" />
+                  {{ t('guidesWheelsetBuyersChooseFreehub.guideIntro.chatButton') }}
+                </button>
+              </div>
+            </section>
+          </template>
+        </WheelsetChooseFreehubSection>
       </section>
 
       <!-- Wheel Components -->
@@ -463,7 +526,7 @@
 
 <script setup lang="ts">
 import { computed, defineAsyncComponent, ref, watch } from 'vue'
-import { useI18n, useLocalePath, useRouter } from '#imports'
+import { useHead, useI18n, useLocalePath, useRouter } from '#imports'
 import WheelsetSafetyInstructionsSection from '~/components/WheelsetSafetyInstructionsSection.vue'
 import WheelsetSampleAssemblySection from '~/components/WheelsetSampleAssemblySection.vue'
 import WheelsetAppearanceLogoSection from '~/components/WheelsetAppearanceLogoSection.vue'
@@ -478,6 +541,7 @@ import FreehubGroupsetHelper from '~/components/FreehubGroupsetHelper.vue'
 import { usePageSubNavigationTab } from '~/composables/usePageSubNavigationTab'
 import { wheelsetBuyerTabs } from '~/utils/pageSubNavigation'
 import { usePageMessages } from '~/composables/usePageMessages'
+import { useStorefrontSeoLinks } from '~/composables/seo/useStorefrontSeoLinks'
 
 const TechnicalHubsSection = defineAsyncComponent(() => import('~/components/TechnicalHubsSection.vue'))
 const TechnicalRimsSection = defineAsyncComponent(() => import('~/components/TechnicalRimsSection.vue'))
@@ -493,8 +557,10 @@ definePageMeta({
 const tabs = wheelsetBuyerTabs
 
 const { locale, t } = useI18n()
+const { canonicalUrl } = useStorefrontSeoLinks()
 const wheelsetMessages = usePageMessages('guidesWheelsetBuyers')
 const overviewMessages = usePageMessages('guidesWheelsetBuyersOverview')
+const chooseFreehubMessages = usePageMessages('guidesWheelsetBuyersChooseFreehub')
 const specialOrderMessages = usePageMessages('guidesWheelsetBuyersSpecialOrder')
 const optionalMessages = usePageMessages('guidesWheelsetBuyersOptional')
 const activeWheelComponent = ref<string | null>('hubs')
@@ -502,6 +568,7 @@ const activeWheelComponent = ref<string | null>('hubs')
 await Promise.all([
   wheelsetMessages.loadPageMessages(locale.value),
   overviewMessages.loadPageMessages(locale.value),
+  chooseFreehubMessages.loadPageMessages(locale.value),
 ])
 
 const { activeTab, localizedTabPath, setActiveTab } = usePageSubNavigationTab({
@@ -514,7 +581,18 @@ const router = useRouter()
 const localePath = useLocalePath()
 
 useHead(() => ({
-  title: t('guidesWheelsetBuyers.title'),
+  title: activeTab.value === 'choose-freehub'
+    ? t('guidesWheelsetBuyersChooseFreehub.seo.title')
+    : t('guidesWheelsetBuyers.title'),
+  meta: activeTab.value === 'choose-freehub'
+    ? [
+        { name: 'description', content: t('guidesWheelsetBuyersChooseFreehub.seo.description') },
+        { property: 'og:title', content: t('guidesWheelsetBuyersChooseFreehub.seo.title') },
+        { property: 'og:description', content: t('guidesWheelsetBuyersChooseFreehub.seo.description') },
+        { property: 'og:type', content: 'article' },
+        { property: 'og:url', content: canonicalUrl.value },
+      ]
+    : [],
 }))
 
 const ctaNotes = computed(() => ({
@@ -529,6 +607,21 @@ const ctaNotes = computed(() => ({
   singleWheelChat: t('guidesWheelsetBuyersOverview.ctaNotes.singleWheelChat'),
 }))
 
+const freehubGuideSteps = computed(() => [
+  {
+    title: t('guidesWheelsetBuyersChooseFreehub.guideIntro.step1.title'),
+    body: t('guidesWheelsetBuyersChooseFreehub.guideIntro.step1.body'),
+  },
+  {
+    title: t('guidesWheelsetBuyersChooseFreehub.guideIntro.step2.title'),
+    body: t('guidesWheelsetBuyersChooseFreehub.guideIntro.step2.body'),
+  },
+  {
+    title: t('guidesWheelsetBuyersChooseFreehub.guideIntro.step3.title'),
+    body: t('guidesWheelsetBuyersChooseFreehub.guideIntro.step3.body'),
+  },
+])
+
 const loadActivePageMessages = (requestedLocale: string) => {
   const requests: Promise<void>[] = []
   if (activeTab.value === 'special-order') {
@@ -537,6 +630,9 @@ const loadActivePageMessages = (requestedLocale: string) => {
   if (activeTab.value === 'optional') {
     requests.push(optionalMessages.loadPageMessages(requestedLocale))
   }
+  if (activeTab.value === 'choose-freehub') {
+    requests.push(chooseFreehubMessages.loadPageMessages(requestedLocale))
+  }
   return Promise.all(requests)
 }
 
@@ -544,6 +640,7 @@ watch(locale, (nextLocale) => {
   void Promise.all([
     wheelsetMessages.loadPageMessages(nextLocale),
     overviewMessages.loadPageMessages(nextLocale),
+    chooseFreehubMessages.loadPageMessages(nextLocale),
     loadActivePageMessages(nextLocale),
   ])
 })
@@ -554,6 +651,13 @@ watch(activeTab, () => {
 
 const openWhatsAppChat = () => {
   openChat({ showAgentList: true })
+}
+
+const openFreehubSupportChat = () => {
+  openChat({
+    showAgentList: true,
+    source: 'wheelset-freehub-guide',
+  })
 }
 
 const openLocalizedRouteInNewTab = (target: string) => {
@@ -679,6 +783,56 @@ const goToAboutAppearance = async () => {
 .wheelset-page :deep(.wheelset-policy-flow) {
   display: grid;
   gap: 2rem;
+}
+
+.wheelset-freehub-guide-intro {
+  display: grid;
+  gap: 1.15rem;
+  width: 100%;
+  margin: 0 0 2rem;
+  border: 1px solid var(--wheelset-border);
+  border-radius: 0.5rem;
+  background: var(--tz-surface-subtle);
+  padding: clamp(1rem, 2vw, 1.5rem);
+}
+
+.wheelset-freehub-guide-intro__copy {
+  max-width: 72rem;
+}
+
+.wheelset-freehub-guide-intro__title {
+  margin: 0 0 0.55rem;
+  color: var(--tz-text-primary);
+  font-size: 1.15rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.wheelset-freehub-guide-intro__copy .wheelset-guide-step__body {
+  max-width: 68rem;
+  margin-bottom: 0;
+}
+
+.wheelset-freehub-guide-intro__steps {
+  min-width: 0;
+}
+
+.wheelset-freehub-guide-intro__steps--desktop {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.35rem;
+}
+
+.wheelset-freehub-guide-intro__steps--mobile {
+  display: none;
+}
+
+.wheelset-freehub-guide-intro__help {
+  margin-top: 0;
+}
+
+.wheelset-freehub-guide-intro__actions {
+  margin-top: 0;
 }
 
 .wheelset-buying-action {
@@ -1026,6 +1180,14 @@ const goToAboutAppearance = async () => {
   .wheelset-guide-panel-grid,
   .wheelset-page :deep(.wheelset-guide-panel-grid) {
     grid-template-columns: 1fr;
+  }
+
+  .wheelset-freehub-guide-intro__steps--desktop {
+    display: none;
+  }
+
+  .wheelset-freehub-guide-intro__steps--mobile {
+    display: block;
   }
 
   .wheelset-guide-button,

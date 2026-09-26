@@ -7,6 +7,7 @@
   "hookless": "Hookless (TSS)",
   "hooked": "Hooked (TC)",
   "empty": "Enter a tire width to see a suggested rim internal width range.",
+  "hooklessSafetyWarning": "ETRTO standards prohibit installing tires narrower than 28 mm on hookless rims.",
   "recommended": "Recommended rim internal width:",
   "sweetSpot": "Sweet spot around {width} mm. For aggressive or technical riding, stay closer to the wider end of the range.",
   "search": "Search for suitable width rims"

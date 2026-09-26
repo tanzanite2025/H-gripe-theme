@@ -17,7 +17,6 @@ import (
 )
 
 const ProductCategoryMaxDepth = 5
-const SystemProductCategoryWheelsetSlug = "wheelset"
 
 var productCategorySlugPattern = regexp.MustCompile(`^[a-z0-9]+(?:[_-][a-z0-9]+)*$`)
 
@@ -511,6 +510,9 @@ func (s *ProductCategoryService) Update(id uint, input ProductCategoryInput) (*P
 		if !category.IsEnabled {
 			return nil, fmt.Errorf("%w: %s must remain enabled", ErrProductCategorySystemProtected, existing.Slug)
 		}
+		if _, ok := systemProductCategoryDefinitionForSlug(existing.Slug); !ok {
+			return nil, fmt.Errorf("%w: unknown system category %s", ErrProductCategorySystemProtected, existing.Slug)
+		}
 	}
 
 	exists, err := s.repo.ExistsBySlug(category.Slug, id)
@@ -548,6 +550,25 @@ func (s *ProductCategoryService) Update(id uint, input ProductCategoryInput) (*P
 		return nil, err
 	}
 	category.Depth = newDepth
+
+	if definition, ok := systemProductCategoryDefinitionForSlug(existing.Slug); ok && definition.Depth > 0 {
+		if category.Depth != definition.Depth {
+			return nil, fmt.Errorf("%w: %s must remain at depth %d", ErrProductCategorySystemProtected, existing.Slug, definition.Depth)
+		}
+		if definition.Parent == "" {
+			if category.ParentID != nil {
+				return nil, fmt.Errorf("%w: %s must remain a root category", ErrProductCategorySystemProtected, existing.Slug)
+			}
+		} else {
+			parentID, parentErr := systemProductCategoryParentID(all, definition.Parent)
+			if parentErr != nil {
+				return nil, parentErr
+			}
+			if category.ParentID == nil || *category.ParentID != parentID {
+				return nil, fmt.Errorf("%w: %s must remain under %s", ErrProductCategorySystemProtected, existing.Slug, definition.Parent)
+			}
+		}
+	}
 
 	depthShift := newDepth - existing.Depth
 	descendantDepths := make(map[uint]int)
@@ -630,15 +651,6 @@ func (s *ProductCategoryService) invalidateCategoryProducts(categoryIDs []uint, 
 func (s *ProductCategoryService) purgeHTMLCache(reason string) {
 	if s != nil && s.htmlCache != nil {
 		s.htmlCache.PurgeAllAsync(reason)
-	}
-}
-
-func isSystemProductCategorySlug(slug string) bool {
-	switch strings.ToLower(strings.TrimSpace(slug)) {
-	case SystemProductCategoryWheelsetSlug:
-		return true
-	default:
-		return false
 	}
 }
 

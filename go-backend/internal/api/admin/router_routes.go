@@ -126,6 +126,7 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 	notificationTemplateHandler := NewNotificationTemplateHandler(services.TransactionalNotificationTemplates)
 	refundCancellationPolicyHandler := NewRefundCancellationPolicyHandler(services.RefundCancellationPolicy)
 	siteLogoHandler := NewSiteLogoHandler(services.SiteLogo, services.AdminSettings)
+	siteFaviconHandler := NewSiteFaviconHandler(services.SiteFavicon, services.AdminSettings)
 	homeVisualTileHandler := NewHomeVisualTileHandler(services.HomeVisualTiles)
 	websiteProfileHandler := NewWebsiteProfileHandler(services.WebsiteProfile)
 	websiteNameHandler := NewWebsiteNameHandler(services.WebsiteName)
@@ -326,6 +327,7 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 		websiteProfileHandler,
 		websiteNameHandler,
 		shippingHandler,
+		siteFaviconHandler,
 	)
 	registerOperationsRoutes(
 		authenticated,

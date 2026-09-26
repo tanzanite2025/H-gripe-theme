@@ -3,10 +3,71 @@
   "actions": {
     "checkTires": "Check out tires"
   },
+  "calculator": {
+    "title": "Engineering input check",
+    "description": "Submit rider, bike, tire, rim, and manufacturer source data. The current model is not calibrated and will not return a pressure recommendation.",
+    "statusMvp": "MVP / no recommendation",
+    "riderWeight": "Rider mass (kg)",
+    "bikeWeight": "Bike mass (kg)",
+    "tireWidth": "Nominal tire width (mm)",
+    "rimWidth": "Inner rim width (mm)",
+    "rimSystemLabel": "Rim system",
+    "hookless": "Hookless (TSS)",
+    "hooked": "Hooked (TC)",
+    "unknown": "Unknown",
+    "position": "Riding position",
+    "positions": { "aggressive": "Aggressive race", "endurance": "Endurance", "tt": "TT / aero", "gravel": "Gravel / trail" },
+    "limitTitle": "Manufacturer limit source",
+    "limitDescription": "Enter a source record. The server does not authenticate the document; it marks the limit as provided and unverified.",
+    "tireLimit": "Tire limit (bar)",
+    "sourceName": "Source name",
+    "sourceVersion": "Document/version",
+    "submit": "Check inputs",
+    "submitting": "Checking…",
+    "resultTitle": "Input metadata",
+    "resultStatus": "Recommendation status: {status}",
+    "frontLoad": "Estimated front load",
+    "rearLoad": "Estimated rear load",
+    "effectiveLimit": "Effective provided limit",
+    "noRecommendation": "No pressure recommendation is available until a calibrated model is approved. Follow the exact tire, rim, and wheel manufacturer instructions.",
+    "requestFailed": "The engineering check could not be completed."
+  },
+  "dashboard": {
+    "svgLabel": "Front and rear tire axial sections, rims, and contact projection",
+    "svgDescription": "Uses simplified axial sections for tire width, air cavity, rim, and axle. The red arrow illustrates horizontal lateral demand; the green double-ended scale shows bidirectional grip capacity, not an actual force direction; the vertical arrow shows vertical load. The tire bottoms meet the level road and rotate with lean. The contact projection is an estimate, not measured data.",
+    "frontStation": "CAD-01 Front axial section",
+    "rearStation": "CAD-02 Rear axial section",
+    "resultantLabel": "Resultant: {value} kg ({g} G)",
+    "verticalLoadLabel": "Vertical load: {value} kg",
+    "lateralDemandLabel": "Lateral demand {value} N",
+    "frontLateralDemandLabel": "Front lateral demand {value} N",
+    "rearLateralDemandLabel": "Rear lateral demand {value} N",
+    "contactPatchDimensions": "L {length} cm × W {width} cm · {state}",
+    "contactProjectionTitle": "Ground contact projection (estimated)",
+    "contactAreaLabel": "Estimated load-bearing area",
+    "contactAreaDescription": "Area is estimated with A = Fz ÷ P: vertical wheel load divided by operating pressure. It is not measured rubber contact area; lean mainly changes patch position and shape.",
+    "contactFormula": "{wheel}: {load} N ÷ {pressure} kPa = {area} cm²",
+    "pressureMode": "Pressure analysis mode",
+    "autoPressure": "Auto pressure",
+    "fixedPressure": "Fixed pressure",
+    "fixedPressureHint": "Fixed pressure isolates how load changes affect the estimated load-bearing area.",
+    "frontPressure": "Front operating pressure",
+    "rearPressure": "Rear operating pressure",
+    "title": "Dynamic tire pressure and cornering grip simulator",
+    "subtitle": "Front/rear load · lean-angle demand · contact patch · impedance diagnostics",
+    "noticeTitle": "Engineering simulation baseline",
+    "noticeBody": "This dashboard visualizes a provisional physics model. It does not issue a production tire-pressure recommendation. Follow tire, rim, and wheel manufacturer limits.",
+    "controlBaselineTitle": "Model assumptions",
+    "controlBaselineBody": "All dynamic simulations in this dashboard concerning cornering lean grip, maximum lateral static friction, and anti-crash safety margin are based on an academic and industrial baseline in which all other external conditions are held strictly identical (including the same high-grip premium silica-compound tire formulation, the same microscopic drainage tread depth and distribution (Tread Pattern/Siping), the same supple 300 TPI casing, and consistent lateral wheel stiffness). In real riding, if the tire is excessively worn and becomes slick, the tread has lost effectiveness, or the road contains loose sand, oil, or leaves, the actual coefficient of friction can deteriorate sharply and the maximum safe lean angle can shrink substantially.",
+    "frontWheel": "FRONT WHEEL", "rearWheel": "REAR WHEEL", "load": "load", "loadValue": "Load {value} kg", "contactValue": "Estimated load-bearing area {value} cm²", "contactPatchValue": "Estimated load-bearing area {area} cm² · L {length} cm · W {width} cm · {state}", "straightCenterState": "centered straight", "shoulderLeanState": "{angle}° shoulder lean",
+    "controlsTitle": "1. Physics inputs and cornering controls", "totalValue": "Total {value} kg", "cadTitle": "2. Section and force visualization", "viewStatus": "simulation view", "diagnosticTitle": "Dynamics and impedance diagnostic",
+    "scienceTitle": "3. Physics notes: cornering friction and impedance", "baseline": "Engineering baseline", "mechanicalTitle": "Mechanical interlocking", "mechanicalBody": "Casing deflection and contact area influence the usable friction envelope. This visualization is a model aid, not a measured tire test.", "riskTitle": "Over-pressure risk", "riskBody": "Excess pressure can reduce casing conformity and cornering margin on imperfect surfaces. Verify limits against the exact tire and rim documents.", "scopeTitle": "Model scope", "scopeBody": "The current production API returns loads and supplied limits only. No uncalibrated pressure recommendation is presented.",
+    "leanAngle": "Lean angle", "riderWeight": "Rider weight", "bikeGear": "Bike and gear", "posture": "Riding posture and load distribution", "surface": "Road surface and friction baseline", "weather": "Weather", "rimSystem": "Rim system", "tireWidth": "Tire width", "dry": "Dry", "wet": "Wet", "hookless": "Hookless", "hooked": "Hooked", "race": "Race", "endurance": "Endurance", "tt": "TT", "gravel": "Gravel", "track": "Track", "goodAsphalt": "Good asphalt", "chipSeal": "Chip seal", "cobbles": "Cobbles", "gravelRoad": "Gravel road", "straight": "straight", "gentle": "gentle corner", "fastCorner": "fast corner", "maximumLean": "maximum lean", "roadLevel": "ROAD SURFACE LEVEL", "frontMargin": "Front cornering margin", "rearMargin": "Rear cornering margin", "criticalMargin": "Critical grip margin", "lowImpedance": "Low rolling impedance zone", "demandValue": "Demand {value} N", "maxGripValue": "Lateral grip capacity ±{value} N", "safe": "SAFE", "warning": "WARNING", "critical": "CRITICAL", "diagnosticBody": "At {lean}° lean, lateral demand is {front} / {rear} N front/rear. Contact patches are estimated from load, pressure, and casing width."
+  },
   "intro": {
     "matching": "For safety and performance, the tire and rim on the bike must be perfectly matched. This applies even more to tubeless tires. Alongside classic hooked rims, hookless rims are becoming increasingly popular. Hookless rims place particularly high demands on tubeless tires for safe operation. Schwalbe TLR and TLE models from model year 2020 are designed to meet these requirements, especially around the bead core, and are generally compatible.",
     "width": "Rim manufacturers often use wider inner bead widths for hookless rims. Tire pressure should therefore be reduced accordingly because the real tire volume increases with wider inner rim widths.",
-    "etrto": "According to ETRTO, hookless rims have a maximum pressure of 5 bar for road bikes. This maximum must be followed, or a lower rim or wheel limit if specified. If the rim maximum is lower than the tire maximum, the rim limit applies. Rim manufacturers may also restrict tire choice. Many recommend a minimum tire width of 28 mm to use low pressure safely."
+    "etrto": "Hookless pressure limits depend on the exact rim, wheel, and tire instructions. Check each manufacturer's stated limit and follow the lowest applicable value. Do not assume a universal pressure limit from the rim type alone; manufacturers may also restrict tire choice and minimum tire width."
   },
   "sections": {
     "why": {
@@ -33,7 +94,7 @@
       "tireWidth": {
         "factor": "Tire width",
         "explanation": "Wider tires can run lower pressure.",
-        "adjustment": "26 x 2.0 MTB: 30-50 psi; 700 x 25C road: 90-110 psi."
+        "adjustment": "26 x 2.0 MTB: 30-50 psi; hooked 700 x 25C road: 90-110 psi. Hookless systems remain capped at 73 psi / 5.0 bar."
       },
       "terrain": {
         "factor": "Terrain",
@@ -43,7 +104,7 @@
       "ridingStyle": {
         "factor": "Riding style",
         "explanation": "Aggressive racing needs higher pressure; casual riding can use lower pressure.",
-        "adjustment": "Racing: 110-130 psi; leisure: 80-100 psi."
+        "adjustment": "Hooked racing: 110-130 psi; leisure: 80-100 psi. These higher ranges do not apply to hookless systems."
       },
       "rimDesign": {
         "factor": "Rim design",
@@ -53,7 +114,7 @@
     },
     "typical": {
       "title": "3. Typical pressure ranges (approximate)",
-      "road": "Road bikes: 80-120 psi, up to 130 psi for racing and as low as 70 psi for cobbled classics.",
+      "road": "Hooked road bikes: 80-120 psi, up to 130 psi for racing; hookless road systems: never over 73 psi / 5.0 bar.",
       "mountain": "Mountain bikes: 30-60 psi, with XC often at 25-40 psi.",
       "city": "City and commuter bikes: 40-70 psi."
     },
@@ -69,7 +130,8 @@
       "title": "5. Risks & warnings",
       "high": "Too high: harsh ride and potential rim damage.",
       "low": "Too low: pinch flats and poor handling.",
-      "neglect": "Neglecting checks: gradual air loss reduces performance and safety."
+      "neglect": "Neglecting checks: gradual air loss reduces performance and safety.",
+      "hookless": "Hookless safety red line: never exceed 73 PSI / 5.0 bar, even if the tire is marked for a higher pressure."
     }
   },
   "comparison": {

@@ -22,7 +22,11 @@ export const useCartDiscount = () => {
       if (!response.coupon || !['percentage', 'fixed'].includes(response.coupon.type)) {
         return { success: false, message: 'Invalid coupon code' }
       }
-      appliedCoupon.value = response.coupon
+      const discountMinor = Number(response.discount_minor)
+      if (!Number.isSafeInteger(discountMinor) || discountMinor < 0) {
+        return { success: false, message: 'Invalid coupon response' }
+      }
+      appliedCoupon.value = { ...response.coupon, discount_minor: discountMinor }
       return { success: true, message: 'Coupon applied successfully' }
     } catch {
       return { success: false, message: 'Invalid coupon code' }

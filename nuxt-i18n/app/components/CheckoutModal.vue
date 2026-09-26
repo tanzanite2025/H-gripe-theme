@@ -132,7 +132,7 @@
                       <input v-model.trim="form.city" class="checkout-input" type="text" autocomplete="address-level2" />
                     </label>
                     <label>
-                      <span class="checkout-label">{{ t('checkout.stepper.shipping.state', 'State / province') }}</span>
+                      <span class="checkout-label">{{ t('checkout.stepper.shipping.stateLabel', 'State / province') }}</span>
                       <input v-model.trim="form.state" class="checkout-input" type="text" autocomplete="address-level1" />
                     </label>
                     <label class="sm:col-span-2">
@@ -217,7 +217,7 @@
                       <input v-model.trim="billingForm.city" class="checkout-input" type="text" autocomplete="billing address-level2" />
                     </label>
                     <label>
-                      <span class="checkout-label">{{ t('checkout.stepper.shipping.state', 'State / province') }}</span>
+                      <span class="checkout-label">{{ t('checkout.stepper.shipping.stateLabel', 'State / province') }}</span>
                       <input v-model.trim="billingForm.state" class="checkout-input" type="text" autocomplete="billing address-level1" />
                     </label>
                     <label class="sm:col-span-2">
@@ -435,8 +435,8 @@ import {
 } from '~/utils/stripeReturn'
 import StripePaymentElement from '~/components/StripePaymentElement.vue'
 import { formatMinorMoney, minorToMajor } from '~/utils/money'
+import { unwrapApiEnvelope, type ApiEnvelope } from '~/utils/apiEnvelope'
 
-type ApiResponse<T> = T | { data?: T | { data?: T } }
 
 interface OrderResponse {
   order_number: string
@@ -793,16 +793,6 @@ const shippingUnavailableMessage = () => t(
   'Shipping unavailable for this country.',
 )
 
-const unwrapApiData = <T,>(payload: ApiResponse<T> | null | undefined): T | null => {
-  let current: unknown = payload
-  for (let depth = 0; depth < 3; depth += 1) {
-    if (!current || typeof current !== 'object') return (current as T) || null
-    if (!('data' in current)) return current as T
-    current = (current as { data?: unknown }).data
-  }
-  return null
-}
-
 const refreshCheckoutQuote = async () => {
   if (!isCheckoutOpen.value || !cartItems.value.length || !form.value.country || !auth.isAuthenticated.value) {
     checkoutQuote.value = null
@@ -881,7 +871,7 @@ const createLocalOrder = async (idempotencyKey: string): Promise<OrderResponse> 
     throw new Error(shippingUnavailableMessage())
   }
 
-  const response = await auth.request<ApiResponse<OrderResponse>>('/orders', {
+  const response = await auth.request<ApiEnvelope<OrderResponse>>('/orders', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -909,7 +899,7 @@ const createLocalOrder = async (idempotencyKey: string): Promise<OrderResponse> 
       policy_disclosure_acknowledged: policyDisclosureAcknowledged.value,
     }),
   })
-  const order = unwrapApiData<OrderResponse>(response)
+  const order = unwrapApiEnvelope<OrderResponse>(response)
   if (!order?.order_number) throw new Error(t('checkout.modal.messages.orderFailed', 'Order submission failed'))
   return order
 }
@@ -982,7 +972,7 @@ const startProviderPayment = async (orderNumber: string, idempotencyKey: string)
     return
   }
 
-  const response = await auth.request<ApiResponse<StripePaymentSession & { client_secret?: string; publishable_key?: string }>>('/payment/stripe/payment-intents', {
+  const response = await auth.request<ApiEnvelope<StripePaymentSession & { client_secret?: string; publishable_key?: string }>>('/payment/stripe/payment-intents', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -991,7 +981,7 @@ const startProviderPayment = async (orderNumber: string, idempotencyKey: string)
     },
     body: JSON.stringify({ order_number: orderNumber }),
   })
-  const session = unwrapApiData<StripePaymentSession & { client_secret?: string; publishable_key?: string }>(response)
+  const session = unwrapApiEnvelope<StripePaymentSession & { client_secret?: string; publishable_key?: string }>(response)
   const clientSecret = session?.clientSecret || session?.client_secret || ''
   const publishableKey = session?.publishableKey || session?.publishable_key || ''
   if (!clientSecret || !publishableKey) throw new Error('Stripe payment response is incomplete')

@@ -200,6 +200,11 @@ const allowedHosts = computed(() => {
 const canOptimize = computed(() => {
   const source = transformSource.value
   if (!source || isVectorSource.value || /^(?:data|blob):/i.test(source)) return false
+  // IPX treats an already encoded space in a local path as a literal `%20`
+  // segment and escapes the percent sign again (`%2520`). Those requests do
+  // not resolve against Nuxt's public directory, so keep the browser-native
+  // URL for local assets whose path contains spaces.
+  if (source.startsWith('/') && /(?:\s|%20)/i.test(source)) return false
   if (uploadPath.value && !uploadOptimizationEnabled.value) return false
   if (source.startsWith('/')) return true
 

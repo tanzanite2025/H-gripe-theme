@@ -12,7 +12,8 @@
   },
   "actions": {
     "goShop": "Go to shop",
-    "refresh": "Refresh"
+    "refresh": "Refresh",
+    "retry": "Retry"
   },
   "loginPrompt": {
     "eyebrow": "Private account area",
@@ -51,7 +52,8 @@
     "cart": "Cart"
   },
   "tabs": {
-    "ariaLabel": "Account sections"
+    "ariaLabel": "Account sections",
+    "referral": "Refer a friend"
   },
   "memberTitle": "My account",
   "wishlist": {
@@ -62,5 +64,87 @@
     "missingProduct": "This saved product needs product data before adding to cart.",
     "added": "Added to cart",
     "addedAll": "Wishlist products added to cart"
+  },
+  "referral": {
+    "loading": "Loading your referral center...",
+    "kicker": "Refer a friend",
+    "title": "Share your referral code",
+    "description": "Share your unique code with friends. Registration points are added to the new account's regular points balance.",
+    "yourCode": "Your referral code",
+    "codeGeneratedNote": "Your unique referral code is generated automatically for this account. Registration points are added to your regular points balance and are not tracked separately.",
+    "copy": "Copy referral link",
+    "share": "Invite a friend",
+    "invitationLink": "Your invitation link",
+    "copyFailed": "Select and copy the invitation link above to send it to a friend.",
+    "copied": "Referral link copied",
+    "invited": "Invited",
+    "successful": "Successful",
+    "pendingPoints": "Pending referrer reward",
+    "settledPoints": "Settled referrer reward",
+    "registrationPointsRule": "{points} pts are credited to a new account immediately at registration and remain regular points.",
+    "ruleSummary": "Earn {points} pts after delivery plus a {days}-day cooling-off period.",
+    "ruleFallback": "Rewards follow the current referral program rules.",
+    "historyKicker": "Activity",
+    "historyTitle": "Referral history",
+    "empty": "Your first referral will appear here.",
+    "newCustomer": "New customer",
+    "disabledTitle": "Referral center is paused",
+    "disabledDescription": "This program is not available right now. Your account and points remain unchanged.",
+    "signInTitle": "Sign in to view your referral code",
+    "signInDescription": "Your referral code and sharing link are available after you sign in.",
+    "signIn": "Sign in",
+    "loadFailed": "Referral data could not be loaded.",
+    "awaitingOrder": "Awaiting first order",
+    "status": {
+      "pending": "Pending",
+      "ordered": "Order paid",
+      "vesting": "Cooling off",
+      "settled": "Settled",
+      "expired": "Expired",
+      "revoked": "Revoked",
+      "reversed": "Reversed"
+    }
+  },
+  "orders": {
+    "eyebrow": "Purchase history",
+    "title": "My orders",
+    "loading": "Loading orders...",
+    "emptyTitle": "No orders yet",
+    "emptyDescription": "Completed purchases will appear here with their delivery details.",
+    "item": "item",
+    "items": "items",
+    "loadingDetail": "Loading order details...",
+    "shippingAddress": "Shipping address",
+    "delivery": "Delivery",
+    "product": "Product",
+    "tracking": "Tracking",
+    "loadingTracking": "Loading...",
+    "viewTracking": "View updates",
+    "trackingUpdate": "Tracking update",
+    "afterSales": "After-sales support",
+    "loadingAfterSales": "Loading...",
+    "refreshAfterSales": "Refresh",
+    "resolution": "Resolution",
+    "returnTracking": "Return tracking",
+    "afterSalesItem": "Item",
+    "quantity": "Quantity",
+    "reason": "Reason",
+    "description": "Description",
+    "submitting": "Submitting...",
+    "submitRequest": "Submit request",
+    "cancelling": "Cancelling...",
+    "cancel": "Cancel order",
+    "previous": "Previous page",
+    "next": "Next page",
+    "loadFailed": "Orders could not be loaded.",
+    "detailFailed": "Order details could not be loaded.",
+    "afterSalesLoadFailed": "After-sales requests could not be loaded.",
+    "afterSalesSubmitFailed": "The after-sales request could not be submitted.",
+    "trackingFailed": "Tracking updates are not available yet.",
+    "cancelConfirm": "Cancel this order?",
+    "cancelFailed": "This order could not be cancelled.",
+    "status": {
+      "pending": "Pending"
+    }
   }
 }

@@ -54,7 +54,15 @@
     <!-- Suggestion / Hint Text (Moved outside flex container to ensure new line) -->
     <div class="mt-3">
       <p
-        v-if="!tireRimSuggestion"
+        v-if="hooklessSafetyWarning"
+        class="tire-rim-helper__safety-warning text-base font-bold"
+        role="alert"
+      >
+        {{ t('guidesTireRimHelper.hooklessSafetyWarning') }}
+      </p>
+
+      <p
+        v-else-if="!tireRimSuggestion"
         class="text-xs tz-text-muted"
       >
         {{ t('guidesTireRimHelper.empty') }}
@@ -74,27 +82,27 @@
       </div>
     </div>
 
-    <div v-if="!hideSearchButton" class="mt-4 flex justify-center">
+    <div v-if="!hideSearchButton && !hooklessSafetyWarning" class="mt-4 flex justify-center">
       <button
         type="button"
         class="tire-rim-helper__search inline-flex items-center justify-center rounded-full px-4 py-1.5 text-xs font-semibold shadow-md transition-all"
-        @click="() => openShopSearch()"
+        @click="tireRimSearchSheetOpen = true"
       >
         {{ t('guidesTireRimHelper.search') }}
       </button>
     </div>
+
+    <TireRimProductSearchSheet v-model="tireRimSearchSheetOpen" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { ref, watch } from 'vue'
 import { useI18n } from '#imports'
-import { useShopSearchSheet } from '~/composables/useShopSearchSheet'
 import { usePageMessages } from '~/composables/usePageMessages'
+import { useTireRimRecommendation, type RimType } from '~/composables/useTireRimRecommendation'
+import TireRimProductSearchSheet from '~/components/TireRimProductSearchSheet.vue'
 
-type RimType = 'hookless' | 'hooked'
-
-const { open: openShopSearch } = useShopSearchSheet()
 const { locale, t } = useI18n()
 const { loadPageMessages } = usePageMessages('guidesTireRimHelper')
 
@@ -117,104 +125,12 @@ const props = withDefaults(defineProps<{
 })
 
 const tireWidthInput = ref<string>('')
+const tireRimSearchSheetOpen = ref(false)
 const rimType = ref<RimType>(props.initialRimType)
-
-interface TireRimSuggestion {
-  minRim: number
-  maxRim: number
-  ideal: number
-}
-
-interface RimAnchor {
-  tire: number
-  minRim: number
-  maxRim: number
-}
-
-// Anchor rows taken or inferred from DT Swiss style charts.
-// You can extend these arrays with more exact rows from the PDF if needed.
-const HOOKLESS_ANCHORS: RimAnchor[] = [
-  // 32 mm hookless row on chart: 23–25 mm
-  { tire: 32, minRim: 23, maxRim: 25 },
-  // Very wide hookless tyre example (~102 mm): 36–40 mm bucket
-  { tire: 102, minRim: 36, maxRim: 40 },
-]
-
-const HOOKED_ANCHORS: RimAnchor[] = [
-  // 30 mm hooked row on chart: 18–22 mm
-  { tire: 30, minRim: 18, maxRim: 22 },
-]
-
-const tireRimSuggestion = computed<TireRimSuggestion | null>(() => {
-  const raw = Number(tireWidthInput.value)
-  if (!Number.isFinite(raw)) return null
-
-  const width = Math.round(raw)
-  // Allow a reasonably wide range; DT Swiss charts go roughly 20–127 mm.
-  if (width < 18 || width > 130) return null
-
-  // 1) If we have an explicit anchor for this tyre width, prefer that.
-  const anchors = rimType.value === 'hookless' ? HOOKLESS_ANCHORS : HOOKED_ANCHORS
-  const anchor = anchors.find((a) => a.tire === width)
-  if (anchor) {
-    const ideal = Math.round((anchor.minRim + anchor.maxRim) / 2)
-    return {
-      minRim: anchor.minRim,
-      maxRim: anchor.maxRim,
-      ideal,
-    }
-  }
-
-  // 2) Otherwise fall back to an approximate guideline loosely calibrated
-  // against DT Swiss style charts.
-  // For Hookless we use a small hard-coded bucket table; for Hooked we keep a
-  // simple ratio-based guideline tuned to match typical points.
-  let minRim: number
-  let maxRim: number
-  let ideal: number
-
-  if (rimType.value === 'hookless') {
-    // Hookless (TSS): buckets roughly following the DT Swiss TSS chart.
-    // Key anchors: 32 mm -> 23–25 mm, 40–45 mm -> ~28–30 mm, 102 mm -> ~36–40 mm.
-    if (width <= 30) {
-      minRim = 23
-      maxRim = 25
-    } else if (width <= 33) {
-      // 32 mm row on chart
-      minRim = 23
-      maxRim = 25
-    } else if (width <= 40) {
-      // mid-width gravel tyres
-      minRim = 25
-      maxRim = 30
-    } else if (width <= 50) {
-      minRim = 28
-      maxRim = 30
-    } else if (width <= 60) {
-      minRim = 30
-      maxRim = 35
-    } else if (width <= 80) {
-      minRim = 35
-      maxRim = 40
-    } else {
-      // very wide tyres, keep in the largest practical bucket
-      minRim = 36
-      maxRim = 40
-    }
-    ideal = Math.round((minRim + maxRim) / 2)
-  } else {
-    // Hooked (TC): calibrated so 30 mm tyre -> ~18–22 mm inner width.
-    minRim = Math.round(width * 0.6)
-    maxRim = Math.round(width * 0.74)
-    ideal = Math.round(width * 0.67)
-  }
-
-  return {
-    minRim,
-    maxRim,
-    ideal,
-  }
-})
+const { hooklessSafetyWarning, tireRimSuggestion } = useTireRimRecommendation(
+  tireWidthInput,
+  rimType,
+)
 </script>
 
 <style scoped>
@@ -244,6 +160,10 @@ const tireRimSuggestion = computed<TireRimSuggestion | null>(() => {
 
 .tire-rim-helper__result {
   color: var(--tz-site-accent);
+}
+
+.tire-rim-helper__safety-warning {
+  color: #b91c1c;
 }
 
 .tire-rim-helper__toggle {

@@ -3,10 +3,71 @@
   "actions": {
     "checkTires": "查看轮胎"
   },
+  "calculator": {
+    "title": "工程输入校验",
+    "description": "提交骑手、车辆、轮胎、车圈和制造商来源数据。当前模型尚未校准，不会返回胎压建议。",
+    "statusMvp": "MVP / 暂无建议值",
+    "riderWeight": "骑手质量（kg）",
+    "bikeWeight": "自行车质量（kg）",
+    "tireWidth": "轮胎标称宽度（mm）",
+    "rimWidth": "车圈内宽（mm）",
+    "rimSystemLabel": "车圈系统",
+    "hookless": "无钩（TSS）",
+    "hooked": "有钩（TC）",
+    "unknown": "未知",
+    "position": "骑行姿态",
+    "positions": { "aggressive": "激进竞赛", "endurance": "耐力骑行", "tt": "计时赛 / 气动", "gravel": "Gravel / 越野" },
+    "limitTitle": "制造商限制来源",
+    "limitDescription": "填写来源记录。服务端不会认证文档真实性，限制状态会标记为“已提供、未核验”。",
+    "tireLimit": "轮胎限制（bar）",
+    "sourceName": "来源名称",
+    "sourceVersion": "文档/版本",
+    "submit": "校验输入",
+    "submitting": "正在校验…",
+    "resultTitle": "输入元数据",
+    "resultStatus": "建议状态：{status}",
+    "frontLoad": "估算前轮载荷",
+    "rearLoad": "估算后轮载荷",
+    "effectiveLimit": "已提供的有效限制",
+    "noRecommendation": "批准并校准模型前不会提供胎压建议。请遵循具体轮胎、车圈和轮组制造商说明。",
+    "requestFailed": "工程输入校验暂时无法完成。"
+  },
+  "dashboard": {
+    "svgLabel": "前后轮胎轴向剖面、轮圈与接地投影示意图",
+    "svgDescription": "用简化的轴向剖面显示外胎宽度、气室、轮圈和轮轴。红色箭头示意水平侧向需求；绿色双端标尺表示双向抓地能力上限，不表示实际受力方向；竖直箭头表示垂直载荷。轮胎底部贴合水平路面，倾角改变时剖面随车轮旋转。接地印迹为估算示意，不是实测数据。",
+    "frontStation": "CAD-01 前轮轴向剖面",
+    "rearStation": "CAD-02 后轮轴向剖面",
+    "resultantLabel": "动态合力：{value} kg（{g} G）",
+    "verticalLoadLabel": "垂直载荷：{value} kg",
+    "lateralDemandLabel": "侧向需求 {value} N",
+    "frontLateralDemandLabel": "前轮侧向需求 {value} N",
+    "rearLateralDemandLabel": "后轮侧向需求 {value} N",
+    "contactPatchDimensions": "长 {length} cm × 宽 {width} cm · {state}",
+    "contactProjectionTitle": "地面接地印迹投影（估算示意）",
+    "contactAreaLabel": "估算承压面积",
+    "contactAreaDescription": "面积按 A = Fz ÷ P 估算：垂直轮载除以工作胎压。它不是实测橡胶接触面积，倾角主要改变印迹位置和形状。",
+    "contactFormula": "{wheel}：{load} N ÷ {pressure} kPa = {area} cm²",
+    "pressureMode": "胎压分析模式",
+    "autoPressure": "自动胎压",
+    "fixedPressure": "固定胎压",
+    "fixedPressureHint": "固定胎压用于观察载荷变化对估算承压面积的直接影响。",
+    "frontPressure": "前轮工作胎压",
+    "rearPressure": "后轮工作胎压",
+    "title": "动态前后轮胎压与过弯抓地仿真看板",
+    "subtitle": "前后轮载荷 · 倾角需求 · 接地印迹 · 阻抗诊断",
+    "noticeTitle": "工程仿真基准",
+    "noticeBody": "本看板展示的是临时物理模型，不提供生产胎压推荐。请遵循具体轮胎、轮圈和轮组制造商限制。",
+    "controlBaselineTitle": "建模前提",
+    "controlBaselineBody": "本看板中关于过弯倾斜抓地力、侧向最大静摩擦力与防摔车安全裕度的全部动态仿真，均建立在“其他外部条件默认严格一致”的学术与工业基准之上（包括：相同的高抓地力顶级二氧化硅外胎配方 Silica Compound、相同的微观排水胎纹深度与分布 Tread Pattern/Siping、相同的 300 TPI 柔软超细帘布层，以及一致的车轮侧向刚度）。在实际真实骑行中，若外胎过度磨损致光头、胎纹失效，或路面遭遇浮沙、油渍、落叶时，实际摩擦系数将急剧恶化，摔车极限倾角将大幅收缩。",
+    "frontWheel": "前轮", "rearWheel": "后轮", "load": "载荷", "loadValue": "载荷 {value} kg", "contactValue": "估算承压面积 {value} cm²", "contactPatchValue": "估算承压面积 {area} cm² · 长 {length} cm · 宽 {width} cm · {state}", "straightCenterState": "直行正中", "shoulderLeanState": "{angle}° 胎肩倾斜",
+    "controlsTitle": "1. 物理输入与过弯控制", "totalValue": "总重 {value} kg", "cadTitle": "2. 截面与受力可视化", "viewStatus": "仿真视图", "diagnosticTitle": "动力学与阻抗诊断",
+    "scienceTitle": "3. 物理说明：过弯摩擦与阻抗", "baseline": "工程基准", "mechanicalTitle": "橡胶微观咬合", "mechanicalBody": "胎体形变和接地面积会影响可用摩擦范围。本图仅用于模型展示，不代表实测轮胎测试。", "riskTitle": "过高胎压风险", "riskBody": "过高胎压会降低胎体贴合和不平路面过弯余量。请以具体轮胎和轮圈文件为准。", "scopeTitle": "模型范围", "scopeBody": "当前生产接口只返回载荷和调用方提供的限制，不输出未经校准的胎压推荐。",
+    "leanAngle": "过弯倾角", "riderWeight": "骑手重量", "bikeGear": "车辆与装备", "posture": "骑行姿势与载荷分配", "surface": "路面与摩擦基准", "weather": "天气", "rimSystem": "轮圈系统", "tireWidth": "轮胎宽度", "dry": "干燥", "wet": "湿滑", "hookless": "无钩", "hooked": "有钩", "race": "竞赛", "endurance": "耐力", "tt": "计时", "gravel": "碎石", "track": "场地", "goodAsphalt": "平整沥青", "chipSeal": "粗糙沥青", "cobbles": "鹅卵石", "gravelRoad": "碎石路", "straight": "直行", "gentle": "缓弯", "fastCorner": "高速过弯", "maximumLean": "极限倾角", "roadLevel": "路面接触基准线", "frontMargin": "前轮过弯余量", "rearMargin": "后轮过弯余量", "criticalMargin": "抓地余量临界", "lowImpedance": "低滚动阻抗区", "demandValue": "侧向需求 {value} N", "maxGripValue": "横向抓地能力范围 ±{value} N", "safe": "安全", "warning": "警告", "critical": "临界", "diagnosticBody": "当前 {lean}° 倾角下，前后轮侧向需求为 {front} / {rear} N。接地印迹根据载荷、胎压和胎体宽度估算。"
+  },
   "intro": {
     "matching": "为了安全与性能，车辆上的轮胎和车圈必须正确匹配，无内胎轮胎尤其如此。除了经典的有钩车圈，无钩车圈也越来越常见。无钩车圈对无内胎轮胎的安全使用提出了更高要求。Schwalbe 2020 年款之后的 TLR 和 TLE 型号，尤其在胎圈芯区域针对这些要求进行了设计，通常具备兼容性。",
     "width": "无钩车圈通常使用更宽的胎圈座内宽，因此应相应降低胎压，因为车圈内宽变大后，轮胎实际容积也会增加。",
-    "etrto": "根据 ETRTO 标准，公路车无钩车圈的最高胎压为 5 bar。必须遵守这一上限；如果车圈或轮组制造商规定了更低上限，则以更低值为准。如果车圈最高胎压低于轮胎标示值，应遵守车圈上限。车圈制造商也可能限制轮胎选择，很多制造商建议至少使用 28 mm 宽的轮胎，以便安全采用较低胎压。"
+    "etrto": "无钩车圈的胎压限制取决于具体车圈、轮组和轮胎说明。应分别核对制造商给出的限制，并遵守所有适用值中的最低值。不能仅凭车圈类型假定存在统一胎压上限；制造商也可能限制轮胎型号和最小胎宽。"
   },
   "sections": {
     "why": {
@@ -33,7 +94,7 @@
       "tireWidth": {
         "factor": "轮胎宽度",
         "explanation": "更宽的轮胎可以使用更低胎压。",
-        "adjustment": "26 x 2.0 山地车：30-50 psi；700 x 25C 公路车：90-110 psi。"
+        "adjustment": "26 x 2.0 山地车：30-50 psi；有钩 700 x 25C 公路车：90-110 psi。无钩系统始终不得超过 73 psi / 5.0 bar。"
       },
       "terrain": {
         "factor": "路况",
@@ -43,7 +104,7 @@
       "ridingStyle": {
         "factor": "骑行风格",
         "explanation": "激烈竞赛需要更高胎压；休闲骑行可以使用更低胎压。",
-        "adjustment": "竞赛：110-130 psi；休闲：80-100 psi。"
+        "adjustment": "有钩竞赛：110-130 psi；休闲：80-100 psi。更高范围不适用于无钩系统。"
       },
       "rimDesign": {
         "factor": "车圈设计",
@@ -53,7 +114,7 @@
     },
     "typical": {
       "title": "3. 常见胎压范围（约值）",
-      "road": "公路车：80-120 psi；竞赛时最高可到 130 psi，石板路经典赛也可能低至 70 psi。",
+      "road": "有钩公路车：80-120 psi，竞赛时最高可到 130 psi；无钩公路系统：绝不能超过 73 psi / 5.0 bar。",
       "mountain": "山地车：30-60 psi；XC 通常为 25-40 psi。",
       "city": "城市和通勤车：40-70 psi。"
     },
@@ -69,7 +130,8 @@
       "title": "5. 风险与警告",
       "high": "过高：骑行颠簸，并可能损伤车圈。",
       "low": "过低：容易蛇咬，操控也会变差。",
-      "neglect": "忽略检查：持续漏气会降低性能与安全性。"
+      "neglect": "忽略检查：持续漏气会降低性能与安全性。",
+      "hookless": "无钩安全红线：即使轮胎标示了更高胎压，也绝不能超过 73 PSI / 5.0 bar。"
     }
   },
   "comparison": {

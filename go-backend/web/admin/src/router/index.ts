@@ -9,6 +9,8 @@ import type {
 } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { LEGACY_PRODUCT_SUPPLIER_COST_VIEW_PERMISSION_CODE } from '@/lib/productSupplierCostLegacyPermissionCodes'
+import type { LogisticsTabDefinition } from '@/lib/logisticsDomainRegistry'
+import { fpxLogisticsTabs, yanwenLogisticsTabs } from '@/lib/logisticsDomainRegistry'
 
 const firstQueryValue = (value: LocationQueryValue | LocationQueryValue[]): LocationQueryValue => Array.isArray(value) ? value[0] : value
 
@@ -21,6 +23,32 @@ const domainRedirect = (defaultRouteName: string, tabRoutes: Record<string, stri
   name: tabRoutes[String(firstQueryValue(to.query.tab) || '')] || defaultRouteName,
   query: stripLegacyTabQuery(to.query),
 })
+
+const logisticsTabRoutes = (
+  tabs: readonly LogisticsTabDefinition[],
+  component: RouteRecordRaw['component'],
+): RouteRecordRaw[] => {
+  const domainPath = tabs[0]?.path.replace(/\/[^/]+$/, '')
+  return tabs.map((tab, index) => ({
+    // These records are spread into the MainLayout children, so keep the full
+    // relative path instead of reducing it to a root-level `overview` route.
+    path: tab.path.replace(/^\//, ''),
+    ...(index === 0 && domainPath ? { alias: domainPath.replace(/^\//, '') } : {}),
+    name: tab.routeName,
+    component,
+    meta: { title: tab.title, permission: tab.permission },
+  }))
+}
+
+const fpxLogisticsRoutes = logisticsTabRoutes(
+  fpxLogisticsTabs,
+  () => import('@/views/logistics/FPXLogisticsHub.vue'),
+)
+
+const yanwenLogisticsRoutes = logisticsTabRoutes(
+  yanwenLogisticsTabs,
+  () => import('@/views/logistics/YanwenLogisticsHub.vue'),
+)
 
 const marketingRedirect = (to: RouteLocationNormalized): RouteLocationRaw => {
   const tab = String(firstQueryValue(to.query.tab) || '')
@@ -509,6 +537,8 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/Shipping.vue'),
         meta: { title: '追踪任务', permission: 'shipping:view' }
       },
+      ...fpxLogisticsRoutes,
+      ...yanwenLogisticsRoutes,
       {
         path: 'access/admin-users',
         name: 'AccessAdminUsers',
