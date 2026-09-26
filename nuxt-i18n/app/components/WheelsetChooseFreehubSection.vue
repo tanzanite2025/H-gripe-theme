@@ -166,6 +166,7 @@ import {
   drivetrainDirectAnswer,
   drivetrainRuleAnchor,
 } from '~/utils/drivetrainFitmentGEO'
+import { getStorefrontLocaleLanguageTag } from '~/utils/storefrontLocales'
 
 type EcosystemId = 'shimano' | 'sram' | 'campagnolo'
 type Tone = 'shimano' | 'sram' | 'campagnolo' | 'mavic'
@@ -361,9 +362,7 @@ const toneForBrand = (brand: string): Tone => {
 
 const drivetrainRules = computed<DrivetrainCassetteRule[]>(() => drivetrainMatrixResponse.value?.data?.rules || [])
 
-const schemaLanguage = computed(() => locale.value.toLowerCase().startsWith('zh')
-  ? 'zh-CN'
-  : locale.value.toLowerCase().startsWith('en') ? 'en-US' : locale.value)
+const schemaLanguage = computed(() => getStorefrontLocaleLanguageTag(locale.value, 'en-US'))
 
 const matrixApiUrl = computed(() => {
   try {

@@ -3,6 +3,7 @@ import type {
   DrivetrainFitmentOption,
   DrivetrainSpacerRequirement,
 } from '~/types/drivetrainFitment'
+import { isSimplifiedChineseStorefrontLocale } from '~/utils/storefrontLocales'
 
 const englishDisplayNames: Record<string, string> = {
   'sram-12s-10-52t': '12-speed 10-52T / 10-50T',
@@ -74,9 +75,8 @@ const englishFreehubNames: Record<string, string> = {
 }
 
 export const isEnglishDrivetrainLocale = (locale: string) => locale.toLowerCase().startsWith('en')
-const isChineseDrivetrainLocale = (locale: string) => locale.toLowerCase().startsWith('zh')
 const usesBackendChineseDrivetrainText = (locale: string) => (
-  !isEnglishDrivetrainLocale(locale) && isChineseDrivetrainLocale(locale)
+  !isEnglishDrivetrainLocale(locale) && isSimplifiedChineseStorefrontLocale(locale)
 )
 
 export const localizedRuleDisplayName = (rule: DrivetrainCassetteRule, locale: string) => {
