@@ -9,6 +9,24 @@ import (
 	"commerce-platform/internal/repository"
 )
 
+func (s *ShippingService) ListFpxChannels(enabledOnly bool) ([]shipping.FpxChannel, error) {
+	return s.shippingRepo.FindAllFpxChannels(enabledOnly)
+}
+
+func (s *ShippingService) GetFpxChannel(id uint) (*shipping.FpxChannel, error) {
+	return s.shippingRepo.FindFpxChannelByID(id)
+}
+
+func (s *ShippingService) UpdateFpxChannel(channel *shipping.FpxChannel) error {
+	if channel == nil {
+		return errors.New("4PX channel is required")
+	}
+	if err := channel.Validate(); err != nil {
+		return err
+	}
+	return s.shippingRepo.UpdateFpxChannel(channel)
+}
+
 func (s *ShippingService) ListCarriers(enabledOnly bool) ([]shipping.Carrier, error) {
 	return s.shippingRepo.FindAllCarriers(enabledOnly)
 }

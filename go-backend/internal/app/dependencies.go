@@ -86,6 +86,7 @@ type Repositories struct {
 	PaymentRefundIdempotency       *repository.PaymentRefundIdempotencyRepository
 	ExchangeRate                   *repository.ExchangeRateRepository
 	Shipping                       *repository.ShippingRepository
+	FpxAPIConfig                   *repository.FpxAPIConfigRepository
 	Coupon                         *repository.CouponRepository
 	Loyalty                        *repository.LoyaltyRepository
 	LoyaltyProgram                 *repository.LoyaltyProgramRepository
@@ -206,6 +207,7 @@ type Services struct {
 	Dashboard                          *service.DashboardService
 	Audit                              *service.AuditService
 	Shipping                           *service.ShippingService
+	FpxAPI                             *service.FpxAPIService
 	Spoke                              *service.SpokeService
 	QuickBuy                           *service.QuickBuyService
 	SelectionAssistant                 *service.SelectionAssistantService

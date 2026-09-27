@@ -113,9 +113,9 @@ export const wheelsetBuyerTabs = [
   {
     id: 'sample-assembly',
     labelKey: 'guidesWheelsetBuyers.tabs.sampleAssembly.label',
-    fallback: 'Sample assembly',
+    fallback: 'Wheel building service',
     descriptionKey: 'guidesWheelsetBuyers.tabs.sampleAssembly.description',
-    description: 'Assembly example with parts and setup references.',
+    description: 'Mainland China service area, build process, parts, and fees.',
   },
   {
     id: 'special-order',
@@ -144,13 +144,6 @@ export const wheelsetBuyerTabs = [
     fallback: 'Wheel Components',
     descriptionKey: 'guidesWheelsetBuyers.tabs.wheelComponents.description',
     description: 'Hubs, rims, spokes, nipples, and build parts.',
-  },
-  {
-    id: 'optional',
-    labelKey: 'guidesWheelsetBuyers.tabs.optional.label',
-    fallback: 'Optional',
-    descriptionKey: 'guidesWheelsetBuyers.tabs.optional.description',
-    description: 'Optional upgrades and configuration add-ons.',
   },
 ] as const satisfies readonly PageSubNavigationTab[]
 

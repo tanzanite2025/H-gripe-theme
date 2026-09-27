@@ -166,6 +166,8 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 	warrantyHandler := NewWarrantyHandler(warrantyService)
 	shipmentRecordHandler := NewShipmentRecordHandler(services.ShipmentRecord, deps.Storage)
 	shippingHandler := NewShippingHandler(services.Shipping)
+	fpxHandler := NewFpxHandler(services.Shipping)
+	fpxAPIHandler := NewFpxAPIHandler(services.FpxAPI)
 	opsDomainBindingHandler := NewOpsDomainBindingHandler(
 		services.OpsDomainBinding,
 		services.OpsDomainDiff,
@@ -329,6 +331,8 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 		shippingHandler,
 		siteFaviconHandler,
 	)
+	registerLogisticsDomainRoutes(authenticated, fpxHandler)
+	registerFpxAPIRoutes(authenticated, fpxAPIHandler)
 	registerOperationsRoutes(
 		authenticated,
 		adminAccountHandler,

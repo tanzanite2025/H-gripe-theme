@@ -106,6 +106,7 @@ services:
       - REDIS_PORT=6379
       - JWT_SECRET=dev-secret-key-change-in-production
       - PAYMENT_CONFIG_MASTER_KEY=${PAYMENT_CONFIG_MASTER_KEY:-dev-payment-config-master-key-change-before-production}
+      - FPX_API_MASTER_KEY=${FPX_API_MASTER_KEY:-dev-fpx-api-master-key-change-before-production}
       - LOG_LEVEL=debug
       - STORAGE_TYPE=local
       - STORAGE_LOCAL_PATH=/app/uploads

@@ -39,6 +39,7 @@
     :errors="carrierServiceErrors"
     :carriers="carriers"
     :templates="templates"
+    :fpx-channels="fpxChannels"
     :submitting="carrierServiceSubmitting"
     @update:open="emit('update:carrierServiceOpen', $event)"
     @submit="emit('save-carrier-service')"
@@ -132,6 +133,7 @@ import type {
 withDefaults(defineProps<{
   templates?: ShippingTemplate[]
   carriers?: ShippingCarrier[]
+  fpxChannels?: Array<{ id: number; service_code: string; display_name: string; enabled: boolean }>
   carrierServices?: ShippingCarrierService[]
   trackingProviders?: TrackingProvider[]
   templateOpen?: boolean
@@ -178,6 +180,7 @@ withDefaults(defineProps<{
 }>(), {
   templates: () => [],
   carriers: () => [],
+  fpxChannels: () => [],
   carrierServices: () => [],
   trackingProviders: () => [],
   templateOpen: false,

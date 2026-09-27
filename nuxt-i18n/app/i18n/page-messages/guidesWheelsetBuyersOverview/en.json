@@ -1,7 +1,7 @@
 {
   "title": "Wheelset buying overview",
   "readyTitle": "Ready to buy after the checks?",
-  "readyBody": "QUICKBUY lets you start selecting wheelset-related products from this guide, then review the selected items before adding them to cart or going to payment. You can also check component categories, freehub fit, appearance choices, add-ons, and safety notes before you place the order.",
+  "readyBody": "QUICKBUY lets you start selecting wheelset-related products from this guide, then review the selected items before adding them to cart or going to payment. You can also check component categories, freehub fit, tubeless installation, appearance and logo choices, wheel building service, and safety notes before you place the order.",
   "startQuickBuy": "Start QUICKBUY",
   "wheelComponents": "Wheel components",
   "step1": {
@@ -49,7 +49,7 @@
   },
   "step3": {
     "title": "Then choose how to configure and buy",
-    "body": "Once the core compatibility checks are clear, move into the actual order path. Use QUICKBUY for a fast product selection flow, or open the wheelset sections below when you need to confirm parts, appearance, special orders, optional add-ons, or safety checks before installation.",
+    "body": "Once the core compatibility checks are clear, move into the actual order path. Use QUICKBUY for a fast product selection flow, or open the wheelset sections below when you need to confirm parts, tire systems, appearance, wheel building service, special orders, or safety checks before installation.",
     "quickBuy": {
       "title": "Configure and buy with QUICKBUY",
       "body": "Open the QUICKBUY builder to select available wheelset-related products, review the selected items, then add them to cart or go directly to payment.",
@@ -57,7 +57,7 @@
     },
     "coverage": {
       "title": "What this order path can cover",
-      "body": "Use the guide sections to check rims, hubs, spokes, nipples, freehub bodies, appearance options, tubeless add-ons, spare spokes, and replacement-wheel requests before buying.",
+      "body": "Use the guide sections to check rims, hubs, spokes, nipples, freehub bodies, tubeless installation, appearance and logo options, spare spokes, wheel building service, and replacement-wheel requests before buying.",
       "button": "Component options"
     },
     "custom": {

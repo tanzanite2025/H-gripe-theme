@@ -69,6 +69,7 @@ func newDependencyRepositories(db *gorm.DB) (Repositories, error) {
 		PaymentRefundIdempotency:       repository.NewPaymentRefundIdempotencyRepository(db),
 		ExchangeRate:                   repository.NewExchangeRateRepository(db),
 		Shipping:                       repository.NewShippingRepository(db),
+		FpxAPIConfig:                   repository.NewFpxAPIConfigRepository(db),
 		Coupon:                         repository.NewCouponRepository(db),
 		Loyalty:                        repository.NewLoyaltyRepository(db),
 		LoyaltyProgram:                 repository.NewLoyaltyProgramRepository(db),

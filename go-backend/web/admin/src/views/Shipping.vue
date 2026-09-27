@@ -18,6 +18,7 @@
       :zones="zones"
       :carriers="carriers"
       :carrier-services="carrierServices"
+      :fpx-channels="fpxChannels"
       :tracking-providers="trackingProviders"
       :tracking-carrier-mappings="trackingCarrierMappings"
       :packaging-rules="packagingRules"
@@ -159,6 +160,7 @@ const {
   zones,
   carriers,
   carrierServices,
+  fpxChannels,
   trackingProviders,
   trackingCarrierMappings,
   trackingShipmentsCount,

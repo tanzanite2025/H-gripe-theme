@@ -1,0 +1,5 @@
+ALTER TABLE shipping_fpx_api_configs
+    ADD COLUMN IF NOT EXISTS last_sync_scanned INTEGER NOT NULL DEFAULT 0,
+    ADD COLUMN IF NOT EXISTS last_sync_added INTEGER NOT NULL DEFAULT 0,
+    ADD COLUMN IF NOT EXISTS last_sync_updated INTEGER NOT NULL DEFAULT 0,
+    ADD COLUMN IF NOT EXISTS last_sync_preserved_enabled INTEGER NOT NULL DEFAULT 0;

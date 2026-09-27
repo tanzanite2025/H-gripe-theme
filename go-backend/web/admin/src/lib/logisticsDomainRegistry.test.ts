@@ -16,19 +16,16 @@ describe('logistics domain registry', () => {
     }
   })
 
-  it('keeps configuration tabs behind manage permissions', () => {
+  it('keeps 4PX read pages view-only and gateway configuration behind manage permissions', () => {
+    expect(fpxLogisticsTabs.filter((tab) => tab.key !== 'config').every((tab) => tab.permission === 'logistics:fpx:view')).toBe(true)
     expect(fpxLogisticsTabs[fpxLogisticsTabs.length - 1]?.permission).toBe('logistics:fpx:manage')
     expect(yanwenLogisticsTabs[yanwenLogisticsTabs.length - 1]?.permission).toBe('logistics:yanwen:manage')
   })
 
-  it('keeps 4PX limited to shipping tabs', () => {
+  it('keeps 4PX limited to the catalog and gateway tabs', () => {
     expect(fpxLogisticsTabs.map((tab) => tab.key)).toEqual([
       'overview',
-      'direct',
       'collection',
-      'calculator',
-      'tracking',
-      'rma',
       'config',
     ])
     expect(JSON.stringify(fpxLogisticsTabs)).not.toMatch(/warehouse|wms|fb4/i)

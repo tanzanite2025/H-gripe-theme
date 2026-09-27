@@ -409,6 +409,7 @@ func (b *dependencyServicesBuilder) build() error {
 			service.NewAuditService(b.repos.Audit),
 		),
 		Shipping:                  shippingService,
+		FpxAPI:                    service.NewFpxAPIService(b.repos.FpxAPIConfig, b.repos.Shipping),
 		Spoke:                     service.NewSpokeService(b.repos.Spoke),
 		QuickBuy:                  service.NewQuickBuyService(b.repos.QuickBuy, b.repos.Product, b.repos.ProductCategory),
 		SelectionAssistant:        service.NewSelectionAssistantService(b.repos.SelectionAssistant),

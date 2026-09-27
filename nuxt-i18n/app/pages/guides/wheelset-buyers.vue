@@ -460,59 +460,6 @@
         </SmartAccordion>
       </section>
 
-      <!-- Optional -->
-      <section
-        v-if="activeTab === 'optional'"
-        id="optional"
-        class="wheelset-section sizecharts-section"
-      >
-        <h2 class="sizecharts-section__title">
-          {{ t('guidesWheelsetBuyers.tabs.optional.label') }}
-        </h2>
-        <div class="wheelset-policy-flow">
-          <article class="wheelset-guide-step">
-            <div class="wheelset-guide-step__number">1</div>
-            <div class="wheelset-guide-step__content">
-              <h3 class="wheelset-guide-step__title">
-                {{ t('guidesWheelsetBuyersOptional.title') }}
-              </h3>
-              <p class="wheelset-guide-step__body">
-                {{ t('guidesWheelsetBuyersOptional.body') }}
-              </p>
-              <div class="wheelset-guide-panel-grid">
-                <div class="wheelset-guide-panel">
-                  <strong>{{ t('guidesWheelsetBuyersOptional.tubeless.title') }}</strong>
-                  <p>{{ t('guidesWheelsetBuyersOptional.tubeless.body') }}</p>
-                </div>
-                <div class="wheelset-guide-panel">
-                  <strong>{{ t('guidesWheelsetBuyersOptional.spareSpokes.title') }}</strong>
-                  <p>{{ t('guidesWheelsetBuyersOptional.spareSpokes.body') }}</p>
-                </div>
-                <div class="wheelset-guide-panel">
-                  <strong>{{ t('guidesWheelsetBuyersOptional.freehub.title') }}</strong>
-                  <p>{{ t('guidesWheelsetBuyersOptional.freehub.body') }}</p>
-                  <div class="wheelset-guide-actions">
-                    <button
-                      type="button"
-                      class="wheelset-guide-button"
-                      :aria-label="ctaNotes.freehubGuideNewTab"
-                      :data-cta-note="ctaNotes.freehubGuideNewTab"
-                      @click="goToFreehubGuide"
-                    >
-                      {{ t('guidesWheelsetBuyersOverview.step2.freehub.button') }}
-                    </button>
-                  </div>
-                </div>
-                <div class="wheelset-guide-panel">
-                  <strong>{{ t('guidesWheelsetBuyersOptional.logo.title') }}</strong>
-                  <p>{{ t('guidesWheelsetBuyersOptional.logo.body') }}</p>
-                </div>
-              </div>
-            </div>
-          </article>
-        </div>
-      </section>
-
       <!-- Feedback / Leave a message -->
       <section class="wheelset-feedback">
         <UserFeedbackThread
@@ -562,7 +509,6 @@ const wheelsetMessages = usePageMessages('guidesWheelsetBuyers')
 const overviewMessages = usePageMessages('guidesWheelsetBuyersOverview')
 const chooseFreehubMessages = usePageMessages('guidesWheelsetBuyersChooseFreehub')
 const specialOrderMessages = usePageMessages('guidesWheelsetBuyersSpecialOrder')
-const optionalMessages = usePageMessages('guidesWheelsetBuyersOptional')
 const activeWheelComponent = ref<string | null>('hubs')
 
 await Promise.all([
@@ -626,9 +572,6 @@ const loadActivePageMessages = (requestedLocale: string) => {
   const requests: Promise<void>[] = []
   if (activeTab.value === 'special-order') {
     requests.push(specialOrderMessages.loadPageMessages(requestedLocale))
-  }
-  if (activeTab.value === 'optional') {
-    requests.push(optionalMessages.loadPageMessages(requestedLocale))
   }
   if (activeTab.value === 'choose-freehub') {
     requests.push(chooseFreehubMessages.loadPageMessages(requestedLocale))
@@ -959,6 +902,11 @@ const goToAboutAppearance = async () => {
   box-shadow: none;
 }
 
+.wheelset-page :deep(.wheelset-guide-panel--notice) {
+  border: 1px solid color-mix(in srgb, var(--tz-status-warning-text) 35%, transparent);
+  background: var(--tz-status-warning-bg);
+}
+
 .wheelset-guide-panel strong,
 .wheelset-page :deep(.wheelset-guide-panel strong) {
   display: inline-flex;
@@ -975,6 +923,10 @@ const goToAboutAppearance = async () => {
   font-weight: 700;
   line-height: 1.35;
   white-space: normal;
+}
+
+.wheelset-page :deep(.wheelset-guide-panel--notice strong) {
+  color: var(--tz-status-warning-text);
 }
 
 .wheelset-guide-panel p,

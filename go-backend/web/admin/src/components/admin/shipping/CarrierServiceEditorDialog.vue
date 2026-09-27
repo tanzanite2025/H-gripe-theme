@@ -9,6 +9,24 @@
           </DialogDescription>
         </DialogHeader>
 
+        <section v-if="selectedCarrierIsFpx" class="rounded-xl border border-orange-500/30 bg-orange-500/5 p-3">
+          <AdminFormField label="从 4PX 服务集合选择">
+            <Select
+              :model-value="form.service_code"
+              :disabled="fpxChannels.length === 0"
+              @update:model-value="applyFpxChannel"
+            >
+              <SelectTrigger class="w-full"><SelectValue :placeholder="fpxChannels.length ? '选择已启用的官方服务' : '暂无已发布服务，请先在 4PX 服务集合启用'" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem v-for="channel in fpxChannels" :key="channel.id" :value="channel.service_code">
+                  {{ channel.display_name }} / {{ channel.service_code }}
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </AdminFormField>
+          <p class="mt-2 text-[11px] leading-5 text-muted-foreground">只读取 4PX「服务集合」已启用项；选择后填入线路代码和名称，物流模板、计费和报价规则仍由物流管理维护。</p>
+        </section>
+
         <section class="grid gap-4 lg:grid-cols-4">
           <AdminFormField label="承运商" required :error="errors.carrier_id">
             <Select v-model="form.carrier_id" @update:model-value="emit('clear-error', 'carrier_id')">
@@ -147,6 +165,7 @@
 </template>
 
 <script setup lang="ts">
+import { computed, toRefs } from 'vue'
 import { LoaderCircle } from '@lucide/vue'
 import AdminFormField from '@/components/admin/AdminFormField.vue'
 import { Button } from '@/components/ui/button'
@@ -163,21 +182,36 @@ import type {
   ShippingTemplate
 } from '@/modules/shipping/shippingTypes'
 
-withDefaults(defineProps<{
+const props = withDefaults(defineProps<{
   open?: boolean
   mode?: ShippingDialogMode
   form: ShippingCarrierServiceForm
   errors: ShippingErrorMap
   carriers?: ShippingCarrier[]
+  fpxChannels?: Array<{ id: number; service_code: string; display_name: string; enabled: boolean }>
   templates?: ShippingTemplate[]
   submitting?: boolean
 }>(), {
   open: false,
   mode: 'create',
   carriers: () => [],
+  fpxChannels: () => [],
   templates: () => [],
   submitting: false
 })
+const { open, mode, form, errors, carriers, templates, submitting } = toRefs(props)
+
+const selectedCarrierIsFpx = computed(() => {
+  const selectedCarrier = props.carriers.find((carrier) => String(carrier.id) === String(props.form.carrier_id))
+  return ['4PX', 'FPX'].includes(String(selectedCarrier?.code || '').trim().toUpperCase())
+})
+
+const applyFpxChannel = (serviceCode: unknown) => {
+  const channel = props.fpxChannels.find((item) => item.service_code === String(serviceCode))
+  if (!channel) return
+  props.form.service_code = channel.service_code
+  props.form.service_name = channel.display_name
+}
 
 const emit = defineEmits<{
   (event: 'update:open', value: boolean): void

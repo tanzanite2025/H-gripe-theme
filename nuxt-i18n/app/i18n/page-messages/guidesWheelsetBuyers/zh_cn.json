@@ -11,8 +11,8 @@
       "description": "骑行和维护前需要完成的核心安全检查。"
     },
     "sampleAssembly": {
-      "label": "组装示例",
-      "description": "查看包含零件和设置参考的组装示例。"
+      "label": "轮组组装服务",
+      "description": "了解仅限中国大陆的服务范围、寄送流程、费用和部件要求。"
     },
     "specialOrder": {
       "label": "特殊订单",
@@ -29,10 +29,6 @@
     "wheelComponents": {
       "label": "轮组部件",
       "description": "了解花鼓、车圈、辐条、辐条帽和组装部件。"
-    },
-    "optional": {
-      "label": "可选配置",
-      "description": "查看可选升级和配置附加项。"
     }
   },
   "componentSections": {

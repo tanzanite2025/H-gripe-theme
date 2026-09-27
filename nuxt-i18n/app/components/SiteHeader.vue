@@ -1404,17 +1404,21 @@ const getPageSubNavigationBreadcrumbSubNavigation = (
   targetPath: string
 ): BreadcrumbSubNavigation | undefined => {
   const normalizedTargetPath = normalizeBreadcrumbPath(targetPath)
-  // A canonical second-level page can own third-level navigation. Keep that
-  // navigation attached after switching between second-level siblings.
+  const currentPath = normalizeBreadcrumbPath(route.path || '/')
+
+  // A canonical page owns its tab menu only while it is the current page.
+  // Once a tab route is active, the parent breadcrumb is just the parent
+  // link; otherwise both the parent and the active tab expose the same menu.
   const baseEntry = pageSubNavigationEntries.find(entry => (
     normalizeBreadcrumbPath(entry.path) === normalizedTargetPath
   ))
+  if (baseEntry && currentPath !== normalizedTargetPath) return undefined
+
   const match = baseEntry
     ? { entry: baseEntry }
     : getBreadcrumbPageSubNavigationTab(normalizedTargetPath)
   if (!match) return undefined
 
-  const currentPath = normalizeBreadcrumbPath(route.path || '/')
   const tabs = match.entry.tabs.map(tab => {
     const tabPath = tab.to || pageSubNavigationChildPath(match.entry.path, tab.id)
 

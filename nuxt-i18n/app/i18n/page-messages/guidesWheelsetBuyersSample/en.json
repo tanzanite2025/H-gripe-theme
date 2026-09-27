@@ -1,42 +1,48 @@
 {
+  "serviceArea": {
+    "title": "Service area: mainland China only (excluding Hong Kong, Macao, and Taiwan)",
+    "body": "Professional wheel building is currently available only for addresses within mainland China. Components must be sent from a mainland China address to the confirmed workshop address, and finished wheels can only be returned to a mainland China address. Overseas, Hong Kong, Macao, Taiwan, and other cross-border shipments are not supported. Confirm the address, accepted parts, and shipping cost in chat before sending anything."
+  },
   "professional": {
     "title": "Professional Wheel Building Service",
-    "body": "We provide professional assembly services, supporting customers who wish to send in hubs or rims. Our skilled technicians will complete the assembly to the highest standards.",
+    "body": "We provide professional wheel building for customers who need compatible hubs, rims, and spokes built at the workshop. Our technicians check the incoming parts, then complete the build, truing, and basic inspection.",
     "feeTitle": "Assembly fee",
-    "feeBody": "USD 30 / set for standard wheel building service.",
+    "feeBody": "USD 30 per set for standard wheel building; return shipping, replacement parts, special work, and non-standard rework are not included. The confirmed quote is final.",
     "bestForTitle": "Best for",
-    "bestForBody": "Customers sending compatible hubs, rims, or full component kits for professional assembly.",
+    "bestForBody": "Customers who can provide complete specifications and a packing list while sending compatible hubs, rims, spokes, and related parts for a professional build.",
     "button": "Get Wheel Building Quote via Chat"
   },
   "process": {
     "title": "Service Process",
     "shipping": {
       "title": "Shipping",
-      "body": "Send components to our designated address."
+      "body": "Confirm the service area, addresses, compatibility, and shipping cost, then send the parts to the confirmed address with a packing list."
     },
     "confirmation": {
       "title": "Confirmation",
-      "body": "We inspect and confirm receipt of all listed items."
+      "body": "We check the model, quantity, condition, and damage. If anything is missing or incompatible, we contact you before starting the build."
     },
     "assembly": {
       "title": "Assembly & testing",
-      "body": "Professional build plus tension and safety analysis."
+      "body": "We build and true the wheels to the confirmed spoke length and lacing pattern, then perform spoke-tension and basic safety checks. Special requests must be confirmed in advance."
     },
     "delivery": {
       "title": "Delivery",
-      "body": "Finished wheelset shipped back or prepared for pickup."
+      "body": "Finished wheels are returned only to the confirmed mainland China address, or prepared for an agreed pickup. Return shipping and insurance follow the confirmed quote."
     }
   },
   "scope": {
     "title": "Scope & Notes",
     "acceptedTitle": "Accepted items",
-    "acceptedBody": "Wheelsets, rims, hubs, spokes, or related components. Please confirm compatibility with us first.",
+    "acceptedBody": "Compatible rims, hubs, spokes, nipples, and related small parts. Confirm the hole count, axle standard, brake mount, freehub standard, and rim system before arranging shipment.",
+    "spareSpokesTitle": "Spare spokes",
+    "spareSpokesBody": "If the matching spoke is difficult to source during travel or racing, add spare spokes to the quote. Confirm quantity by front/rear wheel, drive/non-drive side, and length; the exact model, stock, and price follow the current quote.",
     "importantTitle": "Important",
     "items": [
-      "Components must be new or in good condition.",
-      "Include a detailed packing list.",
-      "Typical turnaround is 3-7 business days.",
-      "Shipping costs are the customer's responsibility."
+      "Components must be new or in good condition. Parts with cracks, deformation, impact damage, or severe wear may be refused.",
+      "Before shipping, provide the model, hole count, dimensions, freehub/brake interface, and a detailed packing list.",
+      "Typical turnaround is 3-7 business days after every part arrives and compatibility is confirmed; missing parts, rework, or special requests can extend it.",
+      "The customer covers round-trip shipping, packing, insurance, and any applicable charges; this service is limited to mainland China."
     ]
   },
   "ownBuild": {

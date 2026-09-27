@@ -1,0 +1,11 @@
+ALTER TABLE shipping_fpx_channels
+    ADD COLUMN IF NOT EXISTS max_length_cm NUMERIC(10,2) NOT NULL DEFAULT 0,
+    ADD COLUMN IF NOT EXISTS max_width_cm NUMERIC(10,2) NOT NULL DEFAULT 0,
+    ADD COLUMN IF NOT EXISTS max_height_cm NUMERIC(10,2) NOT NULL DEFAULT 0,
+    ADD COLUMN IF NOT EXISTS volumetric_divisor INTEGER NOT NULL DEFAULT 6000,
+    ADD COLUMN IF NOT EXISTS max_weight_grams INTEGER NOT NULL DEFAULT 0,
+    ADD COLUMN IF NOT EXISTS notes TEXT NOT NULL DEFAULT '',
+    ADD COLUMN IF NOT EXISTS sort_order INTEGER NOT NULL DEFAULT 0;
+
+CREATE INDEX IF NOT EXISTS idx_shipping_fpx_channels_sort_order
+    ON shipping_fpx_channels (sort_order);

@@ -134,7 +134,6 @@ const (
 
 	PermFPXView   Permission = "logistics:fpx:view"
 	PermFPXShip   Permission = "logistics:fpx:ship"
-	PermFPXCancel Permission = "logistics:fpx:cancel"
 	PermFPXManage Permission = "logistics:fpx:manage"
 
 	PermYanwenView   Permission = "logistics:yanwen:view"
@@ -200,7 +199,7 @@ var RolePermissions = map[Role][]Permission{
 		PermMarketingView, PermMarketingCreate, PermMarketingEdit, PermMarketingDelete,
 		PermMerchantView, PermMerchantEdit, PermMerchantSync,
 		PermShippingView, PermShippingCreate, PermShippingEdit, PermShippingDelete, PermShippingTracking,
-		PermFPXView, PermFPXShip, PermFPXCancel, PermFPXManage,
+		PermFPXView, PermFPXShip, PermFPXManage,
 		PermYanwenView, PermYanwenShip, PermYanwenCancel, PermYanwenManage,
 		PermSettingsView, PermSettingsEdit,
 		PermSEOView, PermSEOEdit, PermURLView, PermURLEdit, PermAnalyticsView, PermAnalyticsEdit,
@@ -230,7 +229,7 @@ var RolePermissions = map[Role][]Permission{
 		PermMarketingView, PermMarketingCreate, PermMarketingEdit, PermMarketingDelete,
 		PermMerchantView, PermMerchantEdit, PermMerchantSync,
 		PermShippingView, PermShippingCreate, PermShippingEdit, PermShippingTracking,
-		PermFPXView, PermFPXShip, PermFPXCancel, PermFPXManage,
+		PermFPXView, PermFPXShip, PermFPXManage,
 		PermYanwenView, PermYanwenShip, PermYanwenCancel, PermYanwenManage,
 		PermSettingsView,
 		PermSEOView, PermURLView, PermURLEdit, PermAnalyticsView,

@@ -37,6 +37,18 @@ type TrackingShipmentFilter struct {
 	Limit               int
 }
 
+type FpxOverviewCounts struct {
+	ChannelTotal        int64
+	EnabledChannelTotal int64
+}
+
+type FpxChannelUpsertStats struct {
+	Scanned          int
+	Added            int
+	Updated          int
+	PreservedEnabled int
+}
+
 func NewShippingRepository(db *gorm.DB) *ShippingRepository {
 	return &ShippingRepository{db: db}
 }
@@ -292,6 +304,130 @@ func (r *ShippingRepository) DeleteTemplate(id uint) error {
 // ShippingRule 閻╃鍙ч弬瑙勭《
 
 // CreateRule 閸掓稑缂撴潻鎰瀭鐟欏嫬鍨?
+func (r *ShippingRepository) FindAllFpxChannels(enabledOnly bool) ([]shipping.FpxChannel, error) {
+	var channels []shipping.FpxChannel
+	query := r.db.Order("service_code ASC").Order("id ASC")
+	if enabledOnly {
+		query = query.Where("enabled = ?", true)
+	}
+	return channels, query.Find(&channels).Error
+}
+
+func (r *ShippingRepository) FindFpxChannelByID(id uint) (*shipping.FpxChannel, error) {
+	var channel shipping.FpxChannel
+	if err := r.db.First(&channel, id).Error; err != nil {
+		return nil, err
+	}
+	return &channel, nil
+}
+
+func (r *ShippingRepository) CreateFpxChannel(channel *shipping.FpxChannel) error {
+	return r.db.Create(channel).Error
+}
+
+// UpsertFpxChannels imports the official 4PX service directory without
+// changing an operator's enabled decision. Newly discovered services remain
+// disabled until they are explicitly confirmed in the service collection tab.
+func (r *ShippingRepository) UpsertFpxChannels(channels []shipping.FpxChannel) (FpxChannelUpsertStats, error) {
+	stats := FpxChannelUpsertStats{Scanned: len(channels)}
+	if len(channels) == 0 {
+		return stats, nil
+	}
+
+	prepared := make([]shipping.FpxChannel, 0, len(channels))
+	positions := make(map[string]int, len(channels))
+	for i := range channels {
+		channel := channels[i]
+		if err := channel.Validate(); err != nil {
+			return FpxChannelUpsertStats{}, err
+		}
+		// Imports may discover services, but only an operator may approve them.
+		channel.Enabled = false
+		channel.UpdatedAt = time.Now().UTC()
+		if position, exists := positions[channel.ServiceCode]; exists {
+			prepared[position].DisplayName = channel.DisplayName
+			continue
+		}
+		positions[channel.ServiceCode] = len(prepared)
+		prepared = append(prepared, channel)
+	}
+
+	err := r.db.Transaction(func(tx *gorm.DB) error {
+		serviceCodes := make([]string, 0, len(prepared))
+		for _, channel := range prepared {
+			serviceCodes = append(serviceCodes, channel.ServiceCode)
+		}
+
+		var existing []shipping.FpxChannel
+		if err := tx.Where("service_code IN ? AND deleted_at IS NULL", serviceCodes).Find(&existing).Error; err != nil {
+			return err
+		}
+		existingByCode := make(map[string]shipping.FpxChannel, len(existing))
+		for _, channel := range existing {
+			existingByCode[channel.ServiceCode] = channel
+		}
+		for _, channel := range prepared {
+			if existingChannel, exists := existingByCode[channel.ServiceCode]; exists {
+				stats.Updated++
+				if existingChannel.Enabled {
+					stats.PreservedEnabled++
+				}
+			} else {
+				stats.Added++
+			}
+		}
+
+		return tx.Clauses(clause.OnConflict{
+			Columns:     []clause.Column{{Name: "service_code"}},
+			TargetWhere: clause.Where{Exprs: []clause.Expression{clause.Expr{SQL: "deleted_at IS NULL"}}},
+			DoUpdates:   clause.AssignmentColumns([]string{"display_name", "updated_at"}),
+		}).Create(&prepared).Error
+	})
+	if err != nil {
+		return FpxChannelUpsertStats{}, err
+	}
+	return stats, nil
+}
+
+func (r *ShippingRepository) UpdateFpxChannel(channel *shipping.FpxChannel) error {
+	result := r.db.Model(&shipping.FpxChannel{}).
+		Where("id = ? AND deleted_at IS NULL", channel.ID).
+		UpdateColumns(map[string]interface{}{
+			"enabled":    channel.Enabled,
+			"updated_at": gorm.Expr("NOW()"),
+		})
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
+	return nil
+}
+
+func (r *ShippingRepository) DeleteFpxChannel(id uint) error {
+	result := r.db.Delete(&shipping.FpxChannel{}, id)
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
+	return nil
+}
+
+func (r *ShippingRepository) GetFpxOverviewCounts() (FpxOverviewCounts, error) {
+	var counts FpxOverviewCounts
+	if err := r.db.Model(&shipping.FpxChannel{}).Count(&counts.ChannelTotal).Error; err != nil {
+		return counts, err
+	}
+	if err := r.db.Model(&shipping.FpxChannel{}).Where("enabled = ?", true).Count(&counts.EnabledChannelTotal).Error; err != nil {
+		return counts, err
+	}
+
+	return counts, nil
+}
+
 func (r *ShippingRepository) CreateRule(rule *shipping.ShippingRule) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
 		if err := tx.Create(rule).Error; err != nil {

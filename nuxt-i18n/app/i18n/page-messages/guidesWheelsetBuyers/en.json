@@ -11,8 +11,8 @@
       "description": "Core safety checks before riding and servicing."
     },
     "sampleAssembly": {
-      "label": "Sample assembly",
-      "description": "Assembly example with parts and setup references."
+      "label": "Wheel building service",
+      "description": "Mainland China service area, shipping process, fees, and part requirements."
     },
     "specialOrder": {
       "label": "Special order",
@@ -29,10 +29,6 @@
     "wheelComponents": {
       "label": "Wheel Components",
       "description": "Hubs, rims, spokes, nipples, and build parts."
-    },
-    "optional": {
-      "label": "Optional",
-      "description": "Optional upgrades and configuration add-ons."
     }
   },
   "componentSections": {

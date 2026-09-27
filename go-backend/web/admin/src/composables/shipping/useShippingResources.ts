@@ -6,6 +6,7 @@ export const useShippingResources = () => {
   const zones = ref<any[]>([])
   const carriers = ref<any[]>([])
   const carrierServices = ref<any[]>([])
+  const fpxChannels = ref<any[]>([])
   const trackingProviders = ref<any[]>([])
   const trackingCarrierMappings = ref<any[]>([])
   const trackingShipmentsCount = ref(0)
@@ -70,6 +71,15 @@ export const useShippingResources = () => {
     }
   }
 
+  const fetchFpxPublishedChannels = async () => {
+    try {
+      fpxChannels.value = await shippingApi.listFpxPublishedCollection()
+    } catch (error) {
+      fpxChannels.value = []
+      console.error('Failed to fetch enabled 4PX service references:', error)
+    }
+  }
+
   const fetchTrackingProviders = async () => {
     loading.tracking = true
     try {
@@ -113,7 +123,7 @@ export const useShippingResources = () => {
       } else if (activeTab === 'carriers') {
         await fetchCarriers()
       } else if (activeTab === 'services') {
-        await Promise.all([fetchCarrierServices(), fetchCarriers(), fetchTemplates()])
+        await Promise.all([fetchCarrierServices(), fetchCarriers(), fetchTemplates(), fetchFpxPublishedChannels()])
       } else if (activeTab === 'tracking') {
         await Promise.all([fetchTrackingProviders(), fetchTrackingCarrierMappings(), fetchCarriers(), fetchCarrierServices()])
       } else if (activeTab === 'trackingShipments') {
@@ -131,6 +141,7 @@ export const useShippingResources = () => {
           fetchZones(),
           fetchCarriers(),
           fetchCarrierServices(),
+          fetchFpxPublishedChannels(),
           fetchTrackingProviders(),
           fetchTrackingCarrierMappings(),
           fetchPackagingRules(),
@@ -146,6 +157,7 @@ export const useShippingResources = () => {
     fetchZones(),
     fetchCarriers(),
     fetchCarrierServices(),
+    fetchFpxPublishedChannels(),
     fetchTrackingProviders(),
     fetchTrackingCarrierMappings(),
     fetchPackagingRules(),
@@ -156,6 +168,7 @@ export const useShippingResources = () => {
     zones,
     carriers,
     carrierServices,
+    fpxChannels,
     trackingProviders,
     trackingCarrierMappings,
     trackingShipmentsCount,
@@ -167,6 +180,7 @@ export const useShippingResources = () => {
     fetchZones,
     fetchCarriers,
     fetchCarrierServices,
+    fetchFpxPublishedChannels,
     fetchTrackingProviders,
     fetchTrackingCarrierMappings,
     fetchPackagingRules,

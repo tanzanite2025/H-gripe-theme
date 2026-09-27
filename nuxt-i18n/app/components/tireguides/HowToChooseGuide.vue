@@ -333,12 +333,12 @@ const formatWidthList = (widths: string[]) =>
 }
 
 .tire-chart-table__recommended {
-  color: #d7ffbc !important;
+  color: var(--tz-text-primary) !important;
   font-weight: 600;
 }
 
 .tire-chart-table__possible {
-  color: #d4d9de !important;
+  color: var(--tz-text-secondary) !important;
 }
 
 @media (min-width: 1024px) {

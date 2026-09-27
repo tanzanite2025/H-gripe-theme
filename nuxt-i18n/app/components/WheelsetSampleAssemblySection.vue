@@ -1,5 +1,10 @@
 <template>
   <div class="wheelset-policy-flow">
+    <aside class="wheelset-guide-panel wheelset-guide-panel--notice" role="note">
+      <strong>{{ t('guidesWheelsetBuyersSample.serviceArea.title') }}</strong>
+      <p>{{ t('guidesWheelsetBuyersSample.serviceArea.body') }}</p>
+    </aside>
+
     <article class="wheelset-guide-step">
       <div class="wheelset-guide-step__number">1</div>
       <div class="wheelset-guide-step__content">
@@ -70,6 +75,10 @@
           <div class="wheelset-guide-panel">
             <strong>{{ t('guidesWheelsetBuyersSample.scope.acceptedTitle') }}</strong>
             <p>{{ t('guidesWheelsetBuyersSample.scope.acceptedBody') }}</p>
+          </div>
+          <div class="wheelset-guide-panel">
+            <strong>{{ t('guidesWheelsetBuyersSample.scope.spareSpokesTitle') }}</strong>
+            <p>{{ t('guidesWheelsetBuyersSample.scope.spareSpokesBody') }}</p>
           </div>
           <div class="wheelset-guide-panel">
             <strong>{{ t('guidesWheelsetBuyersSample.scope.importantTitle') }}</strong>

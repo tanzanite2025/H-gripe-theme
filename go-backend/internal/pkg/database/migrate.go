@@ -152,6 +152,8 @@ func AutoMigrate(db *gorm.DB, serverMode string) error {
 		&shipping.ShippingTemplate{},
 		&shipping.ShippingRule{},
 		&shipping.ShippingDisplayPriceSnapshot{},
+		&shipping.FpxChannel{},
+		&shipping.FpxAPIConfig{},
 		&shipping.Carrier{},
 		&shipping.CarrierService{},
 		&shipping.QuoteSnapshot{},
