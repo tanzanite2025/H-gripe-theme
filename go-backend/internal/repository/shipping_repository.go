@@ -1,12 +1,13 @@
 package repository
 
 import (
-	"commerce-platform/internal/domain/shipping"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
 	"time"
+
+	"commerce-platform/internal/domain/shipping"
 
 	"gorm.io/datatypes"
 	"gorm.io/gorm"

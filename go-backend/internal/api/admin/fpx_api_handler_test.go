@@ -1,6 +1,7 @@
 package admin
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -34,7 +35,7 @@ func TestFpxAPIConfigGetFailsLoudlyOnDatabaseError(t *testing.T) {
 	router := gin.New()
 	router.GET("/config", handler.Get)
 	response := httptest.NewRecorder()
-	router.ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/config?environment=production", nil))
+	router.ServeHTTP(response, httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/config?environment=production", nil))
 
 	require.Equal(t, http.StatusInternalServerError, response.Code)
 	require.Contains(t, response.Body.String(), "no such table")
@@ -59,7 +60,7 @@ func TestFpxAPIConfigGetReturnsEmptyViewWhenNotConfigured(t *testing.T) {
 	router := gin.New()
 	router.GET("/config", handler.Get)
 	response := httptest.NewRecorder()
-	router.ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/config?environment=test", nil))
+	router.ServeHTTP(response, httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/config?environment=test", nil))
 
 	require.Equal(t, http.StatusOK, response.Code)
 	var result struct {

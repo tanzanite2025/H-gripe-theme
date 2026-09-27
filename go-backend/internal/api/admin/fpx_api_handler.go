@@ -1,12 +1,13 @@
 package admin
 
 import (
+	"strings"
+
 	"commerce-platform/internal/api/middleware"
 	"commerce-platform/internal/domain/auth"
 	"commerce-platform/internal/pkg/apierror"
 	"commerce-platform/internal/pkg/response"
 	"commerce-platform/internal/service"
-	"strings"
 
 	"github.com/gin-gonic/gin"
 )

@@ -2,17 +2,16 @@ package migrations
 
 import (
 	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 )
 
 func TestFpxAPISyncStatsMigrationContract(t *testing.T) {
-	upSQL, err := os.ReadFile(filepath.Join("353_fpx_api_sync_stats.up.sql"))
+	upSQL, err := os.ReadFile("353_fpx_api_sync_stats.up.sql")
 	if err != nil {
 		t.Fatalf("read up migration: %v", err)
 	}
-	downSQL, err := os.ReadFile(filepath.Join("353_fpx_api_sync_stats.down.sql"))
+	downSQL, err := os.ReadFile("353_fpx_api_sync_stats.down.sql")
 	if err != nil {
 		t.Fatalf("read down migration: %v", err)
 	}

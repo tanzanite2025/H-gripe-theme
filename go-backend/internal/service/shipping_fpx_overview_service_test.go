@@ -1,9 +1,10 @@
 package service
 
 import (
+	"testing"
+
 	shippingdomain "commerce-platform/internal/domain/shipping"
 	"commerce-platform/internal/repository"
-	"testing"
 
 	"github.com/glebarez/sqlite"
 	"github.com/stretchr/testify/require"

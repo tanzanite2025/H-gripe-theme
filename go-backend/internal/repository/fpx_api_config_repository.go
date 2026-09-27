@@ -1,10 +1,12 @@
 package repository
 
 import (
-	"commerce-platform/internal/domain/shipping"
 	"errors"
-	"gorm.io/gorm"
 	"time"
+
+	"commerce-platform/internal/domain/shipping"
+
+	"gorm.io/gorm"
 )
 
 type FpxAPIConfigRepository struct{ db *gorm.DB }

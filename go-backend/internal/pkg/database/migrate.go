@@ -1,6 +1,10 @@
 package database
 
 import (
+	"context"
+	"database/sql"
+	"fmt"
+
 	"commerce-platform/internal/domain/aftersales"
 	attributiondomain "commerce-platform/internal/domain/attribution"
 	"commerce-platform/internal/domain/audit"
@@ -49,9 +53,6 @@ import (
 	"commerce-platform/internal/pkg/config"
 	"commerce-platform/internal/pkg/logger"
 	"commerce-platform/internal/workbenchfeed"
-	"context"
-	"database/sql"
-	"fmt"
 
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/postgres"

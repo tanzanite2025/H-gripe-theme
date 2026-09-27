@@ -2,9 +2,6 @@ package service
 
 import (
 	"bytes"
-	"commerce-platform/internal/domain/shipping"
-	"commerce-platform/internal/pkg/secretbox"
-	"commerce-platform/internal/repository"
 	"context"
 	"crypto/md5" // #nosec G501 -- 4PX's documented gateway signature is MD5.
 	"encoding/hex"
@@ -16,6 +13,10 @@ import (
 	"sort"
 	"strings"
 	"time"
+
+	"commerce-platform/internal/domain/shipping"
+	"commerce-platform/internal/pkg/secretbox"
+	"commerce-platform/internal/repository"
 )
 
 const (

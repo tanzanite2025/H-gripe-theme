@@ -1,8 +1,6 @@
 package service
 
 import (
-	"commerce-platform/internal/domain/shipping"
-	"commerce-platform/internal/repository"
 	"context"
 	"encoding/json"
 	"io"
@@ -12,6 +10,9 @@ import (
 	"strconv"
 	"testing"
 	"time"
+
+	"commerce-platform/internal/domain/shipping"
+	"commerce-platform/internal/repository"
 
 	"github.com/glebarez/sqlite"
 	"github.com/stretchr/testify/require"

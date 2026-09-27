@@ -2,8 +2,6 @@ package service
 
 import (
 	"bytes"
-	"commerce-platform/internal/domain/shipping"
-	"commerce-platform/internal/pkg/logger"
 	"context"
 	"encoding/json"
 	"errors"
@@ -13,6 +11,9 @@ import (
 	"net/url"
 	"strconv"
 	"time"
+
+	"commerce-platform/internal/domain/shipping"
+	"commerce-platform/internal/pkg/logger"
 
 	"go.uber.org/zap"
 )
@@ -124,7 +125,7 @@ func (c *FpxGatewayClient) call(ctx context.Context, credentials fpxGatewayCrede
 		)
 		return nil, 0, errors.New("4PX gateway request failed; check network access and the official endpoint")
 	}
-	defer response.Body.Close()
+	defer func() { _ = response.Body.Close() }()
 	responseBody, err := io.ReadAll(io.LimitReader(response.Body, fpxResponseLimit))
 	if err != nil {
 		logger.Warn("4PX gateway response read failed",

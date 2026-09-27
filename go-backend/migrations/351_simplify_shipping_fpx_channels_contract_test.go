@@ -2,17 +2,16 @@ package migrations
 
 import (
 	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 )
 
 func TestSimplifyShippingFpxChannelsMigrationContract(t *testing.T) {
-	upSQL, err := os.ReadFile(filepath.Join("351_simplify_shipping_fpx_channels.up.sql"))
+	upSQL, err := os.ReadFile("351_simplify_shipping_fpx_channels.up.sql")
 	if err != nil {
 		t.Fatalf("read up migration: %v", err)
 	}
-	downSQL, err := os.ReadFile(filepath.Join("351_simplify_shipping_fpx_channels.down.sql"))
+	downSQL, err := os.ReadFile("351_simplify_shipping_fpx_channels.down.sql")
 	if err != nil {
 		t.Fatalf("read down migration: %v", err)
 	}
