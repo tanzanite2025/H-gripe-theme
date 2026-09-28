@@ -52,8 +52,7 @@
     "notProvided": "Not provided"
   },
   "source": {
-    "checked": "Source checked {date}",
-    "open": "Open official source"
+    "checked": "Source checked {date}"
   },
   "telemetry": {
     "kicker": "Data boundary",

@@ -25,7 +25,10 @@ export interface SchwalbeTireCatalogItem {
   product_exists: boolean
 }
 
-const endpoint = '/api/v1/products/schwalbe-tire-catalog'
+// `useApiRequest` already prefixes paths with the configured API base
+// (`/api/v1` in the storefront). Keep this endpoint relative to that base so
+// development and production do not request `/api/v1/api/v1/...`.
+const endpoint = '/products/schwalbe-tire-catalog'
 
 const asRecord = (value: unknown): Record<string, unknown> | null => {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return null

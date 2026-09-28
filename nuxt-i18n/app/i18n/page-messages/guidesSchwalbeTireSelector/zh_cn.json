@@ -52,8 +52,7 @@
     "notProvided": "官网未提供"
   },
   "source": {
-    "checked": "来源核验日期：{date}",
-    "open": "打开官方来源"
+    "checked": "来源核验日期：{date}"
   },
   "telemetry": {
     "kicker": "数据边界",

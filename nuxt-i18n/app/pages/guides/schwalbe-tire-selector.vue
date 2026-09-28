@@ -13,6 +13,12 @@ import SchwalbeTelemetryGuide from '~/components/tireguides/schwalbe/SchwalbeTel
 import { usePageMessages } from '~/composables/usePageMessages'
 
 definePageMeta({
+  // Keep this page at the Schwalbe selector URL while keeping it out of the
+  // `tireguides.vue` component hierarchy. The parent page renders the default
+  // Tubeless guide itself and has no `<NuxtPage />` outlet.
+  path: '/guides/tireguides/schwalbe-tire-selector',
+  breadcrumbLabelKey: 'guidesSchwalbeTireSelector.title',
+  breadcrumbLabelFallback: 'Schwalbe tire selector',
   layout: 'products',
   footerLabelKey: 'products.nav.tireSizeCharts',
   footerLabelFallback: 'Tire Guides',

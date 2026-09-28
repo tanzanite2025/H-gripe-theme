@@ -61,9 +61,6 @@
 
     <footer class="schwalbe-tire-card__footer">
       <span>{{ tx('source.checked', { date: checkedDate }) }}</span>
-      <a :href="item.source_url" target="_blank" rel="noopener noreferrer">
-        {{ tx('source.open') }}
-      </a>
     </footer>
   </article>
 </template>
@@ -79,10 +76,11 @@ const props = defineProps<{
 
 const { t: translate, locale } = useI18n()
 const tx = (key: string, params?: Record<string, unknown>) => translate(`guidesSchwalbeTireSelector.${key}`, params || {})
+const intlLocale = computed(() => locale.value.replace(/_/g, '-'))
 
 const numberWithUnit = (value: number | undefined, unit: string) => {
   if (value === undefined || !Number.isFinite(value)) return tx('common.notProvided')
-  return `${new Intl.NumberFormat(locale.value, { maximumFractionDigits: 2 }).format(value)} ${unit}`
+  return `${new Intl.NumberFormat(intlLocale.value, { maximumFractionDigits: 2 }).format(value)} ${unit}`
 }
 
 const pressureRange = computed(() => {
@@ -106,7 +104,7 @@ const pressureRange = computed(() => {
 const checkedDate = computed(() => {
   const parsed = new Date(props.item.source_checked_at)
   if (Number.isNaN(parsed.getTime())) return props.item.source_checked_at
-  return new Intl.DateTimeFormat(locale.value, { dateStyle: 'medium' }).format(parsed)
+  return new Intl.DateTimeFormat(intlLocale.value, { dateStyle: 'medium' }).format(parsed)
 })
 </script>
 
@@ -218,17 +216,11 @@ const checkedDate = computed(() => {
   flex-wrap: wrap;
   gap: 0.5rem 0.75rem;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   border-top: 1px solid var(--tz-border-subtle);
   padding-top: 0.75rem;
   color: var(--tz-text-secondary);
   font-size: 0.72rem;
-}
-
-.schwalbe-tire-card__footer a {
-  color: var(--tz-text-accent);
-  font-weight: 700;
-  text-decoration: underline;
 }
 
 @media (max-width: 480px) {
