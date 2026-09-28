@@ -234,11 +234,11 @@ const formatWidthList = (widths: string[]) =>
 }
 
 .tire-chart-legend__swatch--recommended {
-  background: #9b9b9b;
+  background: var(--tz-text-accent);
 }
 
 .tire-chart-legend__swatch--possible {
-  background: #cecece;
+  background: var(--tz-text-secondary);
 }
 
 .tire-chart-table-panel {
@@ -333,7 +333,7 @@ const formatWidthList = (widths: string[]) =>
 }
 
 .tire-chart-table__recommended {
-  color: var(--tz-text-primary) !important;
+  color: var(--tz-text-accent) !important;
   font-weight: 600;
 }
 
