@@ -55,10 +55,10 @@
       </div>
     </form>
 
-    <SchwalbeTelemetryGuide :catalog-items="items" />
+    <SchwalbeTelemetryGuide :catalog-items="filteredItems" />
 
     <div class="schwalbe-selector__summary" aria-live="polite">
-      <span>{{ tx('summary', { count: visibleItems.length }) }}</span>
+      <span>{{ tx('summary', { count: totalItems, page: currentPage, totalPages }) }}</span>
       <span v-if="submittedSearch">{{ tx('search.active', { term: submittedSearch }) }}</span>
     </div>
 
@@ -71,12 +71,53 @@
         {{ tx('states.retry') }}
       </button>
     </div>
-    <div v-else-if="visibleItems.length === 0" class="schwalbe-selector__state">
+    <div v-else-if="totalItems === 0" class="schwalbe-selector__state">
       {{ submittedSearch ? tx('states.noResults') : tx('states.empty') }}
     </div>
     <div v-else class="schwalbe-selector__grid">
       <SchwalbeTireCard v-for="item in visibleItems" :key="item.article_no" :item="item" />
     </div>
+
+    <nav
+      v-if="!pending && !error && totalPages > 1"
+      class="schwalbe-selector__pagination"
+      :aria-label="tx('pagination.label')"
+    >
+      <NuxtLink
+        v-if="currentPage > 1"
+        class="schwalbe-selector__page-link"
+        :to="pageQuery(currentPage - 1)"
+        rel="prev"
+        :aria-label="tx('pagination.previous')"
+      >
+        ‹
+      </NuxtLink>
+      <span v-else class="schwalbe-selector__page-link schwalbe-selector__page-link--disabled" aria-disabled="true">‹</span>
+
+      <template v-for="(pageToken, tokenIndex) in paginationPages" :key="`page-${tokenIndex}-${pageToken}`">
+        <span v-if="pageToken === 'ellipsis'" class="schwalbe-selector__page-ellipsis" aria-hidden="true">…</span>
+        <NuxtLink
+          v-else
+          class="schwalbe-selector__page-link"
+          :class="{ 'schwalbe-selector__page-link--current': pageToken === currentPage }"
+          :to="pageQuery(pageToken)"
+          :aria-current="pageToken === currentPage ? 'page' : undefined"
+        >
+          {{ pageToken }}
+        </NuxtLink>
+      </template>
+
+      <NuxtLink
+        v-if="currentPage < totalPages"
+        class="schwalbe-selector__page-link"
+        :to="pageQuery(currentPage + 1)"
+        rel="next"
+        :aria-label="tx('pagination.next')"
+      >
+        ›
+      </NuxtLink>
+      <span v-else class="schwalbe-selector__page-link schwalbe-selector__page-link--disabled" aria-disabled="true">›</span>
+    </nav>
   </section>
 </template>
 
@@ -91,11 +132,16 @@ const tx = (key: string, params?: Record<string, unknown>) => translate(`guidesS
 const {
   searchInput,
   submittedSearch,
-  items,
+  filteredItems,
+  totalItems,
   selectedModel,
   sortBy,
   visibleItems,
   modelOptions,
+  currentPage,
+  totalPages,
+  paginationPages,
+  pageQuery,
   pending,
   error,
   refresh,
@@ -260,6 +306,53 @@ const {
   gap: 1rem;
 }
 
+.schwalbe-selector__pagination {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  align-items: center;
+  justify-content: center;
+  padding-top: 0.25rem;
+}
+
+.schwalbe-selector__page-link {
+  display: inline-grid;
+  min-width: 2rem;
+  min-height: 2rem;
+  place-items: center;
+  border: 1px solid var(--tz-border-subtle);
+  border-radius: 0.55rem;
+  background: var(--tz-card-surface);
+  color: var(--tz-text-primary);
+  padding: 0.25rem 0.5rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1;
+  text-decoration: none;
+}
+
+.schwalbe-selector__page-link:hover {
+  border-color: var(--tz-action-primary);
+  color: var(--tz-action-primary);
+}
+
+.schwalbe-selector__page-link--current {
+  border-color: var(--tz-action-primary);
+  background: var(--tz-action-primary);
+  color: var(--tz-action-primary-foreground);
+}
+
+.schwalbe-selector__page-link--disabled {
+  color: var(--tz-text-disabled);
+  cursor: not-allowed;
+}
+
+.schwalbe-selector__page-ellipsis {
+  min-width: 1.25rem;
+  color: var(--tz-text-muted);
+  text-align: center;
+}
+
 @media (max-width: 1024px) {
   .schwalbe-selector__grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -280,6 +373,10 @@ const {
   .schwalbe-selector__button,
   .schwalbe-selector__clear {
     width: 100%;
+  }
+
+  .schwalbe-selector__pagination {
+    justify-content: flex-start;
   }
 }
 </style>

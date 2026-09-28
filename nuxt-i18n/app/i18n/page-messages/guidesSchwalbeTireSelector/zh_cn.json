@@ -22,7 +22,12 @@
     "sortEtrto": "ETRTO",
     "sortArticle": "Article No."
   },
-  "summary": "{count} 条候选记录",
+  "summary": "{count} 条候选记录 · 第 {page}/{totalPages} 页",
+  "pagination": {
+    "label": "目录分页",
+    "previous": "上一页目录",
+    "next": "下一页目录"
+  },
   "states": {
     "loading": "正在读取官方目录快照…",
     "error": "当前无法读取目录。",

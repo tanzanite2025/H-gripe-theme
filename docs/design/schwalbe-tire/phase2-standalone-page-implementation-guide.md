@@ -1,6 +1,6 @@
 # Phase 2：Schwalbe 商品规格查询页实施指南
 
-> **状态**：Phase 2 第一批目录选型切片已实现；销售商品附加层与结构化 Product/Offer 仍待后续切片。
+> **状态**：Phase 2 第一批目录选型切片、Telemetry Guide 和页面端 SSR 分页已实现；销售商品附加层与结构化 Product/Offer 仍待后续切片。
 > **页面**：`/guides/tireguides/schwalbe-tire-selector`  
 > **Phase 1 数据边界**：[Phase 1 商品模板实施指南](./phase1-schwalbe-tire-system-template-implementation-guide.md)  
 > **字段矩阵**：[Schwalbe 商品模板字段矩阵](./schwalbe-master-catalog-specification-matrix.md)  
@@ -29,6 +29,7 @@
 4. 命中真实商品时，商品标题和 19 项销售规格来自 Product 与模板值；价格、库存及可购买状态来自现有 SKU/库存查询结果。
 5. 对候选提供搜索、排序和匹配字段筛选。暂不展示未经核实的“官方兼容”“Hookless 认证”“黄金搭配”或推导出的安全压力。
 6. 页面视觉沿用站点字体和组件规范，接入指南导航、FAQ 与合适的结构化数据。
+7. `SchwalbeTelemetryGuide.vue` 属于 Phase 2 的独立技术说明区块，不扩充 Phase 1 的 19 个商品字段；它在候选卡片前首屏输出，并从当前未分页目录结果动态统计可核验的原文标签。
 
 不包含通过计算器候选自动创建或上架商品、商品审核、静态原型数据导入、购物车改造和 Hookless 兼容性引擎。
 
@@ -87,6 +88,10 @@ export interface SchwalbeMatchResult<TCandidate> {
 
 搜索接口（`GET /api/v1/products/schwalbe-tire-catalog?search=<term>`）与后台型号选择器共用以下契约：`search` 是单个完整搜索词，不做多词分词或跨字段联合。服务端把同一个词分别与 Article No.、`model_name`、ETRTO、Inch 做不区分大小写的包含匹配，四个字段之间是 OR；例如 `Pro One 28-622` 不会拆成两个词去匹配名称和尺寸，不能保证命中预期记录。省略或传空 `search` 时返回全部 773 条当前候选（按 `model_name`、ETRTO、Article No. 升序）；前端应在提交搜索前提示使用一个型号、编号或尺寸词，并按真实接口结果处理空结果。
 
+### 分页与 URL 状态
+
+目录卡片固定每页 20 条。`page` 是从 1 开始的 URL 查询参数，缺省值为 1；`search` 仍是服务端搜索参数。提交或清空搜索、切换型号筛选或排序时都回到 `page=1`，翻页保留当前搜索词。当前 `GET /api/v1/products/schwalbe-tire-catalog` 仍按既有契约返回该搜索词命中的全量数组，以兼容后台型号选择器；Nuxt 页面在 SSR 和客户端渲染层按 URL `page` 对过滤排序后的全量结果切片，HTML 每页只输出当前 20 条卡片。分页使用原生可抓取的 `NuxtLink`，支持直链、刷新、浏览器前进后退和搜索引擎跟踪，不使用点击展开或无限滚动替代分页。后续若新增服务端分页 API，必须另行定义 `{ items, total, page, page_size, total_pages }` 契约并同步 Admin。
+
 实际商品详情由 `schwalbe_tire` 模板和现有 Product/SKU 读取。模板 `is_filterable` 当前仅将 ETRTO、Inch、Version 标记为可筛选；该标记约束商品规格筛选，不代表计算器候选数据的筛选字段集合。Phase 2 候选筛选字段按匹配数据契约确定，不能把两套元数据混为一谈。
 
 本阶段不根据 ETRTO 单独推导轮圈兼容性，不从 `seal`、`version_label`、型号名称或市场经验推导 TLE/TLR、Hookless 批准、轮圈宽度范围或压力上限。将来需要兼容性能力时，先单独确定有来源依据的规则与数据模型，再实施和验收。
@@ -116,9 +121,13 @@ nuxt-i18n/app/
 
 保留原型“全谱系总览”入口、卡片布局和搜索交互。目录列表必须能显示所有已导入候选，即使没有销售 Product。筛选条件只使用目录中实际存储且来源可核验的字段；未经来源核对的 `discipline`、`series`、`hooklessApproved`、`minRimWidthMm`、`optimalRimWidthMm` 等原型字段不得作为官方事实或安全结论。界面使用 Tanzanite 本地字体与现有基础组件，不引入外部字体。
 
+`SchwalbeTelemetryGuide.vue` 保留原型的五个主题标签（四维总览、径向轮胎革命、绿色闭环与段位、1–7 级防刺、ADDIX 橡胶）和展开/收起交互。技术文案只使用已核验来源或目录中实际保存的 `model_name`、`version_label`、`compound` 等原文；773 条快照的计数随当前搜索/型号筛选结果动态更新，不把原型中的性能百分比、奖项、兼容性、安全压力或绝对化宣传当作事实。Telemetry 统计使用未分页的过滤结果，不能只统计当前 20 张卡片。
+
 ## 6. SSR、SEO 与内容
 
 - 在 SSR 阶段查询候选/匹配结果，并为每条结果附加 Article No. 对应的销售商品存在状态。
+- SSR 从 URL 的 `search`、`page` 状态读取结果；首屏只输出当前页 20 条候选卡片，并输出可抓取的分页链接。分页页码不改变候选事实，也不把目录候选变成 Product。
+- Telemetry Guide 在候选列表之前作为首屏语义内容输出；折叠按钮只改变视觉展开状态，不通过点击后再请求技术内容。可按实际文案使用 `TechArticle`，但不得为未核实的技术结论生成结构化数据。
 - 候选/匹配结果本身不是 Product；只有实际存在并展示的销售商品才输出 Product 结构化数据，有真实报价时才输出 Offer。不要输出虚构价格、库存、认证或兼容结论。
 - 通用技术说明可以声明为 `TechArticle`。目录确实完整导入并公开后，才可按实际数据描述覆盖范围；不得为 GEO 虚构数量或完整性。
 - FAQ 使用现有 FAQ 查询与组件，不在页面代码中复制后台 FAQ 内容。
@@ -133,6 +142,8 @@ nuxt-i18n/app/
 已落地的目录选型切片包括：
 
 - SSR 首屏读取 `GET /api/v1/products/schwalbe-tire-catalog`；省略搜索词时读取完整 773 条候选，提交搜索时只发送一个 `search` 参数。
+- 卡片分页固定为每页 20 条；`?page=N` 的直链在 SSR 中只输出该页卡片，搜索、型号筛选和排序会重置页码，分页链接保留搜索状态并可被爬取。
+- 首屏包含 Telemetry Guide 的五个标签、展开/收起按钮和来源边界文案；统计基于未分页的当前结果，不复制旧 HTML 的 mock 型号或未经核实的性能结论。
 - 页面提供单词搜索、型号筛选、型号名/ETRTO/Article No. 排序，并分别处理加载、接口失败、无结果和候选目录为空状态。
 - 每张卡片展示目录中已保存的官方字段、来源链接、核验日期和 `product_exists` 状态；未上架候选不会被隐藏，也不会显示价格、库存或购买按钮。
 - 页面提示四字段 OR 包含匹配和“不拆分多词”的接口限制，避免把 `Pro One 28-622` 当作跨字段联合查询。

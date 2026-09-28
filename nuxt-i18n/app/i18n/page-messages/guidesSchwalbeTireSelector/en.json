@@ -22,7 +22,12 @@
     "sortEtrto": "ETRTO",
     "sortArticle": "Article No."
   },
-  "summary": "{count} candidate records",
+  "summary": "{count} candidate records · page {page} of {totalPages}",
+  "pagination": {
+    "label": "Catalog pages",
+    "previous": "Previous catalog page",
+    "next": "Next catalog page"
+  },
   "states": {
     "loading": "Loading the official catalog snapshot…",
     "error": "The catalog could not be loaded right now.",

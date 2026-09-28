@@ -8,6 +8,16 @@ import {
 
 export type SchwalbeCatalogSort = 'model' | 'etrto' | 'article'
 
+export const SCHWALBE_CATALOG_PAGE_SIZE = 20
+
+type PaginationToken = number | 'ellipsis'
+
+const parsePage = (value: unknown): number | null => {
+  if (typeof value !== 'string' || !/^[1-9]\d*$/.test(value.trim())) return null
+  const parsed = Number(value)
+  return Number.isSafeInteger(parsed) ? parsed : null
+}
+
 export const useSchwalbeTireSelector = async () => {
   const route = useRoute()
   const router = useRouter()
@@ -18,6 +28,7 @@ export const useSchwalbeTireSelector = async () => {
   const submittedSearch = ref(initialSearch)
   const selectedModel = ref('ALL')
   const sortBy = ref<SchwalbeCatalogSort>('model')
+  const requestedPage = computed(() => parsePage(route.query.page) || 1)
 
   const requestKey = computed(() => `schwalbe-tire-catalog:${submittedSearch.value}`)
   const { data, pending, error, refresh } = await useAsyncData<SchwalbeTireCatalogItem[]>(
@@ -33,7 +44,7 @@ export const useSchwalbeTireSelector = async () => {
       .sort((left, right) => left.localeCompare(right)),
   ])
 
-  const visibleItems = computed(() => {
+  const filteredItems = computed(() => {
     const filtered = selectedModel.value === 'ALL'
       ? items.value
       : items.value.filter(item => item.model_name === selectedModel.value)
@@ -48,6 +59,39 @@ export const useSchwalbeTireSelector = async () => {
     })
   })
 
+  const totalItems = computed(() => filteredItems.value.length)
+  const totalPages = computed(() => Math.max(1, Math.ceil(totalItems.value / SCHWALBE_CATALOG_PAGE_SIZE)))
+  const currentPage = computed(() => Math.min(requestedPage.value, totalPages.value))
+  const visibleItems = computed(() => {
+    const start = (currentPage.value - 1) * SCHWALBE_CATALOG_PAGE_SIZE
+    return filteredItems.value.slice(start, start + SCHWALBE_CATALOG_PAGE_SIZE)
+  })
+
+  const paginationPages = computed<PaginationToken[]>(() => {
+    if (totalPages.value <= 7) {
+      return Array.from({ length: totalPages.value }, (_, index) => index + 1)
+    }
+
+    const candidates = new Set([1, totalPages.value, currentPage.value])
+    if (currentPage.value > 1) candidates.add(currentPage.value - 1)
+    if (currentPage.value < totalPages.value) candidates.add(currentPage.value + 1)
+    const sorted = [...candidates].sort((left, right) => left - right)
+    const result: PaginationToken[] = []
+    sorted.forEach((page, index) => {
+      const previous = sorted[index - 1]
+      if (previous !== undefined && page - previous > 1) result.push('ellipsis')
+      result.push(page)
+    })
+    return result
+  })
+
+  const pageQuery = (page: number) => {
+    const query = { ...route.query }
+    if (page <= 1) delete query.page
+    else query.page = String(page)
+    return { query }
+  }
+
   watch(modelOptions, (options) => {
     if (!options.includes(selectedModel.value)) selectedModel.value = 'ALL'
   })
@@ -59,12 +103,35 @@ export const useSchwalbeTireSelector = async () => {
     submittedSearch.value = nextSearch
   })
 
+  watch([selectedModel, sortBy], ([nextModel, nextSort], [previousModel, previousSort]) => {
+    if (nextModel === previousModel && nextSort === previousSort) return
+    if (!route.query.page) return
+    const query = { ...route.query }
+    delete query.page
+    void router.replace({ query })
+  })
+
+  watch([pending, totalPages], ([isPending, pages]) => {
+    if (!import.meta.client || isPending || !route.query.page) return
+
+    const parsedPage = parsePage(route.query.page)
+    const normalizedPage = Math.min(parsedPage || 1, pages)
+    const query = { ...route.query }
+    if (normalizedPage <= 1) delete query.page
+    else query.page = String(normalizedPage)
+
+    const currentPageQuery = typeof route.query.page === 'string' ? route.query.page : ''
+    if (query.page === currentPageQuery) return
+    void router.replace({ query })
+  }, { immediate: true })
+
   const submitSearch = async () => {
     const nextSearch = searchInput.value.trim()
     submittedSearch.value = nextSearch
     const query = { ...route.query }
     if (nextSearch) query.search = nextSearch
     else delete query.search
+    delete query.page
     await router.replace({ query })
   }
 
@@ -79,8 +146,15 @@ export const useSchwalbeTireSelector = async () => {
     selectedModel,
     sortBy,
     items,
+    filteredItems,
+    totalItems,
     visibleItems,
     modelOptions,
+    pageSize: SCHWALBE_CATALOG_PAGE_SIZE,
+    currentPage,
+    totalPages,
+    paginationPages,
+    pageQuery,
     pending,
     error,
     refresh,

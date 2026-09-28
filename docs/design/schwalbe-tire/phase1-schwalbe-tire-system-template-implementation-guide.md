@@ -6,6 +6,7 @@
 > **迁移基线**：既有迁移 1–353 保持原样；Schwalbe 迁移从 354 起追加。迁移 357 是历史清理，迁移 358 前向恢复候选目录，迁移 359 导入官方目录快照，迁移 360 加固销售商品 Article No. 唯一性；不回滚既有迁移。
 > **字段矩阵**：[Schwalbe 商品模板字段矩阵](./schwalbe-master-catalog-specification-matrix.md)  
 > **Phase 2 实施指南**：[Phase 2：Schwalbe 商品规格查询页实施指南](./phase2-standalone-page-implementation-guide.md)
+> **Phase 2 页面技术说明**：Telemetry Guide 与页面端 SSR 分页契约见 [Phase 2 实施指南](./phase2-standalone-page-implementation-guide.md)；技术说明不是 19 个商品字段或销售事实。
 > **目录快照**：2026-09-28 从 Schwalbe 英文官网 sitemap 读取 788 个轮胎候选 URL，其中 773 个产品页可访问并已生成目录行，15 个旧 URL 返回 404 并排除；快照范围为 Article No. 前缀 `111`、`112`、`116` 的外胎变体，不包含内胎和轮圈带。
 
 ## 1. 设计结论
@@ -125,4 +126,6 @@ Hookless/TLE/TLR 兼容性引擎属于后续功能。产品页压力字段不代
 本节与 [Phase 2：Schwalbe 商品规格查询页实施指南](./phase2-standalone-page-implementation-guide.md) 对齐；19 个字段及模板元数据以 [Schwalbe 商品模板字段矩阵](./schwalbe-master-catalog-specification-matrix.md) 为准。
 
 全谱系候选以 `schwalbe_tire_specifications` 为源；当前 2026-09-28 快照包含 773 条 live 外胎变体，15 个 sitemap 旧 URL 因 404 排除。商品选择器据此自动回填表单，选型器据此展示所有目录候选。每条结果再按 Article No. 查询真实销售 Product 并显示是否存在。命中时，销售详情仍从 Product 模板、`product_spec_values` 和现有 SKU 读取；未命中时保留候选结果但不生成虚假商品信息。HTML 原型中的 `rawTires` 是演示数据，不能直接当作已核实目录导入。
+
+页面端的 Telemetry Guide 和固定每页 20 条的 SSR 分页属于 Phase 2 展示契约，不改变本阶段 19 个模板字段、商品保存路径或目录表结构。`page`/`search` URL 状态、可抓取分页链接、五个技术标签和来源边界以 [Phase 2 实施指南](./phase2-standalone-page-implementation-guide.md) 为准；Telemetry 统计可读取未分页候选快照，但不能扩大为新的字段或销售承诺。
 
