@@ -63,5 +63,64 @@
       "sales": "The status chip only reports whether a matching store Product exists; prices and stock are not invented for candidates.",
       "compatibility": "ETRTO, pressure, and construction values are shown as source facts and do not produce a Hookless or rim-compatibility verdict."
     }
+  },
+  "telemetryGuide": {
+    "kicker": "SCHWALBE TELEMETRY GUIDE",
+    "title": "SCHWALBE TELEMETRY GUIDE // 2025/2026 technical catalog map",
+    "subtitle": "Radial labels · model versions · puncture technologies · Compound strings — read from the current catalog snapshot.",
+    "badge": "Source-bound view",
+    "records": "{count} snapshot records",
+    "tabListLabel": "Technical catalog topics",
+    "collapse": "Collapse guide ▲",
+    "expand": "Expand guide ▼",
+    "notObserved": "Not observed",
+    "disclaimer": "Counts follow the current catalog or search result. Labels are copied from source fields; they do not create a compatibility, performance, safety, or purchase recommendation.",
+    "tabs": {
+      "all": "Four topic overview",
+      "radial": "🌀 Radial labels",
+      "green": "🌿 Model and Green Marathon",
+      "protection": "🛡️ 1–7 protection map",
+      "addix": "🧪 ADDIX / Compound"
+    },
+    "radial": {
+      "label": "Radial casing · observed labels",
+      "title": "RADIAL labels in the 2025/2026 catalog snapshot",
+      "count": "{count} records with Radial",
+      "principleTitle": "What this panel can establish",
+      "principleBody": "RADIAL is shown here when it appears in a model name or Version field. The catalog does not include casing angles, contact-area tests, pressure comparisons, or performance measurements.",
+      "observedTitle": "Observed",
+      "observedBody": "Exact model and Version strings remain visible so each result can be checked against its source record.",
+      "boundaryTitle": "Needs a technical source",
+      "boundaryBody": "Grip, damping, rolling resistance, rim width, and race claims require a specific official document or product page.",
+      "snapshotTitle": "Source strings grouped in this result",
+      "snapshotBody": "These groups are counts of exact text matches across model, Version, Compound, Seal, and Tread fields."
+    },
+    "green": {
+      "label": "Model names · Green Marathon",
+      "title": "Official model names and Green Marathon fields",
+      "count": "{count} Green Marathon records",
+      "modelTitle": "No invented product tiers",
+      "modelBody": "The snapshot contains {count} distinct model_name values. This panel keeps those names as catalog labels instead of turning them into performance or market tiers.",
+      "modelStat": "distinct model names",
+      "recordStat": "records in view",
+      "marathonTitle": "Green Marathon · exact fields",
+      "marathonBody": "When the current result includes Green Marathon, the values below are taken from its stored Version, Compound, Seal, and Tread fields."
+    },
+    "protection": {
+      "label": "Protection technologies · source labels",
+      "title": "Named protection technologies in the snapshot",
+      "badge": "Label counts",
+      "note": "The official protection diagram names technologies and numbered constructions. This catalog only counts matching Version or related source text; it does not infer a level, thickness, material, or flat-less result.",
+      "levelBody": "Numbered reference from the official protection diagram; the count is the matching Version-label count in this snapshot.",
+      "labelsTitle": "Observed Version labels",
+      "itemBody": "Observed as source text on one or more catalog records."
+    },
+    "addix": {
+      "label": "ADDIX / Compound · source labels",
+      "title": "Compound strings preserved exactly",
+      "count": "{count} Compound values observed",
+      "note": "Compound is stored and displayed as the official page text. Counts below are exact case-insensitive matches in the current result; performance, color, temperature, and intended-use meanings require their own source.",
+      "itemBody": "Exact Compound label count in the current result."
+    }
   }
 }

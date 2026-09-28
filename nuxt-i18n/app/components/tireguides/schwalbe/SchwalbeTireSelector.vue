@@ -55,6 +55,8 @@
       </div>
     </form>
 
+    <SchwalbeTelemetryGuide :catalog-items="items" />
+
     <div class="schwalbe-selector__summary" aria-live="polite">
       <span>{{ tx('summary', { count: visibleItems.length }) }}</span>
       <span v-if="submittedSearch">{{ tx('search.active', { term: submittedSearch }) }}</span>
@@ -81,6 +83,7 @@
 <script setup lang="ts">
 import { useI18n } from '#imports'
 import SchwalbeTireCard from '~/components/tireguides/schwalbe/SchwalbeTireCard.vue'
+import SchwalbeTelemetryGuide from '~/components/tireguides/schwalbe/SchwalbeTelemetryGuide.vue'
 import { useSchwalbeTireSelector } from '~/composables/useSchwalbeTireSelector'
 
 const { t: translate } = useI18n()
@@ -88,6 +91,7 @@ const tx = (key: string, params?: Record<string, unknown>) => translate(`guidesS
 const {
   searchInput,
   submittedSearch,
+  items,
   selectedModel,
   sortBy,
   visibleItems,

@@ -63,5 +63,64 @@
       "sales": "状态标签只说明是否存在匹配的商城 Product；候选没有价格和库存时不会虚构。",
       "compatibility": "ETRTO、胎压和结构值按来源事实展示，不会据此给出 Hookless 或车圈兼容结论。"
     }
+  },
+  "telemetryGuide": {
+    "kicker": "SCHWALBE TELEMETRY GUIDE",
+    "title": "SCHWALBE TELEMETRY GUIDE // 2025/2026 世文官方前沿硬核技术图解",
+    "subtitle": "径向标签 · 型号版本 · 防刺技术 · Compound 原文——全部读取当前目录快照。",
+    "badge": "有来源边界视图",
+    "records": "{count} 条快照记录",
+    "tabListLabel": "技术目录主题",
+    "collapse": "收起图解 ▲",
+    "expand": "展开图解 ▼",
+    "notObserved": "当前未观察到",
+    "disclaimer": "计数会随当前目录或搜索结果更新。标签直接复制来源字段，不自动形成兼容、性能、安全或购买建议。",
+    "tabs": {
+      "all": "四维总览",
+      "radial": "🌀 径向标签",
+      "green": "🌿 型号与 Green Marathon",
+      "protection": "🛡️ 1–7 级结构图",
+      "addix": "🧪 ADDIX / Compound"
+    },
+    "radial": {
+      "label": "Radial 径向胎体 · 快照标签",
+      "title": "2025/2026 目录快照中的 RADIAL 标签",
+      "count": "{count} 条记录含 Radial",
+      "principleTitle": "本区块可以确认什么",
+      "principleBody": "当 RADIAL 出现在型号名或 Version 字段时，本区块显示该原文。目录没有胎体角度、接触面积测试、压力对比或性能测试字段。",
+      "observedTitle": "快照事实",
+      "observedBody": "保留官方型号和 Version 原文，方便回到对应目录记录核对。",
+      "boundaryTitle": "需要单独技术来源",
+      "boundaryBody": "抓地、阻尼、滚阻、车圈内宽和赛事结论必须由具体官方资料或产品页支持。",
+      "snapshotTitle": "当前结果中的来源字符串分组",
+      "snapshotBody": "以下是 model、Version、Compound、Seal 和 Tread 字段中的文本匹配计数。"
+    },
+    "green": {
+      "label": "型号名称 · Green Marathon",
+      "title": "官方型号名与 Green Marathon 字段",
+      "count": "{count} 条 Green Marathon 记录",
+      "modelTitle": "不虚构产品段位",
+      "modelBody": "当前快照含 {count} 个不同的 model_name。本区块保留目录型号原文，不把名称转换为性能或市场段位。",
+      "modelStat": "个不同型号名",
+      "recordStat": "当前记录数",
+      "marathonTitle": "Green Marathon · 精确字段",
+      "marathonBody": "当前结果含 Green Marathon 时，以下值直接取自已保存的 Version、Compound、Seal 和 Tread 字段。"
+    },
+    "protection": {
+      "label": "防刺技术 · 来源标签",
+      "title": "快照中出现的命名防刺技术",
+      "badge": "标签计数",
+      "note": "官方防刺图示会列出技术名称和数字结构。本目录只统计 Version 或相关来源文本中的匹配，不据此推导等级、厚度、材料或防爆结论。",
+      "levelBody": "数字结构来自官方防刺图示；右侧计数为本快照中匹配 Version 标签的记录数。",
+      "labelsTitle": "快照中观察到的 Version 标签",
+      "itemBody": "作为来源文本出现在一条或多条目录记录中。"
+    },
+    "addix": {
+      "label": "ADDIX / Compound · 来源标签",
+      "title": "完整保留 Compound 原文",
+      "count": "观察到 {count} 个 Compound 值",
+      "note": "Compound 按官网页面原文保存和展示。以下是当前结果中的不区分大小写精确匹配计数；性能、颜色、温度和用途含义需要各自的官方来源。",
+      "itemBody": "当前结果中的 Compound 原文计数。"
+    }
   }
 }

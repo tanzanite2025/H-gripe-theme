@@ -1,7 +1,6 @@
 <template>
   <div class="schwalbe-page">
     <SchwalbeTireSelector />
-    <SchwalbeTelemetryGuide />
   </div>
 </template>
 
@@ -9,7 +8,6 @@
 import { watch } from 'vue'
 import { useHead, useI18n } from '#imports'
 import SchwalbeTireSelector from '~/components/tireguides/schwalbe/SchwalbeTireSelector.vue'
-import SchwalbeTelemetryGuide from '~/components/tireguides/schwalbe/SchwalbeTelemetryGuide.vue'
 import { usePageMessages } from '~/composables/usePageMessages'
 
 definePageMeta({
