@@ -144,9 +144,10 @@ const answerId = (itemId: string) => (
   max-width: 100%;
   flex: 0 0 auto;
   overflow: hidden;
-  border: 1px solid transparent;
-  border-radius: 0.75rem;
+  border: 1px solid rgba(20, 32, 43, 0.12);
+  border-radius: 1rem;
   background: var(--tz-card-surface, #ffffff);
+  box-shadow: 0 3px 12px rgba(20, 32, 43, 0.06);
   transition: border-color 0.2s ease, background 0.2s ease;
 }
 
@@ -216,9 +217,10 @@ const answerId = (itemId: string) => (
   max-width: 100%;
   box-sizing: border-box;
   overflow: hidden;
-  border: 1px solid transparent;
-  border-radius: 0.75rem;
+  border: 1px solid rgba(20, 32, 43, 0.12);
+  border-radius: 1rem;
   background: var(--tz-card-surface, #ffffff);
+  box-shadow: 0 3px 12px rgba(20, 32, 43, 0.06);
 }
 
 .desktop-faq-master-detail__detail-content,

@@ -27,11 +27,15 @@
     </div>
   </section>
 
-  <PageFaq
+  <div
     v-else-if="resolvedFaqData && resolvedFaqPageId"
-    :page-id="resolvedFaqPageId"
-    :data="resolvedFaqData"
-  />
+    class="page-faq-slot"
+  >
+    <PageFaq
+      :page-id="resolvedFaqPageId"
+      :data="resolvedFaqData"
+    />
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -59,7 +63,9 @@ const resolvedFaqPageId = computed(() => resolvedFaqData.value ? getPageFaqId(re
 <style scoped>
 .page-faq-slot {
   width: 100%;
-  padding: clamp(0.75rem, 1vw, 1.2rem) 0;
+  /* Keep the auto-inserted FAQ visually separate from the page section above. */
+  margin-top: clamp(1.25rem, 2vw, 2rem);
+  padding: 0;
 }
 
 .page-faq-slot__skeleton {

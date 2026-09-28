@@ -158,7 +158,12 @@ const answerId = (itemId: string) => (
 
 <style scoped>
 .page-faq {
+  box-sizing: border-box;
   scroll-margin-top: calc(var(--tz-site-header-spacer-height) + 1rem);
+  overflow: hidden;
+  border: 1px solid rgba(20, 32, 43, 0.12);
+  border-radius: 1.25rem;
+  box-shadow: 0 8px 24px rgba(20, 32, 43, 0.07);
   color: var(--tz-text-primary);
 }
 
