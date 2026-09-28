@@ -122,8 +122,21 @@
           </div>
           <p class="schwalbe-telemetry__topic-note">{{ tx('telemetryGuide.addix.note') }}</p>
           <div class="schwalbe-telemetry__compound-grid">
-            <article v-for="entry in compoundGuides" :key="entry.key" class="schwalbe-telemetry__compound">
-              <span class="schwalbe-telemetry__compound-dot" aria-hidden="true"></span>
+            <article
+              v-for="entry in compoundGuides"
+              :key="entry.key"
+              :class="[
+                'schwalbe-telemetry__compound',
+                `schwalbe-telemetry__compound--${entry.accent}`,
+              ]"
+            >
+              <span
+                :class="[
+                  'schwalbe-telemetry__compound-bar',
+                  `schwalbe-telemetry__compound-bar--${entry.accent}`,
+                ]"
+                aria-hidden="true"
+              ></span>
               <div>
                 <div class="schwalbe-telemetry__list-title">
                   <strong>{{ tx(`telemetryGuide.addix.items.${entry.key}.title`) }}</strong>
@@ -190,10 +203,13 @@ const protectionLevels = [
 ] as const
 
 const compoundGuides = [
-  { key: 'speed' },
-  { key: 'mid' },
-  { key: 'soft' },
-  { key: 'ultraSoft' },
+  { key: 'race', accent: 'race' },
+  { key: 'fourSeason', accent: 'fourSeason' },
+  { key: 'speed', accent: 'speed' },
+  { key: 'speedGrip', accent: 'speedGrip' },
+  { key: 'soft', accent: 'soft' },
+  { key: 'ultraSoft', accent: 'ultraSoft' },
+  { key: 'endurance', accent: 'endurance' },
 ] as const
 </script>
 
@@ -525,13 +541,73 @@ const compoundGuides = [
   padding: 0.65rem;
 }
 
-.schwalbe-telemetry__compound-dot {
+.schwalbe-telemetry__compound-bar {
   display: block;
-  width: 0.55rem;
-  height: 0.55rem;
+  width: 0.45rem;
+  min-height: 2.85rem;
   margin-top: 0.25rem;
   border-radius: 999px;
-  background: var(--tz-text-secondary);
+}
+
+.schwalbe-telemetry__compound-bar--race {
+  background: linear-gradient(180deg, #38bdf8 0%, #4f46e5 100%);
+}
+
+.schwalbe-telemetry__compound-bar--fourSeason {
+  background: #475569;
+}
+
+.schwalbe-telemetry__compound-bar--speed {
+  background: #e4032d;
+}
+
+.schwalbe-telemetry__compound-bar--speedGrip {
+  background: #179dda;
+}
+
+.schwalbe-telemetry__compound-bar--soft {
+  background: #ec660d;
+}
+
+.schwalbe-telemetry__compound-bar--ultraSoft {
+  background: #9f4092;
+}
+
+.schwalbe-telemetry__compound-bar--endurance {
+  background: #059669;
+}
+
+.schwalbe-telemetry__compound--race {
+  border-color: #c7d2fe;
+}
+
+.schwalbe-telemetry__compound--fourSeason {
+  border-color: #cbd5e1;
+}
+
+.schwalbe-telemetry__compound--speed {
+  border-color: #fecdd3;
+  background: #fff1f2;
+}
+
+.schwalbe-telemetry__compound--speedGrip {
+  border-color: #bae6fd;
+  background: #f0f9ff;
+}
+
+.schwalbe-telemetry__compound--soft {
+  border-color: #fde68a;
+  background: #fffbeb;
+}
+
+.schwalbe-telemetry__compound--ultraSoft {
+  border-color: #e9d5ff;
+  background: #faf5ff;
+}
+
+.schwalbe-telemetry__compound--endurance {
+  border-color: #a7f3d0;
+  background: #ecfdf5;
 }
 
 .schwalbe-telemetry__list-title {

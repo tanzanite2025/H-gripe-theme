@@ -121,7 +121,7 @@ nuxt-i18n/app/
 
 保留原型“全谱系总览”入口、卡片布局和搜索交互。目录列表必须能显示所有已导入候选，即使没有销售 Product。筛选条件只使用目录中实际存储且来源可核验的字段；未经来源核对的 `discipline`、`series`、`hooklessApproved`、`minRimWidthMm`、`optimalRimWidthMm` 等原型字段不得作为官方事实或安全结论。界面使用 Tanzanite 本地字体与现有基础组件，不引入外部字体。
 
-`SchwalbeTelemetryGuide.vue` 使用四个独立主题标签（Radial 胎体、Green Marathon、防刺等级 1–7、ADDIX 胶料）和展开/收起交互；移除重复的“技术总览”标签，默认只展示 Radial 主题，避免把四个主题重复堆叠在首屏。Radial 卡片依据 [Schwalbe Radial MTB 技术页](https://www.schwalbe.com/en/radialtires-mtb) 说明约 45° 交叉帘线与更钝、接近 90° 的排布、选择性变形、相同胎压下约 30% 的接地面积变化及滚阻取舍；不写入统一胎压、兼容性或型号性能保证。防刺卡片依据 [Schwalbe 防刺技术页](https://www.schwalbe.com/en/technology-faq/puncture-protection/) 展示 Level 7 SmartGuard / Smart DualGuard、Level 6+ Super Defense、Level 6 Double Defense、Level 5 V-Guard / GreenGuard / RaceGuard、Level 4 RaceGuard、Level 3 K-Guard、Level 2 67 EPI 和 Level 1 50 EPI；PunctureGuard 作为官方单独命名的 3 mm 入门结构说明，不强行归入数字等级。ADDIX 卡片依据官方胶料说明展示 Speed、Mid（原 SpeedGrip）、Soft 和 Ultra Soft。Green Marathon 专题只展示面向用户的来源说明（ADDIX Eco 含回收工业炭黑和 100% 天然橡胶；GreenGuard 为 3 mm 柔性印度橡胶防刺层，部分材料来自回收来源；官方页面标注 Fair Rubber，并说明材料中 80% 为回收或可再生来源）。组件不展示快照记录数、来源字符串分组、标签计数或数据治理用语，也不把等级名称解释成跨品牌统一耐刺评分；原型中的奖项、兼容性、安全压力和绝对化宣传必须有逐条官方来源后才能加入。
+`SchwalbeTelemetryGuide.vue` 使用四个独立主题标签（Radial 胎体、Green Marathon、防刺等级 1–7、ADDIX 胶料）和展开/收起交互；移除重复的“技术总览”标签，默认只展示 Radial 主题，避免把四个主题重复堆叠在首屏。Radial 卡片依据 [Schwalbe Radial MTB 技术页](https://www.schwalbe.com/en/radialtires-mtb) 说明约 45° 交叉帘线与更钝、接近 90° 的排布、选择性变形、相同胎压下约 30% 的接地面积变化及滚阻取舍；不写入统一胎压、兼容性或型号性能保证。防刺卡片依据 [Schwalbe 防刺技术页](https://www.schwalbe.com/en/technology-faq/puncture-protection/) 展示 Level 7 SmartGuard / Smart DualGuard、Level 6+ Super Defense、Level 6 Double Defense、Level 5 V-Guard / GreenGuard / RaceGuard、Level 4 RaceGuard、Level 3 K-Guard、Level 2 67 EPI 和 Level 1 50 EPI；PunctureGuard 作为官方单独命名的 3 mm 入门结构说明，不强行归入数字等级。ADDIX 专题保留七条静态命名线：ADDIX Race、ADDIX 4-Season、ADDIX Speed、ADDIX Mid（原 SpeedGrip）、ADDIX Soft、ADDIX Ultra Soft 和 Endurance Compound；其中官方 ADDIX 页给出的 Speed、Mid、Soft、Ultra Soft 颜色用于对应色条，Race、4-Season 和 Endurance 的颜色仅作本指南视觉图例，不代表额外认证或统一性能等级，具体型号仍以对应官方产品页为准。Green Marathon 专题只展示面向用户的来源说明（ADDIX Eco 含回收工业炭黑和 100% 天然橡胶；GreenGuard 为 3 mm 柔性印度橡胶防刺层，部分材料来自回收来源；官方页面标注 Fair Rubber，并说明材料中 80% 为回收或可再生来源）。组件不展示快照记录数、来源字符串分组、标签计数或数据治理用语，也不把等级名称解释成跨品牌统一耐刺评分；原型中的奖项、兼容性、安全压力和绝对化宣传必须有逐条官方来源后才能加入。
 
 ## 6. SSR、SEO 与内容
 
@@ -143,7 +143,7 @@ nuxt-i18n/app/
 
 - SSR 首屏读取 `GET /api/v1/products/schwalbe-tire-catalog`；省略搜索词时读取完整 773 条候选，提交搜索时只发送一个 `search` 参数。
 - 卡片分页固定为每页 20 条；`?page=N` 的直链在 SSR 中只输出该页卡片，搜索、型号筛选和排序会重置页码，分页链接保留搜索状态并可被爬取。
-- 首屏包含 Telemetry Guide 的四个主题标签、展开/收起按钮和静态来源说明；默认只输出一个主题，切换标签时替换主题内容；技术卡片不读取或显示目录计数，不复制旧 HTML 的 mock 型号或未经核实的性能结论。
+- 首屏包含 Telemetry Guide 的四个主题标签、展开/收起按钮和静态来源说明；默认只输出一个主题，切换标签时替换主题内容；ADDIX 标签下保留七条彩色命名线；技术卡片不读取或显示目录计数，不复制旧 HTML 的 mock 型号或未经核实的性能结论。
 - 页面提供单词搜索、型号筛选、型号名/ETRTO/Article No. 排序，并分别处理加载、接口失败、无结果和候选目录为空状态。
 - 每张卡片展示目录中已保存的官方字段、来源链接、核验日期和 `product_exists` 状态；未上架候选不会被隐藏，也不会显示价格、库存或购买按钮。
 - 页面提示四字段 OR 包含匹配和“不拆分多词”的接口限制，避免把 `Pro One 28-622` 当作跨字段联合查询。

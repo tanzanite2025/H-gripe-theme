@@ -170,16 +170,24 @@
     },
     "addix": {
       "label": "ADDIX 胶料 · 官方说明",
-      "title": "当前 ADDIX 官方说明中的胶料区别",
-      "note": "以下四张卡片依据 Schwalbe 当前 ADDIX 胶料页面整理。具体产品还可能使用其他胶料名称，不应把它们的特性直接套用到以下四类。",
+      "title": "ADDIX 胶料体系与颜色线说明",
+      "note": "以下七张卡片保留了 Schwalbe 官方产品资料中出现的 ADDIX 与耐久型配方名称。颜色只是本说明中的视觉识别线，不代表额外认证或统一性能等级；具体型号仍以对应官方产品页为准。",
       "items": {
+        "race": {
+          "title": "ADDIX Race",
+          "body": "出现在部分竞速取向官方产品页中的配方名称。具体胎体、花纹、规格和适用场景仍应以型号产品页为准。"
+        },
+        "fourSeason": {
+          "title": "ADDIX 4-Season",
+          "body": "出现在部分四季公路与旅行产品中的配方名称；名称本身不等于统一的低温或湿地抓地评级。"
+        },
         "speed": {
           "title": "ADDIX Speed",
           "body": "偏向效率与较低滚动阻力，同时兼顾耐久性、缓震和抓地，适合追求速度的越野骑行。"
         },
-        "mid": {
+        "speedGrip": {
           "title": "ADDIX Mid（原 SpeedGrip）",
-          "body": "兼顾较低滚阻、缓震、抓地与耐久性，在效率、舒适和耐用之间取得平衡。"
+          "body": "官方资料目前将这项平衡型配方称为 Mid（此前称 SpeedGrip）：兼顾较低滚阻、缓震、抓地与最大耐久性。"
         },
         "soft": {
           "title": "ADDIX Soft",
@@ -188,6 +196,10 @@
         "ultraSoft": {
           "title": "ADDIX Ultra Soft",
           "body": "滚阻相对最高，同时提供最强缓震和抓地，包括湿地表现；面向需要最大牵引力和控制的极限越野。"
+        },
+        "endurance": {
+          "title": "Endurance Compound",
+          "body": "出现在部分旅行与日常使用产品中的耐久型配方名称。它不是里程承诺，实际耐用性取决于完整型号结构与使用条件。"
         }
       }
     }

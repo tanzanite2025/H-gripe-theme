@@ -170,16 +170,24 @@
     },
     "addix": {
       "label": "ADDIX compounds · official descriptions",
-      "title": "What the current ADDIX compound guide describes",
-      "note": "The four cards below follow Schwalbe's current ADDIX compound page. Other compound names may exist for specific products; do not infer their properties from one of these four descriptions.",
+      "title": "ADDIX compound families and visual line guide",
+      "note": "These seven cards preserve the named ADDIX and endurance lines used across Schwalbe's official product material. The colors are visual markers for this guide, not a separate certification or a universal performance scale. A product may use another compound name; verify the exact model page.",
       "items": {
+        "race": {
+          "title": "ADDIX Race",
+          "body": "A named compound used on selected race-oriented product pages. The model page remains the source for its exact casing, tread, size, and intended use."
+        },
+        "fourSeason": {
+          "title": "ADDIX 4-Season",
+          "body": "A named compound used on selected all-season road and touring products. The name alone is not a universal temperature or wet-grip rating."
+        },
         "speed": {
           "title": "ADDIX Speed",
           "body": "Designed for efficient, fast off-road riding, with low rolling resistance and high durability while retaining damping and grip."
         },
-        "mid": {
+        "speedGrip": {
           "title": "ADDIX Mid (formerly SpeedGrip)",
-          "body": "Combines low rolling resistance with high damping, good grip, and maximum durability for an efficient, comfortable all-round setup."
+          "body": "Official material now calls this balanced compound Mid (formerly SpeedGrip): low rolling resistance with high damping, good grip, and maximum durability."
         },
         "soft": {
           "title": "ADDIX Soft",
@@ -188,6 +196,10 @@
         "ultraSoft": {
           "title": "ADDIX Ultra Soft",
           "body": "Has the highest rolling resistance, with the best damping and maximum grip, even in wet conditions; intended for extreme trails requiring maximum traction and control."
+        },
+        "endurance": {
+          "title": "Endurance Compound",
+          "body": "A named endurance compound found on selected touring and everyday products. It is a compound label, not a mileage promise; actual durability depends on the complete model construction and use."
         }
       }
     }
