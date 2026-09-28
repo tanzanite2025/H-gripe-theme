@@ -8,13 +8,23 @@ $ErrorActionPreference = 'Stop'
 $Root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $LogDir = Join-Path $Root 'output/dev'
 
+$redisHostPort = 9662
+$redisHostPortOverride = [Environment]::GetEnvironmentVariable('REDIS_HOST_PORT', 'Process')
+if (-not [string]::IsNullOrWhiteSpace($redisHostPortOverride)) {
+  $parsedRedisHostPort = 0
+  if (-not [int]::TryParse($redisHostPortOverride, [ref]$parsedRedisHostPort) -or $parsedRedisHostPort -lt 1 -or $parsedRedisHostPort -gt 65535) {
+    throw "REDIS_HOST_PORT must be a valid TCP port between 1 and 65535"
+  }
+  $redisHostPort = $parsedRedisHostPort
+}
+
 $Ports = [ordered]@{
   Storefront = 9199
   Api        = 9200
   Admin      = 9300
   SiteQualityRunner = 9240
   Postgres   = 9400
-  Redis      = 9562
+  Redis      = $redisHostPort
 }
 
 $AppPorts = @($Ports.Storefront, $Ports.Api, $Ports.Admin)
