@@ -37,7 +37,7 @@
 
 ## 4. 技术说明、FAQ 与引用
 
-页面上的 ADDIX、胎体、TLE/TLR、Hookless、ETRTO 等技术内容，只有在对应官方资料能直接支持具体说法和适用范围时，才可作为独立说明加入。引用应链接到实际来源；不得声称未核对的白皮书版本、测试结果或官方认证。Telemetry Guide 采用五个标签（技术总览、Radial 胎体、Green Marathon、防刺结构、ADDIX 胶料）和可折叠视觉交互，首屏仍 SSR 输出内容。Radial 说明以 [Schwalbe Radial MTB 技术页](https://www.schwalbe.com/en/radialtires-mtb) 为准，防刺结构说明以 Schwalbe 官方防刺资料为准，ADDIX 说明以官方胶料资料为准；Green Marathon 标签只展示已核验的 ADDIX Eco、GreenGuard、Fair Rubber 和回收/可再生材料说明。Telemetry 是不读取目录、搜索结果、筛选或分页状态的静态组件，可以在商品页或弹窗中复用；公域不展示快照记录数、来源字符串分组或标签计数，也不把目录标签解释成统一等级、认证、兼容性、性能或销售事实。
+页面上的 ADDIX、胎体、TLE/TLR、Hookless、ETRTO 等技术内容，只有在对应官方资料能直接支持具体说法和适用范围时，才可作为独立说明加入。引用应链接到实际来源；不得声称未核对的白皮书版本、测试结果或官方认证。Telemetry Guide 采用五个标签（技术总览、Radial 胎体、Green Marathon、防刺等级 1–7、ADDIX 胶料）和可折叠视觉交互，首屏仍 SSR 输出内容。Radial 说明以 [Schwalbe Radial MTB 技术页](https://www.schwalbe.com/en/radialtires-mtb) 为准，防刺等级以 [Schwalbe 官方防刺技术页](https://www.schwalbe.com/en/technology-faq/puncture-protection/) 中的 Level 7、6+、6、5、4、3、2、1 结构为准，ADDIX 说明以官方胶料资料为准；PunctureGuard 单独保留为 3 mm 入门结构，不强行归入数字等级。Green Marathon 标签只展示已核验的 ADDIX Eco、GreenGuard、Fair Rubber 和回收/可再生材料说明。Telemetry 是不读取目录、搜索结果、筛选或分页状态的静态组件，可以在商品页或弹窗中复用；公域不展示快照记录数、来源字符串分组或标签计数，也不把等级名称解释成跨品牌统一评分、认证、兼容性、性能或销售事实。
 
 FAQ 使用站点现有内容能力。FAQ 不能扩充 Phase 1 商品字段，也不能把未核实的安全推断包装成 Schwalbe 官方结论。现有样例内容边界见 [FAQ 内容指南](./schwalbe-faq-knowledge-base-input-guide.md)。
 

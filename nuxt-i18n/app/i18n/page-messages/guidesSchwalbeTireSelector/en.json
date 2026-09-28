@@ -81,7 +81,7 @@
       "all": "Technology overview",
       "radial": "🌀 Radial casing",
       "green": "🌿 Green Marathon",
-      "protection": "🛡️ Protection structures",
+      "protection": "🛡️ Protection Level 1–7",
       "addix": "🧪 ADDIX / Compound"
     },
     "radial": {
@@ -127,54 +127,47 @@
       }
     },
     "protection": {
-      "label": "Puncture protection · official constructions",
-      "title": "How Schwalbe protection constructions differ",
-      "note": "These cards summarize the materials and structures described in Schwalbe's official puncture-protection guide. The exact construction for a tire should be verified on that model's official product page; a protection name alone is not a universal safety guarantee.",
+      "label": "Puncture protection · official levels",
+      "title": "Schwalbe Protection Level 1–7",
+      "note": "Schwalbe's official guide presents Protection Levels 1–7, with Super Defense shown as 6+. These are named constructions and reference levels, not a laboratory-wide puncture score; verify the exact construction on the model's official product page.",
       "items": {
-        "smartGuard": {
-          "title": "SmartGuard",
-          "body": "An approximately 5 mm insert made from highly elastic special rubber, designed to resist penetration by sharp objects."
+        "level7": {
+          "title": "Level 7 · SmartGuard / Smart DualGuard",
+          "body": "SmartGuard uses an approximately 5 mm insert made from highly elastic special rubber. Smart DualGuard combines a 4 mm special-rubber insert with two layers of RaceGuard nylon fabric. Schwalbe uses the Flat-less designation for these technologies, while noting that a puncture can never be ruled out completely."
         },
-        "smartDualGuard": {
-          "title": "Smart DualGuard",
-          "body": "A 4 mm special-rubber insert combined with two layers of RaceGuard nylon fabric; Schwalbe describes it especially for e-bike tires."
+        "level6Plus": {
+          "title": "Level 6+ · Super Defense",
+          "body": "A reinforced construction with a 6-ply, 67 EPI double carcass, described for reliable puncture protection under high loads and for cargo bikes."
         },
-        "superDefense": {
-          "title": "Super Defense",
-          "body": "Reinforced construction with a 6-ply, 67 EPI double carcass, developed for high loads and cargo bikes."
+        "level6": {
+          "title": "Level 6 · Double Defense",
+          "body": "Combined protection under the tread and on the sidewalls. Official variants include DD V-Guard, DD GreenGuard, and DD RaceGuard with Snake-Skin sidewall fabric."
         },
-        "doubleDefense": {
-          "title": "Double Defense",
-          "body": "Combined tread and sidewall protection. Depending on the version, the tread uses V-Guard, GreenGuard, or RaceGuard together with SnakeSkin sidewall fabric."
+        "level5": {
+          "title": "Level 5 · V-Guard / GreenGuard / RaceGuard",
+          "body": "V-Guard is a lightweight, cut-resistant high-tech fiber belt. GreenGuard is a 3 mm natural-rubber insert with recycled material. RaceGuard is listed in this official level section; its detailed construction is the two-layer nylon belt described at Level 4."
         },
-        "vGuard": {
-          "title": "V-Guard",
-          "body": "A lightweight, cut-resistant high-tech fiber protection belt."
-        },
-        "greenGuard": {
-          "title": "GreenGuard",
-          "body": "A 3 mm puncture-protection insert made from natural rubber with recycled material."
-        },
-        "raceGuard": {
-          "title": "RaceGuard",
+        "level4": {
+          "title": "Level 4 · RaceGuard",
           "body": "A puncture-protection belt made from two layers of double-layered nylon fabric for fast and light tires."
         },
-        "kGuard": {
-          "title": "K-Guard",
+        "level3": {
+          "title": "Level 3 · K-Guard",
           "body": "A puncture-protection insert made from fiber-reinforced natural rubber."
         },
-        "punctureGuard": {
-          "title": "PunctureGuard",
-          "body": "A 3 mm puncture-protection insert described by Schwalbe for the entry-level segment."
+        "level2": {
+          "title": "Level 2 · 67 EPI carcass",
+          "body": "The official guide lists a 67 EPI carcass as this reference level. EPI describes the casing's thread density; it is not a universal puncture guarantee."
         },
-        "epi67": {
-          "title": "67 EPI carcass",
-          "body": "A tightly woven nylon-cord carcass; Schwalbe's guide links higher fabric density with a smoother tire."
-        },
-        "epi50": {
-          "title": "50 EPI carcass",
-          "body": "The minimum carcass standard listed in Schwalbe's puncture-protection guide."
+        "level1": {
+          "title": "Level 1 · 50 EPI carcass",
+          "body": "The official guide lists a 50 EPI carcass as its base reference level. EPI describes casing construction and should not be read as a standalone safety rating."
         }
+      },
+      "extra": {
+        "title": "PunctureGuard · separately named construction",
+        "body": "Schwalbe describes PunctureGuard as a 3 mm puncture-protection insert for the entry-level segment. The page presents it separately; this guide does not force it into a numbered level."
+      }
       }
     },
     "addix": {
@@ -200,5 +193,4 @@
         }
       }
     }
-  }
 }

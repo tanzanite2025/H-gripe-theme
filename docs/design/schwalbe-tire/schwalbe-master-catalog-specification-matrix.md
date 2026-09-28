@@ -11,6 +11,7 @@
 | --- | --- |
 | [Green Marathon 产品页](https://www.schwalbe.com/en/Green-Marathon-11159397) | 核对产品页字段标签和展示方式 |
 | [Schwalbe Radial MTB 技术页](https://www.schwalbe.com/en/radialtires-mtb) | 核对 Telemetry Guide 的 Radial 胎体结构说明 |
+| [Schwalbe 防刺技术页](https://www.schwalbe.com/en/technology-faq/puncture-protection/) | 核对 Protection Level 1–7、6+ 和独立防刺结构说明 |
 | [Schwalbe ETRTO 尺寸说明](https://www.schwalbe.com/en/technology-faq/tire-sizes/) | ETRTO 和英制尺寸说明 |
 | [轮胎与轮圈尺寸匹配](https://www.schwalbe.com/en/technology-faq/tire-dimensions/) | 尺寸匹配说明 |
 | [Hookless/TLE/TLR 要求](https://www.schwalbe.com/en/tubeless-racing-bike-requirement/) | 后续兼容功能的规则来源 |
@@ -54,7 +55,7 @@
 
 候选目录描述 Schwalbe 全谱系型号；`product_spec_values` 只描述真实 Product。两者可以包含同一型号的官网字段值，但职责不同：目录提供匹配候选和表单自动回填，商品规格值提供实际销售商品快照。匹配结果按 Article No. 显示是否存在对应销售 Product；未命中时保留候选结果，但不生成商品价格、库存或购买信息。
 
-Phase 2 的 `SchwalbeTelemetryGuide` 不属于这 19 个字段，也不改变模板 `is_filterable` 契约。它是可在选型页、商品页或弹窗中复用的独立静态技术说明组件；Radial、防刺结构、ADDIX 胶料和 Green Marathon 材料说明均来自已核验的官方资料，不读取目录、搜索结果或分页状态。公域不展示快照记录数、来源字符串分组或标签计数，也不把目录标签解释成认证、兼容性、性能或销售事实。
+Phase 2 的 `SchwalbeTelemetryGuide` 不属于这 19 个字段，也不改变模板 `is_filterable` 契约。它是可在选型页、商品页或弹窗中复用的独立静态技术说明组件；Radial、Protection Level 1–7（含 6+）、ADDIX 胶料和 Green Marathon 材料说明均来自已核验的官方资料，不读取目录、搜索结果或分页状态。公域不展示快照记录数、来源字符串分组或标签计数，也不把等级名称解释成跨品牌统一耐刺评分、认证、兼容性、性能或销售事实。
 
 目录只读查询的 `search` 使用单个完整词，在 Article No.、`model_name`、ETRTO、Inch 四个字段上分别做不区分大小写的包含匹配，四个字段之间为 OR；不做多词分词或跨字段联合（例如 `Pro One 28-622` 不会拆分查询）。
 

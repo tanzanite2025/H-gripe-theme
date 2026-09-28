@@ -81,7 +81,7 @@
       "all": "技术总览",
       "radial": "🌀 径向胎体",
       "green": "🌿 Green Marathon",
-      "protection": "🛡️ 防刺结构",
+      "protection": "🛡️ 防刺等级 1–7",
       "addix": "🧪 ADDIX / Compound"
     },
     "radial": {
@@ -127,54 +127,47 @@
       }
     },
     "protection": {
-      "label": "防刺技术 · 官方结构说明",
-      "title": "Schwalbe 防刺结构有什么区别",
-      "note": "以下卡片整理自 Schwalbe 官方防刺技术说明，介绍材料与结构；具体外胎采用哪种结构，应以该型号的官方产品页为准，技术名称本身不代表统一安全保证。",
+      "label": "防刺技术 · 官方等级",
+      "title": "Schwalbe Protection Level 1–7",
+      "note": "Schwalbe 官方资料列出 Protection Level 1–7，其中 Super Defense 标为 6+。这些是官方命名的结构和参考等级，不是跨品牌实验室统一耐刺评分；具体外胎结构仍应以该型号官方产品页为准。",
       "items": {
-        "smartGuard": {
-          "title": "SmartGuard",
-          "body": "约 5 mm 厚的高弹性特殊橡胶防刺层，用于抵抗尖锐物穿刺。"
+        "level7": {
+          "title": "Level 7 · SmartGuard / Smart DualGuard",
+          "body": "SmartGuard 使用约 5 mm 厚的高弹性特殊橡胶层；Smart DualGuard 为 4 mm 特殊橡胶层加两层 RaceGuard 尼龙织物。Schwalbe 对这两类技术使用 Flat-less 称谓，同时明确不能完全排除爆胎。"
         },
-        "smartDualGuard": {
-          "title": "Smart DualGuard",
-          "body": "4 mm 特殊橡胶层加两层 RaceGuard 尼龙织物；Schwalbe 特别将其说明用于电助力自行车外胎。"
+        "level6Plus": {
+          "title": "Level 6+ · Super Defense",
+          "body": "加固结构、6 层 67 EPI 双层胎体；官方说明其用于高负载防刺，并特别面向货运自行车。"
         },
-        "superDefense": {
-          "title": "Super Defense",
-          "body": "加固结构、6 层 67 EPI 双层胎体，面向高负载和货运自行车开发。"
+        "level6": {
+          "title": "Level 6 · Double Defense",
+          "body": "胎面与胎侧组合防护。官方变体包括 DD V-Guard、DD GreenGuard 和 DD RaceGuard，并配合 Snake-Skin 胎侧织物。"
         },
-        "doubleDefense": {
-          "title": "Double Defense",
-          "body": "胎面与胎侧组合防护；根据具体版本，胎面可能采用 V-Guard、GreenGuard 或 RaceGuard，并配合 SnakeSkin 胎侧织物。"
+        "level5": {
+          "title": "Level 5 · V-Guard / GreenGuard / RaceGuard",
+          "body": "V-Guard 是轻量、耐切割的高科技纤维防刺带；GreenGuard 是含回收材料的天然橡胶 3 mm 防刺层。RaceGuard 在官方等级区块中列出，具体双层尼龙织物结构见 Level 4。"
         },
-        "vGuard": {
-          "title": "V-Guard",
-          "body": "轻量、耐切割的高科技纤维防刺带。"
-        },
-        "greenGuard": {
-          "title": "GreenGuard",
-          "body": "含回收材料的天然橡胶 3 mm 防刺层。"
-        },
-        "raceGuard": {
-          "title": "RaceGuard",
+        "level4": {
+          "title": "Level 4 · RaceGuard",
           "body": "由双层尼龙织物构成的防刺带，面向快速、轻量外胎。"
         },
-        "kGuard": {
-          "title": "K-Guard",
+        "level3": {
+          "title": "Level 3 · K-Guard",
           "body": "纤维增强天然橡胶防刺层。"
         },
-        "punctureGuard": {
-          "title": "PunctureGuard",
-          "body": "3 mm 防刺层；Schwalbe 官方将其描述为入门级防护。"
+        "level2": {
+          "title": "Level 2 · 67 EPI 胎体",
+          "body": "官方资料将 67 EPI 胎体列为该参考等级。EPI 描述胎体帘线密度，不是单独的统一防刺保证。"
         },
-        "epi67": {
-          "title": "67 EPI 胎体",
-          "body": "紧密编织的尼龙帘线胎体；Schwalbe 说明更高的织物密度有助于获得更顺滑的轮胎表现。"
-        },
-        "epi50": {
-          "title": "50 EPI 胎体",
-          "body": "Schwalbe 防刺技术说明中列出的基础胎体标准。"
+        "level1": {
+          "title": "Level 1 · 50 EPI 胎体",
+          "body": "官方资料将 50 EPI 胎体列为基础参考等级。EPI 描述胎体结构，不应单独理解为安全等级。"
         }
+      },
+      "extra": {
+        "title": "PunctureGuard · 单独命名的结构",
+        "body": "Schwalbe 将 PunctureGuard 描述为入门级 3 mm 防刺层。官方页面把它单独说明，本指南不强行把它归入某个数字等级。"
+      }
       }
     },
     "addix": {
@@ -200,5 +193,4 @@
         }
       }
     }
-  }
 }

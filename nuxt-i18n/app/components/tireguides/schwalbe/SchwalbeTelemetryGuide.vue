@@ -92,7 +92,7 @@
           </div>
           <p class="schwalbe-telemetry__topic-note">{{ tx('telemetryGuide.protection.note') }}</p>
           <div class="schwalbe-telemetry__level-grid">
-            <article v-for="entry in protectionGuides" :key="entry.key" class="schwalbe-telemetry__level">
+            <article v-for="entry in protectionLevels" :key="entry.key" class="schwalbe-telemetry__level">
               <span class="schwalbe-telemetry__level-mark">{{ entry.mark }}</span>
               <div>
                 <div class="schwalbe-telemetry__list-title">
@@ -102,6 +102,12 @@
               </div>
             </article>
           </div>
+          <article class="schwalbe-telemetry__protection-extra">
+            <div class="schwalbe-telemetry__list-title">
+              <strong>{{ tx('telemetryGuide.protection.extra.title') }}</strong>
+            </div>
+            <p>{{ tx('telemetryGuide.protection.extra.body') }}</p>
+          </article>
         </section>
 
         <section
@@ -173,18 +179,15 @@ const greenGuides = [
   { key: 'circularMaterials' },
 ] as const
 
-const protectionGuides = [
-  { key: 'smartGuard', mark: 'SG' },
-  { key: 'smartDualGuard', mark: 'SDG' },
-  { key: 'superDefense', mark: 'SD' },
-  { key: 'doubleDefense', mark: 'DD' },
-  { key: 'vGuard', mark: 'VG' },
-  { key: 'greenGuard', mark: 'GG' },
-  { key: 'raceGuard', mark: 'RG' },
-  { key: 'kGuard', mark: 'KG' },
-  { key: 'punctureGuard', mark: 'PG' },
-  { key: 'epi67', mark: '67' },
-  { key: 'epi50', mark: '50' },
+const protectionLevels = [
+  { key: 'level7', mark: 'L7' },
+  { key: 'level6Plus', mark: 'L6+' },
+  { key: 'level6', mark: 'L6' },
+  { key: 'level5', mark: 'L5' },
+  { key: 'level4', mark: 'L4' },
+  { key: 'level3', mark: 'L3' },
+  { key: 'level2', mark: 'L2' },
+  { key: 'level1', mark: 'L1' },
 ] as const
 
 const compoundGuides = [
@@ -491,6 +494,22 @@ const compoundGuides = [
 
 .schwalbe-telemetry__level p {
   margin: 0.25rem 0 0;
+  color: var(--tz-text-secondary);
+  font-size: 0.66rem;
+  line-height: 1.5;
+}
+
+.schwalbe-telemetry__protection-extra {
+  display: grid;
+  gap: 0.25rem;
+  border: 1px dashed var(--tz-border-strong);
+  border-radius: 0.7rem;
+  background: var(--tz-surface-subtle);
+  padding: 0.65rem;
+}
+
+.schwalbe-telemetry__protection-extra p {
+  margin: 0;
   color: var(--tz-text-secondary);
   font-size: 0.66rem;
   line-height: 1.5;

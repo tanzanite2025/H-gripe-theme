@@ -29,7 +29,7 @@
 4. 命中真实商品时，商品标题和 19 项销售规格来自 Product 与模板值；价格、库存及可购买状态来自现有 SKU/库存查询结果。
 5. 对候选提供搜索、排序和匹配字段筛选。暂不展示未经核实的“官方兼容”“Hookless 认证”“黄金搭配”或推导出的安全压力。
 6. 页面视觉沿用站点字体和组件规范，接入指南导航、FAQ 与合适的结构化数据。
-7. `SchwalbeTelemetryGuide.vue` 属于 Phase 2 的独立技术说明组件，不扩充 Phase 1 的 19 个商品字段；它在候选卡片前首屏输出，使用静态 i18n 技术卡片说明 Radial 胎体、Green Marathon 材料、防刺结构和 ADDIX 胶料，不接收 `catalogItems` 也不读取搜索、筛选、分页或目录记录数，因此可以直接嵌入商品页或弹窗复用。
+7. `SchwalbeTelemetryGuide.vue` 属于 Phase 2 的独立技术说明组件，不扩充 Phase 1 的 19 个商品字段；它在候选卡片前首屏输出，使用静态 i18n 技术卡片说明 Radial 胎体、Green Marathon 材料、Schwalbe Protection Level 1–7（含 6+ Super Defense）和 ADDIX 胶料，不接收 `catalogItems` 也不读取搜索、筛选、分页或目录记录数，因此可以直接嵌入商品页或弹窗复用。
 
 不包含通过计算器候选自动创建或上架商品、商品审核、静态原型数据导入、购物车改造和 Hookless 兼容性引擎。
 
@@ -121,7 +121,7 @@ nuxt-i18n/app/
 
 保留原型“全谱系总览”入口、卡片布局和搜索交互。目录列表必须能显示所有已导入候选，即使没有销售 Product。筛选条件只使用目录中实际存储且来源可核验的字段；未经来源核对的 `discipline`、`series`、`hooklessApproved`、`minRimWidthMm`、`optimalRimWidthMm` 等原型字段不得作为官方事实或安全结论。界面使用 Tanzanite 本地字体与现有基础组件，不引入外部字体。
 
-`SchwalbeTelemetryGuide.vue` 保留原型的五个主题标签（技术总览、Radial 胎体、Green Marathon、防刺结构、ADDIX 胶料）和展开/收起交互。Radial 卡片依据 [Schwalbe Radial MTB 技术页](https://www.schwalbe.com/en/radialtires-mtb) 说明约 45° 交叉帘线与更钝、接近 90° 的排布、选择性变形、相同胎压下约 30% 的接地面积变化及滚阻取舍；不写入统一胎压、兼容性或型号性能保证。防刺卡片依据 Schwalbe 官方防刺说明展示 SmartGuard、Smart DualGuard、Super Defense、Double Defense、V-Guard、GreenGuard、RaceGuard、K-Guard、PunctureGuard 和 EPI 胎体的材料/结构；ADDIX 卡片依据官方胶料说明展示 Speed、Mid（原 SpeedGrip）、Soft 和 Ultra Soft。Green Marathon 专题只展示面向用户的来源说明（ADDIX Eco 含回收工业炭黑和 100% 天然橡胶；GreenGuard 为 3 mm 柔性印度橡胶防刺层，部分材料来自回收来源；官方页面标注 Fair Rubber，并说明材料中 80% 为回收或可再生来源）。组件不展示快照记录数、来源字符串分组、标签计数或数据治理用语，也不把 `RaceGuard` 等名称强行映射成统一等级；原型中的奖项、兼容性、安全压力和绝对化宣传必须有逐条官方来源后才能加入。
+`SchwalbeTelemetryGuide.vue` 保留原型的五个主题标签（技术总览、Radial 胎体、Green Marathon、防刺等级 1–7、ADDIX 胶料）和展开/收起交互。Radial 卡片依据 [Schwalbe Radial MTB 技术页](https://www.schwalbe.com/en/radialtires-mtb) 说明约 45° 交叉帘线与更钝、接近 90° 的排布、选择性变形、相同胎压下约 30% 的接地面积变化及滚阻取舍；不写入统一胎压、兼容性或型号性能保证。防刺卡片依据 [Schwalbe 防刺技术页](https://www.schwalbe.com/en/technology-faq/puncture-protection/) 展示 Level 7 SmartGuard / Smart DualGuard、Level 6+ Super Defense、Level 6 Double Defense、Level 5 V-Guard / GreenGuard / RaceGuard、Level 4 RaceGuard、Level 3 K-Guard、Level 2 67 EPI 和 Level 1 50 EPI；PunctureGuard 作为官方单独命名的 3 mm 入门结构说明，不强行归入数字等级。ADDIX 卡片依据官方胶料说明展示 Speed、Mid（原 SpeedGrip）、Soft 和 Ultra Soft。Green Marathon 专题只展示面向用户的来源说明（ADDIX Eco 含回收工业炭黑和 100% 天然橡胶；GreenGuard 为 3 mm 柔性印度橡胶防刺层，部分材料来自回收来源；官方页面标注 Fair Rubber，并说明材料中 80% 为回收或可再生来源）。组件不展示快照记录数、来源字符串分组、标签计数或数据治理用语，也不把等级名称解释成跨品牌统一耐刺评分；原型中的奖项、兼容性、安全压力和绝对化宣传必须有逐条官方来源后才能加入。
 
 ## 6. SSR、SEO 与内容
 
