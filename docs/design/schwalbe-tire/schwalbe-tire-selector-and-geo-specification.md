@@ -1,9 +1,11 @@
 # Schwalbe 商品规格查询页与 GEO 实施边界
 
-> **状态**：Phase 2 规划，尚未实现。  
+> **状态**：Phase 2 第一批目录选型切片已实现；销售商品附加层仍在后续实现队列。
 > **页面**：/guides/tireguides/schwalbe-tire-selector  
 > **商品字段契约**：[Phase 1 商品模板实施指南](./phase1-schwalbe-tire-system-template-implementation-guide.md) · [字段矩阵](./schwalbe-master-catalog-specification-matrix.md)  
 > **数据基线**：迁移 359 已导入 2026-09-28 官方快照（773 条 live 外胎记录，15 个 404 旧 URL 排除）；迁移 360 已建立销售商品 Article No. 唯一索引。当前快照的文本枚举基准见字段矩阵第 8 节。
+
+> **当前页面实现**：`/guides/tireguides/schwalbe-tire-selector` 已接入 SSR 目录查询、单词搜索、型号筛选、排序和候选状态卡片。真实销售 Product 的价格、库存和商品链接仍须由后端 Article No. 批量附加层提供；当前页面不会为目录候选生成这些信息。
 
 ## 1. 当前边界
 

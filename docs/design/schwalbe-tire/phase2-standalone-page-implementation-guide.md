@@ -1,10 +1,12 @@
 # Phase 2：Schwalbe 商品规格查询页实施指南
 
-> **状态**：后续阶段规划，尚未实现。  
+> **状态**：Phase 2 第一批目录选型切片已实现；销售商品附加层与结构化 Product/Offer 仍待后续切片。
 > **页面**：`/guides/tireguides/schwalbe-tire-selector`  
 > **Phase 1 数据边界**：[Phase 1 商品模板实施指南](./phase1-schwalbe-tire-system-template-implementation-guide.md)  
 > **字段矩阵**：[Schwalbe 商品模板字段矩阵](./schwalbe-master-catalog-specification-matrix.md)  
 > **数据基线**：迁移 359 已导入 2026-09-28 官方 sitemap 快照（773 条 live 外胎记录，15 个 404 旧 URL 排除）；迁移 360 已建立销售商品 Article No. 唯一索引。当前快照中的文本枚举基准见字段矩阵第 8 节。
+
+> **第一批实现位置**：Nuxt 页面为 `app/pages/guides/tireguides/schwalbe-tire-selector.vue`，目录适配器为 `app/data/tireguides/schwalbeCatalog.ts`，查询状态在 `app/composables/useSchwalbeTireSelector.ts`，卡片和数据边界说明位于 `app/components/tireguides/schwalbe/`。该切片只读取 Phase 1 的只读目录接口，不载入旧原型数组。
 
 ## 1. 数据边界
 
@@ -125,6 +127,25 @@ nuxt-i18n/app/
 ## 7. 导航与验收
 
 路由加入指南域导航和面包屑。验收至少覆盖：
+
+### 7.1 第一批实现基线
+
+已落地的目录选型切片包括：
+
+- SSR 首屏读取 `GET /api/v1/products/schwalbe-tire-catalog`；省略搜索词时读取完整 773 条候选，提交搜索时只发送一个 `search` 参数。
+- 页面提供单词搜索、型号筛选、型号名/ETRTO/Article No. 排序，并分别处理加载、接口失败、无结果和候选目录为空状态。
+- 每张卡片展示目录中已保存的官方字段、来源链接、核验日期和 `product_exists` 状态；未上架候选不会被隐藏，也不会显示价格、库存或购买按钮。
+- 页面提示四字段 OR 包含匹配和“不拆分多词”的接口限制，避免把 `Pro One 28-622` 当作跨字段联合查询。
+- `e_bike_rating` 继续按 `E-25`、`E-50` 或空文本显示；页面不生成 Hookless、车圈兼容或安全压力结论。
+
+本批接口响应目前只提供目录候选和 `product_exists`。`SchwalbeSalesProductData` 中的商品标题、链接、19 项销售快照、价格、币种和可售状态，必须在下一批后端附加层一次性按 Article No. 批量读取后再接入页面；在该附加层完成前，不能通过前端逐条请求商品、解析标题或使用静态价格补齐。
+
+### 7.2 下一批实现顺序
+
+1. 在后端为候选结果增加按 Article No. 批量绑定的公开销售 Product 投影，保留候选与商品两层数据职责。
+2. 用现有 Product/SKU 响应生成 `sales_product`，只在真实公开商品命中时提供标题、链接、模板字段、价格和可售状态。
+3. 为真实商品结果加入 Product/Offer 结构化数据，并补充 API、SSR 和无商品候选的回归测试。
+4. 在附加层上线后，再把卡片的“商城商品已存在”状态升级为真实商品链接和购买信息；目录候选排序、搜索和空状态契约保持不变。
 
 - 匹配候选不要求对应销售 Product 才能出现在结果中；
 - 每条结果都显示 Article No. 是否存在于销售商品中；

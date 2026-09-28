@@ -1,0 +1,68 @@
+{
+  "seo": {
+    "title": "Schwalbe tire selector | Tanzanite",
+    "description": "Search the sourced Schwalbe tire candidate catalog by model, Article No., ETRTO, or inch designation."
+  },
+  "kicker": "Official catalog lookup",
+  "title": "Schwalbe tire selector",
+  "description": "Browse the current Schwalbe English product-page snapshot. Candidate rows remain visible even when the corresponding tire has not been added to the store.",
+  "search": {
+    "label": "Search the catalog",
+    "placeholder": "Model, Article No., ETRTO, or inch size",
+    "submit": "Search",
+    "clear": "Clear search",
+    "hint": "Use one complete search term. The API checks Article No., model name, ETRTO, and Inch with OR matching; it does not split multiple words.",
+    "active": "Search: {term}"
+  },
+  "filters": {
+    "model": "Model",
+    "allModels": "All models",
+    "sort": "Sort",
+    "sortModel": "Model name",
+    "sortEtrto": "ETRTO",
+    "sortArticle": "Article No."
+  },
+  "summary": "{count} candidate records",
+  "states": {
+    "loading": "Loading the official catalog snapshot…",
+    "error": "The catalog could not be loaded right now.",
+    "retry": "Try again",
+    "empty": "No catalog candidates are available.",
+    "noResults": "No candidates match this single search term."
+  },
+  "status": {
+    "listed": "Store product exists",
+    "candidate": "Catalog candidate"
+  },
+  "fields": {
+    "weight": "Weight",
+    "pressure": "Pressure",
+    "load": "Load",
+    "epi": "EPI",
+    "version": "Version",
+    "compound": "Compound",
+    "bead": "Bead",
+    "eBike": "E-Bike",
+    "color": "Color",
+    "seal": "Seal",
+    "tread": "Tread",
+    "ean": "EAN"
+  },
+  "common": {
+    "notProvided": "Not provided"
+  },
+  "source": {
+    "checked": "Source checked {date}",
+    "open": "Open official source"
+  },
+  "telemetry": {
+    "kicker": "Data boundary",
+    "title": "How to read these results",
+    "body": "The catalog is an official-source candidate snapshot. A catalog match is not a promise that the item is in stock or compatible with a particular rim.",
+    "points": {
+      "catalog": "Candidate facts come from the stored Schwalbe product-page snapshot.",
+      "sales": "The status chip only reports whether a matching store Product exists; prices and stock are not invented for candidates.",
+      "compatibility": "ETRTO, pressure, and construction values are shown as source facts and do not produce a Hookless or rim-compatibility verdict."
+    }
+  }
+}

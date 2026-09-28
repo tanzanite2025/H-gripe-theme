@@ -1,0 +1,68 @@
+{
+  "seo": {
+    "title": "Schwalbe 外胎选型查询 | Tanzanite",
+    "description": "按型号、Article No.、ETRTO 或英制尺寸查询有来源的 Schwalbe 外胎候选目录。"
+  },
+  "kicker": "官方目录查询",
+  "title": "Schwalbe 外胎选型查询",
+  "description": "浏览当前 Schwalbe 英文产品页快照。即使对应型号尚未在商城上架，目录候选仍会保留显示。",
+  "search": {
+    "label": "搜索目录",
+    "placeholder": "型号、Article No.、ETRTO 或英制尺寸",
+    "submit": "搜索",
+    "clear": "清除搜索",
+    "hint": "请输入一个完整搜索词。接口会在 Article No.、型号名称、ETRTO 和 Inch 四个字段中进行 OR 包含匹配，不会拆分多个词。",
+    "active": "搜索：{term}"
+  },
+  "filters": {
+    "model": "型号",
+    "allModels": "全部型号",
+    "sort": "排序",
+    "sortModel": "型号名称",
+    "sortEtrto": "ETRTO",
+    "sortArticle": "Article No."
+  },
+  "summary": "{count} 条候选记录",
+  "states": {
+    "loading": "正在读取官方目录快照…",
+    "error": "当前无法读取目录。",
+    "retry": "重试",
+    "empty": "当前没有可用的目录候选。",
+    "noResults": "没有候选符合这个单一搜索词。"
+  },
+  "status": {
+    "listed": "商城商品已存在",
+    "candidate": "目录候选"
+  },
+  "fields": {
+    "weight": "重量",
+    "pressure": "胎压",
+    "load": "承重",
+    "epi": "EPI",
+    "version": "版本",
+    "compound": "胶料",
+    "bead": "胎圈",
+    "eBike": "E-Bike",
+    "color": "颜色",
+    "seal": "密封层",
+    "tread": "花纹编号",
+    "ean": "EAN"
+  },
+  "common": {
+    "notProvided": "官网未提供"
+  },
+  "source": {
+    "checked": "来源核验日期：{date}",
+    "open": "打开官方来源"
+  },
+  "telemetry": {
+    "kicker": "数据边界",
+    "title": "如何理解查询结果",
+    "body": "目录是有官方来源的候选快照。命中目录不代表商城有库存，也不代表与某个特定车圈兼容。",
+    "points": {
+      "catalog": "候选规格来自已保存的 Schwalbe 官方产品页快照。",
+      "sales": "状态标签只说明是否存在匹配的商城 Product；候选没有价格和库存时不会虚构。",
+      "compatibility": "ETRTO、胎压和结构值按来源事实展示，不会据此给出 Hookless 或车圈兼容结论。"
+    }
+  }
+}
