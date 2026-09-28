@@ -1,0 +1,3 @@
+-- Intentionally forward-only: rolling back the seed must not delete the
+-- candidate catalog used by the selector and product-template autofill.
+-- Apply a corrective or replacement seed instead.

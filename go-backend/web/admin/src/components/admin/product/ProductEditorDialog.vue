@@ -271,8 +271,32 @@
 
           <AdminFormSection
             title="商品参数（来自模板）"
-            :description="selectedSpecDefinitions.length ? '这里填写当前商品自己的参数值；字段来源于已绑定商品规格模板，但具体值不写回模板。' : '当前模板没有商品级参数字段；可以直接继续维护 SKU。'"
+            :description="selectedProductSpecTemplate?.slug === 'schwalbe_tire' ? '每个 Article No. 单独建商品，并保留一个默认销售 SKU；不同 Article No. 或尺寸要分成不同商品，不能做成同一商品的 SKU 变体。官网未提供的字段留空。' : selectedSpecDefinitions.length ? '这里填写当前商品自己的参数值；字段来源于已绑定商品规格模板。' : '当前模板没有商品级参数字段；可以直接继续维护 SKU。'"
           >
+            <div v-if="selectedProductSpecTemplate?.slug === 'schwalbe_tire'" class="mb-4 rounded-xl border border-primary/20 bg-primary/5 p-3">
+              <AdminFormField label="Schwalbe 型号 / Article No.">
+                <Select
+                  :model-value="selectedSchwalbeTireArticleNo || '__none__'"
+                  :disabled="schwalbeTireCatalogLoading || schwalbeTireCatalogItems.length === 0"
+                  @update:model-value="emit('schwalbe-tire-model-select', $event)"
+                >
+                  <SelectTrigger class="w-full"><SelectValue :placeholder="schwalbeTireCatalogLoading ? '正在读取型号目录…' : '请选择官网型号'" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">请选择型号</SelectItem>
+                    <SelectItem v-for="item in schwalbeTireCatalogItems" :key="item.article_no" :value="item.article_no">
+                      {{ item.model_name }} · {{ item.etrto }} · {{ item.article_no }}{{ item.product_exists ? '（已有销售商品）' : '' }}
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </AdminFormField>
+              <p v-if="schwalbeTireCatalogLoading" class="mt-2 text-xs text-muted-foreground">正在读取 Schwalbe 全谱系型号。</p>
+              <p v-else-if="schwalbeTireCatalogError" class="mt-2 flex items-center gap-2 text-xs text-destructive">
+                {{ schwalbeTireCatalogError }}
+                <Button type="button" variant="link" size="sm" class="h-auto p-0" @click="emit('retry-schwalbe-tire-catalog')">重试</Button>
+              </p>
+              <p v-else-if="schwalbeTireCatalogItems.length === 0" class="mt-2 text-xs text-muted-foreground">目录中暂无型号数据。目录数据由官方来源导入，不在此处逐条录入。</p>
+              <p v-else class="mt-2 text-xs text-muted-foreground">选择型号后会自动填充下方 19 项官网字段；是否存在销售商品仅作状态提示。</p>
+            </div>
             <div v-if="selectedSpecDefinitions.length" class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6">
               <AdminFormField
                 v-for="spec in selectedSpecDefinitions"
@@ -282,13 +306,21 @@
                 :required="spec.is_required"
                 :error="errors[`spec:${spec.slug}`]"
               >
-                <Input
-                  v-if="spec.field_type === 'number'"
-                  v-model.number="form.specs[spec.slug]"
-                  type="number"
-                  min="0"
-                  @input="emit('clear-error', `spec:${spec.slug}`)"
-                />
+                <template v-if="spec.field_type === 'number'">
+                  <Input
+                    v-model.number="form.specs[spec.slug]"
+                    type="number"
+                    :min="selectedProductSpecTemplate?.slug === 'schwalbe_tire' ? (spec.slug === 'epi' ? '1' : spec.unit === 'bar' ? '0.1' : '0.01') : '0'"
+                    :step="selectedProductSpecTemplate?.slug === 'schwalbe_tire' ? (spec.slug === 'epi' ? '1' : spec.unit === 'bar' ? '0.1' : '0.01') : (spec.unit === 'bar' ? '0.1' : '1')"
+                    @input="emit('clear-error', `spec:${spec.slug}`)"
+                  />
+                  <p
+                    v-if="selectedProductSpecTemplate?.slug === 'schwalbe_tire' && spec.slug === 'epi'"
+                    class="mt-1 text-xs leading-4 text-muted-foreground"
+                  >
+                    官网写成 2x67 等双层胎体时，只填写单层 EPI：67。
+                  </p>
+                </template>
                 <Select
                   v-else-if="spec.field_type === 'select' && parseSpecOptions(spec).length"
                   :model-value="specSelectValue(form.specs[spec.slug])"
@@ -468,6 +500,7 @@ import ProductMediaSection from '@/components/admin/product/ProductMediaSection.
 import ProductProfitabilitySection from '@/components/admin/product/ProductProfitabilitySection.vue'
 import ProductTemplateSyncDialog from '@/components/admin/product/ProductTemplateSyncDialog.vue'
 import ProductVariantEditor from '@/components/admin/product/ProductVariantEditor.vue'
+import type { SchwalbeTireCatalogItem } from '@/api/schwalbeTireCatalog'
 import type { ProductSupplierCostProfitDraft } from '@/composables/product/useProductSupplierCostProfitDraft'
 import type { ProductFormRecord, ProductTemplateSyncDiff } from '@/modules/product/productEditorTypes'
 import { Button } from '@/components/ui/button'
@@ -577,6 +610,10 @@ defineProps({
   brands: { type: Array as PropType<ProductBrandRecord[]>, default: () => [] },
   productCategories: { type: Array as PropType<ProductCategoryRecord[]>, default: () => [] },
   selectedProductSpecTemplate: { type: Object as PropType<ProductSpecTemplateRecord | null>, default: null },
+  schwalbeTireCatalogItems: { type: Array as PropType<SchwalbeTireCatalogItem[]>, default: () => [] },
+  schwalbeTireCatalogLoading: { type: Boolean, default: false },
+  schwalbeTireCatalogError: { type: String, default: '' },
+  selectedSchwalbeTireArticleNo: { type: String, default: '' },
   selectedSpecDefinitions: { type: Array as PropType<ProductSpecDefinition[]>, default: () => [] },
   variantSpecDefinitions: { type: Array as PropType<ProductSpecDefinition[]>, default: () => [] },
   customOptionDefinitions: { type: Array as PropType<ProductSpecDefinition[]>, default: () => [] },
@@ -618,6 +655,8 @@ const emit = defineEmits([
   'submit',
   'clear-error',
   'product-spec-template-select',
+  'schwalbe-tire-model-select',
+  'retry-schwalbe-tire-catalog',
   'preview-template-sync',
   'update-template-sync-open',
   'confirm-template-sync',

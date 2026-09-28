@@ -322,3 +322,119 @@ func TestProductServiceDeletesProductSpecificationTemplate(t *testing.T) {
 	_, err = productService.GetProductSpecificationTemplate(created.ID)
 	assert.ErrorIs(t, err, ErrProductSpecificationTemplateNotFound)
 }
+
+func TestProductServiceProtectsSystemManagedTemplateContract(t *testing.T) {
+	db, productService := newTestProductService(t)
+	template := product.ProductSpecificationTemplate{
+		Name:            "Schwalbe Tire",
+		Slug:            "schwalbe_tire",
+		Description:     "Schwalbe official tire facts",
+		SortOrder:       70,
+		IsEnabled:       true,
+		IsSystemManaged: true,
+	}
+	require.NoError(t, db.Create(&template).Error)
+	definition := product.SpecDefinition{
+		ProductSpecificationTemplateID: template.ID,
+		Group:                          "Official product facts",
+		Name:                           "Product name",
+		Slug:                           "model_name",
+		FieldType:                      "text",
+		Presentation:                   "text",
+		Unit:                           "",
+		IsRequired:                     true,
+		IsFilterable:                   false,
+		IsVisible:                      true,
+		Role:                           "attribute",
+		SelectionMode:                  "single",
+		MinSelections:                  0,
+		SortOrder:                      30,
+	}
+	require.NoError(t, db.Create(&definition).Error)
+
+	newInput := func() ProductSpecificationTemplateInput {
+		return ProductSpecificationTemplateInput{
+			Name:        template.Name,
+			Slug:        template.Slug,
+			Description: template.Description,
+			SortOrder:   template.SortOrder,
+			IsEnabled:   template.IsEnabled,
+			SpecDefinitions: []ProductSpecDefinitionInput{{
+				ID:            definition.ID,
+				Group:         "Official product facts",
+				Name:          "Product name",
+				Slug:          "model_name",
+				FieldType:     "text",
+				Presentation:  "text",
+				Role:          "attribute",
+				SelectionMode: "single",
+				IsRequired:    true,
+				IsFilterable:  false,
+				IsVisible:     true,
+				SortOrder:     30,
+			}},
+		}
+	}
+
+	tests := []struct {
+		name   string
+		mutate func(*ProductSpecificationTemplateInput)
+	}{
+		{
+			name: "disable template",
+			mutate: func(input *ProductSpecificationTemplateInput) {
+				input.IsEnabled = false
+			},
+		},
+		{
+			name: "rename field",
+			mutate: func(input *ProductSpecificationTemplateInput) {
+				input.SpecDefinitions[0].Name = "EAN"
+			},
+		},
+		{
+			name: "change field unit",
+			mutate: func(input *ProductSpecificationTemplateInput) {
+				input.SpecDefinitions[0].Unit = "mm"
+			},
+		},
+		{
+			name: "change required flag",
+			mutate: func(input *ProductSpecificationTemplateInput) {
+				input.SpecDefinitions[0].IsRequired = false
+			},
+		},
+		{
+			name: "change visibility",
+			mutate: func(input *ProductSpecificationTemplateInput) {
+				input.SpecDefinitions[0].IsVisible = false
+			},
+		},
+		{
+			name: "change sort order",
+			mutate: func(input *ProductSpecificationTemplateInput) {
+				input.SpecDefinitions[0].SortOrder = 40
+			},
+		},
+		{
+			name: "add option items",
+			mutate: func(input *ProductSpecificationTemplateInput) {
+				input.SpecDefinitions[0].OptionItems = []ProductSpecOptionItemInput{{
+					ValueKey:     "40-622",
+					DefaultLabel: "40-622",
+				}}
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			input := newInput()
+			tt.mutate(&input)
+			_, err := productService.UpdateProductSpecificationTemplate(template.ID, input)
+			require.ErrorIs(t, err, ErrProductSpecificationTemplateSystemManaged)
+		})
+	}
+
+	require.ErrorIs(t, productService.DeleteProductSpecificationTemplate(template.ID), ErrProductSpecificationTemplateSystemManaged)
+}

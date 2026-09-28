@@ -1,0 +1,142 @@
+# Phase 2：Schwalbe 商品规格查询页实施指南
+
+> **状态**：后续阶段规划，尚未实现。  
+> **页面**：`/guides/tireguides/schwalbe-tire-selector`  
+> **Phase 1 数据边界**：[Phase 1 商品模板实施指南](./phase1-schwalbe-tire-system-template-implementation-guide.md)  
+> **字段矩阵**：[Schwalbe 商品模板字段矩阵](./schwalbe-master-catalog-specification-matrix.md)  
+> **数据基线**：迁移 359 已导入 2026-09-28 官方 sitemap 快照（773 条 live 外胎记录，15 个 404 旧 URL 排除）；迁移 360 已建立销售商品 Article No. 唯一索引。当前快照中的文本枚举基准见字段矩阵第 8 节。
+
+## 1. 数据边界
+
+- 全谱系型号候选保存在独立目录 `schwalbe_tire_specifications`；实际在售商品继续作为普通 Product 管理，商品规格保存到该 Product 的 `product_spec_values`。
+- 每个已上架的独立 Article No. 对应一个商品和一个默认销售 SKU；不同 Article No. 或尺寸不合并为同一商品下的 SKU 变体。匹配候选不要求已上架。
+- 搜索/匹配结果来自候选目录，不代表商城销售商品。默认“全谱系总览”展示目录中的全部候选；每条结果必须显示是否存在对应销售商品。
+- 以 Article No. 检查候选是否对应在售商品。命中时，商品名称、19 个销售字段、链接及销售状态从实际 Product、模板值和 SKU 读取；未命中时仍展示目录候选，但不显示虚假商品购买信息。
+- 文本商品字段按官网英文原文存储。商品界面翻译只通过明确的 i18n 映射处理，不修改数据或把不同语言值混成多个筛选项。
+- `e_bike_rating` 保持文本语义：快照取值为 `E-25`、`E-50` 或空值；空值表示普通自行车或官网未提供评级。前端不得把它转换成 boolean，也不得由评级值推导轮圈或安全兼容结论。
+- 匹配候选数据与销售 Product 是不同数据职责。Phase 1 的 19 个字段仅定义当前外胎销售商品模板；`discipline`、`series`、`construction`、`hooklessApproved`、推荐轮圈宽度等旧草案字段不能因此冒充已核实商品事实或安全结论。
+- 产品页显示的 Bar/PSI 是该商品页面给出的压力值，不代表轮圈适配或 Hookless 认证。兼容性判断不在本阶段实现。
+
+原型文件 `preview-schwalbe-tire-selector.html` 中的布局、“全谱系总览”入口和筛选交互可作为设计依据；其中 mock 型号值、价格、库存和 Hookless 结果不能当作生产事实。生产候选来自独立目录，并通过有官方来源的数据库导入/同步维护；不得把原型静态数组冒充已核实数据。
+
+## 2. Phase 2 范围
+
+1. 实现 SSR 页面 `/guides/tireguides/schwalbe-tire-selector`，以候选目录呈现全谱系总览、搜索和匹配结果。
+2. 默认筛选状态为 `ALL`，显示目录里的全部型号候选，不受是否上架影响；用户可按目录中来源可核验的字段搜索和筛选。
+3. 每个候选按 Article No. 查询销售 Product，并在结果中标出存在状态。匹配候选不因参与搜索或匹配而成为 Product。
+4. 命中真实商品时，商品标题和 19 项销售规格来自 Product 与模板值；价格、库存及可购买状态来自现有 SKU/库存查询结果。
+5. 对候选提供搜索、排序和匹配字段筛选。暂不展示未经核实的“官方兼容”“Hookless 认证”“黄金搭配”或推导出的安全压力。
+6. 页面视觉沿用站点字体和组件规范，接入指南导航、FAQ 与合适的结构化数据。
+
+不包含通过计算器候选自动创建或上架商品、商品审核、静态原型数据导入、购物车改造和 Hookless 兼容性引擎。
+
+## 3. 商品查询与页面数据契约
+
+候选事实从 `schwalbe_tire_specifications` 查询，销售状态再通过 Article No. 对现有 `schwalbe_tire` Product 做只读查询。两类数据不能互相创建或替代。目录查询和商品查询可由现有 API 扩展或只读接口承载，不增加商品提交或审核 API。
+
+商品数据附加层可采用以下结构。`facts` 的键只对应 Phase 1 的 19 个模板 slug；其值直接来自已命中的商品的规格值。`product_exists` 表示是否找到对应的销售 Product；价格和库存仅在找到商品时由其 SKU 查询。商品标题 `products.name` 不等于官方 `model_name`：后台型号选择器应建议生成可编辑标题 `Schwalbe {model_name} {etrto} ({inch_designation}) - {article_no}`，并在 `inch_designation` 为空时省略括号部分；手工修改过的标题不能被后续回填覆盖：
+
+```ts
+export interface SchwalbeOfficialFacts {
+  article_no?: string
+  ean?: string
+  model_name?: string
+  etrto?: string
+  inch_designation?: string
+  weight_g?: number
+  version_label?: string
+  compound?: string
+  color?: string
+  bead?: string
+  e_bike_rating?: string
+  epi?: number
+  load_kg?: number
+  seal?: string
+  tread?: string
+  min_pressure_bar?: number
+  max_pressure_bar?: number
+  min_pressure_psi?: number
+  max_pressure_psi?: number
+}
+
+export interface SchwalbeSalesProductData {
+  id: number
+  name: string
+  slug: string
+  facts: SchwalbeOfficialFacts
+  product_url: string
+  price?: { amount_minor: number; currency: string }
+  availability: 'in_stock' | 'out_of_stock' | 'unavailable'
+}
+
+export interface SchwalbeMatchResult<TCandidate> {
+  article_no: string
+  candidate: TCandidate
+  product_exists: boolean
+  sales_product?: SchwalbeSalesProductData
+}
+```
+
+`candidate` 来自独立目录行，至少包含 19 项官方字段和来源信息；计算得出的匹配值与官方字段分开标识。销售商品字段不得靠标题解析或手工静态数组补齐；是否存在商品按 Article No. 查询。可选字段缺失时保持空值；`availability`、`price` 必须复用系统商品/SKU 查询结果，不得硬编码。`product_exists` 为 false 时不得输出虚构的 `sales_product`。
+
+## 4. 选型页逻辑
+
+搜索集合来自 `schwalbe_tire_specifications`，默认“全谱系总览”覆盖整张候选目录，不使用 `SCHWALBE_TIRE_CATALOG` 或 `rawTires` 原型常量。每条候选按 Article No. 独立检查销售商品存在状态；没有销售商品的候选不会被过滤掉，也不会获得购买链接、商品价格或库存。
+
+搜索接口（`GET /api/v1/products/schwalbe-tire-catalog?search=<term>`）与后台型号选择器共用以下契约：`search` 是单个完整搜索词，不做多词分词或跨字段联合。服务端把同一个词分别与 Article No.、`model_name`、ETRTO、Inch 做不区分大小写的包含匹配，四个字段之间是 OR；例如 `Pro One 28-622` 不会拆成两个词去匹配名称和尺寸，不能保证命中预期记录。省略或传空 `search` 时返回全部 773 条当前候选（按 `model_name`、ETRTO、Article No. 升序）；前端应在提交搜索前提示使用一个型号、编号或尺寸词，并按真实接口结果处理空结果。
+
+实际商品详情由 `schwalbe_tire` 模板和现有 Product/SKU 读取。模板 `is_filterable` 当前仅将 ETRTO、Inch、Version 标记为可筛选；该标记约束商品规格筛选，不代表计算器候选数据的筛选字段集合。Phase 2 候选筛选字段按匹配数据契约确定，不能把两套元数据混为一谈。
+
+本阶段不根据 ETRTO 单独推导轮圈兼容性，不从 `seal`、`version_label`、型号名称或市场经验推导 TLE/TLR、Hookless 批准、轮圈宽度范围或压力上限。将来需要兼容性能力时，先单独确定有来源依据的规则与数据模型，再实施和验收。
+
+页面至少处理以下状态：
+
+- 加载中：显示站点统一的加载状态。
+- 查询失败：说明候选目录暂不可用，并允许重试。
+- 候选目录为空：显示目录空状态，不回退到原型 mock；这与当前销售商品数量无关。
+- 候选有数据但没有对应销售 Product：仍显示候选，并标记“未上架”。
+- 候选命中真实销售商品：附加实际 Product 链接及真实 SKU 信息。
+- 文本枚举本地化：优先使用字段矩阵第 8 节基于 773 条快照固化的 `compound`、`version_label`、`bead`、`e_bike_rating`、`seal` 和 `color` 值；未知新值保留英文原文并记录待翻译项。`tread` 是官网花纹编号，应按原文显示，不当作系列枚举翻译。
+
+## 5. 页面与组件结构
+
+```text
+nuxt-i18n/app/
+├── data/tireguides/schwalbeCatalog.ts       # 候选目录与销售商品响应适配器，不内嵌型号常量
+├── composables/useSchwalbeTireSelector.ts   # 查询状态、搜索、排序和官方字段筛选
+├── components/tireguides/schwalbe/
+│   ├── SchwalbeTireSelector.vue             # 页面查询与筛选容器
+│   ├── SchwalbeTireCard.vue                 # 商品字段和真实售卖信息
+│   └── SchwalbeTelemetryGuide.vue            # 有官方来源支撑的技术说明
+└── pages/guides/tireguides/
+    └── schwalbe-tire-selector.vue            # SSR 页面与 SEO
+```
+
+保留原型“全谱系总览”入口、卡片布局和搜索交互。目录列表必须能显示所有已导入候选，即使没有销售 Product。筛选条件只使用目录中实际存储且来源可核验的字段；未经来源核对的 `discipline`、`series`、`hooklessApproved`、`minRimWidthMm`、`optimalRimWidthMm` 等原型字段不得作为官方事实或安全结论。界面使用 Tanzanite 本地字体与现有基础组件，不引入外部字体。
+
+## 6. SSR、SEO 与内容
+
+- 在 SSR 阶段查询候选/匹配结果，并为每条结果附加 Article No. 对应的销售商品存在状态。
+- 候选/匹配结果本身不是 Product；只有实际存在并展示的销售商品才输出 Product 结构化数据，有真实报价时才输出 Offer。不要输出虚构价格、库存、认证或兼容结论。
+- 通用技术说明可以声明为 `TechArticle`。目录确实完整导入并公开后，才可按实际数据描述覆盖范围；不得为 GEO 虚构数量或完整性。
+- FAQ 使用现有 FAQ 查询与组件，不在页面代码中复制后台 FAQ 内容。
+- 页面标题、描述和空状态描述候选目录的实际数据状态；不得把“无销售商品”误写成“无型号候选”，也不得声称未经核验的覆盖数量。
+
+## 7. 导航与验收
+
+路由加入指南域导航和面包屑。验收至少覆盖：
+
+- 匹配候选不要求对应销售 Product 才能出现在结果中；
+- 每条结果都显示 Article No. 是否存在于销售商品中；
+- 命中商品时，19 个字段从该 Product 自己的模板规格值读取，未定义字段不会被伪造；
+- 商品与 SKU 的价格、币种、库存只在真实商品命中时来自现有查询逻辑；
+- 默认全谱系状态展示整个候选目录；目录为空时显示空状态，不载入 `rawTires` 或其他 mock；
+- 即使所有候选都没有对应销售商品，候选仍显示并逐条标记商品不存在；
+- SSR 与客户端状态一致，查询失败可重试；
+- 结构化 Product/Offer 只包含已命中的真实销售商品和真实报价，匹配候选本身不伪装为 Product；
+- 搜索与筛选只使用实际字段，不输出 Hookless/轮圈兼容安全结论。
+
+## 8. 后续独立工作
+
+若要加入 Hookless、TLE/TLR 或轮圈匹配，需要另行核验完整官方规则、轮圈制造商限制以及逐型号适用事实，再制定独立接口和测试。不能把这类结论写进 Phase 1 的 19 个官方商品字段，也不能以本文件中的旧原型示例作为依据。
+

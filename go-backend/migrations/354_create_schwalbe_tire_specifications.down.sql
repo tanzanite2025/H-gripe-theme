@@ -1,0 +1,3 @@
+-- Deliberately empty. The Schwalbe catalog is a forward-only production
+-- baseline; recovery must use a new corrective migration instead of deleting
+-- a table that may already be referenced by products or review workflows.

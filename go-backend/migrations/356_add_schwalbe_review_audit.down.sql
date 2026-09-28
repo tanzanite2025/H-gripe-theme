@@ -1,0 +1,2 @@
+-- Intentionally forward-only: dropping reviewer and revision evidence would
+-- erase production audit data and is not a repair strategy.

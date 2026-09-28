@@ -308,6 +308,7 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 		{
 			productGroup.GET("", productHandler.ListProducts)
 			productGroup.GET("/specification-templates", productHandler.ListProductSpecificationTemplates)
+			productGroup.GET("/schwalbe-tire-catalog", productHandler.ListSchwalbeTireCatalog)
 			productGroup.GET("/categories", productHandler.ListCategories)
 			productGroup.GET("/categories/:slug", productHandler.GetCategory)
 			productGroup.GET("/attributes/filterable", productHandler.GetFilterableAttributes)

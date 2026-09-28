@@ -116,6 +116,10 @@ func (s *ProductService) ListPublicProductSpecificationTemplates(includeDisabled
 	return s.productRepo.FindPublicProductSpecificationTemplates(includeDisabled)
 }
 
+func (s *ProductService) ListSchwalbeTireCatalog(search string) ([]repository.SchwalbeTireCatalogItem, error) {
+	return s.productRepo.ListSchwalbeTireCatalog(search)
+}
+
 func (s *ProductService) GetProductSpecificationTemplate(id uint) (*product.ProductSpecificationTemplate, error) {
 	productSpecificationTemplate, err := s.productRepo.FindProductSpecificationTemplateByID(id)
 	if err != nil {
@@ -167,6 +171,9 @@ func (s *ProductService) UpdateProductSpecificationTemplate(id uint, input Produ
 	if existing.IsSystemManaged {
 		if productSpecificationTemplate.Slug != existing.Slug {
 			return nil, fmt.Errorf("%w: product specification template slug cannot be changed", ErrProductSpecificationTemplateSystemManaged)
+		}
+		if productSpecificationTemplate.IsEnabled != existing.IsEnabled {
+			return nil, fmt.Errorf("%w: product specification template status cannot be changed", ErrProductSpecificationTemplateSystemManaged)
 		}
 		if err := validateSystemManagedProductSpecificationTemplate(existing, productSpecificationTemplate); err != nil {
 			return nil, err
@@ -311,14 +318,23 @@ func validateSystemManagedProductSpecificationTemplate(existing, next *product.P
 		if !ok {
 			return fmt.Errorf("%w: system product specification template fields cannot be added or removed", ErrProductSpecificationTemplateSystemManaged)
 		}
+		if existing.Slug == "schwalbe_tire" && (len(previous.OptionItems) > 0 || len(current.OptionItems) > 0) {
+			return fmt.Errorf("%w: Schwalbe official fact fields cannot define option items", ErrProductSpecificationTemplateSystemManaged)
+		}
 		if previous.Slug != current.Slug ||
+			previous.Group != current.Group ||
+			previous.Name != current.Name ||
 			previous.FieldType != current.FieldType ||
+			previous.Unit != current.Unit ||
+			previous.IsRequired != current.IsRequired ||
 			previous.Role != current.Role ||
 			previous.SelectionMode != current.SelectionMode ||
 			previous.MinSelections != current.MinSelections ||
 			!sameOptionalInt(previous.MaxSelections, current.MaxSelections) ||
 			previous.Presentation != current.Presentation ||
 			previous.IsFilterable != current.IsFilterable ||
+			previous.IsVisible != current.IsVisible ||
+			previous.SortOrder != current.SortOrder ||
 			previous.Validation != current.Validation {
 			return fmt.Errorf("%w: field %q structure is immutable", ErrProductSpecificationTemplateSystemManaged, previous.Slug)
 		}

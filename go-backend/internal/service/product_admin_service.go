@@ -194,7 +194,7 @@ func (s *ProductService) CreateAdminProduct(input ProductCreateInput) (*product.
 		return nil, err
 	}
 
-	specValues, err := s.buildSpecValues(input.ProductSpecificationTemplateID, input.SpecValues)
+	specValues, err := s.buildSpecValues(input.ProductSpecificationTemplateID, input.SpecValues, 0)
 	if err != nil {
 		return nil, err
 	}
@@ -337,7 +337,6 @@ func (s *ProductService) UpdateAdminProduct(id uint, input ProductUpdateInput) (
 	if err != nil {
 		return nil, err
 	}
-
 	previousProduct := *existingProduct
 	previousAfterSalesTemplateID := existingProduct.AfterSalesTemplateID
 	previousPackagingTemplateID := existingProduct.PackagingTemplateID
@@ -517,7 +516,7 @@ func (s *ProductService) UpdateAdminProduct(id uint, input ProductUpdateInput) (
 	}
 	var specValues []product.ProductSpecValue
 	if input.UpdateSpecValues {
-		specValues, err = s.buildSpecValues(existingProduct.ProductSpecificationTemplateID, input.SpecValues)
+		specValues, err = s.buildSpecValues(existingProduct.ProductSpecificationTemplateID, input.SpecValues, existingProduct.ID)
 		if err != nil {
 			return nil, err
 		}

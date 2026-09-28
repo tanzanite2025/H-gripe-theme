@@ -1,0 +1,1 @@
+-- Forward-only cleanup. Do not recreate the retired standalone catalog table.

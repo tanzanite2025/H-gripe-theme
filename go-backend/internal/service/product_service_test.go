@@ -2,8 +2,10 @@ package service
 
 import (
 	"errors"
+	"fmt"
 	"net"
 	"strconv"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -61,6 +63,242 @@ func TestProductServiceCreateAdminProductPersistsTemplateSpecs(t *testing.T) {
 	assert.Equal(t, "30.5", findSavedSpecValue(t, createdProduct, "outer_width_mm"))
 	assert.Equal(t, "RIM-001-24H-DISC", createdProduct.Variants[0].SKU)
 	assert.JSONEq(t, `{"brake_type":"disc"}`, createdProduct.Variants[0].OptionValues)
+}
+
+func TestProductServiceSavesSchwalbeFactsDirectlyOnProduct(t *testing.T) {
+	db, productService := newTestProductService(t)
+	template := product.ProductSpecificationTemplate{
+		Name:            "Schwalbe Tire",
+		Slug:            "schwalbe_tire",
+		IsEnabled:       true,
+		IsSystemManaged: true,
+	}
+	require.NoError(t, db.Create(&template).Error)
+
+	fieldSlugs := []string{
+		"article_no", "ean", "model_name", "etrto", "inch_designation", "weight_g",
+		"version_label", "compound", "color", "bead", "e_bike_rating", "epi",
+		"load_kg", "seal", "tread", "min_pressure_bar", "max_pressure_bar",
+		"min_pressure_psi", "max_pressure_psi",
+	}
+	definitions := make([]product.SpecDefinition, 0, len(fieldSlugs))
+	for index, slug := range fieldSlugs {
+		fieldType := "text"
+		unit := ""
+		for _, numberField := range []string{"weight_g", "epi", "load_kg", "min_pressure_bar", "max_pressure_bar", "min_pressure_psi", "max_pressure_psi"} {
+			if slug == numberField {
+				fieldType = "number"
+				break
+			}
+		}
+		switch slug {
+		case "weight_g":
+			unit = "g"
+		case "epi":
+			unit = "EPI"
+		case "load_kg":
+			unit = "kg"
+		case "min_pressure_bar", "max_pressure_bar":
+			unit = "bar"
+		case "min_pressure_psi", "max_pressure_psi":
+			unit = "psi"
+		}
+		definitions = append(definitions, product.SpecDefinition{
+			ProductSpecificationTemplateID: template.ID,
+			Group:                          "Official product facts",
+			Name:                           slug,
+			Slug:                           slug,
+			FieldType:                      fieldType,
+			Unit:                           unit,
+			IsRequired:                     slug == "article_no" || slug == "model_name" || slug == "etrto",
+			IsVisible:                      true,
+			Role:                           "attribute",
+			SelectionMode:                  "single",
+			SortOrder:                      (index + 1) * 10,
+		})
+	}
+	require.NoError(t, db.Create(&definitions).Error)
+	require.Len(t, definitions, 19)
+
+	// Synthetic values verify the product persistence path; they are not
+	// Schwalbe catalog data and must not be imported into a real product.
+	tireFacts := map[string]string{
+		"article_no":       "\uFEFFTEST-ARTICLE\u200B",
+		"ean":              "TEST-EAN",
+		"model_name":       "Test Tire",
+		"etrto":            "28\u2013622",
+		"inch_designation": "TEST-INCH",
+		"weight_g":         "790",
+		"version_label":    "TEST-VERSION",
+		"compound":         "TEST-COMPOUND",
+		"color":            "TEST-COLOR",
+		"bead":             "TEST-BEAD",
+		"e_bike_rating":    "TEST-E-BIKE",
+		"epi":              "67",
+		"load_kg":          "135",
+		"seal":             "TEST-SEAL",
+		"tread":            "TEST-TREAD",
+		"min_pressure_bar": "2.5",
+		"max_pressure_bar": "4.0",
+		"min_pressure_psi": "30",
+		"max_pressure_psi": "55",
+	}
+	cloneFacts := func(source map[string]string) map[string]string {
+		clone := make(map[string]string, len(source))
+		for key, value := range source {
+			clone[key] = value
+		}
+		return clone
+	}
+	invalidCases := []struct {
+		name  string
+		slug  string
+		value string
+	}{
+		{name: "negative weight", slug: "weight_g", value: "-1"},
+		{name: "zero weight", slug: "weight_g", value: "0"},
+		{name: "negative load", slug: "load_kg", value: "-1"},
+		{name: "zero load", slug: "load_kg", value: "0"},
+		{name: "negative epi", slug: "epi", value: "-1"},
+		{name: "zero epi", slug: "epi", value: "0"},
+		{name: "fractional epi", slug: "epi", value: "67.5"},
+		{name: "negative pressure", slug: "min_pressure_bar", value: "-0.1"},
+		{name: "zero pressure", slug: "min_pressure_bar", value: "0"},
+		{name: "zero max bar pressure", slug: "max_pressure_bar", value: "0"},
+		{name: "zero min psi pressure", slug: "min_pressure_psi", value: "0"},
+		{name: "zero max psi pressure", slug: "max_pressure_psi", value: "0"},
+		{name: "non-finite weight", slug: "weight_g", value: "NaN"},
+	}
+	for index, testCase := range invalidCases {
+		invalidFacts := cloneFacts(tireFacts)
+		invalidFacts[testCase.slug] = testCase.value
+		_, err := productService.CreateAdminProduct(ProductCreateInput{
+			ProductSpecificationTemplateID: &template.ID,
+			Name:                           "Invalid Test Tire",
+			Slug:                           fmt.Sprintf("invalid-test-tire-%d", index),
+			Status:                         "active",
+			Locale:                         "en",
+			SpecValues:                     invalidFacts,
+			Variants: []ProductVariantInput{{
+				SKU:        fmt.Sprintf("SCHWALBE-INVALID-%d", index),
+				PriceMinor: 3999,
+				IsDefault:  true,
+				IsActive:   boolPtr(true),
+			}},
+		})
+		require.ErrorIs(t, err, ErrProductSpecInvalid, testCase.name)
+	}
+	for _, testCase := range []struct {
+		name string
+		min  string
+		max  string
+	}{
+		{name: "bar pressure order", min: "4.5", max: "3.8"},
+		{name: "psi pressure order", min: "60", max: "55"},
+	} {
+		invalidFacts := cloneFacts(tireFacts)
+		if testCase.name == "bar pressure order" {
+			invalidFacts["min_pressure_bar"], invalidFacts["max_pressure_bar"] = testCase.min, testCase.max
+		} else {
+			invalidFacts["min_pressure_psi"], invalidFacts["max_pressure_psi"] = testCase.min, testCase.max
+		}
+		_, err := productService.CreateAdminProduct(ProductCreateInput{
+			ProductSpecificationTemplateID: &template.ID,
+			Name:                           "Invalid Pressure Test Tire",
+			Slug:                           "invalid-pressure-test-tire-" + strings.ReplaceAll(testCase.name, " ", "-"),
+			Status:                         "active",
+			Locale:                         "en",
+			SpecValues:                     invalidFacts,
+			Variants: []ProductVariantInput{{
+				SKU:        "SCHWALBE-INVALID-PRESSURE-" + strings.ReplaceAll(testCase.name, " ", "-"),
+				PriceMinor: 3999,
+				IsDefault:  true,
+				IsActive:   boolPtr(true),
+			}},
+		})
+		require.ErrorIs(t, err, ErrProductSpecInvalid, testCase.name)
+	}
+	created, err := productService.CreateAdminProduct(ProductCreateInput{
+		ProductSpecificationTemplateID: &template.ID,
+		Name:                           "Test Tire",
+		Slug:                           "test-tire",
+		Status:                         "active",
+		Locale:                         "en",
+		SpecValues:                     tireFacts,
+		Variants: []ProductVariantInput{{
+			SKU:        "SCHWALBE-TEST-ARTICLE",
+			PriceMinor: 3999,
+			Stock:      5,
+			IsDefault:  true,
+			IsActive:   boolPtr(true),
+		}},
+	})
+	require.NoError(t, err)
+	require.NotNil(t, created)
+	assert.Equal(t, template.ID, *created.ProductSpecificationTemplateID)
+	assert.Len(t, created.SpecValues, 19)
+	assert.Equal(t, "TEST-ARTICLE", findSavedSpecValue(t, created, "article_no"))
+	assert.Equal(t, "28-622", findSavedSpecValue(t, created, "etrto"))
+	assert.Equal(t, "790", findSavedSpecValue(t, created, "weight_g"))
+	assert.Equal(t, "2.5", findSavedSpecValue(t, created, "min_pressure_bar"))
+
+	updatedFacts := map[string]string{
+		"article_no": "TEST-ARTICLE",
+		"model_name": "Test Tire",
+		"etrto":      "TEST-ETRTO",
+		"weight_g":   "800",
+	}
+	updated, err := productService.UpdateAdminProduct(created.ID, ProductUpdateInput{
+		SpecValues:       updatedFacts,
+		UpdateSpecValues: true,
+	})
+	require.NoError(t, err)
+	assert.Equal(t, "800", findSavedSpecValue(t, updated, "weight_g"))
+	assert.Equal(t, "Test Tire", findSavedSpecValue(t, updated, "model_name"))
+
+	duplicateFacts := cloneFacts(tireFacts)
+	_, err = productService.CreateAdminProduct(ProductCreateInput{
+		ProductSpecificationTemplateID: &template.ID,
+		Name:                           "Duplicate Article Test Tire",
+		Slug:                           "duplicate-article-test-tire",
+		Status:                         "active",
+		Locale:                         "en",
+		SpecValues:                     duplicateFacts,
+		Variants: []ProductVariantInput{{
+			SKU:        "SCHWALBE-DUPLICATE-ARTICLE",
+			PriceMinor: 3999,
+			IsDefault:  true,
+			IsActive:   boolPtr(true),
+		}},
+	})
+	require.ErrorIs(t, err, ErrProductSpecInvalid)
+
+	otherFacts := cloneFacts(tireFacts)
+	otherFacts["article_no"] = "OTHER-ARTICLE"
+	otherProduct, err := productService.CreateAdminProduct(ProductCreateInput{
+		ProductSpecificationTemplateID: &template.ID,
+		Name:                           "Other Test Tire",
+		Slug:                           "other-test-tire",
+		Status:                         "active",
+		Locale:                         "en",
+		SpecValues:                     otherFacts,
+		Variants: []ProductVariantInput{{
+			SKU:        "SCHWALBE-OTHER-ARTICLE",
+			PriceMinor: 3999,
+			IsDefault:  true,
+			IsActive:   boolPtr(true),
+		}},
+	})
+	require.NoError(t, err)
+	_, err = productService.UpdateAdminProduct(otherProduct.ID, ProductUpdateInput{
+		SpecValues: map[string]string{
+			"article_no": "TEST-ARTICLE",
+			"model_name": "Other Test Tire",
+			"etrto":      "28-622",
+		},
+		UpdateSpecValues: true,
+	})
+	require.ErrorIs(t, err, ErrProductSpecInvalid)
 }
 
 func TestProductServiceNormalizesAdminProductSlugOnCreateAndUpdate(t *testing.T) {

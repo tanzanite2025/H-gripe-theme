@@ -76,6 +76,10 @@
       :form="productForm"
       :errors="formErrors"
       :product-spec-templates="productSpecTemplates"
+      :schwalbe-tire-catalog-items="schwalbeTireCatalogItems"
+      :schwalbe-tire-catalog-loading="schwalbeTireCatalogLoading"
+      :schwalbe-tire-catalog-error="schwalbeTireCatalogError"
+      :selected-schwalbe-tire-article-no="selectedSchwalbeTireArticleNo"
       :brands="brands"
       :selected-product-spec-template="selectedProductSpecTemplate"
       :brand-select-value="brandSelectValue"
@@ -101,6 +105,8 @@
       @submit="submitForm"
       @clear-error="clearFieldError"
       @product-spec-template-select="handleProductSpecTemplateSelect"
+      @schwalbe-tire-model-select="setSchwalbeTireCatalogModel"
+      @retry-schwalbe-tire-catalog="fetchSchwalbeTireCatalog"
       @product-brand-select="setProductBrand"
       @product-shipping-template-select="setProductShippingTemplate"
       @product-information-template-select="setProductInformationTemplate"
@@ -202,6 +208,10 @@ const statItems = computed(() => [
 
 const {
   productSpecTemplates,
+  schwalbeTireCatalogItems,
+  schwalbeTireCatalogLoading,
+  schwalbeTireCatalogError,
+  selectedSchwalbeTireArticleNo,
   dialogVisible,
   dialogMode,
   submitting,
@@ -239,6 +249,8 @@ const {
   setDefaultVariant,
   setVariantActive,
   handleProductSpecTemplateSelect,
+  setSchwalbeTireCatalogModel,
+  fetchSchwalbeTireCatalog,
   fetchProductSpecTemplates: fetchEditorProductSpecTemplates,
   showEditDialog,
   submitForm,

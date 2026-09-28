@@ -221,6 +221,21 @@ func (r *ProductRepository) FindByIDContext(ctx context.Context, id uint) (*prod
 	return &p, nil
 }
 
+// HasProductSpecValue reports whether a specification value is already assigned
+// to another product. The caller supplies a product ID to exclude during edits.
+func (r *ProductRepository) HasProductSpecValue(specDefinitionID uint, value string, excludeProductID uint) (bool, error) {
+	query := r.db.Model(&product.ProductSpecValue{}).
+		Where("spec_definition_id = ? AND LOWER(TRIM(value)) = LOWER(TRIM(?))", specDefinitionID, value)
+	if excludeProductID > 0 {
+		query = query.Where("product_id <> ?", excludeProductID)
+	}
+	var count int64
+	if err := query.Count(&count).Error; err != nil {
+		return false, err
+	}
+	return count > 0, nil
+}
+
 // FindBySlug finds a product by slug. When locale is empty, it treats products
 // as a unified storefront catalog item instead of a translated content row.
 func (r *ProductRepository) FindBySlug(slug, locale string) (*product.Product, error) {

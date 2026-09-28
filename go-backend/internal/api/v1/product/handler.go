@@ -281,6 +281,15 @@ func (h *Handler) ListProductSpecificationTemplates(c *gin.Context) {
 	response.Success(c, PublicProductSpecificationTemplatesFromDomainWithLocale(productSpecificationTemplates, middleware.GetLocale(c)))
 }
 
+func (h *Handler) ListSchwalbeTireCatalog(c *gin.Context) {
+	items, err := h.productService.ListSchwalbeTireCatalog(c.Query("search"))
+	if err != nil {
+		apierror.RespondInternalError(c, err)
+		return
+	}
+	response.Success(c, items)
+}
+
 func (h *Handler) ListCategories(c *gin.Context) {
 	if h == nil || h.productCategoryService == nil {
 		c.JSON(500, gin.H{

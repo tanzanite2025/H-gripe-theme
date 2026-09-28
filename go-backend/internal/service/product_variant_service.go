@@ -7,6 +7,7 @@ import (
 	"commerce-platform/internal/repository"
 	"encoding/json"
 	"fmt"
+	"math"
 	"sort"
 	"strconv"
 	"strings"
@@ -30,7 +31,7 @@ type ProductVariantInput struct {
 	OptionValueRules   []product.ProductOptionValueVariantRule
 }
 
-func (s *ProductService) buildSpecValues(productSpecificationTemplateID *uint, values map[string]string) ([]product.ProductSpecValue, error) {
+func (s *ProductService) buildSpecValues(productSpecificationTemplateID *uint, values map[string]string, excludeProductID uint) ([]product.ProductSpecValue, error) {
 	if productSpecificationTemplateID == nil {
 		if len(values) > 0 {
 			return nil, fmt.Errorf("%w: product_specification_template_id is required when specs are provided", ErrProductSpecInvalid)
@@ -61,12 +62,27 @@ func (s *ProductService) buildSpecValues(productSpecificationTemplateID *uint, v
 			return nil, fmt.Errorf("%w: spec %s belongs to product variants", ErrProductSpecInvalid, slug)
 		}
 
-		normalized, err := normalizeSpecValue(definition, raw)
+		normalized, err := normalizeProductSpecValue(productSpecificationTemplate.Slug, definition, raw)
 		if err != nil {
 			return nil, err
 		}
 		if normalized != "" {
 			normalizedValues[slug] = normalized
+		}
+	}
+	if productSpecificationTemplate.Slug == "schwalbe_tire" {
+		if err := validateSchwalbeSpecValues(normalizedValues); err != nil {
+			return nil, err
+		}
+		if articleNo := normalizedValues["article_no"]; articleNo != "" {
+			articleDefinition := definitionsBySlug["article_no"]
+			exists, err := s.productRepo.HasProductSpecValue(articleDefinition.ID, articleNo, excludeProductID)
+			if err != nil {
+				return nil, err
+			}
+			if exists {
+				return nil, fmt.Errorf("%w: Schwalbe Article No. %q already belongs to another product", ErrProductSpecInvalid, articleNo)
+			}
 		}
 	}
 
@@ -90,6 +106,43 @@ func (s *ProductService) buildSpecValues(productSpecificationTemplateID *uint, v
 	}
 
 	return specValues, nil
+}
+
+func validateSchwalbeSpecValues(values map[string]string) error {
+	numericSlugs := []string{
+		"weight_g", "epi", "load_kg",
+		"min_pressure_bar", "max_pressure_bar",
+		"min_pressure_psi", "max_pressure_psi",
+	}
+	parsed := make(map[string]float64, len(numericSlugs))
+	for _, slug := range numericSlugs {
+		raw := strings.TrimSpace(values[slug])
+		if raw == "" {
+			continue
+		}
+		value, err := strconv.ParseFloat(raw, 64)
+		if err != nil || math.IsNaN(value) || math.IsInf(value, 0) {
+			return fmt.Errorf("%w: %s must be a finite number", ErrProductSpecInvalid, slug)
+		}
+		if value <= 0 {
+			return fmt.Errorf("%w: %s must be greater than zero", ErrProductSpecInvalid, slug)
+		}
+		if slug == "epi" && math.Trunc(value) != value {
+			return fmt.Errorf("%w: epi must be an integer", ErrProductSpecInvalid)
+		}
+		parsed[slug] = value
+	}
+	for _, pair := range [][2]string{
+		{"min_pressure_bar", "max_pressure_bar"},
+		{"min_pressure_psi", "max_pressure_psi"},
+	} {
+		minimum, hasMinimum := parsed[pair[0]]
+		maximum, hasMaximum := parsed[pair[1]]
+		if hasMinimum && hasMaximum && minimum > maximum {
+			return fmt.Errorf("%w: %s cannot exceed %s", ErrProductSpecInvalid, pair[0], pair[1])
+		}
+	}
+	return nil
 }
 
 func (s *ProductService) buildVariants(productSpecificationTemplateID *uint, inputs []ProductVariantInput, productCurrency string, optionDisplayValues []product.ProductVariantOptionValue) ([]product.ProductVariant, error) {
@@ -442,6 +495,42 @@ func variantTitle(values map[string]string) string {
 
 func boolPtr(value bool) *bool {
 	return &value
+}
+
+func normalizeProductSpecValue(templateSlug string, definition product.SpecDefinition, raw string) (string, error) {
+	value, err := normalizeSpecValue(definition, raw)
+	if err != nil || value == "" || templateSlug != "schwalbe_tire" {
+		return value, err
+	}
+
+	value = stripSchwalbeInvisibleCharacters(value)
+	switch definition.Slug {
+	case "article_no":
+		return strings.TrimSpace(value), nil
+	case "etrto":
+		value = strings.Map(func(char rune) rune {
+			switch char {
+			case '\u2010', '\u2011', '\u2012', '\u2013', '\u2014', '\u2212', '\uFE63', '\uFF0D':
+				return '-'
+			default:
+				return char
+			}
+		}, value)
+		return strings.TrimSpace(value), nil
+	default:
+		return value, nil
+	}
+}
+
+func stripSchwalbeInvisibleCharacters(value string) string {
+	return strings.Map(func(char rune) rune {
+		switch char {
+		case '\u00AD', '\u200B', '\u200C', '\u200D', '\u2060', '\uFEFF':
+			return -1
+		default:
+			return char
+		}
+	}, value)
 }
 
 func normalizeSpecValue(definition product.SpecDefinition, raw string) (string, error) {

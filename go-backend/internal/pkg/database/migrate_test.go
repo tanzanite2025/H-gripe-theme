@@ -422,16 +422,16 @@ func assertProductTemplateSourceReset(ctx context.Context, t *testing.T, db *sql
 	if err := db.QueryRowContext(ctx, "SELECT COUNT(*) FROM product_specification_templates").Scan(&productSpecificationTemplateCount); err != nil {
 		t.Fatalf("count product specification templates: %v", err)
 	}
-	if productSpecificationTemplateCount != 6 {
-		t.Fatalf("expected six product templates, got %d", productSpecificationTemplateCount)
+	if productSpecificationTemplateCount != 7 {
+		t.Fatalf("expected seven product templates, got %d", productSpecificationTemplateCount)
 	}
 
 	var specCount int
 	if err := db.QueryRowContext(ctx, "SELECT COUNT(*) FROM product_spec_definitions").Scan(&specCount); err != nil {
 		t.Fatalf("count product spec definitions: %v", err)
 	}
-	if specCount != 46 {
-		t.Fatalf("expected forty-six product spec definitions, got %d", specCount)
+	if specCount != 65 {
+		t.Fatalf("expected sixty-five product spec definitions, got %d", specCount)
 	}
 }
 

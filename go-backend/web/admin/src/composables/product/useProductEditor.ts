@@ -2,6 +2,7 @@ import { computed, reactive, ref } from 'vue'
 import { toast } from 'vue-sonner'
 import productApi from '@/api/products'
 import productSpecificationTemplateApi from '@/api/productSpecificationTemplates'
+import schwalbeTireCatalogApi, { type SchwalbeTireCatalogItem } from '@/api/schwalbeTireCatalog'
 import { useProductMediaManager } from '@/composables/product/useProductMediaManager'
 import { buildProductMediaFormValues } from '@/lib/productMedia'
 import axios from '@/utils/axios'
@@ -53,6 +54,9 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
   }
 
   const productSpecTemplates = ref<any[]>([])
+  const schwalbeTireCatalogItems = ref<SchwalbeTireCatalogItem[]>([])
+  const schwalbeTireCatalogLoading = ref(false)
+  const schwalbeTireCatalogError = ref('')
   const primaryCurrency = ref(defaultPrimaryCurrency)
   const currencyPolicyLoaded = ref(false)
   const dialogVisible = ref(false)
@@ -108,6 +112,7 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
   } = useProductMediaManager(productForm, { clearFieldError })
 
   const selectedProductSpecTemplate = computed(() => productSpecTemplates.value.find((template) => template.id === productForm.product_specification_template_id) || null)
+  const selectedSchwalbeTireArticleNo = computed(() => String(productForm.specs.article_no || ''))
   const definitionRole = (spec: any): string => {
     const role = String(spec?.role || '').trim()
     if (role === 'custom_option' || role === 'variant' || role === 'attribute') return role
@@ -581,7 +586,40 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
     return true
   }
 
-  const handleProductSpecTemplateSelect = (value: string) => {
+  const fetchSchwalbeTireCatalog = async () => {
+    schwalbeTireCatalogLoading.value = true
+    schwalbeTireCatalogError.value = ''
+    try {
+      schwalbeTireCatalogItems.value = await schwalbeTireCatalogApi.list()
+    } catch (error) {
+      console.error('Failed to load Schwalbe tire catalog:', error)
+      schwalbeTireCatalogError.value = '读取 Schwalbe 型号目录失败，请重试。'
+    } finally {
+      schwalbeTireCatalogLoading.value = false
+    }
+  }
+
+  const setSchwalbeTireCatalogModel = (articleNo: string) => {
+    if (!articleNo || articleNo === '__none__') return
+    const item = schwalbeTireCatalogItems.value.find((candidate) => candidate.article_no === articleNo)
+    if (!item) return
+
+    const slugs = [
+      'article_no', 'ean', 'model_name', 'etrto', 'inch_designation', 'weight_g',
+      'version_label', 'compound', 'color', 'bead', 'e_bike_rating', 'epi',
+      'load_kg', 'seal', 'tread', 'min_pressure_bar', 'max_pressure_bar',
+      'min_pressure_psi', 'max_pressure_psi'
+    ] as const
+    const nextSpecs: Record<string, any> = {}
+    slugs.forEach((slug) => {
+      const value = item[slug]
+      nextSpecs[slug] = value === undefined || value === null ? '' : value
+      clearFieldError(`spec:${slug}`)
+    })
+    productForm.specs = nextSpecs
+  }
+
+  const handleProductSpecTemplateSelect = async (value: string) => {
     const nextProductSpecTemplateID = value === '__none__' ? null : Number(value)
     if (productForm.product_specification_template_id === nextProductSpecTemplateID) return
 
@@ -599,6 +637,9 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
     clearFormErrors()
     if (hadTemplateValues) {
       toast.info('已切换商品规格模板，商品参数和 SKU 选项值已按新模板重置；SKU 价格、重量、库存和媒体已保留。')
+    }
+    if (selectedProductSpecTemplate.value?.slug === 'schwalbe_tire') {
+      await fetchSchwalbeTireCatalog()
     }
   }
 
@@ -686,6 +727,7 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
     } catch (error) {
       toast.warning('获取商品详情失败，已使用列表数据编辑')
     }
+    const formSpecs = buildSpecFormValues(detail)
     Object.assign(productForm, {
       id: detail.id,
       product_specification_template_id: detail.product_specification_template_id || detail.product_specification_template?.id || null,
@@ -707,12 +749,15 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
       status: detail.status || 'active',
       locale: detail.locale || resolveDefaultLocale(),
       featured: Boolean(detail.featured),
-      specs: buildSpecFormValues(detail),
+      specs: formSpecs,
       variants: buildVariantFormValues(detail),
       variant_option_values: buildVariantOptionValueFormValues(detail),
       option_value_relations: buildOptionValueRelationFormValues(detail),
       media: buildProductMediaFormValues(detail)
     })
+    if (selectedProductSpecTemplate.value?.slug === 'schwalbe_tire') {
+      await fetchSchwalbeTireCatalog()
+    }
     clearFormErrors()
     await notifyProductLoaded(detail, 'edit')
     dialogVisible.value = true
@@ -780,6 +825,10 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
 
   return {
     productSpecTemplates,
+    schwalbeTireCatalogItems,
+    schwalbeTireCatalogLoading,
+    schwalbeTireCatalogError,
+    selectedSchwalbeTireArticleNo,
     dialogVisible,
     dialogMode,
     submitting,
@@ -826,6 +875,8 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
     setDefaultVariant,
     setVariantActive,
     handleProductSpecTemplateSelect,
+    fetchSchwalbeTireCatalog,
+    setSchwalbeTireCatalogModel,
     fetchProductSpecTemplates,
     showCreateDialog,
     showEditDialog,

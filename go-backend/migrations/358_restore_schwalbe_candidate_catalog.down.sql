@@ -1,0 +1,2 @@
+-- Intentionally forward-only: dropping this catalog would remove selector and
+-- product-template autofill data. Append a corrective migration instead.

@@ -1,0 +1,2 @@
+-- Deliberately empty. Do not roll back a system template or its definitions
+-- after products can reference them; append a corrective migration instead.

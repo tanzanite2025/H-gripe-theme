@@ -22,6 +22,9 @@ var reservedProductSlugs = map[string]struct{}{
 }
 
 func mapProductRepositoryMutationError(err error) error {
+	if err != nil && strings.Contains(strings.ToLower(err.Error()), "uq_schwalbe_product_article_no") {
+		return fmt.Errorf("%w: Schwalbe Article No. already belongs to another product", ErrProductSpecInvalid)
+	}
 	switch {
 	case errors.Is(err, repository.ErrProductMediaReferenceInvalid):
 		return fmt.Errorf("%w: %v", ErrProductMediaInvalid, err)

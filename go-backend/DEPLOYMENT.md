@@ -46,6 +46,35 @@ go build ./cmd/server
 go build ./cmd/adminctl
 ```
 
+<a id="schwalbe-migrations-357-360-preflight"></a>
+<a id="schwalbe-migrations-357-359-preflight"></a>
+<!-- Keep the previous anchor for existing runbooks and bookmarks. -->
+<a id="schwalbe-migrations-357-358-preflight"></a>
+
+## Schwalbe Migrations 357-360 Preflight
+
+Migration 357 may remove only an empty legacy catalog; migration 358 recreates the standalone candidate catalog for the all-spectrum selector and template autofill; migration 359 seeds the official Schwalbe sitemap snapshot; migration 360 adds the database uniqueness boundary for Article No. on sales products. Inspect each environment before applying 357. First check whether the table exists:
+
+```sql
+SELECT to_regclass('public.schwalbe_tire_specifications') AS legacy_table;
+```
+
+If it exists, check its row count:
+
+```sql
+SELECT count(*) FROM public.schwalbe_tire_specifications;
+```
+
+Migration 357 stops if the table contains any rows; it does not clear or convert them. If the count is nonzero, stop the deployment and preserve/inspect those catalog rows before deciding how to proceed. Do not map candidate rows to sales Products merely to satisfy the migration. After 357 succeeds, migration 358 recreates the candidate table without review or approval fields. Migration 359 is a roughly 206 KB upsert seed for the 773-row official snapshot and must run after 358. Migration 360 fails closed if existing sales Products already contain duplicate Article No. values; resolve those duplicates before retrying and do not delete catalog or product data to bypass the check. Allow the migration runner enough statement and lock timeout for the seed transaction, then verify `schema_migrations.version`, the candidate row count, and the uniqueness index. Do not run a down migration to recover the catalog.
+
+After the migration completes, verify:
+
+```sql
+SELECT version, dirty FROM schema_migrations;
+SELECT count(*) FROM public.schwalbe_tire_specifications;
+SELECT indexname FROM pg_indexes WHERE tablename = 'product_spec_values' AND indexname = 'uq_schwalbe_product_article_no';
+```
+
 ## Runtime Checks
 
 Expose these internal checks to your load balancer or platform health probes:
