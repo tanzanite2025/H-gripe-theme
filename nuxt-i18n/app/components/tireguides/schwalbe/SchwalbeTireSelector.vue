@@ -54,7 +54,7 @@
       </div>
     </form>
 
-    <SchwalbeTelemetryGuide :catalog-items="filteredItems" />
+    <SchwalbeTelemetryGuide />
 
     <div class="schwalbe-selector__summary" aria-live="polite">
       <span>{{ tx('summary', { count: totalItems, page: currentPage, totalPages }) }}</span>

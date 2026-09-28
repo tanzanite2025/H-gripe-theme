@@ -70,58 +70,135 @@
   },
   "telemetryGuide": {
     "kicker": "SCHWALBE TELEMETRY GUIDE",
-    "title": "SCHWALBE TELEMETRY GUIDE // 2025/2026 technical catalog map",
-    "subtitle": "Radial labels · model versions · puncture technologies · Compound strings — read from the current catalog snapshot.",
-    "badge": "Source-bound view",
-    "records": "{count} snapshot records",
-    "tabListLabel": "Technical catalog topics",
+    "title": "SCHWALBE TELEMETRY GUIDE // 2025/2026 technology guide",
+    "subtitle": "Radial casing · protection constructions · ADDIX compounds · Green Marathon materials — explained from official source notes.",
+    "badge": "Official technology notes",
+    "tabListLabel": "Technology topics",
     "collapse": "Collapse guide ▲",
     "expand": "Expand guide ▼",
-    "notObserved": "Not observed",
-    "disclaimer": "Counts follow the current catalog or search result. Labels are copied from source fields; they do not create a compatibility, performance, safety, or purchase recommendation.",
+    "disclaimer": "Technical names and descriptions follow the cited official source notes. Model-specific specifications should be verified on the relevant official product page; a technology name alone is not a universal safety or purchase recommendation.",
     "tabs": {
-      "all": "Four topic overview",
-      "radial": "🌀 Radial labels",
+      "all": "Technology overview",
+      "radial": "🌀 Radial casing",
       "green": "🌿 Green Marathon",
-      "protection": "🛡️ 1–7 protection map",
+      "protection": "🛡️ Protection structures",
       "addix": "🧪 ADDIX / Compound"
     },
     "radial": {
-      "label": "Radial casing · observed labels",
-      "title": "RADIAL labels in the 2025/2026 catalog snapshot",
-      "count": "{count} records with Radial",
-      "principleTitle": "What this panel can establish",
-      "principleBody": "RADIAL is shown here when it appears in a model name or Version field. The catalog does not include casing angles, contact-area tests, pressure comparisons, or performance measurements.",
-      "observedTitle": "Observed",
-      "observedBody": "Exact model and Version strings remain visible so each result can be checked against its source record.",
-      "boundaryTitle": "Needs a technical source",
-      "boundaryBody": "Grip, damping, rolling resistance, rim width, and race claims require a specific official document or product page.",
-      "snapshotTitle": "Source strings grouped in this result",
-      "snapshotBody": "These groups are counts of exact text matches across model, Version, Compound, Seal, and Tread fields."
+      "label": "Radial casing · official structure",
+      "title": "What changes in a Radial casing",
+      "note": "Schwalbe describes a blunter, near-90° thread angle instead of the roughly 45° cross-ply layout. The casing can deform more selectively and maintain ground contact; at the same air pressure, the contact area is approximately 30% larger. The larger contact area can slightly increase rolling resistance, so the result depends on the model, tread, and setup.",
+      "items": {
+        "casing": {
+          "title": "Thread angle",
+          "body": "Traditional bicycle cross-ply casings use an angle of roughly 45°. Radial casing uses a blunter angle approaching 90° while retaining the casing layers and material thickness."
+        },
+        "contact": {
+          "title": "Selective deformation",
+          "body": "The casing can deform more selectively under the tread and keep more rubber in contact with the ground. Schwalbe reports approximately 30% more contact area at the same air pressure."
+        },
+        "tradeoff": {
+          "title": "Practical trade-off",
+          "body": "The larger contact area can slightly increase rolling resistance. Actual grip, comfort, and control depend on the model, tread, pressure, and riding setup."
+        }
+      }
     },
     "green": {
-      "label": "Green Marathon · official specifications",
-      "title": "Read the official fields by tire size",
-      "summary": "Green Marathon uses ADDIX Eco with recycled industrial carbon black (rCB) and 100% natural rubber. GreenGuard is a flexible 3 mm Indian rubber puncture layer, with part of the material from recycled sources. The official product page also marks Fair Rubber and states that 80% of the materials are recycled or renewable.",
-      "noMatch": "Green Marathon is not in the current filtered result. Clear the search or model filter to read the official series note.",
-      "fieldsLabel": "Official fields consistent in this result",
-      "fieldsFallback": "Green Marathon fields differ or are missing in this result; use each size card for the exact values."
+      "label": "Green Marathon · materials and protection",
+      "title": "What the Green Marathon construction uses",
+      "note": "These cards summarize the official Green Marathon product-page notes. This guide is independent of product records and can be reused wherever the technology needs an explanation.",
+      "items": {
+        "compound": {
+          "title": "ADDIX Eco",
+          "body": "The compound notes include recycled industrial carbon black (rCB) and 100% natural rubber."
+        },
+        "naturalRubber": {
+          "title": "Natural rubber",
+          "body": "The product page identifies Fair Rubber and describes the use of certified natural-rubber materials."
+        },
+        "greenGuard": {
+          "title": "GreenGuard · 3 mm",
+          "body": "A flexible 3 mm Indian-rubber puncture layer; the page notes that part of the material comes from recycled sources."
+        },
+        "circularMaterials": {
+          "title": "Recycled or renewable materials",
+          "body": "The official page states that 80% of the materials come from recycled or renewable sources."
+        }
+      }
     },
     "protection": {
-      "label": "Protection technologies · source labels",
-      "title": "Named protection technologies in the snapshot",
-      "badge": "Label counts",
-      "note": "The official protection diagram names technologies and numbered constructions. This catalog only counts matching Version or related source text; it does not infer a level, thickness, material, or flat-less result.",
-      "levelBody": "Numbered reference from the official protection diagram; the count is the matching Version-label count in this snapshot.",
-      "labelsTitle": "Observed Version labels",
-      "itemBody": "Observed as source text on one or more catalog records."
+      "label": "Puncture protection · official constructions",
+      "title": "How Schwalbe protection constructions differ",
+      "note": "These cards summarize the materials and structures described in Schwalbe's official puncture-protection guide. The exact construction for a tire should be verified on that model's official product page; a protection name alone is not a universal safety guarantee.",
+      "items": {
+        "smartGuard": {
+          "title": "SmartGuard",
+          "body": "An approximately 5 mm insert made from highly elastic special rubber, designed to resist penetration by sharp objects."
+        },
+        "smartDualGuard": {
+          "title": "Smart DualGuard",
+          "body": "A 4 mm special-rubber insert combined with two layers of RaceGuard nylon fabric; Schwalbe describes it especially for e-bike tires."
+        },
+        "superDefense": {
+          "title": "Super Defense",
+          "body": "Reinforced construction with a 6-ply, 67 EPI double carcass, developed for high loads and cargo bikes."
+        },
+        "doubleDefense": {
+          "title": "Double Defense",
+          "body": "Combined tread and sidewall protection. Depending on the version, the tread uses V-Guard, GreenGuard, or RaceGuard together with SnakeSkin sidewall fabric."
+        },
+        "vGuard": {
+          "title": "V-Guard",
+          "body": "A lightweight, cut-resistant high-tech fiber protection belt."
+        },
+        "greenGuard": {
+          "title": "GreenGuard",
+          "body": "A 3 mm puncture-protection insert made from natural rubber with recycled material."
+        },
+        "raceGuard": {
+          "title": "RaceGuard",
+          "body": "A puncture-protection belt made from two layers of double-layered nylon fabric for fast and light tires."
+        },
+        "kGuard": {
+          "title": "K-Guard",
+          "body": "A puncture-protection insert made from fiber-reinforced natural rubber."
+        },
+        "punctureGuard": {
+          "title": "PunctureGuard",
+          "body": "A 3 mm puncture-protection insert described by Schwalbe for the entry-level segment."
+        },
+        "epi67": {
+          "title": "67 EPI carcass",
+          "body": "A tightly woven nylon-cord carcass; Schwalbe's guide links higher fabric density with a smoother tire."
+        },
+        "epi50": {
+          "title": "50 EPI carcass",
+          "body": "The minimum carcass standard listed in Schwalbe's puncture-protection guide."
+        }
+      }
     },
     "addix": {
-      "label": "ADDIX / Compound · source labels",
-      "title": "Compound strings preserved exactly",
-      "count": "{count} Compound values observed",
-      "note": "Compound is stored and displayed as the official page text. Counts below are exact case-insensitive matches in the current result; performance, color, temperature, and intended-use meanings require their own source.",
-      "itemBody": "Exact Compound label count in the current result."
+      "label": "ADDIX compounds · official descriptions",
+      "title": "What the current ADDIX compound guide describes",
+      "note": "The four cards below follow Schwalbe's current ADDIX compound page. Other compound names may exist for specific products; do not infer their properties from one of these four descriptions.",
+      "items": {
+        "speed": {
+          "title": "ADDIX Speed",
+          "body": "Designed for efficient, fast off-road riding, with low rolling resistance and high durability while retaining damping and grip."
+        },
+        "mid": {
+          "title": "ADDIX Mid (formerly SpeedGrip)",
+          "body": "Combines low rolling resistance with high damping, good grip, and maximum durability for an efficient, comfortable all-round setup."
+        },
+        "soft": {
+          "title": "ADDIX Soft",
+          "body": "Offers noticeably more cushioning and grip, with moderate rolling resistance and good durability."
+        },
+        "ultraSoft": {
+          "title": "ADDIX Ultra Soft",
+          "body": "Has the highest rolling resistance, with the best damping and maximum grip, even in wet conditions; intended for extreme trails requiring maximum traction and control."
+        }
+      }
     }
   }
 }

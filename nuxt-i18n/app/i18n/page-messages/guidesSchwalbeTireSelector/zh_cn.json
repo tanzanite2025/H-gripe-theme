@@ -71,57 +71,134 @@
   "telemetryGuide": {
     "kicker": "SCHWALBE TELEMETRY GUIDE",
     "title": "SCHWALBE TELEMETRY GUIDE // 2025/2026 世文官方前沿硬核技术图解",
-    "subtitle": "径向标签 · 型号版本 · 防刺技术 · Compound 原文——全部读取当前目录快照。",
-    "badge": "有来源边界视图",
-    "records": "{count} 条快照记录",
-    "tabListLabel": "技术目录主题",
+    "subtitle": "径向胎体 · 防刺结构 · ADDIX 胶料 · Green Marathon 材料——基于官方资料说明。",
+    "badge": "官方技术说明",
+    "tabListLabel": "技术主题",
     "collapse": "收起图解 ▲",
     "expand": "展开图解 ▼",
-    "notObserved": "当前未观察到",
-    "disclaimer": "计数会随当前目录或搜索结果更新。标签直接复制来源字段，不自动形成兼容、性能、安全或购买建议。",
+    "disclaimer": "技术名称和说明依据已引用的官方资料整理；具体型号规格应以对应官方产品页为准，单独的技术名称不构成统一安全或购买建议。",
     "tabs": {
-      "all": "四维总览",
-      "radial": "🌀 径向标签",
+      "all": "技术总览",
+      "radial": "🌀 径向胎体",
       "green": "🌿 Green Marathon",
-      "protection": "🛡️ 1–7 级结构图",
+      "protection": "🛡️ 防刺结构",
       "addix": "🧪 ADDIX / Compound"
     },
     "radial": {
-      "label": "Radial 径向胎体 · 快照标签",
-      "title": "2025/2026 目录快照中的 RADIAL 标签",
-      "count": "{count} 条记录含 Radial",
-      "principleTitle": "本区块可以确认什么",
-      "principleBody": "当 RADIAL 出现在型号名或 Version 字段时，本区块显示该原文。目录没有胎体角度、接触面积测试、压力对比或性能测试字段。",
-      "observedTitle": "快照事实",
-      "observedBody": "保留官方型号和 Version 原文，方便回到对应目录记录核对。",
-      "boundaryTitle": "需要单独技术来源",
-      "boundaryBody": "抓地、阻尼、滚阻、车圈内宽和赛事结论必须由具体官方资料或产品页支持。",
-      "snapshotTitle": "当前结果中的来源字符串分组",
-      "snapshotBody": "以下是 model、Version、Compound、Seal 和 Tread 字段中的文本匹配计数。"
+      "label": "Radial 径向胎体 · 官方结构",
+      "title": "Radial 胎体改变了什么",
+      "note": "Schwalbe 说明：相较约 45° 的交叉帘线，Radial 采用更钝、接近 90° 的帘线角度。胎体可以更有选择地变形并保持接地；相同胎压下，接地面积约增加 30%。接地面积变大也可能使滚动阻力略有上升，实际效果取决于型号、花纹和设定。",
+      "items": {
+        "casing": {
+          "title": "帘线角度",
+          "body": "传统自行车交叉帘线胎体的角度约为 45°。Radial 采用更钝、接近 90° 的角度，同时不改变胎体层数和材料厚度。"
+        },
+        "contact": {
+          "title": "选择性变形",
+          "body": "胎面下的胎体可以更有选择地变形，让更多橡胶保持接地。Schwalbe 说明相同胎压下接地面积约增加 30%。"
+        },
+        "tradeoff": {
+          "title": "实际取舍",
+          "body": "更大的接地面积可能使滚动阻力略有上升。实际抓地、舒适和控制感取决于型号、花纹、胎压与骑行设定。"
+        }
+      }
     },
     "green": {
-      "label": "Green Marathon · 官方规格",
-      "title": "按尺寸查看 Green Marathon 官方字段",
-      "summary": "Green Marathon 采用 ADDIX Eco 胶料，其中含回收工业炭黑（rCB）和 100% 天然橡胶；GreenGuard 是 3 mm 的柔性印度橡胶防刺层，部分材料来自回收来源。官方产品页同时标注 Fair Rubber，并说明材料中 80% 为回收或可再生来源。",
-      "noMatch": "当前筛选结果不含 Green Marathon；清除搜索或型号筛选后可查看该系列的官方说明。",
-      "fieldsLabel": "当前结果一致的官方字段",
-      "fieldsFallback": "当前结果中的 Green Marathon 字段存在差异或缺失，请以每个具体尺寸卡片为准。"
+      "label": "Green Marathon · 材料与防护",
+      "title": "Green Marathon 使用了什么结构",
+      "note": "以下卡片整理自 Green Marathon 官方产品页说明。该技术说明独立于商品记录，后续可在需要解释这项技术的产品页或弹窗中复用。",
+      "items": {
+        "compound": {
+          "title": "ADDIX Eco",
+          "body": "胶料说明包含回收工业炭黑（rCB）和 100% 天然橡胶。"
+        },
+        "naturalRubber": {
+          "title": "天然橡胶",
+          "body": "产品页标注 Fair Rubber，并说明使用经过认证的天然橡胶材料。"
+        },
+        "greenGuard": {
+          "title": "GreenGuard · 3 mm",
+          "body": "柔性 3 mm 印度橡胶防刺层；页面说明其中部分材料来自回收来源。"
+        },
+        "circularMaterials": {
+          "title": "回收或可再生材料",
+          "body": "官方页面说明材料中 80% 来自回收或可再生来源。"
+        }
+      }
     },
     "protection": {
-      "label": "防刺技术 · 来源标签",
-      "title": "快照中出现的命名防刺技术",
-      "badge": "标签计数",
-      "note": "官方防刺图示会列出技术名称和数字结构。本目录只统计 Version 或相关来源文本中的匹配，不据此推导等级、厚度、材料或防爆结论。",
-      "levelBody": "数字结构来自官方防刺图示；右侧计数为本快照中匹配 Version 标签的记录数。",
-      "labelsTitle": "快照中观察到的 Version 标签",
-      "itemBody": "作为来源文本出现在一条或多条目录记录中。"
+      "label": "防刺技术 · 官方结构说明",
+      "title": "Schwalbe 防刺结构有什么区别",
+      "note": "以下卡片整理自 Schwalbe 官方防刺技术说明，介绍材料与结构；具体外胎采用哪种结构，应以该型号的官方产品页为准，技术名称本身不代表统一安全保证。",
+      "items": {
+        "smartGuard": {
+          "title": "SmartGuard",
+          "body": "约 5 mm 厚的高弹性特殊橡胶防刺层，用于抵抗尖锐物穿刺。"
+        },
+        "smartDualGuard": {
+          "title": "Smart DualGuard",
+          "body": "4 mm 特殊橡胶层加两层 RaceGuard 尼龙织物；Schwalbe 特别将其说明用于电助力自行车外胎。"
+        },
+        "superDefense": {
+          "title": "Super Defense",
+          "body": "加固结构、6 层 67 EPI 双层胎体，面向高负载和货运自行车开发。"
+        },
+        "doubleDefense": {
+          "title": "Double Defense",
+          "body": "胎面与胎侧组合防护；根据具体版本，胎面可能采用 V-Guard、GreenGuard 或 RaceGuard，并配合 SnakeSkin 胎侧织物。"
+        },
+        "vGuard": {
+          "title": "V-Guard",
+          "body": "轻量、耐切割的高科技纤维防刺带。"
+        },
+        "greenGuard": {
+          "title": "GreenGuard",
+          "body": "含回收材料的天然橡胶 3 mm 防刺层。"
+        },
+        "raceGuard": {
+          "title": "RaceGuard",
+          "body": "由双层尼龙织物构成的防刺带，面向快速、轻量外胎。"
+        },
+        "kGuard": {
+          "title": "K-Guard",
+          "body": "纤维增强天然橡胶防刺层。"
+        },
+        "punctureGuard": {
+          "title": "PunctureGuard",
+          "body": "3 mm 防刺层；Schwalbe 官方将其描述为入门级防护。"
+        },
+        "epi67": {
+          "title": "67 EPI 胎体",
+          "body": "紧密编织的尼龙帘线胎体；Schwalbe 说明更高的织物密度有助于获得更顺滑的轮胎表现。"
+        },
+        "epi50": {
+          "title": "50 EPI 胎体",
+          "body": "Schwalbe 防刺技术说明中列出的基础胎体标准。"
+        }
+      }
     },
     "addix": {
-      "label": "ADDIX / Compound · 来源标签",
-      "title": "完整保留 Compound 原文",
-      "count": "观察到 {count} 个 Compound 值",
-      "note": "Compound 按官网页面原文保存和展示。以下是当前结果中的不区分大小写精确匹配计数；性能、颜色、温度和用途含义需要各自的官方来源。",
-      "itemBody": "当前结果中的 Compound 原文计数。"
+      "label": "ADDIX 胶料 · 官方说明",
+      "title": "当前 ADDIX 官方说明中的胶料区别",
+      "note": "以下四张卡片依据 Schwalbe 当前 ADDIX 胶料页面整理。具体产品还可能使用其他胶料名称，不应把它们的特性直接套用到以下四类。",
+      "items": {
+        "speed": {
+          "title": "ADDIX Speed",
+          "body": "偏向效率与较低滚动阻力，同时兼顾耐久性、缓震和抓地，适合追求速度的越野骑行。"
+        },
+        "mid": {
+          "title": "ADDIX Mid（原 SpeedGrip）",
+          "body": "兼顾较低滚阻、缓震、抓地与耐久性，在效率、舒适和耐用之间取得平衡。"
+        },
+        "soft": {
+          "title": "ADDIX Soft",
+          "body": "缓震和抓地表现更突出，滚阻适中，并兼顾耐久性。"
+        },
+        "ultraSoft": {
+          "title": "ADDIX Ultra Soft",
+          "body": "滚阻相对最高，同时提供最强缓震和抓地，包括湿地表现；面向需要最大牵引力和控制的极限越野。"
+        }
+      }
     }
   }
 }

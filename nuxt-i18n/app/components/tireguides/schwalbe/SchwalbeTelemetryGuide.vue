@@ -1,19 +1,16 @@
 <template>
-  <aside class="schwalbe-telemetry" aria-labelledby="schwalbe-telemetry-title">
+  <aside class="schwalbe-telemetry" :aria-labelledby="headingId">
     <header class="schwalbe-telemetry__header">
       <div class="schwalbe-telemetry__heading">
         <span class="schwalbe-telemetry__year" aria-hidden="true">25/26</span>
         <div>
           <p class="schwalbe-telemetry__kicker">{{ tx('telemetryGuide.kicker') }}</p>
-          <h2 id="schwalbe-telemetry-title">{{ tx('telemetryGuide.title') }}</h2>
+          <h2 :id="headingId">{{ tx('telemetryGuide.title') }}</h2>
           <p class="schwalbe-telemetry__subtitle">{{ tx('telemetryGuide.subtitle') }}</p>
         </div>
       </div>
       <div class="schwalbe-telemetry__meta">
         <span class="schwalbe-telemetry__badge">{{ tx('telemetryGuide.badge') }}</span>
-        <span class="schwalbe-telemetry__records">
-          {{ tx('telemetryGuide.records', { count: catalogItems.length }) }}
-        </span>
       </div>
     </header>
 
@@ -51,37 +48,13 @@
             <p class="schwalbe-telemetry__topic-label">{{ tx('telemetryGuide.radial.label') }}</p>
             <h3>{{ tx('telemetryGuide.radial.title') }}</h3>
           </div>
-          <span class="schwalbe-telemetry__topic-count">
-            {{ tx('telemetryGuide.radial.count', { count: radialCount }) }}
-          </span>
         </div>
 
-        <div class="schwalbe-telemetry__two-column">
-          <article class="schwalbe-telemetry__card schwalbe-telemetry__card--violet">
-            <h4>{{ tx('telemetryGuide.radial.principleTitle') }}</h4>
-            <p>{{ tx('telemetryGuide.radial.principleBody') }}</p>
-            <div class="schwalbe-telemetry__comparison">
-              <div>
-                <strong>{{ tx('telemetryGuide.radial.observedTitle') }}</strong>
-                <span>{{ tx('telemetryGuide.radial.observedBody') }}</span>
-              </div>
-              <div>
-                <strong>{{ tx('telemetryGuide.radial.boundaryTitle') }}</strong>
-                <span>{{ tx('telemetryGuide.radial.boundaryBody') }}</span>
-              </div>
-            </div>
-          </article>
-
-          <article class="schwalbe-telemetry__card schwalbe-telemetry__card--neutral">
-            <h4>{{ tx('telemetryGuide.radial.snapshotTitle') }}</h4>
-            <div class="schwalbe-telemetry__big-number">{{ radialCount }}</div>
-            <p>{{ tx('telemetryGuide.radial.snapshotBody') }}</p>
-            <ul class="schwalbe-telemetry__tag-list">
-              <li v-for="entry in radialLabels" :key="entry.label">
-                <span>{{ entry.label }}</span>
-                <b>{{ entry.count }}</b>
-              </li>
-            </ul>
+        <p class="schwalbe-telemetry__topic-note">{{ tx('telemetryGuide.radial.note') }}</p>
+        <div class="schwalbe-telemetry__radial-grid">
+          <article v-for="entry in radialGuides" :key="entry.key" class="schwalbe-telemetry__radial-card">
+            <h4>{{ tx(`telemetryGuide.radial.items.${entry.key}.title`) }}</h4>
+            <p>{{ tx(`telemetryGuide.radial.items.${entry.key}.body`) }}</p>
           </article>
         </div>
       </section>
@@ -97,25 +70,12 @@
           </div>
         </div>
 
-        <p v-if="greenMarathonItems.length" class="schwalbe-telemetry__topic-note">
-          {{ tx('telemetryGuide.green.summary') }}
-        </p>
-        <p v-else class="schwalbe-telemetry__topic-note">
-          {{ tx('telemetryGuide.green.noMatch') }}
-        </p>
-        <div v-if="greenMarathonItems.length" class="schwalbe-telemetry__green-summary">
-          <p v-if="greenMarathonFields" class="schwalbe-telemetry__topic-note">
-            {{ tx('telemetryGuide.green.fieldsLabel') }}
-          </p>
-          <div v-if="greenMarathonFields" class="schwalbe-telemetry__field-list">
-            <span><b>{{ tx('fields.version') }}</b>{{ greenMarathonFields.version }}</span>
-            <span><b>{{ tx('fields.compound') }}</b>{{ greenMarathonFields.compound }}</span>
-            <span><b>{{ tx('fields.seal') }}</b>{{ greenMarathonFields.seal }}</span>
-            <span><b>{{ tx('fields.tread') }}</b>{{ greenMarathonFields.tread }}</span>
-          </div>
-          <p v-else class="schwalbe-telemetry__topic-note">
-            {{ tx('telemetryGuide.green.fieldsFallback') }}
-          </p>
+        <p class="schwalbe-telemetry__topic-note">{{ tx('telemetryGuide.green.note') }}</p>
+        <div class="schwalbe-telemetry__green-grid">
+          <article v-for="entry in greenGuides" :key="entry.key" class="schwalbe-telemetry__green-card">
+            <h4>{{ tx(`telemetryGuide.green.items.${entry.key}.title`) }}</h4>
+            <p>{{ tx(`telemetryGuide.green.items.${entry.key}.body`) }}</p>
+          </article>
         </div>
       </section>
 
@@ -129,31 +89,16 @@
               <p class="schwalbe-telemetry__topic-label">{{ tx('telemetryGuide.protection.label') }}</p>
               <h3>{{ tx('telemetryGuide.protection.title') }}</h3>
             </div>
-            <span class="schwalbe-telemetry__topic-count">{{ tx('telemetryGuide.protection.badge') }}</span>
           </div>
           <p class="schwalbe-telemetry__topic-note">{{ tx('telemetryGuide.protection.note') }}</p>
           <div class="schwalbe-telemetry__level-grid">
-            <article v-for="entry in protectionLevels" :key="entry.level" class="schwalbe-telemetry__level">
-              <span class="schwalbe-telemetry__level-mark">{{ entry.level }}</span>
+            <article v-for="entry in protectionGuides" :key="entry.key" class="schwalbe-telemetry__level">
+              <span class="schwalbe-telemetry__level-mark">{{ entry.mark }}</span>
               <div>
                 <div class="schwalbe-telemetry__list-title">
-                  <strong>{{ entry.label }}</strong>
-                  <span>{{ entry.count }}</span>
+                  <strong>{{ tx(`telemetryGuide.protection.items.${entry.key}.title`) }}</strong>
                 </div>
-                <p>{{ tx('telemetryGuide.protection.levelBody') }}</p>
-              </div>
-            </article>
-          </div>
-          <h4 class="schwalbe-telemetry__subheading">{{ tx('telemetryGuide.protection.labelsTitle') }}</h4>
-          <div class="schwalbe-telemetry__list">
-            <article v-for="entry in protectionStats" :key="entry.label" class="schwalbe-telemetry__list-item">
-              <span class="schwalbe-telemetry__list-mark" aria-hidden="true"></span>
-              <div>
-                <div class="schwalbe-telemetry__list-title">
-                  <strong>{{ entry.label }}</strong>
-                  <span>{{ entry.count }}</span>
-                </div>
-                <p>{{ tx('telemetryGuide.protection.itemBody') }}</p>
+                <p>{{ tx(`telemetryGuide.protection.items.${entry.key}.body`) }}</p>
               </div>
             </article>
           </div>
@@ -168,20 +113,16 @@
               <p class="schwalbe-telemetry__topic-label">{{ tx('telemetryGuide.addix.label') }}</p>
               <h3>{{ tx('telemetryGuide.addix.title') }}</h3>
             </div>
-            <span class="schwalbe-telemetry__topic-count">
-              {{ tx('telemetryGuide.addix.count', { count: observedCompoundCount }) }}
-            </span>
           </div>
           <p class="schwalbe-telemetry__topic-note">{{ tx('telemetryGuide.addix.note') }}</p>
           <div class="schwalbe-telemetry__compound-grid">
-            <article v-for="entry in compoundStats" :key="entry.label" class="schwalbe-telemetry__compound">
+            <article v-for="entry in compoundGuides" :key="entry.key" class="schwalbe-telemetry__compound">
               <span class="schwalbe-telemetry__compound-dot" aria-hidden="true"></span>
               <div>
                 <div class="schwalbe-telemetry__list-title">
-                  <strong>{{ entry.label }}</strong>
-                  <span>{{ entry.count }}</span>
+                  <strong>{{ tx(`telemetryGuide.addix.items.${entry.key}.title`) }}</strong>
                 </div>
-                <p>{{ tx('telemetryGuide.addix.itemBody') }}</p>
+                <p>{{ tx(`telemetryGuide.addix.items.${entry.key}.body`) }}</p>
               </div>
             </article>
           </div>
@@ -196,20 +137,18 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { ref, useId, watch } from 'vue'
 import { useI18n } from '#imports'
-import type { SchwalbeTireCatalogItem } from '~/data/tireguides/schwalbeCatalog'
+import { usePageMessages } from '~/composables/usePageMessages'
 
 type TelemetryTab = 'all' | 'radial' | 'green' | 'protection' | 'addix'
 
-const props = withDefaults(defineProps<{
-  catalogItems?: SchwalbeTireCatalogItem[]
-}>(), {
-  catalogItems: () => [],
-})
-
-const { t: translate } = useI18n()
+const { locale, t: translate } = useI18n()
+const { loadPageMessages } = usePageMessages('guidesSchwalbeTireSelector')
+await loadPageMessages(locale.value)
+watch(locale, (nextLocale) => void loadPageMessages(nextLocale))
 const tx = (key: string, params?: Record<string, unknown>) => translate(`guidesSchwalbeTireSelector.${key}`, params || {})
+const headingId = `schwalbe-telemetry-title-${useId()}`
 
 const activeTechTab = ref<TelemetryTab>('all')
 const showTechGuide = ref(true)
@@ -221,95 +160,39 @@ const tabs: Array<{ id: TelemetryTab; labelKey: string }> = [
   { id: 'addix', labelKey: 'telemetryGuide.tabs.addix' },
 ]
 
-const textOf = (item: SchwalbeTireCatalogItem) => [
-  item.model_name,
-  item.version_label,
-  item.compound,
-  item.seal,
-  item.tread,
-].filter(Boolean).join(' ').toLowerCase()
+const radialGuides = [
+  { key: 'casing' },
+  { key: 'contact' },
+  { key: 'tradeoff' },
+] as const
 
-const countText = (term: string) => props.catalogItems.filter((item) => textOf(item).includes(term.toLowerCase())).length
-const countVersion = (term: string) => props.catalogItems.filter((item) => item.version_label?.toLowerCase().includes(term.toLowerCase())).length
-const countVersions = (terms: string[]) => props.catalogItems.filter((item) => {
-  const version = item.version_label?.toLowerCase() || ''
-  return terms.some((term) => version.includes(term.toLowerCase()))
-}).length
+const greenGuides = [
+  { key: 'compound' },
+  { key: 'naturalRubber' },
+  { key: 'greenGuard' },
+  { key: 'circularMaterials' },
+] as const
 
-const radialCount = computed(() => props.catalogItems.filter((item) => textOf(item).includes('radial')).length)
-const greenMarathonItems = computed(() => props.catalogItems.filter((item) => item.model_name.trim().toLowerCase() === 'green marathon'))
+const protectionGuides = [
+  { key: 'smartGuard', mark: 'SG' },
+  { key: 'smartDualGuard', mark: 'SDG' },
+  { key: 'superDefense', mark: 'SD' },
+  { key: 'doubleDefense', mark: 'DD' },
+  { key: 'vGuard', mark: 'VG' },
+  { key: 'greenGuard', mark: 'GG' },
+  { key: 'raceGuard', mark: 'RG' },
+  { key: 'kGuard', mark: 'KG' },
+  { key: 'punctureGuard', mark: 'PG' },
+  { key: 'epi67', mark: '67' },
+  { key: 'epi50', mark: '50' },
+] as const
 
-const greenMarathonFields = computed(() => {
-  const items = greenMarathonItems.value
-  if (!items.length) return null
-
-  const consistentValue = (field: 'version_label' | 'compound' | 'seal' | 'tread') => {
-    const values = items.map((item) => item[field]?.trim() || '')
-    if (values.some((value) => !value) || new Set(values).size !== 1) return null
-    return values[0]
-  }
-
-  const version = consistentValue('version_label')
-  const compound = consistentValue('compound')
-  const seal = consistentValue('seal')
-  const tread = consistentValue('tread')
-  if (!version || !compound || !seal || !tread) return null
-
-  return { version, compound, seal, tread }
-})
-
-const radialLabels = computed(() => [
-  'GRAVITY PRO, Radial',
-  'TRAIL PRO, Radial',
-  'DD, RaceGuard, Radial',
-  'DD, GreenGuard, Radial',
-].map((label) => ({ label, count: countText(label.toLowerCase()) })))
-
-const protectionLevels = computed(() => [
-  { level: 'L7', label: 'SmartGuard / Smart DualGuard', terms: ['SmartGuard', 'Smart DualGuard'] },
-  { level: 'L6', label: 'Super Defense / Double Defense', terms: ['Super Defense', 'Double Defense'] },
-  { level: 'L5', label: 'V-Guard / GreenGuard / RaceGuard', terms: ['V-Guard', 'GreenGuard', 'RaceGuard'] },
-  { level: 'L4', label: 'RaceGuard', terms: ['RaceGuard'] },
-  { level: 'L3', label: 'K-Guard', terms: ['K-Guard'] },
-  { level: 'L2', label: '67 EPI carcass', terms: [] },
-  { level: 'L1', label: '50 EPI carcass', terms: [] },
-].map((entry) => ({
-  ...entry,
-  count: entry.terms.length
-    ? countVersions(entry.terms)
-    : props.catalogItems.filter((item) => item.epi === (entry.level === 'L2' ? 67 : 50)).length,
-})))
-
-const protectionStats = computed(() => [
-  'SmartGuard',
-  'V-Guard',
-  'GreenGuard',
-  'RaceGuard',
-  'K-Guard',
-  'PunctureGuard',
-  'DD',
-].map((label) => ({ label, count: countVersion(label) })).filter((entry) => entry.count > 0))
-
-const compoundLabels = [
-  'ADDIX',
-  'ADDIX Green',
-  'ADDIX Race',
-  'ADDIX Eco',
-  'ADDIX 365',
-  'ADDIX Speed',
-  'ADDIX SpeedGrip',
-  'ADDIX E',
-  'ADDIX 4-Season',
-  'ADDIX Soft',
-  'ADDIX Ultra Soft',
-]
-
-const compoundStats = computed(() => compoundLabels.map((label) => ({
-  label,
-  count: props.catalogItems.filter((item) => item.compound?.trim().toLowerCase() === label.toLowerCase()).length,
-})).filter((entry) => entry.count > 0))
-
-const observedCompoundCount = computed(() => new Set(props.catalogItems.map((item) => item.compound?.trim()).filter(Boolean)).size)
+const compoundGuides = [
+  { key: 'speed' },
+  { key: 'mid' },
+  { key: 'soft' },
+  { key: 'ultraSoft' },
+] as const
 </script>
 
 <style scoped>
@@ -391,9 +274,8 @@ const observedCompoundCount = computed(() => new Set(props.catalogItems.map((ite
 }
 
 .schwalbe-telemetry__subtitle,
-.schwalbe-telemetry__card p,
 .schwalbe-telemetry__topic-note,
-.schwalbe-telemetry__list-item p,
+.schwalbe-telemetry__green-card p,
 .schwalbe-telemetry__compound p,
 .schwalbe-telemetry__footer {
   margin: 0;
@@ -416,9 +298,7 @@ const observedCompoundCount = computed(() => new Set(props.catalogItems.map((ite
   justify-content: flex-end;
 }
 
-.schwalbe-telemetry__badge,
-.schwalbe-telemetry__records,
-.schwalbe-telemetry__topic-count {
+.schwalbe-telemetry__badge {
   display: inline-flex;
   border-radius: 999px;
   padding: 0.25rem 0.55rem;
@@ -433,11 +313,6 @@ const observedCompoundCount = computed(() => new Set(props.catalogItems.map((ite
   border: 1px solid #bae6fd;
   background: #f0f9ff;
   color: #0369a1;
-}
-
-.schwalbe-telemetry__records {
-  background: var(--tz-surface-subtle);
-  color: var(--tz-text-secondary);
 }
 
 .schwalbe-telemetry__toolbar {
@@ -504,11 +379,6 @@ const observedCompoundCount = computed(() => new Set(props.catalogItems.map((ite
   align-items: center;
 }
 
-.schwalbe-telemetry__topic-count {
-  background: var(--tz-surface-subtle);
-  color: var(--tz-text-secondary);
-}
-
 .schwalbe-telemetry__topic--radial .schwalbe-telemetry__topic-label {
   color: #7c3aed;
 }
@@ -535,88 +405,9 @@ const observedCompoundCount = computed(() => new Set(props.catalogItems.map((ite
   align-items: start;
 }
 
-.schwalbe-telemetry__card {
-  display: grid;
-  gap: 0.6rem;
-  min-width: 0;
-  border: 1px solid var(--tz-border-subtle);
-  border-radius: 0.9rem;
-  padding: 0.9rem;
-}
-
-.schwalbe-telemetry__card--violet {
-  border-color: #ddd6fe;
-  background: #faf5ff;
-}
-
-.schwalbe-telemetry__card--neutral {
-  background: var(--tz-surface-subtle);
-}
-
-.schwalbe-telemetry__comparison {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.5rem;
-}
-
-.schwalbe-telemetry__comparison > div {
-  display: grid;
-  gap: 0.2rem;
-  border-radius: 0.65rem;
-  background: color-mix(in srgb, var(--tz-card-surface) 80%, transparent);
-  padding: 0.55rem;
-}
-
-.schwalbe-telemetry__comparison strong,
-.schwalbe-telemetry__field-list,
-.schwalbe-telemetry__tag-list,
-.schwalbe-telemetry__list-item p,
 .schwalbe-telemetry__compound p {
   font-size: 0.68rem;
   line-height: 1.5;
-}
-
-.schwalbe-telemetry__comparison span {
-  color: var(--tz-text-secondary);
-  font-size: 0.68rem;
-  line-height: 1.5;
-}
-
-.schwalbe-telemetry__big-number {
-  color: #7c3aed;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 2rem;
-  font-weight: 850;
-  line-height: 1;
-}
-
-.schwalbe-telemetry__tag-list,
-.schwalbe-telemetry__field-list {
-  display: grid;
-  gap: 0.35rem;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.schwalbe-telemetry__tag-list li,
-.schwalbe-telemetry__field-list span {
-  display: flex;
-  gap: 0.5rem;
-  align-items: baseline;
-  justify-content: space-between;
-  border-bottom: 1px solid color-mix(in srgb, var(--tz-border-subtle) 70%, transparent);
-  color: var(--tz-text-secondary);
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-}
-
-.schwalbe-telemetry__tag-list b {
-  color: var(--tz-text-primary);
-}
-
-.schwalbe-telemetry__field-list b {
-  color: var(--tz-text-primary);
-  font-weight: 700;
 }
 
 .schwalbe-telemetry__topic-note {
@@ -624,12 +415,45 @@ const observedCompoundCount = computed(() => new Set(props.catalogItems.map((ite
   padding-left: 0.65rem;
 }
 
-.schwalbe-telemetry__green-summary {
+.schwalbe-telemetry__green-grid {
   display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 0.5rem;
 }
 
-.schwalbe-telemetry__list,
+.schwalbe-telemetry__radial-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.schwalbe-telemetry__radial-card {
+  display: grid;
+  gap: 0.4rem;
+  min-width: 0;
+  border: 1px solid #ddd6fe;
+  border-radius: 0.7rem;
+  background: #faf5ff;
+  padding: 0.7rem;
+}
+
+.schwalbe-telemetry__radial-card p {
+  margin: 0;
+  color: var(--tz-text-secondary);
+  font-size: 0.76rem;
+  line-height: 1.65;
+}
+
+.schwalbe-telemetry__green-card {
+  display: grid;
+  gap: 0.4rem;
+  min-width: 0;
+  border: 1px solid #bbf7d0;
+  border-radius: 0.7rem;
+  background: #f0fdf4;
+  padding: 0.7rem;
+}
+
 .schwalbe-telemetry__compound-grid {
   display: grid;
   gap: 0.5rem;
@@ -672,15 +496,6 @@ const observedCompoundCount = computed(() => new Set(props.catalogItems.map((ite
   line-height: 1.5;
 }
 
-.schwalbe-telemetry__subheading {
-  color: var(--tz-text-secondary) !important;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 0.72rem !important;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
-.schwalbe-telemetry__list-item,
 .schwalbe-telemetry__compound {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
@@ -692,7 +507,6 @@ const observedCompoundCount = computed(() => new Set(props.catalogItems.map((ite
   padding: 0.65rem;
 }
 
-.schwalbe-telemetry__list-mark,
 .schwalbe-telemetry__compound-dot {
   display: block;
   width: 0.55rem;
@@ -710,13 +524,6 @@ const observedCompoundCount = computed(() => new Set(props.catalogItems.map((ite
   color: var(--tz-text-primary);
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 0.72rem;
-}
-
-.schwalbe-telemetry__list-title span {
-  flex: 0 0 auto;
-  color: var(--tz-text-secondary);
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 0.65rem;
 }
 
 .schwalbe-telemetry__footer {
@@ -740,6 +547,14 @@ const observedCompoundCount = computed(() => new Set(props.catalogItems.map((ite
     grid-template-columns: 1fr;
   }
 
+  .schwalbe-telemetry__green-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .schwalbe-telemetry__radial-grid {
+    grid-template-columns: 1fr;
+  }
+
   .schwalbe-telemetry__level-grid {
     grid-template-columns: 1fr;
   }
@@ -750,10 +565,6 @@ const observedCompoundCount = computed(() => new Set(props.catalogItems.map((ite
     display: grid;
   }
 
-  .schwalbe-telemetry__comparison {
-    grid-template-columns: 1fr;
-  }
-
   .schwalbe-telemetry__tabs {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -761,6 +572,10 @@ const observedCompoundCount = computed(() => new Set(props.catalogItems.map((ite
 
   .schwalbe-telemetry__tab {
     width: 100%;
+  }
+
+  .schwalbe-telemetry__green-grid {
+    grid-template-columns: 1fr;
   }
 }
 </style>
