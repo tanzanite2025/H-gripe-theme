@@ -37,7 +37,7 @@
 
 ## 4. 技术说明、FAQ 与引用
 
-页面上的 ADDIX、胎体、TLE/TLR、Hookless、ETRTO 等技术内容，只有在对应官方资料能直接支持具体说法和适用范围时，才可作为独立说明加入。引用应链接到实际来源；不得声称未核对的白皮书版本、测试结果或官方认证。Telemetry Guide 采用五个标签（技术总览、Radial 胎体、Green Marathon、防刺等级 1–7、ADDIX 胶料）和可折叠视觉交互，首屏仍 SSR 输出内容。Radial 说明以 [Schwalbe Radial MTB 技术页](https://www.schwalbe.com/en/radialtires-mtb) 为准，防刺等级以 [Schwalbe 官方防刺技术页](https://www.schwalbe.com/en/technology-faq/puncture-protection/) 中的 Level 7、6+、6、5、4、3、2、1 结构为准，ADDIX 说明以官方胶料资料为准；PunctureGuard 单独保留为 3 mm 入门结构，不强行归入数字等级。Green Marathon 标签只展示已核验的 ADDIX Eco、GreenGuard、Fair Rubber 和回收/可再生材料说明。Telemetry 是不读取目录、搜索结果、筛选或分页状态的静态组件，可以在商品页或弹窗中复用；公域不展示快照记录数、来源字符串分组或标签计数，也不把等级名称解释成跨品牌统一评分、认证、兼容性、性能或销售事实。
+页面上的 ADDIX、胎体、TLE/TLR、Hookless、ETRTO 等技术内容，只有在对应官方资料能直接支持具体说法和适用范围时，才可作为独立说明加入。引用应链接到实际来源；不得声称未核对的白皮书版本、测试结果或官方认证。Telemetry Guide 采用四个标签（Radial 胎体、Green Marathon、防刺等级 1–7、ADDIX 胶料）和可折叠视觉交互，默认只显示一个主题，不重复堆叠四个主题。Radial 说明以 [Schwalbe Radial MTB 技术页](https://www.schwalbe.com/en/radialtires-mtb) 为准，防刺等级以 [Schwalbe 官方防刺技术页](https://www.schwalbe.com/en/technology-faq/puncture-protection/) 中的 Level 7、6+、6、5、4、3、2、1 结构为准，ADDIX 说明以官方胶料资料为准；PunctureGuard 单独保留为 3 mm 入门结构，不强行归入数字等级。Green Marathon 标签只展示已核验的 ADDIX Eco、GreenGuard、Fair Rubber 和回收/可再生材料说明。Telemetry 是不读取目录、搜索结果、筛选或分页状态的静态组件，可以在商品页或弹窗中复用；公域不展示快照记录数、来源字符串分组或标签计数，也不把等级名称解释成跨品牌统一评分、认证、兼容性、性能或销售事实。
 
 FAQ 使用站点现有内容能力。FAQ 不能扩充 Phase 1 商品字段，也不能把未核实的安全推断包装成 Schwalbe 官方结论。现有样例内容边界见 [FAQ 内容指南](./schwalbe-faq-knowledge-base-input-guide.md)。
 
@@ -69,6 +69,6 @@ GEO/SEO 不构成扩充字段或编造商品事实的理由。
 - 价格和可售状态只在确实存在销售商品时复用现有商品/SKU 数据。
 - 默认全谱系状态查询候选目录；目录为空和查询失败分别有明确状态，不回退到静态型号数组。
 - 页面不输出未实现的轮组、Hookless 或胎压安全结论。
-- 直链 `?page=N` SSR 只渲染 20 条卡片，分页链接可刷新、可回退、可爬取；Telemetry 五标签和展开/收起交互在中英文页面均可见，技术说明不依赖分页卡片数量。
+- 直链 `?page=N` SSR 只渲染 20 条卡片，分页链接可刷新、可回退、可爬取；Telemetry 四个主题标签和展开/收起交互在中英文页面均可见，默认只渲染一个主题，技术说明不依赖分页卡片数量。
 - 结构化 Product/Offer 只覆盖真实存在且展示的销售商品和售卖信息；匹配候选不作为 Product 输出。
 

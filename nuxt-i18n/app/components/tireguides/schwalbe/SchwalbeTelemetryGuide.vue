@@ -40,7 +40,7 @@
 
     <div v-show="showTechGuide" class="schwalbe-telemetry__content">
       <section
-        v-if="activeTechTab === 'all' || activeTechTab === 'radial'"
+        v-if="activeTechTab === 'radial'"
         class="schwalbe-telemetry__topic schwalbe-telemetry__topic--radial"
       >
         <div class="schwalbe-telemetry__topic-heading">
@@ -60,7 +60,7 @@
       </section>
 
       <section
-        v-if="activeTechTab === 'all' || activeTechTab === 'green'"
+        v-if="activeTechTab === 'green'"
         class="schwalbe-telemetry__topic schwalbe-telemetry__topic--green"
       >
         <div class="schwalbe-telemetry__topic-heading">
@@ -81,7 +81,7 @@
 
       <div class="schwalbe-telemetry__two-column schwalbe-telemetry__two-column--lower">
         <section
-          v-if="activeTechTab === 'all' || activeTechTab === 'protection'"
+          v-if="activeTechTab === 'protection'"
           class="schwalbe-telemetry__topic schwalbe-telemetry__topic--protection"
         >
           <div class="schwalbe-telemetry__topic-heading">
@@ -111,7 +111,7 @@
         </section>
 
         <section
-          v-if="activeTechTab === 'all' || activeTechTab === 'addix'"
+          v-if="activeTechTab === 'addix'"
           class="schwalbe-telemetry__topic schwalbe-telemetry__topic--addix"
         >
           <div class="schwalbe-telemetry__topic-heading">
@@ -147,7 +147,7 @@ import { ref, useId, watch } from 'vue'
 import { useI18n } from '#imports'
 import { usePageMessages } from '~/composables/usePageMessages'
 
-type TelemetryTab = 'all' | 'radial' | 'green' | 'protection' | 'addix'
+type TelemetryTab = 'radial' | 'green' | 'protection' | 'addix'
 
 const { locale, t: translate } = useI18n()
 const { loadPageMessages } = usePageMessages('guidesSchwalbeTireSelector')
@@ -156,10 +156,9 @@ watch(locale, (nextLocale) => void loadPageMessages(nextLocale))
 const tx = (key: string, params?: Record<string, unknown>) => translate(`guidesSchwalbeTireSelector.${key}`, params || {})
 const headingId = `schwalbe-telemetry-title-${useId()}`
 
-const activeTechTab = ref<TelemetryTab>('all')
+const activeTechTab = ref<TelemetryTab>('radial')
 const showTechGuide = ref(true)
 const tabs: Array<{ id: TelemetryTab; labelKey: string }> = [
-  { id: 'all', labelKey: 'telemetryGuide.tabs.all' },
   { id: 'radial', labelKey: 'telemetryGuide.tabs.radial' },
   { id: 'green', labelKey: 'telemetryGuide.tabs.green' },
   { id: 'protection', labelKey: 'telemetryGuide.tabs.protection' },
