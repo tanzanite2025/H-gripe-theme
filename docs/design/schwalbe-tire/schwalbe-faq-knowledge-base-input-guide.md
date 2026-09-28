@@ -8,6 +8,7 @@
 - 新建销售 Product 时，在商品表单选择 Schwalbe Tire 模板及具体型号；型号字段从候选目录自动回填，销售资料仍保存在现有 Product/SKU 中。
 - FAQ 文案不是商品字段，也不复制或替代候选目录；目录候选不表示有库存或可购买。
 - 本指南不新增特殊 Admin 页面、商品资料审核或第二位管理员复核流程。
+- Schwalbe 选型页使用独立 FAQ 页面：`page_id=guides-schwalbe-tire-selector`、`route_path=/guides/tireguides/schwalbe-tire-selector`。后台要在对应 locale 的 `faq_pages` 中保持页面为 `active`，再把问答以相同 `page_id` 保存为 `published`；产品布局会自动挂载 `PageFaqSlot`，按这个精确路由在页面主体之后的 SSR FAQ 区读取已发布内容，选型页组件中不要重复插入 FAQ。缺少页面、翻译或已发布条目时，选型页保持正常显示，不伪造 FAQ 内容。
 
 ## 2. 内容来源规则
 
@@ -28,8 +29,9 @@
 5. **目录型号是否表示有库存？** 不表示；只有匹配到真实销售 Product/SKU 后才显示商品链接、价格和库存。
 6. **为什么选型页有 Telemetry Guide？** 它是独立的技术说明，不是商品字段；四个主题标签发布有官方来源支撑、用户能理解的 Radial 胎体、Protection Level 1–7 防刺结构、ADDIX 胶料和 Green Marathon 材料说明。ADDIX 标签保留 Race、4-Season、Speed、Mid（原 SpeedGrip）、Soft、Ultra Soft 和 Endurance 七条静态命名线，颜色只作视觉图例，默认只显示一个主题，不展示快照记录数、来源字符串分组或标签计数。Telemetry 内容不会改变商品模板，也不会把候选型号变成销售商品，并可在商品页或弹窗复用。
 7. **为什么选型页要分页？** 当前目录候选每页 SSR 输出 20 条，`page` 与 `search` 保留在 URL，便于直链、刷新和搜索引擎抓取；分页只控制展示范围，不代表库存、购买资格或技术认证。
+8. **WIRED、Folding 和 bead 分别是什么意思？** `WIRED` 与 `Folding` 是目录中的胎圈结构标签；bead 是外胎边缘用于坐入车圈胎圈座的加强部分。FAQ 只能解释这些标签的含义，不能单凭胎圈值推导 TLE/TLR、真空胎就绪状态或车圈兼容性，具体结论以型号官方产品页为准。
 
-以上为边界示例，不代表必须创建五条 FAQ。
+以上为内容边界示例；实际条目数量由后台维护的有效问答决定。
 
 ## 4. 旧 FAQ 草稿处理
 
@@ -40,6 +42,8 @@
 ## 5. 发布范围
 
 如站点需要展示 Schwalbe FAQ，沿用现有 FAQ 内容能力。页面与结构化数据仅输出实际维护并展示的问答；不得预设“12 条官方问答”、伪造 FAQPage 答案或声称覆盖全系列。
+
+后台新增或编辑 Schwalbe 问答时，选择 `guides-schwalbe-tire-selector` 页面并使用对应 locale；页面元信息必须是 `active`，条目必须是 `published`。答案由后端清理后经 `PageFaqSlot` SSR 输出；系统不会从静态 i18n 文案或父级 `/guides/tireguides` 自动回退到 Schwalbe 子页，也不会因为只有页面元信息而显示空 FAQ 框。
 
 商品录入继续使用现有商品新增/编辑保存流程，不因 FAQ 增加新的商品审核、复核或资料提交步骤。
 

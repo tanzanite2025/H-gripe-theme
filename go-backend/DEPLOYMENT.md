@@ -46,14 +46,15 @@ go build ./cmd/server
 go build ./cmd/adminctl
 ```
 
+<a id="schwalbe-migrations-357-361-preflight"></a>
 <a id="schwalbe-migrations-357-360-preflight"></a>
 <a id="schwalbe-migrations-357-359-preflight"></a>
 <!-- Keep the previous anchor for existing runbooks and bookmarks. -->
 <a id="schwalbe-migrations-357-358-preflight"></a>
 
-## Schwalbe Migrations 357-360 Preflight
+## Schwalbe Migrations 357-361 Preflight
 
-Migration 357 may remove only an empty legacy catalog; migration 358 recreates the standalone candidate catalog for the all-spectrum selector and template autofill; migration 359 seeds the official Schwalbe sitemap snapshot; migration 360 adds the database uniqueness boundary for Article No. on sales products. Inspect each environment before applying 357. First check whether the table exists:
+Migration 357 may remove only an empty legacy catalog; migration 358 recreates the standalone candidate catalog for the all-spectrum selector and template autofill; migration 359 seeds the official Schwalbe sitemap snapshot; migration 360 adds the database uniqueness boundary for Article No. on sales products; migration 361 creates the route-bound, backend-editable FAQ page for the Schwalbe selector and seeds the English/Chinese bead-label explanations. Inspect each environment before applying 357. First check whether the table exists:
 
 ```sql
 SELECT to_regclass('public.schwalbe_tire_specifications') AS legacy_table;
@@ -73,6 +74,8 @@ After the migration completes, verify:
 SELECT version, dirty FROM schema_migrations;
 SELECT count(*) FROM public.schwalbe_tire_specifications;
 SELECT indexname FROM pg_indexes WHERE tablename = 'product_spec_values' AND indexname = 'uq_schwalbe_product_article_no';
+SELECT page_id, route_path, locale, status FROM faq_pages WHERE page_id = 'guides-schwalbe-tire-selector';
+SELECT locale, count(*) FROM faqs WHERE page_id = 'guides-schwalbe-tire-selector' AND status = 'published' GROUP BY locale;
 ```
 
 ## Runtime Checks

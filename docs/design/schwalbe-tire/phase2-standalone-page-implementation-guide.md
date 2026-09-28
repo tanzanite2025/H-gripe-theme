@@ -4,7 +4,7 @@
 > **页面**：`/guides/tireguides/schwalbe-tire-selector`  
 > **Phase 1 数据边界**：[Phase 1 商品模板实施指南](./phase1-schwalbe-tire-system-template-implementation-guide.md)  
 > **字段矩阵**：[Schwalbe 商品模板字段矩阵](./schwalbe-master-catalog-specification-matrix.md)  
-> **数据基线**：迁移 359 已导入 2026-09-28 官方 sitemap 快照（773 条 live 外胎记录，15 个 404 旧 URL 排除）；迁移 360 已建立销售商品 Article No. 唯一索引。当前快照中的文本枚举基准见字段矩阵第 8 节。
+> **数据基线**：迁移 359 已导入 2026-09-28 官方 sitemap 快照（773 条 live 外胎记录，15 个 404 旧 URL 排除）；迁移 360 已建立销售商品 Article No. 唯一索引；迁移 361 已为 Schwalbe 选型页建立后台可配置 FAQ 路由并预置 `en`/`zh_cn` 的胎圈问答。当前快照中的文本枚举基准见字段矩阵第 8 节。
 
 > **第一批实现位置**：Nuxt 页面为 `app/pages/guides/tireguides/schwalbe-tire-selector.vue`，目录适配器为 `app/data/tireguides/schwalbeCatalog.ts`，查询状态在 `app/composables/useSchwalbeTireSelector.ts`，卡片和数据边界说明位于 `app/components/tireguides/schwalbe/`。该切片只读取 Phase 1 的只读目录接口，不载入旧原型数组。
 
@@ -130,7 +130,7 @@ nuxt-i18n/app/
 - Telemetry Guide 在候选列表之前作为首屏语义内容输出；折叠按钮只改变视觉展开状态，不通过点击后再请求技术内容。可按实际文案使用 `TechArticle`，但不得为未核实的技术结论生成结构化数据。
 - 候选/匹配结果本身不是 Product；只有实际存在并展示的销售商品才输出 Product 结构化数据，有真实报价时才输出 Offer。不要输出虚构价格、库存、认证或兼容结论。
 - 通用技术说明可以声明为 `TechArticle`。目录确实完整导入并公开后，才可按实际数据描述覆盖范围；不得为 GEO 虚构数量或完整性。
-- FAQ 使用现有 FAQ 查询与组件，不在页面代码中复制后台 FAQ 内容。
+- FAQ 使用现有后台 FAQ 查询与 `PageFaqSlot`，不在页面代码中复制后台 FAQ 内容。Schwalbe 选型页按 `route_path=/guides/tireguides/schwalbe-tire-selector` 命中 `page_id=guides-schwalbe-tire-selector`；只有 `faq_pages.status=active` 且对应条目 `status=published` 时，已发布问答才会在 SSR 页面显示。
 - 页面标题、描述和空状态描述候选目录的实际数据状态；不得把“无销售商品”误写成“无型号候选”，也不得声称未经核验的覆盖数量。
 
 ## 7. 导航与验收
@@ -148,6 +148,7 @@ nuxt-i18n/app/
 - 每张卡片展示目录中已保存的官方字段、来源链接、核验日期和 `product_exists` 状态；未上架候选不会被隐藏，也不会显示价格、库存或购买按钮。
 - 页面提示四字段 OR 包含匹配和“不拆分多词”的接口限制，避免把 `Pro One 28-622` 当作跨字段联合查询。
 - `e_bike_rating` 继续按 `E-25`、`E-50` 或空文本显示；页面不生成 Hookless、车圈兼容或安全压力结论。
+- FAQ 路由命中且当前 locale 有已发布条目时，SSR 输出后台已发布的 Schwalbe 问答（包括 WIRED、Folding 和 bead 解释）；未配置页面、未发布条目或缺少该 locale 时不输出伪造内容，选型页主体仍正常渲染。
 
 本批接口响应目前只提供目录候选和 `product_exists`。`SchwalbeSalesProductData` 中的商品标题、链接、19 项销售快照、价格、币种和可售状态，必须在下一批后端附加层一次性按 Article No. 批量读取后再接入页面；在该附加层完成前，不能通过前端逐条请求商品、解析标题或使用静态价格补齐。
 

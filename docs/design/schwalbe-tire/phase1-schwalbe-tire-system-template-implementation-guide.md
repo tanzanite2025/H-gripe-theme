@@ -3,7 +3,7 @@
 > **数据边界**：全谱系 Schwalbe 型号先保存在独立候选目录 `schwalbe_tire_specifications`，供选型器检索，也供商品编辑页自动回填。它不代表销售商品，不通过后台人工逐条录入或审批。实际销售仍是普通 Product：选择 `Schwalbe Tire` 模板，从目录选择具体型号并自动填充 19 项官网字段，再维护销售 SKU 并保存到现有商品表。  
 > **官方字段核验日期**：2026-09-27  
 > **文档更新日期**：2026-09-29  
-> **迁移基线**：既有迁移 1–353 保持原样；Schwalbe 迁移从 354 起追加。迁移 357 是历史清理，迁移 358 前向恢复候选目录，迁移 359 导入官方目录快照，迁移 360 加固销售商品 Article No. 唯一性；不回滚既有迁移。
+> **迁移基线**：既有迁移 1–353 保持原样；Schwalbe 迁移从 354 起追加。迁移 357 是历史清理，迁移 358 前向恢复候选目录，迁移 359 导入官方目录快照，迁移 360 加固销售商品 Article No. 唯一性，迁移 361 为选型页建立后台可配置 FAQ 路由和初始胎圈问答；不回滚既有迁移。
 > **字段矩阵**：[Schwalbe 商品模板字段矩阵](./schwalbe-master-catalog-specification-matrix.md)  
 > **Phase 2 实施指南**：[Phase 2：Schwalbe 商品规格查询页实施指南](./phase2-standalone-page-implementation-guide.md)
 > **Phase 2 页面技术说明**：Telemetry Guide 与页面端 SSR 分页契约见 [Phase 2 实施指南](./phase2-standalone-page-implementation-guide.md)；技术说明不是 19 个商品字段或销售事实。
@@ -16,7 +16,7 @@
 3. 保存实际销售商品时，商品服务仍使用常规 `specs` 路径，将所选型号的 19 项值保存到该 Product 的 `product_spec_values`。商品自己的价格、库存、SKU、图片和销售状态由现有 Product/SKU 字段维护。
 4. 选型器始终可以检索候选目录中的型号，并为每个候选按 Article No. 查询是否存在真实销售 Product。目录候选本身不会自动变成 Product。
 5. 候选目录通过有官方来源的数据库导入/同步维护，不新增人工录入台、Admin 提交流程、审批或二人复核。
-6. 不修改或回滚迁移 1–353。迁移 358 以追加方式恢复候选目录，迁移 359 导入官方快照，迁移 360 加固销售商品 Article No. 唯一性，保留历史迁移顺序；不通过 down migration 删除目录数据。
+6. 不修改或回滚迁移 1–353。迁移 358 以追加方式恢复候选目录，迁移 359 导入官方快照，迁移 360 加固销售商品 Article No. 唯一性，迁移 361 只建立选型页 FAQ 页面和初始问答，不改变 19 个商品字段或目录数据；保留历史迁移顺序，不通过 down migration 删除目录数据。
 
 ## 2. 官网字段边界
 
@@ -109,11 +109,12 @@
 - 迁移 358 在 357 之后重建无审批字段的候选目录，字段包含 19 项官网事实、Article No. 主键和来源 URL/核对日期。这样保留既有迁移记录，不回滚，也不放弃全谱系数据职责。
 - 迁移 359 使用 [Schwalbe 目录导入脚本](../../../scripts/import-schwalbe-catalog.mjs) 生成并幂等 upsert 官方英文 sitemap 快照；当前 seed 包含 773 条 live 产品页记录，并在注释中列出 15 条 404 排除项。该迁移只写候选目录，不创建 Product、SKU、价格或库存；重新抓取时应生成新的带核对日期的 seed。
 - 迁移 360 为 `product_spec_values` 上的 Schwalbe `article_no` 建立大小写/首尾空白不敏感的数据库唯一索引，并在建索引前拒绝已有重复值；应用层预检查只负责更早返回可读错误，不能替代该并发安全边界。
-- 发布前按 [`go-backend/DEPLOYMENT.md`](../../../go-backend/DEPLOYMENT.md#schwalbe-migrations-357-360-preflight) 检查每个环境的旧表行数；非空时先检查并保留数据，不能清空后继续。
+- 迁移 361 为 `guides-schwalbe-tire-selector` 建立精确路由 `/guides/tireguides/schwalbe-tire-selector` 的 FAQ 页面，页面元信息覆盖当前支持的 locale，初始 `en`/`zh_cn` 问答解释 `WIRED`、`Folding` 和 bead；其他语言由后台维护翻译，FAQ 不回填商品字段。
+- 发布前按 [`go-backend/DEPLOYMENT.md`](../../../go-backend/DEPLOYMENT.md#schwalbe-migrations-357-361-preflight) 检查每个环境的旧表行数；非空时先检查并保留数据，不能清空后继续。
 
 ## 7. 当前实现验收与后续工作
 
-已实现的代码路径：商品模板选择、19 个模板字段、商品新增/编辑的 `specs` 保存、目录查询接口、后台型号选择器、选中型号后的 19 字段自动回填，以及目录结果的 Article No. 销售商品存在标记。迁移 358 建表后，迁移 359 已将官方快照导入候选目录，迁移 360 已加固销售商品 Article No. 唯一性；本次快照生成 773 条 live 记录，15 条 sitemap 404 记录被排除。导入脚本会校验必填字段、正数测量值、EPI 整数约束和 min/max 顺序，并可重复运行生成新的 JSON 与 SQL seed。Docker 开发数据库 `commerce-platform-postgres` 执行到 `schema_migrations.version = 360` 后，候选目录行数为 773，Article No. 唯一索引存在，必填字段缺失数、非正数和压力顺序错误均为 0。
+已实现的代码路径：商品模板选择、19 个模板字段、商品新增/编辑的 `specs` 保存、目录查询接口、后台型号选择器、选中型号后的 19 字段自动回填，以及目录结果的 Article No. 销售商品存在标记。迁移 358 建表后，迁移 359 已将官方快照导入候选目录，迁移 360 已加固销售商品 Article No. 唯一性，迁移 361 已为选型页绑定后台 FAQ；本次快照生成 773 条 live 记录，15 条 sitemap 404 记录被排除。导入脚本会校验必填字段、正数测量值、EPI 整数约束和 min/max 顺序，并可重复运行生成新的 JSON 与 SQL seed。Docker 开发数据库 `commerce-platform-postgres` 执行到 `schema_migrations.version = 361` 后，候选目录行数为 773，Article No. 唯一索引存在，Schwalbe FAQ 页面路由存在，必填字段缺失数、非正数和压力顺序错误均为 0。
 
 型号选择后的商城标题建议生成规则尚未接入后台表单；实现时按第 4 节生成可编辑默认值，并避免覆盖手工改过的标题。
 
