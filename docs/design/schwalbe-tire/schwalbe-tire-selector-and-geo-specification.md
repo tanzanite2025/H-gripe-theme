@@ -37,7 +37,7 @@
 
 ## 4. 技术说明、FAQ 与引用
 
-页面上的 ADDIX、胎体、TLE/TLR、Hookless、ETRTO 等技术内容，只有在对应官方资料能直接支持具体说法和适用范围时，才可作为独立说明加入。引用应链接到实际来源；不得声称未核对的白皮书版本、测试结果或官方认证。Telemetry Guide 采用五个标签（四维总览、径向轮胎革命、绿色闭环与段位、1–7 级防刺、ADDIX 橡胶）和可折叠视觉交互，首屏仍 SSR 输出内容；目录统计只从当前未分页结果的原文标签动态生成，不扩充 19 字段契约。
+页面上的 ADDIX、胎体、TLE/TLR、Hookless、ETRTO 等技术内容，只有在对应官方资料能直接支持具体说法和适用范围时，才可作为独立说明加入。引用应链接到实际来源；不得声称未核对的白皮书版本、测试结果或官方认证。Telemetry Guide 采用五个标签（四维总览、径向轮胎革命、Green Marathon、1–7 级防刺、ADDIX 橡胶）和可折叠视觉交互，首屏仍 SSR 输出内容。Green Marathon 标签只展示已核验的 ADDIX Eco、GreenGuard、Fair Rubber 和回收/可再生材料说明；`Version`、`Compound`、`Seal`、`Tread` 只有在当前结果全部一致时才作为摘要显示，否则以具体尺寸卡片为准。数据集治理文案和 Green Marathon 记录统计不进入公域区块；其余目录统计只从当前未分页结果的原文标签动态生成，不扩充 19 字段契约。
 
 FAQ 使用站点现有内容能力。FAQ 不能扩充 Phase 1 商品字段，也不能把未核实的安全推断包装成 Schwalbe 官方结论。现有样例内容边界见 [FAQ 内容指南](./schwalbe-faq-knowledge-base-input-guide.md)。
 

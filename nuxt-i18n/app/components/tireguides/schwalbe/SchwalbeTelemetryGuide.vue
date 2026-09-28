@@ -95,37 +95,27 @@
             <p class="schwalbe-telemetry__topic-label">{{ tx('telemetryGuide.green.label') }}</p>
             <h3>{{ tx('telemetryGuide.green.title') }}</h3>
           </div>
-          <span class="schwalbe-telemetry__topic-count">
-            {{ tx('telemetryGuide.green.count', { count: greenMarathonCount }) }}
-          </span>
         </div>
 
-        <div class="schwalbe-telemetry__two-column">
-          <article class="schwalbe-telemetry__card schwalbe-telemetry__card--green">
-            <h4>{{ tx('telemetryGuide.green.modelTitle') }}</h4>
-            <p>{{ tx('telemetryGuide.green.modelBody', { count: distinctModelCount }) }}</p>
-            <div class="schwalbe-telemetry__stat-grid">
-              <div>
-                <strong>{{ distinctModelCount }}</strong>
-                <span>{{ tx('telemetryGuide.green.modelStat') }}</span>
-              </div>
-              <div>
-                <strong>{{ catalogItems.length }}</strong>
-                <span>{{ tx('telemetryGuide.green.recordStat') }}</span>
-              </div>
-            </div>
-          </article>
-
-          <article class="schwalbe-telemetry__card schwalbe-telemetry__card--green">
-            <h4>{{ tx('telemetryGuide.green.marathonTitle') }}</h4>
-            <p>{{ tx('telemetryGuide.green.marathonBody') }}</p>
-            <div class="schwalbe-telemetry__field-list">
-              <span><b>Version</b>{{ greenMarathonFields.version || tx('telemetryGuide.notObserved') }}</span>
-              <span><b>Compound</b>{{ greenMarathonFields.compound || tx('telemetryGuide.notObserved') }}</span>
-              <span><b>Seal</b>{{ greenMarathonFields.seal || tx('telemetryGuide.notObserved') }}</span>
-              <span><b>Tread</b>{{ greenMarathonFields.tread || tx('telemetryGuide.notObserved') }}</span>
-            </div>
-          </article>
+        <p v-if="greenMarathonItems.length" class="schwalbe-telemetry__topic-note">
+          {{ tx('telemetryGuide.green.summary') }}
+        </p>
+        <p v-else class="schwalbe-telemetry__topic-note">
+          {{ tx('telemetryGuide.green.noMatch') }}
+        </p>
+        <div v-if="greenMarathonItems.length" class="schwalbe-telemetry__green-summary">
+          <p v-if="greenMarathonFields" class="schwalbe-telemetry__topic-note">
+            {{ tx('telemetryGuide.green.fieldsLabel') }}
+          </p>
+          <div v-if="greenMarathonFields" class="schwalbe-telemetry__field-list">
+            <span><b>{{ tx('fields.version') }}</b>{{ greenMarathonFields.version }}</span>
+            <span><b>{{ tx('fields.compound') }}</b>{{ greenMarathonFields.compound }}</span>
+            <span><b>{{ tx('fields.seal') }}</b>{{ greenMarathonFields.seal }}</span>
+            <span><b>{{ tx('fields.tread') }}</b>{{ greenMarathonFields.tread }}</span>
+          </div>
+          <p v-else class="schwalbe-telemetry__topic-note">
+            {{ tx('telemetryGuide.green.fieldsFallback') }}
+          </p>
         </div>
       </section>
 
@@ -247,18 +237,25 @@ const countVersions = (terms: string[]) => props.catalogItems.filter((item) => {
 }).length
 
 const radialCount = computed(() => props.catalogItems.filter((item) => textOf(item).includes('radial')).length)
-const distinctModelCount = computed(() => new Set(props.catalogItems.map((item) => item.model_name.trim()).filter(Boolean)).size)
 const greenMarathonItems = computed(() => props.catalogItems.filter((item) => item.model_name.trim().toLowerCase() === 'green marathon'))
-const greenMarathonCount = computed(() => greenMarathonItems.value.length)
 
 const greenMarathonFields = computed(() => {
-  const item = greenMarathonItems.value[0]
-  return {
-    version: item?.version_label,
-    compound: item?.compound,
-    seal: item?.seal,
-    tread: item?.tread,
+  const items = greenMarathonItems.value
+  if (!items.length) return null
+
+  const consistentValue = (field: 'version_label' | 'compound' | 'seal' | 'tread') => {
+    const values = items.map((item) => item[field]?.trim() || '')
+    if (values.some((value) => !value) || new Set(values).size !== 1) return null
+    return values[0]
   }
+
+  const version = consistentValue('version_label')
+  const compound = consistentValue('compound')
+  const seal = consistentValue('seal')
+  const tread = consistentValue('tread')
+  if (!version || !compound || !seal || !tread) return null
+
+  return { version, compound, seal, tread }
 })
 
 const radialLabels = computed(() => [
@@ -552,11 +549,6 @@ const observedCompoundCount = computed(() => new Set(props.catalogItems.map((ite
   background: #faf5ff;
 }
 
-.schwalbe-telemetry__card--green {
-  border-color: #bbf7d0;
-  background: #f0fdf4;
-}
-
 .schwalbe-telemetry__card--neutral {
   background: var(--tz-surface-subtle);
 }
@@ -567,8 +559,7 @@ const observedCompoundCount = computed(() => new Set(props.catalogItems.map((ite
   gap: 0.5rem;
 }
 
-.schwalbe-telemetry__comparison > div,
-.schwalbe-telemetry__stat-grid > div {
+.schwalbe-telemetry__comparison > div {
   display: grid;
   gap: 0.2rem;
   border-radius: 0.65rem;
@@ -577,7 +568,6 @@ const observedCompoundCount = computed(() => new Set(props.catalogItems.map((ite
 }
 
 .schwalbe-telemetry__comparison strong,
-.schwalbe-telemetry__stat-grid span,
 .schwalbe-telemetry__field-list,
 .schwalbe-telemetry__tag-list,
 .schwalbe-telemetry__list-item p,
@@ -629,21 +619,14 @@ const observedCompoundCount = computed(() => new Set(props.catalogItems.map((ite
   font-weight: 700;
 }
 
-.schwalbe-telemetry__stat-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.5rem;
-}
-
-.schwalbe-telemetry__stat-grid strong {
-  color: #047857;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 1.25rem;
-}
-
 .schwalbe-telemetry__topic-note {
   border-left: 3px solid var(--tz-border-strong);
   padding-left: 0.65rem;
+}
+
+.schwalbe-telemetry__green-summary {
+  display: grid;
+  gap: 0.5rem;
 }
 
 .schwalbe-telemetry__list,
@@ -767,8 +750,7 @@ const observedCompoundCount = computed(() => new Set(props.catalogItems.map((ite
     display: grid;
   }
 
-  .schwalbe-telemetry__comparison,
-  .schwalbe-telemetry__stat-grid {
+  .schwalbe-telemetry__comparison {
     grid-template-columns: 1fr;
   }
 

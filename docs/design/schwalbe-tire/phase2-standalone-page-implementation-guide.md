@@ -121,7 +121,7 @@ nuxt-i18n/app/
 
 保留原型“全谱系总览”入口、卡片布局和搜索交互。目录列表必须能显示所有已导入候选，即使没有销售 Product。筛选条件只使用目录中实际存储且来源可核验的字段；未经来源核对的 `discipline`、`series`、`hooklessApproved`、`minRimWidthMm`、`optimalRimWidthMm` 等原型字段不得作为官方事实或安全结论。界面使用 Tanzanite 本地字体与现有基础组件，不引入外部字体。
 
-`SchwalbeTelemetryGuide.vue` 保留原型的五个主题标签（四维总览、径向轮胎革命、绿色闭环与段位、1–7 级防刺、ADDIX 橡胶）和展开/收起交互。技术文案只使用已核验来源或目录中实际保存的 `model_name`、`version_label`、`compound` 等原文；773 条快照的计数随当前搜索/型号筛选结果动态更新，不把原型中的性能百分比、奖项、兼容性、安全压力或绝对化宣传当作事实。Telemetry 统计使用未分页的过滤结果，不能只统计当前 20 张卡片。
+`SchwalbeTelemetryGuide.vue` 保留原型的五个主题标签（四维总览、径向轮胎革命、Green Marathon、1–7 级防刺、ADDIX 橡胶）和展开/收起交互。技术文案只使用已核验来源或目录中实际保存的 `model_name`、`version_label`、`compound` 等原文；Green Marathon 专题只展示面向用户的来源说明（ADDIX Eco 含回收工业炭黑和 100% 天然橡胶；GreenGuard 为 3 mm 柔性印度橡胶防刺层，部分材料来自回收来源；官方页面标注 Fair Rubber，并说明材料中 80% 为回收或可再生来源）。只有当前结果中的 Green Marathon `Version`、`Compound`、`Seal` 和 `Tread` 全部一致且非空时，才显示这组简洁字段摘要；否则引导用户查看具体尺寸卡片。数据治理用语和 Green Marathon 的记录统计不进入公域区块。其他 Telemetry 计数随当前搜索/型号筛选结果动态更新，不把原型中的性能百分比、奖项、兼容性、安全压力或绝对化宣传当作事实；统计使用未分页的过滤结果，不能只统计当前 20 张卡片。
 
 ## 6. SSR、SEO 与内容
 

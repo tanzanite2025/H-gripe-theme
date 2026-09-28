@@ -83,7 +83,7 @@
     "tabs": {
       "all": "四维总览",
       "radial": "🌀 径向标签",
-      "green": "🌿 型号与 Green Marathon",
+      "green": "🌿 Green Marathon",
       "protection": "🛡️ 1–7 级结构图",
       "addix": "🧪 ADDIX / Compound"
     },
@@ -101,15 +101,12 @@
       "snapshotBody": "以下是 model、Version、Compound、Seal 和 Tread 字段中的文本匹配计数。"
     },
     "green": {
-      "label": "型号名称 · Green Marathon",
-      "title": "官方型号名与 Green Marathon 字段",
-      "count": "{count} 条 Green Marathon 记录",
-      "modelTitle": "不虚构产品段位",
-      "modelBody": "当前快照含 {count} 个不同的 model_name。本区块保留目录型号原文，不把名称转换为性能或市场段位。",
-      "modelStat": "个不同型号名",
-      "recordStat": "当前记录数",
-      "marathonTitle": "Green Marathon · 精确字段",
-      "marathonBody": "当前结果含 Green Marathon 时，以下值直接取自已保存的 Version、Compound、Seal 和 Tread 字段。"
+      "label": "Green Marathon · 官方规格",
+      "title": "按尺寸查看 Green Marathon 官方字段",
+      "summary": "Green Marathon 采用 ADDIX Eco 胶料，其中含回收工业炭黑（rCB）和 100% 天然橡胶；GreenGuard 是 3 mm 的柔性印度橡胶防刺层，部分材料来自回收来源。官方产品页同时标注 Fair Rubber，并说明材料中 80% 为回收或可再生来源。",
+      "noMatch": "当前筛选结果不含 Green Marathon；清除搜索或型号筛选后可查看该系列的官方说明。",
+      "fieldsLabel": "当前结果一致的官方字段",
+      "fieldsFallback": "当前结果中的 Green Marathon 字段存在差异或缺失，请以每个具体尺寸卡片为准。"
     },
     "protection": {
       "label": "防刺技术 · 来源标签",

@@ -83,7 +83,7 @@
     "tabs": {
       "all": "Four topic overview",
       "radial": "🌀 Radial labels",
-      "green": "🌿 Model and Green Marathon",
+      "green": "🌿 Green Marathon",
       "protection": "🛡️ 1–7 protection map",
       "addix": "🧪 ADDIX / Compound"
     },
@@ -101,15 +101,12 @@
       "snapshotBody": "These groups are counts of exact text matches across model, Version, Compound, Seal, and Tread fields."
     },
     "green": {
-      "label": "Model names · Green Marathon",
-      "title": "Official model names and Green Marathon fields",
-      "count": "{count} Green Marathon records",
-      "modelTitle": "No invented product tiers",
-      "modelBody": "The snapshot contains {count} distinct model_name values. This panel keeps those names as catalog labels instead of turning them into performance or market tiers.",
-      "modelStat": "distinct model names",
-      "recordStat": "records in view",
-      "marathonTitle": "Green Marathon · exact fields",
-      "marathonBody": "When the current result includes Green Marathon, the values below are taken from its stored Version, Compound, Seal, and Tread fields."
+      "label": "Green Marathon · official specifications",
+      "title": "Read the official fields by tire size",
+      "summary": "Green Marathon uses ADDIX Eco with recycled industrial carbon black (rCB) and 100% natural rubber. GreenGuard is a flexible 3 mm Indian rubber puncture layer, with part of the material from recycled sources. The official product page also marks Fair Rubber and states that 80% of the materials are recycled or renewable.",
+      "noMatch": "Green Marathon is not in the current filtered result. Clear the search or model filter to read the official series note.",
+      "fieldsLabel": "Official fields consistent in this result",
+      "fieldsFallback": "Green Marathon fields differ or are missing in this result; use each size card for the exact values."
     },
     "protection": {
       "label": "Protection technologies · source labels",
