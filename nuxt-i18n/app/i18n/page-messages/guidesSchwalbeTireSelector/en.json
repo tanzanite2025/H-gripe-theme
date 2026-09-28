@@ -5,7 +5,6 @@
   },
   "kicker": "Official catalog lookup",
   "title": "Schwalbe tire selector",
-  "description": "Browse the current Schwalbe English product-page snapshot. Candidate rows remain visible even when the corresponding tire has not been added to the store.",
   "search": {
     "label": "Search the catalog",
     "placeholder": "Model, Article No., ETRTO, or inch size",

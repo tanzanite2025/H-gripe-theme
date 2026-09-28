@@ -5,7 +5,6 @@
       <h1 id="schwalbe-selector-title" class="schwalbe-selector__title">
         {{ tx('title') }}
       </h1>
-      <p class="schwalbe-selector__description">{{ tx('description') }}</p>
     </div>
 
     <form class="schwalbe-selector__controls" role="search" @submit.prevent="submitSearch">
@@ -178,14 +177,6 @@ const {
   font-size: clamp(1.65rem, 3vw, 2.4rem);
   font-weight: 800;
   line-height: 1.15;
-}
-
-.schwalbe-selector__description {
-  margin: 0.7rem auto 0;
-  max-width: 52rem;
-  color: var(--tz-text-secondary);
-  font-size: 0.92rem;
-  line-height: 1.65;
 }
 
 .schwalbe-selector__controls {

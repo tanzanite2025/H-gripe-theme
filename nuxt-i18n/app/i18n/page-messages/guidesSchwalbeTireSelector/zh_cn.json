@@ -5,7 +5,6 @@
   },
   "kicker": "官方目录查询",
   "title": "Schwalbe 外胎选型查询",
-  "description": "浏览当前 Schwalbe 英文产品页快照。即使对应型号尚未在商城上架，目录候选仍会保留显示。",
   "search": {
     "label": "搜索目录",
     "placeholder": "型号、Article No.、ETRTO 或英制尺寸",
