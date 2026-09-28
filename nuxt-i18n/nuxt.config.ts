@@ -81,8 +81,10 @@ const addTabbedPageRoutes = (pages: any[]) => {
 
     if (pages.some(page => normalizePagePath(page.path || '') === tabPath)) continue
 
+    const basePageWithoutChildren = { ...basePage }
+    delete basePageWithoutChildren.children
     pages.push({
-      ...basePage,
+      ...basePageWithoutChildren,
       name: `${name}-tab`,
       path: tabPath,
     })
