@@ -54,8 +54,10 @@ type SpokeCalculationInput struct {
 	// flange. The value changes both the spoke length geometry and bracing
 	// angles used for the tension-ratio estimate.
 	RimOffsetMM float64
-	// Optional user-entered geometry. Catalog geometry is preferred whenever
-	// RimID/HubID resolve to an authoritative record.
+	// Optional user-entered geometry. The public Nuxt calculator intentionally
+	// sends empty RimID/HubID values and relies on this manual geometry. Catalog
+	// ID resolution remains available for controlled legacy/integration callers;
+	// it must not be wired to the public catalog selector as automatic fill.
 	ERDMM            *float64
 	LeftFlangeMM     *float64
 	RightFlangeMM    *float64

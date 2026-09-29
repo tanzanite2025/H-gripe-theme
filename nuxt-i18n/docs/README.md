@@ -18,7 +18,7 @@ This folder is the live documentation hub for the Nuxt storefront. Active notes 
 - Inner-tube search and guide integration: `notes/TUBE-SEARCH-INNER-TUBE.md`
 - Breadcrumb and page hash-tab behavior: `notes/BREADCRUMB-PAGE-SUBNAV.md`
 - Product warranty system notes: `notes/PRODUCT-WARRANTY-SYSTEM.md`
-- Spoke calculator data notes: `notes/SPOKE-CALCULATOR-SYSTEM.md`
+- Spoke calculator system boundary and data notes: `notes/SPOKE-CALCULATOR-SYSTEM.md`
 
 ## Older active notes that need re-audit before implementation
 

@@ -1,40 +1,132 @@
 # Spoke Calculator System / 辐条计算器系统手册
 
-Last updated: 2026-08-29
+Last updated: 2026-09-29
 
-Status: Active reference. Re-audit when the Go spoke API contract or frontend calculator data model changes.
+Status: Active reference. Re-audit when the Go spoke API contract, the manual
+calculator input model, or the recorded-result projection changes.
 
-## 1. 系统架构 (Architecture)
+## 1. Non-negotiable boundary / 不可混淆的边界
 
-本模块采用 **后端黑盒计算 + 前端展示层** 架构。浏览器只获得品牌/型号标识和标签，所有 CAD 几何、公式与验证数据均留在 Go 服务端。
+The spoke page contains two independent systems. They share the page and the
+catalog API, but they do not share calculation state.
 
-- **核心数据源**: Go `SpokeService` 与数据库；前端通过 `/api/v1/spoke/catalog/export` 获取脱敏目录。
-- **计算接口**: `/api/v1/spoke/calc`，受 IP/用户令牌桶限流并记录 `spoke_histories`。
-- **组成部分**:
-  - `SpokeCalculatorBlueprint.vue`: 主计算器组件 (蓝图式布局，保留 Brand -> Model 级联选择)。
-  - `SpokeSmartSearch.vue`: 智能搜索组件 (关键词模糊匹配)。
+### 1.1 Manual calculator / 手工计算系统
 
-## 2. 数据管理与同步 (Data Management & Sync)
+This is the upper wizard and calculator card. It accepts the dimensions and
+build parameters entered by the user:
 
-目录管理入口位于 Go 管理 API，公网接口只返回脱敏标识。
+- spoke head type (J-bend or straight-pull);
+- front and rear ERD;
+- front and rear PCD, WL, and WR;
+- spoke count, crossing pattern, nipple settings, rim offset, and physical
+  correction inputs.
 
-### 2.1 数据结构
+The manual calculator must calculate from those values. Catalog selection must
+never fill, overwrite, or satisfy the manual geometry fields.
 
-- **RIM/HUB geometry**: 仅后端数据库保存，不进入 Nuxt bundle。
-- **PRESET_BUILDS**: 后端管理，公网仅返回搜索所需的名称、关键词和 ID。
+The browser payload created by `app/utils/spokeCalculatorPayload.ts` sends empty
+`rimId` and `hubId` values and sends the measured geometry fields instead.
+`hasSpokeCalculationGeometry()` is the gate for a calculation request. A
+change in the lower catalog/search area must not clear or replace the manual
+draft.
 
-### 2.2 管理工作流 (Management Workflow)
+Relevant files:
 
-管理员通过 `/api/admin/spoke-catalog` 维护目录；变更即时由 API 生效，无需生成或提交前端静态 CAD 数据。
+- `app/components/SpokeCalculatorBlueprint.vue`
+- `app/components/SpokeCalculatorWheelPanel.vue`
+- `app/components/SpokeCalculatorBuildSettings.vue`
+- `app/components/SpokeHeadTypeStep.vue`
+- `app/components/SpokeERDStep.vue`
+- `app/components/SpokePCDStep.vue`
+- `app/composables/useSpokeCalculatorWizard.ts`
+- `app/composables/useSpokeCalculatorManualOptions.ts`
+- `app/composables/useSpokeCalculatorRun.ts`
+- `app/utils/spokeCalculatorPayload.ts`
 
-## 3. 智能搜索 (Smart Search)
+### 1.2 Recorded catalog/search system / 已录入结果目录系统
 
-位于计算器下方的搜索栏组件 (`SpokeSmartSearch.vue`)。
+This is the independent card below the calculator. It is for finding records
+entered and verified by the backend:
 
-- **逻辑**: 搜索脱敏 API 返回的预设元数据，不接触几何原始数据。
+- `SpokeCalculatorCatalogPanel.vue` owns the front/rear catalog selections;
+- `SpokeSmartSearch.vue` combines those selections with the keyword query to
+  filter recorded build metadata/results;
+- `useSpokeCalculatorCatalogSelection.ts` stores only catalog filter state;
+- `useSpokeCalculatorWheelCatalog.ts` supplies catalog brand/model options;
+- `go-backend/web/admin/src/views/SpokeCatalog.vue` and
+  `/api/admin/spoke-catalog` own catalog entry and import workflows.
 
-## 4. 相关文件索引
+Selecting a rim or hub in this card only filters the recorded-result system. It
+must not write to the wizard draft, change the manual calculation payload, or
+replace a calculated result with a catalog value.
 
-- **数据**: `app/data/spoke-calculator/database.ts`
-- **计算逻辑**: `go-backend/internal/service/spoke_service.go`
-- **Go 导出器**: `go-backend/internal/api/v1/spoke/handler.go`
+## 2. API and data boundaries / API 与数据边界
+
+The Go service remains the authoritative source for CAD geometry and backend
+catalog records. The browser uses two separate API purposes:
+
+- `POST /api/v1/spoke/calc`: manual calculation request. The public Nuxt
+  calculator sends measured ERD/flange/PCD values and empty catalog IDs.
+- `GET /api/v1/spoke/catalog/export` (and `/spoke/export`): browser-facing
+  catalog projection used for labels, identifiers, and catalog filtering.
+- `GET /api/admin/spoke-catalog`: authenticated full catalog projection for
+  backend maintenance, including geometry and recorded build measurements.
+
+The Go calculation service still accepts `rimId`/`hubId` for controlled legacy
+or integration callers. That compatibility path does not authorize the Nuxt
+calculator to use catalog selection as an automatic geometry source. Any change
+to that API contract requires a separate review of the manual/catalog boundary.
+
+### 2.1 Public result projection warning / 公共结果投影说明
+
+The current public export deliberately removes CAD geometry and
+`actualLengths`; the backend tests treat it as a safe identifier/label
+projection. Therefore, exposing verified cut lengths to the lower public search
+card requires an explicit, separately reviewed result projection. Do not work
+around this by sending catalog IDs to `/spoke/calc`, and do not put proprietary
+geometry into the Nuxt bundle.
+
+Until that projection is approved, the public catalog contract is limited to
+selection/search metadata even though the admin catalog stores the full
+recorded measurements.
+
+## 3. Data management and sync / 数据管理与同步
+
+Catalog management lives in the Go admin API. The admin workflow may import
+verified build lengths and catalog geometry, but those records are not manual
+calculator state.
+
+- RIM/HUB geometry stays in the backend database.
+- Preset names, keywords, and stable IDs may be projected for browser search.
+- Verified cut lengths remain backend data unless a public result projection is
+  explicitly approved.
+- The browser never receives proprietary CAD geometry through the public
+  catalog export.
+
+## 4. Calculation and tension rules / 计算与张力规则
+
+J-bend and straight-pull geometry are separate backend calculators. Physical
+corrections (hole-radius deduction, straight-pull tangent offset, elastic
+stretch estimate, alternating drilling offset, and interlacing compensation)
+are calculation inputs. The frontend manual flow chooses and submits these
+inputs; it does not infer them from a catalog selection.
+
+The tension ratio is a derived result of the manual geometry calculation. It is
+not the 2:1 or 1:1 spoke-hole topology ratio. See
+`docs/design/spoke-tension-ratio-architecture.md` for the sign convention and
+ratio verification rules.
+
+## 5. Related file index / 相关文件索引
+
+- **Manual calculator data/contracts**:
+  `app/types/spokeCalculator.ts`, `app/utils/spokeCalculatorPayload.ts`
+- **Catalog normalization**: `app/utils/spokeCatalogNormalizer.ts`
+- **Frontend catalog state**: `app/composables/useSpokeCalculatorCatalog.ts`,
+  `app/composables/useSpokeCalculatorCatalogSelection.ts`,
+  `app/composables/useSpokeCalculatorWheelCatalog.ts`
+- **Backend calculation**: `go-backend/internal/service/spoke_service.go`
+- **Backend geometry calculators**:
+  `go-backend/internal/service/spoke_geometry_j_bend.go`,
+  `go-backend/internal/service/spoke_geometry_straight_pull.go`
+- **Public API handler**: `go-backend/internal/api/v1/spoke/handler.go`
+- **Admin catalog handler**: `go-backend/internal/api/admin/spoke_catalog_handler.go`
