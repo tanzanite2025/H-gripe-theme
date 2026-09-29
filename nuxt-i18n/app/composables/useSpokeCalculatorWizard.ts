@@ -7,6 +7,7 @@ import {
   type SpokeCalculatorWizardDraft,
   type SpokeHeadType,
   type SpokeInterlacing,
+  type SpokeNippleType,
   type SpokeWheelSide,
   type SpokeWizardStep,
 } from '~/types/spokeCalculator'
@@ -72,6 +73,14 @@ export const useSpokeCalculatorWizard = () => {
     draft[side].interlaceCompensationMm = compensationMm
   }
 
+  const setNippleType = (side: SpokeWheelSide, nippleType: SpokeNippleType) => {
+    draft[side].nippleType = nippleType
+  }
+
+  const setNippleLength = (side: SpokeWheelSide, nippleLengthMm: number | null) => {
+    draft[side].nippleLength = nippleLengthMm
+  }
+
   return {
     draft,
     activeStep,
@@ -89,5 +98,7 @@ export const useSpokeCalculatorWizard = () => {
     setSpokeHoleDiameter,
     setInterlacing,
     setInterlaceCompensation,
+    setNippleType,
+    setNippleLength,
   }
 }

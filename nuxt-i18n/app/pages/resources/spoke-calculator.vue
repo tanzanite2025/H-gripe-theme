@@ -61,6 +61,17 @@
           :current-step="activeWizardStep"
           @select-step="goToStep"
           @previous="previousStep"
+          @next="nextStep"
+        />
+        <SpokeNippleStep
+          v-else-if="activeWizardStep === 7"
+          v-model:front-nipple-type="frontNippleType"
+          v-model:rear-nipple-type="rearNippleType"
+          v-model:front-nipple-length="frontNippleLengthMm"
+          v-model:rear-nipple-length="rearNippleLengthMm"
+          :current-step="activeWizardStep"
+          @select-step="goToStep"
+          @previous="previousStep"
         />
 
         <!-- Standalone full-width reference card, above the calculator settings. -->
@@ -98,6 +109,7 @@ import SpokeERDStep from '~/components/SpokeERDStep.vue'
 import SpokeHeadTypeStep from '~/components/SpokeHeadTypeStep.vue'
 import SpokeHoleEngagementStep from '~/components/SpokeHoleEngagementStep.vue'
 import SpokeInterlacingStep from '~/components/SpokeInterlacingStep.vue'
+import SpokeNippleStep from '~/components/SpokeNippleStep.vue'
 import SpokePCDStep from '~/components/SpokePCDStep.vue'
 import SpokePhysicsDiagrams from '~/components/SpokePhysicsDiagrams.vue'
 import UserFeedbackThread from '~/components/UserFeedbackThread.vue'
@@ -107,7 +119,7 @@ import { spokeCalculatorTabs } from '~/utils/pageSubNavigation'
 import { usePageMessages } from '~/composables/usePageMessages'
 import { useSpokeCalculatorWizard } from '~/composables/useSpokeCalculatorWizard'
 import type { HubGeometry } from '~/data/spoke-calculator/database'
-import type { SpokeHeadType, SpokeInterlacing } from '~/types/spokeCalculator'
+import type { SpokeHeadType, SpokeInterlacing, SpokeNippleType } from '~/types/spokeCalculator'
 import { definePageMeta, useHead, useI18n } from '#imports'
 import { computed, watch } from 'vue'
 
@@ -128,6 +140,8 @@ const {
   setSpokeHoleDiameter,
   setInterlacing,
   setInterlaceCompensation,
+  setNippleType,
+  setNippleLength,
 } = useSpokeCalculatorWizard()
 
 const selectedSpokeHeadType = computed<SpokeHeadType>({
@@ -213,6 +227,26 @@ const frontInterlaceCompensationMm = computed<number | null>({
 const rearInterlaceCompensationMm = computed<number | null>({
   get: () => spokeWizardDraft.rear.interlaceCompensationMm,
   set: value => setInterlaceCompensation('rear', value),
+})
+
+const frontNippleType = computed<SpokeNippleType>({
+  get: () => spokeWizardDraft.front.nippleType,
+  set: value => setNippleType('front', value),
+})
+
+const rearNippleType = computed<SpokeNippleType>({
+  get: () => spokeWizardDraft.rear.nippleType,
+  set: value => setNippleType('rear', value),
+})
+
+const frontNippleLengthMm = computed<number | null>({
+  get: () => spokeWizardDraft.front.nippleLength,
+  set: value => setNippleLength('front', value),
+})
+
+const rearNippleLengthMm = computed<number | null>({
+  get: () => spokeWizardDraft.rear.nippleLength,
+  set: value => setNippleLength('rear', value),
 })
 
 await loadPageMessages(locale.value)

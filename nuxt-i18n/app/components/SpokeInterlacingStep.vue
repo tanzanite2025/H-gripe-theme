@@ -3,9 +3,9 @@
     <SpokeStepNavigation
       :current-step="currentStep"
       :show-previous="true"
-      :show-next="false"
       @select="emit('select-step', $event)"
       @previous="emit('previous')"
+      @next="emit('next')"
     />
 
     <div class="spoke-interlacing-step__intro">
@@ -156,6 +156,7 @@ const emit = defineEmits<{
   'update:frontCompensation': [value: number | null]
   'update:rearCompensation': [value: number | null]
   previous: []
+  next: []
 }>()
 
 const interlacingOptions = computed(() => [

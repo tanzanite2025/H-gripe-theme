@@ -29,35 +29,6 @@
         />
       </div>
 
-      <div class="spoke-calculator__setting-field">
-        <label :for="fieldId('nipple')" class="block text-xs font-medium tz-text-secondary">
-          {{ t('resourcesSpokeCalculator.calculator.buildSettings.nippleType') }}
-        </label>
-        <SpokeCalculatorSelect
-          :id="fieldId('nipple')"
-          v-model="config.nippleType"
-          :options="options.nippleTypeOptions"
-        />
-      </div>
-
-      <div v-if="config.nippleType === 'hidden'" class="spoke-calculator__setting-field">
-        <label :for="fieldId('nipple-length')" class="block text-xs font-medium tz-text-secondary">
-          {{ t('resourcesSpokeCalculator.calculator.buildSettings.nippleLength') }}
-        </label>
-        <div class="spoke-calculator__unit-field">
-          <input
-            :id="fieldId('nipple-length')"
-            v-model.number="config.nippleLength"
-            type="number"
-            min="0"
-            max="30"
-            :placeholder="t('resourcesSpokeCalculator.calculator.buildSettings.nippleLengthPlaceholder')"
-            class="spoke-calculator__control spoke-calculator__control--with-unit"
-          />
-          <span class="spoke-calculator__unit">{{ t('resourcesSpokeCalculator.calculator.results.unit') }}</span>
-        </div>
-      </div>
-
     </div>
 
     <details open class="spoke-calculator__physical-settings">
