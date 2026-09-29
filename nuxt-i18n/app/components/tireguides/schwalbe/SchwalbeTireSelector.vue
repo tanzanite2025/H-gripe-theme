@@ -7,6 +7,8 @@
       </h1>
     </div>
 
+    <SchwalbeTelemetryGuide />
+
     <form class="schwalbe-selector__controls" role="search" @submit.prevent="submitSearch">
       <label class="schwalbe-selector__search">
         <span class="schwalbe-selector__label">{{ tx('search.label') }}</span>
@@ -53,8 +55,6 @@
         </button>
       </div>
     </form>
-
-    <SchwalbeTelemetryGuide />
 
     <div class="schwalbe-selector__summary" aria-live="polite">
       <span>{{ tx('summary', { count: totalItems, page: currentPage, totalPages }) }}</span>
