@@ -69,6 +69,20 @@ func runSpokeCatalogHTTPRoundTrip(t *testing.T, buildRequest func(spokedomain.Ex
 	publicRequest := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/api/v1/spoke/export", nil)
 	publicExport := executeSpokeCatalogRequest(t, router, publicRequest)
 	assertPublicSpokeExportRedacted(t, publicExport, expectedExport)
+
+	resultsRequest := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/api/v1/spoke/catalog/results", nil)
+	resultsRecorder := httptest.NewRecorder()
+	router.ServeHTTP(resultsRecorder, resultsRequest)
+	require.Equal(t, http.StatusOK, resultsRecorder.Code, resultsRecorder.Body.String())
+	var results spokedomain.RecordedResultsResponse
+	require.NoError(t, json.Unmarshal(resultsRecorder.Body.Bytes(), &results))
+	require.Len(t, results.Presets, 1)
+	require.Equal(t, expectedExport.Presets[0].ID, results.Presets[0].ID)
+	require.Equal(t, 282.0, *results.Presets[0].ActualLengths.FrontLeft)
+	require.Equal(t, 284.0, *results.Presets[0].ActualLengths.RearRight)
+	require.NotContains(t, resultsRecorder.Body.String(), "erd")
+	require.NotContains(t, resultsRecorder.Body.String(), "leftFlange")
+	require.NotContains(t, resultsRecorder.Body.String(), "notes")
 }
 
 func newSpokeCatalogRoundTripRouter(t *testing.T) *gin.Engine {
@@ -115,6 +129,7 @@ func newSpokeCatalogRoundTripRouter(t *testing.T) *gin.Engine {
 	router.GET("/api/admin/spoke-catalog/preset-template", adminapi.NewSpokeCatalogHandler(spokeService).DownloadPresetTemplate)
 	router.POST("/api/admin/spoke-catalog/preset-template/import", adminapi.NewSpokeCatalogHandler(spokeService).ImportPresetTemplate)
 	router.GET("/api/v1/spoke/export", spokeapi.NewHandler(spokeService).GetExport)
+	router.GET("/api/v1/spoke/catalog/results", spokeapi.NewHandler(spokeService).GetPublicResults)
 	return router
 }
 

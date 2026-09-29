@@ -85,8 +85,9 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useI18n } from '#imports'
-import type { WheelBuildPreset } from '~/data/spoke-calculator/database'
+import type { SpokeRecordedResult } from '~/data/spoke-calculator/database'
 import { useSpokeCalculatorCatalog } from '~/composables/useSpokeCalculatorCatalog'
+import { useSpokeCalculatorRecordedResults } from '~/composables/useSpokeCalculatorRecordedResults'
 import type { SpokeWheelCatalogSelection } from '~/types/spokeCalculator'
 
 const props = defineProps<{
@@ -96,7 +97,8 @@ const props = defineProps<{
 
 const query = ref('')
 const { t } = useI18n()
-const { presets, options: catalogOptions } = useSpokeCalculatorCatalog()
+const { options: catalogOptions } = useSpokeCalculatorCatalog()
+const { presets } = useSpokeCalculatorRecordedResults()
 
 interface LengthCell {
   label: string
@@ -119,7 +121,7 @@ const activeCatalogSelections = computed(() => (
     ))
 ))
 
-const matchesCatalogSelection = (preset: WheelBuildPreset) => (
+const matchesCatalogSelection = (preset: SpokeRecordedResult) => (
   activeCatalogSelections.value.every(selection => (
     (!selection.rimBrandId || preset.rimBrandId === selection.rimBrandId)
     && (!selection.rimModelId || preset.rimModelId === selection.rimModelId)
@@ -141,11 +143,11 @@ const matchingConfigs = computed(() => {
   })
 })
 
-function resultCells(preset: WheelBuildPreset): LengthCell[] {
+function resultCells(preset: SpokeRecordedResult): LengthCell[] {
   return actualResultCells(preset)
 }
 
-function actualResultCells(preset: WheelBuildPreset): LengthCell[] {
+function actualResultCells(preset: SpokeRecordedResult): LengthCell[] {
   const actual = preset.actualLengths
   if (!actual) return []
 
@@ -166,7 +168,7 @@ function formatLength(value: number) {
   return Number.isInteger(value) ? String(value) : value.toFixed(1)
 }
 
-function nippleTypeLabel(value: WheelBuildPreset['nippleType']) {
+function nippleTypeLabel(value: SpokeRecordedResult['nippleType']) {
   return t(
     `resourcesSpokeCalculator.calculator.options.nippleType.${value}`,
     nippleTypeLabels.value.get(value) || value,

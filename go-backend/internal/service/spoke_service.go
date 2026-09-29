@@ -145,6 +145,52 @@ func (s *SpokeService) GetPublicExport() (domainspoke.ExportResponse, error) {
 	return export, nil
 }
 
+// GetPublicRecordedResults returns the narrow result projection consumed by
+// the lower browser search card. It deliberately does not reuse the public
+// catalog export: that export hides recorded measurements, while this endpoint
+// exposes only verified cut lengths and the metadata needed to find them.
+func (s *SpokeService) GetPublicRecordedResults() (domainspoke.RecordedResultsResponse, error) {
+	export, err := s.GetExport()
+	if err != nil {
+		return domainspoke.RecordedResultsResponse{}, err
+	}
+
+	results := make([]domainspoke.RecordedBuildResult, 0, len(export.Presets))
+	for _, preset := range export.Presets {
+		actual := preset.ActualLengths
+		if actual == nil || !hasRecordedSpokeLength(actual) {
+			continue
+		}
+
+		results = append(results, domainspoke.RecordedBuildResult{
+			ID:            preset.ID,
+			Name:          preset.Name,
+			Keywords:      append([]string(nil), preset.Keywords...),
+			Description:   preset.Description,
+			RimBrandID:    preset.RimBrandID,
+			RimModelID:    preset.RimModelID,
+			HubBrandID:    preset.HubBrandID,
+			HubModelID:    preset.HubModelID,
+			WheelPosition: preset.WheelPosition,
+			SpokeCount:    preset.SpokeCount,
+			Crossing:      preset.Crossing,
+			NippleType:    preset.NippleType,
+			ActualLengths: domainspoke.RecordedBuildActualLengths{
+				FrontLeft:  actual.FrontLeft,
+				FrontRight: actual.FrontRight,
+				RearLeft:   actual.RearLeft,
+				RearRight:  actual.RearRight,
+			},
+		})
+	}
+
+	return domainspoke.RecordedResultsResponse{Presets: results}, nil
+}
+
+func hasRecordedSpokeLength(actual *domainspoke.WheelBuildActualLengths) bool {
+	return actual != nil && (actual.FrontLeft != nil || actual.FrontRight != nil || actual.RearLeft != nil || actual.RearRight != nil)
+}
+
 func (s *SpokeService) ReplaceCatalog(export domainspoke.ExportResponse) (domainspoke.ExportResponse, error) {
 	if s.spokeRepo.UsesFitmentHubSpecifications() {
 		authoritativeHubs, configured, err := s.spokeRepo.GetAuthoritativeHubBrands()

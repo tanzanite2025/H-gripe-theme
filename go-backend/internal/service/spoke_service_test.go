@@ -172,6 +172,50 @@ func TestSpokeServicePublicExportRedactsProprietaryGeometry(t *testing.T) {
 	require.Nil(t, public.Hubs[0].Items[0].Front)
 }
 
+func TestSpokeServicePublicRecordedResultsProjectsOnlyMeasuredPresets(t *testing.T) {
+	_, spokeService := newTestSpokeService(t)
+	frontLeft := 282.0
+	rearRight := 284.0
+	nippleLength := 14.0
+
+	_, err := spokeService.ReplaceCatalog(spokedomain.ExportResponse{
+		Rims: []spokedomain.RimBrand{{
+			ID: "dt_swiss", Name: "DT Swiss",
+			Items: []spokedomain.RimModel{{ID: "rr411_db", Name: "RR 411 db"}},
+		}},
+		Hubs: []spokedomain.HubBrand{{
+			ID: "dt_swiss", Name: "DT Swiss",
+			Items: []spokedomain.HubModel{{ID: "hub", Name: "Hub"}},
+		}},
+		Presets: []spokedomain.WheelBuildPreset{
+			{
+				ID: "measured-build", Name: "Measured build", Keywords: []string{"verified"},
+				RimBrandID: "dt_swiss", RimModelID: "rr411_db", HubBrandID: "dt_swiss", HubModelID: "hub",
+				SpokeCount: 24, Crossing: 2, NippleType: "standard", NippleLength: &nippleLength,
+				ActualLengths: &spokedomain.WheelBuildActualLengths{
+					FrontLeft: &frontLeft, RearRight: &rearRight, Notes: "internal import note",
+				},
+			},
+			{
+				ID: "unmeasured-build", Name: "Unmeasured build",
+				RimBrandID: "dt_swiss", RimModelID: "rr411_db", HubBrandID: "dt_swiss", HubModelID: "hub",
+				SpokeCount: 24, Crossing: 2, NippleType: "standard",
+			},
+		},
+	})
+	require.NoError(t, err)
+
+	results, err := spokeService.GetPublicRecordedResults()
+	require.NoError(t, err)
+	require.Len(t, results.Presets, 1)
+	result := results.Presets[0]
+	assert.Equal(t, "measured-build", result.ID)
+	assert.Equal(t, []string{"verified"}, result.Keywords)
+	assert.Equal(t, frontLeft, *result.ActualLengths.FrontLeft)
+	assert.Nil(t, result.ActualLengths.FrontRight)
+	assert.Equal(t, rearRight, *result.ActualLengths.RearRight)
+}
+
 func TestSpokeServiceReplaceCatalogAllowsMissingGeometry(t *testing.T) {
 	_, spokeService := newTestSpokeService(t)
 	frontLeft := 282.0

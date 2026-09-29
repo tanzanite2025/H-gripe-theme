@@ -57,12 +57,11 @@ export interface SpokeCatalog {
   presets: WheelBuildPreset[]
 }
 
-export interface WheelBuildActualLengths {
+export interface SpokeRecordedActualLengths {
   frontLeft: number | null
   frontRight: number | null
   rearLeft: number | null
   rearRight: number | null
-  notes?: string
 }
 
 export interface WheelBuildPreset {
@@ -79,7 +78,31 @@ export interface WheelBuildPreset {
   nippleType: 'standard' | 'hidden'
   nippleLength: number | null
   wheelPosition?: 'auto' | 'front' | 'rear'
-  actualLengths?: WheelBuildActualLengths | null
+}
+
+/**
+ * Metadata and verified cut lengths returned by the separate recorded-result
+ * projection. These records must not enter the manual calculator catalog
+ * state or fill any calculator geometry fields.
+ */
+export interface SpokeRecordedResult {
+  id: string
+  name: string
+  keywords: string[]
+  description?: string
+  rimBrandId: string
+  rimModelId: string
+  hubBrandId: string
+  hubModelId: string
+  spokeCount: number
+  crossing: number
+  nippleType: 'standard' | 'hidden'
+  wheelPosition?: 'auto' | 'front' | 'rear'
+  actualLengths: SpokeRecordedActualLengths
+}
+
+export interface SpokeRecordedResultsResponse {
+  presets: SpokeRecordedResult[]
 }
 
 export const SPOKE_CALCULATOR_OPTIONS: SpokeCatalogOptions = {

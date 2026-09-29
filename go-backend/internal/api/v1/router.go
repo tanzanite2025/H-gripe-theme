@@ -406,6 +406,7 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 		spokeGroup.Use(middleware.SpokeRateLimit(deps.RedisClient))
 		{
 			spokeGroup.POST("/calc", spokeHandler.Calculate)
+			spokeGroup.GET("/catalog/results", spokeHandler.GetPublicResults)
 			spokeGroup.GET("/export", spokeHandler.GetPublicCatalog)
 			spokeGroup.GET("/catalog/export", spokeHandler.GetPublicCatalog)
 			spokeGroup.GET("/history", middleware.AuthMiddleware(authService), spokeHandler.ListHistory)

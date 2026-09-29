@@ -33,6 +33,15 @@ func (h *Handler) GetPublicCatalog(c *gin.Context) {
 	h.GetExport(c)
 }
 
+func (h *Handler) GetPublicResults(c *gin.Context) {
+	results, err := h.spokeService.GetPublicRecordedResults()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "spoke_results_error", "message": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, results)
+}
+
 func (h *Handler) ListHistory(c *gin.Context) {
 	userIDValue, exists := c.Get("user_id")
 	if !exists {

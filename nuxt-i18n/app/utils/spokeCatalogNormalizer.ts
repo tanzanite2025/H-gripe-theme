@@ -5,7 +5,9 @@ import {
   type RimModel,
   type SpokeCatalog,
   type SpokeCatalogOptions,
-  type WheelBuildActualLengths,
+  type SpokeRecordedActualLengths,
+  type SpokeRecordedResult,
+  type SpokeRecordedResultsResponse,
   type WheelBuildPreset,
 } from '../data/spoke-calculator/database'
 
@@ -65,22 +67,24 @@ const normalizePublicHubs = (value: unknown): Brand<HubModel>[] => (
   }))
 )
 
-const normalizeActualLengths = (value: unknown): WheelBuildActualLengths | null => {
+const normalizeNumber = (value: unknown): number | null => (
+  typeof value === 'number' && Number.isFinite(value) ? value : null
+)
+
+const normalizeRecordedLengths = (value: unknown): SpokeRecordedActualLengths | null => {
   if (!value || typeof value !== 'object') return null
-  const record = value as Partial<WheelBuildActualLengths>
-  const actual: WheelBuildActualLengths = {
-    frontLeft: typeof record.frontLeft === 'number' ? record.frontLeft : null,
-    frontRight: typeof record.frontRight === 'number' ? record.frontRight : null,
-    rearLeft: typeof record.rearLeft === 'number' ? record.rearLeft : null,
-    rearRight: typeof record.rearRight === 'number' ? record.rearRight : null,
-    notes: typeof record.notes === 'string' ? record.notes : '',
+  const record = value as Partial<SpokeRecordedActualLengths>
+  const actual: SpokeRecordedActualLengths = {
+    frontLeft: normalizeNumber(record.frontLeft),
+    frontRight: normalizeNumber(record.frontRight),
+    rearLeft: normalizeNumber(record.rearLeft),
+    rearRight: normalizeNumber(record.rearRight),
   }
 
   return actual.frontLeft == null &&
     actual.frontRight == null &&
     actual.rearLeft == null &&
-    actual.rearRight == null &&
-    !actual.notes
+    actual.rearRight == null
     ? null
     : actual
 }
@@ -89,15 +93,57 @@ const normalizePresets = (value: unknown): WheelBuildPreset[] => (
   Array.isArray(value)
     ? value.flatMap((preset) => {
       if (!preset || typeof preset !== 'object') return []
-      const record = preset as WheelBuildPreset
+      const record = preset as Partial<WheelBuildPreset>
       if (!record.id || !record.name) return []
       return [{
-        ...record,
         id: String(record.id),
         name: String(record.name),
-        keywords: Array.isArray(record.keywords) ? record.keywords : [],
-        wheelPosition: record.wheelPosition || 'auto',
-        actualLengths: normalizeActualLengths(record.actualLengths),
+        keywords: Array.isArray(record.keywords)
+          ? record.keywords.filter((keyword): keyword is string => typeof keyword === 'string')
+          : [],
+        description: typeof record.description === 'string' ? record.description : undefined,
+        rimBrandId: typeof record.rimBrandId === 'string' ? record.rimBrandId : '',
+        rimModelId: typeof record.rimModelId === 'string' ? record.rimModelId : '',
+        hubBrandId: typeof record.hubBrandId === 'string' ? record.hubBrandId : '',
+        hubModelId: typeof record.hubModelId === 'string' ? record.hubModelId : '',
+        spokeCount: typeof record.spokeCount === 'number' ? record.spokeCount : 0,
+        crossing: typeof record.crossing === 'number' ? record.crossing : 0,
+        nippleType: record.nippleType === 'hidden' ? 'hidden' : 'standard',
+        nippleLength: null,
+        wheelPosition: record.wheelPosition === 'front' || record.wheelPosition === 'rear'
+          ? record.wheelPosition
+          : 'auto',
+      }]
+    })
+    : []
+)
+
+const normalizeRecordedResults = (value: unknown): SpokeRecordedResult[] => (
+  Array.isArray(value)
+    ? value.flatMap((preset) => {
+      if (!preset || typeof preset !== 'object') return []
+      const record = preset as Partial<SpokeRecordedResult>
+      const actualLengths = normalizeRecordedLengths(record.actualLengths)
+      if (!record.id || !record.name || !actualLengths) return []
+
+      return [{
+        id: String(record.id),
+        name: String(record.name),
+        keywords: Array.isArray(record.keywords)
+          ? record.keywords.filter((keyword): keyword is string => typeof keyword === 'string')
+          : [],
+        description: typeof record.description === 'string' ? record.description : undefined,
+        rimBrandId: typeof record.rimBrandId === 'string' ? record.rimBrandId : '',
+        rimModelId: typeof record.rimModelId === 'string' ? record.rimModelId : '',
+        hubBrandId: typeof record.hubBrandId === 'string' ? record.hubBrandId : '',
+        hubModelId: typeof record.hubModelId === 'string' ? record.hubModelId : '',
+        spokeCount: typeof record.spokeCount === 'number' ? record.spokeCount : 0,
+        crossing: typeof record.crossing === 'number' ? record.crossing : 0,
+        nippleType: record.nippleType === 'hidden' ? 'hidden' : 'standard',
+        wheelPosition: record.wheelPosition === 'front' || record.wheelPosition === 'rear'
+          ? record.wheelPosition
+          : 'auto',
+        actualLengths,
       }]
     })
     : []
@@ -111,5 +157,15 @@ export const normalizeSpokeCatalogPayload = (payload: unknown): SpokeCatalog => 
     rims: normalizePublicRims(record.rims),
     hubs: normalizePublicHubs(record.hubs),
     presets: normalizePresets(record.presets),
+  }
+}
+
+export const normalizeSpokeRecordedResultsPayload = (payload: unknown): SpokeRecordedResultsResponse => {
+  const record = payload && typeof payload === 'object'
+    ? payload as Partial<SpokeRecordedResultsResponse>
+    : {}
+
+  return {
+    presets: normalizeRecordedResults(record.presets),
   }
 }

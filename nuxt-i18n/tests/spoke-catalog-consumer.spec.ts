@@ -1,8 +1,11 @@
 import { expect, test } from '@playwright/test'
 import { DEFAULT_SPOKE_CATALOG } from '../app/data/spoke-calculator/database'
-import { normalizeSpokeCatalogPayload } from '../app/utils/spokeCatalogNormalizer'
+import {
+  normalizeSpokeCatalogPayload,
+  normalizeSpokeRecordedResultsPayload,
+} from '../app/utils/spokeCatalogNormalizer'
 
-test('normalizes the public spoke catalog payload the frontend consumes', () => {
+test('normalizes the public spoke catalog payload without recorded measurements', () => {
   const frontLeft = 282
   const rearRight = 284
   const payload = {
@@ -32,7 +35,28 @@ test('normalizes the public spoke catalog payload the frontend consumes', () => 
   expect(catalog.presets[0].wheelPosition).toBe('auto')
   expect(catalog.presets[0].description).toBe(DEFAULT_SPOKE_CATALOG.presets[0].description)
   expect(catalog.presets[0].keywords).toEqual(DEFAULT_SPOKE_CATALOG.presets[0].keywords)
-  expect(catalog.presets[0].actualLengths?.frontLeft).toBe(frontLeft)
-  expect(catalog.presets[0].actualLengths?.frontRight).toBeNull()
-  expect(catalog.presets[0].actualLengths?.rearRight).toBe(rearRight)
+  expect('actualLengths' in catalog.presets[0]).toBe(false)
+})
+
+test('normalizes the separate recorded-result projection and drops internal notes', () => {
+  const results = normalizeSpokeRecordedResultsPayload({
+    presets: [{
+      ...DEFAULT_SPOKE_CATALOG.presets[0],
+      actualLengths: {
+        frontLeft: 282,
+        frontRight: null,
+        rearLeft: null,
+        rearRight: 284,
+        notes: 'internal import note',
+      },
+    }, {
+      ...DEFAULT_SPOKE_CATALOG.presets[1],
+      actualLengths: { frontLeft: null, frontRight: null, rearLeft: null, rearRight: null },
+    }],
+  })
+
+  expect(results.presets).toHaveLength(1)
+  expect(results.presets[0].actualLengths.frontLeft).toBe(282)
+  expect(results.presets[0].actualLengths.rearRight).toBe(284)
+  expect('notes' in results.presets[0].actualLengths).toBe(false)
 })

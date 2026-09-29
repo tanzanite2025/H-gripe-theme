@@ -69,6 +69,10 @@ catalog records. The browser uses two separate API purposes:
   calculator sends measured ERD/flange/PCD values and empty catalog IDs.
 - `GET /api/v1/spoke/catalog/export` (and `/spoke/export`): browser-facing
   catalog projection used for labels, identifiers, and catalog filtering.
+- `GET /api/v1/spoke/catalog/results`: separate browser-facing projection for
+  backend-recorded spoke lengths. It returns only preset search metadata and
+  the four measured length fields; it does not return geometry, nipple length,
+  or internal import notes.
 - `GET /api/admin/spoke-catalog`: authenticated full catalog projection for
   backend maintenance, including geometry and recorded build measurements.
 
@@ -77,18 +81,16 @@ or integration callers. That compatibility path does not authorize the Nuxt
 calculator to use catalog selection as an automatic geometry source. Any change
 to that API contract requires a separate review of the manual/catalog boundary.
 
-### 2.1 Public result projection warning / 公共结果投影说明
+### 2.1 Public result projection / 公共结果投影
 
 The current public export deliberately removes CAD geometry and
-`actualLengths`; the backend tests treat it as a safe identifier/label
-projection. Therefore, exposing verified cut lengths to the lower public search
-card requires an explicit, separately reviewed result projection. Do not work
-around this by sending catalog IDs to `/spoke/calc`, and do not put proprietary
-geometry into the Nuxt bundle.
-
-Until that projection is approved, the public catalog contract is limited to
-selection/search metadata even though the admin catalog stores the full
-recorded measurements.
+`actualLengths`; it remains a safe identifier/label projection. The lower
+search card reads the separate `/spoke/catalog/results` projection through
+`useSpokeCalculatorRecordedResults.ts`. This keeps verified cut lengths
+available to the search card without allowing catalog selection to fill or
+replace manual calculator geometry. Do not work around this boundary by
+sending catalog IDs to `/spoke/calc`, and do not put proprietary geometry into
+the Nuxt bundle.
 
 ## 3. Data management and sync / 数据管理与同步
 
@@ -98,8 +100,8 @@ calculator state.
 
 - RIM/HUB geometry stays in the backend database.
 - Preset names, keywords, and stable IDs may be projected for browser search.
-- Verified cut lengths remain backend data unless a public result projection is
-  explicitly approved.
+- Verified cut lengths reach the browser only through the narrow recorded-result
+  projection; they never enter the manual calculator catalog state.
 - The browser never receives proprietary CAD geometry through the public
   catalog export.
 
@@ -122,6 +124,7 @@ ratio verification rules.
   `app/types/spokeCalculator.ts`, `app/utils/spokeCalculatorPayload.ts`
 - **Catalog normalization**: `app/utils/spokeCatalogNormalizer.ts`
 - **Frontend catalog state**: `app/composables/useSpokeCalculatorCatalog.ts`,
+  `app/composables/useSpokeCalculatorRecordedResults.ts`,
   `app/composables/useSpokeCalculatorCatalogSelection.ts`,
   `app/composables/useSpokeCalculatorWheelCatalog.ts`
 - **Backend calculation**: `go-backend/internal/service/spoke_service.go`

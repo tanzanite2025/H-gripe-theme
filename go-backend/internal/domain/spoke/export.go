@@ -83,3 +83,36 @@ type WheelBuildActualLengths struct {
 	RearRight  *float64 `json:"rearRight"`
 	Notes      string   `json:"notes,omitempty"`
 }
+
+// RecordedResultsResponse is the intentionally narrow public projection used
+// by the browser's recorded-build search. It is separate from ExportResponse
+// so the public catalog can continue to hide CAD geometry and internal notes.
+type RecordedResultsResponse struct {
+	Presets []RecordedBuildResult `json:"presets"`
+}
+
+// RecordedBuildResult contains only the metadata needed to find a verified
+// build and its recorded spoke lengths. Keep geometry and import notes out of
+// this contract; the admin catalog remains the authoritative full record.
+type RecordedBuildResult struct {
+	ID            string                     `json:"id"`
+	Name          string                     `json:"name"`
+	Keywords      []string                   `json:"keywords"`
+	Description   string                     `json:"description,omitempty"`
+	RimBrandID    string                     `json:"rimBrandId"`
+	RimModelID    string                     `json:"rimModelId"`
+	HubBrandID    string                     `json:"hubBrandId"`
+	HubModelID    string                     `json:"hubModelId"`
+	WheelPosition string                     `json:"wheelPosition,omitempty"`
+	SpokeCount    int                        `json:"spokeCount"`
+	Crossing      int                        `json:"crossing"`
+	NippleType    string                     `json:"nippleType"`
+	ActualLengths RecordedBuildActualLengths `json:"actualLengths"`
+}
+
+type RecordedBuildActualLengths struct {
+	FrontLeft  *float64 `json:"frontLeft,omitempty"`
+	FrontRight *float64 `json:"frontRight,omitempty"`
+	RearLeft   *float64 `json:"rearLeft,omitempty"`
+	RearRight  *float64 `json:"rearRight,omitempty"`
+}
