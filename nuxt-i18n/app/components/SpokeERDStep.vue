@@ -47,6 +47,44 @@
       </div>
     </div>
 
+    <section class="spoke-erd-step__measurement" aria-labelledby="spoke-erd-measurement-title">
+      <div class="spoke-erd-step__measurement-heading">
+        <span class="spoke-erd-step__measurement-badge">01</span>
+        <h3 id="spoke-erd-measurement-title" class="spoke-erd-step__measurement-title">
+          {{ t('resourcesSpokeCalculator.parameter.workflow.stepOneTitle') }}
+        </h3>
+      </div>
+
+      <div class="spoke-erd-step__measurement-grid">
+        <div class="spoke-erd-step__measurement-copy">
+          <p>
+            {{ t('resourcesSpokeCalculator.parameter.workflow.stepOneFormula') }}
+            <strong>{{ t('resourcesSpokeCalculator.parameter.workflow.stepOneFormulaValue') }}</strong>.
+          </p>
+          <ul>
+            <li
+              v-for="index in 4"
+              :key="`erd-measurement-item-${index}`"
+            >
+              {{ t(`resourcesSpokeCalculator.parameter.workflow.stepOneItems.${index - 1}`) }}
+            </li>
+          </ul>
+          <p class="spoke-erd-step__measurement-note">
+            {{ t('resourcesSpokeCalculator.parameter.workflow.stepOneNote') }}
+          </p>
+        </div>
+
+        <div class="spoke-erd-step__measurement-illustration">
+          <GuideImage
+            src="/public/technical/what-is-erd.webp"
+            :alt="t('resourcesSpokeCalculator.parameter.workflow.stepOneAlt')"
+            :zoomOnClick="true"
+            :caption="t('resourcesSpokeCalculator.parameter.workflow.stepOneCaption')"
+          />
+        </div>
+      </div>
+    </section>
+
     <SpokePhysicsDiagrams class="spoke-erd-step__reference" />
 
     <div class="spoke-erd-step__actions">
@@ -61,6 +99,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from '#imports'
+import GuideImage from '~/components/GuideImage.vue'
 import SpokePhysicsDiagrams from '~/components/SpokePhysicsDiagrams.vue'
 import SpokeStepProgress from '~/components/SpokeStepProgress.vue'
 
@@ -177,6 +216,92 @@ const erdMm = computed({
   margin: 0 0 14px;
 }
 
+.spoke-erd-step__measurement {
+  margin-bottom: 24px;
+  padding: 18px 20px;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  border-radius: 20px;
+  background: #ffffff;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
+}
+
+.spoke-erd-step__measurement-heading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.spoke-erd-step__measurement-badge {
+  display: inline-flex;
+  width: 28px;
+  height: 28px;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(5, 150, 105, 0.32);
+  border-radius: 9999px;
+  background: rgba(5, 150, 105, 0.1);
+  color: #047857;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.spoke-erd-step__measurement-title {
+  margin: 0;
+  color: var(--erd-step-text);
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.spoke-erd-step__measurement-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 0.85fr) minmax(320px, 1.15fr);
+  gap: 24px;
+  align-items: center;
+}
+
+.spoke-erd-step__measurement-copy {
+  min-width: 0;
+  color: var(--erd-step-muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.spoke-erd-step__measurement-copy p {
+  margin: 0;
+}
+
+.spoke-erd-step__measurement-copy strong {
+  color: var(--erd-step-text);
+  font-weight: 800;
+}
+
+.spoke-erd-step__measurement-copy ul {
+  display: grid;
+  gap: 6px;
+  margin: 12px 0 0;
+  padding-left: 1.2rem;
+  list-style: disc;
+}
+
+.spoke-erd-step__measurement-note {
+  margin-top: 12px !important;
+  color: var(--erd-step-muted);
+  font-size: 12px;
+  font-style: italic;
+}
+
+.spoke-erd-step__measurement-illustration {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  border-radius: 16px;
+  background: #f8fafc;
+}
+
 /* Reuse the existing ERD panel exactly while leaving the seven-tab card below intact. */
 .spoke-erd-step__reference :deep(.physics-collapse-toggle),
 .spoke-erd-step__reference :deep(.schematic-nav),
@@ -283,6 +408,16 @@ const erdMm = computed({
     gap: 10px;
     margin-bottom: 18px;
     padding: 15px;
+  }
+
+  .spoke-erd-step__measurement {
+    padding: 15px;
+    border-radius: 18px;
+  }
+
+  .spoke-erd-step__measurement-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
   }
 }
 </style>
