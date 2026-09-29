@@ -39,6 +39,8 @@
             v-model:rear-erd="rearErdMm"
             v-model:front-geometry="frontGeometry"
             v-model:rear-geometry="rearGeometry"
+            v-model:front-spoke-head-type="frontSpokeHeadType"
+            v-model:rear-spoke-head-type="rearSpokeHeadType"
           />
 
           <div class="spoke-smart-search-section mt-16 pt-10">
@@ -224,30 +226,62 @@ import SpokePCDStep from '~/components/SpokePCDStep.vue'
 import SpokePhysicsDiagrams from '~/components/SpokePhysicsDiagrams.vue'
 import SpokeSmartSearch from '~/components/SpokeSmartSearch.vue'
 import UserFeedbackThread from '~/components/UserFeedbackThread.vue'
-import type { HubGeometry } from '~/data/spoke-calculator/database'
 
 import GuideImage from '~/components/GuideImage.vue'
 import { usePageSubNavigationTab } from '~/composables/usePageSubNavigationTab'
 import { spokeCalculatorTabs } from '~/utils/pageSubNavigation'
 import { usePageMessages } from '~/composables/usePageMessages'
+import { useSpokeCalculatorWizard } from '~/composables/useSpokeCalculatorWizard'
+import type { SpokeHeadType } from '~/types/spokeCalculator'
 import { definePageMeta, useHead, useI18n } from '#imports'
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 const { locale, t } = useI18n()
 const { loadPageMessages } = usePageMessages('resourcesSpokeCalculator')
 
 const activeWizardStep = ref(1)
-const selectedSpokeHeadType = ref<'j_bend' | 'straight_pull'>('j_bend')
-const frontErdMm = ref<number | null>(null)
-const rearErdMm = ref<number | null>(null)
-const emptyHubGeometry = (): HubGeometry => ({
-  leftFlange: null,
-  rightFlange: null,
-  leftFlangePcd: null,
-  rightFlangePcd: null,
+const {
+  draft: spokeWizardDraft,
+  setHeadType,
+  setWheelHeadType,
+  setErd,
+  setHubGeometry,
+} = useSpokeCalculatorWizard()
+
+const selectedSpokeHeadType = computed<SpokeHeadType>({
+  get: () => spokeWizardDraft.front.headType,
+  set: value => setHeadType(value),
 })
-const frontGeometry = ref<HubGeometry>(emptyHubGeometry())
-const rearGeometry = ref<HubGeometry>(emptyHubGeometry())
+
+const frontSpokeHeadType = computed<SpokeHeadType>({
+  get: () => spokeWizardDraft.front.headType,
+  set: value => setWheelHeadType('front', value),
+})
+
+const rearSpokeHeadType = computed<SpokeHeadType>({
+  get: () => spokeWizardDraft.rear.headType,
+  set: value => setWheelHeadType('rear', value),
+})
+
+const frontErdMm = computed<number | null>({
+  get: () => spokeWizardDraft.front.erdMm,
+  set: value => setErd('front', value),
+})
+
+const rearErdMm = computed<number | null>({
+  get: () => spokeWizardDraft.rear.erdMm,
+  set: value => setErd('rear', value),
+})
+
+const frontGeometry = computed({
+  get: () => spokeWizardDraft.front.hubGeometry,
+  set: value => setHubGeometry('front', value),
+})
+
+const rearGeometry = computed({
+  get: () => spokeWizardDraft.rear.hubGeometry,
+  set: value => setHubGeometry('rear', value),
+})
 
 await loadPageMessages(locale.value)
 

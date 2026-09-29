@@ -527,6 +527,7 @@
 import { computed, reactive, ref, watch } from 'vue'
 import SpokeCalculatorSelect from '~/components/SpokeCalculatorSelect.vue'
 import type { HubGeometry, HubModel, RimModel } from '~/data/spoke-calculator/database'
+import type { SpokeHeadType } from '~/types/spokeCalculator'
 import { useBehaviorEvents } from '~/composables/useBehaviorEvents'
 import { useSpokeCalculatorCatalog } from '~/composables/useSpokeCalculatorCatalog'
 import { useApiRequest } from '~/composables/useApiRequest'
@@ -537,6 +538,8 @@ const props = defineProps<{
   rearErd?: number | null
   frontGeometry?: HubGeometry | null
   rearGeometry?: HubGeometry | null
+  frontSpokeHeadType?: SpokeHeadType
+  rearSpokeHeadType?: SpokeHeadType
 }>()
 
 const emit = defineEmits<{
@@ -544,6 +547,8 @@ const emit = defineEmits<{
   'update:rearErd': [value: number | null]
   'update:frontGeometry': [value: HubGeometry]
   'update:rearGeometry': [value: HubGeometry]
+  'update:frontSpokeHeadType': [value: SpokeHeadType]
+  'update:rearSpokeHeadType': [value: SpokeHeadType]
 }>()
 
 interface WheelConfig {
@@ -841,6 +846,44 @@ watch(
   () => props.rearGeometry,
   geometry => applyExternalGeometry(rearConfig, geometry),
   { immediate: true, deep: true },
+)
+
+watch(
+  () => props.frontSpokeHeadType,
+  value => {
+    if (value && frontConfig.spokeHeadType !== value) {
+      frontConfig.spokeHeadType = value
+    }
+  },
+  { immediate: true },
+)
+
+watch(
+  () => props.rearSpokeHeadType,
+  value => {
+    if (value && rearConfig.spokeHeadType !== value) {
+      rearConfig.spokeHeadType = value
+    }
+  },
+  { immediate: true },
+)
+
+watch(
+  () => frontConfig.spokeHeadType,
+  value => {
+    if (props.frontSpokeHeadType !== undefined && props.frontSpokeHeadType !== value) {
+      emit('update:frontSpokeHeadType', value)
+    }
+  },
+)
+
+watch(
+  () => rearConfig.spokeHeadType,
+  value => {
+    if (props.rearSpokeHeadType !== undefined && props.rearSpokeHeadType !== value) {
+      emit('update:rearSpokeHeadType', value)
+    }
+  },
 )
 
 watch(
