@@ -1,11 +1,11 @@
 # Schwalbe 商品规格查询页与 GEO 实施边界
 
-> **状态**：Phase 2 目录选型切片、Telemetry Guide、SSR 分页，以及型号、ETRTO 派生尺寸、Bead、Seal、E-Bike 评级和 Color 筛选已实现；销售商品附加层仍在后续实现队列。
+> **状态**：Phase 2 目录选型切片、Telemetry Guide、SSR 分页，以及型号、ETRTO 派生尺寸、Bead、Seal、E-Bike 评级、Color 和 Compound 筛选已实现；销售商品附加层仍在后续实现队列。
 > **页面**：/guides/tireguides/schwalbe-tire-selector  
 > **商品字段契约**：[Phase 1 商品模板实施指南](./phase1-schwalbe-tire-system-template-implementation-guide.md) · [字段矩阵](./schwalbe-master-catalog-specification-matrix.md)  
 > **数据基线**：迁移 359 已导入 2026-09-28 官方快照（773 条 live 外胎记录，15 个 404 旧 URL 排除）；迁移 360 已建立销售商品 Article No. 唯一索引；迁移 361 已创建后台可配置 FAQ 路由并预置 `en`/`zh_cn` 胎圈问答；迁移 362 已导入 13 条官方胎宽—车圈内宽可能组合规则并提供只读 API。当前快照的文本枚举基准见字段矩阵第 8 节。
 
-> **当前页面实现**：`/guides/tireguides/schwalbe-tire-selector` 已接入 SSR 目录查询、单词搜索、型号筛选、ETRTO 派生胎宽/胎圈座直径、Bead、Seal、E-Bike 评级和 Color 多选、URL 状态、排序、Telemetry Guide、固定 20 条页面端分页和候选状态卡片。真实销售 Product 的价格、库存和商品链接仍须由后端 Article No. 批量附加层提供；当前页面不会为目录候选生成这些信息。
+> **当前页面实现**：`/guides/tireguides/schwalbe-tire-selector` 已接入 SSR 目录查询、单词搜索、型号筛选、ETRTO 派生胎宽/胎圈座直径、Bead、Seal、E-Bike 评级、Color 和 Compound 多选、URL 状态、排序、Telemetry Guide、固定 20 条页面端分页和候选状态卡片。真实销售 Product 的价格、库存和商品链接仍须由后端 Article No. 批量附加层提供；当前页面不会为目录候选生成这些信息。
 
 ## 1. 当前边界
 
@@ -25,13 +25,13 @@
 
 ## 3. 页面交互范围
 
-页面默认以 `ALL` 显示目录全谱系，并提供文本搜索、排序、型号筛选，以及严格从 ETRTO 派生的胎宽和胎圈座直径、Bead、Seal、E-Bike 评级、Color 多选；每条候选显示其是否对应销售商品。Bead 和 Seal 使用目录原文枚举（当前快照分别为 `WIRED`/`Folding` 与 `Tube`/`TLR`/`TLE`）；Color 按完整的官网颜色字符串精确匹配，组合名不拆分、不归并色系；E-Bike 评级为 `E-25`、`E-50` 或官网未标注评级。同一维度内多选按 OR 匹配，维度之间按 AND 组合。这些筛选仅匹配目录字段，不表示兼容认证或适用性结论；不得从 Bead、Seal、型号或空评级推断 E-Bike 适用性。`Article No.` 是候选与销售商品之间的查找键；商品模板的 `is_filterable` 元数据只约束 Product 字段筛选，不替代目录查询条件。
+页面默认以 `ALL` 显示目录全谱系，并提供文本搜索、排序、型号筛选，以及严格从 ETRTO 派生的胎宽和胎圈座直径、Bead、Seal、E-Bike 评级、Color、Compound 多选；每条候选显示其是否对应销售商品。Bead 和 Seal 使用目录原文枚举（当前快照分别为 `WIRED`/`Folding` 与 `Tube`/`TLR`/`TLE`）；Color 按完整的官网颜色字符串精确匹配，组合名不拆分、不归并色系；Compound 保留完整原始胶料标签，大小写差异保持独立值；E-Bike 评级为 `E-25`、`E-50` 或官网未标注评级。同一维度内多选按 OR 匹配，维度之间按 AND 组合。这些筛选仅匹配目录字段，不表示兼容认证或适用性结论；不得从 Bead、Seal、型号或空评级推断 E-Bike 适用性。`Article No.` 是候选与销售商品之间的查找键；商品模板的 `is_filterable` 元数据只约束 Product 字段筛选，不替代目录查询条件。
 
 文本搜索使用单个完整词：服务端将同一个词对 Article No.、`model_name`、ETRTO、Inch 做不区分大小写的包含匹配，四个字段之间为 OR，不做多词分词或跨字段联合。因此 `Pro One 28-622` 不会拆分为名称词和尺寸词分别查询；页面应提示用户输入一个型号、编号或尺寸。
 
 页面展示全部目录候选卡片及对应销售状态。目录有候选但无销售商品时，仍显示候选并标记未上架；只有目录本身为空时才显示目录空状态。查询失败时展示错误状态并允许重试。
 
-卡片固定每页 20 条。URL 使用 `search`、`page`、`model`、`sort`、可重复的 `tire_width_mm`、`bead_seat_diameter_mm`、`bead`、`seal`、`e_bike_rating` 和 `color` 查询参数保存可分享的搜索状态；`e_bike_rating=none` 表示官网未标注评级，`none` 是 URL 保留值而不是数据库枚举。颜色值按官网原文序列化，例如 `color=Black%2BReflex`；多个颜色使用重复 `color` 参数。缺省页为 1，搜索提交/清空、任一筛选或排序变化会重置为 `page=1`。分页链接保留当前搜索与全部筛选。当前接口仍返回该搜索词命中的全量数组，页面在 SSR 渲染层切片，首屏 HTML 只输出当前页卡片；分页使用原生链接，不采用点击展开或无限滚动隐藏剩余型号。
+卡片固定每页 20 条。URL 使用 `search`、`page`、`model`、`sort`、可重复的 `tire_width_mm`、`bead_seat_diameter_mm`、`bead`、`seal`、`e_bike_rating`、`color` 和 `compound` 查询参数保存可分享的搜索状态；`e_bike_rating=none` 表示官网未标注评级，`none` 是 URL 保留值而不是数据库枚举。颜色值按官网原文序列化，例如 `color=Black%2BReflex`；多个颜色使用重复 `color` 参数。Compound 值也按原文序列化，空格、连字符和撇号由路由序列化器处理，不使用逗号拼接多选值。缺省页为 1，搜索提交/清空、任一筛选或排序变化会重置为 `page=1`。分页链接保留当前搜索与全部筛选。当前接口仍返回该搜索词命中的全量数组，页面在 SSR 渲染层切片，首屏 HTML 只输出当前页卡片；分页使用原生链接，不采用点击展开或无限滚动隐藏剩余型号。
 
 本阶段不做轮组匹配、胎宽推荐、骑行场景推荐、Hookless 认证判断、安装禁令、兼容性徽章或安全压力计算。不要从产品页 Bar/PSI 推断轮圈适配或 Hookless 上限。
 
@@ -44,7 +44,7 @@ FAQ 使用站点现有内容能力。Schwalbe 选型页通过 `page_id=guides-sc
 ## 5. SSR、SEO 与结构化数据
 
 - SSR 页面从目录查询候选，再附加公开销售商品状态；无销售商品时仍显示目录候选，不载入 mock 数据。
-- SSR 页面从 URL 读取 `search`、`page` 和筛选状态，型号、胎宽、BSD、Bead、Seal、E-Bike 评级、Color 及排序可由直链还原；`e_bike_rating=none` 表示官网未标注评级。每页输出 20 条卡片，并提供可抓取的上一页/下一页及页码链接；当前页只声明实际渲染的候选范围，不能伪造完整覆盖或库存。
+- SSR 页面从 URL 读取 `search`、`page` 和筛选状态，型号、胎宽、BSD、Bead、Seal、E-Bike 评级、Color、Compound 及排序可由直链还原；`e_bike_rating=none` 表示官网未标注评级。每页输出 20 条卡片，并提供可抓取的上一页/下一页及页码链接；当前页只声明实际渲染的候选范围，不能伪造完整覆盖或库存。
 - Telemetry Guide 可按真实内容使用 `TechArticle` 语义；折叠状态不应把首屏技术说明变成点击后才加载的内容，也不能把技术标签统计转成 Product/Offer 或兼容性结论。
 - 匹配候选本身不输出 Product 结构化数据；只有对应的真实销售商品实际展示时才输出 Product，只有存在真实售卖报价时才输出 Offer。
 - 名称、Article No.、规格、价格和可售状态必须与页面展示的数据一致。
@@ -64,7 +64,7 @@ GEO/SEO 不构成扩充字段或编造商品事实的理由。
 
 ## 7. Phase 2 验收
 
-- 筛选直链与刷新可还原 Bead、Seal、E-Bike 评级和 Color；包含 `+`、`/` 的官网颜色组合经过 URL 往返后仍按完整原值匹配；官网空评级通过 URL 保留值往返后仍只匹配官网未标注评级的记录。
+- 筛选直链与刷新可还原 Bead、Seal、E-Bike 评级、Color 和 Compound；颜色组合和胶料原值经过 URL 往返后仍按完整字符串匹配，Compound 的空格、连字符和撇号保持原样；官网空评级通过 URL 保留值往返后仍只匹配官网未标注评级的记录。
 - 匹配候选即使没有对应销售商品，也可以作为结果显示。
 - 每条结果显示 Article No. 是否对应销售 Product；商品本身绑定模板并从 Phase 1 的 19 个字段读取规格。
 - 价格和可售状态只在确实存在销售商品时复用现有商品/SKU 数据。

@@ -72,6 +72,16 @@
       </div>
     </fieldset>
 
+    <fieldset class="schwalbe-filter-panel__group">
+      <legend>{{ compoundLabel }}</legend>
+      <div class="schwalbe-filter-panel__options">
+        <label v-for="option in compoundOptions" :key="option.value" class="schwalbe-filter-panel__option">
+          <input v-model="selectedCompounds" type="checkbox" :value="option.value">
+          <span>{{ option.value }}</span>
+        </label>
+      </div>
+    </fieldset>
+
     <button
       v-if="hasSelection"
       type="button"
@@ -95,6 +105,7 @@ const selectedBeads = defineModel<string[]>('selectedBeads', { required: true })
 const selectedSeals = defineModel<string[]>('selectedSeals', { required: true })
 const selectedEBikeRatings = defineModel<(string | null)[]>('selectedEBikeRatings', { required: true })
 const selectedColors = defineModel<string[]>('selectedColors', { required: true })
+const selectedCompounds = defineModel<string[]>('selectedCompounds', { required: true })
 
 defineProps<{
   label: string
@@ -105,6 +116,7 @@ defineProps<{
   eBikeRatingLabel: string
   eBikeUnratedLabel: string
   colorLabel: string
+  compoundLabel: string
   scrollHint: string
   resetLabel: string
   tireWidthOptions: readonly SchwalbeTireCatalogFilterOption<number>[]
@@ -113,6 +125,7 @@ defineProps<{
   sealOptions: readonly SchwalbeTireCatalogFilterOption<string>[]
   eBikeRatingOptions: readonly SchwalbeTireCatalogFilterOption<string | null>[]
   colorOptions: readonly SchwalbeTireCatalogFilterOption<string>[]
+  compoundOptions: readonly SchwalbeTireCatalogFilterOption<string>[]
 }>()
 
 const hasSelection = computed(() => (
@@ -122,6 +135,7 @@ const hasSelection = computed(() => (
   || selectedSeals.value.length > 0
   || selectedEBikeRatings.value.length > 0
   || selectedColors.value.length > 0
+  || selectedCompounds.value.length > 0
 ))
 
 const resetFilters = () => {
@@ -131,13 +145,14 @@ const resetFilters = () => {
   selectedSeals.value = []
   selectedEBikeRatings.value = []
   selectedColors.value = []
+  selectedCompounds.value = []
 }
 </script>
 
 <style scoped>
 .schwalbe-filter-panel {
   display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr)) auto;
+  grid-template-columns: repeat(7, minmax(0, 1fr)) auto;
   gap: 0.75rem;
   align-items: end;
   border: 1px solid var(--tz-border-subtle);
@@ -247,6 +262,12 @@ const resetFilters = () => {
 @media (min-width: 761px) and (max-width: 1100px) {
   .schwalbe-filter-panel {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1101px) and (max-width: 1440px) {
+  .schwalbe-filter-panel {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
 

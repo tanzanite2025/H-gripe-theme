@@ -24,6 +24,7 @@
     "eBikeRating": "E-Bike rating",
     "eBikeUnrated": "No rating listed",
     "color": "Color",
+    "compound": "Compound",
     "scrollHint": "Select multiple values. Scroll a list to see more options.",
     "clearFilters": "Clear filters",
     "sort": "Sort",

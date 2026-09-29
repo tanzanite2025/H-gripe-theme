@@ -8,6 +8,7 @@ export interface SchwalbeTireCatalogFilterQueryState {
   seals: string[]
   eBikeRatings: (string | null)[]
   colors: string[]
+  compounds: string[]
   sortBy: SchwalbeCatalogSort
 }
 
@@ -21,6 +22,7 @@ export const SCHWALBE_TIRE_CATALOG_FILTER_QUERY_KEYS = {
   seals: 'seal',
   eBikeRatings: 'e_bike_rating',
   colors: 'color',
+  compounds: 'compound',
   sortBy: 'sort',
 } as const
 
@@ -91,6 +93,7 @@ export const parseSchwalbeTireCatalogFilterQuery = (
   seals: readStringValues(query[SCHWALBE_TIRE_CATALOG_FILTER_QUERY_KEYS.seals]),
   eBikeRatings: readEBikeRatingValues(query[SCHWALBE_TIRE_CATALOG_FILTER_QUERY_KEYS.eBikeRatings]),
   colors: readStringValues(query[SCHWALBE_TIRE_CATALOG_FILTER_QUERY_KEYS.colors]),
+  compounds: readStringValues(query[SCHWALBE_TIRE_CATALOG_FILTER_QUERY_KEYS.compounds]),
   sortBy: readSort(query[SCHWALBE_TIRE_CATALOG_FILTER_QUERY_KEYS.sortBy]),
 })
 
@@ -131,6 +134,7 @@ export const mergeSchwalbeTireCatalogFilterQuery = (
   delete nextQuery[keys.seals]
   delete nextQuery[keys.eBikeRatings]
   delete nextQuery[keys.colors]
+  delete nextQuery[keys.compounds]
   delete nextQuery[keys.sortBy]
 
   if (state.modelName?.trim()) nextQuery[keys.modelName] = state.modelName.trim()
@@ -158,6 +162,9 @@ export const mergeSchwalbeTireCatalogFilterQuery = (
 
   const colors = normalizedStrings(state.colors)
   if (colors.length > 0) nextQuery[keys.colors] = colors
+
+  const compounds = normalizedStrings(state.compounds)
+  if (compounds.length > 0) nextQuery[keys.compounds] = compounds
 
   if (state.sortBy !== 'model') nextQuery[keys.sortBy] = state.sortBy
   return nextQuery

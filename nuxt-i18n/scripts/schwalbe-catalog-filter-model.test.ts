@@ -94,6 +94,7 @@ assert.deepEqual(options.beadSeatDiametersMm.map(option => option.value), [559])
 assert.deepEqual(options.beads.map(option => option.value), ['Folding', 'WIRED'])
 assert.deepEqual(options.seals.map(option => option.value), ['TLR', 'Tube'])
 assert.deepEqual(options.colors.map(option => option.value), ['Black', 'Black+Reflex'])
+assert.deepEqual(options.compounds.map(option => option.value), ['ADDIX', 'ADDIX Race'])
 assert.deepEqual(
   options.eBikeRatings.map(option => option.value),
   ['E-25', 'E-50', null],
@@ -105,6 +106,7 @@ assert.deepEqual(
     beads: ['Folding', 'WIRED'],
     seals: ['TLR'],
     colors: ['Black+Reflex'],
+    compounds: ['ADDIX Race'],
   }).map(item => item.article_no),
   ['11654751'],
 )

@@ -14,6 +14,7 @@ const parsed = parseSchwalbeTireCatalogFilterQuery({
   seal: ['TLR', 'Tube', 'TLR'],
   e_bike_rating: ['E-50', 'none', 'E-25', 'none'],
   color: ['Black+Reflex', 'Black', 'Black+Reflex'],
+  compound: ["Black'n'Roll", 'ADDIX Race', 'ADDIX Race'],
   sort: 'etrto',
 })
 
@@ -25,6 +26,7 @@ assert.deepEqual(parsed, {
   seals: ['TLR', 'Tube'],
   eBikeRatings: ['E-25', 'E-50', null],
   colors: ['Black', 'Black+Reflex'],
+  compounds: ['ADDIX Race', "Black'n'Roll"],
   sortBy: 'etrto',
 })
 
@@ -44,6 +46,7 @@ assert.deepEqual(
     seal: ['TLR', 'Tube'],
     e_bike_rating: ['E-25', 'E-50', 'none'],
     color: ['Black', 'Black+Reflex'],
+    compound: ['ADDIX Race', "Black'n'Roll"],
     sort: 'etrto',
   },
 )
@@ -57,6 +60,7 @@ assert.deepEqual(
     seal: ' TLR ',
     e_bike_rating: ['none', 'E-25'],
     color: ['Black+Reflex', 'Black'],
+    compound: ['ADDIX Race'],
     sort: 'unknown',
   }),
   {
@@ -67,6 +71,7 @@ assert.deepEqual(
     seals: ['TLR'],
     eBikeRatings: ['E-25', null],
     colors: ['Black', 'Black+Reflex'],
+    compounds: ['ADDIX Race'],
     sortBy: 'model',
   },
 )
@@ -81,6 +86,7 @@ assert.deepEqual(
       seal: ['TLR'],
       e_bike_rating: ['none'],
       color: ['Black+Reflex'],
+      compound: ["Black'n'Roll"],
       sort: 'etrto',
     },
     {
@@ -91,6 +97,7 @@ assert.deepEqual(
       seals: [],
       eBikeRatings: [],
       colors: [],
+      compounds: [],
       sortBy: 'model',
     },
   ),

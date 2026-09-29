@@ -45,6 +45,7 @@ export const useSchwalbeTireSelector = async () => {
   const selectedSeals = ref(initialFilterState.seals)
   const selectedEBikeRatings = ref(initialFilterState.eBikeRatings)
   const selectedColors = ref(initialFilterState.colors)
+  const selectedCompounds = ref(initialFilterState.compounds)
   const sortBy = ref<SchwalbeCatalogSort>(initialFilterState.sortBy)
   const requestedPage = computed(() => parsePage(route.query.page) || 1)
 
@@ -74,6 +75,7 @@ export const useSchwalbeTireSelector = async () => {
       seals: selectedSeals.value,
       eBikeRatings: selectedEBikeRatings.value,
       colors: selectedColors.value,
+      compounds: selectedCompounds.value,
     })
     return [...filtered].sort((left, right) => {
       if (sortBy.value === 'etrto') {
@@ -127,6 +129,7 @@ export const useSchwalbeTireSelector = async () => {
     || selectedSeals.value.length > 0
     || selectedEBikeRatings.value.length > 0
     || selectedColors.value.length > 0
+    || selectedCompounds.value.length > 0
   ))
 
   let applyingRouteFilterState = false
@@ -145,6 +148,7 @@ export const useSchwalbeTireSelector = async () => {
         seals: selectedSeals.value,
         eBikeRatings: selectedEBikeRatings.value,
         colors: selectedColors.value,
+        compounds: selectedCompounds.value,
         sortBy: sortBy.value,
       },
     )
@@ -181,6 +185,7 @@ export const useSchwalbeTireSelector = async () => {
       selectedSeals.value,
       selectedEBikeRatings.value,
       selectedColors.value,
+      selectedCompounds.value,
       sortBy.value,
     ]),
     updateRouteFilterState,
@@ -196,6 +201,7 @@ export const useSchwalbeTireSelector = async () => {
       route.query.seal,
       route.query.e_bike_rating,
       route.query.color,
+      route.query.compound,
       route.query.sort,
     ],
     () => {
@@ -210,6 +216,7 @@ export const useSchwalbeTireSelector = async () => {
       selectedSeals.value = nextFilterState.seals
       selectedEBikeRatings.value = nextFilterState.eBikeRatings
       selectedColors.value = nextFilterState.colors
+      selectedCompounds.value = nextFilterState.compounds
       sortBy.value = nextFilterState.sortBy
       applyingRouteFilterState = false
     },
@@ -261,6 +268,7 @@ export const useSchwalbeTireSelector = async () => {
     selectedSeals,
     selectedEBikeRatings,
     selectedColors,
+    selectedCompounds,
     sortBy,
     items,
     filteredItems,
@@ -273,6 +281,7 @@ export const useSchwalbeTireSelector = async () => {
     sealOptions: computed(() => filterOptions.value.seals),
     eBikeRatingOptions: computed(() => filterOptions.value.eBikeRatings),
     colorOptions: computed(() => filterOptions.value.colors),
+    compoundOptions: computed(() => filterOptions.value.compounds),
     hasActiveFilters,
     pageSize: SCHWALBE_CATALOG_PAGE_SIZE,
     currentPage,
