@@ -28,6 +28,36 @@
       </div>
     </fieldset>
 
+    <fieldset class="schwalbe-filter-panel__group">
+      <legend>{{ beadLabel }}</legend>
+      <div class="schwalbe-filter-panel__options">
+        <label v-for="option in beadOptions" :key="option.value" class="schwalbe-filter-panel__option">
+          <input v-model="selectedBeads" type="checkbox" :value="option.value">
+          <span>{{ option.value }}</span>
+        </label>
+      </div>
+    </fieldset>
+
+    <fieldset class="schwalbe-filter-panel__group">
+      <legend>{{ sealLabel }}</legend>
+      <div class="schwalbe-filter-panel__options">
+        <label v-for="option in sealOptions" :key="option.value" class="schwalbe-filter-panel__option">
+          <input v-model="selectedSeals" type="checkbox" :value="option.value">
+          <span>{{ option.value }}</span>
+        </label>
+      </div>
+    </fieldset>
+
+    <fieldset class="schwalbe-filter-panel__group">
+      <legend>{{ eBikeRatingLabel }}</legend>
+      <div class="schwalbe-filter-panel__options">
+        <label v-for="(option, index) in eBikeRatingOptions" :key="option.value ?? `unrated-${index}`" class="schwalbe-filter-panel__option">
+          <input v-model="selectedEBikeRatings" type="checkbox" :value="option.value">
+          <span>{{ option.value ?? eBikeUnratedLabel }}</span>
+        </label>
+      </div>
+    </fieldset>
+
     <button
       v-if="hasSelection"
       type="button"
@@ -47,31 +77,48 @@ import type { SchwalbeTireCatalogFilterOption } from '~/data/tireguides/schwalbe
 
 const selectedTireWidthsMm = defineModel<number[]>('selectedTireWidthsMm', { required: true })
 const selectedBeadSeatDiametersMm = defineModel<number[]>('selectedBeadSeatDiametersMm', { required: true })
+const selectedBeads = defineModel<string[]>('selectedBeads', { required: true })
+const selectedSeals = defineModel<string[]>('selectedSeals', { required: true })
+const selectedEBikeRatings = defineModel<(string | null)[]>('selectedEBikeRatings', { required: true })
 
 defineProps<{
   label: string
   tireWidthLabel: string
   beadSeatDiameterLabel: string
+  beadLabel: string
+  sealLabel: string
+  eBikeRatingLabel: string
+  eBikeUnratedLabel: string
   scrollHint: string
   resetLabel: string
   tireWidthOptions: readonly SchwalbeTireCatalogFilterOption<number>[]
   beadSeatDiameterOptions: readonly SchwalbeTireCatalogFilterOption<number>[]
+  beadOptions: readonly SchwalbeTireCatalogFilterOption<string>[]
+  sealOptions: readonly SchwalbeTireCatalogFilterOption<string>[]
+  eBikeRatingOptions: readonly SchwalbeTireCatalogFilterOption<string | null>[]
 }>()
 
 const hasSelection = computed(() => (
-  selectedTireWidthsMm.value.length > 0 || selectedBeadSeatDiametersMm.value.length > 0
+  selectedTireWidthsMm.value.length > 0
+  || selectedBeadSeatDiametersMm.value.length > 0
+  || selectedBeads.value.length > 0
+  || selectedSeals.value.length > 0
+  || selectedEBikeRatings.value.length > 0
 ))
 
 const resetFilters = () => {
   selectedTireWidthsMm.value = []
   selectedBeadSeatDiametersMm.value = []
+  selectedBeads.value = []
+  selectedSeals.value = []
+  selectedEBikeRatings.value = []
 }
 </script>
 
 <style scoped>
 .schwalbe-filter-panel {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr)) auto;
+  grid-template-columns: repeat(5, minmax(0, 1fr)) auto;
   gap: 0.75rem;
   align-items: end;
   border: 1px solid var(--tz-border-subtle);
@@ -83,6 +130,7 @@ const resetFilters = () => {
 .schwalbe-filter-panel__group {
   display: grid;
   gap: 0.5rem;
+  align-self: start;
   min-width: 0;
   margin: 0;
   border: 0;

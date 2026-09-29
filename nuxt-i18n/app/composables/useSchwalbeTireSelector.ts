@@ -41,6 +41,9 @@ export const useSchwalbeTireSelector = async () => {
   const selectedModel = ref(initialFilterState.modelName || 'ALL')
   const selectedTireWidthsMm = ref(initialFilterState.nominalTireWidthsMm)
   const selectedBeadSeatDiametersMm = ref(initialFilterState.beadSeatDiametersMm)
+  const selectedBeads = ref(initialFilterState.beads)
+  const selectedSeals = ref(initialFilterState.seals)
+  const selectedEBikeRatings = ref(initialFilterState.eBikeRatings)
   const sortBy = ref<SchwalbeCatalogSort>(initialFilterState.sortBy)
   const requestedPage = computed(() => parsePage(route.query.page) || 1)
 
@@ -66,6 +69,9 @@ export const useSchwalbeTireSelector = async () => {
       modelNames: selectedModel.value === 'ALL' ? [] : [selectedModel.value],
       nominalTireWidthMm: selectedTireWidthsMm.value,
       beadSeatDiameterMm: selectedBeadSeatDiametersMm.value,
+      beads: selectedBeads.value,
+      seals: selectedSeals.value,
+      eBikeRatings: selectedEBikeRatings.value,
     })
     return [...filtered].sort((left, right) => {
       if (sortBy.value === 'etrto') {
@@ -115,6 +121,9 @@ export const useSchwalbeTireSelector = async () => {
     selectedModel.value !== 'ALL'
     || selectedTireWidthsMm.value.length > 0
     || selectedBeadSeatDiametersMm.value.length > 0
+    || selectedBeads.value.length > 0
+    || selectedSeals.value.length > 0
+    || selectedEBikeRatings.value.length > 0
   ))
 
   let applyingRouteFilterState = false
@@ -129,6 +138,9 @@ export const useSchwalbeTireSelector = async () => {
         modelName: selectedModel.value === 'ALL' ? null : selectedModel.value,
         nominalTireWidthsMm: selectedTireWidthsMm.value,
         beadSeatDiametersMm: selectedBeadSeatDiametersMm.value,
+        beads: selectedBeads.value,
+        seals: selectedSeals.value,
+        eBikeRatings: selectedEBikeRatings.value,
         sortBy: sortBy.value,
       },
     )
@@ -161,6 +173,9 @@ export const useSchwalbeTireSelector = async () => {
       selectedModel.value,
       selectedTireWidthsMm.value,
       selectedBeadSeatDiametersMm.value,
+      selectedBeads.value,
+      selectedSeals.value,
+      selectedEBikeRatings.value,
       sortBy.value,
     ]),
     updateRouteFilterState,
@@ -172,6 +187,9 @@ export const useSchwalbeTireSelector = async () => {
       route.query.model,
       route.query.tire_width_mm,
       route.query.bead_seat_diameter_mm,
+      route.query.bead,
+      route.query.seal,
+      route.query.e_bike_rating,
       route.query.sort,
     ],
     () => {
@@ -182,6 +200,9 @@ export const useSchwalbeTireSelector = async () => {
       selectedModel.value = nextFilterState.modelName || 'ALL'
       selectedTireWidthsMm.value = nextFilterState.nominalTireWidthsMm
       selectedBeadSeatDiametersMm.value = nextFilterState.beadSeatDiametersMm
+      selectedBeads.value = nextFilterState.beads
+      selectedSeals.value = nextFilterState.seals
+      selectedEBikeRatings.value = nextFilterState.eBikeRatings
       sortBy.value = nextFilterState.sortBy
       applyingRouteFilterState = false
     },
@@ -229,6 +250,9 @@ export const useSchwalbeTireSelector = async () => {
     selectedModel,
     selectedTireWidthsMm,
     selectedBeadSeatDiametersMm,
+    selectedBeads,
+    selectedSeals,
+    selectedEBikeRatings,
     sortBy,
     items,
     filteredItems,
@@ -237,6 +261,9 @@ export const useSchwalbeTireSelector = async () => {
     modelOptions,
     tireWidthOptions: computed(() => filterOptions.value.nominalTireWidthsMm),
     beadSeatDiameterOptions: computed(() => filterOptions.value.beadSeatDiametersMm),
+    beadOptions: computed(() => filterOptions.value.beads),
+    sealOptions: computed(() => filterOptions.value.seals),
+    eBikeRatingOptions: computed(() => filterOptions.value.eBikeRatings),
     hasActiveFilters,
     pageSize: SCHWALBE_CATALOG_PAGE_SIZE,
     currentPage,

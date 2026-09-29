@@ -59,13 +59,23 @@
     <SchwalbeTireCatalogFilterPanel
       v-model:selected-tire-widths-mm="selectedTireWidthsMm"
       v-model:selected-bead-seat-diameters-mm="selectedBeadSeatDiametersMm"
-      :label="tx('filters.dimensionFilters')"
+      v-model:selected-beads="selectedBeads"
+      v-model:selected-seals="selectedSeals"
+      v-model:selected-e-bike-ratings="selectedEBikeRatings"
+      :label="tx('filters.catalogFilters')"
       :tire-width-label="tx('filters.tireWidth')"
       :bead-seat-diameter-label="tx('filters.beadSeatDiameter')"
+      :bead-label="tx('filters.bead')"
+      :seal-label="tx('filters.seal')"
+      :e-bike-rating-label="tx('filters.eBikeRating')"
+      :e-bike-unrated-label="tx('filters.eBikeUnrated')"
       :scroll-hint="tx('filters.scrollHint')"
-      :reset-label="tx('filters.clearDimensions')"
+      :reset-label="tx('filters.clearFilters')"
       :tire-width-options="tireWidthOptions"
       :bead-seat-diameter-options="beadSeatDiameterOptions"
+      :bead-options="beadOptions"
+      :seal-options="sealOptions"
+      :e-bike-rating-options="eBikeRatingOptions"
     />
 
     <div class="schwalbe-selector__summary" aria-live="polite">
@@ -149,11 +159,17 @@ const {
   selectedModel,
   selectedTireWidthsMm,
   selectedBeadSeatDiametersMm,
+  selectedBeads,
+  selectedSeals,
+  selectedEBikeRatings,
   sortBy,
   visibleItems,
   modelOptions,
   tireWidthOptions,
   beadSeatDiameterOptions,
+  beadOptions,
+  sealOptions,
+  eBikeRatingOptions,
   hasActiveFilters,
   currentPage,
   totalPages,

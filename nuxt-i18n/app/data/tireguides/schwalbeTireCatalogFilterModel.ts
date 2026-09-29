@@ -28,7 +28,7 @@ export interface SchwalbeTireCatalogFilterCriteria {
   colors?: readonly string[]
   beads?: readonly string[]
   seals?: readonly string[]
-  /** Includes `null` for the official blank value (ordinary bicycle models). */
+  /** Includes `null` for catalog rows with no listed E-Bike rating. */
   eBikeRatings?: readonly (string | null)[]
 }
 
@@ -214,8 +214,9 @@ const buildNumberFilterOptions = (
 /**
  * Builds stable option lists from the currently loaded catalog snapshot.
  * Missing values are omitted from ordinary dimensions. The official blank
- * E-Bike value is exposed as `null` because it represents ordinary bicycle
- * models in this snapshot, not an unknown value.
+ * E-Bike value is exposed as `null` so rows without a listed rating can be
+ * filtered separately. The blank does not establish an E-Bike compatibility
+ * or category conclusion.
  */
 export const buildSchwalbeTireCatalogFilterOptions = (
   items: readonly SchwalbeTireCatalogItem[],
