@@ -7,6 +7,7 @@ const selectorRequest: SchwalbeTireCatalogSelectorRequest = {
   search: ' Green Marathon ',
   page: 2,
   modelName: 'Green Marathon',
+  innerRimWidthMm: 23,
   nominalTireWidthMinMm: 40,
   nominalTireWidthMaxMm: 55,
   nominalTireWidthsMm: [40, 50],
@@ -39,11 +40,22 @@ const request: ApiRequestFunction = async <T>(path, init): Promise<T> => {
         source_url: 'https://www.schwalbe.com/internal-provenance',
         source_checked_at: '2026-09-28',
         product_exists: false,
+        rim_width_guidance: [{
+          tire_width_min_mm: 35,
+          tire_width_max_mm: 46,
+          inner_rim_width_min_mm: 17,
+          inner_rim_width_max_mm: 27,
+        }],
       }],
       page: 2,
       page_size: 20,
       total: 21,
       total_pages: 2,
+      rim_width_context: {
+        inner_rim_width_mm: 23,
+        guidance_status: 'covered',
+        source_version: '05/2024',
+      },
       filter_options: {
         model_names: [{ value: 'Green Marathon' }],
         nominal_tire_widths_mm: [{ value: 40 }, { value: 50 }],
@@ -71,6 +83,7 @@ const main = async () => {
   assert.equal(params.search, 'Green Marathon')
   assert.equal(params.page, '2')
   assert.equal(params.sort, 'weight_desc')
+  assert.equal(params.inner_rim_width_mm, '23')
   assert.equal(params.tire_width_min_mm, '40')
   assert.equal(params.tire_width_max_mm, '55')
   assert.equal('tire_width_mm' in params, false)
@@ -83,10 +96,18 @@ const main = async () => {
   assert.equal(page.items.length, 1)
   assert.equal(page.items[0].article_no, '11100001')
   assert.equal('source_url' in page.items[0], false)
+  assert.deepEqual(page.items[0].rim_width_guidance, [{
+    tire_width_min_mm: 35,
+    tire_width_max_mm: 46,
+    inner_rim_width_min_mm: 17,
+    inner_rim_width_max_mm: 27,
+  }])
   assert.equal(page.page, 2)
   assert.equal(page.page_size, 20)
   assert.equal(page.total, 21)
   assert.equal(page.total_pages, 2)
+  assert.equal(page.rim_width_context?.inner_rim_width_mm, 23)
+  assert.equal(page.rim_width_context?.guidance_status, 'covered')
   assert.deepEqual(page.filter_options.nominalTireWidthsMm.map(option => option.value), [40, 50])
   assert.deepEqual(page.filter_options.wheelSizes, [
     { value: '26-559', wheelDiameterIn: '26', beadSeatDiameterMm: 559 },

@@ -59,6 +59,13 @@
       <span v-if="item.ean">{{ tx('fields.ean') }}: {{ item.ean }}</span>
     </div>
 
+    <div v-if="item.rim_width_guidance?.length" class="schwalbe-tire-card__rim-guidance">
+      <strong>{{ tx('rimWidth.matchLabel') }}</strong>
+      <span v-for="guidance in item.rim_width_guidance" :key="`${guidance.tire_width_min_mm}-${guidance.tire_width_max_mm}-${guidance.inner_rim_width_min_mm}-${guidance.inner_rim_width_max_mm}`">
+        {{ tx('rimWidth.range', { min: guidance.inner_rim_width_min_mm, max: guidance.inner_rim_width_max_mm }) }}
+      </span>
+    </div>
+
     <footer class="schwalbe-tire-card__footer">
       <span>{{ tx('source.checked', { date: checkedDate }) }}</span>
     </footer>
@@ -221,6 +228,24 @@ const checkedDate = computed(() => {
   padding-top: 0.75rem;
   color: var(--tz-text-secondary);
   font-size: 0.72rem;
+}
+
+.schwalbe-tire-card__rim-guidance {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem 0.65rem;
+  align-items: baseline;
+  border-radius: 0.65rem;
+  background: color-mix(in srgb, var(--tz-action-primary) 8%, var(--tz-card-surface));
+  color: var(--tz-text-secondary);
+  padding: 0.55rem 0.65rem;
+  font-size: 0.72rem;
+  line-height: 1.4;
+}
+
+.schwalbe-tire-card__rim-guidance strong {
+  color: var(--tz-action-primary);
+  font-weight: 750;
 }
 
 @media (max-width: 480px) {

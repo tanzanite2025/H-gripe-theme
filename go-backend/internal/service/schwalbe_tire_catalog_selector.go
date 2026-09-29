@@ -5,6 +5,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"commerce-platform/internal/repository"
 	"golang.org/x/text/collate"
@@ -33,7 +34,10 @@ type SchwalbeTireCatalogSelectorQuery struct {
 	Search    string
 	Page      int
 	MinLoadKG *float64
-	ModelName string
+	// InnerRimWidthMM enables source-backed possible-combination matching.
+	// A nil value keeps the existing unfiltered catalog behavior.
+	InnerRimWidthMM *float64
+	ModelName       string
 	// Nominal tire-width endpoints are inclusive. A nil endpoint leaves that
 	// side of the range open. The exact-value slice remains for old links and
 	// clients that still send tire_width_mm.
@@ -92,12 +96,28 @@ type SchwalbeTireCatalogSelectorFilterOptions struct {
 // SchwalbeTireCatalogSelectorPage contains only the requested page of rows,
 // while totals and filter options are calculated from their full result sets.
 type SchwalbeTireCatalogSelectorPage struct {
-	Items         []repository.SchwalbeTireCatalogItem     `json:"items"`
-	Page          int                                      `json:"page"`
-	PageSize      int                                      `json:"page_size"`
-	Total         int                                      `json:"total"`
-	TotalPages    int                                      `json:"total_pages"`
-	FilterOptions SchwalbeTireCatalogSelectorFilterOptions `json:"filter_options"`
+	Items           []repository.SchwalbeTireCatalogItem        `json:"items"`
+	Page            int                                         `json:"page"`
+	PageSize        int                                         `json:"page_size"`
+	Total           int                                         `json:"total"`
+	TotalPages      int                                         `json:"total_pages"`
+	FilterOptions   SchwalbeTireCatalogSelectorFilterOptions    `json:"filter_options"`
+	RimWidthContext *SchwalbeTireCatalogSelectorRimWidthContext `json:"rim_width_context,omitempty"`
+	// RimWidthGuidanceByArticle is converted into item-level public fields by
+	// the API projection. Keeping it off the page JSON prevents an internal map
+	// shape from becoming a second public response contract.
+	RimWidthGuidanceByArticle map[string][]SchwalbeTireCatalogSelectorRimWidthGuidance `json:"-"`
+}
+
+// SchwalbeTireCatalogSelectorRimWidthContext explains the source and state of
+// an active inner-rim-width query. SourceURL is intentionally kept out of the
+// selector response; the public rules endpoint owns that provenance detail.
+type SchwalbeTireCatalogSelectorRimWidthContext struct {
+	InnerRimWidthMM float64    `json:"inner_rim_width_mm"`
+	GuidanceStatus  string     `json:"guidance_status"`
+	SourceBasis     string     `json:"source_basis,omitempty"`
+	SourceVersion   string     `json:"source_version,omitempty"`
+	SourceCheckedAt *time.Time `json:"source_checked_at,omitempty"`
 }
 
 type schwalbeTireCatalogSelectorDimensions struct {
@@ -126,6 +146,16 @@ func (s *ProductService) SearchSchwalbeTireCatalogSelector(query SchwalbeTireCat
 		return nil, err
 	}
 
+	var rimWidthRules []repository.SchwalbeTireRimWidthCombinationRule
+	var rimWidthContext *SchwalbeTireCatalogSelectorRimWidthContext
+	if query.InnerRimWidthMM != nil {
+		rimWidthRules, err = s.productRepo.ListSchwalbeTireRimWidthCombinationRules()
+		if err != nil {
+			return nil, err
+		}
+		rimWidthContext = buildSchwalbeTireCatalogSelectorRimWidthContext(query.InnerRimWidthMM, rimWidthRules)
+	}
+
 	rows := make([]schwalbeTireCatalogSelectorRow, 0, len(items))
 	for _, item := range items {
 		rows = append(rows, schwalbeTireCatalogSelectorRow{
@@ -136,7 +166,7 @@ func (s *ProductService) SearchSchwalbeTireCatalogSelector(query SchwalbeTireCat
 
 	collator := collate.New(language.English)
 	filterOptions := buildSchwalbeTireCatalogSelectorFilterOptions(rows, collator)
-	filteredRows := filterSchwalbeTireCatalogSelectorRows(rows, query)
+	filteredRows := filterSchwalbeTireCatalogSelectorRows(rows, query, rimWidthRules)
 	sortSchwalbeTireCatalogSelectorRows(filteredRows, query.SortBy)
 
 	total := len(filteredRows)
@@ -158,18 +188,54 @@ func (s *ProductService) SearchSchwalbeTireCatalogSelector(query SchwalbeTireCat
 		end = total
 	}
 	pageItems := make([]repository.SchwalbeTireCatalogItem, 0, end-start)
+	rimWidthGuidanceByArticle := make(map[string][]SchwalbeTireCatalogSelectorRimWidthGuidance)
 	for _, row := range filteredRows[start:end] {
 		pageItems = append(pageItems, row.item)
+		if query.InnerRimWidthMM != nil {
+			if guidance := schwalbeTireRimWidthGuidanceFor(row.dimensions.NominalTireWidthMM, query.InnerRimWidthMM, rimWidthRules); len(guidance) > 0 {
+				rimWidthGuidanceByArticle[row.item.ArticleNo] = guidance
+			}
+		}
 	}
 
 	return &SchwalbeTireCatalogSelectorPage{
-		Items:         pageItems,
-		Page:          page,
-		PageSize:      schwalbeTireCatalogSelectorPageSize,
-		Total:         total,
-		TotalPages:    totalPages,
-		FilterOptions: filterOptions,
+		Items:                     pageItems,
+		Page:                      page,
+		PageSize:                  schwalbeTireCatalogSelectorPageSize,
+		Total:                     total,
+		TotalPages:                totalPages,
+		FilterOptions:             filterOptions,
+		RimWidthContext:           rimWidthContext,
+		RimWidthGuidanceByArticle: rimWidthGuidanceByArticle,
 	}, nil
+}
+
+func buildSchwalbeTireCatalogSelectorRimWidthContext(
+	innerRimWidthMM *float64,
+	rules []repository.SchwalbeTireRimWidthCombinationRule,
+) *SchwalbeTireCatalogSelectorRimWidthContext {
+	if innerRimWidthMM == nil {
+		return nil
+	}
+
+	context := &SchwalbeTireCatalogSelectorRimWidthContext{
+		InnerRimWidthMM: *innerRimWidthMM,
+		GuidanceStatus:  "no_coverage",
+	}
+	if schwalbeTireRimWidthInputCovered(innerRimWidthMM, rules) {
+		context.GuidanceStatus = "covered"
+	}
+	if len(rules) == 0 {
+		return context
+	}
+
+	context.SourceBasis = rules[0].SourceBasis
+	context.SourceVersion = rules[0].SourceVersion
+	checkedAt := rules[0].SourceCheckedAt
+	if !checkedAt.IsZero() {
+		context.SourceCheckedAt = &checkedAt
+	}
+	return context
 }
 
 func deriveSchwalbeTireCatalogSelectorDimensions(item repository.SchwalbeTireCatalogItem) schwalbeTireCatalogSelectorDimensions {
@@ -256,7 +322,11 @@ func normalizedSchwalbeTireSelectorString(value *string) string {
 	return strings.TrimSpace(*value)
 }
 
-func filterSchwalbeTireCatalogSelectorRows(rows []schwalbeTireCatalogSelectorRow, query SchwalbeTireCatalogSelectorQuery) []schwalbeTireCatalogSelectorRow {
+func filterSchwalbeTireCatalogSelectorRows(
+	rows []schwalbeTireCatalogSelectorRow,
+	query SchwalbeTireCatalogSelectorQuery,
+	rimWidthRules []repository.SchwalbeTireRimWidthCombinationRule,
+) []schwalbeTireCatalogSelectorRow {
 	filtered := make([]schwalbeTireCatalogSelectorRow, 0, len(rows))
 	modelName := strings.TrimSpace(query.ModelName)
 	widths := schwalbeTireSelectorIntegerSet(query.NominalTireWidthsMM)
@@ -286,6 +356,9 @@ func filterSchwalbeTireCatalogSelectorRows(rows []schwalbeTireCatalogSelectorRow
 			if row.item.LoadKG == nil || *row.item.LoadKG < *query.MinLoadKG {
 				continue
 			}
+		}
+		if query.InnerRimWidthMM != nil && len(schwalbeTireRimWidthGuidanceFor(dimensions.NominalTireWidthMM, query.InnerRimWidthMM, rimWidthRules)) == 0 {
+			continue
 		}
 		if modelName != "" && dimensions.ModelName != modelName {
 			continue

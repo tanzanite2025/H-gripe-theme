@@ -299,6 +299,7 @@ func (h *Handler) SearchSchwalbeTireCatalogSelector(c *gin.Context) {
 	}
 	widthMin := parseSchwalbeTireSelectorPositiveInteger(c.Query("tire_width_min_mm"))
 	widthMax := parseSchwalbeTireSelectorPositiveInteger(c.Query("tire_width_max_mm"))
+	innerRimWidthMM := parseSchwalbeTireSelectorPositiveFiniteNumber(c.Query("inner_rim_width_mm"))
 	if widthMin != nil && widthMax != nil && *widthMin > *widthMax {
 		widthMin, widthMax = widthMax, widthMin
 	}
@@ -307,6 +308,7 @@ func (h *Handler) SearchSchwalbeTireCatalogSelector(c *gin.Context) {
 		Search:                c.Query("search"),
 		Page:                  page,
 		ModelName:             c.Query("model"),
+		InnerRimWidthMM:       innerRimWidthMM,
 		NominalTireWidthMinMM: widthMin,
 		NominalTireWidthMaxMM: widthMax,
 		NominalTireWidthsMM:   parseSchwalbeTireSelectorPositiveIntegers(c.QueryArray("tire_width_mm")),
@@ -332,6 +334,10 @@ func (h *Handler) SearchSchwalbeTireCatalogSelector(c *gin.Context) {
 }
 
 func parseSchwalbeTireSelectorMinimumLoadKG(value string) *float64 {
+	return parseSchwalbeTireSelectorPositiveFiniteNumber(value)
+}
+
+func parseSchwalbeTireSelectorPositiveFiniteNumber(value string) *float64 {
 	normalized := strings.TrimSpace(value)
 	if normalized == "" {
 		return nil

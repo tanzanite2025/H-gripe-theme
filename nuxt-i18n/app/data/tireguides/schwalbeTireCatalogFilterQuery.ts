@@ -9,6 +9,8 @@ export type SchwalbeCatalogSort = 'weight_asc' | 'weight_desc' | 'model' | 'etrt
 
 export interface SchwalbeTireCatalogFilterQueryState {
   modelName: string | null
+  /** User-entered rim inner width used for official possible-combination matching. */
+  innerRimWidthMm: number | null
   /**
    * Inclusive nominal-width range used by the selector UI. Empty endpoints
    * mean that side of the range is unbounded.
@@ -36,6 +38,7 @@ export type SchwalbeTireCatalogFilterQuery = Record<string, unknown>
 
 export const SCHWALBE_TIRE_CATALOG_FILTER_QUERY_KEYS = {
   modelName: 'model',
+  innerRimWidthMm: 'inner_rim_width_mm',
   nominalTireWidthMinMm: 'tire_width_min_mm',
   nominalTireWidthMaxMm: 'tire_width_max_mm',
   /** @deprecated Use the inclusive min/max keys for new links. */
@@ -156,6 +159,7 @@ export const parseSchwalbeTireCatalogFilterQuery = (
 
   return {
     modelName: readFirstString(query[keys.modelName]),
+    innerRimWidthMm: readPositiveFiniteNumber(query[keys.innerRimWidthMm]),
     nominalTireWidthMinMm,
     nominalTireWidthMaxMm,
     // A range takes precedence when both contracts are present. This keeps a
@@ -191,6 +195,15 @@ const normalizePositiveInteger = (value: number | null | undefined): number | nu
     : null
 )
 
+const normalizePositiveFiniteNumber = (value: number | null | undefined): number | null => (
+  value !== null
+  && value !== undefined
+  && Number.isFinite(value)
+  && value > 0
+    ? value
+    : null
+)
+
 const normalizedStrings = (values: readonly string[]): string[] => (
   [...new Set(values.map(value => value.trim()).filter(Boolean))]
     .sort((left, right) => left.localeCompare(right))
@@ -217,6 +230,7 @@ export const mergeSchwalbeTireCatalogFilterQuery = (
   const keys = SCHWALBE_TIRE_CATALOG_FILTER_QUERY_KEYS
 
   delete nextQuery[keys.modelName]
+  delete nextQuery[keys.innerRimWidthMm]
   delete nextQuery[keys.nominalTireWidthMinMm]
   delete nextQuery[keys.nominalTireWidthMaxMm]
   delete nextQuery[keys.nominalTireWidthsMm]
@@ -233,6 +247,9 @@ export const mergeSchwalbeTireCatalogFilterQuery = (
   delete nextQuery[keys.sortBy]
 
   if (state.modelName?.trim()) nextQuery[keys.modelName] = state.modelName.trim()
+
+  const innerRimWidthMm = normalizePositiveFiniteNumber(state.innerRimWidthMm)
+  if (innerRimWidthMm !== null) nextQuery[keys.innerRimWidthMm] = String(innerRimWidthMm)
 
   let tireWidthMinMm = normalizePositiveInteger(state.nominalTireWidthMinMm)
   let tireWidthMaxMm = normalizePositiveInteger(state.nominalTireWidthMaxMm)

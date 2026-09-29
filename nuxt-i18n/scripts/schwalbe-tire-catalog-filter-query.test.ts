@@ -24,6 +24,7 @@ const parsed = parseSchwalbeTireCatalogFilterQuery({
 
 assert.deepEqual(parsed, {
   modelName: 'Kojak',
+  innerRimWidthMm: null,
   nominalTireWidthMinMm: null,
   nominalTireWidthMaxMm: null,
   nominalTireWidthsMm: [35, 55],
@@ -82,6 +83,7 @@ assert.deepEqual(
   }),
   {
     modelName: 'Kojak',
+    innerRimWidthMm: null,
     nominalTireWidthMinMm: null,
     nominalTireWidthMaxMm: null,
     nominalTireWidthsMm: [26],
@@ -117,6 +119,7 @@ assert.deepEqual(
     },
     {
       modelName: null,
+      innerRimWidthMm: null,
       nominalTireWidthMinMm: null,
       nominalTireWidthMaxMm: null,
       nominalTireWidthsMm: [],
@@ -171,5 +174,19 @@ assert.deepEqual(
     tire_width_max_mm: '57',
   },
 )
+
+const parsedInnerRimWidth = parseSchwalbeTireCatalogFilterQuery({
+  inner_rim_width_mm: '23.5',
+})
+assert.equal(parsedInnerRimWidth.innerRimWidthMm, 23.5)
+assert.deepEqual(
+  mergeSchwalbeTireCatalogFilterQuery({}, parsedInnerRimWidth),
+  { inner_rim_width_mm: '23.5' },
+)
+
+const invalidInnerRimWidth = parseSchwalbeTireCatalogFilterQuery({
+  inner_rim_width_mm: ['0', '-1', 'Infinity', 'not-a-number'],
+})
+assert.equal(invalidInnerRimWidth.innerRimWidthMm, null)
 
 console.log('Schwalbe tire catalog filter query checks passed.')

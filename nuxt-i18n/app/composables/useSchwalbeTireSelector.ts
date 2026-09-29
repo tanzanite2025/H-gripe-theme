@@ -71,6 +71,7 @@ const emptySelectorPage = (): SchwalbeTireCatalogSelectorPage => ({
     seals: [],
     eBikeRatings: [],
   },
+  rim_width_context: null,
 })
 
 export const useSchwalbeTireSelector = async () => {
@@ -130,6 +131,31 @@ export const useSchwalbeTireSelector = async () => {
       modelName: modelName === 'ALL' ? null : modelName,
     }),
   })
+  const selectedInnerRimWidthMm = computed<number | null>({
+    get: () => filterState.value.innerRimWidthMm,
+    set: (innerRimWidthMm) => updateFilterState({
+      innerRimWidthMm: innerRimWidthMm !== null
+        && Number.isFinite(innerRimWidthMm)
+        && innerRimWidthMm > 0
+        ? innerRimWidthMm
+        : null,
+    }),
+  })
+  const applyRimWidthMatch = (innerRimWidthMm: number | null, wheelSizeKey: string) => {
+    const normalizedWheelSizeKey = wheelSizeKey.trim()
+    updateFilterState({
+      innerRimWidthMm: innerRimWidthMm !== null
+        && Number.isFinite(innerRimWidthMm)
+        && innerRimWidthMm > 0
+        ? innerRimWidthMm
+        : null,
+      wheelSizeKeys: normalizedWheelSizeKey ? [normalizedWheelSizeKey] : [],
+      beadSeatDiametersMm: [],
+    })
+  }
+  const clearRimWidthMatch = () => {
+    updateFilterState({ innerRimWidthMm: null })
+  }
   const selectedTireWidthsMm = computed({
     get: () => filterState.value.nominalTireWidthsMm,
     set: (nominalTireWidthsMm: number[]) => updateFilterState({ nominalTireWidthsMm }),
@@ -243,6 +269,7 @@ export const useSchwalbeTireSelector = async () => {
   ])
   const totalItems = computed(() => data.value?.total || 0)
   const totalPages = computed(() => Math.max(1, data.value?.total_pages || 1))
+  const rimWidthContext = computed(() => data.value?.rim_width_context ?? null)
   const currentPage = computed(() => Math.min(requestedPage.value, totalPages.value))
   const visibleItems = computed(() => items.value)
 
@@ -276,6 +303,7 @@ export const useSchwalbeTireSelector = async () => {
     || filterState.value.nominalTireWidthsMm.length > 0
     || filterState.value.nominalTireWidthMinMm !== null
     || filterState.value.nominalTireWidthMaxMm !== null
+    || filterState.value.innerRimWidthMm !== null
     || filterState.value.wheelSizeKeys.length > 0
     || filterState.value.beadSeatDiametersMm.length > 0
     || filterState.value.minimumLoadKg !== null
@@ -393,6 +421,9 @@ export const useSchwalbeTireSelector = async () => {
     searchInput,
     submittedSearch,
     selectedModel,
+    selectedInnerRimWidthMm,
+    applyRimWidthMatch,
+    clearRimWidthMatch,
     selectedTireWidthsMm,
     selectedTireWidthMinMm,
     selectedTireWidthMaxMm,
@@ -411,6 +442,7 @@ export const useSchwalbeTireSelector = async () => {
     sortBy,
     items,
     totalItems,
+    rimWidthContext,
     visibleItems,
     modelOptions,
     tireWidthOptions: computed(() => filterOptions.value.nominalTireWidthsMm),

@@ -78,6 +78,55 @@
       </div>
     </form>
 
+    <section class="schwalbe-selector__rim-match" :aria-labelledby="'schwalbe-rim-width-title'">
+      <div class="schwalbe-selector__rim-match-copy">
+        <h2 id="schwalbe-rim-width-title" class="schwalbe-selector__rim-match-title">
+          {{ tx('rimWidth.title') }}
+        </h2>
+        <p class="schwalbe-selector__hint">{{ tx('rimWidth.hint') }}</p>
+      </div>
+      <form class="schwalbe-selector__rim-match-form" @submit.prevent="applyRimWidthMatch">
+        <label class="schwalbe-selector__rim-match-field">
+          <span class="schwalbe-selector__label">{{ tx('rimWidth.wheelSize') }}</span>
+          <select v-model="rimWheelSizeKey" :aria-label="tx('rimWidth.wheelSize')" :aria-invalid="rimWheelSizeMissing">
+            <option value="">{{ tx('rimWidth.allWheelSizes') }}</option>
+            <option v-for="option in wheelSizeOptions" :key="option.value" :value="option.value">
+              {{ tx('filters.wheelSizeOption', { diameter: option.wheelDiameterIn, bsd: option.beadSeatDiameterMm }) }}
+            </option>
+          </select>
+        </label>
+        <label class="schwalbe-selector__rim-match-field">
+          <span class="schwalbe-selector__label">{{ tx('rimWidth.innerWidth') }}</span>
+          <span class="schwalbe-selector__rim-match-input">
+            <input
+              v-model="innerRimWidthInput"
+              type="number"
+              min="1"
+              step="0.1"
+              inputmode="decimal"
+              :aria-label="tx('rimWidth.innerWidth')"
+              :aria-invalid="rimWidthInputInvalid"
+            >
+            <span aria-hidden="true">mm</span>
+          </span>
+        </label>
+        <button type="submit" class="schwalbe-selector__button">
+          {{ tx('rimWidth.apply') }}
+        </button>
+        <button
+          v-if="selectedInnerRimWidthMm !== null"
+          type="button"
+          class="schwalbe-selector__clear"
+          @click="clearRimWidthMatch"
+        >
+          {{ tx('rimWidth.clear') }}
+        </button>
+      </form>
+      <p v-if="rimWidthInputInvalid || rimWheelSizeMissing" class="schwalbe-selector__rim-match-error" role="alert">
+        {{ rimWidthInputInvalid ? tx('rimWidth.invalid') : tx('rimWidth.chooseWheelSize') }}
+      </p>
+    </section>
+
     <SchwalbeTireCatalogFilterDrawer
       :id="filterDialogId"
       v-model:open="filterDialogOpen"
@@ -134,6 +183,12 @@
     <div class="schwalbe-selector__summary" aria-live="polite">
       <span>{{ tx('summary', { count: totalItems, page: currentPage, totalPages }) }}</span>
       <span v-if="submittedSearch">{{ tx('search.active', { term: submittedSearch }) }}</span>
+      <span v-if="rimWidthContext">
+        {{ rimWidthContext.guidance_status === 'covered'
+          ? tx('rimWidth.covered', { width: rimWidthContext.inner_rim_width_mm, count: totalItems })
+          : tx('rimWidth.noCoverage', { width: rimWidthContext.inner_rim_width_mm }) }}
+      </span>
+      <span v-if="rimWidthSourceSummary">{{ rimWidthSourceSummary }}</span>
     </div>
 
     <div v-if="pending" class="schwalbe-selector__state" role="status">
@@ -196,7 +251,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, reactive, ref, useId } from 'vue'
+import { computed, reactive, ref, useId, watch } from 'vue'
 import { useI18n } from '#imports'
 import SchwalbeTireCard from '~/components/tireguides/schwalbe/SchwalbeTireCard.vue'
 import SchwalbeTireCatalogFilterPanel from '~/components/tireguides/schwalbe/SchwalbeTireCatalogFilterPanel.vue'
@@ -207,7 +262,7 @@ import {
   type SchwalbeTireCatalogFacetFilterState,
 } from '~/composables/useSchwalbeTireSelector'
 
-const { t: translate } = useI18n()
+const { t: translate, locale } = useI18n()
 const tx = (key: string, params?: Record<string, unknown>) => translate(`guidesSchwalbeTireSelector.${key}`, params || {})
 const filterDialogOpen = ref(false)
 const filterDialogId = `schwalbe-tire-catalog-filter-${useId()}`
@@ -215,7 +270,9 @@ const {
   searchInput,
   submittedSearch,
   totalItems,
+  rimWidthContext,
   selectedModel,
+  selectedInnerRimWidthMm,
   selectedTireWidthsMm,
   selectedTireWidthMinMm,
   selectedTireWidthMaxMm,
@@ -252,7 +309,55 @@ const {
   refresh,
   submitSearch,
   clearSearch,
+  clearRimWidthMatch: clearRimWidthMatchState,
+  applyRimWidthMatch: applyRimWidthMatchState,
 } = await useSchwalbeTireSelector()
+
+const rimWidthSourceSummary = computed(() => {
+  if (!rimWidthContext.value?.source_basis || !rimWidthContext.value.source_version) return ''
+  const checkedAt = rimWidthContext.value.source_checked_at
+  let checkedDate = checkedAt || ''
+  if (checkedAt) {
+    const parsed = new Date(checkedAt)
+    if (!Number.isNaN(parsed.getTime())) {
+      checkedDate = new Intl.DateTimeFormat(locale.value.replace(/_/g, '-'), { dateStyle: 'medium' }).format(parsed)
+    }
+  }
+  return tx('rimWidth.source', {
+    basis: rimWidthContext.value.source_basis,
+    version: rimWidthContext.value.source_version,
+    date: checkedDate,
+  })
+})
+
+const innerRimWidthInput = ref('')
+const rimWheelSizeKey = ref('')
+
+watch(selectedInnerRimWidthMm, (value) => {
+  innerRimWidthInput.value = value === null ? '' : String(value)
+}, { immediate: true })
+
+watch(selectedWheelSizeKeys, (values) => {
+  rimWheelSizeKey.value = values[0] ?? ''
+}, { immediate: true })
+
+const rimWidthInputInvalid = computed(() => {
+  const value = innerRimWidthInput.value.trim()
+  if (!value) return false
+  const parsed = Number(value)
+  return !Number.isFinite(parsed) || parsed <= 0
+})
+const rimWheelSizeMissing = computed(() => Boolean(innerRimWidthInput.value.trim()) && !rimWheelSizeKey.value)
+
+const applyRimWidthMatch = () => {
+  if (rimWidthInputInvalid.value || rimWheelSizeMissing.value) return
+  const value = innerRimWidthInput.value.trim()
+  applyRimWidthMatchState(value ? Number(value) : null, rimWheelSizeKey.value)
+}
+
+const clearRimWidthMatch = () => {
+  clearRimWidthMatchState()
+}
 
 const toggleWeightSort = () => {
   sortBy.value = sortBy.value === 'weight_desc' ? 'weight_asc' : 'weight_desc'
@@ -341,6 +446,7 @@ const clearDraftFacetFilters = () => {
 
 const activeFilterCount = computed(() => [
   selectedModel.value !== 'ALL',
+  selectedInnerRimWidthMm.value !== null,
   selectedTireWidthsMm.value.length > 0
     || selectedTireWidthMinMm.value !== null
     || selectedTireWidthMaxMm.value !== null,
@@ -394,6 +500,98 @@ const activeFilterCount = computed(() => [
   border-radius: 1rem;
   background: var(--tz-card-surface);
   padding: 1rem;
+}
+
+.schwalbe-selector__rim-match {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2.2fr);
+  gap: 0.8rem 1rem;
+  align-items: end;
+  border: 1px solid var(--tz-border-subtle);
+  border-radius: 1rem;
+  background: var(--tz-surface-subtle);
+  padding: 0.9rem 1rem;
+}
+
+.schwalbe-selector__rim-match-copy {
+  min-width: 0;
+}
+
+.schwalbe-selector__rim-match-title {
+  margin: 0;
+  color: var(--tz-text-primary);
+  font-size: 0.9rem;
+  font-weight: 750;
+}
+
+.schwalbe-selector__rim-match-copy .schwalbe-selector__hint {
+  display: block;
+  margin-top: 0.25rem;
+}
+
+.schwalbe-selector__rim-match-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(8rem, 0.8fr) auto auto;
+  gap: 0.55rem;
+  align-items: end;
+}
+
+.schwalbe-selector__rim-match-field {
+  display: grid;
+  min-width: 0;
+  gap: 0.35rem;
+}
+
+.schwalbe-selector__rim-match-field select,
+.schwalbe-selector__rim-match-input {
+  min-height: 2.5rem;
+  min-width: 0;
+  border: 1px solid var(--tz-border-strong);
+  border-radius: 0.65rem;
+  background: var(--tz-surface-page);
+  color: var(--tz-text-primary);
+  font: inherit;
+  font-size: 0.82rem;
+}
+
+.schwalbe-selector__rim-match-field select {
+  width: 100%;
+  padding: 0.55rem 0.65rem;
+}
+
+.schwalbe-selector__rim-match-input {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0 0.65rem;
+}
+
+.schwalbe-selector__rim-match-input input {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+}
+
+.schwalbe-selector__rim-match-input > span {
+  color: var(--tz-text-secondary);
+  font-size: 0.75rem;
+}
+
+.schwalbe-selector__rim-match-input:focus-within,
+.schwalbe-selector__rim-match-field select:focus-visible {
+  outline: 2px solid var(--tz-action-primary);
+  outline-offset: 2px;
+}
+
+.schwalbe-selector__rim-match-error {
+  grid-column: 2;
+  margin: -0.35rem 0 0;
+  color: var(--tz-status-danger-text);
+  font-size: 0.72rem;
 }
 
 .schwalbe-selector__search,
@@ -669,6 +867,23 @@ const activeFilterCount = computed(() => [
 
   .schwalbe-selector__grid {
     grid-template-columns: 1fr;
+  }
+
+  .schwalbe-selector__rim-match {
+    grid-template-columns: 1fr;
+  }
+
+  .schwalbe-selector__rim-match-form {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .schwalbe-selector__rim-match-form .schwalbe-selector__button,
+  .schwalbe-selector__rim-match-form .schwalbe-selector__clear {
+    width: 100%;
+  }
+
+  .schwalbe-selector__rim-match-error {
+    grid-column: 1;
   }
 
   .schwalbe-selector__button,
