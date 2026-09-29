@@ -69,7 +69,7 @@ export const useSpokeCalculatorWizard = () => {
   }
 
   const setInterlaceCompensation = (side: SpokeWheelSide, compensationMm: number | null) => {
-    draft[side].interlaceCompensationMm = compensationMm ?? 0
+    draft[side].interlaceCompensationMm = compensationMm
   }
 
   return {

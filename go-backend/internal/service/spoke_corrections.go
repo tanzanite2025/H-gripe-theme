@@ -7,7 +7,6 @@ import (
 
 const (
 	defaultElasticModulusNMM2 = 200000.0
-	defaultInterlaceOffsetMM  = 0.45
 )
 
 var spokeProfileAreasMM2 = map[string]float64{
@@ -58,8 +57,6 @@ func applySpokePhysicalCorrections(input spokePhysicalCorrectionInput) (spokePhy
 	if input.Interlacing && input.Crossing > 0 {
 		if input.InterlaceCompensationMM != nil {
 			interlaceCompensationMM = *input.InterlaceCompensationMM
-		} else {
-			interlaceCompensationMM = defaultInterlaceCompensation(input.Crossing)
 		}
 		left += interlaceCompensationMM
 		right += interlaceCompensationMM
@@ -84,19 +81,6 @@ func applySpokePhysicalCorrections(input spokePhysicalCorrectionInput) (spokePhy
 		StretchLeftMM:           stretchLeftMM,
 		StretchRightMM:          stretchRightMM,
 	}, nil
-}
-
-func defaultInterlaceCompensation(crossing int) float64 {
-	switch {
-	case crossing >= 3:
-		return defaultInterlaceOffsetMM
-	case crossing == 2:
-		return 0.4
-	case crossing == 1:
-		return 0.25
-	default:
-		return 0
-	}
 }
 
 func spokeElasticStretchMM(targetTensionN, lengthMM, areaMM2 float64) float64 {

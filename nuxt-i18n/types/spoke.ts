@@ -61,7 +61,7 @@ export interface SpokeCalcInput {
   targetTensionN?: number
   alternatingDrillingOffsetMm?: number
   interlacing?: boolean
-  interlaceCompensationMm?: number
+  interlaceCompensationMm?: number | null
 }
 
 export interface SpokeTensionRatio {

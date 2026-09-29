@@ -18,7 +18,7 @@ var (
 	ErrSpokeHubGeometryMissing  = errors.New("hub geometry not available for requested position")
 	ErrInvalidSpokeCalculation  = errors.New("invalid spoke calculation input")
 	ErrInvalidSpokeCatalog      = errors.New("invalid spoke catalog")
-	spokeCalculationFormulaName = "v1.4-go-backend-physical-build-corrections"
+	spokeCalculationFormulaName = "v1.5-go-backend-physical-build-corrections"
 	spokeCatalogIDPattern       = regexp.MustCompile(`^[a-z0-9][a-z0-9_-]{0,139}$`)
 )
 
@@ -49,6 +49,9 @@ type SpokeCalculationInput struct {
 	// alternating rim hole. The right side receives the opposite offset.
 	AlternatingDrillingOffsetMM *float64
 	Interlacing                 bool
+	// InterlaceCompensationMM is an optional user-supplied correction. It is
+	// intentionally not inferred from crossing count or spoke profile because
+	// spoke section, butting, and hub exit direction change the bend geometry.
 	InterlaceCompensationMM     *float64
 	// RimOffsetMM is positive when the rim center moves toward the right
 	// flange. The value changes both the spoke length geometry and bracing

@@ -9,10 +9,10 @@
       <span class="spoke-interlacing-step__eyebrow">06</span>
       <div>
         <h2 id="spoke-interlacing-step-title" class="spoke-interlacing-step__title">
-          {{ t('resourcesSpokeCalculator.calculator.physicalCorrections.stepSixPrompt', '输入交叉压条折线补偿') }}
+          {{ t('resourcesSpokeCalculator.calculator.physicalCorrections.stepSixPrompt', '输入交叉压条折线补偿（可选）') }}
         </h2>
         <p class="spoke-interlacing-step__subtitle">
-          {{ t('resourcesSpokeCalculator.calculator.physicalCorrections.stepSixSubtitle', '确认交叉编法是否在交叉点压条；如果压条，填写由微小折线带来的长度补偿。') }}
+          {{ t('resourcesSpokeCalculator.calculator.physicalCorrections.stepSixSubtitle', '确认交叉编法是否在交叉点压条；只有实际压条并且有测量或估算依据时，才填写对应的长度补偿。') }}
         </p>
       </div>
     </div>
@@ -26,12 +26,12 @@
           {{ t('resourcesSpokeCalculator.calculator.physicalCorrections.interlacingInputLabel', '交叉压条折线') }}
         </strong>
         <p class="spoke-interlacing-step__input-help">
-          {{ t('resourcesSpokeCalculator.calculator.physicalCorrections.interlacingPairHelp', '请分别设置前轮和后轮是否在交叉点压条；开启后再填写对应的长度补偿。') }}
+          {{ t('resourcesSpokeCalculator.calculator.physicalCorrections.interlacingPairHelp', '请分别设置前轮和后轮是否在交叉点压条；选择“是”后，按实际辐条和花鼓结构填写补偿量。') }}
         </p>
         <div class="spoke-interlacing-step__input-note" role="note">
           <span class="spoke-interlacing-step__input-note-icon" aria-hidden="true">⌁</span>
           <p>
-            {{ t('resourcesSpokeCalculator.calculator.physicalCorrections.interlacingInputNote', '2X / 3X 编法在最外侧交叉点做内压外或外压内时，辐条会形成微小折线；没有实际压条时请关闭，不要填入补偿。') }}
+            {{ t('resourcesSpokeCalculator.calculator.physicalCorrections.interlacingInputNote', '补偿量不是固定值：例如等径 2.0 mm 圆辐条、不同厚度的扁辐条和变径辐条，会产生不同折线几何；不同花鼓的出条方向也可能使角度偏差不一致。市面上多数花鼓已不采用压条，长度影响通常较小，不确定时可直接选择“否”。') }}
           </p>
         </div>
       </div>
@@ -56,7 +56,7 @@
             for="spoke-interlace-compensation-front"
             class="spoke-interlacing-step__field"
           >
-            <span>{{ t('resourcesSpokeCalculator.calculator.physicalCorrections.interlaceCompensation', '压条长度补偿（毫米）') }}</span>
+            <span>{{ t('resourcesSpokeCalculator.calculator.physicalCorrections.interlaceCompensation', '实际压条长度补偿（毫米）') }}</span>
             <span class="spoke-interlacing-step__unit-field">
               <input
                 id="spoke-interlace-compensation-front"
@@ -93,7 +93,7 @@
             for="spoke-interlace-compensation-rear"
             class="spoke-interlacing-step__field"
           >
-            <span>{{ t('resourcesSpokeCalculator.calculator.physicalCorrections.interlaceCompensation', '压条长度补偿（毫米）') }}</span>
+            <span>{{ t('resourcesSpokeCalculator.calculator.physicalCorrections.interlaceCompensation', '实际压条长度补偿（毫米）') }}</span>
             <span class="spoke-interlacing-step__unit-field">
               <input
                 id="spoke-interlace-compensation-rear"
@@ -146,8 +146,8 @@ const props = withDefaults(defineProps<{
   currentStep: 6,
   frontInterlacing: 'off',
   rearInterlacing: 'off',
-  frontCompensation: 0.45,
-  rearCompensation: 0.45,
+  frontCompensation: null,
+  rearCompensation: null,
   frontCrossing: 3,
   rearCrossing: 3,
 })

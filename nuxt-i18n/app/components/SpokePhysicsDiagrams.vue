@@ -1013,13 +1013,13 @@
           <g transform="translate(425, 175)">
             <circle cx="0" cy="0" r="11" fill="#e11d48" stroke="#ffffff" stroke-width="1.8" />
             <text cx="0" cy="4" fill="#ffffff" font-family="var(--font-mono)" font-size="11" font-weight="900" text-anchor="middle">5</text>
-            <text x="16" y="4" fill="#e11d48" font-family="var(--font-mono)" font-size="9.5" font-weight="900">δ ≈ 1.8mm</text>
+            <text x="16" y="4" fill="#e11d48" font-family="var(--font-mono)" font-size="9.5" font-weight="900">δ varies</text>
           </g>
 
           <!-- 计算公式牌 -->
           <rect x="180" y="320" width="400" height="36" rx="8" fill="#f8fafc" stroke="rgba(15, 23, 42, 0.12)" />
           <text x="380" y="342" fill="#059669" font-family="var(--font-mono)" font-size="11.5" font-weight="900" text-anchor="middle">
-            ΔL_interlace = √(L1² + δ²) + √(L2² + δ²) - (L1+L2) ≈ +0.45 mm
+            ΔL_interlace = √(L1² + δ²) + √(L2² + δ²) - (L1+L2)
           </text>
         </svg>
 
@@ -1061,8 +1061,8 @@
             <div class="legend-item">
               <div class="legend-badge-num num-rose">5</div>
               <div class="legend-content">
-                <div class="legend-item-title">微观折线拱起位移 (Deflection δ ≈ 1.8mm)</div>
-                <div class="legend-item-desc">折线拱起使辐条物理几何总长增加约 +0.3~0.5mm，需进行正向长度补偿。</div>
+                <div class="legend-item-title">微观折线拱起位移 (Deflection δ，示意值)</div>
+                <div class="legend-item-desc">折线拱起会使辐条物理几何总长增加；具体补偿取决于辐条截面、变径形状和花鼓出条方向，不能用一个固定值代表。</div>
               </div>
             </div>
           </div>
@@ -1073,7 +1073,7 @@
             <strong>物理场景 ⑦：交叉编法交叠压条（Interlacing）的物理折线补偿</strong>
             <p>展示直线欧氏路径序号 ①、外层下压序号 ②、内层拱起序号 ③ 与压条咬合点序号 ④。</p>
           </div>
-          <span class="header-badge" style="background: rgba(5, 150, 105, 0.08); color: #047857; border-color: rgba(5, 150, 105, 0.25);">压条正向补偿: +0.45 MM</span>
+          <span class="header-badge" style="background: rgba(5, 150, 105, 0.08); color: #047857; border-color: rgba(5, 150, 105, 0.25);">压条补偿：按实际输入</span>
         </div>
       </div>
 

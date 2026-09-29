@@ -122,6 +122,12 @@ stretch estimate, alternating drilling offset, and interlacing compensation)
 are calculation inputs. The frontend manual flow chooses and submits these
 inputs; it does not infer them from a catalog selection.
 
+Interlacing compensation is an explicit optional length input for each wheel.
+The backend applies only the submitted value when interlacing is enabled; a
+missing value does not trigger a crossing-count-based default. This keeps the
+correction under the user's control because spoke section/butting and hub exit
+geometry vary, and many current hubs are built without interlacing.
+
 The tension ratio is a derived result of the manual geometry calculation. It is
 not the 2:1 or 1:1 spoke-hole topology ratio. See
 `docs/design/spoke-tension-ratio-architecture.md` for the sign convention and

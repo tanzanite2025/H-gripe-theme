@@ -135,6 +135,13 @@ func TestSpokeServiceCalculateAppliesPhysicalBuildCorrections(t *testing.T) {
 	})
 	require.NoError(t, err)
 	require.InDelta(t, interlace, interlaced.LeftLengthMM-withoutInterlace.LeftLengthMM, 0.01)
+	withoutMeasuredCompensation, err := spokeService.Calculate(SpokeCalculationInput{
+		RimID: "rr411_db", HubID: "hub", WheelPosition: "front", SpokeCount: 24, Crossing: 3,
+		SpokeHeadType: "j_bend", SpokeHoleDiameterMM: floatPtrForTest(0), Interlacing: true,
+	})
+	require.NoError(t, err)
+	assert.InDelta(t, withoutInterlace.LeftLengthMM, withoutMeasuredCompensation.LeftLengthMM, 0.01)
+	assert.InDelta(t, withoutInterlace.RightLengthMM, withoutMeasuredCompensation.RightLengthMM, 0.01)
 
 	alternating := 1.0
 	withAlternatingOffset, err := spokeService.Calculate(SpokeCalculationInput{
