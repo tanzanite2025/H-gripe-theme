@@ -2,6 +2,41 @@ import type { HubGeometry } from '~/data/spoke-calculator/database'
 
 export type SpokeHeadType = 'j_bend' | 'straight_pull'
 export type SpokeWheelSide = 'front' | 'rear'
+export type SpokeNippleType = 'standard' | 'hidden'
+export type SpokeProfile = 'round_2_0' | 'round_1_8' | 'bladed_0_9x2_2'
+export type SpokeInterlacing = 'off' | 'on'
+
+/**
+ * The configuration currently edited by the legacy calculator panel.
+ * Keeping this contract outside the component lets the request adapter and
+ * the panel share one field definition while the panel is being split.
+ */
+export interface SpokeWheelBuildConfig {
+  spokeCount: number
+  crossing: number
+  nippleType: SpokeNippleType
+  nippleLength: number | null
+  spokeHeadType: SpokeHeadType
+  spokeHoleDiameterMm: number | null
+  straightPullTangentOffsetMm: number
+  spokeProfile: SpokeProfile
+  targetTensionN: number
+  alternatingDrillingOffsetMm: number
+  interlacing: SpokeInterlacing
+  interlaceCompensationMm: number
+
+  rimBrandId: string | null
+  rimModelId: string | null
+  hubBrandId: string | null
+  hubModelId: string | null
+
+  erd: number | null
+  rimOffsetMm: number
+  leftFlange: number | null
+  rightFlange: number | null
+  leftFlangePcd: number | null
+  rightFlangePcd: number | null
+}
 
 /**
  * The small, page-owned draft used by the spoke calculator wizard.

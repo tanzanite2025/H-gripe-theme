@@ -527,10 +527,11 @@
 import { computed, reactive, ref, watch } from 'vue'
 import SpokeCalculatorSelect from '~/components/SpokeCalculatorSelect.vue'
 import type { HubGeometry, HubModel, RimModel } from '~/data/spoke-calculator/database'
-import type { SpokeHeadType } from '~/types/spokeCalculator'
+import { useSpokeCalculator } from '~/composables/useSpokeCalculator'
+import type { SpokeHeadType, SpokeWheelBuildConfig, SpokeWheelSide } from '~/types/spokeCalculator'
+import type { SpokeTensionRatio } from '~~/types/spoke'
 import { useBehaviorEvents } from '~/composables/useBehaviorEvents'
 import { useSpokeCalculatorCatalog } from '~/composables/useSpokeCalculatorCatalog'
-import { useApiRequest } from '~/composables/useApiRequest'
 import { useI18n } from '#imports'
 
 const props = defineProps<{
@@ -551,37 +552,8 @@ const emit = defineEmits<{
   'update:rearSpokeHeadType': [value: SpokeHeadType]
 }>()
 
-interface WheelConfig {
-  spokeCount: number
-  crossing: number
-  nippleType: 'standard' | 'hidden'
-  nippleLength: number | null
-	spokeHeadType: 'j_bend' | 'straight_pull'
-	spokeHoleDiameterMm: number | null
-	straightPullTangentOffsetMm: number
-	spokeProfile: 'round_2_0' | 'round_1_8' | 'bladed_0_9x2_2'
-	targetTensionN: number
-	alternatingDrillingOffsetMm: number
-	interlacing: 'off' | 'on'
-	interlaceCompensationMm: number
-  
-  // Selection State
-  rimBrandId: string | null
-  rimModelId: string | null
-  hubBrandId: string | null
-  hubModelId: string | null
-
-  // Geometry Data
-  erd: number | null
-  rimOffsetMm: number
-  leftFlange: number | null
-  rightFlange: number | null
-  leftFlangePcd: number | null
-  rightFlangePcd: number | null
-}
-
 // Front wheel configuration
-const frontConfig = reactive<WheelConfig>({
+const frontConfig = reactive<SpokeWheelBuildConfig>({
   spokeCount: 32,
   crossing: 3,
   nippleType: 'standard',
@@ -607,7 +579,7 @@ const frontConfig = reactive<WheelConfig>({
 })
 
 // Rear wheel configuration
-const rearConfig = reactive<WheelConfig>({
+const rearConfig = reactive<SpokeWheelBuildConfig>({
   spokeCount: 32,
   crossing: 3,
   nippleType: 'standard',
@@ -634,7 +606,7 @@ const rearConfig = reactive<WheelConfig>({
 
 const { t } = useI18n()
 const { rims, hubs, options: catalogOptions } = useSpokeCalculatorCatalog()
-const { request: apiRequest } = useApiRequest()
+const { calculateWheel } = useSpokeCalculator()
 
 const spokeCountOptions = computed(() => catalogOptions.value.spokeCounts)
 const crossingTranslationKeys: Record<number, string> = {
@@ -756,7 +728,7 @@ const rearHubModelOptions = computed(() => rearHubModels.value.map(hub => ({
   value: hub.id,
 })))
 
-const applyHubGeometry = (config: WheelConfig, geometry?: HubGeometry | null) => {
+const applyHubGeometry = (config: SpokeWheelBuildConfig, geometry?: HubGeometry | null) => {
   if (!geometry) return
   config.leftFlange = geometry?.leftFlange ?? null
   config.rightFlange = geometry?.rightFlange ?? null
@@ -815,7 +787,7 @@ const flangeGeometryKeys: FlangeGeometryKey[] = [
   'rightFlangePcd',
 ]
 
-const geometryFromConfig = (config: WheelConfig): HubGeometry => ({
+const geometryFromConfig = (config: SpokeWheelBuildConfig): HubGeometry => ({
   leftFlange: config.leftFlange,
   rightFlange: config.rightFlange,
   leftFlangePcd: config.leftFlangePcd,
@@ -827,7 +799,7 @@ const geometryMatches = (current: HubGeometry | null | undefined, next: HubGeome
   && flangeGeometryKeys.every(key => current?.[key] === next[key])
 )
 
-const applyExternalGeometry = (config: WheelConfig, geometry?: HubGeometry | null) => {
+const applyExternalGeometry = (config: SpokeWheelBuildConfig, geometry?: HubGeometry | null) => {
   if (!geometry) return
   for (const key of flangeGeometryKeys) {
     if (config[key] !== geometry[key]) {
@@ -967,7 +939,6 @@ watch(
 const loading = ref(false)
 const error = ref<string | null>(null)
 
-type WheelPosition = 'front' | 'rear'
 type ResultSource = 'calculated'
 
 interface SpokeResult {
@@ -976,21 +947,6 @@ interface SpokeResult {
   tensionRatio: SpokeTensionRatio | null
   leftSource: ResultSource | null
   rightSource: ResultSource | null
-}
-
-interface CalculatedWheelResult {
-  leftLengthMm: number | null
-  rightLengthMm: number | null
-  tensionRatio: SpokeTensionRatio | null
-}
-
-interface SpokeTensionRatio {
-  leftToRight: number
-  rightToLeft: number
-  lowerToHigher: number
-  lowerSide: 'left' | 'right' | 'balanced'
-  leftBracingAngleDeg: number
-  rightBracingAngleDeg: number
 }
 
 const frontResult = ref<SpokeResult | null>(null)
@@ -1092,8 +1048,20 @@ const updateResults = async () => {
   )).length
 }
 
-const buildWheelResult = async (config: WheelConfig, wheel: WheelPosition): Promise<SpokeResult | null> => {
-  const calculated = await calculateWheel(config, wheel)
+const buildWheelResult = async (config: SpokeWheelBuildConfig, wheel: SpokeWheelSide): Promise<SpokeResult | null> => {
+  let calculated: Awaited<ReturnType<typeof calculateWheel>>
+  try {
+    calculated = await calculateWheel(
+      config,
+      wheel,
+      t('resourcesSpokeCalculator.calculator.action.calculationFailed'),
+    )
+  } catch (requestError: unknown) {
+    error.value = requestError instanceof Error
+      ? requestError.message
+      : t('resourcesSpokeCalculator.calculator.action.calculationFailed')
+    return null
+  }
 
   const leftLengthMm = calculated?.leftLengthMm ?? null
   const rightLengthMm = calculated?.rightLengthMm ?? null
@@ -1106,56 +1074,6 @@ const buildWheelResult = async (config: WheelConfig, wheel: WheelPosition): Prom
     tensionRatio: calculated?.tensionRatio ?? null,
     leftSource: calculated?.leftLengthMm != null ? 'calculated' : null,
     rightSource: calculated?.rightLengthMm != null ? 'calculated' : null,
-  }
-}
-
-const calculateWheel = async (config: WheelConfig, wheel: WheelPosition): Promise<CalculatedWheelResult | null> => {
-  const hasCatalogSelection = Boolean(config.rimModelId && config.hubModelId)
-  const hasManualGeometry = Boolean(config.erd && config.leftFlangePcd && config.rightFlangePcd && config.leftFlange != null && config.rightFlange != null)
-  if (!hasCatalogSelection && !hasManualGeometry) {
-    return null
-  }
-
-  try {
-    const payload = await apiRequest<{
-      leftLengthMm: number
-      rightLengthMm: number
-      tensionRatio?: SpokeTensionRatio | null
-    }>('/spoke/calc', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        rimId: config.rimModelId || '',
-        hubId: config.hubModelId || '',
-        wheelPosition: wheel,
-        spokeCount: config.spokeCount,
-        crossing: config.crossing,
-        nippleType: config.nippleType,
-        nippleLengthMm: config.nippleLength,
-		spokeHeadType: config.spokeHeadType,
-		spokeHoleDiameterMm: config.spokeHoleDiameterMm,
-		straightPullTangentOffsetMm: config.straightPullTangentOffsetMm,
-		spokeProfile: config.spokeProfile,
-		targetTensionN: config.targetTensionN,
-		alternatingDrillingOffsetMm: config.alternatingDrillingOffsetMm,
-		interlacing: config.interlacing === 'on',
-		interlaceCompensationMm: config.interlaceCompensationMm,
-        rimOffsetMm: config.rimOffsetMm,
-        erdMm: config.erd,
-        leftFlangeMm: config.leftFlange,
-        rightFlangeMm: config.rightFlange,
-        leftFlangePcdMm: config.leftFlangePcd,
-        rightFlangePcdMm: config.rightFlangePcd,
-      }),
-    }, t('resourcesSpokeCalculator.calculator.action.calculationFailed'))
-    return {
-      leftLengthMm: Number.isFinite(payload.leftLengthMm) ? payload.leftLengthMm : null,
-      rightLengthMm: Number.isFinite(payload.rightLengthMm) ? payload.rightLengthMm : null,
-      tensionRatio: payload.tensionRatio ?? null,
-    }
-  } catch (requestError: any) {
-    error.value = requestError?.message || t('resourcesSpokeCalculator.calculator.action.calculationFailed')
-    return null
   }
 }
 

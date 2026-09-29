@@ -46,6 +46,11 @@ export interface SpokeCalcInput {
   wheelPosition: 'front' | 'rear'
   spokeCount: number
   crossing: number
+  erdMm?: number | null
+  leftFlangeMm?: number | null
+  rightFlangeMm?: number | null
+  leftFlangePcdMm?: number | null
+  rightFlangePcdMm?: number | null
   rimOffsetMm?: number
   nippleType?: 'standard' | 'hidden' | string
   nippleLengthMm?: number | null

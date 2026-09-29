@@ -1,53 +1,55 @@
-import { ref } from 'vue'
-import type { SpokeCalcInput, SpokeCalcResult, SpokeTensionRatio } from '~~/types/spoke'
+import type { SpokeCalcResult, SpokeTensionRatio } from '~~/types/spoke'
+import { useApiRequest } from '~/composables/useApiRequest'
+import type { SpokeWheelBuildConfig, SpokeWheelSide } from '~/types/spokeCalculator'
+import { hasSpokeCalculationGeometry, toSpokeCalcInput } from '~/utils/spokeCalculatorPayload'
 
-// Define the response shape from Go backend
-interface SpokeCalcApiResponse {
-  leftLengthMm: number
-  rightLengthMm: number
-  tensionRatio?: SpokeTensionRatio | null
-  debug: any
+export interface SpokeWheelCalculationResult {
+  leftLengthMm: number | null
+  rightLengthMm: number | null
+  tensionRatio: SpokeTensionRatio | null
 }
+
+/**
+ * Single API boundary for spoke calculations.
+ *
+ * The calculator panel owns editing state and result presentation. This hook
+ * owns only request execution and response normalization, so future wizard
+ * steps can reuse the same calculation path.
+ */
 export const useSpokeCalculator = () => {
-  const loading = ref(false)
-  const error = ref<string | null>(null)
-  const result = ref<SpokeCalcResult | null>(null)
+  const { request } = useApiRequest()
 
-  const calculate = async (input: SpokeCalcInput) => {
-    loading.value = true
-    error.value = null
+  const calculateWheel = async (
+    config: SpokeWheelBuildConfig,
+    wheel: SpokeWheelSide,
+    fallbackMessage: string,
+  ): Promise<SpokeWheelCalculationResult | null> => {
+    if (!hasSpokeCalculationGeometry(config)) {
+      return null
+    }
 
-    try {
-      // Use the actual Go backend endpoint instead of Nuxt mock
-      const auth = useAuth()
-      const data = await auth.request<SpokeCalcApiResponse>('/spoke/calc', {
+    const payload = await request<SpokeCalcResult>(
+      '/spoke/calc',
+      {
         method: 'POST',
-        body: JSON.stringify(input)
-      })
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(toSpokeCalcInput(config, wheel)),
+      },
+      fallbackMessage,
+    )
 
-      if (data && data.leftLengthMm && data.rightLengthMm) {
-        result.value = {
-          leftLengthMm: data.leftLengthMm,
-          rightLengthMm: data.rightLengthMm,
-          tensionRatio: data.tensionRatio || null,
-        }
-      } else {
-        result.value = null
-        throw new Error('Invalid response format from server')
-      }
-    } catch (e: any) {
-      // eslint-disable-next-line no-console
-      console.error('Spoke calc failed', e)
-      error.value = e?.message || 'Failed to calculate spoke lengths'
-    } finally {
-      loading.value = false
+    if (!payload || !Number.isFinite(payload.leftLengthMm) || !Number.isFinite(payload.rightLengthMm)) {
+      throw new Error('Invalid response format from server')
+    }
+
+    return {
+      leftLengthMm: payload.leftLengthMm,
+      rightLengthMm: payload.rightLengthMm,
+      tensionRatio: payload.tensionRatio ?? null,
     }
   }
 
   return {
-    loading,
-    error,
-    result,
-    calculate,
+    calculateWheel,
   }
 }
