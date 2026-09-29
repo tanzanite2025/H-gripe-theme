@@ -59,7 +59,7 @@ Phase 2 的 `SchwalbeTelemetryGuide` 不属于这 19 个字段，也不改变模
 
 目录只读查询的 `search` 使用单个完整词，在 Article No.、`model_name`、ETRTO、Inch 四个字段上分别做不区分大小写的包含匹配，四个字段之间为 OR；不做多词分词或跨字段联合（例如 `Pro One 28-622` 不会拆分查询）。
 
-选型筛选不读取商品模板的 `is_filterable`。独立模型 `schwalbeTireCatalogFilterModel.ts` 严格从 ETRTO 派生胎宽和胎圈座直径，保留 `bead`、`seal`、`e_bike_rating`、`color`、`compound` 和 `version_label` 的官方原文；同一维度多选为 OR，跨维度为 AND。`e_bike_rating` 的空值作为“官网未标注评级”选项保留，不据此推断车型类别或适用性。车圈内宽筛选通过迁移 362 的 `schwalbe_tire_rim_width_combination_rules` 和只读 API 提供可能组合范围；范围不构成具体型号兼容认证，也不替代车架间隙、Hookless/TLE/TLR 或车圈厂商要求。`version_label` 是复合官方文本，不能直接推导数字防刺等级。
+选型筛选不读取商品模板的 `is_filterable`。独立模型 `schwalbeTireCatalogFilterModel.ts` 严格从 ETRTO 派生胎宽和胎圈座直径，保留 `bead`、`seal`、`e_bike_rating`、`color`、`compound` 和 `version_label` 的官方原文；同一维度多选为 OR，跨维度为 AND。页面已接入 Color 精确多选，按完整官方字符串匹配，不拆分颜色组合或推断色系。`e_bike_rating` 的空值作为“官网未标注评级”选项保留，不据此推断车型类别或适用性。车圈内宽筛选通过迁移 362 的 `schwalbe_tire_rim_width_combination_rules` 和只读 API 提供可能组合范围；范围不构成具体型号兼容认证，也不替代车架间隙、Hookless/TLE/TLR 或车圈厂商要求。`version_label` 是复合官方文本，不能直接推导数字防刺等级。
 
 后续官方快照 upsert 只更新候选目录，不静默覆盖已保存的 `product_spec_values`。销售商品保留保存时的规格快照；重新导入后如候选字段发生变化，应按 Article No. 生成差异报告并提醒管理员复核，再由管理员明确更新商品。这样目录刷新不会在没有人工判断的情况下改变在售商品页面事实。
 
@@ -156,7 +156,7 @@ schwalbe_tire_specifications.article_no -> standalone catalog key (no Product fo
 | `compound` | `ADDIX`、`ADDIX 365`、`ADDIX 4-Season`、`ADDIX E`、`ADDIX Eco`、`ADDIX Green`、`ADDIX Race`、`ADDIX Soft`、`ADDIX Speed`、`ADDIX SpeedGrip`、`ADDIX Ultra Soft`、`Black'n'Roll`、`Endurance`、`GRC`、`Green Compound`、`MID`、`SBC`、`SOFT`、`SPEED`、`Silica`、`ULTRA SOFT`、`WheelStar`、`Winter` |
 | `version_label` | `DD, GreenGuard`、`DD, GreenGuard, Radial`、`DD, RaceGuard`、`DD, RaceGuard, Radial`、`Evolution`、`GRAVITY`、`GRAVITY PRO`、`GRAVITY PRO, Radial`、`GreenGuard`、`K-Guard`、`PRO, DD, RaceGuard`、`PRO, DD, V-Guard`、`PRO, V-Guard`、`Performance`、`PunctureGuard`、`RACE PRO`、`RACE PRO, RaceGuard`、`RACE PRO, V-Guard`、`RACE, RaceGuard`、`RaceGuard`、`Reinforced`、`Reinforced, RaceGuard`、`SCHWALBE`、`Smart DualGuard`、`SmartGuard`、`Super Defense`、`Super Downhill`、`Super Ground`、`Super Race`、`Super Race, RaceGuard`、`Super Race, V-Guard`、`Super Trail`、`TRAIL`、`TRAIL PRO`、`TRAIL PRO, Radial`、`V-Guard`、`XC PRO` |
 | `bead` | `Folding`、`WIRED` |
-| `e_bike_rating` | `E-25`、`E-50`；普通自行车为 NULL |
+| `e_bike_rating` | `E-25`、`E-50`；另有官网未标注评级的 NULL 值，不据此推断车型类别 |
 | `seal` | `TLE`、`TLR`、`Tube` |
 | `color` | `Black`、`Black+BlackReflex`、`Black+Reflex`、`Black/Coffee+Reflex`、`Blue Stripes`、`Bronze`、`Bronze Sidewall`、`Bronze+Reflex`、`Brown+Reflex`、`Brown/Whitewall+Reflex`、`Classic`、`Creme+Reflex`、`Grey Stripes`、`Grey/Black`、`Gumwall`、`Red Stripes`、`Transparent Sidewall`、`White Stripes`、`White/Bordeaux`、`Whitewall`、`Whitewall+Reflex` |
 | `tread` | `HS342`、`HS371`、`HS371A`、`HS375`、`HS379`、`HS385`、`HS387`、`HS396`、`HS417`、`HS425`、`HS429`、`HS431`、`HS438`、`HS439`、`HS440`、`HS442`、`HS447`、`HS447B`、`HS451`、`HS462`、`HS462A`、`HS462B`、`HS463`、`HS464`、`HS466`、`HS468`、`HS471`、`HS472`、`HS473`、`HS475`、`HS483`、`HS484`、`HS489`、`HS490`、`HS492`、`HS493`、`HS493A`、`HS493D`、`HS497`、`HS498`、`HS499`、`HS600`、`HS602`、`HS604`、`HS605`、`HS608`、`HS609`、`HS610`、`HS611`、`HS612`、`HS613`、`HS614`、`HS617`、`HS618`、`HS619`、`HS620`、`HS621`、`HS622`、`HS624`、`HS625`、`HS626`、`HS630`、`HS632`、`HS634`、`HS635`、`HS636`、`HS637`、`HS638`、`HS639`、`HS641`、`HS642`、`HS643`、`HS646`、`HS647`、`HS648`、`HS651` |

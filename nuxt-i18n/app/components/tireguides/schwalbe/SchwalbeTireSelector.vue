@@ -62,6 +62,7 @@
       v-model:selected-beads="selectedBeads"
       v-model:selected-seals="selectedSeals"
       v-model:selected-e-bike-ratings="selectedEBikeRatings"
+      v-model:selected-colors="selectedColors"
       :label="tx('filters.catalogFilters')"
       :tire-width-label="tx('filters.tireWidth')"
       :bead-seat-diameter-label="tx('filters.beadSeatDiameter')"
@@ -69,6 +70,7 @@
       :seal-label="tx('filters.seal')"
       :e-bike-rating-label="tx('filters.eBikeRating')"
       :e-bike-unrated-label="tx('filters.eBikeUnrated')"
+      :color-label="tx('filters.color')"
       :scroll-hint="tx('filters.scrollHint')"
       :reset-label="tx('filters.clearFilters')"
       :tire-width-options="tireWidthOptions"
@@ -76,6 +78,7 @@
       :bead-options="beadOptions"
       :seal-options="sealOptions"
       :e-bike-rating-options="eBikeRatingOptions"
+      :color-options="colorOptions"
     />
 
     <div class="schwalbe-selector__summary" aria-live="polite">
@@ -162,6 +165,7 @@ const {
   selectedBeads,
   selectedSeals,
   selectedEBikeRatings,
+  selectedColors,
   sortBy,
   visibleItems,
   modelOptions,
@@ -170,6 +174,7 @@ const {
   beadOptions,
   sealOptions,
   eBikeRatingOptions,
+  colorOptions,
   hasActiveFilters,
   currentPage,
   totalPages,

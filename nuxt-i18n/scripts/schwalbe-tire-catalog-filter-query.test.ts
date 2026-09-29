@@ -13,6 +13,7 @@ const parsed = parseSchwalbeTireCatalogFilterQuery({
   bead: ['WIRED', 'Folding', 'WIRED'],
   seal: ['TLR', 'Tube', 'TLR'],
   e_bike_rating: ['E-50', 'none', 'E-25', 'none'],
+  color: ['Black+Reflex', 'Black', 'Black+Reflex'],
   sort: 'etrto',
 })
 
@@ -23,6 +24,7 @@ assert.deepEqual(parsed, {
   beads: ['Folding', 'WIRED'],
   seals: ['TLR', 'Tube'],
   eBikeRatings: ['E-25', 'E-50', null],
+  colors: ['Black', 'Black+Reflex'],
   sortBy: 'etrto',
 })
 
@@ -41,6 +43,7 @@ assert.deepEqual(
     bead: ['Folding', 'WIRED'],
     seal: ['TLR', 'Tube'],
     e_bike_rating: ['E-25', 'E-50', 'none'],
+    color: ['Black', 'Black+Reflex'],
     sort: 'etrto',
   },
 )
@@ -53,6 +56,7 @@ assert.deepEqual(
     bead: [' WIRED ', '', 'Folding'],
     seal: ' TLR ',
     e_bike_rating: ['none', 'E-25'],
+    color: ['Black+Reflex', 'Black'],
     sort: 'unknown',
   }),
   {
@@ -62,6 +66,7 @@ assert.deepEqual(
     beads: ['Folding', 'WIRED'],
     seals: ['TLR'],
     eBikeRatings: ['E-25', null],
+    colors: ['Black', 'Black+Reflex'],
     sortBy: 'model',
   },
 )
@@ -75,6 +80,7 @@ assert.deepEqual(
       bead: ['WIRED'],
       seal: ['TLR'],
       e_bike_rating: ['none'],
+      color: ['Black+Reflex'],
       sort: 'etrto',
     },
     {
@@ -84,6 +90,7 @@ assert.deepEqual(
       beads: [],
       seals: [],
       eBikeRatings: [],
+      colors: [],
       sortBy: 'model',
     },
   ),

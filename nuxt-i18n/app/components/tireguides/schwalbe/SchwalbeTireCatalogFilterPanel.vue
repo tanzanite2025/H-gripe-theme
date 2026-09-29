@@ -51,9 +51,23 @@
     <fieldset class="schwalbe-filter-panel__group">
       <legend>{{ eBikeRatingLabel }}</legend>
       <div class="schwalbe-filter-panel__options">
-        <label v-for="(option, index) in eBikeRatingOptions" :key="option.value ?? `unrated-${index}`" class="schwalbe-filter-panel__option">
+        <label
+          v-for="(option, index) in eBikeRatingOptions"
+          :key="option.value ?? `unrated-${index}`"
+          class="schwalbe-filter-panel__option"
+        >
           <input v-model="selectedEBikeRatings" type="checkbox" :value="option.value">
           <span>{{ option.value ?? eBikeUnratedLabel }}</span>
+        </label>
+      </div>
+    </fieldset>
+
+    <fieldset class="schwalbe-filter-panel__group">
+      <legend>{{ colorLabel }}</legend>
+      <div class="schwalbe-filter-panel__options">
+        <label v-for="option in colorOptions" :key="option.value" class="schwalbe-filter-panel__option">
+          <input v-model="selectedColors" type="checkbox" :value="option.value">
+          <span>{{ option.value }}</span>
         </label>
       </div>
     </fieldset>
@@ -80,6 +94,7 @@ const selectedBeadSeatDiametersMm = defineModel<number[]>('selectedBeadSeatDiame
 const selectedBeads = defineModel<string[]>('selectedBeads', { required: true })
 const selectedSeals = defineModel<string[]>('selectedSeals', { required: true })
 const selectedEBikeRatings = defineModel<(string | null)[]>('selectedEBikeRatings', { required: true })
+const selectedColors = defineModel<string[]>('selectedColors', { required: true })
 
 defineProps<{
   label: string
@@ -89,6 +104,7 @@ defineProps<{
   sealLabel: string
   eBikeRatingLabel: string
   eBikeUnratedLabel: string
+  colorLabel: string
   scrollHint: string
   resetLabel: string
   tireWidthOptions: readonly SchwalbeTireCatalogFilterOption<number>[]
@@ -96,6 +112,7 @@ defineProps<{
   beadOptions: readonly SchwalbeTireCatalogFilterOption<string>[]
   sealOptions: readonly SchwalbeTireCatalogFilterOption<string>[]
   eBikeRatingOptions: readonly SchwalbeTireCatalogFilterOption<string | null>[]
+  colorOptions: readonly SchwalbeTireCatalogFilterOption<string>[]
 }>()
 
 const hasSelection = computed(() => (
@@ -104,6 +121,7 @@ const hasSelection = computed(() => (
   || selectedBeads.value.length > 0
   || selectedSeals.value.length > 0
   || selectedEBikeRatings.value.length > 0
+  || selectedColors.value.length > 0
 ))
 
 const resetFilters = () => {
@@ -112,13 +130,14 @@ const resetFilters = () => {
   selectedBeads.value = []
   selectedSeals.value = []
   selectedEBikeRatings.value = []
+  selectedColors.value = []
 }
 </script>
 
 <style scoped>
 .schwalbe-filter-panel {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr)) auto;
+  grid-template-columns: repeat(6, minmax(0, 1fr)) auto;
   gap: 0.75rem;
   align-items: end;
   border: 1px solid var(--tz-border-subtle);
@@ -222,6 +241,12 @@ const resetFilters = () => {
 @media (min-width: 761px) {
   .schwalbe-filter-panel__options {
     max-height: 8.5rem;
+  }
+}
+
+@media (min-width: 761px) and (max-width: 1100px) {
+  .schwalbe-filter-panel {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 

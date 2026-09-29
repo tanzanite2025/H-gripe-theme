@@ -23,6 +23,7 @@
     "seal": "Seal",
     "eBikeRating": "E-Bike rating",
     "eBikeUnrated": "No rating listed",
+    "color": "Color",
     "scrollHint": "Select multiple values. Scroll a list to see more options.",
     "clearFilters": "Clear filters",
     "sort": "Sort",
