@@ -43,154 +43,20 @@
               </div>
             </div>
 
-            <div class="spoke-calculator__build-settings">
-              <div class="spoke-calculator__build-settings-header">
-                <p class="spoke-calculator__build-settings-title">
-                  {{ t('resourcesSpokeCalculator.calculator.buildSettings.title') }}
-                </p>
-              </div>
-
-              <div class="spoke-calculator__build-settings-grid">
-                <div class="spoke-calculator__setting-field">
-                  <label for="front-spoke-count" class="block text-xs font-medium tz-text-secondary">
-                    {{ t('resourcesSpokeCalculator.calculator.buildSettings.spokeCount') }}
-                  </label>
-                  <SpokeCalculatorSelect
-                    id="front-spoke-count"
-                    v-model="frontConfig.spokeCount"
-                    :options="spokeCountOptions"
-                  />
-                </div>
-
-                <div class="spoke-calculator__setting-field">
-                  <label for="front-lacing" class="block text-xs font-medium tz-text-secondary">
-                    {{ t('resourcesSpokeCalculator.calculator.buildSettings.lacingPattern') }}
-                  </label>
-                  <SpokeCalculatorSelect
-                    id="front-lacing"
-                    v-model="frontConfig.crossing"
-                    :options="lacingOptions"
-                  />
-                </div>
-
-                <div class="spoke-calculator__setting-field">
-                  <label for="front-nipple" class="block text-xs font-medium tz-text-secondary">
-                    {{ t('resourcesSpokeCalculator.calculator.buildSettings.nippleType') }}
-                  </label>
-                  <SpokeCalculatorSelect
-                    id="front-nipple"
-                    v-model="frontConfig.nippleType"
-                    :options="nippleTypeOptions"
-                  />
-                </div>
-
-                <div v-if="frontConfig.nippleType === 'hidden'" class="spoke-calculator__setting-field">
-                  <label for="front-nipple-length" class="block text-xs font-medium tz-text-secondary">
-                    {{ t('resourcesSpokeCalculator.calculator.buildSettings.nippleLength') }}
-                  </label>
-                  <div class="spoke-calculator__unit-field">
-                    <input
-                      id="front-nipple-length"
-                      v-model.number="frontConfig.nippleLength"
-                      type="number"
-                      min="0"
-                      max="30"
-                      :placeholder="t('resourcesSpokeCalculator.calculator.buildSettings.nippleLengthPlaceholder')"
-                      class="spoke-calculator__control spoke-calculator__control--with-unit"
-                    />
-                    <span class="spoke-calculator__unit">{{ t('resourcesSpokeCalculator.calculator.results.unit') }}</span>
-                  </div>
-                </div>
-
-                <div class="spoke-calculator__setting-field">
-                  <label for="front-rim-brand" class="block text-xs font-medium tz-text-secondary">
-                    {{ t('resourcesSpokeCalculator.calculator.buildSettings.rimBrand') }}
-                  </label>
-                  <SpokeCalculatorSelect
-                    id="front-rim-brand"
-                    v-model="frontConfig.rimBrandId"
-                    :options="rimBrandOptions"
-                    :placeholder="t('resourcesSpokeCalculator.calculator.buildSettings.selectBrand')"
-                  />
-                </div>
-
-                <div class="spoke-calculator__setting-field">
-                  <label for="front-rim-model" class="block text-xs font-medium tz-text-secondary">
-                    {{ t('resourcesSpokeCalculator.calculator.buildSettings.rimModel') }}
-                  </label>
-                  <SpokeCalculatorSelect
-                    id="front-rim-model"
-                    v-model="frontConfig.rimModelId"
-                    :disabled="!frontRimModels.length"
-                    :options="frontRimModelOptions"
-                    :placeholder="t('resourcesSpokeCalculator.calculator.buildSettings.selectModel')"
-                  />
-                </div>
-
-                <div class="spoke-calculator__setting-field">
-                  <label for="front-hub-brand" class="block text-xs font-medium tz-text-secondary">
-                    {{ t('resourcesSpokeCalculator.calculator.buildSettings.hubBrand') }}
-                  </label>
-                  <SpokeCalculatorSelect
-                    id="front-hub-brand"
-                    v-model="frontConfig.hubBrandId"
-                    :options="hubBrandOptions"
-                    :placeholder="t('resourcesSpokeCalculator.calculator.buildSettings.selectBrand')"
-                  />
-                </div>
-
-                <div class="spoke-calculator__setting-field">
-                  <label for="front-hub-model" class="block text-xs font-medium tz-text-secondary">
-                    {{ t('resourcesSpokeCalculator.calculator.buildSettings.hubModel') }}
-                  </label>
-                  <SpokeCalculatorSelect
-                    id="front-hub-model"
-                    v-model="frontConfig.hubModelId"
-                    :disabled="!frontHubModels.length"
-                    :options="frontHubModelOptions"
-                    :placeholder="t('resourcesSpokeCalculator.calculator.buildSettings.selectModel')"
-                  />
-                </div>
-              </div>
-
-              <details open class="spoke-calculator__physical-settings">
-                <summary>{{ t('resourcesSpokeCalculator.calculator.physicalCorrections.title') }}</summary>
-                <div class="spoke-calculator__physical-settings-grid">
-                  <div class="spoke-calculator__setting-field">
-                    <label for="front-spoke-head-type">{{ t('resourcesSpokeCalculator.calculator.physicalCorrections.spokeHeadType') }}</label>
-                    <SpokeCalculatorSelect id="front-spoke-head-type" v-model="frontConfig.spokeHeadType" :options="spokeHeadTypeOptions" />
-                  </div>
-                  <div v-if="frontConfig.spokeHeadType === 'j_bend'" class="spoke-calculator__setting-field">
-                    <label for="front-spoke-hole-diameter">{{ t('resourcesSpokeCalculator.calculator.physicalCorrections.spokeHoleDiameter') }}</label>
-                    <input id="front-spoke-hole-diameter" v-model.number="frontConfig.spokeHoleDiameterMm" class="spoke-calculator__physical-number" type="number" min="0" max="10" step="0.1" />
-                  </div>
-                  <div v-if="frontConfig.spokeHeadType === 'straight_pull'" class="spoke-calculator__setting-field">
-                    <label for="front-straight-pull-offset">{{ t('resourcesSpokeCalculator.calculator.physicalCorrections.straightPullOffset') }}</label>
-                    <input id="front-straight-pull-offset" v-model.number="frontConfig.straightPullTangentOffsetMm" class="spoke-calculator__physical-number" type="number" min="-20" max="20" step="0.1" />
-                  </div>
-                  <div class="spoke-calculator__setting-field">
-                    <label for="front-spoke-profile">{{ t('resourcesSpokeCalculator.calculator.physicalCorrections.spokeProfile') }}</label>
-                    <SpokeCalculatorSelect id="front-spoke-profile" v-model="frontConfig.spokeProfile" :options="spokeProfileOptions" />
-                  </div>
-                  <div class="spoke-calculator__setting-field">
-                    <label for="front-target-tension">{{ t('resourcesSpokeCalculator.calculator.physicalCorrections.targetTension') }}</label>
-                    <input id="front-target-tension" v-model.number="frontConfig.targetTensionN" class="spoke-calculator__physical-number" type="number" min="0" max="3000" step="50" />
-                  </div>
-                  <div class="spoke-calculator__setting-field">
-                    <label for="front-alternating-offset">{{ t('resourcesSpokeCalculator.calculator.physicalCorrections.alternatingOffset') }}</label>
-                    <input id="front-alternating-offset" v-model.number="frontConfig.alternatingDrillingOffsetMm" class="spoke-calculator__physical-number" type="number" min="-5" max="5" step="0.1" />
-                  </div>
-                  <div class="spoke-calculator__setting-field">
-                    <label for="front-interlacing">{{ t('resourcesSpokeCalculator.calculator.physicalCorrections.interlacing') }}</label>
-                    <SpokeCalculatorSelect id="front-interlacing" v-model="frontConfig.interlacing" :options="interlacingOptions" />
-                  </div>
-                  <div v-if="frontConfig.interlacing === 'on' && frontConfig.crossing > 0" class="spoke-calculator__setting-field">
-                    <label for="front-interlace-compensation">{{ t('resourcesSpokeCalculator.calculator.physicalCorrections.interlaceCompensation') }}</label>
-                    <input id="front-interlace-compensation" v-model.number="frontConfig.interlaceCompensationMm" class="spoke-calculator__physical-number" type="number" min="0" max="5" step="0.05" />
-                  </div>
-                </div>
-              </details>
-            </div>
+            <SpokeCalculatorBuildSettings
+              side="front"
+              :config="frontConfig"
+              :spoke-count-options="spokeCountOptions"
+              :lacing-options="lacingOptions"
+              :nipple-type-options="nippleTypeOptions"
+              :rim-brand-options="rimBrandOptions"
+              :rim-model-options="frontRimModelOptions"
+              :hub-brand-options="hubBrandOptions"
+              :hub-model-options="frontHubModelOptions"
+              :spoke-head-type-options="spokeHeadTypeOptions"
+              :spoke-profile-options="spokeProfileOptions"
+              :interlacing-options="interlacingOptions"
+            />
 
           </div>
 
@@ -229,154 +95,20 @@
               </div>
             </div>
 
-            <div class="spoke-calculator__build-settings">
-              <div class="spoke-calculator__build-settings-header">
-                <p class="spoke-calculator__build-settings-title">
-                  {{ t('resourcesSpokeCalculator.calculator.buildSettings.title') }}
-                </p>
-              </div>
-
-              <div class="spoke-calculator__build-settings-grid">
-                <div class="spoke-calculator__setting-field">
-                  <label for="rear-spoke-count" class="block text-xs font-medium tz-text-secondary">
-                    {{ t('resourcesSpokeCalculator.calculator.buildSettings.spokeCount') }}
-                  </label>
-                  <SpokeCalculatorSelect
-                    id="rear-spoke-count"
-                    v-model="rearConfig.spokeCount"
-                    :options="spokeCountOptions"
-                  />
-                </div>
-
-                <div class="spoke-calculator__setting-field">
-                  <label for="rear-lacing" class="block text-xs font-medium tz-text-secondary">
-                    {{ t('resourcesSpokeCalculator.calculator.buildSettings.lacingPattern') }}
-                  </label>
-                  <SpokeCalculatorSelect
-                    id="rear-lacing"
-                    v-model="rearConfig.crossing"
-                    :options="lacingOptions"
-                  />
-                </div>
-
-                <div class="spoke-calculator__setting-field">
-                  <label for="rear-nipple" class="block text-xs font-medium tz-text-secondary">
-                    {{ t('resourcesSpokeCalculator.calculator.buildSettings.nippleType') }}
-                  </label>
-                  <SpokeCalculatorSelect
-                    id="rear-nipple"
-                    v-model="rearConfig.nippleType"
-                    :options="nippleTypeOptions"
-                  />
-                </div>
-
-                <div v-if="rearConfig.nippleType === 'hidden'" class="spoke-calculator__setting-field">
-                  <label for="rear-nipple-length" class="block text-xs font-medium tz-text-secondary">
-                    {{ t('resourcesSpokeCalculator.calculator.buildSettings.nippleLength') }}
-                  </label>
-                  <div class="spoke-calculator__unit-field">
-                    <input
-                      id="rear-nipple-length"
-                      v-model.number="rearConfig.nippleLength"
-                      type="number"
-                      min="0"
-                      max="30"
-                      :placeholder="t('resourcesSpokeCalculator.calculator.buildSettings.nippleLengthPlaceholder')"
-                      class="spoke-calculator__control spoke-calculator__control--with-unit"
-                    />
-                    <span class="spoke-calculator__unit">{{ t('resourcesSpokeCalculator.calculator.results.unit') }}</span>
-                  </div>
-                </div>
-
-                <div class="spoke-calculator__setting-field">
-                  <label for="rear-rim-brand" class="block text-xs font-medium tz-text-secondary">
-                    {{ t('resourcesSpokeCalculator.calculator.buildSettings.rimBrand') }}
-                  </label>
-                  <SpokeCalculatorSelect
-                    id="rear-rim-brand"
-                    v-model="rearConfig.rimBrandId"
-                    :options="rimBrandOptions"
-                    :placeholder="t('resourcesSpokeCalculator.calculator.buildSettings.selectBrand')"
-                  />
-                </div>
-
-                <div class="spoke-calculator__setting-field">
-                  <label for="rear-rim-model" class="block text-xs font-medium tz-text-secondary">
-                    {{ t('resourcesSpokeCalculator.calculator.buildSettings.rimModel') }}
-                  </label>
-                  <SpokeCalculatorSelect
-                    id="rear-rim-model"
-                    v-model="rearConfig.rimModelId"
-                    :disabled="!rearRimModels.length"
-                    :options="rearRimModelOptions"
-                    :placeholder="t('resourcesSpokeCalculator.calculator.buildSettings.selectModel')"
-                  />
-                </div>
-
-                <div class="spoke-calculator__setting-field">
-                  <label for="rear-hub-brand" class="block text-xs font-medium tz-text-secondary">
-                    {{ t('resourcesSpokeCalculator.calculator.buildSettings.hubBrand') }}
-                  </label>
-                  <SpokeCalculatorSelect
-                    id="rear-hub-brand"
-                    v-model="rearConfig.hubBrandId"
-                    :options="hubBrandOptions"
-                    :placeholder="t('resourcesSpokeCalculator.calculator.buildSettings.selectBrand')"
-                  />
-                </div>
-
-                <div class="spoke-calculator__setting-field">
-                  <label for="rear-hub-model" class="block text-xs font-medium tz-text-secondary">
-                    {{ t('resourcesSpokeCalculator.calculator.buildSettings.hubModel') }}
-                  </label>
-                  <SpokeCalculatorSelect
-                    id="rear-hub-model"
-                    v-model="rearConfig.hubModelId"
-                    :disabled="!rearHubModels.length"
-                    :options="rearHubModelOptions"
-                    :placeholder="t('resourcesSpokeCalculator.calculator.buildSettings.selectModel')"
-                  />
-                </div>
-              </div>
-
-              <details open class="spoke-calculator__physical-settings">
-                <summary>{{ t('resourcesSpokeCalculator.calculator.physicalCorrections.title') }}</summary>
-                <div class="spoke-calculator__physical-settings-grid">
-                  <div class="spoke-calculator__setting-field">
-                    <label for="rear-spoke-head-type">{{ t('resourcesSpokeCalculator.calculator.physicalCorrections.spokeHeadType') }}</label>
-                    <SpokeCalculatorSelect id="rear-spoke-head-type" v-model="rearConfig.spokeHeadType" :options="spokeHeadTypeOptions" />
-                  </div>
-                  <div v-if="rearConfig.spokeHeadType === 'j_bend'" class="spoke-calculator__setting-field">
-                    <label for="rear-spoke-hole-diameter">{{ t('resourcesSpokeCalculator.calculator.physicalCorrections.spokeHoleDiameter') }}</label>
-                    <input id="rear-spoke-hole-diameter" v-model.number="rearConfig.spokeHoleDiameterMm" class="spoke-calculator__physical-number" type="number" min="0" max="10" step="0.1" />
-                  </div>
-                  <div v-if="rearConfig.spokeHeadType === 'straight_pull'" class="spoke-calculator__setting-field">
-                    <label for="rear-straight-pull-offset">{{ t('resourcesSpokeCalculator.calculator.physicalCorrections.straightPullOffset') }}</label>
-                    <input id="rear-straight-pull-offset" v-model.number="rearConfig.straightPullTangentOffsetMm" class="spoke-calculator__physical-number" type="number" min="-20" max="20" step="0.1" />
-                  </div>
-                  <div class="spoke-calculator__setting-field">
-                    <label for="rear-spoke-profile">{{ t('resourcesSpokeCalculator.calculator.physicalCorrections.spokeProfile') }}</label>
-                    <SpokeCalculatorSelect id="rear-spoke-profile" v-model="rearConfig.spokeProfile" :options="spokeProfileOptions" />
-                  </div>
-                  <div class="spoke-calculator__setting-field">
-                    <label for="rear-target-tension">{{ t('resourcesSpokeCalculator.calculator.physicalCorrections.targetTension') }}</label>
-                    <input id="rear-target-tension" v-model.number="rearConfig.targetTensionN" class="spoke-calculator__physical-number" type="number" min="0" max="3000" step="50" />
-                  </div>
-                  <div class="spoke-calculator__setting-field">
-                    <label for="rear-alternating-offset">{{ t('resourcesSpokeCalculator.calculator.physicalCorrections.alternatingOffset') }}</label>
-                    <input id="rear-alternating-offset" v-model.number="rearConfig.alternatingDrillingOffsetMm" class="spoke-calculator__physical-number" type="number" min="-5" max="5" step="0.1" />
-                  </div>
-                  <div class="spoke-calculator__setting-field">
-                    <label for="rear-interlacing">{{ t('resourcesSpokeCalculator.calculator.physicalCorrections.interlacing') }}</label>
-                    <SpokeCalculatorSelect id="rear-interlacing" v-model="rearConfig.interlacing" :options="interlacingOptions" />
-                  </div>
-                  <div v-if="rearConfig.interlacing === 'on' && rearConfig.crossing > 0" class="spoke-calculator__setting-field">
-                    <label for="rear-interlace-compensation">{{ t('resourcesSpokeCalculator.calculator.physicalCorrections.interlaceCompensation') }}</label>
-                    <input id="rear-interlace-compensation" v-model.number="rearConfig.interlaceCompensationMm" class="spoke-calculator__physical-number" type="number" min="0" max="5" step="0.05" />
-                  </div>
-                </div>
-              </details>
-            </div>
+            <SpokeCalculatorBuildSettings
+              side="rear"
+              :config="rearConfig"
+              :spoke-count-options="spokeCountOptions"
+              :lacing-options="lacingOptions"
+              :nipple-type-options="nippleTypeOptions"
+              :rim-brand-options="rimBrandOptions"
+              :rim-model-options="rearRimModelOptions"
+              :hub-brand-options="hubBrandOptions"
+              :hub-model-options="rearHubModelOptions"
+              :spoke-head-type-options="spokeHeadTypeOptions"
+              :spoke-profile-options="spokeProfileOptions"
+              :interlacing-options="interlacingOptions"
+            />
         </div>
 
         </div>
@@ -411,7 +143,7 @@
 
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue'
-import SpokeCalculatorSelect from '~/components/SpokeCalculatorSelect.vue'
+import SpokeCalculatorBuildSettings from '~/components/SpokeCalculatorBuildSettings.vue'
 import SpokeCalculatorResults from '~/components/SpokeCalculatorResults.vue'
 import type { HubGeometry, HubModel, RimModel } from '~/data/spoke-calculator/database'
 import { useSpokeCalculator } from '~/composables/useSpokeCalculator'
@@ -1037,89 +769,6 @@ watch(
   color: var(--tz-text-secondary) !important;
 }
 
-.spoke-calculator__build-settings {
-  display: grid;
-  gap: 0.75rem;
-  padding: 0.75rem;
-  border: 1px solid var(--spoke-border);
-  border-radius: 0.625rem;
-  background: rgba(255, 255, 255, 0.72);
-}
-
-.spoke-calculator__build-settings-header {
-  display: flex;
-  min-width: 0;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 0.75rem;
-}
-
-.spoke-calculator__build-settings-title {
-  margin: 0;
-  color: var(--tz-text-primary);
-  font-size: 0.8rem;
-  font-weight: 800;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-
-.spoke-calculator__build-settings-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.75rem;
-  min-width: 0;
-}
-
-.spoke-calculator__setting-field {
-  display: grid;
-  gap: 0.3rem;
-  min-width: 0;
-}
-
-.spoke-calculator__physical-settings {
-  border-top: 1px solid var(--spoke-border);
-  padding-top: 0.65rem;
-}
-
-.spoke-calculator__physical-settings > summary {
-  color: var(--tz-text-secondary);
-  cursor: pointer;
-  font-size: 0.75rem;
-  font-weight: 700;
-  line-height: 1.35;
-}
-
-.spoke-calculator__physical-settings-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.65rem 0.75rem;
-  margin-top: 0.75rem;
-}
-
-.spoke-calculator__physical-settings-grid label {
-  font-size: 0.7rem;
-  line-height: 1.3;
-}
-
-.spoke-calculator__physical-number {
-  width: 100%;
-  min-width: 0;
-  min-height: 2.75rem;
-  border: 1px solid var(--spoke-border);
-  border-radius: 9999px;
-  background: var(--spoke-control-surface);
-  color: var(--tz-text-primary);
-  padding: 0.6rem 0.85rem;
-  font-size: 0.875rem;
-  line-height: 1.25rem;
-}
-
-.spoke-calculator__physical-number:focus-visible {
-  outline: none;
-  border-color: var(--spoke-border-strong);
-  box-shadow: 0 0 0 1px var(--spoke-focus-ring);
-}
-
 .spoke-calculator__blueprint-sheet {
   display: grid;
   gap: 0.75rem;
@@ -1240,18 +889,6 @@ watch(
     border-top: 1px solid var(--spoke-border);
   }
 
-  .spoke-calculator__build-settings-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .spoke-calculator__physical-settings-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .spoke-calculator__build-settings-header {
-    flex-direction: column;
-  }
-
   .spoke-calculator__blueprint-sheet {
     padding: 0;
     border: 0;
@@ -1260,8 +897,7 @@ watch(
     box-shadow: none;
   }
 
-  .spoke-calculator__legend-table,
-  .spoke-calculator__build-settings {
+  .spoke-calculator__legend-table {
     padding: 0;
     border: 0;
     border-radius: 0;
@@ -1282,11 +918,6 @@ watch(
   .spoke-calculator__legend-fields {
     grid-template-columns: 1fr;
     gap: 0.4rem;
-  }
-
-  .spoke-calculator__build-settings-header {
-    padding-bottom: 0.35rem;
-    border-bottom: 1px solid var(--spoke-border);
   }
 
   .spoke-wheel {
