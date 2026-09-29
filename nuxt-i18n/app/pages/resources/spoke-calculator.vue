@@ -14,7 +14,8 @@
         />
         <SpokeERDStep
           v-else-if="activeWizardStep === 2"
-          v-model="erdStepValue"
+          v-model:front-erd="frontErdMm"
+          v-model:rear-erd="rearErdMm"
           :current-step="activeWizardStep"
           @select-step="activeWizardStep = $event"
           @previous="activeWizardStep = 1"
@@ -24,7 +25,10 @@
         <SpokePhysicsDiagrams class="spoke-page__physics-card" />
 
         <div class="support-page__calculator-wrapper">
-          <SpokeCalculatorBlueprint />
+          <SpokeCalculatorBlueprint
+            v-model:front-erd="frontErdMm"
+            v-model:rear-erd="rearErdMm"
+          />
 
           <div class="spoke-smart-search-section mt-16 pt-10">
              <div class="text-center mb-8">
@@ -221,7 +225,8 @@ const { loadPageMessages } = usePageMessages('resourcesSpokeCalculator')
 
 const activeWizardStep = ref(1)
 const selectedSpokeHeadType = ref<'j_bend' | 'straight_pull'>('j_bend')
-const erdStepValue = ref<number | null>(null)
+const frontErdMm = ref<number | null>(null)
+const rearErdMm = ref<number | null>(null)
 
 await loadPageMessages(locale.value)
 

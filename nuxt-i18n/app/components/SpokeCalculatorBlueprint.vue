@@ -726,6 +726,16 @@ import { useSpokeCalculatorCatalog } from '~/composables/useSpokeCalculatorCatal
 import { useApiRequest } from '~/composables/useApiRequest'
 import { useI18n } from '#imports'
 
+const props = defineProps<{
+  frontErd?: number | null
+  rearErd?: number | null
+}>()
+
+const emit = defineEmits<{
+  'update:frontErd': [value: number | null]
+  'update:rearErd': [value: number | null]
+}>()
+
 interface WheelConfig {
   spokeCount: number
   crossing: number
@@ -939,6 +949,47 @@ const applyHubGeometry = (config: WheelConfig, geometry?: HubGeometry | null) =>
   config.rightFlangePcd = geometry?.rightFlangePcd ?? null
 	config.spokeHoleDiameterMm = geometry?.spokeHoleDiameter ?? config.spokeHoleDiameterMm
 }
+
+// Keep the wizard's front and rear ERD values synchronized with the matching
+// calculator configs. These channels stay separate so one wheel can never
+// overwrite the other wheel's ERD.
+watch(
+  () => props.frontErd,
+  (value) => {
+    if (value !== undefined && frontConfig.erd !== value) {
+      frontConfig.erd = value
+    }
+  },
+  { immediate: true },
+)
+
+watch(
+  () => props.rearErd,
+  (value) => {
+    if (value !== undefined && rearConfig.erd !== value) {
+      rearConfig.erd = value
+    }
+  },
+  { immediate: true },
+)
+
+watch(
+  () => frontConfig.erd,
+  (value) => {
+    if (props.frontErd !== undefined && props.frontErd !== value) {
+      emit('update:frontErd', value)
+    }
+  },
+)
+
+watch(
+  () => rearConfig.erd,
+  (value) => {
+    if (props.rearErd !== undefined && props.rearErd !== value) {
+      emit('update:rearErd', value)
+    }
+  },
+)
 
 // --- Watchers for Auto-Population ---
 

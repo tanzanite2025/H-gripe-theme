@@ -23,27 +23,54 @@
         <span class="spoke-erd-step__input-kicker">
           {{ t('resourcesSpokeCalculator.calculator.physicalCorrections.erdInputKicker', 'STEP 2 INPUT') }}
         </span>
-        <label for="spoke-erd-step-input" class="spoke-erd-step__input-label">
+        <strong class="spoke-erd-step__input-label">
           {{ t('resourcesSpokeCalculator.parameter.items.erd.title') }}
-        </label>
+        </strong>
         <p class="spoke-erd-step__input-help">
-          {{ t('resourcesSpokeCalculator.calculator.physicalCorrections.erdInputHelp', 'Enter the measured ERD in millimetres.') }}
+          {{ t('resourcesSpokeCalculator.calculator.physicalCorrections.erdPairHelp', 'Enter the front and rear rim ERD values separately.') }}
         </p>
       </div>
 
-      <div class="spoke-erd-step__unit-field">
-        <input
-          id="spoke-erd-step-input"
-          v-model.number="erdMm"
-          class="spoke-erd-step__input"
-          type="number"
-          min="250"
-          max="800"
-          step="0.1"
-          inputmode="decimal"
-          :placeholder="t('resourcesSpokeCalculator.calculator.physicalCorrections.erdPlaceholder', '例如 598')"
-        />
-        <span class="spoke-erd-step__unit">mm</span>
+      <div class="spoke-erd-step__input-fields">
+        <label for="spoke-erd-front-input" class="spoke-erd-step__input-field">
+          <span class="spoke-erd-step__input-field-label">
+            {{ t('resourcesSpokeCalculator.calculator.physicalCorrections.frontErdLabel', 'Front wheel ERD') }}
+          </span>
+          <span class="spoke-erd-step__unit-field">
+            <input
+              id="spoke-erd-front-input"
+              v-model.number="frontErdMm"
+              class="spoke-erd-step__input"
+              type="number"
+              min="250"
+              max="800"
+              step="0.1"
+              inputmode="decimal"
+              :placeholder="t('resourcesSpokeCalculator.calculator.physicalCorrections.erdPlaceholder', '例如 598')"
+            />
+            <span class="spoke-erd-step__unit">mm</span>
+          </span>
+        </label>
+
+        <label for="spoke-erd-rear-input" class="spoke-erd-step__input-field">
+          <span class="spoke-erd-step__input-field-label">
+            {{ t('resourcesSpokeCalculator.calculator.physicalCorrections.rearErdLabel', 'Rear wheel ERD') }}
+          </span>
+          <span class="spoke-erd-step__unit-field">
+            <input
+              id="spoke-erd-rear-input"
+              v-model.number="rearErdMm"
+              class="spoke-erd-step__input"
+              type="number"
+              min="250"
+              max="800"
+              step="0.1"
+              inputmode="decimal"
+              :placeholder="t('resourcesSpokeCalculator.calculator.physicalCorrections.erdPlaceholder', '例如 598')"
+            />
+            <span class="spoke-erd-step__unit">mm</span>
+          </span>
+        </label>
       </div>
     </div>
 
@@ -107,21 +134,29 @@ import SpokeStepProgress from '~/components/SpokeStepProgress.vue'
 const { t } = useI18n()
 const props = withDefaults(defineProps<{
   currentStep?: number
-  modelValue?: number | null
+  frontErd?: number | null
+  rearErd?: number | null
 }>(), {
   currentStep: 2,
-  modelValue: null,
+  frontErd: null,
+  rearErd: null,
 })
 
 const emit = defineEmits<{
-  'update:modelValue': [value: number | null]
+  'update:frontErd': [value: number | null]
+  'update:rearErd': [value: number | null]
   'select-step': [step: number]
   previous: []
 }>()
 
-const erdMm = computed({
-  get: () => props.modelValue,
-  set: value => emit('update:modelValue', value),
+const frontErdMm = computed({
+  get: () => props.frontErd,
+  set: value => emit('update:frontErd', value),
+})
+
+const rearErdMm = computed({
+  get: () => props.rearErd,
+  set: value => emit('update:rearErd', value),
 })
 </script>
 
@@ -323,7 +358,7 @@ const erdMm = computed({
 
 .spoke-erd-step__input-panel {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(220px, 300px);
+  grid-template-columns: minmax(0, 1fr) minmax(420px, 1.15fr);
   gap: 18px;
   align-items: center;
   margin-bottom: 24px;
@@ -356,6 +391,26 @@ const erdMm = computed({
   font-size: 15px;
   font-weight: 800;
   line-height: 1.35;
+}
+
+.spoke-erd-step__input-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  min-width: 0;
+}
+
+.spoke-erd-step__input-field {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.spoke-erd-step__input-field-label {
+  color: #047857;
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1.25;
 }
 
 .spoke-erd-step__input-help {
@@ -412,6 +467,10 @@ const erdMm = computed({
     gap: 10px;
     margin-bottom: 18px;
     padding: 15px;
+  }
+
+  .spoke-erd-step__input-fields {
+    grid-template-columns: 1fr;
   }
 
   .spoke-erd-step__measurement {
