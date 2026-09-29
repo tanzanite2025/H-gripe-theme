@@ -63,14 +63,6 @@
     <details open class="spoke-calculator__physical-settings">
       <summary>{{ t('resourcesSpokeCalculator.calculator.physicalCorrections.title') }}</summary>
       <div class="spoke-calculator__physical-settings-grid">
-        <div class="spoke-calculator__setting-field">
-          <label :for="fieldId('spoke-head-type')">{{ t('resourcesSpokeCalculator.calculator.physicalCorrections.spokeHeadType') }}</label>
-          <SpokeCalculatorSelect
-            :id="fieldId('spoke-head-type')"
-            v-model="config.spokeHeadType"
-            :options="options.spokeHeadTypeOptions"
-          />
-        </div>
         <div v-if="config.spokeHeadType === 'straight_pull'" class="spoke-calculator__setting-field">
           <label :for="fieldId('straight-pull-offset')">{{ t('resourcesSpokeCalculator.calculator.physicalCorrections.straightPullOffset') }}</label>
           <input
@@ -81,14 +73,6 @@
             min="-20"
             max="20"
             step="0.1"
-          />
-        </div>
-        <div class="spoke-calculator__setting-field">
-          <label :for="fieldId('spoke-profile')">{{ t('resourcesSpokeCalculator.calculator.physicalCorrections.spokeProfile') }}</label>
-          <SpokeCalculatorSelect
-            :id="fieldId('spoke-profile')"
-            v-model="config.spokeProfile"
-            :options="options.spokeProfileOptions"
           />
         </div>
         <div class="spoke-calculator__setting-field">
