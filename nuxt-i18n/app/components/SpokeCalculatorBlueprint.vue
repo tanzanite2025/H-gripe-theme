@@ -687,11 +687,15 @@ import { useI18n } from '#imports'
 const props = defineProps<{
   frontErd?: number | null
   rearErd?: number | null
+  frontGeometry?: HubGeometry | null
+  rearGeometry?: HubGeometry | null
 }>()
 
 const emit = defineEmits<{
   'update:frontErd': [value: number | null]
   'update:rearErd': [value: number | null]
+  'update:frontGeometry': [value: HubGeometry]
+  'update:rearGeometry': [value: HubGeometry]
 }>()
 
 interface WheelConfig {
@@ -945,6 +949,68 @@ watch(
   (value) => {
     if (props.rearErd !== undefined && props.rearErd !== value) {
       emit('update:rearErd', value)
+    }
+  },
+)
+
+type FlangeGeometryKey = 'leftFlange' | 'rightFlange' | 'leftFlangePcd' | 'rightFlangePcd'
+
+const flangeGeometryKeys: FlangeGeometryKey[] = [
+  'leftFlange',
+  'rightFlange',
+  'leftFlangePcd',
+  'rightFlangePcd',
+]
+
+const geometryFromConfig = (config: WheelConfig): HubGeometry => ({
+  leftFlange: config.leftFlange,
+  rightFlange: config.rightFlange,
+  leftFlangePcd: config.leftFlangePcd,
+  rightFlangePcd: config.rightFlangePcd,
+})
+
+const geometryMatches = (current: HubGeometry | null | undefined, next: HubGeometry) => (
+  Boolean(current)
+  && flangeGeometryKeys.every(key => current?.[key] === next[key])
+)
+
+const applyExternalGeometry = (config: WheelConfig, geometry?: HubGeometry | null) => {
+  if (!geometry) return
+  for (const key of flangeGeometryKeys) {
+    if (config[key] !== geometry[key]) {
+      config[key] = geometry[key]
+    }
+  }
+}
+
+watch(
+  () => props.frontGeometry,
+  geometry => applyExternalGeometry(frontConfig, geometry),
+  { immediate: true, deep: true },
+)
+
+watch(
+  () => props.rearGeometry,
+  geometry => applyExternalGeometry(rearConfig, geometry),
+  { immediate: true, deep: true },
+)
+
+watch(
+  () => flangeGeometryKeys.map(key => frontConfig[key]),
+  () => {
+    const next = geometryFromConfig(frontConfig)
+    if (!geometryMatches(props.frontGeometry, next)) {
+      emit('update:frontGeometry', next)
+    }
+  },
+)
+
+watch(
+  () => flangeGeometryKeys.map(key => rearConfig[key]),
+  () => {
+    const next = geometryFromConfig(rearConfig)
+    if (!geometryMatches(props.rearGeometry, next)) {
+      emit('update:rearGeometry', next)
     }
   },
 )

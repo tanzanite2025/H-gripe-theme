@@ -23,6 +23,8 @@
         />
         <SpokePCDStep
           v-else-if="activeWizardStep === 3"
+          v-model:front-geometry="frontGeometry"
+          v-model:rear-geometry="rearGeometry"
           :current-step="activeWizardStep"
           @select-step="activeWizardStep = $event"
           @previous="activeWizardStep = 2"
@@ -35,6 +37,8 @@
           <SpokeCalculatorBlueprint
             v-model:front-erd="frontErdMm"
             v-model:rear-erd="rearErdMm"
+            v-model:front-geometry="frontGeometry"
+            v-model:rear-geometry="rearGeometry"
           />
 
           <div class="spoke-smart-search-section mt-16 pt-10">
@@ -220,6 +224,7 @@ import SpokePCDStep from '~/components/SpokePCDStep.vue'
 import SpokePhysicsDiagrams from '~/components/SpokePhysicsDiagrams.vue'
 import SpokeSmartSearch from '~/components/SpokeSmartSearch.vue'
 import UserFeedbackThread from '~/components/UserFeedbackThread.vue'
+import type { HubGeometry } from '~/data/spoke-calculator/database'
 
 import GuideImage from '~/components/GuideImage.vue'
 import { usePageSubNavigationTab } from '~/composables/usePageSubNavigationTab'
@@ -235,6 +240,14 @@ const activeWizardStep = ref(1)
 const selectedSpokeHeadType = ref<'j_bend' | 'straight_pull'>('j_bend')
 const frontErdMm = ref<number | null>(null)
 const rearErdMm = ref<number | null>(null)
+const emptyHubGeometry = (): HubGeometry => ({
+  leftFlange: null,
+  rightFlange: null,
+  leftFlangePcd: null,
+  rightFlangePcd: null,
+})
+const frontGeometry = ref<HubGeometry>(emptyHubGeometry())
+const rearGeometry = ref<HubGeometry>(emptyHubGeometry())
 
 await loadPageMessages(locale.value)
 
