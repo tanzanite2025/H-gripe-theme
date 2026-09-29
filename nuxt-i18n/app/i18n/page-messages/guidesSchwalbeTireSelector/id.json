@@ -1,0 +1,18 @@
+{
+  "filters": {
+    "tireWidthMin": "Min",
+    "tireWidthMax": "Maks",
+    "minimumLoad": "Kapasitas beban minimum per ban",
+    "minimumLoadHint": "Nilai ini dibandingkan dengan kapasitas beban resmi untuk satu ban. Ini bukan batas berat pesepeda; beban pesepeda, sepeda, dan perlengkapan terbagi antara ban depan dan belakang.",
+    "openFilters": "Filter",
+    "dialogTitle": "Filter katalog",
+    "closeFilters": "Tutup filter",
+    "showResults": "Lihat hasil",
+    "activeCount": "{count} aktif",
+    "groupDimensions": "Ukuran",
+    "groupCapacity": "Beban & penggunaan",
+    "groupConstruction": "Konstruksi",
+    "groupAppearance": "Warna & kompon",
+    "selectedCount": "{count} dipilih"
+  }
+}

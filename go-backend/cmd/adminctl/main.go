@@ -38,6 +38,8 @@ func run(args []string, stdout, stderr io.Writer) error {
 		return runEnsureAdmin(args[1:], stdout, stderr)
 	case "audit-pricing-snapshots":
 		return runAuditPricingSnapshots(args[1:], stdout, stderr)
+	case "audit-schwalbe-catalog-refresh":
+		return runAuditSchwalbeCatalogRefresh(args[1:], stdout, stderr)
 	case "help", "-h", "--help":
 		printUsage(stdout)
 		return nil
@@ -45,6 +47,71 @@ func run(args []string, stdout, stderr io.Writer) error {
 		printUsage(stderr)
 		return fmt.Errorf("unknown command %q", args[0])
 	}
+}
+
+func runAuditSchwalbeCatalogRefresh(args []string, stdout, stderr io.Writer) error {
+	fs := flag.NewFlagSet("audit-schwalbe-catalog-refresh", flag.ContinueOnError)
+	fs.SetOutput(stderr)
+	configPath := fs.String("config", "", "optional app config file")
+	snapshotPath := fs.String("snapshot", "", "new catalog snapshot JSON from import-schwalbe-catalog.mjs")
+	format := fs.String("format", "text", "output format: text or json")
+	if err := fs.Parse(args); err != nil {
+		return err
+	}
+	if strings.TrimSpace(*snapshotPath) == "" {
+		return errors.New("-snapshot is required")
+	}
+	if *format != "text" && *format != "json" {
+		return errors.New("format must be text or json")
+	}
+
+	snapshotFile, err := os.Open(*snapshotPath)
+	if err != nil {
+		return fmt.Errorf("open snapshot: %w", err)
+	}
+	defer snapshotFile.Close()
+	var snapshot []service.SchwalbeCatalogRefreshSnapshotRow
+	decoder := json.NewDecoder(snapshotFile)
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(&snapshot); err != nil {
+		return fmt.Errorf("decode snapshot JSON: %w", err)
+	}
+	if err := ensureJSONEOF(decoder); err != nil {
+		return fmt.Errorf("decode snapshot JSON: %w", err)
+	}
+
+	dbCfg, _, err := readRuntimeConfig(*configPath)
+	if err != nil {
+		return err
+	}
+	db, err := database.Init(dbCfg)
+	if err != nil {
+		return err
+	}
+	if sqlDB, dbErr := db.DB(); dbErr == nil {
+		defer sqlDB.Close()
+	}
+
+	report, err := service.NewSchwalbeCatalogRefreshAuditService(db).Review(context.Background(), snapshot)
+	if err != nil {
+		return err
+	}
+	if *format == "json" {
+		encoder := json.NewEncoder(stdout)
+		encoder.SetIndent("", "  ")
+		return encoder.Encode(report)
+	}
+	return service.WriteSchwalbeCatalogRefreshAuditText(stdout, report)
+}
+
+func ensureJSONEOF(decoder *json.Decoder) error {
+	var extra any
+	if err := decoder.Decode(&extra); err == io.EOF {
+		return nil
+	} else if err != nil {
+		return err
+	}
+	return errors.New("unexpected content after snapshot JSON")
 }
 
 func runAuditPricingSnapshots(args []string, stdout, stderr io.Writer) error {
@@ -254,6 +321,7 @@ func envIntDefaultAny(keys []string, fallback int) int {
 func printUsage(w io.Writer) {
 	fmt.Fprintln(w, "Usage: adminctl ensure-admin [-config path] [-operator label]")
 	fmt.Fprintln(w, "       adminctl audit-pricing-snapshots [-config path] [-batch-size N] [-max-orders N] [-format text|json]")
+	fmt.Fprintln(w, "       adminctl audit-schwalbe-catalog-refresh -snapshot path [-config path] [-format text|json]")
 	fmt.Fprintln(w, "")
 	fmt.Fprintln(w, "Required environment:")
 	fmt.Fprintln(w, "  ADMIN_EMAIL")

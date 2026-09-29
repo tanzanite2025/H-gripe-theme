@@ -1,0 +1,18 @@
+{
+  "filters": {
+    "tireWidthMin": "最小",
+    "tireWidthMax": "最大",
+    "minimumLoad": "タイヤ1本あたりの最低荷重",
+    "minimumLoadHint": "公式のタイヤ1本あたりの荷重値と比較します。これはライダーの体重上限ではありません。ライダー、自転車、装備の荷重は前後のタイヤに分散されます。",
+    "openFilters": "絞り込み",
+    "dialogTitle": "カタログを絞り込む",
+    "closeFilters": "絞り込みを閉じる",
+    "showResults": "結果を表示",
+    "activeCount": "有効 {count} 件",
+    "groupDimensions": "サイズ",
+    "groupCapacity": "荷重・用途",
+    "groupConstruction": "構造",
+    "groupAppearance": "カラー・コンパウンド",
+    "selectedCount": "{count} 件選択"
+  }
+}

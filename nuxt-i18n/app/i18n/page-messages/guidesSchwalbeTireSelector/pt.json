@@ -1,0 +1,18 @@
+{
+  "filters": {
+    "tireWidthMin": "Mín.",
+    "tireWidthMax": "Máx.",
+    "minimumLoad": "Capacidade de carga mínima por pneu",
+    "minimumLoadHint": "Comparada com a carga oficial de um único pneu. Não é um limite de peso do ciclista; a carga do ciclista, da bicicleta e do equipamento é distribuída entre os pneus dianteiro e traseiro.",
+    "openFilters": "Filtros",
+    "dialogTitle": "Filtrar catálogo",
+    "closeFilters": "Fechar filtros",
+    "showResults": "Ver resultados",
+    "activeCount": "{count} ativos",
+    "groupDimensions": "Tamanho",
+    "groupCapacity": "Carga e uso",
+    "groupConstruction": "Construção",
+    "groupAppearance": "Cor e composto",
+    "selectedCount": "{count} selecionados"
+  }
+}

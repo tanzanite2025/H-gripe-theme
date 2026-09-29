@@ -50,11 +50,18 @@ export const tireGuideTabs = [
     description: 'Size charts by tire width, rim range, and fit reference.',
   },
   {
-    id: 'match',
-    labelKey: 'guidesTireguides.tabs.match.label',
-    fallback: 'Match',
-    descriptionKey: 'guidesTireguides.tabs.match.description',
-    description: 'Match tires with rim profiles and riding conditions.',
+    id: 'tire-frame-clearance',
+    labelKey: 'guidesTireguides.tabs.tireFrameClearance.label',
+    fallback: 'Tire and frame clearance',
+    descriptionKey: 'guidesTireguides.tabs.tireFrameClearance.description',
+    description: 'Check tire dimensions against frame, fork, and stay clearance.',
+  },
+  {
+    id: 'schwalbe-tire-circumference',
+    labelKey: 'guidesTireguides.tabs.schwalbeCircumference.label',
+    fallback: 'Schwalbe tire circumference',
+    descriptionKey: 'guidesTireguides.tabs.schwalbeCircumference.description',
+    description: 'Reference circumference values for Schwalbe bicycle tire sizes.',
   },
   {
     id: 'tubeless',
@@ -90,6 +97,14 @@ export const tireGuideTabs = [
     fallback: 'Inner tube',
     descriptionKey: 'guidesTireguides.tabs.innerTube.description',
     description: 'Tube selection notes, valve types, and sizing basics.',
+  },
+  {
+    id: 'schwalbe-tire-selector',
+    labelKey: 'guidesTireguides.tabs.schwalbe.label',
+    fallback: 'Schwalbe tire selector',
+    descriptionKey: 'guidesTireguides.tabs.schwalbe.description',
+    description: 'Search the sourced Schwalbe tire catalog by model and size.',
+    to: '/guides/tireguides/schwalbe-tire-selector',
   },
 ] as const satisfies readonly PageSubNavigationTab[]
 
@@ -269,23 +284,6 @@ export const testReportTabs = [
 
 export type TestReportTabId = (typeof testReportTabs)[number]['id']
 
-export const spokeCalculatorTabs = [
-  {
-    id: 'calculator',
-    labelKey: 'spokeCalculator.tabs.calculator',
-    fallback: 'Calculator',
-    description: 'Enter wheel data and calculate spoke length.',
-  },
-  {
-    id: 'parameter',
-    labelKey: 'spokeCalculator.tabs.parameter',
-    fallback: 'Parameter',
-    description: 'Rim, hub, lacing, and offset reference data.',
-  },
-] as const satisfies readonly PageSubNavigationTab[]
-
-export type SpokeCalculatorTabId = (typeof spokeCalculatorTabs)[number]['id']
-
 export const membershipAndPointsTabs = [
   {
     id: 'myinfo',
@@ -377,7 +375,6 @@ export const virtualPageSubNavigationEntries = [
   { path: '/company/about', tabs: companyAboutTabs },
   { path: '/support/warranty', tabs: warrantyTabs },
   { path: '/support/test-report', tabs: testReportTabs },
-  { path: '/resources/spoke-calculator', tabs: spokeCalculatorTabs },
   { path: '/resources/membershipandpoints', tabs: membershipAndPointsTabs },
   { path: '/resources/picture-warehouse', tabs: pictureWarehouseTabs },
 ] as const satisfies readonly PageSubNavigationEntry[]

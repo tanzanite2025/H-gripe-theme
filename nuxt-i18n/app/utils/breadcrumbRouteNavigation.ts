@@ -99,6 +99,49 @@ export const breadcrumbRoutePatternMatches = (
   return matchesFrom(0, 0)
 }
 
+export interface BreadcrumbRouteLevelGroup {
+  path: string
+  segment: string
+  candidatePaths: string[]
+}
+
+/**
+ * Group registered routes by the segment at one breadcrumb depth. Every route
+ * in a group shares the same parent prefix; deeper descendants only establish
+ * that the level exists and do not become separate siblings.
+ */
+export const groupBreadcrumbRoutePathsAtLevel = (
+  parentSegments: readonly string[],
+  depth: number,
+  routePaths: readonly string[],
+  localeCodes: string[] = [],
+): BreadcrumbRouteLevelGroup[] => {
+  const normalizedParentSegments = splitNormalizedPath(`/${parentSegments.join('/')}`, localeCodes)
+  if (!Number.isInteger(depth) || depth <= normalizedParentSegments.length) return []
+
+  const groups = new Map<string, BreadcrumbRouteLevelGroup>()
+
+  for (const routePath of routePaths) {
+    const segments = splitNormalizedPath(routePath, localeCodes)
+    if (
+      segments.length < depth ||
+      !normalizedParentSegments.every((segment, index) => segment === segments[index])
+    ) {
+      continue
+    }
+
+    const segment = segments[depth - 1] || ''
+    if (!segment) continue
+
+    const path = `/${segments.slice(0, depth).join('/')}`
+    const group = groups.get(path) || { path, segment, candidatePaths: [] }
+    group.candidatePaths.push(routePath)
+    groups.set(path, group)
+  }
+
+  return Array.from(groups.values())
+}
+
 export interface BreadcrumbSiblingTargetOptions {
   /** Full active route, including any descendants below the expanded crumb. */
   currentPath: string

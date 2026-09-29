@@ -1,7 +1,12 @@
 import assert from 'node:assert/strict'
-import { breadcrumbRoutePatternMatches, resolveBreadcrumbSiblingTarget } from '../app/utils/breadcrumbRouteNavigation.js'
+import {
+  breadcrumbRoutePatternMatches,
+  groupBreadcrumbRoutePathsAtLevel,
+  resolveBreadcrumbSiblingTarget,
+} from '../app/utils/breadcrumbRouteNavigation.js'
 import { resolvePageSubNavigationBreadcrumb } from '../app/utils/pageSubNavigationBreadcrumb.js'
 import type { PageSubNavigationEntry } from '../app/utils/pageSubNavigationData.js'
+import { tireGuideTabs } from '../app/utils/pageSubNavigationData.js'
 
 const entries: PageSubNavigationEntry[] = [
   {
@@ -46,8 +51,8 @@ const localizedTabWithTrailingSlash = match('/zh_cn/guides/tireguides/installati
 assert.equal(localizedTabWithTrailingSlash?.kind, 'tab')
 assert.equal(localizedTabWithTrailingSlash?.tab.id, 'installation')
 
-// Canonical second-level pages retain their entry so the header can attach the
-// page's third-level navigation immediately after switching siblings.
+// Canonical page paths and exact tab paths remain distinct. The canonical
+// crumb owns its same-level route menu; the selected tab crumb owns tab peers.
 assert.equal(canonical?.kind, 'canonical')
 
 // Exact matching is intentional: deeper descendants and unknown tabs do not
@@ -57,6 +62,27 @@ assert.equal(match('/guides/tireguides/unknown'), null)
 assert.equal(match('/guides'), null)
 assert.equal(match('/guides/tireguides-installation'), null)
 assert.equal(match('/unknown/guides/tireguides'), null)
+
+const tireGuideRouteTab = resolvePageSubNavigationBreadcrumb(
+  '/guides/tireguides/schwalbe-tire-selector',
+  [{ path: '/guides/tireguides', tabs: tireGuideTabs }],
+)
+assert.equal(tireGuideRouteTab?.kind, 'tab')
+assert.equal(tireGuideRouteTab?.entry.tabs.length, 9)
+
+const clearanceRouteTab = resolvePageSubNavigationBreadcrumb(
+  '/guides/tireguides/tire-frame-clearance',
+  [{ path: '/guides/tireguides', tabs: tireGuideTabs }],
+)
+assert.equal(clearanceRouteTab?.kind, 'tab')
+assert.equal(clearanceRouteTab?.tab.id, 'tire-frame-clearance')
+
+const circumferenceRouteTab = resolvePageSubNavigationBreadcrumb(
+  '/guides/tireguides/schwalbe-tire-circumference',
+  [{ path: '/guides/tireguides', tabs: tireGuideTabs }],
+)
+assert.equal(circumferenceRouteTab?.kind, 'tab')
+assert.equal(circumferenceRouteTab?.tab.id, 'schwalbe-tire-circumference')
 
 const wheelsetCanonical = match('/guides/wheelset-buyers')
 assert.equal(wheelsetCanonical?.kind, 'canonical')
@@ -70,6 +96,40 @@ const switchSibling = (options: {
   fallbackPath: string
   routePatterns: string[]
 }) => resolveBreadcrumbSiblingTarget({ ...options, localeCodes: ['en', 'zh_cn'] })
+
+// Breadcrumb levels are grouped by the same parent prefix and exact depth.
+// Descendant pages confirm a level but never leak into its sibling list.
+const guideSiblings = groupBreadcrumbRoutePathsAtLevel(
+  ['guides'],
+  2,
+  [
+    '/en/guides/tireguides',
+    '/guides/tireguides/tire-pressure',
+    '/guides/wheelset-buyers',
+    '/guides/wheelset-buyers/overview',
+    '/resources/blog',
+  ],
+  ['en', 'zh_cn'],
+)
+assert.deepEqual(guideSiblings.map(group => group.path), [
+  '/guides/tireguides',
+  '/guides/wheelset-buyers',
+])
+
+// A level with one registered path resolves to one group, so it has no sibling
+// menu to render.
+const singleGuideBranch = groupBreadcrumbRoutePathsAtLevel(
+  ['guides', 'tireguides'],
+  3,
+  [
+    '/guides/tireguides/schwalbe-tire-selector',
+    '/guides/tireguides/schwalbe-tire-selector/details',
+  ],
+  ['en', 'zh_cn'],
+)
+assert.deepEqual(singleGuideBranch.map(group => group.path), [
+  '/guides/tireguides/schwalbe-tire-selector',
+])
 
 // Switching an intermediate breadcrumb preserves every lower segment when
 // the destination branch registers that route, including newly added levels.
@@ -132,4 +192,4 @@ assert.equal(switchSibling({
   routePatterns: ['/support/faqs/:tab(overview|contact)'],
 }), '/support/faqs')
 
-console.log('Breadcrumb navigation contract checks passed: route ownership, constrained tab routes, and registered descendant preservation are correct.')
+console.log('Breadcrumb navigation contract checks passed: route ownership, same-level grouping, singleton levels, and registered descendant preservation are correct.')

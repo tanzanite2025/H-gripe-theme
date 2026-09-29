@@ -1,0 +1,18 @@
+{
+  "filters": {
+    "tireWidthMin": "न्यूनतम",
+    "tireWidthMax": "अधिकतम",
+    "minimumLoad": "न्यूनतम टायर भार क्षमता",
+    "minimumLoadHint": "इस मान की तुलना एक टायर की आधिकारिक भार क्षमता से होती है। यह सवार के वजन की सीमा नहीं है; सवार, साइकिल और सामान का भार आगे और पीछे के टायरों में बँटता है।",
+    "openFilters": "फ़िल्टर",
+    "dialogTitle": "कैटलॉग फ़िल्टर करें",
+    "closeFilters": "फ़िल्टर बंद करें",
+    "showResults": "परिणाम देखें",
+    "activeCount": "{count} सक्रिय",
+    "groupDimensions": "आकार",
+    "groupCapacity": "भार और उपयोग",
+    "groupConstruction": "बनावट",
+    "groupAppearance": "रंग और कंपाउंड",
+    "selectedCount": "{count} चुने गए"
+  }
+}

@@ -1,10 +1,93 @@
 package repository
 
 import (
+	"context"
 	"commerce-platform/internal/domain/faq"
+	"errors"
+	"time"
 
+	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
+
+// ReconcileRoutePages updates only route ownership metadata. Editorial FAQ
+// titles, subtitles, visibility and answer rows are preserved for existing
+// pages; new routes receive an empty page shell for every enabled locale.
+func (r *FAQRepository) ReconcileRoutePages(ctx context.Context, pages []faq.FAQPage, seenAt time.Time) (faq.FAQRouteSyncStats, error) {
+	var stats faq.FAQRouteSyncStats
+	if r == nil || r.db == nil {
+		return stats, gorm.ErrInvalidDB
+	}
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	if seenAt.IsZero() {
+		seenAt = time.Now().UTC()
+	}
+
+	err := r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		desired := make(map[string]struct{}, len(pages))
+		for index := range pages {
+			candidate := pages[index]
+			key := candidate.PageID + "\x00" + candidate.Locale
+			desired[key] = struct{}{}
+			stats.Total++
+
+			var existing faq.FAQPage
+			err := tx.Unscoped().Where("page_id = ? AND locale = ?", candidate.PageID, candidate.Locale).First(&existing).Error
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				// A previous migration may have used a different page_id for the
+				// same URL. Reuse that row so existing FAQ content keeps its page
+				// identity and deep links remain valid.
+				err = tx.Unscoped().Where("route_path = ? AND locale = ?", candidate.RoutePath, candidate.Locale).First(&existing).Error
+			}
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				if err := tx.Create(&candidate).Error; err != nil {
+					return err
+				}
+				stats.Created++
+				continue
+			}
+			if err != nil {
+				return err
+			}
+
+			updates := map[string]interface{}{
+				"route_path":       candidate.RoutePath,
+				"route_key":        candidate.RouteKey,
+				"manifest_version": candidate.ManifestVersion,
+				"route_status":     candidate.RouteStatus,
+				"last_seen_at":     seenAt,
+				"deleted_at":       nil,
+				"updated_at":       seenAt,
+			}
+			if err := tx.Model(&existing).Updates(updates).Error; err != nil {
+				return err
+			}
+			stats.Updated++
+		}
+
+		var existingPages []faq.FAQPage
+		if err := tx.Where("deleted_at IS NULL").Find(&existingPages).Error; err != nil {
+			return err
+		}
+		for index := range existingPages {
+			page := existingPages[index]
+			if _, ok := desired[page.PageID+"\x00"+page.Locale]; ok || page.RouteStatus == "stale" {
+				continue
+			}
+			if err := tx.Model(&page).Updates(map[string]interface{}{
+				"route_status": "stale",
+				"updated_at":   seenAt,
+			}).Error; err != nil {
+				return err
+			}
+			stats.Stale++
+		}
+		return nil
+	})
+	return stats, err
+}
 
 func (r *FAQRepository) ListPages(locale string, includeHidden bool) ([]faq.FAQPage, error) {
 	var pages []faq.FAQPage

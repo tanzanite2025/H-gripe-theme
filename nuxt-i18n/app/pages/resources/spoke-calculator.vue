@@ -114,8 +114,6 @@ import SpokePCDStep from '~/components/SpokePCDStep.vue'
 import SpokePhysicsDiagrams from '~/components/SpokePhysicsDiagrams.vue'
 import UserFeedbackThread from '~/components/UserFeedbackThread.vue'
 
-import { usePageSubNavigationTab } from '~/composables/usePageSubNavigationTab'
-import { spokeCalculatorTabs } from '~/utils/pageSubNavigation'
 import { usePageMessages } from '~/composables/usePageMessages'
 import { useSpokeCalculatorWizard } from '~/composables/useSpokeCalculatorWizard'
 import type { HubGeometry } from '~/data/spoke-calculator/database'
@@ -253,13 +251,6 @@ await loadPageMessages(locale.value)
 
 watch(locale, (nextLocale) => {
   void loadPageMessages(nextLocale)
-})
-
-usePageSubNavigationTab({
-  tabs: spokeCalculatorTabs,
-  basePath: '/resources/spoke-calculator',
-  defaultValue: 'calculator',
-  redirectBasePathToDefaultTab: true,
 })
 
 definePageMeta({

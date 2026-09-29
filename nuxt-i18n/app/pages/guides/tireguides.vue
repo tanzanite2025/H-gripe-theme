@@ -1,7 +1,7 @@
 <template>
   <div>
     <h1 class="products-page__title products-page__title--sr-only">
-      {{ t('guidesTireguides.title') }}
+      {{ activePageTitle }}
     </h1>
     <p class="products-page__intro products-page__intro--sr-only">
       {{ t('guidesTireguides.intro') }}
@@ -17,13 +17,22 @@
         <TireSizeGuide v-if="activeTab === 'size'" @open-tire-products="openTireProductsDrawer" />
       </section>
 
-      <!-- Match (tire & rim matching helpers) -->
+      <!-- Tire frame clearance -->
       <section
-        v-show="activeTab === 'match'"
-        id="match"
+        v-show="activeTab === 'tire-frame-clearance'"
+        id="tire-frame-clearance"
         class="sizecharts-section"
       >
-        <MatchGuide v-if="activeTab === 'match'" />
+        <TireFrameClearanceGuide v-if="activeTab === 'tire-frame-clearance'" />
+      </section>
+
+      <!-- Schwalbe tire circumference -->
+      <section
+        v-show="activeTab === 'schwalbe-tire-circumference'"
+        id="schwalbe-tire-circumference"
+        class="sizecharts-section"
+      >
+        <SchwalbeTireCircumferenceGuide v-if="activeTab === 'schwalbe-tire-circumference'" />
       </section>
 
       <section
@@ -90,12 +99,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useHead, useI18n } from '#imports'
 import { useApiRequest } from '~/composables/useApiRequest'
 import UserFeedbackThread from '~/components/UserFeedbackThread.vue'
 import WhatsAppProductSearchResultDrawer from '~/components/WhatsAppProductSearchResultDrawer.vue'
-import MatchGuide from '~/components/tireguides/MatchGuide.vue'
+import TireFrameClearanceGuide from '~/components/tireguides/TireFrameClearanceGuide.vue'
+import SchwalbeTireCircumferenceGuide from '~/components/tireguides/SchwalbeTireCircumferenceGuide.vue'
 import TubelessGuide from '~/components/tireguides/TubelessGuide.vue'
 import HowToChooseGuide from '~/components/tireguides/HowToChooseGuide.vue'
 import TirePressureGuide from '~/components/tireguides/TirePressureGuide.vue'
@@ -122,10 +132,6 @@ watch(locale, (nextLocale) => {
   void loadPageMessages(nextLocale)
 })
 
-useHead(() => ({
-  title: t('guidesTireguides.title'),
-}))
-
 const tabs = tireGuideTabs
 const { activeTab, setActiveTab } = usePageSubNavigationTab({
   tabs,
@@ -133,6 +139,20 @@ const { activeTab, setActiveTab } = usePageSubNavigationTab({
   defaultValue: 'tubeless',
   redirectBasePathToDefaultTab: true,
 })
+
+const activePageTitle = computed(() => {
+  if (activeTab.value === 'tire-frame-clearance') {
+    return t('guidesTireguides.tabs.tireFrameClearance.label')
+  }
+  if (activeTab.value === 'schwalbe-tire-circumference') {
+    return t('guidesTireguides.tabs.schwalbeCircumference.label')
+  }
+  return t('guidesTireguides.title')
+})
+
+useHead(() => ({
+  title: activePageTitle.value,
+}))
 
 const { request } = useApiRequest()
 

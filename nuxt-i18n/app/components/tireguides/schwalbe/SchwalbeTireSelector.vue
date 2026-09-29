@@ -37,14 +37,36 @@
             </option>
           </select>
         </label>
-        <label>
-          <span class="schwalbe-selector__label">{{ tx('filters.sort') }}</span>
-          <select v-model="sortBy">
-            <option value="model">{{ tx('filters.sortModel') }}</option>
-            <option value="etrto">{{ tx('filters.sortEtrto') }}</option>
-            <option value="article">{{ tx('filters.sortArticle') }}</option>
-          </select>
-        </label>
+        <button
+          type="button"
+          class="schwalbe-selector__sort-toggle"
+          :aria-label="tx(sortBy === 'weight_desc' ? 'filters.sortWeightDescendingAria' : 'filters.sortWeightAscendingAria')"
+          :title="tx(sortBy === 'weight_desc' ? 'filters.sortWeightDescendingAria' : 'filters.sortWeightAscendingAria')"
+          @click="toggleWeightSort"
+        >
+          <Icon name="lucide:scale" class="schwalbe-selector__sort-icon" aria-hidden="true" />
+          <span class="schwalbe-selector__sort-direction" aria-hidden="true">
+            {{ sortBy === 'weight_desc' ? '↓' : '↑' }}
+          </span>
+        </button>
+        <button
+          type="button"
+          class="schwalbe-selector__filter-button"
+          :aria-label="tx('filters.openFilters')"
+          aria-haspopup="dialog"
+          :aria-expanded="filterDialogOpen"
+          :aria-controls="filterDialogOpen ? filterDialogId : undefined"
+          @click="openFilterDialog"
+        >
+          <Icon name="lucide:sliders-horizontal" class="schwalbe-selector__filter-icon" aria-hidden="true" />
+          <span
+            v-if="activeFilterCount > 0"
+            class="schwalbe-selector__filter-count"
+            :aria-label="tx('filters.activeCount', { count: activeFilterCount })"
+          >
+            {{ activeFilterCount }}
+          </span>
+        </button>
         <button
           v-if="submittedSearch"
           type="button"
@@ -56,33 +78,58 @@
       </div>
     </form>
 
-    <SchwalbeTireCatalogFilterPanel
-      v-model:selected-tire-widths-mm="selectedTireWidthsMm"
-      v-model:selected-bead-seat-diameters-mm="selectedBeadSeatDiametersMm"
-      v-model:selected-beads="selectedBeads"
-      v-model:selected-seals="selectedSeals"
-      v-model:selected-e-bike-ratings="selectedEBikeRatings"
-      v-model:selected-colors="selectedColors"
-      v-model:selected-compounds="selectedCompounds"
-      :label="tx('filters.catalogFilters')"
-      :tire-width-label="tx('filters.tireWidth')"
-      :bead-seat-diameter-label="tx('filters.beadSeatDiameter')"
-      :bead-label="tx('filters.bead')"
-      :seal-label="tx('filters.seal')"
-      :e-bike-rating-label="tx('filters.eBikeRating')"
-      :e-bike-unrated-label="tx('filters.eBikeUnrated')"
-      :color-label="tx('filters.color')"
-      :compound-label="tx('filters.compound')"
-      :scroll-hint="tx('filters.scrollHint')"
-      :reset-label="tx('filters.clearFilters')"
-      :tire-width-options="tireWidthOptions"
-      :bead-seat-diameter-options="beadSeatDiameterOptions"
-      :bead-options="beadOptions"
-      :seal-options="sealOptions"
-      :e-bike-rating-options="eBikeRatingOptions"
-      :color-options="colorOptions"
-      :compound-options="compoundOptions"
-    />
+    <SchwalbeTireCatalogFilterDrawer
+      :id="filterDialogId"
+      v-model:open="filterDialogOpen"
+      :title="tx('filters.dialogTitle')"
+      :close-label="tx('filters.closeFilters')"
+      :show-results-label="tx('filters.showResults')"
+      @apply="applyFilterDraft"
+      @cancel="discardFilterDraft"
+    >
+      <SchwalbeTireCatalogFilterPanel
+        v-model:selected-tire-widths-mm="draftFacetFilters.nominalTireWidthsMm"
+        v-model:selected-tire-width-min-mm="draftFacetFilters.nominalTireWidthMinMm"
+        v-model:selected-tire-width-max-mm="draftFacetFilters.nominalTireWidthMaxMm"
+        v-model:selected-wheel-size-keys="draftFacetFilters.wheelSizeKeys"
+        v-model:selected-bead-seat-diameters-mm="draftFacetFilters.beadSeatDiametersMm"
+        v-model:minimum-load-kg="draftFacetFilters.minimumLoadKg"
+        v-model:selected-casing-constructions="draftFacetFilters.casingConstructions"
+        v-model:selected-radial-only="draftFacetFilters.radialOnly"
+        v-model:selected-beads="draftFacetFilters.beads"
+        v-model:selected-seals="draftFacetFilters.seals"
+        v-model:selected-e-bike-ratings="draftFacetFilters.eBikeRatings"
+        v-model:selected-colors="draftFacetFilters.colors"
+        v-model:selected-compounds="draftFacetFilters.compounds"
+        @reset="clearDraftFacetFilters"
+        :label="tx('filters.catalogFilters')"
+        :selected-count-template="tx('filters.selectedCount', { count: '{count}' })"
+        :tire-width-label="tx('filters.tireWidth')"
+        :tire-width-min-label="tx('filters.tireWidthMin')"
+        :tire-width-max-label="tx('filters.tireWidthMax')"
+        :wheel-size-label="tx('filters.wheelSize')"
+        :wheel-size-option-template="tx('filters.wheelSizeOption', { diameter: '{diameter}', bsd: '{bsd}' })"
+        :minimum-load-label="tx('filters.minimumLoad')"
+        :minimum-load-hint="tx('filters.minimumLoadHint')"
+        :casing-construction-label="tx('filters.casingConstruction')"
+        :radial-label="tx('filters.radial')"
+        :bead-label="tx('filters.bead')"
+        :seal-label="tx('filters.seal')"
+        :e-bike-rating-label="tx('filters.eBikeRating')"
+        :e-bike-unrated-label="tx('filters.eBikeUnrated')"
+        :color-label="tx('filters.color')"
+        :compound-label="tx('filters.compound')"
+        :reset-label="tx('filters.clearFilters')"
+        :tire-width-options="tireWidthOptions"
+        :wheel-size-options="wheelSizeOptions"
+        :casing-construction-options="casingConstructionOptions"
+        :bead-options="beadOptions"
+        :seal-options="sealOptions"
+        :e-bike-rating-options="eBikeRatingOptions"
+        :color-options="colorOptions"
+        :compound-options="compoundOptions"
+      />
+    </SchwalbeTireCatalogFilterDrawer>
 
     <div class="schwalbe-selector__summary" aria-live="polite">
       <span>{{ tx('summary', { count: totalItems, page: currentPage, totalPages }) }}</span>
@@ -149,32 +196,47 @@
 </template>
 
 <script setup lang="ts">
+import { computed, reactive, ref, useId } from 'vue'
 import { useI18n } from '#imports'
 import SchwalbeTireCard from '~/components/tireguides/schwalbe/SchwalbeTireCard.vue'
 import SchwalbeTireCatalogFilterPanel from '~/components/tireguides/schwalbe/SchwalbeTireCatalogFilterPanel.vue'
+import SchwalbeTireCatalogFilterDrawer from '~/components/tireguides/schwalbe/SchwalbeTireCatalogFilterDrawer.vue'
 import SchwalbeTelemetryGuide from '~/components/tireguides/schwalbe/SchwalbeTelemetryGuide.vue'
-import { useSchwalbeTireSelector } from '~/composables/useSchwalbeTireSelector'
+import {
+  useSchwalbeTireSelector,
+  type SchwalbeTireCatalogFacetFilterState,
+} from '~/composables/useSchwalbeTireSelector'
 
 const { t: translate } = useI18n()
 const tx = (key: string, params?: Record<string, unknown>) => translate(`guidesSchwalbeTireSelector.${key}`, params || {})
+const filterDialogOpen = ref(false)
+const filterDialogId = `schwalbe-tire-catalog-filter-${useId()}`
 const {
   searchInput,
   submittedSearch,
-  filteredItems,
   totalItems,
   selectedModel,
   selectedTireWidthsMm,
+  selectedTireWidthMinMm,
+  selectedTireWidthMaxMm,
+  selectedWheelSizeKeys,
   selectedBeadSeatDiametersMm,
+  selectedMinimumLoadKg,
+  selectedCasingConstructions,
+  selectedRadialOnly,
   selectedBeads,
   selectedSeals,
   selectedEBikeRatings,
   selectedColors,
   selectedCompounds,
+  getFacetFilterState,
+  applyFacetFilterState,
   sortBy,
   visibleItems,
   modelOptions,
   tireWidthOptions,
-  beadSeatDiameterOptions,
+  wheelSizeOptions,
+  casingConstructionOptions,
   beadOptions,
   sealOptions,
   eBikeRatingOptions,
@@ -191,6 +253,108 @@ const {
   submitSearch,
   clearSearch,
 } = await useSchwalbeTireSelector()
+
+const toggleWeightSort = () => {
+  sortBy.value = sortBy.value === 'weight_desc' ? 'weight_asc' : 'weight_desc'
+}
+
+const draftFacetFilters = reactive<SchwalbeTireCatalogFacetFilterState>({
+  nominalTireWidthMinMm: null,
+  nominalTireWidthMaxMm: null,
+  nominalTireWidthsMm: [],
+  wheelSizeKeys: [],
+  beadSeatDiametersMm: [],
+  minimumLoadKg: null,
+  casingConstructions: [],
+  radialOnly: false,
+  beads: [],
+  seals: [],
+  eBikeRatings: [],
+  colors: [],
+  compounds: [],
+})
+
+const syncDraftFacetFilters = () => {
+  const committed = getFacetFilterState()
+  // The computed width endpoints also expose a legacy single exact-width URL
+  // as a closed range, so old links are represented correctly in the drawer.
+  draftFacetFilters.nominalTireWidthMinMm = selectedTireWidthMinMm.value
+  draftFacetFilters.nominalTireWidthMaxMm = selectedTireWidthMaxMm.value
+  draftFacetFilters.nominalTireWidthsMm = [...committed.nominalTireWidthsMm]
+  draftFacetFilters.wheelSizeKeys = [...committed.wheelSizeKeys]
+  draftFacetFilters.beadSeatDiametersMm = [...committed.beadSeatDiametersMm]
+  draftFacetFilters.minimumLoadKg = committed.minimumLoadKg
+  draftFacetFilters.casingConstructions = [...committed.casingConstructions]
+  draftFacetFilters.radialOnly = committed.radialOnly
+  draftFacetFilters.beads = [...committed.beads]
+  draftFacetFilters.seals = [...committed.seals]
+  draftFacetFilters.eBikeRatings = [...committed.eBikeRatings]
+  draftFacetFilters.colors = [...committed.colors]
+  draftFacetFilters.compounds = [...committed.compounds]
+}
+
+const openFilterDialog = () => {
+  syncDraftFacetFilters()
+  filterDialogOpen.value = true
+}
+
+const discardFilterDraft = () => {
+  // Closing, Escape, and clicking the backdrop intentionally leave the route
+  // and catalog results untouched. The next open starts from committed state.
+  filterDialogOpen.value = false
+}
+
+const applyFilterDraft = () => {
+  applyFacetFilterState({
+    nominalTireWidthMinMm: draftFacetFilters.nominalTireWidthMinMm,
+    nominalTireWidthMaxMm: draftFacetFilters.nominalTireWidthMaxMm,
+    nominalTireWidthsMm: [...draftFacetFilters.nominalTireWidthsMm],
+    wheelSizeKeys: [...draftFacetFilters.wheelSizeKeys],
+    beadSeatDiametersMm: [...draftFacetFilters.beadSeatDiametersMm],
+    minimumLoadKg: draftFacetFilters.minimumLoadKg,
+    casingConstructions: [...draftFacetFilters.casingConstructions],
+    radialOnly: draftFacetFilters.radialOnly,
+    beads: [...draftFacetFilters.beads],
+    seals: [...draftFacetFilters.seals],
+    eBikeRatings: [...draftFacetFilters.eBikeRatings],
+    colors: [...draftFacetFilters.colors],
+    compounds: [...draftFacetFilters.compounds],
+  })
+  filterDialogOpen.value = false
+}
+
+const clearDraftFacetFilters = () => {
+  draftFacetFilters.nominalTireWidthMinMm = null
+  draftFacetFilters.nominalTireWidthMaxMm = null
+  draftFacetFilters.nominalTireWidthsMm = []
+  draftFacetFilters.wheelSizeKeys = []
+  draftFacetFilters.beadSeatDiametersMm = []
+  draftFacetFilters.minimumLoadKg = null
+  draftFacetFilters.casingConstructions = []
+  draftFacetFilters.radialOnly = false
+  draftFacetFilters.beads = []
+  draftFacetFilters.seals = []
+  draftFacetFilters.eBikeRatings = []
+  draftFacetFilters.colors = []
+  draftFacetFilters.compounds = []
+}
+
+const activeFilterCount = computed(() => [
+  selectedModel.value !== 'ALL',
+  selectedTireWidthsMm.value.length > 0
+    || selectedTireWidthMinMm.value !== null
+    || selectedTireWidthMaxMm.value !== null,
+  selectedWheelSizeKeys.value.length > 0,
+  selectedBeadSeatDiametersMm.value.length > 0,
+  selectedMinimumLoadKg.value !== null,
+  selectedCasingConstructions.value.length > 0,
+  selectedRadialOnly.value,
+  selectedBeads.value.length > 0,
+  selectedSeals.value.length > 0,
+  selectedEBikeRatings.value.length > 0,
+  selectedColors.value.length > 0,
+  selectedCompounds.value.length > 0,
+].filter(Boolean).length)
 </script>
 
 <style scoped>
@@ -295,6 +459,108 @@ const {
   color: var(--tz-text-primary);
 }
 
+.schwalbe-selector__sort-toggle {
+  display: inline-flex;
+  width: 2.7rem;
+  min-width: 2.7rem;
+  min-height: 2.5rem;
+  height: 2.5rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  justify-self: start;
+  border: 1px solid var(--tz-border-strong);
+  border-radius: 0.65rem;
+  background: var(--tz-surface-page);
+  color: var(--tz-text-primary);
+  padding: 0;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.schwalbe-selector__sort-toggle:hover {
+  border-color: var(--tz-action-primary);
+  color: var(--tz-action-primary);
+}
+
+.schwalbe-selector__sort-toggle:focus-visible {
+  outline: 2px solid var(--tz-action-primary);
+  outline-offset: 2px;
+}
+
+.schwalbe-selector__sort-toggle :deep(svg) {
+  width: 1.1rem;
+  height: 1.1rem;
+  stroke-width: 2;
+}
+
+.schwalbe-selector__sort-direction {
+  font-size: 0.78rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.schwalbe-selector__filter-button {
+  position: relative;
+  display: inline-grid;
+  width: 2.7rem;
+  min-width: 2.7rem;
+  min-height: 2.5rem;
+  height: 2.7rem;
+  align-items: center;
+  justify-content: center;
+  place-items: center;
+  justify-self: end;
+  border: 1px solid #0b0b0b;
+  border-radius: 0.65rem;
+  background: #0b0b0b;
+  color: #fff;
+  padding: 0;
+  font: inherit;
+  font-weight: 750;
+  cursor: pointer;
+  box-shadow: 0 0.35rem 0.8rem rgb(0 0 0 / 0.16);
+}
+
+.schwalbe-selector__filter-button:hover {
+  border-color: #000;
+  background: #000;
+  color: #fff;
+  box-shadow: 0 0.45rem 1rem rgb(0 0 0 / 0.24);
+}
+
+.schwalbe-selector__filter-button :deep(svg) {
+  width: 1.15rem;
+  height: 1.15rem;
+  stroke-width: 2.2;
+}
+
+.schwalbe-selector__filter-button:focus-visible {
+  outline: 2px solid var(--tz-action-primary);
+  outline-offset: 2px;
+}
+
+.schwalbe-selector__filter-count {
+  position: absolute;
+  top: -0.45rem;
+  right: -0.45rem;
+  display: inline-grid;
+  min-width: 1.15rem;
+  height: 1.15rem;
+  place-items: center;
+  border-radius: 999px;
+  border: 2px solid var(--tz-card-surface);
+  background: var(--tz-action-primary);
+  color: var(--tz-action-primary-foreground);
+  padding: 0 0.2rem;
+  font-size: 0.68rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
 .schwalbe-selector__hint {
   color: var(--tz-text-secondary);
   font-size: 0.74rem;
@@ -303,7 +569,7 @@ const {
 
 .schwalbe-selector__selects {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) auto auto auto;
   gap: 0.75rem;
   align-items: end;
 }
@@ -408,6 +674,10 @@ const {
   .schwalbe-selector__button,
   .schwalbe-selector__clear {
     width: 100%;
+  }
+
+  .schwalbe-selector__filter-button {
+    justify-self: start;
   }
 
   .schwalbe-selector__pagination {

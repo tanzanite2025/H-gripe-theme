@@ -7,9 +7,13 @@
       "label": "Tire size",
       "description": "Size charts by tire width, rim range, and fit reference."
     },
-    "match": {
-      "label": "Match",
-      "description": "Match tires with rim profiles and riding conditions."
+    "tireFrameClearance": {
+      "label": "Tire and frame clearance",
+      "description": "Check tire dimensions against frame, fork, and stay clearance."
+    },
+    "schwalbeCircumference": {
+      "label": "Schwalbe tire circumference",
+      "description": "Reference circumference values for Schwalbe bicycle tire sizes."
     },
     "tubeless": {
       "label": "Tubeless tires",
@@ -30,6 +34,10 @@
     "innerTube": {
       "label": "Inner tube",
       "description": "Tube selection notes, valve types, and sizing basics."
+    },
+    "schwalbe": {
+      "label": "Schwalbe tire selector",
+      "description": "Search the sourced Schwalbe tire catalog by model and size."
     }
   },
   "drawer": {

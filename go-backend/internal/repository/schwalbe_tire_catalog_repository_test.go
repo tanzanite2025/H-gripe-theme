@@ -43,3 +43,34 @@ func TestListSchwalbeTireCatalogKeepsCandidatesAndMarksMatchingProducts(t *testi
 	require.Len(t, filtered, 1)
 	require.Equal(t, "22222222", filtered[0].ArticleNo)
 }
+
+func TestListSchwalbeTireCatalogTreatsSearchLikeMetacharactersLiterally(t *testing.T) {
+	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	require.NoError(t, err)
+
+	statements := []string{
+		`CREATE TABLE schwalbe_tire_specifications (article_no TEXT PRIMARY KEY, ean TEXT, model_name TEXT, etrto TEXT, inch_designation TEXT, weight_g REAL, version_label TEXT, compound TEXT, color TEXT, bead TEXT, e_bike_rating TEXT, epi INTEGER, load_kg REAL, seal TEXT, tread TEXT, min_pressure_bar REAL, max_pressure_bar REAL, min_pressure_psi REAL, max_pressure_psi REAL, source_url TEXT, source_checked_at DATE)`,
+		`CREATE TABLE products (id INTEGER PRIMARY KEY, product_specification_template_id INTEGER)`,
+		`CREATE TABLE product_specification_templates (id INTEGER PRIMARY KEY, slug TEXT)`,
+		`CREATE TABLE product_spec_definitions (id INTEGER PRIMARY KEY, product_specification_template_id INTEGER, slug TEXT)`,
+		`CREATE TABLE product_spec_values (product_id INTEGER, spec_definition_id INTEGER, value TEXT)`,
+		`INSERT INTO schwalbe_tire_specifications (article_no, model_name, etrto, source_url, source_checked_at) VALUES ('10000001', 'Green Marathon', '40-622', 'https://example.test/1', '2026-09-28')`,
+		`INSERT INTO schwalbe_tire_specifications (article_no, model_name, etrto, source_url, source_checked_at) VALUES ('10000002', 'Marathon_Plus', '40-622', 'https://example.test/2', '2026-09-28')`,
+		`INSERT INTO schwalbe_tire_specifications (article_no, model_name, etrto, source_url, source_checked_at) VALUES ('10000003', 'Marathon 100%', '40-622', 'https://example.test/3', '2026-09-28')`,
+		`INSERT INTO schwalbe_tire_specifications (article_no, model_name, etrto, source_url, source_checked_at) VALUES ('10000004', 'Ride!Line', '40-622', 'https://example.test/4', '2026-09-28')`,
+	}
+	for _, statement := range statements {
+		require.NoError(t, db.Exec(statement).Error)
+	}
+
+	for searchTerm, expectedArticleNo := range map[string]string{
+		"_": "10000002",
+		"%": "10000003",
+		"!": "10000004",
+	} {
+		items, err := NewProductRepository(db).ListSchwalbeTireCatalog(searchTerm)
+		require.NoError(t, err)
+		require.Len(t, items, 1, "search term %q should match only its literal occurrence", searchTerm)
+		require.Equal(t, expectedArticleNo, items[0].ArticleNo)
+	}
+}

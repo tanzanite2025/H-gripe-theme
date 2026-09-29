@@ -1,0 +1,18 @@
+{
+  "filters": {
+    "tireWidthMin": "Min",
+    "tireWidthMax": "Maks",
+    "minimumLoad": "Kapasiti beban minimum setiap tayar",
+    "minimumLoadHint": "Nilai ini dibandingkan dengan beban rasmi bagi satu tayar. Ini bukan had berat penunggang; beban penunggang, basikal dan kelengkapan diagihkan antara tayar hadapan dan belakang.",
+    "openFilters": "Penapis",
+    "dialogTitle": "Tapis katalog",
+    "closeFilters": "Tutup penapis",
+    "showResults": "Lihat hasil",
+    "activeCount": "{count} aktif",
+    "groupDimensions": "Saiz",
+    "groupCapacity": "Beban & kegunaan",
+    "groupConstruction": "Binaan",
+    "groupAppearance": "Warna & kompaun",
+    "selectedCount": "{count} dipilih"
+  }
+}

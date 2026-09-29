@@ -1,0 +1,18 @@
+{
+  "filters": {
+    "tireWidthMin": "최소",
+    "tireWidthMax": "최대",
+    "minimumLoad": "타이어 1개당 최소 하중",
+    "minimumLoadHint": "타이어 1개의 공식 하중과 비교합니다. 라이더 체중 한도가 아닙니다. 라이더, 자전거, 장비의 하중은 앞뒤 타이어에 분산됩니다.",
+    "openFilters": "필터",
+    "dialogTitle": "카탈로그 필터",
+    "closeFilters": "필터 닫기",
+    "showResults": "결과 보기",
+    "activeCount": "{count}개 활성",
+    "groupDimensions": "크기",
+    "groupCapacity": "하중 및 용도",
+    "groupConstruction": "구조",
+    "groupAppearance": "색상 및 컴파운드",
+    "selectedCount": "{count}개 선택"
+  }
+}

@@ -168,13 +168,6 @@
 							>
 								<Icon name="lucide:house" class="h-4 w-4 text-[var(--tz-site-accent)]" aria-hidden="true" />
 							</NuxtLink>
-							<NuxtLink
-								v-else-if="crumb.to && index < breadcrumbs.length - 1"
-								:to="crumb.to"
-								class="tz-text-secondary transition-colors"
-							>
-								{{ crumb.label }}
-							</NuxtLink>
 							<span v-else class="tz-text-secondary font-medium">
 								{{ crumb.label }}
 							</span>
@@ -352,13 +345,6 @@
 							>
 								<Icon name="lucide:house" class="h-4 w-4 text-[var(--tz-site-accent)]" aria-hidden="true" />
 							</NuxtLink>
-							<NuxtLink
-								v-else-if="crumb.to && index < breadcrumbs.length - 1"
-								:to="crumb.to"
-								class="tz-text-secondary transition-colors truncate max-w-[100px]"
-							>
-								{{ crumb.label }}
-							</NuxtLink>
 							<span v-else class="tz-text-secondary font-medium truncate max-w-[120px]">
 								{{ crumb.label }}
 							</span>
@@ -508,7 +494,10 @@ import {
   type PrimaryMegaNavId,
   type PrimaryMegaNavSection,
 } from '~/utils/primaryMegaNav'
-import { resolveBreadcrumbSiblingTarget } from '~/utils/breadcrumbRouteNavigation'
+import {
+  groupBreadcrumbRoutePathsAtLevel,
+  resolveBreadcrumbSiblingTarget,
+} from '~/utils/breadcrumbRouteNavigation'
 import {
   getPageSubNavigationBreadcrumbMatch,
   getPageSubNavigationForPath,
@@ -1031,10 +1020,6 @@ const isBreadcrumbExcludedPath = (path: string) => {
   )
 }
 
-const sameBreadcrumbSegments = (left: string[], right: string[]) => {
-  return left.length === right.length && left.every((segment, index) => segment === right[index])
-}
-
 const fallbackBreadcrumbRouteFamilyLabel = (segment: string) => {
   let decodedSegment = segment
   try {
@@ -1280,28 +1265,18 @@ const getBreadcrumbRouteLevelGroups = (
   parentSegments: string[],
   depth: number
 ): BreadcrumbRouteLevelGroup[] => {
-  const groups = new Map<string, { segment: string; path: string; candidates: BreadcrumbRouteCandidate[] }>()
+  const candidates = staticBreadcrumbRouteCandidates()
 
-  for (const candidate of staticBreadcrumbRouteCandidates()) {
-    if (
-      candidate.depth < depth ||
-      !sameBreadcrumbSegments(candidate.segments.slice(0, parentSegments.length), parentSegments)
-    ) {
-      continue
-    }
-
-    const segment = candidate.segments[depth - 1] || ''
-    if (!segment) continue
-
-    const path = `/${candidate.segments.slice(0, depth).join('/')}`
-    const group = groups.get(path) || { segment, path, candidates: [] }
-    group.candidates.push(candidate)
-    groups.set(path, group)
-  }
-
-  return Array.from(groups.values())
+  return groupBreadcrumbRoutePathsAtLevel(
+    parentSegments,
+    depth,
+    candidates.map(candidate => candidate.path),
+    getAllLocaleCodes(),
+  )
     .map((group) => {
-      const preferred = getPreferredBreadcrumbLevelCandidate(group.path, group.candidates)
+      const candidatePaths = new Set(group.candidatePaths)
+      const groupCandidates = candidates.filter(candidate => candidatePaths.has(candidate.path))
+      const preferred = getPreferredBreadcrumbLevelCandidate(group.path, groupCandidates)
       if (!preferred) return null
 
       return {
@@ -1350,10 +1325,6 @@ const isSameOrNestedBreadcrumbPath = (currentPath: string, targetPath: string) =
   return current === target || (current.startsWith(target) && current[target.length] === '/')
 }
 
-const getBreadcrumbFamilyTarget = (rootSegment: string) => {
-  return getBreadcrumbRouteFamilies().find(family => family.id === rootSegment)?.to || ''
-}
-
 const getBreadcrumbSiblingTarget = (
   breadcrumbPath: string,
   siblingPath: string,
@@ -1369,22 +1340,6 @@ const getBreadcrumbSiblingTarget = (
   })
 
   return localizedNavTarget(routeTarget)
-}
-
-const getBreadcrumbTarget = (path: string) => {
-  const normalizedPath = normalizeBreadcrumbPath(path)
-  const segments = getBreadcrumbPathSegments(normalizedPath)
-
-  if (getStaticBreadcrumbRouteCandidateForPath(normalizedPath)) {
-    return localizedNavTarget(normalizedPath)
-  }
-
-  if (segments.length === 1) {
-    const familyTarget = getBreadcrumbFamilyTarget(segments[0] || '')
-    return familyTarget ? localizedNavTarget(familyTarget) : undefined
-  }
-
-  return undefined
 }
 
 const getRouteFamilyBreadcrumbSubNavigation = (
@@ -1418,38 +1373,28 @@ const getBreadcrumbPageSubNavigationTab = (
   return match?.kind === 'tab' ? match : null
 }
 
-const getPageSubNavigationBreadcrumbSubNavigation = (
+const getPageSubNavigationSiblingSubNavigation = (
   targetPath: string
 ): BreadcrumbSubNavigation | undefined => {
   const normalizedTargetPath = normalizeBreadcrumbPath(targetPath)
   const currentPath = normalizeBreadcrumbPath(route.path || '/')
-
-  // A canonical page owns its tab menu only while it is the current page.
-  // Once a tab route is active, the parent breadcrumb is just the parent
-  // link; otherwise both the parent and the active tab expose the same menu.
-  const baseEntry = pageSubNavigationEntries.find(entry => (
-    normalizeBreadcrumbPath(entry.path) === normalizedTargetPath
-  ))
-  if (baseEntry && currentPath !== normalizedTargetPath) return undefined
-
-  const match = baseEntry
-    ? { entry: baseEntry }
-    : getBreadcrumbPageSubNavigationTab(normalizedTargetPath)
+  const match = getBreadcrumbPageSubNavigationTab(normalizedTargetPath)
   if (!match) return undefined
 
-  const tabs = match.entry.tabs.map(tab => {
-    const tabPath = tab.to || pageSubNavigationChildPath(match.entry.path, tab.id)
+  const { entry } = match
+  const tabs = entry.tabs.map(tab => {
+    const tabPath = tab.to || pageSubNavigationChildPath(entry.path, tab.id)
 
     return {
-      id: `${match.entry.path}:${tab.id}`,
+      id: `${entry.path}:${tab.id}`,
       label: pageSubNavigationTabLabel(tab),
       to: getBreadcrumbSiblingTarget(normalizedTargetPath, tabPath, tabPath),
-      active: normalizeBreadcrumbPath(tabPath) === currentPath,
+      active: isSameOrNestedBreadcrumbPath(currentPath, tabPath),
     }
   })
 
   return createBreadcrumbSubNavigation(
-    `${getBreadcrumbRouteLabel(match.entry.path, match.entry.path.split('/').filter(Boolean).at(-1) || '')} tabs`,
+    `${getBreadcrumbRouteLabel(entry.path, entry.path.split('/').filter(Boolean).at(-1) || '')} pages`,
     tabs
   )
 }
@@ -1462,14 +1407,15 @@ const getBreadcrumbSiblingSubNavigation = (
   const targetDepth = targetSegments.length
 
   if (targetDepth === 0) return undefined
-  const pageSubNavigation = getPageSubNavigationBreadcrumbSubNavigation(normalizedTargetPath)
+  const pageSubNavigation = getPageSubNavigationSiblingSubNavigation(normalizedTargetPath)
   if (pageSubNavigation) return pageSubNavigation
 
   if (targetDepth === 1) return getRouteFamilyBreadcrumbSubNavigation(normalizedTargetPath)
 
   const parentSegments = targetSegments.slice(0, -1)
   const siblingGroups = getBreadcrumbRouteLevelGroups(parentSegments, targetDepth)
-  if (!siblingGroups.some(group => group.path === normalizedTargetPath)) return undefined
+  const isCurrentLevelRegistered = siblingGroups.some(group => group.path === normalizedTargetPath)
+  if (!isCurrentLevelRegistered || siblingGroups.length <= 1) return undefined
 
   const currentPath = normalizeBreadcrumbPath(route.path || '/')
   const tabs = siblingGroups.map(group => ({
@@ -1507,7 +1453,6 @@ const breadcrumbs = computed<BreadcrumbItem[]>(() => {
       label: index === 0
         ? getBreadcrumbRouteFamilyLabel(segment)
         : getBreadcrumbRouteLabel(path, segment),
-      to: getBreadcrumbTarget(path),
       subNavigation,
     })
   })

@@ -1,0 +1,18 @@
+{
+  "filters": {
+    "tireWidthMin": "Min",
+    "tireWidthMax": "Max",
+    "minimumLoad": "Renkaan vähimmäiskantavuus",
+    "minimumLoadHint": "Arvoa verrataan yhden renkaan viralliseen kantavuuteen. Se ei ole ajajan painoraja; ajajan, pyörän ja varusteiden kuorma jakautuu etu- ja takarenkaalle.",
+    "openFilters": "Suodattimet",
+    "dialogTitle": "Suodata luetteloa",
+    "closeFilters": "Sulje suodattimet",
+    "showResults": "Näytä tulokset",
+    "activeCount": "{count} aktiivista",
+    "groupDimensions": "Koko",
+    "groupCapacity": "Kuormitus ja käyttö",
+    "groupConstruction": "Rakenne",
+    "groupAppearance": "Väri ja seos",
+    "selectedCount": "{count} valittu"
+  }
+}

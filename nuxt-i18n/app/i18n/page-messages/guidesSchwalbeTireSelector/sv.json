@@ -1,0 +1,18 @@
+{
+  "filters": {
+    "tireWidthMin": "Min",
+    "tireWidthMax": "Max",
+    "minimumLoad": "Minsta belastningskapacitet per däck",
+    "minimumLoadHint": "Jämförs med den officiella belastningen för ett däck. Detta är ingen viktgräns för cyklisten; belastningen från cyklist, cykel och utrustning fördelas mellan fram- och bakdäcket.",
+    "openFilters": "Filter",
+    "dialogTitle": "Filtrera katalogen",
+    "closeFilters": "Stäng filter",
+    "showResults": "Visa resultat",
+    "activeCount": "{count} aktiva",
+    "groupDimensions": "Storlek",
+    "groupCapacity": "Belastning och användning",
+    "groupConstruction": "Konstruktion",
+    "groupAppearance": "Färg och gummiblandning",
+    "selectedCount": "{count} valda"
+  }
+}

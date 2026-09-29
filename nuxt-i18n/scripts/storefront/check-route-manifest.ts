@@ -18,6 +18,24 @@ const projectRoot = fileURLToPath(new URL('../../', import.meta.url))
 const pagesRoot = join(projectRoot, 'app', 'pages')
 const manifestPath = join(projectRoot, 'public', 'storefront-route-manifest.json')
 
+// Some pages deliberately live outside their public URL directory so they do
+// not become children of a parent page that has no <NuxtPage /> outlet. Keep
+// those explicit Nuxt route overrides in the manifest checker as well.
+const customPagePathOverrides = new Map<string, string>([
+  [
+    '/guides/tireguides/schwalbe-tire-selector',
+    join(pagesRoot, 'guides', 'schwalbe-tire-selector.vue'),
+  ],
+  [
+    '/guides/tireguides/tire-frame-clearance',
+    join(pagesRoot, 'guides', 'tireguides.vue'),
+  ],
+  [
+    '/guides/tireguides/schwalbe-tire-circumference',
+    join(pagesRoot, 'guides', 'tireguides.vue'),
+  ],
+])
+
 const normalizePath = (value: string) => {
   if (value === '/') return '/'
   return `/${value.replace(/^\/+|\/+$/g, '')}`
@@ -28,6 +46,9 @@ const isDynamicSegment = (segment: string) => segment.startsWith('[') && segment
 const pageFileForPath = (path: string) => {
   const normalized = normalizePath(path)
   if (normalized.includes(':') || normalized.split('/').some(isDynamicSegment)) return null
+
+  const customPageFile = customPagePathOverrides.get(normalized)
+  if (customPageFile && existsSync(customPageFile)) return customPageFile
 
   const segments = normalized === '/' ? [] : normalized.slice(1).split('/')
   const directory = join(pagesRoot, ...segments)

@@ -1,0 +1,18 @@
+{
+  "filters": {
+    "tireWidthMin": "Min.",
+    "tireWidthMax": "Max.",
+    "minimumLoad": "Charge minimale par pneu",
+    "minimumLoadHint": "Comparée à la charge officielle d’un seul pneu. Ce n’est pas une limite de poids du cycliste ; le poids du cycliste, du vélo et de l’équipement est réparti entre les pneus avant et arrière.",
+    "openFilters": "Filtres",
+    "dialogTitle": "Filtrer le catalogue",
+    "closeFilters": "Fermer les filtres",
+    "showResults": "Afficher les résultats",
+    "activeCount": "{count} actifs",
+    "groupDimensions": "Dimensions",
+    "groupCapacity": "Charge et usage",
+    "groupConstruction": "Construction",
+    "groupAppearance": "Couleur et gomme",
+    "selectedCount": "{count} sélectionnés"
+  }
+}

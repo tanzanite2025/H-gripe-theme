@@ -1,75 +1,42 @@
-# Schwalbe 商品规格查询页与 GEO 实施边界
+# Schwalbe 选型页 SEO/GEO 实施边界
 
-> **状态**：Phase 2 目录选型切片、Telemetry Guide、SSR 分页，以及型号、ETRTO 派生尺寸、Bead、Seal、E-Bike 评级、Color 和 Compound 筛选已实现；销售商品附加层仍在后续实现队列。
-> **页面**：/guides/tireguides/schwalbe-tire-selector  
-> **商品字段契约**：[Phase 1 商品模板实施指南](./phase1-schwalbe-tire-system-template-implementation-guide.md) · [字段矩阵](./schwalbe-master-catalog-specification-matrix.md)  
-> **数据基线**：迁移 359 已导入 2026-09-28 官方快照（773 条 live 外胎记录，15 个 404 旧 URL 排除）；迁移 360 已建立销售商品 Article No. 唯一索引；迁移 361 已创建后台可配置 FAQ 路由并预置 `en`/`zh_cn` 胎圈问答；迁移 362 已导入 13 条官方胎宽—车圈内宽可能组合规则并提供只读 API。当前快照的文本枚举基准见字段矩阵第 8 节。
+> **职责**：本文只维护搜索引擎/生成式引擎收录、canonical、结构化数据和公开内容声明。字段契约由[字段矩阵](./schwalbe-master-catalog-specification-matrix.md)维护，页面行为由[Phase 2 实施指南](./phase2-standalone-page-implementation-guide.md)维护。完整文件职责见[文档索引](./README.md)。
+> **页面**：`/guides/tireguides/schwalbe-tire-selector`
+> **FAQ 内容**：[FAQ 内容指南](./schwalbe-faq-knowledge-base-input-guide.md)
 
-> **当前页面实现**：`/guides/tireguides/schwalbe-tire-selector` 已接入 SSR 目录查询、单词搜索、型号筛选、ETRTO 派生胎宽/胎圈座直径、Bead、Seal、E-Bike 评级、Color 和 Compound 多选、URL 状态、排序、Telemetry Guide、固定 20 条页面端分页和候选状态卡片。真实销售 Product 的价格、库存和商品链接仍须由后端 Article No. 批量附加层提供；当前页面不会为目录候选生成这些信息。
+## 1. 数据事实与公开边界
 
-## 1. 当前边界
+- 页面使用迁移导入的候选目录；候选存在不代表已创建销售 Product、SKU、有库存或可购买。
+- 商品字段、销售价格和可售状态必须分别来自字段矩阵所述的目录或真实 Product/SKU 数据。不得用旧 HTML mock、名称推断或静态数据补齐。
+- `source_url` 保存在候选表用于内部来源追溯，不出现在公开目录 API、页面卡片或 Nuxt 水合数据中。卡片可显示 `source_checked_at` 核验日期。
+- 胎体、Radial、Bead、Seal、E-Bike、Color、Compound 等筛选只表示目录值匹配，不构成官方兼容认证、性能排序或安全推荐。
 
-全谱系 Schwalbe 候选型号保存在独立目录 `schwalbe_tire_specifications`，供选型页展示和商品编辑页自动回填。实际销售的 Schwalbe 型号仍按普通 Product 管理：选择 `Schwalbe Tire` 系统模板，选择目录中的具体型号后自动填充 19 个官网字段，再维护实际 SKU 信息并按现有商品流程保存。商品规格值保存在该 Product 关联的 `product_spec_values`。
+## 2. 抓取与 URL 收录
 
-候选目录不是销售商品资料，也不代表商品在售。目录由官方来源数据导入/同步写库，不通过 Admin 人工逐条录入，不增加审批或二人复核。商品编辑页只读查询目录作为型号选择器；选中型号后把数据自动填回现有商品表单。Article No. 同时作为目录键和商品模板字段，用来判断候选是否存在销售 Product。
+SSR、搜索、筛选、分页 URL 参数以及每页 20 条卡片的实现契约只在 [Phase 2 指南](./phase2-standalone-page-implementation-guide.md) 维护。本节不重复筛选字段清单。
 
-计算器默认显示独立目录的“全谱系总览”，搜索/匹配结果可包含未销售型号。每条结果必须显示对应 Article No. 是否存在于销售商品中；有商品时，商品信息从实际绑定 Schwalbe Tire 模板的 Product 读取；没有商品时仍展示候选，但不能伪造商品链接、SKU、价格或库存。只展示销售商品的页面则只读取实际创建、公开且绑定 Schwalbe Tire 模板的商品。
+- 无 query 的本地化选型页可索引，使用该语言 URL 的 self-canonical，并输出各语言页面和 `x-default` 的 hreflang。
+- 只含 `?page=N` 且 `N >= 2` 的分页页可索引；canonical 保留规范化页码，各语言 hreflang 也保留同一页码。`?page=1` canonical 到不带 query 的本地化选型页。
+- 搜索、筛选、排序、未知或格式错误的 query，以及它们与页码的组合，均使用 `noindex,follow`，canonical 指向当前语言不带 query 的选型页；对应 hreflang 指向各语言不带 query 的选型页。原生分页链接继续保留 query 状态供用户使用。
+- SSR 只查询并输出当前页候选；服务端分页、水合 payload 与响应体测量以 [Phase 2 指南](./phase2-standalone-page-implementation-guide.md) 的当前实现基线为准。DOM 卡片数不能代替 payload 大小指标。
 
-## 2. 商品数据来源
+## 3. 结构化数据
 
-选型候选来自 `schwalbe_tire_specifications`，筛选或匹配逻辑不要求有销售 Product。结果按 Article No. 查询真实商品并附带 `product_exists`。存在时，商品名称、链接和销售用 19 个字段来自同一 Product；价格、可售状态和库存按站点现有 Product/SKU 逻辑读取。
+- 目录候选不是 Product。只有页面真实展示了对应在售 Product 时才输出 Product 结构化数据；只有真实报价存在且已展示时才输出 Offer。
+- Product 名称、Article No.、规格、价格和可售状态必须与可见页面内容一致。不得为未上架候选合成商品链接、价格、库存或 SKU。
+- Telemetry Guide 可按实际技术文章内容使用 `TechArticle`；不要把静态技术主题、枚举数量或候选数量转换成 Product、Offer 或全谱系 Dataset。
+- 当前不生成 FAQPage JSON-LD。以后如需增加，必须逐项对应当前 locale 下后台已发布的 FAQ 内容；FAQ 的编辑与发布流程见 [FAQ 内容指南](./schwalbe-faq-knowledge-base-input-guide.md)。
 
-实际销售 Product 的商品事实严格遵循 Phase 1 的 19 项模板。候选目录保存完整型号候选及其来源；筛选/匹配计算值必须与官网事实分开标识，不得从型号名称、Article No.、ETRTO、原型数组或市场经验补造官方字段。官网产品页未提供的可选字段保持为空。`e_bike_rating` 保留官网文本 `E-25`、`E-50` 或空值，禁止转换为 boolean；空值只表示官网未标注评级，不据此推断 E-Bike 类别或适用性。
+## 4. 官方技术内容与生成式摘要
 
-候选型号清单只有一份来源，即独立目录 `schwalbe_tire_specifications`；商品 `product_spec_values` 保存真实销售商品自己的数据快照，不充当目录。不得用原型 mock 填充生产页面，也不得让候选目录自动创建 Product。目录读取可复用现有后端路由能力或增加只读查询，不提供人工资料提交/审批 API。
+- 技术说明只陈述来源能够支持的内容、条件和范围。Radial、保护结构、ADDIX 与 Green Marathon 的核验来源及页面组件内容由 [Phase 2 技术说明部分](./phase2-standalone-page-implementation-guide.md)维护。
+- 生成式摘要不得把 `version_label` 直接解释为数字防刺等级，不得将 E-Bike 空值推成车型适用结论，也不得从 Bead、Seal、ETRTO 或型号名称推导轮圈兼容性、Hookless 认证或安全胎压。
+- 公开选型内容不使用“覆盖完整”“官方适配”“最佳搭配”等超出实际数据和来源范围的断言。种子记录数属于数据治理状态，不作为技术卖点或产品卡片内容。
+- 页面不以 Schwalbe 官方链接作为购买引导。选型页来源核验日期可以展示；官方来源链接只保存在内部来源追溯数据中。
 
-## 3. 页面交互范围
+## 5. SEO/GEO 验收
 
-页面默认以 `ALL` 显示目录全谱系，并提供文本搜索、排序、型号筛选，以及严格从 ETRTO 派生的胎宽和胎圈座直径、Bead、Seal、E-Bike 评级、Color、Compound 多选；每条候选显示其是否对应销售商品。Bead 和 Seal 使用目录原文枚举（当前快照分别为 `WIRED`/`Folding` 与 `Tube`/`TLR`/`TLE`）；Color 按完整的官网颜色字符串精确匹配，组合名不拆分、不归并色系；Compound 保留完整原始胶料标签，大小写差异保持独立值；E-Bike 评级为 `E-25`、`E-50` 或官网未标注评级。同一维度内多选按 OR 匹配，维度之间按 AND 组合。这些筛选仅匹配目录字段，不表示兼容认证或适用性结论；不得从 Bead、Seal、型号或空评级推断 E-Bike 适用性。`Article No.` 是候选与销售商品之间的查找键；商品模板的 `is_filterable` 元数据只约束 Product 字段筛选，不替代目录查询条件。
-
-文本搜索使用单个完整词：服务端将同一个词对 Article No.、`model_name`、ETRTO、Inch 做不区分大小写的包含匹配，四个字段之间为 OR，不做多词分词或跨字段联合。因此 `Pro One 28-622` 不会拆分为名称词和尺寸词分别查询；页面应提示用户输入一个型号、编号或尺寸。
-
-页面展示全部目录候选卡片及对应销售状态。目录有候选但无销售商品时，仍显示候选并标记未上架；只有目录本身为空时才显示目录空状态。查询失败时展示错误状态并允许重试。
-
-卡片固定每页 20 条。URL 使用 `search`、`page`、`model`、`sort`、可重复的 `tire_width_mm`、`bead_seat_diameter_mm`、`bead`、`seal`、`e_bike_rating`、`color` 和 `compound` 查询参数保存可分享的搜索状态；`e_bike_rating=none` 表示官网未标注评级，`none` 是 URL 保留值而不是数据库枚举。颜色值按官网原文序列化，例如 `color=Black%2BReflex`；多个颜色使用重复 `color` 参数。Compound 值也按原文序列化，空格、连字符和撇号由路由序列化器处理，不使用逗号拼接多选值。缺省页为 1，搜索提交/清空、任一筛选或排序变化会重置为 `page=1`。分页链接保留当前搜索与全部筛选。当前接口仍返回该搜索词命中的全量数组，页面在 SSR 渲染层切片，首屏 HTML 只输出当前页卡片；分页使用原生链接，不采用点击展开或无限滚动隐藏剩余型号。
-
-本阶段不做轮组匹配、胎宽推荐、骑行场景推荐、Hookless 认证判断、安装禁令、兼容性徽章或安全压力计算。不要从产品页 Bar/PSI 推断轮圈适配或 Hookless 上限。
-
-## 4. 技术说明、FAQ 与引用
-
-页面上的 ADDIX、胎体、TLE/TLR、Hookless、ETRTO 等技术内容，只有在对应官方资料能直接支持具体说法和适用范围时，才可作为独立说明加入。引用应链接到实际来源；不得声称未核对的白皮书版本、测试结果或官方认证。Telemetry Guide 采用四个标签（Radial 胎体、Green Marathon、防刺等级 1–7、ADDIX 胶料）和可折叠视觉交互，默认只显示一个主题，不重复堆叠四个主题。Radial 说明以 [Schwalbe Radial MTB 技术页](https://www.schwalbe.com/en/radialtires-mtb) 为准，防刺等级以 [Schwalbe 官方防刺技术页](https://www.schwalbe.com/en/technology-faq/puncture-protection/) 中的 Level 7、6+、6、5、4、3、2、1 结构为准，ADDIX 专题静态保留 ADDIX Race、ADDIX 4-Season、ADDIX Speed、ADDIX Mid（原 SpeedGrip）、ADDIX Soft、ADDIX Ultra Soft 和 Endurance Compound 七条命名线；其中 Speed、Mid、Soft、Ultra Soft 使用官方 ADDIX 资料中的颜色作为对应色条，Race、4-Season 和 Endurance 颜色只作视觉图例，不表示额外认证或统一性能等级，具体型号仍以官方产品页为准。PunctureGuard 单独保留为 3 mm 入门结构，不强行归入数字等级。Green Marathon 标签只展示已核验的 ADDIX Eco、GreenGuard、Fair Rubber 和回收/可再生材料说明。Telemetry 是不读取目录、搜索结果、筛选或分页状态的静态组件，可以在商品页或弹窗中复用；公域不展示快照记录数、来源字符串分组或标签计数，也不把等级名称解释成跨品牌统一评分、认证、兼容性、性能或销售事实。
-
-FAQ 使用站点现有内容能力。Schwalbe 选型页通过 `page_id=guides-schwalbe-tire-selector` 与精确 `route_path=/guides/tireguides/schwalbe-tire-selector` 读取后台已发布问答；页面元信息须为 `active`，条目须为 `published`，答案经后端清理后由 `PageFaqSlot` SSR 展示。FAQ 不能扩充 Phase 1 商品字段，也不能把未核实的安全推断包装成 Schwalbe 官方结论。当前实现不生成 FAQPage JSON-LD；结构化数据若以后增加，必须与实际发布条目一致。现有样例内容边界见 [FAQ 内容指南](./schwalbe-faq-knowledge-base-input-guide.md)。
-
-## 5. SSR、SEO 与结构化数据
-
-- SSR 页面从目录查询候选，再附加公开销售商品状态；无销售商品时仍显示目录候选，不载入 mock 数据。
-- SSR 页面从 URL 读取 `search`、`page` 和筛选状态，型号、胎宽、BSD、Bead、Seal、E-Bike 评级、Color、Compound 及排序可由直链还原；`e_bike_rating=none` 表示官网未标注评级。每页输出 20 条卡片，并提供可抓取的上一页/下一页及页码链接；当前页只声明实际渲染的候选范围，不能伪造完整覆盖或库存。
-- Telemetry Guide 可按真实内容使用 `TechArticle` 语义；折叠状态不应把首屏技术说明变成点击后才加载的内容，也不能把技术标签统计转成 Product/Offer 或兼容性结论。
-- 匹配候选本身不输出 Product 结构化数据；只有对应的真实销售商品实际展示时才输出 Product，只有存在真实售卖报价时才输出 Offer。
-- 名称、Article No.、规格、价格和可售状态必须与页面展示的数据一致。
-- 命中销售商品时，商城标题可采用 `Schwalbe {model_name} {etrto} ({inch_designation}) - {article_no}` 的可编辑默认规则；官方 `model_name` 仍作为独立规格保存，不等同于 `products.name`。
-- 不生成虚构型号、价格、库存或兼容结论；页面可以提供全谱系总览，但覆盖范围只按目录实际数据说明。
-- 页面介绍文章可按实际内容使用 TechArticle；不为搜索引擎虚构全系列 Dataset。
-
-GEO/SEO 不构成扩充字段或编造商品事实的理由。
-
-## 6. 明确不属于 Phase 2 的工作
-
-- 把计算器匹配候选伪造成 Product/SKU，或把匹配成功等同于销售状态。
-- 增加商品审核、二人复核、专用资料录入、重复录入或二次回填。
-- 将 preview-schwalbe-tire-selector.html 中的型号、价格、库存或计算结果导入生产。
-- 推导 Hookless/TLE/TLR 兼容性、轮圈内宽范围、胎宽膨胀或压力安全上限。
-- 把 FAQ 旧稿中的未经来源核对的性能百分比、适配结论或绝对安全规则发布为事实。
-
-## 7. Phase 2 验收
-
-- 筛选直链与刷新可还原 Bead、Seal、E-Bike 评级、Color 和 Compound；颜色组合和胶料原值经过 URL 往返后仍按完整字符串匹配，Compound 的空格、连字符和撇号保持原样；官网空评级通过 URL 保留值往返后仍只匹配官网未标注评级的记录。
-- 匹配候选即使没有对应销售商品，也可以作为结果显示。
-- 每条结果显示 Article No. 是否对应销售 Product；商品本身绑定模板并从 Phase 1 的 19 个字段读取规格。
-- 价格和可售状态只在确实存在销售商品时复用现有商品/SKU 数据。
-- 默认全谱系状态查询候选目录；目录为空和查询失败分别有明确状态，不回退到静态型号数组。
-- 页面不输出未实现的轮组、Hookless 或胎压安全结论。
-- 直链 `?page=N` SSR 只渲染 20 条卡片，分页链接可刷新、可回退、可爬取；Telemetry 四个主题标签和展开/收起交互在中英文页面均可见，默认只渲染一个主题，技术说明不依赖分页卡片数量。
-- 结构化 Product/Offer 只覆盖真实存在且展示的销售商品和售卖信息；匹配候选不作为 Product 输出。
-
+- SSR HTML 对当前状态只输出当前页的真实候选卡片，并提供可抓取分页链接；实际 API/Nuxt payload 体积另行监控。
+- 无 query 与纯分页 URL 按可索引规则输出 self-canonical 和对应 hreflang；搜索、筛选、排序及无效 query 输出 `noindex,follow` 并 canonical 到本地化无 query URL。
+- 未上架候选不带 Product/Offer 标记、价格、库存或购买链接；上架商品的结构化数据只引用真实 Product/SKU 字段。
+- 页面技术说明、FAQ 与生成式摘要不会把目录筛选结果升级成兼容认证或普遍安全结论。

@@ -309,6 +309,7 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 			productGroup.GET("", productHandler.ListProducts)
 			productGroup.GET("/specification-templates", productHandler.ListProductSpecificationTemplates)
 			productGroup.GET("/schwalbe-tire-catalog", productHandler.ListSchwalbeTireCatalog)
+			productGroup.GET("/schwalbe-tire-catalog/selector", productHandler.SearchSchwalbeTireCatalogSelector)
 			productGroup.GET("/schwalbe-tire-rim-width-combination-rules", productHandler.ListSchwalbeTireRimWidthCombinationRules)
 			productGroup.GET("/categories", productHandler.ListCategories)
 			productGroup.GET("/categories/:slug", productHandler.GetCategory)

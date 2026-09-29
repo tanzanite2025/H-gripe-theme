@@ -28,7 +28,6 @@ type SchwalbeTireCatalogItem struct {
 	MaxPressureBar  *float64  `json:"max_pressure_bar,omitempty"`
 	MinPressurePSI  *float64  `json:"min_pressure_psi,omitempty"`
 	MaxPressurePSI  *float64  `json:"max_pressure_psi,omitempty"`
-	SourceURL       string    `json:"source_url"`
 	SourceCheckedAt time.Time `json:"source_checked_at"`
 	ProductExists   bool      `json:"product_exists"`
 }
@@ -56,7 +55,6 @@ func (r *ProductRepository) ListSchwalbeTireCatalog(search string) ([]SchwalbeTi
 			catalog.max_pressure_bar,
 			catalog.min_pressure_psi,
 			catalog.max_pressure_psi,
-			catalog.source_url,
 			catalog.source_checked_at,
 			EXISTS (
 				SELECT 1
@@ -74,12 +72,13 @@ func (r *ProductRepository) ListSchwalbeTireCatalog(search string) ([]SchwalbeTi
 			) AS product_exists`)
 
 	if normalizedSearch := strings.TrimSpace(search); normalizedSearch != "" {
-		pattern := "%" + strings.ToLower(normalizedSearch) + "%"
+		escapedSearch := strings.NewReplacer("!", "!!", "%", "!%", "_", "!_").Replace(strings.ToLower(normalizedSearch))
+		pattern := "%" + escapedSearch + "%"
 		query = query.Where(`
-			LOWER(catalog.article_no) LIKE ?
-			OR LOWER(catalog.model_name) LIKE ?
-			OR LOWER(catalog.etrto) LIKE ?
-			OR LOWER(COALESCE(catalog.inch_designation, '')) LIKE ?`,
+			LOWER(catalog.article_no) LIKE ? ESCAPE '!'
+			OR LOWER(catalog.model_name) LIKE ? ESCAPE '!'
+			OR LOWER(catalog.etrto) LIKE ? ESCAPE '!'
+			OR LOWER(COALESCE(catalog.inch_designation, '')) LIKE ? ESCAPE '!'`,
 			pattern, pattern, pattern, pattern,
 		)
 	}

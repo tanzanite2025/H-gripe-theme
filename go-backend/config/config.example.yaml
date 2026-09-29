@@ -27,7 +27,7 @@ database:
 redis:
   mode: "standalone"  # standalone or sentinel; cluster is rejected until all multi-key scripts are hash-tagged
   host: "localhost"
-  port: 9662
+  port: 10662
   addrs: []  # sentinel example: ["redis-sentinel-1:26379", "redis-sentinel-2:26379", "redis-sentinel-3:26379"]
   username: ""
   password: ""

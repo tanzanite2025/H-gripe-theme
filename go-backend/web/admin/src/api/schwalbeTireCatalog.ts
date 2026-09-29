@@ -21,7 +21,6 @@ export interface SchwalbeTireCatalogItem {
   max_pressure_bar?: number
   min_pressure_psi?: number
   max_pressure_psi?: number
-  source_url: string
   source_checked_at: string
   product_exists: boolean
 }
@@ -31,7 +30,6 @@ const readCatalogItem = (value: unknown, endpoint: string): SchwalbeTireCatalogI
   requireApiStringField(item, 'article_no', endpoint)
   requireApiStringField(item, 'model_name', endpoint)
   requireApiStringField(item, 'etrto', endpoint)
-  requireApiStringField(item, 'source_url', endpoint)
   requireApiStringField(item, 'source_checked_at', endpoint)
   requireApiBooleanField(item, 'product_exists', endpoint)
   return item as SchwalbeTireCatalogItem

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"os"
 	"testing"
 
@@ -44,6 +45,13 @@ func TestRunRejectsUnknownCommand(t *testing.T) {
 
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "unknown command")
+}
+
+func TestAuditSchwalbeCatalogRefreshRequiresSnapshot(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+	err := run([]string{"audit-schwalbe-catalog-refresh"}, &stdout, &stderr)
+
+	require.EqualError(t, err, "-snapshot is required")
 }
 
 func writeAdminctlTestSecret(t *testing.T, value string) string {

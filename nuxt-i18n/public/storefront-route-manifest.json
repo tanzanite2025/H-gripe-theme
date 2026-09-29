@@ -1,5 +1,5 @@
 {
-  "version": "2026-08-23",
+  "version": "2026-09-30",
   "routes": [
     {
       "key": "home",
@@ -119,6 +119,33 @@
       "is_indexable": true
     },
     {
+      "key": "guides-tireguides-tire-frame-clearance",
+      "path": "/guides/tireguides/tire-frame-clearance",
+      "label": "Tire and frame clearance guide",
+      "description": "Compare tire dimensions with bicycle frame, fork, and stay clearance",
+      "is_searchable": true,
+      "is_checkable": true,
+      "is_indexable": true
+    },
+    {
+      "key": "guides-tireguides-schwalbe-tire-circumference",
+      "path": "/guides/tireguides/schwalbe-tire-circumference",
+      "label": "Schwalbe tire circumference guide",
+      "description": "Reference circumference values for Schwalbe bicycle tire sizes",
+      "is_searchable": true,
+      "is_checkable": true,
+      "is_indexable": true
+    },
+    {
+      "key": "guides-tireguides-schwalbe-tire-selector",
+      "path": "/guides/tireguides/schwalbe-tire-selector",
+      "label": "Schwalbe tire selector",
+      "description": "Search the sourced Schwalbe tire catalog by model and size",
+      "is_searchable": true,
+      "is_checkable": true,
+      "is_indexable": true
+    },
+    {
       "key": "guides-wheelset-buyers",
       "path": "/guides/wheelset-buyers",
       "label": "Wheelset Buyers Guide",
@@ -189,6 +216,15 @@
       "is_searchable": true,
       "is_checkable": true,
       "is_indexable": true
+    },
+    {
+      "key": "resources-brand-wheelset-spoke-specs",
+      "path": "/resources/brand-wheelset-spoke-specs",
+      "label": "Complete Wheelset Spoke Specs",
+      "description": "Market-available branded wheelset spoke lengths, types, and lacing references",
+      "is_searchable": true,
+      "is_checkable": true,
+      "is_indexable": false
     },
     {
       "key": "support-faqs",

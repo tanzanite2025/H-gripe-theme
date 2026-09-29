@@ -1,0 +1,18 @@
+{
+  "filters": {
+    "tireWidthMin": "الحد الأدنى",
+    "tireWidthMax": "الحد الأقصى",
+    "minimumLoad": "الحد الأدنى لقدرة حمل الإطار",
+    "minimumLoadHint": "تُقارن هذه القيمة بحمولة إطار واحد الرسمية. هذا ليس حدًا لوزن الراكب؛ إذ تتوزع أوزان الراكب والدراجة والتجهيزات على الإطارين الأمامي والخلفي.",
+    "openFilters": "الفلاتر",
+    "dialogTitle": "تصفية الكتالوج",
+    "closeFilters": "إغلاق الفلاتر",
+    "showResults": "عرض النتائج",
+    "activeCount": "{count} نشطة",
+    "groupDimensions": "المقاس",
+    "groupCapacity": "الحمولة والاستخدام",
+    "groupConstruction": "التركيب",
+    "groupAppearance": "اللون والمركب",
+    "selectedCount": "{count} محددة"
+  }
+}

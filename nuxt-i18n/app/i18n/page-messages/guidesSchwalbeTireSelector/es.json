@@ -1,0 +1,18 @@
+{
+  "filters": {
+    "tireWidthMin": "Mín.",
+    "tireWidthMax": "Máx.",
+    "minimumLoad": "Capacidad de carga mínima por neumático",
+    "minimumLoadHint": "Se compara con la carga oficial de un neumático. No es un límite de peso del ciclista: la carga de la persona, la bicicleta y el equipaje se reparte entre los neumáticos delantero y trasero.",
+    "openFilters": "Filtros",
+    "dialogTitle": "Filtrar el catálogo",
+    "closeFilters": "Cerrar filtros",
+    "showResults": "Ver resultados",
+    "activeCount": "{count} activos",
+    "groupDimensions": "Tamaño",
+    "groupCapacity": "Carga y uso",
+    "groupConstruction": "Construcción",
+    "groupAppearance": "Color y compuesto",
+    "selectedCount": "{count} seleccionados"
+  }
+}

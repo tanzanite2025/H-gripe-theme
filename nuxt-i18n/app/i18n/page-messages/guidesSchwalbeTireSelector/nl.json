@@ -1,0 +1,18 @@
+{
+  "filters": {
+    "tireWidthMin": "Min.",
+    "tireWidthMax": "Max.",
+    "minimumLoad": "Minimale draagcapaciteit per band",
+    "minimumLoadHint": "Vergeleken met de officiële belasting van één band. Dit is geen gewichtslimiet voor de fietser; het gewicht van fietser, fiets en uitrusting wordt verdeeld over de voor- en achterband.",
+    "openFilters": "Filters",
+    "dialogTitle": "Catalogus filteren",
+    "closeFilters": "Filters sluiten",
+    "showResults": "Resultaten tonen",
+    "activeCount": "{count} actief",
+    "groupDimensions": "Maat",
+    "groupCapacity": "Belasting en gebruik",
+    "groupConstruction": "Constructie",
+    "groupAppearance": "Kleur en compound",
+    "selectedCount": "{count} geselecteerd"
+  }
+}

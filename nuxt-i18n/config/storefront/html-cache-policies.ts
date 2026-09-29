@@ -25,7 +25,13 @@ export const storefrontHtmlCachePolicies: StorefrontHtmlCachePolicy[] = [
   {
     name: 'content',
     description: 'Editorial and guide pages that change less frequently than product data.',
-    paths: ['/resources/blog/**', '/guides/**', '/resources/picture-warehouse/**', '/faq'],
+    paths: [
+      '/resources/blog/**',
+      '/resources/brand-wheelset-spoke-specs/**',
+      '/guides/**',
+      '/resources/picture-warehouse/**',
+      '/faq',
+    ],
     ...storefrontHtmlCacheDurations.contentPage,
   },
   {

@@ -2,99 +2,249 @@ import { computed, ref, watch } from 'vue'
 import { useAsyncData, useRoute, useRouter } from '#imports'
 import { useApiRequest } from '~/composables/useApiRequest'
 import {
-  buildSchwalbeTireCatalogFilterOptions,
-  filterSchwalbeTireCatalogItems,
-} from '~/data/tireguides/schwalbeTireCatalogFilterModel'
-import {
   mergeSchwalbeTireCatalogFilterQuery,
   parseSchwalbeTireCatalogFilterQuery,
   type SchwalbeCatalogSort,
+  type SchwalbeTireCatalogFilterQueryState,
 } from '~/data/tireguides/schwalbeTireCatalogFilterQuery'
 import {
-  fetchSchwalbeTireCatalog,
-  type SchwalbeTireCatalogItem,
+  fetchSchwalbeTireCatalogSelectorPage,
+  type SchwalbeTireCatalogSelectorPage,
+  type SchwalbeTireCatalogSelectorRequest,
 } from '~/data/tireguides/schwalbeCatalog'
 
 export type { SchwalbeCatalogSort } from '~/data/tireguides/schwalbeTireCatalogFilterQuery'
+
+/**
+ * Facets edited inside the filter drawer.  The drawer keeps a local draft and
+ * applies this complete patch only after the user chooses “Show results”.
+ */
+export type SchwalbeTireCatalogFacetFilterState = Pick<
+  SchwalbeTireCatalogFilterQueryState,
+  | 'nominalTireWidthMinMm'
+  | 'nominalTireWidthMaxMm'
+  | 'nominalTireWidthsMm'
+  | 'wheelSizeKeys'
+  | 'beadSeatDiametersMm'
+  | 'minimumLoadKg'
+  | 'casingConstructions'
+  | 'radialOnly'
+  | 'beads'
+  | 'seals'
+  | 'eBikeRatings'
+  | 'colors'
+  | 'compounds'
+>
 
 export const SCHWALBE_CATALOG_PAGE_SIZE = 20
 
 type PaginationToken = number | 'ellipsis'
 
 const parsePage = (value: unknown): number | null => {
-  if (typeof value !== 'string' || !/^[1-9]\d*$/.test(value.trim())) return null
-  const parsed = Number(value)
+  const candidate = Array.isArray(value) ? value[0] : value
+  if (typeof candidate !== 'string' || !/^[1-9]\d*$/.test(candidate.trim())) return null
+  const parsed = Number(candidate)
   return Number.isSafeInteger(parsed) ? parsed : null
 }
+
+const readRouteSearch = (value: unknown): string => {
+  const candidate = Array.isArray(value) ? value[0] : value
+  return typeof candidate === 'string' ? candidate.trim() : ''
+}
+
+const emptySelectorPage = (): SchwalbeTireCatalogSelectorPage => ({
+  items: [],
+  page: 1,
+  page_size: SCHWALBE_CATALOG_PAGE_SIZE,
+  total: 0,
+  total_pages: 1,
+  filter_options: {
+    modelNames: [],
+    nominalTireWidthsMm: [],
+    wheelSizes: [],
+    beadSeatDiametersMm: [],
+    versionLabels: [],
+    casingConstructions: [],
+    compounds: [],
+    colors: [],
+    beads: [],
+    seals: [],
+    eBikeRatings: [],
+  },
+})
 
 export const useSchwalbeTireSelector = async () => {
   const route = useRoute()
   const router = useRouter()
   const { request } = useApiRequest()
 
-  const initialSearch = typeof route.query.search === 'string' ? route.query.search.trim() : ''
+  const initialSearch = readRouteSearch(route.query.search)
   const initialFilterState = parseSchwalbeTireCatalogFilterQuery(
     route.query as Record<string, unknown>,
   )
+  const filterState = ref<SchwalbeTireCatalogFilterQueryState>(initialFilterState)
   const searchInput = ref(initialSearch)
   const submittedSearch = ref(initialSearch)
-  const selectedModel = ref(initialFilterState.modelName || 'ALL')
-  const selectedTireWidthsMm = ref(initialFilterState.nominalTireWidthsMm)
-  const selectedBeadSeatDiametersMm = ref(initialFilterState.beadSeatDiametersMm)
-  const selectedBeads = ref(initialFilterState.beads)
-  const selectedSeals = ref(initialFilterState.seals)
-  const selectedEBikeRatings = ref(initialFilterState.eBikeRatings)
-  const selectedColors = ref(initialFilterState.colors)
-  const selectedCompounds = ref(initialFilterState.compounds)
-  const sortBy = ref<SchwalbeCatalogSort>(initialFilterState.sortBy)
-  const requestedPage = computed(() => parsePage(route.query.page) || 1)
+  const updateFilterState = (patch: Partial<SchwalbeTireCatalogFilterQueryState>) => {
+    filterState.value = { ...filterState.value, ...patch }
+  }
+  const applyFacetFilterState = (facetState: SchwalbeTireCatalogFacetFilterState) => {
+    // Assign one complete state object so the route watcher performs a single
+    // navigation and the catalog request is not restarted for every control.
+    const wheelSizeKeys = [...facetState.wheelSizeKeys]
+    updateFilterState({
+      ...facetState,
+      nominalTireWidthsMm: [...facetState.nominalTireWidthsMm],
+      wheelSizeKeys,
+      // A newly selected wheel-size pair is more precise than the legacy BSD
+      // facet. Drop the hidden legacy constraint so an old shared link cannot
+      // make a visibly selected wheel size return zero rows.
+      beadSeatDiametersMm: wheelSizeKeys.length > 0 ? [] : [...facetState.beadSeatDiametersMm],
+      casingConstructions: [...facetState.casingConstructions],
+      beads: [...facetState.beads],
+      seals: [...facetState.seals],
+      eBikeRatings: [...facetState.eBikeRatings],
+      colors: [...facetState.colors],
+      compounds: [...facetState.compounds],
+    })
+  }
 
-  const requestKey = computed(() => `schwalbe-tire-catalog:${submittedSearch.value}`)
-  const { data, pending, error, refresh } = await useAsyncData<SchwalbeTireCatalogItem[]>(
+  const getFacetFilterState = (): SchwalbeTireCatalogFacetFilterState => ({
+    nominalTireWidthMinMm: filterState.value.nominalTireWidthMinMm,
+    nominalTireWidthMaxMm: filterState.value.nominalTireWidthMaxMm,
+    nominalTireWidthsMm: [...filterState.value.nominalTireWidthsMm],
+    wheelSizeKeys: [...filterState.value.wheelSizeKeys],
+    beadSeatDiametersMm: [...filterState.value.beadSeatDiametersMm],
+    minimumLoadKg: filterState.value.minimumLoadKg,
+    casingConstructions: [...filterState.value.casingConstructions],
+    radialOnly: filterState.value.radialOnly,
+    beads: [...filterState.value.beads],
+    seals: [...filterState.value.seals],
+    eBikeRatings: [...filterState.value.eBikeRatings],
+    colors: [...filterState.value.colors],
+    compounds: [...filterState.value.compounds],
+  })
+  const selectedModel = computed({
+    get: () => filterState.value.modelName ?? 'ALL',
+    set: (modelName: string) => updateFilterState({
+      modelName: modelName === 'ALL' ? null : modelName,
+    }),
+  })
+  const selectedTireWidthsMm = computed({
+    get: () => filterState.value.nominalTireWidthsMm,
+    set: (nominalTireWidthsMm: number[]) => updateFilterState({ nominalTireWidthsMm }),
+  })
+  const selectedTireWidthMinMm = computed<number | null>({
+    // A single legacy exact-width value can be represented losslessly as a
+    // closed range, so old shared links remain visible in the new control.
+    get: () => filterState.value.nominalTireWidthMinMm
+      ?? (filterState.value.nominalTireWidthsMm.length === 1
+        ? filterState.value.nominalTireWidthsMm[0] ?? null
+        : null),
+    set: (nominalTireWidthMinMm) => updateFilterState({
+      nominalTireWidthMinMm: nominalTireWidthMinMm !== null
+        && Number.isSafeInteger(nominalTireWidthMinMm)
+        && nominalTireWidthMinMm > 0
+        ? nominalTireWidthMinMm
+        : null,
+      nominalTireWidthsMm: [],
+    }),
+  })
+  const selectedTireWidthMaxMm = computed<number | null>({
+    get: () => filterState.value.nominalTireWidthMaxMm
+      ?? (filterState.value.nominalTireWidthsMm.length === 1
+        ? filterState.value.nominalTireWidthsMm[0] ?? null
+        : null),
+    set: (nominalTireWidthMaxMm) => updateFilterState({
+      nominalTireWidthMaxMm: nominalTireWidthMaxMm !== null
+        && Number.isSafeInteger(nominalTireWidthMaxMm)
+        && nominalTireWidthMaxMm > 0
+        ? nominalTireWidthMaxMm
+        : null,
+      nominalTireWidthsMm: [],
+    }),
+  })
+  const selectedBeadSeatDiametersMm = computed({
+    get: () => filterState.value.beadSeatDiametersMm,
+    set: (beadSeatDiametersMm: number[]) => updateFilterState({ beadSeatDiametersMm }),
+  })
+  const selectedWheelSizeKeys = computed({
+    get: () => filterState.value.wheelSizeKeys,
+    set: (wheelSizeKeys: string[]) => updateFilterState({
+      wheelSizeKeys,
+      beadSeatDiametersMm: wheelSizeKeys.length > 0 ? [] : filterState.value.beadSeatDiametersMm,
+    }),
+  })
+  const selectedMinimumLoadKg = computed<number | null>({
+    get: () => filterState.value.minimumLoadKg,
+    set: (minimumLoadKg) => updateFilterState({
+      minimumLoadKg: minimumLoadKg !== null && Number.isFinite(minimumLoadKg) && minimumLoadKg > 0
+        ? minimumLoadKg
+        : null,
+    }),
+  })
+  const selectedCasingConstructions = computed({
+    get: () => filterState.value.casingConstructions,
+    set: (casingConstructions: string[]) => updateFilterState({ casingConstructions }),
+  })
+  const selectedRadialOnly = computed({
+    get: () => filterState.value.radialOnly,
+    set: (radialOnly: boolean) => updateFilterState({ radialOnly }),
+  })
+  const selectedBeads = computed({
+    get: () => filterState.value.beads,
+    set: (beads: string[]) => updateFilterState({ beads }),
+  })
+  const selectedSeals = computed({
+    get: () => filterState.value.seals,
+    set: (seals: string[]) => updateFilterState({ seals }),
+  })
+  const selectedEBikeRatings = computed({
+    get: () => filterState.value.eBikeRatings,
+    set: (eBikeRatings: (string | null)[]) => updateFilterState({ eBikeRatings }),
+  })
+  const selectedColors = computed({
+    get: () => filterState.value.colors,
+    set: (colors: string[]) => updateFilterState({ colors }),
+  })
+  const selectedCompounds = computed({
+    get: () => filterState.value.compounds,
+    set: (compounds: string[]) => updateFilterState({ compounds }),
+  })
+  const sortBy = computed<SchwalbeCatalogSort>({
+    get: () => filterState.value.sortBy,
+    set: (sortBy) => updateFilterState({ sortBy }),
+  })
+  const requestedPage = computed(() => parsePage(route.query.page) || 1)
+  const routeFilterState = computed(() => parseSchwalbeTireCatalogFilterQuery(
+    route.query as Record<string, unknown>,
+  ))
+  const selectorRequest = computed<SchwalbeTireCatalogSelectorRequest>(() => ({
+    search: readRouteSearch(route.query.search),
+    page: requestedPage.value,
+    ...routeFilterState.value,
+  }))
+
+  const requestKey = computed(() => `schwalbe-tire-catalog-selector:${JSON.stringify(selectorRequest.value)}`)
+  const { data, pending, error, refresh } = await useAsyncData<SchwalbeTireCatalogSelectorPage>(
     requestKey,
-    () => fetchSchwalbeTireCatalog(request, submittedSearch.value),
-    { default: () => [] },
+    () => fetchSchwalbeTireCatalogSelectorPage(request, selectorRequest.value),
+    { default: emptySelectorPage },
   )
 
-  const items = computed(() => data.value || [])
-  const filterOptions = computed(() => buildSchwalbeTireCatalogFilterOptions(items.value))
+  const items = computed(() => data.value?.items || [])
+  const filterOptions = computed(() => data.value?.filter_options || emptySelectorPage().filter_options)
   const modelOptions = computed(() => [
     'ALL',
     ...[...new Set([
-      ...items.value.map(item => item.model_name.trim()).filter(Boolean),
-      ...(selectedModel.value === 'ALL' ? [] : [selectedModel.value]),
+      ...filterOptions.value.modelNames.map(option => option.value),
+      ...(filterState.value.modelName === null ? [] : [filterState.value.modelName]),
     ])].sort((left, right) => left.localeCompare(right)),
   ])
-
-  const filteredItems = computed(() => {
-    const filtered = filterSchwalbeTireCatalogItems(items.value, {
-      modelNames: selectedModel.value === 'ALL' ? [] : [selectedModel.value],
-      nominalTireWidthMm: selectedTireWidthsMm.value,
-      beadSeatDiameterMm: selectedBeadSeatDiametersMm.value,
-      beads: selectedBeads.value,
-      seals: selectedSeals.value,
-      eBikeRatings: selectedEBikeRatings.value,
-      colors: selectedColors.value,
-      compounds: selectedCompounds.value,
-    })
-    return [...filtered].sort((left, right) => {
-      if (sortBy.value === 'etrto') {
-        return left.etrto.localeCompare(right.etrto, undefined, { numeric: true }) || left.article_no.localeCompare(right.article_no)
-      }
-      if (sortBy.value === 'article') {
-        return left.article_no.localeCompare(right.article_no, undefined, { numeric: true })
-      }
-      return left.model_name.localeCompare(right.model_name) || left.etrto.localeCompare(right.etrto, undefined, { numeric: true }) || left.article_no.localeCompare(right.article_no)
-    })
-  })
-
-  const totalItems = computed(() => filteredItems.value.length)
-  const totalPages = computed(() => Math.max(1, Math.ceil(totalItems.value / SCHWALBE_CATALOG_PAGE_SIZE)))
+  const totalItems = computed(() => data.value?.total || 0)
+  const totalPages = computed(() => Math.max(1, data.value?.total_pages || 1))
   const currentPage = computed(() => Math.min(requestedPage.value, totalPages.value))
-  const visibleItems = computed(() => {
-    const start = (currentPage.value - 1) * SCHWALBE_CATALOG_PAGE_SIZE
-    return filteredItems.value.slice(start, start + SCHWALBE_CATALOG_PAGE_SIZE)
-  })
+  const visibleItems = computed(() => items.value)
 
   const paginationPages = computed<PaginationToken[]>(() => {
     if (totalPages.value <= 7) {
@@ -122,14 +272,20 @@ export const useSchwalbeTireSelector = async () => {
   }
 
   const hasActiveFilters = computed(() => (
-    selectedModel.value !== 'ALL'
-    || selectedTireWidthsMm.value.length > 0
-    || selectedBeadSeatDiametersMm.value.length > 0
-    || selectedBeads.value.length > 0
-    || selectedSeals.value.length > 0
-    || selectedEBikeRatings.value.length > 0
-    || selectedColors.value.length > 0
-    || selectedCompounds.value.length > 0
+    filterState.value.modelName !== null
+    || filterState.value.nominalTireWidthsMm.length > 0
+    || filterState.value.nominalTireWidthMinMm !== null
+    || filterState.value.nominalTireWidthMaxMm !== null
+    || filterState.value.wheelSizeKeys.length > 0
+    || filterState.value.beadSeatDiametersMm.length > 0
+    || filterState.value.minimumLoadKg !== null
+    || filterState.value.casingConstructions.length > 0
+    || filterState.value.radialOnly
+    || filterState.value.beads.length > 0
+    || filterState.value.seals.length > 0
+    || filterState.value.eBikeRatings.length > 0
+    || filterState.value.colors.length > 0
+    || filterState.value.compounds.length > 0
   ))
 
   let applyingRouteFilterState = false
@@ -140,17 +296,7 @@ export const useSchwalbeTireSelector = async () => {
     if (!import.meta.client || applyingRouteFilterState) return
     const query = mergeSchwalbeTireCatalogFilterQuery(
       route.query as Record<string, unknown>,
-      {
-        modelName: selectedModel.value === 'ALL' ? null : selectedModel.value,
-        nominalTireWidthsMm: selectedTireWidthsMm.value,
-        beadSeatDiametersMm: selectedBeadSeatDiametersMm.value,
-        beads: selectedBeads.value,
-        seals: selectedSeals.value,
-        eBikeRatings: selectedEBikeRatings.value,
-        colors: selectedColors.value,
-        compounds: selectedCompounds.value,
-        sortBy: sortBy.value,
-      },
+      filterState.value,
     )
     delete query.page
 
@@ -177,54 +323,39 @@ export const useSchwalbeTireSelector = async () => {
   }
 
   watch(
-    () => JSON.stringify([
-      selectedModel.value,
-      selectedTireWidthsMm.value,
-      selectedBeadSeatDiametersMm.value,
-      selectedBeads.value,
-      selectedSeals.value,
-      selectedEBikeRatings.value,
-      selectedColors.value,
-      selectedCompounds.value,
-      sortBy.value,
-    ]),
+    () => JSON.stringify(filterState.value),
     updateRouteFilterState,
     { flush: 'sync' },
   )
 
   watch(
-    () => [
-      route.query.model,
-      route.query.tire_width_mm,
-      route.query.bead_seat_diameter_mm,
-      route.query.bead,
-      route.query.seal,
-      route.query.e_bike_rating,
-      route.query.color,
-      route.query.compound,
-      route.query.sort,
-    ],
+    () => JSON.stringify(routeFilterState.value),
     () => {
-      const nextFilterState = parseSchwalbeTireCatalogFilterQuery(
-        route.query as Record<string, unknown>,
-      )
       applyingRouteFilterState = true
-      selectedModel.value = nextFilterState.modelName || 'ALL'
-      selectedTireWidthsMm.value = nextFilterState.nominalTireWidthsMm
-      selectedBeadSeatDiametersMm.value = nextFilterState.beadSeatDiametersMm
-      selectedBeads.value = nextFilterState.beads
-      selectedSeals.value = nextFilterState.seals
-      selectedEBikeRatings.value = nextFilterState.eBikeRatings
-      selectedColors.value = nextFilterState.colors
-      selectedCompounds.value = nextFilterState.compounds
-      sortBy.value = nextFilterState.sortBy
+      filterState.value = routeFilterState.value
       applyingRouteFilterState = false
     },
     { flush: 'sync' },
   )
 
+  const clearFacetFilters = () => updateFilterState({
+    nominalTireWidthMinMm: null,
+    nominalTireWidthMaxMm: null,
+    nominalTireWidthsMm: [],
+    wheelSizeKeys: [],
+    beadSeatDiametersMm: [],
+    minimumLoadKg: null,
+    casingConstructions: [],
+    radialOnly: false,
+    beads: [],
+    seals: [],
+    eBikeRatings: [],
+    colors: [],
+    compounds: [],
+  })
+
   watch(() => route.query.search, (value) => {
-    const nextSearch = typeof value === 'string' ? value.trim() : ''
+    const nextSearch = readRouteSearch(value)
     if (nextSearch === submittedSearch.value) return
     searchInput.value = nextSearch
     submittedSearch.value = nextSearch
@@ -263,26 +394,35 @@ export const useSchwalbeTireSelector = async () => {
     submittedSearch,
     selectedModel,
     selectedTireWidthsMm,
+    selectedTireWidthMinMm,
+    selectedTireWidthMaxMm,
+    selectedWheelSizeKeys,
     selectedBeadSeatDiametersMm,
+    selectedMinimumLoadKg,
+    selectedCasingConstructions,
+    selectedRadialOnly,
     selectedBeads,
     selectedSeals,
     selectedEBikeRatings,
     selectedColors,
     selectedCompounds,
+    getFacetFilterState,
+    applyFacetFilterState,
     sortBy,
     items,
-    filteredItems,
     totalItems,
     visibleItems,
     modelOptions,
     tireWidthOptions: computed(() => filterOptions.value.nominalTireWidthsMm),
-    beadSeatDiameterOptions: computed(() => filterOptions.value.beadSeatDiametersMm),
+    wheelSizeOptions: computed(() => filterOptions.value.wheelSizes),
+    casingConstructionOptions: computed(() => filterOptions.value.casingConstructions),
     beadOptions: computed(() => filterOptions.value.beads),
     sealOptions: computed(() => filterOptions.value.seals),
     eBikeRatingOptions: computed(() => filterOptions.value.eBikeRatings),
     colorOptions: computed(() => filterOptions.value.colors),
     compoundOptions: computed(() => filterOptions.value.compounds),
     hasActiveFilters,
+    clearFacetFilters,
     pageSize: SCHWALBE_CATALOG_PAGE_SIZE,
     currentPage,
     totalPages,

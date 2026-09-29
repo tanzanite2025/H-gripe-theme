@@ -8,7 +8,7 @@ $ErrorActionPreference = 'Stop'
 $Root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $LogDir = Join-Path $Root 'output/dev'
 
-$redisHostPort = 9662
+$redisHostPort = 10662
 $redisHostPortOverride = [Environment]::GetEnvironmentVariable('REDIS_HOST_PORT', 'Process')
 if (-not [string]::IsNullOrWhiteSpace($redisHostPortOverride)) {
   $parsedRedisHostPort = 0

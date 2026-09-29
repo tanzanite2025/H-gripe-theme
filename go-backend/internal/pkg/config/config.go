@@ -549,7 +549,7 @@ func setDefaults() {
 
 	viper.SetDefault("redis.mode", "standalone")
 	viper.SetDefault("redis.host", "localhost")
-	viper.SetDefault("redis.port", 9662)
+	viper.SetDefault("redis.port", 10662)
 	viper.SetDefault("redis.addrs", []string{})
 	viper.SetDefault("redis.username", "")
 	viper.SetDefault("redis.password", "")

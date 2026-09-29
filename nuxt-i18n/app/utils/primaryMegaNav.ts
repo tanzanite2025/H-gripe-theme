@@ -148,6 +148,16 @@ export const primaryMegaNavSections: PrimaryMegaNavSection[] = [
         accent: 'emerald',
       },
       {
+        id: 'brand-wheelset-spoke-specs',
+        labelKey: 'brandWheelsetSpokeSpecs.navLabel',
+        labelFallback: 'Complete Wheelset Spoke Specs',
+        description: 'Browse spoke specifications for branded, factory-built wheelsets.',
+        to: '/resources/brand-wheelset-spoke-specs',
+        icon: 'lucide:search',
+        size: 'standard',
+        accent: 'emerald',
+      },
+      {
         id: 'blog',
         labelKey: 'footer.links.blog',
         labelFallback: 'Blog',

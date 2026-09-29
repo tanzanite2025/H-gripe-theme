@@ -1,6 +1,7 @@
 # Schwalbe FAQ 内容边界指南
 
 > 本文规定 FAQ 内容如何避免超出已有来源，不是商品录入流程，也不增加商品审批、复核或重复录入步骤。候选目录、模板型号自动回填和销售商品边界以 [Phase 1 商品模板实施指南](./phase1-schwalbe-tire-system-template-implementation-guide.md) 为准。
+> 页面端 FAQ 查询与 SSR 展示见 [Phase 2 实施指南](./phase2-standalone-page-implementation-guide.md)；SEO/FAQ 结构化数据边界见 [SEO/GEO 规范](./schwalbe-tire-selector-and-geo-specification.md)。本指南只拥有内容来源与后台发布规则。
 
 ## 1. FAQ 与商品数据的关系
 

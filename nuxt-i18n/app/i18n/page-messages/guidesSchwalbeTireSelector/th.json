@@ -1,0 +1,18 @@
+{
+  "filters": {
+    "tireWidthMin": "ต่ำสุด",
+    "tireWidthMax": "สูงสุด",
+    "minimumLoad": "ความสามารถรับน้ำหนักขั้นต่ำต่อยางหนึ่งเส้น",
+    "minimumLoadHint": "เปรียบเทียบกับค่ารับน้ำหนักอย่างเป็นทางการของยางหนึ่งเส้น ค่านี้ไม่ใช่ขีดจำกัดน้ำหนักตัวผู้ขี่ เพราะน้ำหนักผู้ขี่ จักรยาน และสัมภาระจะกระจายไปยังยางหน้าและยางหลัง",
+    "openFilters": "ตัวกรอง",
+    "dialogTitle": "กรองแค็ตตาล็อก",
+    "closeFilters": "ปิดตัวกรอง",
+    "showResults": "ดูผลลัพธ์",
+    "activeCount": "เปิดใช้งาน {count} รายการ",
+    "groupDimensions": "ขนาด",
+    "groupCapacity": "น้ำหนักบรรทุกและการใช้งาน",
+    "groupConstruction": "โครงสร้าง",
+    "groupAppearance": "สีและเนื้อยาง",
+    "selectedCount": "เลือก {count} รายการ"
+  }
+}

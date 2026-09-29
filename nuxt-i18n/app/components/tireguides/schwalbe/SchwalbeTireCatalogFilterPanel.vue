@@ -1,126 +1,357 @@
 <template>
   <section class="schwalbe-filter-panel" :aria-label="label">
-    <fieldset class="schwalbe-filter-panel__group">
-      <legend>{{ tireWidthLabel }}</legend>
-      <div class="schwalbe-filter-panel__options">
-        <label v-for="option in tireWidthOptions" :key="option.value" class="schwalbe-filter-panel__option">
-          <input
-            v-model="selectedTireWidthsMm"
-            type="checkbox"
-            :value="option.value"
+    <details name="schwalbe-filter-accordion" class="schwalbe-filter-panel__accordion" open @toggle="closeOtherAccordions">
+      <summary class="schwalbe-filter-panel__accordion-title">
+        <span>{{ tireWidthLabel }}</span>
+        <span v-if="selectedTireWidthMinMm !== null || selectedTireWidthMaxMm !== null" class="schwalbe-filter-panel__selection-count">
+          <span aria-hidden="true">1</span>
+          <span class="schwalbe-filter-panel__visually-hidden">{{ selectedCountLabel(1) }}</span>
+        </span>
+      </summary>
+      <div class="schwalbe-filter-panel__fields">
+        <fieldset class="schwalbe-filter-panel__group">
+          <legend class="schwalbe-filter-panel__visually-hidden">{{ tireWidthLabel }}</legend>
+          <div class="schwalbe-filter-panel__range-inputs">
+            <label class="schwalbe-filter-panel__range-input">
+              <span class="schwalbe-filter-panel__range-label">{{ tireWidthMinLabel }}</span>
+              <span class="schwalbe-filter-panel__range-control">
+                <input
+                  type="number"
+                  step="1"
+                  inputmode="numeric"
+                  :min="tireWidthMinimum || 1"
+                  :max="tireWidthMaximum || undefined"
+                  :aria-label="`${tireWidthLabel} ${tireWidthMinLabel}`"
+                  :value="selectedTireWidthMinMm ?? ''"
+                  @change="updateTireWidthMinFromInput"
+                >
+                <span>mm</span>
+              </span>
+            </label>
+            <label class="schwalbe-filter-panel__range-input">
+              <span class="schwalbe-filter-panel__range-label">{{ tireWidthMaxLabel }}</span>
+              <span class="schwalbe-filter-panel__range-control">
+                <input
+                  type="number"
+                  step="1"
+                  inputmode="numeric"
+                  :min="tireWidthMinimum || 1"
+                  :max="tireWidthMaximum || undefined"
+                  :aria-label="`${tireWidthLabel} ${tireWidthMaxLabel}`"
+                  :value="selectedTireWidthMaxMm ?? ''"
+                  @change="updateTireWidthMaxFromInput"
+                >
+                <span>mm</span>
+              </span>
+            </label>
+          </div>
+          <div class="schwalbe-filter-panel__range-slider" :class="{ 'schwalbe-filter-panel__range-slider--empty': tireWidthValues.length === 0 }">
+            <span class="schwalbe-filter-panel__range-track" aria-hidden="true" />
+            <input
+              class="schwalbe-filter-panel__range-slider-input schwalbe-filter-panel__range-slider-input--min"
+              type="range"
+              min="0"
+              :max="tireWidthSliderMaximum"
+              step="1"
+              :value="tireWidthMinIndex"
+              :disabled="tireWidthValues.length === 0"
+              :aria-label="`${tireWidthLabel} ${tireWidthMinLabel}`"
+              :aria-valuetext="`${selectedTireWidthMinMm ?? tireWidthMinimum} mm`"
+              @input="updateTireWidthMinFromSlider"
+            >
+            <input
+              class="schwalbe-filter-panel__range-slider-input schwalbe-filter-panel__range-slider-input--max"
+              type="range"
+              min="0"
+              :max="tireWidthSliderMaximum"
+              step="1"
+              :value="tireWidthMaxIndex"
+              :disabled="tireWidthValues.length === 0"
+              :aria-label="`${tireWidthLabel} ${tireWidthMaxLabel}`"
+              :aria-valuetext="`${selectedTireWidthMaxMm ?? tireWidthMaximum} mm`"
+              @input="updateTireWidthMaxFromSlider"
+            >
+          </div>
+          <p v-if="tireWidthValues.length > 0" class="schwalbe-filter-panel__hint">
+            {{ tireWidthMinimum }}–{{ tireWidthMaximum }} mm
+          </p>
+        </fieldset>
+      </div>
+    </details>
+
+    <details name="schwalbe-filter-accordion" class="schwalbe-filter-panel__accordion" @toggle="closeOtherAccordions">
+      <summary class="schwalbe-filter-panel__accordion-title">
+        <span>{{ wheelSizeLabel }}</span>
+        <span v-if="selectedWheelSizeKeys.length > 0" class="schwalbe-filter-panel__selection-count">
+          <span aria-hidden="true">{{ selectedWheelSizeKeys.length }}</span>
+          <span class="schwalbe-filter-panel__visually-hidden">{{ selectedCountLabel(selectedWheelSizeKeys.length) }}</span>
+        </span>
+      </summary>
+      <div class="schwalbe-filter-panel__fields">
+        <fieldset class="schwalbe-filter-panel__group">
+          <legend class="schwalbe-filter-panel__visually-hidden">{{ wheelSizeLabel }}</legend>
+          <div
+            class="schwalbe-filter-panel__options"
+            :class="{ 'schwalbe-filter-panel__options--many': hasManyOptions(wheelSizeOptions) }"
           >
-          <span>{{ option.value }} mm</span>
-        </label>
+            <label v-for="option in wheelSizeOptions" :key="option.value" class="schwalbe-filter-panel__option">
+              <input v-model="selectedWheelSizeKeys" type="checkbox" :value="option.value">
+              <span>{{ wheelSizeOptionLabel(option) }}</span>
+            </label>
+          </div>
+        </fieldset>
       </div>
-    </fieldset>
+    </details>
 
-    <fieldset class="schwalbe-filter-panel__group">
-      <legend>{{ beadSeatDiameterLabel }}</legend>
-      <div class="schwalbe-filter-panel__options">
-        <label v-for="option in beadSeatDiameterOptions" :key="option.value" class="schwalbe-filter-panel__option">
-          <input
-            v-model="selectedBeadSeatDiametersMm"
-            type="checkbox"
-            :value="option.value"
+    <details name="schwalbe-filter-accordion" class="schwalbe-filter-panel__accordion" @toggle="closeOtherAccordions">
+      <summary class="schwalbe-filter-panel__accordion-title">
+        <span>{{ minimumLoadLabel }}</span>
+        <span v-if="minimumLoadKg !== null" class="schwalbe-filter-panel__selection-count">
+          <span aria-hidden="true">1</span>
+          <span class="schwalbe-filter-panel__visually-hidden">{{ selectedCountLabel(1) }}</span>
+        </span>
+      </summary>
+      <div class="schwalbe-filter-panel__fields">
+        <fieldset class="schwalbe-filter-panel__group">
+          <legend class="schwalbe-filter-panel__visually-hidden">{{ minimumLoadLabel }}</legend>
+          <label class="schwalbe-filter-panel__numeric-control">
+            <input
+              type="number"
+              :aria-label="minimumLoadLabel"
+              min="1"
+              step="0.1"
+              inputmode="decimal"
+              :value="minimumLoadKg ?? ''"
+              @input="updateMinimumLoadFromInput"
+            >
+            <span>kg</span>
+          </label>
+          <p class="schwalbe-filter-panel__hint">{{ minimumLoadHint }}</p>
+        </fieldset>
+      </div>
+    </details>
+
+    <details name="schwalbe-filter-accordion" class="schwalbe-filter-panel__accordion" @toggle="closeOtherAccordions">
+      <summary class="schwalbe-filter-panel__accordion-title">
+        <span>{{ eBikeRatingLabel }}</span>
+        <span v-if="selectedEBikeRatings.length > 0" class="schwalbe-filter-panel__selection-count">
+          <span aria-hidden="true">{{ selectedEBikeRatings.length }}</span>
+          <span class="schwalbe-filter-panel__visually-hidden">{{ selectedCountLabel(selectedEBikeRatings.length) }}</span>
+        </span>
+      </summary>
+      <div class="schwalbe-filter-panel__fields">
+        <fieldset class="schwalbe-filter-panel__group">
+          <legend class="schwalbe-filter-panel__visually-hidden">{{ eBikeRatingLabel }}</legend>
+          <div
+            class="schwalbe-filter-panel__options"
+            :class="{ 'schwalbe-filter-panel__options--many': hasManyOptions(eBikeRatingOptions) }"
           >
-          <span>{{ option.value }} mm</span>
-        </label>
+            <label
+              v-for="(option, index) in eBikeRatingOptions"
+              :key="option.value ?? `unrated-${index}`"
+              class="schwalbe-filter-panel__option"
+            >
+              <input v-model="selectedEBikeRatings" type="checkbox" :value="option.value">
+              <span>{{ option.value ?? eBikeUnratedLabel }}</span>
+            </label>
+          </div>
+        </fieldset>
       </div>
-    </fieldset>
+    </details>
 
-    <fieldset class="schwalbe-filter-panel__group">
-      <legend>{{ beadLabel }}</legend>
-      <div class="schwalbe-filter-panel__options">
-        <label v-for="option in beadOptions" :key="option.value" class="schwalbe-filter-panel__option">
-          <input v-model="selectedBeads" type="checkbox" :value="option.value">
-          <span>{{ option.value }}</span>
-        </label>
+    <details name="schwalbe-filter-accordion" class="schwalbe-filter-panel__accordion" @toggle="closeOtherAccordions">
+      <summary class="schwalbe-filter-panel__accordion-title">
+        <span>{{ casingConstructionLabel }}</span>
+        <span v-if="selectedCasingConstructions.length > 0" class="schwalbe-filter-panel__selection-count">
+          <span aria-hidden="true">{{ selectedCasingConstructions.length }}</span>
+          <span class="schwalbe-filter-panel__visually-hidden">{{ selectedCountLabel(selectedCasingConstructions.length) }}</span>
+        </span>
+      </summary>
+      <div class="schwalbe-filter-panel__fields">
+        <fieldset class="schwalbe-filter-panel__group">
+          <legend class="schwalbe-filter-panel__visually-hidden">{{ casingConstructionLabel }}</legend>
+          <div
+            class="schwalbe-filter-panel__options"
+            :class="{ 'schwalbe-filter-panel__options--many': hasManyOptions(casingConstructionOptions) }"
+          >
+            <label v-for="option in casingConstructionOptions" :key="option.value" class="schwalbe-filter-panel__option">
+              <input v-model="selectedCasingConstructions" type="checkbox" :value="option.value">
+              <span>{{ option.value }}</span>
+            </label>
+          </div>
+        </fieldset>
       </div>
-    </fieldset>
+    </details>
 
-    <fieldset class="schwalbe-filter-panel__group">
-      <legend>{{ sealLabel }}</legend>
-      <div class="schwalbe-filter-panel__options">
-        <label v-for="option in sealOptions" :key="option.value" class="schwalbe-filter-panel__option">
-          <input v-model="selectedSeals" type="checkbox" :value="option.value">
-          <span>{{ option.value }}</span>
-        </label>
+    <details name="schwalbe-filter-accordion" class="schwalbe-filter-panel__accordion" @toggle="closeOtherAccordions">
+      <summary class="schwalbe-filter-panel__accordion-title">
+        <span>{{ radialLabel }}</span>
+        <span v-if="selectedRadialOnly" class="schwalbe-filter-panel__selection-count">
+          <span aria-hidden="true">1</span>
+          <span class="schwalbe-filter-panel__visually-hidden">{{ selectedCountLabel(1) }}</span>
+        </span>
+      </summary>
+      <div class="schwalbe-filter-panel__fields">
+        <fieldset class="schwalbe-filter-panel__group">
+          <legend class="schwalbe-filter-panel__visually-hidden">{{ radialLabel }}</legend>
+          <div class="schwalbe-filter-panel__options">
+            <label class="schwalbe-filter-panel__option">
+              <input v-model="selectedRadialOnly" type="checkbox">
+              <span>{{ radialLabel }}</span>
+            </label>
+          </div>
+        </fieldset>
       </div>
-    </fieldset>
+    </details>
 
-    <fieldset class="schwalbe-filter-panel__group">
-      <legend>{{ eBikeRatingLabel }}</legend>
-      <div class="schwalbe-filter-panel__options">
-        <label
-          v-for="(option, index) in eBikeRatingOptions"
-          :key="option.value ?? `unrated-${index}`"
-          class="schwalbe-filter-panel__option"
-        >
-          <input v-model="selectedEBikeRatings" type="checkbox" :value="option.value">
-          <span>{{ option.value ?? eBikeUnratedLabel }}</span>
-        </label>
+    <details name="schwalbe-filter-accordion" class="schwalbe-filter-panel__accordion" @toggle="closeOtherAccordions">
+      <summary class="schwalbe-filter-panel__accordion-title">
+        <span>{{ beadLabel }}</span>
+        <span v-if="selectedBeads.length > 0" class="schwalbe-filter-panel__selection-count">
+          <span aria-hidden="true">{{ selectedBeads.length }}</span>
+          <span class="schwalbe-filter-panel__visually-hidden">{{ selectedCountLabel(selectedBeads.length) }}</span>
+        </span>
+      </summary>
+      <div class="schwalbe-filter-panel__fields">
+        <fieldset class="schwalbe-filter-panel__group">
+          <legend class="schwalbe-filter-panel__visually-hidden">{{ beadLabel }}</legend>
+          <div
+            class="schwalbe-filter-panel__options"
+            :class="{ 'schwalbe-filter-panel__options--many': hasManyOptions(beadOptions) }"
+          >
+            <label v-for="option in beadOptions" :key="option.value" class="schwalbe-filter-panel__option">
+              <input v-model="selectedBeads" type="checkbox" :value="option.value">
+              <span>{{ option.value }}</span>
+            </label>
+          </div>
+        </fieldset>
       </div>
-    </fieldset>
+    </details>
 
-    <fieldset class="schwalbe-filter-panel__group">
-      <legend>{{ colorLabel }}</legend>
-      <div class="schwalbe-filter-panel__options">
-        <label v-for="option in colorOptions" :key="option.value" class="schwalbe-filter-panel__option">
-          <input v-model="selectedColors" type="checkbox" :value="option.value">
-          <span>{{ option.value }}</span>
-        </label>
+    <details name="schwalbe-filter-accordion" class="schwalbe-filter-panel__accordion" @toggle="closeOtherAccordions">
+      <summary class="schwalbe-filter-panel__accordion-title">
+        <span>{{ sealLabel }}</span>
+        <span v-if="selectedSeals.length > 0" class="schwalbe-filter-panel__selection-count">
+          <span aria-hidden="true">{{ selectedSeals.length }}</span>
+          <span class="schwalbe-filter-panel__visually-hidden">{{ selectedCountLabel(selectedSeals.length) }}</span>
+        </span>
+      </summary>
+      <div class="schwalbe-filter-panel__fields">
+        <fieldset class="schwalbe-filter-panel__group">
+          <legend class="schwalbe-filter-panel__visually-hidden">{{ sealLabel }}</legend>
+          <div
+            class="schwalbe-filter-panel__options"
+            :class="{ 'schwalbe-filter-panel__options--many': hasManyOptions(sealOptions) }"
+          >
+            <label v-for="option in sealOptions" :key="option.value" class="schwalbe-filter-panel__option">
+              <input v-model="selectedSeals" type="checkbox" :value="option.value">
+              <span>{{ option.value }}</span>
+            </label>
+          </div>
+        </fieldset>
       </div>
-    </fieldset>
+    </details>
 
-    <fieldset class="schwalbe-filter-panel__group">
-      <legend>{{ compoundLabel }}</legend>
-      <div class="schwalbe-filter-panel__options">
-        <label v-for="option in compoundOptions" :key="option.value" class="schwalbe-filter-panel__option">
-          <input v-model="selectedCompounds" type="checkbox" :value="option.value">
-          <span>{{ option.value }}</span>
-        </label>
+    <details name="schwalbe-filter-accordion" class="schwalbe-filter-panel__accordion" @toggle="closeOtherAccordions">
+      <summary class="schwalbe-filter-panel__accordion-title">
+        <span>{{ colorLabel }}</span>
+        <span v-if="selectedColors.length > 0" class="schwalbe-filter-panel__selection-count">
+          <span aria-hidden="true">{{ selectedColors.length }}</span>
+          <span class="schwalbe-filter-panel__visually-hidden">{{ selectedCountLabel(selectedColors.length) }}</span>
+        </span>
+      </summary>
+      <div class="schwalbe-filter-panel__fields">
+        <fieldset class="schwalbe-filter-panel__group">
+          <legend class="schwalbe-filter-panel__visually-hidden">{{ colorLabel }}</legend>
+          <div
+            class="schwalbe-filter-panel__options"
+            :class="{ 'schwalbe-filter-panel__options--many': hasManyOptions(colorOptions) }"
+          >
+            <label v-for="option in colorOptions" :key="option.value" class="schwalbe-filter-panel__option">
+              <input v-model="selectedColors" type="checkbox" :value="option.value">
+              <span>{{ option.value }}</span>
+            </label>
+          </div>
+        </fieldset>
       </div>
-    </fieldset>
+    </details>
 
-    <button
-      v-if="hasSelection"
-      type="button"
-      class="schwalbe-filter-panel__reset"
-      @click="resetFilters"
-    >
+    <details name="schwalbe-filter-accordion" class="schwalbe-filter-panel__accordion" @toggle="closeOtherAccordions">
+      <summary class="schwalbe-filter-panel__accordion-title">
+        <span>{{ compoundLabel }}</span>
+        <span v-if="selectedCompounds.length > 0" class="schwalbe-filter-panel__selection-count">
+          <span aria-hidden="true">{{ selectedCompounds.length }}</span>
+          <span class="schwalbe-filter-panel__visually-hidden">{{ selectedCountLabel(selectedCompounds.length) }}</span>
+        </span>
+      </summary>
+      <div class="schwalbe-filter-panel__fields">
+        <fieldset class="schwalbe-filter-panel__group">
+          <legend class="schwalbe-filter-panel__visually-hidden">{{ compoundLabel }}</legend>
+          <div
+            class="schwalbe-filter-panel__options"
+            :class="{ 'schwalbe-filter-panel__options--many': hasManyOptions(compoundOptions) }"
+          >
+            <label v-for="option in compoundOptions" :key="option.value" class="schwalbe-filter-panel__option">
+              <input v-model="selectedCompounds" type="checkbox" :value="option.value">
+              <span>{{ option.value }}</span>
+            </label>
+          </div>
+        </fieldset>
+      </div>
+    </details>
+
+    <button v-if="hasSelection" type="button" class="schwalbe-filter-panel__reset" @click="emit('reset')">
       {{ resetLabel }}
     </button>
-
-    <p class="schwalbe-filter-panel__hint">{{ scrollHint }}</p>
   </section>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { SchwalbeTireCatalogFilterOption } from '~/data/tireguides/schwalbeTireCatalogFilterModel'
+import type {
+  SchwalbeTireCatalogFilterOption,
+  SchwalbeTireCatalogWheelSizeOption,
+} from '~/data/tireguides/schwalbeTireCatalogFilterModel'
 
 const selectedTireWidthsMm = defineModel<number[]>('selectedTireWidthsMm', { required: true })
+const selectedTireWidthMinMm = defineModel<number | null>('selectedTireWidthMinMm', { required: true })
+const selectedTireWidthMaxMm = defineModel<number | null>('selectedTireWidthMaxMm', { required: true })
+const selectedWheelSizeKeys = defineModel<string[]>('selectedWheelSizeKeys', { required: true })
 const selectedBeadSeatDiametersMm = defineModel<number[]>('selectedBeadSeatDiametersMm', { required: true })
+const minimumLoadKg = defineModel<number | null>('minimumLoadKg', { required: true })
+const selectedCasingConstructions = defineModel<string[]>('selectedCasingConstructions', { required: true })
+const selectedRadialOnly = defineModel<boolean>('selectedRadialOnly', { required: true })
 const selectedBeads = defineModel<string[]>('selectedBeads', { required: true })
 const selectedSeals = defineModel<string[]>('selectedSeals', { required: true })
 const selectedEBikeRatings = defineModel<(string | null)[]>('selectedEBikeRatings', { required: true })
 const selectedColors = defineModel<string[]>('selectedColors', { required: true })
 const selectedCompounds = defineModel<string[]>('selectedCompounds', { required: true })
+const emit = defineEmits<{
+  reset: []
+}>()
 
-defineProps<{
+const props = defineProps<{
   label: string
+  selectedCountTemplate: string
   tireWidthLabel: string
-  beadSeatDiameterLabel: string
+  tireWidthMinLabel: string
+  tireWidthMaxLabel: string
+  wheelSizeLabel: string
+  wheelSizeOptionTemplate: string
+  minimumLoadLabel: string
+  minimumLoadHint: string
+  casingConstructionLabel: string
+  radialLabel: string
   beadLabel: string
   sealLabel: string
   eBikeRatingLabel: string
   eBikeUnratedLabel: string
   colorLabel: string
   compoundLabel: string
-  scrollHint: string
   resetLabel: string
   tireWidthOptions: readonly SchwalbeTireCatalogFilterOption<number>[]
-  beadSeatDiameterOptions: readonly SchwalbeTireCatalogFilterOption<number>[]
+  wheelSizeOptions: readonly SchwalbeTireCatalogWheelSizeOption[]
+  casingConstructionOptions: readonly SchwalbeTireCatalogFilterOption<string>[]
   beadOptions: readonly SchwalbeTireCatalogFilterOption<string>[]
   sealOptions: readonly SchwalbeTireCatalogFilterOption<string>[]
   eBikeRatingOptions: readonly SchwalbeTireCatalogFilterOption<string | null>[]
@@ -129,8 +360,14 @@ defineProps<{
 }>()
 
 const hasSelection = computed(() => (
-  selectedTireWidthsMm.value.length > 0
+  selectedTireWidthMinMm.value !== null
+  || selectedTireWidthMaxMm.value !== null
+  || selectedTireWidthsMm.value.length > 0
+  || selectedWheelSizeKeys.value.length > 0
   || selectedBeadSeatDiametersMm.value.length > 0
+  || minimumLoadKg.value !== null
+  || selectedCasingConstructions.value.length > 0
+  || selectedRadialOnly.value
   || selectedBeads.value.length > 0
   || selectedSeals.value.length > 0
   || selectedEBikeRatings.value.length > 0
@@ -138,33 +375,334 @@ const hasSelection = computed(() => (
   || selectedCompounds.value.length > 0
 ))
 
-const resetFilters = () => {
+const wheelSizeOptionLabel = (option: SchwalbeTireCatalogWheelSizeOption) => props.wheelSizeOptionTemplate
+  .replace('{diameter}', option.wheelDiameterIn)
+  .replace('{bsd}', String(option.beadSeatDiameterMm))
+
+const manyOptionThreshold = 5
+const hasManyOptions = (options: readonly unknown[]) => options.length >= manyOptionThreshold
+
+const tireWidthValues = computed(() => (
+  [...new Set(props.tireWidthOptions
+    .map(option => option.value)
+    .filter(value => Number.isSafeInteger(value) && value > 0))]
+    .sort((left, right) => left - right)
+))
+
+const tireWidthMinimum = computed(() => tireWidthValues.value[0] ?? 0)
+const tireWidthMaximum = computed(() => tireWidthValues.value[tireWidthValues.value.length - 1] ?? 0)
+const tireWidthSliderMaximum = computed(() => Math.max(0, tireWidthValues.value.length - 1))
+
+const indexForTireWidth = (value: number | null, side: 'min' | 'max'): number => {
+  const values = tireWidthValues.value
+  if (values.length === 0 || value === null) return side === 'min' ? 0 : values.length - 1
+
+  if (side === 'min') {
+    const index = values.findIndex(candidate => candidate >= value)
+    return index >= 0 ? index : values.length - 1
+  }
+
+  for (let index = values.length - 1; index >= 0; index -= 1) {
+    const candidate = values[index]
+    if (candidate !== undefined && candidate <= value) return index
+  }
+  return 0
+}
+
+const tireWidthMinIndex = computed(() => indexForTireWidth(selectedTireWidthMinMm.value, 'min'))
+const tireWidthMaxIndex = computed(() => indexForTireWidth(selectedTireWidthMaxMm.value, 'max'))
+
+const snapTireWidthValue = (value: number | null, side: 'min' | 'max'): number | null => {
+  if (value === null || tireWidthValues.value.length === 0) return null
+  return tireWidthValues.value[indexForTireWidth(value, side)] ?? null
+}
+
+const setTireWidthMinimum = (value: number | null) => {
+  const nextValue = snapTireWidthValue(value, 'min')
+  const currentMaximum = selectedTireWidthMaxMm.value
   selectedTireWidthsMm.value = []
-  selectedBeadSeatDiametersMm.value = []
-  selectedBeads.value = []
-  selectedSeals.value = []
-  selectedEBikeRatings.value = []
-  selectedColors.value = []
-  selectedCompounds.value = []
+  selectedTireWidthMinMm.value = nextValue
+  if (currentMaximum !== null) {
+    selectedTireWidthMaxMm.value = nextValue !== null && nextValue > currentMaximum
+      ? nextValue
+      : currentMaximum
+  }
+}
+
+const setTireWidthMaximum = (value: number | null) => {
+  const nextValue = snapTireWidthValue(value, 'max')
+  const currentMinimum = selectedTireWidthMinMm.value
+  selectedTireWidthsMm.value = []
+  selectedTireWidthMaxMm.value = nextValue
+  if (currentMinimum !== null) {
+    selectedTireWidthMinMm.value = nextValue !== null && nextValue < currentMinimum
+      ? nextValue
+      : currentMinimum
+  }
+}
+
+const readTireWidthInput = (event: Event): number | null => {
+  const inputValue = (event.target as HTMLInputElement).value.trim()
+  if (!inputValue) return null
+  const value = Number(inputValue)
+  return Number.isSafeInteger(value) && value > 0 ? value : null
+}
+
+const updateTireWidthMinFromInput = (event: Event) => setTireWidthMinimum(readTireWidthInput(event))
+const updateTireWidthMaxFromInput = (event: Event) => setTireWidthMaximum(readTireWidthInput(event))
+
+const readTireWidthSliderIndex = (event: Event): number => {
+  const value = Number((event.target as HTMLInputElement).value)
+  return Number.isSafeInteger(value)
+    ? Math.min(Math.max(value, 0), tireWidthSliderMaximum.value)
+    : 0
+}
+
+const updateTireWidthMinFromSlider = (event: Event) => {
+  setTireWidthMinimum(tireWidthValues.value[readTireWidthSliderIndex(event)] ?? null)
+}
+
+const updateTireWidthMaxFromSlider = (event: Event) => {
+  setTireWidthMaximum(tireWidthValues.value[readTireWidthSliderIndex(event)] ?? null)
+}
+
+const closeOtherAccordions = (event: Event) => {
+  const current = event.currentTarget
+  if (!(current instanceof HTMLDetailsElement) || !current.open) return
+
+  const panel = current.closest('.schwalbe-filter-panel')
+  panel?.querySelectorAll<HTMLDetailsElement>('.schwalbe-filter-panel__accordion[open]').forEach((accordion) => {
+    if (accordion !== current) accordion.open = false
+  })
+}
+
+const selectedCountLabel = (count: number) => props.selectedCountTemplate.replace('{count}', String(count))
+
+const updateMinimumLoadFromInput = (event: Event) => {
+  const inputValue = (event.target as HTMLInputElement).value.trim()
+  const value = inputValue ? Number(inputValue) : null
+  minimumLoadKg.value = value !== null && Number.isFinite(value) && value > 0 ? value : null
 }
 </script>
 
 <style scoped>
 .schwalbe-filter-panel {
-  display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr)) auto;
-  gap: 0.75rem;
-  align-items: end;
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.schwalbe-filter-panel__accordion {
+  min-width: 0;
+  overflow: hidden;
   border: 1px solid var(--tz-border-subtle);
-  border-radius: 0.85rem;
-  background: var(--tz-surface-subtle);
-  padding: 0.85rem;
+  border-radius: 0.75rem;
+  background: var(--tz-card-surface);
+}
+
+.schwalbe-filter-panel__accordion-title {
+  display: flex;
+  min-height: 2.85rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.65rem 0.8rem;
+  color: var(--tz-text-primary);
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  list-style: none;
+}
+
+.schwalbe-filter-panel__accordion-title::-webkit-details-marker {
+  display: none;
+}
+
+.schwalbe-filter-panel__accordion-title::after {
+  width: 0.45rem;
+  height: 0.45rem;
+  flex: 0 0 auto;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  content: '';
+  transform: translateY(-0.12rem) rotate(45deg);
+  transition: transform 0.16s ease;
+}
+
+.schwalbe-filter-panel__accordion[open] > .schwalbe-filter-panel__accordion-title {
+  border-bottom: 1px solid var(--tz-border-subtle);
+}
+
+.schwalbe-filter-panel__accordion[open] > .schwalbe-filter-panel__accordion-title::after {
+  transform: translateY(0.12rem) rotate(225deg);
+}
+
+.schwalbe-filter-panel__selection-count {
+  display: inline-grid;
+  width: 1.4rem;
+  height: 1.4rem;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--tz-action-primary) 12%, var(--tz-card-surface));
+  color: var(--tz-action-primary);
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+
+.schwalbe-filter-panel__visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  clip-path: inset(50%);
+}
+
+.schwalbe-filter-panel__fields {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  padding: 0.8rem;
+}
+
+.schwalbe-filter-panel__range-inputs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem;
+}
+
+.schwalbe-filter-panel__range-input {
+  display: grid;
+  min-width: 0;
+  gap: 0.25rem;
+}
+
+.schwalbe-filter-panel__range-label {
+  color: var(--tz-text-secondary);
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.schwalbe-filter-panel__range-control {
+  display: flex;
+  min-height: 2.35rem;
+  align-items: center;
+  gap: 0.45rem;
+  border: 1px solid var(--tz-border-subtle);
+  border-radius: 0.65rem;
+  background: var(--tz-card-surface);
+  color: var(--tz-text-primary);
+  padding: 0.25rem 0.55rem;
+}
+
+.schwalbe-filter-panel__range-control input {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 0.82rem;
+}
+
+.schwalbe-filter-panel__range-control input:focus-visible {
+  outline: 2px solid var(--tz-action-primary);
+  outline-offset: 2px;
+}
+
+.schwalbe-filter-panel__range-control > span {
+  color: var(--tz-text-secondary);
+  font-size: 0.75rem;
+}
+
+.schwalbe-filter-panel__range-slider {
+  position: relative;
+  display: grid;
+  min-height: 2.45rem;
+  align-items: center;
+  padding: 0 0.35rem;
+}
+
+.schwalbe-filter-panel__range-track {
+  position: absolute;
+  right: 0.35rem;
+  left: 0.35rem;
+  height: 0.3rem;
+  border-radius: 999px;
+  background: var(--tz-border-subtle);
+}
+
+.schwalbe-filter-panel__range-slider-input {
+  position: relative;
+  z-index: 2;
+  grid-area: 1 / 1;
+  width: 100%;
+  height: 2.45rem;
+  margin: 0;
+  appearance: none;
+  pointer-events: none;
+  background: transparent;
+}
+
+.schwalbe-filter-panel__range-slider-input--max {
+  z-index: 3;
+}
+
+.schwalbe-filter-panel__range-slider-input::-webkit-slider-runnable-track {
+  height: 0.3rem;
+  background: transparent;
+}
+
+.schwalbe-filter-panel__range-slider-input::-moz-range-track {
+  height: 0.3rem;
+  background: transparent;
+}
+
+.schwalbe-filter-panel__range-slider-input::-webkit-slider-thumb {
+  width: 1.15rem;
+  height: 1.15rem;
+  margin-top: -0.425rem;
+  appearance: none;
+  border: 2px solid var(--tz-card-surface);
+  border-radius: 999px;
+  background: var(--tz-action-primary);
+  box-shadow: 0 1px 4px rgb(15 23 42 / 0.28);
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.schwalbe-filter-panel__range-slider-input::-moz-range-thumb {
+  width: 0.9rem;
+  height: 0.9rem;
+  border: 2px solid var(--tz-card-surface);
+  border-radius: 999px;
+  background: var(--tz-action-primary);
+  box-shadow: 0 1px 4px rgb(15 23 42 / 0.28);
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.schwalbe-filter-panel__range-slider-input:focus-visible {
+  outline: 2px solid var(--tz-action-primary);
+  outline-offset: 0.2rem;
+}
+
+.schwalbe-filter-panel__range-slider-input:disabled {
+  opacity: 0.5;
+}
+
+.schwalbe-filter-panel__range-slider--empty {
+  min-height: 1rem;
 }
 
 .schwalbe-filter-panel__group {
   display: grid;
-  gap: 0.5rem;
-  align-self: start;
+  align-content: start;
+  gap: 0.45rem;
   min-width: 0;
   margin: 0;
   border: 0;
@@ -172,9 +710,9 @@ const resetFilters = () => {
 }
 
 .schwalbe-filter-panel__group legend {
-  margin-bottom: 0.15rem;
-  color: var(--tz-text-primary);
-  font-size: 0.76rem;
+  margin-bottom: 0.1rem;
+  color: var(--tz-text-secondary);
+  font-size: 0.72rem;
   font-weight: 700;
 }
 
@@ -182,21 +720,13 @@ const resetFilters = () => {
   display: flex;
   flex-wrap: wrap;
   gap: 0.4rem;
-  max-height: 5.2rem;
-  overflow: auto;
-  scrollbar-color: var(--tz-border-strong) transparent;
-  scrollbar-gutter: stable;
-  scrollbar-width: thin;
   padding: 0.1rem 0.1rem 0.15rem;
 }
 
-.schwalbe-filter-panel__options::-webkit-scrollbar {
-  width: 0.4rem;
-}
-
-.schwalbe-filter-panel__options::-webkit-scrollbar-thumb {
-  border-radius: 999px;
-  background: var(--tz-border-strong);
+.schwalbe-filter-panel__options--many {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: stretch;
 }
 
 .schwalbe-filter-panel__option {
@@ -212,6 +742,13 @@ const resetFilters = () => {
   font-size: 0.76rem;
   cursor: pointer;
   white-space: nowrap;
+}
+
+.schwalbe-filter-panel__options--many .schwalbe-filter-panel__option {
+  width: 100%;
+  min-width: 0;
+  justify-content: flex-start;
+  white-space: normal;
 }
 
 .schwalbe-filter-panel__option:has(input:checked) {
@@ -231,7 +768,46 @@ const resetFilters = () => {
   outline-offset: 2px;
 }
 
+.schwalbe-filter-panel__numeric-control {
+  display: flex;
+  width: min(100%, 10rem);
+  min-height: 2rem;
+  align-items: center;
+  gap: 0.5rem;
+  border: 1px solid var(--tz-border-subtle);
+  border-radius: 0.65rem;
+  background: var(--tz-card-surface);
+  color: var(--tz-text-primary);
+  padding: 0.25rem 0.55rem;
+}
+
+.schwalbe-filter-panel__numeric-control input {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 0.8rem;
+}
+
+.schwalbe-filter-panel__numeric-control input:focus-visible {
+  outline: 2px solid var(--tz-action-primary);
+  outline-offset: 2px;
+}
+
+.schwalbe-filter-panel__hint {
+  max-width: 24rem;
+  margin: 0;
+  color: var(--tz-text-secondary);
+  font-size: 0.68rem;
+  line-height: 1.4;
+}
+
 .schwalbe-filter-panel__reset {
+  grid-column: 1 / -1;
+  justify-self: end;
   min-height: 2rem;
   border: 1px solid var(--tz-border-strong);
   border-radius: 0.6rem;
@@ -245,39 +821,9 @@ const resetFilters = () => {
   white-space: nowrap;
 }
 
-.schwalbe-filter-panel__hint {
-  grid-column: 1 / -1;
-  margin: -0.2rem 0 0;
-  color: var(--tz-text-secondary);
-  font-size: 0.68rem;
-  line-height: 1.35;
-}
-
-@media (min-width: 761px) {
-  .schwalbe-filter-panel__options {
-    max-height: 8.5rem;
-  }
-}
-
-@media (min-width: 761px) and (max-width: 1100px) {
-  .schwalbe-filter-panel {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-}
-
-@media (min-width: 1101px) and (max-width: 1440px) {
-  .schwalbe-filter-panel {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-}
-
-@media (max-width: 760px) {
-  .schwalbe-filter-panel {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .schwalbe-filter-panel__options {
-    max-height: 7rem;
+@media (max-width: 760.5px) {
+  .schwalbe-filter-panel__option {
+    min-height: 2.5rem;
   }
 }
 </style>

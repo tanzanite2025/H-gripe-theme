@@ -2,6 +2,8 @@ package product
 
 import (
 	"errors"
+	"math"
+	"strconv"
 	"strings"
 
 	"commerce-platform/internal/api/middleware"
@@ -287,7 +289,116 @@ func (h *Handler) ListSchwalbeTireCatalog(c *gin.Context) {
 		apierror.RespondInternalError(c, err)
 		return
 	}
-	response.Success(c, items)
+	response.Success(c, publicSchwalbeTireCatalogItems(items))
+}
+
+func (h *Handler) SearchSchwalbeTireCatalogSelector(c *gin.Context) {
+	page, err := strconv.Atoi(c.Query("page"))
+	if err != nil || page < 1 {
+		page = 1
+	}
+	widthMin := parseSchwalbeTireSelectorPositiveInteger(c.Query("tire_width_min_mm"))
+	widthMax := parseSchwalbeTireSelectorPositiveInteger(c.Query("tire_width_max_mm"))
+	if widthMin != nil && widthMax != nil && *widthMin > *widthMax {
+		widthMin, widthMax = widthMax, widthMin
+	}
+
+	query := service.SchwalbeTireCatalogSelectorQuery{
+		Search:                c.Query("search"),
+		Page:                  page,
+		ModelName:             c.Query("model"),
+		NominalTireWidthMinMM: widthMin,
+		NominalTireWidthMaxMM: widthMax,
+		NominalTireWidthsMM:   parseSchwalbeTireSelectorPositiveIntegers(c.QueryArray("tire_width_mm")),
+		BeadSeatDiametersMM:   parseSchwalbeTireSelectorPositiveIntegers(c.QueryArray("bead_seat_diameter_mm")),
+		WheelSizeKeys:         parseSchwalbeTireSelectorStringValues(c.QueryArray("wheel_size")),
+		CasingConstructions:   c.QueryArray("casing"),
+		RadialOnly:            c.Query("radial") == "1" || strings.EqualFold(c.Query("radial"), "true"),
+		Beads:                 c.QueryArray("bead"),
+		Seals:                 c.QueryArray("seal"),
+		EBikeRatings:          parseSchwalbeTireSelectorEBikeRatings(c.QueryArray("e_bike_rating")),
+		Colors:                c.QueryArray("color"),
+		Compounds:             c.QueryArray("compound"),
+		MinLoadKG:             parseSchwalbeTireSelectorMinimumLoadKG(c.Query("min_load_kg")),
+		SortBy:                c.Query("sort"),
+	}
+
+	pageResult, err := h.productService.SearchSchwalbeTireCatalogSelector(query)
+	if err != nil {
+		apierror.RespondInternalError(c, err)
+		return
+	}
+	response.Success(c, publicSchwalbeTireCatalogSelectorResponseFromPage(pageResult))
+}
+
+func parseSchwalbeTireSelectorMinimumLoadKG(value string) *float64 {
+	normalized := strings.TrimSpace(value)
+	if normalized == "" {
+		return nil
+	}
+
+	minimumLoadKG, err := strconv.ParseFloat(normalized, 64)
+	if err != nil || minimumLoadKG <= 0 || math.IsNaN(minimumLoadKG) || math.IsInf(minimumLoadKG, 0) {
+		return nil
+	}
+	return &minimumLoadKG
+}
+
+func parseSchwalbeTireSelectorPositiveIntegers(values []string) []int {
+	parsed := make([]int, 0, len(values))
+	for _, value := range values {
+		number, err := strconv.Atoi(strings.TrimSpace(value))
+		if err == nil && number > 0 {
+			parsed = append(parsed, number)
+		}
+	}
+	return parsed
+}
+
+func parseSchwalbeTireSelectorPositiveInteger(value string) *int {
+	normalized := strings.TrimSpace(value)
+	if normalized == "" {
+		return nil
+	}
+
+	number, err := strconv.Atoi(normalized)
+	if err != nil || number <= 0 {
+		return nil
+	}
+	return &number
+}
+
+func parseSchwalbeTireSelectorStringValues(values []string) []string {
+	parsed := make([]string, 0, len(values))
+	seen := make(map[string]struct{}, len(values))
+	for _, value := range values {
+		normalized := strings.TrimSpace(value)
+		if normalized == "" {
+			continue
+		}
+		if _, exists := seen[normalized]; exists {
+			continue
+		}
+		seen[normalized] = struct{}{}
+		parsed = append(parsed, normalized)
+	}
+	return parsed
+}
+
+func parseSchwalbeTireSelectorEBikeRatings(values []string) []*string {
+	parsed := make([]*string, 0, len(values))
+	for _, value := range values {
+		normalized := strings.TrimSpace(value)
+		if normalized == "none" {
+			parsed = append(parsed, nil)
+			continue
+		}
+		if normalized == "" {
+			continue
+		}
+		parsed = append(parsed, &normalized)
+	}
+	return parsed
 }
 
 func (h *Handler) ListSchwalbeTireRimWidthCombinationRules(c *gin.Context) {

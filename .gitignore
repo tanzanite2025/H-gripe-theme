@@ -49,5 +49,14 @@ deployment/production.env
 # Release boundary evidence is retained outside Git
 release-evidence/
 /docs/
+# Keep the Schwalbe governance index versionable while leaving the rest of
+# the local design-document tree ignored.
+!/docs/
+docs/*
+!/docs/design/
+docs/design/*
+!/docs/design/schwalbe-tire/
+docs/design/schwalbe-tire/*
+!/docs/design/schwalbe-tire/README.md
 /html资料/
 /preview-schwalbe-tire-selector.html

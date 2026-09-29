@@ -1,17 +1,36 @@
 import type { SchwalbeTireCatalogItem } from '~/data/tireguides/schwalbeCatalog'
 import { parseSchwalbeTireCatalogEtrtoDimensions } from '~/data/tireguides/schwalbeTireCatalogDimensionNormalization'
 
+/** Official Version tokens verified as Schwalbe casing constructions. */
+export const SCHWALBE_TIRE_CASING_CONSTRUCTION_LABELS = [
+  'Super Race',
+  'Super Ground',
+  'Super Trail',
+  'Super Downhill',
+  'TRAIL',
+  'TRAIL PRO',
+  'GRAVITY',
+  'GRAVITY PRO',
+] as const
+
+export type SchwalbeTireCasingConstructionLabel = typeof SCHWALBE_TIRE_CASING_CONSTRUCTION_LABELS[number]
+
 /**
  * Filter dimensions are a selector-data contract, independent from the
- * `is_filterable` flag on the sales-product template. Values remain the
- * official catalog strings; this model does not translate, split, or infer
- * protection levels from compound or version labels.
+ * `is_filterable` flag on the sales-product template. Raw official values are
+ * preserved. A separate casing facet recognizes only reviewed, exact
+ * comma-delimited Version tokens; it does not infer puncture protection levels.
  */
 export interface SchwalbeTireCatalogFilterDimensions {
   modelName: string
   nominalTireWidthMm: number | null
   beadSeatDiameterMm: number | null
+  wheelDiameterIn: string | null
+  wheelSizeKey: string | null
+  loadKg: number | null
   versionLabel: string | null
+  casingConstructions: readonly SchwalbeTireCasingConstructionLabel[]
+  isRadial: boolean
   compound: string | null
   color: string | null
   bead: string | null
@@ -21,9 +40,17 @@ export interface SchwalbeTireCatalogFilterDimensions {
 
 export interface SchwalbeTireCatalogFilterCriteria {
   modelNames?: readonly string[]
+  /** Inclusive nominal-width endpoints; null/undefined leaves that side open. */
+  nominalTireWidthMinMm?: number | null
+  nominalTireWidthMaxMm?: number | null
+  /** @deprecated Exact-value selection retained for old links/consumers. */
   nominalTireWidthMm?: readonly number[]
   beadSeatDiameterMm?: readonly number[]
+  wheelSizeKeys?: readonly string[]
+  minimumLoadKg?: number | null
   versionLabels?: readonly string[]
+  casingConstructions?: readonly string[]
+  radialOnly?: boolean
   compounds?: readonly string[]
   colors?: readonly string[]
   beads?: readonly string[]
@@ -36,11 +63,19 @@ export interface SchwalbeTireCatalogFilterOption<Value extends string | number |
   value: Value
 }
 
+export interface SchwalbeTireCatalogWheelSizeOption {
+  value: string
+  wheelDiameterIn: string
+  beadSeatDiameterMm: number
+}
+
 export interface SchwalbeTireCatalogFilterOptions {
   modelNames: readonly SchwalbeTireCatalogFilterOption<string>[]
   nominalTireWidthsMm: readonly SchwalbeTireCatalogFilterOption<number>[]
   beadSeatDiametersMm: readonly SchwalbeTireCatalogFilterOption<number>[]
+  wheelSizes: readonly SchwalbeTireCatalogWheelSizeOption[]
   versionLabels: readonly SchwalbeTireCatalogFilterOption<string>[]
+  casingConstructions: readonly SchwalbeTireCatalogFilterOption<SchwalbeTireCasingConstructionLabel>[]
   compounds: readonly SchwalbeTireCatalogFilterOption<string>[]
   colors: readonly SchwalbeTireCatalogFilterOption<string>[]
   beads: readonly SchwalbeTireCatalogFilterOption<string>[]
@@ -65,6 +100,38 @@ const normalizedOptionalString = (value: string | undefined): string | null => {
   return normalized || null
 }
 
+const SCHWALBE_INCH_DESIGNATION_PATTERN = /^([0-9]+(?:\.[0-9]+)?)\s*[x×]/i
+
+const deriveWheelDiameterIn = (inchDesignation: string | undefined): string | null => {
+  const match = SCHWALBE_INCH_DESIGNATION_PATTERN.exec(inchDesignation?.trim() || '')
+  if (!match?.[1]) return null
+  const numericValue = Number(match[1])
+  return Number.isFinite(numericValue) && numericValue > 0
+    ? String(numericValue)
+    : null
+}
+
+const buildWheelSizeKey = (wheelDiameterIn: string | null, beadSeatDiameterMm: number | null): string | null => (
+  wheelDiameterIn !== null && beadSeatDiameterMm !== null
+    ? `${wheelDiameterIn}-${beadSeatDiameterMm}`
+    : null
+)
+
+const deriveCasingConstructionTokens = (versionLabel: string | null): {
+  casingConstructions: readonly SchwalbeTireCasingConstructionLabel[]
+  isRadial: boolean
+} => {
+  const versionTokens = new Set(
+    versionLabel?.split(',').map(token => token.trim()).filter(Boolean) || [],
+  )
+
+  return {
+    casingConstructions: SCHWALBE_TIRE_CASING_CONSTRUCTION_LABELS
+      .filter(label => versionTokens.has(label)),
+    isRadial: versionTokens.has('Radial'),
+  }
+}
+
 const normalizedStringSelection = (values: readonly string[] | undefined): readonly string[] => (
   values
     ?.map(value => value.trim())
@@ -84,12 +151,20 @@ export const deriveSchwalbeTireCatalogFilterDimensions = (
   item: SchwalbeTireCatalogItem,
 ): SchwalbeTireCatalogFilterDimensions => {
   const etrtoDimensions = parseSchwalbeTireCatalogEtrtoDimensions(item.etrto)
+  const wheelDiameterIn = deriveWheelDiameterIn(item.inch_designation)
+  const beadSeatDiameterMm = etrtoDimensions?.beadSeatDiameterMm ?? null
+  const versionLabel = normalizedOptionalString(item.version_label)
+  const casingDimensions = deriveCasingConstructionTokens(versionLabel)
 
   return {
     modelName: item.model_name.trim(),
     nominalTireWidthMm: etrtoDimensions?.nominalTireWidthMm ?? null,
-    beadSeatDiameterMm: etrtoDimensions?.beadSeatDiameterMm ?? null,
-    versionLabel: normalizedOptionalString(item.version_label),
+    beadSeatDiameterMm,
+    wheelDiameterIn,
+    wheelSizeKey: buildWheelSizeKey(wheelDiameterIn, beadSeatDiameterMm),
+    loadKg: Number.isFinite(item.load_kg) && (item.load_kg ?? 0) > 0 ? item.load_kg! : null,
+    versionLabel,
+    ...casingDimensions,
     compound: normalizedOptionalString(item.compound),
     color: normalizedOptionalString(item.color),
     bead: normalizedOptionalString(item.bead),
@@ -118,6 +193,48 @@ const matchesSelectedNumbers = (
   )
 }
 
+const matchesSelectedWheelSizes = (
+  selectedValues: readonly string[] | undefined,
+  actualValue: string | null,
+): boolean => {
+  const normalizedSelection = normalizedStringSelection(selectedValues)
+  return normalizedSelection.length === 0 || (
+    actualValue !== null && normalizedSelection.includes(actualValue)
+  )
+}
+
+const matchesNominalTireWidthRange = (
+  minimumMm: number | null | undefined,
+  maximumMm: number | null | undefined,
+  actualMm: number | null,
+): boolean => {
+  const hasMinimum = minimumMm !== null && minimumMm !== undefined
+  const hasMaximum = maximumMm !== null && maximumMm !== undefined
+  if (!hasMinimum && !hasMaximum) return true
+  if (actualMm === null || !Number.isFinite(actualMm)) return false
+  if (hasMinimum && (!Number.isFinite(minimumMm) || minimumMm! <= 0 || actualMm < minimumMm!)) return false
+  if (hasMaximum && (!Number.isFinite(maximumMm) || maximumMm! <= 0 || actualMm > maximumMm!)) return false
+  return true
+}
+
+const matchesMinimumLoadKg = (minimumLoadKg: number | null | undefined, actualLoadKg: number | null): boolean => {
+  if (minimumLoadKg === undefined || minimumLoadKg === null) return true
+  return Number.isFinite(minimumLoadKg)
+    && minimumLoadKg > 0
+    && actualLoadKg !== null
+    && actualLoadKg >= minimumLoadKg
+}
+
+const matchesSelectedStringTokens = (
+  selectedValues: readonly string[] | undefined,
+  actualValues: readonly string[],
+): boolean => {
+  const normalizedSelection = normalizedStringSelection(selectedValues)
+  return normalizedSelection.length === 0 || (
+    actualValues.some(actualValue => normalizedSelection.includes(actualValue))
+  )
+}
+
 const matchesSelectedEBikeRatings = (
   selectedRatings: readonly (string | null)[] | undefined,
   actualRating: string | null,
@@ -140,12 +257,26 @@ export const filterSchwalbeTireCatalogItems = (
   criteria: SchwalbeTireCatalogFilterCriteria = {},
 ): SchwalbeTireCatalogItem[] => items.filter((item) => {
   const dimensions = deriveSchwalbeTireCatalogFilterDimensions(item)
+  const hasNominalTireWidthRange = (
+    (criteria.nominalTireWidthMinMm !== undefined && criteria.nominalTireWidthMinMm !== null)
+    || (criteria.nominalTireWidthMaxMm !== undefined && criteria.nominalTireWidthMaxMm !== null)
+  )
 
   return (
     matchesSelectedStrings(criteria.modelNames, dimensions.modelName)
-    && matchesSelectedNumbers(criteria.nominalTireWidthMm, dimensions.nominalTireWidthMm)
+    && (hasNominalTireWidthRange
+      ? matchesNominalTireWidthRange(
+        criteria.nominalTireWidthMinMm,
+        criteria.nominalTireWidthMaxMm,
+        dimensions.nominalTireWidthMm,
+      )
+      : matchesSelectedNumbers(criteria.nominalTireWidthMm, dimensions.nominalTireWidthMm))
     && matchesSelectedNumbers(criteria.beadSeatDiameterMm, dimensions.beadSeatDiameterMm)
+    && matchesSelectedWheelSizes(criteria.wheelSizeKeys, dimensions.wheelSizeKey)
+    && matchesMinimumLoadKg(criteria.minimumLoadKg, dimensions.loadKg)
     && matchesSelectedStrings(criteria.versionLabels, dimensions.versionLabel)
+    && matchesSelectedStringTokens(criteria.casingConstructions, dimensions.casingConstructions)
+    && (!criteria.radialOnly || dimensions.isRadial)
     && matchesSelectedStrings(criteria.compounds, dimensions.compound)
     && matchesSelectedStrings(criteria.colors, dimensions.color)
     && matchesSelectedStrings(criteria.beads, dimensions.bead)
@@ -211,6 +342,28 @@ const buildNumberFilterOptions = (
     .map(value => ({ value }))
 )
 
+const buildWheelSizeFilterOptions = (
+  dimensions: readonly SchwalbeTireCatalogFilterDimensions[],
+): readonly SchwalbeTireCatalogWheelSizeOption[] => {
+  const options = new Map<string, SchwalbeTireCatalogWheelSizeOption>()
+  dimensions.forEach((value) => {
+    if (value.wheelSizeKey === null || value.wheelDiameterIn === null || value.beadSeatDiameterMm === null) return
+    options.set(value.wheelSizeKey, {
+      value: value.wheelSizeKey,
+      wheelDiameterIn: value.wheelDiameterIn,
+      beadSeatDiameterMm: value.beadSeatDiameterMm,
+    })
+  })
+  return [...options.values()].sort((left, right) => {
+    const diameterDifference = Number(left.wheelDiameterIn) - Number(right.wheelDiameterIn)
+    if (diameterDifference !== 0) return diameterDifference
+    if (left.beadSeatDiameterMm !== right.beadSeatDiameterMm) {
+      return left.beadSeatDiameterMm - right.beadSeatDiameterMm
+    }
+    return left.value.localeCompare(right.value)
+  })
+}
+
 /**
  * Builds stable option lists from the currently loaded catalog snapshot.
  * Missing values are omitted from ordinary dimensions. The official blank
@@ -227,7 +380,11 @@ export const buildSchwalbeTireCatalogFilterOptions = (
     modelNames: buildStringFilterOptions(dimensions, value => value.modelName || null),
     nominalTireWidthsMm: buildNumberFilterOptions(dimensions, value => value.nominalTireWidthMm),
     beadSeatDiametersMm: buildNumberFilterOptions(dimensions, value => value.beadSeatDiameterMm),
+    wheelSizes: buildWheelSizeFilterOptions(dimensions),
     versionLabels: buildStringFilterOptions(dimensions, value => value.versionLabel),
+    casingConstructions: SCHWALBE_TIRE_CASING_CONSTRUCTION_LABELS
+      .filter(label => dimensions.some(value => value.casingConstructions.includes(label)))
+      .map(value => ({ value })),
     compounds: buildStringFilterOptions(dimensions, value => value.compound),
     colors: buildStringFilterOptions(dimensions, value => value.color),
     beads: buildStringFilterOptions(dimensions, value => value.bead),

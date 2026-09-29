@@ -1,0 +1,18 @@
+{
+  "filters": {
+    "tireWidthMin": "Min.",
+    "tireWidthMax": "Maks.",
+    "minimumLoad": "Min. belastningskapacitet pr. dæk",
+    "minimumLoadHint": "Sammenlignes med den officielle belastning for ét dæk. Dette er ikke en vægtgrænse for rytteren; belastningen fra rytter, cykel og udstyr fordeles mellem for- og bagdæk.",
+    "openFilters": "Filtre",
+    "dialogTitle": "Filtrer kataloget",
+    "closeFilters": "Luk filtre",
+    "showResults": "Vis resultater",
+    "activeCount": "{count} aktive",
+    "groupDimensions": "Størrelse",
+    "groupCapacity": "Belastning og brug",
+    "groupConstruction": "Konstruktion",
+    "groupAppearance": "Farve og gummiblanding",
+    "selectedCount": "{count} valgt"
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "filters": {
+    "tireWidthMin": "Min.",
+    "tireWidthMax": "Max.",
+    "minimumLoad": "Mindesttragfähigkeit pro Reifen",
+    "minimumLoadHint": "Verglichen wird mit der offiziellen Traglast eines einzelnen Reifens. Das ist keine Gewichtsgrenze für den Fahrer: Fahrer, Fahrrad und Gepäck werden auf Vorder- und Hinterreifen verteilt.",
+    "openFilters": "Filter",
+    "dialogTitle": "Katalog filtern",
+    "closeFilters": "Filter schließen",
+    "showResults": "Ergebnisse anzeigen",
+    "activeCount": "{count} aktiv",
+    "groupDimensions": "Größe",
+    "groupCapacity": "Tragfähigkeit und Einsatz",
+    "groupConstruction": "Aufbau",
+    "groupAppearance": "Farbe und Mischung",
+    "selectedCount": "{count} ausgewählt"
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "filters": {
+    "tireWidthMin": "Min.",
+    "tireWidthMax": "Maks.",
+    "minimumLoad": "Lastik başına minimum taşıma kapasitesi",
+    "minimumLoadHint": "Tek bir lastiğin üretici tarafından belirtilen yük değeriyle karşılaştırılır. Bu, sürücü için bir ağırlık sınırı değildir; sürücü, bisiklet ve ekipman yükü ön ve arka lastiklere dağıtılır.",
+    "openFilters": "Filtreler",
+    "dialogTitle": "Kataloğu filtrele",
+    "closeFilters": "Filtreleri kapat",
+    "showResults": "Sonuçları göster",
+    "activeCount": "{count} etkin",
+    "groupDimensions": "Boyut",
+    "groupCapacity": "Yük ve kullanım",
+    "groupConstruction": "Yapı",
+    "groupAppearance": "Renk ve hamur",
+    "selectedCount": "{count} seçildi"
+  }
+}

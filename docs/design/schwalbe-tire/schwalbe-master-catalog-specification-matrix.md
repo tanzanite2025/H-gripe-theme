@@ -3,7 +3,8 @@
 > 本文件定义两层数据的共同字段契约：全谱系候选型号保存在独立目录 `schwalbe_tire_specifications`；实际在售型号仍是普通 Product，选择 `Schwalbe Tire` 模板后从目录选择型号并自动回填这些字段。候选目录不是销售商品库；选型结果需显示该 Article No. 是否对应真实销售 Product。
 >
 > 对应实施指南：[Phase 1：Schwalbe 外胎商品模板实施指南](./phase1-schwalbe-tire-system-template-implementation-guide.md)  
-> 官方字段核验日期：2026-09-27。迁移 359 已将 2026-09-28 官方 sitemap 快照导入候选目录（773 条 live 外胎记录，15 个 404 旧 URL 排除）；迁移 360 已建立销售商品 Article No. 的数据库唯一边界；迁移 362 已导入官网 05/2024 胎宽—车圈内宽可能组合矩阵（13 条规则）。当前 Docker 开发库中仍没有真实销售 Schwalbe Product，候选目录和独立规则表只供选型与商品表单回填。
+> [Phase 2 页面契约](./phase2-standalone-page-implementation-guide.md) · [文档索引](./README.md)
+> 官方字段核验日期：2026-09-27。迁移与部署操作见 [Phase 1 第 6 节](./phase1-schwalbe-tire-system-template-implementation-guide.md#6-迁移规则)；已导入种子快照基线见本文件[第 8 节](#8-2026-09-28-快照枚举基准)。
 
 ## 1. 官方来源
 
@@ -53,13 +54,9 @@
 
 具体新增和编辑步骤见 [Phase 1 实施指南](./phase1-schwalbe-tire-system-template-implementation-guide.md)。字段值按 Schwalbe 英文产品页原文保存；规格值没有 locale 列，前台本地化只能通过明确的 i18n 映射完成。
 
-候选目录描述 Schwalbe 全谱系型号；`product_spec_values` 只描述真实 Product。两者可以包含同一型号的官网字段值，但职责不同：目录提供匹配候选和表单自动回填，商品规格值提供实际销售商品快照。匹配结果按 Article No. 显示是否存在对应销售 Product；未命中时保留候选结果，但不生成商品价格、库存或购买信息。
+候选目录描述 Schwalbe 全谱系型号；`product_spec_values` 只描述真实 Product。目录提供匹配候选和表单自动回填，商品规格值提供实际销售商品快照。匹配结果按 Article No. 显示是否存在对应销售 Product；未命中时保留候选结果，但不生成商品价格、库存或购买信息。
 
-Phase 2 的 `SchwalbeTelemetryGuide` 不属于这 19 个字段，也不改变模板 `is_filterable` 契约。它是可在选型页、商品页或弹窗中复用的独立静态技术说明组件；Radial、Protection Level 1–7（含 6+）、ADDIX 七条命名线（Race、4-Season、Speed、Mid（原 SpeedGrip）、Soft、Ultra Soft、Endurance）和 Green Marathon 材料说明均来自已核验的官方资料或官方产品命名。ADDIX 卡片颜色只作本组件的视觉图例（Speed、Mid、Soft、Ultra Soft 的四种颜色沿用官方 ADDIX 资料；其余三种为本页视觉标记），不作为额外认证或统一性能等级，不读取目录、搜索结果或分页状态。公域不展示快照记录数、来源字符串分组或标签计数，也不把等级名称解释成跨品牌统一耐刺评分、认证、兼容性、性能或销售事实。
-
-目录只读查询的 `search` 使用单个完整词，在 Article No.、`model_name`、ETRTO、Inch 四个字段上分别做不区分大小写的包含匹配，四个字段之间为 OR；不做多词分词或跨字段联合（例如 `Pro One 28-622` 不会拆分查询）。
-
-选型筛选不读取商品模板的 `is_filterable`。独立模型 `schwalbeTireCatalogFilterModel.ts` 严格从 ETRTO 派生胎宽和胎圈座直径，保留 `bead`、`seal`、`e_bike_rating`、`color`、`compound` 和 `version_label` 的官方原文；同一维度多选为 OR，跨维度为 AND。页面已接入 Color 与 Compound 精确多选；Color 按完整官方字符串匹配，不拆分颜色组合或推断色系，Compound 按完整胶料原文匹配，不翻译、拆分或归并大小写。`e_bike_rating` 的空值作为“官网未标注评级”选项保留，不据此推断车型类别或适用性。车圈内宽筛选通过迁移 362 的 `schwalbe_tire_rim_width_combination_rules` 和只读 API 提供可能组合范围；范围不构成具体型号兼容认证，也不替代车架间隙、Hookless/TLE/TLR 或车圈厂商要求。`version_label` 是复合官方文本，不能直接推导数字防刺等级。
+商品模板 `is_filterable` 只约束 Product 字段筛选。选型页筛选、URL 参数、Telemetry 展示，以及迁移 362 规则是否已接入页面，唯一维护在 [Phase 2 实施指南](./phase2-standalone-page-implementation-guide.md)；这些页面行为不改变本矩阵定义的商品字段契约。
 
 后续官方快照 upsert 只更新候选目录，不静默覆盖已保存的 `product_spec_values`。销售商品保留保存时的规格快照；重新导入后如候选字段发生变化，应按 Article No. 生成差异报告并提醒管理员复核，再由管理员明确更新商品。这样目录刷新不会在没有人工判断的情况下改变在售商品页面事实。
 
@@ -74,9 +71,9 @@ Phase 2 的 `SchwalbeTelemetryGuide` 不属于这 19 个字段，也不改变模
 - `product_specification_templates` 中系统模板的 slug 为 `schwalbe_tire`。
 - `product_spec_definitions` 保存固定的 19 个字段定义。
 - 每个已填写的商品参数值单独保存在通用表 `product_spec_values`，通过 `product_id` 关联 Product、通过 `spec_definition_id` 关联字段定义。Schwalbe 没有当前运行中的专用规格值表。
-- 独立表 `schwalbe_tire_specifications` 保存候选目录中的全谱系型号事实，Article No. 为主键；同时保存 `source_url` 和 `source_checked_at` 供来源追溯，不含审批人、复核状态或审核流字段。
+- 独立表 `schwalbe_tire_specifications` 保存候选目录中的全谱系型号事实，Article No. 为主键；同时保存 `source_url` 和 `source_checked_at` 供内部来源追溯，不含审批人、复核状态或审核流字段。公开目录 API 只返回 `source_checked_at`，不返回 `source_url`。
 - `product_spec_values` 只保存真实 Product 的商品数据，不代表全谱系候选表，也不决定匹配结果是否出现。
-- 迁移 358 前向重建候选目录，以保留 354–357 历史顺序；迁移 359 导入官方快照，迁移 360 为销售商品 Article No. 建立数据库唯一边界，迁移 362 建立并导入独立的官方胎宽—车圈内宽可能组合规则；不要执行 down 或回滚迁移。
+- 迁移顺序、前向恢复方式与部署前检查见 [Phase 1 第 6 节](./phase1-schwalbe-tire-system-template-implementation-guide.md#6-迁移规则)；不要执行 down 或回滚迁移。
 - 不将原型 `rawTires`、经销商页面或未经核验的型号数值直接写入生产商品。
 
 ## 6. 模板元数据的实际配置
@@ -149,7 +146,7 @@ schwalbe_tire_specifications.article_no -> standalone catalog key (no Product fo
 
 ## 8. 2026-09-28 快照枚举基准
 
-以下集合是迁移 359 导入的 773 条 live 记录中按原文去重得到的值，供 Phase 2 本地化字典和筛选展示使用。它们是这次快照的已观测枚举基准，不代表 Schwalbe 未来新增型号时不会出现新值；导入新快照后应重新计算并审阅差异。除 `e_bike_rating` 外，本批记录在这些字段上均有值；空值仍需保留为空。
+2026-09-28 从 Schwalbe 英文官网 sitemap 的 788 个轮胎候选 URL 生成迁移 359 种子：773 个可访问的 live 外胎产品页入库，15 个返回 404 的旧 URL 排除；Article No. 前缀范围为 `111`、`112`、`116`，不包含内胎或轮圈带。详见[迁移 359 种子](../../../go-backend/migrations/359_seed_schwalbe_catalog.up.sql)。下表中的集合由该种子按原文去重得到，供 Phase 2 本地化字典和筛选展示使用。它们是固定种子的已观测枚举基准，不代表 Schwalbe 未来新增型号时不会出现新值；导入新快照后应重新计算并审阅差异。除 `e_bike_rating` 外，这批记录在这些字段上均有值；空值仍需保留为空。该节是文档中唯一列出本批快照来源、条数和排除项的位置；它描述仓库中的 seed，不代表任一数据库环境的当前行数。
 
 | 字段 | 快照中的有效值 |
 | --- | --- |
@@ -161,6 +158,6 @@ schwalbe_tire_specifications.article_no -> standalone catalog key (no Product fo
 | `color` | `Black`、`Black+BlackReflex`、`Black+Reflex`、`Black/Coffee+Reflex`、`Blue Stripes`、`Bronze`、`Bronze Sidewall`、`Bronze+Reflex`、`Brown+Reflex`、`Brown/Whitewall+Reflex`、`Classic`、`Creme+Reflex`、`Grey Stripes`、`Grey/Black`、`Gumwall`、`Red Stripes`、`Transparent Sidewall`、`White Stripes`、`White/Bordeaux`、`Whitewall`、`Whitewall+Reflex` |
 | `tread` | `HS342`、`HS371`、`HS371A`、`HS375`、`HS379`、`HS385`、`HS387`、`HS396`、`HS417`、`HS425`、`HS429`、`HS431`、`HS438`、`HS439`、`HS440`、`HS442`、`HS447`、`HS447B`、`HS451`、`HS462`、`HS462A`、`HS462B`、`HS463`、`HS464`、`HS466`、`HS468`、`HS471`、`HS472`、`HS473`、`HS475`、`HS483`、`HS484`、`HS489`、`HS490`、`HS492`、`HS493`、`HS493A`、`HS493D`、`HS497`、`HS498`、`HS499`、`HS600`、`HS602`、`HS604`、`HS605`、`HS608`、`HS609`、`HS610`、`HS611`、`HS612`、`HS613`、`HS614`、`HS617`、`HS618`、`HS619`、`HS620`、`HS621`、`HS622`、`HS624`、`HS625`、`HS626`、`HS630`、`HS632`、`HS634`、`HS635`、`HS636`、`HS637`、`HS638`、`HS639`、`HS641`、`HS642`、`HS643`、`HS646`、`HS647`、`HS648`、`HS651` |
 
-`tread` 是官网的花纹编号（本快照 76 个 `HS...` 值），不应当当作可翻译的产品系列；前端应按完整原文显示或建立逐值字典。所有枚举本地化只改变显示文本，查询和存储仍使用上述英文原值。
+`tread` 是官网的花纹编号（`HS...` 值），不应当当作可翻译的产品系列；前端应按完整原文显示或建立逐值字典。所有枚举本地化只改变显示文本，查询和存储仍使用上述英文原值。
 
-这批 773 条快照为选型卡片提供当前枚举基线。页面保留每条记录的 `Radial`、保护技术 Version 和 `compound` 原文，并按每页 20 条输出；这些原文不再转换为公域计数或统一防刺等级。Telemetry Guide 使用独立静态技术卡片，不从这批记录计算内容。分页不会改变字段矩阵。
+页面保留每条记录的 `Radial`、保护技术 Version 和 `compound` 原文，并按每页 20 条输出；这些原文不再转换为公域计数或统一防刺等级。Telemetry Guide 使用独立静态技术卡片，不从目录记录计算内容。分页不会改变字段矩阵。
