@@ -18,8 +18,6 @@
       </div>
     </div>
 
-    <SpokePhysicsDiagrams class="spoke-erd-step__reference" />
-
     <div class="spoke-erd-step__input-panel">
       <div class="spoke-erd-step__input-copy">
         <label for="spoke-erd-step-input" class="spoke-erd-step__input-label">
@@ -45,6 +43,8 @@
         <span class="spoke-erd-step__unit">mm</span>
       </div>
     </div>
+
+    <SpokePhysicsDiagrams class="spoke-erd-step__reference" />
 
     <div class="spoke-erd-step__actions">
       <button type="button" class="spoke-erd-step__previous" @click="emit('previous')">
