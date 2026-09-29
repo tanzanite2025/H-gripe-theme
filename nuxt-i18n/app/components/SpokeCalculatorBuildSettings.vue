@@ -64,7 +64,7 @@
         </label>
         <SpokeCalculatorSelect
           :id="fieldId('rim-brand')"
-          v-model="config.rimBrandId"
+          v-model="catalogSelection.rimBrandId"
           :options="rimBrandOptions"
           :placeholder="t('resourcesSpokeCalculator.calculator.buildSettings.selectBrand')"
         />
@@ -76,7 +76,7 @@
         </label>
         <SpokeCalculatorSelect
           :id="fieldId('rim-model')"
-          v-model="config.rimModelId"
+          v-model="catalogSelection.rimModelId"
           :disabled="rimModelOptions.length === 0"
           :options="rimModelOptions"
           :placeholder="t('resourcesSpokeCalculator.calculator.buildSettings.selectModel')"
@@ -89,7 +89,7 @@
         </label>
         <SpokeCalculatorSelect
           :id="fieldId('hub-brand')"
-          v-model="config.hubBrandId"
+          v-model="catalogSelection.hubBrandId"
           :options="hubBrandOptions"
           :placeholder="t('resourcesSpokeCalculator.calculator.buildSettings.selectBrand')"
         />
@@ -101,7 +101,7 @@
         </label>
         <SpokeCalculatorSelect
           :id="fieldId('hub-model')"
-          v-model="config.hubModelId"
+          v-model="catalogSelection.hubModelId"
           :disabled="hubModelOptions.length === 0"
           :options="hubModelOptions"
           :placeholder="t('resourcesSpokeCalculator.calculator.buildSettings.selectModel')"
@@ -206,6 +206,7 @@ import { useI18n } from '#imports'
 import SpokeCalculatorSelect from '~/components/SpokeCalculatorSelect.vue'
 import type {
   SpokeCalculatorSelectOption,
+  SpokeWheelCatalogSelection,
   SpokeWheelBuildConfig,
   SpokeWheelSide,
 } from '~/types/spokeCalculator'
@@ -213,6 +214,7 @@ import type {
 const props = defineProps<{
   side: SpokeWheelSide
   config: SpokeWheelBuildConfig
+  catalogSelection: SpokeWheelCatalogSelection
   spokeCountOptions: SpokeCalculatorSelectOption[]
   lacingOptions: SpokeCalculatorSelectOption[]
   nippleTypeOptions: SpokeCalculatorSelectOption[]
@@ -227,6 +229,7 @@ const props = defineProps<{
 
 const { t } = useI18n()
 const config = props.config
+const catalogSelection = props.catalogSelection
 const fieldId = (name: string) => `${props.side}-${name}`
 </script>
 

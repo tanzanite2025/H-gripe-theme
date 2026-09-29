@@ -4,7 +4,7 @@ import type { HubModel, RimModel } from '~/data/spoke-calculator/database'
 import { useSpokeCalculatorCatalog } from '~/composables/useSpokeCalculatorCatalog'
 import type {
   SpokeCalculatorWheelOptions,
-  SpokeWheelBuildConfig,
+  SpokeWheelCatalogSelection,
 } from '~/types/spokeCalculator'
 
 /**
@@ -14,8 +14,8 @@ import type {
  * catalog item never writes dimensions into the manual calculator draft.
  */
 export const useSpokeCalculatorWheelCatalog = (
-  frontConfig: SpokeWheelBuildConfig,
-  rearConfig: SpokeWheelBuildConfig,
+  frontSelection: SpokeWheelCatalogSelection,
+  rearSelection: SpokeWheelCatalogSelection,
 ) => {
   const { t } = useI18n()
   const { rims, hubs, options: catalogOptions } = useSpokeCalculatorCatalog()
@@ -90,22 +90,22 @@ export const useSpokeCalculatorWheelCatalog = (
     value: brand.id,
   })))
 
-  const rimModelsFor = (config: SpokeWheelBuildConfig) => computed<RimModel[]>(() => {
-    if (!config.rimBrandId) return []
-    const brand = rims.value.find(item => item.id === config.rimBrandId)
+  const rimModelsFor = (selection: SpokeWheelCatalogSelection) => computed<RimModel[]>(() => {
+    if (!selection.rimBrandId) return []
+    const brand = rims.value.find(item => item.id === selection.rimBrandId)
     return brand ? brand.items : []
   })
 
-  const hubModelsFor = (config: SpokeWheelBuildConfig) => computed<HubModel[]>(() => {
-    if (!config.hubBrandId) return []
-    const brand = hubs.value.find(item => item.id === config.hubBrandId)
+  const hubModelsFor = (selection: SpokeWheelCatalogSelection) => computed<HubModel[]>(() => {
+    if (!selection.hubBrandId) return []
+    const brand = hubs.value.find(item => item.id === selection.hubBrandId)
     return brand ? brand.items : []
   })
 
-  const frontRimModels = rimModelsFor(frontConfig)
-  const frontHubModels = hubModelsFor(frontConfig)
-  const rearRimModels = rimModelsFor(rearConfig)
-  const rearHubModels = hubModelsFor(rearConfig)
+  const frontRimModels = rimModelsFor(frontSelection)
+  const frontHubModels = hubModelsFor(frontSelection)
+  const rearRimModels = rimModelsFor(rearSelection)
+  const rearHubModels = hubModelsFor(rearSelection)
 
   const frontRimModelOptions = computed(() => frontRimModels.value.map(rim => ({
     label: rim.name,

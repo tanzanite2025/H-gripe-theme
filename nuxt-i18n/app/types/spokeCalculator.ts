@@ -30,17 +30,20 @@ export interface SpokeWheelBuildConfig {
   interlacing: SpokeInterlacing
   interlaceCompensationMm: number
 
-  rimBrandId: string | null
-  rimModelId: string | null
-  hubBrandId: string | null
-  hubModelId: string | null
-
   erd: number | null
   rimOffsetMm: number
   leftFlange: number | null
   rightFlange: number | null
   leftFlangePcd: number | null
   rightFlangePcd: number | null
+}
+
+/** Catalog/preset selection state kept outside the manual calculator input. */
+export interface SpokeWheelCatalogSelection {
+  rimBrandId: string | null
+  rimModelId: string | null
+  hubBrandId: string | null
+  hubModelId: string | null
 }
 
 export interface SpokeCalculatorSelectOption {
@@ -92,16 +95,19 @@ export const createSpokeWheelWizardDraft = (): SpokeWheelWizardDraft => ({
   alternatingDrillingOffsetMm: 0,
   interlacing: 'off',
   interlaceCompensationMm: 0.45,
-  rimBrandId: null,
-  rimModelId: null,
-  hubBrandId: null,
-  hubModelId: null,
   erd: null,
   rimOffsetMm: 0,
   leftFlange: null,
   rightFlange: null,
   leftFlangePcd: null,
   rightFlangePcd: null,
+})
+
+export const createSpokeWheelCatalogSelection = (): SpokeWheelCatalogSelection => ({
+  rimBrandId: null,
+  rimModelId: null,
+  hubBrandId: null,
+  hubModelId: null,
 })
 
 export const createSpokeCalculatorWizardDraft = (): SpokeCalculatorWizardDraft => ({
