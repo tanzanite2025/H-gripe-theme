@@ -1,8 +1,11 @@
 <template>
   <section class="spoke-hole-step" aria-labelledby="spoke-hole-step-title">
-    <SpokeStepProgress
+    <SpokeStepNavigation
       :current-step="currentStep"
+      :show-previous="true"
       @select="emit('select-step', $event)"
+      @previous="emit('previous')"
+      @next="emit('next')"
     />
 
     <div class="spoke-hole-step__intro">
@@ -89,23 +92,13 @@
 
     <SpokePhysicsDiagrams class="spoke-hole-step__reference" />
 
-    <div class="spoke-hole-step__actions">
-      <button type="button" class="spoke-hole-step__previous" @click="emit('previous')">
-        <span aria-hidden="true">←</span>
-        <span>{{ t('resourcesSpokeCalculator.calculator.physicalCorrections.stepPrevious', '上一步') }}</span>
-      </button>
-      <button type="button" class="spoke-hole-step__next" @click="emit('next')">
-        <span>{{ t('resourcesSpokeCalculator.calculator.physicalCorrections.stepNext', '下一步') }}</span>
-        <span aria-hidden="true">→</span>
-      </button>
-    </div>
   </section>
 </template>
 
 <script setup lang="ts">
 import { useI18n } from '#imports'
 import SpokePhysicsDiagrams from '~/components/SpokePhysicsDiagrams.vue'
-import SpokeStepProgress from '~/components/SpokeStepProgress.vue'
+import SpokeStepNavigation from '~/components/SpokeStepNavigation.vue'
 
 const { t } = useI18n()
 
@@ -376,63 +369,6 @@ const updateHoleDiameter = (side: 'front' | 'rear', event: Event) => {
 
 .spoke-hole-step__reference :deep(.diagram-panel#diagram-hole) {
   display: grid !important;
-}
-
-.spoke-hole-step__actions {
-  display: flex;
-  justify-content: space-between;
-  gap: 10px;
-  margin-top: 14px;
-}
-
-.spoke-hole-step__previous {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 36px;
-  padding: 8px 14px;
-  border: 1px solid var(--hole-step-border);
-  border-radius: 9999px;
-  background: #ffffff;
-  color: var(--hole-step-text);
-  font-size: 12px;
-  font-weight: 800;
-  cursor: pointer;
-}
-
-.spoke-hole-step__previous:hover {
-  border-color: var(--hole-step-accent);
-  color: var(--hole-step-accent);
-}
-
-.spoke-hole-step__previous:focus-visible {
-  outline: 2px solid var(--hole-step-accent);
-  outline-offset: 3px;
-}
-
-.spoke-hole-step__next {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 36px;
-  padding: 8px 14px;
-  border: 0;
-  border-radius: 9999px;
-  background: var(--hole-step-accent);
-  color: #ffffff;
-  font-size: 12px;
-  font-weight: 800;
-  cursor: pointer;
-}
-
-.spoke-hole-step__next:hover {
-  background: #047857;
-  box-shadow: 0 8px 18px rgba(5, 150, 105, 0.22);
-}
-
-.spoke-hole-step__next:focus-visible {
-  outline: 2px solid var(--hole-step-accent);
-  outline-offset: 3px;
 }
 
 @media (max-width: 767px) {

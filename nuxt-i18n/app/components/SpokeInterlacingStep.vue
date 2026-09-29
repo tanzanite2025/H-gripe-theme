@@ -1,8 +1,11 @@
 <template>
   <section class="spoke-interlacing-step" aria-labelledby="spoke-interlacing-step-title">
-    <SpokeStepProgress
+    <SpokeStepNavigation
       :current-step="currentStep"
+      :show-previous="true"
+      :show-next="false"
       @select="emit('select-step', $event)"
+      @previous="emit('previous')"
     />
 
     <div class="spoke-interlacing-step__intro">
@@ -115,12 +118,6 @@
 
     <SpokePhysicsDiagrams class="spoke-interlacing-step__reference" />
 
-    <div class="spoke-interlacing-step__actions">
-      <button type="button" class="spoke-interlacing-step__previous" @click="emit('previous')">
-        <span aria-hidden="true">←</span>
-        <span>{{ t('resourcesSpokeCalculator.calculator.physicalCorrections.stepPrevious', '上一步') }}</span>
-      </button>
-    </div>
   </section>
 </template>
 
@@ -129,7 +126,7 @@ import { computed } from 'vue'
 import { useI18n } from '#imports'
 import SpokeCalculatorSelect from '~/components/SpokeCalculatorSelect.vue'
 import SpokePhysicsDiagrams from '~/components/SpokePhysicsDiagrams.vue'
-import SpokeStepProgress from '~/components/SpokeStepProgress.vue'
+import SpokeStepNavigation from '~/components/SpokeStepNavigation.vue'
 import type { SpokeInterlacing } from '~/types/spokeCalculator'
 
 const { t } = useI18n()
@@ -443,37 +440,6 @@ const updateCompensation = (side: 'front' | 'rear', event: Event) => {
 
 .spoke-interlacing-step__reference :deep(.diagram-panel#diagram-interlace) {
   display: grid !important;
-}
-
-.spoke-interlacing-step__actions {
-  display: flex;
-  justify-content: flex-start;
-  margin-top: 14px;
-}
-
-.spoke-interlacing-step__previous {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 36px;
-  padding: 8px 14px;
-  border: 1px solid var(--interlacing-step-border);
-  border-radius: 9999px;
-  background: #ffffff;
-  color: var(--interlacing-step-text);
-  font-size: 12px;
-  font-weight: 800;
-  cursor: pointer;
-}
-
-.spoke-interlacing-step__previous:hover {
-  border-color: var(--interlacing-step-accent);
-  color: var(--interlacing-step-accent);
-}
-
-.spoke-interlacing-step__previous:focus-visible {
-  outline: 2px solid var(--interlacing-step-accent);
-  outline-offset: 3px;
 }
 
 @media (max-width: 767px) {

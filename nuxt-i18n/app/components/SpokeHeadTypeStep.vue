@@ -1,8 +1,9 @@
 <template>
   <section class="spoke-head-step" aria-labelledby="spoke-head-step-title">
-    <SpokeStepProgress
+    <SpokeStepNavigation
       :current-step="currentStep"
       @select="emit('select-step', $event)"
+      @next="emit('next')"
     />
 
     <div class="spoke-head-step__intro">
@@ -79,12 +80,6 @@
 
     <SpokeHeadMeasurementGuide />
 
-    <div class="spoke-head-step__actions">
-      <button type="button" class="spoke-head-step__next" @click="emit('next')">
-        <span>{{ t('resourcesSpokeCalculator.calculator.physicalCorrections.stepNext', '下一步') }}</span>
-        <span aria-hidden="true">→</span>
-      </button>
-    </div>
   </section>
 </template>
 
@@ -92,7 +87,7 @@
 import { computed } from 'vue'
 import { useI18n } from '#imports'
 import SpokeHeadMeasurementGuide from '~/components/SpokeHeadMeasurementGuide.vue'
-import SpokeStepProgress from '~/components/SpokeStepProgress.vue'
+import SpokeStepNavigation from '~/components/SpokeStepNavigation.vue'
 
 const { t } = useI18n()
 const props = withDefaults(defineProps<{
@@ -262,39 +257,6 @@ const selectedType = computed({
   color: var(--head-step-muted);
   font-size: 12px;
   line-height: 1.55;
-}
-
-.spoke-head-step__actions {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 16px;
-}
-
-.spoke-head-step__next {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 38px;
-  padding: 9px 16px;
-  border: 0;
-  border-radius: 9999px;
-  background: var(--head-step-accent);
-  color: #ffffff;
-  font-size: 13px;
-  font-weight: 800;
-  cursor: pointer;
-  transition: transform 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease;
-}
-
-.spoke-head-step__next:hover {
-  background: #047857;
-  box-shadow: 0 8px 18px rgba(5, 150, 105, 0.22);
-  transform: translateY(-1px);
-}
-
-.spoke-head-step__next:focus-visible {
-  outline: 2px solid var(--head-step-accent);
-  outline-offset: 3px;
 }
 
 @media (max-width: 767px) {

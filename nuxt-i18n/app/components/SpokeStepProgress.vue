@@ -53,7 +53,7 @@ const { t } = useI18n()
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  margin: 0 0 12px;
+  margin: 0;
   padding: 0;
   list-style: none;
 }

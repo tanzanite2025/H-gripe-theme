@@ -1,8 +1,11 @@
 <template>
   <section class="spoke-pcd-step" aria-labelledby="spoke-pcd-step-title">
-    <SpokeStepProgress
+    <SpokeStepNavigation
       :current-step="currentStep"
+      :show-previous="true"
       @select="emit('select-step', $event)"
+      @previous="emit('previous')"
+      @next="emit('next')"
     />
 
     <div class="spoke-pcd-step__intro">
@@ -199,16 +202,6 @@
     <!-- Reuse only the existing PCD / WL / WR engineering panel for this step. -->
     <SpokePhysicsDiagrams class="spoke-pcd-step__reference" />
 
-    <div class="spoke-pcd-step__actions">
-      <button type="button" class="spoke-pcd-step__previous" @click="emit('previous')">
-        <span aria-hidden="true">←</span>
-        <span>{{ t('resourcesSpokeCalculator.calculator.physicalCorrections.stepPrevious', '上一步') }}</span>
-      </button>
-      <button type="button" class="spoke-pcd-step__next" @click="emit('next')">
-        <span>{{ t('resourcesSpokeCalculator.calculator.physicalCorrections.stepNext', '下一步') }}</span>
-        <span aria-hidden="true">→</span>
-      </button>
-    </div>
   </section>
 </template>
 
@@ -217,7 +210,7 @@ import { computed } from 'vue'
 import { useI18n } from '#imports'
 import type { HubGeometry } from '~/data/spoke-calculator/database'
 import SpokePhysicsDiagrams from '~/components/SpokePhysicsDiagrams.vue'
-import SpokeStepProgress from '~/components/SpokeStepProgress.vue'
+import SpokeStepNavigation from '~/components/SpokeStepNavigation.vue'
 
 const { t } = useI18n()
 
@@ -517,63 +510,6 @@ const updateRearGeometry = (field: GeometryField, event: Event) => {
 
 .spoke-pcd-step__reference :deep(.diagram-panel#diagram-pcd) {
   display: grid !important;
-}
-
-.spoke-pcd-step__actions {
-  display: flex;
-  justify-content: space-between;
-  gap: 10px;
-  margin-top: 14px;
-}
-
-.spoke-pcd-step__previous {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 36px;
-  padding: 8px 14px;
-  border: 1px solid var(--pcd-step-border);
-  border-radius: 9999px;
-  background: #ffffff;
-  color: var(--pcd-step-text);
-  font-size: 12px;
-  font-weight: 800;
-  cursor: pointer;
-}
-
-.spoke-pcd-step__previous:hover {
-  border-color: var(--pcd-step-accent);
-  color: var(--pcd-step-accent);
-}
-
-.spoke-pcd-step__previous:focus-visible {
-  outline: 2px solid var(--pcd-step-accent);
-  outline-offset: 3px;
-}
-
-.spoke-pcd-step__next {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 36px;
-  padding: 8px 14px;
-  border: 0;
-  border-radius: 9999px;
-  background: var(--pcd-step-accent);
-  color: #ffffff;
-  font-size: 12px;
-  font-weight: 800;
-  cursor: pointer;
-}
-
-.spoke-pcd-step__next:hover {
-  background: #047857;
-  box-shadow: 0 8px 18px rgba(5, 150, 105, 0.22);
-}
-
-.spoke-pcd-step__next:focus-visible {
-  outline: 2px solid var(--pcd-step-accent);
-  outline-offset: 3px;
 }
 
 @media (max-width: 767px) {
