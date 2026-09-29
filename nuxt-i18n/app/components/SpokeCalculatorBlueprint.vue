@@ -11,31 +11,13 @@
           <SpokeCalculatorWheelPanel
             side="front"
             :config="frontConfig"
-            :spoke-count-options="spokeCountOptions"
-            :lacing-options="lacingOptions"
-            :nipple-type-options="nippleTypeOptions"
-            :rim-brand-options="rimBrandOptions"
-            :rim-model-options="frontRimModelOptions"
-            :hub-brand-options="hubBrandOptions"
-            :hub-model-options="frontHubModelOptions"
-            :spoke-head-type-options="spokeHeadTypeOptions"
-            :spoke-profile-options="spokeProfileOptions"
-            :interlacing-options="interlacingOptions"
+            :options="frontOptions"
           />
 
           <SpokeCalculatorWheelPanel
             side="rear"
             :config="rearConfig"
-            :spoke-count-options="spokeCountOptions"
-            :lacing-options="lacingOptions"
-            :nipple-type-options="nippleTypeOptions"
-            :rim-brand-options="rimBrandOptions"
-            :rim-model-options="rearRimModelOptions"
-            :hub-brand-options="hubBrandOptions"
-            :hub-model-options="rearHubModelOptions"
-            :spoke-head-type-options="spokeHeadTypeOptions"
-            :spoke-profile-options="spokeProfileOptions"
-            :interlacing-options="interlacingOptions"
+            :options="rearOptions"
           />
         </div>
         <!-- Action row -->
@@ -85,18 +67,8 @@ const frontConfig = props.frontConfig
 const rearConfig = props.rearConfig
 
 const {
-  spokeCountOptions,
-  lacingOptions,
-  nippleTypeOptions,
-  spokeHeadTypeOptions,
-  spokeProfileOptions,
-  interlacingOptions,
-  rimBrandOptions,
-  hubBrandOptions,
-  frontRimModelOptions,
-  frontHubModelOptions,
-  rearRimModelOptions,
-  rearHubModelOptions,
+  frontOptions,
+  rearOptions,
 } = useSpokeCalculatorWheelCatalog(frontConfig, rearConfig)
 
 const {

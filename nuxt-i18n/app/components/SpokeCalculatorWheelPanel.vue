@@ -38,16 +38,16 @@
     <SpokeCalculatorBuildSettings
       :side="side"
       :config="config"
-      :spoke-count-options="spokeCountOptions"
-      :lacing-options="lacingOptions"
-      :nipple-type-options="nippleTypeOptions"
-      :rim-brand-options="rimBrandOptions"
-      :rim-model-options="rimModelOptions"
-      :hub-brand-options="hubBrandOptions"
-      :hub-model-options="hubModelOptions"
-      :spoke-head-type-options="spokeHeadTypeOptions"
-      :spoke-profile-options="spokeProfileOptions"
-      :interlacing-options="interlacingOptions"
+      :spoke-count-options="options.spokeCountOptions"
+      :lacing-options="options.lacingOptions"
+      :nipple-type-options="options.nippleTypeOptions"
+      :rim-brand-options="options.rimBrandOptions"
+      :rim-model-options="options.rimModelOptions"
+      :hub-brand-options="options.hubBrandOptions"
+      :hub-model-options="options.hubModelOptions"
+      :spoke-head-type-options="options.spokeHeadTypeOptions"
+      :spoke-profile-options="options.spokeProfileOptions"
+      :interlacing-options="options.interlacingOptions"
     />
   </div>
 </template>
@@ -55,31 +55,22 @@
 <script setup lang="ts">
 import { useI18n } from '#imports'
 import SpokeCalculatorBuildSettings from '~/components/SpokeCalculatorBuildSettings.vue'
-import type { SpokeWheelBuildConfig, SpokeWheelSide } from '~/types/spokeCalculator'
-
-interface SelectOption {
-  label: string
-  value: string | number | null
-}
+import type {
+  SpokeCalculatorWheelOptions,
+  SpokeWheelBuildConfig,
+  SpokeWheelSide,
+} from '~/types/spokeCalculator'
 
 const props = defineProps<{
   side: SpokeWheelSide
   config: SpokeWheelBuildConfig
-  spokeCountOptions: SelectOption[]
-  lacingOptions: SelectOption[]
-  nippleTypeOptions: SelectOption[]
-  rimBrandOptions: SelectOption[]
-  rimModelOptions: SelectOption[]
-  hubBrandOptions: SelectOption[]
-  hubModelOptions: SelectOption[]
-  spokeHeadTypeOptions: SelectOption[]
-  spokeProfileOptions: SelectOption[]
-  interlacingOptions: SelectOption[]
+  options: SpokeCalculatorWheelOptions
 }>()
 
 const { t } = useI18n()
 const side = props.side
 const config = props.config
+const options = props.options
 </script>
 
 <style scoped>

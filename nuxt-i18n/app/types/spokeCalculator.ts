@@ -43,6 +43,24 @@ export interface SpokeWheelBuildConfig {
   rightFlangePcd: number | null
 }
 
+export interface SpokeCalculatorSelectOption {
+  label: string
+  value: string | number | null
+}
+
+export interface SpokeCalculatorWheelOptions {
+  spokeCountOptions: SpokeCalculatorSelectOption[]
+  lacingOptions: SpokeCalculatorSelectOption[]
+  nippleTypeOptions: SpokeCalculatorSelectOption[]
+  rimBrandOptions: SpokeCalculatorSelectOption[]
+  rimModelOptions: SpokeCalculatorSelectOption[]
+  hubBrandOptions: SpokeCalculatorSelectOption[]
+  hubModelOptions: SpokeCalculatorSelectOption[]
+  spokeHeadTypeOptions: SpokeCalculatorSelectOption[]
+  spokeProfileOptions: SpokeCalculatorSelectOption[]
+  interlacingOptions: SpokeCalculatorSelectOption[]
+}
+
 export type SpokeResultSource = 'calculated'
 
 export interface SpokeWheelResult {

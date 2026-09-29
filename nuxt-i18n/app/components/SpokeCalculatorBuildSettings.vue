@@ -204,26 +204,25 @@
 <script setup lang="ts">
 import { useI18n } from '#imports'
 import SpokeCalculatorSelect from '~/components/SpokeCalculatorSelect.vue'
-import type { SpokeWheelBuildConfig, SpokeWheelSide } from '~/types/spokeCalculator'
-
-interface SelectOption {
-  label: string
-  value: string | number | null
-}
+import type {
+  SpokeCalculatorSelectOption,
+  SpokeWheelBuildConfig,
+  SpokeWheelSide,
+} from '~/types/spokeCalculator'
 
 const props = defineProps<{
   side: SpokeWheelSide
   config: SpokeWheelBuildConfig
-  spokeCountOptions: SelectOption[]
-  lacingOptions: SelectOption[]
-  nippleTypeOptions: SelectOption[]
-  rimBrandOptions: SelectOption[]
-  rimModelOptions: SelectOption[]
-  hubBrandOptions: SelectOption[]
-  hubModelOptions: SelectOption[]
-  spokeHeadTypeOptions: SelectOption[]
-  spokeProfileOptions: SelectOption[]
-  interlacingOptions: SelectOption[]
+  spokeCountOptions: SpokeCalculatorSelectOption[]
+  lacingOptions: SpokeCalculatorSelectOption[]
+  nippleTypeOptions: SpokeCalculatorSelectOption[]
+  rimBrandOptions: SpokeCalculatorSelectOption[]
+  rimModelOptions: SpokeCalculatorSelectOption[]
+  hubBrandOptions: SpokeCalculatorSelectOption[]
+  hubModelOptions: SpokeCalculatorSelectOption[]
+  spokeHeadTypeOptions: SpokeCalculatorSelectOption[]
+  spokeProfileOptions: SpokeCalculatorSelectOption[]
+  interlacingOptions: SpokeCalculatorSelectOption[]
 }>()
 
 const { t } = useI18n()

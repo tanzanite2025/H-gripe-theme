@@ -2,7 +2,10 @@ import { computed, watch } from 'vue'
 import { useI18n } from '#imports'
 import type { HubGeometry, HubModel, RimModel } from '~/data/spoke-calculator/database'
 import { useSpokeCalculatorCatalog } from '~/composables/useSpokeCalculatorCatalog'
-import type { SpokeWheelBuildConfig } from '~/types/spokeCalculator'
+import type {
+  SpokeCalculatorWheelOptions,
+  SpokeWheelBuildConfig,
+} from '~/types/spokeCalculator'
 
 /**
  * Adapts the shared spoke catalog to the two wheel configurations used by the
@@ -179,18 +182,34 @@ export const useSpokeCalculatorWheelCatalog = (
     hubModelId => syncHubGeometry(rearConfig, hubModelId, rearHubModels.value, 'rear'),
   )
 
+  const frontOptions = computed<SpokeCalculatorWheelOptions>(() => ({
+    spokeCountOptions: spokeCountOptions.value,
+    lacingOptions: lacingOptions.value,
+    nippleTypeOptions: nippleTypeOptions.value,
+    rimBrandOptions: rimBrandOptions.value,
+    rimModelOptions: frontRimModelOptions.value,
+    hubBrandOptions: hubBrandOptions.value,
+    hubModelOptions: frontHubModelOptions.value,
+    spokeHeadTypeOptions: spokeHeadTypeOptions.value,
+    spokeProfileOptions: spokeProfileOptions.value,
+    interlacingOptions: interlacingOptions.value,
+  }))
+
+  const rearOptions = computed<SpokeCalculatorWheelOptions>(() => ({
+    spokeCountOptions: spokeCountOptions.value,
+    lacingOptions: lacingOptions.value,
+    nippleTypeOptions: nippleTypeOptions.value,
+    rimBrandOptions: rimBrandOptions.value,
+    rimModelOptions: rearRimModelOptions.value,
+    hubBrandOptions: hubBrandOptions.value,
+    hubModelOptions: rearHubModelOptions.value,
+    spokeHeadTypeOptions: spokeHeadTypeOptions.value,
+    spokeProfileOptions: spokeProfileOptions.value,
+    interlacingOptions: interlacingOptions.value,
+  }))
+
   return {
-    spokeCountOptions,
-    lacingOptions,
-    nippleTypeOptions,
-    spokeHeadTypeOptions,
-    spokeProfileOptions,
-    interlacingOptions,
-    rimBrandOptions,
-    hubBrandOptions,
-    frontRimModelOptions,
-    frontHubModelOptions,
-    rearRimModelOptions,
-    rearHubModelOptions,
+    frontOptions,
+    rearOptions,
   }
 }
