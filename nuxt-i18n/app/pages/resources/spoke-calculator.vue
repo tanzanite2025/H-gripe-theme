@@ -34,6 +34,8 @@
           v-else-if="activeWizardStep === 4"
           v-model:front-offset="frontAlternatingOffsetMm"
           v-model:rear-offset="rearAlternatingOffsetMm"
+          v-model:front-rim-offset="frontRimOffsetMm"
+          v-model:rear-rim-offset="rearRimOffsetMm"
           :current-step="activeWizardStep"
           @select-step="goToStep"
           @previous="previousStep"
@@ -98,6 +100,7 @@ const {
   setErd,
   setHubGeometry,
   setAlternatingDrillingOffset,
+  setRimOffset,
 } = useSpokeCalculatorWizard()
 
 const selectedSpokeHeadType = computed<SpokeHeadType>({
@@ -143,6 +146,16 @@ const frontAlternatingOffsetMm = computed<number | null>({
 const rearAlternatingOffsetMm = computed<number | null>({
   get: () => spokeWizardDraft.rear.alternatingDrillingOffsetMm,
   set: value => setAlternatingDrillingOffset('rear', value),
+})
+
+const frontRimOffsetMm = computed<number | null>({
+  get: () => spokeWizardDraft.front.rimOffsetMm,
+  set: value => setRimOffset('front', value),
+})
+
+const rearRimOffsetMm = computed<number | null>({
+  get: () => spokeWizardDraft.rear.rimOffsetMm,
+  set: value => setRimOffset('rear', value),
 })
 
 await loadPageMessages(locale.value)

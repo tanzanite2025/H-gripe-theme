@@ -55,6 +55,10 @@ export const useSpokeCalculatorWizard = () => {
     draft[side].alternatingDrillingOffsetMm = offsetMm ?? 0
   }
 
+  const setRimOffset = (side: SpokeWheelSide, offsetMm: number | null) => {
+    draft[side].rimOffsetMm = offsetMm ?? 0
+  }
+
   return {
     draft,
     activeStep,
@@ -68,5 +72,6 @@ export const useSpokeCalculatorWizard = () => {
     setErd,
     setHubGeometry,
     setAlternatingDrillingOffset,
+    setRimOffset,
   }
 }

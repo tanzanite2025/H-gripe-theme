@@ -34,6 +34,12 @@
             {{ t('resourcesSpokeCalculator.calculator.physicalCorrections.alternatingInputNote', '正值表示孔位向左侧偏移，负值表示向右侧偏移；优先以轮圈厂商数据为准。') }}
           </p>
         </div>
+        <div class="spoke-alternating-step__input-note spoke-alternating-step__input-note--rim" role="note">
+          <span class="spoke-alternating-step__input-note-icon" aria-hidden="true">↔</span>
+          <p>
+            {{ t('resourcesSpokeCalculator.calculator.physicalCorrections.rimOffsetInputNote', '偏心圈的轮圈床整体偏离轮组中心线；对称轮圈填 0。偏心量与交错钻孔偏移是两项独立参数。') }}
+          </p>
+        </div>
       </div>
 
       <div class="spoke-alternating-step__wheel-grid">
@@ -59,6 +65,23 @@
               <span>mm</span>
             </span>
           </label>
+          <label for="spoke-rim-offset-front" class="spoke-alternating-step__field">
+            <span>{{ t('resourcesSpokeCalculator.calculator.physicalCorrections.rimOffsetFieldLabel', '偏心量（正值向右）') }}</span>
+            <span class="spoke-alternating-step__unit-field">
+              <input
+                id="spoke-rim-offset-front"
+                :value="props.frontRimOffset ?? ''"
+                type="number"
+                min="-20"
+                max="20"
+                step="0.1"
+                inputmode="decimal"
+                :placeholder="t('resourcesSpokeCalculator.calculator.physicalCorrections.rimOffsetPlaceholder', '例如 2.5')"
+                @input="updateRimOffset('front', $event)"
+              />
+              <span>mm</span>
+            </span>
+          </label>
         </fieldset>
 
         <fieldset class="spoke-alternating-step__wheel-card">
@@ -79,6 +102,23 @@
                 inputmode="decimal"
                 :placeholder="t('resourcesSpokeCalculator.calculator.physicalCorrections.alternatingOffsetPlaceholder', '例如 0.75')"
                 @input="updateOffset('rear', $event)"
+              />
+              <span>mm</span>
+            </span>
+          </label>
+          <label for="spoke-rim-offset-rear" class="spoke-alternating-step__field">
+            <span>{{ t('resourcesSpokeCalculator.calculator.physicalCorrections.rimOffsetFieldLabel', '偏心量（正值向右）') }}</span>
+            <span class="spoke-alternating-step__unit-field">
+              <input
+                id="spoke-rim-offset-rear"
+                :value="props.rearRimOffset ?? ''"
+                type="number"
+                min="-20"
+                max="20"
+                step="0.1"
+                inputmode="decimal"
+                :placeholder="t('resourcesSpokeCalculator.calculator.physicalCorrections.rimOffsetPlaceholder', '例如 2.5')"
+                @input="updateRimOffset('rear', $event)"
               />
               <span>mm</span>
             </span>
@@ -109,16 +149,22 @@ const props = withDefaults(defineProps<{
   currentStep?: number
   frontOffset?: number | null
   rearOffset?: number | null
+  frontRimOffset?: number | null
+  rearRimOffset?: number | null
 }>(), {
   currentStep: 4,
   frontOffset: 0,
   rearOffset: 0,
+  frontRimOffset: 0,
+  rearRimOffset: 0,
 })
 
 const emit = defineEmits<{
   'select-step': [step: number]
   'update:frontOffset': [value: number | null]
   'update:rearOffset': [value: number | null]
+  'update:frontRimOffset': [value: number | null]
+  'update:rearRimOffset': [value: number | null]
   previous: []
 }>()
 
@@ -135,6 +181,15 @@ const updateOffset = (side: 'front' | 'rear', event: Event) => {
     emit('update:frontOffset', value)
   } else {
     emit('update:rearOffset', value)
+  }
+}
+
+const updateRimOffset = (side: 'front' | 'rear', event: Event) => {
+  const value = readNumber(event)
+  if (side === 'front') {
+    emit('update:frontRimOffset', value)
+  } else {
+    emit('update:rearRimOffset', value)
   }
 }
 </script>
@@ -270,6 +325,17 @@ const updateOffset = (side: 'front' | 'rear', event: Event) => {
 
 .spoke-alternating-step__input-note p {
   margin: 0;
+}
+
+.spoke-alternating-step__input-note--rim {
+  border-color: rgba(5, 150, 105, 0.24);
+  background: rgba(236, 253, 245, 0.82);
+  color: #065f46;
+}
+
+.spoke-alternating-step__input-note--rim .spoke-alternating-step__input-note-icon {
+  background: rgba(5, 150, 105, 0.14);
+  color: #047857;
 }
 
 .spoke-alternating-step__wheel-grid {
