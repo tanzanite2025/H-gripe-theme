@@ -77,6 +77,8 @@
       </button>
     </div>
 
+    <SpokeHeadMeasurementGuide />
+
     <div class="spoke-head-step__actions">
       <button type="button" class="spoke-head-step__next" @click="emit('next')">
         <span>{{ t('resourcesSpokeCalculator.calculator.physicalCorrections.stepNext', '下一步') }}</span>
@@ -89,6 +91,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from '#imports'
+import SpokeHeadMeasurementGuide from '~/components/SpokeHeadMeasurementGuide.vue'
 import SpokeStepProgress from '~/components/SpokeStepProgress.vue'
 
 const { t } = useI18n()
