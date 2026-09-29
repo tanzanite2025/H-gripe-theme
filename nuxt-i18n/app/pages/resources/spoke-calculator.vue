@@ -48,6 +48,19 @@
           :current-step="activeWizardStep"
           @select-step="goToStep"
           @previous="previousStep"
+          @next="nextStep"
+        />
+        <SpokeInterlacingStep
+          v-else-if="activeWizardStep === 6"
+          v-model:front-interlacing="frontInterlacing"
+          v-model:rear-interlacing="rearInterlacing"
+          v-model:front-compensation="frontInterlaceCompensationMm"
+          v-model:rear-compensation="rearInterlaceCompensationMm"
+          :front-crossing="spokeWizardDraft.front.crossing"
+          :rear-crossing="spokeWizardDraft.rear.crossing"
+          :current-step="activeWizardStep"
+          @select-step="goToStep"
+          @previous="previousStep"
         />
 
         <!-- Standalone full-width reference card, above the calculator settings. -->
@@ -84,6 +97,7 @@ import SpokeAlternatingDrillingStep from '~/components/SpokeAlternatingDrillingS
 import SpokeERDStep from '~/components/SpokeERDStep.vue'
 import SpokeHeadTypeStep from '~/components/SpokeHeadTypeStep.vue'
 import SpokeHoleEngagementStep from '~/components/SpokeHoleEngagementStep.vue'
+import SpokeInterlacingStep from '~/components/SpokeInterlacingStep.vue'
 import SpokePCDStep from '~/components/SpokePCDStep.vue'
 import SpokePhysicsDiagrams from '~/components/SpokePhysicsDiagrams.vue'
 import UserFeedbackThread from '~/components/UserFeedbackThread.vue'
@@ -93,7 +107,7 @@ import { spokeCalculatorTabs } from '~/utils/pageSubNavigation'
 import { usePageMessages } from '~/composables/usePageMessages'
 import { useSpokeCalculatorWizard } from '~/composables/useSpokeCalculatorWizard'
 import type { HubGeometry } from '~/data/spoke-calculator/database'
-import type { SpokeHeadType } from '~/types/spokeCalculator'
+import type { SpokeHeadType, SpokeInterlacing } from '~/types/spokeCalculator'
 import { definePageMeta, useHead, useI18n } from '#imports'
 import { computed, watch } from 'vue'
 
@@ -112,6 +126,8 @@ const {
   setAlternatingDrillingOffset,
   setRimOffset,
   setSpokeHoleDiameter,
+  setInterlacing,
+  setInterlaceCompensation,
 } = useSpokeCalculatorWizard()
 
 const selectedSpokeHeadType = computed<SpokeHeadType>({
@@ -177,6 +193,26 @@ const frontHoleDiameterMm = computed<number | null>({
 const rearHoleDiameterMm = computed<number | null>({
   get: () => spokeWizardDraft.rear.spokeHoleDiameterMm,
   set: value => setSpokeHoleDiameter('rear', value),
+})
+
+const frontInterlacing = computed<SpokeInterlacing>({
+  get: () => spokeWizardDraft.front.interlacing,
+  set: value => setInterlacing('front', value),
+})
+
+const rearInterlacing = computed<SpokeInterlacing>({
+  get: () => spokeWizardDraft.rear.interlacing,
+  set: value => setInterlacing('rear', value),
+})
+
+const frontInterlaceCompensationMm = computed<number | null>({
+  get: () => spokeWizardDraft.front.interlaceCompensationMm,
+  set: value => setInterlaceCompensation('front', value),
+})
+
+const rearInterlaceCompensationMm = computed<number | null>({
+  get: () => spokeWizardDraft.rear.interlaceCompensationMm,
+  set: value => setInterlaceCompensation('rear', value),
 })
 
 await loadPageMessages(locale.value)

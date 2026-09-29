@@ -6,6 +6,7 @@ import {
   SPOKE_WIZARD_STEP_COUNT,
   type SpokeCalculatorWizardDraft,
   type SpokeHeadType,
+  type SpokeInterlacing,
   type SpokeWheelSide,
   type SpokeWizardStep,
 } from '~/types/spokeCalculator'
@@ -63,6 +64,14 @@ export const useSpokeCalculatorWizard = () => {
     draft[side].spokeHoleDiameterMm = diameterMm
   }
 
+  const setInterlacing = (side: SpokeWheelSide, interlacing: SpokeInterlacing) => {
+    draft[side].interlacing = interlacing
+  }
+
+  const setInterlaceCompensation = (side: SpokeWheelSide, compensationMm: number | null) => {
+    draft[side].interlaceCompensationMm = compensationMm ?? 0
+  }
+
   return {
     draft,
     activeStep,
@@ -78,5 +87,7 @@ export const useSpokeCalculatorWizard = () => {
     setAlternatingDrillingOffset,
     setRimOffset,
     setSpokeHoleDiameter,
+    setInterlacing,
+    setInterlaceCompensation,
   }
 }
