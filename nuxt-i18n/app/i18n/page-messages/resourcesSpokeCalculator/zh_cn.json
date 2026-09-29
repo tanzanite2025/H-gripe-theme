@@ -1,6 +1,12 @@
 {
   "title": "辐条计算器",
   "feedbackTitle": "分享您对辐条计算器的反馈",
+  "catalog": {
+    "eyebrow": "已录入结果",
+    "title": "目录选择与已验证辐条长度",
+    "description": "这里的轮圈和花鼓选择与下方搜索共同筛选后台保存的已录入编组数据。",
+    "note": "目录选择和搜索只影响下方已录入结果，不会自动填入上方计算器；上方计算器只使用你手工输入的尺寸和参数。"
+  },
   "calculator": {
     "wheelSetup": "轮组设置",
     "frontWheel": "前轮",
@@ -118,21 +124,21 @@
       "on": "是"
     },
     "action": {
-      "description": "辐条长度和预测的单根辐条张力比例根据所选轮组几何尺寸计算。生产编组前，请使用实测的轮圈和花鼓尺寸。",
+      "description": "辐条长度和预测的单根辐条张力比例根据上方手工输入的轮组几何尺寸计算。生产编组前，请使用实测的轮圈和花鼓尺寸。",
       "calculating": "计算中...",
       "recalculate": "重新计算",
       "calculationFailed": "计算失败"
     },
     "results": {
       "title": "辐条长度",
-      "description": "优先使用已验证的目录长度。如果当前选择没有匹配的已验证结果，计算器将使用上方输入的尺寸。",
+      "description": "这里显示根据本次手工输入和物理修正参数计算出的辐条长度。",
       "leftSide": "左侧",
       "rightSide": "右侧",
       "predictedTensionRatio": "预测张力比例",
       "directionalRatio": "左侧 : 右侧 {ratio} · 较低侧 {side}",
       "verified": "已验证",
       "calculated": "计算值",
-      "fallbackNote": "结果优先使用已验证的目录长度。没有匹配的已验证编组时，将回退到上方输入的尺寸。",
+      "fallbackNote": "结果来自本次手工输入的轮圈、花鼓和编组参数。",
       "unit": "毫米",
       "balanced": "平衡"
     }

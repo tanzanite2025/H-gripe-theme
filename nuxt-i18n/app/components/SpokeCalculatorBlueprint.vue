@@ -11,14 +11,12 @@
           <SpokeCalculatorWheelPanel
             side="front"
             :config="frontConfig"
-            :catalog-selection="frontCatalogSelection"
             :options="frontOptions"
           />
 
           <SpokeCalculatorWheelPanel
             side="rear"
             :config="rearConfig"
-            :catalog-selection="rearCatalogSelection"
             :options="rearOptions"
           />
         </div>
@@ -53,10 +51,9 @@
 <script setup lang="ts">
 import SpokeCalculatorResults from '~/components/SpokeCalculatorResults.vue'
 import SpokeCalculatorWheelPanel from '~/components/SpokeCalculatorWheelPanel.vue'
-import { useSpokeCalculatorCatalogSelection } from '~/composables/useSpokeCalculatorCatalogSelection'
+import { useSpokeCalculatorManualOptions } from '~/composables/useSpokeCalculatorManualOptions'
 import { useSpokeCalculatorRun } from '~/composables/useSpokeCalculatorRun'
 import type { SpokeWheelBuildConfig } from '~/types/spokeCalculator'
-import { useSpokeCalculatorWheelCatalog } from '~/composables/useSpokeCalculatorWheelCatalog'
 import { useI18n } from '#imports'
 
 const { t } = useI18n()
@@ -68,15 +65,9 @@ const props = defineProps<{
 
 const frontConfig = props.frontConfig
 const rearConfig = props.rearConfig
-const {
-  front: frontCatalogSelection,
-  rear: rearCatalogSelection,
-} = useSpokeCalculatorCatalogSelection()
-
-const {
-  frontOptions,
-  rearOptions,
-} = useSpokeCalculatorWheelCatalog(frontCatalogSelection, rearCatalogSelection)
+const { options: manualOptions } = useSpokeCalculatorManualOptions()
+const frontOptions = manualOptions
+const rearOptions = manualOptions
 
 const {
   loading,

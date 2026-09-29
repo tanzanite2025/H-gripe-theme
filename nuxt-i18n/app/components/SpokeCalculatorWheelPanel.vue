@@ -38,17 +38,7 @@
     <SpokeCalculatorBuildSettings
       :side="side"
       :config="config"
-      :catalog-selection="catalogSelection"
-      :spoke-count-options="options.spokeCountOptions"
-      :lacing-options="options.lacingOptions"
-      :nipple-type-options="options.nippleTypeOptions"
-      :rim-brand-options="options.rimBrandOptions"
-      :rim-model-options="options.rimModelOptions"
-      :hub-brand-options="options.hubBrandOptions"
-      :hub-model-options="options.hubModelOptions"
-      :spoke-head-type-options="options.spokeHeadTypeOptions"
-      :spoke-profile-options="options.spokeProfileOptions"
-      :interlacing-options="options.interlacingOptions"
+      :options="options"
     />
   </div>
 </template>
@@ -57,8 +47,7 @@
 import { useI18n } from '#imports'
 import SpokeCalculatorBuildSettings from '~/components/SpokeCalculatorBuildSettings.vue'
 import type {
-  SpokeCalculatorWheelOptions,
-  SpokeWheelCatalogSelection,
+  SpokeCalculatorManualOptions,
   SpokeWheelBuildConfig,
   SpokeWheelSide,
 } from '~/types/spokeCalculator'
@@ -66,14 +55,12 @@ import type {
 const props = defineProps<{
   side: SpokeWheelSide
   config: SpokeWheelBuildConfig
-  catalogSelection: SpokeWheelCatalogSelection
-  options: SpokeCalculatorWheelOptions
+  options: SpokeCalculatorManualOptions
 }>()
 
 const { t } = useI18n()
 const side = props.side
 const config = props.config
-const catalogSelection = props.catalogSelection
 const options = props.options
 </script>
 

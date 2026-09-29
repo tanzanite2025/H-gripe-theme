@@ -14,7 +14,7 @@
         <SpokeCalculatorSelect
           :id="fieldId('spoke-count')"
           v-model="config.spokeCount"
-          :options="spokeCountOptions"
+          :options="options.spokeCountOptions"
         />
       </div>
 
@@ -25,7 +25,7 @@
         <SpokeCalculatorSelect
           :id="fieldId('lacing')"
           v-model="config.crossing"
-          :options="lacingOptions"
+          :options="options.lacingOptions"
         />
       </div>
 
@@ -36,7 +36,7 @@
         <SpokeCalculatorSelect
           :id="fieldId('nipple')"
           v-model="config.nippleType"
-          :options="nippleTypeOptions"
+          :options="options.nippleTypeOptions"
         />
       </div>
 
@@ -58,55 +58,6 @@
         </div>
       </div>
 
-      <div class="spoke-calculator__setting-field">
-        <label :for="fieldId('rim-brand')" class="block text-xs font-medium tz-text-secondary">
-          {{ t('resourcesSpokeCalculator.calculator.buildSettings.rimBrand') }}
-        </label>
-        <SpokeCalculatorSelect
-          :id="fieldId('rim-brand')"
-          v-model="catalogSelection.rimBrandId"
-          :options="rimBrandOptions"
-          :placeholder="t('resourcesSpokeCalculator.calculator.buildSettings.selectBrand')"
-        />
-      </div>
-
-      <div class="spoke-calculator__setting-field">
-        <label :for="fieldId('rim-model')" class="block text-xs font-medium tz-text-secondary">
-          {{ t('resourcesSpokeCalculator.calculator.buildSettings.rimModel') }}
-        </label>
-        <SpokeCalculatorSelect
-          :id="fieldId('rim-model')"
-          v-model="catalogSelection.rimModelId"
-          :disabled="rimModelOptions.length === 0"
-          :options="rimModelOptions"
-          :placeholder="t('resourcesSpokeCalculator.calculator.buildSettings.selectModel')"
-        />
-      </div>
-
-      <div class="spoke-calculator__setting-field">
-        <label :for="fieldId('hub-brand')" class="block text-xs font-medium tz-text-secondary">
-          {{ t('resourcesSpokeCalculator.calculator.buildSettings.hubBrand') }}
-        </label>
-        <SpokeCalculatorSelect
-          :id="fieldId('hub-brand')"
-          v-model="catalogSelection.hubBrandId"
-          :options="hubBrandOptions"
-          :placeholder="t('resourcesSpokeCalculator.calculator.buildSettings.selectBrand')"
-        />
-      </div>
-
-      <div class="spoke-calculator__setting-field">
-        <label :for="fieldId('hub-model')" class="block text-xs font-medium tz-text-secondary">
-          {{ t('resourcesSpokeCalculator.calculator.buildSettings.hubModel') }}
-        </label>
-        <SpokeCalculatorSelect
-          :id="fieldId('hub-model')"
-          v-model="catalogSelection.hubModelId"
-          :disabled="hubModelOptions.length === 0"
-          :options="hubModelOptions"
-          :placeholder="t('resourcesSpokeCalculator.calculator.buildSettings.selectModel')"
-        />
-      </div>
     </div>
 
     <details open class="spoke-calculator__physical-settings">
@@ -117,7 +68,7 @@
           <SpokeCalculatorSelect
             :id="fieldId('spoke-head-type')"
             v-model="config.spokeHeadType"
-            :options="spokeHeadTypeOptions"
+            :options="options.spokeHeadTypeOptions"
           />
         </div>
         <div v-if="config.spokeHeadType === 'j_bend'" class="spoke-calculator__setting-field">
@@ -149,7 +100,7 @@
           <SpokeCalculatorSelect
             :id="fieldId('spoke-profile')"
             v-model="config.spokeProfile"
-            :options="spokeProfileOptions"
+            :options="options.spokeProfileOptions"
           />
         </div>
         <div class="spoke-calculator__setting-field">
@@ -181,7 +132,7 @@
           <SpokeCalculatorSelect
             :id="fieldId('interlacing')"
             v-model="config.interlacing"
-            :options="interlacingOptions"
+            :options="options.interlacingOptions"
           />
         </div>
         <div v-if="config.interlacing === 'on' && config.crossing > 0" class="spoke-calculator__setting-field">
@@ -205,8 +156,7 @@
 import { useI18n } from '#imports'
 import SpokeCalculatorSelect from '~/components/SpokeCalculatorSelect.vue'
 import type {
-  SpokeCalculatorSelectOption,
-  SpokeWheelCatalogSelection,
+  SpokeCalculatorManualOptions,
   SpokeWheelBuildConfig,
   SpokeWheelSide,
 } from '~/types/spokeCalculator'
@@ -214,22 +164,12 @@ import type {
 const props = defineProps<{
   side: SpokeWheelSide
   config: SpokeWheelBuildConfig
-  catalogSelection: SpokeWheelCatalogSelection
-  spokeCountOptions: SpokeCalculatorSelectOption[]
-  lacingOptions: SpokeCalculatorSelectOption[]
-  nippleTypeOptions: SpokeCalculatorSelectOption[]
-  rimBrandOptions: SpokeCalculatorSelectOption[]
-  rimModelOptions: SpokeCalculatorSelectOption[]
-  hubBrandOptions: SpokeCalculatorSelectOption[]
-  hubModelOptions: SpokeCalculatorSelectOption[]
-  spokeHeadTypeOptions: SpokeCalculatorSelectOption[]
-  spokeProfileOptions: SpokeCalculatorSelectOption[]
-  interlacingOptions: SpokeCalculatorSelectOption[]
+  options: SpokeCalculatorManualOptions
 }>()
 
 const { t } = useI18n()
 const config = props.config
-const catalogSelection = props.catalogSelection
+const options = props.options
 const fieldId = (name: string) => `${props.side}-${name}`
 </script>
 

@@ -51,17 +51,22 @@ export interface SpokeCalculatorSelectOption {
   value: string | number | null
 }
 
-export interface SpokeCalculatorWheelOptions {
+/** Options owned by the manual calculator. */
+export interface SpokeCalculatorManualOptions {
   spokeCountOptions: SpokeCalculatorSelectOption[]
   lacingOptions: SpokeCalculatorSelectOption[]
   nippleTypeOptions: SpokeCalculatorSelectOption[]
+  spokeHeadTypeOptions: SpokeCalculatorSelectOption[]
+  spokeProfileOptions: SpokeCalculatorSelectOption[]
+  interlacingOptions: SpokeCalculatorSelectOption[]
+}
+
+/** Options owned by the recorded catalog/search system. */
+export interface SpokeCalculatorCatalogOptions {
   rimBrandOptions: SpokeCalculatorSelectOption[]
   rimModelOptions: SpokeCalculatorSelectOption[]
   hubBrandOptions: SpokeCalculatorSelectOption[]
   hubModelOptions: SpokeCalculatorSelectOption[]
-  spokeHeadTypeOptions: SpokeCalculatorSelectOption[]
-  spokeProfileOptions: SpokeCalculatorSelectOption[]
-  interlacingOptions: SpokeCalculatorSelectOption[]
 }
 
 export type SpokeResultSource = 'calculated'

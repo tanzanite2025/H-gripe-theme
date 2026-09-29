@@ -1,6 +1,12 @@
 {
   "title": "Spoke Calculator",
   "feedbackTitle": "Share your feedback about the Spoke Calculator",
+  "catalog": {
+    "eyebrow": "Recorded results",
+    "title": "Catalog selection and verified spoke lengths",
+    "description": "These rim and hub selectors work with the search below to filter builds saved by the backend.",
+    "note": "Catalog selections and search only affect the recorded results below. They never fill the calculator above, which uses only the dimensions and parameters you enter manually."
+  },
   "calculator": {
     "wheelSetup": "Wheel setup",
     "frontWheel": "Front Wheel",
@@ -118,21 +124,21 @@
       "on": "Yes"
     },
     "action": {
-      "description": "Spoke lengths and the predicted per-spoke tension ratio are derived from the selected wheel geometry. Use measured rim and hub dimensions for a production build.",
+      "description": "Spoke lengths and the predicted per-spoke tension ratio are derived from the wheel geometry entered above. Use measured rim and hub dimensions for a production build.",
       "calculating": "Calculating...",
       "recalculate": "Recalculate",
       "calculationFailed": "Calculation failed"
     },
     "results": {
       "title": "Spoke lengths",
-      "description": "Verified catalog lengths are used first. If no verified result matches the current selection, the calculator uses the dimensions above.",
+      "description": "These values are calculated from the manual dimensions and physical corrections entered for this run.",
       "leftSide": "Left side",
       "rightSide": "Right side",
       "predictedTensionRatio": "Predicted tension ratio",
       "directionalRatio": "Left : Right {ratio} · lower side {side}",
       "verified": "Verified",
       "calculated": "Calculated",
-      "fallbackNote": "Results use verified catalog lengths first. If no verified build matches, the calculator falls back to the dimensions entered above.",
+      "fallbackNote": "These values come from the rim, hub, and lacing parameters entered for this run.",
       "unit": "mm",
       "balanced": "balanced"
     }

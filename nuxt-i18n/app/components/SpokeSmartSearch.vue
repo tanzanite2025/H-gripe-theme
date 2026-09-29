@@ -87,6 +87,12 @@ import { ref, computed } from 'vue'
 import { useI18n } from '#imports'
 import type { WheelBuildPreset } from '~/data/spoke-calculator/database'
 import { useSpokeCalculatorCatalog } from '~/composables/useSpokeCalculatorCatalog'
+import type { SpokeWheelCatalogSelection } from '~/types/spokeCalculator'
+
+const props = defineProps<{
+  frontSelection?: SpokeWheelCatalogSelection | null
+  rearSelection?: SpokeWheelCatalogSelection | null
+}>()
 
 const query = ref('')
 const { t } = useI18n()
@@ -101,12 +107,34 @@ const nippleTypeLabels = computed(() => new Map(
   catalogOptions.value.nippleTypes.map(option => [option.value, option.label])
 ))
 
+const activeCatalogSelections = computed(() => (
+  [props.frontSelection, props.rearSelection]
+    .filter((selection): selection is SpokeWheelCatalogSelection => Boolean(
+      selection && (
+        selection.rimBrandId
+        || selection.rimModelId
+        || selection.hubBrandId
+        || selection.hubModelId
+      ),
+    ))
+))
+
+const matchesCatalogSelection = (preset: WheelBuildPreset) => (
+  activeCatalogSelections.value.every(selection => (
+    (!selection.rimBrandId || preset.rimBrandId === selection.rimBrandId)
+    && (!selection.rimModelId || preset.rimModelId === selection.rimModelId)
+    && (!selection.hubBrandId || preset.hubBrandId === selection.hubBrandId)
+    && (!selection.hubModelId || preset.hubModelId === selection.hubModelId)
+  ))
+)
+
 const matchingConfigs = computed(() => {
   const q = query.value.trim().toLowerCase()
   if (q.length < 2) return [] // Minimum 2 chars to search
 
   return presets.value.filter(preset => {
     if (actualResultCells(preset).length === 0) return false
+    if (!matchesCatalogSelection(preset)) return false
     const matchName = preset.name.toLowerCase().includes(q)
     const matchKeywords = preset.keywords.some(k => k.toLowerCase().includes(q))
     return matchName || matchKeywords
