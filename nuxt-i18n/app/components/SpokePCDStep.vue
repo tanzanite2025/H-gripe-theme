@@ -28,11 +28,25 @@
         <p class="spoke-pcd-step__input-help">
           {{ t('resourcesSpokeCalculator.calculator.physicalCorrections.pcdPairHelp', '请分别填写前轮和后轮花鼓的 PCD、WL、WR。') }}
         </p>
+        <div class="spoke-pcd-step__orientation-note" role="note">
+          <span class="spoke-pcd-step__orientation-icon" aria-hidden="true">↔</span>
+          <div>
+            <strong>
+              {{ t('resourcesSpokeCalculator.calculator.physicalCorrections.flangeOrientationTitle', '左右法兰方向') }}
+            </strong>
+            <p>
+              {{ t('resourcesSpokeCalculator.calculator.physicalCorrections.flangeOrientationNote', '左右方向按骑行者坐在车上、面向前方定义；请与花鼓厂商图纸保持一致。') }}
+            </p>
+          </div>
+        </div>
       </div>
 
       <div class="spoke-pcd-step__wheel-grid">
         <fieldset class="spoke-pcd-step__wheel-card">
           <legend>{{ t('resourcesSpokeCalculator.calculator.frontWheel') }}</legend>
+          <p class="spoke-pcd-step__wheel-side-note">
+            {{ t('resourcesSpokeCalculator.calculator.physicalCorrections.frontFlangeSideNote', '左法兰 = 碟刹侧 · 右法兰 = 非碟刹侧') }}
+          </p>
           <div class="spoke-pcd-step__fields">
             <label for="spoke-pcd-front-left" class="spoke-pcd-step__field">
               <span>{{ t('resourcesSpokeCalculator.calculator.physicalCorrections.pcdLeftLabel', 'PCDL（左法兰）') }}</span>
@@ -106,6 +120,9 @@
 
         <fieldset class="spoke-pcd-step__wheel-card">
           <legend>{{ t('resourcesSpokeCalculator.calculator.rearWheel') }}</legend>
+          <p class="spoke-pcd-step__wheel-side-note">
+            {{ t('resourcesSpokeCalculator.calculator.physicalCorrections.rearFlangeSideNote', '左法兰 = 非驱动侧（NDS）· 右法兰 = 驱动侧（DS，飞轮/塔基侧）') }}
+          </p>
           <div class="spoke-pcd-step__fields">
             <label for="spoke-pcd-rear-left" class="spoke-pcd-step__field">
               <span>{{ t('resourcesSpokeCalculator.calculator.physicalCorrections.pcdLeftLabel', 'PCDL（左法兰）') }}</span>
@@ -356,6 +373,46 @@ const updateRearGeometry = (field: GeometryField, event: Event) => {
   line-height: 1.45;
 }
 
+.spoke-pcd-step__orientation-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 10px;
+  padding: 9px 10px;
+  border: 1px solid rgba(5, 150, 105, 0.24);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.72);
+  color: #065f46;
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+.spoke-pcd-step__orientation-icon {
+  display: inline-flex;
+  width: 1.35rem;
+  height: 1.35rem;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  background: rgba(5, 150, 105, 0.12);
+  color: #047857;
+  font-size: 0.85rem;
+  font-weight: 900;
+}
+
+.spoke-pcd-step__orientation-note strong {
+  display: block;
+  margin-bottom: 2px;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.spoke-pcd-step__orientation-note p {
+  margin: 0;
+  color: var(--pcd-step-muted);
+}
+
 .spoke-pcd-step__wheel-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -377,6 +434,18 @@ const updateRearGeometry = (field: GeometryField, event: Event) => {
   color: #047857;
   font-size: 12px;
   font-weight: 900;
+}
+
+.spoke-pcd-step__wheel-side-note {
+  margin: 0 0 10px;
+  padding: 6px 8px;
+  border-radius: 9999px;
+  background: rgba(5, 150, 105, 0.08);
+  color: #047857;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1.35;
+  text-align: center;
 }
 
 .spoke-pcd-step__fields {
