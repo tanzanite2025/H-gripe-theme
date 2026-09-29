@@ -181,7 +181,7 @@ const updateHoleDiameter = (side: 'front' | 'rear', event: Event) => {
   border-radius: 9999px;
   background: var(--hole-step-accent);
   color: #ffffff;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-family: var(--tz-font-ui);
   font-size: 0.7rem;
   font-weight: 900;
 }
@@ -224,7 +224,7 @@ const updateHoleDiameter = (side: 'front' | 'rear', event: Event) => {
   display: block;
   margin-bottom: 4px;
   color: #047857;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-family: var(--tz-font-ui);
   font-size: 10px;
   font-weight: 900;
   letter-spacing: 0.08em;
@@ -353,7 +353,7 @@ const updateHoleDiameter = (side: 'front' | 'rear', event: Event) => {
   flex: 0 0 auto;
   padding-right: 10px;
   color: #047857;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-family: var(--tz-font-ui);
   font-size: 10px;
   font-weight: 800;
 }

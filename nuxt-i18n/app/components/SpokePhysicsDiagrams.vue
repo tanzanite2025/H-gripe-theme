@@ -108,37 +108,37 @@
           
           <!-- 尺寸代号徽标牌 -->
           <rect x="120" y="193" width="120" height="24" rx="6" fill="#ffffff" stroke="#059669" stroke-width="1.5" />
-          <text x="180" y="209" fill="#059669" font-family="var(--font-mono)" font-size="11" font-weight="900" text-anchor="middle">
+          <text x="180" y="209" fill="#059669" font-family="var(--tz-font-ui)" font-size="11" font-weight="900" text-anchor="middle">
             ERD
           </text>
 
           <!-- 序号 ①：ERD 极轴尺寸 -->
           <g transform="translate(180, 150)">
             <circle cx="0" cy="0" r="11" fill="#059669" stroke="#ffffff" stroke-width="1.8" />
-            <text cx="0" cy="4" fill="#ffffff" font-family="var(--font-mono)" font-size="11" font-weight="900" text-anchor="middle">1</text>
+            <text cx="0" cy="4" fill="#ffffff" font-family="var(--tz-font-ui)" font-size="11" font-weight="900" text-anchor="middle">1</text>
           </g>
 
           <!-- 序号 ②：条帽承托座底 -->
           <g transform="translate(225, 91)">
             <line x1="-20" y1="0" x2="-8" y2="0" stroke="#059669" stroke-width="1.5" />
             <circle cx="0" cy="0" r="11" fill="#059669" stroke="#ffffff" stroke-width="1.8" />
-            <text cx="0" cy="4" fill="#ffffff" font-family="var(--font-mono)" font-size="11" font-weight="900" text-anchor="middle">2</text>
+            <text cx="0" cy="4" fill="#ffffff" font-family="var(--tz-font-ui)" font-size="11" font-weight="900" text-anchor="middle">2</text>
           </g>
 
           <!-- 序号 ③：车圈最外径 OD -->
           <g transform="translate(325, 175)">
             <line x1="-15" y1="15" x2="0" y2="0" stroke="#94a3b8" stroke-width="1.5" />
             <circle cx="0" cy="0" r="11" fill="#475569" stroke="#ffffff" stroke-width="1.8" />
-            <text cx="0" cy="4" fill="#ffffff" font-family="var(--font-mono)" font-size="11" font-weight="900" text-anchor="middle">3</text>
-            <text x="16" y="4" fill="#64748b" font-family="var(--font-mono)" font-size="9" font-weight="800">OD</text>
+            <text cx="0" cy="4" fill="#ffffff" font-family="var(--tz-font-ui)" font-size="11" font-weight="900" text-anchor="middle">3</text>
+            <text x="16" y="4" fill="#64748b" font-family="var(--tz-font-ui)" font-size="9" font-weight="800">OD</text>
           </g>
 
           <!-- 序号 ④：胎唇卡槽 BSD -->
           <g transform="translate(325, 235)">
             <line x1="-18" y1="-8" x2="0" y2="0" stroke="#94a3b8" stroke-width="1.5" />
             <circle cx="0" cy="0" r="11" fill="#475569" stroke="#ffffff" stroke-width="1.8" />
-            <text cx="0" cy="4" fill="#ffffff" font-family="var(--font-mono)" font-size="11" font-weight="900" text-anchor="middle">4</text>
-            <text x="16" y="4" fill="#64748b" font-family="var(--font-mono)" font-size="9" font-weight="800">BSD</text>
+            <text cx="0" cy="4" fill="#ffffff" font-family="var(--tz-font-ui)" font-size="11" font-weight="900" text-anchor="middle">4</text>
+            <text x="16" y="4" fill="#64748b" font-family="var(--tz-font-ui)" font-size="9" font-weight="800">BSD</text>
           </g>
 
           <!-- ================= 右侧：截面解剖特写 ================= -->
@@ -161,7 +161,7 @@
           <!-- 序号 ② 指向底面 -->
           <g transform="translate(420, 180)">
             <circle cx="0" cy="0" r="11" fill="#059669" stroke="#ffffff" stroke-width="1.8" />
-            <text cx="0" cy="4" fill="#ffffff" font-family="var(--font-mono)" font-size="11" font-weight="900" text-anchor="middle">2</text>
+            <text cx="0" cy="4" fill="#ffffff" font-family="var(--tz-font-ui)" font-size="11" font-weight="900" text-anchor="middle">2</text>
           </g>
 
           <!-- 螺牙平齐线与 序号 ⑤ -->
@@ -169,7 +169,7 @@
           <circle cx="605" cy="212" r="3.5" fill="#0f172a" />
           <g transform="translate(670, 212)">
             <circle cx="0" cy="0" r="11" fill="#0f172a" stroke="#ffffff" stroke-width="1.8" />
-            <text cx="0" cy="4" fill="#ffffff" font-family="var(--font-mono)" font-size="11" font-weight="900" text-anchor="middle">5</text>
+            <text cx="0" cy="4" fill="#ffffff" font-family="var(--tz-font-ui)" font-size="11" font-weight="900" text-anchor="middle">5</text>
           </g>
         </svg>
 
@@ -249,7 +249,7 @@
           <circle cx="250" cy="150" r="3" fill="#e11d48" />
           <g transform="translate(290, 115)">
             <circle cx="0" cy="0" r="11" fill="#e11d48" stroke="#ffffff" stroke-width="1.8" />
-            <text cx="0" cy="4" fill="#ffffff" font-family="var(--font-mono)" font-size="11" font-weight="900" text-anchor="middle">2</text>
+            <text cx="0" cy="4" fill="#ffffff" font-family="var(--tz-font-ui)" font-size="11" font-weight="900" text-anchor="middle">2</text>
           </g>
 
           <!-- 花鼓筒身与轴孔 -->
@@ -281,13 +281,13 @@
           <!-- PCD 尺寸标注线与 序号 ① -->
           <line x1="97" y1="205" x2="233" y2="205" stroke="#d97706" stroke-width="2" marker-start="url(#arrow-amber)" marker-end="url(#arrow-amber)" />
           <rect x="115" y="193" width="100" height="24" rx="5" fill="#ffffff" stroke="#d97706" stroke-width="1.5" />
-          <text x="165" y="209" fill="#d97706" font-family="var(--font-mono)" font-size="11" font-weight="900" text-anchor="middle">
+          <text x="165" y="209" fill="#d97706" font-family="var(--tz-font-ui)" font-size="11" font-weight="900" text-anchor="middle">
             PCD
           </text>
           <g transform="translate(165, 120)">
             <line x1="0" y1="12" x2="0" y2="17" stroke="#d97706" stroke-width="1.5" />
             <circle cx="0" cy="0" r="11" fill="#d97706" stroke="#ffffff" stroke-width="1.8" />
-            <text cx="0" cy="4" fill="#ffffff" font-family="var(--font-mono)" font-size="11" font-weight="900" text-anchor="middle">1</text>
+            <text cx="0" cy="4" fill="#ffffff" font-family="var(--tz-font-ui)" font-size="11" font-weight="900" text-anchor="middle">1</text>
           </g>
 
           <!-- ================= 右侧：花鼓轴向剖面尺寸 ================= -->
@@ -295,19 +295,19 @@
           <line x1="535" y1="55" x2="535" y2="330" stroke="#059669" stroke-width="2" stroke-dasharray="6 3" />
           <g transform="translate(535, 45)">
             <circle cx="0" cy="0" r="11" fill="#059669" stroke="#ffffff" stroke-width="1.8" />
-            <text cx="0" cy="4" fill="#ffffff" font-family="var(--font-mono)" font-size="11" font-weight="900" text-anchor="middle">3</text>
-            <text x="16" y="4" fill="#059669" font-family="var(--font-mono)" font-size="9" font-weight="900">CL</text>
+            <text cx="0" cy="4" fill="#ffffff" font-family="var(--tz-font-ui)" font-size="11" font-weight="900" text-anchor="middle">3</text>
+            <text x="16" y="4" fill="#059669" font-family="var(--tz-font-ui)" font-size="9" font-weight="900">CL</text>
           </g>
 
           <!-- 序号 ④：开档 OLD 跨距 -->
           <line x1="390" y1="85" x2="680" y2="85" stroke="#475569" stroke-width="1.8" marker-start="url(#arrow-slate)" marker-end="url(#arrow-slate)" />
           <rect x="495" y="73" width="80" height="20" rx="4" fill="#ffffff" stroke="#cbd5e1" stroke-width="1" />
-          <text x="535" y="87" fill="#0f172a" font-family="var(--font-mono)" font-size="9.5" font-weight="800" text-anchor="middle">
+          <text x="535" y="87" fill="#0f172a" font-family="var(--tz-font-ui)" font-size="9.5" font-weight="800" text-anchor="middle">
             OLD
           </text>
           <g transform="translate(475, 83)">
             <circle cx="0" cy="0" r="10" fill="#0f172a" stroke="#ffffff" stroke-width="1.5" />
-            <text cx="0" cy="3.5" fill="#ffffff" font-family="var(--font-mono)" font-size="9.5" font-weight="900" text-anchor="middle">4</text>
+            <text cx="0" cy="3.5" fill="#ffffff" font-family="var(--tz-font-ui)" font-size="9.5" font-weight="900" text-anchor="middle">4</text>
           </g>
           <line x1="390" y1="80" x2="390" y2="260" stroke="#94a3b8" stroke-dasharray="3 3" />
           <line x1="680" y1="80" x2="680" y2="260" stroke="#94a3b8" stroke-dasharray="3 3" />
@@ -326,19 +326,19 @@
           <rect x="580" y="195" width="100" height="50" rx="4" fill="#f1f5f9" stroke="#64748b" stroke-width="1.5" stroke-dasharray="4 2" />
           <g transform="translate(630, 220)">
             <circle cx="0" cy="0" r="11" fill="#475569" stroke="#ffffff" stroke-width="1.8" />
-            <text cx="0" cy="4" fill="#ffffff" font-family="var(--font-mono)" font-size="11" font-weight="900" text-anchor="middle">7</text>
+            <text cx="0" cy="4" fill="#ffffff" font-family="var(--tz-font-ui)" font-size="11" font-weight="900" text-anchor="middle">7</text>
           </g>
 
           <!-- 序号 ⑤：WL 尺寸线 -->
           <line x1="460" y1="112" x2="535" y2="112" stroke="#0f172a" stroke-width="2" marker-start="url(#arrow-slate)" marker-end="url(#arrow-slate)" />
           <line x1="460" y1="107" x2="460" y2="140" stroke="#94a3b8" stroke-dasharray="2 2" />
           <rect x="465" y="100" width="60" height="20" rx="4" fill="#ffffff" stroke="#0f172a" stroke-width="1.2" />
-          <text x="495" y="114" fill="#0f172a" font-family="var(--font-mono)" font-size="9.5" font-weight="900" text-anchor="middle">
+          <text x="495" y="114" fill="#0f172a" font-family="var(--tz-font-ui)" font-size="9.5" font-weight="900" text-anchor="middle">
             WL
           </text>
           <g transform="translate(440, 112)">
             <circle cx="0" cy="0" r="10" fill="#0f172a" stroke="#ffffff" stroke-width="1.5" />
-            <text cx="0" cy="3.5" fill="#ffffff" font-family="var(--font-mono)" font-size="9.5" font-weight="900" text-anchor="middle">5</text>
+            <text cx="0" cy="3.5" fill="#ffffff" font-family="var(--tz-font-ui)" font-size="9.5" font-weight="900" text-anchor="middle">5</text>
           </g>
 
           <!-- 序号 ⑥：WR 尺寸线 -->
@@ -346,12 +346,12 @@
           <line x1="576" y1="130" x2="576" y2="150" stroke="#d97706" stroke-dasharray="2 2" />
           <line x1="555" y1="135" x2="595" y2="135" stroke="#d97706" stroke-width="1.2" />
           <rect x="595" y="125" width="60" height="20" rx="4" fill="#fffbeb" stroke="#d97706" stroke-width="1.2" />
-          <text x="625" y="139" fill="#b45309" font-family="var(--font-mono)" font-size="9.5" font-weight="900" text-anchor="middle">
+          <text x="625" y="139" fill="#b45309" font-family="var(--tz-font-ui)" font-size="9.5" font-weight="900" text-anchor="middle">
             WR
           </text>
           <g transform="translate(675, 135)">
             <circle cx="0" cy="0" r="10" fill="#d97706" stroke="#ffffff" stroke-width="1.5" />
-            <text cx="0" cy="3.5" fill="#ffffff" font-family="var(--font-mono)" font-size="9.5" font-weight="900" text-anchor="middle">6</text>
+            <text cx="0" cy="3.5" fill="#ffffff" font-family="var(--tz-font-ui)" font-size="9.5" font-weight="900" text-anchor="middle">6</text>
           </g>
 
           <!-- 辐条牵引向量 -->
@@ -485,7 +485,7 @@
           <path d="M 110 138 L 210 95 L 210 265 Z" fill="rgba(225, 29, 72, 0.04)" stroke="rgba(225, 29, 72, 0.2)" stroke-dasharray="3 3" />
           <g transform="translate(110, 100)">
             <circle cx="0" cy="0" r="11" fill="#d97706" stroke="#ffffff" stroke-width="1.8" />
-            <text cx="0" cy="4" fill="#ffffff" font-family="var(--font-mono)" font-size="11" font-weight="900" text-anchor="middle">1</text>
+            <text cx="0" cy="4" fill="#ffffff" font-family="var(--tz-font-ui)" font-size="11" font-weight="900" text-anchor="middle">1</text>
           </g>
 
           <!-- 视区 2 (中间)：装配剖视 (放大20x) -->
@@ -494,10 +494,10 @@
           
           <!-- 序号 ⑤：孔壁厚度 t -->
           <line x1="285" y1="66" x2="345" y2="66" stroke="#475569" stroke-width="1.2" marker-start="url(#arrow-slate)" marker-end="url(#arrow-slate)" />
-          <text x="315" y="62" fill="#475569" font-size="8" font-family="var(--font-mono)" text-anchor="middle">t = 3.2mm</text>
+          <text x="315" y="62" fill="#475569" font-size="8" font-family="var(--tz-font-ui)" text-anchor="middle">t = 3.2mm</text>
           <g transform="translate(365, 62)">
             <circle cx="0" cy="0" r="10" fill="#475569" stroke="#ffffff" stroke-width="1.5" />
-            <text cx="0" cy="3.5" fill="#ffffff" font-family="var(--font-mono)" font-size="9.5" font-weight="900" text-anchor="middle">5</text>
+            <text cx="0" cy="3.5" fill="#ffffff" font-family="var(--tz-font-ui)" font-size="9.5" font-weight="900" text-anchor="middle">5</text>
           </g>
 
           <!-- 蘑菇头与辐条 -->
@@ -511,7 +511,7 @@
           <line x1="345" y1="140" x2="385" y2="165" stroke="#059669" stroke-width="1.5" />
           <g transform="translate(405, 175)">
             <circle cx="0" cy="0" r="11" fill="#059669" stroke="#ffffff" stroke-width="1.8" />
-            <text cx="0" cy="4" fill="#ffffff" font-family="var(--font-mono)" font-size="11" font-weight="900" text-anchor="middle">2</text>
+            <text cx="0" cy="4" fill="#ffffff" font-family="var(--tz-font-ui)" font-size="11" font-weight="900" text-anchor="middle">2</text>
           </g>
 
           <!-- 序号 ④：下方脱空间隙 -->
@@ -519,7 +519,7 @@
           <line x1="315" y1="200" x2="315" y2="230" stroke="#e11d48" stroke-width="1.2" />
           <g transform="translate(315, 245)">
             <circle cx="0" cy="0" r="11" fill="#e11d48" stroke="#ffffff" stroke-width="1.8" />
-            <text cx="0" cy="4" fill="#ffffff" font-family="var(--font-mono)" font-size="11" font-weight="900" text-anchor="middle">4</text>
+            <text cx="0" cy="4" fill="#ffffff" font-family="var(--tz-font-ui)" font-size="11" font-weight="900" text-anchor="middle">4</text>
           </g>
 
           <!-- 视区 3 (右侧)：几何误差解析 -->
@@ -531,25 +531,25 @@
           <circle cx="620" cy="180" r="4.5" fill="#d97706" />
           <g transform="translate(585, 195)">
             <circle cx="0" cy="0" r="10" fill="#d97706" stroke="#ffffff" stroke-width="1.5" />
-            <text cx="0" cy="3.5" fill="#ffffff" font-family="var(--font-mono)" font-size="9.5" font-weight="900" text-anchor="middle">1</text>
+            <text cx="0" cy="3.5" fill="#ffffff" font-family="var(--tz-font-ui)" font-size="9.5" font-weight="900" text-anchor="middle">1</text>
           </g>
 
           <!-- 咬合边缘点与 序号 ② -->
           <circle cx="659" cy="141" r="5.5" fill="#059669" stroke="#ffffff" stroke-width="2" />
           <g transform="translate(685, 135)">
             <circle cx="0" cy="0" r="10" fill="#059669" stroke="#ffffff" stroke-width="1.5" />
-            <text cx="0" cy="3.5" fill="#ffffff" font-family="var(--font-mono)" font-size="9.5" font-weight="900" text-anchor="middle">2</text>
+            <text cx="0" cy="3.5" fill="#ffffff" font-family="var(--tz-font-ui)" font-size="9.5" font-weight="900" text-anchor="middle">2</text>
           </g>
 
           <!-- 序号 ③：ΔL 半径扣减线段 -->
           <line x1="620" y1="180" x2="659" y2="141" stroke="#e11d48" stroke-width="2.5" marker-start="url(#arrow-rose)" marker-end="url(#arrow-rose)" />
           <rect x="545" y="255" width="150" height="26" rx="6" fill="#fff1f2" stroke="#e11d48" stroke-width="1.2" />
-          <text x="620" y="272" fill="#e11d48" font-family="var(--font-mono)" font-size="11" font-weight="900" text-anchor="middle">
+          <text x="620" y="272" fill="#e11d48" font-family="var(--tz-font-ui)" font-size="11" font-weight="900" text-anchor="middle">
             ΔL = -dh / 2
           </text>
           <g transform="translate(620, 235)">
             <circle cx="0" cy="0" r="11" fill="#e11d48" stroke="#ffffff" stroke-width="1.8" />
-            <text cx="0" cy="4" fill="#ffffff" font-family="var(--font-mono)" font-size="11" font-weight="900" text-anchor="middle">3</text>
+            <text cx="0" cy="4" fill="#ffffff" font-family="var(--tz-font-ui)" font-size="11" font-weight="900" text-anchor="middle">3</text>
           </g>
         </svg>
 
@@ -633,8 +633,8 @@
           <!-- 序号 ①：J-Bend 极坐标孔 -->
           <g transform="translate(190, 80)">
             <circle cx="0" cy="0" r="11" fill="#475569" stroke="#ffffff" stroke-width="1.8" />
-            <text cx="0" cy="4" fill="#ffffff" font-family="var(--font-mono)" font-size="11" font-weight="900" text-anchor="middle">1</text>
-            <text x="18" y="4" fill="#475569" font-family="var(--font-mono)" font-size="10" font-weight="800">J-BEND</text>
+            <text cx="0" cy="4" fill="#ffffff" font-family="var(--tz-font-ui)" font-size="11" font-weight="900" text-anchor="middle">1</text>
+            <text x="18" y="4" fill="#475569" font-family="var(--tz-font-ui)" font-size="10" font-weight="800">J-BEND</text>
           </g>
 
           <!-- 右侧：Straight Pull 直拉切线预制槽 -->
@@ -651,20 +651,20 @@
           <!-- 序号 ②：切线槽位 -->
           <g transform="translate(530, 115)">
             <circle cx="0" cy="0" r="11" fill="#0f172a" stroke="#ffffff" stroke-width="1.8" />
-            <text cx="0" cy="4" fill="#ffffff" font-family="var(--font-mono)" font-size="11" font-weight="900" text-anchor="middle">2</text>
+            <text cx="0" cy="4" fill="#ffffff" font-family="var(--tz-font-ui)" font-size="11" font-weight="900" text-anchor="middle">2</text>
           </g>
 
           <!-- 序号 ③：切线偏距 r_tangent -->
           <g transform="translate(535, 170)">
             <circle cx="0" cy="0" r="11" fill="#d97706" stroke="#ffffff" stroke-width="1.8" />
-            <text cx="0" cy="4" fill="#ffffff" font-family="var(--font-mono)" font-size="11" font-weight="900" text-anchor="middle">3</text>
-            <text x="16" y="4" fill="#d97706" font-family="var(--font-mono)" font-size="9.5" font-weight="800">r_tangent</text>
+            <text cx="0" cy="4" fill="#ffffff" font-family="var(--tz-font-ui)" font-size="11" font-weight="900" text-anchor="middle">3</text>
+            <text x="16" y="4" fill="#d97706" font-family="var(--tz-font-ui)" font-size="9.5" font-weight="800">r_tangent</text>
           </g>
 
           <!-- 序号 ④：直拉出条矢量 -->
           <g transform="translate(680, 115)">
             <circle cx="0" cy="0" r="11" fill="#059669" stroke="#ffffff" stroke-width="1.8" />
-            <text cx="0" cy="4" fill="#ffffff" font-family="var(--font-mono)" font-size="11" font-weight="900" text-anchor="middle">4</text>
+            <text cx="0" cy="4" fill="#ffffff" font-family="var(--tz-font-ui)" font-size="11" font-weight="900" text-anchor="middle">4</text>
           </g>
         </svg>
 
@@ -744,22 +744,22 @@
           <line x1="60" y1="40" x2="60" y2="350" stroke="#64748b" stroke-width="1.5" stroke-dasharray="4 3" />
           <g transform="translate(60, 48)">
             <circle cx="0" cy="0" r="11" fill="#475569" stroke="#ffffff" stroke-width="1.8" />
-            <text cx="0" cy="4" fill="#ffffff" font-family="var(--font-mono)" font-size="11" font-weight="900" text-anchor="middle">1</text>
+            <text cx="0" cy="4" fill="#ffffff" font-family="var(--tz-font-ui)" font-size="11" font-weight="900" text-anchor="middle">1</text>
           </g>
 
           <!-- 序号 ②：车圈条帽承托座物理基准 -->
           <line x1="480" y1="40" x2="480" y2="350" stroke="#059669" stroke-width="2" stroke-dasharray="6 3" />
           <g transform="translate(480, 48)">
             <circle cx="0" cy="0" r="11" fill="#059669" stroke="#ffffff" stroke-width="1.8" />
-            <text cx="0" cy="4" fill="#ffffff" font-family="var(--font-mono)" font-size="11" font-weight="900" text-anchor="middle">2</text>
+            <text cx="0" cy="4" fill="#ffffff" font-family="var(--tz-font-ui)" font-size="11" font-weight="900" text-anchor="middle">2</text>
           </g>
 
           <!-- 状态 A：0 N 松弛状态 (序号 ③) -->
           <g transform="translate(5, 75)">
             <g transform="translate(30, 20)">
               <circle cx="0" cy="0" r="11" fill="#475569" stroke="#ffffff" stroke-width="1.8" />
-              <text cx="0" cy="4" fill="#ffffff" font-family="var(--font-mono)" font-size="11" font-weight="900" text-anchor="middle">3</text>
-              <text x="16" y="4" fill="#475569" font-family="var(--font-mono)" font-size="9" font-weight="800">0 N</text>
+              <text cx="0" cy="4" fill="#ffffff" font-family="var(--tz-font-ui)" font-size="11" font-weight="900" text-anchor="middle">3</text>
+              <text x="16" y="4" fill="#475569" font-family="var(--tz-font-ui)" font-size="9" font-weight="800">0 N</text>
             </g>
             <rect x="48" y="14" width="12" height="18" fill="#e2e8f0" stroke="#64748b" stroke-width="1" />
             <path d="M 45 17 C 41 19 41 27 45 29 Z" fill="#64748b" />
@@ -773,8 +773,8 @@
           <g transform="translate(5, 160)">
             <g transform="translate(30, 20)">
               <circle cx="0" cy="0" r="11" fill="#e11d48" stroke="#ffffff" stroke-width="1.8" />
-              <text cx="0" cy="4" fill="#ffffff" font-family="var(--font-mono)" font-size="11" font-weight="900" text-anchor="middle">4</text>
-              <text x="16" y="4" fill="#e11d48" font-family="var(--font-mono)" font-size="9" font-weight="800">1200 N (OVER)</text>
+              <text cx="0" cy="4" fill="#ffffff" font-family="var(--tz-font-ui)" font-size="11" font-weight="900" text-anchor="middle">4</text>
+              <text x="16" y="4" fill="#e11d48" font-family="var(--tz-font-ui)" font-size="9" font-weight="800">1200 N (OVER)</text>
             </g>
             <rect x="48" y="14" width="12" height="18" fill="#e2e8f0" stroke="#64748b" stroke-width="1" />
             <path d="M 45 17 C 41 19 41 27 45 29 Z" fill="#64748b" />
@@ -790,8 +790,8 @@
           <g transform="translate(5, 245)">
             <g transform="translate(30, 20)">
               <circle cx="0" cy="0" r="11" fill="#059669" stroke="#ffffff" stroke-width="1.8" />
-              <text cx="0" cy="4" fill="#ffffff" font-family="var(--font-mono)" font-size="11" font-weight="900" text-anchor="middle">5</text>
-              <text x="16" y="4" fill="#059669" font-family="var(--font-mono)" font-size="9" font-weight="800">1200 N (FLUSH)</text>
+              <text cx="0" cy="4" fill="#ffffff" font-family="var(--tz-font-ui)" font-size="11" font-weight="900" text-anchor="middle">5</text>
+              <text x="16" y="4" fill="#059669" font-family="var(--tz-font-ui)" font-size="9" font-weight="800">1200 N (FLUSH)</text>
             </g>
             <rect x="48" y="14" width="12" height="18" fill="#e2e8f0" stroke="#64748b" stroke-width="1" />
             <path d="M 45 17 C 41 19 41 27 45 29 Z" fill="#64748b" />
@@ -874,14 +874,14 @@
           <line x1="380" y1="50" x2="380" y2="375" stroke="rgba(15, 23, 42, 0.25)" stroke-dasharray="6 4" stroke-width="1.5" />
           <g transform="translate(380, 42)">
             <circle cx="0" cy="0" r="11" fill="#475569" stroke="#ffffff" stroke-width="1.8" />
-            <text cx="0" cy="4" fill="#ffffff" font-family="var(--font-mono)" font-size="11" font-weight="900" text-anchor="middle">1</text>
+            <text cx="0" cy="4" fill="#ffffff" font-family="var(--tz-font-ui)" font-size="11" font-weight="900" text-anchor="middle">1</text>
           </g>
 
           <!-- 序号 ②：偏心床面整体偏心距 (+2.5mm) -->
           <line x1="420" y1="50" x2="420" y2="375" stroke="#d97706" stroke-dasharray="4 3" stroke-width="1.5" />
           <g transform="translate(420, 42)">
             <circle cx="0" cy="0" r="11" fill="#d97706" stroke="#ffffff" stroke-width="1.8" />
-            <text cx="0" cy="4" fill="#ffffff" font-family="var(--font-mono)" font-size="11" font-weight="900" text-anchor="middle">2</text>
+            <text cx="0" cy="4" fill="#ffffff" font-family="var(--tz-font-ui)" font-size="11" font-weight="900" text-anchor="middle">2</text>
           </g>
 
           <!-- 序号 ③：左侧交错孔位 -->
@@ -889,7 +889,7 @@
           <circle cx="405" cy="160" r="4" fill="#0f172a" />
           <g transform="translate(365, 160)">
             <circle cx="0" cy="0" r="11" fill="#0f172a" stroke="#ffffff" stroke-width="1.8" />
-            <text cx="0" cy="4" fill="#ffffff" font-family="var(--font-mono)" font-size="11" font-weight="900" text-anchor="middle">3</text>
+            <text cx="0" cy="4" fill="#ffffff" font-family="var(--tz-font-ui)" font-size="11" font-weight="900" text-anchor="middle">3</text>
           </g>
 
           <!-- 序号 ④：右侧交错孔位 -->
@@ -897,15 +897,15 @@
           <circle cx="435" cy="220" r="4" fill="#0f172a" />
           <g transform="translate(475, 220)">
             <circle cx="0" cy="0" r="11" fill="#0f172a" stroke="#ffffff" stroke-width="1.8" />
-            <text cx="0" cy="4" fill="#ffffff" font-family="var(--font-mono)" font-size="11" font-weight="900" text-anchor="middle">4</text>
+            <text cx="0" cy="4" fill="#ffffff" font-family="var(--tz-font-ui)" font-size="11" font-weight="900" text-anchor="middle">4</text>
           </g>
 
           <!-- 序号 ⑤：交错孔间距尺寸线 -->
           <line x1="405" y1="120" x2="435" y2="120" stroke="#d97706" stroke-width="1.5" stroke-dasharray="3 2" />
           <g transform="translate(420, 110)">
             <circle cx="0" cy="0" r="11" fill="#d97706" stroke="#ffffff" stroke-width="1.8" />
-            <text cx="0" cy="4" fill="#ffffff" font-family="var(--font-mono)" font-size="11" font-weight="900" text-anchor="middle">5</text>
-            <text x="16" y="4" fill="#b45309" font-family="var(--font-mono)" font-size="9" font-weight="900">ΔOffset</text>
+            <text cx="0" cy="4" fill="#ffffff" font-family="var(--tz-font-ui)" font-size="11" font-weight="900" text-anchor="middle">5</text>
+            <text x="16" y="4" fill="#b45309" font-family="var(--tz-font-ui)" font-size="9" font-weight="900">ΔOffset</text>
           </g>
 
           <!-- 辐条牵引示意 -->
@@ -981,8 +981,8 @@
           <line x1="60" y1="300" x2="700" y2="80" stroke="#94a3b8" stroke-dasharray="5 3" stroke-width="2" />
           <g transform="translate(640, 75)">
             <circle cx="0" cy="0" r="11" fill="#475569" stroke="#ffffff" stroke-width="1.8" />
-            <text cx="0" cy="4" fill="#ffffff" font-family="var(--font-mono)" font-size="11" font-weight="900" text-anchor="middle">1</text>
-            <text x="16" y="4" fill="#475569" font-family="var(--font-mono)" font-size="9" font-weight="800">IDEAL</text>
+            <text cx="0" cy="4" fill="#ffffff" font-family="var(--tz-font-ui)" font-size="11" font-weight="900" text-anchor="middle">1</text>
+            <text x="16" y="4" fill="#475569" font-family="var(--tz-font-ui)" font-size="9" font-weight="800">IDEAL</text>
           </g>
 
           <!-- 压条外层与内层辐条 -->
@@ -992,33 +992,33 @@
           <!-- 序号 ②：外层辐条弯折 -->
           <g transform="translate(260, 205)">
             <circle cx="0" cy="0" r="11" fill="#0f172a" stroke="#ffffff" stroke-width="1.8" />
-            <text cx="0" cy="4" fill="#ffffff" font-family="var(--font-mono)" font-size="11" font-weight="900" text-anchor="middle">2</text>
+            <text cx="0" cy="4" fill="#ffffff" font-family="var(--tz-font-ui)" font-size="11" font-weight="900" text-anchor="middle">2</text>
           </g>
 
           <!-- 序号 ③：内层辐条反拱 -->
           <g transform="translate(260, 135)">
             <circle cx="0" cy="0" r="11" fill="#64748b" stroke="#ffffff" stroke-width="1.8" />
-            <text cx="0" cy="4" fill="#ffffff" font-family="var(--font-mono)" font-size="11" font-weight="900" text-anchor="middle">3</text>
+            <text cx="0" cy="4" fill="#ffffff" font-family="var(--tz-font-ui)" font-size="11" font-weight="900" text-anchor="middle">3</text>
           </g>
 
           <!-- 序号 ④：压条接触咬合点 -->
           <circle cx="380" cy="180" r="32" fill="none" stroke="#e11d48" stroke-width="1.8" stroke-dasharray="4 4" />
           <g transform="translate(380, 235)">
             <circle cx="0" cy="0" r="11" fill="#e11d48" stroke="#ffffff" stroke-width="1.8" />
-            <text cx="0" cy="4" fill="#ffffff" font-family="var(--font-mono)" font-size="11" font-weight="900" text-anchor="middle">4</text>
+            <text cx="0" cy="4" fill="#ffffff" font-family="var(--tz-font-ui)" font-size="11" font-weight="900" text-anchor="middle">4</text>
           </g>
 
           <!-- 序号 ⑤：拱起位移量 δ -->
           <line x1="380" y1="150" x2="380" y2="210" stroke="#e11d48" stroke-width="1.5" />
           <g transform="translate(425, 175)">
             <circle cx="0" cy="0" r="11" fill="#e11d48" stroke="#ffffff" stroke-width="1.8" />
-            <text cx="0" cy="4" fill="#ffffff" font-family="var(--font-mono)" font-size="11" font-weight="900" text-anchor="middle">5</text>
-            <text x="16" y="4" fill="#e11d48" font-family="var(--font-mono)" font-size="9.5" font-weight="900">δ varies</text>
+            <text cx="0" cy="4" fill="#ffffff" font-family="var(--tz-font-ui)" font-size="11" font-weight="900" text-anchor="middle">5</text>
+            <text x="16" y="4" fill="#e11d48" font-family="var(--tz-font-ui)" font-size="9.5" font-weight="900">δ varies</text>
           </g>
 
           <!-- 计算公式牌 -->
           <rect x="180" y="320" width="400" height="36" rx="8" fill="#f8fafc" stroke="rgba(15, 23, 42, 0.12)" />
-          <text x="380" y="342" fill="#059669" font-family="var(--font-mono)" font-size="11.5" font-weight="900" text-anchor="middle">
+          <text x="380" y="342" fill="#059669" font-family="var(--tz-font-ui)" font-size="11.5" font-weight="900" text-anchor="middle">
             ΔL_interlace = √(L1² + δ²) + √(L2² + δ²) - (L1+L2)
           </text>
         </svg>
@@ -1132,9 +1132,6 @@ onMounted(() => {
       --text-secondary: #334155;     /* Slate-700 次级信息 */
       --text-muted: #64748b;         /* Slate-500 辅助标签 */
       --text-dim: #94a3b8;           /* Slate-400 弱化网格与代码 */
-      
-      --font-mono: "JetBrains Mono", Consolas, "Courier New", monospace;
-      --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
     }
 
     .spoke-physics-diagrams,
@@ -1151,7 +1148,7 @@ onMounted(() => {
         linear-gradient(90deg, rgba(15, 23, 42, 0.035) 1px, transparent 1px);
       background-size: 28px 28px;
       color: var(--text-main);
-      font-family: var(--font-sans);
+      font-family: var(--tz-font-ui);
       width: 100%;
       padding: 24px;
       display: flex;
@@ -1170,7 +1167,7 @@ onMounted(() => {
       color: #334155;
       border: 1px solid rgba(15, 23, 42, 0.12);
       font-size: 8.5px;
-      font-family: var(--font-mono);
+      font-family: var(--tz-font-ui);
       font-weight: 800;
       letter-spacing: 0.08em;
     }
@@ -1186,7 +1183,7 @@ onMounted(() => {
       background: #ffffff;
       color: var(--text-main);
       padding: 10px 12px;
-      font-family: var(--font-sans);
+      font-family: var(--tz-font-ui);
       font-size: 12px;
       font-weight: 800;
       text-align: left;
@@ -1264,7 +1261,7 @@ onMounted(() => {
     }
 
     .schematic-tab span.num {
-      font-family: var(--font-mono);
+      font-family: var(--tz-font-ui);
       font-size: 7.5px;
       padding: 1px 4px;
       background: rgba(15, 23, 42, 0.06);
@@ -1381,7 +1378,7 @@ onMounted(() => {
     }
 
     .legend-badge {
-      font-family: var(--font-mono);
+      font-family: var(--tz-font-ui);
       font-size: 8px;
       font-weight: 800;
       padding: 2px 7px;
@@ -1419,7 +1416,7 @@ onMounted(() => {
       display: flex;
       align-items: center;
       justify-content: center;
-      font-family: var(--font-mono);
+      font-family: var(--tz-font-ui);
       font-size: 10.5px;
       font-weight: 900;
       flex-shrink: 0;

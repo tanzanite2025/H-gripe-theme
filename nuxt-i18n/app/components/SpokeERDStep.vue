@@ -257,7 +257,7 @@ const rearErdMm = computed({
   border-radius: 9999px;
   background: var(--erd-step-accent);
   color: #ffffff;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-family: var(--tz-font-ui);
   font-size: 0.7rem;
   font-weight: 900;
 }
@@ -309,7 +309,7 @@ const rearErdMm = computed({
   border-radius: 9999px;
   background: rgba(5, 150, 105, 0.1);
   color: #047857;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-family: var(--tz-font-ui);
   font-size: 10px;
   font-weight: 900;
 }
@@ -408,7 +408,7 @@ const rearErdMm = computed({
   display: block;
   margin-bottom: 4px;
   color: #047857;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-family: var(--tz-font-ui);
   font-size: 10px;
   font-weight: 900;
   letter-spacing: 0.08em;
@@ -481,7 +481,7 @@ const rearErdMm = computed({
   flex: 0 0 auto;
   padding: 0 14px 0 4px;
   color: #047857;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-family: var(--tz-font-ui);
   font-size: 12px;
   font-weight: 800;
 }

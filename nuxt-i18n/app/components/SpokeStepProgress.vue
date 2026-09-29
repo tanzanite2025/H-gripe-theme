@@ -79,7 +79,7 @@ const { t } = useI18n()
   border-radius: 9999px;
   background: color-mix(in srgb, #0f172a 8%, transparent);
   color: #475569;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-family: var(--tz-font-ui);
   font-size: 0.62rem;
   font-weight: 900;
   line-height: 1;
