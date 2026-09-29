@@ -1,6 +1,6 @@
-import { computed, watch } from 'vue'
+import { computed } from 'vue'
 import { useI18n } from '#imports'
-import type { HubGeometry, HubModel, RimModel } from '~/data/spoke-calculator/database'
+import type { HubModel, RimModel } from '~/data/spoke-calculator/database'
 import { useSpokeCalculatorCatalog } from '~/composables/useSpokeCalculatorCatalog'
 import type {
   SpokeCalculatorWheelOptions,
@@ -10,8 +10,8 @@ import type {
 /**
  * Adapts the shared spoke catalog to the two wheel configurations used by the
  * calculator. Catalog loading stays in useSpokeCalculatorCatalog; this hook
- * owns only translated select options, dependent model lists, and the
- * geometry/ERD values populated after a model is selected.
+ * owns only translated select options and dependent model lists. Selecting a
+ * catalog item never writes dimensions into the manual calculator draft.
  */
 export const useSpokeCalculatorWheelCatalog = (
   frontConfig: SpokeWheelBuildConfig,
@@ -123,64 +123,6 @@ export const useSpokeCalculatorWheelCatalog = (
     label: hub.name,
     value: hub.id,
   })))
-
-  const applyHubGeometry = (config: SpokeWheelBuildConfig, geometry?: HubGeometry | null) => {
-    if (!geometry) return
-    config.leftFlange = geometry.leftFlange ?? null
-    config.rightFlange = geometry.rightFlange ?? null
-    config.leftFlangePcd = geometry.leftFlangePcd ?? null
-    config.rightFlangePcd = geometry.rightFlangePcd ?? null
-    config.spokeHoleDiameterMm = geometry.spokeHoleDiameter ?? config.spokeHoleDiameterMm
-  }
-
-  const syncRimGeometry = (
-    config: SpokeWheelBuildConfig,
-    rimModelId: string | null,
-    models: RimModel[],
-  ) => {
-    if (!rimModelId) {
-      config.erd = null
-      return
-    }
-    const model = models.find(item => item.id === rimModelId)
-    if (model && model.erd != null) {
-      config.erd = model.erd
-    }
-  }
-
-  const syncHubGeometry = (
-    config: SpokeWheelBuildConfig,
-    hubModelId: string | null,
-    models: HubModel[],
-    wheel: 'front' | 'rear',
-  ) => {
-    if (!hubModelId) {
-      config.leftFlange = null
-      config.rightFlange = null
-      config.leftFlangePcd = null
-      config.rightFlangePcd = null
-      return
-    }
-    const model = models.find(item => item.id === hubModelId)
-    applyHubGeometry(config, wheel === 'front' ? model?.front : model?.rear)
-  }
-
-  watch(
-    () => frontConfig.rimModelId,
-    rimModelId => syncRimGeometry(frontConfig, rimModelId, frontRimModels.value),
-  )
-  watch(
-    () => frontConfig.hubModelId,
-    hubModelId => syncHubGeometry(frontConfig, hubModelId, frontHubModels.value, 'front'),
-  )
-  watch(
-    () => rearConfig.rimModelId,
-    rimModelId => syncRimGeometry(rearConfig, rimModelId, rearRimModels.value),
-  )
-  watch(
-    () => rearConfig.hubModelId,
-    hubModelId => syncHubGeometry(rearConfig, hubModelId, rearHubModels.value, 'rear'),
-  )
 
   const frontOptions = computed<SpokeCalculatorWheelOptions>(() => ({
     spokeCountOptions: spokeCountOptions.value,

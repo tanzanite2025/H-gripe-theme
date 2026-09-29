@@ -2,21 +2,18 @@ import type { SpokeCalcInput } from '~~/types/spoke'
 import type { SpokeWheelBuildConfig, SpokeWheelSide } from '~/types/spokeCalculator'
 
 /**
- * Returns whether this wheel has enough information for a calculation.
- * Catalog selection and manual geometry follow the same rules as the
- * existing calculator panel during this extraction step.
+ * Returns whether this wheel has enough manual information for a calculation.
+ * Catalog selection belongs to the separate preset/search system and cannot
+ * satisfy or override the calculator's measured geometry.
  */
 export const hasSpokeCalculationGeometry = (config: SpokeWheelBuildConfig) => {
-  const hasCatalogSelection = Boolean(config.rimModelId && config.hubModelId)
-  const hasManualGeometry = Boolean(
+  return Boolean(
     config.erd
     && config.leftFlangePcd
     && config.rightFlangePcd
     && config.leftFlange != null
     && config.rightFlange != null,
   )
-
-  return hasCatalogSelection || hasManualGeometry
 }
 
 /**
@@ -28,8 +25,10 @@ export const toSpokeCalcInput = (
   config: SpokeWheelBuildConfig,
   wheel: SpokeWheelSide,
 ): SpokeCalcInput => ({
-  rimId: config.rimModelId || '',
-  hubId: config.hubModelId || '',
+  // Manual calculator input is intentionally independent from the catalog
+  // selection used by the preset/search system.
+  rimId: '',
+  hubId: '',
   wheelPosition: wheel,
   spokeCount: config.spokeCount,
   crossing: config.crossing,

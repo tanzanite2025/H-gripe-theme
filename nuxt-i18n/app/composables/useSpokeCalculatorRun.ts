@@ -2,6 +2,7 @@ import { ref, watch } from 'vue'
 import { useI18n } from '#imports'
 import { useBehaviorEvents } from '~/composables/useBehaviorEvents'
 import { useSpokeCalculator } from '~/composables/useSpokeCalculator'
+import { toSpokeCalcInput } from '~/utils/spokeCalculatorPayload'
 import type {
   SpokeWheelBuildConfig,
   SpokeWheelResult,
@@ -26,6 +27,11 @@ export const useSpokeCalculatorRun = (
   const frontResult = ref<SpokeWheelResult | null>(null)
   const rearResult = ref<SpokeWheelResult | null>(null)
   const lastTrackedCalculation = ref('')
+
+  const calculationFingerprint = () => JSON.stringify({
+    front: toSpokeCalcInput(frontConfig, 'front'),
+    rear: toSpokeCalcInput(rearConfig, 'rear'),
+  })
 
   const buildWheelResult = async (
     config: SpokeWheelBuildConfig,
@@ -80,10 +86,7 @@ export const useSpokeCalculatorRun = (
       const completedWheelCount = await updateResults()
 
       if (completedWheelCount > 0) {
-        const fingerprint = JSON.stringify({
-          front: frontConfig,
-          rear: rearConfig,
-        })
+        const fingerprint = calculationFingerprint()
 
         if (fingerprint !== lastTrackedCalculation.value) {
           lastTrackedCalculation.value = fingerprint
@@ -98,10 +101,6 @@ export const useSpokeCalculatorRun = (
               rear_crossing: rearConfig.crossing,
               front_rim_offset_mm: frontConfig.rimOffsetMm,
               rear_rim_offset_mm: rearConfig.rimOffsetMm,
-              front_rim_selected: Boolean(frontConfig.rimModelId),
-              rear_rim_selected: Boolean(rearConfig.rimModelId),
-              front_hub_selected: Boolean(frontConfig.hubModelId),
-              rear_hub_selected: Boolean(rearConfig.hubModelId),
             },
           })
         }
@@ -116,10 +115,7 @@ export const useSpokeCalculatorRun = (
   }
 
   watch(
-    () => ({
-      front: { ...frontConfig },
-      rear: { ...rearConfig },
-    }),
+    calculationFingerprint,
     () => {
       // Results are generated explicitly by the Calculate action. Avoid firing
       // an API request for every slider/input keystroke (and wasting the quota).
