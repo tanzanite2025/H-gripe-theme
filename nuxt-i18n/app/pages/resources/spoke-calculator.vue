@@ -35,12 +35,8 @@
 
         <div class="support-page__calculator-wrapper">
           <SpokeCalculatorBlueprint
-            v-model:front-erd="frontErdMm"
-            v-model:rear-erd="rearErdMm"
-            v-model:front-geometry="frontGeometry"
-            v-model:rear-geometry="rearGeometry"
-            v-model:front-spoke-head-type="frontSpokeHeadType"
-            v-model:rear-spoke-head-type="rearSpokeHeadType"
+            :front-config="spokeWizardDraft.front"
+            :rear-config="spokeWizardDraft.rear"
           />
 
           <div class="spoke-smart-search-section mt-16 pt-10">
@@ -232,6 +228,7 @@ import { usePageSubNavigationTab } from '~/composables/usePageSubNavigationTab'
 import { spokeCalculatorTabs } from '~/utils/pageSubNavigation'
 import { usePageMessages } from '~/composables/usePageMessages'
 import { useSpokeCalculatorWizard } from '~/composables/useSpokeCalculatorWizard'
+import type { HubGeometry } from '~/data/spoke-calculator/database'
 import type { SpokeHeadType } from '~/types/spokeCalculator'
 import { definePageMeta, useHead, useI18n } from '#imports'
 import { computed, watch } from 'vue'
@@ -246,43 +243,42 @@ const {
   nextStep,
   previousStep,
   setHeadType,
-  setWheelHeadType,
   setErd,
   setHubGeometry,
 } = useSpokeCalculatorWizard()
 
 const selectedSpokeHeadType = computed<SpokeHeadType>({
-  get: () => spokeWizardDraft.front.headType,
+  get: () => spokeWizardDraft.front.spokeHeadType,
   set: value => setHeadType(value),
 })
 
-const frontSpokeHeadType = computed<SpokeHeadType>({
-  get: () => spokeWizardDraft.front.headType,
-  set: value => setWheelHeadType('front', value),
-})
-
-const rearSpokeHeadType = computed<SpokeHeadType>({
-  get: () => spokeWizardDraft.rear.headType,
-  set: value => setWheelHeadType('rear', value),
-})
-
 const frontErdMm = computed<number | null>({
-  get: () => spokeWizardDraft.front.erdMm,
+  get: () => spokeWizardDraft.front.erd,
   set: value => setErd('front', value),
 })
 
 const rearErdMm = computed<number | null>({
-  get: () => spokeWizardDraft.rear.erdMm,
+  get: () => spokeWizardDraft.rear.erd,
   set: value => setErd('rear', value),
 })
 
-const frontGeometry = computed({
-  get: () => spokeWizardDraft.front.hubGeometry,
+const frontGeometry = computed<HubGeometry>({
+  get: () => ({
+    leftFlange: spokeWizardDraft.front.leftFlange,
+    rightFlange: spokeWizardDraft.front.rightFlange,
+    leftFlangePcd: spokeWizardDraft.front.leftFlangePcd,
+    rightFlangePcd: spokeWizardDraft.front.rightFlangePcd,
+  }),
   set: value => setHubGeometry('front', value),
 })
 
-const rearGeometry = computed({
-  get: () => spokeWizardDraft.rear.hubGeometry,
+const rearGeometry = computed<HubGeometry>({
+  get: () => ({
+    leftFlange: spokeWizardDraft.rear.leftFlange,
+    rightFlange: spokeWizardDraft.rear.rightFlange,
+    leftFlangePcd: spokeWizardDraft.rear.leftFlangePcd,
+    rightFlangePcd: spokeWizardDraft.rear.rightFlangePcd,
+  }),
   set: value => setHubGeometry('rear', value),
 })
 

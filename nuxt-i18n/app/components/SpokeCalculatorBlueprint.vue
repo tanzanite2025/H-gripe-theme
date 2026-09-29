@@ -142,85 +142,23 @@
 </template>
 
 <script setup lang="ts">
-import { computed, reactive, ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import SpokeCalculatorBuildSettings from '~/components/SpokeCalculatorBuildSettings.vue'
 import SpokeCalculatorResults from '~/components/SpokeCalculatorResults.vue'
 import type { HubGeometry, HubModel, RimModel } from '~/data/spoke-calculator/database'
 import { useSpokeCalculator } from '~/composables/useSpokeCalculator'
-import type { SpokeHeadType, SpokeWheelBuildConfig, SpokeWheelResult, SpokeWheelSide } from '~/types/spokeCalculator'
+import type { SpokeWheelBuildConfig, SpokeWheelResult, SpokeWheelSide } from '~/types/spokeCalculator'
 import { useBehaviorEvents } from '~/composables/useBehaviorEvents'
 import { useSpokeCalculatorCatalog } from '~/composables/useSpokeCalculatorCatalog'
 import { useI18n } from '#imports'
 
 const props = defineProps<{
-  frontErd?: number | null
-  rearErd?: number | null
-  frontGeometry?: HubGeometry | null
-  rearGeometry?: HubGeometry | null
-  frontSpokeHeadType?: SpokeHeadType
-  rearSpokeHeadType?: SpokeHeadType
+  frontConfig: SpokeWheelBuildConfig
+  rearConfig: SpokeWheelBuildConfig
 }>()
 
-const emit = defineEmits<{
-  'update:frontErd': [value: number | null]
-  'update:rearErd': [value: number | null]
-  'update:frontGeometry': [value: HubGeometry]
-  'update:rearGeometry': [value: HubGeometry]
-  'update:frontSpokeHeadType': [value: SpokeHeadType]
-  'update:rearSpokeHeadType': [value: SpokeHeadType]
-}>()
-
-// Front wheel configuration
-const frontConfig = reactive<SpokeWheelBuildConfig>({
-  spokeCount: 32,
-  crossing: 3,
-  nippleType: 'standard',
-  nippleLength: 12,
-	spokeHeadType: 'j_bend',
-	spokeHoleDiameterMm: 2.5,
-	straightPullTangentOffsetMm: 0.8,
-	spokeProfile: 'round_2_0',
-	targetTensionN: 0,
-	alternatingDrillingOffsetMm: 0,
-	interlacing: 'off',
-	interlaceCompensationMm: 0.45,
-  rimBrandId: null,
-  rimModelId: null,
-  hubBrandId: null,
-  hubModelId: null,
-  erd: null,
-  rimOffsetMm: 0,
-  leftFlange: null,
-  rightFlange: null,
-  leftFlangePcd: null,
-  rightFlangePcd: null,
-})
-
-// Rear wheel configuration
-const rearConfig = reactive<SpokeWheelBuildConfig>({
-  spokeCount: 32,
-  crossing: 3,
-  nippleType: 'standard',
-  nippleLength: 12,
-	spokeHeadType: 'j_bend',
-	spokeHoleDiameterMm: 2.5,
-	straightPullTangentOffsetMm: 0.8,
-	spokeProfile: 'round_2_0',
-	targetTensionN: 0,
-	alternatingDrillingOffsetMm: 0,
-	interlacing: 'off',
-	interlaceCompensationMm: 0.45,
-  rimBrandId: null,
-  rimModelId: null,
-  hubBrandId: null,
-  hubModelId: null,
-  erd: null,
-  rimOffsetMm: 0,
-  leftFlange: null,
-  rightFlange: null,
-  leftFlangePcd: null,
-  rightFlangePcd: null,
-})
+const frontConfig = props.frontConfig
+const rearConfig = props.rearConfig
 
 const { t } = useI18n()
 const { rims, hubs, options: catalogOptions } = useSpokeCalculatorCatalog()
@@ -354,147 +292,6 @@ const applyHubGeometry = (config: SpokeWheelBuildConfig, geometry?: HubGeometry 
   config.rightFlangePcd = geometry?.rightFlangePcd ?? null
 	config.spokeHoleDiameterMm = geometry?.spokeHoleDiameter ?? config.spokeHoleDiameterMm
 }
-
-// Keep the wizard's front and rear ERD values synchronized with the matching
-// calculator configs. These channels stay separate so one wheel can never
-// overwrite the other wheel's ERD.
-watch(
-  () => props.frontErd,
-  (value) => {
-    if (value !== undefined && frontConfig.erd !== value) {
-      frontConfig.erd = value
-    }
-  },
-  { immediate: true },
-)
-
-watch(
-  () => props.rearErd,
-  (value) => {
-    if (value !== undefined && rearConfig.erd !== value) {
-      rearConfig.erd = value
-    }
-  },
-  { immediate: true },
-)
-
-watch(
-  () => frontConfig.erd,
-  (value) => {
-    if (props.frontErd !== undefined && props.frontErd !== value) {
-      emit('update:frontErd', value)
-    }
-  },
-)
-
-watch(
-  () => rearConfig.erd,
-  (value) => {
-    if (props.rearErd !== undefined && props.rearErd !== value) {
-      emit('update:rearErd', value)
-    }
-  },
-)
-
-type FlangeGeometryKey = 'leftFlange' | 'rightFlange' | 'leftFlangePcd' | 'rightFlangePcd'
-
-const flangeGeometryKeys: FlangeGeometryKey[] = [
-  'leftFlange',
-  'rightFlange',
-  'leftFlangePcd',
-  'rightFlangePcd',
-]
-
-const geometryFromConfig = (config: SpokeWheelBuildConfig): HubGeometry => ({
-  leftFlange: config.leftFlange,
-  rightFlange: config.rightFlange,
-  leftFlangePcd: config.leftFlangePcd,
-  rightFlangePcd: config.rightFlangePcd,
-})
-
-const geometryMatches = (current: HubGeometry | null | undefined, next: HubGeometry) => (
-  Boolean(current)
-  && flangeGeometryKeys.every(key => current?.[key] === next[key])
-)
-
-const applyExternalGeometry = (config: SpokeWheelBuildConfig, geometry?: HubGeometry | null) => {
-  if (!geometry) return
-  for (const key of flangeGeometryKeys) {
-    if (config[key] !== geometry[key]) {
-      config[key] = geometry[key]
-    }
-  }
-}
-
-watch(
-  () => props.frontGeometry,
-  geometry => applyExternalGeometry(frontConfig, geometry),
-  { immediate: true, deep: true },
-)
-
-watch(
-  () => props.rearGeometry,
-  geometry => applyExternalGeometry(rearConfig, geometry),
-  { immediate: true, deep: true },
-)
-
-watch(
-  () => props.frontSpokeHeadType,
-  value => {
-    if (value && frontConfig.spokeHeadType !== value) {
-      frontConfig.spokeHeadType = value
-    }
-  },
-  { immediate: true },
-)
-
-watch(
-  () => props.rearSpokeHeadType,
-  value => {
-    if (value && rearConfig.spokeHeadType !== value) {
-      rearConfig.spokeHeadType = value
-    }
-  },
-  { immediate: true },
-)
-
-watch(
-  () => frontConfig.spokeHeadType,
-  value => {
-    if (props.frontSpokeHeadType !== undefined && props.frontSpokeHeadType !== value) {
-      emit('update:frontSpokeHeadType', value)
-    }
-  },
-)
-
-watch(
-  () => rearConfig.spokeHeadType,
-  value => {
-    if (props.rearSpokeHeadType !== undefined && props.rearSpokeHeadType !== value) {
-      emit('update:rearSpokeHeadType', value)
-    }
-  },
-)
-
-watch(
-  () => flangeGeometryKeys.map(key => frontConfig[key]),
-  () => {
-    const next = geometryFromConfig(frontConfig)
-    if (!geometryMatches(props.frontGeometry, next)) {
-      emit('update:frontGeometry', next)
-    }
-  },
-)
-
-watch(
-  () => flangeGeometryKeys.map(key => rearConfig[key]),
-  () => {
-    const next = geometryFromConfig(rearConfig)
-    if (!geometryMatches(props.rearGeometry, next)) {
-      emit('update:rearGeometry', next)
-    }
-  },
-)
 
 // --- Watchers for Auto-Population ---
 

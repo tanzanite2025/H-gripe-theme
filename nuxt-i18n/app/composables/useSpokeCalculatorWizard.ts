@@ -32,20 +32,23 @@ export const useSpokeCalculatorWizard = () => {
   const previousStep = () => goToStep(activeStep.value - 1)
 
   const setHeadType = (headType: SpokeHeadType) => {
-    draft.front.headType = headType
-    draft.rear.headType = headType
+    draft.front.spokeHeadType = headType
+    draft.rear.spokeHeadType = headType
   }
 
   const setWheelHeadType = (side: SpokeWheelSide, headType: SpokeHeadType) => {
-    draft[side].headType = headType
+    draft[side].spokeHeadType = headType
   }
 
   const setErd = (side: SpokeWheelSide, erdMm: number | null) => {
-    draft[side].erdMm = erdMm
+    draft[side].erd = erdMm
   }
 
   const setHubGeometry = (side: SpokeWheelSide, geometry: HubGeometry) => {
-    draft[side].hubGeometry = { ...geometry }
+    draft[side].leftFlange = geometry.leftFlange
+    draft[side].rightFlange = geometry.rightFlange
+    draft[side].leftFlangePcd = geometry.leftFlangePcd
+    draft[side].rightFlangePcd = geometry.rightFlangePcd
   }
 
   return {
