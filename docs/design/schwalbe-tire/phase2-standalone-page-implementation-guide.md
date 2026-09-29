@@ -1,12 +1,12 @@
 # Phase 2：Schwalbe 商品规格查询页实施指南
 
-> **状态**：Phase 2 第一批目录选型切片、Telemetry Guide 和页面端 SSR 分页已实现；销售商品附加层与结构化 Product/Offer 仍待后续切片。
+> **状态**：Phase 2 目录选型切片、Telemetry Guide、SSR 分页和 ETRTO 派生胎宽/胎圈座直径多选筛选已实现；销售商品附加层与结构化 Product/Offer 仍待后续切片。
 > **页面**：`/guides/tireguides/schwalbe-tire-selector`  
 > **Phase 1 数据边界**：[Phase 1 商品模板实施指南](./phase1-schwalbe-tire-system-template-implementation-guide.md)  
 > **字段矩阵**：[Schwalbe 商品模板字段矩阵](./schwalbe-master-catalog-specification-matrix.md)  
 > **数据基线**：迁移 359 已导入 2026-09-28 官方 sitemap 快照（773 条 live 外胎记录，15 个 404 旧 URL 排除）；迁移 360 已建立销售商品 Article No. 唯一索引；迁移 361 已为 Schwalbe 选型页建立后台可配置 FAQ 路由并预置 `en`/`zh_cn` 的胎圈问答；迁移 362 已导入官网 05/2024 胎宽—车圈内宽可能组合矩阵 13 条规则，并通过只读 API 提供。当前快照中的文本枚举基准见字段矩阵第 8 节。
 
-> **第一批实现位置**：Nuxt 页面为 `app/pages/guides/tireguides/schwalbe-tire-selector.vue`，目录适配器为 `app/data/tireguides/schwalbeCatalog.ts`，独立筛选模型为 `app/data/tireguides/schwalbeTireCatalogFilterModel.ts`，车圈内宽规则适配器为 `app/data/tireguides/schwalbeTireRimWidthCombinationRules.ts`，查询状态在 `app/composables/useSchwalbeTireSelector.ts`，卡片和数据边界说明位于 `app/components/tireguides/schwalbe/`。该切片只读取 Phase 1 的只读目录接口，不载入旧原型数组。
+> **第一批实现位置**：Nuxt 页面为 `app/pages/guides/schwalbe-tire-selector.vue`，目录适配器为 `app/data/tireguides/schwalbeCatalog.ts`，独立筛选模型与 URL 查询契约分别为 `app/data/tireguides/schwalbeTireCatalogFilterModel.ts`、`app/data/tireguides/schwalbeTireCatalogFilterQuery.ts`，车圈内宽规则适配器为 `app/data/tireguides/schwalbeTireRimWidthCombinationRules.ts`，查询状态在 `app/composables/useSchwalbeTireSelector.ts`，筛选面板和卡片位于 `app/components/tireguides/schwalbe/`。该切片只读取 Phase 1 的只读目录接口，不载入旧原型数组。
 
 ## 1. 数据边界
 
@@ -90,7 +90,7 @@ export interface SchwalbeMatchResult<TCandidate> {
 
 ### 分页与 URL 状态
 
-目录卡片固定每页 20 条。`page` 是从 1 开始的 URL 查询参数，缺省值为 1；`search` 仍是服务端搜索参数。提交或清空搜索、切换型号筛选或排序时都回到 `page=1`，翻页保留当前搜索词。当前 `GET /api/v1/products/schwalbe-tire-catalog` 仍按既有契约返回该搜索词命中的全量数组，以兼容后台型号选择器；Nuxt 页面在 SSR 和客户端渲染层按 URL `page` 对过滤排序后的全量结果切片，HTML 每页只输出当前 20 条卡片。分页使用原生可抓取的 `NuxtLink`，支持直链、刷新、浏览器前进后退和搜索引擎跟踪，不使用点击展开或无限滚动替代分页。后续若新增服务端分页 API，必须另行定义 `{ items, total, page, page_size, total_pages }` 契约并同步 Admin。
+目录卡片固定每页 20 条。`page` 是从 1 开始的 URL 查询参数，缺省值为 1；`search` 仍是服务端搜索参数。型号、排序、胎宽和胎圈座直径状态分别使用 `model`、`sort`、可重复的 `tire_width_mm` 与 `bead_seat_diameter_mm` 查询参数。提交或清空搜索、切换型号/尺寸筛选或排序时都回到 `page=1`；浏览器前进后退和直链会还原查询状态，翻页保留当前搜索词与筛选。当前 `GET /api/v1/products/schwalbe-tire-catalog` 仍按既有契约返回该搜索词命中的全量数组，以兼容后台型号选择器；Nuxt 页面在 SSR 和客户端渲染层按 URL `page` 对过滤排序后的全量结果切片，HTML 每页只输出当前 20 条卡片。分页使用原生可抓取的 `NuxtLink`，支持直链、刷新和搜索引擎跟踪，不使用点击展开或无限滚动替代分页。
 
 实际商品详情由 `schwalbe_tire` 模板和现有 Product/SKU 读取。模板 `is_filterable` 当前仅将 ETRTO、Inch、Version 标记为可筛选；该标记约束商品规格筛选，不代表计算器候选数据的筛选字段集合。Phase 2 候选筛选字段按匹配数据契约确定，不能把两套元数据混为一谈。
 
@@ -111,14 +111,16 @@ ETRTO 派生尺寸只用于目录筛选，不单独证明轮圈兼容性。车�
 nuxt-i18n/app/
 ├── data/tireguides/schwalbeCatalog.ts       # 候选目录与销售商品响应适配器，不内嵌型号常量
 ├── data/tireguides/schwalbeTireCatalogFilterModel.ts # 独立多选/尺寸筛选模型
+├── data/tireguides/schwalbeTireCatalogFilterQuery.ts # URL 筛选和排序状态契约
 ├── data/tireguides/schwalbeTireRimWidthCombinationRules.ts # 迁移 362 规则 API 适配器
 ├── composables/useSchwalbeTireSelector.ts   # 查询状态、搜索、排序和官方字段筛选
 ├── components/tireguides/schwalbe/
 │   ├── SchwalbeTireSelector.vue             # 页面查询与筛选容器
+│   ├── SchwalbeTireCatalogFilterPanel.vue    # 可复用的胎宽和胎圈座直径多选面板
 │   ├── SchwalbeTireCard.vue                 # 商品字段和真实售卖信息
 │   └── SchwalbeTelemetryGuide.vue            # 有官方来源支撑的技术说明
-└── pages/guides/tireguides/
-    └── schwalbe-tire-selector.vue            # SSR 页面与 SEO
+└── pages/guides/
+    └── schwalbe-tire-selector.vue             # SSR 页面与 SEO
 ```
 
 保留原型“全谱系总览”入口、卡片布局和搜索交互。目录列表必须能显示所有已导入候选，即使没有销售 Product。筛选条件只使用目录中实际存储且来源可核验的字段；未经来源核对的 `discipline`、`series`、`hooklessApproved`、`minRimWidthMm`、`optimalRimWidthMm` 等原型字段不得作为官方事实或安全结论。界面使用 Tanzanite 本地字体与现有基础组件，不引入外部字体。
@@ -144,12 +146,12 @@ nuxt-i18n/app/
 已落地的目录选型切片包括：
 
 - SSR 首屏读取 `GET /api/v1/products/schwalbe-tire-catalog`；省略搜索词时读取完整 773 条候选，提交搜索时只发送一个 `search` 参数。
-- 卡片分页固定为每页 20 条；`?page=N` 的直链在 SSR 中只输出该页卡片，搜索、型号筛选和排序会重置页码，分页链接保留搜索状态并可被爬取。
+- 卡片分页固定为每页 20 条；`?page=N` 的直链在 SSR 中只输出该页卡片。型号、排序、胎宽和胎圈座直径状态写入 URL，任何搜索或筛选变化都会重置页码；分页链接保留搜索和筛选状态并可被爬取。
 - 首屏包含 Telemetry Guide 的四个主题标签、展开/收起按钮和静态来源说明；默认只输出一个主题，切换标签时替换主题内容；ADDIX 标签下保留七条彩色命名线；技术卡片不读取或显示目录计数，不复制旧 HTML 的 mock 型号或未经核实的性能结论。
-- 页面提供单词搜索、型号筛选、型号名/ETRTO/Article No. 排序，并分别处理加载、接口失败、无结果和候选目录为空状态。
+- 页面提供单词搜索、型号筛选、ETRTO 派生胎宽与胎圈座直径多选、型号名/ETRTO/Article No. 排序，并分别处理加载、接口失败、无匹配项和候选目录为空状态。
 - 每张卡片展示目录中已保存的官方字段、来源链接、核验日期和 `product_exists` 状态；未上架候选不会被隐藏，也不会显示价格、库存或购买按钮。
 - 页面提示四字段 OR 包含匹配和“不拆分多词”的接口限制，避免把 `Pro One 28-622` 当作跨字段联合查询。
-- 底层筛选模型已通过独立测试验证：同一维度多选为 OR、跨维度为 AND；严格解析 ETRTO 的胎宽/胎圈座直径；`E-25`、`E-50` 与官方空值保持可区分。迁移 362 规则 API 只读返回 13 条来源带版本的可能组合范围，尚未把多选控件接入页面。
+- 底层筛选模型已通过独立测试验证：同一维度多选为 OR、跨维度为 AND；严格解析 ETRTO 的胎宽/胎圈座直径；`E-25`、`E-50` 与官方空值保持可区分。胎宽和胎圈座直径筛选及其 URL 状态已接入；迁移 362 规则 API 只读返回 13 条来源带版本的可能组合范围，车圈内宽控件尚未接入。
 - `e_bike_rating` 继续按 `E-25`、`E-50` 或空文本显示；页面不生成 Hookless、车圈兼容或安全压力结论。
 - FAQ 路由命中且当前 locale 有已发布条目时，SSR 输出后台已发布的 Schwalbe 问答（包括 WIRED、Folding 和 bead 解释）；未配置页面、未发布条目或缺少该 locale 时不输出伪造内容，选型页主体仍正常渲染。
 
@@ -174,5 +176,5 @@ nuxt-i18n/app/
 
 ## 8. 后续独立工作
 
-迁移 362 和只读 API 已提供官方“可能组合”范围，下一步可在不复制规则的前提下把多选控件接入 SSR 页面或产品弹窗。若要升级为具体型号、Hookless、TLE/TLR 或轮圈认证判断，仍需另行核验逐型号事实、完整官方规则、轮圈制造商限制和车架间隙，再制定独立接口和测试。不能把这类结论写进 Phase 1 的 19 个官方商品字段，也不能以本文件中的旧原型示例作为依据。
+迁移 362 和只读 API 已提供官方“可能组合”范围，后续可在不复制规则的前提下接入车圈内宽筛选控件，并供选型页或产品弹窗复用。若要升级为具体型号、Hookless、TLE/TLR 或轮圈认证判断，仍需另行核验逐型号事实、完整官方规则、轮圈制造商限制和车架间隙，再制定独立接口和测试。不能把这类结论写进 Phase 1 的 19 个官方商品字段，也不能以本文件中的旧原型示例作为依据。
 

@@ -56,6 +56,18 @@
       </div>
     </form>
 
+    <SchwalbeTireCatalogFilterPanel
+      v-model:selected-tire-widths-mm="selectedTireWidthsMm"
+      v-model:selected-bead-seat-diameters-mm="selectedBeadSeatDiametersMm"
+      :label="tx('filters.dimensionFilters')"
+      :tire-width-label="tx('filters.tireWidth')"
+      :bead-seat-diameter-label="tx('filters.beadSeatDiameter')"
+      :scroll-hint="tx('filters.scrollHint')"
+      :reset-label="tx('filters.clearDimensions')"
+      :tire-width-options="tireWidthOptions"
+      :bead-seat-diameter-options="beadSeatDiameterOptions"
+    />
+
     <div class="schwalbe-selector__summary" aria-live="polite">
       <span>{{ tx('summary', { count: totalItems, page: currentPage, totalPages }) }}</span>
       <span v-if="submittedSearch">{{ tx('search.active', { term: submittedSearch }) }}</span>
@@ -71,7 +83,7 @@
       </button>
     </div>
     <div v-else-if="totalItems === 0" class="schwalbe-selector__state">
-      {{ submittedSearch ? tx('states.noResults') : tx('states.empty') }}
+      {{ submittedSearch ? tx('states.noResults') : hasActiveFilters ? tx('states.noFilterResults') : tx('states.empty') }}
     </div>
     <div v-else class="schwalbe-selector__grid">
       <SchwalbeTireCard v-for="item in visibleItems" :key="item.article_no" :item="item" />
@@ -123,6 +135,7 @@
 <script setup lang="ts">
 import { useI18n } from '#imports'
 import SchwalbeTireCard from '~/components/tireguides/schwalbe/SchwalbeTireCard.vue'
+import SchwalbeTireCatalogFilterPanel from '~/components/tireguides/schwalbe/SchwalbeTireCatalogFilterPanel.vue'
 import SchwalbeTelemetryGuide from '~/components/tireguides/schwalbe/SchwalbeTelemetryGuide.vue'
 import { useSchwalbeTireSelector } from '~/composables/useSchwalbeTireSelector'
 
@@ -134,9 +147,14 @@ const {
   filteredItems,
   totalItems,
   selectedModel,
+  selectedTireWidthsMm,
+  selectedBeadSeatDiametersMm,
   sortBy,
   visibleItems,
   modelOptions,
+  tireWidthOptions,
+  beadSeatDiameterOptions,
+  hasActiveFilters,
   currentPage,
   totalPages,
   paginationPages,
