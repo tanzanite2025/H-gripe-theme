@@ -4,9 +4,9 @@
 > **页面**：`/guides/tireguides/schwalbe-tire-selector`  
 > **Phase 1 数据边界**：[Phase 1 商品模板实施指南](./phase1-schwalbe-tire-system-template-implementation-guide.md)  
 > **字段矩阵**：[Schwalbe 商品模板字段矩阵](./schwalbe-master-catalog-specification-matrix.md)  
-> **数据基线**：迁移 359 已导入 2026-09-28 官方 sitemap 快照（773 条 live 外胎记录，15 个 404 旧 URL 排除）；迁移 360 已建立销售商品 Article No. 唯一索引；迁移 361 已为 Schwalbe 选型页建立后台可配置 FAQ 路由并预置 `en`/`zh_cn` 的胎圈问答。当前快照中的文本枚举基准见字段矩阵第 8 节。
+> **数据基线**：迁移 359 已导入 2026-09-28 官方 sitemap 快照（773 条 live 外胎记录，15 个 404 旧 URL 排除）；迁移 360 已建立销售商品 Article No. 唯一索引；迁移 361 已为 Schwalbe 选型页建立后台可配置 FAQ 路由并预置 `en`/`zh_cn` 的胎圈问答；迁移 362 已导入官网 05/2024 胎宽—车圈内宽可能组合矩阵 13 条规则，并通过只读 API 提供。当前快照中的文本枚举基准见字段矩阵第 8 节。
 
-> **第一批实现位置**：Nuxt 页面为 `app/pages/guides/tireguides/schwalbe-tire-selector.vue`，目录适配器为 `app/data/tireguides/schwalbeCatalog.ts`，查询状态在 `app/composables/useSchwalbeTireSelector.ts`，卡片和数据边界说明位于 `app/components/tireguides/schwalbe/`。该切片只读取 Phase 1 的只读目录接口，不载入旧原型数组。
+> **第一批实现位置**：Nuxt 页面为 `app/pages/guides/tireguides/schwalbe-tire-selector.vue`，目录适配器为 `app/data/tireguides/schwalbeCatalog.ts`，独立筛选模型为 `app/data/tireguides/schwalbeTireCatalogFilterModel.ts`，车圈内宽规则适配器为 `app/data/tireguides/schwalbeTireRimWidthCombinationRules.ts`，查询状态在 `app/composables/useSchwalbeTireSelector.ts`，卡片和数据边界说明位于 `app/components/tireguides/schwalbe/`。该切片只读取 Phase 1 的只读目录接口，不载入旧原型数组。
 
 ## 1. 数据边界
 
@@ -17,7 +17,7 @@
 - 文本商品字段按官网英文原文存储。商品界面翻译只通过明确的 i18n 映射处理，不修改数据或把不同语言值混成多个筛选项。
 - `e_bike_rating` 保持文本语义：快照取值为 `E-25`、`E-50` 或空值；空值表示普通自行车或官网未提供评级。前端不得把它转换成 boolean，也不得由评级值推导轮圈或安全兼容结论。
 - 匹配候选数据与销售 Product 是不同数据职责。Phase 1 的 19 个字段仅定义当前外胎销售商品模板；`discipline`、`series`、`construction`、`hooklessApproved`、推荐轮圈宽度等旧草案字段不能因此冒充已核实商品事实或安全结论。
-- 产品页显示的 Bar/PSI 是该商品页面给出的压力值，不代表轮圈适配或 Hookless 认证。兼容性判断不在本阶段实现。
+- 产品页显示的 Bar/PSI 是该商品页面给出的压力值，不代表轮圈适配或 Hookless 认证。迁移 362 的胎宽—车圈内宽表只提供官方“可能组合”指导，不认证具体型号兼容性，也不替代车架间隙、TLE/TLR 或车圈厂商要求。
 
 原型文件 `preview-schwalbe-tire-selector.html` 中的布局、“全谱系总览”入口和筛选交互可作为设计依据；其中 mock 型号值、价格、库存和 Hookless 结果不能当作生产事实。生产候选来自独立目录，并通过有官方来源的数据库导入/同步维护；不得把原型静态数组冒充已核实数据。
 
@@ -27,7 +27,7 @@
 2. 默认筛选状态为 `ALL`，显示目录里的全部型号候选，不受是否上架影响；用户可按目录中来源可核验的字段搜索和筛选。
 3. 每个候选按 Article No. 查询销售 Product，并在结果中标出存在状态。匹配候选不因参与搜索或匹配而成为 Product。
 4. 命中真实商品时，商品标题和 19 项销售规格来自 Product 与模板值；价格、库存及可购买状态来自现有 SKU/库存查询结果。
-5. 对候选提供搜索、排序和匹配字段筛选。暂不展示未经核实的“官方兼容”“Hookless 认证”“黄金搭配”或推导出的安全压力。
+5. 对候选提供搜索、排序和匹配字段筛选；底层筛选模型支持文本多选、ETRTO 派生胎宽/胎圈座直径，以及由迁移 362 规则驱动的车圈内宽可能组合过滤。暂不展示未经核实的“官方兼容”“Hookless 认证”“黄金搭配”或推导出的安全压力。
 6. 页面视觉沿用站点字体和组件规范，接入指南导航、FAQ 与合适的结构化数据。
 7. `SchwalbeTelemetryGuide.vue` 属于 Phase 2 的独立技术说明组件，不扩充 Phase 1 的 19 个商品字段；它在候选卡片前首屏输出，使用静态 i18n 技术卡片说明 Radial 胎体、Green Marathon 材料、Schwalbe Protection Level 1–7（含 6+ Super Defense）和 ADDIX 胶料，不接收 `catalogItems` 也不读取搜索、筛选、分页或目录记录数，因此可以直接嵌入商品页或弹窗复用。
 
@@ -94,7 +94,7 @@ export interface SchwalbeMatchResult<TCandidate> {
 
 实际商品详情由 `schwalbe_tire` 模板和现有 Product/SKU 读取。模板 `is_filterable` 当前仅将 ETRTO、Inch、Version 标记为可筛选；该标记约束商品规格筛选，不代表计算器候选数据的筛选字段集合。Phase 2 候选筛选字段按匹配数据契约确定，不能把两套元数据混为一谈。
 
-本阶段不根据 ETRTO 单独推导轮圈兼容性，不从 `seal`、`version_label`、型号名称或市场经验推导 TLE/TLR、Hookless 批准、轮圈宽度范围或压力上限。将来需要兼容性能力时，先单独确定有来源依据的规则与数据模型，再实施和验收。
+ETRTO 派生尺寸只用于目录筛选，不单独证明轮圈兼容性。车圈内宽筛选必须使用迁移 362 的官方可能组合规则和对应 API；同一维度内多选使用 OR，跨维度使用 AND。该范围不能推出具体型号兼容认证、Hookless 批准、车架间隙或压力上限；`seal`、`version_label`、型号名称和市场经验也不能替代这些规则。`version_label` 混合防刺结构、胎体结构和其他官方标签，当前不从它猜测数字防刺等级。
 
 页面至少处理以下状态：
 
@@ -110,6 +110,8 @@ export interface SchwalbeMatchResult<TCandidate> {
 ```text
 nuxt-i18n/app/
 ├── data/tireguides/schwalbeCatalog.ts       # 候选目录与销售商品响应适配器，不内嵌型号常量
+├── data/tireguides/schwalbeTireCatalogFilterModel.ts # 独立多选/尺寸筛选模型
+├── data/tireguides/schwalbeTireRimWidthCombinationRules.ts # 迁移 362 规则 API 适配器
 ├── composables/useSchwalbeTireSelector.ts   # 查询状态、搜索、排序和官方字段筛选
 ├── components/tireguides/schwalbe/
 │   ├── SchwalbeTireSelector.vue             # 页面查询与筛选容器
@@ -147,6 +149,7 @@ nuxt-i18n/app/
 - 页面提供单词搜索、型号筛选、型号名/ETRTO/Article No. 排序，并分别处理加载、接口失败、无结果和候选目录为空状态。
 - 每张卡片展示目录中已保存的官方字段、来源链接、核验日期和 `product_exists` 状态；未上架候选不会被隐藏，也不会显示价格、库存或购买按钮。
 - 页面提示四字段 OR 包含匹配和“不拆分多词”的接口限制，避免把 `Pro One 28-622` 当作跨字段联合查询。
+- 底层筛选模型已通过独立测试验证：同一维度多选为 OR、跨维度为 AND；严格解析 ETRTO 的胎宽/胎圈座直径；`E-25`、`E-50` 与官方空值保持可区分。迁移 362 规则 API 只读返回 13 条来源带版本的可能组合范围，尚未把多选控件接入页面。
 - `e_bike_rating` 继续按 `E-25`、`E-50` 或空文本显示；页面不生成 Hookless、车圈兼容或安全压力结论。
 - FAQ 路由命中且当前 locale 有已发布条目时，SSR 输出后台已发布的 Schwalbe 问答（包括 WIRED、Folding 和 bead 解释）；未配置页面、未发布条目或缺少该 locale 时不输出伪造内容，选型页主体仍正常渲染。
 
@@ -171,5 +174,5 @@ nuxt-i18n/app/
 
 ## 8. 后续独立工作
 
-若要加入 Hookless、TLE/TLR 或轮圈匹配，需要另行核验完整官方规则、轮圈制造商限制以及逐型号适用事实，再制定独立接口和测试。不能把这类结论写进 Phase 1 的 19 个官方商品字段，也不能以本文件中的旧原型示例作为依据。
+迁移 362 和只读 API 已提供官方“可能组合”范围，下一步可在不复制规则的前提下把多选控件接入 SSR 页面或产品弹窗。若要升级为具体型号、Hookless、TLE/TLR 或轮圈认证判断，仍需另行核验逐型号事实、完整官方规则、轮圈制造商限制和车架间隙，再制定独立接口和测试。不能把这类结论写进 Phase 1 的 19 个官方商品字段，也不能以本文件中的旧原型示例作为依据。
 

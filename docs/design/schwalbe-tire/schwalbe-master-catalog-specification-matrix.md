@@ -3,7 +3,7 @@
 > 本文件定义两层数据的共同字段契约：全谱系候选型号保存在独立目录 `schwalbe_tire_specifications`；实际在售型号仍是普通 Product，选择 `Schwalbe Tire` 模板后从目录选择型号并自动回填这些字段。候选目录不是销售商品库；选型结果需显示该 Article No. 是否对应真实销售 Product。
 >
 > 对应实施指南：[Phase 1：Schwalbe 外胎商品模板实施指南](./phase1-schwalbe-tire-system-template-implementation-guide.md)  
-> 官方字段核验日期：2026-09-27。迁移 359 已将 2026-09-28 官方 sitemap 快照导入候选目录（773 条 live 外胎记录，15 个 404 旧 URL 排除）；迁移 360 已建立销售商品 Article No. 的数据库唯一边界。当前 Docker 开发库中仍没有真实销售 Schwalbe Product，候选目录只供选型和商品表单回填。
+> 官方字段核验日期：2026-09-27。迁移 359 已将 2026-09-28 官方 sitemap 快照导入候选目录（773 条 live 外胎记录，15 个 404 旧 URL 排除）；迁移 360 已建立销售商品 Article No. 的数据库唯一边界；迁移 362 已导入官网 05/2024 胎宽—车圈内宽可能组合矩阵（13 条规则）。当前 Docker 开发库中仍没有真实销售 Schwalbe Product，候选目录和独立规则表只供选型与商品表单回填。
 
 ## 1. 官方来源
 
@@ -59,6 +59,8 @@ Phase 2 的 `SchwalbeTelemetryGuide` 不属于这 19 个字段，也不改变模
 
 目录只读查询的 `search` 使用单个完整词，在 Article No.、`model_name`、ETRTO、Inch 四个字段上分别做不区分大小写的包含匹配，四个字段之间为 OR；不做多词分词或跨字段联合（例如 `Pro One 28-622` 不会拆分查询）。
 
+选型筛选不读取商品模板的 `is_filterable`。独立模型 `schwalbeTireCatalogFilterModel.ts` 严格从 ETRTO 派生胎宽和胎圈座直径，保留 `bead`、`seal`、`e_bike_rating`、`color`、`compound` 和 `version_label` 的官方原文；同一维度多选为 OR，跨维度为 AND。`e_bike_rating` 的空值作为普通自行车/无评级选项保留，不等同于未知。车圈内宽筛选通过迁移 362 的 `schwalbe_tire_rim_width_combination_rules` 和只读 API 提供可能组合范围；范围不构成具体型号兼容认证，也不替代车架间隙、Hookless/TLE/TLR 或车圈厂商要求。`version_label` 是复合官方文本，不能直接推导数字防刺等级。
+
 后续官方快照 upsert 只更新候选目录，不静默覆盖已保存的 `product_spec_values`。销售商品保留保存时的规格快照；重新导入后如候选字段发生变化，应按 Article No. 生成差异报告并提醒管理员复核，再由管理员明确更新商品。这样目录刷新不会在没有人工判断的情况下改变在售商品页面事实。
 
 ## 4. 字段边界
@@ -74,7 +76,7 @@ Phase 2 的 `SchwalbeTelemetryGuide` 不属于这 19 个字段，也不改变模
 - 每个已填写的商品参数值单独保存在通用表 `product_spec_values`，通过 `product_id` 关联 Product、通过 `spec_definition_id` 关联字段定义。Schwalbe 没有当前运行中的专用规格值表。
 - 独立表 `schwalbe_tire_specifications` 保存候选目录中的全谱系型号事实，Article No. 为主键；同时保存 `source_url` 和 `source_checked_at` 供来源追溯，不含审批人、复核状态或审核流字段。
 - `product_spec_values` 只保存真实 Product 的商品数据，不代表全谱系候选表，也不决定匹配结果是否出现。
-- 迁移 358 前向重建候选目录，以保留 354–357 历史顺序；迁移 359 导入官方快照，迁移 360 为销售商品 Article No. 建立数据库唯一边界；不要执行 down 或回滚迁移。
+- 迁移 358 前向重建候选目录，以保留 354–357 历史顺序；迁移 359 导入官方快照，迁移 360 为销售商品 Article No. 建立数据库唯一边界，迁移 362 建立并导入独立的官方胎宽—车圈内宽可能组合规则；不要执行 down 或回滚迁移。
 - 不将原型 `rawTires`、经销商页面或未经核验的型号数值直接写入生产商品。
 
 ## 6. 模板元数据的实际配置
@@ -104,6 +106,7 @@ Phase 2 的 `SchwalbeTelemetryGuide` 不属于这 19 个字段，也不改变模
 | `product_spec_definitions` | `id BIGSERIAL PK`、`product_specification_template_id BIGINT NOT NULL`、`group VARCHAR(80)`、`name/slug VARCHAR(120)`、`field_type/presentation VARCHAR(32)`、`unit VARCHAR(32)`、`is_required/is_filterable/is_visible BOOLEAN`、`role VARCHAR(24)`、`selection_mode VARCHAR(16)`、`min_selections INTEGER`、`max_selections INTEGER NULL`、`sort_order INTEGER`、`validation TEXT` | 外键指向模板且删除模板时级联；`(product_specification_template_id, slug)` 唯一；role、selection mode 和选择范围有 CHECK 约束 |
 | `product_spec_values` | `id BIGSERIAL PK`、`product_id BIGINT NOT NULL`、`spec_definition_id BIGINT NOT NULL`、`value TEXT NOT NULL`、`created_at/updated_at TIMESTAMP` | 两个外键分别指向 Product 和定义，删除父记录时级联；`(product_id, spec_definition_id)` 唯一，一商品一字段最多一行；迁移 360 对 Schwalbe `article_no` 以 `lower(btrim(value))` 建立跨商品唯一索引，关闭并发重复写入窗口 |
 | `schwalbe_tire_specifications` | `article_no VARCHAR(32) PK`、19 项官网事实列、`source_url TEXT NOT NULL`、`source_checked_at DATE NOT NULL`、时间戳 | 独立候选目录；Article No. 全局唯一；压力 min/max 与正数测量值有 CHECK；索引覆盖 ETRTO、Inch 和 Version；不关联 Product、不表达销售状态、不含审批列 |
+| `schwalbe_tire_rim_width_combination_rules` | `id BIGSERIAL PK`、`tire_width_min_mm/max_mm INTEGER`、`inner_rim_width_min_mm/max_mm INTEGER`、`source_basis TEXT`、`source_version VARCHAR(64)`、`source_url TEXT`、`source_checked_at DATE`、时间戳 | 迁移 362 的官方可能组合指导；四个范围端点为正数且 min 不得大于 max，四端点组合唯一；不关联 Product，不认证具体型号兼容性，不替代车架间隙或车圈厂商要求 |
 
 候选目录 19 个事实列的实际 SQL 类型如下；它们与上方模板 `slug` 一一对应：
 

@@ -3,7 +3,7 @@
 > **数据边界**：全谱系 Schwalbe 型号先保存在独立候选目录 `schwalbe_tire_specifications`，供选型器检索，也供商品编辑页自动回填。它不代表销售商品，不通过后台人工逐条录入或审批。实际销售仍是普通 Product：选择 `Schwalbe Tire` 模板，从目录选择具体型号并自动填充 19 项官网字段，再维护销售 SKU 并保存到现有商品表。  
 > **官方字段核验日期**：2026-09-27  
 > **文档更新日期**：2026-09-29  
-> **迁移基线**：既有迁移 1–353 保持原样；Schwalbe 迁移从 354 起追加。迁移 357 是历史清理，迁移 358 前向恢复候选目录，迁移 359 导入官方目录快照，迁移 360 加固销售商品 Article No. 唯一性，迁移 361 为选型页建立后台可配置 FAQ 路由和初始胎圈问答；不回滚既有迁移。
+> **迁移基线**：既有迁移 1–353 保持原样；Schwalbe 迁移从 354 起追加。迁移 357 是历史清理，迁移 358 前向恢复候选目录，迁移 359 导入官方目录快照，迁移 360 加固销售商品 Article No. 唯一性，迁移 361 为选型页建立后台可配置 FAQ 路由和初始胎圈问答，迁移 362 建立官方胎宽—车圈内宽可能组合规则表；不回滚既有迁移。
 > **字段矩阵**：[Schwalbe 商品模板字段矩阵](./schwalbe-master-catalog-specification-matrix.md)  
 > **Phase 2 实施指南**：[Phase 2：Schwalbe 商品规格查询页实施指南](./phase2-standalone-page-implementation-guide.md)
 > **Phase 2 页面技术说明**：Telemetry Guide 与页面端 SSR 分页契约见 [Phase 2 实施指南](./phase2-standalone-page-implementation-guide.md)；技术说明不是 19 个商品字段或销售事实。
@@ -16,7 +16,7 @@
 3. 保存实际销售商品时，商品服务仍使用常规 `specs` 路径，将所选型号的 19 项值保存到该 Product 的 `product_spec_values`。商品自己的价格、库存、SKU、图片和销售状态由现有 Product/SKU 字段维护。
 4. 选型器始终可以检索候选目录中的型号，并为每个候选按 Article No. 查询是否存在真实销售 Product。目录候选本身不会自动变成 Product。
 5. 候选目录通过有官方来源的数据库导入/同步维护，不新增人工录入台、Admin 提交流程、审批或二人复核。
-6. 不修改或回滚迁移 1–353。迁移 358 以追加方式恢复候选目录，迁移 359 导入官方快照，迁移 360 加固销售商品 Article No. 唯一性，迁移 361 只建立选型页 FAQ 页面和初始问答，不改变 19 个商品字段或目录数据；保留历史迁移顺序，不通过 down migration 删除目录数据。
+6. 不修改或回滚迁移 1–353。迁移 358 以追加方式恢复候选目录，迁移 359 导入官方快照，迁移 360 加固销售商品 Article No. 唯一性，迁移 361 只建立选型页 FAQ 页面和初始问答，迁移 362 只建立独立的胎宽—车圈内宽可能组合规则，不改变 19 个商品字段或目录数据；保留历史迁移顺序，不通过 down migration 删除目录数据。
 
 ## 2. 官网字段边界
 
@@ -84,7 +84,7 @@
 
 编辑已有商品时，页面从该商品的 `product_spec_values` 载入参数；修改后仍保存回这件商品。Article No.、EAN 等字段值可随商品直接编辑，不需要先改另一份物料记录。
 
-商品保存沿用现有接口：`POST /api/admin/products` 创建，`PUT /api/admin/products/:id` 编辑。`product_specification_template_id` 选择模板，`specs` 携带自动回填后的商品字段。当前只读查询接口为 `GET /api/v1/products/schwalbe-tire-catalog`，支持可选的 `search` 参数：`GET /api/v1/products/schwalbe-tire-catalog?search=<term>` 会对 Article No.、`model_name`、ETRTO 和 Inch 做不区分大小写的包含匹配；省略或传空值时返回全谱系，结果按 `model_name`、ETRTO、Article No. 升序排列。后台型号选择器与 Phase 2 选型页共用该查询契约；不新增目录人工提交、审核或复核接口。
+商品保存沿用现有接口：`POST /api/admin/products` 创建，`PUT /api/admin/products/:id` 编辑。`product_specification_template_id` 选择模板，`specs` 携带自动回填后的商品字段。当前只读查询接口为 `GET /api/v1/products/schwalbe-tire-catalog`，支持可选的 `search` 参数：`GET /api/v1/products/schwalbe-tire-catalog?search=<term>` 会对 Article No.、`model_name`、ETRTO 和 Inch 做不区分大小写的包含匹配；省略或传空值时返回全谱系，结果按 `model_name`、ETRTO、Article No. 升序排列。官方可能组合规则另由 `GET /api/v1/products/schwalbe-tire-rim-width-combination-rules` 只读提供；后台型号选择器与 Phase 2 选型页共用目录查询契约，不新增目录人工提交、审核或复核接口。
 
 `search` 是一个完整搜索词，不做多词分词或跨字段组合：同一个词分别对 Article No.、`model_name`、ETRTO、Inch 做不区分大小写的子串匹配，四个字段之间为 OR。比如输入 `Pro One 28-622` 时，不会拆成 `Pro One` 和 `28-622` 分别匹配，因此不能据此命中名称与尺寸分处不同字段的记录；前端应使用一个型号、编号或尺寸作为搜索词。
 
@@ -110,17 +110,18 @@
 - 迁移 359 使用 [Schwalbe 目录导入脚本](../../../scripts/import-schwalbe-catalog.mjs) 生成并幂等 upsert 官方英文 sitemap 快照；当前 seed 包含 773 条 live 产品页记录，并在注释中列出 15 条 404 排除项。该迁移只写候选目录，不创建 Product、SKU、价格或库存；重新抓取时应生成新的带核对日期的 seed。
 - 迁移 360 为 `product_spec_values` 上的 Schwalbe `article_no` 建立大小写/首尾空白不敏感的数据库唯一索引，并在建索引前拒绝已有重复值；应用层预检查只负责更早返回可读错误，不能替代该并发安全边界。
 - 迁移 361 为 `guides-schwalbe-tire-selector` 建立精确路由 `/guides/tireguides/schwalbe-tire-selector` 的 FAQ 页面，页面元信息覆盖当前支持的 locale，初始 `en`/`zh_cn` 问答解释 `WIRED`、`Folding` 和 bead；其他语言由后台维护翻译，FAQ 不回填商品字段。
+- 迁移 362 建立 `schwalbe_tire_rim_width_combination_rules`，导入官网 05/2024 矩阵的 13 条可能组合范围；它不认证具体型号兼容性，不替代车架间隙判断，Hookless/straight-side 仍须满足 TLE/TLR 与车圈厂商要求。规则通过 `GET /api/v1/products/schwalbe-tire-rim-width-combination-rules` 只读提供。
 - 发布前按 [`go-backend/DEPLOYMENT.md`](../../../go-backend/DEPLOYMENT.md#schwalbe-migrations-357-361-preflight) 检查每个环境的旧表行数；非空时先检查并保留数据，不能清空后继续。
 
 ## 7. 当前实现验收与后续工作
 
-已实现的代码路径：商品模板选择、19 个模板字段、商品新增/编辑的 `specs` 保存、目录查询接口、后台型号选择器、选中型号后的 19 字段自动回填，以及目录结果的 Article No. 销售商品存在标记。迁移 358 建表后，迁移 359 已将官方快照导入候选目录，迁移 360 已加固销售商品 Article No. 唯一性，迁移 361 已为选型页绑定后台 FAQ；本次快照生成 773 条 live 记录，15 条 sitemap 404 记录被排除。导入脚本会校验必填字段、正数测量值、EPI 整数约束和 min/max 顺序，并可重复运行生成新的 JSON 与 SQL seed。Docker 开发数据库 `commerce-platform-postgres` 执行到 `schema_migrations.version = 361` 后，候选目录行数为 773，Article No. 唯一索引存在，Schwalbe FAQ 页面路由存在，必填字段缺失数、非正数和压力顺序错误均为 0。
+已实现的代码路径：商品模板选择、19 个模板字段、商品新增/编辑的 `specs` 保存、目录查询接口、后台型号选择器、选中型号后的 19 字段自动回填，以及目录结果的 Article No. 销售商品存在标记。迁移 358 建表后，迁移 359 已将官方快照导入候选目录，迁移 360 已加固销售商品 Article No. 唯一性，迁移 361 已为选型页绑定后台 FAQ，迁移 362 已建立官方车圈内宽可能组合规则和只读 API；本次快照生成 773 条 live 记录，15 条 sitemap 404 记录被排除。导入脚本会校验必填字段、正数测量值、EPI 整数约束和 min/max 顺序，并可重复运行生成新的 JSON 与 SQL seed。Docker 开发数据库 `commerce-platform-postgres` 执行到 `schema_migrations.version = 362` 后，候选目录行数为 773，车圈内宽规则行数为 13，Article No. 唯一索引存在，Schwalbe FAQ 页面路由存在，必填字段缺失数、非正数和压力顺序错误均为 0。
 
 型号选择后的商城标题建议生成规则尚未接入后台表单；实现时按第 4 节生成可编辑默认值，并避免覆盖手工改过的标题。
 
 候选目录数据与在售 Product 是两件事。目录数据通过来源明确的导入/同步任务写库；实际销售 Product 仍由后台按第 4 节正常保存。导入目录不创建商品、SKU、价格或库存，也不需要额外 Admin 提交或第二位管理员复核。后续 seed 的 upsert 只更新候选目录，不自动覆盖已保存的 `product_spec_values`；销售商品保留保存时的规格快照。官网字段发生变化时，应按 Article No. 对比候选目录与销售商品并提醒管理员复核，再由管理员明确提交商品更新，避免静默改写在售资料。
 
-Hookless/TLE/TLR 兼容性引擎属于后续功能。产品页压力字段不代表轮圈适配结论，当前不得推断统一 hookless 标记或通用压力上限。
+迁移 362 的胎宽—车圈内宽表只提供 Schwalbe/ETRTO 的可能组合指导；它不是 Hookless/TLE/TLR 兼容性引擎，也不代表具体型号认证。产品页压力字段不代表轮圈适配结论，当前不得推断统一 hookless 标记或通用压力上限。
 
 ## 8. Phase 2 数据来源约定
 
@@ -128,5 +129,5 @@ Hookless/TLE/TLR 兼容性引擎属于后续功能。产品页压力字段不代
 
 全谱系候选以 `schwalbe_tire_specifications` 为源；当前 2026-09-28 快照包含 773 条 live 外胎变体，15 个 sitemap 旧 URL 因 404 排除。商品选择器据此自动回填表单，选型器据此展示所有目录候选。每条结果再按 Article No. 查询真实销售 Product 并显示是否存在。命中时，销售详情仍从 Product 模板、`product_spec_values` 和现有 SKU 读取；未命中时保留候选结果但不生成虚假商品信息。HTML 原型中的 `rawTires` 是演示数据，不能直接当作已核实目录导入。
 
-页面端的 Telemetry Guide 和固定每页 20 条的 SSR 分页属于 Phase 2 展示契约，不改变本阶段 19 个模板字段、商品保存路径或目录表结构。`page`/`search` URL 状态、可抓取分页链接、四个技术标签和来源边界以 [Phase 2 实施指南](./phase2-standalone-page-implementation-guide.md) 为准；Telemetry 是不读取目录、搜索结果或分页状态的独立静态技术说明组件，不把候选快照计数当作技术结论。Green Marathon 专题只展示已核验的官方说明，组件可在选型页、商品页或弹窗中复用。
+页面端的 Telemetry Guide 和固定每页 20 条的 SSR 分页属于 Phase 2 展示契约，不改变本阶段 19 个模板字段、商品保存路径或目录表结构。`page`/`search` URL 状态、可抓取分页链接、四个技术标签和来源边界以 [Phase 2 实施指南](./phase2-standalone-page-implementation-guide.md) 为准；独立筛选模型 `schwalbeTireCatalogFilterModel.ts` 负责 ETRTO 派生尺寸、文本多选和迁移 362 规则的兼容性过滤，不读取或改写商品模板 `is_filterable`。Telemetry 是不读取目录、搜索结果或分页状态的独立静态技术说明组件，不把候选快照计数当作技术结论。Green Marathon 专题只展示已核验的官方说明，组件可在选型页、商品页或弹窗中复用。
 
