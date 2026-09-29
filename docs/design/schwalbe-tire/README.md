@@ -16,6 +16,7 @@ This directory contains the design and implementation references for the Schwalb
 
 - `preview-schwalbe-tire-selector.html` is a historical visual prototype. Its mock products, compatibility output, counts, source links and promotional claims are not implementation or product facts.
 - `preview-schwalbe-tread-profile-guide.html` is an unreferenced historical concept. Treat its model counts and product claims as stale unless separately verified against current official sources.
+- `schwalbe-tire-rim-width-matching-design.md` is the design-stage extension contract for querying candidates by a user's inner rim width. It does not mean that the control or API query has been implemented.
 - Runtime behavior is owned by the Nuxt page/components, filter/query modules and backend API. Migration and seed files are the source for imported catalog facts; the matrix section 8 is the human-readable baseline for the checked-in seed snapshot and its observed enums. Environment-specific database row counts are not a stable cross-environment fact and must be verified during deployment.
 
 ## Data exposure rule

@@ -56,7 +56,11 @@ const extractItems = (value: unknown): unknown[] => {
   return []
 }
 
-/** Fetches migration-362 rules without hardcoding the official ranges in UI code. */
+/**
+ * Fetches migration-362 rules without hardcoding the official ranges in UI
+ * code. The paginated storefront selector remains the authoritative result
+ * filter; this adapter is for source context and complete-data consumers.
+ */
 export const fetchSchwalbeTireRimWidthCombinationRules = async (
   request: ApiRequestFunction,
 ): Promise<SchwalbeTireRimWidthCombinationRuleRecord[]> => {

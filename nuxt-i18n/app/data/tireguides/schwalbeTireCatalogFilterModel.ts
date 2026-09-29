@@ -313,8 +313,11 @@ export const isSchwalbeTireCatalogItemCompatibleWithInnerRimWidth = (
 }
 
 /**
- * Applies the migration-362 possible-combination guidance as a separate
- * compatibility pass, so it can be reused by a selector or product modal.
+ * Applies the migration-362 possible-combination guidance to an already
+ * loaded collection. This is suitable for pure model tests and complete,
+ * non-paginated consumers. The storefront selector must apply the equivalent
+ * predicate on the server before sorting and pagination so totals and pages
+ * remain correct.
  */
 export const filterSchwalbeTireCatalogItemsByInnerRimWidth = (
   items: readonly SchwalbeTireCatalogItem[],
