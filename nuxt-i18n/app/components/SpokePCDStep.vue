@@ -204,6 +204,10 @@
         <span aria-hidden="true">←</span>
         <span>{{ t('resourcesSpokeCalculator.calculator.physicalCorrections.stepPrevious', '上一步') }}</span>
       </button>
+      <button type="button" class="spoke-pcd-step__next" @click="emit('next')">
+        <span>{{ t('resourcesSpokeCalculator.calculator.physicalCorrections.stepNext', '下一步') }}</span>
+        <span aria-hidden="true">→</span>
+      </button>
     </div>
   </section>
 </template>
@@ -232,6 +236,7 @@ const emit = defineEmits<{
   'update:frontGeometry': [value: HubGeometry]
   'update:rearGeometry': [value: HubGeometry]
   previous: []
+  next: []
 }>()
 
 const emptyGeometry = (): HubGeometry => ({
@@ -516,7 +521,8 @@ const updateRearGeometry = (field: GeometryField, event: Event) => {
 
 .spoke-pcd-step__actions {
   display: flex;
-  justify-content: flex-start;
+  justify-content: space-between;
+  gap: 10px;
   margin-top: 14px;
 }
 
@@ -541,6 +547,31 @@ const updateRearGeometry = (field: GeometryField, event: Event) => {
 }
 
 .spoke-pcd-step__previous:focus-visible {
+  outline: 2px solid var(--pcd-step-accent);
+  outline-offset: 3px;
+}
+
+.spoke-pcd-step__next {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 8px 14px;
+  border: 0;
+  border-radius: 9999px;
+  background: var(--pcd-step-accent);
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.spoke-pcd-step__next:hover {
+  background: #047857;
+  box-shadow: 0 8px 18px rgba(5, 150, 105, 0.22);
+}
+
+.spoke-pcd-step__next:focus-visible {
   outline: 2px solid var(--pcd-step-accent);
   outline-offset: 3px;
 }

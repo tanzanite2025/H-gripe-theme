@@ -28,6 +28,15 @@
           :current-step="activeWizardStep"
           @select-step="goToStep"
           @previous="previousStep"
+          @next="nextStep"
+        />
+        <SpokeAlternatingDrillingStep
+          v-else-if="activeWizardStep === 4"
+          v-model:front-offset="frontAlternatingOffsetMm"
+          v-model:rear-offset="rearAlternatingOffsetMm"
+          :current-step="activeWizardStep"
+          @select-step="goToStep"
+          @previous="previousStep"
         />
 
         <!-- Standalone full-width reference card, above the calculator settings. -->
@@ -60,6 +69,7 @@
 <script setup lang="ts">
 import SpokeCalculatorBlueprint from '~/components/SpokeCalculatorBlueprint.vue'
 import SpokeCalculatorCatalogPanel from '~/components/SpokeCalculatorCatalogPanel.vue'
+import SpokeAlternatingDrillingStep from '~/components/SpokeAlternatingDrillingStep.vue'
 import SpokeERDStep from '~/components/SpokeERDStep.vue'
 import SpokeHeadTypeStep from '~/components/SpokeHeadTypeStep.vue'
 import SpokePCDStep from '~/components/SpokePCDStep.vue'
@@ -87,6 +97,7 @@ const {
   setHeadType,
   setErd,
   setHubGeometry,
+  setAlternatingDrillingOffset,
 } = useSpokeCalculatorWizard()
 
 const selectedSpokeHeadType = computed<SpokeHeadType>({
@@ -122,6 +133,16 @@ const rearGeometry = computed<HubGeometry>({
     rightFlangePcd: spokeWizardDraft.rear.rightFlangePcd,
   }),
   set: value => setHubGeometry('rear', value),
+})
+
+const frontAlternatingOffsetMm = computed<number | null>({
+  get: () => spokeWizardDraft.front.alternatingDrillingOffsetMm,
+  set: value => setAlternatingDrillingOffset('front', value),
+})
+
+const rearAlternatingOffsetMm = computed<number | null>({
+  get: () => spokeWizardDraft.rear.alternatingDrillingOffsetMm,
+  set: value => setAlternatingDrillingOffset('rear', value),
 })
 
 await loadPageMessages(locale.value)

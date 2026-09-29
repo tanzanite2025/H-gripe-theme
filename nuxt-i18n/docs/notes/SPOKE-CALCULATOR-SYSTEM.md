@@ -1,6 +1,6 @@
 # Spoke Calculator System / 辐条计算器系统手册
 
-Last updated: 2026-09-29
+Last updated: 2026-09-30
 
 Status: Active reference. Re-audit when the Go spoke API contract, the manual
 calculator input model, or the recorded-result projection changes.
@@ -38,6 +38,7 @@ Relevant files:
 - `app/components/SpokeHeadTypeStep.vue`
 - `app/components/SpokeERDStep.vue`
 - `app/components/SpokePCDStep.vue`
+- `app/components/SpokeAlternatingDrillingStep.vue`
 - `app/composables/useSpokeCalculatorWizard.ts`
 - `app/composables/useSpokeCalculatorManualOptions.ts`
 - `app/composables/useSpokeCalculatorRun.ts`

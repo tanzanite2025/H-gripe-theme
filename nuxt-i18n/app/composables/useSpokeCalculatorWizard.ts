@@ -51,6 +51,10 @@ export const useSpokeCalculatorWizard = () => {
     draft[side].rightFlangePcd = geometry.rightFlangePcd
   }
 
+  const setAlternatingDrillingOffset = (side: SpokeWheelSide, offsetMm: number | null) => {
+    draft[side].alternatingDrillingOffsetMm = offsetMm ?? 0
+  }
+
   return {
     draft,
     activeStep,
@@ -63,5 +67,6 @@ export const useSpokeCalculatorWizard = () => {
     setWheelHeadType,
     setErd,
     setHubGeometry,
+    setAlternatingDrillingOffset,
   }
 }
