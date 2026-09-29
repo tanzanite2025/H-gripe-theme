@@ -31,7 +31,7 @@
         <div class="spoke-hole-step__input-note" role="note">
           <span class="spoke-hole-step__input-note-icon" aria-hidden="true">Ø</span>
           <p>
-            {{ t('resourcesSpokeCalculator.calculator.physicalCorrections.holeInputNote', 'J 弯头和直拉式花鼓的长度测量都要考虑孔内缘；计算时从理论孔心扣除约半个孔径。') }}
+            {{ t('resourcesSpokeCalculator.calculator.physicalCorrections.holeInputNote', '部分花鼓没有官方 CAD 图纸，无法直接确认准确数值；有些花鼓的沉头或卡位区域做了内凹处理，有些没有。J 弯头按实际孔径填写，直拉式按实际结构填写；如果有官方 CAD 且已包含这部分结构，请填写 0。') }}
           </p>
         </div>
       </div>

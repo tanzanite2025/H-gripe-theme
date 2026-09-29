@@ -120,7 +120,7 @@
       "holeInputKicker": "STEP 5 INPUT",
       "holeInputLabel": "Flange hole diameter",
       "holePairHelp": "Enter the front and rear hub flange-hole diameters separately; common 14G spoke hubs are about 2.4–2.6 mm.",
-      "holeInputNote": "The length measurement for both J-bend and straight-pull hubs accounts for the inner hole edge; roughly half the hole diameter is deducted from the theoretical hole center.",
+      "holeInputNote": "Some hubs have no official CAD drawing, so the exact value cannot be confirmed directly. Some use a recessed counterbore or retention seat and some do not. Enter the actual hole value for J-bend; enter the value that matches the straight-pull structure. If official CAD already includes this detail, enter 0.",
       "frontHoleNote": "Front hub flange hole",
       "rearHoleNote": "Rear hub flange hole",
       "holeDiameterPlaceholder": "e.g. 2.5",
