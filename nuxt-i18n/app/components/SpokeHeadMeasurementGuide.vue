@@ -267,6 +267,7 @@ const { t } = useI18n()
 <style scoped>
 .spoke-head-measurement-guide {
   width: 100%;
+  margin-top: 18px;
   padding: 18px;
   border: 1px solid rgba(15, 23, 42, 0.12);
   border-radius: 20px;
