@@ -34,6 +34,7 @@ export interface HubGeometry {
   // Geometry used for spoke length calculations
   leftFlangePcdMm: number
   rightFlangePcdMm: number
+  spokeHoleDiameterMm?: number | null
   leftFlangeToCenterMm: number
   rightFlangeToCenterMm: number
 }
@@ -46,6 +47,16 @@ export interface SpokeCalcInput {
   spokeCount: number
   crossing: number
   rimOffsetMm?: number
+  nippleType?: 'standard' | 'hidden' | string
+  nippleLengthMm?: number | null
+  spokeHeadType?: 'j_bend' | 'straight_pull'
+  spokeHoleDiameterMm?: number | null
+  straightPullTangentOffsetMm?: number
+  spokeProfile?: 'round_2_0' | 'round_1_8' | 'bladed_0_9x2_2'
+  targetTensionN?: number
+  alternatingDrillingOffsetMm?: number
+  interlacing?: boolean
+  interlaceCompensationMm?: number
 }
 
 export interface SpokeTensionRatio {

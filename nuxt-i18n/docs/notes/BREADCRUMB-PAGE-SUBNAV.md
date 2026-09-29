@@ -1,6 +1,6 @@
 # Breadcrumb and page sub-navigation current source
 
-Last updated: 2026-07-24
+Last updated: 2026-09-29
 
 ## Required breadcrumb contract
 
@@ -13,6 +13,12 @@ Last updated: 2026-07-24
   result.
 - Unknown tabs, deeper descendants, prefix lookalikes, and unrelated paths
   must not inherit another page's third-level navigation.
+- Switching a breadcrumb sibling retains the route suffix below that level
+  when the destination branch has a registered matching route. Otherwise it
+  opens the sibling's canonical route.
+- Descendant preservation comes from the Nuxt route table, including
+  constrained dynamic routes. Adding a lower page must not require a
+  `SiteHeader.vue` case.
 - Changes to breadcrumb ownership must keep
   `scripts/breadcrumb-navigation-contract.test.ts` passing.
 
@@ -80,6 +86,12 @@ Breadcrumb sub-navigation uses an explicit two-way route classification:
 
 The pure resolver is app/utils/pageSubNavigationBreadcrumb.ts. Its contract
 is covered by npm run test:breadcrumb-navigation.
+
+Sibling switching uses `app/utils/breadcrumbRouteNavigation.ts`. It appends
+the current route suffix to a selected sibling path only when that concrete
+destination matches a registered route pattern. The sibling's preferred
+canonical route remains the fallback when that suffix has no destination.
+This covers both the generic route tree and constrained virtual tab routes.
 
 
 ## Interaction rule

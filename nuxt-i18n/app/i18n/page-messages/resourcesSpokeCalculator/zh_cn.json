@@ -76,6 +76,24 @@
         "hidden": "隐藏式 / 空气动力型"
       }
     },
+    "physicalCorrections": {
+      "title": "物理编组修正（估算）",
+      "spokeHeadType": "花鼓辐条头类型",
+      "spokeHoleDiameter": "法兰孔径（毫米）",
+      "straightPullOffset": "直拉槽切向偏移（毫米）",
+      "spokeProfile": "辐条截面型号",
+      "targetTension": "目标张力（牛顿；0 表示不修正伸长）",
+      "alternatingOffset": "轮圈交错孔偏移（毫米；正值偏左）",
+      "interlacing": "交叉处是否压条",
+      "interlaceCompensation": "压条长度补偿（毫米）",
+      "jBend": "J 弯头",
+      "straightPull": "直拉式",
+      "round20": "圆辐条 2.0 毫米",
+      "round18": "圆辐条 1.8 毫米",
+      "bladed0922": "扁辐条 0.9 × 2.2 毫米",
+      "off": "否",
+      "on": "是"
+    },
     "action": {
       "description": "辐条长度和预测的单根辐条张力比例根据所选轮组几何尺寸计算。生产编组前，请使用实测的轮圈和花鼓尺寸。",
       "calculating": "计算中...",

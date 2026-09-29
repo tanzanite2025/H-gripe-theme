@@ -76,6 +76,24 @@
         "hidden": "Hidden / aero"
       }
     },
+    "physicalCorrections": {
+      "title": "Physical build corrections (estimated)",
+      "spokeHeadType": "Hub spoke-head type",
+      "spokeHoleDiameter": "Flange hole diameter (mm)",
+      "straightPullOffset": "Straight-pull tangential slot offset (mm)",
+      "spokeProfile": "Spoke cross-section",
+      "targetTension": "Target tension (N; 0 disables stretch)",
+      "alternatingOffset": "Alternating rim-hole offset (mm; left positive)",
+      "interlacing": "Interlace spokes at crossings",
+      "interlaceCompensation": "Interlace length compensation (mm)",
+      "jBend": "J-bend",
+      "straightPull": "Straight-pull",
+      "round20": "Round 2.0 mm",
+      "round18": "Round 1.8 mm",
+      "bladed0922": "Bladed 0.9 × 2.2 mm",
+      "off": "No",
+      "on": "Yes"
+    },
     "action": {
       "description": "Spoke lengths and the predicted per-spoke tension ratio are derived from the selected wheel geometry. Use measured rim and hub dimensions for a production build.",
       "calculating": "Calculating...",

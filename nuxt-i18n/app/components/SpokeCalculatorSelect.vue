@@ -163,10 +163,12 @@ onBeforeUnmount(() => {
   justify-content: space-between;
   gap: 0.75rem;
   border: 1px solid var(--spoke-border, var(--tz-border-subtle));
-  border-radius: 0.5rem;
+  border-radius: 9999px;
   background: var(--spoke-control-surface, var(--tz-input-surface));
   color: var(--tz-text-primary);
   padding: 0.75rem 0.875rem;
+  font-size: 0.75rem;
+  line-height: 1rem;
   text-align: left;
   transition:
     background-color 0.18s ease,
@@ -227,10 +229,12 @@ onBeforeUnmount(() => {
   display: block;
   width: 100%;
   border: 0;
-  border-radius: 0.375rem;
+  border-radius: 9999px;
   background: transparent;
   color: var(--tz-text-secondary);
   padding: 0.65rem 0.75rem;
+  font-size: 0.75rem;
+  line-height: 1rem;
   text-align: left;
   transition:
     background-color 0.16s ease,

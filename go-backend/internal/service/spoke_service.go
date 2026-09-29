@@ -18,9 +18,21 @@ var (
 	ErrSpokeHubGeometryMissing  = errors.New("hub geometry not available for requested position")
 	ErrInvalidSpokeCalculation  = errors.New("invalid spoke calculation input")
 	ErrInvalidSpokeCatalog      = errors.New("invalid spoke catalog")
-	spokeCalculationFormulaName = "v1.2-go-backend-hidden-nipple-safe"
+	spokeCalculationFormulaName = "v1.3-go-backend-physical-build-corrections"
 	spokeCatalogIDPattern       = regexp.MustCompile(`^[a-z0-9][a-z0-9_-]{0,139}$`)
 )
+
+const (
+	defaultSpokeHoleDiameterMM = 2.5
+	defaultElasticModulusNMM2  = 200000.0
+	defaultInterlaceOffsetMM   = 0.45
+)
+
+var spokeProfileAreasMM2 = map[string]float64{
+	"round_2_0":      math.Pi * 2.0 * 2.0 / 4.0,
+	"round_1_8":      math.Pi * 1.8 * 1.8 / 4.0,
+	"bladed_0_9x2_2": 0.9 * 2.2,
+}
 
 type SpokeService struct {
 	spokeRepo *repository.SpokeRepository
@@ -34,6 +46,22 @@ type SpokeCalculationInput struct {
 	Crossing       int
 	NippleType     string
 	NippleLengthMM *float64
+	// SpokeHeadType selects the physical hub interface. J-bend uses the
+	// inner tangent of the flange hole; straight-pull uses a tangential slot
+	// offset and does not apply the J-bend hole-radius correction.
+	SpokeHeadType               string
+	SpokeHoleDiameterMM         *float64
+	StraightPullTangentOffsetMM *float64
+	// SpokeProfile and TargetTensionN are used to estimate elastic stretch
+	// under the target build tension. A nil/zero target keeps the legacy
+	// un-stretched result for API clients that do not provide this option.
+	SpokeProfile   string
+	TargetTensionN *float64
+	// AlternatingDrillingOffsetMM is the signed axial offset of the selected
+	// alternating rim hole. The right side receives the opposite offset.
+	AlternatingDrillingOffsetMM *float64
+	Interlacing                 bool
+	InterlaceCompensationMM     *float64
 	// RimOffsetMM is positive when the rim center moves toward the right
 	// flange. The value changes both the spoke length geometry and bracing
 	// angles used for the tension-ratio estimate.
@@ -58,10 +86,17 @@ type SpokeCalculationResult struct {
 type SpokeCalculationDebug struct {
 	// Geometry is intentionally internal-only; exposing it lets clients
 	// reconstruct the proprietary catalog from a single calculation response.
-	Rim            *domainspoke.RimModel    `json:"-"`
-	Hub            *domainspoke.HubGeometry `json:"-"`
-	RimOffsetMM    float64                  `json:"rimOffsetMm"`
-	FormulaVersion string                   `json:"formulaVersion"`
+	Rim                         *domainspoke.RimModel    `json:"-"`
+	Hub                         *domainspoke.HubGeometry `json:"-"`
+	RimOffsetMM                 float64                  `json:"rimOffsetMm"`
+	SpokeHeadType               string                   `json:"spokeHeadType"`
+	SpokeHoleCorrectionMM       float64                  `json:"spokeHoleCorrectionMm"`
+	StraightPullTangentOffsetMM float64                  `json:"straightPullTangentOffsetMm"`
+	AlternatingDrillingOffsetMM float64                  `json:"alternatingDrillingOffsetMm"`
+	StretchLeftMM               float64                  `json:"stretchLeftMm"`
+	StretchRightMM              float64                  `json:"stretchRightMm"`
+	InterlaceCompensationMM     float64                  `json:"interlaceCompensationMm"`
+	FormulaVersion              string                   `json:"formulaVersion"`
 }
 
 type SpokeTensionRatio struct {
@@ -183,6 +218,49 @@ func (s *SpokeService) Calculate(input SpokeCalculationInput) (*SpokeCalculation
 		return nil, ErrInvalidSpokeCalculation
 	}
 
+	input.SpokeHeadType = strings.ToLower(strings.TrimSpace(input.SpokeHeadType))
+	if input.SpokeHeadType == "" {
+		input.SpokeHeadType = "j_bend"
+	}
+	if input.SpokeHeadType != "j_bend" && input.SpokeHeadType != "straight_pull" {
+		return nil, ErrInvalidSpokeCalculation
+	}
+	if input.SpokeHoleDiameterMM != nil && (!isFinite(*input.SpokeHoleDiameterMM) || *input.SpokeHoleDiameterMM < 0 || *input.SpokeHoleDiameterMM > 10) {
+		return nil, ErrInvalidSpokeCalculation
+	}
+	straightPullTangentOffsetMM := 0.0
+	if input.StraightPullTangentOffsetMM != nil {
+		if !isFinite(*input.StraightPullTangentOffsetMM) || math.Abs(*input.StraightPullTangentOffsetMM) > 20 {
+			return nil, ErrInvalidSpokeCalculation
+		}
+		straightPullTangentOffsetMM = *input.StraightPullTangentOffsetMM
+	}
+
+	input.SpokeProfile = strings.ToLower(strings.TrimSpace(input.SpokeProfile))
+	if input.SpokeProfile == "" {
+		input.SpokeProfile = "round_2_0"
+	}
+	if _, exists := spokeProfileAreasMM2[input.SpokeProfile]; !exists {
+		return nil, ErrInvalidSpokeCalculation
+	}
+	targetTensionN := 0.0
+	if input.TargetTensionN != nil {
+		if !isFinite(*input.TargetTensionN) || *input.TargetTensionN < 0 || *input.TargetTensionN > 3000 {
+			return nil, ErrInvalidSpokeCalculation
+		}
+		targetTensionN = *input.TargetTensionN
+	}
+	alternatingDrillingOffsetMM := 0.0
+	if input.AlternatingDrillingOffsetMM != nil {
+		if !isFinite(*input.AlternatingDrillingOffsetMM) || math.Abs(*input.AlternatingDrillingOffsetMM) > 5 {
+			return nil, ErrInvalidSpokeCalculation
+		}
+		alternatingDrillingOffsetMM = *input.AlternatingDrillingOffsetMM
+	}
+	if input.InterlaceCompensationMM != nil && (!isFinite(*input.InterlaceCompensationMM) || *input.InterlaceCompensationMM < 0 || *input.InterlaceCompensationMM > 5) {
+		return nil, ErrInvalidSpokeCalculation
+	}
+
 	export, err := s.GetExport()
 	if err != nil {
 		return nil, err
@@ -222,23 +300,34 @@ func (s *SpokeService) Calculate(input SpokeCalculationInput) (*SpokeCalculation
 
 	leftFlange := effectiveSpokeFlangeDistance(*hubGeo.LeftFlange, input.RimOffsetMM, "left")
 	rightFlange := effectiveSpokeFlangeDistance(*hubGeo.RightFlange, input.RimOffsetMM, "right")
+	leftFlange += alternatingDrillingOffsetMM
+	rightFlange -= alternatingDrillingOffsetMM
 	if leftFlange <= 0 || rightFlange <= 0 {
 		return nil, ErrInvalidSpokeCalculation
 	}
 	leftFlangeRadius := *hubGeo.LeftFlangePCD / 2.0
 	rightFlangeRadius := *hubGeo.RightFlangePCD / 2.0
 	radius := *erd / 2.0
-	angleRad := (720.0 * float64(input.Crossing) / float64(input.SpokeCount)) * math.Pi / 180.0
-
-	leftSquared := radius*radius + leftFlangeRadius*leftFlangeRadius + leftFlange*leftFlange - 2*radius*leftFlangeRadius*math.Cos(angleRad)
-	rightSquared := radius*radius + rightFlangeRadius*rightFlangeRadius + rightFlange*rightFlange - 2*radius*rightFlangeRadius*math.Cos(angleRad)
-	if !isFinite(leftSquared) || !isFinite(rightSquared) || leftSquared < 0 || rightSquared < 0 {
+	baseAngleRad := (720.0 * float64(input.Crossing) / float64(input.SpokeCount)) * math.Pi / 180.0
+	left := spokeLengthFromGeometry(radius, leftFlangeRadius, leftFlange, baseAngleRad, input.SpokeHeadType, straightPullTangentOffsetMM)
+	right := spokeLengthFromGeometry(radius, rightFlangeRadius, rightFlange, baseAngleRad, input.SpokeHeadType, straightPullTangentOffsetMM)
+	if !isFinite(left) || !isFinite(right) || left <= 0 || right <= 0 {
 		return nil, fmt.Errorf("%w: spoke geometry produced an invalid triangle", ErrInvalidSpokeCalculation)
 	}
-	left := math.Sqrt(leftSquared)
-	right := math.Sqrt(rightSquared)
-	if !isFinite(left) || !isFinite(right) || left <= 0 || right <= 0 {
-		return nil, fmt.Errorf("%w: spoke length calculation diverged", ErrInvalidSpokeCalculation)
+
+	spokeHoleCorrectionMM := 0.0
+	if input.SpokeHeadType == "j_bend" {
+		holeDiameter := input.SpokeHoleDiameterMM
+		if holeDiameter == nil {
+			holeDiameter = hubGeo.SpokeHoleDiameter
+		}
+		if holeDiameter == nil {
+			defaultHoleDiameter := defaultSpokeHoleDiameterMM
+			holeDiameter = &defaultHoleDiameter
+		}
+		spokeHoleCorrectionMM = *holeDiameter / 2
+		left -= spokeHoleCorrectionMM
+		right -= spokeHoleCorrectionMM
 	}
 	if input.NippleType == "hidden" && input.NippleLengthMM != nil {
 		correction := *input.NippleLengthMM - 3
@@ -247,6 +336,29 @@ func (s *SpokeService) Calculate(input SpokeCalculationInput) (*SpokeCalculation
 		}
 		left += correction
 		right += correction
+	}
+
+	interlaceCompensationMM := 0.0
+	if input.Interlacing && input.Crossing > 0 {
+		if input.InterlaceCompensationMM != nil {
+			interlaceCompensationMM = *input.InterlaceCompensationMM
+		} else {
+			interlaceCompensationMM = defaultInterlaceCompensation(input.Crossing)
+		}
+		left += interlaceCompensationMM
+		right += interlaceCompensationMM
+	}
+
+	stretchLeftMM, stretchRightMM := 0.0, 0.0
+	if targetTensionN > 0 {
+		areaMM2 := spokeProfileAreasMM2[input.SpokeProfile]
+		stretchLeftMM = spokeElasticStretchMM(targetTensionN, left, areaMM2)
+		stretchRightMM = spokeElasticStretchMM(targetTensionN, right, areaMM2)
+		left -= stretchLeftMM
+		right -= stretchRightMM
+	}
+	if !isFinite(left) || !isFinite(right) || left <= 0 || right <= 0 {
+		return nil, fmt.Errorf("%w: physical spoke corrections produced a non-positive length", ErrInvalidSpokeCalculation)
 	}
 	tensionRatio, err := computeSpokeTensionRatioSafe(leftFlange, rightFlange, left, right)
 	if err != nil {
@@ -264,10 +376,17 @@ func (s *SpokeService) Calculate(input SpokeCalculationInput) (*SpokeCalculation
 		RightLengthMM: roundSpokeLength(right),
 		TensionRatio:  tensionRatio,
 		Debug: SpokeCalculationDebug{
-			Rim:            rim,
-			Hub:            hubGeo,
-			RimOffsetMM:    input.RimOffsetMM,
-			FormulaVersion: spokeCalculationFormulaName,
+			Rim:                         rim,
+			Hub:                         hubGeo,
+			RimOffsetMM:                 input.RimOffsetMM,
+			SpokeHeadType:               input.SpokeHeadType,
+			SpokeHoleCorrectionMM:       spokeHoleCorrectionMM,
+			StraightPullTangentOffsetMM: straightPullTangentOffsetMM,
+			AlternatingDrillingOffsetMM: alternatingDrillingOffsetMM,
+			StretchLeftMM:               stretchLeftMM,
+			StretchRightMM:              stretchRightMM,
+			InterlaceCompensationMM:     interlaceCompensationMM,
+			FormulaVersion:              spokeCalculationFormulaName,
 		},
 	}, nil
 }
@@ -277,6 +396,57 @@ func effectiveSpokeFlangeDistance(flangeDistance, rimOffset float64, side string
 		return flangeDistance + rimOffset
 	}
 	return flangeDistance - rimOffset
+}
+
+// spokeLengthFromGeometry keeps the classic law-of-cosines path for J-bend
+// spokes. Straight-pull spokes use the slot's local radial/tangential vector
+// instead of synthesizing a polar hub angle from the crossing count. The
+// crossing still determines the rim-hole phase, while tangentOffsetMM is the
+// signed tangential slot offset measured at the hub flange in millimetres.
+func spokeLengthFromGeometry(rimRadius, flangeRadius, flangeDistance, baseAngleRad float64, headType string, tangentOffsetMM float64) float64 {
+	if headType == "straight_pull" {
+		// In the local flange frame the slot point is (flangeRadius,
+		// tangentOffsetMM). Resolve the rim point into that same frame and
+		// add the axial component separately. This is the straight-pull
+		// tangential-slot model; it does not treat the slot as a J-bend hole
+		// on a concentric polar circle.
+		radialDelta := rimRadius*math.Cos(baseAngleRad) - flangeRadius
+		tangentialDelta := rimRadius*math.Sin(baseAngleRad) - tangentOffsetMM
+		squared := radialDelta*radialDelta + tangentialDelta*tangentialDelta + flangeDistance*flangeDistance
+		if !isFinite(squared) || squared < 0 {
+			return math.NaN()
+		}
+		return math.Sqrt(squared)
+	}
+
+	angleRad := baseAngleRad
+	virtualRadius := flangeRadius
+	squared := rimRadius*rimRadius + virtualRadius*virtualRadius + flangeDistance*flangeDistance -
+		2*rimRadius*virtualRadius*math.Cos(angleRad)
+	if !isFinite(squared) || squared < 0 {
+		return math.NaN()
+	}
+	return math.Sqrt(squared)
+}
+
+func defaultInterlaceCompensation(crossing int) float64 {
+	switch {
+	case crossing >= 3:
+		return defaultInterlaceOffsetMM
+	case crossing == 2:
+		return 0.4
+	case crossing == 1:
+		return 0.25
+	default:
+		return 0
+	}
+}
+
+func spokeElasticStretchMM(targetTensionN, lengthMM, areaMM2 float64) float64 {
+	if targetTensionN <= 0 || lengthMM <= 0 || areaMM2 <= 0 {
+		return 0
+	}
+	return targetTensionN * lengthMM / (defaultElasticModulusNMM2 * areaMM2)
 }
 
 // computeSpokeTensionRatio is retained for package-level compatibility. The
@@ -339,7 +509,8 @@ func finiteGeometry(geometry *domainspoke.HubGeometry) bool {
 		*geometry.LeftFlange > 0 && *geometry.LeftFlange <= 100 &&
 		*geometry.RightFlange > 0 && *geometry.RightFlange <= 100 &&
 		*geometry.LeftFlangePCD >= 10 && *geometry.LeftFlangePCD <= 150 &&
-		*geometry.RightFlangePCD >= 10 && *geometry.RightFlangePCD <= 150
+		*geometry.RightFlangePCD >= 10 && *geometry.RightFlangePCD <= 150 &&
+		(geometry.SpokeHoleDiameter == nil || (isFinite(*geometry.SpokeHoleDiameter) && *geometry.SpokeHoleDiameter >= 0 && *geometry.SpokeHoleDiameter <= 10))
 }
 
 func buildSpokeHistory(input SpokeCalculationInput, export domainspoke.ExportResponse, rim *domainspoke.RimModel, hub *domainspoke.HubModel, geometry *domainspoke.HubGeometry, erd, left, right float64) *domainspoke.History {

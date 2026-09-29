@@ -508,6 +508,7 @@ import {
   type PrimaryMegaNavId,
   type PrimaryMegaNavSection,
 } from '~/utils/primaryMegaNav'
+import { resolveBreadcrumbSiblingTarget } from '~/utils/breadcrumbRouteNavigation'
 import {
   getPageSubNavigationBreadcrumbMatch,
   getPageSubNavigationForPath,
@@ -1353,6 +1354,23 @@ const getBreadcrumbFamilyTarget = (rootSegment: string) => {
   return getBreadcrumbRouteFamilies().find(family => family.id === rootSegment)?.to || ''
 }
 
+const getBreadcrumbSiblingTarget = (
+  breadcrumbPath: string,
+  siblingPath: string,
+  fallbackPath: string,
+) => {
+  const routeTarget = resolveBreadcrumbSiblingTarget({
+    currentPath: route.path || '/',
+    breadcrumbPath,
+    siblingPath,
+    fallbackPath,
+    routePatterns: getBreadcrumbRouteCandidates(true).map(candidate => candidate.path),
+    localeCodes: getAllLocaleCodes(),
+  })
+
+  return localizedNavTarget(routeTarget)
+}
+
 const getBreadcrumbTarget = (path: string) => {
   const normalizedPath = normalizeBreadcrumbPath(path)
   const segments = getBreadcrumbPathSegments(normalizedPath)
@@ -1380,7 +1398,7 @@ const getRouteFamilyBreadcrumbSubNavigation = (
     families.map(family => ({
       id: family.id,
       label: family.label,
-      to: family.to,
+      to: getBreadcrumbSiblingTarget(normalizedRootPath, family.rootPath, family.to),
       active: isSameOrNestedBreadcrumbPath(normalizedRootPath, family.rootPath),
     }))
   )
@@ -1425,7 +1443,7 @@ const getPageSubNavigationBreadcrumbSubNavigation = (
     return {
       id: `${match.entry.path}:${tab.id}`,
       label: pageSubNavigationTabLabel(tab),
-      to: tabPath,
+      to: getBreadcrumbSiblingTarget(normalizedTargetPath, tabPath, tabPath),
       active: normalizeBreadcrumbPath(tabPath) === currentPath,
     }
   })
@@ -1457,7 +1475,7 @@ const getBreadcrumbSiblingSubNavigation = (
   const tabs = siblingGroups.map(group => ({
     id: group.id,
     label: getBreadcrumbRouteLabel(group.path, group.segment),
-    to: group.target,
+    to: getBreadcrumbSiblingTarget(normalizedTargetPath, group.path, group.target),
     active: isSameOrNestedBreadcrumbPath(currentPath, group.path),
   }))
 

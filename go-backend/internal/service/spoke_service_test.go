@@ -68,6 +68,80 @@ func TestSpokeServiceCalculateAppliesHiddenNippleAndPersistsHistory(t *testing.T
 	require.Equal(t, hidden.LeftLengthMM, *histories[1].LeftLengthMM)
 }
 
+func TestSpokeServiceCalculateAppliesPhysicalBuildCorrections(t *testing.T) {
+	_, spokeService := newTestSpokeService(t)
+	erd := 598.0
+	left := 22.5
+	right := 35.6
+	pcd := 44.0
+	_, err := spokeService.ReplaceCatalog(spokedomain.ExportResponse{
+		Rims: []spokedomain.RimBrand{{ID: "dt_swiss", Name: "DT Swiss", Items: []spokedomain.RimModel{{ID: "rr411_db", Name: "RR 411 db", ERD: &erd}}}},
+		Hubs: []spokedomain.HubBrand{{ID: "dt_swiss", Name: "DT Swiss", Items: []spokedomain.HubModel{{ID: "hub", Name: "Hub", Front: &spokedomain.HubGeometry{LeftFlange: &left, RightFlange: &right, LeftFlangePCD: &pcd, RightFlangePCD: &pcd}}}}},
+	})
+	require.NoError(t, err)
+
+	base, err := spokeService.Calculate(SpokeCalculationInput{
+		RimID: "rr411_db", HubID: "hub", WheelPosition: "front", SpokeCount: 24, Crossing: 2,
+		SpokeHeadType: "j_bend", SpokeHoleDiameterMM: floatPtrForTest(0), Interlacing: false,
+	})
+	require.NoError(t, err)
+	holeDiameter := 2.6
+	holeCorrected, err := spokeService.Calculate(SpokeCalculationInput{
+		RimID: "rr411_db", HubID: "hub", WheelPosition: "front", SpokeCount: 24, Crossing: 2,
+		SpokeHeadType: "j_bend", SpokeHoleDiameterMM: &holeDiameter, Interlacing: false,
+	})
+	require.NoError(t, err)
+	require.InDelta(t, 1.3, base.LeftLengthMM-holeCorrected.LeftLengthMM, 0.01)
+	require.InDelta(t, 1.3, base.RightLengthMM-holeCorrected.RightLengthMM, 0.01)
+
+	tangentOffset := 2.0
+	straightPull, err := spokeService.Calculate(SpokeCalculationInput{
+		RimID: "rr411_db", HubID: "hub", WheelPosition: "front", SpokeCount: 24, Crossing: 2,
+		SpokeHeadType: "straight_pull", StraightPullTangentOffsetMM: &tangentOffset, Interlacing: false,
+	})
+	require.NoError(t, err)
+	assert.Equal(t, "straight_pull", straightPull.Debug.SpokeHeadType)
+	assert.NotEqual(t, base.LeftLengthMM, straightPull.LeftLengthMM)
+	assert.Zero(t, straightPull.Debug.SpokeHoleCorrectionMM)
+
+	targetTension := 1200.0
+	stretched, err := spokeService.Calculate(SpokeCalculationInput{
+		RimID: "rr411_db", HubID: "hub", WheelPosition: "front", SpokeCount: 24, Crossing: 2,
+		SpokeHeadType: "j_bend", SpokeHoleDiameterMM: floatPtrForTest(0),
+		SpokeProfile: "bladed_0_9x2_2", TargetTensionN: &targetTension, Interlacing: false,
+	})
+	require.NoError(t, err)
+	assert.Greater(t, stretched.Debug.StretchLeftMM, 0.0)
+	assert.Less(t, stretched.LeftLengthMM, base.LeftLengthMM)
+
+	interlace := 0.45
+	interlaced, err := spokeService.Calculate(SpokeCalculationInput{
+		RimID: "rr411_db", HubID: "hub", WheelPosition: "front", SpokeCount: 24, Crossing: 3,
+		SpokeHeadType: "j_bend", SpokeHoleDiameterMM: floatPtrForTest(0),
+		Interlacing: true, InterlaceCompensationMM: &interlace,
+	})
+	require.NoError(t, err)
+	withoutInterlace, err := spokeService.Calculate(SpokeCalculationInput{
+		RimID: "rr411_db", HubID: "hub", WheelPosition: "front", SpokeCount: 24, Crossing: 3,
+		SpokeHeadType: "j_bend", SpokeHoleDiameterMM: floatPtrForTest(0), Interlacing: false,
+	})
+	require.NoError(t, err)
+	require.InDelta(t, interlace, interlaced.LeftLengthMM-withoutInterlace.LeftLengthMM, 0.01)
+
+	alternating := 1.0
+	withAlternatingOffset, err := spokeService.Calculate(SpokeCalculationInput{
+		RimID: "rr411_db", HubID: "hub", WheelPosition: "front", SpokeCount: 24, Crossing: 2,
+		SpokeHeadType: "j_bend", SpokeHoleDiameterMM: floatPtrForTest(0),
+		AlternatingDrillingOffsetMM: &alternating, Interlacing: false,
+	})
+	require.NoError(t, err)
+	assert.NotEqual(t, base.LeftLengthMM, withAlternatingOffset.LeftLengthMM)
+}
+
+func floatPtrForTest(value float64) *float64 {
+	return &value
+}
+
 func TestSpokeServiceRejectsNonFiniteGeometry(t *testing.T) {
 	_, spokeService := newTestSpokeService(t)
 	nan := math.NaN()

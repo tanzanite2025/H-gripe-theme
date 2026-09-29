@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { breadcrumbRoutePatternMatches, resolveBreadcrumbSiblingTarget } from '../app/utils/breadcrumbRouteNavigation.js'
 import { resolvePageSubNavigationBreadcrumb } from '../app/utils/pageSubNavigationBreadcrumb.js'
 import type { PageSubNavigationEntry } from '../app/utils/pageSubNavigationData.js'
 
@@ -62,4 +63,73 @@ assert.equal(wheelsetCanonical?.kind, 'canonical')
 assert.equal(wheelsetCanonical?.entry.path, '/guides/wheelset-buyers')
 assert.notEqual(wheelsetCanonical?.entry, canonical?.entry)
 
-console.log('Breadcrumb navigation contract checks passed: canonical pages retain third-level navigation entries and exact tab routes resolve correctly.')
+const switchSibling = (options: {
+  currentPath: string
+  breadcrumbPath: string
+  siblingPath: string
+  fallbackPath: string
+  routePatterns: string[]
+}) => resolveBreadcrumbSiblingTarget({ ...options, localeCodes: ['en', 'zh_cn'] })
+
+// Switching an intermediate breadcrumb preserves every lower segment when
+// the destination branch registers that route, including newly added levels.
+assert.equal(switchSibling({
+  currentPath: '/en/shop/wheels/gravel/fitment/road?source=header',
+  breadcrumbPath: '/shop/wheels',
+  siblingPath: '/shop/tires',
+  fallbackPath: '/shop/tires',
+  routePatterns: [
+    '/shop/wheels/:wheelType/fitment/:fitmentType',
+    '/shop/tires/:tireType/fitment/:fitmentType',
+  ],
+}), '/shop/tires/gravel/fitment/road')
+
+// Dynamic route constraints are honored, so switching between pages with
+// different tab sets does not create an invalid child URL.
+assert.equal(breadcrumbRoutePatternMatches(
+  '/guides/wheelset-buyers/:tab(overview|safety-instructions)',
+  '/guides/wheelset-buyers/overview',
+), true)
+assert.equal(breadcrumbRoutePatternMatches(
+  '/guides/wheelset-buyers/:tab(overview|safety-instructions)',
+  '/guides/wheelset-buyers/installation',
+), false)
+assert.equal(switchSibling({
+  currentPath: '/guides/tireguides/installation',
+  breadcrumbPath: '/guides/tireguides',
+  siblingPath: '/guides/wheelset-buyers',
+  fallbackPath: '/guides/wheelset-buyers',
+  routePatterns: ['/guides/wheelset-buyers/:tab(overview|safety-instructions)'],
+}), '/guides/wheelset-buyers')
+
+// The same rule covers routes nested below a page tab, so newly added lower
+// pages survive tab switches without adding tab-specific header logic.
+assert.equal(switchSibling({
+  currentPath: '/guides/wheelset-buyers/overview/details',
+  breadcrumbPath: '/guides/wheelset-buyers/overview',
+  siblingPath: '/guides/wheelset-buyers/safety-instructions',
+  fallbackPath: '/guides/wheelset-buyers/safety-instructions',
+  routePatterns: [
+    '/guides/wheelset-buyers/:tab(overview|safety-instructions)',
+    '/guides/wheelset-buyers/:tab(overview|safety-instructions)/details',
+  ],
+}), '/guides/wheelset-buyers/safety-instructions/details')
+
+// A same-family root switch can retain its selected descendants; a different
+// branch falls back to its registered representative route when no match exists.
+assert.equal(switchSibling({
+  currentPath: '/guides/tireguides/choose',
+  breadcrumbPath: '/guides',
+  siblingPath: '/guides',
+  fallbackPath: '/guides/tireguides',
+  routePatterns: ['/guides/tireguides/:tab(size|choose)'],
+}), '/guides/tireguides/choose')
+assert.equal(switchSibling({
+  currentPath: '/guides/tireguides/choose',
+  breadcrumbPath: '/guides',
+  siblingPath: '/support',
+  fallbackPath: '/support/faqs',
+  routePatterns: ['/support/faqs/:tab(overview|contact)'],
+}), '/support/faqs')
+
+console.log('Breadcrumb navigation contract checks passed: route ownership, constrained tab routes, and registered descendant preservation are correct.')

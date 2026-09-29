@@ -4,6 +4,9 @@
 
     <div class="spoke-page">
       <section v-show="activeTab === 'calculator'">
+        <!-- Standalone full-width reference card, above the calculator settings. -->
+        <SpokePhysicsDiagrams class="spoke-page__physics-card" />
+
         <div class="support-page__calculator-wrapper">
           <SpokeCalculatorBlueprint />
 
@@ -184,6 +187,7 @@
 
 <script setup lang="ts">
 import SpokeCalculatorBlueprint from '~/components/SpokeCalculatorBlueprint.vue'
+import SpokePhysicsDiagrams from '~/components/SpokePhysicsDiagrams.vue'
 import SpokeSmartSearch from '~/components/SpokeSmartSearch.vue'
 import UserFeedbackThread from '~/components/UserFeedbackThread.vue'
 
@@ -255,6 +259,10 @@ useHead(() => ({
 
 .support-page__calculator-wrapper {
   margin-top: 1.5rem;
+}
+
+.spoke-page__physics-card {
+  margin-bottom: 1.5rem;
 }
 
  .spoke-page {
