@@ -9,25 +9,25 @@
           class="spoke-page__head-step"
           v-model="selectedSpokeHeadType"
           :current-step="activeWizardStep"
-          @select-step="activeWizardStep = $event"
-          @next="activeWizardStep = 2"
+          @select-step="goToStep"
+          @next="nextStep"
         />
         <SpokeERDStep
           v-else-if="activeWizardStep === 2"
           v-model:front-erd="frontErdMm"
           v-model:rear-erd="rearErdMm"
           :current-step="activeWizardStep"
-          @select-step="activeWizardStep = $event"
-          @previous="activeWizardStep = 1"
-          @next="activeWizardStep = 3"
+          @select-step="goToStep"
+          @previous="previousStep"
+          @next="nextStep"
         />
         <SpokePCDStep
           v-else-if="activeWizardStep === 3"
           v-model:front-geometry="frontGeometry"
           v-model:rear-geometry="rearGeometry"
           :current-step="activeWizardStep"
-          @select-step="activeWizardStep = $event"
-          @previous="activeWizardStep = 2"
+          @select-step="goToStep"
+          @previous="previousStep"
         />
 
         <!-- Standalone full-width reference card, above the calculator settings. -->
@@ -234,14 +234,17 @@ import { usePageMessages } from '~/composables/usePageMessages'
 import { useSpokeCalculatorWizard } from '~/composables/useSpokeCalculatorWizard'
 import type { SpokeHeadType } from '~/types/spokeCalculator'
 import { definePageMeta, useHead, useI18n } from '#imports'
-import { computed, ref, watch } from 'vue'
+import { computed, watch } from 'vue'
 
 const { locale, t } = useI18n()
 const { loadPageMessages } = usePageMessages('resourcesSpokeCalculator')
 
-const activeWizardStep = ref(1)
 const {
   draft: spokeWizardDraft,
+  activeStep: activeWizardStep,
+  goToStep,
+  nextStep,
+  previousStep,
   setHeadType,
   setWheelHeadType,
   setErd,

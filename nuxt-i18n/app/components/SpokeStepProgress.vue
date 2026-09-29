@@ -29,14 +29,15 @@
 
 <script setup lang="ts">
 import { useI18n } from '#imports'
+import { SPOKE_WIZARD_STEP_COUNT } from '~/types/spokeCalculator'
 
 withDefaults(defineProps<{
   currentStep: number
   availableStep?: number
   stepCount?: number
 }>(), {
-  availableStep: 1,
-  stepCount: 5,
+  availableStep: SPOKE_WIZARD_STEP_COUNT,
+  stepCount: SPOKE_WIZARD_STEP_COUNT,
 })
 
 const emit = defineEmits<{

@@ -7,6 +7,15 @@ export type SpokeNippleType = 'standard' | 'hidden'
 export type SpokeProfile = 'round_2_0' | 'round_1_8' | 'bladed_0_9x2_2'
 export type SpokeInterlacing = 'off' | 'on'
 
+export const SPOKE_WIZARD_STEPS = [
+  { id: 'head_type', number: 1 },
+  { id: 'erd', number: 2 },
+  { id: 'hub_geometry', number: 3 },
+] as const
+
+export type SpokeWizardStep = typeof SPOKE_WIZARD_STEPS[number]['number']
+export const SPOKE_WIZARD_STEP_COUNT = SPOKE_WIZARD_STEPS.length
+
 /**
  * The configuration currently edited by the legacy calculator panel.
  * Keeping this contract outside the component lets the request adapter and

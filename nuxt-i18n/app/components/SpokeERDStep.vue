@@ -2,7 +2,6 @@
   <section class="spoke-erd-step" aria-labelledby="spoke-erd-step-title">
     <SpokeStepProgress
       :current-step="currentStep"
-      :available-step="3"
       @select="emit('select-step', $event)"
     />
 
