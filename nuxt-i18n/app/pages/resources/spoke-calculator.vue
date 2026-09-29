@@ -21,21 +21,21 @@
           @previous="previousStep"
           @next="nextStep"
         />
-        <SpokePCDStep
+        <SpokeAlternatingDrillingStep
           v-else-if="activeWizardStep === 3"
-          v-model:front-geometry="frontGeometry"
-          v-model:rear-geometry="rearGeometry"
+          v-model:front-offset="frontAlternatingOffsetMm"
+          v-model:rear-offset="rearAlternatingOffsetMm"
+          v-model:front-rim-offset="frontRimOffsetMm"
+          v-model:rear-rim-offset="rearRimOffsetMm"
           :current-step="activeWizardStep"
           @select-step="goToStep"
           @previous="previousStep"
           @next="nextStep"
         />
-        <SpokeAlternatingDrillingStep
+        <SpokePCDStep
           v-else-if="activeWizardStep === 4"
-          v-model:front-offset="frontAlternatingOffsetMm"
-          v-model:rear-offset="rearAlternatingOffsetMm"
-          v-model:front-rim-offset="frontRimOffsetMm"
-          v-model:rear-rim-offset="rearRimOffsetMm"
+          v-model:front-geometry="frontGeometry"
+          v-model:rear-geometry="rearGeometry"
           :current-step="activeWizardStep"
           @select-step="goToStep"
           @previous="previousStep"

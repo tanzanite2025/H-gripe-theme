@@ -15,12 +15,15 @@ catalog API, but they do not share calculation state.
 This is the upper wizard and calculator card. It accepts the dimensions and
 build parameters entered by the user:
 
+- wizard order: spoke head type, front/rear ERD, front/rear rim offsets and
+  alternating drilling offsets, then front/rear hub PCD/WL/WR;
 - spoke head type (J-bend or straight-pull);
 - front and rear ERD;
+- front and rear rim offset (asymmetric rim offset) and alternating drilling
+  offset;
 - front and rear PCD, WL, and WR;
-- front and rear rim offset (asymmetric rim offset), alternating drilling
-  offset, spoke count, crossing pattern, nipple settings, and physical
-  correction inputs.
+- spoke count, crossing pattern, nipple settings, and physical correction
+  inputs.
 
 The manual calculator must calculate from those values. Catalog selection must
 never fill, overwrite, or satisfy the manual geometry fields.

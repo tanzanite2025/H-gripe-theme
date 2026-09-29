@@ -6,13 +6,13 @@
     />
 
     <div class="spoke-alternating-step__intro">
-      <span class="spoke-alternating-step__eyebrow">04</span>
+      <span class="spoke-alternating-step__eyebrow">03</span>
       <div>
         <h2 id="spoke-alternating-step-title" class="spoke-alternating-step__title">
-          {{ t('resourcesSpokeCalculator.calculator.physicalCorrections.stepFourPrompt', '输入轮圈交错钻孔偏移') }}
+          {{ t('resourcesSpokeCalculator.calculator.physicalCorrections.stepThreePrompt', '输入轮圈偏心量与交错钻孔偏移') }}
         </h2>
         <p class="spoke-alternating-step__subtitle">
-          {{ t('resourcesSpokeCalculator.calculator.physicalCorrections.stepFourSubtitle', '确认轮圈左右交错钻孔相对于轮圈中心基准的偏移量。') }}
+          {{ t('resourcesSpokeCalculator.calculator.physicalCorrections.stepThreeSubtitle', '继续录入轮圈整体偏心量和左右交错钻孔相对于轮圈中心基准的偏移量。') }}
         </p>
       </div>
     </div>
@@ -20,7 +20,7 @@
     <div class="spoke-alternating-step__input-panel">
       <div class="spoke-alternating-step__input-copy">
         <span class="spoke-alternating-step__input-kicker">
-          {{ t('resourcesSpokeCalculator.calculator.physicalCorrections.alternatingInputKicker', 'STEP 4 INPUT') }}
+          {{ t('resourcesSpokeCalculator.calculator.physicalCorrections.alternatingInputKicker', 'STEP 3 INPUT') }}
         </span>
         <strong class="spoke-alternating-step__input-label">
           {{ t('resourcesSpokeCalculator.calculator.physicalCorrections.alternatingInputLabel', '轮圈交错钻孔偏移') }}
@@ -134,6 +134,10 @@
         <span aria-hidden="true">←</span>
         <span>{{ t('resourcesSpokeCalculator.calculator.physicalCorrections.stepPrevious', '上一步') }}</span>
       </button>
+      <button type="button" class="spoke-alternating-step__next" @click="emit('next')">
+        <span>{{ t('resourcesSpokeCalculator.calculator.physicalCorrections.stepNext', '下一步') }}</span>
+        <span aria-hidden="true">→</span>
+      </button>
     </div>
   </section>
 </template>
@@ -152,7 +156,7 @@ const props = withDefaults(defineProps<{
   frontRimOffset?: number | null
   rearRimOffset?: number | null
 }>(), {
-  currentStep: 4,
+  currentStep: 3,
   frontOffset: 0,
   rearOffset: 0,
   frontRimOffset: 0,
@@ -166,6 +170,7 @@ const emit = defineEmits<{
   'update:frontRimOffset': [value: number | null]
   'update:rearRimOffset': [value: number | null]
   previous: []
+  next: []
 }>()
 
 const readNumber = (event: Event): number | null => {
@@ -440,7 +445,8 @@ const updateRimOffset = (side: 'front' | 'rear', event: Event) => {
 
 .spoke-alternating-step__actions {
   display: flex;
-  justify-content: flex-start;
+  justify-content: space-between;
+  gap: 10px;
   margin-top: 14px;
 }
 
@@ -465,6 +471,31 @@ const updateRimOffset = (side: 'front' | 'rear', event: Event) => {
 }
 
 .spoke-alternating-step__previous:focus-visible {
+  outline: 2px solid var(--alternating-step-accent);
+  outline-offset: 3px;
+}
+
+.spoke-alternating-step__next {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 8px 14px;
+  border: 0;
+  border-radius: 9999px;
+  background: var(--alternating-step-accent);
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.spoke-alternating-step__next:hover {
+  background: #047857;
+  box-shadow: 0 8px 18px rgba(5, 150, 105, 0.22);
+}
+
+.spoke-alternating-step__next:focus-visible {
   outline: 2px solid var(--alternating-step-accent);
   outline-offset: 3px;
 }

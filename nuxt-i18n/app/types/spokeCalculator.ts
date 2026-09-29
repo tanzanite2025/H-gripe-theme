@@ -9,8 +9,8 @@ export type SpokeInterlacing = 'off' | 'on'
 export const SPOKE_WIZARD_STEPS = [
   { id: 'head_type', number: 1 },
   { id: 'erd', number: 2 },
-  { id: 'hub_geometry', number: 3 },
-  { id: 'alternating_drilling', number: 4 },
+  { id: 'alternating_drilling', number: 3 },
+  { id: 'hub_geometry', number: 4 },
 ] as const
 
 export type SpokeWizardStep = typeof SPOKE_WIZARD_STEPS[number]['number']

@@ -6,13 +6,13 @@
     />
 
     <div class="spoke-pcd-step__intro">
-      <span class="spoke-pcd-step__eyebrow">03</span>
+      <span class="spoke-pcd-step__eyebrow">04</span>
       <div>
         <h2 id="spoke-pcd-step-title" class="spoke-pcd-step__title">
-          {{ t('resourcesSpokeCalculator.calculator.physicalCorrections.stepThreePrompt', '输入花鼓 PCD 与 WL / WR') }}
+          {{ t('resourcesSpokeCalculator.calculator.physicalCorrections.stepFourPrompt', '输入花鼓 PCD 与 WL / WR') }}
         </h2>
         <p class="spoke-pcd-step__subtitle">
-          {{ t('resourcesSpokeCalculator.calculator.physicalCorrections.stepThreeSubtitle', '确认花鼓节圆直径，以及左右法兰到轮组中心线的距离。') }}
+          {{ t('resourcesSpokeCalculator.calculator.physicalCorrections.stepFourSubtitle', '确认花鼓节圆直径，以及左右法兰到轮组中心线的距离。') }}
         </p>
       </div>
     </div>
@@ -20,7 +20,7 @@
     <div class="spoke-pcd-step__input-panel">
       <div class="spoke-pcd-step__input-copy">
         <span class="spoke-pcd-step__input-kicker">
-          {{ t('resourcesSpokeCalculator.calculator.physicalCorrections.pcdInputKicker', 'STEP 3 INPUT') }}
+          {{ t('resourcesSpokeCalculator.calculator.physicalCorrections.pcdInputKicker', 'STEP 4 INPUT') }}
         </span>
         <strong class="spoke-pcd-step__input-label">
           {{ t('resourcesSpokeCalculator.calculator.physicalCorrections.pcdInputLabel', '花鼓 PCD / WL / WR') }}
@@ -204,10 +204,6 @@
         <span aria-hidden="true">←</span>
         <span>{{ t('resourcesSpokeCalculator.calculator.physicalCorrections.stepPrevious', '上一步') }}</span>
       </button>
-      <button type="button" class="spoke-pcd-step__next" @click="emit('next')">
-        <span>{{ t('resourcesSpokeCalculator.calculator.physicalCorrections.stepNext', '下一步') }}</span>
-        <span aria-hidden="true">→</span>
-      </button>
     </div>
   </section>
 </template>
@@ -226,7 +222,7 @@ const props = withDefaults(defineProps<{
   frontGeometry?: HubGeometry | null
   rearGeometry?: HubGeometry | null
 }>(), {
-  currentStep: 3,
+  currentStep: 4,
   frontGeometry: null,
   rearGeometry: null,
 })
@@ -236,7 +232,6 @@ const emit = defineEmits<{
   'update:frontGeometry': [value: HubGeometry]
   'update:rearGeometry': [value: HubGeometry]
   previous: []
-  next: []
 }>()
 
 const emptyGeometry = (): HubGeometry => ({
@@ -547,31 +542,6 @@ const updateRearGeometry = (field: GeometryField, event: Event) => {
 }
 
 .spoke-pcd-step__previous:focus-visible {
-  outline: 2px solid var(--pcd-step-accent);
-  outline-offset: 3px;
-}
-
-.spoke-pcd-step__next {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 36px;
-  padding: 8px 14px;
-  border: 0;
-  border-radius: 9999px;
-  background: var(--pcd-step-accent);
-  color: #ffffff;
-  font-size: 12px;
-  font-weight: 800;
-  cursor: pointer;
-}
-
-.spoke-pcd-step__next:hover {
-  background: #047857;
-  box-shadow: 0 8px 18px rgba(5, 150, 105, 0.22);
-}
-
-.spoke-pcd-step__next:focus-visible {
   outline: 2px solid var(--pcd-step-accent);
   outline-offset: 3px;
 }
