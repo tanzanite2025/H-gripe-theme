@@ -19,6 +19,13 @@
           :current-step="activeWizardStep"
           @select-step="activeWizardStep = $event"
           @previous="activeWizardStep = 1"
+          @next="activeWizardStep = 3"
+        />
+        <SpokePCDStep
+          v-else-if="activeWizardStep === 3"
+          :current-step="activeWizardStep"
+          @select-step="activeWizardStep = $event"
+          @previous="activeWizardStep = 2"
         />
 
         <!-- Standalone full-width reference card, above the calculator settings. -->
@@ -209,6 +216,7 @@
 import SpokeCalculatorBlueprint from '~/components/SpokeCalculatorBlueprint.vue'
 import SpokeERDStep from '~/components/SpokeERDStep.vue'
 import SpokeHeadTypeStep from '~/components/SpokeHeadTypeStep.vue'
+import SpokePCDStep from '~/components/SpokePCDStep.vue'
 import SpokePhysicsDiagrams from '~/components/SpokePhysicsDiagrams.vue'
 import SpokeSmartSearch from '~/components/SpokeSmartSearch.vue'
 import UserFeedbackThread from '~/components/UserFeedbackThread.vue'

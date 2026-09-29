@@ -83,6 +83,8 @@
       "stepProgressLabel": "计算步骤",
       "stepNumber": "第 {step} 步",
       "stepTwoPrompt": "输入轮圈 ERD",
+      "stepThreePrompt": "输入花鼓 PCD 与 WL / WR",
+      "stepThreeSubtitle": "确认花鼓节圆直径，以及左右法兰到轮组中心线的距离。",
       "stepNext": "下一步",
       "stepPrevious": "上一步",
       "erdInputKicker": "第 2 步输入",
