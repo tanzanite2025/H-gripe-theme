@@ -4,6 +4,9 @@
 
     <div class="spoke-page">
       <section v-show="activeTab === 'calculator'">
+        <SpokeHeadTypeStep class="spoke-page__head-step" />
+        <SpokeERDStep />
+
         <!-- Standalone full-width reference card, above the calculator settings. -->
         <SpokePhysicsDiagrams class="spoke-page__physics-card" />
 
@@ -187,6 +190,8 @@
 
 <script setup lang="ts">
 import SpokeCalculatorBlueprint from '~/components/SpokeCalculatorBlueprint.vue'
+import SpokeERDStep from '~/components/SpokeERDStep.vue'
+import SpokeHeadTypeStep from '~/components/SpokeHeadTypeStep.vue'
 import SpokePhysicsDiagrams from '~/components/SpokePhysicsDiagrams.vue'
 import SpokeSmartSearch from '~/components/SpokeSmartSearch.vue'
 import UserFeedbackThread from '~/components/UserFeedbackThread.vue'
@@ -262,6 +267,10 @@ useHead(() => ({
 }
 
 .spoke-page__physics-card {
+  margin-bottom: 1.5rem;
+}
+
+.spoke-page__head-step {
   margin-bottom: 1.5rem;
 }
 

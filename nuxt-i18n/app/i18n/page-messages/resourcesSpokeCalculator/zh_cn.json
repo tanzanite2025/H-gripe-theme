@@ -79,6 +79,13 @@
     "physicalCorrections": {
       "title": "物理编组修正（估算）",
       "spokeHeadType": "花鼓辐条头类型",
+      "stepOnePrompt": "先选择与你的花鼓匹配的辐条类型",
+      "stepProgressLabel": "计算步骤",
+      "stepTwoPrompt": "输入轮圈 ERD",
+      "erdPlaceholder": "例如 598",
+      "erdInputHelp": "请输入实测或制造商公布的 ERD（毫米）。",
+      "jBendHint": "辐条在法兰孔处形成弯头。",
+      "straightPullHint": "辐条沿花鼓槽位直线引出，没有 J 形弯头。",
       "spokeHoleDiameter": "法兰孔径（毫米）",
       "straightPullOffset": "直拉槽切向偏移（毫米）",
       "spokeProfile": "辐条截面型号",
