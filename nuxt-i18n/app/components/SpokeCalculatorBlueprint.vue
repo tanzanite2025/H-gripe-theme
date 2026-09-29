@@ -17,27 +17,6 @@
             <div class="spoke-calculator__blueprint-sheet">
               <div class="spoke-calculator__blueprint-grid">
                 <div class="spoke-calculator__legend-table">
-                  <div class="spoke-calculator__legend-row">
-                    <div class="spoke-calculator__legend-badge">1</div>
-                    <div class="spoke-calculator__legend-heading">
-                      <strong>{{ t('resourcesSpokeCalculator.calculator.schematic.erd.label') }}</strong>
-                      <span>{{ t('resourcesSpokeCalculator.calculator.schematic.erd.description') }}</span>
-                    </div>
-                    <div class="spoke-calculator__legend-control">
-                      <div class="spoke-calculator__unit-field">
-                        <input
-                          id="front-blueprint-erd"
-                          v-model.number="frontConfig.erd"
-                          type="number"
-                          min="400"
-                          max="750"
-                          class="spoke-calculator__control spoke-calculator__control--with-unit"
-                        />
-                        <span class="spoke-calculator__unit">{{ t('resourcesSpokeCalculator.calculator.results.unit') }}</span>
-                      </div>
-                    </div>
-                  </div>
-
                   <div class="spoke-calculator__legend-row spoke-calculator__legend-row--split">
                     <div class="spoke-calculator__legend-badge">2</div>
                     <div class="spoke-calculator__legend-heading">
@@ -300,27 +279,6 @@
             <div class="spoke-calculator__blueprint-sheet">
               <div class="spoke-calculator__blueprint-grid">
                 <div class="spoke-calculator__legend-table">
-                  <div class="spoke-calculator__legend-row">
-                    <div class="spoke-calculator__legend-badge">1</div>
-                    <div class="spoke-calculator__legend-heading">
-                      <strong>{{ t('resourcesSpokeCalculator.calculator.schematic.erd.label') }}</strong>
-                      <span>{{ t('resourcesSpokeCalculator.calculator.schematic.erd.description') }}</span>
-                    </div>
-                    <div class="spoke-calculator__legend-control">
-                      <div class="spoke-calculator__unit-field">
-                        <input
-                          id="rear-blueprint-erd"
-                          v-model.number="rearConfig.erd"
-                          type="number"
-                          min="400"
-                          max="750"
-                          class="spoke-calculator__control spoke-calculator__control--with-unit"
-                        />
-                        <span class="spoke-calculator__unit">{{ t('resourcesSpokeCalculator.calculator.results.unit') }}</span>
-                      </div>
-                    </div>
-                  </div>
-
                   <div class="spoke-calculator__legend-row spoke-calculator__legend-row--split">
                     <div class="spoke-calculator__legend-badge">2</div>
                     <div class="spoke-calculator__legend-heading">
