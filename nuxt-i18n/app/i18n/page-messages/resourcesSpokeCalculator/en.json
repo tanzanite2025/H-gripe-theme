@@ -85,6 +85,7 @@
       "stepTwoPrompt": "Enter the rim ERD",
       "stepNext": "Next step",
       "stepPrevious": "Previous step",
+      "erdInputKicker": "STEP 2 INPUT",
       "erdPlaceholder": "e.g. 598",
       "erdInputHelp": "Enter the measured ERD in millimetres.",
       "jBendHint": "The spoke forms a hook at the flange hole.",

@@ -20,6 +20,9 @@
 
     <div class="spoke-erd-step__input-panel">
       <div class="spoke-erd-step__input-copy">
+        <span class="spoke-erd-step__input-kicker">
+          {{ t('resourcesSpokeCalculator.calculator.physicalCorrections.erdInputKicker', 'STEP 2 INPUT') }}
+        </span>
         <label for="spoke-erd-step-input" class="spoke-erd-step__input-label">
           {{ t('resourcesSpokeCalculator.parameter.items.erd.title') }}
         </label>
@@ -194,16 +197,34 @@ const erdMm = computed({
   grid-template-columns: minmax(0, 1fr) minmax(220px, 300px);
   gap: 18px;
   align-items: center;
-  padding: 16px;
-  border: 1px solid var(--erd-step-border);
+  margin-bottom: 24px;
+  padding: 18px 20px;
+  border: 1px solid rgba(5, 150, 105, 0.32);
+  border-left: 5px solid var(--erd-step-accent);
   border-radius: 18px;
-  background: #ffffff;
+  background: linear-gradient(135deg, #ecfdf5 0%, #f0fdfa 54%, #ffffff 100%);
+  box-shadow: 0 10px 24px rgba(5, 150, 105, 0.1);
+}
+
+.spoke-erd-step__input-copy {
+  min-width: 0;
+}
+
+.spoke-erd-step__input-kicker {
+  display: block;
+  margin-bottom: 4px;
+  color: #047857;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  line-height: 1.2;
 }
 
 .spoke-erd-step__input-label {
   display: block;
-  color: var(--erd-step-text);
-  font-size: 14px;
+  color: #064e3b;
+  font-size: 15px;
   font-weight: 800;
   line-height: 1.35;
 }
@@ -219,9 +240,10 @@ const erdMm = computed({
   display: flex;
   align-items: center;
   min-width: 0;
-  border: 1px solid var(--erd-step-border);
+  border: 2px solid rgba(5, 150, 105, 0.48);
   border-radius: 9999px;
-  background: #f8fafc;
+  background: #ffffff;
+  box-shadow: 0 3px 10px rgba(5, 150, 105, 0.08);
   overflow: hidden;
 }
 
@@ -232,8 +254,8 @@ const erdMm = computed({
   outline: 0;
   background: transparent;
   color: var(--erd-step-text);
-  padding: 10px 12px 10px 16px;
-  font-size: 14px;
+  padding: 11px 12px 11px 16px;
+  font-size: 15px;
   font-weight: 700;
 }
 
@@ -244,7 +266,7 @@ const erdMm = computed({
 .spoke-erd-step__unit {
   flex: 0 0 auto;
   padding: 0 14px 0 4px;
-  color: var(--erd-step-muted);
+  color: #047857;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 12px;
   font-weight: 800;
@@ -259,6 +281,8 @@ const erdMm = computed({
   .spoke-erd-step__input-panel {
     grid-template-columns: 1fr;
     gap: 10px;
+    margin-bottom: 18px;
+    padding: 15px;
   }
 }
 </style>

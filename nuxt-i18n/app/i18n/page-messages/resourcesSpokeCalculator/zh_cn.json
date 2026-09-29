@@ -85,6 +85,7 @@
       "stepTwoPrompt": "输入轮圈 ERD",
       "stepNext": "下一步",
       "stepPrevious": "上一步",
+      "erdInputKicker": "第 2 步输入",
       "erdPlaceholder": "例如 598",
       "erdInputHelp": "请输入实测或制造商公布的 ERD（毫米）。",
       "jBendHint": "辐条在法兰孔处形成弯头。",
