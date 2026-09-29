@@ -142,14 +142,13 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { ref, watch } from 'vue'
 import SpokeCalculatorBuildSettings from '~/components/SpokeCalculatorBuildSettings.vue'
 import SpokeCalculatorResults from '~/components/SpokeCalculatorResults.vue'
-import type { HubGeometry, HubModel, RimModel } from '~/data/spoke-calculator/database'
 import { useSpokeCalculator } from '~/composables/useSpokeCalculator'
 import type { SpokeWheelBuildConfig, SpokeWheelResult, SpokeWheelSide } from '~/types/spokeCalculator'
 import { useBehaviorEvents } from '~/composables/useBehaviorEvents'
-import { useSpokeCalculatorCatalog } from '~/composables/useSpokeCalculatorCatalog'
+import { useSpokeCalculatorWheelCatalog } from '~/composables/useSpokeCalculatorWheelCatalog'
 import { useI18n } from '#imports'
 
 const props = defineProps<{
@@ -161,196 +160,21 @@ const frontConfig = props.frontConfig
 const rearConfig = props.rearConfig
 
 const { t } = useI18n()
-const { rims, hubs, options: catalogOptions } = useSpokeCalculatorCatalog()
 const { calculateWheel } = useSpokeCalculator()
-
-const spokeCountOptions = computed(() => catalogOptions.value.spokeCounts)
-const crossingTranslationKeys: Record<number, string> = {
-  0: 'radial',
-  1: 'one',
-  2: 'two',
-  3: 'three',
-  4: 'four',
-}
-const lacingOptions = computed(() => catalogOptions.value.crossings.map(option => ({
-  ...option,
-  label: t(
-    `resourcesSpokeCalculator.calculator.options.crossing.${crossingTranslationKeys[option.value] || option.value}`,
-    option.label,
-  ),
-})))
-const nippleTypeOptions = computed(() => catalogOptions.value.nippleTypes.map(option => ({
-  ...option,
-  label: t(
-    `resourcesSpokeCalculator.calculator.options.nippleType.${option.value}`,
-    option.label,
-  ),
-})))
-
-const spokeHeadTypeOptions = computed(() => [
-  {
-    value: 'j_bend',
-    label: t('resourcesSpokeCalculator.calculator.physicalCorrections.jBend'),
-  },
-  {
-    value: 'straight_pull',
-    label: t('resourcesSpokeCalculator.calculator.physicalCorrections.straightPull'),
-  },
-])
-
-const spokeProfileOptions = computed(() => [
-  {
-    value: 'round_2_0',
-    label: t('resourcesSpokeCalculator.calculator.physicalCorrections.round20'),
-  },
-  {
-    value: 'round_1_8',
-    label: t('resourcesSpokeCalculator.calculator.physicalCorrections.round18'),
-  },
-  {
-    value: 'bladed_0_9x2_2',
-    label: t('resourcesSpokeCalculator.calculator.physicalCorrections.bladed0922'),
-  },
-])
-
-const interlacingOptions = computed(() => [
-  {
-    value: 'off',
-    label: t('resourcesSpokeCalculator.calculator.physicalCorrections.off'),
-  },
-  {
-    value: 'on',
-    label: t('resourcesSpokeCalculator.calculator.physicalCorrections.on'),
-  },
-])
-
-const rimBrandOptions = computed(() => rims.value.map(brand => ({
-  label: brand.name,
-  value: brand.id,
-})))
-
-const hubBrandOptions = computed(() => hubs.value.map(brand => ({
-  label: brand.name,
-  value: brand.id,
-})))
-
-// --- Computed Models based on Brand Selection ---
-
-// Front Rim Models
-const frontRimModels = computed<RimModel[]>(() => {
-  if (!frontConfig.rimBrandId) return []
-  const brand = rims.value.find(b => b.id === frontConfig.rimBrandId)
-  return brand ? brand.items : []
-})
-
-const frontRimModelOptions = computed(() => frontRimModels.value.map(rim => ({
-  label: rim.name,
-  value: rim.id,
-})))
-
-// Front Hub Models
-const frontHubModels = computed<HubModel[]>(() => {
-  if (!frontConfig.hubBrandId) return []
-  const brand = hubs.value.find(b => b.id === frontConfig.hubBrandId)
-  return brand ? brand.items : []
-})
-
-const frontHubModelOptions = computed(() => frontHubModels.value.map(hub => ({
-  label: hub.name,
-  value: hub.id,
-})))
-
-// Rear Rim Models
-const rearRimModels = computed<RimModel[]>(() => {
-  if (!rearConfig.rimBrandId) return []
-  const brand = rims.value.find(b => b.id === rearConfig.rimBrandId)
-  return brand ? brand.items : []
-})
-
-const rearRimModelOptions = computed(() => rearRimModels.value.map(rim => ({
-  label: rim.name,
-  value: rim.id,
-})))
-
-// Rear Hub Models
-const rearHubModels = computed<HubModel[]>(() => {
-  if (!rearConfig.hubBrandId) return []
-  const brand = hubs.value.find(b => b.id === rearConfig.hubBrandId)
-  return brand ? brand.items : []
-})
-
-const rearHubModelOptions = computed(() => rearHubModels.value.map(hub => ({
-  label: hub.name,
-  value: hub.id,
-})))
-
-const applyHubGeometry = (config: SpokeWheelBuildConfig, geometry?: HubGeometry | null) => {
-  if (!geometry) return
-  config.leftFlange = geometry?.leftFlange ?? null
-  config.rightFlange = geometry?.rightFlange ?? null
-  config.leftFlangePcd = geometry?.leftFlangePcd ?? null
-  config.rightFlangePcd = geometry?.rightFlangePcd ?? null
-	config.spokeHoleDiameterMm = geometry?.spokeHoleDiameter ?? config.spokeHoleDiameterMm
-}
-
-// --- Watchers for Auto-Population ---
-
-// Front Rim Change
-watch(
-  () => frontConfig.rimModelId,
-  (newId) => {
-    if (!newId) {
-      frontConfig.erd = null
-      return
-    }
-    const model = frontRimModels.value.find(m => m.id === newId)
-    if (model && model.erd != null) {
-      frontConfig.erd = model.erd
-    }
-  }
-)
-
-// Front Hub Change
-watch(
-  () => frontConfig.hubModelId,
-  (newId) => {
-    if (!newId) {
-      frontConfig.leftFlange = frontConfig.rightFlange = frontConfig.leftFlangePcd = frontConfig.rightFlangePcd = null
-      return
-    }
-    const model = frontHubModels.value.find(m => m.id === newId)
-    applyHubGeometry(frontConfig, model?.front ?? null)
-  }
-)
-
-// Rear Rim Change
-watch(
-  () => rearConfig.rimModelId,
-  (newId) => {
-    if (!newId) {
-      rearConfig.erd = null
-      return
-    }
-    const model = rearRimModels.value.find(m => m.id === newId)
-    if (model && model.erd != null) {
-      rearConfig.erd = model.erd
-    }
-  }
-)
-
-// Rear Hub Change
-watch(
-  () => rearConfig.hubModelId,
-  (newId) => {
-    if (!newId) {
-      rearConfig.leftFlange = rearConfig.rightFlange = rearConfig.leftFlangePcd = rearConfig.rightFlangePcd = null
-      return
-    }
-    const model = rearHubModels.value.find(m => m.id === newId)
-    applyHubGeometry(rearConfig, model?.rear ?? null)
-  }
-)
-
+const {
+  spokeCountOptions,
+  lacingOptions,
+  nippleTypeOptions,
+  spokeHeadTypeOptions,
+  spokeProfileOptions,
+  interlacingOptions,
+  rimBrandOptions,
+  hubBrandOptions,
+  frontRimModelOptions,
+  frontHubModelOptions,
+  rearRimModelOptions,
+  rearHubModelOptions,
+} = useSpokeCalculatorWheelCatalog(frontConfig, rearConfig)
 const loading = ref(false)
 const error = ref<string | null>(null)
 
