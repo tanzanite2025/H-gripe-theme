@@ -120,6 +120,10 @@ func (s *ProductService) ListSchwalbeTireCatalog(search string) ([]repository.Sc
 	return s.productRepo.ListSchwalbeTireCatalog(search)
 }
 
+func (s *ProductService) ListSchwalbeTireRimWidthCombinationRules() ([]repository.SchwalbeTireRimWidthCombinationRule, error) {
+	return s.productRepo.ListSchwalbeTireRimWidthCombinationRules()
+}
+
 func (s *ProductService) GetProductSpecificationTemplate(id uint) (*product.ProductSpecificationTemplate, error) {
 	productSpecificationTemplate, err := s.productRepo.FindProductSpecificationTemplateByID(id)
 	if err != nil {

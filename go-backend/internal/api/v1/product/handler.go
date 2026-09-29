@@ -290,6 +290,15 @@ func (h *Handler) ListSchwalbeTireCatalog(c *gin.Context) {
 	response.Success(c, items)
 }
 
+func (h *Handler) ListSchwalbeTireRimWidthCombinationRules(c *gin.Context) {
+	rules, err := h.productService.ListSchwalbeTireRimWidthCombinationRules()
+	if err != nil {
+		apierror.RespondInternalError(c, err)
+		return
+	}
+	response.Success(c, rules)
+}
+
 func (h *Handler) ListCategories(c *gin.Context) {
 	if h == nil || h.productCategoryService == nil {
 		c.JSON(500, gin.H{
