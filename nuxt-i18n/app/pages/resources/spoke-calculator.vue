@@ -4,8 +4,21 @@
 
     <div class="spoke-page">
       <section v-show="activeTab === 'calculator'">
-        <SpokeHeadTypeStep class="spoke-page__head-step" />
-        <SpokeERDStep />
+        <SpokeHeadTypeStep
+          v-if="activeWizardStep === 1"
+          class="spoke-page__head-step"
+          v-model="selectedSpokeHeadType"
+          :current-step="activeWizardStep"
+          @select-step="activeWizardStep = $event"
+          @next="activeWizardStep = 2"
+        />
+        <SpokeERDStep
+          v-else-if="activeWizardStep === 2"
+          v-model="erdStepValue"
+          :current-step="activeWizardStep"
+          @select-step="activeWizardStep = $event"
+          @previous="activeWizardStep = 1"
+        />
 
         <!-- Standalone full-width reference card, above the calculator settings. -->
         <SpokePhysicsDiagrams class="spoke-page__physics-card" />
@@ -201,10 +214,14 @@ import { usePageSubNavigationTab } from '~/composables/usePageSubNavigationTab'
 import { spokeCalculatorTabs } from '~/utils/pageSubNavigation'
 import { usePageMessages } from '~/composables/usePageMessages'
 import { definePageMeta, useHead, useI18n } from '#imports'
-import { watch } from 'vue'
+import { ref, watch } from 'vue'
 
 const { locale, t } = useI18n()
 const { loadPageMessages } = usePageMessages('resourcesSpokeCalculator')
+
+const activeWizardStep = ref(1)
+const selectedSpokeHeadType = ref<'j_bend' | 'straight_pull'>('j_bend')
+const erdStepValue = ref<number | null>(null)
 
 await loadPageMessages(locale.value)
 

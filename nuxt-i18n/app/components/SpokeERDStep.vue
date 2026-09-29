@@ -1,5 +1,11 @@
 <template>
   <section class="spoke-erd-step" aria-labelledby="spoke-erd-step-title">
+    <SpokeStepProgress
+      :current-step="currentStep"
+      :available-step="2"
+      @select="emit('select-step', $event)"
+    />
+
     <div class="spoke-erd-step__intro">
       <span class="spoke-erd-step__eyebrow">02</span>
       <div>
@@ -39,16 +45,41 @@
         <span class="spoke-erd-step__unit">mm</span>
       </div>
     </div>
+
+    <div class="spoke-erd-step__actions">
+      <button type="button" class="spoke-erd-step__previous" @click="emit('previous')">
+        <span aria-hidden="true">←</span>
+        <span>{{ t('resourcesSpokeCalculator.calculator.physicalCorrections.stepPrevious', '上一步') }}</span>
+      </button>
+    </div>
   </section>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed } from 'vue'
 import { useI18n } from '#imports'
 import SpokePhysicsDiagrams from '~/components/SpokePhysicsDiagrams.vue'
+import SpokeStepProgress from '~/components/SpokeStepProgress.vue'
 
 const { t } = useI18n()
-const erdMm = ref<number | null>(null)
+const props = withDefaults(defineProps<{
+  currentStep?: number
+  modelValue?: number | null
+}>(), {
+  currentStep: 2,
+  modelValue: null,
+})
+
+const emit = defineEmits<{
+  'update:modelValue': [value: number | null]
+  'select-step': [step: number]
+  previous: []
+}>()
+
+const erdMm = computed({
+  get: () => props.modelValue,
+  set: value => emit('update:modelValue', value),
+})
 </script>
 
 <style scoped>
@@ -75,6 +106,37 @@ const erdMm = ref<number | null>(null)
   align-items: flex-start;
   gap: 10px;
   margin-bottom: 14px;
+}
+
+.spoke-erd-step__actions {
+  display: flex;
+  justify-content: flex-start;
+  margin-top: 14px;
+}
+
+.spoke-erd-step__previous {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 8px 14px;
+  border: 1px solid var(--erd-step-border);
+  border-radius: 9999px;
+  background: #ffffff;
+  color: var(--erd-step-text);
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.spoke-erd-step__previous:hover {
+  border-color: var(--erd-step-accent);
+  color: var(--erd-step-accent);
+}
+
+.spoke-erd-step__previous:focus-visible {
+  outline: 2px solid var(--erd-step-accent);
+  outline-offset: 3px;
 }
 
 .spoke-erd-step__eyebrow {

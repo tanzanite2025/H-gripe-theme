@@ -1,19 +1,10 @@
 <template>
   <section class="spoke-head-step" aria-labelledby="spoke-head-step-title">
-    <ol
-      class="spoke-head-step__progress"
-      :aria-label="t('resourcesSpokeCalculator.calculator.physicalCorrections.stepProgressLabel', 'Calculator steps')"
-    >
-      <li
-        v-for="step in stepCount"
-        :key="step"
-        class="spoke-head-step__progress-item"
-        :class="{ 'spoke-head-step__progress-item--active': step === currentStep }"
-        :aria-current="step === currentStep ? 'step' : undefined"
-      >
-        <span class="spoke-head-step__progress-dot">{{ step }}</span>
-      </li>
-    </ol>
+    <SpokeStepProgress
+      :current-step="currentStep"
+      :available-step="2"
+      @select="emit('select-step', $event)"
+    />
 
     <div class="spoke-head-step__intro">
       <div>
@@ -86,17 +77,40 @@
         </span>
       </button>
     </div>
+
+    <div class="spoke-head-step__actions">
+      <button type="button" class="spoke-head-step__next" @click="emit('next')">
+        <span>{{ t('resourcesSpokeCalculator.calculator.physicalCorrections.stepNext', '下一步') }}</span>
+        <span aria-hidden="true">→</span>
+      </button>
+    </div>
   </section>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed } from 'vue'
 import { useI18n } from '#imports'
+import SpokeStepProgress from '~/components/SpokeStepProgress.vue'
 
 const { t } = useI18n()
-const currentStep = 1
-const stepCount = 5
-const selectedType = ref<'j_bend' | 'straight_pull'>('j_bend')
+const props = withDefaults(defineProps<{
+  currentStep?: number
+  modelValue?: 'j_bend' | 'straight_pull'
+}>(), {
+  currentStep: 1,
+  modelValue: 'j_bend',
+})
+
+const emit = defineEmits<{
+  'update:modelValue': [value: 'j_bend' | 'straight_pull']
+  'select-step': [step: number]
+  next: []
+}>()
+
+const selectedType = computed({
+  get: () => props.modelValue,
+  set: value => emit('update:modelValue', value),
+})
 </script>
 
 <style scoped>
@@ -115,50 +129,6 @@ const selectedType = ref<'j_bend' | 'straight_pull'>('j_bend')
     #f8fafc;
   background-size: 28px 28px;
   color: var(--head-step-text);
-}
-
-.spoke-head-step__progress {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  margin: 0 0 12px;
-  padding: 0;
-  list-style: none;
-}
-
-.spoke-head-step__progress-item {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 2rem;
-  height: 2rem;
-  flex: 0 0 auto;
-  border-radius: 9999px;
-}
-
-.spoke-head-step__progress-dot {
-  display: inline-flex;
-  width: 1.45rem;
-  height: 1.45rem;
-  align-items: center;
-  justify-content: center;
-  border-radius: 9999px;
-  border: 1px solid color-mix(in srgb, var(--head-step-text) 18%, transparent);
-  background: color-mix(in srgb, var(--head-step-text) 8%, transparent);
-  color: var(--head-step-muted);
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 0.62rem;
-  font-weight: 900;
-  line-height: 1;
-  transition: transform 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
-}
-
-.spoke-head-step__progress-item--active .spoke-head-step__progress-dot {
-  border-color: var(--head-step-accent);
-  background: var(--head-step-accent);
-  color: #ffffff;
-  box-shadow: 0 0 0 4px rgba(5, 150, 105, 0.15);
 }
 
 .spoke-head-step__intro {
@@ -290,6 +260,39 @@ const selectedType = ref<'j_bend' | 'straight_pull'>('j_bend')
   color: var(--head-step-muted);
   font-size: 12px;
   line-height: 1.55;
+}
+
+.spoke-head-step__actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 16px;
+}
+
+.spoke-head-step__next {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 9px 16px;
+  border: 0;
+  border-radius: 9999px;
+  background: var(--head-step-accent);
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease;
+}
+
+.spoke-head-step__next:hover {
+  background: #047857;
+  box-shadow: 0 8px 18px rgba(5, 150, 105, 0.22);
+  transform: translateY(-1px);
+}
+
+.spoke-head-step__next:focus-visible {
+  outline: 2px solid var(--head-step-accent);
+  outline-offset: 3px;
 }
 
 @media (max-width: 767px) {
