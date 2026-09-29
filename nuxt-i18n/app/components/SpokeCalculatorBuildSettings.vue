@@ -103,38 +103,6 @@
             step="50"
           />
         </div>
-        <div class="spoke-calculator__setting-field">
-          <label :for="fieldId('alternating-offset')">{{ t('resourcesSpokeCalculator.calculator.physicalCorrections.alternatingOffset') }}</label>
-          <input
-            :id="fieldId('alternating-offset')"
-            v-model.number="config.alternatingDrillingOffsetMm"
-            class="spoke-calculator__physical-number"
-            type="number"
-            min="-5"
-            max="5"
-            step="0.1"
-          />
-        </div>
-        <div class="spoke-calculator__setting-field">
-          <label :for="fieldId('interlacing')">{{ t('resourcesSpokeCalculator.calculator.physicalCorrections.interlacing') }}</label>
-          <SpokeCalculatorSelect
-            :id="fieldId('interlacing')"
-            v-model="config.interlacing"
-            :options="options.interlacingOptions"
-          />
-        </div>
-        <div v-if="config.interlacing === 'on' && config.crossing > 0" class="spoke-calculator__setting-field">
-          <label :for="fieldId('interlace-compensation')">{{ t('resourcesSpokeCalculator.calculator.physicalCorrections.interlaceCompensation') }}</label>
-          <input
-            :id="fieldId('interlace-compensation')"
-            v-model.number="config.interlaceCompensationMm"
-            class="spoke-calculator__physical-number"
-            type="number"
-            min="0"
-            max="5"
-            step="0.05"
-          />
-        </div>
       </div>
     </details>
   </div>
