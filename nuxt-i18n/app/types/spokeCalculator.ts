@@ -1,4 +1,5 @@
 import type { HubGeometry } from '~/data/spoke-calculator/database'
+import type { SpokeTensionRatio } from '~~/types/spoke'
 
 export type SpokeHeadType = 'j_bend' | 'straight_pull'
 export type SpokeWheelSide = 'front' | 'rear'
@@ -36,6 +37,16 @@ export interface SpokeWheelBuildConfig {
   rightFlange: number | null
   leftFlangePcd: number | null
   rightFlangePcd: number | null
+}
+
+export type SpokeResultSource = 'calculated'
+
+export interface SpokeWheelResult {
+  leftLengthMm: number | null
+  rightLengthMm: number | null
+  tensionRatio: SpokeTensionRatio | null
+  leftSource: SpokeResultSource | null
+  rightSource: SpokeResultSource | null
 }
 
 /**
