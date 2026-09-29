@@ -142,14 +142,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
 import SpokeCalculatorBuildSettings from '~/components/SpokeCalculatorBuildSettings.vue'
 import SpokeCalculatorResults from '~/components/SpokeCalculatorResults.vue'
-import { useSpokeCalculator } from '~/composables/useSpokeCalculator'
-import type { SpokeWheelBuildConfig, SpokeWheelResult, SpokeWheelSide } from '~/types/spokeCalculator'
-import { useBehaviorEvents } from '~/composables/useBehaviorEvents'
+import { useSpokeCalculatorRun } from '~/composables/useSpokeCalculatorRun'
+import type { SpokeWheelBuildConfig } from '~/types/spokeCalculator'
 import { useSpokeCalculatorWheelCatalog } from '~/composables/useSpokeCalculatorWheelCatalog'
 import { useI18n } from '#imports'
+
+const { t } = useI18n()
 
 const props = defineProps<{
   frontConfig: SpokeWheelBuildConfig
@@ -159,8 +159,6 @@ const props = defineProps<{
 const frontConfig = props.frontConfig
 const rearConfig = props.rearConfig
 
-const { t } = useI18n()
-const { calculateWheel } = useSpokeCalculator()
 const {
   spokeCountOptions,
   lacingOptions,
@@ -175,110 +173,14 @@ const {
   rearRimModelOptions,
   rearHubModelOptions,
 } = useSpokeCalculatorWheelCatalog(frontConfig, rearConfig)
-const loading = ref(false)
-const error = ref<string | null>(null)
 
-const frontResult = ref<SpokeWheelResult | null>(null)
-const rearResult = ref<SpokeWheelResult | null>(null)
-const lastTrackedCalculation = ref('')
-const { track: trackBehaviorEvent } = useBehaviorEvents()
-
-const onCalculate = async () => {
-  error.value = null
-  loading.value = true
-
-  try {
-    const completedWheelCount = await updateResults()
-
-    if (completedWheelCount > 0) {
-      const fingerprint = JSON.stringify({
-        front: frontConfig,
-        rear: rearConfig,
-      })
-
-      if (fingerprint !== lastTrackedCalculation.value) {
-        lastTrackedCalculation.value = fingerprint
-        trackBehaviorEvent({
-          eventType: 'calculator_use',
-          metadata: {
-            source: 'spoke_calculator',
-            wheel_count: completedWheelCount,
-            front_spoke_count: frontConfig.spokeCount,
-            rear_spoke_count: rearConfig.spokeCount,
-            front_crossing: frontConfig.crossing,
-            rear_crossing: rearConfig.crossing,
-            front_rim_offset_mm: frontConfig.rimOffsetMm,
-            rear_rim_offset_mm: rearConfig.rimOffsetMm,
-            front_rim_selected: Boolean(frontConfig.rimModelId),
-            rear_rim_selected: Boolean(rearConfig.rimModelId),
-            front_hub_selected: Boolean(frontConfig.hubModelId),
-            rear_hub_selected: Boolean(rearConfig.hubModelId),
-          },
-        })
-      }
-    }
-  } catch (e: any) {
-    error.value = e?.message || t('resourcesSpokeCalculator.calculator.action.calculationFailed')
-  } finally {
-    loading.value = false
-  }
-}
-
-const updateResults = async () => {
-  const [front, rear] = await Promise.all([
-    buildWheelResult(frontConfig, 'front'),
-    buildWheelResult(rearConfig, 'rear'),
-  ])
-  frontResult.value = front
-  rearResult.value = rear
-
-  return [frontResult.value, rearResult.value].filter(result => (
-    result && (result.leftLengthMm != null || result.rightLengthMm != null)
-  )).length
-}
-
-const buildWheelResult = async (config: SpokeWheelBuildConfig, wheel: SpokeWheelSide): Promise<SpokeWheelResult | null> => {
-  let calculated: Awaited<ReturnType<typeof calculateWheel>>
-  try {
-    calculated = await calculateWheel(
-      config,
-      wheel,
-      t('resourcesSpokeCalculator.calculator.action.calculationFailed'),
-    )
-  } catch (requestError: unknown) {
-    error.value = requestError instanceof Error
-      ? requestError.message
-      : t('resourcesSpokeCalculator.calculator.action.calculationFailed')
-    return null
-  }
-
-  const leftLengthMm = calculated?.leftLengthMm ?? null
-  const rightLengthMm = calculated?.rightLengthMm ?? null
-
-  if (leftLengthMm == null && rightLengthMm == null) return null
-
-  return {
-    leftLengthMm,
-    rightLengthMm,
-    tensionRatio: calculated?.tensionRatio ?? null,
-    leftSource: calculated?.leftLengthMm != null ? 'calculated' : null,
-    rightSource: calculated?.rightLengthMm != null ? 'calculated' : null,
-  }
-}
-
-watch(
-  () => ({
-    front: { ...frontConfig },
-    rear: { ...rearConfig },
-  }),
-  () => {
-    // Results are generated explicitly by the Calculate action. Avoid firing
-    // an API request for every slider/input keystroke (and wasting the quota).
-    frontResult.value = null
-    rearResult.value = null
-  },
-  { deep: true }
-)
+const {
+  loading,
+  error,
+  frontResult,
+  rearResult,
+  onCalculate,
+} = useSpokeCalculatorRun(frontConfig, rearConfig)
 </script>
 
 <style scoped>
