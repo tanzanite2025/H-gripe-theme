@@ -71,18 +71,6 @@
             :options="options.spokeHeadTypeOptions"
           />
         </div>
-        <div v-if="config.spokeHeadType === 'j_bend'" class="spoke-calculator__setting-field">
-          <label :for="fieldId('spoke-hole-diameter')">{{ t('resourcesSpokeCalculator.calculator.physicalCorrections.spokeHoleDiameter') }}</label>
-          <input
-            :id="fieldId('spoke-hole-diameter')"
-            v-model.number="config.spokeHoleDiameterMm"
-            class="spoke-calculator__physical-number"
-            type="number"
-            min="0"
-            max="10"
-            step="0.1"
-          />
-        </div>
         <div v-if="config.spokeHeadType === 'straight_pull'" class="spoke-calculator__setting-field">
           <label :for="fieldId('straight-pull-offset')">{{ t('resourcesSpokeCalculator.calculator.physicalCorrections.straightPullOffset') }}</label>
           <input

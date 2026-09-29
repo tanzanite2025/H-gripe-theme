@@ -39,6 +39,15 @@
           :current-step="activeWizardStep"
           @select-step="goToStep"
           @previous="previousStep"
+          @next="nextStep"
+        />
+        <SpokeHoleEngagementStep
+          v-else-if="activeWizardStep === 5"
+          v-model:front-hole-diameter="frontHoleDiameterMm"
+          v-model:rear-hole-diameter="rearHoleDiameterMm"
+          :current-step="activeWizardStep"
+          @select-step="goToStep"
+          @previous="previousStep"
         />
 
         <!-- Standalone full-width reference card, above the calculator settings. -->
@@ -74,6 +83,7 @@ import SpokeCalculatorCatalogPanel from '~/components/SpokeCalculatorCatalogPane
 import SpokeAlternatingDrillingStep from '~/components/SpokeAlternatingDrillingStep.vue'
 import SpokeERDStep from '~/components/SpokeERDStep.vue'
 import SpokeHeadTypeStep from '~/components/SpokeHeadTypeStep.vue'
+import SpokeHoleEngagementStep from '~/components/SpokeHoleEngagementStep.vue'
 import SpokePCDStep from '~/components/SpokePCDStep.vue'
 import SpokePhysicsDiagrams from '~/components/SpokePhysicsDiagrams.vue'
 import UserFeedbackThread from '~/components/UserFeedbackThread.vue'
@@ -101,6 +111,7 @@ const {
   setHubGeometry,
   setAlternatingDrillingOffset,
   setRimOffset,
+  setSpokeHoleDiameter,
 } = useSpokeCalculatorWizard()
 
 const selectedSpokeHeadType = computed<SpokeHeadType>({
@@ -156,6 +167,16 @@ const frontRimOffsetMm = computed<number | null>({
 const rearRimOffsetMm = computed<number | null>({
   get: () => spokeWizardDraft.rear.rimOffsetMm,
   set: value => setRimOffset('rear', value),
+})
+
+const frontHoleDiameterMm = computed<number | null>({
+  get: () => spokeWizardDraft.front.spokeHoleDiameterMm,
+  set: value => setSpokeHoleDiameter('front', value),
+})
+
+const rearHoleDiameterMm = computed<number | null>({
+  get: () => spokeWizardDraft.rear.spokeHoleDiameterMm,
+  set: value => setSpokeHoleDiameter('rear', value),
 })
 
 await loadPageMessages(locale.value)

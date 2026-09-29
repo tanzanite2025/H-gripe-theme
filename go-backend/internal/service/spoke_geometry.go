@@ -25,7 +25,9 @@ type spokeGeometryInput struct {
 	Left  spokeGeometrySideInput
 	Right spokeGeometrySideInput
 
-	// SpokeHoleDiameterMM is consumed by the J-bend calculator only.
+	// SpokeHoleDiameterMM supplies the flange-hole inner-edge correction for
+	// both head geometries. The straight-pull calculator applies the same
+	// radius deduction after resolving its tangent slot vector.
 	SpokeHoleDiameterMM float64
 	// StraightPullTangentOffsetMM is consumed by the Straight Pull calculator
 	// only. It is measured in the local flange frame in millimetres.

@@ -16,12 +16,15 @@ This is the upper wizard and calculator card. It accepts the dimensions and
 build parameters entered by the user:
 
 - wizard order: spoke head type, front/rear ERD, front/rear rim offsets and
-  alternating drilling offsets, then front/rear hub PCD/WL/WR;
+  alternating drilling offsets, front/rear hub PCD/WL/WR, then flange-hole
+  diameter for the shared length-measurement correction;
 - spoke head type (J-bend or straight-pull);
 - front and rear ERD;
 - front and rear rim offset (asymmetric rim offset) and alternating drilling
   offset;
 - front and rear PCD, WL, and WR;
+- front and rear flange-hole diameter for J-bend and straight-pull length
+  measurement;
 - spoke count, crossing pattern, nipple settings, and physical correction
   inputs.
 
@@ -43,6 +46,7 @@ Relevant files:
 - `app/components/SpokeERDStep.vue`
 - `app/components/SpokePCDStep.vue`
 - `app/components/SpokeAlternatingDrillingStep.vue`
+- `app/components/SpokeHoleEngagementStep.vue`
 - `app/composables/useSpokeCalculatorWizard.ts`
 - `app/composables/useSpokeCalculatorManualOptions.ts`
 - `app/composables/useSpokeCalculatorRun.ts`

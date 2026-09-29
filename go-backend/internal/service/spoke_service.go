@@ -18,7 +18,7 @@ var (
 	ErrSpokeHubGeometryMissing  = errors.New("hub geometry not available for requested position")
 	ErrInvalidSpokeCalculation  = errors.New("invalid spoke calculation input")
 	ErrInvalidSpokeCatalog      = errors.New("invalid spoke catalog")
-	spokeCalculationFormulaName = "v1.3-go-backend-physical-build-corrections"
+	spokeCalculationFormulaName = "v1.4-go-backend-physical-build-corrections"
 	spokeCatalogIDPattern       = regexp.MustCompile(`^[a-z0-9][a-z0-9_-]{0,139}$`)
 )
 
@@ -35,8 +35,8 @@ type SpokeCalculationInput struct {
 	NippleType     string
 	NippleLengthMM *float64
 	// SpokeHeadType selects the physical hub interface. J-bend uses the
-	// inner tangent of the flange hole; straight-pull uses a tangential slot
-	// offset and does not apply the J-bend hole-radius correction.
+	// flange-hole contact geometry; straight-pull uses a tangential slot
+	// offset. Both paths apply the flange-hole inner-edge correction.
 	SpokeHeadType               string
 	SpokeHoleDiameterMM         *float64
 	StraightPullTangentOffsetMM *float64
@@ -344,17 +344,13 @@ func (s *SpokeService) Calculate(input SpokeCalculationInput) (*SpokeCalculation
 	leftFlangeRadius := *hubGeo.LeftFlangePCD / 2.0
 	rightFlangeRadius := *hubGeo.RightFlangePCD / 2.0
 	radius := *erd / 2.0
-	spokeHoleDiameterMM := 0.0
-	if input.SpokeHeadType == spokeHeadTypeJBend {
-		holeDiameter := input.SpokeHoleDiameterMM
-		if holeDiameter == nil {
-			holeDiameter = hubGeo.SpokeHoleDiameter
-		}
-		if holeDiameter == nil {
-			defaultHoleDiameter := defaultSpokeHoleDiameterMM
-			holeDiameter = &defaultHoleDiameter
-		}
-		spokeHoleDiameterMM = *holeDiameter
+	spokeHoleDiameterMM := input.SpokeHoleDiameterMM
+	if spokeHoleDiameterMM == nil {
+		spokeHoleDiameterMM = hubGeo.SpokeHoleDiameter
+	}
+	if spokeHoleDiameterMM == nil {
+		defaultHoleDiameter := defaultSpokeHoleDiameterMM
+		spokeHoleDiameterMM = &defaultHoleDiameter
 	}
 
 	// The current symmetric lacing path supplies one phase to both sides.
@@ -374,7 +370,7 @@ func (s *SpokeService) Calculate(input SpokeCalculationInput) (*SpokeCalculation
 			FlangeDistanceMM: rightFlange,
 			PhaseRad:         phaseRad,
 		},
-		SpokeHoleDiameterMM:         spokeHoleDiameterMM,
+		SpokeHoleDiameterMM:         *spokeHoleDiameterMM,
 		StraightPullTangentOffsetMM: straightPullTangentOffsetMM,
 	})
 	if err != nil {

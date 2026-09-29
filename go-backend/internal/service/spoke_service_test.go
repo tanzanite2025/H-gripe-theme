@@ -95,14 +95,22 @@ func TestSpokeServiceCalculateAppliesPhysicalBuildCorrections(t *testing.T) {
 	require.InDelta(t, 1.3, base.RightLengthMM-holeCorrected.RightLengthMM, 0.01)
 
 	tangentOffset := 2.0
-	straightPull, err := spokeService.Calculate(SpokeCalculationInput{
+	straightPullBase, err := spokeService.Calculate(SpokeCalculationInput{
 		RimID: "rr411_db", HubID: "hub", WheelPosition: "front", SpokeCount: 24, Crossing: 2,
-		SpokeHeadType: "straight_pull", StraightPullTangentOffsetMM: &tangentOffset, Interlacing: false,
+		SpokeHeadType: "straight_pull", SpokeHoleDiameterMM: floatPtrForTest(0), StraightPullTangentOffsetMM: &tangentOffset, Interlacing: false,
 	})
 	require.NoError(t, err)
+	holeCorrectedStraightPull, err := spokeService.Calculate(SpokeCalculationInput{
+		RimID: "rr411_db", HubID: "hub", WheelPosition: "front", SpokeCount: 24, Crossing: 2,
+		SpokeHeadType: "straight_pull", SpokeHoleDiameterMM: &holeDiameter, StraightPullTangentOffsetMM: &tangentOffset, Interlacing: false,
+	})
+	require.NoError(t, err)
+	straightPull := holeCorrectedStraightPull
 	assert.Equal(t, "straight_pull", straightPull.Debug.SpokeHeadType)
 	assert.NotEqual(t, base.LeftLengthMM, straightPull.LeftLengthMM)
-	assert.Zero(t, straightPull.Debug.SpokeHoleCorrectionMM)
+	assert.InDelta(t, 1.3, straightPullBase.LeftLengthMM-straightPull.LeftLengthMM, 0.01)
+	assert.InDelta(t, 1.3, straightPullBase.RightLengthMM-straightPull.RightLengthMM, 0.01)
+	assert.InDelta(t, 1.3, straightPull.Debug.SpokeHoleCorrectionMM, 0.01)
 
 	targetTension := 1200.0
 	stretched, err := spokeService.Calculate(SpokeCalculationInput{

@@ -14,9 +14,17 @@ func (straightPullSpokeGeometryCalculator) calculate(input spokeGeometryInput) (
 		return spokeGeometryResult{}, fmt.Errorf("%w: spoke geometry produced an invalid straight-pull vector", ErrInvalidSpokeCalculation)
 	}
 
+	correction := input.SpokeHoleDiameterMM / 2
+	left -= correction
+	right -= correction
+	if left <= 0 || right <= 0 {
+		return spokeGeometryResult{}, fmt.Errorf("%w: spoke geometry became invalid after hole-edge correction", ErrInvalidSpokeCalculation)
+	}
+
 	return spokeGeometryResult{
 		LeftLengthMM:                left,
 		RightLengthMM:               right,
+		SpokeHoleCorrectionMM:       correction,
 		StraightPullTangentOffsetMM: input.StraightPullTangentOffsetMM,
 	}, nil
 }

@@ -36,7 +36,7 @@ func TestCalculateSpokeGeometryDispatchesJBendAndStraightPull(t *testing.T) {
 
 	straightPull, err := calculateSpokeGeometry(spokeHeadTypeStraightPull, input)
 	require.NoError(t, err)
-	assert.Zero(t, straightPull.SpokeHoleCorrectionMM)
+	assert.InDelta(t, 1.25, straightPull.SpokeHoleCorrectionMM, 0.0001)
 	assert.Equal(t, input.StraightPullTangentOffsetMM, straightPull.StraightPullTangentOffsetMM)
 	assert.NotEqual(t, jBend.LeftLengthMM, straightPull.LeftLengthMM)
 }

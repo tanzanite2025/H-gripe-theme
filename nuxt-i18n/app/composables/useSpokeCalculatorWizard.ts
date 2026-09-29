@@ -59,6 +59,10 @@ export const useSpokeCalculatorWizard = () => {
     draft[side].rimOffsetMm = offsetMm ?? 0
   }
 
+  const setSpokeHoleDiameter = (side: SpokeWheelSide, diameterMm: number | null) => {
+    draft[side].spokeHoleDiameterMm = diameterMm
+  }
+
   return {
     draft,
     activeStep,
@@ -73,5 +77,6 @@ export const useSpokeCalculatorWizard = () => {
     setHubGeometry,
     setAlternatingDrillingOffset,
     setRimOffset,
+    setSpokeHoleDiameter,
   }
 }
