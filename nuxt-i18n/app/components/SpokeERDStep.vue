@@ -76,10 +76,11 @@
 
         <div class="spoke-erd-step__measurement-illustration">
           <GuideImage
-            src="/public/technical/what-is-erd.webp"
+            src="/technical/spoke-calculator/erd/what-is-erd.webp"
             :alt="t('resourcesSpokeCalculator.parameter.workflow.stepOneAlt')"
             :zoomOnClick="true"
             :caption="t('resourcesSpokeCalculator.parameter.workflow.stepOneCaption')"
+            aspectRatio="2 / 1"
           />
         </div>
       </div>
@@ -258,9 +259,9 @@ const erdMm = computed({
 
 .spoke-erd-step__measurement-grid {
   display: grid;
-  grid-template-columns: minmax(0, 0.85fr) minmax(320px, 1.15fr);
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 320px);
   gap: 24px;
-  align-items: center;
+  align-items: start;
 }
 
 .spoke-erd-step__measurement-copy {
@@ -296,6 +297,9 @@ const erdMm = computed({
 
 .spoke-erd-step__measurement-illustration {
   min-width: 0;
+  width: 100%;
+  max-width: 320px;
+  justify-self: end;
   overflow: hidden;
   border: 1px solid rgba(15, 23, 42, 0.1);
   border-radius: 16px;
@@ -418,6 +422,10 @@ const erdMm = computed({
   .spoke-erd-step__measurement-grid {
     grid-template-columns: 1fr;
     gap: 16px;
+  }
+
+  .spoke-erd-step__measurement-illustration {
+    justify-self: center;
   }
 }
 </style>

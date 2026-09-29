@@ -7,7 +7,11 @@
     :tabindex="props.zoomOnClick ? 0 : -1"
     :role="props.zoomOnClick ? 'button' : undefined"
   >
-    <div class="guide-image__frame">
+    <div
+      class="guide-image__frame"
+      :class="{ 'guide-image__frame--custom-ratio': props.aspectRatio }"
+      :style="frameStyle"
+    >
       <StorefrontImage
         :src="props.src"
         :alt="props.alt || ''"
@@ -39,7 +43,7 @@
   </Teleport>
 </template>
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 
 defineOptions({
   inheritAttrs: false,
@@ -50,11 +54,18 @@ interface Props {
   alt?: string
   zoomOnClick?: boolean
   caption?: string
+  aspectRatio?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
   zoomOnClick: false,
 })
+
+const frameStyle = computed<Record<string, string> | undefined>(() => (
+  props.aspectRatio
+    ? { '--guide-image-aspect-ratio': props.aspectRatio }
+    : undefined
+))
 
 onMounted(() => {
   if (!props.alt) {
@@ -84,6 +95,11 @@ const close = () => {
   position: relative;
   width: 100%;
   padding-top: 56.25%; /* 16:9 aspect ratio */
+}
+
+.guide-image__frame--custom-ratio {
+  padding-top: 0;
+  aspect-ratio: var(--guide-image-aspect-ratio);
 }
 
 .guide-image__img {
