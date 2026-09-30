@@ -764,13 +764,13 @@ const activeFilterCount = computed(() => [
 
 @media (max-width: 760.5px) {
   .schwalbe-selector__search-row {
-    display: grid;
-    grid-template-columns: repeat(3, 4.5rem);
-    justify-content: start;
+    display: flex;
+    flex-wrap: wrap;
   }
 
   .schwalbe-selector__search-row > input {
-    grid-column: 1 / -1;
+    width: 100%;
+    flex: 1 0 100%;
   }
 
   .schwalbe-selector__selects {
