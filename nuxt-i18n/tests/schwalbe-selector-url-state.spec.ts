@@ -119,13 +119,15 @@ test.describe('Schwalbe selector URL state', () => {
     await waitForNuxtMount(page)
     await expect(page.locator('.schwalbe-selector__rim-match')).toHaveCount(0)
     await openCatalogFilters(page)
-    await openFilterGroup(page, 'Wheel size (BSD)')
 
     const innerWidthInput = page.getByRole('spinbutton', { name: 'Rim inner width' })
+    await expect(innerWidthInput).toBeVisible()
+    await expect(innerWidthInput.locator('xpath=ancestor::details')).toHaveCount(0)
     await innerWidthInput.fill('23.5')
     await expect(page.getByRole('alert')).toContainText('Choose exactly one wheel diameter and BSD pair')
     await expect(page.getByRole('button', { name: 'Show results' })).toBeDisabled()
 
+    await openFilterGroup(page, 'Wheel size (BSD)')
     const wheel28 = page.getByRole('checkbox', { name: '28" (BSD 622 mm)', exact: true })
     const wheel29 = page.getByRole('checkbox', { name: '29" (BSD 622 mm)', exact: true })
     await wheel28.check()

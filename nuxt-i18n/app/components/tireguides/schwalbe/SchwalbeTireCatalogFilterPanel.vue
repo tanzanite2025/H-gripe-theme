@@ -90,9 +90,9 @@
     <details name="schwalbe-filter-accordion" class="schwalbe-filter-panel__accordion" @toggle="closeOtherAccordions">
       <summary class="schwalbe-filter-panel__accordion-title">
         <span>{{ wheelSizeLabel }}</span>
-        <span v-if="selectedWheelSizeKeys.length > 0 || hasInnerRimWidthInput" class="schwalbe-filter-panel__selection-count">
-          <span aria-hidden="true">{{ selectedWheelSizeKeys.length + (hasInnerRimWidthInput ? 1 : 0) }}</span>
-          <span class="schwalbe-filter-panel__visually-hidden">{{ selectedCountLabel(selectedWheelSizeKeys.length + (hasInnerRimWidthInput ? 1 : 0)) }}</span>
+        <span v-if="selectedWheelSizeKeys.length > 0" class="schwalbe-filter-panel__selection-count">
+          <span aria-hidden="true">{{ selectedWheelSizeKeys.length }}</span>
+          <span class="schwalbe-filter-panel__visually-hidden">{{ selectedCountLabel(selectedWheelSizeKeys.length) }}</span>
         </span>
       </summary>
       <div class="schwalbe-filter-panel__fields">
@@ -109,42 +109,42 @@
           </div>
         </fieldset>
 
-        <div class="schwalbe-filter-panel__rim-match">
-          <div class="schwalbe-filter-panel__rim-match-copy">
-            <span class="schwalbe-filter-panel__range-label">{{ rimWidthInnerWidthLabel }}</span>
-            <p class="schwalbe-filter-panel__hint">{{ rimWidthHint }}</p>
-          </div>
-          <label class="schwalbe-filter-panel__numeric-control schwalbe-filter-panel__rim-width-control">
-            <span class="schwalbe-filter-panel__visually-hidden">{{ rimWidthInnerWidthLabel }}</span>
-            <input
-              :value="innerRimWidthInput ?? ''"
-              type="number"
-              min="1"
-              step="0.1"
-              inputmode="decimal"
-              :aria-label="rimWidthInnerWidthLabel"
-              :aria-invalid="rimWidthInputInvalid || rimWidthWheelSizeInvalid"
-              @input="updateInnerRimWidthInput"
-            >
-            <span>mm</span>
-          </label>
-          <p v-if="rimWidthInputInvalid" class="schwalbe-filter-panel__error" role="alert">
-            {{ rimWidthInvalidLabel }}
-          </p>
-          <p v-else-if="rimWidthWheelSizeInvalid" class="schwalbe-filter-panel__error" role="alert">
-            {{ rimWidthChooseWheelSizeLabel }}
-          </p>
-          <button
-            v-if="hasInnerRimWidthInput"
-            type="button"
-            class="schwalbe-filter-panel__clear-field"
-            @click="clearInnerRimWidth"
-          >
-            {{ rimWidthClearLabel }}
-          </button>
-        </div>
       </div>
     </details>
+
+    <div class="schwalbe-filter-panel__rim-match" :title="rimWidthHint">
+      <label class="schwalbe-filter-panel__rim-match-field">
+        <span class="schwalbe-filter-panel__range-label">{{ rimWidthInnerWidthLabel }}</span>
+        <span class="schwalbe-filter-panel__visually-hidden">{{ rimWidthHint }}</span>
+        <span class="schwalbe-filter-panel__numeric-control schwalbe-filter-panel__rim-width-control">
+          <input
+            :value="innerRimWidthInput ?? ''"
+            type="number"
+            min="1"
+            step="0.1"
+            inputmode="decimal"
+            :aria-label="rimWidthInnerWidthLabel"
+            :aria-invalid="rimWidthInputInvalid || rimWidthWheelSizeInvalid"
+            @input="updateInnerRimWidthInput"
+          >
+          <span>mm</span>
+        </span>
+      </label>
+      <button
+        v-if="hasInnerRimWidthInput"
+        type="button"
+        class="schwalbe-filter-panel__clear-field"
+        @click="clearInnerRimWidth"
+      >
+        {{ rimWidthClearLabel }}
+      </button>
+      <p v-if="rimWidthInputInvalid" class="schwalbe-filter-panel__error" role="alert">
+        {{ rimWidthInvalidLabel }}
+      </p>
+      <p v-else-if="rimWidthWheelSizeInvalid" class="schwalbe-filter-panel__error" role="alert">
+        {{ rimWidthChooseWheelSizeLabel }}
+      </p>
+    </div>
 
     <details name="schwalbe-filter-accordion" class="schwalbe-filter-panel__accordion" @toggle="closeOtherAccordions">
       <summary class="schwalbe-filter-panel__accordion-title">
@@ -856,22 +856,37 @@ const selectedCountLabel = (count: number) => props.selectedCountTemplate.replac
 }
 
 .schwalbe-filter-panel__rim-match {
-  display: grid;
-  gap: 0.45rem;
-  border-top: 1px solid var(--tz-border-subtle);
-  padding-top: 0.8rem;
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem 0.65rem;
+  border: 1px solid var(--tz-border-subtle);
+  border-radius: 0.75rem;
+  background: var(--tz-card-surface);
+  padding: 0.45rem 0.7rem;
 }
 
-.schwalbe-filter-panel__rim-match-copy {
-  display: grid;
-  gap: 0.25rem;
+.schwalbe-filter-panel__rim-match-field {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.schwalbe-filter-panel__rim-match-field > .schwalbe-filter-panel__range-label {
+  flex: 0 0 auto;
+  white-space: nowrap;
 }
 
 .schwalbe-filter-panel__rim-width-control {
-  width: min(100%, 12rem);
+  flex: 0 1 12rem;
+  width: 12rem;
 }
 
 .schwalbe-filter-panel__error {
+  flex: 1 0 100%;
   margin: 0;
   color: var(--tz-status-danger-text);
   font-size: 0.68rem;
