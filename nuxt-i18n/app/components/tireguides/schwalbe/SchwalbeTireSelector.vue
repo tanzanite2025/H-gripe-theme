@@ -95,7 +95,6 @@
         v-model:selected-tire-width-max-mm="draftFacetFilters.nominalTireWidthMaxMm"
         v-model:selected-wheel-size-keys="draftFacetFilters.wheelSizeKeys"
         v-model:selected-bead-seat-diameters-mm="draftFacetFilters.beadSeatDiametersMm"
-        v-model:minimum-load-kg="draftFacetFilters.minimumLoadKg"
         v-model:selected-casing-constructions="draftFacetFilters.casingConstructions"
         v-model:selected-radial-only="draftFacetFilters.radialOnly"
         v-model:selected-beads="draftFacetFilters.beads"
@@ -117,8 +116,6 @@
         :rim-width-invalid-label="tx('rimWidth.invalid')"
         :rim-width-choose-wheel-size-label="tx('rimWidth.chooseWheelSize')"
         :rim-width-clear-label="tx('rimWidth.clear')"
-        :minimum-load-label="tx('filters.minimumLoad')"
-        :minimum-load-hint="tx('filters.minimumLoadHint')"
         :casing-construction-label="tx('filters.casingConstruction')"
         :radial-label="tx('filters.radial')"
         :bead-label="tx('filters.bead')"
@@ -249,7 +246,6 @@ const {
   selectedTireWidthMaxMm,
   selectedWheelSizeKeys,
   selectedBeadSeatDiametersMm,
-  selectedMinimumLoadKg,
   selectedCasingConstructions,
   selectedRadialOnly,
   selectedBeads,
@@ -322,7 +318,6 @@ const draftFacetFilters = reactive<SchwalbeTireCatalogFacetFilterState>({
   nominalTireWidthsMm: [],
   wheelSizeKeys: [],
   beadSeatDiametersMm: [],
-  minimumLoadKg: null,
   casingConstructions: [],
   radialOnly: false,
   beads: [],
@@ -368,7 +363,6 @@ const syncDraftFacetFilters = () => {
   draftFacetFilters.nominalTireWidthsMm = [...committed.nominalTireWidthsMm]
   draftFacetFilters.wheelSizeKeys = [...committed.wheelSizeKeys]
   draftFacetFilters.beadSeatDiametersMm = [...committed.beadSeatDiametersMm]
-  draftFacetFilters.minimumLoadKg = committed.minimumLoadKg
   draftFacetFilters.casingConstructions = [...committed.casingConstructions]
   draftFacetFilters.radialOnly = committed.radialOnly
   draftFacetFilters.beads = [...committed.beads]
@@ -402,7 +396,6 @@ const applyFilterDraft = () => {
     nominalTireWidthsMm: [...draftFacetFilters.nominalTireWidthsMm],
     wheelSizeKeys: [...draftFacetFilters.wheelSizeKeys],
     beadSeatDiametersMm: [...draftFacetFilters.beadSeatDiametersMm],
-    minimumLoadKg: draftFacetFilters.minimumLoadKg,
     casingConstructions: [...draftFacetFilters.casingConstructions],
     radialOnly: draftFacetFilters.radialOnly,
     beads: [...draftFacetFilters.beads],
@@ -422,7 +415,6 @@ const clearDraftFacetFilters = () => {
   draftFacetFilters.nominalTireWidthsMm = []
   draftFacetFilters.wheelSizeKeys = []
   draftFacetFilters.beadSeatDiametersMm = []
-  draftFacetFilters.minimumLoadKg = null
   draftFacetFilters.casingConstructions = []
   draftFacetFilters.radialOnly = false
   draftFacetFilters.beads = []
@@ -436,7 +428,6 @@ const hasAdditionalRimWidthFacetFilters = computed(() => (
   selectedTireWidthMinMm.value !== null
   || selectedTireWidthMaxMm.value !== null
   || selectedTireWidthsMm.value.length > 0
-  || selectedMinimumLoadKg.value !== null
   || selectedCasingConstructions.value.length > 0
   || selectedRadialOnly.value
   || selectedBeads.value.length > 0
@@ -467,7 +458,6 @@ const activeFilterCount = computed(() => [
     || selectedTireWidthMinMm.value !== null
     || selectedTireWidthMaxMm.value !== null,
   selectedBeadSeatDiametersMm.value.length > 0,
-  selectedMinimumLoadKg.value !== null,
   selectedCasingConstructions.value.length > 0,
   selectedRadialOnly.value,
   selectedBeads.value.length > 0,

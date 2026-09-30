@@ -148,34 +148,6 @@
 
     <details name="schwalbe-filter-accordion" class="schwalbe-filter-panel__accordion" @toggle="closeOtherAccordions">
       <summary class="schwalbe-filter-panel__accordion-title">
-        <span>{{ minimumLoadLabel }}</span>
-        <span v-if="minimumLoadKg !== null" class="schwalbe-filter-panel__selection-count">
-          <span aria-hidden="true">1</span>
-          <span class="schwalbe-filter-panel__visually-hidden">{{ selectedCountLabel(1) }}</span>
-        </span>
-      </summary>
-      <div class="schwalbe-filter-panel__fields">
-        <fieldset class="schwalbe-filter-panel__group">
-          <legend class="schwalbe-filter-panel__visually-hidden">{{ minimumLoadLabel }}</legend>
-          <label class="schwalbe-filter-panel__numeric-control">
-            <input
-              type="number"
-              :aria-label="minimumLoadLabel"
-              min="1"
-              step="0.1"
-              inputmode="decimal"
-              :value="minimumLoadKg ?? ''"
-              @input="updateMinimumLoadFromInput"
-            >
-            <span>kg</span>
-          </label>
-          <p class="schwalbe-filter-panel__hint">{{ minimumLoadHint }}</p>
-        </fieldset>
-      </div>
-    </details>
-
-    <details name="schwalbe-filter-accordion" class="schwalbe-filter-panel__accordion" @toggle="closeOtherAccordions">
-      <summary class="schwalbe-filter-panel__accordion-title">
         <span>{{ eBikeRatingLabel }}</span>
         <span v-if="selectedEBikeRatings.length > 0" class="schwalbe-filter-panel__selection-count">
           <span aria-hidden="true">{{ selectedEBikeRatings.length }}</span>
@@ -362,7 +334,6 @@ const selectedTireWidthMaxMm = defineModel<number | null>('selectedTireWidthMaxM
 const selectedWheelSizeKeys = defineModel<string[]>('selectedWheelSizeKeys', { required: true })
 const innerRimWidthInput = defineModel<string | number | null>('innerRimWidthInput', { required: true })
 const selectedBeadSeatDiametersMm = defineModel<number[]>('selectedBeadSeatDiametersMm', { required: true })
-const minimumLoadKg = defineModel<number | null>('minimumLoadKg', { required: true })
 const selectedCasingConstructions = defineModel<string[]>('selectedCasingConstructions', { required: true })
 const selectedRadialOnly = defineModel<boolean>('selectedRadialOnly', { required: true })
 const selectedBeads = defineModel<string[]>('selectedBeads', { required: true })
@@ -388,8 +359,6 @@ const props = defineProps<{
   rimWidthInvalidLabel: string
   rimWidthChooseWheelSizeLabel: string
   rimWidthClearLabel: string
-  minimumLoadLabel: string
-  minimumLoadHint: string
   casingConstructionLabel: string
   radialLabel: string
   beadLabel: string
@@ -416,7 +385,6 @@ const hasSelection = computed(() => (
   || selectedWheelSizeKeys.value.length > 0
   || hasInnerRimWidthInput.value
   || selectedBeadSeatDiametersMm.value.length > 0
-  || minimumLoadKg.value !== null
   || selectedCasingConstructions.value.length > 0
   || selectedRadialOnly.value
   || selectedBeads.value.length > 0
@@ -573,11 +541,6 @@ const closeOtherAccordions = (event: Event) => {
 
 const selectedCountLabel = (count: number) => props.selectedCountTemplate.replace('{count}', String(count))
 
-const updateMinimumLoadFromInput = (event: Event) => {
-  const inputValue = (event.target as HTMLInputElement).value.trim()
-  const value = inputValue ? Number(inputValue) : null
-  minimumLoadKg.value = value !== null && Number.isFinite(value) && value > 0 ? value : null
-}
 </script>
 
 <style scoped>

@@ -251,7 +251,7 @@ test.describe('Schwalbe selector URL state', () => {
     const before = await dialog.boundingBox()
     expect(before).not.toBeNull()
 
-    await openFilterGroup(page, 'Minimum tire load capacity')
+    await openFilterGroup(page, 'Casing construction')
 
     const after = await dialog.boundingBox()
     expect(after).not.toBeNull()
@@ -260,10 +260,10 @@ test.describe('Schwalbe selector URL state', () => {
 
     const panel = page.locator('.schwalbe-filter-panel')
     const accordions = panel.locator(':scope > .schwalbe-filter-panel__accordion')
-    await expect(accordions).toHaveCount(10)
+    await expect(accordions).toHaveCount(9)
     await expect(panel.locator(':scope > .schwalbe-filter-panel__accordion[open]')).toHaveCount(1)
     const accordionBoxes = await Promise.all(
-      Array.from({ length: 10 }, (_, index) => accordions.nth(index).boundingBox()),
+      Array.from({ length: 9 }, (_, index) => accordions.nth(index).boundingBox()),
     )
     expect(accordionBoxes.every(box => box !== null)).toBe(true)
     expect(new Set(accordionBoxes.map(box => Math.round(box?.x ?? 0))).size).toBe(1)
@@ -291,22 +291,19 @@ test.describe('Schwalbe selector URL state', () => {
     ))
   })
 
-  test('restores and shares the minimum tire load capacity threshold', async ({ page }) => {
+  test('hides the retired minimum tire load filter and clears its legacy condition', async ({ page }) => {
     await page.goto(selectorURL('?min_load_kg=90.5&page=2'))
     await waitForNuxtMount(page)
     await openCatalogFilters(page)
-    await openFilterGroup(page, 'Minimum tire load capacity')
-
-    const minimumLoadInput = page.getByRole('spinbutton', { name: 'Minimum tire load capacity' })
-    await expect(minimumLoadInput).toHaveValue('90.5')
-    const initialURL = page.url()
-    await minimumLoadInput.fill('100')
-
-    expect(page.url()).toBe(initialURL)
+    await expect(page.locator('summary.schwalbe-filter-panel__accordion-title').filter({ hasText: 'Minimum tire load capacity' })).toHaveCount(0)
+    await expect(page.getByRole('spinbutton', { name: 'Minimum tire load capacity' })).toHaveCount(0)
+    await openFilterGroup(page, 'Bead')
+    await page.getByRole('checkbox', { name: 'Folding', exact: true }).check()
     await page.getByRole('button', { name: 'Show results' }).click()
     await expect(page).toHaveURL((url) => (
       url.pathname === selectorPath
-      && url.searchParams.get('min_load_kg') === '100'
+      && url.searchParams.get('bead') === 'Folding'
+      && !url.searchParams.has('min_load_kg')
       && !url.searchParams.has('page')
     ))
   })
@@ -335,8 +332,6 @@ test.describe('Schwalbe selector URL state', () => {
     await openCatalogFilters(page)
     await openFilterGroup(page, 'Bead')
     await expect(page.getByRole('checkbox', { name: 'Folding', exact: true })).not.toBeChecked()
-    await openFilterGroup(page, 'Minimum tire load capacity')
-    await expect(page.getByRole('spinbutton', { name: 'Minimum tire load capacity' })).toHaveValue('')
   })
 
   test('restores the selected facet across pagination back and forward navigation', async ({ page }) => {

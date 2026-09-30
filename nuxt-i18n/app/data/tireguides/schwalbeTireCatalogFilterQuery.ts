@@ -23,6 +23,7 @@ export interface SchwalbeTireCatalogFilterQueryState {
   wheelSizeKeys: string[]
   /** @deprecated Kept for old shared links and API clients. */
   beadSeatDiametersMm: number[]
+  /** @deprecated The selector no longer exposes this filter; retained for API and legacy query compatibility. */
   minimumLoadKg: number | null
   casingConstructions: string[]
   radialOnly: boolean

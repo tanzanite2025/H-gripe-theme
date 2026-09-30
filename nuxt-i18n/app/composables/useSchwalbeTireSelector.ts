@@ -27,7 +27,6 @@ export type SchwalbeTireCatalogFacetFilterState = Pick<
   | 'nominalTireWidthsMm'
   | 'wheelSizeKeys'
   | 'beadSeatDiametersMm'
-  | 'minimumLoadKg'
   | 'casingConstructions'
   | 'radialOnly'
   | 'beads'
@@ -52,6 +51,14 @@ const readRouteSearch = (value: unknown): string => {
   const candidate = Array.isArray(value) ? value[0] : value
   return typeof candidate === 'string' ? candidate.trim() : ''
 }
+
+const parseSelectorRouteFilterState = (query: Record<string, unknown>): SchwalbeTireCatalogFilterQueryState => ({
+  ...parseSchwalbeTireCatalogFilterQuery(query),
+  // This selector no longer exposes minimum single-tire load as a useful
+  // filter. Keep the shared query/API contract for other consumers, but never
+  // let this retired URL field silently constrain selector results.
+  minimumLoadKg: null,
+})
 
 const emptySelectorPage = (): SchwalbeTireCatalogSelectorPage => ({
   items: [],
@@ -81,7 +88,7 @@ export const useSchwalbeTireSelector = async () => {
   const { request } = useApiRequest()
 
   const initialSearch = readRouteSearch(route.query.search)
-  const initialFilterState = parseSchwalbeTireCatalogFilterQuery(
+  const initialFilterState = parseSelectorRouteFilterState(
     route.query as Record<string, unknown>,
   )
   const filterState = ref<SchwalbeTireCatalogFilterQueryState>(initialFilterState)
@@ -117,6 +124,10 @@ export const useSchwalbeTireSelector = async () => {
 
     updateFilterState({
       ...facetState,
+      // Minimum single-tire load remains a legacy API field for other
+      // consumers, but it is no longer exposed in this selector. Applying the
+      // current drawer therefore retires any legacy URL condition.
+      minimumLoadKg: null,
       nominalTireWidthsMm: [...facetState.nominalTireWidthsMm],
       wheelSizeKeys,
       innerRimWidthMm: nextInnerRimWidthMm,
@@ -140,7 +151,6 @@ export const useSchwalbeTireSelector = async () => {
     nominalTireWidthsMm: [...filterState.value.nominalTireWidthsMm],
     wheelSizeKeys: [...filterState.value.wheelSizeKeys],
     beadSeatDiametersMm: [...filterState.value.beadSeatDiametersMm],
-    minimumLoadKg: filterState.value.minimumLoadKg,
     casingConstructions: [...filterState.value.casingConstructions],
     radialOnly: filterState.value.radialOnly,
     beads: [...filterState.value.beads],
@@ -210,14 +220,6 @@ export const useSchwalbeTireSelector = async () => {
       beadSeatDiametersMm: wheelSizeKeys.length > 0 ? [] : filterState.value.beadSeatDiametersMm,
     }),
   })
-  const selectedMinimumLoadKg = computed<number | null>({
-    get: () => filterState.value.minimumLoadKg,
-    set: (minimumLoadKg) => updateFilterState({
-      minimumLoadKg: minimumLoadKg !== null && Number.isFinite(minimumLoadKg) && minimumLoadKg > 0
-        ? minimumLoadKg
-        : null,
-    }),
-  })
   const selectedCasingConstructions = computed({
     get: () => filterState.value.casingConstructions,
     set: (casingConstructions: string[]) => updateFilterState({ casingConstructions }),
@@ -251,7 +253,7 @@ export const useSchwalbeTireSelector = async () => {
     set: (sortBy) => updateFilterState({ sortBy }),
   })
   const requestedPage = computed(() => parsePage(route.query.page) || 1)
-  const routeFilterState = computed(() => parseSchwalbeTireCatalogFilterQuery(
+  const routeFilterState = computed(() => parseSelectorRouteFilterState(
     route.query as Record<string, unknown>,
   ))
   const selectorRequest = computed<SchwalbeTireCatalogSelectorRequest>(() => ({
@@ -462,7 +464,6 @@ export const useSchwalbeTireSelector = async () => {
     selectedTireWidthMaxMm,
     selectedWheelSizeKeys,
     selectedBeadSeatDiametersMm,
-    selectedMinimumLoadKg,
     selectedCasingConstructions,
     selectedRadialOnly,
     selectedBeads,
