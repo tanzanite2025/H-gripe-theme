@@ -130,8 +130,9 @@
       "radial": "🌀 径向胎体",
       "green": "🌿 Green Marathon",
       "protection": "🛡️ 防刺等级 1–7",
-      "colorCompound": "🎨 颜色与胶料",
-      "addix": "🧪 ADDIX / Compound"
+      "addix": "🧪 ADDIX / Compound",
+      "color": "🎨 颜色",
+      "compound": "🧪 胶料"
     },
     "radial": {
       "label": "Radial 径向胎体 · 官方结构",
@@ -218,25 +219,6 @@
         "body": "Schwalbe 将 PunctureGuard 描述为入门级 3 mm 防刺层。官方页面把它单独说明，本指南不强行把它归入某个数字等级。"
       }
     },
-    "colorCompound": {
-      "label": "颜色与胶料 · 如何读取",
-      "title": "这两个目录字段分别代表什么",
-      "note": "选择器在每个商品卡片中保留这两个官方字段，便于核对型号。颜色是外观标签，胶料是橡胶配方名称；两者都不能代替具体型号页面中的完整结构、尺寸和用途说明。",
-      "items": {
-        "color": {
-          "title": "颜色是外观标签",
-          "body": "颜色字段保留官网的完整写法。像 Black+Reflex 这样的组合值应整体理解为一个目录标签，不能据此判断抓地、防刺、滚阻或胶料。"
-        },
-        "compound": {
-          "title": "胶料是橡胶配方名称",
-          "body": "ADDIX、ADDIX Speed、Soft、Ultra Soft、Endurance 等表示官方命名的橡胶配方。它们只能帮助理解大致取向，不是跨型号统一评分；胎体、花纹、胎压和具体型号都会影响实际表现。"
-        },
-        "howToRead": {
-          "title": "把它们当作核对字段",
-          "body": "小白选购时先核对轮径/BSD、ETRTO 外胎宽度、胎圈结构、密封系统、胎体/防刺结构和 E-BIKE 评级；颜色和胶料用于确认具体型号，最终以官方产品页完整规格为准。"
-        }
-      }
-    },
     "addix": {
       "label": "ADDIX 胶料 · 官方说明",
       "title": "ADDIX 胶料体系与颜色线说明",
@@ -269,6 +251,200 @@
         "endurance": {
           "title": "Endurance Compound",
           "body": "出现在部分旅行与日常使用产品中的耐久型配方名称。它不是里程承诺，实际耐用性取决于完整型号结构与使用条件。"
+        }
+      }
+    },
+    "color": {
+      "label": "颜色字段 · 目录释义",
+      "title": "本目录中的每一个颜色值",
+      "note": "这一 TAB 解释种子目录中当前出现的 21 个不同颜色值。代码样式文字就是数据库原始值；组合写法仍视为一个完整值，并且只描述外观。",
+      "valuesTitle": "颜色值 · 21 项",
+      "valuesNote": "颜色值描述基础颜色、条纹、侧壁、白边/棕黄色侧壁或反光元素，不会改变胶料、胎体、防刺结构或安装适配。",
+      "items": {
+        "black": {
+          "title": "黑色外观",
+          "body": "黑色外观版本，只说明看得到的配色，不代表胶料、胎体或防刺结构。"
+        },
+        "blackCoffeeReflex": {
+          "title": "黑色／咖啡色 + 反光",
+          "body": "这是一个组合外观值：黑色与咖啡色配色，再加反光元素。斜杠和加号都是原始目录写法，应整体读取。"
+        },
+        "blackBlackReflex": {
+          "title": "黑色 + BlackReflex",
+          "body": "黑色配色，并带有低调的黑色反光元素。Reflex 说的是可见性/外观，不是另一种胶料或防刺层。"
+        },
+        "blackReflex": {
+          "title": "黑色 + 反光",
+          "body": "黑色配色，并带有反光元素。不能据此判断胶料、胎纹或防刺结构。"
+        },
+        "blueStripes": {
+          "title": "蓝色条纹",
+          "body": "带蓝色条纹的配色，条纹只描述外观，不代表橡胶或胎体。"
+        },
+        "bronze": {
+          "title": "青铜色外观",
+          "body": "青铜色配色，只是外观字段，没有独立的抓地、滚阻或防刺等级含义。"
+        },
+        "bronzeSidewall": {
+          "title": "青铜色侧壁",
+          "body": "侧壁为青铜色。该值没有说明胎面颜色，也不会改变外胎结构。"
+        },
+        "bronzeReflex": {
+          "title": "青铜色 + 反光",
+          "body": "青铜色配色加反光元素，两个部分组成一个完整的目录值。"
+        },
+        "brownWhitewallReflex": {
+          "title": "棕色／白边 + 反光",
+          "body": "组合值表示棕色配色、白色侧壁（Whitewall）和反光元素。它是外观配置，不是胶料说明。"
+        },
+        "brownReflex": {
+          "title": "棕色 + 反光",
+          "body": "棕色配色加反光元素，不能用来判断橡胶配方或防刺结构。"
+        },
+        "classic": {
+          "title": "Classic 经典配色",
+          "body": "目录中的经典配色标签。源字段没有定义统一的具体色调或侧壁布局，准确外观要看型号图片/页面。"
+        },
+        "cremeReflex": {
+          "title": "奶油色 + 反光",
+          "body": "奶油色配色加反光元素；目录原文的拼写 Creme 保持不变。"
+        },
+        "greyStripes": {
+          "title": "灰色条纹",
+          "body": "带灰色条纹的配色，只是外观标签。"
+        },
+        "greyBlack": {
+          "title": "灰色／黑色",
+          "body": "灰色与黑色组合配色，不表示由两种胶料组成。"
+        },
+        "gumwall": {
+          "title": "Gumwall 棕黄色侧壁",
+          "body": "Gumwall 风格的天然橡胶/棕黄色侧壁外观。该字段不会改变胎体、胎圈或防刺结构。"
+        },
+        "redStripes": {
+          "title": "红色条纹",
+          "body": "带红色条纹的配色，条纹不代表胶料。"
+        },
+        "transparentSidewall": {
+          "title": "透明侧壁",
+          "body": "透明或半透明的侧壁外观；胎面颜色和胶料仍由其他字段决定。"
+        },
+        "whiteStripes": {
+          "title": "白色条纹",
+          "body": "带白色条纹的配色，不是抓地或防刺等级。"
+        },
+        "whiteBordeaux": {
+          "title": "白色／Bordeaux 酒红色",
+          "body": "白色与 Bordeaux 酒红色组合配色，应作为外观版本读取，不是两种胶料。"
+        },
+        "whitewall": {
+          "title": "白边／白色侧壁",
+          "body": "白色侧壁外观；胎面颜色、胶料和防刺结构仍是独立规格。"
+        },
+        "whitewallReflex": {
+          "title": "白边 + 反光",
+          "body": "白色侧壁加反光元素，两个细节属于同一个完整颜色值。"
+        }
+      }
+    },
+    "compound": {
+      "label": "胶料字段 · 目录释义",
+      "title": "本目录中的每一个胶料值",
+      "note": "这一 TAB 解释种子目录中当前出现的 23 个不同胶料值。数据库原始值保持不变；相似拼写故意分开，不静默合并。",
+      "valuesTitle": "胶料值 · 23 项",
+      "valuesNote": "这些值包含 ADDIX 品牌名称、用途代码和旧式/原始标签。先用精确值确认型号版本，再看完整型号规格。",
+      "items": {
+        "addix": {
+          "title": "ADDIX 通用系列",
+          "body": "源目录中的通用 ADDIX 系列值。它不能说明具体是 Speed、Soft、Race、E 等哪一种，需继续看完整型号。"
+        },
+        "addix365": {
+          "title": "ADDIX 365",
+          "body": "365 系列型号使用的胶料字段。365 是产品系列标记，不是单独的冬季温度或湿地抓地等级。"
+        },
+        "addixFourSeason": {
+          "title": "ADDIX 4-Season 四季",
+          "body": "部分公路/训练型外胎使用的四季胶料名称。只能当作产品系列标签，不能当作统一温度或全天候保证。"
+        },
+        "addixE": {
+          "title": "ADDIX E 电助力取向",
+          "body": "面向电助力车的 ADDIX 胶料。官方产品说明强调耐久、低滚阻及高速抓地；E-25/E-50 是另一个独立字段。"
+        },
+        "addixEco": {
+          "title": "ADDIX Eco 环保系列",
+          "body": "Green Marathon 使用的环保胶料名称。官方说明关联再生工业炭黑和天然橡胶；不能与 ADDIX Green 或 Green Compound 合并。"
+        },
+        "addixGreen": {
+          "title": "ADDIX Green",
+          "body": "Marathon Racer 等型号使用的原始胶料值。目录没有把它定义为 ADDIX Eco 或 Green Compound 的同义值，核对型号时必须保留原文。"
+        },
+        "addixRace": {
+          "title": "ADDIX Race 竞速",
+          "body": "PRO One 等性能型号使用的竞速取向胶料。具体胎体、花纹和无内胎结构仍要看型号记录。"
+        },
+        "addixSoft": {
+          "title": "ADDIX Soft 柔软",
+          "body": "较软的 ADDIX 选项：官方系列说明是更好的缓冲和抓地，滚阻通常高于偏速度选项；不是单独的安全等级。"
+        },
+        "addixSpeed": {
+          "title": "ADDIX Speed 速度",
+          "body": "偏速度的 ADDIX 选项：官方系列说明是低滚阻和较高耐久，同时保留抓地与缓冲；具体表现随型号变化。"
+        },
+        "addixSpeedGrip": {
+          "title": "ADDIX SpeedGrip",
+          "body": "数据库保留的原始目录值。当前 Schwalbe 资料可能把相关的均衡系列称为 Mid（原 SpeedGrip）；识别型号时不要把字段静默改写。"
+        },
+        "addixUltraSoft": {
+          "title": "ADDIX Ultra Soft 超软",
+          "body": "很软的 ADDIX 选项：官方系列说明是最高缓冲和抓地（包括湿地），同时滚阻最高；实际用途仍以型号为准。"
+        },
+        "blackNRoll": {
+          "title": "Black'n'Roll 不留黑痕",
+          "body": "城市/轮椅类胶料名称。官方产品说明强调耐久且不留黑色磨痕，适合室内地面使用场景。"
+        },
+        "endurance": {
+          "title": "Endurance 耐久",
+          "body": "部分旅行/日常型号使用的耐久取向名称，表示设计侧重点，不是里程承诺。"
+        },
+        "grc": {
+          "title": "GRC",
+          "body": "出现在 Marathon Plus Wheelchair、DownTown 等轮椅型号中的未展开目录代码。当前源数据没有统一释义，应按型号胶料代码理解。"
+        },
+        "greenCompound": {
+          "title": "Green Compound 环保胶料",
+          "body": "官方环保胶料名称。Schwalbe 说明其聚合物来自可再生和再生原料，并用于黑色胎面；不能与 ADDIX Green 或 ADDIX Eco 合并。"
+        },
+        "mid": {
+          "title": "MID 中等/均衡取向",
+          "body": "目录中的原始大写值，可理解为中等或均衡取向的标签；它不是 ADDIX SpeedGrip 或 ADDIX Mid 的同一个数据库值，需看具体型号页。"
+        },
+        "sbc": {
+          "title": "SBC",
+          "body": "Big Ben、Fat Frank 等城市/舒适型型号使用的原始胶料值。当前目录没有提供统一全称或性能等级，按精确型号标签核对。"
+        },
+        "silica": {
+          "title": "Silica 含硅胶料",
+          "body": "Lugano II 等型号使用的含硅胶料名称。官方产品文案将其描述为改善公路性能的配方；它不是跨型号抓地评分。"
+        },
+        "soft": {
+          "title": "SOFT 柔软标签",
+          "body": "原始大写的软胶料标签，通常表示更软、抓地/缓冲取向；目录没有统一刻度，不能自动并入 ADDIX Soft。"
+        },
+        "speed": {
+          "title": "SPEED 速度标签",
+          "body": "原始大写的速度取向标签，通常表示更重视滚阻/速度；目录没有统一刻度，不能自动并入 ADDIX Speed。"
+        },
+        "ultraSoft": {
+          "title": "ULTRA SOFT 超软标签",
+          "body": "原始大写的超软标签，通常表示更软及抓地取向；目录没有统一刻度，不能自动并入 ADDIX Ultra Soft。"
+        },
+        "wheelStar": {
+          "title": "WheelStar 轮椅专用",
+          "body": "One Wheelchair、Dunk King 等轮椅型号使用的专用胶料名称。源目录没有公布全称或通用自行车性能排名。"
+        },
+        "winter": {
+          "title": "Winter 冬季",
+          "body": "部分冬季型号使用的季节性胶料名称。它只标记目录型号，不能替代对花纹、钉胎、温度适用范围和结构的检查。"
         }
       }
     }

@@ -147,24 +147,66 @@
       </section>
 
       <section
-        v-if="activeTechTab === 'colorCompound'"
-        class="schwalbe-telemetry__topic schwalbe-telemetry__topic--color-compound"
+        v-if="activeTechTab === 'color'"
+        class="schwalbe-telemetry__topic schwalbe-telemetry__topic--color"
       >
         <div class="schwalbe-telemetry__topic-heading">
           <div>
-            <p class="schwalbe-telemetry__topic-label">{{ tx('telemetryGuide.colorCompound.label') }}</p>
-            <h3>{{ tx('telemetryGuide.colorCompound.title') }}</h3>
+            <p class="schwalbe-telemetry__topic-label">{{ tx('telemetryGuide.color.label') }}</p>
+            <h3>{{ tx('telemetryGuide.color.title') }}</h3>
           </div>
         </div>
-        <p class="schwalbe-telemetry__topic-note">{{ tx('telemetryGuide.colorCompound.note') }}</p>
-        <div class="schwalbe-telemetry__meaning-grid">
-          <article v-for="entry in colorCompoundGuides" :key="entry.key" class="schwalbe-telemetry__meaning-card">
-            <span class="schwalbe-telemetry__meaning-mark" aria-hidden="true">{{ entry.mark }}</span>
-            <div>
-              <h4>{{ tx(`telemetryGuide.colorCompound.items.${entry.key}.title`) }}</h4>
-              <p>{{ tx(`telemetryGuide.colorCompound.items.${entry.key}.body`) }}</p>
-            </div>
-          </article>
+        <p class="schwalbe-telemetry__topic-note">{{ tx('telemetryGuide.color.note') }}</p>
+        <div class="schwalbe-telemetry__catalog-section">
+          <div class="schwalbe-telemetry__catalog-section-heading">
+            <h4>{{ tx('telemetryGuide.color.valuesTitle') }}</h4>
+            <p>{{ tx('telemetryGuide.color.valuesNote') }}</p>
+          </div>
+          <div class="schwalbe-telemetry__catalog-grid">
+            <article
+              v-for="entry in colorCatalogGuides"
+              :key="entry.key"
+              class="schwalbe-telemetry__catalog-card schwalbe-telemetry__catalog-card--color"
+            >
+              <code class="schwalbe-telemetry__catalog-value">{{ entry.value }}</code>
+              <div>
+                <h5>{{ tx(`telemetryGuide.color.items.${entry.key}.title`) }}</h5>
+                <p>{{ tx(`telemetryGuide.color.items.${entry.key}.body`) }}</p>
+              </div>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section
+        v-if="activeTechTab === 'compound'"
+        class="schwalbe-telemetry__topic schwalbe-telemetry__topic--compound"
+      >
+        <div class="schwalbe-telemetry__topic-heading">
+          <div>
+            <p class="schwalbe-telemetry__topic-label">{{ tx('telemetryGuide.compound.label') }}</p>
+            <h3>{{ tx('telemetryGuide.compound.title') }}</h3>
+          </div>
+        </div>
+        <p class="schwalbe-telemetry__topic-note">{{ tx('telemetryGuide.compound.note') }}</p>
+        <div class="schwalbe-telemetry__catalog-section">
+          <div class="schwalbe-telemetry__catalog-section-heading">
+            <h4>{{ tx('telemetryGuide.compound.valuesTitle') }}</h4>
+            <p>{{ tx('telemetryGuide.compound.valuesNote') }}</p>
+          </div>
+          <div class="schwalbe-telemetry__catalog-grid">
+            <article
+              v-for="entry in compoundCatalogGuides"
+              :key="entry.key"
+              class="schwalbe-telemetry__catalog-card schwalbe-telemetry__catalog-card--compound"
+            >
+              <code class="schwalbe-telemetry__catalog-value">{{ entry.value }}</code>
+              <div>
+                <h5>{{ tx(`telemetryGuide.compound.items.${entry.key}.title`) }}</h5>
+                <p>{{ tx(`telemetryGuide.compound.items.${entry.key}.body`) }}</p>
+              </div>
+            </article>
+          </div>
         </div>
       </section>
     </div>
@@ -180,7 +222,7 @@ import { ref, useId, watch } from 'vue'
 import { useI18n } from '#imports'
 import { usePageMessages } from '~/composables/usePageMessages'
 
-type TelemetryTab = 'radial' | 'green' | 'protection' | 'colorCompound' | 'addix'
+type TelemetryTab = 'radial' | 'green' | 'protection' | 'color' | 'compound' | 'addix'
 
 const { locale, t: translate } = useI18n()
 const { loadPageMessages } = usePageMessages('guidesSchwalbeTireSelector')
@@ -195,7 +237,8 @@ const tabs: Array<{ id: TelemetryTab; labelKey: string }> = [
   { id: 'radial', labelKey: 'telemetryGuide.tabs.radial' },
   { id: 'green', labelKey: 'telemetryGuide.tabs.green' },
   { id: 'protection', labelKey: 'telemetryGuide.tabs.protection' },
-  { id: 'colorCompound', labelKey: 'telemetryGuide.tabs.colorCompound' },
+  { id: 'color', labelKey: 'telemetryGuide.tabs.color' },
+  { id: 'compound', labelKey: 'telemetryGuide.tabs.compound' },
   { id: 'addix', labelKey: 'telemetryGuide.tabs.addix' },
 ]
 
@@ -233,10 +276,54 @@ const compoundGuides = [
   { key: 'endurance', accent: 'endurance' },
 ] as const
 
-const colorCompoundGuides = [
-  { key: 'color', mark: '🎨' },
-  { key: 'compound', mark: '🧪' },
-  { key: 'howToRead', mark: '📖' },
+const colorCatalogGuides = [
+  { key: 'black', value: 'Black' },
+  { key: 'blackCoffeeReflex', value: 'Black/Coffee+Reflex' },
+  { key: 'blackBlackReflex', value: 'Black+BlackReflex' },
+  { key: 'blackReflex', value: 'Black+Reflex' },
+  { key: 'blueStripes', value: 'Blue Stripes' },
+  { key: 'bronze', value: 'Bronze' },
+  { key: 'bronzeSidewall', value: 'Bronze Sidewall' },
+  { key: 'bronzeReflex', value: 'Bronze+Reflex' },
+  { key: 'brownWhitewallReflex', value: 'Brown/Whitewall+Reflex' },
+  { key: 'brownReflex', value: 'Brown+Reflex' },
+  { key: 'classic', value: 'Classic' },
+  { key: 'cremeReflex', value: 'Creme+Reflex' },
+  { key: 'greyStripes', value: 'Grey Stripes' },
+  { key: 'greyBlack', value: 'Grey/Black' },
+  { key: 'gumwall', value: 'Gumwall' },
+  { key: 'redStripes', value: 'Red Stripes' },
+  { key: 'transparentSidewall', value: 'Transparent Sidewall' },
+  { key: 'whiteStripes', value: 'White Stripes' },
+  { key: 'whiteBordeaux', value: 'White/Bordeaux' },
+  { key: 'whitewall', value: 'Whitewall' },
+  { key: 'whitewallReflex', value: 'Whitewall+Reflex' },
+] as const
+
+const compoundCatalogGuides = [
+  { key: 'addix', value: 'ADDIX' },
+  { key: 'addix365', value: 'ADDIX 365' },
+  { key: 'addixFourSeason', value: 'ADDIX 4-Season' },
+  { key: 'addixE', value: 'ADDIX E' },
+  { key: 'addixEco', value: 'ADDIX Eco' },
+  { key: 'addixGreen', value: 'ADDIX Green' },
+  { key: 'addixRace', value: 'ADDIX Race' },
+  { key: 'addixSoft', value: 'ADDIX Soft' },
+  { key: 'addixSpeed', value: 'ADDIX Speed' },
+  { key: 'addixSpeedGrip', value: 'ADDIX SpeedGrip' },
+  { key: 'addixUltraSoft', value: 'ADDIX Ultra Soft' },
+  { key: 'blackNRoll', value: "Black'n'Roll" },
+  { key: 'endurance', value: 'Endurance' },
+  { key: 'grc', value: 'GRC' },
+  { key: 'greenCompound', value: 'Green Compound' },
+  { key: 'mid', value: 'MID' },
+  { key: 'sbc', value: 'SBC' },
+  { key: 'silica', value: 'Silica' },
+  { key: 'soft', value: 'SOFT' },
+  { key: 'speed', value: 'SPEED' },
+  { key: 'ultraSoft', value: 'ULTRA SOFT' },
+  { key: 'wheelStar', value: 'WheelStar' },
+  { key: 'winter', value: 'Winter' },
 ] as const
 </script>
 
@@ -298,7 +385,8 @@ const colorCompoundGuides = [
 
 .schwalbe-telemetry h2,
 .schwalbe-telemetry h3,
-.schwalbe-telemetry h4 {
+.schwalbe-telemetry h4,
+.schwalbe-telemetry h5 {
   margin: 0;
   color: var(--tz-text-primary);
 }
@@ -440,7 +528,11 @@ const colorCompoundGuides = [
   color: #0369a1;
 }
 
-.schwalbe-telemetry__topic--color-compound .schwalbe-telemetry__topic-label {
+.schwalbe-telemetry__topic--color .schwalbe-telemetry__topic-label {
+  color: #c2410c;
+}
+
+.schwalbe-telemetry__topic--compound .schwalbe-telemetry__topic-label {
   color: #c2410c;
 }
 
@@ -499,7 +591,26 @@ const colorCompoundGuides = [
   gap: 0.5rem;
 }
 
-.schwalbe-telemetry__meaning-grid {
+.schwalbe-telemetry__catalog-section {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.schwalbe-telemetry__catalog-section-heading {
+  display: grid;
+  gap: 0.25rem;
+  border-bottom: 1px solid var(--tz-border-subtle);
+  padding-bottom: 0.45rem;
+}
+
+.schwalbe-telemetry__catalog-section-heading p {
+  margin: 0;
+  color: var(--tz-text-secondary);
+  font-size: 0.7rem;
+  line-height: 1.55;
+}
+
+.schwalbe-telemetry__catalog-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.5rem;
@@ -569,29 +680,44 @@ const colorCompoundGuides = [
   padding: 0.65rem;
 }
 
-.schwalbe-telemetry__meaning-card {
+.schwalbe-telemetry__catalog-card {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-columns: minmax(8rem, 12rem) minmax(0, 1fr);
   gap: 0.6rem;
   align-items: start;
   min-width: 0;
-  border: 1px solid #fed7aa;
+  border: 1px solid var(--tz-border-subtle);
   border-radius: 0.7rem;
-  background: #fff7ed;
+  background: var(--tz-surface-subtle);
   padding: 0.65rem;
 }
 
-.schwalbe-telemetry__meaning-mark {
-  display: grid;
-  width: 2rem;
-  height: 2rem;
-  place-items: center;
-  border-radius: 0.55rem;
-  background: #ffedd5;
-  font-size: 1rem;
+.schwalbe-telemetry__catalog-card--color {
+  border-color: #fed7aa;
+  background: #fff7ed;
 }
 
-.schwalbe-telemetry__meaning-card p {
+.schwalbe-telemetry__catalog-card--compound {
+  border-color: #bae6fd;
+  background: #f0f9ff;
+}
+
+.schwalbe-telemetry__catalog-value {
+  min-width: 0;
+  color: var(--tz-text-primary);
+  font-family: var(--tz-font-ui);
+  font-size: 0.68rem;
+  font-weight: 800;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.schwalbe-telemetry__catalog-card h5 {
+  font-size: 0.76rem;
+  line-height: 1.4;
+}
+
+.schwalbe-telemetry__catalog-card p {
   margin: 0.25rem 0 0;
   color: var(--tz-text-secondary);
   font-size: 0.68rem;
@@ -702,7 +828,7 @@ const colorCompoundGuides = [
     grid-template-columns: 1fr;
   }
 
-  .schwalbe-telemetry__meaning-grid {
+  .schwalbe-telemetry__catalog-grid {
     grid-template-columns: 1fr;
   }
 
@@ -733,6 +859,10 @@ const colorCompoundGuides = [
     grid-template-columns: 1fr;
   }
 
+  .schwalbe-telemetry__catalog-card {
+    grid-template-columns: 1fr;
+  }
+
 }
 
 @media (min-width: 761px) and (max-width: 1100px) {
@@ -740,7 +870,7 @@ const colorCompoundGuides = [
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .schwalbe-telemetry__meaning-grid {
+  .schwalbe-telemetry__catalog-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }

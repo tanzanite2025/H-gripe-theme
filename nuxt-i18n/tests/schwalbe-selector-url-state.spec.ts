@@ -52,19 +52,80 @@ test.describe('Schwalbe selector URL state', () => {
     await expect(filterButton).toBeFocused()
   })
 
-  test('explains color and compound fields in the telemetry guide', async ({ page }) => {
+  test('explains every color and compound value in separate telemetry tabs', async ({ page }) => {
     await page.goto(selectorURL())
     await waitForNuxtMount(page)
 
-    const tab = page.locator('[role=tab]').filter({ hasText: 'Color & compound' })
-    await expect(tab).toBeVisible()
-    await tab.click()
+    const colorValues = [
+      'Black',
+      'Black/Coffee+Reflex',
+      'Black+BlackReflex',
+      'Black+Reflex',
+      'Blue Stripes',
+      'Bronze',
+      'Bronze Sidewall',
+      'Bronze+Reflex',
+      'Brown/Whitewall+Reflex',
+      'Brown+Reflex',
+      'Classic',
+      'Creme+Reflex',
+      'Grey Stripes',
+      'Grey/Black',
+      'Gumwall',
+      'Red Stripes',
+      'Transparent Sidewall',
+      'White Stripes',
+      'White/Bordeaux',
+      'Whitewall',
+      'Whitewall+Reflex',
+    ]
+    const compoundValues = [
+      'ADDIX',
+      'ADDIX 365',
+      'ADDIX 4-Season',
+      'ADDIX E',
+      'ADDIX Eco',
+      'ADDIX Green',
+      'ADDIX Race',
+      'ADDIX Soft',
+      'ADDIX Speed',
+      'ADDIX SpeedGrip',
+      'ADDIX Ultra Soft',
+      "Black'n'Roll",
+      'Endurance',
+      'GRC',
+      'Green Compound',
+      'MID',
+      'SBC',
+      'Silica',
+      'SOFT',
+      'SPEED',
+      'ULTRA SOFT',
+      'WheelStar',
+      'Winter',
+    ]
 
-    const topic = page.locator('.schwalbe-telemetry__topic--color-compound')
-    await expect(topic).toBeVisible()
-    await expect(topic).toContainText('Color is an appearance label')
-    await expect(topic).toContainText('Compound is a rubber formula name')
-    await expect(topic.locator('.schwalbe-telemetry__meaning-card')).toHaveCount(3)
+    const colorTab = page.getByRole('tab', { name: /Color$/ })
+    await expect(colorTab).toBeVisible()
+    await colorTab.click()
+
+    const colorTopic = page.locator('.schwalbe-telemetry__topic--color')
+    await expect(colorTopic).toBeVisible()
+    await expect(colorTopic).toContainText('Every color value in this catalog')
+    await expect(colorTopic.locator('.schwalbe-telemetry__catalog-section')).toHaveCount(1)
+    await expect(colorTopic.locator('.schwalbe-telemetry__catalog-value')).toHaveText(colorValues)
+    await expect(colorTopic.locator('.schwalbe-telemetry__catalog-card')).toHaveCount(colorValues.length)
+
+    const compoundTab = page.getByRole('tab', { name: '🧪 Compound', exact: true })
+    await expect(compoundTab).toBeVisible()
+    await compoundTab.click()
+
+    const compoundTopic = page.locator('.schwalbe-telemetry__topic--compound')
+    await expect(compoundTopic).toBeVisible()
+    await expect(compoundTopic).toContainText('Every compound value in this catalog')
+    await expect(compoundTopic.locator('.schwalbe-telemetry__catalog-section')).toHaveCount(1)
+    await expect(compoundTopic.locator('.schwalbe-telemetry__catalog-value')).toHaveText(compoundValues)
+    await expect(compoundTopic.locator('.schwalbe-telemetry__catalog-card')).toHaveCount(compoundValues.length)
   })
 
   test('uses a compact weight sort toggle', async ({ page }) => {
