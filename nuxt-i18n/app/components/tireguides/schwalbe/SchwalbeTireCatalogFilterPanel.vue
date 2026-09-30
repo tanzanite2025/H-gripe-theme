@@ -87,17 +87,12 @@
       </div>
     </details>
 
-    <details
-      v-if="!rimWidthMatchActive"
-      name="schwalbe-filter-accordion"
-      class="schwalbe-filter-panel__accordion"
-      @toggle="closeOtherAccordions"
-    >
+    <details name="schwalbe-filter-accordion" class="schwalbe-filter-panel__accordion" @toggle="closeOtherAccordions">
       <summary class="schwalbe-filter-panel__accordion-title">
         <span>{{ wheelSizeLabel }}</span>
-        <span v-if="selectedWheelSizeKeys.length > 0" class="schwalbe-filter-panel__selection-count">
-          <span aria-hidden="true">{{ selectedWheelSizeKeys.length }}</span>
-          <span class="schwalbe-filter-panel__visually-hidden">{{ selectedCountLabel(selectedWheelSizeKeys.length) }}</span>
+        <span v-if="selectedWheelSizeKeys.length > 0 || hasInnerRimWidthInput" class="schwalbe-filter-panel__selection-count">
+          <span aria-hidden="true">{{ selectedWheelSizeKeys.length + (hasInnerRimWidthInput ? 1 : 0) }}</span>
+          <span class="schwalbe-filter-panel__visually-hidden">{{ selectedCountLabel(selectedWheelSizeKeys.length + (hasInnerRimWidthInput ? 1 : 0)) }}</span>
         </span>
       </summary>
       <div class="schwalbe-filter-panel__fields">
@@ -113,6 +108,41 @@
             </label>
           </div>
         </fieldset>
+
+        <div class="schwalbe-filter-panel__rim-match">
+          <div class="schwalbe-filter-panel__rim-match-copy">
+            <span class="schwalbe-filter-panel__range-label">{{ rimWidthInnerWidthLabel }}</span>
+            <p class="schwalbe-filter-panel__hint">{{ rimWidthHint }}</p>
+          </div>
+          <label class="schwalbe-filter-panel__numeric-control schwalbe-filter-panel__rim-width-control">
+            <span class="schwalbe-filter-panel__visually-hidden">{{ rimWidthInnerWidthLabel }}</span>
+            <input
+              :value="innerRimWidthInput ?? ''"
+              type="number"
+              min="1"
+              step="0.1"
+              inputmode="decimal"
+              :aria-label="rimWidthInnerWidthLabel"
+              :aria-invalid="rimWidthInputInvalid || rimWidthWheelSizeInvalid"
+              @input="updateInnerRimWidthInput"
+            >
+            <span>mm</span>
+          </label>
+          <p v-if="rimWidthInputInvalid" class="schwalbe-filter-panel__error" role="alert">
+            {{ rimWidthInvalidLabel }}
+          </p>
+          <p v-else-if="rimWidthWheelSizeInvalid" class="schwalbe-filter-panel__error" role="alert">
+            {{ rimWidthChooseWheelSizeLabel }}
+          </p>
+          <button
+            v-if="hasInnerRimWidthInput"
+            type="button"
+            class="schwalbe-filter-panel__clear-field"
+            @click="clearInnerRimWidth"
+          >
+            {{ rimWidthClearLabel }}
+          </button>
+        </div>
       </div>
     </details>
 
@@ -330,6 +360,7 @@ const selectedTireWidthsMm = defineModel<number[]>('selectedTireWidthsMm', { req
 const selectedTireWidthMinMm = defineModel<number | null>('selectedTireWidthMinMm', { required: true })
 const selectedTireWidthMaxMm = defineModel<number | null>('selectedTireWidthMaxMm', { required: true })
 const selectedWheelSizeKeys = defineModel<string[]>('selectedWheelSizeKeys', { required: true })
+const innerRimWidthInput = defineModel<string | number | null>('innerRimWidthInput', { required: true })
 const selectedBeadSeatDiametersMm = defineModel<number[]>('selectedBeadSeatDiametersMm', { required: true })
 const minimumLoadKg = defineModel<number | null>('minimumLoadKg', { required: true })
 const selectedCasingConstructions = defineModel<string[]>('selectedCasingConstructions', { required: true })
@@ -345,7 +376,6 @@ const emit = defineEmits<{
 
 const props = defineProps<{
   label: string
-  rimWidthMatchActive: boolean
   selectedCountTemplate: string
   tireWidthLabel: string
   tireWidthMinLabel: string
@@ -353,6 +383,11 @@ const props = defineProps<{
   tireWidthClearLabel: string
   wheelSizeLabel: string
   wheelSizeOptionTemplate: string
+  rimWidthHint: string
+  rimWidthInnerWidthLabel: string
+  rimWidthInvalidLabel: string
+  rimWidthChooseWheelSizeLabel: string
+  rimWidthClearLabel: string
   minimumLoadLabel: string
   minimumLoadHint: string
   casingConstructionLabel: string
@@ -378,7 +413,8 @@ const hasSelection = computed(() => (
   selectedTireWidthMinMm.value !== null
   || selectedTireWidthMaxMm.value !== null
   || selectedTireWidthsMm.value.length > 0
-  || (!props.rimWidthMatchActive && selectedWheelSizeKeys.value.length > 0)
+  || selectedWheelSizeKeys.value.length > 0
+  || hasInnerRimWidthInput.value
   || selectedBeadSeatDiametersMm.value.length > 0
   || minimumLoadKg.value !== null
   || selectedCasingConstructions.value.length > 0
@@ -395,6 +431,26 @@ const hasTireWidthSelection = computed(() => (
   || selectedTireWidthMaxMm.value !== null
   || selectedTireWidthsMm.value.length > 0
 ))
+
+const normalizedInnerRimWidthInput = computed(() => {
+  const value = innerRimWidthInput.value
+  const normalized = value === null || value === undefined ? '' : String(value).trim()
+  if (!normalized) return null
+  const parsed = Number(normalized)
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null
+})
+
+const hasInnerRimWidthInput = computed(() => {
+  const value = innerRimWidthInput.value
+  return Boolean(value !== null && value !== undefined && String(value).trim())
+})
+
+const rimWidthInputInvalid = computed(() => hasInnerRimWidthInput.value && normalizedInnerRimWidthInput.value === null)
+const rimWidthWheelSizeInvalid = computed(() => hasInnerRimWidthInput.value && selectedWheelSizeKeys.value.length !== 1)
+
+const clearInnerRimWidth = () => {
+  innerRimWidthInput.value = ''
+}
 
 const wheelSizeOptionLabel = (option: SchwalbeTireCatalogWheelSizeOption) => props.wheelSizeOptionTemplate
   .replace('{diameter}', option.wheelDiameterIn)
@@ -441,6 +497,7 @@ const snapTireWidthValue = (value: number | null, side: 'min' | 'max'): number |
 const setTireWidthMinimum = (value: number | null) => {
   const nextValue = snapTireWidthValue(value, 'min')
   const currentMaximum = selectedTireWidthMaxMm.value
+  innerRimWidthInput.value = ''
   selectedTireWidthsMm.value = []
   selectedTireWidthMinMm.value = nextValue
   if (currentMaximum !== null) {
@@ -453,6 +510,7 @@ const setTireWidthMinimum = (value: number | null) => {
 const setTireWidthMaximum = (value: number | null) => {
   const nextValue = snapTireWidthValue(value, 'max')
   const currentMinimum = selectedTireWidthMinMm.value
+  innerRimWidthInput.value = ''
   selectedTireWidthsMm.value = []
   selectedTireWidthMaxMm.value = nextValue
   if (currentMinimum !== null) {
@@ -476,6 +534,16 @@ const clearTireWidth = () => {
   selectedTireWidthsMm.value = []
   selectedTireWidthMinMm.value = null
   selectedTireWidthMaxMm.value = null
+}
+
+const updateInnerRimWidthInput = (event: Event) => {
+  const value = (event.target as HTMLInputElement).value
+  innerRimWidthInput.value = value
+  if (value.trim()) {
+    selectedTireWidthsMm.value = []
+    selectedTireWidthMinMm.value = null
+    selectedTireWidthMaxMm.value = null
+  }
 }
 
 const readTireWidthSliderIndex = (event: Event): number => {
@@ -822,6 +890,29 @@ const updateMinimumLoadFromInput = (event: Event) => {
 .schwalbe-filter-panel__numeric-control input:focus-visible {
   outline: 2px solid var(--tz-action-primary);
   outline-offset: 2px;
+}
+
+.schwalbe-filter-panel__rim-match {
+  display: grid;
+  gap: 0.45rem;
+  border-top: 1px solid var(--tz-border-subtle);
+  padding-top: 0.8rem;
+}
+
+.schwalbe-filter-panel__rim-match-copy {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.schwalbe-filter-panel__rim-width-control {
+  width: min(100%, 12rem);
+}
+
+.schwalbe-filter-panel__error {
+  margin: 0;
+  color: var(--tz-status-danger-text);
+  font-size: 0.68rem;
+  line-height: 1.4;
 }
 
 .schwalbe-filter-panel__hint {

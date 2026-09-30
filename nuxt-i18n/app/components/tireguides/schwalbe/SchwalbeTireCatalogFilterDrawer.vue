@@ -29,7 +29,12 @@
         </div>
 
         <footer class="schwalbe-filter-drawer__footer">
-          <button type="button" class="schwalbe-filter-drawer__done" @click="apply">
+          <button
+            type="button"
+            class="schwalbe-filter-drawer__done"
+            :disabled="canApply === false"
+            @click="apply"
+          >
             {{ showResultsLabel }}
           </button>
         </footer>
@@ -48,6 +53,7 @@ const props = defineProps<{
   title: string
   closeLabel: string
   showResultsLabel: string
+  canApply?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -231,6 +237,14 @@ onBeforeUnmount(() => {
   font-size: 0.85rem;
   font-weight: 750;
   cursor: pointer;
+}
+
+.schwalbe-filter-drawer__done:disabled {
+  border-color: var(--tz-border-subtle);
+  background: var(--tz-surface-subtle);
+  color: var(--tz-text-disabled);
+  cursor: not-allowed;
+  opacity: 0.8;
 }
 
 @media (max-width: 760px) {

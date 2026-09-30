@@ -58,7 +58,7 @@
     "clear": "Clear rim match",
     "hint": "Enter the rim's inner width. Results use official possible-combination ranges; check your rim and frame requirements.",
     "invalid": "Enter a positive inner width in mm.",
-    "chooseWheelSize": "Choose the wheel diameter and BSD before matching by inner width.",
+    "chooseWheelSize": "Choose exactly one wheel diameter and BSD pair before matching by inner width.",
     "covered": "Official possible-combination range · {width} mm · {count} candidates",
     "noCoverage": "No official possible-combination range covers {width} mm.",
     "source": "{basis} · source {version} · checked {date}",

@@ -114,6 +114,54 @@ test.describe('Schwalbe selector URL state', () => {
     await expect(page).toHaveURL(url => url.searchParams.get('wheel_size') === '26-559')
   })
 
+  test('keeps wheel size and rim inner width in one drawer flow', async ({ page }) => {
+    await page.goto(selectorURL())
+    await waitForNuxtMount(page)
+    await expect(page.locator('.schwalbe-selector__rim-match')).toHaveCount(0)
+    await openCatalogFilters(page)
+    await openFilterGroup(page, 'Wheel size (BSD)')
+
+    const innerWidthInput = page.getByRole('spinbutton', { name: 'Rim inner width' })
+    await innerWidthInput.fill('23.5')
+    await expect(page.getByRole('alert')).toContainText('Choose exactly one wheel diameter and BSD pair')
+    await expect(page.getByRole('button', { name: 'Show results' })).toBeDisabled()
+
+    const wheel28 = page.getByRole('checkbox', { name: '28" (BSD 622 mm)', exact: true })
+    const wheel29 = page.getByRole('checkbox', { name: '29" (BSD 622 mm)', exact: true })
+    await wheel28.check()
+    await expect(page.getByRole('button', { name: 'Show results' })).toBeEnabled()
+    await wheel29.check()
+    await expect(page.getByRole('button', { name: 'Show results' })).toBeDisabled()
+    await wheel29.uncheck()
+    await page.getByRole('button', { name: 'Show results' }).click()
+
+    await expect(page).toHaveURL(url => (
+      url.searchParams.get('wheel_size') === '28-622'
+      && url.searchParams.get('inner_rim_width_mm') === '23.5'
+    ))
+
+    await openCatalogFilters(page)
+    await openFilterGroup(page, 'Wheel size (BSD)')
+    await page.getByRole('button', { name: 'Clear rim match' }).click()
+    await openFilterGroup(page, 'Tire width')
+    const minimumWidth = page.getByRole('spinbutton', { name: 'Tire width Minimum', exact: true })
+    await minimumWidth.fill('32')
+    await minimumWidth.press('Tab')
+    await openFilterGroup(page, 'Wheel size (BSD)')
+    await expect(page.getByRole('spinbutton', { name: 'Rim inner width' })).toHaveValue('')
+    await page.getByRole('button', { name: 'Show results' }).click()
+    await expect(page).toHaveURL(url => (
+      url.searchParams.get('tire_width_min_mm') === '32'
+      && !url.searchParams.has('inner_rim_width_mm')
+      && url.searchParams.get('wheel_size') === '28-622'
+    ))
+
+    await openCatalogFilters(page)
+    await page.getByRole('button', { name: 'Clear filters', exact: true }).click()
+    await page.getByRole('button', { name: 'Show results' }).click()
+    await expect(page).not.toHaveURL(/wheel_size=|inner_rim_width_mm=|tire_width_min_mm=/)
+  })
+
   test('sets a tire width range through numeric inputs and range sliders', async ({ page }) => {
     await page.goto(selectorURL())
     await waitForNuxtMount(page)

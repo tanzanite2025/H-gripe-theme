@@ -58,7 +58,7 @@
     "clear": "清除车圈匹配",
     "hint": "输入车圈内宽，结果按官方可能组合范围筛选；车圈和车架要求仍需单独核对。",
     "invalid": "请输入大于 0 的车圈内宽（mm）。",
-    "chooseWheelSize": "请先选择轮径和 BSD，再按内宽匹配。",
+    "chooseWheelSize": "按内宽匹配前，请只选择一个轮径 + BSD。",
     "covered": "官方可能组合范围 · {width} mm · {count} 条候选",
     "noCoverage": "没有官方可能组合范围覆盖 {width} mm。",
     "source": "{basis} · 来源版本 {version} · 核验日期 {date}",
