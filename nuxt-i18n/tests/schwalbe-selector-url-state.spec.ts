@@ -238,6 +238,11 @@ test.describe('Schwalbe selector URL state', () => {
     const dialog = page.getByRole('dialog', { name: 'Filter catalog' })
     await expect(dialog).toBeVisible()
     await expect(dialog.locator('summary.schwalbe-filter-panel__accordion-title').filter({ hasText: 'Tire width' })).toBeVisible()
+    await expect(dialog.locator('fieldset.schwalbe-filter-panel__inline-facet')).toHaveCount(3)
+    await expect(dialog.locator('fieldset.schwalbe-filter-panel__inline-facet').filter({ hasText: 'E-Bike rating' })).toBeVisible()
+    await expect(dialog.locator('fieldset.schwalbe-filter-panel__inline-facet').filter({ hasText: 'Seal' })).toBeVisible()
+    await expect(dialog.locator('summary.schwalbe-filter-panel__accordion-title').filter({ hasText: 'E-Bike rating' })).toHaveCount(0)
+    await expect(dialog.locator('summary.schwalbe-filter-panel__accordion-title').filter({ hasText: 'Seal' })).toHaveCount(0)
     await expect(page.getByRole('button', { name: 'Show results' })).toBeVisible()
     await expect(dialog).toHaveJSProperty('open', true)
   })
@@ -261,10 +266,10 @@ test.describe('Schwalbe selector URL state', () => {
 
     const panel = page.locator('.schwalbe-filter-panel')
     const accordions = panel.locator(':scope > .schwalbe-filter-panel__accordion')
-    await expect(accordions).toHaveCount(8)
+    await expect(accordions).toHaveCount(6)
     await expect(panel.locator(':scope > .schwalbe-filter-panel__accordion[open]')).toHaveCount(1)
     const accordionBoxes = await Promise.all(
-      Array.from({ length: 8 }, (_, index) => accordions.nth(index).boundingBox()),
+      Array.from({ length: 6 }, (_, index) => accordions.nth(index).boundingBox()),
     )
     expect(accordionBoxes.every(box => box !== null)).toBe(true)
     expect(new Set(accordionBoxes.map(box => Math.round(box?.x ?? 0))).size).toBe(1)

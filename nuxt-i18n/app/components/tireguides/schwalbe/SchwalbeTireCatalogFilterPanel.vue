@@ -146,33 +146,19 @@
       </p>
     </div>
 
-    <details name="schwalbe-filter-accordion" class="schwalbe-filter-panel__accordion" @toggle="closeOtherAccordions">
-      <summary class="schwalbe-filter-panel__accordion-title">
-        <span>{{ eBikeRatingLabel }}</span>
-        <span v-if="selectedEBikeRatings.length > 0" class="schwalbe-filter-panel__selection-count">
-          <span aria-hidden="true">{{ selectedEBikeRatings.length }}</span>
-          <span class="schwalbe-filter-panel__visually-hidden">{{ selectedCountLabel(selectedEBikeRatings.length) }}</span>
-        </span>
-      </summary>
-      <div class="schwalbe-filter-panel__fields">
-        <fieldset class="schwalbe-filter-panel__group">
-          <legend class="schwalbe-filter-panel__visually-hidden">{{ eBikeRatingLabel }}</legend>
-          <div
-            class="schwalbe-filter-panel__options"
-            :class="{ 'schwalbe-filter-panel__options--many': hasManyOptions(eBikeRatingOptions) }"
-          >
-            <label
-              v-for="(option, index) in eBikeRatingOptions"
-              :key="option.value ?? `unrated-${index}`"
-              class="schwalbe-filter-panel__option"
-            >
-              <input v-model="selectedEBikeRatings" type="checkbox" :value="option.value">
-              <span>{{ option.value ?? eBikeUnratedLabel }}</span>
-            </label>
-          </div>
-        </fieldset>
+    <fieldset class="schwalbe-filter-panel__inline-facet">
+      <legend>{{ eBikeRatingLabel }}</legend>
+      <div class="schwalbe-filter-panel__options">
+        <label
+          v-for="(option, index) in eBikeRatingOptions"
+          :key="option.value ?? `unrated-${index}`"
+          class="schwalbe-filter-panel__option"
+        >
+          <input v-model="selectedEBikeRatings" type="checkbox" :value="option.value">
+          <span>{{ option.value ?? eBikeUnratedLabel }}</span>
+        </label>
       </div>
-    </details>
+    </fieldset>
 
     <details name="schwalbe-filter-accordion" class="schwalbe-filter-panel__accordion" @toggle="closeOtherAccordions">
       <summary class="schwalbe-filter-panel__accordion-title">
@@ -229,29 +215,15 @@
       </div>
     </fieldset>
 
-    <details name="schwalbe-filter-accordion" class="schwalbe-filter-panel__accordion" @toggle="closeOtherAccordions">
-      <summary class="schwalbe-filter-panel__accordion-title">
-        <span>{{ sealLabel }}</span>
-        <span v-if="selectedSeals.length > 0" class="schwalbe-filter-panel__selection-count">
-          <span aria-hidden="true">{{ selectedSeals.length }}</span>
-          <span class="schwalbe-filter-panel__visually-hidden">{{ selectedCountLabel(selectedSeals.length) }}</span>
-        </span>
-      </summary>
-      <div class="schwalbe-filter-panel__fields">
-        <fieldset class="schwalbe-filter-panel__group">
-          <legend class="schwalbe-filter-panel__visually-hidden">{{ sealLabel }}</legend>
-          <div
-            class="schwalbe-filter-panel__options"
-            :class="{ 'schwalbe-filter-panel__options--many': hasManyOptions(sealOptions) }"
-          >
-            <label v-for="option in sealOptions" :key="option.value" class="schwalbe-filter-panel__option">
-              <input v-model="selectedSeals" type="checkbox" :value="option.value">
-              <span>{{ option.value }}</span>
-            </label>
-          </div>
-        </fieldset>
+    <fieldset class="schwalbe-filter-panel__inline-facet">
+      <legend>{{ sealLabel }}</legend>
+      <div class="schwalbe-filter-panel__options">
+        <label v-for="option in sealOptions" :key="option.value" class="schwalbe-filter-panel__option">
+          <input v-model="selectedSeals" type="checkbox" :value="option.value">
+          <span>{{ option.value }}</span>
+        </label>
       </div>
-    </details>
+    </fieldset>
 
     <details name="schwalbe-filter-accordion" class="schwalbe-filter-panel__accordion" @toggle="closeOtherAccordions">
       <summary class="schwalbe-filter-panel__accordion-title">
