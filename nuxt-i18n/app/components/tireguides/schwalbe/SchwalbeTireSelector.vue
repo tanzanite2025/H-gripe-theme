@@ -29,7 +29,7 @@
       </label>
 
       <div class="schwalbe-selector__selects">
-        <label>
+        <label class="schwalbe-selector__model-filter">
           <span class="schwalbe-selector__label">{{ tx('filters.model') }}</span>
           <select v-model="selectedModel">
             <option v-for="model in modelOptions" :key="model" :value="model">
@@ -760,11 +760,21 @@ const activeFilterCount = computed(() => [
   }
 }
 
-@media (max-width: 640px) {
-  .schwalbe-selector__search-row,
-  .schwalbe-selector__selects {
+@media (max-width: 760.5px) {
+  .schwalbe-selector__search-row {
     display: grid;
     grid-template-columns: 1fr;
+  }
+
+  .schwalbe-selector__selects {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.65rem;
+  }
+
+  .schwalbe-selector__selects .schwalbe-selector__model-filter {
+    display: none;
   }
 
   .schwalbe-selector__grid {
@@ -774,6 +784,11 @@ const activeFilterCount = computed(() => [
   .schwalbe-selector__button,
   .schwalbe-selector__clear {
     width: 100%;
+  }
+
+  .schwalbe-selector__clear {
+    flex: 1 1 100%;
+    width: auto;
   }
 
   .schwalbe-selector__filter-button {
