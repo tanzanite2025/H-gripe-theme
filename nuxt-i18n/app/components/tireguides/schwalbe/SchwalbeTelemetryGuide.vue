@@ -145,6 +145,28 @@
           </article>
         </div>
       </section>
+
+      <section
+        v-if="activeTechTab === 'colorCompound'"
+        class="schwalbe-telemetry__topic schwalbe-telemetry__topic--color-compound"
+      >
+        <div class="schwalbe-telemetry__topic-heading">
+          <div>
+            <p class="schwalbe-telemetry__topic-label">{{ tx('telemetryGuide.colorCompound.label') }}</p>
+            <h3>{{ tx('telemetryGuide.colorCompound.title') }}</h3>
+          </div>
+        </div>
+        <p class="schwalbe-telemetry__topic-note">{{ tx('telemetryGuide.colorCompound.note') }}</p>
+        <div class="schwalbe-telemetry__meaning-grid">
+          <article v-for="entry in colorCompoundGuides" :key="entry.key" class="schwalbe-telemetry__meaning-card">
+            <span class="schwalbe-telemetry__meaning-mark" aria-hidden="true">{{ entry.mark }}</span>
+            <div>
+              <h4>{{ tx(`telemetryGuide.colorCompound.items.${entry.key}.title`) }}</h4>
+              <p>{{ tx(`telemetryGuide.colorCompound.items.${entry.key}.body`) }}</p>
+            </div>
+          </article>
+        </div>
+      </section>
     </div>
 
     <footer class="schwalbe-telemetry__footer">
@@ -158,7 +180,7 @@ import { ref, useId, watch } from 'vue'
 import { useI18n } from '#imports'
 import { usePageMessages } from '~/composables/usePageMessages'
 
-type TelemetryTab = 'radial' | 'green' | 'protection' | 'addix'
+type TelemetryTab = 'radial' | 'green' | 'protection' | 'colorCompound' | 'addix'
 
 const { locale, t: translate } = useI18n()
 const { loadPageMessages } = usePageMessages('guidesSchwalbeTireSelector')
@@ -173,6 +195,7 @@ const tabs: Array<{ id: TelemetryTab; labelKey: string }> = [
   { id: 'radial', labelKey: 'telemetryGuide.tabs.radial' },
   { id: 'green', labelKey: 'telemetryGuide.tabs.green' },
   { id: 'protection', labelKey: 'telemetryGuide.tabs.protection' },
+  { id: 'colorCompound', labelKey: 'telemetryGuide.tabs.colorCompound' },
   { id: 'addix', labelKey: 'telemetryGuide.tabs.addix' },
 ]
 
@@ -208,6 +231,12 @@ const compoundGuides = [
   { key: 'soft', accent: 'soft' },
   { key: 'ultraSoft', accent: 'ultraSoft' },
   { key: 'endurance', accent: 'endurance' },
+] as const
+
+const colorCompoundGuides = [
+  { key: 'color', mark: '🎨' },
+  { key: 'compound', mark: '🧪' },
+  { key: 'howToRead', mark: '📖' },
 ] as const
 </script>
 
@@ -411,6 +440,10 @@ const compoundGuides = [
   color: #0369a1;
 }
 
+.schwalbe-telemetry__topic--color-compound .schwalbe-telemetry__topic-label {
+  color: #c2410c;
+}
+
 .schwalbe-telemetry__compound p {
   font-size: 0.68rem;
   line-height: 1.5;
@@ -461,6 +494,12 @@ const compoundGuides = [
 }
 
 .schwalbe-telemetry__compound-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.schwalbe-telemetry__meaning-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.5rem;
@@ -528,6 +567,35 @@ const compoundGuides = [
   border-radius: 0.7rem;
   background: var(--tz-surface-subtle);
   padding: 0.65rem;
+}
+
+.schwalbe-telemetry__meaning-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.6rem;
+  align-items: start;
+  min-width: 0;
+  border: 1px solid #fed7aa;
+  border-radius: 0.7rem;
+  background: #fff7ed;
+  padding: 0.65rem;
+}
+
+.schwalbe-telemetry__meaning-mark {
+  display: grid;
+  width: 2rem;
+  height: 2rem;
+  place-items: center;
+  border-radius: 0.55rem;
+  background: #ffedd5;
+  font-size: 1rem;
+}
+
+.schwalbe-telemetry__meaning-card p {
+  margin: 0.25rem 0 0;
+  color: var(--tz-text-secondary);
+  font-size: 0.68rem;
+  line-height: 1.5;
 }
 
 .schwalbe-telemetry__compound-bar {
@@ -634,6 +702,10 @@ const compoundGuides = [
     grid-template-columns: 1fr;
   }
 
+  .schwalbe-telemetry__meaning-grid {
+    grid-template-columns: 1fr;
+  }
+
   .schwalbe-telemetry__radial-grid {
     grid-template-columns: 1fr;
   }
@@ -665,6 +737,10 @@ const compoundGuides = [
 
 @media (min-width: 761px) and (max-width: 1100px) {
   .schwalbe-telemetry__compound-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .schwalbe-telemetry__meaning-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }

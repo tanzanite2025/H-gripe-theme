@@ -130,6 +130,7 @@
       "radial": "🌀 径向胎体",
       "green": "🌿 Green Marathon",
       "protection": "🛡️ 防刺等级 1–7",
+      "colorCompound": "🎨 颜色与胶料",
       "addix": "🧪 ADDIX / Compound"
     },
     "radial": {
@@ -215,6 +216,25 @@
       "extra": {
         "title": "PunctureGuard · 单独命名的结构",
         "body": "Schwalbe 将 PunctureGuard 描述为入门级 3 mm 防刺层。官方页面把它单独说明，本指南不强行把它归入某个数字等级。"
+      }
+    },
+    "colorCompound": {
+      "label": "颜色与胶料 · 如何读取",
+      "title": "这两个目录字段分别代表什么",
+      "note": "选择器在每个商品卡片中保留这两个官方字段，便于核对型号。颜色是外观标签，胶料是橡胶配方名称；两者都不能代替具体型号页面中的完整结构、尺寸和用途说明。",
+      "items": {
+        "color": {
+          "title": "颜色是外观标签",
+          "body": "颜色字段保留官网的完整写法。像 Black+Reflex 这样的组合值应整体理解为一个目录标签，不能据此判断抓地、防刺、滚阻或胶料。"
+        },
+        "compound": {
+          "title": "胶料是橡胶配方名称",
+          "body": "ADDIX、ADDIX Speed、Soft、Ultra Soft、Endurance 等表示官方命名的橡胶配方。它们只能帮助理解大致取向，不是跨型号统一评分；胎体、花纹、胎压和具体型号都会影响实际表现。"
+        },
+        "howToRead": {
+          "title": "把它们当作核对字段",
+          "body": "小白选购时先核对轮径/BSD、ETRTO 外胎宽度、胎圈结构、密封系统、胎体/防刺结构和 E-BIKE 评级；颜色和胶料用于确认具体型号，最终以官方产品页完整规格为准。"
+        }
       }
     },
     "addix": {

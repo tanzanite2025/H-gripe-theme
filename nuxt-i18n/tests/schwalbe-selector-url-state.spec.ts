@@ -52,6 +52,21 @@ test.describe('Schwalbe selector URL state', () => {
     await expect(filterButton).toBeFocused()
   })
 
+  test('explains color and compound fields in the telemetry guide', async ({ page }) => {
+    await page.goto(selectorURL())
+    await waitForNuxtMount(page)
+
+    const tab = page.locator('[role=tab]').filter({ hasText: 'Color & compound' })
+    await expect(tab).toBeVisible()
+    await tab.click()
+
+    const topic = page.locator('.schwalbe-telemetry__topic--color-compound')
+    await expect(topic).toBeVisible()
+    await expect(topic).toContainText('Color is an appearance label')
+    await expect(topic).toContainText('Compound is a rubber formula name')
+    await expect(topic.locator('.schwalbe-telemetry__meaning-card')).toHaveCount(3)
+  })
+
   test('uses a compact weight sort toggle', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 })
     await page.goto(selectorURL())

@@ -130,6 +130,7 @@
       "radial": "🌀 Radial casing",
       "green": "🌿 Green Marathon",
       "protection": "🛡️ Protection Level 1–7",
+      "colorCompound": "🎨 Color & compound",
       "addix": "🧪 ADDIX / Compound"
     },
     "radial": {
@@ -215,6 +216,25 @@
       "extra": {
         "title": "PunctureGuard · separately named construction",
         "body": "Schwalbe describes PunctureGuard as a 3 mm puncture-protection insert for the entry-level segment. The page presents it separately; this guide does not force it into a numbered level."
+      }
+    },
+    "colorCompound": {
+      "label": "Color and compound · how to read",
+      "title": "What these two catalog fields mean",
+      "note": "The selector keeps these two official fields on each product card for model checking. Color is an appearance label; compound is a named rubber formulation. Neither replaces the complete construction, size, and use guidance on the model page.",
+      "items": {
+        "color": {
+          "title": "Color is an appearance label",
+          "body": "The color field preserves the official product wording. A combined value such as Black+Reflex should be read as one complete catalog label. It does not by itself indicate grip, puncture protection, rolling resistance, or compound."
+        },
+        "compound": {
+          "title": "Compound is a rubber formula name",
+          "body": "ADDIX, ADDIX Speed, Soft, Ultra Soft, Endurance, and similar names identify named rubber formulations. They suggest broad trade-offs, not a universal score; the casing, tread, pressure, and model still matter."
+        },
+        "howToRead": {
+          "title": "Use them as reference fields",
+          "body": "Start with wheel size/BSD, ETRTO width, bead, seal, casing/protection, and E-Bike rating. Use color and compound to confirm the exact model variant, then check the official product page for the complete specification."
+        }
       }
     },
     "addix": {
