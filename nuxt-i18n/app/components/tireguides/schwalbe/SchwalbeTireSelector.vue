@@ -117,6 +117,7 @@
         :rim-width-choose-wheel-size-label="tx('rimWidth.chooseWheelSize')"
         :rim-width-clear-label="tx('rimWidth.clear')"
         :casing-construction-label="tx('filters.casingConstruction')"
+        :radial-group-label="tx('filters.radialGroup')"
         :radial-label="tx('filters.radial')"
         :bead-label="tx('filters.bead')"
         :seal-label="tx('filters.seal')"

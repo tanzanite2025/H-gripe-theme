@@ -184,26 +184,15 @@
       </div>
     </details>
 
-    <details name="schwalbe-filter-accordion" class="schwalbe-filter-panel__accordion" @toggle="closeOtherAccordions">
-      <summary class="schwalbe-filter-panel__accordion-title">
-        <span>{{ radialLabel }}</span>
-        <span v-if="selectedRadialOnly" class="schwalbe-filter-panel__selection-count">
-          <span aria-hidden="true">1</span>
-          <span class="schwalbe-filter-panel__visually-hidden">{{ selectedCountLabel(1) }}</span>
-        </span>
-      </summary>
-      <div class="schwalbe-filter-panel__fields">
-        <fieldset class="schwalbe-filter-panel__group">
-          <legend class="schwalbe-filter-panel__visually-hidden">{{ radialLabel }}</legend>
-          <div class="schwalbe-filter-panel__options">
-            <label class="schwalbe-filter-panel__option">
-              <input v-model="selectedRadialOnly" type="checkbox">
-              <span>{{ radialLabel }}</span>
-            </label>
-          </div>
-        </fieldset>
+    <fieldset class="schwalbe-filter-panel__inline-facet">
+      <legend>{{ radialGroupLabel }}</legend>
+      <div class="schwalbe-filter-panel__options">
+        <label class="schwalbe-filter-panel__option">
+          <input v-model="selectedRadialOnly" type="checkbox">
+          <span>{{ radialLabel }}</span>
+        </label>
       </div>
-    </details>
+    </fieldset>
 
     <fieldset class="schwalbe-filter-panel__inline-facet">
       <legend>{{ beadLabel }}</legend>
@@ -318,6 +307,7 @@ const props = defineProps<{
   rimWidthChooseWheelSizeLabel: string
   rimWidthClearLabel: string
   casingConstructionLabel: string
+  radialGroupLabel: string
   radialLabel: string
   beadLabel: string
   sealLabel: string
