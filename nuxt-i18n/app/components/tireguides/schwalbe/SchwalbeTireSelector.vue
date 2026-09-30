@@ -10,10 +10,11 @@
     <SchwalbeTelemetryGuide />
 
     <form class="schwalbe-selector__controls" role="search" @submit.prevent="submitSearch">
-      <label class="schwalbe-selector__search">
-        <span class="schwalbe-selector__label">{{ tx('search.label') }}</span>
+      <div class="schwalbe-selector__search">
+        <label class="schwalbe-selector__label" :for="searchInputId">{{ tx('search.label') }}</label>
         <span class="schwalbe-selector__search-row">
           <input
+            :id="searchInputId"
             v-model="searchInput"
             type="search"
             :placeholder="tx('search.placeholder')"
@@ -21,8 +22,38 @@
           <button type="submit" class="schwalbe-selector__button">
             {{ tx('search.submit') }}
           </button>
+          <button
+            type="button"
+            class="schwalbe-selector__sort-toggle"
+            :aria-label="tx(sortBy === 'weight_desc' ? 'filters.sortWeightDescendingAria' : 'filters.sortWeightAscendingAria')"
+            :title="tx(sortBy === 'weight_desc' ? 'filters.sortWeightDescendingAria' : 'filters.sortWeightAscendingAria')"
+            @click="toggleWeightSort"
+          >
+            <Icon name="lucide:scale" class="schwalbe-selector__sort-icon" aria-hidden="true" />
+            <span class="schwalbe-selector__sort-direction" aria-hidden="true">
+              {{ sortBy === 'weight_desc' ? '↓' : '↑' }}
+            </span>
+          </button>
+          <button
+            type="button"
+            class="schwalbe-selector__filter-button"
+            :aria-label="tx('filters.openFilters')"
+            aria-haspopup="dialog"
+            :aria-expanded="filterDialogOpen"
+            :aria-controls="filterDialogOpen ? filterDialogId : undefined"
+            @click="openFilterDialog"
+          >
+            <Icon name="lucide:sliders-horizontal" class="schwalbe-selector__filter-icon" aria-hidden="true" />
+            <span
+              v-if="activeFilterCount > 0"
+              class="schwalbe-selector__filter-count"
+              :aria-label="tx('filters.activeCount', { count: activeFilterCount })"
+            >
+              {{ activeFilterCount }}
+            </span>
+          </button>
         </span>
-      </label>
+      </div>
 
       <div class="schwalbe-selector__selects">
         <label class="schwalbe-selector__model-filter">
@@ -33,36 +64,6 @@
             </option>
           </select>
         </label>
-        <button
-          type="button"
-          class="schwalbe-selector__sort-toggle"
-          :aria-label="tx(sortBy === 'weight_desc' ? 'filters.sortWeightDescendingAria' : 'filters.sortWeightAscendingAria')"
-          :title="tx(sortBy === 'weight_desc' ? 'filters.sortWeightDescendingAria' : 'filters.sortWeightAscendingAria')"
-          @click="toggleWeightSort"
-        >
-          <Icon name="lucide:scale" class="schwalbe-selector__sort-icon" aria-hidden="true" />
-          <span class="schwalbe-selector__sort-direction" aria-hidden="true">
-            {{ sortBy === 'weight_desc' ? '↓' : '↑' }}
-          </span>
-        </button>
-        <button
-          type="button"
-          class="schwalbe-selector__filter-button"
-          :aria-label="tx('filters.openFilters')"
-          aria-haspopup="dialog"
-          :aria-expanded="filterDialogOpen"
-          :aria-controls="filterDialogOpen ? filterDialogId : undefined"
-          @click="openFilterDialog"
-        >
-          <Icon name="lucide:sliders-horizontal" class="schwalbe-selector__filter-icon" aria-hidden="true" />
-          <span
-            v-if="activeFilterCount > 0"
-            class="schwalbe-selector__filter-count"
-            :aria-label="tx('filters.activeCount', { count: activeFilterCount })"
-          >
-            {{ activeFilterCount }}
-          </span>
-        </button>
         <button
           v-if="submittedSearch"
           type="button"
@@ -224,6 +225,7 @@ import {
 const { t: translate, locale } = useI18n()
 const tx = (key: string, params?: Record<string, unknown>) => translate(`guidesSchwalbeTireSelector.${key}`, params || {})
 const filterDialogOpen = ref(false)
+const searchInputId = `schwalbe-tire-search-${useId()}`
 const filterDialogId = `schwalbe-tire-catalog-filter-${useId()}`
 const {
   searchInput,
@@ -629,6 +631,16 @@ const activeFilterCount = computed(() => [
   outline-offset: 2px;
 }
 
+.schwalbe-selector__search-row > .schwalbe-selector__button,
+.schwalbe-selector__search-row > .schwalbe-selector__sort-toggle,
+.schwalbe-selector__search-row > .schwalbe-selector__filter-button {
+  width: 4.5rem;
+  min-width: 4.5rem;
+  height: 3rem;
+  min-height: 3rem;
+  border-radius: 999px;
+}
+
 .schwalbe-selector__filter-count {
   position: absolute;
   top: -0.45rem;
@@ -649,7 +661,7 @@ const activeFilterCount = computed(() => [
 
 .schwalbe-selector__selects {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   gap: 0.75rem;
   align-items: end;
 }
@@ -753,7 +765,12 @@ const activeFilterCount = computed(() => [
 @media (max-width: 760.5px) {
   .schwalbe-selector__search-row {
     display: grid;
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(3, 4.5rem);
+    justify-content: start;
+  }
+
+  .schwalbe-selector__search-row > input {
+    grid-column: 1 / -1;
   }
 
   .schwalbe-selector__selects {
