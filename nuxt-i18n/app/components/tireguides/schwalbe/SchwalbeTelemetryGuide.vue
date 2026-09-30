@@ -366,7 +366,7 @@ const compoundCatalogGuides = [
   border-radius: 0.75rem;
   background: #f0f9ff;
   color: #0369a1;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-family: var(--tz-font-ui);
   font-size: 0.65rem;
   font-weight: 800;
 }
@@ -375,7 +375,7 @@ const compoundCatalogGuides = [
 .schwalbe-telemetry__topic-label {
   margin: 0 0 0.25rem;
   color: var(--tz-text-accent);
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-family: var(--tz-font-ui);
   font-size: 0.68rem;
   font-weight: 800;
   letter-spacing: 0.08em;
@@ -435,7 +435,7 @@ const compoundCatalogGuides = [
   display: inline-flex;
   border-radius: 999px;
   padding: 0.25rem 0.55rem;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-family: var(--tz-font-ui);
   font-size: 0.65rem;
   font-weight: 700;
   line-height: 1.3;
@@ -641,7 +641,7 @@ const compoundCatalogGuides = [
   border-radius: 0.55rem;
   background: var(--tz-text-primary);
   color: var(--tz-card-surface);
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-family: var(--tz-font-ui);
   font-size: 0.66rem;
   font-weight: 800;
 }
@@ -799,7 +799,7 @@ const compoundCatalogGuides = [
 
 .schwalbe-telemetry__list-title strong {
   color: var(--tz-text-primary);
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-family: var(--tz-font-ui);
   font-size: 0.72rem;
 }
 

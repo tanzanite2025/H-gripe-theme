@@ -52,6 +52,21 @@ test.describe('Schwalbe selector URL state', () => {
     await expect(filterButton).toBeFocused()
   })
 
+  test('uses the storefront font for telemetry metadata', async ({ page }) => {
+    await page.goto(selectorURL())
+    await waitForNuxtMount(page)
+
+    const fontFamilies = await page.locator([
+      '.schwalbe-telemetry__year',
+      '.schwalbe-telemetry__kicker',
+      '.schwalbe-telemetry__badge',
+      '.schwalbe-telemetry__tab',
+    ].join(',')).evaluateAll((elements) => elements.map((element) => getComputedStyle(element).fontFamily))
+
+    expect(fontFamilies.length).toBeGreaterThan(0)
+    expect(fontFamilies.every((fontFamily) => fontFamily.includes('MapleUI'))).toBe(true)
+  })
+
   test('explains every color and compound value in separate telemetry tabs', async ({ page }) => {
     await page.goto(selectorURL())
     await waitForNuxtMount(page)
