@@ -1,0 +1,110 @@
+-- Add editorial explanations for the Schwalbe selector.
+--
+-- FAQ content is seeded in the database so the Admin FAQ editor can change,
+-- translate, publish, or reorder it. The NOT EXISTS guard makes this seed
+-- additive and avoids overwriting an answer that an editor has changed.
+
+WITH seed_faqs(
+    locale,
+    question,
+    answer,
+    sort_order
+) AS (
+    VALUES
+        (
+            'en',
+            'Does the load value mean the rider weight?',
+            '<p><code>load_kg</code> should normally be read as the catalog load-capacity value for a single tire. It is not a rider-weight limit. The complete system weight also includes the rider, bicycle, luggage, battery, and cargo. Front and rear loads do not have to be equal, so multiplying one tire value by two is not a safety certification for the complete bicycle. Check the exact model instructions together with tire pressure, rim, wheel size and BSD, seal type, and any E-BIKE rating. Treat this catalog value as a reference and follow the manufacturer requirements for the exact product.</p>',
+            140
+        ),
+        (
+            'en',
+            'What does EPI mean?',
+            '<p><strong>EPI</strong> means <em>Ends Per Inch</em>. It describes the density of casing cords in one inch of the tire casing. A higher EPI often points toward a finer and more supple casing, and can also support a lighter construction, but it is not a puncture-protection grade, load rating, or independent quality score. This catalog contains values such as 50, 67, and 127; read EPI together with the casing, puncture layer, tread, pressure range, and exact model specification.</p>',
+            150
+        ),
+        (
+            'en',
+            'What does each catalog color value mean?',
+            '<p>The color field describes the appearance label supplied with the catalog record. It does not describe compound, puncture protection, grip, or rolling resistance. <strong>Reflex</strong> means a reflective element; <strong>BlackReflex</strong> is the catalog label for a black reflective configuration; <strong>Sidewall</strong> means the tire sidewall; and <strong>Stripes</strong> means colored stripes. A slash or plus sign is part of one complete catalog value and must not be read as separate performance fields.</p><ul><li><code>Black</code>: black.</li><li><code>Black/Coffee+Reflex</code>: black and coffee-brown combination with a reflective element.</li><li><code>Black+BlackReflex</code>: black with the BlackReflex configuration.</li><li><code>Black+Reflex</code>: black with a reflective element.</li><li><code>Blue Stripes</code>: blue stripes.</li><li><code>Bronze</code>: bronze-colored finish.</li><li><code>Bronze Sidewall</code>: bronze-colored sidewall.</li><li><code>Bronze+Reflex</code>: bronze with a reflective element.</li><li><code>Brown/Whitewall+Reflex</code>: brown and whitewall combination with a reflective element.</li><li><code>Brown+Reflex</code>: brown with a reflective element.</li><li><code>Classic</code>: the catalog classic colorway label.</li><li><code>Creme+Reflex</code>: cream with a reflective element.</li><li><code>Grey Stripes</code>: grey stripes.</li><li><code>Grey/Black</code>: grey and black combination.</li><li><code>Gumwall</code>: tan or natural-rubber style sidewall.</li><li><code>Red Stripes</code>: red stripes.</li><li><code>Transparent Sidewall</code>: transparent sidewall.</li><li><code>White Stripes</code>: white stripes.</li><li><code>White/Bordeaux</code>: white and Bordeaux-red combination.</li><li><code>Whitewall</code>: white sidewall.</li><li><code>Whitewall+Reflex</code>: white sidewall with a reflective element.</li></ul><p>These names preserve the source catalog wording. They are not a standardized color code or a promise that two different models have identical visual finishes.</p>',
+            160
+        ),
+        (
+            'en',
+            'Which mountain and trail models are in this catalog?',
+            '<p>Grouped by model family, the current catalog contains the following mountain, gravity, trail, and off-road oriented names. Different sizes, compounds, casings, and bead versions are combined under the same family name.</p><ul><li><strong>General MTB and off-road:</strong> Big Betty, Billy Bonkers, Dirty Dan, Ice Spiker Pro, Jumbo Jim, Marathon Plus MTB, Nobby Nic, Racing Ralph, Racing Ray, Rapid Rob, Rocket Ron, Smart Sam, Thunder Burt, Tough Tom, and Wicked Will.</li><li><strong>GRAVITY:</strong> GRAVITY Magic Mary, GRAVITY Tacky Chan, GRAVITY PRO Albert Radial, GRAVITY PRO Eddy Current Radial, GRAVITY PRO Magic Mary, GRAVITY PRO Magic Mary Radial, GRAVITY PRO Romy, GRAVITY PRO Romy Radial, GRAVITY PRO Shredda F Radial, GRAVITY PRO Shredda R Radial, GRAVITY PRO Tacky Chan, and GRAVITY PRO Tacky Chan Radial.</li><li><strong>TRAIL:</strong> TRAIL Magic Mary, TRAIL PRO Albert Radial, TRAIL PRO Magic Mary, TRAIL PRO Magic Mary Radial, TRAIL PRO Nobby Nic, TRAIL PRO Romy, TRAIL PRO Romy Radial, TRAIL PRO Tacky Chan, TRAIL PRO Tacky Chan Radial, TRAIL Romy, and TRAIL Tacky Chan.</li><li><strong>RACE PRO:</strong> RACE PRO Romy and RACE PRO Tacky Chan.</li></ul><p>Motion Hurricane, Motion Land Cruiser, Motion Smart Sam Cargo, and similar names are kept as mixed-terrain or utility models rather than being presented as a pure MTB classification. Always check the exact size, BSD/ETRTO, casing, and intended use.</p>',
+            170
+        ),
+        (
+            'en',
+            'Which road or gravel models are in this catalog, and which are disc-brake tires?',
+            '<p>The catalog contains these road-oriented families: Lugano II, Lugano II Endurance, One, One 365, One 365 Tubeless, One Plus, One Tubeless, PRO One, PRO One Aero Front, PRO One Aero Rear, PRO One TT, PRO One Tubeless, and Schwalbe Pro One Allroad. Its gravel, all-road, and cyclocross-oriented names include G-One Allround, G-One Comp, Schwalbe G-One Comp Plus, G-One Overland, G-One Overland PRO, Schwalbe G-One Overland 365, G-One R, G-One R PRO, G-One RS, G-One RX, G-One RX PRO, G-One Speed, X One RS PRO, X-One R, X-One R PRO, and X-One RX PRO.</p><p>The catalog has no <code>brake_type</code> field and does not certify any of these as a disc-brake-only list. For a road bicycle with disc brakes, confirm the exact product page, wheel size and BSD, ETRTO width, rim internal width, bead and seal construction, frame and fork clearance, pressure range, and tubeless requirements. Road or gravel naming alone is not a compatibility approval.</p>',
+            180
+        ),
+        (
+            'zh_cn',
+            '目录中的承重（kg）是不是车手体重？',
+            '<p><code>load_kg</code> 通常按单条外胎的目录承载能力理解，不能直接当作车手体重上限。整车系统重量还包括车手、自行车、行李、电池和货物；前后轮的负荷也不一定相等，所以不能简单把单条数值乘以二，就当作整车安全承重认证。请结合具体型号官方说明，同时核对胎压、车圈、轮径和 BSD、密封结构以及 E-BIKE 评级。这个目录值只能作为参考，具体产品应遵循制造商要求。</p>',
+            140
+        ),
+        (
+            'zh_cn',
+            'EPI 是什么意思？',
+            '<p><strong>EPI</strong> 是 <em>Ends Per Inch</em> 的缩写，表示外胎胎体帘线每英寸的密度。EPI 较高通常意味着胎体帘线更细密，外胎可能更柔顺，也可能有更轻的结构取向，但它不是独立的防刺等级、承重等级或质量评分。本目录中有 50、67、127 等数值，应和胎体结构、防刺层、花纹、胎压范围及具体型号一起判断。</p>',
+            150
+        ),
+        (
+            'zh_cn',
+            '颜色字段中的每个值分别代表什么？',
+            '<p>颜色字段表示目录记录提供的外观标签，不代表胶料、防刺能力、抓地力或滚阻。<strong>Reflex</strong> 表示反光元素；<strong>BlackReflex</strong> 是黑色反光配置的目录标签；<strong>Sidewall</strong> 表示侧壁；<strong>Stripes</strong> 表示条纹。斜杠和加号属于一个完整的目录值，不能当成独立的性能字段拆开理解。</p><ul><li><code>Black</code>：黑色。</li><li><code>Black/Coffee+Reflex</code>：黑色与咖啡色/棕色组合，并带反光元素。</li><li><code>Black+BlackReflex</code>：黑色与 BlackReflex 配置。</li><li><code>Black+Reflex</code>：黑色并带反光元素。</li><li><code>Blue Stripes</code>：蓝色条纹。</li><li><code>Bronze</code>：青铜/古铜色外观。</li><li><code>Bronze Sidewall</code>：青铜色侧壁。</li><li><code>Bronze+Reflex</code>：青铜色并带反光元素。</li><li><code>Brown/Whitewall+Reflex</code>：棕色与白色侧壁组合，并带反光元素。</li><li><code>Brown+Reflex</code>：棕色并带反光元素。</li><li><code>Classic</code>：目录中的经典配色标签。</li><li><code>Creme+Reflex</code>：奶油色并带反光元素。</li><li><code>Grey Stripes</code>：灰色条纹。</li><li><code>Grey/Black</code>：灰色与黑色组合。</li><li><code>Gumwall</code>：棕黄色或天然橡胶风格侧壁。</li><li><code>Red Stripes</code>：红色条纹。</li><li><code>Transparent Sidewall</code>：透明侧壁。</li><li><code>White Stripes</code>：白色条纹。</li><li><code>White/Bordeaux</code>：白色与酒红色组合。</li><li><code>Whitewall</code>：白色侧壁。</li><li><code>Whitewall+Reflex</code>：白色侧壁并带反光元素。</li></ul><p>这些名称保留了源目录写法，并不是统一的颜色编码，也不能保证不同型号的实际视觉效果完全相同。</p>',
+            160
+        ),
+        (
+            'zh_cn',
+            '当前目录里有哪些山地和越野取向型号？',
+            '<p>按型号家族合并相同系列的不同尺寸、胶料、胎体和胎圈版本后，当前目录中的山地、Gravity、Trail 和越野取向名称如下：</p><ul><li><strong>常见山地和越野：</strong> Big Betty、Billy Bonkers、Dirty Dan、Ice Spiker Pro、Jumbo Jim、Marathon Plus MTB、Nobby Nic、Racing Ralph、Racing Ray、Rapid Rob、Rocket Ron、Smart Sam、Thunder Burt、Tough Tom、Wicked Will。</li><li><strong>GRAVITY：</strong> GRAVITY Magic Mary、GRAVITY Tacky Chan、GRAVITY PRO Albert Radial、GRAVITY PRO Eddy Current Radial、GRAVITY PRO Magic Mary、GRAVITY PRO Magic Mary Radial、GRAVITY PRO Romy、GRAVITY PRO Romy Radial、GRAVITY PRO Shredda F Radial、GRAVITY PRO Shredda R Radial、GRAVITY PRO Tacky Chan、GRAVITY PRO Tacky Chan Radial。</li><li><strong>TRAIL：</strong> TRAIL Magic Mary、TRAIL PRO Albert Radial、TRAIL PRO Magic Mary、TRAIL PRO Magic Mary Radial、TRAIL PRO Nobby Nic、TRAIL PRO Romy、TRAIL PRO Romy Radial、TRAIL PRO Tacky Chan、TRAIL PRO Tacky Chan Radial、TRAIL Romy、TRAIL Tacky Chan。</li><li><strong>RACE PRO：</strong> RACE PRO Romy、RACE PRO Tacky Chan。</li></ul><p>Motion Hurricane、Motion Land Cruiser、Motion Smart Sam Cargo 等名称更接近混合地形或通勤/载重用途，因此没有直接归入纯 MTB。最终仍需核对具体尺寸、BSD/ETRTO、胎体和用途。</p>',
+            170
+        ),
+        (
+            'zh_cn',
+            '当前目录里有哪些公路或 Gravel 型号？哪些可以直接算作碟刹外胎？',
+            '<p>目录中按型号名称归为公路取向的有：Lugano II、Lugano II Endurance、One、One 365、One 365 Tubeless、One Plus、One Tubeless、PRO One、PRO One Aero Front、PRO One Aero Rear、PRO One TT、PRO One Tubeless、Schwalbe Pro One Allroad。Gravel、All-road 和越野公路取向的有：G-One Allround、G-One Comp、Schwalbe G-One Comp Plus、G-One Overland、G-One Overland PRO、Schwalbe G-One Overland 365、G-One R、G-One R PRO、G-One RS、G-One RX、G-One RX PRO、G-One Speed、X One RS PRO、X-One R、X-One R PRO、X-One RX PRO。</p><p>目录没有 <code>brake_type</code> 字段，因此不能把这些型号写成“碟刹专用”清单。装在公路碟刹车上时，仍要按具体型号核对产品页、轮径和 BSD、ETRTO 外胎宽度、车圈内宽、胎圈和密封结构、车架与前叉间隙、胎压范围及真空胎要求。公路或 Gravel 的名称本身不是兼容性认证。</p>',
+            180
+        )
+)
+INSERT INTO faqs (
+    page_id,
+    locale,
+    question,
+    answer,
+    answer_image_url,
+    answer_image_alt,
+    answer_image_width,
+    answer_image_height,
+    status,
+    "order",
+    created_at,
+    updated_at
+)
+SELECT
+    'guides-schwalbe-tire-selector',
+    seed_faqs.locale,
+    seed_faqs.question,
+    seed_faqs.answer,
+    '',
+    '',
+    0,
+    0,
+    'published',
+    seed_faqs.sort_order,
+    NOW(),
+    NOW()
+FROM seed_faqs
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM faqs existing
+    WHERE existing.deleted_at IS NULL
+      AND existing.page_id = 'guides-schwalbe-tire-selector'
+      AND existing.locale = seed_faqs.locale
+      AND existing.question = seed_faqs.question
+);
