@@ -214,54 +214,6 @@
       </div>
     </fieldset>
 
-    <details name="schwalbe-filter-accordion" class="schwalbe-filter-panel__accordion" @toggle="closeOtherAccordions">
-      <summary class="schwalbe-filter-panel__accordion-title">
-        <span>{{ colorLabel }}</span>
-        <span v-if="selectedColors.length > 0" class="schwalbe-filter-panel__selection-count">
-          <span aria-hidden="true">{{ selectedColors.length }}</span>
-          <span class="schwalbe-filter-panel__visually-hidden">{{ selectedCountLabel(selectedColors.length) }}</span>
-        </span>
-      </summary>
-      <div class="schwalbe-filter-panel__fields">
-        <fieldset class="schwalbe-filter-panel__group">
-          <legend class="schwalbe-filter-panel__visually-hidden">{{ colorLabel }}</legend>
-          <div
-            class="schwalbe-filter-panel__options"
-            :class="{ 'schwalbe-filter-panel__options--many': hasManyOptions(colorOptions) }"
-          >
-            <label v-for="option in colorOptions" :key="option.value" class="schwalbe-filter-panel__option">
-              <input v-model="selectedColors" type="checkbox" :value="option.value">
-              <span>{{ option.value }}</span>
-            </label>
-          </div>
-        </fieldset>
-      </div>
-    </details>
-
-    <details name="schwalbe-filter-accordion" class="schwalbe-filter-panel__accordion" @toggle="closeOtherAccordions">
-      <summary class="schwalbe-filter-panel__accordion-title">
-        <span>{{ compoundLabel }}</span>
-        <span v-if="selectedCompounds.length > 0" class="schwalbe-filter-panel__selection-count">
-          <span aria-hidden="true">{{ selectedCompounds.length }}</span>
-          <span class="schwalbe-filter-panel__visually-hidden">{{ selectedCountLabel(selectedCompounds.length) }}</span>
-        </span>
-      </summary>
-      <div class="schwalbe-filter-panel__fields">
-        <fieldset class="schwalbe-filter-panel__group">
-          <legend class="schwalbe-filter-panel__visually-hidden">{{ compoundLabel }}</legend>
-          <div
-            class="schwalbe-filter-panel__options"
-            :class="{ 'schwalbe-filter-panel__options--many': hasManyOptions(compoundOptions) }"
-          >
-            <label v-for="option in compoundOptions" :key="option.value" class="schwalbe-filter-panel__option">
-              <input v-model="selectedCompounds" type="checkbox" :value="option.value">
-              <span>{{ option.value }}</span>
-            </label>
-          </div>
-        </fieldset>
-      </div>
-    </details>
-
     <button v-if="hasSelection" type="button" class="schwalbe-filter-panel__reset" @click="emit('reset')">
       {{ resetLabel }}
     </button>
@@ -286,8 +238,6 @@ const selectedRadialOnly = defineModel<boolean>('selectedRadialOnly', { required
 const selectedBeads = defineModel<string[]>('selectedBeads', { required: true })
 const selectedSeals = defineModel<string[]>('selectedSeals', { required: true })
 const selectedEBikeRatings = defineModel<(string | null)[]>('selectedEBikeRatings', { required: true })
-const selectedColors = defineModel<string[]>('selectedColors', { required: true })
-const selectedCompounds = defineModel<string[]>('selectedCompounds', { required: true })
 const emit = defineEmits<{
   reset: []
 }>()
@@ -313,8 +263,6 @@ const props = defineProps<{
   sealLabel: string
   eBikeRatingLabel: string
   eBikeUnratedLabel: string
-  colorLabel: string
-  compoundLabel: string
   resetLabel: string
   tireWidthOptions: readonly SchwalbeTireCatalogFilterOption<number>[]
   wheelSizeOptions: readonly SchwalbeTireCatalogWheelSizeOption[]
@@ -322,8 +270,6 @@ const props = defineProps<{
   beadOptions: readonly SchwalbeTireCatalogFilterOption<string>[]
   sealOptions: readonly SchwalbeTireCatalogFilterOption<string>[]
   eBikeRatingOptions: readonly SchwalbeTireCatalogFilterOption<string | null>[]
-  colorOptions: readonly SchwalbeTireCatalogFilterOption<string>[]
-  compoundOptions: readonly SchwalbeTireCatalogFilterOption<string>[]
 }>()
 
 const hasSelection = computed(() => (
@@ -338,8 +284,6 @@ const hasSelection = computed(() => (
   || selectedBeads.value.length > 0
   || selectedSeals.value.length > 0
   || selectedEBikeRatings.value.length > 0
-  || selectedColors.value.length > 0
-  || selectedCompounds.value.length > 0
 ))
 
 const hasTireWidthSelection = computed(() => (

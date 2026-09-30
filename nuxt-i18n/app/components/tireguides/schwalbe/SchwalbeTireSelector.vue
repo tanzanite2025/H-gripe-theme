@@ -100,8 +100,6 @@
         v-model:selected-beads="draftFacetFilters.beads"
         v-model:selected-seals="draftFacetFilters.seals"
         v-model:selected-e-bike-ratings="draftFacetFilters.eBikeRatings"
-        v-model:selected-colors="draftFacetFilters.colors"
-        v-model:selected-compounds="draftFacetFilters.compounds"
         @reset="clearDraftFacetFilters"
         :label="tx('filters.catalogFilters')"
         :selected-count-template="tx('filters.selectedCount', { count: '{count}' })"
@@ -123,8 +121,6 @@
         :seal-label="tx('filters.seal')"
         :e-bike-rating-label="tx('filters.eBikeRating')"
         :e-bike-unrated-label="tx('filters.eBikeUnrated')"
-        :color-label="tx('filters.color')"
-        :compound-label="tx('filters.compound')"
         :reset-label="tx('filters.clearFilters')"
         :tire-width-options="tireWidthOptions"
         :wheel-size-options="wheelSizeOptions"
@@ -132,8 +128,6 @@
         :bead-options="beadOptions"
         :seal-options="sealOptions"
         :e-bike-rating-options="eBikeRatingOptions"
-        :color-options="colorOptions"
-        :compound-options="compoundOptions"
       />
     </SchwalbeTireCatalogFilterDrawer>
 
@@ -252,8 +246,6 @@ const {
   selectedBeads,
   selectedSeals,
   selectedEBikeRatings,
-  selectedColors,
-  selectedCompounds,
   getFacetFilterState,
   applyFacetFilterState,
   sortBy,
@@ -265,8 +257,6 @@ const {
   beadOptions,
   sealOptions,
   eBikeRatingOptions,
-  colorOptions,
-  compoundOptions,
   hasActiveFilters,
   currentPage,
   totalPages,
@@ -324,8 +314,6 @@ const draftFacetFilters = reactive<SchwalbeTireCatalogFacetFilterState>({
   beads: [],
   seals: [],
   eBikeRatings: [],
-  colors: [],
-  compounds: [],
 })
 const draftInnerRimWidthInput = ref<string | number | null>('')
 
@@ -369,8 +357,6 @@ const syncDraftFacetFilters = () => {
   draftFacetFilters.beads = [...committed.beads]
   draftFacetFilters.seals = [...committed.seals]
   draftFacetFilters.eBikeRatings = [...committed.eBikeRatings]
-  draftFacetFilters.colors = [...committed.colors]
-  draftFacetFilters.compounds = [...committed.compounds]
   draftInnerRimWidthInput.value = committed.innerRimWidthMm === null
     ? ''
     : String(committed.innerRimWidthMm)
@@ -402,8 +388,6 @@ const applyFilterDraft = () => {
     beads: [...draftFacetFilters.beads],
     seals: [...draftFacetFilters.seals],
     eBikeRatings: [...draftFacetFilters.eBikeRatings],
-    colors: [...draftFacetFilters.colors],
-    compounds: [...draftFacetFilters.compounds],
   })
   filterDialogOpen.value = false
 }
@@ -421,8 +405,6 @@ const clearDraftFacetFilters = () => {
   draftFacetFilters.beads = []
   draftFacetFilters.seals = []
   draftFacetFilters.eBikeRatings = []
-  draftFacetFilters.colors = []
-  draftFacetFilters.compounds = []
 }
 
 const hasAdditionalRimWidthFacetFilters = computed(() => (
@@ -434,8 +416,6 @@ const hasAdditionalRimWidthFacetFilters = computed(() => (
   || selectedBeads.value.length > 0
   || selectedSeals.value.length > 0
   || selectedEBikeRatings.value.length > 0
-  || selectedColors.value.length > 0
-  || selectedCompounds.value.length > 0
   || selectedBeadSeatDiametersMm.value.length > 0
 ))
 
@@ -464,8 +444,6 @@ const activeFilterCount = computed(() => [
   selectedBeads.value.length > 0,
   selectedSeals.value.length > 0,
   selectedEBikeRatings.value.length > 0,
-  selectedColors.value.length > 0,
-  selectedCompounds.value.length > 0,
 ].filter(Boolean).length)
 </script>
 

@@ -32,8 +32,6 @@ export type SchwalbeTireCatalogFacetFilterState = Pick<
   | 'beads'
   | 'seals'
   | 'eBikeRatings'
-  | 'colors'
-  | 'compounds'
 >
 
 export const SCHWALBE_CATALOG_PAGE_SIZE = 20
@@ -58,6 +56,12 @@ const parseSelectorRouteFilterState = (query: Record<string, unknown>): Schwalbe
   // filter. Keep the shared query/API contract for other consumers, but never
   // let this retired URL field silently constrain selector results.
   minimumLoadKg: null,
+  // Color and compound remain catalog dimensions and shared query fields, but
+  // are intentionally not selector facets for the beginner-facing drawer.
+  // Ignore legacy URL values so a hidden condition cannot silently constrain
+  // the visible result set.
+  colors: [],
+  compounds: [],
 })
 
 const emptySelectorPage = (): SchwalbeTireCatalogSelectorPage => ({
@@ -139,8 +143,8 @@ export const useSchwalbeTireSelector = async () => {
       beads: [...facetState.beads],
       seals: [...facetState.seals],
       eBikeRatings: [...facetState.eBikeRatings],
-      colors: [...facetState.colors],
-      compounds: [...facetState.compounds],
+      colors: [],
+      compounds: [],
     })
   }
 
@@ -156,8 +160,6 @@ export const useSchwalbeTireSelector = async () => {
     beads: [...filterState.value.beads],
     seals: [...filterState.value.seals],
     eBikeRatings: [...filterState.value.eBikeRatings],
-    colors: [...filterState.value.colors],
-    compounds: [...filterState.value.compounds],
   })
   const selectedModel = computed({
     get: () => filterState.value.modelName ?? 'ALL',
@@ -240,14 +242,6 @@ export const useSchwalbeTireSelector = async () => {
     get: () => filterState.value.eBikeRatings,
     set: (eBikeRatings: (string | null)[]) => updateFilterState({ eBikeRatings }),
   })
-  const selectedColors = computed({
-    get: () => filterState.value.colors,
-    set: (colors: string[]) => updateFilterState({ colors }),
-  })
-  const selectedCompounds = computed({
-    get: () => filterState.value.compounds,
-    set: (compounds: string[]) => updateFilterState({ compounds }),
-  })
   const sortBy = computed<SchwalbeCatalogSort>({
     get: () => filterState.value.sortBy,
     set: (sortBy) => updateFilterState({ sortBy }),
@@ -323,8 +317,6 @@ export const useSchwalbeTireSelector = async () => {
     || filterState.value.beads.length > 0
     || filterState.value.seals.length > 0
     || filterState.value.eBikeRatings.length > 0
-    || filterState.value.colors.length > 0
-    || filterState.value.compounds.length > 0
   ))
 
   let applyingRouteFilterState = false
@@ -469,8 +461,6 @@ export const useSchwalbeTireSelector = async () => {
     selectedBeads,
     selectedSeals,
     selectedEBikeRatings,
-    selectedColors,
-    selectedCompounds,
     getFacetFilterState,
     applyFacetFilterState,
     sortBy,
@@ -485,8 +475,6 @@ export const useSchwalbeTireSelector = async () => {
     beadOptions: computed(() => filterOptions.value.beads),
     sealOptions: computed(() => filterOptions.value.seals),
     eBikeRatingOptions: computed(() => filterOptions.value.eBikeRatings),
-    colorOptions: computed(() => filterOptions.value.colors),
-    compoundOptions: computed(() => filterOptions.value.compounds),
     hasActiveFilters,
     clearFacetFilters,
     clearRimWidthSecondaryFilters,

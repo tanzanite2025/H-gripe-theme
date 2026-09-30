@@ -269,10 +269,10 @@ test.describe('Schwalbe selector URL state', () => {
 
     const panel = page.locator('.schwalbe-filter-panel')
     const accordions = panel.locator(':scope > .schwalbe-filter-panel__accordion')
-    await expect(accordions).toHaveCount(5)
+    await expect(accordions).toHaveCount(3)
     await expect(panel.locator(':scope > .schwalbe-filter-panel__accordion[open]')).toHaveCount(1)
     const accordionBoxes = await Promise.all(
-      Array.from({ length: 5 }, (_, index) => accordions.nth(index).boundingBox()),
+      Array.from({ length: 3 }, (_, index) => accordions.nth(index).boundingBox()),
     )
     expect(accordionBoxes.every(box => box !== null)).toBe(true)
     expect(new Set(accordionBoxes.map(box => Math.round(box?.x ?? 0))).size).toBe(1)
@@ -312,6 +312,27 @@ test.describe('Schwalbe selector URL state', () => {
       url.pathname === selectorPath
       && url.searchParams.get('bead') === 'Folding'
       && !url.searchParams.has('min_load_kg')
+      && !url.searchParams.has('page')
+    ))
+  })
+
+  test('hides color and compound facets and clears their legacy conditions', async ({ page }) => {
+    await page.goto(selectorURL('?color=Black&compound=ADDIX&page=2'))
+    await waitForNuxtMount(page)
+    await openCatalogFilters(page)
+
+    await expect(page.locator('summary.schwalbe-filter-panel__accordion-title').filter({ hasText: 'Color' })).toHaveCount(0)
+    await expect(page.locator('summary.schwalbe-filter-panel__accordion-title').filter({ hasText: 'Compound' })).toHaveCount(0)
+    await expect(page.getByRole('checkbox', { name: 'Black', exact: true })).toHaveCount(0)
+    await expect(page.getByRole('checkbox', { name: 'ADDIX', exact: true })).toHaveCount(0)
+
+    await page.getByRole('checkbox', { name: 'Folding', exact: true }).check()
+    await page.getByRole('button', { name: 'Show results' }).click()
+    await expect(page).toHaveURL((url) => (
+      url.pathname === selectorPath
+      && url.searchParams.get('bead') === 'Folding'
+      && !url.searchParams.has('color')
+      && !url.searchParams.has('compound')
       && !url.searchParams.has('page')
     ))
   })
