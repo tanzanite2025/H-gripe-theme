@@ -10,7 +10,6 @@
     "placeholder": "型号、Article No.、ETRTO 或英制尺寸",
     "submit": "搜索",
     "clear": "清除搜索",
-    "hint": "请输入一个完整搜索词。接口会在 Article No.、型号名称、ETRTO 和 Inch 四个字段中进行 OR 包含匹配，不会拆分多个词。",
     "active": "搜索：{term}"
   },
   "filters": {

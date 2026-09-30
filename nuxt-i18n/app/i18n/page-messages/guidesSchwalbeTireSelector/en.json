@@ -10,7 +10,6 @@
     "placeholder": "Model, Article No., ETRTO, or inch size",
     "submit": "Search",
     "clear": "Clear search",
-    "hint": "Use one complete search term. The API checks Article No., model name, ETRTO, and Inch with OR matching; it does not split multiple words.",
     "active": "Search: {term}"
   },
   "filters": {

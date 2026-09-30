@@ -17,14 +17,10 @@
             v-model="searchInput"
             type="search"
             :placeholder="tx('search.placeholder')"
-            :aria-describedby="'schwalbe-search-help'"
           >
           <button type="submit" class="schwalbe-selector__button">
             {{ tx('search.submit') }}
           </button>
-        </span>
-        <span id="schwalbe-search-help" class="schwalbe-selector__hint">
-          {{ tx('search.hint') }}
         </span>
       </label>
 
@@ -649,12 +645,6 @@ const activeFilterCount = computed(() => [
   font-size: 0.68rem;
   font-weight: 800;
   line-height: 1;
-}
-
-.schwalbe-selector__hint {
-  color: var(--tz-text-secondary);
-  font-size: 0.74rem;
-  line-height: 1.45;
 }
 
 .schwalbe-selector__selects {
