@@ -222,6 +222,27 @@ test.describe('Schwalbe selector URL state', () => {
     await expect(page).toHaveURL(url => url.searchParams.get('wheel_size') === '26-559')
   })
 
+  test('uses ALL as the default casing orientation and keeps Radial in the URL', async ({ page }) => {
+    await page.goto(selectorURL('?radial=1'))
+    await waitForNuxtMount(page)
+    await openCatalogFilters(page)
+
+    const allOption = page.getByRole('radio', { name: 'ALL', exact: true })
+    const radialOption = page.getByRole('radio', { name: 'Radial', exact: true })
+    await expect(radialOption).toBeChecked()
+    await expect(allOption).not.toBeChecked()
+
+    await allOption.check()
+    await page.getByRole('button', { name: 'Show results' }).click()
+    await expect(page).not.toHaveURL(/radial=/)
+
+    await openCatalogFilters(page)
+    await expect(allOption).toBeChecked()
+    await radialOption.check()
+    await page.getByRole('button', { name: 'Show results' }).click()
+    await expect(page).toHaveURL(url => url.searchParams.get('radial') === '1')
+  })
+
   test('keeps wheel size and rim inner width in one drawer flow', async ({ page }) => {
     await page.goto(selectorURL())
     await waitForNuxtMount(page)
@@ -347,11 +368,17 @@ test.describe('Schwalbe selector URL state', () => {
     const dialog = page.getByRole('dialog', { name: 'Filter catalog' })
     await expect(dialog).toBeVisible()
     await expect(dialog.locator('summary.schwalbe-filter-panel__accordion-title').filter({ hasText: 'Tire width' })).toBeVisible()
-    await expect(dialog.locator('fieldset.schwalbe-filter-panel__inline-facet')).toHaveCount(4)
+    await expect(dialog.locator('fieldset.schwalbe-filter-panel__inline-facet')).toHaveCount(5)
     await expect(dialog.locator('fieldset.schwalbe-filter-panel__inline-facet').filter({ hasText: 'Casing orientation' })).toBeVisible()
     await expect(dialog.locator('fieldset.schwalbe-filter-panel__inline-facet').filter({ hasText: 'E-Bike marking' })).toBeVisible()
     await expect(dialog.locator('fieldset.schwalbe-filter-panel__inline-facet').filter({ hasText: 'Seal' })).toBeVisible()
-    await expect(dialog.getByRole('checkbox', { name: 'Radial', exact: true })).toBeVisible()
+    await expect(dialog.getByRole('radio', { name: 'ALL', exact: true })).toBeChecked()
+    await expect(dialog.getByRole('radio', { name: 'Radial', exact: true })).not.toBeChecked()
+    await dialog.getByRole('radio', { name: 'Radial', exact: true }).check()
+    await expect(dialog.getByRole('radio', { name: 'Radial', exact: true })).toBeChecked()
+    await expect(dialog.getByRole('radio', { name: 'ALL', exact: true })).not.toBeChecked()
+    await dialog.getByRole('radio', { name: 'ALL', exact: true }).check()
+    await expect(dialog.getByRole('radio', { name: 'ALL', exact: true })).toBeChecked()
     await expect(dialog.locator('summary.schwalbe-filter-panel__accordion-title').filter({ hasText: 'Casing orientation' })).toHaveCount(0)
     await expect(dialog.locator('summary.schwalbe-filter-panel__accordion-title').filter({ hasText: 'E-Bike marking' })).toHaveCount(0)
     await expect(dialog.locator('summary.schwalbe-filter-panel__accordion-title').filter({ hasText: 'Seal' })).toHaveCount(0)
@@ -369,7 +396,7 @@ test.describe('Schwalbe selector URL state', () => {
     const before = await dialog.boundingBox()
     expect(before).not.toBeNull()
 
-    await openFilterGroup(page, 'Casing construction')
+    await openFilterGroup(page, 'Wheel size (BSD)')
 
     const after = await dialog.boundingBox()
     expect(after).not.toBeNull()
@@ -378,10 +405,10 @@ test.describe('Schwalbe selector URL state', () => {
 
     const panel = page.locator('.schwalbe-filter-panel')
     const accordions = panel.locator(':scope > .schwalbe-filter-panel__accordion')
-    await expect(accordions).toHaveCount(3)
+    await expect(accordions).toHaveCount(2)
     await expect(panel.locator(':scope > .schwalbe-filter-panel__accordion[open]')).toHaveCount(1)
     const accordionBoxes = await Promise.all(
-      Array.from({ length: 3 }, (_, index) => accordions.nth(index).boundingBox()),
+      Array.from({ length: 2 }, (_, index) => accordions.nth(index).boundingBox()),
     )
     expect(accordionBoxes.every(box => box !== null)).toBe(true)
     expect(new Set(accordionBoxes.map(box => Math.round(box?.x ?? 0))).size).toBe(1)

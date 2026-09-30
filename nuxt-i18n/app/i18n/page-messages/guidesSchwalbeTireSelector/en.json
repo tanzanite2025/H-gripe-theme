@@ -27,6 +27,7 @@
     "minimumLoadHint": "Compared with the official load for one tire. This is not a rider weight limit; rider, bike, and gear loads are shared by the front and rear tires.",
     "casingConstruction": "Casing construction",
     "radialGroup": "Casing orientation",
+    "radialAll": "ALL",
     "radial": "Radial",
     "bead": "Bead",
     "seal": "Seal",

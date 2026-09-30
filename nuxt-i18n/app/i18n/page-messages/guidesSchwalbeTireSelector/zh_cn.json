@@ -27,6 +27,7 @@
     "minimumLoadHint": "按官网标注的单条轮胎承重筛选，不等于骑行者体重上限；骑行者、车辆和装备的重量由前后轮共同承受。",
     "casingConstruction": "胎体结构",
     "radialGroup": "胎体方向",
+    "radialAll": "ALL",
     "radial": "Radial（径向）",
     "bead": "胎圈结构",
     "seal": "密封系统（Seal）",

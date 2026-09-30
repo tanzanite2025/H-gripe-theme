@@ -113,6 +113,7 @@
         :rim-width-clear-label="tx('rimWidth.clear')"
         :casing-construction-label="tx('filters.casingConstruction')"
         :radial-group-label="tx('filters.radialGroup')"
+        :radial-all-label="tx('filters.radialAll')"
         :radial-label="tx('filters.radial')"
         :bead-label="tx('filters.bead')"
         :seal-label="tx('filters.seal')"

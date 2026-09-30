@@ -177,7 +177,21 @@
       <legend>{{ radialGroupLabel }}</legend>
       <div class="schwalbe-filter-panel__options">
         <label class="schwalbe-filter-panel__option">
-          <input v-model="selectedRadialOnly" type="checkbox">
+          <input
+            v-model="selectedRadialOnly"
+            type="radio"
+            name="schwalbe-radial-filter"
+            :value="false"
+          >
+          <span>{{ radialAllLabel }}</span>
+        </label>
+        <label class="schwalbe-filter-panel__option">
+          <input
+            v-model="selectedRadialOnly"
+            type="radio"
+            name="schwalbe-radial-filter"
+            :value="true"
+          >
           <span>{{ radialLabel }}</span>
         </label>
       </div>
@@ -247,6 +261,7 @@ const props = defineProps<{
   rimWidthClearLabel: string
   casingConstructionLabel: string
   radialGroupLabel: string
+  radialAllLabel: string
   radialLabel: string
   beadLabel: string
   sealLabel: string
