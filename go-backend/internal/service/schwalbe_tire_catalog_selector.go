@@ -153,7 +153,7 @@ func (s *ProductService) SearchSchwalbeTireCatalogSelector(query SchwalbeTireCat
 		if err != nil {
 			return nil, err
 		}
-		rimWidthContext = buildSchwalbeTireCatalogSelectorRimWidthContext(query.InnerRimWidthMM, rimWidthRules)
+		rimWidthContext = buildSchwalbeTireCatalogSelectorRimWidthContext(query.InnerRimWidthMM, query.WheelSizeKeys, rimWidthRules)
 	}
 
 	rows := make([]schwalbeTireCatalogSelectorRow, 0, len(items))
@@ -212,6 +212,7 @@ func (s *ProductService) SearchSchwalbeTireCatalogSelector(query SchwalbeTireCat
 
 func buildSchwalbeTireCatalogSelectorRimWidthContext(
 	innerRimWidthMM *float64,
+	wheelSizeKeys []string,
 	rules []repository.SchwalbeTireRimWidthCombinationRule,
 ) *SchwalbeTireCatalogSelectorRimWidthContext {
 	if innerRimWidthMM == nil {
@@ -222,8 +223,13 @@ func buildSchwalbeTireCatalogSelectorRimWidthContext(
 		InnerRimWidthMM: *innerRimWidthMM,
 		GuidanceStatus:  "no_coverage",
 	}
+	if len(schwalbeTireSelectorStringSet(wheelSizeKeys)) == 0 {
+		context.GuidanceStatus = "wheel_size_required"
+	}
 	if schwalbeTireRimWidthInputCovered(innerRimWidthMM, rules) {
-		context.GuidanceStatus = "covered"
+		if context.GuidanceStatus != "wheel_size_required" {
+			context.GuidanceStatus = "covered"
+		}
 	}
 	if len(rules) == 0 {
 		return context
@@ -352,6 +358,12 @@ func filterSchwalbeTireCatalogSelectorRows(
 
 	for _, row := range rows {
 		dimensions := row.dimensions
+		if query.InnerRimWidthMM != nil && len(wheelSizes) == 0 {
+			// Inner-width matching is only meaningful with the user's wheel
+			// diameter + BSD pair. Keep an incomplete shared URL from silently
+			// producing a cross-wheel result set.
+			continue
+		}
 		if query.MinLoadKG != nil {
 			if row.item.LoadKG == nil || *row.item.LoadKG < *query.MinLoadKG {
 				continue

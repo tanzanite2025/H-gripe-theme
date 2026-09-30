@@ -186,7 +186,9 @@
       <span v-if="rimWidthContext">
         {{ rimWidthContext.guidance_status === 'covered'
           ? tx('rimWidth.covered', { width: rimWidthContext.inner_rim_width_mm, count: totalItems })
-          : tx('rimWidth.noCoverage', { width: rimWidthContext.inner_rim_width_mm }) }}
+          : rimWidthContext.guidance_status === 'wheel_size_required'
+            ? tx('rimWidth.chooseWheelSize')
+            : tx('rimWidth.noCoverage', { width: rimWidthContext.inner_rim_width_mm }) }}
       </span>
       <span v-if="rimWidthSourceSummary">{{ rimWidthSourceSummary }}</span>
     </div>
@@ -330,7 +332,10 @@ const rimWidthSourceSummary = computed(() => {
   })
 })
 
-const innerRimWidthInput = ref('')
+// `v-model` on a number input can expose a number at runtime even without an
+// explicit `.number` modifier. Keep the draft tolerant of both runtime shapes
+// and normalize it once before validation or submission.
+const innerRimWidthInput = ref<string | number | null>('')
 const rimWheelSizeKey = ref('')
 
 watch(selectedInnerRimWidthMm, (value) => {
@@ -341,17 +346,22 @@ watch(selectedWheelSizeKeys, (values) => {
   rimWheelSizeKey.value = values[0] ?? ''
 }, { immediate: true })
 
+const normalizedInnerRimWidthInput = computed(() => {
+  const value = innerRimWidthInput.value
+  return value === null || value === undefined ? '' : String(value).trim()
+})
+
 const rimWidthInputInvalid = computed(() => {
-  const value = innerRimWidthInput.value.trim()
+  const value = normalizedInnerRimWidthInput.value
   if (!value) return false
   const parsed = Number(value)
   return !Number.isFinite(parsed) || parsed <= 0
 })
-const rimWheelSizeMissing = computed(() => Boolean(innerRimWidthInput.value.trim()) && !rimWheelSizeKey.value)
+const rimWheelSizeMissing = computed(() => Boolean(normalizedInnerRimWidthInput.value) && !rimWheelSizeKey.value)
 
 const applyRimWidthMatch = () => {
   if (rimWidthInputInvalid.value || rimWheelSizeMissing.value) return
-  const value = innerRimWidthInput.value.trim()
+  const value = normalizedInnerRimWidthInput.value
   applyRimWidthMatchState(value ? Number(value) : null, rimWheelSizeKey.value)
 }
 
