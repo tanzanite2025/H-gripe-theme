@@ -160,29 +160,18 @@
       </div>
     </fieldset>
 
-    <details name="schwalbe-filter-accordion" class="schwalbe-filter-panel__accordion" @toggle="closeOtherAccordions">
-      <summary class="schwalbe-filter-panel__accordion-title">
-        <span>{{ casingConstructionLabel }}</span>
-        <span v-if="selectedCasingConstructions.length > 0" class="schwalbe-filter-panel__selection-count">
-          <span aria-hidden="true">{{ selectedCasingConstructions.length }}</span>
-          <span class="schwalbe-filter-panel__visually-hidden">{{ selectedCountLabel(selectedCasingConstructions.length) }}</span>
-        </span>
-      </summary>
-      <div class="schwalbe-filter-panel__fields">
-        <fieldset class="schwalbe-filter-panel__group">
-          <legend class="schwalbe-filter-panel__visually-hidden">{{ casingConstructionLabel }}</legend>
-          <div
-            class="schwalbe-filter-panel__options"
-            :class="{ 'schwalbe-filter-panel__options--many': hasManyOptions(casingConstructionOptions) }"
-          >
-            <label v-for="option in casingConstructionOptions" :key="option.value" class="schwalbe-filter-panel__option">
-              <input v-model="selectedCasingConstructions" type="checkbox" :value="option.value">
-              <span>{{ option.value }}</span>
-            </label>
-          </div>
-        </fieldset>
+    <fieldset class="schwalbe-filter-panel__inline-facet">
+      <legend>{{ casingConstructionLabel }}</legend>
+      <div
+        class="schwalbe-filter-panel__options"
+        :class="{ 'schwalbe-filter-panel__options--many': hasManyOptions(casingConstructionOptions) }"
+      >
+        <label v-for="option in casingConstructionOptions" :key="option.value" class="schwalbe-filter-panel__option">
+          <input v-model="selectedCasingConstructions" type="checkbox" :value="option.value">
+          <span>{{ option.value }}</span>
+        </label>
       </div>
-    </details>
+    </fieldset>
 
     <fieldset class="schwalbe-filter-panel__inline-facet">
       <legend>{{ radialGroupLabel }}</legend>
