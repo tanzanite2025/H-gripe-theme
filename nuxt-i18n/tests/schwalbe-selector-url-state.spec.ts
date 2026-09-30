@@ -67,6 +67,24 @@ test.describe('Schwalbe selector URL state', () => {
     expect(fontFamilies.every((fontFamily) => fontFamily.includes('MapleUI'))).toBe(true)
   })
 
+  test('fills the shared content shell on a wide viewport', async ({ page }) => {
+    await page.setViewportSize({ width: 1920, height: 900 })
+    await page.goto(selectorURL())
+    await waitForNuxtMount(page)
+
+    const widths = await page.evaluate(() => {
+      const shell = document.querySelector('.page-content-shell')?.getBoundingClientRect()
+      const pageRoot = document.querySelector('.schwalbe-page')?.getBoundingClientRect()
+      return {
+        shell: shell?.width ?? 0,
+        pageRoot: pageRoot?.width ?? 0,
+      }
+    })
+
+    expect(widths.shell).toBeGreaterThan(1700)
+    expect(widths.pageRoot).toBeCloseTo(widths.shell, 0)
+  })
+
   test('explains every color and compound value in separate telemetry tabs', async ({ page }) => {
     await page.goto(selectorURL())
     await waitForNuxtMount(page)

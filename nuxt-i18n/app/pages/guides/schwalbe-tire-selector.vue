@@ -98,7 +98,6 @@ useHead(() => ({
   display: grid;
   gap: 2rem;
   width: 100%;
-  max-width: 96rem;
   margin: 0 auto;
 }
 </style>
