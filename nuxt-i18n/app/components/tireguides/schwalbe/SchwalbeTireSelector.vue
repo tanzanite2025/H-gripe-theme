@@ -636,8 +636,8 @@ const activeFilterCount = computed(() => [
 .schwalbe-selector__search-row > .schwalbe-selector__filter-button {
   width: 4.5rem;
   min-width: 4.5rem;
-  height: 3rem;
-  min-height: 3rem;
+  height: 2.5rem;
+  min-height: 2.5rem;
   border-radius: 999px;
 }
 
