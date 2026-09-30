@@ -80,7 +80,6 @@ test.describe('Schwalbe selector URL state', () => {
     await expect(page.getByRole('searchbox')).toHaveValue('Kojak')
     await expect(page.getByRole('spinbutton', { name: 'Tire width Minimum', exact: true })).toHaveValue('32')
     await expect(page.getByRole('spinbutton', { name: 'Tire width Maximum', exact: true })).toHaveValue('35')
-    await openFilterGroup(page, 'Bead')
     await expect(page.getByRole('checkbox', { name: 'WIRED', exact: true })).toBeChecked()
   })
 
@@ -262,10 +261,10 @@ test.describe('Schwalbe selector URL state', () => {
 
     const panel = page.locator('.schwalbe-filter-panel')
     const accordions = panel.locator(':scope > .schwalbe-filter-panel__accordion')
-    await expect(accordions).toHaveCount(9)
+    await expect(accordions).toHaveCount(8)
     await expect(panel.locator(':scope > .schwalbe-filter-panel__accordion[open]')).toHaveCount(1)
     const accordionBoxes = await Promise.all(
-      Array.from({ length: 9 }, (_, index) => accordions.nth(index).boundingBox()),
+      Array.from({ length: 8 }, (_, index) => accordions.nth(index).boundingBox()),
     )
     expect(accordionBoxes.every(box => box !== null)).toBe(true)
     expect(new Set(accordionBoxes.map(box => Math.round(box?.x ?? 0))).size).toBe(1)
@@ -299,7 +298,6 @@ test.describe('Schwalbe selector URL state', () => {
     await openCatalogFilters(page)
     await expect(page.locator('summary.schwalbe-filter-panel__accordion-title').filter({ hasText: 'Minimum tire load capacity' })).toHaveCount(0)
     await expect(page.getByRole('spinbutton', { name: 'Minimum tire load capacity' })).toHaveCount(0)
-    await openFilterGroup(page, 'Bead')
     await page.getByRole('checkbox', { name: 'Folding', exact: true }).check()
     await page.getByRole('button', { name: 'Show results' }).click()
     await expect(page).toHaveURL((url) => (
@@ -314,14 +312,11 @@ test.describe('Schwalbe selector URL state', () => {
     await page.goto(selectorURL('?search=Marathon&bead=Folding&min_load_kg=90'))
     await waitForNuxtMount(page)
     await openCatalogFilters(page)
-    await openFilterGroup(page, 'Bead')
     await expect(page.getByRole('checkbox', { name: 'Folding', exact: true })).toBeChecked()
 
     await page.getByRole('button', { name: 'Show results' }).click()
     await openCatalogFilters(page)
-    await openFilterGroup(page, 'Bead')
     await page.getByRole('button', { name: 'Clear filters', exact: true }).click()
-    await openFilterGroup(page, 'Bead')
     await page.getByRole('button', { name: 'Show results' }).click()
 
     await expect(page).toHaveURL((url) => (
@@ -332,7 +327,6 @@ test.describe('Schwalbe selector URL state', () => {
       && !url.searchParams.has('page')
     ))
     await openCatalogFilters(page)
-    await openFilterGroup(page, 'Bead')
     await expect(page.getByRole('checkbox', { name: 'Folding', exact: true })).not.toBeChecked()
   })
 
@@ -340,7 +334,6 @@ test.describe('Schwalbe selector URL state', () => {
     await page.goto(selectorURL('?bead=Folding'))
     await waitForNuxtMount(page)
     await openCatalogFilters(page)
-    await openFilterGroup(page, 'Bead')
     await expect(page.getByRole('checkbox', { name: 'Folding', exact: true })).toBeChecked()
     await page.getByRole('button', { name: 'Show results' }).click()
     await expect(page.getByRole('dialog')).toHaveCount(0)
@@ -349,7 +342,6 @@ test.describe('Schwalbe selector URL state', () => {
     await pagination.getByRole('link', { name: '2', exact: true }).click()
     await expect(page).toHaveURL(url => url.searchParams.get('page') === '2')
     await openCatalogFilters(page)
-    await openFilterGroup(page, 'Bead')
     await expect(page.getByRole('checkbox', { name: 'Folding', exact: true })).toBeChecked()
     await page.getByRole('button', { name: 'Show results' }).click()
     await expect(page.getByRole('dialog')).toHaveCount(0)
@@ -357,7 +349,6 @@ test.describe('Schwalbe selector URL state', () => {
     await page.goBack()
     await expect(page).toHaveURL(url => url.searchParams.get('bead') === 'Folding' && !url.searchParams.has('page'))
     await openCatalogFilters(page)
-    await openFilterGroup(page, 'Bead')
     await expect(page.getByRole('checkbox', { name: 'Folding', exact: true })).toBeChecked()
     await page.getByRole('button', { name: 'Show results' }).click()
     await expect(page.getByRole('dialog')).toHaveCount(0)
@@ -365,7 +356,6 @@ test.describe('Schwalbe selector URL state', () => {
     await page.goForward()
     await expect(page).toHaveURL(url => url.searchParams.get('bead') === 'Folding' && url.searchParams.get('page') === '2')
     await openCatalogFilters(page)
-    await openFilterGroup(page, 'Bead')
     await expect(page.getByRole('checkbox', { name: 'Folding', exact: true })).toBeChecked()
   })
 })

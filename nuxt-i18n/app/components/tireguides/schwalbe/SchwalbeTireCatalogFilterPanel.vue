@@ -219,29 +219,15 @@
       </div>
     </details>
 
-    <details name="schwalbe-filter-accordion" class="schwalbe-filter-panel__accordion" @toggle="closeOtherAccordions">
-      <summary class="schwalbe-filter-panel__accordion-title">
-        <span>{{ beadLabel }}</span>
-        <span v-if="selectedBeads.length > 0" class="schwalbe-filter-panel__selection-count">
-          <span aria-hidden="true">{{ selectedBeads.length }}</span>
-          <span class="schwalbe-filter-panel__visually-hidden">{{ selectedCountLabel(selectedBeads.length) }}</span>
-        </span>
-      </summary>
-      <div class="schwalbe-filter-panel__fields">
-        <fieldset class="schwalbe-filter-panel__group">
-          <legend class="schwalbe-filter-panel__visually-hidden">{{ beadLabel }}</legend>
-          <div
-            class="schwalbe-filter-panel__options"
-            :class="{ 'schwalbe-filter-panel__options--many': hasManyOptions(beadOptions) }"
-          >
-            <label v-for="option in beadOptions" :key="option.value" class="schwalbe-filter-panel__option">
-              <input v-model="selectedBeads" type="checkbox" :value="option.value">
-              <span>{{ option.value }}</span>
-            </label>
-          </div>
-        </fieldset>
+    <fieldset class="schwalbe-filter-panel__inline-facet">
+      <legend>{{ beadLabel }}</legend>
+      <div class="schwalbe-filter-panel__options">
+        <label v-for="option in beadOptions" :key="option.value" class="schwalbe-filter-panel__option">
+          <input v-model="selectedBeads" type="checkbox" :value="option.value">
+          <span>{{ option.value }}</span>
+        </label>
       </div>
-    </details>
+    </fieldset>
 
     <details name="schwalbe-filter-accordion" class="schwalbe-filter-panel__accordion" @toggle="closeOtherAccordions">
       <summary class="schwalbe-filter-panel__accordion-title">
@@ -883,6 +869,34 @@ const selectedCountLabel = (count: number) => props.selectedCountTemplate.replac
 .schwalbe-filter-panel__rim-width-control {
   flex: 0 1 12rem;
   width: 12rem;
+}
+
+.schwalbe-filter-panel__inline-facet {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem 0.65rem;
+  margin: 0;
+  border: 1px solid var(--tz-border-subtle);
+  border-radius: 0.75rem;
+  background: var(--tz-card-surface);
+  padding: 0.35rem 0.7rem;
+}
+
+.schwalbe-filter-panel__inline-facet > legend {
+  flex: 0 0 auto;
+  margin: 0;
+  color: var(--tz-text-secondary);
+  font-size: 0.72rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.schwalbe-filter-panel__inline-facet > .schwalbe-filter-panel__options {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 0;
 }
 
 .schwalbe-filter-panel__error {
