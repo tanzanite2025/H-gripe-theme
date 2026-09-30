@@ -79,74 +79,72 @@
         </div>
       </section>
 
-      <div class="schwalbe-telemetry__two-column schwalbe-telemetry__two-column--lower">
-        <section
-          v-if="activeTechTab === 'protection'"
-          class="schwalbe-telemetry__topic schwalbe-telemetry__topic--protection"
-        >
-          <div class="schwalbe-telemetry__topic-heading">
+      <section
+        v-if="activeTechTab === 'protection'"
+        class="schwalbe-telemetry__topic schwalbe-telemetry__topic--protection"
+      >
+        <div class="schwalbe-telemetry__topic-heading">
+          <div>
+            <p class="schwalbe-telemetry__topic-label">{{ tx('telemetryGuide.protection.label') }}</p>
+            <h3>{{ tx('telemetryGuide.protection.title') }}</h3>
+          </div>
+        </div>
+        <p class="schwalbe-telemetry__topic-note">{{ tx('telemetryGuide.protection.note') }}</p>
+        <div class="schwalbe-telemetry__level-grid">
+          <article v-for="entry in protectionLevels" :key="entry.key" class="schwalbe-telemetry__level">
+            <span class="schwalbe-telemetry__level-mark">{{ entry.mark }}</span>
             <div>
-              <p class="schwalbe-telemetry__topic-label">{{ tx('telemetryGuide.protection.label') }}</p>
-              <h3>{{ tx('telemetryGuide.protection.title') }}</h3>
-            </div>
-          </div>
-          <p class="schwalbe-telemetry__topic-note">{{ tx('telemetryGuide.protection.note') }}</p>
-          <div class="schwalbe-telemetry__level-grid">
-            <article v-for="entry in protectionLevels" :key="entry.key" class="schwalbe-telemetry__level">
-              <span class="schwalbe-telemetry__level-mark">{{ entry.mark }}</span>
-              <div>
-                <div class="schwalbe-telemetry__list-title">
-                  <strong>{{ tx(`telemetryGuide.protection.items.${entry.key}.title`) }}</strong>
-                </div>
-                <p>{{ tx(`telemetryGuide.protection.items.${entry.key}.body`) }}</p>
+              <div class="schwalbe-telemetry__list-title">
+                <strong>{{ tx(`telemetryGuide.protection.items.${entry.key}.title`) }}</strong>
               </div>
-            </article>
-          </div>
-          <article class="schwalbe-telemetry__protection-extra">
-            <div class="schwalbe-telemetry__list-title">
-              <strong>{{ tx('telemetryGuide.protection.extra.title') }}</strong>
+              <p>{{ tx(`telemetryGuide.protection.items.${entry.key}.body`) }}</p>
             </div>
-            <p>{{ tx('telemetryGuide.protection.extra.body') }}</p>
           </article>
-        </section>
+        </div>
+        <article class="schwalbe-telemetry__protection-extra">
+          <div class="schwalbe-telemetry__list-title">
+            <strong>{{ tx('telemetryGuide.protection.extra.title') }}</strong>
+          </div>
+          <p>{{ tx('telemetryGuide.protection.extra.body') }}</p>
+        </article>
+      </section>
 
-        <section
-          v-if="activeTechTab === 'addix'"
-          class="schwalbe-telemetry__topic schwalbe-telemetry__topic--addix"
-        >
-          <div class="schwalbe-telemetry__topic-heading">
-            <div>
-              <p class="schwalbe-telemetry__topic-label">{{ tx('telemetryGuide.addix.label') }}</p>
-              <h3>{{ tx('telemetryGuide.addix.title') }}</h3>
-            </div>
+      <section
+        v-if="activeTechTab === 'addix'"
+        class="schwalbe-telemetry__topic schwalbe-telemetry__topic--addix"
+      >
+        <div class="schwalbe-telemetry__topic-heading">
+          <div>
+            <p class="schwalbe-telemetry__topic-label">{{ tx('telemetryGuide.addix.label') }}</p>
+            <h3>{{ tx('telemetryGuide.addix.title') }}</h3>
           </div>
-          <p class="schwalbe-telemetry__topic-note">{{ tx('telemetryGuide.addix.note') }}</p>
-          <div class="schwalbe-telemetry__compound-grid">
-            <article
-              v-for="entry in compoundGuides"
-              :key="entry.key"
+        </div>
+        <p class="schwalbe-telemetry__topic-note">{{ tx('telemetryGuide.addix.note') }}</p>
+        <div class="schwalbe-telemetry__compound-grid">
+          <article
+            v-for="entry in compoundGuides"
+            :key="entry.key"
+            :class="[
+              'schwalbe-telemetry__compound',
+              `schwalbe-telemetry__compound--${entry.accent}`,
+            ]"
+          >
+            <span
               :class="[
-                'schwalbe-telemetry__compound',
-                `schwalbe-telemetry__compound--${entry.accent}`,
+                'schwalbe-telemetry__compound-bar',
+                `schwalbe-telemetry__compound-bar--${entry.accent}`,
               ]"
-            >
-              <span
-                :class="[
-                  'schwalbe-telemetry__compound-bar',
-                  `schwalbe-telemetry__compound-bar--${entry.accent}`,
-                ]"
-                aria-hidden="true"
-              ></span>
-              <div>
-                <div class="schwalbe-telemetry__list-title">
-                  <strong>{{ tx(`telemetryGuide.addix.items.${entry.key}.title`) }}</strong>
-                </div>
-                <p>{{ tx(`telemetryGuide.addix.items.${entry.key}.body`) }}</p>
+              aria-hidden="true"
+            ></span>
+            <div>
+              <div class="schwalbe-telemetry__list-title">
+                <strong>{{ tx(`telemetryGuide.addix.items.${entry.key}.title`) }}</strong>
               </div>
-            </article>
-          </div>
-        </section>
-      </div>
+              <p>{{ tx(`telemetryGuide.addix.items.${entry.key}.body`) }}</p>
+            </div>
+          </article>
+        </div>
+      </section>
     </div>
 
     <footer class="schwalbe-telemetry__footer">
@@ -413,16 +411,6 @@ const compoundGuides = [
   color: #0369a1;
 }
 
-.schwalbe-telemetry__two-column {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.75rem;
-}
-
-.schwalbe-telemetry__two-column--lower {
-  align-items: start;
-}
-
 .schwalbe-telemetry__compound p {
   font-size: 0.68rem;
   line-height: 1.5;
@@ -474,6 +462,7 @@ const compoundGuides = [
 
 .schwalbe-telemetry__compound-grid {
   display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.5rem;
 }
 
@@ -637,12 +626,12 @@ const compoundGuides = [
     justify-content: flex-start;
   }
 
-  .schwalbe-telemetry__two-column {
-    grid-template-columns: 1fr;
-  }
-
   .schwalbe-telemetry__green-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .schwalbe-telemetry__compound-grid {
+    grid-template-columns: 1fr;
   }
 
   .schwalbe-telemetry__radial-grid {
@@ -670,6 +659,13 @@ const compoundGuides = [
 
   .schwalbe-telemetry__green-grid {
     grid-template-columns: 1fr;
+  }
+
+}
+
+@media (min-width: 761px) and (max-width: 1100px) {
+  .schwalbe-telemetry__compound-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 </style>
