@@ -1,13 +1,10 @@
 <template>
   <aside class="schwalbe-telemetry" :aria-labelledby="headingId">
     <header class="schwalbe-telemetry__header">
-      <div class="schwalbe-telemetry__heading">
-        <span class="schwalbe-telemetry__year" aria-hidden="true">25/26</span>
-        <div>
-          <p class="schwalbe-telemetry__kicker">{{ tx('telemetryGuide.kicker') }}</p>
-          <h2 :id="headingId">{{ tx('telemetryGuide.title') }}</h2>
-          <p class="schwalbe-telemetry__subtitle">{{ tx('telemetryGuide.subtitle') }}</p>
-        </div>
+      <div>
+        <p class="schwalbe-telemetry__kicker">{{ tx('telemetryGuide.kicker') }}</p>
+        <h2 :id="headingId">{{ tx('telemetryGuide.title') }}</h2>
+        <p class="schwalbe-telemetry__subtitle">{{ tx('telemetryGuide.subtitle') }}</p>
       </div>
       <div class="schwalbe-telemetry__meta">
         <span class="schwalbe-telemetry__badge">{{ tx('telemetryGuide.badge') }}</span>
@@ -347,28 +344,6 @@ const compoundCatalogGuides = [
   gap: 0.75rem;
   align-items: flex-start;
   justify-content: space-between;
-}
-
-.schwalbe-telemetry__heading {
-  display: flex;
-  gap: 0.75rem;
-  min-width: 0;
-  align-items: flex-start;
-}
-
-.schwalbe-telemetry__year {
-  display: grid;
-  flex: 0 0 auto;
-  width: 2.5rem;
-  height: 2.5rem;
-  place-items: center;
-  border: 1px solid #bae6fd;
-  border-radius: 0.75rem;
-  background: #f0f9ff;
-  color: #0369a1;
-  font-family: var(--tz-font-ui);
-  font-size: 0.65rem;
-  font-weight: 800;
 }
 
 .schwalbe-telemetry__kicker,
@@ -842,10 +817,6 @@ const compoundCatalogGuides = [
 }
 
 @media (max-width: 520px) {
-  .schwalbe-telemetry__heading {
-    display: grid;
-  }
-
   .schwalbe-telemetry__tabs {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
