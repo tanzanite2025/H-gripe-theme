@@ -20,6 +20,7 @@
     "allModels": "All models",
     "catalogFilters": "Filter catalog",
     "tireWidth": "Tire width",
+    "clearTireWidth": "Clear tire width",
     "wheelSize": "Wheel size (BSD)",
     "wheelSizeOption": "{diameter}\" (BSD {bsd} mm)",
     "beadSeatDiameter": "Wheel rim diameter (BSD)",
@@ -61,6 +62,8 @@
     "covered": "Official possible-combination range · {width} mm · {count} candidates",
     "noCoverage": "No official possible-combination range covers {width} mm.",
     "source": "{basis} · source {version} · checked {date}",
+    "filterHint": "Rim matching is active for {wheelSize} at {width} mm. Other drawer filters narrow these results; choosing a tire-width range switches to width filtering. Clear the drawer filters to restore this rim match.",
+    "useWheelSizeFilter": "Use the drawer for wheel-size filtering only",
     "matchLabel": "Official possible combination",
     "range": "Rim inner width {min}–{max} mm"
   },
@@ -76,7 +79,9 @@
     "retry": "Try again",
     "empty": "No catalog candidates are available.",
     "noResults": "No candidates match this single search term.",
-    "noFilterResults": "No candidates match these filters."
+    "noFilterResults": "No candidates match these filters.",
+    "noRimWidthFilterIntersection": "The drawer filters have no candidates in the current rim-width match.",
+    "clearDrawerFilters": "Clear drawer filters"
   },
   "status": {
     "listed": "Store product exists",

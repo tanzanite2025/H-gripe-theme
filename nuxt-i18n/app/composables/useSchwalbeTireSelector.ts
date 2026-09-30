@@ -93,10 +93,26 @@ export const useSchwalbeTireSelector = async () => {
     // Assign one complete state object so the route watcher performs a single
     // navigation and the catalog request is not restarted for every control.
     const wheelSizeKeys = [...facetState.wheelSizeKeys]
+    const hasExplicitTireWidth = facetState.nominalTireWidthMinMm !== null
+      || facetState.nominalTireWidthMaxMm !== null
+      || facetState.nominalTireWidthsMm.length > 0
+    const rimWidthMatchIsActive = filterState.value.innerRimWidthMm !== null
+
+    // A concrete tire-width range and a rim-width match are two different
+    // ways of choosing the tire's size. Keeping both would create a hidden AND
+    // condition that is easy to trigger accidentally and often yields zero
+    // rows. Choosing a width in the drawer therefore switches to width mode.
+    const nextInnerRimWidthMm = hasExplicitTireWidth
+      ? null
+      : rimWidthMatchIsActive && wheelSizeKeys.length !== 1
+        ? null
+        : filterState.value.innerRimWidthMm
+
     updateFilterState({
       ...facetState,
       nominalTireWidthsMm: [...facetState.nominalTireWidthsMm],
       wheelSizeKeys,
+      innerRimWidthMm: nextInnerRimWidthMm,
       // A newly selected wheel-size pair is more precise than the legacy BSD
       // facet. Drop the hidden legacy constraint so an old shared link cannot
       // make a visibly selected wheel size return zero rows.
@@ -150,6 +166,12 @@ export const useSchwalbeTireSelector = async () => {
         ? innerRimWidthMm
         : null,
       wheelSizeKeys: normalizedWheelSizeKey ? [normalizedWheelSizeKey] : [],
+      // The quick match owns the tire-size decision. Remove a stale width
+      // range from an earlier drawer session instead of silently combining it
+      // with the official rim-width possible-combination rule.
+      nominalTireWidthMinMm: null,
+      nominalTireWidthMaxMm: null,
+      nominalTireWidthsMm: [],
       beadSeatDiametersMm: [],
     })
   }
@@ -366,21 +388,31 @@ export const useSchwalbeTireSelector = async () => {
     { flush: 'sync' },
   )
 
-  const clearFacetFilters = () => updateFilterState({
-    nominalTireWidthMinMm: null,
-    nominalTireWidthMaxMm: null,
-    nominalTireWidthsMm: [],
-    wheelSizeKeys: [],
-    beadSeatDiametersMm: [],
-    minimumLoadKg: null,
-    casingConstructions: [],
-    radialOnly: false,
-    beads: [],
-    seals: [],
-    eBikeRatings: [],
-    colors: [],
-    compounds: [],
-  })
+  const clearFacetFilters = () => {
+    const rimWheelSizeKeys = filterState.value.wheelSizeKeys.slice(0, 1)
+    const preserveRimWidthMatch = filterState.value.innerRimWidthMm !== null
+      && rimWheelSizeKeys.length === 1
+
+    updateFilterState({
+      innerRimWidthMm: preserveRimWidthMatch ? filterState.value.innerRimWidthMm : null,
+      nominalTireWidthMinMm: null,
+      nominalTireWidthMaxMm: null,
+      nominalTireWidthsMm: [],
+      // Keep the wheel-size half of an active rim match. Without it, clearing
+      // the drawer would leave inner_rim_width_mm with no required wheel size
+      // and the API would correctly return zero rows.
+      wheelSizeKeys: preserveRimWidthMatch ? rimWheelSizeKeys : [],
+      beadSeatDiametersMm: [],
+      minimumLoadKg: null,
+      casingConstructions: [],
+      radialOnly: false,
+      beads: [],
+      seals: [],
+      eBikeRatings: [],
+      colors: [],
+      compounds: [],
+    })
+  }
 
   watch(() => route.query.search, (value) => {
     const nextSearch = readRouteSearch(value)

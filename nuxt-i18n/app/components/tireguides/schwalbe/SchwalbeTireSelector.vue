@@ -136,7 +136,22 @@
       @apply="applyFilterDraft"
       @cancel="discardFilterDraft"
     >
+      <div
+        v-if="selectedInnerRimWidthMm !== null"
+        class="schwalbe-selector__filter-context"
+        role="note"
+      >
+        <p>{{ rimWidthFilterHint }}</p>
+        <button
+          type="button"
+          class="schwalbe-selector__filter-context-action"
+          @click="useStandaloneWheelSizeFilter"
+        >
+          {{ tx('rimWidth.useWheelSizeFilter') }}
+        </button>
+      </div>
       <SchwalbeTireCatalogFilterPanel
+        :rim-width-match-active="selectedInnerRimWidthMm !== null"
         v-model:selected-tire-widths-mm="draftFacetFilters.nominalTireWidthsMm"
         v-model:selected-tire-width-min-mm="draftFacetFilters.nominalTireWidthMinMm"
         v-model:selected-tire-width-max-mm="draftFacetFilters.nominalTireWidthMaxMm"
@@ -156,6 +171,7 @@
         :tire-width-label="tx('filters.tireWidth')"
         :tire-width-min-label="tx('filters.tireWidthMin')"
         :tire-width-max-label="tx('filters.tireWidthMax')"
+        :tire-width-clear-label="tx('filters.clearTireWidth')"
         :wheel-size-label="tx('filters.wheelSize')"
         :wheel-size-option-template="tx('filters.wheelSizeOption', { diameter: '{diameter}', bsd: '{bsd}' })"
         :minimum-load-label="tx('filters.minimumLoad')"
@@ -200,6 +216,12 @@
       <p>{{ tx('states.error') }}</p>
       <button type="button" class="schwalbe-selector__button" @click="() => refresh()">
         {{ tx('states.retry') }}
+      </button>
+    </div>
+    <div v-else-if="totalItems === 0 && rimWidthFilterConflict" class="schwalbe-selector__state schwalbe-selector__state--conflict" role="alert">
+      <p>{{ tx('states.noRimWidthFilterIntersection') }}</p>
+      <button type="button" class="schwalbe-selector__button" @click="clearRimWidthConflictingFilters">
+        {{ tx('states.clearDrawerFilters') }}
       </button>
     </div>
     <div v-else-if="totalItems === 0" class="schwalbe-selector__state">
@@ -311,6 +333,7 @@ const {
   refresh,
   submitSearch,
   clearSearch,
+  clearFacetFilters: clearFacetFiltersState,
   clearRimWidthMatch: clearRimWidthMatchState,
   applyRimWidthMatch: applyRimWidthMatchState,
 } = await useSchwalbeTireSelector()
@@ -330,6 +353,17 @@ const rimWidthSourceSummary = computed(() => {
     version: rimWidthContext.value.source_version,
     date: checkedDate,
   })
+})
+
+const rimWheelSizeLabel = computed(() => {
+  const selectedKey = selectedWheelSizeKeys.value[0]
+  const option = wheelSizeOptions.value.find(candidate => candidate.value === selectedKey)
+  return option
+    ? tx('filters.wheelSizeOption', {
+        diameter: option.wheelDiameterIn,
+        bsd: option.beadSeatDiameterMm,
+      })
+    : tx('rimWidth.wheelSize')
 })
 
 // `v-model` on a number input can expose a number at runtime even without an
@@ -413,6 +447,18 @@ const openFilterDialog = () => {
   filterDialogOpen.value = true
 }
 
+const rimWidthFilterHint = computed(() => tx('rimWidth.filterHint', {
+  wheelSize: rimWheelSizeLabel.value,
+  width: selectedInnerRimWidthMm.value ?? '',
+}))
+
+const useStandaloneWheelSizeFilter = () => {
+  // Keep the selected wheel-size key as a normal drawer facet, but stop using
+  // it as the required wheel-size half of the rim-width match.
+  clearRimWidthMatchState()
+  filterDialogOpen.value = false
+}
+
 const discardFilterDraft = () => {
   // Closing, Escape, and clicking the backdrop intentionally leave the route
   // and catalog results untouched. The next open starts from committed state.
@@ -442,7 +488,9 @@ const clearDraftFacetFilters = () => {
   draftFacetFilters.nominalTireWidthMinMm = null
   draftFacetFilters.nominalTireWidthMaxMm = null
   draftFacetFilters.nominalTireWidthsMm = []
-  draftFacetFilters.wheelSizeKeys = []
+  draftFacetFilters.wheelSizeKeys = selectedInnerRimWidthMm.value !== null
+    ? selectedWheelSizeKeys.value.slice(0, 1)
+    : []
   draftFacetFilters.beadSeatDiametersMm = []
   draftFacetFilters.minimumLoadKg = null
   draftFacetFilters.casingConstructions = []
@@ -454,13 +502,41 @@ const clearDraftFacetFilters = () => {
   draftFacetFilters.compounds = []
 }
 
+const hasAdditionalRimWidthFacetFilters = computed(() => (
+  selectedTireWidthMinMm.value !== null
+  || selectedTireWidthMaxMm.value !== null
+  || selectedTireWidthsMm.value.length > 0
+  || selectedMinimumLoadKg.value !== null
+  || selectedCasingConstructions.value.length > 0
+  || selectedRadialOnly.value
+  || selectedBeads.value.length > 0
+  || selectedSeals.value.length > 0
+  || selectedEBikeRatings.value.length > 0
+  || selectedColors.value.length > 0
+  || selectedCompounds.value.length > 0
+  || selectedBeadSeatDiametersMm.value.length > 0
+))
+
+const rimWidthFilterConflict = computed(() => (
+  totalItems.value === 0
+  && selectedInnerRimWidthMm.value !== null
+  && rimWidthContext.value?.guidance_status === 'covered'
+  && !submittedSearch.value
+  && hasAdditionalRimWidthFacetFilters.value
+))
+
+const clearRimWidthConflictingFilters = () => {
+  clearFacetFiltersState()
+}
+
 const activeFilterCount = computed(() => [
   selectedModel.value !== 'ALL',
-  selectedInnerRimWidthMm.value !== null,
+  // The outer wheel-size + inner-width controls are one matching mode. Do
+  // not expose its shared wheel-size key as a second hidden drawer filter.
+  selectedInnerRimWidthMm.value !== null || selectedWheelSizeKeys.value.length > 0,
   selectedTireWidthsMm.value.length > 0
     || selectedTireWidthMinMm.value !== null
     || selectedTireWidthMaxMm.value !== null,
-  selectedWheelSizeKeys.value.length > 0,
   selectedBeadSeatDiametersMm.value.length > 0,
   selectedMinimumLoadKg.value !== null,
   selectedCasingConstructions.value.length > 0,
@@ -602,6 +678,49 @@ const activeFilterCount = computed(() => [
   margin: -0.35rem 0 0;
   color: var(--tz-status-danger-text);
   font-size: 0.72rem;
+}
+
+.schwalbe-selector__filter-context {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.55rem 0.8rem;
+  margin: 0 0 0.8rem;
+  border: 1px solid color-mix(in srgb, var(--tz-action-primary) 28%, var(--tz-border-subtle));
+  border-radius: 0.7rem;
+  background: color-mix(in srgb, var(--tz-action-primary) 7%, var(--tz-card-surface));
+  color: var(--tz-text-secondary);
+  padding: 0.65rem 0.75rem;
+  font-size: 0.76rem;
+  line-height: 1.45;
+}
+
+.schwalbe-selector__filter-context p {
+  flex: 1 1 24rem;
+  margin: 0;
+}
+
+.schwalbe-selector__filter-context-action {
+  min-height: 2rem;
+  border: 1px solid var(--tz-border-strong);
+  border-radius: 0.55rem;
+  background: var(--tz-card-surface);
+  color: var(--tz-text-primary);
+  padding: 0.3rem 0.55rem;
+  font: inherit;
+  font-size: 0.7rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.schwalbe-selector__filter-context-action:hover {
+  border-color: var(--tz-action-primary);
+  color: var(--tz-action-primary);
+}
+
+.schwalbe-selector__filter-context-action:focus-visible {
+  outline: 2px solid var(--tz-action-primary);
+  outline-offset: 2px;
 }
 
 .schwalbe-selector__search,
@@ -809,6 +928,16 @@ const activeFilterCount = computed(() => [
   color: var(--tz-status-danger-text);
 }
 
+.schwalbe-selector__state--conflict {
+  border-color: color-mix(in srgb, var(--tz-status-warning-text, #a16207) 38%, transparent);
+  background: color-mix(in srgb, var(--tz-status-warning-text, #a16207) 7%, var(--tz-card-surface));
+}
+
+.schwalbe-selector__state--conflict .schwalbe-selector__button {
+  display: inline-block;
+  width: auto;
+}
+
 .schwalbe-selector__grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -894,6 +1023,10 @@ const activeFilterCount = computed(() => [
 
   .schwalbe-selector__rim-match-error {
     grid-column: 1;
+  }
+
+  .schwalbe-selector__filter-context {
+    margin-bottom: 0.65rem;
   }
 
   .schwalbe-selector__button,

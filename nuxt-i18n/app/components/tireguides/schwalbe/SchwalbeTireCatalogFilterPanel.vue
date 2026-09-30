@@ -75,11 +75,24 @@
           <p v-if="tireWidthValues.length > 0" class="schwalbe-filter-panel__hint">
             {{ tireWidthMinimum }}–{{ tireWidthMaximum }} mm
           </p>
+          <button
+            v-if="hasTireWidthSelection"
+            type="button"
+            class="schwalbe-filter-panel__clear-field"
+            @click="clearTireWidth"
+          >
+            {{ tireWidthClearLabel }}
+          </button>
         </fieldset>
       </div>
     </details>
 
-    <details name="schwalbe-filter-accordion" class="schwalbe-filter-panel__accordion" @toggle="closeOtherAccordions">
+    <details
+      v-if="!rimWidthMatchActive"
+      name="schwalbe-filter-accordion"
+      class="schwalbe-filter-panel__accordion"
+      @toggle="closeOtherAccordions"
+    >
       <summary class="schwalbe-filter-panel__accordion-title">
         <span>{{ wheelSizeLabel }}</span>
         <span v-if="selectedWheelSizeKeys.length > 0" class="schwalbe-filter-panel__selection-count">
@@ -332,10 +345,12 @@ const emit = defineEmits<{
 
 const props = defineProps<{
   label: string
+  rimWidthMatchActive: boolean
   selectedCountTemplate: string
   tireWidthLabel: string
   tireWidthMinLabel: string
   tireWidthMaxLabel: string
+  tireWidthClearLabel: string
   wheelSizeLabel: string
   wheelSizeOptionTemplate: string
   minimumLoadLabel: string
@@ -363,7 +378,7 @@ const hasSelection = computed(() => (
   selectedTireWidthMinMm.value !== null
   || selectedTireWidthMaxMm.value !== null
   || selectedTireWidthsMm.value.length > 0
-  || selectedWheelSizeKeys.value.length > 0
+  || (!props.rimWidthMatchActive && selectedWheelSizeKeys.value.length > 0)
   || selectedBeadSeatDiametersMm.value.length > 0
   || minimumLoadKg.value !== null
   || selectedCasingConstructions.value.length > 0
@@ -373,6 +388,12 @@ const hasSelection = computed(() => (
   || selectedEBikeRatings.value.length > 0
   || selectedColors.value.length > 0
   || selectedCompounds.value.length > 0
+))
+
+const hasTireWidthSelection = computed(() => (
+  selectedTireWidthMinMm.value !== null
+  || selectedTireWidthMaxMm.value !== null
+  || selectedTireWidthsMm.value.length > 0
 ))
 
 const wheelSizeOptionLabel = (option: SchwalbeTireCatalogWheelSizeOption) => props.wheelSizeOptionTemplate
@@ -450,6 +471,12 @@ const readTireWidthInput = (event: Event): number | null => {
 
 const updateTireWidthMinFromInput = (event: Event) => setTireWidthMinimum(readTireWidthInput(event))
 const updateTireWidthMaxFromInput = (event: Event) => setTireWidthMaximum(readTireWidthInput(event))
+
+const clearTireWidth = () => {
+  selectedTireWidthsMm.value = []
+  selectedTireWidthMinMm.value = null
+  selectedTireWidthMaxMm.value = null
+}
 
 const readTireWidthSliderIndex = (event: Event): number => {
   const value = Number((event.target as HTMLInputElement).value)
@@ -803,6 +830,30 @@ const updateMinimumLoadFromInput = (event: Event) => {
   color: var(--tz-text-secondary);
   font-size: 0.68rem;
   line-height: 1.4;
+}
+
+.schwalbe-filter-panel__clear-field {
+  justify-self: start;
+  min-height: 1.9rem;
+  border: 1px solid var(--tz-border-strong);
+  border-radius: 0.55rem;
+  background: transparent;
+  color: var(--tz-text-primary);
+  padding: 0.3rem 0.55rem;
+  font: inherit;
+  font-size: 0.7rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.schwalbe-filter-panel__clear-field:hover {
+  border-color: var(--tz-action-primary);
+  color: var(--tz-action-primary);
+}
+
+.schwalbe-filter-panel__clear-field:focus-visible {
+  outline: 2px solid var(--tz-action-primary);
+  outline-offset: 2px;
 }
 
 .schwalbe-filter-panel__reset {

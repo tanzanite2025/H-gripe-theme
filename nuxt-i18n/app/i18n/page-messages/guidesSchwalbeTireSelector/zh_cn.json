@@ -20,6 +20,7 @@
     "allModels": "全部型号",
     "catalogFilters": "按目录规格筛选",
     "tireWidth": "胎宽",
+    "clearTireWidth": "清除胎宽",
     "wheelSize": "轮径（BSD）",
     "wheelSizeOption": "{diameter} 英寸（BSD {bsd} mm）",
     "beadSeatDiameter": "车圈直径（胎圈座直径 BSD）",
@@ -61,6 +62,8 @@
     "covered": "官方可能组合范围 · {width} mm · {count} 条候选",
     "noCoverage": "没有官方可能组合范围覆盖 {width} mm。",
     "source": "{basis} · 来源版本 {version} · 核验日期 {date}",
+    "filterHint": "当前按 {wheelSize}、车圈内宽 {width} mm 匹配。弹窗中的其他条件会继续缩小结果；选择明确胎宽范围会改用胎宽筛选。清除弹窗筛选可恢复车圈匹配。",
+    "useWheelSizeFilter": "改为只按弹窗轮径筛选",
     "matchLabel": "官方可能组合",
     "range": "车圈内宽 {min}–{max} mm"
   },
@@ -76,7 +79,9 @@
     "retry": "重试",
     "empty": "当前没有可用的目录候选。",
     "noResults": "没有候选符合这个单一搜索词。",
-    "noFilterResults": "没有候选符合当前筛选条件。"
+    "noFilterResults": "没有候选符合当前筛选条件。",
+    "noRimWidthFilterIntersection": "弹窗筛选条件与当前车圈内宽匹配没有交集。",
+    "clearDrawerFilters": "清除弹窗筛选"
   },
   "status": {
     "listed": "商城商品已存在",
