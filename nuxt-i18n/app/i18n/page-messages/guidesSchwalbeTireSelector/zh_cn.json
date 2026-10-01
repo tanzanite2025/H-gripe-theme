@@ -5,6 +5,11 @@
   },
   "kicker": "官方目录查询",
   "title": "Schwalbe 外胎选型查询",
+  "sectionTabs": {
+    "label": "页面内容",
+    "intro": "介绍",
+    "search": "搜索"
+  },
   "wheelSizeTabsLabel": "轮径与 BSD 导航",
   "allWheelSizes": "全部轮径",
   "multipleWheelSizes": "已选择多个轮径",

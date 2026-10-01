@@ -24,6 +24,34 @@ const openCatalogFilters = async (page: Page) => {
 }
 
 test.describe('Schwalbe selector URL state', () => {
+  test('separates the introduction and full catalog search into page tabs', async ({ page }) => {
+    await page.goto(selectorURL('?search=Kojak&wheel_size=26-559'))
+    await waitForNuxtMount(page)
+
+    const introTab = page.getByRole('tab', { name: 'Introduction', exact: true })
+    const searchTab = page.getByRole('tab', { name: 'Search', exact: true })
+    const introPanel = page.locator('.schwalbe-selector__section-panel--intro')
+    const searchPanel = page.locator('.schwalbe-selector__section-panel--search')
+    const searchbox = page.getByRole('searchbox')
+
+    await expect(searchTab).toHaveAttribute('aria-selected', 'true')
+    await expect(searchPanel).toBeVisible()
+    await expect(introPanel).toBeHidden()
+    await expect(searchbox).toHaveValue('Kojak')
+
+    await introTab.click()
+    await expect(introTab).toHaveAttribute('aria-selected', 'true')
+    await expect(introPanel).toBeVisible()
+    await expect(searchPanel).toBeHidden()
+    await expect(page).toHaveURL(/search=Kojak/)
+    await expect(page).toHaveURL(/wheel_size=26-559/)
+
+    await searchTab.click()
+    await expect(searchPanel).toBeVisible()
+    await expect(searchbox).toHaveValue('Kojak')
+    await expect(page.getByRole('button', { name: '26" · BSD 559 mm', exact: true })).toHaveAttribute('aria-pressed', 'true')
+  })
+
   test('renders catalog results outside an accessible filter dialog and returns focus on close', async ({ page }) => {
     await page.goto(selectorURL())
     await waitForNuxtMount(page)
@@ -81,6 +109,7 @@ test.describe('Schwalbe selector URL state', () => {
   test('explains casing, color, and compound values in separate telemetry tabs', async ({ page }) => {
     await page.goto(selectorURL())
     await waitForNuxtMount(page)
+    await page.getByRole('tab', { name: 'Introduction', exact: true }).click()
 
     const colorValues = [
       'Black',
@@ -178,6 +207,7 @@ test.describe('Schwalbe selector URL state', () => {
     await page.setViewportSize({ width: 390, height: 844 })
     await page.goto(selectorURL())
     await waitForNuxtMount(page)
+    await page.getByRole('tab', { name: 'Introduction', exact: true }).click()
 
     const desktopTabs = page.locator('.schwalbe-telemetry__tabs--desktop')
     const mobileTabs = page.locator('.schwalbe-telemetry__mobile-tabs')

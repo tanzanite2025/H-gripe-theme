@@ -5,6 +5,11 @@
   },
   "kicker": "Official catalog lookup",
   "title": "Schwalbe tire selector",
+  "sectionTabs": {
+    "label": "Page sections",
+    "intro": "Introduction",
+    "search": "Search"
+  },
   "wheelSizeTabsLabel": "Wheel size navigation",
   "allWheelSizes": "All wheel sizes",
   "multipleWheelSizes": "Multiple wheel sizes selected",

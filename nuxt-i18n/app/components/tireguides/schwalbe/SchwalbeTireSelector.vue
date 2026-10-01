@@ -7,9 +7,59 @@
       </h1>
     </div>
 
-    <SchwalbeTelemetryGuide />
+    <nav
+      class="schwalbe-selector__section-tabs"
+      role="tablist"
+      :aria-label="tx('sectionTabs.label')"
+    >
+      <button
+        type="button"
+        role="tab"
+        class="schwalbe-selector__section-tab"
+        :class="{ 'schwalbe-selector__section-tab--active': activeSection === 'intro' }"
+        :id="introTabId"
+        :aria-selected="activeSection === 'intro'"
+        :aria-controls="introPanelId"
+        @click="selectSection('intro')"
+        @keydown="onSectionTabKeydown($event, 'intro')"
+      >
+        {{ tx('sectionTabs.intro') }}
+      </button>
+      <button
+        type="button"
+        role="tab"
+        class="schwalbe-selector__section-tab"
+        :class="{ 'schwalbe-selector__section-tab--active': activeSection === 'search' }"
+        :id="searchTabId"
+        :aria-selected="activeSection === 'search'"
+        :aria-controls="searchPanelId"
+        @click="selectSection('search')"
+        @keydown="onSectionTabKeydown($event, 'search')"
+      >
+        {{ tx('sectionTabs.search') }}
+      </button>
+    </nav>
 
-    <form class="schwalbe-selector__controls" role="search" @submit.prevent="submitSearch">
+    <section
+      :id="introPanelId"
+      class="schwalbe-selector__section-panel schwalbe-selector__section-panel--intro"
+      role="tabpanel"
+      tabindex="0"
+      :aria-labelledby="introTabId"
+      :hidden="activeSection !== 'intro'"
+    >
+      <SchwalbeTelemetryGuide />
+    </section>
+
+    <section
+      :id="searchPanelId"
+      class="schwalbe-selector__section-panel schwalbe-selector__section-panel--search"
+      role="tabpanel"
+      tabindex="0"
+      :aria-labelledby="searchTabId"
+      :hidden="activeSection !== 'search'"
+    >
+      <form class="schwalbe-selector__controls" role="search" @submit.prevent="submitSearch">
       <div class="schwalbe-selector__search">
         <label class="schwalbe-selector__label" :for="searchInputId">{{ tx('search.label') }}</label>
         <span class="schwalbe-selector__search-row">
@@ -179,12 +229,13 @@
       </NuxtLink>
       <span v-else class="schwalbe-selector__page-link schwalbe-selector__page-link--disabled" aria-disabled="true">›</span>
     </nav>
+    </section>
   </section>
 </template>
 
 <script setup lang="ts">
-import { computed, reactive, ref, useId } from 'vue'
-import { useI18n } from '#imports'
+import { computed, reactive, ref, useId, watch } from 'vue'
+import { useI18n, useRoute } from '#imports'
 import SchwalbeTireCard from '~/components/tireguides/schwalbe/SchwalbeTireCard.vue'
 import SchwalbeTireCatalogFilterPanel from '~/components/tireguides/schwalbe/SchwalbeTireCatalogFilterPanel.vue'
 import SchwalbeTireCatalogFilterDrawer from '~/components/tireguides/schwalbe/SchwalbeTireCatalogFilterDrawer.vue'
@@ -197,6 +248,42 @@ import {
 
 const { t: translate } = useI18n()
 const tx = (key: string, params?: Record<string, unknown>) => translate(`guidesSchwalbeTireSelector.${key}`, params || {})
+type SelectorSection = 'intro' | 'search'
+const route = useRoute()
+const sectionInstanceId = useId()
+const introTabId = `schwalbe-selector-intro-tab-${sectionInstanceId}`
+const searchTabId = `schwalbe-selector-search-tab-${sectionInstanceId}`
+const introPanelId = `schwalbe-selector-intro-panel-${sectionInstanceId}`
+const searchPanelId = `schwalbe-selector-search-panel-${sectionInstanceId}`
+const activeSection = ref<SelectorSection>('search')
+watch(
+  () => JSON.stringify(route.query),
+  (query) => {
+    // A shared or paginated result link should always open on the result view.
+    // Once the user is reading the introduction, an empty route must not
+    // unexpectedly switch tabs underneath them.
+    if (query !== '{}') activeSection.value = 'search'
+  },
+)
+const selectSection = (section: SelectorSection) => {
+  activeSection.value = section
+}
+const onSectionTabKeydown = (event: KeyboardEvent, current: SelectorSection) => {
+  const next = event.key === 'ArrowRight' || event.key === 'ArrowDown'
+    ? 'search'
+    : event.key === 'ArrowLeft' || event.key === 'ArrowUp'
+      ? 'intro'
+      : event.key === 'Home'
+        ? 'intro'
+        : event.key === 'End'
+          ? 'search'
+          : null
+  if (!next || next === current) return
+  event.preventDefault()
+  selectSection(next)
+  const nextTabId = next === 'intro' ? introTabId : searchTabId
+  document.getElementById(nextTabId)?.focus()
+}
 const filterDialogOpen = ref(false)
 const searchInputId = `schwalbe-tire-search-${useId()}`
 const filterDialogId = `schwalbe-tire-catalog-filter-${useId()}`
@@ -320,6 +407,57 @@ const hasRimWidthGuidance = computed(() => visibleItems.value.some(item => (
   font-size: clamp(1.65rem, 3vw, 2.4rem);
   font-weight: 800;
   line-height: 1.15;
+}
+
+.schwalbe-selector__section-tabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.35rem;
+  width: min(32rem, 100%);
+  margin: 0 auto;
+  border: 1px solid var(--tz-border-subtle);
+  border-radius: 999px;
+  background: var(--tz-surface-subtle);
+  padding: 0.3rem;
+}
+
+.schwalbe-selector__section-tab {
+  min-height: 2.65rem;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--tz-text-secondary);
+  padding: 0.5rem 0.9rem;
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.schwalbe-selector__section-tab:hover {
+  color: var(--tz-text-primary);
+}
+
+.schwalbe-selector__section-tab--active {
+  border-color: var(--tz-border-subtle);
+  background: var(--tz-card-surface);
+  color: var(--tz-text-primary);
+  box-shadow: 0 0.2rem 0.6rem rgb(15 23 42 / 0.1);
+}
+
+.schwalbe-selector__section-tab:focus-visible {
+  outline: 2px solid var(--tz-action-primary);
+  outline-offset: 2px;
+}
+
+.schwalbe-selector__section-panel {
+  display: grid;
+  min-width: 0;
+  gap: 1.25rem;
+}
+
+.schwalbe-selector__section-panel[hidden] {
+  display: none;
 }
 
 .schwalbe-selector__controls {
