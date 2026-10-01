@@ -24,6 +24,22 @@ const openCatalogFilters = async (page: Page) => {
 }
 
 test.describe('Schwalbe selector URL state', () => {
+  test('keeps the page H1 semantic while hiding only its visual presentation', async ({ page }) => {
+    await page.goto(selectorURL())
+    await waitForNuxtMount(page)
+
+    const title = page.locator('#schwalbe-selector-title')
+    await expect(title).toHaveText('Schwalbe tire selector')
+    await expect(title).toHaveAttribute('class', /schwalbe-selector__title--sr-only/)
+    await expect(title).toHaveCSS('position', 'absolute')
+    await expect(title).toHaveCSS('overflow', 'hidden')
+
+    const titleBox = await title.boundingBox()
+    expect(titleBox).not.toBeNull()
+    expect(titleBox?.width).toBeLessThanOrEqual(1)
+    expect(titleBox?.height).toBeLessThanOrEqual(1)
+  })
+
   test('separates the introduction and full catalog search into page tabs', async ({ page }) => {
     await page.goto(selectorURL('?search=Kojak&wheel_size=26-559'))
     await waitForNuxtMount(page)

@@ -2,7 +2,7 @@
   <section class="schwalbe-selector" aria-labelledby="schwalbe-selector-title">
     <div class="schwalbe-selector__intro">
       <p class="schwalbe-selector__kicker">{{ tx('kicker') }}</p>
-      <h1 id="schwalbe-selector-title" class="schwalbe-selector__title">
+      <h1 id="schwalbe-selector-title" class="schwalbe-selector__title schwalbe-selector__title--sr-only">
         {{ tx('title') }}
       </h1>
     </div>
@@ -407,6 +407,21 @@ const hasRimWidthGuidance = computed(() => visibleItems.value.some(item => (
   font-size: clamp(1.65rem, 3vw, 2.4rem);
   font-weight: 800;
   line-height: 1.15;
+}
+
+/* Keep the page title available to screen readers and crawlers without
+   reserving visual space above the two content tabs. */
+.schwalbe-selector__title--sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
 }
 
 .schwalbe-selector__section-tabs {
