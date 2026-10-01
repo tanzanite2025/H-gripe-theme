@@ -404,7 +404,6 @@ export const useSchwalbeTireSelector = async () => {
     totalItems,
     visibleItems,
     modelOptions,
-    wheelSizeOptions: computed(() => filterOptions.value.wheelSizes),
     wheelSizeNavigationOptions,
     beadOptions: computed(() => filterOptions.value.beads),
     sealOptions: computed(() => filterOptions.value.seals),
