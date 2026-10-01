@@ -23,13 +23,6 @@ const openCatalogFilters = async (page: Page) => {
   }, { timeout: 10_000 }).toBe(true)
 }
 
-const openFilterGroup = async (page: Page, label: string) => {
-  const summary = page.locator('summary.schwalbe-filter-panel__accordion-title').filter({ hasText: label })
-  await expect(summary).toBeVisible()
-  const accordion = summary.locator('..')
-  if ((await accordion.getAttribute('open')) === null) await summary.click()
-}
-
 test.describe('Schwalbe selector URL state', () => {
   test('renders catalog results outside an accessible filter dialog and returns focus on close', async ({ page }) => {
     await page.goto(selectorURL())
@@ -223,15 +216,16 @@ test.describe('Schwalbe selector URL state', () => {
     ))
   })
 
-  test('restores the wheel diameter and BSD pair as one facet', async ({ page }) => {
+  test('shows the wheel diameter and BSD pair as a page-level size button', async ({ page }) => {
     await page.goto(selectorURL('?wheel_size=26-559'))
     await waitForNuxtMount(page)
     await openCatalogFilters(page)
-    await openFilterGroup(page, 'Wheel size (BSD)')
 
-    const selectedOption = page.getByRole('checkbox', { name: '26" (BSD 559 mm)', exact: true })
-    await expect(selectedOption).toBeChecked()
-    await expect(page.getByRole('checkbox', { name: '26" (BSD 590 mm)', exact: true })).not.toBeChecked()
+    await expect(page.getByRole('button', { name: '26" · BSD 559 mm', exact: true })).toHaveAttribute('aria-pressed', 'true')
+    await expect(page.getByRole('button', { name: '26" · BSD 590 mm', exact: true })).toHaveAttribute('aria-pressed', 'false')
+    await expect(page.getByRole('dialog').getByText('Wheel size', { exact: true })).toHaveCount(0)
+    await page.getByRole('button', { name: 'Close filters', exact: true }).click()
+    await expect(page.getByRole('dialog')).toHaveCount(0)
     await expect(page).toHaveURL(url => url.searchParams.get('wheel_size') === '26-559')
   })
 
@@ -257,19 +251,20 @@ test.describe('Schwalbe selector URL state', () => {
 
     await expect(page.getByRole('spinbutton', { name: 'Rim inner width' })).toHaveCount(0)
     await expect(page.locator('.schwalbe-filter-panel__rim-match')).toHaveCount(0)
+    await page.getByRole('button', { name: 'Close filters', exact: true }).click()
+    await expect(page.getByRole('dialog')).toHaveCount(0)
 
-    await openFilterGroup(page, 'Wheel size (BSD)')
-    const wheel28 = page.getByRole('checkbox', { name: '28" (BSD 622 mm)', exact: true })
-    const wheel29 = page.getByRole('checkbox', { name: '29" (BSD 622 mm)', exact: true })
-    await wheel28.check()
-    await expect(page.getByRole('button', { name: 'Show results' })).toBeEnabled()
-    await wheel29.check()
-    await expect(page.getByRole('button', { name: 'Show results' })).toBeEnabled()
-    await wheel29.uncheck()
-    await page.getByRole('button', { name: 'Show results' }).click()
-
+    const wheel28 = page.getByRole('button', { name: '28" · BSD 622 mm', exact: true })
+    const wheel29 = page.getByRole('button', { name: '29" · BSD 622 mm', exact: true })
+    await wheel28.click()
     await expect(page).toHaveURL(url => (
       url.searchParams.get('wheel_size') === '28-622'
+      && !url.searchParams.has('inner_rim_width_mm')
+    ))
+
+    await wheel29.click()
+    await expect(page).toHaveURL(url => (
+      url.searchParams.get('wheel_size') === '29-622'
       && !url.searchParams.has('inner_rim_width_mm')
     ))
 
@@ -281,6 +276,11 @@ test.describe('Schwalbe selector URL state', () => {
     await openCatalogFilters(page)
     await page.getByRole('button', { name: 'Clear filters', exact: true }).click()
     await page.getByRole('button', { name: 'Show results' }).click()
+    await expect(page).toHaveURL(url => (
+      url.searchParams.get('wheel_size') === '29-622'
+      && !url.searchParams.has('inner_rim_width_mm')
+    ))
+    await page.getByRole('button', { name: 'All wheel sizes', exact: true }).click()
     await expect(page).not.toHaveURL(/wheel_size=|inner_rim_width_mm=/)
   })
 
@@ -310,7 +310,7 @@ test.describe('Schwalbe selector URL state', () => {
     await expect(dialog).toHaveJSProperty('open', true)
   })
 
-  test('keeps desktop dialog dimensions stable when one accordion expands', async ({ page }) => {
+  test('keeps desktop dialog dimensions stable with inline facets', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 })
     await page.goto(selectorURL())
     await waitForNuxtMount(page)
@@ -320,22 +320,14 @@ test.describe('Schwalbe selector URL state', () => {
     const before = await dialog.boundingBox()
     expect(before).not.toBeNull()
 
-    await openFilterGroup(page, 'Wheel size (BSD)')
-
     const after = await dialog.boundingBox()
     expect(after).not.toBeNull()
     expect(after?.width).toBe(before?.width)
     expect(after?.height).toBe(before?.height)
 
     const panel = page.locator('.schwalbe-filter-panel')
-    const accordions = panel.locator(':scope > .schwalbe-filter-panel__accordion')
-    await expect(accordions).toHaveCount(1)
-    await expect(panel.locator(':scope > .schwalbe-filter-panel__accordion[open]')).toHaveCount(1)
-    const accordionBoxes = await Promise.all(
-      Array.from({ length: 1 }, (_, index) => accordions.nth(index).boundingBox()),
-    )
-    expect(accordionBoxes.every(box => box !== null)).toBe(true)
-    expect(new Set(accordionBoxes.map(box => Math.round(box?.x ?? 0))).size).toBe(1)
+    await expect(panel.locator(':scope > .schwalbe-filter-panel__inline-facet')).toHaveCount(4)
+    await expect(panel.locator('summary.schwalbe-filter-panel__accordion-title')).toHaveCount(0)
   })
 
   test('keeps search and clears the old page when a facet changes', async ({ page }) => {

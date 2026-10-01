@@ -100,8 +100,8 @@ func TestSearchSchwalbeTireCatalogSelectorFiltersByWheelDiameterAndBSDPair(t *te
 		projectedSizes[item.ArticleNo] = item.WheelSize.Value
 	}
 	for articleNo, expectedValue := range map[string]string{
-		"wheel-28":    "28-622",
-		"wheel-29":    "29-622",
+		"wheel-28":     "28-622",
+		"wheel-29":     "29-622",
 		"wheel-26-559": "26-559",
 		"wheel-26-590": "26-590",
 	} {
