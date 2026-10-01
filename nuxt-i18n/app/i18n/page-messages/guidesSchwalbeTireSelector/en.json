@@ -117,6 +117,8 @@
     "subtitle": "Radial casing · protection constructions · ADDIX compounds · Green Marathon materials — explained from official source notes.",
     "badge": "Official technology notes",
     "tabListLabel": "Technology topics",
+    "mobileGroupListLabel": "Technology topic groups",
+    "mobileGroupLabel": "Show technology topic group {group}",
     "collapse": "Collapse guide ▲",
     "expand": "Expand guide ▼",
     "disclaimer": "Technical names and descriptions follow the cited official source notes. Model-specific specifications should be verified on the relevant official product page; a technology name alone is not a universal safety or purchase recommendation.",

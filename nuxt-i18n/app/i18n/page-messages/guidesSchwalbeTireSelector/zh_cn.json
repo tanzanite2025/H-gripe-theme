@@ -117,6 +117,8 @@
     "subtitle": "径向胎体 · 防刺结构 · ADDIX 胶料 · Green Marathon 材料——基于官方资料说明。",
     "badge": "官方技术说明",
     "tabListLabel": "技术主题",
+    "mobileGroupListLabel": "技术主题组",
+    "mobileGroupLabel": "显示技术主题组 {group}",
     "collapse": "收起图解 ▲",
     "expand": "展开图解 ▼",
     "disclaimer": "技术名称和说明依据已引用的官方资料整理；具体型号规格应以对应官方产品页为准，单独的技术名称不构成统一安全或购买建议。",

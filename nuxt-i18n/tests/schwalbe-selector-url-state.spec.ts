@@ -174,6 +174,37 @@ test.describe('Schwalbe selector URL state', () => {
     await expect(compoundTopic.locator('.schwalbe-telemetry__catalog-card')).toHaveCount(compoundValues.length)
   })
 
+  test('groups telemetry tabs into swipeable pairs on a phone viewport', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 })
+    await page.goto(selectorURL())
+    await waitForNuxtMount(page)
+
+    const desktopTabs = page.locator('.schwalbe-telemetry__tabs--desktop')
+    const mobileTabs = page.locator('.schwalbe-telemetry__mobile-tabs')
+    const mobileRail = page.locator('.schwalbe-telemetry__mobile-tab-rail')
+    const mobileDots = page.locator('.schwalbe-telemetry__mobile-pagination .tz-carousel-pagination__dot')
+
+    await expect(desktopTabs).toBeHidden()
+    await expect(mobileTabs).toBeVisible()
+    await expect(mobileRail.locator('[data-mobile-tab-group]')).toHaveCount(4)
+    await expect(mobileDots).toHaveCount(4)
+    await expect(mobileTabs.getByRole('tab', { name: 'Radial casing', exact: true })).toHaveAttribute('aria-selected', 'true')
+
+    await mobileDots.nth(1).click()
+    await expect(mobileDots.nth(1)).toHaveAttribute('aria-selected', 'true')
+    await expect(mobileTabs.getByRole('tab', { name: 'Green Marathon', exact: true })).toHaveAttribute('aria-selected', 'true')
+    await expect(page.locator('.schwalbe-telemetry__topic--green')).toBeVisible()
+
+    await mobileRail.locator('[data-mobile-tab-group="2"]').scrollIntoViewIfNeeded()
+    await expect.poll(async () => mobileDots.nth(2).getAttribute('aria-selected')).toBe('true')
+    await expect(mobileTabs.getByRole('tab', { name: 'Color', exact: true })).toHaveAttribute('aria-selected', 'true')
+
+    await mobileDots.nth(3).click()
+    await expect(mobileTabs.getByRole('tab', { name: 'ADDIX / Compound', exact: true })).toHaveAttribute('aria-selected', 'true')
+    await expect(mobileRail.locator('[data-mobile-tab-group="3"] [role="tab"]')).toHaveCount(1)
+    await expect(page.locator('.schwalbe-telemetry__topic--addix')).toBeVisible()
+  })
+
   test('uses a compact weight sort toggle', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 })
     await page.goto(selectorURL())
