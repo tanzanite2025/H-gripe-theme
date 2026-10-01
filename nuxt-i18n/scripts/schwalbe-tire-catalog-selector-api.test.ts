@@ -68,6 +68,7 @@ const request: ApiRequestFunction = async <T>(path, init): Promise<T> => {
         wheel_sizes: [
           { value: '26-559', wheel_diameter_in: '26', bsd_mm: 559 },
           { value: '28-622', wheel_diameter_in: '28', bsd_mm: 622 },
+          { value: '29-622', wheel_diameter_in: '28', bsd_mm: 622 },
         ],
         casing_constructions: [{ value: 'Super Ground' }],
         beads: [{ value: 'Folding' }],

@@ -219,7 +219,14 @@ const readWheelSizeFilterOptions = (value: unknown): SchwalbeTireCatalogWheelSiz
     const key = optionalString(option?.value as string | undefined)
     const wheelDiameterIn = optionalString(option?.wheel_diameter_in as string | undefined)
     const bsdMm = optionalNumber(option?.bsd_mm)
-    if (!key || !wheelDiameterIn || bsdMm === undefined || !Number.isSafeInteger(bsdMm) || bsdMm <= 0) return []
+    if (
+      !key
+      || !wheelDiameterIn
+      || bsdMm === undefined
+      || !Number.isSafeInteger(bsdMm)
+      || bsdMm <= 0
+      || key !== `${wheelDiameterIn}-${bsdMm}`
+    ) return []
     return [{ value: key, wheelDiameterIn, beadSeatDiameterMm: bsdMm }]
   })
 }
