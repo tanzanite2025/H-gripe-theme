@@ -25,7 +25,11 @@ const publicCatalogs = brandWheelsetSpokeCatalogs
         slug: wheelset.slug,
         model: wheelset.model,
         lifecycleStatus: wheelset.lifecycleStatus,
-        rim: { depthMm: wheelset.rim.depthMm },
+        rim: {
+          depthMm: wheelset.rim.depthMm,
+          depthFrontMm: wheelset.rim.depthFrontMm,
+          depthRearMm: wheelset.rim.depthRearMm,
+        },
         wheels: wheelset.wheels.map((wheel) => ({
           position: wheel.position,
           spokeCount: wheel.spokeCount,
@@ -63,7 +67,11 @@ export interface PublicBrandWheelsetRecord {
   slug: string
   model: string
   lifecycleStatus: PublicBrandWheelsetLifecycleStatus
-  rim: { depthMm: number }
+  rim: {
+    depthMm: number
+    depthFrontMm?: number
+    depthRearMm?: number
+  }
   wheels: PublicBrandWheelPositionSpokeSpec[]
 }
 

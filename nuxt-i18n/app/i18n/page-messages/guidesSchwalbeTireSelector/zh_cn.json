@@ -50,22 +50,9 @@
     "selectedCount": "已选 {count} 项"
   },
   "rimWidth": {
-    "title": "按车圈内宽匹配",
-    "wheelSize": "轮径 + BSD",
-    "allWheelSizes": "全部轮径",
-    "innerWidth": "车圈内宽",
-    "apply": "匹配外胎",
-    "clear": "清除车圈匹配",
-    "hint": "输入车圈内宽，结果按官方可能组合范围筛选；车圈和车架要求仍需单独核对。",
-    "invalid": "请输入大于 0 的车圈内宽（mm）。",
-    "chooseWheelSize": "按内宽匹配前，请只选择一个轮径 + BSD。",
-    "covered": "官方可能组合范围 · {width} mm · {count} 条候选",
-    "noCoverage": "没有官方可能组合范围覆盖 {width} mm。",
-    "source": "{basis} · 来源版本 {version} · 核验日期 {date}",
-    "filterHint": "当前按 {wheelSize}、车圈内宽 {width} mm 匹配。弹窗中的其他条件会继续缩小结果；选择明确胎宽范围会改用胎宽筛选。清除弹窗筛选可恢复车圈匹配。",
-    "useWheelSizeFilter": "改为只按弹窗轮径筛选",
-    "matchLabel": "官方可能组合",
-    "range": "车圈内宽 {min}–{max} mm"
+    "referenceLabel": "车圈内宽参考",
+    "catalogHint": "车圈内宽范围按外胎 ETRTO 公称宽度与官方可能组合参考表提供；实际安装请核对车圈、胎压和车架间隙。",
+    "range": "{min}–{max} mm"
   },
   "summary": "{count} 条候选记录 · 第 {page}/{totalPages} 页",
   "pagination": {

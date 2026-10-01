@@ -45,6 +45,7 @@ func TestListModelsDoesNotExposePrivateRepairKitFields(t *testing.T) {
 		modelSlugs = append(modelSlugs, model.Slug)
 	}
 	require.Contains(t, modelSlugs, "arc-1100-dicut-db-38")
+	require.Contains(t, modelSlugs, "enve-ses-2-3-gen4")
 	require.Contains(t, modelSlugs, "wh-r9270-c50-tl")
 }
 
@@ -91,5 +92,25 @@ func TestGetShimanoModelReturnsRepairKitFields(t *testing.T) {
 	require.Contains(t, body, `"lengthMm":298`)
 	require.Contains(t, body, `"spokeModel":"Shimano XT butted 2.0-1.5-2.0 mm"`)
 	require.Contains(t, body, `"nippleModel":"Shimano 14G aluminum nipple with spherical washer"`)
+	require.NotContains(t, body, "sourceUrl")
+}
+
+func TestGetEnveModelPreservesFrontAndRearRimDepth(t *testing.T) {
+	recorder := httptest.NewRecorder()
+	request := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/wheelset-spoke-specs/models/enve-ses-2-3-gen4", nil)
+	context, _ := gin.CreateTestContext(recorder)
+	context.Request = request
+	context.Params = gin.Params{{Key: "slug", Value: "enve-ses-2-3-gen4"}}
+	context.Set("user_id", uint(42))
+
+	NewHandler().GetModel(context)
+
+	require.Equal(t, http.StatusOK, recorder.Code)
+	body := recorder.Body.String()
+	require.Contains(t, body, `"model":"ENVE SES 2.3 (Gen 4)"`)
+	require.Contains(t, body, `"depthFrontMm":28`)
+	require.Contains(t, body, `"depthRearMm":32`)
+	require.Contains(t, body, `"lengthMm":300`)
+	require.Contains(t, body, `"nippleModel":"ENVE 7075-T6 inverted internal alloy nipple"`)
 	require.NotContains(t, body, "sourceUrl")
 }

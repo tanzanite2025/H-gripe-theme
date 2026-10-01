@@ -273,6 +273,10 @@ export const fetchSchwalbeTireCatalogSelectorPage = async (
   const params: Record<string, string | string[]> = {
     page: String(selectorQuery.page),
     sort: selectorQuery.sortBy as SchwalbeCatalogSort,
+    // The selector displays the source-backed inner-width reference on each
+    // card. This is deliberately separate from the retired user-entered
+    // inner-width filter so loading guidance never narrows the result set.
+    include_rim_width_guidance: '1',
   }
   const search = selectorQuery.search.trim()
   if (search) params.search = search

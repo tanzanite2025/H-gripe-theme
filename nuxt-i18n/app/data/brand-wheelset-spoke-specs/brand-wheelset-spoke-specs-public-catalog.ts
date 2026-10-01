@@ -21,7 +21,11 @@ export interface PublicBrandWheelsetRecord {
   slug: string
   model: string
   lifecycleStatus: PublicBrandWheelsetLifecycleStatus
-  rim: { depthMm: number }
+  rim: {
+    depthMm: number
+    depthFrontMm?: number
+    depthRearMm?: number
+  }
   wheels: PublicBrandWheelPositionSpokeSpec[]
 }
 
@@ -1399,6 +1403,474 @@ export const publicBrandWheelsetSpokeCatalogs: PublicBrandWheelsetCatalog[] = [
                 "side": "right",
                 "spokeModel": "DT Aero Comp Straightpull",
                 "headType": "straight-pull"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "brandSlug": "enve",
+    "brandName": "ENVE",
+    "publicationStatus": "published",
+    "sourceCheckedAt": "2026-10-01",
+    "wheelsets": [
+      {
+        "slug": "enve-ses-2-3-gen4",
+        "model": "ENVE SES 2.3 (Gen 4)",
+        "lifecycleStatus": "current",
+        "rim": {
+          "depthMm": 28,
+          "depthFrontMm": 28,
+          "depthRearMm": 32
+        },
+        "wheels": [
+          {
+            "position": "front",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "Sapim CX-Ray TCS OH bladed straight-pull",
+                "headType": "straight-pull"
+              },
+              {
+                "side": "right",
+                "spokeModel": "Sapim CX-Ray TCS OH bladed straight-pull",
+                "headType": "straight-pull"
+              }
+            ]
+          },
+          {
+            "position": "rear",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "Sapim CX-Ray TCS OH bladed straight-pull",
+                "headType": "straight-pull"
+              },
+              {
+                "side": "right",
+                "spokeModel": "Sapim CX-Ray TCS OH bladed straight-pull",
+                "headType": "straight-pull"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "slug": "enve-ses-3-4-gen4",
+        "model": "ENVE SES 3.4 (Gen 4)",
+        "lifecycleStatus": "current",
+        "rim": {
+          "depthMm": 39,
+          "depthFrontMm": 39,
+          "depthRearMm": 43
+        },
+        "wheels": [
+          {
+            "position": "front",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "Sapim CX-Ray TCS OH bladed 2.0-0.9 x 2.2-2.0 mm straight-pull",
+                "headType": "straight-pull"
+              },
+              {
+                "side": "right",
+                "spokeModel": "Sapim CX-Ray TCS OH bladed 2.0-0.9 x 2.2-2.0 mm straight-pull",
+                "headType": "straight-pull"
+              }
+            ]
+          },
+          {
+            "position": "rear",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "Sapim CX-Ray TCS OH bladed 2.0-0.9 x 2.2-2.0 mm straight-pull",
+                "headType": "straight-pull"
+              },
+              {
+                "side": "right",
+                "spokeModel": "Sapim CX-Ray TCS OH bladed 2.0-0.9 x 2.2-2.0 mm straight-pull",
+                "headType": "straight-pull"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "slug": "enve-ses-4-5-gen4",
+        "model": "ENVE SES 4.5 (Gen 4)",
+        "lifecycleStatus": "current",
+        "rim": {
+          "depthMm": 50,
+          "depthFrontMm": 50,
+          "depthRearMm": 56
+        },
+        "wheels": [
+          {
+            "position": "front",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "Sapim CX-Ray TCS OH bladed straight-pull",
+                "headType": "straight-pull"
+              },
+              {
+                "side": "right",
+                "spokeModel": "Sapim CX-Ray TCS OH bladed straight-pull",
+                "headType": "straight-pull"
+              }
+            ]
+          },
+          {
+            "position": "rear",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "Sapim CX-Ray TCS OH bladed straight-pull",
+                "headType": "straight-pull"
+              },
+              {
+                "side": "right",
+                "spokeModel": "Sapim CX-Ray TCS OH bladed straight-pull",
+                "headType": "straight-pull"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "slug": "enve-ses-6-7-gen4",
+        "model": "ENVE SES 6.7 (Gen 4)",
+        "lifecycleStatus": "current",
+        "rim": {
+          "depthMm": 60,
+          "depthFrontMm": 60,
+          "depthRearMm": 67
+        },
+        "wheels": [
+          {
+            "position": "front",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "Sapim CX-Ray TCS OH bladed straight-pull",
+                "headType": "straight-pull"
+              },
+              {
+                "side": "right",
+                "spokeModel": "Sapim CX-Ray TCS OH bladed straight-pull",
+                "headType": "straight-pull"
+              }
+            ]
+          },
+          {
+            "position": "rear",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "Sapim CX-Ray TCS OH bladed straight-pull",
+                "headType": "straight-pull"
+              },
+              {
+                "side": "right",
+                "spokeModel": "Sapim CX-Ray TCS OH bladed straight-pull",
+                "headType": "straight-pull"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "slug": "enve-g23-gravel",
+        "model": "ENVE G23 (700c Gravel)",
+        "lifecycleStatus": "current",
+        "rim": {
+          "depthMm": 25,
+          "depthFrontMm": 25,
+          "depthRearMm": 25
+        },
+        "wheels": [
+          {
+            "position": "front",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "Sapim CX-Ray bladed straight-pull",
+                "headType": "straight-pull"
+              },
+              {
+                "side": "right",
+                "spokeModel": "Sapim CX-Ray bladed straight-pull",
+                "headType": "straight-pull"
+              }
+            ]
+          },
+          {
+            "position": "rear",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "Sapim CX-Ray bladed straight-pull",
+                "headType": "straight-pull"
+              },
+              {
+                "side": "right",
+                "spokeModel": "Sapim CX-Ray bladed straight-pull",
+                "headType": "straight-pull"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "slug": "enve-foundation-45",
+        "model": "ENVE 45 (Foundation Road)",
+        "lifecycleStatus": "current",
+        "rim": {
+          "depthMm": 45,
+          "depthFrontMm": 45,
+          "depthRearMm": 45
+        },
+        "wheels": [
+          {
+            "position": "front",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "Sapim CX-Sprint bladed J-bend",
+                "headType": "j-bend"
+              },
+              {
+                "side": "right",
+                "spokeModel": "Sapim CX-Sprint bladed J-bend",
+                "headType": "j-bend"
+              }
+            ]
+          },
+          {
+            "position": "rear",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "Sapim CX-Sprint bladed J-bend",
+                "headType": "j-bend"
+              },
+              {
+                "side": "right",
+                "spokeModel": "Sapim CX-Sprint bladed J-bend",
+                "headType": "j-bend"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "slug": "enve-foundation-65",
+        "model": "ENVE 65 (Foundation Road)",
+        "lifecycleStatus": "current",
+        "rim": {
+          "depthMm": 65,
+          "depthFrontMm": 65,
+          "depthRearMm": 65
+        },
+        "wheels": [
+          {
+            "position": "front",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "Sapim CX-Sprint bladed J-bend",
+                "headType": "j-bend"
+              },
+              {
+                "side": "right",
+                "spokeModel": "Sapim CX-Sprint bladed J-bend",
+                "headType": "j-bend"
+              }
+            ]
+          },
+          {
+            "position": "rear",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "Sapim CX-Sprint bladed J-bend",
+                "headType": "j-bend"
+              },
+              {
+                "side": "right",
+                "spokeModel": "Sapim CX-Sprint bladed J-bend",
+                "headType": "j-bend"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "slug": "enve-foundation-ag25",
+        "model": "ENVE AG25 (Foundation Gravel 700c)",
+        "lifecycleStatus": "current",
+        "rim": {
+          "depthMm": 21,
+          "depthFrontMm": 21,
+          "depthRearMm": 21
+        },
+        "wheels": [
+          {
+            "position": "front",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "Sapim CX-Sprint bladed J-bend",
+                "headType": "j-bend"
+              },
+              {
+                "side": "right",
+                "spokeModel": "Sapim CX-Sprint bladed J-bend",
+                "headType": "j-bend"
+              }
+            ]
+          },
+          {
+            "position": "rear",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "Sapim CX-Sprint bladed J-bend",
+                "headType": "j-bend"
+              },
+              {
+                "side": "right",
+                "spokeModel": "Sapim CX-Sprint bladed J-bend",
+                "headType": "j-bend"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "slug": "enve-foundation-ag28",
+        "model": "ENVE AG28 (Foundation Gravel 650b)",
+        "lifecycleStatus": "current",
+        "rim": {
+          "depthMm": 21,
+          "depthFrontMm": 21,
+          "depthRearMm": 21
+        },
+        "wheels": [
+          {
+            "position": "front",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "Sapim CX-Sprint bladed J-bend",
+                "headType": "j-bend"
+              },
+              {
+                "side": "right",
+                "spokeModel": "Sapim CX-Sprint bladed J-bend",
+                "headType": "j-bend"
+              }
+            ]
+          },
+          {
+            "position": "rear",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "Sapim CX-Sprint bladed J-bend",
+                "headType": "j-bend"
+              },
+              {
+                "side": "right",
+                "spokeModel": "Sapim CX-Sprint bladed J-bend",
+                "headType": "j-bend"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "slug": "enve-foundation-am30-29",
+        "model": "ENVE AM30 (Foundation MTB 29\" Boost)",
+        "lifecycleStatus": "current",
+        "rim": {
+          "depthMm": 20,
+          "depthFrontMm": 20,
+          "depthRearMm": 20
+        },
+        "wheels": [
+          {
+            "position": "front",
+            "spokeCount": 28,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "Sapim Race butted 2.0-1.8-2.0 mm J-bend",
+                "headType": "j-bend"
+              },
+              {
+                "side": "right",
+                "spokeModel": "Sapim Race butted 2.0-1.8-2.0 mm J-bend",
+                "headType": "j-bend"
+              }
+            ]
+          },
+          {
+            "position": "rear",
+            "spokeCount": 28,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "Sapim Race butted 2.0-1.8-2.0 mm J-bend",
+                "headType": "j-bend"
+              },
+              {
+                "side": "right",
+                "spokeModel": "Sapim Race butted 2.0-1.8-2.0 mm J-bend",
+                "headType": "j-bend"
               }
             ]
           }

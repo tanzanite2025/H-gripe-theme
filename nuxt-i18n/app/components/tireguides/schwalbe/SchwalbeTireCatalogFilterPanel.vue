@@ -25,40 +25,6 @@
       </div>
     </details>
 
-    <div class="schwalbe-filter-panel__rim-match" :title="rimWidthHint">
-      <label class="schwalbe-filter-panel__rim-match-field">
-        <span class="schwalbe-filter-panel__range-label">{{ rimWidthInnerWidthLabel }}</span>
-        <span class="schwalbe-filter-panel__visually-hidden">{{ rimWidthHint }}</span>
-        <span class="schwalbe-filter-panel__numeric-control schwalbe-filter-panel__rim-width-control">
-          <input
-            :value="innerRimWidthInput ?? ''"
-            type="number"
-            min="1"
-            step="0.1"
-            inputmode="decimal"
-            :aria-label="rimWidthInnerWidthLabel"
-            :aria-invalid="rimWidthInputInvalid || rimWidthWheelSizeInvalid"
-            @input="updateInnerRimWidthInput"
-          >
-          <span>mm</span>
-        </span>
-      </label>
-      <button
-        v-if="hasInnerRimWidthInput"
-        type="button"
-        class="schwalbe-filter-panel__clear-field"
-        @click="clearInnerRimWidth"
-      >
-        {{ rimWidthClearLabel }}
-      </button>
-      <p v-if="rimWidthInputInvalid" class="schwalbe-filter-panel__error" role="alert">
-        {{ rimWidthInvalidLabel }}
-      </p>
-      <p v-else-if="rimWidthWheelSizeInvalid" class="schwalbe-filter-panel__error" role="alert">
-        {{ rimWidthChooseWheelSizeLabel }}
-      </p>
-    </div>
-
     <fieldset class="schwalbe-filter-panel__inline-facet">
       <legend>{{ eBikeRatingLabel }}</legend>
       <div class="schwalbe-filter-panel__options">
@@ -131,7 +97,6 @@ import type {
 } from '~/data/tireguides/schwalbeTireCatalogFilterModel'
 
 const selectedWheelSizeKeys = defineModel<string[]>('selectedWheelSizeKeys', { required: true })
-const innerRimWidthInput = defineModel<string | number | null>('innerRimWidthInput', { required: true })
 const selectedBeadSeatDiametersMm = defineModel<number[]>('selectedBeadSeatDiametersMm', { required: true })
 const selectedRadialOnly = defineModel<boolean>('selectedRadialOnly', { required: true })
 const selectedBeads = defineModel<string[]>('selectedBeads', { required: true })
@@ -146,11 +111,6 @@ const props = defineProps<{
   selectedCountTemplate: string
   wheelSizeLabel: string
   wheelSizeOptionTemplate: string
-  rimWidthHint: string
-  rimWidthInnerWidthLabel: string
-  rimWidthInvalidLabel: string
-  rimWidthChooseWheelSizeLabel: string
-  rimWidthClearLabel: string
   radialGroupLabel: string
   radialAllLabel: string
   radialLabel: string
@@ -167,7 +127,6 @@ const props = defineProps<{
 
 const hasSelection = computed(() => (
   selectedWheelSizeKeys.value.length > 0
-  || hasInnerRimWidthInput.value
   || selectedBeadSeatDiametersMm.value.length > 0
   || selectedRadialOnly.value
   || selectedBeads.value.length > 0
@@ -175,37 +134,12 @@ const hasSelection = computed(() => (
   || selectedEBikeRatings.value.length > 0
 ))
 
-const normalizedInnerRimWidthInput = computed(() => {
-  const value = innerRimWidthInput.value
-  const normalized = value === null || value === undefined ? '' : String(value).trim()
-  if (!normalized) return null
-  const parsed = Number(normalized)
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : null
-})
-
-const hasInnerRimWidthInput = computed(() => {
-  const value = innerRimWidthInput.value
-  return Boolean(value !== null && value !== undefined && String(value).trim())
-})
-
-const rimWidthInputInvalid = computed(() => hasInnerRimWidthInput.value && normalizedInnerRimWidthInput.value === null)
-const rimWidthWheelSizeInvalid = computed(() => hasInnerRimWidthInput.value && selectedWheelSizeKeys.value.length !== 1)
-
-const clearInnerRimWidth = () => {
-  innerRimWidthInput.value = ''
-}
-
 const wheelSizeOptionLabel = (option: SchwalbeTireCatalogWheelSizeOption) => props.wheelSizeOptionTemplate
   .replace('{diameter}', option.wheelDiameterIn)
   .replace('{bsd}', String(option.beadSeatDiameterMm))
 
 const manyOptionThreshold = 5
 const hasManyOptions = (options: readonly unknown[]) => options.length >= manyOptionThreshold
-
-const updateInnerRimWidthInput = (event: Event) => {
-  const value = (event.target as HTMLInputElement).value
-  innerRimWidthInput.value = value
-}
 
 const closeOtherAccordions = (event: Event) => {
   const current = event.currentTarget
@@ -304,12 +238,6 @@ const selectedCountLabel = (count: number) => props.selectedCountTemplate.replac
   padding: 0.8rem;
 }
 
-.schwalbe-filter-panel__range-label {
-  color: var(--tz-text-secondary);
-  font-size: 0.7rem;
-  font-weight: 700;
-}
-
 .schwalbe-filter-panel__group {
   display: grid;
   align-content: start;
@@ -379,65 +307,6 @@ const selectedCountLabel = (count: number) => props.selectedCountTemplate.replac
   outline-offset: 2px;
 }
 
-.schwalbe-filter-panel__numeric-control {
-  display: flex;
-  width: min(100%, 10rem);
-  min-height: 2rem;
-  align-items: center;
-  gap: 0.5rem;
-  border: 1px solid var(--tz-border-subtle);
-  border-radius: 0.65rem;
-  background: var(--tz-card-surface);
-  color: var(--tz-text-primary);
-  padding: 0.25rem 0.55rem;
-}
-
-.schwalbe-filter-panel__numeric-control input {
-  width: 100%;
-  min-width: 0;
-  border: 0;
-  outline: 0;
-  background: transparent;
-  color: inherit;
-  font: inherit;
-  font-size: 0.8rem;
-}
-
-.schwalbe-filter-panel__numeric-control input:focus-visible {
-  outline: 2px solid var(--tz-action-primary);
-  outline-offset: 2px;
-}
-
-.schwalbe-filter-panel__rim-match {
-  display: flex;
-  min-width: 0;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.45rem 0.65rem;
-  border: 1px solid var(--tz-border-subtle);
-  border-radius: 0.75rem;
-  background: var(--tz-card-surface);
-  padding: 0.45rem 0.7rem;
-}
-
-.schwalbe-filter-panel__rim-match-field {
-  display: flex;
-  min-width: 0;
-  flex: 1 1 auto;
-  align-items: center;
-  gap: 0.55rem;
-}
-
-.schwalbe-filter-panel__rim-match-field > .schwalbe-filter-panel__range-label {
-  flex: 0 0 auto;
-  white-space: nowrap;
-}
-
-.schwalbe-filter-panel__rim-width-control {
-  flex: 0 1 12rem;
-  width: 12rem;
-}
-
 .schwalbe-filter-panel__inline-facet {
   display: flex;
   min-width: 0;
@@ -464,46 +333,6 @@ const selectedCountLabel = (count: number) => props.selectedCountTemplate.replac
   flex: 1 1 auto;
   min-width: 0;
   padding: 0;
-}
-
-.schwalbe-filter-panel__error {
-  flex: 1 0 100%;
-  margin: 0;
-  color: var(--tz-status-danger-text);
-  font-size: 0.68rem;
-  line-height: 1.4;
-}
-
-.schwalbe-filter-panel__hint {
-  max-width: 24rem;
-  margin: 0;
-  color: var(--tz-text-secondary);
-  font-size: 0.68rem;
-  line-height: 1.4;
-}
-
-.schwalbe-filter-panel__clear-field {
-  justify-self: start;
-  min-height: 1.9rem;
-  border: 1px solid var(--tz-border-strong);
-  border-radius: 0.55rem;
-  background: transparent;
-  color: var(--tz-text-primary);
-  padding: 0.3rem 0.55rem;
-  font: inherit;
-  font-size: 0.7rem;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.schwalbe-filter-panel__clear-field:hover {
-  border-color: var(--tz-action-primary);
-  color: var(--tz-action-primary);
-}
-
-.schwalbe-filter-panel__clear-field:focus-visible {
-  outline: 2px solid var(--tz-action-primary);
-  outline-offset: 2px;
 }
 
 .schwalbe-filter-panel__reset {

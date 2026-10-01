@@ -35,6 +35,11 @@ type SchwalbeTireCatalogSelectorQuery struct {
 	Search    string
 	Page      int
 	MinLoadKG *float64
+	// IncludeRimWidthGuidance asks the selector to attach the source-backed
+	// possible-combination range for each returned tire. It is separate from
+	// InnerRimWidthMM so the page can explain a tire's reference range without
+	// filtering the catalog by a user-entered rim width.
+	IncludeRimWidthGuidance bool
 	// InnerRimWidthMM enables source-backed possible-combination matching.
 	// A nil value keeps the existing unfiltered catalog behavior.
 	InnerRimWidthMM *float64
@@ -149,7 +154,7 @@ func (s *ProductService) SearchSchwalbeTireCatalogSelector(query SchwalbeTireCat
 
 	var rimWidthRules []repository.SchwalbeTireRimWidthCombinationRule
 	var rimWidthContext *SchwalbeTireCatalogSelectorRimWidthContext
-	if query.InnerRimWidthMM != nil {
+	if query.InnerRimWidthMM != nil || query.IncludeRimWidthGuidance {
 		rimWidthRules, err = s.productRepo.ListSchwalbeTireRimWidthCombinationRules()
 		if err != nil {
 			return nil, err
@@ -192,8 +197,14 @@ func (s *ProductService) SearchSchwalbeTireCatalogSelector(query SchwalbeTireCat
 	rimWidthGuidanceByArticle := make(map[string][]SchwalbeTireCatalogSelectorRimWidthGuidance)
 	for _, row := range filteredRows[start:end] {
 		pageItems = append(pageItems, row.item)
-		if query.InnerRimWidthMM != nil {
-			if guidance := schwalbeTireRimWidthGuidanceFor(row.dimensions.NominalTireWidthMM, query.InnerRimWidthMM, rimWidthRules); len(guidance) > 0 {
+		if query.InnerRimWidthMM != nil || query.IncludeRimWidthGuidance {
+			var guidance []SchwalbeTireCatalogSelectorRimWidthGuidance
+			if query.IncludeRimWidthGuidance {
+				guidance = schwalbeTireRimWidthGuidanceForTireWidth(row.dimensions.NominalTireWidthMM, rimWidthRules)
+			} else {
+				guidance = schwalbeTireRimWidthGuidanceFor(row.dimensions.NominalTireWidthMM, query.InnerRimWidthMM, rimWidthRules)
+			}
+			if len(guidance) > 0 {
 				rimWidthGuidanceByArticle[row.item.ArticleNo] = guidance
 			}
 		}

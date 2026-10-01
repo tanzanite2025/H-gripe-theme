@@ -163,6 +163,9 @@ jobs:
           load: true
           tags: local/${{ matrix.image }}:${{ github.sha }}
           labels: ${{ steps.meta.outputs.labels }}
+          # Chromium receives frequent Debian security updates; do not reuse a
+          # stale cached apt layer for the image whose release gate scans it.
+          no-cache: ${{ matrix.image == 'commerce-platform-site-quality-runner' }}
           cache-from: type=gha,scope=${{ matrix.image }}
           cache-to: type=gha,mode=max,scope=${{ matrix.image }}
 

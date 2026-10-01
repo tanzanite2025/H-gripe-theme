@@ -52,5 +52,19 @@ CREATE INDEX IF NOT EXISTS idx_schwalbe_tire_specs_etrto
 CREATE INDEX IF NOT EXISTS idx_schwalbe_tire_specs_inch
     ON schwalbe_tire_specifications (inch_designation);
 
-CREATE INDEX IF NOT EXISTS idx_schwalbe_tire_specs_verified
-    ON schwalbe_tire_specifications (verification_status, is_active);
+-- Later migrations intentionally replace this reviewable table with a
+-- candidate-only catalog that omits the approval columns. Keep this historical
+-- migration replayable against that forward-only replacement schema.
+DO $$
+BEGIN
+    IF (
+        SELECT COUNT(*)
+        FROM information_schema.columns
+        WHERE table_schema = 'public'
+          AND table_name = 'schwalbe_tire_specifications'
+          AND column_name IN ('verification_status', 'is_active')
+    ) = 2 THEN
+        EXECUTE 'CREATE INDEX IF NOT EXISTS idx_schwalbe_tire_specs_verified
+            ON schwalbe_tire_specifications (verification_status, is_active)';
+    END IF;
+END $$;

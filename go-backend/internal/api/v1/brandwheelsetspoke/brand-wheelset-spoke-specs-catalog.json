@@ -1682,6 +1682,686 @@
     ]
   },
   {
+    "brandSlug": "enve",
+    "brandName": "ENVE",
+    "publicationStatus": "published",
+    "sourceCheckedAt": "2026-10-01",
+    "wheelsets": [
+      {
+        "slug": "enve-ses-2-3-gen4",
+        "model": "ENVE SES 2.3 (Gen 4)",
+        "lifecycleStatus": "current",
+        "verificationStatus": "verified",
+        "rim": {
+          "depthMm": 28,
+          "depthFrontMm": 28,
+          "depthRearMm": 32,
+          "innerWidthMm": 21,
+          "outerWidthMm": 25
+        },
+        "nippleModel": "ENVE 7075-T6 inverted internal alloy nipple",
+        "nippleLengthMm": null,
+        "sourceUrl": "https://support.enve.com/hc/en-us/articles/360058866734-Spoke-Chart-and-Tension",
+        "wheels": [
+          {
+            "position": "front",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "Sapim CX-Ray TCS OH bladed straight-pull",
+                "headType": "straight-pull",
+                "lengthMm": 300
+              },
+              {
+                "side": "right",
+                "spokeModel": "Sapim CX-Ray TCS OH bladed straight-pull",
+                "headType": "straight-pull",
+                "lengthMm": 300
+              }
+            ]
+          },
+          {
+            "position": "rear",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "Sapim CX-Ray TCS OH bladed straight-pull",
+                "headType": "straight-pull",
+                "lengthMm": 296
+              },
+              {
+                "side": "right",
+                "spokeModel": "Sapim CX-Ray TCS OH bladed straight-pull",
+                "headType": "straight-pull",
+                "lengthMm": 296
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "slug": "enve-ses-3-4-gen4",
+        "model": "ENVE SES 3.4 (Gen 4)",
+        "lifecycleStatus": "current",
+        "verificationStatus": "verified",
+        "rim": {
+          "depthMm": 39,
+          "depthFrontMm": 39,
+          "depthRearMm": 43,
+          "innerWidthMm": 25,
+          "outerWidthMm": 32
+        },
+        "nippleModel": "ENVE molded inverted internal alloy nipple",
+        "nippleLengthMm": null,
+        "sourceUrl": "https://support.enve.com/hc/en-us/articles/360058866734-Spoke-Chart-and-Tension",
+        "wheels": [
+          {
+            "position": "front",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "Sapim CX-Ray TCS OH bladed 2.0-0.9 x 2.2-2.0 mm straight-pull",
+                "headType": "straight-pull",
+                "lengthMm": 287
+              },
+              {
+                "side": "right",
+                "spokeModel": "Sapim CX-Ray TCS OH bladed 2.0-0.9 x 2.2-2.0 mm straight-pull",
+                "headType": "straight-pull",
+                "lengthMm": 287
+              }
+            ]
+          },
+          {
+            "position": "rear",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "Sapim CX-Ray TCS OH bladed 2.0-0.9 x 2.2-2.0 mm straight-pull",
+                "headType": "straight-pull",
+                "lengthMm": 283
+              },
+              {
+                "side": "right",
+                "spokeModel": "Sapim CX-Ray TCS OH bladed 2.0-0.9 x 2.2-2.0 mm straight-pull",
+                "headType": "straight-pull",
+                "lengthMm": 283
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "slug": "enve-ses-4-5-gen4",
+        "model": "ENVE SES 4.5 (Gen 4)",
+        "lifecycleStatus": "current",
+        "verificationStatus": "verified",
+        "rim": {
+          "depthMm": 50,
+          "depthFrontMm": 50,
+          "depthRearMm": 56,
+          "innerWidthMm": 25,
+          "outerWidthMm": 32
+        },
+        "nippleModel": "ENVE inverted internal alloy nipple",
+        "nippleLengthMm": null,
+        "sourceUrl": "https://support.enve.com/hc/en-us/articles/360058866734-Spoke-Chart-and-Tension",
+        "wheels": [
+          {
+            "position": "front",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "Sapim CX-Ray TCS OH bladed straight-pull",
+                "headType": "straight-pull",
+                "lengthMm": 276
+              },
+              {
+                "side": "right",
+                "spokeModel": "Sapim CX-Ray TCS OH bladed straight-pull",
+                "headType": "straight-pull",
+                "lengthMm": 276
+              }
+            ]
+          },
+          {
+            "position": "rear",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "Sapim CX-Ray TCS OH bladed straight-pull",
+                "headType": "straight-pull",
+                "lengthMm": 271
+              },
+              {
+                "side": "right",
+                "spokeModel": "Sapim CX-Ray TCS OH bladed straight-pull",
+                "headType": "straight-pull",
+                "lengthMm": 271
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "slug": "enve-ses-4-5-pro",
+        "model": "ENVE SES 4.5 PRO (Team UAE Emirates Edition)",
+        "lifecycleStatus": "current",
+        "verificationStatus": "pending",
+        "rim": {
+          "depthMm": 50,
+          "depthFrontMm": 50,
+          "depthRearMm": 56,
+          "innerWidthMm": 23.5,
+          "outerWidthMm": 31
+        },
+        "nippleModel": "Alpina 7075-T6 inverted internal alloy nipple",
+        "nippleLengthMm": null,
+        "sourceUrl": "https://support.enve.com/hc/en-us/articles/360058866734-Spoke-Chart-and-Tension",
+        "wheels": [
+          {
+            "position": "front",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "Alpina Ultralite Aero R5 bladed 2.0-1.5-2.0 mm straight-pull",
+                "headType": "straight-pull",
+                "lengthMm": 276
+              },
+              {
+                "side": "right",
+                "spokeModel": "Alpina Ultralite Aero R5 bladed 2.0-1.5-2.0 mm straight-pull",
+                "headType": "straight-pull",
+                "lengthMm": 278
+              }
+            ]
+          },
+          {
+            "position": "rear",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "Alpina Ultralite Aero R5 bladed 2.0-1.5-2.0 mm straight-pull",
+                "headType": "straight-pull",
+                "lengthMm": 270
+              },
+              {
+                "side": "right",
+                "spokeModel": "Alpina Ultralite Aero R5 bladed 2.0-1.5-2.0 mm straight-pull",
+                "headType": "straight-pull",
+                "lengthMm": 273
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "slug": "enve-ses-6-7-gen4",
+        "model": "ENVE SES 6.7 (Gen 4)",
+        "lifecycleStatus": "current",
+        "verificationStatus": "verified",
+        "rim": {
+          "depthMm": 60,
+          "depthFrontMm": 60,
+          "depthRearMm": 67,
+          "innerWidthMm": 23,
+          "outerWidthMm": 30
+        },
+        "nippleModel": "ENVE inverted internal alloy nipple",
+        "nippleLengthMm": null,
+        "sourceUrl": "https://support.enve.com/hc/en-us/articles/360058866734-Spoke-Chart-and-Tension",
+        "wheels": [
+          {
+            "position": "front",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "Sapim CX-Ray TCS OH bladed straight-pull",
+                "headType": "straight-pull",
+                "lengthMm": 267
+              },
+              {
+                "side": "right",
+                "spokeModel": "Sapim CX-Ray TCS OH bladed straight-pull",
+                "headType": "straight-pull",
+                "lengthMm": 267
+              }
+            ]
+          },
+          {
+            "position": "rear",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "Sapim CX-Ray TCS OH bladed straight-pull",
+                "headType": "straight-pull",
+                "lengthMm": 261
+              },
+              {
+                "side": "right",
+                "spokeModel": "Sapim CX-Ray TCS OH bladed straight-pull",
+                "headType": "straight-pull",
+                "lengthMm": 261
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "slug": "enve-g23-gravel",
+        "model": "ENVE G23 (700c Gravel)",
+        "lifecycleStatus": "current",
+        "verificationStatus": "verified",
+        "rim": {
+          "depthMm": 25,
+          "depthFrontMm": 25,
+          "depthRearMm": 25,
+          "innerWidthMm": 23,
+          "outerWidthMm": 31.5
+        },
+        "nippleModel": "ENVE inverted internal alloy nipple 14G",
+        "nippleLengthMm": null,
+        "sourceUrl": "https://support.enve.com/hc/en-us/articles/360058866734-Spoke-Chart-and-Tension",
+        "wheels": [
+          {
+            "position": "front",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "Sapim CX-Ray bladed straight-pull",
+                "headType": "straight-pull",
+                "lengthMm": 301
+              },
+              {
+                "side": "right",
+                "spokeModel": "Sapim CX-Ray bladed straight-pull",
+                "headType": "straight-pull",
+                "lengthMm": 301
+              }
+            ]
+          },
+          {
+            "position": "rear",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "Sapim CX-Ray bladed straight-pull",
+                "headType": "straight-pull",
+                "lengthMm": 301
+              },
+              {
+                "side": "right",
+                "spokeModel": "Sapim CX-Ray bladed straight-pull",
+                "headType": "straight-pull",
+                "lengthMm": 301
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "slug": "enve-g27-gravel",
+        "model": "ENVE G27 (650b Gravel)",
+        "lifecycleStatus": "current",
+        "verificationStatus": "pending",
+        "rim": {
+          "depthMm": 25,
+          "depthFrontMm": 25,
+          "depthRearMm": 25,
+          "innerWidthMm": 27,
+          "outerWidthMm": 35.5
+        },
+        "nippleModel": "ENVE inverted internal alloy nipple 14G",
+        "nippleLengthMm": null,
+        "sourceUrl": "https://support.enve.com/hc/en-us/articles/360058866734-Spoke-Chart-and-Tension",
+        "wheels": [
+          {
+            "position": "front",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "Sapim CX-Ray bladed straight-pull",
+                "headType": "straight-pull",
+                "lengthMm": 282
+              },
+              {
+                "side": "right",
+                "spokeModel": "Sapim CX-Ray bladed straight-pull",
+                "headType": "straight-pull",
+                "lengthMm": 282
+              }
+            ]
+          },
+          {
+            "position": "rear",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "Sapim CX-Ray bladed straight-pull",
+                "headType": "straight-pull",
+                "lengthMm": 282
+              },
+              {
+                "side": "right",
+                "spokeModel": "Sapim CX-Ray bladed straight-pull",
+                "headType": "straight-pull",
+                "lengthMm": 282
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "slug": "enve-foundation-45",
+        "model": "ENVE 45 (Foundation Road)",
+        "lifecycleStatus": "current",
+        "verificationStatus": "verified",
+        "rim": {
+          "depthMm": 45,
+          "depthFrontMm": 45,
+          "depthRearMm": 45,
+          "innerWidthMm": 21,
+          "outerWidthMm": 28
+        },
+        "nippleModel": "Sapim Double Square external alloy/brass nipple 14G",
+        "nippleLengthMm": null,
+        "sourceUrl": "https://support.enve.com/hc/en-us/articles/360058866734-Spoke-Chart-and-Tension",
+        "wheels": [
+          {
+            "position": "front",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "Sapim CX-Sprint bladed J-bend",
+                "headType": "j-bend",
+                "lengthMm": 274
+              },
+              {
+                "side": "right",
+                "spokeModel": "Sapim CX-Sprint bladed J-bend",
+                "headType": "j-bend",
+                "lengthMm": 276
+              }
+            ]
+          },
+          {
+            "position": "rear",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "Sapim CX-Sprint bladed J-bend",
+                "headType": "j-bend",
+                "lengthMm": 276
+              },
+              {
+                "side": "right",
+                "spokeModel": "Sapim CX-Sprint bladed J-bend",
+                "headType": "j-bend",
+                "lengthMm": 270
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "slug": "enve-foundation-65",
+        "model": "ENVE 65 (Foundation Road)",
+        "lifecycleStatus": "current",
+        "verificationStatus": "verified",
+        "rim": {
+          "depthMm": 65,
+          "depthFrontMm": 65,
+          "depthRearMm": 65,
+          "innerWidthMm": 21,
+          "outerWidthMm": 28
+        },
+        "nippleModel": "Sapim Double Square external alloy/brass nipple 14G",
+        "nippleLengthMm": null,
+        "sourceUrl": "https://support.enve.com/hc/en-us/articles/360058866734-Spoke-Chart-and-Tension",
+        "wheels": [
+          {
+            "position": "front",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "Sapim CX-Sprint bladed J-bend",
+                "headType": "j-bend",
+                "lengthMm": 254
+              },
+              {
+                "side": "right",
+                "spokeModel": "Sapim CX-Sprint bladed J-bend",
+                "headType": "j-bend",
+                "lengthMm": 256
+              }
+            ]
+          },
+          {
+            "position": "rear",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "Sapim CX-Sprint bladed J-bend",
+                "headType": "j-bend",
+                "lengthMm": 256
+              },
+              {
+                "side": "right",
+                "spokeModel": "Sapim CX-Sprint bladed J-bend",
+                "headType": "j-bend",
+                "lengthMm": 250
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "slug": "enve-foundation-ag25",
+        "model": "ENVE AG25 (Foundation Gravel 700c)",
+        "lifecycleStatus": "current",
+        "verificationStatus": "verified",
+        "rim": {
+          "depthMm": 21,
+          "depthFrontMm": 21,
+          "depthRearMm": 21,
+          "innerWidthMm": 25,
+          "outerWidthMm": 32
+        },
+        "nippleModel": "Sapim Double Square external brass nipple 14G",
+        "nippleLengthMm": null,
+        "sourceUrl": "https://support.enve.com/hc/en-us/articles/360058866734-Spoke-Chart-and-Tension",
+        "wheels": [
+          {
+            "position": "front",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "Sapim CX-Sprint bladed J-bend",
+                "headType": "j-bend",
+                "lengthMm": 290
+              },
+              {
+                "side": "right",
+                "spokeModel": "Sapim CX-Sprint bladed J-bend",
+                "headType": "j-bend",
+                "lengthMm": 294
+              }
+            ]
+          },
+          {
+            "position": "rear",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "Sapim CX-Sprint bladed J-bend",
+                "headType": "j-bend",
+                "lengthMm": 292
+              },
+              {
+                "side": "right",
+                "spokeModel": "Sapim CX-Sprint bladed J-bend",
+                "headType": "j-bend",
+                "lengthMm": 288
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "slug": "enve-foundation-ag28",
+        "model": "ENVE AG28 (Foundation Gravel 650b)",
+        "lifecycleStatus": "current",
+        "verificationStatus": "verified",
+        "rim": {
+          "depthMm": 21,
+          "depthFrontMm": 21,
+          "depthRearMm": 21,
+          "innerWidthMm": 28,
+          "outerWidthMm": 34
+        },
+        "nippleModel": "Sapim Double Square external brass nipple 14G",
+        "nippleLengthMm": null,
+        "sourceUrl": "https://support.enve.com/hc/en-us/articles/360058866734-Spoke-Chart-and-Tension",
+        "wheels": [
+          {
+            "position": "front",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "Sapim CX-Sprint bladed J-bend",
+                "headType": "j-bend",
+                "lengthMm": 272
+              },
+              {
+                "side": "right",
+                "spokeModel": "Sapim CX-Sprint bladed J-bend",
+                "headType": "j-bend",
+                "lengthMm": 276
+              }
+            ]
+          },
+          {
+            "position": "rear",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "Sapim CX-Sprint bladed J-bend",
+                "headType": "j-bend",
+                "lengthMm": 274
+              },
+              {
+                "side": "right",
+                "spokeModel": "Sapim CX-Sprint bladed J-bend",
+                "headType": "j-bend",
+                "lengthMm": 270
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "slug": "enve-foundation-am30-29",
+        "model": "ENVE AM30 (Foundation MTB 29\" Boost)",
+        "lifecycleStatus": "current",
+        "verificationStatus": "verified",
+        "rim": {
+          "depthMm": 20,
+          "depthFrontMm": 20,
+          "depthRearMm": 20,
+          "innerWidthMm": 30,
+          "outerWidthMm": 39
+        },
+        "nippleModel": "Alpina Nylock external brass nipple 14G",
+        "nippleLengthMm": null,
+        "sourceUrl": "https://support.enve.com/hc/en-us/articles/360058866734-Spoke-Chart-and-Tension",
+        "wheels": [
+          {
+            "position": "front",
+            "spokeCount": 28,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "Sapim Race butted 2.0-1.8-2.0 mm J-bend",
+                "headType": "j-bend",
+                "lengthMm": 288
+              },
+              {
+                "side": "right",
+                "spokeModel": "Sapim Race butted 2.0-1.8-2.0 mm J-bend",
+                "headType": "j-bend",
+                "lengthMm": 290
+              }
+            ]
+          },
+          {
+            "position": "rear",
+            "spokeCount": 28,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "Sapim Race butted 2.0-1.8-2.0 mm J-bend",
+                "headType": "j-bend",
+                "lengthMm": 290
+              },
+              {
+                "side": "right",
+                "spokeModel": "Sapim Race butted 2.0-1.8-2.0 mm J-bend",
+                "headType": "j-bend",
+                "lengthMm": 286
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
     "brandSlug": "shimano",
     "brandName": "Shimano",
     "publicationStatus": "published",

@@ -26,6 +26,8 @@ export interface BrandWheelsetSpokeRecord {
   verificationStatus: BrandWheelsetVerificationStatus
   rim: {
     depthMm: number
+    depthFrontMm?: number
+    depthRearMm?: number
     innerWidthMm: number
     outerWidthMm: number
   }

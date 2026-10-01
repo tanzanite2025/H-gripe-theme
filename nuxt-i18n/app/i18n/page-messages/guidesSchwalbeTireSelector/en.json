@@ -50,22 +50,9 @@
     "selectedCount": "{count} selected"
   },
   "rimWidth": {
-    "title": "Match by rim inner width",
-    "wheelSize": "Wheel diameter + BSD",
-    "allWheelSizes": "All wheel sizes",
-    "innerWidth": "Rim inner width",
-    "apply": "Match tires",
-    "clear": "Clear rim match",
-    "hint": "Enter the rim's inner width. Results use official possible-combination ranges; check your rim and frame requirements.",
-    "invalid": "Enter a positive inner width in mm.",
-    "chooseWheelSize": "Choose exactly one wheel diameter and BSD pair before matching by inner width.",
-    "covered": "Official possible-combination range · {width} mm · {count} candidates",
-    "noCoverage": "No official possible-combination range covers {width} mm.",
-    "source": "{basis} · source {version} · checked {date}",
-    "filterHint": "Rim matching is active for {wheelSize} at {width} mm. Other drawer filters narrow these results; choosing a tire-width range switches to width filtering. Clear the drawer filters to restore this rim match.",
-    "useWheelSizeFilter": "Use the drawer for wheel-size filtering only",
-    "matchLabel": "Official possible combination",
-    "range": "Rim inner width {min}–{max} mm"
+    "referenceLabel": "Rim inner-width reference",
+    "catalogHint": "The rim inner-width range follows the tire's nominal ETRTO width and the official possible-combination table; check the rim, pressure, and frame clearance before installation.",
+    "range": "{min}–{max} mm"
   },
   "summary": "{count} candidate records · page {page} of {totalPages}",
   "pagination": {

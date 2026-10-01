@@ -8,7 +8,10 @@ ENV NODE_ENV=production \
     XDG_CACHE_HOME=/tmp/runner-cache \
     XDG_RUNTIME_DIR=/tmp/runner-runtime
 
+# Keep the Chromium security package lookup fresh when the image is rebuilt.
+ARG APT_REFRESH=2026-10-01
 RUN apt-get update \
+    && echo "Refreshing Debian packages (${APT_REFRESH})" \
     && apt-get upgrade -y \
     && apt-get install -y --no-install-recommends \
         ca-certificates \

@@ -81,12 +81,10 @@
       :title="tx('filters.dialogTitle')"
       :close-label="tx('filters.closeFilters')"
       :show-results-label="tx('filters.showResults')"
-      :can-apply="canApplyFilterDraft"
       @apply="applyFilterDraft"
       @cancel="discardFilterDraft"
     >
       <SchwalbeTireCatalogFilterPanel
-        v-model:inner-rim-width-input="draftInnerRimWidthInput"
         v-model:selected-wheel-size-keys="draftFacetFilters.wheelSizeKeys"
         v-model:selected-bead-seat-diameters-mm="draftFacetFilters.beadSeatDiametersMm"
         v-model:selected-radial-only="draftFacetFilters.radialOnly"
@@ -98,11 +96,6 @@
         :selected-count-template="tx('filters.selectedCount', { count: '{count}' })"
         :wheel-size-label="tx('filters.wheelSize')"
         :wheel-size-option-template="tx('filters.wheelSizeOption', { diameter: '{diameter}', bsd: '{bsd}' })"
-        :rim-width-hint="tx('rimWidth.hint')"
-        :rim-width-inner-width-label="tx('rimWidth.innerWidth')"
-        :rim-width-invalid-label="tx('rimWidth.invalid')"
-        :rim-width-choose-wheel-size-label="tx('rimWidth.chooseWheelSize')"
-        :rim-width-clear-label="tx('rimWidth.clear')"
         :radial-group-label="tx('filters.radialGroup')"
         :radial-all-label="tx('filters.radialAll')"
         :radial-label="tx('filters.radial')"
@@ -121,18 +114,7 @@
     <div class="schwalbe-selector__summary" aria-live="polite">
       <span>{{ tx('summary', { count: totalItems, page: currentPage, totalPages }) }}</span>
       <span v-if="submittedSearch">{{ tx('search.active', { term: submittedSearch }) }}</span>
-      <span v-if="rimWidthContext">
-        <template v-if="rimWidthContext.guidance_status === 'covered'">
-          {{ rimWheelSizeLabel }} · {{ tx('rimWidth.covered', { width: rimWidthContext.inner_rim_width_mm, count: totalItems }) }}
-        </template>
-        <template v-else-if="rimWidthContext.guidance_status === 'wheel_size_required'">
-          {{ tx('rimWidth.chooseWheelSize') }}
-        </template>
-        <template v-else>
-          {{ rimWheelSizeLabel }} · {{ tx('rimWidth.noCoverage', { width: rimWidthContext.inner_rim_width_mm }) }}
-        </template>
-      </span>
-      <span v-if="rimWidthSourceSummary">{{ rimWidthSourceSummary }}</span>
+      <span v-if="hasRimWidthGuidance">{{ tx('rimWidth.catalogHint') }}</span>
     </div>
 
     <div v-if="pending" class="schwalbe-selector__state" role="status">
@@ -142,12 +124,6 @@
       <p>{{ tx('states.error') }}</p>
       <button type="button" class="schwalbe-selector__button" @click="() => refresh()">
         {{ tx('states.retry') }}
-      </button>
-    </div>
-    <div v-else-if="totalItems === 0 && rimWidthFilterConflict" class="schwalbe-selector__state schwalbe-selector__state--conflict" role="alert">
-      <p>{{ tx('states.noRimWidthFilterIntersection') }}</p>
-      <button type="button" class="schwalbe-selector__button" @click="clearRimWidthConflictingFilters">
-        {{ tx('states.clearDrawerFilters') }}
       </button>
     </div>
     <div v-else-if="totalItems === 0" class="schwalbe-selector__state">
@@ -212,7 +188,7 @@ import {
   type SchwalbeTireCatalogFacetFilterState,
 } from '~/composables/useSchwalbeTireSelector'
 
-const { t: translate, locale } = useI18n()
+const { t: translate } = useI18n()
 const tx = (key: string, params?: Record<string, unknown>) => translate(`guidesSchwalbeTireSelector.${key}`, params || {})
 const filterDialogOpen = ref(false)
 const searchInputId = `schwalbe-tire-search-${useId()}`
@@ -221,9 +197,7 @@ const {
   searchInput,
   submittedSearch,
   totalItems,
-  rimWidthContext,
   selectedModel,
-  selectedInnerRimWidthMm,
   selectedWheelSizeKeys,
   selectedBeadSeatDiametersMm,
   selectedRadialOnly,
@@ -249,43 +223,13 @@ const {
   refresh,
   submitSearch,
   clearSearch,
-  clearRimWidthSecondaryFilters,
 } = await useSchwalbeTireSelector()
-
-const rimWidthSourceSummary = computed(() => {
-  if (!rimWidthContext.value?.source_basis || !rimWidthContext.value.source_version) return ''
-  const checkedAt = rimWidthContext.value.source_checked_at
-  let checkedDate = checkedAt || ''
-  if (checkedAt) {
-    const parsed = new Date(checkedAt)
-    if (!Number.isNaN(parsed.getTime())) {
-      checkedDate = new Intl.DateTimeFormat(locale.value.replace(/_/g, '-'), { dateStyle: 'medium' }).format(parsed)
-    }
-  }
-  return tx('rimWidth.source', {
-    basis: rimWidthContext.value.source_basis,
-    version: rimWidthContext.value.source_version,
-    date: checkedDate,
-  })
-})
-
-const rimWheelSizeLabel = computed(() => {
-  const selectedKey = selectedWheelSizeKeys.value[0]
-  const option = wheelSizeOptions.value.find(candidate => candidate.value === selectedKey)
-  return option
-    ? tx('filters.wheelSizeOption', {
-        diameter: option.wheelDiameterIn,
-        bsd: option.beadSeatDiameterMm,
-      })
-    : tx('rimWidth.wheelSize')
-})
 
 const toggleWeightSort = () => {
   sortBy.value = sortBy.value === 'weight_desc' ? 'weight_asc' : 'weight_desc'
 }
 
 const draftFacetFilters = reactive<SchwalbeTireCatalogFacetFilterState>({
-  innerRimWidthMm: null,
   wheelSizeKeys: [],
   beadSeatDiametersMm: [],
   radialOnly: false,
@@ -293,45 +237,15 @@ const draftFacetFilters = reactive<SchwalbeTireCatalogFacetFilterState>({
   seals: [],
   eBikeRatings: [],
 })
-const draftInnerRimWidthInput = ref<string | number | null>('')
-
-const normalizedDraftInnerRimWidthInput = computed(() => {
-  const value = draftInnerRimWidthInput.value
-  const normalized = value === null || value === undefined ? '' : String(value).trim()
-  if (!normalized) return null
-  const parsed = Number(normalized)
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : null
-})
-
-const hasDraftInnerRimWidthInput = computed(() => {
-  const value = draftInnerRimWidthInput.value
-  return Boolean(value !== null && value !== undefined && String(value).trim())
-})
-
-const draftRimWidthInputInvalid = computed(() => (
-  hasDraftInnerRimWidthInput.value && normalizedDraftInnerRimWidthInput.value === null
-))
-
-const draftRimWidthWheelSizeInvalid = computed(() => (
-  hasDraftInnerRimWidthInput.value && draftFacetFilters.wheelSizeKeys.length !== 1
-))
-
-const canApplyFilterDraft = computed(() => (
-  !draftRimWidthInputInvalid.value && !draftRimWidthWheelSizeInvalid.value
-))
 
 const syncDraftFacetFilters = () => {
   const committed = getFacetFilterState()
-  draftFacetFilters.innerRimWidthMm = committed.innerRimWidthMm
   draftFacetFilters.wheelSizeKeys = [...committed.wheelSizeKeys]
   draftFacetFilters.beadSeatDiametersMm = [...committed.beadSeatDiametersMm]
   draftFacetFilters.radialOnly = committed.radialOnly
   draftFacetFilters.beads = [...committed.beads]
   draftFacetFilters.seals = [...committed.seals]
   draftFacetFilters.eBikeRatings = [...committed.eBikeRatings]
-  draftInnerRimWidthInput.value = committed.innerRimWidthMm === null
-    ? ''
-    : String(committed.innerRimWidthMm)
 }
 
 const openFilterDialog = () => {
@@ -346,10 +260,7 @@ const discardFilterDraft = () => {
 }
 
 const applyFilterDraft = () => {
-  if (!canApplyFilterDraft.value) return
-
   applyFacetFilterState({
-    innerRimWidthMm: normalizedDraftInnerRimWidthInput.value,
     wheelSizeKeys: [...draftFacetFilters.wheelSizeKeys],
     beadSeatDiametersMm: [...draftFacetFilters.beadSeatDiametersMm],
     radialOnly: draftFacetFilters.radialOnly,
@@ -361,8 +272,6 @@ const applyFilterDraft = () => {
 }
 
 const clearDraftFacetFilters = () => {
-  draftFacetFilters.innerRimWidthMm = null
-  draftInnerRimWidthInput.value = ''
   draftFacetFilters.wheelSizeKeys = []
   draftFacetFilters.beadSeatDiametersMm = []
   draftFacetFilters.radialOnly = false
@@ -371,36 +280,19 @@ const clearDraftFacetFilters = () => {
   draftFacetFilters.eBikeRatings = []
 }
 
-const hasAdditionalRimWidthFacetFilters = computed(() => (
-  selectedRadialOnly.value
-  || selectedBeads.value.length > 0
-  || selectedSeals.value.length > 0
-  || selectedEBikeRatings.value.length > 0
-  || selectedBeadSeatDiametersMm.value.length > 0
-))
-
-const rimWidthFilterConflict = computed(() => (
-  totalItems.value === 0
-  && selectedInnerRimWidthMm.value !== null
-  && rimWidthContext.value?.guidance_status === 'covered'
-  && !submittedSearch.value
-  && hasAdditionalRimWidthFacetFilters.value
-))
-
-const clearRimWidthConflictingFilters = () => {
-  clearRimWidthSecondaryFilters()
-}
-
 const activeFilterCount = computed(() => [
   selectedModel.value !== 'ALL',
-  // The wheel-size pair and optional rim-width match form one dimension group.
-  selectedInnerRimWidthMm.value !== null || selectedWheelSizeKeys.value.length > 0,
+  selectedWheelSizeKeys.value.length > 0,
   selectedBeadSeatDiametersMm.value.length > 0,
   selectedRadialOnly.value,
   selectedBeads.value.length > 0,
   selectedSeals.value.length > 0,
   selectedEBikeRatings.value.length > 0,
 ].filter(Boolean).length)
+
+const hasRimWidthGuidance = computed(() => visibleItems.value.some(item => (
+  Boolean(item.rim_width_guidance?.length)
+)))
 </script>
 
 <style scoped>

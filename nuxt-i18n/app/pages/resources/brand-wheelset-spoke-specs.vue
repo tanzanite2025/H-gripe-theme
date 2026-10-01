@@ -64,7 +64,7 @@
 
       <div v-if="detailModel" class="wheelset-spoke-lookup__detail">
         <div class="wheelset-spoke-lookup__detail-meta">
-          <span>{{ t('brandWheelsetSpokeSpecs.rimDepth') }}: <strong>{{ detailModel.rim.depthMm }} mm</strong></span>
+          <span>{{ t('brandWheelsetSpokeSpecs.rimDepth') }}: <strong>{{ formatRimDepth(detailModel.rim) }}</strong></span>
           <span v-if="detailModel.lifecycleStatus === 'legacy'" class="wheelset-spoke-lookup__legacy-badge">{{ t('brandWheelsetSpokeSpecs.legacyModel') }}</span>
         </div>
         <div class="wheelset-spoke-lookup__detail-grid">
@@ -152,7 +152,7 @@
                 </div>
               </th>
 
-              <td class="wheelset-spoke-lookup__rim-depth-cell">{{ wheelset.rim.depthMm }} mm</td>
+              <td class="wheelset-spoke-lookup__rim-depth-cell">{{ formatRimDepth(wheelset.rim) }}</td>
 
               <td class="wheelset-spoke-lookup__hole-crossing-cell">
                 <div v-for="position in wheelPositions" :key="position" class="wheelset-spoke-lookup__hole-crossing-row">
@@ -480,6 +480,12 @@ const compactLacingPattern = (pattern: string) => [...new Set(
   pattern.split('/').map(value => value.trim()).filter(Boolean),
 )].join(' / ')
 
+const formatRimDepth = (rim: { depthMm: number; depthFrontMm?: number; depthRearMm?: number }) => {
+  const front = rim.depthFrontMm ?? rim.depthMm
+  const rear = rim.depthRearMm ?? rim.depthMm
+  return front === rear ? `${front} mm` : `${front} / ${rear} mm`
+}
+
 const headTypeMessageKey = (headType: PublicBrandSpokeHeadType) => {
   const keys: Record<PublicBrandSpokeHeadType, string> = {
     'straight-pull': 'brandWheelsetSpokeSpecs.headTypeStraightPull',
@@ -494,6 +500,8 @@ const brandMark = (brandName: string, brandSlug: string) => (
     ? 'DT'
     : brandSlug === 'shimano'
       ? 'SH'
+      : brandSlug === 'enve'
+        ? 'EN'
       : brandName.split(/\s+/).map(part => part[0]).join('').slice(0, 2).toUpperCase()
 )
 

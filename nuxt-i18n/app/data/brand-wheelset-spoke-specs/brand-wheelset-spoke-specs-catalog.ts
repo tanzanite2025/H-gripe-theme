@@ -1,4 +1,5 @@
 import { dtSwissWheelsetSpokeCatalog } from './sources/dt-swiss-wheelset-spoke-specs'
+import { enveWheelsetSpokeCatalog } from './sources/enve-wheelset-spoke-specs'
 import { shimanoWheelsetSpokeCatalog } from './sources/shimano-wheelset-spoke-specs'
 import type { BrandWheelsetSpokeCatalog } from './brand-wheelset-spoke-specs-types'
 
@@ -6,6 +7,7 @@ export type * from './brand-wheelset-spoke-specs-types'
 
 export const brandWheelsetSpokeCatalogs: BrandWheelsetSpokeCatalog[] = [
   dtSwissWheelsetSpokeCatalog,
+  enveWheelsetSpokeCatalog,
   shimanoWheelsetSpokeCatalog,
 ]
 

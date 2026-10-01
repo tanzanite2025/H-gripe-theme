@@ -38,9 +38,11 @@ type wheelsetSpec struct {
 }
 
 type rimSpec struct {
-	DepthMM      float64 `json:"depthMm"`
-	InnerWidthMM float64 `json:"innerWidthMm"`
-	OuterWidthMM float64 `json:"outerWidthMm"`
+	DepthMM      float64  `json:"depthMm"`
+	DepthFrontMM *float64 `json:"depthFrontMm"`
+	DepthRearMM  *float64 `json:"depthRearMm"`
+	InnerWidthMM float64  `json:"innerWidthMm"`
+	OuterWidthMM float64  `json:"outerWidthMm"`
 }
 
 type wheelPositionSpec struct {
@@ -68,7 +70,9 @@ type modelIndex struct {
 }
 
 type publicRimSpec struct {
-	DepthMM float64 `json:"depthMm"`
+	DepthMM      float64  `json:"depthMm"`
+	DepthFrontMM *float64 `json:"depthFrontMm,omitempty"`
+	DepthRearMM  *float64 `json:"depthRearMm,omitempty"`
 }
 
 type publicWheelSpec struct {
@@ -231,8 +235,12 @@ func toModelIndex(brand brandCatalog, wheelset wheelsetSpec) modelIndex {
 		Slug:            wheelset.Slug,
 		Model:           wheelset.Model,
 		LifecycleStatus: wheelset.LifecycleStatus,
-		Rim:             publicRimSpec{DepthMM: wheelset.Rim.DepthMM},
-		Wheels:          wheels,
+		Rim: publicRimSpec{
+			DepthMM:      wheelset.Rim.DepthMM,
+			DepthFrontMM: wheelset.Rim.DepthFrontMM,
+			DepthRearMM:  wheelset.Rim.DepthRearMM,
+		},
+		Wheels: wheels,
 	}
 }
 
@@ -261,9 +269,13 @@ func toModelDetail(brand brandCatalog, wheelset wheelsetSpec) modelDetail {
 		Slug:            wheelset.Slug,
 		Model:           wheelset.Model,
 		LifecycleStatus: wheelset.LifecycleStatus,
-		Rim:             publicRimSpec{DepthMM: wheelset.Rim.DepthMM},
-		Wheels:          wheels,
-		NippleModel:     wheelset.NippleModel,
-		NippleLengthMM:  wheelset.NippleLengthMM,
+		Rim: publicRimSpec{
+			DepthMM:      wheelset.Rim.DepthMM,
+			DepthFrontMM: wheelset.Rim.DepthFrontMM,
+			DepthRearMM:  wheelset.Rim.DepthRearMM,
+		},
+		Wheels:         wheels,
+		NippleModel:    wheelset.NippleModel,
+		NippleLengthMM: wheelset.NippleLengthMM,
 	}
 }

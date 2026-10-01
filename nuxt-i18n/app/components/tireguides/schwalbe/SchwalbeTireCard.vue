@@ -60,7 +60,7 @@
     </div>
 
     <div v-if="item.rim_width_guidance?.length" class="schwalbe-tire-card__rim-guidance">
-      <strong>{{ tx('rimWidth.matchLabel') }}</strong>
+      <strong>{{ tx('rimWidth.referenceLabel') }}</strong>
       <span v-for="guidance in item.rim_width_guidance" :key="`${guidance.tire_width_min_mm}-${guidance.tire_width_max_mm}-${guidance.inner_rim_width_min_mm}-${guidance.inner_rim_width_max_mm}`">
         {{ tx('rimWidth.range', { min: guidance.inner_rim_width_min_mm, max: guidance.inner_rim_width_max_mm }) }}
       </span>

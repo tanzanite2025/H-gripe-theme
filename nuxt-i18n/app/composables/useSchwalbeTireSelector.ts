@@ -21,7 +21,6 @@ export type { SchwalbeCatalogSort } from '~/data/tireguides/schwalbeTireCatalogF
  */
 export type SchwalbeTireCatalogFacetFilterState = Pick<
   SchwalbeTireCatalogFilterQueryState,
-  | 'innerRimWidthMm'
   | 'wheelSizeKeys'
   | 'beadSeatDiametersMm'
   | 'radialOnly'
@@ -48,6 +47,9 @@ const readRouteSearch = (value: unknown): string => {
 
 const parseSelectorRouteFilterState = (query: Record<string, unknown>): SchwalbeTireCatalogFilterQueryState => ({
   ...parseSchwalbeTireCatalogFilterQuery(query),
+  // Rim inner width is now card guidance, not a selector facet. Ignore the
+  // legacy URL value so an old shared link cannot silently return zero rows.
+  innerRimWidthMm: null,
   // Tire width remains in the shared query/API contract for compatibility,
   // but it is no longer a selector facet. Ignore legacy URL values so a
   // hidden condition cannot silently constrain the visible result set.
@@ -111,19 +113,6 @@ export const useSchwalbeTireSelector = async () => {
     // Assign one complete state object so the route watcher performs a single
     // navigation and the catalog request is not restarted for every control.
     const wheelSizeKeys = [...facetState.wheelSizeKeys]
-    const requestedInnerRimWidthMm = facetState.innerRimWidthMm
-      !== null
-      && Number.isFinite(facetState.innerRimWidthMm)
-      && facetState.innerRimWidthMm > 0
-      ? facetState.innerRimWidthMm
-      : null
-
-    // The drawer's wheel-size and inner-width fields form one atomic choice:
-    // a rim-width match can only use exactly one wheel-size pair, while a
-    // normal wheel-size facet may contain several pairs.
-    const nextInnerRimWidthMm = wheelSizeKeys.length !== 1
-      ? null
-      : requestedInnerRimWidthMm
 
     updateFilterState({
       ...facetState,
@@ -137,7 +126,9 @@ export const useSchwalbeTireSelector = async () => {
       nominalTireWidthMaxMm: null,
       nominalTireWidthsMm: [],
       wheelSizeKeys,
-      innerRimWidthMm: nextInnerRimWidthMm,
+      // The selector displays rim-width guidance on cards; it no longer
+      // accepts a user-entered rim width as a result filter.
+      innerRimWidthMm: null,
       // A newly selected wheel-size pair is more precise than the legacy BSD
       // facet. Drop the hidden legacy constraint so an old shared link cannot
       // make a visibly selected wheel size return zero rows.
@@ -152,7 +143,6 @@ export const useSchwalbeTireSelector = async () => {
   }
 
   const getFacetFilterState = (): SchwalbeTireCatalogFacetFilterState => ({
-    innerRimWidthMm: filterState.value.innerRimWidthMm,
     wheelSizeKeys: [...filterState.value.wheelSizeKeys],
     beadSeatDiametersMm: [...filterState.value.beadSeatDiametersMm],
     radialOnly: filterState.value.radialOnly,
@@ -164,16 +154,6 @@ export const useSchwalbeTireSelector = async () => {
     get: () => filterState.value.modelName ?? 'ALL',
     set: (modelName: string) => updateFilterState({
       modelName: modelName === 'ALL' ? null : modelName,
-    }),
-  })
-  const selectedInnerRimWidthMm = computed<number | null>({
-    get: () => filterState.value.innerRimWidthMm,
-    set: (innerRimWidthMm) => updateFilterState({
-      innerRimWidthMm: innerRimWidthMm !== null
-        && Number.isFinite(innerRimWidthMm)
-        && innerRimWidthMm > 0
-        ? innerRimWidthMm
-        : null,
     }),
   })
   const selectedBeadSeatDiametersMm = computed({
@@ -235,7 +215,6 @@ export const useSchwalbeTireSelector = async () => {
   ])
   const totalItems = computed(() => data.value?.total || 0)
   const totalPages = computed(() => Math.max(1, data.value?.total_pages || 1))
-  const rimWidthContext = computed(() => data.value?.rim_width_context ?? null)
   const currentPage = computed(() => Math.min(requestedPage.value, totalPages.value))
   const visibleItems = computed(() => items.value)
 
@@ -266,7 +245,6 @@ export const useSchwalbeTireSelector = async () => {
 
   const hasActiveFilters = computed(() => (
     filterState.value.modelName !== null
-    || filterState.value.innerRimWidthMm !== null
     || filterState.value.wheelSizeKeys.length > 0
     || filterState.value.beadSeatDiametersMm.length > 0
     || filterState.value.minimumLoadKg !== null
@@ -345,29 +323,6 @@ export const useSchwalbeTireSelector = async () => {
     })
   }
 
-  const clearRimWidthSecondaryFilters = () => {
-    const wheelSizeKeys = filterState.value.wheelSizeKeys.slice(0, 1)
-    const preserveRimWidthMatch = filterState.value.innerRimWidthMm !== null
-      && wheelSizeKeys.length === 1
-
-    updateFilterState({
-      innerRimWidthMm: preserveRimWidthMatch ? filterState.value.innerRimWidthMm : null,
-      nominalTireWidthMinMm: null,
-      nominalTireWidthMaxMm: null,
-      nominalTireWidthsMm: [],
-      wheelSizeKeys: preserveRimWidthMatch ? wheelSizeKeys : [],
-      beadSeatDiametersMm: [],
-      minimumLoadKg: null,
-      casingConstructions: [],
-      radialOnly: false,
-      beads: [],
-      seals: [],
-      eBikeRatings: [],
-      colors: [],
-      compounds: [],
-    })
-  }
-
   watch(() => route.query.search, (value) => {
     const nextSearch = readRouteSearch(value)
     if (nextSearch === submittedSearch.value) return
@@ -407,7 +362,6 @@ export const useSchwalbeTireSelector = async () => {
     searchInput,
     submittedSearch,
     selectedModel,
-    selectedInnerRimWidthMm,
     selectedWheelSizeKeys,
     selectedBeadSeatDiametersMm,
     selectedRadialOnly,
@@ -419,7 +373,6 @@ export const useSchwalbeTireSelector = async () => {
     sortBy,
     items,
     totalItems,
-    rimWidthContext,
     visibleItems,
     modelOptions,
     wheelSizeOptions: computed(() => filterOptions.value.wheelSizes),
@@ -428,7 +381,6 @@ export const useSchwalbeTireSelector = async () => {
     eBikeRatingOptions: computed(() => filterOptions.value.eBikeRatings),
     hasActiveFilters,
     clearFacetFilters,
-    clearRimWidthSecondaryFilters,
     pageSize: SCHWALBE_CATALOG_PAGE_SIZE,
     currentPage,
     totalPages,
