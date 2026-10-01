@@ -8,6 +8,8 @@
   "wheelSizeTabsLabel": "Wheel size navigation",
   "allWheelSizes": "All wheel sizes",
   "multipleWheelSizes": "Multiple wheel sizes selected",
+  "wheelSizeDialogTitle": "Select wheel size",
+  "wheelSizeDialogClose": "Close wheel size selector",
   "wheelSizeTabOption": "{diameter}\" · BSD {bsd} mm",
   "wheelSizeCard": "{diameter}\" · BSD {bsd} mm · ETRTO {etrto}",
   "search": {

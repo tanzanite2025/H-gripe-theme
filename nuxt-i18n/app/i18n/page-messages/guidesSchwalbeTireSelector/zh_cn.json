@@ -8,6 +8,8 @@
   "wheelSizeTabsLabel": "轮径与 BSD 导航",
   "allWheelSizes": "全部轮径",
   "multipleWheelSizes": "已选择多个轮径",
+  "wheelSizeDialogTitle": "选择轮径",
+  "wheelSizeDialogClose": "关闭轮径选择",
   "wheelSizeTabOption": "{diameter}\" · BSD {bsd} mm",
   "wheelSizeCard": "{diameter}\" · BSD {bsd} mm · ETRTO {etrto}",
   "search": {

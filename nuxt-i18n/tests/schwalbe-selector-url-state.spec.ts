@@ -229,21 +229,44 @@ test.describe('Schwalbe selector URL state', () => {
     await expect(page).toHaveURL(url => url.searchParams.get('wheel_size') === '26-559')
   })
 
-  test('uses a native wheel size dropdown on a phone viewport', async ({ page }) => {
+  test('uses a bounded wheel size picker dialog on a phone viewport', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 })
     await page.goto(selectorURL('?wheel_size=26-559'))
     await waitForNuxtMount(page)
 
-    const wheelSizeSelect = page.getByRole('combobox', { name: 'Wheel size navigation' })
-    await expect(wheelSizeSelect).toBeVisible()
+    const wheelSizeTrigger = page.getByRole('button', { name: /Wheel size navigation/ })
+    await expect(wheelSizeTrigger).toBeVisible()
     await expect(page.locator('.schwalbe-wheel-size-tabs__desktop')).toBeHidden()
-    await expect(wheelSizeSelect).toHaveValue('26-559')
+    await expect(wheelSizeTrigger).toContainText('26" · BSD 559 mm')
+    await expect.poll(async () => page.locator('.schwalbe-wheel-size-tabs__mobile-trigger').evaluate((element) => {
+      const rect = element.getBoundingClientRect()
+      return rect.left >= 0 && rect.right <= window.innerWidth && rect.width > 0
+    })).toBe(true)
+    await expect.poll(async () => page.evaluate(() => ({
+      viewport: window.innerWidth,
+      scrollWidth: document.documentElement.scrollWidth,
+    }))).toEqual({ viewport: 390, scrollWidth: 390 })
 
-    await wheelSizeSelect.selectOption('29-622')
+    await wheelSizeTrigger.click()
+    const wheelSizeDialog = page.getByRole('dialog', { name: 'Select wheel size' })
+    await expect(wheelSizeDialog).toBeVisible()
+    await expect.poll(async () => wheelSizeDialog.evaluate((element) => {
+      const rect = element.getBoundingClientRect()
+      return rect.left >= 0
+        && rect.top >= 0
+        && rect.right <= window.innerWidth
+        && rect.bottom <= window.innerHeight
+        && element.scrollWidth <= window.innerWidth
+    })).toBe(true)
+    await expect(wheelSizeDialog.getByRole('option', { name: '26" · BSD 559 mm', exact: true })).toHaveAttribute('aria-selected', 'true')
+
+    await wheelSizeDialog.getByRole('option', { name: '29" · BSD 622 mm', exact: true }).click()
     await expect(page).toHaveURL(url => url.searchParams.get('wheel_size') === '29-622')
-    await expect(wheelSizeSelect).toHaveValue('29-622')
+    await expect(wheelSizeDialog).toHaveCount(0)
+    await expect(wheelSizeTrigger).toContainText('29" · BSD 622 mm')
 
-    await wheelSizeSelect.selectOption('')
+    await wheelSizeTrigger.click()
+    await page.getByRole('dialog', { name: 'Select wheel size' }).getByRole('option', { name: 'All wheel sizes', exact: true }).click()
     await expect(page).not.toHaveURL(/wheel_size=/)
   })
 

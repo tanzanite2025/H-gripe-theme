@@ -79,6 +79,8 @@
       :label="tx('wheelSizeTabsLabel')"
       :all-label="tx('allWheelSizes')"
       :multiple-label="tx('multipleWheelSizes')"
+      :dialog-title="tx('wheelSizeDialogTitle')"
+      :close-label="tx('wheelSizeDialogClose')"
       :option-template="tx('wheelSizeTabOption', { diameter: '{diameter}', bsd: '{bsd}' })"
       :options="wheelSizeNavigationOptions"
       :selected-wheel-size-keys="selectedWheelSizeKeys"
