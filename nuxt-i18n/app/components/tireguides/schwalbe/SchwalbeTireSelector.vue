@@ -87,9 +87,6 @@
     >
       <SchwalbeTireCatalogFilterPanel
         v-model:inner-rim-width-input="draftInnerRimWidthInput"
-        v-model:selected-tire-widths-mm="draftFacetFilters.nominalTireWidthsMm"
-        v-model:selected-tire-width-min-mm="draftFacetFilters.nominalTireWidthMinMm"
-        v-model:selected-tire-width-max-mm="draftFacetFilters.nominalTireWidthMaxMm"
         v-model:selected-wheel-size-keys="draftFacetFilters.wheelSizeKeys"
         v-model:selected-bead-seat-diameters-mm="draftFacetFilters.beadSeatDiametersMm"
         v-model:selected-casing-constructions="draftFacetFilters.casingConstructions"
@@ -100,10 +97,6 @@
         @reset="clearDraftFacetFilters"
         :label="tx('filters.catalogFilters')"
         :selected-count-template="tx('filters.selectedCount', { count: '{count}' })"
-        :tire-width-label="tx('filters.tireWidth')"
-        :tire-width-min-label="tx('filters.tireWidthMin')"
-        :tire-width-max-label="tx('filters.tireWidthMax')"
-        :tire-width-clear-label="tx('filters.clearTireWidth')"
         :wheel-size-label="tx('filters.wheelSize')"
         :wheel-size-option-template="tx('filters.wheelSizeOption', { diameter: '{diameter}', bsd: '{bsd}' })"
         :rim-width-hint="tx('rimWidth.hint')"
@@ -120,7 +113,6 @@
         :e-bike-rating-label="tx('filters.eBikeRating')"
         :e-bike-unrated-label="tx('filters.eBikeUnrated')"
         :reset-label="tx('filters.clearFilters')"
-        :tire-width-options="tireWidthOptions"
         :wheel-size-options="wheelSizeOptions"
         :casing-construction-options="casingConstructionOptions"
         :bead-options="beadOptions"
@@ -235,9 +227,6 @@ const {
   rimWidthContext,
   selectedModel,
   selectedInnerRimWidthMm,
-  selectedTireWidthsMm,
-  selectedTireWidthMinMm,
-  selectedTireWidthMaxMm,
   selectedWheelSizeKeys,
   selectedBeadSeatDiametersMm,
   selectedCasingConstructions,
@@ -250,7 +239,6 @@ const {
   sortBy,
   visibleItems,
   modelOptions,
-  tireWidthOptions,
   wheelSizeOptions,
   casingConstructionOptions,
   beadOptions,
@@ -303,9 +291,6 @@ const toggleWeightSort = () => {
 
 const draftFacetFilters = reactive<SchwalbeTireCatalogFacetFilterState>({
   innerRimWidthMm: null,
-  nominalTireWidthMinMm: null,
-  nominalTireWidthMaxMm: null,
-  nominalTireWidthsMm: [],
   wheelSizeKeys: [],
   beadSeatDiametersMm: [],
   casingConstructions: [],
@@ -343,12 +328,7 @@ const canApplyFilterDraft = computed(() => (
 
 const syncDraftFacetFilters = () => {
   const committed = getFacetFilterState()
-  // The computed width endpoints also expose a legacy single exact-width URL
-  // as a closed range, so old links are represented correctly in the drawer.
   draftFacetFilters.innerRimWidthMm = committed.innerRimWidthMm
-  draftFacetFilters.nominalTireWidthMinMm = selectedTireWidthMinMm.value
-  draftFacetFilters.nominalTireWidthMaxMm = selectedTireWidthMaxMm.value
-  draftFacetFilters.nominalTireWidthsMm = [...committed.nominalTireWidthsMm]
   draftFacetFilters.wheelSizeKeys = [...committed.wheelSizeKeys]
   draftFacetFilters.beadSeatDiametersMm = [...committed.beadSeatDiametersMm]
   draftFacetFilters.casingConstructions = [...committed.casingConstructions]
@@ -377,9 +357,6 @@ const applyFilterDraft = () => {
 
   applyFacetFilterState({
     innerRimWidthMm: normalizedDraftInnerRimWidthInput.value,
-    nominalTireWidthMinMm: draftFacetFilters.nominalTireWidthMinMm,
-    nominalTireWidthMaxMm: draftFacetFilters.nominalTireWidthMaxMm,
-    nominalTireWidthsMm: [...draftFacetFilters.nominalTireWidthsMm],
     wheelSizeKeys: [...draftFacetFilters.wheelSizeKeys],
     beadSeatDiametersMm: [...draftFacetFilters.beadSeatDiametersMm],
     casingConstructions: [...draftFacetFilters.casingConstructions],
@@ -394,9 +371,6 @@ const applyFilterDraft = () => {
 const clearDraftFacetFilters = () => {
   draftFacetFilters.innerRimWidthMm = null
   draftInnerRimWidthInput.value = ''
-  draftFacetFilters.nominalTireWidthMinMm = null
-  draftFacetFilters.nominalTireWidthMaxMm = null
-  draftFacetFilters.nominalTireWidthsMm = []
   draftFacetFilters.wheelSizeKeys = []
   draftFacetFilters.beadSeatDiametersMm = []
   draftFacetFilters.casingConstructions = []
@@ -407,10 +381,7 @@ const clearDraftFacetFilters = () => {
 }
 
 const hasAdditionalRimWidthFacetFilters = computed(() => (
-  selectedTireWidthMinMm.value !== null
-  || selectedTireWidthMaxMm.value !== null
-  || selectedTireWidthsMm.value.length > 0
-  || selectedCasingConstructions.value.length > 0
+  selectedCasingConstructions.value.length > 0
   || selectedRadialOnly.value
   || selectedBeads.value.length > 0
   || selectedSeals.value.length > 0
@@ -434,9 +405,6 @@ const activeFilterCount = computed(() => [
   selectedModel.value !== 'ALL',
   // The wheel-size pair and optional rim-width match form one dimension group.
   selectedInnerRimWidthMm.value !== null || selectedWheelSizeKeys.value.length > 0,
-  selectedTireWidthsMm.value.length > 0
-    || selectedTireWidthMinMm.value !== null
-    || selectedTireWidthMaxMm.value !== null,
   selectedBeadSeatDiametersMm.value.length > 0,
   selectedCasingConstructions.value.length > 0,
   selectedRadialOnly.value,

@@ -12,8 +12,8 @@ export interface SchwalbeTireCatalogFilterQueryState {
   /** User-entered rim inner width used for official possible-combination matching. */
   innerRimWidthMm: number | null
   /**
-   * Inclusive nominal-width range used by the selector UI. Empty endpoints
-   * mean that side of the range is unbounded.
+   * Legacy inclusive nominal-width range retained for shared links and API
+   * clients. The selector no longer exposes this facet.
    */
   nominalTireWidthMinMm: number | null
   nominalTireWidthMaxMm: number | null

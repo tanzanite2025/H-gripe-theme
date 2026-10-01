@@ -1,92 +1,5 @@
 <template>
   <section class="schwalbe-filter-panel" :aria-label="label">
-    <details name="schwalbe-filter-accordion" class="schwalbe-filter-panel__accordion" open @toggle="closeOtherAccordions">
-      <summary class="schwalbe-filter-panel__accordion-title">
-        <span>{{ tireWidthLabel }}</span>
-        <span v-if="selectedTireWidthMinMm !== null || selectedTireWidthMaxMm !== null" class="schwalbe-filter-panel__selection-count">
-          <span aria-hidden="true">1</span>
-          <span class="schwalbe-filter-panel__visually-hidden">{{ selectedCountLabel(1) }}</span>
-        </span>
-      </summary>
-      <div class="schwalbe-filter-panel__fields">
-        <fieldset class="schwalbe-filter-panel__group">
-          <legend class="schwalbe-filter-panel__visually-hidden">{{ tireWidthLabel }}</legend>
-          <div class="schwalbe-filter-panel__range-inputs">
-            <label class="schwalbe-filter-panel__range-input">
-              <span class="schwalbe-filter-panel__range-label">{{ tireWidthMinLabel }}</span>
-              <span class="schwalbe-filter-panel__range-control">
-                <input
-                  type="number"
-                  step="1"
-                  inputmode="numeric"
-                  :min="tireWidthMinimum || 1"
-                  :max="tireWidthMaximum || undefined"
-                  :aria-label="`${tireWidthLabel} ${tireWidthMinLabel}`"
-                  :value="selectedTireWidthMinMm ?? ''"
-                  @change="updateTireWidthMinFromInput"
-                >
-                <span>mm</span>
-              </span>
-            </label>
-            <label class="schwalbe-filter-panel__range-input">
-              <span class="schwalbe-filter-panel__range-label">{{ tireWidthMaxLabel }}</span>
-              <span class="schwalbe-filter-panel__range-control">
-                <input
-                  type="number"
-                  step="1"
-                  inputmode="numeric"
-                  :min="tireWidthMinimum || 1"
-                  :max="tireWidthMaximum || undefined"
-                  :aria-label="`${tireWidthLabel} ${tireWidthMaxLabel}`"
-                  :value="selectedTireWidthMaxMm ?? ''"
-                  @change="updateTireWidthMaxFromInput"
-                >
-                <span>mm</span>
-              </span>
-            </label>
-          </div>
-          <div class="schwalbe-filter-panel__range-slider" :class="{ 'schwalbe-filter-panel__range-slider--empty': tireWidthValues.length === 0 }">
-            <span class="schwalbe-filter-panel__range-track" aria-hidden="true" />
-            <input
-              class="schwalbe-filter-panel__range-slider-input schwalbe-filter-panel__range-slider-input--min"
-              type="range"
-              min="0"
-              :max="tireWidthSliderMaximum"
-              step="1"
-              :value="tireWidthMinIndex"
-              :disabled="tireWidthValues.length === 0"
-              :aria-label="`${tireWidthLabel} ${tireWidthMinLabel}`"
-              :aria-valuetext="`${selectedTireWidthMinMm ?? tireWidthMinimum} mm`"
-              @input="updateTireWidthMinFromSlider"
-            >
-            <input
-              class="schwalbe-filter-panel__range-slider-input schwalbe-filter-panel__range-slider-input--max"
-              type="range"
-              min="0"
-              :max="tireWidthSliderMaximum"
-              step="1"
-              :value="tireWidthMaxIndex"
-              :disabled="tireWidthValues.length === 0"
-              :aria-label="`${tireWidthLabel} ${tireWidthMaxLabel}`"
-              :aria-valuetext="`${selectedTireWidthMaxMm ?? tireWidthMaximum} mm`"
-              @input="updateTireWidthMaxFromSlider"
-            >
-          </div>
-          <p v-if="tireWidthValues.length > 0" class="schwalbe-filter-panel__hint">
-            {{ tireWidthMinimum }}–{{ tireWidthMaximum }} mm
-          </p>
-          <button
-            v-if="hasTireWidthSelection"
-            type="button"
-            class="schwalbe-filter-panel__clear-field"
-            @click="clearTireWidth"
-          >
-            {{ tireWidthClearLabel }}
-          </button>
-        </fieldset>
-      </div>
-    </details>
-
     <details name="schwalbe-filter-accordion" class="schwalbe-filter-panel__accordion" @toggle="closeOtherAccordions">
       <summary class="schwalbe-filter-panel__accordion-title">
         <span>{{ wheelSizeLabel }}</span>
@@ -230,9 +143,6 @@ import type {
   SchwalbeTireCatalogWheelSizeOption,
 } from '~/data/tireguides/schwalbeTireCatalogFilterModel'
 
-const selectedTireWidthsMm = defineModel<number[]>('selectedTireWidthsMm', { required: true })
-const selectedTireWidthMinMm = defineModel<number | null>('selectedTireWidthMinMm', { required: true })
-const selectedTireWidthMaxMm = defineModel<number | null>('selectedTireWidthMaxMm', { required: true })
 const selectedWheelSizeKeys = defineModel<string[]>('selectedWheelSizeKeys', { required: true })
 const innerRimWidthInput = defineModel<string | number | null>('innerRimWidthInput', { required: true })
 const selectedBeadSeatDiametersMm = defineModel<number[]>('selectedBeadSeatDiametersMm', { required: true })
@@ -248,10 +158,6 @@ const emit = defineEmits<{
 const props = defineProps<{
   label: string
   selectedCountTemplate: string
-  tireWidthLabel: string
-  tireWidthMinLabel: string
-  tireWidthMaxLabel: string
-  tireWidthClearLabel: string
   wheelSizeLabel: string
   wheelSizeOptionTemplate: string
   rimWidthHint: string
@@ -268,7 +174,6 @@ const props = defineProps<{
   eBikeRatingLabel: string
   eBikeUnratedLabel: string
   resetLabel: string
-  tireWidthOptions: readonly SchwalbeTireCatalogFilterOption<number>[]
   wheelSizeOptions: readonly SchwalbeTireCatalogWheelSizeOption[]
   casingConstructionOptions: readonly SchwalbeTireCatalogFilterOption<string>[]
   beadOptions: readonly SchwalbeTireCatalogFilterOption<string>[]
@@ -277,10 +182,7 @@ const props = defineProps<{
 }>()
 
 const hasSelection = computed(() => (
-  selectedTireWidthMinMm.value !== null
-  || selectedTireWidthMaxMm.value !== null
-  || selectedTireWidthsMm.value.length > 0
-  || selectedWheelSizeKeys.value.length > 0
+  selectedWheelSizeKeys.value.length > 0
   || hasInnerRimWidthInput.value
   || selectedBeadSeatDiametersMm.value.length > 0
   || selectedCasingConstructions.value.length > 0
@@ -288,12 +190,6 @@ const hasSelection = computed(() => (
   || selectedBeads.value.length > 0
   || selectedSeals.value.length > 0
   || selectedEBikeRatings.value.length > 0
-))
-
-const hasTireWidthSelection = computed(() => (
-  selectedTireWidthMinMm.value !== null
-  || selectedTireWidthMaxMm.value !== null
-  || selectedTireWidthsMm.value.length > 0
 ))
 
 const normalizedInnerRimWidthInput = computed(() => {
@@ -323,106 +219,9 @@ const wheelSizeOptionLabel = (option: SchwalbeTireCatalogWheelSizeOption) => pro
 const manyOptionThreshold = 5
 const hasManyOptions = (options: readonly unknown[]) => options.length >= manyOptionThreshold
 
-const tireWidthValues = computed(() => (
-  [...new Set(props.tireWidthOptions
-    .map(option => option.value)
-    .filter(value => Number.isSafeInteger(value) && value > 0))]
-    .sort((left, right) => left - right)
-))
-
-const tireWidthMinimum = computed(() => tireWidthValues.value[0] ?? 0)
-const tireWidthMaximum = computed(() => tireWidthValues.value[tireWidthValues.value.length - 1] ?? 0)
-const tireWidthSliderMaximum = computed(() => Math.max(0, tireWidthValues.value.length - 1))
-
-const indexForTireWidth = (value: number | null, side: 'min' | 'max'): number => {
-  const values = tireWidthValues.value
-  if (values.length === 0 || value === null) return side === 'min' ? 0 : values.length - 1
-
-  if (side === 'min') {
-    const index = values.findIndex(candidate => candidate >= value)
-    return index >= 0 ? index : values.length - 1
-  }
-
-  for (let index = values.length - 1; index >= 0; index -= 1) {
-    const candidate = values[index]
-    if (candidate !== undefined && candidate <= value) return index
-  }
-  return 0
-}
-
-const tireWidthMinIndex = computed(() => indexForTireWidth(selectedTireWidthMinMm.value, 'min'))
-const tireWidthMaxIndex = computed(() => indexForTireWidth(selectedTireWidthMaxMm.value, 'max'))
-
-const snapTireWidthValue = (value: number | null, side: 'min' | 'max'): number | null => {
-  if (value === null || tireWidthValues.value.length === 0) return null
-  return tireWidthValues.value[indexForTireWidth(value, side)] ?? null
-}
-
-const setTireWidthMinimum = (value: number | null) => {
-  const nextValue = snapTireWidthValue(value, 'min')
-  const currentMaximum = selectedTireWidthMaxMm.value
-  innerRimWidthInput.value = ''
-  selectedTireWidthsMm.value = []
-  selectedTireWidthMinMm.value = nextValue
-  if (currentMaximum !== null) {
-    selectedTireWidthMaxMm.value = nextValue !== null && nextValue > currentMaximum
-      ? nextValue
-      : currentMaximum
-  }
-}
-
-const setTireWidthMaximum = (value: number | null) => {
-  const nextValue = snapTireWidthValue(value, 'max')
-  const currentMinimum = selectedTireWidthMinMm.value
-  innerRimWidthInput.value = ''
-  selectedTireWidthsMm.value = []
-  selectedTireWidthMaxMm.value = nextValue
-  if (currentMinimum !== null) {
-    selectedTireWidthMinMm.value = nextValue !== null && nextValue < currentMinimum
-      ? nextValue
-      : currentMinimum
-  }
-}
-
-const readTireWidthInput = (event: Event): number | null => {
-  const inputValue = (event.target as HTMLInputElement).value.trim()
-  if (!inputValue) return null
-  const value = Number(inputValue)
-  return Number.isSafeInteger(value) && value > 0 ? value : null
-}
-
-const updateTireWidthMinFromInput = (event: Event) => setTireWidthMinimum(readTireWidthInput(event))
-const updateTireWidthMaxFromInput = (event: Event) => setTireWidthMaximum(readTireWidthInput(event))
-
-const clearTireWidth = () => {
-  selectedTireWidthsMm.value = []
-  selectedTireWidthMinMm.value = null
-  selectedTireWidthMaxMm.value = null
-}
-
 const updateInnerRimWidthInput = (event: Event) => {
   const value = (event.target as HTMLInputElement).value
   innerRimWidthInput.value = value
-  if (value.trim()) {
-    selectedTireWidthsMm.value = []
-    selectedTireWidthMinMm.value = null
-    selectedTireWidthMaxMm.value = null
-  }
-}
-
-const readTireWidthSliderIndex = (event: Event): number => {
-  const value = Number((event.target as HTMLInputElement).value)
-  return Number.isSafeInteger(value)
-    ? Math.min(Math.max(value, 0), tireWidthSliderMaximum.value)
-    : 0
-}
-
-const updateTireWidthMinFromSlider = (event: Event) => {
-  setTireWidthMinimum(tireWidthValues.value[readTireWidthSliderIndex(event)] ?? null)
-}
-
-const updateTireWidthMaxFromSlider = (event: Event) => {
-  setTireWidthMaximum(tireWidthValues.value[readTireWidthSliderIndex(event)] ?? null)
 }
 
 const closeOtherAccordions = (event: Event) => {
@@ -522,135 +321,10 @@ const selectedCountLabel = (count: number) => props.selectedCountTemplate.replac
   padding: 0.8rem;
 }
 
-.schwalbe-filter-panel__range-inputs {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.6rem;
-}
-
-.schwalbe-filter-panel__range-input {
-  display: grid;
-  min-width: 0;
-  gap: 0.25rem;
-}
-
 .schwalbe-filter-panel__range-label {
   color: var(--tz-text-secondary);
   font-size: 0.7rem;
   font-weight: 700;
-}
-
-.schwalbe-filter-panel__range-control {
-  display: flex;
-  min-height: 2.35rem;
-  align-items: center;
-  gap: 0.45rem;
-  border: 1px solid var(--tz-border-subtle);
-  border-radius: 0.65rem;
-  background: var(--tz-card-surface);
-  color: var(--tz-text-primary);
-  padding: 0.25rem 0.55rem;
-}
-
-.schwalbe-filter-panel__range-control input {
-  width: 100%;
-  min-width: 0;
-  border: 0;
-  outline: 0;
-  background: transparent;
-  color: inherit;
-  font: inherit;
-  font-size: 0.82rem;
-}
-
-.schwalbe-filter-panel__range-control input:focus-visible {
-  outline: 2px solid var(--tz-action-primary);
-  outline-offset: 2px;
-}
-
-.schwalbe-filter-panel__range-control > span {
-  color: var(--tz-text-secondary);
-  font-size: 0.75rem;
-}
-
-.schwalbe-filter-panel__range-slider {
-  position: relative;
-  display: grid;
-  min-height: 2.45rem;
-  align-items: center;
-  padding: 0 0.35rem;
-}
-
-.schwalbe-filter-panel__range-track {
-  position: absolute;
-  right: 0.35rem;
-  left: 0.35rem;
-  height: 0.3rem;
-  border-radius: 999px;
-  background: var(--tz-border-subtle);
-}
-
-.schwalbe-filter-panel__range-slider-input {
-  position: relative;
-  z-index: 2;
-  grid-area: 1 / 1;
-  width: 100%;
-  height: 2.45rem;
-  margin: 0;
-  appearance: none;
-  pointer-events: none;
-  background: transparent;
-}
-
-.schwalbe-filter-panel__range-slider-input--max {
-  z-index: 3;
-}
-
-.schwalbe-filter-panel__range-slider-input::-webkit-slider-runnable-track {
-  height: 0.3rem;
-  background: transparent;
-}
-
-.schwalbe-filter-panel__range-slider-input::-moz-range-track {
-  height: 0.3rem;
-  background: transparent;
-}
-
-.schwalbe-filter-panel__range-slider-input::-webkit-slider-thumb {
-  width: 1.15rem;
-  height: 1.15rem;
-  margin-top: -0.425rem;
-  appearance: none;
-  border: 2px solid var(--tz-card-surface);
-  border-radius: 999px;
-  background: var(--tz-action-primary);
-  box-shadow: 0 1px 4px rgb(15 23 42 / 0.28);
-  cursor: pointer;
-  pointer-events: auto;
-}
-
-.schwalbe-filter-panel__range-slider-input::-moz-range-thumb {
-  width: 0.9rem;
-  height: 0.9rem;
-  border: 2px solid var(--tz-card-surface);
-  border-radius: 999px;
-  background: var(--tz-action-primary);
-  box-shadow: 0 1px 4px rgb(15 23 42 / 0.28);
-  cursor: pointer;
-  pointer-events: auto;
-}
-
-.schwalbe-filter-panel__range-slider-input:focus-visible {
-  outline: 2px solid var(--tz-action-primary);
-  outline-offset: 0.2rem;
-}
-
-.schwalbe-filter-panel__range-slider-input:disabled {
-  opacity: 0.5;
-}
-
-.schwalbe-filter-panel__range-slider--empty {
-  min-height: 1rem;
 }
 
 .schwalbe-filter-panel__group {

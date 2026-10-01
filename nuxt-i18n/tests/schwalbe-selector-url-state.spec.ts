@@ -181,33 +181,26 @@ test.describe('Schwalbe selector URL state', () => {
     await expect(page.getByRole('button', { name: 'Sort by weight, heavy to light' })).toBeVisible()
   })
 
-  test('restores search and multi-select facet values from a direct link', async ({ page }) => {
-    await page.goto(selectorURL('?search=Kojak&tire_width_min_mm=32&tire_width_max_mm=35&bead=WIRED'))
+  test('hides the tire width facet and clears legacy width conditions', async ({ page }) => {
+    await page.goto(selectorURL('?search=Kojak&tire_width_min_mm=32&tire_width_max_mm=35&page=2'))
     await waitForNuxtMount(page)
     await openCatalogFilters(page)
 
     await expect(page.getByRole('searchbox')).toHaveValue('Kojak')
-    await expect(page.getByRole('spinbutton', { name: 'Tire width Minimum', exact: true })).toHaveValue('32')
-    await expect(page.getByRole('spinbutton', { name: 'Tire width Maximum', exact: true })).toHaveValue('35')
-    await expect(page.getByRole('checkbox', { name: 'WIRED', exact: true })).toBeChecked()
-  })
+    await expect(page.locator('summary.schwalbe-filter-panel__accordion-title').filter({ hasText: 'Tire width' })).toHaveCount(0)
+    await expect(page.getByRole('spinbutton', { name: /Tire width/ })).toHaveCount(0)
+    await expect(page.getByRole('slider', { name: /Tire width/ })).toHaveCount(0)
 
-  test('keeps legacy exact tire width links working', async ({ page }) => {
-    await page.goto(selectorURL('?search=Kojak&tire_width_mm=35'))
-    await waitForNuxtMount(page)
-
-    await expect(page.locator('.schwalbe-selector__grid')).toBeVisible()
+    await page.getByRole('radio', { name: 'Radial', exact: true }).check()
+    await page.getByRole('button', { name: 'Show results' }).click()
     await expect(page).toHaveURL((url) => (
       url.pathname === selectorPath
       && url.searchParams.get('search') === 'Kojak'
-      && url.searchParams.get('tire_width_mm') === '35'
+      && !url.searchParams.has('tire_width_mm')
       && !url.searchParams.has('tire_width_min_mm')
       && !url.searchParams.has('tire_width_max_mm')
+      && !url.searchParams.has('page')
     ))
-
-    await openCatalogFilters(page)
-    await expect(page.getByRole('spinbutton', { name: 'Tire width Minimum', exact: true })).toHaveValue('35')
-    await expect(page.getByRole('spinbutton', { name: 'Tire width Maximum', exact: true })).toHaveValue('35')
   })
 
   test('restores the wheel diameter and BSD pair as one facet', async ({ page }) => {
@@ -274,89 +267,17 @@ test.describe('Schwalbe selector URL state', () => {
     await openCatalogFilters(page)
     await openFilterGroup(page, 'Wheel size (BSD)')
     await page.getByRole('button', { name: 'Clear rim match' }).click()
-    await openFilterGroup(page, 'Tire width')
-    const minimumWidth = page.getByRole('spinbutton', { name: 'Tire width Minimum', exact: true })
-    await minimumWidth.fill('32')
-    await minimumWidth.press('Tab')
-    await openFilterGroup(page, 'Wheel size (BSD)')
     await expect(page.getByRole('spinbutton', { name: 'Rim inner width' })).toHaveValue('')
     await page.getByRole('button', { name: 'Show results' }).click()
     await expect(page).toHaveURL(url => (
-      url.searchParams.get('tire_width_min_mm') === '32'
-      && !url.searchParams.has('inner_rim_width_mm')
+      !url.searchParams.has('inner_rim_width_mm')
       && url.searchParams.get('wheel_size') === '28-622'
     ))
 
     await openCatalogFilters(page)
     await page.getByRole('button', { name: 'Clear filters', exact: true }).click()
     await page.getByRole('button', { name: 'Show results' }).click()
-    await expect(page).not.toHaveURL(/wheel_size=|inner_rim_width_mm=|tire_width_min_mm=/)
-  })
-
-  test('sets a tire width range through numeric inputs and range sliders', async ({ page }) => {
-    await page.goto(selectorURL())
-    await waitForNuxtMount(page)
-    await openCatalogFilters(page)
-
-    const minimumInput = page.getByRole('spinbutton', { name: 'Tire width Minimum', exact: true })
-    const maximumInput = page.getByRole('spinbutton', { name: 'Tire width Maximum', exact: true })
-    const draftURL = page.url()
-    await minimumInput.fill('32')
-    await minimumInput.press('Tab')
-    await maximumInput.fill('35')
-    await maximumInput.press('Tab')
-
-    // Editing the drawer is a draft operation. It must not replace the URL or
-    // restart the catalog request until the user confirms it.
-    expect(page.url()).toBe(draftURL)
-
-    const minimumSlider = page.getByRole('slider', { name: 'Tire width Minimum', exact: true })
-    const maximumSlider = page.getByRole('slider', { name: 'Tire width Maximum', exact: true })
-    await expect(minimumSlider).toBeEnabled()
-    await expect(maximumSlider).toBeEnabled()
-
-    const previousMinimum = await minimumSlider.inputValue()
-    await minimumSlider.press('ArrowRight')
-    await expect(minimumSlider).not.toHaveValue(previousMinimum)
-    expect(page.url()).toBe(draftURL)
-
-    const minimumValueAfterSlider = await minimumInput.inputValue()
-    await expect(minimumValueAfterSlider).not.toBe('')
-
-    const previousMaximum = await maximumSlider.inputValue()
-    await maximumSlider.press('ArrowLeft')
-    await expect(maximumSlider).not.toHaveValue(previousMaximum)
-    const maximumValueAfterSlider = await maximumInput.inputValue()
-    await expect(maximumValueAfterSlider).not.toBe('')
-    expect(page.url()).toBe(draftURL)
-
-    await page.getByRole('button', { name: 'Show results' }).click()
-    await expect(page).toHaveURL((url) => (
-      url.pathname === selectorPath
-      && url.searchParams.get('tire_width_min_mm') === minimumValueAfterSlider
-      && url.searchParams.get('tire_width_max_mm') === maximumValueAfterSlider
-      && !url.searchParams.has('tire_width_mm')
-      && !url.searchParams.has('page')
-    ))
-  })
-
-  test('discards an unsubmitted drawer draft when it is closed', async ({ page }) => {
-    await page.goto(selectorURL())
-    await waitForNuxtMount(page)
-    await openCatalogFilters(page)
-
-    const minimumInput = page.getByRole('spinbutton', { name: 'Tire width Minimum', exact: true })
-    const initialURL = page.url()
-    await minimumInput.fill('32')
-    await minimumInput.press('Tab')
-    expect(page.url()).toBe(initialURL)
-
-    await page.keyboard.press('Escape')
-    await expect(page.getByRole('dialog')).toHaveCount(0)
-    expect(page.url()).toBe(initialURL)
-
-    await openCatalogFilters(page)
-    await expect(page.getByRole('spinbutton', { name: 'Tire width Minimum', exact: true })).toHaveValue('')
+    await expect(page).not.toHaveURL(/wheel_size=|inner_rim_width_mm=/)
   })
 
   test('keeps the drawer compact and usable on a phone viewport', async ({ page }) => {
@@ -367,7 +288,7 @@ test.describe('Schwalbe selector URL state', () => {
 
     const dialog = page.getByRole('dialog', { name: 'Filter catalog' })
     await expect(dialog).toBeVisible()
-    await expect(dialog.locator('summary.schwalbe-filter-panel__accordion-title').filter({ hasText: 'Tire width' })).toBeVisible()
+    await expect(dialog.locator('summary.schwalbe-filter-panel__accordion-title').filter({ hasText: 'Tire width' })).toHaveCount(0)
     await expect(dialog.locator('fieldset.schwalbe-filter-panel__inline-facet')).toHaveCount(5)
     await expect(dialog.locator('fieldset.schwalbe-filter-panel__inline-facet').filter({ hasText: 'Casing orientation' })).toBeVisible()
     await expect(dialog.locator('fieldset.schwalbe-filter-panel__inline-facet').filter({ hasText: 'E-Bike marking' })).toBeVisible()
@@ -405,10 +326,10 @@ test.describe('Schwalbe selector URL state', () => {
 
     const panel = page.locator('.schwalbe-filter-panel')
     const accordions = panel.locator(':scope > .schwalbe-filter-panel__accordion')
-    await expect(accordions).toHaveCount(2)
+    await expect(accordions).toHaveCount(1)
     await expect(panel.locator(':scope > .schwalbe-filter-panel__accordion[open]')).toHaveCount(1)
     const accordionBoxes = await Promise.all(
-      Array.from({ length: 2 }, (_, index) => accordions.nth(index).boundingBox()),
+      Array.from({ length: 1 }, (_, index) => accordions.nth(index).boundingBox()),
     )
     expect(accordionBoxes.every(box => box !== null)).toBe(true)
     expect(new Set(accordionBoxes.map(box => Math.round(box?.x ?? 0))).size).toBe(1)
@@ -419,19 +340,12 @@ test.describe('Schwalbe selector URL state', () => {
     await waitForNuxtMount(page)
     await openCatalogFilters(page)
 
-    const minimumInput = page.getByRole('spinbutton', { name: 'Tire width Minimum', exact: true })
-    const initialURL = page.url()
-    await minimumInput.fill('32')
-    await minimumInput.press('Tab')
-
-    expect(page.url()).toBe(initialURL)
+    await page.getByRole('radio', { name: 'Radial', exact: true }).check()
     await page.getByRole('button', { name: 'Show results' }).click()
     await expect(page).toHaveURL((url) => (
       url.pathname === selectorPath
       && url.searchParams.get('search') === 'Marathon'
-      && url.searchParams.get('tire_width_min_mm') === '32'
-      && !url.searchParams.has('tire_width_max_mm')
-      && !url.searchParams.has('tire_width_mm')
+      && url.searchParams.get('radial') === '1'
       && !url.searchParams.has('page')
     ))
   })
