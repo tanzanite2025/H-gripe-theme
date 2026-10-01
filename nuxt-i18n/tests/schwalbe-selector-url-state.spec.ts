@@ -250,18 +250,13 @@ test.describe('Schwalbe selector URL state', () => {
     ))
   })
 
-  test('keeps wheel size and rim inner width in one drawer flow', async ({ page }) => {
-    await page.goto(selectorURL())
+  test('shows rim inner-width guidance on cards instead of filtering by entered width', async ({ page }) => {
+    await page.goto(selectorURL('?inner_rim_width_mm=23.5'))
     await waitForNuxtMount(page)
-    await expect(page.locator('.schwalbe-selector__rim-match')).toHaveCount(0)
     await openCatalogFilters(page)
 
-    const innerWidthInput = page.getByRole('spinbutton', { name: 'Rim inner width' })
-    await expect(innerWidthInput).toBeVisible()
-    await expect(innerWidthInput.locator('xpath=ancestor::details')).toHaveCount(0)
-    await innerWidthInput.fill('23.5')
-    await expect(page.getByRole('alert')).toContainText('Choose exactly one wheel diameter and BSD pair')
-    await expect(page.getByRole('button', { name: 'Show results' })).toBeDisabled()
+    await expect(page.getByRole('spinbutton', { name: 'Rim inner width' })).toHaveCount(0)
+    await expect(page.locator('.schwalbe-filter-panel__rim-match')).toHaveCount(0)
 
     await openFilterGroup(page, 'Wheel size (BSD)')
     const wheel28 = page.getByRole('checkbox', { name: '28" (BSD 622 mm)', exact: true })
@@ -269,24 +264,19 @@ test.describe('Schwalbe selector URL state', () => {
     await wheel28.check()
     await expect(page.getByRole('button', { name: 'Show results' })).toBeEnabled()
     await wheel29.check()
-    await expect(page.getByRole('button', { name: 'Show results' })).toBeDisabled()
+    await expect(page.getByRole('button', { name: 'Show results' })).toBeEnabled()
     await wheel29.uncheck()
     await page.getByRole('button', { name: 'Show results' }).click()
 
     await expect(page).toHaveURL(url => (
       url.searchParams.get('wheel_size') === '28-622'
-      && url.searchParams.get('inner_rim_width_mm') === '23.5'
+      && !url.searchParams.has('inner_rim_width_mm')
     ))
 
-    await openCatalogFilters(page)
-    await openFilterGroup(page, 'Wheel size (BSD)')
-    await page.getByRole('button', { name: 'Clear rim match' }).click()
-    await expect(page.getByRole('spinbutton', { name: 'Rim inner width' })).toHaveValue('')
-    await page.getByRole('button', { name: 'Show results' }).click()
-    await expect(page).toHaveURL(url => (
-      !url.searchParams.has('inner_rim_width_mm')
-      && url.searchParams.get('wheel_size') === '28-622'
-    ))
+    const guidance = page.locator('.schwalbe-tire-card__rim-guidance').first()
+    await expect(guidance).toBeVisible()
+    await expect(guidance).toContainText('Rim inner-width reference')
+    await expect(guidance).toContainText('17–27 mm')
 
     await openCatalogFilters(page)
     await page.getByRole('button', { name: 'Clear filters', exact: true }).click()

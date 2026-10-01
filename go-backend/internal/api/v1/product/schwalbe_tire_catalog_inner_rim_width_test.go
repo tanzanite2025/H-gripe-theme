@@ -208,3 +208,77 @@ func TestSearchSchwalbeTireCatalogSelectorRequiresWheelSizeForInnerRimWidth(t *t
 		t.Fatalf("expected incomplete inner-width context to return no rows and an explicit wheel-size requirement, got total=%d items=%d status=%s", payload.Data.Total, len(payload.Data.Items), payload.Data.RimWidthContext.GuidanceStatus)
 	}
 }
+
+func TestSearchSchwalbeTireCatalogSelectorIncludesRimWidthReferenceWithoutFiltering(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	db := newSchwalbeTireCatalogHandlerTestDB(t)
+	if err := db.Exec(`CREATE TABLE schwalbe_tire_rim_width_combination_rules (
+		id INTEGER PRIMARY KEY,
+		tire_width_min_mm INTEGER NOT NULL,
+		tire_width_max_mm INTEGER NOT NULL,
+		inner_rim_width_min_mm INTEGER NOT NULL,
+		inner_rim_width_max_mm INTEGER NOT NULL,
+		source_basis TEXT NOT NULL,
+		source_version TEXT NOT NULL,
+		source_url TEXT NOT NULL,
+		source_checked_at DATE NOT NULL
+	)`).Error; err != nil {
+		t.Fatalf("create rim-width rule table: %v", err)
+	}
+	if err := db.Exec(`INSERT INTO schwalbe_tire_rim_width_combination_rules
+		(id, tire_width_min_mm, tire_width_max_mm, inner_rim_width_min_mm, inner_rim_width_max_mm, source_basis, source_version, source_url, source_checked_at)
+		VALUES (1, 35, 46, 17, 27, 'ETRTO Standard 2024', '05/2024', 'https://example.invalid/rules', '2026-09-28')`).Error; err != nil {
+		t.Fatalf("insert rim-width rule: %v", err)
+	}
+	rows := []struct {
+		articleNo string
+		etrto     string
+	}{
+		{articleNo: "reference-match", etrto: "40-622"},
+		{articleNo: "reference-outside", etrto: "80-622"},
+	}
+	for _, row := range rows {
+		if err := db.Exec(`INSERT INTO schwalbe_tire_specifications
+			(article_no, model_name, etrto, source_url, source_checked_at)
+			VALUES (?, ?, ?, 'https://example.invalid/catalog', '2026-09-28')`, row.articleNo, row.articleNo, row.etrto).Error; err != nil {
+			t.Fatalf("insert catalog row %s: %v", row.articleNo, err)
+		}
+	}
+
+	router := gin.New()
+	handler := NewHandler(service.NewProductService(repository.NewProductRepository(db), nil, 0))
+	router.GET("/products/schwalbe-tire-catalog/selector", handler.SearchSchwalbeTireCatalogSelector)
+	recorder := httptest.NewRecorder()
+	router.ServeHTTP(recorder, httptest.NewRequestWithContext(context.Background(), http.MethodGet,
+		"/products/schwalbe-tire-catalog/selector?include_rim_width_guidance=1&sort=article", nil))
+
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", recorder.Code, recorder.Body.String())
+	}
+	var payload struct {
+		Data struct {
+			Items []struct {
+				ArticleNo        string `json:"article_no"`
+				RimWidthGuidance []struct {
+					InnerRimWidthMinMM int `json:"inner_rim_width_min_mm"`
+					InnerRimWidthMaxMM int `json:"inner_rim_width_max_mm"`
+				} `json:"rim_width_guidance"`
+			} `json:"items"`
+			Total int `json:"total"`
+		} `json:"data"`
+	}
+	if err := json.Unmarshal(recorder.Body.Bytes(), &payload); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if payload.Data.Total != 2 || len(payload.Data.Items) != 2 {
+		t.Fatalf("expected both widths to remain in the result set, got total=%d items=%d", payload.Data.Total, len(payload.Data.Items))
+	}
+	if len(payload.Data.Items[0].RimWidthGuidance) != 1 ||
+		payload.Data.Items[0].RimWidthGuidance[0].InnerRimWidthMinMM != 17 ||
+		payload.Data.Items[0].RimWidthGuidance[0].InnerRimWidthMaxMM != 27 {
+		t.Fatalf("expected the matching tire to carry the reference range, got %+v", payload.Data.Items[0])
+	}
+	if len(payload.Data.Items[1].RimWidthGuidance) != 0 {
+		t.Fatalf("expected an out-of-table tire width to remain visible without guidance, got %+v", payload.Data.Items[1])
+	}
+}

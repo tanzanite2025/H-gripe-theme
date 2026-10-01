@@ -45,3 +45,28 @@ func TestSchwalbeTireRimWidthGuidanceRequiresParsedETRTO(t *testing.T) {
 		t.Fatalf("expected a non-positive ETRTO width to be excluded, got %+v", matches)
 	}
 }
+
+func TestSchwalbeTireRimWidthGuidanceForTireWidthReturnsReferenceRange(t *testing.T) {
+	tireWidth := 40
+	rules := []repository.SchwalbeTireRimWidthCombinationRule{
+		{
+			TireWidthMinMM:     35,
+			TireWidthMaxMM:     46,
+			InnerRimWidthMinMM: 17,
+			InnerRimWidthMaxMM: 27,
+		},
+		{
+			TireWidthMinMM:     47,
+			TireWidthMaxMM:     57,
+			InnerRimWidthMinMM: 17,
+			InnerRimWidthMaxMM: 30,
+		},
+	}
+
+	matches := schwalbeTireRimWidthGuidanceForTireWidth(&tireWidth, rules)
+	if len(matches) != 1 || matches[0].TireWidthMinMM != 35 ||
+		matches[0].TireWidthMaxMM != 46 || matches[0].InnerRimWidthMinMM != 17 ||
+		matches[0].InnerRimWidthMaxMM != 27 {
+		t.Fatalf("expected the reference range for the parsed tire width, got %+v", matches)
+	}
+}
