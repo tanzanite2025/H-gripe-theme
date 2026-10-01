@@ -83,6 +83,7 @@ const main = async () => {
   assert.equal(params.search, 'Green Marathon')
   assert.equal(params.page, '2')
   assert.equal(params.sort, 'weight_desc')
+  assert.equal(params.include_rim_width_guidance, '1')
   assert.equal(params.inner_rim_width_mm, '23')
   assert.equal(params.tire_width_min_mm, '40')
   assert.equal(params.tire_width_max_mm, '55')

@@ -4,6 +4,7 @@ import { useApiRequest } from '~/composables/useApiRequest'
 import {
   mergeSchwalbeTireCatalogFilterQuery,
   parseSchwalbeTireCatalogFilterQuery,
+  SCHWALBE_TIRE_CATALOG_FILTER_QUERY_KEYS,
   type SchwalbeCatalogSort,
   type SchwalbeTireCatalogFilterQueryState,
 } from '~/data/tireguides/schwalbeTireCatalogFilterQuery'
@@ -238,6 +239,9 @@ export const useSchwalbeTireSelector = async () => {
 
   const pageQuery = (page: number) => {
     const query = { ...route.query }
+    // Pagination is a committed selector navigation. Remove the retired
+    // inner-width filter from legacy links instead of carrying it forward.
+    delete query[SCHWALBE_TIRE_CATALOG_FILTER_QUERY_KEYS.innerRimWidthMm]
     if (page <= 1) delete query.page
     else query.page = String(page)
     return { query }
@@ -347,6 +351,7 @@ export const useSchwalbeTireSelector = async () => {
     const nextSearch = searchInput.value.trim()
     submittedSearch.value = nextSearch
     const query = { ...route.query }
+    delete query[SCHWALBE_TIRE_CATALOG_FILTER_QUERY_KEYS.innerRimWidthMm]
     if (nextSearch) query.search = nextSearch
     else delete query.search
     delete query.page
