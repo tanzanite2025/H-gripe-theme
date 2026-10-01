@@ -4,6 +4,7 @@ import (
 	"commerce-platform/internal/domain/faq"
 	"commerce-platform/internal/pkg/faqcontent"
 	"fmt"
+	"strings"
 )
 
 func (s *FAQService) GetPublicByID(id uint) (*faq.FAQ, error) {
@@ -13,6 +14,15 @@ func (s *FAQService) GetPublicByID(id uint) (*faq.FAQ, error) {
 	}
 	if item.Status != "published" {
 		return nil, ErrFAQNotFound
+	}
+	if strings.TrimSpace(item.PageID) != "" {
+		page, pageErr := s.faqRepo.FindPageByPageIDLocale(item.PageID, item.Locale)
+		if pageErr != nil && !IsRecordNotFound(pageErr) {
+			return nil, pageErr
+		}
+		if pageErr == nil && (page.Status != "active" || page.RouteStatus == FAQRouteStatusStale || page.RouteStatus == FAQRouteStatusMissing) {
+			return nil, ErrFAQNotFound
+		}
 	}
 	if sanitized, sanitizeErr := faqcontent.SanitizeAnswer(item.Answer); sanitizeErr == nil {
 		item.Answer = sanitized
@@ -34,6 +44,9 @@ func (s *FAQService) GetPublicPageData(pageID, locale string) (*FAQPublicPageDat
 		return nil, err
 	}
 	if page.Status != "active" {
+		return nil, ErrFAQNotFound
+	}
+	if page.RouteStatus == FAQRouteStatusStale || page.RouteStatus == FAQRouteStatusMissing {
 		return nil, ErrFAQNotFound
 	}
 
@@ -82,6 +95,9 @@ func (s *FAQService) ListPublicPageData(locale string) ([]FAQPublicPageData, err
 
 	result := make([]FAQPublicPageData, 0, len(pages))
 	for _, page := range pages {
+		if page.RouteStatus == FAQRouteStatusStale || page.RouteStatus == FAQRouteStatusMissing {
+			continue
+		}
 		pageData, err := s.GetPublicPageData(page.PageID, page.Locale)
 		if err != nil {
 			return nil, err

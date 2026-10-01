@@ -3,7 +3,6 @@
   "readyTitle": "Ready to buy after the checks?",
   "readyBody": "QUICKBUY lets you start selecting wheelset-related products from this guide, then review the selected items before adding them to cart or going to payment. You can also check component categories, freehub fit, tubeless installation, appearance and logo choices, wheel building service, and safety notes before you place the order.",
   "startQuickBuy": "Start QUICKBUY",
-  "wheelComponents": "Wheel components",
   "step1": {
     "title": "Start with the riding use",
     "body": "A useful wheelset choice starts with the bike and riding style, not with a single spec. Decide whether the build is mainly for road speed, climbing, gravel comfort, trail control, e-bike load, or a replacement wheel that must match an existing setup.",
@@ -49,21 +48,16 @@
   },
   "step3": {
     "title": "Then choose how to configure and buy",
-    "body": "Once the core compatibility checks are clear, move into the actual order path. Use QUICKBUY for a fast product selection flow, or open the wheelset sections below when you need to confirm parts, tire systems, appearance, wheel building service, special orders, or safety checks before installation.",
+    "body": "Once the core compatibility checks are clear, move into the actual order path. Use QUICKBUY for a fast product selection flow, or open the wheelset sections below when you need to confirm parts, tire systems, appearance, wheel building and custom services, or safety checks before installation.",
     "quickBuy": {
       "title": "Configure and buy with QUICKBUY",
       "body": "Open the QUICKBUY builder to select available wheelset-related products, review the selected items, then add them to cart or go directly to payment.",
       "button": "Start QUICKBUY"
     },
-    "coverage": {
-      "title": "What this order path can cover",
-      "body": "Use the guide sections to check rims, hubs, spokes, nipples, freehub bodies, tubeless installation, appearance and logo options, spare spokes, wheel building service, and replacement-wheel requests before buying.",
-      "button": "Component options"
-    },
     "custom": {
       "title": "Need custom work",
-      "body": "Use special order for mullet setups, single front or rear wheel replacement, or mixed rim profiles that need a custom confirmation before purchase.",
-      "button": "Custom orders"
+      "body": "For mullet setups, single front or rear wheel replacements, or mixed rim profiles that need confirmation before purchase, open wheel building and custom services.",
+      "button": "Building & custom services"
     },
     "safety": {
       "title": "Safety before riding",
@@ -73,13 +67,12 @@
   },
   "ctaNotes": {
     "quickBuyEntry": "Opens the bottom QUICKBUY menu; the direct-select option opens the existing wheelset product selection builder.",
-    "wheelComponentsTab": "Switches to the Wheel Components tab with hubs, rims, spokes, and nipples.",
     "tireWidthGuideNewTab": "Opens the tire width chart in a new tab for hooked TC and hookless TSS rim details.",
     "tireSystemGuideNewTab": "Opens the tire system guide in a new tab for tube, tubeless, hookless, and tubular guidance.",
     "freehubGuideNewTab": "Opens the Choose freehub tab in a new tab for freehub compatibility guidance.",
-    "specialOrderTab": "Switches to the Special order tab for mullet wheelsets, single-wheel customization, and mixed rim profiles.",
     "safetyInstructionsTab": "Switches to the Safety instructions tab for wheelset installation and pre-ride safety checks.",
     "mulletQuickBuyEntry": "Opens the QUICKBUY entry popover from the Mullet Wheelsets section for a mixed-size wheelset order path.",
-    "singleWheelChat": "Opens the chat widget for a single front or rear wheel replacement or customization inquiry."
+    "singleWheelChat": "Opens the chat widget for a single front or rear wheel replacement or customization inquiry.",
+    "sampleAssemblyTab": "Switches to the Wheel building & custom builds tab for mullet wheelsets, single-wheel customization, and mixed rim profiles."
   }
 }

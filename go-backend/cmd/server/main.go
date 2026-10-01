@@ -168,6 +168,40 @@ func main() {
 	if err != nil {
 		logger.Fatal("dependency initialization failed", zap.Error(err))
 	}
+	// Keep the backend route catalog and FAQ page structure self-healing after
+	// every deployment. A failed storefront fetch is non-fatal so the API can
+	// still serve existing content while the next explicit URL sync retries it.
+	go func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 45*time.Second)
+		defer cancel()
+		var summary service.StorefrontRouteCatalogSyncSummary
+		var syncErr error
+		for attempt := 1; attempt <= 3; attempt++ {
+			summary, syncErr = deps.Services.StorefrontRouteCatalog.Sync(ctx)
+			if syncErr == nil {
+				break
+			}
+			if attempt < 3 {
+				timer := time.NewTimer(5 * time.Second)
+				select {
+				case <-ctx.Done():
+					timer.Stop()
+				case <-timer.C:
+				}
+			}
+		}
+		if syncErr != nil {
+			logger.Warn("storefront route and FAQ startup sync failed", zap.Error(syncErr))
+			return
+		}
+		logger.Info(
+			"storefront route and FAQ startup sync completed",
+			zap.String("manifest_version", summary.ManifestVersion),
+			zap.Int("route_entries", summary.Entries),
+			zap.Int("faq_pages_created", summary.FAQ.Created),
+			zap.Int("faq_pages_stale", summary.FAQ.Stale),
+		)
+	}()
 	deps.Services.GlobalIPBlock.StartCacheInvalidationListener(context.Background())
 	if deps.CustomerServiceRealtimeRelay != nil {
 		if err := deps.CustomerServiceRealtimeRelay.Start(context.Background()); err != nil {

@@ -31,15 +31,6 @@
             >
               {{ t('guidesWheelsetBuyersOverview.startQuickBuy') }}
             </button>
-            <button
-              type="button"
-              class="wheelset-guide-button"
-              :aria-label="ctaNotes.wheelComponentsTab"
-              :data-cta-note="ctaNotes.wheelComponentsTab"
-              @click="goToWheelComponents"
-            >
-              {{ t('guidesWheelsetBuyersOverview.wheelComponents') }}
-            </button>
           </div>
         </div>
         <div class="wheelset-policy-flow">
@@ -171,30 +162,15 @@
                   </div>
                 </div>
                 <div class="wheelset-guide-panel">
-                  <strong>{{ t('guidesWheelsetBuyersOverview.step3.coverage.title') }}</strong>
-                  <p>{{ t('guidesWheelsetBuyersOverview.step3.coverage.body') }}</p>
-                  <div class="wheelset-guide-actions">
-                    <button
-                      type="button"
-                      class="wheelset-guide-button"
-                      :aria-label="ctaNotes.wheelComponentsTab"
-                      :data-cta-note="ctaNotes.wheelComponentsTab"
-                      @click="goToWheelComponents"
-                    >
-                      {{ t('guidesWheelsetBuyersOverview.step3.coverage.button') }}
-                    </button>
-                  </div>
-                </div>
-                <div class="wheelset-guide-panel">
                   <strong>{{ t('guidesWheelsetBuyersOverview.step3.custom.title') }}</strong>
                   <p>{{ t('guidesWheelsetBuyersOverview.step3.custom.body') }}</p>
                   <div class="wheelset-guide-actions">
                     <button
                       type="button"
                       class="wheelset-guide-button"
-                      :aria-label="ctaNotes.specialOrderTab"
-                      :data-cta-note="ctaNotes.specialOrderTab"
-                      @click="goToSpecialOrder"
+                      :aria-label="ctaNotes.sampleAssemblyTab"
+                      :data-cta-note="ctaNotes.sampleAssemblyTab"
+                      @click="goToSampleAssembly"
                     >
                       {{ t('guidesWheelsetBuyersOverview.step3.custom.button') }}
                     </button>
@@ -248,101 +224,10 @@
         </h2>
         <WheelsetSampleAssemblySection
           :openWhatsAppChat="openWhatsAppChat"
-          :goToTechnicalSpokePattern="goToTechnicalSpokePattern"
+          :openQuickBuy="openQuickBuy"
+          :ctaNotes="ctaNotes"
           :goToHolePatterns="goToHolePatterns"
         />
-      </section>
-
-      <!-- Special order (Mullet, Custom Front & Rear, Mixed rim) -->
-      <section
-        v-if="activeTab === 'special-order'"
-        id="special-order"
-        class="wheelset-section sizecharts-section"
-      >
-        <h2 class="sizecharts-section__title">
-          {{ t('guidesWheelsetBuyers.tabs.specialOrder.label') }}
-        </h2>
-
-        <div class="wheelset-policy-flow">
-          <article class="wheelset-guide-step">
-            <div class="wheelset-guide-step__number">1</div>
-            <div class="wheelset-guide-step__content">
-              <h3 class="wheelset-guide-step__title">
-                {{ t('guidesWheelsetBuyersSpecialOrder.mullet.title') }}
-              </h3>
-              <p class="wheelset-guide-step__body">
-                {{ t('guidesWheelsetBuyersSpecialOrder.mullet.body') }}
-              </p>
-
-              <div class="wheelset-guide-panel-grid wheelset-guide-panel-grid--two">
-                <div class="wheelset-guide-panel">
-                  <strong>{{ t('guidesWheelsetBuyersSpecialOrder.mullet.frontTitle') }}</strong>
-                  <p>{{ t('guidesWheelsetBuyersSpecialOrder.mullet.frontBody') }}</p>
-                </div>
-                <div class="wheelset-guide-panel">
-                  <strong>{{ t('guidesWheelsetBuyersSpecialOrder.mullet.rearTitle') }}</strong>
-                  <p>{{ t('guidesWheelsetBuyersSpecialOrder.mullet.rearBody') }}</p>
-                </div>
-              </div>
-
-              <div class="wheelset-guide-actions">
-                <button
-                  type="button"
-                  class="wheelset-guide-button"
-                  :aria-label="ctaNotes.mulletQuickBuyEntry"
-                  :data-cta-note="ctaNotes.mulletQuickBuyEntry"
-                  @click="openQuickBuy"
-                >
-                  {{ t('guidesWheelsetBuyersSpecialOrder.mullet.button') }}
-                </button>
-              </div>
-            </div>
-          </article>
-
-          <article class="wheelset-guide-step">
-            <div class="wheelset-guide-step__number">2</div>
-            <div class="wheelset-guide-step__content">
-              <h3 class="wheelset-guide-step__title">
-                {{ t('guidesWheelsetBuyersSpecialOrder.singleWheel.title') }}
-              </h3>
-              <p class="wheelset-guide-step__body">
-                {{ t('guidesWheelsetBuyersSpecialOrder.singleWheel.body') }}
-              </p>
-
-              <div class="wheelset-guide-panel">
-                <strong>{{ t('guidesWheelsetBuyersSpecialOrder.singleWheel.beforeTitle') }}</strong>
-                <p>
-                  {{ t('guidesWheelsetBuyersSpecialOrder.singleWheel.beforeBody') }}
-                </p>
-              </div>
-
-              <div class="wheelset-guide-actions">
-                <button
-                  type="button"
-                  class="wheelset-guide-button wheelset-guide-button--solid"
-                  :aria-label="ctaNotes.singleWheelChat"
-                  :data-cta-note="ctaNotes.singleWheelChat"
-                  @click="openWhatsAppChat"
-                >
-                  {{ t('guidesWheelsetBuyersSpecialOrder.singleWheel.button') }}
-                </button>
-              </div>
-            </div>
-          </article>
-
-          <article class="wheelset-guide-step">
-            <div class="wheelset-guide-step__number">3</div>
-            <div class="wheelset-guide-step__content">
-              <h3 class="wheelset-guide-step__title">
-                {{ t('guidesWheelsetBuyersSpecialOrder.mixedRim.title') }}
-              </h3>
-              <WheelsetMixedRimSection
-                :openQuickBuy="openQuickBuy"
-                :openWhatsAppChat="openWhatsAppChat"
-              />
-            </div>
-          </article>
-        </div>
       </section>
 
       <!-- Appearance Logo -->
@@ -432,34 +317,6 @@
         </WheelsetChooseFreehubSection>
       </section>
 
-      <!-- Wheel Components -->
-      <section
-        v-if="activeTab === 'wheel-components'"
-        id="wheel-components"
-        class="wheelset-section sizecharts-section"
-      >
-        <h2 class="sizecharts-section__title">
-          {{ t('guidesWheelsetBuyers.tabs.wheelComponents.label') }}
-        </h2>
-        <SmartAccordion v-model:activeId="activeWheelComponent" default-id="hubs">
-          <AccordionItem id="hubs" :title="t('guidesWheelsetBuyers.componentSections.hubs')">
-             <TechnicalHubsSection v-if="activeWheelComponent === 'hubs'" />
-          </AccordionItem>
-          
-          <AccordionItem id="rims" :title="t('guidesWheelsetBuyers.componentSections.rims')">
-             <TechnicalRimsSection v-if="activeWheelComponent === 'rims'" />
-          </AccordionItem>
-
-          <AccordionItem id="spokes" :title="t('guidesWheelsetBuyers.componentSections.spokes')">
-             <TechnicalSpokesSection v-if="activeWheelComponent === 'spokes'" />
-          </AccordionItem>
-          
-          <AccordionItem id="nipples" :title="t('guidesWheelsetBuyers.componentSections.nipples')">
-             <TechnicalNipplesSection v-if="activeWheelComponent === 'nipples'" />
-          </AccordionItem>
-        </SmartAccordion>
-      </section>
-
       <!-- Feedback / Leave a message -->
       <section class="wheelset-feedback">
         <UserFeedbackThread
@@ -472,13 +329,12 @@
 </template>
 
 <script setup lang="ts">
-import { computed, defineAsyncComponent, ref, watch } from 'vue'
+import { computed, watch } from 'vue'
 import { useHead, useI18n, useLocalePath, useRouter } from '#imports'
 import WheelsetSafetyInstructionsSection from '~/components/WheelsetSafetyInstructionsSection.vue'
 import WheelsetSampleAssemblySection from '~/components/WheelsetSampleAssemblySection.vue'
 import WheelsetAppearanceLogoSection from '~/components/WheelsetAppearanceLogoSection.vue'
 import WheelsetChooseFreehubSection from '~/components/WheelsetChooseFreehubSection.vue'
-import WheelsetMixedRimSection from '~/components/WheelsetMixedRimSection.vue'
 import { useChatWidget } from '~/composables/useChatWidget'
 import UserFeedbackThread from '~/components/UserFeedbackThread.vue'
 import SmartAccordion from '~/components/ui/SmartAccordion.vue'
@@ -489,11 +345,6 @@ import { usePageSubNavigationTab } from '~/composables/usePageSubNavigationTab'
 import { wheelsetBuyerTabs } from '~/utils/pageSubNavigation'
 import { usePageMessages } from '~/composables/usePageMessages'
 import { useStorefrontSeoLinks } from '~/composables/seo/useStorefrontSeoLinks'
-
-const TechnicalHubsSection = defineAsyncComponent(() => import('~/components/TechnicalHubsSection.vue'))
-const TechnicalRimsSection = defineAsyncComponent(() => import('~/components/TechnicalRimsSection.vue'))
-const TechnicalSpokesSection = defineAsyncComponent(() => import('~/components/TechnicalSpokesSection.vue'))
-const TechnicalNipplesSection = defineAsyncComponent(() => import('~/components/TechnicalNipplesSection.vue'))
 
 definePageMeta({
   layout: 'products',
@@ -508,9 +359,6 @@ const { canonicalUrl } = useStorefrontSeoLinks()
 const wheelsetMessages = usePageMessages('guidesWheelsetBuyers')
 const overviewMessages = usePageMessages('guidesWheelsetBuyersOverview')
 const chooseFreehubMessages = usePageMessages('guidesWheelsetBuyersChooseFreehub')
-const specialOrderMessages = usePageMessages('guidesWheelsetBuyersSpecialOrder')
-const activeWheelComponent = ref<string | null>('hubs')
-
 await Promise.all([
   wheelsetMessages.loadPageMessages(locale.value),
   overviewMessages.loadPageMessages(locale.value),
@@ -543,11 +391,10 @@ useHead(() => ({
 
 const ctaNotes = computed(() => ({
   quickBuyEntry: t('guidesWheelsetBuyersOverview.ctaNotes.quickBuyEntry'),
-  wheelComponentsTab: t('guidesWheelsetBuyersOverview.ctaNotes.wheelComponentsTab'),
   tireWidthGuideNewTab: t('guidesWheelsetBuyersOverview.ctaNotes.tireWidthGuideNewTab'),
   tireSystemGuideNewTab: t('guidesWheelsetBuyersOverview.ctaNotes.tireSystemGuideNewTab'),
   freehubGuideNewTab: t('guidesWheelsetBuyersOverview.ctaNotes.freehubGuideNewTab'),
-  specialOrderTab: t('guidesWheelsetBuyersOverview.ctaNotes.specialOrderTab'),
+  sampleAssemblyTab: t('guidesWheelsetBuyersOverview.ctaNotes.sampleAssemblyTab'),
   safetyInstructionsTab: t('guidesWheelsetBuyersOverview.ctaNotes.safetyInstructionsTab'),
   mulletQuickBuyEntry: t('guidesWheelsetBuyersOverview.ctaNotes.mulletQuickBuyEntry'),
   singleWheelChat: t('guidesWheelsetBuyersOverview.ctaNotes.singleWheelChat'),
@@ -570,9 +417,6 @@ const freehubGuideSteps = computed(() => [
 
 const loadActivePageMessages = (requestedLocale: string) => {
   const requests: Promise<void>[] = []
-  if (activeTab.value === 'special-order') {
-    requests.push(specialOrderMessages.loadPageMessages(requestedLocale))
-  }
   if (activeTab.value === 'choose-freehub') {
     requests.push(chooseFreehubMessages.loadPageMessages(requestedLocale))
   }
@@ -640,16 +484,8 @@ const goToTechnicalTension = async () => {
   await router.push(localePath('/support/test-report/tension'))
 }
 
-const goToTechnicalSpokePattern = async () => {
-  setActiveTab('wheel-components')
-}
-
-const goToWheelComponents = () => {
-  setActiveTab('wheel-components')
-}
-
-const goToSpecialOrder = () => {
-  setActiveTab('special-order')
+const goToSampleAssembly = () => {
+  setActiveTab('sample-assembly')
 }
 
 const goToHolePatterns = async () => {

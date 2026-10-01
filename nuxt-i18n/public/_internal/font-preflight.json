@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "project": "tanzanite-theme storefront",
-  "generated_at": "2026-09-28T17:42:04.505Z",
+  "generated_at": "2026-10-01T04:12:22.151Z",
   "overall_status": "pass",
   "baseline": {
     "id": "storefront-built-in-font-shards-v1",
@@ -140,14 +140,14 @@
   ],
   "coverage": {
     "locale_count": 20,
-    "source_file_count": 1058,
-    "checked_characters": 4712,
+    "source_file_count": 1070,
+    "checked_characters": 4744,
     "missing_characters": 0,
     "locales": [
       {
         "locale": "ar",
-        "source_files": 47,
-        "checked_characters": 167,
+        "source_files": 48,
+        "checked_characters": 168,
         "missing_characters": 0,
         "missing_sample": [],
         "font_stack": [
@@ -159,7 +159,7 @@
       },
       {
         "locale": "da",
-        "source_files": 47,
+        "source_files": 48,
         "checked_characters": 132,
         "missing_characters": 0,
         "missing_sample": [],
@@ -172,7 +172,7 @@
       },
       {
         "locale": "de",
-        "source_files": 47,
+        "source_files": 48,
         "checked_characters": 132,
         "missing_characters": 0,
         "missing_sample": [],
@@ -185,8 +185,8 @@
       },
       {
         "locale": "en",
-        "source_files": 106,
-        "checked_characters": 135,
+        "source_files": 103,
+        "checked_characters": 142,
         "missing_characters": 0,
         "missing_sample": [],
         "font_stack": [
@@ -197,7 +197,7 @@
       },
       {
         "locale": "es",
-        "source_files": 47,
+        "source_files": 48,
         "checked_characters": 134,
         "missing_characters": 0,
         "missing_sample": [],
@@ -210,7 +210,7 @@
       },
       {
         "locale": "fi",
-        "source_files": 47,
+        "source_files": 48,
         "checked_characters": 127,
         "missing_characters": 0,
         "missing_sample": [],
@@ -223,7 +223,7 @@
       },
       {
         "locale": "fr",
-        "source_files": 47,
+        "source_files": 48,
         "checked_characters": 135,
         "missing_characters": 0,
         "missing_sample": [],
@@ -236,7 +236,7 @@
       },
       {
         "locale": "hi",
-        "source_files": 47,
+        "source_files": 48,
         "checked_characters": 182,
         "missing_characters": 0,
         "missing_sample": [],
@@ -249,7 +249,7 @@
       },
       {
         "locale": "id",
-        "source_files": 47,
+        "source_files": 48,
         "checked_characters": 125,
         "missing_characters": 0,
         "missing_sample": [],
@@ -261,7 +261,7 @@
       },
       {
         "locale": "it",
-        "source_files": 47,
+        "source_files": 48,
         "checked_characters": 128,
         "missing_characters": 0,
         "missing_sample": [],
@@ -274,8 +274,8 @@
       },
       {
         "locale": "ja",
-        "source_files": 47,
-        "checked_characters": 518,
+        "source_files": 48,
+        "checked_characters": 536,
         "missing_characters": 0,
         "missing_sample": [],
         "font_stack": [
@@ -286,8 +286,8 @@
       },
       {
         "locale": "ko",
-        "source_files": 47,
-        "checked_characters": 436,
+        "source_files": 48,
+        "checked_characters": 441,
         "missing_characters": 0,
         "missing_sample": [],
         "font_stack": [
@@ -298,7 +298,7 @@
       },
       {
         "locale": "ms",
-        "source_files": 47,
+        "source_files": 48,
         "checked_characters": 125,
         "missing_characters": 0,
         "missing_sample": [],
@@ -310,8 +310,8 @@
       },
       {
         "locale": "nl",
-        "source_files": 47,
-        "checked_characters": 128,
+        "source_files": 48,
+        "checked_characters": 129,
         "missing_characters": 0,
         "missing_sample": [],
         "font_stack": [
@@ -323,7 +323,7 @@
       },
       {
         "locale": "pt",
-        "source_files": 47,
+        "source_files": 48,
         "checked_characters": 137,
         "missing_characters": 0,
         "missing_sample": [],
@@ -336,7 +336,7 @@
       },
       {
         "locale": "ru",
-        "source_files": 47,
+        "source_files": 48,
         "checked_characters": 184,
         "missing_characters": 0,
         "missing_sample": [],
@@ -348,7 +348,7 @@
       },
       {
         "locale": "sv",
-        "source_files": 47,
+        "source_files": 48,
         "checked_characters": 131,
         "missing_characters": 0,
         "missing_sample": [],
@@ -361,7 +361,7 @@
       },
       {
         "locale": "th",
-        "source_files": 47,
+        "source_files": 48,
         "checked_characters": 183,
         "missing_characters": 0,
         "missing_sample": [],
@@ -374,7 +374,7 @@
       },
       {
         "locale": "tr",
-        "source_files": 47,
+        "source_files": 48,
         "checked_characters": 136,
         "missing_characters": 0,
         "missing_sample": [],
@@ -387,7 +387,7 @@
       },
       {
         "locale": "zh-cn",
-        "source_files": 106,
+        "source_files": 103,
         "checked_characters": 1337,
         "missing_characters": 0,
         "missing_sample": [],

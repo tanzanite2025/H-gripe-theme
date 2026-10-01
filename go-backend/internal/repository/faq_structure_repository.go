@@ -1,9 +1,10 @@
 package repository
 
 import (
-	"context"
 	"commerce-platform/internal/domain/faq"
+	"context"
 	"errors"
+	"strings"
 	"time"
 
 	"gorm.io/gorm"
@@ -34,12 +35,18 @@ func (r *FAQRepository) ReconcileRoutePages(ctx context.Context, pages []faq.FAQ
 			stats.Total++
 
 			var existing faq.FAQPage
-			err := tx.Unscoped().Where("page_id = ? AND locale = ?", candidate.PageID, candidate.Locale).First(&existing).Error
+			err := tx.Where("page_id = ? AND locale = ?", candidate.PageID, candidate.Locale).First(&existing).Error
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				err = tx.Unscoped().Where("page_id = ? AND locale = ?", candidate.PageID, candidate.Locale).First(&existing).Error
+			}
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				// A previous migration may have used a different page_id for the
 				// same URL. Reuse that row so existing FAQ content keeps its page
 				// identity and deep links remain valid.
-				err = tx.Unscoped().Where("route_path = ? AND locale = ?", candidate.RoutePath, candidate.Locale).First(&existing).Error
+				err = tx.Where("route_path = ? AND locale = ?", candidate.RoutePath, candidate.Locale).First(&existing).Error
+				if errors.Is(err, gorm.ErrRecordNotFound) {
+					err = tx.Unscoped().Where("route_path = ? AND locale = ?", candidate.RoutePath, candidate.Locale).First(&existing).Error
+				}
 			}
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				if err := tx.Create(&candidate).Error; err != nil {
@@ -51,7 +58,15 @@ func (r *FAQRepository) ReconcileRoutePages(ctx context.Context, pages []faq.FAQ
 			if err != nil {
 				return err
 			}
+			// If a historical/custom page_id owns the same route, keep that
+			// content identity instead of marking the reused row stale.
+			desired[existing.PageID+"\x00"+existing.Locale] = struct{}{}
 
+			changed := existing.RoutePath != candidate.RoutePath ||
+				existing.RouteKey != candidate.RouteKey ||
+				existing.ManifestVersion != candidate.ManifestVersion ||
+				existing.RouteStatus != candidate.RouteStatus ||
+				existing.DeletedAt.Valid
 			updates := map[string]interface{}{
 				"route_path":       candidate.RoutePath,
 				"route_key":        candidate.RouteKey,
@@ -64,7 +79,9 @@ func (r *FAQRepository) ReconcileRoutePages(ctx context.Context, pages []faq.FAQ
 			if err := tx.Model(&existing).Updates(updates).Error; err != nil {
 				return err
 			}
-			stats.Updated++
+			if changed {
+				stats.Updated++
+			}
 		}
 
 		var existingPages []faq.FAQPage
@@ -73,11 +90,18 @@ func (r *FAQRepository) ReconcileRoutePages(ctx context.Context, pages []faq.FAQ
 		}
 		for index := range existingPages {
 			page := existingPages[index]
-			if _, ok := desired[page.PageID+"\x00"+page.Locale]; ok || page.RouteStatus == "stale" {
+			pagePath := strings.TrimSpace(page.RoutePath)
+			if _, ok := desired[page.PageID+"\x00"+page.Locale]; ok ||
+				(page.RouteStatus == "stale" && pagePath != "") ||
+				(page.RouteStatus == "missing" && pagePath == "") {
 				continue
 			}
+			routeStatus := "stale"
+			if pagePath == "" {
+				routeStatus = "missing"
+			}
 			if err := tx.Model(&page).Updates(map[string]interface{}{
-				"route_status": "stale",
+				"route_status": routeStatus,
 				"updated_at":   seenAt,
 			}).Error; err != nil {
 				return err

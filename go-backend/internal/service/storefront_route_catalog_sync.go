@@ -69,6 +69,13 @@ func (s *StorefrontRouteCatalogService) Sync(ctx context.Context) (StorefrontRou
 			return StorefrontRouteCatalogSyncSummary{}, fmt.Errorf("reconcile storefront URL issues after sync: %w", err)
 		}
 	}
+	if s.faqReconciler != nil {
+		faqSummary, err := s.faqReconciler.ReconcileStorefrontRoutes(ctx, manifest)
+		if err != nil {
+			return StorefrontRouteCatalogSyncSummary{}, fmt.Errorf("reconcile FAQ routes after storefront sync: %w", err)
+		}
+		summary.FAQ = faqSummary
+	}
 	summary.Entries = len(entries)
 	return summary, nil
 }

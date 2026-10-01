@@ -115,6 +115,8 @@
         </fieldset>
       </div>
     </div>
+
+    <SpokeNippleGuide />
   </section>
 </template>
 
@@ -122,6 +124,7 @@
 import { computed } from 'vue'
 import { useI18n } from '#imports'
 import SpokeCalculatorSelect from '~/components/SpokeCalculatorSelect.vue'
+import SpokeNippleGuide from '~/components/SpokeNippleGuide.vue'
 import SpokeStepNavigation from '~/components/SpokeStepNavigation.vue'
 import type { SpokeNippleType } from '~/types/spokeCalculator'
 

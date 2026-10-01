@@ -28,6 +28,10 @@ export interface FAQStructurePage {
   page_id: string
   locale: string
   route_path?: string | null
+  route_key?: string | null
+  manifest_version?: string | null
+  route_status?: string | null
+  last_seen_at?: string | number | null
   domain?: string | null
   title?: string | null
   subtitle?: string | null
@@ -53,6 +57,8 @@ export const statusName = (status?: string | null): string => ({ published: '已
 export const statusTone = (status?: string | null): FAQStatusTone => ({ published: 'green', draft: 'gray', active: 'green', hidden: 'gray' } as Record<string, FAQStatusTone>)[status || ''] || 'gray'
 export const visibilityName = (status?: string | null): string => statusName(status)
 export const visibilityTone = (status?: string | null): FAQStatusTone => statusTone(status)
+export const routeStatusName = (status?: string | null): string => ({ current: '路由当前', alias: '路由别名', stale: '路由过期', missing: '路由缺失' })[status || ''] || status || '未同步'
+export const routeStatusTone = (status?: string | null): FAQStatusTone => ({ current: 'green', alias: 'green', stale: 'gray', missing: 'gray' } as Record<string, FAQStatusTone>)[status || ''] || 'gray'
 export const domainName = (domain?: string | null): string => ({ products: 'PRODUCTS', guides: 'GUIDES', support: 'SUPPORT', company: 'COMPANY' })[domain || ''] || (domain || 'GENERAL').toUpperCase()
 export const formatDate = (dateString?: string | number | Date | null): string => dateString ? new Date(dateString).toLocaleString('zh-CN') : '-'
 export const plainTextFromHTML = (value?: string | null): string => String(value || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()

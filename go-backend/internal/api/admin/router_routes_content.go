@@ -111,6 +111,7 @@ func registerContentRoutes(
 		faqsGroup.GET("", faqHandler.ListFAQs)
 		faqsGroup.GET("/grouped", faqHandler.ListFAQGroups)
 		faqsGroup.GET("/structure", faqHandler.ListStructure)
+		faqsGroup.POST("/routes/sync", middleware.RequirePermission(auth.PermFAQEdit), faqHandler.SyncRoutes)
 		faqsGroup.PUT("/pages/:page_id", middleware.RequirePermission(auth.PermFAQEdit), faqHandler.UpdatePage)
 		faqsGroup.POST(
 			"/answer-image",

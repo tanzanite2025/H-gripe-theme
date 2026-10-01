@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"golang.org/x/net/html"
+	"golang.org/x/net/html/atom"
 )
 
 var allowedTags = map[string]bool{
@@ -49,8 +50,9 @@ func SanitizeAnswer(value string) (string, error) {
 	}
 
 	nodes, err := html.ParseFragment(strings.NewReader(value), &html.Node{
-		Type: html.ElementNode,
-		Data: "div",
+		Type:     html.ElementNode,
+		DataAtom: atom.Div,
+		Data:     "div",
 	})
 	if err != nil {
 		return "", fmt.Errorf("parse FAQ answer: %w", err)
@@ -68,8 +70,9 @@ func SanitizeAnswer(value string) (string, error) {
 
 func HasVisibleText(value string) bool {
 	nodes, err := html.ParseFragment(strings.NewReader(value), &html.Node{
-		Type: html.ElementNode,
-		Data: "div",
+		Type:     html.ElementNode,
+		DataAtom: atom.Div,
+		Data:     "div",
 	})
 	if err != nil {
 		return strings.TrimSpace(value) != ""

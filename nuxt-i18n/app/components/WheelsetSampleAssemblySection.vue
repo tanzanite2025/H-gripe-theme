@@ -105,18 +105,90 @@
           <button
             type="button"
             class="wheelset-guide-button"
-            @click="goToTechnicalSpokePattern"
-          >
-            {{ t('guidesWheelsetBuyersSample.ownBuild.spokeButton') }}
-          </button>
-          <button
-            type="button"
-            class="wheelset-guide-button"
             @click="goToHolePatterns"
           >
             {{ t('guidesWheelsetBuyersSample.ownBuild.holeButton') }}
           </button>
         </div>
+      </div>
+    </article>
+
+    <article class="wheelset-guide-step">
+      <div class="wheelset-guide-step__number">5</div>
+      <div class="wheelset-guide-step__content">
+        <h3 class="wheelset-guide-step__title">
+          {{ t('guidesWheelsetBuyersSample.customBuilds.mullet.title') }}
+        </h3>
+        <p class="wheelset-guide-step__body">
+          {{ t('guidesWheelsetBuyersSample.customBuilds.mullet.body') }}
+        </p>
+
+        <div class="wheelset-guide-panel-grid wheelset-guide-panel-grid--two">
+          <div class="wheelset-guide-panel">
+            <strong>{{ t('guidesWheelsetBuyersSample.customBuilds.mullet.frontTitle') }}</strong>
+            <p>{{ t('guidesWheelsetBuyersSample.customBuilds.mullet.frontBody') }}</p>
+          </div>
+          <div class="wheelset-guide-panel">
+            <strong>{{ t('guidesWheelsetBuyersSample.customBuilds.mullet.rearTitle') }}</strong>
+            <p>{{ t('guidesWheelsetBuyersSample.customBuilds.mullet.rearBody') }}</p>
+          </div>
+        </div>
+
+        <div class="wheelset-guide-actions">
+          <button
+            type="button"
+            class="wheelset-guide-button"
+            :aria-label="ctaNotes.mulletQuickBuyEntry"
+            :data-cta-note="ctaNotes.mulletQuickBuyEntry"
+            @click="openQuickBuy"
+          >
+            {{ t('guidesWheelsetBuyersSample.customBuilds.mullet.button') }}
+          </button>
+        </div>
+      </div>
+    </article>
+
+    <article class="wheelset-guide-step">
+      <div class="wheelset-guide-step__number">6</div>
+      <div class="wheelset-guide-step__content">
+        <h3 class="wheelset-guide-step__title">
+          {{ t('guidesWheelsetBuyersSample.customBuilds.singleWheel.title') }}
+        </h3>
+        <p class="wheelset-guide-step__body">
+          {{ t('guidesWheelsetBuyersSample.customBuilds.singleWheel.body') }}
+        </p>
+
+        <div class="wheelset-guide-panel">
+          <strong>{{ t('guidesWheelsetBuyersSample.customBuilds.singleWheel.beforeTitle') }}</strong>
+          <p>
+            {{ t('guidesWheelsetBuyersSample.customBuilds.singleWheel.beforeBody') }}
+          </p>
+        </div>
+
+        <div class="wheelset-guide-actions">
+          <button
+            type="button"
+            class="wheelset-guide-button wheelset-guide-button--solid"
+            :aria-label="ctaNotes.singleWheelChat"
+            :data-cta-note="ctaNotes.singleWheelChat"
+            @click="openWhatsAppChat"
+          >
+            {{ t('guidesWheelsetBuyersSample.customBuilds.singleWheel.button') }}
+          </button>
+        </div>
+      </div>
+    </article>
+
+    <article class="wheelset-guide-step">
+      <div class="wheelset-guide-step__number">7</div>
+      <div class="wheelset-guide-step__content">
+        <h3 class="wheelset-guide-step__title">
+          {{ t('guidesWheelsetBuyersSample.customBuilds.mixedRim.title') }}
+        </h3>
+        <WheelsetMixedRimSection
+          :openQuickBuy="openQuickBuy"
+          :openWhatsAppChat="openWhatsAppChat"
+        />
       </div>
     </article>
   </div>
@@ -126,6 +198,7 @@
 import { computed, watch } from 'vue'
 import { useI18n } from '#imports'
 import { usePageMessages } from '~/composables/usePageMessages'
+import WheelsetMixedRimSection from '~/components/WheelsetMixedRimSection.vue'
 
 const { locale, t, tm, rt } = useI18n()
 const { loadPageMessages } = usePageMessages('guidesWheelsetBuyersSample')
@@ -138,9 +211,13 @@ const scopeItems = computed<string[]>(() => (
   tm('guidesWheelsetBuyersSample.scope.items') as string[]
 ))
 
-const { openWhatsAppChat, goToTechnicalSpokePattern, goToHolePatterns } = defineProps<{
+const { openWhatsAppChat, openQuickBuy, ctaNotes, goToHolePatterns } = defineProps<{
   openWhatsAppChat: () => void | Promise<void>
-  goToTechnicalSpokePattern: () => void | Promise<void>
+  openQuickBuy: () => void
+  ctaNotes: {
+    mulletQuickBuyEntry: string
+    singleWheelChat: string
+  }
   goToHolePatterns: () => void | Promise<void>
 }>()
 </script>

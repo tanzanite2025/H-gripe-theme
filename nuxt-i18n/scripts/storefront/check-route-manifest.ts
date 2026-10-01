@@ -2,11 +2,13 @@ import { existsSync } from 'node:fs'
 import { readFile } from 'node:fs/promises'
 import { join, relative, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import locales from '../../app/i18n/locales.manifest'
 
 type ManifestRoute = {
   key?: string
   path?: string
   is_alias?: boolean
+  sitemap_locales?: string[]
 }
 
 type RouteManifest = {
@@ -61,6 +63,7 @@ const pageFileForPath = (path: string) => {
 
 const manifest = JSON.parse(await readFile(manifestPath, 'utf8')) as RouteManifest
 const routes = Array.isArray(manifest.routes) ? manifest.routes : []
+const enabledLocaleCodes = new Set(locales.map(locale => locale.code.toLowerCase()))
 const errors: string[] = []
 const seenKeys = new Set<string>()
 const seenPaths = new Set<string>()
@@ -76,6 +79,25 @@ for (const route of routes) {
   if (!route.path?.trim()) errors.push(`route ${key || '<unknown>'} path is missing`)
   if (key && seenKeys.has(key)) errors.push(`duplicate route key: ${key}`)
   if (key) seenKeys.add(key)
+
+  if (route.sitemap_locales !== undefined) {
+    if (!Array.isArray(route.sitemap_locales) || route.sitemap_locales.length === 0) {
+      errors.push(`route ${key || path} sitemap_locales must be a non-empty array`)
+    } else if (route.sitemap_locales.some(locale => typeof locale !== 'string' || !locale.trim())) {
+      errors.push(`route ${key || path} sitemap_locales contains an empty locale`)
+    } else {
+      const normalizedLocales = route.sitemap_locales.map(locale => locale.trim().toLowerCase().replace(/-/g, '_'))
+      const duplicateLocales = normalizedLocales.filter((locale, index) => normalizedLocales.indexOf(locale) !== index)
+      if (duplicateLocales.length > 0) {
+        errors.push(`route ${key || path} sitemap_locales contains duplicates: ${[...new Set(duplicateLocales)].join(', ')}`)
+      }
+      for (const locale of normalizedLocales) {
+        if (!enabledLocaleCodes.has(locale)) {
+          errors.push(`route ${key || path} sitemap_locales contains unsupported locale: ${locale}`)
+        }
+      }
+    }
+  }
 
   if (seenPaths.has(path) && !route.is_alias) errors.push(`duplicate canonical route path: ${path}`)
   if (!route.is_alias) seenPaths.add(path)

@@ -24,7 +24,6 @@ export type SchwalbeTireCatalogFacetFilterState = Pick<
   | 'innerRimWidthMm'
   | 'wheelSizeKeys'
   | 'beadSeatDiametersMm'
-  | 'casingConstructions'
   | 'radialOnly'
   | 'beads'
   | 'seals'
@@ -65,6 +64,10 @@ const parseSelectorRouteFilterState = (query: Record<string, unknown>): Schwalbe
   // the visible result set.
   colors: [],
   compounds: [],
+  // Casing construction remains a shared catalog/API field, but it is not a
+  // visible selector facet. Ignore legacy URL values so a hidden condition
+  // cannot silently constrain the result set.
+  casingConstructions: [],
 })
 
 const emptySelectorPage = (): SchwalbeTireCatalogSelectorPage => ({
@@ -139,12 +142,12 @@ export const useSchwalbeTireSelector = async () => {
       // facet. Drop the hidden legacy constraint so an old shared link cannot
       // make a visibly selected wheel size return zero rows.
       beadSeatDiametersMm: wheelSizeKeys.length > 0 ? [] : [...facetState.beadSeatDiametersMm],
-      casingConstructions: [...facetState.casingConstructions],
       beads: [...facetState.beads],
       seals: [...facetState.seals],
       eBikeRatings: [...facetState.eBikeRatings],
       colors: [],
       compounds: [],
+      casingConstructions: [],
     })
   }
 
@@ -152,7 +155,6 @@ export const useSchwalbeTireSelector = async () => {
     innerRimWidthMm: filterState.value.innerRimWidthMm,
     wheelSizeKeys: [...filterState.value.wheelSizeKeys],
     beadSeatDiametersMm: [...filterState.value.beadSeatDiametersMm],
-    casingConstructions: [...filterState.value.casingConstructions],
     radialOnly: filterState.value.radialOnly,
     beads: [...filterState.value.beads],
     seals: [...filterState.value.seals],
@@ -184,10 +186,6 @@ export const useSchwalbeTireSelector = async () => {
       wheelSizeKeys,
       beadSeatDiametersMm: wheelSizeKeys.length > 0 ? [] : filterState.value.beadSeatDiametersMm,
     }),
-  })
-  const selectedCasingConstructions = computed({
-    get: () => filterState.value.casingConstructions,
-    set: (casingConstructions: string[]) => updateFilterState({ casingConstructions }),
   })
   const selectedRadialOnly = computed({
     get: () => filterState.value.radialOnly,
@@ -272,7 +270,6 @@ export const useSchwalbeTireSelector = async () => {
     || filterState.value.wheelSizeKeys.length > 0
     || filterState.value.beadSeatDiametersMm.length > 0
     || filterState.value.minimumLoadKg !== null
-    || filterState.value.casingConstructions.length > 0
     || filterState.value.radialOnly
     || filterState.value.beads.length > 0
     || filterState.value.seals.length > 0
@@ -413,7 +410,6 @@ export const useSchwalbeTireSelector = async () => {
     selectedInnerRimWidthMm,
     selectedWheelSizeKeys,
     selectedBeadSeatDiametersMm,
-    selectedCasingConstructions,
     selectedRadialOnly,
     selectedBeads,
     selectedSeals,
@@ -427,7 +423,6 @@ export const useSchwalbeTireSelector = async () => {
     visibleItems,
     modelOptions,
     wheelSizeOptions: computed(() => filterOptions.value.wheelSizes),
-    casingConstructionOptions: computed(() => filterOptions.value.casingConstructions),
     beadOptions: computed(() => filterOptions.value.beads),
     sealOptions: computed(() => filterOptions.value.seals),
     eBikeRatingOptions: computed(() => filterOptions.value.eBikeRatings),

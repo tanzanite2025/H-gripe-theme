@@ -74,19 +74,6 @@
     </fieldset>
 
     <fieldset class="schwalbe-filter-panel__inline-facet">
-      <legend>{{ casingConstructionLabel }}</legend>
-      <div
-        class="schwalbe-filter-panel__options"
-        :class="{ 'schwalbe-filter-panel__options--many': hasManyOptions(casingConstructionOptions) }"
-      >
-        <label v-for="option in casingConstructionOptions" :key="option.value" class="schwalbe-filter-panel__option">
-          <input v-model="selectedCasingConstructions" type="checkbox" :value="option.value">
-          <span>{{ option.value }}</span>
-        </label>
-      </div>
-    </fieldset>
-
-    <fieldset class="schwalbe-filter-panel__inline-facet">
       <legend>{{ radialGroupLabel }}</legend>
       <div class="schwalbe-filter-panel__options">
         <label class="schwalbe-filter-panel__option">
@@ -146,7 +133,6 @@ import type {
 const selectedWheelSizeKeys = defineModel<string[]>('selectedWheelSizeKeys', { required: true })
 const innerRimWidthInput = defineModel<string | number | null>('innerRimWidthInput', { required: true })
 const selectedBeadSeatDiametersMm = defineModel<number[]>('selectedBeadSeatDiametersMm', { required: true })
-const selectedCasingConstructions = defineModel<string[]>('selectedCasingConstructions', { required: true })
 const selectedRadialOnly = defineModel<boolean>('selectedRadialOnly', { required: true })
 const selectedBeads = defineModel<string[]>('selectedBeads', { required: true })
 const selectedSeals = defineModel<string[]>('selectedSeals', { required: true })
@@ -165,7 +151,6 @@ const props = defineProps<{
   rimWidthInvalidLabel: string
   rimWidthChooseWheelSizeLabel: string
   rimWidthClearLabel: string
-  casingConstructionLabel: string
   radialGroupLabel: string
   radialAllLabel: string
   radialLabel: string
@@ -175,7 +160,6 @@ const props = defineProps<{
   eBikeUnratedLabel: string
   resetLabel: string
   wheelSizeOptions: readonly SchwalbeTireCatalogWheelSizeOption[]
-  casingConstructionOptions: readonly SchwalbeTireCatalogFilterOption<string>[]
   beadOptions: readonly SchwalbeTireCatalogFilterOption<string>[]
   sealOptions: readonly SchwalbeTireCatalogFilterOption<string>[]
   eBikeRatingOptions: readonly SchwalbeTireCatalogFilterOption<string | null>[]
@@ -185,7 +169,6 @@ const hasSelection = computed(() => (
   selectedWheelSizeKeys.value.length > 0
   || hasInnerRimWidthInput.value
   || selectedBeadSeatDiametersMm.value.length > 0
-  || selectedCasingConstructions.value.length > 0
   || selectedRadialOnly.value
   || selectedBeads.value.length > 0
   || selectedSeals.value.length > 0

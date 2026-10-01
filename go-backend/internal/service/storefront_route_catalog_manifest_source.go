@@ -23,7 +23,7 @@ func buildManifestRouteCatalogEntries(
 			canonicalPath = path
 		}
 
-		for _, locale := range locales.EnabledLocaleCodes() {
+		for _, locale := range manifestRouteLocales(declaration) {
 			routePath := seodomain.BuildStaticRoute(locale, path).Path
 			routeCanonicalPath := seodomain.BuildStaticRoute(locale, canonicalPath).Path
 			sourceType := seodomain.RouteSourceStatic
@@ -56,4 +56,33 @@ func buildManifestRouteCatalogEntries(
 	}
 
 	return entries
+}
+
+// manifestRouteLocales lets a page opt into sitemap/catalog discovery only for
+// locales that have a real page translation. Existing manifest entries omit
+// the field and therefore retain the all-enabled-locales behaviour.
+func manifestRouteLocales(declaration seodomain.StorefrontRouteManifestRoute) []string {
+	if len(declaration.SitemapLocales) == 0 {
+		return locales.EnabledLocaleCodes()
+	}
+
+	enabled := make(map[string]struct{}, len(locales.EnabledLocaleCodes()))
+	for _, code := range locales.EnabledLocaleCodes() {
+		enabled[code] = struct{}{}
+	}
+
+	selected := make([]string, 0, len(declaration.SitemapLocales))
+	seen := make(map[string]struct{}, len(declaration.SitemapLocales))
+	for _, raw := range declaration.SitemapLocales {
+		code := locales.Normalize(raw)
+		if _, ok := enabled[code]; !ok {
+			continue
+		}
+		if _, ok := seen[code]; ok {
+			continue
+		}
+		seen[code] = struct{}{}
+		selected = append(selected, code)
+	}
+	return selected
 }

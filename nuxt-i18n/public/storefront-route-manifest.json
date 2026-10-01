@@ -1,5 +1,5 @@
 {
-  "version": "2026-09-30",
+  "version": "2026-10-01",
   "routes": [
     {
       "key": "home",
@@ -225,6 +225,16 @@
       "is_searchable": true,
       "is_checkable": true,
       "is_indexable": false
+    },
+    {
+      "key": "resources-wheelset-lacing-topology",
+      "path": "/resources/轮组编法",
+      "label": "Wheelset spoke lacing topology",
+      "description": "Interactive rim-hole mapping and geometric reference for wheelset spoke lacing",
+      "sitemap_locales": ["en", "zh_cn"],
+      "is_searchable": true,
+      "is_checkable": true,
+      "is_indexable": true
     },
     {
       "key": "support-faqs",

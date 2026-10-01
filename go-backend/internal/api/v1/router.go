@@ -9,6 +9,7 @@ import (
 	analyticsapi "commerce-platform/internal/api/v1/analytics"
 	"commerce-platform/internal/api/v1/auth"
 	"commerce-platform/internal/api/v1/behavior"
+	brandwheelsetspokeapi "commerce-platform/internal/api/v1/brandwheelsetspoke"
 	"commerce-platform/internal/api/v1/cart"
 	"commerce-platform/internal/api/v1/checkout"
 	"commerce-platform/internal/api/v1/content"
@@ -41,6 +42,7 @@ import (
 	"commerce-platform/internal/api/v1/ugcshowcase"
 	"commerce-platform/internal/api/v1/warranty"
 	wheelsetfitapi "commerce-platform/internal/api/v1/wheelsetfit"
+	wheelsetlacingapi "commerce-platform/internal/api/v1/wheelsetlacing"
 	"commerce-platform/internal/api/v1/wishlist"
 	workbenchfeedapi "commerce-platform/internal/api/v1/workbenchfeed"
 	"commerce-platform/internal/app"
@@ -196,6 +198,8 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 	suggestionFeedbackHandler := suggestionfeedback.NewHandler(suggestionFeedbackService, storageSvc, services.Media)
 	suggestionFeedbackHandler.ConfigureHoneypot(honeypot.NewPolicy(cfg.AntiAbuse.HoneypotMode))
 	spokeHandler := spoke.NewHandler(services.Spoke)
+	wheelsetLacingHandler := wheelsetlacingapi.NewHandler(services.WheelsetLacing)
+	brandWheelsetSpokeHandler := brandwheelsetspokeapi.NewHandler()
 	behaviorEventHandler := behavior.NewHandler(services.BehaviorEvents)
 	recommendationHandler := recommendation.NewHandler(services.Recommendations)
 	attributionSigner, attributionErr := attributionpkg.NewSigner(cfg.JWT.Secret)
@@ -411,6 +415,28 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 			spokeGroup.GET("/export", spokeHandler.GetPublicCatalog)
 			spokeGroup.GET("/catalog/export", spokeHandler.GetPublicCatalog)
 			spokeGroup.GET("/history", middleware.AuthMiddleware(authService), spokeHandler.ListHistory)
+		}
+
+		// Independent wheelset lacing topology reference. This endpoint exposes
+		// only the checked-in discrete hole mapping and never invokes the spoke
+		// length calculator or accepts physical dimensions.
+		wheelsetLacingGroup := v1.Group("/wheelset-lacing")
+		wheelsetLacingGroup.Use(middleware.RateLimit(30))
+		{
+			wheelsetLacingHandler.RegisterRoutes(wheelsetLacingGroup)
+		}
+
+		// The repair-kit directory exposes only a public model index. Exact
+		// lengths and nipple data are returned one model at a time after login.
+		// Optional auth runs before the shared limiter so authenticated requests
+		// are keyed by user while anonymous probing remains keyed by IP/fingerprint.
+		wheelsetSpokeGroup := v1.Group("/wheelset-spoke-specs")
+		wheelsetSpokeGroup.Use(
+			middleware.OptionalAuthMiddleware(authService),
+			middleware.SpokeRateLimit(deps.RedisClient),
+		)
+		{
+			brandWheelsetSpokeHandler.RegisterRoutes(wheelsetSpokeGroup)
 		}
 
 		checkoutGroup := v1.Group("/checkout")

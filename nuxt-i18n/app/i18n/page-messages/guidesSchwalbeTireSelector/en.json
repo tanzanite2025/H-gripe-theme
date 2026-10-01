@@ -127,12 +127,12 @@
     "expand": "Expand guide ▼",
     "disclaimer": "Technical names and descriptions follow the cited official source notes. Model-specific specifications should be verified on the relevant official product page; a technology name alone is not a universal safety or purchase recommendation.",
     "tabs": {
-      "radial": "🌀 Radial casing",
-      "green": "🌿 Green Marathon",
-      "protection": "🛡️ Protection Level 1–7",
-      "addix": "🧪 ADDIX / Compound",
-      "color": "🎨 Color",
-      "compound": "🧪 Compound"
+      "radial": "Radial casing",
+      "green": "Green Marathon",
+      "protection": "Protection Level 1–7",
+      "addix": "ADDIX / Compound",
+      "color": "Color",
+      "compound": "Compound"
     },
     "radial": {
       "label": "Radial casing · official structure",

@@ -1,0 +1,2232 @@
+[
+  {
+    "brandSlug": "dt-swiss",
+    "brandName": "DT Swiss",
+    "publicationStatus": "published",
+    "sourceCheckedAt": "2026-10-01",
+    "wheelsets": [
+      {
+        "slug": "arc-1100-dicut-db-38",
+        "model": "ARC 1100 DICUT DB 38",
+        "lifecycleStatus": "current",
+        "verificationStatus": "verified",
+        "rim": {
+          "depthMm": 38,
+          "innerWidthMm": 20,
+          "outerWidthMm": 26
+        },
+        "nippleModel": "DT Pro Lock Hidden Aluminum",
+        "nippleLengthMm": 12,
+        "sourceUrl": "https://www.dtswiss.com/en/wheels/wheels-road/aero/arc-1100-dicut-db",
+        "wheels": [
+          {
+            "position": "front",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "DT Aerolite II T-head",
+                "headType": "straight-pull",
+                "lengthMm": 285
+              },
+              {
+                "side": "right",
+                "spokeModel": "DT Aerolite II T-head",
+                "headType": "straight-pull",
+                "lengthMm": 285
+              }
+            ]
+          },
+          {
+            "position": "rear",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "DT Aerolite II T-head",
+                "headType": "straight-pull",
+                "lengthMm": null
+              },
+              {
+                "side": "right",
+                "spokeModel": "DT Aero Comp II T-head",
+                "headType": "straight-pull",
+                "lengthMm": null
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "slug": "arc-1100-dicut-db-55",
+        "model": "ARC 1100 DICUT DB 55",
+        "lifecycleStatus": "current",
+        "verificationStatus": "verified",
+        "rim": {
+          "depthMm": 55,
+          "innerWidthMm": 22,
+          "outerWidthMm": 28
+        },
+        "nippleModel": "DT Pro Lock Hidden Aluminum",
+        "nippleLengthMm": 12,
+        "sourceUrl": "https://www.dtswiss.com/en/wheels/wheels-road/aero/arc-1100-dicut-db",
+        "wheels": [
+          {
+            "position": "front",
+            "spokeCount": 20,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "DT Aerolite II T-head",
+                "headType": "straight-pull",
+                "lengthMm": 269
+              },
+              {
+                "side": "right",
+                "spokeModel": "DT Aerolite II T-head",
+                "headType": "straight-pull",
+                "lengthMm": 271
+              }
+            ]
+          },
+          {
+            "position": "rear",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "DT Aerolite II T-head",
+                "headType": "straight-pull",
+                "lengthMm": 266
+              },
+              {
+                "side": "right",
+                "spokeModel": "DT Aerolite II T-head",
+                "headType": "straight-pull",
+                "lengthMm": 263
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "slug": "arc-1100-dicut-db-65",
+        "model": "ARC 1100 DICUT DB 65",
+        "lifecycleStatus": "current",
+        "verificationStatus": "verified",
+        "rim": {
+          "depthMm": 65,
+          "innerWidthMm": 22,
+          "outerWidthMm": 29
+        },
+        "nippleModel": "DT Pro Lock Hidden Aluminum",
+        "nippleLengthMm": 12,
+        "sourceUrl": "https://www.dtswiss.com/en/wheels/wheels-road/aero/arc-1100-dicut-db",
+        "wheels": [
+          {
+            "position": "front",
+            "spokeCount": 20,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "DT Aerolite II T-head",
+                "headType": "straight-pull",
+                "lengthMm": 259
+              },
+              {
+                "side": "right",
+                "spokeModel": "DT Aerolite II T-head",
+                "headType": "straight-pull",
+                "lengthMm": 261
+              }
+            ]
+          },
+          {
+            "position": "rear",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "DT Aerolite II T-head",
+                "headType": "straight-pull",
+                "lengthMm": 255
+              },
+              {
+                "side": "right",
+                "spokeModel": "DT Aerolite II T-head",
+                "headType": "straight-pull",
+                "lengthMm": 253
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "slug": "arc-1100-dicut-db-85",
+        "model": "ARC 1100 DICUT DB 85",
+        "lifecycleStatus": "current",
+        "verificationStatus": "verified",
+        "rim": {
+          "depthMm": 85,
+          "innerWidthMm": 22,
+          "outerWidthMm": 32
+        },
+        "nippleModel": "DT Pro Lock Hidden Aluminum",
+        "nippleLengthMm": 12,
+        "sourceUrl": "https://www.dtswiss.com/en/wheels/wheels-road/aero/arc-1100-dicut-db",
+        "wheels": [
+          {
+            "position": "front",
+            "spokeCount": 20,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "DT Aerolite II T-head",
+                "headType": "straight-pull",
+                "lengthMm": 239
+              },
+              {
+                "side": "right",
+                "spokeModel": "DT Aerolite II T-head",
+                "headType": "straight-pull",
+                "lengthMm": 241
+              }
+            ]
+          },
+          {
+            "position": "rear",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "DT Aerolite II T-head",
+                "headType": "straight-pull",
+                "lengthMm": 236
+              },
+              {
+                "side": "right",
+                "spokeModel": "DT Aerolite II T-head",
+                "headType": "straight-pull",
+                "lengthMm": 233
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "slug": "arc-1400-dicut-db-38",
+        "model": "ARC 1400 DICUT DB 38",
+        "lifecycleStatus": "current",
+        "verificationStatus": "verified",
+        "rim": {
+          "depthMm": 38,
+          "innerWidthMm": 20,
+          "outerWidthMm": 26
+        },
+        "nippleModel": "DT Pro Lock Hidden Aluminum",
+        "nippleLengthMm": 12,
+        "sourceUrl": "https://www.dtswiss.com/en/wheels/wheels-road/aero/arc-1400-dicut-db",
+        "wheels": [
+          {
+            "position": "front",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "DT Aero Comp II T-head",
+                "headType": "straight-pull",
+                "lengthMm": null
+              },
+              {
+                "side": "right",
+                "spokeModel": "DT Aero Comp II T-head",
+                "headType": "straight-pull",
+                "lengthMm": null
+              }
+            ]
+          },
+          {
+            "position": "rear",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "DT Aero Comp II T-head",
+                "headType": "straight-pull",
+                "lengthMm": null
+              },
+              {
+                "side": "right",
+                "spokeModel": "DT Aero Comp II T-head",
+                "headType": "straight-pull",
+                "lengthMm": null
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "slug": "arc-1400-dicut-db-55",
+        "model": "ARC 1400 DICUT DB 55",
+        "lifecycleStatus": "current",
+        "verificationStatus": "verified",
+        "rim": {
+          "depthMm": 55,
+          "innerWidthMm": 22,
+          "outerWidthMm": 28
+        },
+        "nippleModel": "DT Pro Lock Hidden Aluminum",
+        "nippleLengthMm": 12,
+        "sourceUrl": "https://www.dtswiss.com/en/wheels/wheels-road/aero/arc-1400-dicut-db",
+        "wheels": [
+          {
+            "position": "front",
+            "spokeCount": 20,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "DT Aero Comp II T-head",
+                "headType": "straight-pull",
+                "lengthMm": 269
+              },
+              {
+                "side": "right",
+                "spokeModel": "DT Aero Comp II T-head",
+                "headType": "straight-pull",
+                "lengthMm": 271
+              }
+            ]
+          },
+          {
+            "position": "rear",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "DT Aero Comp II T-head",
+                "headType": "straight-pull",
+                "lengthMm": 266
+              },
+              {
+                "side": "right",
+                "spokeModel": "DT Aero Comp II T-head",
+                "headType": "straight-pull",
+                "lengthMm": 263
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "slug": "arc-1400-dicut-db-65",
+        "model": "ARC 1400 DICUT DB 65",
+        "lifecycleStatus": "current",
+        "verificationStatus": "verified",
+        "rim": {
+          "depthMm": 65,
+          "innerWidthMm": 22,
+          "outerWidthMm": 29
+        },
+        "nippleModel": "DT Pro Lock Hidden Aluminum",
+        "nippleLengthMm": 12,
+        "sourceUrl": "https://www.dtswiss.com/en/wheels/wheels-road/aero/arc-1400-dicut-db",
+        "wheels": [
+          {
+            "position": "front",
+            "spokeCount": 20,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "DT Aero Comp II T-head",
+                "headType": "straight-pull",
+                "lengthMm": 259
+              },
+              {
+                "side": "right",
+                "spokeModel": "DT Aero Comp II T-head",
+                "headType": "straight-pull",
+                "lengthMm": 261
+              }
+            ]
+          },
+          {
+            "position": "rear",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "DT Aero Comp II T-head",
+                "headType": "straight-pull",
+                "lengthMm": 256
+              },
+              {
+                "side": "right",
+                "spokeModel": "DT Aero Comp II T-head",
+                "headType": "straight-pull",
+                "lengthMm": 253
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "slug": "arc-1400-dicut-db-85",
+        "model": "ARC 1400 DICUT DB 85",
+        "lifecycleStatus": "current",
+        "verificationStatus": "verified",
+        "rim": {
+          "depthMm": 85,
+          "innerWidthMm": 22,
+          "outerWidthMm": 32
+        },
+        "nippleModel": "DT Pro Lock Hidden Aluminum",
+        "nippleLengthMm": 12,
+        "sourceUrl": "https://www.dtswiss.com/en/wheels/wheels-road/aero/arc-1400-dicut-db",
+        "wheels": [
+          {
+            "position": "front",
+            "spokeCount": 20,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "DT Aero Comp II T-head",
+                "headType": "straight-pull",
+                "lengthMm": 239
+              },
+              {
+                "side": "right",
+                "spokeModel": "DT Aero Comp II T-head",
+                "headType": "straight-pull",
+                "lengthMm": 241
+              }
+            ]
+          },
+          {
+            "position": "rear",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "DT Aero Comp II T-head",
+                "headType": "straight-pull",
+                "lengthMm": 236
+              },
+              {
+                "side": "right",
+                "spokeModel": "DT Aero Comp II T-head",
+                "headType": "straight-pull",
+                "lengthMm": 233
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "slug": "erc-1100-dicut-35",
+        "model": "ERC 1100 DICUT DB 35",
+        "lifecycleStatus": "current",
+        "verificationStatus": "verified",
+        "rim": {
+          "depthMm": 35,
+          "innerWidthMm": 22,
+          "outerWidthMm": 28.5
+        },
+        "nippleModel": "DT Pro Lock Hidden Aluminum",
+        "nippleLengthMm": 12,
+        "sourceUrl": "https://www.dtswiss.com/en/wheels/wheels-road/endurance/erc-1100-dicut",
+        "wheels": [
+          {
+            "position": "front",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "DT Aerolite II T-head",
+                "headType": "straight-pull",
+                "lengthMm": 285
+              },
+              {
+                "side": "right",
+                "spokeModel": "DT Aerolite II T-head",
+                "headType": "straight-pull",
+                "lengthMm": 288
+              }
+            ]
+          },
+          {
+            "position": "rear",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "DT Aerolite II T-head",
+                "headType": "straight-pull",
+                "lengthMm": 287
+              },
+              {
+                "side": "right",
+                "spokeModel": "DT Aero Comp II T-head",
+                "headType": "straight-pull",
+                "lengthMm": 285
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "slug": "erc-1400-dicut-35",
+        "model": "ERC 1400 DICUT DB 35",
+        "lifecycleStatus": "current",
+        "verificationStatus": "verified",
+        "rim": {
+          "depthMm": 35,
+          "innerWidthMm": 22,
+          "outerWidthMm": 28.5
+        },
+        "nippleModel": "DT Pro Lock Hidden Aluminum",
+        "nippleLengthMm": 12,
+        "sourceUrl": "https://www.dtswiss.com/en/wheels/wheels-road/endurance/erc-1400-dicut",
+        "wheels": [
+          {
+            "position": "front",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "DT Aero Comp T-head",
+                "headType": "straight-pull",
+                "lengthMm": 285
+              },
+              {
+                "side": "right",
+                "spokeModel": "DT Aero Comp T-head",
+                "headType": "straight-pull",
+                "lengthMm": 288
+              }
+            ]
+          },
+          {
+            "position": "rear",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "DT Aero Comp T-head",
+                "headType": "straight-pull",
+                "lengthMm": 287
+              },
+              {
+                "side": "right",
+                "spokeModel": "DT Aero Comp T-head",
+                "headType": "straight-pull",
+                "lengthMm": 285
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "slug": "erc-1100-dicut-45",
+        "model": "ERC 1100 DICUT DB 45",
+        "lifecycleStatus": "current",
+        "verificationStatus": "verified",
+        "rim": {
+          "depthMm": 45,
+          "innerWidthMm": 22,
+          "outerWidthMm": 28.5
+        },
+        "nippleModel": "DT Pro Lock Hidden Aluminum",
+        "nippleLengthMm": 12,
+        "sourceUrl": "https://www.dtswiss.com/en/wheels/wheels-road/endurance/erc-1100-dicut",
+        "wheels": [
+          {
+            "position": "front",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "DT Aerolite II T-head",
+                "headType": "straight-pull",
+                "lengthMm": 275
+              },
+              {
+                "side": "right",
+                "spokeModel": "DT Aerolite II T-head",
+                "headType": "straight-pull",
+                "lengthMm": 278
+              }
+            ]
+          },
+          {
+            "position": "rear",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "DT Aerolite II T-head",
+                "headType": "straight-pull",
+                "lengthMm": 277
+              },
+              {
+                "side": "right",
+                "spokeModel": "DT Aero Comp II T-head",
+                "headType": "straight-pull",
+                "lengthMm": 275
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "slug": "erc-1400-dicut-45",
+        "model": "ERC 1400 DICUT DB 45",
+        "lifecycleStatus": "current",
+        "verificationStatus": "verified",
+        "rim": {
+          "depthMm": 45,
+          "innerWidthMm": 22,
+          "outerWidthMm": 28.5
+        },
+        "nippleModel": "DT Pro Lock Hidden Aluminum",
+        "nippleLengthMm": 12,
+        "sourceUrl": "https://www.dtswiss.com/en/wheels/wheels-road/endurance/erc-1400-dicut",
+        "wheels": [
+          {
+            "position": "front",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "DT Aero Comp T-head",
+                "headType": "straight-pull",
+                "lengthMm": 275
+              },
+              {
+                "side": "right",
+                "spokeModel": "DT Aero Comp T-head",
+                "headType": "straight-pull",
+                "lengthMm": 278
+              }
+            ]
+          },
+          {
+            "position": "rear",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "DT Aero Comp T-head",
+                "headType": "straight-pull",
+                "lengthMm": 277
+              },
+              {
+                "side": "right",
+                "spokeModel": "DT Aero Comp T-head",
+                "headType": "straight-pull",
+                "lengthMm": 275
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "slug": "grc-1100-dicut-30-700c",
+        "model": "GRC 1100 DICUT DB 30 (700C)",
+        "lifecycleStatus": "current",
+        "verificationStatus": "verified",
+        "rim": {
+          "depthMm": 30,
+          "innerWidthMm": 24,
+          "outerWidthMm": 31
+        },
+        "nippleModel": "DT Pro Lock Hidden Aluminum",
+        "nippleLengthMm": 12,
+        "sourceUrl": "https://www.dtswiss.com/en/wheels/wheels-road/gravel/grc-1100-dicut",
+        "wheels": [
+          {
+            "position": "front",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "DT Aerolite II T-head",
+                "headType": "straight-pull",
+                "lengthMm": null
+              },
+              {
+                "side": "right",
+                "spokeModel": "DT Aerolite II T-head",
+                "headType": "straight-pull",
+                "lengthMm": null
+              }
+            ]
+          },
+          {
+            "position": "rear",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "DT Aerolite II T-head",
+                "headType": "straight-pull",
+                "lengthMm": null
+              },
+              {
+                "side": "right",
+                "spokeModel": "DT Aero Comp II T-head",
+                "headType": "straight-pull",
+                "lengthMm": null
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "slug": "grc-1400-dicut-30-700c",
+        "model": "GRC 1400 DICUT DB 30 (700C)",
+        "lifecycleStatus": "current",
+        "verificationStatus": "verified",
+        "rim": {
+          "depthMm": 30,
+          "innerWidthMm": 24,
+          "outerWidthMm": 31
+        },
+        "nippleModel": "DT Pro Lock Hidden Aluminum",
+        "nippleLengthMm": 12,
+        "sourceUrl": "https://www.dtswiss.com/en/wheels/wheels-road/gravel/grc-1400-dicut",
+        "wheels": [
+          {
+            "position": "front",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "DT Aero Comp II T-head",
+                "headType": "straight-pull",
+                "lengthMm": null
+              },
+              {
+                "side": "right",
+                "spokeModel": "DT Aero Comp II T-head",
+                "headType": "straight-pull",
+                "lengthMm": null
+              }
+            ]
+          },
+          {
+            "position": "rear",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "DT Aero Comp II T-head",
+                "headType": "straight-pull",
+                "lengthMm": null
+              },
+              {
+                "side": "right",
+                "spokeModel": "DT Aero Comp II T-head",
+                "headType": "straight-pull",
+                "lengthMm": null
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "slug": "grc-1100-dicut-50",
+        "model": "GRC 1100 DICUT DB 50 (700C)",
+        "lifecycleStatus": "current",
+        "verificationStatus": "verified",
+        "rim": {
+          "depthMm": 50,
+          "innerWidthMm": 24,
+          "outerWidthMm": 36.5
+        },
+        "nippleModel": "DT Pro Lock Hidden Aluminum",
+        "nippleLengthMm": 12,
+        "sourceUrl": "https://www.dtswiss.com/en/wheels/wheels-road/gravel/grc-1100-dicut",
+        "wheels": [
+          {
+            "position": "front",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "DT Aerolite II T-head",
+                "headType": "straight-pull",
+                "lengthMm": 272
+              },
+              {
+                "side": "right",
+                "spokeModel": "DT Aerolite II T-head",
+                "headType": "straight-pull",
+                "lengthMm": 275
+              }
+            ]
+          },
+          {
+            "position": "rear",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "DT Aerolite II T-head",
+                "headType": "straight-pull",
+                "lengthMm": null
+              },
+              {
+                "side": "right",
+                "spokeModel": "DT Aero Comp II T-head",
+                "headType": "straight-pull",
+                "lengthMm": 271
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "slug": "grc-1400-dicut-50",
+        "model": "GRC 1400 DICUT DB 50 (700C)",
+        "lifecycleStatus": "current",
+        "verificationStatus": "verified",
+        "rim": {
+          "depthMm": 50,
+          "innerWidthMm": 24,
+          "outerWidthMm": 36.5
+        },
+        "nippleModel": "DT Pro Lock Hidden Aluminum",
+        "nippleLengthMm": 12,
+        "sourceUrl": "https://www.dtswiss.com/en/wheels/wheels-road/gravel/grc-1400-dicut",
+        "wheels": [
+          {
+            "position": "front",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "DT Aero Comp II T-head",
+                "headType": "straight-pull",
+                "lengthMm": 270
+              },
+              {
+                "side": "right",
+                "spokeModel": "DT Aero Comp II T-head",
+                "headType": "straight-pull",
+                "lengthMm": 275
+              }
+            ]
+          },
+          {
+            "position": "rear",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "DT Aero Comp II T-head",
+                "headType": "straight-pull",
+                "lengthMm": 274
+              },
+              {
+                "side": "right",
+                "spokeModel": "DT Aero Comp II T-head",
+                "headType": "straight-pull",
+                "lengthMm": 270
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "slug": "grc-1100-dicut-30-650b",
+        "model": "GRC 1100 DICUT DB 30 (650B)",
+        "lifecycleStatus": "current",
+        "verificationStatus": "verified",
+        "rim": {
+          "depthMm": 30,
+          "innerWidthMm": 24,
+          "outerWidthMm": 31
+        },
+        "nippleModel": "DT Pro Lock Hidden Aluminum",
+        "nippleLengthMm": 12,
+        "sourceUrl": "https://www.dtswiss.com/en/wheels/wheels-road/gravel/grc-1100-dicut",
+        "wheels": [
+          {
+            "position": "front",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "DT Aerolite II T-head",
+                "headType": "straight-pull",
+                "lengthMm": 271
+              },
+              {
+                "side": "right",
+                "spokeModel": "DT Aerolite II T-head",
+                "headType": "straight-pull",
+                "lengthMm": 271
+              }
+            ]
+          },
+          {
+            "position": "rear",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "DT Aerolite II T-head",
+                "headType": "straight-pull",
+                "lengthMm": 273
+              },
+              {
+                "side": "right",
+                "spokeModel": "DT Aero Comp II T-head",
+                "headType": "straight-pull",
+                "lengthMm": 271
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "slug": "grc-1400-dicut-30-650b",
+        "model": "GRC 1400 DICUT DB 30 (650B)",
+        "lifecycleStatus": "current",
+        "verificationStatus": "verified",
+        "rim": {
+          "depthMm": 30,
+          "innerWidthMm": 24,
+          "outerWidthMm": 31
+        },
+        "nippleModel": "DT Pro Lock Hidden Aluminum",
+        "nippleLengthMm": 12,
+        "sourceUrl": "https://www.dtswiss.com/en/wheels/wheels-road/gravel/grc-1400-dicut",
+        "wheels": [
+          {
+            "position": "front",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "DT Aero Comp II T-head",
+                "headType": "straight-pull",
+                "lengthMm": 271
+              },
+              {
+                "side": "right",
+                "spokeModel": "DT Aero Comp II T-head",
+                "headType": "straight-pull",
+                "lengthMm": 271
+              }
+            ]
+          },
+          {
+            "position": "rear",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "DT Aero Comp II T-head",
+                "headType": "straight-pull",
+                "lengthMm": 270
+              },
+              {
+                "side": "right",
+                "spokeModel": "DT Aero Comp II T-head",
+                "headType": "straight-pull",
+                "lengthMm": 270
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "slug": "prc-1400-spline-35",
+        "model": "PRC 1400 SPLINE 35",
+        "lifecycleStatus": "current",
+        "verificationStatus": "verified",
+        "rim": {
+          "depthMm": 35,
+          "innerWidthMm": 18,
+          "outerWidthMm": 25
+        },
+        "nippleModel": "DT Pro Lock Hidden Aluminum",
+        "nippleLengthMm": 12,
+        "sourceUrl": "https://www.dtswiss.com/en/wheels/wheels-road/performance/prc-1400-spline",
+        "wheels": [
+          {
+            "position": "front",
+            "spokeCount": 20,
+            "lacingPattern": "0X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "DT Aerolite T-head",
+                "headType": "straight-pull",
+                "lengthMm": 282
+              },
+              {
+                "side": "right",
+                "spokeModel": "DT Aerolite T-head",
+                "headType": "straight-pull",
+                "lengthMm": 282
+              }
+            ]
+          },
+          {
+            "position": "rear",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "DT Aero Comp Straight-pull",
+                "headType": "straight-pull",
+                "lengthMm": 295
+              },
+              {
+                "side": "right",
+                "spokeModel": "DT Aero Comp Straight-pull",
+                "headType": "straight-pull",
+                "lengthMm": 290
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "slug": "xrc-1200-spline-29-30",
+        "model": "XRC 1200 SPLINE 29″ 30",
+        "lifecycleStatus": "current",
+        "verificationStatus": "verified",
+        "rim": {
+          "depthMm": 20,
+          "innerWidthMm": 30,
+          "outerWidthMm": 36
+        },
+        "nippleModel": "DT ProLock Squorx ProHead Aluminum",
+        "nippleLengthMm": 15,
+        "sourceUrl": "https://www.dtswiss.com/en/wheels/wheels-mtb/cross-country/xrc-1200-spline",
+        "wheels": [
+          {
+            "position": "front",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "DT Revolite T-head",
+                "headType": "straight-pull",
+                "lengthMm": 299
+              },
+              {
+                "side": "right",
+                "spokeModel": "DT Revolite T-head",
+                "headType": "straight-pull",
+                "lengthMm": 300
+              }
+            ]
+          },
+          {
+            "position": "rear",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "DT Revolite T-head",
+                "headType": "straight-pull",
+                "lengthMm": 299
+              },
+              {
+                "side": "right",
+                "spokeModel": "DT Revolite T-head",
+                "headType": "straight-pull",
+                "lengthMm": 299
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "slug": "exc-1200-classic-27-5",
+        "model": "EXC 1200 CLASSIC 27.5″ 30",
+        "lifecycleStatus": "current",
+        "verificationStatus": "verified",
+        "rim": {
+          "depthMm": 22,
+          "innerWidthMm": 30,
+          "outerWidthMm": 37.2
+        },
+        "nippleModel": "DT Pro Lock Flat Hexagonal Aluminum",
+        "nippleLengthMm": 13,
+        "sourceUrl": "https://www.dtswiss.com/en/wheels/wheels-mtb/enduro/exc-1200-classic",
+        "wheels": [
+          {
+            "position": "front",
+            "spokeCount": 32,
+            "lacingPattern": "3X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "DT Revolite",
+                "headType": "j-bend",
+                "lengthMm": null
+              },
+              {
+                "side": "right",
+                "spokeModel": "DT Revolite",
+                "headType": "j-bend",
+                "lengthMm": null
+              }
+            ]
+          },
+          {
+            "position": "rear",
+            "spokeCount": 32,
+            "lacingPattern": "3X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "DT Revolite",
+                "headType": "j-bend",
+                "lengthMm": null
+              },
+              {
+                "side": "right",
+                "spokeModel": "DT Revolite",
+                "headType": "j-bend",
+                "lengthMm": null
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "slug": "exc-1200-classic-29",
+        "model": "EXC 1200 CLASSIC 29″ 30",
+        "lifecycleStatus": "current",
+        "verificationStatus": "verified",
+        "rim": {
+          "depthMm": 22,
+          "innerWidthMm": 30,
+          "outerWidthMm": 37.2
+        },
+        "nippleModel": "DT Pro Lock Flat Hexagonal Aluminum",
+        "nippleLengthMm": 13,
+        "sourceUrl": "https://www.dtswiss.com/en/wheels/wheels-mtb/enduro/exc-1200-classic",
+        "wheels": [
+          {
+            "position": "front",
+            "spokeCount": 32,
+            "lacingPattern": "3X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "DT Revolite",
+                "headType": "j-bend",
+                "lengthMm": 296
+              },
+              {
+                "side": "right",
+                "spokeModel": "DT Revolite",
+                "headType": "j-bend",
+                "lengthMm": 297
+              }
+            ]
+          },
+          {
+            "position": "rear",
+            "spokeCount": 32,
+            "lacingPattern": "3X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "DT Revolite",
+                "headType": "j-bend",
+                "lengthMm": null
+              },
+              {
+                "side": "right",
+                "spokeModel": "DT Revolite",
+                "headType": "j-bend",
+                "lengthMm": null
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "slug": "arc-1100-dicut-db-50-legacy",
+        "model": "ARC 1100 DICUT DB 50",
+        "lifecycleStatus": "legacy",
+        "verificationStatus": "verified",
+        "rim": {
+          "depthMm": 50,
+          "innerWidthMm": 20,
+          "outerWidthMm": 26.5
+        },
+        "nippleModel": "DT Pro Lock Hidden Aluminum",
+        "nippleLengthMm": 15,
+        "sourceUrl": "https://www.dtswiss.com/en/support/product-support",
+        "wheels": [
+          {
+            "position": "front",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "DT Aerolite II T-head",
+                "headType": "straight-pull",
+                "lengthMm": 272
+              },
+              {
+                "side": "right",
+                "spokeModel": "DT Aerolite II T-head",
+                "headType": "straight-pull",
+                "lengthMm": 273
+              }
+            ]
+          },
+          {
+            "position": "rear",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "DT Aerolite II T-head",
+                "headType": "straight-pull",
+                "lengthMm": 273
+              },
+              {
+                "side": "right",
+                "spokeModel": "DT Aero Comp II T-head",
+                "headType": "straight-pull",
+                "lengthMm": 270
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "slug": "arc-1100-dicut-db-62-legacy",
+        "model": "ARC 1100 DICUT DB 62",
+        "lifecycleStatus": "legacy",
+        "verificationStatus": "verified",
+        "rim": {
+          "depthMm": 62,
+          "innerWidthMm": 20,
+          "outerWidthMm": 27
+        },
+        "nippleModel": "DT Pro Lock Hidden Aluminum",
+        "nippleLengthMm": 15,
+        "sourceUrl": "https://www.dtswiss.com/en/support/product-support",
+        "wheels": [
+          {
+            "position": "front",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "DT Aerolite II T-head",
+                "headType": "straight-pull",
+                "lengthMm": 258
+              },
+              {
+                "side": "right",
+                "spokeModel": "DT Aerolite II T-head",
+                "headType": "straight-pull",
+                "lengthMm": 261
+              }
+            ]
+          },
+          {
+            "position": "rear",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "DT Aerolite II T-head",
+                "headType": "straight-pull",
+                "lengthMm": 260
+              },
+              {
+                "side": "right",
+                "spokeModel": "DT Aero Comp II T-head",
+                "headType": "straight-pull",
+                "lengthMm": 256
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "slug": "arc-1100-dicut-db-80-legacy",
+        "model": "ARC 1100 DICUT DB 80",
+        "lifecycleStatus": "legacy",
+        "verificationStatus": "verified",
+        "rim": {
+          "depthMm": 80,
+          "innerWidthMm": 20,
+          "outerWidthMm": 32
+        },
+        "nippleModel": "DT Pro Lock Hidden Aluminum",
+        "nippleLengthMm": 15,
+        "sourceUrl": "https://www.dtswiss.com/en/support/product-support",
+        "wheels": [
+          {
+            "position": "front",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "DT Aerolite II T-head",
+                "headType": "straight-pull",
+                "lengthMm": 238
+              },
+              {
+                "side": "right",
+                "spokeModel": "DT Aerolite II T-head",
+                "headType": "straight-pull",
+                "lengthMm": 238
+              }
+            ]
+          },
+          {
+            "position": "rear",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "DT Aerolite II T-head",
+                "headType": "straight-pull",
+                "lengthMm": 238
+              },
+              {
+                "side": "right",
+                "spokeModel": "DT Aero Comp II T-head",
+                "headType": "straight-pull",
+                "lengthMm": 233
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "slug": "arc-1400-dicut-db-50-legacy",
+        "model": "ARC 1400 DICUT DB 50",
+        "lifecycleStatus": "legacy",
+        "verificationStatus": "verified",
+        "rim": {
+          "depthMm": 50,
+          "innerWidthMm": 20,
+          "outerWidthMm": 26.5
+        },
+        "nippleModel": "DT Pro Lock Hidden Aluminum",
+        "nippleLengthMm": 15,
+        "sourceUrl": "https://www.dtswiss.com/en/support/product-support",
+        "wheels": [
+          {
+            "position": "front",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "DT Aero Comp T-head",
+                "headType": "straight-pull",
+                "lengthMm": 272
+              },
+              {
+                "side": "right",
+                "spokeModel": "DT Aero Comp T-head",
+                "headType": "straight-pull",
+                "lengthMm": 273
+              }
+            ]
+          },
+          {
+            "position": "rear",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "DT Aero Comp T-head",
+                "headType": "straight-pull",
+                "lengthMm": 273
+              },
+              {
+                "side": "right",
+                "spokeModel": "DT Aero Comp T-head",
+                "headType": "straight-pull",
+                "lengthMm": 270
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "slug": "arc-1400-dicut-db-62-legacy",
+        "model": "ARC 1400 DICUT DB 62",
+        "lifecycleStatus": "legacy",
+        "verificationStatus": "verified",
+        "rim": {
+          "depthMm": 62,
+          "innerWidthMm": 20,
+          "outerWidthMm": 27
+        },
+        "nippleModel": "DT Pro Lock Hidden Aluminum",
+        "nippleLengthMm": 15,
+        "sourceUrl": "https://www.dtswiss.com/en/support/product-support",
+        "wheels": [
+          {
+            "position": "front",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "DT Aero Comp T-head",
+                "headType": "straight-pull",
+                "lengthMm": 258
+              },
+              {
+                "side": "right",
+                "spokeModel": "DT Aero Comp T-head",
+                "headType": "straight-pull",
+                "lengthMm": 261
+              }
+            ]
+          },
+          {
+            "position": "rear",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "DT Aero Comp T-head",
+                "headType": "straight-pull",
+                "lengthMm": 260
+              },
+              {
+                "side": "right",
+                "spokeModel": "DT Aero Comp T-head",
+                "headType": "straight-pull",
+                "lengthMm": 256
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "slug": "prc-1100-mon-chasseral-35-legacy",
+        "model": "PRC 1100 DICUT Mon Chasseral 35 (Rim Brake)",
+        "lifecycleStatus": "legacy",
+        "verificationStatus": "verified",
+        "rim": {
+          "depthMm": 35,
+          "innerWidthMm": 18,
+          "outerWidthMm": 25
+        },
+        "nippleModel": "DT Pro Lock Hidden Aluminum",
+        "nippleLengthMm": 15,
+        "sourceUrl": "https://www.dtswiss.com/en/support/product-support",
+        "wheels": [
+          {
+            "position": "front",
+            "spokeCount": 16,
+            "lacingPattern": "0X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "DT Aerolite Straightpull",
+                "headType": "straight-pull",
+                "lengthMm": 283
+              },
+              {
+                "side": "right",
+                "spokeModel": "DT Aerolite Straightpull",
+                "headType": "straight-pull",
+                "lengthMm": 283
+              }
+            ]
+          },
+          {
+            "position": "rear",
+            "spokeCount": 21,
+            "lacingPattern": "2:1",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "DT Aerolite T-head",
+                "headType": "straight-pull",
+                "lengthMm": 286
+              },
+              {
+                "side": "right",
+                "spokeModel": "DT Aero Comp Straightpull",
+                "headType": "straight-pull",
+                "lengthMm": 284
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "slug": "prc-1100-mon-chasseral-24-db-legacy",
+        "model": "PRC 1100 DICUT 24 DB Mon Chasseral",
+        "lifecycleStatus": "legacy",
+        "verificationStatus": "verified",
+        "rim": {
+          "depthMm": 24,
+          "innerWidthMm": 18,
+          "outerWidthMm": 24
+        },
+        "nippleModel": "DT Pro Lock Hidden Aluminum",
+        "nippleLengthMm": 15,
+        "sourceUrl": "https://www.dtswiss.com/en/support/product-support",
+        "wheels": [
+          {
+            "position": "front",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "DT Aerolite II T-head",
+                "headType": "straight-pull",
+                "lengthMm": 294
+              },
+              {
+                "side": "right",
+                "spokeModel": "DT Aerolite II T-head",
+                "headType": "straight-pull",
+                "lengthMm": 296
+              }
+            ]
+          },
+          {
+            "position": "rear",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "DT Aerolite II T-head",
+                "headType": "straight-pull",
+                "lengthMm": 296
+              },
+              {
+                "side": "right",
+                "spokeModel": "DT Aero Comp II T-head",
+                "headType": "straight-pull",
+                "lengthMm": 294
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "slug": "cr-1400-dicut-db-25-legacy",
+        "model": "CR 1400 DICUT DB 25",
+        "lifecycleStatus": "legacy",
+        "verificationStatus": "verified",
+        "rim": {
+          "depthMm": 25,
+          "innerWidthMm": 24,
+          "outerWidthMm": 28
+        },
+        "nippleModel": "DT Pro Lock Squorx Pro Head Aluminum",
+        "nippleLengthMm": 15,
+        "sourceUrl": "https://www.dtswiss.com/en/support/product-support",
+        "wheels": [
+          {
+            "position": "front",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "DT Aerolite Straightpull",
+                "headType": "straight-pull",
+                "lengthMm": 292
+              },
+              {
+                "side": "right",
+                "spokeModel": "DT Aerolite Straightpull",
+                "headType": "straight-pull",
+                "lengthMm": 294
+              }
+            ]
+          },
+          {
+            "position": "rear",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "DT Aerolite Straightpull",
+                "headType": "straight-pull",
+                "lengthMm": 294
+              },
+              {
+                "side": "right",
+                "spokeModel": "DT Aero Comp Straightpull",
+                "headType": "straight-pull",
+                "lengthMm": 290
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "slug": "pr-1600-dicut-21-rim-brake-legacy",
+        "model": "PR 1600 DICUT 21（圈刹）",
+        "lifecycleStatus": "legacy",
+        "verificationStatus": "verified",
+        "rim": {
+          "depthMm": 21,
+          "innerWidthMm": 18,
+          "outerWidthMm": 21.5
+        },
+        "nippleModel": "DT Pro Lock Aluminum",
+        "nippleLengthMm": 12,
+        "sourceUrl": "https://www.dtswiss.com/en/support/product-support",
+        "wheels": [
+          {
+            "position": "front",
+            "spokeCount": 16,
+            "lacingPattern": "0X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "DT Aero Comp Straightpull",
+                "headType": "straight-pull",
+                "lengthMm": 282
+              },
+              {
+                "side": "right",
+                "spokeModel": "DT Aero Comp Straightpull",
+                "headType": "straight-pull",
+                "lengthMm": 282
+              }
+            ]
+          },
+          {
+            "position": "rear",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "DT Aero Comp Straightpull",
+                "headType": "straight-pull",
+                "lengthMm": 288
+              },
+              {
+                "side": "right",
+                "spokeModel": "DT Aero Comp Straightpull",
+                "headType": "straight-pull",
+                "lengthMm": 292
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "brandSlug": "shimano",
+    "brandName": "Shimano",
+    "publicationStatus": "published",
+    "sourceCheckedAt": "2026-10-01",
+    "wheelsets": [
+      {
+        "slug": "wh-r9270-c50-tl",
+        "model": "DURA-ACE WH-R9270-C50-TL",
+        "lifecycleStatus": "current",
+        "verificationStatus": "verified",
+        "rim": {
+          "depthMm": 50,
+          "innerWidthMm": 21,
+          "outerWidthMm": 28
+        },
+        "nippleModel": "Shimano 14G aluminum nipple",
+        "nippleLengthMm": null,
+        "sourceUrl": "https://si.shimano.com/en/pdfs/ev/WH-R9270-C50-TL-R-4831C/EV-WH-R9270-C50-TL-R-4831C.pdf",
+        "wheels": [
+          {
+            "position": "front",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "Shimano DURA-ACE bladed 2.0-1.5-2.0 mm",
+                "headType": "straight-pull",
+                "lengthMm": 267
+              },
+              {
+                "side": "right",
+                "spokeModel": "Shimano DURA-ACE bladed 2.0-1.5-2.0 mm",
+                "headType": "straight-pull",
+                "lengthMm": 269
+              }
+            ]
+          },
+          {
+            "position": "rear",
+            "spokeCount": 24,
+            "lacingPattern": "2X / 2:1",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "Shimano DURA-ACE bladed 2.0-1.5-2.0 mm",
+                "headType": "straight-pull",
+                "lengthMm": 251.5
+              },
+              {
+                "side": "right",
+                "spokeModel": "Shimano DURA-ACE bladed 2.0-1.5-2.0 mm",
+                "headType": "straight-pull",
+                "lengthMm": 267.5
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "slug": "wh-r9270-c36-tl",
+        "model": "DURA-ACE WH-R9270-C36-TL",
+        "lifecycleStatus": "current",
+        "verificationStatus": "verified",
+        "rim": {
+          "depthMm": 36,
+          "innerWidthMm": 21,
+          "outerWidthMm": 28
+        },
+        "nippleModel": "Shimano 14G aluminum nipple",
+        "nippleLengthMm": null,
+        "sourceUrl": "https://si.shimano.com/en/pdfs/ev/WH-R9270-C36-TL-R-4829C/EV-WH-R9270-C36-TL-R-4829C.pdf",
+        "wheels": [
+          {
+            "position": "front",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "Shimano DURA-ACE bladed 2.0-1.5-2.0 mm",
+                "headType": "straight-pull",
+                "lengthMm": 280.5
+              },
+              {
+                "side": "right",
+                "spokeModel": "Shimano DURA-ACE bladed 2.0-1.5-2.0 mm",
+                "headType": "straight-pull",
+                "lengthMm": 282
+              }
+            ]
+          },
+          {
+            "position": "rear",
+            "spokeCount": 24,
+            "lacingPattern": "2X / 2:1",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "Shimano DURA-ACE bladed 2.0-1.5-2.0 mm",
+                "headType": "straight-pull",
+                "lengthMm": 264
+              },
+              {
+                "side": "right",
+                "spokeModel": "Shimano DURA-ACE bladed 2.0-1.5-2.0 mm",
+                "headType": "straight-pull",
+                "lengthMm": 279
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "slug": "wh-r9270-c60-hr-tl",
+        "model": "DURA-ACE WH-R9270-C60-HR-TL",
+        "lifecycleStatus": "current",
+        "verificationStatus": "verified",
+        "rim": {
+          "depthMm": 60,
+          "innerWidthMm": 21,
+          "outerWidthMm": 28
+        },
+        "nippleModel": "Shimano 14G aluminum nipple",
+        "nippleLengthMm": null,
+        "sourceUrl": "https://si.shimano.com/en/pdfs/ev/WH-R9270-C60-HR-TL-R-4833C/EV-WH-R9270-C60-HR-TL-R-4833C.pdf",
+        "wheels": [
+          {
+            "position": "front",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "Shimano DURA-ACE HR bladed 2.0-1.8-2.0 mm",
+                "headType": "straight-pull",
+                "lengthMm": 248
+              },
+              {
+                "side": "right",
+                "spokeModel": "Shimano DURA-ACE HR bladed 2.0-1.8-2.0 mm",
+                "headType": "straight-pull",
+                "lengthMm": 248
+              }
+            ]
+          },
+          {
+            "position": "rear",
+            "spokeCount": 24,
+            "lacingPattern": "2X / 2:1",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "Shimano DURA-ACE HR bladed 2.0-1.8-2.0 mm",
+                "headType": "straight-pull",
+                "lengthMm": 241
+              },
+              {
+                "side": "right",
+                "spokeModel": "Shimano DURA-ACE HR bladed 2.0-1.8-2.0 mm",
+                "headType": "straight-pull",
+                "lengthMm": 257.5
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "slug": "wh-r8170-c50-tl",
+        "model": "ULTEGRA WH-R8170-C50-TL",
+        "lifecycleStatus": "current",
+        "verificationStatus": "verified",
+        "rim": {
+          "depthMm": 50,
+          "innerWidthMm": 21,
+          "outerWidthMm": 28
+        },
+        "nippleModel": "Shimano 14G aluminum nipple",
+        "nippleLengthMm": null,
+        "sourceUrl": "https://si.shimano.com/en/pdfs/ev/WH-R8170-C50-TL-R-4870B/EV-WH-R8170-C50-TL-R-4870B.pdf",
+        "wheels": [
+          {
+            "position": "front",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "Shimano ULTEGRA bladed 2.0-1.6-2.0 mm",
+                "headType": "straight-pull",
+                "lengthMm": 272
+              },
+              {
+                "side": "right",
+                "spokeModel": "Shimano ULTEGRA bladed 2.0-1.6-2.0 mm",
+                "headType": "straight-pull",
+                "lengthMm": 272
+              }
+            ]
+          },
+          {
+            "position": "rear",
+            "spokeCount": 24,
+            "lacingPattern": "2X / 2:1",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "Shimano ULTEGRA bladed 2.0-1.6-2.0 mm",
+                "headType": "straight-pull",
+                "lengthMm": 253
+              },
+              {
+                "side": "right",
+                "spokeModel": "Shimano ULTEGRA bladed 2.0-1.6-2.0 mm",
+                "headType": "straight-pull",
+                "lengthMm": 272
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "slug": "wh-r8170-c36-tl",
+        "model": "ULTEGRA WH-R8170-C36-TL",
+        "lifecycleStatus": "current",
+        "verificationStatus": "verified",
+        "rim": {
+          "depthMm": 36,
+          "innerWidthMm": 21,
+          "outerWidthMm": 28
+        },
+        "nippleModel": "Shimano 14G aluminum nipple",
+        "nippleLengthMm": null,
+        "sourceUrl": "https://si.shimano.com/en/pdfs/ev/WH-R8170-C36-TL-R-4868B/EV-WH-R8170-C36-TL-R-4868B.pdf",
+        "wheels": [
+          {
+            "position": "front",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "Shimano ULTEGRA bladed 2.0-1.6-2.0 mm",
+                "headType": "straight-pull",
+                "lengthMm": 286
+              },
+              {
+                "side": "right",
+                "spokeModel": "Shimano ULTEGRA bladed 2.0-1.6-2.0 mm",
+                "headType": "straight-pull",
+                "lengthMm": 286
+              }
+            ]
+          },
+          {
+            "position": "rear",
+            "spokeCount": 24,
+            "lacingPattern": "2X / 2:1",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "Shimano ULTEGRA bladed 2.0-1.6-2.0 mm",
+                "headType": "straight-pull",
+                "lengthMm": 265
+              },
+              {
+                "side": "right",
+                "spokeModel": "Shimano ULTEGRA bladed 2.0-1.6-2.0 mm",
+                "headType": "straight-pull",
+                "lengthMm": 284
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "slug": "wh-r8170-c60-tl",
+        "model": "ULTEGRA WH-R8170-C60-TL",
+        "lifecycleStatus": "current",
+        "verificationStatus": "verified",
+        "rim": {
+          "depthMm": 60,
+          "innerWidthMm": 21,
+          "outerWidthMm": 28
+        },
+        "nippleModel": "Shimano 14G aluminum nipple",
+        "nippleLengthMm": null,
+        "sourceUrl": "https://si.shimano.com/en/pdfs/ev/WH-R8170-C60-TL-R-4872B/EV-WH-R8170-C60-TL-R-4872B.pdf",
+        "wheels": [
+          {
+            "position": "front",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "Shimano ULTEGRA bladed 2.0-1.6-2.0 mm",
+                "headType": "straight-pull",
+                "lengthMm": 262
+              },
+              {
+                "side": "right",
+                "spokeModel": "Shimano ULTEGRA bladed 2.0-1.6-2.0 mm",
+                "headType": "straight-pull",
+                "lengthMm": 262
+              }
+            ]
+          },
+          {
+            "position": "rear",
+            "spokeCount": 24,
+            "lacingPattern": "2X / 2:1",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "Shimano ULTEGRA bladed 2.0-1.6-2.0 mm",
+                "headType": "straight-pull",
+                "lengthMm": 244
+              },
+              {
+                "side": "right",
+                "spokeModel": "Shimano ULTEGRA bladed 2.0-1.6-2.0 mm",
+                "headType": "straight-pull",
+                "lengthMm": 262
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "slug": "wh-rs710-c46-tl",
+        "model": "105 WH-RS710-C46-TL",
+        "lifecycleStatus": "current",
+        "verificationStatus": "verified",
+        "rim": {
+          "depthMm": 46,
+          "innerWidthMm": 21,
+          "outerWidthMm": 28
+        },
+        "nippleModel": "Shimano 14G aluminum nipple",
+        "nippleLengthMm": null,
+        "sourceUrl": "https://si.shimano.com/en/pdfs/ev/WH-RS710-C46-TL-R-4991A/EV-WH-RS710-C46-TL-R-4991A.pdf",
+        "wheels": [
+          {
+            "position": "front",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "Shimano 105 bladed 2.0-1.6-2.0 mm",
+                "headType": "j-bend",
+                "lengthMm": 265.5
+              },
+              {
+                "side": "right",
+                "spokeModel": "Shimano 105 bladed 2.0-1.6-2.0 mm",
+                "headType": "j-bend",
+                "lengthMm": 267.5
+              }
+            ]
+          },
+          {
+            "position": "rear",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "Shimano 105 bladed 2.0-1.6-2.0 mm",
+                "headType": "j-bend",
+                "lengthMm": 267.5
+              },
+              {
+                "side": "right",
+                "spokeModel": "Shimano 105 bladed 2.0-1.6-2.0 mm",
+                "headType": "j-bend",
+                "lengthMm": 265.5
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "slug": "wh-rs710-c32-tl",
+        "model": "105 WH-RS710-C32-TL",
+        "lifecycleStatus": "current",
+        "verificationStatus": "verified",
+        "rim": {
+          "depthMm": 32,
+          "innerWidthMm": 21,
+          "outerWidthMm": 28
+        },
+        "nippleModel": "Shimano 14G aluminum nipple",
+        "nippleLengthMm": null,
+        "sourceUrl": "https://si.shimano.com/en/pdfs/ev/WH-RS710-C32-TL-R-4989A/EV-WH-RS710-C32-TL-R-4989A.pdf",
+        "wheels": [
+          {
+            "position": "front",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "Shimano 105 bladed 2.0-1.6-2.0 mm",
+                "headType": "j-bend",
+                "lengthMm": 279
+              },
+              {
+                "side": "right",
+                "spokeModel": "Shimano 105 bladed 2.0-1.6-2.0 mm",
+                "headType": "j-bend",
+                "lengthMm": 281.5
+              }
+            ]
+          },
+          {
+            "position": "rear",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "Shimano 105 bladed 2.0-1.6-2.0 mm",
+                "headType": "j-bend",
+                "lengthMm": 279
+              },
+              {
+                "side": "right",
+                "spokeModel": "Shimano 105 bladed 2.0-1.6-2.0 mm",
+                "headType": "j-bend",
+                "lengthMm": 281.5
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "slug": "wh-rx880-tl",
+        "model": "GRX WH-RX880-TL",
+        "lifecycleStatus": "current",
+        "verificationStatus": "verified",
+        "rim": {
+          "depthMm": 32,
+          "innerWidthMm": 25,
+          "outerWidthMm": 30.7
+        },
+        "nippleModel": "Shimano 14G aluminum nipple",
+        "nippleLengthMm": null,
+        "sourceUrl": "https://si.shimano.com/en/pdfs/ev/WH-RX880-TL-R12-5118A/EV-WH-RX880-TL-R12-5118A.pdf",
+        "wheels": [
+          {
+            "position": "front",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "Shimano GRX bladed 2.0-1.6-2.0 mm",
+                "headType": "j-bend",
+                "lengthMm": 281.5
+              },
+              {
+                "side": "right",
+                "spokeModel": "Shimano GRX bladed 2.0-1.6-2.0 mm",
+                "headType": "j-bend",
+                "lengthMm": 283
+              }
+            ]
+          },
+          {
+            "position": "rear",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "Shimano GRX bladed 2.0-1.6-2.0 mm",
+                "headType": "j-bend",
+                "lengthMm": 280
+              },
+              {
+                "side": "right",
+                "spokeModel": "Shimano GRX bladed 2.0-1.6-2.0 mm",
+                "headType": "j-bend",
+                "lengthMm": 279
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "slug": "wh-m8100-tl-29",
+        "model": "DEORE XT WH-M8100-TL-29 (Boost)",
+        "lifecycleStatus": "current",
+        "verificationStatus": "verified",
+        "rim": {
+          "depthMm": 18.8,
+          "innerWidthMm": 24,
+          "outerWidthMm": 27.9
+        },
+        "nippleModel": "Shimano 14G aluminum nipple with spherical washer",
+        "nippleLengthMm": null,
+        "sourceUrl": "https://si.shimano.com/en/pdfs/ev/WH-M8100-TL-R12-B-4555B/EV-WH-M8100-TL-R12-B-4555B.pdf",
+        "wheels": [
+          {
+            "position": "front",
+            "spokeCount": 28,
+            "lacingPattern": "3X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "Shimano XT butted 2.0-1.5-2.0 mm",
+                "headType": "straight-pull",
+                "lengthMm": 301.5
+              },
+              {
+                "side": "right",
+                "spokeModel": "Shimano XT butted 2.0-1.5-2.0 mm",
+                "headType": "straight-pull",
+                "lengthMm": 301.5
+              }
+            ]
+          },
+          {
+            "position": "rear",
+            "spokeCount": 28,
+            "lacingPattern": "3X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "Shimano XT butted 2.0-1.5-2.0 mm",
+                "headType": "straight-pull",
+                "lengthMm": 301.5
+              },
+              {
+                "side": "right",
+                "spokeModel": "Shimano XT butted 2.0-1.5-2.0 mm",
+                "headType": "straight-pull",
+                "lengthMm": 298
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

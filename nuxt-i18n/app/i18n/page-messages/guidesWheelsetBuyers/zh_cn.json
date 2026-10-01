@@ -11,12 +11,8 @@
       "description": "骑行和维护前需要完成的核心安全检查。"
     },
     "sampleAssembly": {
-      "label": "轮组组装服务",
-      "description": "了解仅限中国大陆的服务范围、寄送流程、费用和部件要求。"
-    },
-    "specialOrder": {
-      "label": "特殊订单",
-      "description": "了解定制订单选项和需求说明。"
+      "label": "轮组组装与定制服务",
+      "description": "了解中国大陆组装服务、大小轮、单轮替换、混合车圈和定制费用。"
     },
     "appearanceLogo": {
       "label": "外观与标识",
@@ -25,16 +21,6 @@
     "chooseFreehub": {
       "label": "选择塔基",
       "description": "了解塔基选择与传动系统兼容性。"
-    },
-    "wheelComponents": {
-      "label": "轮组部件",
-      "description": "了解花鼓、车圈、辐条、辐条帽和组装部件。"
     }
-  },
-  "componentSections": {
-    "hubs": "1. 花鼓",
-    "rims": "2. 车圈",
-    "spokes": "3. 辐条",
-    "nipples": "4. 辐条帽"
   }
 }

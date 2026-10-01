@@ -20,10 +20,6 @@
       @change-tab="setActiveTab" 
     />
     
-    <WarrantyProtectionTab
-      v-if="activeTab === 'protection'"
-    />
-    
     <WarrantySubmitClaimTab
       v-if="activeTab === 'submit-warranty'"
     />
@@ -36,7 +32,6 @@ import { computed, watch } from 'vue'
 import WarrantyDamagedLostTab from '~/components/warranty/DamagedLostTab.vue'
 import WarrantyWarrantyPolicyTab from '~/components/warranty/WarrantyPolicyTab.vue'
 import WarrantyAccidentalDamageTab from '~/components/warranty/AccidentalDamageTab.vue'
-import WarrantyProtectionTab from '~/components/warranty/ProtectionTab.vue'
 import WarrantySubmitClaimTab from '~/components/warranty/SubmitClaimTab.vue'
 import { usePageSubNavigationTab } from '~/composables/usePageSubNavigationTab'
 import { warrantyTabs } from '~/utils/pageSubNavigation'

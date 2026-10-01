@@ -2,6 +2,10 @@
   <div class="flex h-full min-h-0 flex-col gap-3 overflow-hidden">
     <AdminPageHeader class="shrink-0" title="FAQ 管理" description="维护常见问题、页面归属、发布状态和展示顺序">
       <template #actions>
+        <Button v-if="hasPermission('faq:edit')" variant="outline" :disabled="structureLoading" @click="syncStorefrontRoutes">
+          <RefreshCw class="size-4" :class="{ 'animate-spin': structureLoading }" />
+          同步前台路由
+        </Button>
         <Button v-if="hasPermission('faq:create')" @click="showCreateDialog">
           <Plus class="size-4" />
           添加 FAQ
@@ -35,6 +39,8 @@
       :status-name="statusName"
       :visibility-name="visibilityName"
       :visibility-tone="visibilityTone"
+      :route-status-name="routeStatusName"
+      :route-status-tone="routeStatusTone"
       :domain-name="domainName"
       @switch-locale="switchStructureLocale"
       @toggle-faq="toggleFAQ"
@@ -79,7 +85,7 @@
 </template>
 
 <script setup lang="ts">
-import { Plus } from '@lucide/vue'
+import { Plus, RefreshCw } from '@lucide/vue'
 import type { FAQStructurePage } from '@/lib/faqAdminPresentation'
 import AdminConfirmDialog from '@/components/admin/AdminConfirmDialog.vue'
 import AdminPageHeader from '@/components/admin/AdminPageHeader.vue'
@@ -120,6 +126,8 @@ const {
   statusTone,
   visibilityName,
   visibilityTone,
+  routeStatusName,
+  routeStatusTone,
   domainName,
   plainTextFromHTML,
   clearFieldError,
@@ -132,6 +140,7 @@ const {
   submitForm,
   showPageDialog,
   submitPageForm,
+  syncStorefrontRoutes,
   isSelected,
   toggleFAQ,
   requestDelete,

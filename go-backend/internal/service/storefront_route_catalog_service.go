@@ -20,6 +20,7 @@ type StorefrontRouteCatalogService struct {
 	internalBaseURL string
 	httpClient      *http.Client
 	issueReconciler storefrontRouteCatalogIssueReconciler
+	faqReconciler   storefrontFAQRouteReconciler
 	tasksMu         sync.RWMutex
 	checkTasks      map[string]*storefrontRouteCatalogCheckTask
 }
@@ -27,6 +28,10 @@ type StorefrontRouteCatalogService struct {
 type storefrontRouteCatalogIssueReconciler interface {
 	ReconcileCatalog(ctx context.Context) error
 	ReconcileEntry(ctx context.Context, routeEntryID uint, latestCheckResultID *uint) error
+}
+
+type storefrontFAQRouteReconciler interface {
+	ReconcileStorefrontRoutes(ctx context.Context, manifest seodomain.StorefrontRouteManifest) (FAQRouteSyncSummary, error)
 }
 
 func NewStorefrontRouteCatalogService(
@@ -61,14 +66,27 @@ func (s *StorefrontRouteCatalogService) ConfigureIssueReconciler(
 	s.issueReconciler = reconciler
 }
 
+// ConfigureFAQRouteReconciler connects route-catalog snapshots to the FAQ
+// page structure. URL syncs and startup syncs then repair FAQ route metadata
+// in the same operation.
+func (s *StorefrontRouteCatalogService) ConfigureFAQRouteReconciler(
+	reconciler storefrontFAQRouteReconciler,
+) {
+	if s == nil {
+		return
+	}
+	s.faqReconciler = reconciler
+}
+
 type StorefrontRouteCatalogSyncSummary struct {
-	ManifestVersion string `json:"manifest_version"`
-	Entries         int    `json:"entries"`
-	StaticEntries   int    `json:"static_entries"`
-	ProductEntries  int    `json:"product_entries"`
-	BlogEntries     int    `json:"blog_entries"`
-	AliasEntries    int    `json:"alias_entries"`
-	Duplicates      int    `json:"duplicates"`
+	ManifestVersion string              `json:"manifest_version"`
+	Entries         int                 `json:"entries"`
+	StaticEntries   int                 `json:"static_entries"`
+	ProductEntries  int                 `json:"product_entries"`
+	BlogEntries     int                 `json:"blog_entries"`
+	AliasEntries    int                 `json:"alias_entries"`
+	Duplicates      int                 `json:"duplicates"`
+	FAQ             FAQRouteSyncSummary `json:"faq"`
 }
 
 type StorefrontRouteCatalogCheckSummary struct {

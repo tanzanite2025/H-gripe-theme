@@ -84,6 +84,46 @@ func TestFAQServicePublicPageRejectsHiddenPage(t *testing.T) {
 	require.ErrorIs(t, err, ErrFAQNotFound)
 }
 
+func TestFAQServicePublicEndpointsHideStaleFAQPages(t *testing.T) {
+	db, faqService := newTestFAQService(t)
+
+	stalePage := faqdomain.FAQPage{
+		PageID:      "legacy-page",
+		RoutePath:   "/legacy-page",
+		RouteStatus: FAQRouteStatusStale,
+		Locale:      "en",
+		Title:       "Legacy",
+		Status:      "active",
+	}
+	require.NoError(t, db.Create(&stalePage).Error)
+
+	staleFAQ := faqdomain.FAQ{
+		PageID:   stalePage.PageID,
+		Question: "Legacy question",
+		Answer:   "<p>Legacy answer</p>",
+		Status:   "published",
+		Locale:   "en",
+	}
+	require.NoError(t, db.Create(&staleFAQ).Error)
+
+	_, err := faqService.GetPublicByID(staleFAQ.ID)
+	require.ErrorIs(t, err, ErrFAQNotFound)
+
+	items, total, err := faqService.List("en", "", "published", 1, 20)
+	require.NoError(t, err)
+	assert.Empty(t, items)
+	assert.Zero(t, total)
+
+	items, total, err = faqService.Search("Legacy", "en", 1, 20)
+	require.NoError(t, err)
+	assert.Empty(t, items)
+	assert.Zero(t, total)
+
+	items, err = faqService.GetPopular("en", 10)
+	require.NoError(t, err)
+	assert.Empty(t, items)
+}
+
 func newTestFAQService(t *testing.T) (*gorm.DB, *FAQService) {
 	t.Helper()
 

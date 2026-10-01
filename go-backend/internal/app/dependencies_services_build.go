@@ -411,6 +411,7 @@ func (b *dependencyServicesBuilder) build() error {
 		Shipping:                  shippingService,
 		FpxAPI:                    service.NewFpxAPIService(b.repos.FpxAPIConfig, b.repos.Shipping),
 		Spoke:                     service.NewSpokeService(b.repos.Spoke),
+		WheelsetLacing:            service.NewWheelsetLacingService(),
 		QuickBuy:                  service.NewQuickBuyService(b.repos.QuickBuy, b.repos.Product, b.repos.ProductCategory),
 		SelectionAssistant:        service.NewSelectionAssistantService(b.repos.SelectionAssistant),
 		SelectionConfigurationKey: service.NewSelectionConfigurationKeyService(b.repos.SelectionConfigurationKey),

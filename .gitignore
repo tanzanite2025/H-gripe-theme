@@ -60,3 +60,7 @@ docs/design/schwalbe-tire/*
 !/docs/design/schwalbe-tire/README.md
 /html资料/
 /preview-schwalbe-tire-selector.html
+
+# Local confidential documentation (keep out of future commits)
+**/docs/
+**/html资料/

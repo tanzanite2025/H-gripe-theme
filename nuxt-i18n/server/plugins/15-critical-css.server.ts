@@ -29,7 +29,17 @@ const escapeScriptText = (value: string): string => value.replace(/<\/script/gi,
 const loadCriticalCss = (): string => {
   if (isTruthyEnv(process.env.NUXT_CRITICAL_CSS_DISABLED)) return ''
 
-  const currentDirectory = dirname(fileURLToPath(import.meta.url))
+  // Nitro bundles server plugins through an import-meta shim. On Windows the
+  // standalone node-server preset can expose that shim as `file:///_entry.js`,
+  // which is not a valid Windows file URL and makes fileURLToPath throw before
+  // the normal cwd-based candidates can be checked. The cwd candidates are
+  // sufficient for the production artifact, so keep them as the safe fallback.
+  let currentDirectory = process.cwd()
+  try {
+    currentDirectory = dirname(fileURLToPath(import.meta.url))
+  } catch {
+    currentDirectory = process.cwd()
+  }
   const candidates = [
     process.env.NUXT_CRITICAL_CSS_HOME_PATH || '',
     resolve(process.cwd(), '.output/server/critical-css', CRITICAL_CSS_FILENAME),

@@ -146,10 +146,11 @@ const formatPageIndex = (index: number) => String(index + 1).padStart(2, '0')
 
 <style scoped>
 .faqs-page {
-  width: 100%; /* Use full available width (parent handles padding) */
+  width: 100%;
   max-width: none;
   margin: 0 auto;
-  padding: 0;
+  padding-inline: 1rem;
+  box-sizing: border-box;
 }
 
 .faqs-page__title,
@@ -232,8 +233,8 @@ const formatPageIndex = (index: number) => String(index + 1).padStart(2, '0')
 
 @media (min-width: 768px) {
   .faqs-page {
-    max-width: min(100rem, calc(100vw - 5rem));
-    padding: 2rem 0 0;
+    padding: 2rem 1.25rem 2.25rem;
+    border-radius: 1.25rem;
     background-color: var(--tz-card-surface);
     background-image: radial-gradient(rgba(20, 32, 43, 0.04) 1px, transparent 0);
     background-size: 24px 24px;
@@ -440,7 +441,7 @@ const formatPageIndex = (index: number) => String(index + 1).padStart(2, '0')
   }
 
   .faqs-load-more {
-    margin-left: clamp(15rem, 21vw, 18rem);
+    margin-left: calc(clamp(15rem, 21vw, 18rem) + 1.5rem);
   }
 
   .faqs-empty {

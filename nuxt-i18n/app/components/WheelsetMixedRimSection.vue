@@ -1,7 +1,7 @@
 <template>
   <div class="wheelset-guide-subsection">
     <p class="wheelset-guide-step__body">
-      {{ t('guidesWheelsetBuyersSpecialOrder.mixedRim.body') }}
+      {{ t('guidesWheelsetBuyersSample.customBuilds.mixedRim.body') }}
     </p>
 
     <div class="wheelset-guide-actions">
@@ -10,58 +10,58 @@
         class="wheelset-guide-button"
         @click="openQuickBuy"
       >
-        {{ t('guidesWheelsetBuyersSpecialOrder.mixedRim.builderButton') }}
+        {{ t('guidesWheelsetBuyersSample.customBuilds.mixedRim.builderButton') }}
       </button>
       <button
         type="button"
         class="wheelset-guide-button wheelset-guide-button--solid"
         @click="openWhatsAppChat"
       >
-        {{ t('guidesWheelsetBuyersSpecialOrder.mixedRim.expertButton') }}
+        {{ t('guidesWheelsetBuyersSample.customBuilds.mixedRim.expertButton') }}
       </button>
     </div>
 
     <div class="wheelset-guide-panel-grid">
       <div class="wheelset-guide-panel">
-        <strong>{{ t('guidesWheelsetBuyersSpecialOrder.mixedRim.differentModels.title') }}</strong>
+        <strong>{{ t('guidesWheelsetBuyersSample.customBuilds.mixedRim.differentModels.title') }}</strong>
         <p>
-          {{ t('guidesWheelsetBuyersSpecialOrder.mixedRim.differentModels.body') }}
+          {{ t('guidesWheelsetBuyersSample.customBuilds.mixedRim.differentModels.body') }}
         </p>
       </div>
 
       <div class="wheelset-guide-panel">
-        <strong>{{ t('guidesWheelsetBuyersSpecialOrder.mixedRim.differentHeights.title') }}</strong>
+        <strong>{{ t('guidesWheelsetBuyersSample.customBuilds.mixedRim.differentHeights.title') }}</strong>
         <p>
-          {{ t('guidesWheelsetBuyersSpecialOrder.mixedRim.differentHeights.body') }}
+          {{ t('guidesWheelsetBuyersSample.customBuilds.mixedRim.differentHeights.body') }}
         </p>
       </div>
     </div>
 
     <div>
       <h4 class="wheelset-guide-kicker">
-        {{ t('guidesWheelsetBuyersSpecialOrder.mixedRim.cheatsheet') }}
+        {{ t('guidesWheelsetBuyersSample.customBuilds.mixedRim.cheatsheet') }}
       </h4>
 
       <div class="wheelset-guide-panel-grid">
         <div class="wheelset-guide-panel">
-          <strong>{{ t('guidesWheelsetBuyersSpecialOrder.mixedRim.climbing.title') }}</strong>
-          <p>{{ t('guidesWheelsetBuyersSpecialOrder.mixedRim.climbing.sizes') }}</p>
-          <p>{{ t('guidesWheelsetBuyersSpecialOrder.mixedRim.climbing.body') }}</p>
+          <strong>{{ t('guidesWheelsetBuyersSample.customBuilds.mixedRim.climbing.title') }}</strong>
+          <p>{{ t('guidesWheelsetBuyersSample.customBuilds.mixedRim.climbing.sizes') }}</p>
+          <p>{{ t('guidesWheelsetBuyersSample.customBuilds.mixedRim.climbing.body') }}</p>
         </div>
         <div class="wheelset-guide-panel">
-          <strong>{{ t('guidesWheelsetBuyersSpecialOrder.mixedRim.aero.title') }}</strong>
-          <p>{{ t('guidesWheelsetBuyersSpecialOrder.mixedRim.aero.sizes') }}</p>
-          <p>{{ t('guidesWheelsetBuyersSpecialOrder.mixedRim.aero.body') }}</p>
+          <strong>{{ t('guidesWheelsetBuyersSample.customBuilds.mixedRim.aero.title') }}</strong>
+          <p>{{ t('guidesWheelsetBuyersSample.customBuilds.mixedRim.aero.sizes') }}</p>
+          <p>{{ t('guidesWheelsetBuyersSample.customBuilds.mixedRim.aero.body') }}</p>
         </div>
         <div class="wheelset-guide-panel">
-          <strong>{{ t('guidesWheelsetBuyersSpecialOrder.mixedRim.training.title') }}</strong>
-          <p>{{ t('guidesWheelsetBuyersSpecialOrder.mixedRim.training.sizes') }}</p>
-          <p>{{ t('guidesWheelsetBuyersSpecialOrder.mixedRim.training.body') }}</p>
+          <strong>{{ t('guidesWheelsetBuyersSample.customBuilds.mixedRim.training.title') }}</strong>
+          <p>{{ t('guidesWheelsetBuyersSample.customBuilds.mixedRim.training.sizes') }}</p>
+          <p>{{ t('guidesWheelsetBuyersSample.customBuilds.mixedRim.training.body') }}</p>
         </div>
         <div class="wheelset-guide-panel">
-          <strong>{{ t('guidesWheelsetBuyersSpecialOrder.mixedRim.versatile.title') }}</strong>
-          <p>{{ t('guidesWheelsetBuyersSpecialOrder.mixedRim.versatile.sizes') }}</p>
-          <p>{{ t('guidesWheelsetBuyersSpecialOrder.mixedRim.versatile.body') }}</p>
+          <strong>{{ t('guidesWheelsetBuyersSample.customBuilds.mixedRim.versatile.title') }}</strong>
+          <p>{{ t('guidesWheelsetBuyersSample.customBuilds.mixedRim.versatile.sizes') }}</p>
+          <p>{{ t('guidesWheelsetBuyersSample.customBuilds.mixedRim.versatile.body') }}</p>
         </div>
       </div>
     </div>

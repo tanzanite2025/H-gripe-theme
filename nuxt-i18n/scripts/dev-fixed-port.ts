@@ -11,6 +11,9 @@ const port = Number(process.env.NUXT_PORT || process.env.PORT || 9199)
 const retryCount = Number(process.env.NUXT_PORT_CHECK_RETRIES || 20)
 const retryDelayMs = Number(process.env.NUXT_PORT_CHECK_DELAY_MS || 500)
 
+process.env.NUXT_PUBLIC_API_BASE ??= 'http://localhost:9200/api/v1'
+process.env.API_INTERNAL_ORIGIN ??= 'http://localhost:9200'
+
 if (!Number.isInteger(port) || port <= 0 || port > 65535) {
   console.error(`Invalid dev port: ${process.env.NUXT_PORT || process.env.PORT}`)
   process.exit(1)

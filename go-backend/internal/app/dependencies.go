@@ -209,6 +209,7 @@ type Services struct {
 	Shipping                           *service.ShippingService
 	FpxAPI                             *service.FpxAPIService
 	Spoke                              *service.SpokeService
+	WheelsetLacing                     *service.WheelsetLacingService
 	QuickBuy                           *service.QuickBuyService
 	SelectionAssistant                 *service.SelectionAssistantService
 	SelectionConfigurationKey          *service.SelectionConfigurationKeyService

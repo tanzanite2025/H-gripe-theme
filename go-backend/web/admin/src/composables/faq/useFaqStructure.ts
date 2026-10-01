@@ -145,6 +145,17 @@ export function useFaqStructure({ languages, defaultLocale, onChanged }: UseFaqS
     }
   }
 
+  const syncStorefrontRoutes = async (): Promise<void> => {
+    try {
+      await faqAdminApi.syncRoutes()
+      await refreshFAQStructure()
+      toast.success('前台路由与 FAQ 页面已同步')
+    } catch (error) {
+      console.error('Failed to sync storefront FAQ routes:', error)
+      toast.error('前台路由同步失败')
+    }
+  }
+
   watch(localeCodes, (codes) => {
     syncStructureLocales(codes)
   }, { immediate: true })
@@ -164,5 +175,6 @@ export function useFaqStructure({ languages, defaultLocale, onChanged }: UseFaqS
     switchStructureLocale,
     showPageDialog,
     submitPageForm,
+    syncStorefrontRoutes,
   }
 }

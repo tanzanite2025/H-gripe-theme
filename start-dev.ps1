@@ -18,11 +18,21 @@ if (-not [string]::IsNullOrWhiteSpace($redisHostPortOverride)) {
   $redisHostPort = $parsedRedisHostPort
 }
 
+$siteQualityRunnerHostPort = 10243
+$siteQualityRunnerHostPortOverride = [Environment]::GetEnvironmentVariable('SITE_QUALITY_RUNNER_HOST_PORT', 'Process')
+if (-not [string]::IsNullOrWhiteSpace($siteQualityRunnerHostPortOverride)) {
+  $parsedSiteQualityRunnerHostPort = 0
+  if (-not [int]::TryParse($siteQualityRunnerHostPortOverride, [ref]$parsedSiteQualityRunnerHostPort) -or $parsedSiteQualityRunnerHostPort -lt 1 -or $parsedSiteQualityRunnerHostPort -gt 65535) {
+    throw "SITE_QUALITY_RUNNER_HOST_PORT must be a valid TCP port between 1 and 65535"
+  }
+  $siteQualityRunnerHostPort = $parsedSiteQualityRunnerHostPort
+}
+
 $Ports = [ordered]@{
-  Storefront = 9199
-  Api        = 9200
-  Admin      = 9300
-  SiteQualityRunner = 9240
+  Storefront = 10240
+  Api        = 10241
+  Admin      = 10242
+  SiteQualityRunner = $siteQualityRunnerHostPort
   Postgres   = 9400
   Redis      = $redisHostPort
 }
@@ -337,9 +347,11 @@ foreach ($port in $AppPorts) {
 
 Write-Section 'Starting PostgreSQL / Redis / Site Quality runner'
 $env:SITE_QUALITY_ALLOWED_ORIGIN = "http://host.docker.internal:$($Ports.Storefront)"
+$env:SITE_QUALITY_RUNNER_HOST_PORT = [string]$Ports.SiteQualityRunner
 Push-Location $Root
 try {
-  docker compose up -d postgres redis site-quality-runner | Out-Host
+  docker compose up -d postgres redis | Out-Host
+  docker compose up -d --force-recreate site-quality-runner | Out-Host
 } finally {
   Pop-Location
 }
@@ -420,8 +432,9 @@ if ($apiReady) {
 Write-Section 'Starting Nuxt Storefront'
 Clear-StorefrontIconCache
 $storefrontCommand = @"
-`$env:NUXT_PUBLIC_API_BASE='http://localhost:$($Ports.Api)'
+`$env:NUXT_PUBLIC_API_BASE='http://localhost:$($Ports.Api)/api/v1'
 `$env:API_INTERNAL_ORIGIN='http://localhost:$($Ports.Api)'
+`$env:NUXT_PORT='$($Ports.Storefront)'
 `$env:NUXT_HTML_CACHE_ENABLED='false'
 `$env:NUXT_HTML_CACHE_DRIVER='memory'
 `$env:NUXT_HTML_CACHE_PURGE_TOKEN='dev-html-cache-purge-token'
@@ -436,6 +449,8 @@ if (-not (Wait-DevHttpReady -Name 'Nuxt Storefront' -Process $storefrontProcess 
 Write-Section 'Starting Admin Console'
 $adminCommand = @"
 `$env:VITE_API_BASE_URL=''
+`$env:VITE_API_ORIGIN='http://localhost:$($Ports.Api)'
+`$env:VITE_PORT='$($Ports.Admin)'
 npm run dev
 "@
 $adminProcess = Start-DevProcess -Name 'Admin Console' -WorkingDirectory (Join-Path $Root 'go-backend/web/admin') -Command $adminCommand -LogName 'admin'

@@ -95,11 +95,7 @@ func (s *FAQService) UpsertAdminPage(pageID string, input FAQPageAdminInput) (*f
 		if !IsRecordNotFound(err) {
 			return nil, err
 		}
-		existingPage = &faq.FAQPage{
-			PageID:    pageID,
-			Locale:    locale,
-			RoutePath: strings.TrimSpace(input.RoutePath),
-		}
+		return nil, fmt.Errorf("faq page %q must be created by storefront route sync", pageID)
 	}
 
 	existingPage.Domain = strings.TrimSpace(input.Domain)

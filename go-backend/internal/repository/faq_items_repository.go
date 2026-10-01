@@ -7,6 +7,23 @@ import (
 	"gorm.io/gorm/clause"
 )
 
+// applyPublicFAQPageScope hides FAQ rows whose database-owned page is hidden
+// or no longer backed by a current storefront route. Rows without a page
+// record remain visible for backwards compatibility with legacy/global FAQs.
+func applyPublicFAQPageScope(query *gorm.DB) *gorm.DB {
+	return query.Where(`NOT EXISTS (
+		SELECT 1
+		FROM faq_pages AS public_faq_page
+		WHERE public_faq_page.page_id = faqs.page_id
+		  AND public_faq_page.locale = faqs.locale
+		  AND public_faq_page.deleted_at IS NULL
+		  AND (
+			public_faq_page.status <> 'active'
+			OR public_faq_page.route_status IN ('stale', 'missing')
+		  )
+	)`)
+}
+
 // Create 创建FAQ
 func (r *FAQRepository) Create(f *faq.FAQ) error {
 	return r.db.Create(f).Error
@@ -37,7 +54,7 @@ func (r *FAQRepository) List(locale, pageID, status string, offset, limit int) (
 	var faqs []faq.FAQ
 	var total int64
 
-	query := r.db.Model(&faq.FAQ{})
+	query := applyPublicFAQPageScope(r.db.Model(&faq.FAQ{}))
 
 	if locale != "" {
 		query = query.Where("locale = ?", locale)
@@ -114,7 +131,7 @@ func (r *FAQRepository) Search(keyword, locale string, offset, limit int) ([]faq
 	var faqs []faq.FAQ
 	var total int64
 
-	query := r.db.Model(&faq.FAQ{}).Where("status = ?", "published")
+	query := applyPublicFAQPageScope(r.db.Model(&faq.FAQ{})).Where("status = ?", "published")
 
 	if locale != "" {
 		query = query.Where("locale = ?", locale)
@@ -164,7 +181,7 @@ func (r *FAQRepository) IncrementViewCount(id uint) error {
 // GetPopular 获取热门FAQ
 func (r *FAQRepository) GetPopular(locale string, limit int) ([]faq.FAQ, error) {
 	var faqs []faq.FAQ
-	query := r.db.Where("status = ?", "published")
+	query := applyPublicFAQPageScope(r.db.Model(&faq.FAQ{})).Where("status = ?", "published")
 
 	if locale != "" {
 		query = query.Where("locale = ?", locale)

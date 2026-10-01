@@ -314,6 +314,11 @@ export default defineNuxtConfig({
 
   icon: {
     localApiEndpoint: '/_nuxt_icon',
+    // All storefront icons come from the bundled lucide collection. Do not
+    // fall back to api.iconify.design, which is not part of the storefront
+    // CSP connect-src allowlist and would turn a missing local icon into a
+    // browser CSP error.
+    fallbackToApi: false,
     // CSS mode inserts style elements at runtime. SVG keeps icon rendering
     // compatible with the hash-based CSP used by cached SSR HTML.
     mode: 'svg',

@@ -80,6 +80,11 @@ export const faqAdminApi = {
     const endpoint = `/api/admin/faqs/pages/${pageID}`
     return requireApiObjectField(readObjectPayload(await axios.put(endpoint, payload), endpoint), 'page', endpoint)
   },
+
+  async syncRoutes() {
+    const endpoint = '/api/admin/faqs/routes/sync'
+    return readObjectPayload(await axios.post(endpoint), endpoint)
+  },
 }
 
 export default faqAdminApi

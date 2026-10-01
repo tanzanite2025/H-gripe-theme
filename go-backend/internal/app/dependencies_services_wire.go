@@ -74,6 +74,7 @@ func (b *dependencyServicesBuilder) wire() error {
 	services.Post.SetStorefrontHTMLCacheInvalidator(support.StorefrontHTMLCacheInvalidator)
 	services.FAQ.SetStorefrontHTMLCacheInvalidator(support.StorefrontHTMLCacheInvalidator)
 	services.FAQ.SetStorefrontContentReleaseNotifier(support.StorefrontContentReleaseNotifier)
+	services.StorefrontRouteCatalog.ConfigureFAQRouteReconciler(services.FAQ)
 	services.SEO.SetStorefrontHTMLCacheInvalidator(support.StorefrontHTMLCacheInvalidator)
 	services.AdminSettings = service.NewAdminSettingsService(services.Setting)
 	services.AdminPublicChat = service.NewAdminPublicChatAgentService(repos.User)

@@ -98,10 +98,14 @@
               <span class="mb-1 flex flex-wrap items-center gap-2">
                 <AdminStatusBadge tone="blue">{{ domainName(page.domain) }}</AdminStatusBadge>
                 <AdminStatusBadge :tone="visibilityTone(page.status)">{{ visibilityName(page.status) }}</AdminStatusBadge>
+                <AdminStatusBadge :tone="routeStatusTone(page.route_status)">{{ routeStatusName(page.route_status) }}</AdminStatusBadge>
               </span>
               <span class="block truncate text-sm font-black">{{ page.title || page.page_id }}</span>
               <span class="mt-1 block truncate font-mono text-[11px] text-muted-foreground">
                 {{ page.route_path || page.page_id }}
+              </span>
+              <span v-if="page.route_key" class="mt-1 block truncate font-mono text-[10px] text-muted-foreground/80">
+                {{ page.route_key }} · manifest {{ page.manifest_version || '-' }} · {{ page.last_seen_at || '未同步' }}
               </span>
             </span>
           </button>
@@ -276,6 +280,8 @@ const props = withDefaults(defineProps<{
   statusName: (status?: string | null) => string
   visibilityName: (status?: string | null) => string
   visibilityTone: (status?: string | null) => FAQStatusTone
+  routeStatusName: (status?: string | null) => string
+  routeStatusTone: (status?: string | null) => FAQStatusTone
   domainName: (domain?: string | null) => string
 }>(), {
   loading: false,

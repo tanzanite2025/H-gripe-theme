@@ -13,10 +13,6 @@
       "label": "Accidental Damage",
       "description": "Support for accidental riding or handling damage."
     },
-    "protection": {
-      "label": "Protection",
-      "description": "Protection options and service expectations."
-    },
     "submitWarranty": {
       "label": "Submit Warranty",
       "description": "Submit documents and start a warranty request."

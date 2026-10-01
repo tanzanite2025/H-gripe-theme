@@ -102,7 +102,7 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 	paymentRefundRecommendationHandler.ConfigureAuditService(services.Audit)
 	contentHandler := NewContentHandler(postService)
 	blogCategoryHandler := NewBlogCategoryHandler(services.BlogCategory)
-	faqHandler := NewFAQHandler(services.FAQ)
+	faqHandler := NewFAQHandler(services.FAQ, services.StorefrontRouteCatalog)
 	galleryHandler := NewGalleryHandler(services.Gallery)
 	subscriptionHandler := NewSubscriptionHandler(services.Subscription)
 	ticketHandler := NewTicketHandler(services.Ticket, services.CustomerServiceContext, services.CustomerServiceAnalytics, services.CustomerServiceEvents, services.Media)

@@ -201,11 +201,11 @@ STOREFRONT_HTML_CACHE_PURGE_DEBOUNCE_MS=500
 | --- | --- | --- |
 | `/products/**` | Go 商品详情、商品媒体、SKU 等公开数据 | 不缓存 HTML；购物车和结账 API 实时校验价格、配置和库存 |
 | `/blog/**` | Go 文章列表和文章详情，失败时回退本地 mock | 文章写操作触发 HTML purge |
-| `/support/faqs` 和各页面 `PageFaq` | Go FAQ，失败时回退本地 FAQ 文件 | FAQ 写操作、排序操作触发 HTML purge |
+| `/support/faqs` 和各页面 `PageFaq` | Go FAQ；路由和页面壳由 storefront route manifest 同步 | FAQ 写操作、排序操作和 FAQ 路由同步触发 HTML purge |
 | `/guides/**` | 静态指南内容 + `PageFaq`；商品搜索抽屉是用户点击后才请求 API | FAQ 写操作触发 HTML purge；点击后搜索结果不进 HTML cache |
 | `/company/**` | 静态公司内容 + `PageFaq` | FAQ 写操作触发 HTML purge；公司静态文案变更需要重新构建部署 |
 | `/picture-warehouse` | SSR 只输出页面壳；图片库列表、评论和上传在客户端挂载或交互后请求 API | showcase 数据不进 SSR HTML cache；无需触发 HTML purge |
-| `/faq` | 本地 FAQ/i18n 内容 | 代码或文案变更需要重新构建部署 |
+| `/faq` | Nuxt legacy alias 指向 FAQ 汇总页 | 路由 manifest 变更或 FAQ 写操作触发相应 purge |
 
 判断规则：
 

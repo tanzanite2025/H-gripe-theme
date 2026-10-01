@@ -143,6 +143,7 @@ const paymentIcons: PaymentIcon[] = [
   gap: clamp(1.5rem, 4vw, 5rem);
   background: var(--tz-surface-subtle);
   border-block: 1px solid var(--tz-border-subtle);
+  border-radius: 1rem;
 }
 
 .footer-subscription {

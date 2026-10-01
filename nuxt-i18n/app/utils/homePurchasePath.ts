@@ -39,16 +39,6 @@ export const homePurchasePathSection: HomePurchasePathSection = {
       route: '/guides/wheelset-buyers',
     },
     {
-      id: 'component-specs',
-      title: 'Need component specs?',
-      description: 'Review detailed specifications for wheelset components to help you choose.',
-      highlights: ['Hubs', 'Rims', 'Spokes', 'Nipples'],
-      actionLabel: 'View component specs',
-      icon: 'lucide:settings-2',
-      kind: 'route',
-      route: '/guides/wheelset-buyers/wheel-components',
-    },
-    {
       id: 'talk-to-support',
       title: 'Contact support',
       description: 'Open QuickBuy support options to email us or continue in a service chat about your wheelset configuration.',

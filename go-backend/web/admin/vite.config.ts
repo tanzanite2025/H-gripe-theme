@@ -5,6 +5,8 @@ import { resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const projectRoot = fileURLToPath(new URL('.', import.meta.url))
+const adminPort = Number(process.env.VITE_PORT || '9300')
+const apiOrigin = process.env.VITE_API_ORIGIN || 'http://localhost:9200'
 
 const normalizeAdminFontFallbacks = (source: string): string => source
   .replace(
@@ -46,15 +48,15 @@ export default defineConfig({
   },
   server: {
     host: '127.0.0.1',
-    port: 9300,
+    port: adminPort,
     strictPort: true,
     proxy: {
       '/api': {
-        target: 'http://localhost:9200',
+        target: apiOrigin,
         changeOrigin: true
       },
       '/uploads': {
-        target: 'http://localhost:9200',
+        target: apiOrigin,
         changeOrigin: true
       }
     }

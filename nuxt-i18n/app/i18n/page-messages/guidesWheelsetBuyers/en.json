@@ -11,12 +11,8 @@
       "description": "Core safety checks before riding and servicing."
     },
     "sampleAssembly": {
-      "label": "Wheel building service",
-      "description": "Mainland China service area, shipping process, fees, and part requirements."
-    },
-    "specialOrder": {
-      "label": "Special order",
-      "description": "Custom order options and request details."
+      "label": "Wheel building & custom builds",
+      "description": "Wheel building service, mullet setups, single-wheel replacements, mixed rims, and fees."
     },
     "appearanceLogo": {
       "label": "Appearance Logo",
@@ -25,16 +21,6 @@
     "chooseFreehub": {
       "label": "Choose freehub",
       "description": "Freehub choices and drivetrain compatibility."
-    },
-    "wheelComponents": {
-      "label": "Wheel Components",
-      "description": "Hubs, rims, spokes, nipples, and build parts."
     }
-  },
-  "componentSections": {
-    "hubs": "1. Hubs",
-    "rims": "2. Rims",
-    "spokes": "3. Spokes",
-    "nipples": "4. Nipples"
   }
 }

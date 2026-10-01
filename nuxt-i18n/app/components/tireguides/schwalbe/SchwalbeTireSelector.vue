@@ -89,7 +89,6 @@
         v-model:inner-rim-width-input="draftInnerRimWidthInput"
         v-model:selected-wheel-size-keys="draftFacetFilters.wheelSizeKeys"
         v-model:selected-bead-seat-diameters-mm="draftFacetFilters.beadSeatDiametersMm"
-        v-model:selected-casing-constructions="draftFacetFilters.casingConstructions"
         v-model:selected-radial-only="draftFacetFilters.radialOnly"
         v-model:selected-beads="draftFacetFilters.beads"
         v-model:selected-seals="draftFacetFilters.seals"
@@ -104,7 +103,6 @@
         :rim-width-invalid-label="tx('rimWidth.invalid')"
         :rim-width-choose-wheel-size-label="tx('rimWidth.chooseWheelSize')"
         :rim-width-clear-label="tx('rimWidth.clear')"
-        :casing-construction-label="tx('filters.casingConstruction')"
         :radial-group-label="tx('filters.radialGroup')"
         :radial-all-label="tx('filters.radialAll')"
         :radial-label="tx('filters.radial')"
@@ -114,7 +112,6 @@
         :e-bike-unrated-label="tx('filters.eBikeUnrated')"
         :reset-label="tx('filters.clearFilters')"
         :wheel-size-options="wheelSizeOptions"
-        :casing-construction-options="casingConstructionOptions"
         :bead-options="beadOptions"
         :seal-options="sealOptions"
         :e-bike-rating-options="eBikeRatingOptions"
@@ -229,7 +226,6 @@ const {
   selectedInnerRimWidthMm,
   selectedWheelSizeKeys,
   selectedBeadSeatDiametersMm,
-  selectedCasingConstructions,
   selectedRadialOnly,
   selectedBeads,
   selectedSeals,
@@ -240,7 +236,6 @@ const {
   visibleItems,
   modelOptions,
   wheelSizeOptions,
-  casingConstructionOptions,
   beadOptions,
   sealOptions,
   eBikeRatingOptions,
@@ -293,7 +288,6 @@ const draftFacetFilters = reactive<SchwalbeTireCatalogFacetFilterState>({
   innerRimWidthMm: null,
   wheelSizeKeys: [],
   beadSeatDiametersMm: [],
-  casingConstructions: [],
   radialOnly: false,
   beads: [],
   seals: [],
@@ -331,7 +325,6 @@ const syncDraftFacetFilters = () => {
   draftFacetFilters.innerRimWidthMm = committed.innerRimWidthMm
   draftFacetFilters.wheelSizeKeys = [...committed.wheelSizeKeys]
   draftFacetFilters.beadSeatDiametersMm = [...committed.beadSeatDiametersMm]
-  draftFacetFilters.casingConstructions = [...committed.casingConstructions]
   draftFacetFilters.radialOnly = committed.radialOnly
   draftFacetFilters.beads = [...committed.beads]
   draftFacetFilters.seals = [...committed.seals]
@@ -359,7 +352,6 @@ const applyFilterDraft = () => {
     innerRimWidthMm: normalizedDraftInnerRimWidthInput.value,
     wheelSizeKeys: [...draftFacetFilters.wheelSizeKeys],
     beadSeatDiametersMm: [...draftFacetFilters.beadSeatDiametersMm],
-    casingConstructions: [...draftFacetFilters.casingConstructions],
     radialOnly: draftFacetFilters.radialOnly,
     beads: [...draftFacetFilters.beads],
     seals: [...draftFacetFilters.seals],
@@ -373,7 +365,6 @@ const clearDraftFacetFilters = () => {
   draftInnerRimWidthInput.value = ''
   draftFacetFilters.wheelSizeKeys = []
   draftFacetFilters.beadSeatDiametersMm = []
-  draftFacetFilters.casingConstructions = []
   draftFacetFilters.radialOnly = false
   draftFacetFilters.beads = []
   draftFacetFilters.seals = []
@@ -381,8 +372,7 @@ const clearDraftFacetFilters = () => {
 }
 
 const hasAdditionalRimWidthFacetFilters = computed(() => (
-  selectedCasingConstructions.value.length > 0
-  || selectedRadialOnly.value
+  selectedRadialOnly.value
   || selectedBeads.value.length > 0
   || selectedSeals.value.length > 0
   || selectedEBikeRatings.value.length > 0
@@ -406,7 +396,6 @@ const activeFilterCount = computed(() => [
   // The wheel-size pair and optional rim-width match form one dimension group.
   selectedInnerRimWidthMm.value !== null || selectedWheelSizeKeys.value.length > 0,
   selectedBeadSeatDiametersMm.value.length > 0,
-  selectedCasingConstructions.value.length > 0,
   selectedRadialOnly.value,
   selectedBeads.value.length > 0,
   selectedSeals.value.length > 0,

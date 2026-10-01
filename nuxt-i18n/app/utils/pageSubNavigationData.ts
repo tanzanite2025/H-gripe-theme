@@ -128,16 +128,9 @@ export const wheelsetBuyerTabs = [
   {
     id: 'sample-assembly',
     labelKey: 'guidesWheelsetBuyers.tabs.sampleAssembly.label',
-    fallback: 'Wheel building service',
+    fallback: 'Wheel building & custom builds',
     descriptionKey: 'guidesWheelsetBuyers.tabs.sampleAssembly.description',
-    description: 'Mainland China service area, build process, parts, and fees.',
-  },
-  {
-    id: 'special-order',
-    labelKey: 'guidesWheelsetBuyers.tabs.specialOrder.label',
-    fallback: 'Special order',
-    descriptionKey: 'guidesWheelsetBuyers.tabs.specialOrder.description',
-    description: 'Custom order options and request details.',
+    description: 'Wheel building service, custom builds, replacement wheels, parts, and fees.',
   },
   {
     id: 'appearance-logo',
@@ -152,13 +145,6 @@ export const wheelsetBuyerTabs = [
     fallback: 'Choose freehub',
     descriptionKey: 'guidesWheelsetBuyers.tabs.chooseFreehub.description',
     description: 'Freehub choices and drivetrain compatibility.',
-  },
-  {
-    id: 'wheel-components',
-    labelKey: 'guidesWheelsetBuyers.tabs.wheelComponents.label',
-    fallback: 'Wheel Components',
-    descriptionKey: 'guidesWheelsetBuyers.tabs.wheelComponents.description',
-    description: 'Hubs, rims, spokes, nipples, and build parts.',
   },
 ] as const satisfies readonly PageSubNavigationTab[]
 
@@ -232,13 +218,6 @@ export const warrantyTabs = [
     fallback: 'Accidental Damage',
     descriptionKey: 'supportWarranty.tabs.accidentalDamage.description',
     description: 'Support for accidental riding or handling damage.',
-  },
-  {
-    id: 'protection',
-    labelKey: 'supportWarranty.tabs.protection.label',
-    fallback: 'Protection',
-    descriptionKey: 'supportWarranty.tabs.protection.description',
-    description: 'Protection options and service expectations.',
   },
   {
     id: 'submit-warranty',

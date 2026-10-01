@@ -4,7 +4,7 @@
       <form class="space-y-5" @submit.prevent="$emit('submit')">
         <DialogHeader>
           <DialogTitle>编辑 FAQ 页面</DialogTitle>
-          <DialogDescription>页面标识与 Nuxt 的 PageFaq pageId 对应，标题/副标题用于前端 FAQ 区块展示。</DialogDescription>
+          <DialogDescription>页面标识与 Nuxt 的 PageFaq pageId 对应；路由由 storefront route manifest 同步，标题/副标题用于前端 FAQ 区块展示。</DialogDescription>
         </DialogHeader>
 
         <div class="grid gap-4 sm:grid-cols-2">

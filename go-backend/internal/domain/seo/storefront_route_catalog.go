@@ -114,8 +114,12 @@ type StorefrontRouteManifestRoute struct {
 	Label         string `json:"label"`
 	Description   string `json:"description"`
 	CanonicalPath string `json:"canonical_path"`
-	IsAlias       bool   `json:"is_alias"`
-	IsSearchable  bool   `json:"is_searchable"`
-	IsCheckable   bool   `json:"is_checkable"`
-	IsIndexable   bool   `json:"is_indexable"`
+	// SitemapLocales limits the locale variants that are approved for public
+	// route-catalog and sitemap discovery. An empty list keeps the historical
+	// behaviour of generating every enabled locale.
+	SitemapLocales []string `json:"sitemap_locales,omitempty"`
+	IsAlias        bool     `json:"is_alias"`
+	IsSearchable   bool     `json:"is_searchable"`
+	IsCheckable    bool     `json:"is_checkable"`
+	IsIndexable    bool     `json:"is_indexable"`
 }

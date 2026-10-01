@@ -13,10 +13,6 @@
       "label": "意外损坏",
       "description": "意外骑行或操作损坏的支持方式。"
     },
-    "protection": {
-      "label": "买家保障",
-      "description": "买家保障选项与服务说明。"
-    },
     "submitWarranty": {
       "label": "提交质保",
       "description": "提交资料并开始质保申请。"

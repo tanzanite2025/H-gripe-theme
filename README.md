@@ -63,9 +63,10 @@ npm run dev
 
 The root development command starts local infrastructure and the three app servers:
 
-- Storefront Nuxt: `http://localhost:9199`
-- Go API: `http://localhost:9200`
-- Admin console: `http://localhost:9300`
+- Storefront Nuxt: `http://localhost:10240`
+- Go API: `http://localhost:10241`
+- Admin console: `http://localhost:10242`
+- Site Quality runner: `http://localhost:10243/healthz` (override with `SITE_QUALITY_RUNNER_HOST_PORT`)
 - PostgreSQL host port: `localhost:9400`
 - Redis host port: `localhost:10662` (override with `REDIS_HOST_PORT`)
 
@@ -144,6 +145,7 @@ Compose ports:
 
 - Storefront: `http://localhost:9100`
 - API: `http://localhost:9200`
+- Site Quality runner: `http://localhost:10243/healthz` (override with `SITE_QUALITY_RUNNER_HOST_PORT`)
 - PostgreSQL: `localhost:9400`
 - Redis: `localhost:10662` (override with `REDIS_HOST_PORT`)
 

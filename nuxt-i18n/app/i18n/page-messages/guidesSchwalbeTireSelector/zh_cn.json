@@ -127,12 +127,12 @@
     "expand": "展开图解 ▼",
     "disclaimer": "技术名称和说明依据已引用的官方资料整理；具体型号规格应以对应官方产品页为准，单独的技术名称不构成统一安全或购买建议。",
     "tabs": {
-      "radial": "🌀 径向胎体",
-      "green": "🌿 Green Marathon",
-      "protection": "🛡️ 防刺等级 1–7",
-      "addix": "🧪 ADDIX / Compound",
-      "color": "🎨 颜色",
-      "compound": "🧪 胶料"
+      "radial": "径向胎体",
+      "green": "Green Marathon",
+      "protection": "防刺等级 1–7",
+      "addix": "ADDIX / Compound",
+      "color": "颜色",
+      "compound": "胶料"
     },
     "radial": {
       "label": "Radial 径向胎体 · 官方结构",

@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite --host 127.0.0.1 --port 9300 --strictPort",
+    "dev": "vite --host 127.0.0.1 --strictPort",
     "build": "npm run check:admin-font-policy && vite build && npm run check:admin-font-policy -- --dist",
     "preview": "vite preview",
     "test": "vitest run --environment node",
