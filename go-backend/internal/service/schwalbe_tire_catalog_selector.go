@@ -109,6 +109,10 @@ type SchwalbeTireCatalogSelectorPage struct {
 	TotalPages      int                                         `json:"total_pages"`
 	FilterOptions   SchwalbeTireCatalogSelectorFilterOptions    `json:"filter_options"`
 	RimWidthContext *SchwalbeTireCatalogSelectorRimWidthContext `json:"rim_width_context,omitempty"`
+	// WheelSizeByArticle is converted into an item-level public field by the
+	// API projection. Keeping the map off the page JSON avoids exposing an
+	// internal lookup shape as a second public response contract.
+	WheelSizeByArticle map[string]SchwalbeTireCatalogSelectorWheelSizeOption `json:"-"`
 	// RimWidthGuidanceByArticle is converted into item-level public fields by
 	// the API projection. Keeping it off the page JSON prevents an internal map
 	// shape from becoming a second public response contract.
@@ -194,9 +198,13 @@ func (s *ProductService) SearchSchwalbeTireCatalogSelector(query SchwalbeTireCat
 		end = total
 	}
 	pageItems := make([]repository.SchwalbeTireCatalogItem, 0, end-start)
+	wheelSizeByArticle := make(map[string]SchwalbeTireCatalogSelectorWheelSizeOption)
 	rimWidthGuidanceByArticle := make(map[string][]SchwalbeTireCatalogSelectorRimWidthGuidance)
 	for _, row := range filteredRows[start:end] {
 		pageItems = append(pageItems, row.item)
+		if wheelSize, ok := schwalbeTireCatalogSelectorWheelSizeFromDimensions(row.dimensions); ok {
+			wheelSizeByArticle[row.item.ArticleNo] = wheelSize
+		}
 		if query.InnerRimWidthMM != nil || query.IncludeRimWidthGuidance {
 			var guidance []SchwalbeTireCatalogSelectorRimWidthGuidance
 			if query.IncludeRimWidthGuidance {
@@ -218,8 +226,24 @@ func (s *ProductService) SearchSchwalbeTireCatalogSelector(query SchwalbeTireCat
 		TotalPages:                totalPages,
 		FilterOptions:             filterOptions,
 		RimWidthContext:           rimWidthContext,
+		WheelSizeByArticle:        wheelSizeByArticle,
 		RimWidthGuidanceByArticle: rimWidthGuidanceByArticle,
 	}, nil
+}
+
+func schwalbeTireCatalogSelectorWheelSizeFromDimensions(
+	dimensions schwalbeTireCatalogSelectorDimensions,
+) (SchwalbeTireCatalogSelectorWheelSizeOption, bool) {
+	if dimensions.WheelSizeKey == "" || dimensions.WheelDiameterIn == "" ||
+		dimensions.BeadSeatDiameterMM == nil || *dimensions.BeadSeatDiameterMM <= 0 {
+		return SchwalbeTireCatalogSelectorWheelSizeOption{}, false
+	}
+
+	return SchwalbeTireCatalogSelectorWheelSizeOption{
+		Value:              dimensions.WheelSizeKey,
+		WheelDiameterIn:    dimensions.WheelDiameterIn,
+		BeadSeatDiameterMM: *dimensions.BeadSeatDiameterMM,
+	}, true
 }
 
 func buildSchwalbeTireCatalogSelectorRimWidthContext(

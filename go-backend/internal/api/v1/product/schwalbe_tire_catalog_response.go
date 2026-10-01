@@ -32,19 +32,32 @@ type publicSchwalbeTireCatalogItem struct {
 	MaxPressurePSI   *float64                                              `json:"max_pressure_psi,omitempty"`
 	SourceCheckedAt  time.Time                                             `json:"source_checked_at"`
 	ProductExists    bool                                                  `json:"product_exists"`
+	WheelSize        *service.SchwalbeTireCatalogSelectorWheelSizeOption   `json:"wheel_size,omitempty"`
 	RimWidthGuidance []service.SchwalbeTireCatalogSelectorRimWidthGuidance `json:"rim_width_guidance,omitempty"`
 }
 
 func publicSchwalbeTireCatalogItems(items []repository.SchwalbeTireCatalogItem) []publicSchwalbeTireCatalogItem {
-	return publicSchwalbeTireCatalogItemsWithRimWidthGuidance(items, nil)
+	return publicSchwalbeTireCatalogItemsWithProjection(items, nil, nil)
 }
 
 func publicSchwalbeTireCatalogItemsWithRimWidthGuidance(
 	items []repository.SchwalbeTireCatalogItem,
 	guidanceByArticle map[string][]service.SchwalbeTireCatalogSelectorRimWidthGuidance,
 ) []publicSchwalbeTireCatalogItem {
+	return publicSchwalbeTireCatalogItemsWithProjection(items, guidanceByArticle, nil)
+}
+
+func publicSchwalbeTireCatalogItemsWithProjection(
+	items []repository.SchwalbeTireCatalogItem,
+	guidanceByArticle map[string][]service.SchwalbeTireCatalogSelectorRimWidthGuidance,
+	wheelSizeByArticle map[string]service.SchwalbeTireCatalogSelectorWheelSizeOption,
+) []publicSchwalbeTireCatalogItem {
 	publicItems := make([]publicSchwalbeTireCatalogItem, len(items))
 	for index, item := range items {
+		var wheelSize *service.SchwalbeTireCatalogSelectorWheelSizeOption
+		if value, ok := wheelSizeByArticle[item.ArticleNo]; ok {
+			wheelSize = &value
+		}
 		publicItems[index] = publicSchwalbeTireCatalogItem{
 			ArticleNo:        item.ArticleNo,
 			EAN:              item.EAN,
@@ -67,6 +80,7 @@ func publicSchwalbeTireCatalogItemsWithRimWidthGuidance(
 			MaxPressurePSI:   item.MaxPressurePSI,
 			SourceCheckedAt:  item.SourceCheckedAt,
 			ProductExists:    item.ProductExists,
+			WheelSize:        wheelSize,
 			RimWidthGuidance: guidanceByArticle[item.ArticleNo],
 		}
 	}
@@ -103,7 +117,7 @@ func publicSchwalbeTireCatalogSelectorResponseFromPage(page *service.SchwalbeTir
 		}
 	}
 	return publicSchwalbeTireCatalogSelectorResponse{
-		Items:           publicSchwalbeTireCatalogItemsWithRimWidthGuidance(page.Items, page.RimWidthGuidanceByArticle),
+		Items:           publicSchwalbeTireCatalogItemsWithProjection(page.Items, page.RimWidthGuidanceByArticle, page.WheelSizeByArticle),
 		Page:            page.Page,
 		PageSize:        page.PageSize,
 		Total:           page.Total,

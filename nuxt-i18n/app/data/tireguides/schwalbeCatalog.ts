@@ -27,6 +27,7 @@ export interface SchwalbeTireCatalogItem {
   max_pressure_psi?: number
   source_checked_at: string
   product_exists: boolean
+  wheel_size?: SchwalbeTireCatalogWheelSizeOption
   rim_width_guidance?: SchwalbeTireCatalogRimWidthGuidance[]
 }
 
@@ -88,6 +89,27 @@ const optionalNumber = (value: unknown): number | undefined => {
   return Number.isFinite(number) ? number : undefined
 }
 
+const readWheelSizeProjection = (value: unknown): SchwalbeTireCatalogWheelSizeOption | undefined => {
+  const item = asRecord(value)
+  const key = optionalString(item?.value)
+  const wheelDiameterIn = optionalString(item?.wheel_diameter_in)
+  const beadSeatDiameterMm = optionalNumber(item?.bsd_mm)
+  if (
+    !key
+    || !wheelDiameterIn
+    || beadSeatDiameterMm === undefined
+    || !Number.isSafeInteger(beadSeatDiameterMm)
+    || beadSeatDiameterMm <= 0
+    || key !== `${wheelDiameterIn}-${beadSeatDiameterMm}`
+  ) return undefined
+
+  return {
+    value: key,
+    wheelDiameterIn,
+    beadSeatDiameterMm,
+  }
+}
+
 const readRimWidthGuidance = (value: unknown): SchwalbeTireCatalogRimWidthGuidance[] => {
   if (!Array.isArray(value)) return []
   return value.flatMap((candidate) => {
@@ -129,6 +151,7 @@ const readRimWidthContext = (value: unknown): SchwalbeTireCatalogRimWidthContext
 const readItem = (value: unknown): SchwalbeTireCatalogItem => {
   const item = asRecord(value)
   if (!item) throw new Error('Schwalbe catalog response contains an invalid item')
+  const wheelSize = readWheelSizeProjection(item.wheel_size)
   const rimWidthGuidance = readRimWidthGuidance(item.rim_width_guidance)
 
   return {
@@ -153,6 +176,7 @@ const readItem = (value: unknown): SchwalbeTireCatalogItem => {
     ...(optionalNumber(item.max_pressure_psi) !== undefined ? { max_pressure_psi: optionalNumber(item.max_pressure_psi) } : {}),
     source_checked_at: requiredString(item.source_checked_at, 'source_checked_at'),
     product_exists: item.product_exists === true,
+    ...(wheelSize ? { wheel_size: wheelSize } : {}),
     ...(rimWidthGuidance.length > 0
       ? { rim_width_guidance: rimWidthGuidance }
       : {}),
