@@ -211,11 +211,14 @@ export const useSchwalbeTireSelector = async () => {
       if (knownValues.has(selectedKey)) continue
       const match = wheelSizeKeyPattern.exec(selectedKey)
       if (!match) continue
-      const beadSeatDiameterMm = Number(match[2])
+      const wheelDiameterIn = match[1]
+      const beadSeatDiameter = match[2]
+      if (!wheelDiameterIn || !beadSeatDiameter) continue
+      const beadSeatDiameterMm = Number(beadSeatDiameter)
       if (!Number.isSafeInteger(beadSeatDiameterMm) || beadSeatDiameterMm <= 0) continue
       options.push({
         value: selectedKey,
-        wheelDiameterIn: match[1],
+        wheelDiameterIn,
         beadSeatDiameterMm,
       })
       knownValues.add(selectedKey)
@@ -401,7 +404,6 @@ export const useSchwalbeTireSelector = async () => {
     totalItems,
     visibleItems,
     modelOptions,
-    wheelSizeOptions: computed(() => filterOptions.value.wheelSizes),
     wheelSizeNavigationOptions,
     beadOptions: computed(() => filterOptions.value.beads),
     sealOptions: computed(() => filterOptions.value.seals),
