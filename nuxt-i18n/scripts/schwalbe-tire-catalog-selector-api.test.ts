@@ -37,6 +37,11 @@ const request: ApiRequestFunction = async <T>(path, init): Promise<T> => {
         article_no: '11100001',
         model_name: 'Green Marathon',
         etrto: '40-622',
+        wheel_size: {
+          value: '28-622',
+          wheel_diameter_in: '28',
+          bsd_mm: 622,
+        },
         source_url: 'https://www.schwalbe.com/internal-provenance',
         source_checked_at: '2026-09-28',
         product_exists: false,
@@ -96,6 +101,11 @@ const main = async () => {
 
   assert.equal(page.items.length, 1)
   assert.equal(page.items[0].article_no, '11100001')
+  assert.deepEqual(page.items[0].wheel_size, {
+    value: '28-622',
+    wheelDiameterIn: '28',
+    beadSeatDiameterMm: 622,
+  })
   assert.equal('source_url' in page.items[0], false)
   assert.deepEqual(page.items[0].rim_width_guidance, [{
     tire_width_min_mm: 35,

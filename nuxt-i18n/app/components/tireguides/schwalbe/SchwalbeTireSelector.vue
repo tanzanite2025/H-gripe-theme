@@ -75,6 +75,15 @@
       </div>
     </form>
 
+    <SchwalbeTireWheelSizeTabs
+      :label="tx('wheelSizeTabsLabel')"
+      :all-label="tx('allWheelSizes')"
+      :option-template="tx('wheelSizeTabOption', { diameter: '{diameter}', bsd: '{bsd}' })"
+      :options="wheelSizeNavigationOptions"
+      :selected-wheel-size-keys="selectedWheelSizeKeys"
+      @select="selectWheelSize"
+    />
+
     <SchwalbeTireCatalogFilterDrawer
       :id="filterDialogId"
       v-model:open="filterDialogOpen"
@@ -85,17 +94,12 @@
       @cancel="discardFilterDraft"
     >
       <SchwalbeTireCatalogFilterPanel
-        v-model:selected-wheel-size-keys="draftFacetFilters.wheelSizeKeys"
-        v-model:selected-bead-seat-diameters-mm="draftFacetFilters.beadSeatDiametersMm"
         v-model:selected-radial-only="draftFacetFilters.radialOnly"
         v-model:selected-beads="draftFacetFilters.beads"
         v-model:selected-seals="draftFacetFilters.seals"
         v-model:selected-e-bike-ratings="draftFacetFilters.eBikeRatings"
         @reset="clearDraftFacetFilters"
         :label="tx('filters.catalogFilters')"
-        :selected-count-template="tx('filters.selectedCount', { count: '{count}' })"
-        :wheel-size-label="tx('filters.wheelSize')"
-        :wheel-size-option-template="tx('filters.wheelSizeOption', { diameter: '{diameter}', bsd: '{bsd}' })"
         :radial-group-label="tx('filters.radialGroup')"
         :radial-all-label="tx('filters.radialAll')"
         :radial-label="tx('filters.radial')"
@@ -104,7 +108,6 @@
         :e-bike-rating-label="tx('filters.eBikeRating')"
         :e-bike-unrated-label="tx('filters.eBikeUnrated')"
         :reset-label="tx('filters.clearFilters')"
-        :wheel-size-options="wheelSizeOptions"
         :bead-options="beadOptions"
         :seal-options="sealOptions"
         :e-bike-rating-options="eBikeRatingOptions"
@@ -183,6 +186,7 @@ import SchwalbeTireCard from '~/components/tireguides/schwalbe/SchwalbeTireCard.
 import SchwalbeTireCatalogFilterPanel from '~/components/tireguides/schwalbe/SchwalbeTireCatalogFilterPanel.vue'
 import SchwalbeTireCatalogFilterDrawer from '~/components/tireguides/schwalbe/SchwalbeTireCatalogFilterDrawer.vue'
 import SchwalbeTelemetryGuide from '~/components/tireguides/schwalbe/SchwalbeTelemetryGuide.vue'
+import SchwalbeTireWheelSizeTabs from '~/components/tireguides/schwalbe/SchwalbeTireWheelSizeTabs.vue'
 import {
   useSchwalbeTireSelector,
   type SchwalbeTireCatalogFacetFilterState,
@@ -199,7 +203,7 @@ const {
   totalItems,
   selectedModel,
   selectedWheelSizeKeys,
-  selectedBeadSeatDiametersMm,
+  selectWheelSize,
   selectedRadialOnly,
   selectedBeads,
   selectedSeals,
@@ -209,7 +213,7 @@ const {
   sortBy,
   visibleItems,
   modelOptions,
-  wheelSizeOptions,
+  wheelSizeNavigationOptions,
   beadOptions,
   sealOptions,
   eBikeRatingOptions,
@@ -230,8 +234,6 @@ const toggleWeightSort = () => {
 }
 
 const draftFacetFilters = reactive<SchwalbeTireCatalogFacetFilterState>({
-  wheelSizeKeys: [],
-  beadSeatDiametersMm: [],
   radialOnly: false,
   beads: [],
   seals: [],
@@ -240,8 +242,6 @@ const draftFacetFilters = reactive<SchwalbeTireCatalogFacetFilterState>({
 
 const syncDraftFacetFilters = () => {
   const committed = getFacetFilterState()
-  draftFacetFilters.wheelSizeKeys = [...committed.wheelSizeKeys]
-  draftFacetFilters.beadSeatDiametersMm = [...committed.beadSeatDiametersMm]
   draftFacetFilters.radialOnly = committed.radialOnly
   draftFacetFilters.beads = [...committed.beads]
   draftFacetFilters.seals = [...committed.seals]
@@ -261,8 +261,6 @@ const discardFilterDraft = () => {
 
 const applyFilterDraft = () => {
   applyFacetFilterState({
-    wheelSizeKeys: [...draftFacetFilters.wheelSizeKeys],
-    beadSeatDiametersMm: [...draftFacetFilters.beadSeatDiametersMm],
     radialOnly: draftFacetFilters.radialOnly,
     beads: [...draftFacetFilters.beads],
     seals: [...draftFacetFilters.seals],
@@ -272,8 +270,6 @@ const applyFilterDraft = () => {
 }
 
 const clearDraftFacetFilters = () => {
-  draftFacetFilters.wheelSizeKeys = []
-  draftFacetFilters.beadSeatDiametersMm = []
   draftFacetFilters.radialOnly = false
   draftFacetFilters.beads = []
   draftFacetFilters.seals = []
@@ -282,8 +278,6 @@ const clearDraftFacetFilters = () => {
 
 const activeFilterCount = computed(() => [
   selectedModel.value !== 'ALL',
-  selectedWheelSizeKeys.value.length > 0,
-  selectedBeadSeatDiametersMm.value.length > 0,
   selectedRadialOnly.value,
   selectedBeads.value.length > 0,
   selectedSeals.value.length > 0,

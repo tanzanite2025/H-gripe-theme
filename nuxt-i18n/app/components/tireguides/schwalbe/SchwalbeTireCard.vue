@@ -4,10 +4,7 @@
       <div class="schwalbe-tire-card__heading">
         <p class="schwalbe-tire-card__eyebrow">{{ item.article_no }}</p>
         <h3 class="schwalbe-tire-card__title">{{ item.model_name }}</h3>
-        <p v-if="item.inch_designation" class="schwalbe-tire-card__subtitle">
-          {{ item.etrto }} · {{ item.inch_designation }}
-        </p>
-        <p v-else class="schwalbe-tire-card__subtitle">{{ item.etrto }}</p>
+        <p class="schwalbe-tire-card__subtitle">{{ sizeSummary }}</p>
       </div>
       <span
         class="schwalbe-tire-card__status"
@@ -106,6 +103,20 @@ const pressureRange = computed(() => {
     return `${psiMin ?? '—'}–${psiMax ?? '—'} PSI`
   }
   return tx('common.notProvided')
+})
+
+const sizeSummary = computed(() => {
+  if (props.item.wheel_size) {
+    return tx('wheelSizeCard', {
+      diameter: props.item.wheel_size.wheelDiameterIn,
+      bsd: props.item.wheel_size.beadSeatDiameterMm,
+      etrto: props.item.etrto,
+    })
+  }
+
+  return props.item.inch_designation
+    ? `${props.item.etrto} · ${props.item.inch_designation}`
+    : props.item.etrto
 })
 
 const checkedDate = computed(() => {

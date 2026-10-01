@@ -44,6 +44,14 @@ func TestSearchSchwalbeTireCatalogSelectorFiltersByWheelDiameterAndBSDPair(t *te
 
 	var allPayload struct {
 		Data struct {
+			Items []struct {
+				ArticleNo string `json:"article_no"`
+				WheelSize *struct {
+					Value           string `json:"value"`
+					WheelDiameterIn string `json:"wheel_diameter_in"`
+					BSD             int    `json:"bsd_mm"`
+				} `json:"wheel_size"`
+			} `json:"items"`
 			FilterOptions struct {
 				WheelSizes []struct {
 					Value           string `json:"value"`
@@ -82,6 +90,23 @@ func TestSearchSchwalbeTireCatalogSelectorFiltersByWheelDiameterAndBSDPair(t *te
 		actual := allPayload.Data.FilterOptions.WheelSizes[index]
 		if actual.Value != expected.value || actual.WheelDiameterIn != expected.diameter || actual.BSD != expected.bsd {
 			t.Fatalf("wheel size option %d: expected %+v, got %+v", index, expected, actual)
+		}
+	}
+	projectedSizes := make(map[string]string, len(allPayload.Data.Items))
+	for _, item := range allPayload.Data.Items {
+		if item.WheelSize == nil {
+			t.Fatalf("expected wheel_size projection for %s", item.ArticleNo)
+		}
+		projectedSizes[item.ArticleNo] = item.WheelSize.Value
+	}
+	for articleNo, expectedValue := range map[string]string{
+		"wheel-28":    "28-622",
+		"wheel-29":    "29-622",
+		"wheel-26-559": "26-559",
+		"wheel-26-590": "26-590",
+	} {
+		if projectedSizes[articleNo] != expectedValue {
+			t.Fatalf("expected wheel_size projection %s=%s, got %q", articleNo, expectedValue, projectedSizes[articleNo])
 		}
 	}
 

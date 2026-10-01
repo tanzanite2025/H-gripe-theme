@@ -5,6 +5,10 @@
   },
   "kicker": "官方目录查询",
   "title": "Schwalbe 外胎选型查询",
+  "wheelSizeTabsLabel": "轮径与 BSD 导航",
+  "allWheelSizes": "全部轮径",
+  "wheelSizeTabOption": "{diameter}\" · BSD {bsd} mm",
+  "wheelSizeCard": "{diameter}\" · BSD {bsd} mm · ETRTO {etrto}",
   "search": {
     "label": "搜索目录",
     "placeholder": "型号、Article No.、ETRTO 或英制尺寸",

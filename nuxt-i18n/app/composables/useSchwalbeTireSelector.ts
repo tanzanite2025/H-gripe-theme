@@ -13,6 +13,7 @@ import {
   type SchwalbeTireCatalogSelectorPage,
   type SchwalbeTireCatalogSelectorRequest,
 } from '~/data/tireguides/schwalbeCatalog'
+import type { SchwalbeTireCatalogWheelSizeOption } from '~/data/tireguides/schwalbeTireCatalogFilterModel'
 
 export type { SchwalbeCatalogSort } from '~/data/tireguides/schwalbeTireCatalogFilterQuery'
 
@@ -22,8 +23,6 @@ export type { SchwalbeCatalogSort } from '~/data/tireguides/schwalbeTireCatalogF
  */
 export type SchwalbeTireCatalogFacetFilterState = Pick<
   SchwalbeTireCatalogFilterQueryState,
-  | 'wheelSizeKeys'
-  | 'beadSeatDiametersMm'
   | 'radialOnly'
   | 'beads'
   | 'seals'
@@ -71,6 +70,9 @@ const parseSelectorRouteFilterState = (query: Record<string, unknown>): Schwalbe
   // visible selector facet. Ignore legacy URL values so a hidden condition
   // cannot silently constrain the result set.
   casingConstructions: [],
+  // BSD-only links from the former drawer are no longer a visible selector
+  // state. The page always uses the wheel diameter + BSD composite key.
+  beadSeatDiametersMm: [],
 })
 
 const emptySelectorPage = (): SchwalbeTireCatalogSelectorPage => ({
@@ -113,8 +115,6 @@ export const useSchwalbeTireSelector = async () => {
   const applyFacetFilterState = (facetState: SchwalbeTireCatalogFacetFilterState) => {
     // Assign one complete state object so the route watcher performs a single
     // navigation and the catalog request is not restarted for every control.
-    const wheelSizeKeys = [...facetState.wheelSizeKeys]
-
     updateFilterState({
       ...facetState,
       // Minimum single-tire load remains a legacy API field for other
@@ -126,14 +126,12 @@ export const useSchwalbeTireSelector = async () => {
       nominalTireWidthMinMm: null,
       nominalTireWidthMaxMm: null,
       nominalTireWidthsMm: [],
-      wheelSizeKeys,
       // The selector displays rim-width guidance on cards; it no longer
       // accepts a user-entered rim width as a result filter.
       innerRimWidthMm: null,
-      // A newly selected wheel-size pair is more precise than the legacy BSD
-      // facet. Drop the hidden legacy constraint so an old shared link cannot
-      // make a visibly selected wheel size return zero rows.
-      beadSeatDiametersMm: wheelSizeKeys.length > 0 ? [] : [...facetState.beadSeatDiametersMm],
+      // Wheel diameter + BSD is controlled by the page navigation. Drop the
+      // retired BSD-only condition whenever the drawer is submitted.
+      beadSeatDiametersMm: [],
       beads: [...facetState.beads],
       seals: [...facetState.seals],
       eBikeRatings: [...facetState.eBikeRatings],
@@ -144,8 +142,6 @@ export const useSchwalbeTireSelector = async () => {
   }
 
   const getFacetFilterState = (): SchwalbeTireCatalogFacetFilterState => ({
-    wheelSizeKeys: [...filterState.value.wheelSizeKeys],
-    beadSeatDiametersMm: [...filterState.value.beadSeatDiametersMm],
     radialOnly: filterState.value.radialOnly,
     beads: [...filterState.value.beads],
     seals: [...filterState.value.seals],
@@ -157,17 +153,16 @@ export const useSchwalbeTireSelector = async () => {
       modelName: modelName === 'ALL' ? null : modelName,
     }),
   })
-  const selectedBeadSeatDiametersMm = computed({
-    get: () => filterState.value.beadSeatDiametersMm,
-    set: (beadSeatDiametersMm: number[]) => updateFilterState({ beadSeatDiametersMm }),
-  })
   const selectedWheelSizeKeys = computed({
     get: () => filterState.value.wheelSizeKeys,
     set: (wheelSizeKeys: string[]) => updateFilterState({
       wheelSizeKeys,
-      beadSeatDiametersMm: wheelSizeKeys.length > 0 ? [] : filterState.value.beadSeatDiametersMm,
+      beadSeatDiametersMm: [],
     }),
   })
+  const selectWheelSize = (wheelSizeKey: string | null) => {
+    selectedWheelSizeKeys.value = wheelSizeKey ? [wheelSizeKey] : []
+  }
   const selectedRadialOnly = computed({
     get: () => filterState.value.radialOnly,
     set: (radialOnly: boolean) => updateFilterState({ radialOnly }),
@@ -207,6 +202,31 @@ export const useSchwalbeTireSelector = async () => {
 
   const items = computed(() => data.value?.items || [])
   const filterOptions = computed(() => data.value?.filter_options || emptySelectorPage().filter_options)
+  const wheelSizeNavigationOptions = computed<SchwalbeTireCatalogWheelSizeOption[]>(() => {
+    const options = [...filterOptions.value.wheelSizes]
+    const knownValues = new Set(options.map(option => option.value))
+    const wheelSizeKeyPattern = /^([1-9]\d*(?:\.\d+)?)-([1-9]\d*)$/
+
+    for (const selectedKey of filterState.value.wheelSizeKeys) {
+      if (knownValues.has(selectedKey)) continue
+      const match = wheelSizeKeyPattern.exec(selectedKey)
+      if (!match) continue
+      const beadSeatDiameterMm = Number(match[2])
+      if (!Number.isSafeInteger(beadSeatDiameterMm) || beadSeatDiameterMm <= 0) continue
+      options.push({
+        value: selectedKey,
+        wheelDiameterIn: match[1],
+        beadSeatDiameterMm,
+      })
+      knownValues.add(selectedKey)
+    }
+
+    return options.sort((left, right) => (
+      left.wheelDiameterIn.localeCompare(right.wheelDiameterIn, undefined, { numeric: true })
+      || left.beadSeatDiameterMm - right.beadSeatDiameterMm
+      || left.value.localeCompare(right.value)
+    ))
+  })
   const modelOptions = computed(() => [
     'ALL',
     ...[...new Set([
@@ -240,8 +260,10 @@ export const useSchwalbeTireSelector = async () => {
   const pageQuery = (page: number) => {
     const query = { ...route.query }
     // Pagination is a committed selector navigation. Remove the retired
-    // inner-width filter from legacy links instead of carrying it forward.
+    // inner-width and BSD-only filters from legacy links instead of carrying
+    // them forward.
     delete query[SCHWALBE_TIRE_CATALOG_FILTER_QUERY_KEYS.innerRimWidthMm]
+    delete query[SCHWALBE_TIRE_CATALOG_FILTER_QUERY_KEYS.beadSeatDiametersMm]
     if (page <= 1) delete query.page
     else query.page = String(page)
     return { query }
@@ -250,8 +272,6 @@ export const useSchwalbeTireSelector = async () => {
   const hasActiveFilters = computed(() => (
     filterState.value.modelName !== null
     || filterState.value.wheelSizeKeys.length > 0
-    || filterState.value.beadSeatDiametersMm.length > 0
-    || filterState.value.minimumLoadKg !== null
     || filterState.value.radialOnly
     || filterState.value.beads.length > 0
     || filterState.value.seals.length > 0
@@ -352,6 +372,7 @@ export const useSchwalbeTireSelector = async () => {
     submittedSearch.value = nextSearch
     const query = { ...route.query }
     delete query[SCHWALBE_TIRE_CATALOG_FILTER_QUERY_KEYS.innerRimWidthMm]
+    delete query[SCHWALBE_TIRE_CATALOG_FILTER_QUERY_KEYS.beadSeatDiametersMm]
     if (nextSearch) query.search = nextSearch
     else delete query.search
     delete query.page
@@ -368,7 +389,7 @@ export const useSchwalbeTireSelector = async () => {
     submittedSearch,
     selectedModel,
     selectedWheelSizeKeys,
-    selectedBeadSeatDiametersMm,
+    selectWheelSize,
     selectedRadialOnly,
     selectedBeads,
     selectedSeals,
@@ -381,6 +402,7 @@ export const useSchwalbeTireSelector = async () => {
     visibleItems,
     modelOptions,
     wheelSizeOptions: computed(() => filterOptions.value.wheelSizes),
+    wheelSizeNavigationOptions,
     beadOptions: computed(() => filterOptions.value.beads),
     sealOptions: computed(() => filterOptions.value.seals),
     eBikeRatingOptions: computed(() => filterOptions.value.eBikeRatings),

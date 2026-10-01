@@ -5,6 +5,10 @@
   },
   "kicker": "Official catalog lookup",
   "title": "Schwalbe tire selector",
+  "wheelSizeTabsLabel": "Wheel size navigation",
+  "allWheelSizes": "All wheel sizes",
+  "wheelSizeTabOption": "{diameter}\" · BSD {bsd} mm",
+  "wheelSizeCard": "{diameter}\" · BSD {bsd} mm · ETRTO {etrto}",
   "search": {
     "label": "Search the catalog",
     "placeholder": "Model, Article No., ETRTO, or inch size",
