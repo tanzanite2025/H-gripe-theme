@@ -6,6 +6,11 @@
       <p class="wheelset-spoke-lookup__intro">{{ t('brandWheelsetSpokeSpecs.intro') }}</p>
     </header>
 
+    <aside class="wheelset-spoke-lookup__brand-note">
+      <strong>{{ t('brandWheelsetSpokeSpecs.shimanoNoteTitle') }}</strong>
+      <p>{{ t('brandWheelsetSpokeSpecs.shimanoNoteBody') }}</p>
+    </aside>
+
     <section class="wheelset-spoke-lookup__filters" :aria-label="t('brandWheelsetSpokeSpecs.filterTitle')">
       <h2>{{ t('brandWheelsetSpokeSpecs.filterTitle') }}</h2>
 
@@ -626,6 +631,7 @@ useHead(() => ({
 }
 
 .wheelset-spoke-lookup__header,
+.wheelset-spoke-lookup__brand-note,
 .wheelset-spoke-lookup__filters,
 .wheelset-spoke-lookup__matrix {
   min-width: 0;
@@ -663,6 +669,27 @@ useHead(() => ({
   color: var(--spoke-muted);
   font-size: 0.86rem;
   line-height: 1.5;
+}
+
+.wheelset-spoke-lookup__brand-note {
+  display: grid;
+  gap: 0.3rem;
+  padding: 0.9rem 1.2rem;
+  border-left: 3px solid #dc2626;
+  background: #fff;
+}
+
+.wheelset-spoke-lookup__brand-note strong {
+  color: var(--spoke-ink);
+  font-size: 0.78rem;
+  font-weight: 850;
+}
+
+.wheelset-spoke-lookup__brand-note p {
+  margin: 0;
+  color: var(--spoke-muted);
+  font-size: 0.76rem;
+  line-height: 1.55;
 }
 
 .wheelset-spoke-lookup__filters {
@@ -1231,6 +1258,7 @@ useHead(() => ({
   }
 
   .wheelset-spoke-lookup__header,
+  .wheelset-spoke-lookup__brand-note,
   .wheelset-spoke-lookup__filters {
     padding: 0.9rem;
     border-radius: 1rem;

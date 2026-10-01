@@ -1,6 +1,7 @@
 package brandwheelsetspoke
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -21,7 +22,7 @@ func newTestRouter(handler *Handler) *gin.Engine {
 
 func TestListModelsDoesNotExposePrivateRepairKitFields(t *testing.T) {
 	recorder := httptest.NewRecorder()
-	request := httptest.NewRequest(http.MethodGet, "/wheelset-spoke-specs/models", nil)
+	request := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/wheelset-spoke-specs/models", nil)
 	newTestRouter(NewHandler()).ServeHTTP(recorder, request)
 
 	require.Equal(t, http.StatusOK, recorder.Code)
@@ -49,7 +50,7 @@ func TestListModelsDoesNotExposePrivateRepairKitFields(t *testing.T) {
 
 func TestGetModelRequiresAuthentication(t *testing.T) {
 	recorder := httptest.NewRecorder()
-	request := httptest.NewRequest(http.MethodGet, "/wheelset-spoke-specs/models/arc-1100-dicut-db-38", nil)
+	request := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/wheelset-spoke-specs/models/arc-1100-dicut-db-38", nil)
 	newTestRouter(NewHandler()).ServeHTTP(recorder, request)
 
 	require.Equal(t, http.StatusUnauthorized, recorder.Code)
@@ -58,7 +59,7 @@ func TestGetModelRequiresAuthentication(t *testing.T) {
 
 func TestGetModelReturnsOnlyRequestedPrivateRecord(t *testing.T) {
 	recorder := httptest.NewRecorder()
-	request := httptest.NewRequest(http.MethodGet, "/wheelset-spoke-specs/models/arc-1100-dicut-db-38", nil)
+	request := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/wheelset-spoke-specs/models/arc-1100-dicut-db-38", nil)
 	context, _ := gin.CreateTestContext(recorder)
 	context.Request = request
 	context.Params = gin.Params{{Key: "slug", Value: "arc-1100-dicut-db-38"}}
@@ -76,7 +77,7 @@ func TestGetModelReturnsOnlyRequestedPrivateRecord(t *testing.T) {
 
 func TestGetShimanoModelReturnsRepairKitFields(t *testing.T) {
 	recorder := httptest.NewRecorder()
-	request := httptest.NewRequest(http.MethodGet, "/wheelset-spoke-specs/models/wh-m8100-tl-29", nil)
+	request := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/wheelset-spoke-specs/models/wh-m8100-tl-29", nil)
 	context, _ := gin.CreateTestContext(recorder)
 	context.Request = request
 	context.Params = gin.Params{{Key: "slug", Value: "wh-m8100-tl-29"}}

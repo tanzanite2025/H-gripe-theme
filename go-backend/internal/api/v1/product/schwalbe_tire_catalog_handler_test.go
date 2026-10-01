@@ -1,6 +1,7 @@
 package product
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -28,7 +29,7 @@ func TestListSchwalbeTireCatalogDoesNotExposeSourceURL(t *testing.T) {
 	router.GET("/products/schwalbe-tire-catalog", handler.ListSchwalbeTireCatalog)
 
 	recorder := httptest.NewRecorder()
-	request := httptest.NewRequest(http.MethodGet, "/products/schwalbe-tire-catalog", nil)
+	request := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/products/schwalbe-tire-catalog", nil)
 	router.ServeHTTP(recorder, request)
 
 	if recorder.Code != http.StatusOK {
@@ -62,7 +63,7 @@ func TestSearchSchwalbeTireCatalogSelectorKeepsFacetOptionsFromSearchResults(t *
 	handler := NewHandler(service.NewProductService(repository.NewProductRepository(db), nil, 0))
 	router.GET("/products/schwalbe-tire-catalog/selector", handler.SearchSchwalbeTireCatalogSelector)
 	recorder := httptest.NewRecorder()
-	request := httptest.NewRequest(http.MethodGet, "/products/schwalbe-tire-catalog/selector?search=green&model=Green%20Marathon&tire_width_mm=40&bead_seat_diameter_mm=622&casing=Super%20Ground&radial=1&bead=Folding&seal=TLR&e_bike_rating=none&color=Black&compound=ADDIX&sort=article&page=1", nil)
+	request := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/products/schwalbe-tire-catalog/selector?search=green&model=Green%20Marathon&tire_width_mm=40&bead_seat_diameter_mm=622&casing=Super%20Ground&radial=1&bead=Folding&seal=TLR&e_bike_rating=none&color=Black&compound=ADDIX&sort=article&page=1", nil)
 	router.ServeHTTP(recorder, request)
 
 	if recorder.Code != http.StatusOK {
@@ -109,7 +110,7 @@ func TestSearchSchwalbeTireCatalogSelectorKeepsFacetOptionsFromSearchResults(t *
 	}
 
 	sortingRecorder := httptest.NewRecorder()
-	sortingRequest := httptest.NewRequest(http.MethodGet, "/products/schwalbe-tire-catalog/selector?search=green&sort=etrto", nil)
+	sortingRequest := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/products/schwalbe-tire-catalog/selector?search=green&sort=etrto", nil)
 	router.ServeHTTP(sortingRecorder, sortingRequest)
 	var sortingPayload struct {
 		Data struct {
@@ -141,7 +142,7 @@ func TestSearchSchwalbeTireCatalogSelectorReturnsOnlyRequestedPage(t *testing.T)
 	handler := NewHandler(service.NewProductService(repository.NewProductRepository(db), nil, 0))
 	router.GET("/products/schwalbe-tire-catalog/selector", handler.SearchSchwalbeTireCatalogSelector)
 	recorder := httptest.NewRecorder()
-	request := httptest.NewRequest(http.MethodGet, "/products/schwalbe-tire-catalog/selector?page=2&sort=article", nil)
+	request := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/products/schwalbe-tire-catalog/selector?page=2&sort=article", nil)
 	router.ServeHTTP(recorder, request)
 
 	if recorder.Code != http.StatusOK {
@@ -197,7 +198,7 @@ func TestSearchSchwalbeTireCatalogSelectorSortsByWeightWithUnknownValuesLast(t *
 
 	readArticleOrder := func(sortValue string) []string {
 		recorder := httptest.NewRecorder()
-		request := httptest.NewRequest(http.MethodGet, "/products/schwalbe-tire-catalog/selector?sort="+sortValue, nil)
+		request := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/products/schwalbe-tire-catalog/selector?sort="+sortValue, nil)
 		router.ServeHTTP(recorder, request)
 		if recorder.Code != http.StatusOK {
 			t.Fatalf("expected 200 for sort %s, got %d: %s", sortValue, recorder.Code, recorder.Body.String())
@@ -249,7 +250,7 @@ func TestSearchSchwalbeTireCatalogSelectorFiltersByMinimumLoadCapacity(t *testin
 	handler := NewHandler(service.NewProductService(repository.NewProductRepository(db), nil, 0))
 	router.GET("/products/schwalbe-tire-catalog/selector", handler.SearchSchwalbeTireCatalogSelector)
 	recorder := httptest.NewRecorder()
-	request := httptest.NewRequest(http.MethodGet, "/products/schwalbe-tire-catalog/selector?min_load_kg=90.5&sort=article", nil)
+	request := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/products/schwalbe-tire-catalog/selector?min_load_kg=90.5&sort=article", nil)
 	router.ServeHTTP(recorder, request)
 
 	if recorder.Code != http.StatusOK {

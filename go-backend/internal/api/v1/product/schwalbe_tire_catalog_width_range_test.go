@@ -1,6 +1,7 @@
 package product
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -41,7 +42,7 @@ func TestSearchSchwalbeTireCatalogSelectorFiltersInclusiveNominalTireWidthRange(
 	handler := NewHandler(service.NewProductService(repository.NewProductRepository(db), nil, 0))
 	router.GET("/products/schwalbe-tire-catalog/selector", handler.SearchSchwalbeTireCatalogSelector)
 	recorder := httptest.NewRecorder()
-	request := httptest.NewRequest(
+	request := httptest.NewRequestWithContext(context.Background(),
 		http.MethodGet,
 		"/products/schwalbe-tire-catalog/selector?tire_width_min_mm=40&tire_width_max_mm=57&sort=etrto",
 		nil,
@@ -95,7 +96,7 @@ func TestSearchSchwalbeTireCatalogSelectorRangeTakesPrecedenceOverLegacyExactWid
 	handler := NewHandler(service.NewProductService(repository.NewProductRepository(db), nil, 0))
 	router.GET("/products/schwalbe-tire-catalog/selector", handler.SearchSchwalbeTireCatalogSelector)
 	recorder := httptest.NewRecorder()
-	request := httptest.NewRequest(
+	request := httptest.NewRequestWithContext(context.Background(),
 		http.MethodGet,
 		"/products/schwalbe-tire-catalog/selector?tire_width_min_mm=40&tire_width_mm=35",
 		nil,
@@ -146,7 +147,7 @@ func TestSearchSchwalbeTireCatalogSelectorNormalizesReversedWidthRange(t *testin
 	handler := NewHandler(service.NewProductService(repository.NewProductRepository(db), nil, 0))
 	router.GET("/products/schwalbe-tire-catalog/selector", handler.SearchSchwalbeTireCatalogSelector)
 	recorder := httptest.NewRecorder()
-	request := httptest.NewRequest(
+	request := httptest.NewRequestWithContext(context.Background(),
 		http.MethodGet,
 		"/products/schwalbe-tire-catalog/selector?tire_width_min_mm=57&tire_width_max_mm=35&sort=etrto",
 		nil,

@@ -69,7 +69,9 @@ func runAuditSchwalbeCatalogRefresh(args []string, stdout, stderr io.Writer) err
 	if err != nil {
 		return fmt.Errorf("open snapshot: %w", err)
 	}
-	defer snapshotFile.Close()
+	defer func() {
+		_ = snapshotFile.Close()
+	}()
 	var snapshot []service.SchwalbeCatalogRefreshSnapshotRow
 	decoder := json.NewDecoder(snapshotFile)
 	decoder.DisallowUnknownFields()
@@ -89,7 +91,9 @@ func runAuditSchwalbeCatalogRefresh(args []string, stdout, stderr io.Writer) err
 		return err
 	}
 	if sqlDB, dbErr := db.DB(); dbErr == nil {
-		defer sqlDB.Close()
+		defer func() {
+			_ = sqlDB.Close()
+		}()
 	}
 
 	report, err := service.NewSchwalbeCatalogRefreshAuditService(db).Review(context.Background(), snapshot)
@@ -143,7 +147,9 @@ func runAuditPricingSnapshots(args []string, stdout, stderr io.Writer) error {
 		return err
 	}
 	if sqlDB, dbErr := db.DB(); dbErr == nil {
-		defer sqlDB.Close()
+		defer func() {
+			_ = sqlDB.Close()
+		}()
 	}
 	report, err := service.NewOrderPricingSnapshotAuditService(db).Audit(context.Background(), service.OrderPricingSnapshotAuditOptions{
 		BatchSize: *batchSize, MaxOrders: *maxOrders, FromOrderID: uint(*fromOrderID), ToOrderID: uint(*toOrderID), MaxIssues: *maxIssues,
@@ -203,7 +209,9 @@ func runEnsureAdmin(args []string, stdout, stderr io.Writer) error {
 	}
 	sqlDB, err := db.DB()
 	if err == nil {
-		defer sqlDB.Close()
+		defer func() {
+			_ = sqlDB.Close()
+		}()
 	}
 
 	result, err := service.NewAdminAccountMaintenanceService(db).EnsureBackofficeAccount(service.AdminAccountMaintenanceInput{
@@ -320,7 +328,7 @@ func envIntDefaultAny(keys []string, fallback int) int {
 
 func printUsage(w io.Writer) {
 	fmt.Fprintln(w, "Usage: adminctl ensure-admin [-config path] [-operator label]")
-	fmt.Fprintln(w, "       adminctl audit-pricing-snapshots [-config path] [-batch-size N] [-max-orders N] [-format text|json]")
+	_, _ = fmt.Fprintln(w, "       adminctl audit-pricing-snapshots [-config path] [-batch-size N] [-max-orders N] [-format text|json]")
 	fmt.Fprintln(w, "       adminctl audit-schwalbe-catalog-refresh -snapshot path [-config path] [-format text|json]")
 	fmt.Fprintln(w, "")
 	fmt.Fprintln(w, "Required environment:")

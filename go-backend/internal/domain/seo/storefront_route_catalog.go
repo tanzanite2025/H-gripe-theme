@@ -116,7 +116,7 @@ type StorefrontRouteManifestRoute struct {
 	CanonicalPath string `json:"canonical_path"`
 	// SitemapLocales limits the locale variants that are approved for public
 	// route-catalog and sitemap discovery. An empty list keeps the historical
-	// behaviour of generating every enabled locale.
+	// behavior of generating every enabled locale.
 	SitemapLocales []string `json:"sitemap_locales,omitempty"`
 	IsAlias        bool     `json:"is_alias"`
 	IsSearchable   bool     `json:"is_searchable"`

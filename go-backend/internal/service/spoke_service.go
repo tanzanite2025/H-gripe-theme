@@ -52,7 +52,7 @@ type SpokeCalculationInput struct {
 	// InterlaceCompensationMM is an optional user-supplied correction. It is
 	// intentionally not inferred from crossing count or spoke profile because
 	// spoke section, butting, and hub exit direction change the bend geometry.
-	InterlaceCompensationMM     *float64
+	InterlaceCompensationMM *float64
 	// RimOffsetMM is positive when the rim center moves toward the right
 	// flange. The value changes both the spoke length geometry and bracing
 	// angles used for the tension-ratio estimate.

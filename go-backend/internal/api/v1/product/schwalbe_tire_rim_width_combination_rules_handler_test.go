@@ -1,6 +1,7 @@
 package product
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -50,7 +51,7 @@ func TestListSchwalbeTireRimWidthCombinationRulesReturnsSourceBackedRules(t *tes
 	router.GET("/products/schwalbe-tire-rim-width-combination-rules", handler.ListSchwalbeTireRimWidthCombinationRules)
 
 	recorder := httptest.NewRecorder()
-	request := httptest.NewRequest(http.MethodGet, "/products/schwalbe-tire-rim-width-combination-rules", nil)
+	request := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/products/schwalbe-tire-rim-width-combination-rules", nil)
 	router.ServeHTTP(recorder, request)
 
 	if recorder.Code != http.StatusOK {

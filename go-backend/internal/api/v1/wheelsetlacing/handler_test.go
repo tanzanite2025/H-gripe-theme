@@ -1,6 +1,7 @@
 package wheelsetlacing
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -29,7 +30,7 @@ func TestListTopologiesReturnsCacheableContract(t *testing.T) {
 		t.Fatalf("topology contract must not expose physical calculations: %s", first.Body.String())
 	}
 
-	request := httptest.NewRequest(http.MethodGet, "/api/v1/wheelset-lacing/topologies", nil)
+	request := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/api/v1/wheelset-lacing/topologies", nil)
 	request.Header.Set("If-None-Match", first.Header().Get("ETag"))
 	response := httptest.NewRecorder()
 	router.ServeHTTP(response, request)
@@ -76,7 +77,7 @@ func newTestRouter() *gin.Engine {
 }
 
 func performRequest(router *gin.Engine, method, path, body string) *httptest.ResponseRecorder {
-	request := httptest.NewRequest(method, path, strings.NewReader(body))
+	request := httptest.NewRequestWithContext(context.Background(), method, path, strings.NewReader(body))
 	if body != "" {
 		request.Header.Set("Content-Type", "application/json")
 	}

@@ -1,6 +1,7 @@
 package product
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -59,7 +60,7 @@ func TestSearchSchwalbeTireCatalogSelectorFiltersInnerRimWidthBeforePagination(t
 	handler := NewHandler(service.NewProductService(repository.NewProductRepository(db), nil, 0))
 	router.GET("/products/schwalbe-tire-catalog/selector", handler.SearchSchwalbeTireCatalogSelector)
 	recorder := httptest.NewRecorder()
-	request := httptest.NewRequest(http.MethodGet, "/products/schwalbe-tire-catalog/selector?inner_rim_width_mm=23.5&wheel_size=28-622&page=2&sort=article", nil)
+	request := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/products/schwalbe-tire-catalog/selector?inner_rim_width_mm=23.5&wheel_size=28-622&page=2&sort=article", nil)
 	router.ServeHTTP(recorder, request)
 
 	if recorder.Code != http.StatusOK {
@@ -135,7 +136,7 @@ func TestSearchSchwalbeTireCatalogSelectorReportsUncoveredInnerRimWidth(t *testi
 	handler := NewHandler(service.NewProductService(repository.NewProductRepository(db), nil, 0))
 	router.GET("/products/schwalbe-tire-catalog/selector", handler.SearchSchwalbeTireCatalogSelector)
 	recorder := httptest.NewRecorder()
-	router.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/products/schwalbe-tire-catalog/selector?inner_rim_width_mm=30&wheel_size=28-622", nil))
+	router.ServeHTTP(recorder, httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/products/schwalbe-tire-catalog/selector?inner_rim_width_mm=30&wheel_size=28-622", nil))
 
 	if recorder.Code != http.StatusOK {
 		t.Fatalf("expected 200, got %d: %s", recorder.Code, recorder.Body.String())
@@ -186,7 +187,7 @@ func TestSearchSchwalbeTireCatalogSelectorRequiresWheelSizeForInnerRimWidth(t *t
 	handler := NewHandler(service.NewProductService(repository.NewProductRepository(db), nil, 0))
 	router.GET("/products/schwalbe-tire-catalog/selector", handler.SearchSchwalbeTireCatalogSelector)
 	recorder := httptest.NewRecorder()
-	router.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/products/schwalbe-tire-catalog/selector?inner_rim_width_mm=23", nil))
+	router.ServeHTTP(recorder, httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/products/schwalbe-tire-catalog/selector?inner_rim_width_mm=23", nil))
 
 	if recorder.Code != http.StatusOK {
 		t.Fatalf("expected 200, got %d: %s", recorder.Code, recorder.Body.String())

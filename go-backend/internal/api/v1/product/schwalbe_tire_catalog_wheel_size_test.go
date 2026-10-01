@@ -1,6 +1,7 @@
 package product
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -53,7 +54,7 @@ func TestSearchSchwalbeTireCatalogSelectorFiltersByWheelDiameterAndBSDPair(t *te
 		} `json:"data"`
 	}
 	allRecorder := httptest.NewRecorder()
-	router.ServeHTTP(allRecorder, httptest.NewRequest(
+	router.ServeHTTP(allRecorder, httptest.NewRequestWithContext(context.Background(),
 		http.MethodGet,
 		"/products/schwalbe-tire-catalog/selector?sort=article",
 		nil,
@@ -105,7 +106,7 @@ func TestSearchSchwalbeTireCatalogSelectorFiltersByWheelDiameterAndBSDPair(t *te
 				} `json:"data"`
 			}
 			recorder := httptest.NewRecorder()
-			request := httptest.NewRequest(
+			request := httptest.NewRequestWithContext(context.Background(),
 				http.MethodGet,
 				"/products/schwalbe-tire-catalog/selector?sort=article&wheel_size="+testCase.wheelSize,
 				nil,

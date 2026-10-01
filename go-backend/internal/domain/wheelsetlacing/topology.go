@@ -405,10 +405,7 @@ func validateTopology(topology Topology) error {
 	if err := validateSpokeMappings(topology); err != nil {
 		return err
 	}
-	if err := compareExpectedSpokes(topology.Spokes, expected.Spokes); err != nil {
-		return err
-	}
-	return nil
+	return compareExpectedSpokes(topology.Spokes, expected.Spokes)
 }
 
 func expectedTopology(selection string, cross int) *Topology {

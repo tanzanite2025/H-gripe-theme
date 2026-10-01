@@ -30,7 +30,7 @@ type spokeGeometryInput struct {
 	// radius deduction after resolving its tangent slot vector.
 	SpokeHoleDiameterMM float64
 	// StraightPullTangentOffsetMM is consumed by the Straight Pull calculator
-	// only. It is measured in the local flange frame in millimetres.
+	// only. It is measured in the local flange frame in millimeters.
 	StraightPullTangentOffsetMM float64
 }
 

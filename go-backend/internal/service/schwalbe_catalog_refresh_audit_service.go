@@ -174,10 +174,7 @@ func (s *SchwalbeCatalogRefreshAuditService) Review(ctx context.Context, incomin
 		if err := loadSchwalbeCatalogRefreshCatalog(tx, &current); err != nil {
 			return err
 		}
-		if err := loadSchwalbeActiveSalesProducts(tx, &products); err != nil {
-			return err
-		}
-		return nil
+		return loadSchwalbeActiveSalesProducts(tx, &products)
 	}, &sql.TxOptions{ReadOnly: true, Isolation: sql.LevelRepeatableRead})
 	if err != nil {
 		return nil, fmt.Errorf("read Schwalbe catalog and sales snapshots: %w", err)
@@ -299,7 +296,7 @@ func validateSchwalbeDefinitionSlugs(actual []string) error {
 	}
 	sort.Strings(missing)
 	if len(missing) > 0 {
-		return fmt.Errorf("Schwalbe template is missing required specification definitions: %s", strings.Join(missing, ", "))
+		return fmt.Errorf("schwalbe template is missing required specification definitions: %s", strings.Join(missing, ", "))
 	}
 	unexpected := make([]string, 0)
 	for slug := range got {
@@ -309,7 +306,7 @@ func validateSchwalbeDefinitionSlugs(actual []string) error {
 	}
 	sort.Strings(unexpected)
 	if len(unexpected) > 0 {
-		return fmt.Errorf("Schwalbe template has specification definitions outside the 19-field contract: %s", strings.Join(unexpected, ", "))
+		return fmt.Errorf("schwalbe template has specification definitions outside the 19-field contract: %s", strings.Join(unexpected, ", "))
 	}
 	return nil
 }
@@ -647,8 +644,8 @@ func cloneString(value *string) *string {
 	if value == nil {
 		return nil
 	}
-	copy := *value
-	return &copy
+	cloned := *value
+	return &cloned
 }
 
 func isFiniteNumber(value float64) bool {

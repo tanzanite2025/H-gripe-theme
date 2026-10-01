@@ -2,13 +2,12 @@ package migrations_test
 
 import (
 	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 )
 
 func TestFAQRouteReconciliationMigrationContract(t *testing.T) {
-	root := filepath.Join("363_reconcile_faq_route_paths.up.sql")
+	root := "363_reconcile_faq_route_paths.up.sql"
 	up, err := os.ReadFile(root)
 	if err != nil {
 		t.Fatalf("read FAQ route reconciliation migration: %v", err)
@@ -33,7 +32,7 @@ func TestFAQRouteReconciliationMigrationContract(t *testing.T) {
 		}
 	}
 
-	down, err := os.ReadFile(filepath.Join("363_reconcile_faq_route_paths.down.sql"))
+	down, err := os.ReadFile("363_reconcile_faq_route_paths.down.sql")
 	if err != nil {
 		t.Fatalf("read FAQ route reconciliation down migration: %v", err)
 	}

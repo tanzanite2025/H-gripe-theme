@@ -60,7 +60,7 @@ func buildManifestRouteCatalogEntries(
 
 // manifestRouteLocales lets a page opt into sitemap/catalog discovery only for
 // locales that have a real page translation. Existing manifest entries omit
-// the field and therefore retain the all-enabled-locales behaviour.
+// the field and therefore retain the all-enabled-locales behavior.
 func manifestRouteLocales(declaration seodomain.StorefrontRouteManifestRoute) []string {
 	if len(declaration.SitemapLocales) == 0 {
 		return locales.EnabledLocaleCodes()
