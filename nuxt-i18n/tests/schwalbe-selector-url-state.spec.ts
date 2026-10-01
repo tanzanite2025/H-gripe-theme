@@ -229,6 +229,24 @@ test.describe('Schwalbe selector URL state', () => {
     await expect(page).toHaveURL(url => url.searchParams.get('wheel_size') === '26-559')
   })
 
+  test('uses a native wheel size dropdown on a phone viewport', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 })
+    await page.goto(selectorURL('?wheel_size=26-559'))
+    await waitForNuxtMount(page)
+
+    const wheelSizeSelect = page.getByRole('combobox', { name: 'Wheel size navigation' })
+    await expect(wheelSizeSelect).toBeVisible()
+    await expect(page.locator('.schwalbe-wheel-size-tabs__desktop')).toBeHidden()
+    await expect(wheelSizeSelect).toHaveValue('26-559')
+
+    await wheelSizeSelect.selectOption('29-622')
+    await expect(page).toHaveURL(url => url.searchParams.get('wheel_size') === '29-622')
+    await expect(wheelSizeSelect).toHaveValue('29-622')
+
+    await wheelSizeSelect.selectOption('')
+    await expect(page).not.toHaveURL(/wheel_size=/)
+  })
+
   test('hides casing construction filtering and keeps Radial in the URL', async ({ page }) => {
     await page.goto(selectorURL('?casing=Super%20Race&radial=1'))
     await waitForNuxtMount(page)
