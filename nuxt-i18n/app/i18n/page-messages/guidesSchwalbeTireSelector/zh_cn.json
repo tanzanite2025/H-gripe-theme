@@ -128,6 +128,7 @@
     "disclaimer": "技术名称和说明依据已引用的官方资料整理；具体型号规格应以对应官方产品页为准，单独的技术名称不构成统一安全或购买建议。",
     "tabs": {
       "radial": "径向胎体",
+      "casing": "胎体结构",
       "green": "Green Marathon",
       "protection": "防刺等级 1–7",
       "addix": "ADDIX / Compound",
@@ -150,6 +151,45 @@
         "tradeoff": {
           "title": "实际取舍",
           "body": "更大的接地面积可能使滚动阻力略有上升。实际抓地、舒适和控制感取决于型号、花纹、胎压与骑行设定。"
+        }
+      }
+    },
+    "casing": {
+      "label": "胎体结构 · 目录说明",
+      "title": "Schwalbe 目录中的胎体结构分别代表什么",
+      "note": "以下八个值是从目录 version label 中按精确 token 识别的胎体结构名称，用来说明结构方向或使用取向，不是跨系列通用的质量排名。Radial、V-Guard、RaceGuard 等属于其他独立结构，分别在对应技术主题中说明。",
+      "items": {
+        "superRace": {
+          "title": "竞赛取向胎体",
+          "body": "偏轻量和柔顺的竞赛取向结构，常见于竞赛型型号。具体防护层、胶料、胎压范围和用途仍要以完整型号规格为准。"
+        },
+        "superGround": {
+          "title": "XC 与全能越野平衡结构",
+          "body": "面向 XC 和全能越野的平衡型结构，在重量、支撑和日常耐用方向之间取平衡。"
+        },
+        "superTrail": {
+          "title": "Trail 支撑型结构",
+          "body": "Trail 取向结构，更强调胎体支撑和耐用方向，适合技术型越野使用。"
+        },
+        "superDownhill": {
+          "title": "下坡与 Gravity 加强结构",
+          "body": "面向 Gravity/下坡场景的加强结构，用于应对更高冲击和激烈下坡使用。"
+        },
+        "trail": {
+          "title": "TRAIL 系列标签",
+          "body": "Schwalbe Trail 系列的目录结构标签，表示 Trail 家族的使用取向，不能当作跨系列统一性能等级。"
+        },
+        "trailPro": {
+          "title": "TRAIL PRO 系列标签",
+          "body": "Trail Pro 系列的目录结构标签；PRO 是这个系列名称的一部分，不能理解成适用于所有 Schwalbe 胎体的通用排名。"
+        },
+        "gravity": {
+          "title": "GRAVITY 系列标签",
+          "body": "Gravity 取向系列的目录结构标签，指向更高负荷的 Gravity/Enduro 使用场景，具体结构仍需看型号页面。"
+        },
+        "gravityPro": {
+          "title": "GRAVITY PRO 系列标签",
+          "body": "Gravity Pro 系列的目录结构标签；PRO 是系列名称的一部分，不是通用等级，仍要核对具体型号、尺寸、胶料、胎压和防护结构。"
         }
       }
     },

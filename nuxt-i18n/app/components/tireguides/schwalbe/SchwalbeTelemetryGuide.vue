@@ -57,6 +57,32 @@
       </section>
 
       <section
+        v-if="activeTechTab === 'casing'"
+        class="schwalbe-telemetry__topic schwalbe-telemetry__topic--casing"
+      >
+        <div class="schwalbe-telemetry__topic-heading">
+          <div>
+            <p class="schwalbe-telemetry__topic-label">{{ tx('telemetryGuide.casing.label') }}</p>
+            <h3>{{ tx('telemetryGuide.casing.title') }}</h3>
+          </div>
+        </div>
+        <p class="schwalbe-telemetry__topic-note">{{ tx('telemetryGuide.casing.note') }}</p>
+        <div class="schwalbe-telemetry__catalog-grid schwalbe-telemetry__casing-grid">
+          <article
+            v-for="entry in casingConstructionGuides"
+            :key="entry.key"
+            class="schwalbe-telemetry__catalog-card schwalbe-telemetry__catalog-card--casing"
+          >
+            <code class="schwalbe-telemetry__catalog-value">{{ entry.value }}</code>
+            <div>
+              <h5>{{ tx(`telemetryGuide.casing.items.${entry.key}.title`) }}</h5>
+              <p>{{ tx(`telemetryGuide.casing.items.${entry.key}.body`) }}</p>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section
         v-if="activeTechTab === 'green'"
         class="schwalbe-telemetry__topic schwalbe-telemetry__topic--green"
       >
@@ -219,7 +245,7 @@ import { ref, useId, watch } from 'vue'
 import { useI18n } from '#imports'
 import { usePageMessages } from '~/composables/usePageMessages'
 
-type TelemetryTab = 'radial' | 'green' | 'protection' | 'color' | 'compound' | 'addix'
+type TelemetryTab = 'radial' | 'casing' | 'green' | 'protection' | 'color' | 'compound' | 'addix'
 
 const { locale, t: translate } = useI18n()
 const { loadPageMessages } = usePageMessages('guidesSchwalbeTireSelector')
@@ -232,6 +258,7 @@ const activeTechTab = ref<TelemetryTab>('radial')
 const showTechGuide = ref(true)
 const tabs: Array<{ id: TelemetryTab; labelKey: string }> = [
   { id: 'radial', labelKey: 'telemetryGuide.tabs.radial' },
+  { id: 'casing', labelKey: 'telemetryGuide.tabs.casing' },
   { id: 'green', labelKey: 'telemetryGuide.tabs.green' },
   { id: 'protection', labelKey: 'telemetryGuide.tabs.protection' },
   { id: 'color', labelKey: 'telemetryGuide.tabs.color' },
@@ -243,6 +270,17 @@ const radialGuides = [
   { key: 'casing' },
   { key: 'contact' },
   { key: 'tradeoff' },
+] as const
+
+const casingConstructionGuides = [
+  { key: 'superRace', value: 'Super Race' },
+  { key: 'superGround', value: 'Super Ground' },
+  { key: 'superTrail', value: 'Super Trail' },
+  { key: 'superDownhill', value: 'Super Downhill' },
+  { key: 'trail', value: 'TRAIL' },
+  { key: 'trailPro', value: 'TRAIL PRO' },
+  { key: 'gravity', value: 'GRAVITY' },
+  { key: 'gravityPro', value: 'GRAVITY PRO' },
 ] as const
 
 const greenGuides = [
@@ -491,6 +529,10 @@ const compoundCatalogGuides = [
   color: #7c3aed;
 }
 
+.schwalbe-telemetry__topic--casing .schwalbe-telemetry__topic-label {
+  color: #0f766e;
+}
+
 .schwalbe-telemetry__topic--green .schwalbe-telemetry__topic-label {
   color: #047857;
 }
@@ -675,6 +717,11 @@ const compoundCatalogGuides = [
 .schwalbe-telemetry__catalog-card--compound {
   border-color: #bae6fd;
   background: #f0f9ff;
+}
+
+.schwalbe-telemetry__catalog-card--casing {
+  border-color: #99f6e4;
+  background: #f0fdfa;
 }
 
 .schwalbe-telemetry__catalog-value {

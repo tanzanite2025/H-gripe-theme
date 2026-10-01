@@ -85,7 +85,7 @@ test.describe('Schwalbe selector URL state', () => {
     expect(widths.pageRoot).toBeCloseTo(widths.shell, 0)
   })
 
-  test('explains every color and compound value in separate telemetry tabs', async ({ page }) => {
+  test('explains casing, color, and compound values in separate telemetry tabs', async ({ page }) => {
     await page.goto(selectorURL())
     await waitForNuxtMount(page)
 
@@ -137,6 +137,26 @@ test.describe('Schwalbe selector URL state', () => {
       'WheelStar',
       'Winter',
     ]
+    const casingValues = [
+      'Super Race',
+      'Super Ground',
+      'Super Trail',
+      'Super Downhill',
+      'TRAIL',
+      'TRAIL PRO',
+      'GRAVITY',
+      'GRAVITY PRO',
+    ]
+
+    const casingTab = page.getByRole('tab', { name: 'Casing construction', exact: true })
+    await expect(casingTab).toBeVisible()
+    await casingTab.click()
+
+    const casingTopic = page.locator('.schwalbe-telemetry__topic--casing')
+    await expect(casingTopic).toBeVisible()
+    await expect(casingTopic).toContainText('What the Schwalbe casing construction values mean')
+    await expect(casingTopic.locator('.schwalbe-telemetry__catalog-value')).toHaveText(casingValues)
+    await expect(casingTopic.locator('.schwalbe-telemetry__catalog-card')).toHaveCount(casingValues.length)
 
     const colorTab = page.getByRole('tab', { name: /Color$/ })
     await expect(colorTab).toBeVisible()
@@ -215,25 +235,19 @@ test.describe('Schwalbe selector URL state', () => {
     await expect(page).toHaveURL(url => url.searchParams.get('wheel_size') === '26-559')
   })
 
-  test('uses ALL as the default casing orientation and keeps Radial in the URL', async ({ page }) => {
-    await page.goto(selectorURL('?radial=1'))
+  test('hides casing construction filtering and keeps Radial in the URL', async ({ page }) => {
+    await page.goto(selectorURL('?casing=Super%20Race&radial=1'))
     await waitForNuxtMount(page)
     await openCatalogFilters(page)
 
-    const allOption = page.getByRole('radio', { name: 'ALL', exact: true })
     const radialOption = page.getByRole('radio', { name: 'Radial', exact: true })
     await expect(radialOption).toBeChecked()
-    await expect(allOption).not.toBeChecked()
-
-    await allOption.check()
+    await expect(page.locator('fieldset.schwalbe-filter-panel__inline-facet').filter({ hasText: 'Casing orientation' })).toHaveCount(0)
     await page.getByRole('button', { name: 'Show results' }).click()
-    await expect(page).not.toHaveURL(/radial=/)
-
-    await openCatalogFilters(page)
-    await expect(allOption).toBeChecked()
-    await radialOption.check()
-    await page.getByRole('button', { name: 'Show results' }).click()
-    await expect(page).toHaveURL(url => url.searchParams.get('radial') === '1')
+    await expect(page).toHaveURL(url => (
+      url.searchParams.get('radial') === '1'
+      && !url.searchParams.has('casing')
+    ))
   })
 
   test('keeps wheel size and rim inner width in one drawer flow', async ({ page }) => {
@@ -289,8 +303,8 @@ test.describe('Schwalbe selector URL state', () => {
     const dialog = page.getByRole('dialog', { name: 'Filter catalog' })
     await expect(dialog).toBeVisible()
     await expect(dialog.locator('summary.schwalbe-filter-panel__accordion-title').filter({ hasText: 'Tire width' })).toHaveCount(0)
-    await expect(dialog.locator('fieldset.schwalbe-filter-panel__inline-facet')).toHaveCount(5)
-    await expect(dialog.locator('fieldset.schwalbe-filter-panel__inline-facet').filter({ hasText: 'Casing orientation' })).toBeVisible()
+    await expect(dialog.locator('fieldset.schwalbe-filter-panel__inline-facet')).toHaveCount(4)
+    await expect(dialog.locator('fieldset.schwalbe-filter-panel__inline-facet').filter({ hasText: 'Casing orientation' })).toHaveCount(0)
     await expect(dialog.locator('fieldset.schwalbe-filter-panel__inline-facet').filter({ hasText: 'E-Bike marking' })).toBeVisible()
     await expect(dialog.locator('fieldset.schwalbe-filter-panel__inline-facet').filter({ hasText: 'Seal' })).toBeVisible()
     await expect(dialog.getByRole('radio', { name: 'ALL', exact: true })).toBeChecked()
@@ -300,7 +314,6 @@ test.describe('Schwalbe selector URL state', () => {
     await expect(dialog.getByRole('radio', { name: 'ALL', exact: true })).not.toBeChecked()
     await dialog.getByRole('radio', { name: 'ALL', exact: true }).check()
     await expect(dialog.getByRole('radio', { name: 'ALL', exact: true })).toBeChecked()
-    await expect(dialog.locator('summary.schwalbe-filter-panel__accordion-title').filter({ hasText: 'Casing orientation' })).toHaveCount(0)
     await expect(dialog.locator('summary.schwalbe-filter-panel__accordion-title').filter({ hasText: 'E-Bike marking' })).toHaveCount(0)
     await expect(dialog.locator('summary.schwalbe-filter-panel__accordion-title').filter({ hasText: 'Seal' })).toHaveCount(0)
     await expect(page.getByRole('button', { name: 'Show results' })).toBeVisible()

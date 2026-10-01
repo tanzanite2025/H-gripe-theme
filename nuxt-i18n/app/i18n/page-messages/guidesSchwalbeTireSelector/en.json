@@ -128,6 +128,7 @@
     "disclaimer": "Technical names and descriptions follow the cited official source notes. Model-specific specifications should be verified on the relevant official product page; a technology name alone is not a universal safety or purchase recommendation.",
     "tabs": {
       "radial": "Radial casing",
+      "casing": "Casing construction",
       "green": "Green Marathon",
       "protection": "Protection Level 1–7",
       "addix": "ADDIX / Compound",
@@ -150,6 +151,45 @@
         "tradeoff": {
           "title": "Practical trade-off",
           "body": "The larger contact area can slightly increase rolling resistance. Actual grip, comfort, and control depend on the model, tread, pressure, and riding setup."
+        }
+      }
+    },
+    "casing": {
+      "label": "Casing construction · catalog glossary",
+      "title": "What the Schwalbe casing construction values mean",
+      "note": "These eight values are the reviewed casing-construction tokens extracted from the catalog version label. They describe the construction or intended-use direction; they are not a universal quality ranking. Radial, V-Guard, RaceGuard, and other protection tokens are separate constructions and remain explained in their own topics.",
+      "items": {
+        "superRace": {
+          "title": "Race-oriented casing",
+          "body": "A light and supple casing direction for racing-focused models. The exact puncture layer, compound, pressure range, and intended use still come from the complete model specification."
+        },
+        "superGround": {
+          "title": "Balanced cross-country casing",
+          "body": "A balanced construction direction for cross-country and all-round off-road riding, combining low weight with support and everyday durability."
+        },
+        "superTrail": {
+          "title": "Trail-support casing",
+          "body": "A trail-oriented construction direction with more emphasis on casing support and durability for technical off-road riding."
+        },
+        "superDownhill": {
+          "title": "Downhill and gravity casing",
+          "body": "A reinforced gravity/downhill construction direction for demanding impacts and aggressive downhill use."
+        },
+        "trail": {
+          "title": "TRAIL family label",
+          "body": "The catalog label for a Schwalbe Trail-family construction. It identifies the product family direction; it is not a cross-family performance grade."
+        },
+        "trailPro": {
+          "title": "TRAIL PRO family label",
+          "body": "The catalog label for a Trail Pro construction. PRO belongs to this family name and must not be read as a universal ranking across all Schwalbe casings."
+        },
+        "gravity": {
+          "title": "GRAVITY family label",
+          "body": "The catalog label for a gravity-oriented construction family. It points to demanding gravity and enduro use, while the exact construction remains model-specific."
+        },
+        "gravityPro": {
+          "title": "GRAVITY PRO family label",
+          "body": "The catalog label for a Gravity Pro construction. PRO is part of the family name, not a universal grade; check the exact model, size, compound, pressure, and protection details."
         }
       }
     },
