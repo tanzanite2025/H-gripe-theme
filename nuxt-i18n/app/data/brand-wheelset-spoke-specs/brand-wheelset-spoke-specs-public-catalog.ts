@@ -2325,5 +2325,497 @@ export const publicBrandWheelsetSpokeCatalogs: PublicBrandWheelsetCatalog[] = [
         ]
       }
     ]
+  },
+  {
+    "brandSlug": "zipp",
+    "brandName": "ZIPP",
+    "publicationStatus": "published",
+    "sourceCheckedAt": "2026-10-01",
+    "wheelsets": [
+      {
+        "slug": "zipp-303-firecrest-b1",
+        "model": "ZIPP 303 Firecrest [B1 世代 · 2021–2026]",
+        "lifecycleStatus": "current",
+        "rim": {
+          "depthMm": 40
+        },
+        "wheels": [
+          {
+            "position": "front",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "Sapim CX-Sprint",
+                "headType": "j-bend"
+              },
+              {
+                "side": "right",
+                "spokeModel": "Sapim CX-Sprint",
+                "headType": "j-bend"
+              }
+            ]
+          },
+          {
+            "position": "rear",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "Sapim CX-Sprint",
+                "headType": "j-bend"
+              },
+              {
+                "side": "right",
+                "spokeModel": "Sapim CX-Sprint",
+                "headType": "j-bend"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "slug": "zipp-404-firecrest-b1",
+        "model": "ZIPP 404 Firecrest [B1 世代 · 2021–2026]",
+        "lifecycleStatus": "current",
+        "rim": {
+          "depthMm": 58
+        },
+        "wheels": [
+          {
+            "position": "front",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "Sapim CX-Sprint",
+                "headType": "j-bend"
+              },
+              {
+                "side": "right",
+                "spokeModel": "Sapim CX-Sprint",
+                "headType": "j-bend"
+              }
+            ]
+          },
+          {
+            "position": "rear",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "Sapim CX-Sprint",
+                "headType": "j-bend"
+              },
+              {
+                "side": "right",
+                "spokeModel": "Sapim CX-Sprint",
+                "headType": "j-bend"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "slug": "zipp-808-firecrest-b1",
+        "model": "ZIPP 808 Firecrest [B1 世代 · 2022–2026]",
+        "lifecycleStatus": "current",
+        "rim": {
+          "depthMm": 80
+        },
+        "wheels": [
+          {
+            "position": "front",
+            "spokeCount": 20,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "Sapim CX-Sprint",
+                "headType": "j-bend"
+              },
+              {
+                "side": "right",
+                "spokeModel": "Sapim CX-Sprint",
+                "headType": "j-bend"
+              }
+            ]
+          },
+          {
+            "position": "rear",
+            "spokeCount": 20,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "Sapim CX-Sprint",
+                "headType": "j-bend"
+              },
+              {
+                "side": "right",
+                "spokeModel": "Sapim CX-Sprint",
+                "headType": "j-bend"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "slug": "zipp-353-nsw-a1",
+        "model": "ZIPP 353 NSW [A1 世代 · Cognition V2]",
+        "lifecycleStatus": "current",
+        "rim": {
+          "depthMm": 45
+        },
+        "wheels": [
+          {
+            "position": "front",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "Sapim CX-Ray",
+                "headType": "j-bend"
+              },
+              {
+                "side": "right",
+                "spokeModel": "Sapim CX-Ray",
+                "headType": "j-bend"
+              }
+            ]
+          },
+          {
+            "position": "rear",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "Sapim CX-Ray",
+                "headType": "j-bend"
+              },
+              {
+                "side": "right",
+                "spokeModel": "Sapim CX-Ray",
+                "headType": "j-bend"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "slug": "zipp-454-nsw-b1-c1",
+        "model": "ZIPP 454 NSW [B1/C1 世代 · Cognition V2]",
+        "lifecycleStatus": "current",
+        "rim": {
+          "depthMm": 58
+        },
+        "wheels": [
+          {
+            "position": "front",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "Sapim CX-Ray",
+                "headType": "j-bend"
+              },
+              {
+                "side": "right",
+                "spokeModel": "Sapim CX-Ray",
+                "headType": "j-bend"
+              }
+            ]
+          },
+          {
+            "position": "rear",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "Sapim CX-Ray",
+                "headType": "j-bend"
+              },
+              {
+                "side": "right",
+                "spokeModel": "Sapim CX-Ray",
+                "headType": "j-bend"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "slug": "zipp-858-nsw-b1-d1",
+        "model": "ZIPP 858 NSW [B1/D1 世代 · Cognition V2]",
+        "lifecycleStatus": "current",
+        "rim": {
+          "depthMm": 85
+        },
+        "wheels": [
+          {
+            "position": "front",
+            "spokeCount": 20,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "Sapim CX-Ray",
+                "headType": "j-bend"
+              },
+              {
+                "side": "right",
+                "spokeModel": "Sapim CX-Ray",
+                "headType": "j-bend"
+              }
+            ]
+          },
+          {
+            "position": "rear",
+            "spokeCount": 20,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "Sapim CX-Ray",
+                "headType": "j-bend"
+              },
+              {
+                "side": "right",
+                "spokeModel": "Sapim CX-Ray",
+                "headType": "j-bend"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "slug": "zipp-303-xplr-sw-a1",
+        "model": "ZIPP 303 XPLR SW [A1 世代 · 2024–2026]",
+        "lifecycleStatus": "current",
+        "rim": {
+          "depthMm": 54
+        },
+        "wheels": [
+          {
+            "position": "front",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "Sapim CX-Ray",
+                "headType": "j-bend"
+              },
+              {
+                "side": "right",
+                "spokeModel": "Sapim CX-Ray",
+                "headType": "j-bend"
+              }
+            ]
+          },
+          {
+            "position": "rear",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "Sapim CX-Ray",
+                "headType": "j-bend"
+              },
+              {
+                "side": "right",
+                "spokeModel": "Sapim CX-Ray",
+                "headType": "j-bend"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "slug": "zipp-303-xplr-s-a1",
+        "model": "ZIPP 303 XPLR S [A1 世代 · 2024–2026]",
+        "lifecycleStatus": "current",
+        "rim": {
+          "depthMm": 54
+        },
+        "wheels": [
+          {
+            "position": "front",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "Sapim CX-Sprint",
+                "headType": "j-bend"
+              },
+              {
+                "side": "right",
+                "spokeModel": "Sapim CX-Sprint",
+                "headType": "j-bend"
+              }
+            ]
+          },
+          {
+            "position": "rear",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "Sapim CX-Sprint",
+                "headType": "j-bend"
+              },
+              {
+                "side": "right",
+                "spokeModel": "Sapim CX-Sprint",
+                "headType": "j-bend"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "slug": "zipp-101-xplr-a1-700c",
+        "model": "ZIPP 101 XPLR 700c [A1 世代 · MOTO]",
+        "lifecycleStatus": "current",
+        "rim": {
+          "depthMm": 15
+        },
+        "wheels": [
+          {
+            "position": "front",
+            "spokeCount": 28,
+            "lacingPattern": "3X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "Sapim CX-Sprint",
+                "headType": "j-bend"
+              },
+              {
+                "side": "right",
+                "spokeModel": "Sapim CX-Sprint",
+                "headType": "j-bend"
+              }
+            ]
+          },
+          {
+            "position": "rear",
+            "spokeCount": 28,
+            "lacingPattern": "3X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "Sapim CX-Sprint",
+                "headType": "j-bend"
+              },
+              {
+                "side": "right",
+                "spokeModel": "Sapim CX-Sprint",
+                "headType": "j-bend"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "slug": "zipp-303-s-a1",
+        "model": "ZIPP 303 S [A1 世代]",
+        "lifecycleStatus": "current",
+        "rim": {
+          "depthMm": 45
+        },
+        "wheels": [
+          {
+            "position": "front",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "Sapim CX54 / CX-Sprint",
+                "headType": "j-bend"
+              },
+              {
+                "side": "right",
+                "spokeModel": "Sapim CX54 / CX-Sprint",
+                "headType": "j-bend"
+              }
+            ]
+          },
+          {
+            "position": "rear",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "Sapim CX54 / CX-Sprint",
+                "headType": "j-bend"
+              },
+              {
+                "side": "right",
+                "spokeModel": "Sapim CX54 / CX-Sprint",
+                "headType": "j-bend"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "slug": "zipp-303-firecrest-a1-legacy-77-177",
+        "model": "ZIPP 303 Firecrest Carbon Clincher Disc [A1 世代 · MY16–MY19 · 77/177D]",
+        "lifecycleStatus": "legacy",
+        "rim": {
+          "depthMm": 45
+        },
+        "wheels": [
+          {
+            "position": "front",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "Sapim CX-Ray",
+                "headType": "j-bend"
+              },
+              {
+                "side": "right",
+                "spokeModel": "Sapim CX-Ray",
+                "headType": "j-bend"
+              }
+            ]
+          },
+          {
+            "position": "rear",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "Sapim CX-Ray",
+                "headType": "j-bend"
+              },
+              {
+                "side": "right",
+                "spokeModel": "Sapim CX-Ray",
+                "headType": "j-bend"
+              }
+            ]
+          }
+        ]
+      }
+    ]
   }
 ]

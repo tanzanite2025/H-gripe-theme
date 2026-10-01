@@ -502,7 +502,9 @@ const brandMark = (brandName: string, brandSlug: string) => (
       ? 'SH'
       : brandSlug === 'enve'
         ? 'EN'
-      : brandName.split(/\s+/).map(part => part[0]).join('').slice(0, 2).toUpperCase()
+        : brandSlug === 'zipp'
+          ? 'ZP'
+          : brandName.split(/\s+/).map(part => part[0]).join('').slice(0, 2).toUpperCase()
 )
 
 const openAuth = (mode: 'login' | 'register') => {

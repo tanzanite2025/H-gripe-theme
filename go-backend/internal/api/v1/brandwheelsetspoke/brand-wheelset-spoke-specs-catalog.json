@@ -2908,5 +2908,607 @@
         ]
       }
     ]
+  },
+  {
+    "brandSlug": "zipp",
+    "brandName": "ZIPP",
+    "publicationStatus": "published",
+    "sourceCheckedAt": "2026-10-01",
+    "wheelsets": [
+      {
+        "slug": "zipp-303-firecrest-b1",
+        "model": "ZIPP 303 Firecrest [B1 世代 · 2021–2026]",
+        "lifecycleStatus": "current",
+        "verificationStatus": "verified",
+        "rim": {
+          "depthMm": 40,
+          "innerWidthMm": 25,
+          "outerWidthMm": 30
+        },
+        "nippleModel": "Sapim Secure Lock external black alloy nipple, 2.0 mm",
+        "nippleLengthMm": 14,
+        "sourceUrl": "https://www.sram.com/en/service/models/wh-303-ftld-a1",
+        "wheels": [
+          {
+            "position": "front",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "Sapim CX-Sprint",
+                "headType": "j-bend",
+                "lengthMm": 270
+              },
+              {
+                "side": "right",
+                "spokeModel": "Sapim CX-Sprint",
+                "headType": "j-bend",
+                "lengthMm": 272
+              }
+            ]
+          },
+          {
+            "position": "rear",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "Sapim CX-Sprint",
+                "headType": "j-bend",
+                "lengthMm": 270
+              },
+              {
+                "side": "right",
+                "spokeModel": "Sapim CX-Sprint",
+                "headType": "j-bend",
+                "lengthMm": 266
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "slug": "zipp-404-firecrest-b1",
+        "model": "ZIPP 404 Firecrest [B1 世代 · 2021–2026]",
+        "lifecycleStatus": "current",
+        "verificationStatus": "verified",
+        "rim": {
+          "depthMm": 58,
+          "innerWidthMm": 23,
+          "outerWidthMm": 28
+        },
+        "nippleModel": "Sapim Secure Lock external alloy nipple, 2.0 mm",
+        "nippleLengthMm": 14,
+        "sourceUrl": "https://www.sram.com/en/service/models/wh-404-ftld-b1",
+        "wheels": [
+          {
+            "position": "front",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "Sapim CX-Sprint",
+                "headType": "j-bend",
+                "lengthMm": 254
+              },
+              {
+                "side": "right",
+                "spokeModel": "Sapim CX-Sprint",
+                "headType": "j-bend",
+                "lengthMm": 256
+              }
+            ]
+          },
+          {
+            "position": "rear",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "Sapim CX-Sprint",
+                "headType": "j-bend",
+                "lengthMm": 254
+              },
+              {
+                "side": "right",
+                "spokeModel": "Sapim CX-Sprint",
+                "headType": "j-bend",
+                "lengthMm": 250
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "slug": "zipp-808-firecrest-b1",
+        "model": "ZIPP 808 Firecrest [B1 世代 · 2022–2026]",
+        "lifecycleStatus": "current",
+        "verificationStatus": "verified",
+        "rim": {
+          "depthMm": 80,
+          "innerWidthMm": 23,
+          "outerWidthMm": 27.5
+        },
+        "nippleModel": "Sapim Secure Lock external alloy nipple",
+        "nippleLengthMm": 14,
+        "sourceUrl": "https://www.sram.com/en/service/models/wh-808-ftld-b1",
+        "wheels": [
+          {
+            "position": "front",
+            "spokeCount": 20,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "Sapim CX-Sprint",
+                "headType": "j-bend",
+                "lengthMm": 230
+              },
+              {
+                "side": "right",
+                "spokeModel": "Sapim CX-Sprint",
+                "headType": "j-bend",
+                "lengthMm": 226
+              }
+            ]
+          },
+          {
+            "position": "rear",
+            "spokeCount": 20,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "Sapim CX-Sprint",
+                "headType": "j-bend",
+                "lengthMm": 230
+              },
+              {
+                "side": "right",
+                "spokeModel": "Sapim CX-Sprint",
+                "headType": "j-bend",
+                "lengthMm": 224
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "slug": "zipp-353-nsw-a1",
+        "model": "ZIPP 353 NSW [A1 世代 · Cognition V2]",
+        "lifecycleStatus": "current",
+        "verificationStatus": "verified",
+        "rim": {
+          "depthMm": 45,
+          "innerWidthMm": 25,
+          "outerWidthMm": 30
+        },
+        "nippleModel": "Sapim Secure Lock external alloy nipple",
+        "nippleLengthMm": 14,
+        "sourceUrl": "https://www.sram.com/en/service/models/wh-353-ntld-a1",
+        "wheels": [
+          {
+            "position": "front",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "Sapim CX-Ray",
+                "headType": "j-bend",
+                "lengthMm": 264
+              },
+              {
+                "side": "right",
+                "spokeModel": "Sapim CX-Ray",
+                "headType": "j-bend",
+                "lengthMm": 266
+              }
+            ]
+          },
+          {
+            "position": "rear",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "Sapim CX-Ray",
+                "headType": "j-bend",
+                "lengthMm": 266
+              },
+              {
+                "side": "right",
+                "spokeModel": "Sapim CX-Ray",
+                "headType": "j-bend",
+                "lengthMm": 260
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "slug": "zipp-454-nsw-b1-c1",
+        "model": "ZIPP 454 NSW [B1/C1 世代 · Cognition V2]",
+        "lifecycleStatus": "current",
+        "verificationStatus": "verified",
+        "rim": {
+          "depthMm": 58,
+          "innerWidthMm": 23,
+          "outerWidthMm": 28
+        },
+        "nippleModel": "Sapim Secure Lock external alloy nipple",
+        "nippleLengthMm": 14,
+        "sourceUrl": "https://www.sram.com/en/service/models/wh-454-ntld-b1",
+        "wheels": [
+          {
+            "position": "front",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "Sapim CX-Ray",
+                "headType": "j-bend",
+                "lengthMm": 256
+              },
+              {
+                "side": "right",
+                "spokeModel": "Sapim CX-Ray",
+                "headType": "j-bend",
+                "lengthMm": 252
+              }
+            ]
+          },
+          {
+            "position": "rear",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "Sapim CX-Ray",
+                "headType": "j-bend",
+                "lengthMm": 256
+              },
+              {
+                "side": "right",
+                "spokeModel": "Sapim CX-Ray",
+                "headType": "j-bend",
+                "lengthMm": 252
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "slug": "zipp-858-nsw-b1-d1",
+        "model": "ZIPP 858 NSW [B1/D1 世代 · Cognition V2]",
+        "lifecycleStatus": "current",
+        "verificationStatus": "verified",
+        "rim": {
+          "depthMm": 85,
+          "innerWidthMm": 23,
+          "outerWidthMm": 27.5
+        },
+        "nippleModel": "Sapim Secure Lock external alloy nipple",
+        "nippleLengthMm": null,
+        "sourceUrl": "https://www.sram.com/en/service/models/wh-858-ntld-b1",
+        "wheels": [
+          {
+            "position": "front",
+            "spokeCount": 20,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "Sapim CX-Ray",
+                "headType": "j-bend",
+                "lengthMm": 232
+              },
+              {
+                "side": "right",
+                "spokeModel": "Sapim CX-Ray",
+                "headType": "j-bend",
+                "lengthMm": 226
+              }
+            ]
+          },
+          {
+            "position": "rear",
+            "spokeCount": 20,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "Sapim CX-Ray",
+                "headType": "j-bend",
+                "lengthMm": 230
+              },
+              {
+                "side": "right",
+                "spokeModel": "Sapim CX-Ray",
+                "headType": "j-bend",
+                "lengthMm": 232
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "slug": "zipp-303-xplr-sw-a1",
+        "model": "ZIPP 303 XPLR SW [A1 世代 · 2024–2026]",
+        "lifecycleStatus": "current",
+        "verificationStatus": "verified",
+        "rim": {
+          "depthMm": 54,
+          "innerWidthMm": 32,
+          "outerWidthMm": 40
+        },
+        "nippleModel": "Sapim Secure Lock external alloy nipple",
+        "nippleLengthMm": 14,
+        "sourceUrl": "https://www.sram.com/en/service/models/wh-303-xpsw-a1",
+        "wheels": [
+          {
+            "position": "front",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "Sapim CX-Ray",
+                "headType": "j-bend",
+                "lengthMm": 256
+              },
+              {
+                "side": "right",
+                "spokeModel": "Sapim CX-Ray",
+                "headType": "j-bend",
+                "lengthMm": 258
+              }
+            ]
+          },
+          {
+            "position": "rear",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "Sapim CX-Ray",
+                "headType": "j-bend",
+                "lengthMm": 258
+              },
+              {
+                "side": "right",
+                "spokeModel": "Sapim CX-Ray",
+                "headType": "j-bend",
+                "lengthMm": 260
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "slug": "zipp-303-xplr-s-a1",
+        "model": "ZIPP 303 XPLR S [A1 世代 · 2024–2026]",
+        "lifecycleStatus": "current",
+        "verificationStatus": "verified",
+        "rim": {
+          "depthMm": 54,
+          "innerWidthMm": 32,
+          "outerWidthMm": 40
+        },
+        "nippleModel": "Sapim Secure Lock external brass/alloy nipple",
+        "nippleLengthMm": null,
+        "sourceUrl": "https://www.sram.com/en/service/models/wh-303-xps-a1",
+        "wheels": [
+          {
+            "position": "front",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "Sapim CX-Sprint",
+                "headType": "j-bend",
+                "lengthMm": 258
+              },
+              {
+                "side": "right",
+                "spokeModel": "Sapim CX-Sprint",
+                "headType": "j-bend",
+                "lengthMm": 260
+              }
+            ]
+          },
+          {
+            "position": "rear",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "Sapim CX-Sprint",
+                "headType": "j-bend",
+                "lengthMm": 260
+              },
+              {
+                "side": "right",
+                "spokeModel": "Sapim CX-Sprint",
+                "headType": "j-bend",
+                "lengthMm": 258
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "slug": "zipp-101-xplr-a1-700c",
+        "model": "ZIPP 101 XPLR 700c [A1 世代 · MOTO]",
+        "lifecycleStatus": "current",
+        "verificationStatus": "verified",
+        "rim": {
+          "depthMm": 15,
+          "innerWidthMm": 27,
+          "outerWidthMm": 35
+        },
+        "nippleModel": "Sapim Secure Lock external alloy nipple",
+        "nippleLengthMm": null,
+        "sourceUrl": "https://www.sram.com/en/service/models/wh-101-xplr-a1",
+        "wheels": [
+          {
+            "position": "front",
+            "spokeCount": 28,
+            "lacingPattern": "3X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "Sapim CX-Sprint",
+                "headType": "j-bend",
+                "lengthMm": 304
+              },
+              {
+                "side": "right",
+                "spokeModel": "Sapim CX-Sprint",
+                "headType": "j-bend",
+                "lengthMm": 302
+              }
+            ]
+          },
+          {
+            "position": "rear",
+            "spokeCount": 28,
+            "lacingPattern": "3X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "Sapim CX-Sprint",
+                "headType": "j-bend",
+                "lengthMm": 304
+              },
+              {
+                "side": "right",
+                "spokeModel": "Sapim CX-Sprint",
+                "headType": "j-bend",
+                "lengthMm": 302
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "slug": "zipp-303-s-a1",
+        "model": "ZIPP 303 S [A1 世代]",
+        "lifecycleStatus": "current",
+        "verificationStatus": "verified",
+        "rim": {
+          "depthMm": 45,
+          "innerWidthMm": 23,
+          "outerWidthMm": 27
+        },
+        "nippleModel": "Sapim external brass/alloy nipple",
+        "nippleLengthMm": null,
+        "sourceUrl": "https://www.sram.com/en/service/models/wh-303-stld-a1",
+        "wheels": [
+          {
+            "position": "front",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "Sapim CX54 / CX-Sprint",
+                "headType": "j-bend",
+                "lengthMm": 266
+              },
+              {
+                "side": "right",
+                "spokeModel": "Sapim CX54 / CX-Sprint",
+                "headType": "j-bend",
+                "lengthMm": 268
+              }
+            ]
+          },
+          {
+            "position": "rear",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "Sapim CX54 / CX-Sprint",
+                "headType": "j-bend",
+                "lengthMm": 266
+              },
+              {
+                "side": "right",
+                "spokeModel": "Sapim CX54 / CX-Sprint",
+                "headType": "j-bend",
+                "lengthMm": 264
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "slug": "zipp-303-firecrest-a1-legacy-77-177",
+        "model": "ZIPP 303 Firecrest Carbon Clincher Disc [A1 世代 · MY16–MY19 · 77/177D]",
+        "lifecycleStatus": "legacy",
+        "verificationStatus": "verified",
+        "rim": {
+          "depthMm": 45,
+          "innerWidthMm": 19,
+          "outerWidthMm": 29.9
+        },
+        "nippleModel": "Sapim Secure Lock external nipple, 2.0 mm",
+        "nippleLengthMm": 14,
+        "sourceUrl": "https://www.sram.com/en/service",
+        "wheels": [
+          {
+            "position": "front",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "Sapim CX-Ray",
+                "headType": "j-bend",
+                "lengthMm": 272
+              },
+              {
+                "side": "right",
+                "spokeModel": "Sapim CX-Ray",
+                "headType": "j-bend",
+                "lengthMm": 274
+              }
+            ]
+          },
+          {
+            "position": "rear",
+            "spokeCount": 24,
+            "lacingPattern": "2X",
+            "sides": [
+              {
+                "side": "left",
+                "spokeModel": "Sapim CX-Ray",
+                "headType": "j-bend",
+                "lengthMm": 274
+              },
+              {
+                "side": "right",
+                "spokeModel": "Sapim CX-Ray",
+                "headType": "j-bend",
+                "lengthMm": 272
+              }
+            ]
+          }
+        ]
+      }
+    ]
   }
 ]
