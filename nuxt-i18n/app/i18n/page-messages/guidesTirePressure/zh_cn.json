@@ -1,16 +1,24 @@
 {
-  "title": "轮胎胎压",
+  "title": "市售产品胎压标准",
+  "description": "预留用于按市售产品和具体配置查询有来源胎压标准的页面。",
   "actions": {
     "checkTires": "查看轮胎"
   },
   "tabs": {
     "label": "胎压页面内容分区",
-    "calculator": "计算",
+    "standards": "产品标准",
     "details": "说明"
   },
   "calculator": {
     "title": "胎压、载荷与过弯受力演示",
-    "description": "用通用橡胶基准演示骑手、车辆、胎压、胎宽、速度和倾角如何改变接地面积与受力；当前模型不会返回生产胎压建议。"
+    "description": "用通用橡胶基准演示骑手、车辆、胎压、胎宽、速度和倾角如何改变接地面积与受力；当前模型不会返回生产胎压建议。",
+    "backToStandards": "返回市售产品胎压标准"
+  },
+  "standardsPlaceholder": {
+    "status": "数据源占位",
+    "title": "市售产品胎压标准查询",
+    "body": "这里预留给后续按市售轮胎产品和具体配置查询有来源胎压限制。接入产品数据文件后将在此处实现查询。",
+    "openCalculator": "打开受力计算演示"
   },
   "dashboard": {
 

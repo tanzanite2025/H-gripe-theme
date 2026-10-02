@@ -31,6 +31,10 @@
       "label": "胎压",
       "description": "查看建议胎压范围和调整参考。"
     },
+    "pressureCalculator": {
+      "label": "胎压受力计算",
+      "description": "演示胎压、载荷、速度和倾角如何改变受力与估算接地面积。"
+    },
     "innerTube": {
       "label": "内胎",
       "description": "了解内胎选择、气嘴类型和尺寸基础。"

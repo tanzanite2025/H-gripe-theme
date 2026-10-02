@@ -92,6 +92,14 @@ export const tireGuideTabs = [
     description: 'Recommended pressure ranges and adjustment cues.',
   },
   {
+    id: 'tire-pressure-calculator',
+    labelKey: 'guidesTireguides.tabs.pressureCalculator.label',
+    fallback: 'Tire pressure calculator',
+    descriptionKey: 'guidesTireguides.tabs.pressureCalculator.description',
+    description: 'Demonstrate how pressure, load, speed, and lean change force and estimated contact area.',
+    to: '/guides/tireguides/tire-pressure-calculator',
+  },
+  {
     id: 'tube',
     labelKey: 'guidesTireguides.tabs.innerTube.label',
     fallback: 'Inner tube',

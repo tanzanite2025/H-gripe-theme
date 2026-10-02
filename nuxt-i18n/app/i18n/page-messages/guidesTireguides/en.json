@@ -31,6 +31,10 @@
       "label": "Tire pressure",
       "description": "Recommended pressure ranges and adjustment cues."
     },
+    "pressureCalculator": {
+      "label": "Tire pressure calculator",
+      "description": "Demonstrate how pressure, load, speed, and lean change force and estimated contact area."
+    },
     "innerTube": {
       "label": "Inner tube",
       "description": "Tube selection notes, valve types, and sizing basics."

@@ -6,16 +6,16 @@
       :aria-label="t('guidesTirePressure.tabs.label')"
     >
       <button
-        id="tire-pressure-tab-calculator"
+        id="tire-pressure-tab-standards"
         type="button"
         role="tab"
         class="tire-pressure-section__tab"
-        :class="{ 'tire-pressure-section__tab--active': activeTab === 'calculator' }"
-        :aria-selected="activeTab === 'calculator'"
-        aria-controls="tire-pressure-panel-calculator"
-        @click="activeTab = 'calculator'"
+        :class="{ 'tire-pressure-section__tab--active': activeTab === 'standards' }"
+        :aria-selected="activeTab === 'standards'"
+        aria-controls="tire-pressure-panel-standards"
+        @click="activeTab = 'standards'"
       >
-        {{ t('guidesTirePressure.tabs.calculator') }}
+        {{ t('guidesTirePressure.tabs.standards') }}
       </button>
       <button
         id="tire-pressure-tab-details"
@@ -32,13 +32,13 @@
     </div>
 
     <section
-      id="tire-pressure-panel-calculator"
-      class="tire-pressure-section__panel tire-pressure-section__calculator-panel"
+      id="tire-pressure-panel-standards"
+      class="tire-pressure-section__panel tire-pressure-section__standards-panel"
       role="tabpanel"
-      aria-labelledby="tire-pressure-tab-calculator"
-      v-show="activeTab === 'calculator'"
+      aria-labelledby="tire-pressure-tab-standards"
+      v-show="activeTab === 'standards'"
     >
-      <TirePressureCalculator />
+      <TirePressureProductStandardsPlaceholder />
 
       <p class="guide-section__cta-wrapper">
         <button
@@ -209,7 +209,7 @@
 import { ref, watch } from 'vue'
 import { useI18n } from '#imports'
 import { usePageMessages } from '~/composables/usePageMessages'
-import TirePressureCalculator from '~/components/tireguides/tirepressure/TirePressureCalculator.vue'
+import TirePressureProductStandardsPlaceholder from '~/components/tireguides/tirepressure/TirePressureProductStandardsPlaceholder.vue'
 
 const { locale, t } = useI18n()
 const { loadPageMessages } = usePageMessages('guidesTirePressure')
@@ -224,7 +224,7 @@ const emit = defineEmits<{
   (e: 'openTireProducts'): void
 }>()
 
-const activeTab = ref<'calculator' | 'details'>('calculator')
+const activeTab = ref<'standards' | 'details'>('standards')
 </script>
 
 <style scoped>
