@@ -100,70 +100,14 @@
             </div>
           </AdminFormSection>
 
-          <AdminFormSection title="税务与清关资料" description="维护商品的基础清关属性；申报价值不在产品上固定，后续按订单确认。">
-            <div class="mb-4 grid gap-3 rounded-lg border bg-muted/20 p-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
-              <AdminFormField label="清关资料模板" description="选择后会填入 HS Code、CN Code、原产国代码和英文报关品名，仍可继续手动覆盖。">
-                <Select :model-value="customsClassificationSelectValue" @update:model-value="emit('customs-classification-select', $event)">
-                  <SelectTrigger class="w-full"><SelectValue placeholder="请选择清关资料模板" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="__none__">不套用模板</SelectItem>
-                    <SelectItem v-for="profile in customsClassifications" :key="profile.id" :value="String(profile.id)">
-                      {{ profile.name }} · {{ profile.hs_code }}{{ profile.cn_code ? ` / ${profile.cn_code}` : '' }}
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </AdminFormField>
-              <Button type="button" variant="outline" size="sm" as-child>
-                <RouterLink to="/catalog/customs-classifications">
-                  <Tags class="size-3.5" />
-                  清关资料中心
-                </RouterLink>
-              </Button>
-              <div class="flex flex-wrap gap-2 text-[11px] lg:col-span-2">
- <span :class="form.hs_code ? 'bg-emerald-500/10 text-emerald-700': 'bg-amber-500/10 text-amber-700'" class="rounded-full px-2 py-0.5 font-medium">HS</span>
- <span :class="form.cn_code ? 'bg-emerald-500/10 text-emerald-700': 'bg-amber-500/10 text-amber-700'" class="rounded-full px-2 py-0.5 font-medium">CN</span>
- <span :class="form.country_of_origin ? 'bg-emerald-500/10 text-emerald-700': 'bg-amber-500/10 text-amber-700'" class="rounded-full px-2 py-0.5 font-medium">原产国</span>
- <span :class="form.customs_description ? 'bg-emerald-500/10 text-emerald-700': 'bg-amber-500/10 text-amber-700'" class="rounded-full px-2 py-0.5 font-medium">英文品名</span>
-              </div>
-            </div>
-            <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-              <AdminFormField label="HS Code" description="6 位数字" :error="errors.hs_code">
-                <Input
-                  v-model="form.hs_code"
-                  inputmode="numeric"
-                  maxlength="6"
-                  placeholder="例如 871499"
-                  @input="emit('customs-classification-manual-edit'); emit('clear-error', 'hs_code')"
-                />
-              </AdminFormField>
-              <AdminFormField label="CN Code" description="欧盟 8 位编码，可选" :error="errors.cn_code">
-                <Input
-                  v-model="form.cn_code"
-                  inputmode="numeric"
-                  maxlength="8"
-                  placeholder="例如 87149990"
-                  @input="emit('customs-classification-manual-edit'); emit('clear-error', 'cn_code')"
-                />
-              </AdminFormField>
-              <AdminFormField label="原产国代码" description="2 位国家代码" :error="errors.country_of_origin">
-                <Input
-                  v-model="form.country_of_origin"
-                  class="font-mono uppercase"
-                  maxlength="2"
-                  placeholder="例如 CN"
-                  @input="emit('customs-classification-manual-edit'); emit('clear-error', 'country_of_origin')"
-                />
-              </AdminFormField>
-              <AdminFormField label="英文报关品名" :error="errors.customs_description">
-                <Input
-                  v-model="form.customs_description"
-                  maxlength="255"
-                  placeholder="例如 Bicycle frame"
-                  @input="emit('customs-classification-manual-edit'); emit('clear-error', 'customs_description')"
-                />
-              </AdminFormField>
-            </div>
-          </AdminFormSection>
+          <ProductCustomsSection
+            :form="form"
+            :errors="errors"
+            :customs-classifications="customsClassifications"
+            @customs-classification-select="emit('customs-classification-select', $event)"
+            @customs-classification-manual-edit="emit('customs-classification-manual-edit')"
+            @clear-error="emit('clear-error', $event)"
+          />
 
           <AdminFormSection title="绑定商品规格模板" description="选择模板后，下方才会出现对应的商品参数字段和 SKU 选项列。">
             <div class="grid gap-3 2xl:grid-cols-[minmax(20rem,0.68fr)_minmax(0,1.32fr)]">
@@ -408,63 +352,16 @@
             @remove="emit('remove-media', $event)"
           />
 
-          <AdminFormSection title="发布设置" description="控制商品的公开状态和前台可见性。">
-            <div class="grid gap-4 md:grid-cols-2">
-              <div class="md:col-span-2 rounded-lg border bg-muted/30 px-3 py-2.5 text-xs text-muted-foreground">
-                重量现在只在 SKU 变体里维护，前台会按当前选中的 SKU 显示对应重量。
-              </div>
-              <AdminFormField label="状态" required>
-                <Select v-model="form.status">
-                  <SelectTrigger class="w-full"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="active">在售</SelectItem>
-                    <SelectItem value="inactive">下架</SelectItem>
-                    <SelectItem value="out_of_stock">缺货</SelectItem>
-                  </SelectContent>
-                </Select>
-              </AdminFormField>
-              <AdminFormField label="运费模板">
-                <Select :model-value="shippingTemplateSelectValue" @update:model-value="emit('product-shipping-template-select', $event)">
-                  <SelectTrigger class="w-full"><SelectValue placeholder="未设置" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="__none__">未设置</SelectItem>
-                    <SelectItem v-for="template in shippingTemplates" :key="template.id" :value="String(template.id)">
-                      {{ template.name }}{{ template.enabled === false ? '（停用）' : '' }}
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </AdminFormField>
-              <AdminFormField label="After-sales 模板">
-                <Select :model-value="afterSalesTemplateSelectValue" @update:model-value="emit('product-information-template-select', 'after_sales_template_id', $event)">
-                  <SelectTrigger class="w-full"><SelectValue placeholder="未设置" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="__none__">未设置</SelectItem>
-                    <SelectItem v-for="template in afterSalesTemplates" :key="template.id" :value="String(template.id)">
-                      {{ template.name }}{{ template.locale ? `（${template.locale}）` : '' }}{{ template.is_enabled === false ? '（停用）' : '' }}
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </AdminFormField>
-              <AdminFormField label="Packaging 模板">
-                <Select :model-value="packagingTemplateSelectValue" @update:model-value="emit('product-information-template-select', 'packaging_template_id', $event)">
-                  <SelectTrigger class="w-full"><SelectValue placeholder="未设置" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="__none__">未设置</SelectItem>
-                    <SelectItem v-for="template in packagingTemplates" :key="template.id" :value="String(template.id)">
-                      {{ template.name }}{{ template.locale ? `（${template.locale}）` : '' }}{{ template.is_enabled === false ? '（停用）' : '' }}
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </AdminFormField>
-              <div class="flex items-center justify-between gap-4 rounded-lg border px-3 py-2.5 md:col-span-2">
-                <div>
-                  <Label for="product-featured">精选商品</Label>
-                  <p class="mt-0.5 text-xs text-muted-foreground">在前台精选区域优先展示该商品。</p>
-                </div>
-                <Switch id="product-featured" v-model="form.featured" />
-              </div>
-            </div>
-          </AdminFormSection>
+          <ProductPublishingSection
+            :form="form"
+            :shipping-templates="shippingTemplates"
+            :after-sales-templates="afterSalesTemplates"
+            :packaging-templates="packagingTemplates"
+            description="控制商品的公开状态和前台可见性。"
+            notice="重量现在只在 SKU 变体里维护，前台会按当前选中的 SKU 显示对应重量。"
+            @product-shipping-template-select="emit('product-shipping-template-select', $event)"
+            @product-information-template-select="(...args) => emit('product-information-template-select', ...args)"
+          />
 
         </div>
 
@@ -496,8 +393,10 @@ import AdminFormField from '@/components/admin/AdminFormField.vue'
 import AdminFormSection from '@/components/admin/AdminFormSection.vue'
 import StorefrontLocaleSelect from '@/components/admin/StorefrontLocaleSelect.vue'
 import ProductDescriptionEditor from '@/components/admin/product/ProductDescriptionEditor.vue'
+import ProductCustomsSection from '@/components/admin/product/ProductCustomsSection.vue'
 import ProductMediaSection from '@/components/admin/product/ProductMediaSection.vue'
 import ProductProfitabilitySection from '@/components/admin/product/ProductProfitabilitySection.vue'
+import ProductPublishingSection from '@/components/admin/product/ProductPublishingSection.vue'
 import ProductTemplateSyncDialog from '@/components/admin/product/ProductTemplateSyncDialog.vue'
 import ProductVariantEditor from '@/components/admin/product/ProductVariantEditor.vue'
 import type { SchwalbeTireCatalogItem } from '@/api/schwalbeTireCatalog'
@@ -513,7 +412,6 @@ import {
   DialogTitle
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
@@ -621,14 +519,10 @@ defineProps({
   productSpecTemplateSelectValue: { type: String, default: '__none__' },
   productCategorySelectValue: { type: String, default: '__none__' },
   brandSelectValue: { type: String, default: '__none__' },
-  shippingTemplateSelectValue: { type: String, default: '__none__' },
   shippingTemplates: { type: Array as PropType<ShippingTemplateRecord[]>, default: () => [] },
-  afterSalesTemplateSelectValue: { type: String, default: '__none__' },
-  packagingTemplateSelectValue: { type: String, default: '__none__' },
   afterSalesTemplates: { type: Array as PropType<InformationTemplateRecord[]>, default: () => [] },
   packagingTemplates: { type: Array as PropType<InformationTemplateRecord[]>, default: () => [] },
   customsClassifications: { type: Array as PropType<CustomsClassificationRecord[]>, default: () => [] },
-  customsClassificationSelectValue: { type: String, default: '__none__' },
   templateScopedValuesTouched: { type: Boolean, default: false },
   templateSyncDialogVisible: { type: Boolean, default: false },
   templateSyncDiff: { type: Object as PropType<ProductTemplateSyncDiff | null>, default: null },

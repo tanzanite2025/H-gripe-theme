@@ -453,6 +453,13 @@ func validateQuickBuySelectionBounds(version quickbuy.Version, items []quickbuy.
 }
 
 func (s *QuickBuyService) validateQuickBuyProductAllowedForStep(step quickbuy.Step, item productdomain.Product, enforceProductSpecificationTemplates bool) error {
+	categorySlug := ""
+	if item.ProductCategory != nil {
+		categorySlug = item.ProductCategory.Slug
+	}
+	if strings.EqualFold(strings.TrimSpace(categorySlug), productdomain.SpokeRepairKitProductCategorySlug) || len(item.SpokeRepairKitModels) > 0 {
+		return fmt.Errorf("%w: product %d requires compatible wheelset model selection on its product page", ErrQuickBuyInvalid, item.ID)
+	}
 	if err := s.validateQuickBuyProductCategoryAllowedForStep(step, item); err != nil {
 		return err
 	}

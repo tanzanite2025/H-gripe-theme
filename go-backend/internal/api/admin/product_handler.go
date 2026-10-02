@@ -229,6 +229,7 @@ func (h *ProductHandler) CreateProduct(c *gin.Context) {
 		VariantOptionValues:            normalizeVariantOptionValueRequests(req.VariantOptionValues),
 		Media:                          normalizeMediaRequests(req.Media),
 		OptionValueRelations:           normalizeProductOptionValueRelationRequests(req.OptionValueRelations),
+		SpokeRepairKitModelKeys:        normalizeSpokeRepairKitModelKeys(req.SpokeRepairKitModelKeys),
 	})
 	if err != nil {
 		respondProductServiceError(c, err, "Failed to create product")
@@ -285,6 +286,7 @@ func (h *ProductHandler) UpdateProduct(c *gin.Context) {
 	_, updateVariantOptionValues := raw["variant_option_values"]
 	_, updateMedia := raw["media"]
 	_, updateOptionValueRelations := raw["option_value_relations"]
+	_, updateSpokeRepairKitModelKeys := raw["spoke_repair_kit_model_keys"]
 	if updateProductSpecificationTemplateID && !updateSpecs {
 		updateSpecs = true
 	}
@@ -341,6 +343,8 @@ func (h *ProductHandler) UpdateProduct(c *gin.Context) {
 		UpdateMedia:                          updateMedia,
 		OptionValueRelations:                 normalizeProductOptionValueRelationRequests(req.OptionValueRelations),
 		UpdateOptionValueRelations:           updateOptionValueRelations,
+		SpokeRepairKitModelKeys:              normalizeSpokeRepairKitModelKeys(req.SpokeRepairKitModelKeys),
+		UpdateSpokeRepairKitModelKeys:        updateSpokeRepairKitModelKeys,
 	})
 	if err != nil {
 		respondProductServiceError(c, err, "Failed to update product")

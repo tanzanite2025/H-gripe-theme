@@ -93,6 +93,7 @@ func AutoMigrate(db *gorm.DB, serverMode string) error {
 		&product.ProductOptionValueRelation{},
 		&product.ProductOptionGroupVariantRule{},
 		&product.ProductOptionValueVariantRule{},
+		&product.SpokeRepairKitModel{},
 		&product.Cart{},
 		&product.CartItem{},
 		&suppliercostdomain.ProductSupplierCostRecord{},

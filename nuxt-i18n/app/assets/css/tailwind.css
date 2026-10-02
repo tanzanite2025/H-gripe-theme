@@ -165,6 +165,12 @@
     --tz-status-info-text: #1d4ed8;
   }
 
+  @media (max-width: 767px) {
+    :root {
+      --tz-type-faq-question: 0.9rem;
+    }
+  }
+
   html {
     @apply overflow-x-hidden overscroll-x-none;
   }

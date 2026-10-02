@@ -42,8 +42,11 @@
     "radialAll": "ALL",
     "radial": "Radial",
     "bead": "Bead",
+    "beadAll": "ALL",
     "seal": "Seal",
+    "sealAll": "ALL",
     "eBikeRating": "E-Bike marking",
+    "eBikeRatingAll": "ALL",
     "eBikeUnrated": "No E-Bike marking listed",
     "color": "Color",
     "compound": "Compound",
@@ -62,9 +65,14 @@
     "selectedCount": "{count} selected"
   },
   "rimWidth": {
-    "referenceLabel": "Rim inner-width reference",
-    "catalogHint": "The rim inner-width range follows the tire's nominal ETRTO width and the official possible-combination table; check the rim, pressure, and frame clearance before installation.",
-    "range": "{min}–{max} mm"
+    "recommendationLabel": "Rim inner-width reference",
+    "hooked": "Hooked rim",
+    "hookless": "Hookless rim",
+    "noRecommendation": "No exact recommendation for this tire width",
+    "possibleReference": "Possible reference only",
+    "calculated": "Linearly calculated between adjacent DT Swiss data points",
+    "calculatedFromPossibleReference": "At least one possible-only data point is used. This is a calculated reference, not a manufacturer recommendation.",
+    "sourceNote": "Inner-width values use the DT Swiss TSS/TC recommendation chart; the Hookless row appears only when Schwalbe explicitly supports the model. Check the exact rim maker's tire, pressure, and Hookless requirements before fitting."
   },
   "summary": "{count} candidate records · page {page} of {totalPages}",
   "pagination": {
@@ -79,7 +87,6 @@
     "empty": "No catalog candidates are available.",
     "noResults": "No candidates match this single search term.",
     "noFilterResults": "No candidates match these filters.",
-    "noRimWidthFilterIntersection": "The drawer filters have no candidates in the current rim-width match.",
     "clearDrawerFilters": "Clear drawer filters"
   },
   "status": {

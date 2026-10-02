@@ -1,6 +1,6 @@
 # Spoke Calculator System / 辐条计算器系统手册
 
-Last updated: 2026-09-30
+Last updated: 2026-10-01
 
 Status: Active reference. Re-audit when the Go spoke API contract, the manual
 calculator input model, or the recorded-result projection changes.
@@ -69,6 +69,26 @@ Selecting a rim or hub in this card only filters the recorded-result system. It
 must not write to the wizard draft, change the manual calculation payload, or
 replace a calculated result with a catalog value.
 
+### 1.3 Wheelset lacing topology reference page / 轮组编法拓扑参考页
+
+Separate from those two calculator systems, `/resources/轮组编法` is an
+independent display and topology-reference surface. It is not a calculator
+step and it does not own any calculator state.
+
+- The page may define and display pure topology facts such as hole mapping,
+  cross-count support, `21H G3 2:1 (14/7)`, and uniform `24H 2:1 (16/8)`.
+- The calculator must not call the page, read its UI state, consume its
+  geometry-projection telemetry, or receive an automatic result back from it.
+- A future change may reuse a separately tested pure type, hole-mapping
+  function, or topology-selection rule. That reuse must not share page
+  components, DOM state, telemetry, interference labels, or calculation
+  results.
+- `2:1` is a topology distribution label, not a tension ratio and not a
+  substitute for the calculator's measured geometry inputs.
+
+The topology page's SVG display radii are screen coordinates. They are never
+valid ERD, PCD, flange-spacing, or spoke-length inputs for this calculator.
+
 ## 2. API and data boundaries / API 与数据边界
 
 The Go service remains the authoritative source for CAD geometry and backend
@@ -85,12 +105,21 @@ catalog records. The browser uses two separate API purposes:
 - `GET /api/admin/spoke-catalog`: authenticated full catalog projection for
   backend maintenance, including geometry and recorded build measurements.
 
+### 2.1 Dimension units / 尺寸单位
+
+`ERD` and `PCD` are always diameters in `mm` in the calculator contract. Other
+physical lengths (flange spacing, rim offset, drilling offset, and hole
+diameter) also use `mm`; angles use `°`. If a formula needs a radius, it must
+derive it explicitly as `ERD / 2` or `PCD / 2` and use a radius-named variable.
+The topology reference page's display radius constants have no physical unit
+and must never be sent in this payload.
+
 The Go calculation service still accepts `rimId`/`hubId` for controlled legacy
 or integration callers. That compatibility path does not authorize the Nuxt
 calculator to use catalog selection as an automatic geometry source. Any change
 to that API contract requires a separate review of the manual/catalog boundary.
 
-### 2.1 Public result projection / 公共结果投影
+### 2.2 Public result projection / 公共结果投影
 
 The current public export deliberately removes CAD geometry and
 `actualLengths`; it remains a safe identifier/label projection. The lower
@@ -113,6 +142,13 @@ calculator state.
   projection; they never enter the manual calculator catalog state.
 - The browser never receives proprietary CAD geometry through the public
   catalog export.
+
+The brand wheelset repair-kit directory is a separate surface from the
+calculator catalog described above. Its access boundary and update procedure
+are documented in
+[`BRAND-WHEELSET-SPOKE-SPECS.md`](./BRAND-WHEELSET-SPOKE-SPECS.md). Do not
+reuse the calculator's public export for exact wheelset repair-kit lengths or
+nipple data.
 
 ## 4. Calculation and tension rules / 计算与张力规则
 

@@ -7,6 +7,7 @@ import (
 	"errors"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -38,6 +39,7 @@ type productCreateRequest struct {
 	VariantOptionValues            []productVariantOptionValueRequest  `json:"variant_option_values"`
 	Media                          []productMediaRequest               `json:"media"`
 	OptionValueRelations           []productOptionValueRelationRequest `json:"option_value_relations"`
+	SpokeRepairKitModelKeys        []string                            `json:"spoke_repair_kit_model_keys"`
 }
 
 type productUpdateRequest struct {
@@ -67,6 +69,7 @@ type productUpdateRequest struct {
 	VariantOptionValues            []productVariantOptionValueRequest  `json:"variant_option_values"`
 	Media                          []productMediaRequest               `json:"media"`
 	OptionValueRelations           []productOptionValueRelationRequest `json:"option_value_relations"`
+	SpokeRepairKitModelKeys        []string                            `json:"spoke_repair_kit_model_keys"`
 }
 
 type productOptionValueRelationRequest struct {
@@ -181,6 +184,10 @@ func respondProductServiceError(c *gin.Context, err error, fallbackMessage strin
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 	case errors.Is(err, service.ErrProductVariantInvalid):
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	case errors.Is(err, service.ErrSpokeRepairKitModelsInvalid):
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	case errors.Is(err, service.ErrSpokeRepairKitProductTypeImmutable):
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 	case errors.Is(err, service.ErrProductOptionRelationInvalid):
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 	case errors.Is(err, service.ErrProductMediaInvalid):
@@ -230,6 +237,23 @@ func normalizeRequestSpecs(raw map[string]interface{}) map[string]string {
 		}
 	}
 	return specs
+}
+
+func normalizeSpokeRepairKitModelKeys(raw []string) []string {
+	result := make([]string, 0, len(raw))
+	seen := make(map[string]struct{}, len(raw))
+	for _, value := range raw {
+		key := strings.ToLower(strings.TrimSpace(value))
+		if key == "" {
+			continue
+		}
+		if _, exists := seen[key]; exists {
+			continue
+		}
+		seen[key] = struct{}{}
+		result = append(result, key)
+	}
+	return result
 }
 
 func normalizeVariantRequests(raw []productVariantRequest) []service.ProductVariantInput {

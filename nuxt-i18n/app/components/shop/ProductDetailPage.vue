@@ -135,6 +135,53 @@
       </div>
     </div>
 
+    <section
+      v-if="spokeRepairKitModels.length"
+      class="product-spoke-repair-kit-coverage"
+      aria-labelledby="product-spoke-repair-kit-coverage-title"
+    >
+      <header class="product-spoke-repair-kit-coverage__header">
+        <p class="product-spoke-repair-kit-coverage__eyebrow">
+          {{ t('products.detail.spokeRepairKit.coverageEyebrow', 'WHEELSET COVERAGE') }}
+        </p>
+        <h2 id="product-spoke-repair-kit-coverage-title">
+          {{ t('products.detail.spokeRepairKit.coverageTitle', 'Wheelset models covered by this repair kit') }}
+        </h2>
+        <p>
+          {{ t('products.detail.spokeRepairKit.coverageDescription', 'Choose one of these recorded wheelset models when ordering. Open a model to review its exact spoke lengths and nipple specification.') }}
+        </p>
+      </header>
+
+      <ul class="product-spoke-repair-kit-coverage__list">
+        <li
+          v-for="model in spokeRepairKitModels"
+          :key="model.id || `${model.brand_slug}-${model.wheelset_model_slug}`"
+          class="product-spoke-repair-kit-coverage__item"
+        >
+          <div class="product-spoke-repair-kit-coverage__model">
+            <span class="product-spoke-repair-kit-coverage__brand">{{ model.brand_name }}</span>
+            <strong>{{ model.wheelset_model_name }}</strong>
+            <span
+              class="product-spoke-repair-kit-coverage__status"
+              :class="{ 'is-legacy': model.lifecycle_status === 'legacy' }"
+            >
+              {{ model.lifecycle_status === 'legacy'
+                ? t('products.detail.spokeRepairKit.legacy', 'Legacy')
+                : t('products.detail.spokeRepairKit.current', 'Current') }}
+            </span>
+          </div>
+          <NuxtLink
+            :to="wheelsetSpokeSpecsLink(model)"
+            class="product-spoke-repair-kit-coverage__link"
+            :aria-label="t('products.detail.spokeRepairKit.viewSpecsAria', { model: `${model.brand_name} ${model.wheelset_model_name}` }, `View exact spoke specifications for ${model.brand_name} ${model.wheelset_model_name}`)"
+          >
+            {{ t('products.detail.spokeRepairKit.viewSpecs', 'View spoke lengths') }}
+            <Icon name="lucide:arrow-up-right" class="h-4 w-4" aria-hidden="true" />
+          </NuxtLink>
+        </li>
+      </ul>
+    </section>
+
     <ProductDetailSpecifications :groups="specGroups" />
 
     <div key="product-information-tabs" class="product-tabs-anchor">
@@ -167,7 +214,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useI18n } from '#imports'
+import { useI18n, useLocalePath } from '#imports'
 import { useProductDetailData } from '~/composables/useProductDetailData'
 import { useProductDetailMedia } from '~/composables/useProductDetailMedia'
 import { useProductDetailPurchase } from '~/composables/useProductDetailPurchase'
@@ -186,6 +233,7 @@ import ProductReviewsSection from '~/components/shop/ProductReviewsSection.vue'
 import { isMadeToOrderFulfillment } from '~/utils/fulfillmentPresentation'
 
 const { t } = useI18n()
+const localePath = useLocalePath()
 const {
   slug,
   product,
@@ -285,6 +333,23 @@ const {
   specGroups,
   productBreadcrumbItems,
 } = useProductDetailPresentation({ product })
+
+const spokeRepairKitModels = computed(() => (
+  [...(product.value?.spoke_repair_kit_models || [])]
+    .sort((left, right) => (
+      Number(left.sort_order || 0) - Number(right.sort_order || 0)
+        || String(left.brand_name || '').localeCompare(String(right.brand_name || ''))
+        || String(left.wheelset_model_name || '').localeCompare(String(right.wheelset_model_name || ''))
+    ))
+))
+
+const wheelsetSpokeSpecsLink = (model: {
+  brand_slug: string
+  wheelset_model_slug: string
+}) => {
+  const query = `?model=${encodeURIComponent(model.wheelset_model_slug)}`
+  return `${localePath('/resources/brand-wheelset-spoke-specs')}${query}#wheelset-${model.brand_slug}-${model.wheelset_model_slug}`
+}
 
 const isMadeToOrder = computed(() => Boolean(
   isMadeToOrderFulfillment(shopProduct.value?.fulfillmentMode)
@@ -481,9 +546,134 @@ useProductDetailTracking({
   line-height: 1.5;
 }
 
+.product-spoke-repair-kit-coverage {
+  display: grid;
+  gap: 1.1rem;
+  padding: clamp(1.1rem, 2vw, 1.6rem);
+  border: 1px solid var(--tz-border-subtle);
+  border-radius: 1rem;
+  background: var(--tz-surface-subtle);
+}
+
+.product-spoke-repair-kit-coverage__header {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.product-spoke-repair-kit-coverage__header p {
+  margin: 0;
+  color: var(--tz-text-secondary);
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.product-spoke-repair-kit-coverage__eyebrow {
+  color: var(--tz-site-accent) !important;
+  font-size: 0.7rem !important;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.product-spoke-repair-kit-coverage__header h2 {
+  margin: 0;
+  color: var(--tz-text-primary);
+  font-size: clamp(1.1rem, 1.2vw + 0.8rem, 1.45rem);
+}
+
+.product-spoke-repair-kit-coverage__list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.7rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.product-spoke-repair-kit-coverage__item {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.85rem;
+  padding: 0.8rem 0.9rem;
+  border: 1px solid var(--tz-border-subtle);
+  border-radius: 0.75rem;
+  background: var(--tz-card-surface);
+}
+
+.product-spoke-repair-kit-coverage__model {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.35rem 0.55rem;
+}
+
+.product-spoke-repair-kit-coverage__brand {
+  width: 100%;
+  color: var(--tz-text-muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.product-spoke-repair-kit-coverage__model strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: var(--tz-text-primary);
+  font-size: 0.9rem;
+}
+
+.product-spoke-repair-kit-coverage__status {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.18rem 0.45rem;
+  border-radius: 999px;
+  background: rgb(5 150 105 / 0.1);
+  color: #047857;
+  font-size: 0.68rem;
+  font-weight: 800;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.product-spoke-repair-kit-coverage__status.is-legacy {
+  background: rgb(100 116 139 / 0.12);
+  color: var(--tz-text-secondary);
+}
+
+.product-spoke-repair-kit-coverage__link {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 0.25rem;
+  color: var(--tz-site-accent);
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.product-spoke-repair-kit-coverage__link:hover,
+.product-spoke-repair-kit-coverage__link:focus-visible {
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
 @media (max-width: 767px) {
   .product-page {
     padding-inline: 1rem;
+  }
+
+  .product-spoke-repair-kit-coverage__list {
+    grid-template-columns: 1fr;
+  }
+
+  .product-spoke-repair-kit-coverage__item {
+    align-items: flex-start;
+    flex-direction: column;
   }
 }
 </style>

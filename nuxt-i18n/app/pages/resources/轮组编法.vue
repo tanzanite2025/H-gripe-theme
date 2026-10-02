@@ -185,14 +185,14 @@
             <span class="metric-unit">{{ t('wheelsetLacingTopology.telemetry.projectionAngle') }}</span>
           </div>
           <div class="metric-value">
-            <span id="metric-tangential-projection-angle">{{ initialGeometryProjectionMetrics.aggregateMeanAbsoluteProjectionAngleDegrees.toFixed(1) }}</span>
+            <span id="metric-tangential-projection-angle">{{ formatBackendDisplayGeometryMetric(backendDisplayGeometry?.metrics.aggregate_mean_absolute_projection_angle_degrees) }}</span>
             <span class="metric-unit">DEG (°)</span>
           </div>
           <div class="metric-bar">
             <div
               id="bar-tangential-projection-angle"
               class="metric-bar-fill"
-              :style="{ width: `${initialTangentialProjectionAngleBarWidth}%`, backgroundColor: 'var(--accent-primary)' }"
+              :style="{ width: `${formatBackendDisplayGeometryBarWidth(backendDisplayGeometry?.metrics.aggregate_mean_absolute_projection_angle_degrees, 90)}%`, backgroundColor: 'var(--accent-primary)' }"
             ></div>
           </div>
           <p id="metric-tangential-projection-angle-desc" class="metric-desc">{{ t('wheelsetLacingTopology.telemetry.tangentDesc') }}</p>
@@ -205,14 +205,14 @@
             <span class="metric-unit">{{ t('wheelsetLacingTopology.telemetry.tangentialUnit') }}</span>
           </div>
           <div class="metric-value">
-            <span id="metric-tangential-projection">{{ initialGeometryProjectionMetrics.meanAbsoluteTangentialProjectionPercent.toFixed(1) }}</span>
+            <span id="metric-tangential-projection">{{ formatBackendDisplayGeometryMetric(backendDisplayGeometry?.metrics.mean_absolute_tangential_projection_percent) }}</span>
             <span class="metric-unit">%</span>
           </div>
           <div class="metric-bar">
             <div
               id="bar-tangential-projection"
               class="metric-bar-fill"
-              :style="{ width: `${initialGeometryProjectionMetrics.meanAbsoluteTangentialProjectionPercent}%`, backgroundColor: 'var(--accent-primary)' }"
+              :style="{ width: `${formatBackendDisplayGeometryBarWidth(backendDisplayGeometry?.metrics.mean_absolute_tangential_projection_percent, 100)}%`, backgroundColor: 'var(--accent-primary)' }"
             ></div>
           </div>
           <p id="metric-tangential-projection-desc" class="metric-desc">{{ t('wheelsetLacingTopology.telemetry.tangentialDesc') }}</p>
@@ -225,14 +225,14 @@
             <span class="metric-unit">{{ t('wheelsetLacingTopology.telemetry.radialUnit') }}</span>
           </div>
           <div class="metric-value">
-            <span id="metric-radial-projection">{{ initialGeometryProjectionMetrics.meanAbsoluteRadialProjectionPercent.toFixed(1) }}</span>
+            <span id="metric-radial-projection">{{ formatBackendDisplayGeometryMetric(backendDisplayGeometry?.metrics.mean_absolute_radial_projection_percent) }}</span>
             <span class="metric-unit">%</span>
           </div>
           <div class="metric-bar">
             <div
               id="bar-radial-projection"
               class="metric-bar-fill"
-              :style="{ width: `${initialGeometryProjectionMetrics.meanAbsoluteRadialProjectionPercent}%`, backgroundColor: 'var(--accent-steel)' }"
+              :style="{ width: `${formatBackendDisplayGeometryBarWidth(backendDisplayGeometry?.metrics.mean_absolute_radial_projection_percent, 100)}%`, backgroundColor: 'var(--accent-steel)' }"
             ></div>
           </div>
           <p id="metric-radial-projection-desc" class="metric-desc">{{ t('wheelsetLacingTopology.telemetry.radialDesc') }}</p>
@@ -350,7 +350,8 @@
 
 <script setup>
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
-import { useI18n, useSwitchLocalePath } from '#imports'
+import { useAsyncData, useI18n, useSwitchLocalePath } from '#imports'
+import { useApiRequest } from '~/composables/useApiRequest'
 import { usePageMessages } from '~/composables/usePageMessages'
 import {
   useStorefrontSeoLinks,
@@ -358,11 +359,7 @@ import {
 } from '~/composables/seo/useStorefrontSeoLinks'
 import { createSeoJsonLdScript } from '~/utils/seo/jsonLd'
 import localeManifest from '~/i18n/locales.manifest'
-import {
-  buildWheelsetLacingTopology,
-  getSupportedWheelsetLacingCrossCounts,
-} from '~/utils/wheelsetLacingTopology'
-import { calculateWheelsetLacingGeometryProjectionMetrics } from '~/utils/wheelsetLacingGeometryProjectionMetrics'
+import { getSupportedWheelsetLacingCrossCounts } from '~/utils/wheelsetLacingSelectionContract'
 
 definePageMeta({
   layout: 'products',
@@ -372,10 +369,37 @@ definePageMeta({
 })
 
 const { locale, t } = useI18n()
+const { request } = useApiRequest()
 const switchLocalePath = useSwitchLocalePath()
 const { loadPageMessages } = usePageMessages('wheelsetLacingTopology')
 const pageMessagesVersion = ref(0)
 let isInteractiveBlueprintMounted = false
+
+const serverRenderedWheelsetLacingDisplayGeometryTopologyIdentifier = '24h-symmetric-1to1-2x'
+const { data: serverRenderedWheelsetLacingDisplayGeometry } = await useAsyncData(
+  'wheelset-lacing-default-display-geometry-v1',
+  async () => {
+    try {
+      const response = await request('/wheelset-lacing/display-geometry', {
+        method: 'GET',
+        query: {
+          topology_id: serverRenderedWheelsetLacingDisplayGeometryTopologyIdentifier,
+        },
+      })
+      return response?.data ?? null
+    } catch {
+      // The page still exposes the static topology facts if the optional
+      // engineering API is temporarily unavailable during SSR. The client
+      // retry below will request the same canonical GET contract after mount.
+      return null
+    }
+  },
+  { default: () => null },
+)
+
+const backendDisplayGeometry = ref(serverRenderedWheelsetLacingDisplayGeometry.value)
+let displayGeometryRequestSequence = 0
+let displayGeometryController = null
 
 await loadPageMessages(locale.value)
 watch(locale, async nextLocale => {
@@ -524,14 +548,43 @@ useHead(() => {
     const SVG_HUB_FLANGE_OUTER_EDGE_DISPLAY_RADIUS = 78;      // Canvas radius for hub flange edge
     const SVG_HUB_AXLE_HOUSING_DISPLAY_RADIUS = 20;            // Canvas radius for axle housing
 
-    const DISPLAY_DIMENSIONS = {
-      rimRadius: SVG_RIM_HOLE_RING_DISPLAY_RADIUS,
-      flangeRadiusA: SVG_HUB_FLANGE_HOLE_RING_DISPLAY_RADIUS_A,
-      flangeRadiusB: SVG_HUB_FLANGE_HOLE_RING_DISPLAY_RADIUS_B,
+    const resolveWheelsetLacingBackendTopologyIdentifier = (holes, cross) => {
+      if (holes === 21) return '21h-g3-2to1';
+      if (holes === '24_2to1') return '24h-uniform-2to1';
+      return `${holes}h-symmetric-1to1-${cross}x`;
     };
-    const initialTopology = buildWheelsetLacingTopology(24, 2, DISPLAY_DIMENSIONS);
-    const initialGeometryProjectionMetrics = calculateWheelsetLacingGeometryProjectionMetrics(initialTopology);
-    const initialTangentialProjectionAngleBarWidth = Math.min(100, Math.max(0, (initialGeometryProjectionMetrics.aggregateMeanAbsoluteProjectionAngleDegrees / 90) * 100));
+
+    const formatBackendDisplayGeometryMetric = (value) => (
+      Number.isFinite(value) ? Number(value).toFixed(1) : '—'
+    );
+
+    const formatBackendDisplayGeometryBarWidth = (value, maximum) => {
+      if (!Number.isFinite(value) || maximum <= 0) return 0;
+      return Math.min(100, Math.max(0, (value / maximum) * 100));
+    };
+
+    const refreshWheelsetLacingDisplayGeometryFromBackend = async () => {
+      const requestId = ++displayGeometryRequestSequence;
+      const selectedTopologyId = resolveWheelsetLacingBackendTopologyIdentifier(state.holes, state.cross);
+      displayGeometryController?.abort();
+      displayGeometryController = new AbortController();
+      backendDisplayGeometry.value = null;
+      renderBlueprint();
+      try {
+        const response = await request('/wheelset-lacing/display-geometry', {
+          method: 'GET',
+          signal: displayGeometryController.signal,
+          query: { topology_id: selectedTopologyId },
+        });
+        if (requestId !== displayGeometryRequestSequence || selectedTopologyId !== resolveWheelsetLacingBackendTopologyIdentifier(state.holes, state.cross)) return;
+        backendDisplayGeometry.value = response.data;
+        renderBlueprint();
+      } catch (error) {
+        if (requestId !== displayGeometryRequestSequence || (error instanceof DOMException && error.name === 'AbortError')) return;
+        backendDisplayGeometry.value = null;
+        renderBlueprint();
+      }
+    };
 
     let state = {
       holes: 24,            // 16, 20, 21, 24, 28, 32, 36, '24_2to1'
@@ -577,13 +630,13 @@ useHead(() => {
         state.cross = rule.recommended;
       }
       renderControls();
-      renderBlueprint();
+      void refreshWheelsetLacingDisplayGeometryFromBackend();
     }
 
     function setCrossCount(cross) {
       state.cross = cross;
       renderControls();
-      renderBlueprint();
+      void refreshWheelsetLacingDisplayGeometryFromBackend();
     }
 
     function setViewMode(mode) {
@@ -687,15 +740,20 @@ useHead(() => {
       appendSvgElement(bgGroup, 'line', { x1: 0, y1: -280, x2: 0, y2: 280, stroke: 'rgba(15, 23, 42, 0.08)', 'stroke-width': 1, 'stroke-dasharray': '4 4' });
       svg.appendChild(bgGroup);
 
-      // 2. Build a validated topology model before drawing it. The model keeps
-      // symmetric 1:1, uniform 24H 2:1, and 21H G3 as separate distributions.
-      const topology = buildWheelsetLacingTopology(holes, cross, {
-        ...DISPLAY_DIMENSIONS,
-      });
-      const rimHoles = topology.rimHoles;
-      const hubHolesA = topology.hubHolesA;
-      const hubHolesB = topology.hubHolesB;
-      const spokes = topology.spokes;
+      // The backend owns topology generation and geometry projection. The
+      // browser only filters the returned line segments for the selected view
+      // and creates SVG nodes.
+      const geometry = backendDisplayGeometry.value;
+      if (!geometry) {
+        appendSvgElement(svg, 'text', { x: 0, y: 0, 'text-anchor': 'middle', fill: '#64748b', 'font-size': 12 }, t('wheelsetLacingTopology.telemetry.backendPending'));
+        updateGeometryProjectionMetricsAndTopologyReview(null, null);
+        return;
+      }
+      const topology = geometry.topology;
+      const rimHoles = geometry.rim_holes;
+      const hubHolesA = geometry.hub_holes_a;
+      const hubHolesB = geometry.hub_holes_b;
+      const spokes = geometry.spokes;
 
       // 3. Select the visible spoke line segments for the blueprint.
       const visibleSpokes = spokes.filter(s => {
@@ -796,30 +854,33 @@ useHead(() => {
       svg.appendChild(rimHoleGroup);
 
       // 7. Geometry telemetry and topology rule review.
-      const geometryProjectionMetrics = calculateWheelsetLacingGeometryProjectionMetrics(topology);
-      updateGeometryProjectionMetricsAndTopologyReview(topology, geometryProjectionMetrics);
+      updateGeometryProjectionMetricsAndTopologyReview(topology, geometry.metrics);
     }
 
     function updateGeometryProjectionMetricsAndTopologyReview(topology, geometryProjectionMetrics) {
-      const holes = topology.selection;
+      const holes = topology?.selection ?? state.holes;
       const numHoles = holes === '24_2to1' ? 24 : holes;
-      const aggregateMeanAbsoluteProjectionAngleDegrees = geometryProjectionMetrics.aggregateMeanAbsoluteProjectionAngleDegrees;
+      const aggregateMeanAbsoluteProjectionAngleDegrees = geometryProjectionMetrics?.aggregate_mean_absolute_projection_angle_degrees ?? null;
 
-      document.getElementById('metric-tangential-projection-angle').innerText = aggregateMeanAbsoluteProjectionAngleDegrees.toFixed(1);
-      document.getElementById('bar-tangential-projection-angle').style.width = `${(aggregateMeanAbsoluteProjectionAngleDegrees / 90) * 100}%`;
+      document.getElementById('metric-tangential-projection-angle').innerText = formatBackendDisplayGeometryMetric(aggregateMeanAbsoluteProjectionAngleDegrees);
+      document.getElementById('bar-tangential-projection-angle').style.width = `${formatBackendDisplayGeometryBarWidth(aggregateMeanAbsoluteProjectionAngleDegrees, 90)}%`;
       document.getElementById('metric-tangential-projection-angle-desc').innerText = t('wheelsetLacingTopology.telemetry.tangentRuntime', {
-        count: geometryProjectionMetrics.driveSideSpokeCount,
-        min: geometryProjectionMetrics.minimumAbsoluteDriveSideProjectionAngleDegrees.toFixed(1),
-        max: geometryProjectionMetrics.maximumAbsoluteDriveSideProjectionAngleDegrees.toFixed(1),
+        count: geometryProjectionMetrics?.drive_side_spoke_count ?? '—',
+        min: formatBackendDisplayGeometryMetric(geometryProjectionMetrics?.minimum_absolute_drive_side_projection_angle_degrees),
+        max: formatBackendDisplayGeometryMetric(geometryProjectionMetrics?.maximum_absolute_drive_side_projection_angle_degrees),
       });
 
-      document.getElementById('metric-tangential-projection').innerText = geometryProjectionMetrics.meanAbsoluteTangentialProjectionPercent.toFixed(1);
-      document.getElementById('bar-tangential-projection').style.width = `${geometryProjectionMetrics.meanAbsoluteTangentialProjectionPercent}%`;
+      document.getElementById('metric-tangential-projection').innerText = formatBackendDisplayGeometryMetric(geometryProjectionMetrics?.mean_absolute_tangential_projection_percent);
+      document.getElementById('bar-tangential-projection').style.width = `${formatBackendDisplayGeometryBarWidth(geometryProjectionMetrics?.mean_absolute_tangential_projection_percent, 100)}%`;
       document.getElementById('metric-tangential-projection-desc').innerText = t('wheelsetLacingTopology.telemetry.tangentialRuntime');
 
-      document.getElementById('metric-radial-projection').innerText = geometryProjectionMetrics.meanAbsoluteRadialProjectionPercent.toFixed(1);
-      document.getElementById('bar-radial-projection').style.width = `${geometryProjectionMetrics.meanAbsoluteRadialProjectionPercent}%`;
+      document.getElementById('metric-radial-projection').innerText = formatBackendDisplayGeometryMetric(geometryProjectionMetrics?.mean_absolute_radial_projection_percent);
+      document.getElementById('bar-radial-projection').style.width = `${formatBackendDisplayGeometryBarWidth(geometryProjectionMetrics?.mean_absolute_radial_projection_percent, 100)}%`;
       document.getElementById('metric-radial-projection-desc').innerText = t('wheelsetLacingTopology.telemetry.radialRuntime');
+
+      if (!topology || !geometryProjectionMetrics) {
+        return;
+      }
 
       // This status confirms only that the supported topology was generated.
       // It does not infer flange clearance, assembly safety, or mechanics.
@@ -844,7 +905,7 @@ useHead(() => {
       statusDetail.innerText = t('wheelsetLacingTopology.review.previewDetail', {
         holes: numHoles,
         cross: topology.cross,
-        angle: aggregateMeanAbsoluteProjectionAngleDegrees.toFixed(1),
+        angle: formatBackendDisplayGeometryMetric(aggregateMeanAbsoluteProjectionAngleDegrees),
       });
       builderTip.innerText = holes === '24_2to1'
         ? t('wheelsetLacingTopology.review.uniformTip')
@@ -857,7 +918,11 @@ useHead(() => {
 onMounted(() => {
   isInteractiveBlueprintMounted = true
   renderControls()
-  renderBlueprint()
+  if (backendDisplayGeometry.value) {
+    renderBlueprint()
+    return
+  }
+  void refreshWheelsetLacingDisplayGeometryFromBackend()
 })
 
 </script>
@@ -908,7 +973,8 @@ onMounted(() => {
       display: flex;
       flex-direction: column;
       gap: 20px;
-      max-width: 1440px;
+      width: 100%;
+      max-width: none;
       margin: 0 auto;
     }
 

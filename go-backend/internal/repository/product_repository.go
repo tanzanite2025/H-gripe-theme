@@ -24,6 +24,19 @@ func (r *ProductRepository) WithTx(tx *gorm.DB) *ProductRepository {
 	return &ProductRepository{db: tx}
 }
 
+// WithinTransaction executes a product mutation against one database
+// transaction. It is used by service fallback paths that do not have the
+// application-wide TxManager but still need product-owned relations, such as
+// spoke repair-kit compatibility rows, to commit atomically with the product.
+func (r *ProductRepository) WithinTransaction(fn func(*ProductRepository) error) error {
+	if r == nil || r.db == nil {
+		return gorm.ErrInvalidData
+	}
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		return fn(r.WithTx(tx))
+	})
+}
+
 func orderProductMedia(db *gorm.DB) *gorm.DB {
 	return db.Order("product_media.sort_order ASC, product_media.id ASC")
 }
@@ -74,6 +87,15 @@ func (r *ProductRepository) preloadProductVariantOptionValues(db *gorm.DB) *gorm
 		return query
 	}
 	return db
+}
+
+func (r *ProductRepository) preloadSpokeRepairKitModels(db *gorm.DB) *gorm.DB {
+	if !r.db.Migrator().HasTable(&product.SpokeRepairKitModel{}) {
+		return db
+	}
+	return db.Preload("SpokeRepairKitModels", func(db *gorm.DB) *gorm.DB {
+		return db.Order("product_spoke_repair_kit_models.sort_order ASC, product_spoke_repair_kit_models.id ASC")
+	})
 }
 
 func (r *ProductRepository) preloadProductOptionValueRelations(db *gorm.DB) *gorm.DB {
@@ -211,6 +233,7 @@ func (r *ProductRepository) FindByIDContext(ctx context.Context, id uint) (*prod
 	}
 	query = r.preloadProductVariantOptionRules(query)
 	query = r.preloadProductVariantOptionValues(query)
+	query = r.preloadSpokeRepairKitModels(query)
 	err := query.Preload("AfterSalesTemplate").Preload("PackagingTemplate").Preload("CustomsClassificationProfile").First(&p, id).Error
 	if err != nil {
 		return nil, err
@@ -219,6 +242,26 @@ func (r *ProductRepository) FindByIDContext(ctx context.Context, id uint) (*prod
 		return nil, err
 	}
 	return &p, nil
+}
+
+// ReplaceSpokeRepairKitModels replaces the product-owned compatibility choices.
+// The caller may invoke it inside the product mutation transaction.
+func (r *ProductRepository) ReplaceSpokeRepairKitModels(productID uint, models []product.SpokeRepairKitModel) error {
+	if !r.db.Migrator().HasTable(&product.SpokeRepairKitModel{}) {
+		return nil
+	}
+	if err := r.db.Where("product_id = ?", productID).Delete(&product.SpokeRepairKitModel{}).Error; err != nil {
+		return err
+	}
+	if len(models) == 0 {
+		return nil
+	}
+	for index := range models {
+		models[index].ID = 0
+		models[index].ProductID = productID
+		models[index].SortOrder = index * 10
+	}
+	return r.db.Create(&models).Error
 }
 
 // HasProductSpecValue reports whether a specification value is already assigned
@@ -258,6 +301,7 @@ func (r *ProductRepository) FindBySlugContext(ctx context.Context, slug, locale 
 	}
 	query = r.preloadProductVariantOptionRules(query)
 	query = r.preloadProductVariantOptionValues(query).Preload("AfterSalesTemplate").Preload("PackagingTemplate").Preload("CustomsClassificationProfile").Where("slug = ?", slug)
+	query = r.preloadSpokeRepairKitModels(query)
 
 	if locale != "" {
 		query = query.Where("locale = ?", locale)
@@ -276,9 +320,10 @@ func (r *ProductRepository) FindBySlugContext(ctx context.Context, slug, locale 
 // FindBySKU 鏍规嵁SKU鏌ユ壘浜у搧
 func (r *ProductRepository) FindBySKU(sku string) (*product.Product, error) {
 	var p product.Product
-	query := r.db.Preload("Brand").Preload("Media", func(db *gorm.DB) *gorm.DB { return orderProductMedia(db) }).
+	query := r.preloadProductCategory(r.db.Preload("Brand")).Preload("Media", func(db *gorm.DB) *gorm.DB { return orderProductMedia(db) }).
 		Preload("Variants", func(db *gorm.DB) *gorm.DB { return orderProductVariants(db) })
 	query = r.preloadProductVariantOptionValues(query)
+	query = r.preloadSpokeRepairKitModels(query)
 	err := query.Preload("AfterSalesTemplate").Preload("PackagingTemplate").Preload("CustomsClassificationProfile").
 		Joins("JOIN product_variants product_sku_lookup ON product_sku_lookup.product_id = products.id AND product_sku_lookup.deleted_at IS NULL AND product_sku_lookup.sku = ?", sku).
 		First(&p).Error

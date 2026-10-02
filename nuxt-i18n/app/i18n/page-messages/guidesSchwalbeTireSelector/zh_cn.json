@@ -42,8 +42,11 @@
     "radialAll": "ALL",
     "radial": "Radial（径向）",
     "bead": "胎圈结构",
+    "beadAll": "ALL",
     "seal": "密封系统（Seal）",
+    "sealAll": "ALL",
     "eBikeRating": "E-BIKE 标识",
+    "eBikeRatingAll": "ALL",
     "eBikeUnrated": "未标注 E-BIKE",
     "color": "颜色",
     "compound": "胶料",
@@ -62,9 +65,14 @@
     "selectedCount": "已选 {count} 项"
   },
   "rimWidth": {
-    "referenceLabel": "车圈内宽参考",
-    "catalogHint": "车圈内宽范围按外胎 ETRTO 公称宽度与官方可能组合参考表提供；实际安装请核对车圈、胎压和车架间隙。",
-    "range": "{min}–{max} mm"
+    "recommendationLabel": "车圈内宽参考",
+    "hooked": "有钩车圈",
+    "hookless": "无钩车圈",
+    "noRecommendation": "暂无该胎宽的精确推荐数据",
+    "possibleReference": "仅作为可用参考",
+    "calculated": "相邻 DT Swiss 数据点线性计算",
+    "calculatedFromPossibleReference": "此计算使用了至少一个仅标为 possible 的数据点，结果是计算参考，不代表制造商推荐。",
+    "sourceNote": "内宽数字采用 DT Swiss TSS/TC 推荐表；无钩层仅在 Schwalbe 官方明确支持该型号时显示。实际安装仍需核对轮圈制造商的轮胎、胎压和无钩要求。"
   },
   "summary": "{count} 条候选记录 · 第 {page}/{totalPages} 页",
   "pagination": {
@@ -79,7 +87,6 @@
     "empty": "当前没有可用的目录候选。",
     "noResults": "没有候选符合这个单一搜索词。",
     "noFilterResults": "没有候选符合当前筛选条件。",
-    "noRimWidthFilterIntersection": "弹窗筛选条件与当前车圈内宽匹配没有交集。",
     "clearDrawerFilters": "清除弹窗筛选"
   },
   "status": {

@@ -65,6 +65,62 @@ func TestProductServiceCreateAdminProductPersistsTemplateSpecs(t *testing.T) {
 	assert.JSONEq(t, `{"brake_type":"disc"}`, createdProduct.Variants[0].OptionValues)
 }
 
+func TestProductServiceKeepsSpokeRepairKitProductTypeOnDedicatedChain(t *testing.T) {
+	db, productService := newTestProductService(t)
+	require.NoError(t, db.AutoMigrate(&product.SpokeRepairKitModel{}))
+
+	parent := seedProductCategoryForProductServiceTest(t, db, "Wheel Components", "wheel-components", nil)
+	repairKitCategory := seedProductCategoryForProductServiceTest(t, db, "Spoke Repair Kits", product.SpokeRepairKitProductCategorySlug, &parent.ID)
+	otherCategory := seedProductCategoryForProductServiceTest(t, db, "Other Components", "other-components", &parent.ID)
+
+	productRecord, err := productService.CreateAdminProduct(ProductCreateInput{
+		ProductCategoryID:       &repairKitCategory.ID,
+		Name:                    "DT Swiss spoke repair kit",
+		Slug:                    "dt-swiss-spoke-repair-kit",
+		Status:                  "active",
+		Locale:                  "en",
+		SpokeRepairKitModelKeys: []string{"dt-swiss:arc-1100-dicut-db-38"},
+		Variants: []ProductVariantInput{{
+			SKU:        "DT-REPAIR-KIT-001",
+			PriceMinor: 2500,
+			Stock:      4,
+			IsDefault:  true,
+			IsActive:   boolPtr(true),
+		}},
+	})
+	require.NoError(t, err)
+	require.NotNil(t, productRecord)
+
+	_, err = productService.UpdateAdminProduct(productRecord.ID, ProductUpdateInput{
+		ProductCategoryID:       &otherCategory.ID,
+		UpdateProductCategoryID: true,
+	})
+	require.ErrorIs(t, err, ErrSpokeRepairKitProductTypeImmutable)
+
+	template := seedCarbonRimType(t, db)
+	_, err = productService.UpdateAdminProduct(productRecord.ID, ProductUpdateInput{
+		ProductSpecificationTemplateID:       &template.ID,
+		UpdateProductSpecificationTemplateID: true,
+	})
+	require.ErrorIs(t, err, ErrSpokeRepairKitProductTypeImmutable)
+
+	_, err = productService.CreateAdminProduct(ProductCreateInput{
+		ProductSpecificationTemplateID: &template.ID,
+		ProductCategoryID:              &repairKitCategory.ID,
+		Name:                           "Invalid generic repair kit",
+		Slug:                           "invalid-generic-repair-kit",
+		Status:                         "active",
+		Locale:                         "en",
+		Variants: []ProductVariantInput{{
+			SKU:        "DT-REPAIR-KIT-INVALID",
+			PriceMinor: 2500,
+			IsDefault:  true,
+			IsActive:   boolPtr(true),
+		}},
+	})
+	require.ErrorIs(t, err, ErrSpokeRepairKitProductTypeImmutable)
+}
+
 func TestProductServiceSavesSchwalbeFactsDirectlyOnProduct(t *testing.T) {
 	db, productService := newTestProductService(t)
 	template := product.ProductSpecificationTemplate{

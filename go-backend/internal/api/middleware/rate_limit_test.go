@@ -89,3 +89,30 @@ func TestRateLimitByUserPerMinuteLimitsBurstPerUser(t *testing.T) {
 		t.Fatalf("other user request status = %d, want %d", otherUserRecorder.Code, http.StatusOK)
 	}
 }
+
+func TestTirePressureEngineeringCalculatorRateLimitAllowsInteractiveCalculatorBurst(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	router := gin.New()
+	router.POST("/dynamics", TirePressureEngineeringCalculatorRateLimit(nil), func(c *gin.Context) {
+		c.Status(http.StatusOK)
+	})
+
+	for requestNumber := 1; requestNumber <= 10; requestNumber++ {
+		request := httptest.NewRequest(http.MethodPost, "/dynamics", nil)
+		request.Header.Set("X-Device-Fingerprint", "tire-pressure-interactive-test")
+		recorder := httptest.NewRecorder()
+		router.ServeHTTP(recorder, request)
+		if recorder.Code != http.StatusOK {
+			t.Fatalf("interactive burst request %d status = %d, want %d", requestNumber, recorder.Code, http.StatusOK)
+		}
+	}
+
+	limitedRequest := httptest.NewRequest(http.MethodPost, "/dynamics", nil)
+	limitedRequest.Header.Set("X-Device-Fingerprint", "tire-pressure-interactive-test")
+	limitedRecorder := httptest.NewRecorder()
+	router.ServeHTTP(limitedRecorder, limitedRequest)
+	if limitedRecorder.Code != http.StatusTooManyRequests {
+		t.Fatalf("request after interactive burst status = %d, want %d", limitedRecorder.Code, http.StatusTooManyRequests)
+	}
+}

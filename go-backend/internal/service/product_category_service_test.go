@@ -1,6 +1,7 @@
 package service
 
 import (
+	"errors"
 	"testing"
 
 	"commerce-platform/internal/domain/product"
@@ -153,6 +154,57 @@ func TestProductCategoryListIncludesTranslationSummary(t *testing.T) {
 			categoryView.TranslationTotal-2,
 			len(categoryView.TranslationMissingLocales),
 		)
+	}
+}
+
+func TestSpokeRepairKitCategoryCannotBeRenamedOrDisabled(t *testing.T) {
+	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	if err != nil {
+		t.Fatalf("open test db: %v", err)
+	}
+	if err := db.AutoMigrate(&product.ProductCategory{}, &product.ProductCategoryTranslation{}); err != nil {
+		t.Fatalf("migrate test db: %v", err)
+	}
+
+	parent := product.ProductCategory{
+		Name:      "Wheel Components",
+		Slug:      SystemProductCategoryWheelComponentsSlug,
+		Depth:     1,
+		IsEnabled: true,
+	}
+	if err := db.Create(&parent).Error; err != nil {
+		t.Fatalf("create parent category: %v", err)
+	}
+	category := product.ProductCategory{
+		ParentID:  &parent.ID,
+		Name:      "Spoke Repair Kits",
+		Slug:      product.SpokeRepairKitProductCategorySlug,
+		Depth:     2,
+		IsEnabled: true,
+	}
+	if err := db.Create(&category).Error; err != nil {
+		t.Fatalf("create spoke repair-kit category: %v", err)
+	}
+
+	service := NewProductCategoryService(repository.NewProductCategoryRepository(db))
+	_, err = service.Update(category.ID, ProductCategoryInput{
+		ParentID:  &parent.ID,
+		Name:      category.Name,
+		Slug:      "spoke-repair-kits-renamed",
+		IsEnabled: true,
+	})
+	if !errors.Is(err, ErrProductCategorySystemProtected) {
+		t.Fatalf("rename error = %v, want system protection", err)
+	}
+
+	_, err = service.Update(category.ID, ProductCategoryInput{
+		ParentID:  &parent.ID,
+		Name:      category.Name,
+		Slug:      category.Slug,
+		IsEnabled: false,
+	})
+	if !errors.Is(err, ErrProductCategorySystemProtected) {
+		t.Fatalf("disable error = %v, want system protection", err)
 	}
 }
 

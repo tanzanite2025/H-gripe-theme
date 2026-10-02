@@ -394,7 +394,7 @@ const formatPageIndex = (index: number) => String(index + 1).padStart(2, '0')
 .home-faq__question-text {
   flex: 1;
   color: var(--tz-text-secondary);
-  font-size: 0.96rem;
+  font-size: var(--tz-type-faq-question);
   line-height: 1.4;
 }
 
@@ -501,7 +501,6 @@ const formatPageIndex = (index: number) => String(index + 1).padStart(2, '0')
     margin: 0;
     color: var(--tz-text-primary);
     font-size: 1.45rem;
-    font-style: italic;
     font-weight: 900;
     line-height: 1.2;
     text-transform: uppercase;

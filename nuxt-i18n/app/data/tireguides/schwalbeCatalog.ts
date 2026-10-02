@@ -4,6 +4,7 @@ import type {
   SchwalbeTireCatalogWheelSizeOption,
 } from '~/data/tireguides/schwalbeTireCatalogFilterModel'
 import type { SchwalbeCatalogSort, SchwalbeTireCatalogFilterQueryState } from '~/data/tireguides/schwalbeTireCatalogFilterQuery'
+import type { TireRimWidthReferenceSuggestion } from '~/data/tireguides/tireRimWidthReferencePresentation'
 
 export interface SchwalbeTireCatalogItem {
   article_no: string
@@ -28,22 +29,15 @@ export interface SchwalbeTireCatalogItem {
   source_checked_at: string
   product_exists: boolean
   wheel_size?: SchwalbeTireCatalogWheelSizeOption
-  rim_width_guidance?: SchwalbeTireCatalogRimWidthGuidance[]
+  rim_compatibility?: SchwalbeTireCatalogRimCompatibility[]
+  rim_width_guidance?: TireRimWidthReferenceSuggestion[]
 }
 
-export interface SchwalbeTireCatalogRimWidthGuidance {
-  tire_width_min_mm: number
-  tire_width_max_mm: number
-  inner_rim_width_min_mm: number
-  inner_rim_width_max_mm: number
-}
+export type SchwalbeTireRimSystem = 'hooked' | 'hookless'
 
-export interface SchwalbeTireCatalogRimWidthContext {
-  inner_rim_width_mm: number
-  guidance_status: 'covered' | 'no_coverage' | string
-  source_basis?: string
-  source_version?: string
-  source_checked_at?: string
+export interface SchwalbeTireCatalogRimCompatibility {
+  rim_system: SchwalbeTireRimSystem
+  status: 'supported'
 }
 
 // `useApiRequest` already prefixes paths with the configured API base
@@ -64,7 +58,6 @@ export interface SchwalbeTireCatalogSelectorPage {
   total: number
   total_pages: number
   filter_options: SchwalbeTireCatalogFilterOptions
-  rim_width_context: SchwalbeTireCatalogRimWidthContext | null
 }
 
 const asRecord = (value: unknown): Record<string, unknown> | null => {
@@ -110,49 +103,61 @@ const readWheelSizeProjection = (value: unknown): SchwalbeTireCatalogWheelSizeOp
   }
 }
 
-const readRimWidthGuidance = (value: unknown): SchwalbeTireCatalogRimWidthGuidance[] => {
+const readRimCompatibility = (value: unknown): SchwalbeTireCatalogRimCompatibility[] => {
   if (!Array.isArray(value)) return []
+  const seen = new Set<SchwalbeTireRimSystem>()
   return value.flatMap((candidate) => {
     const item = asRecord(candidate)
-    const tireWidthMin = optionalNumber(item?.tire_width_min_mm)
-    const tireWidthMax = optionalNumber(item?.tire_width_max_mm)
-    const innerWidthMin = optionalNumber(item?.inner_rim_width_min_mm)
-    const innerWidthMax = optionalNumber(item?.inner_rim_width_max_mm)
+    const rimSystem = optionalString(item?.rim_system)
+    const status = optionalString(item?.status)
     if (
-      tireWidthMin === undefined || !Number.isSafeInteger(tireWidthMin) || tireWidthMin <= 0
-      || tireWidthMax === undefined || !Number.isSafeInteger(tireWidthMax) || tireWidthMax < tireWidthMin
-      || innerWidthMin === undefined || !Number.isSafeInteger(innerWidthMin) || innerWidthMin <= 0
-      || innerWidthMax === undefined || !Number.isSafeInteger(innerWidthMax) || innerWidthMax < innerWidthMin
+      (rimSystem !== 'hooked' && rimSystem !== 'hookless')
+      || status !== 'supported'
+      || seen.has(rimSystem)
     ) return []
-    return [{
-      tire_width_min_mm: tireWidthMin,
-      tire_width_max_mm: tireWidthMax,
-      inner_rim_width_min_mm: innerWidthMin,
-      inner_rim_width_max_mm: innerWidthMax,
-    }]
+    seen.add(rimSystem)
+    return [{ rim_system: rimSystem, status: 'supported' as const }]
   })
 }
 
-const readRimWidthContext = (value: unknown): SchwalbeTireCatalogRimWidthContext | null => {
-  const context = asRecord(value)
-  if (!context) return null
-  const innerWidth = optionalNumber(context.inner_rim_width_mm)
-  const status = optionalString(context.guidance_status)
-  if (innerWidth === undefined || innerWidth <= 0 || !status) return null
-  return {
-    inner_rim_width_mm: innerWidth,
-    guidance_status: status,
-    ...(optionalString(context.source_basis) ? { source_basis: optionalString(context.source_basis) } : {}),
-    ...(optionalString(context.source_version) ? { source_version: optionalString(context.source_version) } : {}),
-    ...(optionalString(context.source_checked_at) ? { source_checked_at: optionalString(context.source_checked_at) } : {}),
-  }
+const readRimWidthReferenceGuidance = (value: unknown): TireRimWidthReferenceSuggestion[] => {
+  if (!Array.isArray(value)) return []
+  return value.flatMap((candidate) => {
+    const item = asRecord(candidate)
+    const rimSystem = optionalString(item?.rim_system)
+    const resultKind = optionalString(item?.result_kind)
+    const ranges = item?.rim_width_ranges
+    if (
+      (rimSystem !== 'hooked' && rimSystem !== 'hookless')
+      || !resultKind
+      || !Array.isArray(ranges)
+      || ranges.length === 0
+    ) return []
+    const normalizedRanges = ranges.flatMap((range) => {
+      const rangeRecord = asRecord(range)
+      const min = optionalNumber(rangeRecord?.min)
+      const max = optionalNumber(rangeRecord?.max)
+      if (
+        min === undefined
+        || max === undefined
+        || !Number.isSafeInteger(min)
+        || !Number.isSafeInteger(max)
+        || min < 0
+        || max < min
+      ) return []
+      return [{ min, max }]
+    })
+    if (normalizedRanges.length !== ranges.length) return []
+    return [item as unknown as TireRimWidthReferenceSuggestion]
+  })
 }
 
 const readItem = (value: unknown): SchwalbeTireCatalogItem => {
   const item = asRecord(value)
   if (!item) throw new Error('Schwalbe catalog response contains an invalid item')
   const wheelSize = readWheelSizeProjection(item.wheel_size)
-  const rimWidthGuidance = readRimWidthGuidance(item.rim_width_guidance)
+  const rimCompatibility = readRimCompatibility(item.rim_compatibility)
+  const rimWidthGuidance = readRimWidthReferenceGuidance(item.rim_width_guidance)
 
   return {
     article_no: requiredString(item.article_no, 'article_no'),
@@ -177,6 +182,9 @@ const readItem = (value: unknown): SchwalbeTireCatalogItem => {
     source_checked_at: requiredString(item.source_checked_at, 'source_checked_at'),
     product_exists: item.product_exists === true,
     ...(wheelSize ? { wheel_size: wheelSize } : {}),
+    ...(rimCompatibility.length > 0
+      ? { rim_compatibility: rimCompatibility }
+      : {}),
     ...(rimWidthGuidance.length > 0
       ? { rim_width_guidance: rimWidthGuidance }
       : {}),
@@ -280,7 +288,6 @@ const readSelectorPage = (value: unknown): SchwalbeTireCatalogSelectorPage => {
       seals: readStringFilterOptions(rawOptions.seals),
       eBikeRatings: readEBikeRatingFilterOptions(rawOptions.e_bike_ratings),
     },
-    rim_width_context: readRimWidthContext(payload.rim_width_context),
   }
 }
 
@@ -304,17 +311,10 @@ export const fetchSchwalbeTireCatalogSelectorPage = async (
   const params: Record<string, string | string[]> = {
     page: String(selectorQuery.page),
     sort: selectorQuery.sortBy as SchwalbeCatalogSort,
-    // The selector displays the source-backed inner-width reference on each
-    // card. This is deliberately separate from the retired user-entered
-    // inner-width filter so loading guidance never narrows the result set.
-    include_rim_width_guidance: '1',
   }
   const search = selectorQuery.search.trim()
   if (search) params.search = search
   if (selectorQuery.modelName) params.model = selectorQuery.modelName
-  if (selectorQuery.innerRimWidthMm !== null && selectorQuery.innerRimWidthMm !== undefined) {
-    params.inner_rim_width_mm = String(selectorQuery.innerRimWidthMm)
-  }
   if (selectorQuery.nominalTireWidthMinMm !== null && selectorQuery.nominalTireWidthMinMm !== undefined) {
     params.tire_width_min_mm = String(selectorQuery.nominalTireWidthMinMm)
   }

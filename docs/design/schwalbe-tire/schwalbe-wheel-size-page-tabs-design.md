@@ -104,7 +104,7 @@
 | `nuxt-i18n/app/i18n/page-messages/guidesSchwalbeTireSelector/*.json` | 提供“全部”、BSD 标签及单位文案 |
 | `nuxt-i18n/tests/schwalbe-selector-url-state.spec.ts` 与 Go selector/API 测试 | 验证真实 Tab/卡片数据链路、URL 状态和边界尺寸 |
 
-本设计不改变迁移 362 的车圈内宽参考；卡片上现有车圈内宽参考应独立保留。也不改搜索语义、每页数量、排序、目录源、FAQ、SEO canonical/indexing 策略或商品发布流程。
+本设计不把 Schwalbe/ETRTO 宽泛组合矩阵带回卡片；卡片保留由 Go 后端 DT Swiss 参考引擎生成的 `rim_width_guidance`。也不改搜索语义、每页数量、排序、目录源、FAQ、SEO canonical/indexing 策略或商品发布流程。
 
 ## 7. 验收要求
 

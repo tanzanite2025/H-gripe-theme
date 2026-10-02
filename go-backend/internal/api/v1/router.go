@@ -34,11 +34,13 @@ import (
 	"commerce-platform/internal/api/v1/settings"
 	"commerce-platform/internal/api/v1/shipping"
 	"commerce-platform/internal/api/v1/spoke"
+	spokedislocationmechanicsapi "commerce-platform/internal/api/v1/spokedislocationmechanics"
 	"commerce-platform/internal/api/v1/storefront"
 	"commerce-platform/internal/api/v1/subscription"
 	"commerce-platform/internal/api/v1/suggestionfeedback"
 	"commerce-platform/internal/api/v1/ticket"
 	tirepressureapi "commerce-platform/internal/api/v1/tirepressure"
+	tirerimapi "commerce-platform/internal/api/v1/tirerim"
 	"commerce-platform/internal/api/v1/ugcshowcase"
 	"commerce-platform/internal/api/v1/warranty"
 	wheelsetfitapi "commerce-platform/internal/api/v1/wheelsetfit"
@@ -115,7 +117,9 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 		services.FitmentHubSpecification,
 	)
 	fitmentDrivetrainHandler := fitmentdrivetrainapi.NewDefaultHandler()
-	tirePressureHandler := tirepressureapi.NewHandler()
+	tirePressureHandler := tirepressureapi.NewTirePressureEngineeringCalculationHandler()
+	tireRimWidthReferenceHandler := tirerimapi.NewTireRimWidthReferenceHandler()
+	stainlessSteelSpokeDislocationMechanicsHandler := spokedislocationmechanicsapi.NewStainlessSteelSpokeDislocationMechanicsHTTPHandler()
 	workbenchFeedHandler := workbenchfeedapi.NewHandler(services.WorkbenchFeed)
 	cartHandler := cart.NewHandler(cartService, cart.Options{
 		MediaService:          services.Media,
@@ -198,7 +202,7 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 	suggestionFeedbackHandler := suggestionfeedback.NewHandler(suggestionFeedbackService, storageSvc, services.Media)
 	suggestionFeedbackHandler.ConfigureHoneypot(honeypot.NewPolicy(cfg.AntiAbuse.HoneypotMode))
 	spokeHandler := spoke.NewHandler(services.Spoke)
-	wheelsetLacingHandler := wheelsetlacingapi.NewHandler(services.WheelsetLacing)
+	wheelsetLacingHandler := wheelsetlacingapi.NewWheelsetLacingEngineeringHTTPHandler(services.WheelsetLacing)
 	brandWheelsetSpokeHandler := brandwheelsetspokeapi.NewHandler()
 	behaviorEventHandler := behavior.NewHandler(services.BehaviorEvents)
 	recommendationHandler := recommendation.NewHandler(services.Recommendations)
@@ -224,11 +228,29 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 	}
 
 	// Anonymous read-only engineering calculators. This endpoint has no
-	// browser-auth cookie side effect; keep calculator rate limiting applied.
+	// browser-auth cookie side effect; use the dedicated interactive budget.
 	tirePressureGroup := r.Group("/api/v1/engineering/tire-pressure")
-	tirePressureGroup.Use(middleware.SpokeRateLimit(deps.RedisClient))
+	tirePressureGroup.Use(middleware.TirePressureEngineeringCalculatorRateLimit(deps.RedisClient))
 	{
-		tirePressureHandler.RegisterRoutes(tirePressureGroup)
+		tirePressureHandler.RegisterTirePressureEngineeringCalculationRoutes(tirePressureGroup)
+	}
+
+	// The tire/rim reference calculator is a public read-only engineering
+	// endpoint. Its matrix and interpolation rules live in the Go domain
+	// package so the browser cannot become a second calculation authority.
+	tireRimWidthReferenceGroup := r.Group("/api/v1/engineering/tire-rim")
+	tireRimWidthReferenceGroup.Use(middleware.SpokeRateLimit(deps.RedisClient))
+	{
+		tireRimWidthReferenceHandler.RegisterTireRimWidthReferenceHTTPRoutes(tireRimWidthReferenceGroup)
+	}
+
+	// The stainless-steel spoke dislocation calculator keeps model presets,
+	// material references, validation, and safety classification in Go. The
+	// browser only submits inputs and renders the structured result.
+	stainlessSteelSpokeDislocationMechanicsGroup := r.Group("/api/v1/engineering/spoke-dislocation-mechanics")
+	stainlessSteelSpokeDislocationMechanicsGroup.Use(middleware.SpokeRateLimit(deps.RedisClient))
+	{
+		stainlessSteelSpokeDislocationMechanicsHandler.RegisterStainlessSteelSpokeDislocationMechanicsRoutes(stainlessSteelSpokeDislocationMechanicsGroup)
 	}
 
 	// API v1 路由组
@@ -314,7 +336,6 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 			productGroup.GET("/specification-templates", productHandler.ListProductSpecificationTemplates)
 			productGroup.GET("/schwalbe-tire-catalog", productHandler.ListSchwalbeTireCatalog)
 			productGroup.GET("/schwalbe-tire-catalog/selector", productHandler.SearchSchwalbeTireCatalogSelector)
-			productGroup.GET("/schwalbe-tire-rim-width-combination-rules", productHandler.ListSchwalbeTireRimWidthCombinationRules)
 			productGroup.GET("/categories", productHandler.ListCategories)
 			productGroup.GET("/categories/:slug", productHandler.GetCategory)
 			productGroup.GET("/attributes/filterable", productHandler.GetFilterableAttributes)
@@ -411,6 +432,7 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 		spokeGroup.Use(middleware.SpokeRateLimit(deps.RedisClient))
 		{
 			spokeGroup.POST("/calc", spokeHandler.Calculate)
+			spokeGroup.GET("/metadata", spokeHandler.GetSpokeCalculatorEngineeringMetadata)
 			spokeGroup.GET("/catalog/results", spokeHandler.GetPublicResults)
 			spokeGroup.GET("/export", spokeHandler.GetPublicCatalog)
 			spokeGroup.GET("/catalog/export", spokeHandler.GetPublicCatalog)
@@ -423,11 +445,12 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 		wheelsetLacingGroup := v1.Group("/wheelset-lacing")
 		wheelsetLacingGroup.Use(middleware.RateLimit(30))
 		{
-			wheelsetLacingHandler.RegisterRoutes(wheelsetLacingGroup)
+			wheelsetLacingHandler.RegisterWheelsetLacingEngineeringRoutes(wheelsetLacingGroup)
 		}
 
-		// The repair-kit directory exposes only a public model index. Exact
-		// lengths and nipple data are returned one model at a time after login.
+		// The repair-kit directory exposes published model and exact
+		// specification data publicly. Keep optional auth so signed-in requests
+		// can be keyed by user while the shared limiter protects anonymous traffic.
 		// Optional auth runs before the shared limiter so authenticated requests
 		// are keyed by user while anonymous probing remains keyed by IP/fingerprint.
 		wheelsetSpokeGroup := v1.Group("/wheelset-spoke-specs")

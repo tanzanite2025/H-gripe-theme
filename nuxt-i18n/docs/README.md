@@ -1,6 +1,6 @@
 # Nuxt storefront documentation hub
 
-Last updated: 2026-09-17
+Last updated: 2026-10-01
 
 This folder is the live documentation hub for the Nuxt storefront. Active notes stay in `notes/`. Superseded implementation plans and old checklists stay in `archive/notes/` and should not be used as the current source of truth.
 
@@ -19,6 +19,9 @@ This folder is the live documentation hub for the Nuxt storefront. Active notes 
 - Breadcrumb and page hash-tab behavior: `notes/BREADCRUMB-PAGE-SUBNAV.md`
 - Product warranty system notes: `notes/PRODUCT-WARRANTY-SYSTEM.md`
 - Spoke calculator system boundary and data notes: `notes/SPOKE-CALCULATOR-SYSTEM.md`
+- Brand wheelset spoke repair-kit directory, registration gate, Google markup,
+  and API rate-limit contract: `notes/BRAND-WHEELSET-SPOKE-SPECS.md`
+- Wheelset lacing topology page boundary: `../../docs/design/wheelset-spoke-lacing-topology-and-mechanics-engineering-specification.md`
 
 ## Older active notes that need re-audit before implementation
 
@@ -27,7 +30,7 @@ This folder is the live documentation hub for the Nuxt storefront. Active notes 
 
 ## Still not fully closed
 
-- FAQ: keep `FAQ_MANAGEMENT_SOURCE.md` synchronized whenever FAQ admin, route-based insertion, `PageFaqSlot`, static fallback, rich answer rendering, or FAQ loading styling changes. Route-based insertion is now single-source: storefront pages no longer retain duplicated page-level `<PageFaq />`; current products/support layout route coverage is seeded by migration `031`, and the formal product detail lookup is `/products/:slug`. `/shop/...` remains the category namespace and does not resolve product FAQs. FAQ aggregation pages skip auto-inserting a second FAQ block, and `PageFaqSlot` now uses a unified FAQ skeleton loading state instead of bare `LOAD` text.
+- FAQ: keep `FAQ_MANAGEMENT_SOURCE.md` synchronized whenever FAQ admin, route-based insertion, `PageFaqSlot`, route reconciliation, rich answer rendering, or FAQ loading styling changes. The Nuxt `storefront-route-manifest.json` is the route source; Go startup and URL-catalog sync reconcile `faq_pages` without deleting content. Route-based insertion remains single-source: storefront pages do not retain duplicated page-level `<PageFaq />`; the stable product detail lookup is `/products/:slug`, `/shop/...` remains the category namespace, aggregation pages skip a second FAQ block, and `PageFaqSlot` uses a unified skeleton loading state.
 - Chat: `config_confirm` and `order` messages now persist through the customer-service ticket source and render as cards in both Nuxt customer chat and Admin staff chat. Remaining work is real non-SKU configurable fields from the final product/SKU contract and optional history-order-to-configuration refill.
 - Chat realtime: current transport is confirmed in `notes/CHAT-SYSTEM-ANALYSIS.md`. HTTP remains the durable source of truth and WebSocket is the sole browser realtime transport for admin inbox and Nuxt customer chat refresh/invalidation. Scoped typing indicators use WebSocket control frames; there is no SSE or EventSource fallback.
 - i18n: static key coverage is clean, but long-tail locale wording still needs native-language review before marketing-sensitive production use.

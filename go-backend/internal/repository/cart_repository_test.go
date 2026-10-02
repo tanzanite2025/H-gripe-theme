@@ -127,6 +127,55 @@ func TestCartRepositoryGetSummaryRejectsMixedCurrencies(t *testing.T) {
 	require.ErrorContains(t, err, "mixed currencies")
 }
 
+func TestCartRepositoryGetSummaryPreloadsRepairKitCompatibilityModels(t *testing.T) {
+	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	require.NoError(t, err)
+	sqlDB, err := db.DB()
+	require.NoError(t, err)
+	sqlDB.SetMaxOpenConns(1)
+	t.Cleanup(func() { _ = sqlDB.Close() })
+	require.NoError(t, db.AutoMigrate(
+		&product.Product{},
+		&product.ProductMedia{},
+		&product.SpokeRepairKitModel{},
+		&product.ProductVariant{},
+		&product.Cart{},
+		&product.CartItem{},
+	))
+
+	productRecord := product.Product{Name: "Repair kit", Slug: "repair-kit", PriceMinor: 2500}
+	require.NoError(t, db.Create(&productRecord).Error)
+	model := product.SpokeRepairKitModel{
+		ProductID:         productRecord.ID,
+		BrandSlug:         "dt-swiss",
+		BrandName:         "DT Swiss",
+		WheelsetModelSlug: "arc-1100-dicut-db-38",
+		WheelsetModelName: "ARC 1100 DICUT DB 38",
+	}
+	require.NoError(t, db.Create(&model).Error)
+	variant := product.ProductVariant{ProductID: productRecord.ID, SKU: "REPAIR-KIT", PriceMinor: 2500, IsActive: true}
+	require.NoError(t, db.Create(&variant).Error)
+	cart := product.Cart{SessionID: "repair-kit-summary"}
+	require.NoError(t, db.Create(&cart).Error)
+	variantID := variant.ID
+	require.NoError(t, db.Create(&product.CartItem{
+		CartID:            cart.ID,
+		ProductID:         productRecord.ID,
+		VariantID:         &variantID,
+		Quantity:          1,
+		PriceMinor:        2500,
+		Currency:          "USD",
+		ConfigurationData: []byte(`{"schema_version":1,"selections":[{"group_slug":"wheelset_model","value_keys":["dt-swiss:arc-1100-dicut-db-38"]}]}`),
+	}).Error)
+
+	summary, err := NewCartRepository(db).GetSummary(cart.ID)
+	require.NoError(t, err)
+	require.Len(t, summary.Items, 1)
+	require.NotNil(t, summary.Items[0].Product)
+	require.Len(t, summary.Items[0].Product.SpokeRepairKitModels, 1)
+	require.Equal(t, "arc-1100-dicut-db-38", summary.Items[0].Product.SpokeRepairKitModels[0].WheelsetModelSlug)
+}
+
 func newCartRepositorySummaryTestDB(t *testing.T) *gorm.DB {
 	t.Helper()
 	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})

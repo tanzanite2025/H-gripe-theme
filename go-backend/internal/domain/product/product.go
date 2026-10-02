@@ -86,6 +86,7 @@ type Product struct {
 	Variants                     []ProductVariant              `gorm:"foreignKey:ProductID" json:"variants,omitempty"`
 	VariantOptionValues          []ProductVariantOptionValue   `gorm:"foreignKey:ProductID" json:"variant_option_values,omitempty"`
 	OptionValueRelations         []ProductOptionValueRelation  `gorm:"foreignKey:ProductID" json:"option_value_relations,omitempty"`
+	SpokeRepairKitModels         []SpokeRepairKitModel         `gorm:"foreignKey:ProductID" json:"spoke_repair_kit_models,omitempty"`
 	OptionValueRelationsDirty    bool                          `gorm:"-" json:"-"`
 	TranslationGroup             *ProductTranslationGroup      `gorm:"-" json:"translation_group,omitempty"`
 	CreatedAt                    time.Time                     `json:"created_at"`

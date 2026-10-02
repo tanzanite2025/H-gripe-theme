@@ -225,7 +225,7 @@ const answerId = (itemId: string) => (
 .page-faq__question-text {
   min-width: 0;
   flex: 1;
-  font-size: 1rem;
+  font-size: var(--tz-type-faq-question);
   line-height: 1.45;
 }
 
@@ -282,7 +282,6 @@ const answerId = (itemId: string) => (
   .page-faq__title {
     color: var(--tz-text-primary) !important;
     font-size: 1.25rem;
-    font-style: italic;
     font-weight: 900;
     line-height: 1.2;
     text-transform: uppercase;

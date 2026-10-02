@@ -245,6 +245,21 @@ export function useProductDetailPurchase(options: ProductDetailPurchaseOptions) 
     }
   })
 
+  const canonicalSelectedOptions = (options: unknown): string => {
+    if (!Array.isArray(options)) return ''
+    return options
+      .map((item: any) => ({
+        group_slug: String(item?.group_slug || '').trim(),
+        value_keys: Array.isArray(item?.value_keys)
+          ? Array.from(new Set(item.value_keys.map((value: unknown) => String(value || '').trim()).filter(Boolean))).sort()
+          : [],
+      }))
+      .filter(item => item.group_slug && item.value_keys.length)
+      .sort((left, right) => left.group_slug.localeCompare(right.group_slug))
+      .map(item => `${item.group_slug}:${item.value_keys.join(',')}`)
+      .join('|')
+  }
+
   const stripeExpressCheckoutCartItems = computed(() => {
     const items = cartItems.value.map(item => ({ ...item }))
     const selectedItem = selectedExpressCheckoutCartItem.value
@@ -253,6 +268,7 @@ export function useProductDetailPurchase(options: ProductDetailPurchaseOptions) 
     const existingItem = items.find(item => (
       Number(item.product_id || item.id) === Number(selectedItem.product_id)
       && Number(item.variant_id || 0) === Number(selectedItem.variant_id || 0)
+      && canonicalSelectedOptions(item.selected_options) === canonicalSelectedOptions(selectedItem.selected_options)
     ))
     if (existingItem) {
       existingItem.quantity += selectedItem.quantity

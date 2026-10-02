@@ -18,6 +18,14 @@ func NewHandler(spokeService *service.SpokeService) *Handler {
 	return &Handler{spokeService: spokeService}
 }
 
+func (h *Handler) GetSpokeCalculatorEngineeringMetadata(c *gin.Context) {
+	c.Header("Cache-Control", "public, max-age=3600")
+	c.JSON(http.StatusOK, gin.H{
+		"code": 0,
+		"data": h.spokeService.GetSpokeCalculatorEngineeringMetadata(),
+	})
+}
+
 func (h *Handler) GetExport(c *gin.Context) {
 	// Public callers must never receive CAD geometry or verified measurements.
 	export, err := h.spokeService.GetPublicExport()

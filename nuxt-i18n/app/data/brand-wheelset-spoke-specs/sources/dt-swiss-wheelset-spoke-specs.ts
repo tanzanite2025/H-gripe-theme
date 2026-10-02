@@ -1,5 +1,5 @@
-import type { BrandWheelsetSpokeCatalog, BrandWheelsetSpokeRecord } from '../brand-wheelset-spoke-specs-types'
-import { jBend, pair, straight, wheelset } from '../brand-wheelset-spoke-specs-builders'
+import type { BrandWheelsetSpokeCatalog, BrandWheelsetSpokeRecord } from '../brand-wheelset-spoke-specs-types.js'
+import { jBend, pair, straight, wheelset } from '../brand-wheelset-spoke-specs-builders.js'
 
 const sources = {
   arc1100: 'https://www.dtswiss.com/en/wheels/wheels-road/aero/arc-1100-dicut-db',

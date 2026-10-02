@@ -3,7 +3,6 @@ import type { SchwalbeTireCatalogItem } from '../app/data/tireguides/schwalbeCat
 import {
   buildSchwalbeTireCatalogFilterOptions,
   deriveSchwalbeTireCatalogFilterDimensions,
-  filterSchwalbeTireCatalogItemsByInnerRimWidth,
   filterSchwalbeTireCatalogItems,
 } from '../app/data/tireguides/schwalbeTireCatalogFilterModel.js'
 
@@ -50,27 +49,6 @@ const catalogItems: SchwalbeTireCatalogItem[] = [
     seal: 'Tube',
     source_checked_at: '2026-09-28',
     product_exists: false,
-  },
-]
-
-const possibleCombinationRules = [
-  {
-    tireWidthMinMm: 20,
-    tireWidthMaxMm: 21,
-    innerRimWidthMinMm: 15,
-    innerRimWidthMaxMm: 17,
-  },
-  {
-    tireWidthMinMm: 35,
-    tireWidthMaxMm: 46,
-    innerRimWidthMinMm: 17,
-    innerRimWidthMaxMm: 27,
-  },
-  {
-    tireWidthMinMm: 47,
-    tireWidthMaxMm: 57,
-    innerRimWidthMinMm: 17,
-    innerRimWidthMaxMm: 30,
   },
 ]
 
@@ -180,21 +158,6 @@ assert.deepEqual(
   }).map(item => item.article_no),
   ['11100062.02'],
 )
-assert.deepEqual(
-  filterSchwalbeTireCatalogItemsByInnerRimWidth(catalogItems, 27, possibleCombinationRules)
-    .map(item => item.article_no),
-  ['11100062.02', '11654751'],
-)
-assert.deepEqual(
-  filterSchwalbeTireCatalogItemsByInnerRimWidth(catalogItems, 31, possibleCombinationRules)
-    .map(item => item.article_no),
-  [],
-)
-assert.deepEqual(
-  filterSchwalbeTireCatalogItemsByInnerRimWidth(catalogItems, 0, possibleCombinationRules),
-  [],
-)
-
 const casingCatalogItems: SchwalbeTireCatalogItem[] = [
   {
     ...catalogItems[0],

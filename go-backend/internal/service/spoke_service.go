@@ -232,6 +232,33 @@ func (s *SpokeService) ListUserHistory(userID uint, search string, page, pageSiz
 	return s.spokeRepo.ListHistoryByUserID(userID, search, page, pageSize)
 }
 
+// SpokeCalculatorEngineeringMetadata is the public, versioned contract used
+// by the calculator page's SSR/GEO metadata. It contains provenance and
+// limits, never proprietary catalog dimensions.
+type SpokeCalculatorEngineeringMetadata struct {
+	ModelVersion      string   `json:"model_version"`
+	FormulaVersion    string   `json:"formula_version"`
+	KnowledgeAsOf     string   `json:"knowledge_as_of"`
+	CalculationStatus string   `json:"calculation_status"`
+	SourceBasis       string   `json:"source_basis"`
+	Limitations       []string `json:"limitations"`
+}
+
+func (s *SpokeService) GetSpokeCalculatorEngineeringMetadata() SpokeCalculatorEngineeringMetadata {
+	return SpokeCalculatorEngineeringMetadata{
+		ModelVersion:      "spoke-calculator-engineering-v1",
+		FormulaVersion:    spokeCalculationFormulaName,
+		KnowledgeAsOf:     "2026-09-28",
+		CalculationStatus: "production_calculation_endpoint",
+		SourceBasis:       "Go backend spoke geometry and physical-build correction engine",
+		Limitations: []string{
+			"Results depend on the exact measured ERD, flange geometry, hole engagement, lacing, nipple, and rim-offset inputs.",
+			"Verify the result against the rim, hub, spoke, and wheel-builder specifications before cutting spokes.",
+			"Published catalog records are not a substitute for measuring the actual wheel components.",
+		},
+	}
+}
+
 func (s *SpokeService) Calculate(input SpokeCalculationInput) (*SpokeCalculationResult, error) {
 	if !isFinite(input.RimOffsetMM) || math.Abs(input.RimOffsetMM) > 20 {
 		return nil, ErrInvalidSpokeCalculation

@@ -39,6 +39,15 @@
       "title": "Made to order",
       "description": "This item is produced after your order is confirmed. Production time is added to the shipping time and the expected schedule will be confirmed with your order.",
       "cancellation": "Cancellation is available only before production or material cutting begins. After production starts, cancellation may be restricted and a custom handling fee may apply."
+    },
+    "spokeRepairKit": {
+      "coverageEyebrow": "WHEELSET COVERAGE",
+      "coverageTitle": "Wheelset models covered by this repair kit",
+      "coverageDescription": "Choose one of these recorded wheelset models when ordering. Open a model to review its exact spoke lengths and nipple specification.",
+      "current": "Current",
+      "legacy": "Legacy",
+      "viewSpecs": "View spoke lengths",
+      "viewSpecsAria": "View exact spoke specifications for {model}"
     }
   }
 }

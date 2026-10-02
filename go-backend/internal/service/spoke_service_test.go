@@ -478,3 +478,18 @@ func seedSpokeProductBrands(t *testing.T, db *gorm.DB) {
 		SortOrder: 2,
 	}).Error)
 }
+
+
+func TestSpokeServiceEngineeringMetadataUsesBackendFormulaVersion(t *testing.T) {
+	_, spokeService := newTestSpokeService(t)
+	metadata := spokeService.GetSpokeCalculatorEngineeringMetadata()
+	if metadata.ModelVersion == "" || metadata.FormulaVersion == "" || metadata.KnowledgeAsOf == "" {
+		t.Fatalf("metadata is incomplete: %#v", metadata)
+	}
+	if metadata.CalculationStatus != "production_calculation_endpoint" {
+		t.Fatalf("unexpected calculation status: %q", metadata.CalculationStatus)
+	}
+	if len(metadata.Limitations) == 0 {
+		t.Fatal("metadata must expose calculation limitations")
+	}
+}

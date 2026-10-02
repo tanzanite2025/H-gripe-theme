@@ -37,15 +37,30 @@ func (r *CartRepository) lockForUpdate(query *gorm.DB) *gorm.DB {
 	}
 }
 
+// preloadCartSpokeRepairKitModels adds the product-owned compatibility
+// snapshot to cart reads when the dedicated relation table is available.
+// Cart responses use this snapshot to render the selected wheelset model after
+// a page reload without exposing the private spoke dimensions.
+func (r *CartRepository) preloadCartSpokeRepairKitModels(query *gorm.DB, association string) *gorm.DB {
+	if !r.db.Migrator().HasTable(&product.SpokeRepairKitModel{}) {
+		return query
+	}
+	return query.Preload(association, func(db *gorm.DB) *gorm.DB {
+		return db.Order("product_spoke_repair_kit_models.sort_order ASC, product_spoke_repair_kit_models.id ASC")
+	})
+}
+
 // FindByUserID 根据用户ID查找购物车
 func (r *CartRepository) FindByUserID(userID uint) (*product.Cart, error) {
 	if _, err := r.PruneInvalidVariantItemsByCartIdentity("user_id = ?", userID); err != nil {
 		return nil, err
 	}
 	var cart product.Cart
-	err := r.db.Preload("Items.Product.Brand").Preload("Items.Product.Media", func(db *gorm.DB) *gorm.DB {
+	query := r.db.Preload("Items.Product.Brand").Preload("Items.Product.Media", func(db *gorm.DB) *gorm.DB {
 		return db.Order("product_media.sort_order ASC, product_media.id ASC")
-	}).Preload("Items.Variant").Where("user_id = ?", userID).First(&cart).Error
+	}).Preload("Items.Variant")
+	query = r.preloadCartSpokeRepairKitModels(query, "Items.Product.SpokeRepairKitModels")
+	err := query.Where("user_id = ?", userID).First(&cart).Error
 	if err != nil {
 		return nil, err
 	}
@@ -85,9 +100,11 @@ func (r *CartRepository) FindBySessionID(sessionID string) (*product.Cart, error
 		return nil, err
 	}
 	var cart product.Cart
-	err := r.db.Preload("Items.Product.Brand").Preload("Items.Product.Media", func(db *gorm.DB) *gorm.DB {
+	query := r.db.Preload("Items.Product.Brand").Preload("Items.Product.Media", func(db *gorm.DB) *gorm.DB {
 		return db.Order("product_media.sort_order ASC, product_media.id ASC")
-	}).Preload("Items.Variant").Where("session_id = ?", sessionID).First(&cart).Error
+	}).Preload("Items.Variant")
+	query = r.preloadCartSpokeRepairKitModels(query, "Items.Product.SpokeRepairKitModels")
+	err := query.Where("session_id = ?", sessionID).First(&cart).Error
 	if err != nil {
 		return nil, err
 	}
@@ -278,9 +295,11 @@ func (r *CartRepository) GetSummary(cartID uint) (*product.CartSummary, error) {
 		return nil, err
 	}
 	var items []product.CartItem
-	err := r.db.Preload("Product.Media", func(db *gorm.DB) *gorm.DB {
+	query := r.db.Preload("Product.Media", func(db *gorm.DB) *gorm.DB {
 		return db.Order("product_media.sort_order ASC, product_media.id ASC")
-	}).Preload("Variant").Where("cart_id = ?", cartID).Find(&items).Error
+	}).Preload("Variant")
+	query = r.preloadCartSpokeRepairKitModels(query, "Product.SpokeRepairKitModels")
+	err := query.Where("cart_id = ?", cartID).Find(&items).Error
 	if err != nil {
 		return nil, err
 	}

@@ -4,6 +4,7 @@ import (
 	"commerce-platform/internal/api/v1/publicmedia"
 	productdomain "commerce-platform/internal/domain/product"
 	"encoding/json"
+	"strings"
 )
 
 type PublicCartSummary struct {
@@ -13,17 +14,18 @@ type PublicCartSummary struct {
 }
 
 type PublicCartItem struct {
-	ID                uint               `json:"id"`
-	CartID            uint               `json:"cart_id"`
-	ProductID         uint               `json:"product_id"`
-	VariantID         *uint              `json:"variant_id"`
-	Quantity          int                `json:"quantity"`
-	PriceMinor        int64              `json:"price_minor"`
-	Currency          string             `json:"currency"`
-	Configuration     json.RawMessage    `json:"configuration,omitempty"`
-	ConfigurationHash string             `json:"configuration_hash,omitempty"`
-	Product           *PublicCartProduct `json:"product,omitempty"`
-	Variant           *PublicCartVariant `json:"variant,omitempty"`
+	ID                 uint               `json:"id"`
+	CartID             uint               `json:"cart_id"`
+	ProductID          uint               `json:"product_id"`
+	VariantID          *uint              `json:"variant_id"`
+	Quantity           int                `json:"quantity"`
+	PriceMinor         int64              `json:"price_minor"`
+	Currency           string             `json:"currency"`
+	Configuration      json.RawMessage    `json:"configuration,omitempty"`
+	ConfigurationHash  string             `json:"configuration_hash,omitempty"`
+	ConfigurationLabel string             `json:"configuration_label,omitempty"`
+	Product            *PublicCartProduct `json:"product,omitempty"`
+	Variant            *PublicCartVariant `json:"variant,omitempty"`
 }
 
 type PublicCartProduct struct {
@@ -82,15 +84,16 @@ func PublicCartSummaryFromDomain(summary *productdomain.CartSummary, resolvers .
 			fulfillmentMode = productdomain.NormalizeFulfillmentMode(item.Product.FulfillmentMode)
 		}
 		publicItem := PublicCartItem{
-			ID:                item.ID,
-			CartID:            item.CartID,
-			ProductID:         item.ProductID,
-			VariantID:         item.VariantID,
-			Quantity:          item.Quantity,
-			PriceMinor:        item.PriceMinor,
-			Currency:          item.Currency,
-			Configuration:     append(json.RawMessage(nil), item.ConfigurationData...),
-			ConfigurationHash: item.ConfigurationHash,
+			ID:                 item.ID,
+			CartID:             item.CartID,
+			ProductID:          item.ProductID,
+			VariantID:          item.VariantID,
+			Quantity:           item.Quantity,
+			PriceMinor:         item.PriceMinor,
+			Currency:           item.Currency,
+			Configuration:      append(json.RawMessage(nil), item.ConfigurationData...),
+			ConfigurationHash:  item.ConfigurationHash,
+			ConfigurationLabel: publicCartConfigurationLabel(item),
 		}
 		if item.Variant != nil {
 			variantPriceMoney, _ := item.Variant.PriceMoney()
@@ -139,6 +142,37 @@ func PublicCartSummaryFromDomain(summary *productdomain.CartSummary, resolvers .
 		TotalMinor: summaryTotalMinor(summary),
 		Items:      items,
 	}
+}
+
+// publicCartConfigurationLabel returns only the buyer-facing label for the
+// selected repair-kit model. The cart keeps the canonical configuration keys;
+// this derived label lets the UI remain readable after a backend reload while
+// keeping spoke lengths and nipple dimensions out of the cart response.
+func publicCartConfigurationLabel(item productdomain.CartItem) string {
+	if item.Product == nil || len(item.Product.SpokeRepairKitModels) == 0 {
+		return ""
+	}
+	var snapshot struct {
+		Selections []struct {
+			GroupSlug string   `json:"group_slug"`
+			ValueKeys []string `json:"value_keys"`
+		} `json:"selections"`
+	}
+	if err := json.Unmarshal(item.ConfigurationData, &snapshot); err != nil {
+		return ""
+	}
+	for _, selection := range snapshot.Selections {
+		if strings.TrimSpace(selection.GroupSlug) != "wheelset_model" || len(selection.ValueKeys) != 1 {
+			continue
+		}
+		selectedKey := strings.ToLower(strings.TrimSpace(selection.ValueKeys[0]))
+		for _, model := range item.Product.SpokeRepairKitModels {
+			if strings.ToLower(model.BuildSpokeRepairKitModelCompatibilityValueKey()) == selectedKey {
+				return model.Label()
+			}
+		}
+	}
+	return ""
 }
 
 func summaryTotalMinor(summary *productdomain.CartSummary) int64 {

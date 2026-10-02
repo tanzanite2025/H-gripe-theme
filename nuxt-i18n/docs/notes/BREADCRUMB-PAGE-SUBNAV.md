@@ -75,14 +75,15 @@ Home / Guides / Tire Guides
 Breadcrumb sub-navigation uses an explicit two-way route classification:
 
 1. If the current path exactly equals a registered PageSubNavigationEntry.path,
-   it is a canonical page. Its expandable menu must come from the parent
-   route's sibling pages (for example /guides/tireguides expands to Tire
-   Guides and Wheelset Buyers Guide). It must not open its own tabs.
-2. Only an exact match for a registered tab target (<entry.path>/<tab-id>) or
-   a tab's explicit to is a tab route. That route may open the owning page's
-   internal tab list (for example /guides/tireguides/installation).
-3. Prefix or nested matches are not tab matches. Unknown tab IDs and deeper
-   descendants must not open the internal tab list.
+   it is a canonical page. Its expandable menu comes from that page's own
+   registered tabs (for example `/guides/wheelset-buyers` opens Overview,
+   Safety instructions, and the other wheelset pages). The parent `Guides`
+   crumb remains responsible for switching between guide siblings.
+2. Only an exact match for a registered tab target (`<entry.path>/<tab-id>`) or
+   a tab's explicit `to` is a tab route. The active tab crumb opens the owning
+   page's internal tab list (for example `/guides/tireguides/installation`).
+3. A canonical ancestor does not duplicate that menu when a tab route is
+   active. Prefix or unknown matches do not open an internal tab list.
 
 The pure resolver is app/utils/pageSubNavigationBreadcrumb.ts. Its contract
 is covered by npm run test:breadcrumb-navigation.

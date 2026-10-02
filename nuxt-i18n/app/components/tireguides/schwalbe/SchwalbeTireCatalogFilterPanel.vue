@@ -3,6 +3,14 @@
     <fieldset class="schwalbe-filter-panel__inline-facet">
       <legend>{{ eBikeRatingLabel }}</legend>
       <div class="schwalbe-filter-panel__options">
+        <label class="schwalbe-filter-panel__option schwalbe-filter-panel__option--all">
+          <input
+            :checked="selectedEBikeRatings.length === 0"
+            type="checkbox"
+            @change="selectedEBikeRatings = []"
+          >
+          <span>{{ eBikeRatingAllLabel }}</span>
+        </label>
         <label
           v-for="(option, index) in eBikeRatingOptions"
           :key="option.value ?? `unrated-${index}`"
@@ -41,6 +49,14 @@
     <fieldset class="schwalbe-filter-panel__inline-facet">
       <legend>{{ beadLabel }}</legend>
       <div class="schwalbe-filter-panel__options">
+        <label class="schwalbe-filter-panel__option schwalbe-filter-panel__option--all">
+          <input
+            :checked="selectedBeads.length === 0"
+            type="checkbox"
+            @change="selectedBeads = []"
+          >
+          <span>{{ beadAllLabel }}</span>
+        </label>
         <label v-for="option in beadOptions" :key="option.value" class="schwalbe-filter-panel__option">
           <input v-model="selectedBeads" type="checkbox" :value="option.value">
           <span>{{ option.value }}</span>
@@ -51,6 +67,14 @@
     <fieldset class="schwalbe-filter-panel__inline-facet">
       <legend>{{ sealLabel }}</legend>
       <div class="schwalbe-filter-panel__options">
+        <label class="schwalbe-filter-panel__option schwalbe-filter-panel__option--all">
+          <input
+            :checked="selectedSeals.length === 0"
+            type="checkbox"
+            @change="selectedSeals = []"
+          >
+          <span>{{ sealAllLabel }}</span>
+        </label>
         <label v-for="option in sealOptions" :key="option.value" class="schwalbe-filter-panel__option">
           <input v-model="selectedSeals" type="checkbox" :value="option.value">
           <span>{{ option.value }}</span>
@@ -84,8 +108,11 @@ defineProps<{
   radialAllLabel: string
   radialLabel: string
   beadLabel: string
+  beadAllLabel: string
   sealLabel: string
+  sealAllLabel: string
   eBikeRatingLabel: string
+  eBikeRatingAllLabel: string
   eBikeUnratedLabel: string
   resetLabel: string
   beadOptions: readonly SchwalbeTireCatalogFilterOption<string>[]
@@ -142,6 +169,20 @@ const hasSelection = computed(() => (
   height: 0.9rem;
   margin: 0;
   accent-color: var(--tz-action-primary);
+}
+
+.schwalbe-filter-panel__option--all input {
+  appearance: none;
+  flex: 0 0 0.9rem;
+  border: 1px solid var(--tz-border-strong);
+  border-radius: 50%;
+  background: var(--tz-card-surface);
+  cursor: pointer;
+}
+
+.schwalbe-filter-panel__option--all input:checked {
+  border-color: var(--tz-text-primary);
+  background: radial-gradient(circle, var(--tz-text-primary) 0 34%, transparent 39%);
 }
 
 .schwalbe-filter-panel__option input:focus-visible {

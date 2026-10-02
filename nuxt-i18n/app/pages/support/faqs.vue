@@ -259,7 +259,6 @@ const formatPageIndex = (index: number) => String(index + 1).padStart(2, '0')
     margin: 0;
     color: var(--tz-text-primary);
     font-size: 1.25rem;
-    font-style: italic;
     font-weight: 900;
     line-height: 1.2;
     text-transform: uppercase;

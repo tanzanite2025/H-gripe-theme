@@ -1,6 +1,6 @@
 # Phase 2：Schwalbe 商品规格查询页实施指南
 
-> **状态**：目录选型切片、Telemetry Guide、SSR 服务端分页，以及型号、ETRTO 派生尺寸、页面级轮径 + BSD 导航、胎体结构、Radial、Bead、Seal、E-Bike 评级、Color 和 Compound 筛选已接入页面；页面正文分为“介绍 / 搜索”两个顶层 Tab，搜索为默认视图，介绍只承载技术图解卡片；轮径 Tab 与卡片尺寸投影使用同一后端派生值，筛选弹窗只保留次级条件；筛选入口通过独立弹层组件承载，桌面端使用居中 dialog，移动端使用底部抽屉；销售商品附加层与结构化 Product/Offer 仍待后续切片。胎圈内宽规则模型和只读 API 已接入卡片参考范围。
+> **状态**：目录选型切片、Telemetry Guide、SSR 服务端分页，以及型号、ETRTO 派生尺寸、页面级轮径 + BSD 导航、胎体结构、Radial、Bead、Seal、E-Bike 评级、Color 和 Compound 筛选已接入页面；页面正文分为“介绍 / 搜索”两个顶层 Tab，搜索为默认视图，介绍只承载技术图解卡片；轮径 Tab 与卡片尺寸投影使用同一后端派生值，筛选弹窗只保留次级条件；筛选入口通过独立弹层组件承载，桌面端使用居中 dialog，移动端使用底部抽屉；销售商品附加层与结构化 Product/Offer 仍待后续切片。胎圈内宽参考由 Go 后端 DT Swiss 引擎生成，页面只展示结果。
 > **页面**：`/guides/tireguides/schwalbe-tire-selector`  
 > **文档索引**：[Schwalbe 文档职责与权威范围](./README.md)
 > **Phase 1 数据边界**：[Phase 1 商品模板实施指南](./phase1-schwalbe-tire-system-template-implementation-guide.md)  
@@ -9,7 +9,7 @@
 > **已实施的尺寸导航方案**：[轮径页面导航设计](./schwalbe-wheel-size-page-tabs-design.md)。页面结果区上方显示由 selector 响应动态生成的轮径 + BSD 导航，卡片显示同一派生投影中的轮径、BSD 和 ETRTO。
 > **数据与迁移基线**：迁移和部署流程见 [Phase 1 第 6 节](./phase1-schwalbe-tire-system-template-implementation-guide.md#6-迁移规则)；导入种子记录数及文本枚举见[字段矩阵第 8 节](./schwalbe-master-catalog-specification-matrix.md#8-2026-09-28-快照枚举基准)。
 
-> **第一批实现位置**：Nuxt 页面为 `app/pages/guides/schwalbe-tire-selector.vue`，目录与分页查询适配器为 `app/data/tireguides/schwalbeCatalog.ts`，独立筛选模型与 URL 查询契约分别为 `app/data/tireguides/schwalbeTireCatalogFilterModel.ts`、`app/data/tireguides/schwalbeTireCatalogFilterQuery.ts`，车圈内宽规则适配器为 `app/data/tireguides/schwalbeTireRimWidthCombinationRules.ts`，查询状态在 `app/composables/useSchwalbeTireSelector.ts`，筛选弹层、受控字段面板和卡片位于 `app/components/tireguides/schwalbe/`。选型页使用 Phase 1 目录数据专用的分页接口，不载入旧原型数组。
+> **第一批实现位置**：Nuxt 页面为 `app/pages/guides/schwalbe-tire-selector.vue`，目录与分页查询适配器为 `app/data/tireguides/schwalbeCatalog.ts`，独立筛选模型与 URL 查询契约分别为 `app/data/tireguides/schwalbeTireCatalogFilterModel.ts`、`app/data/tireguides/schwalbeTireCatalogFilterQuery.ts`，查询状态在 `app/composables/useSchwalbeTireSelector.ts`，筛选弹层、受控字段面板和卡片位于 `app/components/tireguides/schwalbe/`。车圈内宽结果由 selector 响应中的 `rim_width_guidance` 提供；通用助手通过 `useTireRimWidthReferenceRecommendation.ts` 调用 Go `/api/v1/engineering/tire-rim/solve`。选型页使用 Phase 1 目录数据专用的分页接口，不载入旧原型数组。
 
 ## 1. 数据边界
 
@@ -20,7 +20,7 @@
 - 文本商品字段按官网英文原文存储。商品界面翻译只通过明确的 i18n 映射处理，不修改数据或把不同语言值混成多个筛选项。
 - `e_bike_rating` 保持文本语义：快照取值为 `E-25`、`E-50` 或官网未标注评级。空值不证明车型类别或 E-Bike 适用性；前端不得把它转换成 boolean，也不得由评级值推导轮圈或安全兼容结论。
 - 匹配候选数据与销售 Product 是不同数据职责。Phase 1 的 19 个字段仅定义当前外胎销售商品模板；`discipline`、`series`、`construction`、`hooklessApproved`、推荐轮圈宽度等旧草案字段不能因此冒充已核实商品事实或安全结论。
-- 产品页显示的 Bar/PSI 是该商品页面给出的压力值，不代表轮圈适配或 Hookless 认证。迁移 362 的胎宽—车圈内宽表只提供官方“可能组合”指导，不认证具体型号兼容性，也不替代车架间隙、TLE/TLR 或车圈厂商要求。
+- 产品页显示的 Bar/PSI 是该商品页面给出的压力值，不代表轮圈适配或 Hookless 认证。旧的 Schwalbe/ETRTO 胎宽—车圈内宽组合表已退休，不进入选型页卡片。选型页的 Hookless 层必须来自迁移 369 的独立官方事实，不能从 TLE/TLR 或型号类别推断。
 
 原型文件 `preview-schwalbe-tire-selector.html` 中的布局、“全谱系总览”入口和筛选交互可作为设计依据；其中 mock 型号值、价格、库存和 Hookless 结果不能当作生产事实。生产候选来自独立目录，并通过有官方来源的数据库导入/同步维护；不得把原型静态数组冒充已核实数据。
 
@@ -30,7 +30,7 @@
 2. 默认筛选状态为 `ALL`，显示目录里的全部型号候选，不受是否上架影响；用户可按目录中来源可核验的字段搜索和筛选。
 3. 每个候选按 Article No. 查询销售 Product，并在结果中标出存在状态。匹配候选不因参与搜索或匹配而成为 Product。
 4. 命中真实商品时，商品标题和 19 项销售规格来自 Product 与模板值；价格、库存及可购买状态来自现有 SKU/库存查询结果。
-5. 对候选提供搜索、排序和匹配字段筛选；当前页面已接入型号、ETRTO 派生胎宽/胎圈座直径、页面级轮径 + BSD 导航、胎体结构、Radial、Bead、Seal、E-Bike 评级、Color 和 Compound 筛选。尺寸从官方 `inch_designation` 和严格 ETRTO 派生，`wheel_size` 使用 `轮径-BSD` 组合键，例如 `28-622`、`29-622`、`26-559` 和 `26-590`；两个共享 BSD 的轮径以及 BSD 不同的 26 英寸尺寸仍需分别辨识。原始 `etrto` 和 `inch_designation` 保持不变，派生值不回写源字段，当前页卡片通过 `wheel_size` 投影显示轮径、BSD 和 ETRTO。胎体结构按 `version_label` 逗号分隔后的完整官方 token 匹配，只开放已核实的 `Super Race`、`Super Ground`、`Super Trail`、`Super Downhill`、`TRAIL`、`TRAIL PRO`、`GRAVITY` 和 `GRAVITY PRO`；Radial 为独立条件。原始 `version_label` 保持不变，不从它推导防刺等级或性能排序。Bead、Seal、Color 和 Compound 使用候选目录完整原始值；颜色组合不拆分、不归并色系，胶料名称不翻译、拆分或归并大小写。E-Bike 筛选保留 `E-25`、`E-50` 和官网未标注评级。底层模型另支持由迁移 362 规则驱动的车圈内宽可能组合参考。暂不展示未经核实的“官方兼容”“Hookless 认证”“黄金搭配”或推导出的安全压力。
+5. 对候选提供搜索、排序和匹配字段筛选；当前页面已接入型号、页面级轮径 + BSD 导航、Radial、Bead、Seal 和 E-Bike 评级筛选。尺寸从官方 `inch_designation` 和严格 ETRTO 派生，`wheel_size` 使用 `轮径-BSD` 组合键，例如 `28-622`、`29-622`、`26-559` 和 `26-590`；两个共享 BSD 的轮径以及 BSD 不同的 26 英寸尺寸仍需分别辨识。原始 `etrto` 和 `inch_designation` 保持不变，派生值不回写源字段，当前页卡片通过 `wheel_size` 投影显示轮径、BSD 和 ETRTO。胎体结构按 `version_label` 逗号分隔后的完整官方 token 匹配，只开放已核实的 `Super Race`、`Super Ground`、`Super Trail`、`Super Downhill`、`TRAIL`、`TRAIL PRO`、`GRAVITY` 和 `GRAVITY PRO`；Radial 为独立条件。原始 `version_label` 保持不变，不从它推导防刺等级或性能排序。Bead、Seal、Color 和 Compound 使用候选目录完整原始值；颜色组合不拆分、不归并色系，胶料名称不翻译、拆分或归并大小写。E-Bike 筛选保留 `E-25`、`E-50` 和官网未标注评级。卡片的车圈层始终显示有钩车圈；只有迁移 369 的明确 supported 事实才显示无钩车圈，内宽数字采用 DT Swiss TSS/TC 推荐表。
 6. 页面视觉沿用站点字体和组件规范，接入指南导航、FAQ 与合适的结构化数据。筛选器不作为页面正文中的常驻大面板：`SchwalbeTireSelector.vue` 保留搜索、型号/排序控件、页面级尺寸导航、筛选按钮和结果区，按钮打开独立的 `SchwalbeTireCatalogFilterDrawer.vue`。尺寸导航位于搜索/型号控件之后、结果摘要之前；面板只留胎体方向、胎圈结构、密封结构和 E-BIKE 等次级条件。弹层外壳负责原生 dialog、Teleport、背景遮罩、关闭和“显示结果”操作、焦点回收以及背景滚动锁定；桌面端为居中 dialog，移动端为贴底 bottom sheet，内部保持可滚动。`SchwalbeTireCatalogFilterPanel.vue` 只负责受控字段和现有单行筛选；不负责 URL 解析、目录请求或 SEO 内容，因此可在商品弹窗等其他宿主中复用。
 7. `SchwalbeTelemetryGuide.vue` 属于 Phase 2 的独立技术说明组件，不扩充 Phase 1 的 19 个商品字段；它位于页面级“介绍”Tab，使用静态 i18n 技术卡片说明 Radial 胎体、Green Marathon 材料、Schwalbe Protection Level 1–7（含 6+ Super Defense）、胎体结构、颜色和胶料，不接收 `catalogItems` 也不读取搜索、筛选、分页或目录记录数，因此可以直接嵌入商品页或弹窗复用。
 
@@ -106,13 +106,13 @@ export interface SchwalbeMatchResult<TCandidate> {
 
 ### 分页与 URL 状态
 
-目录卡片固定每页 20 条。`page` 是从 1 开始的 URL 查询参数，缺省值为 1；selector API 仍接收 `search`、`page`、`model`、`sort`、`wheel_size`、`radial=1`、`bead`、`seal` 和 `e_bike_rating`，并保留胎宽、BSD-only、胎体、颜色、胶料、最低承重及旧 `inner_rim_width_mm` 参数供旧客户端兼容。当前页面只生成型号、`wheel_size`、Radial、Bead、Seal 和 E-BIKE 状态；隐藏字段会在页面状态解析时忽略，提交新条件时清理，避免用户看不到的旧条件继续造成 0 结果。`wheel_size` 的值是服务端从源字段派生的 `轮径-BSD` 组合键；`28-622` 与 `29-622` 是不同条件，`26-559` 与 `26-590` 也是不同条件。页面级导航同时显示轮径和 BSD 两部分，防止只看熟悉的英寸值或只看 BSD 导致选错；弹窗不再重复尺寸手风琴。原始 `etrto`、`inch_designation` 不被改写，也不新增数据库事实列；卡片从 selector 条目的 `wheel_size` 投影读取同一派生结果。车圈内宽不再作为页面输入或结果过滤条件，selector 通过 `include_rim_width_guidance=1` 按 ETRTO 胎宽为当前页卡片附加官方可能组合参考范围。选型 API 固定每页 20 条，不接受可变页大小。多选值以重复参数保存；`radial=1` 表示只保留 Version 含完整 `Radial` token 的记录；`e_bike_rating=none` 是官网未标注评级的 URL 保留值，不是目录枚举。搜索提交、尺寸按钮变化、排序切换或在弹层点击“显示结果”提交次级草稿时都回到 `page=1`；仅编辑弹层草稿不会改 URL、刷新结果或改变页码。浏览器前进后退和直链会还原查询状态，翻页保留当前搜索词、尺寸和次级筛选。响应的 `data.items` 是搜索、筛选、排序后当前页的最多 20 条候选；`data.total`、`data.total_pages` 同样按已选筛选计算。`data.filter_options` 只按文本搜索命中集生成，不受已选 facet 影响，保持尺寸导航和其他次级选项完整。页码超出结果范围时服务端返回最后一页，前端把 URL 规范化为响应页码。分页使用原生可抓取的 `NuxtLink`，支持直链、刷新和搜索引擎跟踪，不使用点击展开或无限滚动替代分页。
+目录卡片固定每页 20 条。`page` 是从 1 开始的 URL 查询参数，缺省值为 1；selector API 接收 `search`、`page`、`model`、`sort`、`wheel_size`、`radial=1`、`bead`、`seal` 和 `e_bike_rating` 等目录筛选参数。页面只生成型号、`wheel_size`、Radial、Bead、Seal 和 E-BIKE 状态；隐藏字段会在页面状态解析时忽略，提交新条件时清理，避免用户看不到的旧条件继续造成 0 结果。`wheel_size` 的值是服务端从源字段派生的 `轮径-BSD` 组合键；`28-622` 与 `29-622` 是不同条件，`26-559` 与 `26-590` 也是不同条件。页面级导航同时显示轮径和 BSD 两部分，防止只看熟悉的英寸值或只看 BSD 导致选错；弹窗不再重复尺寸手风琴。原始 `etrto`、`inch_designation` 不被改写，也不新增数据库事实列；卡片从 selector 条目的 `wheel_size` 投影读取同一派生结果。车圈内宽不作为页面输入或结果过滤条件，selector 直接为当前页卡片附加后端 `rim_width_guidance`；该字段只含 DT Swiss 离散推荐行、possible 标记或相邻行插值结果，不包含 Schwalbe/ETRTO 宽泛组合矩阵。选型 API 固定每页 20 条，不接受可变页大小。多选值以重复参数保存；`radial=1` 表示只保留 Version 含完整 `Radial` token 的记录；`e_bike_rating=none` 是官网未标注评级的 URL 保留值，不是目录枚举。搜索提交、尺寸按钮变化、排序切换或在弹层点击“显示结果”提交次级草稿时都回到 `page=1`；仅编辑弹层草稿不会改 URL、刷新结果或改变页码。浏览器前进后退和直链会还原查询状态，翻页保留当前搜索词、尺寸和次级筛选。响应的 `data.items` 是搜索、筛选、排序后当前页的最多 20 条候选；`data.total`、`data.total_pages` 同样按已选筛选计算。`data.filter_options` 只按文本搜索命中集生成，不受已选 facet 影响，保持尺寸导航和其他次级选项完整。页码超出结果范围时服务端返回最后一页，前端把 URL 规范化为响应页码。分页使用原生可抓取的 `NuxtLink`，支持直链、刷新和搜索引擎跟踪，不使用点击展开或无限滚动替代分页。
 
 选型 API 默认按 `weight_asc`（重量从轻到重）排序；已知重量优先，缺少重量的记录排在最后，相同重量再按型号、ETRTO 和 Article No. 稳定排序。`sort=weight_desc` 按重量从重到轻排序，缺少重量的记录仍排在最后。页面只展示这两个面向用户的重量排序方向，默认方向不写入 URL；服务端暂时继续接受 `model`、`etrto` 和 `article` 作为旧 API 调用的兼容值，但新页面不会生成这些值。筛选与排序在服务端对文本搜索命中集计算，当前目录规模下以完整搜索命中集生成 facet，再只返回当前页。若候选规模显著增长，再把相同契约下推到 SQL 并验证索引和 facet 查询成本。
 
 实际商品详情由 `schwalbe_tire` 模板和现有 Product/SKU 读取。模板 `is_filterable` 当前仅将 ETRTO、Inch、Version 标记为可筛选；该标记约束商品规格筛选，不代表计算器候选数据的筛选字段集合。Phase 2 候选筛选字段按匹配数据契约确定，不能把两套元数据混为一谈。
 
-ETRTO 派生尺寸以及轮径 + BSD 复合键只用于目录筛选，不单独证明轮圈兼容性。同一维度内多选使用 OR，跨维度使用 AND。复合键必须同时满足轮径和 BSD；因此共享 BSD 的 28/29 英寸记录不会互相混入，BSD 不同的 26 英寸记录也不会互相混入。最低单胎承重、胎宽、BSD-only、胎体、Color 和 Compound 仍由共享 API 模型保留，但当前页面不展示这些条件，也不让隐藏 URL 值约束页面请求。胎体选项若由其他客户端使用，仍从 `version_label` 中按完整逗号 token 精确提取；Radial 作为独立条件。Bead、Seal、Color、Compound 和 E-Bike 评级只匹配目录中保存的原始值；Color 使用完整官方颜色字符串精确匹配，不拆分 `+`、`/` 等组合，也不推断单一色系；Compound 保留完整胶料标签，不翻译、拆分或归并大小写。上述筛选不代表兼容认证或适用性结论；不得由 Bead、`seal`、`version_label` 或型号推断 E-Bike 评级。旧客户端传入 `inner_rim_width_mm` 时，后端仍可按迁移 362 的官方可能组合规则执行兼容过滤；当前页面只请求 `include_rim_width_guidance=1`，把按 ETRTO 胎宽得到的参考范围附加到卡片，不把它写成具体型号认证、Hookless 批准、车架间隙或压力上限。`version_label` 混合防刺结构、胎体结构和其他官方标签，当前页面不从它猜测数字防刺等级。
+ETRTO 派生尺寸以及轮径 + BSD 复合键只用于目录筛选，不单独证明轮圈兼容性。同一维度内多选使用 OR，跨维度使用 AND。复合键必须同时满足轮径和 BSD；因此共享 BSD 的 28/29 英寸记录不会互相混入，BSD 不同的 26 英寸记录也不会互相混入。最低单胎承重、胎宽、BSD-only、胎体、Color 和 Compound 仍由共享 API 模型保留，但当前页面不展示这些条件，也不让隐藏 URL 值约束页面请求。胎体选项若由其他客户端使用，仍从 `version_label` 中按完整逗号 token 精确提取；Radial 作为独立条件。Bead、Seal、Color、Compound 和 E-Bike 评级只匹配目录中保存的原始值；Color 使用完整官方颜色字符串精确匹配，不拆分 `+`、`/` 等组合，也不推断单一色系；Compound 保留完整胶料标签，不翻译、拆分或归并大小写。上述筛选不代表兼容认证或适用性结论；不得由 Bead、`seal`、`version_label` 或型号推断 E-Bike 评级。车圈内宽不是 selector 输入，后端按 ETRTO 胎宽附加 DT Swiss `rim_width_guidance`；它只表达离散推荐行、possible 行或相邻行插值，不写成具体型号认证、Hookless 批准、车架间隙或压力上限。`version_label` 混合防刺结构、胎体结构和其他官方标签，当前页面不从它猜测数字防刺等级。
 
 页面至少处理以下状态：
 
@@ -130,7 +130,7 @@ nuxt-i18n/app/
 ├── data/tireguides/schwalbeCatalog.ts       # 候选目录与销售商品响应适配器，不内嵌型号常量
 ├── data/tireguides/schwalbeTireCatalogFilterModel.ts # 独立多选、尺寸与承重筛选模型
 ├── data/tireguides/schwalbeTireCatalogFilterQuery.ts # URL 筛选和排序状态契约
-├── data/tireguides/schwalbeTireRimWidthCombinationRules.ts # 迁移 362 规则 API 适配器
+├── data/tireguides/tireRimWidthReferencePresentation.ts # 后端结果的显示类型和范围格式化
 ├── composables/useSchwalbeTireSelector.ts   # 查询状态、搜索、排序和官方字段筛选
 ├── components/tireguides/schwalbe/
 │   ├── SchwalbeTireSelector.vue             # 搜索、筛选按钮、SSR 结果卡片与分页容器
@@ -179,7 +179,7 @@ nuxt-i18n/app/
 - 筛选入口为独立的 `SchwalbeTireCatalogFilterDrawer.vue`：桌面端打开居中 dialog，移动端打开贴底 bottom sheet；弹层负责焦点、关闭和背景滚动，面板负责四组常驻次级条件，不重复显示页面级轮径入口。页面正文保留搜索、型号和尺寸导航，弹窗按钮显示当前已生效的次级条件数量。
 - 每张卡片展示目录字段、核验日期和 `product_exists` 状态；页面和水合数据不带来源 URL。未上架候选不会被隐藏，也不会显示价格、库存或购买按钮。
 - 页面提示四字段 OR 包含匹配和“不拆分多词”的接口限制，避免把 `Pro One 28-622` 当作跨字段联合查询。
-- 底层筛选模型已通过独立测试验证：同一维度多选为 OR、跨维度为 AND；严格解析 ETRTO 的胎宽/胎圈座直径，从 `inch_designation` 派生轮径并生成轮径 + BSD 组合键，页面导航和卡片投影共用后端派生值，`28-622`/`29-622` 和 `26-559`/`26-590` 保持互斥。当前页面的 Radial、Bead、Seal、E-Bike 次级筛选及 URL 状态已接入，旧胎宽、BSD-only、最低承重、胎体、Color 和 Compound 链接会被忽略或在提交时清理，避免隐藏条件继续约束结果。车圈内宽参考由迁移 362 规则在后端按 ETRTO 胎宽投影到卡片；没有覆盖时不伪造范围。API 与前端适配测试验证条目的 `wheel_size` 投影和 `filter_options.wheel_sizes` 结构化选项。
+- 底层筛选模型已通过独立测试验证：同一维度多选为 OR、跨维度为 AND；严格解析 ETRTO 的胎宽/胎圈座直径，从 `inch_designation` 派生轮径并生成轮径 + BSD 组合键，页面导航和卡片投影共用后端派生值，`28-622`/`29-622` 和 `26-559`/`26-590` 保持互斥。当前页面的 Radial、Bead、Seal、E-Bike 次级筛选及 URL 状态已接入，旧胎宽、BSD-only、最低承重、胎体、Color 和 Compound 链接会被忽略或在提交时清理，避免隐藏条件继续约束结果。车圈内宽参考由 Go DT Swiss 引擎按 ETRTO 胎宽投影到卡片；没有覆盖时不伪造范围，断点之间使用分段线性插值。API 与前端适配测试验证条目的 `wheel_size` 投影、`rim_width_guidance` 和 `filter_options.wheel_sizes` 结构化选项。
 - `e_bike_rating` 继续按 `E-25`、`E-50` 或官网未标注评级显示；页面不把空值解释为车型类别，也不生成 Hookless、车圈兼容或安全压力结论。
 - FAQ 路由命中且当前 locale 有已发布条目时，SSR 输出后台已发布的 Schwalbe 问答（包括 WIRED、Folding 和 bead 解释）；未配置页面、未发布条目或缺少该 locale 时不输出伪造内容，选型页主体仍正常渲染。
 - 页面级“介绍 / 搜索”Tab 在 SSR 中同时提供两个面板；“搜索”是默认可见面板，直接带查询参数进入时也默认显示“搜索”。切换 Tab 不改变查询 URL、搜索条件、结果和分页；FAQ 槽位在两个面板之后照常渲染。
@@ -205,5 +205,5 @@ nuxt-i18n/app/
 
 ## 8. 后续独立工作
 
-迁移 362 和只读 API 提供官方“可能组合”范围。当前选型页不再把车圈内宽作为弹窗筛选条件，而是由 selector 请求 `include_rim_width_guidance=1`，按每条记录的 ETRTO 公称胎宽在后端附加 `rim_width_guidance`，再由卡片显示参考范围。旧链接中的 `inner_rim_width_mm` 在选型页会被忽略；后端仍保留该参数供旧客户端兼容。完整职责、响应语义和维护边界见 [车圈内宽匹配设计](./schwalbe-tire-rim-width-matching-design.md)。若要升级为具体型号、Hookless、TLE/TLR 或轮圈认证判断，仍需另行核验逐型号事实、完整官方规则、轮圈制造商限制和车架间隙，再制定独立接口和测试。不能把这类结论写进 Phase 1 的 19 个官方商品字段，也不能以本文件中的旧原型示例作为依据。
+车圈内宽结果由 `/api/v1/engineering/tire-rim/matrix` 和 `/api/v1/engineering/tire-rim/solve` 提供。selector 按每条记录的 ETRTO 公称胎宽在后端附加 `rim_width_guidance`，卡片只展示后端结果；页面没有车圈内宽输入或旧组合规则筛选。DT Swiss 推荐行与 possible 行的语义、断点之间的插值以及模型版本见 [车圈内宽匹配设计](./schwalbe-tire-rim-width-matching-design.md)。若要升级为具体型号、Hookless、TLE/TLR 或轮圈认证判断，仍需另行核验逐型号事实、完整官方规则、轮圈制造商限制和车架间隙，再制定独立接口和测试。不能把这类结论写进 Phase 1 的 19 个官方商品字段，也不能以本文件中的旧原型示例作为依据。
 

@@ -42,6 +42,7 @@ type PublicProduct struct {
 	MetaTitle                    string                              `json:"meta_title"`
 	MetaDesc                     string                              `json:"meta_description"`
 	Brand                        *PublicProductBrand                 `json:"brand,omitempty"`
+	Category                     *PublicProductCategory              `json:"product_category,omitempty"`
 	AfterSalesTemplate           *PublicProductInformationTemplate   `json:"after_sales_template,omitempty"`
 	PackagingTemplate            *PublicProductInformationTemplate   `json:"packaging_template,omitempty"`
 	Availability                 Availability                        `json:"availability"`
@@ -51,8 +52,21 @@ type PublicProduct struct {
 	Variants                     []PublicProductVariant              `json:"variants,omitempty"`
 	VariantOptionValues          []PublicVariantOptionValue          `json:"variant_option_values,omitempty"`
 	OptionValueRelations         []PublicProductOptionValueRelation  `json:"option_value_relations,omitempty"`
+	SpokeRepairKitModels         []PublicSpokeRepairKitModel         `json:"spoke_repair_kit_models,omitempty"`
 	ReviewSummary                *PublicProductReviewSummary         `json:"review_summary,omitempty"`
 	ShippingDetails              *PublicProductShippingDetails       `json:"shipping_details,omitempty"`
+}
+
+// PublicSpokeRepairKitModel is the small product option contract exposed to
+// buyers. Catalog verification and source timestamps remain backend data.
+type PublicSpokeRepairKitModel struct {
+	ID                uint   `json:"id"`
+	BrandSlug         string `json:"brand_slug"`
+	BrandName         string `json:"brand_name"`
+	WheelsetModelSlug string `json:"wheelset_model_slug"`
+	WheelsetModelName string `json:"wheelset_model_name"`
+	LifecycleStatus   string `json:"lifecycle_status"`
+	SortOrder         int    `json:"sort_order"`
 }
 
 type PublicProductReviewSummary struct {
@@ -117,6 +131,12 @@ type PublicProductBrand struct {
 	Slug       string `json:"slug"`
 	LogoURL    string `json:"logo_url,omitempty"`
 	WebsiteURL string `json:"website_url,omitempty"`
+}
+
+type PublicProductCategory struct {
+	ID   uint   `json:"id"`
+	Name string `json:"name"`
+	Slug string `json:"slug"`
 }
 
 type PublicProductSpecificationTemplate struct {
@@ -405,6 +425,19 @@ func PublicProductFromDomainWithLocaleAndRoutes(item productdomain.Product, disp
 		})
 	}
 
+	spokeRepairKitModels := make([]PublicSpokeRepairKitModel, 0, len(item.SpokeRepairKitModels))
+	for _, model := range item.SpokeRepairKitModels {
+		spokeRepairKitModels = append(spokeRepairKitModels, PublicSpokeRepairKitModel{
+			ID:                model.ID,
+			BrandSlug:         model.BrandSlug,
+			BrandName:         model.BrandName,
+			WheelsetModelSlug: model.WheelsetModelSlug,
+			WheelsetModelName: model.WheelsetModelName,
+			LifecycleStatus:   model.LifecycleStatus,
+			SortOrder:         model.SortOrder,
+		})
+	}
+
 	return PublicProduct{
 		ID:                           item.ID,
 		Name:                         item.Name,
@@ -422,6 +455,7 @@ func PublicProductFromDomainWithLocaleAndRoutes(item productdomain.Product, disp
 		MetaTitle:                    item.MetaTitle,
 		MetaDesc:                     item.MetaDesc,
 		Brand:                        publicProductBrandFromDomain(item.Brand, resolver),
+		Category:                     publicProductCategoryFromDomain(item.ProductCategory),
 		AfterSalesTemplate:           publicProductInformationTemplateFromDomain(item.AfterSalesTemplate),
 		PackagingTemplate:            publicProductInformationTemplateFromDomain(item.PackagingTemplate),
 		Availability:                 availabilityForProduct(item),
@@ -431,7 +465,15 @@ func PublicProductFromDomainWithLocaleAndRoutes(item productdomain.Product, disp
 		Variants:                     variants,
 		VariantOptionValues:          variantOptionValues,
 		OptionValueRelations:         optionValueRelations,
+		SpokeRepairKitModels:         spokeRepairKitModels,
 	}
+}
+
+func publicProductCategoryFromDomain(item *productdomain.ProductCategory) *PublicProductCategory {
+	if item == nil || strings.TrimSpace(item.Slug) == "" {
+		return nil
+	}
+	return &PublicProductCategory{ID: item.ID, Name: item.Name, Slug: item.Slug}
 }
 
 func publicProductBrandFromDomain(item *productdomain.ProductBrand, resolver publicmedia.Resolver) *PublicProductBrand {

@@ -100,6 +100,62 @@ func TestListQuickBuyCandidatesIncludesMadeToOrderProductsWithoutStock(t *testin
 	requireProductIDs(t, results, item.ID)
 }
 
+func TestListQuickBuyCandidatesExcludesSpokeRepairKitProducts(t *testing.T) {
+	db := newProductQueryTestDB(t)
+	repo := NewProductRepository(db)
+	require.NoError(t, db.AutoMigrate(&product.ProductCategory{}))
+
+	category := product.ProductCategory{
+		Name:      "Spoke Repair Kits",
+		Slug:      product.SpokeRepairKitProductCategorySlug,
+		Depth:     2,
+		IsEnabled: true,
+	}
+	require.NoError(t, db.Create(&category).Error)
+
+	repairKit := product.Product{
+		Name:              "Repair Kit",
+		Slug:              "repair-kit",
+		Status:            "active",
+		Locale:            "en",
+		ProductCategoryID: &category.ID,
+	}
+	require.NoError(t, db.Create(&repairKit).Error)
+	require.NoError(t, db.Create(&product.ProductVariant{
+		ProductID:  repairKit.ID,
+		SKU:        "REPAIR-KIT-VAR",
+		IsActive:   true,
+		IsDefault:  true,
+		Stock:      10,
+		PriceMinor: 1000,
+	}).Error)
+
+	regular := product.Product{
+		Name:   "Regular Product",
+		Slug:   "regular-product",
+		Status: "active",
+		Locale: "en",
+	}
+	require.NoError(t, db.Create(&regular).Error)
+	require.NoError(t, db.Create(&product.ProductVariant{
+		ProductID:  regular.ID,
+		SKU:        "REGULAR-VAR",
+		IsActive:   true,
+		IsDefault:  true,
+		Stock:      10,
+		PriceMinor: 1000,
+	}).Error)
+
+	results, total, err := repo.ListQuickBuyCandidates(ProductQuickBuyCandidateQuery{
+		Locale: "en",
+		Offset: 0,
+		Limit:  10,
+	})
+	require.NoError(t, err)
+	require.Equal(t, int64(1), total)
+	requireProductIDs(t, results, regular.ID)
+}
+
 func newProductQueryTestDB(t *testing.T) *gorm.DB {
 	t.Helper()
 
@@ -135,27 +191,27 @@ func seedPublicProductsWithSameUpdatedAt(t *testing.T, db *gorm.DB, updatedAt ti
 	products := make([]product.Product, 0, count)
 	for index := 0; index < count; index++ {
 		item := product.Product{
-			SKU:       fmt.Sprintf("STABLE-PAGE-%d", index),
-			Name:      fmt.Sprintf("Stable Page %d", index),
-			Slug:      fmt.Sprintf("stable-page-%d", index),
-			Status:    "active",
-			Locale:    "en",
+			SKU:        fmt.Sprintf("STABLE-PAGE-%d", index),
+			Name:       fmt.Sprintf("Stable Page %d", index),
+			Slug:       fmt.Sprintf("stable-page-%d", index),
+			Status:     "active",
+			Locale:     "en",
 			PriceMinor: 10000,
-			Stock:     1,
-			CreatedAt: updatedAt,
-			UpdatedAt: updatedAt,
+			Stock:      1,
+			CreatedAt:  updatedAt,
+			UpdatedAt:  updatedAt,
 		}
 		require.NoError(t, db.Create(&item).Error)
 		require.NoError(t, db.Create(&product.ProductVariant{
-			ProductID: item.ID,
-			SKU:       fmt.Sprintf("STABLE-PAGE-%d-VAR", index),
-			Title:     "Default",
+			ProductID:  item.ID,
+			SKU:        fmt.Sprintf("STABLE-PAGE-%d-VAR", index),
+			Title:      "Default",
 			PriceMinor: 10000,
-			Stock:     1,
-			IsActive:  true,
-			IsDefault: true,
-			CreatedAt: updatedAt,
-			UpdatedAt: updatedAt,
+			Stock:      1,
+			IsActive:   true,
+			IsDefault:  true,
+			CreatedAt:  updatedAt,
+			UpdatedAt:  updatedAt,
 		}).Error)
 		products = append(products, item)
 	}

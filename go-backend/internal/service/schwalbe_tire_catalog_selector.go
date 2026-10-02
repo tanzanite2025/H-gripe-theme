@@ -5,7 +5,8 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	"time"
+
+	"commerce-platform/internal/domain/tirerim"
 
 	"commerce-platform/internal/repository"
 
@@ -35,15 +36,7 @@ type SchwalbeTireCatalogSelectorQuery struct {
 	Search    string
 	Page      int
 	MinLoadKG *float64
-	// IncludeRimWidthGuidance asks the selector to attach the source-backed
-	// possible-combination range for each returned tire. It is separate from
-	// InnerRimWidthMM so the page can explain a tire's reference range without
-	// filtering the catalog by a user-entered rim width.
-	IncludeRimWidthGuidance bool
-	// InnerRimWidthMM enables source-backed possible-combination matching.
-	// A nil value keeps the existing unfiltered catalog behavior.
-	InnerRimWidthMM *float64
-	ModelName       string
+	ModelName string
 	// Nominal tire-width endpoints are inclusive. A nil endpoint leaves that
 	// side of the range open. The exact-value slice remains for old links and
 	// clients that still send tire_width_mm.
@@ -83,6 +76,9 @@ type SchwalbeTireCatalogSelectorNullableStringOption struct {
 	Value *string `json:"value"`
 }
 
+// SchwalbeTireCatalogSelectorRimWidthReference is the backend DT Swiss reference result attached to one catalog item.
+type SchwalbeTireCatalogSelectorRimWidthReference = tirerim.Suggestion
+
 // SchwalbeTireCatalogSelectorFilterOptions are built from the text-search
 // result before any selected facet is applied, so choosing one facet does not
 // remove options from the other facets.
@@ -102,32 +98,22 @@ type SchwalbeTireCatalogSelectorFilterOptions struct {
 // SchwalbeTireCatalogSelectorPage contains only the requested page of rows,
 // while totals and filter options are calculated from their full result sets.
 type SchwalbeTireCatalogSelectorPage struct {
-	Items           []repository.SchwalbeTireCatalogItem        `json:"items"`
-	Page            int                                         `json:"page"`
-	PageSize        int                                         `json:"page_size"`
-	Total           int                                         `json:"total"`
-	TotalPages      int                                         `json:"total_pages"`
-	FilterOptions   SchwalbeTireCatalogSelectorFilterOptions    `json:"filter_options"`
-	RimWidthContext *SchwalbeTireCatalogSelectorRimWidthContext `json:"rim_width_context,omitempty"`
+	Items         []repository.SchwalbeTireCatalogItem     `json:"items"`
+	Page          int                                      `json:"page"`
+	PageSize      int                                      `json:"page_size"`
+	Total         int                                      `json:"total"`
+	TotalPages    int                                      `json:"total_pages"`
+	FilterOptions SchwalbeTireCatalogSelectorFilterOptions `json:"filter_options"`
 	// WheelSizeByArticle is converted into an item-level public field by the
 	// API projection. Keeping the map off the page JSON avoids exposing an
 	// internal lookup shape as a second public response contract.
 	WheelSizeByArticle map[string]SchwalbeTireCatalogSelectorWheelSizeOption `json:"-"`
-	// RimWidthGuidanceByArticle is converted into item-level public fields by
-	// the API projection. Keeping it off the page JSON prevents an internal map
-	// shape from becoming a second public response contract.
-	RimWidthGuidanceByArticle map[string][]SchwalbeTireCatalogSelectorRimWidthGuidance `json:"-"`
-}
-
-// SchwalbeTireCatalogSelectorRimWidthContext explains the source and state of
-// an active inner-rim-width query. SourceURL is intentionally kept out of the
-// selector response; the public rules endpoint owns that provenance detail.
-type SchwalbeTireCatalogSelectorRimWidthContext struct {
-	InnerRimWidthMM float64    `json:"inner_rim_width_mm"`
-	GuidanceStatus  string     `json:"guidance_status"`
-	SourceBasis     string     `json:"source_basis,omitempty"`
-	SourceVersion   string     `json:"source_version,omitempty"`
-	SourceCheckedAt *time.Time `json:"source_checked_at,omitempty"`
+	// RimCompatibilityByArticle is converted into item-level public fields by
+	// the API projection. Hooked is always present; Hookless is added only from
+	// an explicit supported fact in the independent compatibility table.
+	RimCompatibilityByArticle map[string][]SchwalbeTireCatalogSelectorRimCompatibility `json:"-"`
+	// RimWidthReferenceByArticle is calculated from exact ETRTO width by the backend DT Swiss reference engine.
+	RimWidthReferenceByArticle map[string][]SchwalbeTireCatalogSelectorRimWidthReference `json:"-"`
 }
 
 type schwalbeTireCatalogSelectorDimensions struct {
@@ -155,15 +141,9 @@ func (s *ProductService) SearchSchwalbeTireCatalogSelector(query SchwalbeTireCat
 	if err != nil {
 		return nil, err
 	}
-
-	var rimWidthRules []repository.SchwalbeTireRimWidthCombinationRule
-	var rimWidthContext *SchwalbeTireCatalogSelectorRimWidthContext
-	if query.InnerRimWidthMM != nil || query.IncludeRimWidthGuidance {
-		rimWidthRules, err = s.productRepo.ListSchwalbeTireRimWidthCombinationRules()
-		if err != nil {
-			return nil, err
-		}
-		rimWidthContext = buildSchwalbeTireCatalogSelectorRimWidthContext(query.InnerRimWidthMM, query.WheelSizeKeys, rimWidthRules)
+	hooklessCompatibilityRecords, err := s.productRepo.ListSchwalbeTireHooklessCompatibilities()
+	if err != nil {
+		return nil, err
 	}
 
 	rows := make([]schwalbeTireCatalogSelectorRow, 0, len(items))
@@ -176,7 +156,7 @@ func (s *ProductService) SearchSchwalbeTireCatalogSelector(query SchwalbeTireCat
 
 	collator := collate.New(language.English)
 	filterOptions := buildSchwalbeTireCatalogSelectorFilterOptions(rows, collator)
-	filteredRows := filterSchwalbeTireCatalogSelectorRows(rows, query, rimWidthRules)
+	filteredRows := filterSchwalbeTireCatalogSelectorRows(rows, query)
 	sortSchwalbeTireCatalogSelectorRows(filteredRows, query.SortBy)
 
 	total := len(filteredRows)
@@ -199,35 +179,25 @@ func (s *ProductService) SearchSchwalbeTireCatalogSelector(query SchwalbeTireCat
 	}
 	pageItems := make([]repository.SchwalbeTireCatalogItem, 0, end-start)
 	wheelSizeByArticle := make(map[string]SchwalbeTireCatalogSelectorWheelSizeOption)
-	rimWidthGuidanceByArticle := make(map[string][]SchwalbeTireCatalogSelectorRimWidthGuidance)
+	rimCompatibilityByArticle := schwalbeTireCatalogRimCompatibilityForRows(filteredRows[start:end], hooklessCompatibilityRecords)
+	rimWidthReferenceByArticle := schwalbeTireCatalogRimWidthReferenceForRows(filteredRows[start:end], rimCompatibilityByArticle)
 	for _, row := range filteredRows[start:end] {
 		pageItems = append(pageItems, row.item)
 		if wheelSize, ok := schwalbeTireCatalogSelectorWheelSizeFromDimensions(row.dimensions); ok {
 			wheelSizeByArticle[row.item.ArticleNo] = wheelSize
 		}
-		if query.InnerRimWidthMM != nil || query.IncludeRimWidthGuidance {
-			var guidance []SchwalbeTireCatalogSelectorRimWidthGuidance
-			if query.IncludeRimWidthGuidance {
-				guidance = schwalbeTireRimWidthGuidanceForTireWidth(row.dimensions.NominalTireWidthMM, rimWidthRules)
-			} else {
-				guidance = schwalbeTireRimWidthGuidanceFor(row.dimensions.NominalTireWidthMM, query.InnerRimWidthMM, rimWidthRules)
-			}
-			if len(guidance) > 0 {
-				rimWidthGuidanceByArticle[row.item.ArticleNo] = guidance
-			}
-		}
 	}
 
 	return &SchwalbeTireCatalogSelectorPage{
-		Items:                     pageItems,
-		Page:                      page,
-		PageSize:                  schwalbeTireCatalogSelectorPageSize,
-		Total:                     total,
-		TotalPages:                totalPages,
-		FilterOptions:             filterOptions,
-		RimWidthContext:           rimWidthContext,
-		WheelSizeByArticle:        wheelSizeByArticle,
-		RimWidthGuidanceByArticle: rimWidthGuidanceByArticle,
+		Items:                      pageItems,
+		Page:                       page,
+		PageSize:                   schwalbeTireCatalogSelectorPageSize,
+		Total:                      total,
+		TotalPages:                 totalPages,
+		FilterOptions:              filterOptions,
+		WheelSizeByArticle:         wheelSizeByArticle,
+		RimCompatibilityByArticle:  rimCompatibilityByArticle,
+		RimWidthReferenceByArticle: rimWidthReferenceByArticle,
 	}, nil
 }
 
@@ -244,40 +214,6 @@ func schwalbeTireCatalogSelectorWheelSizeFromDimensions(
 		WheelDiameterIn:    dimensions.WheelDiameterIn,
 		BeadSeatDiameterMM: *dimensions.BeadSeatDiameterMM,
 	}, true
-}
-
-func buildSchwalbeTireCatalogSelectorRimWidthContext(
-	innerRimWidthMM *float64,
-	wheelSizeKeys []string,
-	rules []repository.SchwalbeTireRimWidthCombinationRule,
-) *SchwalbeTireCatalogSelectorRimWidthContext {
-	if innerRimWidthMM == nil {
-		return nil
-	}
-
-	context := &SchwalbeTireCatalogSelectorRimWidthContext{
-		InnerRimWidthMM: *innerRimWidthMM,
-		GuidanceStatus:  "no_coverage",
-	}
-	if len(schwalbeTireSelectorStringSet(wheelSizeKeys)) == 0 {
-		context.GuidanceStatus = "wheel_size_required"
-	}
-	if schwalbeTireRimWidthInputCovered(innerRimWidthMM, rules) {
-		if context.GuidanceStatus != "wheel_size_required" {
-			context.GuidanceStatus = "covered"
-		}
-	}
-	if len(rules) == 0 {
-		return context
-	}
-
-	context.SourceBasis = rules[0].SourceBasis
-	context.SourceVersion = rules[0].SourceVersion
-	checkedAt := rules[0].SourceCheckedAt
-	if !checkedAt.IsZero() {
-		context.SourceCheckedAt = &checkedAt
-	}
-	return context
 }
 
 func deriveSchwalbeTireCatalogSelectorDimensions(item repository.SchwalbeTireCatalogItem) schwalbeTireCatalogSelectorDimensions {
@@ -367,7 +303,6 @@ func normalizedSchwalbeTireSelectorString(value *string) string {
 func filterSchwalbeTireCatalogSelectorRows(
 	rows []schwalbeTireCatalogSelectorRow,
 	query SchwalbeTireCatalogSelectorQuery,
-	rimWidthRules []repository.SchwalbeTireRimWidthCombinationRule,
 ) []schwalbeTireCatalogSelectorRow {
 	filtered := make([]schwalbeTireCatalogSelectorRow, 0, len(rows))
 	modelName := strings.TrimSpace(query.ModelName)
@@ -394,19 +329,10 @@ func filterSchwalbeTireCatalogSelectorRows(
 
 	for _, row := range rows {
 		dimensions := row.dimensions
-		if query.InnerRimWidthMM != nil && len(wheelSizes) == 0 {
-			// Inner-width matching is only meaningful with the user's wheel
-			// diameter + BSD pair. Keep an incomplete shared URL from silently
-			// producing a cross-wheel result set.
-			continue
-		}
 		if query.MinLoadKG != nil {
 			if row.item.LoadKG == nil || *row.item.LoadKG < *query.MinLoadKG {
 				continue
 			}
-		}
-		if query.InnerRimWidthMM != nil && len(schwalbeTireRimWidthGuidanceFor(dimensions.NominalTireWidthMM, query.InnerRimWidthMM, rimWidthRules)) == 0 {
-			continue
 		}
 		if modelName != "" && dimensions.ModelName != modelName {
 			continue

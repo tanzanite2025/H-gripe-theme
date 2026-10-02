@@ -155,6 +155,15 @@
       "is_indexable": true
     },
     {
+      "key": "guides-spokeguides-stainless-steel-microstructural-dislocation-mechanics",
+      "path": "/guides/spokeguides/stainless-steel-microstructural-dislocation-mechanics",
+      "label": "Stainless Steel Dislocation Mechanics",
+      "description": "Reference guide for spoke stress relieving and cold-drawn stainless steel dislocation mechanics",
+      "is_searchable": true,
+      "is_checkable": true,
+      "is_indexable": true
+    },
+    {
       "key": "resources-membershipandpoints",
       "path": "/resources/membershipandpoints",
       "label": "Membership and Points",

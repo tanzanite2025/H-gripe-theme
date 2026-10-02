@@ -1,0 +1,40 @@
+{
+  "catalog_id": "stainless-steel-spoke-material-reference-catalog",
+  "catalog_version": "1.0.2",
+  "default_material_reference_id": "austenitic-302-304-cold-drawn-spoke-reference",
+  "materials": [
+    {
+      "id": "austenitic-302-304-cold-drawn-spoke-reference",
+      "material_name": "Cold-drawn austenitic stainless steel spoke reference (AISI 302/304 family)",
+      "material_family": "Austenitic stainless steel",
+      "manufacturing_condition": "Cold-drawn or cold-worked spoke wire reference",
+      "elastic_modulus_mpa": 193000,
+      "macro_yield_reference_mpa": 1400,
+      "ultimate_tensile_strength_reference_mpa": 1600,
+      "data_version": "1.0.2",
+      "data_status": "generic-materials-science-reference",
+      "source_references": [
+        {
+          "title": "Cold-drawn AISI 302/304 generic material reference profile",
+          "reference_type": "materials-science-reference",
+          "location": "Versioned backend material profile for the spoke-body axial model",
+          "role": "Defines the generic material family, condition, and model reference points used by this page; it is not a brand or model material certificate."
+        },
+        {
+          "title": "ASTM A313/A313M, Standard Specification for Stainless Steel Spring Wire",
+          "reference_type": "material-standard",
+          "url": "https://www.astm.org/a0313_a0313m.html",
+          "role": "Reference for stainless spring-wire grades and condition terminology used to define this generic material family; it does not certify the exact values in this profile."
+        },
+        {
+          "title": "ASTM E111, Young's Modulus, Tangent Modulus, and Chord Modulus",
+          "reference_type": "test-method",
+          "url": "https://www.astm.org/e0111_e0111m.html",
+          "role": "Reference test method for updating elastic modulus from supplier or laboratory data."
+        }
+      ],
+      "applicability": "This profile intentionally represents cold-drawn or cold-worked AISI 302/304-family stainless spoke wire for the spoke-body axial model. It is a materials-science reference for the defined material family and condition, not a brand or model certificate.",
+      "notes": "The elastic modulus, macro-yield reference, and tensile-strength reference are engineering reference points for the defined cold-drawn or cold-worked AISI 302/304-family spoke-wire condition. They are not random placeholders, but they are not universal properties or measured certificates for every spoke brand, model, diameter, or manufacturing batch. The axial elongation calculation uses the elastic modulus; stress ratios and the page safety reference use the macro-yield reference. No separate dislocation-threshold parameter is used by this calculator."
+    }
+  ]
+}

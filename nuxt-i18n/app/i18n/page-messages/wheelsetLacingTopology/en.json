@@ -57,7 +57,7 @@
   },
   "telemetry": {
     "title": "03. Topology geometry metrics",
-    "tag": "GEOMETRY",
+    "tag": "GEOMETRY", "backendPending": "Waiting for backend geometry projection",
     "tangentLabel": "Drive-side mean absolute projection angle (α)",
     "projectionAngle": "line projection angle",
     "tangentDesc": "α = atan2(mean(|ηgeo|), mean(|γgeo|)); the angle formed by mean absolute display-vector components.",

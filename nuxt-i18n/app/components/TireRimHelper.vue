@@ -17,7 +17,7 @@
           v-model="tireWidthInput"
           type="number"
           min="18"
-          max="130"
+          max="127"
           step="1"
           :placeholder="t('guidesTireRimHelper.tireWidthPlaceholder')"
           class="tire-rim-helper__input mt-1 w-full rounded-md bg-[var(--tz-form-control-surface)] px-2 py-1.5 text-xs tz-text-primary outline-none focus:ring-0"
@@ -54,11 +54,24 @@
     <!-- Suggestion / Hint Text (Moved outside flex container to ensure new line) -->
     <div class="mt-3">
       <p
-        v-if="hooklessSafetyWarning"
-        class="tire-rim-helper__safety-warning text-base font-bold"
-        role="alert"
+        v-if="tireWidthOutOfRange"
+        class="text-xs tz-text-muted"
       >
-        {{ t('guidesTireRimHelper.hooklessSafetyWarning') }}
+        {{ t('guidesTireRimHelper.outOfRange') }}
+      </p>
+
+      <p
+        v-else-if="recommendationPending"
+        class="text-xs tz-text-muted"
+      >
+        {{ t('guidesTireRimHelper.loading') }}
+      </p>
+
+      <p
+        v-else-if="tireWidthHasNoPublishedBracket"
+        class="text-xs tz-text-muted"
+      >
+        {{ t('guidesTireRimHelper.noPublishedBracket') }}
       </p>
 
       <p
@@ -73,16 +86,44 @@
         class="text-xs tz-text-secondary"
       >
         <p class="tire-rim-helper__result font-semibold">
-          {{ t('guidesTireRimHelper.recommended') }}
-          {{ tireRimSuggestion.minRim }} - {{ tireRimSuggestion.maxRim }} mm
+          {{ t(tireRimSuggestion.isCalculated ? 'guidesTireRimHelper.calculatedReference' : tireRimSuggestion.isPossibleReference ? 'guidesTireRimHelper.possibleReference' : 'guidesTireRimHelper.recommended') }}
+          {{ formatTireRimWidthReferenceRanges(tireRimSuggestion.rimWidthRanges) }} mm
         </p>
-        <p class="mt-0.5 tz-caption tz-text-muted">
-          {{ t('guidesTireRimHelper.sweetSpot', { width: tireRimSuggestion.ideal }) }}
+        <p
+          v-if="tireRimSuggestion.isCalculated && tireRimSuggestion.calculationRows"
+          class="mt-0.5 tz-caption tz-text-muted"
+        >
+          {{ t('guidesTireRimHelper.calculated', tireRimSuggestion.calculationRows) }}
         </p>
+        <p
+          v-if="tireRimSuggestion.isPossibleReference"
+          class="mt-0.5 tz-caption tz-text-muted"
+        >
+          {{ t('guidesTireRimHelper.possibleReferenceNote') }}
+        </p>
+        <p
+          v-if="tireRimSuggestion.isCalculatedFromPossibleReference"
+          class="mt-0.5 tz-caption tz-text-muted"
+        >
+          {{ t('guidesTireRimHelper.calculatedFromPossibleReferenceNote') }}
+        </p>
+        <div class="tire-rim-helper__physics mt-2 text-left tz-caption tz-text-muted">
+          <p>
+            {{ t('guidesTireRimHelper.inflatedWidth') }}
+            {{ formatMetricRange(tireRimSuggestion.physical.inflatedTireWidth) }} mm
+          </p>
+          <p>
+            {{ t('guidesTireRimHelper.aeroTargetOuterWidth') }}
+            {{ formatMetricRange(tireRimSuggestion.physical.aeroTargetOuterWidth) }} mm
+          </p>
+          <p class="mt-0.5">
+            {{ t('guidesTireRimHelper.physicsNote') }}
+          </p>
+        </div>
       </div>
     </div>
 
-    <div v-if="!hideSearchButton && !hooklessSafetyWarning" class="mt-4 flex justify-center">
+    <div v-if="!hideSearchButton && !tireWidthOutOfRange" class="mt-4 flex justify-center">
       <button
         type="button"
         class="tire-rim-helper__search inline-flex items-center justify-center rounded-full px-4 py-1.5 text-xs font-semibold shadow-md transition-all"
@@ -100,7 +141,8 @@
 import { ref, watch } from 'vue'
 import { useI18n } from '#imports'
 import { usePageMessages } from '~/composables/usePageMessages'
-import { useTireRimRecommendation, type RimType } from '~/composables/useTireRimRecommendation'
+import { useTireRimWidthReferenceRecommendation, type RimType } from '~/composables/useTireRimWidthReferenceRecommendation'
+import { formatTireRimWidthReferenceRanges } from '~/data/tireguides/tireRimWidthReferencePresentation'
 import TireRimProductSearchSheet from '~/components/TireRimProductSearchSheet.vue'
 
 const { locale, t } = useI18n()
@@ -127,9 +169,18 @@ const props = withDefaults(defineProps<{
 const tireWidthInput = ref<string>('')
 const tireRimSearchSheetOpen = ref(false)
 const rimType = ref<RimType>(props.initialRimType)
-const { hooklessSafetyWarning, tireRimSuggestion } = useTireRimRecommendation(
+const {
+  tireRimSuggestion,
+  recommendationPending,
+  tireWidthOutOfRange,
+  tireWidthHasNoPublishedBracket,
+} = useTireRimWidthReferenceRecommendation(
   tireWidthInput,
   rimType,
+)
+
+const formatMetricRange = ({ min, max }: { min: number; max: number }) => (
+  min === max ? min.toFixed(1) : `${min.toFixed(1)}–${max.toFixed(1)}`
 )
 </script>
 
@@ -162,8 +213,10 @@ const { hooklessSafetyWarning, tireRimSuggestion } = useTireRimRecommendation(
   color: var(--tz-site-accent);
 }
 
-.tire-rim-helper__safety-warning {
-  color: #b91c1c;
+.tire-rim-helper__physics {
+  border-top: 1px solid var(--tz-form-control-border);
+  padding-top: 0.5rem;
+  line-height: 1.55;
 }
 
 .tire-rim-helper__toggle {

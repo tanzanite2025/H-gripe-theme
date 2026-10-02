@@ -101,7 +101,6 @@ const paymentIcons: PaymentIcon[] = [
   { src: '/icons/payment/jcb.svg', alt: 'JCB', width: 200, height: 120 },
   { src: '/icons/payment/diners.svg', alt: 'Diners Club', width: 200, height: 120 },
   { src: '/icons/payment/alipay.svg?v=6', alt: 'Alipay', width: 200, height: 120, className: 'payment-icon--alipay' },
-  { src: '/icons/payment/unionpay.svg', alt: 'UnionPay', width: 200, height: 120 },
   { src: '/icons/payment/wechatpay.svg', alt: 'WeChat Pay', width: 200, height: 120 },
   { src: '/icons/payment/applepay.svg?v=7', alt: 'Apple Pay', width: 200, height: 120 },
   { src: '/icons/payment/googlepay.svg', alt: 'Google Pay', width: 200, height: 120 },

@@ -61,7 +61,7 @@
 
 编辑已有商品时，页面从该商品的 `product_spec_values` 载入参数；修改后仍保存回这件商品。Article No.、EAN 等字段值可随商品直接编辑，不需要先改另一份物料记录。
 
-商品保存沿用现有接口：`POST /api/admin/products` 创建，`PUT /api/admin/products/:id` 编辑。`product_specification_template_id` 选择模板，`specs` 携带自动回填后的商品字段。后台型号选择器使用只读接口 `GET /api/v1/products/schwalbe-tire-catalog`，支持可选的 `search` 参数；搜索字段、匹配方式和返回顺序与 Phase 2 选型页共用，具体契约见 [Phase 2 指南](./phase2-standalone-page-implementation-guide.md)。官方可能组合规则另由 `GET /api/v1/products/schwalbe-tire-rim-width-combination-rules` 只读提供；不新增目录人工提交、审核或复核接口。
+商品保存沿用现有接口：`POST /api/admin/products` 创建，`PUT /api/admin/products/:id` 编辑。`product_specification_template_id` 选择模板，`specs` 携带自动回填后的商品字段。后台型号选择器使用只读接口 `GET /api/v1/products/schwalbe-tire-catalog`，支持可选的 `search` 参数；搜索字段、匹配方式和返回顺序与 Phase 2 选型页共用，具体契约见 [Phase 2 指南](./phase2-standalone-page-implementation-guide.md)。车圈内宽参考不属于商品模板字段；选型卡片使用 `/api/v1/engineering/tire-rim/solve` 的 DT Swiss 后端结果，不新增目录人工提交、审核或复核接口。
 
 商品模板本身没有 `source_url`、导入批次等目录来源字段，因为它只承载商品的 19 项事实。来源 URL 和核对日期保存在候选目录行；`source_url` 仅供内部来源追溯，不进入公开目录 API 或选型页水合数据。销售文案、物流、供应商等信息继续使用各自现有商品模块。
 
@@ -85,8 +85,10 @@
 - 迁移 359 使用 [Schwalbe 目录导入脚本](../../../scripts/import-schwalbe-catalog.mjs) 生成并幂等 upsert 官方英文 sitemap 快照；它只写经核验的 live 产品页，不创建 Product、SKU、价格或库存。重新抓取时应生成新的带核对日期的 seed；当前 seed 的来源、范围和记录数见[字段矩阵第 8 节](./schwalbe-master-catalog-specification-matrix.md#8-2026-09-28-快照枚举基准)。
 - 迁移 360 为 `product_spec_values` 上的 Schwalbe `article_no` 建立大小写/首尾空白不敏感的数据库唯一索引，并在建索引前拒绝已有重复值；应用层预检查只负责更早返回可读错误，不能替代该并发安全边界。
 - 迁移 361 为 `guides-schwalbe-tire-selector` 建立精确路由 `/guides/tireguides/schwalbe-tire-selector` 的 FAQ 页面，页面元信息覆盖当前支持的 locale，初始 `en`/`zh_cn` 问答解释 `WIRED`、`Folding` 和 bead；其他语言由后台维护翻译，FAQ 不回填商品字段。
-- 迁移 362 建立 `schwalbe_tire_rim_width_combination_rules`，导入官网 05/2024 矩阵的 13 条可能组合范围；它不认证具体型号兼容性，不替代车架间隙判断，Hookless/straight-side 仍须满足 TLE/TLR 与车圈厂商要求。规则通过 `GET /api/v1/products/schwalbe-tire-rim-width-combination-rules` 只读提供。
-- 发布前按 [`go-backend/DEPLOYMENT.md`](../../../go-backend/DEPLOYMENT.md#schwalbe-migrations-357-362-preflight) 检查每个环境的旧表行数；非空时先检查并保留数据，不能清空后继续。
+- 迁移 362 退休并删除旧的 Schwalbe/ETRTO 胎宽—车圈内宽组合表；该资料不属于商品兼容事实，也不再提供接口或前端字段。
+- 迁移 369 建立 `schwalbe_tire_hookless_compatibility`，按 Article No. 或完整型号保存官方 Hookless Yes/No 快照、来源 URL、版本和核验日期。没有独立记录或来源冲突的型号保持 unknown，不能从 TLE/TLR、seal、山地分类或胎体结构推断无钩兼容。
+- 迁移 370 清理曾执行旧版 362 的环境中可能遗留的组合表；它只删除已退休的数据表，不恢复旧接口。
+- 发布前按 [`go-backend/DEPLOYMENT.md`](../../../go-backend/DEPLOYMENT.md#schwalbe-migrations-357-361-preflight) 执行迁移预检；不要重新创建已退休的组合表。
 
 ## 7. 当前实现验收与后续工作
 
@@ -113,7 +115,7 @@ Pop-Location
 
 `not_in_incoming_snapshot` 只表示当前目录 Article No. 不在本次成功抓取的 JSON 中；可能是官网 sitemap 移除，也可能是产品页返回 404，不能据此自动删除候选记录。先人工核对官网及报告，再生成后续迁移 seed；来源 URL 和核对日期变化单独列出，不算商品规格变化。应用目录更新后，销售商品仍保留原快照，任何在售规格修订都由管理员明确确认并保存。
 
-迁移 362 的胎宽—车圈内宽表只提供 Schwalbe/ETRTO 的可能组合指导；它不是 Hookless/TLE/TLR 兼容性引擎，也不代表具体型号认证。产品页压力字段不代表轮圈适配结论，当前不得推断统一 hookless 标记或通用压力上限。
+旧的 Schwalbe/ETRTO 胎宽—车圈内宽组合表已退休，不是 Hookless/TLE/TLR 兼容性引擎，也不代表具体型号认证。产品页压力字段不代表轮圈适配结论。选型页的有钩/无钩层来自迁移 369 的独立事实表，卡片内宽数字来自 DT Swiss TSS/TC 推荐表。
 
 ## 8. Phase 2 数据来源约定
 

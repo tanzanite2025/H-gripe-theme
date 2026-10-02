@@ -56,7 +56,7 @@
 
 候选目录描述 Schwalbe 全谱系型号；`product_spec_values` 只描述真实 Product。目录提供匹配候选和表单自动回填，商品规格值提供实际销售商品快照。匹配结果按 Article No. 显示是否存在对应销售 Product；未命中时保留候选结果，但不生成商品价格、库存或购买信息。
 
-商品模板 `is_filterable` 只约束 Product 字段筛选。选型页筛选、URL 参数、Telemetry 展示，以及迁移 362 规则是否已接入页面，唯一维护在 [Phase 2 实施指南](./phase2-standalone-page-implementation-guide.md)；这些页面行为不改变本矩阵定义的商品字段契约。
+商品模板 `is_filterable` 只约束 Product 字段筛选。选型页筛选、URL 参数、Telemetry 展示，以及 DT Swiss 车圈内宽参考是否已接入页面，唯一维护在 [Phase 2 实施指南](./phase2-standalone-page-implementation-guide.md)；这些页面行为不改变本矩阵定义的商品字段契约。
 
 后续官方快照 upsert 只更新候选目录，不静默覆盖已保存的 `product_spec_values`。销售商品保留保存时的规格快照；重新导入后如候选字段发生变化，应按 Article No. 生成差异报告并提醒管理员复核，再由管理员明确更新商品。这样目录刷新不会在没有人工判断的情况下改变在售商品页面事实。
 
@@ -103,7 +103,9 @@
 | `product_spec_definitions` | `id BIGSERIAL PK`、`product_specification_template_id BIGINT NOT NULL`、`group VARCHAR(80)`、`name/slug VARCHAR(120)`、`field_type/presentation VARCHAR(32)`、`unit VARCHAR(32)`、`is_required/is_filterable/is_visible BOOLEAN`、`role VARCHAR(24)`、`selection_mode VARCHAR(16)`、`min_selections INTEGER`、`max_selections INTEGER NULL`、`sort_order INTEGER`、`validation TEXT` | 外键指向模板且删除模板时级联；`(product_specification_template_id, slug)` 唯一；role、selection mode 和选择范围有 CHECK 约束 |
 | `product_spec_values` | `id BIGSERIAL PK`、`product_id BIGINT NOT NULL`、`spec_definition_id BIGINT NOT NULL`、`value TEXT NOT NULL`、`created_at/updated_at TIMESTAMP` | 两个外键分别指向 Product 和定义，删除父记录时级联；`(product_id, spec_definition_id)` 唯一，一商品一字段最多一行；迁移 360 对 Schwalbe `article_no` 以 `lower(btrim(value))` 建立跨商品唯一索引，关闭并发重复写入窗口 |
 | `schwalbe_tire_specifications` | `article_no VARCHAR(32) PK`、19 项官网事实列、`source_url TEXT NOT NULL`、`source_checked_at DATE NOT NULL`、时间戳 | 独立候选目录；Article No. 全局唯一；压力 min/max 与正数测量值有 CHECK；索引覆盖 ETRTO、Inch 和 Version；不关联 Product、不表达销售状态、不含审批列 |
-| `schwalbe_tire_rim_width_combination_rules` | `id BIGSERIAL PK`、`tire_width_min_mm/max_mm INTEGER`、`inner_rim_width_min_mm/max_mm INTEGER`、`source_basis TEXT`、`source_version VARCHAR(64)`、`source_url TEXT`、`source_checked_at DATE`、时间戳 | 迁移 362 的官方可能组合指导；四个范围端点为正数且 min 不得大于 max，四端点组合唯一；不关联 Product，不认证具体型号兼容性，不替代车架间隙或车圈厂商要求 |
+| `schwalbe_tire_hookless_compatibility` | `scope_key TEXT PK`、`article_no/model_name`、`status`、`source_basis`、`source_version`、`source_url`、`source_checked_at`、时间戳 | 迁移 369 的逐型号 Hookless 事实；只有独立 `supported` 记录才显示无钩层，不由 TLE/TLR、ETRTO 或型号名称推断 |
+
+Schwalbe/ETRTO 的宽泛胎宽—内宽可能组合矩阵已退休，不属于当前数据模型，也不应重新建表。DT Swiss TSS/TC 的离散推荐行和插值逻辑由 `go-backend/internal/domain/tirerim/tire_rim_width_reference_engine.go` 维护，不写入商品目录表。
 
 候选目录 19 个事实列的实际 SQL 类型如下；它们与上方模板 `slug` 一一对应：
 

@@ -2,6 +2,11 @@ package product
 
 import "time"
 
+// SpokeRepairKitProductCategorySlug is the durable product type marker used
+// by the repair-kit workflow. Keep this value in the product domain so the
+// admin, storefront, Quick Buy, and category services cannot drift apart.
+const SpokeRepairKitProductCategorySlug = "spoke-repair-kits"
+
 type ProductCategory struct {
 	ID                uint                         `gorm:"primarykey" json:"id"`
 	ParentID          *uint                        `gorm:"index" json:"parent_id"`

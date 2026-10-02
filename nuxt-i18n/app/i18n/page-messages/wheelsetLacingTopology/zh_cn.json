@@ -57,7 +57,7 @@
   },
   "telemetry": {
     "title": "03. 拓扑几何指标",
-    "tag": "GEOMETRY",
+    "tag": "GEOMETRY", "backendPending": "等待后端几何投影结果",
     "tangentLabel": "驱动侧平均绝对投影角（α）",
     "projectionAngle": "线段投影角",
     "tangentDesc": "α = atan2(mean(|ηgeo|), mean(|γgeo|))；表示显示线段绝对方向分量形成的角度。",

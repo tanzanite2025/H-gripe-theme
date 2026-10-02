@@ -20,7 +20,7 @@
             清关资料中心
           </RouterLink>
         </Button>
-        <Button v-if="hasPermission('product:create')" @click="showCreateDialog">
+        <Button v-if="hasPermission('product:create')" @click="openProductCreationTypeDialog">
           <Plus class="size-4" />
           添加商品
         </Button>
@@ -53,7 +53,7 @@
       @batch-delete="requestBatchDelete"
       @toggle-all-products="toggleAllProducts"
       @toggle-product="toggleProduct"
-      @edit="showEditDialog"
+      @edit="openProductEditDialog"
       @translations="showTranslationsDialog"
       @sync-google="openGoogleSync"
       @toggle-status="requestToggleStatus"
@@ -76,6 +76,11 @@
       @edit="editTranslation"
     />
 
+    <ProductCreationTypeDialog
+      v-model:open="creationTypeDialogVisible"
+      @continue="handleCreationTypeContinue"
+    />
+
     <ProductEditorDialog
       v-model:open="dialogVisible"
       :mode="dialogMode"
@@ -88,7 +93,7 @@
       :schwalbe-tire-catalog-error="schwalbeTireCatalogError"
       :selected-schwalbe-tire-article-no="selectedSchwalbeTireArticleNo"
       :brands="brands"
-      :product-categories="productCategories"
+      :product-categories="standardProductCategories"
       :selected-product-spec-template="selectedProductSpecTemplate"
       :brand-select-value="brandSelectValue"
       :selected-spec-definitions="selectedSpecDefinitions"
@@ -96,14 +101,10 @@
       :default-variant-index="defaultVariantIndex"
       :product-spec-template-select-value="productSpecTemplateSelectValue"
       :product-category-select-value="productCategorySelectValue"
-      :shipping-template-select-value="shippingTemplateSelectValue"
       :shipping-templates="shippingTemplates"
-      :after-sales-template-select-value="afterSalesTemplateSelectValue"
-      :packaging-template-select-value="packagingTemplateSelectValue"
       :after-sales-templates="afterSalesTemplates"
       :packaging-templates="packagingTemplates"
       :customs-classifications="availableCustomsClassifications"
-      :customs-classification-select-value="customsClassificationSelectValue"
       :template-scoped-values-touched="templateScopedValuesTouched"
       :template-sync-dialog-visible="templateSyncDialogVisible"
       :template-sync-diff="templateSyncDiff"
@@ -150,6 +151,24 @@
       @retry-supplier-cost="retrySupplierCost"
     />
 
+    <SpokeRepairKitProductEditorDialog
+      v-model:open="spokeRepairKitDialogVisible"
+      :mode="spokeRepairKitDialogMode"
+      :product="spokeRepairKitEditingProduct"
+      :category-id="spokeRepairKitCategoryId"
+      :brands="brands"
+      :default-locale="supportedLanguages.defaultLocale.value"
+      :currency="productForm.currency || 'USD'"
+      :language-options="languageOptions"
+      :shipping-templates="shippingTemplates"
+      :after-sales-templates="afterSalesTemplates"
+      :packaging-templates="packagingTemplates"
+      :customs-classifications="customsClassifications"
+      :supplier-cost-visible="canViewSupplierCost"
+      :supplier-cost-can-edit="canEditSupplierCost"
+      @saved="handleSpokeRepairKitSaved"
+    />
+
     <AdminConfirmDialog
       v-model:open="confirmation.open"
       :title="confirmation.title"
@@ -177,10 +196,12 @@ import {
 import AdminConfirmDialog from '@/components/admin/AdminConfirmDialog.vue'
 import AdminPageHeader from '@/components/admin/AdminPageHeader.vue'
 import AdminStatsGrid from '@/components/admin/AdminStatsGrid.vue'
+import ProductCreationTypeDialog, { type ProductCreationType } from '@/components/admin/product/ProductCreationTypeDialog.vue'
 import ProductEditorDialog from '@/components/admin/product/ProductEditorDialog.vue'
 import ProductFilterPanel from '@/components/admin/product/ProductFilterPanel.vue'
 import ProductTablePanel from '@/components/admin/product/ProductTablePanel.vue'
 import ProductTranslationGroupDialog from '@/components/admin/product/ProductTranslationGroupDialog.vue'
+import SpokeRepairKitProductEditorDialog from '@/components/admin/product/SpokeRepairKitProductEditorDialog.vue'
 import productApi, { productBrandApi, productInformationTemplateApi } from '@/api/products'
 import { customsClassificationApi } from '@/api/customsClassifications'
 import productCategoryApi, { type ProductCategoryRecord } from '@/api/productCategories'
@@ -297,9 +318,6 @@ const {
   productSpecTemplateSelectValue,
   productCategorySelectValue,
   brandSelectValue,
-  shippingTemplateSelectValue,
-  afterSalesTemplateSelectValue,
-  packagingTemplateSelectValue,
   templateScopedValuesTouched,
   templateSyncDialogVisible,
   templateSyncDiff,
@@ -330,8 +348,8 @@ const {
   setSchwalbeTireCatalogModel,
   fetchSchwalbeTireCatalog,
   fetchProductSpecTemplates,
-  showCreateDialog,
-  showEditDialog,
+  showCreateDialog: showGenericCreateDialog,
+  showEditDialog: showGenericEditDialog,
   previewTemplateSync,
   confirmTemplateSync,
   submitForm
@@ -361,6 +379,80 @@ const {
     return {}
   },
 })
+
+const creationTypeDialogVisible = ref(false)
+const spokeRepairKitDialogVisible = ref(false)
+const spokeRepairKitDialogMode = ref<'create' | 'edit'>('create')
+const spokeRepairKitEditingProduct = ref<AdminProductRecord | null>(null)
+
+const spokeRepairKitCategoryId = computed<number | null>(() => {
+  const category = productCategories.value.find((item) => item.slug === 'spoke-repair-kits')
+  return category?.id ?? null
+})
+const standardProductCategories = computed(() => productCategories.value.filter((item) => item.slug !== 'spoke-repair-kits'))
+
+const isSpokeRepairKitProduct = (product: AdminProductRecord): boolean => {
+  const categorySlug = String(product.product_category?.slug || product.product_category_slug || '').trim().toLowerCase()
+  if (categorySlug === 'spoke-repair-kits') return true
+
+  // Keep the admin route aligned with backend compatibility fallback for
+  // older rows whose relation exists but category assignment is missing.
+  return Array.isArray(product.spoke_repair_kit_models) && product.spoke_repair_kit_models.length > 0
+}
+
+const ensureSpokeRepairKitCategory = async (): Promise<number | null> => {
+  if (!spokeRepairKitCategoryId.value) await fetchProductCategories()
+  return spokeRepairKitCategoryId.value
+}
+
+const openSpokeRepairKitCreateDialog = async (): Promise<void> => {
+  spokeRepairKitDialogMode.value = 'create'
+  spokeRepairKitEditingProduct.value = null
+  spokeRepairKitDialogVisible.value = true
+
+  const categoryID = await ensureSpokeRepairKitCategory()
+  if (!categoryID) toast.error('辐条修补件分类尚未加载，保存前请重试')
+}
+
+const openSpokeRepairKitEditDialog = async (product: AdminProductRecord): Promise<void> => {
+  if (!await ensureSpokeRepairKitCategory()) {
+    toast.error('辐条修补件分类尚未加载，请稍后重试')
+    return
+  }
+  try {
+    const detail = await productApi.get(product.id)
+    spokeRepairKitDialogMode.value = 'edit'
+    spokeRepairKitEditingProduct.value = detail
+    spokeRepairKitDialogVisible.value = true
+  } catch (error) {
+    console.error('Failed to fetch spoke repair-kit product:', error)
+    toast.error('获取辐条修补件详情失败')
+  }
+}
+
+const openProductCreationTypeDialog = (): void => {
+  creationTypeDialogVisible.value = true
+}
+
+const handleCreationTypeContinue = async (type: ProductCreationType): Promise<void> => {
+  if (type === 'spoke-repair-kit') {
+    await openSpokeRepairKitCreateDialog()
+    return
+  }
+  await showGenericCreateDialog()
+}
+
+const openProductEditDialog = async (product: AdminProductRecord): Promise<void> => {
+  if (isSpokeRepairKitProduct(product)) {
+    await openSpokeRepairKitEditDialog(product)
+    return
+  }
+  await showGenericEditDialog(product)
+}
+
+const handleSpokeRepairKitSaved = async (): Promise<void> => {
+  await refreshProducts()
+}
 
 const setTemplateSyncDialogOpen = (open: boolean) => {
   templateSyncDialogVisible.value = open
@@ -417,12 +509,6 @@ const afterSalesTemplates = computed(() => informationTemplates.value.filter((it
 ))
 const packagingTemplates = computed(() => informationTemplates.value.filter((item) =>
   item.kind === 'packaging' && (item.is_enabled !== false || item.id === productForm.packaging_template_id)
-))
-
-const customsClassificationSelectValue = computed(() => (
-  productForm.customs_classification_profile_id
-    ? String(productForm.customs_classification_profile_id)
-    : '__none__'
 ))
 
 const availableCustomsClassifications = computed(() => customsClassifications.value.filter((profile) => (
@@ -536,7 +622,7 @@ const copyTranslation = async (locale: string) => {
 
 const editTranslation = (translation: ProductTranslation) => {
   translationDialogVisible.value = false
-  void showEditDialog(translation)
+  void openProductEditDialog(translation)
 }
 
 const setConfirmation = (values: Partial<ConfirmationState>) => Object.assign(confirmation, {

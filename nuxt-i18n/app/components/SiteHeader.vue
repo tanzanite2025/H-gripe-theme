@@ -1373,13 +1373,12 @@ const getBreadcrumbPageSubNavigationTab = (
   return match?.kind === 'tab' ? match : null
 }
 
-const getPageSubNavigationSiblingSubNavigation = (
-  targetPath: string
+const getBreadcrumbPageSubNavigationMenuForExactCurrentRoute = (
+  targetPath: string,
+  match: NonNullable<ReturnType<typeof getPageSubNavigationBreadcrumbMatch>>,
 ): BreadcrumbSubNavigation | undefined => {
   const normalizedTargetPath = normalizeBreadcrumbPath(targetPath)
   const currentPath = normalizeBreadcrumbPath(route.path || '/')
-  const match = getBreadcrumbPageSubNavigationTab(normalizedTargetPath)
-  if (!match) return undefined
 
   const { entry } = match
   const tabs = entry.tabs.map(tab => {
@@ -1389,7 +1388,7 @@ const getPageSubNavigationSiblingSubNavigation = (
       id: `${entry.path}:${tab.id}`,
       label: pageSubNavigationTabLabel(tab),
       to: getBreadcrumbSiblingTarget(normalizedTargetPath, tabPath, tabPath),
-      active: isSameOrNestedBreadcrumbPath(currentPath, tabPath),
+      active: match.kind === 'tab' && isSameOrNestedBreadcrumbPath(currentPath, tabPath),
     }
   })
 
@@ -1405,10 +1404,17 @@ const getBreadcrumbSiblingSubNavigation = (
   const normalizedTargetPath = normalizeBreadcrumbPath(targetPath)
   const targetSegments = getBreadcrumbPathSegments(normalizedTargetPath)
   const targetDepth = targetSegments.length
+  const currentPath = normalizeBreadcrumbPath(route.path || '/')
 
   if (targetDepth === 0) return undefined
-  const pageSubNavigation = getPageSubNavigationSiblingSubNavigation(normalizedTargetPath)
-  if (pageSubNavigation) return pageSubNavigation
+  const pageMatch = getPageSubNavigationBreadcrumbMatch(normalizedTargetPath, getAllLocaleCodes())
+  if (pageMatch) {
+    // Only the exact current canonical or tab crumb owns this page's menu.
+    // Ancestor crumbs on tab and deeper descendant routes stay plain.
+    if (currentPath !== normalizedTargetPath) return undefined
+
+    return getBreadcrumbPageSubNavigationMenuForExactCurrentRoute(normalizedTargetPath, pageMatch)
+  }
 
   if (targetDepth === 1) return getRouteFamilyBreadcrumbSubNavigation(normalizedTargetPath)
 
@@ -1417,7 +1423,6 @@ const getBreadcrumbSiblingSubNavigation = (
   const isCurrentLevelRegistered = siblingGroups.some(group => group.path === normalizedTargetPath)
   if (!isCurrentLevelRegistered || siblingGroups.length <= 1) return undefined
 
-  const currentPath = normalizeBreadcrumbPath(route.path || '/')
   const tabs = siblingGroups.map(group => ({
     id: group.id,
     label: getBreadcrumbRouteLabel(group.path, group.segment),

@@ -343,6 +343,17 @@ export const primaryMegaNavSections: PrimaryMegaNavSection[] = [
         size: 'wide',
         accent: 'emerald',
       },
+      {
+        id: 'spoke-guides',
+        labelKey: 'products.nav.spokeStressGuide',
+        labelFallback: 'Spoke Engineering Guides',
+        description: 'Stress relieving, spoke materials, and stainless steel dislocation mechanics.',
+        to: '/guides/spokeguides/stainless-steel-microstructural-dislocation-mechanics',
+        icon: 'lucide:atom',
+        size: 'wide',
+        accent: 'emerald',
+        discoverChildPages: false,
+      },
     ],
   },
 ]

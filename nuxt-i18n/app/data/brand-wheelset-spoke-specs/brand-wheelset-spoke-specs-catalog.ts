@@ -1,10 +1,10 @@
-import { dtSwissWheelsetSpokeCatalog } from './sources/dt-swiss-wheelset-spoke-specs'
-import { enveWheelsetSpokeCatalog } from './sources/enve-wheelset-spoke-specs'
-import { shimanoWheelsetSpokeCatalog } from './sources/shimano-wheelset-spoke-specs'
-import { zippSramWheelsetSpokeCatalog } from './sources/zipp-sram-wheelset-spoke-specs'
-import type { BrandWheelsetSpokeCatalog } from './brand-wheelset-spoke-specs-types'
+import { dtSwissWheelsetSpokeCatalog } from './sources/dt-swiss-wheelset-spoke-specs.js'
+import { enveWheelsetSpokeCatalog } from './sources/enve-wheelset-spoke-specs.js'
+import { shimanoWheelsetSpokeCatalog } from './sources/shimano-wheelset-spoke-specs.js'
+import { zippSramWheelsetSpokeCatalog } from './sources/zipp-sram-wheelset-spoke-specs.js'
+import type { BrandWheelsetSpokeCatalog } from './brand-wheelset-spoke-specs-types.js'
 
-export type * from './brand-wheelset-spoke-specs-types'
+export type * from './brand-wheelset-spoke-specs-types.js'
 
 export const brandWheelsetSpokeCatalogs: BrandWheelsetSpokeCatalog[] = [
   dtSwissWheelsetSpokeCatalog,

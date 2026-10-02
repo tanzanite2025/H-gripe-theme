@@ -116,7 +116,7 @@ const answerId = (itemId: string) => (
 .global-all-faqs-mobile-search-accordion__question {
   min-width: 0;
   color: var(--tz-text-primary);
-  font-size: 1rem;
+  font-size: var(--tz-type-faq-question);
   line-height: 1.45;
 }
 

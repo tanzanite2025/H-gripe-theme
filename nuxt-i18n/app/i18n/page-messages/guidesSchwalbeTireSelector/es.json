@@ -1,9 +1,58 @@
 {
+  "seo": {
+    "title": "Schwalbe tire selector | Tanzanite",
+    "description": "Search the sourced Schwalbe tire candidate catalog by model, Article No., ETRTO, or inch designation."
+  },
+  "kicker": "Official catalog lookup",
+  "title": "Schwalbe tire selector",
+  "sectionTabs": {
+    "label": "Page sections",
+    "intro": "Introduction",
+    "search": "Search"
+  },
+  "wheelSizeTabsLabel": "Wheel size navigation",
+  "allWheelSizes": "All wheel sizes",
+  "multipleWheelSizes": "Multiple wheel sizes selected",
+  "wheelSizeDialogTitle": "Select wheel size",
+  "wheelSizeDialogClose": "Close wheel size selector",
+  "wheelSizeTabOption": "{diameter}\" · BSD {bsd} mm",
+  "wheelSizeCard": "{diameter}\" · BSD {bsd} mm · ETRTO {etrto}",
+  "search": {
+    "label": "Search the catalog",
+    "placeholder": "Model, Article No., ETRTO, or inch size",
+    "submit": "Search",
+    "clear": "Clear search",
+    "active": "Search: {term}"
+  },
   "filters": {
     "tireWidthMin": "Mín.",
     "tireWidthMax": "Máx.",
+    "model": "Model",
+    "allModels": "All models",
+    "catalogFilters": "Filter catalog",
+    "tireWidth": "Tire width",
+    "clearTireWidth": "Clear tire width",
+    "wheelSize": "Wheel size (BSD)",
+    "wheelSizeOption": "{diameter}\" (BSD {bsd} mm)",
+    "beadSeatDiameter": "Wheel rim diameter (BSD)",
     "minimumLoad": "Capacidad de carga mínima por neumático",
     "minimumLoadHint": "Se compara con la carga oficial de un neumático. No es un límite de peso del ciclista: la carga de la persona, la bicicleta y el equipaje se reparte entre los neumáticos delantero y trasero.",
+    "casingConstruction": "Casing construction",
+    "radialGroup": "Casing orientation",
+    "radialAll": "ALL",
+    "radial": "Radial",
+    "bead": "Bead",
+    "beadAll": "ALL",
+    "seal": "Seal",
+    "sealAll": "ALL",
+    "eBikeRating": "E-Bike marking",
+    "eBikeRatingAll": "ALL",
+    "eBikeUnrated": "No E-Bike marking listed",
+    "color": "Color",
+    "compound": "Compound",
+    "clearFilters": "Clear filters",
+    "sortWeightAscendingAria": "Sort by weight, light to heavy",
+    "sortWeightDescendingAria": "Sort by weight, heavy to light",
     "openFilters": "Filtros",
     "dialogTitle": "Filtrar el catálogo",
     "closeFilters": "Cerrar filtros",
@@ -14,5 +63,438 @@
     "groupConstruction": "Construcción",
     "groupAppearance": "Color y compuesto",
     "selectedCount": "{count} seleccionados"
+  },
+  "rimWidth": {
+    "recommendationLabel": "Rim inner-width reference",
+    "hooked": "Hooked rim",
+    "hookless": "Hookless rim",
+    "noRecommendation": "No exact recommendation for this tire width",
+    "possibleReference": "Possible reference only",
+    "calculated": "Linearly calculated between adjacent DT Swiss data points",
+    "calculatedFromPossibleReference": "At least one possible-only data point is used. This is a calculated reference, not a manufacturer recommendation.",
+    "sourceNote": "Inner-width values use the DT Swiss TSS/TC recommendation chart; the Hookless row appears only when Schwalbe explicitly supports the model. Check the exact rim maker's tire, pressure, and Hookless requirements before fitting."
+  },
+  "summary": "{count} candidate records · page {page} of {totalPages}",
+  "pagination": {
+    "label": "Catalog pages",
+    "previous": "Previous catalog page",
+    "next": "Next catalog page"
+  },
+  "states": {
+    "loading": "Loading the official catalog snapshot…",
+    "error": "The catalog could not be loaded right now.",
+    "retry": "Try again",
+    "empty": "No catalog candidates are available.",
+    "noResults": "No candidates match this single search term.",
+    "noFilterResults": "No candidates match these filters.",
+    "clearDrawerFilters": "Clear drawer filters"
+  },
+  "status": {
+    "listed": "Store product exists",
+    "candidate": "Catalog candidate"
+  },
+  "fields": {
+    "weight": "Weight",
+    "pressure": "Pressure",
+    "load": "Load",
+    "epi": "EPI",
+    "version": "Version",
+    "compound": "Compound",
+    "bead": "Bead",
+    "eBike": "E-Bike",
+    "color": "Color",
+    "seal": "Seal",
+    "tread": "Tread",
+    "ean": "EAN"
+  },
+  "common": {
+    "notProvided": "Not provided"
+  },
+  "source": {
+    "checked": "Source checked {date}"
+  },
+  "telemetry": {
+    "kicker": "Data boundary",
+    "title": "How to read these results",
+    "body": "The catalog is an official-source candidate snapshot. A catalog match is not a promise that the item is in stock or compatible with a particular rim.",
+    "points": {
+      "catalog": "Candidate facts come from the stored Schwalbe product-page snapshot.",
+      "sales": "The status chip only reports whether a matching store Product exists; prices and stock are not invented for candidates.",
+      "compatibility": "ETRTO, pressure, and construction values are shown as source facts and do not produce a Hookless or rim-compatibility verdict."
+    }
+  },
+  "telemetryGuide": {
+    "kicker": "SCHWALBE TELEMETRY GUIDE",
+    "title": "2025/2026 technology guide",
+    "subtitle": "Radial casing · protection constructions · ADDIX compounds · Green Marathon materials — explained from official source notes.",
+    "badge": "Official technology notes",
+    "tabListLabel": "Technology topics",
+    "mobileGroupListLabel": "Technology topic groups",
+    "mobileGroupLabel": "Show technology topic group {group}",
+    "collapse": "Collapse guide ▲",
+    "expand": "Expand guide ▼",
+    "disclaimer": "Technical names and descriptions follow the cited official source notes. Model-specific specifications should be verified on the relevant official product page; a technology name alone is not a universal safety or purchase recommendation.",
+    "tabs": {
+      "radial": "Radial casing",
+      "casing": "Casing construction",
+      "green": "Green Marathon",
+      "protection": "Protection Level 1–7",
+      "addix": "ADDIX / Compound",
+      "color": "Color",
+      "compound": "Compound"
+    },
+    "radial": {
+      "label": "Radial casing · official structure",
+      "title": "What changes in a Radial casing",
+      "note": "Schwalbe describes a blunter, near-90° thread angle instead of the roughly 45° cross-ply layout. The casing can deform more selectively and maintain ground contact; at the same air pressure, the contact area is approximately 30% larger. The larger contact area can slightly increase rolling resistance, so the result depends on the model, tread, and setup.",
+      "items": {
+        "casing": {
+          "title": "Thread angle",
+          "body": "Traditional bicycle cross-ply casings use an angle of roughly 45°. Radial casing uses a blunter angle approaching 90° while retaining the casing layers and material thickness."
+        },
+        "contact": {
+          "title": "Selective deformation",
+          "body": "The casing can deform more selectively under the tread and keep more rubber in contact with the ground. Schwalbe reports approximately 30% more contact area at the same air pressure."
+        },
+        "tradeoff": {
+          "title": "Practical trade-off",
+          "body": "The larger contact area can slightly increase rolling resistance. Actual grip, comfort, and control depend on the model, tread, pressure, and riding setup."
+        }
+      }
+    },
+    "casing": {
+      "label": "Casing construction · catalog glossary",
+      "title": "What the Schwalbe casing construction values mean",
+      "note": "These eight values are the reviewed casing-construction tokens extracted from the catalog version label. They describe the construction or intended-use direction; they are not a universal quality ranking. Radial, V-Guard, RaceGuard, and other protection tokens are separate constructions and remain explained in their own topics.",
+      "items": {
+        "superRace": {
+          "title": "Race-oriented casing",
+          "body": "A light and supple casing direction for racing-focused models. The exact puncture layer, compound, pressure range, and intended use still come from the complete model specification."
+        },
+        "superGround": {
+          "title": "Balanced cross-country casing",
+          "body": "A balanced construction direction for cross-country and all-round off-road riding, combining low weight with support and everyday durability."
+        },
+        "superTrail": {
+          "title": "Trail-support casing",
+          "body": "A trail-oriented construction direction with more emphasis on casing support and durability for technical off-road riding."
+        },
+        "superDownhill": {
+          "title": "Downhill and gravity casing",
+          "body": "A reinforced gravity/downhill construction direction for demanding impacts and aggressive downhill use."
+        },
+        "trail": {
+          "title": "TRAIL family label",
+          "body": "The catalog label for a Schwalbe Trail-family construction. It identifies the product family direction; it is not a cross-family performance grade."
+        },
+        "trailPro": {
+          "title": "TRAIL PRO family label",
+          "body": "The catalog label for a Trail Pro construction. PRO belongs to this family name and must not be read as a universal ranking across all Schwalbe casings."
+        },
+        "gravity": {
+          "title": "GRAVITY family label",
+          "body": "The catalog label for a gravity-oriented construction family. It points to demanding gravity and enduro use, while the exact construction remains model-specific."
+        },
+        "gravityPro": {
+          "title": "GRAVITY PRO family label",
+          "body": "The catalog label for a Gravity Pro construction. PRO is part of the family name, not a universal grade; check the exact model, size, compound, pressure, and protection details."
+        }
+      }
+    },
+    "green": {
+      "label": "Green Marathon · materials and protection",
+      "title": "What the Green Marathon construction uses",
+      "note": "These cards summarize the official Green Marathon product-page notes. This guide is independent of product records and can be reused wherever the technology needs an explanation.",
+      "items": {
+        "compound": {
+          "title": "ADDIX Eco",
+          "body": "The compound notes include recycled industrial carbon black (rCB) and 100% natural rubber."
+        },
+        "naturalRubber": {
+          "title": "Natural rubber",
+          "body": "The product page identifies Fair Rubber and describes the use of certified natural-rubber materials."
+        },
+        "greenGuard": {
+          "title": "GreenGuard · 3 mm",
+          "body": "A flexible 3 mm Indian-rubber puncture layer; the page notes that part of the material comes from recycled sources."
+        },
+        "circularMaterials": {
+          "title": "Recycled or renewable materials",
+          "body": "The official page states that 80% of the materials come from recycled or renewable sources."
+        }
+      }
+    },
+    "protection": {
+      "label": "Puncture protection · official levels",
+      "title": "Schwalbe Protection Level 1–7",
+      "note": "Schwalbe's official guide presents Protection Levels 1–7, with Super Defense shown as 6+. These are named constructions and reference levels, not a laboratory-wide puncture score; verify the exact construction on the model's official product page.",
+      "items": {
+        "level7": {
+          "title": "Level 7 · SmartGuard / Smart DualGuard",
+          "body": "SmartGuard uses an approximately 5 mm insert made from highly elastic special rubber. Smart DualGuard combines a 4 mm special-rubber insert with two layers of RaceGuard nylon fabric. Schwalbe uses the Flat-less designation for these technologies, while noting that a puncture can never be ruled out completely."
+        },
+        "level6Plus": {
+          "title": "Level 6+ · Super Defense",
+          "body": "A reinforced construction with a 6-ply, 67 EPI double carcass, described for reliable puncture protection under high loads and for cargo bikes."
+        },
+        "level6": {
+          "title": "Level 6 · Double Defense",
+          "body": "Combined protection under the tread and on the sidewalls. Official variants include DD V-Guard, DD GreenGuard, and DD RaceGuard with Snake-Skin sidewall fabric."
+        },
+        "level5": {
+          "title": "Level 5 · V-Guard / GreenGuard / RaceGuard",
+          "body": "V-Guard is a lightweight, cut-resistant high-tech fiber belt. GreenGuard is a 3 mm natural-rubber insert with recycled material. RaceGuard is listed in this official level section; its detailed construction is the two-layer nylon belt described at Level 4."
+        },
+        "level4": {
+          "title": "Level 4 · RaceGuard",
+          "body": "A puncture-protection belt made from two layers of double-layered nylon fabric for fast and light tires."
+        },
+        "level3": {
+          "title": "Level 3 · K-Guard",
+          "body": "A puncture-protection insert made from fiber-reinforced natural rubber."
+        },
+        "level2": {
+          "title": "Level 2 · 67 EPI carcass",
+          "body": "The official guide lists a 67 EPI carcass as this reference level. EPI describes the casing's thread density; it is not a universal puncture guarantee."
+        },
+        "level1": {
+          "title": "Level 1 · 50 EPI carcass",
+          "body": "The official guide lists a 50 EPI carcass as its base reference level. EPI describes casing construction and should not be read as a standalone safety rating."
+        }
+      },
+      "extra": {
+        "title": "PunctureGuard · separately named construction",
+        "body": "Schwalbe describes PunctureGuard as a 3 mm puncture-protection insert for the entry-level segment. The page presents it separately; this guide does not force it into a numbered level."
+      }
+    },
+    "addix": {
+      "label": "ADDIX compounds · official descriptions",
+      "title": "ADDIX compound families and visual line guide",
+      "note": "These seven cards preserve the named ADDIX and endurance lines used across Schwalbe's official product material. The colors are visual markers for this guide, not a separate certification or a universal performance scale. A product may use another compound name; verify the exact model page.",
+      "items": {
+        "race": {
+          "title": "ADDIX Race",
+          "body": "A named compound used on selected race-oriented product pages. The model page remains the source for its exact casing, tread, size, and intended use."
+        },
+        "fourSeason": {
+          "title": "ADDIX 4-Season",
+          "body": "A named compound used on selected all-season road and touring products. The name alone is not a universal temperature or wet-grip rating."
+        },
+        "speed": {
+          "title": "ADDIX Speed",
+          "body": "Designed for efficient, fast off-road riding, with low rolling resistance and high durability while retaining damping and grip."
+        },
+        "speedGrip": {
+          "title": "ADDIX Mid (formerly SpeedGrip)",
+          "body": "Official material now calls this balanced compound Mid (formerly SpeedGrip): low rolling resistance with high damping, good grip, and maximum durability."
+        },
+        "soft": {
+          "title": "ADDIX Soft",
+          "body": "Offers noticeably more cushioning and grip, with moderate rolling resistance and good durability."
+        },
+        "ultraSoft": {
+          "title": "ADDIX Ultra Soft",
+          "body": "Has the highest rolling resistance, with the best damping and maximum grip, even in wet conditions; intended for extreme trails requiring maximum traction and control."
+        },
+        "endurance": {
+          "title": "Endurance Compound",
+          "body": "A named endurance compound found on selected touring and everyday products. It is a compound label, not a mileage promise; actual durability depends on the complete model construction and use."
+        }
+      }
+    },
+    "color": {
+      "label": "Color field · catalog glossary",
+      "title": "Every color value in this catalog",
+      "note": "This tab explains all 21 distinct color values currently present in the seeded catalog. The code-styled text is the original database value; combined labels are single values and describe appearance only.",
+      "valuesTitle": "Color values · 21 entries",
+      "valuesNote": "Color values describe base color, stripes, sidewall, whitewall/gumwall, or reflective elements. They do not change the tire compound, casing, protection, or fit.",
+      "items": {
+        "black": {
+          "title": "Black colorway",
+          "body": "A black appearance variant. It describes the visible finish only; it does not identify the compound, casing, or puncture protection."
+        },
+        "blackCoffeeReflex": {
+          "title": "Black / coffee + Reflex",
+          "body": "A composite appearance label: black and coffee colors plus a reflective element. Read the full value as one catalog variant; the slash and plus signs are part of the source wording."
+        },
+        "blackBlackReflex": {
+          "title": "Black + BlackReflex",
+          "body": "A black colorway with the discreet black-reflex element. Reflex describes visibility/appearance, not a different rubber compound or protection layer."
+        },
+        "blackReflex": {
+          "title": "Black + Reflex",
+          "body": "A black colorway with a reflective element. It does not imply a different compound, tread, or puncture construction."
+        },
+        "blueStripes": {
+          "title": "Blue stripes",
+          "body": "A colorway with blue stripe accents. The stripes are an appearance detail and do not describe the rubber or casing."
+        },
+        "bronze": {
+          "title": "Bronze colorway",
+          "body": "A bronze appearance variant. The color field carries no independent grip, rolling-resistance, or protection rating."
+        },
+        "bronzeSidewall": {
+          "title": "Bronze sidewall",
+          "body": "The sidewall is shown in bronze. This value does not specify the tread color or change the tire structure."
+        },
+        "bronzeReflex": {
+          "title": "Bronze + Reflex",
+          "body": "A bronze colorway with a reflective element. Keep both parts because this is one complete catalog value."
+        },
+        "brownWhitewallReflex": {
+          "title": "Brown / Whitewall + Reflex",
+          "body": "A composite variant with a brown color scheme, whitewall, and reflective element. It is an appearance configuration, not a compound description."
+        },
+        "brownReflex": {
+          "title": "Brown + Reflex",
+          "body": "A brown colorway with a reflective element. The value does not specify the rubber formula or protection."
+        },
+        "classic": {
+          "title": "Classic",
+          "body": "A classic colorway label. The source field does not define a universal hue or sidewall layout, so use the model photo/page for the exact appearance."
+        },
+        "cremeReflex": {
+          "title": "Creme + Reflex",
+          "body": "A creme colorway with a reflective element. The original spelling “Creme” is preserved from the catalog."
+        },
+        "greyStripes": {
+          "title": "Grey stripes",
+          "body": "A colorway with grey stripe accents. It is an appearance label only."
+        },
+        "greyBlack": {
+          "title": "Grey / Black",
+          "body": "A grey-and-black color combination. It does not describe a two-part rubber compound."
+        },
+        "gumwall": {
+          "title": "Gumwall",
+          "body": "A gumwall-style natural-rubber/tan sidewall appearance. The field does not change the casing, bead, or puncture construction."
+        },
+        "redStripes": {
+          "title": "Red stripes",
+          "body": "A colorway with red stripe accents. The stripes do not identify the compound."
+        },
+        "transparentSidewall": {
+          "title": "Transparent sidewall",
+          "body": "A transparent or translucent sidewall appearance. The tread color and the rubber compound are separate fields."
+        },
+        "whiteStripes": {
+          "title": "White stripes",
+          "body": "A colorway with white stripe accents. It is not a grip or protection rating."
+        },
+        "whiteBordeaux": {
+          "title": "White / Bordeaux",
+          "body": "A white-and-Bordeaux color combination. Read it as an appearance variant, not as two compounds."
+        },
+        "whitewall": {
+          "title": "Whitewall",
+          "body": "A white sidewall appearance. The tread color, compound, and protection remain separate specifications."
+        },
+        "whitewallReflex": {
+          "title": "Whitewall + Reflex",
+          "body": "A white sidewall with a reflective element. Both details belong to the same complete color value."
+        }
+      }
+    },
+    "compound": {
+      "label": "Compound field · catalog glossary",
+      "title": "Every compound value in this catalog",
+      "note": "This tab explains all 23 distinct compound values currently present in the seeded catalog. The original database value is preserved; similar spellings are kept separate instead of being silently merged.",
+      "valuesTitle": "Compound values · 23 entries",
+      "valuesNote": "These values include branded ADDIX names, use-specific codes, and older/raw labels. Use the exact value to identify a model variant, then check the complete model specification.",
+      "items": {
+        "addix": {
+          "title": "ADDIX",
+          "body": "The base ADDIX family label in the source catalog. It does not say whether the model uses Speed, Soft, Race, E, or another specific ADDIX variant; check the complete model record."
+        },
+        "addix365": {
+          "title": "ADDIX 365",
+          "body": "A compound label used by 365-series models. “365” identifies the product family; it is not a standalone winter-temperature or wet-grip rating."
+        },
+        "addixFourSeason": {
+          "title": "ADDIX 4-Season",
+          "body": "A named four-season compound used by selected road and training tires. Read it as a model family label, not a universal temperature or weather guarantee."
+        },
+        "addixE": {
+          "title": "ADDIX E",
+          "body": "An e-bike-oriented ADDIX compound. Official product notes describe it as optimized for durability, low rolling resistance, and grip at higher speed; E-25/E-50 ratings are separate fields."
+        },
+        "addixEco": {
+          "title": "ADDIX Eco",
+          "body": "The compound label used by Green Marathon. Official notes associate this product with recycled industrial carbon black and natural rubber; it is not interchangeable with ADDIX Green or Green Compound."
+        },
+        "addixGreen": {
+          "title": "ADDIX Green",
+          "body": "A named compound value used by models such as Marathon Racer. The catalog does not define it as the same value as ADDIX Eco or Green Compound, so preserve the original label."
+        },
+        "addixRace": {
+          "title": "ADDIX Race",
+          "body": "A race-oriented compound used by PRO One and other performance models. The exact casing, tread, and tubeless construction still come from the model record."
+        },
+        "addixSoft": {
+          "title": "ADDIX Soft",
+          "body": "A softer ADDIX option. Official family notes describe more damping and grip, with more rolling resistance than speed-focused options; it is not a standalone safety rating."
+        },
+        "addixSpeed": {
+          "title": "ADDIX Speed",
+          "body": "A speed-focused ADDIX option. Official family notes describe low rolling resistance and high durability while retaining grip and damping; exact behavior depends on the model."
+        },
+        "addixSpeedGrip": {
+          "title": "ADDIX SpeedGrip",
+          "body": "The original catalog value. Current Schwalbe material may describe the related balanced family as Mid (formerly SpeedGrip); keep this exact database value when identifying a variant."
+        },
+        "addixUltraSoft": {
+          "title": "ADDIX Ultra Soft",
+          "body": "A very soft ADDIX option. Official family notes describe maximum damping and grip, including in wet conditions, with the highest rolling resistance; intended use depends on the model."
+        },
+        "blackNRoll": {
+          "title": "Black'n'Roll",
+          "body": "An urban/wheelchair compound label. Official product notes describe a durable, non-marking tread that does not leave black abrasion marks on indoor floors."
+        },
+        "endurance": {
+          "title": "Endurance",
+          "body": "An endurance-oriented compound label used by selected touring and everyday models. It suggests a durability priority but is not a mileage promise."
+        },
+        "grc": {
+          "title": "GRC",
+          "body": "An unexpanded catalog code found on wheelchair-oriented models such as Marathon Plus Wheelchair and DownTown. The source data gives no universal expansion, so use it as a model-specific compound code."
+        },
+        "greenCompound": {
+          "title": "Green Compound",
+          "body": "An official sustainable compound label. Schwalbe describes polymers made from renewable and recycled raw materials and says it is used on a black tread; do not merge it with ADDIX Green or ADDIX Eco."
+        },
+        "mid": {
+          "title": "MID",
+          "body": "A raw uppercase catalog label for a mid or balanced compound. It is not automatically the same database value as ADDIX SpeedGrip or ADDIX Mid; follow the exact model page."
+        },
+        "sbc": {
+          "title": "SBC",
+          "body": "A raw catalog compound used by selected city and comfort models such as Big Ben and Fat Frank. The supplied catalog publishes no universal expansion or performance scale, so treat SBC as an exact model label."
+        },
+        "silica": {
+          "title": "Silica",
+          "body": "A silica compound label used by products such as Lugano II. Official product copy presents it as an improved compound for road performance; it is not a cross-model grip score."
+        },
+        "soft": {
+          "title": "SOFT",
+          "body": "A raw uppercase soft-compound label. It generally points to a softer grip and damping direction, but the catalog provides no common scale; do not silently merge it with ADDIX Soft."
+        },
+        "speed": {
+          "title": "SPEED",
+          "body": "A raw uppercase speed-compound label. It generally points to a rolling-resistance and speed direction, but the catalog provides no common scale; do not silently merge it with ADDIX Speed."
+        },
+        "ultraSoft": {
+          "title": "ULTRA SOFT",
+          "body": "A raw uppercase very-soft compound label. It generally points to maximum softness and grip, but the catalog provides no common scale; do not silently merge it with ADDIX Ultra Soft."
+        },
+        "wheelStar": {
+          "title": "WheelStar",
+          "body": "A wheelchair-specific compound label used by One Wheelchair and Dunk King. The source catalog publishes no expansion or general bicycle performance ranking."
+        },
+        "winter": {
+          "title": "Winter",
+          "body": "A seasonal compound label used by selected winter products. It identifies the catalog variant; check the model tread, studs, temperature guidance, and other construction separately."
+        }
+      }
+    }
   }
 }

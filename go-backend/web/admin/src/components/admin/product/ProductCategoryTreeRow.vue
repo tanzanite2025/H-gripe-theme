@@ -7,7 +7,7 @@
       <CornerDownRight v-if="row.depth > 1" class="size-4 shrink-0 text-muted-foreground" />
       <Folder class="size-4 shrink-0 text-muted-foreground" />
       <span class="shrink-0 rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">L{{ row.depth }}</span>
-      <Input :model-value="row.name" placeholder="分类名称" @update:model-value="updateField('name', String($event))" />
+      <Input :model-value="row.name" placeholder="分类名称" :disabled="saving || !isEditing" @update:model-value="updateField('name', String($event))" />
     </div>
 
     <div class="flex min-w-0 items-center gap-2">
@@ -16,7 +16,7 @@
         class="product-category-image-preview"
         :aria-label="row.image_url ? '更换分类图片' : '选择分类图片'"
         :title="row.image_url ? '更换分类图片' : '选择分类图片'"
-        :disabled="saving"
+        :disabled="saving || !isEditing"
         @click="emit('pick-image', row)"
       >
         <img v-if="row.image_url" :src="row.image_url" alt="" loading="lazy" />
@@ -29,17 +29,17 @@
         class="size-8 shrink-0"
         aria-label="移除分类图片"
         title="移除分类图片"
-        :disabled="saving"
+        :disabled="saving || !isEditing"
         @click="emit('clear-image', row)"
       >
         <X class="size-3.5 text-muted-foreground" />
       </Button>
     </div>
 
-    <Input :model-value="row.slug" class="min-w-0 font-mono" placeholder="slug" @update:model-value="updateField('slug', String($event))" @blur="emit('normalize-slug', row)" />
+    <Input :model-value="row.slug" class="min-w-0 font-mono" placeholder="slug" :disabled="saving || !isEditing" @update:model-value="updateField('slug', String($event))" @blur="emit('normalize-slug', row)" />
 
     <div class="min-w-0">
-      <Select :model-value="row.parent_key || rootParentValue" :disabled="saving" @update:model-value="emit('change-parent', row, String($event))">
+      <Select :model-value="row.parent_key || rootParentValue" :disabled="saving || !isEditing" @update:model-value="emit('change-parent', row, String($event))">
         <SelectTrigger class="w-full"><SelectValue placeholder="顶级分类" /></SelectTrigger>
         <SelectContent>
           <SelectItem :value="rootParentValue">顶级分类</SelectItem>
@@ -56,7 +56,7 @@
     </div>
 
     <div class="min-w-0">
-      <Input :model-value="row.description" placeholder="可选描述" @update:model-value="updateField('description', String($event))" />
+      <Input :model-value="row.description" placeholder="可选描述" :disabled="saving || !isEditing" @update:model-value="updateField('description', String($event))" />
     </div>
 
     <div
@@ -79,19 +79,30 @@
         :model-value="row.is_enabled"
         size="sm"
         :aria-label="row.is_enabled ? '停用分类' : '启用分类'"
-        :disabled="saving"
+        :disabled="saving || !isEditing"
         @update:model-value="updateField('is_enabled', Boolean($event))"
       />
     </div>
 
     <div class="flex items-center justify-end gap-1">
       <Button
+        variant="ghost"
+        size="icon"
+        :aria-label="isEditing ? '锁定分类字段' : '编辑分类'"
+        :title="isEditing ? '锁定分类字段' : '编辑分类'"
+        :disabled="saving"
+        @click="isEditing = !isEditing"
+      >
+        <LockKeyhole v-if="isEditing" class="size-4" />
+        <Pencil v-else class="size-4" />
+      </Button>
+      <Button
         v-if="canTranslate && row.id"
         variant="ghost"
         size="icon"
         aria-label="编辑分类翻译"
         title="编辑分类翻译"
-        :disabled="saving"
+        :disabled="saving || !isEditing"
         @click="emit('edit-translations', row)"
       >
         <Languages class="size-4" />
@@ -110,7 +121,8 @@
 </template>
 
 <script setup lang="ts">
-import { CornerDownRight, Folder, ImagePlus, Languages, ListPlus, PlusSquare, Trash2, X } from '@lucide/vue'
+import { CornerDownRight, Folder, ImagePlus, Languages, ListPlus, LockKeyhole, Pencil, PlusSquare, Trash2, X } from '@lucide/vue'
+import { ref, watch } from 'vue'
 import type { DraftCategoryRow, ProductCategoryParentOption } from '@/modules/product/productCategoryTypes'
 import { rootProductCategoryParentValue } from '@/composables/product/useProductCategoryTreeEditor'
 import { Button } from '@/components/ui/button'
@@ -130,6 +142,8 @@ const props = defineProps<{
   canTranslate: boolean
 }>()
 
+const isEditing = ref(props.row.is_new)
+
 const emit = defineEmits<{
   'add-sibling': [row: DraftCategoryRow]
   'add-child': [row: DraftCategoryRow]
@@ -141,6 +155,14 @@ const emit = defineEmits<{
   'normalize-slug': [row: DraftCategoryRow]
   'mark-dirty': [row: DraftCategoryRow]
 }>()
+
+watch(() => props.row.is_new, (isNew) => {
+  if (isNew) isEditing.value = true
+})
+
+watch(() => props.row.dirty, (dirty) => {
+  if (!props.row.is_new && !dirty) isEditing.value = false
+})
 
 const updateField = <K extends keyof DraftCategoryRow>(field: K, value: DraftCategoryRow[K]) => {
   props.row[field] = value

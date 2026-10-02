@@ -2,8 +2,8 @@ import type {
   BrandWheelsetLifecycleStatus,
   BrandWheelsetSpokeCatalog,
   BrandWheelsetSpokeRecord,
-} from '../brand-wheelset-spoke-specs-types'
-import { jBend, wheelset } from '../brand-wheelset-spoke-specs-builders'
+} from '../brand-wheelset-spoke-specs-types.js'
+import { jBend, wheelset } from '../brand-wheelset-spoke-specs-builders.js'
 
 const sources = {
   firecrest303: 'https://www.sram.com/en/service/models/wh-303-ftld-a1',

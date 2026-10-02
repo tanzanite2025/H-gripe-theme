@@ -53,7 +53,7 @@
 
               <div class="category-strip__actions">
                 <button
-                  v-if="showAddToCart"
+                  v-if="showAddToCart && !isSpokeRepairKitShopProduct(product)"
                   type="button"
                   class="category-strip__button category-strip__button--primary"
                   @click="handleAddToCart(product)"
@@ -80,7 +80,11 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { useLocalePath } from '#imports'
 import { useCart } from '~/composables/useCart'
-import { resolveShopProductImage, useShopProducts } from '~/composables/useShopProducts'
+import {
+  isSpokeRepairKitShopProduct,
+  resolveShopProductImage,
+  useShopProducts,
+} from '~/composables/useShopProducts'
 import type { ShopProduct } from '~/composables/useShopProducts'
 
 const props = defineProps<{
@@ -147,7 +151,7 @@ const loadProducts = async () => {
 }
 
 const handleAddToCart = (product: ShopProduct) => {
-  if (!product || !product.id) return
+  if (!product || !product.id || isSpokeRepairKitShopProduct(product)) return
 
   const result = addToCart(toCartItem(product))
 

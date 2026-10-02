@@ -83,18 +83,6 @@ export interface SchwalbeTireCatalogFilterOptions {
   eBikeRatings: readonly SchwalbeTireCatalogFilterOption<string | null>[]
 }
 
-/**
- * API-neutral form of migration 362's official possible-combination rule.
- * Inclusive ranges describe width guidance; they do not certify a specific
- * tire model or replace a frame-clearance and rim-maker check.
- */
-export interface SchwalbeTireRimWidthCombinationRule {
-  tireWidthMinMm: number
-  tireWidthMaxMm: number
-  innerRimWidthMinMm: number
-  innerRimWidthMaxMm: number
-}
-
 const normalizedOptionalString = (value: string | undefined): string | null => {
   const normalized = value?.trim() || ''
   return normalized || null
@@ -284,48 +272,6 @@ export const filterSchwalbeTireCatalogItems = (
     && matchesSelectedEBikeRatings(criteria.eBikeRatings, dimensions.eBikeRating)
   )
 })
-
-/**
- * Tests the official width-range guidance for one catalog item and one rim
- * inner width. A missing or invalid ETRTO/rim value is never treated as a
- * match. The caller must provide rules loaded from the migration-362 table.
- */
-export const isSchwalbeTireCatalogItemCompatibleWithInnerRimWidth = (
-  item: SchwalbeTireCatalogItem,
-  innerRimWidthMm: number,
-  rules: readonly SchwalbeTireRimWidthCombinationRule[],
-): boolean => {
-  if (!Number.isFinite(innerRimWidthMm) || innerRimWidthMm <= 0) return false
-
-  const nominalTireWidthMm = deriveSchwalbeTireCatalogFilterDimensions(item).nominalTireWidthMm
-  if (nominalTireWidthMm === null) return false
-
-  return rules.some(rule => (
-    Number.isFinite(rule.tireWidthMinMm)
-    && Number.isFinite(rule.tireWidthMaxMm)
-    && Number.isFinite(rule.innerRimWidthMinMm)
-    && Number.isFinite(rule.innerRimWidthMaxMm)
-    && rule.tireWidthMinMm <= nominalTireWidthMm
-    && nominalTireWidthMm <= rule.tireWidthMaxMm
-    && rule.innerRimWidthMinMm <= innerRimWidthMm
-    && innerRimWidthMm <= rule.innerRimWidthMaxMm
-  ))
-}
-
-/**
- * Applies the migration-362 possible-combination guidance to an already
- * loaded collection. This is suitable for pure model tests and complete,
- * non-paginated consumers. The storefront selector must apply the equivalent
- * predicate on the server before sorting and pagination so totals and pages
- * remain correct.
- */
-export const filterSchwalbeTireCatalogItemsByInnerRimWidth = (
-  items: readonly SchwalbeTireCatalogItem[],
-  innerRimWidthMm: number,
-  rules: readonly SchwalbeTireRimWidthCombinationRule[],
-): SchwalbeTireCatalogItem[] => items.filter(item => (
-  isSchwalbeTireCatalogItemCompatibleWithInnerRimWidth(item, innerRimWidthMm, rules)
-))
 
 const buildStringFilterOptions = (
   dimensions: readonly SchwalbeTireCatalogFilterDimensions[],

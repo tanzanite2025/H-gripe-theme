@@ -17,7 +17,7 @@ This directory contains the design and implementation references for the Schwalb
 
 - `preview-schwalbe-tire-selector.html` is a historical visual prototype. Its mock products, compatibility output, counts, source links and promotional claims are not implementation or product facts.
 - `preview-schwalbe-tread-profile-guide.html` is an unreferenced historical concept. Treat its model counts and product claims as stale unless separately verified against current official sources.
-- `schwalbe-tire-rim-width-matching-design.md` owns the implemented rim inner-width reference contract: the selector no longer filters by a user-entered inner width, and cards show the source-backed range derived from ETRTO nominal width. The legacy API filter remains only for compatibility with older clients.
+- `schwalbe-tire-rim-width-matching-design.md` owns the implemented rim-system and inner-width reference contract: the selector uses reviewed Hooked/Hookless facts and cards show the narrow DT Swiss reference derived from ETRTO nominal width. Broad Schwalbe/ETRTO combination ranges are not part of the selector contract.
 - `schwalbe-wheel-size-page-tabs-design.md` records the implemented move of wheel size + BSD from the filter drawer to page-level size navigation, plus wheel diameter/BSD on each card. Keep the Phase 2 guide as the single runtime status summary.
 - Runtime behavior is owned by the Nuxt page/components, filter/query modules and backend API. Migration and seed files are the source for imported catalog facts; the matrix section 8 is the human-readable baseline for the checked-in seed snapshot and its observed enums. Environment-specific database row counts are not a stable cross-environment fact and must be verified during deployment.
 

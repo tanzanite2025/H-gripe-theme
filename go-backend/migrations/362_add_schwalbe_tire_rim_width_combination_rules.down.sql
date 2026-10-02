@@ -1,3 +1,0 @@
--- Intentionally forward-only: these official combination rules are a shared
--- selector data baseline. Apply a corrective migration for a source revision;
--- do not drop the table or delete rules during rollback.

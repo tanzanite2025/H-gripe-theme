@@ -5,7 +5,7 @@ import type {
   BrandWheelsetSpokeRecord,
   BrandWheelSideSpokeSpec,
   BrandWheelPositionSpokeSpec,
-} from './brand-wheelset-spoke-specs-types'
+} from './brand-wheelset-spoke-specs-types.js'
 
 export type SideInput = Pick<BrandWheelSideSpokeSpec, 'spokeModel' | 'headType' | 'lengthMm'>
 export type WheelInput = {

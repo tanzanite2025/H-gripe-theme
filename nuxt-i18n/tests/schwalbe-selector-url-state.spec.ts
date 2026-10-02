@@ -362,45 +362,6 @@ test.describe('Schwalbe selector URL state', () => {
     ))
   })
 
-  test('shows rim inner-width guidance on cards instead of filtering by entered width', async ({ page }) => {
-    await page.goto(selectorURL('?inner_rim_width_mm=23.5'))
-    await waitForNuxtMount(page)
-    await openCatalogFilters(page)
-
-    await expect(page.getByRole('spinbutton', { name: 'Rim inner width' })).toHaveCount(0)
-    await expect(page.locator('.schwalbe-filter-panel__rim-match')).toHaveCount(0)
-    await page.getByRole('button', { name: 'Close filters', exact: true }).click()
-    await expect(page.getByRole('dialog')).toHaveCount(0)
-
-    const wheel28 = page.getByRole('button', { name: '28" · BSD 622 mm', exact: true })
-    const wheel29 = page.getByRole('button', { name: '29" · BSD 622 mm', exact: true })
-    await wheel28.click()
-    await expect(page).toHaveURL(url => (
-      url.searchParams.get('wheel_size') === '28-622'
-      && !url.searchParams.has('inner_rim_width_mm')
-    ))
-
-    await wheel29.click()
-    await expect(page).toHaveURL(url => (
-      url.searchParams.get('wheel_size') === '29-622'
-      && !url.searchParams.has('inner_rim_width_mm')
-    ))
-
-    const guidance = page.locator('.schwalbe-tire-card__rim-guidance').first()
-    await expect(guidance).toBeVisible()
-    await expect(guidance).toContainText('Rim inner-width reference')
-    await expect(guidance).toContainText('17–27 mm')
-
-    await openCatalogFilters(page)
-    await page.getByRole('button', { name: 'Clear filters', exact: true }).click()
-    await page.getByRole('button', { name: 'Show results' }).click()
-    await expect(page).toHaveURL(url => (
-      url.searchParams.get('wheel_size') === '29-622'
-      && !url.searchParams.has('inner_rim_width_mm')
-    ))
-    await page.getByRole('button', { name: 'All wheel sizes', exact: true }).click()
-    await expect(page).not.toHaveURL(/wheel_size=|inner_rim_width_mm=/)
-  })
 
   test('keeps the drawer compact and usable on a phone viewport', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 })
