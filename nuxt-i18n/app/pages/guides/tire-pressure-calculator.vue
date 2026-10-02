@@ -18,6 +18,7 @@ import TirePressureCalculator from '~/components/tireguides/tirepressure/TirePre
 import { usePageMessages } from '~/composables/usePageMessages'
 
 definePageMeta({
+  path: '/guides/tireguides/tire-pressure-calculator',
   layout: 'products',
   footerLabelKey: 'products.nav.tireSizeCharts',
   footerLabelFallback: 'Tire Guides',

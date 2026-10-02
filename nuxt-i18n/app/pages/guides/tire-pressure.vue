@@ -9,6 +9,7 @@ import TirePressureGuide from '~/components/tireguides/TirePressureGuide.vue'
 import { usePageMessages } from '~/composables/usePageMessages'
 
 definePageMeta({
+  path: '/guides/tireguides/tire-pressure',
   layout: 'products',
   footerLabelKey: 'products.nav.tireSizeCharts',
   footerLabelFallback: 'Tire Guides',
