@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "project": "tanzanite-theme storefront",
-  "generated_at": "2026-10-02T21:11:25.474Z",
+  "generated_at": "2026-10-03T17:36:46.635Z",
   "overall_status": "pass",
   "baseline": {
     "id": "storefront-built-in-font-shards-v1",
@@ -141,7 +141,7 @@
   "coverage": {
     "locale_count": 20,
     "source_file_count": 1072,
-    "checked_characters": 4876,
+    "checked_characters": 4874,
     "missing_characters": 0,
     "locales": [
       {
@@ -186,7 +186,7 @@
       {
         "locale": "en",
         "source_files": 104,
-        "checked_characters": 148,
+        "checked_characters": 147,
         "missing_characters": 0,
         "missing_sample": [],
         "font_stack": [
@@ -388,7 +388,7 @@
       {
         "locale": "zh-cn",
         "source_files": 104,
-        "checked_characters": 1352,
+        "checked_characters": 1351,
         "missing_characters": 0,
         "missing_sample": [],
         "font_stack": [
