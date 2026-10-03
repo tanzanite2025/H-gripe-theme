@@ -66,16 +66,9 @@ export const tireGuideTabs = [
   {
     id: 'tubeless',
     labelKey: 'guidesTireguides.tabs.tubeless.label',
-    fallback: 'Tubeless tires',
+    fallback: 'Tubeless tires & installation',
     descriptionKey: 'guidesTireguides.tabs.tubeless.description',
-    description: 'Tubeless setup notes, sealant basics, and compatibility.',
-  },
-  {
-    id: 'installation',
-    labelKey: 'guidesTireguides.tabs.installation.label',
-    fallback: 'Installation',
-    descriptionKey: 'guidesTireguides.tabs.installation.description',
-    description: 'Mounting steps and practical installation checks.',
+    description: 'Tubeless compatibility, setup, and step-by-step installation in one guide.',
   },
   {
     id: 'choose',
@@ -90,6 +83,14 @@ export const tireGuideTabs = [
     fallback: 'Tire pressure',
     descriptionKey: 'guidesTireguides.tabs.pressure.description',
     description: 'Recommended pressure ranges and adjustment cues.',
+  },
+  {
+    id: 'tire-pressure-calculator',
+    labelKey: 'guidesTireguides.tabs.pressureCalculator.label',
+    fallback: 'Tire pressure calculator',
+    descriptionKey: 'guidesTireguides.tabs.pressureCalculator.description',
+    description: 'Demonstrate how pressure, load, speed, and lean change force and estimated contact area.',
+    to: '/guides/tireguides/tire-pressure-calculator',
   },
   {
     id: 'tube',

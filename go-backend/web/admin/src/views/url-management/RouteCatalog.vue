@@ -20,27 +20,14 @@
       </template>
     </AdminPageHeader>
 
-    <div class="overflow-x-auto pb-1">
-      <Tabs
-        :model-value="filters.locale"
-        class="min-w-max"
-        @update:model-value="selectLocale"
-      >
-        <TabsList class="w-max min-w-full flex-nowrap gap-1 rounded-xl border border-border/70 bg-card p-1">
-          <TabsTrigger
-            v-for="language in enabledLanguages"
-            :key="language.code"
-            :value="language.code"
-            class="min-w-20 flex-none px-3 py-1.5 normal-case tracking-normal"
-          >
-            <span class="flex flex-col items-center leading-tight">
-              <span>{{ language.native_name || language.name || language.code }}</span>
-              <span class="font-mono text-[9px] opacity-60">{{ language.code }}</span>
-            </span>
-          </TabsTrigger>
-        </TabsList>
-      </Tabs>
-    </div>
+    <AdminStorefrontLanguageDisplayCard
+      :model-value="filters.locale"
+      :language-options="languageOptions"
+      :disabled="loading || statsLoading || syncing || checking"
+      :loading="loading || statsLoading"
+      aria-label="URL 路由台账语言"
+      @update:model-value="selectLocale"
+    />
 
     <AdminStatsGrid :items="statItems" />
 
@@ -92,11 +79,11 @@ import {
 } from '@lucide/vue'
 import AdminPageHeader from '@/components/admin/AdminPageHeader.vue'
 import AdminStatsGrid from '@/components/admin/AdminStatsGrid.vue'
+import AdminStorefrontLanguageDisplayCard from '@/components/admin/AdminStorefrontLanguageDisplayCard.vue'
 import StorefrontRouteCatalogDetailDialog from '@/components/admin/url-management/route-catalog/StorefrontRouteCatalogDetailDialog.vue'
 import StorefrontRouteCatalogFilterPanel from '@/components/admin/url-management/route-catalog/StorefrontRouteCatalogFilterPanel.vue'
 import StorefrontRouteCatalogTable from '@/components/admin/url-management/route-catalog/StorefrontRouteCatalogTable.vue'
 import { Button } from '@/components/ui/button'
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useSupportedLanguages } from '@/composables/useSupportedLanguages'
 import { type RouteCatalogMode, useStorefrontRouteCatalog } from '@/composables/url-management/useStorefrontRouteCatalog'
 import { useAuthStore } from '@/stores/auth'
@@ -109,7 +96,7 @@ const props = withDefaults(defineProps<{
 
 const authStore = useAuthStore()
 const supportedLanguages = useSupportedLanguages()
-const enabledLanguages = supportedLanguages.enabledLanguages
+const languageOptions = supportedLanguages.languageOptions
 const canEdit = authStore.hasPermission('url:edit')
 
 const {

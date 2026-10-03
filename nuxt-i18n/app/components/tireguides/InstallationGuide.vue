@@ -9,16 +9,6 @@
          {{ t('guidesTireInstallation.intro') }}
       </p>
       
-      <div class="flex justify-center mb-4">
-         <button
-            type="button"
-            class="inline-flex items-center justify-center rounded-full tz-surface-panel border tz-border-subtle px-6 py-2 text-xs font-bold uppercase tracking-wider tz-text-secondary hover:tz-surface-subtle transition-colors"
-            @click="$emit('changeTab', 'tubeless')"
-          >
-            {{ t('guidesTireInstallation.actions.viewAccessories') }}
-          </button>
-      </div>
-
        <div class="mt-8">
         <h4 class="text-xs font-bold uppercase tracking-wider tz-text-muted mb-4">{{ t('guidesTireInstallation.essential.title') }}</h4>
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -208,10 +198,4 @@ watch(locale, (nextLocale) => {
   void loadPageMessages(nextLocale)
 })
 
-// Match SizeChartsTabId from parent
-type GuideTabId = 'size' | 'match' | 'tubeless' | 'installation' | 'choose' | 'tire-pressure' | 'tube'
-
-defineEmits<{
-  (e: 'changeTab', tab: GuideTabId): void
-}>()
 </script>

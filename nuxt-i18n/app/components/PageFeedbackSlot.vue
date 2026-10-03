@@ -25,7 +25,41 @@ import {
 const route = useRoute()
 const { t } = useI18n()
 
+const routeFeedbackTab = computed<PageSubNavigationTab | null>(() => {
+  const routeMeta = route.meta as Record<string, unknown>
+  const threadKey = typeof routeMeta.feedbackThreadKey === 'string'
+    ? routeMeta.feedbackThreadKey.trim()
+    : ''
+
+  if (!threadKey) return null
+
+  return {
+    id: 'route-feedback',
+    feedbackThreadKey: threadKey,
+    feedbackTitleKey: typeof routeMeta.feedbackTitleKey === 'string'
+      ? routeMeta.feedbackTitleKey
+      : undefined,
+    feedbackTitle: typeof routeMeta.feedbackTitle === 'string'
+      ? routeMeta.feedbackTitle
+      : undefined,
+    feedbackSubtitleKey: typeof routeMeta.feedbackSubtitleKey === 'string'
+      ? routeMeta.feedbackSubtitleKey
+      : undefined,
+    feedbackSubtitle: typeof routeMeta.feedbackSubtitle === 'string'
+      ? routeMeta.feedbackSubtitle
+      : undefined,
+    pageTitleKey: typeof routeMeta.pageTitleKey === 'string'
+      ? routeMeta.pageTitleKey
+      : undefined,
+    pageTitle: typeof routeMeta.pageTitle === 'string'
+      ? routeMeta.pageTitle
+      : undefined,
+  }
+})
+
 const activeFeedbackTab = computed<PageSubNavigationTab | null>(() => {
+  if (routeFeedbackTab.value) return routeFeedbackTab.value
+
   const normalizedPath = normalizeFaqRoutePath(route.path)
 
   for (const entry of pageSubNavigationEntries) {

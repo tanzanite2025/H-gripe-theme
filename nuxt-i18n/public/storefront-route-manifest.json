@@ -146,10 +146,28 @@
       "is_indexable": true
     },
     {
+      "key": "guides-tireguides-tire-pressure-calculator",
+      "path": "/guides/tireguides/tire-pressure-calculator",
+      "label": "Tire pressure calculator",
+      "description": "Demonstrate how pressure, load, speed, and lean change force and estimated contact area",
+      "is_searchable": true,
+      "is_checkable": true,
+      "is_indexable": true
+    },
+    {
       "key": "guides-wheelset-buyers",
       "path": "/guides/wheelset-buyers",
       "label": "Wheelset Buyers Guide",
       "description": "Wheelset buying guide",
+      "is_searchable": true,
+      "is_checkable": true,
+      "is_indexable": true
+    },
+    {
+      "key": "guides-spokeguides-stainless-steel-microstructural-dislocation-mechanics",
+      "path": "/guides/spokeguides/stainless-steel-microstructural-dislocation-mechanics",
+      "label": "Stainless Steel Dislocation Mechanics",
+      "description": "Reference guide for spoke stress relieving and cold-drawn stainless steel dislocation mechanics",
       "is_searchable": true,
       "is_checkable": true,
       "is_indexable": true

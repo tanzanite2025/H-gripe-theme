@@ -3,8 +3,8 @@ import type {
   BrandWheelsetVerificationStatus,
   BrandWheelsetSpokeCatalog,
   BrandWheelsetSpokeRecord,
-} from '../brand-wheelset-spoke-specs-types'
-import { jBend, straight, wheelset, type SideInput } from '../brand-wheelset-spoke-specs-builders'
+} from '../brand-wheelset-spoke-specs-types.js'
+import { jBend, straight, wheelset, type SideInput } from '../brand-wheelset-spoke-specs-builders.js'
 
 const sourceUrl = 'https://support.enve.com/hc/en-us/articles/360058866734-Spoke-Chart-and-Tension'
 type EnveHeadType = Exclude<BrandSpokeHeadType, 'unknown'>

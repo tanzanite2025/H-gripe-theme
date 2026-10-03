@@ -75,13 +75,20 @@
               />
             </AdminFormField>
             <AdminFormField label="成本币种" description="必须与商品主币种一致">
-              <Input
+              <Select
                 :model-value="drafts[index].currency"
-                class="font-mono uppercase"
-                maxlength="3"
-                :disabled="!canEdit"
+                :disabled="!canEdit || currencyCatalogLoading"
                 @update:model-value="setDraftCurrency(drafts[index], $event)"
-              />
+              >
+                <SelectTrigger class="w-full">
+                  <SelectValue :placeholder="currencyCatalogLoading ? '正在读取币种' : '选择币种'" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem v-for="option in currencyOptions" :key="option.code" :value="option.code">
+                    {{ option.code }} · {{ option.name }}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
             </AdminFormField>
             <AdminFormField label="入库运费 / 件">
               <Input
@@ -185,14 +192,22 @@
 </template>
 
 <script setup lang="ts">
-import { computed, defineComponent, h } from 'vue'
+import { computed, defineComponent, h, onMounted, ref } from 'vue'
 import { RefreshCw, TriangleAlert } from '@lucide/vue'
 import AdminFormField from '@/components/admin/AdminFormField.vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import type { ProductSupplierCostProfitDraft } from '@/composables/product/useProductSupplierCostProfitDraft'
 import { formatMinorMoney, minorUnitsForCurrency } from '@/lib/dashboardPresentation'
 import type { ProductVariantForm } from '@/modules/product/productEditorTypes'
+import axios from '@/utils/axios'
+
+interface CurrencyCatalogOption {
+  code: string
+  name: string
+  minor_units?: number
+}
 
 const props = withDefaults(defineProps<{
   variants: ProductVariantForm[]
@@ -217,6 +232,60 @@ const props = withDefaults(defineProps<{
 const emit = defineEmits<{
   (event: 'retry'): void
 }>()
+
+const currencyCatalog = ref<CurrencyCatalogOption[]>([])
+const currencyCatalogLoading = ref(false)
+
+const normalizeCurrencyCode = (value: unknown): string => String(value || '').trim().toUpperCase()
+
+const normalizeCurrencyCatalog = (value: unknown): CurrencyCatalogOption[] => {
+  if (!Array.isArray(value)) return []
+  const seen = new Set<string>()
+  return value
+    .map((option) => {
+      const record = option && typeof option === 'object' ? option as Record<string, unknown> : {}
+      return {
+        code: normalizeCurrencyCode(record.code),
+        name: String(record.name || record.code || ''),
+        minor_units: Number.isFinite(Number(record.minor_units)) ? Number(record.minor_units) : 2,
+      }
+    })
+    .filter((option) => /^[A-Z]{3}$/.test(option.code))
+    .filter((option) => {
+      if (seen.has(option.code)) return false
+      seen.add(option.code)
+      return true
+    })
+}
+
+const currencyOptions = computed<CurrencyCatalogOption[]>(() => {
+  const options = [...currencyCatalog.value]
+  const fallbackCodes = new Set<string>([
+    normalizeCurrencyCode(props.currency),
+    ...props.drafts.map((draft) => normalizeCurrencyCode(draft.currency)),
+  ])
+  fallbackCodes.forEach((code) => {
+    if (!/^[A-Z]{3}$/.test(code) || options.some((option) => option.code === code)) return
+    options.push({ code, name: code })
+  })
+  return options
+})
+
+const loadCurrencyCatalog = async (): Promise<void> => {
+  currencyCatalogLoading.value = true
+  try {
+    const response = await axios.get('/api/admin/settings/currency-policy')
+    currencyCatalog.value = normalizeCurrencyCatalog(response.data?.policy?.available_currencies)
+  } catch (error) {
+    console.error('Failed to load currency catalog for product profitability:', error)
+  } finally {
+    currencyCatalogLoading.value = false
+  }
+}
+
+onMounted(() => {
+  void loadCurrencyCatalog()
+})
 
 type CalculationStatus = 'ready' | 'warning' | 'missing_unit_cost' | 'currency_mismatch' | 'invalid'
 
@@ -382,8 +451,8 @@ const setDraftAmount = (
   draft[field] = Number.isFinite(parsedValue) ? majorToMinor(parsedValue, draft.currency) : 0
 }
 
-const setDraftCurrency = (draft: ProductSupplierCostProfitDraft, value: string | number): void => {
-  draft.currency = String(value || '').toUpperCase()
+const setDraftCurrency = (draft: ProductSupplierCostProfitDraft, value: unknown): void => {
+  draft.currency = normalizeCurrencyCode(value)
 }
 
 const Metric = defineComponent({

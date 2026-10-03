@@ -299,31 +299,28 @@ func (h *Handler) SearchSchwalbeTireCatalogSelector(c *gin.Context) {
 	}
 	widthMin := parseSchwalbeTireSelectorPositiveInteger(c.Query("tire_width_min_mm"))
 	widthMax := parseSchwalbeTireSelectorPositiveInteger(c.Query("tire_width_max_mm"))
-	innerRimWidthMM := parseSchwalbeTireSelectorPositiveFiniteNumber(c.Query("inner_rim_width_mm"))
 	if widthMin != nil && widthMax != nil && *widthMin > *widthMax {
 		widthMin, widthMax = widthMax, widthMin
 	}
 
 	query := service.SchwalbeTireCatalogSelectorQuery{
-		Search:                  c.Query("search"),
-		Page:                    page,
-		ModelName:               c.Query("model"),
-		IncludeRimWidthGuidance: c.Query("include_rim_width_guidance") == "1" || strings.EqualFold(c.Query("include_rim_width_guidance"), "true"),
-		InnerRimWidthMM:         innerRimWidthMM,
-		NominalTireWidthMinMM:   widthMin,
-		NominalTireWidthMaxMM:   widthMax,
-		NominalTireWidthsMM:     parseSchwalbeTireSelectorPositiveIntegers(c.QueryArray("tire_width_mm")),
-		BeadSeatDiametersMM:     parseSchwalbeTireSelectorPositiveIntegers(c.QueryArray("bead_seat_diameter_mm")),
-		WheelSizeKeys:           parseSchwalbeTireSelectorStringValues(c.QueryArray("wheel_size")),
-		CasingConstructions:     c.QueryArray("casing"),
-		RadialOnly:              c.Query("radial") == "1" || strings.EqualFold(c.Query("radial"), "true"),
-		Beads:                   c.QueryArray("bead"),
-		Seals:                   c.QueryArray("seal"),
-		EBikeRatings:            parseSchwalbeTireSelectorEBikeRatings(c.QueryArray("e_bike_rating")),
-		Colors:                  c.QueryArray("color"),
-		Compounds:               c.QueryArray("compound"),
-		MinLoadKG:               parseSchwalbeTireSelectorMinimumLoadKG(c.Query("min_load_kg")),
-		SortBy:                  c.Query("sort"),
+		Search:                c.Query("search"),
+		Page:                  page,
+		ModelName:             c.Query("model"),
+		NominalTireWidthMinMM: widthMin,
+		NominalTireWidthMaxMM: widthMax,
+		NominalTireWidthsMM:   parseSchwalbeTireSelectorPositiveIntegers(c.QueryArray("tire_width_mm")),
+		BeadSeatDiametersMM:   parseSchwalbeTireSelectorPositiveIntegers(c.QueryArray("bead_seat_diameter_mm")),
+		WheelSizeKeys:         parseSchwalbeTireSelectorStringValues(c.QueryArray("wheel_size")),
+		CasingConstructions:   c.QueryArray("casing"),
+		RadialOnly:            c.Query("radial") == "1" || strings.EqualFold(c.Query("radial"), "true"),
+		Beads:                 c.QueryArray("bead"),
+		Seals:                 c.QueryArray("seal"),
+		EBikeRatings:          parseSchwalbeTireSelectorEBikeRatings(c.QueryArray("e_bike_rating")),
+		Colors:                c.QueryArray("color"),
+		Compounds:             c.QueryArray("compound"),
+		MinLoadKG:             parseSchwalbeTireSelectorMinimumLoadKG(c.Query("min_load_kg")),
+		SortBy:                c.Query("sort"),
 	}
 
 	pageResult, err := h.productService.SearchSchwalbeTireCatalogSelector(query)
@@ -406,15 +403,6 @@ func parseSchwalbeTireSelectorEBikeRatings(values []string) []*string {
 		parsed = append(parsed, &normalized)
 	}
 	return parsed
-}
-
-func (h *Handler) ListSchwalbeTireRimWidthCombinationRules(c *gin.Context) {
-	rules, err := h.productService.ListSchwalbeTireRimWidthCombinationRules()
-	if err != nil {
-		apierror.RespondInternalError(c, err)
-		return
-	}
-	response.Success(c, rules)
 }
 
 func (h *Handler) ListCategories(c *gin.Context) {

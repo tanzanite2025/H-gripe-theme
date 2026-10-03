@@ -2,11 +2,79 @@ import { normalizePrimaryMegaNavPath } from './primaryMegaNav.js'
 
 const pathWithoutQueryOrHash = (path: string) => path.split(/[?#]/, 1)[0] || '/'
 
-const splitNormalizedPath = (path: string, localeCodes: string[]) => (
-  normalizePrimaryMegaNavPath(pathWithoutQueryOrHash(path), localeCodes)
+export const normalizeBreadcrumbRouteSegments = (
+  path: string,
+  localeCodes: string[] = [],
+) => {
+  const localeCodeSet = new Set(localeCodes.map(localeCode => localeCode.toLowerCase()))
+  const segments = normalizePrimaryMegaNavPath(pathWithoutQueryOrHash(path), localeCodes)
     .split('/')
     .filter(Boolean)
-)
+
+  // Keep breadcrumb depth independent of prefix_except_default: English has
+  // no URL prefix, while every other locale contributes exactly one segment.
+  while (segments[0] && localeCodeSet.has(segments[0].toLowerCase())) {
+    segments.shift()
+  }
+
+  return segments
+}
+
+const splitNormalizedPath = normalizeBreadcrumbRouteSegments
+
+/** Whether the active route is the exact breadcrumb represented by a page-menu owner. */
+export const isExactBreadcrumbPageSubNavigationOwner = (
+  breadcrumbPath: string,
+  currentRoutePath: string,
+  localeCodes: string[] = [],
+) => {
+  const breadcrumbSegments = splitNormalizedPath(breadcrumbPath, localeCodes)
+  const currentRouteSegments = splitNormalizedPath(currentRoutePath, localeCodes)
+
+  return breadcrumbSegments.length === currentRouteSegments.length
+    && breadcrumbSegments.every((segment, index) => segment === currentRouteSegments[index])
+}
+
+export type BreadcrumbSubNavigationOwner =
+  | 'same-level-route-siblings'
+  | 'page-sub-navigation'
+  | null
+
+export interface BreadcrumbSubNavigationOwnerOptions {
+  breadcrumbPath: string
+  currentRoutePath: string
+  siblingPaths: readonly string[]
+  hasPageSubNavigation: boolean
+  localeCodes?: string[]
+}
+
+/** Prefer route peers at this breadcrumb depth; use page tabs only as fallback. */
+export const resolveBreadcrumbSubNavigationOwner = ({
+  breadcrumbPath,
+  currentRoutePath,
+  siblingPaths,
+  hasPageSubNavigation,
+  localeCodes = [],
+}: BreadcrumbSubNavigationOwnerOptions): BreadcrumbSubNavigationOwner => {
+  const breadcrumbSegments = splitNormalizedPath(breadcrumbPath, localeCodes)
+  const normalizedSiblingPaths = new Set(siblingPaths.map((path) => (
+    `/${splitNormalizedPath(path, localeCodes).join('/')}`
+  )))
+  const normalizedBreadcrumbPath = `/${breadcrumbSegments.join('/')}`
+
+  if (normalizedSiblingPaths.has(normalizedBreadcrumbPath) && normalizedSiblingPaths.size > 1) {
+    return 'same-level-route-siblings'
+  }
+
+  if (
+    hasPageSubNavigation &&
+    isExactBreadcrumbPageSubNavigationOwner(breadcrumbPath, currentRoutePath, localeCodes)
+  ) {
+    return 'page-sub-navigation'
+  }
+
+  return null
+}
 
 interface DynamicRouteParameter {
   constraint: string

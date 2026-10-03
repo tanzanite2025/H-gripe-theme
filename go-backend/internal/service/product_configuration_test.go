@@ -43,6 +43,52 @@ func TestResolveProductConfigurationRejectsInvalidSelections(t *testing.T) {
 	require.ErrorIs(t, err, ErrProductConfigurationRequired)
 }
 
+func TestResolveProductConfigurationValidatesSpokeRepairKitModelSelection(t *testing.T) {
+	item := &productdomain.Product{
+		ID:   77,
+		Name: "DT Swiss spoke repair kit",
+		SpokeRepairKitModels: []productdomain.SpokeRepairKitModel{{
+			BrandSlug:         "dt-swiss",
+			BrandName:         "DT Swiss",
+			WheelsetModelSlug: "arc-1100-dicut-db-38",
+			WheelsetModelName: "ARC 1100 DICUT DB 38",
+		}},
+	}
+	variant := &productdomain.ProductVariant{ID: 88, Currency: "USD", Title: "Default"}
+
+	result, err := ResolveProductConfiguration(item, variant, []SelectedOption{{
+		GroupSlug: "wheelset_model",
+		ValueKeys: []string{"DT-SWISS:ARC-1100-DICUT-DB-38"},
+	}})
+	require.NoError(t, err)
+	require.Equal(t, "dt-swiss:arc-1100-dicut-db-38", result.Selections[0].ValueKeys[0])
+	require.Equal(t, "DT Swiss / ARC 1100 DICUT DB 38", result.Snapshot.Selections[0].Values[0].ValueLabel)
+	require.Equal(t, int64(0), result.Delta.AmountMinor())
+
+	_, err = ResolveProductConfiguration(item, variant, []SelectedOption{{
+		GroupSlug: "wheelset_model",
+		ValueKeys: []string{"dt-swiss:not-bound-to-this-kit"},
+	}})
+	require.ErrorIs(t, err, ErrProductConfigurationConflict)
+
+	_, err = ResolveProductConfiguration(item, variant, nil)
+	require.ErrorIs(t, err, ErrProductConfigurationRequired)
+}
+
+func TestResolveProductConfigurationDoesNotTreatUnboundRepairKitAsGenericProduct(t *testing.T) {
+	item := &productdomain.Product{
+		ProductCategory: &productdomain.ProductCategory{Slug: "spoke-repair-kits"},
+	}
+	variant := &productdomain.ProductVariant{Currency: "USD"}
+
+	_, err := ResolveProductConfiguration(item, variant, nil)
+	require.ErrorIs(t, err, ErrProductConfigurationRequired)
+
+	definitions := ProductCustomOptionDefinitions(item, variant)
+	require.Len(t, definitions, 1)
+	require.Equal(t, "wheelset_model", definitions[0].Slug)
+}
+
 func TestResolveProductConfigurationEnforcesOptionValueRelations(t *testing.T) {
 	item := &productdomain.Product{
 		ID: 1,

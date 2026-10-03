@@ -6,7 +6,8 @@ import type {
   VisualShowcaseLayoutVariant,
 } from '@/modules/visual-showcase/visualShowcaseTypes'
 import {
-  HOME_HERO_VISUAL_SHOWCASE_REQUIRED_ITEM_COUNT,
+  HOME_HERO_VISUAL_SHOWCASE_IMAGE_DIMENSION,
+  HOME_HERO_VISUAL_SHOWCASE_MAXIMUM_ITEM_COUNT,
   HOME_MAIN_PRODUCT_CATEGORIES_REQUIRED_ITEM_COUNT,
 } from '@/modules/visual-showcase/visualShowcaseTypes'
 
@@ -113,8 +114,8 @@ export const createVisualShowcaseHomeHeroAdministrationItemFormState = (
   source,
   homeHeroFallbackLabels,
   'home-hero-visual-showcase-item',
-  900,
-  1200,
+  HOME_HERO_VISUAL_SHOWCASE_IMAGE_DIMENSION,
+  HOME_HERO_VISUAL_SHOWCASE_IMAGE_DIMENSION,
 )
 
 export const createVisualShowcaseHomeMainProductCategoryAdministrationItemFormState = (
@@ -151,11 +152,20 @@ const rowsFromApiItems = (
 
 export const visualShowcaseHomeHeroAdministrationRowsFromApiItems = (
   items: VisualShowcaseAdministrationItemApiRecord[] = [],
-): VisualShowcaseAdministrationItemFormState[] => rowsFromApiItems(
-  items,
-  HOME_HERO_VISUAL_SHOWCASE_REQUIRED_ITEM_COUNT,
-  createVisualShowcaseHomeHeroAdministrationItemFormState,
-)
+): VisualShowcaseAdministrationItemFormState[] => {
+  const rows = Array.from(
+    { length: HOME_HERO_VISUAL_SHOWCASE_MAXIMUM_ITEM_COUNT },
+    (_, index) => createVisualShowcaseHomeHeroAdministrationItemFormState(index),
+  )
+
+  items.forEach((item, apiIndex) => {
+    const desktopOrder = positiveInteger(item.desktop_order, apiIndex + 1)
+    if (desktopOrder > HOME_HERO_VISUAL_SHOWCASE_MAXIMUM_ITEM_COUNT) return
+    rows[desktopOrder - 1] = createVisualShowcaseHomeHeroAdministrationItemFormState(desktopOrder - 1, item)
+  })
+
+  return rows
+}
 
 export const visualShowcaseHomeMainProductCategoriesAdministrationRowsFromApiItems = (
   items: VisualShowcaseAdministrationItemApiRecord[] = [],
@@ -191,7 +201,12 @@ export const visualShowcaseHomeHeroAdministrationSavePayloadFromFormRow = (
   row: VisualShowcaseAdministrationItemFormState,
   index: number,
 ): VisualShowcaseAdministrationItemSavePayload => ({
-  ...visualShowcaseAdministrationSavePayloadFromFormRow(row, index),
+  ...visualShowcaseAdministrationSavePayloadFromFormRow(
+    row,
+    index,
+    HOME_HERO_VISUAL_SHOWCASE_IMAGE_DIMENSION,
+    HOME_HERO_VISUAL_SHOWCASE_IMAGE_DIMENSION,
+  ),
   // Hero cards use their fixed editor position as the persisted order.
   desktop_order: index + 1,
   target_url: '',
@@ -210,16 +225,25 @@ const visualShowcaseAdministrationValidationMessage = (
   ratioWidth: number,
   ratioHeight: number,
   ratioLabel: string,
+  exactWidth?: number,
+  exactHeight?: number,
+  allowUnconfiguredRows = false,
 ): string => {
-  if (rows.length < requiredItemCount) {
-    return `${sectionLabel}至少需要 ${requiredItemCount} 张图片`
+  if (!allowUnconfiguredRows && rows.length !== requiredItemCount) {
+    return `${sectionLabel}必须配置 ${requiredItemCount} 张图片`
   }
 
   for (const [index, row] of rows.entries()) {
     const label = `第 ${index + 1} 张`
-    if (!text(row.image_url) || !text(row.storage_key)) return `${label} 需要先上传图片`
+    const imageURL = text(row.image_url)
+    const storageKey = text(row.storage_key)
+    if (allowUnconfiguredRows && !imageURL && !storageKey) continue
+    if (!imageURL || !storageKey) return `${label} 需要先上传图片`
     if (!text(row.title)) return `${label} 缺少标题`
     if (!text(row.alt_text)) return `${label} 缺少 ALT 文本`
+    if (exactWidth && exactHeight && (row.width !== exactWidth || row.height !== exactHeight)) {
+      return `${label} 图片必须为 ${exactWidth}×${exactHeight} px，请重新上传`
+    }
     if (!hasValidAspectRatio(row.width, row.height, ratioWidth, ratioHeight)) return `${label} 图片必须为 ${ratioLabel} 比例，请重新上传`
   }
 
@@ -230,11 +254,14 @@ export const visualShowcaseHomeHeroAdministrationValidationMessage = (
   rows: VisualShowcaseAdministrationItemFormState[],
 ): string => visualShowcaseAdministrationValidationMessage(
   rows,
-  HOME_HERO_VISUAL_SHOWCASE_REQUIRED_ITEM_COUNT,
+  HOME_HERO_VISUAL_SHOWCASE_MAXIMUM_ITEM_COUNT,
   '',
-  3,
-  4,
-  '3:4',
+  1,
+  1,
+  '1:1',
+  HOME_HERO_VISUAL_SHOWCASE_IMAGE_DIMENSION,
+  HOME_HERO_VISUAL_SHOWCASE_IMAGE_DIMENSION,
+  true,
 )
 
 export const visualShowcaseHomeMainProductCategoriesAdministrationValidationMessage = (
@@ -268,4 +295,3 @@ export const applyVisualShowcaseUploadToFormState = (
     height: positiveInteger(upload.height, row.height),
   }
 }
-

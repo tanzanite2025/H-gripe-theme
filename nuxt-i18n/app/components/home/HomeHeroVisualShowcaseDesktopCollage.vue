@@ -7,10 +7,11 @@
           :key="item.id"
           type="button"
           class="home-hero-visual-showcase-desktop__card"
-          :class="{ 'is-active': index === activeIndex }"
+          :class="{ 'is-active': item.src && index === activeIndex, 'is-empty': !item.src }"
           :style="cardStyle(index)"
-          :aria-label="`${item.title} ${index + 1}`"
-          :aria-pressed="index === activeIndex"
+          :aria-label="`${item.title || ariaLabel} ${index + 1}`"
+          :aria-pressed="item.src ? index === activeIndex : false"
+          :disabled="!item.src"
           @click="setActiveIndex(index)"
         >
           <HomeHeroVisualShowcaseFigure
@@ -18,7 +19,6 @@
             :loading="index === activeIndex ? 'eager' : 'lazy'"
             :fetchpriority="index === activeIndex ? 'high' : 'low'"
             :preload="index === activeIndex ? { fetchPriority: 'high', media: '(min-width: 1024px)' } : false"
-            sizes="xs:100vw sm:50vw lg:22vw xl:22vw"
             caption-visibility="sr-only"
             class="home-hero-visual-showcase-desktop__figure"
           />
@@ -30,10 +30,10 @@
         class="home-hero-visual-showcase-desktop__detail"
         role="region"
         aria-live="polite"
-        :aria-label="activeItem.title"
+        :aria-label="activeItem.title || ariaLabel"
       >
         <div class="home-hero-visual-showcase-desktop__detail-copy">
-          <p class="home-hero-visual-showcase-desktop__detail-title">{{ activeItem.title }}</p>
+          <p v-if="activeItem.title" class="home-hero-visual-showcase-desktop__detail-title">{{ activeItem.title }}</p>
           <p v-if="activeItem.caption" class="home-hero-visual-showcase-desktop__detail-description">
             {{ activeItem.caption }}
           </p>
@@ -92,17 +92,31 @@ const props = defineProps<{
 }>()
 
 const desktopItems = computed(() => props.items.slice(0, FAN_SLOTS.length))
-const centerIndex = Math.min(4, Math.max(0, desktopItems.value.length - 1))
+const centerIndex = 4
 const activeIndex = ref(centerIndex)
 const activeItem = computed(() => desktopItems.value[activeIndex.value] ?? null)
 const ACTIVE_CARD_WIDTH_MULTIPLIER = 1.15
 const ACTIVE_CARD_VERTICAL_LIFT = 2
 
+const closestConfiguredItemIndex = (preferredIndex: number): number => {
+  const configuredIndices = desktopItems.value
+    .map((item, index) => item.src ? index : -1)
+    .filter((index) => index >= 0)
+  if (configuredIndices.length === 0) return centerIndex
+
+  return configuredIndices.reduce((closestIndex, index) => (
+    Math.abs(index - preferredIndex) < Math.abs(closestIndex - preferredIndex)
+      ? index
+      : closestIndex
+  ))
+}
+
 watch(
-  () => desktopItems.value.length,
-  (length) => {
-    if (length <= 0) return
-    activeIndex.value = Math.min(activeIndex.value, length - 1)
+  () => desktopItems.value.map((item) => item.src).join('|'),
+  () => {
+    if (!desktopItems.value[activeIndex.value]?.src) {
+      activeIndex.value = closestConfiguredItemIndex(activeIndex.value)
+    }
   },
   { immediate: true },
 )
@@ -138,7 +152,7 @@ const cardStyle = (index: number): Record<string, string | number> => {
 }
 
 const setActiveIndex = (index: number): void => {
-  if (index < 0 || index >= desktopItems.value.length) return
+  if (index < 0 || index >= desktopItems.value.length || !desktopItems.value[index]?.src) return
   activeIndex.value = index
 }
 </script>
@@ -149,7 +163,7 @@ const setActiveIndex = (index: number): void => {
 
   position: relative;
   width: 100%;
-  height: clamp(34rem, 39vw, 38rem);
+  height: clamp(29rem, 34vw, 33rem);
   container-type: inline-size;
   overflow: hidden;
   isolation: isolate;
@@ -171,7 +185,7 @@ const setActiveIndex = (index: number): void => {
 .home-hero-visual-showcase-desktop__stage {
   position: relative;
   width: 100%;
-  height: clamp(22.5rem, 26vw, 24.5rem);
+  height: clamp(18rem, 21vw, 20rem);
   transform: translateY(2rem);
   overflow: visible;
 }
@@ -233,6 +247,10 @@ const setActiveIndex = (index: number): void => {
 }
 
 .home-hero-visual-showcase-desktop__card.is-active {
+  cursor: default;
+}
+
+.home-hero-visual-showcase-desktop__card.is-empty {
   cursor: default;
 }
 

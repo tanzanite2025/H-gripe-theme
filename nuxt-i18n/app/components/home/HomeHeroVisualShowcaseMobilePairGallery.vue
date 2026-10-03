@@ -14,20 +14,25 @@
       ></button>
     </div>
 
-    <div class="home-hero-visual-showcase-mobile__grid" role="tabpanel" aria-live="polite">
+    <div
+      class="home-hero-visual-showcase-mobile__grid"
+      :class="{ 'home-hero-visual-showcase-mobile__grid--single': activePair.length === 1 }"
+      role="tabpanel"
+      aria-live="polite"
+    >
       <button
         v-for="({ item, index }) in activePair"
         :key="`${activePairIndex}-${item.id}`"
         type="button"
         class="home-hero-visual-showcase-mobile__card"
-        :class="{ 'is-active': index === activeItemIndex }"
-        :aria-label="`${item.title} ${index + 1}`"
-        :aria-pressed="index === activeItemIndex"
+        :class="{ 'is-active': item.src && index === activeItemIndex, 'is-empty': !item.src }"
+        :aria-label="`${item.title || ariaLabel} ${index + 1}`"
+        :aria-pressed="item.src ? index === activeItemIndex : false"
+        :disabled="!item.src"
         @click="setActiveItem(index)"
       >
         <HomeHeroVisualShowcaseFigure
           :item="item"
-          sizes="xs:50vw sm:50vw md:50vw"
           :loading="index === 0 ? 'eager' : 'lazy'"
           :fetchpriority="index === 0 ? 'high' : 'low'"
           :preload="index === 0 ? { fetchPriority: 'high', media: '(max-width: 1023px)' } : false"
@@ -41,10 +46,10 @@
       class="home-hero-visual-showcase-mobile__detail"
       role="region"
       aria-live="polite"
-      :aria-label="activeItem.title"
+      :aria-label="activeItem.title || ariaLabel"
     >
       <div class="home-hero-visual-showcase-mobile__detail-copy">
-        <p class="home-hero-visual-showcase-mobile__detail-title">{{ activeItem.title }}</p>
+        <p v-if="activeItem.title" class="home-hero-visual-showcase-mobile__detail-title">{{ activeItem.title }}</p>
         <p v-if="activeItem.caption" class="home-hero-visual-showcase-mobile__detail-description">
           {{ activeItem.caption }}
         </p>
@@ -54,16 +59,19 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import HomeHeroVisualShowcaseFigure from '~/components/home/HomeHeroVisualShowcaseFigure.vue'
-import type { HomeHeroVisualShowcaseItem } from '~/types/homeHeroVisualShowcase'
+import {
+  HOME_HERO_VISUAL_SHOWCASE_MAXIMUM_ITEM_COUNT,
+  type HomeHeroVisualShowcaseItem,
+} from '~/types/homeHeroVisualShowcase'
 
 const props = defineProps<{
   items: HomeHeroVisualShowcaseItem[]
   ariaLabel: string
 }>()
 
-const mobileItems = computed(() => props.items.slice(0, 8))
+const mobileItems = computed(() => props.items.slice(0, HOME_HERO_VISUAL_SHOWCASE_MAXIMUM_ITEM_COUNT))
 const activePairIndex = ref(0)
 const activeItemIndex = ref(0)
 const mobilePairCount = computed(() => Math.ceil(mobileItems.value.length / 2))
@@ -77,6 +85,39 @@ const activePair = computed(() => (
 ))
 const activeItem = computed(() => mobileItems.value[activeItemIndex.value] ?? null)
 
+const closestConfiguredItemIndex = (preferredIndex: number): number => {
+  const configuredIndices = mobileItems.value
+    .map((item, index) => item.src ? index : -1)
+    .filter((index) => index >= 0)
+  if (configuredIndices.length === 0) return 0
+
+  return configuredIndices.reduce((closestIndex, index) => (
+    Math.abs(index - preferredIndex) < Math.abs(closestIndex - preferredIndex)
+      ? index
+      : closestIndex
+  ))
+}
+
+watch(
+  () => mobileItems.value.map((item) => item.src).join('|'),
+  () => {
+    const length = mobileItems.value.length
+    if (length <= 0) {
+      activePairIndex.value = 0
+      activeItemIndex.value = 0
+      return
+    }
+
+    const pairCount = Math.ceil(length / 2)
+    activePairIndex.value = Math.min(activePairIndex.value, pairCount - 1)
+    if (!mobileItems.value[activeItemIndex.value]?.src) {
+      activeItemIndex.value = closestConfiguredItemIndex(activePairIndex.value * 2)
+      activePairIndex.value = Math.floor(activeItemIndex.value / 2)
+    }
+  },
+  { immediate: true },
+)
+
 const setActivePair = (pairIndex: number) => {
   if (pairIndex < 0 || pairIndex >= mobilePairCount.value) return
   activePairIndex.value = pairIndex
@@ -84,7 +125,7 @@ const setActivePair = (pairIndex: number) => {
 }
 
 const setActiveItem = (index: number) => {
-  if (index < 0 || index >= mobileItems.value.length) return
+  if (index < 0 || index >= mobileItems.value.length || !mobileItems.value[index]?.src) return
   activeItemIndex.value = index
 }
 </script>
@@ -103,6 +144,10 @@ const setActiveItem = (index: number) => {
   gap: clamp(0.45rem, 0.8vw, 0.75rem);
 }
 
+.home-hero-visual-showcase-mobile__grid--single {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .home-hero-visual-showcase-mobile__card {
   display: block;
   min-width: 0;
@@ -115,6 +160,10 @@ const setActiveItem = (index: number) => {
 
 .home-hero-visual-showcase-mobile__card.is-active {
   box-shadow: 0 0 0 2px rgba(5, 150, 105, 0.9);
+}
+
+.home-hero-visual-showcase-mobile__card.is-empty {
+  cursor: default;
 }
 
 .home-hero-visual-showcase-mobile__card:focus-visible {

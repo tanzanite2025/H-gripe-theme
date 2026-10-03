@@ -37,6 +37,15 @@ export function useProductDetailVariants(
     if (role === 'attribute' || role === 'variant' || role === 'custom_option') return role
     return 'attribute'
   }
+  const isSpokeRepairKitProduct = computed(() => {
+    const categorySlug = String(product.value?.product_category?.slug || '').trim().toLowerCase()
+    if (categorySlug === 'spoke-repair-kits') return true
+
+    // Keep older product rows safe when the compatibility relation survived
+    // before the dedicated category was assigned. The backend applies the
+    // same compatibility fallback during cart validation.
+    return (product.value?.spoke_repair_kit_models?.length || 0) > 0
+  })
   const requestedVariantId = computed(() => {
     const value = Number(route.query.variant || 0)
     return Number.isFinite(value) && value > 0 ? value : 0
@@ -83,6 +92,7 @@ export function useProductDetailVariants(
   })
 
   const customOptionDefinitions = computed(() => {
+    if (isSpokeRepairKitProduct.value) return []
     const currentVariant = selectedVariant.value
     const groupRules = new Map((currentVariant?.option_group_rules || []).map(rule => [Number(rule.spec_definition_id), rule]))
     return (product.value?.product_specification_template?.spec_definitions || [])
@@ -119,7 +129,42 @@ export function useProductDetailVariants(
     selectedCustomOptions.value = next
   }, { immediate: true })
 
-  const customOptionGroups = computed(() => customOptionDefinitions.value.map((definition) => {
+  const customOptionGroups = computed(() => {
+    if (isSpokeRepairKitProduct.value) {
+      const options = (product.value?.spoke_repair_kit_models || [])
+        .filter((model) => model.brand_slug && model.wheelset_model_slug)
+        .map((model) => {
+          const value = `${model.brand_slug}:${model.wheelset_model_slug}`.toLowerCase()
+          const selected = (selectedCustomOptions.value.wheelset_model || []).includes(value)
+          return {
+            value,
+            label: `${model.brand_name} / ${model.wheelset_model_name}`,
+            colorHex: '',
+            swatchUrl: '',
+            selected,
+            available: true,
+            unavailableReason: '',
+            priceDeltaMinor: 0,
+          }
+        })
+      const selectedCount = selectedCustomOptions.value.wheelset_model?.length || 0
+      return [{
+        slug: 'wheelset_model',
+        name: locale.value === 'zh_cn' ? '适配轮组型号' : 'Compatible wheelset model',
+        selectionMode: 'single',
+        minSelections: 1,
+        maxSelections: 1,
+        presentation: 'text',
+        options,
+        selectedCount,
+        isValid: selectedCount === 1,
+        validationMessage: selectedCount === 1
+          ? ''
+          : (locale.value === 'zh_cn' ? '请选择一个适配轮组型号' : 'Select one compatible wheelset model'),
+      }]
+    }
+
+    return customOptionDefinitions.value.map((definition) => {
     const currentVariant = selectedVariant.value
     const valueRules = new Map((currentVariant?.option_value_rules || []).map(rule => [Number(rule.product_variant_option_value_id), rule]))
     const groupRule = (currentVariant?.option_group_rules || [])
@@ -186,7 +231,8 @@ export function useProductDetailVariants(
         ? (locale.value === 'zh_cn' ? `需要同时选择 ${requiredOption?.label || requiredOption?.value_key || ''}` : `Requires ${requiredOption?.label || requiredOption?.value_key || 'another option'}`)
         : '',
     }
-  }))
+    })
+  })
 
   const selectCustomOption = (slug: string, value: string) => {
     const group = customOptionGroups.value.find(item => item.slug === slug)
@@ -342,17 +388,28 @@ export function useProductDetailVariants(
   const selectedCartTitle = computed(() => {
     const productName = product.value?.name || ''
     const variant = selectedVariant.value
-    if (!variant) return productName
+    const selectedWheelsetModelKey = selectedCustomOptions.value.wheelset_model?.[0] || ''
+    const selectedWheelsetModelLabel = isSpokeRepairKitProduct.value
+      ? customOptionGroups.value
+        .find(group => group.slug === 'wheelset_model')
+        ?.options.find(option => option.value === selectedWheelsetModelKey)?.label || ''
+      : ''
+
+    const appendSelectedWheelsetModel = (title: string): string => (
+      selectedWheelsetModelLabel ? `${title} - ${selectedWheelsetModelLabel}` : title
+    )
+
+    if (!variant) return appendSelectedWheelsetModel(productName)
 
     const optionText = Object.values(parseProductVariantOptions(variant)).filter(Boolean).join(' / ')
-    if (optionText) return `${productName} - ${optionText}`
+    if (optionText) return appendSelectedWheelsetModel(`${productName} - ${optionText}`)
 
     const variantTitle = String(variant.title || '').trim()
     if (variantTitle && variantTitle.toLowerCase() !== 'default') {
-      return `${productName} - ${variantTitle}`
+      return appendSelectedWheelsetModel(`${productName} - ${variantTitle}`)
     }
 
-    return productName
+    return appendSelectedWheelsetModel(productName)
   })
 
   const selectedCustomOptionPriceDeltaMinor = computed(() => customOptionGroups.value.reduce((total, group) => (

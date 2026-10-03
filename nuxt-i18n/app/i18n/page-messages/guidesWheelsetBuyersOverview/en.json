@@ -28,14 +28,14 @@
     "body": "Use these quick tools to estimate the main compatibility choices before ordering. The detailed pages open in a new tab, so you can keep this buying path open while checking the full explanation.",
     "tireWidth": {
       "title": "Tire width and rim fit",
-      "body": "Confirm the tire size you want can work with the rim inner width and your frame clearance. Use the rim system toggle for DT-style TSS or TC estimates.",
+      "body": "Confirm the tire size you want can work with the rim inner width and your frame clearance. Use the rim system toggle to look up an exact DT Swiss TSS or TC recommendation.",
       "helperTitle": "Tire and rim width quick check",
       "helperDescription": "Enter the tire width you plan to use and choose the rim system. This is a width quick check, not a separate tube-vs-tubeless calculator.",
       "button": "Tire width chart"
     },
     "tireSystem": {
       "title": "Tube, tubeless and tubular check",
-      "body": "After the width estimate, confirm the actual tire/rim system. A rim-brake clincher, tubeless-ready TC rim, hookless TSS rim, and tubular rim can use different rim-bed designs; tubeless and hookless need tire approval and pressure limits, while tubular is a separate glued tire system.",
+      "body": "After checking the width row, confirm the actual tire/rim system. A rim-brake clincher, tubeless-ready TC rim, hookless TSS rim, and tubular rim can use different rim-bed designs; tubeless and hookless need tire approval and pressure limits, while tubular is a separate glued tire system.",
       "button": "Tire systems"
     },
     "freehub": {

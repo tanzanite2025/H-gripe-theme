@@ -196,3 +196,32 @@ func TestPublicCartSummaryExposesMadeToOrderAvailabilityWithoutStock(t *testing.
 		t.Fatalf("made-to-order cart variant availability = %#v", publicItem.Variant)
 	}
 }
+
+func TestPublicCartSummaryIncludesSelectedRepairKitModelLabel(t *testing.T) {
+	variantID := uint(31)
+	publicSummary := PublicCartSummaryFromDomain(&productdomain.CartSummary{
+		ItemCount: 1,
+		Items: []productdomain.CartItem{{
+			ProductID:         30,
+			VariantID:         &variantID,
+			Quantity:          1,
+			PriceMinor:        2500,
+			Currency:          "USD",
+			ConfigurationData: []byte(`{"schema_version":1,"selections":[{"group_slug":"wheelset_model","value_keys":["dt-swiss:arc-1100-dicut-db-38"]}]}`),
+			Product: &productdomain.Product{
+				ID:   30,
+				Name: "DT spoke repair kit",
+				SpokeRepairKitModels: []productdomain.SpokeRepairKitModel{{
+					BrandSlug:         "dt-swiss",
+					BrandName:         "DT Swiss",
+					WheelsetModelSlug: "arc-1100-dicut-db-38",
+					WheelsetModelName: "ARC 1100 DICUT DB 38",
+				}},
+			},
+		}},
+	})
+
+	if got := publicSummary.Items[0].ConfigurationLabel; got != "DT Swiss / ARC 1100 DICUT DB 38" {
+		t.Fatalf("selected repair-kit model label = %q", got)
+	}
+}

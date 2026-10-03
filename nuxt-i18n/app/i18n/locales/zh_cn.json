@@ -1680,6 +1680,15 @@
         "title": "定制生产",
         "description": "该商品会在订单确认后开始生产，生产时间会叠加到物流时间，预计排期将随订单确认。",
         "cancellation": "仅可在生产或材料下料开始前申请取消。生产开始后，取消可能受限，并可能产生定制处理费用。"
+      },
+      "spokeRepairKit": {
+        "coverageEyebrow": "覆盖轮组型号",
+        "coverageTitle": "该修补包覆盖的轮组型号",
+        "coverageDescription": "下单时可从已记录的轮组型号中选择。打开型号链接，可以核对精确的辐条长度和条帽规格。",
+        "current": "现售",
+        "legacy": "旧型号",
+        "viewSpecs": "查看辐条长度",
+        "viewSpecsAria": "查看 {model} 的精确辐条规格"
       }
     }
   },

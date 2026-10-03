@@ -20,18 +20,22 @@ func newTestRouter(handler *Handler) *gin.Engine {
 	return router
 }
 
-func TestListModelsDoesNotExposePrivateRepairKitFields(t *testing.T) {
+func TestListModelsExposesSpokeAndNippleSpecificationsWithoutSourceFields(t *testing.T) {
 	recorder := httptest.NewRecorder()
 	request := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/wheelset-spoke-specs/models", nil)
 	newTestRouter(NewHandler()).ServeHTTP(recorder, request)
 
 	require.Equal(t, http.StatusOK, recorder.Code)
+	require.Equal(t, "public, max-age=86400, stale-while-revalidate=3600", recorder.Header().Get("Cache-Control"))
 	body := recorder.Body.String()
-	for _, forbidden := range []string{"lengthMm", "nippleModel", "nippleLengthMm", "sourceUrl", "verificationStatus"} {
+	for _, forbidden := range []string{"sourceUrl", "verificationStatus"} {
 		if strings.Contains(body, forbidden) {
 			t.Fatalf("public model index contains private field %q", forbidden)
 		}
 	}
+	require.Contains(t, body, `"lengthMm":285`)
+	require.Contains(t, body, `"nippleModel":"DT Pro Lock Hidden Aluminum"`)
+	require.Contains(t, body, `"nippleLengthMm":12`)
 
 	var payload struct {
 		Data struct {
@@ -50,26 +54,29 @@ func TestListModelsDoesNotExposePrivateRepairKitFields(t *testing.T) {
 	require.Contains(t, modelSlugs, "zipp-303-firecrest-b1")
 }
 
-func TestGetModelRequiresAuthentication(t *testing.T) {
+func TestGetModelAllowsAnonymousAccessAndCachesPublicSpecifications(t *testing.T) {
 	recorder := httptest.NewRecorder()
 	request := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/wheelset-spoke-specs/models/arc-1100-dicut-db-38", nil)
 	newTestRouter(NewHandler()).ServeHTTP(recorder, request)
 
-	require.Equal(t, http.StatusUnauthorized, recorder.Code)
-	require.Contains(t, recorder.Body.String(), "registration_required")
+	require.Equal(t, http.StatusOK, recorder.Code)
+	require.Equal(t, "public, max-age=86400, stale-while-revalidate=3600", recorder.Header().Get("Cache-Control"))
+	require.NotContains(t, recorder.Header().Get("Vary"), "Cookie")
+	require.NotContains(t, recorder.Header().Get("Vary"), "Authorization")
+	require.Contains(t, recorder.Body.String(), `"lengthMm":285`)
 }
 
-func TestGetModelReturnsOnlyRequestedPrivateRecord(t *testing.T) {
+func TestGetModelReturnsOnlyRequestedPublicRecord(t *testing.T) {
 	recorder := httptest.NewRecorder()
 	request := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/wheelset-spoke-specs/models/arc-1100-dicut-db-38", nil)
 	context, _ := gin.CreateTestContext(recorder)
 	context.Request = request
 	context.Params = gin.Params{{Key: "slug", Value: "arc-1100-dicut-db-38"}}
-	context.Set("user_id", uint(42))
 
 	NewHandler().GetModel(context)
 
 	require.Equal(t, http.StatusOK, recorder.Code)
+	require.Equal(t, "public, max-age=86400, stale-while-revalidate=3600", recorder.Header().Get("Cache-Control"))
 	body := recorder.Body.String()
 	require.Contains(t, body, `"slug":"arc-1100-dicut-db-38"`)
 	require.Contains(t, body, `"lengthMm":285`)
@@ -83,7 +90,6 @@ func TestGetShimanoModelReturnsRepairKitFields(t *testing.T) {
 	context, _ := gin.CreateTestContext(recorder)
 	context.Request = request
 	context.Params = gin.Params{{Key: "slug", Value: "wh-m8100-tl-29"}}
-	context.Set("user_id", uint(42))
 
 	NewHandler().GetModel(context)
 
@@ -102,7 +108,6 @@ func TestGetEnveModelPreservesFrontAndRearRimDepth(t *testing.T) {
 	context, _ := gin.CreateTestContext(recorder)
 	context.Request = request
 	context.Params = gin.Params{{Key: "slug", Value: "enve-ses-2-3-gen4"}}
-	context.Set("user_id", uint(42))
 
 	NewHandler().GetModel(context)
 
@@ -122,7 +127,6 @@ func TestGetZippModelKeepsGenerationInTitleAndReturnsRepairKitFields(t *testing.
 	context, _ := gin.CreateTestContext(recorder)
 	context.Request = request
 	context.Params = gin.Params{{Key: "slug", Value: "zipp-303-firecrest-b1"}}
-	context.Set("user_id", uint(42))
 
 	NewHandler().GetModel(context)
 

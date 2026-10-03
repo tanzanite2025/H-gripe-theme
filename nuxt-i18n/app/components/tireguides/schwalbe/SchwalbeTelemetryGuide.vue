@@ -12,7 +12,11 @@
     </header>
 
     <div class="schwalbe-telemetry__toolbar">
-      <div class="schwalbe-telemetry__tabs" role="tablist" :aria-label="tx('telemetryGuide.tabListLabel')">
+      <div
+        class="schwalbe-telemetry__tabs schwalbe-telemetry__tabs--desktop"
+        role="tablist"
+        :aria-label="tx('telemetryGuide.tabListLabel')"
+      >
         <button
           v-for="tab in tabs"
           :key="tab.id"
@@ -20,11 +24,64 @@
           role="tab"
           :aria-selected="activeTechTab === tab.id"
           :class="['schwalbe-telemetry__tab', { 'schwalbe-telemetry__tab--active': activeTechTab === tab.id }]"
-          @click="activeTechTab = tab.id"
+          @click="selectTechTab(tab.id)"
         >
           {{ tx(tab.labelKey) }}
         </button>
       </div>
+
+      <div class="schwalbe-telemetry__mobile-tabs">
+        <div
+          ref="mobileTabsRail"
+          class="schwalbe-telemetry__mobile-tab-rail"
+          role="region"
+          :aria-label="tx('telemetryGuide.tabListLabel')"
+          @scroll.passive="updateMobileTabGroup"
+        >
+          <div
+            v-for="(group, groupIndex) in mobileTabGroups"
+            :key="`mobile-tab-group-${groupIndex}`"
+            :data-mobile-tab-group="groupIndex"
+            class="schwalbe-telemetry__mobile-tab-group"
+            role="tablist"
+            :aria-label="tx('telemetryGuide.tabListLabel')"
+          >
+            <button
+              v-for="tab in group"
+              :key="tab.id"
+              type="button"
+              role="tab"
+              class="schwalbe-telemetry__tab schwalbe-telemetry__mobile-tab"
+              :aria-selected="activeTechTab === tab.id"
+              :class="{ 'schwalbe-telemetry__tab--active': activeTechTab === tab.id }"
+              @click="selectTechTab(tab.id)"
+            >
+              {{ tx(tab.labelKey) }}
+            </button>
+          </div>
+        </div>
+
+        <div
+          v-if="mobileTabGroups.length > 1"
+          class="tz-carousel-pagination schwalbe-telemetry__mobile-pagination"
+          role="tablist"
+          :aria-label="tx('telemetryGuide.mobileGroupListLabel')"
+        >
+          <button
+            v-for="(_group, groupIndex) in mobileTabGroups"
+            :key="`mobile-tab-dot-${groupIndex}`"
+            type="button"
+            class="tz-carousel-pagination__dot"
+            :class="{ 'is-active': activeMobileTabGroup === groupIndex }"
+            :aria-label="mobileTabGroupLabel(groupIndex)"
+            :aria-selected="activeMobileTabGroup === groupIndex"
+            :aria-current="activeMobileTabGroup === groupIndex ? 'true' : undefined"
+            role="tab"
+            @click="selectMobileTabGroup(groupIndex)"
+          />
+        </div>
+      </div>
+
       <button
         type="button"
         class="schwalbe-telemetry__toggle"
@@ -241,7 +298,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, useId, watch } from 'vue'
+import { computed, ref, useId, watch } from 'vue'
 import { useI18n } from '#imports'
 import { usePageMessages } from '~/composables/usePageMessages'
 
@@ -265,6 +322,84 @@ const tabs: Array<{ id: TelemetryTab; labelKey: string }> = [
   { id: 'compound', labelKey: 'telemetryGuide.tabs.compound' },
   { id: 'addix', labelKey: 'telemetryGuide.tabs.addix' },
 ]
+
+const mobileTabsPerGroup = 2
+const mobileTabGroups = computed(() => {
+  const groups: Array<Array<{ id: TelemetryTab; labelKey: string }>> = []
+  for (let index = 0; index < tabs.length; index += mobileTabsPerGroup) {
+    groups.push(tabs.slice(index, index + mobileTabsPerGroup))
+  }
+  return groups
+})
+const mobileTabsRail = ref<HTMLElement | null>(null)
+const activeMobileTabGroup = ref(0)
+
+const mobileTabGroupLabel = (groupIndex: number) => tx('telemetryGuide.mobileGroupLabel', {
+  group: groupIndex + 1,
+})
+
+const tabGroupIndex = (tabId: TelemetryTab) => {
+  const tabIndex = tabs.findIndex(tab => tab.id === tabId)
+  return tabIndex >= 0 ? Math.floor(tabIndex / mobileTabsPerGroup) : 0
+}
+
+const scrollMobileTabGroup = (groupIndex: number) => {
+  const rail = mobileTabsRail.value
+  if (!rail || rail.clientWidth === 0) return
+
+  const group = rail.querySelector<HTMLElement>(
+    `[data-mobile-tab-group="${groupIndex}"]`,
+  )
+  if (!group) return
+
+  group.scrollIntoView({
+    behavior: 'smooth',
+    block: 'nearest',
+    inline: 'start',
+  })
+}
+
+const selectTechTab = (tabId: TelemetryTab) => {
+  activeTechTab.value = tabId
+  const groupIndex = tabGroupIndex(tabId)
+  activeMobileTabGroup.value = groupIndex
+  scrollMobileTabGroup(groupIndex)
+}
+
+const selectMobileTabGroup = (groupIndex: number) => {
+  const group = mobileTabGroups.value[groupIndex]
+  const firstTab = group?.[0]
+  if (!firstTab) return
+
+  activeMobileTabGroup.value = groupIndex
+  activeTechTab.value = firstTab.id
+  scrollMobileTabGroup(groupIndex)
+}
+
+const updateMobileTabGroup = () => {
+  const rail = mobileTabsRail.value
+  if (!rail) return
+
+  const groups = [...rail.querySelectorAll<HTMLElement>('[data-mobile-tab-group]')]
+  if (!groups.length) return
+
+  const railCenter = rail.getBoundingClientRect().left + rail.clientWidth / 2
+  const closestGroupIndex = groups.reduce((closestIndex, group, groupIndex) => {
+    const currentGroup = groups[closestIndex]
+    if (!currentGroup) return groupIndex
+
+    const groupCenter = group.getBoundingClientRect().left + group.clientWidth / 2
+    const currentCenter = currentGroup.getBoundingClientRect().left + currentGroup.clientWidth / 2
+    return Math.abs(groupCenter - railCenter) < Math.abs(currentCenter - railCenter)
+      ? groupIndex
+      : closestIndex
+  }, 0)
+
+  if (closestGroupIndex === activeMobileTabGroup.value) return
+  activeMobileTabGroup.value = closestGroupIndex
+  const firstTab = mobileTabGroups.value[closestGroupIndex]?.[0]
+  if (firstTab) activeTechTab.value = firstTab.id
+}
 
 const radialGuides = [
   { key: 'casing' },
@@ -477,6 +612,10 @@ const compoundCatalogGuides = [
   border-radius: 0.75rem;
   background: var(--tz-surface-subtle);
   padding: 0.25rem;
+}
+
+.schwalbe-telemetry__mobile-tabs {
+  display: none;
 }
 
 .schwalbe-telemetry__tab,
@@ -864,9 +1003,54 @@ const compoundCatalogGuides = [
 }
 
 @media (max-width: 520px) {
-  .schwalbe-telemetry__tabs {
+  .schwalbe-telemetry__tabs--desktop {
+    display: none;
+  }
+
+  .schwalbe-telemetry__mobile-tabs {
     display: grid;
+    min-width: 0;
+    flex: 1 1 100%;
+    gap: 0.15rem;
+  }
+
+  .schwalbe-telemetry__mobile-tab-rail {
+    display: flex;
+    min-width: 0;
+    padding: 0.25rem 0;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    scroll-padding-inline: 0.25rem;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-x;
+  }
+
+  .schwalbe-telemetry__mobile-tab-rail::-webkit-scrollbar {
+    display: none;
+  }
+
+  .schwalbe-telemetry__mobile-tab-group {
+    display: grid;
+    min-width: 100%;
+    flex: 0 0 100%;
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.25rem;
+    scroll-snap-align: start;
+  }
+
+  .schwalbe-telemetry__mobile-tab {
+    width: 100%;
+  }
+
+  .schwalbe-telemetry__mobile-pagination {
+    min-height: 2.25rem;
+  }
+
+  .schwalbe-telemetry__mobile-pagination .tz-carousel-pagination__dot {
+    --tz-carousel-pagination-dot-width: 0.5rem;
+    --tz-carousel-pagination-dot-height: 0.5rem;
   }
 
   .schwalbe-telemetry__tab {

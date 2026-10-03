@@ -6,35 +6,39 @@
       <p class="wheelset-spoke-lookup__intro">{{ t('brandWheelsetSpokeSpecs.intro') }}</p>
     </header>
 
-    <aside class="wheelset-spoke-lookup__brand-note">
-      <strong>{{ t('brandWheelsetSpokeSpecs.shimanoNoteTitle') }}</strong>
-      <p>{{ t('brandWheelsetSpokeSpecs.shimanoNoteBody') }}</p>
-    </aside>
-
     <section class="wheelset-spoke-lookup__filters" :aria-label="t('brandWheelsetSpokeSpecs.filterTitle')">
       <h2>{{ t('brandWheelsetSpokeSpecs.filterTitle') }}</h2>
 
-      <div class="wheelset-spoke-lookup__brand-strip" role="group" :aria-label="t('brandWheelsetSpokeSpecs.brandLabel')">
-        <button
-          type="button"
-          class="wheelset-spoke-lookup__brand-pill"
-          :class="{ 'is-active': !selectedBrand }"
-          :aria-pressed="!selectedBrand"
-          @click="selectedBrand = ''"
+      <div class="wheelset-spoke-lookup__brand-controls">
+        <div class="wheelset-spoke-lookup__brand-strip" role="group" :aria-label="t('brandWheelsetSpokeSpecs.brandLabel')">
+          <button
+            type="button"
+            class="wheelset-spoke-lookup__brand-pill"
+            :class="{ 'is-active': !selectedBrand }"
+            :aria-pressed="!selectedBrand"
+            @click="selectedBrand = ''"
+          >
+            {{ t('brandWheelsetSpokeSpecs.allBrands') }}
+          </button>
+          <button
+            v-for="brand in brandOptions"
+            :key="brand.slug"
+            type="button"
+            class="wheelset-spoke-lookup__brand-pill"
+            :class="{ 'is-active': selectedBrand === brand.slug }"
+            :aria-pressed="selectedBrand === brand.slug"
+            @click="selectedBrand = brand.slug"
+          >
+            {{ brand.name }}
+          </button>
+        </div>
+
+        <a
+          href="#brand-wheelset-spoke-repair-kit-products"
+          class="wheelset-spoke-lookup__products-jump"
         >
-          {{ t('brandWheelsetSpokeSpecs.allBrands') }}
-        </button>
-        <button
-          v-for="brand in brandOptions"
-          :key="brand.slug"
-          type="button"
-          class="wheelset-spoke-lookup__brand-pill"
-          :class="{ 'is-active': selectedBrand === brand.slug }"
-          :aria-pressed="selectedBrand === brand.slug"
-          @click="selectedBrand = brand.slug"
-        >
-          {{ brand.name }}
-        </button>
+          {{ t('brandWheelsetSpokeSpecs.products.jumpToProducts') }}
+        </a>
       </div>
 
       <label class="wheelset-spoke-lookup__search">
@@ -46,60 +50,6 @@
           autocomplete="off"
         >
       </label>
-    </section>
-
-    <section
-      id="spoke-specs-gated-content"
-      class="wheelset-spoke-lookup__gated spoke-specs-gated-content"
-      aria-live="polite"
-      :aria-label="t('brandWheelsetSpokeSpecs.gatedTitle')"
-    >
-      <div class="wheelset-spoke-lookup__gated-heading">
-        <div>
-          <p class="wheelset-spoke-lookup__gated-eyebrow">{{ t('brandWheelsetSpokeSpecs.gatedEyebrow') }}</p>
-          <h2>{{ detailModel?.model || t('brandWheelsetSpokeSpecs.gatedTitle') }}</h2>
-        </div>
-        <span v-if="detailModel" class="wheelset-spoke-lookup__gated-status">{{ t('brandWheelsetSpokeSpecs.specLoaded') }}</span>
-      </div>
-
-      <div v-if="detailModel" class="wheelset-spoke-lookup__detail">
-        <div class="wheelset-spoke-lookup__detail-meta">
-          <span>{{ t('brandWheelsetSpokeSpecs.rimDepth') }}: <strong>{{ formatRimDepth(detailModel.rim) }}</strong></span>
-          <span v-if="detailModel.lifecycleStatus === 'legacy'" class="wheelset-spoke-lookup__legacy-badge">{{ t('brandWheelsetSpokeSpecs.legacyModel') }}</span>
-        </div>
-        <div class="wheelset-spoke-lookup__detail-grid">
-          <article v-for="position in wheelPositions" :key="position" class="wheelset-spoke-lookup__detail-wheel">
-            <h3>{{ t(position === 'front' ? 'brandWheelsetSpokeSpecs.frontWheel' : 'brandWheelsetSpokeSpecs.rearWheel') }}</h3>
-            <template v-if="detailWheelForPosition(detailModel, position)">
-              <p class="wheelset-spoke-lookup__detail-line">
-                {{ t('brandWheelsetSpokeSpecs.spokeCount', { count: detailWheelForPosition(detailModel, position)!.spokeCount }) }}
-                · {{ compactLacingPattern(detailWheelForPosition(detailModel, position)!.lacingPattern) }}
-              </p>
-              <p class="wheelset-spoke-lookup__detail-line">
-                <strong>{{ spokeSummary(detailWheelForPosition(detailModel, position)!).models.join(' / ') }}</strong>
-                · {{ spokeSummary(detailWheelForPosition(detailModel, position)!).headTypes.map(headType => t(headTypeMessageKey(headType))).join(' / ') }}
-              </p>
-              <p class="wheelset-spoke-lookup__detail-length">
-                {{ t('brandWheelsetSpokeSpecs.spokeLength') }}: {{ spokeSummary(detailWheelForPosition(detailModel, position)!).lengthsMm.length ? spokeSummary(detailWheelForPosition(detailModel, position)!).lengthsMm.map(length => length + ' mm').join(' · ') : '—' }}
-              </p>
-            </template>
-          </article>
-        </div>
-        <div class="wheelset-spoke-lookup__nipple-detail">
-          <span>{{ t('brandWheelsetSpokeSpecs.nippleColumn') }}</span>
-          <strong>{{ detailModel.nippleModel }}</strong>
-          <b v-if="detailModel.nippleLengthMm !== null">{{ detailModel.nippleLengthMm }} mm</b>
-          <b v-else>—</b>
-        </div>
-      </div>
-
-      <div v-else class="wheelset-spoke-lookup__login-prompt">
-        <p>{{ selectedModel ? t('brandWheelsetSpokeSpecs.loginPromptForModel', { model: selectedModel.model }) : t('brandWheelsetSpokeSpecs.loginPrompt') }}</p>
-        <button type="button" class="wheelset-spoke-lookup__login-button" @click="openAuth('login')">
-          {{ t('brandWheelsetSpokeSpecs.loginToView') }}
-        </button>
-      </div>
-      <p v-if="requestError" class="wheelset-spoke-lookup__request-error" role="alert">{{ requestError }}</p>
     </section>
 
     <section class="wheelset-spoke-lookup__matrix" :aria-label="t('brandWheelsetSpokeSpecs.matrixTitle')">
@@ -120,6 +70,7 @@
               <th scope="col">{{ t('brandWheelsetSpokeSpecs.holeCrossingColumn') }}</th>
               <th scope="col">{{ t('brandWheelsetSpokeSpecs.frontWheel') }}</th>
               <th scope="col">{{ t('brandWheelsetSpokeSpecs.rearWheel') }}</th>
+              <th scope="col">{{ t('brandWheelsetSpokeSpecs.nippleColumn') }}</th>
             </tr>
           </thead>
           <tbody>
@@ -133,17 +84,7 @@
                   <span class="wheelset-spoke-lookup__brand-mark" :class="{ 'is-dt-swiss': wheelset.brandSlug === 'dt-swiss' }">{{ brandMark(wheelset.brandName, wheelset.brandSlug) }}</span>
                   <span class="wheelset-spoke-lookup__model-copy">
                     <span class="wheelset-spoke-lookup__model-title">
-                      <button
-                        type="button"
-                        class="wheelset-spoke-lookup__model-select"
-                        :class="{ 'is-selected': selectedSlug === wheelset.slug }"
-                        :disabled="loadingSlug === wheelset.slug"
-                        :aria-busy="loadingSlug === wheelset.slug"
-                        :aria-pressed="selectedSlug === wheelset.slug"
-                        @click="selectModel(wheelset)"
-                      >
-                        <strong>{{ wheelset.model }}</strong>
-                      </button>
+                      <strong>{{ wheelset.model }}</strong>
                       <span v-if="wheelset.lifecycleStatus === 'legacy'" class="wheelset-spoke-lookup__legacy-badge">
                         {{ t('brandWheelsetSpokeSpecs.legacyModel') }}
                       </span>
@@ -169,14 +110,23 @@
                 <div v-if="wheelForPosition(wheelset, position)" class="wheelset-spoke-lookup__spoke-summary">
                   <strong>{{ spokeSummary(wheelForPosition(wheelset, position)!).models.join(' / ') }}</strong>
                   <span>{{ spokeSummary(wheelForPosition(wheelset, position)!).headTypes.map(headType => t(headTypeMessageKey(headType))).join(' / ') }}</span>
+                  <span class="wheelset-spoke-lookup__spoke-lengths">
+                    {{ t('brandWheelsetSpokeSpecs.spokeLength') }}: {{ formatSpokeSideLengths(wheelForPosition(wheelset, position)!) }}
+                  </span>
                 </div>
                 <span v-else class="wheelset-spoke-lookup__empty-value">—</span>
+              </td>
+
+              <td class="wheelset-spoke-lookup__nipple-cell">
+                <strong>{{ wheelset.nippleModel || t('brandWheelsetSpokeSpecs.missingValue') }}</strong>
+                <span v-if="wheelset.nippleLengthMm !== null">{{ wheelset.nippleLengthMm }} mm</span>
+                <span v-else>{{ t('brandWheelsetSpokeSpecs.missingValue') }}</span>
               </td>
 
             </tr>
 
             <tr v-if="filteredWheelsets.length === 0" class="wheelset-spoke-lookup__empty-row">
-              <td colspan="5"><p role="status">{{ t('brandWheelsetSpokeSpecs.emptyState') }}</p></td>
+              <td colspan="6"><p role="status">{{ t('brandWheelsetSpokeSpecs.emptyState') }}</p></td>
             </tr>
           </tbody>
         </table>
@@ -241,14 +191,8 @@
       </nav>
     </section>
 
-    <LazyAuthModal
-      v-if="showAuthModal"
-      v-model="showAuthModal"
-      :default-mode="authMode"
-      embedded
-      @mode-change="authMode = $event"
-      @success="handleAuthSuccess"
-    />
+    <BrandWheelsetSpokeRepairKitProductsSection />
+
   </div>
 </template>
 
@@ -262,13 +206,14 @@ import {
   useRouter,
   useSwitchLocalePath,
 } from '#imports'
-import { ApiRequestError, useApiRequest } from '~/composables/useApiRequest'
-import { useAuth } from '~/composables/useAuth'
+import { useApiRequest } from '~/composables/useApiRequest'
+import BrandWheelsetSpokeRepairKitProductsSection from '~/components/BrandWheelsetSpokeRepairKitProductsSection.vue'
 import {
   publicBrandWheelsetSpokeCatalogs,
   type PublicBrandSpokeHeadType,
   type PublicBrandWheelPosition,
   type PublicBrandWheelPositionSpokeSpec,
+  type PublicBrandWheelSideSpokeSpec,
   type PublicBrandWheelsetRecord,
 } from '~/data/brand-wheelset-spoke-specs/brand-wheelset-spoke-specs-public-catalog'
 import { usePageMessages } from '~/composables/usePageMessages'
@@ -283,25 +228,16 @@ type WheelsetEntry = PublicBrandWheelsetRecord & {
   brandSlug: string
   brandName: string
 }
-type SpokeSide = {
-  side: string
-  spokeModel: string
-  headType: PublicBrandSpokeHeadType
-  lengthMm?: number | null
-}
-type DetailWheel = Omit<PublicBrandWheelPositionSpokeSpec, 'sides'> & {
-  sides: SpokeSide[]
-}
-type WheelsetDetail = Omit<WheelsetEntry, 'wheels'> & {
-  wheels: DetailWheel[]
-  nippleModel: string
-  nippleLengthMm: number | null
-}
 
 definePageMeta({
   layout: 'products',
   footerLabelKey: 'brandWheelsetSpokeSpecs.navLabel',
   footerLabelFallback: 'Complete Wheelset Spoke Specs',
+  pageTitleKey: 'brandWheelsetSpokeSpecs.title',
+  pageTitle: 'Wheelset Spoke and Nipple Specifications',
+  feedbackThreadKey: 'resources-brand-wheelset-spoke-specs',
+  feedbackTitleKey: 'brandWheelsetSpokeSpecs.feedbackTitle',
+  feedbackTitle: 'Share your feedback about the Wheelset Spoke Specs',
 })
 
 const searchTerm = ref('')
@@ -315,24 +251,20 @@ const switchLocalePath = useSwitchLocalePath()
 const { canonicalUrl } = useStorefrontSeoLinks()
 const { loadPageMessages } = usePageMessages('brandWheelsetSpokeSpecs')
 const { request } = useApiRequest()
-const auth = useAuth()
-const authMode = ref<'login' | 'register'>('login')
-const showAuthModal = ref(false)
-const pendingSlug = ref('')
-const selectedSlug = ref('')
-const loadingSlug = ref('')
-const requestError = ref('')
 
 await loadPageMessages(locale.value)
 watch(locale, nextLocale => void loadPageMessages(nextLocale))
 
-const fallbackWheelsets = publicBrandWheelsetSpokeCatalogs.flatMap(catalog => (
-  catalog.wheelsets.map(wheelset => ({
-    ...wheelset,
-    brandSlug: catalog.brandSlug,
-    brandName: catalog.brandName,
-  }))
-))
+const fallbackWheelsets = publicBrandWheelsetSpokeCatalogs
+  .filter(catalog => catalog.publicationStatus === 'published')
+  .flatMap(catalog => (
+    catalog.wheelsets.map(wheelset => ({
+      ...wheelset,
+      brandSlug: catalog.brandSlug,
+      brandName: catalog.brandName,
+    }))
+  ))
+  .sort((left, right) => left.model.toLocaleLowerCase().localeCompare(right.model.toLocaleLowerCase()))
 const publicWheelsets = ref<WheelsetEntry[]>(fallbackWheelsets)
 
 const unwrapPublicModels = (payload: unknown): WheelsetEntry[] => {
@@ -348,13 +280,23 @@ const unwrapPublicModels = (payload: unknown): WheelsetEntry[] => {
   ))
 }
 
+const allModelsExposePublicSpokeAndNippleSpecifications = (models: WheelsetEntry[]) => models.every(model => (
+  typeof model.nippleModel === 'string'
+  && Object.prototype.hasOwnProperty.call(model, 'nippleLengthMm')
+  && model.wheels.every(wheel => wheel.sides.every(side => (
+    Object.prototype.hasOwnProperty.call(side, 'lengthMm')
+  )))
+))
+
 try {
   const payload = await request<unknown>('/wheelset-spoke-specs/models', {}, 'Failed to load wheelset model index')
   const models = unwrapPublicModels(payload)
-  if (models.length > 0) publicWheelsets.value = models
+  // Keep the generated SSR catalog as the source of complete visible specs
+  // during a rolling deploy if an older API replica returns the former shape.
+  if (models.length > 0 && allModelsExposePublicSpokeAndNippleSpecifications(models)) publicWheelsets.value = models
 } catch (_) {
-  // The safe public fallback keeps the page usable during a local backend
-  // restart. Exact specifications never fall back to client-side data.
+  // The generated fallback keeps all published table data in SSR during a
+  // local backend restart.
 }
 
 const brandOptions = computed(() => [...new Map(publicWheelsets.value.map(wheelset => [
@@ -370,7 +312,10 @@ const filteredWheelsets = computed(() => wheelsetEntries.value.filter((wheelset)
   const searchable = [
     wheelset.brandName,
     wheelset.model,
-    ...wheelset.wheels.flatMap(wheel => wheel.sides.map(side => side.spokeModel)),
+    ...wheelset.wheels.flatMap(wheel => wheel.sides.flatMap(side => [
+      side.spokeModel,
+      typeof side.lengthMm === 'number' ? String(side.lengthMm) : '',
+    ])),
   ].join(' ').toLocaleLowerCase()
   return searchable.includes(normalizedSearch.value)
 }))
@@ -385,7 +330,24 @@ const requestedPage = computed(() => {
   return Number.isSafeInteger(page) && page > 0 ? page : 1
 })
 const totalPages = computed(() => Math.max(1, Math.ceil(filteredWheelsets.value.length / wheelsetPageSize)))
-const currentPage = computed(() => Math.min(requestedPage.value, totalPages.value))
+const requestedModelSlug = computed(() => {
+  const rawModel = Array.isArray(route.query.model) ? route.query.model[0] : route.query.model
+  return typeof rawModel === 'string' ? rawModel.trim() : ''
+})
+const requestedModelIndex = computed(() => (
+  requestedModelSlug.value
+    ? wheelsetEntries.value.findIndex(wheelset => wheelset.slug === requestedModelSlug.value)
+    : -1
+))
+const requestedModelPage = computed(() => (
+  requestedModelIndex.value >= 0
+    ? Math.floor(requestedModelIndex.value / wheelsetPageSize) + 1
+    : null
+))
+const currentPage = computed(() => Math.min(
+  requestedModelPage.value || requestedPage.value,
+  totalPages.value,
+))
 const paginatedWheelsets = computed(() => {
   const start = (currentPage.value - 1) * wheelsetPageSize
   return filteredWheelsets.value.slice(start, start + wheelsetPageSize)
@@ -410,6 +372,7 @@ const paginationPages = computed<PaginationToken[]>(() => {
 })
 const pageQuery = (page: number) => {
   const query = { ...route.query }
+  delete query.model
   if (page <= 1) delete query.page
   else query.page = String(page)
   return { query }
@@ -453,28 +416,29 @@ watch([totalPages, requestedPage], ([pages, requested]) => {
   void router.replace({ query: nextQuery })
 }, { immediate: true })
 
-const detailBySlug = ref<Record<string, WheelsetDetail>>({})
-const selectedModel = computed(() => wheelsetEntries.value.find(wheelset => wheelset.slug === selectedSlug.value) || null)
-const detailModel = computed(() => detailBySlug.value[selectedSlug.value] || null)
-
 const wheelForPosition = (
   wheelset: WheelsetEntry,
   position: PublicBrandWheelPosition,
 ): PublicBrandWheelPositionSpokeSpec | undefined => wheelset.wheels.find(wheel => wheel.position === position)
-const detailWheelForPosition = (
-  wheelset: WheelsetDetail,
-  position: PublicBrandWheelPosition,
-): DetailWheel | undefined => wheelset.wheels.find(wheel => wheel.position === position)
 
-const spokeSummary = (wheel: { spokeCount: number; lacingPattern: string; sides: SpokeSide[] }) => ({
+const spokeSummary = (wheel: { spokeCount: number; lacingPattern: string; sides: PublicBrandWheelSideSpokeSpec[] }) => ({
   models: [...new Set(wheel.sides.map(side => side.spokeModel))],
   headTypes: [...new Set(wheel.sides.map(side => side.headType))],
-  lengthsMm: [...new Set(wheel.sides
-    .map(side => side.lengthMm)
-    .filter((length): length is number => typeof length === 'number'))].sort((a, b) => a - b),
   spokeCount: wheel.spokeCount,
   lacingPattern: wheel.lacingPattern,
 })
+
+const formatSpokeSideLengths = (wheel: { sides: PublicBrandWheelSideSpokeSpec[] }) => wheel.sides.map((side) => {
+  const sideLabel = side.side === 'left'
+    ? t('brandWheelsetSpokeSpecs.leftSide')
+    : side.side === 'right'
+      ? t('brandWheelsetSpokeSpecs.rightSide')
+      : side.side
+  const length = typeof side.lengthMm === 'number'
+    ? `${side.lengthMm} mm`
+    : t('brandWheelsetSpokeSpecs.missingValue')
+  return `${sideLabel}: ${length}`
+}).join(' · ')
 
 const compactLacingPattern = (pattern: string) => [...new Set(
   pattern.split('/').map(value => value.trim()).filter(Boolean),
@@ -507,58 +471,6 @@ const brandMark = (brandName: string, brandSlug: string) => (
           : brandName.split(/\s+/).map(part => part[0]).join('').slice(0, 2).toUpperCase()
 )
 
-const openAuth = (mode: 'login' | 'register') => {
-  authMode.value = mode
-  showAuthModal.value = true
-}
-
-const loadModelDetail = async (slug: string) => {
-  if (!slug || detailBySlug.value[slug]) return
-  loadingSlug.value = slug
-  requestError.value = ''
-  try {
-    const payload = await auth.request<unknown>(`/wheelset-spoke-specs/models/${encodeURIComponent(slug)}`, {
-      headers: { Accept: 'application/json' },
-    }, 'Failed to load wheelset repair-kit specifications')
-    const root = payload && typeof payload === 'object' ? payload as { data?: { model?: unknown } } : {}
-    const model = root.data?.model
-    if (!model || typeof model !== 'object') throw new Error('The wheelset specification response was empty.')
-    detailBySlug.value = { ...detailBySlug.value, [slug]: model as WheelsetDetail }
-  } catch (error) {
-    if (error instanceof ApiRequestError && error.status === 401) {
-      pendingSlug.value = slug
-      openAuth('login')
-    } else if (error instanceof ApiRequestError && error.status === 429) {
-      requestError.value = t('brandWheelsetSpokeSpecs.rateLimited')
-    } else {
-      requestError.value = error instanceof Error ? error.message : t('brandWheelsetSpokeSpecs.requestFailed')
-    }
-  } finally {
-    loadingSlug.value = ''
-  }
-}
-
-const selectModel = async (wheelset: WheelsetEntry) => {
-  selectedSlug.value = wheelset.slug
-  requestError.value = ''
-  if (detailBySlug.value[wheelset.slug]) return
-
-  const session = auth.user.value || await auth.ensureSession()
-  if (!session) {
-    pendingSlug.value = wheelset.slug
-    openAuth('login')
-    return
-  }
-  await loadModelDetail(wheelset.slug)
-}
-
-const handleAuthSuccess = async () => {
-  showAuthModal.value = false
-  const slug = pendingSlug.value || selectedSlug.value
-  pendingSlug.value = ''
-  if (slug) await loadModelDetail(slug)
-}
-
 const itemList = computed(() => paginatedWheelsets.value.map((wheelset, index) => ({
   '@type': 'ListItem',
   position: index + 1,
@@ -574,13 +486,7 @@ const collectionSchema = computed(() => ({
   name: t('brandWheelsetSpokeSpecs.seoTitle'),
   description: t('brandWheelsetSpokeSpecs.seoDescription'),
   inLanguage: localeManifest.find(entry => entry.code === locale.value)?.iso || locale.value,
-  isAccessibleForFree: false,
-  hasPart: {
-    '@type': 'WebPageElement',
-    '@id': canonicalUrl.value + '#spoke-specs-gated-content',
-    cssSelector: '.spoke-specs-gated-content',
-    isAccessibleForFree: false,
-  },
+  isAccessibleForFree: true,
   mainEntity: {
     '@type': 'ItemList',
     itemListOrder: 'https://schema.org/ItemListOrderAscending',
@@ -641,7 +547,6 @@ useHead(() => ({
 }
 
 .wheelset-spoke-lookup__header,
-.wheelset-spoke-lookup__brand-note,
 .wheelset-spoke-lookup__filters,
 .wheelset-spoke-lookup__matrix {
   min-width: 0;
@@ -681,27 +586,6 @@ useHead(() => ({
   line-height: 1.5;
 }
 
-.wheelset-spoke-lookup__brand-note {
-  display: grid;
-  gap: 0.3rem;
-  padding: 0.9rem 1.2rem;
-  border-left: 3px solid #dc2626;
-  background: #fff;
-}
-
-.wheelset-spoke-lookup__brand-note strong {
-  color: var(--spoke-ink);
-  font-size: 0.78rem;
-  font-weight: 850;
-}
-
-.wheelset-spoke-lookup__brand-note p {
-  margin: 0;
-  color: var(--spoke-muted);
-  font-size: 0.76rem;
-  line-height: 1.55;
-}
-
 .wheelset-spoke-lookup__filters {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(15rem, 25rem);
@@ -725,6 +609,41 @@ useHead(() => ({
   overflow-x: auto;
   padding: 0.1rem 0.1rem 0.3rem;
   scrollbar-width: thin;
+}
+
+.wheelset-spoke-lookup__brand-controls {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.wheelset-spoke-lookup__brand-controls .wheelset-spoke-lookup__brand-strip {
+  flex: 1 1 auto;
+}
+
+.wheelset-spoke-lookup__products-jump {
+  display: inline-flex;
+  flex: 0 0 auto;
+  min-height: 2rem;
+  align-items: center;
+  justify-content: center;
+  padding: 0.38rem 0.75rem;
+  border: 1px solid rgba(37, 99, 235, 0.28);
+  border-radius: 999px;
+  background: rgba(37, 99, 235, 0.08);
+  color: #1d4ed8;
+  font-size: 0.7rem;
+  font-weight: 800;
+  line-height: 1.25;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: border-color 0.16s ease, background-color 0.16s ease, color 0.16s ease;
+}
+
+.wheelset-spoke-lookup__products-jump:hover {
+  border-color: rgba(37, 99, 235, 0.5);
+  background: rgba(37, 99, 235, 0.14);
 }
 
 .wheelset-spoke-lookup__brand-pill {
@@ -768,6 +687,7 @@ useHead(() => ({
 
 .wheelset-spoke-lookup__search input:focus-visible,
 .wheelset-spoke-lookup__brand-pill:focus-visible,
+.wheelset-spoke-lookup__products-jump:focus-visible,
 .wheelset-spoke-lookup__table-scroll:focus-visible {
   outline: 3px solid rgba(37, 99, 235, 0.28);
   outline-offset: 2px;
@@ -891,11 +811,12 @@ useHead(() => ({
   white-space: nowrap;
 }
 
-.wheelset-spoke-lookup__table thead th:nth-child(1) { width: 24%; }
-.wheelset-spoke-lookup__table thead th:nth-child(2) { width: 10%; }
-.wheelset-spoke-lookup__table thead th:nth-child(3) { width: 20%; }
-.wheelset-spoke-lookup__table thead th:nth-child(4) { width: 23%; }
-.wheelset-spoke-lookup__table thead th:nth-child(5) { width: 23%; }
+.wheelset-spoke-lookup__table thead th:nth-child(1) { width: 22%; }
+.wheelset-spoke-lookup__table thead th:nth-child(2) { width: 8%; }
+.wheelset-spoke-lookup__table thead th:nth-child(3) { width: 15%; }
+.wheelset-spoke-lookup__table thead th:nth-child(4) { width: 19%; }
+.wheelset-spoke-lookup__table thead th:nth-child(5) { width: 19%; }
+.wheelset-spoke-lookup__table thead th:nth-child(6) { width: 17%; }
 
 .wheelset-spoke-lookup__table tbody tr:last-child > * {
   border-bottom: 0;
@@ -945,29 +866,6 @@ useHead(() => ({
   flex-wrap: wrap;
   gap: 0.4rem;
   min-width: 0;
-}
-
-.wheelset-spoke-lookup__model-select {
-  min-width: 0;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: inherit;
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-}
-
-.wheelset-spoke-lookup__model-select:hover strong,
-.wheelset-spoke-lookup__model-select.is-selected strong {
-  color: var(--spoke-blue);
-  text-decoration: underline;
-  text-underline-offset: 0.14em;
-}
-
-.wheelset-spoke-lookup__model-select:disabled {
-  cursor: wait;
-  opacity: 0.68;
 }
 
 .wheelset-spoke-lookup__legacy-badge {
@@ -1044,6 +942,11 @@ useHead(() => ({
   line-height: 1.45;
 }
 
+.wheelset-spoke-lookup__spoke-summary .wheelset-spoke-lookup__spoke-lengths {
+  color: var(--spoke-blue);
+  font-weight: 800;
+}
+
 .wheelset-spoke-lookup__nipple-cell strong,
 .wheelset-spoke-lookup__nipple-cell > span {
   display: block;
@@ -1054,173 +957,6 @@ useHead(() => ({
   color: var(--spoke-blue);
   font-size: 0.72rem;
   font-weight: 800;
-}
-
-.wheelset-spoke-lookup__login-button {
-  min-height: 2.15rem;
-  padding: 0.42rem 0.7rem;
-  border: 1px solid rgba(37, 99, 235, 0.35);
-  border-radius: 0.65rem;
-  background: rgba(37, 99, 235, 0.08);
-  color: #1d4ed8;
-  font: inherit;
-  font-size: 0.67rem;
-  font-weight: 800;
-  line-height: 1.3;
-  cursor: pointer;
-  transition: border-color 0.16s ease, background-color 0.16s ease, color 0.16s ease;
-}
-
-.wheelset-spoke-lookup__login-button:hover {
-  border-color: #1d4ed8;
-  background: #1d4ed8;
-  color: #fff;
-}
-
-.wheelset-spoke-lookup__gated {
-  min-width: 0;
-  border: 1px solid var(--spoke-line);
-  border-radius: 1.35rem;
-  background: var(--spoke-panel);
-  box-shadow: 0 8px 24px -18px rgba(15, 23, 42, 0.24);
-  overflow: hidden;
-}
-
-.wheelset-spoke-lookup__gated-heading {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.8rem;
-  padding: 1rem 1.2rem;
-  border-bottom: 1px solid var(--spoke-line);
-  background: var(--spoke-wash);
-}
-
-.wheelset-spoke-lookup__gated-heading h2 {
-  margin: 0;
-  color: var(--spoke-ink);
-  font-size: 0.95rem;
-  font-weight: 850;
-}
-
-.wheelset-spoke-lookup__gated-eyebrow {
-  margin: 0 0 0.2rem;
-  color: var(--spoke-blue);
-  font-size: 0.62rem;
-  font-weight: 850;
-  letter-spacing: 0.08em;
-}
-
-.wheelset-spoke-lookup__gated-status {
-  flex: 0 0 auto;
-  color: #166534;
-  font-size: 0.68rem;
-  font-weight: 800;
-}
-
-.wheelset-spoke-lookup__login-prompt {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 1rem 1.2rem 1.15rem;
-}
-
-.wheelset-spoke-lookup__login-prompt p {
-  max-width: 48rem;
-  margin: 0;
-  color: var(--spoke-muted);
-  font-size: 0.78rem;
-  line-height: 1.55;
-}
-
-.wheelset-spoke-lookup__login-button {
-  flex: 0 0 auto;
-  background: #1d4ed8;
-  color: #fff;
-}
-
-.wheelset-spoke-lookup__detail {
-  padding: 1rem 1.2rem 1.2rem;
-}
-
-.wheelset-spoke-lookup__detail-meta {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 0.55rem;
-  color: var(--spoke-muted);
-  font-size: 0.72rem;
-}
-
-.wheelset-spoke-lookup__detail-meta strong {
-  color: var(--spoke-ink);
-}
-
-.wheelset-spoke-lookup__detail-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.75rem;
-  margin-top: 0.85rem;
-}
-
-.wheelset-spoke-lookup__detail-wheel {
-  min-width: 0;
-  padding: 0.8rem;
-  border: 1px solid var(--spoke-line);
-  border-radius: 0.8rem;
-  background: #fbfdff;
-}
-
-.wheelset-spoke-lookup__detail-wheel h3 {
-  margin: 0 0 0.35rem;
-  color: var(--spoke-ink);
-  font-size: 0.74rem;
-  font-weight: 850;
-}
-
-.wheelset-spoke-lookup__detail-line,
-.wheelset-spoke-lookup__detail-length {
-  margin: 0.2rem 0 0;
-  color: #475569;
-  font-size: 0.7rem;
-  line-height: 1.45;
-}
-
-.wheelset-spoke-lookup__detail-line strong {
-  color: var(--spoke-ink);
-}
-
-.wheelset-spoke-lookup__detail-length {
-  color: var(--spoke-blue);
-  font-weight: 800;
-}
-
-.wheelset-spoke-lookup__nipple-detail {
-  display: flex;
-  align-items: baseline;
-  flex-wrap: wrap;
-  gap: 0.35rem 0.55rem;
-  margin-top: 0.75rem;
-  padding-top: 0.75rem;
-  border-top: 1px solid var(--spoke-line);
-  color: var(--spoke-muted);
-  font-size: 0.7rem;
-}
-
-.wheelset-spoke-lookup__nipple-detail strong {
-  color: var(--spoke-ink);
-}
-
-.wheelset-spoke-lookup__nipple-detail b {
-  color: var(--spoke-blue);
-}
-
-.wheelset-spoke-lookup__request-error {
-  margin: 0;
-  padding: 0 1.2rem 1rem;
-  color: #b91c1c;
-  font-size: 0.72rem;
 }
 
 .wheelset-spoke-lookup__empty-value {
@@ -1257,7 +993,7 @@ useHead(() => ({
   }
 
   .wheelset-spoke-lookup__search {
-    grid-row: 2;
+    grid-row: auto;
   }
 }
 
@@ -1268,7 +1004,6 @@ useHead(() => ({
   }
 
   .wheelset-spoke-lookup__header,
-  .wheelset-spoke-lookup__brand-note,
   .wheelset-spoke-lookup__filters {
     padding: 0.9rem;
     border-radius: 1rem;
@@ -1282,26 +1017,6 @@ useHead(() => ({
     padding: 0.85rem 0.9rem;
   }
 
-  .wheelset-spoke-lookup__gated {
-    border-radius: 1rem;
-  }
-
-  .wheelset-spoke-lookup__gated-heading,
-  .wheelset-spoke-lookup__detail,
-  .wheelset-spoke-lookup__login-prompt {
-    padding-left: 0.9rem;
-    padding-right: 0.9rem;
-  }
-
-  .wheelset-spoke-lookup__login-prompt {
-    align-items: stretch;
-    flex-direction: column;
-  }
-
-  .wheelset-spoke-lookup__detail-grid {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
   .wheelset-spoke-lookup__matrix-heading h2 {
     font-size: 0.76rem;
   }
@@ -1311,8 +1026,21 @@ useHead(() => ({
   }
 }
 
+@media (max-width: 560px) {
+  .wheelset-spoke-lookup__brand-controls {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 0.55rem;
+  }
+
+  .wheelset-spoke-lookup__products-jump {
+    width: 100%;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .wheelset-spoke-lookup__brand-pill {
+  .wheelset-spoke-lookup__brand-pill,
+  .wheelset-spoke-lookup__products-jump {
     transition-duration: 0.01ms;
   }
 }

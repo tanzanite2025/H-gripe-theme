@@ -19,6 +19,7 @@ func TestCalcRequestAcceptsPhysicalSnakeCaseFields(t *testing.T) {
 		"alternating_drilling_offset_mm": 0.75,
 		"interlacing": true,
 		"interlace_compensation_mm": 0.45,
+		"spoke_elongation_compensation_mm": 1.18,
 		"erd_mm": 598,
 		"left_flange_mm": 22.5,
 		"right_flange_mm": 35.6,
@@ -40,5 +41,8 @@ func TestCalcRequestAcceptsPhysicalSnakeCaseFields(t *testing.T) {
 	}
 	if request.TargetTensionN == nil || *request.TargetTensionN != 1200 {
 		t.Fatalf("target tension = %v, want 1200", request.TargetTensionN)
+	}
+	if request.SpokeElongationCompensationMM == nil || *request.SpokeElongationCompensationMM != 1.18 {
+		t.Fatalf("spoke elongation compensation = %v, want 1.18", request.SpokeElongationCompensationMM)
 	}
 }

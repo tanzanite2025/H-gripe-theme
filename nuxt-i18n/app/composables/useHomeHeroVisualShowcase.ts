@@ -1,10 +1,11 @@
 import { computed, useAsyncData, useI18n, useRuntimeConfig } from '#imports'
 import { useApiRequest } from '~/composables/useApiRequest'
-import { homeHeroVisualShowcaseFallback } from '~/data/homeHeroVisualShowcaseFallback'
-import type {
-  HomeHeroVisualShowcaseApiEnvelope,
-  HomeHeroVisualShowcaseApiItem,
-  HomeHeroVisualShowcaseItem,
+import {
+  HOME_HERO_VISUAL_SHOWCASE_IMAGE_DIMENSION,
+  HOME_HERO_VISUAL_SHOWCASE_MAXIMUM_ITEM_COUNT,
+  type HomeHeroVisualShowcaseApiEnvelope,
+  type HomeHeroVisualShowcaseApiItem,
+  type HomeHeroVisualShowcaseItem,
 } from '~/types/homeHeroVisualShowcase'
 import {
   createStorefrontMediaContext,
@@ -23,6 +24,36 @@ const numericValue = (value: unknown, fallback: number): number => {
   return Number.isFinite(parsed) ? parsed : fallback
 }
 
+const createEmptyHomeHeroVisualShowcaseSlot = (
+  index: number,
+  locale: string,
+): HomeHeroVisualShowcaseItem => ({
+  id: `empty-home-hero-slot-${index + 1}`,
+  showcaseKey: 'home-hero',
+  locale,
+  src: '',
+  altText: '',
+  title: '',
+  caption: '',
+  width: HOME_HERO_VISUAL_SHOWCASE_IMAGE_DIMENSION,
+  height: HOME_HERO_VISUAL_SHOWCASE_IMAGE_DIMENSION,
+  desktopOrder: index + 1,
+})
+
+const fillHomeHeroVisualShowcaseSlots = (
+  configuredItems: HomeHeroVisualShowcaseItem[],
+  locale: string,
+): HomeHeroVisualShowcaseItem[] => {
+  const itemsByDesktopOrder = new Map(
+    configuredItems.map((item) => [item.desktopOrder, item]),
+  )
+
+  return Array.from(
+    { length: HOME_HERO_VISUAL_SHOWCASE_MAXIMUM_ITEM_COUNT },
+    (_, index) => itemsByDesktopOrder.get(index + 1) ?? createEmptyHomeHeroVisualShowcaseSlot(index, locale),
+  )
+}
+
 const normalizeShowcaseItem = (
   raw: HomeHeroVisualShowcaseApiItem,
   index: number,
@@ -32,6 +63,15 @@ const normalizeShowcaseItem = (
   const src = normalizeStorefrontMediaUrl(raw.image_url || raw.thumbnail_url, mediaContext)
   if (!src) return null
 
+  const width = numericValue(raw.width, 0)
+  const height = numericValue(raw.height, 0)
+  if (
+    width !== HOME_HERO_VISUAL_SHOWCASE_IMAGE_DIMENSION
+    || height !== HOME_HERO_VISUAL_SHOWCASE_IMAGE_DIMENSION
+  ) {
+    return null
+  }
+
   return {
     id: String(raw.id || `api-home-hero-${index + 1}`),
     showcaseKey: String(raw.showcase_key || 'home-hero'),
@@ -40,8 +80,8 @@ const normalizeShowcaseItem = (
     altText: String(raw.alt_text || raw.title || 'Wheelset manufacturing and inspection'),
     title: String(raw.title || 'Wheelset manufacturing'),
     caption: String(raw.caption || ''),
-    width: Math.max(1, numericValue(raw.width, 900)),
-    height: Math.max(1, numericValue(raw.height, 1200)),
+    width,
+    height,
     desktopOrder: Math.max(1, numericValue(raw.desktop_order, index + 1)),
   }
 }
@@ -92,28 +132,31 @@ export async function useHomeHeroVisualShowcase() {
     { default: () => null },
   )
 
-  const configuredItems = computed(() => (
-    Array.isArray(data.value?.data?.items)
-      ? data.value.data.items
-        .map((item, index) => normalizeShowcaseItem(item, index, locale.value, mediaContext))
-        .filter((item): item is HomeHeroVisualShowcaseItem => Boolean(item))
-        .sort((left, right) => left.desktopOrder - right.desktopOrder)
-      : []
+  const configuredItems = computed(() => {
+    const apiItems = data.value?.data?.items
+    if (
+      !Array.isArray(apiItems)
+      || data.value?.data?.fallback === true
+      || apiItems.length > HOME_HERO_VISUAL_SHOWCASE_MAXIMUM_ITEM_COUNT
+    ) {
+      return []
+    }
+
+    return apiItems
+      .map((item, index) => normalizeShowcaseItem(item, index, locale.value, mediaContext))
+      .filter((item): item is HomeHeroVisualShowcaseItem => Boolean(item))
+      .sort((left, right) => left.desktopOrder - right.desktopOrder)
+  })
+
+  const items = computed(() => fillHomeHeroVisualShowcaseSlots(
+    error.value ? [] : configuredItems.value,
+    locale.value,
   ))
 
-  const items = computed(() => (
-    configuredItems.value.length >= 8 && !error.value
-      ? configuredItems.value
-      : homeHeroVisualShowcaseFallback
-  ))
-
-  const source = computed<'configured' | 'locale-fallback' | 'built-in-fallback' | 'error' | 'loading'>(() => {
+  const source = computed<'configured' | 'empty' | 'error' | 'loading'>(() => {
     if (pending.value && !data.value) return 'loading'
     if (error.value) return 'error'
-    if (configuredItems.value.length >= 8) {
-      return data.value?.data?.fallback ? 'locale-fallback' : 'configured'
-    }
-    return 'built-in-fallback'
+    return configuredItems.value.length > 0 ? 'configured' : 'empty'
   })
 
   return {

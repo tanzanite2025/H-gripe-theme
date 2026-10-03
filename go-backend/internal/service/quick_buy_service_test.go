@@ -28,6 +28,20 @@ func TestQuickBuySessionTotalsUsesCurrencyMinorUnits(t *testing.T) {
 	require.Equal(t, 600, weight)
 }
 
+func TestQuickBuyRejectsSpokeRepairKitWithoutWheelsetSelection(t *testing.T) {
+	service := &QuickBuyService{}
+	item := productdomain.Product{
+		ID: 42,
+		ProductCategory: &productdomain.ProductCategory{
+			Slug: productdomain.SpokeRepairKitProductCategorySlug,
+		},
+	}
+
+	err := service.validateQuickBuyProductAllowedForStep(quickbuy.Step{StepKey: "product"}, item, false)
+	require.ErrorIs(t, err, ErrQuickBuyInvalid)
+	require.ErrorContains(t, err, "compatible wheelset model selection")
+}
+
 func TestQuickBuySessionTotalsRejectsInvalidMoney(t *testing.T) {
 	total, weight, err := quickBuySessionTotals([]quickbuy.SessionItem{{
 		ID:                     9,

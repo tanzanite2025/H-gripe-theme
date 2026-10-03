@@ -2,6 +2,9 @@ import assert from 'node:assert/strict'
 import {
   breadcrumbRoutePatternMatches,
   groupBreadcrumbRoutePathsAtLevel,
+  isExactBreadcrumbPageSubNavigationOwner,
+  normalizeBreadcrumbRouteSegments,
+  resolveBreadcrumbSubNavigationOwner,
   resolveBreadcrumbSiblingTarget,
 } from '../app/utils/breadcrumbRouteNavigation.js'
 import { resolvePageSubNavigationBreadcrumb } from '../app/utils/pageSubNavigationBreadcrumb.js'
@@ -13,7 +16,7 @@ const entries: PageSubNavigationEntry[] = [
     path: '/guides/tireguides',
     tabs: [
       { id: 'size', fallback: 'Tire size' },
-      { id: 'installation', fallback: 'Installation' },
+      { id: 'tubeless', fallback: 'Tubeless tires & installation' },
     ],
   },
   {
@@ -38,18 +41,18 @@ const canonicalWithTrailingSlash = match('/guides/tireguides/')
 assert.equal(canonicalWithTrailingSlash?.kind, 'canonical')
 assert.equal(canonicalWithTrailingSlash?.entry.path, '/guides/tireguides')
 
-const tab = match('/guides/tireguides/installation')
+const tab = match('/guides/tireguides/tubeless')
 assert.equal(tab?.kind, 'tab')
 assert.equal(tab?.entry.path, '/guides/tireguides')
-assert.equal(tab?.tab.id, 'installation')
+assert.equal(tab?.tab.id, 'tubeless')
 
-const localizedTab = match('/en/guides/tireguides/installation?source=breadcrumb')
-assert.equal(localizedTab?.kind, 'tab')
-assert.equal(localizedTab?.tab.id, 'installation')
+const englishDirectTab = match('/guides/tireguides/tubeless?source=breadcrumb')
+assert.equal(englishDirectTab?.kind, 'tab')
+assert.equal(englishDirectTab?.tab.id, 'tubeless')
 
-const localizedTabWithTrailingSlash = match('/zh_cn/guides/tireguides/installation/')
+const localizedTabWithTrailingSlash = match('/zh_cn/guides/tireguides/tubeless/')
 assert.equal(localizedTabWithTrailingSlash?.kind, 'tab')
-assert.equal(localizedTabWithTrailingSlash?.tab.id, 'installation')
+assert.equal(localizedTabWithTrailingSlash?.tab.id, 'tubeless')
 
 // Canonical page paths and exact tab paths remain distinct. The canonical
 // crumb owns its same-level route menu; the selected tab crumb owns tab peers.
@@ -57,11 +60,65 @@ assert.equal(canonical?.kind, 'canonical')
 
 // Exact matching is intentional: deeper descendants and unknown tabs do not
 // open the owning page's internal tab menu.
-assert.equal(match('/guides/tireguides/installation/details'), null)
+assert.equal(match('/guides/tireguides/tubeless/details'), null)
+assert.equal(match('/guides/tireguides/installation'), null)
 assert.equal(match('/guides/tireguides/unknown'), null)
 assert.equal(match('/guides'), null)
 assert.equal(match('/guides/tireguides-installation'), null)
 assert.equal(match('/unknown/guides/tireguides'), null)
+
+// On a calculator route, the Tire Guides crumb is an ancestor and must keep
+// its /guides sibling menu; only an exact canonical/tab crumb owns page tabs.
+assert.equal(isExactBreadcrumbPageSubNavigationOwner(
+  '/guides/tireguides',
+  '/guides/tireguides/tire-pressure-calculator',
+  ['en', 'zh_cn'],
+), false)
+assert.equal(isExactBreadcrumbPageSubNavigationOwner(
+  '/guides/tireguides/tire-pressure-calculator?source=breadcrumb',
+  '/guides/tireguides/tire-pressure-calculator',
+  ['en', 'zh_cn'],
+), true)
+assert.deepEqual(normalizeBreadcrumbRouteSegments(
+  '/guides/tireguides/tire-pressure-calculator',
+  ['en', 'zh_cn'],
+), ['guides', 'tireguides', 'tire-pressure-calculator'])
+assert.deepEqual(normalizeBreadcrumbRouteSegments(
+  '/zh_cn/guides/tireguides/tire-pressure-calculator?source=breadcrumb',
+  ['en', 'zh_cn'],
+), ['guides', 'tireguides', 'tire-pressure-calculator'])
+assert.deepEqual(normalizeBreadcrumbRouteSegments(
+  '/ZH_CN/guides/tireguides/tire-pressure-calculator#calculator',
+  ['en', 'zh_cn'],
+), ['guides', 'tireguides', 'tire-pressure-calculator'])
+assert.equal(resolveBreadcrumbSubNavigationOwner({
+  breadcrumbPath: '/guides/tireguides',
+  currentRoutePath: '/guides/tireguides/tire-pressure-calculator',
+  siblingPaths: ['/guides/tireguides', '/guides/wheelset-buyers'],
+  hasPageSubNavigation: true,
+  localeCodes: ['en', 'zh_cn'],
+}), 'same-level-route-siblings')
+assert.equal(resolveBreadcrumbSubNavigationOwner({
+  breadcrumbPath: '/zh_cn/guides/tireguides',
+  currentRoutePath: '/zh_cn/guides/tireguides/tire-pressure-calculator',
+  siblingPaths: ['/guides/tireguides', '/guides/wheelset-buyers'],
+  hasPageSubNavigation: true,
+  localeCodes: ['en', 'zh_cn'],
+}), 'same-level-route-siblings')
+assert.equal(resolveBreadcrumbSubNavigationOwner({
+  breadcrumbPath: '/guides/tireguides',
+  currentRoutePath: '/guides/tireguides',
+  siblingPaths: ['/guides/tireguides'],
+  hasPageSubNavigation: true,
+  localeCodes: ['en', 'zh_cn'],
+}), 'page-sub-navigation')
+assert.equal(resolveBreadcrumbSubNavigationOwner({
+  breadcrumbPath: '/zh_cn/guides/tireguides',
+  currentRoutePath: '/zh_cn/guides/tireguides/tire-pressure-calculator',
+  siblingPaths: ['/guides/tireguides'],
+  hasPageSubNavigation: true,
+  localeCodes: ['en', 'zh_cn'],
+}), null)
 
 const tireGuideRouteTab = resolvePageSubNavigationBreadcrumb(
   '/guides/tireguides/schwalbe-tire-selector',
@@ -69,6 +126,13 @@ const tireGuideRouteTab = resolvePageSubNavigationBreadcrumb(
 )
 assert.equal(tireGuideRouteTab?.kind, 'tab')
 assert.equal(tireGuideRouteTab?.entry.tabs.length, 9)
+
+const tirePressureCalculatorRouteTab = resolvePageSubNavigationBreadcrumb(
+  '/guides/tireguides/tire-pressure-calculator',
+  [{ path: '/guides/tireguides', tabs: tireGuideTabs }],
+)
+assert.equal(tirePressureCalculatorRouteTab?.kind, 'tab')
+assert.equal(tirePressureCalculatorRouteTab?.tab.id, 'tire-pressure-calculator')
 
 const clearanceRouteTab = resolvePageSubNavigationBreadcrumb(
   '/guides/tireguides/tire-frame-clearance',
@@ -103,7 +167,7 @@ const guideSiblings = groupBreadcrumbRoutePathsAtLevel(
   ['guides'],
   2,
   [
-    '/en/guides/tireguides',
+    '/guides/tireguides',
     '/guides/tireguides/tire-pressure',
     '/guides/wheelset-buyers',
     '/guides/wheelset-buyers/overview',
@@ -114,6 +178,23 @@ const guideSiblings = groupBreadcrumbRoutePathsAtLevel(
 assert.deepEqual(guideSiblings.map(group => group.path), [
   '/guides/tireguides',
   '/guides/wheelset-buyers',
+])
+
+const localizedGuideSiblings = groupBreadcrumbRoutePathsAtLevel(
+  ['zh_cn', 'guides', 'tireguides'],
+  3,
+  [
+    '/guides/tireguides/tubeless',
+    '/zh_cn/guides/tireguides/tire-pressure-calculator',
+    '/zh_cn/guides/tireguides/schwalbe-tire-selector',
+    '/fr/guides/wheelset-buyers/overview',
+  ],
+  ['en', 'zh_cn', 'fr'],
+)
+assert.deepEqual(localizedGuideSiblings.map(group => group.path), [
+  '/guides/tireguides/tubeless',
+  '/guides/tireguides/tire-pressure-calculator',
+  '/guides/tireguides/schwalbe-tire-selector',
 ])
 
 // A level with one registered path resolves to one group, so it has no sibling
@@ -134,7 +215,7 @@ assert.deepEqual(singleGuideBranch.map(group => group.path), [
 // Switching an intermediate breadcrumb preserves every lower segment when
 // the destination branch registers that route, including newly added levels.
 assert.equal(switchSibling({
-  currentPath: '/en/shop/wheels/gravel/fitment/road?source=header',
+  currentPath: '/shop/wheels/gravel/fitment/road?source=header',
   breadcrumbPath: '/shop/wheels',
   siblingPath: '/shop/tires',
   fallbackPath: '/shop/tires',
@@ -155,11 +236,23 @@ assert.equal(breadcrumbRoutePatternMatches(
   '/guides/wheelset-buyers/installation',
 ), false)
 assert.equal(switchSibling({
-  currentPath: '/guides/tireguides/installation',
+  currentPath: '/guides/tireguides/tubeless',
   breadcrumbPath: '/guides/tireguides',
   siblingPath: '/guides/wheelset-buyers',
   fallbackPath: '/guides/wheelset-buyers',
   routePatterns: ['/guides/wheelset-buyers/:tab(overview|safety-instructions)'],
+}), '/guides/wheelset-buyers')
+
+// Prefixed locale URLs normalize to the same route depth, then re-localize at
+// the component boundary. A sibling route only keeps a suffix it actually has.
+assert.equal(switchSibling({
+  currentPath: '/zh_cn/guides/tireguides/tire-pressure-calculator',
+  breadcrumbPath: '/zh_cn/guides/tireguides',
+  siblingPath: '/guides/wheelset-buyers',
+  fallbackPath: '/guides/wheelset-buyers',
+  routePatterns: [
+    '/guides/wheelset-buyers/:tab(overview|safety-instructions)',
+  ],
 }), '/guides/wheelset-buyers')
 
 // The same rule covers routes nested below a page tab, so newly added lower

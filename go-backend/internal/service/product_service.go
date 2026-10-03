@@ -8,6 +8,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"golang.org/x/sync/singleflight"
@@ -167,6 +168,83 @@ func (s *ProductService) validateProductCategory(id *uint, allowDisabled bool) e
 	return nil
 }
 
+// validateSpokeRepairKitProductCreationType prevents a caller from creating a
+// repair-kit category product through the generic specification-template path.
+// Repair-kit products are owned by the dedicated product editor and their
+// compatibility choices live in product_spoke_repair_kit_models.
+func (s *ProductService) validateSpokeRepairKitProductCreationType(categoryID, specificationTemplateID *uint) error {
+	if categoryID == nil || *categoryID == 0 || specificationTemplateID == nil || *specificationTemplateID == 0 {
+		return nil
+	}
+	if s.productCategoryRepo == nil {
+		return fmt.Errorf("%w: category repository is not configured", ErrSpokeRepairKitProductTypeImmutable)
+	}
+	category, err := s.productCategoryRepo.FindByID(*categoryID)
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return ErrProductCategoryNotFound
+	}
+	if err != nil {
+		return err
+	}
+	if strings.EqualFold(strings.TrimSpace(category.Slug), product.SpokeRepairKitProductCategorySlug) {
+		return fmt.Errorf("%w: repair-kit products cannot use a generic specification template", ErrSpokeRepairKitProductTypeImmutable)
+	}
+	return nil
+}
+
+// validateSpokeRepairKitProductUpdateType keeps an existing repair-kit product
+// on the dedicated category and prevents a direct admin API call from silently
+// converting it into a generic product.
+func (s *ProductService) validateSpokeRepairKitProductUpdateType(existing *product.Product, input ProductUpdateInput) error {
+	if existing == nil {
+		return nil
+	}
+	existingIsSpokeRepairKit := isSpokeRepairKitProduct(existing)
+
+	// A generic product must not be converted into a repair-kit product through
+	// the generic editor/API. Repair kits are created by the dedicated workflow;
+	// the dedicated editor only updates rows that already have this type.
+	if input.UpdateProductCategoryID && input.ProductCategoryID != nil && *input.ProductCategoryID != 0 && s.productCategoryRepo != nil {
+		category, err := s.productCategoryRepo.FindByID(*input.ProductCategoryID)
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return ErrProductCategoryNotFound
+		}
+		if err != nil {
+			return err
+		}
+		if strings.EqualFold(strings.TrimSpace(category.Slug), product.SpokeRepairKitProductCategorySlug) && !existingIsSpokeRepairKit {
+			return fmt.Errorf("%w: generic products cannot be converted into repair-kit products", ErrSpokeRepairKitProductTypeImmutable)
+		}
+	}
+
+	if !existingIsSpokeRepairKit {
+		return nil
+	}
+	if input.UpdateProductSpecificationTemplateID && input.ProductSpecificationTemplateID != nil && *input.ProductSpecificationTemplateID != 0 {
+		return fmt.Errorf("%w: repair-kit products cannot use a generic specification template", ErrSpokeRepairKitProductTypeImmutable)
+	}
+	if !input.UpdateProductCategoryID {
+		return nil
+	}
+	if input.ProductCategoryID == nil || *input.ProductCategoryID == 0 {
+		return fmt.Errorf("%w: repair-kit products must keep the spoke-repair-kits category", ErrSpokeRepairKitProductTypeImmutable)
+	}
+	if s.productCategoryRepo == nil {
+		return fmt.Errorf("%w: category repository is not configured", ErrSpokeRepairKitProductTypeImmutable)
+	}
+	category, err := s.productCategoryRepo.FindByID(*input.ProductCategoryID)
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return ErrProductCategoryNotFound
+	}
+	if err != nil {
+		return err
+	}
+	if !strings.EqualFold(strings.TrimSpace(category.Slug), product.SpokeRepairKitProductCategorySlug) {
+		return fmt.Errorf("%w: repair-kit products must keep the spoke-repair-kits category", ErrSpokeRepairKitProductTypeImmutable)
+	}
+	return nil
+}
+
 func (s *ProductService) SetStorefrontHTMLCacheInvalidator(invalidator *StorefrontHTMLCacheInvalidator) {
 	s.storefrontHTMLCacheInvalidator = invalidator
 }
@@ -209,6 +287,8 @@ var (
 	ErrProductCustomsProfileInvalid              = errors.New("product customs classification profile invalid")
 	ErrProductTranslationInvalid                 = errors.New("product translation relationship invalid")
 	ErrProductFulfillmentModeInvalid             = errors.New("product fulfillment mode invalid")
+	ErrSpokeRepairKitModelsInvalid               = errors.New("spoke repair-kit wheelset models invalid")
+	ErrSpokeRepairKitProductTypeImmutable        = errors.New("spoke repair-kit product type is immutable")
 )
 
 type ProductSearchInput struct {

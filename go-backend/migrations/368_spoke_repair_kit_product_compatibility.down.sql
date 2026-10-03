@@ -1,0 +1,3 @@
+-- This is a corrective migration. Keep the product-owned compatibility data
+-- when rolling back application code; remove it only with an explicit data
+-- migration after the products have been reviewed.

@@ -20,22 +20,22 @@
       </template>
     </AdminPageHeader>
 
-    <section class="rounded-2xl border bg-muted/20 p-4">
-      <div class="mb-4 flex items-start justify-between gap-3">
-        <div>
-          <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">SEO Defaults</p>
-          <h2 class="mt-1 text-sm font-black">{{ sectionTitle }}</h2>
-        </div>
-        <StorefrontLocaleSelect
-          v-model="selectedLocale"
-          :language-options="languageOptions"
-          :loading="languagesLoading"
-          :disabled="loading || saving"
-          class="w-44"
-        />
+    <section class="space-y-4">
+      <div>
+        <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">SEO Defaults</p>
+        <h2 class="mt-1 text-sm font-black">{{ sectionTitle }}</h2>
       </div>
 
-      <div class="grid gap-4">
+      <AdminStorefrontLanguageDisplayCard
+        :model-value="selectedLocale"
+        :language-options="languageOptions"
+        :loading="languagesLoading || loading || saving"
+        :disabled="languagesLoading || loading || saving"
+        :aria-label="`${title} SEO 内容语言`"
+        @update:model-value="selectedLocale = $event"
+      />
+
+      <div class="grid gap-4 rounded-2xl border bg-muted/20 p-4">
         <AdminFormField label="页面路由" description="首页路由固定为根路径，不能修改。">
           <div class="relative">
             <LockKeyhole class="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -59,7 +59,7 @@ import { toast } from 'vue-sonner'
 import { ExternalLink, LoaderCircle, LockKeyhole, RefreshCw, Save } from '@lucide/vue'
 import AdminFormField from '@/components/admin/AdminFormField.vue'
 import AdminPageHeader from '@/components/admin/AdminPageHeader.vue'
-import StorefrontLocaleSelect from '@/components/admin/StorefrontLocaleSelect.vue'
+import AdminStorefrontLanguageDisplayCard from '@/components/admin/AdminStorefrontLanguageDisplayCard.vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'

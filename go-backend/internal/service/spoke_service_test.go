@@ -122,6 +122,19 @@ func TestSpokeServiceCalculateAppliesPhysicalBuildCorrections(t *testing.T) {
 	assert.Greater(t, stretched.Debug.StretchLeftMM, 0.0)
 	assert.Less(t, stretched.LeftLengthMM, base.LeftLengthMM)
 
+	manualElongation := 1.18
+	manualCompensated, err := spokeService.Calculate(SpokeCalculationInput{
+		RimID: "rr411_db", HubID: "hub", WheelPosition: "front", SpokeCount: 24, Crossing: 2,
+		SpokeHeadType: "j_bend", SpokeHoleDiameterMM: floatPtrForTest(0),
+		SpokeProfile: "bladed_0_9x2_2", TargetTensionN: &targetTension,
+		SpokeElongationCompensationMM: &manualElongation, Interlacing: false,
+	})
+	require.NoError(t, err)
+	assert.InDelta(t, manualElongation, manualCompensated.Debug.StretchLeftMM, 0.001)
+	assert.InDelta(t, manualElongation, manualCompensated.Debug.StretchRightMM, 0.001)
+	assert.InDelta(t, manualElongation, base.LeftLengthMM-manualCompensated.LeftLengthMM, 0.01)
+	assert.InDelta(t, manualElongation, base.RightLengthMM-manualCompensated.RightLengthMM, 0.01)
+
 	interlace := 0.45
 	interlaced, err := spokeService.Calculate(SpokeCalculationInput{
 		RimID: "rr411_db", HubID: "hub", WheelPosition: "front", SpokeCount: 24, Crossing: 3,
@@ -477,4 +490,18 @@ func seedSpokeProductBrands(t *testing.T, db *gorm.DB) {
 		IsEnabled: true,
 		SortOrder: 2,
 	}).Error)
+}
+
+func TestSpokeServiceEngineeringMetadataUsesBackendFormulaVersion(t *testing.T) {
+	_, spokeService := newTestSpokeService(t)
+	metadata := spokeService.GetSpokeCalculatorEngineeringMetadata()
+	if metadata.ModelVersion == "" || metadata.FormulaVersion == "" || metadata.KnowledgeAsOf == "" {
+		t.Fatalf("metadata is incomplete: %#v", metadata)
+	}
+	if metadata.CalculationStatus != "production_calculation_endpoint" {
+		t.Fatalf("unexpected calculation status: %q", metadata.CalculationStatus)
+	}
+	if len(metadata.Limitations) == 0 {
+		t.Fatal("metadata must expose calculation limitations")
+	}
 }

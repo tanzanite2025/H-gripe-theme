@@ -53,6 +53,10 @@ type SpokeCalculationInput struct {
 	// intentionally not inferred from crossing count or spoke profile because
 	// spoke section, butting, and hub exit direction change the bend geometry.
 	InterlaceCompensationMM *float64
+	// SpokeElongationCompensationMM is a manual correction sourced from the
+	// spoke elongation reference page. When present it replaces the generic
+	// target-tension stretch estimate for this calculation.
+	SpokeElongationCompensationMM *float64
 	// RimOffsetMM is positive when the rim center moves toward the right
 	// flange. The value changes both the spoke length geometry and bracing
 	// angles used for the tension-ratio estimate.
@@ -232,6 +236,33 @@ func (s *SpokeService) ListUserHistory(userID uint, search string, page, pageSiz
 	return s.spokeRepo.ListHistoryByUserID(userID, search, page, pageSize)
 }
 
+// SpokeCalculatorEngineeringMetadata is the public, versioned contract used
+// by the calculator page's SSR/GEO metadata. It contains provenance and
+// limits, never proprietary catalog dimensions.
+type SpokeCalculatorEngineeringMetadata struct {
+	ModelVersion      string   `json:"model_version"`
+	FormulaVersion    string   `json:"formula_version"`
+	KnowledgeAsOf     string   `json:"knowledge_as_of"`
+	CalculationStatus string   `json:"calculation_status"`
+	SourceBasis       string   `json:"source_basis"`
+	Limitations       []string `json:"limitations"`
+}
+
+func (s *SpokeService) GetSpokeCalculatorEngineeringMetadata() SpokeCalculatorEngineeringMetadata {
+	return SpokeCalculatorEngineeringMetadata{
+		ModelVersion:      "spoke-calculator-engineering-v1",
+		FormulaVersion:    spokeCalculationFormulaName,
+		KnowledgeAsOf:     "2026-09-28",
+		CalculationStatus: "production_calculation_endpoint",
+		SourceBasis:       "Go backend spoke geometry and physical-build correction engine",
+		Limitations: []string{
+			"Results depend on the exact measured ERD, flange geometry, hole engagement, lacing, nipple, and rim-offset inputs.",
+			"Verify the result against the rim, hub, spoke, and wheel-builder specifications before cutting spokes.",
+			"Published catalog records are not a substitute for measuring the actual wheel components.",
+		},
+	}
+}
+
 func (s *SpokeService) Calculate(input SpokeCalculationInput) (*SpokeCalculationResult, error) {
 	if !isFinite(input.RimOffsetMM) || math.Abs(input.RimOffsetMM) > 20 {
 		return nil, ErrInvalidSpokeCalculation
@@ -297,6 +328,9 @@ func (s *SpokeService) Calculate(input SpokeCalculationInput) (*SpokeCalculation
 		alternatingDrillingOffsetMM = *input.AlternatingDrillingOffsetMM
 	}
 	if input.InterlaceCompensationMM != nil && (!isFinite(*input.InterlaceCompensationMM) || *input.InterlaceCompensationMM < 0 || *input.InterlaceCompensationMM > 5) {
+		return nil, ErrInvalidSpokeCalculation
+	}
+	if input.SpokeElongationCompensationMM != nil && (!isFinite(*input.SpokeElongationCompensationMM) || *input.SpokeElongationCompensationMM < 0 || *input.SpokeElongationCompensationMM > 5) {
 		return nil, ErrInvalidSpokeCalculation
 	}
 
@@ -381,15 +415,16 @@ func (s *SpokeService) Calculate(input SpokeCalculationInput) (*SpokeCalculation
 	}
 
 	corrections, err := applySpokePhysicalCorrections(spokePhysicalCorrectionInput{
-		LeftLengthMM:            geometry.LeftLengthMM,
-		RightLengthMM:           geometry.RightLengthMM,
-		NippleType:              input.NippleType,
-		NippleLengthMM:          input.NippleLengthMM,
-		Crossing:                input.Crossing,
-		Interlacing:             input.Interlacing,
-		InterlaceCompensationMM: input.InterlaceCompensationMM,
-		SpokeProfile:            input.SpokeProfile,
-		TargetTensionN:          targetTensionN,
+		LeftLengthMM:                  geometry.LeftLengthMM,
+		RightLengthMM:                 geometry.RightLengthMM,
+		NippleType:                    input.NippleType,
+		NippleLengthMM:                input.NippleLengthMM,
+		Crossing:                      input.Crossing,
+		Interlacing:                   input.Interlacing,
+		InterlaceCompensationMM:       input.InterlaceCompensationMM,
+		SpokeElongationCompensationMM: input.SpokeElongationCompensationMM,
+		SpokeProfile:                  input.SpokeProfile,
+		TargetTensionN:                targetTensionN,
 	})
 	if err != nil {
 		return nil, err

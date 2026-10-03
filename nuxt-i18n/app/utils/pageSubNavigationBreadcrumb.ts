@@ -27,8 +27,8 @@ export type PageSubNavigationBreadcrumbMatch =
 
 /**
  * Resolves breadcrumb ownership with an explicit canonical/tab split.
- * Canonical paths belong to their parent page list; only an exact child-tab
- * path can open the owning page's internal tab navigation.
+ * Canonical paths own their page's registered tabs; an exact child-tab path
+ * also opens that same internal tab navigation.
  */
 export const resolvePageSubNavigationBreadcrumb = (
   path: string,

@@ -1,63 +1,23 @@
 package brandwheelsetspoke
 
 import (
-	_ "embed"
-	"encoding/json"
 	"net/http"
 	"sort"
 	"strings"
 
+	"commerce-platform/internal/domain/wheelsetcatalog"
+
 	"github.com/gin-gonic/gin"
 )
 
-// The complete repair-kit directory is kept on the backend. The browser only
-// receives the public model index, then requests one exact model after login.
-// This prevents the full directory from becoming part of the Nuxt JavaScript
-// bundle or one bulk response.
-//
-//go:embed brand-wheelset-spoke-specs-catalog.json
-var catalogJSON []byte
-
-type brandCatalog struct {
-	BrandSlug         string         `json:"brandSlug"`
-	BrandName         string         `json:"brandName"`
-	PublicationStatus string         `json:"publicationStatus"`
-	SourceCheckedAt   *string        `json:"sourceCheckedAt"`
-	Wheelsets         []wheelsetSpec `json:"wheelsets"`
-}
-
-type wheelsetSpec struct {
-	Slug               string              `json:"slug"`
-	Model              string              `json:"model"`
-	LifecycleStatus    string              `json:"lifecycleStatus"`
-	VerificationStatus string              `json:"verificationStatus"`
-	Rim                rimSpec             `json:"rim"`
-	NippleModel        string              `json:"nippleModel"`
-	NippleLengthMM     *float64            `json:"nippleLengthMm"`
-	Wheels             []wheelPositionSpec `json:"wheels"`
-}
-
-type rimSpec struct {
-	DepthMM      float64  `json:"depthMm"`
-	DepthFrontMM *float64 `json:"depthFrontMm"`
-	DepthRearMM  *float64 `json:"depthRearMm"`
-	InnerWidthMM float64  `json:"innerWidthMm"`
-	OuterWidthMM float64  `json:"outerWidthMm"`
-}
-
-type wheelPositionSpec struct {
-	Position      string          `json:"position"`
-	SpokeCount    int             `json:"spokeCount"`
-	LacingPattern string          `json:"lacingPattern"`
-	Sides         []spokeSideSpec `json:"sides"`
-}
-
-type spokeSideSpec struct {
-	Side       string   `json:"side"`
-	LengthMM   *float64 `json:"lengthMm"`
-	SpokeModel string   `json:"spokeModel"`
-	HeadType   string   `json:"headType"`
-}
+// The complete repair-kit directory is kept on the backend. The public model
+// index exposes verified spoke and nipple specifications; product editors use
+// a reduced selector response. Router-level rate limits bound catalog access.
+type brandCatalog = wheelsetcatalog.Brand
+type wheelsetSpec = wheelsetcatalog.Wheelset
+type rimSpec = wheelsetcatalog.Rim
+type wheelPositionSpec = wheelsetcatalog.Wheel
+type spokeSideSpec = wheelsetcatalog.Side
 
 type modelIndex struct {
 	BrandSlug       string            `json:"brandSlug"`
@@ -67,6 +27,16 @@ type modelIndex struct {
 	LifecycleStatus string            `json:"lifecycleStatus"`
 	Rim             publicRimSpec     `json:"rim"`
 	Wheels          []publicWheelSpec `json:"wheels"`
+	NippleModel     string            `json:"nippleModel"`
+	NippleLengthMM  *float64          `json:"nippleLengthMm"`
+}
+
+type selectorModel struct {
+	BrandSlug       string `json:"brandSlug"`
+	BrandName       string `json:"brandName"`
+	Slug            string `json:"slug"`
+	Model           string `json:"model"`
+	LifecycleStatus string `json:"lifecycleStatus"`
 }
 
 type publicRimSpec struct {
@@ -83,9 +53,10 @@ type publicWheelSpec struct {
 }
 
 type publicSpokeSide struct {
-	Side       string `json:"side"`
-	SpokeModel string `json:"spokeModel"`
-	HeadType   string `json:"headType"`
+	Side       string   `json:"side"`
+	LengthMM   *float64 `json:"lengthMm"`
+	SpokeModel string   `json:"spokeModel"`
+	HeadType   string   `json:"headType"`
 }
 
 type modelDetail struct {
@@ -119,22 +90,38 @@ type Handler struct {
 }
 
 func NewHandler() *Handler {
-	var brands []brandCatalog
-	if err := json.Unmarshal(catalogJSON, &brands); err != nil {
+	brands, err := wheelsetcatalog.LoadWheelsetSpokeCatalogBrands()
+	if err != nil {
 		panic("brand wheelset spoke catalog is invalid: " + err.Error())
 	}
 	return &Handler{brands: brands}
 }
 
-// RegisterRoutes exposes a small public model index and a protected
-// single-model detail endpoint. Authentication and rate limiting are attached
-// by the router so all replicas share the same API policy.
+// RegisterRoutes exposes the published model index and single-model details.
+// Optional authentication and rate limiting are attached by the router so all
+// replicas share the same API policy while anonymous visitors can use the
+// reference data.
 func (h *Handler) RegisterRoutes(group *gin.RouterGroup) {
 	group.GET("/models", h.ListModels)
+	group.GET("/selector-models", h.ListSelectorModels)
 	group.GET("/models/:slug", h.GetModel)
 }
 
+// ListSelectorModels returns only the finite model labels and keys needed by
+// product editors. It does not expose spoke, nipple, or dimensional data.
+func (h *Handler) ListSelectorModels(c *gin.Context) {
+	models := make([]selectorModel, 0)
+	for _, item := range h.publicModels() {
+		models = append(models, selectorModel{
+			BrandSlug: item.BrandSlug, BrandName: item.BrandName,
+			Slug: item.Slug, Model: item.Model, LifecycleStatus: item.LifecycleStatus,
+		})
+	}
+	c.JSON(http.StatusOK, gin.H{"code": 0, "data": gin.H{"models": models}})
+}
+
 func (h *Handler) ListModels(c *gin.Context) {
+	c.Header("Cache-Control", "public, max-age=86400, stale-while-revalidate=3600")
 	models := h.publicModels()
 	c.JSON(http.StatusOK, gin.H{
 		"code": 0,
@@ -146,14 +133,6 @@ func (h *Handler) ListModels(c *gin.Context) {
 }
 
 func (h *Handler) GetModel(c *gin.Context) {
-	if _, ok := c.Get("user_id"); !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"error":   "registration_required",
-			"message": "Sign in or create an account to view exact repair-kit specifications.",
-		})
-		return
-	}
-
 	slug := strings.TrimSpace(c.Param("slug"))
 	if slug == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "model slug is required"})
@@ -168,6 +147,10 @@ func (h *Handler) GetModel(c *gin.Context) {
 			if wheelset.Slug != slug || wheelset.VerificationStatus != "verified" {
 				continue
 			}
+			// Published specifications are identical for every visitor, so a
+			// shared cache can safely serve the response to search crawlers and
+			// anonymous repair-kit shoppers.
+			c.Header("Cache-Control", "public, max-age=86400, stale-while-revalidate=3600")
 			c.JSON(http.StatusOK, gin.H{
 				"code": 0,
 				"data": gin.H{"model": toModelDetail(brand, wheelset)},
@@ -218,6 +201,7 @@ func toModelIndex(brand brandCatalog, wheelset wheelsetSpec) modelIndex {
 		for _, side := range wheel.Sides {
 			sides = append(sides, publicSpokeSide{
 				Side:       side.Side,
+				LengthMM:   side.LengthMM,
 				SpokeModel: side.SpokeModel,
 				HeadType:   side.HeadType,
 			})
@@ -240,7 +224,9 @@ func toModelIndex(brand brandCatalog, wheelset wheelsetSpec) modelIndex {
 			DepthFrontMM: wheelset.Rim.DepthFrontMM,
 			DepthRearMM:  wheelset.Rim.DepthRearMM,
 		},
-		Wheels: wheels,
+		Wheels:         wheels,
+		NippleModel:    wheelset.NippleModel,
+		NippleLengthMM: wheelset.NippleLengthMM,
 	}
 }
 

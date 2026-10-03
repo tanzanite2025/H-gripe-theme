@@ -199,6 +199,9 @@ func ResolveProductConfiguration(item *productdomain.Product, variant *productdo
 	if item == nil || variant == nil {
 		return ProductConfigurationResult{}, fmt.Errorf("%w: product and variant are required", ErrProductConfigurationInvalid)
 	}
+	if isSpokeRepairKitProduct(item) {
+		return resolveSpokeRepairKitModelSelection(item, variant, selected)
+	}
 	currencyCode := strings.TrimSpace(variant.Currency)
 	if currencyCode == "" {
 		currencyCode = productdomain.DefaultPriceCurrency
@@ -473,10 +476,101 @@ func ResolveProductConfiguration(item *productdomain.Product, variant *productdo
 	}, nil
 }
 
+// isSpokeRepairKitProduct uses the category as the durable product type. The
+// relation length remains a compatibility fallback for older loaded records,
+// but a missing relation can never make a category product look generic.
+func isSpokeRepairKitProduct(item *productdomain.Product) bool {
+	if item == nil {
+		return false
+	}
+	if item.ProductCategory != nil && strings.EqualFold(strings.TrimSpace(item.ProductCategory.Slug), productdomain.SpokeRepairKitProductCategorySlug) {
+		return true
+	}
+	return len(item.SpokeRepairKitModels) > 0
+}
+
+func resolveSpokeRepairKitModelSelection(item *productdomain.Product, variant *productdomain.ProductVariant, selected []SelectedOption) (ProductConfigurationResult, error) {
+	const groupSlug = "wheelset_model"
+	var selectedKey string
+	if len(selected) != 1 || strings.TrimSpace(selected[0].GroupSlug) != groupSlug || len(selected[0].ValueKeys) != 1 {
+		return ProductConfigurationResult{}, fmt.Errorf("%w: select one compatible wheelset model", ErrProductConfigurationRequired)
+	}
+	selectedKey = strings.ToLower(strings.TrimSpace(selected[0].ValueKeys[0]))
+	if selectedKey == "" {
+		return ProductConfigurationResult{}, fmt.Errorf("%w: wheelset model is empty", ErrProductConfigurationInvalid)
+	}
+	var selectedModel *productdomain.SpokeRepairKitModel
+	for index := range item.SpokeRepairKitModels {
+		candidate := &item.SpokeRepairKitModels[index]
+		if strings.ToLower(candidate.BuildSpokeRepairKitModelCompatibilityValueKey()) == selectedKey {
+			selectedModel = candidate
+			break
+		}
+	}
+	if selectedModel == nil {
+		return ProductConfigurationResult{}, fmt.Errorf("%w: wheelset model is not available for this repair kit", ErrProductConfigurationConflict)
+	}
+	currencyCode := strings.TrimSpace(variant.Currency)
+	if currencyCode == "" {
+		currencyCode = productdomain.DefaultPriceCurrency
+	}
+	zero, err := domainmoney.New(0, currencyCode)
+	if err != nil {
+		return ProductConfigurationResult{}, fmt.Errorf("%w: invalid option currency: %v", ErrProductConfigurationInvalid, err)
+	}
+	selection := SelectedOption{GroupSlug: groupSlug, ValueKeys: []string{selectedKey}}
+	snapshot := productConfigurationSnapshot{
+		SchemaVersion: ProductConfigurationSchemaVersion,
+		Selections:    []productConfigurationSelection{{GroupSlug: groupSlug, ValueKeys: []string{selectedKey}}},
+	}
+	data, err := json.Marshal(snapshot)
+	if err != nil {
+		return ProductConfigurationResult{}, fmt.Errorf("%w: encode normalized configuration: %v", ErrProductConfigurationInvalid, err)
+	}
+	digest := sha256.Sum256(data)
+	configurationGroup := ProductConfigurationGroupSnapshot{
+		GroupSlug: groupSlug, GroupName: "Wheelset model", SelectionMode: ProductSpecSelectionSingle,
+		Values: []ProductConfigurationValueSnapshot{{ValueKey: selectedKey, ValueLabel: selectedModel.Label()}},
+	}
+	return ProductConfigurationResult{
+		Data: data, Hash: hex.EncodeToString(digest[:]), Delta: zero,
+		Selections: []SelectedOption{selection},
+		Snapshot: ProductConfigurationSnapshot{
+			SchemaVersion:           ProductConfigurationSchemaVersion,
+			ProductID:               item.ID,
+			VariantID:               variant.ID,
+			ProductName:             item.Name,
+			VariantName:             variant.Title,
+			ConfigurationHash:       hex.EncodeToString(digest[:]),
+			NormalizedConfiguration: data,
+			Currency:                currencyCode,
+			Selections:              []ProductConfigurationGroupSnapshot{configurationGroup},
+			PriceBreakdown:          ProductConfigurationPriceBreakdown{},
+		},
+	}, nil
+}
+
 // ProductCustomOptionDefinitions returns the public-facing custom option
 // groups for a product and the variant-specific applicability overlays.
 func ProductCustomOptionDefinitions(item *productdomain.Product, variant *productdomain.ProductVariant) []productdomain.SpecDefinition {
-	if item == nil || item.ProductSpecificationTemplate == nil {
+	if item == nil {
+		return nil
+	}
+	if isSpokeRepairKitProduct(item) {
+		maxSelections := 1
+		return []productdomain.SpecDefinition{{
+			Name:          "Wheelset model",
+			Slug:          "wheelset_model",
+			FieldType:     "select",
+			Presentation:  "text",
+			Role:          ProductSpecRoleCustomOption,
+			SelectionMode: ProductSpecSelectionSingle,
+			MinSelections: 1,
+			MaxSelections: &maxSelections,
+			IsVisible:     true,
+		}}
+	}
+	if item.ProductSpecificationTemplate == nil {
 		return nil
 	}
 	groupRules := make(map[uint]productdomain.ProductOptionGroupVariantRule)

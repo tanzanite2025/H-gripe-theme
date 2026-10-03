@@ -110,13 +110,12 @@
         <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-md p-6 text-center flex flex-col justify-center items-center hover:-translate-y-1 transition-transform">
            <h4 class="tz-text-secondary font-bold mb-2">{{ t('guidesTireTubeless.navigation.installation.title') }}</h4>
            <p class="text-xs tz-text-muted mb-4">{{ t('guidesTireTubeless.navigation.installation.description') }}</p>
-           <button
-             type="button"
-              class="rounded-full bg-[var(--tz-card-surface)] border tz-border-subtle px-6 py-2 text-xs font-bold uppercase tracking-wider tz-text-primary shadow-md transition-colors hover:border-[rgba(5, 150, 105,0.28)] hover:tz-surface-subtle hover:text-[var(--tz-site-accent)]"
-             @click="$emit('changeTab', 'installation')"
+           <a
+             href="#tubeless-installation"
+             class="rounded-full bg-[var(--tz-card-surface)] border tz-border-subtle px-6 py-2 text-xs font-bold uppercase tracking-wider tz-text-primary shadow-md transition-colors hover:border-[rgba(5, 150, 105,0.28)] hover:tz-surface-subtle hover:text-[var(--tz-site-accent)]"
            >
              {{ t('guidesTireTubeless.navigation.installation.button') }}
-           </button>
+           </a>
         </div>
 
         <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-md p-6 text-center flex flex-col justify-center items-center hover:-translate-y-1 transition-transform">
@@ -139,6 +138,7 @@ import { watch } from 'vue'
 import { useI18n } from '#imports'
 import GuideImage from '~/components/GuideImage.vue'
 import { usePageMessages } from '~/composables/usePageMessages'
+import type { TireGuideTabId } from '~/utils/pageSubNavigation'
 
 const { locale, t } = useI18n()
 const { loadPageMessages } = usePageMessages('guidesTireTubeless')
@@ -149,10 +149,7 @@ watch(locale, (nextLocale) => {
   void loadPageMessages(nextLocale)
 })
 
-// Match SizeChartsTabId from parent
-type GuideTabId = 'size' | 'match' | 'tubeless' | 'installation' | 'choose' | 'tire-pressure' | 'tube'
-
 defineEmits<{
-  (e: 'changeTab', tab: GuideTabId): void
+  (e: 'changeTab', tab: TireGuideTabId): void
 }>()
 </script>

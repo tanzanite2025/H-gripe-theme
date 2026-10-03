@@ -6,6 +6,7 @@ export type StorefrontImagePreset =
   | 'detail'
   | 'gallery'
   | 'hero'
+  | 'home-hero-showcase'
   | 'history'
   | 'logo'
   | 'swatch'
@@ -52,6 +53,10 @@ export const STOREFRONT_IMAGE_SPECS: Record<StorefrontImagePreset, StorefrontIma
   hero: {
     sizes: 'xs:100vw sm:100vw md:100vw lg:1280px',
     densities: '1x 2x',
+  },
+  'home-hero-showcase': {
+    sizes: 'xs:50vw sm:50vw md:50vw lg:22vw xl:22vw',
+    densities: '1x',
   },
   history: {
     sizes: 'xs:160px sm:160px md:160px',

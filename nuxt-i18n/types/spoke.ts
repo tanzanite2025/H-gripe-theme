@@ -62,6 +62,7 @@ export interface SpokeCalcInput {
   alternatingDrillingOffsetMm?: number
   interlacing?: boolean
   interlaceCompensationMm?: number | null
+  spokeElongationCompensationMm?: number | null
 }
 
 export interface SpokeTensionRatio {

@@ -5,16 +5,16 @@
       <p class="mt-1 text-[9px] font-black uppercase tracking-widest text-muted-foreground/60">前台 Refund &amp; Cancellation Policy 页面使用这份内容。</p>
     </div>
     <div class="space-y-5">
-      <div class="flex flex-wrap items-end gap-3 border-b border-dashed border-border pb-4">
-        <AdminFormField label="编辑语言" class="min-w-56">
-          <StorefrontLocaleSelect
-            :model-value="locale"
-            :language-options="languageOptions"
-            :disabled="loading || saving"
-            @update:model-value="emit('locale-change', $event)"
-          />
-        </AdminFormField>
-        <div class="pb-1 text-xs text-muted-foreground">
+      <div class="space-y-3 border-b border-dashed border-border pb-4">
+        <AdminStorefrontLanguageDisplayCard
+          :model-value="locale"
+          :language-options="languageOptions"
+          :disabled="loading || saving"
+          :loading="loading || saving"
+          aria-label="退款取消政策编辑语言"
+          @update:model-value="emit('locale-change', $event)"
+        />
+        <div class="text-xs text-muted-foreground">
           <span v-if="fallback">当前语言尚未单独配置，正在编辑英文默认内容的副本。</span>
           <span v-else>当前语言已配置独立内容。</span>
         </div>
@@ -159,7 +159,7 @@ import {
   Trash2,
 } from '@lucide/vue'
 import AdminFormField from '@/components/admin/AdminFormField.vue'
-import StorefrontLocaleSelect from '@/components/admin/StorefrontLocaleSelect.vue'
+import AdminStorefrontLanguageDisplayCard from '@/components/admin/AdminStorefrontLanguageDisplayCard.vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'

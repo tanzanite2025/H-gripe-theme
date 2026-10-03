@@ -216,14 +216,15 @@ func (r *ProductRepository) List(locale, status string, featured bool, offset, l
 	var products []product.Product
 	var total int64
 
-	query := r.db.Model(&product.Product{}).Preload("Brand").Preload("ProductSpecificationTemplate").Preload("Media", func(db *gorm.DB) *gorm.DB {
+	query := r.preloadProductCategory(r.db.Model(&product.Product{}).Preload("Brand").Preload("ProductSpecificationTemplate").Preload("Media", func(db *gorm.DB) *gorm.DB {
 		return orderProductMedia(db)
 	}).Preload("ProductSpecificationTemplate.SpecDefinitions", func(db *gorm.DB) *gorm.DB {
 		return orderSpecDefinitions(db)
 	}).Preload("Variants", func(db *gorm.DB) *gorm.DB {
 		return orderProductVariants(db)
-	})
-	query = r.preloadProductVariantOptionValues(query).
+	}))
+	query = r.preloadProductVariantOptionValues(query)
+	query = r.preloadSpokeRepairKitModels(query).
 		Preload("AfterSalesTemplate").
 		Preload("PackagingTemplate").
 		Where(activeVariantExistsSQL("pv_list"))
@@ -288,7 +289,7 @@ func (r *ProductRepository) ListPublicAvailable(locale string, offset, limit int
 	var products []product.Product
 	var total int64
 
-	query := r.db.Model(&product.Product{}).
+	query := r.preloadProductCategory(r.db.Model(&product.Product{}).
 		Preload("Brand").
 		Preload("Media", func(db *gorm.DB) *gorm.DB {
 			return orderProductMedia(db)
@@ -298,8 +299,9 @@ func (r *ProductRepository) ListPublicAvailable(locale string, offset, limit int
 		}).
 		Preload("Variants", func(db *gorm.DB) *gorm.DB {
 			return orderProductVariants(db)
-		})
-	query = r.preloadProductVariantOptionValues(query).
+		}))
+	query = r.preloadProductVariantOptionValues(query)
+	query = r.preloadSpokeRepairKitModels(query).
 		Preload("AfterSalesTemplate").
 		Preload("PackagingTemplate").
 		Where("products.status = ?", "active").
@@ -337,13 +339,14 @@ func (r *ProductRepository) ListRecommendationCandidates(input ProductRecommenda
 	var products []product.Product
 	var total int64
 
-	query := r.db.Model(&product.Product{}).
+	query := r.preloadProductCategory(r.db.Model(&product.Product{}).
 		Preload("Brand").
 		Preload("Media", orderProductMedia).
 		Preload("ProductSpecificationTemplate.SpecDefinitions", orderSpecDefinitions).
 		Preload("SpecValues.SpecDefinition", orderSpecDefinitions).
-		Preload("Variants", orderProductVariants)
-	query = r.preloadProductVariantOptionValues(query).
+		Preload("Variants", orderProductVariants))
+	query = r.preloadProductVariantOptionValues(query)
+	query = r.preloadSpokeRepairKitModels(query).
 		Preload("AfterSalesTemplate").
 		Preload("PackagingTemplate").
 		Where("products.status = ?", "active").
@@ -411,11 +414,13 @@ func (r *ProductRepository) ListQuickBuyCandidates(input ProductQuickBuyCandidat
 		Preload("ProductSpecificationTemplate.SpecDefinitions", orderSpecDefinitions).
 		Preload("SpecValues.SpecDefinition", orderSpecDefinitions).
 		Preload("Variants", orderProductVariants)
-	query = r.preloadProductVariantOptionValues(query).
+	query = r.preloadProductVariantOptionValues(query)
+	query = r.preloadSpokeRepairKitModels(query).
 		Preload("AfterSalesTemplate").
 		Preload("PackagingTemplate")
 
 	query = applyQuickBuyCandidateScope(query, input)
+	query = r.excludeSpokeRepairKitProductsFromQuickBuy(query)
 	var err error
 	query, err = applyProductSpecFilters(query, input.SpecFilters, r.db.Dialector.Name())
 	if err != nil {
@@ -442,6 +447,33 @@ func (r *ProductRepository) ListQuickBuyCandidates(input ProductQuickBuyCandidat
 		return nil, 0, err
 	}
 	return products, total, nil
+}
+
+// excludeSpokeRepairKitProductsFromQuickBuy keeps the repair-kit purchase
+// contract on the product detail page, where the buyer must choose one
+// compatible wheelset model. The table-existence guard keeps lightweight
+// repository tests and pre-migration read paths compatible with older schemas.
+func (r *ProductRepository) excludeSpokeRepairKitProductsFromQuickBuy(query *gorm.DB) *gorm.DB {
+	if r == nil || r.db == nil || query == nil || !r.db.Migrator().HasTable(&product.ProductCategory{}) {
+		return query
+	}
+	return query.Where(`(
+		products.product_category_id IS NULL
+		OR products.product_category_id NOT IN (
+		WITH RECURSIVE spoke_repair_kit_category_tree(id) AS (
+			SELECT id
+			FROM product_categories
+			WHERE slug = ?
+
+			UNION ALL
+
+			SELECT child.id
+			FROM product_categories child
+			JOIN spoke_repair_kit_category_tree parent ON child.parent_id = parent.id
+		)
+		SELECT id FROM spoke_repair_kit_category_tree
+		)
+	)`, product.SpokeRepairKitProductCategorySlug)
 }
 
 func (r *ProductRepository) ListQuickBuyFilterValues(input ProductQuickBuyCandidateQuery, slugs []string) (map[string][]string, error) {
@@ -807,6 +839,7 @@ func (r *ProductRepository) ListFilterableSpecificationsWithDynamicValuesForCate
 
 func (r *ProductRepository) quickBuyCandidateProductIDs(input ProductQuickBuyCandidateQuery) ([]uint, error) {
 	query := applyQuickBuyCandidateScope(r.db.Model(&product.Product{}), input)
+	query = r.excludeSpokeRepairKitProductsFromQuickBuy(query)
 	filteredQuery, err := applyProductSpecFilters(query, input.SpecFilters, r.db.Dialector.Name())
 	if err != nil {
 		return nil, err
@@ -870,14 +903,15 @@ func (r *ProductRepository) SearchPublic(input ProductSearchQuery) ([]product.Pr
 	var products []product.Product
 	var total int64
 
-	query := r.db.Model(&product.Product{}).Preload("Brand").Preload("ProductSpecificationTemplate").Preload("CustomsClassificationProfile").Preload("Media", func(db *gorm.DB) *gorm.DB {
+	query := r.preloadProductCategory(r.db.Model(&product.Product{}).Preload("Brand").Preload("ProductSpecificationTemplate").Preload("CustomsClassificationProfile").Preload("Media", func(db *gorm.DB) *gorm.DB {
 		return orderProductMedia(db)
 	}).Preload("ProductSpecificationTemplate.SpecDefinitions", func(db *gorm.DB) *gorm.DB {
 		return orderSpecDefinitions(db)
 	}).Preload("Variants", func(db *gorm.DB) *gorm.DB {
 		return orderProductVariants(db)
-	})
-	query = r.preloadProductVariantOptionValues(query).
+	}))
+	query = r.preloadProductVariantOptionValues(query)
+	query = r.preloadSpokeRepairKitModels(query).
 		Preload("AfterSalesTemplate").
 		Preload("PackagingTemplate").
 		Where(activeVariantExistsSQL("pv_public"))
@@ -918,6 +952,8 @@ func (r *ProductRepository) SearchPublicCompact(input ProductSearchQuery) ([]pro
 			return orderProductVariants(db).Where("product_variants.is_active = ?", true)
 		}).
 		Where(activeVariantExistsSQL("pv_public_compact"))
+	query = r.preloadProductCategory(query)
+	query = r.preloadSpokeRepairKitModels(query)
 
 	var err error
 	query, err = applyPublicProductSearchFilters(query, input, r.db.Dialector.Name())
@@ -1019,6 +1055,7 @@ func (r *ProductRepository) FindAllWithFilters(page, pageSize int, status, local
 	}).Preload("Variants", func(db *gorm.DB) *gorm.DB {
 		return orderProductVariants(db)
 	}).Preload("AfterSalesTemplate").Preload("PackagingTemplate"))
+	query = r.preloadSpokeRepairKitModels(query)
 
 	if status != "" {
 		query = query.Where("status = ?", status)

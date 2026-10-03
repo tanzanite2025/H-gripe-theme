@@ -1,5 +1,5 @@
-import type { BrandWheelsetSpokeCatalog, BrandWheelsetSpokeRecord } from '../brand-wheelset-spoke-specs-types'
-import { jBend, straight, wheelset, type SideInput } from '../brand-wheelset-spoke-specs-builders'
+import type { BrandWheelsetSpokeCatalog, BrandWheelsetSpokeRecord } from '../brand-wheelset-spoke-specs-types.js'
+import { jBend, straight, wheelset, type SideInput } from '../brand-wheelset-spoke-specs-builders.js'
 
 const sources = {
   r9270C50: 'https://si.shimano.com/en/pdfs/ev/WH-R9270-C50-TL-R-4831C/EV-WH-R9270-C50-TL-R-4831C.pdf',

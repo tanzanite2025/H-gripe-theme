@@ -24,6 +24,50 @@ const openCatalogFilters = async (page: Page) => {
 }
 
 test.describe('Schwalbe selector URL state', () => {
+  test('keeps the page H1 semantic while hiding only its visual presentation', async ({ page }) => {
+    await page.goto(selectorURL())
+    await waitForNuxtMount(page)
+
+    const title = page.locator('#schwalbe-selector-title')
+    await expect(title).toHaveText('Schwalbe tire selector')
+    await expect(title).toHaveAttribute('class', /schwalbe-selector__title--sr-only/)
+    await expect(title).toHaveCSS('position', 'absolute')
+    await expect(title).toHaveCSS('overflow', 'hidden')
+
+    const titleBox = await title.boundingBox()
+    expect(titleBox).not.toBeNull()
+    expect(titleBox?.width).toBeLessThanOrEqual(1)
+    expect(titleBox?.height).toBeLessThanOrEqual(1)
+  })
+
+  test('separates the introduction and full catalog search into page tabs', async ({ page }) => {
+    await page.goto(selectorURL('?search=Kojak&wheel_size=26-559'))
+    await waitForNuxtMount(page)
+
+    const introTab = page.getByRole('tab', { name: 'Introduction', exact: true })
+    const searchTab = page.getByRole('tab', { name: 'Search', exact: true })
+    const introPanel = page.locator('.schwalbe-selector__section-panel--intro')
+    const searchPanel = page.locator('.schwalbe-selector__section-panel--search')
+    const searchbox = page.getByRole('searchbox')
+
+    await expect(searchTab).toHaveAttribute('aria-selected', 'true')
+    await expect(searchPanel).toBeVisible()
+    await expect(introPanel).toBeHidden()
+    await expect(searchbox).toHaveValue('Kojak')
+
+    await introTab.click()
+    await expect(introTab).toHaveAttribute('aria-selected', 'true')
+    await expect(introPanel).toBeVisible()
+    await expect(searchPanel).toBeHidden()
+    await expect(page).toHaveURL(/search=Kojak/)
+    await expect(page).toHaveURL(/wheel_size=26-559/)
+
+    await searchTab.click()
+    await expect(searchPanel).toBeVisible()
+    await expect(searchbox).toHaveValue('Kojak')
+    await expect(page.getByRole('button', { name: '26" · BSD 559 mm', exact: true })).toHaveAttribute('aria-pressed', 'true')
+  })
+
   test('renders catalog results outside an accessible filter dialog and returns focus on close', async ({ page }) => {
     await page.goto(selectorURL())
     await waitForNuxtMount(page)
@@ -81,6 +125,7 @@ test.describe('Schwalbe selector URL state', () => {
   test('explains casing, color, and compound values in separate telemetry tabs', async ({ page }) => {
     await page.goto(selectorURL())
     await waitForNuxtMount(page)
+    await page.getByRole('tab', { name: 'Introduction', exact: true }).click()
 
     const colorValues = [
       'Black',
@@ -174,6 +219,38 @@ test.describe('Schwalbe selector URL state', () => {
     await expect(compoundTopic.locator('.schwalbe-telemetry__catalog-card')).toHaveCount(compoundValues.length)
   })
 
+  test('groups telemetry tabs into swipeable pairs on a phone viewport', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 })
+    await page.goto(selectorURL())
+    await waitForNuxtMount(page)
+    await page.getByRole('tab', { name: 'Introduction', exact: true }).click()
+
+    const desktopTabs = page.locator('.schwalbe-telemetry__tabs--desktop')
+    const mobileTabs = page.locator('.schwalbe-telemetry__mobile-tabs')
+    const mobileRail = page.locator('.schwalbe-telemetry__mobile-tab-rail')
+    const mobileDots = page.locator('.schwalbe-telemetry__mobile-pagination .tz-carousel-pagination__dot')
+
+    await expect(desktopTabs).toBeHidden()
+    await expect(mobileTabs).toBeVisible()
+    await expect(mobileRail.locator('[data-mobile-tab-group]')).toHaveCount(4)
+    await expect(mobileDots).toHaveCount(4)
+    await expect(mobileTabs.getByRole('tab', { name: 'Radial casing', exact: true })).toHaveAttribute('aria-selected', 'true')
+
+    await mobileDots.nth(1).click()
+    await expect(mobileDots.nth(1)).toHaveAttribute('aria-selected', 'true')
+    await expect(mobileTabs.getByRole('tab', { name: 'Green Marathon', exact: true })).toHaveAttribute('aria-selected', 'true')
+    await expect(page.locator('.schwalbe-telemetry__topic--green')).toBeVisible()
+
+    await mobileRail.locator('[data-mobile-tab-group="2"]').scrollIntoViewIfNeeded()
+    await expect.poll(async () => mobileDots.nth(2).getAttribute('aria-selected')).toBe('true')
+    await expect(mobileTabs.getByRole('tab', { name: 'Color', exact: true })).toHaveAttribute('aria-selected', 'true')
+
+    await mobileDots.nth(3).click()
+    await expect(mobileTabs.getByRole('tab', { name: 'ADDIX / Compound', exact: true })).toHaveAttribute('aria-selected', 'true')
+    await expect(mobileRail.locator('[data-mobile-tab-group="3"] [role="tab"]')).toHaveCount(1)
+    await expect(page.locator('.schwalbe-telemetry__topic--addix')).toBeVisible()
+  })
+
   test('uses a compact weight sort toggle', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 })
     await page.goto(selectorURL())
@@ -229,6 +306,47 @@ test.describe('Schwalbe selector URL state', () => {
     await expect(page).toHaveURL(url => url.searchParams.get('wheel_size') === '26-559')
   })
 
+  test('uses a bounded wheel size picker dialog on a phone viewport', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 })
+    await page.goto(selectorURL('?wheel_size=26-559'))
+    await waitForNuxtMount(page)
+
+    const wheelSizeTrigger = page.getByRole('button', { name: /Wheel size navigation/ })
+    await expect(wheelSizeTrigger).toBeVisible()
+    await expect(page.locator('.schwalbe-wheel-size-tabs__desktop')).toBeHidden()
+    await expect(wheelSizeTrigger).toContainText('26" · BSD 559 mm')
+    await expect.poll(async () => page.locator('.schwalbe-wheel-size-tabs__mobile-trigger').evaluate((element) => {
+      const rect = element.getBoundingClientRect()
+      return rect.left >= 0 && rect.right <= window.innerWidth && rect.width > 0
+    })).toBe(true)
+    await expect.poll(async () => page.evaluate(() => ({
+      viewport: window.innerWidth,
+      scrollWidth: document.documentElement.scrollWidth,
+    }))).toEqual({ viewport: 390, scrollWidth: 390 })
+
+    await wheelSizeTrigger.click()
+    const wheelSizeDialog = page.getByRole('dialog', { name: 'Select wheel size' })
+    await expect(wheelSizeDialog).toBeVisible()
+    await expect.poll(async () => wheelSizeDialog.evaluate((element) => {
+      const rect = element.getBoundingClientRect()
+      return rect.left >= 0
+        && rect.top >= 0
+        && rect.right <= window.innerWidth
+        && rect.bottom <= window.innerHeight
+        && element.scrollWidth <= window.innerWidth
+    })).toBe(true)
+    await expect(wheelSizeDialog.getByRole('option', { name: '26" · BSD 559 mm', exact: true })).toHaveAttribute('aria-selected', 'true')
+
+    await wheelSizeDialog.getByRole('option', { name: '29" · BSD 622 mm', exact: true }).click()
+    await expect(page).toHaveURL(url => url.searchParams.get('wheel_size') === '29-622')
+    await expect(wheelSizeDialog).toHaveCount(0)
+    await expect(wheelSizeTrigger).toContainText('29" · BSD 622 mm')
+
+    await wheelSizeTrigger.click()
+    await page.getByRole('dialog', { name: 'Select wheel size' }).getByRole('option', { name: 'All wheel sizes', exact: true }).click()
+    await expect(page).not.toHaveURL(/wheel_size=/)
+  })
+
   test('hides casing construction filtering and keeps Radial in the URL', async ({ page }) => {
     await page.goto(selectorURL('?casing=Super%20Race&radial=1'))
     await waitForNuxtMount(page)
@@ -244,45 +362,6 @@ test.describe('Schwalbe selector URL state', () => {
     ))
   })
 
-  test('shows rim inner-width guidance on cards instead of filtering by entered width', async ({ page }) => {
-    await page.goto(selectorURL('?inner_rim_width_mm=23.5'))
-    await waitForNuxtMount(page)
-    await openCatalogFilters(page)
-
-    await expect(page.getByRole('spinbutton', { name: 'Rim inner width' })).toHaveCount(0)
-    await expect(page.locator('.schwalbe-filter-panel__rim-match')).toHaveCount(0)
-    await page.getByRole('button', { name: 'Close filters', exact: true }).click()
-    await expect(page.getByRole('dialog')).toHaveCount(0)
-
-    const wheel28 = page.getByRole('button', { name: '28" · BSD 622 mm', exact: true })
-    const wheel29 = page.getByRole('button', { name: '29" · BSD 622 mm', exact: true })
-    await wheel28.click()
-    await expect(page).toHaveURL(url => (
-      url.searchParams.get('wheel_size') === '28-622'
-      && !url.searchParams.has('inner_rim_width_mm')
-    ))
-
-    await wheel29.click()
-    await expect(page).toHaveURL(url => (
-      url.searchParams.get('wheel_size') === '29-622'
-      && !url.searchParams.has('inner_rim_width_mm')
-    ))
-
-    const guidance = page.locator('.schwalbe-tire-card__rim-guidance').first()
-    await expect(guidance).toBeVisible()
-    await expect(guidance).toContainText('Rim inner-width reference')
-    await expect(guidance).toContainText('17–27 mm')
-
-    await openCatalogFilters(page)
-    await page.getByRole('button', { name: 'Clear filters', exact: true }).click()
-    await page.getByRole('button', { name: 'Show results' }).click()
-    await expect(page).toHaveURL(url => (
-      url.searchParams.get('wheel_size') === '29-622'
-      && !url.searchParams.has('inner_rim_width_mm')
-    ))
-    await page.getByRole('button', { name: 'All wheel sizes', exact: true }).click()
-    await expect(page).not.toHaveURL(/wheel_size=|inner_rim_width_mm=/)
-  })
 
   test('keeps the drawer compact and usable on a phone viewport', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 })

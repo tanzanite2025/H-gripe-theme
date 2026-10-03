@@ -208,7 +208,20 @@ return {1, math.floor(tokens)}
 // Redis gives every API replica the same token bucket; the in-process limiter
 // is retained only for development/test environments without Redis.
 func SpokeRateLimit(redisClient redis.UniversalClient) gin.HandlerFunc {
-	local := RateLimitByIPAndFingerprintPerMinute(20, 5)
+	return newRedisBackedAnonymousEngineeringCalculatorRateLimit(redisClient, "spoke-rate-limit:v1", 20, 5)
+}
+
+// TirePressureEngineeringCalculatorRateLimit gives the interactive tire-pressure dashboard
+// its own read-only calculator budget. Its controls can legitimately produce
+// several distinct requests during one editing session, so it must not share
+// the smaller burst budget used by catalog and spoke calculators.
+func TirePressureEngineeringCalculatorRateLimit(redisClient redis.UniversalClient) gin.HandlerFunc {
+	return newRedisBackedAnonymousEngineeringCalculatorRateLimit(redisClient, "tire-pressure-dynamics-rate-limit:v1", 60, 10)
+}
+
+func newRedisBackedAnonymousEngineeringCalculatorRateLimit(redisClient redis.UniversalClient, keyNamespace string, requestsPerMinute, burst int) gin.HandlerFunc {
+	local := RateLimitByIPAndFingerprintPerMinute(requestsPerMinute, burst)
+	refillTokensPerMillisecond := float64(requestsPerMinute) / 60000.0
 	return func(c *gin.Context) {
 		if redisClient == nil {
 			local(c)
@@ -220,8 +233,10 @@ func SpokeRateLimit(redisClient redis.UniversalClient) gin.HandlerFunc {
 			identity = fmt.Sprintf("user:%v", userID)
 		}
 		digest := sha256.Sum256([]byte(identity))
-		key := "commerce_platform:spoke-rate-limit:v1:" + fmt.Sprintf("%x", digest[:])
-		values, err := spokeRateLimitScript.Run(c.Request.Context(), redisClient, []string{key}, time.Now().UnixMilli(), 20.0/60000.0, 5, 120).Slice()
+		key := "commerce_platform:" + keyNamespace + ":" + fmt.Sprintf("%x", digest[:])
+		operationContext, cancel := context.WithTimeout(c.Request.Context(), 2*time.Second)
+		defer cancel()
+		values, err := spokeRateLimitScript.Run(operationContext, redisClient, []string{key}, time.Now().UnixMilli(), refillTokensPerMillisecond, burst, 120).Slice()
 		if err != nil {
 			c.JSON(http.StatusServiceUnavailable, gin.H{"error": "rate_limit_service_unavailable", "message": "Calculator protection is temporarily unavailable"})
 			c.Abort()

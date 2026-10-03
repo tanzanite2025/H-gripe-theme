@@ -152,20 +152,6 @@ const heroVisualNotice = computed(() => {
         title: t('storefrontDataNotice.hero.error.title'),
         description: t('storefrontDataNotice.hero.error.description'),
       }
-    case 'locale-fallback':
-      return {
-        tone: 'fallback' as const,
-        role: 'status' as const,
-        title: t('storefrontDataNotice.hero.localeFallback.title'),
-        description: t('storefrontDataNotice.hero.localeFallback.description'),
-      }
-    case 'built-in-fallback':
-      return {
-        tone: 'fallback' as const,
-        role: 'status' as const,
-        title: t('storefrontDataNotice.hero.builtInFallback.title'),
-        description: t('storefrontDataNotice.hero.builtInFallback.description'),
-      }
     default:
       return null
   }

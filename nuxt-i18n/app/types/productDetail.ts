@@ -153,6 +153,12 @@ export interface ProductBrand {
   website_url?: string
 }
 
+export interface ProductCategory {
+  id: number
+  name: string
+  slug: string
+}
+
 export interface ProductDisplayPrice {
   amount_decimal: string
   currency: string
@@ -201,6 +207,7 @@ export interface GoProduct {
   product_specification_template_id?: number
   product_specification_template?: ProductSpecificationTemplate
   brand?: ProductBrand | null
+  product_category?: ProductCategory | null
   name: string
   slug: string
   short_description?: string
@@ -224,9 +231,20 @@ export interface GoProduct {
   variants?: ProductVariant[]
   variant_option_values?: ProductVariantOptionValue[]
   option_value_relations?: ProductOptionValueRelation[]
+  spoke_repair_kit_models?: SpokeRepairKitModel[]
   review_summary?: ProductReviewSummary | null
   shipping_details?: ProductShippingDetails | null
   breadcrumb?: ProductBreadcrumb | null
+}
+
+export interface SpokeRepairKitModel {
+  id: number
+  brand_slug: string
+  brand_name: string
+  wheelset_model_slug: string
+  wheelset_model_name: string
+  lifecycle_status?: string
+  sort_order?: number
 }
 
 export type ProductPreviewMedia =

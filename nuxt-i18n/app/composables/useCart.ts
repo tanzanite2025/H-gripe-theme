@@ -147,13 +147,18 @@ const normalizeBackendCartItem = (
   const thumbnail = resolveProductThumbnail(product, mediaContext)
   const itemCurrency = normalizeCurrencyCode(item.currency || variant.currency || product.currency) || normalizeCurrencyCode(fallbackCurrency) || 'USD'
   const fulfillmentMode = product.fulfillment_mode === 'made_to_order' ? 'made_to_order' : 'stock'
+  const configurationLabel = String(item.configuration_label || '').trim()
+  const baseTitle = product.name || 'Unknown Product'
+  const variantTitle = String(variant.title || '').trim()
+  const variantLabel = variantTitle && variantTitle.toLowerCase() !== 'default' ? variantTitle : ''
+  const displayTitle = [baseTitle, variantLabel, configurationLabel].filter(Boolean).join(' - ')
 
   return {
     id: cartItemKey(productId, variantId, item.configuration_hash, selectedOptions),
     product_id: productId,
     variant_id: variantId,
-    name: product.name || 'Unknown Product',
-    title: product.name || 'Unknown Product',
+    name: displayTitle,
+    title: displayTitle,
     slug: product.slug || '',
     price_minor: Number(item.price_minor ?? item.price ?? 0),
     currency: itemCurrency,

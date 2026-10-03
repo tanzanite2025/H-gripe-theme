@@ -73,6 +73,10 @@ export const useSpokeCalculatorWizard = () => {
     draft[side].interlaceCompensationMm = compensationMm
   }
 
+  const setSpokeElongationCompensation = (side: SpokeWheelSide, compensationMm: number | null) => {
+    draft[side].spokeElongationCompensationMm = compensationMm
+  }
+
   const setNippleType = (side: SpokeWheelSide, nippleType: SpokeNippleType) => {
     draft[side].nippleType = nippleType
   }
@@ -98,6 +102,7 @@ export const useSpokeCalculatorWizard = () => {
     setSpokeHoleDiameter,
     setInterlacing,
     setInterlaceCompensation,
+    setSpokeElongationCompensation,
     setNippleType,
     setNippleLength,
   }

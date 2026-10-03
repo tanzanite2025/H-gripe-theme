@@ -2,10 +2,10 @@
   "title": "如何选择合适的尺寸",
   "standards": {
     "title": "制造商标准",
-    "description": "下方 DT Swiss 无钩（TSS）和有钩（TC）车圈内宽图表展示了推荐组合与可用组合。HTML 表格同步整理了图表行，方便搜索引擎和读屏工具读取。请始终遵守轮胎和车圈制造商给出的限制。",
+    "description": "下方 DT Swiss 无钩（TSS）和有钩（TC）车圈内宽图表展示了推荐组合与图表标记的 possible 参考组合。HTML 表格同步整理了图表行，方便搜索引擎和读屏工具读取；它不是具体轮胎或车圈型号的认证。请始终遵守轮胎、车圈和轮组制造商给出的限制。",
     "recommended": "推荐组合",
-    "possible": "可用组合",
-    "legendDescription": "推荐组合表示图表中优先建议的轮胎与车圈搭配；可用组合表示允许但处于优先范围之外的搭配。",
+    "possible": "可能组合（参考）",
+    "legendDescription": "推荐组合表示 DT Swiss 图表中的优先搭配；possible 组合只是图表参考，不应改写为推荐，也不代表具体型号已经认证。",
     "hooklessTitle": "无钩 / 无内胎直边（TSS）",
     "hookedTitle": "有钩 / 无内胎钩边（TC）",
     "captionHookless": "DT Swiss 无钩 TSS 轮胎宽度与车圈内宽的推荐及可用组合",
@@ -14,7 +14,7 @@
       "tireWidthMm": "轮胎宽度（mm）",
       "tireWidthInch": "轮胎宽度（英寸）",
       "recommendedRim": "推荐车圈内宽（mm）",
-      "possibleRim": "可用车圈内宽（mm）"
+      "possibleRim": "可能参考车圈内宽（mm）"
     }
   },
   "images": {

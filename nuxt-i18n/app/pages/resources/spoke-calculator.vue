@@ -56,6 +56,7 @@
           v-model:rear-interlacing="rearInterlacing"
           v-model:front-compensation="frontInterlaceCompensationMm"
           v-model:rear-compensation="rearInterlaceCompensationMm"
+          v-model:spoke-elongation-compensation="spokeElongationCompensationMm"
           :front-crossing="spokeWizardDraft.front.crossing"
           :rear-crossing="spokeWizardDraft.rear.crossing"
           :current-step="activeWizardStep"
@@ -73,9 +74,6 @@
           @select-step="goToStep"
           @previous="previousStep"
         />
-
-        <!-- Standalone full-width reference card, above the calculator settings. -->
-        <SpokePhysicsDiagrams class="spoke-page__physics-card" />
 
         <div class="support-page__calculator-wrapper">
           <SpokeCalculatorBlueprint
@@ -111,15 +109,24 @@ import SpokeHoleEngagementStep from '~/components/SpokeHoleEngagementStep.vue'
 import SpokeInterlacingStep from '~/components/SpokeInterlacingStep.vue'
 import SpokeNippleStep from '~/components/SpokeNippleStep.vue'
 import SpokePCDStep from '~/components/SpokePCDStep.vue'
-import SpokePhysicsDiagrams from '~/components/SpokePhysicsDiagrams.vue'
 import UserFeedbackThread from '~/components/UserFeedbackThread.vue'
 
 import { usePageMessages } from '~/composables/usePageMessages'
 import { useSpokeCalculatorWizard } from '~/composables/useSpokeCalculatorWizard'
 import type { HubGeometry } from '~/data/spoke-calculator/database'
 import type { SpokeHeadType, SpokeInterlacing, SpokeNippleType } from '~/types/spokeCalculator'
-import { definePageMeta, useHead, useI18n } from '#imports'
+import { definePageMeta, useAsyncData, useHead, useI18n } from '#imports'
 import { computed, watch } from 'vue'
+import { useApiRequest } from '~/composables/useApiRequest'
+
+interface SpokeCalculatorEngineeringMetadata {
+  model_version: string
+  formula_version: string
+  knowledge_as_of: string
+  calculation_status: string
+  source_basis: string
+  limitations: string[]
+}
 
 const { locale, t } = useI18n()
 const { loadPageMessages } = usePageMessages('resourcesSpokeCalculator')
@@ -138,6 +145,7 @@ const {
   setSpokeHoleDiameter,
   setInterlacing,
   setInterlaceCompensation,
+  setSpokeElongationCompensation,
   setNippleType,
   setNippleLength,
 } = useSpokeCalculatorWizard()
@@ -227,6 +235,15 @@ const rearInterlaceCompensationMm = computed<number | null>({
   set: value => setInterlaceCompensation('rear', value),
 })
 
+const spokeElongationCompensationMm = computed<number | null>({
+  get: () => spokeWizardDraft.front.spokeElongationCompensationMm
+    ?? spokeWizardDraft.rear.spokeElongationCompensationMm,
+  set: value => {
+    setSpokeElongationCompensation('front', value)
+    setSpokeElongationCompensation('rear', value)
+  },
+})
+
 const frontNippleType = computed<SpokeNippleType>({
   get: () => spokeWizardDraft.front.nippleType,
   set: value => setNippleType('front', value),
@@ -253,6 +270,20 @@ watch(locale, (nextLocale) => {
   void loadPageMessages(nextLocale)
 })
 
+const { request } = useApiRequest()
+const { data: spokeCalculatorEngineeringMetadata } = await useAsyncData<SpokeCalculatorEngineeringMetadata | null>(
+  'spoke-calculator-engineering-metadata',
+  async () => {
+    const response = await request<{ data?: SpokeCalculatorEngineeringMetadata }>(
+      '/spoke/metadata',
+      {},
+      'Spoke calculator engineering metadata is temporarily unavailable',
+    )
+    return response.data || null
+  },
+  { default: () => null },
+)
+
 definePageMeta({
   layout: 'products',
   footerLabelKey: 'support.nav.spokeCalculator',
@@ -267,18 +298,28 @@ useHead(() => ({
       '@context': 'https://schema.org',
       '@type': 'TechArticle',
       headline: t('resourcesSpokeCalculator.title'),
-      version: 'V1.0-ENGINEERING',
       proficiencyLevel: 'Expert',
+      description: t('resourcesSpokeCalculator.catalog.description'),
       author: {
         '@type': 'Organization',
         name: 'Guangengwang Engineering Lab',
       },
       inLanguage: locale.value,
-      hasPart: [{
-        '@type': 'Dataset',
-        name: 'Spoke calculator engineering dataset',
-        description: 'Server-side spoke length and tension-ratio calculations for validated rim and hub geometry.',
-      }],
+      ...(spokeCalculatorEngineeringMetadata.value?.model_version
+        ? { version: spokeCalculatorEngineeringMetadata.value.model_version }
+        : {}),
+      ...(spokeCalculatorEngineeringMetadata.value?.knowledge_as_of
+        ? { dateModified: spokeCalculatorEngineeringMetadata.value.knowledge_as_of }
+        : {}),
+      ...(spokeCalculatorEngineeringMetadata.value?.formula_version
+        ? {
+            additionalProperty: [{
+              '@type': 'PropertyValue',
+              name: 'formulaVersion',
+              value: spokeCalculatorEngineeringMetadata.value.formula_version,
+            }],
+          }
+        : {}),
     }),
   }],
 }))
@@ -297,10 +338,6 @@ useHead(() => ({
 
 .support-page__calculator-wrapper {
   margin-top: 1.5rem;
-}
-
-.spoke-page__physics-card {
-  margin-bottom: 1.5rem;
 }
 
 .spoke-page__head-step {

@@ -1,11 +1,14 @@
 <template>
-  <figure class="home-hero-visual-showcase-figure">
+  <figure
+    class="home-hero-visual-showcase-figure"
+    :class="{ 'home-hero-visual-showcase-figure--empty': !item.src }"
+  >
     <StorefrontImage
+      v-if="item.src"
       :src="item.src"
       :alt="item.altText"
+      preset="home-hero-showcase"
       class="home-hero-visual-showcase-figure__image h-full w-full object-cover"
-      :sizes="sizes"
-      densities="1x"
       format="webp"
       quality="82"
       :loading="loading"
@@ -14,7 +17,7 @@
       decoding="async"
     />
     <figcaption
-      v-if="captionVisibility !== 'hidden'"
+      v-if="captionVisibility !== 'hidden' && (item.title || item.caption)"
       class="home-hero-visual-showcase-figure__caption"
       :class="{ 'home-hero-visual-showcase-figure__caption--sr-only': captionVisibility === 'sr-only' }"
     >
@@ -35,13 +38,11 @@ type HeroImagePreload = boolean | {
 
 withDefaults(defineProps<{
   item: HomeHeroVisualShowcaseItem
-  sizes?: string
   loading?: 'eager' | 'lazy'
   fetchpriority?: 'high' | 'low' | 'auto'
   preload?: HeroImagePreload
   captionVisibility?: 'inline' | 'sr-only' | 'hidden'
 }>(), {
-  sizes: 'xs:100vw sm:50vw lg:22vw',
   loading: 'lazy',
   fetchpriority: 'low',
   preload: false,
@@ -52,7 +53,7 @@ withDefaults(defineProps<{
 <style scoped>
 .home-hero-visual-showcase-figure {
   position: relative;
-  aspect-ratio: 3 / 4;
+  aspect-ratio: 1 / 1;
   min-width: 0;
   overflow: hidden;
   margin: 0;
@@ -68,6 +69,14 @@ withDefaults(defineProps<{
   content: '';
   background: linear-gradient(180deg, rgba(0, 0, 0, 0.02) 45%, rgba(0, 0, 0, 0.28));
   pointer-events: none;
+}
+
+.home-hero-visual-showcase-figure--empty {
+  background: var(--tz-image-loading-surface);
+}
+
+.home-hero-visual-showcase-figure--empty::after {
+  display: none;
 }
 
 .home-hero-visual-showcase-figure__image {

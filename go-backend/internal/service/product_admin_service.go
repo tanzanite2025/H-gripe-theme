@@ -89,6 +89,7 @@ type ProductCreateInput struct {
 	VariantOptionValues            []ProductVariantOptionValueInput
 	Media                          []ProductMediaInput
 	OptionValueRelations           []ProductOptionValueRelationInput
+	SpokeRepairKitModelKeys        []string
 }
 
 type ProductUpdateInput struct {
@@ -137,6 +138,8 @@ type ProductUpdateInput struct {
 	UpdateMedia                          bool
 	OptionValueRelations                 []ProductOptionValueRelationInput
 	UpdateOptionValueRelations           bool
+	SpokeRepairKitModelKeys              []string
+	UpdateSpokeRepairKitModelKeys        bool
 }
 
 func (s *ProductService) ListAdmin(page, pageSize int, status, locale, search, featured, customsStatus, productSpecificationTemplateID string) ([]product.Product, int64, error) {
@@ -194,6 +197,21 @@ func (s *ProductService) CreateAdminProduct(input ProductCreateInput) (*product.
 		return nil, err
 	}
 
+	// Resolve the product type before building generic specification values.
+	// A spoke repair-kit product has no generic specification template, so the
+	// dedicated type error must win even when the supplied template is missing
+	// required fields.
+	if err := s.validateProductCategory(input.ProductCategoryID, false); err != nil {
+		return nil, err
+	}
+	if err := s.validateSpokeRepairKitProductCreationType(input.ProductCategoryID, input.ProductSpecificationTemplateID); err != nil {
+		return nil, err
+	}
+	spokeRepairKitModels, err := s.buildSpokeRepairKitModels(input.ProductCategoryID, input.SpokeRepairKitModelKeys)
+	if err != nil {
+		return nil, err
+	}
+
 	specValues, err := s.buildSpecValues(input.ProductSpecificationTemplateID, input.SpecValues, 0)
 	if err != nil {
 		return nil, err
@@ -238,9 +256,6 @@ func (s *ProductService) CreateAdminProduct(input ProductCreateInput) (*product.
 		return nil, err
 	}
 	if err := s.validateProductBrand(input.BrandID, false); err != nil {
-		return nil, err
-	}
-	if err := s.validateProductCategory(input.ProductCategoryID, false); err != nil {
 		return nil, err
 	}
 	if err := s.validateInformationTemplate(input.AfterSalesTemplateID, product.ProductInformationTemplateKindAfterSales, locale, false); err != nil {
@@ -295,6 +310,9 @@ func (s *ProductService) CreateAdminProduct(input ProductCreateInput) (*product.
 			if err := tx.Product.CreateWithSpecValuesVariantsOptionValuesAndMedia(newProduct, specValues, variants, optionValues, mediaItems); err != nil {
 				return mapProductRepositoryMutationError(err)
 			}
+			if err := tx.Product.ReplaceSpokeRepairKitModels(newProduct.ID, spokeRepairKitModels); err != nil {
+				return err
+			}
 			var err error
 			createdProduct, err = tx.Product.FindByID(newProduct.ID)
 			if err != nil {
@@ -316,8 +334,13 @@ func (s *ProductService) CreateAdminProduct(input ProductCreateInput) (*product.
 		return createdProduct, nil
 	}
 
-	if err := s.productRepo.CreateWithSpecValuesVariantsOptionValuesAndMedia(newProduct, specValues, variants, optionValues, mediaItems); err != nil {
-		return nil, mapProductRepositoryMutationError(err)
+	if err := s.productRepo.WithinTransaction(func(txProduct *repository.ProductRepository) error {
+		if err := txProduct.CreateWithSpecValuesVariantsOptionValuesAndMedia(newProduct, specValues, variants, optionValues, mediaItems); err != nil {
+			return mapProductRepositoryMutationError(err)
+		}
+		return txProduct.ReplaceSpokeRepairKitModels(newProduct.ID, spokeRepairKitModels)
+	}); err != nil {
+		return nil, err
 	}
 
 	s.invalidateStorefrontHTMLCache("admin product create")
@@ -337,9 +360,13 @@ func (s *ProductService) UpdateAdminProduct(id uint, input ProductUpdateInput) (
 	if err != nil {
 		return nil, err
 	}
+	if err := s.validateSpokeRepairKitProductUpdateType(existingProduct, input); err != nil {
+		return nil, err
+	}
 	previousProduct := *existingProduct
 	previousAfterSalesTemplateID := existingProduct.AfterSalesTemplateID
 	previousPackagingTemplateID := existingProduct.PackagingTemplateID
+	previousCategoryID := existingProduct.ProductCategoryID
 
 	if input.UpdateProductSpecificationTemplateID {
 		existingProduct.ProductSpecificationTemplateID = input.ProductSpecificationTemplateID
@@ -559,6 +586,19 @@ func (s *ProductService) UpdateAdminProduct(id uint, input ProductUpdateInput) (
 		}
 	}
 
+	updateSpokeRepairKitModels := input.UpdateSpokeRepairKitModelKeys || input.UpdateProductCategoryID
+	var spokeRepairKitModels []product.SpokeRepairKitModel
+	if updateSpokeRepairKitModels {
+		keys := input.SpokeRepairKitModelKeys
+		if !input.UpdateSpokeRepairKitModelKeys && input.UpdateProductCategoryID && previousCategoryID != nil && existingProduct.ProductCategoryID != nil && *previousCategoryID == *existingProduct.ProductCategoryID {
+			keys = spokeRepairKitModelKeys(existingProduct.SpokeRepairKitModels)
+		}
+		spokeRepairKitModels, err = s.buildSpokeRepairKitModels(existingProduct.ProductCategoryID, keys)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	if s.txManager != nil {
 		var updatedProduct *product.Product
 		err := s.txManager.WithinTx(func(tx repository.TxRepositories) error {
@@ -567,6 +607,11 @@ func (s *ProductService) UpdateAdminProduct(id uint, input ProductUpdateInput) (
 			}
 			if err := tx.Product.UpdateWithSpecValuesVariantsOptionValuesAndMedia(existingProduct, specValues, input.UpdateSpecValues, variants, input.UpdateVariants, optionValues, input.UpdateVariantOptionValues, mediaItems, input.UpdateMedia); err != nil {
 				return mapProductRepositoryMutationError(err)
+			}
+			if updateSpokeRepairKitModels {
+				if err := tx.Product.ReplaceSpokeRepairKitModels(existingProduct.ID, spokeRepairKitModels); err != nil {
+					return err
+				}
 			}
 			var err error
 			updatedProduct, err = tx.Product.FindByID(existingProduct.ID)
@@ -597,8 +642,16 @@ func (s *ProductService) UpdateAdminProduct(id uint, input ProductUpdateInput) (
 		return updatedProduct, nil
 	}
 
-	if err := s.productRepo.UpdateWithSpecValuesVariantsOptionValuesAndMedia(existingProduct, specValues, input.UpdateSpecValues, variants, input.UpdateVariants, optionValues, input.UpdateVariantOptionValues, mediaItems, input.UpdateMedia); err != nil {
-		return nil, mapProductRepositoryMutationError(err)
+	if err := s.productRepo.WithinTransaction(func(txProduct *repository.ProductRepository) error {
+		if err := txProduct.UpdateWithSpecValuesVariantsOptionValuesAndMedia(existingProduct, specValues, input.UpdateSpecValues, variants, input.UpdateVariants, optionValues, input.UpdateVariantOptionValues, mediaItems, input.UpdateMedia); err != nil {
+			return mapProductRepositoryMutationError(err)
+		}
+		if updateSpokeRepairKitModels {
+			return txProduct.ReplaceSpokeRepairKitModels(existingProduct.ID, spokeRepairKitModels)
+		}
+		return nil
+	}); err != nil {
+		return nil, err
 	}
 
 	s.clearProductCache(&previousProduct)

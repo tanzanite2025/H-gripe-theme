@@ -1,7 +1,7 @@
 <template>
   <div class="grid gap-3 rounded-xl border border-border/80 bg-background p-3 lg:grid-cols-[9rem_minmax(0,1fr)] lg:items-start">
     <div class="min-w-0 space-y-2">
-      <div class="aspect-[3/4] overflow-hidden rounded-lg bg-muted">
+      <div class="aspect-square overflow-hidden rounded-lg bg-muted">
         <img
           v-if="item.image_url"
           :src="item.image_url"
@@ -36,7 +36,7 @@
           ref="fileInput"
           type="file"
           class="hidden"
-          :accept="uploadSpecAccept('visual_showcase_editorial')"
+          :accept="uploadSpecAccept('visual_showcase_home_hero')"
           :disabled="!canEdit || uploading"
           @change="handleUploadFile"
         />
@@ -135,13 +135,12 @@ const handleUploadFile = async (event: Event): Promise<void> => {
   const file = input?.files?.[0] || null
   if (input) input.value = ''
   if (!file) return
-  const validation = await validateUploadFile(file, 'visual_showcase_editorial')
+  const validation = await validateUploadFile(file, 'visual_showcase_home_hero')
   if (!validation.ok) {
-    toast.error(validation.error || '竖版视觉图片不符合上传规范')
+    toast.error(validation.error || '首页首屏视觉图片必须是 600×600 px')
     return
   }
   if (validation.warning) toast.warning(validation.warning)
   emit('upload-image', { index: props.index, file })
 }
 </script>
-

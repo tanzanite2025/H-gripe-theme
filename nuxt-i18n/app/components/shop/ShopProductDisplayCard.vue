@@ -4,7 +4,12 @@ import { useLocalePath } from '#imports'
 import ProductRatingCompact from '~/components/shop/ProductRatingCompact.vue'
 import ProductSharePopover from '~/components/shop/ProductSharePopover.vue'
 import { useCart } from '~/composables/useCart'
-import { resolveShopProductImage, type ShopProduct, useShopProducts } from '~/composables/useShopProducts'
+import {
+  isSpokeRepairKitShopProduct,
+  resolveShopProductImage,
+  type ShopProduct,
+  useShopProducts,
+} from '~/composables/useShopProducts'
 
 type ShopProductDisplayCardDensity = 'catalog' | 'quick-buy'
 
@@ -95,6 +100,8 @@ const handleShareDialogClose = () => {
 }
 
 const canAddToCart = computed(() => props.product.availability !== 'out_of_stock')
+const isSpokeRepairKit = computed(() => isSpokeRepairKitShopProduct(props.product))
+const showDirectAddToCartAction = computed(() => props.density === 'catalog' && !isSpokeRepairKit.value)
 
 const handleAddToCart = () => {
   if (!canAddToCart.value) return
@@ -233,7 +240,7 @@ const productDetailUrl = computed(() => {
       class="shop-product-display-card__actions"
     >
       <button
-        v-if="density === 'catalog'"
+        v-if="showDirectAddToCartAction"
         type="button"
         class="shop-product-display-card__add-to-cart-action"
         :disabled="!canAddToCart"

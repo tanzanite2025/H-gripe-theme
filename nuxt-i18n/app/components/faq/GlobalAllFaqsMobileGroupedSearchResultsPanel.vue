@@ -160,7 +160,7 @@ const emit = defineEmits<{
   min-width: 0;
   flex: 1;
   color: var(--tz-text-primary);
-  font-size: 1rem;
+  font-size: var(--tz-type-faq-question);
   line-height: 1.45;
 }
 

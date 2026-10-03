@@ -1,0 +1,2 @@
+-- Keep sourced compatibility facts forward-only so a rollback cannot make a
+-- previously reviewed model silently lose its provenance.

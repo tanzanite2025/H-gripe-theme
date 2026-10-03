@@ -496,6 +496,8 @@ import {
 } from '~/utils/primaryMegaNav'
 import {
   groupBreadcrumbRoutePathsAtLevel,
+  normalizeBreadcrumbRouteSegments,
+  resolveBreadcrumbSubNavigationOwner,
   resolveBreadcrumbSiblingTarget,
 } from '~/utils/breadcrumbRouteNavigation'
 import {
@@ -919,7 +921,7 @@ interface BreadcrumbRouteCandidate {
   depth: number
   dynamicSegmentCount: number
   order: number
-  routeRecord: BreadcrumbRouteRecord
+  routeRecord?: BreadcrumbRouteRecord
 }
 
 interface BreadcrumbRouteFamily {
@@ -1079,8 +1081,9 @@ const getBreadcrumbMetaLabel = (meta: Record<string, unknown> | undefined) => {
 const getBreadcrumbRouteCandidates = (includeDynamic = false): BreadcrumbRouteCandidate[] => {
   const candidates: BreadcrumbRouteCandidate[] = []
   const seen = new Set<string>()
+  const routeRecords = router.getRoutes()
 
-  router.getRoutes().forEach((routeRecord, order) => {
+  routeRecords.forEach((routeRecord, order) => {
     const rawPath = routeRecord.path || '/'
     const path = normalizeBreadcrumbPath(rawPath)
     const segments = path.split('/').filter(Boolean)
@@ -1107,6 +1110,28 @@ const getBreadcrumbRouteCandidates = (includeDynamic = false): BreadcrumbRouteCa
       dynamicSegmentCount: segments.filter(segment => isDynamicBreadcrumbSegment(segment)).length,
       order,
       routeRecord,
+    })
+  })
+
+  // Nuxt registers virtual page tabs through constrained dynamic routes.
+  // Add their concrete destinations to the same path tree so every breadcrumb
+  // depth can discover real siblings instead of depending on a special menu.
+  pageSubNavigationEntries.forEach((entry, entryIndex) => {
+    entry.tabs.forEach((tab, tabIndex) => {
+      const rawPath = tab.to || pageSubNavigationChildPath(entry.path, tab.id)
+      const path = normalizeBreadcrumbPath(rawPath)
+      const segments = normalizeBreadcrumbRouteSegments(path, getAllLocaleCodes())
+      const key = `${path}:static`
+
+      if (seen.has(key) || isBreadcrumbExcludedPath(path)) return
+      seen.add(key)
+      candidates.push({
+        path,
+        segments,
+        depth: segments.length,
+        dynamicSegmentCount: 0,
+        order: routeRecords.length + entryIndex * 1000 + tabIndex,
+      })
     })
   })
 
@@ -1201,7 +1226,7 @@ const getBreadcrumbRouteFamilyLabel = (segment: string) => {
   const path = `/${segment}`
   const routeCandidate = getStaticBreadcrumbRouteCandidateForPath(path)
   const routeMetaLabel = getBreadcrumbMetaLabel(
-    routeCandidate?.routeRecord.meta as Record<string, unknown> | undefined
+    routeCandidate?.routeRecord?.meta as Record<string, unknown> | undefined
   )
 
   return (
@@ -1220,7 +1245,7 @@ const getBreadcrumbRouteLabel = (path: string, segment: string) => {
   if (matchingCard) return cardDisplayLabel(matchingCard)
 
   const routeCandidate = findBreadcrumbRouteCandidateForPath(normalizedPath)
-  const routeMetaLabel = getBreadcrumbMetaLabel(routeCandidate?.routeRecord.meta as Record<string, unknown> | undefined)
+  const routeMetaLabel = getBreadcrumbMetaLabel(routeCandidate?.routeRecord?.meta as Record<string, unknown> | undefined)
   if (routeMetaLabel) return routeMetaLabel
 
   if (normalizeBreadcrumbPath(route.path || '/') === normalizedPath) {
@@ -1373,13 +1398,12 @@ const getBreadcrumbPageSubNavigationTab = (
   return match?.kind === 'tab' ? match : null
 }
 
-const getPageSubNavigationSiblingSubNavigation = (
-  targetPath: string
+const getBreadcrumbPageSubNavigationMenuForExactCurrentRoute = (
+  targetPath: string,
+  match: NonNullable<ReturnType<typeof getPageSubNavigationBreadcrumbMatch>>,
 ): BreadcrumbSubNavigation | undefined => {
   const normalizedTargetPath = normalizeBreadcrumbPath(targetPath)
   const currentPath = normalizeBreadcrumbPath(route.path || '/')
-  const match = getBreadcrumbPageSubNavigationTab(normalizedTargetPath)
-  if (!match) return undefined
 
   const { entry } = match
   const tabs = entry.tabs.map(tab => {
@@ -1389,7 +1413,7 @@ const getPageSubNavigationSiblingSubNavigation = (
       id: `${entry.path}:${tab.id}`,
       label: pageSubNavigationTabLabel(tab),
       to: getBreadcrumbSiblingTarget(normalizedTargetPath, tabPath, tabPath),
-      active: isSameOrNestedBreadcrumbPath(currentPath, tabPath),
+      active: match.kind === 'tab' && isSameOrNestedBreadcrumbPath(currentPath, tabPath),
     }
   })
 
@@ -1405,30 +1429,47 @@ const getBreadcrumbSiblingSubNavigation = (
   const normalizedTargetPath = normalizeBreadcrumbPath(targetPath)
   const targetSegments = getBreadcrumbPathSegments(normalizedTargetPath)
   const targetDepth = targetSegments.length
+  const currentPath = normalizeBreadcrumbPath(route.path || '/')
 
   if (targetDepth === 0) return undefined
-  const pageSubNavigation = getPageSubNavigationSiblingSubNavigation(normalizedTargetPath)
-  if (pageSubNavigation) return pageSubNavigation
-
+  const pageMatch = getPageSubNavigationBreadcrumbMatch(normalizedTargetPath, getAllLocaleCodes())
   if (targetDepth === 1) return getRouteFamilyBreadcrumbSubNavigation(normalizedTargetPath)
 
   const parentSegments = targetSegments.slice(0, -1)
   const siblingGroups = getBreadcrumbRouteLevelGroups(parentSegments, targetDepth)
-  const isCurrentLevelRegistered = siblingGroups.some(group => group.path === normalizedTargetPath)
-  if (!isCurrentLevelRegistered || siblingGroups.length <= 1) return undefined
+  const navigationOwner = resolveBreadcrumbSubNavigationOwner({
+    breadcrumbPath: normalizedTargetPath,
+    currentRoutePath: currentPath,
+    siblingPaths: siblingGroups.map(group => group.path),
+    hasPageSubNavigation: Boolean(pageMatch),
+    localeCodes: getAllLocaleCodes(),
+  })
 
-  const currentPath = normalizeBreadcrumbPath(route.path || '/')
-  const tabs = siblingGroups.map(group => ({
-    id: group.id,
-    label: getBreadcrumbRouteLabel(group.path, group.segment),
-    to: getBreadcrumbSiblingTarget(normalizedTargetPath, group.path, group.target),
-    active: isSameOrNestedBreadcrumbPath(currentPath, group.path),
-  }))
+  // Same-depth route peers always own this crumb's dropdown. Page tabs are
+  // included in the route tree above, so they follow the same rule as every
+  // other level and work for both direct English and prefixed locales.
+  if (navigationOwner === 'same-level-route-siblings') {
+    const tabs = siblingGroups.map(group => ({
+      id: group.id,
+      label: getBreadcrumbRouteLabel(group.path, group.segment),
+      to: getBreadcrumbSiblingTarget(normalizedTargetPath, group.path, group.target),
+      active: isSameOrNestedBreadcrumbPath(currentPath, group.path),
+    }))
 
-  return createBreadcrumbSubNavigation(
-    `${getBreadcrumbRouteLabel(`/${parentSegments.join('/')}`, parentSegments[parentSegments.length - 1] || '')} pages`,
-    tabs
-  )
+    return createBreadcrumbSubNavigation(
+      `${getBreadcrumbRouteLabel(`/${parentSegments.join('/')}`, parentSegments[parentSegments.length - 1] || '')} pages`,
+      tabs
+    )
+  }
+
+  // Retain child-page navigation only when the route tree has no same-level
+  // peers. This keeps standalone tabbed pages navigable without displacing
+  // sibling routes such as Tire Guides and Wheelset Guide.
+  if (navigationOwner === 'page-sub-navigation' && pageMatch) {
+    return getBreadcrumbPageSubNavigationMenuForExactCurrentRoute(normalizedTargetPath, pageMatch)
+  }
+
+  return undefined
 }
 
 const breadcrumbs = computed<BreadcrumbItem[]>(() => {

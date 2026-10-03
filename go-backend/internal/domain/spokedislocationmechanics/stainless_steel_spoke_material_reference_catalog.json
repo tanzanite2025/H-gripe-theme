@@ -1,0 +1,84 @@
+{
+  "catalog_id": "stainless-steel-spoke-material-reference-catalog",
+  "catalog_version": "2.1.0",
+  "default_material_reference_id": "aisi-304-cold-drawn-wire-true-strain-0-585",
+  "materials": [
+    {
+      "id": "aisi-304-cold-drawn-wire-true-strain-0-585",
+      "material_name": "AISI 304 cold-drawn stainless-steel wire reference (true drawing strain 0.585)",
+      "material_family": "AISI 304 / X5CrNi18-10 (18/8 austenitic stainless steel)",
+      "manufacturing_condition": "Room-temperature multi-pass cold-drawn wire with no intermediate annealing; final diameter 3.55 mm; true drawing strain 0.585; 52.6% area reduction",
+      "elastic_modulus_mpa": 193000,
+      "yield_strength_mpa": 1137,
+      "ultimate_tensile_strength_mpa": 1346,
+      "total_elongation_to_failure_percent": 5,
+      "curve_type": "Engineering stress–engineering strain; initial elastic reference plus post-yield points digitized from the monotonic loading curve through the published ultimate tensile point",
+      "stress_strain_curve": [
+        {
+          "engineering_strain": 0,
+          "engineering_stress_mpa": 0
+        },
+        {
+          "engineering_strain": 0.001,
+          "engineering_stress_mpa": 193
+        },
+        {
+          "engineering_strain": 0.002,
+          "engineering_stress_mpa": 386
+        },
+        {
+          "engineering_strain": 0.003,
+          "engineering_stress_mpa": 579
+        },
+        {
+          "engineering_strain": 0.004,
+          "engineering_stress_mpa": 772
+        },
+        {
+          "engineering_strain": 0.005,
+          "engineering_stress_mpa": 965
+        },
+        {
+          "engineering_strain": 0.005891,
+          "engineering_stress_mpa": 1137
+        },
+        {
+          "engineering_strain": 0.01,
+          "engineering_stress_mpa": 1210
+        },
+        {
+          "engineering_strain": 0.02,
+          "engineering_stress_mpa": 1300
+        },
+        {
+          "engineering_strain": 0.03,
+          "engineering_stress_mpa": 1346
+        }
+      ],
+      "data_version": "2.1.0",
+      "data_status": "published-curve-reference-digitized-from-figure",
+      "source_references": [
+        {
+          "title": "The effect of drawing strain on the fatigue behaviour of stainless and carbon steel wires (UCT thesis, Fig. 4.23 and Table 4.4, printed pp. 113–114)",
+          "reference_type": "university-thesis-tensile-curve",
+          "url": "http://hdl.handle.net/11427/8749",
+          "role": "Defines the AISI 304 wire chemistry, multi-pass drawing condition, yield strength 1137 MPa, ultimate tensile strength 1346 MPa, total elongation to failure 5%, and the engineering tensile curve used here. The post-elastic plotted points are a documented digitization of the ascending curve shown in Fig. 4.23; Table 4.4 anchors the yield, ultimate, and total-failure-elongation values. The initial linear points use the 193000 MPa room-temperature elastic-modulus reference recorded in this profile."
+        },
+        {
+          "title": "UCT repository full thesis PDF",
+          "reference_type": "primary-data-document",
+          "url": "https://open.uct.ac.za/server/api/core/bitstreams/869005f7-b771-4f0f-96c4-53eeecc8a628/content",
+          "role": "Primary document for the drawing schedule, final 3.55 mm diameter, 0.585 true drawing strain, no-intermediate-anneal condition, tensile testing, and curve figure."
+        },
+        {
+          "title": "SAPIM CX-Ray official product sheet (01 10 2025)",
+          "reference_type": "manufacturer-product-identity",
+          "url": "https://sapim.eu/download/cx-ray/",
+          "role": "Confirms that the CX-Ray product is described by SAPIM as 18/8 stainless steel and publishes its geometry and 1600 N/mm² middle-strength product value. It does not publish a complete stress–strain curve or certify that the UCT wire state is the CX-Ray production batch."
+        }
+      ],
+      "applicability": "This is the explicitly selected AISI 304 cold-drawn reference state for the single-spoke axial model. Every geometry preset uses this same defined material state; selecting a model selects its effective load-bearing cross-sectional area, which is paired with this curve in the stress calculation. Model names do not introduce separate brand material curves.",
+      "notes": "The calculator interpolates this stored engineering curve to obtain total strain, elastic strain, plastic strain, and permanent elongation after unloading. The initial linear segment is the 193000 MPa elastic-modulus reference; the post-yield points are digitized from UCT Fig. 4.23 and anchored to Table 4.4. Table 4.4 reports 5% total elongation to failure; the calculator exposes that value only as a loaded-length fracture-elongation reference and does not use it to invent a fracture force. The curve is valid only from zero stress through 1346 MPa; work or overload stress above that endpoint is rejected by the backend. No 950 MPa dislocation-threshold parameter is used."
+    }
+  ]
+}

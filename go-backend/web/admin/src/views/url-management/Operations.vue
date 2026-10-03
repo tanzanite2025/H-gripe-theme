@@ -20,27 +20,14 @@
       </template>
     </AdminPageHeader>
 
-    <div class="overflow-x-auto pb-1">
-      <Tabs
-        :model-value="filters.locale"
-        class="min-w-max"
-        @update:model-value="selectLocale"
-      >
-        <TabsList class="w-max min-w-full flex-nowrap gap-1 rounded-xl border border-border/70 bg-card p-1">
-          <TabsTrigger
-            v-for="language in enabledLanguages"
-            :key="language.code"
-            :value="language.code"
-            class="min-w-20 flex-none px-3 py-1.5 normal-case tracking-normal"
-          >
-            <span class="flex flex-col items-center leading-tight">
-              <span>{{ language.native_name || language.name || language.code }}</span>
-              <span class="font-mono text-[9px] opacity-60">{{ language.code }}</span>
-            </span>
-          </TabsTrigger>
-        </TabsList>
-      </Tabs>
-    </div>
+    <AdminStorefrontLanguageDisplayCard
+      :model-value="filters.locale"
+      :language-options="languageOptions"
+      :disabled="loading || syncing || checking"
+      :loading="loading"
+      aria-label="URL 同步与检查语言"
+      @update:model-value="selectLocale"
+    />
 
     <p class="text-xs text-muted-foreground">
       当前检查范围：{{ selectedLocaleLabel }}（{{ filters.locale }}）。同步 URL 会更新全量语言；检查只处理当前语言，最多 200 条可检查 URL；待处理卡片为全站工单汇总。
@@ -55,8 +42,8 @@ import { computed, onMounted } from 'vue'
 import { CircleCheck, RefreshCw, TriangleAlert } from '@lucide/vue'
 import AdminPageHeader from '@/components/admin/AdminPageHeader.vue'
 import AdminStatsGrid from '@/components/admin/AdminStatsGrid.vue'
+import AdminStorefrontLanguageDisplayCard from '@/components/admin/AdminStorefrontLanguageDisplayCard.vue'
 import { Button } from '@/components/ui/button'
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useSupportedLanguages } from '@/composables/useSupportedLanguages'
 import { useStorefrontRouteCatalog } from '@/composables/url-management/useStorefrontRouteCatalog'
 import { useAuthStore } from '@/stores/auth'
@@ -64,7 +51,7 @@ import { useAuthStore } from '@/stores/auth'
 const authStore = useAuthStore()
 const canEdit = authStore.hasPermission('url:edit')
 const supportedLanguages = useSupportedLanguages()
-const enabledLanguages = supportedLanguages.enabledLanguages
+const languageOptions = supportedLanguages.languageOptions
 const {
   stats,
   issueStats,

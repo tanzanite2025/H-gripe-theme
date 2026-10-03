@@ -49,6 +49,8 @@ export interface ShopProduct {
   }
   fulfillmentMode: ShopProductFulfillmentMode
   availability: ShopProductAvailability
+  productCategorySlug?: string
+  spokeRepairKitModelCount?: number
   brand?: ShopProductBrand | null
   productSpecificationTemplate?: ShopProductSpecificationTemplate | null
   reviewSummary?: ShopProductReviewSummary | null
@@ -520,6 +522,12 @@ export const normalizeShopProduct = (
   ) || undefined
   const url = buildProductPath(slug)
   const fulfillmentMode = normalizeFulfillmentMode(item?.fulfillment_mode)
+  const productCategorySlug = String(
+    item?.product_category?.slug || item?.category?.slug || item?.product_category_slug || '',
+  ).trim().toLowerCase() || undefined
+  const spokeRepairKitModelCount = Array.isArray(item?.spoke_repair_kit_models)
+    ? item.spoke_repair_kit_models.length
+    : 0
   return {
     id,
     productId: id,
@@ -545,6 +553,8 @@ export const normalizeShopProduct = (
     },
     fulfillmentMode,
     availability: normalizeAvailability(item?.availability),
+    ...(productCategorySlug ? { productCategorySlug } : {}),
+    ...(spokeRepairKitModelCount > 0 ? { spokeRepairKitModelCount } : {}),
     brand: item?.brand?.name
       ? {
           id: toOptionalPositiveNumber(item.brand.id) || undefined,
@@ -558,6 +568,14 @@ export const normalizeShopProduct = (
     reviewSummary: normalizeReviewSummary(item?.review_summary, id),
     variants: variantsWithMedia,
   }
+}
+
+export const isSpokeRepairKitShopProduct = (
+  product: Pick<ShopProduct, 'productCategorySlug' | 'spokeRepairKitModelCount'> | null | undefined,
+): boolean => {
+  if (!product) return false
+  return product.productCategorySlug === 'spoke-repair-kits'
+    || Number(product.spokeRepairKitModelCount || 0) > 0
 }
 
 const extractProductItems = (response: any): any[] => {

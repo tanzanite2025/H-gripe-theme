@@ -47,9 +47,6 @@ const readRouteSearch = (value: unknown): string => {
 
 const parseSelectorRouteFilterState = (query: Record<string, unknown>): SchwalbeTireCatalogFilterQueryState => ({
   ...parseSchwalbeTireCatalogFilterQuery(query),
-  // Rim inner width is now card guidance, not a selector facet. Ignore the
-  // legacy URL value so an old shared link cannot silently return zero rows.
-  innerRimWidthMm: null,
   // Tire width remains in the shared query/API contract for compatibility,
   // but it is no longer a selector facet. Ignore legacy URL values so a
   // hidden condition cannot silently constrain the visible result set.
@@ -94,7 +91,6 @@ const emptySelectorPage = (): SchwalbeTireCatalogSelectorPage => ({
     seals: [],
     eBikeRatings: [],
   },
-  rim_width_context: null,
 })
 
 export const useSchwalbeTireSelector = async () => {
@@ -126,9 +122,6 @@ export const useSchwalbeTireSelector = async () => {
       nominalTireWidthMinMm: null,
       nominalTireWidthMaxMm: null,
       nominalTireWidthsMm: [],
-      // The selector displays rim-width guidance on cards; it no longer
-      // accepts a user-entered rim width as a result filter.
-      innerRimWidthMm: null,
       // Wheel diameter + BSD is controlled by the page navigation. Drop the
       // retired BSD-only condition whenever the drawer is submitted.
       beadSeatDiametersMm: [],
@@ -263,9 +256,7 @@ export const useSchwalbeTireSelector = async () => {
   const pageQuery = (page: number) => {
     const query = { ...route.query }
     // Pagination is a committed selector navigation. Remove the retired
-    // inner-width and BSD-only filters from legacy links instead of carrying
-    // them forward.
-    delete query[SCHWALBE_TIRE_CATALOG_FILTER_QUERY_KEYS.innerRimWidthMm]
+    // BSD-only filter from legacy links instead of carrying it forward.
     delete query[SCHWALBE_TIRE_CATALOG_FILTER_QUERY_KEYS.beadSeatDiametersMm]
     if (page <= 1) delete query.page
     else query.page = String(page)
@@ -333,7 +324,6 @@ export const useSchwalbeTireSelector = async () => {
 
   const clearFacetFilters = () => {
     updateFilterState({
-      innerRimWidthMm: null,
       nominalTireWidthMinMm: null,
       nominalTireWidthMaxMm: null,
       nominalTireWidthsMm: [],
@@ -374,7 +364,6 @@ export const useSchwalbeTireSelector = async () => {
     const nextSearch = searchInput.value.trim()
     submittedSearch.value = nextSearch
     const query = { ...route.query }
-    delete query[SCHWALBE_TIRE_CATALOG_FILTER_QUERY_KEYS.innerRimWidthMm]
     delete query[SCHWALBE_TIRE_CATALOG_FILTER_QUERY_KEYS.beadSeatDiametersMm]
     if (nextSearch) query.search = nextSearch
     else delete query.search

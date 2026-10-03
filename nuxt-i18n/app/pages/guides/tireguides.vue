@@ -40,16 +40,12 @@
         id="tubeless"
         class="sizecharts-section"
       >
-        <TubelessGuide v-if="activeTab === 'tubeless'" @change-tab="setActiveTab" />
-      </section>
-
-      <!-- Installation -->
-      <section
-        v-show="activeTab === 'installation'"
-        id="installation"
-        class="sizecharts-section"
-      >
-        <InstallationGuide v-if="activeTab === 'installation'" @change-tab="setActiveTab" />
+        <div class="tubeless-installation-guide space-y-12">
+          <TubelessGuide v-if="activeTab === 'tubeless'" @change-tab="setActiveTab" />
+          <div id="tubeless-installation">
+            <InstallationGuide v-if="activeTab === 'tubeless'" />
+          </div>
+        </div>
       </section>
 
       <!-- How to choose -->
@@ -141,6 +137,9 @@ const { activeTab, setActiveTab } = usePageSubNavigationTab({
 })
 
 const activePageTitle = computed(() => {
+  if (activeTab.value === 'tubeless') {
+    return t('guidesTireguides.tabs.tubeless.label')
+  }
   if (activeTab.value === 'tire-frame-clearance') {
     return t('guidesTireguides.tabs.tireFrameClearance.label')
   }

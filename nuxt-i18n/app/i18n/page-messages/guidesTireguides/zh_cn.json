@@ -16,12 +16,8 @@
       "description": "查询 Schwalbe 自行车外胎的周长参考值。"
     },
     "tubeless": {
-      "label": "无内胎轮胎",
-      "description": "查看无内胎设置、补胎液基础和兼容性说明。"
-    },
-    "installation": {
-      "label": "安装",
-      "description": "查看轮胎安装步骤和实用检查要点。"
+      "label": "无内胎轮胎与安装",
+      "description": "在同一指南中查看无内胎兼容性、设置和分步骤安装说明。"
     },
     "choose": {
       "label": "如何选择",
@@ -30,6 +26,10 @@
     "pressure": {
       "label": "胎压",
       "description": "查看建议胎压范围和调整参考。"
+    },
+    "pressureCalculator": {
+      "label": "胎压受力计算",
+      "description": "演示胎压、载荷、速度和倾角如何改变受力与估算接地面积。"
     },
     "innerTube": {
       "label": "内胎",
