@@ -23,19 +23,19 @@
 
       <section class="border-b border-dashed border-border/80 pb-4">
         <div class="grid gap-3 lg:grid-cols-[minmax(0,1fr)_18rem] lg:items-end">
-          <AdminFormField
-            label="内容编辑语言"
-            description="这里只决定正在编辑哪一套页面文案，不代表市场范围、语言范围或站点全局语言配置。"
-          >
+          <div class="min-w-0">
+            <span class="block text-[10px] font-black uppercase tracking-widest text-muted-foreground/70">内容编辑语言</span>
+            <span class="mt-0.5 block text-[9px] font-black uppercase tracking-widest text-muted-foreground/60">这里只决定正在编辑哪一套页面文案，不代表市场范围、语言范围或站点全局语言配置。</span>
             <AdminStorefrontLanguageDisplayCard
               :model-value="contentLocale"
               :language-options="languageOptions"
               :disabled="loading || saving"
               :loading="loading || saving"
               aria-label="我与这个网站内容编辑语言"
+              class="mt-2"
               @update:model-value="contentLocale = $event"
             />
-          </AdminFormField>
+          </div>
 
           <div class="rounded-2xl border border-dashed border-border/80 bg-muted/25 px-3 py-2.5">
             <p class="text-[9px] font-black uppercase tracking-widest text-muted-foreground/60">当前编辑对象</p>
