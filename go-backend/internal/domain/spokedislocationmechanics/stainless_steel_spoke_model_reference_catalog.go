@@ -10,7 +10,7 @@ import (
 var embeddedStainlessSteelSpokeModelReferenceCatalogFile []byte
 
 // StainlessSteelSpokeModelReferenceCatalog is the backend-owned model and
-// geometry catalogue used by both metadata and elastic-elongation calculation.
+// geometry catalog used by both metadata and elastic-elongation calculation.
 // Keeping this data in a versioned JSON file allows reviewed values to change
 // without rewriting the calculation formula.
 type StainlessSteelSpokeModelReferenceCatalog struct {

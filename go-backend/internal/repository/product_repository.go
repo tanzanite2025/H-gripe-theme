@@ -320,7 +320,7 @@ func (r *ProductRepository) FindBySlugContext(ctx context.Context, slug, locale 
 // FindBySKU 鏍规嵁SKU鏌ユ壘浜у搧
 func (r *ProductRepository) FindBySKU(sku string) (*product.Product, error) {
 	var p product.Product
-	query := r.preloadProductCategory(r.db.Preload("Brand")).Preload("Media", func(db *gorm.DB) *gorm.DB { return orderProductMedia(db) }).
+	query := r.preloadProductCategory(r.db.Preload("Brand")).Preload("Media", orderProductMedia).
 		Preload("Variants", func(db *gorm.DB) *gorm.DB { return orderProductVariants(db) })
 	query = r.preloadProductVariantOptionValues(query)
 	query = r.preloadSpokeRepairKitModels(query)

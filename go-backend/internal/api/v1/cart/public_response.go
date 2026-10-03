@@ -1,10 +1,11 @@
 package cart
 
 import (
-	"commerce-platform/internal/api/v1/publicmedia"
-	productdomain "commerce-platform/internal/domain/product"
 	"encoding/json"
 	"strings"
+
+	"commerce-platform/internal/api/v1/publicmedia"
+	productdomain "commerce-platform/internal/domain/product"
 )
 
 type PublicCartSummary struct {

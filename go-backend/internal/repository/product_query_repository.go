@@ -216,9 +216,7 @@ func (r *ProductRepository) List(locale, status string, featured bool, offset, l
 	var products []product.Product
 	var total int64
 
-	query := r.preloadProductCategory(r.db.Model(&product.Product{}).Preload("Brand").Preload("ProductSpecificationTemplate").Preload("Media", func(db *gorm.DB) *gorm.DB {
-		return orderProductMedia(db)
-	}).Preload("ProductSpecificationTemplate.SpecDefinitions", func(db *gorm.DB) *gorm.DB {
+	query := r.preloadProductCategory(r.db.Model(&product.Product{}).Preload("Brand").Preload("ProductSpecificationTemplate").Preload("Media", orderProductMedia).Preload("ProductSpecificationTemplate.SpecDefinitions", func(db *gorm.DB) *gorm.DB {
 		return orderSpecDefinitions(db)
 	}).Preload("Variants", func(db *gorm.DB) *gorm.DB {
 		return orderProductVariants(db)
@@ -903,9 +901,7 @@ func (r *ProductRepository) SearchPublic(input ProductSearchQuery) ([]product.Pr
 	var products []product.Product
 	var total int64
 
-	query := r.preloadProductCategory(r.db.Model(&product.Product{}).Preload("Brand").Preload("ProductSpecificationTemplate").Preload("CustomsClassificationProfile").Preload("Media", func(db *gorm.DB) *gorm.DB {
-		return orderProductMedia(db)
-	}).Preload("ProductSpecificationTemplate.SpecDefinitions", func(db *gorm.DB) *gorm.DB {
+	query := r.preloadProductCategory(r.db.Model(&product.Product{}).Preload("Brand").Preload("ProductSpecificationTemplate").Preload("CustomsClassificationProfile").Preload("Media", orderProductMedia).Preload("ProductSpecificationTemplate.SpecDefinitions", func(db *gorm.DB) *gorm.DB {
 		return orderSpecDefinitions(db)
 	}).Preload("Variants", func(db *gorm.DB) *gorm.DB {
 		return orderProductVariants(db)

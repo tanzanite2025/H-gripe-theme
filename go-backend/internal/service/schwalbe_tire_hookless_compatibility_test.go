@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"commerce-platform/internal/repository"
+
 	"github.com/stretchr/testify/require"
 )
 

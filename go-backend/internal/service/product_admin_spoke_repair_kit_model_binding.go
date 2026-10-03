@@ -1,11 +1,12 @@
 package service
 
 import (
-	"commerce-platform/internal/domain/product"
-	"commerce-platform/internal/domain/wheelsetcatalog"
 	"errors"
 	"fmt"
 	"strings"
+
+	"commerce-platform/internal/domain/product"
+	"commerce-platform/internal/domain/wheelsetcatalog"
 
 	"gorm.io/gorm"
 )

@@ -1,8 +1,9 @@
 package service
 
 import (
-	productdomain "commerce-platform/internal/domain/product"
 	"testing"
+
+	productdomain "commerce-platform/internal/domain/product"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
