@@ -23,6 +23,15 @@
       />
     </div>
 
+    <AdminStorefrontLanguageDisplayCard
+      :model-value="activeStructureLocale"
+      :language-options="structureLocales"
+      :disabled="loading || structureLoading"
+      :loading="loading || structureLoading"
+      class="shrink-0"
+      @update:model-value="switchStructureLocale"
+    />
+
     <FAQAccordionList
       class="min-h-0 flex-1"
       :loading="loading"
@@ -30,8 +39,6 @@
       :faq-groups="faqGroups"
       :selected-faqs="selectedFAQs"
       :pagination="pagination"
-      :structure-locales="structureLocales"
-      :active-structure-locale="activeStructureLocale"
       :has-permission="hasPermission"
       :is-selected="isSelected"
       :plain-text="plainTextFromHTML"
@@ -42,7 +49,6 @@
       :route-status-name="routeStatusName"
       :route-status-tone="routeStatusTone"
       :domain-name="domainName"
-      @switch-locale="switchStructureLocale"
       @toggle-faq="toggleFAQ"
       @edit="showEditDialog"
       @delete="requestDelete"
@@ -89,6 +95,7 @@ import { Plus, RefreshCw } from '@lucide/vue'
 import type { FAQStructurePage } from '@/lib/faqAdminPresentation'
 import AdminConfirmDialog from '@/components/admin/AdminConfirmDialog.vue'
 import AdminPageHeader from '@/components/admin/AdminPageHeader.vue'
+import AdminStorefrontLanguageDisplayCard from '@/components/admin/AdminStorefrontLanguageDisplayCard.vue'
 import FAQAccordionList from '@/components/admin/faq/FAQAccordionList.vue'
 import FAQEditorDialog from '@/components/admin/faq/FAQEditorDialog.vue'
 import FAQFilterPanel from '@/components/admin/faq/FAQFilterPanel.vue'

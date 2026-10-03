@@ -10,70 +10,6 @@
       </div>
     </template>
 
-    <div class="border-b border-border/70 px-4 py-3">
-      <div class="flex min-w-0 items-center gap-2">
-        <div
-          ref="localeScrollArea"
-          class="min-w-0 flex-1 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
-        >
-          <Tabs
-            :model-value="activeStructureLocale"
-            class="w-max min-w-full gap-0"
-            @update:model-value="selectLocale"
-          >
-            <TabsList
-              variant="default"
-              class="h-11 w-max min-w-full max-w-none flex-nowrap justify-start gap-2 rounded-2xl bg-muted/50 p-1.5"
-            >
-              <TabsTrigger
-                v-for="(locale, index) in structureLocales"
-                :key="locale.value"
-                :ref="(element) => setLocaleTriggerRef(locale.value, element)"
-                :value="locale.value"
-          class="h-8 flex-none gap-1.5 px-3.5 text-xs font-bold normal-case tracking-normal"
-              >
-                <span class="font-mono text-[11px] opacity-60">{{ localeNumber(index) }}</span>
-                <span>{{ locale.label }}</span>
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
-        </div>
-
-        <DropdownMenu v-if="hasLocaleOverflow">
-          <DropdownMenuTrigger as-child>
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              class="size-9 shrink-0 rounded-full"
-              aria-label="选择更多语言"
-              title="更多语言"
-            >
-              <Ellipsis class="size-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" class="max-h-80 w-64">
-            <DropdownMenuLabel>全部语言</DropdownMenuLabel>
-            <DropdownMenuItem
-              v-for="(locale, index) in structureLocales"
-              :key="locale.value"
-              class="gap-2"
-              @select="selectLocale(locale.value)"
-            >
-              <span class="w-5 shrink-0 text-center font-mono text-[10px] text-muted-foreground">
-                {{ localeNumber(index) }}
-              </span>
-              <span class="min-w-0 flex-1 truncate">{{ locale.label }}</span>
-              <Check
-                v-if="locale.value === activeStructureLocale"
-                class="size-3.5 shrink-0 text-primary"
-              />
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
-    </div>
-
     <div v-if="!loading && !structureLoading && faqGroups.length === 0" class="p-10 text-center text-sm text-muted-foreground">
       当前语言暂无 FAQ 页面。
     </div>
@@ -242,28 +178,17 @@
 </template>
 
 <script setup lang="ts">
-import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import type { ComponentPublicInstance } from 'vue'
-import { Check, ChevronDown, Ellipsis, Pencil, Plus, Trash2 } from '@lucide/vue'
-import type { LanguageOption } from '@/lib/languages'
+import { ref, watch } from 'vue'
+import { ChevronDown, Pencil, Plus, Trash2 } from '@lucide/vue'
 import type { FAQID, FAQItemLike, FAQStatusTone, FAQStructurePage } from '@/lib/faqAdminPresentation'
 import AdminStatusBadge from '@/components/admin/AdminStatusBadge.vue'
 import AdminTablePanel from '@/components/admin/AdminTablePanel.vue'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuTrigger
-} from '@/components/ui/dropdown-menu'
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import type { FAQPagination } from '@/composables/faq/useFaqList'
 
 type FAQSelectionState = boolean | string
-type TemplateRefTarget = Element | ComponentPublicInstance | null
 
 const props = withDefaults(defineProps<{
   loading?: boolean
@@ -271,8 +196,6 @@ const props = withDefaults(defineProps<{
   faqGroups: FAQStructurePage[]
   selectedFaqs: FAQItemLike[]
   pagination: FAQPagination
-  structureLocales: LanguageOption[]
-  activeStructureLocale: string
   hasPermission: (permission: string) => boolean
   isSelected: (faqID?: FAQID | null) => boolean
   plainText: (value?: string | null) => string
@@ -289,44 +212,7 @@ const props = withDefaults(defineProps<{
 })
 
 const expandedPages = ref<Set<string>>(new Set())
-const localeScrollArea = ref<HTMLElement | null>(null)
-const localeTriggerRefs = new Map<string, HTMLElement>()
-const hasLocaleOverflow = ref(false)
-let localeResizeObserver: ResizeObserver | null = null
-
 const pageKey = (page: FAQStructurePage): string => `${page.page_id || ''}\u0000${page.locale || ''}`
-const localeNumber = (index: number): string => String(index + 1).padStart(2, '0')
-const setLocaleTriggerRef = (locale: string, element: TemplateRefTarget): void => {
-  const target = element && '$el' in element ? element.$el : element
-  if (target instanceof HTMLElement) localeTriggerRefs.set(locale, target)
-  else localeTriggerRefs.delete(locale)
-}
-const updateLocaleOverflow = (): void => {
-  const area = localeScrollArea.value
-  hasLocaleOverflow.value = Boolean(area && area.scrollWidth > area.clientWidth + 1)
-}
-const centerActiveLocale = async (locale = props.activeStructureLocale, behavior: ScrollBehavior = 'smooth'): Promise<void> => {
-  await nextTick()
-  const area = localeScrollArea.value
-  const target = localeTriggerRefs.get(locale)
-  if (!area || !target) return
-
-  const areaRect = area.getBoundingClientRect()
-  const targetRect = target.getBoundingClientRect()
-  const desiredLeft = area.scrollLeft
-    + targetRect.left
-    - areaRect.left
-    - (area.clientWidth - targetRect.width) / 2
-  const maxLeft = Math.max(0, area.scrollWidth - area.clientWidth)
-
-  area.scrollTo({
-    left: Math.max(0, Math.min(desiredLeft, maxLeft)),
-    behavior
-  })
-}
-const selectLocale = (locale: unknown): void => {
-  if (typeof locale === 'string') emit('switch-locale', locale)
-}
 const isPageExpanded = (key: string): boolean => expandedPages.value.has(key)
 const togglePage = (key: string): void => {
   const next = new Set(expandedPages.value)
@@ -345,7 +231,6 @@ watch(() => props.faqGroups, (groups) => {
 }, { immediate: true })
 
 const emit = defineEmits<{
-  (event: 'switch-locale', locale: string): void
   (event: 'toggle-faq', faq: FAQItemLike, checked: FAQSelectionState): void
   (event: 'edit', faq: FAQItemLike): void
   (event: 'delete', faq: FAQItemLike): void
@@ -353,29 +238,4 @@ const emit = defineEmits<{
   (event: 'edit-page', page: FAQStructurePage): void
   (event: 'create-faq', page: FAQStructurePage): void
 }>()
-
-watch(
-  () => [props.structureLocales, props.activeStructureLocale],
-  async () => {
-    await nextTick()
-    updateLocaleOverflow()
-    centerActiveLocale(props.activeStructureLocale)
-  },
-  { deep: true, immediate: true }
-)
-
-onMounted(() => {
-  localeResizeObserver = new ResizeObserver(() => {
-    updateLocaleOverflow()
-    centerActiveLocale(props.activeStructureLocale, 'auto')
-  })
-  if (localeScrollArea.value) localeResizeObserver.observe(localeScrollArea.value)
-  updateLocaleOverflow()
-  centerActiveLocale(props.activeStructureLocale, 'auto')
-})
-
-onBeforeUnmount(() => {
-  localeResizeObserver?.disconnect()
-  localeTriggerRefs.clear()
-})
 </script>
