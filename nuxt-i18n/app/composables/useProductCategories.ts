@@ -45,6 +45,7 @@ interface ProductCategoryState {
 type ProductCategoryStateStore = Record<string, ProductCategoryState>
 
 const PRODUCT_CATEGORY_SERVER_REQUEST_TIMEOUT_MS = 5000
+const inFlightProductCategoryLoads = new WeakMap<ProductCategoryState, Promise<ProductCategory[]>>()
 
 const createEmptyState = (): ProductCategoryState => ({
   tree: [],
@@ -242,51 +243,44 @@ export const useProductCategories = () => {
     }
   }
 
-  const waitForExistingLoad = (state: ProductCategoryState): Promise<ProductCategory[]> => (
-    new Promise((resolve) => {
-      const stop = watch(
-        () => state.loading,
-        (isLoading) => {
-          if (isLoading) return
-          stop()
-          resolve(state.flat)
-        },
-        { immediate: true },
-      )
-    })
-  )
-
   const loadCategories = async (
     options: ProductCategoryLoadOptions = {},
   ): Promise<ProductCategory[]> => {
     const state = getState()
-    if (state.loading) return waitForExistingLoad(state)
     if (state.loaded) return state.flat
+    const existingLoad = inFlightProductCategoryLoads.get(state)
+    if (existingLoad) return existingLoad
 
-    state.loading = true
-    state.error = null
+    const loadPromise = (async (): Promise<ProductCategory[]> => {
+      state.loading = true
+      state.error = null
 
-    try {
-      const serverTimeoutMs = import.meta.server
-        ? PRODUCT_CATEGORY_SERVER_REQUEST_TIMEOUT_MS
-        : undefined
-      const timeoutMs = options.timeoutMs ?? serverTimeoutMs
-      const result = await requestCategories(localeCode.value, timeoutMs)
-      state.tree = result.tree
-      state.flat = result.flat
-      state.maxDepth = result.maxDepth
-      state.loaded = true
-      return state.flat
-    } catch (e: any) {
-      console.error('Failed to load product categories:', e)
-      state.error = e?.data?.message || e?.message || 'Failed to load product categories.'
-      state.tree = []
-      state.flat = []
-      state.loaded = false
-      return state.flat
-    } finally {
-      state.loading = false
-    }
+      try {
+        const serverTimeoutMs = import.meta.server
+          ? PRODUCT_CATEGORY_SERVER_REQUEST_TIMEOUT_MS
+          : undefined
+        const timeoutMs = options.timeoutMs ?? serverTimeoutMs
+        const result = await requestCategories(localeCode.value, timeoutMs)
+        state.tree = result.tree
+        state.flat = result.flat
+        state.maxDepth = result.maxDepth
+        state.loaded = true
+        return state.flat
+      } catch (e: any) {
+        console.error('Failed to load product categories:', e)
+        state.error = e?.data?.message || e?.message || 'Failed to load product categories.'
+        state.tree = []
+        state.flat = []
+        state.loaded = false
+        return state.flat
+      } finally {
+        state.loading = false
+        inFlightProductCategoryLoads.delete(state)
+      }
+    })()
+
+    inFlightProductCategoryLoads.set(state, loadPromise)
+    return loadPromise
   }
 
   watch(localeCode, () => {
