@@ -27,20 +27,14 @@
             label="内容编辑语言"
             description="这里只决定正在编辑哪一套页面文案，不代表市场范围、语言范围或站点全局语言配置。"
           >
-            <Select v-model="contentLocale" :disabled="loading || saving">
-              <SelectTrigger class="max-w-md">
-                <SelectValue placeholder="选择内容语言" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem
-                  v-for="option in languageOptions"
-                  :key="option.value"
-                  :value="option.value"
-                >
-                  {{ option.label }}
-                </SelectItem>
-              </SelectContent>
-            </Select>
+            <AdminStorefrontLanguageDisplayCard
+              :model-value="contentLocale"
+              :language-options="languageOptions"
+              :disabled="loading || saving"
+              :loading="loading || saving"
+              aria-label="我与这个网站内容编辑语言"
+              @update:model-value="contentLocale = $event"
+            />
           </AdminFormField>
 
           <div class="rounded-2xl border border-dashed border-border/80 bg-muted/25 px-3 py-2.5">
@@ -257,10 +251,10 @@ import { toast } from 'vue-sonner'
 import { ImagePlus, LoaderCircle, Save } from '@lucide/vue'
 import AdminFormField from '@/components/admin/AdminFormField.vue'
 import AdminPageHeader from '@/components/admin/AdminPageHeader.vue'
+import AdminStorefrontLanguageDisplayCard from '@/components/admin/AdminStorefrontLanguageDisplayCard.vue'
 import RichTextEditor from '@/components/admin/settings/RichTextEditor.vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
 import mediaApi from '@/api/media'
