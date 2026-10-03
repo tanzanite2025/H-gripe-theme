@@ -28,28 +28,28 @@
       </template>
     </AdminPageHeader>
 
-    <Card>
-      <CardContent class="grid gap-4 md:grid-cols-[minmax(0,18rem)_minmax(0,1fr)] md:items-end">
-        <AdminFormField
-          label="内容语言"
-          description="首页会按当前前台语种读取对应配置。"
-        >
-          <StorefrontLocaleSelect
-            v-model="locale"
-            :language-options="languageOptions"
-            :disabled="loading || saving"
-          />
-        </AdminFormField>
-        <div class="rounded-xl border border-dashed border-emerald-500/30 bg-emerald-500/5 px-3 py-2.5">
-          <p class="text-xs font-black uppercase tracking-wider text-emerald-700 dark:text-emerald-300">
-            前台发布逻辑
-          </p>
-          <p class="mt-1 text-[11px] leading-relaxed text-muted-foreground">
-            未配置或全部关闭时，前台会保留模块框架并显示未配置提示；配置保存后只展示发布状态打开的卡片。
-          </p>
-        </div>
-      </CardContent>
-    </Card>
+    <div class="grid gap-4 md:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)] md:items-stretch">
+      <AdminStorefrontLanguageDisplayCard
+        :model-value="locale"
+        :language-options="languageOptions"
+        :disabled="loading || saving"
+        :loading="loading || saving"
+        aria-label="首页主力产品内容语言"
+        @update:model-value="locale = $event"
+      />
+      <Card>
+        <CardContent class="flex h-full items-center">
+          <div class="rounded-xl border border-dashed border-emerald-500/30 bg-emerald-500/5 px-3 py-2.5">
+            <p class="text-xs font-black uppercase tracking-wider text-emerald-700 dark:text-emerald-300">
+              前台发布逻辑
+            </p>
+            <p class="mt-1 text-[11px] leading-relaxed text-muted-foreground">
+              未配置或全部关闭时，前台会保留模块框架并显示未配置提示；配置保存后只展示发布状态打开的卡片。
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
 
     <Card class="overflow-hidden">
       <CardHeader class="border-b">
@@ -89,10 +89,9 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { toast } from 'vue-sonner'
 import { LoaderCircle, RefreshCw, Save } from '@lucide/vue'
-import AdminFormField from '@/components/admin/AdminFormField.vue'
 import AdminPageHeader from '@/components/admin/AdminPageHeader.vue'
+import AdminStorefrontLanguageDisplayCard from '@/components/admin/AdminStorefrontLanguageDisplayCard.vue'
 import UploadSpecHint from '@/components/admin/UploadSpecHint.vue'
-import StorefrontLocaleSelect from '@/components/admin/StorefrontLocaleSelect.vue'
 import HomeMainProductCategoryEditorRow from '@/components/admin/visual-showcase/HomeMainProductCategoryEditorRow.vue'
 import {
   applyVisualShowcaseUploadToFormState,
@@ -199,4 +198,3 @@ onMounted(() => {
   void loadItems()
 })
 </script>
-
