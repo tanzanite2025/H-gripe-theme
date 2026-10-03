@@ -2,7 +2,7 @@
   <div class="space-y-4">
     <AdminPageHeader
       title="首页视觉目录"
-      description="管理首页首屏固定位置的 9 张 3:4 展示图，不进入媒体库"
+      description="管理首页首屏固定位置的 9 张 1:1 展示图，不进入媒体库"
     >
       <template #actions>
         <Button
@@ -55,7 +55,7 @@
       <CardHeader class="border-b">
         <CardTitle>9 张首页展示图</CardTitle>
         <CardDescription>
-          图片必须为 3:4；左侧编号就是前台位置，不需要手动排序。白色文案条使用标题和备注，ALT 文本用于图片可访问性与搜索引擎上下文。
+          图片必须为 600×600 px；左侧编号就是前台位置，不需要手动排序。白色文案条使用标题和备注，ALT 文本用于图片可访问性与搜索引擎上下文。
         </CardDescription>
       </CardHeader>
       <CardContent class="space-y-3 p-3 sm:p-4">
@@ -63,7 +63,7 @@
           <p class="text-[10px] font-black uppercase tracking-wider text-muted-foreground/70">
             统一上传规范
           </p>
-          <UploadSpecHint code="visual_showcase_editorial" compact />
+          <UploadSpecHint code="visual_showcase_home_hero" compact />
         </div>
         <div v-if="loading" class="flex min-h-64 items-center justify-center text-xs font-bold text-muted-foreground">
           正在加载首页视觉目录
@@ -153,7 +153,7 @@ const uploadImage = async ({ index, file }: VisualShowcaseAdministrationUploadRe
     toast.success(`第 ${index + 1} 张图片已上传，保存整组配置后生效`)
   } catch (error) {
     console.error('Failed to upload visual showcase image:', error)
-    toast.error('图片上传失败，请确认图片为 3:4 比例')
+    toast.error('图片上传失败，请确认图片为 600×600 px')
   } finally {
     uploadingIndex.value = null
   }

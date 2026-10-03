@@ -75,6 +75,8 @@ func (h *StainlessSteelSpokeDislocationMechanicsHTTPHandler) CalculateStainlessS
 
 func mapStainlessSteelSpokeDislocationMechanicsValidationError(err error) (int, string, string) {
 	switch {
+	case errors.Is(err, spokedislocationmechanicsdomain.ErrStainlessSteelSpokeStressOutsideMaterialCurve):
+		return http.StatusUnprocessableEntity, "CURVE_OUT_OF_RANGE", "nominal_working_tension_n"
 	case errors.Is(err, spokedislocationmechanicsdomain.ErrUnknownStainlessSteelSpokeModel):
 		return http.StatusUnprocessableEntity, "UNKNOWN_MODEL", "model_id"
 	case errors.Is(err, spokedislocationmechanicsdomain.ErrCustomSpokeAreaRequired):

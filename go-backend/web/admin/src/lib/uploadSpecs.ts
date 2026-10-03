@@ -5,6 +5,7 @@ export type UploadSpecCode =
   | 'media_library_image'
   | 'faq_answer_image'
   | 'visual_showcase_home_categories'
+  | 'visual_showcase_home_hero'
   | 'visual_showcase_editorial'
   | 'site_logo'
   | 'site_favicon'
@@ -132,6 +133,23 @@ export const UPLOAD_SPECS: Record<UploadSpecCode, UploadSpec> = {
     aspectRatioHeight: 9,
     aspectRatioLabel: '16:9',
     qualityNote: '必须保持 16:9，建议 1920×1080 px。',
+  },
+  visual_showcase_home_hero: {
+    code: 'visual_showcase_home_hero',
+    kind: 'image',
+    label: '首页首屏视觉展示图片',
+    description: '首页首屏 9 个固定位置的视觉展示',
+    acceptedExtensions: imageExtensions,
+    acceptedContentTypes: imageTypes,
+    ...productLimits,
+    exactWidth: 600,
+    exactHeight: 600,
+    recommendedWidth: 600,
+    recommendedHeight: 600,
+    aspectRatioWidth: 1,
+    aspectRatioHeight: 1,
+    aspectRatioLabel: '1:1',
+    qualityNote: '必须是 600×600 px，供首页首屏 9 个固定位置使用。',
   },
   visual_showcase_editorial: {
     code: 'visual_showcase_editorial',

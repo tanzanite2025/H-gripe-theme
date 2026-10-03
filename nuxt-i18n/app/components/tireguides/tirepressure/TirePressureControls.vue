@@ -2,12 +2,63 @@
   <article class="station controls">
     <header class="controls-header"><b>{{ t('guidesTirePressure.dashboard.controlsTitle') }}</b><span>{{ t('guidesTirePressure.dashboard.totalValue', { value: totalWeight.toFixed(1) }) }}</span></header>
     <div class="controls-grid">
-    <div class="control-box control-box--wide">
-      <b>{{ t('guidesTirePressure.dashboard.fixedPressure') }}</b>
-      <span>{{ t('guidesTirePressure.dashboard.fixedPressureHint') }}</span>
+    <div class="control-box control-box--wide control-box--pressure-reference">
+      <div class="control-head">
+        <b>{{ t('guidesTirePressure.dashboard.selectedTirePressure') }}</b>
+        <span>{{ selectedTirePressureRangeLabel }}</span>
+      </div>
+      <span>{{ selectedTireModelLabel }}</span>
+      <small class="pressure-reference-hint">{{ t('guidesTirePressure.dashboard.selectedTirePressureHint') }}</small>
+      <strong class="pressure-reference-value">{{ selectedTireReferencePressureLabel }}</strong>
+      <div class="pressure-comparison-actions">
+        <button
+          class="pressure-comparison-toggle"
+          type="button"
+          :disabled="!pressureComparisonAvailable"
+          :aria-pressed="pressureComparisonEnabled"
+          :aria-busy="comparisonRequestPending ? 'true' : 'false'"
+          @click="toggleLowestPressureComparison"
+        >
+          {{ pressureComparisonEnabled ? t('guidesTirePressure.dashboard.pressureComparisonHide') : t('guidesTirePressure.dashboard.pressureComparisonShow') }}
+        </button>
+        <button
+          class="pressure-comparison-toggle wet-pressure-toggle"
+          type="button"
+          :disabled="!wetPressureScenarioAvailable"
+          :aria-pressed="wetPressureScenarioEnabled"
+          :aria-busy="comparisonRequestPending ? 'true' : 'false'"
+          @click="toggleWetPressureScenario"
+        >
+          🌧️ {{ wetPressureScenarioEnabled ? t('guidesTirePressure.dashboard.wetPressureScenarioHide') : t('guidesTirePressure.dashboard.wetPressureScenarioShow') }}
+        </button>
+      </div>
+      <small v-if="wetPressureScenarioEnabled" class="wet-pressure-hint">{{ t('guidesTirePressure.dashboard.wetPressureScenarioHint', { water: wetPressureWaterFilmDepthMm }) }}</small>
+      <p
+        v-if="!pressureComparisonAvailable"
+        class="pressure-comparison-status pressure-comparison-status--hint"
+        role="status"
+      >
+        {{ pressureComparisonAvailabilityHint }}
+      </p>
+      <p
+        v-else-if="comparisonRequestPending"
+        class="pressure-comparison-status"
+        role="status"
+        aria-live="polite"
+      >
+        {{ t('guidesTirePressure.dashboard.pressureComparisonCalculating') }}
+      </p>
+      <div
+        v-else-if="comparisonRequestFailed"
+        class="pressure-comparison-status pressure-comparison-status--error"
+        role="alert"
+      >
+        <span>{{ t('guidesTirePressure.dashboard.pressureComparisonError') }}</span>
+        <button type="button" class="pressure-comparison-retry" @click="retryTirePressureDynamics">
+          {{ t('guidesTirePressure.dashboard.pressureComparisonRetry') }}
+        </button>
+      </div>
     </div>
-    <div class="control-box"><div class="control-head"><b>{{ t('guidesTirePressure.dashboard.frontPressure') }}</b><span>{{ fixedFrontPsi.toFixed(1) }} PSI</span></div><input id="tire-dashboard-fixed-front-pressure" v-model.number="fixedFrontPsi" :aria-label="t('guidesTirePressure.dashboard.frontPressure')" type="range" min="25" max="100" step="0.5"><div class="range-scale"><span>25 PSI</span><span>50 PSI</span><span>75 PSI</span><span>100 PSI</span></div></div>
-    <div class="control-box"><div class="control-head"><b>{{ t('guidesTirePressure.dashboard.rearPressure') }}</b><span>{{ fixedRearPsi.toFixed(1) }} PSI</span></div><input id="tire-dashboard-fixed-rear-pressure" v-model.number="fixedRearPsi" :aria-label="t('guidesTirePressure.dashboard.rearPressure')" type="range" min="25" max="100" step="0.5"><div class="range-scale"><span>25 PSI</span><span>50 PSI</span><span>75 PSI</span><span>100 PSI</span></div></div>
     <div class="control-box control-box--wide"><div class="control-head"><b>{{ t('guidesTirePressure.dashboard.leanAngle') }}</b><span>{{ leanAngle }}° · {{ leanDesc }}</span></div><div class="presets lean-presets"><button v-for="preset in leanPresets" :key="preset" type="button" :aria-pressed="leanAngle === preset" :class="{ active: leanAngle === preset }" @click="leanAngle = preset">{{ preset }}° · {{ leanPresetLabel(preset) }}</button></div></div>
     <div class="control-box"><div class="control-head"><b>{{ t('guidesTirePressure.dashboard.speed') }}</b><span>{{ speedKmh.toFixed(0) }} km/h</span></div><input id="tire-dashboard-speed" v-model.number="speedKmh" :aria-label="t('guidesTirePressure.dashboard.speed')" type="range" min="0" max="80" step="1"><div class="range-scale"><span>0</span><span>20</span><span>40</span><span>80 km/h</span></div><small class="speed-hint">{{ t('guidesTirePressure.dashboard.speedHint') }}</small><div class="speed-readout"><span>{{ t('guidesTirePressure.dashboard.lateralAcceleration') }}</span><strong>{{ lateralAccelerationG === null ? '—' : lateralAccelerationG.toFixed(2) }} G</strong><span>{{ t('guidesTirePressure.dashboard.turnRadius') }}</span><strong>{{ formatTurnRadius(equivalentTurnRadiusM) }}</strong></div></div>
     <div class="control-box"><div class="control-head"><b>{{ t('guidesTirePressure.dashboard.riderWeight') }}</b><span>{{ riderWeight.toFixed(1) }} kg</span></div><input id="tire-dashboard-rider-weight" v-model.number="riderWeight" :aria-label="t('guidesTirePressure.dashboard.riderWeight')" type="range" min="45" max="115" step="0.5"><div class="range-scale"><span>45 kg</span><span>70 kg</span><span>90 kg</span><span>115 kg</span></div></div>
@@ -40,7 +91,7 @@
         <small>{{ t('guidesTirePressure.dashboard.fixedMuHint') }}</small>
       </div>
     </div>
-    <div class="control-box"><div class="control-head"><b>{{ t('guidesTirePressure.dashboard.tireWidth') }}</b><span>{{ tireWidth }}C</span></div><input id="tire-dashboard-tire-width" v-model.number="tireWidth" :aria-label="t('guidesTirePressure.dashboard.tireWidth')" type="range" min="25" max="40" step="1"><div class="range-scale"><span>25C</span><span>28C</span><span>32C</span><span>40C</span></div></div>
+    <div class="control-box"><div class="control-head"><b>{{ t('guidesTirePressure.dashboard.tireWidth') }}</b><span>{{ tireWidth }}C</span></div><input id="tire-dashboard-tire-width" v-model.number="tireWidth" :aria-label="t('guidesTirePressure.dashboard.tireWidth')" type="range" min="20" max="80" step="1"><div class="range-scale"><span>20C</span><span>28C</span><span>40C</span><span>80C</span></div></div>
     </div>
   </article>
 </template>
@@ -65,8 +116,20 @@ type TirePressureControlsModel = {
   postures: ComputedRef<Array<{ id: string; key: string; label: string }>>
   postureId: Ref<string>
   tireWidth: Ref<number>
-  fixedFrontPsi: Ref<number>
-  fixedRearPsi: Ref<number>
+  selectedTireModelLabel: ComputedRef<string>
+  selectedTirePressureRangeLabel: ComputedRef<string>
+  selectedTireReferencePressureLabel: ComputedRef<string>
+  pressureComparisonEnabled: Ref<boolean>
+  pressureComparisonAvailable: ComputedRef<boolean>
+  pressureComparisonAvailabilityHint: ComputedRef<string>
+  comparisonRequestPending: ComputedRef<boolean>
+  comparisonRequestFailed: ComputedRef<boolean>
+  retryTirePressureDynamics: () => void
+  toggleLowestPressureComparison: () => void
+  wetPressureScenarioEnabled: Ref<boolean>
+  wetPressureScenarioAvailable: ComputedRef<boolean>
+  wetPressureWaterFilmDepthMm: number
+  toggleWetPressureScenario: () => void
   speedKmh: Ref<number>
   equivalentTurnRadiusM: ComputedRef<number | null>
   lateralAccelerationG: ComputedRef<number | null>
@@ -77,7 +140,7 @@ type TirePressureControlsModel = {
 const { t } = useI18n()
 const model = inject<TirePressureControlsModel>('tirePressureModel')
 if (!model) throw new Error('TirePressureControls requires tirePressureModel')
-const { totalWeight, leanAngle, leanDesc, leanPresets, leanPresetLabel, riderWeight, bikeWeight, frontLoad, rearLoad, frontRatio, rearRatio, postureLabel, postures, postureId, tireWidth, fixedFrontPsi, fixedRearPsi, speedKmh, equivalentTurnRadiusM, lateralAccelerationG, formatTurnRadius, demonstrationFrictionCoefficientNominal } = model
+const { totalWeight, leanAngle, leanDesc, leanPresets, leanPresetLabel, riderWeight, bikeWeight, frontLoad, rearLoad, frontRatio, rearRatio, postureLabel, postures, postureId, tireWidth, selectedTireModelLabel, selectedTirePressureRangeLabel, selectedTireReferencePressureLabel, pressureComparisonEnabled, pressureComparisonAvailable, pressureComparisonAvailabilityHint, comparisonRequestPending, comparisonRequestFailed, retryTirePressureDynamics, toggleLowestPressureComparison, wetPressureScenarioEnabled, wetPressureScenarioAvailable, wetPressureWaterFilmDepthMm, toggleWetPressureScenario, speedKmh, equivalentTurnRadiusM, lateralAccelerationG, formatTurnRadius, demonstrationFrictionCoefficientNominal } = model
 
 function formatFrictionCoefficient(value: number | null | undefined) {
   return value === null || value === undefined || !Number.isFinite(value) ? '—' : value.toFixed(2)
@@ -141,6 +204,112 @@ function formatFrictionCoefficient(value: number | null | undefined) {
   line-height: 1.25;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.pressure-reference-hint {
+  display: block;
+  margin-top: 0.28rem;
+  color: var(--tz-text-secondary);
+  font-size: 0.62rem;
+  line-height: 1.35;
+}
+
+.pressure-reference-value {
+  display: block;
+  margin-top: 0.35rem;
+  color: var(--tz-text-primary);
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.pressure-comparison-toggle {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.65rem;
+  margin-top: 0.45rem;
+  padding: 0.22rem 0.48rem;
+  border: 1px solid var(--tz-border-strong);
+  border-radius: 0.4rem;
+  background: var(--tz-card-surface);
+  color: var(--tz-text-primary);
+  cursor: pointer;
+  font-size: 0.65rem;
+  line-height: 1.2;
+}
+
+.pressure-comparison-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin-top: 0.45rem;
+}
+
+.pressure-comparison-actions .pressure-comparison-toggle {
+  margin-top: 0;
+}
+
+.wet-pressure-toggle[aria-pressed='true'] {
+  border-color: #0369a1;
+  background: #0369a1;
+  color: #ffffff;
+}
+
+.wet-pressure-hint {
+  display: block;
+  margin-top: 0.3rem;
+  color: var(--tz-text-secondary);
+  font-size: 0.6rem;
+  line-height: 1.35;
+}
+
+.pressure-comparison-status {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin: 0.32rem 0 0;
+  color: var(--tz-text-secondary);
+  font-size: 0.6rem;
+  line-height: 1.35;
+}
+
+.pressure-comparison-status--error {
+  color: #b91c1c;
+}
+
+.pressure-comparison-retry {
+  min-height: 1.35rem;
+  padding: 0.12rem 0.35rem;
+  border: 1px solid currentColor;
+  border-radius: 0.3rem;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font-size: 0.59rem;
+  line-height: 1.15;
+}
+
+.pressure-comparison-retry:hover,
+.pressure-comparison-retry:focus-visible {
+  background: rgb(185 28 28 / 0.08);
+  outline: none;
+}
+
+.pressure-comparison-toggle:hover:not(:disabled),
+.pressure-comparison-toggle:focus-visible:not(:disabled) {
+  border-color: var(--tz-site-accent);
+  outline: none;
+}
+
+.pressure-comparison-toggle[aria-pressed='true'] {
+  border-color: var(--tz-text-primary);
+  background: var(--tz-text-primary);
+  color: var(--tz-card-surface);
+}
+
+.pressure-comparison-toggle:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
 }
 
 .friction-baseline {

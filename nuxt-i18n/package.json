@@ -13,6 +13,7 @@
     "scripts:typecheck": "tsc --project tsconfig.scripts.json",
     "test:referral-invitation-share": "tsx scripts/referral-invitation-share.test.ts",
     "test:breadcrumb-navigation": "tsx scripts/breadcrumb-navigation-contract.test.ts",
+    "test:footer-menu-route-discovery": "tsx scripts/footer-menu-route-discovery-contract.test.ts",
     "test:wheelset-lacing-topology": "tsx scripts/wheelset-lacing-topology.test.ts",
     "i18n:typecheck": "npm run scripts:typecheck",
     "i18n:split": "tsx scripts/i18n/split-locales.ts",

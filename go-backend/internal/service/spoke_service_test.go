@@ -122,6 +122,17 @@ func TestSpokeServiceCalculateAppliesPhysicalBuildCorrections(t *testing.T) {
 	assert.Greater(t, stretched.Debug.StretchLeftMM, 0.0)
 	assert.Less(t, stretched.LeftLengthMM, base.LeftLengthMM)
 
+	manualElongation := 1.18
+	manualCompensated, err := spokeService.Calculate(SpokeCalculationInput{
+		RimID: "rr411_db", HubID: "hub", WheelPosition: "front", SpokeCount: 24, Crossing: 2,
+		SpokeHeadType: "j_bend", SpokeHoleDiameterMM: floatPtrForTest(0),
+		SpokeProfile: "bladed_0_9x2_2", TargetTensionN: &targetTension,
+		SpokeElongationCompensationMM: &manualElongation, Interlacing: false,
+	})
+	require.NoError(t, err)
+	assert.InDelta(t, manualElongation, manualCompensated.Debug.StretchLeftMM, 0.001)
+	assert.InDelta(t, manualElongation, base.LeftLengthMM-manualCompensated.LeftLengthMM, 0.01)
+
 	interlace := 0.45
 	interlaced, err := spokeService.Calculate(SpokeCalculationInput{
 		RimID: "rr411_db", HubID: "hub", WheelPosition: "front", SpokeCount: 24, Crossing: 3,

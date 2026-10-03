@@ -22,6 +22,11 @@ definePageMeta({
   layout: 'products',
   footerLabelKey: 'products.nav.tireSizeCharts',
   footerLabelFallback: 'Tire Guides',
+  feedbackThreadKey: 'guides-tire-pressure-calculator',
+  feedbackTitleKey: 'guidesTirePressure.feedbackTitle',
+  feedbackTitle: 'Share your feedback about the tire-pressure calculator',
+  pageTitleKey: 'guidesTirePressure.calculator.title',
+  pageTitle: 'Tire pressure, load, and cornering force demonstration',
 })
 
 const { locale, t } = useI18n()

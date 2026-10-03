@@ -14,7 +14,12 @@
       ></button>
     </div>
 
-    <div class="home-hero-visual-showcase-mobile__grid" role="tabpanel" aria-live="polite">
+    <div
+      class="home-hero-visual-showcase-mobile__grid"
+      :class="{ 'home-hero-visual-showcase-mobile__grid--single': activePair.length === 1 }"
+      role="tabpanel"
+      aria-live="polite"
+    >
       <button
         v-for="({ item, index }) in activePair"
         :key="`${activePairIndex}-${item.id}`"
@@ -27,7 +32,6 @@
       >
         <HomeHeroVisualShowcaseFigure
           :item="item"
-          sizes="xs:50vw sm:50vw md:50vw"
           :loading="index === 0 ? 'eager' : 'lazy'"
           :fetchpriority="index === 0 ? 'high' : 'low'"
           :preload="index === 0 ? { fetchPriority: 'high', media: '(max-width: 1023px)' } : false"
@@ -56,14 +60,17 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import HomeHeroVisualShowcaseFigure from '~/components/home/HomeHeroVisualShowcaseFigure.vue'
-import type { HomeHeroVisualShowcaseItem } from '~/types/homeHeroVisualShowcase'
+import {
+  HOME_HERO_VISUAL_SHOWCASE_REQUIRED_ITEM_COUNT,
+  type HomeHeroVisualShowcaseItem,
+} from '~/types/homeHeroVisualShowcase'
 
 const props = defineProps<{
   items: HomeHeroVisualShowcaseItem[]
   ariaLabel: string
 }>()
 
-const mobileItems = computed(() => props.items.slice(0, 8))
+const mobileItems = computed(() => props.items.slice(0, HOME_HERO_VISUAL_SHOWCASE_REQUIRED_ITEM_COUNT))
 const activePairIndex = ref(0)
 const activeItemIndex = ref(0)
 const mobilePairCount = computed(() => Math.ceil(mobileItems.value.length / 2))
@@ -101,6 +108,10 @@ const setActiveItem = (index: number) => {
   width: 100%;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: clamp(0.45rem, 0.8vw, 0.75rem);
+}
+
+.home-hero-visual-showcase-mobile__grid--single {
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .home-hero-visual-showcase-mobile__card {

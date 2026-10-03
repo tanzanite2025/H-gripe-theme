@@ -66,16 +66,9 @@ export const tireGuideTabs = [
   {
     id: 'tubeless',
     labelKey: 'guidesTireguides.tabs.tubeless.label',
-    fallback: 'Tubeless tires',
+    fallback: 'Tubeless tires & installation',
     descriptionKey: 'guidesTireguides.tabs.tubeless.description',
-    description: 'Tubeless setup notes, sealant basics, and compatibility.',
-  },
-  {
-    id: 'installation',
-    labelKey: 'guidesTireguides.tabs.installation.label',
-    fallback: 'Installation',
-    descriptionKey: 'guidesTireguides.tabs.installation.description',
-    description: 'Mounting steps and practical installation checks.',
+    description: 'Tubeless compatibility, setup, and step-by-step installation in one guide.',
   },
   {
     id: 'choose',

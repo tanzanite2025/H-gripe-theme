@@ -1,3 +1,6 @@
+export const HOME_HERO_VISUAL_SHOWCASE_REQUIRED_ITEM_COUNT = 9
+export const HOME_HERO_VISUAL_SHOWCASE_IMAGE_DIMENSION = 600
+
 export interface HomeHeroVisualShowcaseItem {
   id: string
   showcaseKey: string

@@ -42,6 +42,7 @@
     "eyebrow": "辐条修补包产品",
     "title": "查看辐条修补包产品",
     "description": "这里展示该分类下的真实在售产品。打开产品后，可以先选择它覆盖的轮组型号再购买。",
+    "jumpToProducts": "直接查看修补包产品",
     "emptyDescription": "无产品",
     "loadError": "产品暂时无法加载，发布后会显示在这里。"
   },

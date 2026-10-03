@@ -1,5 +1,6 @@
 <template>
   <section
+    id="brand-wheelset-spoke-repair-kit-products"
     class="brand-wheelset-spoke-repair-kit-products"
     :aria-labelledby="sectionTitleId"
     :aria-busy="pending || undefined"
@@ -51,6 +52,11 @@
     >
       {{ t('products.loading', 'Loading...') }}
     </p>
+
+    <aside class="brand-wheelset-spoke-repair-kit-products__note">
+      <strong>{{ t('brandWheelsetSpokeSpecs.shimanoNoteTitle') }}</strong>
+      <p>{{ t('brandWheelsetSpokeSpecs.shimanoNoteBody') }}</p>
+    </aside>
   </section>
 </template>
 
@@ -87,12 +93,34 @@ const requestError = computed(() => Boolean(error.value))
   gap: 1rem;
   min-width: 0;
   margin-top: 0.25rem;
+  scroll-margin-top: 5rem;
   padding: clamp(1.1rem, 2vw, 1.5rem);
   border: 1px solid var(--spoke-line, #dbe3ec);
   border-radius: 1.35rem;
   background:
     radial-gradient(circle at top right, rgb(37 99 235 / 0.07), transparent 38%),
     var(--spoke-panel, #fff);
+}
+
+.brand-wheelset-spoke-repair-kit-products__note {
+  display: grid;
+  gap: 0.3rem;
+  padding: 0.9rem 1.2rem;
+  border-left: 3px solid #dc2626;
+  background: #fff;
+}
+
+.brand-wheelset-spoke-repair-kit-products__note strong {
+  color: var(--spoke-ink, #17212b);
+  font-size: 0.78rem;
+  font-weight: 850;
+}
+
+.brand-wheelset-spoke-repair-kit-products__note p {
+  margin: 0;
+  color: var(--spoke-muted, #64748b);
+  font-size: 0.76rem;
+  line-height: 1.55;
 }
 
 .brand-wheelset-spoke-repair-kit-products__header {

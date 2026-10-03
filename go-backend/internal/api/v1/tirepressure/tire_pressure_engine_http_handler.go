@@ -85,13 +85,17 @@ func (h *TirePressureEngineeringCalculationHTTPHandler) HandleTirePressureGround
 		WriteTirePressureCalculationErrorResponse(c, http.StatusBadRequest, "INVALID_FIELD", "Dynamic inputs are invalid", "")
 		return
 	}
+	warnings := []string{"Demo estimate only; not a pressure recommendation or safety guarantee."}
+	if req.WetPressureDemonstrationEnabled {
+		warnings = append(warnings, "Wet friction retention and same-area equivalent pressure use an explicit first-order demonstration proxy; the area comparison does not claim to restore lost grip or represent a calibrated tire-road measurement.")
+	}
 	c.JSON(http.StatusOK, gin.H{"code": 0, "data": gin.H{
 		"model_version": tirepressure.DynamicsModelVersion,
 		"load_source":   loads.Source,
 		"front_load_kg": loads.FrontKg,
 		"rear_load_kg":  loads.RearKg,
 		"dynamics":      dynamics,
-		"warnings":      []string{"Demo estimate only; not a pressure recommendation or safety guarantee."},
+		"warnings":      warnings,
 	}})
 }
 

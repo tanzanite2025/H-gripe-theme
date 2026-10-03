@@ -18,6 +18,7 @@ const (
 	SpecMediaLibraryImage            SpecCode = "media_library_image"
 	SpecFAQAnswerImage               SpecCode = "faq_answer_image"
 	SpecVisualShowcaseHomeCategories SpecCode = "visual_showcase_home_categories"
+	SpecVisualShowcaseHomeHero       SpecCode = "visual_showcase_home_hero"
 	SpecVisualShowcaseEditorial      SpecCode = "visual_showcase_editorial"
 	SpecSiteLogo                     SpecCode = "site_logo"
 	SpecSiteFavicon                  SpecCode = "site_favicon"
@@ -123,6 +124,17 @@ var uploadSpecDefinitions = map[SpecCode]uploadSpecDefinition{
 		1080,
 		16,
 		9,
+	),
+	SpecVisualShowcaseHomeHero: makeExactAspectImageSpec(
+		SpecVisualShowcaseHomeHero,
+		"Home hero visual showcase image",
+		"Exactly 600x600 image used by the home hero visual showcase.",
+		ProductImageRule,
+		600,
+		600,
+		1,
+		1,
+		"Upload exactly 600x600 px for the nine fixed home hero showcase positions.",
 	),
 	SpecVisualShowcaseEditorial: makeAspectImageSpec(
 		SpecVisualShowcaseEditorial,
@@ -318,6 +330,35 @@ func makeAspectImageSpec(
 	definition.AspectRatioWidth = aspectRatioWidth
 	definition.AspectRatioHeight = aspectRatioHeight
 	definition.AspectRatioLabel = formatAspectRatio(aspectRatioWidth, aspectRatioHeight)
+	return definition
+}
+
+func makeExactAspectImageSpec(
+	code SpecCode,
+	label string,
+	description string,
+	rule FileRule,
+	recommendedWidth int,
+	recommendedHeight int,
+	aspectRatioWidth int,
+	aspectRatioHeight int,
+	qualityNote string,
+) uploadSpecDefinition {
+	definition := makeAspectImageSpec(
+		code,
+		label,
+		description,
+		rule,
+		recommendedWidth,
+		recommendedHeight,
+		aspectRatioWidth,
+		aspectRatioHeight,
+	)
+	definition.FileRule.ExactWidth = recommendedWidth
+	definition.FileRule.ExactHeight = recommendedHeight
+	definition.UploadSpec.ExactWidth = recommendedWidth
+	definition.UploadSpec.ExactHeight = recommendedHeight
+	definition.UploadSpec.QualityNote = qualityNote
 	return definition
 }
 

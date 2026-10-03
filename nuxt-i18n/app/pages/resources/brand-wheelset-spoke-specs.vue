@@ -6,35 +6,39 @@
       <p class="wheelset-spoke-lookup__intro">{{ t('brandWheelsetSpokeSpecs.intro') }}</p>
     </header>
 
-    <aside class="wheelset-spoke-lookup__brand-note">
-      <strong>{{ t('brandWheelsetSpokeSpecs.shimanoNoteTitle') }}</strong>
-      <p>{{ t('brandWheelsetSpokeSpecs.shimanoNoteBody') }}</p>
-    </aside>
-
     <section class="wheelset-spoke-lookup__filters" :aria-label="t('brandWheelsetSpokeSpecs.filterTitle')">
       <h2>{{ t('brandWheelsetSpokeSpecs.filterTitle') }}</h2>
 
-      <div class="wheelset-spoke-lookup__brand-strip" role="group" :aria-label="t('brandWheelsetSpokeSpecs.brandLabel')">
-        <button
-          type="button"
-          class="wheelset-spoke-lookup__brand-pill"
-          :class="{ 'is-active': !selectedBrand }"
-          :aria-pressed="!selectedBrand"
-          @click="selectedBrand = ''"
+      <div class="wheelset-spoke-lookup__brand-controls">
+        <div class="wheelset-spoke-lookup__brand-strip" role="group" :aria-label="t('brandWheelsetSpokeSpecs.brandLabel')">
+          <button
+            type="button"
+            class="wheelset-spoke-lookup__brand-pill"
+            :class="{ 'is-active': !selectedBrand }"
+            :aria-pressed="!selectedBrand"
+            @click="selectedBrand = ''"
+          >
+            {{ t('brandWheelsetSpokeSpecs.allBrands') }}
+          </button>
+          <button
+            v-for="brand in brandOptions"
+            :key="brand.slug"
+            type="button"
+            class="wheelset-spoke-lookup__brand-pill"
+            :class="{ 'is-active': selectedBrand === brand.slug }"
+            :aria-pressed="selectedBrand === brand.slug"
+            @click="selectedBrand = brand.slug"
+          >
+            {{ brand.name }}
+          </button>
+        </div>
+
+        <a
+          href="#brand-wheelset-spoke-repair-kit-products"
+          class="wheelset-spoke-lookup__products-jump"
         >
-          {{ t('brandWheelsetSpokeSpecs.allBrands') }}
-        </button>
-        <button
-          v-for="brand in brandOptions"
-          :key="brand.slug"
-          type="button"
-          class="wheelset-spoke-lookup__brand-pill"
-          :class="{ 'is-active': selectedBrand === brand.slug }"
-          :aria-pressed="selectedBrand === brand.slug"
-          @click="selectedBrand = brand.slug"
-        >
-          {{ brand.name }}
-        </button>
+          {{ t('brandWheelsetSpokeSpecs.products.jumpToProducts') }}
+        </a>
       </div>
 
       <label class="wheelset-spoke-lookup__search">
@@ -543,7 +547,6 @@ useHead(() => ({
 }
 
 .wheelset-spoke-lookup__header,
-.wheelset-spoke-lookup__brand-note,
 .wheelset-spoke-lookup__filters,
 .wheelset-spoke-lookup__matrix {
   min-width: 0;
@@ -583,27 +586,6 @@ useHead(() => ({
   line-height: 1.5;
 }
 
-.wheelset-spoke-lookup__brand-note {
-  display: grid;
-  gap: 0.3rem;
-  padding: 0.9rem 1.2rem;
-  border-left: 3px solid #dc2626;
-  background: #fff;
-}
-
-.wheelset-spoke-lookup__brand-note strong {
-  color: var(--spoke-ink);
-  font-size: 0.78rem;
-  font-weight: 850;
-}
-
-.wheelset-spoke-lookup__brand-note p {
-  margin: 0;
-  color: var(--spoke-muted);
-  font-size: 0.76rem;
-  line-height: 1.55;
-}
-
 .wheelset-spoke-lookup__filters {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(15rem, 25rem);
@@ -627,6 +609,41 @@ useHead(() => ({
   overflow-x: auto;
   padding: 0.1rem 0.1rem 0.3rem;
   scrollbar-width: thin;
+}
+
+.wheelset-spoke-lookup__brand-controls {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.wheelset-spoke-lookup__brand-controls .wheelset-spoke-lookup__brand-strip {
+  flex: 1 1 auto;
+}
+
+.wheelset-spoke-lookup__products-jump {
+  display: inline-flex;
+  flex: 0 0 auto;
+  min-height: 2rem;
+  align-items: center;
+  justify-content: center;
+  padding: 0.38rem 0.75rem;
+  border: 1px solid rgba(37, 99, 235, 0.28);
+  border-radius: 999px;
+  background: rgba(37, 99, 235, 0.08);
+  color: #1d4ed8;
+  font-size: 0.7rem;
+  font-weight: 800;
+  line-height: 1.25;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: border-color 0.16s ease, background-color 0.16s ease, color 0.16s ease;
+}
+
+.wheelset-spoke-lookup__products-jump:hover {
+  border-color: rgba(37, 99, 235, 0.5);
+  background: rgba(37, 99, 235, 0.14);
 }
 
 .wheelset-spoke-lookup__brand-pill {
@@ -670,6 +687,7 @@ useHead(() => ({
 
 .wheelset-spoke-lookup__search input:focus-visible,
 .wheelset-spoke-lookup__brand-pill:focus-visible,
+.wheelset-spoke-lookup__products-jump:focus-visible,
 .wheelset-spoke-lookup__table-scroll:focus-visible {
   outline: 3px solid rgba(37, 99, 235, 0.28);
   outline-offset: 2px;
@@ -975,7 +993,7 @@ useHead(() => ({
   }
 
   .wheelset-spoke-lookup__search {
-    grid-row: 2;
+    grid-row: auto;
   }
 }
 
@@ -986,7 +1004,6 @@ useHead(() => ({
   }
 
   .wheelset-spoke-lookup__header,
-  .wheelset-spoke-lookup__brand-note,
   .wheelset-spoke-lookup__filters {
     padding: 0.9rem;
     border-radius: 1rem;
@@ -1009,8 +1026,21 @@ useHead(() => ({
   }
 }
 
+@media (max-width: 560px) {
+  .wheelset-spoke-lookup__brand-controls {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 0.55rem;
+  }
+
+  .wheelset-spoke-lookup__products-jump {
+    width: 100%;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .wheelset-spoke-lookup__brand-pill {
+  .wheelset-spoke-lookup__brand-pill,
+  .wheelset-spoke-lookup__products-jump {
     transition-duration: 0.01ms;
   }
 }

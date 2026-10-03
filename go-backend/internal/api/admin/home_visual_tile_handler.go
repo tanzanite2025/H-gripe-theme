@@ -50,11 +50,13 @@ func respondVisualShowcaseError(c *gin.Context, err error) {
 	case errors.Is(err, service.ErrHomeVisualTileKeyRequired),
 		errors.Is(err, service.ErrHomeVisualTileLocaleRequired),
 		errors.Is(err, service.ErrHomeVisualTileItemLimit),
+		errors.Is(err, service.ErrHomeVisualTileItemCountInvalid),
 		errors.Is(err, service.ErrHomeVisualTileTitleRequired),
 		errors.Is(err, service.ErrHomeVisualTileAltTextRequired),
 		errors.Is(err, service.ErrHomeVisualTileImageRequired),
 		errors.Is(err, service.ErrHomeVisualTileImageInvalid),
 		errors.Is(err, service.ErrHomeVisualTileUploadFileRequired),
+		errors.Is(err, service.ErrHomeVisualTileImageDimensionsInvalid),
 		errors.Is(err, service.ErrHomeVisualTileAspectRatioInvalid):
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 	default:

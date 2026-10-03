@@ -16,12 +16,8 @@
       "description": "Reference circumference values for Schwalbe bicycle tire sizes."
     },
     "tubeless": {
-      "label": "Tubeless tires",
-      "description": "Tubeless setup notes, sealant basics, and compatibility."
-    },
-    "installation": {
-      "label": "Installation",
-      "description": "Mounting steps and practical installation checks."
+      "label": "Tubeless tires & installation",
+      "description": "Tubeless compatibility, setup, and step-by-step installation in one guide."
     },
     "choose": {
       "label": "How to choose",

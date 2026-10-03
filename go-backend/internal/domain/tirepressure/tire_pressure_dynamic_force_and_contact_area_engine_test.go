@@ -97,6 +97,17 @@ func TestValidateTirePressureDynamicCalculationRequestRejectsIncompleteLimitSour
 	}
 }
 
+func TestValidateTirePressureDynamicCalculationRequestRequiresReferencePressureForComparison(t *testing.T) {
+	comparisonPressurePsi := 40.0
+	req := baseRequest()
+	req.FrontComparisonPressurePsi = &comparisonPressurePsi
+	req.RearComparisonPressurePsi = &comparisonPressurePsi
+	validationErr, ok := ValidateTirePressureDynamicCalculationRequest(req).(*ValidationError)
+	if !ok || validationErr.Field != "front_comparison_pressure_psi/rear_comparison_pressure_psi" {
+		t.Fatalf("expected comparison/reference pressure validation error, got %v", validationErr)
+	}
+}
+
 func TestValidateTirePressureDynamicCalculationRequestRejectsInvalidRimSystem(t *testing.T) {
 	req := baseRequest()
 	req.RimSystem = "MAYBE"
@@ -231,6 +242,147 @@ func TestOperatingPressureChangesContactAreaWithoutChangingFixedGripBaseline(t *
 	areaRatio := *lowPressureWheel.EstimatedStaticContactCm2 / *highPressureWheel.EstimatedStaticContactCm2
 	if math.Abs(areaRatio-2) > 0.03 {
 		t.Fatalf("contact area did not follow inverse pressure relationship: low=%v high=%v ratio=%v", *lowPressureWheel.EstimatedStaticContactCm2, *highPressureWheel.EstimatedStaticContactCm2, areaRatio)
+	}
+}
+
+func TestCalculateWetRoadFrictionRetentionRatioUsesSpeedWaterAndLateralDemand(t *testing.T) {
+	if got := CalculateWetRoadFrictionRetentionRatio(0, 1, 1); got != 1 {
+		t.Fatalf("zero speed retention = %v, want 1", got)
+	}
+	lowDemand := CalculateWetRoadFrictionRetentionRatio(30, 1, 0)
+	highDemand := CalculateWetRoadFrictionRetentionRatio(30, 1, 1)
+	if !(lowDemand > highDemand && highDemand < 1) {
+		t.Fatalf("expected speed/water/lateral-demand loss: low=%v high=%v", lowDemand, highDemand)
+	}
+	if got := CalculateWetRoadFrictionRetentionRatio(120, 5, 1); got != WetRoadDemoMinimumFrictionRetentionRatio {
+		t.Fatalf("retention lower bound = %v, want %v", got, WetRoadDemoMinimumFrictionRetentionRatio)
+	}
+}
+
+func TestWetPressureCompensationDerivesEquivalentPressureAndArea(t *testing.T) {
+	referencePressurePsi, rearPressurePsi := 50.0, 55.0
+	angle := 30.0
+	req := baseRequest()
+	req.SpeedKmh = 30
+	req.LeanAngleDeg = &angle
+	req.FrontOperatingPsi, req.RearOperatingPsi = &referencePressurePsi, &rearPressurePsi
+	req.WetPressureDemonstrationEnabled = true
+	waterFilmDepthMm := 1.0
+	req.WaterFilmDepthMm = &waterFilmDepthMm
+	loads, err := ResolveTirePressureWheelLoads(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	dynamics, err := CalculateTirePressureGroundFrameCorneringDynamics(req, loads)
+	if err != nil {
+		t.Fatal(err)
+	}
+	compensation := dynamics.Front.WetPressureCompensation
+	if compensation == nil {
+		t.Fatal("expected wet pressure compensation")
+	}
+	if compensation.FrictionRetentionRatio >= 1 || compensation.EquivalentPressurePsi >= compensation.ReferencePressurePsi {
+		t.Fatalf("expected wet equivalent pressure reduction: %+v", compensation)
+	}
+	if math.Abs(compensation.EquivalentContactAreaCm2/compensation.ReferenceContactAreaCm2-1/compensation.FrictionRetentionRatio) > 0.02 {
+		t.Fatalf("area ratio does not compensate retention ratio: %+v", compensation)
+	}
+	if compensation.WetGripLimitAtReferencePressureN >= dynamics.Front.IdealizedGripLimitN {
+		t.Fatalf("expected wet grip below dry baseline: %+v", compensation)
+	}
+	if compensation.WetGripMarginPct >= dynamics.Front.GripMarginPct {
+		t.Fatalf("expected wet margin below dry baseline: %+v", compensation)
+	}
+	if compensation.SurfaceTextureBaseline != WetRoadDemoSurfaceTextureBaseline || compensation.RubberBaseline != WetRoadDemoRubberBaseline {
+		t.Fatalf("unexpected fixed baselines: %+v", compensation)
+	}
+	if dynamics.Front.PressureContactAreaComparison == nil {
+		t.Fatal("expected wet scenario to expose pressure-area comparison")
+	}
+}
+
+func TestWetPressureCompensationClampsEquivalentPressureToProvidedMinimum(t *testing.T) {
+	referencePressurePsi, rearPressurePsi := 50.0, 55.0
+	minimumFrontPressurePsi, minimumRearPressurePsi := 45.0, 45.0
+	angle := 30.0
+	req := baseRequest()
+	req.SpeedKmh = 30
+	req.LeanAngleDeg = &angle
+	req.FrontOperatingPsi, req.RearOperatingPsi = &referencePressurePsi, &rearPressurePsi
+	req.FrontMinimumPressurePsi, req.RearMinimumPressurePsi = &minimumFrontPressurePsi, &minimumRearPressurePsi
+	req.WetPressureDemonstrationEnabled = true
+	loads, err := ResolveTirePressureWheelLoads(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	dynamics, err := CalculateTirePressureGroundFrameCorneringDynamics(req, loads)
+	if err != nil {
+		t.Fatal(err)
+	}
+	compensation := dynamics.Front.WetPressureCompensation
+	if compensation == nil || !compensation.PressureClampedToMinimum || compensation.EquivalentPressurePsi != minimumFrontPressurePsi {
+		t.Fatalf("expected minimum-pressure clamp: %+v", compensation)
+	}
+	if compensation.WetGripLimitAtReferencePressureN >= dynamics.Front.IdealizedGripLimitN {
+		t.Fatalf("clamped wet grip should remain below dry target: %+v", compensation)
+	}
+}
+
+func TestValidateTirePressureDynamicCalculationRequestRejectsMinimumPressureAboveOperatingPressure(t *testing.T) {
+	operatingPressurePsi := 40.0
+	minimumPressurePsi := 45.0
+	req := baseRequest()
+	req.FrontOperatingPsi, req.RearOperatingPsi = &operatingPressurePsi, &operatingPressurePsi
+	req.FrontMinimumPressurePsi, req.RearMinimumPressurePsi = &minimumPressurePsi, &minimumPressurePsi
+	validationErr, ok := ValidateTirePressureDynamicCalculationRequest(req).(*ValidationError)
+	if !ok || validationErr.Code != "OUT_OF_RANGE" || validationErr.Field != "front_minimum_pressure_psi/rear_minimum_pressure_psi" {
+		t.Fatalf("expected minimum-pressure range validation, got %v", validationErr)
+	}
+}
+
+func TestPressureContactAreaComparisonUsesOneWheelReferenceLoad(t *testing.T) {
+	referencePressurePsi, comparisonPressurePsi := 50.0, 40.0
+	req := baseRequest()
+	req.FrontOperatingPsi = &referencePressurePsi
+	req.RearOperatingPsi = &referencePressurePsi
+	req.FrontComparisonPressurePsi = &comparisonPressurePsi
+	req.RearComparisonPressurePsi = &comparisonPressurePsi
+	loads, err := ResolveTirePressureWheelLoads(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	dynamics, err := CalculateTirePressureGroundFrameCorneringDynamics(req, loads)
+	if err != nil {
+		t.Fatal(err)
+	}
+	comparison := dynamics.Front.PressureContactAreaComparison
+	if comparison == nil {
+		t.Fatal("expected pressure contact-area comparison")
+	}
+	if comparison.ReferencePressurePsi != referencePressurePsi || comparison.ComparisonPressurePsi != comparisonPressurePsi {
+		t.Fatalf("unexpected pressure comparison: %+v", comparison)
+	}
+	if math.Abs(comparison.AreaChangePct-25) > 0.1 {
+		t.Fatalf("area change = %v, want 25%%", comparison.AreaChangePct)
+	}
+	if math.Abs(comparison.ComparisonAreaCm2/comparison.ReferenceAreaCm2-1.25) > 0.01 {
+		t.Fatalf("area ratio = %v, want 1.25", comparison.ComparisonAreaCm2/comparison.ReferenceAreaCm2)
+	}
+	if comparison.ReferencePatchWidthMm == nil || comparison.ReferencePatchLengthMm == nil || comparison.ComparisonPatchWidthMm == nil || comparison.ComparisonPatchLengthMm == nil {
+		t.Fatalf("expected reference and comparison footprint dimensions: %+v", comparison)
+	}
+	if *comparison.ComparisonPatchLengthMm <= *comparison.ReferencePatchLengthMm {
+		t.Fatalf("lower pressure should increase the width-limited footprint length: reference=%v comparison=%v", *comparison.ReferencePatchLengthMm, *comparison.ComparisonPatchLengthMm)
+	}
+	baselineRequest := req
+	baselineRequest.FrontComparisonPressurePsi = nil
+	baselineRequest.RearComparisonPressurePsi = nil
+	baselineDynamics, err := CalculateTirePressureGroundFrameCorneringDynamics(baselineRequest, loads)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if dynamics.Front.IdealizedGripLimitN != baselineDynamics.Front.IdealizedGripLimitN || dynamics.Rear.IdealizedGripLimitN != baselineDynamics.Rear.IdealizedGripLimitN {
+		t.Fatalf("comparison should not alter fixed grip model: with=%v/%v without=%v/%v", dynamics.Front.IdealizedGripLimitN, dynamics.Rear.IdealizedGripLimitN, baselineDynamics.Front.IdealizedGripLimitN, baselineDynamics.Rear.IdealizedGripLimitN)
 	}
 }
 

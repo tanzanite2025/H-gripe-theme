@@ -103,6 +103,7 @@ type CalcRequest struct {
 	AlternatingDrillingOffsetMM *float64 `json:"alternatingDrillingOffsetMm"`
 	Interlacing                 bool     `json:"interlacing"`
 	InterlaceCompensationMM     *float64 `json:"interlaceCompensationMm"`
+	SpokeElongationCompensationMM *float64 `json:"spokeElongationCompensationMm"`
 	ERDMM                       *float64 `json:"erdMm"`
 	LeftFlangeMM                *float64 `json:"leftFlangeMm"`
 	RightFlangeMM               *float64 `json:"rightFlangeMm"`
@@ -137,6 +138,7 @@ func (r *CalcRequest) UnmarshalJSON(data []byte) error {
 		TargetTensionN              *float64 `json:"target_tension_n"`
 		AlternatingDrillingOffsetMM *float64 `json:"alternating_drilling_offset_mm"`
 		InterlaceCompensationMM     *float64 `json:"interlace_compensation_mm"`
+		SpokeElongationCompensationMM *float64 `json:"spoke_elongation_compensation_mm"`
 		ERDMM                       *float64 `json:"erd_mm"`
 		LeftFlangeMM                *float64 `json:"left_flange_mm"`
 		RightFlangeMM               *float64 `json:"right_flange_mm"`
@@ -193,6 +195,9 @@ func (r *CalcRequest) UnmarshalJSON(data []byte) error {
 	if r.InterlaceCompensationMM == nil {
 		r.InterlaceCompensationMM = snake.InterlaceCompensationMM
 	}
+	if r.SpokeElongationCompensationMM == nil {
+		r.SpokeElongationCompensationMM = snake.SpokeElongationCompensationMM
+	}
 	if r.ERDMM == nil {
 		r.ERDMM = snake.ERDMM
 	}
@@ -241,6 +246,7 @@ func (h *Handler) Calculate(c *gin.Context) {
 		AlternatingDrillingOffsetMM: req.AlternatingDrillingOffsetMM,
 		Interlacing:                 req.Interlacing,
 		InterlaceCompensationMM:     req.InterlaceCompensationMM,
+		SpokeElongationCompensationMM: req.SpokeElongationCompensationMM,
 		ERDMM:                       req.ERDMM,
 		LeftFlangeMM:                req.LeftFlangeMM,
 		RightFlangeMM:               req.RightFlangeMM,

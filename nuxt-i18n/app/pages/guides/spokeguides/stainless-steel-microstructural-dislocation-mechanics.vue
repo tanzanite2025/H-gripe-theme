@@ -23,17 +23,17 @@
         <p class="spoke-dislocation-page__body-copy">{{ t('guidesSpokeDislocationMechanics.materialLadder.description') }}</p>
         <div class="spoke-dislocation-page__load-ladder">
           <div class="spoke-dislocation-page__load-step spoke-dislocation-page__load-step--blue">
-            <strong>{{ formattedBackendWorkingTension }}</strong>
+            <strong>{{ t('guidesSpokeDislocationMechanics.materialLadder.workingValueLabel') }}</strong>
             <div>
               <b>{{ t('guidesSpokeDislocationMechanics.materialLadder.workingTitle') }}</b>
-              <span>{{ t('guidesSpokeDislocationMechanics.materialLadder.workingDescription', { stress: formattedBackendWorkingStress }) }}</span>
+              <span>{{ t('guidesSpokeDislocationMechanics.materialLadder.workingDescription') }}</span>
             </div>
           </div>
           <div class="spoke-dislocation-page__load-step spoke-dislocation-page__load-step--emerald">
-            <strong>{{ formattedBackendOverloadForce }}</strong>
+            <strong>{{ t('guidesSpokeDislocationMechanics.materialLadder.overloadValueLabel') }}</strong>
             <div>
               <b>{{ t('guidesSpokeDislocationMechanics.materialLadder.overloadTitle') }}</b>
-              <span>{{ t('guidesSpokeDislocationMechanics.materialLadder.overloadDescription', { ratio: overloadRatio ?? '—' }) }}</span>
+              <span>{{ t('guidesSpokeDislocationMechanics.materialLadder.overloadDescription') }}</span>
             </div>
           </div>
           <div class="spoke-dislocation-page__load-step spoke-dislocation-page__load-step--slate">
@@ -211,6 +211,43 @@
             <span>{{ t('guidesSpokeDislocationMechanics.calculator.overloadElongationLabel') }}</span>
             <small>{{ formattedBackendOverloadDeltaElasticElongation }}</small>
           </div>
+          <div>
+            <strong class="spoke-dislocation-page__result-value--blue">{{ formattedBackendWorkTotalElongation }}</strong>
+            <span>{{ t('guidesSpokeDislocationMechanics.calculator.workTotalElongationLabel') }}</span>
+            <small>{{ t('guidesSpokeDislocationMechanics.calculator.totalElongationNote') }}</small>
+          </div>
+          <div>
+            <strong class="spoke-dislocation-page__result-value--rose">{{ formattedBackendWorkPermanentElongation }}</strong>
+            <span>{{ t('guidesSpokeDislocationMechanics.calculator.workPermanentElongationLabel') }}</span>
+            <small>{{ t('guidesSpokeDislocationMechanics.calculator.permanentElongationNote') }}</small>
+          </div>
+          <div>
+            <strong class="spoke-dislocation-page__result-value--emerald">{{ formattedBackendOverloadTotalElongation }}</strong>
+            <span>{{ t('guidesSpokeDislocationMechanics.calculator.overloadTotalElongationLabel') }}</span>
+            <small>{{ formattedBackendOverloadDeltaTotalElongation }}</small>
+          </div>
+          <div>
+            <strong class="spoke-dislocation-page__result-value--rose">{{ formattedBackendOverloadPermanentElongation }}</strong>
+            <span>{{ t('guidesSpokeDislocationMechanics.calculator.overloadPermanentElongationLabel') }}</span>
+            <small>{{ formattedBackendOverloadDeltaPermanentElongation }}</small>
+          </div>
+          <div>
+            <strong class="spoke-dislocation-page__result-value--rose">{{ formattedBackendTotalElongationToFailure }}</strong>
+            <span>{{ t('guidesSpokeDislocationMechanics.calculator.totalElongationToFailureLabel') }}</span>
+            <small>{{ formattedBackendTotalElongationToFailureNote }}</small>
+          </div>
+        </div>
+
+        <div class="spoke-dislocation-page__callout spoke-dislocation-page__callout--rose">
+          <span aria-hidden="true">⛔</span>
+          <div>
+            <strong>{{ t('guidesSpokeDislocationMechanics.calculator.fractureReferenceTitle') }}</strong>
+            <p>{{ t('guidesSpokeDislocationMechanics.calculator.fractureReferenceDescription', {
+              percent: materialReference ? formatStainlessSteelSpokeNumericValue(materialReference.total_elongation_to_failure_percent, 1) : '—',
+              length: calculationResult ? formatStainlessSteelSpokeNumericValue(calculationResult.effective_spoke_length_mm, 1) : '—',
+              elongation: formattedBackendTotalElongationToFailure,
+            }) }}</p>
+          </div>
         </div>
 
         <div class="spoke-dislocation-page__callout spoke-dislocation-page__callout--safety" :class="`spoke-dislocation-page__callout--${safetyGate.tone}`">
@@ -249,18 +286,20 @@
           <strong>{{ t('guidesSpokeDislocationMechanics.calculator.materialReferenceTitle') }}</strong>
           <p>{{ t('guidesSpokeDislocationMechanics.calculator.materialReferenceDescription', {
             name: materialReference.material_name,
-            catalogVersion: stainlessSteelSpokeDislocationMechanicsMetadata?.material_catalog_version || '—',
-            dataVersion: materialReference.data_version,
-            status: materialReferenceStatusLabel,
           }) }}</p>
           <p class="spoke-dislocation-page__material-basis">
             {{ t('guidesSpokeDislocationMechanics.calculator.materialReferenceBasis', {
               family: materialReference.material_family,
               condition: materialReference.manufacturing_condition,
-              modulus: materialReference.elastic_modulus_mpa.toFixed(0),
-              yieldReference: materialReference.macro_yield_reference_mpa.toFixed(0),
-              ultimateStrength: materialReference.ultimate_tensile_strength_reference_mpa.toFixed(0),
+              modulus: formatStainlessSteelSpokeNumericValue(materialReference.elastic_modulus_mpa, 0),
+              yieldReference: formatStainlessSteelSpokeNumericValue(materialReference.yield_strength_mpa, 0),
+              ultimateStrength: formatStainlessSteelSpokeNumericValue(materialReference.ultimate_tensile_strength_mpa, 0),
+              totalElongationToFailure: formatStainlessSteelSpokeNumericValue(materialReference.total_elongation_to_failure_percent, 1),
             }) }}
+          </p>
+          <p class="spoke-dislocation-page__material-basis">
+            <strong>{{ t('guidesSpokeDislocationMechanics.calculator.coldWorkHardeningTitle') }}</strong>
+            {{ t('guidesSpokeDislocationMechanics.calculator.coldWorkHardeningDescription') }}
           </p>
           <dl class="spoke-dislocation-page__material-values">
             <div>
@@ -272,24 +311,26 @@
               <dd>{{ materialReference.manufacturing_condition }}</dd>
             </div>
             <div>
+              <dt>{{ t('guidesSpokeDislocationMechanics.calculator.curveTypeLabel') }}</dt>
+              <dd>{{ t('guidesSpokeDislocationMechanics.calculator.curveTypeDescription') }}</dd>
+            </div>
+            <div>
               <dt>{{ t('guidesSpokeDislocationMechanics.calculator.elasticModulusLabel') }}</dt>
-              <dd>{{ materialReference.elastic_modulus_mpa.toFixed(0) }} MPa</dd>
+              <dd>{{ formatStainlessSteelSpokeNumericValue(materialReference.elastic_modulus_mpa, 0) }} MPa</dd>
             </div>
             <div>
               <dt>{{ t('guidesSpokeDislocationMechanics.calculator.yieldReferenceLabel') }}</dt>
-              <dd>{{ materialReference.macro_yield_reference_mpa.toFixed(0) }} MPa</dd>
+              <dd>{{ formatStainlessSteelSpokeNumericValue(materialReference.yield_strength_mpa, 0) }} MPa</dd>
             </div>
             <div>
               <dt>{{ t('guidesSpokeDislocationMechanics.calculator.ultimateStrengthLabel') }}</dt>
-              <dd>{{ materialReference.ultimate_tensile_strength_reference_mpa.toFixed(0) }} MPa</dd>
+              <dd>{{ formatStainlessSteelSpokeNumericValue(materialReference.ultimate_tensile_strength_mpa, 0) }} MPa</dd>
+            </div>
+            <div>
+              <dt>{{ t('guidesSpokeDislocationMechanics.calculator.totalElongationToFailureLabel') }}</dt>
+              <dd>{{ formatStainlessSteelSpokeNumericValue(materialReference.total_elongation_to_failure_percent, 1) }}%</dd>
             </div>
           </dl>
-          <ul v-if="materialReference.source_references.length" class="spoke-dislocation-page__material-sources">
-            <li v-for="source in materialReference.source_references" :key="`${source.reference_type}-${source.title}`">
-              <a v-if="source.url" :href="source.url" target="_blank" rel="noopener noreferrer">{{ source.title }}</a>
-              <span v-else>{{ source.title }}</span>
-            </li>
-          </ul>
         </div>
       </div>
     </section>
@@ -300,7 +341,24 @@
         <h2>{{ t('guidesSpokeDislocationMechanics.backendCatalog.title') }}</h2>
         <span class="spoke-dislocation-page__tag spoke-dislocation-page__tag--blue">{{ t('guidesSpokeDislocationMechanics.backendCatalog.tag') }}</span>
       </div>
-      <p class="spoke-dislocation-page__body-copy">{{ t('guidesSpokeDislocationMechanics.backendCatalog.description') }}</p>
+      <p class="spoke-dislocation-page__body-copy">{{ t('guidesSpokeDislocationMechanics.backendCatalog.description', {
+        workingTensionKgf: referenceCalculation ? formatStainlessSteelSpokeNumericValue(referenceCalculation.reference_calculation_tension_kgf, 0) : '180',
+        length: referenceCalculation ? formatStainlessSteelSpokeNumericValue(referenceCalculation.effective_spoke_length_mm, 0) : '270',
+      }) }}</p>
+      <div v-if="referenceCalculation" class="spoke-dislocation-page__callout spoke-dislocation-page__callout--blue spoke-dislocation-page__reference-baseline">
+        <span aria-hidden="true">📌</span>
+        <p>{{ t('guidesSpokeDislocationMechanics.backendCatalog.referenceBaseline', {
+          length: formatStainlessSteelSpokeNumericValue(referenceCalculation.effective_spoke_length_mm, 0),
+          referenceWorkingTensionKgf: formatStainlessSteelSpokeNumericValue(referenceCalculation.reference_calculation_tension_kgf, 0),
+          referenceWorkingTensionN: formatStainlessSteelSpokeNumericValue(referenceCalculation.reference_calculation_tension_n, 0),
+          yieldStrength: formatStainlessSteelSpokeNumericValue(referenceCalculation.yield_strength_mpa, 0),
+          curveEndpoint: formatStainlessSteelSpokeNumericValue(referenceCalculation.curve_endpoint_stress_mpa, 0),
+          curveEndpointStrain: formatStainlessSteelSpokeNumericValue(referenceCalculation.curve_endpoint_total_strain_percent, 3),
+          curveEndpointElongation: formatStainlessSteelSpokeNumericValue(referenceCalculation.curve_endpoint_total_elongation_mm, 3),
+          totalElongationToFailurePercent: formatStainlessSteelSpokeNumericValue(referenceCalculation.total_elongation_to_failure_percent, 1),
+          totalElongationToFailure: formatStainlessSteelSpokeNumericValue(referenceCalculation.fracture_reference_total_elongation_mm, 3),
+        }) }}</p>
+      </div>
 
       <div v-if="backendModelRows.length" class="spoke-dislocation-page__table-wrapper" tabindex="0">
         <table class="spoke-dislocation-page__table spoke-dislocation-page__backend-catalog-table">
@@ -311,7 +369,11 @@
               <th scope="col">{{ t('guidesSpokeDislocationMechanics.backendCatalog.headers.geometry') }}</th>
               <th scope="col">{{ t('guidesSpokeDislocationMechanics.backendCatalog.headers.area') }}</th>
               <th scope="col">{{ t('guidesSpokeDislocationMechanics.backendCatalog.headers.material') }}</th>
-              <th scope="col">{{ t('guidesSpokeDislocationMechanics.backendCatalog.headers.currentResult') }}</th>
+              <th scope="col">{{ t('guidesSpokeDislocationMechanics.backendCatalog.headers.yieldReferenceForce') }}</th>
+              <th scope="col">{{ t('guidesSpokeDislocationMechanics.backendCatalog.headers.curveEndpointForce') }}</th>
+              <th scope="col">{{ t('guidesSpokeDislocationMechanics.backendCatalog.headers.referenceElongation', {
+                workingTensionKgf: referenceCalculation ? formatStainlessSteelSpokeNumericValue(referenceCalculation.reference_calculation_tension_kgf, 0) : '180',
+              }) }}</th>
             </tr>
           </thead>
           <tbody>
@@ -323,18 +385,39 @@
             >
               <th scope="row">
                 <span class="spoke-dislocation-page__mono">{{ model.display_name }}</span>
-                <small class="spoke-dislocation-page__catalog-id">{{ model.id }}</small>
               </th>
               <td>{{ model.geometry_description }}</td>
-              <td class="spoke-dislocation-page__mono">{{ model.effective_area_mm2.toFixed(2) }} mm²</td>
+              <td class="spoke-dislocation-page__mono">{{ formatStainlessSteelSpokeNumericValue(model.effective_area_mm2, 2) }} mm²</td>
               <td>
-                <span>{{ model.materialName }}</span>
-                <small class="spoke-dislocation-page__catalog-id">{{ model.material_reference_id }}</small>
+                <span
+                  class="spoke-dislocation-page__material-reference"
+                  :title="model.materialName"
+                  :aria-label="model.materialName"
+                >
+                  {{ formatStainlessSteelSpokeMaterialReferenceLabel(model.materialName) }}
+                </span>
+              </td>
+              <td class="spoke-dislocation-page__mono">
+                <template v-if="model.referenceYieldForceN !== null">
+                  {{ formatStainlessSteelSpokeReferenceForce(model.referenceYieldForceN) }}
+                </template>
+                <span v-else class="spoke-dislocation-page__catalog-pending">{{ t('guidesSpokeDislocationMechanics.backendCatalog.selectModelToViewResult') }}</span>
+              </td>
+              <td class="spoke-dislocation-page__mono">
+                <template v-if="model.referenceCurveEndpointForceN !== null">
+                  {{ formatStainlessSteelSpokeReferenceForce(model.referenceCurveEndpointForceN) }}
+                </template>
+                <span v-else class="spoke-dislocation-page__catalog-pending">{{ t('guidesSpokeDislocationMechanics.backendCatalog.selectModelToViewResult') }}</span>
               </td>
               <td>
-                <template v-if="model.isCurrent && model.workElasticElongationMM !== null && model.overloadElasticElongationMM !== null">
-                  <span class="spoke-dislocation-page__mono">{{ model.workElasticElongationMM.toFixed(3) }} / {{ model.overloadElasticElongationMM.toFixed(3) }} mm</span>
-                  <small class="spoke-dislocation-page__catalog-id">{{ t('guidesSpokeDislocationMechanics.backendCatalog.selectedResultNote') }}</small>
+                <template v-if="model.referenceWorkingTotalElongationMM !== null">
+                  <span class="spoke-dislocation-page__mono">{{ formatStainlessSteelSpokeNumericValue(model.referenceWorkingTotalElongationMM, 3) }} mm</span>
+                  <small class="spoke-dislocation-page__table-note">{{ t('guidesSpokeDislocationMechanics.backendCatalog.selectedResultNote', {
+                    workingTensionKgf: referenceCalculation ? formatStainlessSteelSpokeNumericValue(referenceCalculation.reference_calculation_tension_kgf, 0) : '180',
+                    workingTensionN: referenceCalculation ? formatStainlessSteelSpokeNumericValue(referenceCalculation.reference_calculation_tension_n, 0) : '1765',
+                    permanent: formatStainlessSteelSpokeNumericValue(model.referenceWorkingPermanentElongationMM, 3),
+                    failure: formatStainlessSteelSpokeNumericValue(model.referenceFractureTotalElongationMM, 3),
+                  }) }}</small>
                 </template>
                 <span v-else class="spoke-dislocation-page__catalog-pending">{{ t('guidesSpokeDislocationMechanics.backendCatalog.selectModelToViewResult') }}</span>
               </td>
@@ -368,13 +451,41 @@ definePageMeta({
   layout: 'products',
   breadcrumbLabelKey: 'guidesSpokeDislocationMechanics.title',
   breadcrumbLabelFallback: 'Stainless Steel Spoke Axial Elongation Calculator',
-  footerLabelFallback: 'Spoke Engineering Tools',
+  footerLabelKey: 'guidesSpokeDislocationMechanics.title',
+  footerLabelFallback: 'Stainless Steel Spoke Axial Elongation Calculator',
+  footerGroupLabelFallback: 'Spoke Guides',
   feedbackThreadKey: 'guides-spoke-dislocation-mechanics',
   feedbackTitleKey: 'guidesSpokeDislocationMechanics.feedbackTitle',
   feedbackTitle: 'Share your feedback about this spoke elongation calculator',
 })
 
 type SafetyTone = 'emerald' | 'amber' | 'rose'
+
+const formatStainlessSteelSpokeNumericValue = (
+  value: unknown,
+  fractionDigits: number,
+  fallback = '—',
+) => {
+  if (value === null || value === undefined || value === '') return fallback
+  const numericValue = typeof value === 'number' ? value : Number(value)
+  return Number.isFinite(numericValue) ? numericValue.toFixed(fractionDigits) : fallback
+}
+
+const formatStainlessSteelSpokeMaterialReferenceLabel = (value: unknown) => {
+  const materialReferenceText = String(value ?? '').trim()
+  if (!materialReferenceText) return '—'
+
+  const materialReferenceCharacters = Array.from(materialReferenceText)
+  return materialReferenceCharacters.length > 10
+    ? `${materialReferenceCharacters.slice(0, 10).join('')}…`
+    : materialReferenceText
+}
+
+const formatStainlessSteelSpokeReferenceForce = (value: unknown) => {
+  const numericValue = typeof value === 'number' ? value : Number(value)
+  if (!Number.isFinite(numericValue)) return '—'
+  return `${numericValue.toFixed(0)} N ≈ ${(numericValue / 9.80665).toFixed(1)} kgf`
+}
 
 const { locale, t } = useI18n()
 const { loadPageMessages } = usePageMessages('guidesSpokeDislocationMechanics')
@@ -417,7 +528,6 @@ const {
   metadata: stainlessSteelSpokeDislocationMechanicsMetadata,
   calculationResult: stainlessSteelSpokeDislocationMechanicsCalculationResult,
   calculationPending: stainlessSteelSpokeDislocationMechanicsCalculationPending,
-  calculationError: stainlessSteelSpokeDislocationMechanicsCalculationError,
   calculationErrorKind: stainlessSteelSpokeDislocationMechanicsCalculationErrorKind,
 } = await useStainlessSteelSpokeDislocationMechanicsCalculation(
   selectedSpokeModel,
@@ -451,7 +561,7 @@ const spokeModelTranslationKeyByModelID: Record<string, string> = {
 const formatStainlessSteelSpokeModelOptionLabel = (model: StainlessSteelSpokeModelReference) => {
   const translationKey = spokeModelTranslationKeyByModelID[model.id]
   const translatedName = translationKey ? t(translationKey) : model.display_name
-  return `${translatedName} (${model.geometry_description} / ${model.effective_area_mm2.toFixed(2)} mm²)`
+  return `${translatedName || '—'} · ${t('guidesSpokeDislocationMechanics.calculator.catalogModelMaterialSuffix')} (${model.geometry_description || '—'} / ${formatStainlessSteelSpokeNumericValue(model.effective_area_mm2, 2)} mm²)`
 }
 
 const spokeModelOptions = computed<SpokeModelOption[]>(() => {
@@ -486,15 +596,10 @@ const calculationResult = computed(() => stainlessSteelSpokeDislocationMechanics
 const materialReference = computed(() => calculationResult.value?.material_reference
   || stainlessSteelSpokeDislocationMechanicsMetadata.value?.material_reference
   || null)
-const materialReferenceStatusTranslationKeyByID: Record<string, string> = {
-  'generic-materials-science-reference': 'guidesSpokeDislocationMechanics.calculator.materialReferenceStatuses.genericMaterialsScience',
-}
-const materialReferenceStatusLabel = computed(() => {
-  const status = materialReference.value?.data_status
-  if (!status) return '—'
-  const translationKey = materialReferenceStatusTranslationKeyByID[status]
-  return translationKey ? t(translationKey) : status
-})
+const referenceCalculation = computed(() => stainlessSteelSpokeDislocationMechanicsMetadata.value?.reference_calculation || null)
+const referenceCalculationResultByModelID = computed(() => new Map(
+  (referenceCalculation.value?.results || []).map(result => [result.model_id, result]),
+))
 const selectedBackendModelReference = computed(() => {
   const selectedModelFromMetadata = stainlessSteelSpokeDislocationMechanicsMetadata.value?.models.find(model => model.id === selectedSpokeModel.value)
   if (selectedModelFromMetadata) return selectedModelFromMetadata
@@ -504,14 +609,14 @@ const selectedBackendModelReference = computed(() => {
 const selectedBackendModelAreaDisplay = computed(() => {
   const effectiveAreaMM2 = selectedBackendModelReference.value?.effective_area_mm2
     ?? (calculationResult.value?.model_id === selectedSpokeModel.value ? calculationResult.value.effective_area_mm2 : null)
-  return effectiveAreaMM2 === null || effectiveAreaMM2 === undefined ? '—' : `${effectiveAreaMM2.toFixed(2)} mm²`
+  return `${formatStainlessSteelSpokeNumericValue(effectiveAreaMM2, 2)} mm²`
 })
 const backendReferenceTranslationValues = computed(() => {
   const references = stainlessSteelSpokeDislocationMechanicsMetadata.value?.physical_references
   return {
-    rimBaseline: references ? references.carbon_rim_spoke_hole_warning_force_n.toFixed(0) : '—',
-    yieldReference: references ? references.macro_yield_reference_mpa.toFixed(0) : '—',
-    uts: references ? references.ultimate_tensile_strength_reference_mpa.toFixed(0) : '—',
+    rimBaseline: formatStainlessSteelSpokeNumericValue(references?.carbon_rim_spoke_hole_warning_force_n, 0),
+    yieldReference: formatStainlessSteelSpokeNumericValue(references?.yield_strength_mpa, 0),
+    uts: formatStainlessSteelSpokeNumericValue(references?.ultimate_tensile_strength_mpa, 0),
   }
 })
 const backendModelRows = computed(() => {
@@ -520,31 +625,31 @@ const backendModelRows = computed(() => {
 
   return (stainlessSteelSpokeDislocationMechanicsMetadata.value?.models || []).map(model => {
     const isCurrent = currentResult?.model_id === model.id
+    const referenceResult = referenceCalculationResultByModelID.value.get(model.id)
     return {
       ...model,
       isCurrent,
       materialName: isCurrent ? currentResult?.material_reference.material_name || catalogMaterialName : catalogMaterialName,
-      workElasticElongationMM: isCurrent ? currentResult?.work_elastic_elongation_mm ?? null : null,
-      overloadElasticElongationMM: isCurrent ? currentResult?.overload_elastic_elongation_mm ?? null : null,
+      referenceWorkingStressMPA: referenceResult?.reference_calculation_stress_mpa ?? null,
+      referenceWorkingTotalElongationMM: referenceResult?.reference_calculation_total_elongation_mm ?? null,
+      referenceWorkingPermanentElongationMM: referenceResult?.reference_calculation_permanent_elongation_mm ?? null,
+      referenceYieldForceN: referenceResult?.yield_reference_force_n ?? null,
+      referenceCurveEndpointForceN: referenceResult?.curve_endpoint_force_n ?? null,
+      referenceFractureTotalElongationMM: referenceResult?.fracture_reference_total_elongation_mm ?? null,
     }
   })
 })
 
 const hasBackendCalculationResult = computed(() => calculationResult.value !== null)
 const calculationInputBounds = computed(() => stainlessSteelSpokeDislocationMechanicsMetadata.value?.input_bounds ?? null)
-const formattedBackendCalculationError = computed(() => {
-  const error = stainlessSteelSpokeDislocationMechanicsCalculationError.value
-  return error instanceof Error && error.message.trim() ? error.message : ''
-})
 const formattedBackendMissingResult = computed(() => stainlessSteelSpokeDislocationMechanicsCalculationPending.value
   ? t('guidesSpokeDislocationMechanics.calculator.pendingResult')
   : t('guidesSpokeDislocationMechanics.calculator.unavailableResult'))
 
 const formattedBackendWorkingStress = computed(() => calculationResult.value ? `${calculationResult.value.work_stress_mpa} MPa` : '—')
-const formattedBackendWorkingTension = computed(() => calculationResult.value ? `${calculationResult.value.nominal_working_tension_n} N` : '—')
 const formattedBackendWorkingYieldRatio = computed(() => calculationResult.value
   ? t('guidesSpokeDislocationMechanics.calculator.workYieldRatio', {
-      ratio: calculationResult.value.work_yield_ratio_percent.toFixed(1),
+      ratio: formatStainlessSteelSpokeNumericValue(calculationResult.value.work_yield_ratio_percent, 1),
       yieldReference: backendReferenceTranslationValues.value.yieldReference,
     })
   : formattedBackendMissingResult.value)
@@ -553,25 +658,52 @@ const formattedBackendOverloadDelta = computed(() => calculationResult.value
   ? t('guidesSpokeDislocationMechanics.calculator.overloadDelta', { delta: calculationResult.value.overload_delta_force_n })
   : formattedBackendMissingResult.value)
 const formattedBackendOverloadStress = computed(() => calculationResult.value ? `${calculationResult.value.overload_stress_mpa} MPa` : '—')
-const formattedBackendOverloadYieldRatio = computed(() => calculationResult.value ? `${calculationResult.value.overload_yield_ratio_percent.toFixed(1)}%` : '—')
+const formattedBackendOverloadYieldRatio = computed(() => calculationResult.value ? `${formatStainlessSteelSpokeNumericValue(calculationResult.value.overload_yield_ratio_percent, 1)}%` : '—')
 const formattedBackendYieldMargin = computed(() => calculationResult.value
-  ? t('guidesSpokeDislocationMechanics.calculator.yieldMargin', { margin: calculationResult.value.yield_margin_percent.toFixed(1) })
+  ? t('guidesSpokeDislocationMechanics.calculator.yieldMargin', { margin: formatStainlessSteelSpokeNumericValue(calculationResult.value.yield_margin_percent, 1) })
   : formattedBackendMissingResult.value)
 const formattedBackendWorkElasticElongation = computed(() => calculationResult.value
-  ? `${calculationResult.value.work_elastic_elongation_mm.toFixed(3)} mm`
+  ? `${formatStainlessSteelSpokeNumericValue(calculationResult.value.work_elastic_elongation_mm, 3)} mm`
   : '—')
 const formattedBackendOverloadElasticElongation = computed(() => calculationResult.value
-  ? `${calculationResult.value.overload_elastic_elongation_mm.toFixed(3)} mm`
+  ? `${formatStainlessSteelSpokeNumericValue(calculationResult.value.overload_elastic_elongation_mm, 3)} mm`
   : '—')
 const formattedBackendOverloadDeltaElasticElongation = computed(() => calculationResult.value
-  ? t('guidesSpokeDislocationMechanics.calculator.overloadDeltaElongation', { delta: calculationResult.value.overload_delta_elastic_elongation_mm.toFixed(3) })
+  ? t('guidesSpokeDislocationMechanics.calculator.overloadDeltaElongation', { delta: formatStainlessSteelSpokeNumericValue(calculationResult.value.overload_delta_elastic_elongation_mm, 3) })
+  : formattedBackendMissingResult.value)
+const formattedBackendWorkTotalElongation = computed(() => calculationResult.value
+  ? `${formatStainlessSteelSpokeNumericValue(calculationResult.value.work_total_elongation_mm, 3)} mm`
+  : '—')
+const formattedBackendWorkPermanentElongation = computed(() => calculationResult.value
+  ? `${formatStainlessSteelSpokeNumericValue(calculationResult.value.work_permanent_elongation_mm, 3)} mm`
+  : '—')
+const formattedBackendOverloadTotalElongation = computed(() => calculationResult.value
+  ? `${formatStainlessSteelSpokeNumericValue(calculationResult.value.overload_total_elongation_mm, 3)} mm`
+  : '—')
+const formattedBackendOverloadPermanentElongation = computed(() => calculationResult.value
+  ? `${formatStainlessSteelSpokeNumericValue(calculationResult.value.overload_permanent_elongation_mm, 3)} mm`
+  : '—')
+const formattedBackendTotalElongationToFailure = computed(() => calculationResult.value
+  ? `${formatStainlessSteelSpokeNumericValue(calculationResult.value.fracture_reference_total_elongation_mm, 3)} mm`
+  : '—')
+const formattedBackendTotalElongationToFailureNote = computed(() => calculationResult.value
+  ? t('guidesSpokeDislocationMechanics.calculator.totalElongationToFailureNote', {
+      percent: formatStainlessSteelSpokeNumericValue(calculationResult.value.material_reference.total_elongation_to_failure_percent, 1),
+      length: formatStainlessSteelSpokeNumericValue(calculationResult.value.effective_spoke_length_mm, 1),
+    })
+  : formattedBackendMissingResult.value)
+const formattedBackendOverloadDeltaTotalElongation = computed(() => calculationResult.value
+  ? t('guidesSpokeDislocationMechanics.calculator.overloadDeltaTotalElongation', { delta: formatStainlessSteelSpokeNumericValue(calculationResult.value.overload_delta_total_elongation_mm, 3) })
+  : formattedBackendMissingResult.value)
+const formattedBackendOverloadDeltaPermanentElongation = computed(() => calculationResult.value
+  ? t('guidesSpokeDislocationMechanics.calculator.overloadDeltaPermanentElongation', { delta: formatStainlessSteelSpokeNumericValue(calculationResult.value.overload_delta_permanent_elongation_mm, 3) })
   : formattedBackendMissingResult.value)
 const formattedBackendElasticElongationNote = computed(() => calculationResult.value
   ? t('guidesSpokeDislocationMechanics.calculator.elasticElongationNote', {
-      length: calculationResult.value.effective_spoke_length_mm.toFixed(1),
-      area: calculationResult.value.effective_area_mm2.toFixed(2),
-      modulus: calculationResult.value.elastic_modulus_mpa.toFixed(0),
-      micrometres: Math.round(calculationResult.value.work_elastic_elongation_mm * 1000),
+      length: formatStainlessSteelSpokeNumericValue(calculationResult.value.effective_spoke_length_mm, 1),
+      area: formatStainlessSteelSpokeNumericValue(calculationResult.value.effective_area_mm2, 2),
+      modulus: formatStainlessSteelSpokeNumericValue(calculationResult.value.elastic_modulus_mpa, 0),
+      micrometres: formatStainlessSteelSpokeNumericValue(Number(calculationResult.value.work_elastic_elongation_mm) * 1000, 0),
     })
   : formattedBackendMissingResult.value)
 const yieldRatioToneClass = computed(() => {
@@ -593,7 +725,7 @@ const safetyGate = computed(() => {
 
   if (!hasBackendCalculationResult.value) {
     const isInvalidInput = stainlessSteelSpokeDislocationMechanicsCalculationErrorKind.value === 'invalid-input'
-    const genericDescription = t(isInvalidInput
+    const backendStateDescription = t(isInvalidInput
       ? 'guidesSpokeDislocationMechanics.calculator.safety.invalidDescription'
       : 'guidesSpokeDislocationMechanics.calculator.safety.unavailableDescription')
     return {
@@ -602,9 +734,7 @@ const safetyGate = computed(() => {
       title: t(isInvalidInput
         ? 'guidesSpokeDislocationMechanics.calculator.safety.invalidTitle'
         : 'guidesSpokeDislocationMechanics.calculator.safety.unavailableTitle'),
-      description: isInvalidInput && formattedBackendCalculationError.value
-        ? `${genericDescription} ${t('guidesSpokeDislocationMechanics.calculator.safety.backendReason', { reason: formattedBackendCalculationError.value })}`
-        : genericDescription,
+      description: backendStateDescription,
     }
   }
 
@@ -617,7 +747,7 @@ const safetyGate = computed(() => {
         overload: calculationResult.value.overload_force_n,
         rimMargin: calculationResult.value.rim_warning_margin_n,
         stress: calculationResult.value.overload_stress_mpa,
-        ratio: calculationResult.value.overload_yield_ratio_percent.toFixed(1),
+        ratio: formatStainlessSteelSpokeNumericValue(calculationResult.value.overload_yield_ratio_percent, 1),
         rimBaseline: backendReferenceTranslationValues.value.rimBaseline,
       }),
     }
@@ -641,7 +771,7 @@ const safetyGate = computed(() => {
     title: t('guidesSpokeDislocationMechanics.calculator.safety.safeTitle'),
     description: t('guidesSpokeDislocationMechanics.calculator.safety.safeDescription', {
       overload: calculationResult.value?.overload_force_n,
-      margin: calculationResult.value?.rim_warning_margin_percent.toFixed(1),
+      margin: formatStainlessSteelSpokeNumericValue(calculationResult.value?.rim_warning_margin_percent, 1),
         rimBaseline: backendReferenceTranslationValues.value.rimBaseline,
     }),
   }
@@ -928,7 +1058,15 @@ const synchronizeStainlessSteelSpokeCustomAreaSelection = () => {
 .spoke-dislocation-page__table-row--emerald { background: var(--spoke-emerald-bg); }
 .spoke-dislocation-page__table-row--rose { background: var(--spoke-rose-bg); }
 .spoke-dislocation-page__mono { font-family: var(--tz-font-ui); }
-.spoke-dislocation-page__catalog-id {
+.spoke-dislocation-page__material-reference {
+  display: inline-block;
+  max-width: 11ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: bottom;
+  white-space: nowrap;
+}
+.spoke-dislocation-page__table-note {
   display: block;
   margin-top: 0.22rem;
   color: var(--spoke-muted);
@@ -1068,13 +1206,6 @@ const synchronizeStainlessSteelSpokeCustomAreaSelection = () => {
   font-size: 0.76rem;
   line-height: 1.45;
 }
-.spoke-dislocation-page__material-sources {
-  margin: 0.55rem 0 0;
-  padding-left: 1.1rem;
-  font-size: 0.72rem;
-  line-height: 1.5;
-}
-.spoke-dislocation-page__material-sources a { color: inherit; text-decoration: underline; }
 .spoke-dislocation-page__notice { margin-top: 0; border-color: var(--spoke-amber-border); background: var(--spoke-amber-bg); color: #92400e; padding: 0.9rem 1rem; }
 .spoke-dislocation-page__notice strong { display: block; margin-bottom: 0.2rem; }
 .spoke-dislocation-page__notice p { margin-bottom: 0; font-size: 0.8rem; line-height: 1.6; }

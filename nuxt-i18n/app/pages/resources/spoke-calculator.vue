@@ -56,6 +56,7 @@
           v-model:rear-interlacing="rearInterlacing"
           v-model:front-compensation="frontInterlaceCompensationMm"
           v-model:rear-compensation="rearInterlaceCompensationMm"
+          v-model:spoke-elongation-compensation="spokeElongationCompensationMm"
           :front-crossing="spokeWizardDraft.front.crossing"
           :rear-crossing="spokeWizardDraft.rear.crossing"
           :current-step="activeWizardStep"
@@ -73,9 +74,6 @@
           @select-step="goToStep"
           @previous="previousStep"
         />
-
-        <!-- Standalone full-width reference card, above the calculator settings. -->
-        <SpokePhysicsDiagrams class="spoke-page__physics-card" />
 
         <div class="support-page__calculator-wrapper">
           <SpokeCalculatorBlueprint
@@ -111,7 +109,6 @@ import SpokeHoleEngagementStep from '~/components/SpokeHoleEngagementStep.vue'
 import SpokeInterlacingStep from '~/components/SpokeInterlacingStep.vue'
 import SpokeNippleStep from '~/components/SpokeNippleStep.vue'
 import SpokePCDStep from '~/components/SpokePCDStep.vue'
-import SpokePhysicsDiagrams from '~/components/SpokePhysicsDiagrams.vue'
 import UserFeedbackThread from '~/components/UserFeedbackThread.vue'
 
 import { usePageMessages } from '~/composables/usePageMessages'
@@ -148,6 +145,7 @@ const {
   setSpokeHoleDiameter,
   setInterlacing,
   setInterlaceCompensation,
+  setSpokeElongationCompensation,
   setNippleType,
   setNippleLength,
 } = useSpokeCalculatorWizard()
@@ -235,6 +233,15 @@ const frontInterlaceCompensationMm = computed<number | null>({
 const rearInterlaceCompensationMm = computed<number | null>({
   get: () => spokeWizardDraft.rear.interlaceCompensationMm,
   set: value => setInterlaceCompensation('rear', value),
+})
+
+const spokeElongationCompensationMm = computed<number | null>({
+  get: () => spokeWizardDraft.front.spokeElongationCompensationMm
+    ?? spokeWizardDraft.rear.spokeElongationCompensationMm,
+  set: value => {
+    setSpokeElongationCompensation('front', value)
+    setSpokeElongationCompensation('rear', value)
+  },
 })
 
 const frontNippleType = computed<SpokeNippleType>({
@@ -331,10 +338,6 @@ useHead(() => ({
 
 .support-page__calculator-wrapper {
   margin-top: 1.5rem;
-}
-
-.spoke-page__physics-card {
-  margin-bottom: 1.5rem;
 }
 
 .spoke-page__head-step {

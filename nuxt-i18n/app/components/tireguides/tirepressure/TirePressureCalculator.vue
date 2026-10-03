@@ -7,23 +7,29 @@
       <p>{{ t('guidesTirePressure.dashboard.subtitle') }}</p>
     </header>
 
-    <aside class="notice" role="note">
-      <span class="notice-mark" aria-hidden="true">!</span>
-      <div class="notice-copy">
+    <details class="notice">
+      <summary>
+        <span class="notice-mark" aria-hidden="true">!</span>
         <strong>{{ t('guidesTirePressure.dashboard.controlBaselineTitle') }}</strong>
-        <p>{{ t('guidesTirePressure.dashboard.controlBaselineBody') }}</p>
-      </div>
-    </aside>
-    <p class="model-badge">{{ t('guidesTirePressure.dashboard.baseline') }} · {{ t('guidesTirePressure.dashboard.scopeTitle') }} · {{ t('guidesTirePressure.dashboard.modelVersionLabel', { value: modelVersionLabel }) }}</p>
-    <p class="model-provenance">{{ t('guidesTirePressure.dashboard.provenanceLabel', { load: loadSourceLabel, width: tireWidthSourceLabel, body: tireBodyNormalizationLabel }) }}</p>
+      </summary>
+      <p>{{ t('guidesTirePressure.dashboard.controlBaselineBody') }}</p>
+    </details>
+    <details class="model-info">
+      <summary>
+        <span>{{ t('guidesTirePressure.dashboard.modelInfoTitle') }}</span>
+      </summary>
+      <p>{{ t('guidesTirePressure.dashboard.modelVersionLabel', { value: modelVersionLabel }) }} · {{ t('guidesTirePressure.dashboard.provenanceLabel', { load: loadSourceLabel, width: tireWidthSourceLabel, body: tireBodyNormalizationLabel }) }}</p>
+    </details>
+
+    <TirePressureProductModelSelector v-model:selected-tire-model="selectedTireModel" />
 
     <section class="hero-grid">
       <article class="hero-card front">
-        <div><b>{{ t('guidesTirePressure.dashboard.frontWheel') }}</b><span class="load-tag">{{ formatRatio(frontRatio) }} {{ t('guidesTirePressure.dashboard.load') }}</span><strong>{{ formatPressure(frontPsi) }} <small>PSI</small></strong><em>{{ formatBar(frontBar) }}</em><p>{{ t('guidesTirePressure.dashboard.loadValue', { value: formatEngineeringNumber(frontLoad, 1) }) }} · {{ t('guidesTirePressure.dashboard.contactValue', { value: formatArea(frontArea) }) }}</p></div>
+        <div><b>{{ t('guidesTirePressure.dashboard.frontWheel') }}</b><span class="load-tag">{{ formatRatio(frontRatio) }} {{ t('guidesTirePressure.dashboard.load') }}</span><strong>{{ formatPressure(frontPsi) }} <small>PSI</small></strong><em>{{ formatBar(frontBar) }}</em><p>{{ t('guidesTirePressure.dashboard.loadValue', { value: formatEngineeringNumber(frontLoad, 1) }) }} · {{ t('guidesTirePressure.dashboard.contactValue', { value: formatArea(frontArea) }) }}</p><p v-if="frontPressureAreaComparison" class="pressure-comparison-result">{{ formatPressureAreaComparison(frontPressureAreaComparison) }}</p></div>
         <span class="status" :class="statusClass(frontMargin)">{{ marginLabel(frontMargin) }}</span>
       </article>
       <article class="hero-card rear">
-        <div><b>{{ t('guidesTirePressure.dashboard.rearWheel') }}</b><span class="load-tag">{{ formatRatio(rearRatio) }} {{ t('guidesTirePressure.dashboard.load') }}</span><strong>{{ formatPressure(rearPsi) }} <small>PSI</small></strong><em>{{ formatBar(rearBar) }}</em><p>{{ t('guidesTirePressure.dashboard.loadValue', { value: formatEngineeringNumber(rearLoad, 1) }) }} · {{ t('guidesTirePressure.dashboard.contactValue', { value: formatArea(rearArea) }) }}</p></div>
+        <div><b>{{ t('guidesTirePressure.dashboard.rearWheel') }}</b><span class="load-tag">{{ formatRatio(rearRatio) }} {{ t('guidesTirePressure.dashboard.load') }}</span><strong>{{ formatPressure(rearPsi) }} <small>PSI</small></strong><em>{{ formatBar(rearBar) }}</em><p>{{ t('guidesTirePressure.dashboard.loadValue', { value: formatEngineeringNumber(rearLoad, 1) }) }} · {{ t('guidesTirePressure.dashboard.contactValue', { value: formatArea(rearArea) }) }}</p><p v-if="rearPressureAreaComparison" class="pressure-comparison-result">{{ formatPressureAreaComparison(rearPressureAreaComparison) }}</p></div>
         <span class="status" :class="statusClass(rearMargin)">{{ marginLabel(rearMargin) }}</span>
       </article>
     </section>
@@ -40,9 +46,9 @@
               <div class="metric metric--primary"><span>{{ t('guidesTirePressure.dashboard.resultantForceMetric') }}</span><strong>{{ formatForce(backendFront?.resultant_contact_force_n ?? null) }} N</strong><small>{{ formatResultantMass(backendFront?.resultant_contact_force_n) }} · {{ formatResultantG(backendFront?.resultant_contact_force_n, backendFront?.vertical_load_n) }}</small></div>
               <div class="metric"><span>{{ t('guidesTirePressure.dashboard.verticalLoadMetric') }}</span><strong>{{ formatForce(backendFront?.vertical_load_n ?? null) }} N</strong><small>{{ formatEngineeringNumber(frontLoad, 1) }} kg</small></div>
               <div class="metric"><span>{{ t('guidesTirePressure.dashboard.lateralDemandMetric') }}</span><strong>{{ formatForce(frontDemand) }} N</strong><small>{{ t('guidesTirePressure.dashboard.leanAngle') }} {{ formatEngineeringNumber(currentBackendDynamics?.dynamics.lean_angle_deg, 1) }}°</small></div>
-              <div class="metric"><span>{{ t('guidesTirePressure.dashboard.gripLimitMetric') }}</span><strong>{{ formatForce(frontMax) }} N</strong><small>μ {{ formatEngineeringNumber(backendFront?.mu_nominal, 2) }}</small></div>
-              <div class="metric"><span>{{ t('guidesTirePressure.dashboard.gripMarginMetric') }}</span><strong>{{ marginLabel(frontMargin) }}</strong><small>{{ t('guidesTirePressure.dashboard.fixedMuLabel', { value: formatEngineeringNumber(backendFront?.mu_nominal, 2) }) }}</small></div>
-              <div class="metric"><span>{{ t('guidesTirePressure.dashboard.contactAreaMetric') }}</span><strong>{{ formatArea(frontArea) }} cm²</strong><small>{{ formatPatchDimensions(backendFront?.estimated_contact_patch_width_mm, backendFront?.estimated_contact_patch_length_mm) }}</small></div>
+              <div class="metric"><span>{{ t('guidesTirePressure.dashboard.gripLimitMetric') }}</span><strong>{{ formatForce(frontMax) }} N</strong><small>{{ formatEffectiveFrictionCoefficient(backendFront) }}</small></div>
+              <div class="metric"><span>{{ t('guidesTirePressure.dashboard.gripMarginMetric') }}</span><strong>{{ marginLabel(frontMargin) }}</strong><small>{{ formatEffectiveFrictionCoefficient(backendFront) }}</small></div>
+              <div class="metric"><span>{{ t('guidesTirePressure.dashboard.contactAreaMetric') }}</span><strong>{{ formatArea(frontArea) }} cm²</strong><small>{{ formatPatchDimensions(backendFront?.estimated_contact_patch_width_mm, backendFront?.estimated_contact_patch_length_mm) }}</small><small v-if="frontPressureAreaComparison">{{ formatPressureAreaComparisonDelta(frontPressureAreaComparison) }}</small><small v-if="frontPressureAreaComparison">{{ formatPressureContactPatchChange(frontPressureAreaComparison) }}</small><small v-if="backendFront?.wet_pressure_compensation">{{ formatWetPressureCompensation(backendFront.wet_pressure_compensation) }}</small></div>
             </div>
           </article>
           <article class="force-wheel-card force-wheel-card--rear">
@@ -51,9 +57,9 @@
               <div class="metric metric--primary"><span>{{ t('guidesTirePressure.dashboard.resultantForceMetric') }}</span><strong>{{ formatForce(backendRear?.resultant_contact_force_n ?? null) }} N</strong><small>{{ formatResultantMass(backendRear?.resultant_contact_force_n) }} · {{ formatResultantG(backendRear?.resultant_contact_force_n, backendRear?.vertical_load_n) }}</small></div>
               <div class="metric"><span>{{ t('guidesTirePressure.dashboard.verticalLoadMetric') }}</span><strong>{{ formatForce(backendRear?.vertical_load_n ?? null) }} N</strong><small>{{ formatEngineeringNumber(rearLoad, 1) }} kg</small></div>
               <div class="metric"><span>{{ t('guidesTirePressure.dashboard.lateralDemandMetric') }}</span><strong>{{ formatForce(rearDemand) }} N</strong><small>{{ t('guidesTirePressure.dashboard.leanAngle') }} {{ formatEngineeringNumber(currentBackendDynamics?.dynamics.lean_angle_deg, 1) }}°</small></div>
-              <div class="metric"><span>{{ t('guidesTirePressure.dashboard.gripLimitMetric') }}</span><strong>{{ formatForce(rearMax) }} N</strong><small>μ {{ formatEngineeringNumber(backendRear?.mu_nominal, 2) }}</small></div>
-              <div class="metric"><span>{{ t('guidesTirePressure.dashboard.gripMarginMetric') }}</span><strong>{{ marginLabel(rearMargin) }}</strong><small>{{ t('guidesTirePressure.dashboard.fixedMuLabel', { value: formatEngineeringNumber(backendRear?.mu_nominal, 2) }) }}</small></div>
-              <div class="metric"><span>{{ t('guidesTirePressure.dashboard.contactAreaMetric') }}</span><strong>{{ formatArea(rearArea) }} cm²</strong><small>{{ formatPatchDimensions(backendRear?.estimated_contact_patch_width_mm, backendRear?.estimated_contact_patch_length_mm) }}</small></div>
+              <div class="metric"><span>{{ t('guidesTirePressure.dashboard.gripLimitMetric') }}</span><strong>{{ formatForce(rearMax) }} N</strong><small>{{ formatEffectiveFrictionCoefficient(backendRear) }}</small></div>
+              <div class="metric"><span>{{ t('guidesTirePressure.dashboard.gripMarginMetric') }}</span><strong>{{ marginLabel(rearMargin) }}</strong><small>{{ formatEffectiveFrictionCoefficient(backendRear) }}</small></div>
+              <div class="metric"><span>{{ t('guidesTirePressure.dashboard.contactAreaMetric') }}</span><strong>{{ formatArea(rearArea) }} cm²</strong><small>{{ formatPatchDimensions(backendRear?.estimated_contact_patch_width_mm, backendRear?.estimated_contact_patch_length_mm) }}</small><small v-if="rearPressureAreaComparison">{{ formatPressureAreaComparisonDelta(rearPressureAreaComparison) }}</small><small v-if="rearPressureAreaComparison">{{ formatPressureContactPatchChange(rearPressureAreaComparison) }}</small><small v-if="backendRear?.wet_pressure_compensation">{{ formatWetPressureCompensation(backendRear.wet_pressure_compensation) }}</small></div>
             </div>
           </article>
         </div>
@@ -70,18 +76,23 @@
 import { computed, onBeforeUnmount, provide, ref, watch } from 'vue'
 import { useI18n } from '#imports'
 import { ApiRequestError, useApiRequest } from '~/composables/useApiRequest'
+import type { SchwalbeTireCatalogItem } from '~/data/tireguides/schwalbeCatalog'
+import { parseSchwalbeTireCatalogEtrtoDimensions } from '~/data/tireguides/schwalbeTireCatalogDimensionNormalization'
 import TirePressureControls from './TirePressureControls.vue'
+import TirePressureProductModelSelector from './TirePressureProductModelSelector.vue'
 
 const { t } = useI18n()
 const { request } = useApiRequest()
+const wetPressureWaterFilmDepthMm = 1
 const riderWeight = ref(70)
 const bikeWeight = ref(8.5)
 const leanAngle = ref(0)
-const fixedFrontPsi = ref(50)
-const fixedRearPsi = ref(55)
 const speedKmh = ref(30)
 const postureId = ref('race')
 const tireWidth = ref(28)
+const selectedTireModel = ref<SchwalbeTireCatalogItem | null>(null)
+const minimumTireWidthMm = 20
+const maximumTireWidthMm = 80
 const dynamicsState = ref<'PENDING' | 'BACKEND DEMO' | 'UNAVAILABLE'>('PENDING')
 const backendDynamics = ref<BackendDynamics | null>(null)
 const leanPresets = [0, 15, 28, 40]
@@ -93,6 +104,75 @@ const postureConfigs = [
 ]
 const postures = computed(() => postureConfigs.map(item => ({ ...item, label: t(`guidesTirePressure.dashboard.${item.key}`) })))
 const apiPosition = computed(() => ({ race: 'AGGRESSIVE_RACE', endurance: 'ENDURANCE', tt: 'TT_AERO', gravel: 'GRAVEL_TRAIL' }[postureId.value] || 'ENDURANCE'))
+const totalWeight = computed(() => riderWeight.value + bikeWeight.value)
+const selectedTirePressureBoundsPsi = computed(() => {
+  const tire = selectedTireModel.value
+  if (!tire) return null
+
+  const minimumPsi = tire.min_pressure_psi ?? (tire.min_pressure_bar === undefined ? undefined : tire.min_pressure_bar * 14.5037738)
+  const maximumPsi = tire.max_pressure_psi ?? (tire.max_pressure_bar === undefined ? undefined : tire.max_pressure_bar * 14.5037738)
+  if (minimumPsi === undefined && maximumPsi === undefined) return null
+
+  const lowerBoundPsi = minimumPsi ?? maximumPsi!
+  const upperBoundPsi = maximumPsi ?? minimumPsi!
+  return {
+    minimumPsi: Math.min(lowerBoundPsi, upperBoundPsi),
+    maximumPsi: Math.max(lowerBoundPsi, upperBoundPsi),
+  }
+})
+const selectedTireReferencePressurePsi = computed(() => {
+  const bounds = selectedTirePressureBoundsPsi.value
+  if (!bounds) return null
+  return Number(((bounds.minimumPsi + bounds.maximumPsi) / 2).toFixed(1))
+})
+const selectedTireModelLabel = computed(() => selectedTireModel.value?.model_name || t('guidesTirePressure.dashboard.tireModelNotSelected'))
+const selectedTireEtrtoWidthMm = computed(() => {
+  const etrto = selectedTireModel.value?.etrto
+  if (!etrto) return null
+  return parseSchwalbeTireCatalogEtrtoDimensions(etrto)?.nominalTireWidthMm ?? null
+})
+const selectedTirePressureRangeLabel = computed(() => {
+  const bounds = selectedTirePressureBoundsPsi.value
+  if (!bounds) return t('guidesTirePressure.dashboard.tirePressureNotAvailable')
+  return `${formatEngineeringNumber(bounds.minimumPsi, 1)}–${formatEngineeringNumber(bounds.maximumPsi, 1)} PSI`
+})
+const selectedTireReferencePressureLabel = computed(() => selectedTireReferencePressurePsi.value === null
+  ? '—'
+  : `${formatEngineeringNumber(selectedTireReferencePressurePsi.value, 1)} PSI`)
+const frontPsi = computed(() => selectedTireReferencePressurePsi.value)
+const rearPsi = computed(() => selectedTireReferencePressurePsi.value)
+const frontBar = computed(() => frontPsi.value === null ? null : frontPsi.value / 14.5037738)
+const rearBar = computed(() => rearPsi.value === null ? null : rearPsi.value / 14.5037738)
+const pressureComparisonEnabled = ref(false)
+const wetPressureScenarioEnabled = ref(false)
+const pressureComparisonAvailable = computed(() => {
+  const referencePressurePsi = selectedTireReferencePressurePsi.value
+  const minimumPressurePsi = selectedTirePressureBoundsPsi.value?.minimumPsi ?? null
+  return referencePressurePsi !== null
+    && minimumPressurePsi !== null
+    && minimumPressurePsi < referencePressurePsi
+})
+const wetPressureScenarioAvailable = computed(() => pressureComparisonAvailable.value)
+const pressureComparisonAvailabilityHint = computed(() => {
+  if (!selectedTireModel.value) return t('guidesTirePressure.dashboard.pressureComparisonUnavailableNoModel')
+  const bounds = selectedTirePressureBoundsPsi.value
+  if (!bounds) return t('guidesTirePressure.dashboard.pressureComparisonUnavailableNoRange')
+  return t('guidesTirePressure.dashboard.pressureComparisonUnavailableNoLowerPressure')
+})
+const frontComparisonPressurePsi = computed(() => {
+  const referencePressurePsi = selectedTireReferencePressurePsi.value
+  const minimumPressurePsi = selectedTirePressureBoundsPsi.value?.minimumPsi ?? null
+  if (referencePressurePsi === null || minimumPressurePsi === null) return null
+  if (wetPressureScenarioEnabled.value) return null
+  return pressureComparisonEnabled.value ? minimumPressurePsi : null
+})
+const rearComparisonPressurePsi = computed(() => {
+  const referencePressurePsi = selectedTireReferencePressurePsi.value
+  const minimumPressurePsi = selectedTirePressureBoundsPsi.value?.minimumPsi ?? null
+  if (referencePressurePsi === null || minimumPressurePsi === null) return null
+  if (wetPressureScenarioEnabled.value) return null
+  return pressureComparisonEnabled.value ? minimumPressurePsi : null
+})
 const dynamicsInputKey = computed(() => JSON.stringify({
   rider: riderWeight.value,
   bike: bikeWeight.value,
@@ -100,30 +180,36 @@ const dynamicsInputKey = computed(() => JSON.stringify({
   speed: speedKmh.value,
   position: apiPosition.value,
   lean: leanAngle.value,
-  frontPsi: fixedFrontPsi.value,
-  rearPsi: fixedRearPsi.value,
+  tireArticleNo: selectedTireModel.value?.article_no ?? null,
+  referencePressurePsi: selectedTireReferencePressurePsi.value,
+  minimumPressurePsi: selectedTirePressureBoundsPsi.value?.minimumPsi ?? null,
+  pressureComparisonEnabled: pressureComparisonEnabled.value,
+  wetPressureScenarioEnabled: wetPressureScenarioEnabled.value,
+  wetPressureWaterFilmDepthMm,
+  frontComparisonPressurePsi: frontComparisonPressurePsi.value,
+  rearComparisonPressurePsi: rearComparisonPressurePsi.value,
 }))
 const committedDynamicsInputKey = ref<string | null>(null)
 const currentBackendDynamics = computed(() => committedDynamicsInputKey.value === dynamicsInputKey.value ? backendDynamics.value : null)
-const totalWeight = computed(() => riderWeight.value + bikeWeight.value)
+const pressureComparisonActive = computed(() => pressureComparisonEnabled.value || wetPressureScenarioEnabled.value)
+const comparisonRequestPending = computed(() => pressureComparisonAvailable.value && pressureComparisonActive.value && dynamicsState.value === 'PENDING')
+const comparisonRequestFailed = computed(() => pressureComparisonAvailable.value && pressureComparisonActive.value && dynamicsState.value === 'UNAVAILABLE')
 const backendFront = computed(() => currentBackendDynamics.value?.dynamics.front)
 const backendRear = computed(() => currentBackendDynamics.value?.dynamics.rear)
 const frontLoad = computed(() => currentBackendDynamics.value?.front_load_kg ?? null)
 const rearLoad = computed(() => currentBackendDynamics.value?.rear_load_kg ?? null)
 const frontRatio = computed(() => frontLoad.value === null ? null : Math.round(frontLoad.value / totalWeight.value * 100))
 const rearRatio = computed(() => rearLoad.value === null ? null : Math.round(rearLoad.value / totalWeight.value * 100))
-const frontPsi = computed(() => fixedFrontPsi.value)
-const rearPsi = computed(() => fixedRearPsi.value)
-const frontBar = computed(() => frontPsi.value === null ? null : frontPsi.value / 14.5037738)
-const rearBar = computed(() => rearPsi.value === null ? null : rearPsi.value / 14.5037738)
 const frontArea = computed(() => backendFront.value?.estimated_static_contact_area_cm2 ?? null)
 const rearArea = computed(() => backendRear.value?.estimated_static_contact_area_cm2 ?? null)
+const frontPressureAreaComparison = computed(() => backendFront.value?.pressure_contact_area_comparison ?? null)
+const rearPressureAreaComparison = computed(() => backendRear.value?.pressure_contact_area_comparison ?? null)
 const frontDemand = computed(() => backendFront.value?.lateral_demand_n ?? null)
 const rearDemand = computed(() => backendRear.value?.lateral_demand_n ?? null)
-const frontMax = computed(() => backendFront.value?.idealized_grip_limit_n ?? null)
-const rearMax = computed(() => backendRear.value?.idealized_grip_limit_n ?? null)
-const frontMargin = computed(() => backendFront.value?.grip_margin_pct ?? null)
-const rearMargin = computed(() => backendRear.value?.grip_margin_pct ?? null)
+const frontMax = computed(() => backendFront.value?.wet_pressure_compensation?.wet_grip_limit_at_reference_pressure_n ?? backendFront.value?.idealized_grip_limit_n ?? null)
+const rearMax = computed(() => backendRear.value?.wet_pressure_compensation?.wet_grip_limit_at_reference_pressure_n ?? backendRear.value?.idealized_grip_limit_n ?? null)
+const frontMargin = computed(() => backendFront.value?.wet_pressure_compensation?.wet_grip_margin_pct ?? backendFront.value?.grip_margin_pct ?? null)
+const rearMargin = computed(() => backendRear.value?.wet_pressure_compensation?.wet_grip_margin_pct ?? backendRear.value?.grip_margin_pct ?? null)
 const equivalentTurnRadiusM = computed(() => currentBackendDynamics.value?.dynamics.equivalent_turn_radius_m ?? null)
 const lateralAccelerationG = computed(() => currentBackendDynamics.value?.dynamics.lateral_acceleration_g ?? null)
 const demonstrationFrictionCoefficientNominal = computed(() => backendFront.value?.mu_nominal ?? null)
@@ -138,7 +224,9 @@ const tireWidthSourceLabel = computed(() => {
   return source === 'MEASURED'
     ? t('guidesTirePressure.dashboard.measuredWidthSource')
     : source === 'NOMINAL_UNCORRECTED'
-      ? t('guidesTirePressure.dashboard.nominalWidthSource')
+      ? selectedTireEtrtoWidthMm.value !== null && tireWidth.value === selectedTireEtrtoWidthMm.value
+        ? t('guidesTirePressure.dashboard.nominalWidthSource')
+        : t('guidesTirePressure.dashboard.manualWidthSource')
       : t('guidesTirePressure.dashboard.backendPending')
 })
 const leanDesc = computed(() => t(`guidesTirePressure.dashboard.${leanAngle.value < 10 ? 'straight' : leanAngle.value < 20 ? 'gentle' : leanAngle.value < 32 ? 'fastCorner' : 'maximumLean'}`))
@@ -167,7 +255,37 @@ type BackendWheelDynamics = {
   estimated_equivalent_circular_contact_diameter_mm?: number
   estimated_contact_patch_width_mm?: number
   estimated_contact_patch_length_mm?: number
+  pressure_contact_area_comparison?: PressureContactAreaComparison
+  wet_pressure_compensation?: WetPressureCompensation
   mu_nominal: number
+}
+type PressureContactAreaComparison = {
+  reference_pressure_psi: number
+  comparison_pressure_psi: number
+  reference_contact_area_cm2: number
+  comparison_contact_area_cm2: number
+  area_change_pct: number
+  reference_contact_patch_width_mm?: number
+  reference_contact_patch_length_mm?: number
+  comparison_contact_patch_width_mm?: number
+  comparison_contact_patch_length_mm?: number
+}
+type WetPressureCompensation = {
+  water_film_depth_mm: number
+  speed_kmh: number
+  lateral_demand_ratio: number
+  friction_retention_ratio: number
+  reference_pressure_psi: number
+  equivalent_pressure_psi: number
+  reference_contact_area_cm2: number
+  equivalent_contact_area_cm2: number
+  contact_area_change_pct: number
+  wet_grip_limit_at_reference_pressure_n: number
+  wet_grip_margin_pct: number
+  pressure_clamped_to_minimum: boolean
+  minimum_pressure_psi?: number
+  surface_texture_baseline: string
+  rubber_baseline: string
 }
 type BackendDynamics = {
   model_version: string
@@ -228,9 +346,22 @@ function scheduleTirePressureDynamicsRefresh(delayMilliseconds = 450) {
   dynamicsTimer = setTimeout(() => void refreshTirePressureGroundFrameDynamicsFromBackend(), delayMilliseconds)
 }
 
+function retryTirePressureDynamics() {
+  if (!pressureComparisonAvailable.value) return
+  dynamicsRefreshQueued = false
+  scheduleTirePressureDynamicsRefresh(0)
+}
+
 async function refreshTirePressureGroundFrameDynamicsFromBackend() {
   if (!import.meta.client || isTirePressureCalculatorUnmounted) return
   const inputKey = dynamicsInputKey.value
+
+  if (selectedTireReferencePressurePsi.value === null) {
+    backendDynamics.value = null
+    committedDynamicsInputKey.value = null
+    dynamicsState.value = 'PENDING'
+    return
+  }
 
   const cachedDynamics = readCachedTirePressureDynamics(inputKey)
   if (cachedDynamics) {
@@ -262,8 +393,20 @@ async function refreshTirePressureGroundFrameDynamicsFromBackend() {
     surface_condition: 'FLAT_ROAD',
     lean_angle_deg: leanAngle.value,
   }
-  body.front_operating_pressure_psi = fixedFrontPsi.value
-  body.rear_operating_pressure_psi = fixedRearPsi.value
+  body.front_operating_pressure_psi = selectedTireReferencePressurePsi.value
+  body.rear_operating_pressure_psi = selectedTireReferencePressurePsi.value
+  if (wetPressureScenarioEnabled.value) {
+    body.wet_pressure_demonstration_enabled = true
+    body.water_film_depth_mm = wetPressureWaterFilmDepthMm
+    const minimumPressurePsi = selectedTirePressureBoundsPsi.value?.minimumPsi
+    if (minimumPressurePsi !== undefined) {
+      body.front_minimum_pressure_psi = minimumPressurePsi
+      body.rear_minimum_pressure_psi = minimumPressurePsi
+    }
+  } else if (frontComparisonPressurePsi.value !== null && rearComparisonPressurePsi.value !== null) {
+    body.front_comparison_pressure_psi = frontComparisonPressurePsi.value
+    body.rear_comparison_pressure_psi = rearComparisonPressurePsi.value
+  }
   try {
     const response = await request<{ data: BackendDynamics }>('/engineering/tire-pressure/dynamics', {
       method: 'POST',
@@ -298,9 +441,18 @@ async function refreshTirePressureGroundFrameDynamicsFromBackend() {
 }
 
 let dynamicsTimer: ReturnType<typeof setTimeout> | undefined
-watch([riderWeight, bikeWeight, leanAngle, speedKmh, postureId, tireWidth, fixedFrontPsi, fixedRearPsi], () => {
+watch([riderWeight, bikeWeight, leanAngle, speedKmh, postureId, tireWidth, selectedTireReferencePressurePsi, pressureComparisonEnabled, wetPressureScenarioEnabled], () => {
   scheduleTirePressureDynamicsRefresh()
 }, { immediate: true })
+
+watch(selectedTireModel, () => {
+  const modelWidthMm = selectedTireEtrtoWidthMm.value
+  if (modelWidthMm !== null && modelWidthMm >= minimumTireWidthMm && modelWidthMm <= maximumTireWidthMm) {
+    tireWidth.value = modelWidthMm
+  }
+  pressureComparisonEnabled.value = false
+  wetPressureScenarioEnabled.value = false
+})
 
 onBeforeUnmount(() => {
   isTirePressureCalculatorUnmounted = true
@@ -320,6 +472,52 @@ function formatTurnRadius(value: number | null) { return value === null ? '∞' 
 function formatArea(value: number | null) { return formatEngineeringNumber(value, 2) }
 function formatForce(value: number | null) { return formatEngineeringNumber(value, 0) }
 function formatRatio(value: number | null) { return value === null ? '—' : `${value}%` }
+function formatSignedPercent(value: number) {
+  if (!Number.isFinite(value)) return '—'
+  return `${value >= 0 ? '+' : ''}${value.toFixed(1)}%`
+}
+function formatPressureAreaComparison(comparison: PressureContactAreaComparison) {
+  return t(wetPressureScenarioEnabled.value
+    ? 'guidesTirePressure.dashboard.wetPressureComparisonResult'
+    : 'guidesTirePressure.dashboard.pressureComparisonResult', {
+    pressure: formatPressure(comparison.comparison_pressure_psi),
+    area: formatArea(comparison.comparison_contact_area_cm2),
+    change: formatSignedPercent(comparison.area_change_pct),
+  })
+}
+function formatPressureAreaComparisonDelta(comparison: PressureContactAreaComparison) {
+  return t(wetPressureScenarioEnabled.value
+    ? 'guidesTirePressure.dashboard.wetPressureComparisonDelta'
+    : 'guidesTirePressure.dashboard.pressureComparisonDelta', {
+    pressure: formatPressure(comparison.comparison_pressure_psi),
+    change: formatSignedPercent(comparison.area_change_pct),
+  })
+}
+function formatPressureContactPatchChange(comparison: PressureContactAreaComparison) {
+  const referenceDimensions = formatPatchDimensions(comparison.reference_contact_patch_width_mm, comparison.reference_contact_patch_length_mm)
+  const comparisonDimensions = formatPatchDimensions(comparison.comparison_contact_patch_width_mm, comparison.comparison_contact_patch_length_mm)
+  if (referenceDimensions === '—' || comparisonDimensions === '—') return '—'
+  return t('guidesTirePressure.dashboard.pressureComparisonDimensions', {
+    reference: referenceDimensions,
+    comparison: comparisonDimensions,
+  })
+}
+function formatWetPressureCompensation(compensation: WetPressureCompensation) {
+  return t(compensation.pressure_clamped_to_minimum
+    ? 'guidesTirePressure.dashboard.wetPressureCompensationClampedSummary'
+    : 'guidesTirePressure.dashboard.wetPressureCompensationSummary', {
+    retention: formatEngineeringNumber(compensation.friction_retention_ratio * 100, 1),
+    demand: formatEngineeringNumber(compensation.lateral_demand_ratio * 100, 1),
+    grip: formatForce(compensation.wet_grip_limit_at_reference_pressure_n),
+    pressure: formatPressure(compensation.equivalent_pressure_psi),
+  })
+}
+function formatEffectiveFrictionCoefficient(wheel: BackendWheelDynamics | undefined) {
+  if (!wheel || !Number.isFinite(wheel.vertical_load_n) || wheel.vertical_load_n <= 0) return 'μ —'
+  const wetGripLimit = wheel.wet_pressure_compensation?.wet_grip_limit_at_reference_pressure_n
+  const gripLimit = wetGripLimit ?? wheel.idealized_grip_limit_n
+  return `μ ${formatEngineeringNumber(gripLimit / wheel.vertical_load_n, 2)}`
+}
 function formatResultantMass(value: number | undefined) { return value === undefined || !Number.isFinite(value) ? '—' : `${(value / 9.80665).toFixed(1)} kg` }
 function formatResultantG(resultantForce: number | undefined, verticalLoad: number | undefined) {
   return resultantForce === undefined || verticalLoad === undefined || verticalLoad <= 0 || !Number.isFinite(resultantForce) || !Number.isFinite(verticalLoad)
@@ -341,11 +539,30 @@ function statusClass(value: number | null) {
   if (value === null) return 'pending'
   return value >= 25 ? 'safe' : value >= 8 ? 'warning' : 'danger'
 }
+function toggleLowestPressureComparison() {
+  if (!pressureComparisonAvailable.value) return
+  wetPressureScenarioEnabled.value = false
+  pressureComparisonEnabled.value = !pressureComparisonEnabled.value
+}
+function toggleWetPressureScenario() {
+  if (!wetPressureScenarioAvailable.value) return
+  pressureComparisonEnabled.value = false
+  wetPressureScenarioEnabled.value = !wetPressureScenarioEnabled.value
+}
 provide('tirePressureModel', {
   totalWeight, leanAngle, leanDesc, leanPresets, leanPresetLabel, riderWeight, bikeWeight,
   frontLoad, rearLoad, frontRatio, rearRatio,
   postureLabel, postures, postureId, tireWidth,
-  fixedFrontPsi, fixedRearPsi, speedKmh, equivalentTurnRadiusM, lateralAccelerationG, formatTurnRadius,
+  selectedTireModelLabel, selectedTirePressureRangeLabel, selectedTireReferencePressureLabel,
+  pressureComparisonEnabled, pressureComparisonAvailable,
+  pressureComparisonAvailabilityHint,
+  comparisonRequestPending, comparisonRequestFailed,
+  retryTirePressureDynamics,
+  toggleLowestPressureComparison,
+  wetPressureScenarioEnabled, wetPressureScenarioAvailable,
+  wetPressureWaterFilmDepthMm,
+  toggleWetPressureScenario,
+  speedKmh, equivalentTurnRadiusM, lateralAccelerationG, formatTurnRadius,
   demonstrationFrictionCoefficientNominal,
 })
 </script>
@@ -389,16 +606,45 @@ provide('tirePressureModel', {
   text-align: right;
 }
 
-.notice {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.65rem;
+.notice,
+.model-info {
   margin-top: 0.75rem;
-  padding: 0.65rem 0.75rem;
+  padding: 0.45rem 0.6rem;
   border: 1px solid #f5d28a;
   border-radius: 0.7rem;
   background: #fffaf0;
   color: #713f12;
+}
+
+.notice summary,
+.model-info summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.55rem;
+  cursor: pointer;
+  list-style: none;
+  font-size: 0.72rem;
+  line-height: 1.25;
+}
+
+.notice summary::-webkit-details-marker,
+.model-info summary::-webkit-details-marker {
+  display: none;
+}
+
+.notice summary::after,
+.model-info summary::after {
+  flex: 0 0 auto;
+  color: currentColor;
+  content: '+';
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.notice[open] summary::after,
+.model-info[open] summary::after {
+  content: '−';
 }
 
 .notice-mark {
@@ -415,38 +661,32 @@ provide('tirePressureModel', {
   font-weight: 800;
 }
 
-.notice-copy {
-  min-width: 0;
-}
-
-.notice-copy strong {
-  display: block;
-  font-size: 0.76rem;
-  line-height: 1.25;
-}
-
-.notice-copy p {
+.notice > p,
+.model-info > p {
   margin: 0.2rem 0 0;
   color: #92400e;
   font-size: 0.7rem;
   line-height: 1.45;
 }
 
-.model-badge,
-.model-provenance {
-  display: inline-block;
-  margin: 0.55rem 0 0;
+.model-info {
+  margin-top: 0.3rem;
+  border-color: var(--simulator-border);
+  background: var(--simulator-soft);
+  color: var(--simulator-muted);
+}
+
+.model-info summary {
   color: var(--simulator-muted);
   font-size: 0.64rem;
-  letter-spacing: 0.04em;
-  line-height: 1.3;
+  letter-spacing: 0.03em;
   text-transform: uppercase;
 }
 
-.model-provenance {
-  margin-left: 0.65rem;
-  letter-spacing: 0;
-  text-transform: none;
+.model-info > p {
+  color: var(--simulator-muted);
+  font-size: 0.64rem;
+  line-height: 1.3;
 }
 
 .hero-grid {
@@ -519,6 +759,12 @@ provide('tirePressureModel', {
   color: var(--simulator-muted);
   font-size: 0.64rem;
   line-height: 1.35;
+}
+
+.hero-card .pressure-comparison-result {
+  margin-top: 0.18rem;
+  color: var(--tz-text-accent, #0369a1);
+  font-variant-numeric: tabular-nums;
 }
 
 .status {
@@ -836,12 +1082,6 @@ provide('tirePressureModel', {
     max-width: none;
     margin-top: 0.35rem;
     text-align: left;
-  }
-
-  .model-badge,
-  .model-provenance {
-    display: block;
-    margin-left: 0;
   }
 
   .hero-grid,

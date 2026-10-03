@@ -18,7 +18,6 @@
             :loading="index === activeIndex ? 'eager' : 'lazy'"
             :fetchpriority="index === activeIndex ? 'high' : 'low'"
             :preload="index === activeIndex ? { fetchPriority: 'high', media: '(min-width: 1024px)' } : false"
-            sizes="xs:100vw sm:50vw lg:22vw xl:22vw"
             caption-visibility="sr-only"
             class="home-hero-visual-showcase-desktop__figure"
           />
@@ -149,7 +148,7 @@ const setActiveIndex = (index: number): void => {
 
   position: relative;
   width: 100%;
-  height: clamp(34rem, 39vw, 38rem);
+  height: clamp(29rem, 34vw, 33rem);
   container-type: inline-size;
   overflow: hidden;
   isolation: isolate;
@@ -171,7 +170,7 @@ const setActiveIndex = (index: number): void => {
 .home-hero-visual-showcase-desktop__stage {
   position: relative;
   width: 100%;
-  height: clamp(22.5rem, 26vw, 24.5rem);
+  height: clamp(18rem, 21vw, 20rem);
   transform: translateY(2rem);
   overflow: visible;
 }

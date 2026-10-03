@@ -24,6 +24,7 @@ type spokePhysicalCorrectionInput struct {
 	Crossing                int
 	Interlacing             bool
 	InterlaceCompensationMM *float64
+	SpokeElongationCompensationMM *float64
 	SpokeProfile            string
 	TargetTensionN          float64
 }
@@ -63,7 +64,12 @@ func applySpokePhysicalCorrections(input spokePhysicalCorrectionInput) (spokePhy
 	}
 
 	stretchLeftMM, stretchRightMM := 0.0, 0.0
-	if input.TargetTensionN > 0 {
+	if input.SpokeElongationCompensationMM != nil {
+		stretchLeftMM = *input.SpokeElongationCompensationMM
+		stretchRightMM = *input.SpokeElongationCompensationMM
+		left -= stretchLeftMM
+		right -= stretchRightMM
+	} else if input.TargetTensionN > 0 {
 		areaMM2 := spokeProfileAreasMM2[input.SpokeProfile]
 		stretchLeftMM = spokeElasticStretchMM(input.TargetTensionN, left, areaMM2)
 		stretchRightMM = spokeElasticStretchMM(input.TargetTensionN, right, areaMM2)

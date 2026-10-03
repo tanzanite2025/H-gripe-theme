@@ -118,6 +118,11 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 	)
 	fitmentDrivetrainHandler := fitmentdrivetrainapi.NewDefaultHandler()
 	tirePressureHandler := tirepressureapi.NewTirePressureEngineeringCalculationHandler()
+	var tirePressureReferenceCatalogReader tirepressureapi.SchwalbeTirePressureReferenceCatalogReader
+	if productService != nil {
+		tirePressureReferenceCatalogReader = productService
+	}
+	tirePressureReferenceHandler := tirepressureapi.NewTirePressureReferenceHTTPHandler(tirePressureReferenceCatalogReader)
 	tireRimWidthReferenceHandler := tirerimapi.NewTireRimWidthReferenceHandler()
 	stainlessSteelSpokeDislocationMechanicsHandler := spokedislocationmechanicsapi.NewStainlessSteelSpokeDislocationMechanicsHTTPHandler()
 	workbenchFeedHandler := workbenchfeedapi.NewHandler(services.WorkbenchFeed)
@@ -233,6 +238,7 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 	tirePressureGroup.Use(middleware.TirePressureEngineeringCalculatorRateLimit(deps.RedisClient))
 	{
 		tirePressureHandler.RegisterTirePressureEngineeringCalculationRoutes(tirePressureGroup)
+		tirePressureReferenceHandler.RegisterTirePressureReferenceHTTPRoutes(tirePressureGroup)
 	}
 
 	// The tire/rim reference calculator is a public read-only engineering

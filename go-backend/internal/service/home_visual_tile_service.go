@@ -18,24 +18,28 @@ import (
 )
 
 var (
-	ErrHomeVisualTileKeyRequired        = errors.New("visual showcase key is required")
-	ErrHomeVisualTileLocaleRequired     = errors.New("visual showcase locale is required")
-	ErrHomeVisualTileItemLimit          = errors.New("visual showcase item limit exceeded")
-	ErrHomeVisualTileTitleRequired      = errors.New("visual showcase item title is required")
-	ErrHomeVisualTileAltTextRequired    = errors.New("visual showcase item alt text is required")
-	ErrHomeVisualTileImageRequired      = errors.New("visual showcase item image is required")
-	ErrHomeVisualTileImageInvalid       = errors.New("visual showcase item image is not a visual showcase upload")
-	ErrHomeVisualTileStorageUnavailable = errors.New("visual showcase storage is unavailable")
-	ErrHomeVisualTileUploadFileRequired = errors.New("visual showcase upload file is required")
-	ErrHomeVisualTileAspectRatioInvalid = errors.New("visual showcase image aspect ratio is invalid")
+	ErrHomeVisualTileKeyRequired            = errors.New("visual showcase key is required")
+	ErrHomeVisualTileLocaleRequired         = errors.New("visual showcase locale is required")
+	ErrHomeVisualTileItemLimit              = errors.New("visual showcase item limit exceeded")
+	ErrHomeVisualTileTitleRequired          = errors.New("visual showcase item title is required")
+	ErrHomeVisualTileAltTextRequired        = errors.New("visual showcase item alt text is required")
+	ErrHomeVisualTileImageRequired          = errors.New("visual showcase item image is required")
+	ErrHomeVisualTileImageInvalid           = errors.New("visual showcase item image is not a visual showcase upload")
+	ErrHomeVisualTileStorageUnavailable     = errors.New("visual showcase storage is unavailable")
+	ErrHomeVisualTileUploadFileRequired     = errors.New("visual showcase upload file is required")
+	ErrHomeVisualTileItemCountInvalid       = errors.New("visual showcase item count is invalid")
+	ErrHomeVisualTileImageDimensionsInvalid = errors.New("visual showcase image dimensions are invalid")
+	ErrHomeVisualTileAspectRatioInvalid     = errors.New("visual showcase image aspect ratio is invalid")
 )
 
 const (
-	HomeHeroVisualShowcaseTileSetKey    = "home-hero"
-	HomeMainProductCategoriesTileSetKey = "home-main-product-categories"
-	maxHomeVisualTileItems              = 100
-	HomeVisualTileStoragePrefix         = "visual-showcase"
-	homeVisualTileImageCacheControl     = "public, max-age=31536000, immutable"
+	HomeHeroVisualShowcaseTileSetKey        = "home-hero"
+	HomeHeroVisualShowcaseRequiredItemCount = 9
+	HomeHeroVisualShowcaseImageDimension    = 600
+	HomeMainProductCategoriesTileSetKey     = "home-main-product-categories"
+	maxHomeVisualTileItems                  = 100
+	HomeVisualTileStoragePrefix             = "visual-showcase"
+	homeVisualTileImageCacheControl         = "public, max-age=31536000, immutable"
 )
 
 type HomeVisualTileInput struct {
@@ -114,7 +118,12 @@ func (s *HomeVisualTileService) GetPublishedResult(tileSetKey, locale string) (*
 	if err != nil {
 		return nil, err
 	}
-	if configuredCount > 0 || normalizedLocale == "en" {
+	if shouldUseRequestedHomeVisualTileLocale(
+		key,
+		normalizedLocale,
+		configuredCount,
+		len(items),
+	) {
 		return &HomeVisualTilePublishedResult{
 			Items:           items,
 			Locale:          normalizedLocale,
@@ -139,6 +148,21 @@ func (s *HomeVisualTileService) GetPublishedResult(tileSetKey, locale string) (*
 		Fallback:        true,
 		ConfiguredCount: fallbackConfiguredCount,
 	}, nil
+}
+
+func shouldUseRequestedHomeVisualTileLocale(
+	tileSetKey string,
+	locale string,
+	configuredCount int64,
+	publishedCount int,
+) bool {
+	if locale == "en" {
+		return true
+	}
+	if strings.TrimSpace(tileSetKey) == HomeHeroVisualShowcaseTileSetKey {
+		return configuredCount == HomeHeroVisualShowcaseRequiredItemCount && publishedCount == HomeHeroVisualShowcaseRequiredItemCount
+	}
+	return configuredCount > 0
 }
 
 func (s *HomeVisualTileService) GetAdminItems(tileSetKey, locale string) ([]homevisualtile.Tile, error) {
@@ -174,7 +198,10 @@ func (s *HomeVisualTileService) UploadAdminImage(
 		return nil, ErrHomeVisualTileUploadFileRequired
 	}
 	specCode := upload.SpecVisualShowcaseEditorial
-	if key == HomeMainProductCategoriesTileSetKey {
+	switch key {
+	case HomeHeroVisualShowcaseTileSetKey:
+		specCode = upload.SpecVisualShowcaseHomeHero
+	case HomeMainProductCategoriesTileSetKey:
 		specCode = upload.SpecVisualShowcaseHomeCategories
 	}
 	if err := upload.ValidateSpecFile(file, string(specCode)); err != nil {
@@ -185,8 +212,8 @@ func (s *HomeVisualTileService) UploadAdminImage(
 	if err != nil {
 		return nil, err
 	}
-	if !isValidHomeVisualTileAspectRatioForTileSet(key, width, height) {
-		return nil, homeVisualTileAspectRatioError(key, width, height)
+	if err := validateHomeVisualTileDimensionsForTileSet(key, width, height); err != nil {
+		return nil, err
 	}
 
 	imageURL, err := s.uploadVisualShowcaseImage(ctx, key, normalizedLocale, file)
@@ -222,8 +249,8 @@ func (s *HomeVisualTileService) ReplaceAdminItems(
 	if normalizedLocale == "" {
 		return nil, ErrHomeVisualTileLocaleRequired
 	}
-	if len(inputs) > maxHomeVisualTileItems {
-		return nil, ErrHomeVisualTileItemLimit
+	if err := validateHomeVisualTileItemCount(key, len(inputs)); err != nil {
+		return nil, err
 	}
 
 	retainedStorageKeys := make(map[string]struct{}, len(inputs))
@@ -267,15 +294,18 @@ func (s *HomeVisualTileService) ReplaceAdminItems(
 			mobilePairIndex = 0
 		}
 		width := input.Width
-		if width <= 0 {
-			width = 900
-		}
 		height := input.Height
-		if height <= 0 {
-			height = 1200
+		if key != HomeHeroVisualShowcaseTileSetKey {
+			defaultWidth, defaultHeight := homeVisualTileDefaultDimensions(key)
+			if width <= 0 {
+				width = defaultWidth
+			}
+			if height <= 0 {
+				height = defaultHeight
+			}
 		}
-		if !isValidHomeVisualTileAspectRatioForTileSet(key, width, height) {
-			return nil, homeVisualTileAspectRatioError(key, width, height)
+		if err := validateHomeVisualTileDimensionsForTileSet(key, width, height); err != nil {
+			return nil, err
 		}
 
 		targetURL := strings.TrimSpace(input.TargetURL)
@@ -431,6 +461,46 @@ func IsHomeVisualTileStorageKey(key string) bool {
 	return ok && (normalizedKey == HomeVisualTileStoragePrefix || strings.HasPrefix(normalizedKey, HomeVisualTileStoragePrefix+"/"))
 }
 
+func validateHomeVisualTileItemCount(tileSetKey string, itemCount int) error {
+	if itemCount > maxHomeVisualTileItems {
+		return ErrHomeVisualTileItemLimit
+	}
+	if strings.TrimSpace(tileSetKey) == HomeHeroVisualShowcaseTileSetKey && itemCount != HomeHeroVisualShowcaseRequiredItemCount {
+		return fmt.Errorf(
+			"%w: expected %d items, received %d",
+			ErrHomeVisualTileItemCountInvalid,
+			HomeHeroVisualShowcaseRequiredItemCount,
+			itemCount,
+		)
+	}
+	return nil
+}
+
+func validateHomeVisualTileDimensionsForTileSet(tileSetKey string, width, height int) error {
+	switch strings.TrimSpace(tileSetKey) {
+	case HomeHeroVisualShowcaseTileSetKey:
+		if width != HomeHeroVisualShowcaseImageDimension || height != HomeHeroVisualShowcaseImageDimension {
+			return fmt.Errorf(
+				"%w: expected %dx%d, received %dx%d",
+				ErrHomeVisualTileImageDimensionsInvalid,
+				HomeHeroVisualShowcaseImageDimension,
+				HomeHeroVisualShowcaseImageDimension,
+				width,
+				height,
+			)
+		}
+	case HomeMainProductCategoriesTileSetKey:
+		if !isValidHomeVisualTileAspectRatio(width, height, 16, 9) {
+			return homeVisualTileAspectRatioError(tileSetKey, width, height)
+		}
+	default:
+		if !isValidHomeVisualTileAspectRatio(width, height, 3, 4) {
+			return homeVisualTileAspectRatioError(tileSetKey, width, height)
+		}
+	}
+	return nil
+}
+
 func homeVisualTileAspectRatioError(tileSetKey string, width, height int) error {
 	return fmt.Errorf(
 		"%w: expected %s, received %dx%d",
@@ -442,17 +512,25 @@ func homeVisualTileAspectRatioError(tileSetKey string, width, height int) error 
 }
 
 func homeVisualTileAspectRatioLabel(tileSetKey string) string {
-	if strings.TrimSpace(tileSetKey) == HomeMainProductCategoriesTileSetKey {
+	switch strings.TrimSpace(tileSetKey) {
+	case HomeHeroVisualShowcaseTileSetKey:
+		return "1:1"
+	case HomeMainProductCategoriesTileSetKey:
 		return "16:9"
+	default:
+		return "3:4"
 	}
-	return "3:4"
 }
 
-func isValidHomeVisualTileAspectRatioForTileSet(tileSetKey string, width, height int) bool {
-	if strings.TrimSpace(tileSetKey) == HomeMainProductCategoriesTileSetKey {
-		return isValidHomeVisualTileAspectRatio(width, height, 16, 9)
+func homeVisualTileDefaultDimensions(tileSetKey string) (int, int) {
+	switch strings.TrimSpace(tileSetKey) {
+	case HomeHeroVisualShowcaseTileSetKey:
+		return HomeHeroVisualShowcaseImageDimension, HomeHeroVisualShowcaseImageDimension
+	case HomeMainProductCategoriesTileSetKey:
+		return 1600, 900
+	default:
+		return 900, 1200
 	}
-	return isValidHomeVisualTileAspectRatio(width, height, 3, 4)
 }
 
 func isValidHomeVisualTileAspectRatio(width, height, ratioWidth, ratioHeight int) bool {

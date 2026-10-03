@@ -1,65 +1,109 @@
 <template>
   <nav v-if="sections.length" class="footer-menus" aria-label="Footer navigation">
-    <div class="footer-menus__grid">
-      <section
-        v-for="section in sections"
-        :key="section.id"
-        class="footer-menus__column"
-        :class="{ 'is-open': isOpen(section.id) }"
+    <div v-if="compactSections.length" class="footer-menus__compact-row">
+      <button
+        v-if="hasCompactMenuOverflow"
+        type="button"
+        class="footer-menus__scroll-button footer-menus__scroll-button--previous"
+        :disabled="!canScrollCompactLeft"
+        aria-label="Scroll footer navigation left"
+        @click="scrollCompactMenus(-1)"
       >
-        <h3 class="footer-menus__title" @click="toggleSection(section.id)">
-          <span class="footer-menus__title-text">
-            {{ $t(section.titleKey, section.fallback || section.id) }}
-          </span>
-          <!-- Mobile Toggle Icon -->
-          <span class="footer-menus__toggle-icon">
-            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-          </span>
-        </h3>
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <path d="M10 3L5 8L10 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
 
-        <!-- Link-list derived from the router's direct child pages -->
-        <ul class="footer-menus__list mobile-accordion-content">
-          <li
-            v-for="link in section.links"
-            :key="link.labelKey + '::' + link.to"
-            class="footer-menus__item"
-            >
-              <NuxtLink
-                v-if="!link.external"
-                class="footer-menus__link"
-                :to="localePath(link.to)"
-              >
-              {{ link.labelKey ? $t(link.labelKey, link.fallback || link.labelKey) : link.fallback }}
-              </NuxtLink>
-            <a
-              v-else
-              class="footer-menus__link"
-              :href="link.to"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              {{ link.labelKey ? $t(link.labelKey, link.fallback || link.labelKey) : link.fallback }}
-            </a>
-          </li>
-        </ul>
-      </section>
+      <div
+        ref="compactMenuViewport"
+        class="footer-menus__compact-viewport"
+        @scroll="updateCompactScrollState"
+      >
+        <div class="footer-menus__grid">
+          <section
+            v-for="section in compactSections"
+            :key="section.id"
+            class="footer-menus__column"
+            :class="{ 'is-open': isOpen(section.id) }"
+          >
+            <h3 class="footer-menus__title" @click="toggleSection(section.id)">
+              <span class="footer-menus__title-text">
+                {{ $t(section.titleKey, section.fallback || section.id) }}
+              </span>
+              <!-- Mobile Toggle Icon -->
+              <span class="footer-menus__toggle-icon">
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </span>
+            </h3>
+
+            <!-- Route groups, nested pages, and runtime SHOP links. -->
+            <ul class="footer-menus__list mobile-accordion-content">
+              <FooterMenuNavigationItem
+                v-for="(item, itemIndex) in section.links"
+                :key="getFooterMenuNavigationItemKey(item, itemIndex)"
+                :item="item"
+              />
+            </ul>
+          </section>
+        </div>
+      </div>
+
+      <button
+        v-if="hasCompactMenuOverflow"
+        type="button"
+        class="footer-menus__scroll-button footer-menus__scroll-button--next"
+        :disabled="!canScrollCompactRight"
+        aria-label="Scroll footer navigation right"
+        @click="scrollCompactMenus(1)"
+      >
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <path d="M6 3L11 8L6 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
     </div>
+
+    <section
+      v-if="guidesSection"
+      class="footer-menus__guides-row"
+      :class="{ 'is-open': isOpen(guidesSection.id) }"
+    >
+      <h3 class="footer-menus__title" @click="toggleSection(guidesSection.id)">
+        <span class="footer-menus__title-text">
+          {{ $t(guidesSection.titleKey, guidesSection.fallback || guidesSection.id) }}
+        </span>
+        <!-- Mobile Toggle Icon -->
+        <span class="footer-menus__toggle-icon">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </span>
+      </h3>
+
+      <!-- Keep the complete documentation hierarchy together in its own row. -->
+      <ul class="footer-menus__list footer-menus__list--guides mobile-accordion-content">
+        <FooterMenuNavigationItem
+          v-for="(item, itemIndex) in guidesSection.links"
+          :key="getFooterMenuNavigationItemKey(item, itemIndex)"
+          :item="item"
+        />
+      </ul>
+    </section>
   </nav>
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import { useLocalePath, useRouter } from '#imports'
-import type { FooterSection } from '~/utils/footerMenus'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { useRouter } from '#imports'
+import FooterMenuNavigationItem from '~/components/FooterMenuNavigationItem.vue'
+import type { FooterNavigationItem, FooterSection } from '~/utils/footerMenus'
 import { createFooterMenusFromRoutes } from '~/utils/footerMenus'
 
 const props = defineProps<{
   menus?: FooterSection[]
 }>()
 
-const localePath = useLocalePath()
 const router = useRouter()
 
 const sections = computed<FooterSection[]>(() => {
@@ -69,7 +113,72 @@ const sections = computed<FooterSection[]>(() => {
   return createFooterMenusFromRoutes(router.getRoutes())
 })
 
+const compactSections = computed<FooterSection[]>(() => (
+  sections.value.filter(section => section.id !== 'guides')
+))
+
+const guidesSection = computed<FooterSection | undefined>(() => (
+  sections.value.find(section => section.id === 'guides')
+))
+
 const openSections = ref<Record<string, boolean>>({})
+
+const compactMenuViewport = ref<HTMLElement | null>(null)
+const hasCompactMenuOverflow = ref(false)
+const canScrollCompactLeft = ref(false)
+const canScrollCompactRight = ref(false)
+
+const updateCompactScrollState = () => {
+  const viewport = compactMenuViewport.value
+  if (!viewport) {
+    hasCompactMenuOverflow.value = false
+    canScrollCompactLeft.value = false
+    canScrollCompactRight.value = false
+    return
+  }
+
+  const maximumScrollLeft = Math.max(viewport.scrollWidth - viewport.clientWidth, 0)
+  hasCompactMenuOverflow.value = maximumScrollLeft > 1
+  canScrollCompactLeft.value = viewport.scrollLeft > 1
+  canScrollCompactRight.value = viewport.scrollLeft < maximumScrollLeft - 1
+}
+
+const scrollCompactMenus = (direction: -1 | 1) => {
+  const viewport = compactMenuViewport.value
+  if (!viewport) return
+
+  viewport.scrollBy({
+    left: direction * Math.max(viewport.clientWidth * 0.8, 240),
+    behavior: 'smooth',
+  })
+}
+
+let compactMenuResizeObserver: ResizeObserver | undefined
+
+onMounted(async () => {
+  await nextTick()
+
+  const viewport = compactMenuViewport.value
+  if (viewport) {
+    if (typeof ResizeObserver !== 'undefined') {
+      compactMenuResizeObserver = new ResizeObserver(updateCompactScrollState)
+      compactMenuResizeObserver.observe(viewport)
+    }
+  }
+
+  window.addEventListener('resize', updateCompactScrollState)
+  updateCompactScrollState()
+})
+
+watch(sections, async () => {
+  await nextTick()
+  updateCompactScrollState()
+}, { deep: true, flush: 'post' })
+
+onBeforeUnmount(() => {
+  compactMenuResizeObserver?.disconnect()
+  window.removeEventListener('resize', updateCompactScrollState)
+})
 
 const toggleSection = (id: string) => {
   openSections.value[id] = !openSections.value[id]
@@ -78,6 +187,11 @@ const toggleSection = (id: string) => {
 const isOpen = (id: string) => {
   return !!openSections.value[id]
 }
+
+const getFooterMenuNavigationItemKey = (
+  item: FooterNavigationItem,
+  index: number,
+) => `${item.to || item.labelKey || item.fallback || 'group'}-${index}`
 </script>
 
 <style scoped>
@@ -85,15 +199,73 @@ const isOpen = (id: string) => {
   width: 100%;
 }
 
+.footer-menus__compact-row {
+  display: flex;
+  align-items: stretch;
+  min-width: 0;
+  gap: 0.5rem;
+}
+
+.footer-menus__compact-viewport {
+  min-width: 0;
+  flex: 1 1 auto;
+  overflow-x: auto;
+  scrollbar-width: none;
+  scroll-behavior: smooth;
+}
+
+.footer-menus__compact-viewport::-webkit-scrollbar {
+  display: none;
+}
+
 .footer-menus__grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  display: flex;
+  flex-wrap: nowrap;
   gap: 1.5rem;
+  width: max-content;
+  min-width: 100%;
 }
 
 .footer-menus__column {
   min-width: 0;
+  flex: 1 0 clamp(11rem, 16vw, 17rem);
   text-align: left;
+}
+
+.footer-menus__guides-row {
+  width: 100%;
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--tz-border-subtle);
+  text-align: left;
+}
+
+.footer-menus__scroll-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: center;
+  flex: 0 0 2.25rem;
+  width: 2.25rem;
+  height: 2.25rem;
+  padding: 0;
+  color: var(--tz-text-secondary);
+  background: var(--tz-surface-subtle);
+  border: 1px solid var(--tz-border-subtle);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: color 0.2s ease, background-color 0.2s ease, opacity 0.2s ease;
+}
+
+.footer-menus__scroll-button:hover:not(:disabled),
+.footer-menus__scroll-button:focus-visible:not(:disabled) {
+  color: var(--tz-text-primary);
+  background: var(--tz-card-surface);
+}
+
+.footer-menus__scroll-button:disabled {
+  cursor: default;
+  opacity: 0.35;
 }
 
 .footer-menus__title {
@@ -124,7 +296,8 @@ const isOpen = (id: string) => {
   transition: transform 0.3s ease;
 }
 
-.footer-menus__column.is-open .footer-menus__toggle-icon {
+.footer-menus__column.is-open .footer-menus__toggle-icon,
+.footer-menus__guides-row.is-open .footer-menus__toggle-icon {
   transform: rotate(180deg);
 }
 
@@ -137,28 +310,30 @@ const isOpen = (id: string) => {
   gap: 0.8rem;
 }
 
-.footer-menus__link {
-  font-size: 0.9rem;
-  font-weight: 500;
-  color: var(--tz-text-secondary);
-  text-decoration: none;
-  display: inline-block;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  position: relative;
-}
-
-.footer-menus__link:hover,
-.footer-menus__link:focus-visible {
-  color: var(--tz-text-primary);
-  transform: translateX(4px);
-  text-shadow: none;
+/* Each top-level guide group gets one column; its child links stay vertical. */
+.footer-menus__list--guides {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  align-items: start;
+  column-gap: 2rem;
+  row-gap: 1.5rem;
 }
 
 /* Mobile Accordion Styles */
 @media (max-width: 768px) {
+  .footer-menus__compact-row {
+    display: block;
+  }
+
+  .footer-menus__compact-viewport {
+    overflow-x: visible;
+  }
+
   .footer-menus__grid {
     display: flex;
     flex-direction: column; /* Vertical stack */
+    width: 100%;
+    min-width: 0;
     overflow-x: visible; /* No scroll */
     gap: 0; /* Gap handled by padding inside columns or items */
     margin: 0;
@@ -169,6 +344,7 @@ const isOpen = (id: string) => {
   
   .footer-menus__column {
     min-width: auto;
+    flex: 0 0 auto;
     flex-shrink: 1;
     border-bottom: 1px solid rgba(20, 32, 43, 0.12); /* Divider */
   }
@@ -176,6 +352,17 @@ const isOpen = (id: string) => {
   .footer-menus__column:last-child {
     border-bottom: none;
     padding-right: 0;
+  }
+
+  .footer-menus__guides-row {
+    margin-top: 0;
+    padding-top: 0;
+    border-top: none;
+    border-bottom: 1px solid rgba(20, 32, 43, 0.12);
+  }
+
+  .footer-menus__scroll-button {
+    display: none;
   }
 
   .footer-menus__title {
@@ -201,26 +388,16 @@ const isOpen = (id: string) => {
     animation: slideDown 0.3s ease-out;
   }
 
-  .footer-menus__column.is-open .mobile-accordion-content {
+  .footer-menus__column.is-open .mobile-accordion-content,
+  .footer-menus__guides-row.is-open .mobile-accordion-content {
     display: block;
   }
 
-  .footer-menus__column.is-open .footer-menus__list.mobile-accordion-content {
+  .footer-menus__column.is-open .footer-menus__list.mobile-accordion-content,
+  .footer-menus__guides-row.is-open .footer-menus__list.mobile-accordion-content {
     display: flex;
     flex-direction: column;
     gap: 0.35rem;
-  }
-
-  .footer-menus__item {
-    margin: 0;
-  }
-
-  .footer-menus__link {
-    display: inline-flex;
-    align-items: center;
-    min-height: 2.25rem;
-    padding-block: 0.2rem;
-    line-height: 1.45;
   }
 
   @keyframes slideDown {
@@ -231,21 +408,17 @@ const isOpen = (id: string) => {
 
 @media (min-width: 769px) and (max-width: 1023px) {
   .footer-menus__grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 1.25rem;
+  }
+
+  .footer-menus__list--guides {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
 @media (min-width: 1024px) and (max-width: 1279px) {
-  .footer-menus__grid {
+  .footer-menus__list--guides {
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 1.25rem;
-  }
-}
-
-@media (min-width: 1280px) {
-  .footer-menus__grid {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
   }
 }
 </style>

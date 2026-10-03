@@ -42,6 +42,7 @@
     "eyebrow": "REPAIR-KIT PRODUCTS",
     "title": "Browse spoke repair-kit products",
     "description": "These active products are linked to the wheelset models above. Open a product to choose a covered model before buying.",
+    "jumpToProducts": "Browse repair-kit products",
     "emptyDescription": "No products",
     "loadError": "Products are temporarily unavailable. Published products will appear here."
   },

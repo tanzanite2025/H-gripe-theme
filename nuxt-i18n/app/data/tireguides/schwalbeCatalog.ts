@@ -45,6 +45,7 @@ export interface SchwalbeTireCatalogRimCompatibility {
 // development and production do not request `/api/v1/api/v1/...`.
 const endpoint = '/products/schwalbe-tire-catalog'
 const selectorEndpoint = '/products/schwalbe-tire-catalog/selector'
+const tirePressureReferenceCatalogEndpoint = '/engineering/tire-pressure/reference-data/catalog'
 
 export interface SchwalbeTireCatalogSelectorRequest extends SchwalbeTireCatalogFilterQueryState {
   search: string
@@ -189,6 +190,45 @@ const readItem = (value: unknown): SchwalbeTireCatalogItem => {
       ? { rim_width_guidance: rimWidthGuidance }
       : {}),
   }
+}
+
+/**
+ * Reads the locally persisted Schwalbe pressure reference catalog in one
+ * request. The endpoint intentionally has a different response shape from
+ * the general selector, so pressure data is flattened into the shared item
+ * type only after the nested product/reference contract is validated.
+ */
+export const fetchSchwalbeTirePressureReferenceCatalog = async (
+  request: ApiRequestFunction,
+): Promise<SchwalbeTireCatalogItem[]> => {
+  const response = await request<unknown>(
+    tirePressureReferenceCatalogEndpoint,
+    {},
+    'Schwalbe tire pressure reference data is temporarily unavailable',
+  )
+  const envelope = asRecord(response)
+  const payload = asRecord(envelope?.data)
+  if (!payload || !Array.isArray(payload.items)) {
+    throw new Error('Schwalbe tire pressure reference response is missing items')
+  }
+
+  return payload.items.map((candidate) => {
+    const row = asRecord(candidate)
+    const product = asRecord(row?.product)
+    const pressure = asRecord(row?.pressure)
+    if (!row || !product || !pressure) {
+      throw new Error('Schwalbe tire pressure reference response contains an invalid item')
+    }
+
+    return readItem({
+      ...product,
+      min_pressure_bar: pressure.min_pressure_bar,
+      max_pressure_bar: pressure.max_pressure_bar,
+      min_pressure_psi: pressure.min_pressure_psi,
+      max_pressure_psi: pressure.max_pressure_psi,
+      source_checked_at: row.source_checked_at,
+    })
+  })
 }
 
 const extractItems = (value: unknown): unknown[] => {
@@ -353,3 +393,4 @@ export const fetchSchwalbeTireCatalogSelectorPage = async (
 
 export const schwalbeTireCatalogEndpoint = endpoint
 export const schwalbeTireCatalogSelectorEndpoint = selectorEndpoint
+export const schwalbeTirePressureReferenceCatalogEndpoint = tirePressureReferenceCatalogEndpoint

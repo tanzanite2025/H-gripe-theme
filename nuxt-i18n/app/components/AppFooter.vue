@@ -63,26 +63,51 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted, onServerPrefetch } from 'vue'
 import { useRouter } from '#imports'
 import SocialIcons from '~/components/SocialIcons.vue'
 import FooterSiteOverview from '~/components/FooterSiteOverview.vue'
 import FooterMenus from '~/components/FooterMenus.vue'
 import SubscriptionOptIn from '~/components/SubscriptionOptIn.vue'
-import type { FooterSection } from '~/utils/footerMenus'
-import { createFooterMenusFromRoutes } from '~/utils/footerMenus'
+import type { FooterLink, FooterSection } from '~/utils/footerMenus'
+import {
+  createFooterMenusFromRoutes,
+  createFooterShopLinksFromProductCategories,
+  isFooterLink,
+} from '~/utils/footerMenus'
+import { useProductCategories } from '~/composables/useProductCategories'
 
 const currentYear = computed(() => new Date().getFullYear())
 const router = useRouter()
+// SHOP is data-driven; the remaining footer columns are discovered from the
+// static router below.
+const { tree: productCategoryTree, loadCategories: loadProductCategories } = useProductCategories()
+const shopCategoryLinks = computed(() => (
+  createFooterShopLinksFromProductCategories(productCategoryTree.value)
+))
 const footerSections = computed<FooterSection[]>(() => (
-  createFooterMenusFromRoutes(router.getRoutes())
+  createFooterMenusFromRoutes(router.getRoutes(), {
+    shopLinks: shopCategoryLinks.value,
+  })
 ))
-const siteOverviewLinks = computed(() => (
-  footerSections.value.find(section => section.id === 'siteOverview')?.links || []
-))
+const siteOverviewLinks = computed<FooterLink[]>(() => {
+  const links = footerSections.value.find(section => section.id === 'siteOverview')?.links || []
+  return links.filter(isFooterLink)
+})
 const routeMenuSections = computed<FooterSection[]>(() => (
   footerSections.value.filter(section => section.id !== 'siteOverview')
 ))
+
+// The footer is part of the server-rendered navigation. Load the public
+// category tree before SSR completes so the initial HTML contains the same
+// SHOP category links that the hydrated client renders. The composable stores
+// the result in useState(), so hydration reuses it without a second request;
+// its bounded server timeout prevents a slow catalog API from blocking SSR.
+onServerPrefetch(() => loadProductCategories())
+
+onMounted(() => {
+  void loadProductCategories()
+})
 
 interface PaymentIcon {
   src: string

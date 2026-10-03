@@ -63,6 +63,14 @@ func TestUploadSpecRegistryContainsCriticalImageContracts(t *testing.T) {
 			aspectRatioLabel:  "16:9",
 		},
 		{
+			code:              SpecVisualShowcaseHomeHero,
+			recommendedWidth:  600,
+			recommendedHeight: 600,
+			exactWidth:        600,
+			exactHeight:       600,
+			aspectRatioLabel:  "1:1",
+		},
+		{
 			code:              SpecVisualShowcaseEditorial,
 			recommendedWidth:  1200,
 			recommendedHeight: 1600,
@@ -158,6 +166,26 @@ func TestValidateSpecFileEnforcesVisualAspectRatios(t *testing.T) {
 			code:    SpecVisualShowcaseHomeCategories,
 			width:   160,
 			height:  100,
+			wantErr: true,
+		},
+		{
+			name:   "home hero visual accepts exactly 600 by 600",
+			code:   SpecVisualShowcaseHomeHero,
+			width:  600,
+			height: 600,
+		},
+		{
+			name:    "home hero visual rejects smaller square",
+			code:    SpecVisualShowcaseHomeHero,
+			width:   599,
+			height:  599,
+			wantErr: true,
+		},
+		{
+			name:    "home hero visual rejects non square",
+			code:    SpecVisualShowcaseHomeHero,
+			width:   600,
+			height:  599,
 			wantErr: true,
 		},
 		{

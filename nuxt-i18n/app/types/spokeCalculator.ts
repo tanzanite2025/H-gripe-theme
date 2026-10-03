@@ -33,6 +33,7 @@ export interface SpokeWheelBuildConfig {
   alternatingDrillingOffsetMm: number
   interlacing: SpokeInterlacing
   interlaceCompensationMm: number | null
+  spokeElongationCompensationMm: number | null
 
   erd: number | null
   rimOffsetMm: number
@@ -104,6 +105,7 @@ export const createSpokeWheelWizardDraft = (): SpokeWheelWizardDraft => ({
   alternatingDrillingOffsetMm: 0,
   interlacing: 'off',
   interlaceCompensationMm: null,
+  spokeElongationCompensationMm: null,
   erd: null,
   rimOffsetMm: 0,
   leftFlange: null,

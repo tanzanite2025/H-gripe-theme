@@ -28,6 +28,11 @@ export interface ProductCategoryList {
   maxDepth: number
 }
 
+export interface ProductCategoryLoadOptions {
+  /** Abort a server-side catalog request that would otherwise block SSR. */
+  timeoutMs?: number
+}
+
 interface ProductCategoryState {
   tree: ProductCategory[]
   flat: ProductCategory[]
@@ -38,6 +43,8 @@ interface ProductCategoryState {
 }
 
 type ProductCategoryStateStore = Record<string, ProductCategoryState>
+
+const PRODUCT_CATEGORY_SERVER_REQUEST_TIMEOUT_MS = 5000
 
 const createEmptyState = (): ProductCategoryState => ({
   tree: [],
@@ -173,10 +180,29 @@ export const useProductCategories = () => {
   const loaded = computed(() => currentState.value.loaded)
   const error = computed(() => currentState.value.error)
 
-  const requestCategories = async (requestLocale: string): Promise<ProductCategoryList> => {
+  const requestCategories = async (
+    requestLocale: string,
+    timeoutMs?: number,
+  ): Promise<ProductCategoryList> => {
     const headers = requestLocale ? { 'Accept-Language': requestLocale } : undefined
-    const response = await request<unknown>('/products/categories', { headers }, 'Failed to load product categories')
-    return extractProductCategoryList(response, mediaContext)
+    const abortController = timeoutMs && timeoutMs > 0 ? new AbortController() : null
+    const timeoutHandle = abortController
+      ? setTimeout(() => abortController.abort(), timeoutMs)
+      : null
+
+    try {
+      const response = await request<unknown>(
+        '/products/categories',
+        {
+          headers,
+          ...(abortController ? { signal: abortController.signal } : {}),
+        },
+        'Failed to load product categories',
+      )
+      return extractProductCategoryList(response, mediaContext)
+    } finally {
+      if (timeoutHandle) clearTimeout(timeoutHandle)
+    }
   }
 
   const fetchCategory = async (slugOrPath: string): Promise<ProductCategory | null> => {
@@ -230,7 +256,9 @@ export const useProductCategories = () => {
     })
   )
 
-  const loadCategories = async (): Promise<ProductCategory[]> => {
+  const loadCategories = async (
+    options: ProductCategoryLoadOptions = {},
+  ): Promise<ProductCategory[]> => {
     const state = getState()
     if (state.loading) return waitForExistingLoad(state)
     if (state.loaded) return state.flat
@@ -239,7 +267,11 @@ export const useProductCategories = () => {
     state.error = null
 
     try {
-      const result = await requestCategories(localeCode.value)
+      const serverTimeoutMs = import.meta.server
+        ? PRODUCT_CATEGORY_SERVER_REQUEST_TIMEOUT_MS
+        : undefined
+      const timeoutMs = options.timeoutMs ?? serverTimeoutMs
+      const result = await requestCategories(localeCode.value, timeoutMs)
       state.tree = result.tree
       state.flat = result.flat
       state.maxDepth = result.maxDepth

@@ -1,4 +1,7 @@
-import type { HomeHeroVisualShowcaseItem } from '~/types/homeHeroVisualShowcase'
+import {
+  HOME_HERO_VISUAL_SHOWCASE_IMAGE_DIMENSION,
+  type HomeHeroVisualShowcaseItem,
+} from '~/types/homeHeroVisualShowcase'
 
 const fallbackImage = (
   id: string,
@@ -15,8 +18,8 @@ const fallbackImage = (
   altText,
   title,
   caption,
-  width: 900,
-  height: 1200,
+  width: HOME_HERO_VISUAL_SHOWCASE_IMAGE_DIMENSION,
+  height: HOME_HERO_VISUAL_SHOWCASE_IMAGE_DIMENSION,
   desktopOrder,
 })
 
@@ -28,4 +31,6 @@ export const homeHeroVisualShowcaseFallback: HomeHeroVisualShowcaseItem[] = [
   fallbackImage('fallback-cnc-machining', '/company/ourstory/factory/factory-cncmachiningworkshop9.webp', 'CNC spoke and valve hole machining', 'CNC machining', 'Accurate drilling supports clean assembly and reliable tension.', 5),
   fallbackImage('fallback-wheel-building', '/testreport/wheelsetassembly/4/wheelsbuilding-and-check-spoke-tension.webp', 'Wheel building and spoke tension check', 'Wheel building and tension', 'Assembly and spoke tension are checked by the wheel builder.', 6),
   fallbackImage('fallback-prepreg-workshop', '/company/ourstory/factory/factory-carbonprepregsworkshop2.webp', 'Carbon prepreg workshop', 'Carbon prepreg preparation', 'Material preparation is part of the finished wheelset story.', 7),
+  fallbackImage('fallback-cutting-workshop', '/company/ourstory/factory/factory-cuttingworkshop4.webp', 'Carbon material cutting workshop', 'Material cutting', 'Accurate material cutting prepares each carbon component for production.', 8),
+  fallbackImage('fallback-grinding-workshop', '/company/ourstory/factory/factory-grinding12.webp', 'Carbon rim grinding workshop', 'Surface finishing', 'Controlled surface finishing prepares the rim for inspection and final coating.', 9),
 ]

@@ -12,10 +12,10 @@
       <span class="spoke-interlacing-step__eyebrow">06</span>
       <div>
         <h2 id="spoke-interlacing-step-title" class="spoke-interlacing-step__title">
-          {{ t('resourcesSpokeCalculator.calculator.physicalCorrections.stepSixPrompt', '输入交叉压条折线补偿（可选）') }}
+          {{ t('resourcesSpokeCalculator.calculator.physicalCorrections.stepSixPrompt', '输入交叉压条与辐条拉长补偿（可选）') }}
         </h2>
         <p class="spoke-interlacing-step__subtitle">
-          {{ t('resourcesSpokeCalculator.calculator.physicalCorrections.stepSixSubtitle', '确认交叉编法是否在交叉点压条；只有实际压条并且有测量或估算依据时，才填写对应的长度补偿。') }}
+          {{ t('resourcesSpokeCalculator.calculator.physicalCorrections.stepSixSubtitle', '确认交叉编法是否在交叉点压条，并按辐条实际拉长量修正下料长度。') }}
         </p>
       </div>
     </div>
@@ -36,6 +36,37 @@
           <p>
             {{ t('resourcesSpokeCalculator.calculator.physicalCorrections.interlacingInputNote', '补偿量不是固定值：例如等径 2.0 mm 圆辐条、不同厚度的扁辐条和变径辐条，会产生不同折线几何；不同花鼓的出条方向也可能使角度偏差不一致。市面上多数花鼓已不采用压条，长度影响通常较小，不确定时可直接选择“否”。') }}
           </p>
+        </div>
+        <div class="spoke-interlacing-step__elongation-control">
+          <label for="spoke-elongation-compensation" class="spoke-interlacing-step__field">
+            <span>{{ t('resourcesSpokeCalculator.calculator.physicalCorrections.elongationCompensationLabel', '辐条拉长补偿') }}</span>
+            <span class="spoke-interlacing-step__unit-field">
+              <input
+                id="spoke-elongation-compensation"
+                :value="props.spokeElongationCompensation ?? ''"
+                type="number"
+                min="0"
+                max="5"
+                step="0.01"
+                inputmode="decimal"
+                :placeholder="t('resourcesSpokeCalculator.calculator.physicalCorrections.elongationCompensationPlaceholder', '例如 1.18')"
+                @input="updateElongationCompensation"
+              />
+              <span>mm</span>
+            </span>
+          </label>
+          <p class="spoke-interlacing-step__elongation-help">
+            {{ t('resourcesSpokeCalculator.calculator.physicalCorrections.elongationCompensationHelp', '留空表示不使用手动拉长补偿；数值会同时应用到前轮和后轮。') }}
+          </p>
+          <a
+            class="spoke-interlacing-step__elongation-guide-button"
+            :href="spokeElongationGuidePath"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {{ t('resourcesSpokeCalculator.calculator.physicalCorrections.elongationGuideButton', '打开辐条型号拉长数据') }}
+            <span aria-hidden="true">↗</span>
+          </a>
         </div>
       </div>
 
@@ -123,13 +154,15 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useI18n } from '#imports'
+import { useI18n, useLocalePath } from '#imports'
 import SpokeCalculatorSelect from '~/components/SpokeCalculatorSelect.vue'
 import SpokePhysicsDiagrams from '~/components/SpokePhysicsDiagrams.vue'
 import SpokeStepNavigation from '~/components/SpokeStepNavigation.vue'
 import type { SpokeInterlacing } from '~/types/spokeCalculator'
 
 const { t } = useI18n()
+const localePath = useLocalePath()
+const spokeElongationGuidePath = localePath('/guides/spokeguides/stainless-steel-microstructural-dislocation-mechanics')
 
 const props = withDefaults(defineProps<{
   currentStep?: number
@@ -137,6 +170,7 @@ const props = withDefaults(defineProps<{
   rearInterlacing?: SpokeInterlacing
   frontCompensation?: number | null
   rearCompensation?: number | null
+  spokeElongationCompensation?: number | null
   frontCrossing?: number
   rearCrossing?: number
 }>(), {
@@ -145,6 +179,7 @@ const props = withDefaults(defineProps<{
   rearInterlacing: 'off',
   frontCompensation: null,
   rearCompensation: null,
+  spokeElongationCompensation: null,
   frontCrossing: 3,
   rearCrossing: 3,
 })
@@ -155,6 +190,7 @@ const emit = defineEmits<{
   'update:rearInterlacing': [value: SpokeInterlacing]
   'update:frontCompensation': [value: number | null]
   'update:rearCompensation': [value: number | null]
+  'update:spokeElongationCompensation': [value: number | null]
   previous: []
   next: []
 }>()
@@ -193,6 +229,10 @@ const updateCompensation = (side: 'front' | 'rear', event: Event) => {
   } else {
     emit('update:rearCompensation', value)
   }
+}
+
+const updateElongationCompensation = (event: Event) => {
+  emit('update:spokeElongationCompensation', readNumber(event))
 }
 </script>
 
@@ -329,6 +369,49 @@ const updateCompensation = (side: 'front' | 'rear', event: Event) => {
   margin: 0;
 }
 
+.spoke-interlacing-step__elongation-control {
+  display: grid;
+  gap: 7px;
+  margin-top: 12px;
+  padding: 10px;
+  border: 1px solid rgba(14, 165, 233, 0.24);
+  border-radius: 12px;
+  background: rgba(240, 249, 255, 0.88);
+}
+
+.spoke-interlacing-step__elongation-control .spoke-interlacing-step__field {
+  margin-top: 0;
+}
+
+.spoke-interlacing-step__elongation-help {
+  margin: 0;
+  color: #0369a1;
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+.spoke-interlacing-step__elongation-guide-button {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid rgba(14, 165, 233, 0.32);
+  border-radius: 9999px;
+  background: #ffffff;
+  color: #0369a1;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.3;
+  padding: 6px 10px;
+  text-decoration: none;
+}
+
+.spoke-interlacing-step__elongation-guide-button:hover {
+  border-color: rgba(14, 165, 233, 0.55);
+  background: #e0f2fe;
+  color: #075985;
+}
+
 .spoke-interlacing-step__wheel-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -427,11 +510,11 @@ const updateCompensation = (side: 'front' | 'rear', event: Event) => {
   margin: 0 0 14px;
 }
 
-/* Reuse the exact interlacing diagram, legend, and two-column arrangement
- * from the seven-tab engineering reference while showing only tab 07 here. */
+/* Reuse the exact stretch and interlacing diagrams, legends, and two-column
+ * arrangement from the seven-tab engineering reference inside Step 6. */
 .spoke-interlacing-step__reference :deep(.physics-collapse-toggle),
 .spoke-interlacing-step__reference :deep(.schematic-nav),
-.spoke-interlacing-step__reference :deep(.diagram-panel:not(#diagram-interlace)) {
+.spoke-interlacing-step__reference :deep(.diagram-panel:not(#diagram-interlace):not(#diagram-stretch)) {
   display: none !important;
 }
 
@@ -439,6 +522,7 @@ const updateCompensation = (side: 'front' | 'rear', event: Event) => {
   display: block !important;
 }
 
+.spoke-interlacing-step__reference :deep(.diagram-panel#diagram-stretch),
 .spoke-interlacing-step__reference :deep(.diagram-panel#diagram-interlace) {
   display: grid !important;
 }

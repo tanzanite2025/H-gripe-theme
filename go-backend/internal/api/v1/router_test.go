@@ -71,6 +71,61 @@ func TestRegisterRoutesExposesTirePressureSolveRoute(t *testing.T) {
 	t.Fatal("tire pressure solve route is not registered")
 }
 
+func TestRegisterRoutesExposesTirePressureReferenceDataRoute(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	router := gin.New()
+	cfg := &config.Config{
+		CORS: config.CORSConfig{},
+		JWT:  config.JWTConfig{Secret: "test-secret"},
+	}
+	RegisterRoutes(router, &app.Dependencies{}, cfg)
+
+	for _, route := range router.Routes() {
+		if route.Method == http.MethodGet && route.Path == "/api/v1/engineering/tire-pressure/reference-data" {
+			return
+		}
+	}
+	t.Fatal("tire pressure reference data route is not registered")
+}
+
+func TestRegisterRoutesExposesTirePressureReferenceCatalogDataRoute(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	router := gin.New()
+	cfg := &config.Config{
+		CORS: config.CORSConfig{},
+		JWT:  config.JWTConfig{Secret: "test-secret"},
+	}
+	RegisterRoutes(router, &app.Dependencies{}, cfg)
+
+	for _, route := range router.Routes() {
+		if route.Method == http.MethodGet && route.Path == "/api/v1/engineering/tire-pressure/reference-data/catalog" {
+			return
+		}
+	}
+	t.Fatal("tire pressure reference catalog data route is not registered")
+}
+
+func TestTirePressureReferenceDataRouteReportsUnavailableCatalogService(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	router := gin.New()
+	cfg := &config.Config{
+		CORS: config.CORSConfig{},
+		JWT:  config.JWTConfig{Secret: "test-secret"},
+	}
+	RegisterRoutes(router, &app.Dependencies{}, cfg)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/api/v1/engineering/tire-pressure/reference-data?article_no=11654432", nil)
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusInternalServerError || !strings.Contains(w.Body.String(), "REFERENCE_UNAVAILABLE") {
+		t.Fatalf("expected unavailable reference data response, got %d: %s", w.Code, w.Body.String())
+	}
+}
+
 func TestTirePressureSolveRouteIsReachableWithoutCSRFToken(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 

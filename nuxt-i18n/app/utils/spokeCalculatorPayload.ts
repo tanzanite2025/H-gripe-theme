@@ -42,6 +42,7 @@ export const toSpokeCalcInput = (
   alternatingDrillingOffsetMm: config.alternatingDrillingOffsetMm,
   interlacing: config.interlacing === 'on',
   interlaceCompensationMm: config.interlaceCompensationMm,
+  spokeElongationCompensationMm: config.spokeElongationCompensationMm,
   rimOffsetMm: config.rimOffsetMm,
   erdMm: config.erd,
   leftFlangeMm: config.leftFlange,

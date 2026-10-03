@@ -327,7 +327,7 @@ export const primaryMegaNavSections: PrimaryMegaNavSection[] = [
         id: 'tire-guides',
         labelKey: 'products.nav.tireSizeCharts',
         labelFallback: 'Tire Guides',
-        description: 'Tire sizing, pressure, inner tube, tubeless, and installation topics.',
+        description: 'Tire sizing, pressure, inner tube, and tubeless setup and installation topics.',
         to: '/guides/tireguides',
         icon: 'lucide:ruler',
         size: 'feature',

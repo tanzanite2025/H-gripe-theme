@@ -457,7 +457,7 @@ const openLocalizedRouteInNewTab = (target: string) => {
 }
 
 const goToTubelessInstallation = () => {
-  openLocalizedRouteInNewTab(localePath('/guides/tireguides/installation'))
+  openLocalizedRouteInNewTab(localePath('/guides/tireguides/tubeless'))
 }
 
 const goToHookedHooklessGuide = () => {

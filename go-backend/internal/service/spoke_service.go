@@ -53,6 +53,10 @@ type SpokeCalculationInput struct {
 	// intentionally not inferred from crossing count or spoke profile because
 	// spoke section, butting, and hub exit direction change the bend geometry.
 	InterlaceCompensationMM *float64
+	// SpokeElongationCompensationMM is a manual correction sourced from the
+	// spoke elongation reference page. When present it replaces the generic
+	// target-tension stretch estimate for this calculation.
+	SpokeElongationCompensationMM *float64
 	// RimOffsetMM is positive when the rim center moves toward the right
 	// flange. The value changes both the spoke length geometry and bracing
 	// angles used for the tension-ratio estimate.
@@ -326,6 +330,9 @@ func (s *SpokeService) Calculate(input SpokeCalculationInput) (*SpokeCalculation
 	if input.InterlaceCompensationMM != nil && (!isFinite(*input.InterlaceCompensationMM) || *input.InterlaceCompensationMM < 0 || *input.InterlaceCompensationMM > 5) {
 		return nil, ErrInvalidSpokeCalculation
 	}
+	if input.SpokeElongationCompensationMM != nil && (!isFinite(*input.SpokeElongationCompensationMM) || *input.SpokeElongationCompensationMM < 0 || *input.SpokeElongationCompensationMM > 5) {
+		return nil, ErrInvalidSpokeCalculation
+	}
 
 	export, err := s.GetExport()
 	if err != nil {
@@ -415,6 +422,7 @@ func (s *SpokeService) Calculate(input SpokeCalculationInput) (*SpokeCalculation
 		Crossing:                input.Crossing,
 		Interlacing:             input.Interlacing,
 		InterlaceCompensationMM: input.InterlaceCompensationMM,
+		SpokeElongationCompensationMM: input.SpokeElongationCompensationMM,
 		SpokeProfile:            input.SpokeProfile,
 		TargetTensionN:          targetTensionN,
 	})
