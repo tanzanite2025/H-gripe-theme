@@ -1,0 +1,118 @@
+{
+  "schema_version": "1.0.0",
+  "dataset_version": "maier-2018-vertical-deformation-reference-v1",
+  "data_status": "REFERENCE_ONLY",
+  "source": {
+    "authors": [
+      "Oliver Maier",
+      "Stefan Hillenbrand",
+      "Juergen Wrede",
+      "Andreas Freund",
+      "Frank Gauterin"
+    ],
+    "title": "Vertical and Longitudinal Characteristics of a Bicycle Tire",
+    "journal": "Tire Science and Technology",
+    "volume": "46",
+    "issue": "3",
+    "pages": "153-173",
+    "publication_year": 2018,
+    "doi": "10.2346/tire.18.460301",
+    "source_url": "https://doi.org/10.2346/tire.18.460301",
+    "publisher_article_url": "https://tst.kglmeridian.com/view/journals/tist/46/3/article-p153.xml",
+    "test_tire_description": "Typical trekking bike tire described by the authors",
+    "test_method": "Inner drum tire test bench",
+    "source_accessed_on": "2026-10-04"
+  },
+  "vertical_stiffness_reference": {
+    "source_figure": "Fig. 4",
+    "inflation_pressure_bar": 4.75,
+    "fitted_vertical_stiffness_n_per_mm": 173.0,
+    "fit_description": "Fz = 173 N/mm * d, as shown in the figure legend",
+    "pressure_scope": "Only 4.75 bar is shown in this figure; no pressure sweep is claimed",
+    "extraction_method": "Direct transcription of the published figure legend"
+  },
+  "vertical_force_deflection_points": [
+    {
+      "source_figure": "Fig. 4",
+      "inflation_pressure_bar": 4.75,
+      "vertical_load_n": 500.0,
+      "deflection_mm": 3.5,
+      "extraction_method": "Approximate manual digitization of the plotted measurement marker",
+      "estimated_digitization_uncertainty_mm": 0.2
+    },
+    {
+      "source_figure": "Fig. 4",
+      "inflation_pressure_bar": 4.75,
+      "vertical_load_n": 1000.0,
+      "deflection_mm": 6.0,
+      "extraction_method": "Approximate manual digitization of the plotted measurement marker",
+      "estimated_digitization_uncertainty_mm": 0.2
+    },
+    {
+      "source_figure": "Fig. 4",
+      "inflation_pressure_bar": 4.75,
+      "vertical_load_n": 1500.0,
+      "deflection_mm": 8.2,
+      "extraction_method": "Approximate manual digitization of the plotted measurement marker",
+      "estimated_digitization_uncertainty_mm": 0.2
+    }
+  ],
+  "contact_patch_geometry_points": [
+    {
+      "source_figure": "Fig. 3",
+      "inflation_pressure_bar": 3.5,
+      "wheel_load_n": 1000.0,
+      "patch_length_mm": 145.0,
+      "patch_width_mm": 20.0,
+      "extraction_method": "Approximate raster measurement using the 100 mm scale marker in the published figure",
+      "estimated_digitization_uncertainty_mm": 5.0,
+      "figure_cell": "3.5 bar / 1000 N"
+    },
+    {
+      "source_figure": "Fig. 3",
+      "inflation_pressure_bar": 4.75,
+      "wheel_load_n": 500.0,
+      "patch_length_mm": 105.0,
+      "patch_width_mm": 15.0,
+      "extraction_method": "Approximate raster measurement using the 100 mm scale marker in the published figure",
+      "estimated_digitization_uncertainty_mm": 5.0,
+      "figure_cell": "4.75 bar / 500 N"
+    },
+    {
+      "source_figure": "Fig. 3",
+      "inflation_pressure_bar": 4.75,
+      "wheel_load_n": 1000.0,
+      "patch_length_mm": 135.0,
+      "patch_width_mm": 20.0,
+      "extraction_method": "Approximate raster measurement using the 100 mm scale marker in the published figure",
+      "estimated_digitization_uncertainty_mm": 5.0,
+      "figure_cell": "4.75 bar / 1000 N"
+    },
+    {
+      "source_figure": "Fig. 3",
+      "inflation_pressure_bar": 4.75,
+      "wheel_load_n": 1500.0,
+      "patch_length_mm": 145.0,
+      "patch_width_mm": 25.0,
+      "extraction_method": "Approximate raster measurement using the 100 mm scale marker in the published figure",
+      "estimated_digitization_uncertainty_mm": 5.0,
+      "figure_cell": "4.75 bar / 1500 N"
+    },
+    {
+      "source_figure": "Fig. 3",
+      "inflation_pressure_bar": 6.0,
+      "wheel_load_n": 1000.0,
+      "patch_length_mm": 125.0,
+      "patch_width_mm": 20.0,
+      "extraction_method": "Approximate raster measurement using the 100 mm scale marker in the published figure",
+      "estimated_digitization_uncertainty_mm": 5.0,
+      "figure_cell": "6 bar / 1000 N"
+    }
+  ],
+  "calculation_limits": [
+    "The paper reports one vertical stiffness fit at 4.75 bar; it does not provide a complete pressure-dependent vertical stiffness curve.",
+    "The pressure scaling used by the application is a first-order proportional assumption and is not a measured property of every Schwalbe tire.",
+    "The contact patch dimensions are approximate digitizations of a raster figure and are retained for provenance, not used as a hidden manufacturer-specific calibration.",
+    "The reference tire and test bench are not the selected Schwalbe product. The result must be labelled as a generic reference model."
+  ]
+}

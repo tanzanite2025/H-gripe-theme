@@ -9,7 +9,7 @@ import (
 
 const (
 	ModelVersion                                    = "pressure-baseline-v1-unapproved"
-	DynamicsModelVersion                            = "cornering-demo-v5-speed-radius-contact-shape-wet-area-separated"
+	DynamicsModelVersion                            = "cornering-demo-v6-vertical-deformation-reference"
 	PsiPerBar                                       = 14.5037738
 	LoadToleranceKg                                 = 0.5
 	GravityMps2                                     = 9.80665
@@ -110,19 +110,40 @@ type Loads struct {
 // WheelDynamics is an intentionally explicit, ground-frame force decomposition.
 // It is a demo estimate, not a tire safety or pressure recommendation.
 type WheelDynamics struct {
-	LoadKg                                       float64                        `json:"load_kg"`
-	VerticalLoadN                                float64                        `json:"vertical_load_n"`
-	LateralDemandN                               float64                        `json:"lateral_demand_n"`
-	ResultantContactForceN                       float64                        `json:"resultant_contact_force_n"`
-	EstimatedStaticContactCm2                    *float64                       `json:"estimated_static_contact_area_cm2,omitempty"`
-	EstimatedEquivalentCircularContactDiameterMm *float64                       `json:"estimated_equivalent_circular_contact_diameter_mm,omitempty"`
-	EstimatedContactPatchWidthMm                 *float64                       `json:"estimated_contact_patch_width_mm,omitempty"`
-	EstimatedContactPatchLengthMm                *float64                       `json:"estimated_contact_patch_length_mm,omitempty"`
-	MuNominal                                    float64                        `json:"mu_nominal"`
-	IdealizedGripLimitN                          float64                        `json:"idealized_grip_limit_n"`
-	GripMarginPct                                float64                        `json:"grip_margin_pct"`
-	PressureContactAreaComparison                *PressureContactAreaComparison `json:"pressure_contact_area_comparison,omitempty"`
-	WetPressureCompensation                      *WetPressureCompensation       `json:"wet_pressure_compensation,omitempty"`
+	LoadKg                                       float64                                  `json:"load_kg"`
+	VerticalLoadN                                float64                                  `json:"vertical_load_n"`
+	LateralDemandN                               float64                                  `json:"lateral_demand_n"`
+	ResultantContactForceN                       float64                                  `json:"resultant_contact_force_n"`
+	EstimatedStaticContactCm2                    *float64                                 `json:"estimated_static_contact_area_cm2,omitempty"`
+	EstimatedEquivalentCircularContactDiameterMm *float64                                 `json:"estimated_equivalent_circular_contact_diameter_mm,omitempty"`
+	EstimatedContactPatchWidthMm                 *float64                                 `json:"estimated_contact_patch_width_mm,omitempty"`
+	EstimatedContactPatchLengthMm                *float64                                 `json:"estimated_contact_patch_length_mm,omitempty"`
+	VerticalDeformation                          *TirePressureVerticalDeformationEstimate `json:"vertical_deformation,omitempty"`
+	MuNominal                                    float64                                  `json:"mu_nominal"`
+	IdealizedGripLimitN                          float64                                  `json:"idealized_grip_limit_n"`
+	GripMarginPct                                float64                                  `json:"grip_margin_pct"`
+	PressureContactAreaComparison                *PressureContactAreaComparison           `json:"pressure_contact_area_comparison,omitempty"`
+	WetPressureCompensation                      *WetPressureCompensation                 `json:"wet_pressure_compensation,omitempty"`
+}
+
+// TirePressureVerticalDeformationEstimate is a transparent reference-tire
+// estimate. It is intentionally separate from the selected Schwalbe product:
+// the local dataset provides one measured-pressure reference and the pressure
+// scaling used here is a first-order application assumption.
+type TirePressureVerticalDeformationEstimate struct {
+	DataStatus                       string  `json:"data_status"`
+	DatasetVersion                   string  `json:"dataset_version"`
+	ReferencePressureBar             float64 `json:"reference_pressure_bar"`
+	OperatingPressurePsi             float64 `json:"operating_pressure_psi"`
+	OperatingPressureBar             float64 `json:"operating_pressure_bar"`
+	VerticalLoadN                    float64 `json:"vertical_load_n"`
+	ReferenceDeflectionMm            float64 `json:"reference_deflection_mm"`
+	EstimatedDeflectionMm            float64 `json:"estimated_deflection_mm"`
+	RelativeDeformationIndex         float64 `json:"relative_deformation_index"`
+	ReferenceVerticalStiffnessNPerMm float64 `json:"reference_vertical_stiffness_n_per_mm"`
+	EstimatedVerticalStiffnessNPerMm float64 `json:"estimated_vertical_stiffness_n_per_mm"`
+	CalculationMethod                string  `json:"calculation_method"`
+	PressureScalingAssumption        string  `json:"pressure_scaling_assumption"`
 }
 
 // WetPressureCompensation contains an explicit equivalent-pressure comparison.
@@ -513,9 +534,10 @@ func CalculateSingleWheelGroundFrameCorneringDynamics(loadKg, angleDeg, muNomina
 }
 
 // CalculateSingleWheelGroundFrameCorneringDynamicsWithTireWidth adds a
-// width-limited equivalent circular footprint to the transparent force model.
-// The footprint dimensions are geometric estimates only; the generic tire-body
-// baseline is fixed at 1.0 and no vertical stiffness or displacement is inferred.
+// width-limited equivalent circular footprint and a generic reference-tire
+// vertical-deformation estimate to the transparent force model. The footprint
+// dimensions are geometric estimates only, and the deformation estimate is
+// not a selected Schwalbe tire measurement.
 func CalculateSingleWheelGroundFrameCorneringDynamicsWithTireWidth(loadKg, angleDeg, muNominal float64, pressurePsi *float64, tireWidthMm float64) WheelDynamics {
 	fz := loadKg * GravityMps2
 	fy := fz * math.Tan(angleDeg*math.Pi/180)
@@ -550,7 +572,105 @@ func CalculateSingleWheelGroundFrameCorneringDynamicsWithTireWidth(loadKg, angle
 			}
 		}
 	}
+	result.VerticalDeformation = CalculateTirePressureVerticalDeformationEstimate(fz, pressurePsi)
 	return result
+}
+
+// CalculateTirePressureVerticalDeformationEstimate interpolates the local
+// 4.75-bar reference points and scales the result by reference pressure over
+// operating pressure. The scaling is a clearly labelled first-order assumption
+// because the source paper does not publish a complete pressure sweep.
+func CalculateTirePressureVerticalDeformationEstimate(verticalLoadN float64, operatingPressurePsi *float64) *TirePressureVerticalDeformationEstimate {
+	if operatingPressurePsi == nil || !isFinitePositiveTirePressureCalculationNumber(verticalLoadN) || !isFinitePositiveTirePressureCalculationNumber(*operatingPressurePsi) {
+		return nil
+	}
+
+	referenceData := GetTirePressureVerticalDeformationReferenceData()
+	referencePressureBar := referenceData.VerticalStiffnessReference.InflationPressureBar
+	referenceStiffnessNPerMm := referenceData.VerticalStiffnessReference.FittedVerticalStiffnessNPerMm
+	operatingPressureBar := *operatingPressurePsi / PsiPerBar
+	if !isFinitePositiveTirePressureCalculationNumber(referencePressureBar) || !isFinitePositiveTirePressureCalculationNumber(referenceStiffnessNPerMm) || !isFinitePositiveTirePressureCalculationNumber(operatingPressureBar) {
+		return nil
+	}
+
+	referenceDeflectionMm := interpolateTirePressureReferenceDeflectionMm(verticalLoadN, referenceData.VerticalForceDeflectionPoints, referenceStiffnessNPerMm)
+	if !isFinitePositiveTirePressureCalculationNumber(referenceDeflectionMm) {
+		return nil
+	}
+	deformationIndex := referencePressureBar / operatingPressureBar
+	estimatedDeflectionMm := referenceDeflectionMm * deformationIndex
+	estimatedStiffnessNPerMm := referenceStiffnessNPerMm / deformationIndex
+	if !isFinitePositiveTirePressureCalculationNumber(deformationIndex) || !isFinitePositiveTirePressureCalculationNumber(estimatedDeflectionMm) || !isFinitePositiveTirePressureCalculationNumber(estimatedStiffnessNPerMm) {
+		return nil
+	}
+
+	return &TirePressureVerticalDeformationEstimate{
+		DataStatus:                       referenceData.DataStatus,
+		DatasetVersion:                   referenceData.DatasetVersion,
+		ReferencePressureBar:             roundTirePressureEngineeringValue(referencePressureBar, 2),
+		OperatingPressurePsi:             roundTirePressureEngineeringValue(*operatingPressurePsi, 1),
+		OperatingPressureBar:             roundTirePressureEngineeringValue(operatingPressureBar, 3),
+		VerticalLoadN:                    roundTirePressureEngineeringValue(verticalLoadN, 1),
+		ReferenceDeflectionMm:            roundTirePressureEngineeringValue(referenceDeflectionMm, 2),
+		EstimatedDeflectionMm:            roundTirePressureEngineeringValue(estimatedDeflectionMm, 2),
+		RelativeDeformationIndex:         roundTirePressureEngineeringValue(deformationIndex, 3),
+		ReferenceVerticalStiffnessNPerMm: roundTirePressureEngineeringValue(referenceStiffnessNPerMm, 1),
+		EstimatedVerticalStiffnessNPerMm: roundTirePressureEngineeringValue(estimatedStiffnessNPerMm, 1),
+		CalculationMethod:                "piecewise_linear_reference_points_with_zero_load_origin",
+		PressureScalingAssumption:        "estimated_deflection_scales with reference_pressure_bar / operating_pressure_bar; reference stiffness scales inversely",
+	}
+}
+
+func interpolateTirePressureReferenceDeflectionMm(verticalLoadN float64, points []TirePressureVerticalForceDeflectionPoint, fallbackStiffnessNPerMm float64) float64 {
+	if !isFinitePositiveTirePressureCalculationNumber(verticalLoadN) {
+		return 0
+	}
+	if !isFinitePositiveTirePressureCalculationNumber(fallbackStiffnessNPerMm) {
+		return 0
+	}
+	if len(points) == 0 {
+		return verticalLoadN / fallbackStiffnessNPerMm
+	}
+
+	first := points[0]
+	if verticalLoadN <= first.VerticalLoadN {
+		if !isFinitePositiveTirePressureCalculationNumber(first.VerticalLoadN) || !isFinitePositiveTirePressureCalculationNumber(first.DeflectionMm) {
+			return verticalLoadN / fallbackStiffnessNPerMm
+		}
+		// The zero-load origin is a transparent geometric anchor, not a
+		// measured point in the paper.
+		return verticalLoadN * first.DeflectionMm / first.VerticalLoadN
+	}
+
+	for index := 1; index < len(points); index++ {
+		previous := points[index-1]
+		current := points[index]
+		if verticalLoadN > current.VerticalLoadN {
+			continue
+		}
+		loadSpan := current.VerticalLoadN - previous.VerticalLoadN
+		if loadSpan <= 0 {
+			return verticalLoadN / fallbackStiffnessNPerMm
+		}
+		loadRatio := (verticalLoadN - previous.VerticalLoadN) / loadSpan
+		return previous.DeflectionMm + loadRatio*(current.DeflectionMm-previous.DeflectionMm)
+	}
+
+	if len(points) == 1 {
+		last := points[0]
+		if !isFinitePositiveTirePressureCalculationNumber(last.VerticalLoadN) || !isFinitePositiveTirePressureCalculationNumber(last.DeflectionMm) {
+			return verticalLoadN / fallbackStiffnessNPerMm
+		}
+		return verticalLoadN * last.DeflectionMm / last.VerticalLoadN
+	}
+
+	last := points[len(points)-1]
+	previous := points[len(points)-2]
+	loadSpan := last.VerticalLoadN - previous.VerticalLoadN
+	if loadSpan <= 0 {
+		return verticalLoadN / fallbackStiffnessNPerMm
+	}
+	return last.DeflectionMm + (verticalLoadN-last.VerticalLoadN)*(last.DeflectionMm-previous.DeflectionMm)/loadSpan
 }
 
 func calculateGripMarginPercentage(gripLimitN, lateralDemandN float64) float64 {

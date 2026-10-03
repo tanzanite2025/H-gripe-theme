@@ -420,6 +420,56 @@ func TestCalculateTirePressureGroundFrameCorneringDynamicsUsesMeasuredWidthWitho
 	}
 }
 
+func TestTirePressureVerticalDeformationReferenceDataLoadsFromLocalVersionedDataset(t *testing.T) {
+	data := GetTirePressureVerticalDeformationReferenceData()
+	if data.DataStatus != "REFERENCE_ONLY" || data.DatasetVersion == "" {
+		t.Fatalf("unexpected reference-data metadata: %+v", data)
+	}
+	if data.VerticalStiffnessReference.InflationPressureBar != 4.75 || data.VerticalStiffnessReference.FittedVerticalStiffnessNPerMm != 173 {
+		t.Fatalf("unexpected reference stiffness: %+v", data.VerticalStiffnessReference)
+	}
+	if len(data.VerticalForceDeflectionPoints) < 3 {
+		t.Fatalf("expected digitized force-deflection points: %+v", data.VerticalForceDeflectionPoints)
+	}
+}
+
+func TestCalculateTirePressureVerticalDeformationEstimateInterpolatesReferenceLoad(t *testing.T) {
+	referencePressurePsi := 4.75 * PsiPerBar
+	estimate := CalculateTirePressureVerticalDeformationEstimate(1000, &referencePressurePsi)
+	if estimate == nil {
+		t.Fatal("expected vertical deformation estimate")
+	}
+	if math.Abs(estimate.ReferenceDeflectionMm-6.0) > 0.01 || math.Abs(estimate.EstimatedDeflectionMm-6.0) > 0.01 {
+		t.Fatalf("unexpected reference-pressure displacement: %+v", estimate)
+	}
+	if math.Abs(estimate.RelativeDeformationIndex-1) > 0.001 || math.Abs(estimate.EstimatedVerticalStiffnessNPerMm-173) > 0.1 {
+		t.Fatalf("unexpected reference-pressure scaling: %+v", estimate)
+	}
+}
+
+func TestCalculateTirePressureVerticalDeformationEstimateIncreasesWithLoadAndLowerPressure(t *testing.T) {
+	highPressurePsi, lowPressurePsi := 70.0, 40.0
+	lowLoad := CalculateTirePressureVerticalDeformationEstimate(500, &highPressurePsi)
+	highLoad := CalculateTirePressureVerticalDeformationEstimate(1000, &highPressurePsi)
+	lowerPressure := CalculateTirePressureVerticalDeformationEstimate(500, &lowPressurePsi)
+	if lowLoad == nil || highLoad == nil || lowerPressure == nil {
+		t.Fatal("expected vertical deformation estimates")
+	}
+	if highLoad.EstimatedDeflectionMm <= lowLoad.EstimatedDeflectionMm {
+		t.Fatalf("higher load should increase estimated displacement: low=%+v high=%+v", lowLoad, highLoad)
+	}
+	if lowerPressure.EstimatedDeflectionMm <= lowLoad.EstimatedDeflectionMm || lowerPressure.RelativeDeformationIndex <= lowLoad.RelativeDeformationIndex {
+		t.Fatalf("lower pressure should increase displacement and deformation index: high=%+v low=%+v", lowLoad, lowerPressure)
+	}
+}
+
+func TestCalculateSingleWheelGroundFrameCorneringDynamicsOmitsVerticalDeformationWithoutPressure(t *testing.T) {
+	wheel := CalculateSingleWheelGroundFrameCorneringDynamicsWithTireWidth(40, 0, FlatRoadDemoFrictionCoefficient, nil, 28)
+	if wheel.VerticalDeformation != nil {
+		t.Fatalf("vertical deformation should be omitted without operating pressure: %+v", wheel.VerticalDeformation)
+	}
+}
+
 func TestValidateTirePressureDynamicCalculationRequestRejectsUnpairedOperatingPressure(t *testing.T) {
 	req := baseRequest()
 	pressure := 45.0

@@ -18,7 +18,7 @@
       <summary>
         <span>{{ t('guidesTirePressure.dashboard.modelInfoTitle') }}</span>
       </summary>
-      <p>{{ t('guidesTirePressure.dashboard.modelVersionLabel', { value: modelVersionLabel }) }} · {{ t('guidesTirePressure.dashboard.provenanceLabel', { load: loadSourceLabel, width: tireWidthSourceLabel, body: tireBodyNormalizationLabel }) }}</p>
+      <p>{{ t('guidesTirePressure.dashboard.modelVersionLabel', { value: modelVersionLabel }) }} · {{ t('guidesTirePressure.dashboard.provenanceLabel', { load: loadSourceLabel, width: tireWidthSourceLabel, body: tireBodyNormalizationLabel }) }} · {{ t('guidesTirePressure.dashboard.verticalDeformationProvenanceLabel', { value: verticalDeformationDatasetLabel }) }}</p>
     </details>
 
     <TirePressureProductModelSelector v-model:selected-tire-model="selectedTireModel" />
@@ -48,7 +48,7 @@
               <div class="metric"><span>{{ t('guidesTirePressure.dashboard.lateralDemandMetric') }}</span><strong>{{ formatForce(frontDemand) }} N</strong><small>{{ t('guidesTirePressure.dashboard.leanAngle') }} {{ formatEngineeringNumber(currentBackendDynamics?.dynamics.lean_angle_deg, 1) }}°</small></div>
               <div class="metric"><span>{{ t('guidesTirePressure.dashboard.gripLimitMetric') }}</span><strong>{{ formatForce(frontMax) }} N</strong><small>{{ formatEffectiveFrictionCoefficient(backendFront) }}</small></div>
               <div class="metric"><span>{{ t('guidesTirePressure.dashboard.gripMarginMetric') }}</span><strong>{{ marginLabel(frontMargin) }}</strong><small>{{ formatEffectiveFrictionCoefficient(backendFront) }}</small></div>
-              <div class="metric"><span>{{ t('guidesTirePressure.dashboard.contactAreaMetric') }}</span><strong>{{ formatArea(frontArea) }} cm²</strong><small>{{ formatPatchDimensions(backendFront?.estimated_contact_patch_width_mm, backendFront?.estimated_contact_patch_length_mm) }}</small><small v-if="frontPressureAreaComparison">{{ formatPressureAreaComparisonDelta(frontPressureAreaComparison) }}</small><small v-if="frontPressureAreaComparison">{{ formatPressureContactPatchChange(frontPressureAreaComparison) }}</small><small v-if="backendFront?.wet_pressure_compensation">{{ formatWetPressureCompensation(backendFront.wet_pressure_compensation) }}</small></div>
+              <div class="metric"><span>{{ t('guidesTirePressure.dashboard.contactAreaMetric') }}</span><strong>{{ formatArea(frontArea) }} cm²</strong><small>{{ formatPatchDimensions(backendFront?.estimated_contact_patch_width_mm, backendFront?.estimated_contact_patch_length_mm) }}</small><small v-if="backendFront?.vertical_deformation">{{ formatVerticalDeformation(backendFront.vertical_deformation) }}</small><small v-if="frontPressureAreaComparison">{{ formatPressureAreaComparisonDelta(frontPressureAreaComparison) }}</small><small v-if="frontPressureAreaComparison">{{ formatPressureContactPatchChange(frontPressureAreaComparison) }}</small><small v-if="backendFront?.wet_pressure_compensation">{{ formatWetPressureCompensation(backendFront.wet_pressure_compensation) }}</small></div>
             </div>
           </article>
           <article class="force-wheel-card force-wheel-card--rear">
@@ -59,7 +59,7 @@
               <div class="metric"><span>{{ t('guidesTirePressure.dashboard.lateralDemandMetric') }}</span><strong>{{ formatForce(rearDemand) }} N</strong><small>{{ t('guidesTirePressure.dashboard.leanAngle') }} {{ formatEngineeringNumber(currentBackendDynamics?.dynamics.lean_angle_deg, 1) }}°</small></div>
               <div class="metric"><span>{{ t('guidesTirePressure.dashboard.gripLimitMetric') }}</span><strong>{{ formatForce(rearMax) }} N</strong><small>{{ formatEffectiveFrictionCoefficient(backendRear) }}</small></div>
               <div class="metric"><span>{{ t('guidesTirePressure.dashboard.gripMarginMetric') }}</span><strong>{{ marginLabel(rearMargin) }}</strong><small>{{ formatEffectiveFrictionCoefficient(backendRear) }}</small></div>
-              <div class="metric"><span>{{ t('guidesTirePressure.dashboard.contactAreaMetric') }}</span><strong>{{ formatArea(rearArea) }} cm²</strong><small>{{ formatPatchDimensions(backendRear?.estimated_contact_patch_width_mm, backendRear?.estimated_contact_patch_length_mm) }}</small><small v-if="rearPressureAreaComparison">{{ formatPressureAreaComparisonDelta(rearPressureAreaComparison) }}</small><small v-if="rearPressureAreaComparison">{{ formatPressureContactPatchChange(rearPressureAreaComparison) }}</small><small v-if="backendRear?.wet_pressure_compensation">{{ formatWetPressureCompensation(backendRear.wet_pressure_compensation) }}</small></div>
+              <div class="metric"><span>{{ t('guidesTirePressure.dashboard.contactAreaMetric') }}</span><strong>{{ formatArea(rearArea) }} cm²</strong><small>{{ formatPatchDimensions(backendRear?.estimated_contact_patch_width_mm, backendRear?.estimated_contact_patch_length_mm) }}</small><small v-if="backendRear?.vertical_deformation">{{ formatVerticalDeformation(backendRear.vertical_deformation) }}</small><small v-if="rearPressureAreaComparison">{{ formatPressureAreaComparisonDelta(rearPressureAreaComparison) }}</small><small v-if="rearPressureAreaComparison">{{ formatPressureContactPatchChange(rearPressureAreaComparison) }}</small><small v-if="backendRear?.wet_pressure_compensation">{{ formatWetPressureCompensation(backendRear.wet_pressure_compensation) }}</small></div>
             </div>
           </article>
         </div>
@@ -191,6 +191,10 @@ const dynamicsInputKey = computed(() => JSON.stringify({
 }))
 const committedDynamicsInputKey = ref<string | null>(null)
 const currentBackendDynamics = computed(() => committedDynamicsInputKey.value === dynamicsInputKey.value ? backendDynamics.value : null)
+const verticalDeformationDatasetLabel = computed(() => {
+  const dataset = currentBackendDynamics.value?.dynamics.front.vertical_deformation
+  return dataset ? `${dataset.data_status} · ${dataset.dataset_version}` : t('guidesTirePressure.dashboard.backendPending')
+})
 const pressureComparisonActive = computed(() => pressureComparisonEnabled.value || wetPressureScenarioEnabled.value)
 const comparisonRequestPending = computed(() => pressureComparisonAvailable.value && pressureComparisonActive.value && dynamicsState.value === 'PENDING')
 const comparisonRequestFailed = computed(() => pressureComparisonAvailable.value && pressureComparisonActive.value && dynamicsState.value === 'UNAVAILABLE')
@@ -255,9 +259,25 @@ type BackendWheelDynamics = {
   estimated_equivalent_circular_contact_diameter_mm?: number
   estimated_contact_patch_width_mm?: number
   estimated_contact_patch_length_mm?: number
+  vertical_deformation?: VerticalDeformationEstimate
   pressure_contact_area_comparison?: PressureContactAreaComparison
   wet_pressure_compensation?: WetPressureCompensation
   mu_nominal: number
+}
+type VerticalDeformationEstimate = {
+  data_status: string
+  dataset_version: string
+  reference_pressure_bar: number
+  operating_pressure_psi: number
+  operating_pressure_bar: number
+  vertical_load_n: number
+  reference_deflection_mm: number
+  estimated_deflection_mm: number
+  relative_deformation_index: number
+  reference_vertical_stiffness_n_per_mm: number
+  estimated_vertical_stiffness_n_per_mm: number
+  calculation_method: string
+  pressure_scaling_assumption: string
 }
 type PressureContactAreaComparison = {
   reference_pressure_psi: number
@@ -528,6 +548,14 @@ function formatPatchDimensions(widthMm: number | undefined, lengthMm: number | u
   return widthMm === undefined || lengthMm === undefined || !Number.isFinite(widthMm) || !Number.isFinite(lengthMm)
     ? '—'
     : `${widthMm.toFixed(1)} × ${lengthMm.toFixed(1)} mm`
+}
+function formatVerticalDeformation(deformation: VerticalDeformationEstimate) {
+  return t('guidesTirePressure.dashboard.verticalDeformationSummary', {
+    estimated: formatEngineeringNumber(deformation.estimated_deflection_mm, 2),
+    reference: formatEngineeringNumber(deformation.reference_deflection_mm, 2),
+    index: formatEngineeringNumber(deformation.relative_deformation_index, 2),
+    stiffness: formatEngineeringNumber(deformation.estimated_vertical_stiffness_n_per_mm, 0),
+  })
 }
 function marginLabel(value: number | null) {
   if (value === null) return t('guidesTirePressure.dashboard.backendPending')
