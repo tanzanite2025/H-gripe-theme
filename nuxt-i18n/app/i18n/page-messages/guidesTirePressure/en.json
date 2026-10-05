@@ -7,11 +7,6 @@
     "calculator": "Pressure and force",
     "details": "Guide"
   },
-  "calculator": {
-    "title": "Tire pressure, load, and cornering force demonstration",
-    "description": "Use a generic rubber baseline to show how rider, bike, pressure, tire width, speed, and lean change contact area and force; the model does not return a production pressure recommendation.",
-    "backToGuide": "Back to the tire-pressure guide"
-  },
   "feedbackTitle": "Share your feedback about the tire-pressure calculator",
   "productSelector": {
     "title": "Choose a tire model",

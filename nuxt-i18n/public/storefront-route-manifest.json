@@ -165,15 +165,6 @@
       "is_indexable": true
     },
     {
-      "key": "guides-tireguides-tire-pressure-calculator",
-      "path": "/guides/tireguides/tire-pressure-calculator",
-      "label": "Tire pressure calculator",
-      "description": "Demonstrate how pressure, load, speed, and lean change force and estimated contact area",
-      "is_searchable": true,
-      "is_checkable": true,
-      "is_indexable": true
-    },
-    {
       "key": "guides-tireguides-tire-pressure",
       "path": "/guides/tireguides/tire-pressure",
       "label": "Tire pressure guide",

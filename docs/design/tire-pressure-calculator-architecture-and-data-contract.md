@@ -6,13 +6,11 @@ This document is the implementation owner for the tire-pressure demonstration pa
 
 ## Scope and routes
 
-The feature has one primary user-facing guide page and one compatibility route:
+The feature has one primary user-facing guide page:
 
 | Route | Responsibility | Current state |
 | --- | --- | --- |
 | `/guides/tireguides/tire-pressure` | Interactive force and contact-area demonstration with the explanation tab. It owns the calculator inputs, selected product pressure display, and dynamics output. | This is the primary calculation entry point. |
-| `/guides/tireguides/tire-pressure-calculator` | Compatibility route that keeps the original direct calculator URL and feedback metadata. | It reuses the same calculator component; its FAQ content is owned by the primary guide route. |
-
 The primary guide page keeps the calculator and its explanation together so users do not need to move between scattered guide pages. The product selector and pressure range are read from the same local Schwalbe catalog projection wherever the shared calculator component is mounted. A future sourced product-standard table can still be added to the guide without introducing another calculation implementation.
 
 ## Frontend ownership
@@ -20,7 +18,6 @@ The primary guide page keeps the calculator and its explanation together so user
 | File | Responsibility | Boundary |
 | --- | --- | --- |
 | `app/pages/guides/tire-pressure.vue` | Route shell and SEO metadata for the combined pressure/force guide. | Calculation state remains in the mounted calculator component. |
-| `app/pages/guides/tire-pressure-calculator.vue` | Route shell, back link, SEO/JSON-LD metadata and page-level FAQ/feedback metadata. | Does not implement physics or catalog parsing. |
 | `app/components/tireguides/TirePressureGuide.vue` | Loads the page message shard and mounts the combined pressure/force guide. | Does not fetch the product catalog. |
 | `app/components/TirePressureSection.vue` | Calculator/details tab state and explanatory content. | It mounts the shared calculator component but does not implement physics. |
 | `app/components/tireguides/tirepressure/TirePressureProductModelSelector.vue` | Search-as-you-type pressure-reference product selection and selected catalog row. | It emits the narrow pressure-reference item; it does not calculate pressure or force. |
@@ -128,9 +125,9 @@ The success envelope is `{ code: 0, data: { model_version, load_source, front_lo
 
 ## FAQ, i18n and migration ownership
 
-- FAQ route/page content was seeded by migration `372_add_tire_pressure_calculator_faq_content.up.sql` and moved to the primary guide route by migration `400_move_tire_pressure_calculator_faq_to_tire_pressure_guide.up.sql`; the products layout places the FAQ slot above feedback and the primary page metadata supplies the calculator feedback thread key.
+- FAQ route/page content was seeded by migration `372_add_tire_pressure_calculator_faq_content.up.sql` and moved to the primary guide route by migration `400_move_tire_pressure_calculator_faq_to_tire_pressure_guide.up.sql`; the products layout places the FAQ slot above feedback and the primary page metadata supplies the tire-pressure feedback thread key.
 - Calculator and guide copy is owned by `app/i18n/page-messages/guidesTirePressure/en.json` and `zh_cn.json`; other locale shards follow the page-message loading convention.
-- Route discovery, footer, breadcrumb and navigation contracts must keep both the primary guide route and the compatibility calculator route valid. Update their matching tests when changing a path.
+- Route discovery, footer, breadcrumb and navigation contracts must keep the primary guide route valid. Update their matching tests when changing its path.
 - The old HTML prototypes and design-only route names are reference artifacts. They are not runtime dependencies and must not be copied into the calculator.
 
 ## Follow-up split order

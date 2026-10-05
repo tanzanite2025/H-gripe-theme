@@ -11,7 +11,7 @@ This directory contains the design and implementation references for the Schwalb
 | [Phase 2 page implementation guide](./phase2-standalone-page-implementation-guide.md) | Selector page behavior, filters, URL contract, SSR pagination, component boundaries and current implementation status | Product-template schema or SEO indexing policy |
 | [Selector SEO/GEO specification](./schwalbe-tire-selector-and-geo-specification.md) | Indexing/canonical policy, structured data and public content claims | Catalog fields, filters and page implementation details |
 | [FAQ content guide](./schwalbe-faq-knowledge-base-input-guide.md) | FAQ sources, answer boundaries and editorial workflow | FAQ runtime integration or Product data |
-| [Tire-pressure calculator architecture](../tire-pressure-calculator-architecture-and-data-contract.md) | Calculator route, local pressure catalog projection, dynamics request/response contract and model boundaries | Schwalbe catalog field ownership, product selector filters or safety recommendations |
+| [Tire-pressure calculator architecture](../tire-pressure-calculator-architecture-and-data-contract.md) | Guide page, local pressure catalog projection, dynamics request/response contract and model boundaries | Schwalbe catalog field ownership, product selector filters or safety recommendations |
 
 ## Reference artifacts
 
