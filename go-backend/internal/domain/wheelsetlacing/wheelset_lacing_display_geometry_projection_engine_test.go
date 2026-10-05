@@ -37,7 +37,7 @@ func TestCalculateWheelsetLacingDisplayGeometryProjectionMatchesCanonicalSymmetr
 
 func TestCalculateWheelsetLacingDisplayGeometryProjectionKeepsSpecialTopologyMappings(t *testing.T) {
 	catalog := NewDefaultCatalog()
-	for _, topologyID := range []string{"21h-g3-2to1", "24h-uniform-2to1"} {
+	for _, topologyID := range []string{"21h-g3-2to1", "24h-uniform-2to1", "18h-uniform-2to1"} {
 		t.Run(topologyID, func(t *testing.T) {
 			topology, err := catalog.Get(topologyID)
 			if err != nil {
@@ -57,6 +57,52 @@ func TestCalculateWheelsetLacingDisplayGeometryProjectionKeepsSpecialTopologyMap
 				t.Fatalf("unexpected special topology result: %+v", result)
 			}
 		})
+	}
+}
+
+func TestCalculateWheelsetLacingDisplayGeometryProjectionUsesIndependentUniform18HGeometry(t *testing.T) {
+	topology, err := NewDefaultCatalog().Get("18h-uniform-2to1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	result, err := CalculateWheelsetLacingDisplayGeometryProjection(DisplayGeometryProjectionRequest{
+		TopologyID: "18h-uniform-2to1", RimRadius: 232, FlangeRadiusA: 66, FlangeRadiusB: 54,
+		FlangeOffsetAMM: 20, FlangeOffsetBMM: 35,
+	}, topology)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.DisplayLayout != DisplayGeometryLayoutUniform18H2To1 {
+		t.Fatalf("display layout = %q, want %q", result.DisplayLayout, DisplayGeometryLayoutUniform18H2To1)
+	}
+	if len(result.RimHoles) != 18 || len(result.HubHolesA) != 12 || len(result.HubHolesB) != 6 || len(result.Spokes) != 18 {
+		t.Fatalf("unexpected uniform 18H display geometry counts: rim=%d hubA=%d hubB=%d spokes=%d", len(result.RimHoles), len(result.HubHolesA), len(result.HubHolesB), len(result.Spokes))
+	}
+	if result.G3GroupSpacing.Enabled {
+		t.Fatal("uniform 18H display geometry must not expose G3 spacing")
+	}
+	for index, point := range result.RimHoles {
+		if point.Side == SideB && index%3 != 1 {
+			t.Fatalf("uniform 18H rim point %d has B side outside A-B-A sequence", index)
+		}
+		if point.Side == SideA && index%3 == 1 {
+			t.Fatalf("uniform 18H rim point %d has A side in B slot", index)
+		}
+	}
+	if result.Metrics.DriveSideSpokeCount != 12 {
+		t.Fatalf("drive-side spoke count = %d, want 12", result.Metrics.DriveSideSpokeCount)
+	}
+	for index, point := range result.RimHoles {
+		wantAngle := (float64(index) * 2 * math.Pi / 18) - math.Pi/2 + math.Pi/18
+		if math.Abs(point.Angle-wantAngle) > 0.000001 {
+			t.Fatalf("uniform 18H rim point %d angle = %v, want %v", index, point.Angle, wantAngle)
+		}
+	}
+	for index, point := range result.HubHolesB {
+		rimPoint := result.RimHoles[1+index*3]
+		if math.Abs(point.Angle-rimPoint.Angle) > 0.000001 {
+			t.Fatalf("uniform 18H non-drive hub point %d angle = %v, want radial rim angle %v", index, point.Angle, rimPoint.Angle)
+		}
 	}
 }
 

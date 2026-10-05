@@ -19,6 +19,7 @@ const expectedCrossCountsByHoleSelection: ReadonlyArray<readonly [WheelsetLacing
   [28, [0, 1, 2, 3]],
   [32, [0, 1, 2, 3, 4]],
   [36, [0, 1, 2, 3, 4]],
+  ['18_2to1', [2]],
   ['24_2to1', [2]],
 ]
 
@@ -39,11 +40,15 @@ assert.deepEqual(
   { topologyId: '24h-uniform-2to1', displayLayout: WHEELSET_LACING_DISPLAY_GEOMETRY_LAYOUT.uniform2To1 },
 )
 assert.deepEqual(
+  resolveWheelsetLacingDisplayGeometryTopologySelection('18_2to1', 2),
+  { topologyId: '18h-uniform-2to1', displayLayout: WHEELSET_LACING_DISPLAY_GEOMETRY_LAYOUT.uniform18H2To1 },
+)
+assert.deepEqual(
   resolveWheelsetLacingDisplayGeometryTopologySelection(24, 2),
   { topologyId: '24h-symmetric-1to1-2x', displayLayout: WHEELSET_LACING_DISPLAY_GEOMETRY_LAYOUT.symmetric1To1 },
 )
 assert.throws(
-  () => resolveWheelsetLacingDisplayGeometryTopologySelection(18 as WheelsetLacingHoleSelection, 2),
+  () => resolveWheelsetLacingDisplayGeometryTopologySelection(19 as WheelsetLacingHoleSelection, 2),
   /unregistered wheelset lacing display topology/,
 )
 assert.throws(

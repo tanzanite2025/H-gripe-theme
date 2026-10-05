@@ -48,6 +48,10 @@
             <span>{{ t('wheelsetLacingTopology.holes.21') }}</span>
             <span class="sub-text">{{ t('wheelsetLacingTopology.holes.21Sub') }}</span>
           </button>
+          <button type="button" class="uds-pill-btn" data-holes="18_2to1" aria-pressed="false" @click="setHoleCount('18_2to1')">
+            <span>{{ t('wheelsetLacingTopology.holes.18_2to1') }}</span>
+            <span class="sub-text">{{ t('wheelsetLacingTopology.holes.18_2to1Sub') }}</span>
+          </button>
           <button type="button" class="uds-pill-btn active" data-holes="24" aria-pressed="true" @click="setHoleCount(24)">
             <span>{{ t('wheelsetLacingTopology.holes.24') }}</span>
           </button>
@@ -473,7 +477,7 @@ const { data: wheelsetLacingFaqData } = await useAsyncData(
 const serverRenderedWheelsetLacingDisplayGeometryTopologyIdentifier = '24h-symmetric-1to1-2x'
 const serverRenderedWheelsetLacingDisplayGeometrySelection = resolveWheelsetLacingDisplayGeometryTopologySelection(24, 2)
 const { data: serverRenderedWheelsetLacingDisplayGeometry } = await useAsyncData(
-  'wheelset-lacing-default-display-geometry-v1-4',
+  'wheelset-lacing-default-display-geometry-v1-5',
   async () => {
     try {
       const response = await request('/wheelset-lacing/display-geometry', {
@@ -542,6 +546,11 @@ const topologyFacts = () => [
     '@type': 'PropertyValue',
     name: t('wheelsetLacingTopology.seo.factG3Name'),
     value: t('wheelsetLacingTopology.review.preview21Detail'),
+  },
+  {
+    '@type': 'PropertyValue',
+    name: t('wheelsetLacingTopology.seo.factUniform18HName'),
+    value: t('wheelsetLacingTopology.review.uniform18HTip'),
   },
   {
     '@type': 'PropertyValue',
@@ -788,7 +797,7 @@ useHead(() => {
     };
 
     let state = {
-      holes: 24,            // 16, 20, 21, 24, 28, 32, 36, '24_2to1'
+      holes: 24,            // 16, 20, 21, 24, 28, 32, 36, '18_2to1', '24_2to1'
       cross: 2,             // 0, 1, 2, 3, 4
       viewMode: 'both',     // 默认全景双侧透视，确保所有孔位100%全满严整
       flangeRadiusA: resolveDisplayGeometryRadius(initialServerRenderedDisplayGeometry?.hub_holes_a, SVG_HUB_FLANGE_HOLE_RING_DISPLAY_RADIUS_A),
@@ -809,6 +818,7 @@ useHead(() => {
       20: 1,
       21: 2,
       24: 2,
+      '18_2to1': 2,
       '24_2to1': 2,
       28: 2,
       32: 3,
@@ -818,6 +828,8 @@ useHead(() => {
     const getHoleRule = (holes) => {
       const translatedLabel = holes === 21
         ? `${t('wheelsetLacingTopology.holes.21')} (${t('wheelsetLacingTopology.holes.21Sub')})`
+        : holes === '18_2to1'
+          ? t('wheelsetLacingTopology.holes.18_2to1')
         : holes === '24_2to1'
           ? t('wheelsetLacingTopology.holes.24_2to1')
           : holes === 24
@@ -1177,7 +1189,8 @@ useHead(() => {
       const displayLayout = topology?.display_layout ?? null;
       const isG3Topology = displayLayout === WHEELSET_LACING_DISPLAY_GEOMETRY_LAYOUT.g3Triplet2To1;
       const isUniformTwoToOneTopology = displayLayout === WHEELSET_LACING_DISPLAY_GEOMETRY_LAYOUT.uniform2To1;
-      const numHoles = Number(topology?.hole_count ?? (holes === '24_2to1' ? 24 : holes));
+      const isUniform18HTwoToOneTopology = displayLayout === WHEELSET_LACING_DISPLAY_GEOMETRY_LAYOUT.uniform18H2To1;
+      const numHoles = Number(topology?.hole_count ?? (holes === '18_2to1' ? 18 : holes === '24_2to1' ? 24 : holes));
       const aggregateMeanAbsoluteProjectionAngleDegrees = geometryProjectionMetrics?.aggregate_mean_absolute_projection_angle_degrees ?? null;
 
       document.getElementById('metric-tangential-projection-angle').innerText = formatBackendDisplayGeometryMetric(aggregateMeanAbsoluteProjectionAngleDegrees);
@@ -1251,9 +1264,11 @@ useHead(() => {
         cross: topology.cross,
         angle: formatBackendDisplayGeometryMetric(aggregateMeanAbsoluteProjectionAngleDegrees),
       });
-      builderTip.innerText = isUniformTwoToOneTopology
-        ? t('wheelsetLacingTopology.review.uniformTip')
-        : t('wheelsetLacingTopology.review.generalTip');
+      builderTip.innerText = isUniform18HTwoToOneTopology
+        ? t('wheelsetLacingTopology.review.uniform18HTip')
+        : isUniformTwoToOneTopology
+          ? t('wheelsetLacingTopology.review.uniformTip')
+          : t('wheelsetLacingTopology.review.generalTip');
       statusTag.innerText = t('wheelsetLacingTopology.review.tagPreview');
       statusTag.style.background = 'rgba(5, 150, 105, 0.1)';
       statusTag.style.color = '#059669';

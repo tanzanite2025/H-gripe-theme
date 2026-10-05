@@ -10,7 +10,7 @@ import (
 // coordinates; flange offsets are physical millimetres used only for the
 // generated axial reference profile. Neither represents spoke length,
 // stiffness, tension, efficiency, or assembly safety.
-const WheelsetLacingDisplayGeometryContractVersion = "v1.4-backend-display-geometry"
+const WheelsetLacingDisplayGeometryContractVersion = "v1.5-backend-display-geometry"
 
 // These values are centralized in the domain package so SSR and browser
 // requests use the same reference geometry. Radial constants are canvas
@@ -278,6 +278,8 @@ func buildWheelsetLacingDisplayGeometryPoints(
 		return buildG3DisplayGeometryPoints(topology, request)
 	case DisplayGeometryLayoutUniform2To1:
 		return buildUniformTwoToOneDisplayGeometryPoints(topology, request)
+	case DisplayGeometryLayoutUniform18H2To1:
+		return buildUniform18H2To1DisplayGeometryPoints(topology, request)
 	case DisplayGeometryLayoutSymmetric1To1:
 		return buildSymmetricDisplayGeometryPoints(topology, topology.HoleCount, request)
 	default:
@@ -347,21 +349,30 @@ func buildG3DisplayGeometryPoints(topology Topology, request DisplayGeometryProj
 }
 
 func buildUniformTwoToOneDisplayGeometryPoints(topology Topology, request DisplayGeometryProjectionRequest) ([]DisplayGeometryPoint, []DisplayGeometryPoint, []DisplayGeometryPoint, error) {
-	if topology.HoleCount != 24 || len(topology.RimHoles) != 24 || len(topology.HubHolesA) != 16 || len(topology.HubHolesB) != 8 {
-		return nil, nil, nil, fmt.Errorf("%w: uniform 2:1 display layout requires a 24-hole 16/8 topology", ErrInvalidTopology)
+	return buildUniformTwoToOneDisplayGeometryPointsWithExplicitHoleCounts(topology, request, 24, 16, 8)
+}
+
+// buildUniform18H2To1DisplayGeometryPoints keeps the 18H non-G3 layout
+// separate from the 24H generator while sharing only the parameterized math.
+func buildUniform18H2To1DisplayGeometryPoints(topology Topology, request DisplayGeometryProjectionRequest) ([]DisplayGeometryPoint, []DisplayGeometryPoint, []DisplayGeometryPoint, error) {
+	return buildUniformTwoToOneDisplayGeometryPointsWithExplicitHoleCounts(topology, request, 18, 12, 6)
+}
+
+func buildUniformTwoToOneDisplayGeometryPointsWithExplicitHoleCounts(topology Topology, request DisplayGeometryProjectionRequest, total, driveSideHoleCount, nonDriveSideHoleCount int) ([]DisplayGeometryPoint, []DisplayGeometryPoint, []DisplayGeometryPoint, error) {
+	if topology.HoleCount != total || len(topology.RimHoles) != total || len(topology.HubHolesA) != driveSideHoleCount || len(topology.HubHolesB) != nonDriveSideHoleCount {
+		return nil, nil, nil, fmt.Errorf("%w: uniform 2:1 display layout requires a %d-hole %d/%d topology", ErrInvalidTopology, total, driveSideHoleCount, nonDriveSideHoleCount)
 	}
-	const total = 24
 	rimHoles := make([]DisplayGeometryPoint, 0, len(topology.RimHoles))
 	rimBySide := map[Side][]DisplayGeometryPoint{SideA: {}, SideB: {}}
 	for index, hole := range topology.RimHoles {
-		angle := (float64(index) * 2 * math.Pi / total) - math.Pi/2 + math.Pi/total
+		angle := (float64(index) * 2 * math.Pi / float64(total)) - math.Pi/2 + math.Pi/float64(total)
 		point := displayGeometryPoint(hole.ID, hole.Side, angle, request.RimRadius)
 		rimHoles = append(rimHoles, point)
 		rimBySide[hole.Side] = append(rimBySide[hole.Side], point)
 	}
 	hubHolesA := make([]DisplayGeometryPoint, 0, len(topology.HubHolesA))
 	for index, hole := range topology.HubHolesA {
-		angle := (float64(index) * 2 * math.Pi / 16) - math.Pi/2
+		angle := (float64(index) * 2 * math.Pi / float64(driveSideHoleCount)) - math.Pi/2
 		hubHolesA = append(hubHolesA, displayGeometryPoint(hole.ID, SideA, angle, request.FlangeRadiusA))
 	}
 	hubHolesB := make([]DisplayGeometryPoint, 0, len(topology.HubHolesB))

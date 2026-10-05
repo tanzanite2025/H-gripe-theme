@@ -1,10 +1,11 @@
 import type { WheelsetLacingHoleSelection } from './wheelsetLacingSelectionContract'
 
-export const WHEELSET_LACING_DISPLAY_GEOMETRY_CONTRACT_VERSION = 'v1.4-backend-display-geometry'
+export const WHEELSET_LACING_DISPLAY_GEOMETRY_CONTRACT_VERSION = 'v1.5-backend-display-geometry'
 
 export const WHEELSET_LACING_DISPLAY_GEOMETRY_LAYOUT = Object.freeze({
   symmetric1To1: 'symmetric_1to1',
   uniform2To1: 'uniform_2to1',
+  uniform18H2To1: 'uniform_18h_2to1',
   g3Triplet2To1: 'g3_triplet_2to1',
 } as const)
 
@@ -248,6 +249,39 @@ const validateDisplayGeometryLayoutSpecificFields = (
   }
 }
 
+const validateUniform18HTwoToOneTopologyShape = (
+  topology: UnknownRecord,
+  rimHoles: unknown[],
+  hubHolesA: unknown[],
+  hubHolesB: unknown[],
+): void => {
+  if (requireInteger(topology.cross, 'topology cross') !== 2) {
+    throw new Error('uniform 18H 2:1 display geometry must use 2X crossing')
+  }
+  if (rimHoles.length !== 18 || hubHolesA.length !== 12 || hubHolesB.length !== 6) {
+    throw new Error('uniform 18H 2:1 display geometry must contain 18 rim, 12 drive-side, and 6 non-drive-side holes')
+  }
+  rimHoles.forEach((holeValue, index) => {
+    const hole = requireUnknownRecord(holeValue, `uniform 18H rim hole ${index}`)
+    const expectedSide = index % 3 === 1 ? 'B' : 'A'
+    if (requireSide(hole.side, `uniform 18H rim hole ${index} side`) !== expectedSide) {
+      throw new Error('uniform 18H 2:1 rim holes must repeat the A-B-A sequence')
+    }
+  })
+  hubHolesA.forEach((holeValue, index) => {
+    const hole = requireUnknownRecord(holeValue, `uniform 18H hub A hole ${index}`)
+    if (requireSide(hole.side, `uniform 18H hub A hole ${index} side`) !== 'A') {
+      throw new Error('uniform 18H drive-side hub holes must all be side A')
+    }
+  })
+  hubHolesB.forEach((holeValue, index) => {
+    const hole = requireUnknownRecord(holeValue, `uniform 18H hub B hole ${index}`)
+    if (requireSide(hole.side, `uniform 18H hub B hole ${index} side`) !== 'B') {
+      throw new Error('uniform 18H non-drive-side hub holes must all be side B')
+    }
+  })
+}
+
 /**
  * Maps a UI topology selection to its canonical ID and exact display layout.
  * The layout is explicit metadata; it is never inferred from a hole count.
@@ -267,6 +301,11 @@ export const resolveWheelsetLacingDisplayGeometryTopologySelection = (
         topologyId: '24h-uniform-2to1',
         displayLayout: WHEELSET_LACING_DISPLAY_GEOMETRY_LAYOUT.uniform2To1,
       }
+    case '18_2to1':
+      return {
+        topologyId: '18h-uniform-2to1',
+        displayLayout: WHEELSET_LACING_DISPLAY_GEOMETRY_LAYOUT.uniform18H2To1,
+      }
     case 16:
     case 20:
     case 24:
@@ -284,8 +323,8 @@ export const resolveWheelsetLacingDisplayGeometryTopologySelection = (
 
 /**
  * Validates a backend projection before the page creates any SVG element from
- * it. This intentionally rejects unknown layouts and endpoint mismatches so a
- * future 18H 2:1 topology cannot be silently drawn as symmetric 1:1.
+ * it. This intentionally rejects unknown layouts and endpoint mismatches so
+ * every registered 18H 2:1 projection is drawn only from its own layout.
  */
 export const validateWheelsetLacingDisplayGeometryResponse = (
   value: unknown,
@@ -314,6 +353,7 @@ export const validateWheelsetLacingDisplayGeometryResponse = (
   const distributionByLayout: Record<WheelsetLacingDisplayGeometryLayout, string> = {
     [WHEELSET_LACING_DISPLAY_GEOMETRY_LAYOUT.symmetric1To1]: 'symmetric_1to1',
     [WHEELSET_LACING_DISPLAY_GEOMETRY_LAYOUT.uniform2To1]: 'uniform_2to1',
+    [WHEELSET_LACING_DISPLAY_GEOMETRY_LAYOUT.uniform18H2To1]: 'uniform_2to1',
     [WHEELSET_LACING_DISPLAY_GEOMETRY_LAYOUT.g3Triplet2To1]: 'g3_2to1',
   }
   if (topology.distribution !== distributionByLayout[expectedSelection.displayLayout]) {
@@ -321,6 +361,9 @@ export const validateWheelsetLacingDisplayGeometryResponse = (
   }
   if (expectedSelection.displayLayout === WHEELSET_LACING_DISPLAY_GEOMETRY_LAYOUT.uniform2To1 && holeCount !== 24) {
     throw new Error('uniform 2:1 display geometry must contain 24 rim holes')
+  }
+  if (expectedSelection.displayLayout === WHEELSET_LACING_DISPLAY_GEOMETRY_LAYOUT.uniform18H2To1 && holeCount !== 18) {
+    throw new Error('uniform 18H 2:1 display geometry must contain 18 rim holes')
   }
   if (expectedSelection.displayLayout === WHEELSET_LACING_DISPLAY_GEOMETRY_LAYOUT.g3Triplet2To1 && holeCount !== 21) {
     throw new Error('G3 display geometry must contain 21 rim holes')
@@ -332,6 +375,13 @@ export const validateWheelsetLacingDisplayGeometryResponse = (
   const topologySpokes = requireUnknownArray(topology.spokes, 'topology spokes')
   if (topologyRimHoles.length !== holeCount || topologySpokes.length !== holeCount) {
     throw new Error('topology rim-hole and spoke counts must equal topology hole_count')
+  }
+  if (expectedSelection.displayLayout === WHEELSET_LACING_DISPLAY_GEOMETRY_LAYOUT.uniform18H2To1
+    && (topologyHubHolesA.length !== 12 || topologyHubHolesB.length !== 6)) {
+    throw new Error('uniform 18H 2:1 display geometry must contain 12 drive-side and 6 non-drive-side hub holes')
+  }
+  if (expectedSelection.displayLayout === WHEELSET_LACING_DISPLAY_GEOMETRY_LAYOUT.uniform18H2To1) {
+    validateUniform18HTwoToOneTopologyShape(topology, topologyRimHoles, topologyHubHolesA, topologyHubHolesB)
   }
   const rimPointsByKey = validatePointListAgainstHoleList(geometry.rim_holes, topologyRimHoles, 'rim')
   const hubPointsAByKey = validatePointListAgainstHoleList(geometry.hub_holes_a, topologyHubHolesA, 'hub A')
