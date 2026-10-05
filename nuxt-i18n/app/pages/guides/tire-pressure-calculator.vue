@@ -49,7 +49,7 @@ useHead(() => ({
           '@type': 'TechArticle',
           headline: t('guidesTirePressure.calculator.title'),
           description: t('guidesTirePressure.calculator.description'),
-          version: 'v1.1-MVP-Review',
+          version: 'cornering-demo-v7-pressure-friction-status',
           proficiencyLevel: 'Expert',
           author: {
             '@type': 'Organization',

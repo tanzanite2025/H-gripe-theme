@@ -77,6 +77,50 @@ func (b *dependencyServicesBuilder) build() error {
 	exchangeRateService := service.NewExchangeRateService(b.repos.ExchangeRate, b.repos.Setting)
 	productService.ConfigureDisplayPriceRefreshLeaseRepository(b.repos.ExchangeRate)
 	shippingService.ConfigureCurrencyPolicy(currencyPolicyService)
+	yanwenPublishedCollectionService := b.support.YanwenPublishedCollectionService
+	yanwenGatewayClient := service.NewYanwenGatewayClient()
+	yanwenGatewayConfigurationService := service.NewYanwenGatewayConfigurationService(
+		b.repos.YanwenAPIConfig,
+		yanwenGatewayClient,
+	)
+	yanwenOfficialCatalogService := service.NewYanwenOfficialCatalogService(
+		yanwenGatewayConfigurationService,
+		b.repos.YanwenProductCatalog,
+		b.repos.YanwenCountryCatalog,
+		b.repos.YanwenWarehouseCatalog,
+		b.repos.YanwenPublishedChannel,
+		yanwenGatewayClient,
+	)
+	yanwenWaybillOperationsService := service.NewYanwenWaybillOperationsService(
+		yanwenGatewayConfigurationService,
+		b.repos.YanwenProductCatalog,
+		b.repos.YanwenCountryCatalog,
+		b.repos.YanwenWarehouseCatalog,
+		b.repos.Order,
+		b.repos.YanwenPublishedChannel,
+		b.repos.YanwenWaybill,
+		b.repos.YanwenTrackingSnapshot,
+		yanwenGatewayClient,
+	)
+	yanwenTrackingOperationsService := service.NewYanwenTrackingOperationsService(
+		yanwenGatewayConfigurationService,
+		b.repos.YanwenTrackingSnapshot,
+		yanwenGatewayClient,
+	)
+	yanwenOperationsOverviewService := service.NewYanwenOperationsOverviewService(
+		yanwenGatewayConfigurationService,
+		b.repos.YanwenWaybill,
+		b.repos.YanwenTrackingSnapshot,
+	)
+	yanwenKoreaPersonalCustomsClearanceCodeService := service.NewYanwenKoreaPersonalCustomsClearanceCodeService(yanwenGatewayConfigurationService)
+	yanwenUnitedStatesAddressVerificationService := service.NewYanwenUnitedStatesAddressVerificationService(yanwenGatewayConfigurationService)
+	yanwenTrackingPollingService := service.NewYanwenTrackingPollingService(
+		yanwenTrackingOperationsService,
+		b.repos.YanwenTrackingSnapshot,
+		time.Duration(b.cfg.Worker.YanwenTrackingPollingIntervalSeconds)*time.Second,
+		b.cfg.Worker.YanwenTrackingPollingBatchLimit,
+	)
+	yanwenTrackingAlertService := service.NewYanwenTrackingAlertService(b.repos.YanwenTrackingSnapshot)
 	orderEvidenceSnapshotService := service.NewOrderEvidenceSnapshotService()
 	orderEvidenceService := service.NewOrderEvidenceService()
 	orderEvidenceAdminService := service.NewOrderEvidenceAdminService(
@@ -408,13 +452,23 @@ func (b *dependencyServicesBuilder) build() error {
 			b.repos.OpsProjectBinding,
 			service.NewAuditService(b.repos.Audit),
 		),
-		Shipping:                  shippingService,
-		FpxAPI:                    service.NewFpxAPIService(b.repos.FpxAPIConfig, b.repos.Shipping),
-		Spoke:                     service.NewSpokeService(b.repos.Spoke),
-		WheelsetLacing:            service.NewWheelsetLacingService(),
-		QuickBuy:                  service.NewQuickBuyService(b.repos.QuickBuy, b.repos.Product, b.repos.ProductCategory),
-		SelectionAssistant:        service.NewSelectionAssistantService(b.repos.SelectionAssistant),
-		SelectionConfigurationKey: service.NewSelectionConfigurationKeyService(b.repos.SelectionConfigurationKey),
+		Shipping:                    shippingService,
+		FpxAPI:                      service.NewFpxAPIService(b.repos.FpxAPIConfig, b.repos.Shipping),
+		YanwenGatewayConfiguration:  yanwenGatewayConfigurationService,
+		YanwenOfficialCatalog:       yanwenOfficialCatalogService,
+		YanwenWaybillOperations:     yanwenWaybillOperationsService,
+		YanwenTrackingOperations:    yanwenTrackingOperationsService,
+		YanwenOperationsOverview:    yanwenOperationsOverviewService,
+		YanwenPublishedCollection:   yanwenPublishedCollectionService,
+		YanwenKoreaPCCCVerification: yanwenKoreaPersonalCustomsClearanceCodeService,
+		YanwenUSAddressVerification: yanwenUnitedStatesAddressVerificationService,
+		YanwenTrackingPolling:       yanwenTrackingPollingService,
+		YanwenTrackingAlerts:        yanwenTrackingAlertService,
+		Spoke:                       service.NewSpokeService(b.repos.Spoke),
+		WheelsetLacing:              service.NewWheelsetLacingService(),
+		QuickBuy:                    service.NewQuickBuyService(b.repos.QuickBuy, b.repos.Product, b.repos.ProductCategory),
+		SelectionAssistant:          service.NewSelectionAssistantService(b.repos.SelectionAssistant),
+		SelectionConfigurationKey:   service.NewSelectionConfigurationKeyService(b.repos.SelectionConfigurationKey),
 		WheelsetFitQuestionnaire: service.NewWheelsetFitQuestionnaireService(
 			b.repos.WheelsetFitQuestionnaire,
 			b.repos.SelectionConfigurationKey,

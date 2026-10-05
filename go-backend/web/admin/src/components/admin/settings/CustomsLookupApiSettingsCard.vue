@@ -8,6 +8,7 @@
         <div>
           <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">Customs Lookup API</p>
           <h3 class="mt-1 text-sm font-black tracking-tight text-foreground">清关编码查询接口</h3>
+          <p class="mt-1 text-xs text-muted-foreground">官方查询地址已内置，通常无需手动填写；只有切换镜像或服务地址时才需要修改。</p>
         </div>
       </div>
       <Button v-if="canEdit" type="button" :disabled="effectiveSaving" @click="saveSettings">
@@ -40,7 +41,7 @@
             </div>
             <Switch v-model="usHTSEnabled" :disabled="controlsDisabled" aria-label="启用 US HTS" />
           </div>
-          <AdminFormField label="API 地址">
+          <AdminFormField label="API 地址" description="默认已填入 USITC 官方地址，通常无需修改。">
             <Input v-model="apiSettings.customs_lookup_us_hts_endpoint" :disabled="controlsDisabled" placeholder="https://hts.usitc.gov/reststop/search" />
           </AdminFormField>
           <AdminFormField label="API Key" description="可选；如服务商要求，可在 Endpoint 中使用 {apiKey}，或通过请求头发送。">
@@ -76,7 +77,7 @@
             </div>
             <Switch v-model="ukTradeTariffEnabled" :disabled="controlsDisabled" aria-label="启用 UK Trade Tariff" />
           </div>
-          <AdminFormField label="API 地址">
+          <AdminFormField label="API 地址" description="默认已填入 UK Trade Tariff 官方地址，通常无需修改。">
             <Input v-model="apiSettings.customs_lookup_uk_trade_tariff_endpoint" :disabled="controlsDisabled" placeholder="https://www.trade-tariff.service.gov.uk/api/v2/commodities" />
           </AdminFormField>
           <AdminFormField label="API Key" description="可选；如服务商要求，可在 Endpoint 中使用 {apiKey}，或通过请求头发送。">

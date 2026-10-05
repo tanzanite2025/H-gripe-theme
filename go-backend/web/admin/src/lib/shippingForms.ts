@@ -16,6 +16,9 @@ export const defaultShippingCarrierForm = () => ({
 export const defaultShippingCarrierServiceForm = (carriers: any[] = []) => ({
   id: null,
   carrier_id: firstId(carriers),
+  fpx_channel_id: null,
+  yanwen_published_channel_id: null,
+  provider_code: '',
   template_id: 'none',
   service_code: '',
   service_name: '',
@@ -84,15 +87,7 @@ export const defaultShippingTemplateForm = () => ({
   description: '',
   enabled: true,
   rules: [],
-})
-
-export const defaultShippingZoneForm = () => ({
-  id: null,
-  name: '',
-  countries: '[]',
-  states: '[]',
-  postal_codes: '[]',
-  enabled: true,
+  carrier_services: [],
 })
 
 export const defaultShippingPackagingForm = () => ({

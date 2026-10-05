@@ -110,7 +110,8 @@ func (s *HomeVisualTileService) GetPublishedResult(tileSetKey, locale string) (*
 		normalizedLocale = "en"
 	}
 
-	items, err := s.repo.ListItems(key, normalizedLocale, true)
+	publishedOnly := key != HomeHeroVisualShowcaseTileSetKey
+	items, err := s.repo.ListItems(key, normalizedLocale, publishedOnly)
 	if err != nil {
 		return nil, err
 	}
@@ -133,7 +134,7 @@ func (s *HomeVisualTileService) GetPublishedResult(tileSetKey, locale string) (*
 		}, nil
 	}
 
-	fallbackItems, err := s.repo.ListItems(key, "en", true)
+	fallbackItems, err := s.repo.ListItems(key, "en", key != HomeHeroVisualShowcaseTileSetKey)
 	if err != nil {
 		return nil, err
 	}
@@ -259,101 +260,15 @@ func (s *HomeVisualTileService) ReplaceAdminItems(
 	usedHomeHeroDesktopOrders := make(map[int]struct{}, len(inputs))
 	items := make([]homevisualtile.Tile, 0, len(inputs))
 	for index, input := range inputs {
-		title := strings.TrimSpace(input.Title)
-		altText := strings.TrimSpace(input.AltText)
-		imageURL := strings.TrimSpace(input.ImageURL)
-		thumbnailURL := strings.TrimSpace(input.ThumbnailURL)
-		if thumbnailURL == "" {
-			thumbnailURL = imageURL
-		}
-		if title == "" {
-			return nil, ErrHomeVisualTileTitleRequired
-		}
-		if altText == "" {
-			return nil, ErrHomeVisualTileAltTextRequired
-		}
-		if imageURL == "" {
-			return nil, ErrHomeVisualTileImageRequired
-		}
-
-		storageKey := s.visualShowcaseStorageKeyFromInput(input.StorageKey, imageURL)
-		if storageKey == "" {
-			return nil, ErrHomeVisualTileImageInvalid
-		}
-		retainedStorageKeys[storageKey] = struct{}{}
-
-		layoutVariant := strings.TrimSpace(input.LayoutVariant)
-		if layoutVariant == "" {
-			layoutVariant = "standard"
-		}
-		desktopOrder := input.DesktopOrder
-		if key == HomeHeroVisualShowcaseTileSetKey {
-			if desktopOrder <= 0 {
-				desktopOrder = index + 1
-			}
-			if desktopOrder > HomeHeroVisualShowcaseMaximumItemCount {
-				return nil, fmt.Errorf(
-					"%w: desktop position must be between 1 and %d",
-					ErrHomeVisualTileItemCountInvalid,
-					HomeHeroVisualShowcaseMaximumItemCount,
-				)
-			}
-			if _, exists := usedHomeHeroDesktopOrders[desktopOrder]; exists {
-				return nil, fmt.Errorf("%w: duplicate desktop position %d", ErrHomeVisualTileItemCountInvalid, desktopOrder)
-			}
-			usedHomeHeroDesktopOrders[desktopOrder] = struct{}{}
-		} else if desktopOrder <= 0 {
-			desktopOrder = index + 1
-		}
-		mobilePairIndex := input.MobilePairIndex
-		if mobilePairIndex < 0 {
-			mobilePairIndex = 0
-		}
-		width := input.Width
-		height := input.Height
-		if key != HomeHeroVisualShowcaseTileSetKey {
-			defaultWidth, defaultHeight := homeVisualTileDefaultDimensions(key)
-			if width <= 0 {
-				width = defaultWidth
-			}
-			if height <= 0 {
-				height = defaultHeight
-			}
-		}
-		if err := validateHomeVisualTileDimensionsForTileSet(key, width, height); err != nil {
+		item, err := s.buildHomeVisualTile(key, normalizedLocale, index, input, usedHomeHeroDesktopOrders)
+		if err != nil {
 			return nil, err
 		}
-
-		targetURL := strings.TrimSpace(input.TargetURL)
-		targetLabel := strings.TrimSpace(input.TargetLabel)
-		if key == HomeHeroVisualShowcaseTileSetKey {
-			targetURL = ""
-			targetLabel = ""
-		}
-
-		items = append(items, homevisualtile.Tile{
-			TileSetKey:      key,
-			Locale:          normalizedLocale,
-			ImageURL:        imageURL,
-			ThumbnailURL:    thumbnailURL,
-			StorageKey:      storageKey,
-			Title:           title,
-			Caption:         strings.TrimSpace(input.Caption),
-			AltText:         altText,
-			DesktopOrder:    desktopOrder,
-			MobilePairIndex: mobilePairIndex,
-			TargetURL:       targetURL,
-			TargetLabel:     targetLabel,
-			LayoutVariant:   layoutVariant,
-			IsPublished:     input.IsPublished,
-			Width:           width,
-			Height:          height,
-		})
+		retainedStorageKeys[item.StorageKey] = struct{}{}
+		items = append(items, item)
 	}
 
-	var previousItems []homevisualtile.Tile
 	if err := s.repo.ReplaceItems(key, normalizedLocale, items, func(tx *gorm.DB, previous []homevisualtile.Tile) error {
-		previousItems = append(previousItems[:0], previous...)
 		removedKeys := homeVisualTileRemovedStorageKeys(s, previous, retainedStorageKeys)
 		if len(removedKeys) == 0 {
 			return nil
@@ -377,6 +292,180 @@ func (s *HomeVisualTileService) ReplaceAdminItems(
 		return nil, err
 	}
 	return s.repo.ListItems(key, normalizedLocale, false)
+}
+
+// SaveSingleVisualShowcaseAdminItem persists one showcase slot while leaving every other slot untouched.
+func (s *HomeVisualTileService) SaveSingleVisualShowcaseAdminItem(
+	ctx context.Context,
+	tileSetKey string,
+	locale string,
+	input HomeVisualTileInput,
+) ([]homevisualtile.Tile, error) {
+	key := strings.TrimSpace(tileSetKey)
+	normalizedLocale := strings.TrimSpace(locale)
+	if key == "" {
+		return nil, ErrHomeVisualTileKeyRequired
+	}
+	if normalizedLocale == "" {
+		return nil, ErrHomeVisualTileLocaleRequired
+	}
+	if input.DesktopOrder <= 0 {
+		return nil, fmt.Errorf(
+			"%w: desktop position must be positive",
+			ErrHomeVisualTileItemCountInvalid,
+		)
+	}
+
+	item, err := s.buildHomeVisualTile(
+		key,
+		normalizedLocale,
+		input.DesktopOrder-1,
+		input,
+		make(map[int]struct{}),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	retainedStorageKeys := map[string]struct{}{item.StorageKey: {}}
+	previousStorageKey := ""
+	err = s.repo.SaveSingleVisualShowcaseItem(&item, func(tx *gorm.DB, previous *homevisualtile.Tile) error {
+		if previous == nil {
+			return nil
+		}
+		previousStorageKey = previous.StorageKey
+		removedKeys := homeVisualTileRemovedStorageKeys(s, []homevisualtile.Tile{*previous}, retainedStorageKeys)
+		if len(removedKeys) == 0 {
+			return nil
+		}
+		if s.outbox == nil {
+			return ErrObjectStorageCleanupUnavailable
+		}
+		aggregateID := key + ":" + normalizedLocale
+		event, eventErr := newObjectStorageCleanupEvent(
+			objectCleanupResourceHomeVisualTile,
+			aggregateID,
+			outbox.AggregateTypeHomeVisualTileSet,
+			aggregateID,
+			removedKeys,
+		)
+		if eventErr != nil {
+			return eventErr
+		}
+		return s.outbox.WithTx(tx).CreateEvent(event)
+	})
+	if err != nil {
+		if s.storage != nil && previousStorageKey != "" && previousStorageKey != item.StorageKey {
+			_ = s.storage.Delete(ctx, item.ImageURL)
+		}
+		return nil, err
+	}
+	return s.repo.ListItems(key, normalizedLocale, false)
+}
+
+func (s *HomeVisualTileService) buildHomeVisualTile(
+	tileSetKey string,
+	locale string,
+	index int,
+	input HomeVisualTileInput,
+	usedDesktopOrders map[int]struct{},
+) (homevisualtile.Tile, error) {
+	title := strings.TrimSpace(input.Title)
+	altText := strings.TrimSpace(input.AltText)
+	imageURL := strings.TrimSpace(input.ImageURL)
+	thumbnailURL := strings.TrimSpace(input.ThumbnailURL)
+	if thumbnailURL == "" {
+		thumbnailURL = imageURL
+	}
+	if title == "" {
+		return homevisualtile.Tile{}, ErrHomeVisualTileTitleRequired
+	}
+	if altText == "" {
+		return homevisualtile.Tile{}, ErrHomeVisualTileAltTextRequired
+	}
+	if imageURL == "" {
+		return homevisualtile.Tile{}, ErrHomeVisualTileImageRequired
+	}
+
+	storageKey := s.visualShowcaseStorageKeyFromInput(input.StorageKey, imageURL)
+	if storageKey == "" {
+		return homevisualtile.Tile{}, ErrHomeVisualTileImageInvalid
+	}
+
+	desktopOrder := input.DesktopOrder
+	if desktopOrder <= 0 {
+		desktopOrder = index + 1
+	}
+	if tileSetKey == HomeHeroVisualShowcaseTileSetKey {
+		if desktopOrder > HomeHeroVisualShowcaseMaximumItemCount {
+			return homevisualtile.Tile{}, fmt.Errorf(
+				"%w: desktop position must be between 1 and %d",
+				ErrHomeVisualTileItemCountInvalid,
+				HomeHeroVisualShowcaseMaximumItemCount,
+			)
+		}
+		if _, exists := usedDesktopOrders[desktopOrder]; exists {
+			return homevisualtile.Tile{}, fmt.Errorf(
+				"%w: duplicate desktop position %d",
+				ErrHomeVisualTileItemCountInvalid,
+				desktopOrder,
+			)
+		}
+		usedDesktopOrders[desktopOrder] = struct{}{}
+	}
+
+	layoutVariant := strings.TrimSpace(input.LayoutVariant)
+	if layoutVariant == "" {
+		layoutVariant = "standard"
+	}
+	mobilePairIndex := input.MobilePairIndex
+	if mobilePairIndex < 0 {
+		mobilePairIndex = 0
+	}
+	width := input.Width
+	height := input.Height
+	if tileSetKey != HomeHeroVisualShowcaseTileSetKey {
+		defaultWidth, defaultHeight := homeVisualTileDefaultDimensions(tileSetKey)
+		if width <= 0 {
+			width = defaultWidth
+		}
+		if height <= 0 {
+			height = defaultHeight
+		}
+	}
+	if err := validateHomeVisualTileDimensionsForTileSet(tileSetKey, width, height); err != nil {
+		return homevisualtile.Tile{}, err
+	}
+
+	targetURL := strings.TrimSpace(input.TargetURL)
+	targetLabel := strings.TrimSpace(input.TargetLabel)
+	if tileSetKey == HomeHeroVisualShowcaseTileSetKey {
+		targetURL = ""
+		targetLabel = ""
+	}
+	isPublished := input.IsPublished
+	if tileSetKey == HomeHeroVisualShowcaseTileSetKey {
+		isPublished = true
+	}
+
+	return homevisualtile.Tile{
+		TileSetKey:      tileSetKey,
+		Locale:          locale,
+		ImageURL:        imageURL,
+		ThumbnailURL:    thumbnailURL,
+		StorageKey:      storageKey,
+		Title:           title,
+		Caption:         strings.TrimSpace(input.Caption),
+		AltText:         altText,
+		DesktopOrder:    desktopOrder,
+		MobilePairIndex: mobilePairIndex,
+		TargetURL:       targetURL,
+		TargetLabel:     targetLabel,
+		LayoutVariant:   layoutVariant,
+		IsPublished:     isPublished,
+		Width:           width,
+		Height:          height,
+	}, nil
 }
 
 func homeVisualTileRemovedStorageKeys(

@@ -1,0 +1,2 @@
+-- Intentionally forward-only. The seeded rows are shared catalog data and may
+-- already be referenced by products or customized by an administrator.

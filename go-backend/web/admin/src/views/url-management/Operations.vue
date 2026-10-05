@@ -30,7 +30,7 @@
     />
 
     <p class="text-xs text-muted-foreground">
-      当前检查范围：{{ selectedLocaleLabel }}（{{ filters.locale }}）。同步 URL 会更新全量语言；检查只处理当前语言，最多 200 条可检查 URL；待处理卡片为全站工单汇总。
+      当前检查范围：{{ selectedLocaleLabel }}（{{ filters.locale }}）。同步 URL 会更新全量语言；检查会自动分批处理当前筛选范围内的全部可检查 URL；待处理卡片为全站工单汇总。
     </p>
 
     <AdminStatsGrid :items="statItems" />
@@ -78,7 +78,7 @@ const selectLocale = (locale: string | number): void => {
 const statItems = computed(() => [
   { key: 'checked', label: '已检查', value: stats.value.checked, icon: CircleCheck, tone: 'green' },
   { key: 'unchecked', label: '未检查', value: stats.value.unchecked, icon: RefreshCw, tone: stats.value.unchecked ? 'amber' : 'gray' },
-  { key: 'attention', label: '全站待处理', value: issueStats.value.active, icon: TriangleAlert, tone: issueStats.value.active ? 'coral' : 'gray' },
+  { key: 'attention', label: '全站未关闭工单', value: issueStats.value.active, icon: TriangleAlert, tone: issueStats.value.active ? 'coral' : 'gray' },
   { key: 'stale', label: '失效快照', value: stats.value.stale, icon: TriangleAlert, tone: stats.value.stale ? 'amber' : 'gray' },
 ])
 

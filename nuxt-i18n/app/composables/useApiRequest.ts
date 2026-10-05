@@ -265,7 +265,7 @@ const extractDetails = (payload: MaybeJson) => {
 export function useApiRequest() {
   const config = useRuntimeConfig()
   const { baseURL, requestBaseURL } = resolveApiBases(config)
-  const requestSigningKey = config.public?.requestSigningKey || ''
+  const requestSigningKey = (config.public as { requestSigningKey?: string })?.requestSigningKey || ''
 
   const request: ApiRequestFunction = async <T = MaybeJson>(path: string, init: ApiRequestInit = {}, fallbackMessage = 'Request failed'): Promise<T> => {
     if (!requestBaseURL) {

@@ -1,20 +1,29 @@
 <template>
   <div>
-    <h1 class="products-page__title products-page__title--sr-only">
+    <h1 v-if="!isGuideCategoryLandingPage" class="products-page__title products-page__title--sr-only">
       {{ activePageTitle }}
     </h1>
-    <p class="products-page__intro products-page__intro--sr-only">
+    <p v-if="!isGuideCategoryLandingPage" class="products-page__intro products-page__intro--sr-only">
       {{ t('guidesTireguides.intro') }}
     </p>
 
-    <div class="sizecharts-page">
-      <!-- Tire size (new top-level tab) -->
+    <GuideCategoryChildRouteNavigationCards
+      v-if="isGuideCategoryLandingPage"
+      eyebrow="Tire Guides"
+      :heading="t('guidesTireguides.title')"
+      :description="t('guidesTireguides.intro')"
+      open-label="Open guide"
+      :cards="tireGuideNavigationCards"
+    />
+
+    <div v-else class="sizecharts-page">
+      <!-- Tire size marking education -->
       <section
-        v-show="activeTab === 'size'"
-        id="size"
+        v-show="activeTab === 'tire-size-markings'"
+        id="tire-size-markings"
         class="sizecharts-section tz-text-secondary"
       >
-        <TireSizeGuide v-if="activeTab === 'size'" @open-tire-products="openTireProductsDrawer" />
+        <TireSizeGuide v-if="activeTab === 'tire-size-markings'" @open-tire-products="openTireProductsDrawer" />
       </section>
 
       <!-- Tire frame clearance -->
@@ -66,16 +75,16 @@
         <TirePressureGuide v-if="activeTab === 'tire-pressure'" @open-tire-products="openTireProductsDrawer" />
       </section>
 
-      <!-- Inner Tube -->
+      <!-- How to choose an inner tube -->
       <section
-        v-show="activeTab === 'tube'"
-        id="tube"
+        v-show="activeTab === 'choose-inner-tube'"
+        id="choose-inner-tube"
         class="sizecharts-section"
       >
-        <InnerTubeGuide v-if="activeTab === 'tube'" />
+        <InnerTubeGuide v-if="activeTab === 'choose-inner-tube'" />
       </section>
 
-      <div class="sizecharts-feedback">
+      <div v-if="activeTab !== 'choose-inner-tube'" class="sizecharts-feedback">
       <UserFeedbackThread
         threadKey="guides-tireguides"
         :title="t('guidesTireguides.feedbackTitle')"
@@ -96,7 +105,7 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { useHead, useI18n } from '#imports'
+import { useHead, useI18n, useLocalePath, useRoute } from '#imports'
 import { useApiRequest } from '~/composables/useApiRequest'
 import UserFeedbackThread from '~/components/UserFeedbackThread.vue'
 import WhatsAppProductSearchResultDrawer from '~/components/WhatsAppProductSearchResultDrawer.vue'
@@ -110,8 +119,9 @@ import InstallationGuide from '~/components/tireguides/InstallationGuide.vue'
 import TireSizeGuide from '~/components/tireguides/TireSizeGuide.vue'
 import { usePageSubNavigationTab } from '~/composables/usePageSubNavigationTab'
 import { normalizeShopProduct } from '~/composables/useShopProducts'
-import { tireGuideTabs } from '~/utils/pageSubNavigation'
+import { pageSubNavigationChildPath, tireGuideTabs } from '~/utils/pageSubNavigation'
 import { usePageMessages } from '~/composables/usePageMessages'
+import GuideCategoryChildRouteNavigationCards from '~/components/GuideCategoryChildRouteNavigationCards.vue'
 
 definePageMeta({
   layout: 'products',
@@ -120,23 +130,57 @@ definePageMeta({
 })
 
 const { locale, t } = useI18n()
+const route = useRoute()
+const localePath = useLocalePath()
 const { loadPageMessages } = usePageMessages('guidesTireguides')
+const { loadPageMessages: loadTireRimReferencePageMessages } = usePageMessages('guidesTireChoose')
+const { loadPageMessages: loadTireSizePageMessages } = usePageMessages('guidesTireSize')
 
-await loadPageMessages(locale.value)
+const normalizeGuideCategoryLandingRoutePath = (path: string) => path.replace(/\/+$/, '') || '/'
+
+await Promise.all([
+  loadPageMessages(locale.value),
+  loadTireRimReferencePageMessages(locale.value),
+  loadTireSizePageMessages(locale.value),
+])
 
 watch(locale, (nextLocale) => {
-  void loadPageMessages(nextLocale)
+  void Promise.all([
+    loadPageMessages(nextLocale),
+    loadTireRimReferencePageMessages(nextLocale),
+    loadTireSizePageMessages(nextLocale),
+  ])
 })
 
 const tabs = tireGuideTabs
+const isGuideCategoryLandingPage = computed(() => (
+  normalizeGuideCategoryLandingRoutePath(route.path) ===
+  normalizeGuideCategoryLandingRoutePath(localePath('/guides/tireguides'))
+))
+const getTireGuideCardRoute = (tab: (typeof tabs)[number]) => {
+  const explicitRoute = (tab as { to?: string }).to
+  return explicitRoute || pageSubNavigationChildPath('/guides/tireguides', tab.id)
+}
+const tireGuideNavigationCards = computed(() => tabs.map(tab => ({
+  id: tab.id,
+  label: t(tab.labelKey, tab.fallback),
+  description: t(tab.descriptionKey, tab.description),
+  to: getTireGuideCardRoute(tab),
+})))
 const { activeTab, setActiveTab } = usePageSubNavigationTab({
   tabs,
   basePath: '/guides/tireguides',
   defaultValue: 'tubeless',
-  redirectBasePathToDefaultTab: true,
 })
 
 const activePageTitle = computed(() => {
+  if (isGuideCategoryLandingPage.value) {
+    return t('guidesTireguides.title')
+  }
+
+  if (activeTab.value === 'tire-size-markings') {
+    return t('guidesTireSize.title')
+  }
   if (activeTab.value === 'tubeless') {
     return t('guidesTireguides.tabs.tubeless.label')
   }
@@ -145,6 +189,12 @@ const activePageTitle = computed(() => {
   }
   if (activeTab.value === 'schwalbe-tire-circumference') {
     return t('guidesTireguides.tabs.schwalbeCircumference.label')
+  }
+  if (activeTab.value === 'choose') {
+    return t('guidesTireChoose.seo.title')
+  }
+  if (activeTab.value === 'choose-inner-tube') {
+    return t('guidesTireguides.tabs.innerTube.label')
   }
   return t('guidesTireguides.title')
 })

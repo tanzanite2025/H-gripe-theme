@@ -9,13 +9,13 @@ import {
 } from '../app/utils/breadcrumbRouteNavigation.js'
 import { resolvePageSubNavigationBreadcrumb } from '../app/utils/pageSubNavigationBreadcrumb.js'
 import type { PageSubNavigationEntry } from '../app/utils/pageSubNavigationData.js'
-import { tireGuideTabs } from '../app/utils/pageSubNavigationData.js'
+import { spokeGuideTabs, tireGuideTabs } from '../app/utils/pageSubNavigationData.js'
 
 const entries: PageSubNavigationEntry[] = [
   {
     path: '/guides/tireguides',
     tabs: [
-      { id: 'size', fallback: 'Tire size' },
+      { id: 'tire-size-markings', fallback: 'Tire size markings' },
       { id: 'tubeless', fallback: 'Tubeless tires & installation' },
     ],
   },
@@ -152,6 +152,21 @@ const wheelsetCanonical = match('/guides/wheelset-buyers')
 assert.equal(wheelsetCanonical?.kind, 'canonical')
 assert.equal(wheelsetCanonical?.entry.path, '/guides/wheelset-buyers')
 assert.notEqual(wheelsetCanonical?.entry, canonical?.entry)
+
+const spokeGuideEntries: PageSubNavigationEntry[] = [
+  { path: '/guides/spokeguides', tabs: spokeGuideTabs },
+]
+const spokeCanonical = resolvePageSubNavigationBreadcrumb('/guides/spokeguides', spokeGuideEntries)
+assert.equal(spokeCanonical?.kind, 'canonical')
+assert.equal(spokeCanonical?.entry.path, '/guides/spokeguides')
+const spokeCalculatorTab = resolvePageSubNavigationBreadcrumb(
+  '/zh_cn/guides/spokeguides/spoke-length-calculator',
+  spokeGuideEntries,
+  ['en', 'zh_cn'],
+)
+assert.equal(spokeCalculatorTab?.kind, 'tab')
+assert.equal(spokeCalculatorTab?.entry.path, '/guides/spokeguides')
+assert.equal(spokeCalculatorTab?.tab.id, 'spoke-length-calculator')
 
 const switchSibling = (options: {
   currentPath: string

@@ -7,7 +7,7 @@
     <div class="flex items-center justify-between gap-3">
       <div class="min-w-0">
         <p class="truncate text-xs font-black">
-          {{ operation.status === 'failed' ? 'URL 检查失败' : '正在检查 URL' }}
+          {{ operation.status === 'failed' ? 'URL 检查失败' : operation.status === 'queued' ? '正在同步最新路由清单' : '正在检查 URL' }}
         </p>
         <p v-if="operation.locale" class="mt-0.5 font-mono text-[10px] text-muted-foreground">
           {{ operation.locale }}
@@ -24,11 +24,18 @@
         :style="{ width: `${operation.progress.percentage}%` }"
       />
     </div>
-    <p v-if="operation.status !== 'failed'" class="mt-2 text-[11px] text-muted-foreground">
-      {{ operation.progress.checked }} / {{ operation.progress.eligible }} 条 · 剩余 {{ operation.progress.remaining }} 条
+    <p class="mt-2 text-[11px] text-muted-foreground">
+      本次 {{ operation.progress.eligible }} 条 · 每批 {{ operation.batchSize || operation.summary.batch_size || 200 }} 条
+      <span v-if="operation.summary.total_batches"> · 第 {{ operation.summary.current_batch || 0 }} / {{ operation.summary.total_batches }} 批</span>
+    </p>
+    <p class="mt-1 text-[11px] text-muted-foreground">
+      已完成 {{ operation.progress.checked }} 条 · 剩余 {{ operation.progress.remaining }} 条
       <span v-if="operation.progress.estimatedSeconds"> · 预计 {{ operation.progress.estimatedSeconds }} 秒</span>
     </p>
-    <p v-else class="mt-2 text-[11px] text-destructive">{{ operation.error || '请稍后重试' }}</p>
+    <p class="mt-1 text-[10px] text-muted-foreground">
+      正常 {{ operation.summary.ok }} · 跳转 {{ operation.summary.redirects }} · 404 {{ operation.summary.not_found }} · 5xx {{ operation.summary.server_errors }} · Canonical {{ operation.summary.canonical_mismatch }} · 请求错误 {{ operation.summary.errors }}
+    </p>
+    <p v-if="operation.status === 'failed'" class="mt-1 text-[11px] text-destructive">{{ operation.error || '任务中断，剩余 URL 可按“未检查”筛选后重跑' }}</p>
   </aside>
 </template>
 

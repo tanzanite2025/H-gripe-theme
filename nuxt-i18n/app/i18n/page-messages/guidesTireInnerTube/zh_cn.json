@@ -1,4 +1,11 @@
 {
+  "tabs": {
+    "ariaLabel": "内胎指南内容切换",
+    "introduction": "介绍",
+    "introductionDescription": "先了解尺寸、气嘴、材料和常见型号，再进入计算。",
+    "calculator": "计算",
+    "calculatorDescription": "输入车圈框高和夹头参数，复核法嘴长度、延长嘴与有效外露。"
+  },
   "steps": {
     "size": {
       "title": "选择尺寸",
@@ -8,45 +15,265 @@
       "title": "选择气嘴类型"
     },
     "model": {
-      "title": "选择内胎型号"
+      "title": "选择内胎材料与型号"
     }
   },
   "actions": {
     "findTube": "查找内胎"
   },
   "valves": {
+    "introduction": "先看气嘴外形，再按车圈气门孔的最小有效直径确认兼容。气嘴类型、孔径和真空密封要求要同时匹配，不能只按内胎尺寸选择。",
+    "imageOverviewAlt": "Schwalbe 内胎美嘴、英嘴和法嘴类型与长度示意图",
     "av": {
       "type": "美嘴 / Schrader",
-      "description": "标准汽车气嘴，常见长度约 40 mm。"
+      "description": "孔径通常约 8.5 mm，常见于山地车、通勤车和胖胎车，也存在于部分真空系统；可使用汽车打气筒。",
+      "fit": "适配要点：确认车圈明确支持 Schrader/AV 孔，不要把大孔强行改成法嘴孔。"
     },
     "dv": {
       "type": "英嘴 / Dunlop / Woods",
-      "description": "经典自行车气嘴，常见长度为 32 或 40 mm。"
+      "description": "传统城市车和部分欧洲自行车常见；孔径和锁紧结构可能随车圈、气嘴版本变化，不能只凭外观判断。",
+      "fit": "适配要点：量车圈孔径并核对气嘴规格；不要直接套用美嘴或法嘴的尺寸结论。"
     },
     "sv": {
       "type": "法嘴 / Presta",
-      "description": "运动自行车常用气嘴，提供 40、50、60 和 80 mm 等长度。"
+      "description": "孔径通常约 6 mm，公路车、砾石车和多数高框碳圈常见；原生长度可见 40、50、60、80 和 100 mm。",
+      "fit": "适配要点：多数公路真空胎圈使用法嘴，但真空并不自动等于法嘴，仍要以孔径和车圈说明为准。"
+    },
+    "measure": {
+      "title": "怎么确认车圈适合哪种气嘴？",
+      "stepOne": "先看车圈标签、说明书或制造商规格，确认它标注的是 Presta/SV、Schrader/AV 还是 Dunlop/DV；真空车圈还要确认气嘴底座和密封方式。",
+      "stepTwo": "拆下外胎和内胎，用游标卡尺从车圈孔最窄处量内径。不要把外侧沉孔、倒角、垫片或气门嘴底座的外径当成孔径。",
+      "stepThree": "把实测孔径与下方参考范围对照，再核对内胎气嘴根部形状和车圈制造商说明；孔径不确定时，优先按车圈原规格更换内胎。",
+      "warning": "孔太小会挤伤或无法穿过气嘴，孔太大会让气嘴晃动并磨损内胎根部；碳圈不要自行钻大气门孔，转换垫圈或护圈也只能在制造商明确支持时使用。"
+    },
+    "holeReference": {
+      "title": "车圈气门孔直径参考",
+      "headers": {
+        "valve": "气嘴",
+        "diameter": "常见最小有效孔径"
+      },
+      "rows": {
+        "sv": {
+          "valve": "法嘴 SV / Presta",
+          "diameter": "约 6.0 mm"
+        },
+        "av": {
+          "valve": "美嘴 AV / Schrader",
+          "diameter": "约 8.5 mm"
+        },
+        "dv": {
+          "valve": "英嘴 DV / Dunlop",
+          "diameter": "很多车圈接近 8.5 mm；以具体规格为准"
+        }
+      },
+      "note": "这些是常见参考值，不是统一强制标准；车圈孔的倒角、护圈和气嘴底座会影响实际配合。"
+    },
+    "tubeless": {
+      "title": "支持真空的车圈，气嘴一定是法嘴吗？",
+      "description": "不一定。公路和砾石真空胎圈普遍使用法嘴，部分山地车、胖胎车和其他真空系统也会使用美嘴。判断依据是车圈气门孔直径、真空气嘴底座的密封形状和制造商说明；不要只看“支持真空”四个字。"
     }
   },
-  "images": {
-    "valveOverviewAlt": "Schwalbe 内胎气嘴类型与长度示意图"
-  },
-  "compatibility": {
-    "title": "打气筒与车圈兼容性",
-    "headers": {
-      "rimHeight": "车圈高度",
-      "recommendedValve": "推荐气嘴",
-      "notes": "说明"
+  "materials": {
+    "title": "先选择材料路线",
+    "description": "材料会影响保气、重量、安装手感和维护方式；确定材料后，再核对尺寸、气嘴长度和车圈兼容性。",
+    "butyl": {
+      "title": "丁基胶",
+      "description": "保气稳定、耐用、价格和维护压力较低，适合日常通勤、训练和多数常规车轮。",
+      "fit": "优先考虑可靠性和易维护性时选择。"
     },
-    "valves": {
-      "extender": "延长杆"
+    "latex": {
+      "title": "乳胶",
+      "description": "滚动手感和重量表现有吸引力，但通常需要更频繁补气，安装时也要避免夹伤和扭折。",
+      "fit": "愿意增加检查和维护频率时选择。"
     },
-    "notes": {
-      "standard": "标准",
-      "deepRim": "高框车圈",
-      "aeroRim": "气动车圈",
-      "extenderNeeded": "需要气嘴延长杆"
+    "tpu": {
+      "title": "TPU",
+      "description": "重量轻、收纳体积小，适合关注轻量化和备胎携带；修补、气嘴根部和锁母要求要按品牌说明执行。",
+      "fit": "确认具体型号的安装、修补和气嘴配件要求后选择。"
     }
+  },
+  "advanced": {
+    "title": "资深技师级防呆知识库",
+    "description": "两项容易被忽略、但会直接影响气嘴根部寿命和高框充气可靠性的装配检查。",
+    "carbonValveHole": {
+      "title": "碳圈气门孔毛刺：TPU 可能被割伤",
+      "description": "很多超轻 TPU 内胎的管壁只有约 0.3 mm，具体以型号说明为准。碳圈气门孔若未倒角、孔内有毛刺，或金属气嘴在孔内晃动，充气和骑行时都可能在气嘴根部形成切口。",
+      "rule": "装胎前用手感和目视检查孔口，按车圈制造商规格加装匹配的气门孔防护垫片或护圈；发现毛刺不要强行装胎。"
+    },
+    "co2Seal": {
+      "title": "CO₂ 充气：延长嘴密封圈会冷缩",
+      "description": "CO₂ 快速膨胀会让阀门和密封圈明显降温；普通橡胶圈、劣质密封圈或生料带处理不当，可能在瞬时充气后变硬、收缩或渗漏。",
+      "rule": "RVC 延长嘴只使用制造商明确适用于 CO₂ 和低温的原厂密封件；若规格允许选用 FKM（氟橡胶）O 圈，也要以密封件和延长嘴的兼容说明为准，不要把“FKM”标签当成万能保证。"
+    }
+  },
+  "fitment": {
+    "title": "车圈框高、法嘴与延长嘴选型",
+    "description": "先按车圈名义框高估算穿透深度，再检查内胎法嘴和延长嘴的有效外露。这里的 6.5 mm 外唇落差和可调的夹头夹持阈值是参考模型参数，具体仍应以车圈、内胎和打气筒规格为准。",
+    "loading": "正在从后端加载法嘴选型结果…",
+    "error": "后端法嘴选型暂时不可用，请稍后重试。",
+    "visuals": {
+      "title": "法嘴穿透与外露示意",
+      "description": "图中的灰色车圈、深色内胎法嘴和蓝色延长嘴会随框高与选型模式同步变化。",
+      "ariaLabel": "车圈框高、内胎法嘴、延长嘴和有效外露长度示意图",
+      "rimBase": "BSD 床底基准",
+      "outerLip": "外唇落差",
+      "passageLabel": "框高 {rimDepth} mm 的穿透净深",
+      "tubeRoot": "内胎根部",
+      "tubeBody": "内胎橡胶胎体",
+      "valveStem": "原生法嘴 {valve} mm",
+      "extender": "+{extender} mm 延长嘴",
+      "exposed": "外露 {clearance}"
+    },
+    "controls": {
+      "modeLabel": "选型模式",
+      "automaticMode": "智能推荐",
+      "manualMode": "手动试配",
+      "rimDepth": "车圈名义框高",
+      "rimDepthRange": "可输入 {min}–{max} mm 的任意整数；滑块按 1 mm 调整。",
+      "measurementNoteTitle": "先确认测量基准",
+      "measurementNote": "这里输入的是车圈厂家标称框高，不是轮胎外径。当前选择的 ±{tolerance} mm 会在区间两端复核；如果两端状态不同，应重新确认车圈截面。",
+      "pumpHeadGripDepth": "打气筒夹头夹持深度",
+      "pumpHeadGripDepthRange": "打气筒夹头需要稳定夹住的法嘴外露：{min}–{max} mm。",
+      "rimDepthUncertainty": "框高测量误差",
+      "rimDepthUncertaintyRange": "会按名义框高 ± 当前误差复核同一组合（0–{max} mm）。",
+      "baseValveLength": "内胎原生法嘴长度",
+      "extenderLength": "延长嘴长度",
+      "noExtender": "不加延长嘴"
+    },
+    "status": {
+      "optimal": {
+        "title": "外露充裕",
+        "description": "当前组合总长 {totalLength}，有效外露 {clearance}，达到 {preferredExposure} mm 以上，通常更容易稳定夹持。"
+      },
+      "marginal": {
+        "title": "外露处于临界区",
+        "description": "当前组合总长 {totalLength}，有效外露 {clearance}，达到 {gripDepth} mm 夹持基准但余量有限；深孔或不同夹头可能需要更长规格。"
+      },
+      "unsafe": {
+        "title": "外露不足",
+        "description": "当前组合总长 {totalLength}，有效外露仅 {clearance}；低于 {gripDepth} mm 时不要依靠硬塞夹头充气，应更换更长内胎或使用合适的延长嘴。"
+      }
+    },
+    "metrics": {
+      "passageDepth": "估算穿透净深",
+      "passageFormula": "框高 {rimDepth} mm − 外唇落差 {offset} mm",
+      "totalValveLength": "总装配长度",
+      "totalValveWithExtender": "原生 {valve} mm + 延长嘴 {extender} mm",
+      "totalValveWithoutExtender": "仅使用内胎原生法嘴",
+      "minimumRequiredLength": "最低所需总长",
+      "preferredMinimumLength": "建议总长",
+      "lengthMargins": "最低要求余量 {minimumMargin}；建议长度余量 {preferredMargin}",
+      "pumpHeadGripDepth": "打气筒夹头夹持深度",
+      "preferredExposure": "建议有效外露",
+      "exposedLength": "有效外露长度",
+      "exposedFormula": "总装配长度 − 穿透净深",
+      "recommendation": "当前推荐",
+      "automaticRecommendation": "根据框高区间自动选择参考组合。",
+      "manualSelection": "手动组合只用于检查余量，不能替代制造商规格。"
+    },
+    "recommendationReasons": {
+      "shortestNativeValveMeetsMinimum": "后端选择了达到最低所需总长 {minimumLength} mm 的最短原生法嘴。",
+      "shortestExtenderAssemblyReachesMinimum": "原生法嘴不足以达到最低所需总长 {minimumLength} mm，后端选择了达到该长度的最短支持组合。",
+      "manualCombination": "这是手动组合；后端只计算当前组合的余量，不把它当作自动推荐。"
+    },
+    "uncertainty": {
+      "title": "测量误差区间复核",
+      "description": "当前组合会按 {lower}–{upper} mm 的框高范围复核（名义值 ±{uncertainty} mm）。",
+      "lowerBound": "下界 · {rimDepth} mm",
+      "upperBound": "上界 · {rimDepth} mm",
+      "exposedLength": "有效外露",
+      "minimumMargin": "最低要求余量",
+      "stable": "在当前测量区间内，状态稳定为“{status}”。",
+      "unstable": "当前区间内状态发生变化；请按最差状态“{status}”判断，并在安装前重新测量。"
+    },
+    "share": {
+      "title": "分享这次计算",
+      "description": "链接只保存当前计算参数，不保存商品或库存信息。",
+      "copy": "复制计算结果链接",
+      "copied": "链接已复制",
+      "error": "链接复制失败，请从浏览器地址栏手动复制。"
+    },
+    "alternatives": {
+      "title": "可用组合比较",
+      "description": "这些是后端按当前框高筛出的可用参考组合，不对应具体商品。点击任一项可带入手动试配。",
+      "referenceBadge": "仅算长度",
+      "automaticBadge": "后端推荐",
+      "assemblySuffix": "组合",
+      "total": "总长 {total} mm",
+      "margin": "最低要求余量 {margin}"
+    },
+    "recommendations": {
+      "shortValve": "{valve} mm 短法嘴内胎",
+      "standardValve": "{valve} mm 法嘴内胎",
+      "mediumValve": "{valve} mm 法嘴内胎",
+      "highRimValve": "{valve} mm 高框法嘴内胎",
+      "mediumValveWithExtender": "{valve} mm 内胎 + {extender} mm RVC 延长嘴",
+      "highRimValveWithExtender": "{valve} mm 内胎 + {extender} mm RVC 延长嘴"
+    },
+    "matrix": {
+      "title": "框高与法嘴外露速查",
+      "description": "点击行可将框高带入上方试配。单元格显示对应原生法嘴的估算有效外露。",
+      "referenceBadge": "参考模型",
+      "rimDepth": "车圈框高",
+      "passageDepth": "穿透净深",
+      "minimumRequiredLength": "最低所需总长",
+      "recommendation": "推荐组合"
+    },
+    "structure": {
+      "title": "先确认气门芯结构",
+      "options": {
+        "removableCore": {
+          "label": "可拆气门芯",
+          "title": "可拆气门芯（RVC）",
+          "description": "气门芯可以用合适的工具拆下，延长嘴可把原装气门芯移到最外端，便于正常充气和测压。",
+          "rule": "高框轮组准备延长嘴时，优先选择明确标注可拆气门芯的内胎。"
+        },
+        "fixedCore": {
+          "label": "一体气门芯",
+          "title": "一体不可拆气门芯",
+          "description": "气门芯与阀管铆接或一体成型，不能按 RVC 方式移装。",
+          "rule": "不要把普通套筒延长管当作 RVC 延长嘴使用；先确认内胎结构和延长嘴说明。"
+        },
+        "rvcExtender": {
+          "label": "RVC 延长嘴",
+          "title": "RVC 延长嘴接驳",
+          "description": "拆下原装气门芯后，将其安装到延长嘴顶端，再按产品说明完成密封和锁紧。",
+          "rule": "延长嘴长度要与框高和打气筒夹持余量一起计算，不能只看总长度。"
+        },
+        "rootProtection": {
+          "label": "根部防护",
+          "title": "气嘴根部与车圈孔保护",
+          "description": "内胎根部需要自然坐落，车圈气门孔应平滑；碳圈可按制造商建议使用防异响胶圈或保护贴。",
+          "rule": "外锁母只用手指轻旋贴合，不要用钳子死拧或把内胎根部拉紧。"
+        }
+      }
+    },
+    "pitfalls": {
+      "title": "装配避坑",
+      "items": {
+        "shortValve": {
+          "title": "法嘴外露不足",
+          "description": "外露太短时，打气筒夹头可能无法可靠越过阀芯颈部，充气时容易滑脱或压弯阀针。",
+          "rule": "目标至少 15 mm；高框优先升级原生法嘴长度或使用合适的 RVC 延长嘴。"
+        },
+        "overTightenedLocknut": {
+          "title": "外锁母拧得过紧",
+          "description": "过度锁紧会把车圈孔的微小位移变成对内胎根部的拉扯，增加慢漏气和撕裂风险。",
+          "rule": "外锁母用两个手指轻旋到位，具体要求以内胎制造商说明为准。"
+        },
+        "fixedCoreExtender": {
+          "title": "不可拆气门芯乱接延长嘴",
+          "description": "一体气门芯通常不能实现把原装阀芯移到延长嘴顶端的 RVC 装配，可能出现测压失真或接头漏气。",
+          "rule": "高框选购前先确认可拆气门芯和延长嘴的兼容关系。"
+        },
+        "carbonHole": {
+          "title": "车圈气门孔边缘粗糙",
+          "description": "孔口毛刺或金属气嘴在碳圈孔内晃动，可能产生异响并长期磨损气嘴根部。",
+          "rule": "检查孔口和气嘴配合，按车圈制造商建议加装保护或消音部件。"
+        }
+      }
+    },
+    "disclaimer": "这是基于看板公式的选型参考，不是某个轮圈、内胎或打气筒型号的认证。安装前请核对轮胎尺寸、车圈孔径、气门芯结构、最大胎压和制造商说明。"
   },
   "models": {
     "standard": {

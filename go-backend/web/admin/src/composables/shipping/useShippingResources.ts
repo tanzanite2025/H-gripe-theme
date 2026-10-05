@@ -1,12 +1,17 @@
 import { reactive, ref } from 'vue'
 import shippingApi from '@/api/shipping'
+import {
+  shippingServiceCollectionReferenceApi,
+  type FpxPublishedCollectionReference,
+  type YanwenPublishedCollectionReference,
+} from '@/api/shippingServiceCollectionReferenceApi'
 
 export const useShippingResources = () => {
   const templates = ref<any[]>([])
-  const zones = ref<any[]>([])
   const carriers = ref<any[]>([])
   const carrierServices = ref<any[]>([])
-  const fpxChannels = ref<any[]>([])
+  const fpxChannels = ref<FpxPublishedCollectionReference[]>([])
+  const yanwenPublishedChannels = ref<YanwenPublishedCollectionReference[]>([])
   const trackingProviders = ref<any[]>([])
   const trackingCarrierMappings = ref<any[]>([])
   const trackingShipmentsCount = ref(0)
@@ -14,7 +19,6 @@ export const useShippingResources = () => {
   const refreshing = ref(false)
   const loading = reactive({
     templates: false,
-    zones: false,
     carriers: false,
     services: false,
     tracking: false,
@@ -35,17 +39,6 @@ export const useShippingResources = () => {
       console.error('Failed to fetch shipping templates:', error)
     } finally {
       loading.templates = false
-    }
-  }
-
-  const fetchZones = async () => {
-    loading.zones = true
-    try {
-      zones.value = await shippingApi.listZones()
-    } catch (error) {
-      console.error('Failed to fetch shipping zones:', error)
-    } finally {
-      loading.zones = false
     }
   }
 
@@ -73,10 +66,19 @@ export const useShippingResources = () => {
 
   const fetchFpxPublishedChannels = async () => {
     try {
-      fpxChannels.value = await shippingApi.listFpxPublishedCollection()
+      fpxChannels.value = await shippingServiceCollectionReferenceApi.listFpxPublishedCollection()
     } catch (error) {
       fpxChannels.value = []
       console.error('Failed to fetch enabled 4PX service references:', error)
+    }
+  }
+
+  const fetchYanwenPublishedChannels = async () => {
+    try {
+      yanwenPublishedChannels.value = await shippingServiceCollectionReferenceApi.listYanwenPublishedCollection()
+    } catch (error) {
+      yanwenPublishedChannels.value = []
+      console.error('Failed to fetch published Yanwen service references:', error)
     }
   }
 
@@ -118,12 +120,10 @@ export const useShippingResources = () => {
     try {
       if (activeTab === 'templates') {
         await fetchTemplates()
-      } else if (activeTab === 'zones') {
-        await fetchZones()
       } else if (activeTab === 'carriers') {
         await fetchCarriers()
       } else if (activeTab === 'services') {
-        await Promise.all([fetchCarrierServices(), fetchCarriers(), fetchTemplates(), fetchFpxPublishedChannels()])
+        await Promise.all([fetchCarrierServices(), fetchCarriers(), fetchTemplates(), fetchFpxPublishedChannels(), fetchYanwenPublishedChannels()])
       } else if (activeTab === 'tracking') {
         await Promise.all([fetchTrackingProviders(), fetchTrackingCarrierMappings(), fetchCarriers(), fetchCarrierServices()])
       } else if (activeTab === 'trackingShipments') {
@@ -138,10 +138,10 @@ export const useShippingResources = () => {
       } else {
         await Promise.all([
           fetchTemplates(),
-          fetchZones(),
           fetchCarriers(),
           fetchCarrierServices(),
           fetchFpxPublishedChannels(),
+          fetchYanwenPublishedChannels(),
           fetchTrackingProviders(),
           fetchTrackingCarrierMappings(),
           fetchPackagingRules(),
@@ -154,10 +154,10 @@ export const useShippingResources = () => {
 
   const fetchAllShippingResources = () => Promise.all([
     fetchTemplates(),
-    fetchZones(),
     fetchCarriers(),
     fetchCarrierServices(),
     fetchFpxPublishedChannels(),
+    fetchYanwenPublishedChannels(),
     fetchTrackingProviders(),
     fetchTrackingCarrierMappings(),
     fetchPackagingRules(),
@@ -165,10 +165,10 @@ export const useShippingResources = () => {
 
   return {
     templates,
-    zones,
     carriers,
     carrierServices,
     fpxChannels,
+    yanwenPublishedChannels,
     trackingProviders,
     trackingCarrierMappings,
     trackingShipmentsCount,
@@ -177,10 +177,10 @@ export const useShippingResources = () => {
     loading,
     handleTrackingShipmentsCountChange,
     fetchTemplates,
-    fetchZones,
     fetchCarriers,
     fetchCarrierServices,
     fetchFpxPublishedChannels,
+    fetchYanwenPublishedChannels,
     fetchTrackingProviders,
     fetchTrackingCarrierMappings,
     fetchPackagingRules,

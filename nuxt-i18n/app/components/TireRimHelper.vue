@@ -8,24 +8,59 @@
       {{ description || t('guidesTireRimHelper.description') }}
     </p>
     <div class="flex flex-col gap-3 sm:flex-row sm:items-end justify-center items-center">
-      <div class="sm:w-40">
-        <label class="block text-xs font-medium tz-text-secondary" for="tire-width-mm">
-          {{ t('guidesTireRimHelper.tireWidthLabel') }}
-        </label>
+      <div class="sm:w-64">
+        <div class="flex items-center justify-between gap-2">
+          <label class="block text-xs font-medium tz-text-secondary" for="tire-width-input">
+            {{ t('guidesTireRimHelper.tireWidthLabel') }}
+          </label>
+          <div
+            class="tire-rim-helper__toggle-group inline-flex rounded-full bg-[var(--tz-form-control-surface)] p-0.5"
+            role="group"
+            :aria-label="t('guidesTireRimHelper.tireWidthUnitLabel')"
+          >
+            <button
+              type="button"
+              class="tire-rim-helper__toggle rounded-full px-2.5 py-1 tz-caption transition-colors"
+              :class="{ 'tire-rim-helper__toggle--active': tireWidthInputUnit === 'mm' }"
+              :aria-pressed="tireWidthInputUnit === 'mm'"
+              @click="changeTireWidthInputUnit('mm')"
+            >
+              {{ t('guidesTireRimHelper.tireWidthUnitMm') }}
+            </button>
+            <button
+              type="button"
+              class="tire-rim-helper__toggle rounded-full px-2.5 py-1 tz-caption transition-colors"
+              :class="{ 'tire-rim-helper__toggle--active': tireWidthInputUnit === 'inch' }"
+              :aria-pressed="tireWidthInputUnit === 'inch'"
+              @click="changeTireWidthInputUnit('inch')"
+            >
+              {{ t('guidesTireRimHelper.tireWidthUnitInch') }}
+            </button>
+          </div>
+        </div>
         <input
-          id="tire-width-mm"
+          id="tire-width-input"
           v-model="tireWidthInput"
           type="number"
-          min="18"
-          max="127"
-          step="1"
-          :placeholder="t('guidesTireRimHelper.tireWidthPlaceholder')"
+          :min="tireWidthInputUnit === 'mm' ? 18 : 0.7"
+          :max="tireWidthInputUnit === 'mm' ? 127 : 5"
+          :step="tireWidthInputUnit === 'mm' ? 1 : 0.01"
+          :placeholder="t(tireWidthInputUnit === 'mm' ? 'guidesTireRimHelper.tireWidthPlaceholderMm' : 'guidesTireRimHelper.tireWidthPlaceholderInch')"
           class="tire-rim-helper__input mt-1 w-full rounded-md bg-[var(--tz-form-control-surface)] px-2 py-1.5 text-xs tz-text-primary outline-none focus:ring-0"
         />
+        <p
+          v-if="tireWidthInputUnit === 'inch' && parsedTireWidth !== null"
+          class="mt-1 text-left tz-caption tz-text-muted"
+        >
+          {{ t('guidesTireRimHelper.inchConversionNote', {
+            inches: formatTireWidthInput(Number(tireWidthInput)),
+            millimeters: parsedTireWidth,
+          }) }}
+        </p>
       </div>
 
       <div class="sm:w-52">
-          <span class="mb-1 block text-xs font-medium tz-text-secondary">
+        <span class="mb-1 block text-xs font-medium tz-text-secondary">
           {{ t('guidesTireRimHelper.rimSystemLabel') }}
         </span>
         <div
@@ -143,6 +178,10 @@ import { useI18n } from '#imports'
 import { usePageMessages } from '~/composables/usePageMessages'
 import { useTireRimWidthReferenceRecommendation, type RimType } from '~/composables/useTireRimWidthReferenceRecommendation'
 import { formatTireRimWidthReferenceRanges } from '~/data/tireguides/tireRimWidthReferencePresentation'
+import {
+  convertTireWidthInputBetweenUnits,
+  type TireWidthInputUnit,
+} from '~/data/tireguides/tireRimWidthInputConversion'
 import TireRimProductSearchSheet from '~/components/TireRimProductSearchSheet.vue'
 
 const { locale, t } = useI18n()
@@ -167,9 +206,11 @@ const props = withDefaults(defineProps<{
 })
 
 const tireWidthInput = ref<string>('')
+const tireWidthInputUnit = ref<TireWidthInputUnit>('mm')
 const tireRimSearchSheetOpen = ref(false)
 const rimType = ref<RimType>(props.initialRimType)
 const {
+  parsedTireWidth,
   tireRimSuggestion,
   recommendationPending,
   tireWidthOutOfRange,
@@ -177,7 +218,19 @@ const {
 } = useTireRimWidthReferenceRecommendation(
   tireWidthInput,
   rimType,
+  tireWidthInputUnit,
 )
+
+const changeTireWidthInputUnit = (nextUnit: TireWidthInputUnit): void => {
+  tireWidthInput.value = convertTireWidthInputBetweenUnits(
+    tireWidthInput.value,
+    tireWidthInputUnit.value,
+    nextUnit,
+  )
+  tireWidthInputUnit.value = nextUnit
+}
+
+const formatTireWidthInput = (width: number): string => String(Number(width.toFixed(2)))
 
 const formatMetricRange = ({ min, max }: { min: number; max: number }) => (
   min === max ? min.toFixed(1) : `${min.toFixed(1)}–${max.toFixed(1)}`

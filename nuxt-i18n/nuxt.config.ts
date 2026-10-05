@@ -102,6 +102,25 @@ const storefrontI18nLocales = locales.map((locale) => {
   }
 })
 
+const wheelsetLacingReferencePath = '/resources/wheelset-spoke-lacing-topology-and-geometry-reference'
+const wheelsetLacingPublicSitemapLocales = new Set(['en', 'zh_cn'])
+const wheelsetLacingUnsupportedLocaleSitemapExcludes = storefrontI18nLocales
+  .map(locale => String(locale.code || '').trim())
+  .filter(locale => locale && !wheelsetLacingPublicSitemapLocales.has(locale))
+  .map(locale => `/${locale}${wheelsetLacingReferencePath}`)
+const tireRimReferencePath = '/guides/tireguides/choose'
+const tireRimReferencePublicSitemapLocales = new Set(['en', 'zh_cn'])
+const tireRimReferenceUnsupportedLocaleSitemapExcludes = storefrontI18nLocales
+  .map(locale => String(locale.code || '').trim())
+  .filter(locale => locale && !tireRimReferencePublicSitemapLocales.has(locale))
+  .map(locale => `/${locale}${tireRimReferencePath}`)
+const unsupportedTechnicalReferenceSitemapExcludes = [
+  ...new Set([
+    ...wheelsetLacingUnsupportedLocaleSitemapExcludes,
+    ...tireRimReferenceUnsupportedLocaleSitemapExcludes,
+  ]),
+]
+
 type RollupBuildWarning = {
   code?: string
   id?: string
@@ -256,6 +275,11 @@ export default defineNuxtConfig({
 
   sitemap: {
     sources: ['/__sitemap__/dynamic-urls.json'],
+    // These technical pages have real copy only for en and zh_cn. Nuxt
+    // Sitemap's automatic i18n page source otherwise emits fallback pages for
+    // every locale; exclude only those unsupported variants and keep the two
+    // public URLs supplied by the backend route catalog.
+    exclude: unsupportedTechnicalReferenceSitemapExcludes,
   },
 
   image: {

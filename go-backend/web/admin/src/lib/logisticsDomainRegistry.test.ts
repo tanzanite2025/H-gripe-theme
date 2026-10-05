@@ -19,6 +19,7 @@ describe('logistics domain registry', () => {
   it('keeps 4PX read pages view-only and gateway configuration behind manage permissions', () => {
     expect(fpxLogisticsTabs.filter((tab) => tab.key !== 'config').every((tab) => tab.permission === 'logistics:fpx:view')).toBe(true)
     expect(fpxLogisticsTabs[fpxLogisticsTabs.length - 1]?.permission).toBe('logistics:fpx:manage')
+    expect(yanwenLogisticsTabs.filter((tab) => tab.key !== 'config').every((tab) => tab.permission === 'logistics:yanwen:view')).toBe(true)
     expect(yanwenLogisticsTabs[yanwenLogisticsTabs.length - 1]?.permission).toBe('logistics:yanwen:manage')
   })
 
@@ -29,5 +30,17 @@ describe('logistics domain registry', () => {
       'config',
     ])
     expect(JSON.stringify(fpxLogisticsTabs)).not.toMatch(/warehouse|wms|fb4/i)
+  })
+
+  it('keeps Yanwen focused on fulfillment, collection, tracking, customs, and gateway tabs', () => {
+    expect(yanwenLogisticsTabs.map((tab) => tab.key)).toEqual([
+      'overview',
+      'waybills',
+      'collection',
+      'tracking',
+      'customs',
+      'config',
+    ])
+    expect(JSON.stringify(yanwenLogisticsTabs)).not.toMatch(/calculator|calc\.list/i)
   })
 })

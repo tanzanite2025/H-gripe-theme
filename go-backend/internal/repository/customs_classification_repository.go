@@ -12,12 +12,11 @@ type CustomsClassificationRepository struct {
 }
 
 type CustomsClassificationListFilter struct {
-	ProductSpecificationTemplateID uint
-	ComponentKind                  string
-	Material                       string
-	Status                         string
-	Search                         string
-	IncludePaused                  bool
+	ComponentKind string
+	Material      string
+	Status        string
+	Search        string
+	IncludePaused bool
 }
 
 func NewCustomsClassificationRepository(db *gorm.DB) *CustomsClassificationRepository {
@@ -26,10 +25,7 @@ func NewCustomsClassificationRepository(db *gorm.DB) *CustomsClassificationRepos
 
 func (r *CustomsClassificationRepository) List(filter CustomsClassificationListFilter) ([]product.CustomsClassificationProfile, error) {
 	var profiles []product.CustomsClassificationProfile
-	query := r.db.Preload("ProductSpecificationTemplate").Model(&product.CustomsClassificationProfile{})
-	if filter.ProductSpecificationTemplateID > 0 {
-		query = query.Where("product_specification_template_id = ?", filter.ProductSpecificationTemplateID)
-	}
+	query := r.db.Model(&product.CustomsClassificationProfile{})
 	componentKind := strings.TrimSpace(filter.ComponentKind)
 	if componentKind != "" {
 		query = query.Where("LOWER(component_kind) = ?", strings.ToLower(componentKind))
@@ -57,13 +53,13 @@ func (r *CustomsClassificationRepository) List(filter CustomsClassificationListF
 		)
 	}
 
-	err := query.Order("CASE WHEN product_specification_template_id IS NULL THEN 1 ELSE 0 END ASC").Order("name ASC").Order("id ASC").Find(&profiles).Error
+	err := query.Order("name ASC").Order("id ASC").Find(&profiles).Error
 	return profiles, err
 }
 
 func (r *CustomsClassificationRepository) FindByID(id uint) (*product.CustomsClassificationProfile, error) {
 	var profile product.CustomsClassificationProfile
-	if err := r.db.Preload("ProductSpecificationTemplate").First(&profile, id).Error; err != nil {
+	if err := r.db.First(&profile, id).Error; err != nil {
 		return nil, err
 	}
 	return &profile, nil
@@ -87,20 +83,27 @@ func (r *CustomsClassificationRepository) Create(profile *product.CustomsClassif
 
 func (r *CustomsClassificationRepository) Update(profile *product.CustomsClassificationProfile) error {
 	return r.db.Model(&product.CustomsClassificationProfile{}).Where("id = ?", profile.ID).Updates(map[string]interface{}{
-		"product_specification_template_id": profile.ProductSpecificationTemplateID,
-		"name":                              profile.Name,
-		"slug":                              profile.Slug,
-		"component_kind":                    profile.ComponentKind,
-		"material":                          profile.Material,
-		"hs_code":                           profile.HSCode,
-		"cn_code":                           profile.CNCode,
-		"country_of_origin":                 profile.CountryOfOrigin,
-		"customs_description":               profile.CustomsDescription,
-		"source":                            profile.Source,
-		"source_code":                       profile.SourceCode,
-		"source_url":                        profile.SourceURL,
-		"notes":                             profile.Notes,
-		"status":                            profile.Status,
+		"name":                            profile.Name,
+		"slug":                            profile.Slug,
+		"component_kind":                  profile.ComponentKind,
+		"material":                        profile.Material,
+		"hs_code":                         profile.HSCode,
+		"cn_code":                         profile.CNCode,
+		"country_of_origin":               profile.CountryOfOrigin,
+		"customs_description":             profile.CustomsDescription,
+		"source":                          profile.Source,
+		"source_code":                     profile.SourceCode,
+		"source_url":                      profile.SourceURL,
+		"source_url_us":                   profile.SourceURLUS,
+		"source_url_eu":                   profile.SourceURLEU,
+		"source_url_uk":                   profile.SourceURLUK,
+		"notes":                           profile.Notes,
+		"verified_at":                     profile.VerifiedAt,
+		"review_due_at":                   profile.ReviewDueAt,
+		"trade_remedy_risk_level":         profile.TradeRemedyRiskLevel,
+		"trade_remedy_risk_tags_json":     profile.TradeRemedyRiskTags,
+		"trade_remedy_declaration_advice": profile.TradeRemedyDeclarationAdvice,
+		"status":                          profile.Status,
 	}).Error
 }
 

@@ -87,6 +87,13 @@ type Repositories struct {
 	ExchangeRate                   *repository.ExchangeRateRepository
 	Shipping                       *repository.ShippingRepository
 	FpxAPIConfig                   *repository.FpxAPIConfigRepository
+	YanwenAPIConfig                *repository.YanwenAPIConfigRepository
+	YanwenPublishedChannel         *repository.YanwenPublishedChannelRepository
+	YanwenProductCatalog           *repository.YanwenProductCatalogRepository
+	YanwenCountryCatalog           *repository.YanwenCountryCatalogRepository
+	YanwenWarehouseCatalog         *repository.YanwenWarehouseCatalogRepository
+	YanwenWaybill                  *repository.YanwenWaybillRepository
+	YanwenTrackingSnapshot         *repository.YanwenTrackingSnapshotRepository
 	Coupon                         *repository.CouponRepository
 	Loyalty                        *repository.LoyaltyRepository
 	LoyaltyProgram                 *repository.LoyaltyProgramRepository
@@ -208,6 +215,16 @@ type Services struct {
 	Audit                              *service.AuditService
 	Shipping                           *service.ShippingService
 	FpxAPI                             *service.FpxAPIService
+	YanwenGatewayConfiguration         *service.YanwenGatewayConfigurationService
+	YanwenOfficialCatalog              *service.YanwenOfficialCatalogService
+	YanwenWaybillOperations            *service.YanwenWaybillOperationsService
+	YanwenTrackingOperations           *service.YanwenTrackingOperationsService
+	YanwenOperationsOverview           *service.YanwenOperationsOverviewService
+	YanwenPublishedCollection          *service.YanwenPublishedCollectionService
+	YanwenKoreaPCCCVerification        *service.YanwenKoreaPersonalCustomsClearanceCodeService
+	YanwenUSAddressVerification        *service.YanwenUnitedStatesAddressVerificationService
+	YanwenTrackingPolling              *service.YanwenTrackingPollingService
+	YanwenTrackingAlerts               *service.YanwenTrackingAlertService
 	Spoke                              *service.SpokeService
 	WheelsetLacing                     *service.WheelsetLacingService
 	QuickBuy                           *service.QuickBuyService

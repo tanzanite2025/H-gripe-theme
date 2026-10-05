@@ -88,7 +88,7 @@ func (h *TirePressureEngineeringCalculationHTTPHandler) HandleTirePressureGround
 	}
 	warnings := []string{
 		"Demo estimate only; not a pressure recommendation or safety guarantee.",
-		"Vertical deformation uses a generic reference-tire dataset; only the 4.75-bar reference is sourced from the paper and other pressures use a first-order scaling assumption.",
+		"The data required for this calculation currently lacks complete and accurate support; the result is for relative change demonstration only.",
 	}
 	if req.WetPressureDemonstrationEnabled {
 		warnings = append(warnings, "Wet friction retention and same-area equivalent pressure use an explicit first-order demonstration proxy; the area comparison does not claim to restore lost grip or represent a calibrated tire-road measurement.")
@@ -198,7 +198,7 @@ func (h *TirePressureEngineeringCalculationHTTPHandler) HandleTirePressureMetada
 			"dynamics":                dynamics,
 			"warnings": []string{
 				"The pressure model is not approved for production; no pressure recommendation is returned.",
-				"Vertical deformation uses a generic reference-tire dataset; only the 4.75-bar reference is sourced from the paper and other pressures use a first-order scaling assumption.",
+				"The data required for this calculation currently lacks complete and accurate support; the result is for relative change demonstration only.",
 				"Follow tire, rim, and wheel manufacturer instructions.",
 			},
 		},

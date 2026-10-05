@@ -176,7 +176,7 @@ type productCustomsInfo struct {
 	CustomsDescription string
 }
 
-func (s *ProductService) resolveProductCustomsInfo(profileID *uint, productSpecificationTemplateID *uint, hsCode, cnCode, countryOfOrigin, customsDescription string) (productCustomsInfo, error) {
+func (s *ProductService) resolveProductCustomsInfo(profileID *uint, hsCode, cnCode, countryOfOrigin, customsDescription string) (productCustomsInfo, error) {
 	if profileID == nil || *profileID == 0 {
 		return normalizeProductCustomsInfo(hsCode, cnCode, countryOfOrigin, customsDescription)
 	}
@@ -192,9 +192,6 @@ func (s *ProductService) resolveProductCustomsInfo(profileID *uint, productSpeci
 	}
 	if profile.Status != product.CustomsClassificationStatusActive {
 		return productCustomsInfo{}, fmt.Errorf("%w: profile is not active", ErrProductCustomsProfileInvalid)
-	}
-	if profile.ProductSpecificationTemplateID != nil && (productSpecificationTemplateID == nil || *profile.ProductSpecificationTemplateID != *productSpecificationTemplateID) {
-		return productCustomsInfo{}, fmt.Errorf("%w: profile does not match product specification template", ErrProductCustomsProfileInvalid)
 	}
 	return normalizeProductCustomsInfo(
 		profile.HSCode,

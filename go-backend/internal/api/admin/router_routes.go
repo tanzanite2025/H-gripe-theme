@@ -167,7 +167,16 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 	shipmentRecordHandler := NewShipmentRecordHandler(services.ShipmentRecord, deps.Storage)
 	shippingHandler := NewShippingHandler(services.Shipping)
 	fpxHandler := NewFpxHandler(services.Shipping)
+	yanwenCollectionHandler := NewYanwenCollectionHandler(services.YanwenPublishedCollection)
 	fpxAPIHandler := NewFpxAPIHandler(services.FpxAPI)
+	yanwenOverviewHandler := NewYanwenOverviewHandler(services.YanwenOperationsOverview)
+	yanwenAPIConfigHandler := NewYanwenAPIConfigHandler(services.YanwenGatewayConfiguration)
+	yanwenCatalogHandler := NewYanwenCatalogHandler(services.YanwenOfficialCatalog)
+	yanwenWaybillHandler := NewYanwenWaybillHandler(services.YanwenWaybillOperations)
+	yanwenTrackingHandler := NewYanwenTrackingHandler(services.YanwenTrackingOperations)
+	yanwenTrackingAlertHandler := NewYanwenTrackingAlertHandler(services.YanwenTrackingAlerts)
+	yanwenKoreaPersonalCustomsClearanceCodeHandler := NewYanwenKoreaPersonalCustomsClearanceCodeHandler(services.YanwenKoreaPCCCVerification)
+	yanwenUnitedStatesAddressVerificationHandler := NewYanwenUnitedStatesAddressVerificationHandler(services.YanwenUSAddressVerification)
 	opsDomainBindingHandler := NewOpsDomainBindingHandler(
 		services.OpsDomainBinding,
 		services.OpsDomainDiff,
@@ -331,8 +340,16 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 		shippingHandler,
 		siteFaviconHandler,
 	)
-	registerLogisticsDomainRoutes(authenticated, fpxHandler)
+	registerLogisticsDomainRoutes(authenticated, fpxHandler, yanwenCollectionHandler)
 	registerFpxAPIRoutes(authenticated, fpxAPIHandler)
+	registerYanwenAPIConfigRoutes(authenticated, yanwenAPIConfigHandler)
+	registerYanwenCatalogRoutes(authenticated, yanwenCatalogHandler)
+	registerYanwenOverviewRoutes(authenticated, yanwenOverviewHandler)
+	registerYanwenWaybillRoutes(authenticated, yanwenWaybillHandler)
+	registerYanwenTrackingRoutes(authenticated, yanwenTrackingHandler)
+	registerYanwenTrackingAlertRoutes(authenticated, yanwenTrackingAlertHandler)
+	registerYanwenKoreaPersonalCustomsClearanceCodeRoutes(authenticated, yanwenKoreaPersonalCustomsClearanceCodeHandler)
+	registerYanwenUnitedStatesAddressVerificationRoutes(authenticated, yanwenUnitedStatesAddressVerificationHandler)
 	registerOperationsRoutes(
 		authenticated,
 		adminAccountHandler,

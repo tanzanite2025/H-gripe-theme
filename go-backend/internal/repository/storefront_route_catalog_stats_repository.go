@@ -47,6 +47,25 @@ func (r *StorefrontRouteCatalogRepository) StatsForLocaleAndScope(locale, proble
 		return seodomain.StorefrontRouteCatalogStats{}, err
 	}
 
+	var latestCheckedEntry seodomain.StorefrontRouteCatalogEntry
+	latestCheckedQuery := r.db.Model(&seodomain.StorefrontRouteCatalogEntry{}).
+		Where("last_checked_at IS NOT NULL AND entry_status <> ?", seodomain.RouteEntryStatusStale)
+	if locale != "" && locale != "all" {
+		latestCheckedQuery = latestCheckedQuery.Where("locale = ?", locale)
+	}
+	if problemScope == "canonical" {
+		latestCheckedQuery = latestCheckedQuery.Where(
+			"(entry_status = ? OR last_check_status = ?) AND is_alias = ?",
+			seodomain.RouteEntryStatusDuplicate,
+			seodomain.RouteCheckStatusCanonicalMisfit,
+			false,
+		)
+	}
+	if err := latestCheckedQuery.Order("last_checked_at DESC").First(&latestCheckedEntry).Error; err != nil &&
+		!errors.Is(err, gorm.ErrRecordNotFound) {
+		return seodomain.StorefrontRouteCatalogStats{}, err
+	}
+
 	var stats seodomain.StorefrontRouteCatalogStats
 	err := query.
 		Select(`
@@ -56,20 +75,25 @@ func (r *StorefrontRouteCatalogRepository) StatsForLocaleAndScope(locale, proble
 			COALESCE(SUM(CASE WHEN entry_status = 'duplicate' THEN 1 ELSE 0 END), 0) AS duplicate,
 			COALESCE(SUM(CASE WHEN entry_status = 'stale' THEN 1 ELSE 0 END), 0) AS stale,
 			COALESCE(SUM(CASE
-				WHEN entry_status IN ('duplicate', 'stale')
+				WHEN entry_status = 'duplicate'
 					OR (
-						is_alias = FALSE
-						AND last_check_status IN ('redirect', 'not_found', 'server_error', 'canonical_mismatch', 'error')
-					)
-					OR (
-						is_alias = TRUE
-						AND last_check_status IN (
-							'redirect_chain',
-							'redirect_target_mismatch',
-							'not_found',
-							'server_error',
-							'canonical_mismatch',
-							'error'
+						entry_status <> 'stale'
+						AND (
+							(
+								is_alias = FALSE
+								AND last_check_status IN ('redirect', 'not_found', 'server_error', 'canonical_mismatch', 'error')
+							)
+							OR (
+								is_alias = TRUE
+								AND last_check_status IN (
+									'redirect_chain',
+									'redirect_target_mismatch',
+									'not_found',
+									'server_error',
+									'canonical_mismatch',
+									'error'
+								)
+							)
 						)
 					)
 				THEN 1 ELSE 0
@@ -107,6 +131,9 @@ func (r *StorefrontRouteCatalogRepository) StatsForLocaleAndScope(locale, proble
 	}
 	if latestEntry.ID != 0 {
 		stats.LastSyncedAt = &latestEntry.LastSeenAt
+	}
+	if latestCheckedEntry.LastCheckedAt != nil {
+		stats.LastCheckedAt = latestCheckedEntry.LastCheckedAt
 	}
 	return stats, err
 }

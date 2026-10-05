@@ -95,16 +95,26 @@ func TestHandleTirePressureMetadataSolveMapsMeasuredLoadMismatchTo422(t *testing
 func TestDynamicsReturnsGroundFrameDemoModel(t *testing.T) {
 	recorder := requestPath(testRouter(), "/dynamics", "{\"rider_weight_kg\":72,\"bike_weight_kg\":8.5,\"nominal_tire_width_mm\":28,\"inner_rim_width_mm\":23,\"riding_position\":\"AGGRESSIVE_RACE\",\"surface_condition\":\"FLAT_ROAD\",\"lean_angle_deg\":30,\"speed_kmh\":36,\"front_operating_pressure_psi\":48,\"rear_operating_pressure_psi\":52,\"front_comparison_pressure_psi\":43,\"rear_comparison_pressure_psi\":47}")
 	body := recorder.Body.String()
-	if recorder.Code != http.StatusOK || !strings.Contains(body, "\"force_frame\":\"GROUND\"") || !strings.Contains(body, "\"model_status\":\"DEMO_ESTIMATE_UNCALIBRATED\"") || !strings.Contains(body, "\"lateral_demand_n\"") || !strings.Contains(body, "\"surface_condition\":\"FLAT_ROAD\"") || !strings.Contains(body, "\"speed_kmh\":36") || !strings.Contains(body, "\"equivalent_turn_radius_m\"") || !strings.Contains(body, "\"tire_body_normalization_factor\":1") || !strings.Contains(body, "\"tire_body_normalization_source\":\"FIXED_GENERIC_BASELINE\"") || !strings.Contains(body, "\"pressure_contact_area_comparison\"") || !strings.Contains(body, "\"area_change_pct\"") || !strings.Contains(body, "\"vertical_deformation\"") || !strings.Contains(body, "\"dataset_version\":\"maier-2018-vertical-deformation-reference-v1\"") {
+	if recorder.Code != http.StatusOK || !strings.Contains(body, "\"force_frame\":\"GROUND\"") || !strings.Contains(body, "\"model_status\":\"DEMO_ESTIMATE_UNCALIBRATED\"") || !strings.Contains(body, "\"lateral_demand_n\"") || !strings.Contains(body, "\"surface_condition\":\"FLAT_ROAD\"") || !strings.Contains(body, "\"speed_kmh\":36") || !strings.Contains(body, "\"equivalent_turn_radius_m\"") || !strings.Contains(body, "\"tire_body_normalization_factor\":1") || !strings.Contains(body, "\"tire_body_normalization_source\":\"FIXED_GENERIC_BASELINE\"") || !strings.Contains(body, "\"pressure_contact_area_comparison\"") || !strings.Contains(body, "\"area_change_pct\"") || !strings.Contains(body, "\"vertical_deformation\"") || !strings.Contains(body, "\"dataset_version\":\"maier-2018-vertical-deformation-reference-v1\"") || !strings.Contains(body, "\"pressure_friction_coefficient\"") || !strings.Contains(body, "\"pressure_effect_applied\":false") {
 		t.Fatalf("status=%d body=%s", recorder.Code, body)
 	}
 }
 
 func TestDynamicsReturnsWetEquivalentPressureCompensation(t *testing.T) {
-	recorder := requestPath(testRouter(), "/dynamics", `{"rider_weight_kg":72,"bike_weight_kg":8.5,"nominal_tire_width_mm":28,"riding_position":"AGGRESSIVE_RACE","surface_condition":"FLAT_ROAD","lean_angle_deg":30,"speed_kmh":30,"front_operating_pressure_psi":48,"rear_operating_pressure_psi":52,"wet_pressure_demonstration_enabled":true,"water_film_depth_mm":1}`)
+	recorder := requestPath(testRouter(), "/dynamics", `{"rider_weight_kg":72,"bike_weight_kg":8.5,"nominal_tire_width_mm":28,"riding_position":"AGGRESSIVE_RACE","surface_condition":"FLAT_ROAD","lean_angle_deg":30,"speed_kmh":30,"front_operating_pressure_psi":48,"rear_operating_pressure_psi":52,"front_minimum_pressure_psi":43,"rear_minimum_pressure_psi":47,"wet_pressure_demonstration_enabled":true,"water_film_depth_mm":1}`)
 	body := recorder.Body.String()
+	if !strings.Contains(body, `"pressure_reduction_psi"`) || !strings.Contains(body, `"pressure_reduction_pct"`) {
+		t.Fatalf("wet response is missing explicit pressure reduction fields: %s", body)
+	}
 	if recorder.Code != http.StatusOK || !strings.Contains(body, `"wet_pressure_compensation"`) || !strings.Contains(body, `"friction_retention_ratio"`) || !strings.Contains(body, `"equivalent_pressure_psi"`) || !strings.Contains(body, `"wet_grip_margin_pct"`) || strings.Contains(body, `"area_compensated_grip_limit_n"`) || !strings.Contains(body, `"water_film_depth_mm":1`) || !strings.Contains(body, "first-order demonstration proxy") {
 		t.Fatalf("status=%d body=%s", recorder.Code, body)
+	}
+}
+
+func TestDynamicsRejectsWetDemonstrationWithoutMinimumPressure(t *testing.T) {
+	recorder := requestPath(testRouter(), "/dynamics", `{"rider_weight_kg":72,"bike_weight_kg":8.5,"nominal_tire_width_mm":28,"riding_position":"AGGRESSIVE_RACE","surface_condition":"FLAT_ROAD","lean_angle_deg":30,"speed_kmh":30,"front_operating_pressure_psi":48,"rear_operating_pressure_psi":52,"wet_pressure_demonstration_enabled":true}`)
+	if recorder.Code != http.StatusBadRequest || !strings.Contains(recorder.Body.String(), `"front_minimum_pressure_psi/rear_minimum_pressure_psi"`) {
+		t.Fatalf("status=%d body=%s", recorder.Code, recorder.Body.String())
 	}
 }
 

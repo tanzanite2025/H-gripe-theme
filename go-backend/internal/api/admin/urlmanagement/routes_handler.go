@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 
+	seodomain "commerce-platform/internal/domain/seo"
 	"commerce-platform/internal/repository"
 	"commerce-platform/internal/service"
 
@@ -106,7 +107,7 @@ func (h *RoutesHandler) History(c *gin.Context) {
 func (h *RoutesHandler) Sync(c *gin.Context) {
 	summary, err := h.catalog.Sync(c.Request.Context())
 	if err != nil {
-		c.JSON(http.StatusBadGateway, gin.H{"error": err.Error()})
+		c.JSON(routeCatalogOperationErrorStatus(err, http.StatusBadGateway), gin.H{"error": err.Error()})
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"data": summary})
@@ -118,14 +119,14 @@ func (h *RoutesHandler) Sitemap(c *gin.Context) {
 		c.JSON(http.StatusBadGateway, gin.H{"error": err.Error()})
 		return
 	}
-	c.Header("Cache-Control", "private, max-age=15")
+	c.Header("Cache-Control", "no-store")
 	c.JSON(http.StatusOK, gin.H{"data": overview})
 }
 
 func (h *RoutesHandler) SyncSitemap(c *gin.Context) {
 	syncSummary, err := h.catalog.Sync(c.Request.Context())
 	if err != nil {
-		c.JSON(http.StatusBadGateway, gin.H{"error": err.Error()})
+		c.JSON(routeCatalogOperationErrorStatus(err, http.StatusBadGateway), gin.H{"error": err.Error()})
 		return
 	}
 	overview, err := h.catalog.SitemapOverview()
@@ -147,10 +148,31 @@ func (h *RoutesHandler) CheckOne(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+	if c.DefaultQuery("sync_latest", "true") == "true" {
+		if _, err := h.catalog.Sync(contextOrBackground(c)); err != nil {
+			c.JSON(routeCatalogOperationErrorStatus(err, http.StatusBadGateway), gin.H{"error": err.Error()})
+			return
+		}
+	}
+	entry, err := h.catalog.Get(id)
+	if err != nil {
+		status := http.StatusInternalServerError
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			status = http.StatusNotFound
+		}
+		c.JSON(status, gin.H{"error": err.Error()})
+		return
+	}
+	if entry.EntryStatus == seodomain.RouteEntryStatusStale {
+		c.JSON(http.StatusConflict, gin.H{"error": "该路径已不在最新路由清单中，只能在失效路径/问题队列中处理"})
+		return
+	}
 	result, err := h.catalog.CheckEntry(contextOrBackground(c), id)
 	if err != nil {
 		status := http.StatusBadGateway
-		if errors.Is(err, gorm.ErrRecordNotFound) {
+		if errors.Is(err, service.ErrStorefrontRouteCatalogOperationInProgress) {
+			status = http.StatusConflict
+		} else if errors.Is(err, gorm.ErrRecordNotFound) {
 			status = http.StatusNotFound
 		}
 		c.JSON(status, gin.H{"error": err.Error()})
@@ -160,10 +182,29 @@ func (h *RoutesHandler) CheckOne(c *gin.Context) {
 }
 
 func (h *RoutesHandler) Check(c *gin.Context) {
-	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "100"))
-	task, err := h.catalog.StartCheck(routeCatalogFilter(c), limit)
+	// A route check must start from the current storefront manifest. This is a
+	// live fetch and does not require restarting the API process. Issue-queue
+	// scans can pass sync_latest=false because they already synchronize first.
+	syncLatest := c.DefaultQuery("sync_latest", "true") == "true"
+	if syncLatest && c.Query("entry_status") == seodomain.RouteEntryStatusStale {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "历史失效路径不属于当前路由检查范围，请先切回当前路由"})
+		return
+	}
+	if syncLatest {
+		if _, err := h.catalog.Sync(contextOrBackground(c)); err != nil {
+			c.JSON(routeCatalogOperationErrorStatus(err, http.StatusBadGateway), gin.H{"error": err.Error()})
+			return
+		}
+	}
+	batchSizeValue := c.DefaultQuery("batch_size", c.DefaultQuery("limit", "200"))
+	batchSize, _ := strconv.Atoi(batchSizeValue)
+	filter := routeCatalogFilter(c)
+	if syncLatest {
+		filter.IncludeStaleWhenChecking = false
+	}
+	task, err := h.catalog.StartCheck(filter, batchSize)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(routeCatalogOperationErrorStatus(err, http.StatusInternalServerError), gin.H{"error": err.Error()})
 		return
 	}
 	c.JSON(http.StatusAccepted, gin.H{"data": task})
@@ -183,6 +224,13 @@ func (h *RoutesHandler) CheckStatus(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"data": task})
 }
 
+func routeCatalogOperationErrorStatus(err error, defaultStatus int) int {
+	if errors.Is(err, service.ErrStorefrontRouteCatalogOperationInProgress) {
+		return http.StatusConflict
+	}
+	return defaultStatus
+}
+
 func routeCatalogFilter(c *gin.Context) repository.StorefrontRouteCatalogListFilter {
 	searchProfileStatus := strings.ToLower(strings.TrimSpace(c.Query("search_profile_status")))
 	switch searchProfileStatus {
@@ -192,16 +240,17 @@ func routeCatalogFilter(c *gin.Context) repository.StorefrontRouteCatalogListFil
 	}
 
 	return repository.StorefrontRouteCatalogListFilter{
-		Locale:              c.Query("locale"),
-		SourceType:          c.Query("source_type"),
-		EntryStatus:         c.Query("entry_status"),
-		CheckStatus:         c.Query("check_status"),
-		Search:              c.Query("search"),
-		Searchable:          parseOptionalBool(c.Query("searchable")),
-		SearchProfileStatus: searchProfileStatus,
-		NeedsAttention:      parseOptionalBool(c.Query("needs_attention")),
-		ProblemScope:        c.Query("problem_scope"),
-		ExcludeAlias:        c.Query("include_aliases") != "true",
+		Locale:                   c.Query("locale"),
+		SourceType:               c.Query("source_type"),
+		EntryStatus:              c.Query("entry_status"),
+		CheckStatus:              c.Query("check_status"),
+		Search:                   c.Query("search"),
+		Searchable:               parseOptionalBool(c.Query("searchable")),
+		SearchProfileStatus:      searchProfileStatus,
+		NeedsAttention:           parseOptionalBool(c.Query("needs_attention")),
+		ProblemScope:             c.Query("problem_scope"),
+		ExcludeAlias:             c.Query("include_aliases") != "true",
+		IncludeStaleWhenChecking: c.Query("include_stale_when_checking") == "true",
 	}
 }
 

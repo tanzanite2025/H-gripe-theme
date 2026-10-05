@@ -9,7 +9,6 @@ import type {
 
 const createEmptyTemplateForm = (): CustomsClassificationForm => ({
   id: undefined,
-  product_specification_template_id: null,
   name: '',
   slug: '',
   component_kind: '',
@@ -21,7 +20,15 @@ const createEmptyTemplateForm = (): CustomsClassificationForm => ({
   source: '',
   source_code: '',
   source_url: '',
+  source_url_us: '',
+  source_url_eu: '',
+  source_url_uk: '',
   notes: '',
+  verified_at: null,
+  review_due_at: null,
+  trade_remedy_risk_level: 'none',
+  trade_remedy_risk_tags: [],
+  trade_remedy_declaration_advice: '',
   status: 'active',
 })
 
@@ -64,7 +71,6 @@ export const useCustomsTemplates = () => {
   const openTemplateEdit = (template: CustomsClassificationRecord) => {
     Object.assign(templateForm, {
       id: template.id,
-      product_specification_template_id: template.product_specification_template_id ?? template.product_specification_template?.id ?? null,
       name: template.name || '',
       slug: template.slug || '',
       component_kind: template.component_kind || '',
@@ -76,18 +82,18 @@ export const useCustomsTemplates = () => {
       source: template.source || '',
       source_code: template.source_code || '',
       source_url: template.source_url || '',
+      source_url_us: template.source_url_us || template.source_url || '',
+      source_url_eu: template.source_url_eu || '',
+      source_url_uk: template.source_url_uk || '',
       notes: template.notes || '',
+      verified_at: template.verified_at || null,
+      review_due_at: template.review_due_at || null,
+      trade_remedy_risk_level: template.trade_remedy_risk_level || 'none',
+      trade_remedy_risk_tags: Array.isArray(template.trade_remedy_risk_tags) ? [...template.trade_remedy_risk_tags] : [],
+      trade_remedy_declaration_advice: template.trade_remedy_declaration_advice || '',
       status: template.status || 'active',
     })
     templateDialogOpen.value = true
-  }
-
-  const templateProductSpecTemplateValue = computed(() => (
-    templateForm.product_specification_template_id ? String(templateForm.product_specification_template_id) : '__none__'
-  ))
-
-  const setTemplateProductSpecTemplate = (value: string) => {
-    templateForm.product_specification_template_id = value === '__none__' ? null : Number(value)
   }
 
   const saveTemplate = async () => {
@@ -98,7 +104,6 @@ export const useCustomsTemplates = () => {
     templateSaving.value = true
     try {
       const payload = {
-        product_specification_template_id: templateForm.product_specification_template_id,
         name: templateForm.name.trim(),
         slug: templateForm.slug.trim(),
         component_kind: templateForm.component_kind.trim(),
@@ -109,8 +114,14 @@ export const useCustomsTemplates = () => {
         customs_description: templateForm.customs_description.trim(),
         source: templateForm.source.trim(),
         source_code: templateForm.source_code.trim(),
-        source_url: templateForm.source_url.trim(),
+        source_url: templateForm.source_url_us.trim() || templateForm.source_url.trim(),
+        source_url_us: templateForm.source_url_us.trim() || templateForm.source_url.trim(),
+        source_url_eu: templateForm.source_url_eu.trim(),
+        source_url_uk: templateForm.source_url_uk.trim(),
         notes: templateForm.notes.trim(),
+        trade_remedy_risk_level: templateForm.trade_remedy_risk_level,
+        trade_remedy_risk_tags: [...templateForm.trade_remedy_risk_tags],
+        trade_remedy_declaration_advice: templateForm.trade_remedy_declaration_advice.trim(),
         status: templateForm.status,
       }
       if (templateForm.id) {
@@ -151,7 +162,12 @@ export const useCustomsTemplates = () => {
     templateForm.customs_description = candidate.customs_description || candidate.description
     templateForm.source = candidate.provider
     templateForm.source_code = candidate.source_code
-    templateForm.source_url = candidate.source_url
+    if (candidate.provider === 'uk_trade_tariff') {
+      templateForm.source_url_uk = candidate.source_url
+    } else {
+      templateForm.source_url = candidate.source_url
+      templateForm.source_url_us = candidate.source_url
+    }
     templateDialogOpen.value = true
   }
 
@@ -165,8 +181,6 @@ export const useCustomsTemplates = () => {
     fetchTemplates,
     openTemplateCreate,
     openTemplateEdit,
-    templateProductSpecTemplateValue,
-    setTemplateProductSpecTemplate,
     saveTemplate,
     removeTemplate,
     openTemplateFromCandidate,
@@ -174,4 +188,3 @@ export const useCustomsTemplates = () => {
 }
 
 export default useCustomsTemplates
-

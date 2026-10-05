@@ -64,3 +64,12 @@ docs/design/schwalbe-tire/*
 # Local confidential documentation (keep out of future commits)
 **/docs/
 **/html资料/
+
+# Versioned architecture and data-contract documents are retained explicitly;
+# other local design notes stay ignored.
+!/docs/
+!/docs/design/
+!/docs/design/tire-pressure-calculator-architecture-and-data-contract.md
+!/docs/design/shipping-service-collection-data-contract.md
+!/docs/design/yanwen/
+!/docs/design/yanwen/yanwen-logistics-hub-integration-architecture.md

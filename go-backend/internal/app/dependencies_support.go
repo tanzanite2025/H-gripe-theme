@@ -26,6 +26,7 @@ type dependencySupport struct {
 	EmailProviderSvc                    *service.EmailProviderService
 	TxManager                           *repository.TxManager
 	ShippingService                     *service.ShippingService
+	YanwenPublishedCollectionService    *service.YanwenPublishedCollectionService
 	OutboundHTTPResilience              outboundHTTPResilience
 	AntiBotService                      *antibot.Service
 	AntiFraudService                    *antifraud.Service
@@ -92,6 +93,11 @@ func newDependencySupport(
 	txManager.ConfigureAfterSalesRefundReviewRepository(repos.AfterSalesRefundReview)
 
 	shippingService := service.NewShippingService(repos.Shipping, repos.Product)
+	yanwenPublishedCollectionService := service.NewYanwenPublishedCollectionService(
+		repos.YanwenPublishedChannel,
+		repos.YanwenProductCatalog,
+	)
+	shippingService.ConfigureYanwenPublishedCollectionService(yanwenPublishedCollectionService)
 	shippingService.ConfigureOrderRepository(repos.Order)
 	shippingService.ConfigureTxManager(txManager)
 	// Wired after the AfterSalesService is constructed in the service builder;
@@ -138,6 +144,7 @@ func newDependencySupport(
 		EmailProviderSvc:                    emailProviderSvc,
 		TxManager:                           txManager,
 		ShippingService:                     shippingService,
+		YanwenPublishedCollectionService:    yanwenPublishedCollectionService,
 		OutboundHTTPResilience:              outboundHTTPResilience,
 		AntiBotService:                      antiBotService,
 		AntiFraudService:                    antiFraudService,

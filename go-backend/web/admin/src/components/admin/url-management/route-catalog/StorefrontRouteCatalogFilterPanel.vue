@@ -5,12 +5,13 @@
  <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">Route Catalog Control</p>
  <h2 class="mt-1 text-sm font-black">URL 来源、索引与可用性筛选</h2>
  <p class="mt-1 text-xs text-muted-foreground">
-          当前语言 {{ localeLabel }} 显示 {{ paginationTotal }} 条。批量检查只处理当前语言，最多 200 条符合筛选条件的可检查 URL。
+          当前语言 {{ localeLabel }} 显示 {{ paginationTotal }} 条。列表默认排除已从最新清单移除的历史路径；需要处理旧路径时选择“失效”。批量检查会先拉取最新清单，再按每批 200 条、并发 2 个请求逐批执行，页面会自动刷新已完成结果。
         </p>
       </div>
  <div class="shrink-0 text-left text-[10px] font-mono text-muted-foreground xl:text-right">
         <p>MANIFEST / {{ stats.manifest_version || '未同步' }}</p>
- <p class="mt-1">LAST SYNC / {{ formatRouteCatalogDate(stats.last_synced_at) }}</p>
+        <p class="mt-1">LAST SYNC / {{ formatRouteCatalogDate(stats.last_synced_at) }}</p>
+        <p class="mt-1">LAST CHECK / {{ formatRouteCatalogDate(stats.last_checked_at) }}</p>
       </div>
     </div>
 
@@ -54,6 +55,8 @@
           <SelectTrigger><SelectValue placeholder="全部检查状态" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">全部检查状态</SelectItem>
+            <SelectItem value="checked">已检查</SelectItem>
+            <SelectItem value="unchecked">未检查</SelectItem>
             <SelectItem value="ok">正常</SelectItem>
             <SelectItem value="redirect">发生跳转</SelectItem>
             <SelectItem value="redirect_chain">重定向链</SelectItem>

@@ -5,20 +5,12 @@
     :form="templateForm"
     :errors="templateErrors"
     :submitting="templateSubmitting"
+    :fpx-channels="fpxChannels"
+    :yanwen-published-channels="yanwenPublishedChannels"
+    :carriers="carriers"
     @update:open="emit('update:templateOpen', $event)"
     @submit="emit('save-template')"
     @clear-error="emit('clear-template-error', $event)"
-  />
-
-  <ShippingZoneEditorDialog
-    :open="zoneOpen"
-    :mode="zoneMode"
-    :form="zoneForm"
-    :errors="zoneErrors"
-    :submitting="zoneSubmitting"
-    @update:open="emit('update:zoneOpen', $event)"
-    @submit="emit('save-zone')"
-    @clear-error="emit('clear-zone-error', $event)"
   />
 
   <CarrierEditorDialog
@@ -40,6 +32,7 @@
     :carriers="carriers"
     :templates="templates"
     :fpx-channels="fpxChannels"
+    :yanwen-published-channels="yanwenPublishedChannels"
     :submitting="carrierServiceSubmitting"
     @update:open="emit('update:carrierServiceOpen', $event)"
     @submit="emit('save-carrier-service')"
@@ -108,9 +101,12 @@ import CarrierServiceEditorDialog from '@/components/admin/shipping/CarrierServi
 import PackagingRuleAppliesDialog from '@/components/admin/shipping/PackagingRuleAppliesDialog.vue'
 import PackagingRuleEditorDialog from '@/components/admin/shipping/PackagingRuleEditorDialog.vue'
 import ShippingTemplateEditorDialog from '@/components/admin/shipping/ShippingTemplateEditorDialog.vue'
-import ShippingZoneEditorDialog from '@/components/admin/shipping/ShippingZoneEditorDialog.vue'
 import TrackingCarrierMappingEditorDialog from '@/components/admin/shipping/TrackingCarrierMappingEditorDialog.vue'
 import TrackingProviderEditorDialog from '@/components/admin/shipping/TrackingProviderEditorDialog.vue'
+import type {
+  FpxPublishedCollectionReference,
+  YanwenPublishedCollectionReference,
+} from '@/api/shippingServiceCollectionReferenceApi'
 import type {
   ShippingCarrier,
   ShippingCarrierForm,
@@ -120,8 +116,6 @@ import type {
   ShippingErrorMap,
   ShippingTemplate,
   ShippingTemplateForm,
-  ShippingZone,
-  ShippingZoneForm,
   PackagingRule,
   PackagingRuleForm,
   TrackingCarrierMapping,
@@ -133,7 +127,8 @@ import type {
 withDefaults(defineProps<{
   templates?: ShippingTemplate[]
   carriers?: ShippingCarrier[]
-  fpxChannels?: Array<{ id: number; service_code: string; display_name: string; enabled: boolean }>
+  fpxChannels?: FpxPublishedCollectionReference[]
+  yanwenPublishedChannels?: YanwenPublishedCollectionReference[]
   carrierServices?: ShippingCarrierService[]
   trackingProviders?: TrackingProvider[]
   templateOpen?: boolean
@@ -141,11 +136,6 @@ withDefaults(defineProps<{
   templateSubmitting?: boolean
   templateErrors: ShippingErrorMap
   templateForm: ShippingTemplateForm
-  zoneOpen?: boolean
-  zoneMode?: ShippingDialogMode
-  zoneSubmitting?: boolean
-  zoneErrors: ShippingErrorMap
-  zoneForm: ShippingZoneForm
   carrierOpen?: boolean
   carrierMode?: ShippingDialogMode
   carrierSubmitting?: boolean
@@ -181,14 +171,12 @@ withDefaults(defineProps<{
   templates: () => [],
   carriers: () => [],
   fpxChannels: () => [],
+  yanwenPublishedChannels: () => [],
   carrierServices: () => [],
   trackingProviders: () => [],
   templateOpen: false,
   templateMode: 'create',
   templateSubmitting: false,
-  zoneOpen: false,
-  zoneMode: 'create',
-  zoneSubmitting: false,
   carrierOpen: false,
   carrierMode: 'create',
   carrierSubmitting: false,
@@ -214,7 +202,6 @@ withDefaults(defineProps<{
 
 const emit = defineEmits<{
   (event: 'update:templateOpen', value: boolean): void
-  (event: 'update:zoneOpen', value: boolean): void
   (event: 'update:carrierOpen', value: boolean): void
   (event: 'update:carrierServiceOpen', value: boolean): void
   (event: 'update:trackingProviderOpen', value: boolean): void
@@ -223,14 +210,12 @@ const emit = defineEmits<{
   (event: 'update:packagingAppliesOpen', value: boolean): void
   (event: 'update:deleteOpen', value: boolean): void
   (event: 'save-template'): void
-  (event: 'save-zone'): void
   (event: 'save-carrier'): void
   (event: 'save-carrier-service'): void
   (event: 'save-tracking-provider'): void
   (event: 'save-tracking-carrier-mapping'): void
   (event: 'save-packaging-rule'): void
   (event: 'clear-template-error', field: unknown): void
-  (event: 'clear-zone-error', field: unknown): void
   (event: 'clear-carrier-error', field: unknown): void
   (event: 'clear-carrier-service-error', field: unknown): void
   (event: 'clear-tracking-provider-error', field: unknown): void
@@ -240,4 +225,3 @@ const emit = defineEmits<{
   (event: 'confirm-delete'): void
 }>()
 </script>
-

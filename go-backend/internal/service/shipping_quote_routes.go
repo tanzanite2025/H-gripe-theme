@@ -28,6 +28,10 @@ func (s *ShippingService) quoteShipmentPlans(
 	if err != nil {
 		return nil, err
 	}
+	carrierServices, templatesWithPublishedCollectionRoutes, err := s.projectCarrierServicesFromPublishedCollections(carrierServices)
+	if err != nil {
+		return nil, err
+	}
 
 	legsByTemplate := make(map[uint][]ShippingQuoteLeg, len(groups))
 	for i := range carrierServices {
@@ -68,6 +72,9 @@ func (s *ShippingService) quoteShipmentPlans(
 		group := groups[templateID]
 		legs := legsByTemplate[templateID]
 		if len(legs) == 0 {
+			if _, requiresPublishedCollectionRoute := templatesWithPublishedCollectionRoutes[templateID]; requiresPublishedCollectionRoute {
+				return nil, fmt.Errorf("%w: no active published logistics service for template %q in %s", ErrShippingQuotePlanUnavailable, group.Template.Name, country)
+			}
 			rate := groupRates[templateID]
 			if !rate.FreeShipping {
 				if err := validateTemplateWeightBillingForValue(

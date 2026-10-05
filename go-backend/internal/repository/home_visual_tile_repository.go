@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"errors"
 	"strings"
 	"time"
 
@@ -87,6 +88,45 @@ func (r *HomeVisualTileRepository) ReplaceItems(
 		}
 		if afterReplace != nil {
 			return afterReplace(tx, previous)
+		}
+		return nil
+	})
+}
+
+// SaveSingleVisualShowcaseItem updates one active slot without replacing the other slots in the same showcase.
+func (r *HomeVisualTileRepository) SaveSingleVisualShowcaseItem(
+	tile *homevisualtile.Tile,
+	afterSave func(tx *gorm.DB, previous *homevisualtile.Tile) error,
+) error {
+	if r == nil || r.db == nil {
+		return gorm.ErrInvalidDB
+	}
+	if tile == nil {
+		return gorm.ErrInvalidData
+	}
+
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		var current homevisualtile.Tile
+		err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
+			Where("showcase_key = ? AND locale = ? AND desktop_order = ?", tile.TileSetKey, tile.Locale, tile.DesktopOrder).
+			First(&current).Error
+		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+			return err
+		}
+
+		var previous *homevisualtile.Tile
+		if err == nil {
+			previousCopy := current
+			previous = &previousCopy
+			tile.ID = current.ID
+			tile.CreatedAt = current.CreatedAt
+		}
+
+		if err := tx.Save(tile).Error; err != nil {
+			return err
+		}
+		if afterSave != nil {
+			return afterSave(tx, previous)
 		}
 		return nil
 	})

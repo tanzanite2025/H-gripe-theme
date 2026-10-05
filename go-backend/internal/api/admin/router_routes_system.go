@@ -120,8 +120,6 @@ func registerSystemRoutes(
 	shippingGroup := authenticated.Group("/shipping")
 	shippingGroup.Use(middleware.RequirePermission(auth.PermShippingView))
 	{
-		shippingGroup.POST("/quote", shippingHandler.QuoteShipping)
-
 		shippingGroup.GET("/templates", shippingHandler.ListTemplates)
 		shippingGroup.GET("/templates/:id", shippingHandler.GetTemplate)
 		shippingGroup.POST("/templates", middleware.RequirePermission(auth.PermShippingCreate), shippingHandler.CreateTemplate)
@@ -130,12 +128,6 @@ func registerSystemRoutes(
 		shippingGroup.POST("/templates/:id/rules", middleware.RequirePermission(auth.PermShippingEdit), shippingHandler.CreateTemplateRule)
 		shippingGroup.PUT("/templates/:id/rules/:ruleId", middleware.RequirePermission(auth.PermShippingEdit), shippingHandler.UpdateTemplateRule)
 		shippingGroup.DELETE("/templates/:id/rules/:ruleId", middleware.RequirePermission(auth.PermShippingEdit), shippingHandler.DeleteTemplateRule)
-
-		shippingGroup.GET("/zones", shippingHandler.ListZones)
-		shippingGroup.GET("/zones/:id", shippingHandler.GetZone)
-		shippingGroup.POST("/zones", middleware.RequirePermission(auth.PermShippingCreate), shippingHandler.CreateZone)
-		shippingGroup.PUT("/zones/:id", middleware.RequirePermission(auth.PermShippingEdit), shippingHandler.UpdateZone)
-		shippingGroup.DELETE("/zones/:id", middleware.RequirePermission(auth.PermShippingDelete), shippingHandler.DeleteZone)
 
 		shippingGroup.GET("/packaging-rules", shippingHandler.ListPackagingRules)
 		shippingGroup.GET("/packaging-rules/:id", shippingHandler.GetPackagingRule)

@@ -78,11 +78,11 @@
             </TableCell>
 
             <TableCell>
-              <AdminStatusBadge :tone="profileTone(profileFor(item))">
-                {{ profileLabel(profileFor(item)) }}
+              <AdminStatusBadge :tone="searchStatusTone(item)">
+                {{ searchStatusLabel(item) }}
               </AdminStatusBadge>
               <p class="mt-1 text-[10px] text-muted-foreground">
-                权重 / {{ profileFor(item)?.search_weight ?? '-' }}
+                {{ searchConfigLabel(item) }}
               </p>
             </TableCell>
 
@@ -161,7 +161,9 @@
               <span class="text-xs font-bold">启用搜索</span>
               <div class="flex items-center gap-2">
                 <Switch v-model="form.enabled" />
-                <span class="text-xs text-muted-foreground">仅启用后会进入前台搜索索引</span>
+                <span class="text-xs text-muted-foreground">
+                  启用且路由有效、可搜索、可索引时进入前台搜索索引
+                </span>
               </div>
             </label>
 
@@ -236,6 +238,7 @@ import type { StorefrontRouteCatalogEntry } from '@/modules/url-management/route
 import {
   storefrontURLSearchProfilesApi,
   type StorefrontURLSearchProfile,
+  type StorefrontURLSearchProfileStats,
 } from '@/modules/url-management/searchProfiles'
 import { useAuthStore } from '@/stores/auth'
 
@@ -246,9 +249,8 @@ const {
   items,
   loading,
   syncing,
-  stats,
   pagination,
-  refreshAll,
+  refreshCatalogList,
   syncCatalog,
   updatePage,
   updatePageSize,
@@ -257,6 +259,7 @@ const {
 
 const profiles = ref<StorefrontURLSearchProfile[]>([])
 const profilesLoading = ref(false)
+const searchStats = ref<StorefrontURLSearchProfileStats>(emptySearchStats())
 const editorOpen = ref(false)
 const editorLoading = ref(false)
 const saving = ref(false)
@@ -266,13 +269,24 @@ const localeFilterOptions = computed(() => supportedLanguages.localeFilterOption
 
 const form = reactive({
   enabled: true,
-  search_weight: 100,
+  search_weight: 0,
   display_title: '',
   display_summary: '',
 })
 const keywordsModel = ref('')
 
 const profileMap = computed(() => new Map(profiles.value.map((profile) => [profile.route_entry_id, profile])))
+
+function emptySearchStats(): StorefrontURLSearchProfileStats {
+  return {
+    total_routes: 0,
+    public_indexed: 0,
+    explicit_profiles: 0,
+    explicit_enabled: 0,
+    keyword_count: 0,
+    unconfigured: 0,
+  }
+}
 
 const profileFor = (entry: StorefrontRouteCatalogEntry) => profileMap.value.get(entry.id)
 
@@ -288,14 +302,31 @@ const stringifyKeywords = (keywords: string[] | undefined): string => {
   return keywords.join('\n')
 }
 
-const profileLabel = (profile?: StorefrontURLSearchProfile): string => {
-  if (!profile) return '未配置'
-  return profile.enabled ? '已启用' : '已停用'
+const isPublicSearchEntry = (entry: StorefrontRouteCatalogEntry): boolean => (
+  entry.entry_status === 'active' &&
+  !entry.is_alias &&
+  entry.is_searchable &&
+  entry.is_indexable
+)
+
+const searchStatusLabel = (entry: StorefrontRouteCatalogEntry): string => {
+  const profile = profileFor(entry)
+  if (!isPublicSearchEntry(entry)) return '不收录'
+  if (profile && !profile.enabled) return '已停用'
+  return profile ? '已收录 / 显式' : '已收录 / 默认'
 }
 
-const profileTone = (profile?: StorefrontURLSearchProfile): AdminStatusTone => {
-  if (!profile) return 'gray'
-  return profile.enabled ? 'green' : 'amber'
+const searchStatusTone = (entry: StorefrontRouteCatalogEntry): AdminStatusTone => {
+  const profile = profileFor(entry)
+  if (!isPublicSearchEntry(entry)) return 'gray'
+  if (profile && !profile.enabled) return 'amber'
+  return 'green'
+}
+
+const searchConfigLabel = (entry: StorefrontRouteCatalogEntry): string => {
+  const profile = profileFor(entry)
+  if (!profile) return '默认规则 / 权重 0'
+  return `显式配置 / ${profile.enabled ? '已启用' : '已停用'} / 权重 ${profile.search_weight}`
 }
 
 const sourceLabel = (value: string): string => ({
@@ -328,64 +359,92 @@ const displaySummary = (entry: StorefrontRouteCatalogEntry): string => {
   return profile?.display_summary || entry.summary || '暂无展示摘要'
 }
 
+let profilesRequestSequence = 0
+let searchStatsRequestSequence = 0
+let editorRequestSequence = 0
+
 const loadProfiles = async (): Promise<void> => {
+  const requestSequence = ++profilesRequestSequence
+  const localeSnapshot = filters.locale === 'all' ? undefined : filters.locale
   profilesLoading.value = true
   try {
-    profiles.value = await storefrontURLSearchProfilesApi.list(
-      filters.locale === 'all' ? undefined : filters.locale,
-    )
+    const nextProfiles = await storefrontURLSearchProfilesApi.list(localeSnapshot)
+    if (requestSequence === profilesRequestSequence) profiles.value = nextProfiles
   } catch (error) {
     console.error('Failed to load storefront URL search profiles:', error)
-    toast.error('URL 搜索配置加载失败')
+    if (requestSequence === profilesRequestSequence) toast.error('URL 搜索配置加载失败')
   } finally {
-    profilesLoading.value = false
+    if (requestSequence === profilesRequestSequence) profilesLoading.value = false
+  }
+}
+
+const loadSearchStats = async (): Promise<void> => {
+  const requestSequence = ++searchStatsRequestSequence
+  const localeSnapshot = filters.locale === 'all' ? undefined : filters.locale
+  try {
+    const nextStats = await storefrontURLSearchProfilesApi.stats(localeSnapshot)
+    if (requestSequence === searchStatsRequestSequence) {
+      searchStats.value = { ...emptySearchStats(), ...nextStats }
+    }
+  } catch (error) {
+    console.error('Failed to load storefront URL search profile stats:', error)
+    if (requestSequence === searchStatsRequestSequence) toast.error('URL 搜索统计加载失败')
   }
 }
 
 const reloadAll = async (): Promise<void> => {
-  await Promise.all([refreshAll(), loadProfiles()])
+  await Promise.all([refreshCatalogList(), loadProfiles(), loadSearchStats()])
 }
 
 const syncCatalogAndReload = async (): Promise<void> => {
   await syncCatalog()
-  await loadProfiles()
+  await Promise.all([loadProfiles(), loadSearchStats()])
 }
 
 const applyFilters = async (): Promise<void> => {
   pagination.page = 1
-  await reloadAll()
+  await refreshCatalogList()
 }
 
 const resetFilters = async (): Promise<void> => {
+  const previousLocale = filters.locale
+  const nextLocale = supportedLanguages.defaultLocale.value || 'all'
   filters.search = ''
-  filters.locale = supportedLanguages.defaultLocale.value || 'all'
+  filters.locale = nextLocale
   filters.source_type = 'all'
   filters.searchable = 'all'
   filters.search_profile_status = 'all'
   filters.includeAliases = false
   pagination.page = 1
-  await reloadAll()
+  await refreshCatalogList()
+  if (previousLocale !== nextLocale) {
+    await Promise.all([loadProfiles(), loadSearchStats()])
+  }
 }
 
 const openEditor = async (entry: StorefrontRouteCatalogEntry): Promise<void> => {
+  const requestSequence = ++editorRequestSequence
   editingRouteID.value = entry.id
   editingRoute.value = entry
   editorOpen.value = true
   editorLoading.value = true
   try {
     const profile = await storefrontURLSearchProfilesApi.get(entry.id)
+    if (requestSequence !== editorRequestSequence) return
     editingRoute.value = profile.route_entry || entry
     form.enabled = profile.enabled ?? true
-    form.search_weight = profile.search_weight ?? 100
+    form.search_weight = profile.search_weight ?? 0
     form.display_title = profile.display_title || ''
     form.display_summary = profile.display_summary || ''
     keywordsModel.value = stringifyKeywords(profile.keywords)
   } catch (error) {
     console.error('Failed to load URL search profile:', error)
-    toast.error('搜索配置读取失败')
-    editorOpen.value = false
+    if (requestSequence === editorRequestSequence) {
+      toast.error('搜索配置读取失败')
+      editorOpen.value = false
+    }
   } finally {
-    editorLoading.value = false
+    if (requestSequence === editorRequestSequence) editorLoading.value = false
   }
 }
 
@@ -412,20 +471,13 @@ const save = async (): Promise<void> => {
 }
 
 const statItems = computed(() => {
-  // Profiles are loaded for the complete selected locale. Do not derive
-  // site-level metrics from the paginated table, otherwise every page would
-  // report a different configured/missing count.
-  const configuredCount = profiles.value.length
-  const enabledCount = profiles.value.filter((profile) => profile.enabled).length
-  const keywordCount = profiles.value.reduce((total, profile) => total + profile.keywords.length, 0)
-  const missingCount = Math.max(0, stats.value.total - configuredCount)
-
   return [
-    { key: 'total', label: 'URL 总量', value: stats.value.total, icon: RefreshCw, tone: 'blue' },
-    { key: 'configured', label: '已配置', value: configuredCount, icon: PencilLine, tone: configuredCount ? 'green' : 'gray' },
-    { key: 'enabled', label: '已启用', value: enabledCount, icon: RefreshCw, tone: enabledCount ? 'green' : 'gray' },
-    { key: 'keywords', label: '关键词', value: keywordCount, icon: PencilLine, tone: keywordCount ? 'amber' : 'gray' },
-    { key: 'missing', label: '未配置', value: missingCount, icon: RefreshCw, tone: missingCount ? 'amber' : 'gray' },
+    { key: 'total', label: '可管理 URL', value: searchStats.value.total_routes, icon: RefreshCw, tone: 'blue' },
+    { key: 'public-indexed', label: '前台实际收录', value: searchStats.value.public_indexed, icon: RefreshCw, tone: searchStats.value.public_indexed ? 'green' : 'gray' },
+    { key: 'explicit-profiles', label: '显式配置', value: searchStats.value.explicit_profiles, icon: PencilLine, tone: searchStats.value.explicit_profiles ? 'green' : 'gray' },
+    { key: 'explicit-enabled', label: '显式启用', value: searchStats.value.explicit_enabled, icon: RefreshCw, tone: searchStats.value.explicit_enabled ? 'green' : 'gray' },
+    { key: 'keywords', label: '关键词', value: searchStats.value.keyword_count, icon: PencilLine, tone: searchStats.value.keyword_count ? 'amber' : 'gray' },
+    { key: 'unconfigured', label: '未配置', value: searchStats.value.unconfigured, icon: RefreshCw, tone: searchStats.value.unconfigured ? 'amber' : 'gray' },
   ]
 })
 

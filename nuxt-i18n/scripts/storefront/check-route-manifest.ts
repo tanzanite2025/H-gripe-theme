@@ -25,11 +25,23 @@ const manifestPath = join(projectRoot, 'public', 'storefront-route-manifest.json
 // those explicit Nuxt route overrides in the manifest checker as well.
 const customPagePathOverrides = new Map<string, string>([
   [
+    '/guides',
+    join(pagesRoot, 'guides', 'guides-category-navigation-overview.vue'),
+  ],
+  [
+    '/guides/spokeguides',
+    join(pagesRoot, 'guides', 'spokeguides', 'spoke-guides-category-navigation-overview.vue'),
+  ],
+  [
     '/guides/tireguides/schwalbe-tire-selector',
     join(pagesRoot, 'guides', 'schwalbe-tire-selector.vue'),
   ],
   [
     '/guides/tireguides/tire-frame-clearance',
+    join(pagesRoot, 'guides', 'tireguides.vue'),
+  ],
+  [
+    '/guides/tireguides/choose',
     join(pagesRoot, 'guides', 'tireguides.vue'),
   ],
   [
@@ -39,6 +51,10 @@ const customPagePathOverrides = new Map<string, string>([
   [
     '/guides/tireguides/tire-pressure-calculator',
     join(pagesRoot, 'guides', 'tire-pressure-calculator.vue'),
+  ],
+  [
+    '/guides/tireguides/choose-inner-tube',
+    join(pagesRoot, 'guides', 'tireguides.vue'),
   ],
 ])
 

@@ -1,8 +1,17 @@
 {
   "compilerOptions": {
+    "baseUrl": ".",
+    "ignoreDeprecations": "6.0",
+    "paths": {
+      "~": ["./app"],
+      "~/*": ["./app/*"],
+      "@": ["./app"],
+      "@/*": ["./app/*"]
+    },
     "target": "ES2022",
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "moduleDetection": "force",
     "lib": ["ES2022", "DOM"],
     "types": ["node"],
     "allowImportingTsExtensions": true,

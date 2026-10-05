@@ -1,6 +1,6 @@
 <template>
   <div class="space-y-4">
-    <AdminPageHeader title="物流管理" description="管理承运商、包装规则、运费模板、配送区域和 17TRACK 追踪配置。">
+    <AdminPageHeader title="物流管理" description="管理承运商、包装规则、运费模板和 17TRACK 追踪配置。">
       <template #actions>
         <Button variant="outline" :disabled="refreshing" @click="refreshCurrentTab">
           <RefreshCw :class="['size-3.5', { 'animate-spin': refreshing }]" />
@@ -15,7 +15,6 @@
       ref="trackingShipmentsPanelRef"
       :active-tab="activeTab"
       :templates="templates"
-      :zones="zones"
       :carriers="carriers"
       :carrier-services="carrierServices"
       :fpx-channels="fpxChannels"
@@ -30,8 +29,6 @@
       @edit-template="showEditTemplateDialog"
       @create-mapping="showCreateTrackingCarrierMappingDialog"
       @edit-mapping="showEditTrackingCarrierMappingDialog"
-      @create-zone="showCreateZoneDialog"
-      @edit-zone="showEditZoneDialog"
       @create-carrier="showCreateCarrierDialog"
       @edit-carrier="showEditCarrierDialog"
       @create-carrier-service="showCreateCarrierServiceDialog"
@@ -48,7 +45,6 @@
 
     <ShippingDialogsPanel
       v-model:template-open="templateDialogOpen"
-      v-model:zone-open="zoneDialogOpen"
       v-model:carrier-open="carrierDialogOpen"
       v-model:carrier-service-open="carrierServiceDialogOpen"
       v-model:tracking-provider-open="trackingProviderDialogOpen"
@@ -59,15 +55,13 @@
       :templates="templates"
       :carriers="carriers"
       :carrier-services="carrierServices"
+      :fpx-channels="fpxChannels"
+      :yanwen-published-channels="yanwenPublishedChannels"
       :tracking-providers="trackingProviders"
       :template-mode="templateDialogMode"
       :template-form="templateForm"
       :template-errors="templateErrors"
       :template-submitting="templateSubmitting"
-      :zone-mode="zoneDialogMode"
-      :zone-form="zoneForm"
-      :zone-errors="zoneErrors"
-      :zone-submitting="zoneSubmitting"
       :carrier-mode="carrierDialogMode"
       :carrier-form="carrierForm"
       :carrier-errors="carrierErrors"
@@ -93,14 +87,12 @@
       :delete-title="deleteDialogTitle"
       :delete-description="deleteDialogDescription"
       @save-template="saveTemplate"
-      @save-zone="saveZone"
       @save-carrier="saveCarrier"
       @save-carrier-service="saveCarrierService"
       @save-tracking-provider="saveTrackingProvider"
       @save-tracking-carrier-mapping="saveTrackingCarrierMapping"
       @save-packaging-rule="savePackagingRule"
       @clear-template-error="clearTemplateError"
-      @clear-zone-error="clearZoneError"
       @clear-carrier-error="clearCarrierError"
       @clear-carrier-service-error="clearCarrierServiceError"
       @clear-tracking-provider-error="clearTrackingProviderError"
@@ -119,7 +111,6 @@ import {
   Calculator,
   CircleCheck,
   Link2,
-  MapPin,
   Radar,
   RefreshCw,
   Truck,
@@ -142,13 +133,11 @@ import { useAuthStore } from '@/stores/auth'
 const authStore = useAuthStore()
 const activeTab = useRouteTab({
   defaultValue: 'templates',
-  values: ['templates', 'zones', 'carriers', 'services', 'quote', 'packaging', 'tracking', 'trackingShipments'],
+  values: ['templates', 'carriers', 'services', 'packaging', 'tracking', 'trackingShipments'],
   routes: {
     templates: 'ShippingTemplates',
-    zones: 'ShippingZones',
     carriers: 'ShippingCarriers',
     services: 'ShippingServices',
-    quote: 'ShippingQuote',
     packaging: 'ShippingPackaging',
     tracking: 'ShippingTracking',
     trackingShipments: 'ShippingTrackingShipments',
@@ -157,10 +146,10 @@ const activeTab = useRouteTab({
 const trackingShipmentsPanelRef = ref(null)
 const {
   templates,
-  zones,
   carriers,
   carrierServices,
   fpxChannels,
+  yanwenPublishedChannels,
   trackingProviders,
   trackingCarrierMappings,
   trackingShipmentsCount,
@@ -169,7 +158,6 @@ const {
   loading,
   handleTrackingShipmentsCountChange,
   fetchTemplates,
-  fetchZones,
   fetchCarriers,
   fetchCarrierServices,
   fetchTrackingProviders,
@@ -187,7 +175,6 @@ const {
   confirmDelete,
 } = useShippingDeleteManager({
   fetchTemplates,
-  fetchZones,
   fetchCarriers,
   fetchCarrierServices,
   fetchTrackingProviders,
@@ -201,22 +188,14 @@ const {
   templateSubmitting,
   templateErrors,
   templateForm,
-  zoneDialogOpen,
-  zoneDialogMode,
-  zoneSubmitting,
-  zoneErrors,
-  zoneForm,
   clearTemplateError,
-  clearZoneError,
   showCreateTemplateDialog,
   showEditTemplateDialog,
   saveTemplate,
-  showCreateZoneDialog,
-  showEditZoneDialog,
-  saveZone,
 } = useShippingTemplateManager({
   fetchTemplates,
-  fetchZones,
+  carrierServices,
+  fetchCarrierServices,
 })
 
 const {
@@ -297,13 +276,6 @@ const statItems = computed(() => [
     value: templates.value.length,
     icon: Calculator,
     tone: 'blue',
-  },
-  {
-    key: 'zones',
-    label: '配送区域',
-    value: zones.value.length,
-    icon: MapPin,
-    tone: 'amber',
   },
   {
     key: 'carriers',

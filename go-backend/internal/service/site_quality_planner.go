@@ -112,8 +112,9 @@ func (s *SiteQualityEngineService) SyncTargetsFromRouteCatalog(now time.Time, li
 	synced := 0
 	for {
 		entries, total, err := s.routeCatalog.List(repository.StorefrontRouteCatalogListFilter{
-			Page:     page,
-			PageSize: limit,
+			Page:                     page,
+			PageSize:                 limit,
+			IncludeStaleWhenChecking: true,
 		})
 		if err != nil {
 			return synced, err

@@ -9,6 +9,7 @@ import (
 
 	"github.com/glebarez/sqlite"
 	"github.com/stretchr/testify/require"
+	"gorm.io/datatypes"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 )
@@ -144,6 +145,90 @@ func TestStorefrontRouteCatalogRepositoryListFiltersBySearchProfileStatus(t *tes
 	require.Equal(t, entries[1].ID, unconfigured[0].ID)
 }
 
+func TestStorefrontRouteCatalogRepositoryListSearchesSearchProfileFields(t *testing.T) {
+	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Silent),
+	})
+	require.NoError(t, err)
+	require.NoError(t, db.AutoMigrate(
+		&seodomain.StorefrontRouteCatalogEntry{},
+		&urlmanagementdomain.StorefrontURLSearchProfile{},
+	))
+
+	now := time.Now().UTC()
+	entry := seodomain.StorefrontRouteCatalogEntry{
+		RouteKey:      "static:search-profile-fields",
+		Path:          "/en/search-profile-fields",
+		Locale:        "en",
+		SourceType:    seodomain.RouteSourceStatic,
+		Title:         "Route title",
+		Summary:       "Route summary",
+		SourceKey:     "route-source-key",
+		CanonicalPath: "/en/search-profile-fields",
+		EntryStatus:   seodomain.RouteEntryStatusActive,
+		LastSeenAt:    now,
+	}
+	require.NoError(t, db.Create(&entry).Error)
+	require.NoError(t, db.Create(&urlmanagementdomain.StorefrontURLSearchProfile{
+		RouteEntryID:   entry.ID,
+		Enabled:        true,
+		SearchWeight:   10,
+		Keywords:       datatypes.JSONSlice[string]{"rare-search-keyword"},
+		DisplayTitle:   "Custom search heading",
+		DisplaySummary: "Custom search summary",
+	}).Error)
+
+	repo := NewStorefrontRouteCatalogRepository(db)
+	for _, query := range []string{"Custom search heading", "Custom search summary", "rare-search-keyword"} {
+		result, total, err := repo.List(StorefrontRouteCatalogListFilter{
+			Page:     1,
+			PageSize: 20,
+			Search:   query,
+		})
+		require.NoError(t, err)
+		require.Equal(t, int64(1), total, query)
+		require.Len(t, result, 1, query)
+		require.Equal(t, entry.ID, result[0].ID, query)
+	}
+}
+
+func TestListIssueCandidateIDsIncludesRoutesWithActiveHistoricalIssues(t *testing.T) {
+	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Silent),
+	})
+	require.NoError(t, err)
+	require.NoError(t, db.AutoMigrate(
+		&seodomain.StorefrontRouteCatalogEntry{},
+		&urlmanagementdomain.StorefrontURLIssue{},
+		&urlmanagementdomain.StorefrontURLIssueEvent{},
+	))
+
+	now := time.Now().UTC()
+	entries := []seodomain.StorefrontRouteCatalogEntry{
+		{
+			RouteKey: "manifest:restored:en", Path: "/restored", Locale: "en", SourceType: seodomain.RouteSourceStatic,
+			EntryStatus: seodomain.RouteEntryStatusActive, IsCheckable: true, LastSeenAt: now,
+		},
+		{
+			RouteKey: "manifest:healthy:en", Path: "/healthy", Locale: "en", SourceType: seodomain.RouteSourceStatic,
+			EntryStatus: seodomain.RouteEntryStatusActive, IsCheckable: true, LastSeenAt: now,
+		},
+	}
+	require.NoError(t, db.Create(&entries).Error)
+	require.NoError(t, db.Create(&urlmanagementdomain.StorefrontURLIssue{
+		RouteEntryID:    entries[0].ID,
+		IssueType:       urlmanagementdomain.URLIssueTypeStaleRoute,
+		Severity:        urlmanagementdomain.URLIssueSeverityMedium,
+		State:           urlmanagementdomain.URLIssueStateOpen,
+		FirstDetectedAt: now,
+		LastDetectedAt:  now,
+	}).Error)
+
+	ids, err := NewStorefrontRouteCatalogRepository(db).ListIssueCandidateIDs()
+	require.NoError(t, err)
+	require.Equal(t, []uint{entries[0].ID}, ids)
+}
+
 func TestStorefrontRouteCatalogRepositoryListCheckableOnlyExcludesStaleAndUncheckable(t *testing.T) {
 	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Silent),
@@ -195,6 +280,100 @@ func TestStorefrontRouteCatalogRepositoryListCheckableOnlyExcludesStaleAndUnchec
 	require.Equal(t, int64(1), total)
 	require.Len(t, result, 1)
 	require.Equal(t, "/checkable", result[0].Path)
+
+	result, total, err = NewStorefrontRouteCatalogRepository(db).List(StorefrontRouteCatalogListFilter{
+		Page:                     1,
+		PageSize:                 20,
+		CheckableOnly:            true,
+		IncludeStaleWhenChecking: true,
+	})
+	require.NoError(t, err)
+	require.Equal(t, int64(2), total)
+	require.Len(t, result, 2)
+	require.Equal(t, []string{"/checkable", "/stale"}, []string{result[0].Path, result[1].Path})
+}
+
+func TestStorefrontRouteCatalogRepositoryDefaultListExcludesStaleAndSupportsCheckProgressFilters(t *testing.T) {
+	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Silent),
+	})
+	require.NoError(t, err)
+	require.NoError(t, db.AutoMigrate(&seodomain.StorefrontRouteCatalogEntry{}))
+
+	now := time.Now().UTC()
+	entries := []seodomain.StorefrontRouteCatalogEntry{
+		{RouteKey: "static:checked", Path: "/checked", Locale: "en", SourceType: seodomain.RouteSourceStatic, IsCheckable: true, EntryStatus: seodomain.RouteEntryStatusActive, LastCheckStatus: seodomain.RouteCheckStatusOK, LastSeenAt: now},
+		{RouteKey: "static:unchecked", Path: "/unchecked", Locale: "en", SourceType: seodomain.RouteSourceStatic, IsCheckable: true, EntryStatus: seodomain.RouteEntryStatusActive, LastSeenAt: now},
+		{RouteKey: "static:old", Path: "/old", Locale: "en", SourceType: seodomain.RouteSourceStatic, IsCheckable: true, EntryStatus: seodomain.RouteEntryStatusStale, LastSeenAt: now},
+	}
+	require.NoError(t, db.Create(&entries).Error)
+	repo := NewStorefrontRouteCatalogRepository(db)
+
+	current, total, err := repo.List(StorefrontRouteCatalogListFilter{Page: 1, PageSize: 20})
+	require.NoError(t, err)
+	require.Equal(t, int64(2), total)
+	require.Equal(t, []string{"/checked", "/unchecked"}, []string{current[0].Path, current[1].Path})
+
+	checked, total, err := repo.List(StorefrontRouteCatalogListFilter{Page: 1, PageSize: 20, CheckStatus: "checked"})
+	require.NoError(t, err)
+	require.Equal(t, int64(1), total)
+	require.Equal(t, "/checked", checked[0].Path)
+
+	unchecked, total, err := repo.List(StorefrontRouteCatalogListFilter{Page: 1, PageSize: 20, CheckStatus: "unchecked"})
+	require.NoError(t, err)
+	require.Equal(t, int64(1), total)
+	require.Equal(t, "/unchecked", unchecked[0].Path)
+
+	historical, total, err := repo.List(StorefrontRouteCatalogListFilter{Page: 1, PageSize: 20, EntryStatus: seodomain.RouteEntryStatusStale})
+	require.NoError(t, err)
+	require.Equal(t, int64(1), total)
+	require.Equal(t, "/old", historical[0].Path)
+}
+
+func TestStorefrontRouteCatalogRepositoryNeedsAttentionStopsSelectingRecoveredStaleRoutes(t *testing.T) {
+	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Silent),
+	})
+	require.NoError(t, err)
+	require.NoError(t, db.AutoMigrate(&seodomain.StorefrontRouteCatalogEntry{}))
+
+	now := time.Now().UTC()
+	checkedAt := now.Add(-time.Minute)
+	entries := []seodomain.StorefrontRouteCatalogEntry{
+		{
+			RouteKey: "static:stale-unchecked", Path: "/stale-unchecked", Locale: "en", SourceType: seodomain.RouteSourceStatic,
+			IsCheckable: true, EntryStatus: seodomain.RouteEntryStatusStale, LastSeenAt: now,
+		},
+		{
+			RouteKey: "static:stale-recovered", Path: "/stale-recovered", Locale: "en", SourceType: seodomain.RouteSourceStatic,
+			IsCheckable: true, EntryStatus: seodomain.RouteEntryStatusStale, LastCheckStatus: seodomain.RouteCheckStatusOK,
+			LastCheckedAt: &checkedAt, LastSeenAt: now,
+		},
+		{
+			RouteKey: "static:stale-still-failing", Path: "/stale-still-failing", Locale: "en", SourceType: seodomain.RouteSourceStatic,
+			IsCheckable: true, EntryStatus: seodomain.RouteEntryStatusStale, LastCheckStatus: seodomain.RouteCheckStatusServerError,
+			LastCheckedAt: &checkedAt, LastSeenAt: now,
+		},
+		{
+			RouteKey: "static:stale-retired", Path: "/stale-retired", Locale: "en", SourceType: seodomain.RouteSourceStatic,
+			IsCheckable: true, EntryStatus: seodomain.RouteEntryStatusStale, LastCheckStatus: seodomain.RouteCheckStatusNotFound,
+			LastCheckedAt: &checkedAt, LastSeenAt: now,
+		},
+	}
+	require.NoError(t, db.Create(&entries).Error)
+
+	needsAttention := true
+	result, total, err := NewStorefrontRouteCatalogRepository(db).List(StorefrontRouteCatalogListFilter{
+		Page:                     1,
+		PageSize:                 20,
+		NeedsAttention:           &needsAttention,
+		CheckableOnly:            true,
+		IncludeStaleWhenChecking: true,
+	})
+	require.NoError(t, err)
+	require.Equal(t, int64(2), total)
+	require.Len(t, result, 2)
+	require.Equal(t, []string{"/stale-still-failing", "/stale-unchecked"}, []string{result[0].Path, result[1].Path})
 }
 
 func TestStorefrontRouteCatalogRepositoryStatsFiltersByLocale(t *testing.T) {
@@ -296,7 +475,7 @@ func TestStatsForLocaleAndScopeRestrictsCanonicalMetrics(t *testing.T) {
 	require.Equal(t, int64(3), allStats.Total)
 }
 
-func TestUpsertSnapshotClearsCurrentCheckProjectionAndPreservesHistory(t *testing.T) {
+func TestUpsertSnapshotClearsCheckProjectionWhenPathChangesAndPreservesHistory(t *testing.T) {
 	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Silent),
 	})
@@ -358,6 +537,53 @@ func TestUpsertSnapshotClearsCurrentCheckProjectionAndPreservesHistory(t *testin
 		Where("route_entry_id = ?", entry.ID).
 		Count(&historyCount).Error)
 	require.Equal(t, int64(1), historyCount)
+}
+
+func TestUpsertSnapshotPreservesCheckProjectionWhenCheckedRouteIsUnchanged(t *testing.T) {
+	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Silent),
+	})
+	require.NoError(t, err)
+	require.NoError(t, db.AutoMigrate(&seodomain.StorefrontRouteCatalogEntry{}))
+
+	checkedAt := time.Now().UTC().Add(-time.Hour)
+	entry := seodomain.StorefrontRouteCatalogEntry{
+		RouteKey:        "manifest:unchanged-route:en",
+		Path:            "/resources/blog",
+		Locale:          "en",
+		SourceType:      seodomain.RouteSourceStatic,
+		CanonicalPath:   "/resources/blog",
+		ManifestVersion: "before",
+		EntryStatus:     seodomain.RouteEntryStatusActive,
+		IsCheckable:     true,
+		LastCheckStatus: seodomain.RouteCheckStatusNotFound,
+		LastHTTPStatus:  404,
+		LastFinalURL:    "http://localhost:9200/resources/blog",
+		LastCheckedAt:   &checkedAt,
+		LastSeenAt:      checkedAt,
+	}
+	require.NoError(t, db.Create(&entry).Error)
+
+	seenAt := time.Now().UTC()
+	require.NoError(t, NewStorefrontRouteCatalogRepository(db).UpsertSnapshot([]seodomain.StorefrontRouteCatalogEntry{{
+		RouteKey:        entry.RouteKey,
+		Path:            entry.Path,
+		Locale:          entry.Locale,
+		SourceType:      entry.SourceType,
+		CanonicalPath:   entry.CanonicalPath,
+		ManifestVersion: "after",
+		EntryStatus:     seodomain.RouteEntryStatusActive,
+		IsCheckable:     true,
+	}}, seenAt))
+
+	var refreshed seodomain.StorefrontRouteCatalogEntry
+	require.NoError(t, db.First(&refreshed, entry.ID).Error)
+	require.Equal(t, "after", refreshed.ManifestVersion)
+	require.Equal(t, seodomain.RouteCheckStatusNotFound, refreshed.LastCheckStatus)
+	require.Equal(t, 404, refreshed.LastHTTPStatus)
+	require.Equal(t, entry.LastFinalURL, refreshed.LastFinalURL)
+	require.NotNil(t, refreshed.LastCheckedAt)
+	require.WithinDuration(t, checkedAt, *refreshed.LastCheckedAt, time.Second)
 }
 
 func TestUpsertSnapshotClearsCheckProjectionForStaleEntries(t *testing.T) {

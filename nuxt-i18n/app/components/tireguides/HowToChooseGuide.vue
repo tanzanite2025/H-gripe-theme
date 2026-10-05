@@ -36,7 +36,46 @@
           {{ t('guidesTireChoose.standards.legendDescription') }}
         </p>
 
-        <div class="tire-chart-table-grid">
+        <section
+          class="tire-chart-methodology mx-auto mb-6 max-w-3xl text-left"
+          aria-labelledby="tire-chart-methodology-title"
+        >
+          <h4 id="tire-chart-methodology-title" class="tire-chart-methodology__title">
+            {{ t('guidesTireChoose.methodology.title') }}
+          </h4>
+          <p v-if="tireRimWidthReferenceMetadata?.source" class="tire-chart-methodology__source">
+            {{ t('guidesTireChoose.methodology.source', {
+              source: tireRimWidthReferenceMetadata.source.name,
+              date: tireRimWidthReferenceMetadata.knowledge_as_of,
+            }) }}
+          </p>
+          <p v-else class="tire-chart-methodology__source">
+            {{ t('guidesTireChoose.methodology.unavailable') }}
+          </p>
+          <p v-if="tireRimWidthReferenceMetadata?.source" class="tire-chart-methodology__provenance">
+            {{ t('guidesTireChoose.methodology.provenance', {
+              provenance: tireRimWidthReferenceMetadata.source.provenance,
+            }) }}
+          </p>
+          <p class="tire-chart-methodology__body">
+            {{ t('guidesTireChoose.methodology.body') }}
+          </p>
+          <p v-if="tireRimWidthReferenceMetadata?.model_version" class="tire-chart-methodology__version">
+            {{ t('guidesTireChoose.methodology.version', {
+              modelVersion: tireRimWidthReferenceMetadata.model_version,
+            }) }}
+          </p>
+          <ul class="tire-chart-methodology__limitations">
+            <li
+              v-for="limitationKey in tireRimWidthReferenceLimitationKeys"
+              :key="limitationKey"
+            >
+              {{ t(`guidesTireChoose.methodology.limitations.${limitationKey}`) }}
+            </li>
+          </ul>
+        </section>
+
+        <div id="tire-chart-tables" class="tire-chart-table-grid">
           <section class="tire-chart-table-panel" aria-labelledby="hookless-chart-table-title">
             <h4 id="hookless-chart-table-title" class="tire-chart-table-panel__title">
               {{ t('guidesTireChoose.standards.hooklessTitle') }}
@@ -138,9 +177,15 @@
 
 <script setup lang="ts">
 import { computed, watch } from 'vue'
-import { useAsyncData, useI18n } from '#imports'
+import { useAsyncData, useHead, useI18n, useSwitchLocalePath } from '#imports'
 import TireRimHelper from '~/components/TireRimHelper.vue'
 import { usePageMessages } from '~/composables/usePageMessages'
+import {
+  useStorefrontSeoLinks,
+  useStorefrontSeoRouteOverride,
+} from '~/composables/seo/useStorefrontSeoLinks'
+import { createSeoJsonLdScript } from '~/utils/seo/jsonLd'
+import localeManifest from '~/i18n/locales.manifest'
 import {
   formatTireRimWidthReferenceRanges,
   type TireRimWidthRange,
@@ -150,7 +195,36 @@ import {
 import { useApiRequest } from '~/composables/useApiRequest'
 
 const { locale, t } = useI18n()
+const switchLocalePath = useSwitchLocalePath()
+const { canonicalUrl } = useStorefrontSeoLinks()
 const { loadPageMessages } = usePageMessages('guidesTireChoose')
+
+const tireRimReferencePublishedLocaleCodes = ['en', 'zh_cn'] as const
+const tireRimWidthReferenceLimitationKeys = [
+  'modelSpecificCertification',
+  'possibleReferenceStatus',
+  'interpolationProjection',
+  'displayOnlyMetrics',
+] as const
+const localizedTireRimReferenceSeoRoutes = computed(() => (
+  tireRimReferencePublishedLocaleCodes.map((code) => {
+    const localizedPath = switchLocalePath(code as any)
+    return {
+      code,
+      path: localizedPath || (code === 'zh_cn'
+        ? '/zh_cn/guides/tireguides/choose'
+        : '/guides/tireguides/choose'),
+    }
+  })
+))
+
+// Only the locales with dedicated page copy are indexable. The route remains
+// reachable in other locale shells, but those fallback copies must not create
+// duplicate search results or asymmetric hreflang declarations.
+useStorefrontSeoRouteOverride(localizedTireRimReferenceSeoRoutes)
+const isPublishedTireRimReferenceLocale = computed(() => (
+  tireRimReferencePublishedLocaleCodes.includes(locale.value as (typeof tireRimReferencePublishedLocaleCodes)[number])
+))
 
 await loadPageMessages(locale.value)
 
@@ -183,6 +257,97 @@ const formatWidthList = (widths: TireRimWidthRange[]) =>
   widths.length > 0
     ? `${formatTireRimWidthReferenceRanges(widths)} mm`
     : t('guidesTireChoose.helper.noneShown')
+const tireRimReferenceSchema = computed(() => {
+  const metadata = tireRimWidthReferenceMetadata.value
+  const language = localeManifest.find(entry => entry.code === locale.value)?.iso || locale.value
+  const datasetId = canonicalUrl.value + '#tire-rim-width-reference-dataset'
+  const measurementTechnique = metadata?.methodology
+    ? [
+        metadata.methodology.exact_rows,
+        metadata.methodology.interpolated_rows,
+        metadata.methodology.possible_rows,
+        metadata.methodology.derived_metrics,
+      ].filter(Boolean).join(' ')
+    : t('guidesTireChoose.seo.measurementTechnique')
+
+  return {
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'TechArticle',
+        '@id': canonicalUrl.value + '#tire-rim-width-reference',
+        url: canonicalUrl.value,
+        mainEntityOfPage: canonicalUrl.value,
+        headline: t('guidesTireChoose.seo.title'),
+        description: t('guidesTireChoose.seo.description'),
+        articleSection: t('guidesTireChoose.seo.articleSection'),
+        articleBody: t('guidesTireChoose.seo.articleBody'),
+        proficiencyLevel: 'Expert',
+        author: {
+          '@type': 'Organization',
+          name: 'Tanzanite Engineering Laboratory',
+        },
+        inLanguage: language,
+        ...(metadata?.model_version ? { version: metadata.model_version } : {}),
+        ...(metadata?.knowledge_as_of ? { dateModified: metadata.knowledge_as_of } : {}),
+        hasPart: { '@id': datasetId },
+      },
+      {
+        '@type': 'Dataset',
+        '@id': datasetId,
+        url: canonicalUrl.value + '#tire-chart-tables',
+        name: t('guidesTireChoose.seo.datasetName'),
+        description: t('guidesTireChoose.seo.datasetDescription'),
+        ...(metadata?.model_version ? { version: metadata.model_version } : {}),
+        inLanguage: language,
+        isAccessibleForFree: true,
+        ...(metadata?.knowledge_as_of ? { dateModified: metadata.knowledge_as_of } : {}),
+        ...(metadata?.rows?.length ? { numberOfItems: metadata.rows.length } : {}),
+        measurementTechnique,
+        variableMeasured: [
+          t('guidesTireChoose.seo.tireWidthVariable'),
+          t('guidesTireChoose.seo.rimWidthVariable'),
+        ],
+        ...(metadata?.source
+          ? {
+              additionalProperty: [
+                {
+                  '@type': 'PropertyValue',
+                  name: t('guidesTireChoose.seo.sourceProperty'),
+                  value: metadata.source.name,
+                },
+                {
+                  '@type': 'PropertyValue',
+                  name: t('guidesTireChoose.seo.sourceDateProperty'),
+                  value: metadata.knowledge_as_of,
+                },
+                {
+                  '@type': 'PropertyValue',
+                  name: 'source_provenance',
+                  value: metadata.source.provenance,
+                },
+              ],
+            }
+          : {}),
+      },
+    ],
+  }
+})
+
+useHead(() => ({
+  title: t('guidesTireChoose.seo.title'),
+  meta: [
+    {
+      name: 'description',
+      content: t('guidesTireChoose.seo.description'),
+      key: 'description',
+    },
+    ...(!isPublishedTireRimReferenceLocale.value
+      ? [{ name: 'robots', content: 'noindex,follow', key: 'robots' }]
+      : []),
+  ],
+  script: [createSeoJsonLdScript(tireRimReferenceSchema.value)],
+}))
 </script>
 
 <style scoped>
@@ -203,6 +368,40 @@ const formatWidthList = (widths: TireRimWidthRange[]) =>
 
 .tire-chart-table-panel {
   min-width: 0;
+}
+
+.tire-chart-methodology {
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 0.75rem;
+  padding: 0.85rem 1rem;
+  background: var(--tz-form-panel-surface);
+}
+
+.tire-chart-methodology__title {
+  margin: 0 0 0.35rem;
+  color: var(--tz-text-primary);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.tire-chart-methodology__source,
+.tire-chart-methodology__provenance,
+.tire-chart-methodology__body,
+.tire-chart-methodology__version {
+  margin: 0;
+  color: var(--tz-text-muted);
+  font-size: 0.72rem;
+  line-height: 1.55;
+}
+
+.tire-chart-methodology__limitations {
+  display: grid;
+  gap: 0.2rem;
+  margin: 0.45rem 0 0;
+  padding-left: 1rem;
+  color: var(--tz-text-muted);
+  font-size: 0.7rem;
+  line-height: 1.5;
 }
 
 .tire-chart-table-grid {

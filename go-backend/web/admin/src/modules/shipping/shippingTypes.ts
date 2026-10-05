@@ -39,6 +39,33 @@ export interface ShippingTemplate {
   description?: string | null
   enabled?: boolean
   rules?: ShippingTemplateRule[]
+  carrier_services?: ShippingTemplateCarrierServiceDraft[]
+}
+
+export interface ShippingTemplateCarrierServiceDraft {
+  id?: ShippingID | null
+  carrier_id: ShippingID
+  fpx_channel_id?: ShippingID | null
+  yanwen_published_channel_id?: ShippingID | null
+  provider_code?: string
+  service_code: string
+  service_name: string
+  route_name?: string
+  countries?: string
+  currency?: string
+  billing_mode?: string
+  first_weight_grams?: number
+  additional_weight_grams?: number
+  min_charge_weight_grams?: number
+  volumetric_divisor?: number
+  fuel_surcharge_percent_decimal?: string
+  remote_surcharge_minor?: number
+  remote_postal_codes?: string
+  eta_min_days?: number
+  eta_max_days?: number
+  enabled?: boolean
+  sort_order?: number
+  description?: string
 }
 
 export interface ShippingTemplateForm {
@@ -53,24 +80,7 @@ export interface ShippingTemplateForm {
   description: string
   enabled: boolean
   rules: ShippingTemplateRule[]
-}
-
-export interface ShippingZone {
-  id: ShippingID
-  name?: string | null
-  countries?: unknown
-  states?: unknown
-  postal_codes?: unknown
-  enabled?: boolean
-}
-
-export interface ShippingZoneForm {
-  id: ShippingID | null
-  name: string
-  countries: string
-  states: string
-  postal_codes: string
-  enabled: boolean
+  carrier_services: ShippingTemplateCarrierServiceDraft[]
 }
 
 export interface ShippingCarrier {
@@ -102,6 +112,9 @@ export interface ShippingCarrierForm {
 export interface ShippingCarrierService {
   id: ShippingID
   carrier_id?: ShippingID | null
+  fpx_channel_id?: ShippingID | null
+  yanwen_published_channel_id?: ShippingID | null
+  provider_code?: string | null
   service_code?: string | null
   service_name?: string | null
   route_name?: string | null
@@ -123,6 +136,9 @@ export interface ShippingCarrierService {
 export interface ShippingCarrierServiceForm {
   id: ShippingID | null
   carrier_id: string
+  fpx_channel_id: ShippingID | null
+  yanwen_published_channel_id: ShippingID | null
+  provider_code: string
   template_id: string
   service_code: string
   service_name: string
@@ -236,78 +252,6 @@ export interface PackagingRuleForm {
   is_active: boolean
 }
 
-export interface ShippingQuoteItemInput {
-  product_id: number | string
-  variant_id: number | string | null
-  quantity: number | string
-}
-
-export interface ShippingQuoteForm {
-  country: string
-  postal_code: string
-  currency: string
-  items: ShippingQuoteItemInput[]
-}
-
-export interface ShippingQuoteLeg {
-  group_key?: string | null
-  item_indexes?: number[]
-  allocation_basis?: string | null
-  carrier_service_id?: ShippingID | null
-  service_name?: string | null
-  carrier_name?: string | null
-  service_code?: string | null
-  template_id?: ShippingID | null
-  template_name?: string | null
-  billing_mode?: string | null
-  actual_weight_grams?: number | string | null
-  volumetric_weight_grams?: number | string | null
-  billable_weight_grams?: number | string | null
-  base_fee_minor?: number | string | null
-  fuel_surcharge_minor?: number | string | null
-  remote_surcharge_minor?: number | string | null
-  shipping_fee_minor?: number | string | null
-  eta_min_days?: number | string | null
-  eta_max_days?: number | string | null
-}
-
-export interface ShippingQuotePlan {
-  id?: string | null
-  currency?: string | null
-  shipping_fee_minor?: number | string | null
-  free_shipping?: boolean
-  eta_min_days?: number | string | null
-  eta_max_days?: number | string | null
-  legs?: ShippingQuoteLeg[]
-}
-
-export interface ShippingQuoteItemResult {
-  product_id?: ShippingID | null
-  variant_id?: ShippingID | null
-  template_id?: ShippingID | null
-  template_name?: string | null
-  quantity?: number | string | null
-  unit_price_minor?: number | string | null
-  weight_grams?: number | string | null
-  packaging_rule_id?: ShippingID | null
-  packaging_rule_name?: string | null
-  packaging_weight_grams?: number | string | null
-  charge_weight_grams?: number | string | null
-  shipping_fee_minor?: number | string | null
-}
-
-export interface ShippingQuoteResult {
-  id?: string | null
-  rate_version?: string | null
-  expires_at?: string | number | Date | null
-  shipping_fee_minor?: number | string | null
-  currency?: string | null
-  free_shipping?: boolean
-  selected_plan?: ShippingQuotePlan | null
-  plans?: ShippingQuotePlan[]
-  items?: ShippingQuoteItemResult[]
-}
-
 export interface TrackingShipment {
   id?: ShippingID | null
   order_id?: ShippingID | null
@@ -390,7 +334,6 @@ export interface TrackingWebhookState {
 
 export interface ShippingLoadingState {
   templates: boolean
-  zones: boolean
   carriers: boolean
   services: boolean
   tracking: boolean
@@ -401,7 +344,6 @@ export interface ShippingLoadingState {
 
 export type ShippingResource =
   | ShippingTemplate
-  | ShippingZone
   | ShippingCarrier
   | ShippingCarrierService
   | TrackingProvider

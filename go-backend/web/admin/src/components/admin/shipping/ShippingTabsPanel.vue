@@ -19,17 +19,6 @@
       @delete-mapping="emit('delete', 'trackingCarrierMapping', $event)"
     />
 
-    <ShippingZonesPanel
-      :zones="zones"
-      :loading="loading.zones"
-      :can-create="canCreate"
-      :can-edit="canEdit"
-      :can-delete="canDelete"
-      @create="emit('create-zone')"
-      @edit="emit('edit-zone', $event)"
-      @delete="emit('delete', 'zone', $event)"
-    />
-
     <ShippingCarriersPanel
       :carriers="carriers"
       :loading="loading.carriers"
@@ -53,10 +42,6 @@
       @edit="emit('edit-carrier-service', $event)"
       @delete="emit('delete', 'carrierService', $event)"
     />
-
-    <TabsContent value="quote" class="space-y-3">
-      <ShippingQuoteCalculator />
-    </TabsContent>
 
     <ShippingPackagingPanel
       :packaging-rules="packagingRules"
@@ -100,9 +85,7 @@ import { ref } from 'vue'
 import ShippingCarrierServicesPanel from '@/components/admin/shipping/ShippingCarrierServicesPanel.vue'
 import ShippingCarriersPanel from '@/components/admin/shipping/ShippingCarriersPanel.vue'
 import ShippingPackagingPanel from '@/components/admin/shipping/ShippingPackagingPanel.vue'
-import ShippingQuoteCalculator from '@/components/admin/shipping/ShippingQuoteCalculator.vue'
 import ShippingTemplatesPanel from '@/components/admin/shipping/ShippingTemplatesPanel.vue'
-import ShippingZonesPanel from '@/components/admin/shipping/ShippingZonesPanel.vue'
 import TrackingProvidersPanel from '@/components/admin/shipping/TrackingProvidersPanel.vue'
 import TrackingShipmentsPanel from '@/components/admin/shipping/TrackingShipmentsPanel.vue'
 import { Tabs, TabsContent } from '@/components/ui/tabs'
@@ -113,7 +96,6 @@ import type {
   ShippingLoadingState,
   ShippingResource,
   ShippingTemplate,
-  ShippingZone,
   TrackingCarrierMapping,
   TrackingProvider
 } from '@/modules/shipping/shippingTypes'
@@ -121,7 +103,6 @@ import type {
 withDefaults(defineProps<{
   activeTab?: string
   templates?: ShippingTemplate[]
-  zones?: ShippingZone[]
   carriers?: ShippingCarrier[]
   carrierServices?: ShippingCarrierService[]
   trackingProviders?: TrackingProvider[]
@@ -134,7 +115,6 @@ withDefaults(defineProps<{
 }>(), {
   activeTab: 'templates',
   templates: () => [],
-  zones: () => [],
   carriers: () => [],
   carrierServices: () => [],
   trackingProviders: () => [],
@@ -142,7 +122,6 @@ withDefaults(defineProps<{
   packagingRules: () => [],
   loading: () => ({
     templates: false,
-    zones: false,
     carriers: false,
     services: false,
     tracking: false,
@@ -160,8 +139,6 @@ const emit = defineEmits<{
   (event: 'edit-template', template: ShippingTemplate): void
   (event: 'create-mapping'): void
   (event: 'edit-mapping', mapping: TrackingCarrierMapping): void
-  (event: 'create-zone'): void
-  (event: 'edit-zone', zone: ShippingZone): void
   (event: 'create-carrier'): void
   (event: 'edit-carrier', carrier: ShippingCarrier): void
   (event: 'create-carrier-service'): void
@@ -181,4 +158,3 @@ const refresh = () => trackingShipmentsPanelRef.value?.refresh?.()
 
 defineExpose({ refresh })
 </script>
-

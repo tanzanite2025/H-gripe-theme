@@ -36,7 +36,7 @@ func TestBuildManifestRouteCatalogEntriesHonoursSitemapLocales(t *testing.T) {
 		Routes: []seodomain.StorefrontRouteManifestRoute{
 			{
 				Key:            "resources-wheelset-lacing-topology",
-				Path:           "/resources/轮组编法",
+				Path:           "/resources/wheelset-spoke-lacing-topology-and-geometry-reference",
 				Label:          "Wheelset spoke lacing topology",
 				Description:    "Interactive wheelset lacing topology reference",
 				SitemapLocales: []string{"en", "zh_cn"},
@@ -52,10 +52,10 @@ func TestBuildManifestRouteCatalogEntriesHonoursSitemapLocales(t *testing.T) {
 	if len(entries) != 2 {
 		t.Fatalf("expected two public locale entries, got %d", len(entries))
 	}
-	if entries[0].Locale != "en" || entries[0].Path != "/resources/轮组编法" {
+	if entries[0].Locale != "en" || entries[0].Path != "/resources/wheelset-spoke-lacing-topology-and-geometry-reference" {
 		t.Fatalf("unexpected English route entry: %+v", entries[0])
 	}
-	if entries[1].Locale != "zh_cn" || entries[1].Path != "/zh_cn/resources/轮组编法" {
+	if entries[1].Locale != "zh_cn" || entries[1].Path != "/zh_cn/resources/wheelset-spoke-lacing-topology-and-geometry-reference" {
 		t.Fatalf("unexpected Chinese route entry: %+v", entries[1])
 	}
 }
@@ -66,7 +66,7 @@ func TestFAQRoutePagesHonourManifestSitemapLocales(t *testing.T) {
 		Routes: []seodomain.StorefrontRouteManifestRoute{
 			{
 				Key:            "resources-wheelset-lacing-topology",
-				Path:           "/resources/轮组编法",
+				Path:           "/resources/wheelset-spoke-lacing-topology-and-geometry-reference",
 				Label:          "Wheelset spoke lacing topology",
 				Description:    "Interactive wheelset lacing topology reference",
 				SitemapLocales: []string{"en", "zh_cn"},

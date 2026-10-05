@@ -27,7 +27,7 @@ export const storefrontHtmlCachePolicies: StorefrontHtmlCachePolicy[] = [
     description: 'Editorial and guide pages that change less frequently than product data.',
     paths: [
       '/resources/blog/**',
-      '/resources/brand-wheelset-spoke-specs/**',
+      '/guides/spokeguides/brand-wheelset-spoke-specs/**',
       '/guides/**',
       '/resources/picture-warehouse/**',
       '/faq',
@@ -60,7 +60,7 @@ export const storefrontNoStorePagePaths = [
   // changes frequently. Keep it uncached until a query-aware cache strategy is added.
   '/shop',
   '/resources/membershipandpoints/**',
-  '/resources/spoke-calculator/**',
+  '/guides/spokeguides/spoke-length-calculator/**',
   '/resources/workbench',
   '/support/test-report',
   '/support/warranty-check',

@@ -9,20 +9,15 @@ import (
 
 const (
 	ModelVersion                                    = "pressure-baseline-v1-unapproved"
-	DynamicsModelVersion                            = "cornering-demo-v6-vertical-deformation-reference"
+	DynamicsModelVersion                            = "cornering-demo-v7-pressure-friction-status"
 	PsiPerBar                                       = 14.5037738
 	LoadToleranceKg                                 = 0.5
 	GravityMps2                                     = 9.80665
 	GenericTireBodyNormalizationBaseline            = 1.0
 	GenericTireBodyNormalizationSourceFixedBaseline = "FIXED_GENERIC_BASELINE"
 	FlatRoadDemoFrictionCoefficient                 = 0.76
-	WetRoadDemoDefaultWaterFilmDepthMm              = 1.0
-	WetRoadDemoReferenceSpeedKmh                    = 30.0
-	WetRoadDemoReferenceFrictionLoss                = 0.20
-	WetRoadDemoMinimumFrictionRetentionRatio        = 0.45
-	WetRoadDemoMaximumWaterFilmDepthMm              = 5.0
-	WetRoadDemoSurfaceTextureBaseline               = "INDOOR_FLAT_BASELINE"
-	WetRoadDemoRubberBaseline                       = "GENERIC_NON_RADIAL_RUBBER"
+	PressureFrictionDataStatus                      = "INSUFFICIENT_MEASUREMENT_SUPPORT"
+	PressureFrictionCalculationMethod               = "fixed_flat_road_baseline_without_pressure_adjustment"
 	TireWidthSourceMeasured                         = "MEASURED"
 	TireWidthSourceNominalUncorrected               = "NOMINAL_UNCORRECTED"
 )
@@ -123,7 +118,22 @@ type WheelDynamics struct {
 	IdealizedGripLimitN                          float64                                  `json:"idealized_grip_limit_n"`
 	GripMarginPct                                float64                                  `json:"grip_margin_pct"`
 	PressureContactAreaComparison                *PressureContactAreaComparison           `json:"pressure_contact_area_comparison,omitempty"`
+	PressureFrictionCoefficient                  *PressureFrictionCoefficientEstimate     `json:"pressure_friction_coefficient,omitempty"`
 	WetPressureCompensation                      *WetPressureCompensation                 `json:"wet_pressure_compensation,omitempty"`
+}
+
+// PressureFrictionCoefficientEstimate makes the missing pressure-to-friction
+// link explicit. A complete same-tire, same-load, same-surface and same-speed
+// pressure sweep is not available, so the calculation retains the fixed flat
+// road coefficient and reports that pressure adjustment was not applied.
+type PressureFrictionCoefficientEstimate struct {
+	DataStatus               string  `json:"data_status"`
+	OperatingPressurePsi     float64 `json:"operating_pressure_psi"`
+	NominalCoefficient       float64 `json:"nominal_coefficient"`
+	EstimatedCoefficient     float64 `json:"estimated_coefficient"`
+	RelativeCoefficientIndex float64 `json:"relative_coefficient_index"`
+	PressureEffectApplied    bool    `json:"pressure_effect_applied"`
+	CalculationMethod        string  `json:"calculation_method"`
 }
 
 // TirePressureVerticalDeformationEstimate is a transparent reference-tire
@@ -144,27 +154,6 @@ type TirePressureVerticalDeformationEstimate struct {
 	EstimatedVerticalStiffnessNPerMm float64 `json:"estimated_vertical_stiffness_n_per_mm"`
 	CalculationMethod                string  `json:"calculation_method"`
 	PressureScalingAssumption        string  `json:"pressure_scaling_assumption"`
-}
-
-// WetPressureCompensation contains an explicit equivalent-pressure comparison.
-// It uses a bounded demonstration proxy for wet-friction retention; it is not a
-// calibrated tire-road friction law or a pressure recommendation.
-type WetPressureCompensation struct {
-	WaterFilmDepthMm                 float64  `json:"water_film_depth_mm"`
-	SpeedKmh                         float64  `json:"speed_kmh"`
-	LateralDemandRatio               float64  `json:"lateral_demand_ratio"`
-	FrictionRetentionRatio           float64  `json:"friction_retention_ratio"`
-	ReferencePressurePsi             float64  `json:"reference_pressure_psi"`
-	EquivalentPressurePsi            float64  `json:"equivalent_pressure_psi"`
-	ReferenceContactAreaCm2          float64  `json:"reference_contact_area_cm2"`
-	EquivalentContactAreaCm2         float64  `json:"equivalent_contact_area_cm2"`
-	ContactAreaChangePct             float64  `json:"contact_area_change_pct"`
-	WetGripLimitAtReferencePressureN float64  `json:"wet_grip_limit_at_reference_pressure_n"`
-	WetGripMarginPct                 float64  `json:"wet_grip_margin_pct"`
-	PressureClampedToMinimum         bool     `json:"pressure_clamped_to_minimum"`
-	MinimumPressurePsi               *float64 `json:"minimum_pressure_psi,omitempty"`
-	SurfaceTextureBaseline           string   `json:"surface_texture_baseline"`
-	RubberBaseline                   string   `json:"rubber_baseline"`
 }
 
 // PressureContactAreaComparison reports the deterministic pressure-only
@@ -269,6 +258,14 @@ func ValidateTirePressureDynamicCalculationRequest(req Request) error {
 	}
 	if (req.FrontMinimumPressurePsi == nil) != (req.RearMinimumPressurePsi == nil) {
 		return &ValidationError{Code: "INVALID_FIELD", Field: "front_minimum_pressure_psi/rear_minimum_pressure_psi", Reason: "both minimum pressures must be supplied together"}
+	}
+	if req.WetPressureDemonstrationEnabled {
+		if req.FrontOperatingPsi == nil || req.RearOperatingPsi == nil {
+			return &ValidationError{Code: "INVALID_FIELD", Field: "front_operating_pressure_psi/rear_operating_pressure_psi", Reason: "wet pressure demonstration requires both operating pressures"}
+		}
+		if req.FrontMinimumPressurePsi == nil || req.RearMinimumPressurePsi == nil {
+			return &ValidationError{Code: "INVALID_FIELD", Field: "front_minimum_pressure_psi/rear_minimum_pressure_psi", Reason: "wet pressure demonstration requires both minimum pressures"}
+		}
 	}
 	if req.FrontMinimumPressurePsi != nil && req.FrontOperatingPsi != nil {
 		if *req.FrontMinimumPressurePsi > *req.FrontOperatingPsi || *req.RearMinimumPressurePsi > *req.RearOperatingPsi {
@@ -419,80 +416,6 @@ func CalculateTirePressureGroundFrameCorneringDynamics(req Request, loads Loads)
 	}, nil
 }
 
-// CalculateWetRoadFrictionRetentionRatio applies a transparent first-order
-// proxy: dynamic water pressure grows with speed squared, the water film
-// scales the loss linearly, and higher lateral demand increases sensitivity.
-// The coefficients are demonstration assumptions and must not be presented as
-// measured values for a specific tire, rubber, or road.
-func CalculateWetRoadFrictionRetentionRatio(speedKmh, waterFilmDepthMm, lateralDemandRatio float64) float64 {
-	if speedKmh <= 0 || waterFilmDepthMm <= 0 {
-		return 1
-	}
-	normalizedSpeed := speedKmh / WetRoadDemoReferenceSpeedKmh
-	normalizedWaterFilm := waterFilmDepthMm / WetRoadDemoDefaultWaterFilmDepthMm
-	boundedLateralDemandRatio := math.Max(0, math.Min(1, lateralDemandRatio))
-	demandFactor := 0.5 + 0.5*boundedLateralDemandRatio
-	loss := WetRoadDemoReferenceFrictionLoss * normalizedSpeed * normalizedSpeed * normalizedWaterFilm * demandFactor
-	return math.Max(WetRoadDemoMinimumFrictionRetentionRatio, math.Min(1, 1-loss))
-}
-
-func resolveWetRoadWaterFilmDepthMm(value *float64) float64 {
-	if value == nil {
-		return WetRoadDemoDefaultWaterFilmDepthMm
-	}
-	return *value
-}
-
-func attachWetPressureCompensation(wheel *WheelDynamics, referencePressurePsi, minimumPressurePsi *float64, speedKmh, waterFilmDepthMm, tireWidthMm float64) {
-	if wheel == nil || wheel.EstimatedStaticContactCm2 == nil || referencePressurePsi == nil {
-		return
-	}
-	if !isFinitePositiveTirePressureCalculationNumber(*referencePressurePsi) || !isFinitePositiveTirePressureCalculationNumber(*wheel.EstimatedStaticContactCm2) {
-		return
-	}
-	lateralDemandRatio := 0.0
-	if wheel.IdealizedGripLimitN > 0 {
-		lateralDemandRatio = math.Abs(wheel.LateralDemandN) / wheel.IdealizedGripLimitN
-	}
-	retentionRatio := CalculateWetRoadFrictionRetentionRatio(speedKmh, waterFilmDepthMm, lateralDemandRatio)
-	equivalentPressurePsi := *referencePressurePsi * retentionRatio
-	pressureClampedToMinimum := false
-	if minimumPressurePsi != nil && *minimumPressurePsi > equivalentPressurePsi {
-		equivalentPressurePsi = *minimumPressurePsi
-		pressureClampedToMinimum = true
-	}
-	if !isFinitePositiveTirePressureCalculationNumber(equivalentPressurePsi) {
-		return
-	}
-	equivalentAreaCm2 := *wheel.EstimatedStaticContactCm2 * *referencePressurePsi / equivalentPressurePsi
-	if !isFinitePositiveTirePressureCalculationNumber(equivalentAreaCm2) {
-		return
-	}
-	wetGripAtReferencePressureN := wheel.IdealizedGripLimitN * retentionRatio
-	comparison := &WetPressureCompensation{
-		WaterFilmDepthMm:                 roundTirePressureEngineeringValue(waterFilmDepthMm, 2),
-		SpeedKmh:                         roundTirePressureEngineeringValue(speedKmh, 1),
-		LateralDemandRatio:               roundTirePressureEngineeringValue(lateralDemandRatio, 3),
-		FrictionRetentionRatio:           roundTirePressureEngineeringValue(retentionRatio, 3),
-		ReferencePressurePsi:             roundTirePressureEngineeringValue(*referencePressurePsi, 1),
-		EquivalentPressurePsi:            roundTirePressureEngineeringValue(equivalentPressurePsi, 1),
-		ReferenceContactAreaCm2:          roundTirePressureEngineeringValue(*wheel.EstimatedStaticContactCm2, 2),
-		EquivalentContactAreaCm2:         roundTirePressureEngineeringValue(equivalentAreaCm2, 2),
-		ContactAreaChangePct:             roundTirePressureEngineeringValue((equivalentAreaCm2 / *wheel.EstimatedStaticContactCm2 - 1)*100, 1),
-		WetGripLimitAtReferencePressureN: roundTirePressureEngineeringValue(wetGripAtReferencePressureN, 1),
-		WetGripMarginPct:                 roundTirePressureEngineeringValue(calculateGripMarginPercentage(wetGripAtReferencePressureN, wheel.LateralDemandN), 1),
-		PressureClampedToMinimum:         pressureClampedToMinimum,
-		SurfaceTextureBaseline:           WetRoadDemoSurfaceTextureBaseline,
-		RubberBaseline:                   WetRoadDemoRubberBaseline,
-	}
-	if minimumPressurePsi != nil {
-		minimumPressure := roundTirePressureEngineeringValue(*minimumPressurePsi, 1)
-		comparison.MinimumPressurePsi = &minimumPressure
-	}
-	wheel.WetPressureCompensation = comparison
-	attachPressureContactAreaComparison(wheel, referencePressurePsi, &equivalentPressurePsi, tireWidthMm)
-}
-
 func attachPressureContactAreaComparison(wheel *WheelDynamics, referencePressurePsi, comparisonPressurePsi *float64, tireWidthMm float64) {
 	if wheel == nil || wheel.EstimatedStaticContactCm2 == nil || referencePressurePsi == nil || comparisonPressurePsi == nil {
 		return
@@ -573,7 +496,28 @@ func CalculateSingleWheelGroundFrameCorneringDynamicsWithTireWidth(loadKg, angle
 		}
 	}
 	result.VerticalDeformation = CalculateTirePressureVerticalDeformationEstimate(fz, pressurePsi)
+	result.PressureFrictionCoefficient = CalculateTirePressureFrictionCoefficientEstimate(muNominal, pressurePsi)
 	return result
+}
+
+// CalculateTirePressureFrictionCoefficientEstimate returns the fixed friction
+// baseline together with its data status. It intentionally does not invent a
+// pressure-dependent coefficient until a complete matched measurement set is
+// available for the same tire, load, surface, and speed.
+func CalculateTirePressureFrictionCoefficientEstimate(muNominal float64, operatingPressurePsi *float64) *PressureFrictionCoefficientEstimate {
+	if operatingPressurePsi == nil || !isFinitePositiveTirePressureCalculationNumber(*operatingPressurePsi) || !isFinitePositiveTirePressureCalculationNumber(muNominal) {
+		return nil
+	}
+
+	return &PressureFrictionCoefficientEstimate{
+		DataStatus:               PressureFrictionDataStatus,
+		OperatingPressurePsi:     roundTirePressureEngineeringValue(*operatingPressurePsi, 1),
+		NominalCoefficient:       roundTirePressureEngineeringValue(muNominal, 3),
+		EstimatedCoefficient:     roundTirePressureEngineeringValue(muNominal, 3),
+		RelativeCoefficientIndex: 1,
+		PressureEffectApplied:    false,
+		CalculationMethod:        PressureFrictionCalculationMethod,
+	}
 }
 
 // CalculateTirePressureVerticalDeformationEstimate interpolates the local

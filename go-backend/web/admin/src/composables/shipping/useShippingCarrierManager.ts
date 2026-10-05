@@ -113,6 +113,9 @@ export const useShippingCarrierManager = (options: Record<string, any> = {}) => 
       ...defaultCarrierServiceForm(),
       ...service,
       carrier_id: service.carrier_id ? String(service.carrier_id) : '',
+      provider_code: String(service.provider_code || service.carrier?.code || '').trim().toUpperCase(),
+      fpx_channel_id: service.fpx_channel_id ?? null,
+      yanwen_published_channel_id: service.yanwen_published_channel_id ?? null,
       template_id: service.template_id ? String(service.template_id) : 'none',
       first_weight_grams: Number(service.first_weight_grams || 0),
       additional_weight_grams: Number(service.additional_weight_grams || 0),
@@ -164,6 +167,9 @@ export const useShippingCarrierManager = (options: Record<string, any> = {}) => 
 
   const buildCarrierServicePayload = () => ({
     carrier_id: nullablePositiveID(carrierServiceForm.carrier_id),
+    fpx_channel_id: nullablePositiveID(carrierServiceForm.fpx_channel_id),
+    yanwen_published_channel_id: nullablePositiveID(carrierServiceForm.yanwen_published_channel_id),
+    provider_code: carrierServiceForm.provider_code?.trim().toUpperCase() || String(carriers?.value?.find((carrier: any) => String(carrier.id) === String(carrierServiceForm.carrier_id))?.code || '').trim().toUpperCase(),
     template_id: carrierServiceForm.template_id === 'none' ? null : nullablePositiveID(carrierServiceForm.template_id),
     service_code: carrierServiceForm.service_code?.trim().toUpperCase() || '',
     service_name: carrierServiceForm.service_name?.trim() || '',

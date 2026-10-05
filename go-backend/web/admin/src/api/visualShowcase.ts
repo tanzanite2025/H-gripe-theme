@@ -21,6 +21,10 @@ const visualShowcaseAdministrationUploadEndpoint = (showcaseKey: string): string
   `/api/admin/content/visual-showcases/${encodeURIComponent(showcaseKey)}/assets`
 )
 
+const visualShowcaseAdministrationSingleItemEndpoint = (showcaseKey: string, desktopOrder: number): string => (
+  `/api/admin/content/visual-showcases/${encodeURIComponent(showcaseKey)}/items/${desktopOrder}`
+)
+
 const readVisualShowcaseAdministrationResponse = (
   response: unknown,
   endpoint: string,
@@ -76,7 +80,19 @@ export const visualShowcaseApi = {
       endpoint,
     )
   },
+
+  async saveSingleVisualShowcaseItem(
+    showcaseKey: string,
+    locale: string,
+    desktopOrder: number,
+    item: VisualShowcaseAdministrationItemSavePayload,
+  ): Promise<VisualShowcaseAdministrationResponse> {
+    const endpoint = visualShowcaseAdministrationSingleItemEndpoint(showcaseKey, desktopOrder)
+    return readVisualShowcaseAdministrationResponse(
+      await axios.put(endpoint, { locale, item }),
+      endpoint,
+    )
+  },
 }
 
 export default visualShowcaseApi
-

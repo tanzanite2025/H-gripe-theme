@@ -11,8 +11,8 @@
         </div>
         <ul class="mt-4 space-y-2 text-sm text-muted-foreground">
           <li class="flex gap-2"><CircleCheck class="mt-0.5 size-4 text-emerald-600" />运费模板和规则矩阵列表、新增、编辑、删除</li>
-          <li class="flex gap-2"><CircleCheck class="mt-0.5 size-4 text-emerald-600" />配送区域列表、新增、编辑、删除</li>
-      <li class="flex gap-2"><CircleCheck class="mt-0.5 size-4 text-emerald-600" />默认、商品规格模板、商品和 SKU 模板绑定</li>
+          <li class="flex gap-2"><CircleCheck class="mt-0.5 size-4 text-emerald-600" />运费模板规则与已发布线路的国家/地区范围</li>
+          <li class="flex gap-2"><CircleCheck class="mt-0.5 size-4 text-emerald-600" />默认、商品规格模板、商品和 SKU 模板绑定</li>
           <li class="flex gap-2"><CircleCheck class="mt-0.5 size-4 text-emerald-600" />承运商列表、新增、编辑、删除</li>
           <li class="flex gap-2"><CircleCheck class="mt-0.5 size-4 text-emerald-600" />追踪 Provider 配置独立维护，不和承运商档案混用</li>
           <li class="flex gap-2"><CircleCheck class="mt-0.5 size-4 text-emerald-600" />包装规则列表、新增、编辑、删除</li>
@@ -29,7 +29,7 @@
         </div>
         <ul class="mt-4 space-y-2 text-sm text-muted-foreground">
           <li class="flex gap-2"><CircleCheck class="mt-0.5 size-4 text-emerald-600" />承运商线路服务基础档案、首续重和体积重参数</li>
-          <li class="flex gap-2"><CircleCheck class="mt-0.5 size-4 text-emerald-600" />运费试算器和结算报价 API</li>
+          <li class="flex gap-2"><CircleCheck class="mt-0.5 size-4 text-emerald-600" />前台结账报价 API 与报价快照</li>
           <li class="flex gap-2"><CircleCheck class="mt-0.5 size-4 text-emerald-600" />17TRACK 等追踪 Provider API 凭证、Webhook、同步策略配置</li>
           <li class="flex gap-2"><CircleCheck class="mt-0.5 size-4 text-emerald-600" />追踪任务面板已承接手动同步、自动轮询和 Webhook 状态落库</li>
           <li class="flex gap-2"><CircleDashed class="mt-0.5 size-4 text-amber-600" />Nuxt 单品页、购物车、结算接入报价</li>

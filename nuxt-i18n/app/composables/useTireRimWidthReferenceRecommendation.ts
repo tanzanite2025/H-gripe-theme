@@ -5,6 +5,10 @@ import type {
   TireRimWidthRange,
   TireRimWidthReferenceSuggestion,
 } from '~/data/tireguides/tireRimWidthReferencePresentation'
+import {
+  parseTireWidthInputAsMillimeters,
+  type TireWidthInputUnit,
+} from '~/data/tireguides/tireRimWidthInputConversion'
 
 export type RimType = TireRimReferenceRimSystem
 
@@ -63,13 +67,14 @@ const mapTireRimWidthReferenceSuggestion = (
 export const useTireRimWidthReferenceRecommendation = (
   tireWidthInput: Ref<string>,
   rimType: Ref<RimType>,
+  tireWidthInputUnit: Ref<TireWidthInputUnit> = ref<TireWidthInputUnit>('mm'),
 ) => {
   const { request } = useApiRequest()
   const parsedTireWidth = computed(() => {
-    const input = String(tireWidthInput.value).trim()
-    if (!input) return null
-    const raw = Number(input)
-    return Number.isFinite(raw) ? raw : null
+    return parseTireWidthInputAsMillimeters(
+      String(tireWidthInput.value),
+      tireWidthInputUnit.value,
+    )
   })
   const tireRimSuggestion = ref<TireRimSuggestion | null>(null)
   const recommendationPending = ref(false)

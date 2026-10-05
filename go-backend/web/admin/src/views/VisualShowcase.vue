@@ -8,7 +8,7 @@
         <Button
           variant="outline"
           size="sm"
-          :disabled="loading || saving"
+          :disabled="loading || busy"
           @click="loadItems"
         >
           <LoaderCircle v-if="loading" class="size-3.5 animate-spin" />
@@ -18,7 +18,7 @@
         <Button
           v-if="canEdit"
           size="sm"
-          :disabled="saving || loading"
+          :disabled="busy || loading"
           @click="save"
         >
           <LoaderCircle v-if="saving" class="size-3.5 animate-spin" />
@@ -32,8 +32,8 @@
       <AdminStorefrontLanguageDisplayCard
         :model-value="locale"
         :language-options="languageOptions"
-        :disabled="loading || saving"
-        :loading="loading || saving"
+        :disabled="loading || busy"
+        :loading="loading || busy"
         aria-label="首页视觉目录内容语言"
         @update:model-value="locale = $event"
       />
@@ -55,7 +55,7 @@
       <CardHeader class="border-b">
         <CardTitle>最多 9 张首页展示图</CardTitle>
         <CardDescription>
-          图片必须为 600×600 px；可以只配置部分位置，未上传的位置不会在前台显示。左侧编号就是前台位置，不需要手动排序。白色文案条使用标题和备注，ALT 文本用于图片可访问性与搜索引擎上下文。
+          图片必须为 600×600 px；可以只配置部分位置，未上传的位置不会在前台显示。左侧编号就是前台位置，不需要手动排序。每张卡片可以单独保存，也可以使用右上角按钮一次保存整组配置。白色文案条使用标题和备注，ALT 文本用于图片可访问性与搜索引擎上下文。
         </CardDescription>
       </CardHeader>
       <CardContent class="space-y-3 p-3 sm:p-4">
@@ -76,8 +76,11 @@
             :index="index"
             :can-edit="canEdit"
             :uploading="uploadingIndex === index"
+            :saving="savingIndex === index"
+            :busy="busy"
             @update:item="updateItem(index, $event)"
             @upload-image="uploadImage"
+            @save-card-configuration="saveSingleVisualShowcaseCardConfiguration(index)"
           />
         </div>
       </CardContent>
@@ -124,9 +127,11 @@ const items = ref<VisualShowcaseAdministrationItemFormState[]>(
 )
 const loading = ref(false)
 const saving = ref(false)
+const savingIndex = ref<number | null>(null)
 const uploadingIndex = ref<number | null>(null)
 
 const canEdit = computed(() => authStore.hasPermission('content:edit'))
+const busy = computed(() => saving.value || savingIndex.value !== null)
 
 const updateItem = (index: number, item: VisualShowcaseAdministrationItemFormState): void => {
   items.value = items.value.map((current, itemIndex) => itemIndex === index ? item : current)
@@ -136,25 +141,27 @@ const loadItems = async (): Promise<void> => {
   loading.value = true
   try {
     const response = await visualShowcaseApi.getItems(SHOWCASE_KEY, locale.value)
-    items.value = visualShowcaseHomeHeroAdministrationRowsFromApiItems(response.items)
+    const loadedItems = visualShowcaseHomeHeroAdministrationRowsFromApiItems(response.items)
+    items.value = loadedItems
   } catch (error) {
     console.error('Failed to load visual showcase:', error)
     toast.error('首页视觉目录加载失败')
-    items.value = visualShowcaseHomeHeroAdministrationRowsFromApiItems([])
+    const emptyItems = visualShowcaseHomeHeroAdministrationRowsFromApiItems([])
+    items.value = emptyItems
   } finally {
     loading.value = false
   }
 }
 
 const uploadImage = async ({ index, file }: VisualShowcaseAdministrationUploadRequest): Promise<void> => {
-  if (!canEdit.value || uploadingIndex.value !== null) return
+  if (!canEdit.value || busy.value || uploadingIndex.value !== null) return
 
   uploadingIndex.value = index
   try {
     const upload = await visualShowcaseApi.uploadImage(SHOWCASE_KEY, locale.value, file)
     const current = items.value[index]
     if (current) updateItem(index, applyVisualShowcaseUploadToFormState(current, upload))
-    toast.success(`第 ${index + 1} 张图片已上传，保存配置后生效`)
+    toast.success(`第 ${index + 1} 张图片已上传，保存当前卡片后生效`)
   } catch (error) {
     console.error('Failed to upload visual showcase image:', error)
     toast.error('图片上传失败，请确认图片为 600×600 px')
@@ -164,7 +171,7 @@ const uploadImage = async ({ index, file }: VisualShowcaseAdministrationUploadRe
 }
 
 const save = async (): Promise<void> => {
-  if (!canEdit.value) return
+  if (!canEdit.value || busy.value) return
 
   const validationMessage = visualShowcaseHomeHeroAdministrationValidationMessage(items.value)
   if (validationMessage) {
@@ -181,7 +188,8 @@ const save = async (): Promise<void> => {
         .filter((item) => item.image_url.trim() || item.storage_key.trim())
         .map((item) => visualShowcaseHomeHeroAdministrationSavePayloadFromFormRow(item, item.desktop_order - 1)),
     )
-    items.value = visualShowcaseHomeHeroAdministrationRowsFromApiItems(response.items)
+    const savedItems = visualShowcaseHomeHeroAdministrationRowsFromApiItems(response.items)
+    items.value = savedItems
     toast.success('首页视觉目录已保存，旧图片已按引用关系清理')
   } catch (error) {
     console.error('Failed to save visual showcase:', error)
@@ -191,8 +199,46 @@ const save = async (): Promise<void> => {
   }
 }
 
+const saveSingleVisualShowcaseCardConfiguration = async (index: number): Promise<void> => {
+  if (!canEdit.value || saving.value || savingIndex.value !== null) return
+
+  const item = items.value[index]
+  if (!item) return
+
+  if (!item.image_url.trim() || !item.storage_key.trim()) {
+    toast.error(`第 ${index + 1} 张图片请先上传图片`)
+    return
+  }
+
+  const validationMessage = visualShowcaseHomeHeroAdministrationValidationMessage([item])
+  if (validationMessage) {
+    toast.error(validationMessage)
+    return
+  }
+
+  savingIndex.value = index
+  try {
+    const response = await visualShowcaseApi.saveSingleVisualShowcaseItem(
+      SHOWCASE_KEY,
+      locale.value,
+      index + 1,
+      visualShowcaseHomeHeroAdministrationSavePayloadFromFormRow(item, index),
+    )
+    const savedItems = visualShowcaseHomeHeroAdministrationRowsFromApiItems(response.items)
+    items.value = items.value.map((currentItem, itemIndex) => (
+      itemIndex === index ? savedItems[itemIndex] || currentItem : currentItem
+    ))
+    toast.success(`第 ${index + 1} 张配置已保存`)
+  } catch (error) {
+    console.error('Failed to save visual showcase item:', error)
+    toast.error(`第 ${index + 1} 张图片保存失败`)
+  } finally {
+    savingIndex.value = null
+  }
+}
+
 watch(locale, () => {
-  if (!loading.value && !saving.value) void loadItems()
+  if (!loading.value && !busy.value) void loadItems()
 })
 
 onMounted(() => {

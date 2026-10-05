@@ -3,9 +3,9 @@
   "intro": "提供常见轮胎与车圈尺寸的参考图表。",
   "feedbackTitle": "分享您对轮胎指南页面的反馈",
   "tabs": {
-    "size": {
-      "label": "轮胎尺寸",
-      "description": "按轮胎宽度、车圈范围和适配关系查看尺寸图表。"
+    "tireSizeMarkings": {
+      "label": "轮胎尺寸标注",
+      "description": "读懂 ETRTO、英寸和法式标注，先确认尺寸含义再核对轮圈适配。"
     },
     "tireFrameClearance": {
       "label": "轮胎与车架间隙",
@@ -20,8 +20,8 @@
       "description": "在同一指南中查看无内胎兼容性、设置和分步骤安装说明。"
     },
     "choose": {
-      "label": "如何选择",
-      "description": "根据路况、间隙和使用场景选择合适的轮胎。"
+      "label": "如何选择外胎",
+      "description": "根据路况、车架间隙和车圈兼容性选择合适的外胎。"
     },
     "pressure": {
       "label": "胎压",
@@ -32,8 +32,8 @@
       "description": "演示胎压、载荷、速度和倾角如何改变受力与估算接地面积。"
     },
     "innerTube": {
-      "label": "内胎",
-      "description": "了解内胎选择、气嘴类型和尺寸基础。"
+      "label": "如何选择内胎",
+      "description": "了解内胎尺寸、气嘴类型和选择方法。"
     },
     "schwalbe": {
       "label": "Schwalbe 外胎选型",

@@ -26,7 +26,7 @@ const selectorRequest: SchwalbeTireCatalogSelectorRequest = {
 let requestedPath = ''
 let requestParams: ApiRequestInit['params']
 
-const request: ApiRequestFunction = async <T>(path, init): Promise<T> => {
+const request: ApiRequestFunction = async <T>(path: string, init?: ApiRequestInit): Promise<T> => {
   requestedPath = path
   requestParams = init?.params
   return {

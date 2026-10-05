@@ -245,86 +245,20 @@ func TestOperatingPressureChangesContactAreaWithoutChangingFixedGripBaseline(t *
 	}
 }
 
-func TestCalculateWetRoadFrictionRetentionRatioUsesSpeedWaterAndLateralDemand(t *testing.T) {
-	if got := CalculateWetRoadFrictionRetentionRatio(0, 1, 1); got != 1 {
-		t.Fatalf("zero speed retention = %v, want 1", got)
+func TestPressureFrictionCoefficientEstimateExposesUnsupportedPressureEffect(t *testing.T) {
+	pressurePsi := 48.0
+	estimate := CalculateTirePressureFrictionCoefficientEstimate(FlatRoadDemoFrictionCoefficient, &pressurePsi)
+	if estimate == nil {
+		t.Fatal("expected pressure-friction coefficient status")
 	}
-	lowDemand := CalculateWetRoadFrictionRetentionRatio(30, 1, 0)
-	highDemand := CalculateWetRoadFrictionRetentionRatio(30, 1, 1)
-	if !(lowDemand > highDemand && highDemand < 1) {
-		t.Fatalf("expected speed/water/lateral-demand loss: low=%v high=%v", lowDemand, highDemand)
+	if estimate.DataStatus != PressureFrictionDataStatus || estimate.PressureEffectApplied {
+		t.Fatalf("unexpected pressure-friction status: %+v", estimate)
 	}
-	if got := CalculateWetRoadFrictionRetentionRatio(120, 5, 1); got != WetRoadDemoMinimumFrictionRetentionRatio {
-		t.Fatalf("retention lower bound = %v, want %v", got, WetRoadDemoMinimumFrictionRetentionRatio)
+	if estimate.EstimatedCoefficient != FlatRoadDemoFrictionCoefficient || estimate.RelativeCoefficientIndex != 1 {
+		t.Fatalf("pressure should retain fixed baseline until matched data exists: %+v", estimate)
 	}
-}
-
-func TestWetPressureCompensationDerivesEquivalentPressureAndArea(t *testing.T) {
-	referencePressurePsi, rearPressurePsi := 50.0, 55.0
-	angle := 30.0
-	req := baseRequest()
-	req.SpeedKmh = 30
-	req.LeanAngleDeg = &angle
-	req.FrontOperatingPsi, req.RearOperatingPsi = &referencePressurePsi, &rearPressurePsi
-	req.WetPressureDemonstrationEnabled = true
-	waterFilmDepthMm := 1.0
-	req.WaterFilmDepthMm = &waterFilmDepthMm
-	loads, err := ResolveTirePressureWheelLoads(req)
-	if err != nil {
-		t.Fatal(err)
-	}
-	dynamics, err := CalculateTirePressureGroundFrameCorneringDynamics(req, loads)
-	if err != nil {
-		t.Fatal(err)
-	}
-	compensation := dynamics.Front.WetPressureCompensation
-	if compensation == nil {
-		t.Fatal("expected wet pressure compensation")
-	}
-	if compensation.FrictionRetentionRatio >= 1 || compensation.EquivalentPressurePsi >= compensation.ReferencePressurePsi {
-		t.Fatalf("expected wet equivalent pressure reduction: %+v", compensation)
-	}
-	if math.Abs(compensation.EquivalentContactAreaCm2/compensation.ReferenceContactAreaCm2-1/compensation.FrictionRetentionRatio) > 0.02 {
-		t.Fatalf("area ratio does not compensate retention ratio: %+v", compensation)
-	}
-	if compensation.WetGripLimitAtReferencePressureN >= dynamics.Front.IdealizedGripLimitN {
-		t.Fatalf("expected wet grip below dry baseline: %+v", compensation)
-	}
-	if compensation.WetGripMarginPct >= dynamics.Front.GripMarginPct {
-		t.Fatalf("expected wet margin below dry baseline: %+v", compensation)
-	}
-	if compensation.SurfaceTextureBaseline != WetRoadDemoSurfaceTextureBaseline || compensation.RubberBaseline != WetRoadDemoRubberBaseline {
-		t.Fatalf("unexpected fixed baselines: %+v", compensation)
-	}
-	if dynamics.Front.PressureContactAreaComparison == nil {
-		t.Fatal("expected wet scenario to expose pressure-area comparison")
-	}
-}
-
-func TestWetPressureCompensationClampsEquivalentPressureToProvidedMinimum(t *testing.T) {
-	referencePressurePsi, rearPressurePsi := 50.0, 55.0
-	minimumFrontPressurePsi, minimumRearPressurePsi := 45.0, 45.0
-	angle := 30.0
-	req := baseRequest()
-	req.SpeedKmh = 30
-	req.LeanAngleDeg = &angle
-	req.FrontOperatingPsi, req.RearOperatingPsi = &referencePressurePsi, &rearPressurePsi
-	req.FrontMinimumPressurePsi, req.RearMinimumPressurePsi = &minimumFrontPressurePsi, &minimumRearPressurePsi
-	req.WetPressureDemonstrationEnabled = true
-	loads, err := ResolveTirePressureWheelLoads(req)
-	if err != nil {
-		t.Fatal(err)
-	}
-	dynamics, err := CalculateTirePressureGroundFrameCorneringDynamics(req, loads)
-	if err != nil {
-		t.Fatal(err)
-	}
-	compensation := dynamics.Front.WetPressureCompensation
-	if compensation == nil || !compensation.PressureClampedToMinimum || compensation.EquivalentPressurePsi != minimumFrontPressurePsi {
-		t.Fatalf("expected minimum-pressure clamp: %+v", compensation)
-	}
-	if compensation.WetGripLimitAtReferencePressureN >= dynamics.Front.IdealizedGripLimitN {
-		t.Fatalf("clamped wet grip should remain below dry target: %+v", compensation)
+	if CalculateTirePressureFrictionCoefficientEstimate(FlatRoadDemoFrictionCoefficient, nil) != nil {
+		t.Fatal("expected no pressure-friction status without operating pressure")
 	}
 }
 
@@ -337,6 +271,17 @@ func TestValidateTirePressureDynamicCalculationRequestRejectsMinimumPressureAbov
 	validationErr, ok := ValidateTirePressureDynamicCalculationRequest(req).(*ValidationError)
 	if !ok || validationErr.Code != "OUT_OF_RANGE" || validationErr.Field != "front_minimum_pressure_psi/rear_minimum_pressure_psi" {
 		t.Fatalf("expected minimum-pressure range validation, got %v", validationErr)
+	}
+}
+
+func TestValidateTirePressureDynamicCalculationRequestRequiresMinimumPressureForWetDemonstration(t *testing.T) {
+	operatingPressurePsi := 48.0
+	req := baseRequest()
+	req.FrontOperatingPsi, req.RearOperatingPsi = &operatingPressurePsi, &operatingPressurePsi
+	req.WetPressureDemonstrationEnabled = true
+	validationErr, ok := ValidateTirePressureDynamicCalculationRequest(req).(*ValidationError)
+	if !ok || validationErr.Code != "INVALID_FIELD" || validationErr.Field != "front_minimum_pressure_psi/rear_minimum_pressure_psi" {
+		t.Fatalf("expected wet minimum-pressure validation, got %v", validationErr)
 	}
 }
 

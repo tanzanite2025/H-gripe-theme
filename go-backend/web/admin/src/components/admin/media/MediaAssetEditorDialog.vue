@@ -7,7 +7,7 @@
       </DialogHeader>
       <div class="grid gap-4 md:grid-cols-[16rem_minmax(0,1fr)]">
         <div class="overflow-hidden rounded-2xl bg-muted">
-          <img v-if="asset?.media_type === 'image'" :src="assetAccessURL(asset)" :alt="alt" class="aspect-[4/3] size-full object-cover" />
+          <img v-if="asset?.media_type === 'image' && adminMediaAssetFileURL(asset)" :src="adminMediaAssetFileURL(asset)" :alt="alt" class="aspect-[4/3] size-full object-cover" />
           <div v-else class="flex aspect-[4/3] items-center justify-center text-muted-foreground">
             <FileVideo class="size-8" />
           </div>
@@ -65,7 +65,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
-import { assetAccessURL } from '@/lib/mediaPresentation'
+import { adminMediaAssetFileURL } from '@/lib/mediaPresentation'
 
 withDefaults(defineProps<{
   open?: boolean

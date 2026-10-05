@@ -21,15 +21,45 @@ import (
 )
 
 const routeCheckBodyLimit = 4 * 1024 * 1024
-const routeCheckConcurrency = 6
+
+// Storefront route checks render the complete Nuxt HTML document so the
+// checker can validate canonical metadata. Keep the worker count low enough
+// that several SSR renders do not queue behind one another in development or
+// on a small production instance.
+const routeCheckConcurrency = 2
+
+// Nuxt SSR can take several seconds while loading page data or compiling a
+// route for the first time. Five seconds turns that normal startup cost into
+// a false failed check, so allow a full page render up to fifteen seconds.
+const storefrontRouteCatalogRequestTimeout = 15 * time.Second
 
 func (s *StorefrontRouteCatalogService) CheckEntry(ctx context.Context, id uint) (seodomain.StorefrontRouteCheckResult, error) {
+	return s.checkRouteCatalogEntryByID(ctx, id, false)
+}
+
+// CheckStaleRouteEntry is reserved for the issue queue's explicit historical
+// path verification. Current route checks must never probe a path that the
+// latest manifest has removed.
+func (s *StorefrontRouteCatalogService) CheckStaleRouteEntry(ctx context.Context, id uint) (seodomain.StorefrontRouteCheckResult, error) {
+	return s.checkRouteCatalogEntryByID(ctx, id, true)
+}
+
+func (s *StorefrontRouteCatalogService) checkRouteCatalogEntryByID(
+	ctx context.Context,
+	id uint,
+	includeStale bool,
+) (seodomain.StorefrontRouteCheckResult, error) {
 	if s == nil || s.repository == nil {
 		return seodomain.StorefrontRouteCheckResult{}, errors.New("storefront route catalog service is unavailable")
 	}
 	if id == 0 {
 		return seodomain.StorefrontRouteCheckResult{}, errors.New("route entry ID is required")
 	}
+	releaseOperation, err := s.beginCatalogOperation()
+	if err != nil {
+		return seodomain.StorefrontRouteCheckResult{}, err
+	}
+	defer releaseOperation()
 	if ctx == nil {
 		ctx = context.Background()
 	}
@@ -38,8 +68,8 @@ func (s *StorefrontRouteCatalogService) CheckEntry(ctx context.Context, id uint)
 	if err != nil {
 		return seodomain.StorefrontRouteCheckResult{}, err
 	}
-	if entry.EntryStatus == seodomain.RouteEntryStatusStale {
-		return seodomain.StorefrontRouteCheckResult{}, fmt.Errorf("route %s is stale and must be synced before checking", entry.Path)
+	if entry.EntryStatus == seodomain.RouteEntryStatusStale && !includeStale {
+		return seodomain.StorefrontRouteCheckResult{}, fmt.Errorf("route %s is stale and can only be checked from the historical route issue workflow", entry.Path)
 	}
 	if !entry.IsCheckable {
 		return seodomain.StorefrontRouteCheckResult{}, fmt.Errorf("route %s is not checkable", entry.Path)
@@ -57,8 +87,16 @@ func (s *StorefrontRouteCatalogService) CheckEntry(ctx context.Context, id uint)
 	return result, nil
 }
 
-func (s *StorefrontRouteCatalogService) Check(ctx context.Context, filter repository.StorefrontRouteCatalogListFilter, limit int) (StorefrontRouteCatalogCheckSummary, error) {
-	return s.checkBatch(ctx, filter, limit, nil)
+func (s *StorefrontRouteCatalogService) Check(ctx context.Context, filter repository.StorefrontRouteCatalogListFilter, batchSize int) (StorefrontRouteCatalogCheckSummary, error) {
+	if s == nil || s.repository == nil {
+		return StorefrontRouteCatalogCheckSummary{}, errors.New("storefront route catalog service is unavailable")
+	}
+	releaseOperation, err := s.beginCatalogOperation()
+	if err != nil {
+		return StorefrontRouteCatalogCheckSummary{}, err
+	}
+	defer releaseOperation()
+	return s.checkBatch(ctx, filter, batchSize, nil)
 }
 
 type storefrontRouteCatalogCheckProgress func(StorefrontRouteCatalogCheckSummary)
@@ -66,7 +104,7 @@ type storefrontRouteCatalogCheckProgress func(StorefrontRouteCatalogCheckSummary
 func (s *StorefrontRouteCatalogService) checkBatch(
 	ctx context.Context,
 	filter repository.StorefrontRouteCatalogListFilter,
-	limit int,
+	batchSize int,
 	progress storefrontRouteCatalogCheckProgress,
 ) (StorefrontRouteCatalogCheckSummary, error) {
 	if s == nil || s.repository == nil {
@@ -75,94 +113,146 @@ func (s *StorefrontRouteCatalogService) checkBatch(
 	if ctx == nil {
 		ctx = context.Background()
 	}
-	if limit < 1 {
-		limit = 100
-	} else if limit > 200 {
-		limit = 200
+	if batchSize < 1 || batchSize > 200 {
+		batchSize = 200
 	}
 	filter.CheckableOnly = true
-	filter.Page = 1
-	filter.PageSize = limit
+	filter.PageSize = batchSize
 
-	entries, _, err := s.repository.List(filter)
-	if err != nil {
-		return StorefrontRouteCatalogCheckSummary{}, err
-	}
-
-	checkableEntries := make([]seodomain.StorefrontRouteCatalogEntry, 0, len(entries))
-	for _, entry := range entries {
-		if routeEntryCanBeChecked(entry) {
-			checkableEntries = append(checkableEntries, entry)
+	// Snapshot every matching route before starting checks. Some filters depend
+	// on the current check status, which changes as routes are checked; applying
+	// those filters while walking pages would skip later rows.
+	checkableEntries := make([]seodomain.StorefrontRouteCatalogEntry, 0)
+	for page := 1; ; page++ {
+		filter.Page = page
+		entries, total, err := s.repository.List(filter)
+		if err != nil {
+			return StorefrontRouteCatalogCheckSummary{}, err
+		}
+		for _, entry := range entries {
+			if routeEntryCanBeChecked(entry, filter.IncludeStaleWhenChecking) {
+				checkableEntries = append(checkableEntries, seodomain.StorefrontRouteCatalogEntry{
+					ID:            entry.ID,
+					Path:          entry.Path,
+					CanonicalPath: entry.CanonicalPath,
+					IsAlias:       entry.IsAlias,
+					IsCheckable:   entry.IsCheckable,
+					EntryStatus:   entry.EntryStatus,
+				})
+			}
+		}
+		if len(entries) == 0 || int64(page*batchSize) >= total {
+			break
 		}
 	}
 
 	// The repository's total is the coarse SQL count. Keep task progress tied
 	// to the entries that can actually be checked after the same guard used by
 	// the worker, otherwise stale rows would make `remaining` never reach zero.
+	totalBatches := 0
+	if len(checkableEntries) > 0 {
+		totalBatches = (len(checkableEntries) + batchSize - 1) / batchSize
+	}
 	summary := StorefrontRouteCatalogCheckSummary{
-		Eligible:  len(checkableEntries),
-		Remaining: len(checkableEntries),
+		Eligible:     len(checkableEntries),
+		Remaining:    len(checkableEntries),
+		BatchSize:    batchSize,
+		TotalBatches: totalBatches,
 	}
 	if progress != nil {
 		progress(summary)
 	}
 
-	workerCount := routeCheckConcurrency
-	if len(checkableEntries) < workerCount {
-		workerCount = len(checkableEntries)
-	}
-	if workerCount == 0 {
-		return summary, nil
-	}
+	for batchStart := 0; batchStart < len(checkableEntries); batchStart += batchSize {
+		if err := ctx.Err(); err != nil {
+			return summary, err
+		}
+		batchEnd := batchStart + batchSize
+		if batchEnd > len(checkableEntries) {
+			batchEnd = len(checkableEntries)
+		}
+		summary.CurrentBatch = batchStart/batchSize + 1
+		if progress != nil {
+			progress(summary)
+		}
 
-	type checkResult struct {
-		entry  seodomain.StorefrontRouteCatalogEntry
-		result seodomain.StorefrontRouteCheckResult
+		batchResults := s.checkRouteCatalogBatch(ctx, checkableEntries[batchStart:batchEnd])
+		for checked := range batchResults {
+			// A task timeout means the result currently being processed is no
+			// longer part of this run. Leave it unpersisted so `remaining` really
+			// identifies work that can be retried.
+			if err := ctx.Err(); err != nil {
+				return summary, err
+			}
+			if err := s.repository.SaveCheck(&checked.result); err != nil {
+				return summary, fmt.Errorf("save URL check for %s: %w", checked.entry.Path, err)
+			}
+			if s.issueReconciler != nil {
+				if err := s.issueReconciler.ReconcileEntry(ctx, checked.entry.ID, &checked.result.ID); err != nil {
+					return summary, fmt.Errorf("reconcile URL issue for %s: %w", checked.entry.Path, err)
+				}
+			}
+			summary.Checked++
+			summary.Remaining--
+			incrementRouteCatalogCheckSummary(&summary, checked.result.Status)
+			if progress != nil {
+				progress(summary)
+			}
+		}
 	}
+	if summary.TotalBatches > 0 {
+		summary.CurrentBatch = summary.TotalBatches
+	}
+	return summary, nil
+}
+
+type storefrontRouteCatalogCheckResult struct {
+	entry  seodomain.StorefrontRouteCatalogEntry
+	result seodomain.StorefrontRouteCheckResult
+}
+
+// checkRouteCatalogBatch runs at most routeCheckConcurrency SSR requests at a
+// time and returns a bounded result set for persistence before the next batch
+// starts. This makes batch_size an actual work boundary instead of only a SQL
+// page size.
+func (s *StorefrontRouteCatalogService) checkRouteCatalogBatch(
+	ctx context.Context,
+	entries []seodomain.StorefrontRouteCatalogEntry,
+) <-chan storefrontRouteCatalogCheckResult {
+	results := make(chan storefrontRouteCatalogCheckResult, len(entries))
 	jobs := make(chan seodomain.StorefrontRouteCatalogEntry)
-	results := make(chan checkResult, len(checkableEntries))
-	var wg sync.WaitGroup
+	workerCount := routeCheckConcurrency
+	if len(entries) < workerCount {
+		workerCount = len(entries)
+	}
+	var workers sync.WaitGroup
 	for worker := 0; worker < workerCount; worker++ {
-		wg.Add(1)
+		workers.Add(1)
 		go func() {
-			defer wg.Done()
+			defer workers.Done()
 			for entry := range jobs {
-				results <- checkResult{entry: entry, result: s.checkEntry(ctx, entry)}
+				results <- storefrontRouteCatalogCheckResult{entry: entry, result: s.checkEntry(ctx, entry)}
 			}
 		}()
 	}
 	go func() {
 		defer close(jobs)
-		for _, entry := range checkableEntries {
+		for _, entry := range entries {
 			jobs <- entry
 		}
 	}()
 	go func() {
-		wg.Wait()
+		workers.Wait()
 		close(results)
 	}()
-
-	for checked := range results {
-		if err := s.repository.SaveCheck(&checked.result); err != nil {
-			return summary, fmt.Errorf("save URL check for %s: %w", checked.entry.Path, err)
-		}
-		if s.issueReconciler != nil {
-			if err := s.issueReconciler.ReconcileEntry(ctx, checked.entry.ID, &checked.result.ID); err != nil {
-				return summary, fmt.Errorf("reconcile URL issue for %s: %w", checked.entry.Path, err)
-			}
-		}
-		summary.Checked++
-		summary.Remaining--
-		incrementRouteCatalogCheckSummary(&summary, checked.result.Status)
-		if progress != nil {
-			progress(summary)
-		}
-	}
-	return summary, nil
+	return results
 }
 
-func routeEntryCanBeChecked(entry seodomain.StorefrontRouteCatalogEntry) bool {
-	return entry.IsCheckable && entry.EntryStatus != seodomain.RouteEntryStatusStale
+func routeEntryCanBeChecked(
+	entry seodomain.StorefrontRouteCatalogEntry,
+	includeStaleWhenChecking bool,
+) bool {
+	return entry.IsCheckable && (includeStaleWhenChecking || entry.EntryStatus != seodomain.RouteEntryStatusStale)
 }
 
 func incrementRouteCatalogCheckSummary(summary *StorefrontRouteCatalogCheckSummary, status string) {

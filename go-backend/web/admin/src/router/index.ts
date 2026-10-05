@@ -479,10 +479,8 @@ const routes: RouteRecordRaw[] = [
         redirect: domainRedirect('ShippingTemplates', {
           overview: 'ShippingTemplates',
           templates: 'ShippingTemplates',
-          zones: 'ShippingZones',
           carriers: 'ShippingCarriers',
           services: 'ShippingServices',
-          quote: 'ShippingQuote',
           packaging: 'ShippingPackaging',
           tracking: 'ShippingTracking',
           trackingShipments: 'ShippingTrackingShipments',
@@ -496,12 +494,6 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '运费模板', permission: 'shipping:view' }
       },
       {
-        path: 'shipping/zones',
-        name: 'ShippingZones',
-        component: () => import('@/views/Shipping.vue'),
-        meta: { title: '配送区域', permission: 'shipping:view' }
-      },
-      {
         path: 'shipping/carriers',
         name: 'ShippingCarriers',
         component: () => import('@/views/Shipping.vue'),
@@ -512,12 +504,6 @@ const routes: RouteRecordRaw[] = [
         name: 'ShippingServices',
         component: () => import('@/views/Shipping.vue'),
         meta: { title: '线路服务', permission: 'shipping:view' }
-      },
-      {
-        path: 'shipping/quote',
-        name: 'ShippingQuote',
-        component: () => import('@/views/Shipping.vue'),
-        meta: { title: '试算器', permission: 'shipping:view' }
       },
       {
         path: 'shipping/packaging',

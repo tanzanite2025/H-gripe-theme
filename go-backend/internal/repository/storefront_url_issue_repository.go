@@ -45,9 +45,15 @@ func (r *StorefrontURLIssueRepository) List(
 		Joins(`JOIN storefront_route_catalog_entries AS route_catalog_entry
 			ON route_catalog_entry.id = storefront_url_issues.route_entry_id`).
 		Where(
-			"route_catalog_entry.entry_status <> ? OR storefront_url_issues.issue_type = ?",
+			"route_catalog_entry.entry_status <> ? OR storefront_url_issues.issue_type = ? OR (storefront_url_issues.latest_check_result_id IS NOT NULL AND storefront_url_issues.state IN ?)",
 			seodomain.RouteEntryStatusStale,
 			urlmanagementdomain.URLIssueTypeStaleRoute,
+			[]string{
+				urlmanagementdomain.URLIssueStateOpen,
+				urlmanagementdomain.URLIssueStateAcknowledged,
+				urlmanagementdomain.URLIssueStateResolved,
+				urlmanagementdomain.URLIssueStateSuppressed,
+			},
 		)
 	switch filter.State {
 	case "active":
@@ -93,9 +99,15 @@ func (r *StorefrontURLIssueRepository) Stats() (urlmanagementdomain.StorefrontUR
 		Joins(`JOIN storefront_route_catalog_entries AS route_catalog_entry
 			ON route_catalog_entry.id = storefront_url_issues.route_entry_id`).
 		Where(
-			"route_catalog_entry.entry_status <> ? OR storefront_url_issues.issue_type = ?",
+			"route_catalog_entry.entry_status <> ? OR storefront_url_issues.issue_type = ? OR (storefront_url_issues.latest_check_result_id IS NOT NULL AND storefront_url_issues.state IN ?)",
 			seodomain.RouteEntryStatusStale,
 			urlmanagementdomain.URLIssueTypeStaleRoute,
+			[]string{
+				urlmanagementdomain.URLIssueStateOpen,
+				urlmanagementdomain.URLIssueStateAcknowledged,
+				urlmanagementdomain.URLIssueStateResolved,
+				urlmanagementdomain.URLIssueStateSuppressed,
+			},
 		).
 		Select(`
 			COALESCE(SUM(CASE WHEN state IN ('open', 'acknowledged', 'resolved') THEN 1 ELSE 0 END), 0) AS active,
@@ -105,52 +117,84 @@ func (r *StorefrontURLIssueRepository) Stats() (urlmanagementdomain.StorefrontUR
 			COALESCE(SUM(CASE WHEN state = 'verified' THEN 1 ELSE 0 END), 0) AS verified,
 			COALESCE(SUM(CASE WHEN state = 'suppressed' THEN 1 ELSE 0 END), 0) AS suppressed,
 			COALESCE(SUM(CASE WHEN severity = 'critical' AND state IN ('open', 'acknowledged', 'resolved') THEN 1 ELSE 0 END), 0) AS critical,
-			COALESCE(SUM(CASE WHEN severity = 'high' AND state IN ('open', 'acknowledged', 'resolved') THEN 1 ELSE 0 END), 0) AS high
+			COALESCE(SUM(CASE WHEN severity = 'high' AND state IN ('open', 'acknowledged', 'resolved') THEN 1 ELSE 0 END), 0) AS high,
+			COALESCE(SUM(CASE WHEN issue_type = 'stale_route' AND route_catalog_entry.entry_status = 'stale' AND state IN ('open', 'acknowledged', 'resolved') THEN 1 ELSE 0 END), 0) AS stale_route
 		`).
 		Scan(&stats).Error
 	return stats, err
 }
 
-func (r *StorefrontURLIssueRepository) InvalidateRuntimeIssuesForCatalogSync(
-	syncedAt time.Time,
-) error {
+// AutomaticallyVerifyIssuesNoLongerDetectedForRouteEntry closes historical
+// active issues after a later route check or source snapshot no longer reports
+// their issue type. The issue row and timeline event remain for auditability.
+func (r *StorefrontURLIssueRepository) AutomaticallyVerifyIssuesNoLongerDetectedForRouteEntry(
+	routeEntryID uint,
+	detectedIssueTypes []string,
+	verifiedAt time.Time,
+) (int64, error) {
 	if r == nil || r.db == nil {
-		return errors.New("storefront URL issue repository is unavailable")
+		return 0, errors.New("storefront URL issue repository is unavailable")
 	}
-	if syncedAt.IsZero() {
-		syncedAt = time.Now().UTC()
+	if routeEntryID == 0 {
+		return 0, errors.New("route entry ID is required")
+	}
+	if verifiedAt.IsZero() {
+		verifiedAt = time.Now().UTC()
 	}
 
-	return r.db.Transaction(func(tx *gorm.DB) error {
-		var issues []urlmanagementdomain.StorefrontURLIssue
-		if err := tx.Model(&urlmanagementdomain.StorefrontURLIssue{}).
-			Joins(`JOIN storefront_route_catalog_entries AS route_catalog_entry
-				ON route_catalog_entry.id = storefront_url_issues.route_entry_id`).
-			Where(
-				"route_catalog_entry.entry_status <> ? AND storefront_url_issues.issue_type NOT IN ? AND storefront_url_issues.state IN ? AND (route_catalog_entry.last_check_status IS NULL OR route_catalog_entry.last_check_status = '')",
-				seodomain.RouteEntryStatusStale,
-				[]string{
-					urlmanagementdomain.URLIssueTypePathCollision,
-					urlmanagementdomain.URLIssueTypeStaleRoute,
-				},
-				[]string{
-					urlmanagementdomain.URLIssueStateOpen,
-					urlmanagementdomain.URLIssueStateAcknowledged,
-					urlmanagementdomain.URLIssueStateResolved,
-				},
-			).
-			Find(&issues).Error; err != nil {
+	verifiedCount := int64(0)
+	err := r.db.Transaction(func(tx *gorm.DB) error {
+		var routeEntry seodomain.StorefrontRouteCatalogEntry
+		if err := tx.Select("entry_status", "last_check_status").First(&routeEntry, routeEntryID).Error; err != nil {
 			return err
 		}
+		query := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
+			Where("route_entry_id = ?", routeEntryID).
+			Where("state IN ?", []string{
+				urlmanagementdomain.URLIssueStateOpen,
+				urlmanagementdomain.URLIssueStateAcknowledged,
+				urlmanagementdomain.URLIssueStateResolved,
+				urlmanagementdomain.URLIssueStateSuppressed,
+			})
+		if len(detectedIssueTypes) > 0 {
+			query = query.Where("issue_type NOT IN ?", detectedIssueTypes)
+		}
 
+		var issues []urlmanagementdomain.StorefrontURLIssue
+		if err := query.Find(&issues).Error; err != nil {
+			return err
+		}
 		for _, issue := range issues {
+			resolutionType := urlmanagementdomain.URLIssueResolutionRuntimeFixed
+			resolutionNote := "后续 URL 检查已恢复正常，系统自动验证关闭"
+			eventType := urlmanagementdomain.URLIssueEventVerificationPassed
+			if issue.IssueType == urlmanagementdomain.URLIssueTypeStaleRoute &&
+				routeEntry.EntryStatus == seodomain.RouteEntryStatusStale &&
+				routeEntry.LastCheckStatus == seodomain.RouteCheckStatusNotFound {
+				resolutionType = urlmanagementdomain.URLIssueResolutionRetired
+				resolutionNote = "复检确认该失效路径已返回 404，系统自动标记为已退役并关闭"
+				eventType = urlmanagementdomain.URLIssueEventStaleRouteRetired
+			}
+
 			updates := map[string]interface{}{
-				"state":           urlmanagementdomain.URLIssueStateVerified,
-				"resolved_at":     syncedAt,
-				"verified_at":     syncedAt,
-				"resolution_type": urlmanagementdomain.URLIssueResolutionNotApplicable,
-				"resolution_note": "invalidated by storefront route catalog sync; previous runtime check is no longer current",
-				"updated_at":      syncedAt,
+				"state":              urlmanagementdomain.URLIssueStateVerified,
+				"verified_at":        verifiedAt,
+				"suppressed_until":   nil,
+				"suppression_reason": "",
+				"updated_at":         verifiedAt,
+			}
+			if issue.ResolvedAt == nil {
+				updates["resolved_at"] = verifiedAt
+			}
+			// Keep a human-recorded resolution when the issue was already
+			// waiting for verification; otherwise record the automatic fix.
+			if issue.State != urlmanagementdomain.URLIssueStateResolved || issue.ResolutionType == "" {
+				updates["resolution_type"] = resolutionType
+				updates["resolution_note"] = resolutionNote
+			}
+			if resolutionType == urlmanagementdomain.URLIssueResolutionRetired {
+				updates["resolution_type"] = resolutionType
+				updates["resolution_note"] = resolutionNote
 			}
 			if err := tx.Model(&urlmanagementdomain.StorefrontURLIssue{}).
 				Where("id = ?", issue.ID).
@@ -160,20 +204,88 @@ func (r *StorefrontURLIssueRepository) InvalidateRuntimeIssuesForCatalogSync(
 			if err := r.createEvent(
 				tx,
 				issue.ID,
-				urlmanagementdomain.URLIssueEventSnapshotInvalidated,
+				eventType,
 				0,
-				"previous runtime check invalidated by storefront route catalog sync",
+				resolutionNote,
 				map[string]interface{}{
-					"previous_latest_check_result_id": issue.LatestCheckResultID,
-					"synced_at":                       syncedAt,
+					"automatic":       true,
+					"route_entry_id":  routeEntryID,
+					"previous_state":  issue.State,
+					"issue_type":      issue.IssueType,
+					"resolution_type": resolutionType,
+					"verified_at":     verifiedAt,
 				},
-				syncedAt,
+				verifiedAt,
 			); err != nil {
 				return err
 			}
+			verifiedCount++
 		}
 		return nil
 	})
+	return verifiedCount, err
+}
+
+// RetireAllActiveStaleRouteIssues marks stale catalog paths as intentionally
+// retired in one audited operation. The historical issue rows remain intact.
+func (r *StorefrontURLIssueRepository) RetireAllActiveStaleRouteIssues(
+	actorUserID uint,
+	retiredAt time.Time,
+) (int64, error) {
+	if r == nil || r.db == nil {
+		return 0, errors.New("storefront URL issue repository is unavailable")
+	}
+	if retiredAt.IsZero() {
+		retiredAt = time.Now().UTC()
+	}
+
+	retiredCount := int64(0)
+	err := r.db.Transaction(func(tx *gorm.DB) error {
+		var issues []urlmanagementdomain.StorefrontURLIssue
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
+			Joins(`JOIN storefront_route_catalog_entries AS route_catalog_entry
+				ON route_catalog_entry.id = storefront_url_issues.route_entry_id`).
+			Where("route_catalog_entry.entry_status = ?", seodomain.RouteEntryStatusStale).
+			Where("storefront_url_issues.issue_type = ?", urlmanagementdomain.URLIssueTypeStaleRoute).
+			Where("storefront_url_issues.state <> ?", urlmanagementdomain.URLIssueStateVerified).
+			Find(&issues).Error; err != nil {
+			return err
+		}
+		for _, issue := range issues {
+			if err := tx.Model(&urlmanagementdomain.StorefrontURLIssue{}).
+				Where("id = ?", issue.ID).
+				Updates(map[string]interface{}{
+					"state":              urlmanagementdomain.URLIssueStateVerified,
+					"resolution_type":    urlmanagementdomain.URLIssueResolutionRetired,
+					"resolution_note":    "批量清理：该路径已从当前 URL 台账退役",
+					"resolved_at":        retiredAt,
+					"verified_at":        retiredAt,
+					"suppressed_until":   nil,
+					"suppression_reason": "",
+					"updated_at":         retiredAt,
+				}).Error; err != nil {
+				return err
+			}
+			if err := r.createEvent(
+				tx,
+				issue.ID,
+				urlmanagementdomain.URLIssueEventStaleRouteRetired,
+				actorUserID,
+				"批量清理：该路径已从当前 URL 台账退役",
+				map[string]interface{}{
+					"automatic":      false,
+					"route_entry_id": issue.RouteEntryID,
+					"retired_at":     retiredAt,
+				},
+				retiredAt,
+			); err != nil {
+				return err
+			}
+			retiredCount++
+		}
+		return nil
+	})
+	return retiredCount, err
 }
 
 func (r *StorefrontURLIssueRepository) FindByID(
@@ -280,10 +392,12 @@ func (r *StorefrontURLIssueRepository) RecordDetection(
 		if latestCheckResultID != nil {
 			updates["latest_check_result_id"] = *latestCheckResultID
 		}
-		reopened := issue.State == urlmanagementdomain.URLIssueStateVerified ||
+		intentionallyRetired := issue.IssueType == urlmanagementdomain.URLIssueTypeStaleRoute &&
+			issue.ResolutionType == urlmanagementdomain.URLIssueResolutionRetired
+		reopened := !intentionallyRetired && (issue.State == urlmanagementdomain.URLIssueStateVerified ||
 			issue.State == urlmanagementdomain.URLIssueStateResolved ||
 			(issue.State == urlmanagementdomain.URLIssueStateSuppressed &&
-				issue.SuppressedUntil != nil && !issue.SuppressedUntil.After(detectedAt))
+				issue.SuppressedUntil != nil && !issue.SuppressedUntil.After(detectedAt)))
 		if reopened {
 			updates["state"] = urlmanagementdomain.URLIssueStateOpen
 			updates["resolved_at"] = nil

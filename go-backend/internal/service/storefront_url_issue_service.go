@@ -71,18 +71,14 @@ func (s *StorefrontURLIssueService) ListEvents(
 }
 
 // ReconcileCatalog projects current route observations into durable issue work
-// items. A new catalog snapshot invalidates runtime observations that no
-// longer have a current check projection; detected current issues are then
-// opened or reopened as durable work items.
+// items. It keeps current checks for unchanged routes and updates source-based
+// issues when the route catalog snapshot changes.
 func (s *StorefrontURLIssueService) ReconcileCatalog(ctx context.Context) error {
 	if s == nil || s.catalog == nil {
 		return errors.New("storefront route catalog is unavailable")
 	}
 	if s.issues == nil {
 		return errors.New("storefront URL issue repository is unavailable")
-	}
-	if err := s.issues.InvalidateRuntimeIssuesForCatalogSync(time.Now().UTC()); err != nil {
-		return fmt.Errorf("invalidate stale runtime observations: %w", err)
 	}
 	ids, err := s.catalog.ListIssueCandidateIDs()
 	if err != nil {
@@ -108,7 +104,10 @@ func (s *StorefrontURLIssueService) ReconcileEntry(
 	if err != nil {
 		return err
 	}
-	for _, definition := range deriveStorefrontURLIssueDefinitions(*entry) {
+	definitions := deriveStorefrontURLIssueDefinitions(*entry)
+	detectedIssueTypes := make([]string, 0, len(definitions))
+	for _, definition := range definitions {
+		detectedIssueTypes = append(detectedIssueTypes, definition.issueType)
 		if _, err := s.issues.RecordDetection(
 			entry.ID,
 			definition.issueType,
@@ -119,7 +118,26 @@ func (s *StorefrontURLIssueService) ReconcileEntry(
 			return err
 		}
 	}
+	if _, err := s.issues.AutomaticallyVerifyIssuesNoLongerDetectedForRouteEntry(
+		entry.ID,
+		detectedIssueTypes,
+		time.Now().UTC(),
+	); err != nil {
+		return err
+	}
 	return nil
+}
+
+// RetireAllActiveStaleRouteIssues records an explicit operator decision for
+// stale paths that are no longer present in the current URL manifest.
+func (s *StorefrontURLIssueService) RetireAllActiveStaleRouteIssues(actorUserID uint) (int64, error) {
+	if s == nil || s.issues == nil {
+		return 0, errors.New("storefront URL issue service is unavailable")
+	}
+	if actorUserID == 0 {
+		return 0, errors.New("an authenticated user is required to retire stale URL issues")
+	}
+	return s.issues.RetireAllActiveStaleRouteIssues(actorUserID, time.Now().UTC())
 }
 
 func (s *StorefrontURLIssueService) Acknowledge(
@@ -200,7 +218,8 @@ func (s *StorefrontURLIssueService) LinkRedirect(
 	actorUserID uint,
 	input urlmanagementdomain.StorefrontURLIssueLinkRedirectInput,
 ) (*urlmanagementdomain.StorefrontURLIssue, error) {
-	if _, err := s.requireActionableIssue(id); err != nil {
+	issue, err := s.requireActionableIssue(id)
+	if err != nil {
 		return nil, err
 	}
 	if input.RedirectRuleID == 0 {
@@ -211,6 +230,9 @@ func (s *StorefrontURLIssueService) LinkRedirect(
 	}
 	rule, err := s.redirectRules.FindByID(input.RedirectRuleID)
 	if err != nil {
+		return nil, err
+	}
+	if err := validateStorefrontURLIssueRedirectSource(issue, rule); err != nil {
 		return nil, err
 	}
 	return s.issues.UpdateWithEvent(
@@ -250,19 +272,39 @@ func (s *StorefrontURLIssueService) Resolve(
 	if resolutionNote == "" {
 		return nil, errors.New("resolution note is required")
 	}
+	if resolutionType == urlmanagementdomain.URLIssueResolutionRedirectPublished &&
+		(input.LinkedRedirectRuleID == nil || *input.LinkedRedirectRuleID == 0) {
+		return nil, errors.New("a redirect-published resolution requires a linked redirect rule")
+	}
+	if resolutionType == urlmanagementdomain.URLIssueResolutionRetired &&
+		issue.IssueType != urlmanagementdomain.URLIssueTypeStaleRoute {
+		return nil, errors.New("only stale-route URL issues can be marked retired")
+	}
 	if input.LinkedRedirectRuleID != nil {
-		if err := s.validateResolutionRedirect(*input.LinkedRedirectRuleID, resolutionType); err != nil {
+		if err := s.validateResolutionRedirect(issue, *input.LinkedRedirectRuleID, resolutionType); err != nil {
 			return nil, err
 		}
 	}
 
 	now := time.Now().UTC()
+	targetState := urlmanagementdomain.URLIssueStateResolved
+	verificationTime := (*time.Time)(nil)
+	eventType := urlmanagementdomain.URLIssueEventResolutionRecorded
+	if issue.IssueType == urlmanagementdomain.URLIssueTypeStaleRoute &&
+		resolutionType == urlmanagementdomain.URLIssueResolutionRetired {
+		// A stale route cannot be probed after it leaves the manifest. Retiring
+		// it is therefore a complete operator decision, rather than a pending
+		// resolution that would require an impossible verification request.
+		targetState = urlmanagementdomain.URLIssueStateVerified
+		verificationTime = &now
+		eventType = urlmanagementdomain.URLIssueEventStaleRouteRetired
+	}
 	updates := map[string]interface{}{
-		"state":           urlmanagementdomain.URLIssueStateResolved,
+		"state":           targetState,
 		"resolution_type": resolutionType,
 		"resolution_note": resolutionNote,
 		"resolved_at":     now,
-		"verified_at":     nil,
+		"verified_at":     verificationTime,
 	}
 	if input.LinkedRedirectRuleID != nil {
 		updates["linked_redirect_rule_id"] = *input.LinkedRedirectRuleID
@@ -270,7 +312,7 @@ func (s *StorefrontURLIssueService) Resolve(
 	return s.issues.UpdateWithEvent(
 		id,
 		updates,
-		urlmanagementdomain.URLIssueEventResolutionRecorded,
+		eventType,
 		actorUserID,
 		resolutionNote,
 		map[string]interface{}{
@@ -400,6 +442,7 @@ func (s *StorefrontURLIssueService) requireActionableIssue(
 }
 
 func (s *StorefrontURLIssueService) validateResolutionRedirect(
+	issue *urlmanagementdomain.StorefrontURLIssue,
 	redirectRuleID uint,
 	resolutionType string,
 ) error {
@@ -410,11 +453,41 @@ func (s *StorefrontURLIssueService) validateResolutionRedirect(
 	if err != nil {
 		return err
 	}
+	if err := validateStorefrontURLIssueRedirectSource(issue, rule); err != nil {
+		return err
+	}
 	if resolutionType == urlmanagementdomain.URLIssueResolutionRedirectPublished &&
 		rule.State != urlmanagementdomain.RedirectRuleStatePublished {
 		return errors.New("a redirect-published resolution requires a published redirect rule")
 	}
 	return nil
+}
+
+func validateStorefrontURLIssueRedirectSource(
+	issue *urlmanagementdomain.StorefrontURLIssue,
+	rule *urlmanagementdomain.StorefrontRedirectRule,
+) error {
+	if issue == nil || issue.RouteEntry == nil {
+		return errors.New("URL issue route entry is unavailable")
+	}
+	if rule == nil {
+		return errors.New("redirect rule is unavailable")
+	}
+	issuePath := normalizeStorefrontURLIssuePath(issue.RouteEntry.Path)
+	ruleSourcePath := normalizeStorefrontURLIssuePath(rule.SourcePath)
+	if issuePath != ruleSourcePath {
+		return fmt.Errorf("redirect rule source path %q does not match URL issue path %q", rule.SourcePath, issue.RouteEntry.Path)
+	}
+	return nil
+}
+
+func normalizeStorefrontURLIssuePath(value string) string {
+	trimmed := strings.TrimSpace(value)
+	trimmed = strings.TrimRight(trimmed, "/")
+	if trimmed == "" {
+		return "/"
+	}
+	return trimmed
 }
 
 type storefrontURLIssueDefinition struct {
@@ -425,13 +498,35 @@ type storefrontURLIssueDefinition struct {
 func deriveStorefrontURLIssueDefinitions(
 	entry seodomain.StorefrontRouteCatalogEntry,
 ) []storefrontURLIssueDefinition {
-	// A stale snapshot is no longer a runtime observation. Its previous check
-	// result must not be carried forward as a new 404 or server error.
-	if entry.EntryStatus == seodomain.RouteEntryStatusStale {
+	// A stale catalog snapshot remains actionable until it has a fresh runtime
+	// check. After that, derive issues from the current response so recovered
+	// URLs can close their historical stale-route issue automatically.
+	if entry.EntryStatus == seodomain.RouteEntryStatusStale &&
+		(entry.LastCheckedAt == nil || entry.LastCheckStatus == "") {
 		return []storefrontURLIssueDefinition{{
 			issueType: urlmanagementdomain.URLIssueTypeStaleRoute,
 			severity:  urlmanagementdomain.URLIssueSeverityMedium,
 		}}
+	}
+	if entry.EntryStatus == seodomain.RouteEntryStatusStale {
+		switch entry.LastCheckStatus {
+		case seodomain.RouteCheckStatusOK:
+			return nil
+		case seodomain.RouteCheckStatusNotFound:
+			// A stale URL that now returns 404 is confirmed retired, so it no
+			// longer needs an active issue or an operator cleanup action.
+			return nil
+		case seodomain.RouteCheckStatusServerError,
+			seodomain.RouteCheckStatusError:
+			return []storefrontURLIssueDefinition{{
+				issueType: urlmanagementdomain.URLIssueTypeStaleRoute,
+				severity:  urlmanagementdomain.URLIssueSeverityMedium,
+			}}
+		case seodomain.RouteCheckStatusRedirect:
+			if entry.IsAlias {
+				return nil
+			}
+		}
 	}
 
 	definitions := make([]storefrontURLIssueDefinition, 0, 2)
@@ -440,11 +535,6 @@ func deriveStorefrontURLIssueDefinitions(
 		definitions = append(definitions, storefrontURLIssueDefinition{
 			issueType: urlmanagementdomain.URLIssueTypePathCollision,
 			severity:  urlmanagementdomain.URLIssueSeverityCritical,
-		})
-	case seodomain.RouteEntryStatusStale:
-		definitions = append(definitions, storefrontURLIssueDefinition{
-			issueType: urlmanagementdomain.URLIssueTypeStaleRoute,
-			severity:  urlmanagementdomain.URLIssueSeverityMedium,
 		})
 	}
 

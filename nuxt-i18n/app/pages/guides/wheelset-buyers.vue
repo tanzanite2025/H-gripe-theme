@@ -1,10 +1,19 @@
 <template>
   <div>
-    <h2 class="products-page__title products-page__title--sr-only">
+    <h2 v-if="!isGuideCategoryLandingPage" class="products-page__title products-page__title--sr-only">
       {{ t('guidesWheelsetBuyers.title') }}
     </h2>
 
-    <div class="wheelset-page">
+    <GuideCategoryChildRouteNavigationCards
+      v-if="isGuideCategoryLandingPage"
+      eyebrow="Wheelset Guides"
+      :heading="t('guidesWheelsetBuyers.title')"
+      description="Use the wheelset guide sections to compare buying, safety, custom build, appearance, and freehub decisions."
+      open-label="Open guide"
+      :cards="wheelsetGuideNavigationCards"
+    />
+
+    <div v-else class="wheelset-page">
       <!-- Buying overview -->
       <section
         v-show="activeTab === 'overview'"
@@ -330,7 +339,7 @@
 
 <script setup lang="ts">
 import { computed, watch } from 'vue'
-import { useHead, useI18n, useLocalePath, useRouter } from '#imports'
+import { useHead, useI18n, useLocalePath, useRoute, useRouter } from '#imports'
 import WheelsetSafetyInstructionsSection from '~/components/WheelsetSafetyInstructionsSection.vue'
 import WheelsetSampleAssemblySection from '~/components/WheelsetSampleAssemblySection.vue'
 import WheelsetAppearanceLogoSection from '~/components/WheelsetAppearanceLogoSection.vue'
@@ -342,9 +351,10 @@ import AccordionItem from '~/components/ui/AccordionItem.vue'
 import TireRimHelper from '~/components/TireRimHelper.vue'
 import FreehubGroupsetHelper from '~/components/FreehubGroupsetHelper.vue'
 import { usePageSubNavigationTab } from '~/composables/usePageSubNavigationTab'
-import { wheelsetBuyerTabs } from '~/utils/pageSubNavigation'
+import { pageSubNavigationChildPath, wheelsetBuyerTabs } from '~/utils/pageSubNavigation'
 import { usePageMessages } from '~/composables/usePageMessages'
 import { useStorefrontSeoLinks } from '~/composables/seo/useStorefrontSeoLinks'
+import GuideCategoryChildRouteNavigationCards from '~/components/GuideCategoryChildRouteNavigationCards.vue'
 
 definePageMeta({
   layout: 'products',
@@ -352,9 +362,25 @@ definePageMeta({
   footerLabelFallback: 'Wheelset Guide',
 })
 
-const tabs = wheelsetBuyerTabs
-
 const { locale, t } = useI18n()
+const route = useRoute()
+const localePath = useLocalePath()
+const tabs = wheelsetBuyerTabs
+const normalizeGuideCategoryLandingRoutePath = (path: string) => path.replace(/\/+$/, '') || '/'
+const isGuideCategoryLandingPage = computed(() => (
+  normalizeGuideCategoryLandingRoutePath(route.path) ===
+  normalizeGuideCategoryLandingRoutePath(localePath('/guides/wheelset-buyers'))
+))
+const getWheelsetGuideCardRoute = (tab: (typeof tabs)[number]) => {
+  const explicitRoute = (tab as { to?: string }).to
+  return explicitRoute || pageSubNavigationChildPath('/guides/wheelset-buyers', tab.id)
+}
+const wheelsetGuideNavigationCards = computed(() => tabs.map(tab => ({
+  id: tab.id,
+  label: t(tab.labelKey, tab.fallback),
+  description: t(tab.descriptionKey, tab.description),
+  to: getWheelsetGuideCardRoute(tab),
+})))
 const { canonicalUrl } = useStorefrontSeoLinks()
 const wheelsetMessages = usePageMessages('guidesWheelsetBuyers')
 const overviewMessages = usePageMessages('guidesWheelsetBuyersOverview')
@@ -372,7 +398,6 @@ const { activeTab, localizedTabPath, setActiveTab } = usePageSubNavigationTab({
 })
 const { openChat } = useChatWidget()
 const router = useRouter()
-const localePath = useLocalePath()
 
 useHead(() => ({
   title: activeTab.value === 'choose-freehub'

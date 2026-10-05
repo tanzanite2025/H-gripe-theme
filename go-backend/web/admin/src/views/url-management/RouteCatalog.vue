@@ -5,17 +5,17 @@
       :description="pageMeta.description"
     >
       <template #actions>
-        <Button variant="outline" :disabled="loading || statsLoading || syncing || checking" @click="refreshAll">
+        <Button variant="outline" title="重新读取台账、检查记录和工单统计，不会重新访问 URL" :disabled="loading || statsLoading || syncing || checking || checkingSelected" @click="refreshAll">
  <RefreshCw :class="['size-4', loading || statsLoading ? 'animate-spin': '']" />
           刷新
         </Button>
-        <Button variant="outline" :disabled="loading || syncing || !canEdit" @click="syncCatalog">
+        <Button variant="outline" :disabled="loading || syncing || checking || checkingSelected || !canEdit" @click="syncCatalog">
  <RefreshCw :class="['size-4', syncing ? 'animate-spin': '']" />
           同步 URL
         </Button>
-        <Button :disabled="checking || !canEdit || pagination.total === 0" @click="checkCatalog">
- <CircleCheck :class="['size-4', checking ? 'animate-spin': '']" />
-          检查当前语言
+        <Button :title="filters.entry_status === 'stale' ? '失效路径已移出当前路由，不参加普通检测' : '先同步最新路由清单，再按当前语言和筛选条件检查全部可检查 URL'" :disabled="checking || syncing || checkingSelected || !canEdit || filters.entry_status === 'stale' || !filters.locale || filters.locale === 'all' || pagination.total === 0" @click="checkCatalog">
+          <CircleCheck :class="['size-4', checking ? 'animate-spin': '']" />
+          同步并检查
         </Button>
       </template>
     </AdminPageHeader>
@@ -23,7 +23,7 @@
     <AdminStorefrontLanguageDisplayCard
       :model-value="filters.locale"
       :language-options="languageOptions"
-      :disabled="loading || statsLoading || syncing || checking"
+      :disabled="loading || statsLoading || syncing || checking || checkingSelected"
       :loading="loading || statsLoading"
       aria-label="URL 路由台账语言"
       @update:model-value="selectLocale"
@@ -37,7 +37,7 @@
       :pagination-total="pagination.total"
       :locale-label="selectedLocaleLabel"
       :mode="mode"
-      :loading="loading"
+      :loading="loading || syncing || checking || checkingSelected"
  @apply="applyFilters"
       @reset="resetFilters"
     />
@@ -60,6 +60,7 @@
       :detail-loading="detailLoading"
       :history-loading="historyLoading"
       :checking-selected="checkingSelected"
+      :operation-busy="syncing || checking || checkingSelected"
       :can-edit="canEdit"
       @check-selected="checkSelected"
       @update-history-page="updateHistoryPage"
@@ -148,15 +149,16 @@ const statItems = computed(() => props.mode === 'canonical'
       { key: 'total', label: '冲突 URL', value: stats.value.total, icon: Eye, tone: 'blue' },
       { key: 'canonical', label: 'Canonical 不一致', value: stats.value.canonical_mismatch, icon: TriangleAlert, tone: stats.value.canonical_mismatch ? 'amber' : 'gray' },
       { key: 'duplicate', label: '路径重复', value: stats.value.duplicate, icon: Eye, tone: stats.value.duplicate ? 'amber' : 'gray' },
-      { key: 'issues', label: '待处理工单', value: issueStats.value.active, icon: RefreshCw, tone: issueStats.value.active ? 'coral' : 'gray' },
+      { key: 'issues', label: '未关闭工单', value: issueStats.value.active, icon: RefreshCw, tone: issueStats.value.active ? 'coral' : 'gray' },
       { key: 'checked', label: '已检查', value: stats.value.checked, icon: CircleCheck, tone: 'green' },
       { key: 'unchecked', label: '未检查', value: stats.value.unchecked, icon: RefreshCw, tone: stats.value.unchecked ? 'amber' : 'gray' },
     ]
   : [
       { key: 'total', label: 'URL 总量', value: stats.value.total, icon: Eye, tone: 'blue' },
+      { key: 'stale', label: '历史失效', value: stats.value.stale, icon: RefreshCw, tone: stats.value.stale ? 'amber' : 'gray' },
       { key: 'healthy', label: '正常可用', value: stats.value.ok, icon: CircleCheck, tone: 'green' },
       { key: 'attention', label: '待优化路由', value: stats.value.needs_attention, icon: TriangleAlert, tone: stats.value.needs_attention ? 'amber' : 'gray' },
-      { key: 'issues', label: '待处理工单', value: issueStats.value.active, icon: RefreshCw, tone: issueStats.value.active ? 'coral' : 'gray' },
+      { key: 'issues', label: '未关闭工单', value: issueStats.value.active, icon: RefreshCw, tone: issueStats.value.active ? 'coral' : 'gray' },
       { key: 'not-found', label: '404', value: stats.value.not_found, icon: Search, tone: stats.value.not_found ? 'coral' : 'gray' },
       { key: 'unchecked', label: '未检查', value: stats.value.unchecked, icon: RefreshCw, tone: stats.value.unchecked ? 'amber' : 'gray' },
       { key: 'duplicate', label: '路径重复', value: stats.value.duplicate, icon: Eye, tone: stats.value.duplicate ? 'amber' : 'gray' },

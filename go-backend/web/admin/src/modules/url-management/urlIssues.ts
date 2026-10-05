@@ -57,6 +57,7 @@ export interface StorefrontURLIssueStats {
   suppressed: number
   critical: number
   high: number
+  stale_route?: number
 }
 
 export interface StorefrontURLIssueResolutionInput {
@@ -140,7 +141,7 @@ export const storefrontURLIssuesApi = {
     return response.data?.data || {}
   },
 
-  async recheck(id: number): Promise<{ issue: StorefrontURLIssue; check_result: StorefrontRouteCheckResult }> {
+  async recheck(id: number): Promise<{ issue: StorefrontURLIssue; check_result?: StorefrontRouteCheckResult }> {
     const response = await axios.post(`/api/admin/urls/issues/${id}/recheck`)
     return response.data?.data || {}
   },
@@ -148,5 +149,10 @@ export const storefrontURLIssuesApi = {
   async verify(id: number): Promise<{ issue: StorefrontURLIssue; check_result?: StorefrontRouteCheckResult }> {
     const response = await axios.post(`/api/admin/urls/issues/${id}/verify`)
     return response.data?.data || {}
+  },
+
+  async retireAllActiveStaleRouteIssues(): Promise<number> {
+    const response = await axios.post('/api/admin/urls/issues/retire-stale')
+    return Number(response.data?.data?.retired_count || 0)
   },
 }

@@ -4,7 +4,7 @@ import { CheckCircle2, RefreshCw, Save } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useAuthStore } from '@/stores/auth'
-import shippingApi, { type FpxAPIConfigView, type FpxChannelSyncSummary, type FpxPingResult } from '@/api/shipping'
+import fpxLogisticsAdminApi, { type FpxAPIConfigView, type FpxChannelSyncSummary, type FpxPingResult } from '@/api/fpxLogisticsAdminApi'
 
 type Environment = 'production' | 'test'
 type GatewayForm = FpxAPIConfigView & {
@@ -76,7 +76,7 @@ async function load() {
   syncResult.value = null
   form.value = emptyForm(selectedEnvironment)
   try {
-    const saved = await shippingApi.getFpxApiConfig(selectedEnvironment)
+    const saved = await fpxLogisticsAdminApi.getFpxApiConfig(selectedEnvironment)
     if (requestSequence !== loadSequence) return
     form.value = {
       ...emptyForm(selectedEnvironment),
@@ -101,7 +101,7 @@ async function save() {
   error.value = ''
   message.value = ''
   try {
-    await shippingApi.saveFpxApiConfig({ ...form.value, environment: environment.value })
+    await fpxLogisticsAdminApi.saveFpxApiConfig({ ...form.value, environment: environment.value })
     form.value.app_key = ''
     form.value.app_secret = ''
     form.value.access_token = ''
@@ -121,7 +121,7 @@ async function ping() {
   message.value = ''
   pingResult.value = null
   try {
-    pingResult.value = await shippingApi.pingFpxApi({ ...form.value, environment: environment.value })
+    pingResult.value = await fpxLogisticsAdminApi.pingFpxApi({ ...form.value, environment: environment.value })
   } catch (cause) {
     error.value = getErrorMessage(cause, '连通性自检失败')
   } finally {
@@ -136,7 +136,7 @@ async function syncChannels() {
   message.value = ''
   syncResult.value = null
   try {
-    const result = await shippingApi.syncFpxChannels({ ...form.value, environment: environment.value })
+    const result = await fpxLogisticsAdminApi.syncFpxChannels({ ...form.value, environment: environment.value })
     syncResult.value = result
     form.value.last_sync_status = 'success'
     form.value.last_synced_at = new Date().toISOString()

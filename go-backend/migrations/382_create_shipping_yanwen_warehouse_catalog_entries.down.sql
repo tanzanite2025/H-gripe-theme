@@ -1,0 +1,1 @@
+DROP TABLE IF EXISTS shipping_yanwen_warehouse_catalog_entries;

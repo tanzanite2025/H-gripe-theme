@@ -1,5 +1,5 @@
 {
-  "version": "2026-10-01",
+  "version": "2026-10-05",
   "routes": [
     {
       "key": "home",
@@ -110,6 +110,15 @@
       "is_indexable": true
     },
     {
+      "key": "guides",
+      "path": "/guides",
+      "label": "Guides",
+      "description": "Tire, wheelset, and spoke engineering guides",
+      "is_searchable": true,
+      "is_checkable": true,
+      "is_indexable": true
+    },
+    {
       "key": "guides-tireguides",
       "path": "/guides/tireguides",
       "label": "Tire Guides",
@@ -123,6 +132,16 @@
       "path": "/guides/tireguides/tire-frame-clearance",
       "label": "Tire and frame clearance guide",
       "description": "Compare tire dimensions with bicycle frame, fork, and stay clearance",
+      "is_searchable": true,
+      "is_checkable": true,
+      "is_indexable": true
+    },
+    {
+      "key": "guides-tireguides-choose",
+      "path": "/guides/tireguides/choose",
+      "label": "Tire and rim width reference calculator",
+      "description": "Convert inch tire widths and resolve DT Swiss rim internal width references",
+      "sitemap_locales": ["en", "zh_cn"],
       "is_searchable": true,
       "is_checkable": true,
       "is_indexable": true
@@ -155,10 +174,29 @@
       "is_indexable": true
     },
     {
+      "key": "guides-tireguides-choose-inner-tube",
+      "path": "/guides/tireguides/choose-inner-tube",
+      "label": "How to Choose an Inner Tube",
+      "description": "Choose inner-tube size, valve type, material, and deep-rim valve length",
+      "sitemap_locales": ["en", "zh_cn"],
+      "is_searchable": true,
+      "is_checkable": true,
+      "is_indexable": true
+    },
+    {
       "key": "guides-wheelset-buyers",
       "path": "/guides/wheelset-buyers",
       "label": "Wheelset Buyers Guide",
       "description": "Wheelset buying guide",
+      "is_searchable": true,
+      "is_checkable": true,
+      "is_indexable": true
+    },
+    {
+      "key": "guides-spokeguides",
+      "path": "/guides/spokeguides",
+      "label": "Spoke Guides",
+      "description": "Spoke calculators, specifications, and engineering references",
       "is_searchable": true,
       "is_checkable": true,
       "is_indexable": true
@@ -227,8 +265,8 @@
       "is_indexable": true
     },
     {
-      "key": "resources-spoke-calculator",
-      "path": "/resources/spoke-calculator",
+      "key": "guides-spokeguides-spoke-length-calculator",
+      "path": "/guides/spokeguides/spoke-length-calculator",
       "label": "Spoke Calculator",
       "description": "Spoke length calculator",
       "is_searchable": true,
@@ -236,8 +274,8 @@
       "is_indexable": true
     },
     {
-      "key": "resources-brand-wheelset-spoke-specs",
-      "path": "/resources/brand-wheelset-spoke-specs",
+      "key": "guides-spokeguides-brand-wheelset-spoke-specs",
+      "path": "/guides/spokeguides/brand-wheelset-spoke-specs",
       "label": "Complete Wheelset Spoke Specs",
       "description": "Market-available branded wheelset spoke lengths, types, and lacing references",
       "is_searchable": true,
@@ -246,7 +284,7 @@
     },
     {
       "key": "resources-wheelset-lacing-topology",
-      "path": "/resources/轮组编法",
+      "path": "/resources/wheelset-spoke-lacing-topology-and-geometry-reference",
       "label": "Wheelset spoke lacing topology",
       "description": "Interactive rim-hole mapping and geometric reference for wheelset spoke lacing",
       "sitemap_locales": ["en", "zh_cn"],

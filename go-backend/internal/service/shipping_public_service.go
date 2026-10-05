@@ -48,6 +48,10 @@ func (s *ShippingService) ListPublicCarrierServices() ([]shipping.CarrierService
 	if err != nil {
 		return nil, err
 	}
+	services, _, err = s.projectCarrierServicesFromPublishedCollections(services)
+	if err != nil {
+		return nil, err
+	}
 
 	publicServices := make([]shipping.CarrierService, 0, len(services))
 	for _, service := range services {
@@ -63,6 +67,14 @@ func (s *ShippingService) GetPublicCarrierService(id uint) (*shipping.CarrierSer
 	if err != nil {
 		return nil, err
 	}
+	projectedServices, _, err := s.projectCarrierServicesFromPublishedCollections([]shipping.CarrierService{*service})
+	if err != nil {
+		return nil, err
+	}
+	if len(projectedServices) == 0 {
+		return nil, ErrShippingNotFound
+	}
+	service = &projectedServices[0]
 	if !publicCarrierServiceVisible(service) {
 		return nil, ErrShippingNotFound
 	}
@@ -83,7 +95,7 @@ func publicCarrierServiceVisible(service *shipping.CarrierService) bool {
 }
 
 func (s *ShippingService) ListPublicZones() ([]shipping.ShippingZone, error) {
-	zones, err := s.ListZones()
+	zones, err := s.shippingRepo.FindAllZones()
 	if err != nil {
 		return nil, err
 	}
@@ -98,7 +110,7 @@ func (s *ShippingService) ListPublicZones() ([]shipping.ShippingZone, error) {
 }
 
 func (s *ShippingService) GetPublicZone(id uint) (*shipping.ShippingZone, error) {
-	zone, err := s.GetZone(id)
+	zone, err := s.shippingRepo.FindZoneByID(id)
 	if err != nil {
 		return nil, err
 	}

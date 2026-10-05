@@ -196,7 +196,7 @@ func (s *FpxAPIService) SyncChannels(ctx context.Context, input FpxAPIConfigInpu
 	if s.shipping == nil {
 		return FpxChannelSyncSummary{}, errors.New("4PX channel repository is not configured")
 	}
-	stats, err := s.shipping.UpsertFpxChannels(result.Channels)
+	stats, err := s.shipping.UpsertFpxChannelsForEnvironment(credentials.environment, result.Channels)
 	if err != nil {
 		if s.configs != nil {
 			_ = s.configs.RecordSyncFailure(credentials.environment, safeFpxError(err, credentials))
@@ -366,12 +366,41 @@ func parseFpxChannelResponseWithCount(responseBody []byte) ([]shipping.FpxChanne
 			continue
 		}
 		seen[key] = struct{}{}
-		channels = append(channels, shipping.FpxChannel{ServiceCode: code, DisplayName: name})
+		channels = append(channels, shipping.FpxChannel{
+			ServiceCode: code,
+			DisplayName: name,
+			Countries:   fpxChannelCountries(record),
+		})
 	}
 	if len(response.Data) == 0 || string(response.Data) == "null" {
 		return nil, 0, errors.New("4PX response is missing data")
 	}
 	return channels, scanned, nil
+}
+
+func fpxChannelCountries(record map[string]json.RawMessage) string {
+	for _, key := range []string{
+		"countries", "country_codes", "countryCodes", "destination_countries", "destinationCountries",
+		"country_list", "countryList", "ship_to_country_codes", "shipToCountryCodes",
+		"destination_country", "destinationCountry", "country_code", "countryCode", "country",
+	} {
+		raw, ok := record[key]
+		if !ok {
+			continue
+		}
+		var values []string
+		if json.Unmarshal(raw, &values) == nil {
+			if len(values) > 0 {
+				encoded, _ := json.Marshal(values)
+				return shipping.NormalizeShippingServiceCollectionCountryCodes(string(encoded))
+			}
+		}
+		var value string
+		if json.Unmarshal(raw, &value) == nil && strings.TrimSpace(value) != "" {
+			return shipping.NormalizeShippingServiceCollectionCountryCodes(value)
+		}
+	}
+	return "[]"
 }
 
 func fpxChannelRecordsWithCount(raw json.RawMessage) ([]map[string]json.RawMessage, int) {

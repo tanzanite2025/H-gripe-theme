@@ -15,7 +15,7 @@
     <div v-if="items.length > 0" class="global-url-search-results__list">
       <NuxtLink
         v-for="item in items"
-        :key="item.id"
+        :key="item.route_entry_id || item.route_entry?.id || item.id"
         :to="resolveTarget(item)"
         class="global-url-search-results__item"
         @click="emit('select', item)"

@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -22,6 +23,11 @@ func (s *StorefrontRouteCatalogService) Sync(ctx context.Context) (StorefrontRou
 	if s == nil || s.repository == nil {
 		return StorefrontRouteCatalogSyncSummary{}, errors.New("storefront route catalog service is unavailable")
 	}
+	releaseOperation, err := s.beginCatalogOperation()
+	if err != nil {
+		return StorefrontRouteCatalogSyncSummary{}, err
+	}
+	defer releaseOperation()
 	if ctx == nil {
 		ctx = context.Background()
 	}
@@ -92,10 +98,16 @@ func (s *StorefrontRouteCatalogService) loadManifest(ctx context.Context) (seodo
 		return seodomain.StorefrontRouteManifest{}, errors.New("storefront internal origin is not configured")
 	}
 
-	request, err := http.NewRequestWithContext(ctx, http.MethodGet, s.internalBaseURL+routeCatalogManifestPath, nil)
+	// The manifest is the source of truth for a sync. Add a cache-busting
+	// query and explicit no-cache headers so a proxy or a long-lived storefront
+	// process cannot make the admin API reuse yesterday's route list.
+	manifestURL := s.internalBaseURL + routeCatalogManifestPath + "?route_catalog_sync=" + strconv.FormatInt(time.Now().UTC().UnixNano(), 10)
+	request, err := http.NewRequestWithContext(ctx, http.MethodGet, manifestURL, nil)
 	if err != nil {
 		return seodomain.StorefrontRouteManifest{}, err
 	}
+	request.Header.Set("Cache-Control", "no-cache, no-store")
+	request.Header.Set("Pragma", "no-cache")
 	response, err := s.httpClient.Do(request)
 	if err != nil {
 		return seodomain.StorefrontRouteManifest{}, fmt.Errorf("fetch storefront route manifest: %w", err)

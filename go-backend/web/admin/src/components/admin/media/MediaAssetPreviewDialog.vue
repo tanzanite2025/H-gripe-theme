@@ -7,14 +7,14 @@
       </DialogHeader>
       <div class="max-h-[76dvh] overflow-auto bg-black/95 p-4">
         <img
-          v-if="asset?.media_type === 'image'"
-          :src="assetAccessURL(asset)"
+          v-if="asset?.media_type === 'image' && adminMediaAssetFileURL(asset)"
+          :src="adminMediaAssetFileURL(asset)"
           :alt="asset?.alt || ''"
           class="mx-auto max-h-[70dvh] max-w-full rounded-xl object-contain"
         />
         <video
-          v-else-if="asset?.media_type === 'video'"
-          :src="assetAccessURL(asset)"
+          v-else-if="asset?.media_type === 'video' && adminMediaAssetFileURL(asset)"
+          :src="adminMediaAssetFileURL(asset)"
           controls
           class="mx-auto max-h-[70dvh] max-w-full rounded-xl"
         />
@@ -26,7 +26,7 @@
 <script setup lang="ts">
 import type { MediaAsset } from '@/api/media'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { assetAccessURL, assetTitle } from '@/lib/mediaPresentation'
+import { adminMediaAssetFileURL, assetTitle } from '@/lib/mediaPresentation'
 
 withDefaults(defineProps<{
   open?: boolean

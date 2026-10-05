@@ -1,4 +1,11 @@
 {
+  "tabs": {
+    "ariaLabel": "Inner tube guide sections",
+    "introduction": "Introduction",
+    "introductionDescription": "Review size, valve, material, and model basics before opening the calculator.",
+    "calculator": "Calculator",
+    "calculatorDescription": "Enter rim depth and pump-head parameters to review valve length, extenders, and effective exposure."
+  },
   "steps": {
     "size": {
       "title": "Choose Your Size",
@@ -8,45 +15,265 @@
       "title": "Select Valve Type"
     },
     "model": {
-      "title": "Choose Model Type"
+      "title": "Choose Material and Model"
     }
   },
   "actions": {
     "findTube": "Find My Tube"
   },
   "valves": {
+    "introduction": "Identify the valve shape first, then confirm compatibility from the rim hole's minimum effective diameter. The valve type, hole size, and tubeless seal must all match; tire size alone is not enough.",
+    "imageOverviewAlt": "Schwalbe inner tube valve types and lengths: Schrader, Dunlop, and Presta",
     "av": {
       "type": "Auto / Schrader",
-      "description": "Standard car valve. Typical length: 40 mm."
+      "description": "Usually uses an approximately 8.5 mm hole. Common on mountain, commuter, and fat bikes, and also used by some tubeless systems; it works with a car-style pump head.",
+      "fit": "Fit check: confirm that the rim explicitly supports a Schrader/AV hole; do not enlarge a hole or force a large valve into a Presta rim."
     },
     "dv": {
       "type": "Dunlop / Woods",
-      "description": "Classic bicycle valve. Typical length: 32 or 40 mm."
+      "description": "A traditional valve found on city bikes and some European bicycles. Hole size and retaining hardware can vary by rim and valve version, so appearance alone is not enough.",
+      "fit": "Fit check: measure the rim hole and confirm the valve specification; do not apply the AV or SV measurement blindly."
     },
     "sv": {
       "type": "Presta / French",
-      "description": "Sport valve. Available in 40, 50, 60, and 80 mm."
+      "description": "Usually uses an approximately 6 mm hole. Common on road bikes, gravel bikes, and many deep carbon rims; native lengths include 40, 50, 60, 80, and 100 mm.",
+      "fit": "Fit check: most road tubeless rims use Presta, but tubeless support does not automatically mean Presta; confirm the hole and rim instructions."
+    },
+    "measure": {
+      "title": "How do I confirm which valve fits the rim?",
+      "stepOne": "Check the rim label, manual, or manufacturer specification for Presta/SV, Schrader/AV, or Dunlop/DV. For a tubeless rim, also confirm the valve-base and sealing profile.",
+      "stepTwo": "Remove the tire and tube, then measure the narrowest part of the rim hole with a caliper. Do not measure the outer countersink, chamfer, washer, or the outside of the valve base.",
+      "stepThree": "Compare the measured hole with the reference ranges below, then confirm the tube's valve-root shape and the rim maker's instructions. When the size is uncertain, keep the rim's original valve specification.",
+      "warning": "A hole that is too small can pinch the valve or stop it passing through; a hole that is too large lets the valve move and wear the tube root. Do not drill a carbon rim larger yourself. Use a reducer, washer, or grommet only when the manufacturer supports it."
+    },
+    "holeReference": {
+      "title": "Rim valve-hole diameter reference",
+      "headers": {
+        "valve": "Valve",
+        "diameter": "Typical minimum effective hole"
+      },
+      "rows": {
+        "sv": {
+          "valve": "Presta / SV",
+          "diameter": "About 6.0 mm"
+        },
+        "av": {
+          "valve": "Schrader / AV",
+          "diameter": "About 8.5 mm"
+        },
+        "dv": {
+          "valve": "Dunlop / DV",
+          "diameter": "Often close to 8.5 mm; confirm the exact specification"
+        }
+      },
+      "note": "These are common reference values, not a universal standard. Chamfers, washers, and the valve base can change the actual fit."
+    },
+    "tubeless": {
+      "title": "Are tubeless-ready rims always Presta?",
+      "description": "No. Road and gravel tubeless rims commonly use Presta, while some mountain-bike, fat-bike, and other tubeless systems use Schrader. Check the rim-hole diameter, tubeless valve-base seal, and manufacturer instructions instead of relying on the words “tubeless-ready” alone."
     }
   },
-  "images": {
-    "valveOverviewAlt": "Schwalbe inner tube valve types and lengths overview"
-  },
-  "compatibility": {
-    "title": "Pump & Rim Compatibility",
-    "headers": {
-      "rimHeight": "Rim Height",
-      "recommendedValve": "Recommended Valve",
-      "notes": "Notes"
+  "materials": {
+    "title": "Choose the material route first",
+    "description": "Material changes air retention, weight, installation feel, and maintenance. After choosing a material, confirm the size, valve length, and rim compatibility.",
+    "butyl": {
+      "title": "Butyl",
+      "description": "Stable air retention, durable construction, and straightforward cost and maintenance make it suitable for commuting, training, and most everyday wheels.",
+      "fit": "Choose it when reliability and easy maintenance come first."
     },
-    "valves": {
-      "extender": "Extender"
+    "latex": {
+      "title": "Latex",
+      "description": "It can offer attractive rolling feel and weight, but usually needs more frequent inflation and careful installation to avoid pinching or twisting.",
+      "fit": "Choose it when you are comfortable with more frequent checks and maintenance."
     },
-    "notes": {
-      "standard": "Standard",
-      "deepRim": "Deep rim",
-      "aeroRim": "Aero rim",
-      "extenderNeeded": "Valve extender needed"
+    "tpu": {
+      "title": "TPU",
+      "description": "Light weight and compact storage suit riders focused on low weight and a small spare. Follow the brand instructions for repair, valve roots, and locknuts.",
+      "fit": "Choose it after confirming the exact model's installation, repair, and valve-accessory requirements."
     }
+  },
+  "advanced": {
+    "title": "Technician-level failure-proof knowledge",
+    "description": "Two easy-to-miss assembly checks that directly affect valve-root life and reliable inflation on deep rims.",
+    "carbonValveHole": {
+      "title": "Carbon-rim burrs can cut a TPU valve neck",
+      "description": "Many ultralight TPU tubes have walls around 0.3 mm, but the exact thickness depends on the model. An unfinished carbon-rim valve hole, a burr, or a loose metal stem can create a cut at the valve root during inflation and riding.",
+      "rule": "Inspect the hole by sight and touch before fitting. Use a valve-hole washer or grommet that matches the rim maker's specification; never force a tube through a burr."
+    },
+    "co2Seal": {
+      "title": "CO₂ inflation can shrink a poor extender seal",
+      "description": "Rapid CO₂ expansion can cool the valve and seal sharply. An ordinary or poor-quality O-ring, or an improvised thread-tape seal, can harden, shrink, or leak during a rapid inflation.",
+      "rule": "For an RVC extender, use an OEM seal explicitly rated for CO₂ and low temperature. If the specification allows FKM (fluoroelastomer), follow the seal and extender compatibility instructions; an FKM label alone is not a universal guarantee."
+    }
+  },
+  "fitment": {
+    "title": "Rim Depth, Valve Length, and Extender Fitment",
+    "description": "Estimate the valve passage depth from the nominal rim depth, then check the effective valve exposure from the tube and extender. The 6.5 mm offset and configurable pump-head grip thresholds are reference model parameters; confirm the exact rim, tube, and pump specifications before installation.",
+    "loading": "Loading valve fitment results from the backend…",
+    "error": "The valve fitment service is temporarily unavailable. Try again shortly.",
+    "visuals": {
+      "title": "Valve passage and exposure diagram",
+      "description": "The grey rim, dark native valve, and blue extender update with the rim depth and selection mode.",
+      "ariaLabel": "Diagram of rim depth, inner tube valve, extender, and effective exposed length",
+      "rimBase": "BSD base reference",
+      "outerLip": "Outer lip offset",
+      "passageLabel": "Passage depth at {rimDepth} mm",
+      "tubeRoot": "Tube root",
+      "tubeBody": "Inner tube body",
+      "valveStem": "Native valve {valve} mm",
+      "extender": "+{extender} mm extender",
+      "exposed": "Exposed {clearance}"
+    },
+    "controls": {
+      "modeLabel": "Selection mode",
+      "automaticMode": "Smart recommendation",
+      "manualMode": "Manual fit check",
+      "rimDepth": "Nominal rim depth",
+      "rimDepthRange": "Enter any whole number from {min}–{max} mm; the slider adjusts in 1 mm steps.",
+      "measurementNoteTitle": "Confirm the measurement basis",
+      "measurementNote": "Enter the rim maker's nominal rim depth, not the tire outside diameter. The selected ±{tolerance} mm is checked at both interval boundaries; confirm the exact rim section when the status changes across the range.",
+      "pumpHeadGripDepth": "Pump-head grip depth",
+      "pumpHeadGripDepthRange": "How much valve stem the pump head needs to hold reliably: {min}–{max} mm.",
+      "rimDepthUncertainty": "Rim-depth measurement uncertainty",
+      "rimDepthUncertaintyRange": "Review the same setup at nominal depth ± the selected value (0–{max} mm).",
+      "baseValveLength": "Native tube valve length",
+      "extenderLength": "Extender length",
+      "noExtender": "No extender"
+    },
+    "status": {
+      "optimal": {
+        "title": "Comfortable exposure",
+        "description": "The current total is {totalLength} with {clearance} of effective exposure. At {preferredExposure} mm or more, the pump head usually has a more stable grip."
+      },
+      "marginal": {
+        "title": "Exposure is marginal",
+        "description": "The current total is {totalLength} with {clearance} of effective exposure. It reaches the {gripDepth} mm grip-depth reference but leaves little margin; deep holes or another pump head may need more length."
+      },
+      "unsafe": {
+        "title": "Exposure is too short",
+        "description": "The current total is {totalLength} with only {clearance} of effective exposure. Below {gripDepth} mm, do not force the pump head onto it; use a longer tube or a compatible extender."
+      }
+    },
+    "metrics": {
+      "passageDepth": "Estimated passage depth",
+      "passageFormula": "Rim depth {rimDepth} mm − outer lip offset {offset} mm",
+      "totalValveLength": "Total assembled length",
+      "totalValveWithExtender": "Native {valve} mm + extender {extender} mm",
+      "totalValveWithoutExtender": "Native tube valve only",
+      "minimumRequiredLength": "Minimum required total",
+      "preferredMinimumLength": "Preferred total",
+      "lengthMargins": "Minimum margin {minimumMargin}; preferred-length margin {preferredMargin}",
+      "pumpHeadGripDepth": "Pump-head grip depth",
+      "preferredExposure": "Preferred exposed length",
+      "exposedLength": "Effective exposed length",
+      "exposedFormula": "Total assembled length − passage depth",
+      "recommendation": "Current recommendation",
+      "automaticRecommendation": "The reference combination is selected from the rim-depth range.",
+      "manualSelection": "Manual combinations are for checking clearance and do not replace manufacturer specifications."
+    },
+    "recommendationReasons": {
+      "shortestNativeValveMeetsMinimum": "The backend selected the shortest native valve that reaches the {minimumLength} mm minimum required total.",
+      "shortestExtenderAssemblyReachesMinimum": "The native valve alone does not reach the {minimumLength} mm minimum required total, so the backend selected the shortest supported assembly that does.",
+      "manualCombination": "This is a manual combination; the backend calculates its margins but does not treat it as an automatic recommendation."
+    },
+    "uncertainty": {
+      "title": "Measurement-error interval review",
+      "description": "The current assembly is rechecked from {lower} to {upper} mm of rim depth (nominal ±{uncertainty} mm).",
+      "lowerBound": "Lower bound · {rimDepth} mm",
+      "upperBound": "Upper bound · {rimDepth} mm",
+      "exposedLength": "Effective exposure",
+      "minimumMargin": "Minimum margin",
+      "stable": "The status stays {status} across the selected measurement interval.",
+      "unstable": "The status changes within the selected interval; use the worst case ({status}) and remeasure before installation."
+    },
+    "share": {
+      "title": "Share this calculation",
+      "description": "The link stores the current calculation inputs in the URL; it does not store products or inventory.",
+      "copy": "Copy result link",
+      "copied": "Link copied",
+      "error": "The link could not be copied. Copy the page URL from the address bar instead."
+    },
+    "alternatives": {
+      "title": "Compare usable assemblies",
+      "description": "These are backend-calculated reference assemblies for the current rim depth, not specific products. Click one to load it into manual fit checking.",
+      "referenceBadge": "Length only",
+      "automaticBadge": "Backend pick",
+      "assemblySuffix": "assembly",
+      "total": "Total {total} mm",
+      "margin": "Minimum margin {margin}"
+    },
+    "recommendations": {
+      "shortValve": "{valve} mm short-valve tube",
+      "standardValve": "{valve} mm valve tube",
+      "mediumValve": "{valve} mm valve tube",
+      "highRimValve": "{valve} mm deep-rim valve tube",
+      "mediumValveWithExtender": "{valve} mm tube + {extender} mm RVC extender",
+      "highRimValveWithExtender": "{valve} mm tube + {extender} mm RVC extender"
+    },
+    "matrix": {
+      "title": "Rim-depth and valve-exposure reference",
+      "description": "Click a row to load its rim depth into the fit check above. Each cell shows the estimated effective exposure for that native valve length.",
+      "referenceBadge": "Reference model",
+      "rimDepth": "Rim depth",
+      "passageDepth": "Passage depth",
+      "minimumRequiredLength": "Minimum required total",
+      "recommendation": "Recommended setup"
+    },
+    "structure": {
+      "title": "Confirm the valve-core structure first",
+      "options": {
+        "removableCore": {
+          "label": "Removable core",
+          "title": "Removable valve core (RVC)",
+          "description": "The core can be removed with the correct tool, allowing the original core to be moved to the outer end of an extender for normal inflation and pressure checks.",
+          "rule": "For a deep rim that may need an extender, prioritize a tube explicitly marked as having a removable valve core."
+        },
+        "fixedCore": {
+          "label": "Fixed core",
+          "title": "Fixed valve core",
+          "description": "The core is riveted or formed as one piece with the valve stem and cannot be transferred using an RVC setup.",
+          "rule": "Do not treat a generic sleeve extender as an RVC extender; confirm the tube and extender instructions first."
+        },
+        "rvcExtender": {
+          "label": "RVC extender",
+          "title": "RVC extender assembly",
+          "description": "Remove the original core, install it at the top of the extender, and complete the seal and tightening steps specified by the product.",
+          "rule": "Calculate the extender together with rim depth and pump-head clearance instead of checking total length alone."
+        },
+        "rootProtection": {
+          "label": "Root protection",
+          "title": "Valve root and rim-hole protection",
+          "description": "The tube root should sit naturally and the rim hole should be smooth. On carbon rims, use a protective or anti-rattle part only when the rim maker recommends it.",
+          "rule": "Tighten the outer nut gently by hand; do not use pliers or pull the tube root tight."
+        }
+      }
+    },
+    "pitfalls": {
+      "title": "Assembly pitfalls",
+      "items": {
+        "shortValve": {
+          "title": "Valve exposure is too short",
+          "description": "When too little stem is exposed, the pump head may not pass the core neck reliably and can slip or bend the valve pin while inflating.",
+          "rule": "Target at least 15 mm; for deep rims, move to a longer native valve or use a compatible RVC extender."
+        },
+        "overTightenedLocknut": {
+          "title": "Over-tightened locknut",
+          "description": "Excessive tightening turns small movement between the rim hole and tube into tension at the tube root, increasing slow-leak and tearing risk.",
+          "rule": "Turn the nut into place with two fingers and follow the tube maker's instructions."
+        },
+        "fixedCoreExtender": {
+          "title": "Using an extender on a fixed core",
+          "description": "A fixed-core tube usually cannot move its original core to the top of an RVC extender, which can cause pressure-reading errors or a leaking joint.",
+          "rule": "Before buying for a deep rim, confirm the removable-core and extender compatibility."
+        },
+        "carbonHole": {
+          "title": "Rough rim valve hole",
+          "description": "Burrs or a loose metal stem in a carbon rim hole can create rattling and gradually wear the valve root.",
+          "rule": "Inspect the hole and stem fit, then follow the rim maker's guidance for protective or anti-rattle parts."
+        }
+      }
+    },
+    "disclaimer": "This is a reference selection model based on the supplied board formula, not certification for a specific rim, tube, or pump model. Confirm tire size, rim-hole diameter, valve-core structure, maximum pressure, and manufacturer instructions before installation."
   },
   "models": {
     "standard": {

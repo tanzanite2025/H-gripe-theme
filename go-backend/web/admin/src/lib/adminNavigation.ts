@@ -311,10 +311,8 @@ export const adminNavigationItems: AdminNavigationItem[] = [
     permission: 'shipping:view',
     children: [
       { id: 'shipping-templates', path: '/shipping/templates', routeName: 'ShippingTemplates', label: '运费模板' },
-      { id: 'shipping-zones', path: '/shipping/zones', routeName: 'ShippingZones', label: '配送区域' },
       { id: 'shipping-carriers', path: '/shipping/carriers', routeName: 'ShippingCarriers', label: '承运商' },
       { id: 'shipping-services', path: '/shipping/services', routeName: 'ShippingServices', label: '线路服务' },
-      { id: 'shipping-quote', path: '/shipping/quote', routeName: 'ShippingQuote', label: '试算器' },
       { id: 'shipping-packaging', path: '/shipping/packaging', routeName: 'ShippingPackaging', label: '包装规则' },
       { id: 'shipping-tracking', path: '/shipping/tracking', routeName: 'ShippingTracking', label: '追踪配置' },
       { id: 'shipping-tracking-shipments', path: '/shipping/trackingshipments', routeName: 'ShippingTrackingShipments', label: '追踪任务' },
