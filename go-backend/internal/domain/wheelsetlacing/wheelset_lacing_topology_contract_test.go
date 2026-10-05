@@ -2,6 +2,7 @@ package wheelsetlacing
 
 import (
 	"errors"
+	"sort"
 	"testing"
 )
 
@@ -21,6 +22,38 @@ func TestDefaultCatalogContainsAllSupportedTopologyFamilies(t *testing.T) {
 	} {
 		if _, err := catalog.Get(id); err != nil {
 			t.Fatalf("Get(%q) error = %v", id, err)
+		}
+	}
+}
+
+func TestDefaultCatalogExposesExactSupportedCrossCombinations(t *testing.T) {
+	wantBySelection := map[string][]int{
+		"16":      {0, 1},
+		"20":      {0, 1, 2},
+		"24":      {0, 1, 2, 3},
+		"28":      {0, 1, 2, 3},
+		"32":      {0, 1, 2, 3, 4},
+		"36":      {0, 1, 2, 3, 4},
+		"18_2to1": {2},
+		"21":      {2},
+		"24_2to1": {2},
+	}
+	crossesBySelection := make(map[string][]int, len(wantBySelection))
+	for _, topology := range NewDefaultCatalog().List() {
+		if _, ok := wantBySelection[topology.Selection]; ok {
+			crossesBySelection[topology.Selection] = append(crossesBySelection[topology.Selection], topology.Cross)
+		}
+	}
+	for selection, want := range wantBySelection {
+		got := crossesBySelection[selection]
+		sort.Ints(got)
+		if len(got) != len(want) {
+			t.Fatalf("selection %q exposes crosses %v, want %v", selection, got, want)
+		}
+		for index := range want {
+			if got[index] != want[index] {
+				t.Fatalf("selection %q exposes crosses %v, want %v", selection, got, want)
+			}
 		}
 	}
 }

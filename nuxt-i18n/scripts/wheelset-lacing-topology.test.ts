@@ -48,6 +48,14 @@ assert.deepEqual(
   { topologyId: '24h-symmetric-1to1-2x', displayLayout: WHEELSET_LACING_DISPLAY_GEOMETRY_LAYOUT.symmetric1To1 },
 )
 assert.throws(
+  () => resolveWheelsetLacingDisplayGeometryTopologySelection(16, 2),
+  /unsupported 16 wheelset lacing cross count 2/,
+)
+assert.throws(
+  () => resolveWheelsetLacingDisplayGeometryTopologySelection('18_2to1', 1),
+  /unsupported 18_2to1 wheelset lacing cross count 1/,
+)
+assert.throws(
   () => resolveWheelsetLacingDisplayGeometryTopologySelection(19 as WheelsetLacingHoleSelection, 2),
   /unregistered wheelset lacing display topology/,
 )

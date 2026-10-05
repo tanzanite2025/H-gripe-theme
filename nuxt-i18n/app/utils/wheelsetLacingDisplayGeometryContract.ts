@@ -1,4 +1,7 @@
-import type { WheelsetLacingHoleSelection } from './wheelsetLacingSelectionContract'
+import {
+  getSupportedWheelsetLacingCrossCounts,
+  type WheelsetLacingHoleSelection,
+} from './wheelsetLacingSelectionContract'
 
 export const WHEELSET_LACING_DISPLAY_GEOMETRY_CONTRACT_VERSION = 'v1.5-backend-display-geometry'
 
@@ -290,6 +293,13 @@ export const resolveWheelsetLacingDisplayGeometryTopologySelection = (
   holeSelection: WheelsetLacingHoleSelection,
   cross: number,
 ): WheelsetLacingDisplayGeometryTopologySelection => {
+  const supportedCrossCounts = getSupportedWheelsetLacingCrossCounts(holeSelection)
+  if (supportedCrossCounts.length === 0) {
+    throw new Error(`unregistered wheelset lacing display topology ${String(holeSelection)}`)
+  }
+  if (!supportedCrossCounts.includes(cross)) {
+    throw new Error(`unsupported ${String(holeSelection)} wheelset lacing cross count ${String(cross)}`)
+  }
   switch (holeSelection) {
     case 21:
       return {

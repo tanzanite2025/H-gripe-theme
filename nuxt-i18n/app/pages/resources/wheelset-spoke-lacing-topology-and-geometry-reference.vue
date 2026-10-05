@@ -854,6 +854,7 @@ useHead(() => {
     }
 
     function setCrossCount(cross) {
+      if (!getHoleRule(state.holes).allowedCross.includes(cross)) return;
       state.cross = cross;
       renderControls();
       cancelScheduledWheelsetLacingDisplayGeometryRefresh();
