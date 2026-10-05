@@ -41,6 +41,10 @@ const customPagePathOverrides = new Map<string, string>([
     join(pagesRoot, 'guides', 'tireguides.vue'),
   ],
   [
+    '/guides/tireguides/tire-pressure',
+    join(pagesRoot, 'guides', 'tire-pressure.vue'),
+  ],
+  [
     '/guides/tireguides/choose',
     join(pagesRoot, 'guides', 'tireguides.vue'),
   ],

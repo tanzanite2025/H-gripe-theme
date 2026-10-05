@@ -1,5 +1,5 @@
 {
-  "version": "2026-10-05",
+  "version": "2026-10-06",
   "routes": [
     {
       "key": "home",
@@ -169,6 +169,15 @@
       "path": "/guides/tireguides/tire-pressure-calculator",
       "label": "Tire pressure calculator",
       "description": "Demonstrate how pressure, load, speed, and lean change force and estimated contact area",
+      "is_searchable": true,
+      "is_checkable": true,
+      "is_indexable": true
+    },
+    {
+      "key": "guides-tireguides-tire-pressure",
+      "path": "/guides/tireguides/tire-pressure",
+      "label": "Tire pressure guide",
+      "description": "Explore how rider load, tire pressure, speed, and lean change estimated contact area and cornering force",
       "is_searchable": true,
       "is_checkable": true,
       "is_indexable": true
