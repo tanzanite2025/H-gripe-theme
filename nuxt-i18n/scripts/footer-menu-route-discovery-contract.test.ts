@@ -77,7 +77,7 @@ assert.ok(guidesSection, 'GUIDES column should be discovered from its static des
 const tireGuidesGroup = guidesSection.links.find(link => link.to === '/guides/tireguides')
 assert.ok(tireGuidesGroup, 'Tire Guides should retain its real landing page')
 assert.equal(tireGuidesGroup.fallback, 'Tire Guides')
-assert.equal(tireGuidesGroup.children?.length, 9, 'All tire guide tabs should be listed')
+assert.equal(tireGuidesGroup.children?.length, 8, 'All tire guide tabs should be listed')
 assert.deepEqual(
   tireGuidesGroup.children?.map(link => link.to),
   [
@@ -87,7 +87,6 @@ assert.deepEqual(
     '/guides/tireguides/tubeless',
     '/guides/tireguides/choose',
     '/guides/tireguides/tire-pressure',
-    '/guides/tireguides/tire-pressure-calculator',
     '/guides/tireguides/choose-inner-tube',
     '/guides/tireguides/schwalbe-tire-selector',
   ],

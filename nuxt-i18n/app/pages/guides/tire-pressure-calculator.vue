@@ -4,7 +4,7 @@
       class="tire-pressure-calculator-page__back-link"
       :to="localePath('/guides/tireguides/tire-pressure')"
     >
-      {{ t('guidesTirePressure.calculator.backToStandards') }}
+      {{ t('guidesTirePressure.calculator.backToGuide') }}
     </NuxtLink>
 
     <TirePressureCalculator />
@@ -22,6 +22,7 @@ definePageMeta({
   layout: 'products',
   footerLabelKey: 'products.nav.tireSizeCharts',
   footerLabelFallback: 'Tire Guides',
+  footer: false,
   feedbackThreadKey: 'guides-tire-pressure-calculator',
   feedbackTitleKey: 'guidesTirePressure.feedbackTitle',
   feedbackTitle: 'Share your feedback about the tire-pressure calculator',

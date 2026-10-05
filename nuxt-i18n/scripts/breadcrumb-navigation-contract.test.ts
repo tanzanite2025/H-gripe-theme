@@ -125,14 +125,13 @@ const tireGuideRouteTab = resolvePageSubNavigationBreadcrumb(
   [{ path: '/guides/tireguides', tabs: tireGuideTabs }],
 )
 assert.equal(tireGuideRouteTab?.kind, 'tab')
-assert.equal(tireGuideRouteTab?.entry.tabs.length, 9)
+assert.equal(tireGuideRouteTab?.entry.tabs.length, 8)
 
 const tirePressureCalculatorRouteTab = resolvePageSubNavigationBreadcrumb(
   '/guides/tireguides/tire-pressure-calculator',
   [{ path: '/guides/tireguides', tabs: tireGuideTabs }],
 )
-assert.equal(tirePressureCalculatorRouteTab?.kind, 'tab')
-assert.equal(tirePressureCalculatorRouteTab?.tab.id, 'tire-pressure-calculator')
+assert.equal(tirePressureCalculatorRouteTab, null)
 
 const clearanceRouteTab = resolvePageSubNavigationBreadcrumb(
   '/guides/tireguides/tire-frame-clearance',

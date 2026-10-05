@@ -1,26 +1,18 @@
 {
-  "title": "Product tire pressure standards",
-  "description": "A reserved page for searching sourced tire-pressure standards by current market product and exact setup.",
-  "actions": {
-    "checkTires": "Check out tires"
-  },
+  "guideTitle": "Tire pressure guide",
+  "title": "Tire pressure and cornering-force demonstration",
+  "description": "Explore how rider load, tire pressure, speed, and lean change estimated contact area and cornering force.",
   "tabs": {
     "label": "Tire pressure page sections",
-    "standards": "Product standards",
+    "calculator": "Pressure and force",
     "details": "Guide"
   },
   "calculator": {
     "title": "Tire pressure, load, and cornering force demonstration",
     "description": "Use a generic rubber baseline to show how rider, bike, pressure, tire width, speed, and lean change contact area and force; the model does not return a production pressure recommendation.",
-    "backToStandards": "Back to product pressure standards"
+    "backToGuide": "Back to the tire-pressure guide"
   },
   "feedbackTitle": "Share your feedback about the tire-pressure calculator",
-  "standardsPlaceholder": {
-    "status": "Data source placeholder",
-    "title": "Product tire-pressure standards search",
-    "body": "This tab is reserved for a sourced search of current market tire products and their exact pressure limits. The calculator already reads the local product catalog as an input; the standards table is still pending.",
-    "openCalculator": "Open the force calculation demonstration"
-  },
   "productSelector": {
     "title": "Choose a tire model",
     "searchLabel": "Search model, article number, or size",

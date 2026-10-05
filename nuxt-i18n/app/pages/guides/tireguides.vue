@@ -72,7 +72,7 @@
         id="tire-pressure"
         class="sizecharts-section"
       >
-        <TirePressureGuide v-if="activeTab === 'tire-pressure'" @open-tire-products="openTireProductsDrawer" />
+        <TirePressureGuide v-if="activeTab === 'tire-pressure'" />
       </section>
 
       <!-- How to choose an inner tube -->
