@@ -107,33 +107,58 @@
           <label class="flange-geometry-field">
             <span>{{ t('wheelsetLacingTopology.controls.driveFlangeRadius') }}</span>
             <span class="flange-geometry-input-line">
-              <input id="flange-radius-a-input" type="number" :min="MINIMUM_FLANGE_DISPLAY_RADIUS" :max="MAXIMUM_FLANGE_DISPLAY_RADIUS" step="1" :value="state.flangeRadiusA" @input="updateWheelsetLacingFlangeGeometryInput('flangeRadiusA', $event)" @change="normalizeWheelsetLacingFlangeGeometryInput('flangeRadiusA', $event)">
+              <input id="flange-radius-a-input" type="number" :min="MINIMUM_FLANGE_DISPLAY_RADIUS" :max="MAXIMUM_FLANGE_DISPLAY_RADIUS" step="1" :value="state.flangeRadiusA" @input="updateWheelsetLacingGeometryInput('flangeRadiusA', $event)" @change="normalizeWheelsetLacingGeometryInput('flangeRadiusA', $event)">
               <span>SVG</span>
             </span>
           </label>
           <label class="flange-geometry-field">
             <span>{{ t('wheelsetLacingTopology.controls.nonDriveFlangeRadius') }}</span>
             <span class="flange-geometry-input-line">
-              <input id="flange-radius-b-input" type="number" :min="MINIMUM_FLANGE_DISPLAY_RADIUS" :max="MAXIMUM_FLANGE_DISPLAY_RADIUS" step="1" :value="state.flangeRadiusB" @input="updateWheelsetLacingFlangeGeometryInput('flangeRadiusB', $event)" @change="normalizeWheelsetLacingFlangeGeometryInput('flangeRadiusB', $event)">
+              <input id="flange-radius-b-input" type="number" :min="MINIMUM_FLANGE_DISPLAY_RADIUS" :max="MAXIMUM_FLANGE_DISPLAY_RADIUS" step="1" :value="state.flangeRadiusB" @input="updateWheelsetLacingGeometryInput('flangeRadiusB', $event)" @change="normalizeWheelsetLacingGeometryInput('flangeRadiusB', $event)">
               <span>SVG</span>
             </span>
           </label>
           <label class="flange-geometry-field">
             <span>{{ t('wheelsetLacingTopology.controls.driveFlangeOffset') }}</span>
             <span class="flange-geometry-input-line">
-              <input id="flange-offset-a-input" type="number" :min="MINIMUM_FLANGE_OFFSET_MM" :max="MAXIMUM_FLANGE_OFFSET_MM" step="0.5" :value="state.flangeOffsetAMm" @input="updateWheelsetLacingFlangeGeometryInput('flangeOffsetAMm', $event)" @change="normalizeWheelsetLacingFlangeGeometryInput('flangeOffsetAMm', $event)">
+              <input id="flange-offset-a-input" type="number" :min="MINIMUM_FLANGE_OFFSET_MM" :max="MAXIMUM_FLANGE_OFFSET_MM" step="0.5" :value="state.flangeOffsetAMm" @input="updateWheelsetLacingGeometryInput('flangeOffsetAMm', $event)" @change="normalizeWheelsetLacingGeometryInput('flangeOffsetAMm', $event)">
               <span>mm</span>
             </span>
           </label>
           <label class="flange-geometry-field">
             <span>{{ t('wheelsetLacingTopology.controls.nonDriveFlangeOffset') }}</span>
             <span class="flange-geometry-input-line">
-              <input id="flange-offset-b-input" type="number" :min="MINIMUM_FLANGE_OFFSET_MM" :max="MAXIMUM_FLANGE_OFFSET_MM" step="0.5" :value="state.flangeOffsetBMm" @input="updateWheelsetLacingFlangeGeometryInput('flangeOffsetBMm', $event)" @change="normalizeWheelsetLacingFlangeGeometryInput('flangeOffsetBMm', $event)">
+              <input id="flange-offset-b-input" type="number" :min="MINIMUM_FLANGE_OFFSET_MM" :max="MAXIMUM_FLANGE_OFFSET_MM" step="0.5" :value="state.flangeOffsetBMm" @input="updateWheelsetLacingGeometryInput('flangeOffsetBMm', $event)" @change="normalizeWheelsetLacingGeometryInput('flangeOffsetBMm', $event)">
               <span>mm</span>
             </span>
           </label>
         </div>
         <p class="flange-geometry-help">{{ t('wheelsetLacingTopology.controls.flangeGeometryHelp') }}</p>
+      </div>
+
+      <!-- G3 仅在 21H 选择时显示；A-B-A 三孔组由两段独立角间距定义 -->
+      <div id="g3-geometry-control-group" class="flange-geometry-control-group g3-geometry-control-group" hidden aria-hidden="true">
+        <div class="selector-group-label">
+          <span>{{ t('wheelsetLacingTopology.controls.g3GroupSpacingLabel') }}</span>
+          <span class="control-unit-label">{{ t('wheelsetLacingTopology.controls.displayDegrees') }}</span>
+        </div>
+        <div class="flange-geometry-grid">
+          <label class="flange-geometry-field">
+            <span>{{ t('wheelsetLacingTopology.controls.g3SpacingAToB') }}</span>
+            <span class="flange-geometry-input-line">
+              <input id="g3-spacing-a-to-b-input" type="number" :min="MINIMUM_G3_RIM_HOLE_SPACING_DEGREES" :max="MAXIMUM_G3_RIM_HOLE_SPACING_DEGREES" step="0.1" :value="state.g3RimHoleSpacingAToBDegrees" @input="updateWheelsetLacingGeometryInput('g3RimHoleSpacingAToBDegrees', $event)" @change="normalizeWheelsetLacingGeometryInput('g3RimHoleSpacingAToBDegrees', $event)">
+              <span>°</span>
+            </span>
+          </label>
+          <label class="flange-geometry-field">
+            <span>{{ t('wheelsetLacingTopology.controls.g3SpacingBToA') }}</span>
+            <span class="flange-geometry-input-line">
+              <input id="g3-spacing-b-to-a-input" type="number" :min="MINIMUM_G3_RIM_HOLE_SPACING_DEGREES" :max="MAXIMUM_G3_RIM_HOLE_SPACING_DEGREES" step="0.1" :value="state.g3RimHoleSpacingBToADegrees" @input="updateWheelsetLacingGeometryInput('g3RimHoleSpacingBToADegrees', $event)" @change="normalizeWheelsetLacingGeometryInput('g3RimHoleSpacingBToADegrees', $event)">
+              <span>°</span>
+            </span>
+          </label>
+        </div>
+        <p class="flange-geometry-help">{{ t('wheelsetLacingTopology.controls.g3GroupSpacingHelp') }}</p>
       </div>
 
       <!-- 4. 轮侧视图模式切换 (View Mode) -->
@@ -442,7 +467,7 @@ const { data: wheelsetLacingFaqData } = await useAsyncData(
 
 const serverRenderedWheelsetLacingDisplayGeometryTopologyIdentifier = '24h-symmetric-1to1-2x'
 const { data: serverRenderedWheelsetLacingDisplayGeometry } = await useAsyncData(
-  'wheelset-lacing-default-display-geometry-v1-2',
+  'wheelset-lacing-default-display-geometry-v1-3',
   async () => {
     try {
       const response = await request('/wheelset-lacing/display-geometry', {
@@ -635,6 +660,10 @@ useHead(() => {
     const MAXIMUM_FLANGE_DISPLAY_RADIUS = 280;
     const MINIMUM_FLANGE_OFFSET_MM = 0;
     const MAXIMUM_FLANGE_OFFSET_MM = 100;
+    const DEFAULT_G3_RIM_HOLE_SPACING_A_TO_B_DEGREES = 4.87;
+    const DEFAULT_G3_RIM_HOLE_SPACING_B_TO_A_DEGREES = 4.87;
+    const MINIMUM_G3_RIM_HOLE_SPACING_DEGREES = 0.1;
+    const MAXIMUM_G3_RIM_HOLE_SPACING_DEGREES = 20;
     const WHEELSET_LACING_DISPLAY_GEOMETRY_REFRESH_DEBOUNCE_MS = 120;
 
     const resolveWheelsetLacingBackendTopologyIdentifier = (holes, cross) => {
@@ -667,19 +696,34 @@ useHead(() => {
         : fallbackOffset;
     };
 
+    const resolveInitialG3RimHoleSpacing = (spacingProfile, field, fallbackSpacing) => {
+      const spacing = Number(spacingProfile?.[field]);
+      return Number.isFinite(spacing) && spacing >= MINIMUM_G3_RIM_HOLE_SPACING_DEGREES && spacing <= MAXIMUM_G3_RIM_HOLE_SPACING_DEGREES
+        ? spacing
+        : fallbackSpacing;
+    };
+
     const initialServerRenderedDisplayGeometry = serverRenderedWheelsetLacingDisplayGeometry.value;
     const initialServerRenderedFlangeProfile = initialServerRenderedDisplayGeometry?.flange_profile;
+    const initialServerRenderedG3GroupSpacing = initialServerRenderedDisplayGeometry?.g3_group_spacing;
 
     let displayGeometryRefreshTimer = null;
 
-    const buildWheelsetLacingDisplayGeometryRequestBody = () => ({
-      topology_id: resolveWheelsetLacingBackendTopologyIdentifier(state.holes, state.cross),
-      rim_radius: SVG_RIM_HOLE_RING_DISPLAY_RADIUS,
-      flange_radius_a: state.flangeRadiusA,
-      flange_radius_b: state.flangeRadiusB,
-      flange_offset_a_mm: state.flangeOffsetAMm,
-      flange_offset_b_mm: state.flangeOffsetBMm,
-    });
+    const buildWheelsetLacingDisplayGeometryRequestBody = () => {
+      const requestBody = {
+        topology_id: resolveWheelsetLacingBackendTopologyIdentifier(state.holes, state.cross),
+        rim_radius: SVG_RIM_HOLE_RING_DISPLAY_RADIUS,
+        flange_radius_a: state.flangeRadiusA,
+        flange_radius_b: state.flangeRadiusB,
+        flange_offset_a_mm: state.flangeOffsetAMm,
+        flange_offset_b_mm: state.flangeOffsetBMm,
+      };
+      if (state.holes === 21) {
+        requestBody.g3_rim_hole_spacing_a_to_b_degrees = state.g3RimHoleSpacingAToBDegrees;
+        requestBody.g3_rim_hole_spacing_b_to_a_degrees = state.g3RimHoleSpacingBToADegrees;
+      }
+      return requestBody;
+    };
 
     const refreshWheelsetLacingDisplayGeometryFromBackend = async () => {
       const requestId = ++displayGeometryRequestSequence;
@@ -730,6 +774,8 @@ useHead(() => {
       flangeRadiusB: resolveDisplayGeometryRadius(initialServerRenderedDisplayGeometry?.hub_holes_b, SVG_HUB_FLANGE_HOLE_RING_DISPLAY_RADIUS_B),
       flangeOffsetAMm: resolveInitialFlangeOffset(initialServerRenderedFlangeProfile, 'flange_offset_a_mm', 20),
       flangeOffsetBMm: resolveInitialFlangeOffset(initialServerRenderedFlangeProfile, 'flange_offset_b_mm', 35),
+      g3RimHoleSpacingAToBDegrees: resolveInitialG3RimHoleSpacing(initialServerRenderedG3GroupSpacing, 'spacing_a_to_b_degrees', DEFAULT_G3_RIM_HOLE_SPACING_A_TO_B_DEGREES),
+      g3RimHoleSpacingBToADegrees: resolveInitialG3RimHoleSpacing(initialServerRenderedG3GroupSpacing, 'spacing_b_to_a_degrees', DEFAULT_G3_RIM_HOLE_SPACING_B_TO_A_DEGREES),
       showLeading: true,
       showTrailing: true,
       showNonDrive: true,
@@ -781,13 +827,19 @@ useHead(() => {
       void refreshWheelsetLacingDisplayGeometryFromBackend();
     }
 
-    const getWheelsetLacingFlangeGeometryInputLimits = field => field.startsWith('flangeRadius')
-      ? { min: MINIMUM_FLANGE_DISPLAY_RADIUS, max: MAXIMUM_FLANGE_DISPLAY_RADIUS }
-      : { min: MINIMUM_FLANGE_OFFSET_MM, max: MAXIMUM_FLANGE_OFFSET_MM };
+    const getWheelsetLacingGeometryInputLimits = field => {
+      if (field.startsWith('flangeRadius')) {
+        return { min: MINIMUM_FLANGE_DISPLAY_RADIUS, max: MAXIMUM_FLANGE_DISPLAY_RADIUS };
+      }
+      if (field.startsWith('g3RimHoleSpacing')) {
+        return { min: MINIMUM_G3_RIM_HOLE_SPACING_DEGREES, max: MAXIMUM_G3_RIM_HOLE_SPACING_DEGREES };
+      }
+      return { min: MINIMUM_FLANGE_OFFSET_MM, max: MAXIMUM_FLANGE_OFFSET_MM };
+    };
 
-    function updateWheelsetLacingFlangeGeometryInput(field, event) {
+    function updateWheelsetLacingGeometryInput(field, event) {
       const rawValue = String(event?.target?.value ?? '').trim();
-      const limits = getWheelsetLacingFlangeGeometryInputLimits(field);
+      const limits = getWheelsetLacingGeometryInputLimits(field);
       const inputValue = Number(rawValue);
       if (!rawValue || !Number.isFinite(inputValue) || inputValue < limits.min || inputValue > limits.max) {
         cancelScheduledWheelsetLacingDisplayGeometryRefresh();
@@ -797,10 +849,10 @@ useHead(() => {
       scheduleWheelsetLacingDisplayGeometryRefresh();
     }
 
-    function normalizeWheelsetLacingFlangeGeometryInput(field, event) {
+    function normalizeWheelsetLacingGeometryInput(field, event) {
       const target = event?.target;
       const rawValue = String(target?.value ?? '').trim();
-      const limits = getWheelsetLacingFlangeGeometryInputLimits(field);
+      const limits = getWheelsetLacingGeometryInputLimits(field);
       const previousValue = state[field];
       const inputValue = Number(rawValue);
       const normalizedValue = rawValue && Number.isFinite(inputValue)
@@ -873,10 +925,18 @@ useHead(() => {
       document.querySelectorAll('.view-mode-grid .view-pill-btn').forEach(btn => {
         btn.setAttribute('aria-pressed', String(btn.id === `btn-view-${state.viewMode}`));
       });
+      const g3GeometryControlGroup = document.getElementById('g3-geometry-control-group');
+      if (g3GeometryControlGroup) {
+        const isG3Selection = state.holes === 21;
+        g3GeometryControlGroup.hidden = !isG3Selection;
+        g3GeometryControlGroup.setAttribute('aria-hidden', String(!isG3Selection));
+      }
       document.getElementById('flange-radius-a-input').value = String(state.flangeRadiusA);
       document.getElementById('flange-radius-b-input').value = String(state.flangeRadiusB);
       document.getElementById('flange-offset-a-input').value = String(state.flangeOffsetAMm);
       document.getElementById('flange-offset-b-input').value = String(state.flangeOffsetBMm);
+      document.getElementById('g3-spacing-a-to-b-input').value = String(state.g3RimHoleSpacingAToBDegrees);
+      document.getElementById('g3-spacing-b-to-a-input').value = String(state.g3RimHoleSpacingBToADegrees);
     }
 
     const SVG_NS = 'http://www.w3.org/2000/svg';
@@ -925,7 +985,7 @@ useHead(() => {
       if (!geometry) {
         appendSvgElement(svg, 'text', { x: 0, y: 0, 'text-anchor': 'middle', fill: '#64748b', 'font-size': 12 }, t('wheelsetLacingTopology.telemetry.backendPending'));
         renderFlangeProfile(null);
-        updateGeometryProjectionMetricsAndTopologyReview(null, null);
+        updateGeometryProjectionMetricsAndTopologyReview(null, null, null);
         return;
       }
       const topology = geometry.topology;
@@ -1037,7 +1097,7 @@ useHead(() => {
 
       // 7. Geometry telemetry and topology rule review.
       renderFlangeProfile(geometry.flange_profile);
-      updateGeometryProjectionMetricsAndTopologyReview(topology, geometry.metrics);
+      updateGeometryProjectionMetricsAndTopologyReview(topology, geometry.metrics, geometry.g3_group_spacing);
     }
 
     function renderFlangeProfile(profile) {
@@ -1084,8 +1144,9 @@ useHead(() => {
       statusTag.innerText = t('wheelsetLacingTopology.canvas.profileTag');
     }
 
-    function updateGeometryProjectionMetricsAndTopologyReview(topology, geometryProjectionMetrics) {
+    function updateGeometryProjectionMetricsAndTopologyReview(topology, geometryProjectionMetrics, g3GroupSpacing) {
       const holes = topology?.selection ?? state.holes;
+      const isG3Topology = String(holes) === '21';
       const numHoles = holes === '24_2to1' ? 24 : holes;
       const aggregateMeanAbsoluteProjectionAngleDegrees = geometryProjectionMetrics?.aggregate_mean_absolute_projection_angle_degrees ?? null;
 
@@ -1118,9 +1179,12 @@ useHead(() => {
       const statusTag = document.getElementById('canvas-status-tag');
 
       statusBox.className = 'topology-status-card topology-status-preview';
-      if (holes === 21) {
+      if (isG3Topology) {
         statusTitle.innerText = t('wheelsetLacingTopology.review.preview21Title');
-        statusDetail.innerText = t('wheelsetLacingTopology.review.preview21Detail');
+        statusDetail.innerText = t('wheelsetLacingTopology.review.preview21DetailRuntime', {
+          spacingAToB: formatBackendDisplayGeometryMetric(g3GroupSpacing?.spacing_a_to_b_degrees),
+          spacingBToA: formatBackendDisplayGeometryMetric(g3GroupSpacing?.spacing_b_to_a_degrees),
+        });
         builderTip.innerText = t('wheelsetLacingTopology.review.preview21Tip');
         statusTag.innerText = t('wheelsetLacingTopology.review.tagG3');
         statusTag.style.background = 'rgba(5, 150, 105, 0.1)';
@@ -1532,6 +1596,10 @@ onBeforeUnmount(() => {
       border: 1px solid var(--border-line);
       border-radius: 16px;
       background: rgba(241, 245, 249, 0.68);
+    }
+
+    .g3-geometry-control-group[hidden] {
+      display: none !important;
     }
 
     .control-unit-label {

@@ -73,10 +73,29 @@ func TestHandleWheelsetLacingDisplayGeometryCalculationReturnsBackendCoordinates
 	if response.Code != http.StatusOK {
 		t.Fatalf("status = %d, want %d; body=%s", response.Code, http.StatusOK, response.Body.String())
 	}
-	for _, fragment := range []string{`"contract_version":"v1.2-backend-display-geometry"`, `"rim_holes"`, `"spokes"`, `"flange_profile"`, `"aggregate_mean_absolute_projection_angle_degrees"`} {
+	for _, fragment := range []string{`"contract_version":"v1.3-backend-display-geometry"`, `"rim_holes"`, `"spokes"`, `"flange_profile"`, `"aggregate_mean_absolute_projection_angle_degrees"`} {
 		if !strings.Contains(response.Body.String(), fragment) {
 			t.Fatalf("body missing %s: %s", fragment, response.Body.String())
 		}
+	}
+}
+
+func TestHandleWheelsetLacingDisplayGeometryCalculationReturnsG3GroupSpacing(t *testing.T) {
+	response := performRequest(newTestRouter(), http.MethodPost, "/api/v1/wheelset-lacing/display-geometry", `{"topology_id":"21h-g3-2to1","rim_radius":232,"flange_radius_a":66,"flange_radius_b":54,"flange_offset_a_mm":20,"flange_offset_b_mm":35,"g3_rim_hole_spacing_a_to_b_degrees":2.5,"g3_rim_hole_spacing_b_to_a_degrees":8.5}`)
+	if response.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d; body=%s", response.Code, http.StatusOK, response.Body.String())
+	}
+	for _, fragment := range []string{`"g3_group_spacing"`, `"spacing_a_to_b_degrees":2.5`, `"spacing_b_to_a_degrees":8.5`} {
+		if !strings.Contains(response.Body.String(), fragment) {
+			t.Fatalf("body missing %s: %s", fragment, response.Body.String())
+		}
+	}
+}
+
+func TestHandleWheelsetLacingDisplayGeometryCalculationRejectsOutOfRangeG3GroupSpacing(t *testing.T) {
+	response := performRequest(newTestRouter(), http.MethodPost, "/api/v1/wheelset-lacing/display-geometry", `{"topology_id":"21h-g3-2to1","rim_radius":232,"flange_radius_a":66,"flange_radius_b":54,"flange_offset_a_mm":20,"flange_offset_b_mm":35,"g3_rim_hole_spacing_a_to_b_degrees":21,"g3_rim_hole_spacing_b_to_a_degrees":4.87}`)
+	if response.Code != http.StatusUnprocessableEntity || !strings.Contains(response.Body.String(), "WHEELSET_LACING_GEOMETRY_CALCULATION_FAILED") {
+		t.Fatalf("response = %d %s", response.Code, response.Body.String())
 	}
 }
 
@@ -102,7 +121,7 @@ func TestGetWheelsetLacingDisplayGeometryProjectionForServerRenderedReferencePag
 	if response.Header().Get("Cache-Control") != "public, max-age=86400" {
 		t.Fatalf("cache header = %q", response.Header().Get("Cache-Control"))
 	}
-	for _, fragment := range []string{`"contract_version":"v1.2-backend-display-geometry"`, `"rim_holes"`, `"spokes"`, `"flange_profile"`, `"metrics"`} {
+	for _, fragment := range []string{`"contract_version":"v1.3-backend-display-geometry"`, `"rim_holes"`, `"spokes"`, `"flange_profile"`, `"metrics"`} {
 		if !strings.Contains(response.Body.String(), fragment) {
 			t.Fatalf("body missing %s: %s", fragment, response.Body.String())
 		}

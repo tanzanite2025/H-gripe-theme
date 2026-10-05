@@ -5,6 +5,13 @@ import (
 	"testing"
 )
 
+func TestNewWheelsetLacingDefaultDisplayGeometryProjectionRequestUsesG3SpacingDefaults(t *testing.T) {
+	request := NewWheelsetLacingDefaultDisplayGeometryProjectionRequest("21h-g3-2to1")
+	if request.G3RimHoleSpacingAToBDegrees != DefaultWheelsetLacingG3RimHoleSpacingAToBDegrees || request.G3RimHoleSpacingBToADegrees != DefaultWheelsetLacingG3RimHoleSpacingBToADegrees {
+		t.Fatalf("unexpected G3 default spacing request: %+v", request)
+	}
+}
+
 func TestCalculateWheelsetLacingDisplayGeometryProjectionMatchesCanonicalSymmetricPreview(t *testing.T) {
 	topology, err := NewDefaultCatalog().Get("24h-symmetric-1to1-2x")
 	if err != nil {
@@ -83,6 +90,33 @@ func TestCalculateWheelsetLacingDisplayGeometryProjectionKeepsIndependentFlangeO
 	}
 	if result.FlangeProfile.FlangeAX != 68.57 || result.FlangeProfile.FlangeBX != -160 {
 		t.Fatalf("custom flange offsets were not projected: %+v", result.FlangeProfile)
+	}
+}
+
+func TestCalculateWheelsetLacingDisplayGeometryProjectionSupportsIndependentG3RimHoleSpacing(t *testing.T) {
+	topology, err := NewDefaultCatalog().Get("21h-g3-2to1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	result, err := CalculateWheelsetLacingDisplayGeometryProjection(DisplayGeometryProjectionRequest{
+		TopologyID: "21h-g3-2to1", RimRadius: 232, FlangeRadiusA: 66, FlangeRadiusB: 54,
+		FlangeOffsetAMM: 20, FlangeOffsetBMM: 35,
+		G3RimHoleSpacingAToBDegrees: 2.5, G3RimHoleSpacingBToADegrees: 8.5,
+	}, topology)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !result.G3GroupSpacing.Enabled || result.G3GroupSpacing.SpacingAToBDegrees != 2.5 || result.G3GroupSpacing.SpacingBToADegrees != 8.5 {
+		t.Fatalf("unexpected G3 group spacing profile: %+v", result.G3GroupSpacing)
+	}
+	if got, want := result.RimHoles[1].Angle, -math.Pi/2; math.Abs(got-want) > 0.000001 {
+		t.Fatalf("G3 center hole angle = %v, want %v", got, want)
+	}
+	if got, want := result.RimHoles[0].Angle, -math.Pi/2-2.5*math.Pi/180; math.Abs(got-want) > 0.000001 {
+		t.Fatalf("G3 A-to-B hole angle = %v, want %v", got, want)
+	}
+	if got, want := result.RimHoles[2].Angle, -math.Pi/2+8.5*math.Pi/180; math.Abs(got-want) > 0.000001 {
+		t.Fatalf("G3 B-to-A hole angle = %v, want %v", got, want)
 	}
 }
 
