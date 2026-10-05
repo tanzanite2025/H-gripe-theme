@@ -1,16 +1,10 @@
 package wheelsetlacing
 
 import (
+	"errors"
 	"math"
 	"testing"
 )
-
-func TestNewWheelsetLacingDefaultDisplayGeometryProjectionRequestUsesG3SpacingDefaults(t *testing.T) {
-	request := NewWheelsetLacingDefaultDisplayGeometryProjectionRequest("21h-g3-2to1")
-	if request.G3RimHoleSpacingAToBDegrees != DefaultWheelsetLacingG3RimHoleSpacingAToBDegrees || request.G3RimHoleSpacingBToADegrees != DefaultWheelsetLacingG3RimHoleSpacingBToADegrees {
-		t.Fatalf("unexpected G3 default spacing request: %+v", request)
-	}
-}
 
 func TestCalculateWheelsetLacingDisplayGeometryProjectionMatchesCanonicalSymmetricPreview(t *testing.T) {
 	topology, err := NewDefaultCatalog().Get("24h-symmetric-1to1-2x")
@@ -23,6 +17,9 @@ func TestCalculateWheelsetLacingDisplayGeometryProjectionMatchesCanonicalSymmetr
 	}, topology)
 	if err != nil {
 		t.Fatal(err)
+	}
+	if result.DisplayLayout != DisplayGeometryLayoutSymmetric1To1 || result.Topology.DisplayLayout != DisplayGeometryLayoutSymmetric1To1 {
+		t.Fatalf("unexpected symmetric display layout: %+v", result)
 	}
 	if len(result.RimHoles) != 24 || len(result.HubHolesA) != 12 || len(result.HubHolesB) != 12 || len(result.Spokes) != 24 {
 		t.Fatalf("unexpected display geometry counts: %+v", result)
@@ -53,10 +50,30 @@ func TestCalculateWheelsetLacingDisplayGeometryProjectionKeepsSpecialTopologyMap
 			if err != nil {
 				t.Fatal(err)
 			}
+			if result.DisplayLayout != topology.DisplayLayout {
+				t.Fatalf("display layout = %q, want %q", result.DisplayLayout, topology.DisplayLayout)
+			}
 			if len(result.Spokes) != topology.HoleCount || result.Metrics.DriveSideSpokeCount == 0 {
 				t.Fatalf("unexpected special topology result: %+v", result)
 			}
 		})
+	}
+}
+
+func TestCalculateWheelsetLacingDisplayGeometryProjectionUsesG3DefaultsWhenSpacingIsUnset(t *testing.T) {
+	topology, err := NewDefaultCatalog().Get("21h-g3-2to1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	result, err := CalculateWheelsetLacingDisplayGeometryProjection(DisplayGeometryProjectionRequest{
+		TopologyID: "21h-g3-2to1", RimRadius: 232, FlangeRadiusA: 66, FlangeRadiusB: 54,
+		FlangeOffsetAMM: 20, FlangeOffsetBMM: 35,
+	}, topology)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.G3GroupSpacing.SpacingAToBDegrees != DefaultWheelsetLacingG3RimHoleSpacingAToBDegrees || result.G3GroupSpacing.SpacingBToADegrees != DefaultWheelsetLacingG3RimHoleSpacingBToADegrees {
+		t.Fatalf("unexpected G3 default spacing profile: %+v", result.G3GroupSpacing)
 	}
 }
 
@@ -117,6 +134,50 @@ func TestCalculateWheelsetLacingDisplayGeometryProjectionSupportsIndependentG3Ri
 	}
 	if got, want := result.RimHoles[2].Angle, -math.Pi/2+8.5*math.Pi/180; math.Abs(got-want) > 0.000001 {
 		t.Fatalf("G3 B-to-A hole angle = %v, want %v", got, want)
+	}
+}
+
+func TestCalculateWheelsetLacingDisplayGeometryProjectionRejectsUnregisteredDisplayLayout(t *testing.T) {
+	topology, err := NewDefaultCatalog().Get("24h-symmetric-1to1-2x")
+	if err != nil {
+		t.Fatal(err)
+	}
+	topology.DisplayLayout = DisplayGeometryLayout("future_18h_2to1")
+	_, err = CalculateWheelsetLacingDisplayGeometryProjection(DisplayGeometryProjectionRequest{
+		TopologyID: "24h-symmetric-1to1-2x", RimRadius: 232, FlangeRadiusA: 66, FlangeRadiusB: 54,
+		FlangeOffsetAMM: 20, FlangeOffsetBMM: 35,
+	}, topology)
+	if err == nil || !errors.Is(err, ErrInvalidTopology) {
+		t.Fatalf("error = %v, want ErrInvalidTopology for an unregistered display layout", err)
+	}
+}
+
+func TestBuildWheelsetLacingDisplayGeometryPointsDoesNotFallbackUnknownLayoutToSymmetric(t *testing.T) {
+	topology, err := NewDefaultCatalog().Get("24h-symmetric-1to1-2x")
+	if err != nil {
+		t.Fatal(err)
+	}
+	topology.DisplayLayout = DisplayGeometryLayout("future_18h_2to1")
+	_, _, _, err = buildWheelsetLacingDisplayGeometryPoints(topology, DisplayGeometryProjectionRequest{
+		TopologyID: "24h-symmetric-1to1-2x", RimRadius: 232, FlangeRadiusA: 66, FlangeRadiusB: 54,
+		FlangeOffsetAMM: 20, FlangeOffsetBMM: 35,
+	})
+	if err == nil || !errors.Is(err, ErrInvalidTopology) {
+		t.Fatalf("error = %v, want unsupported display layout", err)
+	}
+}
+
+func TestBuildWheelsetLacingDisplayGeometryPointsRejectsWrongSpecialLayoutShape(t *testing.T) {
+	topology, err := NewDefaultCatalog().Get("24h-uniform-2to1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	topology.DisplayLayout = DisplayGeometryLayoutSymmetric1To1
+	_, _, _, err = buildWheelsetLacingDisplayGeometryPoints(topology, DisplayGeometryProjectionRequest{
+		TopologyID: "24h-uniform-2to1", RimRadius: 232, FlangeRadiusA: 66, FlangeRadiusB: 54,
+	})
+	if err == nil || !errors.Is(err, ErrInvalidTopology) {
+		t.Fatalf("error = %v, want special layout shape mismatch", err)
 	}
 }
 

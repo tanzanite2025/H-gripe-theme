@@ -443,6 +443,11 @@ import { createSeoJsonLdScript } from '~/utils/seo/jsonLd'
 import { fetchFaqDataByRoutePath } from '~/data/faq'
 import localeManifest from '~/i18n/locales.manifest'
 import { getSupportedWheelsetLacingCrossCounts } from '~/utils/wheelsetLacingSelectionContract'
+import {
+  resolveWheelsetLacingDisplayGeometryTopologySelection,
+  validateWheelsetLacingDisplayGeometryResponse,
+  WHEELSET_LACING_DISPLAY_GEOMETRY_LAYOUT,
+} from '~/utils/wheelsetLacingDisplayGeometryContract'
 
 definePageMeta({
   layout: 'products',
@@ -466,8 +471,9 @@ const { data: wheelsetLacingFaqData } = await useAsyncData(
 )
 
 const serverRenderedWheelsetLacingDisplayGeometryTopologyIdentifier = '24h-symmetric-1to1-2x'
+const serverRenderedWheelsetLacingDisplayGeometrySelection = resolveWheelsetLacingDisplayGeometryTopologySelection(24, 2)
 const { data: serverRenderedWheelsetLacingDisplayGeometry } = await useAsyncData(
-  'wheelset-lacing-default-display-geometry-v1-3',
+  'wheelset-lacing-default-display-geometry-v1-4',
   async () => {
     try {
       const response = await request('/wheelset-lacing/display-geometry', {
@@ -487,7 +493,17 @@ const { data: serverRenderedWheelsetLacingDisplayGeometry } = await useAsyncData
   { default: () => null },
 )
 
-const backendDisplayGeometry = ref(serverRenderedWheelsetLacingDisplayGeometry.value)
+const displayGeometryError = ref(null)
+const backendDisplayGeometry = ref(null)
+const initialServerRenderedDisplayGeometry = serverRenderedWheelsetLacingDisplayGeometry.value
+if (initialServerRenderedDisplayGeometry) {
+  try {
+    validateWheelsetLacingDisplayGeometryResponse(initialServerRenderedDisplayGeometry, serverRenderedWheelsetLacingDisplayGeometrySelection)
+    backendDisplayGeometry.value = initialServerRenderedDisplayGeometry
+  } catch (error) {
+    displayGeometryError.value = error instanceof Error ? error.message : 'invalid server-rendered display geometry'
+  }
+}
 let displayGeometryRequestSequence = 0
 let displayGeometryController = null
 
@@ -666,11 +682,13 @@ useHead(() => {
     const MAXIMUM_G3_RIM_HOLE_SPACING_DEGREES = 20;
     const WHEELSET_LACING_DISPLAY_GEOMETRY_REFRESH_DEBOUNCE_MS = 120;
 
-    const resolveWheelsetLacingBackendTopologyIdentifier = (holes, cross) => {
-      if (holes === 21) return '21h-g3-2to1';
-      if (holes === '24_2to1') return '24h-uniform-2to1';
-      return `${holes}h-symmetric-1to1-${cross}x`;
-    };
+    const resolveWheelsetLacingBackendTopologySelection = (holes, cross) => (
+      resolveWheelsetLacingDisplayGeometryTopologySelection(holes, cross)
+    );
+
+    const resolveWheelsetLacingBackendTopologyIdentifier = (holes, cross) => (
+      resolveWheelsetLacingBackendTopologySelection(holes, cross).topologyId
+    );
 
     const formatBackendDisplayGeometryMetric = (value) => (
       Number.isFinite(value) ? Number(value).toFixed(1) : '—'
@@ -703,7 +721,6 @@ useHead(() => {
         : fallbackSpacing;
     };
 
-    const initialServerRenderedDisplayGeometry = serverRenderedWheelsetLacingDisplayGeometry.value;
     const initialServerRenderedFlangeProfile = initialServerRenderedDisplayGeometry?.flange_profile;
     const initialServerRenderedG3GroupSpacing = initialServerRenderedDisplayGeometry?.g3_group_spacing;
 
@@ -711,7 +728,7 @@ useHead(() => {
 
     const buildWheelsetLacingDisplayGeometryRequestBody = () => {
       const requestBody = {
-        topology_id: resolveWheelsetLacingBackendTopologyIdentifier(state.holes, state.cross),
+        topology_id: resolveWheelsetLacingBackendTopologySelection(state.holes, state.cross).topologyId,
         rim_radius: SVG_RIM_HOLE_RING_DISPLAY_RADIUS,
         flange_radius_a: state.flangeRadiusA,
         flange_radius_b: state.flangeRadiusB,
@@ -729,9 +746,11 @@ useHead(() => {
       const requestId = ++displayGeometryRequestSequence;
       const requestBody = buildWheelsetLacingDisplayGeometryRequestBody();
       const selectedTopologyId = requestBody.topology_id;
+      const selectedTopology = resolveWheelsetLacingBackendTopologySelection(state.holes, state.cross);
       displayGeometryController?.abort();
       displayGeometryController = new AbortController();
       backendDisplayGeometry.value = null;
+      displayGeometryError.value = null;
       renderBlueprint();
       try {
         const response = await request('/wheelset-lacing/display-geometry', {
@@ -741,11 +760,13 @@ useHead(() => {
           body: JSON.stringify(requestBody),
         });
         if (requestId !== displayGeometryRequestSequence || selectedTopologyId !== resolveWheelsetLacingBackendTopologyIdentifier(state.holes, state.cross)) return;
+        validateWheelsetLacingDisplayGeometryResponse(response?.data, selectedTopology);
         backendDisplayGeometry.value = response.data;
         renderBlueprint();
       } catch (error) {
         if (requestId !== displayGeometryRequestSequence || (error instanceof DOMException && error.name === 'AbortError')) return;
         backendDisplayGeometry.value = null;
+        displayGeometryError.value = error instanceof Error ? error.message : 'wheelset lacing display geometry request failed';
         renderBlueprint();
       }
     };
@@ -983,7 +1004,14 @@ useHead(() => {
       // and creates SVG nodes.
       const geometry = backendDisplayGeometry.value;
       if (!geometry) {
-        appendSvgElement(svg, 'text', { x: 0, y: 0, 'text-anchor': 'middle', fill: '#64748b', 'font-size': 12 }, t('wheelsetLacingTopology.telemetry.backendPending'));
+        appendSvgElement(
+          svg,
+          'text',
+          { x: 0, y: 0, 'text-anchor': 'middle', fill: displayGeometryError.value ? '#b91c1c' : '#64748b', 'font-size': 12 },
+          displayGeometryError.value
+            ? t('wheelsetLacingTopology.telemetry.backendRejected')
+            : t('wheelsetLacingTopology.telemetry.backendPending'),
+        );
         renderFlangeProfile(null);
         updateGeometryProjectionMetricsAndTopologyReview(null, null, null);
         return;
@@ -1146,8 +1174,10 @@ useHead(() => {
 
     function updateGeometryProjectionMetricsAndTopologyReview(topology, geometryProjectionMetrics, g3GroupSpacing) {
       const holes = topology?.selection ?? state.holes;
-      const isG3Topology = String(holes) === '21';
-      const numHoles = holes === '24_2to1' ? 24 : holes;
+      const displayLayout = topology?.display_layout ?? null;
+      const isG3Topology = displayLayout === WHEELSET_LACING_DISPLAY_GEOMETRY_LAYOUT.g3Triplet2To1;
+      const isUniformTwoToOneTopology = displayLayout === WHEELSET_LACING_DISPLAY_GEOMETRY_LAYOUT.uniform2To1;
+      const numHoles = Number(topology?.hole_count ?? (holes === '24_2to1' ? 24 : holes));
       const aggregateMeanAbsoluteProjectionAngleDegrees = geometryProjectionMetrics?.aggregate_mean_absolute_projection_angle_degrees ?? null;
 
       document.getElementById('metric-tangential-projection-angle').innerText = formatBackendDisplayGeometryMetric(aggregateMeanAbsoluteProjectionAngleDegrees);
@@ -1167,6 +1197,29 @@ useHead(() => {
       document.getElementById('metric-radial-projection-desc').innerText = t('wheelsetLacingTopology.telemetry.radialRuntime');
 
       if (!topology || !geometryProjectionMetrics) {
+        const statusBox = document.getElementById('topology-status-box');
+        const statusTitle = document.getElementById('status-title-text');
+        const statusDetail = document.getElementById('status-detail-text');
+        const builderTip = document.getElementById('builder-tip-text');
+        const statusTag = document.getElementById('canvas-status-tag');
+        const hasDisplayGeometryError = Boolean(displayGeometryError.value);
+        statusBox.className = hasDisplayGeometryError
+          ? 'topology-status-card topology-status-error'
+          : 'topology-status-card topology-status-preview';
+        statusTitle.innerText = hasDisplayGeometryError
+          ? t('wheelsetLacingTopology.review.backendRejectedTitle')
+          : t('wheelsetLacingTopology.review.backendPendingTitle');
+        statusDetail.innerText = hasDisplayGeometryError
+          ? t('wheelsetLacingTopology.review.backendRejectedDetail')
+          : t('wheelsetLacingTopology.review.backendPendingDetail');
+        builderTip.innerText = hasDisplayGeometryError
+          ? t('wheelsetLacingTopology.review.backendRejectedTip')
+          : t('wheelsetLacingTopology.review.noteTip');
+        statusTag.innerText = hasDisplayGeometryError
+          ? t('wheelsetLacingTopology.review.tagUnavailable')
+          : t('wheelsetLacingTopology.review.tagPreview');
+        statusTag.style.background = hasDisplayGeometryError ? 'rgba(185, 28, 28, 0.1)' : 'rgba(5, 150, 105, 0.1)';
+        statusTag.style.color = hasDisplayGeometryError ? '#b91c1c' : '#059669';
         return;
       }
 
@@ -1198,7 +1251,7 @@ useHead(() => {
         cross: topology.cross,
         angle: formatBackendDisplayGeometryMetric(aggregateMeanAbsoluteProjectionAngleDegrees),
       });
-      builderTip.innerText = holes === '24_2to1'
+      builderTip.innerText = isUniformTwoToOneTopology
         ? t('wheelsetLacingTopology.review.uniformTip')
         : t('wheelsetLacingTopology.review.generalTip');
       statusTag.innerText = t('wheelsetLacingTopology.review.tagPreview');
@@ -1842,6 +1895,12 @@ onBeforeUnmount(() => {
       background: rgba(5, 150, 105, 0.06);
       border-color: rgba(5, 150, 105, 0.25);
       color: #047857;
+    }
+
+    .topology-status-error {
+      background: rgba(185, 28, 28, 0.06);
+      border-color: rgba(185, 28, 28, 0.25);
+      color: #b91c1c;
     }
 
     .status-header-line {

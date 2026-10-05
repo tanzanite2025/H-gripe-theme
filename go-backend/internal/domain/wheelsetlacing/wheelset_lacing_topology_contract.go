@@ -18,6 +18,19 @@ const (
 	DistributionG32To1        Distribution = "g3_2to1"
 )
 
+// DisplayGeometryLayout identifies the exact coordinate generator used by the
+// display-geometry projection. It is deliberately separate from Distribution:
+// two 2:1 topologies can share a ratio while requiring different rim-hole
+// geometry. A new topology must register a layout and a matching generator;
+// unknown layouts fail closed instead of falling back to symmetric geometry.
+type DisplayGeometryLayout string
+
+const (
+	DisplayGeometryLayoutSymmetric1To1 DisplayGeometryLayout = "symmetric_1to1"
+	DisplayGeometryLayoutUniform2To1   DisplayGeometryLayout = "uniform_2to1"
+	DisplayGeometryLayoutG3Triplet2To1 DisplayGeometryLayout = "g3_triplet_2to1"
+)
+
 type Side string
 
 const (
@@ -60,15 +73,16 @@ type SpokeMapping struct {
 // Topology is the backend's read-only topology contract. It contains only
 // discrete hole assignments and no ERD/PCD, lengths, angles, or force values.
 type Topology struct {
-	ID           string         `json:"topology_id"`
-	Selection    string         `json:"selection"`
-	HoleCount    int            `json:"hole_count"`
-	Cross        int            `json:"cross"`
-	Distribution Distribution   `json:"distribution"`
-	RimHoles     []Hole         `json:"rim_holes"`
-	HubHolesA    []Hole         `json:"hub_holes_a"`
-	HubHolesB    []Hole         `json:"hub_holes_b"`
-	Spokes       []SpokeMapping `json:"spokes"`
+	ID            string                `json:"topology_id"`
+	Selection     string                `json:"selection"`
+	HoleCount     int                   `json:"hole_count"`
+	Cross         int                   `json:"cross"`
+	Distribution  Distribution          `json:"distribution"`
+	DisplayLayout DisplayGeometryLayout `json:"display_layout"`
+	RimHoles      []Hole                `json:"rim_holes"`
+	HubHolesA     []Hole                `json:"hub_holes_a"`
+	HubHolesB     []Hole                `json:"hub_holes_b"`
+	Spokes        []SpokeMapping        `json:"spokes"`
 }
 
 // Catalog owns an immutable, validated set of topology facts.
@@ -212,15 +226,16 @@ func symmetricSelection(holes, cross int) string {
 func buildSymmetricTopology(holes, cross int) Topology {
 	flangeCount := holes / 2
 	topology := Topology{
-		ID:           symmetricSelection(holes, cross),
-		Selection:    fmt.Sprintf("%d", holes),
-		HoleCount:    holes,
-		Cross:        cross,
-		Distribution: DistributionSymmetric1To1,
-		RimHoles:     make([]Hole, 0, holes),
-		HubHolesA:    make([]Hole, 0, flangeCount),
-		HubHolesB:    make([]Hole, 0, flangeCount),
-		Spokes:       make([]SpokeMapping, 0, holes),
+		ID:            symmetricSelection(holes, cross),
+		Selection:     fmt.Sprintf("%d", holes),
+		HoleCount:     holes,
+		Cross:         cross,
+		Distribution:  DistributionSymmetric1To1,
+		DisplayLayout: DisplayGeometryLayoutSymmetric1To1,
+		RimHoles:      make([]Hole, 0, holes),
+		HubHolesA:     make([]Hole, 0, flangeCount),
+		HubHolesB:     make([]Hole, 0, flangeCount),
+		Spokes:        make([]SpokeMapping, 0, holes),
 	}
 	for index := 0; index < holes; index++ {
 		side := SideA
@@ -278,15 +293,16 @@ func buildSymmetricTopology(holes, cross int) Topology {
 func buildG3Topology() Topology {
 	const groups = 7
 	topology := Topology{
-		ID:           "21h-g3-2to1",
-		Selection:    "21",
-		HoleCount:    21,
-		Cross:        2,
-		Distribution: DistributionG32To1,
-		RimHoles:     make([]Hole, 0, 21),
-		HubHolesA:    make([]Hole, 0, 14),
-		HubHolesB:    make([]Hole, 0, 7),
-		Spokes:       make([]SpokeMapping, 0, 21),
+		ID:            "21h-g3-2to1",
+		Selection:     "21",
+		HoleCount:     21,
+		Cross:         2,
+		Distribution:  DistributionG32To1,
+		DisplayLayout: DisplayGeometryLayoutG3Triplet2To1,
+		RimHoles:      make([]Hole, 0, 21),
+		HubHolesA:     make([]Hole, 0, 14),
+		HubHolesB:     make([]Hole, 0, 7),
+		Spokes:        make([]SpokeMapping, 0, 21),
 	}
 	for group := 0; group < groups; group++ {
 		topology.RimHoles = append(topology.RimHoles,
@@ -319,15 +335,16 @@ func buildG3Topology() Topology {
 func buildUniformTwoToOneTopology() Topology {
 	const total = 24
 	topology := Topology{
-		ID:           "24h-uniform-2to1",
-		Selection:    "24_2to1",
-		HoleCount:    total,
-		Cross:        2,
-		Distribution: DistributionUniform2To1,
-		RimHoles:     make([]Hole, 0, total),
-		HubHolesA:    make([]Hole, 0, 16),
-		HubHolesB:    make([]Hole, 0, 8),
-		Spokes:       make([]SpokeMapping, 0, total),
+		ID:            "24h-uniform-2to1",
+		Selection:     "24_2to1",
+		HoleCount:     total,
+		Cross:         2,
+		Distribution:  DistributionUniform2To1,
+		DisplayLayout: DisplayGeometryLayoutUniform2To1,
+		RimHoles:      make([]Hole, 0, total),
+		HubHolesA:     make([]Hole, 0, 16),
+		HubHolesB:     make([]Hole, 0, 8),
+		Spokes:        make([]SpokeMapping, 0, total),
 	}
 	for index := 0; index < total; index++ {
 		side := SideA
@@ -383,12 +400,15 @@ func validateTopology(topology Topology) error {
 	if topology.Distribution != DistributionSymmetric1To1 && topology.Distribution != DistributionUniform2To1 && topology.Distribution != DistributionG32To1 {
 		return fmt.Errorf("unsupported distribution %q", topology.Distribution)
 	}
+	if topology.DisplayLayout != DisplayGeometryLayoutSymmetric1To1 && topology.DisplayLayout != DisplayGeometryLayoutUniform2To1 && topology.DisplayLayout != DisplayGeometryLayoutG3Triplet2To1 {
+		return fmt.Errorf("unsupported display layout %q", topology.DisplayLayout)
+	}
 	expected := expectedTopology(topology.Selection, topology.Cross)
 	if expected == nil {
 		return fmt.Errorf("unsupported selection %q", topology.Selection)
 	}
-	if topology.HoleCount != expected.HoleCount || topology.Distribution != expected.Distribution || topology.Cross != expected.Cross {
-		return fmt.Errorf("selection %q does not match hole_count=%d, cross=%d, distribution=%q", topology.Selection, topology.HoleCount, topology.Cross, topology.Distribution)
+	if topology.HoleCount != expected.HoleCount || topology.Distribution != expected.Distribution || topology.DisplayLayout != expected.DisplayLayout || topology.Cross != expected.Cross {
+		return fmt.Errorf("selection %q does not match hole_count=%d, cross=%d, distribution=%q, display_layout=%q", topology.Selection, topology.HoleCount, topology.Cross, topology.Distribution, topology.DisplayLayout)
 	}
 	if len(topology.RimHoles) != len(expected.RimHoles) || len(topology.HubHolesA) != len(expected.HubHolesA) || len(topology.HubHolesB) != len(expected.HubHolesB) || len(topology.Spokes) != len(expected.Spokes) {
 		return fmt.Errorf("hole or spoke counts do not match the selection")

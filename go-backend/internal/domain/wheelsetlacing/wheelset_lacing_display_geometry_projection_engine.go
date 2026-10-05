@@ -3,7 +3,6 @@ package wheelsetlacing
 import (
 	"fmt"
 	"math"
-	"strconv"
 )
 
 // WheelsetLacingDisplayGeometryContractVersion identifies the backend contract
@@ -11,7 +10,7 @@ import (
 // coordinates; flange offsets are physical millimetres used only for the
 // generated axial reference profile. Neither represents spoke length,
 // stiffness, tension, efficiency, or assembly safety.
-const WheelsetLacingDisplayGeometryContractVersion = "v1.3-backend-display-geometry"
+const WheelsetLacingDisplayGeometryContractVersion = "v1.4-backend-display-geometry"
 
 // These values are centralized in the domain package so SSR and browser
 // requests use the same reference geometry. Radial constants are canvas
@@ -51,7 +50,7 @@ type DisplayGeometryProjectionRequest struct {
 // for explicit consumers, while the public GET endpoint uses these stable
 // reference values.
 func NewWheelsetLacingDefaultDisplayGeometryProjectionRequest(topologyID string) DisplayGeometryProjectionRequest {
-	request := DisplayGeometryProjectionRequest{
+	return DisplayGeometryProjectionRequest{
 		TopologyID:      topologyID,
 		RimRadius:       DefaultWheelsetLacingDisplayRimHoleRingRadius,
 		FlangeRadiusA:   DefaultWheelsetLacingDisplayHubFlangeHoleRingRadiusA,
@@ -59,11 +58,6 @@ func NewWheelsetLacingDefaultDisplayGeometryProjectionRequest(topologyID string)
 		FlangeOffsetAMM: DefaultWheelsetLacingFlangeOffsetAMM,
 		FlangeOffsetBMM: DefaultWheelsetLacingFlangeOffsetBMM,
 	}
-	if topologyID == "21h-g3-2to1" {
-		request.G3RimHoleSpacingAToBDegrees = DefaultWheelsetLacingG3RimHoleSpacingAToBDegrees
-		request.G3RimHoleSpacingBToADegrees = DefaultWheelsetLacingG3RimHoleSpacingBToADegrees
-	}
-	return request
 }
 
 type DisplayGeometryPoint struct {
@@ -121,6 +115,7 @@ type DisplayGeometryG3GroupSpacing struct {
 
 type DisplayGeometryProjectionResult struct {
 	ContractVersion string                           `json:"contract_version"`
+	DisplayLayout   DisplayGeometryLayout            `json:"display_layout"`
 	Topology        Topology                         `json:"topology"`
 	RimHoles        []DisplayGeometryPoint           `json:"rim_holes"`
 	HubHolesA       []DisplayGeometryPoint           `json:"hub_holes_a"`
@@ -180,6 +175,7 @@ func CalculateWheelsetLacingDisplayGeometryProjection(
 	}
 	return DisplayGeometryProjectionResult{
 		ContractVersion: WheelsetLacingDisplayGeometryContractVersion,
+		DisplayLayout:   topology.DisplayLayout,
 		Topology:        topology,
 		RimHoles:        rimHoles,
 		HubHolesA:       hubHolesA,
@@ -245,7 +241,7 @@ func buildWheelsetLacingDisplayGeometryG3GroupSpacing(
 	request DisplayGeometryProjectionRequest,
 	topology Topology,
 ) (DisplayGeometryG3GroupSpacing, error) {
-	if topology.Selection != "21" {
+	if topology.DisplayLayout != DisplayGeometryLayoutG3Triplet2To1 {
 		return DisplayGeometryG3GroupSpacing{}, nil
 	}
 	spacingAToB, spacingBToA := resolveWheelsetLacingG3RimHoleSpacing(request)
@@ -277,20 +273,22 @@ func buildWheelsetLacingDisplayGeometryPoints(
 	topology Topology,
 	request DisplayGeometryProjectionRequest,
 ) ([]DisplayGeometryPoint, []DisplayGeometryPoint, []DisplayGeometryPoint, error) {
-	if topology.Selection == "21" {
+	switch topology.DisplayLayout {
+	case DisplayGeometryLayoutG3Triplet2To1:
 		return buildG3DisplayGeometryPoints(topology, request)
-	}
-	if topology.Selection == "24_2to1" {
+	case DisplayGeometryLayoutUniform2To1:
 		return buildUniformTwoToOneDisplayGeometryPoints(topology, request)
+	case DisplayGeometryLayoutSymmetric1To1:
+		return buildSymmetricDisplayGeometryPoints(topology, topology.HoleCount, request)
+	default:
+		return nil, nil, nil, fmt.Errorf("%w: unsupported display layout %q", ErrInvalidTopology, topology.DisplayLayout)
 	}
-	holeCount, err := strconv.Atoi(topology.Selection)
-	if err != nil || holeCount <= 0 {
-		return nil, nil, nil, fmt.Errorf("%w: unsupported display selection %q", ErrInvalidTopology, topology.Selection)
-	}
-	return buildSymmetricDisplayGeometryPoints(topology, holeCount, request)
 }
 
 func buildSymmetricDisplayGeometryPoints(topology Topology, holeCount int, request DisplayGeometryProjectionRequest) ([]DisplayGeometryPoint, []DisplayGeometryPoint, []DisplayGeometryPoint, error) {
+	if holeCount <= 0 || len(topology.RimHoles) != holeCount || len(topology.HubHolesA) != holeCount/2 || len(topology.HubHolesB) != holeCount/2 {
+		return nil, nil, nil, fmt.Errorf("%w: symmetric display layout shape does not match %d rim holes", ErrInvalidTopology, holeCount)
+	}
 	rimHoles := make([]DisplayGeometryPoint, 0, len(topology.RimHoles))
 	rimBySide := map[Side][]DisplayGeometryPoint{SideA: {}, SideB: {}}
 	for index, hole := range topology.RimHoles {
@@ -316,6 +314,9 @@ func buildSymmetricDisplayGeometryPoints(topology Topology, holeCount int, reque
 }
 
 func buildG3DisplayGeometryPoints(topology Topology, request DisplayGeometryProjectionRequest) ([]DisplayGeometryPoint, []DisplayGeometryPoint, []DisplayGeometryPoint, error) {
+	if topology.HoleCount != 21 || len(topology.RimHoles) != 21 || len(topology.HubHolesA) != 14 || len(topology.HubHolesB) != 7 {
+		return nil, nil, nil, fmt.Errorf("%w: G3 display layout requires a 21-hole 14/7 topology", ErrInvalidTopology)
+	}
 	spacingAToB, spacingBToA := resolveWheelsetLacingG3RimHoleSpacing(request)
 	if spacingAToB+spacingBToA >= WheelsetLacingG3GroupPitchDegrees {
 		return nil, nil, nil, fmt.Errorf("%w: G3 rim-hole triplet spacing must leave a positive gap between groups", ErrInvalidRequest)
@@ -346,6 +347,9 @@ func buildG3DisplayGeometryPoints(topology Topology, request DisplayGeometryProj
 }
 
 func buildUniformTwoToOneDisplayGeometryPoints(topology Topology, request DisplayGeometryProjectionRequest) ([]DisplayGeometryPoint, []DisplayGeometryPoint, []DisplayGeometryPoint, error) {
+	if topology.HoleCount != 24 || len(topology.RimHoles) != 24 || len(topology.HubHolesA) != 16 || len(topology.HubHolesB) != 8 {
+		return nil, nil, nil, fmt.Errorf("%w: uniform 2:1 display layout requires a 24-hole 16/8 topology", ErrInvalidTopology)
+	}
 	const total = 24
 	rimHoles := make([]DisplayGeometryPoint, 0, len(topology.RimHoles))
 	rimBySide := map[Side][]DisplayGeometryPoint{SideA: {}, SideB: {}}
