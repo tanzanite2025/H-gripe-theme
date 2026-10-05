@@ -107,28 +107,28 @@
           <label class="flange-geometry-field">
             <span>{{ t('wheelsetLacingTopology.controls.driveFlangeRadius') }}</span>
             <span class="flange-geometry-input-line">
-              <input id="flange-radius-a-input" type="number" min="24" max="120" step="1" :value="state.flangeRadiusA" @input="updateWheelsetLacingFlangeGeometryInput('flangeRadiusA', $event)">
+              <input id="flange-radius-a-input" type="number" :min="MINIMUM_FLANGE_DISPLAY_RADIUS" :max="MAXIMUM_FLANGE_DISPLAY_RADIUS" step="1" :value="state.flangeRadiusA" @input="updateWheelsetLacingFlangeGeometryInput('flangeRadiusA', $event)" @change="normalizeWheelsetLacingFlangeGeometryInput('flangeRadiusA', $event)">
               <span>SVG</span>
             </span>
           </label>
           <label class="flange-geometry-field">
             <span>{{ t('wheelsetLacingTopology.controls.nonDriveFlangeRadius') }}</span>
             <span class="flange-geometry-input-line">
-              <input id="flange-radius-b-input" type="number" min="24" max="120" step="1" :value="state.flangeRadiusB" @input="updateWheelsetLacingFlangeGeometryInput('flangeRadiusB', $event)">
+              <input id="flange-radius-b-input" type="number" :min="MINIMUM_FLANGE_DISPLAY_RADIUS" :max="MAXIMUM_FLANGE_DISPLAY_RADIUS" step="1" :value="state.flangeRadiusB" @input="updateWheelsetLacingFlangeGeometryInput('flangeRadiusB', $event)" @change="normalizeWheelsetLacingFlangeGeometryInput('flangeRadiusB', $event)">
               <span>SVG</span>
             </span>
           </label>
           <label class="flange-geometry-field">
             <span>{{ t('wheelsetLacingTopology.controls.driveFlangeOffset') }}</span>
             <span class="flange-geometry-input-line">
-              <input id="flange-offset-a-input" type="number" min="0" max="100" step="0.5" :value="state.flangeOffsetAMm" @input="updateWheelsetLacingFlangeGeometryInput('flangeOffsetAMm', $event)">
+              <input id="flange-offset-a-input" type="number" :min="MINIMUM_FLANGE_OFFSET_MM" :max="MAXIMUM_FLANGE_OFFSET_MM" step="0.5" :value="state.flangeOffsetAMm" @input="updateWheelsetLacingFlangeGeometryInput('flangeOffsetAMm', $event)" @change="normalizeWheelsetLacingFlangeGeometryInput('flangeOffsetAMm', $event)">
               <span>mm</span>
             </span>
           </label>
           <label class="flange-geometry-field">
             <span>{{ t('wheelsetLacingTopology.controls.nonDriveFlangeOffset') }}</span>
             <span class="flange-geometry-input-line">
-              <input id="flange-offset-b-input" type="number" min="0" max="100" step="0.5" :value="state.flangeOffsetBMm" @input="updateWheelsetLacingFlangeGeometryInput('flangeOffsetBMm', $event)">
+              <input id="flange-offset-b-input" type="number" :min="MINIMUM_FLANGE_OFFSET_MM" :max="MAXIMUM_FLANGE_OFFSET_MM" step="0.5" :value="state.flangeOffsetBMm" @input="updateWheelsetLacingFlangeGeometryInput('flangeOffsetBMm', $event)" @change="normalizeWheelsetLacingFlangeGeometryInput('flangeOffsetBMm', $event)">
               <span>mm</span>
             </span>
           </label>
@@ -631,8 +631,8 @@ useHead(() => {
     const SVG_HUB_FLANGE_HOLE_RING_DISPLAY_RADIUS_A = 66;     // Canvas radius for flange A holes
     const SVG_HUB_FLANGE_HOLE_RING_DISPLAY_RADIUS_B = 54;     // Canvas radius for flange B holes
     const SVG_HUB_AXLE_HOUSING_DISPLAY_RADIUS = 20;            // Canvas radius for axle housing
-    const MINIMUM_FLANGE_DISPLAY_RADIUS = 24;
-    const MAXIMUM_FLANGE_DISPLAY_RADIUS = 120;
+    const MINIMUM_FLANGE_DISPLAY_RADIUS = 1;
+    const MAXIMUM_FLANGE_DISPLAY_RADIUS = 280;
     const MINIMUM_FLANGE_OFFSET_MM = 0;
     const MAXIMUM_FLANGE_OFFSET_MM = 100;
     const WHEELSET_LACING_DISPLAY_GEOMETRY_REFRESH_DEBOUNCE_MS = 120;
@@ -781,15 +781,36 @@ useHead(() => {
       void refreshWheelsetLacingDisplayGeometryFromBackend();
     }
 
+    const getWheelsetLacingFlangeGeometryInputLimits = field => field.startsWith('flangeRadius')
+      ? { min: MINIMUM_FLANGE_DISPLAY_RADIUS, max: MAXIMUM_FLANGE_DISPLAY_RADIUS }
+      : { min: MINIMUM_FLANGE_OFFSET_MM, max: MAXIMUM_FLANGE_OFFSET_MM };
+
     function updateWheelsetLacingFlangeGeometryInput(field, event) {
-      const inputValue = Number(event?.target?.value);
-      if (!Number.isFinite(inputValue)) return;
-      const limits = field.startsWith('flangeRadius')
-        ? { min: MINIMUM_FLANGE_DISPLAY_RADIUS, max: MAXIMUM_FLANGE_DISPLAY_RADIUS }
-        : { min: MINIMUM_FLANGE_OFFSET_MM, max: MAXIMUM_FLANGE_OFFSET_MM };
-      state[field] = Math.min(limits.max, Math.max(limits.min, inputValue));
-      renderControls();
+      const rawValue = String(event?.target?.value ?? '').trim();
+      const limits = getWheelsetLacingFlangeGeometryInputLimits(field);
+      const inputValue = Number(rawValue);
+      if (!rawValue || !Number.isFinite(inputValue) || inputValue < limits.min || inputValue > limits.max) {
+        cancelScheduledWheelsetLacingDisplayGeometryRefresh();
+        return;
+      }
+      state[field] = inputValue;
       scheduleWheelsetLacingDisplayGeometryRefresh();
+    }
+
+    function normalizeWheelsetLacingFlangeGeometryInput(field, event) {
+      const target = event?.target;
+      const rawValue = String(target?.value ?? '').trim();
+      const limits = getWheelsetLacingFlangeGeometryInputLimits(field);
+      const previousValue = state[field];
+      const inputValue = Number(rawValue);
+      const normalizedValue = rawValue && Number.isFinite(inputValue)
+        ? Math.min(limits.max, Math.max(limits.min, inputValue))
+        : previousValue;
+      state[field] = normalizedValue;
+      if (target) target.value = String(normalizedValue);
+      if (normalizedValue !== previousValue) {
+        scheduleWheelsetLacingDisplayGeometryRefresh();
+      }
     }
 
     function setViewMode(mode) {
