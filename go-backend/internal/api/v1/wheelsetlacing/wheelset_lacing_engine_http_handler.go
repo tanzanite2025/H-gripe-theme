@@ -35,10 +35,10 @@ func (h *WheelsetLacingEngineeringHTTPHandler) RegisterWheelsetLacingEngineering
 }
 
 // GetWheelsetLacingDisplayGeometryProjectionForServerRenderedReferencePage
-// returns the canonical default canvas geometry for SSR and GEO. The GET
-// contract accepts only a topology identifier and uses domain-owned display
-// coordinates; it never accepts ERD, PCD, spoke length, tension, or safety
-// inputs.
+// returns the canonical default canvas and axial-profile geometry for SSR and
+// GEO. The GET contract accepts only a topology identifier and uses
+// domain-owned display coordinates plus reference flange offsets; it never
+// accepts ERD, PCD, spoke length, tension, or safety inputs.
 func (h *WheelsetLacingEngineeringHTTPHandler) GetWheelsetLacingDisplayGeometryProjectionForServerRenderedReferencePage(c *gin.Context) {
 	request, err := decodeWheelsetLacingDefaultDisplayGeometryQueryParameters(c)
 	if err != nil {
@@ -50,9 +50,11 @@ func (h *WheelsetLacingEngineeringHTTPHandler) GetWheelsetLacingDisplayGeometryP
 }
 
 // HandleWheelsetLacingDisplayGeometryCalculation validates a canonical
-// topology and returns backend-generated canvas coordinates plus geometry-only
-// projection metrics. The radii are display coordinates and carry no physical
-// ERD, PCD, spoke-length, stiffness, tension, efficiency, or safety meaning.
+// topology and returns backend-generated canvas coordinates, an axial flange
+// profile, and geometry-only projection metrics. The radii are display
+// coordinates; flange offsets are profile reference inputs in millimetres.
+// None of these values represent ERD, PCD, spoke length, stiffness, tension,
+// efficiency, or safety conclusions.
 func (h *WheelsetLacingEngineeringHTTPHandler) HandleWheelsetLacingDisplayGeometryCalculation(c *gin.Context) {
 	request, err := decodeWheelsetLacingDisplayGeometryProjectionRequest(c)
 	if err != nil {

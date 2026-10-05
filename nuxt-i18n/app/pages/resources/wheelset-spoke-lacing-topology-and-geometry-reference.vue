@@ -97,7 +97,46 @@
         </div>
       </div>
 
-      <!-- 3. 轮侧视图模式切换 (View Mode) -->
+      <!-- 3. 双法兰几何参数；径向值只控制主视图，轴向值控制下方剖面图 -->
+      <div class="flange-geometry-control-group">
+        <div class="selector-group-label">
+          <span>{{ t('wheelsetLacingTopology.controls.flangeGeometryLabel') }}</span>
+          <span class="control-unit-label">{{ t('wheelsetLacingTopology.controls.displayAndMm') }}</span>
+        </div>
+        <div class="flange-geometry-grid">
+          <label class="flange-geometry-field">
+            <span>{{ t('wheelsetLacingTopology.controls.driveFlangeRadius') }}</span>
+            <span class="flange-geometry-input-line">
+              <input id="flange-radius-a-input" type="number" min="24" max="120" step="1" :value="state.flangeRadiusA" @input="updateWheelsetLacingFlangeGeometryInput('flangeRadiusA', $event)">
+              <span>SVG</span>
+            </span>
+          </label>
+          <label class="flange-geometry-field">
+            <span>{{ t('wheelsetLacingTopology.controls.nonDriveFlangeRadius') }}</span>
+            <span class="flange-geometry-input-line">
+              <input id="flange-radius-b-input" type="number" min="24" max="120" step="1" :value="state.flangeRadiusB" @input="updateWheelsetLacingFlangeGeometryInput('flangeRadiusB', $event)">
+              <span>SVG</span>
+            </span>
+          </label>
+          <label class="flange-geometry-field">
+            <span>{{ t('wheelsetLacingTopology.controls.driveFlangeOffset') }}</span>
+            <span class="flange-geometry-input-line">
+              <input id="flange-offset-a-input" type="number" min="0" max="100" step="0.5" :value="state.flangeOffsetAMm" @input="updateWheelsetLacingFlangeGeometryInput('flangeOffsetAMm', $event)">
+              <span>mm</span>
+            </span>
+          </label>
+          <label class="flange-geometry-field">
+            <span>{{ t('wheelsetLacingTopology.controls.nonDriveFlangeOffset') }}</span>
+            <span class="flange-geometry-input-line">
+              <input id="flange-offset-b-input" type="number" min="0" max="100" step="0.5" :value="state.flangeOffsetBMm" @input="updateWheelsetLacingFlangeGeometryInput('flangeOffsetBMm', $event)">
+              <span>mm</span>
+            </span>
+          </label>
+        </div>
+        <p class="flange-geometry-help">{{ t('wheelsetLacingTopology.controls.flangeGeometryHelp') }}</p>
+      </div>
+
+      <!-- 4. 轮侧视图模式切换 (View Mode) -->
       <div>
         <div class="selector-group-label">
           <span>{{ t('wheelsetLacingTopology.controls.viewLabel') }}</span>
@@ -115,7 +154,7 @@
         </div>
       </div>
 
-      <!-- 4. 图层显示开关 -->
+      <!-- 5. 图层显示开关 -->
       <div class="layer-toggle-group">
         <span class="selector-group-label" style="margin-bottom: 4px;">{{ t('wheelsetLacingTopology.controls.layersLabel') }}</span>
         
@@ -162,6 +201,24 @@
           :aria-label="t('wheelsetLacingTopology.canvas.aria')"
         >
           <!-- 动态渲染 SVG 元素 -->
+        </svg>
+      </div>
+      <div class="flange-profile-viewport" id="flange-profile-container">
+        <div class="flange-profile-toolbar">
+          <div class="card-title">
+            <span>{{ t('wheelsetLacingTopology.canvas.profileTitle') }}</span>
+            <span class="card-tag" id="flange-profile-status-tag">{{ t('wheelsetLacingTopology.canvas.profileTag') }}</span>
+          </div>
+          <span class="flange-profile-summary" id="flange-profile-summary">{{ t('wheelsetLacingTopology.canvas.profilePending') }}</span>
+        </div>
+        <svg
+          id="flange-profile-svg"
+          viewBox="-220 -90 440 180"
+          preserveAspectRatio="xMidYMid meet"
+          role="img"
+          :aria-label="t('wheelsetLacingTopology.canvas.profileAria')"
+        >
+          <!-- 动态渲染双法兰轴向剖面 -->
         </svg>
       </div>
     </section>
@@ -349,7 +406,7 @@
 </template>
 
 <script setup>
-import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useAsyncData, useI18n, useSwitchLocalePath } from '#imports'
 import { useApiRequest } from '~/composables/useApiRequest'
 import { usePageMessages } from '~/composables/usePageMessages'
@@ -385,7 +442,7 @@ const { data: wheelsetLacingFaqData } = await useAsyncData(
 
 const serverRenderedWheelsetLacingDisplayGeometryTopologyIdentifier = '24h-symmetric-1to1-2x'
 const { data: serverRenderedWheelsetLacingDisplayGeometry } = await useAsyncData(
-  'wheelset-lacing-default-display-geometry-v1',
+  'wheelset-lacing-default-display-geometry-v1-2',
   async () => {
     try {
       const response = await request('/wheelset-lacing/display-geometry', {
@@ -573,8 +630,12 @@ useHead(() => {
     const SVG_RIM_INNER_EDGE_DISPLAY_RADIUS = 214;            // Canvas radius for inner rim edge
     const SVG_HUB_FLANGE_HOLE_RING_DISPLAY_RADIUS_A = 66;     // Canvas radius for flange A holes
     const SVG_HUB_FLANGE_HOLE_RING_DISPLAY_RADIUS_B = 54;     // Canvas radius for flange B holes
-    const SVG_HUB_FLANGE_OUTER_EDGE_DISPLAY_RADIUS = 78;      // Canvas radius for hub flange edge
     const SVG_HUB_AXLE_HOUSING_DISPLAY_RADIUS = 20;            // Canvas radius for axle housing
+    const MINIMUM_FLANGE_DISPLAY_RADIUS = 24;
+    const MAXIMUM_FLANGE_DISPLAY_RADIUS = 120;
+    const MINIMUM_FLANGE_OFFSET_MM = 0;
+    const MAXIMUM_FLANGE_OFFSET_MM = 100;
+    const WHEELSET_LACING_DISPLAY_GEOMETRY_REFRESH_DEBOUNCE_MS = 120;
 
     const resolveWheelsetLacingBackendTopologyIdentifier = (holes, cross) => {
       if (holes === 21) return '21h-g3-2to1';
@@ -591,18 +652,49 @@ useHead(() => {
       return Math.min(100, Math.max(0, (value / maximum) * 100));
     };
 
+    const resolveDisplayGeometryRadius = (points, fallbackRadius) => {
+      const radii = (points || [])
+        .map(point => Math.hypot(Number(point.x), Number(point.y)))
+        .filter(Number.isFinite);
+      if (radii.length === 0) return fallbackRadius;
+      return Math.round(Math.max(...radii) * 100) / 100;
+    };
+
+    const resolveInitialFlangeOffset = (profile, field, fallbackOffset) => {
+      const offset = Number(profile?.[field]);
+      return Number.isFinite(offset) && offset >= MINIMUM_FLANGE_OFFSET_MM && offset <= MAXIMUM_FLANGE_OFFSET_MM
+        ? offset
+        : fallbackOffset;
+    };
+
+    const initialServerRenderedDisplayGeometry = serverRenderedWheelsetLacingDisplayGeometry.value;
+    const initialServerRenderedFlangeProfile = initialServerRenderedDisplayGeometry?.flange_profile;
+
+    let displayGeometryRefreshTimer = null;
+
+    const buildWheelsetLacingDisplayGeometryRequestBody = () => ({
+      topology_id: resolveWheelsetLacingBackendTopologyIdentifier(state.holes, state.cross),
+      rim_radius: SVG_RIM_HOLE_RING_DISPLAY_RADIUS,
+      flange_radius_a: state.flangeRadiusA,
+      flange_radius_b: state.flangeRadiusB,
+      flange_offset_a_mm: state.flangeOffsetAMm,
+      flange_offset_b_mm: state.flangeOffsetBMm,
+    });
+
     const refreshWheelsetLacingDisplayGeometryFromBackend = async () => {
       const requestId = ++displayGeometryRequestSequence;
-      const selectedTopologyId = resolveWheelsetLacingBackendTopologyIdentifier(state.holes, state.cross);
+      const requestBody = buildWheelsetLacingDisplayGeometryRequestBody();
+      const selectedTopologyId = requestBody.topology_id;
       displayGeometryController?.abort();
       displayGeometryController = new AbortController();
       backendDisplayGeometry.value = null;
       renderBlueprint();
       try {
         const response = await request('/wheelset-lacing/display-geometry', {
-          method: 'GET',
+          method: 'POST',
           signal: displayGeometryController.signal,
-          query: { topology_id: selectedTopologyId },
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(requestBody),
         });
         if (requestId !== displayGeometryRequestSequence || selectedTopologyId !== resolveWheelsetLacingBackendTopologyIdentifier(state.holes, state.cross)) return;
         backendDisplayGeometry.value = response.data;
@@ -614,10 +706,30 @@ useHead(() => {
       }
     };
 
+    const scheduleWheelsetLacingDisplayGeometryRefresh = () => {
+      if (displayGeometryRefreshTimer !== null) {
+        window.clearTimeout(displayGeometryRefreshTimer);
+      }
+      displayGeometryRefreshTimer = window.setTimeout(() => {
+        displayGeometryRefreshTimer = null;
+        void refreshWheelsetLacingDisplayGeometryFromBackend();
+      }, WHEELSET_LACING_DISPLAY_GEOMETRY_REFRESH_DEBOUNCE_MS);
+    };
+
+    const cancelScheduledWheelsetLacingDisplayGeometryRefresh = () => {
+      if (displayGeometryRefreshTimer === null) return;
+      window.clearTimeout(displayGeometryRefreshTimer);
+      displayGeometryRefreshTimer = null;
+    };
+
     let state = {
       holes: 24,            // 16, 20, 21, 24, 28, 32, 36, '24_2to1'
       cross: 2,             // 0, 1, 2, 3, 4
       viewMode: 'both',     // 默认全景双侧透视，确保所有孔位100%全满严整
+      flangeRadiusA: resolveDisplayGeometryRadius(initialServerRenderedDisplayGeometry?.hub_holes_a, SVG_HUB_FLANGE_HOLE_RING_DISPLAY_RADIUS_A),
+      flangeRadiusB: resolveDisplayGeometryRadius(initialServerRenderedDisplayGeometry?.hub_holes_b, SVG_HUB_FLANGE_HOLE_RING_DISPLAY_RADIUS_B),
+      flangeOffsetAMm: resolveInitialFlangeOffset(initialServerRenderedFlangeProfile, 'flange_offset_a_mm', 20),
+      flangeOffsetBMm: resolveInitialFlangeOffset(initialServerRenderedFlangeProfile, 'flange_offset_b_mm', 35),
       showLeading: true,
       showTrailing: true,
       showNonDrive: true,
@@ -658,13 +770,26 @@ useHead(() => {
         state.cross = rule.recommended;
       }
       renderControls();
+      cancelScheduledWheelsetLacingDisplayGeometryRefresh();
       void refreshWheelsetLacingDisplayGeometryFromBackend();
     }
 
     function setCrossCount(cross) {
       state.cross = cross;
       renderControls();
+      cancelScheduledWheelsetLacingDisplayGeometryRefresh();
       void refreshWheelsetLacingDisplayGeometryFromBackend();
+    }
+
+    function updateWheelsetLacingFlangeGeometryInput(field, event) {
+      const inputValue = Number(event?.target?.value);
+      if (!Number.isFinite(inputValue)) return;
+      const limits = field.startsWith('flangeRadius')
+        ? { min: MINIMUM_FLANGE_DISPLAY_RADIUS, max: MAXIMUM_FLANGE_DISPLAY_RADIUS }
+        : { min: MINIMUM_FLANGE_OFFSET_MM, max: MAXIMUM_FLANGE_OFFSET_MM };
+      state[field] = Math.min(limits.max, Math.max(limits.min, inputValue));
+      renderControls();
+      scheduleWheelsetLacingDisplayGeometryRefresh();
     }
 
     function setViewMode(mode) {
@@ -727,6 +852,10 @@ useHead(() => {
       document.querySelectorAll('.view-mode-grid .view-pill-btn').forEach(btn => {
         btn.setAttribute('aria-pressed', String(btn.id === `btn-view-${state.viewMode}`));
       });
+      document.getElementById('flange-radius-a-input').value = String(state.flangeRadiusA);
+      document.getElementById('flange-radius-b-input').value = String(state.flangeRadiusB);
+      document.getElementById('flange-offset-a-input').value = String(state.flangeOffsetAMm);
+      document.getElementById('flange-offset-b-input').value = String(state.flangeOffsetBMm);
     }
 
     const SVG_NS = 'http://www.w3.org/2000/svg';
@@ -774,6 +903,7 @@ useHead(() => {
       const geometry = backendDisplayGeometry.value;
       if (!geometry) {
         appendSvgElement(svg, 'text', { x: 0, y: 0, 'text-anchor': 'middle', fill: '#64748b', 'font-size': 12 }, t('wheelsetLacingTopology.telemetry.backendPending'));
+        renderFlangeProfile(null);
         updateGeometryProjectionMetricsAndTopologyReview(null, null);
         return;
       }
@@ -782,6 +912,9 @@ useHead(() => {
       const hubHolesA = geometry.hub_holes_a;
       const hubHolesB = geometry.hub_holes_b;
       const spokes = geometry.spokes;
+      const flangeRadiusA = resolveDisplayGeometryRadius(hubHolesA, state.flangeRadiusA);
+      const flangeRadiusB = resolveDisplayGeometryRadius(hubHolesB, state.flangeRadiusB);
+      const hubOuterRadius = Math.min(280, Math.max(flangeRadiusA, flangeRadiusB) + 12);
 
       // 3. Select the visible spoke line segments for the blueprint.
       const visibleSpokes = spokes.filter(s => {
@@ -796,9 +929,9 @@ useHead(() => {
       // 4. 先绘制花鼓底层金属底盘与 PCD 节圆 (置于辐条下方，避免遮挡辐条穿入孔心)
       const hubBaseGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
       hubBaseGroup.setAttribute('id', 'layer-hub-base');
-      appendSvgElement(hubBaseGroup, 'circle', { cx: 0, cy: 0, r: SVG_HUB_FLANGE_OUTER_EDGE_DISPLAY_RADIUS, fill: '#f1f5f9', stroke: '#475569', 'stroke-width': 2 });
-      appendSvgElement(hubBaseGroup, 'circle', { cx: 0, cy: 0, r: SVG_HUB_FLANGE_HOLE_RING_DISPLAY_RADIUS_A, fill: 'none', stroke: '#d97706', 'stroke-width': 1.4, 'stroke-dasharray': '3 3' });
-      appendSvgElement(hubBaseGroup, 'circle', { cx: 0, cy: 0, r: SVG_HUB_FLANGE_HOLE_RING_DISPLAY_RADIUS_B, fill: 'none', stroke: '#0284c7', 'stroke-width': 1.2, 'stroke-dasharray': '2 2' });
+      appendSvgElement(hubBaseGroup, 'circle', { cx: 0, cy: 0, r: hubOuterRadius, fill: '#f1f5f9', stroke: '#475569', 'stroke-width': 2 });
+      appendSvgElement(hubBaseGroup, 'circle', { cx: 0, cy: 0, r: flangeRadiusA, fill: 'none', stroke: '#d97706', 'stroke-width': 1.4, 'stroke-dasharray': '3 3' });
+      appendSvgElement(hubBaseGroup, 'circle', { cx: 0, cy: 0, r: flangeRadiusB, fill: 'none', stroke: '#0284c7', 'stroke-width': 1.2, 'stroke-dasharray': '2 2' });
       appendSvgElement(hubBaseGroup, 'circle', { cx: 0, cy: 0, r: SVG_HUB_AXLE_HOUSING_DISPLAY_RADIUS, fill: '#0f172a', stroke: '#cbd5e1', 'stroke-width': 1.8 });
       appendSvgElement(hubBaseGroup, 'circle', { cx: 0, cy: 0, r: 5, fill: '#38bdf8' });
       svg.appendChild(hubBaseGroup);
@@ -882,7 +1015,52 @@ useHead(() => {
       svg.appendChild(rimHoleGroup);
 
       // 7. Geometry telemetry and topology rule review.
+      renderFlangeProfile(geometry.flange_profile);
       updateGeometryProjectionMetricsAndTopologyReview(topology, geometry.metrics);
+    }
+
+    function renderFlangeProfile(profile) {
+      const svg = document.getElementById('flange-profile-svg');
+      const summary = document.getElementById('flange-profile-summary');
+      const statusTag = document.getElementById('flange-profile-status-tag');
+      svg.replaceChildren();
+      const profileCoordinateKeys = ['centerline_x', 'flange_a_x', 'flange_b_x', 'axle_left_x', 'axle_right_x', 'flange_offset_a_mm', 'flange_offset_b_mm', 'total_flange_span_mm'];
+      const hasValidProfile = profile && profileCoordinateKeys.every(key => Number.isFinite(Number(profile[key])));
+      if (!hasValidProfile) {
+        appendSvgElement(svg, 'text', { x: 0, y: 8, 'text-anchor': 'middle', fill: '#64748b', 'font-size': 10 }, t('wheelsetLacingTopology.canvas.profilePending'));
+        summary.innerText = t('wheelsetLacingTopology.canvas.profilePending');
+        statusTag.innerText = t('wheelsetLacingTopology.canvas.profileTag');
+        return;
+      }
+
+      const profileDescription = t('wheelsetLacingTopology.canvas.profileRuntime', {
+        driveOffset: formatBackendDisplayGeometryMetric(profile.flange_offset_a_mm),
+        nonDriveOffset: formatBackendDisplayGeometryMetric(profile.flange_offset_b_mm),
+        total: formatBackendDisplayGeometryMetric(profile.total_flange_span_mm),
+      });
+      svg.setAttribute('aria-label', profileDescription);
+      appendSvgElement(svg, 'desc', { id: 'flange-profile-svg-description' }, profileDescription);
+      const defs = document.createElementNS(SVG_NS, 'defs');
+      const createProfileArrowMarker = (id, color) => {
+        const marker = appendSvgElement(defs, 'marker', { id, viewBox: '0 0 10 10', refX: 5, refY: 5, markerWidth: 5, markerHeight: 5, orient: 'auto-start-reverse' });
+        appendSvgElement(marker, 'path', { d: 'M 0 1 L 8 5 L 0 9 z', fill: color });
+      };
+      createProfileArrowMarker('flange-profile-arrow-sky', '#0284c7');
+      createProfileArrowMarker('flange-profile-arrow-amber', '#d97706');
+      svg.appendChild(defs);
+      appendSvgElement(svg, 'line', { x1: profile.axle_left_x, y1: 0, x2: profile.axle_right_x, y2: 0, stroke: '#475569', 'stroke-width': 8, 'stroke-linecap': 'round' });
+      appendSvgElement(svg, 'line', { x1: profile.centerline_x, y1: -62, x2: profile.centerline_x, y2: 62, stroke: '#059669', 'stroke-width': 1.5, 'stroke-dasharray': '5 4' });
+      appendSvgElement(svg, 'text', { x: profile.centerline_x + 5, y: -66, fill: '#059669', 'font-size': 8, 'font-weight': 800 }, t('wheelsetLacingTopology.canvas.profileCenterline'));
+
+      appendSvgElement(svg, 'line', { x1: profile.flange_b_x, y1: -34, x2: profile.flange_b_x, y2: 34, stroke: '#0284c7', 'stroke-width': 6, 'stroke-linecap': 'round' });
+      appendSvgElement(svg, 'line', { x1: profile.flange_a_x, y1: -34, x2: profile.flange_a_x, y2: 34, stroke: '#d97706', 'stroke-width': 6, 'stroke-linecap': 'round' });
+      appendSvgElement(svg, 'text', { x: profile.flange_b_x, y: 52, fill: '#0284c7', 'font-size': 8, 'font-weight': 800, 'text-anchor': 'middle' }, `${t('wheelsetLacingTopology.canvas.profileNonDrive')} ${profile.flange_offset_b_mm} mm`);
+      appendSvgElement(svg, 'text', { x: profile.flange_a_x, y: -48, fill: '#b45309', 'font-size': 8, 'font-weight': 800, 'text-anchor': 'middle' }, `${t('wheelsetLacingTopology.canvas.profileDrive')} ${profile.flange_offset_a_mm} mm`);
+
+      appendSvgElement(svg, 'line', { x1: profile.flange_b_x, y1: 70, x2: profile.centerline_x, y2: 70, stroke: '#0284c7', 'stroke-width': 1.2, 'marker-start': 'url(#flange-profile-arrow-sky)', 'marker-end': 'url(#flange-profile-arrow-sky)' });
+      appendSvgElement(svg, 'line', { x1: profile.centerline_x, y1: -70, x2: profile.flange_a_x, y2: -70, stroke: '#d97706', 'stroke-width': 1.2, 'marker-start': 'url(#flange-profile-arrow-amber)', 'marker-end': 'url(#flange-profile-arrow-amber)' });
+      summary.innerText = profileDescription;
+      statusTag.innerText = t('wheelsetLacingTopology.canvas.profileTag');
     }
 
     function updateGeometryProjectionMetricsAndTopologyReview(topology, geometryProjectionMetrics) {
@@ -951,6 +1129,14 @@ onMounted(() => {
     return
   }
   void refreshWheelsetLacingDisplayGeometryFromBackend()
+})
+
+onBeforeUnmount(() => {
+  isInteractiveBlueprintMounted = false
+  if (displayGeometryRefreshTimer !== null) {
+    window.clearTimeout(displayGeometryRefreshTimer)
+  }
+  displayGeometryController?.abort()
 })
 
 </script>
@@ -1317,6 +1503,76 @@ onMounted(() => {
       cursor: pointer;
     }
 
+    .flange-geometry-control-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding: 12px;
+      border: 1px solid var(--border-line);
+      border-radius: 16px;
+      background: rgba(241, 245, 249, 0.68);
+    }
+
+    .control-unit-label {
+      color: var(--text-dim);
+      font-size: 8px;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .flange-geometry-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .flange-geometry-field {
+      display: flex;
+      min-width: 0;
+      flex-direction: column;
+      gap: 4px;
+      color: var(--text-secondary);
+      font-size: 8.5px;
+      font-weight: 800;
+      line-height: 1.2;
+    }
+
+    .flange-geometry-input-line {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      color: var(--text-muted);
+      font-family: var(--tz-font-ui);
+      font-size: 8px;
+    }
+
+    .flange-geometry-input-line input {
+      width: 100%;
+      min-width: 0;
+      height: 28px;
+      padding: 0 6px;
+      border: 1px solid var(--border-line);
+      border-radius: 8px;
+      background: #ffffff;
+      color: var(--text-main);
+      font-family: var(--tz-font-ui);
+      font-size: 10px;
+      font-weight: 800;
+    }
+
+    .flange-geometry-input-line input:focus-visible {
+      outline: 2px solid rgba(5, 150, 105, 0.35);
+      outline-offset: 1px;
+      border-color: var(--accent-primary);
+    }
+
+    .flange-geometry-help {
+      color: var(--text-muted);
+      font-size: 8.5px;
+      line-height: 1.4;
+    }
+
     .layer-indicator {
       display: inline-block;
       width: 8px;
@@ -1371,6 +1627,37 @@ onMounted(() => {
       max-width: 600px;
       max-height: 600px;
       filter: drop-shadow(0 12px 24px rgba(15, 23, 42, 0.04));
+    }
+
+    .flange-profile-viewport {
+      width: 100%;
+      padding: 12px 20px 16px;
+      border-top: 1px solid var(--border-line);
+      background: rgba(248, 250, 252, 0.72);
+    }
+
+    .flange-profile-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 4px;
+    }
+
+    .flange-profile-summary {
+      max-width: 60%;
+      color: var(--text-muted);
+      font-size: 8.5px;
+      line-height: 1.35;
+      text-align: right;
+    }
+
+    .flange-profile-viewport svg {
+      display: block;
+      width: 100%;
+      height: 142px;
+      max-width: 600px;
+      margin: 0 auto;
     }
 
     /* 辐条线交互 */

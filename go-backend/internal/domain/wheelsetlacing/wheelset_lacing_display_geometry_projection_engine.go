@@ -7,37 +7,50 @@ import (
 )
 
 // WheelsetLacingDisplayGeometryContractVersion identifies the backend contract
-// used by the SVG-only wheelset lacing reference page. The radii are canvas
-// coordinates, not ERD, PCD, flange, spoke-length, stiffness, or safety data.
-const WheelsetLacingDisplayGeometryContractVersion = "v1.1-backend-display-geometry"
+// used by the wheelset lacing reference page. Radial values are canvas
+// coordinates; flange offsets are physical millimetres used only for the
+// generated axial reference profile. Neither represents spoke length,
+// stiffness, tension, efficiency, or assembly safety.
+const WheelsetLacingDisplayGeometryContractVersion = "v1.2-backend-display-geometry"
 
-// These values are canvas coordinates for the public reference blueprint. They
-// are deliberately centralized in the domain package so SSR and browser
-// requests use the same display geometry without treating the values as ERD,
-// PCD, measured dimensions, or physical millimetres.
+// These values are centralized in the domain package so SSR and browser
+// requests use the same reference geometry. Radial constants are canvas
+// coordinates; the flange-offset defaults are illustrative physical profile
+// inputs and are not used as spoke-length or safety calculations.
 const (
 	DefaultWheelsetLacingDisplayRimHoleRingRadius        = 232.0
 	DefaultWheelsetLacingDisplayHubFlangeHoleRingRadiusA = 66.0
 	DefaultWheelsetLacingDisplayHubFlangeHoleRingRadiusB = 54.0
+	DefaultWheelsetLacingFlangeOffsetAMM                 = 20.0
+	DefaultWheelsetLacingFlangeOffsetBMM                 = 35.0
+	WheelsetLacingDisplayProfileHalfSpan                 = 160.0
+	WheelsetLacingDisplayProfileAxleHalfSpan             = 194.0
+	WheelsetLacingDisplayMaximumCanvasRadius             = 280.0
+	WheelsetLacingMaximumFlangeOffsetMM                  = 100.0
 )
 
 type DisplayGeometryProjectionRequest struct {
-	TopologyID    string  `json:"topology_id"`
-	RimRadius     float64 `json:"rim_radius"`
-	FlangeRadiusA float64 `json:"flange_radius_a"`
-	FlangeRadiusB float64 `json:"flange_radius_b"`
+	TopologyID      string  `json:"topology_id"`
+	RimRadius       float64 `json:"rim_radius"`
+	FlangeRadiusA   float64 `json:"flange_radius_a"`
+	FlangeRadiusB   float64 `json:"flange_radius_b"`
+	FlangeOffsetAMM float64 `json:"flange_offset_a_mm"`
+	FlangeOffsetBMM float64 `json:"flange_offset_b_mm"`
 }
 
 // NewWheelsetLacingDefaultDisplayGeometryProjectionRequest creates the
 // canonical canvas-only request used by the server-rendered reference page.
-// Custom display radii remain available to the POST endpoint for explicit
-// consumers, while the public GET endpoint always uses these stable values.
+// Custom display radii and flange offsets remain available to the POST endpoint
+// for explicit consumers, while the public GET endpoint uses these stable
+// reference values.
 func NewWheelsetLacingDefaultDisplayGeometryProjectionRequest(topologyID string) DisplayGeometryProjectionRequest {
 	return DisplayGeometryProjectionRequest{
-		TopologyID:    topologyID,
-		RimRadius:     DefaultWheelsetLacingDisplayRimHoleRingRadius,
-		FlangeRadiusA: DefaultWheelsetLacingDisplayHubFlangeHoleRingRadiusA,
-		FlangeRadiusB: DefaultWheelsetLacingDisplayHubFlangeHoleRingRadiusB,
+		TopologyID:      topologyID,
+		RimRadius:       DefaultWheelsetLacingDisplayRimHoleRingRadius,
+		FlangeRadiusA:   DefaultWheelsetLacingDisplayHubFlangeHoleRingRadiusA,
+		FlangeRadiusB:   DefaultWheelsetLacingDisplayHubFlangeHoleRingRadiusB,
+		FlangeOffsetAMM: DefaultWheelsetLacingFlangeOffsetAMM,
+		FlangeOffsetBMM: DefaultWheelsetLacingFlangeOffsetBMM,
 	}
 }
 
@@ -69,6 +82,20 @@ type DisplayGeometryProjectionMetrics struct {
 	DriveSideSpokeCount                            int     `json:"drive_side_spoke_count"`
 }
 
+// DisplayGeometryFlangeProfile is a compact axial reference projection. The
+// X coordinates are profile canvas coordinates; the offset fields retain the
+// physical input in millimetres for labels and accessibility text.
+type DisplayGeometryFlangeProfile struct {
+	CenterlineX     float64 `json:"centerline_x"`
+	FlangeAX        float64 `json:"flange_a_x"`
+	FlangeBX        float64 `json:"flange_b_x"`
+	AxleLeftX       float64 `json:"axle_left_x"`
+	AxleRightX      float64 `json:"axle_right_x"`
+	FlangeOffsetAMM float64 `json:"flange_offset_a_mm"`
+	FlangeOffsetBMM float64 `json:"flange_offset_b_mm"`
+	TotalSpanMM     float64 `json:"total_flange_span_mm"`
+}
+
 type DisplayGeometryProjectionResult struct {
 	ContractVersion string                           `json:"contract_version"`
 	Topology        Topology                         `json:"topology"`
@@ -77,6 +104,7 @@ type DisplayGeometryProjectionResult struct {
 	HubHolesB       []DisplayGeometryPoint           `json:"hub_holes_b"`
 	Spokes          []DisplayGeometrySpoke           `json:"spokes"`
 	Metrics         DisplayGeometryProjectionMetrics `json:"metrics"`
+	FlangeProfile   DisplayGeometryFlangeProfile     `json:"flange_profile"`
 }
 
 func CalculateWheelsetLacingDisplayGeometryProjection(
@@ -121,6 +149,7 @@ func CalculateWheelsetLacingDisplayGeometryProjection(
 	if err != nil {
 		return DisplayGeometryProjectionResult{}, err
 	}
+	flangeProfile := buildWheelsetLacingDisplayGeometryFlangeProfile(request)
 	return DisplayGeometryProjectionResult{
 		ContractVersion: WheelsetLacingDisplayGeometryContractVersion,
 		Topology:        topology,
@@ -129,6 +158,7 @@ func CalculateWheelsetLacingDisplayGeometryProjection(
 		HubHolesB:       hubHolesB,
 		Spokes:          spokes,
 		Metrics:         metrics,
+		FlangeProfile:   flangeProfile,
 	}, nil
 }
 
@@ -141,11 +171,37 @@ func validateDisplayGeometryProjectionRequest(request DisplayGeometryProjectionR
 		"flange_radius_a": request.FlangeRadiusA,
 		"flange_radius_b": request.FlangeRadiusB,
 	} {
-		if math.IsNaN(value) || math.IsInf(value, 0) || value <= 0 || value > 10000 {
-			return fmt.Errorf("%w: %s must be finite and within (0, 10000]", ErrInvalidRequest, field)
+		if math.IsNaN(value) || math.IsInf(value, 0) || value <= 0 || value > WheelsetLacingDisplayMaximumCanvasRadius {
+			return fmt.Errorf("%w: %s must be finite and within (0, %g] canvas units", ErrInvalidRequest, field, WheelsetLacingDisplayMaximumCanvasRadius)
+		}
+	}
+	for field, value := range map[string]float64{
+		"flange_offset_a_mm": request.FlangeOffsetAMM,
+		"flange_offset_b_mm": request.FlangeOffsetBMM,
+	} {
+		if math.IsNaN(value) || math.IsInf(value, 0) || value < 0 || value > WheelsetLacingMaximumFlangeOffsetMM {
+			return fmt.Errorf("%w: %s must be finite and within [0, %g] mm", ErrInvalidRequest, field, WheelsetLacingMaximumFlangeOffsetMM)
 		}
 	}
 	return nil
+}
+
+func buildWheelsetLacingDisplayGeometryFlangeProfile(request DisplayGeometryProjectionRequest) DisplayGeometryFlangeProfile {
+	maximumOffset := math.Max(request.FlangeOffsetAMM, request.FlangeOffsetBMM)
+	profileScale := 0.0
+	if maximumOffset > 0 {
+		profileScale = WheelsetLacingDisplayProfileHalfSpan / maximumOffset
+	}
+	return DisplayGeometryFlangeProfile{
+		CenterlineX:     0,
+		FlangeAX:        roundWheelsetLacingDisplayGeometryValue(request.FlangeOffsetAMM*profileScale, 2),
+		FlangeBX:        roundWheelsetLacingDisplayGeometryValue(-request.FlangeOffsetBMM*profileScale, 2),
+		AxleLeftX:       -WheelsetLacingDisplayProfileAxleHalfSpan,
+		AxleRightX:      WheelsetLacingDisplayProfileAxleHalfSpan,
+		FlangeOffsetAMM: roundWheelsetLacingDisplayGeometryValue(request.FlangeOffsetAMM, 1),
+		FlangeOffsetBMM: roundWheelsetLacingDisplayGeometryValue(request.FlangeOffsetBMM, 1),
+		TotalSpanMM:     roundWheelsetLacingDisplayGeometryValue(request.FlangeOffsetAMM+request.FlangeOffsetBMM, 1),
+	}
 }
 
 func buildWheelsetLacingDisplayGeometryPoints(
