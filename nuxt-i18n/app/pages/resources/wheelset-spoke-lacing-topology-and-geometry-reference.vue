@@ -140,7 +140,7 @@
         <p class="flange-geometry-help">{{ t('wheelsetLacingTopology.controls.flangeGeometryHelp') }}</p>
       </div>
 
-      <!-- G3 仅在 21H 选择时显示；A-B-A 三孔组的三段角间距独立输入并闭合校验 -->
+      <!-- G3 仅在 21H 选择时显示；前两段可调，组间第三段自动闭合 -->
       <div id="g3-geometry-control-group" class="flange-geometry-control-group g3-geometry-control-group" hidden aria-hidden="true">
         <div class="selector-group-label">
           <span>{{ t('wheelsetLacingTopology.controls.g3GroupSpacingLabel') }}</span>
@@ -164,7 +164,7 @@
           <label class="flange-geometry-field">
             <span>{{ t('wheelsetLacingTopology.controls.g3SpacingAToNextGroupA') }}</span>
             <span class="flange-geometry-input-line">
-              <input id="g3-spacing-a-to-next-group-a-input" type="number" :min="MINIMUM_G3_RIM_HOLE_SPACING_DEGREES" :max="MAXIMUM_G3_RIM_HOLE_SPACING_DEGREES" step="any" :value="state.g3RimHoleSpacingAToNextGroupADegrees" @input="updateWheelsetLacingGeometryInput('g3RimHoleSpacingAToNextGroupADegrees', $event)" @change="normalizeWheelsetLacingGeometryInput('g3RimHoleSpacingAToNextGroupADegrees', $event)">
+              <input id="g3-spacing-a-to-next-group-a-input" type="number" :min="MINIMUM_G3_RIM_HOLE_SPACING_DEGREES" :max="MAXIMUM_G3_RIM_HOLE_SPACING_DEGREES" step="any" :value="formatG3RimHoleSpacingInputValue(state.g3RimHoleSpacingAToNextGroupADegrees)" readonly aria-readonly="true">
               <span>°</span>
             </span>
           </label>
@@ -705,6 +705,10 @@ useHead(() => {
     const G3_RIM_HOLE_SPACING_CLOSURE_TOLERANCE_DEGREES = 0.01;
     const WHEELSET_LACING_DISPLAY_GEOMETRY_REFRESH_DEBOUNCE_MS = 120;
 
+    const formatG3RimHoleSpacingInputValue = spacing => (
+      Number.isFinite(spacing) ? spacing.toFixed(2) : ''
+    );
+
     const resolveWheelsetLacingBackendTopologySelection = (holes, cross) => (
       resolveWheelsetLacingDisplayGeometryTopologySelection(holes, cross)
     );
@@ -883,6 +887,18 @@ useHead(() => {
       showNonDrive: true,
     };
 
+    const synchronizeG3RimHoleSpacingAToNextGroupA = () => {
+      state.g3RimHoleSpacingAToNextGroupADegrees = G3_GROUP_PITCH_DEGREES
+        - state.g3RimHoleSpacingAToBDegrees
+        - state.g3RimHoleSpacingBToADegrees;
+      if (typeof document !== 'undefined') {
+        const input = document.getElementById('g3-spacing-a-to-next-group-a-input');
+        if (input) input.value = formatG3RimHoleSpacingInputValue(state.g3RimHoleSpacingAToNextGroupADegrees);
+      }
+      return state.g3RimHoleSpacingAToNextGroupADegrees;
+    };
+    synchronizeG3RimHoleSpacingAToNextGroupA();
+
     // Default values only choose the first useful preview for a selection.
     // Supported combinations themselves come from the pure topology contract.
     const DEFAULT_PREVIEW_CROSS_COUNT_BY_SELECTION = {
@@ -957,6 +973,9 @@ useHead(() => {
         return;
       }
       state[field] = inputValue;
+      if (field === 'g3RimHoleSpacingAToBDegrees' || field === 'g3RimHoleSpacingBToADegrees') {
+        synchronizeG3RimHoleSpacingAToNextGroupA();
+      }
       if (field.startsWith('g3RimHoleSpacing') && state.holes === 21
         && !updateG3RimHoleSpacingValidationMessage()) {
         cancelScheduledWheelsetLacingDisplayGeometryRefresh();
@@ -977,6 +996,9 @@ useHead(() => {
         ? Math.min(limits.max, Math.max(limits.min, inputValue))
         : previousValue;
       state[field] = normalizedValue;
+      if (field === 'g3RimHoleSpacingAToBDegrees' || field === 'g3RimHoleSpacingBToADegrees') {
+        synchronizeG3RimHoleSpacingAToNextGroupA();
+      }
       if (target) target.value = String(normalizedValue);
       if (field.startsWith('g3RimHoleSpacing') && state.holes === 21) {
         updateG3RimHoleSpacingValidationMessage();
@@ -1060,13 +1082,16 @@ useHead(() => {
         g3GeometryControlGroup.hidden = !isG3Selection;
         g3GeometryControlGroup.setAttribute('aria-hidden', String(!isG3Selection));
       }
+      if (state.holes === 21) {
+        synchronizeG3RimHoleSpacingAToNextGroupA();
+      }
       document.getElementById('flange-radius-a-input').value = String(state.flangeRadiusA);
       document.getElementById('flange-radius-b-input').value = String(state.flangeRadiusB);
       document.getElementById('flange-offset-a-input').value = String(state.flangeOffsetAMm);
       document.getElementById('flange-offset-b-input').value = String(state.flangeOffsetBMm);
       document.getElementById('g3-spacing-a-to-b-input').value = String(state.g3RimHoleSpacingAToBDegrees);
       document.getElementById('g3-spacing-b-to-a-input').value = String(state.g3RimHoleSpacingBToADegrees);
-      document.getElementById('g3-spacing-a-to-next-group-a-input').value = String(state.g3RimHoleSpacingAToNextGroupADegrees);
+      document.getElementById('g3-spacing-a-to-next-group-a-input').value = formatG3RimHoleSpacingInputValue(state.g3RimHoleSpacingAToNextGroupADegrees);
       updateG3RimHoleSpacingValidationMessage();
     }
 
@@ -1822,6 +1847,12 @@ onBeforeUnmount(() => {
       outline: 2px solid rgba(5, 150, 105, 0.35);
       outline-offset: 1px;
       border-color: var(--accent-primary);
+    }
+
+    .flange-geometry-input-line input[readonly] {
+      background: #f1f5f9;
+      color: var(--text-muted);
+      cursor: not-allowed;
     }
 
     .flange-geometry-help {
