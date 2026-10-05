@@ -48,6 +48,9 @@ export const tireGuideTabs = [
     fallback: 'Tire size markings',
     descriptionKey: 'guidesTireguides.tabs.tireSizeMarkings.description',
     description: 'Learn to read ETRTO, inch, and French tire markings before checking rim fit.',
+    feedbackThreadKey: 'guides-tireguides',
+    feedbackTitleKey: 'guidesTireguides.feedbackTitle',
+    feedbackSubtitleKey: 'feedback.defaultSubtitle',
   },
   {
     id: 'tire-frame-clearance',

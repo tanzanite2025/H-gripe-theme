@@ -2,7 +2,7 @@
   <div class="tz-text-secondary">
     <h2 class="sizecharts-section__title">{{ t('guidesTireSize.title') }}</h2>
     <div class="mt-1">
-      <TireSizeSection @openTireProducts="$emit('openTireProducts')" />
+      <TireSizeSection />
     </div>
   </div>
 </template>
@@ -22,7 +22,4 @@ watch(locale, (nextLocale) => {
   void loadPageMessages(nextLocale)
 })
 
-defineEmits<{
-  (e: 'openTireProducts'): void
-}>()
 </script>

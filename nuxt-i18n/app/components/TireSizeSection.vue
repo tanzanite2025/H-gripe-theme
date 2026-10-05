@@ -16,15 +16,26 @@
 
     <!-- 2. Intro Card: Basics & Definitions -->
     <div class="rounded-2xl bg-[var(--tz-card-surface)] p-4 text-center shadow-md md:p-5">
-      <div class="mb-4 flex justify-center">
-         <button
-          type="button"
-          class="inline-flex items-center justify-center rounded-full bg-[var(--tz-action-primary)] px-6 py-2 text-xs font-bold uppercase tracking-wider text-white shadow-[0_4px_14px_rgba(15,23,42,0.16)] hover:bg-[var(--tz-action-primary-hover)] hover:shadow-[0_8px_22px_-6px_rgba(15,23,42,0.24)] hover:-translate-y-0.5 transition-all"
-          @click="emit('openTireProducts')"
+      <nav class="tire-size-guide-actions mb-5" :aria-label="t('guidesTireSize.actions.title')">
+        <NuxtLink
+          :to="localePath('/guides/tireguides/schwalbe-tire-selector')"
+          class="tire-size-guide-action tire-size-guide-action--primary"
         >
-          {{ t('guidesTireSize.actions.checkTires') }}
-        </button>
-      </div>
+          {{ t('guidesTireSize.actions.schwalbeSelector') }}
+        </NuxtLink>
+        <NuxtLink
+          :to="localePath('/guides/tireguides/choose')"
+          class="tire-size-guide-action"
+        >
+          {{ t('guidesTireSize.actions.chooseTire') }}
+        </NuxtLink>
+        <NuxtLink
+          :to="localePath('/guides/tireguides/choose-inner-tube')"
+          class="tire-size-guide-action"
+        >
+          {{ t('guidesTireSize.actions.chooseInnerTube') }}
+        </NuxtLink>
+      </nav>
 
       <div class="mx-auto mb-5 w-full max-w-3xl">
         <GuideImage
@@ -73,75 +84,10 @@
             </div>
          </div>
 
-         <div class="mx-auto mt-4 max-w-3xl rounded-xl border border-[var(--tz-site-accent)]/30 bg-[var(--tz-surface-muted)] p-3 text-left">
-           <strong class="block text-sm font-bold tz-text-primary mb-1">
-             {{ t('guidesTireSize.standards.readFirst') }}
-           </strong>
-           <p class="text-sm tz-text-secondary leading-relaxed">
-             {{ t('guidesTireSize.standards.readFirstDescription') }}
-           </p>
-         </div>
-      </div>
+       </div>
     </div>
 
-    <!-- 3. Comparison Table Card -->
-    <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-md p-5 md:p-6 text-center">
-       <h3 class="text-lg font-bold tz-text-secondary mb-6 flex items-center justify-center gap-2">
-         {{ t('guidesTireSize.comparison.title') }}
-       </h3>
-       <div class="overflow-x-auto rounded-xl tz-surface-panel shadow-md inline-block w-full max-w-4xl">
-        <table class="min-w-full text-left text-xs sm:text-sm tz-text-secondary">
-          <thead class="tz-surface-panel">
-            <tr>
-              <th class="px-4 py-3 font-bold tz-text-primary text-center">{{ t('guidesTireSize.comparison.headers.dimension') }}</th>
-              <th class="px-4 py-3 font-bold text-[var(--tz-site-accent)] text-center">{{ t('guidesTireSize.comparison.headers.etrto') }}</th>
-              <th class="px-4 py-3 font-bold text-amber-400 text-center">{{ t('guidesTireSize.comparison.headers.inch') }}</th>
-              <th class="px-4 py-3 font-bold text-emerald-700 text-center">{{ t('guidesTireSize.comparison.headers.french') }}</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-slate-200 tz-surface-panel">
-            <tr class="hover:tz-surface-panel transition-colors">
-              <td class="px-4 py-3 font-semibold tz-text-primary text-center">{{ t('guidesTireSize.comparison.rows.exampleSize') }}</td>
-              <td class="px-4 py-3 text-center font-mono tz-text-secondary">37-622</td>
-              <td class="px-4 py-3 text-center font-mono tz-text-secondary">
-                28 x 1.40<br />
-                <span class="tz-caption tz-text-muted">{{ t('guidesTireSize.comparison.inchAltSize') }}</span>
-              </td>
-              <td class="px-4 py-3 text-center font-mono tz-text-secondary">700 x 35C</td>
-            </tr>
-            <tr class="hover:tz-surface-panel transition-colors">
-              <td class="px-4 py-3 font-semibold tz-text-primary text-center">{{ t('guidesTireSize.comparison.rows.outerDiameter') }}</td>
-              <td class="px-4 py-3 text-center font-mono tz-text-secondary">{{ t('guidesTireSize.comparison.etrtoFormat') }}</td>
-              <td class="px-4 py-3 text-center font-mono tz-text-secondary">{{ t('guidesTireSize.comparison.inchDiameter') }}</td>
-              <td class="px-4 py-3 text-center font-mono tz-text-secondary">{{ t('guidesTireSize.comparison.frenchDiameter') }}</td>
-            </tr>
-            <tr class="hover:tz-surface-panel transition-colors">
-              <td class="px-4 py-3 font-semibold tz-text-primary text-center">{{ t('guidesTireSize.comparison.rows.innerDiameter') }}</td>
-              <td class="px-4 py-3 text-center font-mono tz-text-secondary">622 mm</td>
-              <td class="px-4 py-3 text-center tz-text-muted">-</td>
-              <td class="px-4 py-3 text-center font-mono tz-text-secondary">{{ t('guidesTireSize.comparison.frenchCode') }}</td>
-            </tr>
-            <tr class="hover:tz-surface-panel transition-colors">
-              <td class="px-4 py-3 font-semibold tz-text-primary text-center">{{ t('guidesTireSize.comparison.rows.tireWidth') }}</td>
-              <td class="px-4 py-3 text-center font-mono tz-text-secondary">{{ t('guidesTireSize.comparison.etrtoWidth') }}</td>
-              <td class="px-4 py-3 text-center font-mono tz-text-secondary">
-                {{ t('guidesTireSize.comparison.inchWidth') }}<br />
-                <span class="tz-caption tz-text-muted">{{ t('guidesTireSize.comparison.inchWidthAlt') }}</span>
-              </td>
-              <td class="px-4 py-3 text-center font-mono tz-text-secondary">{{ t('guidesTireSize.comparison.frenchWidth') }}</td>
-            </tr>
-            <tr class="hover:tz-surface-panel transition-colors">
-              <td class="px-4 py-3 font-semibold tz-text-primary text-center">{{ t('guidesTireSize.comparison.rows.tireHeight') }}</td>
-              <td class="px-4 py-3 text-center font-mono tz-text-secondary">{{ t('guidesTireSize.comparison.etrtoReminder') }}</td>
-              <td class="px-4 py-3 text-center font-mono tz-text-secondary">{{ t('guidesTireSize.comparison.inchHeight') }}</td>
-              <td class="px-4 py-3 text-center font-mono tz-text-secondary">{{ t('guidesTireSize.comparison.frenchReminder') }}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- 4. Market Sizes Card -->
+    <!-- 3. Market Sizes Card -->
     <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-md p-5 md:p-6 text-center">
        <div class="flex items-center justify-center gap-2 mb-4">
          <div class="h-px w-8 tz-surface-panel"></div>
@@ -201,7 +147,7 @@
       </div>
     </div>
 
-    <!-- 5. 28 vs 29 Comparison Card -->
+    <!-- 4. 28 vs 29 Comparison Card -->
     <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-md p-5 md:p-6 text-center border-t-4 border-[var(--tz-site-accent)]">
        <h3 class="text-xl font-bold tz-text-secondary mb-6">
          {{ t('guidesTireSize.mystery.title') }}
@@ -237,16 +183,13 @@
 </template>
 
 <script setup lang="ts">
-import { useI18n } from '#imports'
+import { useI18n, useLocalePath } from '#imports'
 import GuideImage from '~/components/GuideImage.vue'
 import TireSizeMarkingMappingCalculator from '~/components/tireguides/TireSizeMarkingMappingCalculator.vue'
 import { tireSizeMarkingMappingGroups } from '~/data/tireguides/tireSizeMarkingMappingData'
 
 const { t } = useI18n()
-
-const emit = defineEmits<{
-  (e: 'openTireProducts'): void
-}>()
+const localePath = useLocalePath()
 
 const tireSizeMarkingMappingColumns = [
   tireSizeMarkingMappingGroups.slice(0, Math.ceil(tireSizeMarkingMappingGroups.length / 2)),
@@ -262,6 +205,52 @@ const tireSizeMarkingMappingColumns = [
   align-items: start;
   gap: 1rem;
   text-align: left;
+}
+
+.tire-size-guide-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.65rem;
+}
+
+.tire-size-guide-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.4rem;
+  border: 1px solid var(--tz-border-subtle);
+  border-radius: 999px;
+  background: var(--tz-surface-muted);
+  padding: 0.62rem 1rem;
+  color: var(--tz-text-primary);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.035em;
+  line-height: 1.2;
+  text-align: center;
+  text-decoration: none;
+  transition: border-color 0.18s ease, background-color 0.18s ease, color 0.18s ease;
+}
+
+.tire-size-guide-action:hover,
+.tire-size-guide-action:focus-visible {
+  border-color: var(--tz-site-accent);
+  background: var(--tz-surface-subtle);
+  color: var(--tz-text-accent);
+}
+
+.tire-size-guide-action--primary {
+  border-color: var(--tz-action-primary);
+  background: var(--tz-action-primary);
+  color: #fff;
+}
+
+.tire-size-guide-action--primary:hover,
+.tire-size-guide-action--primary:focus-visible {
+  border-color: var(--tz-action-primary-hover);
+  background: var(--tz-action-primary-hover);
+  color: #fff;
 }
 
 .tire-size-availability-column {

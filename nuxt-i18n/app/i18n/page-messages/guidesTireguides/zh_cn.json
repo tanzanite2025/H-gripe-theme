@@ -39,9 +39,5 @@
       "label": "Schwalbe 外胎选型",
       "description": "按型号和尺寸查询有来源的 Schwalbe 外胎目录。"
     }
-  },
-  "drawer": {
-    "query": "轮胎产品",
-    "error": "轮胎产品加载失败，请重试。"
   }
 }

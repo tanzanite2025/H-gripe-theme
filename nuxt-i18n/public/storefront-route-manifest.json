@@ -128,6 +128,15 @@
       "is_indexable": true
     },
     {
+      "key": "guides-tireguides-tire-size-markings",
+      "path": "/guides/tireguides/tire-size-markings",
+      "label": "Tire size markings",
+      "description": "Learn to read ETRTO, inch, and French tire markings before checking rim fit",
+      "is_searchable": true,
+      "is_checkable": true,
+      "is_indexable": true
+    },
+    {
       "key": "guides-tireguides-tire-frame-clearance",
       "path": "/guides/tireguides/tire-frame-clearance",
       "label": "Tire and frame clearance guide",

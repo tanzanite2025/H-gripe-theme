@@ -1,74 +1,47 @@
 {
   "title": "How to Read Tire Size Markings",
   "actions": {
-    "checkTires": "Browse tire products"
+    "title": "Continue with a tire guide",
+    "schwalbeSelector": "Schwalbe tire selector",
+    "chooseTire": "How to choose a tire",
+    "chooseInnerTube": "How to choose an inner tube"
   },
   "calculator": {
     "title": "Size marking mapping calculator",
-    "description": "Choose any one marking and the other two will update automatically. Repeated names include the ETRTO value so different sizes stay clear.",
+    "description": "Choose any marking and the other two update automatically; duplicate names include the ETRTO value.",
     "labels": {
       "etrto": "ETRTO / ISO",
       "inch": "Inch / imperial",
       "french": "French"
     },
     "resultLabel": "Current mapping",
-    "note": "The calculator includes common combinations with all three markings available. It explains the naming relationship and does not replace rim, frame-clearance, or manufacturer fitment checks."
+    "note": "Only common combinations with all three markings are shown. Use it to identify the size, then check the rim, frame clearance, and manufacturer fitment guidance before installation."
   },
   "images": {
     "overviewAlt": "Bicycle tire ETRTO, inch, and French size marking chart"
   },
   "standards": {
     "title": "Start with the three common markings",
-    "description": "The same bicycle tire may show ETRTO/ISO, inch, and French markings at the same time. They are different ways to express one tire size, not three different tires. For rim compatibility, start with ETRTO and use the other markings to read packaging and sidewall information.",
-    "readFirst": "Read ETRTO first:",
-    "readFirstDescription": "37-622 means an approximate 37 mm nominal width and a 622 mm bead seat diameter (BSD). The second number determines the rim diameter; “28 inch” or “700C” alone is not enough.",
+    "description": "One tire may show all three markings. They describe the same size, but their precision and use differ: check the rim with ETRTO first, then use inch and French markings to read packaging or sidewall information.",
     "etrto": {
       "name": "ETRTO / ISO marking",
       "example": "e.g. 37-622",
-      "description": "The format is width–bead seat diameter, with both values in millimetres. 37-622 means about 37 mm nominal width and a 622 mm BSD, which is the clearest reference for rim diameter."
+      "description": "The format is width–bead seat diameter (BSD), both in millimetres. In 37-622, 37 is the nominal width and 622 is the BSD; check the second number first when matching a rim."
     },
     "inch": {
       "name": "Inch / imperial marking",
       "example": "e.g. 28 x 1.40",
-      "description": "A traditional format that usually gives approximate outer diameter × width. The same inch name can refer to different BSDs, so use it to read older tires or packaging and confirm the ETRTO before fitting."
+      "description": "A traditional outer diameter × width format whose values are usually approximate. The same inch name can refer to different BSDs, so return to ETRTO when reading an older tire or package."
     },
     "french": {
       "name": "French marking",
       "example": "e.g. 700 x 35C",
-      "description": "Usually written as approximate outer diameter × width plus a letter code. In 700 × 35C, C is a rim-diameter code. It is common on road and gravel tires, but the letter does not replace the exact ETRTO/BSD."
+      "description": "An outer diameter × width format followed by a letter code, such as 700 × 35C. C identifies a rim-diameter category; it is common on road and gravel tires but does not replace ETRTO/BSD."
     }
-  },
-  "comparison": {
-    "title": "Three ways to write the same tire size",
-    "headers": {
-      "dimension": "How to read it",
-      "etrto": "ETRTO",
-      "inch": "Inch",
-      "french": "French"
-    },
-    "rows": {
-      "exampleSize": "Same example",
-      "outerDiameter": "First part",
-      "innerDiameter": "Second part",
-      "tireWidth": "Tire Width",
-      "tireHeight": "Fitting reminder"
-    },
-    "inchAltSize": "or 28 x 1 5/8 x 1 3/8",
-    "etrtoFormat": "width–BSD",
-    "inchDiameter": "~ 28 inch (outer diameter)",
-    "inchWidth": "1 3/8 Inch",
-    "inchWidthAlt": "(1.40 Inch)",
-    "inchHeight": "Inch name is not BSD",
-    "frenchDiameter": "~ 700 mm (outer diameter)",
-    "frenchCode": "C = rim-diameter code",
-    "frenchWidth": "~ 35 mm",
-    "frenchReminder": "Confirm with ETRTO",
-    "etrtoWidth": "37 mm nominal",
-    "etrtoReminder": "Check 622 BSD first"
   },
   "availability": {
     "title": "Common marking reference",
-    "description": "These entries are grouped by rim diameter for lookup and comparison. They are not a fitment result for a specific frame or bike. Before installation, use the tire sidewall ETRTO, rim specification, and manufacturer instructions.",
+    "description": "These entries are grouped by common rim-size names. Expand a group to find the names used for the same size.",
     "sizeCount": "{count} marking combinations",
     "sizeCountSingular": "{count} marking combination",
     "headers": {
@@ -97,7 +70,7 @@
     "title": "Why 28 inch and 29 inch can both be 622",
     "same": "Same",
     "innerDiameter": "Bead seat diameter (BSD)",
-    "sameDescription": "Both 28 inch touring or road tires and 29 inch MTB tires can use the same 622 mm BSD. Width, frame clearance, and the exact tire construction still determine whether a fit is safe.",
+    "sameDescription": "Both 28 inch touring or road tires and 29 inch MTB tires can use a 622 mm BSD. Width, frame clearance, and the exact tire construction still determine fitment.",
     "contextTitle": "History & Context",
     "contextBody": "28 inches is the traditional European size for touring bikes. 29 inches is a marketing term introduced in the US for voluminous MTB tires that have an approximate outer diameter of 29 inches when mounted.",
     "realityTitle": "Reality Check",

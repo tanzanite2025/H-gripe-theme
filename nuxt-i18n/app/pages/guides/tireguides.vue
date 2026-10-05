@@ -23,7 +23,7 @@
         id="tire-size-markings"
         class="sizecharts-section tz-text-secondary"
       >
-        <TireSizeGuide v-if="activeTab === 'tire-size-markings'" @open-tire-products="openTireProductsDrawer" />
+        <TireSizeGuide v-if="activeTab === 'tire-size-markings'" />
       </section>
 
       <!-- Tire frame clearance -->
@@ -84,31 +84,24 @@
         <InnerTubeGuide v-if="activeTab === 'choose-inner-tube'" />
       </section>
 
-      <div v-if="activeTab !== 'choose-inner-tube'" class="sizecharts-feedback">
-      <UserFeedbackThread
-        threadKey="guides-tireguides"
-        :title="t('guidesTireguides.feedbackTitle')"
-      />
+      <div
+        v-if="activeTab !== 'choose-inner-tube' && activeTab !== 'tire-size-markings'"
+        class="sizecharts-feedback"
+      >
+        <UserFeedbackThread
+          threadKey="guides-tireguides"
+          :title="t('guidesTireguides.feedbackTitle')"
+        />
       </div>
     </div>
   </div>
 
-  <WhatsAppProductSearchResultDrawer
-    v-model="tireProductsDrawerVisible"
-    :loading="tireProductsLoading"
-    :results="tireProductsResults"
-    :error="tireProductsError"
-    :query="tireProductsQuery"
-    @close="handleTireProductsDrawerClose"
-  />
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, watch } from 'vue'
 import { useHead, useI18n, useLocalePath, useRoute } from '#imports'
-import { useApiRequest } from '~/composables/useApiRequest'
 import UserFeedbackThread from '~/components/UserFeedbackThread.vue'
-import WhatsAppProductSearchResultDrawer from '~/components/WhatsAppProductSearchResultDrawer.vue'
 import TireFrameClearanceGuide from '~/components/tireguides/TireFrameClearanceGuide.vue'
 import SchwalbeTireCircumferenceGuide from '~/components/tireguides/SchwalbeTireCircumferenceGuide.vue'
 import TubelessGuide from '~/components/tireguides/TubelessGuide.vue'
@@ -118,7 +111,6 @@ import InnerTubeGuide from '~/components/tireguides/InnerTubeGuide.vue'
 import InstallationGuide from '~/components/tireguides/InstallationGuide.vue'
 import TireSizeGuide from '~/components/tireguides/TireSizeGuide.vue'
 import { usePageSubNavigationTab } from '~/composables/usePageSubNavigationTab'
-import { normalizeShopProduct } from '~/composables/useShopProducts'
 import { pageSubNavigationChildPath, tireGuideTabs } from '~/utils/pageSubNavigation'
 import { usePageMessages } from '~/composables/usePageMessages'
 import GuideCategoryChildRouteNavigationCards from '~/components/GuideCategoryChildRouteNavigationCards.vue'
@@ -202,69 +194,6 @@ const activePageTitle = computed(() => {
 useHead(() => ({
   title: activePageTitle.value,
 }))
-
-const { request } = useApiRequest()
-
-// Tire products drawer
-const tireProductsDrawerVisible = ref(false)
-const tireProductsLoading = ref(false)
-const tireProductsResults = ref<any[]>([])
-const tireProductsError = ref<string | null>(null)
-const tireProductsQuery = ref('')
-
-const openTireProductsDrawer = async () => {
-  const keyword = 'tire'
-
-  tireProductsQuery.value = t('guidesTireguides.drawer.query')
-  tireProductsError.value = null
-  tireProductsDrawerVisible.value = true
-  tireProductsLoading.value = true
-
-  try {
-    const response = await request<any>('/customer-service/products', {
-      params: {
-        keyword,
-        per_page: 20,
-        status: 'active',
-      },
-      credentials: 'include',
-    }, t('guidesTireguides.drawer.error'))
-
-    const products = Array.isArray(response?.items) ? response.items : []
-    if (products.length > 0) {
-      tireProductsResults.value = products.map((item: any) => {
-        const normalized = normalizeShopProduct(item)
-        return {
-          ...normalized,
-          thumbnail: normalized.thumbnail || item.thumbnail,
-          price: normalized.priceLabel ||
-            (Number(item.prices?.sale) > 0
-              ? `$${item.prices.sale}`
-              : Number(item.prices?.regular) > 0
-                ? `$${item.prices.regular}`
-                : ''),
-        }
-      })
-    } else {
-      tireProductsResults.value = []
-    }
-  } catch (error) {
-    // eslint-disable-next-line no-console
-    console.error('Failed to load tire products', error)
-    tireProductsError.value = t('guidesTireguides.drawer.error')
-    tireProductsResults.value = []
-  } finally {
-    tireProductsLoading.value = false
-  }
-}
-
-const handleTireProductsDrawerClose = () => {
-  tireProductsDrawerVisible.value = false
-  tireProductsError.value = null
-  tireProductsQuery.value = ''
-  tireProductsResults.value = []
-  tireProductsLoading.value = false
-}
 
 </script>
 

@@ -39,9 +39,5 @@
       "label": "Schwalbe tire selector",
       "description": "Search the sourced Schwalbe tire catalog by model and size."
     }
-  },
-  "drawer": {
-    "query": "Tire products",
-    "error": "Failed to load tire products. Please try again."
   }
 }

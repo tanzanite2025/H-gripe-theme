@@ -1,74 +1,47 @@
 {
   "title": "轮胎尺寸标注解读",
   "actions": {
-    "checkTires": "浏览轮胎产品"
+    "title": "继续查看相关指南",
+    "schwalbeSelector": "Schwalbe 外胎选型",
+    "chooseTire": "如何选择外胎",
+    "chooseInnerTube": "如何选择内胎"
   },
   "calculator": {
     "title": "尺寸标注映射计算器",
-    "description": "选择任意一种尺寸写法，另外两种标注会自动同步。重复名称会附带 ETRTO，避免把不同尺寸混在一起。",
+    "description": "选择任意一种尺寸写法，另外两种会自动同步；遇到同名写法时，选项会附带 ETRTO。",
     "labels": {
       "etrto": "ETRTO / ISO",
       "inch": "英寸 / 英式",
       "french": "法式"
     },
     "resultLabel": "当前对应关系",
-    "note": "计算器只展示三种标注都明确的常见组合；它用于理解尺寸写法，不代替车圈、车架间隙和制造商的适配确认。"
+    "note": "这里只列出三种标注都明确的常见组合。它用于识别尺寸，安装前仍需核对车圈、车架间隙和制造商适配要求。"
   },
   "images": {
     "overviewAlt": "自行车轮胎 ETRTO、英寸与法式尺寸标注图表"
   },
   "standards": {
     "title": "先读懂三种尺寸标注",
-    "description": "同一条自行车外胎可能同时印有 ETRTO/ISO、英寸和法式标注。它们是表达尺寸的不同方式，不是三种不同的轮胎。确认车圈是否匹配时，优先使用 ETRTO 标注，再用其他写法理解包装和胎侧信息。",
-    "readFirst": "先看 ETRTO：",
-    "readFirstDescription": "37-622 表示额定宽度约 37 mm、胎圈座直径（BSD）622 mm。第二个数字决定车圈直径是否匹配，不能只凭“28 英寸”或“700C”判断。",
+    "description": "同一条外胎可能同时印有三种写法。它们表示同一个尺寸，但用途和精确度不同：先用 ETRTO 核对车圈，再用英寸和法式标注识别包装或胎侧信息。",
     "etrto": {
       "name": "ETRTO / ISO 标注",
       "example": "例如 37-622",
-      "description": "格式是“宽度–胎圈座直径”，两个数字都用毫米表示。37-622 就是额定宽度约 37 mm、BSD 622 mm，是确认车圈直径最明确的依据。"
+      "description": "格式是“宽度–胎圈座直径（BSD）”，单位都是毫米。37-622 中，37 是额定宽度，622 是 BSD；选车圈时优先核对第二个数字。"
     },
     "inch": {
       "name": "英寸（英式）标注",
       "example": "例如 28 x 1.40",
-      "description": "传统写法，通常表示大致外径 × 宽度。相同的英寸名称可能对应不同的 BSD，因此它适合阅读旧车胎或包装，最终仍应回到 ETRTO。"
+      "description": "传统的外径 × 宽度写法，数值通常是约数。同一个英寸名称可能对应不同 BSD，看到旧车胎或包装时最好回到 ETRTO 确认。"
     },
     "french": {
       "name": "法式标注",
       "example": "例如 700 x 35C",
-      "description": "通常写成大致外径 × 宽度 + 字母代码。700 × 35C 中的 C 是轮圈直径代码，常见于公路和砾石车；字母不能代替具体的 ETRTO/BSD。"
+      "description": "外径 × 宽度后加字母代码，例如 700 × 35C。C 表示轮圈直径类别，常见于公路和砾石车；字母本身不能替代 ETRTO/BSD。"
     }
-  },
-  "comparison": {
-    "title": "同一条轮胎的三种写法",
-    "headers": {
-      "dimension": "怎么看",
-      "etrto": "ETRTO",
-      "inch": "英寸",
-      "french": "法式"
-    },
-    "rows": {
-      "exampleSize": "同一示例",
-      "outerDiameter": "第一部分",
-      "innerDiameter": "第二部分",
-      "tireWidth": "轮胎宽度",
-      "tireHeight": "使用提醒"
-    },
-    "inchAltSize": "或 28 x 1 5/8 x 1 3/8",
-    "etrtoFormat": "宽度–BSD",
-    "inchDiameter": "约 28 英寸（外径）",
-    "inchWidth": "1 3/8 英寸",
-    "inchWidthAlt": "（1.40 英寸）",
-    "inchHeight": "英寸写法不是 BSD",
-    "frenchDiameter": "约 700 mm（外径）",
-    "frenchCode": "C = 轮圈直径代码",
-    "frenchWidth": "约 35 mm",
-    "frenchReminder": "用 ETRTO 复核",
-    "etrtoWidth": "37 mm（额定）",
-    "etrtoReminder": "优先核对 622 BSD"
   },
   "availability": {
     "title": "常见尺寸标注速查",
-    "description": "下面按轮圈直径整理常见写法，适合查阅和对照，不是按车型或车架间隙做出的选型结果。安装前请以胎侧 ETRTO、车圈规格和制造商说明为准。",
+    "description": "下面按常见轮圈尺寸分组，展开后可快速查找同一尺寸的不同名称。",
     "sizeCount": "{count} 个标注组合",
     "sizeCountSingular": "{count} 个标注组合",
     "headers": {
@@ -97,7 +70,7 @@
     "title": "为什么 28 英寸和 29 英寸都可能是 622",
     "same": "相同",
     "innerDiameter": "胎圈座直径（BSD）",
-    "sameDescription": "28 英寸旅行车或公路车轮胎与 29 英寸山地车轮胎，都可能使用相同的 622 mm BSD；能否安装还要看宽度、车架间隙和具体轮胎结构。",
+    "sameDescription": "28 英寸旅行车或公路车胎和 29 英寸山地车胎都可能采用 622 mm BSD；最终还要看宽度、车架间隙和具体轮胎结构。",
     "contextTitle": "历史与背景",
     "contextBody": "28 英寸是传统的欧洲旅行车尺寸。29 英寸则是美国市场为大体积山地车轮胎引入的营销名称，安装后外径大约为 29 英寸。",
     "realityTitle": "实际情况",
