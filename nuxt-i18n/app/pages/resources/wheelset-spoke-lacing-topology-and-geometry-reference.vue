@@ -4,7 +4,7 @@
   <header class="blueprint-header">
     <div class="header-title-group">
       <h1>
-        <span>{{ t('wheelsetLacingTopology.title') }}</span>
+        <span class="header-main-title">{{ t('wheelsetLacingTopology.title') }}</span>
         <span class="header-badge badge-primary">{{ t('wheelsetLacingTopology.versionBadge') }}</span>
         <span class="header-badge">{{ t('wheelsetLacingTopology.topologyTag') }}</span>
       </h1>
@@ -1504,6 +1504,14 @@ onBeforeUnmount(() => {
       gap: 12px;
     }
 
+    .header-title-group {
+      min-width: 0;
+    }
+
+    .header-main-title {
+      min-width: 0;
+    }
+
     .header-badge {
       display: inline-flex;
       align-items: center;
@@ -1532,6 +1540,34 @@ onBeforeUnmount(() => {
       color: var(--text-muted);
       opacity: 0.75;
       margin-top: 4px;
+    }
+
+    @media (max-width: 640px) {
+      .blueprint-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+        padding: 18px 20px;
+      }
+
+      .header-title-group {
+        width: 100%;
+      }
+
+      .header-title-group h1 {
+        flex-wrap: wrap;
+        row-gap: 8px;
+        line-height: 1.2;
+      }
+
+      .header-main-title {
+        flex: 1 0 100%;
+        width: 100%;
+      }
+
+      .header-controls {
+        align-self: flex-start;
+      }
     }
 
     /* 顶层主网格排版 */
