@@ -10,7 +10,7 @@ import (
 // coordinates; flange offsets are physical millimetres used only for the
 // generated axial reference profile. Neither represents spoke length,
 // stiffness, tension, efficiency, or assembly safety.
-const WheelsetLacingDisplayGeometryContractVersion = "v1.5-backend-display-geometry"
+const WheelsetLacingDisplayGeometryContractVersion = "v1.6-backend-display-geometry"
 
 // These values are centralized in the domain package so SSR and browser
 // requests use the same reference geometry. Radial constants are canvas
@@ -30,18 +30,24 @@ const (
 	WheelsetLacingMaximumFlangeOffsetMM                  = 100.0
 	WheelsetLacingG3GroupCount                           = 7
 	WheelsetLacingG3GroupPitchDegrees                    = 360.0 / WheelsetLacingG3GroupCount
-	WheelsetLacingMaximumG3RimHoleSpacingDegrees         = 20.0
+	WheelsetLacingMaximumG3RimHoleSpacingDegrees         = WheelsetLacingG3GroupPitchDegrees
+	WheelsetLacingG3SpacingClosureToleranceDegrees       = 0.01
 )
 
+const DefaultWheelsetLacingG3RimHoleSpacingAToNextGroupADegrees = WheelsetLacingG3GroupPitchDegrees -
+	DefaultWheelsetLacingG3RimHoleSpacingAToBDegrees -
+	DefaultWheelsetLacingG3RimHoleSpacingBToADegrees
+
 type DisplayGeometryProjectionRequest struct {
-	TopologyID                  string  `json:"topology_id"`
-	RimRadius                   float64 `json:"rim_radius"`
-	FlangeRadiusA               float64 `json:"flange_radius_a"`
-	FlangeRadiusB               float64 `json:"flange_radius_b"`
-	FlangeOffsetAMM             float64 `json:"flange_offset_a_mm"`
-	FlangeOffsetBMM             float64 `json:"flange_offset_b_mm"`
-	G3RimHoleSpacingAToBDegrees float64 `json:"g3_rim_hole_spacing_a_to_b_degrees"`
-	G3RimHoleSpacingBToADegrees float64 `json:"g3_rim_hole_spacing_b_to_a_degrees"`
+	TopologyID                           string  `json:"topology_id"`
+	RimRadius                            float64 `json:"rim_radius"`
+	FlangeRadiusA                        float64 `json:"flange_radius_a"`
+	FlangeRadiusB                        float64 `json:"flange_radius_b"`
+	FlangeOffsetAMM                      float64 `json:"flange_offset_a_mm"`
+	FlangeOffsetBMM                      float64 `json:"flange_offset_b_mm"`
+	G3RimHoleSpacingAToBDegrees          float64 `json:"g3_rim_hole_spacing_a_to_b_degrees"`
+	G3RimHoleSpacingBToADegrees          float64 `json:"g3_rim_hole_spacing_b_to_a_degrees"`
+	G3RimHoleSpacingAToNextGroupADegrees float64 `json:"g3_rim_hole_spacing_a_to_next_group_a_degrees"`
 }
 
 // NewWheelsetLacingDefaultDisplayGeometryProjectionRequest creates the
@@ -50,7 +56,7 @@ type DisplayGeometryProjectionRequest struct {
 // for explicit consumers, while the public GET endpoint uses these stable
 // reference values.
 func NewWheelsetLacingDefaultDisplayGeometryProjectionRequest(topologyID string) DisplayGeometryProjectionRequest {
-	return DisplayGeometryProjectionRequest{
+	request := DisplayGeometryProjectionRequest{
 		TopologyID:      topologyID,
 		RimRadius:       DefaultWheelsetLacingDisplayRimHoleRingRadius,
 		FlangeRadiusA:   DefaultWheelsetLacingDisplayHubFlangeHoleRingRadiusA,
@@ -58,6 +64,12 @@ func NewWheelsetLacingDefaultDisplayGeometryProjectionRequest(topologyID string)
 		FlangeOffsetAMM: DefaultWheelsetLacingFlangeOffsetAMM,
 		FlangeOffsetBMM: DefaultWheelsetLacingFlangeOffsetBMM,
 	}
+	if topologyID == "21h-g3-2to1" {
+		request.G3RimHoleSpacingAToBDegrees = DefaultWheelsetLacingG3RimHoleSpacingAToBDegrees
+		request.G3RimHoleSpacingBToADegrees = DefaultWheelsetLacingG3RimHoleSpacingBToADegrees
+		request.G3RimHoleSpacingAToNextGroupADegrees = DefaultWheelsetLacingG3RimHoleSpacingAToNextGroupADegrees
+	}
+	return request
 }
 
 type DisplayGeometryPoint struct {
@@ -102,15 +114,17 @@ type DisplayGeometryFlangeProfile struct {
 	TotalSpanMM     float64 `json:"total_flange_span_mm"`
 }
 
-// DisplayGeometryG3GroupSpacing describes the two angular gaps in each G3
-// A-B-A rim-hole triplet. It is display geometry only; it does not represent
-// measured rim drilling dimensions in millimetres.
+// DisplayGeometryG3GroupSpacing describes the three angular gaps in each G3
+// A-B-A rim-hole triplet, including the gap to the next group's first A hole.
+// It is display geometry only; it does not represent measured rim drilling
+// dimensions in millimetres.
 type DisplayGeometryG3GroupSpacing struct {
-	Enabled            bool    `json:"enabled"`
-	GroupCount         int     `json:"group_count"`
-	GroupPitchDegrees  float64 `json:"group_pitch_degrees"`
-	SpacingAToBDegrees float64 `json:"spacing_a_to_b_degrees"`
-	SpacingBToADegrees float64 `json:"spacing_b_to_a_degrees"`
+	Enabled                     bool    `json:"enabled"`
+	GroupCount                  int     `json:"group_count"`
+	GroupPitchDegrees           float64 `json:"group_pitch_degrees"`
+	SpacingAToBDegrees          float64 `json:"spacing_a_to_b_degrees"`
+	SpacingBToADegrees          float64 `json:"spacing_b_to_a_degrees"`
+	SpacingAToNextGroupADegrees float64 `json:"spacing_a_to_next_group_a_degrees"`
 }
 
 type DisplayGeometryProjectionResult struct {
@@ -209,8 +223,9 @@ func validateDisplayGeometryProjectionRequest(request DisplayGeometryProjectionR
 		}
 	}
 	for field, value := range map[string]float64{
-		"g3_rim_hole_spacing_a_to_b_degrees": request.G3RimHoleSpacingAToBDegrees,
-		"g3_rim_hole_spacing_b_to_a_degrees": request.G3RimHoleSpacingBToADegrees,
+		"g3_rim_hole_spacing_a_to_b_degrees":            request.G3RimHoleSpacingAToBDegrees,
+		"g3_rim_hole_spacing_b_to_a_degrees":            request.G3RimHoleSpacingBToADegrees,
+		"g3_rim_hole_spacing_a_to_next_group_a_degrees": request.G3RimHoleSpacingAToNextGroupADegrees,
 	} {
 		if math.IsNaN(value) || math.IsInf(value, 0) || value < 0 || value > WheelsetLacingMaximumG3RimHoleSpacingDegrees {
 			return fmt.Errorf("%w: %s must be finite and within [0, %g] degrees", ErrInvalidRequest, field, WheelsetLacingMaximumG3RimHoleSpacingDegrees)
@@ -244,29 +259,57 @@ func buildWheelsetLacingDisplayGeometryG3GroupSpacing(
 	if topology.DisplayLayout != DisplayGeometryLayoutG3Triplet2To1 {
 		return DisplayGeometryG3GroupSpacing{}, nil
 	}
-	spacingAToB, spacingBToA := resolveWheelsetLacingG3RimHoleSpacing(request)
-	if spacingAToB+spacingBToA >= WheelsetLacingG3GroupPitchDegrees {
-		return DisplayGeometryG3GroupSpacing{}, fmt.Errorf("%w: G3 rim-hole triplet spacing must leave a positive gap between groups", ErrInvalidRequest)
+	spacingAToB, spacingBToA, spacingAToNextGroupA := resolveWheelsetLacingG3RimHoleSpacing(request)
+	if err := validateWheelsetLacingG3RimHoleSpacingClosure(spacingAToB, spacingBToA, spacingAToNextGroupA); err != nil {
+		return DisplayGeometryG3GroupSpacing{}, err
 	}
 	return DisplayGeometryG3GroupSpacing{
-		Enabled:            true,
-		GroupCount:         WheelsetLacingG3GroupCount,
-		GroupPitchDegrees:  roundWheelsetLacingDisplayGeometryValue(WheelsetLacingG3GroupPitchDegrees, 2),
-		SpacingAToBDegrees: roundWheelsetLacingDisplayGeometryValue(spacingAToB, 2),
-		SpacingBToADegrees: roundWheelsetLacingDisplayGeometryValue(spacingBToA, 2),
+		Enabled:                     true,
+		GroupCount:                  WheelsetLacingG3GroupCount,
+		GroupPitchDegrees:           roundWheelsetLacingDisplayGeometryValue(WheelsetLacingG3GroupPitchDegrees, 2),
+		SpacingAToBDegrees:          roundWheelsetLacingDisplayGeometryValue(spacingAToB, 2),
+		SpacingBToADegrees:          roundWheelsetLacingDisplayGeometryValue(spacingBToA, 2),
+		SpacingAToNextGroupADegrees: roundWheelsetLacingDisplayGeometryValue(spacingAToNextGroupA, 2),
 	}, nil
 }
 
-func resolveWheelsetLacingG3RimHoleSpacing(request DisplayGeometryProjectionRequest) (float64, float64) {
+func resolveWheelsetLacingG3RimHoleSpacing(request DisplayGeometryProjectionRequest) (float64, float64, float64) {
 	spacingAToB := request.G3RimHoleSpacingAToBDegrees
 	spacingBToA := request.G3RimHoleSpacingBToADegrees
+	spacingAToNextGroupA := request.G3RimHoleSpacingAToNextGroupADegrees
 	if spacingAToB == 0 {
 		spacingAToB = DefaultWheelsetLacingG3RimHoleSpacingAToBDegrees
 	}
 	if spacingBToA == 0 {
 		spacingBToA = DefaultWheelsetLacingG3RimHoleSpacingBToADegrees
 	}
-	return spacingAToB, spacingBToA
+	if spacingAToNextGroupA == 0 {
+		if request.G3RimHoleSpacingAToBDegrees == 0 && request.G3RimHoleSpacingBToADegrees == 0 {
+			spacingAToNextGroupA = DefaultWheelsetLacingG3RimHoleSpacingAToNextGroupADegrees
+		} else {
+			// Keep older two-field G3 callers compatible by deriving the omitted
+			// closing gap from their explicit A-to-B and B-to-A values.
+			spacingAToNextGroupA = WheelsetLacingG3GroupPitchDegrees - spacingAToB - spacingBToA
+		}
+	}
+	return spacingAToB, spacingBToA, spacingAToNextGroupA
+}
+
+func validateWheelsetLacingG3RimHoleSpacingClosure(spacingAToB, spacingBToA, spacingAToNextGroupA float64) error {
+	for field, value := range map[string]float64{
+		"A-to-B":            spacingAToB,
+		"B-to-A":            spacingBToA,
+		"A-to-next-group-A": spacingAToNextGroupA,
+	} {
+		if value <= 0 || value > WheelsetLacingMaximumG3RimHoleSpacingDegrees {
+			return fmt.Errorf("%w: G3 rim-hole %s spacing must be within (0, %g] degrees", ErrInvalidRequest, field, WheelsetLacingMaximumG3RimHoleSpacingDegrees)
+		}
+	}
+	spacingTotal := spacingAToB + spacingBToA + spacingAToNextGroupA
+	if math.Abs(spacingTotal-WheelsetLacingG3GroupPitchDegrees) > WheelsetLacingG3SpacingClosureToleranceDegrees {
+		return fmt.Errorf("%w: G3 rim-hole A-to-B, B-to-A, and A-to-next-group-A spacings must sum to %.6g degrees", ErrInvalidRequest, WheelsetLacingG3GroupPitchDegrees)
+	}
+	return nil
 }
 
 func buildWheelsetLacingDisplayGeometryPoints(
@@ -319,9 +362,9 @@ func buildG3DisplayGeometryPoints(topology Topology, request DisplayGeometryProj
 	if topology.HoleCount != 21 || len(topology.RimHoles) != 21 || len(topology.HubHolesA) != 14 || len(topology.HubHolesB) != 7 {
 		return nil, nil, nil, fmt.Errorf("%w: G3 display layout requires a 21-hole 14/7 topology", ErrInvalidTopology)
 	}
-	spacingAToB, spacingBToA := resolveWheelsetLacingG3RimHoleSpacing(request)
-	if spacingAToB+spacingBToA >= WheelsetLacingG3GroupPitchDegrees {
-		return nil, nil, nil, fmt.Errorf("%w: G3 rim-hole triplet spacing must leave a positive gap between groups", ErrInvalidRequest)
+	spacingAToB, spacingBToA, spacingAToNextGroupA := resolveWheelsetLacingG3RimHoleSpacing(request)
+	if err := validateWheelsetLacingG3RimHoleSpacingClosure(spacingAToB, spacingBToA, spacingAToNextGroupA); err != nil {
+		return nil, nil, nil, err
 	}
 	spacingAToBRadians := spacingAToB * math.Pi / 180
 	spacingBToARadians := spacingBToA * math.Pi / 180

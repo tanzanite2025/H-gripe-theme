@@ -140,7 +140,7 @@
         <p class="flange-geometry-help">{{ t('wheelsetLacingTopology.controls.flangeGeometryHelp') }}</p>
       </div>
 
-      <!-- G3 仅在 21H 选择时显示；A-B-A 三孔组由两段独立角间距定义 -->
+      <!-- G3 仅在 21H 选择时显示；A-B-A 三孔组的三段角间距独立输入并闭合校验 -->
       <div id="g3-geometry-control-group" class="flange-geometry-control-group g3-geometry-control-group" hidden aria-hidden="true">
         <div class="selector-group-label">
           <span>{{ t('wheelsetLacingTopology.controls.g3GroupSpacingLabel') }}</span>
@@ -150,19 +150,27 @@
           <label class="flange-geometry-field">
             <span>{{ t('wheelsetLacingTopology.controls.g3SpacingAToB') }}</span>
             <span class="flange-geometry-input-line">
-              <input id="g3-spacing-a-to-b-input" type="number" :min="MINIMUM_G3_RIM_HOLE_SPACING_DEGREES" :max="MAXIMUM_G3_RIM_HOLE_SPACING_DEGREES" step="0.1" :value="state.g3RimHoleSpacingAToBDegrees" @input="updateWheelsetLacingGeometryInput('g3RimHoleSpacingAToBDegrees', $event)" @change="normalizeWheelsetLacingGeometryInput('g3RimHoleSpacingAToBDegrees', $event)">
+              <input id="g3-spacing-a-to-b-input" type="number" :min="MINIMUM_G3_RIM_HOLE_SPACING_DEGREES" :max="MAXIMUM_G3_RIM_HOLE_SPACING_DEGREES" step="any" :value="state.g3RimHoleSpacingAToBDegrees" @input="updateWheelsetLacingGeometryInput('g3RimHoleSpacingAToBDegrees', $event)" @change="normalizeWheelsetLacingGeometryInput('g3RimHoleSpacingAToBDegrees', $event)">
               <span>°</span>
             </span>
           </label>
           <label class="flange-geometry-field">
             <span>{{ t('wheelsetLacingTopology.controls.g3SpacingBToA') }}</span>
             <span class="flange-geometry-input-line">
-              <input id="g3-spacing-b-to-a-input" type="number" :min="MINIMUM_G3_RIM_HOLE_SPACING_DEGREES" :max="MAXIMUM_G3_RIM_HOLE_SPACING_DEGREES" step="0.1" :value="state.g3RimHoleSpacingBToADegrees" @input="updateWheelsetLacingGeometryInput('g3RimHoleSpacingBToADegrees', $event)" @change="normalizeWheelsetLacingGeometryInput('g3RimHoleSpacingBToADegrees', $event)">
+              <input id="g3-spacing-b-to-a-input" type="number" :min="MINIMUM_G3_RIM_HOLE_SPACING_DEGREES" :max="MAXIMUM_G3_RIM_HOLE_SPACING_DEGREES" step="any" :value="state.g3RimHoleSpacingBToADegrees" @input="updateWheelsetLacingGeometryInput('g3RimHoleSpacingBToADegrees', $event)" @change="normalizeWheelsetLacingGeometryInput('g3RimHoleSpacingBToADegrees', $event)">
+              <span>°</span>
+            </span>
+          </label>
+          <label class="flange-geometry-field">
+            <span>{{ t('wheelsetLacingTopology.controls.g3SpacingAToNextGroupA') }}</span>
+            <span class="flange-geometry-input-line">
+              <input id="g3-spacing-a-to-next-group-a-input" type="number" :min="MINIMUM_G3_RIM_HOLE_SPACING_DEGREES" :max="MAXIMUM_G3_RIM_HOLE_SPACING_DEGREES" step="any" :value="state.g3RimHoleSpacingAToNextGroupADegrees" @input="updateWheelsetLacingGeometryInput('g3RimHoleSpacingAToNextGroupADegrees', $event)" @change="normalizeWheelsetLacingGeometryInput('g3RimHoleSpacingAToNextGroupADegrees', $event)">
               <span>°</span>
             </span>
           </label>
         </div>
         <p class="flange-geometry-help">{{ t('wheelsetLacingTopology.controls.g3GroupSpacingHelp') }}</p>
+        <p id="g3-spacing-validation-message" class="flange-geometry-help g3-spacing-warning" role="status" aria-live="polite" hidden></p>
       </div>
 
       <!-- 4. 轮侧视图模式切换 (View Mode) -->
@@ -477,7 +485,7 @@ const { data: wheelsetLacingFaqData } = await useAsyncData(
 const serverRenderedWheelsetLacingDisplayGeometryTopologyIdentifier = '24h-symmetric-1to1-2x'
 const serverRenderedWheelsetLacingDisplayGeometrySelection = resolveWheelsetLacingDisplayGeometryTopologySelection(24, 2)
 const { data: serverRenderedWheelsetLacingDisplayGeometry } = await useAsyncData(
-  'wheelset-lacing-default-display-geometry-v1-5',
+  'wheelset-lacing-default-display-geometry-v1-6',
   async () => {
     try {
       const response = await request('/wheelset-lacing/display-geometry', {
@@ -687,8 +695,14 @@ useHead(() => {
     const MAXIMUM_FLANGE_OFFSET_MM = 100;
     const DEFAULT_G3_RIM_HOLE_SPACING_A_TO_B_DEGREES = 4.87;
     const DEFAULT_G3_RIM_HOLE_SPACING_B_TO_A_DEGREES = 4.87;
+    const G3_GROUP_COUNT = 7;
+    const G3_GROUP_PITCH_DEGREES = 360 / G3_GROUP_COUNT;
+    const DEFAULT_G3_RIM_HOLE_SPACING_A_TO_NEXT_GROUP_A_DEGREES = G3_GROUP_PITCH_DEGREES
+      - DEFAULT_G3_RIM_HOLE_SPACING_A_TO_B_DEGREES
+      - DEFAULT_G3_RIM_HOLE_SPACING_B_TO_A_DEGREES;
     const MINIMUM_G3_RIM_HOLE_SPACING_DEGREES = 0.1;
-    const MAXIMUM_G3_RIM_HOLE_SPACING_DEGREES = 20;
+    const MAXIMUM_G3_RIM_HOLE_SPACING_DEGREES = G3_GROUP_PITCH_DEGREES;
+    const G3_RIM_HOLE_SPACING_CLOSURE_TOLERANCE_DEGREES = 0.01;
     const WHEELSET_LACING_DISPLAY_GEOMETRY_REFRESH_DEBOUNCE_MS = 120;
 
     const resolveWheelsetLacingBackendTopologySelection = (holes, cross) => (
@@ -701,6 +715,10 @@ useHead(() => {
 
     const formatBackendDisplayGeometryMetric = (value) => (
       Number.isFinite(value) ? Number(value).toFixed(1) : '—'
+    );
+
+    const formatBackendDisplayGeometryDegrees = (value) => (
+      Number.isFinite(value) ? Number(value).toFixed(2) : '—'
     );
 
     const formatBackendDisplayGeometryBarWidth = (value, maximum) => {
@@ -747,18 +765,71 @@ useHead(() => {
       if (state.holes === 21) {
         requestBody.g3_rim_hole_spacing_a_to_b_degrees = state.g3RimHoleSpacingAToBDegrees;
         requestBody.g3_rim_hole_spacing_b_to_a_degrees = state.g3RimHoleSpacingBToADegrees;
+        requestBody.g3_rim_hole_spacing_a_to_next_group_a_degrees = state.g3RimHoleSpacingAToNextGroupADegrees;
       }
       return requestBody;
     };
 
+    const areCurrentG3RimHoleSpacingsClosed = () => {
+      const spacings = [
+        state.g3RimHoleSpacingAToBDegrees,
+        state.g3RimHoleSpacingBToADegrees,
+        state.g3RimHoleSpacingAToNextGroupADegrees,
+      ];
+      return spacings.every(spacing => Number.isFinite(spacing)
+        && spacing >= MINIMUM_G3_RIM_HOLE_SPACING_DEGREES
+        && spacing <= MAXIMUM_G3_RIM_HOLE_SPACING_DEGREES)
+        && Math.abs(spacings.reduce((total, spacing) => total + spacing, 0) - G3_GROUP_PITCH_DEGREES)
+          <= G3_RIM_HOLE_SPACING_CLOSURE_TOLERANCE_DEGREES;
+    };
+
+    const updateG3RimHoleSpacingValidationMessage = (isClosed = areCurrentG3RimHoleSpacingsClosed()) => {
+      const validationMessage = document.getElementById('g3-spacing-validation-message');
+      if (validationMessage) {
+        validationMessage.hidden = isClosed;
+        validationMessage.textContent = isClosed
+          ? ''
+          : t('wheelsetLacingTopology.controls.g3SpacingNotClosed', {
+            groupPitch: G3_GROUP_PITCH_DEGREES.toFixed(2),
+          });
+      }
+      [
+        'g3-spacing-a-to-b-input',
+        'g3-spacing-b-to-a-input',
+        'g3-spacing-a-to-next-group-a-input',
+      ].forEach(inputId => {
+        document.getElementById(inputId)?.setAttribute('aria-invalid', String(!isClosed));
+      });
+      return isClosed;
+    };
+
+    const invalidatePendingWheelsetLacingDisplayGeometryRequest = () => {
+      displayGeometryRequestSequence += 1;
+      displayGeometryController?.abort();
+      displayGeometryController = null;
+    };
+
     const refreshWheelsetLacingDisplayGeometryFromBackend = async () => {
-      const requestId = ++displayGeometryRequestSequence;
       const requestBody = buildWheelsetLacingDisplayGeometryRequestBody();
       const selectedTopologyId = requestBody.topology_id;
       const selectedTopology = resolveWheelsetLacingBackendTopologySelection(state.holes, state.cross);
+      if (selectedTopology.displayLayout === WHEELSET_LACING_DISPLAY_GEOMETRY_LAYOUT.g3Triplet2To1
+        && !updateG3RimHoleSpacingValidationMessage()) {
+        cancelScheduledWheelsetLacingDisplayGeometryRefresh();
+        invalidatePendingWheelsetLacingDisplayGeometryRequest();
+        if (backendDisplayGeometry.value?.topology?.topology_id !== selectedTopologyId) {
+          backendDisplayGeometry.value = null;
+          displayGeometryError.value = null;
+        }
+        renderBlueprint();
+        return;
+      }
+      const requestId = ++displayGeometryRequestSequence;
       displayGeometryController?.abort();
       displayGeometryController = new AbortController();
-      backendDisplayGeometry.value = null;
+      if (backendDisplayGeometry.value?.topology?.topology_id !== selectedTopologyId) {
+        backendDisplayGeometry.value = null;
+      }
       displayGeometryError.value = null;
       renderBlueprint();
       try {
@@ -806,6 +877,7 @@ useHead(() => {
       flangeOffsetBMm: resolveInitialFlangeOffset(initialServerRenderedFlangeProfile, 'flange_offset_b_mm', 35),
       g3RimHoleSpacingAToBDegrees: resolveInitialG3RimHoleSpacing(initialServerRenderedG3GroupSpacing, 'spacing_a_to_b_degrees', DEFAULT_G3_RIM_HOLE_SPACING_A_TO_B_DEGREES),
       g3RimHoleSpacingBToADegrees: resolveInitialG3RimHoleSpacing(initialServerRenderedG3GroupSpacing, 'spacing_b_to_a_degrees', DEFAULT_G3_RIM_HOLE_SPACING_B_TO_A_DEGREES),
+      g3RimHoleSpacingAToNextGroupADegrees: resolveInitialG3RimHoleSpacing(initialServerRenderedG3GroupSpacing, 'spacing_a_to_next_group_a_degrees', DEFAULT_G3_RIM_HOLE_SPACING_A_TO_NEXT_GROUP_A_DEGREES),
       showLeading: true,
       showTrailing: true,
       showNonDrive: true,
@@ -877,9 +949,21 @@ useHead(() => {
       const inputValue = Number(rawValue);
       if (!rawValue || !Number.isFinite(inputValue) || inputValue < limits.min || inputValue > limits.max) {
         cancelScheduledWheelsetLacingDisplayGeometryRefresh();
+        if (field.startsWith('g3RimHoleSpacing') && state.holes === 21) {
+          updateG3RimHoleSpacingValidationMessage(false);
+          invalidatePendingWheelsetLacingDisplayGeometryRequest();
+          renderBlueprint();
+        }
         return;
       }
       state[field] = inputValue;
+      if (field.startsWith('g3RimHoleSpacing') && state.holes === 21
+        && !updateG3RimHoleSpacingValidationMessage()) {
+        cancelScheduledWheelsetLacingDisplayGeometryRefresh();
+        invalidatePendingWheelsetLacingDisplayGeometryRequest();
+        renderBlueprint();
+        return;
+      }
       scheduleWheelsetLacingDisplayGeometryRefresh();
     }
 
@@ -894,6 +978,17 @@ useHead(() => {
         : previousValue;
       state[field] = normalizedValue;
       if (target) target.value = String(normalizedValue);
+      if (field.startsWith('g3RimHoleSpacing') && state.holes === 21) {
+        updateG3RimHoleSpacingValidationMessage();
+        if (!areCurrentG3RimHoleSpacingsClosed()) {
+          cancelScheduledWheelsetLacingDisplayGeometryRefresh();
+          invalidatePendingWheelsetLacingDisplayGeometryRequest();
+          renderBlueprint();
+          return;
+        }
+        scheduleWheelsetLacingDisplayGeometryRefresh();
+        return;
+      }
       if (normalizedValue !== previousValue) {
         scheduleWheelsetLacingDisplayGeometryRefresh();
       }
@@ -971,6 +1066,8 @@ useHead(() => {
       document.getElementById('flange-offset-b-input').value = String(state.flangeOffsetBMm);
       document.getElementById('g3-spacing-a-to-b-input').value = String(state.g3RimHoleSpacingAToBDegrees);
       document.getElementById('g3-spacing-b-to-a-input').value = String(state.g3RimHoleSpacingBToADegrees);
+      document.getElementById('g3-spacing-a-to-next-group-a-input').value = String(state.g3RimHoleSpacingAToNextGroupADegrees);
+      updateG3RimHoleSpacingValidationMessage();
     }
 
     const SVG_NS = 'http://www.w3.org/2000/svg';
@@ -1249,8 +1346,10 @@ useHead(() => {
       if (isG3Topology) {
         statusTitle.innerText = t('wheelsetLacingTopology.review.preview21Title');
         statusDetail.innerText = t('wheelsetLacingTopology.review.preview21DetailRuntime', {
-          spacingAToB: formatBackendDisplayGeometryMetric(g3GroupSpacing?.spacing_a_to_b_degrees),
-          spacingBToA: formatBackendDisplayGeometryMetric(g3GroupSpacing?.spacing_b_to_a_degrees),
+          spacingAToB: formatBackendDisplayGeometryDegrees(g3GroupSpacing?.spacing_a_to_b_degrees),
+          spacingBToA: formatBackendDisplayGeometryDegrees(g3GroupSpacing?.spacing_b_to_a_degrees),
+          spacingAToNextGroupA: formatBackendDisplayGeometryDegrees(g3GroupSpacing?.spacing_a_to_next_group_a_degrees),
+          groupPitch: formatBackendDisplayGeometryDegrees(g3GroupSpacing?.group_pitch_degrees),
         });
         builderTip.innerText = t('wheelsetLacingTopology.review.preview21Tip');
         statusTag.innerText = t('wheelsetLacingTopology.review.tagG3');
@@ -1729,6 +1828,11 @@ onBeforeUnmount(() => {
       color: var(--text-muted);
       font-size: 8.5px;
       line-height: 1.4;
+    }
+
+    .g3-spacing-warning {
+      color: #b91c1c;
+      font-weight: 700;
     }
 
     .layer-indicator {

@@ -118,8 +118,26 @@ func TestCalculateWheelsetLacingDisplayGeometryProjectionUsesG3DefaultsWhenSpaci
 	if err != nil {
 		t.Fatal(err)
 	}
-	if result.G3GroupSpacing.SpacingAToBDegrees != DefaultWheelsetLacingG3RimHoleSpacingAToBDegrees || result.G3GroupSpacing.SpacingBToADegrees != DefaultWheelsetLacingG3RimHoleSpacingBToADegrees {
+	if result.G3GroupSpacing.SpacingAToBDegrees != DefaultWheelsetLacingG3RimHoleSpacingAToBDegrees || result.G3GroupSpacing.SpacingBToADegrees != DefaultWheelsetLacingG3RimHoleSpacingBToADegrees || result.G3GroupSpacing.SpacingAToNextGroupADegrees != roundWheelsetLacingDisplayGeometryValue(DefaultWheelsetLacingG3RimHoleSpacingAToNextGroupADegrees, 2) {
 		t.Fatalf("unexpected G3 default spacing profile: %+v", result.G3GroupSpacing)
+	}
+}
+
+func TestCalculateWheelsetLacingDisplayGeometryProjectionDerivesOmittedG3ClosingGapForOlderCallers(t *testing.T) {
+	topology, err := NewDefaultCatalog().Get("21h-g3-2to1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	result, err := CalculateWheelsetLacingDisplayGeometryProjection(DisplayGeometryProjectionRequest{
+		TopologyID: "21h-g3-2to1", RimRadius: 232, FlangeRadiusA: 66, FlangeRadiusB: 54,
+		FlangeOffsetAMM: 20, FlangeOffsetBMM: 35,
+		G3RimHoleSpacingAToBDegrees: 2.5, G3RimHoleSpacingBToADegrees: 8.5,
+	}, topology)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.G3GroupSpacing.SpacingAToNextGroupADegrees != 40.43 {
+		t.Fatalf("derived G3 closing gap = %v°, want 40.43°", result.G3GroupSpacing.SpacingAToNextGroupADegrees)
 	}
 }
 
@@ -164,12 +182,12 @@ func TestCalculateWheelsetLacingDisplayGeometryProjectionSupportsIndependentG3Ri
 	result, err := CalculateWheelsetLacingDisplayGeometryProjection(DisplayGeometryProjectionRequest{
 		TopologyID: "21h-g3-2to1", RimRadius: 232, FlangeRadiusA: 66, FlangeRadiusB: 54,
 		FlangeOffsetAMM: 20, FlangeOffsetBMM: 35,
-		G3RimHoleSpacingAToBDegrees: 2.5, G3RimHoleSpacingBToADegrees: 8.5,
+		G3RimHoleSpacingAToBDegrees: 2.5, G3RimHoleSpacingBToADegrees: 8.5, G3RimHoleSpacingAToNextGroupADegrees: 40.428571,
 	}, topology)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !result.G3GroupSpacing.Enabled || result.G3GroupSpacing.SpacingAToBDegrees != 2.5 || result.G3GroupSpacing.SpacingBToADegrees != 8.5 {
+	if !result.G3GroupSpacing.Enabled || result.G3GroupSpacing.SpacingAToBDegrees != 2.5 || result.G3GroupSpacing.SpacingBToADegrees != 8.5 || result.G3GroupSpacing.SpacingAToNextGroupADegrees != 40.43 {
 		t.Fatalf("unexpected G3 group spacing profile: %+v", result.G3GroupSpacing)
 	}
 	if got, want := result.RimHoles[1].Angle, -math.Pi/2; math.Abs(got-want) > 0.000001 {
@@ -180,6 +198,61 @@ func TestCalculateWheelsetLacingDisplayGeometryProjectionSupportsIndependentG3Ri
 	}
 	if got, want := result.RimHoles[2].Angle, -math.Pi/2+8.5*math.Pi/180; math.Abs(got-want) > 0.000001 {
 		t.Fatalf("G3 B-to-A hole angle = %v, want %v", got, want)
+	}
+}
+
+func TestCalculateWheelsetLacingDisplayGeometryProjectionPreservesAllThreeG3RimHoleGapsAcrossGroups(t *testing.T) {
+	topology, err := NewDefaultCatalog().Get("21h-g3-2to1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	const spacingAToB = 2.5
+	const spacingBToA = 8.5
+	const spacingAToNextGroupA = 40.428571
+	result, err := CalculateWheelsetLacingDisplayGeometryProjection(DisplayGeometryProjectionRequest{
+		TopologyID: "21h-g3-2to1", RimRadius: 232, FlangeRadiusA: 66, FlangeRadiusB: 54,
+		FlangeOffsetAMM: 20, FlangeOffsetBMM: 35,
+		G3RimHoleSpacingAToBDegrees: spacingAToB, G3RimHoleSpacingBToADegrees: spacingBToA,
+		G3RimHoleSpacingAToNextGroupADegrees: spacingAToNextGroupA,
+	}, topology)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for group := 0; group < WheelsetLacingG3GroupCount; group++ {
+		firstHoleIndex := group * 3
+		nextGroupFirstHoleIndex := ((group + 1) % WheelsetLacingG3GroupCount) * 3
+		if got := positiveG3RimHoleAngleDifferenceInDegrees(result.RimHoles[firstHoleIndex+1].Angle, result.RimHoles[firstHoleIndex].Angle); math.Abs(got-spacingAToB) > 0.0001 {
+			t.Fatalf("group %d A-to-B gap = %v°, want %v°", group, got, spacingAToB)
+		}
+		if got := positiveG3RimHoleAngleDifferenceInDegrees(result.RimHoles[firstHoleIndex+2].Angle, result.RimHoles[firstHoleIndex+1].Angle); math.Abs(got-spacingBToA) > 0.0001 {
+			t.Fatalf("group %d B-to-A gap = %v°, want %v°", group, got, spacingBToA)
+		}
+		if got := positiveG3RimHoleAngleDifferenceInDegrees(result.RimHoles[nextGroupFirstHoleIndex].Angle, result.RimHoles[firstHoleIndex+2].Angle); math.Abs(got-spacingAToNextGroupA) > 0.0001 {
+			t.Fatalf("group %d A-to-next-group-A gap = %v°, want %v°", group, got, spacingAToNextGroupA)
+		}
+	}
+}
+
+func positiveG3RimHoleAngleDifferenceInDegrees(toAngle, fromAngle float64) float64 {
+	angleDifference := math.Mod(toAngle-fromAngle, 2*math.Pi)
+	if angleDifference < 0 {
+		angleDifference += 2 * math.Pi
+	}
+	return angleDifference * 180 / math.Pi
+}
+
+func TestCalculateWheelsetLacingDisplayGeometryProjectionRejectsNonClosingG3RimHoleSpacing(t *testing.T) {
+	topology, err := NewDefaultCatalog().Get("21h-g3-2to1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = CalculateWheelsetLacingDisplayGeometryProjection(DisplayGeometryProjectionRequest{
+		TopologyID: "21h-g3-2to1", RimRadius: 232, FlangeRadiusA: 66, FlangeRadiusB: 54,
+		FlangeOffsetAMM: 20, FlangeOffsetBMM: 35,
+		G3RimHoleSpacingAToBDegrees: 5, G3RimHoleSpacingBToADegrees: 5, G3RimHoleSpacingAToNextGroupADegrees: 5,
+	}, topology)
+	if err == nil || !containsDisplayGeometryError(err, ErrInvalidRequest) {
+		t.Fatalf("error = %v, want non-closing G3 rim-hole spacing request rejection", err)
 	}
 }
 

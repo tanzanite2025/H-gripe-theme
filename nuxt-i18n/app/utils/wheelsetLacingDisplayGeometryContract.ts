@@ -3,7 +3,7 @@ import {
   type WheelsetLacingHoleSelection,
 } from './wheelsetLacingSelectionContract'
 
-export const WHEELSET_LACING_DISPLAY_GEOMETRY_CONTRACT_VERSION = 'v1.5-backend-display-geometry'
+export const WHEELSET_LACING_DISPLAY_GEOMETRY_CONTRACT_VERSION = 'v1.6-backend-display-geometry'
 
 export const WHEELSET_LACING_DISPLAY_GEOMETRY_LAYOUT = Object.freeze({
   symmetric1To1: 'symmetric_1to1',
@@ -242,8 +242,10 @@ const validateDisplayGeometryLayoutSpecificFields = (
     const groupPitch = requireFiniteNumber(spacing.group_pitch_degrees, 'display geometry G3 group spacing.group_pitch_degrees')
     const spacingAToB = requireFiniteNumber(spacing.spacing_a_to_b_degrees, 'display geometry G3 group spacing.spacing_a_to_b_degrees')
     const spacingBToA = requireFiniteNumber(spacing.spacing_b_to_a_degrees, 'display geometry G3 group spacing.spacing_b_to_a_degrees')
-    if (groupPitch <= 0 || spacingAToB < 0 || spacingBToA < 0 || spacingAToB + spacingBToA >= groupPitch) {
-      throw new Error('G3 display geometry group spacing leaves no positive inter-group gap')
+    const spacingAToNextGroupA = requireFiniteNumber(spacing.spacing_a_to_next_group_a_degrees, 'display geometry G3 group spacing.spacing_a_to_next_group_a_degrees')
+    const spacingTotal = spacingAToB + spacingBToA + spacingAToNextGroupA
+    if (groupPitch <= 0 || spacingAToB <= 0 || spacingBToA <= 0 || spacingAToNextGroupA <= 0 || Math.abs(spacingTotal - groupPitch) > 0.01) {
+      throw new Error('G3 display geometry group spacing must close all three rim-hole gaps to one group pitch')
     }
     return
   }
