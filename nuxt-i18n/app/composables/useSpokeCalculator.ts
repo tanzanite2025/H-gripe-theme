@@ -1,13 +1,9 @@
-import type { SpokeCalcResult, SpokeTensionRatio } from '~~/types/spoke'
+import type { SpokeCalcResult } from '~~/types/spoke'
 import { useApiRequest } from '~/composables/useApiRequest'
-import type { SpokeWheelBuildConfig, SpokeWheelSide } from '~/types/spokeCalculator'
+import type { SpokeWheelBuildConfig, SpokeWheelSide, SpokeWheelResult } from '~/types/spokeCalculator'
 import { hasSpokeCalculationGeometry, toSpokeCalcInput } from '~/utils/spokeCalculatorPayload'
 
-export interface SpokeWheelCalculationResult {
-  leftLengthMm: number | null
-  rightLengthMm: number | null
-  tensionRatio: SpokeTensionRatio | null
-}
+export type SpokeWheelCalculationResult = Pick<SpokeWheelResult, 'leftLengthMm' | 'rightLengthMm' | 'tensionRatio' | 'topologyId' | 'distribution' | 'spokeLengths'>
 
 /**
  * Single API boundary for spoke calculations.
@@ -46,6 +42,9 @@ export const useSpokeCalculator = () => {
       leftLengthMm: payload.leftLengthMm,
       rightLengthMm: payload.rightLengthMm,
       tensionRatio: payload.tensionRatio ?? null,
+      topologyId: payload.topologyId ?? config.topologyId,
+      distribution: payload.distribution ?? null,
+      spokeLengths: payload.spokeLengths ?? [],
     }
   }
 

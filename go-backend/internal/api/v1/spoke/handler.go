@@ -87,28 +87,32 @@ func (h *Handler) ListHistory(c *gin.Context) {
 }
 
 type CalcRequest struct {
-	RimID                         string   `json:"rimId"`
-	HubID                         string   `json:"hubId"`
-	WheelPosition                 string   `json:"wheelPosition" binding:"required"`
-	SpokeCount                    int      `json:"spokeCount" binding:"required"`
-	Crossing                      int      `json:"crossing"`
-	RimOffsetMM                   float64  `json:"rimOffsetMm"`
-	NippleType                    string   `json:"nippleType"`
-	NippleLengthMM                *float64 `json:"nippleLengthMm"`
-	SpokeHeadType                 string   `json:"spokeHeadType"`
-	SpokeHoleDiameterMM           *float64 `json:"spokeHoleDiameterMm"`
-	StraightPullTangentOffsetMM   *float64 `json:"straightPullTangentOffsetMm"`
-	SpokeProfile                  string   `json:"spokeProfile"`
-	TargetTensionN                *float64 `json:"targetTensionN"`
-	AlternatingDrillingOffsetMM   *float64 `json:"alternatingDrillingOffsetMm"`
-	Interlacing                   bool     `json:"interlacing"`
-	InterlaceCompensationMM       *float64 `json:"interlaceCompensationMm"`
-	SpokeElongationCompensationMM *float64 `json:"spokeElongationCompensationMm"`
-	ERDMM                         *float64 `json:"erdMm"`
-	LeftFlangeMM                  *float64 `json:"leftFlangeMm"`
-	RightFlangeMM                 *float64 `json:"rightFlangeMm"`
-	LeftFlangePCDMM               *float64 `json:"leftFlangePcdMm"`
-	RightFlangePCDMM              *float64 `json:"rightFlangePcdMm"`
+	RimID                                string   `json:"rimId"`
+	HubID                                string   `json:"hubId"`
+	WheelPosition                        string   `json:"wheelPosition" binding:"required"`
+	TopologyID                           string   `json:"topologyId"`
+	SpokeCount                           int      `json:"spokeCount"`
+	Crossing                             int      `json:"crossing"`
+	G3RimHoleSpacingAToBDegrees          float64  `json:"g3RimHoleSpacingAToBDegrees"`
+	G3RimHoleSpacingBToADegrees          float64  `json:"g3RimHoleSpacingBToADegrees"`
+	G3RimHoleSpacingAToNextGroupADegrees float64  `json:"g3RimHoleSpacingAToNextGroupADegrees"`
+	RimOffsetMM                          float64  `json:"rimOffsetMm"`
+	NippleType                           string   `json:"nippleType"`
+	NippleLengthMM                       *float64 `json:"nippleLengthMm"`
+	SpokeHeadType                        string   `json:"spokeHeadType"`
+	SpokeHoleDiameterMM                  *float64 `json:"spokeHoleDiameterMm"`
+	StraightPullTangentOffsetMM          *float64 `json:"straightPullTangentOffsetMm"`
+	SpokeProfile                         string   `json:"spokeProfile"`
+	TargetTensionN                       *float64 `json:"targetTensionN"`
+	AlternatingDrillingOffsetMM          *float64 `json:"alternatingDrillingOffsetMm"`
+	Interlacing                          bool     `json:"interlacing"`
+	InterlaceCompensationMM              *float64 `json:"interlaceCompensationMm"`
+	SpokeElongationCompensationMM        *float64 `json:"spokeElongationCompensationMm"`
+	ERDMM                                *float64 `json:"erdMm"`
+	LeftFlangeMM                         *float64 `json:"leftFlangeMm"`
+	RightFlangeMM                        *float64 `json:"rightFlangeMm"`
+	LeftFlangePCDMM                      *float64 `json:"leftFlangePcdMm"`
+	RightFlangePCDMM                     *float64 `json:"rightFlangePcdMm"`
 }
 
 // UnmarshalJSON keeps the public camelCase contract while accepting the
@@ -123,27 +127,31 @@ func (r *CalcRequest) UnmarshalJSON(data []byte) error {
 	}
 
 	var snake struct {
-		RimID                         string   `json:"rim_id"`
-		HubID                         string   `json:"hub_id"`
-		WheelPosition                 string   `json:"wheel_position"`
-		SpokeCount                    *int     `json:"spoke_count"`
-		Crossing                      *int     `json:"crossing"`
-		RimOffsetMM                   *float64 `json:"rim_offset_mm"`
-		NippleType                    string   `json:"nipple_type"`
-		NippleLengthMM                *float64 `json:"nipple_length_mm"`
-		SpokeHeadType                 string   `json:"spoke_head_type"`
-		SpokeHoleDiameterMM           *float64 `json:"spoke_hole_diameter_mm"`
-		StraightPullTangentOffsetMM   *float64 `json:"straight_pull_tangent_offset_mm"`
-		SpokeProfile                  string   `json:"spoke_profile"`
-		TargetTensionN                *float64 `json:"target_tension_n"`
-		AlternatingDrillingOffsetMM   *float64 `json:"alternating_drilling_offset_mm"`
-		InterlaceCompensationMM       *float64 `json:"interlace_compensation_mm"`
-		SpokeElongationCompensationMM *float64 `json:"spoke_elongation_compensation_mm"`
-		ERDMM                         *float64 `json:"erd_mm"`
-		LeftFlangeMM                  *float64 `json:"left_flange_mm"`
-		RightFlangeMM                 *float64 `json:"right_flange_mm"`
-		LeftFlangePCDMM               *float64 `json:"left_flange_pcd_mm"`
-		RightFlangePCDMM              *float64 `json:"right_flange_pcd_mm"`
+		RimID                                string   `json:"rim_id"`
+		HubID                                string   `json:"hub_id"`
+		WheelPosition                        string   `json:"wheel_position"`
+		TopologyID                           string   `json:"topology_id"`
+		SpokeCount                           *int     `json:"spoke_count"`
+		Crossing                             *int     `json:"crossing"`
+		G3RimHoleSpacingAToBDegrees          *float64 `json:"g3_rim_hole_spacing_a_to_b_degrees"`
+		G3RimHoleSpacingBToADegrees          *float64 `json:"g3_rim_hole_spacing_b_to_a_degrees"`
+		G3RimHoleSpacingAToNextGroupADegrees *float64 `json:"g3_rim_hole_spacing_a_to_next_group_a_degrees"`
+		RimOffsetMM                          *float64 `json:"rim_offset_mm"`
+		NippleType                           string   `json:"nipple_type"`
+		NippleLengthMM                       *float64 `json:"nipple_length_mm"`
+		SpokeHeadType                        string   `json:"spoke_head_type"`
+		SpokeHoleDiameterMM                  *float64 `json:"spoke_hole_diameter_mm"`
+		StraightPullTangentOffsetMM          *float64 `json:"straight_pull_tangent_offset_mm"`
+		SpokeProfile                         string   `json:"spoke_profile"`
+		TargetTensionN                       *float64 `json:"target_tension_n"`
+		AlternatingDrillingOffsetMM          *float64 `json:"alternating_drilling_offset_mm"`
+		InterlaceCompensationMM              *float64 `json:"interlace_compensation_mm"`
+		SpokeElongationCompensationMM        *float64 `json:"spoke_elongation_compensation_mm"`
+		ERDMM                                *float64 `json:"erd_mm"`
+		LeftFlangeMM                         *float64 `json:"left_flange_mm"`
+		RightFlangeMM                        *float64 `json:"right_flange_mm"`
+		LeftFlangePCDMM                      *float64 `json:"left_flange_pcd_mm"`
+		RightFlangePCDMM                     *float64 `json:"right_flange_pcd_mm"`
 	}
 	if err := json.Unmarshal(data, &snake); err != nil {
 		return err
@@ -159,11 +167,23 @@ func (r *CalcRequest) UnmarshalJSON(data []byte) error {
 	if r.WheelPosition == "" {
 		r.WheelPosition = snake.WheelPosition
 	}
+	if r.TopologyID == "" {
+		r.TopologyID = snake.TopologyID
+	}
 	if snake.SpokeCount != nil {
 		r.SpokeCount = *snake.SpokeCount
 	}
 	if snake.Crossing != nil {
 		r.Crossing = *snake.Crossing
+	}
+	if snake.G3RimHoleSpacingAToBDegrees != nil {
+		r.G3RimHoleSpacingAToBDegrees = *snake.G3RimHoleSpacingAToBDegrees
+	}
+	if snake.G3RimHoleSpacingBToADegrees != nil {
+		r.G3RimHoleSpacingBToADegrees = *snake.G3RimHoleSpacingBToADegrees
+	}
+	if snake.G3RimHoleSpacingAToNextGroupADegrees != nil {
+		r.G3RimHoleSpacingAToNextGroupADegrees = *snake.G3RimHoleSpacingAToNextGroupADegrees
 	}
 	if snake.RimOffsetMM != nil {
 		r.RimOffsetMM = *snake.RimOffsetMM
@@ -230,29 +250,33 @@ func (h *Handler) Calculate(c *gin.Context) {
 		}
 	}
 	result, err := h.spokeService.Calculate(service.SpokeCalculationInput{
-		RimID:                         req.RimID,
-		HubID:                         req.HubID,
-		WheelPosition:                 req.WheelPosition,
-		SpokeCount:                    req.SpokeCount,
-		Crossing:                      req.Crossing,
-		RimOffsetMM:                   req.RimOffsetMM,
-		NippleType:                    req.NippleType,
-		NippleLengthMM:                req.NippleLengthMM,
-		SpokeHeadType:                 req.SpokeHeadType,
-		SpokeHoleDiameterMM:           req.SpokeHoleDiameterMM,
-		StraightPullTangentOffsetMM:   req.StraightPullTangentOffsetMM,
-		SpokeProfile:                  req.SpokeProfile,
-		TargetTensionN:                req.TargetTensionN,
-		AlternatingDrillingOffsetMM:   req.AlternatingDrillingOffsetMM,
-		Interlacing:                   req.Interlacing,
-		InterlaceCompensationMM:       req.InterlaceCompensationMM,
-		SpokeElongationCompensationMM: req.SpokeElongationCompensationMM,
-		ERDMM:                         req.ERDMM,
-		LeftFlangeMM:                  req.LeftFlangeMM,
-		RightFlangeMM:                 req.RightFlangeMM,
-		LeftFlangePCDMM:               req.LeftFlangePCDMM,
-		RightFlangePCDMM:              req.RightFlangePCDMM,
-		UserID:                        userID,
+		RimID:                                req.RimID,
+		HubID:                                req.HubID,
+		WheelPosition:                        req.WheelPosition,
+		TopologyID:                           req.TopologyID,
+		SpokeCount:                           req.SpokeCount,
+		Crossing:                             req.Crossing,
+		G3RimHoleSpacingAToBDegrees:          req.G3RimHoleSpacingAToBDegrees,
+		G3RimHoleSpacingBToADegrees:          req.G3RimHoleSpacingBToADegrees,
+		G3RimHoleSpacingAToNextGroupADegrees: req.G3RimHoleSpacingAToNextGroupADegrees,
+		RimOffsetMM:                          req.RimOffsetMM,
+		NippleType:                           req.NippleType,
+		NippleLengthMM:                       req.NippleLengthMM,
+		SpokeHeadType:                        req.SpokeHeadType,
+		SpokeHoleDiameterMM:                  req.SpokeHoleDiameterMM,
+		StraightPullTangentOffsetMM:          req.StraightPullTangentOffsetMM,
+		SpokeProfile:                         req.SpokeProfile,
+		TargetTensionN:                       req.TargetTensionN,
+		AlternatingDrillingOffsetMM:          req.AlternatingDrillingOffsetMM,
+		Interlacing:                          req.Interlacing,
+		InterlaceCompensationMM:              req.InterlaceCompensationMM,
+		SpokeElongationCompensationMM:        req.SpokeElongationCompensationMM,
+		ERDMM:                                req.ERDMM,
+		LeftFlangeMM:                         req.LeftFlangeMM,
+		RightFlangeMM:                        req.RightFlangeMM,
+		LeftFlangePCDMM:                      req.LeftFlangePCDMM,
+		RightFlangePCDMM:                     req.RightFlangePCDMM,
+		UserID:                               userID,
 	})
 	if err != nil {
 		switch {

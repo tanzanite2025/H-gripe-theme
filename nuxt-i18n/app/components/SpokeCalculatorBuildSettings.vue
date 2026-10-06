@@ -8,25 +8,29 @@
 
     <div class="spoke-calculator__build-settings-grid">
       <div class="spoke-calculator__setting-field">
-        <label :for="fieldId('spoke-count')" class="block text-xs font-medium tz-text-secondary">
-          {{ t('resourcesSpokeCalculator.calculator.buildSettings.spokeCount') }}
+        <label :for="fieldId('topology')" class="block text-xs font-medium tz-text-secondary">
+          {{ t('resourcesSpokeCalculator.calculator.buildSettings.topology') }}
         </label>
         <SpokeCalculatorSelect
-          :id="fieldId('spoke-count')"
-          v-model="config.spokeCount"
-          :options="options.spokeCountOptions"
+          :id="fieldId('topology')"
+          :model-value="config.topologyId"
+          :options="props.options.topologyOptions"
+          :disabled="props.options.topologyOptions.length === 0"
+          :aria-label="t('resourcesSpokeCalculator.calculator.buildSettings.topology')"
+          @update:model-value="updateTopology"
         />
       </div>
 
-      <div class="spoke-calculator__setting-field">
-        <label :for="fieldId('lacing')" class="block text-xs font-medium tz-text-secondary">
-          {{ t('resourcesSpokeCalculator.calculator.buildSettings.lacingPattern') }}
-        </label>
-        <SpokeCalculatorSelect
-          :id="fieldId('lacing')"
-          v-model="config.crossing"
-          :options="options.lacingOptions"
-        />
+      <div v-if="selectedTopology" class="spoke-calculator__topology-summary" role="status">
+        <span class="spoke-calculator__topology-summary-title">
+          {{ t('resourcesSpokeCalculator.calculator.buildSettings.topologySummary') }}
+        </span>
+        <div class="spoke-calculator__topology-summary-grid">
+          <span>{{ t('resourcesSpokeCalculator.calculator.buildSettings.totalHoles') }} <strong>{{ selectedTopology.holeCount }}</strong></span>
+          <span>{{ t('resourcesSpokeCalculator.calculator.buildSettings.sideACount') }} <strong>{{ selectedTopology.sideACount }}</strong></span>
+          <span>{{ t('resourcesSpokeCalculator.calculator.buildSettings.sideBCount') }} <strong>{{ selectedTopology.sideBCount }}</strong></span>
+          <span>{{ t('resourcesSpokeCalculator.calculator.buildSettings.crossing') }} <strong>{{ selectedTopology.cross }}X</strong></span>
+        </div>
       </div>
     </div>
   </div>
@@ -40,6 +44,7 @@ import type {
   SpokeWheelBuildConfig,
   SpokeWheelSide,
 } from '~/types/spokeCalculator'
+import { computed } from 'vue'
 
 const props = defineProps<{
   side: SpokeWheelSide
@@ -49,8 +54,20 @@ const props = defineProps<{
 
 const { t } = useI18n()
 const config = props.config
-const options = props.options
 const fieldId = (name: string) => `${props.side}-${name}`
+
+const selectedTopology = computed(() => props.options.topologySummaries.find(
+  topology => topology.topologyId === config.topologyId,
+))
+
+const updateTopology = (value: string | number | null) => {
+  if (typeof value !== 'string') return
+  const topology = props.options.topologySummaries.find(item => item.topologyId === value)
+  if (!topology) return
+  config.topologyId = topology.topologyId
+  config.spokeCount = topology.holeCount
+  config.crossing = topology.cross
+}
 </script>
 
 <style scoped>
@@ -95,6 +112,39 @@ const fieldId = (name: string) => `${props.side}-${name}`
 
 .spoke-calculator__setting-field label {
   color: var(--tz-text-secondary);
+}
+
+.spoke-calculator__topology-summary {
+  display: grid;
+  gap: 0.45rem;
+  align-content: start;
+  min-width: 0;
+  border: 1px solid var(--spoke-border);
+  border-radius: 0.5rem;
+  background: var(--spoke-result-surface);
+  padding: 0.65rem 0.75rem;
+  color: var(--tz-text-secondary);
+  font-size: 0.72rem;
+  line-height: 1.35;
+}
+
+.spoke-calculator__topology-summary-title {
+  color: var(--tz-text-muted);
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.spoke-calculator__topology-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.35rem 0.75rem;
+}
+
+.spoke-calculator__topology-summary-grid strong {
+  color: var(--tz-text-primary);
+  font-weight: 800;
 }
 
 .spoke-calculator__control {

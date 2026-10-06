@@ -3,6 +3,7 @@ package service
 import (
 	productdomain "commerce-platform/internal/domain/product"
 	domainspoke "commerce-platform/internal/domain/spoke"
+	wheelsetlacingdomain "commerce-platform/internal/domain/wheelsetlacing"
 	"commerce-platform/internal/repository"
 	"errors"
 	"fmt"
@@ -26,14 +27,23 @@ type SpokeService struct {
 	spokeRepo *repository.SpokeRepository
 }
 
+var sharedWheelsetLacingTopologyCatalog = wheelsetlacingdomain.NewDefaultCatalog()
+
 type SpokeCalculationInput struct {
-	RimID          string
-	HubID          string
-	WheelPosition  string
-	SpokeCount     int
-	Crossing       int
-	NippleType     string
-	NippleLengthMM *float64
+	RimID         string
+	HubID         string
+	WheelPosition string
+	// TopologyID is the canonical lacing selection produced by the shared
+	// wheelset-lacing catalog. When empty, the legacy symmetric spoke-count /
+	// crossing fields are converted to a registered symmetric topology.
+	TopologyID                           string
+	SpokeCount                           int
+	Crossing                             int
+	G3RimHoleSpacingAToBDegrees          float64
+	G3RimHoleSpacingBToADegrees          float64
+	G3RimHoleSpacingAToNextGroupADegrees float64
+	NippleType                           string
+	NippleLengthMM                       *float64
 	// SpokeHeadType selects the physical hub interface. J-bend uses the
 	// flange-hole contact geometry; straight-pull uses a tangential slot
 	// offset. Both paths apply the flange-hole inner-edge correction.
@@ -77,7 +87,23 @@ type SpokeCalculationResult struct {
 	LeftLengthMM  float64               `json:"leftLengthMm"`
 	RightLengthMM float64               `json:"rightLengthMm"`
 	TensionRatio  *SpokeTensionRatio    `json:"tensionRatio,omitempty"`
+	TopologyID    string                `json:"topologyId,omitempty"`
+	Distribution  string                `json:"distribution,omitempty"`
+	SpokeLengths  []SpokeLengthResult   `json:"spokeLengths,omitempty"`
 	Debug         SpokeCalculationDebug `json:"debug"`
+}
+
+// SpokeLengthResult is the physical length for one canonical topology
+// mapping. Returning the mapping identifiers keeps 2:1 and G3 results
+// unambiguous when one side contains multiple spoke-length classes.
+type SpokeLengthResult struct {
+	ID           int     `json:"id"`
+	Side         string  `json:"side"`
+	PhysicalSide string  `json:"physicalSide"`
+	Type         string  `json:"type"`
+	HubHoleID    int     `json:"hubHoleId"`
+	RimHoleID    int     `json:"rimHoleId"`
+	LengthMM     float64 `json:"lengthMm"`
 }
 
 type SpokeCalculationDebug struct {
@@ -112,6 +138,48 @@ type SpokeTensionRatio struct {
 
 func NewSpokeService(spokeRepo *repository.SpokeRepository) *SpokeService {
 	return &SpokeService{spokeRepo: spokeRepo}
+}
+
+func resolveSpokeCalculationTopology(input SpokeCalculationInput) (wheelsetlacingdomain.Topology, error) {
+	topologyID := strings.TrimSpace(input.TopologyID)
+	if topologyID == "" {
+		if input.SpokeCount <= 0 {
+			return wheelsetlacingdomain.Topology{}, fmt.Errorf("%w: spoke count is required when topology_id is omitted", ErrInvalidSpokeCalculation)
+		}
+		topologyID = fmt.Sprintf("%dh-symmetric-1to1-%dx", input.SpokeCount, input.Crossing)
+	}
+	topology, err := sharedWheelsetLacingTopologyCatalog.Get(topologyID)
+	if err != nil {
+		return wheelsetlacingdomain.Topology{}, fmt.Errorf("%w: invalid topology_id %q: %v", ErrInvalidSpokeCalculation, topologyID, err)
+	}
+	if input.SpokeCount > 0 && input.SpokeCount != topology.HoleCount {
+		return wheelsetlacingdomain.Topology{}, fmt.Errorf("%w: spoke count %d does not match topology %q hole count %d", ErrInvalidSpokeCalculation, input.SpokeCount, topology.ID, topology.HoleCount)
+	}
+	// A zero crossing remains a useful legacy omission signal for callers that
+	// send topology_id alone. Any explicit non-zero crossing must agree with the
+	// canonical topology; the browser always sends the derived value.
+	if input.Crossing > 0 && input.Crossing != topology.Cross {
+		return wheelsetlacingdomain.Topology{}, fmt.Errorf("%w: crossing %d does not match topology %q crossing %d", ErrInvalidSpokeCalculation, input.Crossing, topology.ID, topology.Cross)
+	}
+	return topology, nil
+}
+
+// resolveSpokeTopologyPhysicalSide keeps the topology contract logical while
+// preserving the calculator's physical left/right convention. The shared
+// catalog names side A as the drive-side/high-count side for 2:1 layouts; on
+// a rear wheel that is the rider's right side, while on a front wheel side A
+// is presented as the rider's left side because there is no drive side.
+func resolveSpokeTopologyPhysicalSide(wheelPosition string, logicalSide wheelsetlacingdomain.Side) string {
+	if wheelPosition == "rear" {
+		if logicalSide == wheelsetlacingdomain.SideA {
+			return "right"
+		}
+		return "left"
+	}
+	if logicalSide == wheelsetlacingdomain.SideA {
+		return "left"
+	}
+	return "right"
 }
 
 func (s *SpokeService) GetExport() (domainspoke.ExportResponse, error) {
@@ -267,13 +335,12 @@ func (s *SpokeService) Calculate(input SpokeCalculationInput) (*SpokeCalculation
 	if !isFinite(input.RimOffsetMM) || math.Abs(input.RimOffsetMM) > 20 {
 		return nil, ErrInvalidSpokeCalculation
 	}
-	options := domainspoke.DefaultOptions()
-	if _, exists := intOptionSet(options.SpokeCounts)[input.SpokeCount]; !exists {
-		return nil, ErrInvalidSpokeCalculation
+	topology, err := resolveSpokeCalculationTopology(input)
+	if err != nil {
+		return nil, err
 	}
-	if _, exists := intOptionSet(options.Crossings)[input.Crossing]; !exists {
-		return nil, ErrInvalidSpokeCalculation
-	}
+	resolvedSpokeCount := topology.HoleCount
+	resolvedCrossing := topology.Cross
 	if input.WheelPosition != "auto" && input.WheelPosition != "front" && input.WheelPosition != "rear" {
 		return nil, ErrInvalidSpokeCalculation
 	}
@@ -390,53 +457,114 @@ func (s *SpokeService) Calculate(input SpokeCalculationInput) (*SpokeCalculation
 		spokeHoleDiameterMM = &defaultHoleDiameter
 	}
 
-	// The current symmetric lacing path supplies one phase to both sides.
-	// A future lacing-layout resolver (such as 2:1) can populate distinct
-	// left/right phases without changing either head-type calculator.
-	phaseRad := spokeLacingPhaseRadians(input.Crossing, input.SpokeCount)
-	geometry, err := calculateSpokeGeometry(input.SpokeHeadType, spokeGeometryInput{
-		Left: spokeGeometrySideInput{
-			RimRadiusMM:      radius,
-			FlangeRadiusMM:   leftFlangeRadius,
-			FlangeDistanceMM: leftFlange,
-			PhaseRad:         phaseRad,
+	angularLayout, err := wheelsetlacingdomain.CalculateWheelsetLacingAngularLayout(
+		wheelsetlacingdomain.WheelsetLacingAngularLayoutRequest{
+			TopologyID:                           topology.ID,
+			G3RimHoleSpacingAToBDegrees:          input.G3RimHoleSpacingAToBDegrees,
+			G3RimHoleSpacingBToADegrees:          input.G3RimHoleSpacingBToADegrees,
+			G3RimHoleSpacingAToNextGroupADegrees: input.G3RimHoleSpacingAToNextGroupADegrees,
 		},
-		Right: spokeGeometrySideInput{
-			RimRadiusMM:      radius,
-			FlangeRadiusMM:   rightFlangeRadius,
-			FlangeDistanceMM: rightFlange,
-			PhaseRad:         phaseRad,
-		},
-		SpokeHoleDiameterMM:         *spokeHoleDiameterMM,
-		StraightPullTangentOffsetMM: straightPullTangentOffsetMM,
-	})
+		topology,
+	)
 	if err != nil {
 		return nil, err
 	}
 
-	corrections, err := applySpokePhysicalCorrections(spokePhysicalCorrectionInput{
-		LeftLengthMM:                  geometry.LeftLengthMM,
-		RightLengthMM:                 geometry.RightLengthMM,
-		NippleType:                    input.NippleType,
-		NippleLengthMM:                input.NippleLengthMM,
-		Crossing:                      input.Crossing,
-		Interlacing:                   input.Interlacing,
-		InterlaceCompensationMM:       input.InterlaceCompensationMM,
-		SpokeElongationCompensationMM: input.SpokeElongationCompensationMM,
-		SpokeProfile:                  input.SpokeProfile,
-		TargetTensionN:                targetTensionN,
-	})
-	if err != nil {
-		return nil, err
+	physicalSideGeometry := map[string]spokeGeometrySideInput{
+		"left": {
+			RimRadiusMM:      radius,
+			FlangeRadiusMM:   leftFlangeRadius,
+			FlangeDistanceMM: leftFlange,
+		},
+		"right": {
+			RimRadiusMM:      radius,
+			FlangeRadiusMM:   rightFlangeRadius,
+			FlangeDistanceMM: rightFlange,
+		},
 	}
-	left := corrections.LeftLengthMM
-	right := corrections.RightLengthMM
+	var spokeLengths []SpokeLengthResult
+	if topology.Distribution != wheelsetlacingdomain.DistributionSymmetric1To1 {
+		spokeLengths = make([]SpokeLengthResult, 0, len(angularLayout.Spokes))
+	}
+	leftTotal, rightTotal := 0.0, 0.0
+	leftCount, rightCount := 0, 0
+	leftStretchTotal, rightStretchTotal := 0.0, 0.0
+	spokeHoleCorrectionMM := 0.0
+	interlaceCompensationMM := 0.0
+	straightPullCorrectionMM := 0.0
+	for _, mappedSpoke := range angularLayout.Spokes {
+		physicalSide := resolveSpokeTopologyPhysicalSide(input.WheelPosition, mappedSpoke.Side)
+		geometryInput, ok := physicalSideGeometry[physicalSide]
+		if !ok {
+			return nil, fmt.Errorf("%w: spoke %d has an unsupported physical side %q", ErrInvalidSpokeCalculation, mappedSpoke.ID, physicalSide)
+		}
+		geometryInput.PhaseRad = mappedSpoke.RelativeAngleRadians
+		geometry, err := calculateSingleSpokeGeometryLength(
+			input.SpokeHeadType,
+			geometryInput,
+			*spokeHoleDiameterMM,
+			straightPullTangentOffsetMM,
+		)
+		if err != nil {
+			return nil, err
+		}
+		corrections, err := applySpokePhysicalCorrections(spokePhysicalCorrectionInput{
+			LeftLengthMM:                  geometry.LeftLengthMM,
+			RightLengthMM:                 geometry.LeftLengthMM,
+			NippleType:                    input.NippleType,
+			NippleLengthMM:                input.NippleLengthMM,
+			Crossing:                      resolvedCrossing,
+			Interlacing:                   input.Interlacing,
+			InterlaceCompensationMM:       input.InterlaceCompensationMM,
+			SpokeElongationCompensationMM: input.SpokeElongationCompensationMM,
+			SpokeProfile:                  input.SpokeProfile,
+			TargetTensionN:                targetTensionN,
+		})
+		if err != nil {
+			return nil, err
+		}
+		length := corrections.LeftLengthMM
+		if spokeLengths != nil {
+			spokeLengths = append(spokeLengths, SpokeLengthResult{
+				ID:           mappedSpoke.ID,
+				Side:         string(mappedSpoke.Side),
+				PhysicalSide: physicalSide,
+				Type:         string(mappedSpoke.Type),
+				HubHoleID:    mappedSpoke.HubHoleID,
+				RimHoleID:    mappedSpoke.RimHoleID,
+				LengthMM:     roundSpokeLength(length),
+			})
+		}
+		spokeHoleCorrectionMM = geometry.SpokeHoleCorrectionMM
+		straightPullCorrectionMM = geometry.StraightPullTangentOffsetMM
+		interlaceCompensationMM = corrections.InterlaceCompensationMM
+		switch physicalSide {
+		case "left":
+			leftTotal += length
+			leftStretchTotal += corrections.StretchLeftMM
+			leftCount++
+		case "right":
+			rightTotal += length
+			rightStretchTotal += corrections.StretchRightMM
+			rightCount++
+		}
+	}
+	if leftCount == 0 || rightCount == 0 {
+		return nil, fmt.Errorf("%w: topology must provide spokes on both physical sides", ErrInvalidSpokeCalculation)
+	}
+	left := leftTotal / float64(leftCount)
+	right := rightTotal / float64(rightCount)
+	leftStretch := leftStretchTotal / float64(leftCount)
+	rightStretch := rightStretchTotal / float64(rightCount)
 	tensionRatio, err := computeSpokeTensionRatioSafe(leftFlange, rightFlange, left, right)
 	if err != nil {
 		return nil, err
 	}
 	if s.spokeRepo != nil {
-		history := buildSpokeHistory(input, export, rim, hub, hubGeo, *erd, left, right)
+		historyInput := input
+		historyInput.SpokeCount = resolvedSpokeCount
+		historyInput.Crossing = resolvedCrossing
+		history := buildSpokeHistory(historyInput, export, rim, hub, hubGeo, *erd, left, right)
 		if err := s.spokeRepo.CreateHistory(history); err != nil {
 			return nil, fmt.Errorf("persist spoke calculation history: %w", err)
 		}
@@ -446,17 +574,20 @@ func (s *SpokeService) Calculate(input SpokeCalculationInput) (*SpokeCalculation
 		LeftLengthMM:  roundSpokeLength(left),
 		RightLengthMM: roundSpokeLength(right),
 		TensionRatio:  tensionRatio,
+		TopologyID:    topology.ID,
+		Distribution:  string(topology.Distribution),
+		SpokeLengths:  spokeLengths,
 		Debug: SpokeCalculationDebug{
 			Rim:                         rim,
 			Hub:                         hubGeo,
 			RimOffsetMM:                 input.RimOffsetMM,
 			SpokeHeadType:               input.SpokeHeadType,
-			SpokeHoleCorrectionMM:       geometry.SpokeHoleCorrectionMM,
-			StraightPullTangentOffsetMM: geometry.StraightPullTangentOffsetMM,
+			SpokeHoleCorrectionMM:       spokeHoleCorrectionMM,
+			StraightPullTangentOffsetMM: straightPullCorrectionMM,
 			AlternatingDrillingOffsetMM: alternatingDrillingOffsetMM,
-			StretchLeftMM:               corrections.StretchLeftMM,
-			StretchRightMM:              corrections.StretchRightMM,
-			InterlaceCompensationMM:     corrections.InterlaceCompensationMM,
+			StretchLeftMM:               leftStretch,
+			StretchRightMM:              rightStretch,
+			InterlaceCompensationMM:     interlaceCompensationMM,
 			FormulaVersion:              spokeCalculationFormulaName,
 		},
 	}, nil

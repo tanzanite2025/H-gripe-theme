@@ -1,6 +1,7 @@
 import { computed } from 'vue'
 import { useI18n } from '#imports'
 import { useSpokeCalculatorCatalog } from '~/composables/useSpokeCalculatorCatalog'
+import { useWheelsetLacingTopologyOptions } from '~/composables/useWheelsetLacingTopologyOptions'
 import type { SpokeCalculatorManualOptions } from '~/types/spokeCalculator'
 
 /**
@@ -12,23 +13,8 @@ import type { SpokeCalculatorManualOptions } from '~/types/spokeCalculator'
 export const useSpokeCalculatorManualOptions = () => {
   const { t } = useI18n()
   const { options: catalogOptions } = useSpokeCalculatorCatalog()
+  const { options: topologyOptions, topologies: topologySummaries } = useWheelsetLacingTopologyOptions()
 
-  const crossingTranslationKeys: Record<number, string> = {
-    0: 'radial',
-    1: 'one',
-    2: 'two',
-    3: 'three',
-    4: 'four',
-  }
-
-  const spokeCountOptions = computed(() => catalogOptions.value.spokeCounts)
-  const lacingOptions = computed(() => catalogOptions.value.crossings.map(option => ({
-    ...option,
-    label: t(
-      `resourcesSpokeCalculator.calculator.options.crossing.${crossingTranslationKeys[option.value] || option.value}`,
-      option.label,
-    ),
-  })))
   const nippleTypeOptions = computed(() => catalogOptions.value.nippleTypes.map(option => ({
     ...option,
     label: t(
@@ -75,8 +61,8 @@ export const useSpokeCalculatorManualOptions = () => {
   ])
 
   const options = computed<SpokeCalculatorManualOptions>(() => ({
-    spokeCountOptions: spokeCountOptions.value,
-    lacingOptions: lacingOptions.value,
+    topologyOptions: topologyOptions.value,
+    topologySummaries: topologySummaries.value,
     nippleTypeOptions: nippleTypeOptions.value,
     spokeHeadTypeOptions: spokeHeadTypeOptions.value,
     spokeProfileOptions: spokeProfileOptions.value,

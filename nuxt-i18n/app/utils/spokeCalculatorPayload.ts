@@ -8,7 +8,8 @@ import type { SpokeWheelBuildConfig, SpokeWheelSide } from '~/types/spokeCalcula
  */
 export const hasSpokeCalculationGeometry = (config: SpokeWheelBuildConfig) => {
   return Boolean(
-    config.erd
+    config.topologyId
+    && config.erd
     && config.leftFlangePcd
     && config.rightFlangePcd
     && config.leftFlange != null
@@ -30,8 +31,12 @@ export const toSpokeCalcInput = (
   rimId: '',
   hubId: '',
   wheelPosition: wheel,
+  topologyId: config.topologyId,
   spokeCount: config.spokeCount,
   crossing: config.crossing,
+  g3RimHoleSpacingAToBDegrees: config.g3RimHoleSpacingAToBDegrees,
+  g3RimHoleSpacingBToADegrees: config.g3RimHoleSpacingBToADegrees,
+  g3RimHoleSpacingAToNextGroupADegrees: config.g3RimHoleSpacingAToNextGroupADegrees,
   nippleType: config.nippleType,
   nippleLengthMm: config.nippleLength,
   spokeHeadType: config.spokeHeadType,

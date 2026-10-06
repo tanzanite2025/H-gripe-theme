@@ -44,6 +44,15 @@
             </div>
           </div>
         </div>
+        <div v-if="frontTopologyLengthRows.length" class="spoke-calculator__topology-lengths">
+          <div class="spoke-calculator__topology-lengths-title">
+            {{ t('resourcesSpokeCalculator.calculator.results.topologyDetails') }}
+          </div>
+          <div v-for="row in frontTopologyLengthRows" :key="row.key" class="spoke-calculator__topology-length-row">
+            <span>{{ row.label }} · {{ row.count }} {{ t('resourcesSpokeCalculator.calculator.results.spokes') }}</span>
+            <strong>{{ formatResultLength(row.lengthMm) }} {{ t('resourcesSpokeCalculator.calculator.results.unit') }}</strong>
+          </div>
+        </div>
         <div class="spoke-calculator__tension-summary">
           <div class="flex items-baseline justify-between gap-3">
             <span class="tz-compact-label tz-text-muted">
@@ -93,6 +102,15 @@
                 {{ t('resourcesSpokeCalculator.calculator.results.unit') }}
               </span>
             </div>
+          </div>
+        </div>
+        <div v-if="rearTopologyLengthRows.length" class="spoke-calculator__topology-lengths">
+          <div class="spoke-calculator__topology-lengths-title">
+            {{ t('resourcesSpokeCalculator.calculator.results.topologyDetails') }}
+          </div>
+          <div v-for="row in rearTopologyLengthRows" :key="row.key" class="spoke-calculator__topology-length-row">
+            <span>{{ row.label }} · {{ row.count }} {{ t('resourcesSpokeCalculator.calculator.results.spokes') }}</span>
+            <strong>{{ formatResultLength(row.lengthMm) }} {{ t('resourcesSpokeCalculator.calculator.results.unit') }}</strong>
           </div>
         </div>
         <div class="spoke-calculator__tension-summary">
@@ -161,10 +179,49 @@ const resultSourceLabel = (source: SpokeWheelResult['leftSource'] | undefined) =
   return ''
 }
 
+interface TopologyLengthRow {
+  key: string
+  label: string
+  count: number
+  lengthMm: number
+}
+
+const topologyTypeLabel = (type: 'leading' | 'trailing' | 'nondrive') => {
+  if (type === 'leading') return t('resourcesSpokeCalculator.calculator.results.leading')
+  if (type === 'trailing') return t('resourcesSpokeCalculator.calculator.results.trailing')
+  return t('resourcesSpokeCalculator.calculator.results.nondrive')
+}
+
+const buildTopologyLengthRows = (result: SpokeWheelResult | null): TopologyLengthRow[] => {
+  if (!result || result.distribution === 'symmetric_1to1' || result.spokeLengths.length === 0) return []
+  const groups = new Map<string, { side: 'A' | 'B'; type: 'leading' | 'trailing' | 'nondrive'; physicalSide: 'left' | 'right'; lengths: number[] }>()
+  for (const spoke of result.spokeLengths) {
+    const key = `${spoke.side}-${spoke.type}-${spoke.physicalSide}`
+    const group = groups.get(key) || {
+      side: spoke.side,
+      type: spoke.type,
+      physicalSide: spoke.physicalSide,
+      lengths: [],
+    }
+    group.lengths.push(spoke.lengthMm)
+    groups.set(key, group)
+  }
+  return [...groups.entries()].map(([key, group]) => ({
+    key,
+    label: `${group.side} · ${topologyTypeLabel(group.type)} (${group.physicalSide === 'left'
+      ? t('resourcesSpokeCalculator.calculator.results.leftSide')
+      : t('resourcesSpokeCalculator.calculator.results.rightSide')})`,
+    count: group.lengths.length,
+    lengthMm: group.lengths.reduce((sum, value) => sum + value, 0) / group.lengths.length,
+  }))
+}
+
 const frontLeftDisplay = computed(() => formatResultLength(props.frontResult?.leftLengthMm))
 const frontRightDisplay = computed(() => formatResultLength(props.frontResult?.rightLengthMm))
 const rearLeftDisplay = computed(() => formatResultLength(props.rearResult?.leftLengthMm))
 const rearRightDisplay = computed(() => formatResultLength(props.rearResult?.rightLengthMm))
+const frontTopologyLengthRows = computed(() => buildTopologyLengthRows(props.frontResult))
+const rearTopologyLengthRows = computed(() => buildTopologyLengthRows(props.rearResult))
 
 const frontLeftSourceLabel = computed(() => resultSourceLabel(props.frontResult?.leftSource))
 const frontRightSourceLabel = computed(() => resultSourceLabel(props.frontResult?.rightSource))
@@ -192,6 +249,38 @@ const rearRightSourceLabel = computed(() => resultSourceLabel(props.rearResult?.
   border-radius: 0.5rem;
   background: var(--spoke-result-surface);
   padding: 0.75rem 1rem;
+}
+
+.spoke-calculator__topology-lengths {
+  display: grid;
+  gap: 0.35rem;
+  border: 1px solid var(--spoke-border);
+  border-radius: 0.5rem;
+  background: var(--spoke-result-surface);
+  padding: 0.65rem 0.75rem;
+  color: var(--tz-text-secondary);
+  font-size: 0.72rem;
+}
+
+.spoke-calculator__topology-lengths-title {
+  color: var(--tz-text-muted);
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.spoke-calculator__topology-length-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.spoke-calculator__topology-length-row strong {
+  flex: 0 0 auto;
+  color: var(--tz-text-primary);
+  font-weight: 800;
 }
 
 .spoke-calculator__source-badge {

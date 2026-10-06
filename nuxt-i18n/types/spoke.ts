@@ -44,8 +44,12 @@ export interface SpokeCalcInput {
   rimId: string
   hubId: string
   wheelPosition: 'front' | 'rear'
+  topologyId: string
   spokeCount: number
   crossing: number
+  g3RimHoleSpacingAToBDegrees?: number
+  g3RimHoleSpacingBToADegrees?: number
+  g3RimHoleSpacingAToNextGroupADegrees?: number
   erdMm?: number | null
   leftFlangeMm?: number | null
   rightFlangeMm?: number | null
@@ -79,4 +83,17 @@ export interface SpokeCalcResult {
   leftLengthMm: number
   rightLengthMm: number
   tensionRatio: SpokeTensionRatio | null
+  topologyId?: string
+  distribution?: 'symmetric_1to1' | 'uniform_2to1' | 'g3_2to1'
+  spokeLengths?: SpokeCalcSpokeLengthResult[]
+}
+
+export interface SpokeCalcSpokeLengthResult {
+  id: number
+  side: 'A' | 'B'
+  physicalSide: 'left' | 'right'
+  type: 'leading' | 'trailing' | 'nondrive'
+  hubHoleId: number
+  rimHoleId: number
+  lengthMm: number
 }

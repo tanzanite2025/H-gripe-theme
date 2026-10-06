@@ -505,3 +505,106 @@ func TestSpokeServiceEngineeringMetadataUsesBackendFormulaVersion(t *testing.T) 
 		t.Fatal("metadata must expose calculation limitations")
 	}
 }
+
+func TestSpokeServiceUsesSharedTopologyMappingsForSymmetricAndTwoToOneBuilds(t *testing.T) {
+	_, spokeService := newTestSpokeService(t)
+
+	for _, testCase := range []struct {
+		topologyID string
+		holeCount  int
+		sideACount int
+		sideBCount int
+		detailed   bool
+	}{
+		{topologyID: "24h-symmetric-1to1-2x", holeCount: 24, sideACount: 12, sideBCount: 12, detailed: false},
+		{topologyID: "24h-uniform-2to1", holeCount: 24, sideACount: 16, sideBCount: 8, detailed: true},
+		{topologyID: "18h-uniform-2to1", holeCount: 18, sideACount: 12, sideBCount: 6, detailed: true},
+		{topologyID: "21h-g3-2to1", holeCount: 21, sideACount: 14, sideBCount: 7, detailed: true},
+	} {
+		t.Run(testCase.topologyID, func(t *testing.T) {
+			result, err := spokeService.Calculate(sharedTopologyCalculationInput(testCase.topologyID, "front", testCase.holeCount))
+			require.NoError(t, err)
+			require.Equal(t, testCase.topologyID, result.TopologyID)
+			if testCase.detailed {
+				require.Len(t, result.SpokeLengths, testCase.holeCount)
+			} else {
+				require.Empty(t, result.SpokeLengths)
+			}
+
+			logicalCounts := map[string]int{}
+			physicalCounts := map[string]int{}
+			for _, spoke := range result.SpokeLengths {
+				logicalCounts[spoke.Side]++
+				physicalCounts[spoke.PhysicalSide]++
+			}
+			if testCase.detailed {
+				assert.Equal(t, testCase.sideACount, logicalCounts["A"])
+				assert.Equal(t, testCase.sideBCount, logicalCounts["B"])
+				assert.Equal(t, testCase.sideACount, physicalCounts["left"])
+				assert.Equal(t, testCase.sideBCount, physicalCounts["right"])
+			}
+		})
+	}
+}
+
+func TestSpokeServiceMapsRearDriveSideToPhysicalRightSide(t *testing.T) {
+	_, spokeService := newTestSpokeService(t)
+	result, err := spokeService.Calculate(sharedTopologyCalculationInput("24h-uniform-2to1", "rear", 24))
+	require.NoError(t, err)
+
+	physicalCountsByLogicalSide := map[string]map[string]int{}
+	for _, spoke := range result.SpokeLengths {
+		if physicalCountsByLogicalSide[spoke.Side] == nil {
+			physicalCountsByLogicalSide[spoke.Side] = map[string]int{}
+		}
+		physicalCountsByLogicalSide[spoke.Side][spoke.PhysicalSide]++
+	}
+	assert.Equal(t, 16, physicalCountsByLogicalSide["A"]["right"])
+	assert.Equal(t, 8, physicalCountsByLogicalSide["B"]["left"])
+}
+
+func TestSpokeServiceG3SpacingChangesMappedSpokeLengths(t *testing.T) {
+	_, spokeService := newTestSpokeService(t)
+	baseInput := sharedTopologyCalculationInput("21h-g3-2to1", "rear", 21)
+	defaultResult, err := spokeService.Calculate(baseInput)
+	require.NoError(t, err)
+
+	customInput := baseInput
+	customInput.G3RimHoleSpacingAToBDegrees = 2.5
+	customInput.G3RimHoleSpacingBToADegrees = 8.5
+	customInput.G3RimHoleSpacingAToNextGroupADegrees = 40.4285714286
+	customResult, err := spokeService.Calculate(customInput)
+	require.NoError(t, err)
+	require.Len(t, defaultResult.SpokeLengths, 21)
+	require.Len(t, customResult.SpokeLengths, 21)
+
+	changed := false
+	for index := range defaultResult.SpokeLengths {
+		if defaultResult.SpokeLengths[index].LengthMM != customResult.SpokeLengths[index].LengthMM {
+			changed = true
+			break
+		}
+	}
+	assert.True(t, changed, "custom G3 group spacing must change at least one mapped spoke length")
+}
+
+func sharedTopologyCalculationInput(topologyID, wheelPosition string, spokeCount int) SpokeCalculationInput {
+	erd := 598.0
+	leftFlange := 22.5
+	rightFlange := 35.6
+	leftPCD := 44.0
+	rightPCD := 44.0
+	return SpokeCalculationInput{
+		WheelPosition:    wheelPosition,
+		TopologyID:       topologyID,
+		SpokeCount:       spokeCount,
+		Crossing:         2,
+		ERDMM:            &erd,
+		LeftFlangeMM:     &leftFlange,
+		RightFlangeMM:    &rightFlange,
+		LeftFlangePCDMM:  &leftPCD,
+		RightFlangePCDMM: &rightPCD,
+		SpokeHeadType:    spokeHeadTypeJBend,
+		NippleType:       "standard",
+	}
+}

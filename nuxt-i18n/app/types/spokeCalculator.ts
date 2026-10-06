@@ -6,6 +6,20 @@ export type SpokeNippleType = 'standard' | 'hidden'
 export type SpokeProfile = 'round_2_0' | 'round_1_8' | 'bladed_0_9x2_2'
 export type SpokeInterlacing = 'off' | 'on'
 
+export type SpokeCalculatorTopologyDistribution = 'symmetric_1to1' | 'uniform_2to1' | 'g3_2to1'
+
+/** Discrete topology facts returned by the shared wheelset-lacing endpoint. */
+export interface SpokeCalculatorTopologySummary {
+  topologyId: string
+  selection: string
+  holeCount: number
+  cross: number
+  distribution: SpokeCalculatorTopologyDistribution
+  displayLayout: string
+  sideACount: number
+  sideBCount: number
+}
+
 export const SPOKE_WIZARD_STEPS = [
   { id: 'head_type', number: 1 },
   { id: 'erd', number: 2 },
@@ -21,8 +35,12 @@ export const SPOKE_WIZARD_STEP_COUNT = SPOKE_WIZARD_STEPS.length
 
 /** Complete input configuration for one wheel. */
 export interface SpokeWheelBuildConfig {
+  topologyId: string
   spokeCount: number
   crossing: number
+  g3RimHoleSpacingAToBDegrees: number
+  g3RimHoleSpacingBToADegrees: number
+  g3RimHoleSpacingAToNextGroupADegrees: number
   nippleType: SpokeNippleType
   nippleLength: number | null
   spokeHeadType: SpokeHeadType
@@ -58,8 +76,8 @@ export interface SpokeCalculatorSelectOption {
 
 /** Options owned by the manual calculator. */
 export interface SpokeCalculatorManualOptions {
-  spokeCountOptions: SpokeCalculatorSelectOption[]
-  lacingOptions: SpokeCalculatorSelectOption[]
+  topologyOptions: SpokeCalculatorSelectOption[]
+  topologySummaries: SpokeCalculatorTopologySummary[]
   nippleTypeOptions: SpokeCalculatorSelectOption[]
   spokeHeadTypeOptions: SpokeCalculatorSelectOption[]
   spokeProfileOptions: SpokeCalculatorSelectOption[]
@@ -80,8 +98,21 @@ export interface SpokeWheelResult {
   leftLengthMm: number | null
   rightLengthMm: number | null
   tensionRatio: SpokeTensionRatio | null
+  topologyId: string | null
+  distribution: SpokeCalculatorTopologyDistribution | null
+  spokeLengths: SpokeLengthResult[]
   leftSource: SpokeResultSource | null
   rightSource: SpokeResultSource | null
+}
+
+export interface SpokeLengthResult {
+  id: number
+  side: 'A' | 'B'
+  physicalSide: 'left' | 'right'
+  type: 'leading' | 'trailing' | 'nondrive'
+  hubHoleId: number
+  rimHoleId: number
+  lengthMm: number
 }
 
 /** The wizard and calculator share one complete configuration per wheel. */
@@ -93,8 +124,12 @@ export interface SpokeCalculatorWizardDraft {
 }
 
 export const createSpokeWheelWizardDraft = (): SpokeWheelWizardDraft => ({
+  topologyId: '32h-symmetric-1to1-3x',
   spokeCount: 32,
   crossing: 3,
+  g3RimHoleSpacingAToBDegrees: 0,
+  g3RimHoleSpacingBToADegrees: 0,
+  g3RimHoleSpacingAToNextGroupADegrees: 0,
   nippleType: 'standard',
   nippleLength: 12,
   spokeHeadType: 'j_bend',

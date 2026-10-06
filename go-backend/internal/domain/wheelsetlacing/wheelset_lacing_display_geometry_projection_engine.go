@@ -114,10 +114,9 @@ type DisplayGeometryFlangeProfile struct {
 	TotalSpanMM     float64 `json:"total_flange_span_mm"`
 }
 
-// DisplayGeometryG3GroupSpacing describes the three angular gaps in each G3
-// A-B-A rim-hole triplet, including the gap to the next group's first A hole.
-// It is display geometry only; it does not represent measured rim drilling
-// dimensions in millimetres.
+// DisplayGeometryG3GroupSpacing is the rounded display projection of the
+// shared angular G3 spacing profile. The values describe angular layout; they
+// do not represent measured rim drilling dimensions in millimetres.
 type DisplayGeometryG3GroupSpacing struct {
 	Enabled                     bool    `json:"enabled"`
 	GroupCount                  int     `json:"group_count"`
@@ -259,7 +258,11 @@ func buildWheelsetLacingDisplayGeometryG3GroupSpacing(
 	if topology.DisplayLayout != DisplayGeometryLayoutG3Triplet2To1 {
 		return DisplayGeometryG3GroupSpacing{}, nil
 	}
-	spacingAToB, spacingBToA, spacingAToNextGroupA := resolveWheelsetLacingG3RimHoleSpacing(request)
+	spacingAToB, spacingBToA, spacingAToNextGroupA := resolveWheelsetLacingG3RimHoleSpacingValues(
+		request.G3RimHoleSpacingAToBDegrees,
+		request.G3RimHoleSpacingBToADegrees,
+		request.G3RimHoleSpacingAToNextGroupADegrees,
+	)
 	if err := validateWheelsetLacingG3RimHoleSpacingClosure(spacingAToB, spacingBToA, spacingAToNextGroupA); err != nil {
 		return DisplayGeometryG3GroupSpacing{}, err
 	}
@@ -273,159 +276,40 @@ func buildWheelsetLacingDisplayGeometryG3GroupSpacing(
 	}, nil
 }
 
-func resolveWheelsetLacingG3RimHoleSpacing(request DisplayGeometryProjectionRequest) (float64, float64, float64) {
-	spacingAToB := request.G3RimHoleSpacingAToBDegrees
-	spacingBToA := request.G3RimHoleSpacingBToADegrees
-	spacingAToNextGroupA := request.G3RimHoleSpacingAToNextGroupADegrees
-	if spacingAToB == 0 {
-		spacingAToB = DefaultWheelsetLacingG3RimHoleSpacingAToBDegrees
-	}
-	if spacingBToA == 0 {
-		spacingBToA = DefaultWheelsetLacingG3RimHoleSpacingBToADegrees
-	}
-	if spacingAToNextGroupA == 0 {
-		if request.G3RimHoleSpacingAToBDegrees == 0 && request.G3RimHoleSpacingBToADegrees == 0 {
-			spacingAToNextGroupA = DefaultWheelsetLacingG3RimHoleSpacingAToNextGroupADegrees
-		} else {
-			// Keep older two-field G3 callers compatible by deriving the omitted
-			// closing gap from their explicit A-to-B and B-to-A values.
-			spacingAToNextGroupA = WheelsetLacingG3GroupPitchDegrees - spacingAToB - spacingBToA
-		}
-	}
-	return spacingAToB, spacingBToA, spacingAToNextGroupA
-}
-
-func validateWheelsetLacingG3RimHoleSpacingClosure(spacingAToB, spacingBToA, spacingAToNextGroupA float64) error {
-	for field, value := range map[string]float64{
-		"A-to-B":            spacingAToB,
-		"B-to-A":            spacingBToA,
-		"A-to-next-group-A": spacingAToNextGroupA,
-	} {
-		if value <= 0 || value > WheelsetLacingMaximumG3RimHoleSpacingDegrees {
-			return fmt.Errorf("%w: G3 rim-hole %s spacing must be within (0, %g] degrees", ErrInvalidRequest, field, WheelsetLacingMaximumG3RimHoleSpacingDegrees)
-		}
-	}
-	spacingTotal := spacingAToB + spacingBToA + spacingAToNextGroupA
-	if math.Abs(spacingTotal-WheelsetLacingG3GroupPitchDegrees) > WheelsetLacingG3SpacingClosureToleranceDegrees {
-		return fmt.Errorf("%w: G3 rim-hole A-to-B, B-to-A, and A-to-next-group-A spacings must sum to %.6g degrees", ErrInvalidRequest, WheelsetLacingG3GroupPitchDegrees)
-	}
-	return nil
-}
-
 func buildWheelsetLacingDisplayGeometryPoints(
 	topology Topology,
 	request DisplayGeometryProjectionRequest,
 ) ([]DisplayGeometryPoint, []DisplayGeometryPoint, []DisplayGeometryPoint, error) {
-	switch topology.DisplayLayout {
-	case DisplayGeometryLayoutG3Triplet2To1:
-		return buildG3DisplayGeometryPoints(topology, request)
-	case DisplayGeometryLayoutUniform2To1:
-		return buildUniformTwoToOneDisplayGeometryPoints(topology, request)
-	case DisplayGeometryLayoutUniform18H2To1:
-		return buildUniform18H2To1DisplayGeometryPoints(topology, request)
-	case DisplayGeometryLayoutSymmetric1To1:
-		return buildSymmetricDisplayGeometryPoints(topology, topology.HoleCount, request)
-	default:
-		return nil, nil, nil, fmt.Errorf("%w: unsupported display layout %q", ErrInvalidTopology, topology.DisplayLayout)
-	}
-}
-
-func buildSymmetricDisplayGeometryPoints(topology Topology, holeCount int, request DisplayGeometryProjectionRequest) ([]DisplayGeometryPoint, []DisplayGeometryPoint, []DisplayGeometryPoint, error) {
-	if holeCount <= 0 || len(topology.RimHoles) != holeCount || len(topology.HubHolesA) != holeCount/2 || len(topology.HubHolesB) != holeCount/2 {
-		return nil, nil, nil, fmt.Errorf("%w: symmetric display layout shape does not match %d rim holes", ErrInvalidTopology, holeCount)
-	}
-	rimHoles := make([]DisplayGeometryPoint, 0, len(topology.RimHoles))
-	rimBySide := map[Side][]DisplayGeometryPoint{SideA: {}, SideB: {}}
-	for index, hole := range topology.RimHoles {
-		point := displayGeometryPoint(hole.ID, hole.Side, (float64(index)*2*math.Pi/float64(holeCount))-math.Pi/2+math.Pi/float64(holeCount), request.RimRadius)
-		rimHoles = append(rimHoles, point)
-		rimBySide[hole.Side] = append(rimBySide[hole.Side], point)
-	}
-	hubHolesA := make([]DisplayGeometryPoint, 0, len(topology.HubHolesA))
-	hubHolesB := make([]DisplayGeometryPoint, 0, len(topology.HubHolesB))
-	for index, hole := range topology.HubHolesA {
-		if index >= len(rimBySide[SideA]) {
-			return nil, nil, nil, fmt.Errorf("%w: symmetric side A hole %d has no rim reference", ErrInvalidTopology, hole.ID)
-		}
-		hubHolesA = append(hubHolesA, displayGeometryPoint(hole.ID, SideA, rimBySide[SideA][index].Angle, request.FlangeRadiusA))
-	}
-	for index, hole := range topology.HubHolesB {
-		if index >= len(rimBySide[SideB]) {
-			return nil, nil, nil, fmt.Errorf("%w: symmetric side B hole %d has no rim reference", ErrInvalidTopology, hole.ID)
-		}
-		hubHolesB = append(hubHolesB, displayGeometryPoint(hole.ID, SideB, rimBySide[SideB][index].Angle, request.FlangeRadiusB))
-	}
-	return rimHoles, hubHolesA, hubHolesB, nil
-}
-
-func buildG3DisplayGeometryPoints(topology Topology, request DisplayGeometryProjectionRequest) ([]DisplayGeometryPoint, []DisplayGeometryPoint, []DisplayGeometryPoint, error) {
-	if topology.HoleCount != 21 || len(topology.RimHoles) != 21 || len(topology.HubHolesA) != 14 || len(topology.HubHolesB) != 7 {
-		return nil, nil, nil, fmt.Errorf("%w: G3 display layout requires a 21-hole 14/7 topology", ErrInvalidTopology)
-	}
-	spacingAToB, spacingBToA, spacingAToNextGroupA := resolveWheelsetLacingG3RimHoleSpacing(request)
-	if err := validateWheelsetLacingG3RimHoleSpacingClosure(spacingAToB, spacingBToA, spacingAToNextGroupA); err != nil {
+	angularLayout, err := CalculateWheelsetLacingAngularLayout(WheelsetLacingAngularLayoutRequest{
+		TopologyID:                           request.TopologyID,
+		G3RimHoleSpacingAToBDegrees:          request.G3RimHoleSpacingAToBDegrees,
+		G3RimHoleSpacingBToADegrees:          request.G3RimHoleSpacingBToADegrees,
+		G3RimHoleSpacingAToNextGroupADegrees: request.G3RimHoleSpacingAToNextGroupADegrees,
+	}, topology)
+	if err != nil {
 		return nil, nil, nil, err
 	}
-	spacingAToBRadians := spacingAToB * math.Pi / 180
-	spacingBToARadians := spacingBToA * math.Pi / 180
-	rimHoles := make([]DisplayGeometryPoint, 0, len(topology.RimHoles))
-	for group := 0; group < WheelsetLacingG3GroupCount; group++ {
-		centerAngle := (float64(group) * 2 * math.Pi / float64(WheelsetLacingG3GroupCount)) - math.Pi/2
-		rimHoles = append(rimHoles,
-			displayGeometryPoint(group*3, SideA, centerAngle-spacingAToBRadians, request.RimRadius),
-			displayGeometryPoint(group*3+1, SideB, centerAngle, request.RimRadius),
-			displayGeometryPoint(group*3+2, SideA, centerAngle+spacingBToARadians, request.RimRadius),
-		)
-	}
-	hubHolesA := make([]DisplayGeometryPoint, 0, len(topology.HubHolesA))
-	hubHolesB := make([]DisplayGeometryPoint, 0, len(topology.HubHolesB))
-	for group := 0; group < WheelsetLacingG3GroupCount; group++ {
-		centerAngle := (float64(group) * 2 * math.Pi / float64(WheelsetLacingG3GroupCount)) - math.Pi/2
-		midAngle := centerAngle + math.Pi/float64(WheelsetLacingG3GroupCount)
-		hubHolesA = append(hubHolesA,
-			displayGeometryPoint(group*2, SideA, midAngle-math.Pi/14, request.FlangeRadiusA),
-			displayGeometryPoint(group*2+1, SideA, midAngle+math.Pi/14, request.FlangeRadiusA),
-		)
-		hubHolesB = append(hubHolesB, displayGeometryPoint(group, SideB, centerAngle, request.FlangeRadiusB))
-	}
+	rimHoles, hubHolesA, hubHolesB := buildDisplayGeometryPointListsFromSharedAngularLayout(angularLayout, request)
 	return rimHoles, hubHolesA, hubHolesB, nil
 }
 
-func buildUniformTwoToOneDisplayGeometryPoints(topology Topology, request DisplayGeometryProjectionRequest) ([]DisplayGeometryPoint, []DisplayGeometryPoint, []DisplayGeometryPoint, error) {
-	return buildUniformTwoToOneDisplayGeometryPointsWithExplicitHoleCounts(topology, request, 24, 16, 8)
-}
-
-// buildUniform18H2To1DisplayGeometryPoints keeps the 18H non-G3 layout
-// separate from the 24H generator while sharing only the parameterized math.
-func buildUniform18H2To1DisplayGeometryPoints(topology Topology, request DisplayGeometryProjectionRequest) ([]DisplayGeometryPoint, []DisplayGeometryPoint, []DisplayGeometryPoint, error) {
-	return buildUniformTwoToOneDisplayGeometryPointsWithExplicitHoleCounts(topology, request, 18, 12, 6)
-}
-
-func buildUniformTwoToOneDisplayGeometryPointsWithExplicitHoleCounts(topology Topology, request DisplayGeometryProjectionRequest, total, driveSideHoleCount, nonDriveSideHoleCount int) ([]DisplayGeometryPoint, []DisplayGeometryPoint, []DisplayGeometryPoint, error) {
-	if topology.HoleCount != total || len(topology.RimHoles) != total || len(topology.HubHolesA) != driveSideHoleCount || len(topology.HubHolesB) != nonDriveSideHoleCount {
-		return nil, nil, nil, fmt.Errorf("%w: uniform 2:1 display layout requires a %d-hole %d/%d topology", ErrInvalidTopology, total, driveSideHoleCount, nonDriveSideHoleCount)
+func buildDisplayGeometryPointListsFromSharedAngularLayout(
+	layout WheelsetLacingAngularLayout,
+	request DisplayGeometryProjectionRequest,
+) ([]DisplayGeometryPoint, []DisplayGeometryPoint, []DisplayGeometryPoint) {
+	rimHoles := make([]DisplayGeometryPoint, 0, len(layout.RimHoles))
+	for _, point := range layout.RimHoles {
+		rimHoles = append(rimHoles, displayGeometryPoint(point.ID, point.Side, point.AngleRadians, request.RimRadius))
 	}
-	rimHoles := make([]DisplayGeometryPoint, 0, len(topology.RimHoles))
-	rimBySide := map[Side][]DisplayGeometryPoint{SideA: {}, SideB: {}}
-	for index, hole := range topology.RimHoles {
-		angle := (float64(index) * 2 * math.Pi / float64(total)) - math.Pi/2 + math.Pi/float64(total)
-		point := displayGeometryPoint(hole.ID, hole.Side, angle, request.RimRadius)
-		rimHoles = append(rimHoles, point)
-		rimBySide[hole.Side] = append(rimBySide[hole.Side], point)
+	hubHolesA := make([]DisplayGeometryPoint, 0, len(layout.HubHolesA))
+	for _, point := range layout.HubHolesA {
+		hubHolesA = append(hubHolesA, displayGeometryPoint(point.ID, point.Side, point.AngleRadians, request.FlangeRadiusA))
 	}
-	hubHolesA := make([]DisplayGeometryPoint, 0, len(topology.HubHolesA))
-	for index, hole := range topology.HubHolesA {
-		angle := (float64(index) * 2 * math.Pi / float64(driveSideHoleCount)) - math.Pi/2
-		hubHolesA = append(hubHolesA, displayGeometryPoint(hole.ID, SideA, angle, request.FlangeRadiusA))
+	hubHolesB := make([]DisplayGeometryPoint, 0, len(layout.HubHolesB))
+	for _, point := range layout.HubHolesB {
+		hubHolesB = append(hubHolesB, displayGeometryPoint(point.ID, point.Side, point.AngleRadians, request.FlangeRadiusB))
 	}
-	hubHolesB := make([]DisplayGeometryPoint, 0, len(topology.HubHolesB))
-	for index, hole := range topology.HubHolesB {
-		if index >= len(rimBySide[SideB]) {
-			return nil, nil, nil, fmt.Errorf("%w: uniform side B hole %d has no rim reference", ErrInvalidTopology, hole.ID)
-		}
-		hubHolesB = append(hubHolesB, displayGeometryPoint(hole.ID, SideB, rimBySide[SideB][index].Angle, request.FlangeRadiusB))
-	}
-	return rimHoles, hubHolesA, hubHolesB, nil
+	return rimHoles, hubHolesA, hubHolesB
 }
 
 func displayGeometryPoint(id int, side Side, angle, radius float64) DisplayGeometryPoint {

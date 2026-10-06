@@ -59,8 +59,17 @@ func calculateSpokeGeometry(headType string, input spokeGeometryInput) (spokeGeo
 	return calculator.calculate(input)
 }
 
-func spokeLacingPhaseRadians(crossing, spokeCount int) float64 {
-	return (720.0 * float64(crossing) / float64(spokeCount)) * math.Pi / 180.0
+// calculateSingleSpokeGeometryLength reuses the existing J-bend and
+// straight-pull geometry calculators for one mapped spoke. Passing the same
+// side input twice keeps the established correction and validation path while
+// allowing each topology mapping to supply its own phase.
+func calculateSingleSpokeGeometryLength(headType string, sideInput spokeGeometrySideInput, spokeHoleDiameterMM, straightPullTangentOffsetMM float64) (spokeGeometryResult, error) {
+	return calculateSpokeGeometry(headType, spokeGeometryInput{
+		Left:                        sideInput,
+		Right:                       sideInput,
+		SpokeHoleDiameterMM:         spokeHoleDiameterMM,
+		StraightPullTangentOffsetMM: straightPullTangentOffsetMM,
+	})
 }
 
 func effectiveSpokeFlangeDistance(flangeDistance, rimOffset float64, side string) float64 {

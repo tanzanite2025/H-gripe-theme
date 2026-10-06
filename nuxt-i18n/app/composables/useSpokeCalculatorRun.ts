@@ -60,6 +60,9 @@ export const useSpokeCalculatorRun = (
       leftLengthMm,
       rightLengthMm,
       tensionRatio: calculated?.tensionRatio ?? null,
+      topologyId: calculated?.topologyId ?? config.topologyId,
+      distribution: calculated?.distribution ?? null,
+      spokeLengths: calculated?.spokeLengths ?? [],
       leftSource: calculated?.leftLengthMm != null ? 'calculated' : null,
       rightSource: calculated?.rightLengthMm != null ? 'calculated' : null,
     }
@@ -95,6 +98,8 @@ export const useSpokeCalculatorRun = (
             metadata: {
               source: 'spoke_calculator',
               wheel_count: completedWheelCount,
+              front_topology_id: frontConfig.topologyId,
+              rear_topology_id: rearConfig.topologyId,
               front_spoke_count: frontConfig.spokeCount,
               rear_spoke_count: rearConfig.spokeCount,
               front_crossing: frontConfig.crossing,
