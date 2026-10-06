@@ -291,9 +291,6 @@ definePageMeta({
   footerLabelKey: 'support.nav.spokeCalculator',
   footerLabelFallback: 'Spoke Calculator',
   footerGroupLabelFallback: 'Spoke Guides',
-  feedbackThreadKey: 'guides-spokeguides-spoke-length-calculator',
-  feedbackTitleKey: 'resourcesSpokeCalculator.feedbackTitle',
-  feedbackTitle: 'Share your feedback about the spoke length calculator',
 })
 
 useHead(() => ({

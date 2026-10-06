@@ -1,4 +1,4 @@
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useState } from '#imports'
 import { useApiRequest } from '~/composables/useApiRequest'
 import type {
@@ -141,12 +141,14 @@ export const useWheelsetLacingTopologyOptions = () => {
     return loadRequest
   }
 
-  // A server render can serialize `loading: true` before its fire-and-forget
-  // request settles. The source marker is the durable state, so retry on the
-  // client whenever no topology payload has been received yet.
-  if (state.value.source === 'empty' && !inFlightWheelsetLacingTopologyLoads[baseURL]) {
-    void loadTopologies()
-  }
+  // Keep the initial server and client renders identical. A fast response
+  // during hydration would otherwise replace the placeholder with options
+  // before Vue finishes reconciling the server-rendered button.
+  onMounted(() => {
+    if (state.value.source === 'empty' && !inFlightWheelsetLacingTopologyLoads[baseURL]) {
+      void loadTopologies()
+    }
+  })
 
   return {
     topologies: computed(() => state.value.topologies),

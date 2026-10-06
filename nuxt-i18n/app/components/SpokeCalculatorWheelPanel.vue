@@ -9,7 +9,7 @@
     <SpokeCalculatorBuildSettings
       :side="side"
       :config="config"
-      :options="options"
+      :options="props.options"
     />
   </div>
 </template>
@@ -32,7 +32,6 @@ const props = defineProps<{
 const { t } = useI18n()
 const side = props.side
 const config = props.config
-const options = props.options
 </script>
 
 <style scoped>
