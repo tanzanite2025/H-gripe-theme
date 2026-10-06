@@ -19,7 +19,7 @@ var (
 	ErrSpokeHubGeometryMissing  = errors.New("hub geometry not available for requested position")
 	ErrInvalidSpokeCalculation  = errors.New("invalid spoke calculation input")
 	ErrInvalidSpokeCatalog      = errors.New("invalid spoke catalog")
-	spokeCalculationFormulaName = "v1.5-go-backend-physical-build-corrections"
+	spokeCalculationFormulaName = "v1.6-go-backend-physical-build-corrections-topology-aware"
 	spokeCatalogIDPattern       = regexp.MustCompile(`^[a-z0-9][a-z0-9_-]{0,139}$`)
 )
 
@@ -458,10 +458,16 @@ func (s *SpokeService) Calculate(input SpokeCalculationInput) (*SpokeCalculation
 		defaultHoleDiameter := defaultSpokeHoleDiameterMM
 		spokeHoleDiameterMM = &defaultHoleDiameter
 	}
+	sideAFlangeHoleCircleRadiusMM := leftFlangeRadius
+	if resolveSpokeTopologyPhysicalSide(input.WheelPosition, wheelsetlacingdomain.SideA) == "right" {
+		sideAFlangeHoleCircleRadiusMM = rightFlangeRadius
+	}
 
 	angularLayout, err := wheelsetlacingdomain.CalculateWheelsetLacingAngularLayout(
 		wheelsetlacingdomain.WheelsetLacingAngularLayoutRequest{
 			TopologyID:                           topology.ID,
+			G3RimHoleCircleRadiusMM:              radius,
+			G3SideAFlangeHoleCircleRadiusMM:      sideAFlangeHoleCircleRadiusMM,
 			G3RimHoleSpacingAToBDegrees:          input.G3RimHoleSpacingAToBDegrees,
 			G3RimHoleSpacingBToADegrees:          input.G3RimHoleSpacingBToADegrees,
 			G3RimHoleSpacingAToNextGroupADegrees: input.G3RimHoleSpacingAToNextGroupADegrees,

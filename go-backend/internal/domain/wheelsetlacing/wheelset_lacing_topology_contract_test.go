@@ -76,6 +76,17 @@ func TestG3AndUniformTwoToOneHaveIndependentMappings(t *testing.T) {
 			t.Fatalf("G3 rim hole %d side = %q, want %q", index, hole.Side, want)
 		}
 	}
+	for group := 0; group < WheelsetLacingTwentyOneHoleG3GroupCount; group++ {
+		trailing := g3.Spokes[WheelsetLacingTwentyOneHoleG3GroupCount+group*2]
+		leading := g3.Spokes[WheelsetLacingTwentyOneHoleG3GroupCount+group*2+1]
+		nextGroup := (group + 1) % WheelsetLacingTwentyOneHoleG3GroupCount
+		if trailing.Side != SideA || trailing.Type != SpokeTypeTrailing || trailing.HubHoleID != group*2 || trailing.RimHoleID != group*3+2 {
+			t.Fatalf("G3 group %d trailing spoke = %+v, want same-order rim endpoint in its group", group, trailing)
+		}
+		if leading.Side != SideA || leading.Type != SpokeTypeLeading || leading.HubHoleID != group*2+1 || leading.RimHoleID != nextGroup*3 {
+			t.Fatalf("G3 group %d leading spoke = %+v, want same-order rim endpoint in the next group", group, leading)
+		}
+	}
 
 	uniform, err := catalog.Get("24h-uniform-2to1")
 	if err != nil {

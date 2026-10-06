@@ -10,33 +10,27 @@ import (
 // coordinates; flange offsets are physical millimetres used only for the
 // generated axial reference profile. Neither represents spoke length,
 // stiffness, tension, efficiency, or assembly safety.
-const WheelsetLacingDisplayGeometryContractVersion = "v1.7-backend-display-geometry"
+const WheelsetLacingDisplayGeometryContractVersion = "v1.8-backend-display-geometry"
 
 // These values are centralized in the domain package so SSR and browser
 // requests use the same reference geometry. Radial constants are canvas
 // coordinates; the flange-offset defaults are illustrative physical profile
 // inputs and are not used as spoke-length or safety calculations.
 const (
-	DefaultWheelsetLacingDisplayRimHoleRingRadius                 = 232.0
-	DefaultWheelsetLacingDisplayHubFlangeHoleRingRadiusA          = 66.0
-	DefaultWheelsetLacingDisplayHubFlangeHoleRingRadiusB          = 54.0
-	DefaultWheelsetLacingFlangeOffsetAMM                          = 20.0
-	DefaultWheelsetLacingFlangeOffsetBMM                          = 35.0
-	DefaultWheelsetLacingTwentyOneHoleG3RimHoleSpacingAToBDegrees = 4.87
-	DefaultWheelsetLacingTwentyOneHoleG3RimHoleSpacingBToADegrees = 4.87
-	WheelsetLacingDisplayProfileHalfSpan                          = 160.0
-	WheelsetLacingDisplayProfileAxleHalfSpan                      = 194.0
-	WheelsetLacingDisplayMaximumCanvasRadius                      = 280.0
-	WheelsetLacingMaximumFlangeOffsetMM                           = 100.0
-	WheelsetLacingTwentyOneHoleG3GroupCount                       = 7
-	WheelsetLacingTwentyOneHoleG3GroupPitchDegrees                = 360.0 / WheelsetLacingTwentyOneHoleG3GroupCount
-	WheelsetLacingMaximumTwentyOneHoleG3RimHoleSpacingDegrees     = WheelsetLacingTwentyOneHoleG3GroupPitchDegrees
-	WheelsetLacingTwentyOneHoleG3SpacingClosureToleranceDegrees   = 0.01
+	DefaultWheelsetLacingDisplayRimHoleRingRadius               = 232.0
+	DefaultWheelsetLacingDisplayHubFlangeHoleRingRadiusA        = 66.0
+	DefaultWheelsetLacingDisplayHubFlangeHoleRingRadiusB        = 54.0
+	DefaultWheelsetLacingFlangeOffsetAMM                        = 20.0
+	DefaultWheelsetLacingFlangeOffsetBMM                        = 35.0
+	WheelsetLacingDisplayProfileHalfSpan                        = 160.0
+	WheelsetLacingDisplayProfileAxleHalfSpan                    = 194.0
+	WheelsetLacingDisplayMaximumCanvasRadius                    = 280.0
+	WheelsetLacingMaximumFlangeOffsetMM                         = 100.0
+	WheelsetLacingTwentyOneHoleG3GroupCount                     = 7
+	WheelsetLacingTwentyOneHoleG3GroupPitchDegrees              = 360.0 / WheelsetLacingTwentyOneHoleG3GroupCount
+	WheelsetLacingMaximumTwentyOneHoleG3RimHoleSpacingDegrees   = WheelsetLacingTwentyOneHoleG3GroupPitchDegrees
+	WheelsetLacingTwentyOneHoleG3SpacingClosureToleranceDegrees = 0.01
 )
-
-const DefaultWheelsetLacingTwentyOneHoleG3RimHoleSpacingAToNextGroupADegrees = WheelsetLacingTwentyOneHoleG3GroupPitchDegrees -
-	DefaultWheelsetLacingTwentyOneHoleG3RimHoleSpacingAToBDegrees -
-	DefaultWheelsetLacingTwentyOneHoleG3RimHoleSpacingBToADegrees
 
 type DisplayGeometryProjectionRequest struct {
 	TopologyID                           string  `json:"topology_id"`
@@ -63,11 +57,6 @@ func NewWheelsetLacingDefaultDisplayGeometryProjectionRequest(topologyID string)
 		FlangeRadiusB:   DefaultWheelsetLacingDisplayHubFlangeHoleRingRadiusB,
 		FlangeOffsetAMM: DefaultWheelsetLacingFlangeOffsetAMM,
 		FlangeOffsetBMM: DefaultWheelsetLacingFlangeOffsetBMM,
-	}
-	if topologyID == "21h-g3-2to1" {
-		request.G3RimHoleSpacingAToBDegrees = DefaultWheelsetLacingTwentyOneHoleG3RimHoleSpacingAToBDegrees
-		request.G3RimHoleSpacingBToADegrees = DefaultWheelsetLacingTwentyOneHoleG3RimHoleSpacingBToADegrees
-		request.G3RimHoleSpacingAToNextGroupADegrees = DefaultWheelsetLacingTwentyOneHoleG3RimHoleSpacingAToNextGroupADegrees
 	}
 	return request
 }
@@ -258,11 +247,16 @@ func buildWheelsetLacingDisplayGeometryG3GroupSpacing(
 	if topology.DisplayLayout != DisplayGeometryLayoutG3TwentyOneHoleTriplet2To1 {
 		return DisplayGeometryG3GroupSpacing{}, nil
 	}
-	spacingAToB, spacingBToA, spacingAToNextGroupA := resolveWheelsetLacingG3RimHoleSpacingValues(
+	spacingAToB, spacingBToA, spacingAToNextGroupA, err := resolveWheelsetLacingG3RimHoleSpacingValues(
 		request.G3RimHoleSpacingAToBDegrees,
 		request.G3RimHoleSpacingBToADegrees,
 		request.G3RimHoleSpacingAToNextGroupADegrees,
+		request.RimRadius,
+		request.FlangeRadiusA,
 	)
+	if err != nil {
+		return DisplayGeometryG3GroupSpacing{}, err
+	}
 	if err := validateWheelsetLacingG3RimHoleSpacingClosure(spacingAToB, spacingBToA, spacingAToNextGroupA); err != nil {
 		return DisplayGeometryG3GroupSpacing{}, err
 	}
@@ -282,6 +276,8 @@ func buildWheelsetLacingDisplayGeometryPoints(
 ) ([]DisplayGeometryPoint, []DisplayGeometryPoint, []DisplayGeometryPoint, error) {
 	angularLayout, err := CalculateWheelsetLacingAngularLayout(WheelsetLacingAngularLayoutRequest{
 		TopologyID:                           request.TopologyID,
+		G3RimHoleCircleRadiusMM:              request.RimRadius,
+		G3SideAFlangeHoleCircleRadiusMM:      request.FlangeRadiusA,
 		G3RimHoleSpacingAToBDegrees:          request.G3RimHoleSpacingAToBDegrees,
 		G3RimHoleSpacingBToADegrees:          request.G3RimHoleSpacingBToADegrees,
 		G3RimHoleSpacingAToNextGroupADegrees: request.G3RimHoleSpacingAToNextGroupADegrees,

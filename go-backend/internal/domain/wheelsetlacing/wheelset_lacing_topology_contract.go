@@ -326,8 +326,8 @@ func buildTwentyOneHoleG3Topology() Topology {
 	for group := 0; group < groups; group++ {
 		nextGroup := (group + 1) % groups
 		topology.Spokes = append(topology.Spokes,
-			SpokeMapping{ID: len(topology.Spokes), Side: SideA, Type: SpokeTypeTrailing, HubHoleID: group * 2, RimHoleID: nextGroup * 3},
-			SpokeMapping{ID: len(topology.Spokes) + 1, Side: SideA, Type: SpokeTypeLeading, HubHoleID: group*2 + 1, RimHoleID: group*3 + 2},
+			SpokeMapping{ID: len(topology.Spokes), Side: SideA, Type: SpokeTypeTrailing, HubHoleID: group * 2, RimHoleID: group*3 + 2},
+			SpokeMapping{ID: len(topology.Spokes) + 1, Side: SideA, Type: SpokeTypeLeading, HubHoleID: group*2 + 1, RimHoleID: nextGroup * 3},
 		)
 	}
 	return topology

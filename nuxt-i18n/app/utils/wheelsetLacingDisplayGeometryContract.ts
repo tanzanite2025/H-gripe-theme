@@ -3,7 +3,7 @@ import {
   type WheelsetLacingTopologySelection,
 } from './wheelsetLacingSelectionContract'
 
-export const WHEELSET_LACING_DISPLAY_GEOMETRY_CONTRACT_VERSION = 'v1.7-backend-display-geometry'
+export const WHEELSET_LACING_DISPLAY_GEOMETRY_CONTRACT_VERSION = 'v1.8-backend-display-geometry'
 
 export const WHEELSET_LACING_DISPLAY_GEOMETRY_LAYOUT = Object.freeze({
   symmetric1To1: 'symmetric_1to1',

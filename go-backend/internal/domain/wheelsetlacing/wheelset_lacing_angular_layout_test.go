@@ -18,8 +18,13 @@ func TestCalculateWheelsetLacingAngularLayoutCoversRegisteredTopologySpokes(t *t
 			if err != nil {
 				t.Fatal(err)
 			}
+			request := WheelsetLacingAngularLayoutRequest{TopologyID: topologyID}
+			if topologyID == "21h-g3-2to1" {
+				request.G3RimHoleCircleRadiusMM = 232
+				request.G3SideAFlangeHoleCircleRadiusMM = 66
+			}
 			layout, err := CalculateWheelsetLacingAngularLayout(
-				WheelsetLacingAngularLayoutRequest{TopologyID: topologyID},
+				request,
 				topology,
 			)
 			if err != nil {
@@ -47,7 +52,9 @@ func TestCalculateWheelsetLacingAngularLayoutG3SpacingDefaultsAndCustomClosure(t
 	}
 
 	defaultLayout, err := CalculateWheelsetLacingAngularLayout(
-		WheelsetLacingAngularLayoutRequest{TopologyID: topology.ID},
+		WheelsetLacingAngularLayoutRequest{
+			TopologyID: topology.ID, G3RimHoleCircleRadiusMM: 232, G3SideAFlangeHoleCircleRadiusMM: 66,
+		},
 		topology,
 	)
 	if err != nil {

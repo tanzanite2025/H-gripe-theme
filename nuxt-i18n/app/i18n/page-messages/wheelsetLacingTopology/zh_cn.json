@@ -24,7 +24,7 @@
     "g3SpacingAToB": "车圈 A → B 孔间角",
     "g3SpacingBToA": "车圈 B → A 孔间角",
     "g3SpacingAToNextGroupA": "车圈 A → 下一组 A 实际空隙（自动闭合）",
-    "g3GroupSpacingHelp": "仅 21H G3 车圈孔生效：只需调整 A→B、B→A 两段；七组节距固定为 360°/7（约 51.43°），A→下一组 A 的实际空隙由系统自动补齐；不控制 WR/WL 或法兰几何。",
+    "g3GroupSpacingHelp": "仅 21H G3 车圈孔生效：默认按图中的轮圈孔圈与 A 法兰孔圈半径自动求出两根驱动侧辐条平行的间距；手动修改 A→B、B→A 后转为自定义。七组节距固定为 360°/7（约 51.43°），第三段由系统闭合。",
     "g3SpacingNotClosed": "前两段合计必须小于 {groupPitch}°（360°/7），系统才能自动补齐第三段；当前保留上一张有效图。",
     "viewLabel": "法兰透视模式（Flange View）",
     "driveView": "右侧（驱动侧）",

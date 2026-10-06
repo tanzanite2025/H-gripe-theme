@@ -118,8 +118,37 @@ func TestCalculateWheelsetLacingDisplayGeometryProjectionUsesG3DefaultsWhenSpaci
 	if err != nil {
 		t.Fatal(err)
 	}
-	if result.G3GroupSpacing.SpacingAToBDegrees != DefaultWheelsetLacingTwentyOneHoleG3RimHoleSpacingAToBDegrees || result.G3GroupSpacing.SpacingBToADegrees != DefaultWheelsetLacingTwentyOneHoleG3RimHoleSpacingBToADegrees || result.G3GroupSpacing.SpacingAToNextGroupADegrees != roundWheelsetLacingDisplayGeometryValue(DefaultWheelsetLacingTwentyOneHoleG3RimHoleSpacingAToNextGroupADegrees, 2) {
-		t.Fatalf("unexpected G3 default spacing profile: %+v", result.G3GroupSpacing)
+	wantSpacingAToB, wantSpacingBToA, wantClosingGap, err := calculateWheelsetLacingTwentyOneHoleG3ParallelSpacing(232, 66)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.G3GroupSpacing.SpacingAToBDegrees != roundWheelsetLacingDisplayGeometryValue(wantSpacingAToB, 2) || result.G3GroupSpacing.SpacingBToADegrees != roundWheelsetLacingDisplayGeometryValue(wantSpacingBToA, 2) || result.G3GroupSpacing.SpacingAToNextGroupADegrees != roundWheelsetLacingDisplayGeometryValue(wantClosingGap, 2) {
+		t.Fatalf("unexpected radius-derived parallel G3 spacing profile: %+v", result.G3GroupSpacing)
+	}
+}
+
+func TestCalculateWheelsetLacingDisplayGeometryProjectionMakesEachG3DriveSpokePairParallel(t *testing.T) {
+	topology, err := NewDefaultCatalog().Get("21h-g3-2to1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	result, err := CalculateWheelsetLacingDisplayGeometryProjection(DisplayGeometryProjectionRequest{
+		TopologyID: "21h-g3-2to1", RimRadius: 232, FlangeRadiusA: 66, FlangeRadiusB: 54,
+		FlangeOffsetAMM: 20, FlangeOffsetBMM: 35,
+	}, topology)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for group := 0; group < WheelsetLacingTwentyOneHoleG3GroupCount; group++ {
+		firstSpoke := result.Spokes[WheelsetLacingTwentyOneHoleG3GroupCount+group*2]
+		secondSpoke := result.Spokes[WheelsetLacingTwentyOneHoleG3GroupCount+group*2+1]
+		firstVectorX := firstSpoke.Rim.X - firstSpoke.Hub.X
+		firstVectorY := firstSpoke.Rim.Y - firstSpoke.Hub.Y
+		secondVectorX := secondSpoke.Rim.X - secondSpoke.Hub.X
+		secondVectorY := secondSpoke.Rim.Y - secondSpoke.Hub.Y
+		if math.Abs(firstVectorX-secondVectorX) > 0.03 || math.Abs(firstVectorY-secondVectorY) > 0.03 {
+			t.Fatalf("G3 drive spoke pair %d vectors differ: first=(%.4f, %.4f), second=(%.4f, %.4f)", group, firstVectorX, firstVectorY, secondVectorX, secondVectorY)
+		}
 	}
 }
 

@@ -24,7 +24,7 @@
     "g3SpacingAToB": "A → B rim-hole gap",
     "g3SpacingBToA": "B → A rim-hole gap",
     "g3SpacingAToNextGroupA": "A → next-group A actual gap (auto-closed)",
-    "g3GroupSpacingHelp": "For 21H G3 rim holes only: adjust the A→B and B→A gaps. The seven-group pitch stays at 360°/7 (about 51.43°), and the A→next-group A gap is filled automatically; this does not control WR/WL or flange geometry.",
+    "g3GroupSpacingHelp": "For 21H G3 rim holes only: the default gaps are solved from the displayed rim and side-A flange radii so the two drive-side spokes are parallel. Editing A→B or B→A switches to custom spacing. The seven-group pitch is 360°/7 (about 51.43°), and the third gap closes automatically.",
     "g3SpacingNotClosed": "The first two gaps must total less than {groupPitch}° (360°/7) so the third gap can close automatically; the last valid drawing is kept.",
     "viewLabel": "Flange view (Flange View)",
     "driveView": "Right side (drive side)",

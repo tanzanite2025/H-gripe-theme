@@ -6,12 +6,14 @@ import (
 	"strings"
 )
 
-// WheelsetLacingAngularLayoutRequest contains only the continuous angular
-// inputs needed to resolve a registered topology. It deliberately excludes
-// SVG radii and physical ERD/PCD/WL/WR values so the same layout can feed both
-// the reference drawing and the spoke-length calculator.
+// WheelsetLacingAngularLayoutRequest contains the continuous inputs needed to
+// resolve a registered topology. The two optional G3 radii derive its automatic
+// parallel spacing; the resulting layout remains coordinate-free so both the
+// reference drawing and spoke-length calculator can use the same hole angles.
 type WheelsetLacingAngularLayoutRequest struct {
 	TopologyID                           string
+	G3RimHoleCircleRadiusMM              float64
+	G3SideAFlangeHoleCircleRadiusMM      float64
 	G3RimHoleSpacingAToBDegrees          float64
 	G3RimHoleSpacingBToADegrees          float64
 	G3RimHoleSpacingAToNextGroupADegrees float64
@@ -143,6 +145,17 @@ func validateWheelsetLacingAngularLayoutRequest(request WheelsetLacingAngularLay
 			return fmt.Errorf("%w: %s must be finite and within [0, %g] degrees", ErrInvalidRequest, field, WheelsetLacingMaximumTwentyOneHoleG3RimHoleSpacingDegrees)
 		}
 	}
+	if (request.G3RimHoleCircleRadiusMM == 0) != (request.G3SideAFlangeHoleCircleRadiusMM == 0) {
+		return fmt.Errorf("%w: G3 rim and side-A flange hole-circle radii must be supplied together", ErrInvalidRequest)
+	}
+	for field, value := range map[string]float64{
+		"g3_rim_hole_circle_radius_mm":           request.G3RimHoleCircleRadiusMM,
+		"g3_side_a_flange_hole_circle_radius_mm": request.G3SideAFlangeHoleCircleRadiusMM,
+	} {
+		if value != 0 && (!isFinitePositiveWheelsetLacingNumber(value)) {
+			return fmt.Errorf("%w: %s must be finite and positive", ErrInvalidRequest, field)
+		}
+	}
 	return nil
 }
 
@@ -195,11 +208,16 @@ func buildWheelsetLacingTwentyOneHoleG3AngularPoints(
 	if topology.HoleCount != 21 || len(topology.RimHoles) != 21 || len(topology.HubHolesA) != 14 || len(topology.HubHolesB) != 7 {
 		return wheelsetLacingAngularPointSet{}, WheelsetLacingG3GroupSpacing{}, fmt.Errorf("%w: G3 angular layout requires a 21-hole 14/7 topology", ErrInvalidTopology)
 	}
-	spacingAToB, spacingBToA, spacingAToNextGroupA := resolveWheelsetLacingG3RimHoleSpacingValues(
+	spacingAToB, spacingBToA, spacingAToNextGroupA, err := resolveWheelsetLacingG3RimHoleSpacingValues(
 		request.G3RimHoleSpacingAToBDegrees,
 		request.G3RimHoleSpacingBToADegrees,
 		request.G3RimHoleSpacingAToNextGroupADegrees,
+		request.G3RimHoleCircleRadiusMM,
+		request.G3SideAFlangeHoleCircleRadiusMM,
 	)
+	if err != nil {
+		return wheelsetLacingAngularPointSet{}, WheelsetLacingG3GroupSpacing{}, err
+	}
 	if err := validateWheelsetLacingG3RimHoleSpacingClosure(spacingAToB, spacingBToA, spacingAToNextGroupA); err != nil {
 		return wheelsetLacingAngularPointSet{}, WheelsetLacingG3GroupSpacing{}, err
 	}
@@ -276,21 +294,48 @@ func buildWheelsetLacingUniformTwoToOneAngularPoints(
 	return wheelsetLacingAngularPointSet{rimHoles: rimHoles, hubHolesA: hubHolesA, hubHolesB: hubHolesB}
 }
 
-func resolveWheelsetLacingG3RimHoleSpacingValues(spacingAToB, spacingBToA, spacingAToNextGroupA float64) (float64, float64, float64) {
-	if spacingAToB == 0 {
-		spacingAToB = DefaultWheelsetLacingTwentyOneHoleG3RimHoleSpacingAToBDegrees
+func resolveWheelsetLacingG3RimHoleSpacingValues(
+	spacingAToB, spacingBToA, spacingAToNextGroupA float64,
+	rimHoleCircleRadiusMM, sideAFlangeHoleCircleRadiusMM float64,
+) (float64, float64, float64, error) {
+	if spacingAToB == 0 && spacingBToA == 0 && spacingAToNextGroupA == 0 {
+		return calculateWheelsetLacingTwentyOneHoleG3ParallelSpacing(
+			rimHoleCircleRadiusMM,
+			sideAFlangeHoleCircleRadiusMM,
+		)
 	}
-	if spacingBToA == 0 {
-		spacingBToA = DefaultWheelsetLacingTwentyOneHoleG3RimHoleSpacingBToADegrees
+	if spacingAToB <= 0 || spacingBToA <= 0 {
+		return 0, 0, 0, fmt.Errorf("%w: custom 21-hole G3 spacing requires positive A-to-B and B-to-A gaps", ErrInvalidRequest)
 	}
 	if spacingAToNextGroupA == 0 {
-		if spacingAToB == DefaultWheelsetLacingTwentyOneHoleG3RimHoleSpacingAToBDegrees && spacingBToA == DefaultWheelsetLacingTwentyOneHoleG3RimHoleSpacingBToADegrees {
-			spacingAToNextGroupA = DefaultWheelsetLacingTwentyOneHoleG3RimHoleSpacingAToNextGroupADegrees
-		} else {
-			spacingAToNextGroupA = WheelsetLacingTwentyOneHoleG3GroupPitchDegrees - spacingAToB - spacingBToA
-		}
+		spacingAToNextGroupA = WheelsetLacingTwentyOneHoleG3GroupPitchDegrees - spacingAToB - spacingBToA
 	}
-	return spacingAToB, spacingBToA, spacingAToNextGroupA
+	return spacingAToB, spacingBToA, spacingAToNextGroupA, nil
+}
+
+// calculateWheelsetLacingTwentyOneHoleG3ParallelSpacing derives the symmetric
+// rim-hole gaps that make each mapped pair of side-A spokes share a direction.
+// It equates the rim-side and flange-side pair chord lengths at their matched
+// angular midline; the spoke mapping must preserve the corresponding endpoint
+// order for this condition to produce parallel spoke vectors.
+func calculateWheelsetLacingTwentyOneHoleG3ParallelSpacing(
+	rimHoleCircleRadiusMM, sideAFlangeHoleCircleRadiusMM float64,
+) (float64, float64, float64, error) {
+	if !isFinitePositiveWheelsetLacingNumber(rimHoleCircleRadiusMM) || !isFinitePositiveWheelsetLacingNumber(sideAFlangeHoleCircleRadiusMM) {
+		return 0, 0, 0, fmt.Errorf("%w: automatic 21-hole G3 parallel spacing requires positive rim and side-A flange hole-circle radii", ErrInvalidRequest)
+	}
+	const hubPairHalfAngleRadians = WheelsetLacingTwentyOneHoleG3GroupPitchDegrees * math.Pi / 720
+	closingGapSine := (sideAFlangeHoleCircleRadiusMM / rimHoleCircleRadiusMM) * math.Sin(hubPairHalfAngleRadians)
+	maximumClosingGapSine := math.Sin(WheelsetLacingTwentyOneHoleG3GroupPitchDegrees * math.Pi / 360)
+	if !isFinitePositiveWheelsetLacingNumber(closingGapSine) || closingGapSine >= maximumClosingGapSine {
+		return 0, 0, 0, fmt.Errorf("%w: rim and side-A flange radii cannot form a valid 21-hole G3 parallel group", ErrInvalidRequest)
+	}
+	closingGapDegrees := 2 * math.Asin(closingGapSine) * 180 / math.Pi
+	withinGroupGapDegrees := (WheelsetLacingTwentyOneHoleG3GroupPitchDegrees - closingGapDegrees) / 2
+	if !isFinitePositiveWheelsetLacingNumber(withinGroupGapDegrees) {
+		return 0, 0, 0, fmt.Errorf("%w: automatic 21-hole G3 parallel spacing produced an invalid within-group gap", ErrInvalidRequest)
+	}
+	return withinGroupGapDegrees, withinGroupGapDegrees, closingGapDegrees, nil
 }
 
 func validateWheelsetLacingG3RimHoleSpacingClosure(spacingAToB, spacingBToA, spacingAToNextGroupA float64) error {
@@ -316,4 +361,8 @@ func wheelsetLacingAngularHubKey(side Side, id int) string {
 
 func normalizeWheelsetLacingAngularDifference(value float64) float64 {
 	return math.Atan2(math.Sin(value), math.Cos(value))
+}
+
+func isFinitePositiveWheelsetLacingNumber(value float64) bool {
+	return value > 0 && !math.IsNaN(value) && !math.IsInf(value, 0)
 }
