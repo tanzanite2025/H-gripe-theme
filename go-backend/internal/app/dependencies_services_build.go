@@ -495,6 +495,7 @@ func (b *dependencyServicesBuilder) build() error {
 		PaymentRefundReview:                service.NewPaymentRefundRecommendationService(b.repos.PaymentRefundReview, txManager),
 		Outbox:                             service.NewOutboxService(b.repos.Outbox),
 		TransactionalNotificationTemplates: service.NewTransactionalNotificationTemplateService(b.repos.NotificationTemplates),
+		EmailDeliveryRecords:               service.NewTransactionalNotificationDeliveryRecordService(b.repos.EmailDeliveryRecords),
 		EmailProviders:                     b.support.EmailProviderSvc,
 	}
 	return nil

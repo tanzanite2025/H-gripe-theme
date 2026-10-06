@@ -106,6 +106,7 @@ func AutoMigrate(db *gorm.DB, serverMode string) error {
 		&social.OAuthConnection{},
 		&social.OAuthSession{},
 		&notification.EmailProviderConfig{},
+		&notification.EmailDeliveryRecord{},
 		&ops.DomainBinding{},
 		&ops.Connector{},
 		&ops.VPSBinding{},
@@ -336,6 +337,7 @@ func PrepareSchema(ctx context.Context, db *gorm.DB, cfg *config.DatabaseConfig,
 		return fmt.Errorf("run SQL migrations: %w", err)
 	}
 	if err := VerifyRequiredTables(ctx, sqlDB,
+		"email_delivery_records",
 		// Legacy physical table name for SKU supplier-cost records. This table
 		// does not imply that the application implements supplier-side workflow.
 		"product_procurement_records",

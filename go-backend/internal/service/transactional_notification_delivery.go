@@ -4,8 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
+	"time"
 
+	"commerce-platform/internal/domain/notification"
 	"commerce-platform/internal/domain/outbox"
+	"commerce-platform/internal/pkg/resilience"
 )
 
 // TransactionalNotificationSender is the provider-neutral portion of the
@@ -24,6 +28,12 @@ type RenderedTransactionalNotificationSender interface {
 	SendRenderedEmail(to []string, subject, htmlBody, textBody string) error
 }
 
+// TransactionalNotificationProviderIdentity is optional metadata supplied by
+// a runtime sender when it can identify the selected outbound channel.
+type TransactionalNotificationProviderIdentity interface {
+	TransactionalNotificationProviderCode() string
+}
+
 var (
 	ErrTransactionalNotificationTemplateServiceRequired = errors.New("transactional notification template service is required")
 	ErrTransactionalNotificationSenderRequired          = errors.New("transactional notification sender is required")
@@ -38,6 +48,16 @@ func deliverTransactionalNotification(
 	event outbox.Event,
 	templateService *TransactionalNotificationTemplateService,
 	sender TransactionalNotificationSender,
+) error {
+	return deliverTransactionalNotificationWithRecordService(ctx, event, templateService, sender, nil)
+}
+
+func deliverTransactionalNotificationWithRecordService(
+	ctx context.Context,
+	event outbox.Event,
+	templateService *TransactionalNotificationTemplateService,
+	sender TransactionalNotificationSender,
+	recordService *TransactionalNotificationDeliveryRecordService,
 ) error {
 	if ctx == nil {
 		ctx = context.Background()
@@ -67,6 +87,35 @@ func deliverTransactionalNotification(
 		return fmt.Errorf("render transactional notification %q: %w", plan.TemplateCode, err)
 	}
 
+	referenceType, referenceNumber := transactionalNotificationReference(plan)
+	providerCode := ""
+	if identifiedSender, ok := sender.(TransactionalNotificationProviderIdentity); ok {
+		providerCode = identifiedSender.TransactionalNotificationProviderCode()
+	}
+	attemptedAt := time.Now().UTC()
+	if event.Attempts <= 0 {
+		event.Attempts = 1
+	}
+	if recordService != nil {
+		// A missing audit row must never turn a successful SMTP delivery into an
+		// Outbox retry, so audit writes are deliberately best effort.
+		_ = recordService.StartEmailDeliveryRecord(
+			plan.IdempotencyKey,
+			event.ID,
+			event.EventType,
+			plan.TemplateCode,
+			plan.Locale,
+			rendered.TemplateVersion,
+			plan.RecipientEmail,
+			rendered.Subject,
+			referenceType,
+			referenceNumber,
+			event.Attempts,
+			providerCode,
+			attemptedAt,
+		)
+	}
+
 	if renderedSender, ok := sender.(RenderedTransactionalNotificationSender); ok {
 		if err := renderedSender.SendRenderedEmail(
 			[]string{plan.RecipientEmail},
@@ -74,13 +123,44 @@ func deliverTransactionalNotification(
 			rendered.HTML,
 			rendered.Text,
 		); err != nil {
+			if recordService != nil {
+				status := notificationDeliveryRecordFailureStatus(err)
+				_ = recordService.MarkEmailDeliveryRecordFailed(plan.IdempotencyKey, status, err.Error(), time.Now().UTC())
+			}
 			return fmt.Errorf("send transactional notification %q: %w", plan.TemplateCode, err)
+		}
+		if recordService != nil {
+			_ = recordService.MarkEmailDeliveryRecordSent(plan.IdempotencyKey, time.Now().UTC())
 		}
 		return nil
 	}
 
 	if err := sender.SendEmail([]string{plan.RecipientEmail}, rendered.Subject, rendered.Text); err != nil {
+		if recordService != nil {
+			status := notificationDeliveryRecordFailureStatus(err)
+			_ = recordService.MarkEmailDeliveryRecordFailed(plan.IdempotencyKey, status, err.Error(), time.Now().UTC())
+		}
 		return fmt.Errorf("send transactional notification %q: %w", plan.TemplateCode, err)
 	}
+	if recordService != nil {
+		_ = recordService.MarkEmailDeliveryRecordSent(plan.IdempotencyKey, time.Now().UTC())
+	}
 	return nil
+}
+
+func transactionalNotificationReference(plan TransactionalNotificationDeliveryPlan) (string, string) {
+	if value := strings.TrimSpace(plan.Variables["after_sales_case_number"]); value != "" {
+		return "after_sales", value
+	}
+	if value := strings.TrimSpace(plan.Variables["order_number"]); value != "" {
+		return "order", value
+	}
+	return "", ""
+}
+
+func notificationDeliveryRecordFailureStatus(err error) string {
+	if errors.Is(err, resilience.ErrExternalOutcomeUnknown) {
+		return notification.EmailDeliveryStatusUnknown
+	}
+	return notification.EmailDeliveryStatusFailed
 }

@@ -43,10 +43,21 @@ const itemTarget = (item: AdminNavigationItem): RouteLocationRaw => {
   return { name: 'Dashboard' }
 }
 
+const matchesNavigationTabPath = (itemPath: string | undefined): boolean => {
+  if (!itemPath) return false
+  if (itemPath === '/') return props.activePath === '/'
+  return props.activePath === itemPath || props.activePath.startsWith(`${itemPath}/`)
+}
+
 const isActive = (item: AdminNavigationItem): boolean => {
-  if (!item.path) return false
-  if (item.path === '/') return props.activePath === '/'
-  return props.activePath === item.path || props.activePath.startsWith(`${item.path}/`)
+  if (!matchesNavigationTabPath(item.path)) return false
+
+  const itemPathLength = item.path?.length || 0
+  return !props.tabs.some((otherTab) => (
+    otherTab.id !== item.id
+    && (otherTab.path?.length || 0) > itemPathLength
+    && matchesNavigationTabPath(otherTab.path)
+  ))
 }
 
 const tabLabel = computed(() => props.label || t('layout.navigation'))

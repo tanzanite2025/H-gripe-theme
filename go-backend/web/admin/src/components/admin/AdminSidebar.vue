@@ -152,7 +152,9 @@ const isGroupActive = (item: AdminNavigationItem): boolean => {
 }
 
 const activeChild = (item: AdminNavigationItem): AdminNavigationItem | undefined => (
-  (item.children || []).find((child) => isChildActive(child, item))
+  (item.children || [])
+    .filter((child) => isChildActive(child, item))
+    .sort((firstChild, secondChild) => (secondChild.path?.length || 0) - (firstChild.path?.length || 0))[0]
 )
 
 const itemTarget = (item: AdminNavigationItem): RouteLocationRaw => {

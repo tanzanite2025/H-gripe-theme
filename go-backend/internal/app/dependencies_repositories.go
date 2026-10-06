@@ -119,6 +119,7 @@ func newDependencyRepositories(db *gorm.DB) (Repositories, error) {
 		EmailChallenge:                 repository.NewEmailChallengeRepository(db),
 		NotificationTemplates:          repository.NewNotificationTemplateRepository(db),
 		EmailProviders:                 repository.NewEmailProviderRepository(db),
+		EmailDeliveryRecords:           repository.NewEmailDeliveryRecordRepository(db),
 		VisitorProfile:                 repository.NewVisitorProfileRepository(db),
 		RecommendationEvent:            repository.NewRecommendationEventRepository(db),
 		VisitorRiskFact:                repository.NewVisitorRiskFactRepository(db),

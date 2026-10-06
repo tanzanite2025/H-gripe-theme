@@ -19,6 +19,7 @@ import {
   ImageDown,
   LayoutDashboard,
   ListChecks,
+  Mail,
   MessageSquareText,
   Megaphone,
   Package,
@@ -441,6 +442,18 @@ export const adminNavigationItems: AdminNavigationItem[] = [
     ],
   },
   {
+    id: 'email',
+    code: 'EMAIL',
+    label: '邮件',
+    icon: Mail,
+    permission: 'settings:view',
+    children: [
+      { id: 'email-providers', path: '/email/providers', routeName: 'EmailProviders', label: '发件通道' },
+      { id: 'email-templates', path: '/email/templates', routeName: 'EmailTemplates', label: '事务邮件模板' },
+      { id: 'email-deliveries', path: '/email/deliveries', routeName: 'EmailDeliveryRecords', label: '发送记录' },
+    ],
+  },
+  {
     id: 'services',
     code: 'SERVICES',
     label: '服务中心',
@@ -475,7 +488,6 @@ export const adminNavigationItems: AdminNavigationItem[] = [
     icon: Settings,
     permission: 'settings:view',
     children: [
-      { id: 'settings-email', path: '/settings/email', routeName: 'SettingsEmail', label: '邮件' },
       { id: 'settings-markets', path: '/settings/markets', routeName: 'SettingsMarkets', label: '市场与本地化语种' },
       { id: 'settings-api', path: '/settings/api', routeName: 'SettingsApi', label: 'API 管理' },
       { id: 'settings-commercial-crawler', path: '/settings/commercial-crawler', routeName: 'SettingsCommercialCrawler', label: '商业爬虫防护' },

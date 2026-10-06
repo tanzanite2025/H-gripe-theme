@@ -135,6 +135,7 @@ type Repositories struct {
 	EmailChallenge                 *repository.EmailChallengeRepository
 	NotificationTemplates          *repository.NotificationTemplateRepository
 	EmailProviders                 *repository.EmailProviderRepository
+	EmailDeliveryRecords           *repository.EmailDeliveryRecordRepository
 	VisitorProfile                 *repository.VisitorProfileRepository
 	RecommendationEvent            *repository.RecommendationEventRepository
 	VisitorRiskFact                *repository.VisitorRiskFactRepository
@@ -242,6 +243,7 @@ type Services struct {
 	PaymentThreeDS                     *service.PaymentThreeDSPolicyService
 	Outbox                             *service.OutboxService
 	TransactionalNotificationTemplates *service.TransactionalNotificationTemplateService
+	EmailDeliveryRecords               *service.TransactionalNotificationDeliveryRecordService
 	EmailProviders                     *service.EmailProviderService
 	CurrencyPolicy                     *service.CurrencyPolicyService
 	ExchangeRate                       *service.ExchangeRateService

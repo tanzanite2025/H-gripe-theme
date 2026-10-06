@@ -199,6 +199,20 @@ func (s *EmailProviderService) DefaultSMTPConfig() (*email.SMTPConfig, bool, err
 	return cfg, true, nil
 }
 
+// DefaultProviderCode returns the configured channel identifier without
+// decrypting its secret. Delivery history uses it only as an operator-facing
+// label.
+func (s *EmailProviderService) DefaultProviderCode() string {
+	if s == nil || s.repo == nil {
+		return ""
+	}
+	record, err := s.repo.FindDefaultActive()
+	if err != nil || record == nil {
+		return ""
+	}
+	return strings.TrimSpace(record.Code)
+}
+
 // Test sends a real message through the selected provider and persists the
 // result. The target address is deliberately required by the API so a test can
 // never accidentally broadcast to an implicit recipient.

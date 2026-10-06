@@ -117,7 +117,7 @@ const activeTab = useRouteTab({
   values: ['site', 'email', 'markets', 'api', 'commercial_crawler', 'public_chat', 'refund_cancellation'],
   routes: {
     site: 'SettingsSite',
-    email: 'SettingsEmail',
+    email: 'EmailProviders',
     markets: 'SettingsMarkets',
     api: 'SettingsApi',
     commercial_crawler: 'SettingsCommercialCrawler',
