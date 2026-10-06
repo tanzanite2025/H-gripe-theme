@@ -1543,6 +1543,10 @@ onBeforeUnmount(() => {
     }
 
     @media (max-width: 640px) {
+      .spoke-lacing-page {
+        padding: 16px 0 24px;
+      }
+
       .blueprint-header {
         flex-direction: column;
         align-items: stretch;
