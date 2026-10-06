@@ -210,6 +210,9 @@ func (s *ShippingService) validateCarrierServiceWeightBilling(service *shipping.
 	if err != nil {
 		return err
 	}
+	if template.IsSystemFreeShippingTemplate() {
+		return errors.New("system free-shipping template cannot be bound to a carrier service")
+	}
 	if template.Type != "weight" {
 		return nil
 	}

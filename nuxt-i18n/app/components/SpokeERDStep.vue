@@ -1,6 +1,11 @@
 <template>
-  <section class="spoke-erd-step" aria-labelledby="spoke-erd-step-title">
+  <section
+    class="spoke-erd-step"
+    :class="{ 'spoke-erd-step--embedded': props.presentation !== 'full' }"
+    :aria-labelledby="props.presentation === 'full' ? 'spoke-erd-step-title' : undefined"
+  >
     <SpokeStepNavigation
+      v-if="props.presentation === 'full'"
       :current-step="currentStep"
       :show-previous="true"
       @select="emit('select-step', $event)"
@@ -8,11 +13,11 @@
       @next="emit('next')"
     />
 
-    <div class="spoke-erd-step__intro">
+    <div v-if="props.presentation === 'full'" class="spoke-erd-step__intro">
       <span class="spoke-erd-step__eyebrow">02</span>
       <div>
         <h2 id="spoke-erd-step-title" class="spoke-erd-step__title">
-          {{ t('resourcesSpokeCalculator.calculator.physicalCorrections.stepTwoPrompt', '输入轮圈 ERD') }}
+          {{ t('resourcesSpokeCalculator.parameter.items.erd.title') }}
         </h2>
         <p class="spoke-erd-step__subtitle">
           {{ t('resourcesSpokeCalculator.parameter.items.erd.desc') }}
@@ -20,8 +25,8 @@
       </div>
     </div>
 
-    <div class="spoke-erd-step__input-panel">
-      <div class="spoke-erd-step__input-copy">
+    <div v-if="props.presentation !== 'guidance'" class="spoke-erd-step__input-panel">
+      <div v-if="props.presentation === 'full'" class="spoke-erd-step__input-copy">
         <span class="spoke-erd-step__input-kicker">
           {{ t('resourcesSpokeCalculator.calculator.physicalCorrections.erdInputKicker', 'STEP 2 INPUT') }}
         </span>
@@ -76,7 +81,11 @@
       </div>
     </div>
 
-    <section class="spoke-erd-step__measurement" aria-labelledby="spoke-erd-measurement-title">
+    <section
+      v-if="props.presentation !== 'inputs'"
+      class="spoke-erd-step__measurement"
+      aria-labelledby="spoke-erd-measurement-title"
+    >
       <div class="spoke-erd-step__measurement-heading">
         <span class="spoke-erd-step__measurement-badge">01</span>
         <h3 id="spoke-erd-measurement-title" class="spoke-erd-step__measurement-title">
@@ -115,7 +124,7 @@
       </div>
     </section>
 
-    <SpokePhysicsDiagrams class="spoke-erd-step__reference" />
+    <SpokePhysicsDiagrams v-if="props.presentation === 'full'" class="spoke-erd-step__reference" />
 
   </section>
 </template>
@@ -129,10 +138,12 @@ import SpokeStepNavigation from '~/components/SpokeStepNavigation.vue'
 
 const { t } = useI18n()
 const props = withDefaults(defineProps<{
+  presentation?: 'full' | 'inputs' | 'guidance'
   currentStep?: number
   frontErd?: number | null
   rearErd?: number | null
 }>(), {
+  presentation: 'full',
   currentStep: 2,
   frontErd: null,
   rearErd: null,
@@ -174,6 +185,15 @@ const rearErdMm = computed({
     #f8fafc;
   background-size: 28px 28px;
   color: var(--erd-step-text);
+}
+
+.spoke-erd-step--embedded {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
 }
 
 .spoke-erd-step__intro {
@@ -336,6 +356,20 @@ const rearErdMm = computed({
   box-shadow: 0 10px 24px rgba(5, 150, 105, 0.1);
 }
 
+.spoke-erd-step--embedded .spoke-erd-step__input-panel {
+  grid-template-columns: minmax(0, 1fr);
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.spoke-erd-step--embedded .spoke-erd-step__input-fields {
+  width: 100%;
+}
+
 .spoke-erd-step__input-copy {
   min-width: 0;
 }
@@ -426,6 +460,10 @@ const rearErdMm = computed({
   .spoke-erd-step {
     padding: 16px;
     border-radius: 20px;
+  }
+
+  .spoke-erd-step.spoke-erd-step--embedded {
+    padding: 0;
   }
 
   .spoke-erd-step__input-panel {

@@ -1654,7 +1654,8 @@
       "tireSizeCharts": "Tire Guides",
       "blog": "Blog",
       "technicalDocs": "Technical",
-      "wheelsetBuyersGuide": "Wheelset Guide"
+      "wheelsetBuyersGuide": "Wheelset Guide",
+      "spokeGuides": "Spoke Guides"
     },
     "navShort": {
       "tireSize": "Tire guides",

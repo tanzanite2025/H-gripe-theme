@@ -12,17 +12,10 @@
           @select-step="goToStep"
           @next="nextStep"
         />
-        <SpokeERDStep
+        <SpokeRimGeometryStep
           v-else-if="activeWizardStep === 2"
           v-model:front-erd="frontErdMm"
           v-model:rear-erd="rearErdMm"
-          :current-step="activeWizardStep"
-          @select-step="goToStep"
-          @previous="previousStep"
-          @next="nextStep"
-        />
-        <SpokeAlternatingDrillingStep
-          v-else-if="activeWizardStep === 3"
           v-model:front-offset="frontAlternatingOffsetMm"
           v-model:rear-offset="rearAlternatingOffsetMm"
           v-model:front-rim-offset="frontRimOffsetMm"
@@ -33,7 +26,7 @@
           @next="nextStep"
         />
         <SpokePCDStep
-          v-else-if="activeWizardStep === 4"
+          v-else-if="activeWizardStep === 3"
           v-model:front-geometry="frontGeometry"
           v-model:rear-geometry="rearGeometry"
           :front-config="spokeWizardDraft.front"
@@ -45,7 +38,7 @@
           @next="nextStep"
         />
         <SpokePhysicalCorrectionsStep
-          v-else-if="activeWizardStep === 5"
+          v-else-if="activeWizardStep === 4"
           v-model:front-hole-diameter="frontHoleDiameterMm"
           v-model:rear-hole-diameter="rearHoleDiameterMm"
           v-model:front-interlacing="frontInterlacing"
@@ -61,7 +54,7 @@
           @next="nextStep"
         />
         <SpokeNippleStep
-          v-else-if="activeWizardStep === 6"
+          v-else-if="activeWizardStep === 5"
           v-model:front-nipple-type="frontNippleType"
           v-model:rear-nipple-type="rearNippleType"
           v-model:front-nipple-length="frontNippleLengthMm"
@@ -69,13 +62,33 @@
           :current-step="activeWizardStep"
           @select-step="goToStep"
           @previous="previousStep"
+          @next="nextStep"
         />
 
         <div class="support-page__calculator-wrapper">
-          <SpokeCalculatorBlueprint
-            :front-config="spokeWizardDraft.front"
-            :rear-config="spokeWizardDraft.rear"
-          />
+          <div v-show="activeWizardStep === 6" class="spoke-result-step">
+            <SpokeCalculatorBlueprint
+              :front-config="spokeWizardDraft.front"
+              :rear-config="spokeWizardDraft.rear"
+              :current-step="activeWizardStep"
+              @select-step="goToStep"
+              @previous="previousStep"
+            >
+              <template #intro>
+                <header class="spoke-result-step__intro">
+                  <span class="spoke-result-step__number" aria-hidden="true">06</span>
+                  <div>
+                    <h2 class="spoke-result-step__title">
+                      {{ t('resourcesSpokeCalculator.calculator.physicalCorrections.stepSixPrompt') }}
+                    </h2>
+                    <p class="spoke-result-step__subtitle">
+                      {{ t('resourcesSpokeCalculator.calculator.physicalCorrections.stepSixSubtitle') }}
+                    </p>
+                  </div>
+                </header>
+              </template>
+            </SpokeCalculatorBlueprint>
+          </div>
 
           <SpokeCalculatorCatalogPanel />
 
@@ -98,12 +111,11 @@
 <script setup lang="ts">
 import SpokeCalculatorBlueprint from '~/components/SpokeCalculatorBlueprint.vue'
 import SpokeCalculatorCatalogPanel from '~/components/SpokeCalculatorCatalogPanel.vue'
-import SpokeAlternatingDrillingStep from '~/components/SpokeAlternatingDrillingStep.vue'
-import SpokeERDStep from '~/components/SpokeERDStep.vue'
 import SpokeHeadTypeStep from '~/components/SpokeHeadTypeStep.vue'
 import SpokeNippleStep from '~/components/SpokeNippleStep.vue'
 import SpokePCDStep from '~/components/SpokePCDStep.vue'
 import SpokePhysicalCorrectionsStep from '~/components/SpokePhysicalCorrectionsStep.vue'
+import SpokeRimGeometryStep from '~/components/SpokeRimGeometryStep.vue'
 import UserFeedbackThread from '~/components/UserFeedbackThread.vue'
 
 import { usePageMessages } from '~/composables/usePageMessages'
@@ -338,11 +350,51 @@ useHead(() => ({
 }
 
 .support-page__calculator-wrapper {
-  margin-top: 1.5rem;
+  margin-top: 0;
 }
 
 .spoke-page__head-step {
   margin-bottom: 1.5rem;
+}
+
+.spoke-result-step {
+  margin-bottom: 1.5rem;
+}
+
+.spoke-result-step__intro {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.875rem;
+  margin: 0 0 1.25rem;
+}
+
+.spoke-result-step__number {
+  display: inline-flex;
+  width: 1.7rem;
+  height: 1.7rem;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  background: rgba(5, 150, 105, 0.12);
+  color: #047857;
+  font-size: 0.68rem;
+  font-weight: 800;
+}
+
+.spoke-result-step__title {
+  margin: 0;
+  color: var(--tz-text-primary);
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1.3;
+}
+
+.spoke-result-step__subtitle {
+  margin: 3px 0 0;
+  color: var(--tz-text-muted);
+  font-size: 12px;
+  line-height: 1.5;
 }
 
  .spoke-page {

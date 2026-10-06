@@ -247,14 +247,17 @@ func (r *ShippingRepository) UpdateTemplateWithRules(template *shipping.Shipping
 func (r *ShippingRepository) UpdateTemplateWithRulesAndCarrierServices(template *shipping.ShippingTemplate, rules []shipping.ShippingRule, carrierServices []shipping.CarrierService) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
 		updates := map[string]interface{}{
-			"name":                 template.Name,
-			"type":                 template.Type,
-			"currency":             template.Currency,
-			"free_shipping":        template.FreeShipping,
-			"free_threshold_minor": template.FreeThresholdMinor,
-			"default_fee_minor":    template.DefaultFeeMinor,
-			"description":          template.Description,
-			"enabled":              template.Enabled,
+			"name":                    template.Name,
+			"type":                    template.Type,
+			"template_kind":           template.TemplateKind,
+			"is_system_managed":       template.IsSystemManaged,
+			"currency":                template.Currency,
+			"free_shipping":           template.FreeShipping,
+			"free_threshold_minor":    template.FreeThresholdMinor,
+			"default_fee_minor":       template.DefaultFeeMinor,
+			"free_shipping_countries": template.FreeShippingCountries,
+			"description":             template.Description,
+			"enabled":                 template.Enabled,
 		}
 		if err := tx.Model(&shipping.ShippingTemplate{}).Where("id = ?", template.ID).Updates(updates).Error; err != nil {
 			return err

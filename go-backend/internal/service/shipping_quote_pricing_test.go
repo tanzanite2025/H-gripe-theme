@@ -1,6 +1,7 @@
 package service
 
 import (
+	"errors"
 	"testing"
 
 	domainmoney "commerce-platform/internal/domain/money"
@@ -38,6 +39,49 @@ func TestTemplatePricingMoneyPathUsesMinorThresholdsWithoutFloatArithmetic(t *te
 	}
 	if free || atThreshold.AmountMinor() != 125 {
 		t.Fatalf("at-threshold fee = %d/free=%v, want 125/false", atThreshold.AmountMinor(), free)
+	}
+}
+
+func TestSystemFreeShippingTemplateRejectsCountryOutsideConfiguredScope(t *testing.T) {
+	template := &shipping.ShippingTemplate{
+		Name:                  "系统免邮模板",
+		TemplateKind:          shipping.ShippingTemplateKindSystemFreeShipping,
+		Currency:              "USD",
+		FreeShipping:          true,
+		FreeShippingCountries: `["US"]`,
+	}
+
+	fee, free, _, err := calculateTemplateShippingFeeWithDisplayPricesMoney(
+		template, "DE", 1000, 1, domainmoney.MustNew(100, "USD"), domainmoney.MustNew(100, "USD"),
+	)
+	if !errors.Is(err, ErrCountryNotSupported) {
+		t.Fatalf("country outside system scope error = %v, want ErrCountryNotSupported", err)
+	}
+	if free || fee.AmountMinor() != 0 {
+		t.Fatalf("country outside system scope returned fee=%d/free=%v", fee.AmountMinor(), free)
+	}
+}
+
+func TestSystemFreeShippingTemplateAlwaysReturnsZeroInsideConfiguredScope(t *testing.T) {
+	template := &shipping.ShippingTemplate{
+		Name:                  "系统免邮模板",
+		Type:                  shipping.ShippingTemplateTypeSystemFreeShipping,
+		TemplateKind:          shipping.ShippingTemplateKindSystemFreeShipping,
+		Currency:              "USD",
+		FreeShipping:          true,
+		FreeThresholdMinor:    9999,
+		DefaultFeeMinor:       777,
+		FreeShippingCountries: `["US"]`,
+	}
+
+	fee, free, _, err := calculateTemplateShippingFeeWithDisplayPricesMoney(
+		template, "US", 1000, 1, domainmoney.MustNew(100, "USD"), domainmoney.MustNew(100, "USD"),
+	)
+	if err != nil {
+		t.Fatalf("system free-shipping pricing failed: %v", err)
+	}
+	if !free || fee.AmountMinor() != 0 {
+		t.Fatalf("system free-shipping fee=%d/free=%v, want 0/true", fee.AmountMinor(), free)
 	}
 }
 

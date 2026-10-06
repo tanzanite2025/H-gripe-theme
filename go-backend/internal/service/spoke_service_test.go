@@ -542,6 +542,30 @@ func TestSpokeServiceUsesSharedTopologyMappingsForSymmetricAndTwoToOneBuilds(t *
 				assert.Equal(t, testCase.sideBCount, logicalCounts["B"])
 				assert.Equal(t, testCase.sideACount, physicalCounts["left"])
 				assert.Equal(t, testCase.sideBCount, physicalCounts["right"])
+
+				leftBracingSineSum, rightBracingSineSum := 0.0, 0.0
+				for _, spoke := range result.SpokeLengths {
+					bracingDistanceMM := 22.5
+					if spoke.PhysicalSide == "right" {
+						bracingDistanceMM = 35.6
+					}
+					// This fixture uses the default 2.5 mm flange-hole input;
+					// add back its 1.25 mm cut-length edge correction to recover
+					// the spoke centerline length used for the bracing angle.
+					bracingSine := bracingDistanceMM / (spoke.LengthMM + 1.25)
+					if spoke.PhysicalSide == "left" {
+						leftBracingSineSum += bracingSine
+					} else {
+						rightBracingSineSum += bracingSine
+					}
+				}
+				assert.InDelta(
+					t,
+					rightBracingSineSum/leftBracingSineSum,
+					result.TensionRatio.LeftToRight,
+					0.001,
+					"per-spoke tension ratio should balance summed lateral force contributions",
+				)
 			}
 		})
 	}

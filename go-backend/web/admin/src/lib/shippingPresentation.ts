@@ -6,8 +6,26 @@ export const templateTypeLabel = (type: string) => {
     weight: '按重量',
     quantity: '按数量',
     price: '按金额',
+    free_shipping: '系统免邮',
   }
   return labels[type] || type || '-'
+}
+
+export const templateKindLabel = (kind?: string | null, type?: string | null) => (
+  kind === 'system_free_shipping' || type === 'free_shipping' ? '系统免邮' : '承运计费'
+)
+
+export const freeShippingCountriesLabel = (value: unknown) => {
+  const raw = Array.isArray(value) ? value : String(value || '').trim()
+  if (Array.isArray(raw)) return raw.length ? raw.join(', ') : '未配置国家'
+  if (!raw) return '未配置国家'
+  try {
+    const parsed = JSON.parse(raw)
+    if (Array.isArray(parsed)) return parsed.length ? parsed.join(', ') : '未配置国家'
+  } catch {
+    // Keep compatibility with older delimited country scopes.
+  }
+  return raw.replace(/[\[\]"']/g, '').replace(/[,，;|]+/g, ', ')
 }
 
 export const formatMoney = (valueMinor: any, currency?: string | null) => formatMinorMoney(valueMinor, currency)

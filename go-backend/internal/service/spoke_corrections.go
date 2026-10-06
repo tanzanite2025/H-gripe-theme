@@ -116,12 +116,33 @@ func computeSpokeTensionRatioSafe(leftBracingDistance, rightBracingDistance, lef
 
 	leftSin := math.Min(1, leftBracingDistance/leftLength)
 	rightSin := math.Min(1, rightBracingDistance/rightLength)
-	if leftSin <= 0 || rightSin <= 0 || !isFinite(leftSin) || !isFinite(rightSin) {
+	return computeSpokeTensionRatioFromBracingSums(leftSin, rightSin, 1, 1)
+}
+
+// computeSpokeTensionRatioFromBracingSums balances the total axial force on
+// both sides. Each spoke contributes sin(theta) = flange distance / spoke
+// length, so summing the contributions naturally accounts for unequal spoke
+// counts and for multiple spoke-angle classes in 2:1 and G3 layouts.
+func computeSpokeTensionRatioFromBracingSums(
+	leftBracingSineSum,
+	rightBracingSineSum float64,
+	leftSpokeCount,
+	rightSpokeCount int,
+) (*SpokeTensionRatio, error) {
+	if leftSpokeCount <= 0 || rightSpokeCount <= 0 || leftBracingSineSum <= 0 || rightBracingSineSum <= 0 {
+		return nil, fmt.Errorf("%w: bracing geometry and spoke counts must be positive", ErrInvalidSpokeCalculation)
+	}
+	if !isFinite(leftBracingSineSum) || !isFinite(rightBracingSineSum) {
+		return nil, fmt.Errorf("%w: tension ratio calculation received a non-finite value", ErrInvalidSpokeCalculation)
+	}
+	leftMeanSin := math.Min(1, leftBracingSineSum/float64(leftSpokeCount))
+	rightMeanSin := math.Min(1, rightBracingSineSum/float64(rightSpokeCount))
+	if leftMeanSin <= 0 || rightMeanSin <= 0 || !isFinite(leftMeanSin) || !isFinite(rightMeanSin) {
 		return nil, fmt.Errorf("%w: tension ratio calculation diverged", ErrInvalidSpokeCalculation)
 	}
 
-	leftToRight := rightSin / leftSin
-	rightToLeft := leftSin / rightSin
+	leftToRight := rightBracingSineSum / leftBracingSineSum
+	rightToLeft := leftBracingSineSum / rightBracingSineSum
 	lowerToHigher := math.Min(leftToRight, rightToLeft)
 
 	lowerSide := "balanced"
@@ -137,8 +158,8 @@ func computeSpokeTensionRatioSafe(leftBracingDistance, rightBracingDistance, lef
 		RightToLeft:          roundSpokeRatio(rightToLeft),
 		LowerToHigher:        roundSpokeRatio(lowerToHigher),
 		LowerSide:            lowerSide,
-		LeftBracingAngleDeg:  roundSpokeRatio(math.Asin(leftSin) * 180 / math.Pi),
-		RightBracingAngleDeg: roundSpokeRatio(math.Asin(rightSin) * 180 / math.Pi),
+		LeftBracingAngleDeg:  roundSpokeRatio(math.Asin(leftMeanSin) * 180 / math.Pi),
+		RightBracingAngleDeg: roundSpokeRatio(math.Asin(rightMeanSin) * 180 / math.Pi),
 	}
 	if !isFinite(result.LeftToRight) || !isFinite(result.RightToLeft) || !isFinite(result.LowerToHigher) {
 		return nil, fmt.Errorf("%w: tension ratio calculation diverged", ErrInvalidSpokeCalculation)

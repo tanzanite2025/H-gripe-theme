@@ -1,6 +1,11 @@
 <template>
-  <section class="spoke-alternating-step" aria-labelledby="spoke-alternating-step-title">
+  <section
+    class="spoke-alternating-step"
+    :class="{ 'spoke-alternating-step--embedded': props.presentation !== 'full' }"
+    :aria-labelledby="props.presentation === 'full' ? 'spoke-alternating-step-title' : undefined"
+  >
     <SpokeStepNavigation
+      v-if="props.presentation === 'full'"
       :current-step="currentStep"
       :show-previous="true"
       @select="emit('select-step', $event)"
@@ -8,22 +13,22 @@
       @next="emit('next')"
     />
 
-    <div class="spoke-alternating-step__intro">
-      <span class="spoke-alternating-step__eyebrow">03</span>
+    <div v-if="props.presentation === 'full'" class="spoke-alternating-step__intro">
+      <span class="spoke-alternating-step__eyebrow">02</span>
       <div>
         <h2 id="spoke-alternating-step-title" class="spoke-alternating-step__title">
-          {{ t('resourcesSpokeCalculator.calculator.physicalCorrections.stepThreePrompt', '输入轮圈偏心量与交错钻孔偏移') }}
+          {{ t('resourcesSpokeCalculator.calculator.physicalCorrections.rimGeometryOffsetHeading', '轮圈偏心量与交错钻孔偏移') }}
         </h2>
         <p class="spoke-alternating-step__subtitle">
-          {{ t('resourcesSpokeCalculator.calculator.physicalCorrections.stepThreeSubtitle', '继续录入轮圈整体偏心量和左右交错钻孔相对于轮圈中心基准的偏移量。') }}
+          {{ t('resourcesSpokeCalculator.calculator.physicalCorrections.rimGeometryOffsetSubtitle', '分别填写轮圈整体偏心量和左右交错钻孔相对于轮圈中心基准的偏移量。') }}
         </p>
       </div>
     </div>
 
-    <div class="spoke-alternating-step__input-panel">
-      <div class="spoke-alternating-step__input-copy">
+    <div v-if="props.presentation !== 'guidance'" class="spoke-alternating-step__input-panel">
+      <div v-if="props.presentation === 'full'" class="spoke-alternating-step__input-copy">
         <span class="spoke-alternating-step__input-kicker">
-          {{ t('resourcesSpokeCalculator.calculator.physicalCorrections.alternatingInputKicker', 'STEP 3 INPUT') }}
+          {{ t('resourcesSpokeCalculator.calculator.physicalCorrections.alternatingInputKicker', 'STEP 2 INPUT') }}
         </span>
         <strong class="spoke-alternating-step__input-label">
           {{ t('resourcesSpokeCalculator.calculator.physicalCorrections.alternatingInputLabel', '轮圈交错钻孔偏移') }}
@@ -130,7 +135,31 @@
       </div>
     </div>
 
-    <SpokePhysicsDiagrams class="spoke-alternating-step__reference" />
+    <section
+      v-if="props.presentation === 'guidance'"
+      class="spoke-alternating-step__guidance"
+      :aria-label="t('resourcesSpokeCalculator.calculator.physicalCorrections.rimOffsetGuidanceTitle')"
+    >
+      <h3 class="spoke-alternating-step__guidance-title">
+        {{ t('resourcesSpokeCalculator.calculator.physicalCorrections.rimOffsetGuidanceTitle') }}
+      </h3>
+      <div class="spoke-alternating-step__guidance-notes">
+        <div class="spoke-alternating-step__input-note" role="note">
+          <span class="spoke-alternating-step__input-note-icon" aria-hidden="true">±</span>
+          <p>
+            {{ t('resourcesSpokeCalculator.calculator.physicalCorrections.alternatingInputNote', '正值表示孔位向左侧偏移，负值表示向右侧偏移；优先以轮圈厂商数据为准。') }}
+          </p>
+        </div>
+        <div class="spoke-alternating-step__input-note spoke-alternating-step__input-note--rim" role="note">
+          <span class="spoke-alternating-step__input-note-icon" aria-hidden="true">↔</span>
+          <p>
+            {{ t('resourcesSpokeCalculator.calculator.physicalCorrections.rimOffsetInputNote', '偏心圈的轮圈床整体偏离轮组中心线；对称轮圈填 0。偏心量与交错钻孔偏移是两项独立参数。') }}
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <SpokePhysicsDiagrams v-if="props.presentation === 'full'" class="spoke-alternating-step__reference" />
 
   </section>
 </template>
@@ -143,13 +172,15 @@ import SpokeStepNavigation from '~/components/SpokeStepNavigation.vue'
 const { t } = useI18n()
 
 const props = withDefaults(defineProps<{
+  presentation?: 'full' | 'inputs' | 'guidance'
   currentStep?: number
   frontOffset?: number | null
   rearOffset?: number | null
   frontRimOffset?: number | null
   rearRimOffset?: number | null
 }>(), {
-  currentStep: 3,
+  presentation: 'full',
+  currentStep: 2,
   frontOffset: 0,
   rearOffset: 0,
   frontRimOffset: 0,
@@ -211,6 +242,15 @@ const updateRimOffset = (side: 'front' | 'rear', event: Event) => {
   color: var(--alternating-step-text);
 }
 
+.spoke-alternating-step--embedded {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+}
+
 .spoke-alternating-step__intro {
   display: flex;
   align-items: flex-start;
@@ -261,6 +301,40 @@ const updateRimOffset = (side: 'front' | 'rear', event: Event) => {
   border-radius: 18px;
   background: linear-gradient(135deg, #ecfdf5 0%, #f0fdfa 54%, #ffffff 100%);
   box-shadow: 0 10px 24px rgba(5, 150, 105, 0.1);
+}
+
+.spoke-alternating-step--embedded .spoke-alternating-step__input-panel {
+  grid-template-columns: minmax(0, 1fr);
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.spoke-alternating-step__guidance {
+  display: grid;
+  gap: 10px;
+  margin: 0 0 18px;
+  padding: 16px;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.84);
+}
+
+.spoke-alternating-step__guidance-title {
+  margin: 0;
+  color: var(--alternating-step-text);
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.spoke-alternating-step__guidance-notes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
 }
 
 .spoke-alternating-step__input-copy {
@@ -442,11 +516,24 @@ const updateRimOffset = (side: 'front' | 'rear', event: Event) => {
     border-radius: 20px;
   }
 
+  .spoke-alternating-step.spoke-alternating-step--embedded {
+    padding: 0;
+  }
+
   .spoke-alternating-step__input-panel {
     grid-template-columns: 1fr;
     gap: 12px;
     margin-bottom: 18px;
     padding: 15px;
+  }
+
+  .spoke-alternating-step__guidance {
+    margin-bottom: 14px;
+    padding: 13px;
+  }
+
+  .spoke-alternating-step__guidance-notes {
+    grid-template-columns: 1fr;
   }
 
   .spoke-alternating-step__wheel-grid {

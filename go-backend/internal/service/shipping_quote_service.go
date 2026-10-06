@@ -21,8 +21,14 @@ func (s *ShippingService) CalculateShipping(input ShippingCalculationInput) (*Sh
 		return nil, fmt.Errorf("%w: country must be an ISO alpha-2 code", ErrInvalidShippingDestination)
 	}
 	input.Country = country
+	if !template.AllowsShippingCountry(country) {
+		return nil, fmt.Errorf("%w: shipping template %q does not include country %s", ErrCountryNotSupported, template.Name, country)
+	}
 	if input.AmountMinor < 0 {
 		return nil, errors.New("shipping amount cannot be negative")
+	}
+	if template.IsSystemFreeShippingTemplate() {
+		return &ShippingQuote{ShippingFeeMinor: 0, Currency: template.Currency, FreeShipping: true}, nil
 	}
 	if template.FreeShipping {
 		threshold, thresholdErr := template.FreeThresholdMoney()

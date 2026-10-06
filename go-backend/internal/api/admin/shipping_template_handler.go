@@ -216,20 +216,30 @@ func validateShippingTemplate(template shippingdomain.ShippingTemplate) error {
 	if strings.TrimSpace(template.Name) == "" {
 		return errors.New("template name is required")
 	}
+	if shippingdomain.NormalizeShippingTemplateKind(template.TemplateKind) != template.TemplateKind {
+		return errors.New("template kind is invalid")
+	}
 	if template.Currency != "" && !currency.IsCatalogCode(template.Currency) {
 		return errors.New("template source currency is required")
 	}
 	switch template.Type {
-	case "weight", "quantity", "price":
+	case "weight", "quantity", "price", shippingdomain.ShippingTemplateTypeSystemFreeShipping:
 	default:
-		return errors.New("template type must be weight, quantity or price")
+		return errors.New("template type must be weight, quantity, price or free_shipping")
 	}
 	if template.FreeThresholdMinor < 0 || template.DefaultFeeMinor < 0 {
 		return errors.New("fees and thresholds cannot be negative")
 	}
-	for _, rule := range template.Rules {
-		if err := validateShippingRule(rule); err != nil {
+	if template.IsSystemFreeShippingTemplate() {
+		if err := shippingdomain.ValidateShippingCountryCodes(template.FreeShippingCountries); err != nil {
 			return err
+		}
+	}
+	if !template.IsSystemFreeShippingTemplate() {
+		for _, rule := range template.Rules {
+			if err := validateShippingRule(rule); err != nil {
+				return err
+			}
 		}
 	}
 	return nil

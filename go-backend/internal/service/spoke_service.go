@@ -56,7 +56,9 @@ type SpokeCalculationInput struct {
 	SpokeProfile   string
 	TargetTensionN *float64
 	// AlternatingDrillingOffsetMM is the signed axial offset of the selected
-	// alternating rim hole. The right side receives the opposite offset.
+	// alternating rim hole. Positive means the hole moves toward the physical
+	// left side, so the left flange distance decreases and the right distance
+	// increases.
 	AlternatingDrillingOffsetMM *float64
 	Interlacing                 bool
 	// InterlaceCompensationMM is an optional user-supplied correction. It is
@@ -440,8 +442,8 @@ func (s *SpokeService) Calculate(input SpokeCalculationInput) (*SpokeCalculation
 
 	leftFlange := effectiveSpokeFlangeDistance(*hubGeo.LeftFlange, input.RimOffsetMM, "left")
 	rightFlange := effectiveSpokeFlangeDistance(*hubGeo.RightFlange, input.RimOffsetMM, "right")
-	leftFlange += alternatingDrillingOffsetMM
-	rightFlange -= alternatingDrillingOffsetMM
+	leftFlange -= alternatingDrillingOffsetMM
+	rightFlange += alternatingDrillingOffsetMM
 	if leftFlange <= 0 || rightFlange <= 0 {
 		return nil, ErrInvalidSpokeCalculation
 	}
@@ -488,6 +490,7 @@ func (s *SpokeService) Calculate(input SpokeCalculationInput) (*SpokeCalculation
 	}
 	leftTotal, rightTotal := 0.0, 0.0
 	leftCount, rightCount := 0, 0
+	leftBracingSineSum, rightBracingSineSum := 0.0, 0.0
 	leftStretchTotal, rightStretchTotal := 0.0, 0.0
 	spokeHoleCorrectionMM := 0.0
 	interlaceCompensationMM := 0.0
@@ -507,6 +510,14 @@ func (s *SpokeService) Calculate(input SpokeCalculationInput) (*SpokeCalculation
 		)
 		if err != nil {
 			return nil, err
+		}
+		// Physical build corrections change cut length, not the spoke's
+		// geometric bracing angle. Restore the flange-hole radius deduction
+		// before resolving the per-spoke lateral-force contribution.
+		geometricSpokeLength := geometry.LeftLengthMM + geometry.SpokeHoleCorrectionMM
+		bracingSine := geometryInput.FlangeDistanceMM / geometricSpokeLength
+		if !isFinite(bracingSine) || bracingSine <= 0 || bracingSine > 1 {
+			return nil, fmt.Errorf("%w: spoke %d has invalid bracing geometry", ErrInvalidSpokeCalculation, mappedSpoke.ID)
 		}
 		corrections, err := applySpokePhysicalCorrections(spokePhysicalCorrectionInput{
 			LeftLengthMM:                  geometry.LeftLengthMM,
@@ -541,10 +552,12 @@ func (s *SpokeService) Calculate(input SpokeCalculationInput) (*SpokeCalculation
 		switch physicalSide {
 		case "left":
 			leftTotal += length
+			leftBracingSineSum += bracingSine
 			leftStretchTotal += corrections.StretchLeftMM
 			leftCount++
 		case "right":
 			rightTotal += length
+			rightBracingSineSum += bracingSine
 			rightStretchTotal += corrections.StretchRightMM
 			rightCount++
 		}
@@ -556,7 +569,12 @@ func (s *SpokeService) Calculate(input SpokeCalculationInput) (*SpokeCalculation
 	right := rightTotal / float64(rightCount)
 	leftStretch := leftStretchTotal / float64(leftCount)
 	rightStretch := rightStretchTotal / float64(rightCount)
-	tensionRatio, err := computeSpokeTensionRatioSafe(leftFlange, rightFlange, left, right)
+	tensionRatio, err := computeSpokeTensionRatioFromBracingSums(
+		leftBracingSineSum,
+		rightBracingSineSum,
+		leftCount,
+		rightCount,
+	)
 	if err != nil {
 		return nil, err
 	}

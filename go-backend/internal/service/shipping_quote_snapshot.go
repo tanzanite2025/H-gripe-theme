@@ -100,6 +100,9 @@ func (s *ShippingService) restoreShippingQuote(input ShippingQuoteInput) (*Shipp
 	if quote.ID != snapshot.ID || quote.RateVersion != snapshot.RateVersion {
 		return nil, fmt.Errorf("%w: quote %s snapshot metadata is inconsistent", ErrShippingRateConfigurationInvalid, quoteID)
 	}
+	if err := s.validateRestoredShippingQuoteTemplateScopes(input, &quote); err != nil {
+		return nil, err
+	}
 	planID := strings.TrimSpace(input.SelectedQuotePlanID)
 	if planID == "" && quote.SelectedPlan != nil {
 		planID = quote.SelectedPlan.ID
@@ -111,6 +114,33 @@ func (s *ShippingService) restoreShippingQuote(input ShippingQuoteInput) (*Shipp
 		}
 	}
 	return nil, fmt.Errorf("%w: plan %s does not belong to quote %s", ErrShippingQuotePlanUnavailable, planID, quoteID)
+}
+
+// validateRestoredShippingQuoteTemplateScopes closes the gap between a
+// persisted quote and a later checkout when an administrator changes a
+// system free-shipping country scope during the quote lifetime.
+func (s *ShippingService) validateRestoredShippingQuoteTemplateScopes(input ShippingQuoteInput, quote *ShippingQuote) error {
+	if s == nil || s.shippingRepo == nil || quote == nil {
+		return nil
+	}
+	templateIDs, err := uniqueShippingQuoteTemplateIDs(input.Items)
+	if err != nil {
+		return err
+	}
+	templatesByID, err := s.shippingRepo.FindTemplatesByIDs(templateIDs)
+	if err != nil {
+		return fmt.Errorf("reload shipping templates for quote %s: %w", quote.ID, err)
+	}
+	for _, templateID := range templateIDs {
+		template := templatesByID[templateID]
+		if template == nil || !template.Enabled {
+			return fmt.Errorf("%w: shipping template ID %d changed after the quote was created", ErrShippingQuoteStale, templateID)
+		}
+		if !template.AllowsShippingCountry(input.Country) {
+			return fmt.Errorf("%w: shipping template %q does not include country %s", ErrCountryNotSupported, template.Name, input.Country)
+		}
+	}
+	return nil
 }
 
 func shippingQuoteRequestHash(input ShippingQuoteInput) string {

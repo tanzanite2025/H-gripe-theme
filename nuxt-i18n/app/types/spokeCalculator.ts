@@ -22,11 +22,11 @@ export interface SpokeCalculatorTopologySummary {
 
 export const SPOKE_WIZARD_STEPS = [
   { id: 'head_type', number: 1 },
-  { id: 'erd', number: 2 },
-  { id: 'alternating_drilling', number: 3 },
-  { id: 'hub_geometry', number: 4 },
-  { id: 'physical_corrections', number: 5 },
-  { id: 'nipple_type', number: 6 },
+  { id: 'rim_geometry', number: 2 },
+  { id: 'hub_geometry', number: 3 },
+  { id: 'physical_corrections', number: 4 },
+  { id: 'nipple_type', number: 5 },
+  { id: 'calculation_results', number: 6 },
 ] as const
 
 export type SpokeWizardStep = typeof SPOKE_WIZARD_STEPS[number]['number']

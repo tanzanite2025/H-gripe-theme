@@ -135,6 +135,18 @@ func calculateTemplateShippingFeeWithDisplayPricesMoney(
 	if template == nil {
 		return domainmoney.Money{}, false, nil, errors.New("shipping template is required")
 	}
+	if !template.AllowsShippingCountry(country) {
+		return domainmoney.Money{}, false, nil, fmt.Errorf(
+			"%w: shipping template %q does not include country %s",
+			ErrCountryNotSupported,
+			template.Name,
+			strings.ToUpper(strings.TrimSpace(country)),
+		)
+	}
+	if template.IsSystemFreeShippingTemplate() {
+		zero, err := domainmoney.New(0, template.Currency)
+		return zero, true, nil, err
+	}
 
 	freeThresholdMoney, thresholdErr := template.FreeThresholdMoney()
 	if thresholdErr != nil {

@@ -22,6 +22,9 @@ func (s *ShippingService) projectCarrierServicesFromPublishedCollections(
 	needsYanwenCollection := false
 
 	for i := range services {
+		if services[i].Template != nil && services[i].Template.IsSystemFreeShippingTemplate() {
+			continue
+		}
 		provider := publishedCarrierServiceProvider(services[i])
 		serviceCode := strings.ToUpper(strings.TrimSpace(services[i].ServiceCode))
 		isYanwenService := provider == "YANWEN" || strings.HasPrefix(serviceCode, "YANWEN:")
@@ -67,6 +70,9 @@ func (s *ShippingService) projectCarrierServicesFromPublishedCollections(
 
 	for i := range services {
 		carrierService := services[i]
+		if carrierService.Template != nil && carrierService.Template.IsSystemFreeShippingTemplate() {
+			continue
+		}
 		provider := publishedCarrierServiceProvider(carrierService)
 		serviceCode := strings.ToUpper(strings.TrimSpace(carrierService.ServiceCode))
 		isYanwenCode := strings.HasPrefix(serviceCode, "YANWEN:")

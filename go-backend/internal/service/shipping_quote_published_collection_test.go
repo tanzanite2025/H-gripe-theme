@@ -69,6 +69,79 @@ func TestQuoteCartUsesCurrentFpxCollectionCountryScope(t *testing.T) {
 	assert.Equal(t, `["CA"]`, publicService.Countries)
 }
 
+func TestQuoteCartSystemFreeShippingIgnoresUnrelatedCarrierCollections(t *testing.T) {
+	db, shippingService := newTestShippingQuoteService(t)
+	systemTemplate := shippingdomain.ShippingTemplate{
+		Name:                  "System free shipping",
+		Type:                  shippingdomain.ShippingTemplateTypeSystemFreeShipping,
+		TemplateKind:          shippingdomain.ShippingTemplateKindSystemFreeShipping,
+		Currency:              "USD",
+		FreeShipping:          true,
+		FreeShippingCountries: `["US"]`,
+		Enabled:               true,
+	}
+	require.NoError(t, db.Create(&systemTemplate).Error)
+	product, variant := seedQuoteProduct(t, db, 50, 900, systemTemplate.ID)
+
+	// This unrelated Yanwen route is deliberately unusable because the
+	// collection reader is disabled. It must not block a system-only quote.
+	unrelatedTemplate := createGlobalWeightQuoteTemplateForPublishedCollectionTest(t, db)
+	carrier := seedQuoteCarrier(t, db, "Yanwen", "YANWEN")
+	unrelatedChannelID := uint(9999)
+	seedQuoteCarrierService(t, db, carrier.ID, unrelatedTemplate.ID, shippingdomain.CarrierService{
+		ProviderCode:             "YANWEN",
+		ServiceCode:              "YANWEN:UNRELATED",
+		YanwenPublishedChannelID: &unrelatedChannelID,
+	})
+	shippingService.ConfigureYanwenPublishedCollectionService(nil)
+
+	quote, err := shippingService.QuoteCart(ShippingQuoteInput{
+		Country:  "US",
+		Currency: "USD",
+		Items:    []ShippingQuoteItemInput{{ProductID: product.ID, VariantID: &variant.ID, Quantity: 1}},
+	})
+	require.NoError(t, err)
+	leg := requireSelectedQuoteLeg(t, quote)
+	assert.Equal(t, uint(0), leg.CarrierServiceID)
+	assert.Equal(t, int64(0), leg.ShippingFeeMinor)
+	assert.True(t, leg.FreeShipping)
+}
+
+func TestQuoteCartRejectsRestoredSystemFreeShippingQuoteAfterCountryScopeChanges(t *testing.T) {
+	db, shippingService := newTestShippingQuoteService(t)
+	systemTemplate := shippingdomain.ShippingTemplate{
+		Name:                  "System free shipping",
+		Type:                  shippingdomain.ShippingTemplateTypeSystemFreeShipping,
+		TemplateKind:          shippingdomain.ShippingTemplateKindSystemFreeShipping,
+		Currency:              "USD",
+		FreeShipping:          true,
+		FreeShippingCountries: `["US"]`,
+		Enabled:               true,
+	}
+	require.NoError(t, db.Create(&systemTemplate).Error)
+	product, variant := seedQuoteProduct(t, db, 50, 900, systemTemplate.ID)
+	input := ShippingQuoteInput{
+		Country:  "US",
+		Currency: "USD",
+		Items:    []ShippingQuoteItemInput{{ProductID: product.ID, VariantID: &variant.ID, Quantity: 1}},
+	}
+
+	quote, err := shippingService.QuoteCart(input)
+	require.NoError(t, err)
+	require.NotNil(t, quote.SelectedPlan)
+	require.True(t, quote.FreeShipping)
+	require.Zero(t, quote.ShippingFeeMinor)
+
+	require.NoError(t, db.Model(&shippingdomain.ShippingTemplate{}).
+		Where("id = ?", systemTemplate.ID).
+		Update("free_shipping_countries", `["CA"]`).Error)
+	input.ShippingQuoteID = quote.ID
+	input.SelectedQuotePlanID = quote.SelectedPlan.ID
+
+	_, err = shippingService.QuoteCart(input)
+	require.ErrorIs(t, err, ErrCountryNotSupported)
+}
+
 func TestQuoteCartIgnoresTestEnvironmentFpxChannels(t *testing.T) {
 	db, shippingService := newTestShippingQuoteService(t)
 	template := createGlobalWeightQuoteTemplateForPublishedCollectionTest(t, db)

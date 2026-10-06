@@ -28,7 +28,7 @@
     <div class="spoke-interlacing-step__input-panel">
       <div class="spoke-interlacing-step__input-copy">
         <span class="spoke-interlacing-step__input-kicker">
-          {{ t('resourcesSpokeCalculator.calculator.physicalCorrections.interlacingInputKicker', '第 6 步输入') }}
+          {{ t('resourcesSpokeCalculator.calculator.physicalCorrections.interlacingInputKicker', '第 4 步输入') }}
         </span>
         <strong class="spoke-interlacing-step__input-label">
           {{ t('resourcesSpokeCalculator.calculator.physicalCorrections.interlacingInputLabel', '交叉压条折线') }}
@@ -180,7 +180,7 @@ const props = withDefaults(defineProps<{
   frontCrossing?: number
   rearCrossing?: number
 }>(), {
-  currentStep: 6,
+  currentStep: 4,
   embedded: false,
   frontInterlacing: 'off',
   rearInterlacing: 'off',

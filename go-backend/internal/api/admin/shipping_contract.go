@@ -3,6 +3,7 @@ package admin
 import (
 	"commerce-platform/internal/domain/currency"
 	shippingdomain "commerce-platform/internal/domain/shipping"
+	"encoding/json"
 	"strings"
 	"time"
 )
@@ -10,10 +11,12 @@ import (
 type shippingTemplateRequest struct {
 	Name                  string                                     `json:"name" binding:"required"`
 	Type                  string                                     `json:"type" binding:"required"`
+	TemplateKind          string                                     `json:"template_kind"`
 	Currency              string                                     `json:"currency"`
 	FreeShipping          bool                                       `json:"free_shipping"`
 	FreeThresholdMinor    int64                                      `json:"free_threshold_minor"`
 	DefaultFeeMinor       int64                                      `json:"default_fee_minor"`
+	FreeShippingCountries json.RawMessage                            `json:"free_shipping_countries"`
 	DisplayPriceSnapshots map[string][]currency.DisplayPriceSnapshot `json:"display_price_snapshots"`
 	Description           string                                     `json:"description"`
 	Enabled               *bool                                      `json:"enabled"`
@@ -118,20 +121,31 @@ func (r shippingTemplateRequest) toDomain() shippingdomain.ShippingTemplate {
 	}
 
 	templateType := strings.TrimSpace(r.Type)
+	templateKind := strings.ToLower(strings.TrimSpace(r.TemplateKind))
+	if templateKind == "" {
+		templateKind = shippingdomain.ShippingTemplateKindCarrier
+	}
 	templateCurrency := currency.NormalizeCode(r.Currency)
 	if templateCurrency == "" {
 		templateCurrency = currency.DefaultPrimaryCurrency
 	}
+	freeShippingCountries := ""
+	if r.FreeShippingCountries != nil {
+		freeShippingCountries = string(r.FreeShippingCountries)
+	}
 	template := shippingdomain.ShippingTemplate{
-		Name:               strings.TrimSpace(r.Name),
-		Type:               templateType,
-		Currency:           templateCurrency,
-		FreeShipping:       r.FreeShipping,
-		FreeThresholdMinor: r.FreeThresholdMinor,
-		DefaultFeeMinor:    r.DefaultFeeMinor,
-		DisplayPriceData:   shippingdomain.TemplateDisplayPriceSnapshotsJSON(r.DisplayPriceSnapshots),
-		Description:        strings.TrimSpace(r.Description),
-		Enabled:            enabled,
+		Name:                          strings.TrimSpace(r.Name),
+		Type:                          templateType,
+		TemplateKind:                  templateKind,
+		Currency:                      templateCurrency,
+		FreeShipping:                  r.FreeShipping,
+		FreeThresholdMinor:            r.FreeThresholdMinor,
+		DefaultFeeMinor:               r.DefaultFeeMinor,
+		FreeShippingCountries:         freeShippingCountries,
+		FreeShippingCountriesProvided: r.FreeShippingCountries != nil,
+		DisplayPriceData:              shippingdomain.TemplateDisplayPriceSnapshotsJSON(r.DisplayPriceSnapshots),
+		Description:                   strings.TrimSpace(r.Description),
+		Enabled:                       enabled,
 	}
 
 	for _, rule := range r.Rules {

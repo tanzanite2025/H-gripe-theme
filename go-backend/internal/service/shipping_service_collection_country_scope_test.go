@@ -63,6 +63,64 @@ func TestCreateTemplateWithCarrierServicesUsesPublishedFpxCountryScope(t *testin
 	require.Equal(t, `["DE","FR"]`, stored.Countries)
 }
 
+func TestUpdateSystemFreeShippingTemplatePreservesCountryScopeForLegacyRequests(t *testing.T) {
+	_, shippingService, _ := newShippingServiceCollectionTestFixture(t, "GENERIC")
+	template := shippingdomain.ShippingTemplate{
+		Name:                  "System free shipping",
+		Type:                  shippingdomain.ShippingTemplateTypeSystemFreeShipping,
+		TemplateKind:          shippingdomain.ShippingTemplateKindSystemFreeShipping,
+		Currency:              "USD",
+		FreeShipping:          true,
+		FreeShippingCountries: `["US"]`,
+		Enabled:               true,
+	}
+	require.NoError(t, shippingService.CreateTemplate(&template))
+
+	legacyUpdate := shippingdomain.ShippingTemplate{
+		ID:           template.ID,
+		Name:         "Updated system free shipping",
+		Type:         "weight",
+		Currency:     "USD",
+		Enabled:      true,
+		FreeShipping: true,
+	}
+	require.NoError(t, shippingService.UpdateTemplate(&legacyUpdate))
+	require.Equal(t, shippingdomain.ShippingTemplateTypeSystemFreeShipping, legacyUpdate.Type)
+	require.Equal(t, `["US"]`, legacyUpdate.FreeShippingCountries)
+
+	explicitEmptyScope := shippingdomain.ShippingTemplate{
+		ID:                            template.ID,
+		Name:                          "Updated system free shipping",
+		Type:                          shippingdomain.ShippingTemplateTypeSystemFreeShipping,
+		TemplateKind:                  shippingdomain.ShippingTemplateKindSystemFreeShipping,
+		Currency:                      "USD",
+		FreeShipping:                  true,
+		FreeShippingCountries:         `[]`,
+		FreeShippingCountriesProvided: true,
+		Enabled:                       true,
+	}
+	require.ErrorContains(t, shippingService.UpdateTemplate(&explicitEmptyScope), "requires at least one country")
+}
+
+func TestSystemFreeShippingTemplateRejectsPricingRuleMutations(t *testing.T) {
+	_, shippingService, _ := newShippingServiceCollectionTestFixture(t, "GENERIC")
+	template := shippingdomain.ShippingTemplate{
+		Name:                  "System free shipping",
+		Type:                  shippingdomain.ShippingTemplateTypeSystemFreeShipping,
+		TemplateKind:          shippingdomain.ShippingTemplateKindSystemFreeShipping,
+		Currency:              "USD",
+		FreeShipping:          true,
+		FreeShippingCountries: `["US"]`,
+		Enabled:               true,
+	}
+	require.NoError(t, shippingService.CreateTemplate(&template))
+
+	rule := &shippingdomain.ShippingRule{Region: "US", Currency: "USD"}
+	require.ErrorContains(t, shippingService.CreateTemplateRule(template.ID, rule), "does not support shipping rules")
+	require.ErrorContains(t, shippingService.UpdateTemplateRule(template.ID, rule), "does not support shipping rules")
+	require.ErrorContains(t, shippingService.DeleteTemplateRule(template.ID, 1), "does not support shipping rules")
+}
+
 func TestCreateTemplateRejectsUnpublishedFpxService(t *testing.T) {
 	db, shippingService, carrier := newShippingServiceCollectionTestFixture(t, "4PX")
 	template := shippingdomain.ShippingTemplate{Name: "Unknown 4PX service", Type: "weight", Currency: "USD"}

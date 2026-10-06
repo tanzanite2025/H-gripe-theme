@@ -21,6 +21,30 @@ func (s *ShippingService) CreateTemplate(template *shipping.ShippingTemplate) er
 }
 
 func (s *ShippingService) CreateTemplateWithCarrierServices(template *shipping.ShippingTemplate, carrierServices []shipping.CarrierService) error {
+	if template == nil {
+		return errors.New("shipping template is required")
+	}
+	template.NormalizeSystemFreeShippingTemplateIdentity()
+	if template.IsSystemFreeShippingTemplate() && !template.FreeShipping {
+		return errors.New("system free-shipping template must keep free shipping enabled")
+	}
+	template.ApplySystemFreeShippingTemplatePricingDefaults()
+	template.FreeShippingCountries = shipping.NormalizeShippingCountryCodes(template.FreeShippingCountries)
+	if err := shipping.ValidateShippingCountryCodes(template.FreeShippingCountries); err != nil {
+		return err
+	}
+	if template.IsSystemFreeShippingTemplate() {
+		template.IsSystemManaged = true
+		if !template.FreeShipping {
+			return errors.New("system free-shipping template must keep free shipping enabled")
+		}
+		if len(template.ShippingCountryCodes()) == 0 {
+			return errors.New("system free-shipping template requires at least one country")
+		}
+		if len(carrierServices) > 0 {
+			return errors.New("system free-shipping template cannot be bound to carrier services")
+		}
+	}
 	if err := s.prepareShippingTemplateCurrencies(template); err != nil {
 		return err
 	}
@@ -44,6 +68,47 @@ func (s *ShippingService) UpdateTemplateWithCarrierServices(template *shipping.S
 	}
 	if currency.NormalizeCode(template.Currency) == "" {
 		template.Currency = existing.Currency
+	}
+	if existing.IsSystemManaged {
+		// IsSystemManaged is an ownership flag. Preserve it for future system
+		// template kinds without making every such template behave like free
+		// shipping.
+		template.IsSystemManaged = true
+		template.TemplateKind = existing.TemplateKind
+	}
+	if existing.IsSystemFreeShippingTemplate() {
+		template.TemplateKind = existing.TemplateKind
+		template.Type = shipping.ShippingTemplateTypeSystemFreeShipping
+		template.IsSystemManaged = true
+		if !template.FreeShippingCountriesProvided && len(template.ShippingCountryCodes()) == 0 && len(existing.ShippingCountryCodes()) > 0 {
+			// Preserve the configured scope for legacy clients that predate the
+			// optional free_shipping_countries request field.
+			template.FreeShippingCountries = existing.FreeShippingCountries
+		}
+	}
+	template.NormalizeSystemFreeShippingTemplateIdentity()
+	if template.IsSystemFreeShippingTemplate() && !template.FreeShipping {
+		return errors.New("system free-shipping template must keep free shipping enabled")
+	}
+	template.ApplySystemFreeShippingTemplatePricingDefaults()
+	template.FreeShippingCountries = shipping.NormalizeShippingCountryCodes(template.FreeShippingCountries)
+	if err := shipping.ValidateShippingCountryCodes(template.FreeShippingCountries); err != nil {
+		return err
+	}
+	if template.IsSystemFreeShippingTemplate() {
+		template.IsSystemManaged = true
+		if !template.FreeShipping {
+			return errors.New("system free-shipping template must keep free shipping enabled")
+		}
+		if len(template.ShippingCountryCodes()) == 0 {
+			return errors.New("system free-shipping template requires at least one country")
+		}
+		if len(carrierServices) > 0 {
+			return errors.New("system free-shipping template cannot be bound to carrier services")
+		}
+		// Force-detach any legacy accidental binding even when an older client
+		// omits the optional carrier_services field on update.
+		carrierServices = []shipping.CarrierService{}
 	}
 	if err := s.prepareShippingTemplateCurrencies(template); err != nil {
 		return err
@@ -185,10 +250,20 @@ func normalizePublishedCarrierProviderCode(value string) string {
 }
 
 func (s *ShippingService) DeleteTemplate(id uint) error {
+	template, err := s.GetTemplate(id)
+	if err != nil {
+		return err
+	}
+	if template.IsSystemManaged || template.IsSystemFreeShippingTemplate() {
+		return errors.New("system-managed shipping template cannot be deleted")
+	}
 	return s.shippingRepo.DeleteTemplate(id)
 }
 
 func (s *ShippingService) CreateTemplateRule(templateID uint, rule *shipping.ShippingRule) error {
+	if err := s.ensureTemplateSupportsShippingRules(templateID); err != nil {
+		return err
+	}
 	rule.TemplateID = templateID
 	if err := s.prepareShippingRuleCurrency(templateID, rule); err != nil {
 		return err
@@ -197,6 +272,9 @@ func (s *ShippingService) CreateTemplateRule(templateID uint, rule *shipping.Shi
 }
 
 func (s *ShippingService) UpdateTemplateRule(templateID uint, rule *shipping.ShippingRule) error {
+	if err := s.ensureTemplateSupportsShippingRules(templateID); err != nil {
+		return err
+	}
 	rule.TemplateID = templateID
 	if err := s.prepareShippingRuleCurrency(templateID, rule); err != nil {
 		return err
@@ -205,7 +283,21 @@ func (s *ShippingService) UpdateTemplateRule(templateID uint, rule *shipping.Shi
 }
 
 func (s *ShippingService) DeleteTemplateRule(templateID uint, ruleID uint) error {
+	if err := s.ensureTemplateSupportsShippingRules(templateID); err != nil {
+		return err
+	}
 	return s.shippingRepo.DeleteRuleForTemplate(templateID, ruleID)
+}
+
+func (s *ShippingService) ensureTemplateSupportsShippingRules(templateID uint) error {
+	template, err := s.GetTemplate(templateID)
+	if err != nil {
+		return err
+	}
+	if template.IsSystemFreeShippingTemplate() {
+		return errors.New("system free-shipping template does not support shipping rules")
+	}
+	return nil
 }
 
 func (s *ShippingService) prepareShippingTemplateCurrencies(template *shipping.ShippingTemplate) error {

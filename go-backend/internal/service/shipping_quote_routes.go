@@ -28,6 +28,20 @@ func (s *ShippingService) quoteShipmentPlans(
 	if err != nil {
 		return nil, err
 	}
+	// Only project carrier routes that can participate in this quote. A cart
+	// using the system free-shipping template must remain independent from
+	// unrelated 4PX or Yanwen collection state elsewhere in the catalog.
+	relevantCarrierServices := make([]shipping.CarrierService, 0, len(carrierServices))
+	for _, carrierService := range carrierServices {
+		if carrierService.TemplateID == nil {
+			continue
+		}
+		if _, usedByQuote := groups[*carrierService.TemplateID]; !usedByQuote {
+			continue
+		}
+		relevantCarrierServices = append(relevantCarrierServices, carrierService)
+	}
+	carrierServices = relevantCarrierServices
 	carrierServices, templatesWithPublishedCollectionRoutes, err := s.projectCarrierServicesFromPublishedCollections(carrierServices)
 	if err != nil {
 		return nil, err
@@ -162,6 +176,9 @@ func (s *ShippingService) buildCarrierServiceQuoteLeg(
 	groupAmount domainmoney.Money,
 ) (ShippingQuoteLeg, bool, error) {
 	if group == nil || service.Template == nil || !service.Enabled || !service.Template.Enabled {
+		return ShippingQuoteLeg{}, false, nil
+	}
+	if service.Template.IsSystemFreeShippingTemplate() {
 		return ShippingQuoteLeg{}, false, nil
 	}
 	if service.TemplateID == nil || *service.TemplateID != group.Template.ID {

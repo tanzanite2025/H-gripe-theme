@@ -28,7 +28,7 @@
     <div class="spoke-hole-step__input-panel">
       <div class="spoke-hole-step__input-copy">
         <span class="spoke-hole-step__input-kicker">
-          {{ t('resourcesSpokeCalculator.calculator.physicalCorrections.holeInputKicker', 'STEP 5 INPUT') }}
+          {{ t('resourcesSpokeCalculator.calculator.physicalCorrections.holeInputKicker', 'STEP 4 INPUT') }}
         </span>
         <strong class="spoke-hole-step__input-label">
           {{ t('resourcesSpokeCalculator.calculator.physicalCorrections.holeInputLabel', '法兰孔径') }}
@@ -113,7 +113,7 @@ const props = withDefaults(defineProps<{
   frontHoleDiameter?: number | null
   rearHoleDiameter?: number | null
 }>(), {
-  currentStep: 5,
+  currentStep: 4,
   embedded: false,
   frontHoleDiameter: 2.5,
   rearHoleDiameter: 2.5,

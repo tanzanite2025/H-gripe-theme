@@ -5,7 +5,8 @@
         <DialogHeader>
           <DialogTitle>{{ mode === 'create' ? '新增运费模板' : '编辑运费模板' }}</DialogTitle>
           <DialogDescription>
-            选择已发布的 4PX 或燕文服务加入模板；配送地区随服务集合带入，模板内只读。
+            <template v-if="isSystemFreeShippingTemplate">系统免邮模板独立维护国家范围，不绑定 4PX、燕文或其他承运商线路。</template>
+            <template v-else>选择已发布的 4PX 或燕文服务加入模板；配送地区随服务集合带入，模板内只读。</template>
           </DialogDescription>
         </DialogHeader>
 
@@ -14,7 +15,7 @@
             <Input v-model.trim="form.name" placeholder="例如 全球空运标准模板" @input="emit('clear-error', 'name')" />
           </AdminFormField>
 
-          <AdminFormField label="计费类型" required :error="errors.type">
+          <AdminFormField v-if="!isSystemFreeShippingTemplate" label="计费类型" required :error="errors.type">
             <Select v-model="form.type" @update:model-value="emit('clear-error', 'type')">
               <SelectTrigger class="w-full"><SelectValue placeholder="请选择计费类型" /></SelectTrigger>
               <SelectContent>
@@ -25,7 +26,7 @@
             </Select>
           </AdminFormField>
 
-          <AdminFormField label="运费录入币种" required :error="errors.currency">
+          <AdminFormField v-if="!isSystemFreeShippingTemplate" label="运费录入币种" required :error="errors.currency">
             <Input
               v-model.trim="form.currency"
               class="font-mono uppercase"
@@ -43,15 +44,15 @@
             <Switch v-model="form.enabled" aria-label="启用运费模板" />
           </div>
 
-          <AdminFormField label="默认运费（minor）" required :error="errors.default_fee_minor">
+          <AdminFormField v-if="!isSystemFreeShippingTemplate" label="默认运费（minor）" required :error="errors.default_fee_minor">
             <Input v-model.number="form.default_fee_minor" type="number" min="0" step="1" @input="handleDefaultFeeInput" />
           </AdminFormField>
 
-          <AdminFormField label="免运门槛（minor）">
+          <AdminFormField v-if="!isSystemFreeShippingTemplate" label="免运门槛（minor）">
             <Input v-model.number="form.free_threshold_minor" type="number" min="0" step="1" @input="clearTemplateDisplayPrice('free_threshold')" />
           </AdminFormField>
 
-          <div class="flex items-end justify-between gap-3 rounded-lg border px-3 py-2.5">
+          <div v-if="!isSystemFreeShippingTemplate" class="flex items-end justify-between gap-3 rounded-lg border px-3 py-2.5">
             <div>
               <span class="text-xs font-bold uppercase tracking-wider">开启免运 / FREE SHIPPING</span>
               <p class="mt-0.5 text-xs text-muted-foreground">订单金额达到门槛时返回 0 运费。</p>
@@ -59,12 +60,25 @@
             <Switch v-model="form.free_shipping" aria-label="开启免运" />
           </div>
 
+          <div v-if="isSystemFreeShippingTemplate" class="flex items-center gap-3 rounded-lg border border-emerald-500/30 bg-emerald-500/5 px-3 py-2.5 lg:col-span-3">
+            <Globe2 class="size-4 text-emerald-600" />
+            <div>
+              <span class="text-xs font-bold uppercase tracking-wider">系统免邮 / SYSTEM FREE SHIPPING</span>
+              <p class="mt-0.5 text-xs text-muted-foreground">仅下面选中的国家返回 0 运费；未选国家会被后端报价和下单校验拒绝。</p>
+            </div>
+          </div>
+
           <AdminFormField label="说明" class="lg:col-span-4">
             <Textarea v-model="form.description" class="min-h-20" placeholder="内部说明、适用渠道或注意事项" />
           </AdminFormField>
         </section>
 
-        <section class="space-y-3 rounded-lg border border-orange-500/25 bg-orange-500/5 p-4">
+        <section v-if="isSystemFreeShippingTemplate" class="space-y-3 rounded-lg border border-emerald-500/25 bg-emerald-500/5 p-4">
+          <ShippingFreeShippingCountrySelector v-model="form.free_shipping_countries" />
+          <p v-if="errors.free_shipping_countries" class="text-xs font-medium text-destructive">{{ errors.free_shipping_countries }}</p>
+        </section>
+
+        <section v-if="!isSystemFreeShippingTemplate" class="space-y-3 rounded-lg border border-orange-500/25 bg-orange-500/5 p-4">
           <div class="flex flex-wrap items-end justify-between gap-3">
             <div>
               <h3 class="text-sm font-black tracking-tight">从服务集合加入线路</h3>
@@ -106,7 +120,7 @@
           </div>
         </section>
 
-        <section class="rounded-lg border bg-background px-3 py-3">
+        <section v-if="!isSystemFreeShippingTemplate" class="rounded-lg border bg-background px-3 py-3">
           <div class="flex flex-wrap items-center justify-between gap-2">
             <div class="text-xs leading-5 text-muted-foreground">
               运费金额按本模板源币种 {{ sourceBaseCurrency }} 录入；按钮只刷新展示快照，不会修改默认运费、免运门槛或规则金额。
@@ -144,7 +158,7 @@
           </div>
         </section>
 
-        <section class="space-y-3 border-t border-dashed pt-5">
+        <section v-if="!isSystemFreeShippingTemplate" class="space-y-3 border-t border-dashed pt-5">
           <div class="flex flex-wrap items-center justify-between gap-3">
             <div>
               <h3 class="text-sm font-black tracking-tighter uppercase text-foreground">规则矩阵</h3>
@@ -218,6 +232,7 @@ import { computed, onMounted, ref, watch, type PropType } from 'vue'
 import { toast } from 'vue-sonner'
 import { Globe2, LoaderCircle, Plus, RefreshCw, Trash2 } from '@lucide/vue'
 import AdminFormField from '@/components/admin/AdminFormField.vue'
+import ShippingFreeShippingCountrySelector from '@/components/admin/shipping/ShippingFreeShippingCountrySelector.vue'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
@@ -262,6 +277,10 @@ const displayPriceError = ref('')
 const primaryPricingCurrency = ref('')
 const selectedServiceKey = ref('')
 const serviceCollectionError = ref('')
+const isSystemFreeShippingTemplate = computed(() => (
+  String(props.form.template_kind || '').trim() === 'system_free_shipping'
+  || String(props.form.type || '').trim() === 'free_shipping'
+))
 const sourceBaseCurrency = computed(() => normalizeCurrencyCode(props.form.currency) || primaryPricingCurrency.value)
 const templateServices = computed(() => Array.isArray(props.form.carrier_services) ? props.form.carrier_services : [])
 const carrierCodeForService = (service: any) => {

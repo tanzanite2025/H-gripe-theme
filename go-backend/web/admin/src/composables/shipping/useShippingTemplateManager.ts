@@ -69,6 +69,21 @@ export const useShippingTemplateManager = (options: Record<string, any> = {}) =>
 
   const normalizedTemplateCurrency = () => normalizeCurrencyCode(templateForm.currency) || 'USD'
 
+  const normalizeFreeShippingCountries = (value: any) => {
+    const raw = Array.isArray(value) ? value : String(value || '').trim()
+    if (Array.isArray(raw)) {
+      return JSON.stringify(Array.from(new Set(raw.map((code: any) => String(code || '').trim().toUpperCase()).filter(Boolean))).sort())
+    }
+    if (!raw) return '[]'
+    try {
+      const parsed = JSON.parse(raw)
+      if (Array.isArray(parsed)) return normalizeFreeShippingCountries(parsed)
+    } catch {
+      // Keep compatibility with older comma-separated country scopes.
+    }
+    return normalizeFreeShippingCountries(String(raw).split(/[,，;|\s]+/))
+  }
+
   const showCreateTemplateDialog = () => {
     templateDialogMode.value = 'create'
     resetReactive(templateForm, defaultShippingTemplateForm())
@@ -107,6 +122,9 @@ export const useShippingTemplateManager = (options: Record<string, any> = {}) =>
     resetReactive(templateForm, {
       ...defaultShippingTemplateForm(),
       ...template,
+      template_kind: String(template.template_kind || (template.type === 'free_shipping' ? 'system_free_shipping' : 'carrier')).trim().toLowerCase() || 'carrier',
+      is_system_managed: template.is_system_managed === true,
+      free_shipping_countries: normalizeFreeShippingCountries(template.free_shipping_countries),
       currency: normalizeCurrencyCode(template.currency) || 'USD',
       free_threshold_minor: Number(template.free_threshold_minor || 0),
       default_fee_minor: Number(template.default_fee_minor || 0),
@@ -154,10 +172,18 @@ export const useShippingTemplateManager = (options: Record<string, any> = {}) =>
 
   const validateTemplate = () => {
     clearErrors(templateErrors)
+    const isSystemFreeShippingTemplate = templateForm.template_kind === 'system_free_shipping' || templateForm.type === 'free_shipping'
     if (!templateForm.name?.trim()) templateErrors.name = '请输入模板名称'
-    if (!['weight', 'quantity', 'price'].includes(templateForm.type)) templateErrors.type = '请选择计费类型'
+    if (!isSystemFreeShippingTemplate && !['weight', 'quantity', 'price'].includes(templateForm.type)) templateErrors.type = '请选择计费类型'
     if (!normalizeCurrencyCode(templateForm.currency)) templateErrors.currency = '请输入运费录入币种'
     if (Number(templateForm.default_fee_minor) < 0) templateErrors.default_fee_minor = '默认运费不能小于 0'
+
+    if (templateForm.template_kind === 'system_free_shipping' || templateForm.type === 'free_shipping') {
+      templateForm.free_shipping_countries = normalizeFreeShippingCountries(templateForm.free_shipping_countries)
+      const selectedCountries = JSON.parse(templateForm.free_shipping_countries) as string[]
+      if (!selectedCountries.length) templateErrors.free_shipping_countries = '请至少选择一个免邮国家'
+      if (!templateForm.free_shipping) templateErrors.free_shipping = '系统免邮模板必须保持开启'
+    }
 
     const invalidRule = normalizeTemplateRules().find((rule: any) => {
       const minValue = templateForm.type === 'price' ? rule.min_value_minor : rule.min_value
@@ -180,15 +206,19 @@ export const useShippingTemplateManager = (options: Record<string, any> = {}) =>
       const payload = {
         name: templateForm.name.trim(),
         type: templateForm.type,
+        template_kind: templateForm.template_kind === 'system_free_shipping' || templateForm.type === 'free_shipping' ? 'system_free_shipping' : 'carrier',
         currency: normalizedTemplateCurrency(),
-        free_shipping: Boolean(templateForm.free_shipping),
+        free_shipping: templateForm.template_kind === 'system_free_shipping' || templateForm.type === 'free_shipping' ? true : Boolean(templateForm.free_shipping),
         free_threshold_minor: Number(templateForm.free_threshold_minor || 0),
         default_fee_minor: Number(templateForm.default_fee_minor || 0),
+        free_shipping_countries: normalizeFreeShippingCountries(templateForm.free_shipping_countries),
         display_price_snapshots: normalizeDisplayPriceSnapshotMap(templateForm.display_price_snapshots, TEMPLATE_DISPLAY_PRICE_FIELDS),
         description: templateForm.description || '',
         enabled: Boolean(templateForm.enabled),
         rules: normalizeTemplateRules(),
-        carrier_services: normalizeTemplateCarrierServices(templateForm.carrier_services),
+        carrier_services: templateForm.template_kind === 'system_free_shipping' || templateForm.type === 'free_shipping'
+          ? []
+          : normalizeTemplateCarrierServices(templateForm.carrier_services),
       }
 
       if (templateDialogMode.value === 'create') {

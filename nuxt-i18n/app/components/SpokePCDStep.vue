@@ -9,13 +9,13 @@
     />
 
     <div class="spoke-pcd-step__intro">
-      <span class="spoke-pcd-step__eyebrow">04</span>
+      <span class="spoke-pcd-step__eyebrow">03</span>
       <div>
         <h2 id="spoke-pcd-step-title" class="spoke-pcd-step__title">
-          {{ t('resourcesSpokeCalculator.calculator.physicalCorrections.stepFourPrompt', '输入花鼓 PCD 与 WL / WR') }}
+          {{ t('resourcesSpokeCalculator.calculator.physicalCorrections.stepThreePrompt', '输入花鼓 PCD 与 WL / WR') }}
         </h2>
         <p class="spoke-pcd-step__subtitle">
-          {{ t('resourcesSpokeCalculator.calculator.physicalCorrections.stepFourSubtitle', '确认花鼓节圆直径，以及左右法兰到轮组中心线的距离。') }}
+          {{ t('resourcesSpokeCalculator.calculator.physicalCorrections.stepThreeSubtitle', '确认花鼓节圆直径，以及左右法兰到轮组中心线的距离。') }}
         </p>
       </div>
     </div>
@@ -23,7 +23,7 @@
     <div class="spoke-pcd-step__input-panel">
       <div class="spoke-pcd-step__input-copy">
         <span class="spoke-pcd-step__input-kicker">
-          {{ t('resourcesSpokeCalculator.calculator.physicalCorrections.pcdInputKicker', 'STEP 4 INPUT') }}
+          {{ t('resourcesSpokeCalculator.calculator.physicalCorrections.pcdInputKicker', 'STEP 3 INPUT') }}
         </span>
         <strong class="spoke-pcd-step__input-label">
           {{ t('resourcesSpokeCalculator.calculator.physicalCorrections.pcdInputLabel', '花鼓 PCD / WL / WR') }}
@@ -241,7 +241,7 @@ const props = withDefaults(defineProps<{
   rearConfig: SpokeWheelBuildConfig
   options: SpokeCalculatorManualOptions
 }>(), {
-  currentStep: 4,
+  currentStep: 3,
   frontGeometry: null,
   rearGeometry: null,
 })

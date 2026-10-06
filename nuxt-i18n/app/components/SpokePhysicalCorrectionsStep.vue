@@ -9,13 +9,13 @@
     />
 
     <div class="spoke-physical-corrections-step__intro">
-      <span class="spoke-physical-corrections-step__eyebrow">05</span>
+      <span class="spoke-physical-corrections-step__eyebrow">04</span>
       <div>
         <h2 id="spoke-physical-corrections-step-title" class="spoke-physical-corrections-step__title">
-          {{ t('resourcesSpokeCalculator.calculator.physicalCorrections.stepFivePrompt') }}
+          {{ t('resourcesSpokeCalculator.calculator.physicalCorrections.stepFourPrompt') }}
         </h2>
         <p class="spoke-physical-corrections-step__subtitle">
-          {{ t('resourcesSpokeCalculator.calculator.physicalCorrections.stepFiveSubtitle') }}
+          {{ t('resourcesSpokeCalculator.calculator.physicalCorrections.stepFourSubtitle') }}
         </p>
       </div>
     </div>
@@ -72,7 +72,7 @@ const props = withDefaults(defineProps<{
   frontCrossing?: number
   rearCrossing?: number
 }>(), {
-  currentStep: 5,
+  currentStep: 4,
   frontHoleDiameter: 2.5,
   rearHoleDiameter: 2.5,
   frontInterlacing: 'off',

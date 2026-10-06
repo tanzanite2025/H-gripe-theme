@@ -724,7 +724,7 @@ const openGlobalFaqSearch = () => {
 }
 
 // Language Switcher
-const { locale, locales, setLocale, t } = useI18n() as any
+const { locale, locales, setLocale, t, te } = useI18n() as any
 const localePath = useLocalePath()
 const router = useRouter()
 const route = useRoute()
@@ -805,6 +805,8 @@ const getPageNavigationMessageNamespacesForEntry = (
   ))
 }
 
+const normalizeNavPath = (path: string) => normalizePrimaryMegaNavPath(path, getAllLocaleCodes())
+
 const getPageNavigationMessageNamespacesForSection = (
   sectionId: PrimaryMegaNavId,
 ) => {
@@ -833,7 +835,20 @@ const loadPageNavigationMessages = async (namespaces: string[]) => {
 
 const loadCurrentPageNavigationMessages = async () => {
   const entry = getPageSubNavigationForPath(route.path || '/', getAllLocaleCodes())
-  await loadPageNavigationMessages(getPageNavigationMessageNamespacesForEntry(entry))
+  const currentSection = findPrimaryMegaNavSectionByPath(
+    route.path || '/',
+    primaryMegaNavSections,
+    getAllLocaleCodes(),
+  )
+  const namespaces = new Set(getPageNavigationMessageNamespacesForEntry(entry))
+
+  if (currentSection) {
+    for (const namespace of getPageNavigationMessageNamespacesForSection(currentSection.id)) {
+      namespaces.add(namespace)
+    }
+  }
+
+  await loadPageNavigationMessages([...namespaces])
 }
 
 await loadCurrentPageNavigationMessages()
@@ -844,8 +859,6 @@ watch(
     void loadCurrentPageNavigationMessages()
   },
 )
-
-const normalizeNavPath = (path: string) => normalizePrimaryMegaNavPath(path, getAllLocaleCodes())
 
 const currentMegaNavId = computed<PrimaryMegaNavId | null>(() => {
   const section = findPrimaryMegaNavSectionByPath(route.path || '/', primaryMegaNavSections, getAllLocaleCodes())
@@ -881,8 +894,13 @@ const routePathFromTo = (to: string) => {
   return to.split('?')[0] || '/'
 }
 
+const translateNavigationLabelWhenAvailable = (key: string | undefined, fallback: string) => {
+  if (!key || !te(key)) return fallback
+  return t(key) as string
+}
+
 const cardDisplayLabel = (card: PrimaryMegaNavCard) => {
-  return t(card.labelKey, card.labelFallback) as string
+  return translateNavigationLabelWhenAvailable(card.labelKey, card.labelFallback)
 }
 
 const localizedNavTarget = (to: string) => {
@@ -1037,9 +1055,7 @@ const fallbackBreadcrumbRouteFamilyLabel = (segment: string) => {
 }
 
 const resolveBreadcrumbLabelDefinition = (definition: BreadcrumbLabelDefinition) => {
-  return definition.labelKey
-    ? t(definition.labelKey, definition.fallback) as string
-    : definition.fallback
+  return translateNavigationLabelWhenAvailable(definition.labelKey, definition.fallback)
 }
 
 const getBreadcrumbMetaLabel = (meta: Record<string, unknown> | undefined) => {
@@ -1055,10 +1071,10 @@ const getBreadcrumbMetaLabel = (meta: Record<string, unknown> | undefined) => {
     meta.footerLabelFallback
 
   if (typeof labelKey === 'string') {
-    return t(
+    return translateNavigationLabelWhenAvailable(
       labelKey,
       typeof labelFallback === 'string' ? labelFallback.trim() : '',
-    ) as string
+    )
   }
 
   const rawLabel =
@@ -1386,7 +1402,10 @@ const getRouteFamilyBreadcrumbSubNavigation = (
 
 const pageSubNavigationTabLabel = (tab: PageSubNavigationTab) => {
   if (tab.labelKey) {
-    return t(tab.labelKey, tab.fallback || tab.label || fallbackBreadcrumbRouteFamilyLabel(tab.id)) as string
+    const fallback = tab.fallback || tab.label || fallbackBreadcrumbRouteFamilyLabel(tab.id)
+    return te(tab.labelKey)
+      ? t(tab.labelKey) as string
+      : fallback
   }
   return tab.label || tab.fallback || fallbackBreadcrumbRouteFamilyLabel(tab.id)
 }

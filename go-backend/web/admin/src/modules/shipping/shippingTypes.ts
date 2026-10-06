@@ -31,6 +31,9 @@ export interface ShippingTemplate {
   id: ShippingID
   name?: string | null
   type?: string | null
+  template_kind?: string | null
+  is_system_managed?: boolean
+  free_shipping_countries?: string | string[] | null
   currency?: string | null
   free_shipping?: boolean
   free_threshold_minor?: number | string | null
@@ -72,6 +75,9 @@ export interface ShippingTemplateForm {
   id: ShippingID | null
   name: string
   type: string
+  template_kind: string
+  is_system_managed: boolean
+  free_shipping_countries: string
   currency: string
   free_shipping: boolean
   free_threshold_minor: number

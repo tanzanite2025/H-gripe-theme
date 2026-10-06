@@ -1,21 +1,21 @@
 <template>
-  <section class="spoke-calculator__results-shell mt-6">
-    <h2 class="text-xs font-semibold uppercase tracking-[0.18em] tz-text-secondary mb-3">
+  <section class="spoke-calculator__results-shell">
+    <h2 class="text-xs font-semibold uppercase tracking-[0.18em] tz-text-secondary mb-2">
       {{ t('resourcesSpokeCalculator.calculator.results.title') }}
     </h2>
 
-    <p class="tz-description mb-4 tz-text-secondary">
+    <p class="tz-description mb-3 tz-text-secondary">
       {{ t('resourcesSpokeCalculator.calculator.results.description') }}
     </p>
 
-    <div class="grid gap-4 md:grid-cols-2">
+    <div class="grid gap-3 md:grid-cols-2">
       <!-- Front Wheel Results -->
-      <div class="space-y-3">
-        <div class="text-xs font-semibold tz-text-accent uppercase tracking-wide mb-2">
+      <div class="space-y-2">
+        <div class="text-xs font-semibold tz-text-accent uppercase tracking-wide mb-1">
           {{ t('resourcesSpokeCalculator.calculator.frontWheel') }}
         </div>
-        <div class="grid gap-3 grid-cols-2">
-          <div class="spoke-calculator__result-card px-4 py-3">
+        <div v-if="!frontResult || frontResult.distribution === 'symmetric_1to1'" class="grid gap-2 grid-cols-2">
+          <div class="spoke-calculator__result-card px-3 py-2">
             <div class="mb-1 flex items-center justify-between gap-2">
               <span class="tz-compact-label tz-text-muted">
                 {{ t('resourcesSpokeCalculator.calculator.results.leftSide') }}
@@ -23,13 +23,13 @@
               <span v-if="frontLeftSourceLabel" class="spoke-calculator__source-badge">{{ frontLeftSourceLabel }}</span>
             </div>
             <div class="flex items-baseline gap-1">
-              <span class="text-2xl font-semibold text-[var(--tz-site-accent)]">{{ frontLeftDisplay }}</span>
+              <span class="text-xl font-semibold text-[var(--tz-site-accent)]">{{ frontLeftDisplay }}</span>
               <span v-if="frontLeftDisplay !== '--'" class="text-xs tz-text-muted">
                 {{ t('resourcesSpokeCalculator.calculator.results.unit') }}
               </span>
             </div>
           </div>
-          <div class="spoke-calculator__result-card px-4 py-3">
+          <div class="spoke-calculator__result-card px-3 py-2">
             <div class="mb-1 flex items-center justify-between gap-2">
               <span class="tz-compact-label tz-text-muted">
                 {{ t('resourcesSpokeCalculator.calculator.results.rightSide') }}
@@ -37,7 +37,7 @@
               <span v-if="frontRightSourceLabel" class="spoke-calculator__source-badge">{{ frontRightSourceLabel }}</span>
             </div>
             <div class="flex items-baseline gap-1">
-              <span class="text-2xl font-semibold text-[var(--tz-site-accent)]">{{ frontRightDisplay }}</span>
+              <span class="text-xl font-semibold text-[var(--tz-site-accent)]">{{ frontRightDisplay }}</span>
               <span v-if="frontRightDisplay !== '--'" class="text-xs tz-text-muted">
                 {{ t('resourcesSpokeCalculator.calculator.results.unit') }}
               </span>
@@ -70,12 +70,12 @@
       </div>
 
       <!-- Rear Wheel Results -->
-      <div class="space-y-3">
-        <div class="text-xs font-semibold tz-text-accent uppercase tracking-wide mb-2">
+      <div class="space-y-2">
+        <div class="text-xs font-semibold tz-text-accent uppercase tracking-wide mb-1">
           {{ t('resourcesSpokeCalculator.calculator.rearWheel') }}
         </div>
-        <div class="grid gap-3 grid-cols-2">
-          <div class="spoke-calculator__result-card px-4 py-3">
+        <div v-if="!rearResult || rearResult.distribution === 'symmetric_1to1'" class="grid gap-2 grid-cols-2">
+          <div class="spoke-calculator__result-card px-3 py-2">
             <div class="mb-1 flex items-center justify-between gap-2">
               <span class="tz-compact-label tz-text-muted">
                 {{ t('resourcesSpokeCalculator.calculator.results.leftSide') }}
@@ -83,13 +83,13 @@
               <span v-if="rearLeftSourceLabel" class="spoke-calculator__source-badge">{{ rearLeftSourceLabel }}</span>
             </div>
             <div class="flex items-baseline gap-1">
-              <span class="text-2xl font-semibold text-[var(--tz-site-accent)]">{{ rearLeftDisplay }}</span>
+              <span class="text-xl font-semibold text-[var(--tz-site-accent)]">{{ rearLeftDisplay }}</span>
               <span v-if="rearLeftDisplay !== '--'" class="text-xs tz-text-muted">
                 {{ t('resourcesSpokeCalculator.calculator.results.unit') }}
               </span>
             </div>
           </div>
-          <div class="spoke-calculator__result-card px-4 py-3">
+          <div class="spoke-calculator__result-card px-3 py-2">
             <div class="mb-1 flex items-center justify-between gap-2">
               <span class="tz-compact-label tz-text-muted">
                 {{ t('resourcesSpokeCalculator.calculator.results.rightSide') }}
@@ -97,7 +97,7 @@
               <span v-if="rearRightSourceLabel" class="spoke-calculator__source-badge">{{ rearRightSourceLabel }}</span>
             </div>
             <div class="flex items-baseline gap-1">
-              <span class="text-2xl font-semibold text-[var(--tz-site-accent)]">{{ rearRightDisplay }}</span>
+              <span class="text-xl font-semibold text-[var(--tz-site-accent)]">{{ rearRightDisplay }}</span>
               <span v-if="rearRightDisplay !== '--'" class="text-xs tz-text-muted">
                 {{ t('resourcesSpokeCalculator.calculator.results.unit') }}
               </span>
@@ -130,7 +130,7 @@
       </div>
     </div>
 
-    <div class="spoke-calculator__results-note mt-6">
+    <div class="spoke-calculator__results-note mt-2">
       {{ t('resourcesSpokeCalculator.calculator.results.fallbackNote') }}
     </div>
   </section>
@@ -231,33 +231,35 @@ const rearRightSourceLabel = computed(() => resultSourceLabel(props.rearResult?.
 
 <style scoped>
 .spoke-calculator__results-shell {
-  border: 1px solid var(--spoke-border);
-  border-radius: 0.5rem;
-  background: var(--spoke-shell-surface);
-  box-shadow: 0 10px 26px -14px rgba(20, 32, 43, 0.12);
-  padding: 1.25rem;
+  min-width: 0;
+  padding: 12px 14px;
+  border: 1px solid rgba(5, 150, 105, 0.32);
+  border-left: 5px solid var(--spoke-step-accent);
+  border-radius: 18px;
+  background: linear-gradient(135deg, #ecfdf5 0%, #f0fdfa 54%, #ffffff 100%);
+  box-shadow: 0 10px 24px rgba(5, 150, 105, 0.1);
 }
 
 .spoke-calculator__result-card {
   border: 1px solid var(--spoke-border);
-  border-radius: 0.5rem;
+  border-radius: 15px;
   background: var(--spoke-result-surface);
 }
 
 .spoke-calculator__tension-summary {
   border: 1px solid var(--spoke-border);
-  border-radius: 0.5rem;
+  border-radius: 15px;
   background: var(--spoke-result-surface);
-  padding: 0.75rem 1rem;
+  padding: 0.6rem 0.75rem;
 }
 
 .spoke-calculator__topology-lengths {
   display: grid;
   gap: 0.35rem;
   border: 1px solid var(--spoke-border);
-  border-radius: 0.5rem;
+  border-radius: 15px;
   background: var(--spoke-result-surface);
-  padding: 0.65rem 0.75rem;
+  padding: 0.5rem 0.6rem;
   color: var(--tz-text-secondary);
   font-size: 0.72rem;
 }
@@ -295,22 +297,20 @@ const rearRightSourceLabel = computed(() => resultSourceLabel(props.rearResult?.
 }
 
 .spoke-calculator__results-note {
-  padding: 0.95rem 1rem;
+  padding: 0.55rem 0.7rem;
   border: 1px solid var(--spoke-border);
-  border-radius: 0.5rem;
+  border-radius: 15px;
   background: var(--spoke-result-surface);
   color: var(--tz-text-secondary);
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   line-height: 1.55;
 }
 
 @media (max-width: 767px) {
   .spoke-calculator__results-shell {
-    padding: 0;
-    border: 0;
-    border-radius: 0;
-    background: transparent;
-    box-shadow: none;
+    padding: 12px;
+    border-left-width: 4px;
+    border-radius: 16px;
   }
 }
 </style>

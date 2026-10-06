@@ -1,5 +1,8 @@
 <template>
-  <div class="spoke-step-navigation">
+  <div
+    class="spoke-step-navigation"
+    :class="{ 'spoke-step-navigation--has-trailing-slot': $slots.trailing }"
+  >
     <button
       v-if="showPrevious"
       type="button"
@@ -19,19 +22,23 @@
       @select="emit('select', $event)"
     />
 
-    <button
-      v-if="showNext"
-      type="button"
-      class="spoke-step-navigation__button spoke-step-navigation__button--next"
-      :aria-label="t('resourcesSpokeCalculator.calculator.physicalCorrections.stepNext', '下一步')"
-      @click="emit('next')"
-    >
-      <span class="spoke-step-navigation__label">
-        {{ t('resourcesSpokeCalculator.calculator.physicalCorrections.stepNext', '下一步') }}
-      </span>
-      <span aria-hidden="true">→</span>
-    </button>
-    <span v-else class="spoke-step-navigation__spacer" aria-hidden="true" />
+    <div class="spoke-step-navigation__trailing">
+      <slot name="trailing">
+        <button
+          v-if="showNext"
+          type="button"
+          class="spoke-step-navigation__button spoke-step-navigation__button--next"
+          :aria-label="t('resourcesSpokeCalculator.calculator.physicalCorrections.stepNext', '下一步')"
+          @click="emit('next')"
+        >
+          <span class="spoke-step-navigation__label">
+            {{ t('resourcesSpokeCalculator.calculator.physicalCorrections.stepNext', '下一步') }}
+          </span>
+          <span aria-hidden="true">→</span>
+        </button>
+        <span v-else class="spoke-step-navigation__spacer" aria-hidden="true" />
+      </slot>
+    </div>
   </div>
 </template>
 
@@ -70,6 +77,13 @@ const { t } = useI18n()
 .spoke-step-navigation__button,
 .spoke-step-navigation__spacer {
   min-width: 0;
+}
+
+.spoke-step-navigation__trailing {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: flex-end;
 }
 
 .spoke-step-navigation__button {
@@ -120,6 +134,10 @@ const { t } = useI18n()
   .spoke-step-navigation {
     grid-template-columns: 2rem minmax(0, 1fr) 2rem;
     gap: 0.3rem;
+  }
+
+  .spoke-step-navigation--has-trailing-slot {
+    grid-template-columns: 2rem minmax(0, 1fr) minmax(0, auto);
   }
 
   .spoke-step-navigation__button {

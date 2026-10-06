@@ -62,11 +62,12 @@
               <SelectTrigger class="w-full"><SelectValue placeholder="可选" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="none">暂不绑定模板</SelectItem>
-                <SelectItem v-for="template in templates" :key="template.id" :value="String(template.id)">
+                <SelectItem v-for="template in carrierBindableTemplates" :key="template.id" :value="String(template.id)">
                   {{ template.name }}
                 </SelectItem>
               </SelectContent>
             </Select>
+            <p class="mt-1 text-[11px] leading-4 text-muted-foreground">系统免邮模板只按国家范围控制下单，不绑定具体承运线路。</p>
           </AdminFormField>
 
           <AdminFormField label="线路代码" required :error="errors.service_code">
@@ -260,6 +261,9 @@ const selectedCarrierUsesPublishedCollection = computed(() => {
   const carrierCode = String(selectedCarrier?.code || '').trim().toUpperCase()
   return ['4PX', 'FPX', 'YANWEN'].includes(carrierCode) || String(props.form.service_code || '').trim().toUpperCase().startsWith('YANWEN:')
 })
+const carrierBindableTemplates = computed(() => props.templates.filter((template) => (
+  template.template_kind !== 'system_free_shipping' && template.type !== 'free_shipping'
+)))
 
 const serviceCountriesLabel = (value: unknown) => {
   const raw = String(value || '').trim()

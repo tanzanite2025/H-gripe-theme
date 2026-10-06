@@ -25,6 +25,9 @@ export interface ShippingTemplate {
   name?: string
   template_name?: string
   type?: string
+  template_kind?: string
+  is_system_managed?: boolean
+  free_shipping_countries?: string | string[]
   description?: string
   enabled?: boolean
   is_active?: boolean
@@ -92,6 +95,28 @@ const ruleRegions = (rule: ShippingRule): string[] => {
   return splitRegions(rule.region || '')
 }
 
+const templateFreeShippingCountries = (template: ShippingTemplate): string[] => {
+  if (template.template_kind !== 'system_free_shipping' && template.type !== 'free_shipping') return []
+  const value = template.free_shipping_countries
+  if (Array.isArray(value)) return normalizeRegionList(value)
+  const raw = String(value || '').trim()
+  if (!raw) return []
+  try {
+    const parsed = JSON.parse(raw)
+    if (Array.isArray(parsed)) return normalizeRegionList(parsed)
+  } catch {
+    // Keep compatibility with delimited country scopes.
+  }
+  return normalizeRegionList(raw.split(/[,，;|\s]+/))
+}
+
+const templateMatchesCountry = (template: ShippingTemplate, countryCode: string): boolean => {
+  if (template.template_kind !== 'system_free_shipping' && template.type !== 'free_shipping') return true
+  const countries = templateFreeShippingCountries(template)
+  if (countries.length === 0) return false
+  return countries.some(country => ['*', 'ALL', 'GLOBAL', 'WORLDWIDE'].includes(country) || country === countryCode.toUpperCase())
+}
+
 const ruleMatchesCountry = (rule: ShippingRule, countryCode: string): boolean => {
   const normalizedCountry = countryCode.toUpperCase()
   const regions = ruleRegions(rule)
@@ -142,6 +167,7 @@ function findMatchingRule(
 
   for (const template of templates) {
     if (!isTemplateActive(template)) continue
+    if (!templateMatchesCountry(template, countryCode)) continue
 
     if (!template.rules?.length) {
       countryRules.push({
@@ -220,6 +246,7 @@ export function useShippingValidation() {
 
     for (const template of shippingTemplates.value) {
       if (!isTemplateActive(template)) continue
+      if (!templateMatchesCountry(template, countryCode)) continue
 
       if (!template.rules?.length) {
         return true
@@ -240,6 +267,16 @@ export function useShippingValidation() {
 
     for (const template of shippingTemplates.value) {
       if (!isTemplateActive(template)) continue
+
+      if (template.template_kind === 'system_free_shipping' || template.type === 'free_shipping') {
+        const allowedCountries = templateFreeShippingCountries(template)
+        if (allowedCountries.some(country => ['*', 'ALL', 'GLOBAL', 'WORLDWIDE'].includes(country))) {
+          allCountryCodes().forEach(code => countries.add(code))
+        } else {
+          allowedCountries.forEach(code => countries.add(code))
+        }
+        continue
+      }
 
       if (!template.rules?.length) {
         allCountryCodes().forEach(code => countries.add(code))
