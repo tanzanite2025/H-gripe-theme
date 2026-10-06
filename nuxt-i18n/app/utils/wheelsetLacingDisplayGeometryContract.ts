@@ -1,15 +1,15 @@
 import {
   getSupportedWheelsetLacingCrossCounts,
-  type WheelsetLacingHoleSelection,
+  type WheelsetLacingTopologySelection,
 } from './wheelsetLacingSelectionContract'
 
-export const WHEELSET_LACING_DISPLAY_GEOMETRY_CONTRACT_VERSION = 'v1.6-backend-display-geometry'
+export const WHEELSET_LACING_DISPLAY_GEOMETRY_CONTRACT_VERSION = 'v1.7-backend-display-geometry'
 
 export const WHEELSET_LACING_DISPLAY_GEOMETRY_LAYOUT = Object.freeze({
   symmetric1To1: 'symmetric_1to1',
   uniform2To1: 'uniform_2to1',
   uniform18H2To1: 'uniform_18h_2to1',
-  g3Triplet2To1: 'g3_triplet_2to1',
+  g3TwentyOneHoleTriplet2To1: 'g3_21h_triplet_2to1',
 } as const)
 
 export type WheelsetLacingDisplayGeometryLayout =
@@ -17,6 +17,7 @@ export type WheelsetLacingDisplayGeometryLayout =
 
 export interface WheelsetLacingDisplayGeometryTopologySelection {
   topologyId: string
+  selection: string
   displayLayout: WheelsetLacingDisplayGeometryLayout
 }
 
@@ -235,7 +236,7 @@ const validateDisplayGeometryLayoutSpecificFields = (
 ): void => {
   const spacing = requireUnknownRecord(spacingValue, 'display geometry G3 group spacing')
   const enabled = requireBoolean(spacing.enabled, 'display geometry G3 group spacing.enabled')
-  if (displayLayout === WHEELSET_LACING_DISPLAY_GEOMETRY_LAYOUT.g3Triplet2To1) {
+  if (displayLayout === WHEELSET_LACING_DISPLAY_GEOMETRY_LAYOUT.g3TwentyOneHoleTriplet2To1) {
     if (!enabled || requireInteger(spacing.group_count, 'display geometry G3 group spacing.group_count') !== 7) {
       throw new Error('G3 display geometry must expose seven enabled groups')
     }
@@ -288,34 +289,38 @@ const validateUniform18HTwoToOneTopologyShape = (
 }
 
 /**
- * Maps a UI topology selection to its canonical ID and exact display layout.
- * The layout is explicit metadata; it is never inferred from a hole count.
+ * Maps an explicit UI topology selection to its canonical ID and display
+ * layout. The 21-hole G3 selector is independent from its hole count, and its
+ * display layout cannot be reused by a future G3 hole-count variant.
  */
 export const resolveWheelsetLacingDisplayGeometryTopologySelection = (
-  holeSelection: WheelsetLacingHoleSelection,
+  topologySelection: WheelsetLacingTopologySelection,
   cross: number,
 ): WheelsetLacingDisplayGeometryTopologySelection => {
-  const supportedCrossCounts = getSupportedWheelsetLacingCrossCounts(holeSelection)
+  const supportedCrossCounts = getSupportedWheelsetLacingCrossCounts(topologySelection)
   if (supportedCrossCounts.length === 0) {
-    throw new Error(`unregistered wheelset lacing display topology ${String(holeSelection)}`)
+    throw new Error(`unregistered wheelset lacing display topology ${String(topologySelection)}`)
   }
   if (!supportedCrossCounts.includes(cross)) {
-    throw new Error(`unsupported ${String(holeSelection)} wheelset lacing cross count ${String(cross)}`)
+    throw new Error(`unsupported ${String(topologySelection)} wheelset lacing cross count ${String(cross)}`)
   }
-  switch (holeSelection) {
-    case 21:
+  switch (topologySelection) {
+    case '21_g3':
       return {
         topologyId: '21h-g3-2to1',
-        displayLayout: WHEELSET_LACING_DISPLAY_GEOMETRY_LAYOUT.g3Triplet2To1,
+        selection: '21_g3',
+        displayLayout: WHEELSET_LACING_DISPLAY_GEOMETRY_LAYOUT.g3TwentyOneHoleTriplet2To1,
       }
     case '24_2to1':
       return {
         topologyId: '24h-uniform-2to1',
+        selection: '24_2to1',
         displayLayout: WHEELSET_LACING_DISPLAY_GEOMETRY_LAYOUT.uniform2To1,
       }
     case '18_2to1':
       return {
         topologyId: '18h-uniform-2to1',
+        selection: '18_2to1',
         displayLayout: WHEELSET_LACING_DISPLAY_GEOMETRY_LAYOUT.uniform18H2To1,
       }
     case 16:
@@ -325,11 +330,12 @@ export const resolveWheelsetLacingDisplayGeometryTopologySelection = (
     case 32:
     case 36:
       return {
-        topologyId: `${holeSelection}h-symmetric-1to1-${cross}x`,
+        topologyId: `${topologySelection}h-symmetric-1to1-${cross}x`,
+        selection: String(topologySelection),
         displayLayout: WHEELSET_LACING_DISPLAY_GEOMETRY_LAYOUT.symmetric1To1,
       }
     default:
-      throw new Error(`unregistered wheelset lacing display topology ${String(holeSelection)}`)
+    throw new Error(`unregistered wheelset lacing display topology ${String(topologySelection)}`)
   }
 }
 
@@ -354,6 +360,9 @@ export const validateWheelsetLacingDisplayGeometryResponse = (
   if (topology.topology_id !== expectedSelection.topologyId) {
     throw new Error(`display geometry topology ${String(topology.topology_id)} does not match the selected topology`)
   }
+  if (topology.selection !== expectedSelection.selection) {
+    throw new Error(`display geometry selection ${String(topology.selection)} does not match the selected topology selection`)
+  }
   if (topology.display_layout !== geometry.display_layout) {
     throw new Error('topology display layout does not match the projection display layout')
   }
@@ -366,7 +375,7 @@ export const validateWheelsetLacingDisplayGeometryResponse = (
     [WHEELSET_LACING_DISPLAY_GEOMETRY_LAYOUT.symmetric1To1]: 'symmetric_1to1',
     [WHEELSET_LACING_DISPLAY_GEOMETRY_LAYOUT.uniform2To1]: 'uniform_2to1',
     [WHEELSET_LACING_DISPLAY_GEOMETRY_LAYOUT.uniform18H2To1]: 'uniform_2to1',
-    [WHEELSET_LACING_DISPLAY_GEOMETRY_LAYOUT.g3Triplet2To1]: 'g3_2to1',
+    [WHEELSET_LACING_DISPLAY_GEOMETRY_LAYOUT.g3TwentyOneHoleTriplet2To1]: 'g3_2to1',
   }
   if (topology.distribution !== distributionByLayout[expectedSelection.displayLayout]) {
     throw new Error('topology distribution does not match the selected display layout')
@@ -377,8 +386,8 @@ export const validateWheelsetLacingDisplayGeometryResponse = (
   if (expectedSelection.displayLayout === WHEELSET_LACING_DISPLAY_GEOMETRY_LAYOUT.uniform18H2To1 && holeCount !== 18) {
     throw new Error('uniform 18H 2:1 display geometry must contain 18 rim holes')
   }
-  if (expectedSelection.displayLayout === WHEELSET_LACING_DISPLAY_GEOMETRY_LAYOUT.g3Triplet2To1 && holeCount !== 21) {
-    throw new Error('G3 display geometry must contain 21 rim holes')
+  if (expectedSelection.displayLayout === WHEELSET_LACING_DISPLAY_GEOMETRY_LAYOUT.g3TwentyOneHoleTriplet2To1 && holeCount !== 21) {
+    throw new Error('21-hole G3 display geometry must contain 21 rim holes')
   }
 
   const topologyRimHoles = requireUnknownArray(topology.rim_holes, 'topology rim holes')

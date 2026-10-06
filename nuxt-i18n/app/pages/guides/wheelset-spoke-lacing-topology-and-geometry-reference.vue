@@ -38,33 +38,33 @@
           <span id="current-hole-label" style="font-family: var(--tz-font-ui); color: var(--accent-primary);">{{ t('wheelsetLacingTopology.holes.24') }} (1:1)</span>
         </div>
         <div class="hole-pill-grid">
-          <button type="button" class="uds-pill-btn" data-holes="16" aria-pressed="false" @click="setHoleCount(16)">
+          <button type="button" class="uds-pill-btn" data-selection="16" aria-pressed="false" @click="setTopologySelection(16)">
             <span>{{ t('wheelsetLacingTopology.holes.16') }}</span>
           </button>
-          <button type="button" class="uds-pill-btn" data-holes="20" aria-pressed="false" @click="setHoleCount(20)">
+          <button type="button" class="uds-pill-btn" data-selection="20" aria-pressed="false" @click="setTopologySelection(20)">
             <span>{{ t('wheelsetLacingTopology.holes.20') }}</span>
           </button>
-          <button type="button" class="uds-pill-btn" data-holes="21" aria-pressed="false" @click="setHoleCount(21)">
+          <button type="button" class="uds-pill-btn" data-selection="21_g3" aria-pressed="false" @click="setTopologySelection('21_g3')">
             <span>{{ t('wheelsetLacingTopology.holes.21') }}</span>
             <span class="sub-text">{{ t('wheelsetLacingTopology.holes.21Sub') }}</span>
           </button>
-          <button type="button" class="uds-pill-btn" data-holes="18_2to1" aria-pressed="false" @click="setHoleCount('18_2to1')">
+          <button type="button" class="uds-pill-btn" data-selection="18_2to1" aria-pressed="false" @click="setTopologySelection('18_2to1')">
             <span>{{ t('wheelsetLacingTopology.holes.18_2to1') }}</span>
             <span class="sub-text">{{ t('wheelsetLacingTopology.holes.18_2to1Sub') }}</span>
           </button>
-          <button type="button" class="uds-pill-btn active" data-holes="24" aria-pressed="true" @click="setHoleCount(24)">
+          <button type="button" class="uds-pill-btn active" data-selection="24" aria-pressed="true" @click="setTopologySelection(24)">
             <span>{{ t('wheelsetLacingTopology.holes.24') }}</span>
           </button>
-          <button type="button" class="uds-pill-btn" data-holes="28" aria-pressed="false" @click="setHoleCount(28)">
+          <button type="button" class="uds-pill-btn" data-selection="28" aria-pressed="false" @click="setTopologySelection(28)">
             <span>{{ t('wheelsetLacingTopology.holes.28') }}</span>
           </button>
-          <button type="button" class="uds-pill-btn" data-holes="32" aria-pressed="false" @click="setHoleCount(32)">
+          <button type="button" class="uds-pill-btn" data-selection="32" aria-pressed="false" @click="setTopologySelection(32)">
             <span>{{ t('wheelsetLacingTopology.holes.32') }}</span>
           </button>
-          <button type="button" class="uds-pill-btn" data-holes="36" aria-pressed="false" @click="setHoleCount(36)">
+          <button type="button" class="uds-pill-btn" data-selection="36" aria-pressed="false" @click="setTopologySelection(36)">
             <span>{{ t('wheelsetLacingTopology.holes.36') }}</span>
           </button>
-          <button type="button" class="uds-pill-btn" data-holes="24_2to1" aria-pressed="false" @click="setHoleCount('24_2to1')">
+          <button type="button" class="uds-pill-btn" data-selection="24_2to1" aria-pressed="false" @click="setTopologySelection('24_2to1')">
             <span>{{ t('wheelsetLacingTopology.holes.24_2to1') }}</span>
             <span class="sub-text">{{ t('wheelsetLacingTopology.holes.24_2to1Sub') }}</span>
           </button>
@@ -333,7 +333,7 @@ const { data: wheelsetLacingFaqData } = await useAsyncData(
 const serverRenderedWheelsetLacingDisplayGeometryTopologyIdentifier = '24h-symmetric-1to1-2x'
 const serverRenderedWheelsetLacingDisplayGeometrySelection = resolveWheelsetLacingDisplayGeometryTopologySelection(24, 2)
 const { data: serverRenderedWheelsetLacingDisplayGeometry } = await useAsyncData(
-  'wheelset-lacing-default-display-geometry-v1-6',
+  'wheelset-lacing-default-display-geometry-v1-7',
   async () => {
     try {
       const response = await request('/wheelset-lacing/display-geometry', {
@@ -511,12 +511,17 @@ useHead(() => {
       Number.isFinite(spacing) ? spacing.toFixed(2) : ''
     );
 
-    const resolveWheelsetLacingBackendTopologySelection = (holes, cross) => (
-      resolveWheelsetLacingDisplayGeometryTopologySelection(holes, cross)
+    const resolveWheelsetLacingBackendTopologySelection = (topologySelection, cross) => (
+      resolveWheelsetLacingDisplayGeometryTopologySelection(topologySelection, cross)
     );
 
-    const resolveWheelsetLacingBackendTopologyIdentifier = (holes, cross) => (
-      resolveWheelsetLacingBackendTopologySelection(holes, cross).topologyId
+    const resolveWheelsetLacingBackendTopologyIdentifier = (topologySelection, cross) => (
+      resolveWheelsetLacingBackendTopologySelection(topologySelection, cross).topologyId
+    );
+
+    const isG3TopologySelection = (topologySelection, cross) => (
+      resolveWheelsetLacingBackendTopologySelection(topologySelection, cross).displayLayout
+        === WHEELSET_LACING_DISPLAY_GEOMETRY_LAYOUT.g3TwentyOneHoleTriplet2To1
     );
 
     const formatBackendDisplayGeometryMetric = (value) => (
@@ -551,15 +556,16 @@ useHead(() => {
     let displayGeometryRefreshTimer = null;
 
     const buildWheelsetLacingDisplayGeometryRequestBody = () => {
+      const selectedTopology = resolveWheelsetLacingBackendTopologySelection(state.topologySelection, state.cross);
       const requestBody = {
-        topology_id: resolveWheelsetLacingBackendTopologySelection(state.holes, state.cross).topologyId,
+        topology_id: selectedTopology.topologyId,
         rim_radius: SVG_RIM_HOLE_RING_DISPLAY_RADIUS,
         flange_radius_a: state.flangeRadiusA,
         flange_radius_b: state.flangeRadiusB,
         flange_offset_a_mm: state.flangeOffsetAMm,
         flange_offset_b_mm: state.flangeOffsetBMm,
       };
-      if (state.holes === 21) {
+      if (selectedTopology.displayLayout === WHEELSET_LACING_DISPLAY_GEOMETRY_LAYOUT.g3TwentyOneHoleTriplet2To1) {
         requestBody.g3_rim_hole_spacing_a_to_b_degrees = state.g3RimHoleSpacingAToBDegrees;
         requestBody.g3_rim_hole_spacing_b_to_a_degrees = state.g3RimHoleSpacingBToADegrees;
         requestBody.g3_rim_hole_spacing_a_to_next_group_a_degrees = state.g3RimHoleSpacingAToNextGroupADegrees;
@@ -609,8 +615,8 @@ useHead(() => {
     const refreshWheelsetLacingDisplayGeometryFromBackend = async () => {
       const requestBody = buildWheelsetLacingDisplayGeometryRequestBody();
       const selectedTopologyId = requestBody.topology_id;
-      const selectedTopology = resolveWheelsetLacingBackendTopologySelection(state.holes, state.cross);
-      if (selectedTopology.displayLayout === WHEELSET_LACING_DISPLAY_GEOMETRY_LAYOUT.g3Triplet2To1
+      const selectedTopology = resolveWheelsetLacingBackendTopologySelection(state.topologySelection, state.cross);
+      if (selectedTopology.displayLayout === WHEELSET_LACING_DISPLAY_GEOMETRY_LAYOUT.g3TwentyOneHoleTriplet2To1
         && !updateG3RimHoleSpacingValidationMessage()) {
         cancelScheduledWheelsetLacingDisplayGeometryRefresh();
         invalidatePendingWheelsetLacingDisplayGeometryRequest();
@@ -636,7 +642,7 @@ useHead(() => {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(requestBody),
         });
-        if (requestId !== displayGeometryRequestSequence || selectedTopologyId !== resolveWheelsetLacingBackendTopologyIdentifier(state.holes, state.cross)) return;
+        if (requestId !== displayGeometryRequestSequence || selectedTopologyId !== resolveWheelsetLacingBackendTopologyIdentifier(state.topologySelection, state.cross)) return;
         validateWheelsetLacingDisplayGeometryResponse(response?.data, selectedTopology);
         backendDisplayGeometry.value = response.data;
         renderBlueprint();
@@ -665,7 +671,7 @@ useHead(() => {
     };
 
     let state = {
-      holes: 24,            // 16, 20, 21, 24, 28, 32, 36, '18_2to1', '24_2to1'
+      topologySelection: 24, // G3 and uniform 2:1 selections have explicit family keys.
       cross: 2,             // 0, 1, 2, 3, 4
       viewMode: 'both',     // 默认全景双侧透视，确保所有孔位100%全满严整
       flangeRadiusA: resolveDisplayGeometryRadius(initialServerRenderedDisplayGeometry?.hub_holes_a, SVG_HUB_FLANGE_HOLE_RING_DISPLAY_RADIUS_A),
@@ -697,7 +703,7 @@ useHead(() => {
     const DEFAULT_PREVIEW_CROSS_COUNT_BY_SELECTION = {
       16: 0,
       20: 1,
-      21: 2,
+      '21_g3': 2,
       24: 2,
       '18_2to1': 2,
       '24_2to1': 2,
@@ -706,26 +712,34 @@ useHead(() => {
       36: 3,
     };
 
-    const getHoleRule = (holes) => {
-      const translatedLabel = holes === 21
+    const getTopologySelectionRule = (topologySelection) => {
+      const translatedLabel = topologySelection === '21_g3'
         ? `${t('wheelsetLacingTopology.holes.21')} (${t('wheelsetLacingTopology.holes.21Sub')})`
-        : holes === '18_2to1'
+        : topologySelection === '18_2to1'
           ? t('wheelsetLacingTopology.holes.18_2to1')
-        : holes === '24_2to1'
+        : topologySelection === '24_2to1'
           ? t('wheelsetLacingTopology.holes.24_2to1')
-          : holes === 24
+          : topologySelection === 24
             ? `${t('wheelsetLacingTopology.holes.24')} (1:1)`
-            : t(`wheelsetLacingTopology.holes.${holes}`)
+            : t(`wheelsetLacingTopology.holes.${topologySelection}`)
+      const holeCount = typeof topologySelection === 'number'
+        ? topologySelection
+        : topologySelection === '21_g3'
+          ? 21
+          : topologySelection === '18_2to1'
+            ? 18
+            : 24
       return {
         label: translatedLabel,
-        allowedCross: getSupportedWheelsetLacingCrossCounts(holes),
-        recommended: DEFAULT_PREVIEW_CROSS_COUNT_BY_SELECTION[holes],
+        holeCount,
+        allowedCross: getSupportedWheelsetLacingCrossCounts(topologySelection),
+        recommended: DEFAULT_PREVIEW_CROSS_COUNT_BY_SELECTION[topologySelection],
       }
     }
 
-    function setHoleCount(holes) {
-      state.holes = holes;
-      const rule = getHoleRule(holes);
+    function setTopologySelection(topologySelection) {
+      state.topologySelection = topologySelection;
+      const rule = getTopologySelectionRule(topologySelection);
       if (!rule.allowedCross.includes(state.cross)) {
         state.cross = rule.recommended;
       }
@@ -735,7 +749,7 @@ useHead(() => {
     }
 
     function setCrossCount(cross) {
-      if (!getHoleRule(state.holes).allowedCross.includes(cross)) return;
+      if (!getTopologySelectionRule(state.topologySelection).allowedCross.includes(cross)) return;
       state.cross = cross;
       renderControls();
       cancelScheduledWheelsetLacingDisplayGeometryRefresh();
@@ -758,7 +772,7 @@ useHead(() => {
       const inputValue = Number(rawValue);
       if (!rawValue || !Number.isFinite(inputValue) || inputValue < limits.min || inputValue > limits.max) {
         cancelScheduledWheelsetLacingDisplayGeometryRefresh();
-        if (field.startsWith('g3RimHoleSpacing') && state.holes === 21) {
+        if (field.startsWith('g3RimHoleSpacing') && isG3TopologySelection(state.topologySelection, state.cross)) {
           updateG3RimHoleSpacingValidationMessage(false);
           invalidatePendingWheelsetLacingDisplayGeometryRequest();
           renderBlueprint();
@@ -769,7 +783,7 @@ useHead(() => {
       if (field === 'g3RimHoleSpacingAToBDegrees' || field === 'g3RimHoleSpacingBToADegrees') {
         synchronizeG3RimHoleSpacingAToNextGroupA();
       }
-      if (field.startsWith('g3RimHoleSpacing') && state.holes === 21
+      if (field.startsWith('g3RimHoleSpacing') && isG3TopologySelection(state.topologySelection, state.cross)
         && !updateG3RimHoleSpacingValidationMessage()) {
         cancelScheduledWheelsetLacingDisplayGeometryRefresh();
         invalidatePendingWheelsetLacingDisplayGeometryRequest();
@@ -793,7 +807,7 @@ useHead(() => {
         synchronizeG3RimHoleSpacingAToNextGroupA();
       }
       if (target) target.value = String(normalizedValue);
-      if (field.startsWith('g3RimHoleSpacing') && state.holes === 21) {
+      if (field.startsWith('g3RimHoleSpacing') && isG3TopologySelection(state.topologySelection, state.cross)) {
         updateG3RimHoleSpacingValidationMessage();
         if (!areCurrentG3RimHoleSpacingsClosed()) {
           cancelScheduledWheelsetLacingDisplayGeometryRefresh();
@@ -831,11 +845,11 @@ useHead(() => {
     }
 
     function renderControls() {
-      const rule = getHoleRule(state.holes);
+      const rule = getTopologySelectionRule(state.topologySelection);
 
       document.querySelectorAll('.hole-pill-grid .uds-pill-btn').forEach(btn => {
-        const h = btn.getAttribute('data-holes');
-        if (h === String(state.holes)) {
+        const selection = btn.getAttribute('data-selection');
+        if (selection === String(state.topologySelection)) {
           btn.classList.add('active');
           btn.setAttribute('aria-pressed', 'true');
         } else {
@@ -871,11 +885,11 @@ useHead(() => {
       });
       const g3GeometryControlGroup = document.getElementById('g3-geometry-control-group');
       if (g3GeometryControlGroup) {
-        const isG3Selection = state.holes === 21;
+        const isG3Selection = isG3TopologySelection(state.topologySelection, state.cross);
         g3GeometryControlGroup.hidden = !isG3Selection;
         g3GeometryControlGroup.setAttribute('aria-hidden', String(!isG3Selection));
       }
-      if (state.holes === 21) {
+      if (isG3TopologySelection(state.topologySelection, state.cross)) {
         synchronizeG3RimHoleSpacingAToNextGroupA();
       }
       document.getElementById('flange-radius-a-input').value = String(state.flangeRadiusA);
@@ -905,10 +919,10 @@ useHead(() => {
       const svg = document.getElementById('spoke-lacing-svg');
       svg.replaceChildren();
 
-      const holes = state.holes;
+      const topologySelection = state.topologySelection;
       const cross = state.cross;
       const viewMode = state.viewMode;
-      const selectionLabel = getHoleRule(holes).label;
+      const selectionLabel = getTopologySelectionRule(topologySelection).label;
       const crossLabel = t(`wheelsetLacingTopology.cross.${cross}`);
       const svgDescription = t('wheelsetLacingTopology.canvas.ariaRuntime', {
         selection: selectionLabel,
@@ -1101,8 +1115,7 @@ useHead(() => {
     }
 
     function updateWheelsetLacingTopologyPreviewStatus(topology) {
-      const holes = topology?.selection ?? state.holes;
-      const numHoles = Number(topology?.hole_count ?? (holes === '18_2to1' ? 18 : holes === '24_2to1' ? 24 : holes));
+      const numHoles = Number(topology?.hole_count ?? getTopologySelectionRule(state.topologySelection).holeCount);
 
       if (!topology) {
         const statusBox = document.getElementById('topology-status-box');

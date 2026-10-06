@@ -35,7 +35,7 @@ func TestDefaultCatalogExposesExactSupportedCrossCombinations(t *testing.T) {
 		"32":      {0, 1, 2, 3, 4},
 		"36":      {0, 1, 2, 3, 4},
 		"18_2to1": {2},
-		"21":      {2},
+		"21_g3":   {2},
 		"24_2to1": {2},
 	}
 	crossesBySelection := make(map[string][]int, len(wantBySelection))
@@ -64,7 +64,7 @@ func TestG3AndUniformTwoToOneHaveIndependentMappings(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if g3.Distribution != DistributionG32To1 || g3.DisplayLayout != DisplayGeometryLayoutG3Triplet2To1 || g3.HoleCount != 21 || len(g3.HubHolesA) != 14 || len(g3.HubHolesB) != 7 {
+	if g3.Distribution != DistributionG32To1 || g3.DisplayLayout != DisplayGeometryLayoutG3TwentyOneHoleTriplet2To1 || g3.HoleCount != 21 || len(g3.HubHolesA) != 14 || len(g3.HubHolesB) != 7 {
 		t.Fatalf("unexpected G3 topology: %+v", g3)
 	}
 	for index, hole := range g3.RimHoles {
@@ -135,6 +135,22 @@ func TestG3AndUniformTwoToOneHaveIndependentMappings(t *testing.T) {
 		if spoke.Side != SideA || spoke.Type != wantType || spoke.HubHoleID != index || spoke.RimHoleID != wantRimHoleID {
 			t.Fatalf("uniform 18H drive spoke %d = %+v, want side=%s type=%s hub=%d rim=%d", index, spoke, SideA, wantType, index, wantRimHoleID)
 		}
+	}
+}
+
+func TestG3SelectionIsExplicitlySeparateFromItsHoleCount(t *testing.T) {
+	catalog := NewDefaultCatalog()
+	g3, err := catalog.Get("21h-g3-2to1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if g3.Selection != "21_g3" || g3.HoleCount != 21 || g3.Distribution != DistributionG32To1 {
+		t.Fatalf("G3 identity must be independent from hole count: %+v", g3)
+	}
+
+	legacyHoleCountSelection := "21"
+	if _, err := catalog.Validate(ValidateRequest{TopologyID: g3.ID, Selection: &legacyHoleCountSelection}); !errors.Is(err, ErrTopologyMismatch) {
+		t.Fatalf("Validate() with ambiguous selection error = %v, want ErrTopologyMismatch", err)
 	}
 }
 

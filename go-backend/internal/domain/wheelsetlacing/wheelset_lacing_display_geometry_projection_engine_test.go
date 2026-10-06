@@ -118,7 +118,7 @@ func TestCalculateWheelsetLacingDisplayGeometryProjectionUsesG3DefaultsWhenSpaci
 	if err != nil {
 		t.Fatal(err)
 	}
-	if result.G3GroupSpacing.SpacingAToBDegrees != DefaultWheelsetLacingG3RimHoleSpacingAToBDegrees || result.G3GroupSpacing.SpacingBToADegrees != DefaultWheelsetLacingG3RimHoleSpacingBToADegrees || result.G3GroupSpacing.SpacingAToNextGroupADegrees != roundWheelsetLacingDisplayGeometryValue(DefaultWheelsetLacingG3RimHoleSpacingAToNextGroupADegrees, 2) {
+	if result.G3GroupSpacing.SpacingAToBDegrees != DefaultWheelsetLacingTwentyOneHoleG3RimHoleSpacingAToBDegrees || result.G3GroupSpacing.SpacingBToADegrees != DefaultWheelsetLacingTwentyOneHoleG3RimHoleSpacingBToADegrees || result.G3GroupSpacing.SpacingAToNextGroupADegrees != roundWheelsetLacingDisplayGeometryValue(DefaultWheelsetLacingTwentyOneHoleG3RimHoleSpacingAToNextGroupADegrees, 2) {
 		t.Fatalf("unexpected G3 default spacing profile: %+v", result.G3GroupSpacing)
 	}
 }
@@ -218,9 +218,9 @@ func TestCalculateWheelsetLacingDisplayGeometryProjectionPreservesAllThreeG3RimH
 	if err != nil {
 		t.Fatal(err)
 	}
-	for group := 0; group < WheelsetLacingG3GroupCount; group++ {
+	for group := 0; group < WheelsetLacingTwentyOneHoleG3GroupCount; group++ {
 		firstHoleIndex := group * 3
-		nextGroupFirstHoleIndex := ((group + 1) % WheelsetLacingG3GroupCount) * 3
+		nextGroupFirstHoleIndex := ((group + 1) % WheelsetLacingTwentyOneHoleG3GroupCount) * 3
 		if got := positiveG3RimHoleAngleDifferenceInDegrees(result.RimHoles[firstHoleIndex+1].Angle, result.RimHoles[firstHoleIndex].Angle); math.Abs(got-spacingAToB) > 0.0001 {
 			t.Fatalf("group %d A-to-B gap = %v°, want %v°", group, got, spacingAToB)
 		}

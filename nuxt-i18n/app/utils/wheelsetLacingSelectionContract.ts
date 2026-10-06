@@ -1,15 +1,15 @@
-export type WheelsetLacingHoleSelection =
+export type WheelsetLacingTopologySelection =
   | 16
   | 20
-  | 21
   | 24
   | 28
   | 32
   | 36
+  | '21_g3'
   | '18_2to1'
   | '24_2to1'
 
-const SUPPORTED_WHEELSET_LACING_CROSS_COUNTS_BY_HOLE_SELECTION: Record<number, readonly number[]> = {
+const SUPPORTED_WHEELSET_LACING_CROSS_COUNTS_BY_SYMMETRIC_HOLE_COUNT: Record<number, readonly number[]> = {
   16: [0, 1],
   20: [0, 1, 2],
   24: [0, 1, 2, 3],
@@ -19,13 +19,13 @@ const SUPPORTED_WHEELSET_LACING_CROSS_COUNTS_BY_HOLE_SELECTION: Record<number, r
 }
 
 /**
- * Returns the supported selector values for one topology choice. Topology
+ * Returns supported cross counts for one explicit topology selection. Topology
  * generation, coordinates, and projection metrics are owned by the Go API;
  * this contract only controls which buttons the presentation can enable.
  */
 export const getSupportedWheelsetLacingCrossCounts = (
-  holeSelection: WheelsetLacingHoleSelection,
+  topologySelection: WheelsetLacingTopologySelection,
 ): readonly number[] => {
-  if (holeSelection === 21 || holeSelection === '18_2to1' || holeSelection === '24_2to1') return [2]
-  return SUPPORTED_WHEELSET_LACING_CROSS_COUNTS_BY_HOLE_SELECTION[holeSelection] || []
+  if (topologySelection === '21_g3' || topologySelection === '18_2to1' || topologySelection === '24_2to1') return [2]
+  return SUPPORTED_WHEELSET_LACING_CROSS_COUNTS_BY_SYMMETRIC_HOLE_COUNT[topologySelection] || []
 }

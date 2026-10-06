@@ -139,8 +139,8 @@ func validateWheelsetLacingAngularLayoutRequest(request WheelsetLacingAngularLay
 		"g3_rim_hole_spacing_b_to_a_degrees":            request.G3RimHoleSpacingBToADegrees,
 		"g3_rim_hole_spacing_a_to_next_group_a_degrees": request.G3RimHoleSpacingAToNextGroupADegrees,
 	} {
-		if math.IsNaN(value) || math.IsInf(value, 0) || value < 0 || value > WheelsetLacingMaximumG3RimHoleSpacingDegrees {
-			return fmt.Errorf("%w: %s must be finite and within [0, %g] degrees", ErrInvalidRequest, field, WheelsetLacingMaximumG3RimHoleSpacingDegrees)
+		if math.IsNaN(value) || math.IsInf(value, 0) || value < 0 || value > WheelsetLacingMaximumTwentyOneHoleG3RimHoleSpacingDegrees {
+			return fmt.Errorf("%w: %s must be finite and within [0, %g] degrees", ErrInvalidRequest, field, WheelsetLacingMaximumTwentyOneHoleG3RimHoleSpacingDegrees)
 		}
 	}
 	return nil
@@ -151,8 +151,8 @@ func buildWheelsetLacingAngularPoints(
 	request WheelsetLacingAngularLayoutRequest,
 ) (wheelsetLacingAngularPointSet, WheelsetLacingG3GroupSpacing, error) {
 	switch topology.DisplayLayout {
-	case DisplayGeometryLayoutG3Triplet2To1:
-		return buildWheelsetLacingG3AngularPoints(topology, request)
+	case DisplayGeometryLayoutG3TwentyOneHoleTriplet2To1:
+		return buildWheelsetLacingTwentyOneHoleG3AngularPoints(topology, request)
 	case DisplayGeometryLayoutUniform2To1:
 		return buildWheelsetLacingUniformTwoToOneAngularPoints(topology, 24, 16, 8), WheelsetLacingG3GroupSpacing{}, nil
 	case DisplayGeometryLayoutUniform18H2To1:
@@ -188,7 +188,7 @@ func buildWheelsetLacingSymmetricAngularPoints(topology Topology) wheelsetLacing
 	return wheelsetLacingAngularPointSet{rimHoles: rimHoles, hubHolesA: hubHolesA, hubHolesB: hubHolesB}
 }
 
-func buildWheelsetLacingG3AngularPoints(
+func buildWheelsetLacingTwentyOneHoleG3AngularPoints(
 	topology Topology,
 	request WheelsetLacingAngularLayoutRequest,
 ) (wheelsetLacingAngularPointSet, WheelsetLacingG3GroupSpacing, error) {
@@ -207,8 +207,8 @@ func buildWheelsetLacingG3AngularPoints(
 	spacingAToBRadians := spacingAToB * math.Pi / 180
 	spacingBToARadians := spacingBToA * math.Pi / 180
 	rimHoles := make([]WheelsetLacingAngularPoint, 0, len(topology.RimHoles))
-	for group := 0; group < WheelsetLacingG3GroupCount; group++ {
-		centerAngle := (float64(group) * 2 * math.Pi / float64(WheelsetLacingG3GroupCount)) - math.Pi/2
+	for group := 0; group < WheelsetLacingTwentyOneHoleG3GroupCount; group++ {
+		centerAngle := (float64(group) * 2 * math.Pi / float64(WheelsetLacingTwentyOneHoleG3GroupCount)) - math.Pi/2
 		rimHoles = append(rimHoles,
 			WheelsetLacingAngularPoint{ID: group * 3, Side: SideA, AngleRadians: centerAngle - spacingAToBRadians},
 			WheelsetLacingAngularPoint{ID: group*3 + 1, Side: SideB, AngleRadians: centerAngle},
@@ -217,9 +217,9 @@ func buildWheelsetLacingG3AngularPoints(
 	}
 	hubHolesA := make([]WheelsetLacingAngularPoint, 0, len(topology.HubHolesA))
 	hubHolesB := make([]WheelsetLacingAngularPoint, 0, len(topology.HubHolesB))
-	for group := 0; group < WheelsetLacingG3GroupCount; group++ {
-		centerAngle := (float64(group) * 2 * math.Pi / float64(WheelsetLacingG3GroupCount)) - math.Pi/2
-		midAngle := centerAngle + math.Pi/float64(WheelsetLacingG3GroupCount)
+	for group := 0; group < WheelsetLacingTwentyOneHoleG3GroupCount; group++ {
+		centerAngle := (float64(group) * 2 * math.Pi / float64(WheelsetLacingTwentyOneHoleG3GroupCount)) - math.Pi/2
+		midAngle := centerAngle + math.Pi/float64(WheelsetLacingTwentyOneHoleG3GroupCount)
 		hubHolesA = append(hubHolesA,
 			WheelsetLacingAngularPoint{ID: group * 2, Side: SideA, AngleRadians: midAngle - math.Pi/14},
 			WheelsetLacingAngularPoint{ID: group*2 + 1, Side: SideA, AngleRadians: midAngle + math.Pi/14},
@@ -228,8 +228,8 @@ func buildWheelsetLacingG3AngularPoints(
 	}
 	return wheelsetLacingAngularPointSet{rimHoles: rimHoles, hubHolesA: hubHolesA, hubHolesB: hubHolesB}, WheelsetLacingG3GroupSpacing{
 		Enabled:                     true,
-		GroupCount:                  WheelsetLacingG3GroupCount,
-		GroupPitchDegrees:           WheelsetLacingG3GroupPitchDegrees,
+		GroupCount:                  WheelsetLacingTwentyOneHoleG3GroupCount,
+		GroupPitchDegrees:           WheelsetLacingTwentyOneHoleG3GroupPitchDegrees,
 		SpacingAToBDegrees:          spacingAToB,
 		SpacingBToADegrees:          spacingBToA,
 		SpacingAToNextGroupADegrees: spacingAToNextGroupA,
@@ -278,16 +278,16 @@ func buildWheelsetLacingUniformTwoToOneAngularPoints(
 
 func resolveWheelsetLacingG3RimHoleSpacingValues(spacingAToB, spacingBToA, spacingAToNextGroupA float64) (float64, float64, float64) {
 	if spacingAToB == 0 {
-		spacingAToB = DefaultWheelsetLacingG3RimHoleSpacingAToBDegrees
+		spacingAToB = DefaultWheelsetLacingTwentyOneHoleG3RimHoleSpacingAToBDegrees
 	}
 	if spacingBToA == 0 {
-		spacingBToA = DefaultWheelsetLacingG3RimHoleSpacingBToADegrees
+		spacingBToA = DefaultWheelsetLacingTwentyOneHoleG3RimHoleSpacingBToADegrees
 	}
 	if spacingAToNextGroupA == 0 {
-		if spacingAToB == DefaultWheelsetLacingG3RimHoleSpacingAToBDegrees && spacingBToA == DefaultWheelsetLacingG3RimHoleSpacingBToADegrees {
-			spacingAToNextGroupA = DefaultWheelsetLacingG3RimHoleSpacingAToNextGroupADegrees
+		if spacingAToB == DefaultWheelsetLacingTwentyOneHoleG3RimHoleSpacingAToBDegrees && spacingBToA == DefaultWheelsetLacingTwentyOneHoleG3RimHoleSpacingBToADegrees {
+			spacingAToNextGroupA = DefaultWheelsetLacingTwentyOneHoleG3RimHoleSpacingAToNextGroupADegrees
 		} else {
-			spacingAToNextGroupA = WheelsetLacingG3GroupPitchDegrees - spacingAToB - spacingBToA
+			spacingAToNextGroupA = WheelsetLacingTwentyOneHoleG3GroupPitchDegrees - spacingAToB - spacingBToA
 		}
 	}
 	return spacingAToB, spacingBToA, spacingAToNextGroupA
@@ -299,13 +299,13 @@ func validateWheelsetLacingG3RimHoleSpacingClosure(spacingAToB, spacingBToA, spa
 		"B-to-A":            spacingBToA,
 		"A-to-next-group-A": spacingAToNextGroupA,
 	} {
-		if value <= 0 || value > WheelsetLacingMaximumG3RimHoleSpacingDegrees {
-			return fmt.Errorf("%w: G3 rim-hole %s spacing must be within (0, %g] degrees", ErrInvalidRequest, field, WheelsetLacingMaximumG3RimHoleSpacingDegrees)
+		if value <= 0 || value > WheelsetLacingMaximumTwentyOneHoleG3RimHoleSpacingDegrees {
+			return fmt.Errorf("%w: 21-hole G3 rim-hole %s spacing must be within (0, %g] degrees", ErrInvalidRequest, field, WheelsetLacingMaximumTwentyOneHoleG3RimHoleSpacingDegrees)
 		}
 	}
 	spacingTotal := spacingAToB + spacingBToA + spacingAToNextGroupA
-	if math.Abs(spacingTotal-WheelsetLacingG3GroupPitchDegrees) > WheelsetLacingG3SpacingClosureToleranceDegrees {
-		return fmt.Errorf("%w: G3 rim-hole A-to-B, B-to-A, and A-to-next-group-A spacings must sum to %.6g degrees", ErrInvalidRequest, WheelsetLacingG3GroupPitchDegrees)
+	if math.Abs(spacingTotal-WheelsetLacingTwentyOneHoleG3GroupPitchDegrees) > WheelsetLacingTwentyOneHoleG3SpacingClosureToleranceDegrees {
+		return fmt.Errorf("%w: 21-hole G3 rim-hole A-to-B, B-to-A, and A-to-next-group-A spacings must sum to %.6g degrees", ErrInvalidRequest, WheelsetLacingTwentyOneHoleG3GroupPitchDegrees)
 	}
 	return nil
 }

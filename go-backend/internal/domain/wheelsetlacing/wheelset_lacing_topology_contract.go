@@ -26,10 +26,10 @@ const (
 type DisplayGeometryLayout string
 
 const (
-	DisplayGeometryLayoutSymmetric1To1  DisplayGeometryLayout = "symmetric_1to1"
-	DisplayGeometryLayoutUniform2To1    DisplayGeometryLayout = "uniform_2to1"
-	DisplayGeometryLayoutUniform18H2To1 DisplayGeometryLayout = "uniform_18h_2to1"
-	DisplayGeometryLayoutG3Triplet2To1  DisplayGeometryLayout = "g3_triplet_2to1"
+	DisplayGeometryLayoutSymmetric1To1              DisplayGeometryLayout = "symmetric_1to1"
+	DisplayGeometryLayoutUniform2To1                DisplayGeometryLayout = "uniform_2to1"
+	DisplayGeometryLayoutUniform18H2To1             DisplayGeometryLayout = "uniform_18h_2to1"
+	DisplayGeometryLayoutG3TwentyOneHoleTriplet2To1 DisplayGeometryLayout = "g3_21h_triplet_2to1"
 )
 
 type Side string
@@ -130,7 +130,7 @@ func NewDefaultCatalog() *Catalog {
 			set = append(set, buildSymmetricTopology(holes, cross))
 		}
 	}
-	set = append(set, buildG3Topology(), buildUniformTwoToOneTopology(), buildUniform18TwoToOneTopology())
+	set = append(set, buildTwentyOneHoleG3Topology(), buildUniformTwoToOneTopology(), buildUniform18TwoToOneTopology())
 	catalog, err := NewCatalog(set)
 	if err != nil {
 		// The checked-in contract is a program invariant. Serving a partial or
@@ -291,15 +291,15 @@ func buildSymmetricTopology(holes, cross int) Topology {
 	return topology
 }
 
-func buildG3Topology() Topology {
+func buildTwentyOneHoleG3Topology() Topology {
 	const groups = 7
 	topology := Topology{
 		ID:            "21h-g3-2to1",
-		Selection:     "21",
+		Selection:     "21_g3",
 		HoleCount:     21,
 		Cross:         2,
 		Distribution:  DistributionG32To1,
-		DisplayLayout: DisplayGeometryLayoutG3Triplet2To1,
+		DisplayLayout: DisplayGeometryLayoutG3TwentyOneHoleTriplet2To1,
 		RimHoles:      make([]Hole, 0, 21),
 		HubHolesA:     make([]Hole, 0, 14),
 		HubHolesB:     make([]Hole, 0, 7),
@@ -424,7 +424,7 @@ func validateTopology(topology Topology) error {
 	if topology.Distribution != DistributionSymmetric1To1 && topology.Distribution != DistributionUniform2To1 && topology.Distribution != DistributionG32To1 {
 		return fmt.Errorf("unsupported distribution %q", topology.Distribution)
 	}
-	if topology.DisplayLayout != DisplayGeometryLayoutSymmetric1To1 && topology.DisplayLayout != DisplayGeometryLayoutUniform2To1 && topology.DisplayLayout != DisplayGeometryLayoutUniform18H2To1 && topology.DisplayLayout != DisplayGeometryLayoutG3Triplet2To1 {
+	if topology.DisplayLayout != DisplayGeometryLayoutSymmetric1To1 && topology.DisplayLayout != DisplayGeometryLayoutUniform2To1 && topology.DisplayLayout != DisplayGeometryLayoutUniform18H2To1 && topology.DisplayLayout != DisplayGeometryLayoutG3TwentyOneHoleTriplet2To1 {
 		return fmt.Errorf("unsupported display layout %q", topology.DisplayLayout)
 	}
 	expected := expectedTopology(topology.Selection, topology.Cross)
@@ -454,11 +454,11 @@ func validateTopology(topology Topology) error {
 
 func expectedTopology(selection string, cross int) *Topology {
 	switch selection {
-	case "21":
+	case "21_g3":
 		if cross != 2 {
 			return nil
 		}
-		expected := buildG3Topology()
+		expected := buildTwentyOneHoleG3Topology()
 		return &expected
 	case "24_2to1":
 		if cross != 2 {

@@ -21,7 +21,7 @@ func TestListWheelsetLacingTopologiesReturnsCacheableContract(t *testing.T) {
 	if first.Header().Get("ETag") == "" || first.Header().Get("Cache-Control") != "public, max-age=86400" {
 		t.Fatalf("missing cache headers: etag=%q cache=%q", first.Header().Get("ETag"), first.Header().Get("Cache-Control"))
 	}
-	for _, fragment := range []string{`"topologies"`, `"21h-g3-2to1"`, `"18h-uniform-2to1"`, `"uniform_18h_2to1"`, `"display_layout":"g3_triplet_2to1"`, `"contract_version":"v1.2"`, `"length_unit":"mm"`} {
+	for _, fragment := range []string{`"topologies"`, `"21h-g3-2to1"`, `"18h-uniform-2to1"`, `"uniform_18h_2to1"`, `"display_layout":"g3_21h_triplet_2to1"`, `"contract_version":"v1.2"`, `"length_unit":"mm"`} {
 		if !strings.Contains(first.Body.String(), fragment) {
 			t.Fatalf("body missing %s: %s", fragment, first.Body.String())
 		}
@@ -73,7 +73,7 @@ func TestHandleWheelsetLacingDisplayGeometryCalculationReturnsBackendCoordinates
 	if response.Code != http.StatusOK {
 		t.Fatalf("status = %d, want %d; body=%s", response.Code, http.StatusOK, response.Body.String())
 	}
-	for _, fragment := range []string{`"contract_version":"v1.6-backend-display-geometry"`, `"display_layout":"symmetric_1to1"`, `"rim_holes"`, `"spokes"`, `"flange_profile"`, `"aggregate_mean_absolute_projection_angle_degrees"`} {
+	for _, fragment := range []string{`"contract_version":"v1.7-backend-display-geometry"`, `"display_layout":"symmetric_1to1"`, `"rim_holes"`, `"spokes"`, `"flange_profile"`, `"aggregate_mean_absolute_projection_angle_degrees"`} {
 		if !strings.Contains(response.Body.String(), fragment) {
 			t.Fatalf("body missing %s: %s", fragment, response.Body.String())
 		}
@@ -85,7 +85,7 @@ func TestHandleWheelsetLacingDisplayGeometryCalculationReturnsUniform18HTwoToOne
 	if response.Code != http.StatusOK {
 		t.Fatalf("status = %d, want %d; body=%s", response.Code, http.StatusOK, response.Body.String())
 	}
-	for _, fragment := range []string{`"contract_version":"v1.6-backend-display-geometry"`, `"display_layout":"uniform_18h_2to1"`, `"hole_count":18`, `"drive_side_spoke_count":12`} {
+	for _, fragment := range []string{`"contract_version":"v1.7-backend-display-geometry"`, `"display_layout":"uniform_18h_2to1"`, `"hole_count":18`, `"drive_side_spoke_count":12`} {
 		if !strings.Contains(response.Body.String(), fragment) {
 			t.Fatalf("body missing %s: %s", fragment, response.Body.String())
 		}
@@ -133,7 +133,7 @@ func TestGetWheelsetLacingDisplayGeometryProjectionForServerRenderedReferencePag
 	if response.Header().Get("Cache-Control") != "public, max-age=86400" {
 		t.Fatalf("cache header = %q", response.Header().Get("Cache-Control"))
 	}
-	for _, fragment := range []string{`"contract_version":"v1.6-backend-display-geometry"`, `"display_layout":"symmetric_1to1"`, `"rim_holes"`, `"spokes"`, `"flange_profile"`, `"metrics"`} {
+	for _, fragment := range []string{`"contract_version":"v1.7-backend-display-geometry"`, `"display_layout":"symmetric_1to1"`, `"rim_holes"`, `"spokes"`, `"flange_profile"`, `"metrics"`} {
 		if !strings.Contains(response.Body.String(), fragment) {
 			t.Fatalf("body missing %s: %s", fragment, response.Body.String())
 		}
