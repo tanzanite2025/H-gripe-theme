@@ -36,6 +36,9 @@
           v-else-if="activeWizardStep === 4"
           v-model:front-geometry="frontGeometry"
           v-model:rear-geometry="rearGeometry"
+          :front-config="spokeWizardDraft.front"
+          :rear-config="spokeWizardDraft.rear"
+          :options="spokeCalculatorOptions"
           :current-step="activeWizardStep"
           @select-step="goToStep"
           @previous="previousStep"
@@ -112,6 +115,7 @@ import SpokePCDStep from '~/components/SpokePCDStep.vue'
 import UserFeedbackThread from '~/components/UserFeedbackThread.vue'
 
 import { usePageMessages } from '~/composables/usePageMessages'
+import { useSpokeCalculatorManualOptions } from '~/composables/useSpokeCalculatorManualOptions'
 import { useSpokeCalculatorWizard } from '~/composables/useSpokeCalculatorWizard'
 import type { HubGeometry } from '~/data/spoke-calculator/database'
 import type { SpokeHeadType, SpokeInterlacing, SpokeNippleType } from '~/types/spokeCalculator'
@@ -265,6 +269,8 @@ const rearNippleLengthMm = computed<number | null>({
 })
 
 await loadPageMessages(locale.value)
+
+const { options: spokeCalculatorOptions } = useSpokeCalculatorManualOptions()
 
 watch(locale, (nextLocale) => {
   void loadPageMessages(nextLocale)

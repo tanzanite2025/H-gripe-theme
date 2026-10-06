@@ -119,6 +119,13 @@
               </span>
             </label>
           </div>
+
+          <SpokeCalculatorBuildSettings
+            class="spoke-pcd-step__topology-settings"
+            side="front"
+            :config="props.frontConfig"
+            :options="props.options"
+          />
         </fieldset>
 
         <fieldset class="spoke-pcd-step__wheel-card">
@@ -195,6 +202,13 @@
               </span>
             </label>
           </div>
+
+          <SpokeCalculatorBuildSettings
+            class="spoke-pcd-step__topology-settings"
+            side="rear"
+            :config="props.rearConfig"
+            :options="props.options"
+          />
         </fieldset>
       </div>
     </div>
@@ -209,6 +223,11 @@
 import { computed } from 'vue'
 import { useI18n } from '#imports'
 import type { HubGeometry } from '~/data/spoke-calculator/database'
+import type {
+  SpokeCalculatorManualOptions,
+  SpokeWheelBuildConfig,
+} from '~/types/spokeCalculator'
+import SpokeCalculatorBuildSettings from '~/components/SpokeCalculatorBuildSettings.vue'
 import SpokePhysicsDiagrams from '~/components/SpokePhysicsDiagrams.vue'
 import SpokeStepNavigation from '~/components/SpokeStepNavigation.vue'
 
@@ -218,6 +237,9 @@ const props = withDefaults(defineProps<{
   currentStep?: number
   frontGeometry?: HubGeometry | null
   rearGeometry?: HubGeometry | null
+  frontConfig: SpokeWheelBuildConfig
+  rearConfig: SpokeWheelBuildConfig
+  options: SpokeCalculatorManualOptions
 }>(), {
   currentStep: 4,
   frontGeometry: null,
@@ -450,6 +472,10 @@ const updateRearGeometry = (field: GeometryField, event: Event) => {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
+}
+
+.spoke-pcd-step__topology-settings {
+  grid-column: 1 / -1;
 }
 
 .spoke-pcd-step__field {

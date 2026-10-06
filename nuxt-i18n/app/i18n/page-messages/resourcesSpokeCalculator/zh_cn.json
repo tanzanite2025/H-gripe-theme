@@ -8,7 +8,6 @@
     "note": "目录选择和搜索只影响下方已录入结果，不会自动填入上方计算器；上方计算器只使用你手工输入的尺寸和参数。"
   },
   "calculator": {
-    "wheelSetup": "轮组设置",
     "frontWheel": "前轮",
     "rearWheel": "后轮",
     "schematic": {
@@ -122,8 +121,8 @@
       "stepTwoPrompt": "输入轮圈 ERD",
       "stepThreePrompt": "输入轮圈偏心量与交错钻孔偏移",
       "stepThreeSubtitle": "继续录入轮圈整体偏心量和左右交错钻孔相对于轮圈中心基准的偏移量。",
-      "stepFourPrompt": "输入花鼓 PCD 与 WL / WR",
-      "stepFourSubtitle": "确认花鼓节圆直径，以及左右法兰到轮组中心线的距离。",
+      "stepFourPrompt": "设置轮圈孔数、编法与花鼓 PCD / WL / WR",
+      "stepFourSubtitle": "分别为前后轮选择拓扑编法，再填写对应花鼓的 PCD 与左右法兰中心距。",
       "stepFivePrompt": "输入法兰孔径",
       "stepFiveSubtitle": "确认法兰孔径，用于从理论孔心扣除孔半径；J 弯头和直拉式花鼓的长度测量都适用。",
       "stepSixPrompt": "输入交叉压条与辐条拉长补偿（可选）",
@@ -132,7 +131,7 @@
       "stepSevenSubtitle": "外置辐条帽作为长度基准；本计算器按 SAPIM POLYAX 14 mm 外置辐条帽建立基准。选择内置式后，请输入实际辐条帽长度。",
       "pcdInputKicker": "第 4 步输入",
       "pcdInputLabel": "花鼓 PCD / WL / WR",
-      "pcdPairHelp": "请分别填写前轮和后轮花鼓的 PCD、WL、WR。",
+      "pcdPairHelp": "前、后轮分别选择轮圈孔数与拓扑编法，并填写各自花鼓的 PCD、WL、WR。",
       "flangeOrientationTitle": "左右法兰方向",
       "flangeOrientationNote": "左右方向按骑行者坐在车上、面向前方定义；请与花鼓厂商图纸保持一致。",
       "frontFlangeSideNote": "左法兰 = 碟刹侧 · 右法兰 = 非碟刹侧",

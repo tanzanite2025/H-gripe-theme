@@ -2,26 +2,8 @@
   <div class="spoke-calculator">
     <div class="grid gap-6 items-start">
       <section class="spoke-calculator__shell">
-        <h2 class="text-xs font-semibold uppercase tracking-[0.18em] tz-text-secondary mb-4">
-          {{ t('resourcesSpokeCalculator.calculator.wheelSetup') }}
-        </h2>
-
-        <!-- Two-column layout: Front Wheel | Rear Wheel -->
-        <div class="grid gap-6 md:grid-cols-2">
-          <SpokeCalculatorWheelPanel
-            side="front"
-            :config="frontConfig"
-            :options="frontOptions"
-          />
-
-          <SpokeCalculatorWheelPanel
-            side="rear"
-            :config="rearConfig"
-            :options="rearOptions"
-          />
-        </div>
         <!-- Action row -->
-        <div class="mt-6 flex flex-col gap-3 md:flex-row md:items-center md:justify-between border-t tz-border-subtle pt-4">
+        <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <p class="tz-description tz-text-muted max-w-md">
             {{ t('resourcesSpokeCalculator.calculator.action.description') }}
           </p>
@@ -50,8 +32,6 @@
 
 <script setup lang="ts">
 import SpokeCalculatorResults from '~/components/SpokeCalculatorResults.vue'
-import SpokeCalculatorWheelPanel from '~/components/SpokeCalculatorWheelPanel.vue'
-import { useSpokeCalculatorManualOptions } from '~/composables/useSpokeCalculatorManualOptions'
 import { useSpokeCalculatorRun } from '~/composables/useSpokeCalculatorRun'
 import type { SpokeWheelBuildConfig } from '~/types/spokeCalculator'
 import { useI18n } from '#imports'
@@ -65,9 +45,6 @@ const props = defineProps<{
 
 const frontConfig = props.frontConfig
 const rearConfig = props.rearConfig
-const { options: manualOptions } = useSpokeCalculatorManualOptions()
-const frontOptions = manualOptions
-const rearOptions = manualOptions
 
 const {
   loading,

@@ -74,10 +74,8 @@ const updateTopology = (value: string | number | null) => {
 .spoke-calculator__build-settings {
   display: grid;
   gap: 0.75rem;
-  padding: 0.75rem;
-  border: 1px solid var(--spoke-border);
-  border-radius: 0.625rem;
-  background: rgba(255, 255, 255, 0.72);
+  padding: 0.75rem 0 0;
+  border-top: 1px solid var(--spoke-border, var(--tz-border-subtle));
 }
 
 .spoke-calculator__build-settings-header {
@@ -119,9 +117,9 @@ const updateTopology = (value: string | number | null) => {
   gap: 0.45rem;
   align-content: start;
   min-width: 0;
-  border: 1px solid var(--spoke-border);
+  border: 1px solid var(--spoke-border, var(--tz-border-subtle));
   border-radius: 0.5rem;
-  background: var(--spoke-result-surface);
+  background: var(--spoke-result-surface, var(--tz-surface-subtle));
   padding: 0.65rem 0.75rem;
   color: var(--tz-text-secondary);
   font-size: 0.72rem;
