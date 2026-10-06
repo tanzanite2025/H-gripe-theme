@@ -260,81 +260,8 @@
       </div>
     </section>
 
-    <!-- ========== 右侧列：实时几何投影与拓扑规则 ========== -->
-    <section class="geometry-metrics-column">
-
-       <!-- 实时几何指标卡片 -->
-      <div class="uds-card">
-        <div class="card-header">
-          <h2 class="card-title">
-            <span>{{ t('wheelsetLacingTopology.telemetry.title') }}</span>
-          </h2>
-          <span class="card-tag">{{ t('wheelsetLacingTopology.telemetry.tag') }}</span>
-        </div>
-
-        <!-- 指标 1：出条切线角 α -->
-        <div class="telemetry-metric-tile">
-          <div class="metric-top">
-            <span class="metric-label">{{ t('wheelsetLacingTopology.telemetry.tangentLabel') }}</span>
-            <span class="metric-unit">{{ t('wheelsetLacingTopology.telemetry.projectionAngle') }}</span>
-          </div>
-          <div class="metric-value">
-            <span id="metric-tangential-projection-angle">{{ formatBackendDisplayGeometryMetric(backendDisplayGeometry?.metrics.aggregate_mean_absolute_projection_angle_degrees) }}</span>
-            <span class="metric-unit">DEG (°)</span>
-          </div>
-          <div class="metric-bar">
-            <div
-              id="bar-tangential-projection-angle"
-              class="metric-bar-fill"
-              :style="{ width: `${formatBackendDisplayGeometryBarWidth(backendDisplayGeometry?.metrics.aggregate_mean_absolute_projection_angle_degrees, 90)}%`, backgroundColor: 'var(--accent-primary)' }"
-            ></div>
-          </div>
-          <p id="metric-tangential-projection-angle-desc" class="metric-desc">{{ t('wheelsetLacingTopology.telemetry.tangentDesc') }}</p>
-        </div>
-
-        <!-- 指标 2：切向几何投影 (sin α) -->
-        <div class="telemetry-metric-tile">
-          <div class="metric-top">
-            <span class="metric-label">{{ t('wheelsetLacingTopology.telemetry.tangentialLabel') }}</span>
-            <span class="metric-unit">{{ t('wheelsetLacingTopology.telemetry.tangentialUnit') }}</span>
-          </div>
-          <div class="metric-value">
-            <span id="metric-tangential-projection">{{ formatBackendDisplayGeometryMetric(backendDisplayGeometry?.metrics.mean_absolute_tangential_projection_percent) }}</span>
-            <span class="metric-unit">%</span>
-          </div>
-          <div class="metric-bar">
-            <div
-              id="bar-tangential-projection"
-              class="metric-bar-fill"
-              :style="{ width: `${formatBackendDisplayGeometryBarWidth(backendDisplayGeometry?.metrics.mean_absolute_tangential_projection_percent, 100)}%`, backgroundColor: 'var(--accent-primary)' }"
-            ></div>
-          </div>
-          <p id="metric-tangential-projection-desc" class="metric-desc">{{ t('wheelsetLacingTopology.telemetry.tangentialDesc') }}</p>
-        </div>
-
-        <!-- 指标 3：径向几何投影 (cos α) -->
-        <div class="telemetry-metric-tile">
-          <div class="metric-top">
-            <span class="metric-label">{{ t('wheelsetLacingTopology.telemetry.radialLabel') }}</span>
-            <span class="metric-unit">{{ t('wheelsetLacingTopology.telemetry.radialUnit') }}</span>
-          </div>
-          <div class="metric-value">
-            <span id="metric-radial-projection">{{ formatBackendDisplayGeometryMetric(backendDisplayGeometry?.metrics.mean_absolute_radial_projection_percent) }}</span>
-            <span class="metric-unit">%</span>
-          </div>
-          <div class="metric-bar">
-            <div
-              id="bar-radial-projection"
-              class="metric-bar-fill"
-              :style="{ width: `${formatBackendDisplayGeometryBarWidth(backendDisplayGeometry?.metrics.mean_absolute_radial_projection_percent, 100)}%`, backgroundColor: 'var(--accent-steel)' }"
-            ></div>
-          </div>
-          <p id="metric-radial-projection-desc" class="metric-desc">{{ t('wheelsetLacingTopology.telemetry.radialDesc') }}</p>
-        </div>
-
-      </div>
-
-      <!-- 法兰孔几何规则提示 -->
+    <!-- ========== 右侧列：拓扑生成状态 ========== -->
+    <section class="topology-preview-column">
       <div class="uds-card">
         <div class="card-header">
           <h2 class="card-title">
@@ -348,94 +275,14 @@
            <span id="status-title-text">{{ t('wheelsetLacingTopology.review.previewTitle') }}</span>
           </div>
           <p id="status-detail-text" class="status-detail-text">
-            {{ t('wheelsetLacingTopology.review.generalTip') }}
+            {{ t('wheelsetLacingTopology.review.previewDetail', { holes: 24, cross: 2 }) }}
           </p>
-        </div>
-
-        <div style="background: var(--bg-inset); border-radius: 14px; padding: 12px; font-size: 9.5px; color: var(--text-secondary); line-height: 1.45;">
-          <strong style="color: var(--text-main); display: block; margin-bottom: 4px;">{{ t('wheelsetLacingTopology.review.noteLabel') }}</strong>
-          <span id="builder-tip-text">
-            {{ t('wheelsetLacingTopology.review.noteTip') }}
-          </span>
         </div>
       </div>
 
     </section>
 
   </div>
-
-  <!-- ================= SSR 可读的拓扑事实摘要 ================= -->
-  <section class="uds-card geo-fact-summary" aria-labelledby="geo-fact-title">
-    <div class="card-header">
-      <h2 id="geo-fact-title" class="card-title">
-        <span>{{ t('wheelsetLacingTopology.facts.title') }}</span>
-      </h2>
-      <span class="card-tag">{{ t('wheelsetLacingTopology.facts.tag') }}</span>
-    </div>
-    <p class="geo-fact-summary__intro">
-      {{ t('wheelsetLacingTopology.facts.intro') }}
-    </p>
-    <dl class="geo-fact-summary__grid">
-      <div>
-        <dt>{{ t('wheelsetLacingTopology.facts.topologyScope') }}</dt>
-        <dd>{{ t('wheelsetLacingTopology.facts.topologyScopeValue') }}</dd>
-      </div>
-      <div>
-        <dt>{{ t('wheelsetLacingTopology.facts.units') }}</dt>
-        <dd>{{ t('wheelsetLacingTopology.facts.unitsValue') }}</dd>
-      </div>
-      <div>
-        <dt>{{ t('wheelsetLacingTopology.facts.displayCoordinates') }}</dt>
-        <dd>{{ t('wheelsetLacingTopology.facts.displayCoordinatesValue') }}</dd>
-      </div>
-      <div>
-        <dt>{{ t('wheelsetLacingTopology.facts.boundary') }}</dt>
-        <dd>{{ t('wheelsetLacingTopology.facts.boundaryValue') }}</dd>
-      </div>
-    </dl>
-  </section>
-
-  <!-- ================= 底部拓扑规则说明 ================= -->
-  <footer class="cad-legend-section">
-    <div class="card-header" style="padding-bottom: 8px;">
-      <h3 class="card-title">
-        <span>{{ t('wheelsetLacingTopology.notes.title') }}</span>
-      </h3>
-      <span class="header-badge">{{ t('wheelsetLacingTopology.notes.tag') }}</span>
-    </div>
-
-    <div class="legend-table-grid">
-      <div class="legend-box">
-        <div class="legend-box-title">
-          <span class="legend-box-num">01</span>
-          <span>{{ t('wheelsetLacingTopology.notes.radialTitle') }}</span>
-        </div>
-        <div class="legend-box-body">
-            {{ t('wheelsetLacingTopology.notes.radialBody') }}
-        </div>
-      </div>
-
-      <div class="legend-box">
-        <div class="legend-box-title">
-          <span class="legend-box-num">02</span>
-          <span>{{ t('wheelsetLacingTopology.notes.mappingTitle') }}</span>
-        </div>
-        <div class="legend-box-body">
-            {{ t('wheelsetLacingTopology.notes.mappingBody') }}
-        </div>
-      </div>
-
-      <div class="legend-box">
-        <div class="legend-box-title">
-          <span class="legend-box-num">03</span>
-          <span>{{ t('wheelsetLacingTopology.notes.asymmetricTitle') }}</span>
-        </div>
-        <div class="legend-box-body">
-            {{ t('wheelsetLacingTopology.notes.asymmetricBody') }}
-        </div>
-      </div>
-    </div>
-  </footer>
 
   <!-- ================= 核心计算与完整拓扑动态 SVG 渲染引擎 ================= -->
   
@@ -497,9 +344,9 @@ const { data: serverRenderedWheelsetLacingDisplayGeometry } = await useAsyncData
       })
       return response?.data ?? null
     } catch {
-      // The page still exposes the static topology facts if the optional
-      // engineering API is temporarily unavailable during SSR. The client
-      // retry below will request the same canonical GET contract after mount.
+      // The page keeps its public preview shell if the optional geometry API
+      // is temporarily unavailable during SSR. The client retry below will
+      // request the same canonical GET contract after mount.
       return null
     }
   },
@@ -545,34 +392,6 @@ const isPublicSeoLocale = computed(() => supportedSeoLocaleCodes.has(locale.valu
 const { canonicalUrl } = useStorefrontSeoLinks()
 useStorefrontSeoRouteOverride(localizedSeoRoutes)
 
-const topologyFacts = () => [
-  {
-    '@type': 'PropertyValue',
-    name: t('wheelsetLacingTopology.seo.factStandardName'),
-    value: t('wheelsetLacingTopology.seo.standardFactValue'),
-  },
-  {
-    '@type': 'PropertyValue',
-    name: t('wheelsetLacingTopology.seo.factG3Name'),
-    value: t('wheelsetLacingTopology.review.preview21Detail'),
-  },
-  {
-    '@type': 'PropertyValue',
-    name: t('wheelsetLacingTopology.seo.factUniform18HName'),
-    value: t('wheelsetLacingTopology.review.uniform18HTip'),
-  },
-  {
-    '@type': 'PropertyValue',
-    name: t('wheelsetLacingTopology.seo.factUniformName'),
-    value: t('wheelsetLacingTopology.review.uniformTip'),
-  },
-  {
-    '@type': 'PropertyValue',
-    name: t('wheelsetLacingTopology.facts.units'),
-    value: t('wheelsetLacingTopology.facts.unitsValue'),
-  },
-]
-
 const wheelsetLacingFaqSchema = () => {
   const items = wheelsetLacingFaqData.value?.items || []
   if (items.length === 0) return null
@@ -610,24 +429,6 @@ const topologySchema = () => ({
         '@type': 'Thing',
         name: t('wheelsetLacingTopology.seo.about'),
       },
-      hasPart: {
-        '@id': `${canonicalUrl.value}#topology-facts`,
-      },
-    },
-    {
-      '@type': 'Dataset',
-      '@id': `${canonicalUrl.value}#topology-facts`,
-      url: `${canonicalUrl.value}#geo-fact-title`,
-      name: t('wheelsetLacingTopology.seo.datasetName'),
-      description: t('wheelsetLacingTopology.seo.datasetDescription'),
-      inLanguage: localeManifest.find(entry => entry.code === locale.value)?.iso || locale.value,
-      isAccessibleForFree: true,
-      measurementTechnique: t('wheelsetLacingTopology.seo.measurementTechnique'),
-      variableMeasured: [
-        t('wheelsetLacingTopology.seo.variableHoleMapping'),
-        t('wheelsetLacingTopology.seo.variableProjection'),
-      ],
-      additionalProperty: topologyFacts(),
     },
     wheelsetLacingFaqSchema(),
   ].filter(Boolean),
@@ -721,15 +522,6 @@ useHead(() => {
     const formatBackendDisplayGeometryMetric = (value) => (
       Number.isFinite(value) ? Number(value).toFixed(1) : '—'
     );
-
-    const formatBackendDisplayGeometryDegrees = (value) => (
-      Number.isFinite(value) ? Number(value).toFixed(2) : '—'
-    );
-
-    const formatBackendDisplayGeometryBarWidth = (value, maximum) => {
-      if (!Number.isFinite(value) || maximum <= 0) return 0;
-      return Math.min(100, Math.max(0, (value / maximum) * 100));
-    };
 
     const resolveDisplayGeometryRadius = (points, fallbackRadius) => {
       const radii = (points || [])
@@ -1145,11 +937,11 @@ useHead(() => {
           'text',
           { x: 0, y: 0, 'text-anchor': 'middle', fill: displayGeometryError.value ? '#b91c1c' : '#64748b', 'font-size': 12 },
           displayGeometryError.value
-            ? t('wheelsetLacingTopology.telemetry.backendRejected')
-            : t('wheelsetLacingTopology.telemetry.backendPending'),
+            ? t('wheelsetLacingTopology.review.backendRejectedTitle')
+            : t('wheelsetLacingTopology.review.backendPendingTitle'),
         );
         renderFlangeProfile(null);
-        updateGeometryProjectionMetricsAndTopologyReview(null, null, null);
+        updateWheelsetLacingTopologyPreviewStatus(null);
         return;
       }
       const topology = geometry.topology;
@@ -1259,9 +1051,9 @@ useHead(() => {
 
       svg.appendChild(rimHoleGroup);
 
-      // 7. Geometry telemetry and topology rule review.
+      // 7. Update the public preview status after the geometry is rendered.
       renderFlangeProfile(geometry.flange_profile);
-      updateGeometryProjectionMetricsAndTopologyReview(topology, geometry.metrics, geometry.g3_group_spacing);
+      updateWheelsetLacingTopologyPreviewStatus(topology);
     }
 
     function renderFlangeProfile(profile) {
@@ -1308,36 +1100,14 @@ useHead(() => {
       statusTag.innerText = t('wheelsetLacingTopology.canvas.profileTag');
     }
 
-    function updateGeometryProjectionMetricsAndTopologyReview(topology, geometryProjectionMetrics, g3GroupSpacing) {
+    function updateWheelsetLacingTopologyPreviewStatus(topology) {
       const holes = topology?.selection ?? state.holes;
-      const displayLayout = topology?.display_layout ?? null;
-      const isG3Topology = displayLayout === WHEELSET_LACING_DISPLAY_GEOMETRY_LAYOUT.g3Triplet2To1;
-      const isUniformTwoToOneTopology = displayLayout === WHEELSET_LACING_DISPLAY_GEOMETRY_LAYOUT.uniform2To1;
-      const isUniform18HTwoToOneTopology = displayLayout === WHEELSET_LACING_DISPLAY_GEOMETRY_LAYOUT.uniform18H2To1;
       const numHoles = Number(topology?.hole_count ?? (holes === '18_2to1' ? 18 : holes === '24_2to1' ? 24 : holes));
-      const aggregateMeanAbsoluteProjectionAngleDegrees = geometryProjectionMetrics?.aggregate_mean_absolute_projection_angle_degrees ?? null;
 
-      document.getElementById('metric-tangential-projection-angle').innerText = formatBackendDisplayGeometryMetric(aggregateMeanAbsoluteProjectionAngleDegrees);
-      document.getElementById('bar-tangential-projection-angle').style.width = `${formatBackendDisplayGeometryBarWidth(aggregateMeanAbsoluteProjectionAngleDegrees, 90)}%`;
-      document.getElementById('metric-tangential-projection-angle-desc').innerText = t('wheelsetLacingTopology.telemetry.tangentRuntime', {
-        count: geometryProjectionMetrics?.drive_side_spoke_count ?? '—',
-        min: formatBackendDisplayGeometryMetric(geometryProjectionMetrics?.minimum_absolute_drive_side_projection_angle_degrees),
-        max: formatBackendDisplayGeometryMetric(geometryProjectionMetrics?.maximum_absolute_drive_side_projection_angle_degrees),
-      });
-
-      document.getElementById('metric-tangential-projection').innerText = formatBackendDisplayGeometryMetric(geometryProjectionMetrics?.mean_absolute_tangential_projection_percent);
-      document.getElementById('bar-tangential-projection').style.width = `${formatBackendDisplayGeometryBarWidth(geometryProjectionMetrics?.mean_absolute_tangential_projection_percent, 100)}%`;
-      document.getElementById('metric-tangential-projection-desc').innerText = t('wheelsetLacingTopology.telemetry.tangentialRuntime');
-
-      document.getElementById('metric-radial-projection').innerText = formatBackendDisplayGeometryMetric(geometryProjectionMetrics?.mean_absolute_radial_projection_percent);
-      document.getElementById('bar-radial-projection').style.width = `${formatBackendDisplayGeometryBarWidth(geometryProjectionMetrics?.mean_absolute_radial_projection_percent, 100)}%`;
-      document.getElementById('metric-radial-projection-desc').innerText = t('wheelsetLacingTopology.telemetry.radialRuntime');
-
-      if (!topology || !geometryProjectionMetrics) {
+      if (!topology) {
         const statusBox = document.getElementById('topology-status-box');
         const statusTitle = document.getElementById('status-title-text');
         const statusDetail = document.getElementById('status-detail-text');
-        const builderTip = document.getElementById('builder-tip-text');
         const statusTag = document.getElementById('canvas-status-tag');
         const hasDisplayGeometryError = Boolean(displayGeometryError.value);
         statusBox.className = hasDisplayGeometryError
@@ -1349,9 +1119,6 @@ useHead(() => {
         statusDetail.innerText = hasDisplayGeometryError
           ? t('wheelsetLacingTopology.review.backendRejectedDetail')
           : t('wheelsetLacingTopology.review.backendPendingDetail');
-        builderTip.innerText = hasDisplayGeometryError
-          ? t('wheelsetLacingTopology.review.backendRejectedTip')
-          : t('wheelsetLacingTopology.review.noteTip');
         statusTag.innerText = hasDisplayGeometryError
           ? t('wheelsetLacingTopology.review.tagUnavailable')
           : t('wheelsetLacingTopology.review.tagPreview');
@@ -1365,36 +1132,14 @@ useHead(() => {
       const statusBox = document.getElementById('topology-status-box');
       const statusTitle = document.getElementById('status-title-text');
       const statusDetail = document.getElementById('status-detail-text');
-      const builderTip = document.getElementById('builder-tip-text');
       const statusTag = document.getElementById('canvas-status-tag');
 
       statusBox.className = 'topology-status-card topology-status-preview';
-      if (isG3Topology) {
-        statusTitle.innerText = t('wheelsetLacingTopology.review.preview21Title');
-        statusDetail.innerText = t('wheelsetLacingTopology.review.preview21DetailRuntime', {
-          spacingAToB: formatBackendDisplayGeometryDegrees(g3GroupSpacing?.spacing_a_to_b_degrees),
-          spacingBToA: formatBackendDisplayGeometryDegrees(g3GroupSpacing?.spacing_b_to_a_degrees),
-          spacingAToNextGroupA: formatBackendDisplayGeometryDegrees(g3GroupSpacing?.spacing_a_to_next_group_a_degrees),
-          groupPitch: formatBackendDisplayGeometryDegrees(g3GroupSpacing?.group_pitch_degrees),
-        });
-        builderTip.innerText = t('wheelsetLacingTopology.review.preview21Tip');
-        statusTag.innerText = t('wheelsetLacingTopology.review.tagG3');
-        statusTag.style.background = 'rgba(5, 150, 105, 0.1)';
-        statusTag.style.color = '#059669';
-        return;
-      }
-
       statusTitle.innerText = t('wheelsetLacingTopology.review.previewTitle');
       statusDetail.innerText = t('wheelsetLacingTopology.review.previewDetail', {
         holes: numHoles,
         cross: topology.cross,
-        angle: formatBackendDisplayGeometryMetric(aggregateMeanAbsoluteProjectionAngleDegrees),
       });
-      builderTip.innerText = isUniform18HTwoToOneTopology
-        ? t('wheelsetLacingTopology.review.uniform18HTip')
-        : isUniformTwoToOneTopology
-          ? t('wheelsetLacingTopology.review.uniformTip')
-          : t('wheelsetLacingTopology.review.generalTip');
       statusTag.innerText = t('wheelsetLacingTopology.review.tagPreview');
       statusTag.style.background = 'rgba(5, 150, 105, 0.1)';
       statusTag.style.color = '#059669';
@@ -1578,23 +1323,33 @@ onBeforeUnmount(() => {
     /* 顶层主网格排版 */
     .blueprint-grid {
       display: grid;
-      grid-template-columns: 360px 1fr 340px;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-areas:
+        "controls canvas"
+        "status canvas";
       gap: 20px;
       align-items: start;
     }
 
-    @media (max-width: 1280px) {
-      .blueprint-grid {
-        grid-template-columns: 320px 1fr;
-      }
-      .geometry-metrics-column {
-        grid-column: 1 / -1;
-      }
+    .controls-column {
+      grid-area: controls;
+    }
+
+    .canvas-card {
+      grid-area: canvas;
+    }
+
+    .topology-preview-column {
+      grid-area: status;
     }
 
     @media (max-width: 960px) {
       .blueprint-grid {
         grid-template-columns: 1fr;
+        grid-template-areas:
+          "controls"
+          "canvas"
+          "status";
       }
     }
 
@@ -1640,60 +1395,6 @@ onBeforeUnmount(() => {
       color: var(--text-muted);
     }
 
-    /* SSR-visible fact block: keep the page's stable reference facts readable
-       before the interactive SVG hydrates and easy to scan on narrow screens. */
-    .geo-fact-summary {
-      gap: 14px;
-    }
-
-    .geo-fact-summary__intro {
-      max-width: 980px;
-      color: var(--text-secondary);
-      font-size: 11px;
-      line-height: 1.65;
-    }
-
-    .geo-fact-summary__grid {
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 12px;
-      margin: 0;
-    }
-
-    .geo-fact-summary__grid > div {
-      min-width: 0;
-      padding: 12px 14px;
-      border: 1px solid var(--border-line);
-      border-radius: 16px;
-      background: var(--bg-inset);
-    }
-
-    .geo-fact-summary__grid dt {
-      color: var(--text-main);
-      font-size: 10px;
-      font-weight: 900;
-      letter-spacing: 0.04em;
-    }
-
-    .geo-fact-summary__grid dd {
-      margin: 6px 0 0;
-      color: var(--text-secondary);
-      font-size: 10px;
-      line-height: 1.55;
-    }
-
-    @media (max-width: 1024px) {
-      .geo-fact-summary__grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-      }
-    }
-
-    @media (max-width: 640px) {
-      .geo-fact-summary__grid {
-        grid-template-columns: 1fr;
-      }
-    }
-
     /* 控制面板按钮网格 */
     .selector-group-label {
       font-size: 10px;
@@ -1708,14 +1409,14 @@ onBeforeUnmount(() => {
 
     .hole-pill-grid {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 8px;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 6px;
     }
 
     .cross-pill-grid {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 8px;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 6px;
     }
 
     .view-mode-grid {
@@ -1725,6 +1426,16 @@ onBeforeUnmount(() => {
       background: var(--bg-inset);
       padding: 4px;
       border-radius: 14px;
+    }
+
+    @media (max-width: 640px) {
+      .hole-pill-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .cross-pill-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
     }
 
     .uds-pill-btn {
@@ -2005,72 +1716,10 @@ onBeforeUnmount(() => {
       filter: drop-shadow(0 0 6px rgba(5, 150, 105, 0.8));
     }
 
-    /* 右侧几何指标看板 */
-    .geometry-metrics-column {
+    .topology-preview-column {
       display: flex;
       flex-direction: column;
       gap: 20px;
-    }
-
-    .telemetry-metric-tile {
-      background: var(--bg-inset);
-      border-radius: 16px;
-      padding: 14px 16px;
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
-
-    .metric-top {
-      display: flex;
-      justify-content: space-between;
-      align-items: baseline;
-    }
-
-    .metric-label {
-      font-size: 9.5px;
-      font-weight: 900;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: var(--text-muted);
-    }
-
-    .metric-value {
-      font-family: var(--tz-font-ui);
-      font-size: 1.45rem;
-      font-weight: 900;
-      color: var(--text-main);
-      display: flex;
-      align-items: baseline;
-      gap: 4px;
-    }
-
-    .metric-unit {
-      font-size: 11px;
-      font-weight: 700;
-      color: var(--text-muted);
-    }
-
-    .metric-bar {
-      height: 4px;
-      width: 100%;
-      background: rgba(15, 23, 42, 0.08);
-      border-radius: 9999px;
-      overflow: hidden;
-      margin-top: 6px;
-    }
-
-    .metric-bar-fill {
-      height: 100%;
-      border-radius: 9999px;
-      transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.3s ease;
-    }
-
-    .metric-desc {
-      font-size: 9px;
-      color: var(--text-muted);
-      line-height: 1.35;
-      margin-top: 2px;
     }
 
     /* 拓扑生成状态卡片 */
@@ -2109,74 +1758,6 @@ onBeforeUnmount(() => {
       font-size: 9.5px;
       line-height: 1.45;
       color: var(--text-secondary);
-    }
-
-    /* 底部技术规范对照表 */
-    .cad-legend-section {
-      background: var(--bg-surface);
-      border: var(--border-dashed);
-      border-radius: 24px;
-      padding: 24px;
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-    }
-
-    .legend-table-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 14px;
-    }
-
-    @media (max-width: 1024px) {
-      .legend-table-grid {
-        grid-template-columns: repeat(2, 1fr);
-      }
-    }
-
-    @media (max-width: 640px) {
-      .legend-table-grid {
-        grid-template-columns: 1fr;
-      }
-    }
-
-    .legend-box {
-      border: 1px solid var(--border-line);
-      border-radius: 16px;
-      padding: 12px 14px;
-      background: var(--bg-base);
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-
-    .legend-box-title {
-      font-size: 10px;
-      font-weight: 900;
-      color: var(--text-main);
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .legend-box-num {
-      width: 18px;
-      height: 18px;
-      border-radius: 6px;
-      background: #0f172a;
-      color: #ffffff;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      font-family: var(--tz-font-ui);
-      font-size: 9px;
-      font-weight: 900;
-    }
-
-    .legend-box-body {
-      font-size: 9.5px;
-      color: var(--text-secondary);
-      line-height: 1.45;
     }
 
 /* Spoke lines are inserted into the SVG by the blueprint renderer after mount. */
