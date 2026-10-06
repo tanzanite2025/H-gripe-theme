@@ -2,13 +2,8 @@ import { reactive, ref } from 'vue'
 import { toast } from 'vue-sonner'
 import shippingApi from '@/api/shipping'
 import {
-  parseAddressRegionCodes,
-  serializeAddressRegionCodes,
-} from '@/lib/addressRegions'
-import {
   clearErrors,
   defaultShippingTemplateForm,
-  defaultShippingZoneForm,
   resetReactive,
 } from '@/lib/shippingForms'
 
@@ -17,7 +12,8 @@ const RULE_DISPLAY_PRICE_FIELDS = ['min_value', 'max_value', 'fee', 'additional'
 
 export const useShippingTemplateManager = (options: Record<string, any> = {}) => {
   const fetchTemplates = options.fetchTemplates || (() => Promise.resolve())
-  const fetchZones = options.fetchZones || (() => Promise.resolve())
+  const fetchCarrierServices = options.fetchCarrierServices || (() => Promise.resolve())
+  const carrierServices = options.carrierServices
 
   const templateDialogOpen = ref(false)
   const templateDialogMode = ref<'create' | 'edit'>('create')
@@ -25,18 +21,8 @@ export const useShippingTemplateManager = (options: Record<string, any> = {}) =>
   const templateErrors = reactive<Record<string, string>>({})
   const templateForm = reactive(defaultShippingTemplateForm())
 
-  const zoneDialogOpen = ref(false)
-  const zoneDialogMode = ref<'create' | 'edit'>('create')
-  const zoneSubmitting = ref(false)
-  const zoneErrors = reactive<Record<string, string>>({})
-  const zoneForm = reactive(defaultShippingZoneForm())
-
   const clearTemplateError = (field: string) => {
     delete templateErrors[field]
-  }
-
-  const clearZoneError = (field: string) => {
-    delete zoneErrors[field]
   }
 
   const normalizeCurrencyCode = (value: any) => {
@@ -90,6 +76,32 @@ export const useShippingTemplateManager = (options: Record<string, any> = {}) =>
     templateDialogOpen.value = true
   }
 
+  const normalizeTemplateCarrierServices = (services: any[] = []) => services.map((service: any) => ({
+    id: service.id,
+    carrier_id: service.carrier_id,
+    fpx_channel_id: service.fpx_channel_id ?? null,
+    yanwen_published_channel_id: service.yanwen_published_channel_id ?? null,
+    provider_code: String(service.provider_code || service.carrier?.code || (String(service.service_code || '').toUpperCase().startsWith('YANWEN:') ? 'YANWEN' : '')).trim().toUpperCase(),
+    service_code: String(service.service_code || '').trim().toUpperCase(),
+    service_name: String(service.service_name || '').trim(),
+    route_name: String(service.route_name || '').trim(),
+    countries: String(service.countries || '[]'),
+    currency: normalizeCurrencyCode(service.currency) || normalizedTemplateCurrency(),
+    billing_mode: service.billing_mode || 'actual_weight',
+    first_weight_grams: Number(service.first_weight_grams || 0),
+    additional_weight_grams: Number(service.additional_weight_grams || 0),
+    min_charge_weight_grams: Number(service.min_charge_weight_grams || 0),
+    volumetric_divisor: Number(service.volumetric_divisor || 6000),
+    fuel_surcharge_percent_decimal: String(service.fuel_surcharge_percent_decimal ?? '0'),
+    remote_surcharge_minor: Number(service.remote_surcharge_minor || 0),
+    remote_postal_codes: String(service.remote_postal_codes || '[]'),
+    eta_min_days: Number(service.eta_min_days || 0),
+    eta_max_days: Number(service.eta_max_days || 0),
+    enabled: service.enabled !== false,
+    sort_order: Number(service.sort_order || 0),
+    description: String(service.description || ''),
+  }))
+
   const showEditTemplateDialog = (template: any) => {
     templateDialogMode.value = 'edit'
     resetReactive(templateForm, {
@@ -100,6 +112,11 @@ export const useShippingTemplateManager = (options: Record<string, any> = {}) =>
       default_fee_minor: Number(template.default_fee_minor || 0),
       display_price_snapshots: normalizeDisplayPriceSnapshotMap(template.display_price_snapshots, TEMPLATE_DISPLAY_PRICE_FIELDS),
       enabled: template.enabled !== false,
+      carrier_services: normalizeTemplateCarrierServices(
+        Array.isArray(carrierServices?.value)
+          ? carrierServices.value.filter((service: any) => Number(service.template_id) === Number(template.id))
+          : [],
+      ),
       rules: Array.isArray(template.rules) ? template.rules.map((rule: any) => ({
         id: rule.id,
         region: rule.region || '',
@@ -171,6 +188,7 @@ export const useShippingTemplateManager = (options: Record<string, any> = {}) =>
         description: templateForm.description || '',
         enabled: Boolean(templateForm.enabled),
         rules: normalizeTemplateRules(),
+        carrier_services: normalizeTemplateCarrierServices(templateForm.carrier_services),
       }
 
       if (templateDialogMode.value === 'create') {
@@ -183,68 +201,11 @@ export const useShippingTemplateManager = (options: Record<string, any> = {}) =>
 
       templateDialogOpen.value = false
       await fetchTemplates()
+      await fetchCarrierServices()
     } catch (error) {
       console.error('Failed to save shipping template:', error)
     } finally {
       templateSubmitting.value = false
-    }
-  }
-
-  const showCreateZoneDialog = () => {
-    zoneDialogMode.value = 'create'
-    resetReactive(zoneForm, defaultShippingZoneForm())
-    clearErrors(zoneErrors)
-    zoneDialogOpen.value = true
-  }
-
-  const showEditZoneDialog = (zone: any) => {
-    zoneDialogMode.value = 'edit'
-    resetReactive(zoneForm, {
-      ...defaultShippingZoneForm(),
-      ...zone,
-      countries: serializeAddressRegionCodes(parseAddressRegionCodes(zone.countries)),
-      states: '[]',
-      postal_codes: '[]',
-      enabled: zone.enabled !== false,
-    })
-    clearErrors(zoneErrors)
-    zoneDialogOpen.value = true
-  }
-
-  const validateZone = () => {
-    clearErrors(zoneErrors)
-    if (!zoneForm.name?.trim()) zoneErrors.name = '请输入区域名称'
-    if (!parseAddressRegionCodes(zoneForm.countries).length) zoneErrors.countries = '请选择至少一个国家/地区'
-    return Object.keys(zoneErrors).length === 0
-  }
-
-  const saveZone = async () => {
-    if (!validateZone()) return
-
-    zoneSubmitting.value = true
-    try {
-      const payload = {
-        name: zoneForm.name.trim(),
-        countries: serializeAddressRegionCodes(parseAddressRegionCodes(zoneForm.countries)),
-        states: '[]',
-        postal_codes: '[]',
-        enabled: Boolean(zoneForm.enabled),
-      }
-
-      if (zoneDialogMode.value === 'create') {
-        await shippingApi.createZone(payload)
-        toast.success('配送区域已创建')
-      } else {
-        await shippingApi.updateZone(zoneForm.id, payload)
-        toast.success('配送区域已更新')
-      }
-
-      zoneDialogOpen.value = false
-      await fetchZones()
-    } catch (error) {
-      console.error('Failed to save shipping zone:', error)
-    } finally {
-      zoneSubmitting.value = false
     }
   }
 
@@ -254,19 +215,10 @@ export const useShippingTemplateManager = (options: Record<string, any> = {}) =>
     templateSubmitting,
     templateErrors,
     templateForm,
-    zoneDialogOpen,
-    zoneDialogMode,
-    zoneSubmitting,
-    zoneErrors,
-    zoneForm,
     clearTemplateError,
-    clearZoneError,
     showCreateTemplateDialog,
     showEditTemplateDialog,
     saveTemplate,
-    showCreateZoneDialog,
-    showEditZoneDialog,
-    saveZone,
   }
 }
 

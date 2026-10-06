@@ -17,7 +17,6 @@ export const useCustomsClassificationCenter = (options: Record<string, any> = {}
   const productTotal = ref(0)
   const productFilters = reactive<CustomsProductFilters>({
     search: '',
-    product_specification_template_id: 'all',
     customs_status: 'incomplete',
   })
 
@@ -36,8 +35,6 @@ export const useCustomsClassificationCenter = (options: Record<string, any> = {}
     fetchTemplates,
     openTemplateCreate,
     openTemplateEdit,
-    templateProductSpecTemplateValue,
-    setTemplateProductSpecTemplate,
     saveTemplate,
     removeTemplate,
     openTemplateFromCandidate,
@@ -67,7 +64,6 @@ export const useCustomsClassificationCenter = (options: Record<string, any> = {}
         page_size: productPageSize.value,
         locale: resolveLocale(),
         ...(productFilters.search.trim() ? { search: productFilters.search.trim() } : {}),
-        ...(productFilters.product_specification_template_id !== 'all' ? { product_specification_template_id: productFilters.product_specification_template_id } : {}),
         ...(productFilters.customs_status !== 'all' ? { customs_status: productFilters.customs_status } : {}),
       }
       const payload = await productApi.list(params)
@@ -149,8 +145,6 @@ export const useCustomsClassificationCenter = (options: Record<string, any> = {}
     updateProductPageSize,
     openTemplateCreate,
     openTemplateEdit,
-    templateProductSpecTemplateValue,
-    setTemplateProductSpecTemplate,
     saveTemplate,
     removeTemplate,
     runLookup,
@@ -159,4 +153,3 @@ export const useCustomsClassificationCenter = (options: Record<string, any> = {}
 }
 
 export default useCustomsClassificationCenter
-

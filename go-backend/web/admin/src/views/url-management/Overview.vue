@@ -2,12 +2,12 @@
  <div class="space-y-4">
     <AdminPageHeader
       title="URL 管理 / 概览"
-      description="查看前台路由健康度与待处理问题"
+      description="查看前台路由健康度与未关闭工单"
     >
       <template #actions>
-        <Button variant="outline" :disabled="loading" @click="load">
+        <Button variant="outline" title="重新读取统计数据，不会重新检测 URL" :disabled="loading || sitemapSyncing" @click="load">
  <RefreshCw :class="['size-4', loading ? 'animate-spin': '']" />
-          刷新
+          刷新统计
         </Button>
         <Button variant="outline" as-child>
           <a :href="sitemapHref" target="_blank" rel="noreferrer">
@@ -15,9 +15,9 @@
             打开 Sitemap
           </a>
         </Button>
-        <Button variant="outline" :disabled="loading || sitemapSyncing || !canEdit" @click="syncSitemap">
- <RefreshCw :class="['size-4', sitemapSyncing ? 'animate-spin': '']" />
-          更新 Sitemap
+        <Button variant="outline" title="同步最新 URL 台账并更新 Sitemap" :disabled="loading || sitemapSyncing || checking || !canEdit" @click="syncSitemap">
+          <RefreshCw :class="['size-4', sitemapSyncing ? 'animate-spin': '']" />
+          同步台账并更新 Sitemap
         </Button>
         <Button as-child>
           <RouterLink :to="{ name: 'URLIssues' }">
@@ -29,6 +29,9 @@
     </AdminPageHeader>
 
     <AdminStatsGrid :items="statItems" />
+    <p class="-mt-2 text-xs text-muted-foreground">
+      统计口径：URL 总量包含已从来源清单移除的历史记录；异常路由包含 404；未关闭工单包含已解决待复核项，未认领工单属于其子集。
+    </p>
 
     <section class="rounded-2xl border bg-muted/20 p-4">
       <div class="flex flex-wrap items-start justify-between gap-3">
@@ -36,12 +39,13 @@
           <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">Sitemap Mapping</p>
           <h2 class="mt-1 text-sm font-black">Sitemap 映射</h2>
           <p class="mt-1 text-xs text-muted-foreground">
-            sitemap.xml 由后台路由台账驱动，公开入口指向 {{ sitemapOverview.public_path || '/sitemap.xml' }}。
+            sitemap.xml 由后台路由台账驱动。同步来源清单时会保留未变化 URL 的检查结果；公开入口指向 {{ sitemapOverview.public_path || '/sitemap.xml' }}。
           </p>
         </div>
         <div class="text-right text-[10px] font-mono text-muted-foreground">
           <p>VERSION / {{ sitemapOverview.manifest_version || stats.manifest_version || '未同步' }}</p>
-          <p class="mt-1">LAST SYNC / {{ formatDate(sitemapOverview.last_synced_at || stats.last_synced_at) }}</p>
+          <p class="mt-1">台账同步 / {{ formatDate(sitemapOverview.last_synced_at || stats.last_synced_at, '未同步') }}</p>
+          <p class="mt-1">最近检测 / {{ formatDate(stats.last_checked_at, '尚无检测') }}</p>
         </div>
       </div>
 
@@ -56,14 +60,17 @@
           <p class="mt-1 text-[10px] text-muted-foreground">{{ sitemapOverview.dynamic_source_path || '/api/v1/storefront/sitemap-routes' }}</p>
         </div>
         <div class="rounded-xl border bg-background/70 p-3">
-          <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">可索引</p>
+          <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">标记可索引</p>
           <p class="mt-1 text-sm font-black text-foreground">{{ sitemapOverview.indexable ?? stats.indexable }}</p>
+          <p class="mt-1 text-[10px] text-muted-foreground">按台账的可索引标记统计</p>
         </div>
         <div class="rounded-xl border bg-background/70 p-3">
           <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">总映射</p>
           <p class="mt-1 text-sm font-black text-foreground">{{ sitemapOverview.entries ?? stats.sitemap_eligible }}</p>
         </div>
       </div>
+
+      <p class="mt-3 text-xs text-muted-foreground">“标记可索引”按台账字段统计；Sitemap 映射只计符合实际导出规则的路由。</p>
     </section>
   </div>
 </template>
@@ -78,8 +85,9 @@ import { Button } from '@/components/ui/button'
 import { storefrontRouteCatalogApi } from '@/modules/url-management/routeCatalog'
 import type { StorefrontRouteCatalogStats, StorefrontSitemapOverview } from '@/modules/url-management/routeCatalogTypes'
 import { storefrontURLIssuesApi, type StorefrontURLIssueStats } from '@/modules/url-management/urlIssues'
-import { defaultStorefrontRouteCatalogStats } from '@/composables/url-management/useStorefrontRouteCatalog'
+import { defaultStorefrontRouteCatalogStats } from '@/modules/url-management/routeCatalogStatsDefaults'
 import { useAuthStore } from '@/stores/auth'
+import { useURLOperationStore } from '@/stores/urlOperation'
 
 const loading = ref(false)
 const sitemapSyncing = ref(false)
@@ -92,6 +100,7 @@ const sitemapOverview = ref<StorefrontSitemapOverview>({
   indexable: 0,
   last_synced_at: null,
   manifest_version: '',
+  stats: defaultStorefrontRouteCatalogStats(),
 })
 const stats = ref<StorefrontRouteCatalogStats>(defaultStorefrontRouteCatalogStats())
 const issueStats = ref<StorefrontURLIssueStats>({
@@ -103,28 +112,62 @@ const issueStats = ref<StorefrontURLIssueStats>({
   suppressed: 0,
   critical: 0,
   high: 0,
+  stale_route: 0,
 })
 const authStore = useAuthStore()
+const urlOperationStore = useURLOperationStore()
 const canEdit = authStore.hasPermission('url:edit')
+const checking = computed(() => urlOperationStore.running)
 const sitemapHref = computed(() => sitemapOverview.value.sitemap_url || '/sitemap.xml')
 
-const formatDate = (value?: string | null): string => {
-  if (!value) return '未同步'
+const responseErrorMessage = (error: unknown): string => {
+  if (error && typeof error === 'object') {
+    const responseData = (error as { response?: { data?: unknown } }).response?.data
+    if (responseData && typeof responseData === 'object') {
+      const message = (responseData as Record<string, unknown>).error
+      if (typeof message === 'string' && message.trim()) return message.trim()
+    }
+  }
+  return error instanceof Error ? error.message : ''
+}
+
+const formatDate = (value: string | null | undefined, emptyLabel: string): string => {
+  if (!value) return emptyLabel
   const parsed = new Date(value)
   return Number.isNaN(parsed.getTime()) ? value : parsed.toLocaleString()
 }
 
 const load = async (): Promise<void> => {
+  if (loading.value) return
   loading.value = true
   try {
-    const [catalogStats, currentIssueStats, currentSitemapOverview] = await Promise.all([
-      storefrontRouteCatalogApi.stats(),
+    const [issueStatsResult, sitemapOverviewResult] = await Promise.allSettled([
       storefrontURLIssuesApi.summary(),
       storefrontRouteCatalogApi.sitemap(),
     ])
-    stats.value = { ...defaultStorefrontRouteCatalogStats(), ...catalogStats }
-    issueStats.value = { ...issueStats.value, ...currentIssueStats }
-    sitemapOverview.value = { ...sitemapOverview.value, ...currentSitemapOverview }
+
+    const failedResources: string[] = []
+    if (issueStatsResult.status === 'fulfilled') {
+      issueStats.value = { ...issueStats.value, ...issueStatsResult.value }
+    } else {
+      console.error('Failed to load URL management issue summary:', issueStatsResult.reason)
+      failedResources.push('工单统计')
+    }
+
+    if (sitemapOverviewResult.status === 'fulfilled') {
+      sitemapOverview.value = { ...sitemapOverview.value, ...sitemapOverviewResult.value }
+      stats.value = {
+        ...defaultStorefrontRouteCatalogStats(),
+        ...sitemapOverviewResult.value.stats,
+      }
+    } else {
+      console.error('Failed to load URL management route statistics:', sitemapOverviewResult.reason)
+      failedResources.push('路由与 Sitemap 统计')
+    }
+
+    if (failedResources.length > 0) {
+      toast.error(`概览部分数据加载失败：${failedResources.join('、')}`)
+    }
   } catch (error) {
     console.error('Failed to load URL management overview:', error)
     toast.error('URL 管理概览加载失败')
@@ -133,17 +176,28 @@ const load = async (): Promise<void> => {
   }
 }
 
+const loadIssueStats = async (): Promise<void> => {
+  try {
+    issueStats.value = { ...issueStats.value, ...(await storefrontURLIssuesApi.summary()) }
+  } catch (error) {
+    console.error('Failed to refresh URL management issue summary:', error)
+    toast.error('工单统计刷新失败')
+  }
+}
+
 const syncSitemap = async (): Promise<void> => {
-  if (!canEdit || sitemapSyncing.value) return
+  if (!canEdit || loading.value || sitemapSyncing.value || checking.value) return
   sitemapSyncing.value = true
   try {
     const response = await storefrontRouteCatalogApi.syncSitemap()
     sitemapOverview.value = { ...sitemapOverview.value, ...response.sitemap }
-    toast.success(`Sitemap 已更新：${response.sync.entries || 0} 条映射`)
-    await load()
+    stats.value = { ...defaultStorefrontRouteCatalogStats(), ...response.sitemap.stats }
+    toast.success(`URL 台账与 Sitemap 已更新：${response.sync.entries || 0} 条映射`)
+    await loadIssueStats()
   } catch (error) {
     console.error('Failed to sync sitemap mapping:', error)
-    toast.error('Sitemap 更新失败')
+    const detail = responseErrorMessage(error)
+    toast.error(detail ? `Sitemap 更新失败：${detail}` : 'Sitemap 更新失败')
   } finally {
     sitemapSyncing.value = false
   }
@@ -152,9 +206,9 @@ const syncSitemap = async (): Promise<void> => {
 const statItems = computed(() => [
   { key: 'total', label: 'URL 总量', value: stats.value.total, icon: Route, tone: 'blue' },
   { key: 'ok', label: '正常路由', value: stats.value.ok, icon: CircleCheck, tone: 'green' },
-  { key: 'needs-attention', label: '待优化路由', value: stats.value.needs_attention, icon: TriangleAlert, tone: stats.value.needs_attention ? 'amber' : 'gray' },
+  { key: 'needs-attention', label: '异常路由', value: stats.value.needs_attention, icon: TriangleAlert, tone: stats.value.needs_attention ? 'amber' : 'gray' },
   { key: 'not-found', label: '404', value: stats.value.not_found, icon: TriangleAlert, tone: stats.value.not_found ? 'coral' : 'gray' },
-  { key: 'active-issues', label: '待处理工单', value: issueStats.value.active, icon: RefreshCw, tone: issueStats.value.active ? 'coral' : 'gray' },
+  { key: 'active-issues', label: '未关闭工单', value: issueStats.value.active, icon: RefreshCw, tone: issueStats.value.active ? 'coral' : 'gray' },
   { key: 'open-issues', label: '未认领工单', value: issueStats.value.open, icon: UserCheck, tone: issueStats.value.open ? 'amber' : 'gray' },
 ])
 

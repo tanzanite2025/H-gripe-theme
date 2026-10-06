@@ -13,6 +13,10 @@ func (s *ShippingService) ListFpxChannels(enabledOnly bool) ([]shipping.FpxChann
 	return s.shippingRepo.FindAllFpxChannels(enabledOnly)
 }
 
+func (s *ShippingService) ListFpxChannelsForEnvironment(environment string, enabledOnly bool) ([]shipping.FpxChannel, error) {
+	return s.shippingRepo.FindAllFpxChannelsForEnvironment(environment, enabledOnly)
+}
+
 func (s *ShippingService) GetFpxChannel(id uint) (*shipping.FpxChannel, error) {
 	return s.shippingRepo.FindFpxChannelByID(id)
 }
@@ -175,6 +179,11 @@ func (s *ShippingService) CreateCarrierService(service *shipping.CarrierService)
 	if err := s.validateCarrierServiceWeightBilling(service); err != nil {
 		return err
 	}
+	collectionServices := []shipping.CarrierService{*service}
+	if err := s.validateAndHydratePublishedCarrierServiceCollections(collectionServices); err != nil {
+		return err
+	}
+	*service = collectionServices[0]
 	return s.shippingRepo.CreateCarrierService(service)
 }
 
@@ -185,6 +194,11 @@ func (s *ShippingService) UpdateCarrierService(service *shipping.CarrierService)
 	if err := s.validateCarrierServiceWeightBilling(service); err != nil {
 		return err
 	}
+	collectionServices := []shipping.CarrierService{*service}
+	if err := s.validateAndHydratePublishedCarrierServiceCollections(collectionServices); err != nil {
+		return err
+	}
+	*service = collectionServices[0]
 	return s.shippingRepo.UpdateCarrierService(service)
 }
 
@@ -233,26 +247,6 @@ func (s *ShippingService) prepareCarrierServiceCurrency(carrierService *shipping
 
 func (s *ShippingService) DeleteCarrierService(id uint) error {
 	return s.shippingRepo.DeleteCarrierService(id)
-}
-
-func (s *ShippingService) ListZones() ([]shipping.ShippingZone, error) {
-	return s.shippingRepo.FindAllZones()
-}
-
-func (s *ShippingService) GetZone(id uint) (*shipping.ShippingZone, error) {
-	return s.shippingRepo.FindZoneByID(id)
-}
-
-func (s *ShippingService) CreateZone(zone *shipping.ShippingZone) error {
-	return s.shippingRepo.CreateZone(zone)
-}
-
-func (s *ShippingService) UpdateZone(zone *shipping.ShippingZone) error {
-	return s.shippingRepo.UpdateZone(zone)
-}
-
-func (s *ShippingService) DeleteZone(id uint) error {
-	return s.shippingRepo.DeleteZone(id)
 }
 
 func (s *ShippingService) GetTrackingEventsByTrackingNumber(trackingNumber string) ([]shipping.TrackingEvent, error) {

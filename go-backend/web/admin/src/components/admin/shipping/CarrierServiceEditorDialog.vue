@@ -27,9 +27,27 @@
           <p class="mt-2 text-[11px] leading-5 text-muted-foreground">只读取 4PX「服务集合」已启用项；选择后填入线路代码和名称，物流模板、计费和报价规则仍由物流管理维护。</p>
         </section>
 
+        <section v-if="selectedCarrierIsYanwen" class="rounded-xl border border-orange-500/30 bg-orange-500/5 p-3">
+          <AdminFormField label="从燕文服务集合选择">
+            <Select
+              :model-value="form.yanwen_published_channel_id ? String(form.yanwen_published_channel_id) : ''"
+              :disabled="yanwenPublishedChannels.length === 0"
+              @update:model-value="applyYanwenChannel"
+            >
+              <SelectTrigger class="w-full"><SelectValue :placeholder="yanwenPublishedChannels.length ? '选择已启用的官方服务' : '暂无已发布服务，请先在燕文服务集合启用'" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem v-for="channel in yanwenPublishedChannels" :key="channel.id" :value="String(channel.id)">
+                  {{ channel.display_name }} / {{ channel.product_code }}
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </AdminFormField>
+          <p class="mt-2 text-[11px] leading-5 text-muted-foreground">只读取燕文「服务集合」已启用项；选择后填入产品代码、名称和配送地区。</p>
+        </section>
+
         <section class="grid gap-4 lg:grid-cols-4">
           <AdminFormField label="承运商" required :error="errors.carrier_id">
-            <Select v-model="form.carrier_id" @update:model-value="emit('clear-error', 'carrier_id')">
+            <Select v-model="form.carrier_id" @update:model-value="handleCarrierSelectionChange">
               <SelectTrigger class="w-full"><SelectValue placeholder="请选择承运商" /></SelectTrigger>
               <SelectContent>
                 <SelectItem v-for="carrier in carriers" :key="carrier.id" :value="String(carrier.id)">
@@ -56,8 +74,11 @@
               v-model.trim="form.service_code"
               class="font-mono uppercase"
               placeholder="DHL-EXP-US"
+              :readonly="selectedCarrierUsesPublishedCollection"
+              :class="{ 'bg-muted/30 text-muted-foreground': selectedCarrierUsesPublishedCollection }"
               @input="emit('clear-error', 'service_code')"
             />
+            <p v-if="selectedCarrierUsesPublishedCollection" class="mt-1 text-[11px] leading-4 text-muted-foreground">线路代码由已选服务集合记录提供；需要更换代码请切换精选服务。</p>
           </AdminFormField>
 
           <AdminFormField label="排序">
@@ -65,7 +86,14 @@
           </AdminFormField>
 
           <AdminFormField label="线路名称" required :error="errors.service_name" class="lg:col-span-2">
-            <Input v-model.trim="form.service_name" placeholder="例如 DHL Express 美国线" @input="emit('clear-error', 'service_name')" />
+            <Input
+              v-model.trim="form.service_name"
+              placeholder="例如 DHL Express 美国线"
+              :readonly="selectedCarrierUsesPublishedCollection"
+              :class="{ 'bg-muted/30 text-muted-foreground': selectedCarrierUsesPublishedCollection }"
+              @input="emit('clear-error', 'service_name')"
+            />
+            <p v-if="selectedCarrierUsesPublishedCollection" class="mt-1 text-[11px] leading-4 text-muted-foreground">线路名称由服务集合提供；业务备注请填写在线路/渠道或说明。</p>
           </AdminFormField>
 
           <AdminFormField label="线路/渠道">
@@ -81,6 +109,18 @@
           </div>
 
           <AdminFormField
+            v-if="selectedCarrierUsesPublishedCollection"
+            label="配送地区"
+            class="lg:col-span-2"
+            description="地区由 4PX/燕文服务集合提供，不能在物流管理中编辑。"
+          >
+            <div class="flex min-h-20 items-start rounded-md border bg-muted/30 px-3 py-2 font-mono text-xs text-muted-foreground">
+              {{ serviceCountriesLabel(form.countries) }}
+            </div>
+          </AdminFormField>
+
+          <AdminFormField
+            v-else
             label="国家/区域"
             class="lg:col-span-2"
             description="JSON 数组或逗号分隔；例如 US, CA。为空代表暂未限制。"
@@ -181,6 +221,10 @@ import type {
   ShippingErrorMap,
   ShippingTemplate
 } from '@/modules/shipping/shippingTypes'
+import type {
+  FpxPublishedCollectionReference,
+  YanwenPublishedCollectionReference,
+} from '@/api/shippingServiceCollectionReferenceApi'
 
 const props = withDefaults(defineProps<{
   open?: boolean
@@ -188,7 +232,8 @@ const props = withDefaults(defineProps<{
   form: ShippingCarrierServiceForm
   errors: ShippingErrorMap
   carriers?: ShippingCarrier[]
-  fpxChannels?: Array<{ id: number; service_code: string; display_name: string; enabled: boolean }>
+  fpxChannels?: FpxPublishedCollectionReference[]
+  yanwenPublishedChannels?: YanwenPublishedCollectionReference[]
   templates?: ShippingTemplate[]
   submitting?: boolean
 }>(), {
@@ -196,6 +241,7 @@ const props = withDefaults(defineProps<{
   mode: 'create',
   carriers: () => [],
   fpxChannels: () => [],
+  yanwenPublishedChannels: () => [],
   templates: () => [],
   submitting: false
 })
@@ -205,12 +251,58 @@ const selectedCarrierIsFpx = computed(() => {
   const selectedCarrier = props.carriers.find((carrier) => String(carrier.id) === String(props.form.carrier_id))
   return ['4PX', 'FPX'].includes(String(selectedCarrier?.code || '').trim().toUpperCase())
 })
+const selectedCarrierIsYanwen = computed(() => {
+  const selectedCarrier = props.carriers.find((carrier) => String(carrier.id) === String(props.form.carrier_id))
+  return String(selectedCarrier?.code || '').trim().toUpperCase() === 'YANWEN'
+})
+const selectedCarrierUsesPublishedCollection = computed(() => {
+  const selectedCarrier = props.carriers.find((carrier) => String(carrier.id) === String(props.form.carrier_id))
+  const carrierCode = String(selectedCarrier?.code || '').trim().toUpperCase()
+  return ['4PX', 'FPX', 'YANWEN'].includes(carrierCode) || String(props.form.service_code || '').trim().toUpperCase().startsWith('YANWEN:')
+})
+
+const serviceCountriesLabel = (value: unknown) => {
+  const raw = String(value || '').trim()
+  if (!raw) return '未限制（服务集合未提供地区）'
+  try {
+    const parsed = JSON.parse(raw)
+    if (Array.isArray(parsed) && parsed.length) return parsed.join(', ')
+  } catch {
+    // Keep compatibility with older comma-separated records.
+  }
+  return raw.replace(/[\[\]"']/g, '').replace(/[,，;|]+/g, ', ')
+}
+
+const handleCarrierSelectionChange = (carrierID: unknown) => {
+  const selectedCarrier = props.carriers.find((carrier) => String(carrier.id) === String(carrierID))
+  const carrierCode = String(selectedCarrier?.code || '').trim().toUpperCase()
+  props.form.fpx_channel_id = null
+  props.form.yanwen_published_channel_id = null
+  props.form.provider_code = ['4PX', 'FPX'].includes(carrierCode) ? '4PX' : carrierCode
+  emit('clear-error', 'carrier_id')
+}
 
 const applyFpxChannel = (serviceCode: unknown) => {
   const channel = props.fpxChannels.find((item) => item.service_code === String(serviceCode))
   if (!channel) return
   props.form.service_code = channel.service_code
   props.form.service_name = channel.display_name
+  props.form.provider_code = '4PX'
+  props.form.fpx_channel_id = channel.id
+  props.form.yanwen_published_channel_id = null
+  props.form.countries = channel.countries || '[]'
+}
+
+const applyYanwenChannel = (channelID: unknown) => {
+  const channel = props.yanwenPublishedChannels.find((item) => String(item.id) === String(channelID))
+  if (!channel) return
+  const productCode = String(channel.product_code || '').trim().replace(/^YANWEN:/i, '')
+  props.form.service_code = `YANWEN:${productCode}`
+  props.form.service_name = channel.display_name
+  props.form.provider_code = 'YANWEN'
+  props.form.fpx_channel_id = null
+  props.form.yanwen_published_channel_id = channel.id
+  props.form.countries = channel.countries || '[]'
 }
 
 const emit = defineEmits<{
@@ -219,4 +311,3 @@ const emit = defineEmits<{
   (event: 'clear-error', field: string): void
 }>()
 </script>
-

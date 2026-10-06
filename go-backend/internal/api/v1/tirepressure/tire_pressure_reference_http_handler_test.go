@@ -63,10 +63,6 @@ func TestGetTirePressureReferenceDataReturnsExactArticleWithDimensionsAndPressur
 	require.Equal(t, "11654432", response.Data.Product.ArticleNo)
 	require.Equal(t, "Marathon Efficiency", response.Data.Product.ModelName)
 	require.Equal(t, "40-622", response.Data.Product.ETRTO)
-	require.NotNil(t, response.Data.Product.NominalTireWidthMM)
-	require.Equal(t, 40, *response.Data.Product.NominalTireWidthMM)
-	require.NotNil(t, response.Data.Product.BeadSeatDiameterMM)
-	require.Equal(t, 622, *response.Data.Product.BeadSeatDiameterMM)
 	require.NotNil(t, response.Data.Pressure.MinPressureBar)
 	require.Equal(t, 2.2, *response.Data.Pressure.MinPressureBar)
 	require.NotNil(t, response.Data.Pressure.MaxPressureBar)
@@ -76,6 +72,8 @@ func TestGetTirePressureReferenceDataReturnsExactArticleWithDimensionsAndPressur
 	require.NotNil(t, response.Data.Pressure.MaxPressurePSI)
 	require.Equal(t, float64(65), *response.Data.Pressure.MaxPressurePSI)
 	require.Equal(t, "2026-10-03T10:20:30.000Z", response.Data.SourceCheckedAt)
+	require.NotContains(t, recorder.Body.String(), `"weight_g"`)
+	require.NotContains(t, recorder.Body.String(), `"compound"`)
 	require.Equal(t, "11654432", reader.lastSearch)
 }
 
@@ -159,15 +157,6 @@ func TestGetTirePressureReferenceDataMapsCatalogFailureToInternalServerError(t *
 
 	require.Equal(t, http.StatusInternalServerError, recorder.Code, recorder.Body.String())
 	require.Contains(t, recorder.Body.String(), `"REFERENCE_UNAVAILABLE"`)
-}
-
-func TestParseSchwalbeETRTODimensionsAcceptsDashVariantsAndWhitespace(t *testing.T) {
-	width, beadSeatDiameter := parseSchwalbeETRTODimensions(" 28–622 ")
-
-	require.NotNil(t, width)
-	require.Equal(t, 28, *width)
-	require.NotNil(t, beadSeatDiameter)
-	require.Equal(t, 622, *beadSeatDiameter)
 }
 
 func requestTirePressureReferenceData(t *testing.T, reader SchwalbeTirePressureReferenceCatalogReader, articleNo string) *httptest.ResponseRecorder {

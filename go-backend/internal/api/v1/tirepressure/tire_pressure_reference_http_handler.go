@@ -2,7 +2,6 @@ package tirepressure
 
 import (
 	"net/http"
-	"strconv"
 	"strings"
 
 	"commerce-platform/internal/repository"
@@ -10,7 +9,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-const tirePressureReferenceDataSchemaVersion = "tire-pressure-reference-v1"
+const tirePressureReferenceDataSchemaVersion = "tire-pressure-reference-v2"
 
 // SchwalbeTirePressureReferenceCatalogReader is the narrow read-only catalog
 // contract used by the tire-pressure reference adapter. Keeping this contract
@@ -38,24 +37,10 @@ func (h *TirePressureReferenceHTTPHandler) RegisterTirePressureReferenceHTTPRout
 }
 
 type tirePressureReferenceProductResponse struct {
-	ArticleNo          string   `json:"article_no"`
-	EAN                *string  `json:"ean,omitempty"`
-	ModelName          string   `json:"model_name"`
-	ETRTO              string   `json:"etrto"`
-	InchDesignation    *string  `json:"inch_designation,omitempty"`
-	NominalTireWidthMM *int     `json:"nominal_tire_width_mm,omitempty"`
-	BeadSeatDiameterMM *int     `json:"bead_seat_diameter_mm,omitempty"`
-	WeightG            *float64 `json:"weight_g,omitempty"`
-	VersionLabel       *string  `json:"version_label,omitempty"`
-	Compound           *string  `json:"compound,omitempty"`
-	Color              *string  `json:"color,omitempty"`
-	Bead               *string  `json:"bead,omitempty"`
-	EBikeRating        *string  `json:"e_bike_rating,omitempty"`
-	EPI                *int     `json:"epi,omitempty"`
-	LoadKG             *float64 `json:"load_kg,omitempty"`
-	Seal               *string  `json:"seal,omitempty"`
-	Tread              *string  `json:"tread,omitempty"`
-	ProductExists      bool     `json:"product_exists"`
+	ArticleNo       string  `json:"article_no"`
+	ModelName       string  `json:"model_name"`
+	ETRTO           string  `json:"etrto"`
+	InchDesignation *string `json:"inch_designation,omitempty"`
 }
 
 type tirePressureReferencePressureResponse struct {
@@ -174,28 +159,12 @@ func buildTirePressureReferenceDataResponse(
 func buildTirePressureReferenceCatalogItemResponse(
 	item repository.SchwalbeTireCatalogItem,
 ) tirePressureReferenceCatalogItemResponse {
-	nominalTireWidthMM, beadSeatDiameterMM := parseSchwalbeETRTODimensions(item.ETRTO)
-
 	return tirePressureReferenceCatalogItemResponse{
 		Product: tirePressureReferenceProductResponse{
-			ArticleNo:          item.ArticleNo,
-			EAN:                item.EAN,
-			ModelName:          item.ModelName,
-			ETRTO:              item.ETRTO,
-			InchDesignation:    item.InchDesignation,
-			NominalTireWidthMM: nominalTireWidthMM,
-			BeadSeatDiameterMM: beadSeatDiameterMM,
-			WeightG:            item.WeightG,
-			VersionLabel:       item.VersionLabel,
-			Compound:           item.Compound,
-			Color:              item.Color,
-			Bead:               item.Bead,
-			EBikeRating:        item.EBikeRating,
-			EPI:                item.EPI,
-			LoadKG:             item.LoadKG,
-			Seal:               item.Seal,
-			Tread:              item.Tread,
-			ProductExists:      item.ProductExists,
+			ArticleNo:       item.ArticleNo,
+			ModelName:       item.ModelName,
+			ETRTO:           item.ETRTO,
+			InchDesignation: item.InchDesignation,
 		},
 		Pressure: tirePressureReferencePressureResponse{
 			MinPressureBar: item.MinPressureBar,
@@ -205,22 +174,6 @@ func buildTirePressureReferenceCatalogItemResponse(
 		},
 		SourceCheckedAt: item.SourceCheckedAt.UTC().Format("2006-01-02T15:04:05.000Z07:00"),
 	}
-}
-
-func parseSchwalbeETRTODimensions(etrto string) (*int, *int) {
-	normalizedETRTO := strings.NewReplacer("–", "-", "—", "-").Replace(strings.TrimSpace(etrto))
-	parts := strings.Split(normalizedETRTO, "-")
-	if len(parts) != 2 {
-		return nil, nil
-	}
-
-	width, widthErr := strconv.Atoi(strings.TrimSpace(parts[0]))
-	beadSeatDiameter, beadSeatDiameterErr := strconv.Atoi(strings.TrimSpace(parts[1]))
-	if widthErr != nil || beadSeatDiameterErr != nil || width <= 0 || beadSeatDiameter <= 0 {
-		return nil, nil
-	}
-
-	return &width, &beadSeatDiameter
 }
 
 func writeTirePressureReferenceErrorResponse(c *gin.Context, status int, code, message, field string) {

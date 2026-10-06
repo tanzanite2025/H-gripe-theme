@@ -625,7 +625,6 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
 
     const hadTemplateValues = templateScopedValuesTouched.value
     productForm.product_specification_template_id = nextProductSpecTemplateID
-    productForm.customs_classification_profile_id = null
     const nextSpecs: Record<string, any> = {}
     selectedSpecDefinitions.value.forEach((spec: any) => {
       if (spec.field_type === 'boolean') nextSpecs[spec.slug] = false

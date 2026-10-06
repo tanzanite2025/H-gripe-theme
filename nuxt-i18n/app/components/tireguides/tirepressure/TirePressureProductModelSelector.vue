@@ -118,16 +118,16 @@ import { useAsyncData, useI18n } from '#imports'
 import { useApiRequest } from '~/composables/useApiRequest'
 import {
   fetchSchwalbeTirePressureReferenceCatalog,
-  type SchwalbeTireCatalogItem,
+  type SchwalbeTirePressureReferenceCatalogItem,
 } from '~/data/tireguides/schwalbeCatalog'
 
 const { t } = useI18n()
 const { request } = useApiRequest()
 const props = defineProps<{
-  selectedTireModel: SchwalbeTireCatalogItem | null
+  selectedTireModel: SchwalbeTirePressureReferenceCatalogItem | null
 }>()
 const emit = defineEmits<{
-  (event: 'update:selectedTireModel', value: SchwalbeTireCatalogItem | null): void
+  (event: 'update:selectedTireModel', value: SchwalbeTirePressureReferenceCatalogItem | null): void
 }>()
 const searchInput = ref('')
 const searchShell = ref<HTMLElement | null>(null)
@@ -136,7 +136,7 @@ const activeSuggestionIndex = ref(-1)
 const visibleResultLimit = 12
 let closeSuggestionsTimer: ReturnType<typeof setTimeout> | null = null
 
-const { data: catalogData, pending, error, refresh } = await useAsyncData<SchwalbeTireCatalogItem[]>(
+const { data: catalogData, pending, error, refresh } = await useAsyncData<SchwalbeTirePressureReferenceCatalogItem[]>(
   'tire-pressure-product-model-selector-catalog',
   () => fetchSchwalbeTirePressureReferenceCatalog(request),
   { default: () => [] },
@@ -155,8 +155,6 @@ const matchingItems = computed(() => {
       item.article_no,
       item.etrto,
       item.inch_designation,
-      item.ean,
-      item.version_label,
     ].some(value => value?.toLowerCase().includes(query)))
     .sort((left, right) => (
       left.model_name.localeCompare(right.model_name)
@@ -178,7 +176,7 @@ const activeSuggestionId = computed(() => {
   return item ? suggestionId(item.article_no) : undefined
 })
 
-const selectTireModel = (item: SchwalbeTireCatalogItem) => {
+const selectTireModel = (item: SchwalbeTirePressureReferenceCatalogItem) => {
   emit('update:selectedTireModel', item)
   searchInput.value = item.model_name
   isSuggestionsOpen.value = false
@@ -237,7 +235,7 @@ const clearSelectedTireModel = () => {
   activeSuggestionIndex.value = -1
 }
 
-const formatPressureRange = (item: SchwalbeTireCatalogItem) => {
+const formatPressureRange = (item: SchwalbeTirePressureReferenceCatalogItem) => {
   const barRange = item.min_pressure_bar !== undefined || item.max_pressure_bar !== undefined
     ? `${item.min_pressure_bar ?? '—'}–${item.max_pressure_bar ?? '—'} bar`
     : ''

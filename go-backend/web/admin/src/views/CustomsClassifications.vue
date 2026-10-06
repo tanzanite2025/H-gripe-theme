@@ -1,6 +1,6 @@
 <template>
   <div class="space-y-4">
-    <AdminPageHeader title="清关资料中心" description="集中检查商品清关资料完整度，并维护可复用的分类资料模板。">
+    <AdminPageHeader title="清关资料中心" description="常用自行车部件模板已随系统写入数据库，商品建立时可独立选择，不绑定商品规格模板。">
       <template #actions>
         <Button variant="outline" as-child>
           <RouterLink to="/catalog/products">商品管理</RouterLink>
@@ -11,7 +11,7 @@
         </Button>
         <Button v-if="hasPermission('product:create')" @click="openTemplateCreate">
           <Plus class="size-4" />
-          新建清关模板
+          新建自定义模板
         </Button>
       </template>
     </AdminPageHeader>
@@ -25,7 +25,6 @@
       :product-page-size="productPageSize"
       :product-total="productTotal"
       :filters="productFilters"
-      :product-spec-templates="productSpecTemplates"
       @refresh="refreshWorkbench"
       @apply="applyProductFilters"
       @update:page="updateProductPage"
@@ -63,9 +62,7 @@
       :open="templateDialogOpen"
       :form="templateForm"
       :saving="templateSaving"
-      :product-spec-templates="productSpecTemplates"
       @update:open="templateDialogOpen = $event"
-      @update:product-spec-template="setTemplateProductSpecTemplate"
       @save="saveTemplate"
     />
 
@@ -131,6 +128,7 @@ import { computed, onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import { toast } from 'vue-sonner'
 import {
+  CalendarClock,
   CheckCircle2,
   CircleAlert,
   FileSearch,
@@ -147,6 +145,10 @@ import { Button } from '@/components/ui/button'
 import { useCustomsClassificationCenter } from '@/composables/customs/useCustomsClassificationCenter'
 import { useProductEditor } from '@/composables/product/useProductEditor'
 import { useSupportedLanguages } from '@/composables/useSupportedLanguages'
+import {
+  getCustomsReviewLifecycleStatus,
+  customsReviewLifecycleStatusRequiresAttention,
+} from '@/modules/customs/customsReviewLifecycle'
 import { useAuthStore } from '@/stores/auth'
 
 const authStore = useAuthStore()
@@ -190,7 +192,6 @@ const {
   updateProductPageSize,
   openTemplateCreate,
   openTemplateEdit,
-  setTemplateProductSpecTemplate,
   saveTemplate,
   removeTemplate,
   runLookup,
@@ -199,10 +200,23 @@ const {
   locale: supportedLanguages.defaultLocale,
 })
 
+const customsTemplatesRequiringReviewCount = computed(() => templates.value.filter((template) => (
+  customsReviewLifecycleStatusRequiresAttention(
+    getCustomsReviewLifecycleStatus(template.verified_at, template.review_due_at),
+  )
+)).length)
+
 const statItems = computed(() => [
   { key: 'total', label: '商品总数', value: catalogTotal.value, icon: FileSearch, tone: 'gray' },
   { key: 'incomplete', label: '资料不完整', value: incompleteTotal.value, icon: CircleAlert, tone: 'amber' },
   { key: 'complete', label: '资料完整', value: completeTotal.value, icon: CheckCircle2, tone: 'green' },
+  {
+    key: 'customs-review-lifecycle',
+    label: '临期/待核验模板',
+    value: customsTemplatesRequiringReviewCount.value,
+    icon: CalendarClock,
+    tone: customsTemplatesRequiringReviewCount.value > 0 ? 'amber' : 'green',
+  },
   { key: 'missing-hs', label: '缺 HS Code', value: missingHSTotal.value, icon: CircleAlert, tone: 'coral' },
 ])
 
@@ -259,13 +273,7 @@ const {
   defaultLocale: supportedLanguages.defaultLocale,
 })
 
-const activeCustomsClassifications = computed(() => activeCustomsTemplates.value.filter((profile) => (
-  String(profile.id) === String(productForm.customs_classification_profile_id || '')
-  || (
-    !profile.product_specification_template_id
-    || (productForm.product_specification_template_id != null && String(profile.product_specification_template_id) === String(productForm.product_specification_template_id))
-  )
-)))
+const activeCustomsClassifications = computed(() => activeCustomsTemplates.value)
 
 const customsClassificationSelectValue = computed(() => (
   productForm.customs_classification_profile_id

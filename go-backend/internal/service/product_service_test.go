@@ -602,10 +602,16 @@ func TestProductServiceAdminProductPersistsCustomsInformation(t *testing.T) {
 	assert.Equal(t, "DE", stored.CountryOfOrigin)
 }
 
-func TestProductServiceBindsCustomsProfileAndClearsOnManualOverride(t *testing.T) {
+func TestProductServiceBindsIndependentCustomsProfileAndClearsOnlyOnManualOverride(t *testing.T) {
 	db, productService := newTestProductService(t)
 	require.NoError(t, db.AutoMigrate(&product.CustomsClassificationProfile{}))
 	productService.ConfigureCustomsClassificationRepository(repository.NewCustomsClassificationRepository(db))
+	productSpecificationTemplate := product.ProductSpecificationTemplate{
+		Name:      "Independent product specification template",
+		Slug:      "independent-product-specification-template",
+		IsEnabled: true,
+	}
+	require.NoError(t, db.Create(&productSpecificationTemplate).Error)
 
 	profile := product.CustomsClassificationProfile{
 		Name:               "Carbon rim profile",
@@ -619,6 +625,7 @@ func TestProductServiceBindsCustomsProfileAndClearsOnManualOverride(t *testing.T
 	require.NoError(t, db.Create(&profile).Error)
 
 	createdProduct, err := productService.CreateAdminProduct(ProductCreateInput{
+		ProductSpecificationTemplateID: &productSpecificationTemplate.ID,
 		CustomsClassificationProfileID: &profile.ID,
 		HSCode:                         "000000",
 		Name:                           "Bound customs product",
@@ -636,11 +643,32 @@ func TestProductServiceBindsCustomsProfileAndClearsOnManualOverride(t *testing.T
 	require.NoError(t, err)
 	require.NotNil(t, createdProduct.CustomsClassificationProfileID)
 	assert.Equal(t, profile.ID, *createdProduct.CustomsClassificationProfileID)
+	require.NotNil(t, createdProduct.ProductSpecificationTemplateID)
+	assert.Equal(t, productSpecificationTemplate.ID, *createdProduct.ProductSpecificationTemplateID)
 	assert.Equal(t, profile.HSCode, createdProduct.HSCode)
 	assert.Equal(t, profile.CNCode, createdProduct.CNCode)
 
+	anotherProductSpecificationTemplate := product.ProductSpecificationTemplate{
+		Name:      "Another independent product specification template",
+		Slug:      "another-independent-product-specification-template",
+		IsEnabled: true,
+	}
+	require.NoError(t, db.Create(&anotherProductSpecificationTemplate).Error)
+
+	switchedProduct, err := productService.UpdateAdminProduct(createdProduct.ID, ProductUpdateInput{
+		ProductSpecificationTemplateID:       &anotherProductSpecificationTemplate.ID,
+		UpdateProductSpecificationTemplateID: true,
+	})
+	require.NoError(t, err)
+	require.NotNil(t, switchedProduct.CustomsClassificationProfileID)
+	assert.Equal(t, profile.ID, *switchedProduct.CustomsClassificationProfileID)
+	require.NotNil(t, switchedProduct.ProductSpecificationTemplateID)
+	assert.Equal(t, anotherProductSpecificationTemplate.ID, *switchedProduct.ProductSpecificationTemplateID)
+	assert.Equal(t, profile.HSCode, switchedProduct.HSCode)
+	assert.Equal(t, profile.CNCode, switchedProduct.CNCode)
+
 	hsCode := "871492"
-	updatedProduct, err := productService.UpdateAdminProduct(createdProduct.ID, ProductUpdateInput{
+	updatedProduct, err := productService.UpdateAdminProduct(switchedProduct.ID, ProductUpdateInput{
 		HSCode:       &hsCode,
 		UpdateHSCode: true,
 	})

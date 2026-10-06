@@ -19,9 +19,11 @@ import { Input } from '@/components/ui/input'
 const props = withDefaults(defineProps<{
   modelValue: string
   disabled?: boolean
+  templateVariableDisplayValues?: Record<string, string>
 }>(), {
   modelValue: '',
   disabled: false,
+  templateVariableDisplayValues: () => ({}),
 })
 
 const emit = defineEmits<{
@@ -31,7 +33,60 @@ const emit = defineEmits<{
 const editor = ref<HTMLElement | null>(null)
 const linkURL = ref('')
 const syncing = ref(false)
+let lastEmittedModelValue: string | null = null
 let savedRange: Range | null = null
+
+const renderTemplateVariablesAsDisplayValues = (source: string): string => {
+  if (!source || typeof document === 'undefined') return source
+
+  const container = document.createElement('div')
+  container.innerHTML = source
+  const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT)
+  const textNodes: Text[] = []
+  let currentNode = walker.nextNode()
+  while (currentNode) {
+    textNodes.push(currentNode as Text)
+    currentNode = walker.nextNode()
+  }
+
+  const variablePattern = /\{\{\s*([a-z][a-z0-9_]*)\s*\}\}/gi
+  textNodes.forEach((textNode) => {
+    const value = textNode.nodeValue || ''
+    if (!variablePattern.test(value)) {
+      variablePattern.lastIndex = 0
+      return
+    }
+    variablePattern.lastIndex = 0
+
+    const fragment = document.createDocumentFragment()
+    let lastIndex = 0
+    value.replace(variablePattern, (match, variableName: string, offset: number) => {
+      if (offset > lastIndex) fragment.append(value.slice(lastIndex, offset))
+      const displayValue = props.templateVariableDisplayValues[variableName] || '示例内容'
+      const displayNode = document.createElement('span')
+      displayNode.dataset.notificationTemplateVariable = variableName
+      displayNode.contentEditable = 'false'
+      displayNode.className = 'rich-text-editor__template-variable'
+      displayNode.textContent = displayValue
+      fragment.append(displayNode)
+      lastIndex = offset + match.length
+      return match
+    })
+    if (lastIndex < value.length) fragment.append(value.slice(lastIndex))
+    textNode.replaceWith(fragment)
+  })
+
+  return container.innerHTML
+}
+
+const serializeTemplateVariablesFromEditor = (source: HTMLElement): string => {
+  const clonedSource = source.cloneNode(true) as HTMLElement
+  clonedSource.querySelectorAll<HTMLElement>('[data-notification-template-variable]').forEach((displayNode) => {
+    const variableName = displayNode.dataset.notificationTemplateVariable
+    if (variableName) displayNode.replaceWith(`{{${variableName}}}`)
+  })
+  return clonedSource.innerHTML
+}
 
 const isSelectionInsideEditor = (): boolean => {
   if (!editor.value) return false
@@ -57,10 +112,12 @@ const restoreSelection = (): void => {
 }
 
 const syncEditor = async (): Promise<void> => {
-  if (!editor.value || editor.value === document.activeElement) return
+  if (!editor.value) return
+  if (editor.value === document.activeElement && props.modelValue === lastEmittedModelValue) return
   syncing.value = true
   await nextTick()
-  editor.value.innerHTML = props.modelValue || ''
+  editor.value.innerHTML = renderTemplateVariablesAsDisplayValues(props.modelValue || '')
+  lastEmittedModelValue = props.modelValue
   syncing.value = false
 }
 
@@ -69,7 +126,9 @@ watch(() => props.modelValue, syncEditor)
 
 const emitContent = (): void => {
   if (!editor.value || syncing.value || props.disabled) return
-  emit('update:modelValue', editor.value.innerHTML)
+  const serializedContent = serializeTemplateVariablesFromEditor(editor.value)
+  lastEmittedModelValue = serializedContent
+  emit('update:modelValue', serializedContent)
   saveSelection()
 }
 
@@ -108,8 +167,8 @@ const insertLink = (): void => {
 </script>
 
 <template>
-  <div class="rounded-lg border bg-muted/15 p-2" :class="{ 'pointer-events-none opacity-60': disabled }">
-    <div class="flex flex-wrap items-center gap-1 border-b pb-2">
+  <div class="flex flex-col rounded-lg border bg-muted/15 p-2" :class="{ 'pointer-events-none opacity-60': disabled }">
+    <div class="flex shrink-0 flex-wrap items-center gap-1 border-b pb-2">
       <Button type="button" variant="ghost" size="icon-sm" title="撤销" @click="exec('undo')">
         <Undo2 class="size-4" />
       </Button>
@@ -160,7 +219,7 @@ const insertLink = (): void => {
       :contenteditable="disabled ? 'false' : 'true'"
       role="textbox"
       aria-multiline="true"
-      class="rich-text-editor__canvas mt-2 min-h-48 rounded-md bg-background px-4 py-3 text-sm leading-6 outline-none focus:ring-2 focus:ring-ring"
+      class="rich-text-editor__canvas mt-2 min-h-48 flex-1 overflow-y-auto rounded-md bg-background px-4 py-3 text-sm leading-6 outline-none focus:ring-2 focus:ring-ring"
       data-placeholder="请输入正文，可使用段落、标题、加粗、斜体、列表、引用和链接"
       @focus="saveSelection"
       @keyup="saveSelection"
@@ -214,5 +273,13 @@ const insertLink = (): void => {
 .rich-text-editor__canvas :deep(a) {
   color: hsl(var(--primary));
   text-decoration: underline;
+}
+
+.rich-text-editor__canvas :deep(.rich-text-editor__template-variable) {
+  background: hsl(var(--muted));
+  border-radius: 0.25rem;
+  color: hsl(var(--foreground));
+  padding: 0.05rem 0.25rem;
+  white-space: nowrap;
 }
 </style>

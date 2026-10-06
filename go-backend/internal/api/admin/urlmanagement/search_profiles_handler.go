@@ -30,6 +30,15 @@ func (h *SearchProfilesHandler) List(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"items": profiles})
 }
 
+func (h *SearchProfilesHandler) Stats(c *gin.Context) {
+	stats, err := h.profiles.Stats(c.Query("locale"))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"data": stats})
+}
+
 func (h *SearchProfilesHandler) Get(c *gin.Context) {
 	routeEntryID, err := searchProfileRouteEntryID(c.Param("id"))
 	if err != nil {

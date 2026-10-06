@@ -122,6 +122,19 @@ func TestStorefrontURLSearchProfileServicePublicIndexUsesRouteCatalogFallbacks(t
 	assert.False(t, hiddenOK, "non-searchable route should stay excluded")
 	_, guidesOK := itemsByPath["/zh_cn/guides"]
 	assert.False(t, guidesOK, "disabled search profile should suppress fallback")
+
+	fallbackProfile, err := service.Get(entries[0].ID)
+	require.NoError(t, err)
+	assert.Equal(t, 0, fallbackProfile.SearchWeight, "unconfigured routes must keep the public default weight")
+
+	stats, err := service.Stats("zh_cn")
+	require.NoError(t, err)
+	assert.Equal(t, int64(4), stats.TotalRoutes)
+	assert.Equal(t, int64(2), stats.PublicIndexed)
+	assert.Equal(t, int64(2), stats.ExplicitProfiles)
+	assert.Equal(t, int64(1), stats.ExplicitEnabled)
+	assert.Equal(t, int64(3), stats.KeywordCount)
+	assert.Equal(t, int64(2), stats.Unconfigured)
 }
 
 func newStorefrontURLSearchProfileTestDB(t *testing.T) *gorm.DB {

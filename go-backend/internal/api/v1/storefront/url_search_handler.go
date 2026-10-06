@@ -23,7 +23,9 @@ func (h *URLSearchHandler) List(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	c.Header("Cache-Control", "public, max-age=60")
+	// Search configuration is editable from the admin console. Avoid serving a
+	// stale index after an operator saves a profile.
+	c.Header("Cache-Control", "no-store")
 	c.JSON(http.StatusOK, gin.H{
 		"items": entries,
 		"total": len(entries),

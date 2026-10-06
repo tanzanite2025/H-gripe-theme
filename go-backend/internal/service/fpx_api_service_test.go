@@ -118,6 +118,31 @@ func TestFpxAPISyncChannelsFetchesSignedOfficialDirectoryAndPreservesEnabledStat
 	require.Equal(t, 1, stored.LastSyncAdded)
 	require.Equal(t, 1, stored.LastSyncUpdated)
 	require.Equal(t, 1, stored.LastSyncPreservedEnabled)
+
+	require.NoError(t, apiService.Save(FpxAPIConfigInput{
+		Environment: "test",
+		Endpoint:    fpxTestEndpoint,
+		AppKey:      appKey,
+		AppSecret:   appSecret,
+		AccessToken: accessToken,
+		Enabled:     true,
+	}))
+	testSummary, err := apiService.SyncChannels(context.Background(), FpxAPIConfigInput{Environment: "test"})
+	require.NoError(t, err)
+	require.Equal(t, FpxChannelSyncSummary{Scanned: 4, Added: 2}, testSummary)
+	require.Equal(t, 2, requestCount)
+
+	productionChannels, err := shippingRepo.FindAllFpxChannelsForEnvironment(shipping.FpxChannelEnvironmentProduction, false)
+	require.NoError(t, err)
+	require.Len(t, productionChannels, 2)
+	require.Equal(t, "4PX经济线", productionChannels[0].DisplayName)
+	require.True(t, productionChannels[0].Enabled, "test sync must not overwrite production approval or names")
+
+	testChannels, err := shippingRepo.FindAllFpxChannelsForEnvironment(shipping.FpxChannelEnvironmentTest, false)
+	require.NoError(t, err)
+	require.Len(t, testChannels, 2)
+	require.Equal(t, "4PX经济线", testChannels[0].DisplayName)
+	require.False(t, testChannels[0].Enabled)
 }
 
 func TestParseFpxChannelResponseRejectsGatewayAndMalformedResponses(t *testing.T) {
@@ -136,6 +161,14 @@ func TestParseFpxChannelResponseRejectsGatewayAndMalformedResponses(t *testing.T
 
 	_, err = parseFpxChannelResponse([]byte(`not-json`))
 	require.ErrorContains(t, err, "decode 4PX response")
+}
+
+func TestParseFpxChannelResponseExtractsPublishedCountryScope(t *testing.T) {
+	channels, err := parseFpxChannelResponse([]byte(`{"result":true,"data":[{"logistics_product_code":"EU-TEST","logistics_product_name_cn":"欧洲专线","countries":["de","FR","DE"]},{"service_code":"US-TEST","service_name":"美国专线","country_codes":"US, CA"}]}`))
+	require.NoError(t, err)
+	require.Len(t, channels, 2)
+	require.Equal(t, `["DE","FR"]`, channels[0].Countries)
+	require.Equal(t, `["US","CA"]`, channels[1].Countries)
 }
 
 func TestFpxAPIPingDoesNotPersistSyncStateOrChannels(t *testing.T) {

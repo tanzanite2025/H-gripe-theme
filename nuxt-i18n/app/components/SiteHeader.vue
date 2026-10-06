@@ -955,7 +955,7 @@ const breadcrumbLabelDefinitions: Record<string, BreadcrumbLabelDefinition> = {
   '/policies/refund-cancellation': { fallback: 'Refund & Cancellation Policy' },
   '/policies/terms': { fallback: 'Terms of Service' },
   '/shop': { labelKey: 'products.nav.shop', fallback: 'Shop' },
-  '/resources/spoke-calculator': { labelKey: 'support.nav.spokeCalculator', fallback: 'Spoke Calculator' },
+  '/guides/spokeguides/spoke-length-calculator': { labelKey: 'support.nav.spokeCalculator', fallback: 'Spoke Calculator' },
   '/support': { labelKey: 'footer.menus.support', fallback: 'Support' },
 }
 

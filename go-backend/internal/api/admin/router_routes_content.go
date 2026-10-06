@@ -82,6 +82,7 @@ func registerContentRoutes(
 		{
 			homeVisualTileGroup.GET("/:showcase_key", homeVisualTileHandler.GetItems)
 			homeVisualTileGroup.POST("/:showcase_key/assets", middleware.RequirePermission(auth.PermContentEdit), middleware.RateLimitByUserPerMinute(3, 2), homeVisualTileHandler.UploadImage)
+			homeVisualTileGroup.PUT("/:showcase_key/items/:desktop_order", middleware.RequirePermission(auth.PermContentEdit), homeVisualTileHandler.SaveSingleVisualShowcaseItem)
 			homeVisualTileGroup.PUT("/:showcase_key", middleware.RequirePermission(auth.PermContentEdit), homeVisualTileHandler.ReplaceItems)
 		}
 

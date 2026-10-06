@@ -6,16 +6,16 @@
       :aria-label="t('guidesTirePressure.tabs.label')"
     >
       <button
-        id="tire-pressure-tab-standards"
+        id="tire-pressure-tab-calculator"
         type="button"
         role="tab"
         class="tire-pressure-section__tab"
-        :class="{ 'tire-pressure-section__tab--active': activeTab === 'standards' }"
-        :aria-selected="activeTab === 'standards'"
-        aria-controls="tire-pressure-panel-standards"
-        @click="activeTab = 'standards'"
+        :class="{ 'tire-pressure-section__tab--active': activeTab === 'calculator' }"
+        :aria-selected="activeTab === 'calculator'"
+        aria-controls="tire-pressure-panel-calculator"
+        @click="activeTab = 'calculator'"
       >
-        {{ t('guidesTirePressure.tabs.standards') }}
+        {{ t('guidesTirePressure.tabs.calculator') }}
       </button>
       <button
         id="tire-pressure-tab-details"
@@ -32,23 +32,13 @@
     </div>
 
     <section
-      id="tire-pressure-panel-standards"
-      class="tire-pressure-section__panel tire-pressure-section__standards-panel"
+      id="tire-pressure-panel-calculator"
+      class="tire-pressure-section__panel tire-pressure-section__calculator-panel"
       role="tabpanel"
-      aria-labelledby="tire-pressure-tab-standards"
-      v-show="activeTab === 'standards'"
+      aria-labelledby="tire-pressure-tab-calculator"
+      v-show="activeTab === 'calculator'"
     >
-      <TirePressureProductStandardsPlaceholder />
-
-      <p class="guide-section__cta-wrapper">
-        <button
-          type="button"
-          class="tire-pressure-section__cta"
-          @click="emit('openTireProducts')"
-        >
-          {{ t('guidesTirePressure.actions.checkTires') }}
-        </button>
-      </p>
+      <TirePressureCalculator />
     </section>
 
     <section
@@ -209,7 +199,7 @@
 import { ref, watch } from 'vue'
 import { useI18n } from '#imports'
 import { usePageMessages } from '~/composables/usePageMessages'
-import TirePressureProductStandardsPlaceholder from '~/components/tireguides/tirepressure/TirePressureProductStandardsPlaceholder.vue'
+import TirePressureCalculator from '~/components/tireguides/tirepressure/TirePressureCalculator.vue'
 
 const { locale, t } = useI18n()
 const { loadPageMessages } = usePageMessages('guidesTirePressure')
@@ -220,11 +210,7 @@ watch(locale, (nextLocale) => {
   void loadPageMessages(nextLocale)
 })
 
-const emit = defineEmits<{
-  (e: 'openTireProducts'): void
-}>()
-
-const activeTab = ref<'standards' | 'details'>('standards')
+const activeTab = ref<'calculator' | 'details'>('calculator')
 </script>
 
 <style scoped>
@@ -290,27 +276,6 @@ const activeTab = ref<'standards' | 'details'>('standards')
 
 .tire-pressure-section__intro p {
   margin: 0;
-}
-
-.tire-pressure-section__cta {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: 0;
-  border-radius: 999px;
-  background: var(--tz-action-primary);
-  color: var(--tz-action-primary-foreground);
-  cursor: pointer;
-  font-size: 0.75rem;
-  font-weight: 700;
-  padding: 0.375rem 1rem;
-  transition: background-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
-}
-
-.tire-pressure-section__cta:hover {
-  background: var(--tz-action-primary-hover);
-  box-shadow: 0 0.5rem 1.35rem -0.5rem rgba(0, 0, 0, 0.9);
-  transform: translateY(-1px);
 }
 
 .tire-pressure-section__safety-warning {

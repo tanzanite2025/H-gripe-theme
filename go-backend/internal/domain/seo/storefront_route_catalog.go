@@ -100,6 +100,7 @@ type StorefrontRouteCatalogStats struct {
 	Indexable         int64      `json:"indexable"`
 	SitemapEligible   int64      `json:"sitemap_eligible"`
 	LastSyncedAt      *time.Time `json:"last_synced_at,omitempty"`
+	LastCheckedAt     *time.Time `json:"last_checked_at,omitempty"`
 	ManifestVersion   string     `json:"manifest_version"`
 }
 

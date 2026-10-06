@@ -32,7 +32,7 @@
       @refresh="fetchAssets"
     />
 
-    <Card class="min-h-0 flex-1 overflow-hidden">
+    <Card class="min-h-0 flex-1 gap-0 overflow-hidden py-0">
       <CardContent class="min-h-0 flex-1 overflow-y-auto p-4">
         <div v-if="loading" class="flex min-h-64 items-center justify-center text-xs font-bold text-muted-foreground">
           正在加载媒体资源
@@ -41,7 +41,7 @@
           <ImageOff class="size-9 opacity-50" />
           <span class="text-xs font-bold">暂无媒体资源</span>
         </div>
-        <div v-else class="grid auto-rows-fr grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-5">
+        <div v-else class="grid auto-rows-min grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-5">
           <MediaAssetCard
             v-for="asset in assets"
             :key="asset.id"
@@ -58,6 +58,7 @@
       </CardContent>
       <CardContent class="border-t py-3">
         <AdminPagination
+          compact
           :page="pagination.page"
           :page-size="pagination.pageSize"
           :total="pagination.total"

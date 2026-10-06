@@ -34,3 +34,16 @@ type StorefrontURLSearchProfileInput struct {
 	DisplayTitle   string   `json:"display_title"`
 	DisplaySummary string   `json:"display_summary"`
 }
+
+// StorefrontURLSearchProfileStats describes both the explicit admin
+// configuration and the effective public search index for one locale scope.
+// A route without a profile can still be included in the public index when
+// the route itself is active, searchable, and indexable.
+type StorefrontURLSearchProfileStats struct {
+	TotalRoutes      int64 `json:"total_routes"`
+	PublicIndexed    int64 `json:"public_indexed"`
+	ExplicitProfiles int64 `json:"explicit_profiles"`
+	ExplicitEnabled  int64 `json:"explicit_enabled"`
+	KeywordCount     int64 `json:"keyword_count"`
+	Unconfigured     int64 `json:"unconfigured"`
+}

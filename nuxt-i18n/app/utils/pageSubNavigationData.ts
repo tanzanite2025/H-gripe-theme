@@ -43,11 +43,14 @@ export interface PageSubNavigationTabFromPathOptions {
 
 export const tireGuideTabs = [
   {
-    id: 'size',
-    labelKey: 'guidesTireguides.tabs.size.label',
-    fallback: 'Tire size',
-    descriptionKey: 'guidesTireguides.tabs.size.description',
-    description: 'Size charts by tire width, rim range, and fit reference.',
+    id: 'tire-size-markings',
+    labelKey: 'guidesTireguides.tabs.tireSizeMarkings.label',
+    fallback: 'Tire size markings',
+    descriptionKey: 'guidesTireguides.tabs.tireSizeMarkings.description',
+    description: 'Learn to read ETRTO, inch, and French tire markings before checking rim fit.',
+    feedbackThreadKey: 'guides-tireguides',
+    feedbackTitleKey: 'guidesTireguides.feedbackTitle',
+    feedbackSubtitleKey: 'feedback.defaultSubtitle',
   },
   {
     id: 'tire-frame-clearance',
@@ -73,9 +76,9 @@ export const tireGuideTabs = [
   {
     id: 'choose',
     labelKey: 'guidesTireguides.tabs.choose.label',
-    fallback: 'How to choose',
+    fallback: 'How to Choose a Tire',
     descriptionKey: 'guidesTireguides.tabs.choose.description',
-    description: 'Selection tips for terrain, clearance, and use case.',
+    description: 'Guidance for choosing a tire by terrain, frame clearance, and rim compatibility.',
   },
   {
     id: 'tire-pressure',
@@ -85,19 +88,15 @@ export const tireGuideTabs = [
     description: 'Recommended pressure ranges and adjustment cues.',
   },
   {
-    id: 'tire-pressure-calculator',
-    labelKey: 'guidesTireguides.tabs.pressureCalculator.label',
-    fallback: 'Tire pressure calculator',
-    descriptionKey: 'guidesTireguides.tabs.pressureCalculator.description',
-    description: 'Demonstrate how pressure, load, speed, and lean change force and estimated contact area.',
-    to: '/guides/tireguides/tire-pressure-calculator',
-  },
-  {
-    id: 'tube',
+    id: 'choose-inner-tube',
     labelKey: 'guidesTireguides.tabs.innerTube.label',
-    fallback: 'Inner tube',
+    fallback: 'How to Choose an Inner Tube',
     descriptionKey: 'guidesTireguides.tabs.innerTube.description',
-    description: 'Tube selection notes, valve types, and sizing basics.',
+    description: 'Inner tube sizing, valve types, and selection guidance.',
+    feedbackThreadKey: 'guides-tireguides',
+    feedbackTitleKey: 'guidesTireguides.feedbackTitle',
+    feedbackTitle: 'Share your feedback about this Tire Guides guide',
+    feedbackSubtitleKey: 'feedback.defaultSubtitle',
   },
   {
     id: 'schwalbe-tire-selector',
@@ -147,9 +146,42 @@ export const wheelsetBuyerTabs = [
     descriptionKey: 'guidesWheelsetBuyers.tabs.chooseFreehub.description',
     description: 'Freehub choices and drivetrain compatibility.',
   },
+  {
+    id: 'wheelset-spoke-lacing-topology-and-geometry-reference',
+    labelKey: 'guidesWheelsetBuyers.tabs.spokeLacingTopology.label',
+    fallback: 'Spoke lacing topology reference',
+    descriptionKey: 'guidesWheelsetBuyers.tabs.spokeLacingTopology.description',
+    description: 'Inspect rim-hole mapping, G3 and uniform 2:1 topologies, and flange geometry references.',
+  },
 ] as const satisfies readonly PageSubNavigationTab[]
 
 export type WheelsetBuyerTabId = (typeof wheelsetBuyerTabs)[number]['id']
+
+export const spokeGuideTabs = [
+  {
+    id: 'stainless-steel-microstructural-dislocation-mechanics',
+    labelKey: 'guidesSpokeDislocationMechanics.title',
+    fallback: 'Stainless steel spoke axial elongation calculator',
+    description: 'Calculate axial elongation from spoke material, area, length, and working tension inputs.',
+    to: '/guides/spokeguides/stainless-steel-microstructural-dislocation-mechanics',
+  },
+  {
+    id: 'brand-wheelset-spoke-specs',
+    labelKey: 'brandWheelsetSpokeSpecs.title',
+    fallback: 'Wheelset spoke and nipple specifications',
+    description: 'Find recorded spoke lengths, crossing patterns, models, and nipple specifications.',
+    to: '/guides/spokeguides/brand-wheelset-spoke-specs',
+  },
+  {
+    id: 'spoke-length-calculator',
+    labelKey: 'resourcesSpokeCalculator.title',
+    fallback: 'Spoke Calculator',
+    description: 'Work through hub, rim, lacing, ERD, nipple, and spoke geometry inputs.',
+    to: '/guides/spokeguides/spoke-length-calculator',
+  },
+] as const satisfies readonly PageSubNavigationTab[]
+
+export type SpokeGuideTabId = (typeof spokeGuideTabs)[number]['id']
 
 export const companyAboutTabs = [
   {
@@ -352,6 +384,7 @@ export type PictureWarehouseTabId = (typeof pictureWarehouseTabs)[number]['id']
 export const virtualPageSubNavigationEntries = [
   { path: '/guides/tireguides', tabs: tireGuideTabs },
   { path: '/guides/wheelset-buyers', tabs: wheelsetBuyerTabs },
+  { path: '/guides/spokeguides', tabs: spokeGuideTabs },
   { path: '/company/about', tabs: companyAboutTabs },
   { path: '/support/warranty', tabs: warrantyTabs },
   { path: '/support/test-report', tabs: testReportTabs },

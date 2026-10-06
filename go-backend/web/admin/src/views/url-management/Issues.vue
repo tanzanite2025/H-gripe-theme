@@ -2,15 +2,34 @@
  <div class="space-y-4">
     <AdminPageHeader
       title="URL 管理 / 问题队列"
-      description="围绕已发现的 URL 问题进行认领、处理、复检和验证"
+      description="刷新列表只读取已保存结果；重新扫描会先更新 URL 来源清单，再分批检查全部待处理 URL。修复后会自动验证关闭，历史记录仍保留。"
     >
       <template #actions>
-        <Button variant="outline" :disabled="loading" @click="refreshAll">
+        <Button variant="outline" title="只重新读取已保存的问题结果，不会访问 URL" :disabled="loading || scanning || syncing || retiringStaleRoutes" @click="refreshIssueQueueList">
  <RefreshCw :class="['size-4', loading ? 'animate-spin': '']" />
-          刷新
+          刷新列表
+        </Button>
+        <Button variant="outline" title="从当前站点清单更新 URL 台账" :disabled="loading || scanning || syncing || retiringStaleRoutes || !canEdit" @click="synchronizeStorefrontUrlCatalog">
+ <RefreshCw :class="['size-4', syncing ? 'animate-spin': '']" />
+          同步 URL 台账
+        </Button>
+        <Button variant="outline" title="先同步最新 URL 来源，再实际访问全部可检查的问题 URL" :disabled="loading || scanning || syncing || retiringStaleRoutes || !canEdit" @click="scanCurrentIssueQueueUrls">
+ <ScanSearch :class="['size-4', scanning ? 'animate-spin': '']" />
+          更新来源并扫描全部问题 URL
+        </Button>
+        <Button v-if="canEdit && issueStats.stale_route" variant="ghost" :disabled="loading || scanning || syncing || retiringStaleRoutes" @click="retireAllActiveStaleRouteIssues">
+ <Trash2 :class="['size-4', retiringStaleRoutes ? 'animate-pulse': '']" />
+          清理 {{ issueStats.stale_route }} 条失效路径
         </Button>
       </template>
     </AdminPageHeader>
+
+    <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+      <span v-if="syncing">正在更新 URL 来源清单…</span>
+      <span v-else-if="scanning">正在重新检查问题 URL：已检查 {{ urlOperationStore.checked }} / {{ urlOperationStore.eligible }} 条</span>
+      <span v-else-if="lastListRefreshAt">列表读取于 {{ formatRouteCatalogDate(lastListRefreshAt) }}</span>
+      <span>“最近发现”是问题被检测到的时间，不是列表刷新时间。</span>
+    </div>
 
     <AdminStatsGrid :items="statItems" />
 
@@ -40,6 +59,9 @@
       <Button variant="outline" size="sm" :disabled="loading" @click="applyFilters">
  <Filter class="size-3.5" />
         筛选
+      </Button>
+      <Button variant="ghost" size="sm" :disabled="loading" @click="resetFilters">
+        重置筛选
       </Button>
  <span class="ml-auto text-xs text-muted-foreground">共 {{ pagination.total }} 项</span>
     </div>
@@ -213,19 +235,22 @@
               建立重定向
             </Button>
             <Button
-              v-if="selectedIssue.route_entry?.is_checkable"
+              v-if="selectedIssue.issue_type === 'path_collision' || selectedIssue.route_entry?.is_checkable"
               variant="outline"
               size="sm"
-              :disabled="!canEdit || actionKey !== null"
+              :disabled="!canEdit || actionKey !== null || scanning || syncing"
               @click="recheck"
             >
  <RefreshCw :class="['size-3.5', actionKey === 'recheck'? 'animate-spin': '']" />
-              重新检查
+              {{ selectedIssue.issue_type === 'path_collision' ? '同步来源并复核' : '重新检查' }}
             </Button>
+            <span v-else-if="selectedIssue.route_entry" class="self-center text-xs text-muted-foreground">
+              该路径在 URL 台账中标记为不可检查。
+            </span>
             <Button
               v-if="selectedIssue.state === 'resolved'"
               size="sm"
-              :disabled="!canEdit || actionKey !== null"
+              :disabled="!canEdit || actionKey !== null || scanning || syncing"
               @click="verify"
             >
  <BadgeCheck :class="['size-3.5', actionKey === 'verify'? 'animate-spin': '']" />
@@ -261,7 +286,7 @@
                   <SelectItem value="source_path_changed">来源路径已调整</SelectItem>
                   <SelectItem value="canonical_fixed">Canonical 已修正</SelectItem>
                   <SelectItem value="runtime_fixed">运行环境已修复</SelectItem>
-                  <SelectItem value="retired">页面已正式退役</SelectItem>
+                  <SelectItem v-if="selectedIssue?.issue_type === 'stale_route'" value="retired">页面已正式退役</SelectItem>
                   <SelectItem value="not_applicable">确认无需处理</SelectItem>
                 </SelectContent>
               </Select>
@@ -292,8 +317,11 @@
               </div>
  <span class="font-mono text-[10px] text-muted-foreground">共 {{ eventsPagination.total }} 项</span>
             </div>
- <div class="max-h-64 overflow-auto">
- <div v-if="events.length === 0" class="px-3 py-8 text-center text-xs text-muted-foreground">
+  <div class="max-h-64 overflow-auto">
+  <div v-if="eventsLoading" class="px-3 py-8 text-center text-xs text-muted-foreground">
+                正在加载处理事件
+              </div>
+  <div v-else-if="events.length === 0" class="px-3 py-8 text-center text-xs text-muted-foreground">
                 暂无处理事件
               </div>
  <div v-for="event in events" :key="event.id" class="border-b border-dashed border-border/60 px-3 py-3 last:border-b-0">
@@ -304,6 +332,16 @@
  <p v-if="event.note" class="mt-1 whitespace-pre-wrap text-xs text-muted-foreground">{{ event.note }}</p>
  <p v-if="event.actor_user_id" class="mt-1 font-mono text-[10px] text-muted-foreground">用户 #{{ event.actor_user_id }}</p>
               </div>
+            </div>
+            <div v-if="eventsPagination.total > eventsPagination.page_size" class="border-t border-dashed border-border/70 px-3 py-2">
+              <AdminPagination
+                :page="eventsPagination.page"
+                :page-size="eventsPagination.page_size"
+                :total="eventsPagination.total"
+                :page-sizes="[20, 50, 100]"
+                @update:page="updateEventsPage"
+                @update:page-size="updateEventsPageSize"
+              />
             </div>
           </section>
         </div>
@@ -317,7 +355,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import {
   BadgeCheck,
   BellOff,
@@ -328,7 +366,9 @@ import {
   GitBranch,
   MessageSquarePlus,
   RefreshCw,
+  ScanSearch,
   ShieldAlert,
+  Trash2,
   UserCheck,
 } from '@lucide/vue'
 import { toast } from 'vue-sonner'
@@ -345,6 +385,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Textarea } from '@/components/ui/textarea'
 import { formatRouteCatalogDate, checkLabel } from '@/modules/url-management/routeCatalogPresentation'
+import { storefrontRouteCatalogApi } from '@/modules/url-management/routeCatalog'
 import {
   storefrontURLIssuesApi,
   type StorefrontURLIssue,
@@ -356,11 +397,17 @@ import {
 } from '@/modules/url-management/urlIssues'
 import type { SEOResourcePagination } from '@/modules/seo/types'
 import { useAuthStore } from '@/stores/auth'
+import { useURLOperationStore } from '@/stores/urlOperation'
 
 const authStore = useAuthStore()
+const urlOperationStore = useURLOperationStore()
 const router = useRouter()
 const canEdit = authStore.hasPermission('url:edit')
 const loading = ref(false)
+const eventsLoading = ref(false)
+const syncing = ref(false)
+const retiringStaleRoutes = ref(false)
+const lastListRefreshAt = ref<string | null>(null)
 const detailLoading = ref(false)
 const actionKey = ref<string | null>(null)
 const issues = ref<StorefrontURLIssue[]>([])
@@ -385,7 +432,26 @@ const issueStats = ref<StorefrontURLIssueStats>({
   suppressed: 0,
   critical: 0,
   high: 0,
+  stale_route: 0,
 })
+
+const scanning = computed(() => urlOperationStore.running)
+
+let issueListRequestSequence = 0
+let issueSummaryRequestSequence = 0
+let detailRequestSequence = 0
+let eventRequestSequence = 0
+
+const requestErrorMessage = (error: unknown): string => {
+  if (error && typeof error === 'object') {
+    const responseData = (error as { response?: { data?: unknown } }).response?.data
+    if (responseData && typeof responseData === 'object') {
+      const message = (responseData as Record<string, unknown>).error
+      if (typeof message === 'string' && message.trim()) return message.trim()
+    }
+  }
+  return error instanceof Error ? error.message : ''
+}
 
 const issueLabel = (value: string): string => ({
   redirect_chain: '重定向链',
@@ -397,7 +463,7 @@ const issueLabel = (value: string): string => ({
   path_collision: '路径冲突',
   stale_route: '失效路径',
   check_error: '检查失败',
-}[value] || value)
+}[value] || value || '-')
 
 const prescribedAction = (value: string): string => ({
   redirect_chain: '改为一次直达目标路径后重新检查',
@@ -416,14 +482,14 @@ const severityLabel = (value: StorefrontURLIssueSeverity): string => ({
   high: '高',
   medium: '中',
   low: '低',
-}[value])
+}[value] || value)
 
 const severityTone = (value: StorefrontURLIssueSeverity): AdminStatusTone => ({
   critical: 'coral',
   high: 'coral',
   medium: 'amber',
   low: 'gray',
-} as const)[value]
+} as const)[value] || 'gray'
 
 const stateLabel = (value: StorefrontURLIssueState): string => ({
   open: '未认领',
@@ -431,7 +497,7 @@ const stateLabel = (value: StorefrontURLIssueState): string => ({
   resolved: '待验证',
   verified: '已验证',
   suppressed: '已抑制',
-}[value])
+}[value] || value)
 
 const stateTone = (value: StorefrontURLIssueState): AdminStatusTone => ({
   open: 'coral',
@@ -439,7 +505,7 @@ const stateTone = (value: StorefrontURLIssueState): AdminStatusTone => ({
   resolved: 'blue',
   verified: 'green',
   suppressed: 'gray',
-} as const)[value]
+} as const)[value] || 'gray'
 
 const eventLabel = (value: string): string => ({
   detected: '检测到问题',
@@ -453,6 +519,7 @@ const eventLabel = (value: string): string => ({
   snapshot_invalidated: '快照使旧观测失效',
   verification_passed: '验证通过',
   verification_failed: '验证未通过',
+  stale_route_retired: '失效路径已清理',
 }[value] || value)
 
 const isActionable = computed(() => (
@@ -464,22 +531,31 @@ const canCreateRedirect = computed(() => (
 ))
 
 const statItems = computed(() => [
-  { key: 'active', label: '待处理工单', value: issueStats.value.active, icon: RefreshCw, tone: issueStats.value.active ? 'amber' : 'gray' },
+  { key: 'active', label: '未关闭工单', value: issueStats.value.active, icon: RefreshCw, tone: issueStats.value.active ? 'amber' : 'gray' },
   { key: 'open', label: '未认领', value: issueStats.value.open, icon: UserCheck, tone: issueStats.value.open ? 'coral' : 'gray' },
   { key: 'acknowledged', label: '处理中', value: issueStats.value.acknowledged, icon: RefreshCw, tone: issueStats.value.acknowledged ? 'blue' : 'gray' },
   { key: 'resolved', label: '待验证', value: issueStats.value.resolved, icon: BadgeCheck, tone: issueStats.value.resolved ? 'blue' : 'gray' },
   { key: 'critical', label: '严重等级', value: issueStats.value.critical, icon: ShieldAlert, tone: issueStats.value.critical ? 'coral' : 'gray' },
 ])
 
-const loadSummary = async (): Promise<void> => {
+const loadSummary = async (): Promise<boolean> => {
+  const requestSequence = ++issueSummaryRequestSequence
   try {
-    issueStats.value = { ...issueStats.value, ...(await storefrontURLIssuesApi.summary()) }
+    const nextStats = await storefrontURLIssuesApi.summary()
+    if (requestSequence !== issueSummaryRequestSequence) return false
+    issueStats.value = { ...issueStats.value, ...nextStats }
+    return true
   } catch (error) {
     console.error('Failed to load storefront URL issue summary:', error)
+    if (requestSequence === issueSummaryRequestSequence) {
+      toast.error('URL 问题统计加载失败')
+    }
+    return false
   }
 }
 
-const load = async (): Promise<void> => {
+const load = async (): Promise<boolean> => {
+  const requestSequence = ++issueListRequestSequence
   loading.value = true
   try {
     const response = await storefrontURLIssuesApi.list({
@@ -488,38 +564,116 @@ const load = async (): Promise<void> => {
       state: stateFilter.value,
       ...(severityFilter.value !== 'all' ? { severity: severityFilter.value } : {}),
     })
+    if (requestSequence !== issueListRequestSequence) return false
     issues.value = response.items
     pagination.value = response.pagination
+    return true
   } catch (error) {
     console.error('Failed to load storefront URL issues:', error)
-    toast.error('URL 问题队列加载失败')
+    if (requestSequence === issueListRequestSequence) toast.error('URL 问题队列加载失败')
+    return false
   } finally {
-    loading.value = false
+    if (requestSequence === issueListRequestSequence) loading.value = false
   }
 }
 
-const refreshAll = async (): Promise<void> => {
-  await Promise.all([load(), loadSummary()])
+const refreshIssueQueueList = async (): Promise<void> => {
+  const [listLoaded] = await Promise.all([load(), loadSummary()])
+  if (listLoaded) lastListRefreshAt.value = new Date().toISOString()
 }
 
-const loadEvents = async (issueID: number): Promise<void> => {
-  const response = await storefrontURLIssuesApi.events(issueID, {
-    page: eventsPagination.value.page,
-    page_size: eventsPagination.value.page_size,
+const scanCurrentIssueQueueUrls = async (): Promise<void> => {
+  if (!canEdit || scanning.value || syncing.value || retiringStaleRoutes.value) return
+  if (!await synchronizeStorefrontUrlCatalog(false)) return
+  const completed = await urlOperationStore.run({
+    needs_attention: true,
+    include_stale_when_checking: true,
+    include_aliases: true,
+    sync_latest: false,
+    batch_size: 200,
   })
-  events.value = response.items
-  eventsPagination.value = response.pagination
+  if (!completed) return
+  await refreshIssueQueueList()
+}
+
+const synchronizeStorefrontUrlCatalog = async (showSuccessMessage = true): Promise<boolean> => {
+  if (!canEdit || syncing.value || scanning.value || retiringStaleRoutes.value) return false
+  syncing.value = true
+  try {
+    const summary = await storefrontRouteCatalogApi.sync()
+    await refreshIssueQueueList()
+    if (showSuccessMessage) {
+      toast.success(`URL 台账已同步：${summary.entries || 0} 条，重复 ${summary.duplicates || 0} 条`)
+    }
+    return true
+  } catch (error) {
+    console.error('Failed to sync storefront route catalog:', error)
+    const detail = requestErrorMessage(error)
+    toast.error(detail ? `URL 台账同步失败：${detail}` : 'URL 台账同步失败，请检查站点清单')
+    return false
+  } finally {
+    syncing.value = false
+  }
+}
+
+const retireAllActiveStaleRouteIssues = async (): Promise<void> => {
+  const staleRouteCount = Number(issueStats.value.stale_route || 0)
+  if (!canEdit || staleRouteCount < 1 || retiringStaleRoutes.value) return
+  if (!window.confirm(`确认清理 ${staleRouteCount} 条失效路径吗？系统会保留历史记录，并将它们标记为“已验证 / 已退役”。`)) return
+  retiringStaleRoutes.value = true
+  try {
+    const retiredCount = await storefrontURLIssuesApi.retireAllActiveStaleRouteIssues()
+    detailOpen.value = false
+    await refreshIssueQueueList()
+    toast.success(retiredCount ? `已清理 ${retiredCount} 条失效路径，历史记录已保留` : '没有需要清理的失效路径')
+  } catch (error) {
+    console.error('Failed to retire stale storefront URL issues:', error)
+    toast.error('失效路径清理失败')
+  } finally {
+    retiringStaleRoutes.value = false
+  }
+}
+
+const loadEvents = async (issueID: number, detailSequence = detailRequestSequence): Promise<boolean> => {
+  const requestSequence = ++eventRequestSequence
+  const page = eventsPagination.value.page
+  const pageSize = eventsPagination.value.page_size
+  eventsLoading.value = true
+  try {
+    const response = await storefrontURLIssuesApi.events(issueID, {
+      page,
+      page_size: pageSize,
+    })
+    if (detailSequence !== detailRequestSequence || requestSequence !== eventRequestSequence) return false
+    events.value = response.items
+    eventsPagination.value = response.pagination
+    return true
+  } catch (error) {
+    console.error('Failed to load storefront URL issue events:', error)
+    if (detailSequence === detailRequestSequence && requestSequence === eventRequestSequence) {
+      toast.error('URL 问题时间线加载失败')
+    }
+    return false
+  } finally {
+    if (requestSequence === eventRequestSequence) eventsLoading.value = false
+  }
 }
 
 const openDetail = async (issueID: number): Promise<void> => {
+  const requestSequence = ++detailRequestSequence
+  eventRequestSequence += 1
   detailOpen.value = true
   detailLoading.value = true
+  selectedIssue.value = null
+  events.value = []
+  eventsPagination.value = { page: 1, page_size: 50, total: 0, total_pages: 0 }
   eventsPagination.value.page = 1
   try {
     const [issue] = await Promise.all([
       storefrontURLIssuesApi.get(issueID),
-      loadEvents(issueID),
+      loadEvents(issueID, requestSequence),
     ])
+    if (requestSequence !== detailRequestSequence) return
     selectedIssue.value = issue
     commentNote.value = ''
     resolutionType.value = issue.resolution_type || 'runtime_fixed'
@@ -528,99 +682,148 @@ const openDetail = async (issueID: number): Promise<void> => {
     suppressedUntil.value = ''
   } catch (error) {
     console.error('Failed to load storefront URL issue detail:', error)
-    toast.error('URL 问题详情加载失败')
-    detailOpen.value = false
+    if (requestSequence === detailRequestSequence) {
+      toast.error('URL 问题详情加载失败')
+      detailOpen.value = false
+    }
   } finally {
-    detailLoading.value = false
+    if (requestSequence === detailRequestSequence) detailLoading.value = false
   }
 }
 
-const refreshSelectedIssue = async (issue: StorefrontURLIssue): Promise<void> => {
+watch(detailOpen, (open) => {
+  if (!open) {
+    detailRequestSequence += 1
+    eventRequestSequence += 1
+  }
+})
+
+const refreshSelectedIssue = async (
+  issue: StorefrontURLIssue,
+  expectedDetailSequence = detailRequestSequence,
+): Promise<void> => {
+  if (expectedDetailSequence !== detailRequestSequence || selectedIssue.value?.id !== issue.id) {
+    await refreshIssueQueueList()
+    return
+  }
+  if (issue.state === 'verified') {
+    detailOpen.value = false
+    selectedIssue.value = null
+    await Promise.all([load(), loadSummary()])
+    return
+  }
   selectedIssue.value = issue
-  await Promise.all([load(), loadEvents(issue.id), loadSummary()])
+  await Promise.all([load(), loadEvents(issue.id, expectedDetailSequence), loadSummary()])
 }
 
 const withAction = async (
   key: string,
-  run: () => Promise<StorefrontURLIssue>,
+  run: (issueID: number) => Promise<StorefrontURLIssue>,
   successMessage: string,
-): Promise<void> => {
-  if (!selectedIssue.value || !canEdit || actionKey.value) return
+): Promise<boolean> => {
+  if (!selectedIssue.value || !canEdit || actionKey.value) return false
+  const issueID = selectedIssue.value.id
+  const detailSequence = detailRequestSequence
   actionKey.value = key
   try {
-    const issue = await run()
-    await refreshSelectedIssue(issue)
+    const issue = await run(issueID)
+    await refreshSelectedIssue(issue, detailSequence)
     toast.success(successMessage)
+    return true
   } catch (error) {
     console.error(`Failed to ${key} storefront URL issue:`, error)
-    toast.error('URL 问题操作失败')
+    const detail = requestErrorMessage(error)
+    toast.error(detail ? `URL 问题操作失败：${detail}` : 'URL 问题操作失败')
+    return false
   } finally {
     actionKey.value = null
   }
 }
 
 const acknowledge = async (): Promise<void> => {
-  await withAction('acknowledge', () => storefrontURLIssuesApi.acknowledge(selectedIssue.value!.id), '已确认处理')
+  await withAction('acknowledge', (issueID) => storefrontURLIssuesApi.acknowledge(issueID), '已确认处理')
 }
 
 const claim = async (): Promise<void> => {
-  await withAction('claim', () => storefrontURLIssuesApi.claim(selectedIssue.value!.id), '已由你认领')
+  await withAction('claim', (issueID) => storefrontURLIssuesApi.claim(issueID), '已由你认领')
 }
 
 const addComment = async (): Promise<void> => {
   const note = commentNote.value.trim()
   if (!note) return
-  await withAction('comment', () => storefrontURLIssuesApi.comment(selectedIssue.value!.id, note), '处理备注已记录')
-  commentNote.value = ''
+  if (await withAction('comment', (issueID) => storefrontURLIssuesApi.comment(issueID, note), '处理备注已记录')) {
+    commentNote.value = ''
+  }
 }
 
 const resolve = async (): Promise<void> => {
   const note = resolutionNote.value.trim()
   if (!note) return
-  await withAction('resolve', () => storefrontURLIssuesApi.resolve(selectedIssue.value!.id, {
-    resolution_type: resolutionType.value,
+  const resolutionTypeSnapshot = resolutionType.value
+  const linkedRedirectRuleID = selectedIssue.value?.linked_redirect_rule_id
+  const retiresStaleRoute = selectedIssue.value?.issue_type === 'stale_route' && resolutionType.value === 'retired'
+  if (await withAction('resolve', (issueID) => storefrontURLIssuesApi.resolve(issueID, {
+    resolution_type: resolutionTypeSnapshot,
     resolution_note: note,
-    ...(selectedIssue.value?.linked_redirect_rule_id
-      ? { linked_redirect_rule_id: selectedIssue.value.linked_redirect_rule_id }
+    ...(linkedRedirectRuleID
+      ? { linked_redirect_rule_id: linkedRedirectRuleID }
       : {}),
-  }), '已记录解决方案，等待验证')
-  resolutionNote.value = ''
+  }), retiresStaleRoute ? '失效路径已退役并关闭' : '已记录解决方案，等待验证')) {
+    resolutionNote.value = ''
+  }
 }
 
 const suppress = async (): Promise<void> => {
   const reason = suppressionReason.value.trim()
   if (!reason || !suppressedUntil.value) return
-  await withAction('suppress', () => storefrontURLIssuesApi.suppress(selectedIssue.value!.id, {
+  const parsedSuppressedUntil = new Date(suppressedUntil.value)
+  if (Number.isNaN(parsedSuppressedUntil.getTime())) {
+    toast.error('复审时间格式无效')
+    return
+  }
+  const suppressedUntilISO = parsedSuppressedUntil.toISOString()
+  if (await withAction('suppress', (issueID) => storefrontURLIssuesApi.suppress(issueID, {
     reason,
-    suppressed_until: suppressedUntil.value,
-  }), '该问题已抑制，届时将重新复审')
+    suppressed_until: suppressedUntilISO,
+  }), '该问题已抑制，届时将重新复审')) {
+    suppressionReason.value = ''
+    suppressedUntil.value = ''
+  }
 }
 
 const recheck = async (): Promise<void> => {
-  if (!selectedIssue.value || !canEdit || actionKey.value) return
+  if (!selectedIssue.value || !canEdit || actionKey.value || scanning.value || syncing.value) return
+  const issueID = selectedIssue.value.id
+  const detailSequence = detailRequestSequence
   actionKey.value = 'recheck'
   try {
-    const result = await storefrontURLIssuesApi.recheck(selectedIssue.value.id)
-    await refreshSelectedIssue(result.issue)
-    toast.success('URL 重新检查完成')
+    const result = await storefrontURLIssuesApi.recheck(issueID)
+    await refreshSelectedIssue(result.issue, detailSequence)
+    toast.success(result.issue.state === 'verified'
+      ? '已确认恢复，问题已自动关闭并从待处理列表移除'
+      : '复检完成，问题仍未恢复')
   } catch (error) {
     console.error('Failed to recheck storefront URL issue:', error)
-    toast.error('URL 重新检查失败')
+    const detail = requestErrorMessage(error)
+    toast.error(detail ? `URL 重新检查失败：${detail}` : 'URL 重新检查失败')
   } finally {
     actionKey.value = null
   }
 }
 
 const verify = async (): Promise<void> => {
-  if (!selectedIssue.value || !canEdit || actionKey.value) return
+  if (!selectedIssue.value || !canEdit || actionKey.value || scanning.value || syncing.value) return
+  const issueID = selectedIssue.value.id
+  const detailSequence = detailRequestSequence
   actionKey.value = 'verify'
   try {
-    const result = await storefrontURLIssuesApi.verify(selectedIssue.value.id)
-    await refreshSelectedIssue(result.issue)
+    const result = await storefrontURLIssuesApi.verify(issueID)
+    await refreshSelectedIssue(result.issue, detailSequence)
     toast.success(result.issue.state === 'verified' ? 'URL 问题已验证关闭' : '验证未通过，问题已重新打开')
   } catch (error) {
     console.error('Failed to verify storefront URL issue:', error)
-    toast.error('URL 问题验证失败')
+    const detail = requestErrorMessage(error)
+    toast.error(detail ? `URL 问题验证失败：${detail}` : 'URL 问题验证失败')
   } finally {
     actionKey.value = null
   }
@@ -643,6 +846,13 @@ const applyFilters = (): void => {
   void load()
 }
 
+const resetFilters = (): void => {
+  stateFilter.value = 'active'
+  severityFilter.value = 'all'
+  pagination.value.page = 1
+  void load()
+}
+
 const updatePage = (page: number): void => {
   pagination.value.page = page
   void load()
@@ -654,7 +864,20 @@ const updatePageSize = (pageSize: number): void => {
   void load()
 }
 
+const updateEventsPage = (page: number): void => {
+  if (!selectedIssue.value) return
+  eventsPagination.value.page = page
+  void loadEvents(selectedIssue.value.id)
+}
+
+const updateEventsPageSize = (pageSize: number): void => {
+  if (!selectedIssue.value) return
+  eventsPagination.value.page_size = pageSize
+  eventsPagination.value.page = 1
+  void loadEvents(selectedIssue.value.id)
+}
+
 onMounted(() => {
-  void refreshAll()
+  void refreshIssueQueueList()
 })
 </script>

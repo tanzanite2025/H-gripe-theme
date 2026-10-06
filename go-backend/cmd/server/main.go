@@ -240,6 +240,22 @@ func main() {
 		logger.Info("tracking scheduler disabled")
 	}
 
+	var yanwenTrackingScheduler *scheduler.YanwenTrackingScheduler
+	if cfg.Worker.YanwenTrackingPollingEnabled {
+		yanwenTrackingScheduler = scheduler.NewYanwenTrackingScheduler(deps.Services.YanwenTrackingPolling, cfg.Worker, deps.RedisClient)
+		yanwenTrackingScheduler.Start(context.Background())
+	} else {
+		logger.Info("Yanwen tracking scheduler disabled")
+	}
+
+	var yanwenCatalogSyncScheduler *scheduler.YanwenCatalogSyncScheduler
+	if cfg.Worker.YanwenCatalogSyncEnabled {
+		yanwenCatalogSyncScheduler = scheduler.NewYanwenCatalogSyncScheduler(deps.Services.YanwenOfficialCatalog, cfg.Worker, deps.RedisClient)
+		yanwenCatalogSyncScheduler.Start(context.Background())
+	} else {
+		logger.Info("Yanwen catalog sync scheduler disabled")
+	}
+
 	var visitorProfileCleanupScheduler *scheduler.VisitorProfileCleanupScheduler
 	if cfg.Worker.VisitorProfileCleanupEnabled {
 		visitorProfileCleanupScheduler = scheduler.NewVisitorProfileCleanupScheduler(deps.Services.VisitorProfile, cfg.Worker)
@@ -407,6 +423,12 @@ func main() {
 	}
 	if trackingScheduler != nil {
 		trackingScheduler.Stop()
+	}
+	if yanwenTrackingScheduler != nil {
+		yanwenTrackingScheduler.Stop()
+	}
+	if yanwenCatalogSyncScheduler != nil {
+		yanwenCatalogSyncScheduler.Stop()
 	}
 	if visitorProfileCleanupScheduler != nil {
 		visitorProfileCleanupScheduler.Stop()

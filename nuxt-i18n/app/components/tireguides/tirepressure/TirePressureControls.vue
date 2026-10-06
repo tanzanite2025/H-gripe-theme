@@ -88,7 +88,7 @@
           <b>{{ t('guidesTirePressure.dashboard.frictionBaselineTitle') }}</b>
           <strong>{{ t('guidesTirePressure.dashboard.fixedMuLabel', { value: formatFrictionCoefficient(demonstrationFrictionCoefficientNominal) }) }}</strong>
         </div>
-        <small>{{ t('guidesTirePressure.dashboard.fixedMuHint') }}</small>
+        <small>{{ t('guidesTirePressure.dashboard.pressureFrictionDataHint') }}</small>
       </div>
     </div>
     <div class="control-box"><div class="control-head"><b>{{ t('guidesTirePressure.dashboard.tireWidth') }}</b><span>{{ tireWidth }}C</span></div><input id="tire-dashboard-tire-width" v-model.number="tireWidth" :aria-label="t('guidesTirePressure.dashboard.tireWidth')" type="range" min="20" max="80" step="1"><div class="range-scale"><span>20C</span><span>28C</span><span>40C</span><span>80C</span></div></div>

@@ -23,6 +23,7 @@ type OrderCompletionOutboxHandler struct {
 	orderService    *OrderService
 	templateService *TransactionalNotificationTemplateService
 	sender          TransactionalNotificationSender
+	deliveryRecords *TransactionalNotificationDeliveryRecordService
 }
 
 func NewOrderCompletionOutboxHandler(orderService *OrderService, templateServices ...*TransactionalNotificationTemplateService) *OrderCompletionOutboxHandler {
@@ -38,6 +39,14 @@ func (h *OrderCompletionOutboxHandler) ConfigureTransactionalNotificationSender(
 		return
 	}
 	h.sender = sender
+}
+
+func (h *OrderCompletionOutboxHandler) ConfigureTransactionalNotificationDeliveryRecords(
+	recordService *TransactionalNotificationDeliveryRecordService,
+) {
+	if h != nil {
+		h.deliveryRecords = recordService
+	}
 }
 
 func (h *OrderCompletionOutboxHandler) Handle(ctx context.Context, event outbox.Event) error {
@@ -75,7 +84,7 @@ func (h *OrderCompletionOutboxHandler) Handle(ctx context.Context, event outbox.
 		return err
 	}
 	if h.sender != nil {
-		if err := deliverTransactionalNotification(ctx, event, h.templateService, h.sender); err != nil {
+		if err := deliverTransactionalNotificationWithRecordService(ctx, event, h.templateService, h.sender, h.deliveryRecords); err != nil {
 			return err
 		}
 	}

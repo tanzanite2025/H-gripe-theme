@@ -17,7 +17,7 @@
       </div>
     </CardHeader>
     <CardContent class="space-y-3 p-4">
-      <div class="grid gap-3 md:grid-cols-[minmax(0,1fr)_12rem_12rem_auto]">
+      <div class="grid gap-3 md:grid-cols-[minmax(0,1fr)_12rem_auto]">
         <div class="relative">
           <Search class="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
@@ -27,15 +27,6 @@
             @keyup.enter="emit('apply')"
           />
         </div>
-        <Select v-model="filters.product_specification_template_id">
-          <SelectTrigger><SelectValue placeholder="商品规格模板" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">全部商品规格模板</SelectItem>
-            <SelectItem v-for="type in productSpecTemplates" :key="type.id" :value="String(type.id)">
-              {{ type.name }}
-            </SelectItem>
-          </SelectContent>
-        </Select>
         <Select v-model="filters.customs_status">
           <SelectTrigger><SelectValue placeholder="清关状态" /></SelectTrigger>
           <SelectContent>
@@ -55,11 +46,10 @@
       </div>
 
       <div class="overflow-x-auto rounded-lg border">
-        <table class="w-full min-w-[760px] text-sm">
+        <table class="w-full min-w-[640px] text-sm">
           <thead class="bg-muted/40 text-left text-xs text-muted-foreground">
             <tr>
               <th class="px-3 py-2.5 font-medium">商品</th>
-              <th class="px-3 py-2.5 font-medium">商品规格模板</th>
               <th class="px-3 py-2.5 font-medium">资料状态</th>
               <th class="px-3 py-2.5 font-medium">缺失字段</th>
               <th class="px-3 py-2.5 text-right font-medium">操作</th>
@@ -67,18 +57,15 @@
           </thead>
           <tbody class="divide-y">
             <tr v-if="productLoading">
-              <td colspan="5" class="px-3 py-10 text-center text-sm text-muted-foreground">加载中...</td>
+              <td colspan="4" class="px-3 py-10 text-center text-sm text-muted-foreground">加载中...</td>
             </tr>
             <tr v-else-if="!productRows.length">
-              <td colspan="5" class="px-3 py-10 text-center text-sm text-muted-foreground">没有符合条件的商品。</td>
+              <td colspan="4" class="px-3 py-10 text-center text-sm text-muted-foreground">没有符合条件的商品。</td>
             </tr>
             <tr v-for="product in productRows" v-else :key="product.id" class="align-top">
               <td class="px-3 py-3">
                 <p class="font-semibold">{{ product.name }}</p>
                 <p class="mt-1 font-mono text-xs text-muted-foreground">{{ product.sku }}</p>
-              </td>
-              <td class="px-3 py-3 text-muted-foreground">
-                {{ product.product_specification_template?.name || '未绑定商品规格模板' }}
               </td>
               <td class="px-3 py-3">
                 <span
@@ -140,14 +127,12 @@ withDefaults(defineProps<{
   productPageSize?: number
   productTotal?: number
   filters: CustomsProductFilters
-  productSpecTemplates?: any[]
 }>(), {
   productRows: () => [],
   productLoading: false,
   productPage: 1,
   productPageSize: 20,
   productTotal: 0,
-  productSpecTemplates: () => [],
 })
 
 const emit = defineEmits<{
@@ -160,4 +145,3 @@ const emit = defineEmits<{
 
 const missingFields = missingCustomsFields
 </script>
-

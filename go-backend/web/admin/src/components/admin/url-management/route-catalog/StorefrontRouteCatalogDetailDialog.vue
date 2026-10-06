@@ -47,11 +47,14 @@
                 迁移重定向
               </RouterLink>
             </Button>
-            <Button size="sm" :disabled="checkingSelected || !canEdit || !selectedEntry.is_checkable" @click="emit('checkSelected')">
- <CircleCheck :class="['size-3.5', checkingSelected ? 'animate-spin': '']" />
+            <Button v-if="selectedEntry.entry_status !== 'stale'" size="sm" :disabled="operationBusy || !canEdit || !selectedEntry.is_checkable" @click="emit('checkSelected')">
+              <CircleCheck :class="['size-3.5', checkingSelected ? 'animate-spin': '']" />
               {{ checkingSelected ? '检查中' : '检查此 URL' }}
             </Button>
           </div>
+          <p v-if="selectedEntry.entry_status === 'stale'" class="mt-2 text-xs text-amber-700">
+            这是历史失效路径，已不在最新路由清单中，不参与当前路由检查；请在问题队列中选择恢复、建立跳转或正式退役。
+          </p>
         </div>
 
  <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -189,6 +192,7 @@ const props = defineProps<{
   detailLoading?: boolean
   historyLoading?: boolean
   checkingSelected?: boolean
+  operationBusy?: boolean
   canEdit?: boolean
 }>()
 

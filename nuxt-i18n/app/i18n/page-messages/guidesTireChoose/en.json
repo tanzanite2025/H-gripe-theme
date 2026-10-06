@@ -1,5 +1,32 @@
 {
-  "title": "How to Choose the Right Size",
+  "title": "How to Choose the Right Tire",
+  "seo": {
+    "title": "DT Swiss tire width and rim internal width reference",
+    "description": "Reference the DT Swiss TSS and TC tire-width to rim-internal-width matrix. Enter tire width in millimetres or inches; inch input is converted to millimetres before the published recommendation and piecewise reference calculation runs on the backend.",
+    "articleSection": "Tire and rim size reference",
+    "articleBody": "This page presents the DT Swiss hookless TSS and hooked TC tire-width to rim-internal-width reference. Exact widths use published rows; unlisted integer widths use piecewise linear reference calculations between adjacent data points. Possible-only rows remain references and are not model-specific certification. Inch tire widths are converted using 1 inch equals 25.4 millimetres before lookup.",
+    "datasetName": "DT Swiss TSS/TC tire width and rim internal width reference matrix",
+    "datasetDescription": "Backend-provided DT Swiss tire widths, inch labels, recommended rim internal widths, possible references, and display-only width projections.",
+    "measurementTechnique": "Exact published rows are read directly; unlisted widths are calculated as a piecewise linear reference between adjacent chart points.",
+    "tireWidthVariable": "Nominal tire width",
+    "rimWidthVariable": "Rim internal width",
+    "sourceProperty": "Source",
+    "sourceDateProperty": "Source checked date"
+  },
+  "methodology": {
+    "title": "Source and calculation method",
+    "unavailable": "The backend reference matrix is temporarily unavailable. The page keeps the method and safety limits visible and does not substitute example calculation values.",
+    "source": "Source: {source}; checked on {date}.",
+    "provenance": "Published basis: {provenance}",
+    "body": "Published rows are read directly; unlisted integer widths are calculated piecewise between adjacent chart rows. Inch input is only normalized to millimetres; recommendation and interpolation remain backend calculations.",
+    "version": "Model version: {modelVersion}. The limitations below come from the same backend contract.",
+    "limitations": {
+      "modelSpecificCertification": "This is a DT Swiss reference chart result, not certification for a specific tire, rim model, or wheelset.",
+      "possibleReferenceStatus": "Rows marked possible are reference anchors only; they are never relabeled as recommended.",
+      "interpolationProjection": "Interpolated widths are mathematical projections between chart rows and must be checked against the exact manufacturer specifications.",
+      "displayOnlyMetrics": "Inflated-width and 105% outer-width values are display-only projections, not measured dimensions or safety limits."
+    }
+  },
   "standards": {
     "title": "Manufacturer Standards",
     "description": "The following DT Swiss hookless (TSS) and hooked (TC) rim inner-width charts show recommended combinations and chart-marked possible references. The HTML tables transcribe the chart rows for search engines and screen readers; they are not certification for a specific tire or rim model. Follow the exact tire, rim, and wheel manufacturer limits.",

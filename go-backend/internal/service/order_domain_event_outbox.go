@@ -28,6 +28,7 @@ type CanonicalDomainEventOutboxHandler struct {
 	templateService *TransactionalNotificationTemplateService
 	sender          TransactionalNotificationSender
 	settings        *SettingService
+	deliveryRecords *TransactionalNotificationDeliveryRecordService
 }
 
 func NewCanonicalDomainEventOutboxHandler(templateServices ...*TransactionalNotificationTemplateService) *CanonicalDomainEventOutboxHandler {
@@ -54,6 +55,14 @@ func NewCanonicalDomainEventOutboxHandlerWithSender(
 func (h *CanonicalDomainEventOutboxHandler) ConfigureNotificationSettings(settings *SettingService) {
 	if h != nil {
 		h.settings = settings
+	}
+}
+
+func (h *CanonicalDomainEventOutboxHandler) ConfigureTransactionalNotificationDeliveryRecords(
+	recordService *TransactionalNotificationDeliveryRecordService,
+) {
+	if h != nil {
+		h.deliveryRecords = recordService
 	}
 }
 
@@ -97,7 +106,7 @@ func (h *CanonicalDomainEventOutboxHandler) Handle(ctx context.Context, event ou
 		}
 	}
 	if h.sender != nil {
-		if err := deliverTransactionalNotification(ctx, event, h.templateService, h.sender); err != nil {
+		if err := deliverTransactionalNotificationWithRecordService(ctx, event, h.templateService, h.sender, h.deliveryRecords); err != nil {
 			return err
 		}
 		return nil

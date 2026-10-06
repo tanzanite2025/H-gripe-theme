@@ -38,6 +38,8 @@ export interface StorefrontRouteCatalogListParams {
   searchable?: string
   search_profile_status?: string
   include_aliases?: boolean
+  include_stale_when_checking?: boolean
+  sync_latest?: boolean
   needs_attention?: boolean
   problem_scope?: 'canonical'
 }
@@ -66,6 +68,7 @@ export interface StorefrontSitemapOverview {
   indexable: number
   last_synced_at?: string | null
   manifest_version?: string | null
+  stats: StorefrontRouteCatalogStats
 }
 
 export interface StorefrontSitemapSyncResponse {
@@ -77,6 +80,9 @@ export interface StorefrontRouteCatalogCheckSummary {
   checked: number
   eligible: number
   remaining: number
+  batch_size: number
+  current_batch: number
+  total_batches: number
   ok: number
   redirects: number
   not_found: number
@@ -97,6 +103,7 @@ export interface StorefrontRouteCatalogCheckTask {
   checked: number
   eligible: number
   remaining: number
+  batch_size: number
   summary: StorefrontRouteCatalogCheckSummary
   error?: string
 }
@@ -121,6 +128,7 @@ export interface StorefrontRouteCatalogStats {
   indexable: number
   sitemap_eligible: number
   last_synced_at?: string | null
+  last_checked_at?: string | null
   manifest_version?: string | null
 }
 

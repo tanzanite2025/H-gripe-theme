@@ -18,6 +18,20 @@ const (
 	DistributionG32To1        Distribution = "g3_2to1"
 )
 
+// DisplayGeometryLayout identifies the exact coordinate generator used by the
+// display-geometry projection. It is deliberately separate from Distribution:
+// multiple 2:1 topologies can share a ratio while requiring different rim-hole
+// geometry. A new topology must register a layout and a matching generator;
+// unknown layouts fail closed instead of falling back to symmetric geometry.
+type DisplayGeometryLayout string
+
+const (
+	DisplayGeometryLayoutSymmetric1To1  DisplayGeometryLayout = "symmetric_1to1"
+	DisplayGeometryLayoutUniform2To1    DisplayGeometryLayout = "uniform_2to1"
+	DisplayGeometryLayoutUniform18H2To1 DisplayGeometryLayout = "uniform_18h_2to1"
+	DisplayGeometryLayoutG3Triplet2To1  DisplayGeometryLayout = "g3_triplet_2to1"
+)
+
 type Side string
 
 const (
@@ -60,15 +74,16 @@ type SpokeMapping struct {
 // Topology is the backend's read-only topology contract. It contains only
 // discrete hole assignments and no ERD/PCD, lengths, angles, or force values.
 type Topology struct {
-	ID           string         `json:"topology_id"`
-	Selection    string         `json:"selection"`
-	HoleCount    int            `json:"hole_count"`
-	Cross        int            `json:"cross"`
-	Distribution Distribution   `json:"distribution"`
-	RimHoles     []Hole         `json:"rim_holes"`
-	HubHolesA    []Hole         `json:"hub_holes_a"`
-	HubHolesB    []Hole         `json:"hub_holes_b"`
-	Spokes       []SpokeMapping `json:"spokes"`
+	ID            string                `json:"topology_id"`
+	Selection     string                `json:"selection"`
+	HoleCount     int                   `json:"hole_count"`
+	Cross         int                   `json:"cross"`
+	Distribution  Distribution          `json:"distribution"`
+	DisplayLayout DisplayGeometryLayout `json:"display_layout"`
+	RimHoles      []Hole                `json:"rim_holes"`
+	HubHolesA     []Hole                `json:"hub_holes_a"`
+	HubHolesB     []Hole                `json:"hub_holes_b"`
+	Spokes        []SpokeMapping        `json:"spokes"`
 }
 
 // Catalog owns an immutable, validated set of topology facts.
@@ -105,7 +120,7 @@ func NewCatalog(topologies []Topology) (*Catalog, error) {
 
 // NewDefaultCatalog builds the topology contract used by the public API.
 func NewDefaultCatalog() *Catalog {
-	set := make([]Topology, 0, 8)
+	set := make([]Topology, 0, 26)
 	for _, holes := range []int{16, 20, 24, 28, 32, 36} {
 		set = append(set, buildSymmetricTopology(holes, 0))
 		for _, cross := range supportedSymmetricCrosses(holes) {
@@ -115,7 +130,7 @@ func NewDefaultCatalog() *Catalog {
 			set = append(set, buildSymmetricTopology(holes, cross))
 		}
 	}
-	set = append(set, buildG3Topology(), buildUniformTwoToOneTopology())
+	set = append(set, buildG3Topology(), buildUniformTwoToOneTopology(), buildUniform18TwoToOneTopology())
 	catalog, err := NewCatalog(set)
 	if err != nil {
 		// The checked-in contract is a program invariant. Serving a partial or
@@ -212,15 +227,16 @@ func symmetricSelection(holes, cross int) string {
 func buildSymmetricTopology(holes, cross int) Topology {
 	flangeCount := holes / 2
 	topology := Topology{
-		ID:           symmetricSelection(holes, cross),
-		Selection:    fmt.Sprintf("%d", holes),
-		HoleCount:    holes,
-		Cross:        cross,
-		Distribution: DistributionSymmetric1To1,
-		RimHoles:     make([]Hole, 0, holes),
-		HubHolesA:    make([]Hole, 0, flangeCount),
-		HubHolesB:    make([]Hole, 0, flangeCount),
-		Spokes:       make([]SpokeMapping, 0, holes),
+		ID:            symmetricSelection(holes, cross),
+		Selection:     fmt.Sprintf("%d", holes),
+		HoleCount:     holes,
+		Cross:         cross,
+		Distribution:  DistributionSymmetric1To1,
+		DisplayLayout: DisplayGeometryLayoutSymmetric1To1,
+		RimHoles:      make([]Hole, 0, holes),
+		HubHolesA:     make([]Hole, 0, flangeCount),
+		HubHolesB:     make([]Hole, 0, flangeCount),
+		Spokes:        make([]SpokeMapping, 0, holes),
 	}
 	for index := 0; index < holes; index++ {
 		side := SideA
@@ -278,15 +294,16 @@ func buildSymmetricTopology(holes, cross int) Topology {
 func buildG3Topology() Topology {
 	const groups = 7
 	topology := Topology{
-		ID:           "21h-g3-2to1",
-		Selection:    "21",
-		HoleCount:    21,
-		Cross:        2,
-		Distribution: DistributionG32To1,
-		RimHoles:     make([]Hole, 0, 21),
-		HubHolesA:    make([]Hole, 0, 14),
-		HubHolesB:    make([]Hole, 0, 7),
-		Spokes:       make([]SpokeMapping, 0, 21),
+		ID:            "21h-g3-2to1",
+		Selection:     "21",
+		HoleCount:     21,
+		Cross:         2,
+		Distribution:  DistributionG32To1,
+		DisplayLayout: DisplayGeometryLayoutG3Triplet2To1,
+		RimHoles:      make([]Hole, 0, 21),
+		HubHolesA:     make([]Hole, 0, 14),
+		HubHolesB:     make([]Hole, 0, 7),
+		Spokes:        make([]SpokeMapping, 0, 21),
 	}
 	for group := 0; group < groups; group++ {
 		topology.RimHoles = append(topology.RimHoles,
@@ -317,17 +334,41 @@ func buildG3Topology() Topology {
 }
 
 func buildUniformTwoToOneTopology() Topology {
-	const total = 24
+	return buildUniformTwoToOneTopologyWithExplicitHoleCountsAndDisplayLayout(
+		"24h-uniform-2to1",
+		"24_2to1",
+		24,
+		16,
+		8,
+		DisplayGeometryLayoutUniform2To1,
+	)
+}
+
+// buildUniform18TwoToOneTopology is the non-G3 18H variant: its rim holes are
+// uniformly spaced, with 12 drive-side and 6 non-drive-side assignments.
+func buildUniform18TwoToOneTopology() Topology {
+	return buildUniformTwoToOneTopologyWithExplicitHoleCountsAndDisplayLayout(
+		"18h-uniform-2to1",
+		"18_2to1",
+		18,
+		12,
+		6,
+		DisplayGeometryLayoutUniform18H2To1,
+	)
+}
+
+func buildUniformTwoToOneTopologyWithExplicitHoleCountsAndDisplayLayout(id, selection string, total, driveSideHoleCount, nonDriveSideHoleCount int, displayLayout DisplayGeometryLayout) Topology {
 	topology := Topology{
-		ID:           "24h-uniform-2to1",
-		Selection:    "24_2to1",
-		HoleCount:    total,
-		Cross:        2,
-		Distribution: DistributionUniform2To1,
-		RimHoles:     make([]Hole, 0, total),
-		HubHolesA:    make([]Hole, 0, 16),
-		HubHolesB:    make([]Hole, 0, 8),
-		Spokes:       make([]SpokeMapping, 0, total),
+		ID:            id,
+		Selection:     selection,
+		HoleCount:     total,
+		Cross:         2,
+		Distribution:  DistributionUniform2To1,
+		DisplayLayout: displayLayout,
+		RimHoles:      make([]Hole, 0, total),
+		HubHolesA:     make([]Hole, 0, driveSideHoleCount),
+		HubHolesB:     make([]Hole, 0, nonDriveSideHoleCount),
+		Spokes:        make([]SpokeMapping, 0, total),
 	}
 	for index := 0; index < total; index++ {
 		side := SideA
@@ -345,18 +386,18 @@ func buildUniformTwoToOneTopology() Topology {
 			rimB = append(rimB, hole)
 		}
 	}
-	for index := 0; index < 16; index++ {
+	for index := 0; index < driveSideHoleCount; index++ {
 		topology.HubHolesA = append(topology.HubHolesA, Hole{ID: index, Side: SideA})
 	}
-	for index := 0; index < 8; index++ {
+	for index := 0; index < nonDriveSideHoleCount; index++ {
 		topology.HubHolesB = append(topology.HubHolesB, Hole{ID: index, Side: SideB})
 	}
-	for index := 0; index < 8; index++ {
+	for index := 0; index < nonDriveSideHoleCount; index++ {
 		topology.Spokes = append(topology.Spokes, SpokeMapping{
 			ID: len(topology.Spokes), Side: SideB, Type: SpokeTypeNonDrive, HubHoleID: index, RimHoleID: rimB[index].ID,
 		})
 	}
-	for index := 0; index < 16; index++ {
+	for index := 0; index < driveSideHoleCount; index++ {
 		targetIndex := index - 2
 		spokeType := SpokeTypeTrailing
 		if index%2 == 0 {
@@ -364,7 +405,7 @@ func buildUniformTwoToOneTopology() Topology {
 			spokeType = SpokeTypeLeading
 		}
 		topology.Spokes = append(topology.Spokes, SpokeMapping{
-			ID: len(topology.Spokes), Side: SideA, Type: spokeType, HubHoleID: index, RimHoleID: rimA[mod(targetIndex, 16)].ID,
+			ID: len(topology.Spokes), Side: SideA, Type: spokeType, HubHoleID: index, RimHoleID: rimA[mod(targetIndex, driveSideHoleCount)].ID,
 		})
 	}
 	return topology
@@ -383,12 +424,15 @@ func validateTopology(topology Topology) error {
 	if topology.Distribution != DistributionSymmetric1To1 && topology.Distribution != DistributionUniform2To1 && topology.Distribution != DistributionG32To1 {
 		return fmt.Errorf("unsupported distribution %q", topology.Distribution)
 	}
+	if topology.DisplayLayout != DisplayGeometryLayoutSymmetric1To1 && topology.DisplayLayout != DisplayGeometryLayoutUniform2To1 && topology.DisplayLayout != DisplayGeometryLayoutUniform18H2To1 && topology.DisplayLayout != DisplayGeometryLayoutG3Triplet2To1 {
+		return fmt.Errorf("unsupported display layout %q", topology.DisplayLayout)
+	}
 	expected := expectedTopology(topology.Selection, topology.Cross)
 	if expected == nil {
 		return fmt.Errorf("unsupported selection %q", topology.Selection)
 	}
-	if topology.HoleCount != expected.HoleCount || topology.Distribution != expected.Distribution || topology.Cross != expected.Cross {
-		return fmt.Errorf("selection %q does not match hole_count=%d, cross=%d, distribution=%q", topology.Selection, topology.HoleCount, topology.Cross, topology.Distribution)
+	if topology.HoleCount != expected.HoleCount || topology.Distribution != expected.Distribution || topology.DisplayLayout != expected.DisplayLayout || topology.Cross != expected.Cross {
+		return fmt.Errorf("selection %q does not match hole_count=%d, cross=%d, distribution=%q, display_layout=%q", topology.Selection, topology.HoleCount, topology.Cross, topology.Distribution, topology.DisplayLayout)
 	}
 	if len(topology.RimHoles) != len(expected.RimHoles) || len(topology.HubHolesA) != len(expected.HubHolesA) || len(topology.HubHolesB) != len(expected.HubHolesB) || len(topology.Spokes) != len(expected.Spokes) {
 		return fmt.Errorf("hole or spoke counts do not match the selection")
@@ -421,6 +465,12 @@ func expectedTopology(selection string, cross int) *Topology {
 			return nil
 		}
 		expected := buildUniformTwoToOneTopology()
+		return &expected
+	case "18_2to1":
+		if cross != 2 {
+			return nil
+		}
+		expected := buildUniform18TwoToOneTopology()
 		return &expected
 	default:
 		var holes int

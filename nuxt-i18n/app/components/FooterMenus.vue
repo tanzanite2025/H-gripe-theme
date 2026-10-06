@@ -307,7 +307,7 @@ const getFooterMenuNavigationItemKey = (
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.8rem;
+  gap: 0.55rem;
 }
 
 /* Each top-level guide group gets one column; its child links stay vertical. */

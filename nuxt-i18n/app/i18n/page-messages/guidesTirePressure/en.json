@@ -1,26 +1,13 @@
 {
-  "title": "Product tire pressure standards",
-  "description": "A reserved page for searching sourced tire-pressure standards by current market product and exact setup.",
-  "actions": {
-    "checkTires": "Check out tires"
-  },
+  "guideTitle": "Tire pressure guide",
+  "title": "Tire pressure and cornering-force demonstration",
+  "description": "Explore how rider load, tire pressure, speed, and lean change estimated contact area and cornering force.",
   "tabs": {
     "label": "Tire pressure page sections",
-    "standards": "Product standards",
+    "calculator": "Pressure and force",
     "details": "Guide"
   },
-  "calculator": {
-    "title": "Tire pressure, load, and cornering force demonstration",
-    "description": "Use a generic rubber baseline to show how rider, bike, pressure, tire width, speed, and lean change contact area and force; the model does not return a production pressure recommendation.",
-    "backToStandards": "Back to product pressure standards"
-  },
   "feedbackTitle": "Share your feedback about the tire-pressure calculator",
-  "standardsPlaceholder": {
-    "status": "Data source placeholder",
-    "title": "Product tire-pressure standards search",
-    "body": "This tab is reserved for a sourced search of current market tire products and their exact pressure limits. The product data file will be connected here later.",
-    "openCalculator": "Open the force calculation demonstration"
-  },
   "productSelector": {
     "title": "Choose a tire model",
     "searchLabel": "Search model, article number, or size",
@@ -40,7 +27,7 @@
   },
   "dashboard": {
 
-     "modelInfoTitle": "Model information", "modelVersionLabel": "Model {value}", "provenanceLabel": "Load source: {load}; tire-width source: {width}; tire-body calculation baseline: {body}", "tireBodyBaseline": "normalized baseline {value}", "measuredWidthSource": "Measured width", "nominalWidthSource": "ETRTO nominal width (no rim correction)", "manualWidthSource": "Manual comparison width",
+     "modelInfoTitle": "Model information", "modelVersionLabel": "Model {value}", "provenanceLabel": "Load source: {load}; tire-width source: {width}; tire-body calculation baseline: {body}", "calculationDataSupportLabel": "Required data lacks complete, accurate support", "tireBodyBaseline": "normalized baseline {value}", "measuredWidthSource": "Measured width", "nominalWidthSource": "ETRTO nominal width (no rim correction)", "manualWidthSource": "Manual comparison width",
 
     "selectedTirePressure": "Selected tire pressure",
     "selectedTirePressureHint": "Pressure is read directly from the selected tire's local record. The catalog provides a minimum/maximum range, so the midpoint is used as the shared front/rear demonstration input; this is not a production pressure recommendation.",
@@ -62,8 +49,8 @@
     "wetPressureScenarioHint": "Water film {water} mm · indoor-road baseline · generic rubber baseline",
     "wetPressureComparisonResult": "Wet demo {pressure} PSI · estimated area {area} cm² · {change} vs midpoint",
     "wetPressureComparisonDelta": "At wet-demo pressure {pressure} PSI: {change} vs midpoint",
-    "wetPressureCompensationSummary": "Wet friction retained {retention}% · lateral-demand utilization {demand}% · same-area equivalent pressure {pressure} PSI · wet grip limit {grip} N",
-    "wetPressureCompensationClampedSummary": "Wet friction retained {retention}% · lateral-demand utilization {demand}% · same-area pressure clamped to minimum {pressure} PSI · wet grip limit {grip} N",
+    "wetPressureCompensationSummary": "Model-equivalent reduction {reduction} PSI ({reductionPct}%) · equivalent pressure {pressure} PSI · wet friction retained {retention}% · lateral utilization {demand}% · wet grip limit at reference pressure {grip} N",
+    "wetPressureCompensationClampedSummary": "Model-equivalent reduction {reduction} PSI ({reductionPct}%) · equivalent pressure limited to minimum {pressure} PSI · wet friction retained {retention}% · lateral utilization {demand}% · wet grip limit at reference pressure {grip} N",
     "title": "Tire pressure, load, and cornering force demonstration",
     "subtitle": "Pressure · load · speed · lean · contact area and dynamic force data",
 
@@ -72,8 +59,8 @@
     "controlBaselineBody": "This dashboard uses a simplified first-order baseline to demonstrate how pressure, load, speed, tire width, and lean angle change force and contact area. The road is fixed to one flat-road condition. The result is an explanatory calculation only, not a measured tire test or a production safety limit.",
     "frontWheel": "FRONT WHEEL", "rearWheel": "REAR WHEEL", "load": "load", "loadValue": "Load {value} kg", "contactValue": "Estimated load-bearing area {value} cm²",
     "controlsTitle": "1. Physics inputs and cornering controls", "totalValue": "Total {value} kg", "dynamicDataTitle": "2. Dynamic force data", "dataViewStatus": "calculation data", "diagnosticTitle": "Force relationship diagnostic",
-    "scienceTitle": "3. Physics notes: load, pressure, and force", "baseline": "Engineering baseline", "mechanicalTitle": "Contact area and friction", "mechanicalBody": "The generic tire-body condition is fixed at normalized baseline 1 in this calculation; contact area shows the relationship between load and pressure. The result is a calculation display, not a measured tire test.", "riskTitle": "Over-pressure effect", "riskBody": "Changing pressure changes the estimated contact area. The model does not simulate tread or compound changes.", "scopeTitle": "Model scope", "scopeBody": "The current production API returns loads and supplied limits only. No uncalibrated pressure recommendation is presented.",
-    "leanAngle": "Lean angle", "speed": "Speed", "speedHint": "At a fixed lean, speed changes the equivalent turn radius: R = v² / (g·tanθ).", "lateralAcceleration": "Lateral acceleration", "turnRadius": "Equivalent turn radius", "riderWeight": "Rider weight", "bikeGear": "Bike and gear", "posture": "Riding posture and load distribution", "roadBaselineTitle": "Road condition", "flatRoadBaseline": "Flat road (fixed demonstration condition)", "frictionBaselineTitle": "Fixed friction baseline", "fixedMuLabel": "μ = {value}", "fixedMuHint": "One fixed coefficient is used to demonstrate force relationships; it is not a road or tire measurement.", "forceDemoStatus": "fixed flat-road force demo",  "tireWidth": "Nominal tire width", "race": "Race", "endurance": "Endurance", "tt": "TT", "gravel": "Gravel", "straight": "straight", "gentle": "gentle corner", "fastCorner": "fast corner", "maximumLean": "maximum lean", "frontMargin": "Front model margin", "rearMargin": "Rear model margin",   "demandValue": "Demand {value} N", "maxGripValue": "Lateral force capacity ±{value} N", "resultantForceMetric": "Dynamic resultant", "verticalLoadMetric": "Vertical load", "lateralDemandMetric": "Lateral demand", "gripLimitMetric": "Grip limit", "gripMarginMetric": "Grip margin", "contactAreaMetric": "Contact area", "safe": "MODEL POSITIVE", "warning": "MODEL LOW", "critical": "MODEL EXCEEDED", "diagnosticBody": "At {speed} km/h and {lean}° lean, the equivalent turn radius is about {radius} m; front/rear lateral demand is {front} / {rear} N. The data panel shows the backend's force and contact-area estimates.", "backendPending": "Waiting for the backend engineering demo", "backendUnavailable": "The backend engineering demo is temporarily unavailable"
+    "scienceTitle": "3. Physics notes: load, pressure, and force", "baseline": "Engineering baseline", "mechanicalTitle": "Contact area and friction", "mechanicalBody": "The generic tire-body condition is fixed at normalized baseline 1 in this calculation; contact area shows the relationship between load and pressure. The result is a calculation display, not a measured tire test.", "riskTitle": "Over-pressure effect", "riskBody": "Changing pressure changes the estimated contact area. The model does not simulate tread or compound changes.", "scopeTitle": "Model scope", "scopeBody": "The current API returns force, contact-area, and generic reference-tire vertical-deformation estimates. Pressure–friction data currently lacks complete, accurate support, so the fixed friction baseline is retained for relative-change demonstration only.",
+    "leanAngle": "Lean angle", "speed": "Speed", "speedHint": "At a fixed lean, speed changes the equivalent turn radius: R = v² / (g·tanθ).", "lateralAcceleration": "Lateral acceleration", "turnRadius": "Equivalent turn radius", "riderWeight": "Rider weight", "bikeGear": "Bike and gear", "posture": "Riding posture and load distribution", "roadBaselineTitle": "Road condition", "flatRoadBaseline": "Flat road (fixed demonstration condition)", "frictionBaselineTitle": "Friction coefficient baseline", "fixedMuLabel": "μ = {value}", "fixedMuHint": "One fixed coefficient is used to demonstrate force relationships; it is not a road or tire measurement.", "pressureFrictionDataHint": "Pressure–friction data currently lacks complete, accurate support, so fixed μ is retained for relative-change demonstration only.", "pressureFrictionCoefficientSummary": "Pressure–friction μ {coefficient} · relative index {index}", "forceDemoStatus": "fixed flat-road force demo",  "tireWidth": "Nominal tire width", "race": "Race", "endurance": "Endurance", "tt": "TT", "gravel": "Gravel", "straight": "straight", "gentle": "gentle corner", "fastCorner": "fast corner", "maximumLean": "maximum lean", "frontMargin": "Front model margin", "rearMargin": "Rear model margin",   "demandValue": "Demand {value} N", "maxGripValue": "Lateral force capacity ±{value} N", "resultantForceMetric": "Dynamic resultant", "verticalLoadMetric": "Vertical load", "lateralDemandMetric": "Lateral demand", "gripLimitMetric": "Grip limit", "wetGripLimitMetric": "Wet grip limit at reference pressure", "gripMarginMetric": "Grip margin", "contactAreaMetric": "Contact area", "verticalDeformationSummary": "Deformation {estimated} mm · reference {reference} mm · index {index} · stiffness {stiffness} N/mm", "safe": "MODEL POSITIVE", "warning": "MODEL LOW", "critical": "MODEL EXCEEDED", "diagnosticBody": "At {speed} km/h and {lean}° lean, the equivalent turn radius is about {radius} m; front/rear lateral demand is {front} / {rear} N. The data panel shows the backend's force and contact-area estimates.", "backendPending": "Waiting for the backend engineering demo", "backendUnavailable": "The backend engineering demo is temporarily unavailable"
   },
   "intro": {
     "matching": "For safety and performance, match the exact tire, rim, and wheelset using each manufacturer's documents, especially for tubeless and hookless systems. This page does not infer compatibility from a brand, model year, or technology label; without an article-level source, the result remains unknown.",

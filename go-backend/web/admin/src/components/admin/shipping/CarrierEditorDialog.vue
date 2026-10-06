@@ -54,7 +54,7 @@
           <AdminFormField
             label="服务区域"
             class="lg:col-span-3"
-            description="先按文本/JSON 维护，后续会和配送区域、线路模板打通。"
+            description="先按文本/JSON 维护，国家/地区范围由已发布线路和运费模板规则提供。"
           >
  <Textarea v-model="form.service_area" class="min-h-24 font-mono text-xs" placeholder='["US","CA","EU"]'/>
           </AdminFormField>
@@ -104,4 +104,3 @@ const emit = defineEmits<{
   (event: 'clear-error', field: string): void
 }>()
 </script>
-

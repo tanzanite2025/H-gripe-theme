@@ -33,8 +33,13 @@ func (h *FpxHandler) GetOverview(c *gin.Context) {
 }
 
 func (h *FpxHandler) ListChannels(c *gin.Context) {
+	environment, err := shippingdomain.NormalizeFpxChannelEnvironment(c.Query("environment"))
+	if err != nil {
+		apierror.RespondBadRequest(c, err.Error())
+		return
+	}
 	enabledOnly := c.Query("enabled") == "true"
-	channels, err := h.shippingService.ListFpxChannels(enabledOnly)
+	channels, err := h.shippingService.ListFpxChannelsForEnvironment(environment, enabledOnly)
 	if err != nil {
 		apierror.RespondInternalError(c, err)
 		return
@@ -43,10 +48,10 @@ func (h *FpxHandler) ListChannels(c *gin.Context) {
 }
 
 // ListPublishedCollection is the only 4PX output consumed by downstream
-// logistics management. It intentionally exposes enabled service references
-// only, never credentials, orders, prices, or direct-shipping tasks.
+// logistics management. It only exposes enabled production references, never
+// test-environment services, credentials, orders, prices, or direct-shipping tasks.
 func (h *FpxHandler) ListPublishedCollection(c *gin.Context) {
-	channels, err := h.shippingService.ListFpxChannels(true)
+	channels, err := h.shippingService.ListFpxChannelsForEnvironment(shippingdomain.FpxChannelEnvironmentProduction, true)
 	if err != nil {
 		apierror.RespondInternalError(c, err)
 		return

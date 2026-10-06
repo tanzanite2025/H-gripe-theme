@@ -24,8 +24,10 @@ func TestFpxOverviewCountsServiceDirectory(t *testing.T) {
 	repo := repository.NewShippingRepository(db)
 	enabledChannel := &shippingdomain.FpxChannel{ServiceCode: "FPX-OVERVIEW-ENABLED", DisplayName: "Enabled", Enabled: true}
 	disabledChannel := &shippingdomain.FpxChannel{ServiceCode: "FPX-OVERVIEW-DISABLED", DisplayName: "Disabled", Enabled: false}
+	testChannel := &shippingdomain.FpxChannel{Environment: "test", ServiceCode: "FPX-OVERVIEW-TEST", DisplayName: "Test", Enabled: true}
 	require.NoError(t, repo.CreateFpxChannel(enabledChannel))
 	require.NoError(t, repo.CreateFpxChannel(disabledChannel))
+	require.NoError(t, repo.CreateFpxChannel(testChannel))
 
 	overview, err := NewShippingService(repo).GetFpxOverview()
 	require.NoError(t, err)

@@ -190,6 +190,10 @@ func (r *ShippingRepository) FindAllTemplates() ([]shipping.ShippingTemplate, er
 }
 
 func (r *ShippingRepository) CreateTemplateWithRules(template *shipping.ShippingTemplate, rules []shipping.ShippingRule) error {
+	return r.CreateTemplateWithRulesAndCarrierServices(template, rules, nil)
+}
+
+func (r *ShippingRepository) CreateTemplateWithRulesAndCarrierServices(template *shipping.ShippingTemplate, rules []shipping.ShippingRule, carrierServices []shipping.CarrierService) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
 		enabled := template.Enabled
 		template.Rules = nil
@@ -220,6 +224,9 @@ func (r *ShippingRepository) CreateTemplateWithRules(template *shipping.Shipping
 				return err
 			}
 		}
+		if err := createTemplateCarrierServices(tx, template.ID, carrierServices); err != nil {
+			return err
+		}
 
 		if err := tx.Preload("Rules").First(template, template.ID).Error; err != nil {
 			return err
@@ -234,6 +241,10 @@ func (r *ShippingRepository) CreateTemplateWithRules(template *shipping.Shipping
 }
 
 func (r *ShippingRepository) UpdateTemplateWithRules(template *shipping.ShippingTemplate, rules []shipping.ShippingRule) error {
+	return r.UpdateTemplateWithRulesAndCarrierServices(template, rules, nil)
+}
+
+func (r *ShippingRepository) UpdateTemplateWithRulesAndCarrierServices(template *shipping.ShippingTemplate, rules []shipping.ShippingRule, carrierServices []shipping.CarrierService) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
 		updates := map[string]interface{}{
 			"name":                 template.Name,
@@ -267,6 +278,9 @@ func (r *ShippingRepository) UpdateTemplateWithRules(template *shipping.Shipping
 				return err
 			}
 		}
+		if err := replaceTemplateCarrierServices(tx, template.ID, carrierServices); err != nil {
+			return err
+		}
 		if err := upsertShippingTemplateDisplayPriceSnapshot(tx, template); err != nil {
 			return err
 		}
@@ -288,6 +302,96 @@ func (r *ShippingRepository) UpdateTemplateWithRules(template *shipping.Shipping
 	})
 }
 
+func createTemplateCarrierServices(tx *gorm.DB, templateID uint, services []shipping.CarrierService) error {
+	for i := range services {
+		services[i].ID = 0
+		services[i].TemplateID = &templateID
+		if err := tx.Create(&services[i]).Error; err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func replaceTemplateCarrierServices(tx *gorm.DB, templateID uint, services []shipping.CarrierService) error {
+	if services == nil {
+		return nil
+	}
+	var existingServices []shipping.CarrierService
+	if err := tx.Where("template_id = ?", templateID).Find(&existingServices).Error; err != nil {
+		return err
+	}
+
+	requestedIDs := make(map[uint]struct{}, len(services))
+	for i := range services {
+		if services[i].ID == 0 {
+			continue
+		}
+		if _, exists := requestedIDs[services[i].ID]; exists {
+			return fmt.Errorf("carrier service %d is selected more than once", services[i].ID)
+		}
+		requestedIDs[services[i].ID] = struct{}{}
+	}
+	for _, existing := range existingServices {
+		if _, keep := requestedIDs[existing.ID]; keep {
+			continue
+		}
+		if err := tx.Model(&shipping.CarrierService{}).
+			Where("id = ? AND template_id = ?", existing.ID, templateID).
+			Updates(map[string]interface{}{"template_id": nil}).Error; err != nil {
+			return err
+		}
+	}
+	for i := range services {
+		services[i].TemplateID = &templateID
+		if services[i].ID == 0 {
+			if err := tx.Create(&services[i]).Error; err != nil {
+				return err
+			}
+			continue
+		}
+
+		var existing shipping.CarrierService
+		if err := tx.First(&existing, services[i].ID).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return fmt.Errorf("carrier service %d does not exist", services[i].ID)
+			}
+			return err
+		}
+		if existing.TemplateID != nil && *existing.TemplateID != templateID {
+			return fmt.Errorf("carrier service %d belongs to another shipping template", services[i].ID)
+		}
+		updates := map[string]interface{}{
+			"carrier_id":                     services[i].CarrierID,
+			"template_id":                    templateID,
+			"fpx_channel_id":                 services[i].FpxChannelID,
+			"yanwen_published_channel_id":    services[i].YanwenPublishedChannelID,
+			"service_code":                   services[i].ServiceCode,
+			"service_name":                   services[i].ServiceName,
+			"route_name":                     services[i].RouteName,
+			"countries":                      services[i].Countries,
+			"currency":                       services[i].Currency,
+			"billing_mode":                   services[i].BillingMode,
+			"first_weight_grams":             services[i].FirstWeightGrams,
+			"additional_weight_grams":        services[i].AdditionalWeightGrams,
+			"min_charge_weight_grams":        services[i].MinChargeWeightGrams,
+			"volumetric_divisor":             services[i].VolumetricDivisor,
+			"fuel_surcharge_percent_decimal": services[i].FuelSurchargePercentDecimal,
+			"remote_surcharge_minor":         services[i].RemoteSurchargeMinor,
+			"remote_postal_codes":            services[i].RemotePostalCodes,
+			"eta_min_days":                   services[i].EtaMinDays,
+			"eta_max_days":                   services[i].EtaMaxDays,
+			"enabled":                        services[i].Enabled,
+			"sort_order":                     services[i].SortOrder,
+			"description":                    services[i].Description,
+		}
+		if err := tx.Model(&shipping.CarrierService{}).Where("id = ?", services[i].ID).Updates(updates).Error; err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (r *ShippingRepository) DeleteTemplate(id uint) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
 		if tx.Migrator().HasTable(&shipping.ShippingDisplayPriceSnapshot{}) {
@@ -298,6 +402,11 @@ func (r *ShippingRepository) DeleteTemplate(id uint) error {
 		if err := tx.Where("template_id = ?", id).Delete(&shipping.ShippingRule{}).Error; err != nil {
 			return err
 		}
+		if err := tx.Model(&shipping.CarrierService{}).
+			Where("template_id = ?", id).
+			Updates(map[string]interface{}{"template_id": nil}).Error; err != nil {
+			return err
+		}
 		return tx.Delete(&shipping.ShippingTemplate{}, id).Error
 	})
 }
@@ -306,8 +415,16 @@ func (r *ShippingRepository) DeleteTemplate(id uint) error {
 
 // CreateRule 閸掓稑缂撴潻鎰瀭鐟欏嫬鍨?
 func (r *ShippingRepository) FindAllFpxChannels(enabledOnly bool) ([]shipping.FpxChannel, error) {
+	return r.FindAllFpxChannelsForEnvironment(shipping.FpxChannelEnvironmentProduction, enabledOnly)
+}
+
+func (r *ShippingRepository) FindAllFpxChannelsForEnvironment(environment string, enabledOnly bool) ([]shipping.FpxChannel, error) {
+	environment, err := shipping.NormalizeFpxChannelEnvironment(environment)
+	if err != nil {
+		return nil, err
+	}
 	var channels []shipping.FpxChannel
-	query := r.db.Order("service_code ASC").Order("id ASC")
+	query := r.db.Where("environment = ?", environment).Order("service_code ASC").Order("id ASC")
 	if enabledOnly {
 		query = query.Where("enabled = ?", true)
 	}
@@ -330,6 +447,14 @@ func (r *ShippingRepository) CreateFpxChannel(channel *shipping.FpxChannel) erro
 // changing an operator's enabled decision. Newly discovered services remain
 // disabled until they are explicitly confirmed in the service collection tab.
 func (r *ShippingRepository) UpsertFpxChannels(channels []shipping.FpxChannel) (FpxChannelUpsertStats, error) {
+	return r.UpsertFpxChannelsForEnvironment(shipping.FpxChannelEnvironmentProduction, channels)
+}
+
+func (r *ShippingRepository) UpsertFpxChannelsForEnvironment(environment string, channels []shipping.FpxChannel) (FpxChannelUpsertStats, error) {
+	environment, err := shipping.NormalizeFpxChannelEnvironment(environment)
+	if err != nil {
+		return FpxChannelUpsertStats{}, err
+	}
 	stats := FpxChannelUpsertStats{Scanned: len(channels)}
 	if len(channels) == 0 {
 		return stats, nil
@@ -339,6 +464,7 @@ func (r *ShippingRepository) UpsertFpxChannels(channels []shipping.FpxChannel) (
 	positions := make(map[string]int, len(channels))
 	for i := range channels {
 		channel := channels[i]
+		channel.Environment = environment
 		if err := channel.Validate(); err != nil {
 			return FpxChannelUpsertStats{}, err
 		}
@@ -353,25 +479,28 @@ func (r *ShippingRepository) UpsertFpxChannels(channels []shipping.FpxChannel) (
 		prepared = append(prepared, channel)
 	}
 
-	err := r.db.Transaction(func(tx *gorm.DB) error {
+	err = r.db.Transaction(func(tx *gorm.DB) error {
 		serviceCodes := make([]string, 0, len(prepared))
 		for _, channel := range prepared {
 			serviceCodes = append(serviceCodes, channel.ServiceCode)
 		}
 
 		var existing []shipping.FpxChannel
-		if err := tx.Where("service_code IN ? AND deleted_at IS NULL", serviceCodes).Find(&existing).Error; err != nil {
+		if err := tx.Where("environment = ? AND service_code IN ? AND deleted_at IS NULL", environment, serviceCodes).Find(&existing).Error; err != nil {
 			return err
 		}
 		existingByCode := make(map[string]shipping.FpxChannel, len(existing))
 		for _, channel := range existing {
 			existingByCode[channel.ServiceCode] = channel
 		}
-		for _, channel := range prepared {
+		for i, channel := range prepared {
 			if existingChannel, exists := existingByCode[channel.ServiceCode]; exists {
 				stats.Updated++
 				if existingChannel.Enabled {
 					stats.PreservedEnabled++
+				}
+				if channel.Countries == "[]" && existingChannel.Countries != "" && existingChannel.Countries != "[]" {
+					prepared[i].Countries = existingChannel.Countries
 				}
 			} else {
 				stats.Added++
@@ -379,9 +508,9 @@ func (r *ShippingRepository) UpsertFpxChannels(channels []shipping.FpxChannel) (
 		}
 
 		return tx.Clauses(clause.OnConflict{
-			Columns:     []clause.Column{{Name: "service_code"}},
+			Columns:     []clause.Column{{Name: "environment"}, {Name: "service_code"}},
 			TargetWhere: clause.Where{Exprs: []clause.Expression{clause.Expr{SQL: "deleted_at IS NULL"}}},
-			DoUpdates:   clause.AssignmentColumns([]string{"display_name", "updated_at"}),
+			DoUpdates:   clause.AssignmentColumns([]string{"display_name", "countries", "updated_at"}),
 		}).Create(&prepared).Error
 	})
 	if err != nil {
@@ -419,10 +548,14 @@ func (r *ShippingRepository) DeleteFpxChannel(id uint) error {
 
 func (r *ShippingRepository) GetFpxOverviewCounts() (FpxOverviewCounts, error) {
 	var counts FpxOverviewCounts
-	if err := r.db.Model(&shipping.FpxChannel{}).Count(&counts.ChannelTotal).Error; err != nil {
+	if err := r.db.Model(&shipping.FpxChannel{}).
+		Where("environment = ?", shipping.FpxChannelEnvironmentProduction).
+		Count(&counts.ChannelTotal).Error; err != nil {
 		return counts, err
 	}
-	if err := r.db.Model(&shipping.FpxChannel{}).Where("enabled = ?", true).Count(&counts.EnabledChannelTotal).Error; err != nil {
+	if err := r.db.Model(&shipping.FpxChannel{}).
+		Where("environment = ? AND enabled = ?", shipping.FpxChannelEnvironmentProduction, true).
+		Count(&counts.EnabledChannelTotal).Error; err != nil {
 		return counts, err
 	}
 
@@ -1522,6 +1655,8 @@ func (r *ShippingRepository) UpdateCarrierService(service *shipping.CarrierServi
 	updates := map[string]interface{}{
 		"carrier_id":                     service.CarrierID,
 		"template_id":                    service.TemplateID,
+		"fpx_channel_id":                 service.FpxChannelID,
+		"yanwen_published_channel_id":    service.YanwenPublishedChannelID,
 		"service_code":                   service.ServiceCode,
 		"service_name":                   service.ServiceName,
 		"route_name":                     service.RouteName,
@@ -1604,35 +1739,6 @@ func (r *ShippingRepository) FindAllZones() ([]shipping.ShippingZone, error) {
 	var zones []shipping.ShippingZone
 	err := r.db.Order("name ASC").Find(&zones).Error
 	return zones, err
-}
-
-func (r *ShippingRepository) CreateZone(zone *shipping.ShippingZone) error {
-	enabled := zone.Enabled
-	if err := r.db.Create(zone).Error; err != nil {
-		return err
-	}
-	if !enabled {
-		if err := r.db.Model(zone).Update("enabled", false).Error; err != nil {
-			return err
-		}
-		zone.Enabled = false
-	}
-	return nil
-}
-
-func (r *ShippingRepository) UpdateZone(zone *shipping.ShippingZone) error {
-	updates := map[string]interface{}{
-		"name":         zone.Name,
-		"countries":    zone.Countries,
-		"states":       zone.States,
-		"postal_codes": zone.PostalCodes,
-		"enabled":      zone.Enabled,
-	}
-	return r.db.Model(&shipping.ShippingZone{}).Where("id = ?", zone.ID).Updates(updates).Error
-}
-
-func (r *ShippingRepository) DeleteZone(id uint) error {
-	return r.db.Delete(&shipping.ShippingZone{}, id).Error
 }
 
 // FindZoneByCountry 閺嶈宓侀崶钘夘啀閺屻儲澹橀崠鍝勭厵

@@ -9,13 +9,13 @@ import {
 } from '../app/utils/breadcrumbRouteNavigation.js'
 import { resolvePageSubNavigationBreadcrumb } from '../app/utils/pageSubNavigationBreadcrumb.js'
 import type { PageSubNavigationEntry } from '../app/utils/pageSubNavigationData.js'
-import { tireGuideTabs } from '../app/utils/pageSubNavigationData.js'
+import { spokeGuideTabs, tireGuideTabs } from '../app/utils/pageSubNavigationData.js'
 
 const entries: PageSubNavigationEntry[] = [
   {
     path: '/guides/tireguides',
     tabs: [
-      { id: 'size', fallback: 'Tire size' },
+      { id: 'tire-size-markings', fallback: 'Tire size markings' },
       { id: 'tubeless', fallback: 'Tubeless tires & installation' },
     ],
   },
@@ -67,40 +67,40 @@ assert.equal(match('/guides'), null)
 assert.equal(match('/guides/tireguides-installation'), null)
 assert.equal(match('/unknown/guides/tireguides'), null)
 
-// On a calculator route, the Tire Guides crumb is an ancestor and must keep
-// its /guides sibling menu; only an exact canonical/tab crumb owns page tabs.
+// On the tire-pressure guide route, the Tire Guides crumb is an ancestor and
+// must keep its /guides sibling menu; only an exact crumb owns page tabs.
 assert.equal(isExactBreadcrumbPageSubNavigationOwner(
   '/guides/tireguides',
-  '/guides/tireguides/tire-pressure-calculator',
+  '/guides/tireguides/tire-pressure',
   ['en', 'zh_cn'],
 ), false)
 assert.equal(isExactBreadcrumbPageSubNavigationOwner(
-  '/guides/tireguides/tire-pressure-calculator?source=breadcrumb',
-  '/guides/tireguides/tire-pressure-calculator',
+  '/guides/tireguides/tire-pressure?source=breadcrumb',
+  '/guides/tireguides/tire-pressure',
   ['en', 'zh_cn'],
 ), true)
 assert.deepEqual(normalizeBreadcrumbRouteSegments(
-  '/guides/tireguides/tire-pressure-calculator',
+  '/guides/tireguides/tire-pressure',
   ['en', 'zh_cn'],
-), ['guides', 'tireguides', 'tire-pressure-calculator'])
+), ['guides', 'tireguides', 'tire-pressure'])
 assert.deepEqual(normalizeBreadcrumbRouteSegments(
-  '/zh_cn/guides/tireguides/tire-pressure-calculator?source=breadcrumb',
+  '/zh_cn/guides/tireguides/tire-pressure?source=breadcrumb',
   ['en', 'zh_cn'],
-), ['guides', 'tireguides', 'tire-pressure-calculator'])
+), ['guides', 'tireguides', 'tire-pressure'])
 assert.deepEqual(normalizeBreadcrumbRouteSegments(
-  '/ZH_CN/guides/tireguides/tire-pressure-calculator#calculator',
+  '/ZH_CN/guides/tireguides/tire-pressure#calculator',
   ['en', 'zh_cn'],
-), ['guides', 'tireguides', 'tire-pressure-calculator'])
+), ['guides', 'tireguides', 'tire-pressure'])
 assert.equal(resolveBreadcrumbSubNavigationOwner({
   breadcrumbPath: '/guides/tireguides',
-  currentRoutePath: '/guides/tireguides/tire-pressure-calculator',
+  currentRoutePath: '/guides/tireguides/tire-pressure',
   siblingPaths: ['/guides/tireguides', '/guides/wheelset-buyers'],
   hasPageSubNavigation: true,
   localeCodes: ['en', 'zh_cn'],
 }), 'same-level-route-siblings')
 assert.equal(resolveBreadcrumbSubNavigationOwner({
   breadcrumbPath: '/zh_cn/guides/tireguides',
-  currentRoutePath: '/zh_cn/guides/tireguides/tire-pressure-calculator',
+  currentRoutePath: '/zh_cn/guides/tireguides/tire-pressure',
   siblingPaths: ['/guides/tireguides', '/guides/wheelset-buyers'],
   hasPageSubNavigation: true,
   localeCodes: ['en', 'zh_cn'],
@@ -114,7 +114,7 @@ assert.equal(resolveBreadcrumbSubNavigationOwner({
 }), 'page-sub-navigation')
 assert.equal(resolveBreadcrumbSubNavigationOwner({
   breadcrumbPath: '/zh_cn/guides/tireguides',
-  currentRoutePath: '/zh_cn/guides/tireguides/tire-pressure-calculator',
+  currentRoutePath: '/zh_cn/guides/tireguides/tire-pressure',
   siblingPaths: ['/guides/tireguides'],
   hasPageSubNavigation: true,
   localeCodes: ['en', 'zh_cn'],
@@ -125,14 +125,14 @@ const tireGuideRouteTab = resolvePageSubNavigationBreadcrumb(
   [{ path: '/guides/tireguides', tabs: tireGuideTabs }],
 )
 assert.equal(tireGuideRouteTab?.kind, 'tab')
-assert.equal(tireGuideRouteTab?.entry.tabs.length, 9)
+assert.equal(tireGuideRouteTab?.entry.tabs.length, 8)
 
-const tirePressureCalculatorRouteTab = resolvePageSubNavigationBreadcrumb(
-  '/guides/tireguides/tire-pressure-calculator',
+const tirePressureGuideRouteTab = resolvePageSubNavigationBreadcrumb(
+  '/guides/tireguides/tire-pressure',
   [{ path: '/guides/tireguides', tabs: tireGuideTabs }],
 )
-assert.equal(tirePressureCalculatorRouteTab?.kind, 'tab')
-assert.equal(tirePressureCalculatorRouteTab?.tab.id, 'tire-pressure-calculator')
+assert.equal(tirePressureGuideRouteTab?.kind, 'tab')
+assert.equal(tirePressureGuideRouteTab?.tab.id, 'tire-pressure')
 
 const clearanceRouteTab = resolvePageSubNavigationBreadcrumb(
   '/guides/tireguides/tire-frame-clearance',
@@ -152,6 +152,21 @@ const wheelsetCanonical = match('/guides/wheelset-buyers')
 assert.equal(wheelsetCanonical?.kind, 'canonical')
 assert.equal(wheelsetCanonical?.entry.path, '/guides/wheelset-buyers')
 assert.notEqual(wheelsetCanonical?.entry, canonical?.entry)
+
+const spokeGuideEntries: PageSubNavigationEntry[] = [
+  { path: '/guides/spokeguides', tabs: spokeGuideTabs },
+]
+const spokeCanonical = resolvePageSubNavigationBreadcrumb('/guides/spokeguides', spokeGuideEntries)
+assert.equal(spokeCanonical?.kind, 'canonical')
+assert.equal(spokeCanonical?.entry.path, '/guides/spokeguides')
+const spokeCalculatorTab = resolvePageSubNavigationBreadcrumb(
+  '/zh_cn/guides/spokeguides/spoke-length-calculator',
+  spokeGuideEntries,
+  ['en', 'zh_cn'],
+)
+assert.equal(spokeCalculatorTab?.kind, 'tab')
+assert.equal(spokeCalculatorTab?.entry.path, '/guides/spokeguides')
+assert.equal(spokeCalculatorTab?.tab.id, 'spoke-length-calculator')
 
 const switchSibling = (options: {
   currentPath: string
@@ -185,7 +200,7 @@ const localizedGuideSiblings = groupBreadcrumbRoutePathsAtLevel(
   3,
   [
     '/guides/tireguides/tubeless',
-    '/zh_cn/guides/tireguides/tire-pressure-calculator',
+    '/zh_cn/guides/tireguides/tire-pressure',
     '/zh_cn/guides/tireguides/schwalbe-tire-selector',
     '/fr/guides/wheelset-buyers/overview',
   ],
@@ -193,7 +208,7 @@ const localizedGuideSiblings = groupBreadcrumbRoutePathsAtLevel(
 )
 assert.deepEqual(localizedGuideSiblings.map(group => group.path), [
   '/guides/tireguides/tubeless',
-  '/guides/tireguides/tire-pressure-calculator',
+  '/guides/tireguides/tire-pressure',
   '/guides/tireguides/schwalbe-tire-selector',
 ])
 
@@ -246,7 +261,7 @@ assert.equal(switchSibling({
 // Prefixed locale URLs normalize to the same route depth, then re-localize at
 // the component boundary. A sibling route only keeps a suffix it actually has.
 assert.equal(switchSibling({
-  currentPath: '/zh_cn/guides/tireguides/tire-pressure-calculator',
+  currentPath: '/zh_cn/guides/tireguides/tire-pressure',
   breadcrumbPath: '/zh_cn/guides/tireguides',
   siblingPath: '/guides/wheelset-buyers',
   fallbackPath: '/guides/wheelset-buyers',

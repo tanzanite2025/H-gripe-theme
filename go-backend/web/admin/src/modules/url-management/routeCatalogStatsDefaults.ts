@@ -1,0 +1,25 @@
+import type { StorefrontRouteCatalogStats } from './routeCatalogTypes'
+
+export const defaultStorefrontRouteCatalogStats = (): StorefrontRouteCatalogStats => ({
+  total: 0,
+  active: 0,
+  alias: 0,
+  duplicate: 0,
+  stale: 0,
+  needs_attention: 0,
+  checked: 0,
+  unchecked: 0,
+  ok: 0,
+  redirects: 0,
+  not_found: 0,
+  server_errors: 0,
+  canonical_mismatch: 0,
+  errors: 0,
+  searchable: 0,
+  checkable: 0,
+  indexable: 0,
+  sitemap_eligible: 0,
+  last_synced_at: null,
+  last_checked_at: null,
+  manifest_version: '',
+})

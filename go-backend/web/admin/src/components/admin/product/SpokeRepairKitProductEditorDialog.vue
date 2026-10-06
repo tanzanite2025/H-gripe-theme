@@ -178,7 +178,17 @@ import { useProductSupplierCostProfitDraft } from '@/composables/product/useProd
 interface BrandRecord { id: number | string; name: string; is_enabled?: boolean }
 interface LanguageOption { value: string; label: string }
 interface TemplateRecord { id: number | string; name: string; locale?: string; is_enabled?: boolean; enabled?: boolean }
-interface CustomsClassificationRecord { id: number; product_specification_template_id?: number | null; name: string; hs_code: string; cn_code?: string; country_of_origin?: string; customs_description?: string; status?: string }
+interface CustomsClassificationRecord {
+  id: number
+  name: string
+  hs_code: string
+  cn_code?: string
+  country_of_origin?: string
+  customs_description?: string
+  verified_at?: string | null
+  review_due_at?: string | null
+  status?: string
+}
 
 const editorSteps = [
   { no: '01', label: '基础识别' },
@@ -420,7 +430,7 @@ const loadSpokeRepairKitSupplierCostData = async (): Promise<void> => {
 
 const availableSpokeRepairKitCustomsClassifications = computed(() => props.customsClassifications.filter((profile) => (
   String(profile.id) === String(form.customs_classification_profile_id || '')
-  || !profile.product_specification_template_id
+  || profile.status === 'active'
 )))
 
 const setSpokeRepairKitProductBrand = (value: unknown): void => { form.brand_id = value === '__none__' ? null : Number(value) }

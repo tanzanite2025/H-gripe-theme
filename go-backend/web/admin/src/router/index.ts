@@ -479,10 +479,8 @@ const routes: RouteRecordRaw[] = [
         redirect: domainRedirect('ShippingTemplates', {
           overview: 'ShippingTemplates',
           templates: 'ShippingTemplates',
-          zones: 'ShippingZones',
           carriers: 'ShippingCarriers',
           services: 'ShippingServices',
-          quote: 'ShippingQuote',
           packaging: 'ShippingPackaging',
           tracking: 'ShippingTracking',
           trackingShipments: 'ShippingTrackingShipments',
@@ -496,12 +494,6 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '运费模板', permission: 'shipping:view' }
       },
       {
-        path: 'shipping/zones',
-        name: 'ShippingZones',
-        component: () => import('@/views/Shipping.vue'),
-        meta: { title: '配送区域', permission: 'shipping:view' }
-      },
-      {
         path: 'shipping/carriers',
         name: 'ShippingCarriers',
         component: () => import('@/views/Shipping.vue'),
@@ -512,12 +504,6 @@ const routes: RouteRecordRaw[] = [
         name: 'ShippingServices',
         component: () => import('@/views/Shipping.vue'),
         meta: { title: '线路服务', permission: 'shipping:view' }
-      },
-      {
-        path: 'shipping/quote',
-        name: 'ShippingQuote',
-        component: () => import('@/views/Shipping.vue'),
-        meta: { title: '试算器', permission: 'shipping:view' }
       },
       {
         path: 'shipping/packaging',
@@ -1017,8 +1003,8 @@ const routes: RouteRecordRaw[] = [
       },
       {
         path: 'settings',
-        redirect: domainRedirect('SettingsEmail', {
-          email: 'SettingsEmail',
+        redirect: domainRedirect('SettingsMarkets', {
+          email: 'EmailProviders',
           social: 'SocialProfiles',
           currency: 'CurrencyExchangeOverview',
           markets: 'SettingsMarkets',
@@ -1028,16 +1014,51 @@ const routes: RouteRecordRaw[] = [
         meta: { permission: 'settings:view' }
       },
       {
+        path: 'email',
+        redirect: { name: 'EmailProviders' },
+        meta: { permission: 'settings:view' }
+      },
+      {
+        path: 'email/providers',
+        name: 'EmailProviders',
+        component: () => import('@/views/EmailProviderSettings.vue'),
+        meta: { title: '邮件发件通道', permission: 'settings:view' }
+      },
+      {
+        path: 'email/templates',
+        name: 'EmailTemplates',
+        component: () => import('@/views/NotificationTemplates.vue'),
+        meta: { title: '邮件模板', permission: 'settings:view' }
+      },
+      {
+        path: 'email/deliveries',
+        name: 'EmailDeliveryRecords',
+        component: () => import('@/views/EmailDeliveryRecords.vue'),
+        meta: { title: '邮件发送记录', permission: 'settings:view' }
+      },
+      {
         path: 'settings/email',
         name: 'SettingsEmail',
-        component: () => import('@/views/Settings.vue'),
-        meta: { title: '邮件', permission: 'settings:view' }
+        redirect: { name: 'EmailProviders' },
+        meta: { permission: 'settings:view' }
+      },
+      {
+        path: 'settings/email/providers',
+        name: 'SettingsEmailProviders',
+        redirect: { name: 'EmailProviders' },
+        meta: { title: '邮件发件通道', permission: 'settings:view' }
       },
       {
         path: 'settings/email/templates',
         name: 'SettingsEmailTemplates',
-        component: () => import('@/views/NotificationTemplates.vue'),
+        redirect: { name: 'EmailTemplates' },
         meta: { title: '邮件模板', permission: 'settings:view' }
+      },
+      {
+        path: 'settings/email/deliveries',
+        name: 'SettingsEmailDeliveryRecords',
+        redirect: { name: 'EmailDeliveryRecords' },
+        meta: { title: '邮件发送记录', permission: 'settings:view' }
       },
       {
         path: 'settings/social',

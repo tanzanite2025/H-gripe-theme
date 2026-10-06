@@ -209,6 +209,11 @@ worker:
   tracking_polling_enabled: false  # Tracking polling scheduler can run without Asynq worker
   tracking_polling_interval_seconds: 300
   tracking_polling_batch_limit: 20
+  yanwen_tracking_polling_enabled: false  # Yanwen production-only polling; never writes generic tracking events
+  yanwen_tracking_polling_interval_seconds: 300
+  yanwen_tracking_polling_batch_limit: 20  # Yanwen official endpoint maximum is 30
+  yanwen_catalog_sync_enabled: false  # Yanwen-only country, warehouse and product catalog sync
+  yanwen_catalog_sync_interval_seconds: 86400
   visitor_profile_ip_address_retention_days: 30
   # Destructive customer-service retention purge is opt-in and admin-policy gated.
   customer_service_retention_enabled: false

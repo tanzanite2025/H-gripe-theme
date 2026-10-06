@@ -35,19 +35,24 @@ func (Carrier) TableName() string {
 
 // CarrierService 承运商线路服务
 type CarrierService struct {
-	ID                    uint   `gorm:"primarykey" json:"id"`
-	CarrierID             uint   `gorm:"not null;index;uniqueIndex:idx_shipping_carrier_service_code" json:"carrier_id"`
-	TemplateID            *uint  `gorm:"index" json:"template_id"`
-	ServiceCode           string `gorm:"type:varchar(80);not null;uniqueIndex:idx_shipping_carrier_service_code" json:"service_code"`
-	ServiceName           string `gorm:"type:varchar(160);not null" json:"service_name"`
-	RouteName             string `gorm:"type:varchar(160)" json:"route_name"`
-	Countries             string `gorm:"type:text;default:'[]';not null" json:"countries"`
-	Currency              string `gorm:"type:varchar(10);not null" json:"currency"`
-	BillingMode           string `gorm:"type:varchar(40);default:'actual_weight';not null" json:"billing_mode"`
-	FirstWeightGrams      int    `gorm:"default:0;not null" json:"first_weight_grams"`
-	AdditionalWeightGrams int    `gorm:"default:0;not null" json:"additional_weight_grams"`
-	MinChargeWeightGrams  int    `gorm:"default:0;not null" json:"min_charge_weight_grams"`
-	VolumetricDivisor     int    `gorm:"default:6000;not null" json:"volumetric_divisor"`
+	ID         uint  `gorm:"primarykey" json:"id"`
+	CarrierID  uint  `gorm:"not null;index;uniqueIndex:idx_shipping_carrier_service_code" json:"carrier_id"`
+	TemplateID *uint `gorm:"index" json:"template_id"`
+	// FpxChannelID and YanwenPublishedChannelID are mutually exclusive stable
+	// links to the production service collection selected for this route.
+	FpxChannelID             *uint  `gorm:"column:fpx_channel_id;index" json:"fpx_channel_id,omitempty"`
+	YanwenPublishedChannelID *uint  `gorm:"column:yanwen_published_channel_id;index" json:"yanwen_published_channel_id,omitempty"`
+	ProviderCode             string `gorm:"-" json:"provider_code,omitempty"`
+	ServiceCode              string `gorm:"type:varchar(80);not null;uniqueIndex:idx_shipping_carrier_service_code" json:"service_code"`
+	ServiceName              string `gorm:"type:varchar(160);not null" json:"service_name"`
+	RouteName                string `gorm:"type:varchar(160)" json:"route_name"`
+	Countries                string `gorm:"type:text;default:'[]';not null" json:"countries"`
+	Currency                 string `gorm:"type:varchar(10);not null" json:"currency"`
+	BillingMode              string `gorm:"type:varchar(40);default:'actual_weight';not null" json:"billing_mode"`
+	FirstWeightGrams         int    `gorm:"default:0;not null" json:"first_weight_grams"`
+	AdditionalWeightGrams    int    `gorm:"default:0;not null" json:"additional_weight_grams"`
+	MinChargeWeightGrams     int    `gorm:"default:0;not null" json:"min_charge_weight_grams"`
+	VolumetricDivisor        int    `gorm:"default:6000;not null" json:"volumetric_divisor"`
 	// FuelSurchargePercentDecimal is the exact percentage applied to the base
 	// shipping fee (for example, "7.5" means 7.5%). It is the sole persisted
 	// source of truth; display layers may project it to a number at their
@@ -79,6 +84,7 @@ func (s *CarrierService) BeforeCreate(tx *gorm.DB) error { return s.validateMone
 func (s *CarrierService) BeforeSave(tx *gorm.DB) error   { return s.validateMoneyFields() }
 
 func (s *CarrierService) validateMoneyFields() error {
+	s.Countries = NormalizeShippingServiceCollectionCountryCodes(s.Countries)
 	if strings.TrimSpace(s.FuelSurchargePercentDecimal) == "" {
 		s.FuelSurchargePercentDecimal = "0"
 	}

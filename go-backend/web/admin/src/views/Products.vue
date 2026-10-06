@@ -246,12 +246,13 @@ interface ProductInformationTemplateRecord {
 
 interface CustomsClassificationRecord {
   id: number
-  product_specification_template_id?: number | null
   name: string
   hs_code: string
   cn_code?: string
   country_of_origin?: string
   customs_description?: string
+  verified_at?: string | null
+  review_due_at?: string | null
   status?: string
 }
 
@@ -513,13 +514,7 @@ const packagingTemplates = computed(() => informationTemplates.value.filter((ite
 
 const availableCustomsClassifications = computed(() => customsClassifications.value.filter((profile) => (
   String(profile.id) === String(productForm.customs_classification_profile_id || '')
-  || (
-    profile.status === 'active'
-    && (
-      !profile.product_specification_template_id
-      || (productForm.product_specification_template_id != null && String(profile.product_specification_template_id) === String(productForm.product_specification_template_id))
-    )
-  )
+  || profile.status === 'active'
 )))
 
 const fetchInformationTemplates = async () => {
@@ -696,4 +691,3 @@ onMounted(() => Promise.all([
   fetchProducts()
 ]))
 </script>
-

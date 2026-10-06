@@ -74,7 +74,7 @@ export const storefrontRouteCatalogApi = {
     return response.data?.data || {}
   },
 
-  async startCheck(params: Omit<StorefrontRouteCatalogListParams, 'page' | 'page_size'> & { limit?: number }): Promise<StorefrontRouteCatalogCheckTask> {
+  async startCheck(params: Omit<StorefrontRouteCatalogListParams, 'page' | 'page_size'> & { batch_size?: number }): Promise<StorefrontRouteCatalogCheckTask> {
     const response = await axios.post('/api/admin/urls/check', null, { params })
     return response.data?.data || {}
   },

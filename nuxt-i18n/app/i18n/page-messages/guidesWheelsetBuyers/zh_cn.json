@@ -21,6 +21,10 @@
     "chooseFreehub": {
       "label": "选择塔基",
       "description": "了解塔基选择与传动系统兼容性。"
+    },
+    "spokeLacingTopology": {
+      "label": "辐条编法拓扑参考",
+      "description": "查看车圈孔位映射、G3 与均孔 2:1 拓扑，以及法兰几何参考。"
     }
   }
 }

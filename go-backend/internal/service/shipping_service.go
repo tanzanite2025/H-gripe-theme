@@ -10,19 +10,20 @@ import (
 )
 
 type ShippingService struct {
-	shippingRepo      *repository.ShippingRepository
-	productRepo       *repository.ProductRepository
-	orderRepo         *repository.OrderRepository
-	txManager         *repository.TxManager
-	currencyPolicy    *CurrencyPolicyService
-	exchangeRates     *ExchangeRateService
-	auditRecorder     AuditRecorder
-	trackingRun       TrackingPollingRunState
-	webhookRun        TrackingWebhookRunState
-	trackingMu        sync.RWMutex
-	trackingRetry     resilience.HTTPRetryPolicy
-	trackingBreaker   resilience.CircuitController
-	afterSalesService *AfterSalesService
+	shippingRepo              *repository.ShippingRepository
+	productRepo               *repository.ProductRepository
+	yanwenPublishedCollection YanwenPublishedCollectionReferenceReader
+	orderRepo                 *repository.OrderRepository
+	txManager                 *repository.TxManager
+	currencyPolicy            *CurrencyPolicyService
+	exchangeRates             *ExchangeRateService
+	auditRecorder             AuditRecorder
+	trackingRun               TrackingPollingRunState
+	webhookRun                TrackingWebhookRunState
+	trackingMu                sync.RWMutex
+	trackingRetry             resilience.HTTPRetryPolicy
+	trackingBreaker           resilience.CircuitController
+	afterSalesService         *AfterSalesService
 }
 
 type TrackingCarrierResolutionInput struct {
@@ -208,6 +209,17 @@ func (s *ShippingService) ConfigureOrderRepository(orderRepo *repository.OrderRe
 		return
 	}
 	s.orderRepo = orderRepo
+}
+
+// ConfigureYanwenPublishedCollectionService supplies the narrow, read-only
+// Yanwen collection projection used by generic shipping template operations.
+func (s *ShippingService) ConfigureYanwenPublishedCollectionService(
+	collectionService YanwenPublishedCollectionReferenceReader,
+) {
+	if s == nil {
+		return
+	}
+	s.yanwenPublishedCollection = collectionService
 }
 
 func (s *ShippingService) ConfigureTxManager(txManager *repository.TxManager) {

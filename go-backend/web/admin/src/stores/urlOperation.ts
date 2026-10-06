@@ -9,12 +9,15 @@ import type {
   StorefrontRouteCatalogListParams,
 } from '@/modules/url-management/routeCatalogTypes'
 
-type StartCheckParams = Omit<StorefrontRouteCatalogListParams, 'page' | 'page_size'> & { limit?: number }
+type StartCheckParams = Omit<StorefrontRouteCatalogListParams, 'page' | 'page_size'> & { batch_size?: number }
 
 const emptySummary = (): StorefrontRouteCatalogCheckSummary => ({
   checked: 0,
   eligible: 0,
   remaining: 0,
+  batch_size: 0,
+  current_batch: 0,
+  total_batches: 0,
   ok: 0,
   redirects: 0,
   not_found: 0,
@@ -47,6 +50,7 @@ export const useURLOperationStore = defineStore('url-operation', () => {
   const checked = ref(0)
   const eligible = ref(0)
   const remaining = ref(0)
+  const batchSize = ref(0)
   const summary = ref<StorefrontRouteCatalogCheckSummary>(emptySummary())
   const error = ref('')
   const startedAt = ref<string | null>(null)
@@ -81,6 +85,7 @@ export const useURLOperationStore = defineStore('url-operation', () => {
     checked.value = Number(task.checked || task.summary?.checked || 0)
     eligible.value = Number(task.eligible || task.summary?.eligible || 0)
     remaining.value = Number(task.remaining ?? task.summary?.remaining ?? 0)
+    batchSize.value = Number(task.batch_size || task.summary?.batch_size || batchSize.value || 0)
     summary.value = { ...emptySummary(), ...(task.summary || {}) }
     error.value = task.error || ''
     startedAt.value = task.started_at || startedAt.value
@@ -102,6 +107,7 @@ export const useURLOperationStore = defineStore('url-operation', () => {
     checked.value = 0
     eligible.value = 0
     remaining.value = 0
+    batchSize.value = 0
     summary.value = emptySummary()
     error.value = ''
     startedAt.value = null
@@ -114,9 +120,18 @@ export const useURLOperationStore = defineStore('url-operation', () => {
 
     const token = ++runToken
     running.value = true
+    taskId.value = ''
     error.value = ''
     status.value = 'queued'
     locale.value = requestedLocale
+    checked.value = 0
+    eligible.value = 0
+    remaining.value = 0
+    batchSize.value = 0
+    summary.value = emptySummary()
+    startedAt.value = null
+    updatedAt.value = null
+    endedAt.value = null
     try {
       const task = await storefrontRouteCatalogApi.startCheck(params)
       if (token !== runToken) return false
@@ -131,6 +146,10 @@ export const useURLOperationStore = defineStore('url-operation', () => {
       if (token !== runToken) return false
       const finalStatus = status.value as StorefrontRouteCatalogCheckTaskStatus | null
       if (finalStatus === 'completed') {
+        if (eligible.value === 0 || checked.value === 0) {
+          toast.info('当前筛选范围没有可检查的 URL')
+          return true
+        }
         toast.success(`URL 检查已完成：${checked.value} 条`)
         return true
       }
@@ -156,6 +175,7 @@ export const useURLOperationStore = defineStore('url-operation', () => {
     checked,
     eligible,
     remaining,
+    batchSize,
     summary,
     error,
     startedAt,

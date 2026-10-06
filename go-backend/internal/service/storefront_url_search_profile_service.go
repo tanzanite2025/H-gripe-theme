@@ -38,6 +38,58 @@ func (s *StorefrontURLSearchProfileService) List(locale string) ([]urlmanagement
 	return filterURLSearchProfiles(profiles, locale, false), nil
 }
 
+// Stats returns the effective public index size alongside explicit admin
+// configuration counts. These values intentionally use the same active,
+// searchable, indexable, non-alias rules as PublicIndex.
+func (s *StorefrontURLSearchProfileService) Stats(locale string) (urlmanagementdomain.StorefrontURLSearchProfileStats, error) {
+	if s == nil || s.profiles == nil || s.catalog == nil {
+		return urlmanagementdomain.StorefrontURLSearchProfileStats{}, errors.New("storefront URL search profile service is unavailable")
+	}
+
+	profiles, err := s.list(false)
+	if err != nil {
+		return urlmanagementdomain.StorefrontURLSearchProfileStats{}, err
+	}
+	normalizedLocale := strings.TrimSpace(locale)
+	filteredProfiles := filterURLSearchProfiles(profiles, normalizedLocale, false)
+
+	var totalRoutes int64
+	_, totalRoutes, err = s.catalog.List(repository.StorefrontRouteCatalogListFilter{
+		Page:         1,
+		PageSize:     1,
+		Locale:       normalizedLocale,
+		ExcludeAlias: true,
+	})
+	if err != nil {
+		return urlmanagementdomain.StorefrontURLSearchProfileStats{}, err
+	}
+
+	stats := urlmanagementdomain.StorefrontURLSearchProfileStats{
+		TotalRoutes: totalRoutes,
+	}
+	for _, profile := range filteredProfiles {
+		if profile.RouteEntry == nil || profile.RouteEntry.IsAlias {
+			continue
+		}
+		stats.ExplicitProfiles++
+		if profile.Enabled {
+			stats.ExplicitEnabled++
+		}
+		stats.KeywordCount += int64(len(profile.Keywords))
+	}
+
+	publicEntries, err := s.PublicIndex(normalizedLocale)
+	if err != nil {
+		return urlmanagementdomain.StorefrontURLSearchProfileStats{}, err
+	}
+	stats.PublicIndexed = int64(len(publicEntries))
+	stats.Unconfigured = totalRoutes - stats.ExplicitProfiles
+	if stats.Unconfigured < 0 {
+		stats.Unconfigured = 0
+	}
+	return stats, nil
+}
+
 func (s *StorefrontURLSearchProfileService) PublicIndex(locale string) ([]urlmanagementdomain.StorefrontURLSearchProfile, error) {
 	profiles, err := s.list(false)
 	if err != nil {
@@ -106,7 +158,7 @@ func (s *StorefrontURLSearchProfileService) Get(routeEntryID uint) (*urlmanageme
 	return &urlmanagementdomain.StorefrontURLSearchProfile{
 		RouteEntryID:   routeEntryID,
 		Enabled:        true,
-		SearchWeight:   100,
+		SearchWeight:   0,
 		Keywords:       datatypes.JSONSlice[string]{},
 		DisplayTitle:   entry.Title,
 		DisplaySummary: entry.Summary,

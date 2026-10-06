@@ -50,7 +50,7 @@ func (h *ShippingHandler) CreateTemplate(c *gin.Context) {
 		return
 	}
 
-	if err := h.shippingService.CreateTemplate(&template); err != nil {
+	if err := h.shippingService.CreateTemplateWithCarrierServices(&template, shippingCarrierServicesFromRequest(req.CarrierServices)); err != nil {
 		apierror.RespondBadRequest(c, err.Error())
 		return
 	}
@@ -77,12 +77,29 @@ func (h *ShippingHandler) UpdateTemplate(c *gin.Context) {
 		return
 	}
 
-	if err := h.shippingService.UpdateTemplate(&template); err != nil {
-		apierror.RespondBadRequest(c, err.Error())
+	var saveErr error
+	if req.CarrierServices == nil {
+		saveErr = h.shippingService.UpdateTemplate(&template)
+	} else {
+		saveErr = h.shippingService.UpdateTemplateWithCarrierServices(&template, shippingCarrierServicesFromRequest(req.CarrierServices))
+	}
+	if saveErr != nil {
+		apierror.RespondBadRequest(c, saveErr.Error())
 		return
 	}
 
 	response.Success(c, template)
+}
+
+func shippingCarrierServicesFromRequest(requests *[]shippingCarrierServiceRequest) []shippingdomain.CarrierService {
+	if requests == nil {
+		return nil
+	}
+	services := make([]shippingdomain.CarrierService, 0, len(*requests))
+	for _, request := range *requests {
+		services = append(services, request.toDomain())
+	}
+	return services
 }
 
 func (h *ShippingHandler) DeleteTemplate(c *gin.Context) {

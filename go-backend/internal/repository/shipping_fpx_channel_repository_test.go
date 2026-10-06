@@ -50,3 +50,40 @@ func TestUpsertFpxChannelsPreservesApprovalAndDisablesNewChannels(t *testing.T) 
 	require.True(t, byCode["APPROVED-1"].Enabled, "sync must preserve the operator's approval")
 	require.False(t, byCode["NEW-1"].Enabled, "new official services must require explicit approval")
 }
+
+func TestUpsertFpxChannelsKeepsTestAndProductionDirectoriesSeparate(t *testing.T) {
+	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{Logger: logger.Default.LogMode(logger.Silent)})
+	require.NoError(t, err)
+	sqlDB, err := db.DB()
+	require.NoError(t, err)
+	sqlDB.SetMaxOpenConns(1)
+	t.Cleanup(func() { _ = sqlDB.Close() })
+	require.NoError(t, db.AutoMigrate(&shipping.FpxChannel{}))
+
+	repo := NewShippingRepository(db)
+	productionChannel := &shipping.FpxChannel{
+		ServiceCode: "SHARED-CODE",
+		DisplayName: "Production service",
+		Enabled:     true,
+	}
+	require.NoError(t, repo.CreateFpxChannel(productionChannel))
+
+	stats, err := repo.UpsertFpxChannelsForEnvironment(shipping.FpxChannelEnvironmentTest, []shipping.FpxChannel{{
+		ServiceCode: "SHARED-CODE",
+		DisplayName: "Test service",
+	}})
+	require.NoError(t, err)
+	require.Equal(t, FpxChannelUpsertStats{Scanned: 1, Added: 1}, stats)
+
+	productionChannels, err := repo.FindAllFpxChannelsForEnvironment(shipping.FpxChannelEnvironmentProduction, false)
+	require.NoError(t, err)
+	require.Len(t, productionChannels, 1)
+	require.Equal(t, "Production service", productionChannels[0].DisplayName)
+	require.True(t, productionChannels[0].Enabled)
+
+	testChannels, err := repo.FindAllFpxChannelsForEnvironment(shipping.FpxChannelEnvironmentTest, false)
+	require.NoError(t, err)
+	require.Len(t, testChannels, 1)
+	require.Equal(t, "Test service", testChannels[0].DisplayName)
+	require.False(t, testChannels[0].Enabled, "new channels must require approval in their own environment")
+}

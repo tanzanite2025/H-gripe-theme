@@ -1,26 +1,13 @@
 {
-  "title": "市售产品胎压标准",
-  "description": "预留用于按市售产品和具体配置查询有来源胎压标准的页面。",
-  "actions": {
-    "checkTires": "查看轮胎"
-  },
+  "guideTitle": "胎压指南",
+  "title": "胎压与过弯受力演示",
+  "description": "查看骑手载荷、胎压、速度和倾角如何改变估算接地面积与过弯受力。",
   "tabs": {
     "label": "胎压页面内容分区",
-    "standards": "产品标准",
+    "calculator": "胎压与受力",
     "details": "说明"
   },
-  "calculator": {
-    "title": "胎压、载荷与过弯受力演示",
-    "description": "用通用橡胶基准演示骑手、车辆、胎压、胎宽、速度和倾角如何改变接地面积与受力；当前模型不会返回生产胎压建议。",
-    "backToStandards": "返回市售产品胎压标准"
-  },
   "feedbackTitle": "分享您对胎压计算器的反馈",
-  "standardsPlaceholder": {
-    "status": "数据源占位",
-    "title": "市售产品胎压标准查询",
-    "body": "这里预留给后续按市售轮胎产品和具体配置查询有来源胎压限制。接入产品数据文件后将在此处实现查询。",
-    "openCalculator": "打开受力计算演示"
-  },
   "productSelector": {
     "title": "选择外胎型号",
     "searchLabel": "搜索型号、货号或规格",
@@ -40,7 +27,7 @@
   },
   "dashboard": {
 
-     "modelInfoTitle": "模型信息", "modelVersionLabel": "模型 {value}", "provenanceLabel": "载荷来源：{load}；胎宽来源：{width}；胎体计算基准：{body}", "tireBodyBaseline": "归一化基准 {value}", "measuredWidthSource": "实测宽度", "nominalWidthSource": "ETRTO 名义宽度（未做内宽修正）", "manualWidthSource": "手动对比宽度",
+     "modelInfoTitle": "模型信息", "modelVersionLabel": "模型 {value}", "provenanceLabel": "载荷来源：{load}；胎宽来源：{width}；胎体计算基准：{body}", "calculationDataSupportLabel": "所需数据目前缺少完整、准确支撑", "tireBodyBaseline": "归一化基准 {value}", "measuredWidthSource": "实测宽度", "nominalWidthSource": "ETRTO 名义宽度（未做内宽修正）", "manualWidthSource": "手动对比宽度",
 
     "selectedTirePressure": "选中外胎胎压",
     "selectedTirePressureHint": "胎压直接读取所选外胎的本地资料。目录只有最低/最高范围，演示值取范围中点，并作为前后轮共同的计算输入；这不是生产胎压建议。",
@@ -62,8 +49,8 @@
     "wetPressureScenarioHint": "水膜 {water} mm · 室内路面基准 · 通用橡胶基准",
     "wetPressureComparisonResult": "湿地演示 {pressure} PSI · 估算面积 {area} cm² · 相对中点 {change}",
     "wetPressureComparisonDelta": "湿地演示 {pressure} PSI 时，相对中点 {change}",
-    "wetPressureCompensationSummary": "湿地摩擦保留 {retention}% · 侧向受力利用率 {demand}% · 保持参考面积的等效胎压 {pressure} PSI · 湿地抓地上限 {grip} N",
-    "wetPressureCompensationClampedSummary": "湿地摩擦保留 {retention}% · 侧向受力利用率 {demand}% · 保持参考面积的等效胎压按最低值截断 {pressure} PSI · 湿地抓地上限 {grip} N",
+    "wetPressureCompensationSummary": "模型等效减压 {reduction} PSI（{reductionPct}%）· 等效胎压 {pressure} PSI · 摩擦保留 {retention}% · 侧向利用率 {demand}% · 湿地参考压力抓地上限 {grip} N",
+    "wetPressureCompensationClampedSummary": "模型等效减压 {reduction} PSI（{reductionPct}%）· 等效胎压受最低值限制为 {pressure} PSI · 摩擦保留 {retention}% · 侧向利用率 {demand}% · 湿地参考压力抓地上限 {grip} N",
     "title": "胎压、载荷与过弯受力演示",
     "subtitle": "胎压 · 载荷 · 速度 · 倾角 · 接地面积与动态受力数据",
 
@@ -72,8 +59,8 @@
     "controlBaselineBody": "本看板使用简化的一阶基准，演示胎压、载荷、速度、轮胎宽度和倾角如何改变受力与接地面积。路面固定为一个平路条件。结果仅用于解释计算关系，不是实测轮胎测试，也不是生产安全上限。",
     "frontWheel": "前轮", "rearWheel": "后轮", "load": "载荷", "loadValue": "载荷 {value} kg", "contactValue": "估算承压面积 {value} cm²",
     "controlsTitle": "1. 物理输入与过弯控制", "totalValue": "总重 {value} kg", "dynamicDataTitle": "2. 动态受力数据", "dataViewStatus": "计算数据", "diagnosticTitle": "受力关系诊断",
-    "scienceTitle": "3. 物理说明：载荷、胎压与受力", "baseline": "工程基准", "mechanicalTitle": "接地面积与摩擦", "mechanicalBody": "通用胎体条件在本计算中固定为归一化基准 1，接地面积用于展示载荷与胎压的关系。结果是计算展示，不代表实测轮胎测试。", "riskTitle": "胎压变化的作用", "riskBody": "改变胎压会改变估算接地面积。本模型不模拟胎纹或胶料变化。", "scopeTitle": "模型范围", "scopeBody": "当前生产接口只返回载荷和调用方提供的限制，不输出未经校准的胎压推荐。",
-    "leanAngle": "过弯倾角", "speed": "行驶速度", "speedHint": "固定倾角时，速度改变等效转弯半径：R = v² / (g·tanθ)。", "lateralAcceleration": "侧向加速度", "turnRadius": "等效转弯半径", "riderWeight": "骑手重量", "bikeGear": "车辆与装备", "posture": "骑行姿势与载荷分配", "roadBaselineTitle": "路面条件", "flatRoadBaseline": "平路（固定演示条件）", "frictionBaselineTitle": "固定摩擦基准", "fixedMuLabel": "μ = {value}", "fixedMuHint": "使用一个固定系数演示受力关系，不代表具体路面或轮胎实测值。", "forceDemoStatus": "固定平路受力演示",  "tireWidth": "轮胎名义宽度", "race": "竞赛", "endurance": "耐力", "tt": "计时", "gravel": "碎石", "straight": "直行", "gentle": "缓弯", "fastCorner": "高速过弯", "maximumLean": "极限倾角", "frontMargin": "前轮模型余量", "rearMargin": "后轮模型余量",   "demandValue": "侧向需求 {value} N", "maxGripValue": "横向受力能力 ±{value} N", "resultantForceMetric": "动态合力", "verticalLoadMetric": "垂直载荷", "lateralDemandMetric": "侧向需求", "gripLimitMetric": "抓地上限", "gripMarginMetric": "抓地余量", "contactAreaMetric": "接地面积", "safe": "模型为正", "warning": "模型余量低", "critical": "模型已超出", "diagnosticBody": "当前 {speed} km/h、{lean}° 倾角下，等效转弯半径约 {radius} m；前后轮侧向需求为 {front} / {rear} N。右侧数据面板显示后端返回的力与接地面积估算。", "backendPending": "等待后端工程演示结果", "backendUnavailable": "后端工程演示暂时不可用"
+    "scienceTitle": "3. 物理说明：载荷、胎压与受力", "baseline": "工程基准", "mechanicalTitle": "接地面积与摩擦", "mechanicalBody": "通用胎体条件在本计算中固定为归一化基准 1，接地面积用于展示载荷与胎压的关系。结果是计算展示，不代表实测轮胎测试。", "riskTitle": "胎压变化的作用", "riskBody": "改变胎压会改变估算接地面积。本模型不模拟胎纹或胶料变化。", "scopeTitle": "模型范围", "scopeBody": "当前接口返回受力、接地面积和通用参考轮胎的垂向形变估算。压力—摩擦系数所需数据目前缺少完整、准确支撑，因此保留固定摩擦基准，仅用于相对变化演示。",
+    "leanAngle": "过弯倾角", "speed": "行驶速度", "speedHint": "固定倾角时，速度改变等效转弯半径：R = v² / (g·tanθ)。", "lateralAcceleration": "侧向加速度", "turnRadius": "等效转弯半径", "riderWeight": "骑手重量", "bikeGear": "车辆与装备", "posture": "骑行姿势与载荷分配", "roadBaselineTitle": "路面条件", "flatRoadBaseline": "平路（固定演示条件）", "frictionBaselineTitle": "摩擦系数基准", "fixedMuLabel": "μ = {value}", "fixedMuHint": "使用一个固定系数演示受力关系，不代表具体路面或轮胎实测值。", "pressureFrictionDataHint": "压力—摩擦系数所需数据目前没有完整、准确支撑，当前保留固定 μ，仅用于相对变化演示。", "pressureFrictionCoefficientSummary": "压力—摩擦 μ {coefficient} · 相对指数 {index}", "forceDemoStatus": "固定平路受力演示",  "tireWidth": "轮胎名义宽度", "race": "竞赛", "endurance": "耐力", "tt": "计时", "gravel": "碎石", "straight": "直行", "gentle": "缓弯", "fastCorner": "高速过弯", "maximumLean": "极限倾角", "frontMargin": "前轮模型余量", "rearMargin": "后轮模型余量",   "demandValue": "侧向需求 {value} N", "maxGripValue": "横向受力能力 ±{value} N", "resultantForceMetric": "动态合力", "verticalLoadMetric": "垂直载荷", "lateralDemandMetric": "侧向需求", "gripLimitMetric": "抓地上限", "wetGripLimitMetric": "湿地参考压力抓地上限", "gripMarginMetric": "抓地余量", "contactAreaMetric": "接地面积", "verticalDeformationSummary": "形变 {estimated} mm · 参考 {reference} mm · 指数 {index} · 刚度 {stiffness} N/mm", "safe": "模型为正", "warning": "模型余量低", "critical": "模型已超出", "diagnosticBody": "当前 {speed} km/h、{lean}° 倾角下，等效转弯半径约 {radius} m；前后轮侧向需求为 {front} / {rear} N。右侧数据面板显示后端返回的力与接地面积估算。", "backendPending": "等待后端工程演示结果", "backendUnavailable": "后端工程演示暂时不可用"
   },
   "intro": {
     "matching": "为了安全与性能，车辆上的轮胎、车圈和轮组必须按各自制造商的具体文件匹配，无内胎和无钩系统尤其如此。本站不根据品牌、年份或技术名称推断某个型号的兼容性；没有逐型号来源时，结果保持未知。",

@@ -1255,6 +1255,8 @@ func newTestShippingQuoteService(t *testing.T) (*gorm.DB, *ShippingService) {
 		&shippingdomain.ShippingDisplayPriceSnapshot{},
 		&shippingdomain.Carrier{},
 		&shippingdomain.CarrierService{},
+		&shippingdomain.FpxChannel{},
+		&shippingdomain.YanwenPublishedChannel{},
 		&shippingdomain.QuoteSnapshot{},
 		&shippingdomain.PackagingRule{},
 		&shippingdomain.PackagingRuleApply{},
@@ -1262,7 +1264,11 @@ func newTestShippingQuoteService(t *testing.T) (*gorm.DB, *ShippingService) {
 
 	shippingRepo := repository.NewShippingRepository(db)
 	productRepo := repository.NewProductRepository(db)
-	return db, NewShippingService(shippingRepo, productRepo)
+	shippingService := NewShippingService(shippingRepo, productRepo)
+	shippingService.ConfigureYanwenPublishedCollectionService(
+		NewYanwenPublishedCollectionService(repository.NewYanwenPublishedChannelRepository(db), nil),
+	)
+	return db, shippingService
 }
 
 func seedQuoteProduct(t *testing.T, db *gorm.DB, price float64, weightGrams int, shippingTemplateIDs ...uint) (productdomain.Product, productdomain.ProductVariant) {

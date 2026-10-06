@@ -1,0 +1,4 @@
+ALTER TABLE shipping_yanwen_published_channels
+    ADD COLUMN IF NOT EXISTS require_receiver_tax_number BOOLEAN NOT NULL DEFAULT FALSE,
+    ADD COLUMN IF NOT EXISTS require_ioss BOOLEAN NOT NULL DEFAULT FALSE,
+    ADD COLUMN IF NOT EXISTS require_eori BOOLEAN NOT NULL DEFAULT FALSE;

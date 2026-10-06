@@ -183,12 +183,14 @@ func (b *dependencyServicesBuilder) wire() error {
 	services.Outbox.RegisterHandler(outbox.EventTypeOrderPaid, orderPaidWebhookHandler.Handle)
 	orderCompletionHandler := service.NewOrderCompletionOutboxHandler(services.Order, services.TransactionalNotificationTemplates)
 	orderCompletionHandler.ConfigureTransactionalNotificationSender(support.EmailSvc)
+	orderCompletionHandler.ConfigureTransactionalNotificationDeliveryRecords(services.EmailDeliveryRecords)
 	services.Outbox.RegisterHandler(outbox.EventTypeOrderCompleted, orderCompletionHandler.Handle)
 	canonicalDomainEventHandler := service.NewCanonicalDomainEventOutboxHandlerWithSender(
 		services.TransactionalNotificationTemplates,
 		support.EmailSvc,
 	)
 	canonicalDomainEventHandler.ConfigureNotificationSettings(services.Setting)
+	canonicalDomainEventHandler.ConfigureTransactionalNotificationDeliveryRecords(services.EmailDeliveryRecords)
 	services.Outbox.RegisterHandler(outbox.EventTypeOrderPaymentSucceeded, canonicalDomainEventHandler.Handle)
 	services.Outbox.RegisterHandler(outbox.EventTypeOrderPaymentExpired, canonicalDomainEventHandler.Handle)
 	services.Outbox.RegisterHandler(outbox.EventTypeOrderCancelled, canonicalDomainEventHandler.Handle)

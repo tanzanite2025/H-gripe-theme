@@ -38,6 +38,57 @@ func (r *StorefrontRouteCatalogRepository) UpsertSnapshot(entries []seodomain.St
 	}
 
 	return r.db.Transaction(func(tx *gorm.DB) error {
+		for index := range entries {
+			entry := entries[index]
+			entry.LastSeenAt = seenAt
+
+			var existing seodomain.StorefrontRouteCatalogEntry
+			err := tx.Where("route_key = ?", entry.RouteKey).First(&existing).Error
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				if err := tx.Create(&entry).Error; err != nil {
+					return err
+				}
+				if err := r.publishRouteCatalogChanged(tx, entry.ID, entry.ManifestVersion, seenAt, "upsert"); err != nil {
+					return err
+				}
+				continue
+			}
+			if err != nil {
+				return err
+			}
+
+			updates := map[string]interface{}{
+				"path":                entry.Path,
+				"locale":              entry.Locale,
+				"source_type":         entry.SourceType,
+				"source_id":           entry.SourceID,
+				"source_key":          entry.SourceKey,
+				"title":               entry.Title,
+				"summary":             entry.Summary,
+				"canonical_path":      entry.CanonicalPath,
+				"is_alias":            entry.IsAlias,
+				"is_searchable":       entry.IsSearchable,
+				"is_checkable":        entry.IsCheckable,
+				"is_indexable":        entry.IsIndexable,
+				"entry_status":        entry.EntryStatus,
+				"duplicate_group_key": entry.DuplicateGroupKey,
+				"manifest_version":    entry.ManifestVersion,
+				"last_seen_at":        entry.LastSeenAt,
+				"updated_at":          time.Now().UTC(),
+			}
+			if routeCheckProjectionMustBeReset(existing, entry) {
+				resetRouteCheckProjection(updates)
+			}
+			if err := tx.Model(&existing).Updates(updates).Error; err != nil {
+				return err
+			}
+			if err := r.publishRouteCatalogChanged(tx, entry.ID, entry.ManifestVersion, seenAt, "upsert"); err != nil {
+				return err
+			}
+		}
+
+		// Mark only routes absent from this snapshot as stale. Applying this after
+		// upserts lets unchanged routes retain their latest HTTP check projection.
 		var staleIDs []uint
 		if err := tx.Model(&seodomain.StorefrontRouteCatalogEntry{}).
 			Where("last_seen_at < ?", seenAt).
@@ -60,60 +111,6 @@ func (r *StorefrontRouteCatalogRepository) UpsertSnapshot(entries []seodomain.St
 				"last_checked_at":     nil,
 			}).Error; err != nil {
 			return err
-		}
-
-		for index := range entries {
-			entry := entries[index]
-			entry.LastSeenAt = seenAt
-
-			var existing seodomain.StorefrontRouteCatalogEntry
-			err := tx.Where("route_key = ?", entry.RouteKey).First(&existing).Error
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				if err := tx.Create(&entry).Error; err != nil {
-					return err
-				}
-				if err := r.publishRouteCatalogChanged(tx, entry.ID, entry.ManifestVersion, seenAt, "upsert"); err != nil {
-					return err
-				}
-				continue
-			}
-			if err != nil {
-				return err
-			}
-
-			if err := tx.Model(&existing).Updates(map[string]interface{}{
-				"path":                entry.Path,
-				"locale":              entry.Locale,
-				"source_type":         entry.SourceType,
-				"source_id":           entry.SourceID,
-				"source_key":          entry.SourceKey,
-				"title":               entry.Title,
-				"summary":             entry.Summary,
-				"canonical_path":      entry.CanonicalPath,
-				"is_alias":            entry.IsAlias,
-				"is_searchable":       entry.IsSearchable,
-				"is_checkable":        entry.IsCheckable,
-				"is_indexable":        entry.IsIndexable,
-				"entry_status":        entry.EntryStatus,
-				"duplicate_group_key": entry.DuplicateGroupKey,
-				"manifest_version":    entry.ManifestVersion,
-				"last_seen_at":        entry.LastSeenAt,
-				"last_check_status":   "",
-				"last_http_status":    0,
-				"last_final_url":      "",
-				"last_canonical_url":  "",
-				"last_response_ms":    0,
-				"last_redirect_count": 0,
-				"last_content_hash":   "",
-				"last_check_error":    "",
-				"last_checked_at":     nil,
-				"updated_at":          time.Now().UTC(),
-			}).Error; err != nil {
-				return err
-			}
-			if err := r.publishRouteCatalogChanged(tx, entry.ID, entry.ManifestVersion, seenAt, "upsert"); err != nil {
-				return err
-			}
 		}
 		for _, routeEntryID := range staleIDs {
 			if err := r.publishRouteCatalogChanged(tx, routeEntryID, "", seenAt, "stale"); err != nil {
@@ -160,20 +157,21 @@ func (r *StorefrontRouteCatalogRepository) publishRouteCatalogChanged(
 }
 
 type StorefrontRouteCatalogListFilter struct {
-	Page                int
-	PageSize            int
-	Locale              string
-	SourceType          string
-	EntryStatus         string
-	CheckStatus         string
-	Search              string
-	Searchable          *bool
-	SearchProfileStatus string
-	Indexable           *bool
-	NeedsAttention      *bool
-	ProblemScope        string
-	ExcludeAlias        bool
-	CheckableOnly       bool
+	Page                     int
+	PageSize                 int
+	Locale                   string
+	SourceType               string
+	EntryStatus              string
+	CheckStatus              string
+	Search                   string
+	Searchable               *bool
+	SearchProfileStatus      string
+	Indexable                *bool
+	NeedsAttention           *bool
+	ProblemScope             string
+	ExcludeAlias             bool
+	CheckableOnly            bool
+	IncludeStaleWhenChecking bool
 }
 
 func (r *StorefrontRouteCatalogRepository) List(filter StorefrontRouteCatalogListFilter) ([]seodomain.StorefrontRouteCatalogEntry, int64, error) {
@@ -197,7 +195,13 @@ func (r *StorefrontRouteCatalogRepository) List(filter StorefrontRouteCatalogLis
 	if filter.EntryStatus != "" {
 		query = query.Where("entry_status = ?", filter.EntryStatus)
 	}
-	if filter.CheckStatus != "" {
+	switch filter.CheckStatus {
+	case "checked":
+		query = query.Where("last_check_status IS NOT NULL AND last_check_status <> ''")
+	case "unchecked":
+		query = query.Where("last_check_status IS NULL OR last_check_status = ''")
+	case "":
+	default:
 		query = query.Where("last_check_status = ?", filter.CheckStatus)
 	}
 	if filter.Searchable != nil {
@@ -233,20 +237,36 @@ func (r *StorefrontRouteCatalogRepository) List(filter StorefrontRouteCatalogLis
 			seodomain.RouteCheckStatusCanonicalMisfit,
 		)
 	}
+	// The normal route ledger represents the current storefront manifest. A
+	// route removed from that manifest is historical evidence and must be
+	// requested explicitly with entry_status=stale (or by the issue scanner).
+	if filter.EntryStatus == "" && !filter.IncludeStaleWhenChecking {
+		query = query.Where("entry_status <> ?", seodomain.RouteEntryStatusStale)
+	}
 	if filter.ExcludeAlias {
 		query = query.Where("is_alias = ?", false)
 	}
 	if filter.CheckableOnly {
-		query = query.Where(
-			"is_checkable = ? AND entry_status <> ?",
-			true,
-			seodomain.RouteEntryStatusStale,
-		)
+		query = query.Where("is_checkable = ?", true)
+		if !filter.IncludeStaleWhenChecking {
+			query = query.Where("entry_status <> ?", seodomain.RouteEntryStatusStale)
+		}
 	}
 	if search := filter.Search; search != "" {
 		like := "%" + search + "%"
 		query = query.Where(
-			"LOWER(path) LIKE LOWER(?) OR LOWER(title) LIKE LOWER(?) OR LOWER(summary) LIKE LOWER(?) OR LOWER(source_key) LIKE LOWER(?)",
+			"LOWER(storefront_route_catalog_entries.path) LIKE LOWER(?) OR "+
+				"LOWER(storefront_route_catalog_entries.title) LIKE LOWER(?) OR "+
+				"LOWER(storefront_route_catalog_entries.summary) LIKE LOWER(?) OR "+
+				"LOWER(storefront_route_catalog_entries.source_key) LIKE LOWER(?) OR "+
+				"EXISTS (SELECT 1 FROM storefront_url_search_profiles sp WHERE sp.route_entry_id = storefront_route_catalog_entries.id AND ("+
+				"LOWER(sp.display_title) LIKE LOWER(?) OR "+
+				"LOWER(sp.display_summary) LIKE LOWER(?) OR "+
+				"LOWER(CAST(sp.keywords_json AS TEXT)) LIKE LOWER(?)"+
+				"))",
+			like,
+			like,
+			like,
 			like,
 			like,
 			like,
@@ -264,10 +284,34 @@ func (r *StorefrontRouteCatalogRepository) List(filter StorefrontRouteCatalogLis
 		Order("is_alias ASC").
 		Order("locale ASC").
 		Order("path ASC").
+		Order("id ASC").
 		Offset((filter.Page - 1) * filter.PageSize).
 		Limit(filter.PageSize).
 		Find(&entries).Error
 	return entries, total, err
+}
+
+func routeCheckProjectionMustBeReset(
+	existing seodomain.StorefrontRouteCatalogEntry,
+	incoming seodomain.StorefrontRouteCatalogEntry,
+) bool {
+	return existing.Path != incoming.Path ||
+		existing.Locale != incoming.Locale ||
+		existing.CanonicalPath != incoming.CanonicalPath ||
+		existing.IsAlias != incoming.IsAlias ||
+		existing.IsCheckable != incoming.IsCheckable
+}
+
+func resetRouteCheckProjection(updates map[string]interface{}) {
+	updates["last_check_status"] = ""
+	updates["last_http_status"] = 0
+	updates["last_final_url"] = ""
+	updates["last_canonical_url"] = ""
+	updates["last_response_ms"] = 0
+	updates["last_redirect_count"] = 0
+	updates["last_content_hash"] = ""
+	updates["last_check_error"] = ""
+	updates["last_checked_at"] = nil
 }
 
 func (r *StorefrontRouteCatalogRepository) ListSitemapEntries(limit int) ([]seodomain.StorefrontRouteCatalogEntry, error) {
@@ -335,12 +379,21 @@ func sitemapEligibleRouteEntry(entry seodomain.StorefrontRouteCatalogEntry) bool
 
 func routeNeedsAttentionCondition() string {
 	return `
-		entry_status IN ('duplicate', 'stale')
+		entry_status = 'duplicate'
+		OR (entry_status = 'stale' AND COALESCE(last_check_status, '') = '')
 		OR (
+			entry_status = 'stale'
+			AND last_check_status IN ('redirect', 'redirect_chain', 'redirect_target_mismatch', 'server_error', 'canonical_mismatch', 'error')
+		)
+		OR (
+			entry_status <> 'stale'
+			AND
 			is_alias = FALSE
 			AND last_check_status IN ('redirect', 'not_found', 'server_error', 'canonical_mismatch', 'error')
 		)
 		OR (
+			entry_status <> 'stale'
+			AND
 			is_alias = TRUE
 			AND last_check_status IN (
 				'redirect_chain',
@@ -359,9 +412,15 @@ func (r *StorefrontRouteCatalogRepository) ListIssueCandidateIDs() ([]uint, erro
 		return nil, errors.New("storefront route catalog repository is unavailable")
 	}
 
+	// Include routes with active historical issues so a manifest sync can
+	// reconcile an issue that disappeared when the route became healthy again.
 	var ids []uint
 	err := r.db.Model(&seodomain.StorefrontRouteCatalogEntry{}).
-		Where(routeNeedsAttentionCondition()).
+		Where("("+routeNeedsAttentionCondition()+") OR EXISTS ("+
+			"SELECT 1 FROM storefront_url_issues active_issue "+
+			"WHERE active_issue.route_entry_id = storefront_route_catalog_entries.id "+
+			"AND active_issue.state IN ('open', 'acknowledged', 'resolved', 'suppressed')"+
+			")").
 		Order("id ASC").
 		Pluck("id", &ids).Error
 	return ids, err

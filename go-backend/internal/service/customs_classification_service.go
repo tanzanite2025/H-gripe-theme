@@ -8,12 +8,14 @@ import (
 	"net/http"
 	"net/url"
 	"regexp"
+	"slices"
 	"strings"
 	"time"
 
 	"commerce-platform/internal/domain/product"
 	"commerce-platform/internal/repository"
 
+	"gorm.io/datatypes"
 	"gorm.io/gorm"
 )
 
@@ -33,34 +35,39 @@ var (
 	ErrCustomsClassificationNotFound   = errors.New("customs classification profile not found")
 	ErrCustomsClassificationInvalid    = errors.New("customs classification profile invalid")
 	ErrCustomsClassificationSlugExists = errors.New("customs classification profile slug already exists")
+	ErrCustomsClassificationBuiltIn    = errors.New("built-in customs classification profile cannot be deleted")
 	ErrCustomsLookupInvalid            = errors.New("customs classification lookup invalid")
 	ErrCustomsLookupUnavailable        = errors.New("customs classification lookup unavailable")
 )
 
 type CustomsClassificationInput struct {
-	ProductSpecificationTemplateID *uint
-	Name                           string
-	Slug                           string
-	ComponentKind                  string
-	Material                       string
-	HSCode                         string
-	CNCode                         string
-	CountryOfOrigin                string
-	CustomsDescription             string
-	Source                         string
-	SourceCode                     string
-	SourceURL                      string
-	Notes                          string
-	Status                         string
+	Name                         string
+	Slug                         string
+	ComponentKind                string
+	Material                     string
+	HSCode                       string
+	CNCode                       string
+	CountryOfOrigin              string
+	CustomsDescription           string
+	Source                       string
+	SourceCode                   string
+	SourceURL                    string
+	SourceURLUS                  string
+	SourceURLEU                  string
+	SourceURLUK                  string
+	Notes                        string
+	TradeRemedyRiskLevel         string
+	TradeRemedyRiskTags          []string
+	TradeRemedyDeclarationAdvice string
+	Status                       string
 }
 
 type CustomsClassificationListInput struct {
-	ProductSpecificationTemplateID uint
-	ComponentKind                  string
-	Material                       string
-	Status                         string
-	Search                         string
-	IncludePaused                  bool
+	ComponentKind string
+	Material      string
+	Status        string
+	Search        string
+	IncludePaused bool
 }
 
 type CustomsClassificationLookupInput struct {
@@ -141,12 +148,11 @@ func (s *CustomsClassificationService) ConfigureLookupBaseURLs(usHTSBaseURL, ukT
 
 func (s *CustomsClassificationService) List(input CustomsClassificationListInput) ([]product.CustomsClassificationProfile, error) {
 	return s.repo.List(repository.CustomsClassificationListFilter{
-		ProductSpecificationTemplateID: input.ProductSpecificationTemplateID,
-		ComponentKind:                  strings.TrimSpace(input.ComponentKind),
-		Material:                       strings.TrimSpace(input.Material),
-		Status:                         strings.TrimSpace(input.Status),
-		Search:                         strings.TrimSpace(input.Search),
-		IncludePaused:                  input.IncludePaused,
+		ComponentKind: strings.TrimSpace(input.ComponentKind),
+		Material:      strings.TrimSpace(input.Material),
+		Status:        strings.TrimSpace(input.Status),
+		Search:        strings.TrimSpace(input.Search),
+		IncludePaused: input.IncludePaused,
 	})
 }
 
@@ -177,7 +183,8 @@ func (s *CustomsClassificationService) Create(input CustomsClassificationInput) 
 }
 
 func (s *CustomsClassificationService) Update(id uint, input CustomsClassificationInput) (*product.CustomsClassificationProfile, error) {
-	if _, err := s.Get(id); err != nil {
+	existingProfile, err := s.Get(id)
+	if err != nil {
 		return nil, err
 	}
 	profile, err := normalizeCustomsClassificationInput(input)
@@ -185,6 +192,16 @@ func (s *CustomsClassificationService) Update(id uint, input CustomsClassificati
 		return nil, err
 	}
 	profile.ID = id
+	if strings.EqualFold(strings.TrimSpace(existingProfile.Source), "built_in") {
+		profile.Source = existingProfile.Source
+	}
+	if customsClassificationEvidenceChanged(existingProfile, profile) {
+		profile.VerifiedAt = nil
+		profile.ReviewDueAt = nil
+	} else {
+		profile.VerifiedAt = existingProfile.VerifiedAt
+		profile.ReviewDueAt = existingProfile.ReviewDueAt
+	}
 	exists, err := s.repo.SlugExists(profile.Slug, id)
 	if err != nil {
 		return nil, err
@@ -198,9 +215,34 @@ func (s *CustomsClassificationService) Update(id uint, input CustomsClassificati
 	return s.Get(id)
 }
 
+func customsClassificationEvidenceChanged(existingProfile, updatedProfile *product.CustomsClassificationProfile) bool {
+	if existingProfile == nil || updatedProfile == nil {
+		return true
+	}
+	return existingProfile.ComponentKind != updatedProfile.ComponentKind ||
+		existingProfile.Material != updatedProfile.Material ||
+		existingProfile.HSCode != updatedProfile.HSCode ||
+		existingProfile.CNCode != updatedProfile.CNCode ||
+		existingProfile.CountryOfOrigin != updatedProfile.CountryOfOrigin ||
+		existingProfile.CustomsDescription != updatedProfile.CustomsDescription ||
+		existingProfile.Source != updatedProfile.Source ||
+		existingProfile.SourceCode != updatedProfile.SourceCode ||
+		existingProfile.SourceURL != updatedProfile.SourceURL ||
+		existingProfile.SourceURLUS != updatedProfile.SourceURLUS ||
+		existingProfile.SourceURLEU != updatedProfile.SourceURLEU ||
+		existingProfile.SourceURLUK != updatedProfile.SourceURLUK ||
+		existingProfile.TradeRemedyRiskLevel != updatedProfile.TradeRemedyRiskLevel ||
+		!slices.Equal(existingProfile.TradeRemedyRiskTags, updatedProfile.TradeRemedyRiskTags) ||
+		existingProfile.TradeRemedyDeclarationAdvice != updatedProfile.TradeRemedyDeclarationAdvice
+}
+
 func (s *CustomsClassificationService) Delete(id uint) error {
-	if _, err := s.Get(id); err != nil {
+	profile, err := s.Get(id)
+	if err != nil {
 		return err
+	}
+	if strings.EqualFold(strings.TrimSpace(profile.Source), "built_in") {
+		return ErrCustomsClassificationBuiltIn
 	}
 	return s.repo.Delete(id)
 }
@@ -256,26 +298,75 @@ func normalizeCustomsClassificationInput(input CustomsClassificationInput) (*pro
 	if len(customsDescription) > 255 {
 		return nil, fmt.Errorf("%w: customs description is too long", ErrCustomsClassificationInvalid)
 	}
+	riskLevel := strings.ToLower(strings.TrimSpace(input.TradeRemedyRiskLevel))
+	if riskLevel == "" {
+		riskLevel = product.CustomsTradeRemedyRiskLevelNone
+	}
+	if !product.IsCustomsTradeRemedyRiskLevel(riskLevel) {
+		return nil, fmt.Errorf("%w: unsupported trade remedy risk level", ErrCustomsClassificationInvalid)
+	}
+	riskTags, err := normalizeCustomsTradeRemedyRiskTags(input.TradeRemedyRiskTags)
+	if err != nil {
+		return nil, err
+	}
+	declarationAdvice := strings.TrimSpace(input.TradeRemedyDeclarationAdvice)
+	if len(declarationAdvice) > 4000 {
+		return nil, fmt.Errorf("%w: trade remedy declaration advice is too long", ErrCustomsClassificationInvalid)
+	}
 	if !product.IsCustomsClassificationStatus(status) {
 		return nil, fmt.Errorf("%w: unsupported status", ErrCustomsClassificationInvalid)
 	}
 
+	sourceURL := strings.TrimSpace(input.SourceURL)
+	sourceURLUS := strings.TrimSpace(input.SourceURLUS)
+	if sourceURLUS == "" {
+		sourceURLUS = sourceURL
+	}
+	if sourceURL == "" {
+		sourceURL = sourceURLUS
+	}
+
 	return &product.CustomsClassificationProfile{
-		ProductSpecificationTemplateID: input.ProductSpecificationTemplateID,
-		Name:                           name,
-		Slug:                           slug,
-		ComponentKind:                  strings.TrimSpace(input.ComponentKind),
-		Material:                       strings.TrimSpace(input.Material),
-		HSCode:                         hsCode,
-		CNCode:                         cnCode,
-		CountryOfOrigin:                countryOfOrigin,
-		CustomsDescription:             customsDescription,
-		Source:                         strings.ToLower(strings.TrimSpace(input.Source)),
-		SourceCode:                     strings.TrimSpace(input.SourceCode),
-		SourceURL:                      strings.TrimSpace(input.SourceURL),
-		Notes:                          strings.TrimSpace(input.Notes),
-		Status:                         status,
+		Name:                         name,
+		Slug:                         slug,
+		ComponentKind:                strings.TrimSpace(input.ComponentKind),
+		Material:                     strings.TrimSpace(input.Material),
+		HSCode:                       hsCode,
+		CNCode:                       cnCode,
+		CountryOfOrigin:              countryOfOrigin,
+		CustomsDescription:           customsDescription,
+		Source:                       strings.ToLower(strings.TrimSpace(input.Source)),
+		SourceCode:                   strings.TrimSpace(input.SourceCode),
+		SourceURL:                    sourceURL,
+		SourceURLUS:                  sourceURLUS,
+		SourceURLEU:                  strings.TrimSpace(input.SourceURLEU),
+		SourceURLUK:                  strings.TrimSpace(input.SourceURLUK),
+		Notes:                        strings.TrimSpace(input.Notes),
+		TradeRemedyRiskLevel:         riskLevel,
+		TradeRemedyRiskTags:          datatypes.JSONSlice[string](riskTags),
+		TradeRemedyDeclarationAdvice: declarationAdvice,
+		Status:                       status,
 	}, nil
+}
+
+func normalizeCustomsTradeRemedyRiskTags(values []string) ([]string, error) {
+	seen := make(map[string]struct{}, len(values))
+	result := make([]string, 0, len(values))
+	for _, value := range values {
+		tag := strings.ToLower(strings.TrimSpace(value))
+		if tag == "" {
+			continue
+		}
+		if !product.IsCustomsTradeRemedyRiskTag(tag) {
+			return nil, fmt.Errorf("%w: unsupported trade remedy risk tag %q", ErrCustomsClassificationInvalid, value)
+		}
+		if _, exists := seen[tag]; exists {
+			continue
+		}
+		seen[tag] = struct{}{}
+		result = append(result, tag)
+	}
+	return result, nil
 }
 
 func normalizeCustomsClassificationSlug(value string) string {
@@ -411,7 +502,7 @@ func (s *CustomsClassificationService) lookupUKTradeTariff(query string, limit i
 		CNCode:             itemCode[:8],
 		Description:        description,
 		CustomsDescription: titleLikeCustomsDescription(description),
-		SourceURL:          "https://www.trade-tariff.service.gov.uk/commodities/" + itemCode,
+		SourceURL:          "https://www.gov.uk/trade-tariff/" + itemCode,
 	}
 	return []CustomsClassificationLookupCandidate{candidate}, nil
 }

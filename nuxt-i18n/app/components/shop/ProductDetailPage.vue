@@ -348,7 +348,7 @@ const wheelsetSpokeSpecsLink = (model: {
   wheelset_model_slug: string
 }) => {
   const query = `?model=${encodeURIComponent(model.wheelset_model_slug)}`
-  return `${localePath('/resources/brand-wheelset-spoke-specs')}${query}#wheelset-${model.brand_slug}-${model.wheelset_model_slug}`
+  return `${localePath('/guides/spokeguides/brand-wheelset-spoke-specs')}${query}#wheelset-${model.brand_slug}-${model.wheelset_model_slug}`
 }
 
 const isMadeToOrder = computed(() => Boolean(

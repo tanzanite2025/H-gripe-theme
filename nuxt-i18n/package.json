@@ -15,6 +15,7 @@
     "test:breadcrumb-navigation": "tsx scripts/breadcrumb-navigation-contract.test.ts",
     "test:footer-menu-route-discovery": "tsx scripts/footer-menu-route-discovery-contract.test.ts",
     "test:wheelset-lacing-topology": "tsx scripts/wheelset-lacing-topology.test.ts",
+    "test:tire-rim-width-input-conversion": "tsx scripts/tire-rim-width-input-conversion.test.ts",
     "i18n:typecheck": "npm run scripts:typecheck",
     "i18n:split": "tsx scripts/i18n/split-locales.ts",
     "i18n:fill-missing": "tsx scripts/i18n/fill-missing.ts",

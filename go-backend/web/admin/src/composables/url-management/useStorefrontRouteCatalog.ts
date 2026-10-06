@@ -1,4 +1,4 @@
-import { computed, reactive, ref } from 'vue'
+import { computed, onBeforeUnmount, reactive, ref, watch } from 'vue'
 import { toast } from 'vue-sonner'
 import { storefrontRouteCatalogApi } from '@/modules/url-management/routeCatalog'
 import { storefrontURLIssuesApi, type StorefrontURLIssueStats } from '@/modules/url-management/urlIssues'
@@ -9,6 +9,7 @@ import type {
   StorefrontRouteCatalogStats,
   StorefrontRouteCheckResult,
 } from '@/modules/url-management/routeCatalogTypes'
+import { defaultStorefrontRouteCatalogStats } from '@/modules/url-management/routeCatalogStatsDefaults'
 import { checkLabel } from '@/modules/url-management/routeCatalogPresentation'
 import { useURLOperationStore } from '@/stores/urlOperation'
 
@@ -24,29 +25,6 @@ export interface StorefrontRouteCatalogFilters {
   search_profile_status: string
   includeAliases: boolean
 }
-
-export const defaultStorefrontRouteCatalogStats = (): StorefrontRouteCatalogStats => ({
-  total: 0,
-  active: 0,
-  alias: 0,
-  duplicate: 0,
-  stale: 0,
-  needs_attention: 0,
-  checked: 0,
-  unchecked: 0,
-  ok: 0,
-  redirects: 0,
-  not_found: 0,
-  server_errors: 0,
-  canonical_mismatch: 0,
-  errors: 0,
-  searchable: 0,
-  checkable: 0,
-  indexable: 0,
-  sitemap_eligible: 0,
-  last_synced_at: null,
-  manifest_version: '',
-})
 
 const defaultPagination = (pageSize: number): SEOResourcePagination => ({
   page: 1,
@@ -83,6 +61,7 @@ export function useStorefrontRouteCatalog(canEdit: boolean) {
     suppressed: 0,
     critical: 0,
     high: 0,
+    stale_route: 0,
   })
   const items = ref<StorefrontRouteCatalogEntry[]>([])
   const loading = ref(false)
@@ -115,6 +94,11 @@ export function useStorefrontRouteCatalog(canEdit: boolean) {
   const pagination = reactive<SEOResourcePagination>(defaultPagination(50))
   const historyPagination = reactive<SEOResourcePagination>(defaultPagination(10))
   const latestHistoryItem = computed(() => historyItems.value[0] || null)
+  let loadRequestSequence = 0
+  let statsRequestSequence = 0
+  let issueStatsRequestSequence = 0
+  let liveRefreshTimer: number | null = null
+  let liveRefreshInFlight = false
 
   const listParams = (): StorefrontRouteCatalogListParams => ({
     page: pagination.page,
@@ -128,48 +112,60 @@ export function useStorefrontRouteCatalog(canEdit: boolean) {
       ? { entry_status: filters.entry_status }
       : {}),
     ...(filters.check_status !== 'all' ? { check_status: filters.check_status } : {}),
+    ...(filters.entry_status === 'stale' ? { include_stale_when_checking: true } : {}),
     ...(filters.searchable !== 'all' ? { searchable: filters.searchable } : {}),
     ...(filters.search_profile_status !== 'all' ? { search_profile_status: filters.search_profile_status } : {}),
     ...(mode.value === 'canonical' ? { problem_scope: 'canonical' as const } : {}),
     include_aliases: filters.includeAliases,
   })
 
-  const loadStats = async (): Promise<void> => {
+  const loadStats = async (silent = false): Promise<void> => {
+    const requestSequence = ++statsRequestSequence
     statsLoading.value = true
     try {
       const locale = filters.locale !== 'all' ? filters.locale : undefined
-      stats.value = {
-        ...defaultStorefrontRouteCatalogStats(),
-        ...(await storefrontRouteCatalogApi.stats(locale, mode.value === 'canonical' ? 'canonical' : undefined)),
+      const nextStats = await storefrontRouteCatalogApi.stats(locale, mode.value === 'canonical' ? 'canonical' : undefined)
+      if (requestSequence === statsRequestSequence) {
+        stats.value = {
+          ...defaultStorefrontRouteCatalogStats(),
+          ...nextStats,
+        }
       }
     } catch (error) {
       console.error('Failed to load storefront route catalog stats:', error)
-      toast.error('URL 台账统计加载失败')
+      if (!silent) toast.error('URL 台账统计加载失败')
     } finally {
-      statsLoading.value = false
+      if (requestSequence === statsRequestSequence) statsLoading.value = false
     }
   }
 
-  const load = async (): Promise<void> => {
+  const load = async (silent = false): Promise<void> => {
+    const requestSequence = ++loadRequestSequence
     loading.value = true
     try {
       const response = await storefrontRouteCatalogApi.list(listParams())
-      items.value = response.items
-      Object.assign(pagination, response.pagination)
+      if (requestSequence === loadRequestSequence) {
+        items.value = response.items
+        Object.assign(pagination, response.pagination)
+      }
     } catch (error) {
       console.error('Failed to load storefront route catalog:', error)
-      toast.error('URL 台账加载失败')
+      if (!silent) toast.error('URL 台账加载失败')
     } finally {
-      loading.value = false
+      if (requestSequence === loadRequestSequence) loading.value = false
     }
   }
 
   const loadIssueStats = async (): Promise<void> => {
+    const requestSequence = ++issueStatsRequestSequence
     try {
       // The issue queue is the human workflow source of truth for "待处理".
       // Route observations remain useful for the other health counters, but
       // must not make this card drift after an issue is suppressed/resolved.
-      issueStats.value = { ...issueStats.value, ...(await storefrontURLIssuesApi.summary()) }
+      const nextStats = await storefrontURLIssuesApi.summary()
+      if (requestSequence === issueStatsRequestSequence) {
+        issueStats.value = { ...issueStats.value, ...nextStats }
+      }
     } catch (error) {
       console.error('Failed to load storefront URL issue stats:', error)
       toast.error('URL 问题统计加载失败')
@@ -179,6 +175,47 @@ export function useStorefrontRouteCatalog(canEdit: boolean) {
   const refreshAll = async (): Promise<void> => {
     await Promise.all([loadStats(), load(), loadIssueStats()])
   }
+
+  const refreshCatalogData = async (silent = false): Promise<void> => {
+    await Promise.all([loadStats(silent), load(silent)])
+  }
+
+  const refreshCatalogList = async (): Promise<void> => {
+    await load()
+  }
+
+  const stopLiveCatalogRefresh = (): void => {
+    if (liveRefreshTimer !== null) {
+      window.clearInterval(liveRefreshTimer)
+      liveRefreshTimer = null
+    }
+  }
+
+  const refreshCatalogWhileCheckRuns = async (): Promise<void> => {
+    if (!checking.value || liveRefreshInFlight) return
+    liveRefreshInFlight = true
+    try {
+      // Each completed URL is persisted before the task progress advances.
+      // Re-reading the list and stats makes the table reflect that durable
+      // state while the long-running task is still in progress.
+      await refreshCatalogData(true)
+    } finally {
+      liveRefreshInFlight = false
+    }
+  }
+
+  const startLiveCatalogRefresh = (): void => {
+    stopLiveCatalogRefresh()
+    liveRefreshTimer = window.setInterval(() => {
+      void refreshCatalogWhileCheckRuns()
+    }, 1000)
+  }
+
+  watch(checking, (isChecking) => {
+    if (isChecking) startLiveCatalogRefresh()
+    else stopLiveCatalogRefresh()
+  }, { immediate: true })
+  onBeforeUnmount(stopLiveCatalogRefresh)
 
   const applyFilters = (): void => {
     pagination.page = 1
@@ -225,7 +262,7 @@ export function useStorefrontRouteCatalog(canEdit: boolean) {
   }
 
   const syncCatalog = async (): Promise<void> => {
-    if (!canEdit || syncing.value) return
+    if (!canEdit || syncing.value || checking.value || checkingSelected.value) return
     syncing.value = true
     try {
       const summary = await storefrontRouteCatalogApi.sync()
@@ -242,12 +279,20 @@ export function useStorefrontRouteCatalog(canEdit: boolean) {
   }
 
   const checkCatalog = async (): Promise<void> => {
-    if (!canEdit || checking.value) return
-    const completed = await urlOperationStore.run(
-      { ...listParams(), limit: 200 },
-      filters.locale !== 'all' ? filters.locale : '',
+    if (!canEdit || checking.value || syncing.value || checkingSelected.value) return
+    if (filters.entry_status === 'stale') {
+      toast.error('历史失效路径不属于当前路由检查范围，请先切回当前路由')
+      return
+    }
+    if (!filters.locale || filters.locale === 'all') {
+      toast.error('请先选择检查语言')
+      return
+    }
+    await urlOperationStore.run(
+      { ...listParams(), batch_size: 200 },
+      filters.locale,
     )
-    if (completed) await refreshAll()
+    await refreshAll()
   }
 
   const loadDetail = async (id: number): Promise<void> => {
@@ -281,15 +326,20 @@ export function useStorefrontRouteCatalog(canEdit: boolean) {
   }
 
   const checkSelected = async (): Promise<void> => {
-    if (!selectedEntry.value || !canEdit || checkingSelected.value) return
+    if (!selectedEntry.value || !canEdit || checkingSelected.value || syncing.value || checking.value) return
+    const selectedEntryID = selectedEntry.value.id
     checkingSelected.value = true
     try {
-      const result = await storefrontRouteCatalogApi.checkOne(selectedEntry.value.id)
+      const result = await storefrontRouteCatalogApi.checkOne(selectedEntryID)
       toast.success(`检查完成：${checkLabel(result.status, result.http_status)}`)
-      await Promise.all([loadStats(), load(), loadDetail(selectedEntry.value.id)])
+      await refreshAll()
+      await loadDetail(selectedEntryID)
     } catch (error) {
       console.error('Failed to check storefront route:', error)
-      toast.error('URL 检查失败')
+      await refreshCatalogData(true)
+      await loadDetail(selectedEntryID)
+      const detail = errorMessage(error)
+      toast.error(detail ? `URL 检查失败：${detail}` : 'URL 检查失败')
     } finally {
       checkingSelected.value = false
     }
@@ -331,6 +381,8 @@ export function useStorefrontRouteCatalog(canEdit: boolean) {
     latestHistoryItem,
     applyPreset,
     refreshAll,
+    refreshCatalogData,
+    refreshCatalogList,
     applyFilters,
     resetFilters,
     updatePage,

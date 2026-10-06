@@ -9,14 +9,15 @@ import (
 )
 
 type StorefrontSitemapOverview struct {
-	PublicPath        string     `json:"public_path"`
-	SitemapURL        string     `json:"sitemap_url"`
-	Source            string     `json:"source"`
-	DynamicSourcePath string     `json:"dynamic_source_path"`
-	Entries           int64      `json:"entries"`
-	Indexable         int64      `json:"indexable"`
-	LastSyncedAt      *time.Time `json:"last_synced_at,omitempty"`
-	ManifestVersion   string     `json:"manifest_version"`
+	PublicPath        string                                `json:"public_path"`
+	SitemapURL        string                                `json:"sitemap_url"`
+	Source            string                                `json:"source"`
+	DynamicSourcePath string                                `json:"dynamic_source_path"`
+	Entries           int64                                 `json:"entries"`
+	Indexable         int64                                 `json:"indexable"`
+	LastSyncedAt      *time.Time                            `json:"last_synced_at,omitempty"`
+	ManifestVersion   string                                `json:"manifest_version"`
+	Stats             seodomain.StorefrontRouteCatalogStats `json:"stats"`
 }
 
 func (s *StorefrontRouteCatalogService) SitemapOverview() (StorefrontSitemapOverview, error) {
@@ -40,6 +41,7 @@ func (s *StorefrontRouteCatalogService) SitemapOverview() (StorefrontSitemapOver
 		Indexable:         stats.Indexable,
 		LastSyncedAt:      stats.LastSyncedAt,
 		ManifestVersion:   stats.ManifestVersion,
+		Stats:             stats,
 	}, nil
 }
 

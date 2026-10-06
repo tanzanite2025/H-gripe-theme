@@ -477,6 +477,8 @@ interface CustomsClassificationRecord {
   cn_code?: string
   country_of_origin?: string
   customs_description?: string
+  verified_at?: string | null
+  review_due_at?: string | null
   status?: string
 }
 

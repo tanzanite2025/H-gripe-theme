@@ -6,6 +6,7 @@ export type WheelsetLacingHoleSelection =
   | 28
   | 32
   | 36
+  | '18_2to1'
   | '24_2to1'
 
 const SUPPORTED_WHEELSET_LACING_CROSS_COUNTS_BY_HOLE_SELECTION: Record<number, readonly number[]> = {
@@ -25,6 +26,6 @@ const SUPPORTED_WHEELSET_LACING_CROSS_COUNTS_BY_HOLE_SELECTION: Record<number, r
 export const getSupportedWheelsetLacingCrossCounts = (
   holeSelection: WheelsetLacingHoleSelection,
 ): readonly number[] => {
-  if (holeSelection === 21 || holeSelection === '24_2to1') return [2]
+  if (holeSelection === 21 || holeSelection === '18_2to1' || holeSelection === '24_2to1') return [2]
   return SUPPORTED_WHEELSET_LACING_CROSS_COUNTS_BY_HOLE_SELECTION[holeSelection] || []
 }

@@ -10,29 +10,55 @@ import (
 	"github.com/google/uuid"
 )
 
-const storefrontRouteCatalogTaskTimeout = 15 * time.Minute
+const storefrontRouteCatalogTaskMinimumTimeout = 15 * time.Minute
+const storefrontRouteCatalogPersistenceAllowance = 250 * time.Millisecond
 
 func (s *StorefrontRouteCatalogService) StartCheck(
 	filter repository.StorefrontRouteCatalogListFilter,
-	limit int,
+	batchSize int,
 ) (StorefrontRouteCatalogCheckTask, error) {
 	if s == nil || s.repository == nil {
 		return StorefrontRouteCatalogCheckTask{}, errors.New("storefront route catalog service is unavailable")
 	}
-	if limit < 1 {
-		limit = 100
-	} else if limit > 200 {
-		limit = 200
+	releaseOperation, err := s.beginCatalogOperation()
+	if err != nil {
+		return StorefrontRouteCatalogCheckTask{}, err
 	}
+	if batchSize < 1 || batchSize > 200 {
+		batchSize = 200
+	}
+	filter.CheckableOnly = true
+	filter.Page = 1
+	filter.PageSize = 1
+	_, eligible, err := s.repository.List(filter)
+	if err != nil {
+		releaseOperation()
+		return StorefrontRouteCatalogCheckTask{}, err
+	}
+	filter.PageSize = batchSize
 
+	taskTimeout := storefrontRouteCatalogCheckTaskTimeout(eligible)
 	now := time.Now().UTC()
+	eligibleCount := int(eligible)
+	totalBatches := 0
+	if eligibleCount > 0 {
+		totalBatches = (eligibleCount + batchSize - 1) / batchSize
+	}
 	task := &storefrontRouteCatalogCheckTask{data: StorefrontRouteCatalogCheckTask{
 		ID:        "url-check-" + uuid.NewString(),
 		Status:    StorefrontRouteCatalogCheckTaskQueued,
 		StartedAt: now,
 		UpdatedAt: now,
 		Locale:    filter.Locale,
-		Summary:   StorefrontRouteCatalogCheckSummary{},
+		Eligible:  eligibleCount,
+		Remaining: eligibleCount,
+		BatchSize: batchSize,
+		Summary: StorefrontRouteCatalogCheckSummary{
+			Eligible:     eligibleCount,
+			Remaining:    eligibleCount,
+			BatchSize:    batchSize,
+			TotalBatches: totalBatches,
+		},
 	}}
 
 	s.tasksMu.Lock()
@@ -43,29 +69,34 @@ func (s *StorefrontRouteCatalogService) StartCheck(
 	snapshot := task.snapshot()
 	s.tasksMu.Unlock()
 
-	go s.runCheckTask(task, filter, limit)
+	go func() {
+		defer releaseOperation()
+		s.runCheckTask(task, filter, batchSize, taskTimeout)
+	}()
 	return snapshot, nil
 }
 
 func (s *StorefrontRouteCatalogService) runCheckTask(
 	task *storefrontRouteCatalogCheckTask,
 	filter repository.StorefrontRouteCatalogListFilter,
-	limit int,
+	batchSize int,
+	taskTimeout time.Duration,
 ) {
 	task.update(func(data *StorefrontRouteCatalogCheckTask) {
 		data.Status = StorefrontRouteCatalogCheckTaskRunning
 		data.UpdatedAt = time.Now().UTC()
 	})
 
-	ctx, cancel := context.WithTimeout(context.Background(), storefrontRouteCatalogTaskTimeout)
+	ctx, cancel := context.WithTimeout(context.Background(), taskTimeout)
 	defer cancel()
 
-	summary, err := s.checkBatch(ctx, filter, limit, func(progress StorefrontRouteCatalogCheckSummary) {
+	summary, err := s.checkBatch(ctx, filter, batchSize, func(progress StorefrontRouteCatalogCheckSummary) {
 		task.update(func(data *StorefrontRouteCatalogCheckTask) {
 			data.Summary = progress
 			data.Checked = progress.Checked
 			data.Eligible = progress.Eligible
 			data.Remaining = progress.Remaining
+			data.BatchSize = progress.BatchSize
 			data.UpdatedAt = time.Now().UTC()
 		})
 	})
@@ -77,6 +108,7 @@ func (s *StorefrontRouteCatalogService) runCheckTask(
 			data.Checked = summary.Checked
 			data.Eligible = summary.Eligible
 			data.Remaining = summary.Remaining
+			data.BatchSize = summary.BatchSize
 			endedAt := time.Now().UTC()
 			data.EndedAt = &endedAt
 			data.UpdatedAt = endedAt
@@ -90,10 +122,27 @@ func (s *StorefrontRouteCatalogService) runCheckTask(
 		data.Checked = summary.Checked
 		data.Eligible = summary.Eligible
 		data.Remaining = summary.Remaining
+		data.BatchSize = summary.BatchSize
 		endedAt := time.Now().UTC()
 		data.EndedAt = &endedAt
 		data.UpdatedAt = endedAt
 	})
+}
+
+func storefrontRouteCatalogCheckTaskTimeout(eligible int64) time.Duration {
+	if eligible < 1 {
+		return storefrontRouteCatalogTaskMinimumTimeout
+	}
+
+	workerCount := int64(routeCheckConcurrency)
+	requestWaves := (eligible + workerCount - 1) / workerCount
+	requestBudget := time.Duration(requestWaves) * storefrontRouteCatalogRequestTimeout
+	writeBudget := time.Duration(eligible) * storefrontRouteCatalogPersistenceAllowance
+	estimated := requestBudget + writeBudget + time.Minute
+	if estimated < storefrontRouteCatalogTaskMinimumTimeout {
+		return storefrontRouteCatalogTaskMinimumTimeout
+	}
+	return estimated + estimated/2
 }
 
 func (s *StorefrontRouteCatalogService) GetCheckTask(taskID string) (StorefrontRouteCatalogCheckTask, error) {

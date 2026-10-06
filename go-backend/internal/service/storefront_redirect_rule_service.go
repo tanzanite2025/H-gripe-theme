@@ -88,9 +88,6 @@ func (s *StorefrontRedirectRuleService) Publish(id, publishedByID uint) (*urlman
 	if err != nil {
 		return nil, err
 	}
-	if rule.State == urlmanagementdomain.RedirectRuleStateDisabled {
-		return nil, errors.New("disabled redirect rules cannot be published")
-	}
 	if err := s.validatePaths(rule.SourcePath, rule.TargetPath); err != nil {
 		return nil, err
 	}

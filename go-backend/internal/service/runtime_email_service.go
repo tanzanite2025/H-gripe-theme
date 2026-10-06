@@ -63,6 +63,21 @@ func (s *RuntimeEmailService) SendEmail(to []string, subject, body string) error
 	return sender.SendEmail(to, subject, body)
 }
 
+func (s *RuntimeEmailService) TransactionalNotificationProviderCode() string {
+	if s == nil {
+		return ""
+	}
+	if s.providers != nil {
+		if code := s.providers.DefaultProviderCode(); code != "" {
+			return code
+		}
+	}
+	if s.fallback != nil {
+		return "environment"
+	}
+	return ""
+}
+
 // SendRenderedEmail preserves the HTML/text multipart path used by canonical
 // transactional notifications. A third-party test double that only implements
 // EmailService receives the text alternative instead.

@@ -491,6 +491,12 @@ func TestLoadEnablesPaymentExpirationByDefault(t *testing.T) {
 	if cfg.Worker.PaymentPendingTTLSeconds != 1800 {
 		t.Fatalf("payment pending TTL = %d, want 1800", cfg.Worker.PaymentPendingTTLSeconds)
 	}
+	if cfg.Worker.YanwenCatalogSyncEnabled {
+		t.Fatal("Yanwen catalog sync should be opt-in by default")
+	}
+	if cfg.Worker.YanwenCatalogSyncIntervalSeconds != 86400 {
+		t.Fatalf("Yanwen catalog sync interval = %d, want 86400", cfg.Worker.YanwenCatalogSyncIntervalSeconds)
+	}
 	if cfg.Worker.PaymentExpirationBatchLimit != 100 {
 		t.Fatalf("payment expiration batch limit = %d, want 100", cfg.Worker.PaymentExpirationBatchLimit)
 	}

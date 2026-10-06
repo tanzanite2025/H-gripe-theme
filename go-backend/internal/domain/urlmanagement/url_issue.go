@@ -39,6 +39,7 @@ const (
 	URLIssueEventSnapshotInvalidated = "snapshot_invalidated"
 	URLIssueEventVerificationPassed  = "verification_passed"
 	URLIssueEventVerificationFailed  = "verification_failed"
+	URLIssueEventStaleRouteRetired   = "stale_route_retired"
 
 	URLIssueResolutionRedirectPublished = "redirect_published"
 	URLIssueResolutionSourceRestored    = "source_restored"
@@ -102,6 +103,7 @@ type StorefrontURLIssueStats struct {
 	Suppressed   int64 `json:"suppressed"`
 	Critical     int64 `json:"critical"`
 	High         int64 `json:"high"`
+	StaleRoute   int64 `json:"stale_route"`
 }
 
 type StorefrontURLIssueActionInput struct {

@@ -18,6 +18,7 @@ type shippingTemplateRequest struct {
 	Description           string                                     `json:"description"`
 	Enabled               *bool                                      `json:"enabled"`
 	Rules                 []shippingRuleRequest                      `json:"rules"`
+	CarrierServices       *[]shippingCarrierServiceRequest           `json:"carrier_services"`
 }
 
 type shippingRuleRequest struct {
@@ -35,17 +36,12 @@ type shippingRuleRequest struct {
 	DisplayPriceSnapshots map[string][]currency.DisplayPriceSnapshot `json:"display_price_snapshots"`
 }
 
-type shippingZoneRequest struct {
-	Name        string `json:"name" binding:"required"`
-	Countries   string `json:"countries"`
-	States      string `json:"states"`
-	PostalCodes string `json:"postal_codes"`
-	Enabled     *bool  `json:"enabled"`
-}
-
 type shippingCarrierServiceRequest struct {
 	CarrierID                   uint   `json:"carrier_id" binding:"required"`
 	TemplateID                  *uint  `json:"template_id"`
+	FpxChannelID                *uint  `json:"fpx_channel_id"`
+	YanwenPublishedChannelID    *uint  `json:"yanwen_published_channel_id"`
+	ProviderCode                string `json:"provider_code"`
 	ServiceCode                 string `json:"service_code" binding:"required"`
 	ServiceName                 string `json:"service_name" binding:"required"`
 	RouteName                   string `json:"route_name"`
@@ -231,6 +227,9 @@ func (r shippingCarrierServiceRequest) toDomain() shippingdomain.CarrierService 
 	return shippingdomain.CarrierService{
 		CarrierID:                   r.CarrierID,
 		TemplateID:                  r.TemplateID,
+		FpxChannelID:                r.FpxChannelID,
+		YanwenPublishedChannelID:    r.YanwenPublishedChannelID,
+		ProviderCode:                strings.ToUpper(strings.TrimSpace(r.ProviderCode)),
 		ServiceCode:                 strings.ToUpper(strings.TrimSpace(r.ServiceCode)),
 		ServiceName:                 strings.TrimSpace(r.ServiceName),
 		RouteName:                   strings.TrimSpace(r.RouteName),
@@ -327,20 +326,5 @@ func (r shippingTrackingCarrierMappingRequest) toDomain() shippingdomain.Trackin
 		Enabled:             enabled,
 		Priority:            r.Priority,
 		Description:         strings.TrimSpace(r.Description),
-	}
-}
-
-func (r shippingZoneRequest) toDomain() shippingdomain.ShippingZone {
-	enabled := true
-	if r.Enabled != nil {
-		enabled = *r.Enabled
-	}
-
-	return shippingdomain.ShippingZone{
-		Name:        strings.TrimSpace(r.Name),
-		Countries:   strings.TrimSpace(r.Countries),
-		States:      strings.TrimSpace(r.States),
-		PostalCodes: strings.TrimSpace(r.PostalCodes),
-		Enabled:     enabled,
 	}
 }

@@ -1,0 +1,1 @@
+DROP TABLE IF EXISTS shipping_yanwen_country_catalog_entries;

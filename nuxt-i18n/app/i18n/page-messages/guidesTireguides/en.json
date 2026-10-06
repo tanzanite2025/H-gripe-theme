@@ -3,9 +3,9 @@
   "intro": "Reference charts for common tire and rim sizes.",
   "feedbackTitle": "Share your feedback about this Tire Guides guide",
   "tabs": {
-    "size": {
-      "label": "Tire size",
-      "description": "Size charts by tire width, rim range, and fit reference."
+    "tireSizeMarkings": {
+      "label": "Tire size markings",
+      "description": "Learn to read ETRTO, inch, and French markings before checking rim fit."
     },
     "tireFrameClearance": {
       "label": "Tire and frame clearance",
@@ -20,8 +20,8 @@
       "description": "Tubeless compatibility, setup, and step-by-step installation in one guide."
     },
     "choose": {
-      "label": "How to choose",
-      "description": "Selection tips for terrain, clearance, and use case."
+      "label": "How to Choose a Tire",
+      "description": "Guidance for choosing a tire by terrain, frame clearance, and rim compatibility."
     },
     "pressure": {
       "label": "Tire pressure",
@@ -32,16 +32,12 @@
       "description": "Demonstrate how pressure, load, speed, and lean change force and estimated contact area."
     },
     "innerTube": {
-      "label": "Inner tube",
-      "description": "Tube selection notes, valve types, and sizing basics."
+      "label": "How to Choose an Inner Tube",
+      "description": "Inner tube sizing, valve types, and selection guidance."
     },
     "schwalbe": {
       "label": "Schwalbe tire selector",
       "description": "Search the sourced Schwalbe tire catalog by model and size."
     }
-  },
-  "drawer": {
-    "query": "Tire products",
-    "error": "Failed to load tire products. Please try again."
   }
 }

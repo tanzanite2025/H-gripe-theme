@@ -28,38 +28,7 @@
           :options="options.lacingOptions"
         />
       </div>
-
     </div>
-
-    <details open class="spoke-calculator__physical-settings">
-      <summary>{{ t('resourcesSpokeCalculator.calculator.physicalCorrections.title') }}</summary>
-      <div class="spoke-calculator__physical-settings-grid">
-        <div v-if="config.spokeHeadType === 'straight_pull'" class="spoke-calculator__setting-field">
-          <label :for="fieldId('straight-pull-offset')">{{ t('resourcesSpokeCalculator.calculator.physicalCorrections.straightPullOffset') }}</label>
-          <input
-            :id="fieldId('straight-pull-offset')"
-            v-model.number="config.straightPullTangentOffsetMm"
-            class="spoke-calculator__physical-number"
-            type="number"
-            min="-20"
-            max="20"
-            step="0.1"
-          />
-        </div>
-        <div class="spoke-calculator__setting-field">
-          <label :for="fieldId('target-tension')">{{ t('resourcesSpokeCalculator.calculator.physicalCorrections.targetTension') }}</label>
-          <input
-            :id="fieldId('target-tension')"
-            v-model.number="config.targetTensionN"
-            class="spoke-calculator__physical-number"
-            type="number"
-            min="0"
-            max="3000"
-            step="50"
-          />
-        </div>
-      </div>
-    </details>
   </div>
 </template>
 
@@ -198,53 +167,8 @@ const fieldId = (name: string) => `${props.side}-${name}`
   white-space: nowrap;
 }
 
-.spoke-calculator__physical-settings {
-  border-top: 1px solid var(--spoke-border);
-  padding-top: 0.65rem;
-}
-
-.spoke-calculator__physical-settings > summary {
-  color: var(--tz-text-secondary);
-  cursor: pointer;
-  font-size: 0.75rem;
-  font-weight: 700;
-  line-height: 1.35;
-}
-
-.spoke-calculator__physical-settings-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.65rem 0.75rem;
-  margin-top: 0.75rem;
-}
-
-.spoke-calculator__physical-settings-grid label {
-  font-size: 0.7rem;
-  line-height: 1.3;
-}
-
-.spoke-calculator__physical-number {
-  width: 100%;
-  min-width: 0;
-  min-height: 2.75rem;
-  border: 1px solid var(--spoke-border);
-  border-radius: 9999px;
-  background: var(--spoke-control-surface);
-  color: var(--tz-text-primary);
-  padding: 0.6rem 0.85rem;
-  font-size: 0.875rem;
-  line-height: 1.25rem;
-}
-
-.spoke-calculator__physical-number:focus-visible {
-  outline: none;
-  border-color: var(--spoke-border-strong);
-  box-shadow: 0 0 0 1px var(--spoke-focus-ring);
-}
-
 @media (max-width: 767px) {
-  .spoke-calculator__build-settings-grid,
-  .spoke-calculator__physical-settings-grid {
+  .spoke-calculator__build-settings-grid {
     grid-template-columns: 1fr;
   }
 

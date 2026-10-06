@@ -1,5 +1,8 @@
 <template>
-  <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+  <div
+    class="flex flex-col gap-3 sm:flex-row sm:items-center"
+    :class="compact ? 'sm:justify-start sm:gap-6' : 'sm:justify-between'"
+  >
     <span class="text-[10px] font-mono font-bold uppercase tracking-wider text-muted-foreground/70">
       TOTAL: {{ total }}<span v-if="total"> ({{ rangeStart }}-{{ rangeEnd }})</span>
     </span>
@@ -86,8 +89,10 @@ const props = withDefaults(defineProps<{
   pageSize: number
   total: number
   pageSizes?: number[]
+  compact?: boolean
 }>(), {
-  pageSizes: () => [10, 20, 50, 100]
+  pageSizes: () => [10, 20, 50, 100],
+  compact: false
 })
 
 const emit = defineEmits<{

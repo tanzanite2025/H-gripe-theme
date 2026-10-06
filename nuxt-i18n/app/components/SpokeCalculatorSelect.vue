@@ -2,10 +2,12 @@
   <div ref="rootRef" class="spoke-calculator-select">
     <button
       :id="id"
+      ref="buttonRef"
       type="button"
       class="spoke-calculator-select__button"
       :class="{ 'spoke-calculator-select__button--placeholder': !selectedOption }"
       :disabled="disabled"
+      :aria-label="ariaLabel"
       :aria-expanded="open"
       :aria-controls="menuId"
       aria-haspopup="listbox"
@@ -20,6 +22,8 @@
       v-if="open"
       :id="menuId"
       class="spoke-calculator-select__menu"
+      :class="{ 'spoke-calculator-select__menu--viewport-bound': keepMenuWithinViewport }"
+      :style="menuStyle"
       role="listbox"
       :aria-labelledby="id"
     >
@@ -44,7 +48,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 type SelectValue = string | number | null
 
@@ -59,9 +63,13 @@ const props = withDefaults(defineProps<{
   options: SelectOption[]
   placeholder?: string
   disabled?: boolean
+  ariaLabel?: string
+  keepMenuWithinViewport?: boolean
 }>(), {
   placeholder: 'Select',
   disabled: false,
+  ariaLabel: undefined,
+  keepMenuWithinViewport: false,
 })
 
 const emit = defineEmits<{
@@ -70,9 +78,33 @@ const emit = defineEmits<{
 
 const open = ref(false)
 const rootRef = ref<HTMLElement | null>(null)
+const buttonRef = ref<HTMLButtonElement | null>(null)
 const highlightedIndex = ref(0)
 const menuId = computed(() => `${props.id}-menu`)
 const selectedOption = computed(() => props.options.find(option => option.value === props.modelValue) || null)
+const menuStyle = ref<Record<string, string>>({})
+
+const updateMenuPosition = () => {
+  if (!props.keepMenuWithinViewport || !open.value || !buttonRef.value) return
+
+  const buttonRect = buttonRef.value.getBoundingClientRect()
+  const viewportMargin = 8
+  const menuGap = 5
+  const preferredMenuHeight = 240
+  const spaceBelow = Math.max(0, window.innerHeight - buttonRect.bottom - viewportMargin - menuGap)
+  const spaceAbove = Math.max(0, buttonRect.top - viewportMargin - menuGap)
+  const openBelow = spaceBelow > spaceAbove + 32
+  const availableHeight = Math.max(0, openBelow ? spaceBelow : spaceAbove)
+  const menuTop = openBelow ? buttonRect.bottom + menuGap : buttonRect.top - menuGap
+
+  menuStyle.value = {
+    top: `${menuTop}px`,
+    left: `${buttonRect.left}px`,
+    width: `${buttonRect.width}px`,
+    maxHeight: `${Math.min(preferredMenuHeight, availableHeight)}px`,
+    transform: openBelow ? 'none' : 'translateY(-100%)',
+  }
+}
 
 const closeMenu = () => {
   open.value = false
@@ -83,6 +115,7 @@ const openMenu = () => {
   const selectedIndex = props.options.findIndex(option => option.value === props.modelValue)
   highlightedIndex.value = selectedIndex >= 0 ? selectedIndex : 0
   open.value = true
+  if (props.keepMenuWithinViewport) void nextTick(updateMenuPosition)
 }
 
 const toggleMenu = () => {
@@ -133,6 +166,10 @@ const onDocumentPointerDown = (event: PointerEvent) => {
   }
 }
 
+const onViewportChange = () => {
+  updateMenuPosition()
+}
+
 watch(
   () => props.disabled,
   (disabled) => {
@@ -142,10 +179,14 @@ watch(
 
 onMounted(() => {
   document.addEventListener('pointerdown', onDocumentPointerDown)
+  window.addEventListener('resize', onViewportChange)
+  window.addEventListener('scroll', onViewportChange, true)
 })
 
 onBeforeUnmount(() => {
   document.removeEventListener('pointerdown', onDocumentPointerDown)
+  window.removeEventListener('resize', onViewportChange)
+  window.removeEventListener('scroll', onViewportChange, true)
 })
 </script>
 
@@ -223,6 +264,14 @@ onBeforeUnmount(() => {
   background: var(--spoke-control-surface, var(--tz-input-surface));
   padding: 0.35rem;
   box-shadow: 0 18px 42px rgba(20, 32, 43, 0.14);
+}
+
+.spoke-calculator-select__menu--viewport-bound {
+  position: fixed;
+  top: auto;
+  left: auto;
+  width: auto;
+  max-height: min(15rem, calc(100dvh - 1rem));
 }
 
 .spoke-calculator-select__option {

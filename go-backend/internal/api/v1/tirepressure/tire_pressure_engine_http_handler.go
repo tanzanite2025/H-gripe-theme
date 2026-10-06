@@ -86,7 +86,10 @@ func (h *TirePressureEngineeringCalculationHTTPHandler) HandleTirePressureGround
 		WriteTirePressureCalculationErrorResponse(c, http.StatusBadRequest, "INVALID_FIELD", "Dynamic inputs are invalid", "")
 		return
 	}
-	warnings := []string{"Demo estimate only; not a pressure recommendation or safety guarantee."}
+	warnings := []string{
+		"Demo estimate only; not a pressure recommendation or safety guarantee.",
+		"The data required for this calculation currently lacks complete and accurate support; the result is for relative change demonstration only.",
+	}
 	if req.WetPressureDemonstrationEnabled {
 		warnings = append(warnings, "Wet friction retention and same-area equivalent pressure use an explicit first-order demonstration proxy; the area comparison does not claim to restore lost grip or represent a calibrated tire-road measurement.")
 	}
@@ -195,6 +198,7 @@ func (h *TirePressureEngineeringCalculationHTTPHandler) HandleTirePressureMetada
 			"dynamics":                dynamics,
 			"warnings": []string{
 				"The pressure model is not approved for production; no pressure recommendation is returned.",
+				"The data required for this calculation currently lacks complete and accurate support; the result is for relative change demonstration only.",
 				"Follow tire, rim, and wheel manufacturer instructions.",
 			},
 		},

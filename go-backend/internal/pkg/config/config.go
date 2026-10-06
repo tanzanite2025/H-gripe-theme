@@ -191,6 +191,11 @@ type WorkerConfig struct {
 	TrackingPollingEnabled                     bool `mapstructure:"tracking_polling_enabled"`
 	TrackingPollingIntervalSeconds             int  `mapstructure:"tracking_polling_interval_seconds"`
 	TrackingPollingBatchLimit                  int  `mapstructure:"tracking_polling_batch_limit"`
+	YanwenTrackingPollingEnabled               bool `mapstructure:"yanwen_tracking_polling_enabled"`
+	YanwenTrackingPollingIntervalSeconds       int  `mapstructure:"yanwen_tracking_polling_interval_seconds"`
+	YanwenTrackingPollingBatchLimit            int  `mapstructure:"yanwen_tracking_polling_batch_limit"`
+	YanwenCatalogSyncEnabled                   bool `mapstructure:"yanwen_catalog_sync_enabled"`
+	YanwenCatalogSyncIntervalSeconds           int  `mapstructure:"yanwen_catalog_sync_interval_seconds"`
 	VisitorProfileCleanupEnabled               bool `mapstructure:"visitor_profile_cleanup_enabled"`
 	VisitorProfileCleanupIntervalSeconds       int  `mapstructure:"visitor_profile_cleanup_interval_seconds"`
 	VisitorProfileIPAddressRetentionDays       int  `mapstructure:"visitor_profile_ip_address_retention_days"`
@@ -648,6 +653,11 @@ func setDefaults() {
 	viper.SetDefault("worker.tracking_polling_enabled", false)
 	viper.SetDefault("worker.tracking_polling_interval_seconds", 300)
 	viper.SetDefault("worker.tracking_polling_batch_limit", 20)
+	viper.SetDefault("worker.yanwen_tracking_polling_enabled", false)
+	viper.SetDefault("worker.yanwen_tracking_polling_interval_seconds", 300)
+	viper.SetDefault("worker.yanwen_tracking_polling_batch_limit", 20)
+	viper.SetDefault("worker.yanwen_catalog_sync_enabled", false)
+	viper.SetDefault("worker.yanwen_catalog_sync_interval_seconds", 86400)
 	viper.SetDefault("worker.visitor_profile_cleanup_enabled", false)
 	viper.SetDefault("worker.visitor_profile_cleanup_interval_seconds", 86400)
 	viper.SetDefault("worker.visitor_profile_ip_address_retention_days", DefaultVisitorProfileIPAddressRetentionDays)
@@ -950,6 +960,11 @@ func bindEnvironment() {
 	_ = viper.BindEnv("worker.tracking_polling_enabled", "WORKER_TRACKING_POLLING_ENABLED", "TRACKING_POLLING_ENABLED")
 	_ = viper.BindEnv("worker.tracking_polling_interval_seconds", "WORKER_TRACKING_POLLING_INTERVAL_SECONDS", "TRACKING_POLLING_INTERVAL_SECONDS")
 	_ = viper.BindEnv("worker.tracking_polling_batch_limit", "WORKER_TRACKING_POLLING_BATCH_LIMIT", "TRACKING_POLLING_BATCH_LIMIT")
+	_ = viper.BindEnv("worker.yanwen_tracking_polling_enabled", "WORKER_YANWEN_TRACKING_POLLING_ENABLED", "YANWEN_TRACKING_POLLING_ENABLED")
+	_ = viper.BindEnv("worker.yanwen_tracking_polling_interval_seconds", "WORKER_YANWEN_TRACKING_POLLING_INTERVAL_SECONDS", "YANWEN_TRACKING_POLLING_INTERVAL_SECONDS")
+	_ = viper.BindEnv("worker.yanwen_tracking_polling_batch_limit", "WORKER_YANWEN_TRACKING_POLLING_BATCH_LIMIT", "YANWEN_TRACKING_POLLING_BATCH_LIMIT")
+	_ = viper.BindEnv("worker.yanwen_catalog_sync_enabled", "WORKER_YANWEN_CATALOG_SYNC_ENABLED", "YANWEN_CATALOG_SYNC_ENABLED")
+	_ = viper.BindEnv("worker.yanwen_catalog_sync_interval_seconds", "WORKER_YANWEN_CATALOG_SYNC_INTERVAL_SECONDS", "YANWEN_CATALOG_SYNC_INTERVAL_SECONDS")
 	_ = viper.BindEnv("worker.visitor_profile_cleanup_enabled", "WORKER_VISITOR_PROFILE_CLEANUP_ENABLED", "VISITOR_PROFILE_CLEANUP_ENABLED")
 	_ = viper.BindEnv("worker.visitor_profile_cleanup_interval_seconds", "WORKER_VISITOR_PROFILE_CLEANUP_INTERVAL_SECONDS", "VISITOR_PROFILE_CLEANUP_INTERVAL_SECONDS")
 	_ = viper.BindEnv("worker.visitor_profile_ip_address_retention_days", "WORKER_VISITOR_PROFILE_IP_ADDRESS_RETENTION_DAYS", "VISITOR_PROFILE_IP_ADDRESS_RETENTION_DAYS")
@@ -1533,6 +1548,15 @@ func validateConfig(cfg *Config) error {
 	}
 	if cfg.Worker.VisitorProfileCleanupEnabled && cfg.Worker.VisitorProfileCleanupIntervalSeconds <= 0 {
 		return fmt.Errorf("visitor profile cleanup interval must be positive when cleanup is enabled")
+	}
+	if cfg.Worker.YanwenTrackingPollingEnabled &&
+		(cfg.Worker.YanwenTrackingPollingIntervalSeconds <= 0 ||
+			cfg.Worker.YanwenTrackingPollingBatchLimit <= 0 ||
+			cfg.Worker.YanwenTrackingPollingBatchLimit > 30) {
+		return fmt.Errorf("Yanwen tracking polling configuration is invalid")
+	}
+	if cfg.Worker.YanwenCatalogSyncEnabled && cfg.Worker.YanwenCatalogSyncIntervalSeconds <= 0 {
+		return fmt.Errorf("Yanwen catalog sync interval must be positive when catalog sync is enabled")
 	}
 	if cfg.Worker.VisitorProfileIPAddressRetentionDays < 0 ||
 		(cfg.Worker.VisitorProfileCleanupEnabled && cfg.Worker.VisitorProfileIPAddressRetentionDays <= 0) {

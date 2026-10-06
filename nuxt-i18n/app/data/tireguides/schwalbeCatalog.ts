@@ -33,6 +33,22 @@ export interface SchwalbeTireCatalogItem {
   rim_width_guidance?: TireRimWidthReferenceSuggestion[]
 }
 
+/**
+ * The pressure calculator receives only the product identity and pressure
+ * reference it can display or use as a calculation input.
+ */
+export interface SchwalbeTirePressureReferenceCatalogItem {
+  article_no: string
+  model_name: string
+  etrto: string
+  inch_designation?: string
+  min_pressure_bar?: number
+  max_pressure_bar?: number
+  min_pressure_psi?: number
+  max_pressure_psi?: number
+  source_checked_at: string
+}
+
 export type SchwalbeTireRimSystem = 'hooked' | 'hookless'
 
 export interface SchwalbeTireCatalogRimCompatibility {
@@ -195,12 +211,29 @@ const readItem = (value: unknown): SchwalbeTireCatalogItem => {
 /**
  * Reads the locally persisted Schwalbe pressure reference catalog in one
  * request. The endpoint intentionally has a different response shape from
- * the general selector, so pressure data is flattened into the shared item
- * type only after the nested product/reference contract is validated.
+ * the general selector, so its compact product/reference contract is parsed
+ * into a calculator-specific item type.
  */
+const readSchwalbeTirePressureReferenceItem = (value: unknown): SchwalbeTirePressureReferenceCatalogItem => {
+  const item = asRecord(value)
+  if (!item) throw new Error('Schwalbe tire pressure reference response contains an invalid product')
+
+  return {
+    article_no: requiredString(item.article_no, 'article_no'),
+    model_name: requiredString(item.model_name, 'model_name'),
+    etrto: requiredString(item.etrto, 'etrto'),
+    ...(optionalString(item.inch_designation) ? { inch_designation: optionalString(item.inch_designation) } : {}),
+    ...(optionalNumber(item.min_pressure_bar) !== undefined ? { min_pressure_bar: optionalNumber(item.min_pressure_bar) } : {}),
+    ...(optionalNumber(item.max_pressure_bar) !== undefined ? { max_pressure_bar: optionalNumber(item.max_pressure_bar) } : {}),
+    ...(optionalNumber(item.min_pressure_psi) !== undefined ? { min_pressure_psi: optionalNumber(item.min_pressure_psi) } : {}),
+    ...(optionalNumber(item.max_pressure_psi) !== undefined ? { max_pressure_psi: optionalNumber(item.max_pressure_psi) } : {}),
+    source_checked_at: requiredString(item.source_checked_at, 'source_checked_at'),
+  }
+}
+
 export const fetchSchwalbeTirePressureReferenceCatalog = async (
   request: ApiRequestFunction,
-): Promise<SchwalbeTireCatalogItem[]> => {
+): Promise<SchwalbeTirePressureReferenceCatalogItem[]> => {
   const response = await request<unknown>(
     tirePressureReferenceCatalogEndpoint,
     {},
@@ -220,7 +253,7 @@ export const fetchSchwalbeTirePressureReferenceCatalog = async (
       throw new Error('Schwalbe tire pressure reference response contains an invalid item')
     }
 
-    return readItem({
+    return readSchwalbeTirePressureReferenceItem({
       ...product,
       min_pressure_bar: pressure.min_pressure_bar,
       max_pressure_bar: pressure.max_pressure_bar,

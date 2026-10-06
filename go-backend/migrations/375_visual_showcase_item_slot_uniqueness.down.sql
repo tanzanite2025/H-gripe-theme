@@ -1,0 +1,1 @@
+DROP INDEX IF EXISTS uq_visual_showcase_items_active_slot;

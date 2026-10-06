@@ -49,11 +49,11 @@
  <TableCell class="text-right">
  <div class="inline-flex gap-1">
                 <Button
-                  v-if="rule.state === 'draft'"
+                  v-if="rule.state !== 'published'"
                   variant="ghost"
                   size="icon"
-                  title="发布重定向"
-                  aria-label="发布重定向"
+                  :title="rule.state === 'disabled' ? '重新启用重定向' : '发布重定向'"
+                  :aria-label="rule.state === 'disabled' ? '重新启用重定向' : '发布重定向'"
                   :disabled="!canEdit || actionID === rule.id"
                   @click="publish(rule)"
                 >
@@ -247,6 +247,8 @@ const create = async (): Promise<void> => {
 
 const publish = async (rule: StorefrontRedirectRule): Promise<void> => {
   if (!canEdit || actionID.value) return
+  const actionLabel = rule.state === 'disabled' ? '重新启用' : '发布'
+  if (!window.confirm(`确认${actionLabel}重定向吗？${rule.source_path} 将立即跳转到 ${rule.target_path}。`)) return
   actionID.value = rule.id
   try {
     await storefrontRedirectRulesApi.publish(rule.id)
@@ -262,6 +264,7 @@ const publish = async (rule: StorefrontRedirectRule): Promise<void> => {
 
 const disable = async (rule: StorefrontRedirectRule): Promise<void> => {
   if (!canEdit || actionID.value) return
+  if (!window.confirm(`确认停用重定向吗？${rule.source_path} 将立即不再跳转到 ${rule.target_path}。`)) return
   actionID.value = rule.id
   try {
     await storefrontRedirectRulesApi.disable(rule.id)

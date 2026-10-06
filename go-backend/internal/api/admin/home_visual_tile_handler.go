@@ -3,6 +3,7 @@ package admin
 import (
 	"errors"
 	"net/http"
+	"strconv"
 
 	"commerce-platform/internal/pkg/response"
 	"commerce-platform/internal/pkg/upload"
@@ -39,6 +40,25 @@ type visualShowcaseItemRequest struct {
 	IsPublished     bool   `json:"is_published"`
 	Width           int    `json:"width"`
 	Height          int    `json:"height"`
+}
+
+func homeVisualTileInputFromRequest(item visualShowcaseItemRequest) service.HomeVisualTileInput {
+	return service.HomeVisualTileInput{
+		ImageURL:        item.ImageURL,
+		ThumbnailURL:    item.ThumbnailURL,
+		StorageKey:      item.StorageKey,
+		Title:           item.Title,
+		Caption:         item.Caption,
+		AltText:         item.AltText,
+		DesktopOrder:    item.DesktopOrder,
+		MobilePairIndex: item.MobilePairIndex,
+		TargetURL:       item.TargetURL,
+		TargetLabel:     item.TargetLabel,
+		LayoutVariant:   item.LayoutVariant,
+		IsPublished:     item.IsPublished,
+		Width:           item.Width,
+		Height:          item.Height,
+	}
 }
 
 func respondVisualShowcaseError(c *gin.Context, err error) {
@@ -129,22 +149,7 @@ func (h *HomeVisualTileHandler) ReplaceItems(c *gin.Context) {
 
 	inputs := make([]service.HomeVisualTileInput, 0, len(req.Items))
 	for _, item := range req.Items {
-		inputs = append(inputs, service.HomeVisualTileInput{
-			ImageURL:        item.ImageURL,
-			ThumbnailURL:    item.ThumbnailURL,
-			StorageKey:      item.StorageKey,
-			Title:           item.Title,
-			Caption:         item.Caption,
-			AltText:         item.AltText,
-			DesktopOrder:    item.DesktopOrder,
-			MobilePairIndex: item.MobilePairIndex,
-			TargetURL:       item.TargetURL,
-			TargetLabel:     item.TargetLabel,
-			LayoutVariant:   item.LayoutVariant,
-			IsPublished:     item.IsPublished,
-			Width:           item.Width,
-			Height:          item.Height,
-		})
+		inputs = append(inputs, homeVisualTileInputFromRequest(item))
 	}
 
 	items, err := h.HomeVisualTileService.ReplaceAdminItems(c.Request.Context(), tileSetKey, req.Locale, inputs)
@@ -153,6 +158,36 @@ func (h *HomeVisualTileHandler) ReplaceItems(c *gin.Context) {
 		return
 	}
 	response.SuccessWithMessage(c, "Visual showcase saved", gin.H{
+		"showcase_key": tileSetKey,
+		"locale":       req.Locale,
+		"items":        items,
+	})
+}
+
+func (h *HomeVisualTileHandler) SaveSingleVisualShowcaseItem(c *gin.Context) {
+	desktopOrder, err := strconv.Atoi(c.Param("desktop_order"))
+	if err != nil || desktopOrder <= 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "desktop position must be a positive integer"})
+		return
+	}
+
+	tileSetKey := c.Param("showcase_key")
+	var req struct {
+		Locale string                    `json:"locale"`
+		Item   visualShowcaseItemRequest `json:"item"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	input := homeVisualTileInputFromRequest(req.Item)
+	input.DesktopOrder = desktopOrder
+	items, err := h.HomeVisualTileService.SaveSingleVisualShowcaseAdminItem(c.Request.Context(), tileSetKey, req.Locale, input)
+	if err != nil {
+		respondVisualShowcaseError(c, err)
+		return
+	}
+	response.SuccessWithMessage(c, "Visual showcase item saved", gin.H{
 		"showcase_key": tileSetKey,
 		"locale":       req.Locale,
 		"items":        items,

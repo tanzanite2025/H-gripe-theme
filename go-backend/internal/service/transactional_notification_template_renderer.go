@@ -22,9 +22,10 @@ var notificationTemplatePlaceholderPattern = regexp.MustCompile(`\{\{\s*([a-z][a
 // rendering a persisted template. The SMTP/API provider is intentionally not
 // involved here.
 type RenderedTransactionalNotification struct {
-	Subject string
-	HTML    string
-	Text    string
+	Subject         string
+	HTML            string
+	Text            string
+	TemplateVersion int
 }
 
 // RenderTransactionalNotificationTemplate validates a persisted template and
@@ -59,7 +60,12 @@ func RenderTransactionalNotificationTemplate(templateRecord *notification.EmailT
 	if err != nil {
 		return RenderedTransactionalNotification{}, fmt.Errorf("render notification text body: %w", err)
 	}
-	return RenderedTransactionalNotification{Subject: subject, HTML: htmlBody, Text: textBody}, nil
+	return RenderedTransactionalNotification{
+		Subject:         subject,
+		HTML:            htmlBody,
+		Text:            textBody,
+		TemplateVersion: templateRecord.Version,
+	}, nil
 }
 
 func renderNotificationTemplateString(source string, variables map[string]string, escapeHTML, subject bool) (string, error) {

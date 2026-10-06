@@ -14,9 +14,6 @@
       </div>
       <div class="flex items-center justify-between gap-2">
         <Badge variant="outline">#{{ index + 1 }}</Badge>
-        <Badge :variant="item.is_published ? 'default' : 'outline'">
-          {{ item.is_published ? 'Published' : 'Draft' }}
-        </Badge>
       </div>
       <div class="space-y-1.5">
         <Button
@@ -24,7 +21,7 @@
           variant="outline"
           size="sm"
           class="w-full justify-center"
-          :disabled="!canEdit || uploading"
+          :disabled="!canEdit || busy || uploading"
           title="上传或替换图片"
           @click="fileInput?.click()"
         >
@@ -37,9 +34,22 @@
           type="file"
           class="hidden"
           :accept="uploadSpecAccept('visual_showcase_home_hero')"
-          :disabled="!canEdit || uploading"
+          :disabled="!canEdit || busy || uploading"
           @change="handleUploadFile"
         />
+        <Button
+          v-if="canEdit"
+          type="button"
+          size="sm"
+          class="w-full justify-center"
+          :disabled="busy || uploading || saving"
+          title="保存当前展示图配置"
+          @click="emit('save-card-configuration')"
+        >
+          <LoaderCircle v-if="saving" class="size-3.5 animate-spin" />
+          <Save v-else class="size-3.5" />
+          {{ saving ? '保存中' : '保存' }}
+        </Button>
       </div>
       <p class="truncate text-[9px] font-black uppercase tracking-widest text-muted-foreground/60">
         {{ item.storage_key || '未上传到专用目录' }}
@@ -50,31 +60,22 @@
       <AdminFormField label="标题" required class="md:col-span-2">
         <Input
           :model-value="item.title"
-          :disabled="!canEdit"
+          :disabled="!canEdit || busy"
           @update:model-value="updateText('title', $event)"
         />
       </AdminFormField>
       <AdminFormField label="ALT 文本" required class="md:col-span-2">
         <Input
           :model-value="item.alt_text"
-          :disabled="!canEdit"
+          :disabled="!canEdit || busy"
           @update:model-value="updateText('alt_text', $event)"
         />
-      </AdminFormField>
-      <AdminFormField label="发布">
-        <div class="flex h-9 items-center">
-          <Switch
-            :checked="item.is_published"
-            :disabled="!canEdit"
-            @update:checked="updatePublished"
-          />
-        </div>
       </AdminFormField>
       <AdminFormField label="备注" class="md:col-span-2">
         <Textarea
           :model-value="item.caption"
           class="min-h-16"
-          :disabled="!canEdit"
+          :disabled="!canEdit || busy"
           @update:model-value="updateText('caption', $event)"
         />
       </AdminFormField>
@@ -85,12 +86,11 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { toast } from 'vue-sonner'
-import { ImagePlus, LoaderCircle } from '@lucide/vue'
+import { ImagePlus, LoaderCircle, Save } from '@lucide/vue'
 import AdminFormField from '@/components/admin/AdminFormField.vue'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import { uploadSpecAccept, validateUploadFile } from '@/lib/uploadSpecs'
 import type {
@@ -103,14 +103,19 @@ const props = withDefaults(defineProps<{
   index: number
   canEdit?: boolean
   uploading?: boolean
+  saving?: boolean
+  busy?: boolean
 }>(), {
   canEdit: false,
   uploading: false,
+  saving: false,
+  busy: false,
 })
 
 const emit = defineEmits<{
   (event: 'update:item', value: VisualShowcaseAdministrationItemFormState): void
   (event: 'upload-image', value: VisualShowcaseAdministrationUploadRequest): void
+  (event: 'save-card-configuration'): void
 }>()
 
 const fileInput = ref<HTMLInputElement | null>(null)
@@ -124,10 +129,6 @@ const updateText = (
   value: string | number,
 ): void => {
   patchItem({ [key]: String(value ?? '') })
-}
-
-const updatePublished = (value: boolean): void => {
-  patchItem({ is_published: Boolean(value) })
 }
 
 const handleUploadFile = async (event: Event): Promise<void> => {

@@ -4,8 +4,10 @@ import (
 	"errors"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
+	seodomain "commerce-platform/internal/domain/seo"
 	urlmanagementdomain "commerce-platform/internal/domain/urlmanagement"
 	"commerce-platform/internal/repository"
 	"commerce-platform/internal/service"
@@ -44,8 +46,8 @@ func (h *IssuesHandler) List(c *gin.Context) {
 	issues, total, err := h.issues.List(repository.StorefrontURLIssueListFilter{
 		Page:      page,
 		PageSize:  pageSize,
-		State:     c.DefaultQuery("state", "active"),
-		Severity:  c.Query("severity"),
+		State:     normalizeStorefrontURLIssueStateFilter(c.DefaultQuery("state", "active")),
+		Severity:  normalizeStorefrontURLIssueSeverityFilter(c.Query("severity")),
 		IssueType: c.Query("issue_type"),
 	})
 	if err != nil {
@@ -63,6 +65,25 @@ func (h *IssuesHandler) List(c *gin.Context) {
 	})
 }
 
+func normalizeStorefrontURLIssueStateFilter(value string) string {
+	switch strings.ToLower(strings.TrimSpace(value)) {
+	case "active", "open", "acknowledged", "resolved", "verified", "suppressed", "all":
+		return strings.ToLower(strings.TrimSpace(value))
+	default:
+		return "active"
+	}
+}
+
+func normalizeStorefrontURLIssueSeverityFilter(value string) string {
+	normalized := strings.ToLower(strings.TrimSpace(value))
+	switch normalized {
+	case "low", "medium", "high", "critical":
+		return normalized
+	default:
+		return ""
+	}
+}
+
 func (h *IssuesHandler) Summary(c *gin.Context) {
 	stats, err := h.issues.Stats()
 	if err != nil {
@@ -70,6 +91,20 @@ func (h *IssuesHandler) Summary(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"data": stats})
+}
+
+func (h *IssuesHandler) RetireStaleRoutes(c *gin.Context) {
+	startedAt := urlIssueAuditStartedAt()
+	retiredCount, err := h.issues.RetireAllActiveStaleRouteIssues(c.GetUint("user_id"))
+	if err != nil {
+		h.recordIssueAudit(c, startedAt, "bulk_retire_stale_routes", 0, "failed", err, nil, nil)
+		writeURLIssueError(c, err)
+		return
+	}
+	h.recordIssueAudit(c, startedAt, "bulk_retire_stale_routes", 0, "success", nil, nil, map[string]interface{}{
+		"retired_count": retiredCount,
+	})
+	c.JSON(http.StatusOK, gin.H{"data": gin.H{"retired_count": retiredCount}})
 }
 
 func (h *IssuesHandler) Get(c *gin.Context) {
@@ -172,14 +207,48 @@ func (h *IssuesHandler) Recheck(c *gin.Context) {
 		writeURLIssueError(c, err)
 		return
 	}
-	if issue.RouteEntry == nil || !issue.RouteEntry.IsCheckable {
+	if issue.RouteEntry == nil || (!issue.RouteEntry.IsCheckable && issue.IssueType != urlmanagementdomain.URLIssueTypePathCollision) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "this URL issue cannot be checked"})
 		return
 	}
-	result, err := h.catalog.CheckEntry(contextOrBackground(c), issue.RouteEntryID)
+	if issue.IssueType == urlmanagementdomain.URLIssueTypePathCollision {
+		syncSummary, err := h.catalog.Sync(contextOrBackground(c))
+		if err != nil {
+			h.recordIssueAudit(c, startedAt, "sync", issue.ID, "failed", err, nil, nil)
+			status := http.StatusBadGateway
+			if errors.Is(err, service.ErrStorefrontRouteCatalogOperationInProgress) {
+				status = http.StatusConflict
+			}
+			c.JSON(status, gin.H{"error": err.Error()})
+			return
+		}
+		updatedIssue, err := h.issues.Get(issue.ID)
+		if err != nil {
+			writeURLIssueError(c, err)
+			return
+		}
+		h.recordIssueAudit(c, startedAt, "sync", issue.ID, "success", nil, map[string]interface{}{
+			"route_entry_id": issue.RouteEntryID,
+		}, map[string]interface{}{
+			"state":            updatedIssue.State,
+			"manifest_version": syncSummary.ManifestVersion,
+		})
+		c.JSON(http.StatusOK, gin.H{"data": gin.H{"issue": updatedIssue}})
+		return
+	}
+	var result seodomain.StorefrontRouteCheckResult
+	if issue.RouteEntry.EntryStatus == seodomain.RouteEntryStatusStale {
+		result, err = h.catalog.CheckStaleRouteEntry(contextOrBackground(c), issue.RouteEntryID)
+	} else {
+		result, err = h.catalog.CheckEntry(contextOrBackground(c), issue.RouteEntryID)
+	}
 	if err != nil {
 		h.recordIssueAudit(c, startedAt, "probe", issue.ID, "failed", err, nil, nil)
-		c.JSON(http.StatusBadGateway, gin.H{"error": err.Error()})
+		status := http.StatusBadGateway
+		if errors.Is(err, service.ErrStorefrontRouteCatalogOperationInProgress) {
+			status = http.StatusConflict
+		}
+		c.JSON(status, gin.H{"error": err.Error()})
 		return
 	}
 	updatedIssue, err := h.issues.Get(issue.ID)
@@ -212,10 +281,19 @@ func (h *IssuesHandler) Verify(c *gin.Context) {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "this URL issue cannot be checked"})
 			return
 		}
-		result, err := h.catalog.CheckEntry(contextOrBackground(c), issue.RouteEntryID)
+		var result seodomain.StorefrontRouteCheckResult
+		if issue.RouteEntry.EntryStatus == seodomain.RouteEntryStatusStale {
+			result, err = h.catalog.CheckStaleRouteEntry(contextOrBackground(c), issue.RouteEntryID)
+		} else {
+			result, err = h.catalog.CheckEntry(contextOrBackground(c), issue.RouteEntryID)
+		}
 		if err != nil {
 			h.recordIssueAudit(c, startedAt, "probe", issue.ID, "failed", err, nil, nil)
-			c.JSON(http.StatusBadGateway, gin.H{"error": err.Error()})
+			status := http.StatusBadGateway
+			if errors.Is(err, service.ErrStorefrontRouteCatalogOperationInProgress) {
+				status = http.StatusConflict
+			}
+			c.JSON(status, gin.H{"error": err.Error()})
 			return
 		}
 		checkResult = result
@@ -304,7 +382,9 @@ func parseURLIssueID(c *gin.Context) (uint, error) {
 
 func writeURLIssueError(c *gin.Context, err error) {
 	status := http.StatusBadRequest
-	if errors.Is(err, gorm.ErrRecordNotFound) {
+	if errors.Is(err, service.ErrStorefrontRouteCatalogOperationInProgress) {
+		status = http.StatusConflict
+	} else if errors.Is(err, gorm.ErrRecordNotFound) {
 		status = http.StatusNotFound
 	}
 	c.JSON(status, gin.H{"error": err.Error()})

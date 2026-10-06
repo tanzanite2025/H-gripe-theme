@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"commerce-platform/internal/domain/order"
+	"commerce-platform/internal/domain/shipping"
 
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
@@ -73,6 +74,54 @@ func (r *OrderRepository) FindByID(id uint) (*order.Order, error) {
 		return nil, err
 	}
 	return &o, nil
+}
+
+// FindYanwenOrderFactsByID returns only the paid-order, recipient, currency,
+// and declaration facts required by the Yanwen waybill workflow. Keeping this
+// projection in the order repository prevents the Yanwen service from
+// depending on the complete order aggregate or repository API.
+func (r *OrderRepository) FindYanwenOrderFactsByID(id uint) (*shipping.YanwenOrderFacts, error) {
+	orderRecord, err := r.FindByID(id)
+	if err != nil {
+		return nil, err
+	}
+
+	items := make([]shipping.YanwenOrderFactItem, 0, len(orderRecord.Items))
+	for _, item := range orderRecord.Items {
+		items = append(items, shipping.YanwenOrderFactItem{
+			ProductName:            item.ProductName,
+			SKU:                    item.SKU,
+			Quantity:               item.Quantity,
+			WeightGrams:            item.WeightGrams,
+			HSCode:                 item.HSCode,
+			CustomsDescription:     item.CustomsDescription,
+			DeclaredValueMinor:     item.DeclaredValueMinor,
+			DeclaredValueConfirmed: item.DeclaredValueConfirmed,
+		})
+	}
+
+	return &shipping.YanwenOrderFacts{
+		ID:            orderRecord.ID,
+		OrderNumber:   orderRecord.OrderNumber,
+		Status:        orderRecord.Status,
+		PaymentStatus: orderRecord.PaymentStatus,
+		Currency:      orderRecord.Currency,
+		ShippingAddress: shipping.YanwenOrderFactAddress{
+			FirstName:  orderRecord.ShippingAddress.FirstName,
+			LastName:   orderRecord.ShippingAddress.LastName,
+			Company:    orderRecord.ShippingAddress.Company,
+			Address1:   orderRecord.ShippingAddress.Address1,
+			Address2:   orderRecord.ShippingAddress.Address2,
+			City:       orderRecord.ShippingAddress.City,
+			State:      orderRecord.ShippingAddress.State,
+			PostalCode: orderRecord.ShippingAddress.PostalCode,
+			Country:    orderRecord.ShippingAddress.Country,
+			Phone:      orderRecord.ShippingAddress.Phone,
+			Email:      orderRecord.ShippingAddress.Email,
+		},
+		Items:  items,
+		PaidAt: orderRecord.PaidAt,
+	}, nil
 }
 
 // FindByIDBasic reads the order record without loading order items. It is

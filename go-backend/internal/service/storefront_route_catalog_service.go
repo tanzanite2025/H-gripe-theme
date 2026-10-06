@@ -21,8 +21,20 @@ type StorefrontRouteCatalogService struct {
 	httpClient      *http.Client
 	issueReconciler storefrontRouteCatalogIssueReconciler
 	faqReconciler   storefrontFAQRouteReconciler
+	operationMu     sync.Mutex
 	tasksMu         sync.RWMutex
 	checkTasks      map[string]*storefrontRouteCatalogCheckTask
+}
+
+// ErrStorefrontRouteCatalogOperationInProgress reports that a sync or check
+// already owns the catalog's mutation lock.
+var ErrStorefrontRouteCatalogOperationInProgress = errors.New("URL 台账正在同步或检测，请等待完成后再试")
+
+func (s *StorefrontRouteCatalogService) beginCatalogOperation() (func(), error) {
+	if !s.operationMu.TryLock() {
+		return nil, ErrStorefrontRouteCatalogOperationInProgress
+	}
+	return s.operationMu.Unlock, nil
 }
 
 type storefrontRouteCatalogIssueReconciler interface {
@@ -51,7 +63,7 @@ func NewStorefrontRouteCatalogService(
 		baseURL:         publicOrigin,
 		internalBaseURL: privateOrigin,
 		httpClient: &http.Client{
-			Timeout: 5 * time.Second,
+			Timeout: storefrontRouteCatalogRequestTimeout,
 		},
 		checkTasks: make(map[string]*storefrontRouteCatalogCheckTask),
 	}
@@ -93,6 +105,9 @@ type StorefrontRouteCatalogCheckSummary struct {
 	Checked       int `json:"checked"`
 	Eligible      int `json:"eligible"`
 	Remaining     int `json:"remaining"`
+	BatchSize     int `json:"batch_size"`
+	CurrentBatch  int `json:"current_batch"`
+	TotalBatches  int `json:"total_batches"`
 	OK            int `json:"ok"`
 	Redirects     int `json:"redirects"`
 	NotFound      int `json:"not_found"`
@@ -121,6 +136,7 @@ type StorefrontRouteCatalogCheckTask struct {
 	Checked   int                                `json:"checked"`
 	Eligible  int                                `json:"eligible"`
 	Remaining int                                `json:"remaining"`
+	BatchSize int                                `json:"batch_size"`
 	Summary   StorefrontRouteCatalogCheckSummary `json:"summary"`
 	Error     string                             `json:"error,omitempty"`
 }

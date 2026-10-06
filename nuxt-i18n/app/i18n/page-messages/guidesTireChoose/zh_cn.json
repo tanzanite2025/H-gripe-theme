@@ -1,5 +1,32 @@
 {
-  "title": "如何选择合适的尺寸",
+  "title": "如何选择合适的外胎",
+  "seo": {
+    "title": "DT Swiss 轮胎宽度与车圈内宽参考",
+    "description": "查看 DT Swiss TSS 与 TC 轮胎宽度—车圈内宽参考矩阵。支持毫米和英寸胎宽输入；英寸值会先换算为毫米，再使用后端发布的推荐行和分段线性参考计算。",
+    "articleSection": "轮胎与车圈尺寸参考",
+    "articleBody": "本页整理 DT Swiss 无钩 TSS 与有钩 TC 的胎宽和车圈内宽参考。精确宽度使用发布行；未单独列出的整数宽度使用相邻数据点分段线性计算。possible 行保持为参考状态，不代表具体型号认证。英制胎宽按 1 英寸等于 25.4 毫米换算后查询。",
+    "datasetName": "DT Swiss TSS/TC 轮胎宽度与车圈内宽参考矩阵",
+    "datasetDescription": "由后端提供的 DT Swiss 轮胎宽度、英寸标注、推荐车圈内宽、possible 参考和展示性宽度投影数据。",
+    "measurementTechnique": "按 DT Swiss 发布行进行精确读取，并在相邻数据点之间进行分段线性参考计算。",
+    "tireWidthVariable": "轮胎标称宽度",
+    "rimWidthVariable": "车圈内宽",
+    "sourceProperty": "数据来源",
+    "sourceDateProperty": "数据核验日期"
+  },
+  "methodology": {
+    "title": "数据来源与计算口径",
+    "unavailable": "后端参考矩阵暂时不可用。页面仍保留计算方法和安全限制说明，不用示例数值代替真实结果。",
+    "source": "来源：{source}；数据核验日期：{date}。",
+    "provenance": "发布依据：{provenance}",
+    "body": "已发布行直接读取；未单列的整数宽度在相邻图表行之间进行分段计算。英寸输入只负责换算为毫米，推荐和插值仍由后端计算引擎完成。",
+    "version": "模型版本：{modelVersion}。以下限制来自同一份后端契约。",
+    "limitations": {
+      "modelSpecificCertification": "这是 DT Swiss 参考图表结果，不是具体轮胎、车圈型号或轮组的认证。",
+      "possibleReferenceStatus": "标记为 possible 的行只作为参考锚点，不会改写为推荐组合。",
+      "interpolationProjection": "插值宽度是图表行之间的数学投影，仍需对照轮胎和车圈制造商的具体规格。",
+      "displayOnlyMetrics": "充气后胎宽和 105% 外宽是展示性投影，不是实测尺寸或安全边界。"
+    }
+  },
   "standards": {
     "title": "制造商标准",
     "description": "下方 DT Swiss 无钩（TSS）和有钩（TC）车圈内宽图表展示了推荐组合与图表标记的 possible 参考组合。HTML 表格同步整理了图表行，方便搜索引擎和读屏工具读取；它不是具体轮胎或车圈型号的认证。请始终遵守轮胎、车圈和轮组制造商给出的限制。",

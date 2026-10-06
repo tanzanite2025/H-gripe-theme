@@ -20,7 +20,7 @@ export const entryLabel = (value: string): string => ({
   active: '有效',
   alias: '兼容',
   duplicate: '重复',
-  stale: '失效',
+  stale: '历史失效',
 }[value] || value || '未同步')
 
 const entryToneMap: Record<string, AdminStatusTone> = {
@@ -59,6 +59,14 @@ export const checkTone = (status?: string | null): AdminStatusTone => checkToneM
 
 export const formatRouteCatalogDate = (value?: string | null): string => {
   if (!value) return '未同步'
-  const date = new Date(value)
-  return Number.isNaN(date.getTime()) ? value : date.toLocaleString('zh-CN')
+  const normalizedValue = /(?:[zZ]|[+-]\d{2}:?\d{2})$/.test(value.trim())
+    ? value
+    : `${value}Z`
+  const date = new Date(normalizedValue)
+  if (Number.isNaN(date.getTime())) return value
+  return new Intl.DateTimeFormat('zh-CN', {
+    dateStyle: 'short',
+    timeStyle: 'medium',
+    timeZone: 'Asia/Shanghai',
+  }).format(date)
 }

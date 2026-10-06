@@ -45,6 +45,10 @@ const sections = createFooterMenusFromRoutes([
     footerLabelKey: 'products.nav.wheelsetBuyersGuide',
     footerLabelFallback: 'Wheelset Guide',
   }),
+  createNormalizedFooterTestRoute('/guides/spokeguides', 'guides-spokeguides', {
+    footerLabelKey: 'products.nav.spokeGuides',
+    footerLabelFallback: 'Spoke Guides',
+  }),
   createNormalizedFooterTestRoute(
     '/guides/spokeguides/new-spoke-engineering-guide',
     'guides-spokeguides-new-guide',
@@ -73,18 +77,17 @@ assert.ok(guidesSection, 'GUIDES column should be discovered from its static des
 const tireGuidesGroup = guidesSection.links.find(link => link.to === '/guides/tireguides')
 assert.ok(tireGuidesGroup, 'Tire Guides should retain its real landing page')
 assert.equal(tireGuidesGroup.fallback, 'Tire Guides')
-assert.equal(tireGuidesGroup.children?.length, 9, 'All tire guide tabs should be listed')
+assert.equal(tireGuidesGroup.children?.length, 8, 'All tire guide tabs should be listed')
 assert.deepEqual(
   tireGuidesGroup.children?.map(link => link.to),
   [
-    '/guides/tireguides/size',
+    '/guides/tireguides/tire-size-markings',
     '/guides/tireguides/tire-frame-clearance',
     '/guides/tireguides/schwalbe-tire-circumference',
     '/guides/tireguides/tubeless',
     '/guides/tireguides/choose',
     '/guides/tireguides/tire-pressure',
-    '/guides/tireguides/tire-pressure-calculator',
-    '/guides/tireguides/tube',
+    '/guides/tireguides/choose-inner-tube',
     '/guides/tireguides/schwalbe-tire-selector',
   ],
 )
@@ -96,10 +99,15 @@ assert.equal(wheelsetGuidesGroup.children?.length, 5, 'All wheelset guide tabs s
 
 const spokeGuidesGroup = guidesSection.links.find(link => link.fallback === 'Spoke Guides')
 assert.ok(spokeGuidesGroup, 'Spoke Guides should be represented as a group')
-assert.equal(spokeGuidesGroup.to, undefined, 'A page-less group must not link to a child article as its title')
+assert.equal(spokeGuidesGroup.to, '/guides/spokeguides', 'Spoke Guides should link to its category landing page')
 assert.deepEqual(
   spokeGuidesGroup.children?.map(link => link.to),
-  ['/guides/spokeguides/new-spoke-engineering-guide'],
+  [
+    '/guides/spokeguides/stainless-steel-microstructural-dislocation-mechanics',
+    '/guides/spokeguides/brand-wheelset-spoke-specs',
+    '/guides/spokeguides/spoke-length-calculator',
+    '/guides/spokeguides/new-spoke-engineering-guide',
+  ],
 )
 
 const allGuideLinks = flattenFooterNavigationItems(guidesSection.links)
@@ -141,10 +149,7 @@ assert.deepEqual(shopCategoryLinks, [
   },
   { fallback: 'Tires', to: '/shop/tires' },
 ])
-assert.deepEqual(
-  createFooterShopLinksFromProductCategories([]),
-  [{ labelKey: 'products.nav.shop', fallback: 'Shop', to: '/shop' }],
-)
+assert.deepEqual(createFooterShopLinksFromProductCategories([]), [])
 
 const sectionsWithProductCategories = createFooterMenusFromRoutes(
   [
@@ -156,6 +161,19 @@ const sectionsWithProductCategories = createFooterMenusFromRoutes(
 assert.deepEqual(
   sectionsWithProductCategories.find(section => section.id === 'shop')?.links,
   shopCategoryLinks,
+)
+
+const sectionsWhileProductCategoriesAreLoading = createFooterMenusFromRoutes(
+  [
+    createNormalizedFooterTestRoute('/shop', 'shop'),
+    createNormalizedFooterTestRoute('/shop/:slug', 'shop-slug'),
+  ],
+  { shopLinks: [] },
+)
+assert.equal(
+  sectionsWhileProductCategoriesAreLoading.find(section => section.id === 'shop'),
+  undefined,
+  'SHOP must not fall back to a generic Shop link while categories are unavailable',
 )
 
 console.log('Footer menu route discovery contract passed.')

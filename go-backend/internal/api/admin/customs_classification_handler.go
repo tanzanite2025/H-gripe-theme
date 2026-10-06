@@ -15,20 +15,25 @@ type CustomsClassificationHandler struct {
 }
 
 type customsClassificationRequest struct {
-	ProductSpecificationTemplateID *uint  `json:"product_specification_template_id"`
-	Name                           string `json:"name" binding:"required"`
-	Slug                           string `json:"slug" binding:"required"`
-	ComponentKind                  string `json:"component_kind"`
-	Material                       string `json:"material"`
-	HSCode                         string `json:"hs_code" binding:"required"`
-	CNCode                         string `json:"cn_code"`
-	CountryOfOrigin                string `json:"country_of_origin"`
-	CustomsDescription             string `json:"customs_description"`
-	Source                         string `json:"source"`
-	SourceCode                     string `json:"source_code"`
-	SourceURL                      string `json:"source_url"`
-	Notes                          string `json:"notes"`
-	Status                         string `json:"status"`
+	Name                         string   `json:"name" binding:"required"`
+	Slug                         string   `json:"slug" binding:"required"`
+	ComponentKind                string   `json:"component_kind"`
+	Material                     string   `json:"material"`
+	HSCode                       string   `json:"hs_code" binding:"required"`
+	CNCode                       string   `json:"cn_code"`
+	CountryOfOrigin              string   `json:"country_of_origin"`
+	CustomsDescription           string   `json:"customs_description"`
+	Source                       string   `json:"source"`
+	SourceCode                   string   `json:"source_code"`
+	SourceURL                    string   `json:"source_url"`
+	SourceURLUS                  string   `json:"source_url_us"`
+	SourceURLEU                  string   `json:"source_url_eu"`
+	SourceURLUK                  string   `json:"source_url_uk"`
+	Notes                        string   `json:"notes"`
+	TradeRemedyRiskLevel         string   `json:"trade_remedy_risk_level"`
+	TradeRemedyRiskTags          []string `json:"trade_remedy_risk_tags"`
+	TradeRemedyDeclarationAdvice string   `json:"trade_remedy_declaration_advice"`
+	Status                       string   `json:"status"`
 }
 
 func NewCustomsClassificationHandler(customsService *service.CustomsClassificationService) *CustomsClassificationHandler {
@@ -36,14 +41,12 @@ func NewCustomsClassificationHandler(customsService *service.CustomsClassificati
 }
 
 func (h *CustomsClassificationHandler) List(c *gin.Context) {
-	productSpecificationTemplateID, _ := strconv.ParseUint(c.Query("product_specification_template_id"), 10, 32)
 	items, err := h.service.List(service.CustomsClassificationListInput{
-		ProductSpecificationTemplateID: uint(productSpecificationTemplateID),
-		ComponentKind:                  c.Query("component_kind"),
-		Material:                       c.Query("material"),
-		Status:                         c.Query("status"),
-		Search:                         c.Query("q"),
-		IncludePaused:                  c.Query("include_paused") == "true" || c.Query("include_paused") == "1",
+		ComponentKind: c.Query("component_kind"),
+		Material:      c.Query("material"),
+		Status:        c.Query("status"),
+		Search:        c.Query("q"),
+		IncludePaused: c.Query("include_paused") == "true" || c.Query("include_paused") == "1",
 	})
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch customs classifications"})
@@ -125,20 +128,25 @@ func (h *CustomsClassificationHandler) Lookup(c *gin.Context) {
 
 func customsClassificationInput(req customsClassificationRequest) service.CustomsClassificationInput {
 	return service.CustomsClassificationInput{
-		ProductSpecificationTemplateID: req.ProductSpecificationTemplateID,
-		Name:                           req.Name,
-		Slug:                           req.Slug,
-		ComponentKind:                  req.ComponentKind,
-		Material:                       req.Material,
-		HSCode:                         req.HSCode,
-		CNCode:                         req.CNCode,
-		CountryOfOrigin:                req.CountryOfOrigin,
-		CustomsDescription:             req.CustomsDescription,
-		Source:                         req.Source,
-		SourceCode:                     req.SourceCode,
-		SourceURL:                      req.SourceURL,
-		Notes:                          req.Notes,
-		Status:                         req.Status,
+		Name:                         req.Name,
+		Slug:                         req.Slug,
+		ComponentKind:                req.ComponentKind,
+		Material:                     req.Material,
+		HSCode:                       req.HSCode,
+		CNCode:                       req.CNCode,
+		CountryOfOrigin:              req.CountryOfOrigin,
+		CustomsDescription:           req.CustomsDescription,
+		Source:                       req.Source,
+		SourceCode:                   req.SourceCode,
+		SourceURL:                    req.SourceURL,
+		SourceURLUS:                  req.SourceURLUS,
+		SourceURLEU:                  req.SourceURLEU,
+		SourceURLUK:                  req.SourceURLUK,
+		Notes:                        req.Notes,
+		TradeRemedyRiskLevel:         req.TradeRemedyRiskLevel,
+		TradeRemedyRiskTags:          req.TradeRemedyRiskTags,
+		TradeRemedyDeclarationAdvice: req.TradeRemedyDeclarationAdvice,
+		Status:                       req.Status,
 	}
 }
 
@@ -157,6 +165,8 @@ func respondCustomsClassificationError(c *gin.Context, err error) {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Customs classification not found"})
 	case errors.Is(err, service.ErrCustomsClassificationSlugExists):
 		c.JSON(http.StatusConflict, gin.H{"error": "Customs classification slug already exists"})
+	case errors.Is(err, service.ErrCustomsClassificationBuiltIn):
+		c.JSON(http.StatusConflict, gin.H{"error": "Built-in customs classification profiles cannot be deleted"})
 	case errors.Is(err, service.ErrCustomsClassificationInvalid),
 		errors.Is(err, service.ErrCustomsLookupInvalid):
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})

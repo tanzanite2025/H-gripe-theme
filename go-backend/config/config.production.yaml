@@ -184,6 +184,11 @@ worker:
   tracking_polling_enabled: false
   tracking_polling_interval_seconds: 300
   tracking_polling_batch_limit: 20
+  yanwen_tracking_polling_enabled: false
+  yanwen_tracking_polling_interval_seconds: 300
+  yanwen_tracking_polling_batch_limit: 20
+  yanwen_catalog_sync_enabled: false
+  yanwen_catalog_sync_interval_seconds: 86400
   visitor_profile_ip_address_retention_days: 30
   # Keep physical conversation purge explicitly opt-in per deployment.
   customer_service_retention_enabled: false

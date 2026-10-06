@@ -266,7 +266,6 @@ func (s *ProductService) CreateAdminProduct(input ProductCreateInput) (*product.
 	}
 	customsInfo, err := s.resolveProductCustomsInfo(
 		input.CustomsClassificationProfileID,
-		input.ProductSpecificationTemplateID,
 		input.HSCode,
 		input.CNCode,
 		input.CountryOfOrigin,
@@ -370,8 +369,6 @@ func (s *ProductService) UpdateAdminProduct(id uint, input ProductUpdateInput) (
 
 	if input.UpdateProductSpecificationTemplateID {
 		existingProduct.ProductSpecificationTemplateID = input.ProductSpecificationTemplateID
-		existingProduct.CustomsClassificationProfileID = nil
-		existingProduct.CustomsClassificationProfile = nil
 	}
 	if input.UpdateProductCategoryID {
 		allowDisabled := existingProduct.ProductCategoryID != nil &&
@@ -402,7 +399,6 @@ func (s *ProductService) UpdateAdminProduct(id uint, input ProductUpdateInput) (
 	if input.UpdateCustomsClassificationProfileID {
 		customsInfo, err := s.resolveProductCustomsInfo(
 			input.CustomsClassificationProfileID,
-			existingProduct.ProductSpecificationTemplateID,
 			existingProduct.HSCode,
 			existingProduct.CNCode,
 			existingProduct.CountryOfOrigin,

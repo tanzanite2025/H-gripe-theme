@@ -28,6 +28,11 @@ export const assetAccessURL = (asset?: MediaAssetLike | null): string => {
   return String(preferred || asset?.access_url || asset?.url || '')
 }
 
+export const adminMediaAssetFileURL = (asset?: MediaAssetLike | null): string => {
+  const id = String(asset?.id ?? '').trim()
+  return id ? `/api/admin/media/assets/${encodeURIComponent(id)}/file` : ''
+}
+
 export const statusLabel = (status?: string | null): string => status === 'archived' ? '归档' : '启用'
 
 export const mediaTypeLabel = (type?: string | null): string => type === 'video' ? '视频' : '图片'
