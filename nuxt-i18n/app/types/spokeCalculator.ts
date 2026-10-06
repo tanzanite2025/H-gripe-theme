@@ -25,9 +25,8 @@ export const SPOKE_WIZARD_STEPS = [
   { id: 'erd', number: 2 },
   { id: 'alternating_drilling', number: 3 },
   { id: 'hub_geometry', number: 4 },
-  { id: 'spoke_hole_diameter', number: 5 },
-  { id: 'interlacing', number: 6 },
-  { id: 'nipple_type', number: 7 },
+  { id: 'physical_corrections', number: 5 },
+  { id: 'nipple_type', number: 6 },
 ] as const
 
 export type SpokeWizardStep = typeof SPOKE_WIZARD_STEPS[number]['number']

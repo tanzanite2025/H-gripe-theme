@@ -44,17 +44,10 @@
           @previous="previousStep"
           @next="nextStep"
         />
-        <SpokeHoleEngagementStep
+        <SpokePhysicalCorrectionsStep
           v-else-if="activeWizardStep === 5"
           v-model:front-hole-diameter="frontHoleDiameterMm"
           v-model:rear-hole-diameter="rearHoleDiameterMm"
-          :current-step="activeWizardStep"
-          @select-step="goToStep"
-          @previous="previousStep"
-          @next="nextStep"
-        />
-        <SpokeInterlacingStep
-          v-else-if="activeWizardStep === 6"
           v-model:front-interlacing="frontInterlacing"
           v-model:rear-interlacing="rearInterlacing"
           v-model:front-compensation="frontInterlaceCompensationMm"
@@ -68,7 +61,7 @@
           @next="nextStep"
         />
         <SpokeNippleStep
-          v-else-if="activeWizardStep === 7"
+          v-else-if="activeWizardStep === 6"
           v-model:front-nipple-type="frontNippleType"
           v-model:rear-nipple-type="rearNippleType"
           v-model:front-nipple-length="frontNippleLengthMm"
@@ -108,10 +101,9 @@ import SpokeCalculatorCatalogPanel from '~/components/SpokeCalculatorCatalogPane
 import SpokeAlternatingDrillingStep from '~/components/SpokeAlternatingDrillingStep.vue'
 import SpokeERDStep from '~/components/SpokeERDStep.vue'
 import SpokeHeadTypeStep from '~/components/SpokeHeadTypeStep.vue'
-import SpokeHoleEngagementStep from '~/components/SpokeHoleEngagementStep.vue'
-import SpokeInterlacingStep from '~/components/SpokeInterlacingStep.vue'
 import SpokeNippleStep from '~/components/SpokeNippleStep.vue'
 import SpokePCDStep from '~/components/SpokePCDStep.vue'
+import SpokePhysicalCorrectionsStep from '~/components/SpokePhysicalCorrectionsStep.vue'
 import UserFeedbackThread from '~/components/UserFeedbackThread.vue'
 
 import { usePageMessages } from '~/composables/usePageMessages'

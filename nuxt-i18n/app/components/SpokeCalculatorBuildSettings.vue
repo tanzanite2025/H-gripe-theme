@@ -1,13 +1,22 @@
 <template>
-  <div class="spoke-calculator__build-settings">
-    <div class="spoke-calculator__build-settings-header">
+  <div
+    class="spoke-calculator__build-settings"
+    :class="{ 'spoke-calculator__build-settings--inline': props.layout === 'inline' }"
+  >
+    <div v-if="props.layout === 'section'" class="spoke-calculator__build-settings-header">
       <p class="spoke-calculator__build-settings-title">
         {{ t('resourcesSpokeCalculator.calculator.buildSettings.title') }}
       </p>
     </div>
 
-    <div class="spoke-calculator__build-settings-grid">
-      <div class="spoke-calculator__setting-field">
+    <div
+      class="spoke-calculator__build-settings-grid"
+      :class="{ 'spoke-calculator__build-settings-grid--inline': props.layout === 'inline' }"
+    >
+      <div
+        class="spoke-calculator__setting-field"
+        :class="{ 'spoke-calculator__setting-field--inline': props.layout === 'inline' }"
+      >
         <label :for="fieldId('topology')" class="block text-xs font-medium tz-text-secondary">
           {{ t('resourcesSpokeCalculator.calculator.buildSettings.topology') }}
         </label>
@@ -21,7 +30,12 @@
         />
       </div>
 
-      <div v-if="selectedTopology" class="spoke-calculator__topology-summary" role="status">
+      <div
+        v-if="selectedTopology"
+        class="spoke-calculator__topology-summary"
+        :class="{ 'spoke-calculator__topology-summary--inline': props.layout === 'inline' }"
+        role="status"
+      >
         <span class="spoke-calculator__topology-summary-title">
           {{ t('resourcesSpokeCalculator.calculator.buildSettings.topologySummary') }}
         </span>
@@ -46,11 +60,14 @@ import type {
 } from '~/types/spokeCalculator'
 import { computed } from 'vue'
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   side: SpokeWheelSide
   config: SpokeWheelBuildConfig
   options: SpokeCalculatorManualOptions
-}>()
+  layout?: 'section' | 'inline'
+}>(), {
+  layout: 'section',
+})
 
 const { t } = useI18n()
 const config = props.config
@@ -76,6 +93,11 @@ const updateTopology = (value: string | number | null) => {
   gap: 0.75rem;
   padding: 0.75rem 0 0;
   border-top: 1px solid var(--spoke-border, var(--tz-border-subtle));
+}
+
+.spoke-calculator__build-settings--inline,
+.spoke-calculator__build-settings-grid--inline {
+  display: contents;
 }
 
 .spoke-calculator__build-settings-header {
@@ -106,6 +128,11 @@ const updateTopology = (value: string | number | null) => {
   display: grid;
   gap: 0.3rem;
   min-width: 0;
+}
+
+.spoke-calculator__setting-field--inline,
+.spoke-calculator__topology-summary--inline {
+  grid-column: 1 / -1;
 }
 
 .spoke-calculator__setting-field label {

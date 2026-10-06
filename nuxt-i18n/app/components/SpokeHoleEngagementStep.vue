@@ -1,6 +1,11 @@
 <template>
-  <section class="spoke-hole-step" aria-labelledby="spoke-hole-step-title">
+  <section
+    class="spoke-hole-step"
+    :class="{ 'spoke-hole-step--embedded': props.embedded }"
+    :aria-labelledby="props.embedded ? undefined : 'spoke-hole-step-title'"
+  >
     <SpokeStepNavigation
+      v-if="!props.embedded"
       :current-step="currentStep"
       :show-previous="true"
       @select="emit('select-step', $event)"
@@ -8,14 +13,14 @@
       @next="emit('next')"
     />
 
-    <div class="spoke-hole-step__intro">
+    <div v-if="!props.embedded" class="spoke-hole-step__intro">
       <span class="spoke-hole-step__eyebrow">05</span>
       <div>
         <h2 id="spoke-hole-step-title" class="spoke-hole-step__title">
-          {{ t('resourcesSpokeCalculator.calculator.physicalCorrections.stepFivePrompt', '输入法兰孔径') }}
+          {{ t('resourcesSpokeCalculator.calculator.physicalCorrections.holeStepPrompt', '输入法兰孔径') }}
         </h2>
         <p class="spoke-hole-step__subtitle">
-          {{ t('resourcesSpokeCalculator.calculator.physicalCorrections.stepFiveSubtitle', '确认法兰孔径，用于从理论孔心扣除孔半径；J 弯头和直拉式花鼓的长度测量都适用。') }}
+          {{ t('resourcesSpokeCalculator.calculator.physicalCorrections.holeStepSubtitle', '确认法兰孔径，用于从理论孔心扣除孔半径；J 弯头和直拉式花鼓的长度测量都适用。') }}
         </p>
       </div>
     </div>
@@ -90,7 +95,7 @@
       </div>
     </div>
 
-    <SpokePhysicsDiagrams class="spoke-hole-step__reference" />
+    <SpokePhysicsDiagrams v-if="!props.embedded" class="spoke-hole-step__reference" />
 
   </section>
 </template>
@@ -103,11 +108,13 @@ import SpokeStepNavigation from '~/components/SpokeStepNavigation.vue'
 const { t } = useI18n()
 
 const props = withDefaults(defineProps<{
+  embedded?: boolean
   currentStep?: number
   frontHoleDiameter?: number | null
   rearHoleDiameter?: number | null
 }>(), {
   currentStep: 5,
+  embedded: false,
   frontHoleDiameter: 2.5,
   rearHoleDiameter: 2.5,
 })
@@ -155,6 +162,15 @@ const updateHoleDiameter = (side: 'front' | 'rear', event: Event) => {
     #f8fafc;
   background-size: 28px 28px;
   color: var(--hole-step-text);
+}
+
+.spoke-hole-step--embedded {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
 }
 
 .spoke-hole-step__intro {
@@ -207,6 +223,10 @@ const updateHoleDiameter = (side: 'front' | 'rear', event: Event) => {
   border-radius: 18px;
   background: linear-gradient(135deg, #ecfdf5 0%, #f0fdfa 54%, #ffffff 100%);
   box-shadow: 0 10px 24px rgba(5, 150, 105, 0.1);
+}
+
+.spoke-hole-step--embedded .spoke-hole-step__input-panel {
+  margin-bottom: 0;
 }
 
 .spoke-hole-step__input-copy {

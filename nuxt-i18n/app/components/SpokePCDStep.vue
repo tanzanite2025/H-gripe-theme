@@ -118,14 +118,14 @@
                 <span>mm</span>
               </span>
             </label>
-          </div>
 
-          <SpokeCalculatorBuildSettings
-            class="spoke-pcd-step__topology-settings"
-            side="front"
-            :config="props.frontConfig"
-            :options="props.options"
-          />
+            <SpokeCalculatorBuildSettings
+              side="front"
+              :config="props.frontConfig"
+              :options="props.options"
+              layout="inline"
+            />
+          </div>
         </fieldset>
 
         <fieldset class="spoke-pcd-step__wheel-card">
@@ -201,14 +201,14 @@
                 <span>mm</span>
               </span>
             </label>
-          </div>
 
-          <SpokeCalculatorBuildSettings
-            class="spoke-pcd-step__topology-settings"
-            side="rear"
-            :config="props.rearConfig"
-            :options="props.options"
-          />
+            <SpokeCalculatorBuildSettings
+              side="rear"
+              :config="props.rearConfig"
+              :options="props.options"
+              layout="inline"
+            />
+          </div>
         </fieldset>
       </div>
     </div>
@@ -472,10 +472,6 @@ const updateRearGeometry = (field: GeometryField, event: Event) => {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
-}
-
-.spoke-pcd-step__topology-settings {
-  grid-column: 1 / -1;
 }
 
 .spoke-pcd-step__field {

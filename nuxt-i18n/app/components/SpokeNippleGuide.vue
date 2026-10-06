@@ -768,7 +768,7 @@
       font-weight: 800;
     }
 
-/* The reference document is embedded below the Step 7 input panel. */
+/* The reference document is embedded below the Step 6 input panel. */
 .spoke-nipple-guide {
   width: 100%;
   max-width: none;

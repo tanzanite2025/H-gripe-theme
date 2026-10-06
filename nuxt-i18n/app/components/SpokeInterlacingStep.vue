@@ -1,6 +1,11 @@
 <template>
-  <section class="spoke-interlacing-step" aria-labelledby="spoke-interlacing-step-title">
+  <section
+    class="spoke-interlacing-step"
+    :class="{ 'spoke-interlacing-step--embedded': props.embedded }"
+    :aria-labelledby="props.embedded ? undefined : 'spoke-interlacing-step-title'"
+  >
     <SpokeStepNavigation
+      v-if="!props.embedded"
       :current-step="currentStep"
       :show-previous="true"
       @select="emit('select-step', $event)"
@@ -8,14 +13,14 @@
       @next="emit('next')"
     />
 
-    <div class="spoke-interlacing-step__intro">
+    <div v-if="!props.embedded" class="spoke-interlacing-step__intro">
       <span class="spoke-interlacing-step__eyebrow">06</span>
       <div>
         <h2 id="spoke-interlacing-step-title" class="spoke-interlacing-step__title">
-          {{ t('resourcesSpokeCalculator.calculator.physicalCorrections.stepSixPrompt', '输入交叉压条与辐条拉长补偿（可选）') }}
+          {{ t('resourcesSpokeCalculator.calculator.physicalCorrections.interlacingStepPrompt', '输入交叉压条与辐条拉长补偿（可选）') }}
         </h2>
         <p class="spoke-interlacing-step__subtitle">
-          {{ t('resourcesSpokeCalculator.calculator.physicalCorrections.stepSixSubtitle', '确认交叉编法是否在交叉点压条，并按辐条实际拉长量修正下料长度。') }}
+          {{ t('resourcesSpokeCalculator.calculator.physicalCorrections.interlacingStepSubtitle', '确认交叉编法是否在交叉点压条，并按辐条实际拉长量修正下料长度。') }}
         </p>
       </div>
     </div>
@@ -147,7 +152,7 @@
       </div>
     </div>
 
-    <SpokePhysicsDiagrams class="spoke-interlacing-step__reference" />
+    <SpokePhysicsDiagrams v-if="!props.embedded" class="spoke-interlacing-step__reference" />
 
   </section>
 </template>
@@ -165,6 +170,7 @@ const localePath = useLocalePath()
 const spokeElongationGuidePath = localePath('/guides/spokeguides/stainless-steel-microstructural-dislocation-mechanics')
 
 const props = withDefaults(defineProps<{
+  embedded?: boolean
   currentStep?: number
   frontInterlacing?: SpokeInterlacing
   rearInterlacing?: SpokeInterlacing
@@ -175,6 +181,7 @@ const props = withDefaults(defineProps<{
   rearCrossing?: number
 }>(), {
   currentStep: 6,
+  embedded: false,
   frontInterlacing: 'off',
   rearInterlacing: 'off',
   frontCompensation: null,
@@ -255,6 +262,15 @@ const updateElongationCompensation = (event: Event) => {
   color: var(--interlacing-step-text);
 }
 
+.spoke-interlacing-step--embedded {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+}
+
 .spoke-interlacing-step__intro {
   display: flex;
   align-items: flex-start;
@@ -305,6 +321,10 @@ const updateElongationCompensation = (event: Event) => {
   border-radius: 18px;
   background: linear-gradient(135deg, #ecfdf5 0%, #f0fdfa 54%, #ffffff 100%);
   box-shadow: 0 10px 24px rgba(5, 150, 105, 0.1);
+}
+
+.spoke-interlacing-step--embedded .spoke-interlacing-step__input-panel {
+  margin-bottom: 0;
 }
 
 .spoke-interlacing-step__input-copy {

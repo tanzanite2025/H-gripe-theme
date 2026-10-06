@@ -9,13 +9,13 @@
     />
 
     <div class="spoke-nipple-step__intro">
-      <span class="spoke-nipple-step__eyebrow">07</span>
+      <span class="spoke-nipple-step__eyebrow">06</span>
       <div>
         <h2 id="spoke-nipple-step-title" class="spoke-nipple-step__title">
-          {{ t('resourcesSpokeCalculator.calculator.physicalCorrections.stepSevenPrompt', '选择外置或内置辐条帽') }}
+          {{ t('resourcesSpokeCalculator.calculator.physicalCorrections.stepSixPrompt', '选择外置或内置辐条帽') }}
         </h2>
         <p class="spoke-nipple-step__subtitle">
-          {{ t('resourcesSpokeCalculator.calculator.physicalCorrections.stepSevenSubtitle', '外置辐条帽作为长度基准；本计算器按 SAPIM POLYAX 14 mm 外置辐条帽建立基准。选择内置式后，请输入实际辐条帽长度。') }}
+          {{ t('resourcesSpokeCalculator.calculator.physicalCorrections.stepSixSubtitle', '外置辐条帽作为长度基准；本计算器按 SAPIM POLYAX 14 mm 外置辐条帽建立基准。选择内置式后，请输入实际辐条帽长度。') }}
         </p>
       </div>
     </div>
@@ -23,7 +23,7 @@
     <div class="spoke-nipple-step__input-panel">
       <div class="spoke-nipple-step__input-copy">
         <span class="spoke-nipple-step__input-kicker">
-          {{ t('resourcesSpokeCalculator.calculator.physicalCorrections.nippleInputKicker', '第 7 步输入') }}
+          {{ t('resourcesSpokeCalculator.calculator.physicalCorrections.nippleInputKicker', '第 6 步输入') }}
         </span>
         <strong class="spoke-nipple-step__input-label">
           {{ t('resourcesSpokeCalculator.calculator.physicalCorrections.nippleInputLabel', '辐条帽位置与长度') }}
@@ -137,7 +137,7 @@ const props = withDefaults(defineProps<{
   frontNippleLength?: number | null
   rearNippleLength?: number | null
 }>(), {
-  currentStep: 7,
+  currentStep: 6,
   frontNippleType: 'standard',
   rearNippleType: 'standard',
   frontNippleLength: 12,
