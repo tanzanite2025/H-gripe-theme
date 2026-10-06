@@ -463,7 +463,8 @@ import {
 
 definePageMeta({
   layout: 'products',
-  footer: false,
+  footerLabelKey: 'wheelsetLacingTopology.navLabel',
+  footerLabelFallback: 'Wheelset spoke lacing topology',
   breadcrumbLabelKey: 'wheelsetLacingTopology.breadcrumb',
   breadcrumbLabelFallback: 'Wheelset lacing topology',
 })
@@ -475,7 +476,7 @@ const { loadPageMessages } = usePageMessages('wheelsetLacingTopology')
 const pageMessagesVersion = ref(0)
 let isInteractiveBlueprintMounted = false
 
-const wheelsetLacingFaqRoutePath = '/resources/wheelset-spoke-lacing-topology-and-geometry-reference'
+const wheelsetLacingFaqRoutePath = '/guides/wheelset-buyers/wheelset-spoke-lacing-topology-and-geometry-reference'
 const { data: wheelsetLacingFaqData } = await useAsyncData(
   'wheelset-lacing-topology-faq-structured-data',
   () => fetchFaqDataByRoutePath(wheelsetLacingFaqRoutePath),
@@ -537,7 +538,7 @@ const localizedSeoRoutes = computed(() => localeManifest
   .filter(entry => supportedSeoLocaleCodes.has(entry.code))
   .map(({ code }) => ({
     code,
-    path: switchLocalePath(code) || '/resources/wheelset-spoke-lacing-topology-and-geometry-reference',
+    path: switchLocalePath(code) || '/guides/wheelset-buyers/wheelset-spoke-lacing-topology-and-geometry-reference',
   })))
 
 const isPublicSeoLocale = computed(() => supportedSeoLocaleCodes.has(locale.value))

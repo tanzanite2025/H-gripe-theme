@@ -35,8 +35,8 @@ func TestBuildManifestRouteCatalogEntriesHonoursSitemapLocales(t *testing.T) {
 		Version: "test",
 		Routes: []seodomain.StorefrontRouteManifestRoute{
 			{
-				Key:            "resources-wheelset-lacing-topology",
-				Path:           "/resources/wheelset-spoke-lacing-topology-and-geometry-reference",
+				Key:            "guides-wheelset-buyers-spoke-lacing-topology",
+				Path:           "/guides/wheelset-buyers/wheelset-spoke-lacing-topology-and-geometry-reference",
 				Label:          "Wheelset spoke lacing topology",
 				Description:    "Interactive wheelset lacing topology reference",
 				SitemapLocales: []string{"en", "zh_cn"},
@@ -52,10 +52,10 @@ func TestBuildManifestRouteCatalogEntriesHonoursSitemapLocales(t *testing.T) {
 	if len(entries) != 2 {
 		t.Fatalf("expected two public locale entries, got %d", len(entries))
 	}
-	if entries[0].Locale != "en" || entries[0].Path != "/resources/wheelset-spoke-lacing-topology-and-geometry-reference" {
+	if entries[0].Locale != "en" || entries[0].Path != "/guides/wheelset-buyers/wheelset-spoke-lacing-topology-and-geometry-reference" {
 		t.Fatalf("unexpected English route entry: %+v", entries[0])
 	}
-	if entries[1].Locale != "zh_cn" || entries[1].Path != "/zh_cn/resources/wheelset-spoke-lacing-topology-and-geometry-reference" {
+	if entries[1].Locale != "zh_cn" || entries[1].Path != "/zh_cn/guides/wheelset-buyers/wheelset-spoke-lacing-topology-and-geometry-reference" {
 		t.Fatalf("unexpected Chinese route entry: %+v", entries[1])
 	}
 }
@@ -65,8 +65,8 @@ func TestFAQRoutePagesHonourManifestSitemapLocales(t *testing.T) {
 		Version: "test",
 		Routes: []seodomain.StorefrontRouteManifestRoute{
 			{
-				Key:            "resources-wheelset-lacing-topology",
-				Path:           "/resources/wheelset-spoke-lacing-topology-and-geometry-reference",
+				Key:            "guides-wheelset-buyers-spoke-lacing-topology",
+				Path:           "/guides/wheelset-buyers/wheelset-spoke-lacing-topology-and-geometry-reference",
 				Label:          "Wheelset spoke lacing topology",
 				Description:    "Interactive wheelset lacing topology reference",
 				SitemapLocales: []string{"en", "zh_cn"},
@@ -77,8 +77,11 @@ func TestFAQRoutePagesHonourManifestSitemapLocales(t *testing.T) {
 	pages := buildFAQRoutePages(manifest)
 	localesByRoute := make(map[string]struct{})
 	for _, page := range pages {
-		if page.RouteKey == "resources-wheelset-lacing-topology" {
+		if page.RouteKey == "guides-wheelset-buyers-spoke-lacing-topology" {
 			localesByRoute[page.Locale] = struct{}{}
+			if page.PageID != "resources-wheelset-lacing-topology" {
+				t.Fatalf("FAQ page identity changed during route move: %q", page.PageID)
+			}
 		}
 	}
 	if len(localesByRoute) != 2 {

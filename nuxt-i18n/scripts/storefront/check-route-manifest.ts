@@ -33,6 +33,10 @@ const customPagePathOverrides = new Map<string, string>([
     join(pagesRoot, 'guides', 'spokeguides', 'spoke-guides-category-navigation-overview.vue'),
   ],
   [
+    '/guides/wheelset-buyers/wheelset-spoke-lacing-topology-and-geometry-reference',
+    join(pagesRoot, 'guides', 'wheelset-spoke-lacing-topology-and-geometry-reference.vue'),
+  ],
+  [
     '/guides/tireguides/schwalbe-tire-selector',
     join(pagesRoot, 'guides', 'schwalbe-tire-selector.vue'),
   ],

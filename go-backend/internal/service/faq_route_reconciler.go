@@ -131,6 +131,10 @@ func faqPageIDForRouteKey(routeKey string) string {
 		return "picture-warehouse"
 	case "guides-tireguides-schwalbe-tire-selector":
 		return "guides-schwalbe-tire-selector"
+	case "guides-wheelset-buyers-spoke-lacing-topology":
+		// Keep the FAQ content identity stable while the public route moves
+		// from Resources into the Wheelset Guide route family.
+		return "resources-wheelset-lacing-topology"
 	case "legacy-faq":
 		return "faq"
 	default:

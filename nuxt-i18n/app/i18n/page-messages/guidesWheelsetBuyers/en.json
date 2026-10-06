@@ -21,6 +21,10 @@
     "chooseFreehub": {
       "label": "Choose freehub",
       "description": "Freehub choices and drivetrain compatibility."
+    },
+    "spokeLacingTopology": {
+      "label": "Spoke lacing topology reference",
+      "description": "Inspect rim-hole mapping, G3 and uniform 2:1 topologies, and flange geometry references."
     }
   }
 }

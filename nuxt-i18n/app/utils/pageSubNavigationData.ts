@@ -146,6 +146,13 @@ export const wheelsetBuyerTabs = [
     descriptionKey: 'guidesWheelsetBuyers.tabs.chooseFreehub.description',
     description: 'Freehub choices and drivetrain compatibility.',
   },
+  {
+    id: 'wheelset-spoke-lacing-topology-and-geometry-reference',
+    labelKey: 'guidesWheelsetBuyers.tabs.spokeLacingTopology.label',
+    fallback: 'Spoke lacing topology reference',
+    descriptionKey: 'guidesWheelsetBuyers.tabs.spokeLacingTopology.description',
+    description: 'Inspect rim-hole mapping, G3 and uniform 2:1 topologies, and flange geometry references.',
+  },
 ] as const satisfies readonly PageSubNavigationTab[]
 
 export type WheelsetBuyerTabId = (typeof wheelsetBuyerTabs)[number]['id']
