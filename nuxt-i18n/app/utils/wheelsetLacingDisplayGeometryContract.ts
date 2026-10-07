@@ -3,7 +3,7 @@ import {
   type WheelsetLacingTopologySelection,
 } from './wheelsetLacingSelectionContract'
 
-export const WHEELSET_LACING_DISPLAY_GEOMETRY_CONTRACT_VERSION = 'v1.13-backend-display-geometry'
+export const WHEELSET_LACING_DISPLAY_GEOMETRY_CONTRACT_VERSION = 'v1.14-backend-display-geometry'
 
 export const WHEELSET_LACING_DISPLAY_GEOMETRY_LAYOUT = Object.freeze({
   symmetric1To1: 'symmetric_1to1',
@@ -374,13 +374,14 @@ const validateTwentyOneHoleG3TopologyShape = (
   hubHolesB: unknown[],
   topologySpokes: unknown[],
 ): void => {
-  const driveSideSpokeCount = 14
+  const driveSideFlangeHoleCount = 7
+  const nonDriveSideFlangeHoleCount = 7
   if (requireInteger(topology.cross, 'G3 topology cross') !== 2
     || topology.spoke_head_style !== WHEELSET_LACING_SPOKE_HEAD_STYLE.straightPull
     || rimHoles.length !== 21
-    || hubHolesA.length !== driveSideSpokeCount
-    || hubHolesB.length !== 7) {
-    throw new Error('21-hole G3 topology must use its registered 2:1 metadata, straight-pull heads, and 21/14/7 hole counts')
+    || hubHolesA.length !== driveSideFlangeHoleCount
+    || hubHolesB.length !== nonDriveSideFlangeHoleCount) {
+    throw new Error('21-hole G3 topology must use its registered 2:1 metadata, straight-pull heads, 14/7 spoke counts, and 7/7 flange-hole counts')
   }
 
   rimHoles.forEach((holeValue, index) => {
@@ -392,41 +393,50 @@ const validateTwentyOneHoleG3TopologyShape = (
     requireInteger(hole.id, `G3 rim hole ${index} id`)
   })
 
-  const driveSpokesByHubHoleId = new Map<number, UnknownRecord>()
-  const nonDriveSpokesByHubHoleId = new Map<number, UnknownRecord>()
+  const driveSpokesByHubHoleId = new Map<number, UnknownRecord[]>()
+  const nonDriveSpokesByHubHoleId = new Map<number, UnknownRecord[]>()
   for (const spokeValue of topologySpokes) {
     const spoke = requireUnknownRecord(spokeValue, 'G3 topology spoke')
     const side = requireSide(spoke.side, 'G3 topology spoke side')
     const hubHoleId = requireInteger(spoke.hub_hole_id, 'G3 topology spoke hub hole id')
     if (side === 'A') {
-      driveSpokesByHubHoleId.set(hubHoleId, spoke)
+      const spokes = driveSpokesByHubHoleId.get(hubHoleId) ?? []
+      spokes.push(spoke)
+      driveSpokesByHubHoleId.set(hubHoleId, spokes)
     } else {
-      nonDriveSpokesByHubHoleId.set(hubHoleId, spoke)
+      const spokes = nonDriveSpokesByHubHoleId.get(hubHoleId) ?? []
+      spokes.push(spoke)
+      nonDriveSpokesByHubHoleId.set(hubHoleId, spokes)
     }
   }
 
-  for (let hubHoleId = 0; hubHoleId < driveSideSpokeCount; hubHoleId++) {
-    const spoke = driveSpokesByHubHoleId.get(hubHoleId)
-    const group = Math.floor(hubHoleId / 2)
-    const isTrailing = hubHoleId % 2 === 0
-    const expectedType = isTrailing ? 'trailing' : 'leading'
-    const expectedRimHoleId = isTrailing
-      ? group * 3
-      : group * 3 + 2
-    if (!spoke
-      || requireSpokeType(spoke.type, `G3 drive spoke ${hubHoleId}`) !== expectedType
-      || requireInteger(spoke.rim_hole_id, `G3 drive spoke ${hubHoleId} rim hole id`) !== expectedRimHoleId) {
-      throw new Error(`G3 drive spoke ${hubHoleId} must follow the grouped straight-pull parallel mapping`)
+  for (let group = 0; group < driveSideFlangeHoleCount; group++) {
+    const spokes = driveSpokesByHubHoleId.get(group)
+    if (!spokes || spokes.length !== 2) {
+      throw new Error(`G3 drive flange hole ${group} must serve exactly two drive spokes`)
+    }
+    const trailingSpoke = spokes.find(spoke => requireSpokeType(spoke.type, `G3 drive spoke in flange hole ${group}`) === 'trailing')
+    const leadingSpoke = spokes.find(spoke => requireSpokeType(spoke.type, `G3 drive spoke in flange hole ${group}`) === 'leading')
+    if (!trailingSpoke || !leadingSpoke
+      || requireInteger(trailingSpoke.rim_hole_id, `G3 trailing spoke in flange hole ${group} rim hole id`) !== group * 3
+      || requireInteger(leadingSpoke.rim_hole_id, `G3 leading spoke in flange hole ${group} rim hole id`) !== group * 3 + 2) {
+      throw new Error(`G3 drive flange hole ${group} must map trailing/leading spokes to the two outer A rim holes`)
     }
   }
 
-  for (let hubHoleId = 0; hubHoleId < 7; hubHoleId++) {
-    const spoke = nonDriveSpokesByHubHoleId.get(hubHoleId)
-    if (!spoke
+  for (let hubHoleId = 0; hubHoleId < nonDriveSideFlangeHoleCount; hubHoleId++) {
+    const spokes = nonDriveSpokesByHubHoleId.get(hubHoleId)
+    const spoke = spokes?.[0]
+    if (!spokes || spokes.length !== 1 || !spoke
       || requireSpokeType(spoke.type, `G3 non-drive spoke ${hubHoleId}`) !== 'nondrive'
       || requireInteger(spoke.rim_hole_id, `G3 non-drive spoke ${hubHoleId} rim hole id`) !== hubHoleId * 3 + 1) {
-      throw new Error(`G3 non-drive spoke ${hubHoleId} must remain radial to its grouped rim hole`)
+      throw new Error(`G3 non-drive flange hole ${hubHoleId} must remain radial to its grouped rim hole`)
     }
+  }
+
+  if (driveSpokesByHubHoleId.size !== driveSideFlangeHoleCount
+    || nonDriveSpokesByHubHoleId.size !== nonDriveSideFlangeHoleCount) {
+    throw new Error('G3 spokes must map only to the seven drive and seven non-drive flange holes')
   }
 }
 

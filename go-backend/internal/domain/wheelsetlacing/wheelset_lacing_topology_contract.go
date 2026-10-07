@@ -329,7 +329,7 @@ func buildTwentyOneHoleG3Topology() Topology {
 		DisplayLayout:  DisplayGeometryLayoutG3TwentyOneHoleTriplet2To1,
 		SpokeHeadStyle: SpokeHeadStyleStraightPull,
 		RimHoles:       make([]Hole, 0, 21),
-		HubHolesA:      make([]Hole, 0, 14),
+		HubHolesA:      make([]Hole, 0, groups),
 		HubHolesB:      make([]Hole, 0, 7),
 		Spokes:         make([]SpokeMapping, 0, 21),
 	}
@@ -340,7 +340,7 @@ func buildTwentyOneHoleG3Topology() Topology {
 			Hole{ID: group*3 + 2, Side: SideA},
 		)
 	}
-	for index := 0; index < 14; index++ {
+	for index := 0; index < groups; index++ {
 		topology.HubHolesA = append(topology.HubHolesA, Hole{ID: index, Side: SideA})
 	}
 	for index := 0; index < 7; index++ {
@@ -352,14 +352,15 @@ func buildTwentyOneHoleG3Topology() Topology {
 		})
 	}
 	// G3 is a straight-pull topology: each three-hole A-B-A rim group is kept
-	// together. The two A-side anchors map to the A holes on either side of the
-	// group's B hole; the angular layout then makes all three spokes in that
-	// group parallel. This must not be replaced by the conventional alternating
-	// 2X J-bend mapping.
+	// together. The two A-side spokes in a group share one straight-pull flange
+	// hole and extend in opposite tangential directions; the B-side spoke uses
+	// the group's matching non-drive flange hole. There are seven drive-side
+	// flange holes for fourteen drive-side spokes, not fourteen drive-side
+	// flange holes.
 	for group := 0; group < groups; group++ {
 		topology.Spokes = append(topology.Spokes,
-			SpokeMapping{ID: len(topology.Spokes), Side: SideA, Type: SpokeTypeTrailing, HubHoleID: group * 2, RimHoleID: group * 3},
-			SpokeMapping{ID: len(topology.Spokes) + 1, Side: SideA, Type: SpokeTypeLeading, HubHoleID: group*2 + 1, RimHoleID: group*3 + 2},
+			SpokeMapping{ID: len(topology.Spokes), Side: SideA, Type: SpokeTypeTrailing, HubHoleID: group, RimHoleID: group * 3},
+			SpokeMapping{ID: len(topology.Spokes) + 1, Side: SideA, Type: SpokeTypeLeading, HubHoleID: group, RimHoleID: group*3 + 2},
 		)
 	}
 	return topology
@@ -656,8 +657,13 @@ func validateSpokeMappings(topology Topology) error {
 		}
 	}
 	for key := range hubByKey {
+		hub := hubByKey[key]
 		wantSpokesPerHole := 1
-		if topology.SpokeHeadStyle == SpokeHeadStyleStraightPull && topology.Distribution != DistributionG32To1 {
+		// Conventional straight-pull variants pair both flange sides. G3 is
+		// asymmetric: only the fourteen-spoke drive side has two spokes per
+		// anchor; its seven non-drive anchors remain one spoke each.
+		if topology.SpokeHeadStyle == SpokeHeadStyleStraightPull &&
+			(topology.Distribution != DistributionG32To1 || hub.Side == SideA) {
 			wantSpokesPerHole = 2
 		}
 		if hubUsage[key] != wantSpokesPerHole {

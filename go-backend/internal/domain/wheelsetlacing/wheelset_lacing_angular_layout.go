@@ -8,7 +8,7 @@ import (
 
 // WheelsetLacingAngularLayoutRequest contains the continuous inputs needed to
 // resolve a registered topology. The two optional G3 radii derive the grouped
-// rim-hole gaps from the paired-hole center distance; the resulting layout
+// rim-hole gaps from the outer A-hole center distance; the resulting layout
 // remains coordinate-free for both drawings and spoke-length calculations.
 type WheelsetLacingAngularLayoutRequest struct {
 	TopologyID                           string
@@ -226,8 +226,8 @@ func buildWheelsetLacingTwentyOneHoleG3AngularPoints(
 	topology Topology,
 	request WheelsetLacingAngularLayoutRequest,
 ) (wheelsetLacingAngularPointSet, WheelsetLacingG3GroupSpacing, error) {
-	if topology.HoleCount != 21 || len(topology.RimHoles) != 21 || len(topology.HubHolesA) != 14 || len(topology.HubHolesB) != 7 {
-		return wheelsetLacingAngularPointSet{}, WheelsetLacingG3GroupSpacing{}, fmt.Errorf("%w: G3 angular layout requires a 21-hole 14/7 topology", ErrInvalidTopology)
+	if topology.HoleCount != 21 || len(topology.RimHoles) != 21 || len(topology.HubHolesA) != WheelsetLacingTwentyOneHoleG3GroupCount || len(topology.HubHolesB) != WheelsetLacingTwentyOneHoleG3GroupCount {
+		return wheelsetLacingAngularPointSet{}, WheelsetLacingG3GroupSpacing{}, fmt.Errorf("%w: G3 angular layout requires a 21-hole 7/7 flange-hole topology", ErrInvalidTopology)
 	}
 	spacingAToB, spacingBToA, spacingAToNextGroupA, err := resolveWheelsetLacingG3RimHoleSpacingValues(
 		request.G3RimHoleSpacingAToBDegrees,
@@ -256,16 +256,20 @@ func buildWheelsetLacingTwentyOneHoleG3AngularPoints(
 	}
 	hubHolesA := make([]WheelsetLacingAngularPoint, 0, len(topology.HubHolesA))
 	hubHolesB := make([]WheelsetLacingAngularPoint, 0, len(topology.HubHolesB))
+	rimByID := make(map[int]WheelsetLacingAngularPoint, len(rimHoles))
+	for _, point := range rimHoles {
+		rimByID[point.ID] = point
+	}
 	for group := 0; group < WheelsetLacingTwentyOneHoleG3GroupCount; group++ {
+		// One straight-pull A-flange hole is shared by the two outer A-side
+		// spokes in each G3 group. Its display angle is the midpoint of those
+		// two rim holes, so the seven physical A anchors remain seven points.
+		aAngle, err := calculateWheelsetLacingStraightPullHubHoleAngle(topology, SideA, group, rimByID)
+		if err != nil {
+			return wheelsetLacingAngularPointSet{}, WheelsetLacingG3GroupSpacing{}, err
+		}
 		centerAngle := (float64(group) * 2 * math.Pi / float64(WheelsetLacingTwentyOneHoleG3GroupCount)) - math.Pi/2
-		// Each A-hole pair straddles the B hole in the same A-B-A rim group.
-		// The adjacent 14-hole flange points are therefore centered on the same
-		// group angle as the B point; equal paired-hole chords make all three
-		// spoke vectors share that radial direction.
-		hubHolesA = append(hubHolesA,
-			WheelsetLacingAngularPoint{ID: group * 2, Side: SideA, AngleRadians: centerAngle - math.Pi/14},
-			WheelsetLacingAngularPoint{ID: group*2 + 1, Side: SideA, AngleRadians: centerAngle + math.Pi/14},
-		)
+		hubHolesA = append(hubHolesA, WheelsetLacingAngularPoint{ID: group, Side: SideA, AngleRadians: aAngle})
 		hubHolesB = append(hubHolesB, WheelsetLacingAngularPoint{ID: group, Side: SideB, AngleRadians: centerAngle})
 	}
 	return wheelsetLacingAngularPointSet{rimHoles: rimHoles, hubHolesA: hubHolesA, hubHolesB: hubHolesB}, WheelsetLacingG3GroupSpacing{
@@ -386,17 +390,18 @@ func resolveWheelsetLacingG3RimHoleSpacingValues(
 
 // calculateWheelsetLacingTwentyOneHoleG3ParallelSpacing derives the symmetric
 // A-to-B and B-to-A gaps that place the two A rim holes on either side of the
-// same B hole. Their combined A-pair chord equals the chord between adjacent
-// A-flange holes, so the two A spokes and the radial B spoke share one direction.
+// same B hole. Their outer A-pair chord equals the chord between adjacent
+// seven-hole A-flange group anchors; this keeps the single straight-pull
+// anchor per G3 group tied to the user-facing group spacing.
 func calculateWheelsetLacingTwentyOneHoleG3ParallelSpacing(
 	rimHoleCircleRadiusMM, sideAFlangeHoleCircleRadiusMM float64,
 ) (float64, float64, float64, error) {
 	if !isFinitePositiveWheelsetLacingNumber(rimHoleCircleRadiusMM) || !isFinitePositiveWheelsetLacingNumber(sideAFlangeHoleCircleRadiusMM) {
 		return 0, 0, 0, fmt.Errorf("%w: automatic 21-hole G3 parallel spacing requires positive rim and side-A flange hole-circle radii", ErrInvalidRequest)
 	}
-	const flangePairHalfAngleRadians = WheelsetLacingTwentyOneHoleG3GroupPitchDegrees * math.Pi / 720
-	withinGroupGapSine := (sideAFlangeHoleCircleRadiusMM / rimHoleCircleRadiusMM) * math.Sin(flangePairHalfAngleRadians)
-	maximumWithinGroupGapSine := math.Sin(WheelsetLacingTwentyOneHoleG3GroupPitchDegrees * math.Pi / 720)
+	const flangeGroupHalfAngleRadians = WheelsetLacingTwentyOneHoleG3GroupPitchDegrees * math.Pi / 360
+	withinGroupGapSine := (sideAFlangeHoleCircleRadiusMM / rimHoleCircleRadiusMM) * math.Sin(flangeGroupHalfAngleRadians)
+	maximumWithinGroupGapSine := math.Sin(WheelsetLacingTwentyOneHoleG3GroupPitchDegrees * math.Pi / 360)
 	if !isFinitePositiveWheelsetLacingNumber(withinGroupGapSine) || withinGroupGapSine >= maximumWithinGroupGapSine {
 		return 0, 0, 0, fmt.Errorf("%w: rim and side-A flange radii cannot form a valid 21-hole G3 parallel group", ErrInvalidRequest)
 	}
@@ -409,9 +414,9 @@ func calculateWheelsetLacingTwentyOneHoleG3ParallelSpacing(
 }
 
 // calculateWheelsetLacingTwentyOneHoleG3FlangeHoleCircleRadius converts the
-// user-facing center distance of the G3 drive-side hole pair to the A-flange
-// hole-circle radius. The fourteen A-flange holes are evenly spaced, so
-// adjacent holes subtend 360°/14 at the hub.
+// user-facing G3 group-anchor chord to the A-flange hole-circle radius. The
+// seven A-flange anchors are evenly spaced, so adjacent anchors subtend
+// 360°/7 at the hub.
 func calculateWheelsetLacingTwentyOneHoleG3FlangeHoleCircleRadius(parallelHoleSpacingMM, rimHoleCircleRadiusMM float64) (float64, error) {
 	if !isFinitePositiveWheelsetLacingNumber(parallelHoleSpacingMM) {
 		return 0, fmt.Errorf("%w: G3 parallel-hole spacing must be finite and positive", ErrInvalidRequest)
@@ -419,8 +424,8 @@ func calculateWheelsetLacingTwentyOneHoleG3FlangeHoleCircleRadius(parallelHoleSp
 	if !isFinitePositiveWheelsetLacingNumber(rimHoleCircleRadiusMM) {
 		return 0, fmt.Errorf("%w: G3 parallel-hole spacing requires a positive rim-hole circle radius", ErrInvalidRequest)
 	}
-	const pairedFlangeHoleHalfAngleRadians = math.Pi / 14
-	flangeRadiusMM := parallelHoleSpacingMM / (2 * math.Sin(pairedFlangeHoleHalfAngleRadians))
+	const flangeGroupHalfAngleRadians = math.Pi / WheelsetLacingTwentyOneHoleG3GroupCount
+	flangeRadiusMM := parallelHoleSpacingMM / (2 * math.Sin(flangeGroupHalfAngleRadians))
 	if !isFinitePositiveWheelsetLacingNumber(flangeRadiusMM) || flangeRadiusMM < 1 || flangeRadiusMM > rimHoleCircleRadiusMM {
 		return 0, fmt.Errorf("%w: G3 parallel-hole spacing must produce an A-side flange radius smaller than the rim-hole circle radius", ErrInvalidRequest)
 	}

@@ -12,7 +12,7 @@ import (
 // offsets are physical millimetres used only for the axial reference profile.
 // None of these values represents spoke length, stiffness, tension, efficiency,
 // or assembly safety.
-const WheelsetLacingDisplayGeometryContractVersion = "v1.13-backend-display-geometry"
+const WheelsetLacingDisplayGeometryContractVersion = "v1.14-backend-display-geometry"
 
 // These values are centralized in the domain package so SSR and browser
 // requests use the same reference geometry. Radial constants are canvas
@@ -41,8 +41,9 @@ type DisplayGeometryProjectionRequest struct {
 	FlangeRadiusB   float64 `json:"flange_radius_b"`
 	FlangeOffsetAMM float64 `json:"flange_offset_a_mm"`
 	FlangeOffsetBMM float64 `json:"flange_offset_b_mm"`
-	// G3ParallelHoleSpacingMM is the center spacing of the paired drive-side
-	// holes on both rim and A flange. When positive, it derives FlangeRadiusA.
+	// G3ParallelHoleSpacingMM is the center spacing of the two outer A-side rim
+	// holes in one G3 group. The same chord is used between adjacent seven-hole
+	// A-flange group anchors; when positive, it derives FlangeRadiusA.
 	G3ParallelHoleSpacingMM              float64 `json:"g3_parallel_hole_spacing_mm"`
 	G3RimHoleSpacingAToBDegrees          float64 `json:"g3_rim_hole_spacing_a_to_b_degrees"`
 	G3RimHoleSpacingBToADegrees          float64 `json:"g3_rim_hole_spacing_b_to_a_degrees"`
@@ -300,7 +301,7 @@ func buildWheelsetLacingDisplayGeometryG3GroupSpacing(
 		SpacingAToBDegrees:            roundWheelsetLacingDisplayGeometryValue(spacingAToB, 2),
 		SpacingBToADegrees:            roundWheelsetLacingDisplayGeometryValue(spacingBToA, 2),
 		SpacingAToNextGroupADegrees:   roundWheelsetLacingDisplayGeometryValue(spacingAToNextGroupA, 2),
-		ParallelHoleSpacingMM:         roundWheelsetLacingDisplayGeometryValue(2*request.FlangeRadiusA*math.Sin(WheelsetLacingTwentyOneHoleG3GroupPitchDegrees*math.Pi/720), 2),
+		ParallelHoleSpacingMM:         roundWheelsetLacingDisplayGeometryValue(2*request.FlangeRadiusA*math.Sin(WheelsetLacingTwentyOneHoleG3GroupPitchDegrees*math.Pi/360), 2),
 		SideAFlangeHoleCircleRadiusMM: roundWheelsetLacingDisplayGeometryValue(request.FlangeRadiusA, 2),
 		SideAFlangePCDMM:              roundWheelsetLacingDisplayGeometryValue(2*request.FlangeRadiusA, 2),
 	}, nil

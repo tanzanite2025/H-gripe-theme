@@ -497,13 +497,13 @@ useHead(() => {
     const MINIMUM_FLANGE_OFFSET_MM = 0;
     const MAXIMUM_FLANGE_OFFSET_MM = 100;
     const G3_GROUP_COUNT = 7;
-    const G3_FLANGE_PAIR_HALF_ANGLE_RADIANS = Math.PI / (G3_GROUP_COUNT * 2);
-    const MINIMUM_G3_PARALLEL_HOLE_SPACING_MM = 2 * MINIMUM_FLANGE_DISPLAY_RADIUS * Math.sin(G3_FLANGE_PAIR_HALF_ANGLE_RADIANS);
-    const MAXIMUM_G3_PARALLEL_HOLE_SPACING_MM = 2 * SVG_RIM_HOLE_RING_DISPLAY_RADIUS * Math.sin(G3_FLANGE_PAIR_HALF_ANGLE_RADIANS);
+    const G3_FLANGE_GROUP_HALF_ANGLE_RADIANS = Math.PI / G3_GROUP_COUNT;
+    const MINIMUM_G3_PARALLEL_HOLE_SPACING_MM = 2 * MINIMUM_FLANGE_DISPLAY_RADIUS * Math.sin(G3_FLANGE_GROUP_HALF_ANGLE_RADIANS);
+    const MAXIMUM_G3_PARALLEL_HOLE_SPACING_MM = 2 * SVG_RIM_HOLE_RING_DISPLAY_RADIUS * Math.sin(G3_FLANGE_GROUP_HALF_ANGLE_RADIANS);
     const WHEELSET_LACING_DISPLAY_GEOMETRY_REFRESH_DEBOUNCE_MS = 120;
 
     const calculateG3ParallelHoleSpacingFromFlangeRadius = flangeRadius => (
-      Number((2 * flangeRadius * Math.sin(G3_FLANGE_PAIR_HALF_ANGLE_RADIANS)).toFixed(2))
+      Number((2 * flangeRadius * Math.sin(G3_FLANGE_GROUP_HALF_ANGLE_RADIANS)).toFixed(2))
     );
 
     const resolveWheelsetLacingBackendTopologySelection = (topologySelection, cross, spokeHeadStyle = state.spokeHeadStyle) => (

@@ -115,7 +115,7 @@ func TestG3AndUniformTwoToOneHaveIndependentMappings(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if g3.Distribution != DistributionG32To1 || g3.DisplayLayout != DisplayGeometryLayoutG3TwentyOneHoleTriplet2To1 || g3.SpokeHeadStyle != SpokeHeadStyleStraightPull || g3.HoleCount != 21 || len(g3.HubHolesA) != 14 || len(g3.HubHolesB) != 7 {
+	if g3.Distribution != DistributionG32To1 || g3.DisplayLayout != DisplayGeometryLayoutG3TwentyOneHoleTriplet2To1 || g3.SpokeHeadStyle != SpokeHeadStyleStraightPull || g3.HoleCount != 21 || len(g3.HubHolesA) != WheelsetLacingTwentyOneHoleG3GroupCount || len(g3.HubHolesB) != WheelsetLacingTwentyOneHoleG3GroupCount {
 		t.Fatalf("unexpected G3 topology: %+v", g3)
 	}
 	for index, hole := range g3.RimHoles {
@@ -129,8 +129,8 @@ func TestG3AndUniformTwoToOneHaveIndependentMappings(t *testing.T) {
 	}
 	for group := 0; group < WheelsetLacingTwentyOneHoleG3GroupCount; group++ {
 		wantDriveSpokes := []SpokeMapping{
-			{ID: WheelsetLacingTwentyOneHoleG3GroupCount + group*2, Side: SideA, Type: SpokeTypeTrailing, HubHoleID: group * 2, RimHoleID: group * 3},
-			{ID: WheelsetLacingTwentyOneHoleG3GroupCount + group*2 + 1, Side: SideA, Type: SpokeTypeLeading, HubHoleID: group*2 + 1, RimHoleID: group*3 + 2},
+			{ID: WheelsetLacingTwentyOneHoleG3GroupCount + group*2, Side: SideA, Type: SpokeTypeTrailing, HubHoleID: group, RimHoleID: group * 3},
+			{ID: WheelsetLacingTwentyOneHoleG3GroupCount + group*2 + 1, Side: SideA, Type: SpokeTypeLeading, HubHoleID: group, RimHoleID: group*3 + 2},
 		}
 		for _, want := range wantDriveSpokes {
 			spoke := g3.Spokes[want.ID]
