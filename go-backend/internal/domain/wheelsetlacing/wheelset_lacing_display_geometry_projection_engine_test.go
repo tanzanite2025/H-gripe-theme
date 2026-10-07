@@ -216,9 +216,8 @@ func TestCalculateWheelsetLacingDisplayGeometryProjectionDerivesG3FlangeSizeFrom
 	for group := 0; group < WheelsetLacingTwentyOneHoleG3GroupCount; group++ {
 		firstFlangeHole := result.HubHolesA[group*2]
 		secondFlangeHole := result.HubHolesA[group*2+1]
-		nextGroup := (group + 1) % WheelsetLacingTwentyOneHoleG3GroupCount
-		firstRimHole := rimPointsByID[group*3+2]
-		secondRimHole := rimPointsByID[nextGroup*3]
+		firstRimHole := rimPointsByID[group*3]
+		secondRimHole := rimPointsByID[group*3+2]
 		flangeHoleSpacing := math.Hypot(secondFlangeHole.X-firstFlangeHole.X, secondFlangeHole.Y-firstFlangeHole.Y)
 		rimHoleSpacing := math.Hypot(secondRimHole.X-firstRimHole.X, secondRimHole.Y-firstRimHole.Y)
 		if math.Abs(flangeHoleSpacing-parallelHoleSpacingMM) > 0.03 || math.Abs(rimHoleSpacing-parallelHoleSpacingMM) > 0.03 {
@@ -227,7 +226,7 @@ func TestCalculateWheelsetLacingDisplayGeometryProjectionDerivesG3FlangeSizeFrom
 	}
 }
 
-func TestCalculateWheelsetLacingDisplayGeometryProjectionKeepsG3DrivePairsParallelForStraightPull(t *testing.T) {
+func TestCalculateWheelsetLacingDisplayGeometryProjectionKeepsAllThreeG3SpokesParallelForStraightPull(t *testing.T) {
 	topology, err := NewDefaultCatalog().Get("21h-g3-2to1")
 	if err != nil {
 		t.Fatal(err)
@@ -243,18 +242,13 @@ func TestCalculateWheelsetLacingDisplayGeometryProjectionKeepsG3DrivePairsParall
 		t.Fatal(err)
 	}
 	for group := 0; group < WheelsetLacingTwentyOneHoleG3GroupCount; group++ {
+		nonDriveSpoke := result.Spokes[group]
 		firstSpoke := result.Spokes[WheelsetLacingTwentyOneHoleG3GroupCount+group*2]
 		secondSpoke := result.Spokes[WheelsetLacingTwentyOneHoleG3GroupCount+group*2+1]
 		if firstSpoke.Type != SpokeTypeTrailing || secondSpoke.Type != SpokeTypeLeading {
 			t.Fatalf("G3 group %d spoke heads = %q/%q, want paired straight-pull anchor assignments", group, firstSpoke.Type, secondSpoke.Type)
 		}
-		firstVectorX := firstSpoke.Rim.X - firstSpoke.Hub.X
-		firstVectorY := firstSpoke.Rim.Y - firstSpoke.Hub.Y
-		secondVectorX := secondSpoke.Rim.X - secondSpoke.Hub.X
-		secondVectorY := secondSpoke.Rim.Y - secondSpoke.Hub.Y
-		if math.Abs(firstVectorX-secondVectorX) > 0.03 || math.Abs(firstVectorY-secondVectorY) > 0.03 {
-			t.Fatalf("G3 straight-pull drive pair %d is not parallel: first=(%.4f, %.4f), second=(%.4f, %.4f)", group, firstVectorX, firstVectorY, secondVectorX, secondVectorY)
-		}
+		assertWheelsetLacingSpokeVectorsParallel(t, group, nonDriveSpoke, firstSpoke, secondSpoke)
 	}
 	if result.StraightPullProjection == nil {
 		t.Fatal("G3 must return the dedicated straight-pull flange projection")
@@ -272,6 +266,32 @@ func TestCalculateWheelsetLacingDisplayGeometryProjectionKeepsG3DrivePairsParall
 		secondVectorY := secondSpoke.Rim.Y - secondSpoke.Hub.Y
 		if math.Abs(firstVectorX-secondVectorX) > 0.03 || math.Abs(firstVectorY-secondVectorY) > 0.03 {
 			t.Fatalf("G3 straight-pull projected drive pair %d is not parallel: first=(%.4f, %.4f), second=(%.4f, %.4f)", group, firstVectorX, firstVectorY, secondVectorX, secondVectorY)
+		}
+	}
+}
+
+func assertWheelsetLacingSpokeVectorsParallel(t *testing.T, group int, spokes ...DisplayGeometrySpoke) {
+	t.Helper()
+	if len(spokes) < 2 {
+		t.Fatalf("G3 group %d needs at least two spokes for a parallel check", group)
+	}
+	firstVectorX := spokes[0].Rim.X - spokes[0].Hub.X
+	firstVectorY := spokes[0].Rim.Y - spokes[0].Hub.Y
+	firstLength := math.Hypot(firstVectorX, firstVectorY)
+	if firstLength <= 0 {
+		t.Fatalf("G3 group %d has a zero-length reference spoke", group)
+	}
+	for spokeIndex, spoke := range spokes[1:] {
+		vectorX := spoke.Rim.X - spoke.Hub.X
+		vectorY := spoke.Rim.Y - spoke.Hub.Y
+		length := math.Hypot(vectorX, vectorY)
+		if length <= 0 {
+			t.Fatalf("G3 group %d spoke %d has a zero-length vector", group, spokeIndex+1)
+		}
+		crossProduct := (firstVectorX*vectorY - firstVectorY*vectorX) / (firstLength * length)
+		dotProduct := (firstVectorX*vectorX + firstVectorY*vectorY) / (firstLength * length)
+		if math.Abs(crossProduct) > 0.001 || dotProduct < 0.999 {
+			t.Fatalf("G3 group %d spoke %d is not parallel and co-directed: cross=%.6f dot=%.6f", group, spokeIndex+1, crossProduct, dotProduct)
 		}
 	}
 }

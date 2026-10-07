@@ -3,7 +3,7 @@ import {
   type WheelsetLacingTopologySelection,
 } from './wheelsetLacingSelectionContract'
 
-export const WHEELSET_LACING_DISPLAY_GEOMETRY_CONTRACT_VERSION = 'v1.12-backend-display-geometry'
+export const WHEELSET_LACING_DISPLAY_GEOMETRY_CONTRACT_VERSION = 'v1.13-backend-display-geometry'
 
 export const WHEELSET_LACING_DISPLAY_GEOMETRY_LAYOUT = Object.freeze({
   symmetric1To1: 'symmetric_1to1',
@@ -411,8 +411,8 @@ const validateTwentyOneHoleG3TopologyShape = (
     const isTrailing = hubHoleId % 2 === 0
     const expectedType = isTrailing ? 'trailing' : 'leading'
     const expectedRimHoleId = isTrailing
-      ? group * 3 + 2
-      : ((group + 1) % 7) * 3
+      ? group * 3
+      : group * 3 + 2
     if (!spoke
       || requireSpokeType(spoke.type, `G3 drive spoke ${hubHoleId}`) !== expectedType
       || requireInteger(spoke.rim_hole_id, `G3 drive spoke ${hubHoleId} rim hole id`) !== expectedRimHoleId) {

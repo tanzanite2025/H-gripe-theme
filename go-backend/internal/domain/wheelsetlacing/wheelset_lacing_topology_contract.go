@@ -351,15 +351,15 @@ func buildTwentyOneHoleG3Topology() Topology {
 			ID: len(topology.Spokes), Side: SideB, Type: SpokeTypeNonDrive, HubHoleID: group, RimHoleID: group*3 + 1,
 		})
 	}
-	// G3 is a straight-pull topology: the two drive-side anchors in each group
-	// map to the adjacent A-side rim holes on opposite group edges. Matching
-	// the two chord lengths keeps each drive-side pair parallel; this must not
-	// be replaced by the conventional alternating 2X J-bend mapping.
+	// G3 is a straight-pull topology: each three-hole A-B-A rim group is kept
+	// together. The two A-side anchors map to the A holes on either side of the
+	// group's B hole; the angular layout then makes all three spokes in that
+	// group parallel. This must not be replaced by the conventional alternating
+	// 2X J-bend mapping.
 	for group := 0; group < groups; group++ {
-		nextGroup := (group + 1) % groups
 		topology.Spokes = append(topology.Spokes,
-			SpokeMapping{ID: len(topology.Spokes), Side: SideA, Type: SpokeTypeTrailing, HubHoleID: group * 2, RimHoleID: group*3 + 2},
-			SpokeMapping{ID: len(topology.Spokes) + 1, Side: SideA, Type: SpokeTypeLeading, HubHoleID: group*2 + 1, RimHoleID: nextGroup * 3},
+			SpokeMapping{ID: len(topology.Spokes), Side: SideA, Type: SpokeTypeTrailing, HubHoleID: group * 2, RimHoleID: group * 3},
+			SpokeMapping{ID: len(topology.Spokes) + 1, Side: SideA, Type: SpokeTypeLeading, HubHoleID: group*2 + 1, RimHoleID: group*3 + 2},
 		)
 	}
 	return topology

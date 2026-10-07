@@ -128,10 +128,9 @@ func TestG3AndUniformTwoToOneHaveIndependentMappings(t *testing.T) {
 		}
 	}
 	for group := 0; group < WheelsetLacingTwentyOneHoleG3GroupCount; group++ {
-		nextGroup := (group + 1) % WheelsetLacingTwentyOneHoleG3GroupCount
 		wantDriveSpokes := []SpokeMapping{
-			{ID: WheelsetLacingTwentyOneHoleG3GroupCount + group*2, Side: SideA, Type: SpokeTypeTrailing, HubHoleID: group * 2, RimHoleID: group*3 + 2},
-			{ID: WheelsetLacingTwentyOneHoleG3GroupCount + group*2 + 1, Side: SideA, Type: SpokeTypeLeading, HubHoleID: group*2 + 1, RimHoleID: nextGroup * 3},
+			{ID: WheelsetLacingTwentyOneHoleG3GroupCount + group*2, Side: SideA, Type: SpokeTypeTrailing, HubHoleID: group * 2, RimHoleID: group * 3},
+			{ID: WheelsetLacingTwentyOneHoleG3GroupCount + group*2 + 1, Side: SideA, Type: SpokeTypeLeading, HubHoleID: group*2 + 1, RimHoleID: group*3 + 2},
 		}
 		for _, want := range wantDriveSpokes {
 			spoke := g3.Spokes[want.ID]

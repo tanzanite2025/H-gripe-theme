@@ -12,7 +12,7 @@ import (
 // offsets are physical millimetres used only for the axial reference profile.
 // None of these values represents spoke length, stiffness, tension, efficiency,
 // or assembly safety.
-const WheelsetLacingDisplayGeometryContractVersion = "v1.12-backend-display-geometry"
+const WheelsetLacingDisplayGeometryContractVersion = "v1.13-backend-display-geometry"
 
 // These values are centralized in the domain package so SSR and browser
 // requests use the same reference geometry. Radial constants are canvas
