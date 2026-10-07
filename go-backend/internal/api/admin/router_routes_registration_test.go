@@ -40,7 +40,7 @@ func TestAdminRouteRegistrationHasNoDuplicateRoutes(t *testing.T) {
 		registerCommerceRoutes(authenticated, nil, nil, nil, nil, nil, nil, nil, nil)
 		registerContentRoutes(authenticated, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 		registerBusinessRoutes(authenticated, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-		registerSystemRoutes(authenticated, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+		registerSystemRoutes(authenticated, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 		registerOperationsRoutes(authenticated, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	})
 
@@ -51,6 +51,16 @@ func TestAdminRouteRegistrationHasNoDuplicateRoutes(t *testing.T) {
 			t.Fatalf("duplicate route registered: %s", key)
 		}
 		seen[key] = struct{}{}
+	}
+	for _, requiredRoute := range []string{
+		"GET /api/admin/settings/tax-rates/rules",
+		"POST /api/admin/settings/tax-rates/rules",
+		"PUT /api/admin/settings/tax-rates/rules/:id",
+		"DELETE /api/admin/settings/tax-rates/rules/:id",
+	} {
+		if _, exists := seen[requiredRoute]; !exists {
+			t.Errorf("required tax rate rule route is not registered: %s", requiredRoute)
+		}
 	}
 }
 

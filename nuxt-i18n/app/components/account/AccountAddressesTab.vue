@@ -33,7 +33,25 @@
       </label>
       <label>
         <span>{{ t('checkout.fields.state', 'State') }}</span>
-        <input v-model.trim="form.state" autocomplete="address-level1" />
+        <select
+          v-if="selectedCheckoutStateProvinceOptions.length"
+          v-model="form.state"
+          autocomplete="address-level1"
+          @change="normalizeSelectedCheckoutStateProvince"
+        >
+          <option value="">{{ t('checkout.stepper.shipping.state.selectStateProvince', 'Select state / province') }}</option>
+          <option v-for="region in selectedCheckoutStateProvinceOptions" :key="region.code" :value="region.code">
+            {{ region.name }} ({{ region.code }})
+          </option>
+        </select>
+        <input
+          v-else
+          autocomplete="address-level1"
+          disabled
+          :placeholder="form.country
+            ? t('checkout.stepper.shipping.state.selectStateProvince', 'Select state / province')
+            : t('checkout.stepper.shipping.selectCountry', 'Select country first')"
+        />
       </label>
       <label>
         <span>{{ t('checkout.fields.zip', 'ZIP') }}</span>
@@ -41,7 +59,12 @@
       </label>
       <label>
         <span>{{ t('checkout.fields.country', 'Country') }}</span>
-        <input v-model.trim="form.country" autocomplete="country-name" />
+        <select v-model="form.country" autocomplete="country-name" @change="clearCheckoutStateProvinceAfterCountryChange">
+          <option value="">{{ t('checkout.stepper.shipping.selectCountry', 'Select country') }}</option>
+          <option v-for="country in COUNTRIES" :key="country.code" :value="country.code">
+            {{ getCountryName(country.code, String(locale || 'en')) }} ({{ country.code }})
+          </option>
+        </select>
       </label>
 
       <div class="address-form__actions">
@@ -58,12 +81,17 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref, watch } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 import { useI18n } from '#imports'
+import { COUNTRIES, getCountryName } from '~/data/countries'
+import {
+  getCheckoutStateProvinceOptions,
+  normalizeCheckoutStateProvinceCode,
+} from '~/data/checkoutStateProvinceCatalog'
 import { useAuth } from '~/composables/useAuth'
 import { useCart, type ShippingAddress } from '~/composables/useCart'
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const auth = useAuth()
 const { shippingAddress, setShippingAddress } = useCart()
 
@@ -79,16 +107,38 @@ const emptyAddress = (): ShippingAddress => ({
 
 const form = reactive<ShippingAddress>(emptyAddress())
 const savedMessage = ref('')
+const selectedCheckoutStateProvinceOptions = computed(() => getCheckoutStateProvinceOptions(form.country))
+
+const resolveCheckoutCountryCodeFromSavedAddressValue = (countryValue: string): string => {
+  const trimmedCountryValue = countryValue.trim()
+  const uppercaseCountryValue = trimmedCountryValue.toUpperCase()
+  const matchingCountry = COUNTRIES.find(country => (
+    country.code.toUpperCase() === uppercaseCountryValue ||
+    country.name.toLowerCase() === trimmedCountryValue.toLowerCase() ||
+    country.nameZh === trimmedCountryValue
+  ))
+  return matchingCountry?.code || ''
+}
 
 const fillForm = (source: Partial<ShippingAddress> | null | undefined) => {
   const profile = auth.user.value?.profile || {}
+  const sourceCountry = String(source?.country || profile.country || '')
+  const countryCode = resolveCheckoutCountryCodeFromSavedAddressValue(sourceCountry)
   form.name = source?.name || profile.fullName || ''
   form.phone = source?.phone || profile.phone || ''
   form.address = source?.address || ''
   form.city = source?.city || ''
-  form.state = source?.state || ''
+  form.state = normalizeCheckoutStateProvinceCode(countryCode, source?.state || '')
   form.zip = source?.zip || ''
-  form.country = source?.country || profile.country || ''
+  form.country = countryCode
+}
+
+const clearCheckoutStateProvinceAfterCountryChange = (): void => {
+  form.state = ''
+}
+
+const normalizeSelectedCheckoutStateProvince = (): void => {
+  form.state = normalizeCheckoutStateProvinceCode(form.country, form.state)
 }
 
 const flashSaved = () => {
@@ -180,7 +230,8 @@ watch(
   font-weight: 750;
 }
 
-.address-form input {
+.address-form input,
+.address-form select {
   width: 100%;
   min-height: 2.35rem;
   border: 1px solid rgba(255, 255, 255, 0.13);
@@ -192,7 +243,8 @@ watch(
   font-size: 0.82rem;
 }
 
-.address-form input:focus {
+.address-form input:focus,
+.address-form select:focus {
   border-color: rgba(5, 150, 105, 0.7);
   box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.12);
 }

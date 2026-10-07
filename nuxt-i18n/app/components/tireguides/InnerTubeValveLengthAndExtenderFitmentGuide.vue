@@ -1115,26 +1115,200 @@ onMounted(() => {
   void requestCurrentInnerTubeFitmentResult({ updateShareUrl: false })
 })
 
-const innerTubeFitmentJsonLd = computed(() => ({
-  '@context': 'https://schema.org',
-  '@type': 'TechArticle',
-  '@id': `${canonicalUrl.value}#inner-tube-valve-fitment-engine`,
-  url: canonicalUrl.value,
-  headline: t('guidesTireInnerTube.fitment.title'),
-  description: t('guidesTireInnerTube.fitment.description'),
-  proficiencyLevel: 'Expert',
-  inLanguage: innerTubeFitmentSchemaLanguage.value,
-  author: { '@type': 'Organization', name: 'Tanzanite Engineering Laboratory' },
-  articleBody: t('guidesTireInnerTube.fitment.description'),
-  hasPart: {
-    '@type': 'Dataset',
-    name: t('guidesTireInnerTube.fitment.matrix.title'),
-    description: t('guidesTireInnerTube.fitment.matrix.description'),
-    isAccessibleForFree: true,
-    ...(innerTubeFitmentMetadata.value?.rows?.length ? { numberOfItems: innerTubeFitmentMetadata.value.rows.length } : {}),
-    variableMeasured: ['rim depth', 'valve length', 'pump-head grip depth', 'rim-depth uncertainty', 'minimum required total length', 'effective valve exposure', 'length margin'],
+const innerTubeFitmentCalculatorApplicationId = computed(() => `${canonicalUrl.value}#inner-tube-fitment-calculator`)
+const innerTubeFitmentHowToId = computed(() => `${canonicalUrl.value}#inner-tube-fitment-how-to`)
+const innerTubeFitmentMatrixDatasetId = computed(() => `${canonicalUrl.value}#inner-tube-fitment-matrix`)
+
+const innerTubeFitmentInputParameterProperties = computed(() => [
+  {
+    '@type': 'PropertyValue',
+    propertyID: 'input',
+    name: t('guidesTireInnerTube.fitment.controls.rimDepth'),
+    value: `${rimDepthMinimum.value}–${rimDepthMaximum.value} mm`,
   },
-}))
+  {
+    '@type': 'PropertyValue',
+    propertyID: 'input',
+    name: t('guidesTireInnerTube.fitment.controls.pumpHeadGripDepth'),
+    value: `${pumpHeadGripDepthMinimum.value}–${pumpHeadGripDepthMaximum.value} mm`,
+  },
+  {
+    '@type': 'PropertyValue',
+    propertyID: 'input',
+    name: t('guidesTireInnerTube.fitment.controls.rimDepthUncertainty'),
+    value: `0–${rimDepthUncertaintyMaximum.value} mm`,
+  },
+  {
+    '@type': 'PropertyValue',
+    propertyID: 'input',
+    name: t('guidesTireInnerTube.fitment.controls.modeLabel'),
+    value: `${t('guidesTireInnerTube.fitment.controls.automaticMode')} / ${t('guidesTireInnerTube.fitment.controls.manualMode')}`,
+  },
+  {
+    '@type': 'PropertyValue',
+    propertyID: 'input',
+    name: t('guidesTireInnerTube.fitment.controls.baseValveLength'),
+    value: `${baseValveLengthOptions.value.join(', ')} mm`,
+  },
+  {
+    '@type': 'PropertyValue',
+    propertyID: 'input',
+    name: t('guidesTireInnerTube.fitment.controls.extenderLength'),
+    value: `${extenderLengthOptions.value.join(', ')} mm`,
+  },
+])
+
+const innerTubeFitmentOutputParameterProperties = computed(() => [
+  {
+    '@type': 'PropertyValue',
+    propertyID: 'output',
+    name: t('guidesTireInnerTube.fitment.metrics.passageDepth'),
+    value: t('guidesTireInnerTube.fitment.metrics.passageFormula', {
+      rimDepth: t('guidesTireInnerTube.fitment.controls.rimDepth'),
+      offset: `${innerTubeFitmentMetadata.value?.outer_lip_offset_mm ?? 6.5} mm`,
+    }),
+  },
+  {
+    '@type': 'PropertyValue',
+    propertyID: 'output',
+    name: t('guidesTireInnerTube.fitment.metrics.minimumRequiredLength'),
+    value: `${t('guidesTireInnerTube.fitment.controls.rimDepth')} + ${t('guidesTireInnerTube.fitment.controls.pumpHeadGripDepth')}`,
+  },
+  {
+    '@type': 'PropertyValue',
+    propertyID: 'output',
+    name: t('guidesTireInnerTube.fitment.metrics.exposedLength'),
+    value: t('guidesTireInnerTube.fitment.metrics.exposedFormula'),
+  },
+  {
+    '@type': 'PropertyValue',
+    propertyID: 'output',
+    name: t('guidesTireInnerTube.fitment.metrics.recommendation'),
+    value: t('guidesTireInnerTube.fitment.matrix.recommendation'),
+  },
+  {
+    '@type': 'PropertyValue',
+    propertyID: 'output',
+    name: t('guidesTireInnerTube.fitment.uncertainty.title'),
+    value: t('guidesTireInnerTube.fitment.controls.rimDepthUncertaintyRange', { max: rimDepthUncertaintyMaximum.value }),
+  },
+])
+
+const innerTubeFitmentJsonLd = computed(() => {
+  const articleId = `${canonicalUrl.value}#inner-tube-valve-fitment-engine`
+
+  return {
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'TechArticle',
+        '@id': articleId,
+        url: canonicalUrl.value,
+        mainEntityOfPage: canonicalUrl.value,
+        mainEntity: { '@id': innerTubeFitmentCalculatorApplicationId.value },
+        headline: t('guidesTireInnerTube.fitment.title'),
+        description: t('guidesTireInnerTube.fitment.description'),
+        proficiencyLevel: 'Expert',
+        inLanguage: innerTubeFitmentSchemaLanguage.value,
+        author: { '@type': 'Organization', name: 'Tanzanite Engineering Laboratory' },
+        articleBody: t('guidesTireInnerTube.fitment.description'),
+        hasPart: [
+          { '@id': innerTubeFitmentHowToId.value },
+          { '@id': innerTubeFitmentMatrixDatasetId.value },
+        ],
+      },
+      {
+        '@type': 'WebApplication',
+        '@id': innerTubeFitmentCalculatorApplicationId.value,
+        url: canonicalUrl.value,
+        mainEntityOfPage: canonicalUrl.value,
+        name: t('guidesTireInnerTube.fitment.title'),
+        description: t('guidesTireInnerTube.fitment.description'),
+        applicationCategory: 'EngineeringApplication',
+        applicationSubCategory: t('guidesTireInnerTube.fitment.title'),
+        operatingSystem: 'Web',
+        isAccessibleForFree: true,
+        inLanguage: innerTubeFitmentSchemaLanguage.value,
+        featureList: [
+          t('guidesTireInnerTube.fitment.controls.automaticMode'),
+          t('guidesTireInnerTube.fitment.controls.manualMode'),
+          t('guidesTireInnerTube.fitment.matrix.description'),
+          t('guidesTireInnerTube.fitment.controls.rimDepthUncertaintyRange', { max: rimDepthUncertaintyMaximum.value }),
+        ],
+        additionalProperty: [
+          ...innerTubeFitmentInputParameterProperties.value,
+          ...innerTubeFitmentOutputParameterProperties.value,
+        ],
+      },
+      {
+        '@type': 'HowTo',
+        '@id': innerTubeFitmentHowToId.value,
+        url: `${canonicalUrl.value}#inner-tube-fitment-how-to`,
+        name: t('guidesTireInnerTube.fitment.title'),
+        description: t('guidesTireInnerTube.fitment.description'),
+        inLanguage: innerTubeFitmentSchemaLanguage.value,
+        step: [
+          {
+            '@type': 'HowToStep',
+            name: t('guidesTireInnerTube.fitment.controls.measurementNoteTitle'),
+            text: t('guidesTireInnerTube.fitment.controls.measurementNote', { tolerance: rimDepthUncertainty.value }),
+          },
+          {
+            '@type': 'HowToStep',
+            name: t('guidesTireInnerTube.fitment.controls.pumpHeadGripDepth'),
+            text: t('guidesTireInnerTube.fitment.controls.pumpHeadGripDepthRange', {
+              min: pumpHeadGripDepthMinimum.value,
+              max: pumpHeadGripDepthMaximum.value,
+            }),
+          },
+          {
+            '@type': 'HowToStep',
+            name: t('guidesTireInnerTube.fitment.controls.rimDepthUncertainty'),
+            text: t('guidesTireInnerTube.fitment.controls.rimDepthUncertaintyRange', {
+              max: rimDepthUncertaintyMaximum.value,
+            }),
+          },
+          {
+            '@type': 'HowToStep',
+            name: t('guidesTireInnerTube.fitment.controls.modeLabel'),
+            text: `${t('guidesTireInnerTube.fitment.metrics.automaticRecommendation')} ${t('guidesTireInnerTube.fitment.metrics.manualSelection')}`,
+          },
+          {
+            '@type': 'HowToStep',
+            name: t('guidesTireInnerTube.fitment.matrix.title'),
+            text: t('guidesTireInnerTube.fitment.matrix.description'),
+          },
+          {
+            '@type': 'HowToStep',
+            name: t('guidesTireInnerTube.fitment.pitfalls.title'),
+            text: innerTubeFitmentPitfalls
+              .map(pitfall => t(`guidesTireInnerTube.fitment.pitfalls.items.${pitfall}.rule`))
+              .join(' '),
+          },
+        ],
+      },
+      {
+        '@type': 'Dataset',
+        '@id': innerTubeFitmentMatrixDatasetId.value,
+        url: canonicalUrl.value,
+        name: t('guidesTireInnerTube.fitment.matrix.title'),
+        description: t('guidesTireInnerTube.fitment.matrix.description'),
+        isAccessibleForFree: true,
+        inLanguage: innerTubeFitmentSchemaLanguage.value,
+        ...(innerTubeFitmentMetadata.value?.rows?.length ? { numberOfItems: innerTubeFitmentMetadata.value.rows.length } : {}),
+        variableMeasured: [
+          t('guidesTireInnerTube.fitment.controls.rimDepth'),
+          t('guidesTireInnerTube.fitment.controls.baseValveLength'),
+          t('guidesTireInnerTube.fitment.controls.pumpHeadGripDepth'),
+          t('guidesTireInnerTube.fitment.controls.rimDepthUncertainty'),
+          t('guidesTireInnerTube.fitment.metrics.minimumRequiredLength'),
+          t('guidesTireInnerTube.fitment.metrics.exposedLength'),
+          t('guidesTireInnerTube.fitment.metrics.preferredMinimumLength'),
+        ],
+      },
+    ],
+  }
+})
 
 useHead(() => ({
   script: [createSeoJsonLdScript(innerTubeFitmentJsonLd.value)],

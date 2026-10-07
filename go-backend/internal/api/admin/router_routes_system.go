@@ -17,6 +17,8 @@ func registerSystemRoutes(
 	currencyPolicyHandler *CurrencyPolicyHandler,
 	siteLogoHandler *SiteLogoHandler,
 	exchangeRateHandler *ExchangeRateHandler,
+	taxRateRuleHandler *TaxRateRuleHandler,
+	taxRateSourceSnapshotHandler *TaxRateSourceSnapshotHandler,
 	websiteProfileHandler *WebsiteProfileHandler,
 	websiteNameHandler *WebsiteNameHandler,
 	shippingHandler *ShippingHandler,
@@ -88,6 +90,19 @@ func registerSystemRoutes(
 		settingsGroup.GET("/exchange-rates", exchangeRateHandler.GetExchangeRates)
 		settingsGroup.POST("/exchange-rates/sync", middleware.RequirePermission(auth.PermSettingsEdit), exchangeRateHandler.SyncExchangeRates)
 		settingsGroup.POST("/exchange-rates/convert", middleware.RequirePermission(auth.PermSettingsEdit), exchangeRateHandler.ConvertDisplayPrices)
+		settingsGroup.GET("/tax-rates/rules", taxRateRuleHandler.ListRules)
+		settingsGroup.POST("/tax-rates/rules", middleware.RequirePermission(auth.PermSettingsEdit), taxRateRuleHandler.CreateRule)
+		settingsGroup.PUT("/tax-rates/rules/:id", middleware.RequirePermission(auth.PermSettingsEdit), taxRateRuleHandler.UpdateRule)
+		settingsGroup.DELETE("/tax-rates/rules/:id", middleware.RequirePermission(auth.PermSettingsEdit), taxRateRuleHandler.DeleteRule)
+		settingsGroup.GET("/tax-rates/config", taxRateSourceSnapshotHandler.GetSourceConfiguration)
+		settingsGroup.PUT("/tax-rates/config", middleware.RequirePermission(auth.PermSettingsEdit), taxRateSourceSnapshotHandler.UpdateSourceConfiguration)
+		settingsGroup.GET("/tax-rates/snapshot", taxRateSourceSnapshotHandler.GetCurrentSnapshot)
+		settingsGroup.POST(
+			"/tax-rates/sync",
+			middleware.RequirePermission(auth.PermSettingsEdit),
+			middleware.RateLimitByUserPerMinute(2, 1),
+			taxRateSourceSnapshotHandler.SyncSourceSnapshot,
+		)
 		settingsGroup.PUT("/payment-gateways/:provider", middleware.RequirePermission(auth.PermSettingsEdit), paymentHandler.UpsertGatewayConfig)
 		settingsGroup.DELETE("/payment-gateways/:provider", middleware.RequirePermission(auth.PermSettingsEdit), paymentHandler.DeleteGatewayConfig)
 		settingsGroup.GET("/payment-installments/:provider", paymentHandler.GetPaymentProviderInstallments)

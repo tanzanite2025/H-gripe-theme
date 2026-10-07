@@ -26,7 +26,8 @@
       "orderFailed": "Order submission failed, please try again",
       "emailRequired": "Add an email address to your account before checkout.",
       "priceUpdated": "The price or configuration has changed. We loaded the latest total. Please review it and continue when ready.",
-      "checkoutAlreadySubmitted": "This cart was already submitted as an order. Please check your order status before trying again."
+      "checkoutAlreadySubmitted": "This cart was already submitted as an order. Please check your order status before trying again.",
+      "taxRateUnavailable": "Tax could not be calculated for this address right now. Please try again later or contact support."
     }
   },
   "order": {
@@ -178,7 +179,8 @@
         "selectCountry": "Select country",
         "unavailable": "Unavailable",
         "calculating": "Calculating...",
-        "free": "Free"
+        "free": "Free",
+        "selectStateProvince": "Select a state or province"
       },
       "zip": "Postal code",
       "method": "Delivery method",

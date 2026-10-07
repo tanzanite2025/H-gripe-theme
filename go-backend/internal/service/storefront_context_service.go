@@ -319,6 +319,7 @@ func defaultStorefrontMarkets() []StorefrontMarket {
 		{
 			Code:              "US",
 			Countries:         []string{"US"},
+			Enabled:           true,
 			DefaultLocale:     "en",
 			SupportedLocales:  []string{"en", "es"},
 			DefaultCurrency:   "USD",
@@ -327,6 +328,7 @@ func defaultStorefrontMarkets() []StorefrontMarket {
 		{
 			Code:              "EU",
 			Countries:         []string{"AT", "BE", "DE", "ES", "FI", "FR", "IE", "IT", "LU", "NL", "PT"},
+			Enabled:           true,
 			DefaultLocale:     "en",
 			SupportedLocales:  []string{"en", "de", "fr", "es", "it", "nl"},
 			DefaultCurrency:   "EUR",
@@ -335,6 +337,7 @@ func defaultStorefrontMarkets() []StorefrontMarket {
 		{
 			Code:              "UK",
 			Countries:         []string{"GB"},
+			Enabled:           true,
 			DefaultLocale:     "en",
 			SupportedLocales:  []string{"en"},
 			DefaultCurrency:   "GBP",
@@ -343,6 +346,7 @@ func defaultStorefrontMarkets() []StorefrontMarket {
 		{
 			Code:              "CA",
 			Countries:         []string{"CA"},
+			Enabled:           true,
 			DefaultLocale:     "en",
 			SupportedLocales:  []string{"en", "fr"},
 			DefaultCurrency:   "CAD",
@@ -351,6 +355,7 @@ func defaultStorefrontMarkets() []StorefrontMarket {
 		{
 			Code:              "CN",
 			Countries:         []string{"CN"},
+			Enabled:           true,
 			DefaultLocale:     "zh_cn",
 			SupportedLocales:  []string{"zh_cn", "en"},
 			DefaultCurrency:   "CNY",

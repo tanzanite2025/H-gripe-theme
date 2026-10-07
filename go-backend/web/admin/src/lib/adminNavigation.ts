@@ -23,6 +23,7 @@ import {
   MessageSquareText,
   Megaphone,
   Package,
+  Percent,
   Rocket,
   Server,
   Share2,
@@ -276,6 +277,19 @@ export const adminNavigationItems: AdminNavigationItem[] = [
     children: [
       { id: 'currency-exchange-overview', path: '/currency-exchange/overview', routeName: 'CurrencyExchangeOverview', label: '币种总览' },
       { id: 'currency-exchange-api', path: '/currency-exchange/api', routeName: 'CurrencyExchangeApi', label: '汇率 API' },
+    ],
+  },
+  {
+    id: 'tax-rate-management',
+    code: 'TAX_RATE_MANAGEMENT',
+    label: '税率管理',
+    icon: Percent,
+    permission: 'settings:view',
+    children: [
+      { id: 'tax-rate-source-config', path: '/tax-rates/config', routeName: 'TaxRateManagementConfig', label: '数据源配置' },
+      { id: 'tax-rate-source-snapshot', path: '/tax-rates/snapshot', routeName: 'TaxRateManagementSnapshot', label: '当前快照' },
+      { id: 'tax-rate-region-coverage', path: '/tax-rates/coverage', routeName: 'TaxRateManagementCoverage', label: '地区覆盖核对' },
+      { id: 'tax-rate-checkout-rules', path: '/tax-rates/rules', routeName: 'TaxRateManagementRules', label: '结算规则' },
     ],
   },
   {

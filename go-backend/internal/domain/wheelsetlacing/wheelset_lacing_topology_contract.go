@@ -47,6 +47,17 @@ const (
 	SpokeTypeNonDrive SpokeType = "nondrive"
 )
 
+// SpokeHeadStyle identifies the hub-side end geometry required by a topology.
+// It is separate from the lacing map: conventional topologies retain their
+// existing J-bend mappings, paired-hole straight-pull variants share each
+// anchor between two spokes, and 21-hole G3 retains its special spoke anchors.
+type SpokeHeadStyle string
+
+const (
+	SpokeHeadStyleJBend        SpokeHeadStyle = "j_bend"
+	SpokeHeadStyleStraightPull SpokeHeadStyle = "straight_pull"
+)
+
 var (
 	ErrUnknownTopology  = errors.New("unknown wheelset lacing topology")
 	ErrInvalidTopology  = errors.New("wheelset lacing topology is invalid")
@@ -74,16 +85,19 @@ type SpokeMapping struct {
 // Topology is the backend's read-only topology contract. It contains only
 // discrete hole assignments and no ERD/PCD, lengths, angles, or force values.
 type Topology struct {
-	ID            string                `json:"topology_id"`
-	Selection     string                `json:"selection"`
-	HoleCount     int                   `json:"hole_count"`
-	Cross         int                   `json:"cross"`
-	Distribution  Distribution          `json:"distribution"`
-	DisplayLayout DisplayGeometryLayout `json:"display_layout"`
-	RimHoles      []Hole                `json:"rim_holes"`
-	HubHolesA     []Hole                `json:"hub_holes_a"`
-	HubHolesB     []Hole                `json:"hub_holes_b"`
-	Spokes        []SpokeMapping        `json:"spokes"`
+	ID        string `json:"topology_id"`
+	Selection string `json:"selection"`
+	HoleCount int    `json:"hole_count"`
+	// Cross is selectable for conventional lacing patterns. For G3, its
+	// registered value is topology metadata, not a J-bend cross selector.
+	Cross          int                   `json:"cross"`
+	Distribution   Distribution          `json:"distribution"`
+	DisplayLayout  DisplayGeometryLayout `json:"display_layout"`
+	SpokeHeadStyle SpokeHeadStyle        `json:"spoke_head_style"`
+	RimHoles       []Hole                `json:"rim_holes"`
+	HubHolesA      []Hole                `json:"hub_holes_a"`
+	HubHolesB      []Hole                `json:"hub_holes_b"`
+	Spokes         []SpokeMapping        `json:"spokes"`
 }
 
 // Catalog owns an immutable, validated set of topology facts.
@@ -131,6 +145,18 @@ func NewDefaultCatalog() *Catalog {
 		}
 	}
 	set = append(set, buildTwentyOneHoleG3Topology(), buildUniformTwoToOneTopology(), buildUniform18TwoToOneTopology())
+	straightPullVariants := make([]Topology, 0, len(set)-1)
+	for _, topology := range set {
+		if topology.SpokeHeadStyle != SpokeHeadStyleJBend {
+			continue
+		}
+		straightPullTopology, err := buildStraightPullPairedHoleTopologyVariant(topology)
+		if err != nil {
+			panic(fmt.Errorf("build straight-pull variant for %q: %w", topology.ID, err))
+		}
+		straightPullVariants = append(straightPullVariants, straightPullTopology)
+	}
+	set = append(set, straightPullVariants...)
 	catalog, err := NewCatalog(set)
 	if err != nil {
 		// The checked-in contract is a program invariant. Serving a partial or
@@ -227,16 +253,17 @@ func symmetricSelection(holes, cross int) string {
 func buildSymmetricTopology(holes, cross int) Topology {
 	flangeCount := holes / 2
 	topology := Topology{
-		ID:            symmetricSelection(holes, cross),
-		Selection:     fmt.Sprintf("%d", holes),
-		HoleCount:     holes,
-		Cross:         cross,
-		Distribution:  DistributionSymmetric1To1,
-		DisplayLayout: DisplayGeometryLayoutSymmetric1To1,
-		RimHoles:      make([]Hole, 0, holes),
-		HubHolesA:     make([]Hole, 0, flangeCount),
-		HubHolesB:     make([]Hole, 0, flangeCount),
-		Spokes:        make([]SpokeMapping, 0, holes),
+		ID:             symmetricSelection(holes, cross),
+		Selection:      fmt.Sprintf("%d", holes),
+		HoleCount:      holes,
+		Cross:          cross,
+		Distribution:   DistributionSymmetric1To1,
+		DisplayLayout:  DisplayGeometryLayoutSymmetric1To1,
+		SpokeHeadStyle: SpokeHeadStyleJBend,
+		RimHoles:       make([]Hole, 0, holes),
+		HubHolesA:      make([]Hole, 0, flangeCount),
+		HubHolesB:      make([]Hole, 0, flangeCount),
+		Spokes:         make([]SpokeMapping, 0, holes),
 	}
 	for index := 0; index < holes; index++ {
 		side := SideA
@@ -294,16 +321,17 @@ func buildSymmetricTopology(holes, cross int) Topology {
 func buildTwentyOneHoleG3Topology() Topology {
 	const groups = 7
 	topology := Topology{
-		ID:            "21h-g3-2to1",
-		Selection:     "21_g3",
-		HoleCount:     21,
-		Cross:         2,
-		Distribution:  DistributionG32To1,
-		DisplayLayout: DisplayGeometryLayoutG3TwentyOneHoleTriplet2To1,
-		RimHoles:      make([]Hole, 0, 21),
-		HubHolesA:     make([]Hole, 0, 14),
-		HubHolesB:     make([]Hole, 0, 7),
-		Spokes:        make([]SpokeMapping, 0, 21),
+		ID:             "21h-g3-2to1",
+		Selection:      "21_g3",
+		HoleCount:      21,
+		Cross:          2,
+		Distribution:   DistributionG32To1,
+		DisplayLayout:  DisplayGeometryLayoutG3TwentyOneHoleTriplet2To1,
+		SpokeHeadStyle: SpokeHeadStyleStraightPull,
+		RimHoles:       make([]Hole, 0, 21),
+		HubHolesA:      make([]Hole, 0, 14),
+		HubHolesB:      make([]Hole, 0, 7),
+		Spokes:         make([]SpokeMapping, 0, 21),
 	}
 	for group := 0; group < groups; group++ {
 		topology.RimHoles = append(topology.RimHoles,
@@ -323,6 +351,10 @@ func buildTwentyOneHoleG3Topology() Topology {
 			ID: len(topology.Spokes), Side: SideB, Type: SpokeTypeNonDrive, HubHoleID: group, RimHoleID: group*3 + 1,
 		})
 	}
+	// G3 is a straight-pull topology: the two drive-side anchors in each group
+	// map to the adjacent A-side rim holes on opposite group edges. Matching
+	// the two chord lengths keeps each drive-side pair parallel; this must not
+	// be replaced by the conventional alternating 2X J-bend mapping.
 	for group := 0; group < groups; group++ {
 		nextGroup := (group + 1) % groups
 		topology.Spokes = append(topology.Spokes,
@@ -359,16 +391,17 @@ func buildUniform18TwoToOneTopology() Topology {
 
 func buildUniformTwoToOneTopologyWithExplicitHoleCountsAndDisplayLayout(id, selection string, total, driveSideHoleCount, nonDriveSideHoleCount int, displayLayout DisplayGeometryLayout) Topology {
 	topology := Topology{
-		ID:            id,
-		Selection:     selection,
-		HoleCount:     total,
-		Cross:         2,
-		Distribution:  DistributionUniform2To1,
-		DisplayLayout: displayLayout,
-		RimHoles:      make([]Hole, 0, total),
-		HubHolesA:     make([]Hole, 0, driveSideHoleCount),
-		HubHolesB:     make([]Hole, 0, nonDriveSideHoleCount),
-		Spokes:        make([]SpokeMapping, 0, total),
+		ID:             id,
+		Selection:      selection,
+		HoleCount:      total,
+		Cross:          2,
+		Distribution:   DistributionUniform2To1,
+		DisplayLayout:  displayLayout,
+		SpokeHeadStyle: SpokeHeadStyleJBend,
+		RimHoles:       make([]Hole, 0, total),
+		HubHolesA:      make([]Hole, 0, driveSideHoleCount),
+		HubHolesB:      make([]Hole, 0, nonDriveSideHoleCount),
+		Spokes:         make([]SpokeMapping, 0, total),
 	}
 	for index := 0; index < total; index++ {
 		side := SideA
@@ -424,15 +457,18 @@ func validateTopology(topology Topology) error {
 	if topology.Distribution != DistributionSymmetric1To1 && topology.Distribution != DistributionUniform2To1 && topology.Distribution != DistributionG32To1 {
 		return fmt.Errorf("unsupported distribution %q", topology.Distribution)
 	}
+	if topology.SpokeHeadStyle != SpokeHeadStyleJBend && topology.SpokeHeadStyle != SpokeHeadStyleStraightPull {
+		return fmt.Errorf("unsupported spoke head style %q", topology.SpokeHeadStyle)
+	}
 	if topology.DisplayLayout != DisplayGeometryLayoutSymmetric1To1 && topology.DisplayLayout != DisplayGeometryLayoutUniform2To1 && topology.DisplayLayout != DisplayGeometryLayoutUniform18H2To1 && topology.DisplayLayout != DisplayGeometryLayoutG3TwentyOneHoleTriplet2To1 {
 		return fmt.Errorf("unsupported display layout %q", topology.DisplayLayout)
 	}
-	expected := expectedTopology(topology.Selection, topology.Cross)
+	expected := expectedTopology(topology.Selection, topology.Cross, topology.SpokeHeadStyle)
 	if expected == nil {
 		return fmt.Errorf("unsupported selection %q", topology.Selection)
 	}
-	if topology.HoleCount != expected.HoleCount || topology.Distribution != expected.Distribution || topology.DisplayLayout != expected.DisplayLayout || topology.Cross != expected.Cross {
-		return fmt.Errorf("selection %q does not match hole_count=%d, cross=%d, distribution=%q, display_layout=%q", topology.Selection, topology.HoleCount, topology.Cross, topology.Distribution, topology.DisplayLayout)
+	if topology.HoleCount != expected.HoleCount || topology.Distribution != expected.Distribution || topology.DisplayLayout != expected.DisplayLayout || topology.Cross != expected.Cross || topology.SpokeHeadStyle != expected.SpokeHeadStyle {
+		return fmt.Errorf("selection %q does not match hole_count=%d, cross=%d, distribution=%q, display_layout=%q, spoke_head_style=%q", topology.Selection, topology.HoleCount, topology.Cross, topology.Distribution, topology.DisplayLayout, topology.SpokeHeadStyle)
 	}
 	if len(topology.RimHoles) != len(expected.RimHoles) || len(topology.HubHolesA) != len(expected.HubHolesA) || len(topology.HubHolesB) != len(expected.HubHolesB) || len(topology.Spokes) != len(expected.Spokes) {
 		return fmt.Errorf("hole or spoke counts do not match the selection")
@@ -452,26 +488,27 @@ func validateTopology(topology Topology) error {
 	return compareExpectedSpokes(topology.Spokes, expected.Spokes)
 }
 
-func expectedTopology(selection string, cross int) *Topology {
+func expectedTopology(selection string, cross int, spokeHeadStyle SpokeHeadStyle) *Topology {
+	var expected *Topology
 	switch selection {
 	case "21_g3":
 		if cross != 2 {
 			return nil
 		}
-		expected := buildTwentyOneHoleG3Topology()
-		return &expected
+		g3Topology := buildTwentyOneHoleG3Topology()
+		expected = &g3Topology
 	case "24_2to1":
 		if cross != 2 {
 			return nil
 		}
-		expected := buildUniformTwoToOneTopology()
-		return &expected
+		uniformTopology := buildUniformTwoToOneTopology()
+		expected = &uniformTopology
 	case "18_2to1":
 		if cross != 2 {
 			return nil
 		}
-		expected := buildUniform18TwoToOneTopology()
-		return &expected
+		uniform18Topology := buildUniform18TwoToOneTopology()
+		expected = &uniform18Topology
 	default:
 		var holes int
 		if _, err := fmt.Sscanf(selection, "%d", &holes); err != nil || fmt.Sprintf("%d", holes) != selection {
@@ -480,12 +517,77 @@ func expectedTopology(selection string, cross int) *Topology {
 		allowed := supportedSymmetricCrosses(holes)
 		for _, candidate := range allowed {
 			if candidate == cross {
-				expected := buildSymmetricTopology(holes, cross)
-				return &expected
+				symmetricTopology := buildSymmetricTopology(holes, cross)
+				expected = &symmetricTopology
+				break
 			}
 		}
+	}
+	if expected == nil {
 		return nil
 	}
+	if expected.SpokeHeadStyle == spokeHeadStyle {
+		return expected
+	}
+	if expected.SpokeHeadStyle != SpokeHeadStyleJBend || spokeHeadStyle != SpokeHeadStyleStraightPull {
+		return nil
+	}
+	straightPullTopology, err := buildStraightPullPairedHoleTopologyVariant(*expected)
+	if err != nil {
+		return nil
+	}
+	return &straightPullTopology
+}
+
+// buildStraightPullPairedHoleTopologyVariant preserves every rim assignment
+// while pairing consecutive J-bend flange holes into one straight-pull anchor
+// shared by two spokes. G3 has its own registered straight-pull mapping.
+func buildStraightPullPairedHoleTopologyVariant(source Topology) (Topology, error) {
+	if source.SpokeHeadStyle != SpokeHeadStyleJBend || source.Distribution == DistributionG32To1 {
+		return Topology{}, fmt.Errorf("topology %q is not a conventional J-bend topology", source.ID)
+	}
+	straightPullTopology := cloneTopology(source)
+	straightPullTopology.ID += "-straight-pull"
+	straightPullTopology.SpokeHeadStyle = SpokeHeadStyleStraightPull
+	straightPullTopology.HubHolesA = make([]Hole, 0, len(source.HubHolesA)/2)
+	straightPullTopology.HubHolesB = make([]Hole, 0, len(source.HubHolesB)/2)
+	hubHoleIDByOriginalKey := make(map[string]int, len(source.HubHolesA)+len(source.HubHolesB))
+
+	for _, sideHoles := range []struct {
+		side  Side
+		holes []Hole
+	}{
+		{side: SideA, holes: source.HubHolesA},
+		{side: SideB, holes: source.HubHolesB},
+	} {
+		orderedHoles := append([]Hole(nil), sideHoles.holes...)
+		sort.Slice(orderedHoles, func(i, j int) bool { return orderedHoles[i].ID < orderedHoles[j].ID })
+		if len(orderedHoles)%2 != 0 {
+			return Topology{}, fmt.Errorf("side %s has an odd spoke-hole count %d", sideHoles.side, len(orderedHoles))
+		}
+		for pairIndex := 0; pairIndex < len(orderedHoles)/2; pairIndex++ {
+			straightPullHole := Hole{ID: pairIndex, Side: sideHoles.side}
+			if sideHoles.side == SideA {
+				straightPullTopology.HubHolesA = append(straightPullTopology.HubHolesA, straightPullHole)
+			} else {
+				straightPullTopology.HubHolesB = append(straightPullTopology.HubHolesB, straightPullHole)
+			}
+			firstOriginalHoleID := orderedHoles[pairIndex*2].ID
+			secondOriginalHoleID := orderedHoles[pairIndex*2+1].ID
+			hubHoleIDByOriginalKey[hubKey(sideHoles.side, firstOriginalHoleID)] = pairIndex
+			hubHoleIDByOriginalKey[hubKey(sideHoles.side, secondOriginalHoleID)] = pairIndex
+		}
+	}
+
+	for index := range straightPullTopology.Spokes {
+		spoke := &straightPullTopology.Spokes[index]
+		pairedHoleID, exists := hubHoleIDByOriginalKey[hubKey(spoke.Side, spoke.HubHoleID)]
+		if !exists {
+			return Topology{}, fmt.Errorf("spoke %d does not map to a paired flange hole", spoke.ID)
+		}
+		spoke.HubHoleID = pairedHoleID
+	}
+	return straightPullTopology, nil
 }
 
 func validateHoles(holes []Hole, label string) error {
@@ -554,8 +656,12 @@ func validateSpokeMappings(topology Topology) error {
 		}
 	}
 	for key := range hubByKey {
-		if hubUsage[key] != 1 {
-			return fmt.Errorf("hub hole %s must map to exactly one spoke", key)
+		wantSpokesPerHole := 1
+		if topology.SpokeHeadStyle == SpokeHeadStyleStraightPull && topology.Distribution != DistributionG32To1 {
+			wantSpokesPerHole = 2
+		}
+		if hubUsage[key] != wantSpokesPerHole {
+			return fmt.Errorf("hub hole %s must map to exactly %d spoke(s)", key, wantSpokesPerHole)
 		}
 	}
 	return nil

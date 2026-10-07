@@ -155,6 +155,10 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 	currencyPolicyHandler.ConfigureProductService(services.Product)
 	exchangeRateHandler := NewExchangeRateHandler(services.ExchangeRate)
 	exchangeRateHandler.ConfigureAuditService(services.Audit)
+	taxRateSourceSnapshotHandler := NewTaxRateSourceSnapshotHandler(services.TaxRateSourceSnapshot)
+	taxRateSourceSnapshotHandler.ConfigureAuditService(services.Audit)
+	taxRateRuleHandler := NewTaxRateRuleHandler(services.TaxRate)
+	taxRateRuleHandler.ConfigureAuditService(services.Audit)
 	storefrontMarketHandler := NewStorefrontMarketHandler(services.StorefrontMarket)
 	storefrontMarketHandler.ConfigureAuditService(services.Audit)
 	googleMerchantHandler := NewGoogleMerchantHandler(services.GoogleMerchant, cfg.GoogleMerchant.PostConnectURL)
@@ -337,6 +341,8 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 		currencyPolicyHandler,
 		siteLogoHandler,
 		exchangeRateHandler,
+		taxRateRuleHandler,
+		taxRateSourceSnapshotHandler,
 		websiteProfileHandler,
 		websiteNameHandler,
 		shippingHandler,

@@ -1,4 +1,4 @@
-package payment
+package taxrate
 
 import (
 	domainmoney "commerce-platform/internal/domain/money"
@@ -29,4 +29,16 @@ func TestTaxRateRejectsPrecisionBeyondDatabaseScale(t *testing.T) {
 
 	rate := TaxRate{Name: "overprecise", Country: "US", RateDecimal: "7.1234567890123456"}
 	require.Error(t, db.Create(&rate).Error)
+}
+
+func TestTaxRateRequiresExplicitRateAndAllowsExplicitZero(t *testing.T) {
+	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	require.NoError(t, err)
+	require.NoError(t, db.AutoMigrate(&TaxRate{}))
+
+	missingRate := TaxRate{Name: "Missing rate", Country: "US"}
+	require.Error(t, db.Create(&missingRate).Error)
+
+	explicitZeroRate := TaxRate{Name: "Explicit zero", Country: "US", RateDecimal: "0"}
+	require.NoError(t, db.Create(&explicitZeroRate).Error)
 }

@@ -50,6 +50,7 @@ type TxRepositories struct {
 	Referral                  *ReferralRepository
 	ReferralProgram           *ReferralProgramRepository
 	Payment                   *PaymentRepository
+	TaxRate                   *TaxRateRepository
 	RefundReview              *PaymentRefundRecommendationRepository
 	RefundExecution           *PaymentRefundExecutionRepository
 	RefundIdempotency         *PaymentRefundIdempotencyRepository
@@ -265,6 +266,7 @@ func (m *TxManager) WithinTx(fn func(TxRepositories) error) error {
 			Referral:                  referralRepo,
 			ReferralProgram:           referralProgramRepo,
 			Payment:                   m.paymentRepo.WithTx(tx),
+			TaxRate:                   NewTaxRateRepository(tx),
 			RefundReview:              refundReviewRepo,
 			RefundExecution:           refundExecRepo,
 			RefundIdempotency:         refundIdempotencyRepo,

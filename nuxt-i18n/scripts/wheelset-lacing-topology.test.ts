@@ -8,6 +8,7 @@ import {
   validateWheelsetLacingDisplayGeometryResponse,
   WHEELSET_LACING_DISPLAY_GEOMETRY_CONTRACT_VERSION,
   WHEELSET_LACING_DISPLAY_GEOMETRY_LAYOUT,
+  WHEELSET_LACING_SPOKE_HEAD_STYLE,
   type WheelsetLacingDisplayGeometryLayout,
 } from '../app/utils/wheelsetLacingDisplayGeometryContract.ts'
 
@@ -33,19 +34,70 @@ for (const [topologySelection, expectedCrossCounts] of expectedCrossCountsByTopo
 
 assert.deepEqual(
   resolveWheelsetLacingDisplayGeometryTopologySelection('21_g3', 2),
-  { topologyId: '21h-g3-2to1', selection: '21_g3', displayLayout: WHEELSET_LACING_DISPLAY_GEOMETRY_LAYOUT.g3TwentyOneHoleTriplet2To1 },
+  {
+    topologyId: '21h-g3-2to1',
+    selection: '21_g3',
+    displayLayout: WHEELSET_LACING_DISPLAY_GEOMETRY_LAYOUT.g3TwentyOneHoleTriplet2To1,
+    spokeHeadStyle: WHEELSET_LACING_SPOKE_HEAD_STYLE.straightPull,
+  },
 )
 assert.deepEqual(
   resolveWheelsetLacingDisplayGeometryTopologySelection('24_2to1', 2),
-  { topologyId: '24h-uniform-2to1', selection: '24_2to1', displayLayout: WHEELSET_LACING_DISPLAY_GEOMETRY_LAYOUT.uniform2To1 },
+  {
+    topologyId: '24h-uniform-2to1',
+    selection: '24_2to1',
+    displayLayout: WHEELSET_LACING_DISPLAY_GEOMETRY_LAYOUT.uniform2To1,
+    spokeHeadStyle: WHEELSET_LACING_SPOKE_HEAD_STYLE.jBend,
+  },
 )
 assert.deepEqual(
   resolveWheelsetLacingDisplayGeometryTopologySelection('18_2to1', 2),
-  { topologyId: '18h-uniform-2to1', selection: '18_2to1', displayLayout: WHEELSET_LACING_DISPLAY_GEOMETRY_LAYOUT.uniform18H2To1 },
+  {
+    topologyId: '18h-uniform-2to1',
+    selection: '18_2to1',
+    displayLayout: WHEELSET_LACING_DISPLAY_GEOMETRY_LAYOUT.uniform18H2To1,
+    spokeHeadStyle: WHEELSET_LACING_SPOKE_HEAD_STYLE.jBend,
+  },
 )
 assert.deepEqual(
   resolveWheelsetLacingDisplayGeometryTopologySelection(24, 2),
-  { topologyId: '24h-symmetric-1to1-2x', selection: '24', displayLayout: WHEELSET_LACING_DISPLAY_GEOMETRY_LAYOUT.symmetric1To1 },
+  {
+    topologyId: '24h-symmetric-1to1-2x',
+    selection: '24',
+    displayLayout: WHEELSET_LACING_DISPLAY_GEOMETRY_LAYOUT.symmetric1To1,
+    spokeHeadStyle: WHEELSET_LACING_SPOKE_HEAD_STYLE.jBend,
+  },
+)
+assert.deepEqual(
+  resolveWheelsetLacingDisplayGeometryTopologySelection(24, 2, WHEELSET_LACING_SPOKE_HEAD_STYLE.straightPull),
+  {
+    topologyId: '24h-symmetric-1to1-2x-straight-pull',
+    selection: '24',
+    displayLayout: WHEELSET_LACING_DISPLAY_GEOMETRY_LAYOUT.symmetric1To1,
+    spokeHeadStyle: WHEELSET_LACING_SPOKE_HEAD_STYLE.straightPull,
+  },
+)
+assert.deepEqual(
+  resolveWheelsetLacingDisplayGeometryTopologySelection('18_2to1', 2, WHEELSET_LACING_SPOKE_HEAD_STYLE.straightPull),
+  {
+    topologyId: '18h-uniform-2to1-straight-pull',
+    selection: '18_2to1',
+    displayLayout: WHEELSET_LACING_DISPLAY_GEOMETRY_LAYOUT.uniform18H2To1,
+    spokeHeadStyle: WHEELSET_LACING_SPOKE_HEAD_STYLE.straightPull,
+  },
+)
+assert.deepEqual(
+  resolveWheelsetLacingDisplayGeometryTopologySelection('24_2to1', 2, WHEELSET_LACING_SPOKE_HEAD_STYLE.straightPull),
+  {
+    topologyId: '24h-uniform-2to1-straight-pull',
+    selection: '24_2to1',
+    displayLayout: WHEELSET_LACING_DISPLAY_GEOMETRY_LAYOUT.uniform2To1,
+    spokeHeadStyle: WHEELSET_LACING_SPOKE_HEAD_STYLE.straightPull,
+  },
+)
+assert.throws(
+  () => resolveWheelsetLacingDisplayGeometryTopologySelection('21_g3', 2, WHEELSET_LACING_SPOKE_HEAD_STYLE.jBend),
+  /available only in straight-pull mode/,
 )
 assert.throws(
   () => resolveWheelsetLacingDisplayGeometryTopologySelection(16, 2),
@@ -93,6 +145,7 @@ assert.throws(
       topologyId: '18h-2to1',
       selection: '18_g3',
       displayLayout: 'future_18h_2to1' as WheelsetLacingDisplayGeometryLayout,
+      spokeHeadStyle: WHEELSET_LACING_SPOKE_HEAD_STYLE.jBend,
     },
   ),
   /unsupported display geometry layout/,

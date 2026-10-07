@@ -42,6 +42,7 @@ import (
 	"commerce-platform/internal/domain/spoke"
 	"commerce-platform/internal/domain/subscription"
 	"commerce-platform/internal/domain/suggestionfeedback"
+	"commerce-platform/internal/domain/taxrate"
 	"commerce-platform/internal/domain/ticket"
 	"commerce-platform/internal/domain/ugcshowcase"
 	urlmanagementdomain "commerce-platform/internal/domain/urlmanagement"
@@ -135,7 +136,10 @@ func AutoMigrate(db *gorm.DB, serverMode string) error {
 		&outboxdomain.Event{},
 		&payment.PaymentMethod{},
 		&payment.PaymentOperationIdempotency{},
-		&payment.TaxRate{},
+		&taxrate.TaxRate{},
+		&taxrate.TaxRateSourceConfig{},
+		&taxrate.TaxRateSourceSnapshot{},
+		&taxrate.TaxRateSourceSnapshotEntry{},
 		&payment.Transaction{},
 		&payment.Refund{},
 		&payment.RefundLineItem{},
@@ -338,6 +342,9 @@ func PrepareSchema(ctx context.Context, db *gorm.DB, cfg *config.DatabaseConfig,
 	}
 	if err := VerifyRequiredTables(ctx, sqlDB,
 		"email_delivery_records",
+		"tax_rate_source_configs",
+		"tax_rate_source_snapshots",
+		"tax_rate_source_snapshot_entries",
 		// Legacy physical table name for SKU supplier-cost records. This table
 		// does not imply that the application implements supplier-side workflow.
 		"product_procurement_records",

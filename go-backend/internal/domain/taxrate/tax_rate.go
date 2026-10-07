@@ -1,4 +1,4 @@
-package payment
+package taxrate
 
 import (
 	domainmoney "commerce-platform/internal/domain/money"
@@ -20,7 +20,7 @@ type TaxRate struct {
 	PostalCode string `json:"postal_code"`
 	// RateDecimal is the exact percentage used for tax arithmetic and is the
 	// sole persisted source of truth (for example "7.5" means 7.5%).
-	RateDecimal string         `gorm:"column:rate_decimal;type:numeric(30,15);not null;default:0" json:"rate_decimal"`
+	RateDecimal string         `gorm:"column:rate_decimal;type:numeric(30,15);not null" json:"rate_decimal"`
 	Priority    int            `gorm:"default:0" json:"priority"`
 	Compound    bool           `gorm:"default:false" json:"compound"` // 是否复合税率
 	Enabled     bool           `gorm:"default:true" json:"enabled"`
@@ -40,6 +40,55 @@ func (tr *TaxRate) BeforeSave(tx *gorm.DB) error {
 		}
 		return fmt.Errorf("tax rate decimal is required")
 	}
+	return tr.validateRateDecimal(value)
+}
+
+func (tr *TaxRate) BeforeCreate(_ *gorm.DB) error {
+	return tr.validateRateDecimal(strings.TrimSpace(tr.RateDecimal))
+}
+
+func (tr *TaxRate) validateRateDecimal(value string) error {
+	if value == "" {
+		return fmt.Errorf("tax rate decimal is required")
+	}
+	if err := ValidateTaxRatePercentage(value); err != nil {
+		return err
+	}
+	tr.RateDecimal = value
+	return nil
+}
+
+// ValidateTaxRatePercentage checks the exact percentage representation stored
+// by a tax rule. A value of "0" is a valid, explicitly configured zero rate.
+func ValidateTaxRatePercentage(value string) error {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return fmt.Errorf("tax rate decimal is required")
+	}
+	digitCount := 0
+	fractionalDigits := -1
+	for _, character := range value {
+		if character == '.' {
+			if fractionalDigits >= 0 {
+				return fmt.Errorf("tax rate decimal must be a base-10 number")
+			}
+			fractionalDigits = 0
+			continue
+		}
+		if character < '0' || character > '9' {
+			return fmt.Errorf("tax rate decimal must be a base-10 number")
+		}
+		digitCount++
+		if fractionalDigits >= 0 {
+			fractionalDigits++
+		}
+	}
+	if digitCount == 0 {
+		return fmt.Errorf("tax rate decimal must be a base-10 number")
+	}
+	if fractionalDigits > 15 {
+		return fmt.Errorf("tax rate decimal supports at most 15 fractional digits")
+	}
 	rate, ok := new(big.Rat).SetString(value)
 	if !ok || rate.Sign() < 0 || rate.Cmp(big.NewRat(100, 1)) > 0 {
 		return fmt.Errorf("tax rate decimal must be between 0 and 100")
@@ -50,7 +99,6 @@ func (tr *TaxRate) BeforeSave(tx *gorm.DB) error {
 	if scaled.Denom().Cmp(big.NewInt(1)) != 0 {
 		return fmt.Errorf("tax rate decimal supports at most 15 fractional digits")
 	}
-	tr.RateDecimal = value
 	return nil
 }
 

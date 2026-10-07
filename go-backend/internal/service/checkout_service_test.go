@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"testing"
 
 	"commerce-platform/internal/domain/loyalty"
@@ -8,7 +9,7 @@ import (
 	"commerce-platform/internal/domain/order"
 	shippingdomain "commerce-platform/internal/domain/shipping"
 
-	paymentdomain "commerce-platform/internal/domain/payment"
+	taxratedomain "commerce-platform/internal/domain/taxrate"
 	"commerce-platform/internal/repository"
 
 	"github.com/stretchr/testify/assert"
@@ -54,7 +55,7 @@ func TestCheckoutQuoteAppliesMerchandiseDiscountsBeforeShippingAndTax(t *testing
 		Update("free_shipping", false).Error)
 	seedUserLoyalty(t, db, 42, 100000)
 	seedCoupon(t, db, "WATERFALL-900", "fixed", 900, 0)
-	require.NoError(t, db.Create(&paymentdomain.TaxRate{
+	require.NoError(t, db.Create(&taxratedomain.TaxRate{
 		Name:        "California sales tax",
 		Country:     "US",
 		State:       "CA",
@@ -107,7 +108,38 @@ func TestCheckoutQuoteAppliesMerchandiseDiscountsBeforeShippingAndTax(t *testing
 	assert.Equal(t, quote.PricingSnapshot.NetTotal().AmountMinor()+quote.PricingSnapshot.TaxTotal().AmountMinor(), quote.TotalMinor-quote.ShippingFeeMinor)
 }
 
-func TestCheckoutCalculateTaxReturnsZeroWhenLocationHasNoTaxRule(t *testing.T) {
+func TestCheckoutAndOrderCreationRejectAddressWithoutConfiguredTaxRule(t *testing.T) {
+	db, orderService := newTestOrderService(t)
+	productRecord := seedProduct(t, db, 1000, 5)
+	unsupportedTaxAddress := testAddress()
+	unsupportedTaxAddress.State = "NY"
+	unsupportedTaxAddress.PostalCode = "10001"
+
+	_, err := orderService.checkout.Quote(CheckoutQuoteInput{
+		UserID:          42,
+		Items:           []order.OrderItem{{ProductID: productRecord.ID, Quantity: 1}},
+		ShippingAddress: unsupportedTaxAddress,
+	})
+	require.ErrorIs(t, err, ErrTaxRateUnavailable)
+
+	_, err = orderService.CreateOrder(
+		context.Background(),
+		42,
+		[]order.OrderItem{{ProductID: productRecord.ID, Quantity: 1}},
+		unsupportedTaxAddress,
+		unsupportedTaxAddress,
+		"card",
+		"standard",
+		"",
+	)
+	require.ErrorIs(t, err, ErrTaxRateUnavailable)
+
+	var createdOrderCount int64
+	require.NoError(t, db.Model(&order.Order{}).Count(&createdOrderCount).Error)
+	assert.Zero(t, createdOrderCount)
+}
+
+func TestCheckoutCalculateTaxRejectsLocationWithoutTaxRule(t *testing.T) {
 	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
 	require.NoError(t, err)
 	sqlDB, err := db.DB()
@@ -115,11 +147,12 @@ func TestCheckoutCalculateTaxReturnsZeroWhenLocationHasNoTaxRule(t *testing.T) {
 	t.Cleanup(func() {
 		_ = sqlDB.Close()
 	})
-	require.NoError(t, db.AutoMigrate(&paymentdomain.TaxRate{}))
+	require.NoError(t, db.AutoMigrate(&taxratedomain.TaxRate{}))
 
-	checkoutService := &CheckoutService{}
+	taxRateRepository := repository.NewTaxRateRepository(db)
+	checkoutService := &CheckoutService{taxRateService: NewTaxRateService(taxRateRepository)}
 	taxMoney, err := checkoutService.calculateTaxMoney(
-		repository.NewPaymentRepository(db),
+		taxRateRepository,
 		domainmoney.MustNew(10000, "USD"),
 		"US",
 		"CA",
@@ -127,7 +160,7 @@ func TestCheckoutCalculateTaxReturnsZeroWhenLocationHasNoTaxRule(t *testing.T) {
 		"USD",
 	)
 
-	require.NoError(t, err)
+	require.ErrorIs(t, err, ErrTaxRateUnavailable)
 	assert.Zero(t, taxMoney.AmountMinor())
 }
 
@@ -136,11 +169,14 @@ func TestCheckoutCalculateTaxPropagatesTaxRateLookupFailure(t *testing.T) {
 	require.NoError(t, err)
 	sqlDB, err := db.DB()
 	require.NoError(t, err)
-	require.NoError(t, sqlDB.Close())
+	t.Cleanup(func() { _ = sqlDB.Close() })
+	require.NoError(t, db.AutoMigrate(&taxratedomain.TaxRate{}))
+	require.NoError(t, db.Migrator().DropTable(&taxratedomain.TaxRate{}))
 
-	checkoutService := &CheckoutService{}
+	taxRateRepository := repository.NewTaxRateRepository(db)
+	checkoutService := &CheckoutService{taxRateService: NewTaxRateService(taxRateRepository)}
 	taxMoney, err := checkoutService.calculateTaxMoney(
-		repository.NewPaymentRepository(db),
+		taxRateRepository,
 		domainmoney.MustNew(10000, "USD"),
 		"US",
 		"CA",
@@ -161,8 +197,8 @@ func TestCheckoutCalculateTaxRoundsUsingCurrencyMinorUnits(t *testing.T) {
 	t.Cleanup(func() {
 		_ = sqlDB.Close()
 	})
-	require.NoError(t, db.AutoMigrate(&paymentdomain.TaxRate{}))
-	require.NoError(t, db.Create(&paymentdomain.TaxRate{
+	require.NoError(t, db.AutoMigrate(&taxratedomain.TaxRate{}))
+	require.NoError(t, db.Create(&taxratedomain.TaxRate{
 		Name:        "California VAT",
 		Country:     "US",
 		State:       "CA",
@@ -171,9 +207,10 @@ func TestCheckoutCalculateTaxRoundsUsingCurrencyMinorUnits(t *testing.T) {
 		Enabled:     true,
 	}).Error)
 
-	checkoutService := &CheckoutService{}
+	taxRateRepository := repository.NewTaxRateRepository(db)
+	checkoutService := &CheckoutService{taxRateService: NewTaxRateService(taxRateRepository)}
 	usdTax, err := checkoutService.calculateTaxMoney(
-		repository.NewPaymentRepository(db),
+		taxRateRepository,
 		domainmoney.MustNew(142405, "USD"),
 		"US",
 		"CA",

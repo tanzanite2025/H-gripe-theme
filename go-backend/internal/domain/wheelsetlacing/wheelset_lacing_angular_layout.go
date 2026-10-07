@@ -7,9 +7,9 @@ import (
 )
 
 // WheelsetLacingAngularLayoutRequest contains the continuous inputs needed to
-// resolve a registered topology. The two optional G3 radii derive its automatic
-// parallel spacing; the resulting layout remains coordinate-free so both the
-// reference drawing and spoke-length calculator can use the same hole angles.
+// resolve a registered topology. The two optional G3 radii derive the grouped
+// rim-hole gaps from the paired-hole center distance; the resulting layout
+// remains coordinate-free for both drawings and spoke-length calculations.
 type WheelsetLacingAngularLayoutRequest struct {
 	TopologyID                           string
 	G3RimHoleCircleRadiusMM              float64
@@ -167,20 +167,24 @@ func buildWheelsetLacingAngularPoints(
 	case DisplayGeometryLayoutG3TwentyOneHoleTriplet2To1:
 		return buildWheelsetLacingTwentyOneHoleG3AngularPoints(topology, request)
 	case DisplayGeometryLayoutUniform2To1:
-		return buildWheelsetLacingUniformTwoToOneAngularPoints(topology, 24, 16, 8), WheelsetLacingG3GroupSpacing{}, nil
+		points, err := buildWheelsetLacingUniformTwoToOneAngularPoints(topology, 24, 16, 8)
+		return points, WheelsetLacingG3GroupSpacing{}, err
 	case DisplayGeometryLayoutUniform18H2To1:
-		return buildWheelsetLacingUniformTwoToOneAngularPoints(topology, 18, 12, 6), WheelsetLacingG3GroupSpacing{}, nil
+		points, err := buildWheelsetLacingUniformTwoToOneAngularPoints(topology, 18, 12, 6)
+		return points, WheelsetLacingG3GroupSpacing{}, err
 	case DisplayGeometryLayoutSymmetric1To1:
-		return buildWheelsetLacingSymmetricAngularPoints(topology), WheelsetLacingG3GroupSpacing{}, nil
+		points, err := buildWheelsetLacingSymmetricAngularPoints(topology)
+		return points, WheelsetLacingG3GroupSpacing{}, err
 	default:
 		return wheelsetLacingAngularPointSet{}, WheelsetLacingG3GroupSpacing{}, fmt.Errorf("%w: unsupported angular layout %q", ErrInvalidTopology, topology.DisplayLayout)
 	}
 }
 
-func buildWheelsetLacingSymmetricAngularPoints(topology Topology) wheelsetLacingAngularPointSet {
+func buildWheelsetLacingSymmetricAngularPoints(topology Topology) (wheelsetLacingAngularPointSet, error) {
 	holeCount := topology.HoleCount
 	rimHoles := make([]WheelsetLacingAngularPoint, 0, len(topology.RimHoles))
 	rimBySide := map[Side][]WheelsetLacingAngularPoint{SideA: {}, SideB: {}}
+	rimByID := make(map[int]WheelsetLacingAngularPoint, len(topology.RimHoles))
 	for index, hole := range topology.RimHoles {
 		point := WheelsetLacingAngularPoint{
 			ID:           hole.ID,
@@ -189,16 +193,33 @@ func buildWheelsetLacingSymmetricAngularPoints(topology Topology) wheelsetLacing
 		}
 		rimHoles = append(rimHoles, point)
 		rimBySide[hole.Side] = append(rimBySide[hole.Side], point)
+		rimByID[hole.ID] = point
 	}
 	hubHolesA := make([]WheelsetLacingAngularPoint, 0, len(topology.HubHolesA))
 	hubHolesB := make([]WheelsetLacingAngularPoint, 0, len(topology.HubHolesB))
 	for index, hole := range topology.HubHolesA {
-		hubHolesA = append(hubHolesA, WheelsetLacingAngularPoint{ID: hole.ID, Side: SideA, AngleRadians: rimBySide[SideA][index].AngleRadians})
+		angle := rimBySide[SideA][index].AngleRadians
+		if topology.SpokeHeadStyle == SpokeHeadStyleStraightPull {
+			var err error
+			angle, err = calculateWheelsetLacingStraightPullHubHoleAngle(topology, SideA, hole.ID, rimByID)
+			if err != nil {
+				return wheelsetLacingAngularPointSet{}, err
+			}
+		}
+		hubHolesA = append(hubHolesA, WheelsetLacingAngularPoint{ID: hole.ID, Side: SideA, AngleRadians: angle})
 	}
 	for index, hole := range topology.HubHolesB {
-		hubHolesB = append(hubHolesB, WheelsetLacingAngularPoint{ID: hole.ID, Side: SideB, AngleRadians: rimBySide[SideB][index].AngleRadians})
+		angle := rimBySide[SideB][index].AngleRadians
+		if topology.SpokeHeadStyle == SpokeHeadStyleStraightPull {
+			var err error
+			angle, err = calculateWheelsetLacingStraightPullHubHoleAngle(topology, SideB, hole.ID, rimByID)
+			if err != nil {
+				return wheelsetLacingAngularPointSet{}, err
+			}
+		}
+		hubHolesB = append(hubHolesB, WheelsetLacingAngularPoint{ID: hole.ID, Side: SideB, AngleRadians: angle})
 	}
-	return wheelsetLacingAngularPointSet{rimHoles: rimHoles, hubHolesA: hubHolesA, hubHolesB: hubHolesB}
+	return wheelsetLacingAngularPointSet{rimHoles: rimHoles, hubHolesA: hubHolesA, hubHolesB: hubHolesB}, nil
 }
 
 func buildWheelsetLacingTwentyOneHoleG3AngularPoints(
@@ -259,9 +280,10 @@ func buildWheelsetLacingUniformTwoToOneAngularPoints(
 	totalHoleCount int,
 	driveSideHoleCount int,
 	nonDriveSideHoleCount int,
-) wheelsetLacingAngularPointSet {
+) (wheelsetLacingAngularPointSet, error) {
 	rimHoles := make([]WheelsetLacingAngularPoint, 0, len(topology.RimHoles))
 	rimBySide := map[Side][]WheelsetLacingAngularPoint{SideA: {}, SideB: {}}
+	rimByID := make(map[int]WheelsetLacingAngularPoint, len(topology.RimHoles))
 	for index, hole := range topology.RimHoles {
 		point := WheelsetLacingAngularPoint{
 			ID:           hole.ID,
@@ -270,28 +292,74 @@ func buildWheelsetLacingUniformTwoToOneAngularPoints(
 		}
 		rimHoles = append(rimHoles, point)
 		rimBySide[hole.Side] = append(rimBySide[hole.Side], point)
+		rimByID[hole.ID] = point
 	}
 	hubHolesA := make([]WheelsetLacingAngularPoint, 0, len(topology.HubHolesA))
 	for index, hole := range topology.HubHolesA {
+		angle := (float64(index) * 2 * math.Pi / float64(driveSideHoleCount)) - math.Pi/2
+		if topology.SpokeHeadStyle == SpokeHeadStyleStraightPull {
+			var err error
+			angle, err = calculateWheelsetLacingStraightPullHubHoleAngle(topology, SideA, hole.ID, rimByID)
+			if err != nil {
+				return wheelsetLacingAngularPointSet{}, err
+			}
+		}
 		hubHolesA = append(hubHolesA, WheelsetLacingAngularPoint{
 			ID:           hole.ID,
 			Side:         SideA,
-			AngleRadians: (float64(index) * 2 * math.Pi / float64(driveSideHoleCount)) - math.Pi/2,
+			AngleRadians: angle,
 		})
 	}
 	hubHolesB := make([]WheelsetLacingAngularPoint, 0, len(topology.HubHolesB))
 	for index, hole := range topology.HubHolesB {
 		if index >= len(rimBySide[SideB]) {
-			return wheelsetLacingAngularPointSet{}
+			return wheelsetLacingAngularPointSet{}, fmt.Errorf("%w: non-drive flange hole %d has no matching rim phase", ErrInvalidTopology, hole.ID)
+		}
+		angle := rimBySide[SideB][index].AngleRadians
+		if topology.SpokeHeadStyle == SpokeHeadStyleStraightPull {
+			var err error
+			angle, err = calculateWheelsetLacingStraightPullHubHoleAngle(topology, SideB, hole.ID, rimByID)
+			if err != nil {
+				return wheelsetLacingAngularPointSet{}, err
+			}
 		}
 		hubHolesB = append(hubHolesB, WheelsetLacingAngularPoint{
 			ID:           hole.ID,
 			Side:         SideB,
-			AngleRadians: rimBySide[SideB][index].AngleRadians,
+			AngleRadians: angle,
 		})
 	}
 	_ = nonDriveSideHoleCount
-	return wheelsetLacingAngularPointSet{rimHoles: rimHoles, hubHolesA: hubHolesA, hubHolesB: hubHolesB}
+	return wheelsetLacingAngularPointSet{rimHoles: rimHoles, hubHolesA: hubHolesA, hubHolesB: hubHolesB}, nil
+}
+
+func calculateWheelsetLacingStraightPullHubHoleAngle(
+	topology Topology,
+	side Side,
+	hubHoleID int,
+	rimPointsByID map[int]WheelsetLacingAngularPoint,
+) (float64, error) {
+	var connectedRimAngles [2]float64
+	spokeCount := 0
+	for _, spoke := range topology.Spokes {
+		if spoke.Side != side || spoke.HubHoleID != hubHoleID {
+			continue
+		}
+		if spokeCount >= len(connectedRimAngles) {
+			return 0, fmt.Errorf("%w: straight-pull flange hole %s:%d connects more than two spokes", ErrInvalidTopology, side, hubHoleID)
+		}
+		rim, exists := rimPointsByID[spoke.RimHoleID]
+		if !exists {
+			return 0, fmt.Errorf("%w: straight-pull spoke %d references a missing rim point", ErrInvalidTopology, spoke.ID)
+		}
+		connectedRimAngles[spokeCount] = rim.AngleRadians
+		spokeCount++
+	}
+	if spokeCount != len(connectedRimAngles) {
+		return 0, fmt.Errorf("%w: straight-pull flange hole %s:%d must connect two spokes", ErrInvalidTopology, side, hubHoleID)
+	}
+	shortestAngleDifference := normalizeWheelsetLacingAngularDifference(connectedRimAngles[1] - connectedRimAngles[0])
+	return connectedRimAngles[0] + shortestAngleDifference/2, nil
 }
 
 func resolveWheelsetLacingG3RimHoleSpacingValues(
@@ -314,10 +382,9 @@ func resolveWheelsetLacingG3RimHoleSpacingValues(
 }
 
 // calculateWheelsetLacingTwentyOneHoleG3ParallelSpacing derives the symmetric
-// rim-hole gaps that make each mapped pair of side-A spokes share a direction.
-// It equates the rim-side and flange-side pair chord lengths at their matched
-// angular midline; the spoke mapping must preserve the corresponding endpoint
-// order for this condition to produce parallel spoke vectors.
+// rim-hole gaps that make each three-hole G3 group close around one seven-group
+// pitch. The rim-side pair chord at each group boundary equals the chord between
+// adjacent A-flange holes; spoke endpoint order remains a separate lacing rule.
 func calculateWheelsetLacingTwentyOneHoleG3ParallelSpacing(
 	rimHoleCircleRadiusMM, sideAFlangeHoleCircleRadiusMM float64,
 ) (float64, float64, float64, error) {
@@ -336,6 +403,25 @@ func calculateWheelsetLacingTwentyOneHoleG3ParallelSpacing(
 		return 0, 0, 0, fmt.Errorf("%w: automatic 21-hole G3 parallel spacing produced an invalid within-group gap", ErrInvalidRequest)
 	}
 	return withinGroupGapDegrees, withinGroupGapDegrees, closingGapDegrees, nil
+}
+
+// calculateWheelsetLacingTwentyOneHoleG3FlangeHoleCircleRadius converts the
+// user-facing center distance of the G3 drive-side hole pair to the A-flange
+// hole-circle radius. The fourteen A-flange holes are evenly spaced, so
+// adjacent holes subtend 360°/14 at the hub.
+func calculateWheelsetLacingTwentyOneHoleG3FlangeHoleCircleRadius(parallelHoleSpacingMM, rimHoleCircleRadiusMM float64) (float64, error) {
+	if !isFinitePositiveWheelsetLacingNumber(parallelHoleSpacingMM) {
+		return 0, fmt.Errorf("%w: G3 parallel-hole spacing must be finite and positive", ErrInvalidRequest)
+	}
+	if !isFinitePositiveWheelsetLacingNumber(rimHoleCircleRadiusMM) {
+		return 0, fmt.Errorf("%w: G3 parallel-hole spacing requires a positive rim-hole circle radius", ErrInvalidRequest)
+	}
+	const pairedFlangeHoleHalfAngleRadians = math.Pi / 14
+	flangeRadiusMM := parallelHoleSpacingMM / (2 * math.Sin(pairedFlangeHoleHalfAngleRadians))
+	if !isFinitePositiveWheelsetLacingNumber(flangeRadiusMM) || flangeRadiusMM < 1 || flangeRadiusMM > rimHoleCircleRadiusMM {
+		return 0, fmt.Errorf("%w: G3 parallel-hole spacing must produce an A-side flange radius smaller than the rim-hole circle radius", ErrInvalidRequest)
+	}
+	return flangeRadiusMM, nil
 }
 
 func validateWheelsetLacingG3RimHoleSpacingClosure(spacingAToB, spacingBToA, spacingAToNextGroupA float64) error {

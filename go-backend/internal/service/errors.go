@@ -15,6 +15,7 @@ var (
 	ErrPaymentNotFound                      = errors.New("payment resource not found")
 	ErrShippingNotFound                     = errors.New("shipping resource not found")
 	ErrShippingRateUnavailable              = errors.New("shipping rate is unavailable")
+	ErrTaxRateUnavailable                   = errors.New("tax rate is unavailable")
 	ErrInvalidShippingDestination           = errors.New("shipping destination is invalid")
 	ErrCountryNotSupported                  = errors.New("shipping country is not supported")
 	ErrShippingRateConfigurationInvalid     = errors.New("shipping rate configuration is invalid")

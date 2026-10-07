@@ -781,6 +781,58 @@ view reads `orders` and only writes optional after-sales evidence to
 
 ---
 
+## Admin Tax Rate Management
+
+These routes require an authenticated backoffice session with `settings:view`.
+Rule, source-configuration changes, and synchronization also require
+`settings:edit`.
+
+```http
+GET /api/admin/settings/tax-rates/rules
+POST /api/admin/settings/tax-rates/rules
+PUT /api/admin/settings/tax-rates/rules/:id
+DELETE /api/admin/settings/tax-rates/rules/:id
+GET /api/admin/settings/tax-rates/config
+PUT /api/admin/settings/tax-rates/config
+GET /api/admin/settings/tax-rates/snapshot
+POST /api/admin/settings/tax-rates/sync
+```
+
+Checkout rules are maintained separately from source snapshots. A rule uses a
+two-letter country code, optional state and postal code, a percentage from 0 to
+100, priority, and enabled state. Checkout matches exact postal code, then
+state default, then country default; within the same scope, higher priority
+wins. Deleting a rule is a soft delete. An explicit 0% rule is valid; a
+location with no matching rule cannot receive a checkout quote or create an
+order. Checkout and order creation return HTTP 422 with code
+`tax_rate_unavailable`. The database also requires an explicit rate value, so
+an omitted rate cannot become a zero-tax rule through a default.
+
+The supported provider is the fixed VATcomply VAT-rates endpoint. Its API URL
+is not administrator-editable and it does not require a key. The configuration
+controls whether scheduled collection is enabled and its refresh interval.
+Manual synchronization is rate-limited.
+
+`GET .../snapshot` returns the latest immutable source snapshot and normalized
+rate entries. The snapshot records collection time, version, SHA-256 content
+hash, country coverage, standard/reduced rates, and source product-category
+rates. VATcomply covers EU member-state VAT reference data; it does not cover
+all storefront markets or determine the legally applicable tax rate for a
+specific product.
+
+The source-configuration and snapshot endpoints only manage immutable provider
+reference data. They never import or overwrite checkout rules; rule changes
+must be managed separately in the rules tab.
+
+The admin tax-rate page also includes a region-coverage view. It compares
+enabled storefront-market countries, the latest source snapshot, and currently
+enabled checkout rules using the existing read endpoints. A matching number is
+only a discrepancy check; it is not a legal applicability or product-tax
+classification decision. See
+`tax-rate-source-snapshot-and-checkout-coverage-operations-guide.md`
+for coverage labels, current calculation scope, operational steps, and the
+long-term publication model.
+
 ## Internationalization
 
 All endpoints support multiple languages through:

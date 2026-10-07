@@ -129,6 +129,18 @@ func TestStorefrontMarketNormalizesLocaleAliases(t *testing.T) {
 	require.Equal(t, []string{"en", "fr"}, created.SupportedLocales)
 }
 
+func TestDefaultStorefrontMarketFallbackMarksBuiltInMarketsEnabled(t *testing.T) {
+	marketService := NewStorefrontMarketService(nil)
+
+	markets, err := marketService.List(false)
+
+	require.NoError(t, err)
+	require.NotEmpty(t, markets)
+	for _, market := range markets {
+		require.True(t, market.Enabled, "built-in fallback market %s should be included in active market coverage", market.Code)
+	}
+}
+
 func newStorefrontMarketTestDB(t *testing.T) *gorm.DB {
 	t.Helper()
 	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{Logger: logger.Default.LogMode(logger.Silent)})

@@ -306,6 +306,25 @@ func TestRespondCreateOrderErrorMapsUnavailableShippingRate(t *testing.T) {
 	}
 }
 
+func TestRespondCreateOrderErrorMapsUnavailableTaxRate(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	recorder := httptest.NewRecorder()
+	context, _ := gin.CreateTestContext(recorder)
+
+	respondCreateOrderError(context, fmt.Errorf("%w: country US", service.ErrTaxRateUnavailable))
+
+	if recorder.Code != http.StatusUnprocessableEntity {
+		t.Fatalf("status = %d, want %d", recorder.Code, http.StatusUnprocessableEntity)
+	}
+	var payload map[string]string
+	if err := json.Unmarshal(recorder.Body.Bytes(), &payload); err != nil {
+		t.Fatal(err)
+	}
+	if payload["code"] != "tax_rate_unavailable" {
+		t.Fatalf("code = %q, want tax_rate_unavailable", payload["code"])
+	}
+}
+
 func TestRespondCreateOrderErrorMapsConsumedCheckoutCartToConflict(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	recorder := httptest.NewRecorder()

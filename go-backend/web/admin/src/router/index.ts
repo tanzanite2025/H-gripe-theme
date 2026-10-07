@@ -418,6 +418,30 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '汇率 API', permission: 'settings:view' }
       },
       {
+        path: 'tax-rates/config',
+        name: 'TaxRateManagementConfig',
+        component: () => import('@/views/TaxRateManagement.vue'),
+        meta: { title: '税率数据源配置', permission: 'settings:view' }
+      },
+      {
+        path: 'tax-rates/snapshot',
+        name: 'TaxRateManagementSnapshot',
+        component: () => import('@/views/TaxRateManagement.vue'),
+        meta: { title: '税率快照', permission: 'settings:view' }
+      },
+      {
+        path: 'tax-rates/coverage',
+        name: 'TaxRateManagementCoverage',
+        component: () => import('@/views/TaxRateManagement.vue'),
+        meta: { title: '税率地区覆盖核对', permission: 'settings:view' }
+      },
+      {
+        path: 'tax-rates/rules',
+        name: 'TaxRateManagementRules',
+        component: () => import('@/views/TaxRateManagement.vue'),
+        meta: { title: '结算税率规则', permission: 'settings:view' }
+      },
+      {
         path: 'payment-risk/overview',
         name: 'RiskStrategyOverview',
         component: () => import('@/views/RiskStrategy.vue'),

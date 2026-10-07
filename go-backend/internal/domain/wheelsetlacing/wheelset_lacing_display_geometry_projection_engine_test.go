@@ -60,6 +60,59 @@ func TestCalculateWheelsetLacingDisplayGeometryProjectionKeepsSpecialTopologyMap
 	}
 }
 
+func TestCalculateWheelsetLacingDisplayGeometryProjectionSharesStraightPullAnchorsAcrossPatterns(t *testing.T) {
+	catalog := NewDefaultCatalog()
+	topologyIDs := []string{
+		"16h-symmetric-1to1-0x-straight-pull",
+		"24h-symmetric-1to1-2x-straight-pull",
+		"24h-uniform-2to1-straight-pull",
+		"18h-uniform-2to1-straight-pull",
+	}
+	for _, topologyID := range topologyIDs {
+		t.Run(topologyID, func(t *testing.T) {
+			topology, err := catalog.Get(topologyID)
+			if err != nil {
+				t.Fatal(err)
+			}
+			result, err := CalculateWheelsetLacingDisplayGeometryProjection(DisplayGeometryProjectionRequest{
+				TopologyID: topologyID, RimRadius: 232, FlangeRadiusA: 66, FlangeRadiusB: 54,
+				FlangeOffsetAMM: 20, FlangeOffsetBMM: 35,
+			}, topology)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if topology.SpokeHeadStyle != SpokeHeadStyleStraightPull || result.StraightPullProjection == nil {
+				t.Fatalf("topology %q must return straight-pull flange projections", topologyID)
+			}
+			spokesBySharedHubHole := make(map[string][]DisplayGeometrySpoke)
+			for _, spoke := range result.Spokes {
+				key := displayGeometryHubKey(spoke.Side, spoke.Hub.ID)
+				spokesBySharedHubHole[key] = append(spokesBySharedHubHole[key], spoke)
+			}
+			for key, pairedSpokes := range spokesBySharedHubHole {
+				if len(pairedSpokes) != 2 {
+					t.Fatalf("straight-pull hub hole %s has %d spokes, want 2", key, len(pairedSpokes))
+				}
+				firstSpoke := pairedSpokes[0]
+				secondSpoke := pairedSpokes[1]
+				if firstSpoke.Hub.X != secondSpoke.Hub.X || firstSpoke.Hub.Y != secondSpoke.Hub.Y {
+					t.Fatalf("straight-pull hub hole %s does not share one anchor: %+v / %+v", key, firstSpoke.Hub, secondSpoke.Hub)
+				}
+				hubRadius := math.Hypot(firstSpoke.Hub.X, firstSpoke.Hub.Y)
+				firstVectorX := firstSpoke.Rim.X - firstSpoke.Hub.X
+				firstVectorY := firstSpoke.Rim.Y - firstSpoke.Hub.Y
+				secondVectorX := secondSpoke.Rim.X - secondSpoke.Hub.X
+				secondVectorY := secondSpoke.Rim.Y - secondSpoke.Hub.Y
+				firstTangentialComponent := (-firstSpoke.Hub.Y*firstVectorX + firstSpoke.Hub.X*firstVectorY) / hubRadius
+				secondTangentialComponent := (-secondSpoke.Hub.Y*secondVectorX + secondSpoke.Hub.X*secondVectorY) / hubRadius
+				if firstTangentialComponent*secondTangentialComponent >= 0 {
+					t.Fatalf("straight-pull spokes from hole %s do not extend in opposite tangential directions: %.4f / %.4f", key, firstTangentialComponent, secondTangentialComponent)
+				}
+			}
+		})
+	}
+}
+
 func TestCalculateWheelsetLacingDisplayGeometryProjectionUsesIndependentUniform18HGeometry(t *testing.T) {
 	topology, err := NewDefaultCatalog().Get("18h-uniform-2to1")
 	if err != nil {
@@ -127,10 +180,60 @@ func TestCalculateWheelsetLacingDisplayGeometryProjectionUsesG3DefaultsWhenSpaci
 	}
 }
 
-func TestCalculateWheelsetLacingDisplayGeometryProjectionMakesEachG3DriveSpokePairParallel(t *testing.T) {
+func TestCalculateWheelsetLacingDisplayGeometryProjectionDerivesG3FlangeSizeFromParallelHoleSpacing(t *testing.T) {
 	topology, err := NewDefaultCatalog().Get("21h-g3-2to1")
 	if err != nil {
 		t.Fatal(err)
+	}
+	const parallelHoleSpacingMM = 40.0
+	result, err := CalculateWheelsetLacingDisplayGeometryProjection(DisplayGeometryProjectionRequest{
+		TopologyID: "21h-g3-2to1", RimRadius: 232, FlangeRadiusA: 66, FlangeRadiusB: 54,
+		FlangeOffsetAMM: 20, FlangeOffsetBMM: 35, G3ParallelHoleSpacingMM: parallelHoleSpacingMM,
+	}, topology)
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantFlangeRadius, err := calculateWheelsetLacingTwentyOneHoleG3FlangeHoleCircleRadius(parallelHoleSpacingMM, 232)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if math.Abs(result.G3GroupSpacing.ParallelHoleSpacingMM-parallelHoleSpacingMM) > 0.01 {
+		t.Fatalf("parallel hole spacing = %.2f mm, want %.2f mm", result.G3GroupSpacing.ParallelHoleSpacingMM, parallelHoleSpacingMM)
+	}
+	if math.Abs(result.G3GroupSpacing.SideAFlangeHoleCircleRadiusMM-wantFlangeRadius) > 0.01 {
+		t.Fatalf("derived A-side flange hole-circle radius = %.2f mm, want %.2f mm", result.G3GroupSpacing.SideAFlangeHoleCircleRadiusMM, wantFlangeRadius)
+	}
+	if math.Abs(result.G3GroupSpacing.SideAFlangePCDMM-2*wantFlangeRadius) > 0.01 {
+		t.Fatalf("derived A-side flange PCD = %.2f mm, want %.2f mm", result.G3GroupSpacing.SideAFlangePCDMM, 2*wantFlangeRadius)
+	}
+	if math.Abs(math.Hypot(result.HubHolesA[0].X, result.HubHolesA[0].Y)-wantFlangeRadius) > 0.02 {
+		t.Fatalf("projected A-side hub hole radius does not match calculated flange radius %.2f mm", wantFlangeRadius)
+	}
+	rimPointsByID := make(map[int]DisplayGeometryPoint, len(result.RimHoles))
+	for _, point := range result.RimHoles {
+		rimPointsByID[point.ID] = point
+	}
+	for group := 0; group < WheelsetLacingTwentyOneHoleG3GroupCount; group++ {
+		firstFlangeHole := result.HubHolesA[group*2]
+		secondFlangeHole := result.HubHolesA[group*2+1]
+		nextGroup := (group + 1) % WheelsetLacingTwentyOneHoleG3GroupCount
+		firstRimHole := rimPointsByID[group*3+2]
+		secondRimHole := rimPointsByID[nextGroup*3]
+		flangeHoleSpacing := math.Hypot(secondFlangeHole.X-firstFlangeHole.X, secondFlangeHole.Y-firstFlangeHole.Y)
+		rimHoleSpacing := math.Hypot(secondRimHole.X-firstRimHole.X, secondRimHole.Y-firstRimHole.Y)
+		if math.Abs(flangeHoleSpacing-parallelHoleSpacingMM) > 0.03 || math.Abs(rimHoleSpacing-parallelHoleSpacingMM) > 0.03 {
+			t.Fatalf("G3 group %d hole-center spacing: flange=%.3f rim=%.3f, want both %.3f mm", group, flangeHoleSpacing, rimHoleSpacing, parallelHoleSpacingMM)
+		}
+	}
+}
+
+func TestCalculateWheelsetLacingDisplayGeometryProjectionKeepsG3DrivePairsParallelForStraightPull(t *testing.T) {
+	topology, err := NewDefaultCatalog().Get("21h-g3-2to1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if topology.SpokeHeadStyle != SpokeHeadStyleStraightPull {
+		t.Fatalf("G3 spoke head style = %q, want %q", topology.SpokeHeadStyle, SpokeHeadStyleStraightPull)
 	}
 	result, err := CalculateWheelsetLacingDisplayGeometryProjection(DisplayGeometryProjectionRequest{
 		TopologyID: "21h-g3-2to1", RimRadius: 232, FlangeRadiusA: 66, FlangeRadiusB: 54,
@@ -142,12 +245,33 @@ func TestCalculateWheelsetLacingDisplayGeometryProjectionMakesEachG3DriveSpokePa
 	for group := 0; group < WheelsetLacingTwentyOneHoleG3GroupCount; group++ {
 		firstSpoke := result.Spokes[WheelsetLacingTwentyOneHoleG3GroupCount+group*2]
 		secondSpoke := result.Spokes[WheelsetLacingTwentyOneHoleG3GroupCount+group*2+1]
+		if firstSpoke.Type != SpokeTypeTrailing || secondSpoke.Type != SpokeTypeLeading {
+			t.Fatalf("G3 group %d spoke heads = %q/%q, want paired straight-pull anchor assignments", group, firstSpoke.Type, secondSpoke.Type)
+		}
 		firstVectorX := firstSpoke.Rim.X - firstSpoke.Hub.X
 		firstVectorY := firstSpoke.Rim.Y - firstSpoke.Hub.Y
 		secondVectorX := secondSpoke.Rim.X - secondSpoke.Hub.X
 		secondVectorY := secondSpoke.Rim.Y - secondSpoke.Hub.Y
 		if math.Abs(firstVectorX-secondVectorX) > 0.03 || math.Abs(firstVectorY-secondVectorY) > 0.03 {
-			t.Fatalf("G3 drive spoke pair %d vectors differ: first=(%.4f, %.4f), second=(%.4f, %.4f)", group, firstVectorX, firstVectorY, secondVectorX, secondVectorY)
+			t.Fatalf("G3 straight-pull drive pair %d is not parallel: first=(%.4f, %.4f), second=(%.4f, %.4f)", group, firstVectorX, firstVectorY, secondVectorX, secondVectorY)
+		}
+	}
+	if result.StraightPullProjection == nil {
+		t.Fatal("G3 must return the dedicated straight-pull flange projection")
+	}
+	projection := result.StraightPullProjection
+	if projection.FlangeCenterA.X <= 0 || projection.FlangeCenterB.X >= 0 {
+		t.Fatalf("straight-pull flange centers must extend to opposite axial sides: A=%+v B=%+v", projection.FlangeCenterA, projection.FlangeCenterB)
+	}
+	for group := 0; group < WheelsetLacingTwentyOneHoleG3GroupCount; group++ {
+		firstSpoke := projection.Spokes[WheelsetLacingTwentyOneHoleG3GroupCount+group*2]
+		secondSpoke := projection.Spokes[WheelsetLacingTwentyOneHoleG3GroupCount+group*2+1]
+		firstVectorX := firstSpoke.Rim.X - firstSpoke.Hub.X
+		firstVectorY := firstSpoke.Rim.Y - firstSpoke.Hub.Y
+		secondVectorX := secondSpoke.Rim.X - secondSpoke.Hub.X
+		secondVectorY := secondSpoke.Rim.Y - secondSpoke.Hub.Y
+		if math.Abs(firstVectorX-secondVectorX) > 0.03 || math.Abs(firstVectorY-secondVectorY) > 0.03 {
+			t.Fatalf("G3 straight-pull projected drive pair %d is not parallel: first=(%.4f, %.4f), second=(%.4f, %.4f)", group, firstVectorX, firstVectorY, secondVectorX, secondVectorY)
 		}
 	}
 }

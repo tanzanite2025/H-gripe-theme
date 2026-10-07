@@ -129,10 +129,13 @@
 </template>
 
 <script setup lang="ts">
-import { useLocalePath } from '#imports'
+import { computed } from 'vue'
+import { useHead, useLocalePath } from '#imports'
 import FaqAnswerContent from '~/components/FaqAnswerContent.vue'
 import DesktopFaqMasterDetail from '~/components/faq/DesktopFaqMasterDetail.vue'
 import { usePageFaq } from '~/composables/usePageFaq'
+import { useStorefrontSeoLinks } from '~/composables/seo/useStorefrontSeoLinks'
+import { createSeoJsonLdScript, createFaqPageJsonLd } from '~/utils/seo/jsonLd'
 import type { PageFaqProps } from '../data/faq/types'
 
 const props = withDefaults(defineProps<PageFaqProps>(), {
@@ -140,8 +143,9 @@ const props = withDefaults(defineProps<PageFaqProps>(), {
   showViewAllLink: false,
 })
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const localePath = useLocalePath()
+const { canonicalUrl } = useStorefrontSeoLinks()
 const {
   faqData,
   displayTitle,
@@ -150,6 +154,17 @@ const {
   toggleItem,
   hasMoreItems,
 } = await usePageFaq(props)
+
+const pageFaqJsonLd = computed(() => createFaqPageJsonLd({
+  canonicalUrl: canonicalUrl.value,
+  pageId: props.pageId,
+  inLanguage: locale.value === 'zh_cn' ? 'zh-CN' : locale.value,
+  visibleQuestionsAndAnswers: displayItems.value,
+}))
+
+useHead(() => ({
+  script: pageFaqJsonLd.value ? [createSeoJsonLdScript(pageFaqJsonLd.value)] : [],
+}))
 
 const answerId = (itemId: string) => (
   `page-faq-answer-${itemId.replace(/[^a-zA-Z0-9_-]/g, '-')}`

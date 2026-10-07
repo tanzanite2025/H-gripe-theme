@@ -26,6 +26,7 @@ import (
 	refundcancellationdomain "commerce-platform/internal/domain/refundcancellation"
 	"commerce-platform/internal/domain/setting"
 	shippingdomain "commerce-platform/internal/domain/shipping"
+	taxratedomain "commerce-platform/internal/domain/taxrate"
 	attributionpkg "commerce-platform/internal/pkg/attribution"
 	"commerce-platform/internal/pkg/cache"
 	"commerce-platform/internal/pkg/config"
@@ -2093,7 +2094,7 @@ func newTestOrderService(t *testing.T) (*gorm.DB, *OrderService) {
 		&loyalty.MemberLevel{},
 		&setting.Setting{},
 		&paymentdomain.Transaction{},
-		&paymentdomain.TaxRate{},
+		&taxratedomain.TaxRate{},
 		&paymentdomain.StripeDispute{},
 		&paymentdomain.PayPalDispute{},
 		&paymentdomain.PaymentReview{},
@@ -2109,6 +2110,17 @@ func newTestOrderService(t *testing.T) (*gorm.DB, *OrderService) {
 		&shippingdomain.PackagingRule{},
 		&shippingdomain.PackagingRuleApply{},
 	))
+	// Order-service tests use testAddress (US/CA) as their baseline. Keep that
+	// fixture explicit: a zero tax rate is valid only when a rule is configured,
+	// so these tests never depend on the production fallback that used to treat
+	// a missing rule as zero tax.
+	require.NoError(t, db.Create(&taxratedomain.TaxRate{
+		Name:        "Test California zero tax",
+		Country:     "US",
+		State:       "CA",
+		RateDecimal: "0",
+		Enabled:     true,
+	}).Error)
 
 	orderRepo := repository.NewOrderRepository(db)
 	productRepo := repository.NewProductRepository(db)
@@ -2118,7 +2130,8 @@ func newTestOrderService(t *testing.T) (*gorm.DB, *OrderService) {
 	shippingRepo := repository.NewShippingRepository(db)
 	shippingService := NewShippingService(shippingRepo, productRepo)
 	seedDefaultShippingTemplate(t, db)
-	checkoutService := NewCheckoutService(productRepo, couponRepo, paymentRepo, loyaltyRepo, shippingService)
+	taxRateService := NewTaxRateService(repository.NewTaxRateRepository(db))
+	checkoutService := NewCheckoutService(productRepo, couponRepo, taxRateService, loyaltyRepo, shippingService)
 	txManager := repository.NewTxManager(db, orderRepo, productRepo, couponRepo, loyaltyRepo, paymentRepo, shippingRepo)
 	txManager.ConfigureCartRepository(repository.NewCartRepository(db))
 	txManager.ConfigureOrderIdempotencyRepository(repository.NewOrderIdempotencyRepository(db))
