@@ -1,16 +1,16 @@
 # 🛠️ 独立工程工具体系 (/tools) 全景架构与迁移实施规范
 ## Architecture & Migration Specification for Engineering Tools Suite
 
-> **文档版本**: `v1.0-Engineering`
+> **文档版本**: `v1.1-Engineering`
 > **文档位置**: `docs/design/tools-category-architecture-and-engineering-suite-specification.md`
-> **适用范围**: 针对现有代码库中已实现的所有计算器、适配器、选型矩阵及仿真看板的**目录拆解、路由独立化与导航重组**。
+> **适用范围**: 针对现有代码库中已实现的所有计算器、适配器、选型矩阵及仿真看板，判定其是否需要**目录拆解、路由独立化或仅保留混合页面**，并规范后续导航重组。
 >
 > 🛑 **【最高核心原则：算法零改动，纯架构重组】**
 > **本项目所有核心力学模型、材料物性参数、物理计算引擎与状态机逻辑已在代码库中 100% 完整实现且实机验证正确。**
 > **本文档严禁编写、推导或重新设计任何数学公式与物理算法，绝不增加任何额外计算需求，杜绝技术跑偏！**
-> **本文档唯一目标是：全面盘点现有分散在 `/guides` 中的各块工具资产，规范如何将其解耦平移至独立的顶级分类 `/tools`，理清路由、菜单、面包屑与迁移映射，确保平稳落地、不落下一块。**
+> **本文档唯一目标是：全面盘点现有分散在 `/guides` 中的各块工具资产，先依据搜索意图、页面主任务、内容独立性与重复风险判定是否需要拆分，再为确认独立的工具规划 `/tools` 路由，理清路由、菜单、面包屑与迁移映射，确保平稳落地、不落下一块。一个页面可以同时承载图文和计算器；只有拆分后能形成两个各自完整且有独立搜索意图的页面，才建立两个可索引 URL。**
 
-> **路由核对口径**：下文“现有访问路径”以 `nuxt-i18n/public/storefront-route-manifest.json` 与页面 `definePageMeta` 的实际结果为准。`?tab=...` 只是兼容性查询参数，不作为独立规范路由。迁移前必须确认页面是纯工具还是图文混合页面；混合页面不得直接整页 301。
+> **路由核对口径**：下文“现有访问路径”以 `nuxt-i18n/public/storefront-route-manifest.json` 与页面 `definePageMeta` 的实际结果为准。`?tab=...` 只是兼容性查询参数，不作为独立规范路由。`/tools` 与 `/guides` 是信息架构标签，不是要求页面只能包含交互或只能包含静态内容。迁移前必须确认页面的主任务、独立内容价值和重复风险；混合页面不得因为计划建立工具页就直接整页 301。
 
 ---
 
@@ -33,16 +33,53 @@
 目前项目里的各个计算器和工程工具**在算法与功能层面已经做得非常扎实、完全正确**。然而在**信息架构（Information Architecture）**上，这些工具大多被塞在 `/guides`（指南）的深层 Tab、子目录或折叠面板中：
 
 1. **用户找工具路径过长**：用户想算气门嘴或辐条长度，必须先打开指南文章，再在一堆科普图文中找“计算器”Tab 切换，操作链路繁琐；
-2. **SEO/GEO 意图错配**：AI 爬虫（ChatGPT, Perplexity）与搜索引擎对“工具（Tool/Calculator）”和“文章（Guide/Article）”分配不同的权重。把成熟工具作为子 Tab 折叠隐藏在文章里，导致工具在搜索结果中无法作为独立的 Web 应用被直接推荐；
+2. **SEO/GEO 意图表达不清**：搜索引擎和检索系统不会仅凭 `/tools` 或 `/guides` 路径给页面固定加权，主要还是根据可抓取内容、查询意图匹配、页面质量、内部链接和用户任务完成度判断相关性。把一个本可独立完成任务的工具深藏在文章 Tab 中，可能让用户和系统都更难识别其主任务；但如果图文和计算器本来服务同一意图，机械拆分反而会制造近重复页面；
 3. **页面复杂度过高**：一个指南页面既要加载长图文，又要加载复杂的计算组件，导致单个页面体积臃肿、维护困难。
 
-**解决方案**：将既有的工具组件抽离为独立的顶级 `/tools` 页面，原指南页面仅保留清晰的卡片导流，既让工具简单纯粹、一触即达，又让指南保持清晰轻量。
+**解决方向**：把真正以计算、查表或参数匹配为主任务，且可以脱离指南独立完成任务的页面放入 `/tools`；对同时承担原理说明、测量步骤、目录说明和交互计算的页面，先保留一个完整的混合页面。需要时可以复用同一计算组件，并在指南中放置工具入口，但不复制两份完整正文或完整交互。这样既能缩短工具任务的到达路径，也不会因机械拆分造成近重复页面、上下文断裂或权重分散。
+
+### 1. 拆分决策先于路由设计
+
+“有计算器”只能说明页面包含一个交互能力，不能单独证明需要建立 `/tools/*` 页面。每个资产在开始迁移前必须按以下顺序判断：
+
+| 判断维度 | 需要回答的问题 | 对路由的影响 |
+| :--- | :--- | :--- |
+| 搜索意图 | 用户是在寻找一个数值/兼容结果，还是在学习原理、测量方法或选型背景？ | 两种意图清晰分离，才有建立两个 URL 的理由；意图相同则保留一个主 URL。 |
+| 页面主任务 | 首屏和主要操作是输入参数、查表并得到结果，还是阅读、比较和理解？ | 计算/查表为主且任务可独立完成，可进入 `/tools`；阅读为主时保留 `/guides`，即使页面带有计算器。 |
+| 内容独立性 | 拆出的工具页和指南页能否各自写出独立标题、说明、使用边界和验收标准？ | 不能独立成页时不拆；可以独立成页时才分别建立 canonical。 |
+| 重复风险 | 两个页面是否会复制相同正文、相同结果说明和相同交互？ | 近重复时只保留一个可索引 URL；组件、composable 或 API 可以复用，页面内容不能整页复制。 |
+| 现有收录与链接 | 旧 URL 当前承载的内容和外部链接是否仍与目标页等价？ | 只有内容和意图基本等价才允许 301；混合旧页不能为了目录整齐而整页重定向。 |
+
+根据判断结果只能选择以下三种动作之一：
+
+1. **保留混合页**：图文和计算器服务同一个任务，保留一个 URL 和一个 canonical；可以优化首屏、折叠区和工具入口。
+2. **建立工具页与指南页两页**：两者面向不同查询意图，各有独立内容和验收标准；共享底层计算能力，但不复制完整正文和完整交互。
+3. **整体迁移为工具页**：页面本来就是可独立完成的计算/查表应用，必要的简介、数据来源和使用限制仍保留在工具页；旧 URL 仅在新旧页面等价且验收通过后 301。
+
+如果当前页面没有真实可用的交互或查表能力，只能先作为指南/参考页，不得为了填充 `/tools` 目录创建一个名义上的工具页。
+
+### 2. 本轮评估的决策基线
+
+以下结论是本规范后续实施的默认边界，除非新的页面证据、搜索数据或验收结果明确改变它们，否则后续任务不得把“暂不拆分”重新写回“强制抽离”：
+
+| 资产 | 当前决策 | 允许的下一步 |
+| :--- | :--- | :--- |
+| 内胎气门嘴匹配 | 指南上下文 + 独立工具页并存 | 先建立工具页和导流卡片；父级指南保留，不整页 301。 |
+| 胎压 | 保留图文 + 计算器混合页 | 先优化现有组合页；只有验证独立搜索意图后才评估第二个 URL。 |
+| Schwalbe 选型器 | 整体迁移为工具页候选 | 保留必要介绍和目录说明；新旧页等价验收后再 301。 |
+| 车架间隙 | 保留指南/参考页 | 当前不创建不存在的计算器页面。 |
+| 辐条长度 | 独立工具优先 | 迁移五步向导并做输入/输出回归。 |
+| 品牌轮组辐条规格 | 整体查表工具候选 | 保留数据来源和使用说明；等价验收后再 301。 |
+| 轮组编法拓扑 | 暂保留混合页 | 先验证仿真任务能否脱离工程正文独立成页。 |
+| 不锈钢辐条位错 | 暂保留混合页 | 先验证计算意图与材料力学学习意图是否稳定分离。 |
+
+该表是迁移清单的约束来源。任何新增 `/tools/*` 路由、工具大厅卡片或 301 规则，都必须先在本表或对应资产表中更新决策，再进入开发任务。
 
 ---
 
 ## 二、 “工具 (Tools) + 指南 (Guides)”双飞轮架构
 
-将工具独立后，工具与指南不是非此即彼，而是形成清晰的“双飞轮”分工：
+工具页与指南页不是必须二选一，也不是每个计算器都要拆出第二个 URL。对确认存在两种独立搜索意图的资产，工具与指南形成清晰的“双飞轮”分工；对意图相同的资产，保留一个完整混合页面：
 
 ```
                     ┌────────────────────────────────────────────────────────┐
@@ -52,9 +89,9 @@
              ┌──────────────────────────────────┴──────────────────────────────────┐
              ▼                                                                     ▼
    【 /tools (独立工程工具中心) 】                                       【 /guides (技术指南与白皮书) 】
-   • 页面形态：纯粹的工具交互、参数输入、结果与工单导出                  • 页面形态：原理深度解析、结构科普、图文指南
+   • 页面形态：以工具交互、参数输入、查表和结果为主，保留必要说明       • 页面形态：以原理解析、测量步骤、结构科普和图文指南为主
    • 核心心智：解决“具体参数怎么选？数值是多少？”                        • 核心心智：解决“原理是什么？为什么这样选？”
-   • 内部代码：直接复用现有的成熟计算组件与逻辑                          • 内部代码：纯图文静态内容，移除内嵌的重型计算组件
+   • 内部代码：直接复用现有的成熟计算组件与逻辑；必要时保留上下文说明   • 内部代码：按页面主任务决定是否保留交互，不因目录分类强制移除
              │                                                                     │
              └──────────────────────► [ 双向上下文锚点高频引流 ] ◄─────────────────┘
                • 工具页面底部："深入了解此方案的工程原理解析 ➔ 查看对应指南"
@@ -71,10 +108,10 @@
 
 | 序号 | 工具名称 | 代码库现有文件位置 | 现有访问路径 | 目标独立路由 | 迁移方案说明 |
 | :---: | :--- | :--- | :--- | :--- | :--- |
-| **1** | **车圈框高与气门嘴/延长嘴穿透匹配器** | `app/components/tireguides/InnerTubeValveLengthAndExtenderFitmentGuide.vue`<br>`app/composables/useInnerTubeValveFitmentCalculator.ts` | `/guides/tireguides/choose-inner-tube`（兼容 `/guides/tireguides?tab=choose-inner-tube`） | `/tools/valve-length-fitment-calculator` | **重点抽离**：将其从 `InnerTubeGuide.vue` 中拆出，包装为独立的工具页面；原内胎指南中用大卡片引导跳转。现有算法与后端接口 100% 直接复用。 |
-| **2** | **动态前后轮智能胎压与滚阻计算器** | `app/pages/guides/tire-pressure.vue`<br>`app/components/tireguides/tirepressure/*` | `/guides/tireguides/tire-pressure` | `/tools/dynamic-tire-pressure-calculator` | **平移归类**：已是独立页面，直接平移至 `pages/tools/` 目录；原路径配置 301 重定向。 |
-| **3** | **Schwalbe 官方外胎选型与周长适配器** | `app/pages/guides/schwalbe-tire-selector.vue`<br>`app/components/tireguides/schwalbe/*` | `/guides/tireguides/schwalbe-tire-selector` | `/tools/schwalbe-tire-selector` | **平移归类**：已是成熟独立页面，平移至 `pages/tools/` 目录；原路径配置 301 重定向。 |
-| **4** | **外胎实测膨胀率与车架安全间隙校验器** | `app/components/tireguides/TireFrameClearanceGuide.vue` | `/guides/tireguides/tire-frame-clearance` | `/tools/tire-frame-clearance-checker` | **独立化**：现有组件封装成独立页面，原 Guides 保留科普说明与跳转链接；父级指南不做整页 301。 |
+| **1** | **车圈框高与气门嘴/延长嘴穿透匹配器** | `app/components/tireguides/InnerTubeValveLengthAndExtenderFitmentGuide.vue`<br>`app/composables/useInnerTubeValveFitmentCalculator.ts` | `/guides/tireguides/choose-inner-tube`（兼容 `/guides/tireguides?tab=choose-inner-tube`） | `/tools/valve-length-fitment-calculator` | **混合页配套工具**：指南仍保留内胎选型上下文和精简入口；另建完整工具页供“直接计算”意图使用。共享现有算法与后端接口，不对父级指南整页 301。 |
+| **2** | **动态前后轮智能胎压与滚阻计算器** | `app/pages/guides/tire-pressure.vue`<br>`app/components/tireguides/tirepressure/*` | `/guides/tireguides/tire-pressure` | **暂不新建**（候选：`/tools/dynamic-tire-pressure-calculator`） | **保留混合页**：当前页面同时有 `calculator` 与 `details` Tab，图文和计算器共同完成任务。先保留一个 canonical，不为了目录整齐平移或 301；只有后续验证出独立工具意图和独立内容价值，才建立第二个 URL。 |
+| **3** | **Schwalbe 官方外胎选型与周长适配器** | `app/pages/guides/schwalbe-tire-selector.vue`<br>`app/components/tireguides/schwalbe/*` | `/guides/tireguides/schwalbe-tire-selector` | `/tools/schwalbe-tire-selector` | **整体工具迁移候选**：页面已有介绍、搜索、筛选和目录结果，可整体作为工具页；保留完成选型所需的介绍与数据说明。新旧页面内容和意图验收等价后，才配置 301。 |
+| **4** | **外胎实测膨胀率与车架安全间隙校验器** | `app/components/tireguides/TireFrameClearanceGuide.vue` | `/guides/tireguides/tire-frame-clearance` | **暂不新建**（候选：`/tools/tire-frame-clearance-checker`） | **先保留参考指南**：当前主要是测量说明、参考表和图片，未确认存在独立交互计算器。不得为了匹配工具目录创建不存在的计算页；若以后补齐真实计算能力，再按拆分判定表评估。 |
 | **5** | **Hookless 车圈与轮胎物理安全校验器** | 关联已有 Hookless 适配契约与数据模型 | 规划中（当前仓库未发现独立页面） | `/tools/hookless-compatibility-checker` | **保留规划项**：在出现可迁移页面和验收用例前，不加入可点击工具入口、不加入 sitemap，也不配置 301。 |
 
 ---
@@ -83,10 +120,10 @@
 
 | 序号 | 工具名称 | 代码库现有文件位置 | 现有访问路径 | 目标独立路由 | 迁移方案说明 |
 | :---: | :--- | :--- | :--- | :--- | :--- |
-| **6** | **多步向导式辐条长度精密计算器** | `app/pages/guides/spokeguides/spoke-length-calculator.vue`<br>`app/components/Spoke*.vue` (向导 5 步)<br>`app/composables/useSpokeCalculator*.ts` | `/guides/spokeguides/spoke-length-calculator` | `/tools/spoke-length-calculator` | **核心平移**：现有 5 步向导（头型、车圈几何、PCD、物理修正、条帽）与计算结果已完全实现且验证正确。平移至 `pages/tools/`，不修改内部向导与计算代码，仅对齐顶部导航与布局。 |
-| **7** | **高端大牌轮组官方出厂辐条规格速查** | `app/pages/guides/spokeguides/brand-wheelset-spoke-specs.vue`<br>`app/data/brand-wheelset-spoke-specs/*` | `/guides/spokeguides/brand-wheelset-spoke-specs` | `/tools/brand-wheelset-spoke-specs` | **平移归类**：已包含 DT Swiss、Enve、Shimano、Zipp 等原厂数据，直接平移至 `pages/tools/`；原路径配置 301 重定向。 |
-| **8** | **轮组编法拓扑与法兰干涉仿真器** | `app/pages/guides/wheelset-spoke-lacing-topology-and-geometry-reference.vue` | `/guides/wheelset-buyers/wheelset-spoke-lacing-topology-and-geometry-reference` | `/tools/spoke-lacing-topology-simulator` | **工具表面抽取**：当前页面同时包含指南正文和仿真器；迁移交互工具后保留指南 URL，只有另建独立指南 canonical 后才评估整页 301。 |
-| **9** | **不锈钢辐条微观位错力学评估器** | `app/pages/guides/spokeguides/stainless-steel-microstructural-dislocation-mechanics.vue`<br>`app/composables/useStainlessSteelSpokeDislocationMechanicsCalculation.ts` | `/guides/spokeguides/stainless-steel-microstructural-dislocation-mechanics` | `/tools/spoke-stress-relief-mechanics` | **工具表面抽取**：当前页面同时包含原理正文和计算器；只抽取计算器交互，保留指南 URL，不直接整页 301。 |
+| **6** | **多步向导式辐条长度精密计算器** | `app/pages/guides/spokeguides/spoke-length-calculator.vue`<br>`app/components/Spoke*.vue` (向导 5 步)<br>`app/composables/useSpokeCalculator*.ts` | `/guides/spokeguides/spoke-length-calculator` | `/tools/spoke-length-calculator` | **优先独立工具**：五步向导、参数输入和结果面板构成完整计算任务。平移至 `pages/tools/` 时保持向导和计算代码原样复用；新页验收通过后，旧页才可按等价性配置 301。 |
+| **7** | **高端大牌轮组官方出厂辐条规格速查** | `app/pages/guides/spokeguides/brand-wheelset-spoke-specs.vue`<br>`app/data/brand-wheelset-spoke-specs/*` | `/guides/spokeguides/brand-wheelset-spoke-specs` | `/tools/brand-wheelset-spoke-specs` | **整体查表工具迁移候选**：品牌筛选、搜索、分页和规格矩阵本身构成独立查表任务；保留必要的数据来源与使用说明，不另造重复指南。新旧页面等价后再配置 301。 |
+| **8** | **轮组编法拓扑与法兰干涉仿真器** | `app/pages/guides/wheelset-spoke-lacing-topology-and-geometry-reference.vue` | `/guides/wheelset-buyers/wheelset-spoke-lacing-topology-and-geometry-reference` | **暂保留混合页**（候选：`/tools/spoke-lacing-topology-simulator`） | **先保留一个主页面**：当前是复杂 SVG/几何工作台，同时承担工程说明和交互仿真。只有仿真任务能脱离正文形成独立标题、帮助内容和验收标准时，才另建工具页；在此之前不抽走交互、不复制页面。 |
+| **9** | **不锈钢辐条微观位错力学评估器** | `app/pages/guides/spokeguides/stainless-steel-microstructural-dislocation-mechanics.vue`<br>`app/composables/useStainlessSteelSpokeDislocationMechanicsCalculation.ts` | `/guides/spokeguides/stainless-steel-microstructural-dislocation-mechanics` | **暂保留混合页**（候选：`/tools/spoke-stress-relief-mechanics`） | **先保留一个主页面**：材料力学说明和计算器共同解释结果，当前不证明拆成两个 URL 会增加独立价值。后续若验证“直接计算”与“学习原理”是稳定分离的查询意图，再共享计算能力建立工具页。 |
 | **10** | **车圈气压径向压缩与张力暴跌预测器** | 关联现有力学看板规范与工程数据 | 规划中（当前仓库未发现独立页面） | `/tools/rim-compression-tension-drop-predictor` | **保留规划项**：未有页面、数据契约和回归用例前，不加入可点击工具入口、不加入 sitemap。 |
 
 ---
@@ -101,7 +138,7 @@
 
 ## 四、 导航体系与菜单布局改造方案
 
-为了让用户和搜索引擎能清晰感知到全新的工程工具体系，前台导航必须进行轻量而明确的调整：
+为了让用户能快速找到已经确认适合独立使用的工程工具，前台导航可以进行轻量而明确的调整。导航分类用于发现和组织内容，不代表每个列出的资产都必须拥有独立工具 URL：混合页应明确标记并链接到其真实主页面。
 
 ### 1. 顶部 Header 导航栏与移动端 Drawer 抽屉
 * **主导航栏新增顶级项**：
@@ -111,8 +148,8 @@
   ```
 * **下拉菜单（Mega Menu / Dropdown）三列布局**：
   点击/悬浮 `TOOLS` 展开清晰的分类菜单：
-  * **第一列：轮胎与气门系统**（气门嘴/延长嘴匹配、动态胎压计算、Schwalbe 外胎选型、外胎间隙校验；其中已实现项可直接启动）
-  * **第二列：轮组与辐条工程**（辐条长度计算器、大牌出厂辐条速查、轮组编法拓扑仿真、微观位错力学）
+  * **第一列：轮胎与气门系统**（气门嘴/延长嘴匹配、胎压组合页、Schwalbe 外胎选型、车架间隙参考；只有已确认独立的页面提供工具启动链接）
+  * **第二列：轮组与辐条工程**（辐条长度计算器、大牌出厂辐条速查、轮组编法拓扑与微观位错混合页；混合页链接到其主页面）
   * **第三列：传动与通用系统**（塔基飞轮兼容求解器、Hookless 安全校验器；规划项显示为置灰状态，不提供启动链接）
 
 ### 2. `/tools` 大厅入口页面 (Tools Hub / Dashboard)
@@ -120,8 +157,8 @@
 * **页面形态**: 工业仪表盘风格的工具导航大厅；
 * **内容构成**:
   * 顶部：清晰的工具集介绍与快速搜索框；
-  * 主体：按 3 大板块陈列 8 个当前已有实现的工具；另外 3 个规划项可以用明确的“规划中”状态卡展示，但不得提供【启动工具 ➔】按钮、可索引工具页或虚假计算结果；
-  * 无多余长篇图文，保持纯粹的工具导航索引属性。
+  * 主体：按 3 大板块陈列已确认可用的独立工具，并以“混合指南”或“参考页”标识暂不拆分的资产；另外 3 个规划项可以用明确的“规划中”状态卡展示，但不得提供【启动工具 ➔】按钮、可索引工具页或虚假计算结果；
+  * 工具大厅以导航和任务选择为主，可保留完成选择所需的简短说明；不得为了保持目录数量而复制指南正文或制造第二份计算器页面。
 
 ### 3. 面包屑对齐
 所有独立工具页面的面包屑统一规范为：
@@ -135,20 +172,22 @@
 
 ### 1. 纯工具页面的服务端 301 永久重定向映射表
 
-只对迁移后不再承载指南正文的纯工具页面配置整页 301。以下源路径采用仓库当前实际 canonical 路径：
-* `/guides/tireguides/tire-pressure` ➔ `301` ➔ `/tools/dynamic-tire-pressure-calculator`
+只对迁移后不再承载指南正文、且新旧页面在搜索意图和主要内容上基本等价的页面配置整页 301。以下是**验收通过后可执行的候选映射**，不是立即生效的重定向清单：
 * `/guides/tireguides/schwalbe-tire-selector` ➔ `301` ➔ `/tools/schwalbe-tire-selector`
 * `/guides/spokeguides/spoke-length-calculator` ➔ `301` ➔ `/tools/spoke-length-calculator`
 * `/guides/spokeguides/brand-wheelset-spoke-specs` ➔ `301` ➔ `/tools/brand-wheelset-spoke-specs`
+
+`/guides/tireguides/tire-pressure` 当前属于图文与计算器组合页，不在本批 301 清单内。若未来真的建立独立工具页，必须重新完成意图、内容等价性、canonical 和回归验收，不能沿用旧表自动重定向。
 
 重定向必须在服务端返回 `301`，保留语言前缀和必要的查询参数，且目标页的 canonical、hreflang 和 sitemap 只指向新的 `/tools/*` 路径。旧路径上线前要用真实路由清单和 HTTP 集成测试逐条核对。
 
 ### 2. 图文混合页面与内嵌组件的兼容策略
 
-以下页面不能在工具抽取完成后立即整页 301，因为它们还承担指南正文或父级导航职责：
-* `/guides/wheelset-buyers/wheelset-spoke-lacing-topology-and-geometry-reference`：保留指南 URL 和原理内容；将仿真器交互抽取到 `/tools/spoke-lacing-topology-simulator`，指南页增加启动工具卡片。
-* `/guides/spokeguides/stainless-steel-microstructural-dislocation-mechanics`：保留原理正文；将计算器交互抽取到 `/tools/spoke-stress-relief-mechanics`，指南页增加启动工具卡片。
-* `/guides/tireguides/tire-frame-clearance`：保留测量说明和参考表；独立工具页只复用现有组件能力，不重定向整个父级指南。
+以下页面当前不能整页 301，因为它们还承担指南正文、测量参考或父级导航职责；即使未来有工具页，也要先证明两个 URL 各自有独立价值：
+* `/guides/tireguides/tire-pressure`：保留现有 `calculator` 与 `details` Tab 的组合页面，不为了拆分而复制胎压计算器。
+* `/guides/wheelset-buyers/wheelset-spoke-lacing-topology-and-geometry-reference`：保留指南 URL 和原理内容；是否另建仿真器工具页，取决于独立标题、说明和验收标准是否成立。
+* `/guides/spokeguides/stainless-steel-microstructural-dislocation-mechanics`：保留原理正文和计算器，后续只有在“直接计算”意图能够独立时才评估工具页。
+* `/guides/tireguides/tire-frame-clearance`：保留测量说明和参考表；当前未发现独立交互计算器，不创建名义上的工具页。
 
 对于原先内嵌在 `/guides/tireguides/choose-inner-tube`（以及兼容的 `/guides/tireguides?tab=choose-inner-tube`）内部的气门嘴计算器：
 * **改造前**：内胎指南里直接挂载庞大的 `InnerTubeValveLengthAndExtenderFitmentGuide.vue` 组件，导致指南页面代码量巨大。
@@ -183,6 +222,14 @@
 * 页面 `<title>` 统一命名规范：`[工具名称] - 工程工具中心 | 品牌名`；
 * 自动继承已有的 `useLocalePath` 与 `@nuxtjs/i18n` 多语言配置，生成标准的对称 hreflang。
 
+### 3. SEO 拆分与索引规则
+
+* 搜索引擎主要依据查询意图、页面内容和任务完成度判断相关性，不会因为 URL 位于 `/tools` 或 `/guides` 就自动给予不同排名。目录名称用于组织和导航，不能替代页面价值。
+* 两个 URL 只有在用户任务明显不同、正文与说明可以独立成立、标题和摘要不重复，并且各自能通过独立验收时，才同时允许索引。相同计算器可以复用同一个 composable、API 或领域组件，但不能在两个 URL 复制完整正文和完整交互。
+* 近重复页面只保留一个主 URL 和 canonical；`noindex`、canonical、合并页面或保留混合页的选择要基于实际内容，而不是为了填满工具目录。
+* 301 只用于旧页和新页的搜索意图、主要内容与用户任务基本等价的情况。图文混合旧页不能因为计划建立工具页就自动整页 301；若只迁移其中的交互，应保留旧页并添加清晰的工具入口。
+* `WebApplication` 等 Schema 只描述真实存在、可用且可访问的页面，不是拆分理由，也不保证排名。规划中的工具不得伪装成已上线应用，不得进入 sitemap。
+
 ---
 
 ## 七、 研发落地分批拆解检查清单
@@ -200,12 +247,10 @@
 - [ ] 3. 验证 `/tools` 大厅页面的 i18n 多语言翻译文本与路由跳转畅通。
 
 ### 第二批：迁移已有独立页面工具 (Page Migration)
-- [ ] 4. 迁移胎压计算器至 `app/pages/tools/dynamic-tire-pressure-calculator.vue`；
-- [ ] 5. 迁移 Schwalbe 外胎选型器至 `app/pages/tools/schwalbe-tire-selector.vue`；
-- [ ] 6. 迁移大牌辐条速查矩阵至 `app/pages/tools/brand-wheelset-spoke-specs.vue`；
-- [ ] 7. 迁移轮组编法拓扑仿真器至 `app/pages/tools/spoke-lacing-topology-simulator.vue`；
-- [ ] 8. 迁移微观位错力学评估器至 `app/pages/tools/spoke-stress-relief-mechanics.vue`；
-- [ ] 9. 仅为纯工具页面的真实旧路径配置 301：`/guides/tireguides/tire-pressure`、`/guides/tireguides/schwalbe-tire-selector`、`/guides/spokeguides/spoke-length-calculator`、`/guides/spokeguides/brand-wheelset-spoke-specs`；混合指南保留原 URL。
+- [ ] 4. 迁移 Schwalbe 外胎选型器至 `app/pages/tools/schwalbe-tire-selector.vue`，保留完成选型所需的介绍和目录说明；
+- [ ] 5. 迁移大牌辐条速查矩阵至 `app/pages/tools/brand-wheelset-spoke-specs.vue`，保留数据来源和使用限制；
+- [ ] 6. 暂不迁移胎压、轮组编法拓扑或微观位错页面；先按决策基线完成混合页验收和拆分证据记录；
+- [ ] 7. 仅为已通过等价性验收的页面配置 301：当前候选为 `/guides/tireguides/schwalbe-tire-selector`、`/guides/spokeguides/spoke-length-calculator`、`/guides/spokeguides/brand-wheelset-spoke-specs`；胎压和其他混合指南保留原 URL。
 
 ### 第三批：抽离内嵌组件并独立化 (Component Extraction)
 - [ ] 10. 将气门嘴穿透力学组件封装为独立页面 `app/pages/tools/valve-length-fitment-calculator.vue`；
@@ -213,9 +258,10 @@
 - [ ] 12. 将辐条长度向导计算器平移至 `app/pages/tools/spoke-length-calculator.vue`，保持向导 5 步逻辑 100% 原样复用。
 
 ### 第四批：双向飞轮与收尾验证 (Verification)
-- [ ] 13. 在各个独立工具页面底部，确认均已添加“前往阅读相关指南”的卡片链接；
-- [ ] 14. 检查动态 Sitemap 只包含已实现并可访问的 `/tools/*` 路由；规划项不得进入 sitemap；
-- [ ] 15. 逐个已迁移工具页面进行功能回归测试，确认**算法、计算数值、参数联动完全与迁移前保持一致**；同时验证旧 URL 的 301 或混合指南的保留策略。
+- [ ] 13. 在每个独立工具页底部确认已添加“前往阅读相关指南”的卡片链接；混合页只添加清晰的工具入口，不复制完整正文或完整计算器；
+- [ ] 14. 检查动态 Sitemap 只包含已实现并可访问、且已确认需要独立 URL 的 `/tools/*` 路由；规划项和暂不拆分的候选页不得进入 sitemap；
+- [ ] 15. 逐个迁移候选页面进行功能与内容回归，确认**算法、计算数值、参数联动、主任务和页面说明均与迁移前一致**；同时验证旧 URL 的 301 或混合指南保留策略；
+- [ ] 16. 每次新增工具页前更新“本轮评估的决策基线”和资产迁移表，记录拆分依据、重复风险、canonical、sitemap 和 301 决策，防止后续任务按旧计划强制拆分。
 
 ---
 *文档编制完成。本规范为纯信息架构重组与路由迁移实施指南，所有开发工作严禁篡改现有算法逻辑。*
