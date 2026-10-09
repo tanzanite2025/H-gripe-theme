@@ -2,6 +2,7 @@ package admin
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -118,7 +119,7 @@ func performTaxRateRuleHandlerRequest(
 	method, path, body string,
 ) *httptest.ResponseRecorder {
 	t.Helper()
-	request := httptest.NewRequest(method, path, bytes.NewBufferString(body))
+	request := httptest.NewRequestWithContext(context.Background(), method, path, bytes.NewBufferString(body))
 	if body != "" {
 		request.Header.Set("Content-Type", "application/json")
 	}

@@ -8,5 +8,5 @@ func (h *TaxRateRuleHandler) recordTaxRateRuleAudit(c *gin.Context, event adminA
 	if h == nil {
 		return
 	}
-	recordAdminAudit(h.auditService, c, event)
+	_ = recordAdminAudit(h.auditService, c, event)
 }

@@ -737,6 +737,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n, useHead, useRoute, useRouter } from '#imports'
+import { getStorefrontLocaleLanguageTag } from '~/utils/storefrontLocales'
 import { createSeoJsonLdScript } from '~/utils/seo/jsonLd'
 import { useStorefrontSeoLinks } from '~/composables/seo/useStorefrontSeoLinks'
 import {
@@ -760,7 +761,7 @@ const {
   solveInnerTubeValveFitmentWithBackend,
 } = await useInnerTubeValveFitmentCalculator()
 
-const innerTubeFitmentSchemaLanguage = computed(() => locale.value === 'zh_cn' ? 'zh-CN' : locale.value)
+const innerTubeFitmentSchemaLanguage = computed(() => getStorefrontLocaleLanguageTag(locale.value))
 
 const innerTubeValveStructureOptions: readonly InnerTubeValveStructure[] = [
   'removableCore',

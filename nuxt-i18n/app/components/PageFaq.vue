@@ -135,6 +135,7 @@ import FaqAnswerContent from '~/components/FaqAnswerContent.vue'
 import DesktopFaqMasterDetail from '~/components/faq/DesktopFaqMasterDetail.vue'
 import { usePageFaq } from '~/composables/usePageFaq'
 import { useStorefrontSeoLinks } from '~/composables/seo/useStorefrontSeoLinks'
+import { getStorefrontLocaleLanguageTag } from '~/utils/storefrontLocales'
 import { createSeoJsonLdScript, createFaqPageJsonLd } from '~/utils/seo/jsonLd'
 import type { PageFaqProps } from '../data/faq/types'
 
@@ -158,7 +159,7 @@ const {
 const pageFaqJsonLd = computed(() => createFaqPageJsonLd({
   canonicalUrl: canonicalUrl.value,
   pageId: props.pageId,
-  inLanguage: locale.value === 'zh_cn' ? 'zh-CN' : locale.value,
+  inLanguage: getStorefrontLocaleLanguageTag(locale.value),
   visibleQuestionsAndAnswers: displayItems.value,
 }))
 

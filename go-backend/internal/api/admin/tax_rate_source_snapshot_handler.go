@@ -58,7 +58,7 @@ func (h *TaxRateSourceSnapshotHandler) UpdateSourceConfiguration(c *gin.Context)
 	}
 	newConfiguration, err := h.snapshotService.UpdateSourceConfiguration(request)
 	if err != nil {
-		recordAdminAudit(h.auditService, c, adminAuditEvent{
+		_ = recordAdminAudit(h.auditService, c, adminAuditEvent{
 			StartedAt:    startedAt,
 			Action:       adminAuditActionUpdate,
 			Resource:     adminAuditResourceTaxRateSource,
@@ -72,7 +72,7 @@ func (h *TaxRateSourceSnapshotHandler) UpdateSourceConfiguration(c *gin.Context)
 		apierror.RespondInternalError(c, err)
 		return
 	}
-	recordAdminAudit(h.auditService, c, adminAuditEvent{
+	_ = recordAdminAudit(h.auditService, c, adminAuditEvent{
 		StartedAt: startedAt,
 		Action:    adminAuditActionUpdate,
 		Resource:  adminAuditResourceTaxRateSource,
@@ -115,7 +115,7 @@ func (h *TaxRateSourceSnapshotHandler) SyncSourceSnapshot(c *gin.Context) {
 	}
 	result, err := h.snapshotService.Sync(c.Request.Context())
 	if err != nil {
-		recordAdminAudit(h.auditService, c, adminAuditEvent{
+		_ = recordAdminAudit(h.auditService, c, adminAuditEvent{
 			StartedAt:    startedAt,
 			Action:       adminAuditActionExecute,
 			Resource:     adminAuditResourceTaxRateSource,
@@ -133,7 +133,7 @@ func (h *TaxRateSourceSnapshotHandler) SyncSourceSnapshot(c *gin.Context) {
 		apierror.RespondError(c, http.StatusBadGateway, "tax_rate_source_sync_failed", err.Error())
 		return
 	}
-	recordAdminAudit(h.auditService, c, adminAuditEvent{
+	_ = recordAdminAudit(h.auditService, c, adminAuditEvent{
 		StartedAt: startedAt,
 		Action:    adminAuditActionExecute,
 		Resource:  adminAuditResourceTaxRateSource,

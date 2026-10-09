@@ -9,7 +9,7 @@ import (
 // used by the wheelset lacing reference page. Radial values are projection
 // coordinates unless a G3 parallel-hole distance is supplied; that design
 // distance derives the A-flange hole-circle radius before projection. Flange
-// offsets are physical millimetres used only for the axial reference profile.
+// offsets are physical millimeters used only for the axial reference profile.
 // None of these values represents spoke length, stiffness, tension, efficiency,
 // or assembly safety.
 const WheelsetLacingDisplayGeometryContractVersion = "v1.15-backend-display-geometry"

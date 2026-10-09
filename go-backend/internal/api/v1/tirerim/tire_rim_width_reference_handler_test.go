@@ -1,6 +1,7 @@
 package tirerim
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -44,7 +45,7 @@ func TestSolveTireRimWidthReferenceReturnsEngineering31MmResult(t *testing.T) {
 
 func TestSolveTireRimWidthReferenceReturnsEngineeringCalculationWhenInnerWidthIsProvided(t *testing.T) {
 	recorder := httptest.NewRecorder()
-	request := httptest.NewRequest(http.MethodPost, "/api/v1/engineering/tire-rim/solve", strings.NewReader(`{"tire_width_mm":32,"rim_system":"hookless","rim_inner_width_mm":25}`))
+	request := httptest.NewRequestWithContext(context.Background(), http.MethodPost, "/api/v1/engineering/tire-rim/solve", strings.NewReader(`{"tire_width_mm":32,"rim_system":"hookless","rim_inner_width_mm":25}`))
 	request.Header.Set("Content-Type", "application/json")
 	newTireRimWidthReferenceTestRouter().ServeHTTP(recorder, request)
 	if recorder.Code != http.StatusOK {
@@ -73,7 +74,7 @@ func TestSolveTireRimWidthReferenceReturnsEngineeringCalculationWhenInnerWidthIs
 
 func TestSolveTireRimWidthReferenceRejectsUnknownFields(t *testing.T) {
 	recorder := httptest.NewRecorder()
-	request := httptest.NewRequest(http.MethodPost, "/api/v1/engineering/tire-rim/solve", strings.NewReader(`{"tire_width_mm":31,"rim_system":"hookless","unsafe":true}`))
+	request := httptest.NewRequestWithContext(context.Background(), http.MethodPost, "/api/v1/engineering/tire-rim/solve", strings.NewReader(`{"tire_width_mm":31,"rim_system":"hookless","unsafe":true}`))
 	request.Header.Set("Content-Type", "application/json")
 	newTireRimWidthReferenceTestRouter().ServeHTTP(recorder, request)
 	if recorder.Code != http.StatusBadRequest || !strings.Contains(recorder.Body.String(), `"code":"INVALID_JSON"`) {
@@ -83,7 +84,7 @@ func TestSolveTireRimWidthReferenceRejectsUnknownFields(t *testing.T) {
 
 func TestSolveTireRimWidthReferenceReturnsNoBracketForHookless18Mm(t *testing.T) {
 	recorder := httptest.NewRecorder()
-	request := httptest.NewRequest(http.MethodPost, "/api/v1/engineering/tire-rim/solve", strings.NewReader(`{"tire_width_mm":18,"rim_system":"hookless"}`))
+	request := httptest.NewRequestWithContext(context.Background(), http.MethodPost, "/api/v1/engineering/tire-rim/solve", strings.NewReader(`{"tire_width_mm":18,"rim_system":"hookless"}`))
 	request.Header.Set("Content-Type", "application/json")
 	newTireRimWidthReferenceTestRouter().ServeHTTP(recorder, request)
 	if recorder.Code != http.StatusUnprocessableEntity || !strings.Contains(recorder.Body.String(), `"code":"NO_PUBLISHED_BRACKET"`) {

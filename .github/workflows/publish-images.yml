@@ -69,6 +69,7 @@ jobs:
 
       - name: Scan full Git history for secrets
         id: gitleaks
+        if: always()
         continue-on-error: true
         run: |
           mkdir -p security-reports
