@@ -1,5 +1,5 @@
 # Multi-stage production build.
-FROM golang:1.26.6-alpine AS builder
+FROM golang:1.26.9-alpine AS builder
 
 ARG VERSION=dev
 ARG BUILD_TIME=unknown
