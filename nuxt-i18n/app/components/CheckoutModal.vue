@@ -112,7 +112,7 @@
                   <div class="grid gap-3 sm:grid-cols-2">
                     <label class="sm:col-span-2">
                       <span class="checkout-label">{{ t('checkout.stepper.shipping.countryRegion', 'Country / region') }}</span>
-                      <select v-model="form.country" class="checkout-input">
+                      <select v-model="form.country" class="checkout-input" @change="clearShippingStateProvinceAfterCountryChange">
                         <option value="" disabled>{{ t('checkout.stepper.shipping.selectCountry', 'Select country') }}</option>
                         <option v-for="country in COUNTRIES" :key="country.code" :value="country.code">
                           {{ countryLabel(country) }}
@@ -133,7 +133,28 @@
                     </label>
                     <label>
                       <span class="checkout-label">{{ t('checkout.stepper.shipping.stateLabel', 'State / province') }}</span>
-                      <input v-model.trim="form.state" class="checkout-input" type="text" autocomplete="address-level1" />
+                      <select
+                        v-if="shippingStateProvinceOptions.length"
+                        v-model="form.state"
+                        class="checkout-input"
+                        autocomplete="address-level1"
+                        @change="normalizeShippingStateProvinceAfterSelection"
+                      >
+                        <option value="">{{ t('checkout.stepper.shipping.state.selectStateProvince', 'Select state / province') }}</option>
+                        <option v-for="region in shippingStateProvinceOptions" :key="region.code" :value="region.code">
+                          {{ region.name }} ({{ region.code }})
+                        </option>
+                      </select>
+                      <input
+                        v-else
+                        class="checkout-input"
+                        type="text"
+                        autocomplete="address-level1"
+                        disabled
+                        :placeholder="form.country
+                          ? t('checkout.stepper.shipping.state.selectStateProvince', 'Select state / province')
+                          : t('checkout.stepper.shipping.selectCountry', 'Select country first')"
+                      />
                     </label>
                     <label class="sm:col-span-2">
                       <span class="checkout-label">{{ t('checkout.stepper.shipping.address', 'Address') }}</span>
@@ -197,7 +218,7 @@
                   <div v-if="!billingSameAsShipping" class="mt-4 grid gap-3 sm:grid-cols-2">
                     <label class="sm:col-span-2">
                       <span class="checkout-label">{{ t('checkout.stepper.billing.countryRegion', 'Billing country / region') }}</span>
-                      <select v-model="billingForm.country" class="checkout-input">
+                      <select v-model="billingForm.country" class="checkout-input" @change="clearBillingStateProvinceAfterCountryChange">
                         <option value="" disabled>{{ t('checkout.stepper.shipping.selectCountry', 'Select country') }}</option>
                         <option v-for="country in COUNTRIES" :key="`billing-${country.code}`" :value="country.code">
                           {{ countryLabel(country) }}
@@ -218,7 +239,28 @@
                     </label>
                     <label>
                       <span class="checkout-label">{{ t('checkout.stepper.shipping.stateLabel', 'State / province') }}</span>
-                      <input v-model.trim="billingForm.state" class="checkout-input" type="text" autocomplete="billing address-level1" />
+                      <select
+                        v-if="billingStateProvinceOptions.length"
+                        v-model="billingForm.state"
+                        class="checkout-input"
+                        autocomplete="billing address-level1"
+                        @change="normalizeBillingStateProvinceAfterSelection"
+                      >
+                        <option value="">{{ t('checkout.stepper.shipping.state.selectStateProvince', 'Select state / province') }}</option>
+                        <option v-for="region in billingStateProvinceOptions" :key="`billing-${region.code}`" :value="region.code">
+                          {{ region.name }} ({{ region.code }})
+                        </option>
+                      </select>
+                      <input
+                        v-else
+                        class="checkout-input"
+                        type="text"
+                        autocomplete="billing address-level1"
+                        disabled
+                        :placeholder="billingForm.country
+                          ? t('checkout.stepper.shipping.state.selectStateProvince', 'Select state / province')
+                          : t('checkout.stepper.shipping.selectCountry', 'Select country first')"
+                      />
                     </label>
                     <label class="sm:col-span-2">
                       <span class="checkout-label">{{ t('checkout.stepper.shipping.address', 'Address') }}</span>
@@ -397,6 +439,10 @@
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { navigateTo, useI18n, useLocalePath } from '#imports'
 import { COUNTRIES, getCountryName, getZipFormatHint, validateZipFormat } from '~/data/countries'
+import {
+  getCheckoutStateProvinceOptions,
+  normalizeCheckoutStateProvinceCode,
+} from '~/data/checkoutStateProvinceCatalog'
 import { useAuth } from '~/composables/useAuth'
 import { useCart } from '~/composables/useCart'
 import { usePaymentMethods } from '~/composables/usePaymentMethods'
@@ -574,6 +620,8 @@ const billingZipPlaceholder = computed(() => {
   if (!billingForm.value.country) return ''
   return getZipFormatHint(billingForm.value.country)?.placeholder || ''
 })
+const shippingStateProvinceOptions = computed(() => getCheckoutStateProvinceOptions(form.value.country))
+const billingStateProvinceOptions = computed(() => getCheckoutStateProvinceOptions(billingForm.value.country))
 const billingAddressComplete = computed(() => {
   if (billingSameAsShipping.value) return true
   return Boolean(
@@ -734,6 +782,22 @@ const paymentOptionClass = (option: CheckoutPaymentOption) => {
 const countryLabel = (country: { code: string; name: string }) =>
   getCountryName(country.code, String(locale.value || 'en'))
 
+const clearShippingStateProvinceAfterCountryChange = (): void => {
+  form.value.state = ''
+}
+
+const clearBillingStateProvinceAfterCountryChange = (): void => {
+  billingForm.value.state = ''
+}
+
+const normalizeShippingStateProvinceAfterSelection = (): void => {
+  form.value.state = normalizeCheckoutStateProvinceCode(form.value.country, form.value.state)
+}
+
+const normalizeBillingStateProvinceAfterSelection = (): void => {
+  billingForm.value.state = normalizeCheckoutStateProvinceCode(billingForm.value.country, billingForm.value.state)
+}
+
 const selectPaymentOption = (option: CheckoutPaymentOption) => {
   if (!isPaymentOptionAvailable(option)) return
   selectedMethod.value = option.id
@@ -757,7 +821,7 @@ const addressPayloadFromForm = (addressForm: CheckoutAddressForm) => {
     last_name: nameParts.length > 1 ? nameParts.slice(1).join(' ') : 'User',
     address1: addressForm.address.trim(),
     city: addressForm.city.trim(),
-    state: addressForm.state.trim(),
+    state: normalizeCheckoutStateProvinceCode(addressForm.country, addressForm.state),
     postal_code: addressForm.zip.trim(),
     country: addressForm.country.trim().toUpperCase(),
     phone: addressForm.phone.trim(),
@@ -781,7 +845,9 @@ const stripeBillingDetails = computed<StripePaymentBillingDetails>(() => {
     address: {
       line1: addressForm.address.trim(),
       city: addressForm.city.trim(),
-      ...(addressForm.state.trim() ? { state: addressForm.state.trim() } : {}),
+      ...(addressForm.state.trim()
+        ? { state: normalizeCheckoutStateProvinceCode(addressForm.country, addressForm.state) }
+        : {}),
       postal_code: addressForm.zip.trim(),
       country: addressForm.country.trim().toUpperCase(),
     },
@@ -791,6 +857,11 @@ const stripeBillingDetails = computed<StripePaymentBillingDetails>(() => {
 const shippingUnavailableMessage = () => t(
   'checkout.stepper.shipping.unavailableFallback',
   'Shipping unavailable for this country.',
+)
+
+const taxRateUnavailableMessage = () => t(
+  'checkout.modal.messages.taxRateUnavailable',
+  'Tax cannot be calculated for this address. Please choose a supported address or contact support.',
 )
 
 const refreshCheckoutQuote = async () => {
@@ -815,7 +886,7 @@ const refreshCheckoutQuote = async () => {
         : {}),
     })
     checkoutQuote.value = nextQuote
-    if (checkoutError.value === shippingUnavailableMessage()) {
+    if ([shippingUnavailableMessage(), taxRateUnavailableMessage()].includes(checkoutError.value)) {
       checkoutError.value = ''
     }
     const available = nextQuote?.shipping_quote?.plans || []
@@ -838,6 +909,8 @@ const refreshCheckoutQuote = async () => {
     }
     if (error instanceof ApiRequestError && error.code === 'shipping_rate_unavailable') {
       checkoutError.value = shippingUnavailableMessage()
+    } else if (error instanceof ApiRequestError && error.code === 'tax_rate_unavailable') {
+      checkoutError.value = taxRateUnavailableMessage()
     }
   }
 }
@@ -1124,6 +1197,8 @@ const submitOrder = async () => {
       )
     } else if (error instanceof ApiRequestError && error.code === 'shipping_rate_unavailable') {
       checkoutError.value = shippingUnavailableMessage()
+    } else if (error instanceof ApiRequestError && error.code === 'tax_rate_unavailable') {
+      checkoutError.value = taxRateUnavailableMessage()
     } else {
       checkoutError.value = error instanceof Error
         ? error.message
@@ -1265,7 +1340,7 @@ watch(checkoutCouponCode, () => {
 })
 
 watch(
-  () => [form.value.name, form.value.phone, form.value.address, form.value.city, form.value.zip],
+  () => [form.value.name, form.value.phone, form.value.address, form.value.city, form.value.state, form.value.zip],
   () => {
     if (isCheckoutOpen.value) {
       selectedQuotePlanID.value = null

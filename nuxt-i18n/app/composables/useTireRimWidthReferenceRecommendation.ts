@@ -21,6 +21,8 @@ export interface TireRimSuggestion {
   isCalculated: boolean
   isCalculatedFromPossibleReference: boolean
   isPossibleReference: boolean
+  isEngineeringRecommended: boolean
+  isEngineeringReference: boolean
   resultKind: TireRimWidthReferenceSuggestion['result_kind']
   rimWidthRanges: TireRimWidthRange[]
   physical: TireRimPhysicalMetrics
@@ -43,26 +45,33 @@ interface TireRimWidthReferenceSolveResponse {
 
 const mapTireRimWidthReferenceSuggestion = (
   suggestion: TireRimWidthReferenceSuggestion,
-): TireRimSuggestion => ({
-  isCalculated: suggestion.result_kind === 'interpolated',
-  isCalculatedFromPossibleReference: suggestion.result_kind === 'interpolated'
-    && suggestion.source_rows.some(sourceRow => sourceRow.kind === 'possible_reference'),
-  isPossibleReference: suggestion.result_kind === 'possible_reference',
-  resultKind: suggestion.result_kind,
-  rimWidthRanges: suggestion.rim_width_ranges,
-  physical: {
-    inflatedTireWidth: suggestion.derived_metrics.inflated_tire_width_mm,
-    aeroTargetOuterWidth: suggestion.derived_metrics.aero_target_outer_width_mm,
-  },
-  calculationRows: suggestion.calculation
-    ? {
-        lowerTireWidth: suggestion.calculation.lower_tire_width_mm,
-        upperTireWidth: suggestion.calculation.upper_tire_width_mm,
-      }
-    : null,
-  modelVersion: suggestion.model_version,
-  knowledgeAsOf: suggestion.knowledge_as_of,
-})
+): TireRimSuggestion => {
+  const isEngineeringRecommended = suggestion.result_kind === 'engineering_recommended'
+  const isEngineeringReference = suggestion.result_kind === 'engineering_reference'
+
+  return {
+    isCalculated: suggestion.result_kind === 'interpolated',
+    isCalculatedFromPossibleReference: suggestion.result_kind === 'interpolated'
+      && suggestion.source_rows.some(sourceRow => sourceRow.kind === 'possible_reference'),
+    isPossibleReference: suggestion.result_kind === 'possible_reference',
+    isEngineeringRecommended,
+    isEngineeringReference,
+    resultKind: suggestion.result_kind,
+    rimWidthRanges: suggestion.rim_width_ranges,
+    physical: {
+      inflatedTireWidth: suggestion.derived_metrics.inflated_tire_width_mm,
+      aeroTargetOuterWidth: suggestion.derived_metrics.aero_target_outer_width_mm,
+    },
+    calculationRows: suggestion.calculation
+      ? {
+          lowerTireWidth: suggestion.calculation.lower_tire_width_mm,
+          upperTireWidth: suggestion.calculation.upper_tire_width_mm,
+        }
+      : null,
+    modelVersion: suggestion.model_version,
+    knowledgeAsOf: suggestion.knowledge_as_of,
+  }
+}
 
 export const useTireRimWidthReferenceRecommendation = (
   tireWidthInput: Ref<string>,

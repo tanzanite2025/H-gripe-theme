@@ -75,6 +75,8 @@ func (b *dependencyServicesBuilder) build() error {
 	analyticsService := service.NewAnalyticsService(settingService)
 	currencyPolicyService := service.NewCurrencyPolicyService(b.repos.Setting)
 	exchangeRateService := service.NewExchangeRateService(b.repos.ExchangeRate, b.repos.Setting)
+	taxRateService := service.NewTaxRateService(b.repos.TaxRate)
+	taxRateSourceSnapshotService := service.NewTaxRateSourceSnapshotService(b.repos.TaxRateSourceSnapshot)
 	productService.ConfigureDisplayPriceRefreshLeaseRepository(b.repos.ExchangeRate)
 	shippingService.ConfigureCurrencyPolicy(currencyPolicyService)
 	yanwenPublishedCollectionService := b.support.YanwenPublishedCollectionService
@@ -374,6 +376,8 @@ func (b *dependencyServicesBuilder) build() error {
 		Analytics:                         analyticsService,
 		CurrencyPolicy:                    currencyPolicyService,
 		ExchangeRate:                      exchangeRateService,
+		TaxRate:                           taxRateService,
+		TaxRateSourceSnapshot:             taxRateSourceSnapshotService,
 		StorefrontMarket:                  storefrontMarketService,
 		OpsDomainBinding:                  opsDomainBindingService,
 		OpsDomainDiff:                     opsDomainDiffService,
@@ -399,7 +403,7 @@ func (b *dependencyServicesBuilder) build() error {
 		SiteFavicon:                       siteFaviconService,
 		Warranty:                          service.NewWarrantyService(emailChallengeTxManager, b.repos.Warranty, b.repos.Order, b.repos.ShipmentRecord),
 		ShipmentRecord:                    service.NewShipmentRecordService(b.repos.ShipmentRecord),
-		Checkout:                          service.NewCheckoutService(b.repos.Product, b.repos.Coupon, b.repos.Payment, b.repos.Loyalty, shippingService),
+		Checkout:                          service.NewCheckoutService(b.repos.Product, b.repos.Coupon, taxRateService, b.repos.Loyalty, shippingService),
 		OrderEvidenceSnapshot:             orderEvidenceSnapshotService,
 		OrderEvidence:                     orderEvidenceService,
 		OrderEvidenceAdmin:                orderEvidenceAdminService,

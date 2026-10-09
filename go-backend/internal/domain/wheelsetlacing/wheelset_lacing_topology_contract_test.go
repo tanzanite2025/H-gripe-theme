@@ -2,14 +2,16 @@ package wheelsetlacing
 
 import (
 	"errors"
+	"reflect"
 	"sort"
+	"strings"
 	"testing"
 )
 
 func TestDefaultCatalogContainsAllSupportedTopologyFamilies(t *testing.T) {
 	catalog := NewDefaultCatalog()
 	topologies := catalog.List()
-	if got, want := len(topologies), 26; got != want {
+	if got, want := len(topologies), 51; got != want {
 		t.Fatalf("default topology count = %d, want %d", got, want)
 	}
 
@@ -19,6 +21,10 @@ func TestDefaultCatalogContainsAllSupportedTopologyFamilies(t *testing.T) {
 		"21h-g3-2to1",
 		"24h-uniform-2to1",
 		"18h-uniform-2to1",
+		"16h-symmetric-1to1-0x-straight-pull",
+		"24h-symmetric-1to1-2x-straight-pull",
+		"24h-uniform-2to1-straight-pull",
+		"18h-uniform-2to1-straight-pull",
 	} {
 		if _, err := catalog.Get(id); err != nil {
 			t.Fatalf("Get(%q) error = %v", id, err)
@@ -40,8 +46,10 @@ func TestDefaultCatalogExposesExactSupportedCrossCombinations(t *testing.T) {
 	}
 	crossesBySelection := make(map[string][]int, len(wantBySelection))
 	for _, topology := range NewDefaultCatalog().List() {
-		if _, ok := wantBySelection[topology.Selection]; ok {
-			crossesBySelection[topology.Selection] = append(crossesBySelection[topology.Selection], topology.Cross)
+		if topology.SpokeHeadStyle == SpokeHeadStyleJBend || topology.Distribution == DistributionG32To1 {
+			if _, ok := wantBySelection[topology.Selection]; ok {
+				crossesBySelection[topology.Selection] = append(crossesBySelection[topology.Selection], topology.Cross)
+			}
 		}
 	}
 	for selection, want := range wantBySelection {
@@ -58,13 +66,56 @@ func TestDefaultCatalogExposesExactSupportedCrossCombinations(t *testing.T) {
 	}
 }
 
+func TestStraightPullTopologyVariantsShareEachFlangeHoleBetweenTwoSpokesAndPreserveJbendMaps(t *testing.T) {
+	catalog := NewDefaultCatalog()
+	for _, straightPullTopology := range catalog.List() {
+		if straightPullTopology.SpokeHeadStyle != SpokeHeadStyleStraightPull || straightPullTopology.Distribution == DistributionG32To1 {
+			continue
+		}
+		baseID := strings.TrimSuffix(straightPullTopology.ID, "-straight-pull")
+		jBendTopology, err := catalog.Get(baseID)
+		if err != nil {
+			t.Fatalf("straight-pull topology %q has no J-bend counterpart: %v", straightPullTopology.ID, err)
+		}
+		if jBendTopology.SpokeHeadStyle != SpokeHeadStyleJBend {
+			t.Fatalf("counterpart %q has spoke head style %q, want J-bend", baseID, jBendTopology.SpokeHeadStyle)
+		}
+		if !reflect.DeepEqual(straightPullTopology.RimHoles, jBendTopology.RimHoles) {
+			t.Fatalf("straight-pull topology %q changed the rim hole assignments", straightPullTopology.ID)
+		}
+		if len(straightPullTopology.HubHolesA)*2 != len(jBendTopology.HubHolesA) ||
+			len(straightPullTopology.HubHolesB)*2 != len(jBendTopology.HubHolesB) {
+			t.Fatalf("straight-pull topology %q flange holes are not paired: A=%d/%d B=%d/%d", straightPullTopology.ID,
+				len(straightPullTopology.HubHolesA), len(jBendTopology.HubHolesA),
+				len(straightPullTopology.HubHolesB), len(jBendTopology.HubHolesB))
+		}
+		if len(straightPullTopology.Spokes) != len(jBendTopology.Spokes) {
+			t.Fatalf("straight-pull topology %q changed spoke count", straightPullTopology.ID)
+		}
+		spokeUsageByHubHole := make(map[string]int)
+		for index, straightPullSpoke := range straightPullTopology.Spokes {
+			jBendSpoke := jBendTopology.Spokes[index]
+			if straightPullSpoke.ID != jBendSpoke.ID || straightPullSpoke.Side != jBendSpoke.Side ||
+				straightPullSpoke.Type != jBendSpoke.Type || straightPullSpoke.RimHoleID != jBendSpoke.RimHoleID {
+				t.Fatalf("straight-pull topology %q changed spoke-to-rim mapping at spoke %d", straightPullTopology.ID, straightPullSpoke.ID)
+			}
+			spokeUsageByHubHole[hubKey(straightPullSpoke.Side, straightPullSpoke.HubHoleID)]++
+		}
+		for key, usageCount := range spokeUsageByHubHole {
+			if usageCount != 2 {
+				t.Fatalf("straight-pull topology %q hub hole %s serves %d spokes, want 2", straightPullTopology.ID, key, usageCount)
+			}
+		}
+	}
+}
+
 func TestG3AndUniformTwoToOneHaveIndependentMappings(t *testing.T) {
 	catalog := NewDefaultCatalog()
 	g3, err := catalog.Get("21h-g3-2to1")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if g3.Distribution != DistributionG32To1 || g3.DisplayLayout != DisplayGeometryLayoutG3TwentyOneHoleTriplet2To1 || g3.HoleCount != 21 || len(g3.HubHolesA) != 14 || len(g3.HubHolesB) != 7 {
+	if g3.Distribution != DistributionG32To1 || g3.DisplayLayout != DisplayGeometryLayoutG3TwentyOneHoleTriplet2To1 || g3.SpokeHeadStyle != SpokeHeadStyleStraightPull || g3.HoleCount != 21 || len(g3.HubHolesA) != WheelsetLacingTwentyOneHoleG3GroupCount || len(g3.HubHolesB) != WheelsetLacingTwentyOneHoleG3GroupCount {
 		t.Fatalf("unexpected G3 topology: %+v", g3)
 	}
 	for index, hole := range g3.RimHoles {
@@ -77,14 +128,22 @@ func TestG3AndUniformTwoToOneHaveIndependentMappings(t *testing.T) {
 		}
 	}
 	for group := 0; group < WheelsetLacingTwentyOneHoleG3GroupCount; group++ {
-		trailing := g3.Spokes[WheelsetLacingTwentyOneHoleG3GroupCount+group*2]
-		leading := g3.Spokes[WheelsetLacingTwentyOneHoleG3GroupCount+group*2+1]
 		nextGroup := (group + 1) % WheelsetLacingTwentyOneHoleG3GroupCount
-		if trailing.Side != SideA || trailing.Type != SpokeTypeTrailing || trailing.HubHoleID != group*2 || trailing.RimHoleID != group*3+2 {
-			t.Fatalf("G3 group %d trailing spoke = %+v, want same-order rim endpoint in its group", group, trailing)
+		wantDriveSpokes := []SpokeMapping{
+			{ID: WheelsetLacingTwentyOneHoleG3GroupCount + group*2, Side: SideA, Type: SpokeTypeTrailing, HubHoleID: group, RimHoleID: group*3 + 2},
+			{ID: WheelsetLacingTwentyOneHoleG3GroupCount + group*2 + 1, Side: SideA, Type: SpokeTypeLeading, HubHoleID: group, RimHoleID: nextGroup * 3},
 		}
-		if leading.Side != SideA || leading.Type != SpokeTypeLeading || leading.HubHoleID != group*2+1 || leading.RimHoleID != nextGroup*3 {
-			t.Fatalf("G3 group %d leading spoke = %+v, want same-order rim endpoint in the next group", group, leading)
+		for _, want := range wantDriveSpokes {
+			spoke := g3.Spokes[want.ID]
+			if spoke != want {
+				t.Fatalf("G3 straight-pull spoke %d = %+v, want %+v", want.ID, spoke, want)
+			}
+		}
+	}
+	for group := 0; group < WheelsetLacingTwentyOneHoleG3GroupCount; group++ {
+		nonDriveSpoke := g3.Spokes[group]
+		if nonDriveSpoke.Side != SideB || nonDriveSpoke.Type != SpokeTypeNonDrive || nonDriveSpoke.HubHoleID != group || nonDriveSpoke.RimHoleID != group*3+1 {
+			t.Fatalf("G3 non-drive spoke %d = %+v, want radial mapping to its grouped rim hole", group, nonDriveSpoke)
 		}
 	}
 
@@ -94,6 +153,9 @@ func TestG3AndUniformTwoToOneHaveIndependentMappings(t *testing.T) {
 	}
 	if uniform.Distribution != DistributionUniform2To1 || uniform.DisplayLayout != DisplayGeometryLayoutUniform2To1 || uniform.HoleCount != 24 || len(uniform.HubHolesA) != 16 || len(uniform.HubHolesB) != 8 {
 		t.Fatalf("unexpected uniform 2:1 topology: %+v", uniform)
+	}
+	if uniform.SpokeHeadStyle != SpokeHeadStyleJBend {
+		t.Fatalf("uniform 24H 2:1 must retain J-bend heads: %+v", uniform)
 	}
 	for index, hole := range uniform.RimHoles {
 		want := SideA
@@ -114,6 +176,9 @@ func TestG3AndUniformTwoToOneHaveIndependentMappings(t *testing.T) {
 	}
 	if uniform18.Distribution != DistributionUniform2To1 || uniform18.DisplayLayout != DisplayGeometryLayoutUniform18H2To1 || uniform18.HoleCount != 18 || len(uniform18.HubHolesA) != 12 || len(uniform18.HubHolesB) != 6 {
 		t.Fatalf("unexpected uniform 18H 2:1 topology: %+v", uniform18)
+	}
+	if uniform18.SpokeHeadStyle != SpokeHeadStyleJBend {
+		t.Fatalf("uniform 18H 2:1 must retain J-bend heads: %+v", uniform18)
 	}
 	for index, hole := range uniform18.RimHoles {
 		want := SideA

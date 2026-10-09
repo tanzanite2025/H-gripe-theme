@@ -28,7 +28,7 @@
     "body": "Use these quick tools to estimate the main compatibility choices before ordering. The detailed pages open in a new tab, so you can keep this buying path open while checking the full explanation.",
     "tireWidth": {
       "title": "Tire width and rim fit",
-      "body": "Confirm the tire size you want can work with the rim inner width and your frame clearance. Use the rim system toggle to look up an exact DT Swiss TSS or TC recommendation.",
+      "body": "Confirm the tire size you want can work with the rim inner width and your frame clearance. Use the rim system toggle to view the backend engineering model's TSS or TC inner-width recommendation.",
       "helperTitle": "Tire and rim width quick check",
       "helperDescription": "Enter the tire width you plan to use and choose the rim system. This is a width quick check, not a separate tube-vs-tubeless calculator.",
       "button": "Tire width chart"

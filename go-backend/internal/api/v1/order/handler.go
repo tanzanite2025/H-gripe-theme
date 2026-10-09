@@ -256,6 +256,10 @@ func respondCreateOrderError(c *gin.Context, err error) {
 		apierror.RespondError(c, http.StatusUnprocessableEntity, "shipping_rate_unavailable", err.Error())
 		return
 	}
+	if errors.Is(err, service.ErrTaxRateUnavailable) {
+		apierror.RespondError(c, http.StatusUnprocessableEntity, "tax_rate_unavailable", err.Error())
+		return
+	}
 	if strings.Contains(err.Error(), "exchange rate unavailable") {
 		apierror.RespondError(c, http.StatusUnprocessableEntity, "exchange_rate_unavailable", err.Error())
 		return

@@ -1,24 +1,235 @@
 {
   "title": "How to Choose the Right Tire",
+  "engineering": {
+    "eyebrow": "Physical safety verification board",
+    "title": "Rim and tire cross-section force simulator",
+    "description": "Enter the rim system, inner width, and nominal tire width. This model returns a narrowed engineering window, transition window, or blocking result.",
+    "sourceBadge": "ERP UDS 1.0 · ETRTO 2024",
+    "board": {
+      "statusSource": "SCHWALBE TLE SPEC / ETRTO 2024",
+      "status": {
+        "badges": {
+          "critical": "[WARN] CRITICAL FORBIDDEN",
+          "recommended": "[OK] OPTIMAL SWEET SPOT",
+          "reference": "[ALERT] ALERT · TOLERANCE RANGE"
+        },
+        "criticalBelow": "DO NOT INSTALL: a {tireWidth} mm tire is below the model's {allowedMin} mm starting line for a {rimWidth} mm rim. A straight hookless sidewall has no mechanical hook to resist the side load and can unseat suddenly.",
+        "criticalAbove": "DO NOT INSTALL: a {tireWidth} mm tire exceeds the model's {allowedMax} mm limit for a {rimWidth} mm rim. The oversized casing creates a large side lever and can unseat under cornering or braking load.",
+        "recommended": "The {rimWidth} mm rim and {tireWidth}C tire sit inside the model's recommended window ({recommendedMin}–{recommendedMax} mm), giving the bead an even load and a more stable section transition.",
+        "reference": "The {rimWidth} mm rim and {tireWidth}C tire sit inside the engineering reference range ({allowedMin}–{allowedMax} mm), outside the preferred sweet spot. Respect the {maxBar} bar pressure limit and check the exact model documentation.",
+        "empty": "Enter a valid integer tire width to see the safety state."
+      },
+      "metrics": {
+        "pressureLabel": "Hookless legal maximum pressure",
+        "pressureNote": "Width-dependent limit · never copy a 100–120 PSI sidewall mark",
+        "tubeLabel": "Recommended inner tube",
+        "certificationLabel": "Tire certification requirement",
+        "certification": {
+          "hookless": "TLE certification required",
+          "hooked": "Check TLE / clincher approval by model"
+        },
+        "certificationNote": {
+          "hookless": "Do not put an ordinary clincher on a hookless rim",
+          "hooked": "Follow the exact tire and rim compatibility notes"
+        },
+        "tubes": {
+          "roadModel": "Aerothan SV20E (or Extra Light SV20)",
+          "roadRange": "700 × 23–28C",
+          "midModel": "Aerothan SV17E (or Air Plus SV17)",
+          "midRange": "700 × 28–40C",
+          "wideModel": "Aerothan SV17E / SV19E (or Air Plus SV19)",
+          "wideRange": "700 × 38–45C"
+        }
+      },
+      "aero": {
+        "title": "Aero break-through: the 105% flush rule and inflated outer-width projection",
+        "source": "JOSH POERTNER / SILCA wind-tunnel principle",
+        "intro": "The ETRTO safety floor and the aero optimum are different questions. Nominal tire width changes with inner width and pressure; this section shows the trend with one formula, while exact installation still follows measured and manufacturer data.",
+        "cards": {
+          "bulbTire": {
+            "title": "① The bulb-tire aero failure",
+            "formula": "Inflated tire wider than the rim's maximum outer width",
+            "body": "The shoulder rolls outward, flow separates early, and the rim loses much of its aero benefit. Crosswind response can also become less stable."
+          },
+          "ruleOf105": {
+            "title": "② The 105% aero flush rule",
+            "formula": "Maximum rim outer width ≥ 1.05 × actual inflated tire width",
+            "body": "When the rim is flush with or slightly wider than the tire section, flow can reattach to the sidewall and form a more continuous teardrop wing."
+          },
+          "modernSweetSpot": {
+            "title": "③ The modern hookless road sweet spot",
+            "formula": "23–25 mm inner width with a 28–32 mm tire",
+            "body": "Modern wider rims narrow the engineering window where bead support, rolling resistance, and aero transition work together. A broad chart cannot replace a model-specific limit."
+          }
+        },
+        "formulaLabel": "Inflated-width projection formula:",
+        "current": "Current pairing: {rimWidth} mm inner width with a {tireWidth}C tire → about {inflatedWidth} mm inflated → at least {aeroTarget} mm rim outer width to approach the 105% flush target."
+      },
+      "traps": {
+        "title": "Frequent failure modes and workshop lessons",
+        "source": "Workshop and after-sales failure history",
+        "items": {
+          "nonTleOnHookless": {
+            "number": "TRAP 01 · FATAL INCIDENT",
+            "title": "Putting an ordinary clincher with a tube on a hookless rim → sudden unseating",
+            "body": "Adding a tube does not give an ordinary clincher the bead tensile strength it lacks. A straight hookless wall still has no mechanical hook to resist pressure and side load.",
+            "rule": "Rule: a hookless rim requires a tire with TLE / hookless approval."
+          },
+          "emptyTpuInflation": {
+            "number": "TRAP 02 · RUINED TUBE",
+            "title": "Inflating a TPU tube in the air → permanent bulges",
+            "body": "An unloaded TPU tube can develop irreversible thin spots and bulges when overinflated. Once installed, the uneven wall can fail on the first ride.",
+            "rule": "Rule: stay below 0.3 bar (4.3 PSI) before the tube is inside the tire; never test it with an empty CO₂ blast."
+          },
+          "oldSealantResidue": {
+            "number": "TRAP 03 · SLOW LEAK",
+            "title": "Leaving dried sealant in an emergency TPU conversion → abrasion wear",
+            "body": "Dried latex and grit act like sandpaper against a thin TPU wall as the tire rolls and flexes, often producing a leak within a short ride.",
+            "rule": "Rule: wipe all dried sealant and grit from the casing before inserting the tube."
+          },
+          "co2ColdBrittle": {
+            "number": "TRAP 04 · COLD FRACTURE",
+            "title": "Using a CO₂ cartridge aggressively → brittle TPU valve",
+            "body": "Rapid CO₂ expansion creates a severe temperature drop. The plastic valve base is more vulnerable to brittle fracture under the cold gas pulse.",
+            "rule": "Rule: use a hand pump when possible; use CO₂ with a regulator and a slow release."
+          },
+          "metalLever": {
+            "number": "TRAP 05 · RUINED CARBON RIM",
+            "title": "Forcing a tight tire with a metal lever → damaged hookless wall",
+            "body": "A straight hookless lip has no hooked curve to spread a point load. A metal lever can crush or delaminate the carbon edge.",
+            "rule": "Rule: never use a metal lever; push both beads into the center well to release circumference."
+          },
+          "beadPinch": {
+            "number": "TRAP 06 · WOBBLE AND PINCH",
+            "title": "Pinching the bead seat → tire cannot lock into the safety step",
+            "body": "A trapped tube prevents the tire from seating evenly. It can wobble under pressure and develop a slow leak.",
+            "rule": "Rule: stop around 1.0 bar, then inspect the rim line all the way around before final inflation."
+          }
+        }
+      }
+    },
+    "modeLabel": "Choose calculation entry",
+    "modes": {
+      "rim": "Mode A: I have a rim",
+      "tire": "Mode B: I have a tire"
+    },
+    "rimSystemLabel": "Rim system",
+    "rimSystems": {
+      "hookless": "Hookless TSS",
+      "hooked": "Hooked TC"
+    },
+    "rimInnerWidthLabel": "Rim inner width",
+    "tireWidthLabel": "Nominal tire width",
+    "tireWidthInputLabel": "Enter nominal tire width",
+    "tireWidthHint": "Use the millimetre width printed on the sidewall or ETRTO marking.",
+    "tireWidthPresetsLabel": "Common widths",
+    "verdicts": {
+      "recommended": {
+        "badge": "Engineering recommendation",
+        "title": "Inside this model's recommended window"
+      },
+      "reference": {
+        "badge": "Engineering reference",
+        "title": "Reference window, not the preferred window"
+      },
+      "critical": {
+        "badge": "Model block",
+        "title": "Outside this model's fitment window"
+      }
+    },
+    "reasons": {
+      "below_minimum": "For a {rimWidth} mm rim, this model starts at {allowedMin} mm. The current {tireWidth} mm is below that starting window, so do not treat the pairing as usable.",
+      "above_maximum": "For a {rimWidth} mm rim, this model ends at {allowedMax} mm. The current {tireWidth} mm is above that window, so do not treat the pairing as usable.",
+      "recommended_window": "The current pairing is inside the {recommendedMin}–{recommendedMax} mm recommended window; this model treats {allowedMin}–{allowedMax} mm as the complete engineering reference range.",
+      "reference_window": "The current pairing is inside the {allowedMin}–{allowedMax} mm engineering reference range, while the recommended window is {recommendedMin}–{recommendedMax} mm.",
+      "transitional_rim": "A 19 mm TSS rim is treated as a transition size. This model exposes {allowedMin}–{allowedMax} mm as a reference range and does not present it as the preferred modern wheelset choice."
+    },
+    "metrics": {
+      "allowedRange": "Engineering reference range",
+      "recommendedRange": "Recommended window",
+      "inflatedWidth": "Inflated-width projection",
+      "aeroTarget": "105% outer-width target"
+    },
+    "resultNote": "This result comes from this engineering reference model. Check the exact rim, tire, wheelset, and frame documentation for model limits, pressure limits, and installation requirements.",
+    "emptyTitle": "Enter a valid tire width",
+    "emptyDescription": "Choose a rim system and inner width, then enter an integer width from 18–127 mm to see this model's result.",
+    "diagramTitle": "Rim and tire cross-section schematic",
+    "diagramAlt": "Rim and tire cross-section schematic based on the current inner width and tire width",
+    "diagramNote": "The drawing explains the inner-width to tire-body proportion. It is not a measured cross-section or a substitute for a manufacturer drawing.",
+    "diagram": {
+      "badges": {
+        "aero": "ETRTO 105% aero-section rule monitor",
+        "critical": "[WARN] Excess shear torque · bead unseating risk",
+        "recommended": "[OK] Deep bead-seat lock · sweet spot",
+        "reference": "[ALERT] Physical tolerance · respect pressure limits"
+      },
+      "stress": {
+        "outward": "Unseating force"
+      },
+      "lip": {
+        "tssTitle": "TSS straight sidewall (3.2 mm carbon wall)",
+        "tssDescription": "No hook · locked by bead stiffness and pressure",
+        "tcTitle": "TC mechanical bead hook",
+        "tcDescription": "Hook captures the bead · higher retention margin"
+      },
+      "beadCore": {
+        "title": "KEVLAR rigid bead core",
+        "description": "First line of bead-retention safety"
+      },
+      "tireLabels": {
+        "critical": "Tire: {tireWidth} mm (very high unseating risk · do not install)",
+        "recommended": "Tire: {tireWidth} mm (aero teardrop · locked bead · optimal)",
+        "reference": "Tire: {tireWidth} mm (within tolerance · observe pressure limit)"
+      },
+      "footer": {
+        "critical": "[CRITICAL] Model block: {tireWidth} mm tire is outside the {rimWidth} mm rim reference range ({allowedMin}–{allowedMax} mm).",
+        "recommended": "[OK] Sweet spot: {tireWidth} mm tire is inside the recommended window ({recommendedMin}–{recommendedMax} mm) for the {rimWidth} mm rim.",
+        "reference": "[ALERT] Compatibility note: {tireWidth} mm is inside the {rimWidth} mm reference range ({allowedMin}–{allowedMax} mm), outside the preferred window.",
+        "empty": "Enter a valid width to see the status."
+      }
+    },
+    "explanations": {
+      "rimSystem": {
+        "title": "Separate TSS from TC first",
+        "body": "Hookless TSS and hooked TC rims constrain the bead differently. One system's width window cannot be copied directly to the other."
+      },
+      "nominalWidth": {
+        "title": "Nominal width is not measured width",
+        "body": "The same nominal width changes with casing, pressure, and rim inner width. This page uses one projection to explain the trend; installation still follows measured and model-specific data."
+      },
+      "aeroProjection": {
+        "title": "105% explains an aero target only",
+        "body": "The outer-width target is a display reference for aero shape. It is not a compatibility certification, pressure limit, or bead-retention safety boundary."
+      }
+    },
+    "checklist": {
+      "title": "Complete these checks before installation",
+      "items": {
+        "exactSpecifications": "Verify the rim model, tire model, ETRTO, BSD, and the manufacturer's compatibility notes.",
+        "pressureLimits": "Use the strictest limit from the rim, tire, wheelset, and bicycle; this model does not generate a pressure limit.",
+        "installationCheck": "After inflation, check the bead line for even seating, inspect for wobble, and confirm frame and fork clearance."
+      }
+    }
+  },
   "seo": {
-    "title": "DT Swiss tire width and rim internal width reference",
-    "description": "Reference the DT Swiss TSS and TC tire-width to rim-internal-width matrix. Enter tire width in millimetres or inches; inch input is converted to millimetres before the published recommendation and piecewise reference calculation runs on the backend.",
+    "title": "Tire and rim engineering fitment reference",
+    "description": "Start with this engineering reference model for a narrowed tire-width window, then use the DT Swiss TSS and TC matrix below as broad official comparison material.",
     "articleSection": "Tire and rim size reference",
-    "articleBody": "This page presents the DT Swiss hookless TSS and hooked TC tire-width to rim-internal-width reference. Exact widths use published rows; unlisted integer widths use piecewise linear reference calculations between adjacent data points. Possible-only rows remain references and are not model-specific certification. Inch tire widths are converted using 1 inch equals 25.4 millimetres before lookup.",
-    "datasetName": "DT Swiss TSS/TC tire width and rim internal width reference matrix",
-    "datasetDescription": "Backend-provided DT Swiss tire widths, inch labels, recommended rim internal widths, possible references, and display-only width projections.",
-    "measurementTechnique": "Exact published rows are read directly; unlisted widths are calculated as a piecewise linear reference between adjacent chart points.",
+    "articleBody": "This page first uses the versioned engineering reference model to calculate a narrowed width window for hookless TSS and hooked TC rims, then shows the DT Swiss broad reference matrix. The two sections use independent methods; DT possible rows and interpolated results remain comparison material and are not model-specific certification.",
+    "datasetName": "Tire and rim engineering reference model with DT Swiss comparison matrix",
+    "datasetDescription": "The versioned engineering width windows shown above, followed by backend-provided DT Swiss tire widths, recommended rim internal widths, possible references, and display-only width projections.",
+    "measurementTechnique": "The page model reads a versioned width window by rim system and inner width; the DT Swiss section separately reads published rows and calculates piecewise references.",
     "tireWidthVariable": "Nominal tire width",
     "rimWidthVariable": "Rim internal width",
     "sourceProperty": "Source",
     "sourceDateProperty": "Source checked date"
   },
   "methodology": {
-    "title": "Source and calculation method",
+    "title": "DT Swiss comparison note",
     "unavailable": "The backend reference matrix is temporarily unavailable. The page keeps the method and safety limits visible and does not substitute example calculation values.",
     "source": "Source: {source}; checked on {date}.",
     "provenance": "Published basis: {provenance}",
-    "body": "Published rows are read directly; unlisted integer widths are calculated piecewise between adjacent chart rows. Inch input is only normalized to millimetres; recommendation and interpolation remain backend calculations.",
+    "body": "The DT Swiss table shows broad combinations from the published material. Possible rows and interpolated values are comparison references only; they do not decide the engineering model above and are not certification for a specific rim, tire, or wheelset. Follow the exact model limits during installation.",
     "version": "Model version: {modelVersion}. The limitations below come from the same backend contract.",
     "limitations": {
       "modelSpecificCertification": "This is a DT Swiss reference chart result, not certification for a specific tire, rim model, or wheelset.",
@@ -29,7 +240,7 @@
   },
   "standards": {
     "title": "Manufacturer Standards",
-    "description": "The following DT Swiss hookless (TSS) and hooked (TC) rim inner-width charts show recommended combinations and chart-marked possible references. The HTML tables transcribe the chart rows for search engines and screen readers; they are not certification for a specific tire or rim model. Follow the exact tire, rim, and wheel manufacturer limits.",
+    "description": "The following tables show DT Swiss tire and rim inner-width combinations for hookless (TSS) and hooked (TC) systems as a comparison reference. Their ranges are broad guidance and do not replace fitment information for a specific rim and tire model; follow the applicable manufacturers’ limits when installing.",
     "recommended": "Recommended combination",
     "possible": "Possible combination (reference)",
     "legendDescription": "Recommended combinations are DT Swiss preferred pairings. Possible combinations remain chart references; they must not be relabeled as recommendations or treated as model-specific certification.",

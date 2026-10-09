@@ -331,16 +331,32 @@ import { useI18n } from '#imports'
 import GuideImage from '~/components/GuideImage.vue'
 import { useShopSearchSheet } from '~/composables/useShopSearchSheet'
 import { usePageMessages } from '~/composables/usePageMessages'
+import englishInnerTubeGuideMessages from '~/i18n/page-messages/guidesTireInnerTube/en.json'
 import InnerTubeValveLengthAndExtenderFitmentGuide from '~/components/tireguides/InnerTubeValveLengthAndExtenderFitmentGuide.vue'
 
-const { locale, t } = useI18n()
+const { locale, t, getLocaleMessage, mergeLocaleMessage } = useI18n()
 const { loadPageMessages } = usePageMessages('guidesTireInnerTube')
 
-await loadPageMessages(locale.value)
+const loadInnerTubeGuideMessagesWithEnglishFallback = async (targetLocale: string) => {
+  const currentLocaleMessages = getLocaleMessage(targetLocale) as Record<string, unknown>
+  if (!Object.prototype.hasOwnProperty.call(currentLocaleMessages, 'guidesTireInnerTube')) {
+    mergeLocaleMessage(targetLocale, {
+      guidesTireInnerTube: englishInnerTubeGuideMessages,
+    })
+  }
+
+  try {
+    await loadPageMessages(targetLocale)
+  } catch (error) {
+    console.warn('[i18n] Failed to load inner-tube guide translations; using English fallback.', error)
+  }
+}
+
+await loadInnerTubeGuideMessagesWithEnglishFallback(locale.value)
 
 watch(locale, (nextLocale) => {
-  void loadPageMessages(nextLocale)
-})
+  void loadInnerTubeGuideMessagesWithEnglishFallback(nextLocale)
+}, { flush: 'sync' })
 
 const { open: openShopSearchSheet } = useShopSearchSheet()
 const activeInnerTubeGuideTab = ref<'introduction' | 'calculator'>('introduction')

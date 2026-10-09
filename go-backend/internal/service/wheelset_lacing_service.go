@@ -9,7 +9,7 @@ import (
 	wheelsetlacingdomain "commerce-platform/internal/domain/wheelsetlacing"
 )
 
-const WheelsetLacingContractVersion = "v1.2"
+const WheelsetLacingContractVersion = "v1.4"
 
 // WheelsetLacingService is a deterministic, read-only service for the
 // independent wheelset lacing reference page. It has no repository, product,

@@ -127,6 +127,8 @@ const {
   fetchConversations,
   fetchContext,
   fetchMessages,
+  appendCustomerServiceMessageToSelectedConversation,
+  updateSelectedConversationPreviewAfterSendingMessage,
   refreshInbox,
   selectConversation: selectInboxConversation,
   changePage,
@@ -211,14 +213,18 @@ const {
   onTyping: handleCustomerTypingEvent,
   onConnected: refreshInbox,
   onRefresh: async (event) => {
-    await fetchConversations()
+    await fetchConversations({ showLoadingIndicator: false })
 
     if (!selectedConversation.value || Number(event.ticket_id) !== Number(selectedConversation.value.id)) {
       return
     }
 
     if (event.type === 'conversation.message.created') {
-      await fetchMessages(selectedConversation.value.id)
+      await fetchMessages(selectedConversation.value.id, {
+        showLoadingIndicator: false,
+        clearMessagesWhenRequestFails: false,
+        markMessagesAsRead: event.actor?.kind !== 'agent',
+      })
     }
     if (event.type === 'conversation.assigned') {
       await fetchContext(selectedConversation.value.id)
@@ -251,7 +257,7 @@ const sendCustomerServiceMessage = async (payload: CustomerServiceSendMessagePay
   replying.value = true
   try {
     await notifyAgentTyping(false)
-    await customerServiceApi.sendMessage(conversationID, message, {
+    const sentMessage = await customerServiceApi.sendMessage(conversationID, message, {
       messageType: payload.messageType,
       metadata: payload.metadata,
       attachmentUrl: payload.attachmentUrl,
@@ -262,12 +268,10 @@ const sendCustomerServiceMessage = async (payload: CustomerServiceSendMessagePay
       clearCurrentDraft(conversationID)
     }
 
+    appendCustomerServiceMessageToSelectedConversation(conversationID, sentMessage)
+    updateSelectedConversationPreviewAfterSendingMessage(conversationID, sentMessage)
     toast.success(payload.toastLabel || getCustomerServiceMessageToastLabel(payload.messageType))
-    await Promise.all([
-      fetchMessages(conversationID),
-      fetchConversations(),
-      fetchContext(conversationID),
-    ])
+    void fetchConversations({ showLoadingIndicator: false })
   } catch (error) {
     console.error('Failed to send customer-service message:', error)
   } finally {

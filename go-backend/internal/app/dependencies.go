@@ -78,12 +78,14 @@ type Repositories struct {
 	OrderEvidenceSubmission        *repository.OrderEvidenceSubmissionSnapshotRepository
 	OrderEvidenceExport            *repository.OrderEvidenceExportSnapshotRepository
 	Payment                        *repository.PaymentRepository
+	TaxRate                        *repository.TaxRateRepository
 	PaymentOperationIdempotency    *repository.PaymentOperationIdempotencyRepository
 	PaymentRisk                    *repository.PaymentRiskRepository
 	PaymentProtection              *repository.PaymentProtectionRepository
 	PaymentRefundReview            *repository.PaymentRefundRecommendationRepository
 	PaymentRefundExec              *repository.PaymentRefundExecutionRepository
 	PaymentRefundIdempotency       *repository.PaymentRefundIdempotencyRepository
+	TaxRateSourceSnapshot          *repository.TaxRateSourceSnapshotRepository
 	ExchangeRate                   *repository.ExchangeRateRepository
 	Shipping                       *repository.ShippingRepository
 	FpxAPIConfig                   *repository.FpxAPIConfigRepository
@@ -187,6 +189,7 @@ type Services struct {
 	OrderEvidenceExport                *service.OrderEvidenceExportSnapshotService
 	AfterSales                         *service.AfterSalesService
 	Payment                            *service.PaymentService
+	TaxRate                            *service.TaxRateService
 	Marketing                          *service.MarketingService
 	LoyaltyProgram                     *service.LoyaltyProgramService
 	Referral                           *service.ReferralService
@@ -247,6 +250,7 @@ type Services struct {
 	EmailProviders                     *service.EmailProviderService
 	CurrencyPolicy                     *service.CurrencyPolicyService
 	ExchangeRate                       *service.ExchangeRateService
+	TaxRateSourceSnapshot              *service.TaxRateSourceSnapshotService
 	StorefrontMarket                   *service.StorefrontMarketService
 	OpsDomainBinding                   *service.OpsDomainBindingService
 	OpsDomainDiff                      *service.OpsDomainDiffService

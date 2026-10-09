@@ -26,7 +26,8 @@
       "paymentPending": "Payment is not complete yet. Please check your order status later.",
       "emailRequired": "Add an email address to your account before checkout.",
       "priceUpdated": "The price or configuration has changed. We loaded the latest total. Please review it and continue when ready.",
-      "checkoutAlreadySubmitted": "This cart was already submitted as an order. Please check your order status before trying again."
+      "checkoutAlreadySubmitted": "This cart was already submitted as an order. Please check your order status before trying again.",
+      "taxRateUnavailable": "No se pueden calcular los impuestos para esta dirección ahora. Inténtalo de nuevo más tarde o contacta con soporte."
     }
   },
   "order": {
@@ -170,7 +171,8 @@
         "selectCountry": "Select country",
         "unavailable": "Unavailable",
         "calculating": "Calculating...",
-        "free": "Free"
+        "free": "Free",
+        "selectStateProvince": "Selecciona un estado o una provincia"
       },
       "zip": "Postal code",
       "method": "Delivery method",

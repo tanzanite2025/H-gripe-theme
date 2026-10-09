@@ -1,15 +1,17 @@
 <template>
   <div class="how-to-choose-guide">
     <!-- Main Premium Card -->
-    <div class="rounded-2xl bg-[var(--tz-card-surface)] p-5 text-center shadow-md md:p-6">
+    <div class="rounded-2xl bg-[var(--tz-card-surface)] p-3 text-center shadow-md md:p-6">
       <h2 class="mb-6 flex items-center justify-center gap-2 text-xl font-bold tz-text-secondary">
         {{ t('guidesTireChoose.title') }}
       </h2>
 
-      <!-- Interactive Helper -->
+      <!-- Existing calculator remains the single page input and result entry point. -->
       <div class="mb-8">
         <TireRimHelper />
       </div>
+
+      <TireRimEngineeringReferenceWorkbench />
 
       <div class="mt-8 border-t tz-border-subtle pt-8">
         <div class="mb-6 flex items-center justify-center gap-2">
@@ -43,36 +45,9 @@
           <h4 id="tire-chart-methodology-title" class="tire-chart-methodology__title">
             {{ t('guidesTireChoose.methodology.title') }}
           </h4>
-          <p v-if="tireRimWidthReferenceMetadata?.source" class="tire-chart-methodology__source">
-            {{ t('guidesTireChoose.methodology.source', {
-              source: tireRimWidthReferenceMetadata.source.name,
-              date: tireRimWidthReferenceMetadata.knowledge_as_of,
-            }) }}
-          </p>
-          <p v-else class="tire-chart-methodology__source">
-            {{ t('guidesTireChoose.methodology.unavailable') }}
-          </p>
-          <p v-if="tireRimWidthReferenceMetadata?.source" class="tire-chart-methodology__provenance">
-            {{ t('guidesTireChoose.methodology.provenance', {
-              provenance: tireRimWidthReferenceMetadata.source.provenance,
-            }) }}
-          </p>
           <p class="tire-chart-methodology__body">
             {{ t('guidesTireChoose.methodology.body') }}
           </p>
-          <p v-if="tireRimWidthReferenceMetadata?.model_version" class="tire-chart-methodology__version">
-            {{ t('guidesTireChoose.methodology.version', {
-              modelVersion: tireRimWidthReferenceMetadata.model_version,
-            }) }}
-          </p>
-          <ul class="tire-chart-methodology__limitations">
-            <li
-              v-for="limitationKey in tireRimWidthReferenceLimitationKeys"
-              :key="limitationKey"
-            >
-              {{ t(`guidesTireChoose.methodology.limitations.${limitationKey}`) }}
-            </li>
-          </ul>
         </section>
 
         <div id="tire-chart-tables" class="tire-chart-table-grid">
@@ -179,6 +154,7 @@
 import { computed, watch } from 'vue'
 import { useAsyncData, useHead, useI18n, useSwitchLocalePath } from '#imports'
 import TireRimHelper from '~/components/TireRimHelper.vue'
+import TireRimEngineeringReferenceWorkbench from '~/components/tireguides/TireRimEngineeringReferenceWorkbench.vue'
 import { usePageMessages } from '~/composables/usePageMessages'
 import {
   useStorefrontSeoLinks,
@@ -200,12 +176,6 @@ const { canonicalUrl } = useStorefrontSeoLinks()
 const { loadPageMessages } = usePageMessages('guidesTireChoose')
 
 const tireRimReferencePublishedLocaleCodes = ['en', 'zh_cn'] as const
-const tireRimWidthReferenceLimitationKeys = [
-  'modelSpecificCertification',
-  'possibleReferenceStatus',
-  'interpolationProjection',
-  'displayOnlyMetrics',
-] as const
 const localizedTireRimReferenceSeoRoutes = computed(() => (
   tireRimReferencePublishedLocaleCodes.map((code) => {
     const localizedPath = switchLocalePath(code as any)
@@ -257,6 +227,7 @@ const formatWidthList = (widths: TireRimWidthRange[]) =>
   widths.length > 0
     ? `${formatTireRimWidthReferenceRanges(widths)} mm`
     : t('guidesTireChoose.helper.noneShown')
+
 const tireRimReferenceSchema = computed(() => {
   const metadata = tireRimWidthReferenceMetadata.value
   const language = localeManifest.find(entry => entry.code === locale.value)?.iso || locale.value
@@ -284,8 +255,8 @@ const tireRimReferenceSchema = computed(() => {
         articleBody: t('guidesTireChoose.seo.articleBody'),
         proficiencyLevel: 'Expert',
         author: {
-          '@type': 'Organization',
-          name: 'Tanzanite Engineering Laboratory',
+          '@type': 'Person',
+          name: locale.value === 'zh_cn' ? '王关根' : 'wangguangen',
         },
         inLanguage: language,
         ...(metadata?.model_version ? { version: metadata.model_version } : {}),

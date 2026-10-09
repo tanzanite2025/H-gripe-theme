@@ -3,7 +3,7 @@ import {
   type WheelsetLacingTopologySelection,
 } from './wheelsetLacingSelectionContract'
 
-export const WHEELSET_LACING_DISPLAY_GEOMETRY_CONTRACT_VERSION = 'v1.8-backend-display-geometry'
+export const WHEELSET_LACING_DISPLAY_GEOMETRY_CONTRACT_VERSION = 'v1.15-backend-display-geometry'
 
 export const WHEELSET_LACING_DISPLAY_GEOMETRY_LAYOUT = Object.freeze({
   symmetric1To1: 'symmetric_1to1',
@@ -15,10 +15,19 @@ export const WHEELSET_LACING_DISPLAY_GEOMETRY_LAYOUT = Object.freeze({
 export type WheelsetLacingDisplayGeometryLayout =
   typeof WHEELSET_LACING_DISPLAY_GEOMETRY_LAYOUT[keyof typeof WHEELSET_LACING_DISPLAY_GEOMETRY_LAYOUT]
 
+export const WHEELSET_LACING_SPOKE_HEAD_STYLE = Object.freeze({
+  jBend: 'j_bend',
+  straightPull: 'straight_pull',
+} as const)
+
+export type WheelsetLacingSpokeHeadStyle =
+  typeof WHEELSET_LACING_SPOKE_HEAD_STYLE[keyof typeof WHEELSET_LACING_SPOKE_HEAD_STYLE]
+
 export interface WheelsetLacingDisplayGeometryTopologySelection {
   topologyId: string
   selection: string
   displayLayout: WheelsetLacingDisplayGeometryLayout
+  spokeHeadStyle: WheelsetLacingSpokeHeadStyle
 }
 
 type UnknownRecord = Record<string, unknown>
@@ -198,6 +207,57 @@ const validateDisplayGeometrySpokeMappings = (
   }
 }
 
+const validateStraightPullProjection = (
+  projectionValue: unknown,
+  topologySpokes: unknown[],
+  topologyHubHolesAValue: unknown,
+  topologyHubHolesBValue: unknown,
+  rimPointsByKey: Map<string, UnknownRecord>,
+  baseHubPointsAByKey: Map<string, UnknownRecord>,
+  baseHubPointsBByKey: Map<string, UnknownRecord>,
+): void => {
+  const projection = requireUnknownRecord(projectionValue, 'straight-pull display projection')
+  const flangeCenterA = requireUnknownRecord(projection.flange_center_a, 'straight-pull flange A center')
+  const flangeCenterB = requireUnknownRecord(projection.flange_center_b, 'straight-pull flange B center')
+  const topologyHubHolesA = requireUnknownArray(topologyHubHolesAValue, 'topology hub A holes')
+  const topologyHubHolesB = requireUnknownArray(topologyHubHolesBValue, 'topology hub B holes')
+  const projectedHubPointsAByKey = validatePointListAgainstHoleList(
+    projection.hub_holes_a,
+    topologyHubHolesA,
+    'straight-pull projected hub A',
+  )
+  const projectedHubPointsBByKey = validatePointListAgainstHoleList(
+    projection.hub_holes_b,
+    topologyHubHolesB,
+    'straight-pull projected hub B',
+  )
+
+  for (const [projectedPointsByKey, basePointsByKey, center, sideLabel] of [
+    [projectedHubPointsAByKey, baseHubPointsAByKey, flangeCenterA, 'A'],
+    [projectedHubPointsBByKey, baseHubPointsBByKey, flangeCenterB, 'B'],
+  ] as const) {
+    const centerX = requireFiniteNumber(center.x, `straight-pull flange ${sideLabel} center x`)
+    const centerY = requireFiniteNumber(center.y, `straight-pull flange ${sideLabel} center y`)
+    for (const [key, point] of projectedPointsByKey) {
+      const basePoint = basePointsByKey.get(key)
+      if (!basePoint
+        || point.angle !== basePoint.angle
+        || Math.abs(Number(point.x) - (Number(basePoint.x) + centerX)) > 0.02
+        || Math.abs(Number(point.y) - (Number(basePoint.y) + centerY)) > 0.02) {
+        throw new Error(`straight-pull projected hub ${sideLabel} point ${key} does not match its flange plane`)
+      }
+    }
+  }
+
+  validateDisplayGeometrySpokeMappings(
+    projection.spokes,
+    topologySpokes,
+    rimPointsByKey,
+    projectedHubPointsAByKey,
+    projectedHubPointsBByKey,
+  )
+}
+
 const validateDisplayGeometryMetrics = (metricsValue: unknown): void => {
   const metrics = requireUnknownRecord(metricsValue, 'display geometry metrics')
   for (const field of [
@@ -244,9 +304,16 @@ const validateDisplayGeometryLayoutSpecificFields = (
     const spacingAToB = requireFiniteNumber(spacing.spacing_a_to_b_degrees, 'display geometry G3 group spacing.spacing_a_to_b_degrees')
     const spacingBToA = requireFiniteNumber(spacing.spacing_b_to_a_degrees, 'display geometry G3 group spacing.spacing_b_to_a_degrees')
     const spacingAToNextGroupA = requireFiniteNumber(spacing.spacing_a_to_next_group_a_degrees, 'display geometry G3 group spacing.spacing_a_to_next_group_a_degrees')
+    const parallelHoleSpacing = requireFiniteNumber(spacing.parallel_hole_spacing_mm, 'display geometry G3 group spacing.parallel_hole_spacing_mm')
+    const sideAFlangeHoleCircleRadius = requireFiniteNumber(spacing.side_a_flange_hole_circle_radius_mm, 'display geometry G3 group spacing.side_a_flange_hole_circle_radius_mm')
+    const sideAFlangePCD = requireFiniteNumber(spacing.side_a_flange_pcd_mm, 'display geometry G3 group spacing.side_a_flange_pcd_mm')
+    const flangePCDRoundingToleranceMM = 0.011
     const spacingTotal = spacingAToB + spacingBToA + spacingAToNextGroupA
     if (groupPitch <= 0 || spacingAToB <= 0 || spacingBToA <= 0 || spacingAToNextGroupA <= 0 || Math.abs(spacingTotal - groupPitch) > 0.01) {
       throw new Error('G3 display geometry group spacing must close all three rim-hole gaps to one group pitch')
+    }
+    if (parallelHoleSpacing <= 0 || sideAFlangeHoleCircleRadius <= 0 || Math.abs(sideAFlangePCD - 2 * sideAFlangeHoleCircleRadius) > flangePCDRoundingToleranceMM) {
+      throw new Error('G3 parallel-hole spacing and A-side flange dimensions must be positive and consistent')
     }
     return
   }
@@ -255,37 +322,153 @@ const validateDisplayGeometryLayoutSpecificFields = (
   }
 }
 
-const validateUniform18HTwoToOneTopologyShape = (
+const validateUniformTwoToOneTopologyShape = (
   topology: UnknownRecord,
   rimHoles: unknown[],
   hubHolesA: unknown[],
   hubHolesB: unknown[],
+  expectedRimHoleCount: number,
 ): void => {
+  const holeCountLabel = `${expectedRimHoleCount}H`
   if (requireInteger(topology.cross, 'topology cross') !== 2) {
-    throw new Error('uniform 18H 2:1 display geometry must use 2X crossing')
+    throw new Error(`uniform ${holeCountLabel} 2:1 display geometry must use 2X crossing`)
   }
-  if (rimHoles.length !== 18 || hubHolesA.length !== 12 || hubHolesB.length !== 6) {
-    throw new Error('uniform 18H 2:1 display geometry must contain 18 rim, 12 drive-side, and 6 non-drive-side holes')
+  const groupCount = expectedRimHoleCount / 3
+  const straightPull = topology.spoke_head_style === WHEELSET_LACING_SPOKE_HEAD_STYLE.straightPull
+  const expectedHubHolePairSize = straightPull ? 2 : 1
+  const expectedDriveSideHubHoleCount = (groupCount * 2) / expectedHubHolePairSize
+  const expectedNonDriveSideHubHoleCount = groupCount / expectedHubHolePairSize
+  if (rimHoles.length !== expectedRimHoleCount
+    || hubHolesA.length !== expectedDriveSideHubHoleCount
+    || hubHolesB.length !== expectedNonDriveSideHubHoleCount) {
+    throw new Error(`uniform ${holeCountLabel} 2:1 display geometry has incorrect rim or flange hole counts for its spoke head style`)
   }
   rimHoles.forEach((holeValue, index) => {
-    const hole = requireUnknownRecord(holeValue, `uniform 18H rim hole ${index}`)
+    const hole = requireUnknownRecord(holeValue, `uniform ${holeCountLabel} rim hole ${index}`)
     const expectedSide = index % 3 === 1 ? 'B' : 'A'
-    if (requireSide(hole.side, `uniform 18H rim hole ${index} side`) !== expectedSide) {
-      throw new Error('uniform 18H 2:1 rim holes must repeat the A-B-A sequence')
+    if (requireSide(hole.side, `uniform ${holeCountLabel} rim hole ${index} side`) !== expectedSide) {
+      throw new Error(`uniform ${holeCountLabel} 2:1 rim holes must repeat the A-B-A sequence`)
     }
+    requireInteger(hole.id, `uniform ${holeCountLabel} rim hole ${index} id`)
   })
   hubHolesA.forEach((holeValue, index) => {
-    const hole = requireUnknownRecord(holeValue, `uniform 18H hub A hole ${index}`)
-    if (requireSide(hole.side, `uniform 18H hub A hole ${index} side`) !== 'A') {
-      throw new Error('uniform 18H drive-side hub holes must all be side A')
+    const hole = requireUnknownRecord(holeValue, `uniform ${holeCountLabel} hub A hole ${index}`)
+    if (requireSide(hole.side, `uniform ${holeCountLabel} hub A hole ${index} side`) !== 'A') {
+      throw new Error(`uniform ${holeCountLabel} drive-side hub holes must all be side A`)
     }
+    requireInteger(hole.id, `uniform ${holeCountLabel} hub A hole ${index} id`)
   })
   hubHolesB.forEach((holeValue, index) => {
-    const hole = requireUnknownRecord(holeValue, `uniform 18H hub B hole ${index}`)
-    if (requireSide(hole.side, `uniform 18H hub B hole ${index} side`) !== 'B') {
-      throw new Error('uniform 18H non-drive-side hub holes must all be side B')
+    const hole = requireUnknownRecord(holeValue, `uniform ${holeCountLabel} hub B hole ${index}`)
+    if (requireSide(hole.side, `uniform ${holeCountLabel} hub B hole ${index} side`) !== 'B') {
+      throw new Error(`uniform ${holeCountLabel} non-drive-side hub holes must all be side B`)
     }
+    requireInteger(hole.id, `uniform ${holeCountLabel} hub B hole ${index} id`)
   })
+}
+
+const validateTwentyOneHoleG3TopologyShape = (
+  topology: UnknownRecord,
+  rimHoles: unknown[],
+  hubHolesA: unknown[],
+  hubHolesB: unknown[],
+  topologySpokes: unknown[],
+): void => {
+  const driveSideFlangeHoleCount = 7
+  const nonDriveSideFlangeHoleCount = 7
+  if (requireInteger(topology.cross, 'G3 topology cross') !== 2
+    || topology.spoke_head_style !== WHEELSET_LACING_SPOKE_HEAD_STYLE.straightPull
+    || rimHoles.length !== 21
+    || hubHolesA.length !== driveSideFlangeHoleCount
+    || hubHolesB.length !== nonDriveSideFlangeHoleCount) {
+    throw new Error('21-hole G3 topology must use its registered 2:1 metadata, straight-pull heads, 14/7 spoke counts, and 7/7 flange-hole counts')
+  }
+
+  rimHoles.forEach((holeValue, index) => {
+    const hole = requireUnknownRecord(holeValue, `G3 rim hole ${index}`)
+    const expectedSide = index % 3 === 1 ? 'B' : 'A'
+    if (requireSide(hole.side, `G3 rim hole ${index} side`) !== expectedSide) {
+      throw new Error('21-hole G3 rim holes must repeat the A-B-A group sequence')
+    }
+    requireInteger(hole.id, `G3 rim hole ${index} id`)
+  })
+
+  const driveSpokesByHubHoleId = new Map<number, UnknownRecord[]>()
+  const nonDriveSpokesByHubHoleId = new Map<number, UnknownRecord[]>()
+  for (const spokeValue of topologySpokes) {
+    const spoke = requireUnknownRecord(spokeValue, 'G3 topology spoke')
+    const side = requireSide(spoke.side, 'G3 topology spoke side')
+    const hubHoleId = requireInteger(spoke.hub_hole_id, 'G3 topology spoke hub hole id')
+    if (side === 'A') {
+      const spokes = driveSpokesByHubHoleId.get(hubHoleId) ?? []
+      spokes.push(spoke)
+      driveSpokesByHubHoleId.set(hubHoleId, spokes)
+    } else {
+      const spokes = nonDriveSpokesByHubHoleId.get(hubHoleId) ?? []
+      spokes.push(spoke)
+      nonDriveSpokesByHubHoleId.set(hubHoleId, spokes)
+    }
+  }
+
+  for (let group = 0; group < driveSideFlangeHoleCount; group++) {
+    const nextGroup = (group + 1) % driveSideFlangeHoleCount
+    const spokes = driveSpokesByHubHoleId.get(group)
+    if (!spokes || spokes.length !== 2) {
+      throw new Error(`G3 drive flange hole ${group} must serve exactly two drive spokes`)
+    }
+    const trailingSpoke = spokes.find(spoke => requireSpokeType(spoke.type, `G3 drive spoke in flange hole ${group}`) === 'trailing')
+    const leadingSpoke = spokes.find(spoke => requireSpokeType(spoke.type, `G3 drive spoke in flange hole ${group}`) === 'leading')
+    if (!trailingSpoke || !leadingSpoke
+      || requireInteger(trailingSpoke.rim_hole_id, `G3 trailing spoke in flange hole ${group} rim hole id`) !== group * 3 + 2
+      || requireInteger(leadingSpoke.rim_hole_id, `G3 leading spoke in flange hole ${group} rim hole id`) !== nextGroup * 3) {
+      throw new Error(`G3 drive flange hole ${group} must span the adjacent group boundary between the two outer A rim holes`)
+    }
+  }
+
+  for (let hubHoleId = 0; hubHoleId < nonDriveSideFlangeHoleCount; hubHoleId++) {
+    const spokes = nonDriveSpokesByHubHoleId.get(hubHoleId)
+    const spoke = spokes?.[0]
+    if (!spokes || spokes.length !== 1 || !spoke
+      || requireSpokeType(spoke.type, `G3 non-drive spoke ${hubHoleId}`) !== 'nondrive'
+      || requireInteger(spoke.rim_hole_id, `G3 non-drive spoke ${hubHoleId} rim hole id`) !== hubHoleId * 3 + 1) {
+      throw new Error(`G3 non-drive flange hole ${hubHoleId} must remain radial to its grouped rim hole`)
+    }
+  }
+
+  if (driveSpokesByHubHoleId.size !== driveSideFlangeHoleCount
+    || nonDriveSpokesByHubHoleId.size !== nonDriveSideFlangeHoleCount) {
+    throw new Error('G3 spokes must map only to the seven drive and seven non-drive flange holes')
+  }
+}
+
+const validatePairedStraightPullTopologyShape = (
+  hubHolesA: unknown[],
+  hubHolesB: unknown[],
+  topologySpokes: unknown[],
+): void => {
+  const spokeCountByHubHoleKey = new Map<string, number>()
+  for (const spokeValue of topologySpokes) {
+    const spoke = requireUnknownRecord(spokeValue, 'straight-pull topology spoke')
+    const side = requireSide(spoke.side, 'straight-pull topology spoke side')
+    const hubHoleId = requireInteger(spoke.hub_hole_id, 'straight-pull topology spoke hub hole id')
+    const key = `${side}:${hubHoleId}`
+    spokeCountByHubHoleKey.set(key, (spokeCountByHubHoleKey.get(key) ?? 0) + 1)
+  }
+
+  for (const [holes, expectedSide] of [[hubHolesA, 'A'], [hubHolesB, 'B']] as const) {
+    for (const holeValue of holes) {
+      const hole = requireUnknownRecord(holeValue, `straight-pull hub ${expectedSide} hole`)
+      const id = requireInteger(hole.id, `straight-pull hub ${expectedSide} hole id`)
+      const side = requireSide(hole.side, `straight-pull hub ${expectedSide} hole side`)
+      if (side !== expectedSide || spokeCountByHubHoleKey.get(`${side}:${id}`) !== 2) {
+        throw new Error(`straight-pull hub hole ${expectedSide}:${id} must be shared by exactly two spokes`)
+      }
+      spokeCountByHubHoleKey.delete(`${side}:${id}`)
+    }
+  }
+  if (spokeCountByHubHoleKey.size !== 0) {
+    throw new Error('straight-pull topology spokes must map only to registered shared flange holes')
+  }
 }
 
 /**
@@ -296,6 +479,7 @@ const validateUniform18HTwoToOneTopologyShape = (
 export const resolveWheelsetLacingDisplayGeometryTopologySelection = (
   topologySelection: WheelsetLacingTopologySelection,
   cross: number,
+  requestedSpokeHeadStyle?: WheelsetLacingSpokeHeadStyle,
 ): WheelsetLacingDisplayGeometryTopologySelection => {
   const supportedCrossCounts = getSupportedWheelsetLacingCrossCounts(topologySelection)
   if (supportedCrossCounts.length === 0) {
@@ -304,24 +488,41 @@ export const resolveWheelsetLacingDisplayGeometryTopologySelection = (
   if (!supportedCrossCounts.includes(cross)) {
     throw new Error(`unsupported ${String(topologySelection)} wheelset lacing cross count ${String(cross)}`)
   }
+  const spokeHeadStyle = requestedSpokeHeadStyle
+    ?? (topologySelection === '21_g3'
+      ? WHEELSET_LACING_SPOKE_HEAD_STYLE.straightPull
+      : WHEELSET_LACING_SPOKE_HEAD_STYLE.jBend)
+  if (!Object.values(WHEELSET_LACING_SPOKE_HEAD_STYLE).includes(spokeHeadStyle)) {
+    throw new Error(`unsupported wheelset spoke head style ${String(spokeHeadStyle)}`)
+  }
+  if (topologySelection === '21_g3' && spokeHeadStyle !== WHEELSET_LACING_SPOKE_HEAD_STYLE.straightPull) {
+    throw new Error('21-hole G3 is available only in straight-pull mode')
+  }
   switch (topologySelection) {
     case '21_g3':
       return {
         topologyId: '21h-g3-2to1',
         selection: '21_g3',
         displayLayout: WHEELSET_LACING_DISPLAY_GEOMETRY_LAYOUT.g3TwentyOneHoleTriplet2To1,
+        spokeHeadStyle: WHEELSET_LACING_SPOKE_HEAD_STYLE.straightPull,
       }
     case '24_2to1':
       return {
-        topologyId: '24h-uniform-2to1',
+        topologyId: spokeHeadStyle === WHEELSET_LACING_SPOKE_HEAD_STYLE.straightPull
+          ? '24h-uniform-2to1-straight-pull'
+          : '24h-uniform-2to1',
         selection: '24_2to1',
         displayLayout: WHEELSET_LACING_DISPLAY_GEOMETRY_LAYOUT.uniform2To1,
+        spokeHeadStyle,
       }
     case '18_2to1':
       return {
-        topologyId: '18h-uniform-2to1',
+        topologyId: spokeHeadStyle === WHEELSET_LACING_SPOKE_HEAD_STYLE.straightPull
+          ? '18h-uniform-2to1-straight-pull'
+          : '18h-uniform-2to1',
         selection: '18_2to1',
         displayLayout: WHEELSET_LACING_DISPLAY_GEOMETRY_LAYOUT.uniform18H2To1,
+        spokeHeadStyle,
       }
     case 16:
     case 20:
@@ -330,9 +531,12 @@ export const resolveWheelsetLacingDisplayGeometryTopologySelection = (
     case 32:
     case 36:
       return {
-        topologyId: `${topologySelection}h-symmetric-1to1-${cross}x`,
+        topologyId: spokeHeadStyle === WHEELSET_LACING_SPOKE_HEAD_STYLE.straightPull
+          ? `${topologySelection}h-symmetric-1to1-${cross}x-straight-pull`
+          : `${topologySelection}h-symmetric-1to1-${cross}x`,
         selection: String(topologySelection),
         displayLayout: WHEELSET_LACING_DISPLAY_GEOMETRY_LAYOUT.symmetric1To1,
+        spokeHeadStyle,
       }
     default:
     throw new Error(`unregistered wheelset lacing display topology ${String(topologySelection)}`)
@@ -369,6 +573,9 @@ export const validateWheelsetLacingDisplayGeometryResponse = (
   if (!Object.values(WHEELSET_LACING_DISPLAY_GEOMETRY_LAYOUT).includes(topology.display_layout as WheelsetLacingDisplayGeometryLayout)) {
     throw new Error(`unsupported display geometry layout ${String(topology.display_layout)}`)
   }
+  if (topology.spoke_head_style !== expectedSelection.spokeHeadStyle) {
+    throw new Error('topology spoke head style does not match the selected spoke head tab')
+  }
   const holeCount = requireInteger(topology.hole_count, 'topology hole_count')
   requireInteger(topology.cross, 'topology cross')
   const distributionByLayout: Record<WheelsetLacingDisplayGeometryLayout, string> = {
@@ -397,17 +604,34 @@ export const validateWheelsetLacingDisplayGeometryResponse = (
   if (topologyRimHoles.length !== holeCount || topologySpokes.length !== holeCount) {
     throw new Error('topology rim-hole and spoke counts must equal topology hole_count')
   }
-  if (expectedSelection.displayLayout === WHEELSET_LACING_DISPLAY_GEOMETRY_LAYOUT.uniform18H2To1
-    && (topologyHubHolesA.length !== 12 || topologyHubHolesB.length !== 6)) {
-    throw new Error('uniform 18H 2:1 display geometry must contain 12 drive-side and 6 non-drive-side hub holes')
+  if (expectedSelection.displayLayout === WHEELSET_LACING_DISPLAY_GEOMETRY_LAYOUT.uniform2To1) {
+    validateUniformTwoToOneTopologyShape(topology, topologyRimHoles, topologyHubHolesA, topologyHubHolesB, 24)
   }
   if (expectedSelection.displayLayout === WHEELSET_LACING_DISPLAY_GEOMETRY_LAYOUT.uniform18H2To1) {
-    validateUniform18HTwoToOneTopologyShape(topology, topologyRimHoles, topologyHubHolesA, topologyHubHolesB)
+    validateUniformTwoToOneTopologyShape(topology, topologyRimHoles, topologyHubHolesA, topologyHubHolesB, 18)
+  }
+  if (expectedSelection.displayLayout === WHEELSET_LACING_DISPLAY_GEOMETRY_LAYOUT.g3TwentyOneHoleTriplet2To1) {
+    validateTwentyOneHoleG3TopologyShape(topology, topologyRimHoles, topologyHubHolesA, topologyHubHolesB, topologySpokes)
+  } else if (expectedSelection.spokeHeadStyle === WHEELSET_LACING_SPOKE_HEAD_STYLE.straightPull) {
+    validatePairedStraightPullTopologyShape(topologyHubHolesA, topologyHubHolesB, topologySpokes)
   }
   const rimPointsByKey = validatePointListAgainstHoleList(geometry.rim_holes, topologyRimHoles, 'rim')
   const hubPointsAByKey = validatePointListAgainstHoleList(geometry.hub_holes_a, topologyHubHolesA, 'hub A')
   const hubPointsBByKey = validatePointListAgainstHoleList(geometry.hub_holes_b, topologyHubHolesB, 'hub B')
   validateDisplayGeometrySpokeMappings(geometry.spokes, topologySpokes, rimPointsByKey, hubPointsAByKey, hubPointsBByKey)
+  if (expectedSelection.spokeHeadStyle === WHEELSET_LACING_SPOKE_HEAD_STYLE.straightPull) {
+    validateStraightPullProjection(
+      geometry.straight_pull_projection,
+      topologySpokes,
+      topologyHubHolesA,
+      topologyHubHolesB,
+      rimPointsByKey,
+      hubPointsAByKey,
+      hubPointsBByKey,
+    )
+  } else if (geometry.straight_pull_projection !== undefined) {
+    throw new Error('J-bend geometry must not expose straight-pull flange projections')
+  }
   validateDisplayGeometryMetrics(geometry.metrics)
   validateDisplayGeometryFlangeProfile(geometry.flange_profile)
   validateDisplayGeometryLayoutSpecificFields(expectedSelection.displayLayout, geometry.g3_group_spacing)

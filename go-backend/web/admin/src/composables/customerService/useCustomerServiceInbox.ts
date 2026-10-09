@@ -8,6 +8,16 @@ import type {
   CustomerServiceFiltersState,
 } from '@/modules/customer-service/customerServiceTypes'
 
+interface CustomerServiceConversationFetchOptions {
+  showLoadingIndicator?: boolean
+}
+
+interface CustomerServiceMessageFetchOptions {
+  showLoadingIndicator?: boolean
+  clearMessagesWhenRequestFails?: boolean
+  markMessagesAsRead?: boolean
+}
+
 export const useCustomerServiceInbox = () => {
   const loading = ref(false)
   const messagesLoading = ref(false)
@@ -35,6 +45,9 @@ export const useCustomerServiceInbox = () => {
   const totalPages = computed(() => Math.max(1, Math.ceil((pagination.total || 0) / pagination.pageSize)))
 
   const filteredConversations = computed(() => conversations.value)
+  let activeConversationRequests = 0
+  let conversationRequestSequence = 0
+  let messagesRequestSequence = 0
 
   const conversationKey = (conversationID: number | string | null | undefined): string => {
     const normalized = String(conversationID ?? '').trim()
@@ -56,8 +69,15 @@ export const useCustomerServiceInbox = () => {
     if (conversationKey(selectedConversation.value?.id) === key) replyMessage.value = ''
   }
 
-  const fetchConversations = async () => {
-    loading.value = true
+  const fetchConversations = async (
+    options: CustomerServiceConversationFetchOptions = {},
+  ) => {
+    const showLoadingIndicator = options.showLoadingIndicator !== false
+    if (showLoadingIndicator) {
+      activeConversationRequests += 1
+      loading.value = true
+    }
+    const requestSequence = ++conversationRequestSequence
     try {
       const data = await customerServiceApi.listConversations({
         page: pagination.page,
@@ -68,6 +88,7 @@ export const useCustomerServiceInbox = () => {
         identity: filters.identity !== 'all' ? filters.identity : undefined,
         unread: filters.unread === 'unread' ? 'true' : undefined,
       })
+      if (requestSequence !== conversationRequestSequence) return
       conversations.value = data.conversations || []
       pagination.total = data.pagination?.total ?? conversations.value.length
 
@@ -86,7 +107,10 @@ export const useCustomerServiceInbox = () => {
     } catch (error) {
       console.error('Failed to fetch customer-service conversations:', error)
     } finally {
-      loading.value = false
+      if (showLoadingIndicator) {
+        activeConversationRequests = Math.max(0, activeConversationRequests - 1)
+        loading.value = activeConversationRequests > 0
+      }
     }
   }
 
@@ -126,17 +150,79 @@ export const useCustomerServiceInbox = () => {
     }
   }
 
-  const fetchMessages = async (conversationID: number | string | null | undefined) => {
+  const fetchMessages = async (
+    conversationID: number | string | null | undefined,
+    options: CustomerServiceMessageFetchOptions = {},
+  ) => {
     if (!conversationID) return
-    messagesLoading.value = true
+    const showLoadingIndicator = options.showLoadingIndicator !== false
+    const clearMessagesWhenRequestFails = options.clearMessagesWhenRequestFails !== false
+    const markMessagesAsRead = options.markMessagesAsRead !== false
+    const requestSequence = ++messagesRequestSequence
+    if (showLoadingIndicator) messagesLoading.value = true
     try {
-      messages.value = await customerServiceApi.listMessages(conversationID)
-      await customerServiceApi.markMessagesRead(conversationID)
+      const nextMessages = await customerServiceApi.listMessages(conversationID)
+      if (
+        requestSequence !== messagesRequestSequence
+        || conversationKey(selectedConversation.value?.id) !== conversationKey(conversationID)
+      ) return
+      messages.value = nextMessages
+      if (markMessagesAsRead) await customerServiceApi.markMessagesRead(conversationID)
     } catch (error) {
       console.error('Failed to fetch customer-service messages:', error)
-      messages.value = []
+      if (
+        requestSequence === messagesRequestSequence
+        && conversationKey(selectedConversation.value?.id) === conversationKey(conversationID)
+        && clearMessagesWhenRequestFails
+      ) messages.value = []
     } finally {
-      messagesLoading.value = false
+      if (showLoadingIndicator && requestSequence === messagesRequestSequence) messagesLoading.value = false
+    }
+  }
+
+  const appendCustomerServiceMessageToSelectedConversation = (
+    conversationID: number | string,
+    message: CustomerConversationMessage,
+  ): void => {
+    if (conversationKey(selectedConversation.value?.id) !== conversationKey(conversationID)) return
+
+    messagesRequestSequence += 1
+    messagesLoading.value = false
+
+    const messageID = String(message?.id ?? '').trim()
+    const existingMessageIndex = messageID
+      ? messages.value.findIndex((item) => String(item?.id ?? '').trim() === messageID)
+      : -1
+    if (existingMessageIndex >= 0) {
+      const nextMessages = [...messages.value]
+      nextMessages[existingMessageIndex] = message
+      messages.value = nextMessages
+      return
+    }
+
+    messages.value = [...messages.value, message]
+  }
+
+  const updateSelectedConversationPreviewAfterSendingMessage = (
+    conversationID: number | string,
+    message: CustomerConversationMessage,
+  ): void => {
+    const normalizedConversationID = conversationKey(conversationID)
+    const lastMessage = String(message.content || message.message || '').trim()
+    if (!normalizedConversationID || !lastMessage) return
+
+    conversations.value = conversations.value.map((conversation) => (
+      conversationKey(conversation.id) === normalizedConversationID
+        ? { ...conversation, last_message: lastMessage }
+        : conversation
+    ))
+
+    const currentSelectedConversation = selectedConversation.value
+    if (conversationKey(currentSelectedConversation?.id) === normalizedConversationID && currentSelectedConversation) {
+      selectedConversation.value = {
+        ...currentSelectedConversation,
+        last_message: lastMessage,
+      }
     }
   }
 
@@ -207,6 +293,8 @@ export const useCustomerServiceInbox = () => {
     fetchContext,
     fetchAgents,
     fetchMessages,
+    appendCustomerServiceMessageToSelectedConversation,
+    updateSelectedConversationPreviewAfterSendingMessage,
     refreshInbox,
     selectConversation,
     changePage,

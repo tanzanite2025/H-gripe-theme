@@ -7,7 +7,7 @@ import (
 	"commerce-platform/internal/repository"
 )
 
-func TestSchwalbeTireCatalogRimWidthReferenceForRowsUsesBackendInterpolation(t *testing.T) {
+func TestSchwalbeTireCatalogRimWidthReferenceForRowsUsesBackendEngineeringWindow(t *testing.T) {
 	nominalWidthMM := 31
 	rows := []schwalbeTireCatalogSelectorRow{{
 		item: repository.SchwalbeTireCatalogItem{
@@ -28,10 +28,10 @@ func TestSchwalbeTireCatalogRimWidthReferenceForRowsUsesBackendInterpolation(t *
 	if len(guidance) != 1 {
 		t.Fatalf("expected one hooked reference result, got %#v", guidance)
 	}
-	if guidance[0].RimSystem != tirerim.RimSystemHooked || guidance[0].ResultKind != "interpolated" {
-		t.Fatalf("expected backend hooked interpolation, got %#v", guidance[0])
+	if guidance[0].RimSystem != tirerim.RimSystemHooked || guidance[0].ResultKind != "engineering_recommended" {
+		t.Fatalf("expected backend hooked engineering recommendation, got %#v", guidance[0])
 	}
-	if len(guidance[0].RimWidthRanges) != 1 || guidance[0].RimWidthRanges[0] != (tirerim.WidthRange{Min: 20, Max: 24}) {
-		t.Fatalf("unexpected interpolated hooked range: %#v", guidance[0].RimWidthRanges)
+	if len(guidance[0].RimWidthRanges) != 1 || guidance[0].RimWidthRanges[0] != (tirerim.WidthRange{Min: 23, Max: 25}) {
+		t.Fatalf("unexpected engineering hooked range: %#v", guidance[0].RimWidthRanges)
 	}
 }

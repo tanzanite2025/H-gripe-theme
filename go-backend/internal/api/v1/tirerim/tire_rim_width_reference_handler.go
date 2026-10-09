@@ -21,8 +21,9 @@ func NewTireRimWidthReferenceHandler() *TireRimWidthReferenceHandler {
 }
 
 type tireRimWidthReferenceSolveRequest struct {
-	TireWidthMM int    `json:"tire_width_mm"`
-	RimSystem   string `json:"rim_system"`
+	TireWidthMM     int    `json:"tire_width_mm"`
+	RimSystem       string `json:"rim_system"`
+	RimInnerWidthMM *int   `json:"rim_inner_width_mm,omitempty"`
 }
 
 func (h *TireRimWidthReferenceHandler) RegisterTireRimWidthReferenceHTTPRoutes(group *gin.RouterGroup) {
@@ -53,7 +54,37 @@ func (h *TireRimWidthReferenceHandler) SolveTireRimWidthReference(c *gin.Context
 		tireRimWidthReferenceWriteAPIErrorResponse(c, http.StatusBadRequest, "INVALID_JSON", "Request body must contain exactly one JSON object", "")
 		return
 	}
-	result, err := domain.ResolveTireRimWidthReference(request.TireWidthMM, domain.NormalizeRimSystem(request.RimSystem))
+	normalizedRimSystem := domain.NormalizeRimSystem(request.RimSystem)
+	if request.RimInnerWidthMM != nil {
+		engineeringCalculation, err := domain.CalculateTireRimEngineeringReference(
+			normalizedRimSystem,
+			*request.RimInnerWidthMM,
+			request.TireWidthMM,
+		)
+		if err != nil {
+			status := http.StatusBadRequest
+			code := "INVALID_FIELD"
+			field := ""
+			switch {
+			case errors.Is(err, domain.ErrInvalidTireWidth):
+				status = http.StatusUnprocessableEntity
+				code = "OUT_OF_RANGE"
+				field = "tire_width_mm"
+			case errors.Is(err, domain.ErrInvalidRimSystem):
+				field = "rim_system"
+			case errors.Is(err, domain.ErrInvalidTireRimEngineeringInnerWidth):
+				status = http.StatusUnprocessableEntity
+				code = "OUT_OF_RANGE"
+				field = "rim_inner_width_mm"
+			}
+			tireRimWidthReferenceWriteAPIErrorResponse(c, status, code, err.Error(), field)
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"code": 0, "data": domain.BuildTireRimEngineeringSuggestion(engineeringCalculation)})
+		return
+	}
+
+	result, err := domain.ResolveTireRimWidthReference(request.TireWidthMM, normalizedRimSystem)
 	if err != nil {
 		status := http.StatusBadRequest
 		code := "INVALID_FIELD"

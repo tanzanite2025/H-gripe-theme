@@ -20,7 +20,13 @@ export interface TireRimWidthReferenceSourceRow {
 export interface TireRimWidthReferenceSuggestion {
   tire_width_mm: number
   rim_system: TireRimReferenceRimSystem
-  result_kind: 'exact_recommended' | 'possible_reference' | 'interpolated' | string
+  result_kind:
+    | 'exact_recommended'
+    | 'possible_reference'
+    | 'interpolated'
+    | 'engineering_recommended'
+    | 'engineering_reference'
+    | string
   rim_width_ranges: TireRimWidthRange[]
   source_rows: TireRimWidthReferenceSourceRow[]
   calculation?: TireRimWidthReferenceCalculation

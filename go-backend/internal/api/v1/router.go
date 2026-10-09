@@ -177,6 +177,7 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 		deps.AntiFraud,
 		services.StorefrontContext,
 	)
+	paymentHandler.ConfigureTaxRateService(services.TaxRate)
 	paymentHandler.ConfigurePublicBaseURL(cfg.Server.BaseURL)
 	paymentHandler.ConfigureCardBINLimiter(deps.CardBINLimiter)
 	paymentHandler.ConfigurePaymentGatewayCircuitBreaker(deps.PaymentGatewayCircuitBreaker)

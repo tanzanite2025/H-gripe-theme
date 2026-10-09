@@ -26,7 +26,8 @@
       "orderFailed": "订单提交失败，请重试",
       "emailRequired": "Add an email address to your account before checkout.",
       "priceUpdated": "The price or configuration has changed. We loaded the latest total. Please review it and continue when ready.",
-      "checkoutAlreadySubmitted": "This cart was already submitted as an order. Please check your order status before trying again."
+      "checkoutAlreadySubmitted": "This cart was already submitted as an order. Please check your order status before trying again.",
+      "taxRateUnavailable": "暂时无法计算此地址的税费，请稍后重试或联系客服。"
     }
   },
   "order": {
@@ -178,7 +179,8 @@
         "selectCountry": "选择国家",
         "unavailable": "不可用",
         "calculating": "正在计算...",
-        "free": "免费"
+        "free": "免费",
+        "selectStateProvince": "选择州或省"
       },
       "zip": "Postal code",
       "method": "Delivery method",

@@ -27,6 +27,7 @@ import (
 
 type Handler struct {
 	paymentService        *service.PaymentService
+	taxRateService        *service.TaxRateService
 	orderService          *service.OrderService
 	settingsService       *service.AdminSettingsService
 	threeDSPolicy         *service.PaymentThreeDSPolicyService
@@ -40,6 +41,13 @@ type Handler struct {
 	gatewayCircuitBreaker *service.PaymentGatewayCircuitBreakerService
 	gatewayFactory        func(*pgateway.Config) (pgateway.PaymentGateway, error)
 	publicBaseURL         string
+}
+
+func (h *Handler) ConfigureTaxRateService(taxRateService *service.TaxRateService) {
+	if h == nil {
+		return
+	}
+	h.taxRateService = taxRateService
 }
 
 func NewHandler(

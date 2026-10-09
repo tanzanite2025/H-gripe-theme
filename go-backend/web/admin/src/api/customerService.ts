@@ -9,6 +9,7 @@ import {
   unwrapApiPayload,
 } from '@/utils/apiResponse'
 import { adminApiBaseUrl } from '@/lib/adminUrl'
+import type { CustomerConversationMessage } from '@/modules/customer-service/customerServiceTypes'
 
 export interface CustomerServiceRetentionEligibility {
   ticket_id: number
@@ -142,7 +143,7 @@ export const customerServiceApi = {
       attachmentUrl?: string
       attachments?: string[]
     } = {},
-  ) {
+  ): Promise<CustomerConversationMessage> {
     const path = `/api/admin/customer-service/conversations/${conversationId}/messages`
     const attachments = Array.isArray(options.attachments)
       ? options.attachments.map((item) => String(item || '').trim()).filter(Boolean)
@@ -155,7 +156,7 @@ export const customerServiceApi = {
       attachment_url: attachmentUrl,
       attachments,
     }), path)
-    return requireApiObjectField(payload, 'message', path)
+    return requireApiObjectField<CustomerConversationMessage>(payload, 'message', path)
   },
 
   async transferConversation(conversationId: number | string, assignedTo: number) {

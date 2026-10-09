@@ -350,6 +350,9 @@ func main() {
 		logger.Info("exchange rate sync scheduler disabled")
 	}
 
+	taxRateSourceSnapshotSyncScheduler := scheduler.NewTaxRateSourceSnapshotSyncScheduler(deps.Services.TaxRateSourceSnapshot)
+	taxRateSourceSnapshotSyncScheduler.Start(context.Background())
+
 	var siteQualityWorker *scheduler.SiteQualityWorker
 	if cfg.Worker.SiteQualityEnabled {
 		siteQualityWorker = scheduler.NewSiteQualityWorker(
@@ -462,6 +465,9 @@ func main() {
 	}
 	if exchangeRateSyncScheduler != nil {
 		exchangeRateSyncScheduler.Stop()
+	}
+	if taxRateSourceSnapshotSyncScheduler != nil {
+		taxRateSourceSnapshotSyncScheduler.Stop()
 	}
 	if siteQualityWorker != nil {
 		siteQualityWorker.Stop()

@@ -7,6 +7,7 @@ import { useAuth } from '~/composables/useAuth'
 import { createIdempotencyKey } from '~/utils/idempotency'
 import { useStorefrontContext } from '~/composables/useStorefrontContext'
 import { useShippingQuote } from '~/composables/useShippingQuote'
+import { normalizeCheckoutStateProvinceCode } from '~/data/checkoutStateProvinceCatalog'
 
 type ApiResponse<T> = T | { data?: T | { data?: T } }
 
@@ -62,6 +63,15 @@ const splitCustomerName = (value: string) => {
 
 const normalizeCountryCode = (value: unknown) => String(value || '').trim().toUpperCase()
 
+const normalizeStripeExpressCheckoutStateProvince = (countryCode: string, stateProvinceValue: unknown): string => {
+  const originalValue = String(stateProvinceValue || '').trim()
+  const normalizedValue = normalizeCheckoutStateProvinceCode(countryCode, originalValue)
+  if (originalValue && !normalizedValue) {
+    throw new Error('The selected state or province is not recognized. Please choose a valid address.')
+  }
+  return normalizedValue
+}
+
 const buildOrderAddressFromStripeExpressCheckoutDetails = (
   addressDetails: StripeExpressCheckoutAddress | undefined,
   paymentDetails: StripeExpressCheckoutPaymentDetails | undefined,
@@ -72,6 +82,7 @@ const buildOrderAddressFromStripeExpressCheckoutDetails = (
   }
 
   const name = splitCustomerName(addressDetails.name)
+  const countryCode = normalizeCountryCode(addressDetails.address.country)
   const email = String(paymentDetails?.email || fallbackEmail || '').trim()
   const phone = String(paymentDetails?.phone || '').trim()
   if (!email || !phone) {
@@ -84,9 +95,9 @@ const buildOrderAddressFromStripeExpressCheckoutDetails = (
     address1: addressDetails.address.line1.trim(),
     address2: String(addressDetails.address.line2 || '').trim(),
     city: addressDetails.address.city.trim(),
-    state: String(addressDetails.address.state || '').trim(),
+    state: normalizeStripeExpressCheckoutStateProvince(countryCode, addressDetails.address.state),
     postal_code: String(addressDetails.address.postal_code || '').trim(),
-    country: normalizeCountryCode(addressDetails.address.country),
+    country: countryCode,
     phone,
     email,
   }
@@ -281,14 +292,15 @@ export function useStripeExpressCheckoutOrder() {
     fallbackPhone: string,
   ) => {
     const name = splitCustomerName(shippingEvent.name)
+    const countryCode = normalizeCountryCode(shippingEvent.address.country)
     return {
       first_name: name.firstName,
       last_name: name.lastName,
       address1: '',
       city: shippingEvent.address.city,
-      state: shippingEvent.address.state,
+      state: normalizeStripeExpressCheckoutStateProvince(countryCode, shippingEvent.address.state),
       postal_code: shippingEvent.address.postal_code,
-      country: normalizeCountryCode(shippingEvent.address.country),
+      country: countryCode,
       phone: fallbackPhone,
       email: fallbackEmail,
     }

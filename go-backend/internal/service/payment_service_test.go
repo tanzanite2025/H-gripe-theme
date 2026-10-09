@@ -1479,74 +1479,6 @@ func TestRecordVerifiedGatewayRefundRejectsOverRefund(t *testing.T) {
 	assert.Equal(t, int64(0), refundCount)
 }
 
-func TestPaymentServicePublicTaxRatesOnlyReturnEnabledRates(t *testing.T) {
-	db, paymentService := newTestPaymentService(t)
-
-	enabledRate := paymentdomain.TaxRate{
-		Name:        "Enabled",
-		Country:     "US",
-		State:       "CA",
-		RateDecimal: "7.5",
-		Enabled:     true,
-	}
-	disabledRate := paymentdomain.TaxRate{
-		Name:        "Disabled",
-		Country:     "US",
-		State:       "NY",
-		RateDecimal: "8.5",
-		Enabled:     false,
-	}
-	require.NoError(t, db.Create(&enabledRate).Error)
-	require.NoError(t, db.Create(&disabledRate).Error)
-	require.NoError(t, db.Model(&paymentdomain.TaxRate{}).Where("id = ?", disabledRate.ID).Update("enabled", false).Error)
-
-	rates, err := paymentService.ListPublicTaxRates()
-	require.NoError(t, err)
-	require.Len(t, rates, 1)
-	assert.Equal(t, enabledRate.ID, rates[0].ID)
-
-	_, err = paymentService.GetPublicTaxRate(disabledRate.ID)
-	require.ErrorIs(t, err, ErrPaymentNotFound)
-}
-
-func TestPaymentServiceCalculateTaxPrefersPostalCodeAndFallsBackToDefault(t *testing.T) {
-	db, paymentService := newTestPaymentService(t)
-
-	defaultRate := paymentdomain.TaxRate{
-		Name:        "California default",
-		Country:     "US",
-		State:       "CA",
-		RateDecimal: "7.25",
-		Enabled:     true,
-	}
-	postalRate := paymentdomain.TaxRate{
-		Name:        "Beverly Hills",
-		Country:     "US",
-		State:       "CA",
-		PostalCode:  "90210",
-		RateDecimal: "9.5",
-		Enabled:     true,
-	}
-	require.NoError(t, db.Create(&defaultRate).Error)
-	require.NoError(t, db.Create(&postalRate).Error)
-
-	amount, err := domainmoney.New(10000, "USD")
-	require.NoError(t, err)
-	rate, taxMoney, err := paymentService.CalculateTaxMoney(amount, "us", "ca", "90210")
-	require.NoError(t, err)
-	tax, err := taxMoney.MajorFloat()
-	require.NoError(t, err)
-	assert.Equal(t, "9.5", rate)
-	assert.InDelta(t, 9.5, tax, 0.001)
-
-	rate, taxMoney, err = paymentService.CalculateTaxMoney(amount, "US", "CA", "10001")
-	require.NoError(t, err)
-	tax, err = taxMoney.MajorFloat()
-	require.NoError(t, err)
-	assert.Equal(t, "7.25", rate)
-	assert.InDelta(t, 7.25, tax, 0.001)
-}
-
 func TestStripeWebhookEventClaimIsIdempotentAndFailedEventsRetry(t *testing.T) {
 	db, paymentService := newTestPaymentService(t)
 
@@ -1904,7 +1836,6 @@ func newTestPaymentService(t *testing.T) (*gorm.DB, *PaymentService) {
 		&paymentdomain.PaymentRefundExecution{},
 		&paymentdomain.RefundIdempotency{},
 		&paymentdomain.RefundLineItem{},
-		&paymentdomain.TaxRate{},
 		&paymentdomain.StripeWebhookEvent{},
 		&paymentdomain.StripeDispute{},
 		&paymentdomain.PayPalDispute{},

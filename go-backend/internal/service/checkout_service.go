@@ -16,14 +16,12 @@ import (
 	"math/big"
 	"strings"
 	"time"
-
-	"gorm.io/gorm"
 )
 
 type CheckoutService struct {
 	productRepo         *repository.ProductRepository
 	couponRepo          *repository.CouponRepository
-	paymentRepo         *repository.PaymentRepository
+	taxRateService      *TaxRateService
 	loyaltyRepo         *repository.LoyaltyRepository
 	referralRepo        *repository.ReferralRepository
 	referralProgramRepo *repository.ReferralProgramRepository
@@ -65,7 +63,7 @@ type CheckoutQuote struct {
 type checkoutRepositories struct {
 	productRepo         *repository.ProductRepository
 	couponRepo          *repository.CouponRepository
-	paymentRepo         *repository.PaymentRepository
+	taxRateRepository   *repository.TaxRateRepository
 	loyaltyRepo         *repository.LoyaltyRepository
 	referralRepo        *repository.ReferralRepository
 	referralProgramRepo *repository.ReferralProgramRepository
@@ -78,15 +76,15 @@ type checkoutRepositories struct {
 func NewCheckoutService(
 	productRepo *repository.ProductRepository,
 	couponRepo *repository.CouponRepository,
-	paymentRepo *repository.PaymentRepository,
+	taxRateService *TaxRateService,
 	loyaltyRepo *repository.LoyaltyRepository,
 	shippingServices ...*ShippingService,
 ) *CheckoutService {
 	checkoutService := &CheckoutService{
-		productRepo: productRepo,
-		couponRepo:  couponRepo,
-		paymentRepo: paymentRepo,
-		loyaltyRepo: loyaltyRepo,
+		productRepo:    productRepo,
+		couponRepo:     couponRepo,
+		taxRateService: taxRateService,
+		loyaltyRepo:    loyaltyRepo,
 	}
 	if len(shippingServices) > 0 {
 		checkoutService.shippingService = shippingServices[0]
@@ -118,7 +116,6 @@ func (s *CheckoutService) Quote(input CheckoutQuoteInput) (*CheckoutQuote, error
 	return s.quote(input, checkoutRepositories{
 		productRepo:         s.productRepo,
 		couponRepo:          s.couponRepo,
-		paymentRepo:         s.paymentRepo,
 		loyaltyRepo:         s.loyaltyRepo,
 		shippingService:     s.shippingService,
 		currencyPolicy:      s.currencyPolicy,
@@ -140,7 +137,7 @@ func (s *CheckoutService) QuoteWithRepositories(input CheckoutQuoteInput, repos 
 	return s.quote(input, checkoutRepositories{
 		productRepo:         repos.Product,
 		couponRepo:          repos.Coupon,
-		paymentRepo:         repos.Payment,
+		taxRateRepository:   repos.TaxRate,
 		loyaltyRepo:         repos.Loyalty,
 		shippingService:     shippingService,
 		currencyPolicy:      NewCurrencyPolicyService(repos.Setting),
@@ -423,7 +420,7 @@ func (s *CheckoutService) quote(input CheckoutQuoteInput, repos checkoutReposito
 		return nil, fmt.Errorf("validate checkout pricing pipeline: %w", err)
 	}
 	taxMoney, err := s.calculateTaxMoney(
-		repos.paymentRepo,
+		repos.taxRateRepository,
 		remainingMerchandiseMoney,
 		input.ShippingAddress.Country,
 		input.ShippingAddress.State,
@@ -991,7 +988,7 @@ func couponConversionRateRat(c *coupon.Coupon, snapshot currency.OrderFXSnapshot
 }
 
 func (s *CheckoutService) calculateTaxMoney(
-	paymentRepo *repository.PaymentRepository,
+	taxRateRepository *repository.TaxRateRepository,
 	amount domainmoney.Money,
 	country, state, postalCode, currencyCode string,
 ) (domainmoney.Money, error) {
@@ -1002,22 +999,17 @@ func (s *CheckoutService) calculateTaxMoney(
 	if amount.Currency().String() != zero.Currency().String() {
 		return domainmoney.Money{}, fmt.Errorf("tax amount currency mismatch: %s and %s", amount.Currency(), zero.Currency())
 	}
-	if paymentRepo == nil {
-		return domainmoney.Money{}, errors.New("payment repository is not configured")
+	if s == nil || s.taxRateService == nil {
+		return domainmoney.Money{}, errors.New("tax rate service is not configured")
 	}
-	taxRate, err := paymentRepo.FindTaxRateByLocation(country, state, postalCode)
+	var tax domainmoney.Money
+	if taxRateRepository != nil {
+		_, tax, err = s.taxRateService.CalculateTaxMoneyInTransaction(taxRateRepository, amount, country, state, postalCode)
+	} else {
+		_, tax, err = s.taxRateService.CalculateTaxMoney(amount, country, state, postalCode)
+	}
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return zero, nil
-		}
-		return domainmoney.Money{}, fmt.Errorf("failed to load tax rate for %s/%s/%s: %w", country, state, postalCode, err)
-	}
-	if taxRate == nil {
-		return domainmoney.Money{}, errors.New("tax rate lookup returned no result")
-	}
-	tax, err := taxRate.CalculateTaxMoney(amount)
-	if err != nil {
-		return domainmoney.Money{}, fmt.Errorf("calculate tax from exact rate: %w", err)
+		return domainmoney.Money{}, fmt.Errorf("failed to calculate tax for %s/%s/%s: %w", country, state, postalCode, err)
 	}
 	return tax, nil
 }

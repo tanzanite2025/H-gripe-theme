@@ -10,8 +10,8 @@ func TestResolveTireRimWidthReferenceReturnsExactRecommendedRow(t *testing.T) {
 	if err != nil {
 		t.Fatalf("resolve: %v", err)
 	}
-	if result.ResultKind != "exact_recommended" {
-		t.Fatalf("expected exact recommendation, got %q", result.ResultKind)
+	if result.ResultKind != "engineering_recommended" {
+		t.Fatalf("expected engineering recommendation, got %q", result.ResultKind)
 	}
 	if len(result.RimWidthRanges) != 1 || result.RimWidthRanges[0] != (WidthRange{Min: 23, Max: 25}) {
 		t.Fatalf("unexpected exact ranges: %#v", result.RimWidthRanges)
@@ -33,43 +33,29 @@ func TestResolveTireRimWidthReferenceMatchesThePublishedRowsShownByTheGuide(t *t
 			name:       "hookless 34 millimetres",
 			width:      34,
 			system:     RimSystemHookless,
-			expected:   []WidthRange{{Min: 23, Max: 25}},
-			resultKind: "exact_recommended",
+			expected:   []WidthRange{{Min: 25, Max: 25}},
+			resultKind: "engineering_reference",
 		},
 		{
 			name:       "hookless 47 millimetres",
 			width:      47,
 			system:     RimSystemHookless,
-			expected:   []WidthRange{{Min: 23, Max: 25}, {Min: 26, Max: 27}},
-			resultKind: "exact_recommended",
+			expected:   []WidthRange{{Min: 28, Max: 30}},
+			resultKind: "engineering_reference",
 		},
 		{
 			name:       "hookless 60 millimetres",
 			width:      60,
 			system:     RimSystemHookless,
-			expected:   []WidthRange{{Min: 26, Max: 27}, {Min: 28, Max: 30}},
-			resultKind: "exact_recommended",
-		},
-		{
-			name:       "hookless 64 millimetres",
-			width:      64,
-			system:     RimSystemHookless,
-			expected:   []WidthRange{{Min: 28, Max: 30}, {Min: 31, Max: 35}},
-			resultKind: "exact_recommended",
-		},
-		{
-			name:       "hookless 102 millimetres",
-			width:      102,
-			system:     RimSystemHookless,
-			expected:   []WidthRange{{Min: 76, Max: 76}},
-			resultKind: "exact_recommended",
+			expected:   []WidthRange{{Min: 30, Max: 30}},
+			resultKind: "engineering_reference",
 		},
 		{
 			name:       "hooked 28 millimetres",
 			width:      28,
 			system:     RimSystemHooked,
-			expected:   []WidthRange{{Min: 18, Max: 20}, {Min: 21, Max: 22}},
-			resultKind: "exact_recommended",
+			expected:   []WidthRange{{Min: 19, Max: 25}},
+			resultKind: "engineering_recommended",
 		},
 	}
 
@@ -125,45 +111,39 @@ func TestGetTireRimWidthReferenceMatrixPreservesPossibleHooklessRowsAtSixtyAndSi
 	}
 }
 
-func TestResolveTireRimWidthReferenceInterpolatesTheGapInsteadOfRejectingIt(t *testing.T) {
+func TestResolveTireRimWidthReferenceUsesEngineeringWindowInsteadOfInterpolation(t *testing.T) {
 	result, err := ResolveTireRimWidthReference(31, RimSystemHookless)
 	if err != nil {
 		t.Fatalf("resolve: %v", err)
 	}
-	if result.ResultKind != "interpolated" {
-		t.Fatalf("expected interpolation, got %q", result.ResultKind)
+	if result.ResultKind != "engineering_recommended" {
+		t.Fatalf("expected engineering recommendation, got %q", result.ResultKind)
 	}
-	if result.Calculation == nil || result.Calculation.LowerTireWidthMM != 30 || result.Calculation.UpperTireWidthMM != 32 {
-		t.Fatalf("unexpected interpolation metadata: %#v", result.Calculation)
-	}
-	if len(result.SourceRows) != 2 || result.SourceRows[0].Kind != "possible_reference" || result.SourceRows[1].Kind != "recommended" {
-		t.Fatalf("unexpected interpolation source rows: %#v", result.SourceRows)
+	if result.Calculation != nil || len(result.SourceRows) != 0 {
+		t.Fatalf("engineering result must not include DT interpolation metadata: calculation=%#v source_rows=%#v", result.Calculation, result.SourceRows)
 	}
 	if len(result.RimWidthRanges) != 1 || result.RimWidthRanges[0] != (WidthRange{Min: 23, Max: 25}) {
-		t.Fatalf("unexpected interpolated ranges: %#v", result.RimWidthRanges)
+		t.Fatalf("unexpected engineering ranges: %#v", result.RimWidthRanges)
 	}
 }
 
-func TestResolveTireRimWidthReferenceKeepsPossibleOnlyRowsLabeledAsReference(t *testing.T) {
+func TestResolveTireRimWidthReferenceUsesTheEngineeringRecommendationWhenSeveralInnerWidthsMatch(t *testing.T) {
 	result, err := ResolveTireRimWidthReference(30, RimSystemHookless)
 	if err != nil {
 		t.Fatalf("resolve: %v", err)
 	}
-	if result.ResultKind != "possible_reference" {
-		t.Fatalf("expected possible reference, got %q", result.ResultKind)
+	if result.ResultKind != "engineering_recommended" {
+		t.Fatalf("expected engineering recommendation, got %q", result.ResultKind)
 	}
-	if result.SourceRows[0].Kind != "possible_reference" {
-		t.Fatalf("possible row was relabeled: %#v", result.SourceRows)
+	if len(result.RimWidthRanges) != 1 || result.RimWidthRanges[0] != (WidthRange{Min: 21, Max: 25}) {
+		t.Fatalf("unexpected engineering range: %#v", result.RimWidthRanges)
 	}
 }
 
-func TestResolveTireRimWidthReferenceDoesNotApplyAnArbitraryTenMillimetreCutoff(t *testing.T) {
+func TestResolveTireRimWidthReferenceRejectsWidthsOutsideTheEngineeringModel(t *testing.T) {
 	result, err := ResolveTireRimWidthReference(96, RimSystemHookless)
-	if err != nil {
-		t.Fatalf("resolve: %v", err)
-	}
-	if len(result.RimWidthRanges) != 1 || result.RimWidthRanges[0] != (WidthRange{Min: 76, Max: 76}) {
-		t.Fatalf("unexpected wide-rim result: %#v", result.RimWidthRanges)
+	if result != nil || !errors.Is(err, ErrNoPublishedBracket) {
+		t.Fatalf("expected no engineering bracket, result=%#v error=%v", result, err)
 	}
 }
 
@@ -172,7 +152,7 @@ func TestResolveTireRimWidthReferenceReportsDisplayOnlyPhysicalProjectionFromThe
 	if err != nil {
 		t.Fatalf("resolve: %v", err)
 	}
-	if result.DerivedMetrics.Status != "display_only" {
+	if result.DerivedMetrics.Status != "engineering" {
 		t.Fatalf("unexpected derived metric status: %q", result.DerivedMetrics.Status)
 	}
 	if result.DerivedMetrics.InflatedTireWidthMM.Min != 33.6 || result.DerivedMetrics.InflatedTireWidthMM.Max != 34.4 {
@@ -184,7 +164,7 @@ func TestResolveTireRimWidthReferenceReportsDisplayOnlyPhysicalProjectionFromThe
 }
 
 func TestResolveTireRimWidthReferenceRejectsWidthsWithoutAChartBracket(t *testing.T) {
-	_, err := ResolveTireRimWidthReference(29, RimSystemHookless)
+	_, err := ResolveTireRimWidthReference(18, RimSystemHookless)
 	if !errors.Is(err, ErrNoPublishedBracket) {
 		t.Fatalf("expected no bracket error, got %v", err)
 	}
@@ -206,5 +186,48 @@ func TestGetTireRimWidthReferenceMetadataClonesRows(t *testing.T) {
 				t.Fatal("metadata mutation leaked into matrix")
 			}
 		}
+	}
+}
+
+func TestCalculateTireRimEngineeringReferenceIncludesThe105PercentAeroProjection(t *testing.T) {
+	result, err := CalculateTireRimEngineeringReference(RimSystemHookless, 25, 32)
+	if err != nil {
+		t.Fatalf("calculate engineering reference: %v", err)
+	}
+	if result.Verdict != TireRimEngineeringVerdictRecommended {
+		t.Fatalf("expected recommended verdict, got %q", result.Verdict)
+	}
+	if result.InflatedTireWidthMM != 34.4 || result.AeroTargetOuterWidthMM != 36.1 {
+		t.Fatalf("unexpected aero projection: inflated=%v target=%v", result.InflatedTireWidthMM, result.AeroTargetOuterWidthMM)
+	}
+	if result.MaximumPressure.Bar != 4.5 || result.MaximumPressure.PSI != 65 {
+		t.Fatalf("unexpected pressure limit: %#v", result.MaximumPressure)
+	}
+}
+
+func TestCalculateTireRimEngineeringReferenceBlocksHooklessTwentyFiveMillimetreRimWithTwentyEightMillimetreTire(t *testing.T) {
+	result, err := CalculateTireRimEngineeringReference(RimSystemHookless, 25, 28)
+	if err != nil {
+		t.Fatalf("calculate engineering reference: %v", err)
+	}
+	if result.Verdict != TireRimEngineeringVerdictCritical || result.VerdictReason != TireRimEngineeringReasonBelowMinimum {
+		t.Fatalf("expected below-minimum critical result, got verdict=%q reason=%q", result.Verdict, result.VerdictReason)
+	}
+}
+
+func TestCalculateTireRimEngineeringReferenceMarksNineteenMillimetreHooklessRimAsTransitional(t *testing.T) {
+	result, err := CalculateTireRimEngineeringReference(RimSystemHookless, 19, 28)
+	if err != nil {
+		t.Fatalf("calculate engineering reference: %v", err)
+	}
+	if result.Verdict != TireRimEngineeringVerdictReference || result.VerdictReason != TireRimEngineeringReasonTransitionalRim {
+		t.Fatalf("expected transitional reference result, got verdict=%q reason=%q", result.Verdict, result.VerdictReason)
+	}
+}
+
+func TestCalculateTireRimEngineeringReferenceRejectsUnsupportedInnerWidth(t *testing.T) {
+	_, err := CalculateTireRimEngineeringReference(RimSystemHookless, 24, 28)
+	if !errors.Is(err, ErrInvalidTireRimEngineeringInnerWidth) {
+		t.Fatalf("expected unsupported inner-width error, got %v", err)
 	}
 }
