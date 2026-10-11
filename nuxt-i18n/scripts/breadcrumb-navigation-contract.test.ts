@@ -286,14 +286,14 @@ assert.equal(switchSibling({
 // A same-family root switch can retain its selected descendants; a different
 // branch falls back to its registered representative route when no match exists.
 assert.equal(switchSibling({
-  currentPath: '/guides/tireguides/choose',
+  currentPath: '/guides/tireguides/tire-rim-width-compatibility',
   breadcrumbPath: '/guides',
   siblingPath: '/guides',
   fallbackPath: '/guides/tireguides',
-  routePatterns: ['/guides/tireguides/:tab(size|choose)'],
-}), '/guides/tireguides/choose')
+  routePatterns: ['/guides/tireguides/:tab(size|tire-rim-width-compatibility)'],
+}), '/guides/tireguides/tire-rim-width-compatibility')
 assert.equal(switchSibling({
-  currentPath: '/guides/tireguides/choose',
+  currentPath: '/guides/tireguides/tire-rim-width-compatibility',
   breadcrumbPath: '/guides',
   siblingPath: '/support',
   fallbackPath: '/support/faqs',

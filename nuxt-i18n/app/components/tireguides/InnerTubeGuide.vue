@@ -1,40 +1,12 @@
 <template>
   <div class="inner-tube-guide space-y-5 md:space-y-6">
     <div class="rounded-2xl bg-[var(--tz-card-surface)] p-2 shadow-md md:p-3">
-      <div
-        class="grid grid-cols-2 gap-1 rounded-xl bg-[var(--tz-page-surface)] p-1"
-        role="tablist"
-        :aria-label="t('guidesTireInnerTube.tabs.ariaLabel')"
-      >
-        <button
-          id="inner-tube-introduction-tab"
-          type="button"
-          role="tab"
-          :aria-selected="activeInnerTubeGuideTab === 'introduction'"
-          aria-controls="inner-tube-introduction-panel"
-          class="rounded-lg px-3 py-2.5 text-sm font-bold transition-colors"
-          :class="activeInnerTubeGuideTab === 'introduction'
-            ? 'bg-[var(--tz-action-primary)] text-[var(--tz-action-primary-foreground)] shadow-sm'
-            : 'tz-text-secondary hover:tz-text-primary'"
-          @click="activeInnerTubeGuideTab = 'introduction'"
-        >
-          {{ t('guidesTireInnerTube.tabs.introduction') }}
-        </button>
-        <button
-          id="inner-tube-calculator-tab"
-          type="button"
-          role="tab"
-          :aria-selected="activeInnerTubeGuideTab === 'calculator'"
-          aria-controls="inner-tube-calculator-panel"
-          class="rounded-lg px-3 py-2.5 text-sm font-bold transition-colors"
-          :class="activeInnerTubeGuideTab === 'calculator'
-            ? 'bg-[var(--tz-action-primary)] text-[var(--tz-action-primary-foreground)] shadow-sm'
-            : 'tz-text-secondary hover:tz-text-primary'"
-          @click="activeInnerTubeGuideTab = 'calculator'"
-        >
-          {{ t('guidesTireInnerTube.tabs.calculator') }}
-        </button>
-      </div>
+      <ReusablePageSectionUnderlineTabs
+        :tabs="innerTubeGuideSectionTabs"
+        :active-id="activeInnerTubeGuideTab"
+        :tab-list-label="t('guidesTireInnerTube.tabs.ariaLabel')"
+        @select="activeInnerTubeGuideTab = $event"
+      />
       <p class="mt-2 px-2 text-center text-xs leading-relaxed tz-text-secondary">
         {{ activeInnerTubeGuideTab === 'introduction'
           ? t('guidesTireInnerTube.tabs.introductionDescription')
@@ -326,13 +298,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from '#imports'
 import GuideImage from '~/components/GuideImage.vue'
 import { useShopSearchSheet } from '~/composables/useShopSearchSheet'
 import { usePageMessages } from '~/composables/usePageMessages'
 import englishInnerTubeGuideMessages from '~/i18n/page-messages/guidesTireInnerTube/en.json'
 import InnerTubeValveLengthAndExtenderFitmentGuide from '~/components/tireguides/InnerTubeValveLengthAndExtenderFitmentGuide.vue'
+import ReusablePageSectionUnderlineTabs from '~/components/ReusablePageSectionUnderlineTabs.vue'
 
 const { locale, t, getLocaleMessage, mergeLocaleMessage } = useI18n()
 const { loadPageMessages } = usePageMessages('guidesTireInnerTube')
@@ -360,6 +333,20 @@ watch(locale, (nextLocale) => {
 
 const { open: openShopSearchSheet } = useShopSearchSheet()
 const activeInnerTubeGuideTab = ref<'introduction' | 'calculator'>('introduction')
+const innerTubeGuideSectionTabs = computed(() => [
+  {
+    id: 'introduction' as const,
+    label: t('guidesTireInnerTube.tabs.introduction'),
+    tabId: 'inner-tube-introduction-tab',
+    panelId: 'inner-tube-introduction-panel',
+  },
+  {
+    id: 'calculator' as const,
+    label: t('guidesTireInnerTube.tabs.calculator'),
+    tabId: 'inner-tube-calculator-tab',
+    panelId: 'inner-tube-calculator-panel',
+  },
+])
 
 type InnerTubeValveType = 'av' | 'dv' | 'sv'
 

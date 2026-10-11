@@ -60,7 +60,7 @@
           <button
             type="button"
               class="inline-flex items-center justify-center rounded-full bg-[var(--tz-card-surface)] border tz-border-subtle px-6 py-2 text-xs font-bold uppercase tracking-wider tz-text-primary shadow-md transition-colors hover:border-[rgba(5, 150, 105,0.28)] hover:tz-surface-subtle hover:text-[var(--tz-site-accent)]"
-            @click="$emit('changeTab', 'choose')"
+            @click="$emit('changeTab', 'tire-rim-width-compatibility')"
           >
              {{ t('guidesTireTubeless.definitions.button') }}
           </button>

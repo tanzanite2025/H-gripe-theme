@@ -76,7 +76,9 @@ type SchwalbeTireCatalogSelectorNullableStringOption struct {
 	Value *string `json:"value"`
 }
 
-// SchwalbeTireCatalogSelectorRimWidthReference is the backend DT Swiss reference result attached to one catalog item.
+// SchwalbeTireCatalogSelectorRimWidthReference is the backend engineering
+// best-fit result attached to one catalog item. The DT Swiss matrix shown on
+// the guide is a separate comparison dataset and is not used here.
 type SchwalbeTireCatalogSelectorRimWidthReference = tirerim.Suggestion
 
 // SchwalbeTireCatalogSelectorFilterOptions are built from the text-search
@@ -112,7 +114,9 @@ type SchwalbeTireCatalogSelectorPage struct {
 	// the API projection. Hooked is always present; Hookless is added only from
 	// an explicit supported fact in the independent compatibility table.
 	RimCompatibilityByArticle map[string][]SchwalbeTireCatalogSelectorRimCompatibility `json:"-"`
-	// RimWidthReferenceByArticle is calculated from exact ETRTO width by the backend DT Swiss reference engine.
+	// RimWidthReferenceByArticle is calculated from exact ETRTO width by the
+	// backend engineering model. It is independent from the guide's DT Swiss
+	// comparison matrix.
 	RimWidthReferenceByArticle map[string][]SchwalbeTireCatalogSelectorRimWidthReference `json:"-"`
 }
 

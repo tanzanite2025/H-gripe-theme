@@ -65,14 +65,12 @@
     "selectedCount": "已选 {count} 项"
   },
   "rimWidth": {
-    "recommendationLabel": "车圈内宽参考",
+    "recommendationLabel": "工程最佳匹配车圈内宽",
+    "referenceLabel": "工程参考车圈内宽",
     "hooked": "有钩车圈",
     "hookless": "无钩车圈",
     "noRecommendation": "暂无该胎宽的精确推荐数据",
-    "possibleReference": "仅作为可用参考",
-    "calculated": "相邻 DT Swiss 数据点线性计算",
-    "calculatedFromPossibleReference": "此计算使用了至少一个仅标为 possible 的数据点，结果是计算参考，不代表制造商推荐。",
-    "sourceNote": "内宽数字采用 DT Swiss TSS/TC 推荐表；无钩层仅在 Schwalbe 官方明确支持该型号时显示。实际安装仍需核对轮圈制造商的轮胎、胎压和无钩要求。"
+    "sourceNote": "这些内宽选项由共用的后端工程模型计算。只有 Schwalbe 明确支持该型号时才显示无钩；安装前仍需核对轮圈制造商对轮胎、胎压及无钩系统的要求。"
   },
   "summary": "{count} 条候选记录 · 第 {page}/{totalPages} 页",
   "pagination": {

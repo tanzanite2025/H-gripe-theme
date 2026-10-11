@@ -1,5 +1,5 @@
 <template>
-  <!-- Tire width -> rim internal width helper -->
+  <!-- Shared tire/rim width calculator. The small text link below the controls changes the lookup direction. -->
   <div class="tire-rim-helper-card mt-5 rounded-2xl bg-[var(--tz-form-panel-surface)] p-3 text-center md:p-4">
     <h3 class="mb-2 text-sm font-semibold tz-text-primary">
       {{ title || t('guidesTireRimHelper.title') }}
@@ -8,7 +8,7 @@
       {{ description || t('guidesTireRimHelper.description') }}
     </p>
     <div class="tire-rim-helper__controls mx-auto flex w-full max-w-xl flex-col gap-3 items-stretch sm:flex-row sm:items-end">
-      <div class="w-full min-w-0 sm:flex-1">
+      <div v-if="calculationMode === 'tire'" class="w-full min-w-0 sm:flex-1">
         <label class="block text-left text-xs font-medium tz-text-secondary" for="tire-width-input">
             {{ t('guidesTireRimHelper.tireWidthLabel') }}
         </label>
@@ -23,6 +23,27 @@
           <span class="min-w-0 flex-1">
             <span class="block truncate font-medium tz-text-primary">
               {{ selectedTireWidthSummary }}
+            </span>
+          </span>
+          <Icon name="lucide:chevron-down" class="h-4 w-4 shrink-0 tz-text-secondary" aria-hidden="true" />
+        </button>
+      </div>
+
+      <div v-else class="w-full min-w-0 sm:flex-1">
+        <label class="block text-left text-xs font-medium tz-text-secondary" for="rim-inner-width-input">
+          {{ t('guidesTireRimHelper.rimInnerWidthLabel') }}
+        </label>
+        <button
+          id="rim-inner-width-input"
+          type="button"
+          class="tire-rim-helper__picker-trigger mt-1 flex w-full items-center justify-between gap-3 rounded-md px-3 py-0 text-left text-xs outline-none transition-colors focus-visible:ring-2"
+          aria-haspopup="dialog"
+          :aria-expanded="rimInnerWidthPickerOpen"
+          @click="openRimInnerWidthPicker"
+        >
+          <span class="min-w-0 flex-1">
+            <span class="block truncate font-medium tz-text-primary">
+              {{ selectedRimInnerWidthSummary }}
             </span>
           </span>
           <Icon name="lucide:chevron-down" class="h-4 w-4 shrink-0 tz-text-secondary" aria-hidden="true" />
@@ -66,95 +87,28 @@
       </div>
     </div>
 
-    <!-- Suggestion / Hint Text (Moved outside flex container to ensure new line) -->
-    <div class="mt-3">
-      <p
-        v-if="tireWidthOutOfRange"
-        class="text-xs tz-text-muted"
+    <div class="tire-rim-helper__direction-switch mt-2">
+      <button
+        type="button"
+        class="tire-rim-helper__direction-link text-xs font-medium"
+        @click="toggleCalculationMode"
       >
-        {{ t('guidesTireRimHelper.outOfRange') }}
-      </p>
-
-      <p
-        v-else-if="recommendationPending"
-        class="text-xs tz-text-muted"
-      >
-        {{ t('guidesTireRimHelper.loading') }}
-      </p>
-
-      <p
-        v-else-if="tireWidthHasNoPublishedBracket"
-        class="text-xs tz-text-muted"
-      >
-        {{ t('guidesTireRimHelper.noPublishedBracket') }}
-      </p>
-
-      <p
-        v-else-if="!tireRimSuggestion"
-        class="text-xs tz-text-muted"
-      >
-        {{ t('guidesTireRimHelper.empty') }}
-      </p>
-
-      <div
-        v-else
-        class="text-xs tz-text-secondary"
-      >
-        <p class="tire-rim-helper__result font-semibold">
-          {{ t(
-            tireRimSuggestion.isEngineeringRecommended
-              ? 'guidesTireRimHelper.engineeringRecommended'
-              : tireRimSuggestion.isEngineeringReference
-                ? 'guidesTireRimHelper.engineeringReference'
-                : tireRimSuggestion.isCalculated
-                  ? 'guidesTireRimHelper.calculatedReference'
-                  : tireRimSuggestion.isPossibleReference
-                    ? 'guidesTireRimHelper.possibleReference'
-                    : 'guidesTireRimHelper.recommended',
-          ) }}
-          {{ formatTireRimWidthReferenceRanges(tireRimSuggestion.rimWidthRanges) }} mm
-        </p>
-        <p
-          v-if="tireRimSuggestion.isCalculated && tireRimSuggestion.calculationRows"
-          class="mt-0.5 tz-caption tz-text-muted"
-        >
-          {{ t('guidesTireRimHelper.calculated', tireRimSuggestion.calculationRows) }}
-        </p>
-        <p
-          v-if="tireRimSuggestion.isPossibleReference"
-          class="mt-0.5 tz-caption tz-text-muted"
-        >
-          {{ t('guidesTireRimHelper.possibleReferenceNote') }}
-        </p>
-        <p
-          v-if="tireRimSuggestion.isCalculatedFromPossibleReference"
-          class="mt-0.5 tz-caption tz-text-muted"
-        >
-          {{ t('guidesTireRimHelper.calculatedFromPossibleReferenceNote') }}
-        </p>
-        <p
-          v-if="tireRimSuggestion.isEngineeringReference"
-          class="mt-0.5 tz-caption tz-text-muted"
-        >
-          {{ t('guidesTireRimHelper.engineeringReferenceNote') }}
-        </p>
-        <div class="tire-rim-helper__physics mt-2 text-left tz-caption tz-text-muted">
-          <p>
-            {{ t('guidesTireRimHelper.inflatedWidth') }}
-            {{ formatMetricRange(tireRimSuggestion.physical.inflatedTireWidth) }} mm
-          </p>
-          <p>
-            {{ t('guidesTireRimHelper.aeroTargetOuterWidth') }}
-            {{ formatMetricRange(tireRimSuggestion.physical.aeroTargetOuterWidth) }} mm
-          </p>
-          <p class="mt-0.5">
-            {{ t('guidesTireRimHelper.physicsNote') }}
-          </p>
-        </div>
-      </div>
+        {{ t(calculationMode === 'tire'
+          ? 'guidesTireRimHelper.reverseLookupLink'
+          : 'guidesTireRimHelper.forwardLookupLink') }}
+      </button>
     </div>
 
-    <div v-if="!hideSearchButton && !tireWidthOutOfRange" class="mt-4 flex justify-center">
+    <div class="mt-3">
+      <p v-if="calculationMode === 'tire' && tireWidthOutOfRange" class="text-xs tz-text-muted">{{ t('guidesTireRimHelper.outOfRange') }}</p>
+      <p v-else-if="activeRecommendationPending" class="text-xs tz-text-muted">{{ t('guidesTireRimHelper.loading') }}</p>
+      <p v-else-if="calculationMode === 'tire' && tireWidthHasNoPublishedBracket" class="text-xs tz-text-muted">{{ t('guidesTireRimHelper.noPublishedBracket') }}</p>
+      <p v-else-if="activeRecommendationError" role="alert" class="text-xs tz-text-secondary">{{ t('guidesTireRimHelper.requestError') }}</p>
+      <TireRimLayeredFitmentResults v-else-if="activeSuggestion" :suggestion="activeSuggestion" />
+      <p v-else class="text-xs tz-text-muted">{{ t(calculationMode === 'tire' ? 'guidesTireRimHelper.empty' : 'guidesTireRimHelper.reverseEmpty') }}</p>
+    </div>
+
+    <div v-if="!hideSearchButton" class="mt-4 flex justify-center">
       <button
         type="button"
         class="tire-rim-helper__search inline-flex items-center justify-center rounded-full px-4 py-1.5 text-xs font-semibold shadow-md transition-all"
@@ -167,83 +121,22 @@
     <TireRimProductSearchSheet v-model="tireRimSearchSheetOpen" />
   </div>
 
-  <Teleport to="body">
-    <div
-      v-if="tireWidthPickerOpen"
-      class="tire-rim-helper__picker-mask fixed inset-0 z-[14000] flex items-center justify-center p-2 md:p-5 tz-mobile-safe-modal-mask tz-mobile-dialog-mask"
-      role="presentation"
-      @click.self="closeTireWidthPicker"
-      @keydown.esc.stop.prevent="closeTireWidthPicker"
-    >
-      <section
-        class="tire-rim-helper__picker tz-mobile-dialog-surface w-full max-w-2xl overflow-hidden rounded-2xl p-4"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="tire-width-picker-title"
-        @click.stop
-      >
-        <div class="flex items-start justify-between gap-3">
-          <div>
-            <h2 id="tire-width-picker-title" class="text-base font-semibold tz-text-primary">
-              {{ t('guidesTireRimHelper.tireWidthPickerTitle') }}
-            </h2>
-            <p class="mt-1 text-xs tz-text-secondary">
-              {{ t('guidesTireRimHelper.tireWidthPickerDescription') }}
-            </p>
-          </div>
-          <button
-            type="button"
-            class="tz-global-close-btn shrink-0"
-            :aria-label="t('guidesTireRimHelper.tireWidthPickerClose')"
-            @click="closeTireWidthPicker"
-          >
-            <Icon name="lucide:x" class="h-3.5 w-3.5" aria-hidden="true" />
-          </button>
-        </div>
+  <slot name="calculation-guidance" :suggestion="activeSuggestion" />
 
-        <div class="tire-rim-helper__picker-options mt-4 min-h-0 flex-1 overflow-y-auto pr-1">
-          <p class="mb-2 text-xs font-semibold tz-text-primary">
-            {{ t('guidesTireRimHelper.tireWidthPresetCSection') }}
-          </p>
-          <div class="grid grid-cols-2 gap-2 sm:grid-cols-4">
-            <button
-              v-for="preset in cMarkingTireWidthPresets"
-              :key="preset.id"
-              type="button"
-              class="tire-rim-helper__preset rounded-lg px-3 py-2 text-left transition-colors"
-              :class="{ 'tire-rim-helper__preset--active': selectedTireWidthPreset?.id === preset.id }"
-              @click="selectTireWidthPreset(preset)"
-            >
-              <span class="block text-sm font-semibold tz-text-primary">{{ preset.label }}</span>
-              <span class="mt-0.5 block tz-caption tz-text-secondary">
-                {{ preset.millimeters }} mm · {{ formatTireWidthPresetInches(preset) }}″
-              </span>
-            </button>
-          </div>
-
-          <p class="mb-2 mt-5 text-xs font-semibold tz-text-primary">
-            {{ t('guidesTireRimHelper.tireWidthPresetInchSection') }}
-          </p>
-          <div class="grid grid-cols-2 gap-2 sm:grid-cols-4">
-            <button
-              v-for="preset in inchMarkingTireWidthPresets"
-              :key="preset.id"
-              type="button"
-              class="tire-rim-helper__preset rounded-lg px-3 py-2 text-left transition-colors"
-              :class="{ 'tire-rim-helper__preset--active': selectedTireWidthPreset?.id === preset.id }"
-              @click="selectTireWidthPreset(preset)"
-            >
-              <span class="block text-sm font-semibold tz-text-primary">{{ preset.label }}</span>
-              <span class="mt-0.5 block tz-caption tz-text-secondary">
-                {{ preset.millimeters }} mm · {{ formatTireWidthPresetInches(preset) }}″
-              </span>
-            </button>
-          </div>
-
-        </div>
-      </section>
-    </div>
-  </Teleport>
+  <TireRimWidthSelectionDialog
+    v-model="tireWidthPickerOpen"
+    kind="tire"
+    :selected-tire-width-preset-id="selectedTireWidthPreset?.id"
+    :selected-tire-width-mm="parsedTireWidth"
+    @select-tire-width-preset="selectTireWidthPreset"
+    @select-tire-width-millimeters="selectTireWidthMillimetersFromDialog"
+  />
+  <TireRimWidthSelectionDialog
+    v-model="rimInnerWidthPickerOpen"
+    kind="rim"
+    :selected-rim-inner-width-mm="rimInnerWidthInput"
+    @select-rim-inner-width="selectRimInnerWidth"
+  />
 
   <Teleport to="body">
     <div
@@ -344,9 +237,6 @@
             <li>
               {{ t('guidesTireRimHelper.rimSystemHelpSourceEnve') }}
             </li>
-            <li>
-              {{ t('guidesTireRimHelper.rimSystemHelpSourceDtSwiss') }}
-            </li>
           </ul>
         </div>
       </section>
@@ -360,17 +250,18 @@ import { useI18n } from '#imports'
 import { usePageMessages } from '~/composables/usePageMessages'
 import {
   useTireRimWidthReferenceRecommendation,
+  useTireRimWidthReferenceRecommendationForKnownRimInnerWidth,
   type RimType,
 } from '~/composables/useTireRimWidthReferenceRecommendation'
-import { formatTireRimWidthReferenceRanges } from '~/data/tireguides/tireRimWidthReferencePresentation'
 import {
   commonTireWidthInputPresets,
-  parseTireWidthInputAsMillimeters,
   stripTireWidthInputUnitSuffix,
   type TireWidthInputPreset,
   type TireWidthInputUnit,
 } from '~/data/tireguides/tireRimWidthInputConversion'
 import TireRimProductSearchSheet from '~/components/TireRimProductSearchSheet.vue'
+import TireRimLayeredFitmentResults from '~/components/tireguides/TireRimLayeredFitmentResults.vue'
+import TireRimWidthSelectionDialog from '~/components/tireguides/TireRimWidthSelectionDialog.vue'
 
 const { locale, t } = useI18n()
 const { loadPageMessages } = usePageMessages('guidesTireRimHelper')
@@ -396,35 +287,44 @@ const props = withDefaults(defineProps<{
 const tireWidthInput = ref<string>('')
 const tireWidthInputUnit = ref<TireWidthInputUnit>('mm')
 const tireWidthPickerOpen = ref(false)
+const rimInnerWidthPickerOpen = ref(false)
 const tireRimSystemHelpOpen = ref(false)
 const tireRimSearchSheetOpen = ref(false)
 const rimType = ref<RimType>(props.initialRimType)
+const calculationMode = ref<'tire' | 'rim'>('tire')
+const rimInnerWidthInput = ref<number>(25)
+const forwardLookupEnabled = computed(() => calculationMode.value === 'tire')
+const reverseLookupEnabled = computed(() => calculationMode.value === 'rim')
 const {
   parsedTireWidth,
   tireRimSuggestion,
   recommendationPending,
+  recommendationError,
   tireWidthOutOfRange,
   tireWidthHasNoPublishedBracket,
 } = useTireRimWidthReferenceRecommendation(
   tireWidthInput,
   rimType,
   tireWidthInputUnit,
+  undefined,
+  forwardLookupEnabled,
+)
+const {
+  tireRimReverseSuggestion: reverseTireRimSuggestion,
+  recommendationPending: reverseRecommendationPending,
+  recommendationError: reverseRecommendationError,
+} = useTireRimWidthReferenceRecommendationForKnownRimInnerWidth(
+  rimInnerWidthInput,
+  rimType,
+  reverseLookupEnabled,
 )
 
-const cMarkingTireWidthPresets = computed(() => (
-  commonTireWidthInputPresets.filter(preset => preset.category === 'c-marking')
-))
-
-const inchMarkingTireWidthPresets = computed(() => (
-  commonTireWidthInputPresets.filter(preset => preset.category === 'inch-marking')
-))
+const activeSuggestion = computed(() => calculationMode.value === 'tire' ? tireRimSuggestion.value : reverseTireRimSuggestion.value)
+const activeRecommendationPending = computed(() => calculationMode.value === 'tire' ? recommendationPending.value : reverseRecommendationPending.value)
+const activeRecommendationError = computed(() => calculationMode.value === 'tire' ? recommendationError.value : reverseRecommendationError.value)
 
 const formatTireWidthInches = (widthInMillimeters: number): string => (
   String(Number((widthInMillimeters / 25.4).toFixed(2)))
-)
-
-const formatTireWidthPresetInches = (preset: TireWidthInputPreset): string => (
-  String(Number(preset.inches.toFixed(2)))
 )
 
 const selectedTireWidthPreset = computed(() => {
@@ -454,12 +354,30 @@ const selectedTireWidthSummary = computed(() => {
   return `${primaryLabel} · ${currentWidth} mm · ${formatTireWidthInches(currentWidth)}″`
 })
 
+const selectedRimInnerWidthSummary = computed(() => (
+  `${rimInnerWidthInput.value} mm`
+))
+
+const toggleCalculationMode = (): void => {
+  calculationMode.value = calculationMode.value === 'tire' ? 'rim' : 'tire'
+  tireWidthPickerOpen.value = false
+  rimInnerWidthPickerOpen.value = false
+}
+
 const openTireWidthPicker = (): void => {
   tireWidthPickerOpen.value = true
 }
 
 const closeTireWidthPicker = (): void => {
   tireWidthPickerOpen.value = false
+}
+
+const openRimInnerWidthPicker = (): void => {
+  rimInnerWidthPickerOpen.value = true
+}
+
+const closeRimInnerWidthPicker = (): void => {
+  rimInnerWidthPickerOpen.value = false
 }
 
 const openTireRimSystemHelp = (): void => {
@@ -480,6 +398,11 @@ const handleTireRimHelperEscapeKey = (event: KeyboardEvent): void => {
 
   if (tireWidthPickerOpen.value) {
     closeTireWidthPicker()
+    return
+  }
+
+  if (rimInnerWidthPickerOpen.value) {
+    closeRimInnerWidthPicker()
   }
 }
 
@@ -497,9 +420,17 @@ const selectTireWidthPreset = (preset: TireWidthInputPreset): void => {
   closeTireWidthPicker()
 }
 
-const formatMetricRange = ({ min, max }: { min: number; max: number }) => (
-  min === max ? min.toFixed(1) : `${min.toFixed(1)}–${max.toFixed(1)}`
-)
+const selectTireWidthMillimetersFromDialog = (widthMm: number): void => {
+  tireWidthInput.value = String(widthMm)
+  tireWidthInputUnit.value = 'mm'
+  closeTireWidthPicker()
+}
+
+const selectRimInnerWidth = (rimInnerWidth: number): void => {
+  rimInnerWidthInput.value = rimInnerWidth
+  closeRimInnerWidthPicker()
+}
+
 </script>
 
 <style scoped>
@@ -567,24 +498,6 @@ const formatMetricRange = ({ min, max }: { min: number; max: number }) => (
   transform: scale(1.06);
 }
 
-.tire-rim-helper__picker-mask {
-  background: rgba(15, 23, 42, 0.35);
-  backdrop-filter: blur(3px);
-}
-
-.tire-rim-helper__picker {
-  display: flex;
-  flex-direction: column;
-  max-height: min(760px, 92vh);
-  border: 1px solid var(--tz-form-control-border);
-  background: var(--tz-form-panel-surface);
-  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.24);
-}
-
-.tire-rim-helper__picker-options {
-  overscroll-behavior: contain;
-  -webkit-overflow-scrolling: touch;
-}
 
 .tire-rim-helper__system-help-mask {
   background: rgba(15, 23, 42, 0.38);
@@ -625,30 +538,12 @@ const formatMetricRange = ({ min, max }: { min: number; max: number }) => (
 }
 
 @media (max-width: 767px) {
-  .tire-rim-helper__picker {
-    max-height: min(
-      760px,
-      calc(var(--tz-mobile-safe-viewport-height, 100dvh) - var(--tz-mobile-dialog-inset, 2px) * 2)
-    );
-  }
-
   .tire-rim-helper__system-help {
     max-height: calc(var(--tz-mobile-safe-viewport-height, 100dvh) - var(--tz-mobile-dialog-inset, 2px) * 2);
   }
+
 }
 
-.tire-rim-helper__preset {
-  border: 1px solid var(--tz-form-control-border);
-  background: var(--tz-form-control-surface);
-}
-
-.tire-rim-helper__preset:hover,
-.tire-rim-helper__preset:focus-visible,
-.tire-rim-helper__preset--active {
-  border-color: var(--tz-site-accent);
-  background: color-mix(in srgb, var(--tz-site-accent) 10%, var(--tz-form-control-surface));
-  outline: none;
-}
 
 .tire-rim-helper__toggle-group {
   display: inline-flex;
@@ -703,6 +598,38 @@ const formatMetricRange = ({ min, max }: { min: number; max: number }) => (
   background-color: var(--tz-site-accent-hover);
   background-image: none;
   color: #ffffff;
+}
+
+.tire-rim-helper__direction-switch {
+  min-height: 1.25rem;
+}
+
+.tire-rim-helper__direction-link {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--tz-site-accent);
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
+}
+
+.tire-rim-helper__direction-link:hover,
+.tire-rim-helper__direction-link:focus-visible {
+  color: var(--tz-site-accent-hover);
+  outline: none;
+}
+
+.tire-rim-helper__reverse-match {
+  border: 1px solid var(--tz-form-control-border);
+  border-radius: 0.75rem;
+  background: var(--tz-form-control-surface);
+  padding: 0.7rem 0.8rem;
+  text-align: left;
+}
+
+.tire-rim-helper__reverse-note {
+  text-align: left;
+  line-height: 1.5;
 }
 
 .tire-rim-helper__search {

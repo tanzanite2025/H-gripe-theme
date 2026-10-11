@@ -24,7 +24,7 @@
           {{ t('guidesTireSize.actions.schwalbeSelector') }}
         </NuxtLink>
         <NuxtLink
-          :to="localePath('/guides/tireguides/choose')"
+          :to="localePath('/guides/tireguides/tire-rim-width-compatibility')"
           class="tire-size-guide-action"
         >
           {{ t('guidesTireSize.actions.chooseTire') }}

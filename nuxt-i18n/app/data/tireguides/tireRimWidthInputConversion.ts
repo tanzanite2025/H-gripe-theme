@@ -17,11 +17,13 @@ export interface TireWidthInputPreset {
 const MILLIMETERS_PER_INCH = 25.4
 
 const MIN_COMMON_TIRE_WIDTH_INCHES = 0.7
-const MAX_COMMON_TIRE_WIDTH_INCHES = 5
+const MAX_COMMON_TIRE_WIDTH_INCHES = 5.2
 
 // These are common tire sidewall markings, shown as a picker convenience.
 // The backend remains the only source of engineering recommendations.
 export const commonTireWidthInputPresets: readonly TireWidthInputPreset[] = [
+  { id: '18c', category: 'c-marking', label: '18C', millimeters: 18, inches: 0.71, inputValue: '18', inputUnit: 'mm' },
+  { id: '20c', category: 'c-marking', label: '20C', millimeters: 20, inches: 0.79, inputValue: '20', inputUnit: 'mm' },
   { id: '23c', category: 'c-marking', label: '23C', millimeters: 23, inches: 0.91, inputValue: '23', inputUnit: 'mm' },
   { id: '25c', category: 'c-marking', label: '25C', millimeters: 25, inches: 0.98, inputValue: '25', inputUnit: 'mm' },
   { id: '28c', category: 'c-marking', label: '28C', millimeters: 28, inches: 1.1, inputValue: '28', inputUnit: 'mm' },
@@ -46,6 +48,7 @@ export const commonTireWidthInputPresets: readonly TireWidthInputPreset[] = [
   { id: '4-0-inch', category: 'inch-marking', label: '4.0″', millimeters: 102, inches: 4, inputValue: '4.0', inputUnit: 'inch' },
   { id: '4-5-inch', category: 'inch-marking', label: '4.5″', millimeters: 114, inches: 4.5, inputValue: '4.5', inputUnit: 'inch' },
   { id: '5-0-inch', category: 'inch-marking', label: '5.0″', millimeters: 127, inches: 5, inputValue: '5.0', inputUnit: 'inch' },
+  { id: '5-2-inch', category: 'inch-marking', label: '5.2″', millimeters: 132, inches: 5.2, inputValue: '5.2', inputUnit: 'inch' },
 ]
 
 const getExplicitTireWidthInputUnit = (input: TireWidthInputValue): TireWidthInputUnit | null => {

@@ -84,12 +84,14 @@ export const useStorefrontSeoLinks = (options: StorefrontSeoLinksOptions = {}) =
     () => null,
   )
 
+  // A new consumer (such as the FAQ) must preserve the page's locale override.
+  // Clear it when navigation changes the path or query. A section hash must
+  // preserve the page's published-locale override.
   watch(
-    () => route.fullPath,
+    () => route.fullPath.split('#', 1)[0],
     () => {
       alternateLinksOverride.value = null
     },
-    { immediate: true },
   )
 
   const siteOrigin = computed(() => {

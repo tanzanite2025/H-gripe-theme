@@ -244,9 +244,9 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 		tirePressureReferenceHandler.RegisterTirePressureReferenceHTTPRoutes(tirePressureGroup)
 	}
 
-	// The tire/rim reference calculator is a public read-only engineering
-	// endpoint. Its matrix and interpolation rules live in the Go domain
-	// package so the browser cannot become a second calculation authority.
+	// The tire/rim calculator is a public engineering endpoint. Fitment rules
+	// and calculations live in the Go domain package; the DT Swiss comparison
+	// chart is static front-end reference data and is not served by this API.
 	tireRimWidthReferenceGroup := r.Group("/api/v1/engineering/tire-rim")
 	tireRimWidthReferenceGroup.Use(middleware.TireRimReferenceTraversalGuard(deps.RedisClient))
 	tireRimWidthReferenceGroup.Use(middleware.SpokeRateLimit(deps.RedisClient))

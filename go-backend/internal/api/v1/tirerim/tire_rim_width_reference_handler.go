@@ -21,19 +21,14 @@ func NewTireRimWidthReferenceHandler() *TireRimWidthReferenceHandler {
 }
 
 type tireRimWidthReferenceSolveRequest struct {
-	TireWidthMM     int    `json:"tire_width_mm"`
-	RimSystem       string `json:"rim_system"`
-	RimInnerWidthMM *int   `json:"rim_inner_width_mm,omitempty"`
+	TireWidthMM        *int   `json:"tire_width_mm,omitempty"`
+	RimSystem          string `json:"rim_system"`
+	RimInnerWidthMM    *int   `json:"rim_inner_width_mm,omitempty"`
+	ApplicationProfile string `json:"application_profile,omitempty"`
 }
 
 func (h *TireRimWidthReferenceHandler) RegisterTireRimWidthReferenceHTTPRoutes(group *gin.RouterGroup) {
-	group.GET("/matrix", h.GetTireRimWidthReferenceMatrix)
 	group.POST("/solve", h.SolveTireRimWidthReference)
-}
-
-func (h *TireRimWidthReferenceHandler) GetTireRimWidthReferenceMatrix(c *gin.Context) {
-	c.Header("Cache-Control", "public, max-age=86400")
-	c.JSON(http.StatusOK, gin.H{"code": 0, "data": domain.GetTireRimWidthReferenceMetadata()})
 }
 
 func (h *TireRimWidthReferenceHandler) SolveTireRimWidthReference(c *gin.Context) {
@@ -55,11 +50,45 @@ func (h *TireRimWidthReferenceHandler) SolveTireRimWidthReference(c *gin.Context
 		return
 	}
 	normalizedRimSystem := domain.NormalizeRimSystem(request.RimSystem)
+	normalizedApplicationProfile := domain.NormalizeTireRimApplicationProfile(request.ApplicationProfile)
+	if request.TireWidthMM == nil && request.RimInnerWidthMM != nil {
+		reverseSuggestion, err := domain.ResolveTireRimWidthReferenceForRim(
+			normalizedRimSystem,
+			*request.RimInnerWidthMM,
+			normalizedApplicationProfile,
+		)
+		if err != nil {
+			status := http.StatusBadRequest
+			code := "INVALID_FIELD"
+			field := ""
+			switch {
+			case errors.Is(err, domain.ErrInvalidRimSystem):
+				field = "rim_system"
+			case errors.Is(err, domain.ErrInvalidTireRimApplicationProfile), errors.Is(err, domain.ErrTireRimApplicationProfileOutsideAeroScope):
+				field = "application_profile"
+			case errors.Is(err, domain.ErrInvalidTireRimEngineeringInnerWidth):
+				status = http.StatusUnprocessableEntity
+				code = "OUT_OF_RANGE"
+				field = "rim_inner_width_mm"
+			}
+			tireRimWidthReferenceWriteAPIErrorResponse(c, status, code, err.Error(), field)
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"code": 0, "data": reverseSuggestion})
+		return
+	}
+
+	if request.TireWidthMM == nil {
+		tireRimWidthReferenceWriteAPIErrorResponse(c, http.StatusBadRequest, "INVALID_FIELD", "tire_width_mm or rim_inner_width_mm is required", "tire_width_mm")
+		return
+	}
+
 	if request.RimInnerWidthMM != nil {
 		engineeringCalculation, err := domain.CalculateTireRimEngineeringReference(
 			normalizedRimSystem,
 			*request.RimInnerWidthMM,
-			request.TireWidthMM,
+			*request.TireWidthMM,
+			normalizedApplicationProfile,
 		)
 		if err != nil {
 			status := http.StatusBadRequest
@@ -72,6 +101,8 @@ func (h *TireRimWidthReferenceHandler) SolveTireRimWidthReference(c *gin.Context
 				field = "tire_width_mm"
 			case errors.Is(err, domain.ErrInvalidRimSystem):
 				field = "rim_system"
+			case errors.Is(err, domain.ErrInvalidTireRimApplicationProfile), errors.Is(err, domain.ErrTireRimApplicationProfileOutsideAeroScope):
+				field = "application_profile"
 			case errors.Is(err, domain.ErrInvalidTireRimEngineeringInnerWidth):
 				status = http.StatusUnprocessableEntity
 				code = "OUT_OF_RANGE"
@@ -84,7 +115,7 @@ func (h *TireRimWidthReferenceHandler) SolveTireRimWidthReference(c *gin.Context
 		return
 	}
 
-	result, err := domain.ResolveTireRimWidthReference(request.TireWidthMM, normalizedRimSystem)
+	result, err := domain.ResolveTireRimWidthReference(*request.TireWidthMM, normalizedRimSystem, normalizedApplicationProfile)
 	if err != nil {
 		status := http.StatusBadRequest
 		code := "INVALID_FIELD"
@@ -96,6 +127,8 @@ func (h *TireRimWidthReferenceHandler) SolveTireRimWidthReference(c *gin.Context
 			field = "tire_width_mm"
 		case errors.Is(err, domain.ErrInvalidRimSystem):
 			field = "rim_system"
+		case errors.Is(err, domain.ErrInvalidTireRimApplicationProfile), errors.Is(err, domain.ErrTireRimApplicationProfileOutsideAeroScope):
+			field = "application_profile"
 		case errors.Is(err, domain.ErrNoPublishedBracket):
 			status = http.StatusUnprocessableEntity
 			code = "NO_PUBLISHED_BRACKET"

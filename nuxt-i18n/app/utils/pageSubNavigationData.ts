@@ -74,11 +74,14 @@ export const tireGuideTabs = [
     description: 'Tubeless compatibility, setup, and step-by-step installation in one guide.',
   },
   {
-    id: 'choose',
+    id: 'tire-rim-width-compatibility',
     labelKey: 'guidesTireguides.tabs.choose.label',
-    fallback: 'How to Choose a Tire',
+    fallback: 'Tire and Rim Width Calculator',
     descriptionKey: 'guidesTireguides.tabs.choose.description',
-    description: 'Guidance for choosing a tire by terrain, frame clearance, and rim compatibility.',
+    description: 'Calculate the best tire or rim inner width and check normal fitment ranges.',
+    feedbackThreadKey: 'guides-tireguides',
+    feedbackTitleKey: 'guidesTireguides.feedbackTitle',
+    feedbackSubtitleKey: 'feedback.defaultSubtitle',
   },
   {
     id: 'tire-pressure',

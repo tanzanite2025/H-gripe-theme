@@ -82,7 +82,40 @@ SELECT to_regclass('public.schwalbe_tire_hookless_compatibility') AS hookless_co
 SELECT to_regclass('public.schwalbe_tire_rim_width_combination_rules') AS retired_combination_table;
 ```
 
-The selector has no broad Schwalbe combination endpoint. The calculator uses the DT Swiss chart and physical calculations documented in the tire-rim helper.
+The selector has no broad Schwalbe combination endpoint. The calculator and
+selector cards use the same versioned Go engineering model in
+`internal/domain/tirerim`. The tire/rim API exposes only the `/solve` endpoint;
+the DT Swiss comparison table is static front-end reference data and does not
+participate in engineering results.
+
+## Tire and Rim Width Guide FAQ and Route Migrations 407-409
+
+Migration 407 seeds editable English and Chinese FAQ content. Migration 408
+renames the page and its FAQ associations to
+`guides-tireguides-tire-rim-width-compatibility` and moves the existing sitemap
+catalog rows to `/guides/tireguides/tire-rim-width-compatibility`. It updates
+existing records without replacing administrator questions, answers, images,
+ordering or publication state. Run the pending migrations before starting the
+API with the updated Nuxt route manifest.
+
+Migration 409 adds three English and three Chinese long-tail answers to the
+same editable page: 28 mm on a 25 mm hookless rim, the current 28C recommendation,
+and how inner width can affect measured tire width. Existing answers, including
+the 105% calculation explanation, remain unchanged. PageFaq generates its
+FAQPage JSON-LD from these same visible, published questions.
+
+This guide has not launched. Its old `/guides/tireguides/choose` URL is removed
+and returns 404; no redirect or alias is registered. Use the new route and page
+identity in Admin. After migration, check that each of the English and Chinese
+pages has its twelve published questions and that the sitemap contains only the
+new guide URLs. The calculation engine and `/solve` endpoint are unchanged by
+the URL rename.
+
+Google stopped showing FAQ rich results on May 7, 2026. Retaining FAQPage does
+not promise expanded search snippets or a larger search result card. See the
+Google Search Central documentation updates and section 28 of the tire/rim
+fitment specification for checked sources and the separately deferred 105%
+formula review.
 
 ## Runtime Checks
 

@@ -65,14 +65,12 @@
     "selectedCount": "{count} 件選択"
   },
   "rimWidth": {
-    "recommendationLabel": "Rim inner-width reference",
+    "recommendationLabel": "Engineering best-fit rim inner-width options",
+    "referenceLabel": "Engineering reference rim inner width",
     "hooked": "Hooked rim",
     "hookless": "Hookless rim",
     "noRecommendation": "No exact recommendation for this tire width",
-    "possibleReference": "Possible reference only",
-    "calculated": "Linearly calculated between adjacent DT Swiss data points",
-    "calculatedFromPossibleReference": "At least one possible-only data point is used. This is a calculated reference, not a manufacturer recommendation.",
-    "sourceNote": "Inner-width values use the DT Swiss TSS/TC recommendation chart; the Hookless row appears only when Schwalbe explicitly supports the model. Check the exact rim maker's tire, pressure, and Hookless requirements before fitting."
+    "sourceNote": "These inner-width options come from the shared engineering model. The Hookless row appears only when Schwalbe explicitly supports the model. Check the exact rim maker's tire, pressure, and Hookless requirements before fitting."
   },
   "summary": "{count} candidate records · page {page} of {totalPages}",
   "pagination": {

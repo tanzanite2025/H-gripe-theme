@@ -75,29 +75,22 @@
         </div>
 
         <div v-if="rimRecommendations.length" class="schwalbe-tire-card__rim-guidance">
-          <strong>{{ tx('rimWidth.recommendationLabel') }}</strong>
           <div
             v-for="recommendation in rimRecommendations"
             :key="recommendation.rim_system"
             class="schwalbe-tire-card__rim-recommendation"
           >
+            <strong>
+              {{ tx(recommendation.result_kind === 'engineering_recommended'
+                ? 'rimWidth.recommendationLabel'
+                : 'rimWidth.referenceLabel') }}
+            </strong>
             <span class="schwalbe-tire-card__rim-system">
               {{ recommendation.rim_system === 'hookless' ? tx('rimWidth.hookless') : tx('rimWidth.hooked') }}
             </span>
             <span>
               {{ formatTireRimWidthReferenceRanges(recommendation.rim_width_ranges) }} mm
             </span>
-            <small v-if="recommendation.result_kind === 'possible_reference'">
-              {{ tx('rimWidth.possibleReference') }}
-            </small>
-            <small v-else-if="recommendation.result_kind === 'interpolated'">
-              {{ tx('rimWidth.calculated') }}
-            </small>
-            <small
-              v-if="recommendation.result_kind === 'interpolated' && recommendation.source_rows.some(sourceRow => sourceRow.kind === 'possible_reference')"
-            >
-              {{ tx('rimWidth.calculatedFromPossibleReference') }}
-            </small>
           </div>
           <p>{{ tx('rimWidth.sourceNote') }}</p>
         </div>

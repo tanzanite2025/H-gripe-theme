@@ -2,18 +2,51 @@
   <div class="how-to-choose-guide">
     <!-- Main Premium Card -->
     <div class="rounded-2xl bg-[var(--tz-card-surface)] p-3 text-center shadow-md md:p-6">
-      <h2 class="mb-6 flex items-center justify-center gap-2 text-xl font-bold tz-text-secondary">
-        {{ t('guidesTireChoose.title') }}
-      </h2>
+      <h1 class="mb-6 flex items-center justify-center gap-2 text-xl font-bold tz-text-secondary">
+        {{ t('guidesTireChoose.seo.title') }}
+      </h1>
 
-      <!-- Existing calculator remains the single page input and result entry point. -->
-      <div class="mb-8">
-        <TireRimHelper />
-      </div>
+      <ReusablePageSectionUnderlineTabs
+        :tabs="chooseGuideSectionTabs"
+        :active-id="activeChooseGuideTab"
+        :tab-list-label="t('guidesTireChoose.tabs.ariaLabel')"
+        @select="selectChooseGuideTabAndUpdateUrlHash"
+      />
 
-      <TireRimEngineeringReferenceWorkbench />
+      <section
+        :id="getChooseGuidePanelId('calculation')"
+        v-show="activeChooseGuideTab === 'calculation'"
+        role="tabpanel"
+        :aria-labelledby="getChooseGuideTabId('calculation')"
+        tabindex="0"
+      >
+        <div class="mb-8">
+          <TireRimHelper>
+            <template #calculation-guidance="{ suggestion }">
+              <TireRimCalculatorInstallationAerodynamicsAndFailureGuidanceCards :suggestion="suggestion" />
+            </template>
+          </TireRimHelper>
+        </div>
+      </section>
 
-      <div class="mt-8 border-t tz-border-subtle pt-8">
+      <section
+        :id="getChooseGuidePanelId('simulation')"
+        v-show="activeChooseGuideTab === 'simulation'"
+        role="tabpanel"
+        :aria-labelledby="getChooseGuideTabId('simulation')"
+        tabindex="0"
+      >
+        <TireRimEngineeringReferenceWorkbench />
+      </section>
+
+      <section
+        :id="getChooseGuidePanelId('reference')"
+        v-show="activeChooseGuideTab === 'reference'"
+        role="tabpanel"
+        :aria-labelledby="getChooseGuideTabId('reference')"
+        tabindex="0"
+        class="mt-8 border-t tz-border-subtle pt-8"
+      >
         <div class="mb-6 flex items-center justify-center gap-2">
           <span class="h-px w-8 tz-surface-panel"></span>
           <h3 class="text-lg font-bold uppercase tracking-wider tz-text-primary">{{ t('guidesTireChoose.standards.title') }}</h3>
@@ -145,16 +178,28 @@
             </figcaption>
           </figure>
         </div>
-      </div>
+      </section>
+      <section
+        :id="getChooseGuidePanelId('schwalbeReference')"
+        v-show="activeChooseGuideTab === 'schwalbeReference'"
+        role="tabpanel"
+        :aria-labelledby="getChooseGuideTabId('schwalbeReference')"
+        tabindex="0"
+      >
+        <SchwalbeEtrto2024TireRimWidthReference />
+      </section>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, watch } from 'vue'
-import { useAsyncData, useHead, useI18n, useSwitchLocalePath } from '#imports'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import { useHead, useI18n, useRoute, useRouter, useSwitchLocalePath } from '#imports'
 import TireRimHelper from '~/components/TireRimHelper.vue'
+import TireRimCalculatorInstallationAerodynamicsAndFailureGuidanceCards from '~/components/tireguides/TireRimCalculatorInstallationAerodynamicsAndFailureGuidanceCards.vue'
 import TireRimEngineeringReferenceWorkbench from '~/components/tireguides/TireRimEngineeringReferenceWorkbench.vue'
+import SchwalbeEtrto2024TireRimWidthReference from '~/components/tireguides/SchwalbeEtrto2024TireRimWidthReference.vue'
+import ReusablePageSectionUnderlineTabs from '~/components/ReusablePageSectionUnderlineTabs.vue'
 import { usePageMessages } from '~/composables/usePageMessages'
 import {
   useStorefrontSeoLinks,
@@ -165,12 +210,65 @@ import localeManifest from '~/i18n/locales.manifest'
 import {
   formatTireRimWidthReferenceRanges,
   type TireRimWidthRange,
-  type TireRimWidthReferenceMatrixRow,
-  type TireRimWidthReferenceMetadata,
 } from '~/data/tireguides/tireRimWidthReferencePresentation'
-import { useApiRequest } from '~/composables/useApiRequest'
+import { tireRimDtSwissReferenceData } from '~/data/tireguides/tireRimDtSwissReferenceData'
+import { schwalbeEtrto2024TireRimWidthReferenceData } from '~/data/tireguides/schwalbeEtrto2024TireRimWidthReferenceData'
 
 const { locale, t } = useI18n()
+type ChooseGuideTabId = 'calculation' | 'simulation' | 'reference' | 'schwalbeReference'
+const chooseGuideTabIds: readonly ChooseGuideTabId[] = ['calculation', 'simulation', 'reference', 'schwalbeReference']
+const chooseGuideTabHashAnchors: Record<ChooseGuideTabId, string> = {
+  calculation: 'calculation',
+  simulation: 'simulation',
+  reference: 'reference',
+  schwalbeReference: 'etrto-2024',
+}
+const activeChooseGuideTab = ref<ChooseGuideTabId>('calculation')
+const route = useRoute()
+const router = useRouter()
+let isChooseGuideMounted = false
+
+const getChooseGuideTabId = (tabId: ChooseGuideTabId): string => `tire-rim-guide-tab-${tabId}`
+const getChooseGuidePanelId = (tabId: ChooseGuideTabId): string => chooseGuideTabHashAnchors[tabId]
+
+async function synchronizeChooseGuideTabWithUrlHash(hash: string): Promise<void> {
+  if (!hash) {
+    activeChooseGuideTab.value = 'calculation'
+    return
+  }
+  const targetTabId = chooseGuideTabIds.find(tabId => `#${chooseGuideTabHashAnchors[tabId]}` === hash)
+  if (!targetTabId) return
+  activeChooseGuideTab.value = targetTabId
+  await nextTick()
+  if (route.hash !== hash) return
+  document.getElementById(getChooseGuidePanelId(targetTabId))?.scrollIntoView({ block: 'start' })
+  document.getElementById(getChooseGuideTabId(targetTabId))?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+}
+
+async function selectChooseGuideTabAndUpdateUrlHash(tabId: ChooseGuideTabId): Promise<void> {
+  activeChooseGuideTab.value = tabId
+  const hash = `#${chooseGuideTabHashAnchors[tabId]}`
+  if (route.hash === hash) return
+  await router.push({ path: route.path, query: route.query, hash })
+}
+
+// Hashes are absent from HTTP requests. Apply them after hydration so the
+// server and first client render agree, while keeping all v-show panels mounted.
+onMounted(() => {
+  isChooseGuideMounted = true
+  void synchronizeChooseGuideTabWithUrlHash(route.hash)
+})
+watch(() => route.hash, hash => {
+  if (isChooseGuideMounted) void synchronizeChooseGuideTabWithUrlHash(hash)
+}, { flush: 'post' })
+
+const chooseGuideSectionTabs = computed(() => chooseGuideTabIds.map(tabId => ({
+  id: tabId,
+  label: t(`guidesTireChoose.tabs.${tabId}`),
+  tabId: getChooseGuideTabId(tabId),
+  panelId: getChooseGuidePanelId(tabId),
+})))
+
 const switchLocalePath = useSwitchLocalePath()
 const { canonicalUrl } = useStorefrontSeoLinks()
 const { loadPageMessages } = usePageMessages('guidesTireChoose')
@@ -178,12 +276,12 @@ const { loadPageMessages } = usePageMessages('guidesTireChoose')
 const tireRimReferencePublishedLocaleCodes = ['en', 'zh_cn'] as const
 const localizedTireRimReferenceSeoRoutes = computed(() => (
   tireRimReferencePublishedLocaleCodes.map((code) => {
-    const localizedPath = switchLocalePath(code as any)
+    const localizedPath = switchLocalePath(code as any)?.split(/[?#]/, 1)[0]
     return {
       code,
       path: localizedPath || (code === 'zh_cn'
-        ? '/zh_cn/guides/tireguides/choose'
-        : '/guides/tireguides/choose'),
+        ? '/zh_cn/guides/tireguides/tire-rim-width-compatibility'
+        : '/guides/tireguides/tire-rim-width-compatibility'),
     }
   })
 ))
@@ -202,26 +300,12 @@ watch(locale, (nextLocale) => {
   void loadPageMessages(nextLocale)
 })
 
-const { request } = useApiRequest()
-const { data: tireRimWidthReferenceMetadata } = await useAsyncData<TireRimWidthReferenceMetadata>(
-  'tire-rim-width-reference-metadata',
-  async () => {
-    const response = await request<{ data?: TireRimWidthReferenceMetadata }>(
-      '/engineering/tire-rim/matrix',
-      {},
-      'Tire/rim reference matrix is temporarily unavailable',
-    )
-    if (!response.data) throw new Error('Tire/rim reference matrix response is missing data')
-    return response.data
-  },
-  { default: () => ({ rows: [] } as unknown as TireRimWidthReferenceMetadata) },
-)
-
-const referenceRows = computed<TireRimWidthReferenceMatrixRow[]>(() => (
-  tireRimWidthReferenceMetadata.value?.rows || []
+const hooklessChartRows = computed(() => (
+  tireRimDtSwissReferenceData.rows.filter(row => row.rim_system === 'hookless')
 ))
-const hooklessChartRows = computed(() => referenceRows.value.filter(row => row.rim_system === 'hookless'))
-const hookedChartRows = computed(() => referenceRows.value.filter(row => row.rim_system === 'hooked'))
+const hookedChartRows = computed(() => (
+  tireRimDtSwissReferenceData.rows.filter(row => row.rim_system === 'hooked')
+))
 
 const formatWidthList = (widths: TireRimWidthRange[]) =>
   widths.length > 0
@@ -229,17 +313,18 @@ const formatWidthList = (widths: TireRimWidthRange[]) =>
     : t('guidesTireChoose.helper.noneShown')
 
 const tireRimReferenceSchema = computed(() => {
-  const metadata = tireRimWidthReferenceMetadata.value
+  const metadata = tireRimDtSwissReferenceData
   const language = localeManifest.find(entry => entry.code === locale.value)?.iso || locale.value
   const datasetId = canonicalUrl.value + '#tire-rim-width-reference-dataset'
-  const measurementTechnique = metadata?.methodology
-    ? [
-        metadata.methodology.exact_rows,
-        metadata.methodology.interpolated_rows,
-        metadata.methodology.possible_rows,
-        metadata.methodology.derived_metrics,
-      ].filter(Boolean).join(' ')
-    : t('guidesTireChoose.seo.measurementTechnique')
+  const schwalbeDatasetId = canonicalUrl.value + '#schwalbe-etrto-2024-width-reference-dataset'
+  const schwalbeDocumentId = canonicalUrl.value + '#schwalbe-etrto-2024-source-document'
+  const schwalbeMetadata = schwalbeEtrto2024TireRimWidthReferenceData
+  const measurementTechnique = [
+    metadata.methodology.exact_rows,
+    metadata.methodology.interpolated_rows,
+    metadata.methodology.possible_rows,
+    metadata.methodology.derived_metrics,
+  ].filter(Boolean).join(' ')
 
   return {
     '@context': 'https://schema.org',
@@ -259,9 +344,9 @@ const tireRimReferenceSchema = computed(() => {
           name: locale.value === 'zh_cn' ? '王关根' : 'wangguangen',
         },
         inLanguage: language,
-        ...(metadata?.model_version ? { version: metadata.model_version } : {}),
-        ...(metadata?.knowledge_as_of ? { dateModified: metadata.knowledge_as_of } : {}),
-        hasPart: { '@id': datasetId },
+        version: metadata.model_version,
+        dateModified: '2026-10-11',
+        hasPart: [{ '@id': datasetId }, { '@id': schwalbeDatasetId }],
       },
       {
         '@type': 'Dataset',
@@ -269,37 +354,60 @@ const tireRimReferenceSchema = computed(() => {
         url: canonicalUrl.value + '#tire-chart-tables',
         name: t('guidesTireChoose.seo.datasetName'),
         description: t('guidesTireChoose.seo.datasetDescription'),
-        ...(metadata?.model_version ? { version: metadata.model_version } : {}),
+        version: metadata.model_version,
         inLanguage: language,
         isAccessibleForFree: true,
-        ...(metadata?.knowledge_as_of ? { dateModified: metadata.knowledge_as_of } : {}),
-        ...(metadata?.rows?.length ? { numberOfItems: metadata.rows.length } : {}),
+        dateModified: metadata.knowledge_as_of,
+        numberOfItems: metadata.rows.length,
         measurementTechnique,
         variableMeasured: [
           t('guidesTireChoose.seo.tireWidthVariable'),
           t('guidesTireChoose.seo.rimWidthVariable'),
         ],
-        ...(metadata?.source
-          ? {
-              additionalProperty: [
-                {
-                  '@type': 'PropertyValue',
-                  name: t('guidesTireChoose.seo.sourceProperty'),
-                  value: metadata.source.name,
-                },
-                {
-                  '@type': 'PropertyValue',
-                  name: t('guidesTireChoose.seo.sourceDateProperty'),
-                  value: metadata.knowledge_as_of,
-                },
-                {
-                  '@type': 'PropertyValue',
-                  name: 'source_provenance',
-                  value: metadata.source.provenance,
-                },
-              ],
-            }
-          : {}),
+        additionalProperty: [
+          {
+            '@type': 'PropertyValue',
+            name: t('guidesTireChoose.seo.sourceProperty'),
+            value: metadata.source.name,
+          },
+          {
+            '@type': 'PropertyValue',
+            name: t('guidesTireChoose.seo.sourceDateProperty'),
+            value: metadata.knowledge_as_of,
+          },
+          {
+            '@type': 'PropertyValue',
+            name: 'source_provenance',
+            value: metadata.source.provenance,
+          },
+        ],
+      },
+      {
+        '@type': 'Dataset',
+        '@id': schwalbeDatasetId,
+        url: canonicalUrl.value + '#schwalbe-etrto-2024-width-table',
+        name: t('guidesTireChoose.schwalbeReference.datasetName'),
+        description: t('guidesTireChoose.schwalbeReference.datasetDescription'),
+        version: schwalbeMetadata.standardEdition,
+        inLanguage: language,
+        isAccessibleForFree: true,
+        numberOfItems: schwalbeMetadata.rows.length,
+        isBasedOn: { '@id': schwalbeDocumentId },
+        variableMeasured: [
+          t('guidesTireChoose.seo.tireWidthVariable'),
+          t('guidesTireChoose.seo.rimWidthVariable'),
+        ],
+      },
+      {
+        '@type': 'DigitalDocument',
+        '@id': schwalbeDocumentId,
+        name: schwalbeMetadata.sourceTitle,
+        publisher: { '@type': 'Organization', name: schwalbeMetadata.publisher },
+        datePublished: schwalbeMetadata.publicationMonth,
+        inLanguage: 'en',
+        version: schwalbeMetadata.standardEdition,
+        encodingFormat: 'application/pdf',
+        image: new URL(schwalbeMetadata.sourceImage.path, canonicalUrl.value).href,
       },
     ],
   }
@@ -322,6 +430,10 @@ useHead(() => ({
 </script>
 
 <style scoped>
+.how-to-choose-guide > div > [role='tabpanel'] {
+  scroll-margin-top: calc(var(--tz-site-header-spacer-height) + var(--tz-page-content-top-gap) + 4rem);
+}
+
 .tire-chart-legend__swatch {
   display: inline-block;
   height: 0.75rem;

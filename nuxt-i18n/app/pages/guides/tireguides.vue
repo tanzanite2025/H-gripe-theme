@@ -1,6 +1,6 @@
 <template>
   <div>
-    <h1 v-if="!isGuideCategoryLandingPage" class="products-page__title products-page__title--sr-only">
+    <h1 v-if="!isGuideCategoryLandingPage && activeTab !== 'tire-rim-width-compatibility'" class="products-page__title products-page__title--sr-only">
       {{ activePageTitle }}
     </h1>
     <p v-if="!isGuideCategoryLandingPage" class="products-page__intro products-page__intro--sr-only">
@@ -57,13 +57,13 @@
         </div>
       </section>
 
-      <!-- How to choose -->
+      <!-- Tire and rim width compatibility -->
       <section
-        v-show="activeTab === 'choose'"
-        id="choose"
+        v-show="activeTab === 'tire-rim-width-compatibility'"
+        id="tire-rim-width-compatibility"
         class="sizecharts-section"
       >
-        <HowToChooseGuide v-if="activeTab === 'choose'" />
+        <HowToChooseGuide v-if="activeTab === 'tire-rim-width-compatibility'" />
       </section>
 
       <!-- Tire pressure -->
@@ -85,7 +85,7 @@
       </section>
 
       <div
-        v-if="activeTab !== 'choose-inner-tube' && activeTab !== 'tire-size-markings'"
+        v-if="activeTab !== 'tire-rim-width-compatibility' && activeTab !== 'choose-inner-tube' && activeTab !== 'tire-size-markings'"
         class="sizecharts-feedback"
       >
         <UserFeedbackThread
@@ -182,7 +182,7 @@ const activePageTitle = computed(() => {
   if (activeTab.value === 'schwalbe-tire-circumference') {
     return t('guidesTireguides.tabs.schwalbeCircumference.label')
   }
-  if (activeTab.value === 'choose') {
+  if (activeTab.value === 'tire-rim-width-compatibility') {
     return t('guidesTireChoose.seo.title')
   }
   if (activeTab.value === 'choose-inner-tube') {

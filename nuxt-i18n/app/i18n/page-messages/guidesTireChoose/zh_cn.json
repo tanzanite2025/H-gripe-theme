@@ -1,36 +1,59 @@
 {
   "title": "如何选择合适的外胎",
+  "tabs": {
+    "ariaLabel": "轮胎与车圈指南内容",
+    "calculation": "计算",
+    "simulation": "模拟",
+    "reference": "DT Swiss 参考",
+    "schwalbeReference": "Schwalbe 参考"
+  },
+  "schwalbeReference": {
+    "title": "Schwalbe 外胎与车圈内宽对照",
+    "source": "Schwalbe 发布 · ETRTO 2024 · 2024 年 5 月",
+    "description": "这份表列出外胎宽度与车圈内宽的可能组合，供查阅和对照。表内范围表示宽度搭配，不表示每个尺寸都同样合适；最佳尺寸见计算页签。",
+    "hooklessTitle": "无钩 / 直边车圈的外胎要求",
+    "hooklessRestriction": "无钩或直边车圈只能搭配 TLE / TLR 外胎（Tubeless Easy / Tubeless Ready）。即使装入内胎也必须满足这一要求，适用于山地、砾石 / 越野、城市 / 旅行和公路车。",
+    "tableCaption": "Schwalbe / ETRTO 2024 可能宽度组合",
+    "tireWidthHeader": "外胎宽度（mm）",
+    "rimWidthHeader": "可能搭配的车圈内宽（mm）",
+    "manufacturerNote": "原表附注：请始终遵守车圈制造商规定的最大气压，以及外胎类型（无内胎 / 使用内胎）要求。",
+    "originalPageTitle": "PDF 原始图表",
+    "originalPageAlt": "Schwalbe 发布的 ETRTO 2024 外胎与车圈内宽可能组合原表，含 13 行胎宽、19 列内宽、无钩外胎要求及 05/2024 日期",
+    "originalPageCaption": "Schwalbe 原表 · ETRTO Standard 2024 · 05/2024",
+    "datasetName": "Schwalbe 发布的 ETRTO 2024 外胎与车圈内宽可能组合",
+    "datasetDescription": "根据 Schwalbe 2024 年 5 月 PDF 整理的 13 行可能组合，覆盖 20–132 mm 胎宽和 15–100 mm 内宽。原表仅供资料对照，保留无钩 TLE / TLR 要求与制造商附注。"
+  },
   "engineering": {
-    "eyebrow": "工程物理安全校验看板",
-    "title": "车圈直边与外胎截面物理受力拟真仪",
-    "description": "先输入车圈系统、内宽和外胎标称宽度。本模型给出收敛的工程参考区间、过渡区和需要阻断的组合。",
-    "sourceBadge": "ERP UDS 1.0 · ETRTO 2024",
+    "eyebrow": "搭配效果预览",
+    "title": "车圈与外胎配合模拟",
+    "description": "点选车圈系统、内宽和外胎宽度，查看这组搭配的截面比例与配合状态。尺寸规则自动匹配，图示始终保留你选定的搭配。",
+    "sourceBadge": "截面与配合状态",
     "board": {
-      "statusSource": "SCHWALBE TLE SPEC / ETRTO 2024",
+      "statusSource": "宽度配合依据：ISO 5775-1:2023 · 图示展示当前所选组合",
       "status": {
         "badges": {
-          "critical": "[WARN] CRITICAL FORBIDDEN（严格禁止）",
+          "critical": "[WARN] 模型阻断（超出参考区间）",
           "recommended": "[OK] OPTIMAL SWEET SPOT（黄金甜点）",
           "reference": "[ALERT] ALERT（公差兼容）"
         },
-        "criticalBelow": "【严禁安装！致命脱圈隐患】{rimWidth} mm 内宽的车圈不应安装 {tireWidth} mm 外胎；当前宽度低于本模型的 {allowedMin} mm 起始线。无钩直边缺乏机械鹰嘴倒钩，侧向切力可能把胎唇瞬间撬出。",
-        "criticalAbove": "【严禁安装！严重超限】{rimWidth} mm 内宽搭配 {tireWidth} mm 外胎已经超过本模型的 {allowedMax} mm 上限；过大的胎体会产生侧向杠杆力矩，压弯或重刹时可能脱槽。",
+        "criticalBelow": "【模型阻断】{rimWidth} mm 内宽与 {tireWidth} mm 外胎低于本模型的 {allowedMin} mm 起始线，因此不建议按这个结果安装；无钩系统还必须核对具体轮圈与外胎制造商的 TLE / Hookless 兼容要求。",
+        "criticalAbove": "【模型阻断】{rimWidth} mm 内宽与 {tireWidth} mm 外胎超过本模型的 {allowedMax} mm 上限，因此不建议按这个结果安装；请核对具体轮圈、外胎和车架的制造商限制。",
         "recommended": "{rimWidth} mm 车圈与 {tireWidth}C 外胎落在模型的推荐窗口（{recommendedMin}–{recommendedMax} mm），胎唇受力均匀，台阶咬合和截面过渡更稳定。",
         "reference": "{rimWidth} mm 车圈与 {tireWidth}C 外胎处于工程参考区间（{allowedMin}–{allowedMax} mm），但不是推荐甜点；请严格遵守 {maxBar} bar 压力上限并核对具体型号资料。",
         "empty": "请输入有效的整数外胎宽度后查看安全状态。"
       },
       "metrics": {
-        "pressureLabel": "Hookless（无钩）法定最高气压上限",
-        "pressureNote": "递减限值 · 严禁照抄外胎侧壁 100–120 PSI",
+        "pressureLabel": "压力参考",
+        "pressureNote": "仅供模型参考 · 不能替代轮圈与外胎厂商上限",
         "tubeLabel": "适配推荐内胎型号",
-        "certificationLabel": "外胎适格性认证要求",
+        "certificationLabel": "外胎适配要求",
         "certification": {
-          "hookless": "TLE 强制认证",
-          "hooked": "TLE / 传统开口胎按型号核对"
+          "hookless": "核对 TLE / Hookless 适配",
+          "hooked": "核对 TC / 开口胎适配"
         },
         "certificationNote": {
-          "hookless": "严禁普通纯开口外胎装上无钩圈",
-          "hooked": "按外胎与轮圈的具体兼容说明执行"
+          "hookless": "按具体轮圈与外胎制造商资料执行",
+          "hooked": "按具体轮圈与外胎制造商资料执行"
         },
         "tubes": {
           "roadModel": "Aerothan SV20E（或 Extra Light SV20）",
@@ -38,23 +61,24 @@
           "midModel": "Aerothan SV17E（或 Air Plus SV17）",
           "midRange": "700 × 28–40C",
           "wideModel": "Aerothan SV17E / SV19E（或 Air Plus SV19）",
-          "wideRange": "700 × 38–45C"
+          "wideRange": "700 × 38–45C",
+          "fatModel": "雪地/胖胎内胎（按外胎实际规格匹配）"
         }
       },
       "aero": {
-        "title": "空气动力学破局：105% 平齐贴合法则与真实充气外宽测算",
-        "source": "JOSH POERTNER / SILCA 经典风洞公理",
-        "intro": "ETRTO 安全保底与气动最优不是同一件事。外胎标称宽度会随内宽和胎压变化；本区用统一公式展示趋势，具体尺寸仍以实测和厂商数据为准。",
+        "title": "空气动力学破局：105% 平齐贴合法则与胎宽测算",
+        "source": "JOSH POERTNER / SILCA 发布的气动经验关系",
+        "intro": "ISO 5775／ETRTO 提供正常尺寸配合的依据，气动目标用于选择最合适宽度。105% 气动关系只用于 30C 及以下；输入的毫米值直接作为胎宽。",
         "cards": {
           "bulbTire": {
             "title": "① 窄圈装宽胎的“灯泡胎”气动灾难",
-            "formula": "外胎充气宽度大于车圈最大外宽",
+            "formula": "胎宽大于车圈最大外宽",
             "body": "胎肩向外翻出会让气流提前分离，车圈的气动减阻失效，横风下也更容易出现侧向摆动。"
           },
           "ruleOf105": {
             "title": "② 105% 气动贴合法则",
-            "formula": "车圈最大外宽 ≥ 1.05 × 外胎实际充气宽度",
-            "body": "车圈外宽与外胎截面平齐或略宽时，气流才能重新贴附侧壁，形成更连续的水滴形翼面。"
+            "formula": "胎宽 ≈ 车圈最大外宽 × 1.05",
+            "body": "胎宽比车圈最大外宽约宽 5% 时，侧壁过渡更接近平齐，气流更容易连续贴附，形成更完整的水滴形翼面。"
           },
           "modernSweetSpot": {
             "title": "③ 现代无钩公路的真实黄金甜点",
@@ -62,15 +86,15 @@
             "body": "现代宽内宽轮圈把胎唇支撑、低滚阻和气动过渡收敛到更窄的工程窗口，不能用大跨度图表替代具体车型限制。"
           }
         },
-        "formulaLabel": "真实充气宽度数学推算公式：",
-        "current": "当前拟配：{rimWidth} mm 内宽圈配 {tireWidth}C 外胎 → 充气约 {inflatedWidth} mm → 车圈最大外宽建议至少 {aeroTarget} mm 以接近 105% 平齐。"
+        "formulaLabel": "胎宽与车圈外宽关系：",
+        "currentPairing": "当前车圈：{rimWidth} mm 内宽 + 两侧各约 {wallThickness} mm = 外宽约 {rimOuterWidth} mm；105% 气动目标胎宽 = {rimOuterWidth} × 1.05 ≈ {targetTireWidth} mm。"
       },
       "traps": {
         "title": "现实用户高频踩坑与真实故障工况分析",
         "source": "车间一线与售后血泪总结",
         "items": {
           "nonTleOnHookless": {
-            "number": "陷阱 01 · 致命事故",
+            "number": "陷阱 01 · 高风险工况",
             "title": "普通纯开口外胎强塞内胎装上无钩圈 → 瞬时脱圈炸飞",
             "body": "塞入内胎不会替普通开口胎补上胎圈抗拉力。无钩直边缺乏机械钩阻挡，充气和侧向载荷叠加后仍可能从直边滑出。",
             "rule": "规避铁律：Hookless 轮圈上的外胎必须有 TLE / Hookless 认证。"
@@ -108,98 +132,115 @@
         }
       }
     },
-    "modeLabel": "选择计算入口",
-    "modes": {
-      "rim": "模式 A：已知车圈，查外胎",
-      "tire": "模式 B：已知外胎，查车圈"
-    },
     "rimSystemLabel": "车圈系统",
     "rimSystems": {
       "hookless": "无钩 TSS",
       "hooked": "有钩 TC"
     },
     "rimInnerWidthLabel": "车圈内宽",
-    "tireWidthLabel": "拟配外胎标称宽度",
-    "tireWidthInputLabel": "输入外胎标称宽度",
-    "tireWidthHint": "使用外胎侧壁或 ETRTO 标注的毫米宽度。",
-    "tireWidthPresetsLabel": "常用宽度",
+    "rimWidthPickerDescription": "选择车圈的实际内宽，查看与当前外胎搭配后的截面比例和配合状态。",
+    "tireWidthPresetsLabel": "外胎宽度",
     "verdicts": {
       "recommended": {
-        "badge": "工程推荐窗口",
-        "title": "落在本模型的推荐区间"
+        "badge": "推荐窗口内",
+        "title": "当前搭配处于推荐窗口内"
       },
       "reference": {
-        "badge": "工程参考窗口",
-        "title": "可作为参考，但不是最佳窗口"
+        "badge": "正常参考范围",
+        "title": "当前搭配处于正常参考范围"
       },
       "critical": {
-        "badge": "模型阻断",
-        "title": "超出本模型的配合区间"
+        "badge": "超出参考范围",
+        "title": "当前搭配超出正常参考范围"
       }
     },
     "reasons": {
-      "below_minimum": "{rimWidth} mm 内宽的本模型起始宽度为 {allowedMin} mm；当前 {tireWidth} mm 低于起始区间，停止把它当作可用搭配。",
-      "above_maximum": "{rimWidth} mm 内宽的本模型上限为 {allowedMax} mm；当前 {tireWidth} mm 超出区间，停止把它当作可用搭配。",
-      "recommended_window": "当前组合位于 {recommendedMin}–{recommendedMax} mm 推荐窗口内；本模型把 {allowedMin}–{allowedMax} mm 作为完整工程参考区间。",
-      "reference_window": "当前组合位于 {allowedMin}–{allowedMax} mm 工程参考区间内，但推荐窗口为 {recommendedMin}–{recommendedMax} mm。",
-      "transitional_rim": "19 mm TSS 属于过渡尺寸。本模型只把 {allowedMin}–{allowedMax} mm 标为参考区间，不把它表达成现代轮组的最佳选择。"
+      "below_minimum": "ISO 宽度表中，{rimWidth} mm 内宽的正常胎宽下限为 {allowedMin} mm；当前 {tireWidth} mm 低于该下限。",
+      "above_maximum": "ISO 宽度表中，{rimWidth} mm 内宽的正常胎宽上限为 {allowedMax} mm；当前 {tireWidth} mm 超出该上限。",
+      "recommended_window": "当前组合位于 {recommendedMin}–{recommendedMax} mm 推荐窗口内，也在 ISO 正常配合范围 {allowedMin}–{allowedMax} mm 内。",
+      "reference_window": "当前组合位于 ISO 正常配合范围 {allowedMin}–{allowedMax} mm 内，推荐窗口为 {recommendedMin}–{recommendedMax} mm。",
+      "no_recommended_window": "当前组合位于 ISO 正常配合范围 {allowedMin}–{allowedMax} mm 内，当前用途暂无推荐胎宽。",
+      "transitional_rim": "当前组合位于 ISO 正常配合范围 {allowedMin}–{allowedMax} mm 内；现有推荐规则将 19 mm TSS 作为过渡尺寸，未给出最佳建议。"
     },
     "metrics": {
-      "allowedRange": "工程参考区间",
+      "allowedRange": "正常配合范围（ISO）",
       "recommendedRange": "推荐窗口",
-      "inflatedWidth": "充气宽度投影",
-      "aeroTarget": "105% 外宽目标投影"
+      "tireWidth": "胎宽（按输入）",
+      "rimOuterWidthEstimate": "车圈外宽粗估（两侧各约 {wallThickness} mm）",
+      "rimOuterWidthFormula": "{innerWidth} mm + 2 × {wallThickness} mm ≈ {outerWidth} mm",
+      "aeroTargetOuterWidth": "105% 气动目标车圈外宽（胎宽 ÷ 1.05）",
+      "aeroTargetTireWidth": "105% 气动目标胎宽（车圈外宽 × 1.05）"
     },
-    "resultNote": "这是本页工程参考模型的计算结果。具体轮圈、轮胎、轮组和车架仍需核对各自的型号资料、压力限制和安装要求。",
-    "emptyTitle": "请输入有效的外胎宽度",
-    "emptyDescription": "选择车圈系统和内宽后，输入 18–127 mm 的整数宽度即可查看本模型结果。",
+    "resultNote": "车圈外宽按内宽加两侧各约 3 mm 粗估；实际轮圈截面和最宽处因型号而异，请以厂家标注为准。这是本页工程参考模型的计算结果，仍需核对具体轮圈、轮胎、轮组和车架资料、压力限制及安装要求。",
+    "emptyTitle": "选择一组搭配查看效果",
+    "emptyDescription": "点选车圈系统、内宽和外胎宽度，查看所选组合的配合状态。",
+    "loadingTitle": "正在计算当前组合",
+    "loadingDescription": "结果和截面图会在工程计算完成后更新。",
     "diagramTitle": "车圈与外胎截面示意",
     "diagramAlt": "根据当前内宽和外胎宽度绘制的车圈与外胎截面示意",
     "diagramNote": "图形用于解释内宽与胎体比例，不是实测截面，也不替代厂家尺寸图。",
     "diagram": {
       "badges": {
-        "aero": "ETRTO 105% 气动截面法则监控",
-        "critical": "[WARN] 剪切力矩过大 · 脱槽极高危",
-        "recommended": "[OK] 台阶咬合深锁 · 黄金甜点区",
-        "reference": "[ALERT] 物理公差兼容 · 需遵照气压上限"
+        "aero": "105% 气动目标（本项目模型）",
+        "critical": "当前输入超出参考区间",
+        "recommended": "当前输入落在推荐窗口",
+        "reference": "当前输入处于参考范围"
       },
       "stress": {
         "outward": "脱槽分力"
       },
       "lip": {
-        "tssTitle": "TSS 直边平唇（碳纤厚度 3.2 mm）",
-        "tssDescription": "平直无倒钩 · 纯靠刚性胎圈与气压锁紧",
-        "tcTitle": "TC 机械内倒钩（Bead Hook 鹰嘴）",
-        "tcDescription": "倒钩向下扣死外胎 · 物理防脱宽容度高"
+        "tssTitle": "TSS 直侧壁（无胎唇钩）",
+        "tssDescription": "依靠胎圈座尺寸与胎圈配合保持",
+        "tcTitle": "TC 胎唇钩（有钩车圈）",
+        "tcDescription": "胎唇钩托住胎圈 · 仍需确认型号与压力限制"
       },
       "beadCore": {
-        "title": "KEVLAR 刚性胎圈芯",
-        "description": "防脱圈第一道安全防线"
+        "title": "胎圈芯",
+        "description": "约束胎唇尺寸并支撑胎圈座配合"
       },
       "tireLabels": {
-        "critical": "外胎: {tireWidth} mm（脱圈极高危·严禁安装）",
-        "recommended": "外胎: {tireWidth} mm（气动水滴形态·胎唇紧密咬合·极佳）",
-        "reference": "外胎: {tireWidth} mm（公差带兼容·气动或气压受限）"
+        "critical": "外胎：{tireWidth} mm（超出正常配合范围）",
+        "recommended": "外胎：{tireWidth} mm（当前用途推荐窗口内）",
+        "reference": "外胎：{tireWidth} mm（正常参考范围）"
       },
       "footer": {
-        "critical": "[CRITICAL] 致命违规：{rimWidth} mm 内宽与 {tireWidth} mm 外胎超出本模型参考区间（{allowedMin}–{allowedMax} mm）。",
-        "recommended": "[OK] 黄金甜点：{rimWidth} mm 内宽与 {tireWidth} mm 外胎落在推荐窗口（{recommendedMin}–{recommendedMax} mm）。",
+        "critical": "当前 {rimWidth} mm 内宽与 {tireWidth} mm 外胎超出 ISO 正常配合范围（{allowedMin}–{allowedMax} mm）。",
+        "recommended": "当前组合：{rimWidth} mm 内宽与 {tireWidth} mm 外胎落在推荐窗口（{recommendedMin}–{recommendedMax} mm）。",
         "reference": "[ALERT] 兼容提示：{rimWidth} mm 与 {tireWidth} mm 位于参考区间（{allowedMin}–{allowedMax} mm），但不是推荐窗口。",
+        "reverseRecommended": "该外胎的最佳匹配内宽：{options}。图示展示其中 {rimWidth} mm 的截面方案。",
+        "reverseReference": "当前未命中推荐窗口，可参考内宽：{options}。图示展示其中 {rimWidth} mm 的截面方案。",
         "empty": "请输入有效宽度后查看状态。"
+      }
+    },
+    "examples": {
+      "title": "固定组合示例",
+      "description": "这三组固定组合帮助理解状态标签；上方结果会随当前选择更新。",
+      "critical": {
+        "title": "无钩 · 内宽 25 mm × 外胎 28 mm",
+        "description": "ISO 表中，25 mm 内宽对应 29–71 mm 胎宽；28 mm 低于下限。"
+      },
+      "reference": {
+        "title": "无钩 · 内宽 21 mm × 外胎 31 mm",
+        "description": "ISO 表中，21 mm 内宽对应 25–65 mm 胎宽；31 mm 在正常范围内，超出现有推荐窗口 28–30 mm。"
+      },
+      "recommended": {
+        "title": "无钩 · 内宽 25 mm × 外胎 32 mm",
+        "description": "32 mm 胎宽既在 ISO 正常范围 29–71 mm 内，也在现有推荐窗口 30–32 mm 内。"
       }
     },
     "explanations": {
       "rimSystem": {
         "title": "先区分 TSS 与 TC",
-        "body": "无钩 TSS 与有钩 TC 的胎唇约束方式不同，不能把同一组宽度范围直接复制到另一种车圈系统。"
+        "body": "本页两种系统使用同一张名义宽度表。TSS 与 TC 的胎圈座和轮胎类型要求仍须分别核对，表内宽度搭配不代表具体型号的安装许可。"
       },
       "nominalWidth": {
-        "title": "标称宽度不是实测宽度",
-        "body": "同一标称宽度会随胎体、气压和车圈内宽变化。本页用统一投影帮助理解趋势，具体安装仍以实测和型号资料为准。"
+        "title": "选定宽度直接作为胎宽",
+        "body": "所选毫米值直接作为胎宽，不根据车圈内宽额外加宽；具体安装仍以实测和型号资料为准。"
       },
       "aeroProjection": {
         "title": "105% 只解释气动目标",
-        "body": "外宽目标是气动形态的展示性参考，不是兼容认证、压力上限或脱圈安全边界。"
+        "body": "这里的关系是胎宽约为车圈外宽的 105%；反推的车圈外宽只是气动形态展示性参考，不是具体型号、压力上限或脱圈安全边界。"
       }
     },
     "checklist": {
@@ -212,14 +253,14 @@
     }
   },
   "seo": {
-    "title": "车圈与外胎工程配合参考",
-    "description": "先使用本页工程参考模型查看车圈内宽与外胎宽度的收敛区间，再将下方 DT Swiss TSS 与 TC 矩阵作为宽泛官方资料对照。",
+    "title": "外胎宽度与车圈内宽匹配计算器｜ETRTO 2024 对照表",
+    "description": "选择胎宽或车圈内宽，查看最佳尺寸与 ISO 5775 正常范围；模拟有钩／无钩组合，对照 DT Swiss 与 Schwalbe ETRTO 2024 表。",
     "articleSection": "轮胎与车圈尺寸参考",
-    "articleBody": "本页先用工程参考模型计算无钩 TSS 与有钩 TC 车圈的收敛宽度窗口，再展示 DT Swiss 的宽幅参考矩阵。本页模型结果与 DT Swiss 表格是两套独立口径；DT 的 possible 行和插值结果只保留为官方资料对照，不代表具体型号认证。",
+    "articleBody": "本页按 ISO 5775-1:2023 来源宽度矩阵查询正常配合范围，项目算法另行给出一个最佳尺寸。用户可模拟所选车圈与外胎的搭配状态。DT Swiss TSS 与 TC 表格、Schwalbe 发布于 2024 年 5 月的 ETRTO 2024 可能组合表分别在独立页签用于资料对照和来源说明，不参与计算或表示具体型号认证。",
     "datasetName": "车圈—外胎工程参考模型与 DT Swiss 对照矩阵",
-    "datasetDescription": "页面上方的版本化工程宽度窗口，以及下方后端提供的 DT Swiss 轮胎宽度、推荐车圈内宽、possible 参考和展示性宽度投影数据。",
-    "measurementTechnique": "页面模型按车圈系统和内宽读取版本化宽度窗口；DT Swiss 区块按发布行和后端分段线性参考单独展示。",
-    "tireWidthVariable": "轮胎标称宽度",
+    "datasetDescription": "正常宽度范围按 ISO 5775-1:2023 来源矩阵查询，最佳尺寸由项目算法单独选择；DT Swiss 表格是已发布资料的静态整理，仅作对照展示和来源说明。",
+    "measurementTechnique": "正常范围直接查询名义胎宽与内宽矩阵，不做插值；最佳尺寸另按项目规则选择。DT Swiss 表格按发布内容展示，不在该区块进行配合计算或插值。",
+    "tireWidthVariable": "外胎宽度",
     "rimWidthVariable": "车圈内宽",
     "sourceProperty": "数据来源",
     "sourceDateProperty": "数据核验日期"
@@ -235,7 +276,7 @@
       "modelSpecificCertification": "这是 DT Swiss 参考图表结果，不是具体轮胎、车圈型号或轮组的认证。",
       "possibleReferenceStatus": "标记为 possible 的行只作为参考锚点，不会改写为推荐组合。",
       "interpolationProjection": "插值宽度是图表行之间的数学投影，仍需对照轮胎和车圈制造商的具体规格。",
-      "displayOnlyMetrics": "充气后胎宽和 105% 外宽是展示性投影，不是实测尺寸或安全边界。"
+      "displayOnlyMetrics": "按输入的胎宽和按 105% 关系反推的目标车圈外宽是展示性参考，不是实测尺寸或安全边界。"
     }
   },
   "standards": {

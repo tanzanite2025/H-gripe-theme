@@ -17,6 +17,7 @@ import {
   createStorefrontMediaContext,
   normalizeStorefrontMediaUrl,
 } from '../../app/utils/storefrontMedia'
+import { validateSchemaOrgJsonLdContentForTrustedScriptAssignment } from '../../app/utils/security/trustedScriptUrl'
 
 const projectRoot = resolve(import.meta.dirname, '../..')
 const appRoot = resolve(projectRoot, 'app')
@@ -24,6 +25,31 @@ const failures: string[] = []
 
 const assert = (condition: unknown, message: string): void => {
   if (!condition) failures.push(message)
+}
+
+const sampleSchemaOrgJsonLdContent = JSON.stringify({
+  '@context': 'https://schema.org', '@type': 'FAQPage',
+  description: '</script><script>alert(1)</script> & data',
+})
+const trustedSchemaOrgJsonLdContent = validateSchemaOrgJsonLdContentForTrustedScriptAssignment(sampleSchemaOrgJsonLdContent)
+assert(JSON.stringify(JSON.parse(trustedSchemaOrgJsonLdContent)) === sampleSchemaOrgJsonLdContent,
+  'Trusted JSON-LD validation must preserve data')
+assert(!/[<>&]/.test(trustedSchemaOrgJsonLdContent), 'Trusted JSON-LD must escape HTML delimiters')
+for (const rejectedContent of [
+  'alert(1)',
+  '({"@context":"https://schema.org"});alert(1)',
+  '{"@context":"https://schema.org"};alert(1)',
+  '{"@context":"https://schema.org", "value": function() { alert(1) }}',
+  '{}', '[]', '"plain string"', 'null',
+  '{"@context":"https://unreviewed-schema.invalid"}',
+]) {
+  let rejected = false
+  try {
+    validateSchemaOrgJsonLdContentForTrustedScriptAssignment(rejectedContent)
+  } catch {
+    rejected = true
+  }
+  assert(rejected, 'Trusted script assignment must reject executable or unrecognized content')
 }
 
 const mediaContext = createStorefrontMediaContext({

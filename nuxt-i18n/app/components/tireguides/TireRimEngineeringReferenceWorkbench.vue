@@ -17,68 +17,6 @@
       </span>
     </header>
 
-    <section
-      v-if="engineeringReferenceResult"
-      class="tire-rim-engineering-workbench__global-diagnostic"
-      :class="`tire-rim-engineering-workbench__global-diagnostic--${engineeringReferenceResult.verdict}`"
-      aria-live="polite"
-    >
-      <div class="tire-rim-engineering-workbench__global-diagnostic-heading">
-        <span class="tire-rim-engineering-workbench__global-diagnostic-badge">
-          {{ t(`guidesTireChoose.engineering.board.status.badges.${engineeringReferenceResult.verdict}`) }}
-        </span>
-        <span class="tire-rim-engineering-workbench__global-diagnostic-source">
-          {{ t('guidesTireChoose.engineering.board.statusSource') }}
-        </span>
-      </div>
-      <p>{{ diagnosticDescription }}</p>
-    </section>
-
-    <section class="tire-rim-engineering-workbench__board-metrics" aria-label="Engineering safety metrics">
-      <article class="tire-rim-engineering-workbench__board-metric tire-rim-engineering-workbench__board-metric--pressure">
-        <div>
-          <span class="tire-rim-engineering-workbench__board-metric-label">
-            {{ t('guidesTireChoose.engineering.board.metrics.pressureLabel') }}
-          </span>
-          <strong>{{ maxPressure.bar.toFixed(1) }} bar</strong>
-        </div>
-        <p>{{ maxPressure.psi.toFixed(1) }} PSI · {{ t('guidesTireChoose.engineering.board.metrics.pressureNote') }}</p>
-      </article>
-      <article class="tire-rim-engineering-workbench__board-metric">
-        <div>
-          <span class="tire-rim-engineering-workbench__board-metric-label">
-            {{ t('guidesTireChoose.engineering.board.metrics.tubeLabel') }}
-          </span>
-          <strong>{{ tubeRecommendation.model }}</strong>
-        </div>
-        <p>{{ tubeRecommendation.range }}</p>
-      </article>
-      <article class="tire-rim-engineering-workbench__board-metric">
-        <div>
-          <span class="tire-rim-engineering-workbench__board-metric-label">
-            {{ t('guidesTireChoose.engineering.board.metrics.certificationLabel') }}
-          </span>
-          <strong>{{ t(`guidesTireChoose.engineering.board.metrics.certification.${rimSystem}`) }}</strong>
-        </div>
-        <p>{{ t(`guidesTireChoose.engineering.board.metrics.certificationNote.${rimSystem}`) }}</p>
-      </article>
-    </section>
-
-    <div class="tire-rim-engineering-workbench__mode-tabs" role="tablist" :aria-label="t('guidesTireChoose.engineering.modeLabel')">
-      <button
-        v-for="modeOption in modeOptions"
-        :key="modeOption"
-        type="button"
-        class="tire-rim-engineering-workbench__mode-tab"
-        :class="{ 'tire-rim-engineering-workbench__mode-tab--active': mode === modeOption }"
-        role="tab"
-        :aria-selected="mode === modeOption"
-        @click="mode = modeOption"
-      >
-        {{ t(`guidesTireChoose.engineering.modes.${modeOption}`) }}
-      </button>
-    </div>
-
     <div class="tire-rim-engineering-workbench__controls">
       <fieldset class="tire-rim-engineering-workbench__field">
         <legend>{{ t('guidesTireChoose.engineering.rimSystemLabel') }}</legend>
@@ -98,112 +36,89 @@
       </fieldset>
 
       <fieldset class="tire-rim-engineering-workbench__field">
-        <legend>{{ t('guidesTireChoose.engineering.rimInnerWidthLabel') }}</legend>
-        <div class="tire-rim-engineering-workbench__width-options">
-          <button
-            v-for="rimWidth in TIRE_RIM_ENGINEERING_SUPPORTED_RIM_INNER_WIDTHS_MM"
-            :key="rimWidth"
-            type="button"
-            class="tire-rim-engineering-workbench__width-option"
-            :class="{ 'tire-rim-engineering-workbench__width-option--active': rimInnerWidthMm === rimWidth }"
-            :aria-pressed="rimInnerWidthMm === rimWidth"
-            @click="rimInnerWidthMm = rimWidth"
-          >
-            {{ rimWidth }} mm
-          </button>
-        </div>
+        <legend id="simulation-rim-inner-width-label">{{ t('guidesTireChoose.engineering.rimInnerWidthLabel') }}</legend>
+        <button
+          type="button"
+          class="tire-rim-engineering-workbench__picker-trigger"
+          aria-labelledby="simulation-rim-inner-width-label"
+          aria-haspopup="dialog"
+          :aria-expanded="rimInnerWidthPickerOpen"
+          @click="rimInnerWidthPickerOpen = true"
+        >
+          <span>{{ rimInnerWidthMm }} mm</span>
+          <Icon name="lucide:chevron-down" class="h-4 w-4 shrink-0" aria-hidden="true" />
+        </button>
       </fieldset>
 
-      <label class="tire-rim-engineering-workbench__field tire-rim-engineering-workbench__field--tire-width">
-        <span>{{ t(mode === 'rim' ? 'guidesTireChoose.engineering.tireWidthLabel' : 'guidesTireChoose.engineering.tireWidthInputLabel') }}</span>
-        <span class="tire-rim-engineering-workbench__input-wrap">
-          <input
-            v-model.number="tireWidthInput"
-            type="number"
-            min="18"
-            max="127"
-            step="1"
-            inputmode="numeric"
-            :aria-label="t('guidesTireChoose.engineering.tireWidthLabel')"
-          />
-          <span>mm</span>
-        </span>
-        <span class="tire-rim-engineering-workbench__input-hint">
-          {{ t('guidesTireChoose.engineering.tireWidthHint') }}
-        </span>
-      </label>
+      <fieldset class="tire-rim-engineering-workbench__field">
+        <legend id="simulation-tire-width-label">{{ t('guidesTireChoose.engineering.tireWidthPresetsLabel') }}</legend>
+        <button
+          type="button"
+          class="tire-rim-engineering-workbench__picker-trigger"
+          aria-labelledby="simulation-tire-width-label"
+          aria-haspopup="dialog"
+          :aria-expanded="tireWidthPickerOpen"
+          @click="tireWidthPickerOpen = true"
+        >
+          <span class="min-w-0 truncate">{{ selectedSimulationTireWidthSummary }}</span>
+          <Icon name="lucide:chevron-down" class="h-4 w-4 shrink-0" aria-hidden="true" />
+        </button>
+      </fieldset>
     </div>
 
-    <div class="tire-rim-engineering-workbench__preset-row" aria-label="Tire width presets">
-      <span>{{ t('guidesTireChoose.engineering.tireWidthPresetsLabel') }}</span>
-      <button
-        v-for="tireWidth in TIRE_RIM_ENGINEERING_TIRE_WIDTH_PRESETS_MM"
-        :key="tireWidth"
-        type="button"
-        class="tire-rim-engineering-workbench__preset"
-        :class="{ 'tire-rim-engineering-workbench__preset--active': tireWidthInput === tireWidth }"
-        @click="tireWidthInput = tireWidth"
-      >
-        {{ tireWidth }}C
-      </button>
-    </div>
+    <TireRimWidthSelectionDialog
+      v-model="rimInnerWidthPickerOpen"
+      kind="rim"
+      :selected-rim-inner-width-mm="rimInnerWidthMm"
+      :description="t('guidesTireChoose.engineering.rimWidthPickerDescription')"
+      @select-rim-inner-width="rimInnerWidthMm = $event"
+    />
+    <TireRimWidthSelectionDialog
+      v-model="tireWidthPickerOpen"
+      kind="tire"
+      :selected-tire-width-preset-id="selectedSimulationTireWidthPresetId"
+      :selected-tire-width-mm="selectedTireWidthMm"
+      @select-tire-width-preset="selectSimulationTireWidthPreset"
+      @select-tire-width-millimeters="selectSimulationTireWidthMillimeters"
+    />
 
     <div class="tire-rim-engineering-workbench__result-layout">
       <section
-        v-if="engineeringReferenceResult"
+        v-if="engineeringReferenceResult && !recommendationPending"
         class="tire-rim-engineering-workbench__diagnostic"
         :class="`tire-rim-engineering-workbench__diagnostic--${engineeringReferenceResult.verdict}`"
         aria-live="polite"
       >
-        <div class="tire-rim-engineering-workbench__diagnostic-badge">
+        <span class="tire-rim-engineering-workbench__diagnostic-badge">
           {{ t(`guidesTireChoose.engineering.verdicts.${engineeringReferenceResult.verdict}.badge`) }}
-        </div>
-        <h4>
-          {{ t(`guidesTireChoose.engineering.verdicts.${engineeringReferenceResult.verdict}.title`) }}
-        </h4>
-        <p>
-          {{ t(`guidesTireChoose.engineering.reasons.${engineeringReferenceResult.verdictReason}`, {
-            rimWidth: engineeringReferenceResult.rimInnerWidthMm,
-            tireWidth: engineeringReferenceResult.tireWidthMm,
-            allowedMin: engineeringReferenceResult.allowedTireWidthRange.min,
-            allowedMax: engineeringReferenceResult.allowedTireWidthRange.max,
-            recommendedMin: engineeringReferenceResult.recommendedTireWidthRange.min,
-            recommendedMax: engineeringReferenceResult.recommendedTireWidthRange.max,
-          }) }}
-        </p>
-
+        </span>
+        <h4>{{ t(`guidesTireChoose.engineering.verdicts.${engineeringReferenceResult.verdict}.title`) }}</h4>
+        <p>{{ t('guidesTireRimHelper.layered.pairing', {
+          rimWidth: engineeringReferenceResult.rimInnerWidthMm,
+          tireWidth: engineeringReferenceResult.tireWidthMm,
+        }) }}</p>
+        <p>{{ simulationPairingExplanation }}</p>
         <dl class="tire-rim-engineering-workbench__metrics">
           <div>
             <dt>{{ t('guidesTireChoose.engineering.metrics.allowedRange') }}</dt>
-            <dd>{{ formatWidthRange(engineeringReferenceResult.allowedTireWidthRange) }} mm</dd>
+            <dd>{{ engineeringReferenceResult.allowedTireWidthRange.min }}–{{ engineeringReferenceResult.allowedTireWidthRange.max }} mm</dd>
           </div>
-          <div>
+          <div v-if="engineeringReferenceResult.recommendedTireWidthRange">
             <dt>{{ t('guidesTireChoose.engineering.metrics.recommendedRange') }}</dt>
-            <dd>{{ formatWidthRange(engineeringReferenceResult.recommendedTireWidthRange) }} mm</dd>
-          </div>
-          <div>
-            <dt>{{ t('guidesTireChoose.engineering.metrics.inflatedWidth') }}</dt>
-            <dd>{{ engineeringReferenceResult.inflatedTireWidthMm.toFixed(1) }} mm</dd>
-          </div>
-          <div>
-            <dt>{{ t('guidesTireChoose.engineering.metrics.aeroTarget') }}</dt>
-            <dd>{{ engineeringReferenceResult.aeroTargetOuterWidthMm.toFixed(1) }} mm</dd>
+            <dd>{{ engineeringReferenceResult.recommendedTireWidthRange.min }}–{{ engineeringReferenceResult.recommendedTireWidthRange.max }} mm</dd>
           </div>
         </dl>
-        <p class="tire-rim-engineering-workbench__diagnostic-note">
-          {{ t('guidesTireChoose.engineering.resultNote') }}
-        </p>
+        <p class="tire-rim-engineering-workbench__diagnostic-note">{{ t('guidesTireChoose.engineering.diagramNote') }}</p>
       </section>
-
       <section v-else class="tire-rim-engineering-workbench__diagnostic tire-rim-engineering-workbench__diagnostic--empty">
-        <h4>{{ t('guidesTireChoose.engineering.emptyTitle') }}</h4>
-        <p>{{ t('guidesTireChoose.engineering.emptyDescription') }}</p>
+        <h4>{{ t(recommendationPending ? 'guidesTireChoose.engineering.loadingTitle' : activeRecommendationError ? 'guidesTireRimHelper.requestError' : 'guidesTireChoose.engineering.emptyTitle') }}</h4>
+        <p :role="activeRecommendationError || activeTireWidthOutOfRange ? 'alert' : undefined">{{ t(activeTireWidthOutOfRange ? 'guidesTireRimHelper.outOfRange' : activeRecommendationError ? 'guidesTireRimHelper.requestError' : recommendationPending ? 'guidesTireChoose.engineering.loadingDescription' : 'guidesTireChoose.engineering.emptyDescription') }}</p>
       </section>
 
-      <figure class="tire-rim-engineering-workbench__diagram">
+      <figure v-if="diagramHasConfirmedInputPairing && !recommendationPending" class="tire-rim-engineering-workbench__diagram">
         <figcaption>{{ t('guidesTireChoose.engineering.diagramTitle') }}</figcaption>
         <div class="tire-rim-engineering-workbench__diagram-stage">
-          <div class="tire-rim-engineering-workbench__diagram-floating-badge">
+          <div v-if="engineeringReferenceResult?.aeroRuleApplies" class="tire-rim-engineering-workbench__diagram-floating-badge">
             {{ t('guidesTireChoose.engineering.diagram.badges.aero') }}
           </div>
           <div
@@ -400,6 +315,59 @@
       </figure>
     </div>
 
+    <section class="tire-rim-engineering-workbench__board-metrics" aria-label="Engineering safety metrics">
+      <article class="tire-rim-engineering-workbench__board-metric tire-rim-engineering-workbench__board-metric--pressure">
+        <div>
+          <span class="tire-rim-engineering-workbench__board-metric-label">
+            {{ t('guidesTireChoose.engineering.board.metrics.pressureLabel') }}
+          </span>
+          <strong>{{ maxPressure ? `${maxPressure.bar.toFixed(1)} bar` : '—' }}</strong>
+        </div>
+        <p>{{ maxPressure ? `${maxPressure.psi.toFixed(1)} PSI` : '—' }} · {{ t(maxPressure ? 'guidesTireChoose.engineering.board.metrics.pressureNote' : 'guidesTireRimHelper.layered.noPressureNote') }}</p>
+      </article>
+      <article class="tire-rim-engineering-workbench__board-metric">
+        <div>
+          <span class="tire-rim-engineering-workbench__board-metric-label">
+            {{ t('guidesTireChoose.engineering.board.metrics.tubeLabel') }}
+          </span>
+          <strong>{{ tubeRecommendation.model }}</strong>
+        </div>
+        <p>{{ tubeRecommendation.range }}</p>
+      </article>
+      <article class="tire-rim-engineering-workbench__board-metric">
+        <div>
+          <span class="tire-rim-engineering-workbench__board-metric-label">
+            {{ t('guidesTireChoose.engineering.board.metrics.certificationLabel') }}
+          </span>
+          <strong>{{ t(`guidesTireChoose.engineering.board.metrics.certification.${rimSystem}`) }}</strong>
+        </div>
+        <p>{{ t(`guidesTireChoose.engineering.board.metrics.certificationNote.${rimSystem}`) }}</p>
+      </article>
+    </section>
+
+    <section class="tire-rim-engineering-workbench__examples" aria-labelledby="tire-rim-engineering-examples-title">
+      <div>
+        <h4 id="tire-rim-engineering-examples-title">
+          {{ t('guidesTireChoose.engineering.examples.title') }}
+        </h4>
+        <p>{{ t('guidesTireChoose.engineering.examples.description') }}</p>
+      </div>
+      <div class="tire-rim-engineering-workbench__examples-grid">
+        <article
+          v-for="exampleKey in fitmentExampleKeys"
+          :key="exampleKey"
+          class="tire-rim-engineering-workbench__example"
+          :class="`tire-rim-engineering-workbench__example--${exampleKey}`"
+        >
+          <span class="tire-rim-engineering-workbench__example-badge">
+            {{ t(`guidesTireChoose.engineering.verdicts.${exampleKey}.badge`) }}
+          </span>
+          <h5>{{ t(`guidesTireChoose.engineering.examples.${exampleKey}.title`) }}</h5>
+          <p>{{ t(`guidesTireChoose.engineering.examples.${exampleKey}.description`) }}</p>
+        </article>
+      </div>
+    </section>
+
     <div class="tire-rim-engineering-workbench__explanations">
       <article v-for="explanationKey in explanationKeys" :key="explanationKey">
         <h4>{{ t(`guidesTireChoose.engineering.explanations.${explanationKey}.title`) }}</h4>
@@ -407,60 +375,6 @@
       </article>
     </div>
 
-    <div class="tire-rim-engineering-workbench__checklist">
-      <h4>{{ t('guidesTireChoose.engineering.checklist.title') }}</h4>
-      <ul>
-        <li v-for="checklistKey in checklistKeys" :key="checklistKey">
-          {{ t(`guidesTireChoose.engineering.checklist.items.${checklistKey}`) }}
-        </li>
-      </ul>
-    </div>
-
-    <section class="tire-rim-engineering-workbench__aero-board">
-      <div class="tire-rim-engineering-workbench__board-section-heading">
-        <h4>{{ t('guidesTireChoose.engineering.board.aero.title') }}</h4>
-        <span>{{ t('guidesTireChoose.engineering.board.aero.source') }}</span>
-      </div>
-      <p class="tire-rim-engineering-workbench__board-section-intro">
-        {{ t('guidesTireChoose.engineering.board.aero.intro') }}
-      </p>
-      <div class="tire-rim-engineering-workbench__aero-grid">
-        <article v-for="aeroKey in aeroKeys" :key="aeroKey">
-          <h5>{{ t(`guidesTireChoose.engineering.board.aero.cards.${aeroKey}.title`) }}</h5>
-          <strong>{{ t(`guidesTireChoose.engineering.board.aero.cards.${aeroKey}.formula`) }}</strong>
-          <p>{{ t(`guidesTireChoose.engineering.board.aero.cards.${aeroKey}.body`) }}</p>
-        </article>
-      </div>
-      <div class="tire-rim-engineering-workbench__aero-formula">
-        <strong>{{ t('guidesTireChoose.engineering.board.aero.formulaLabel') }}</strong>
-        <code>W<sub>inflated</sub> ≈ W<sub>nominal</sub> + 0.4 × (W<sub>rim inner</sub> − 19)</code>
-        <span>
-          {{ t('guidesTireChoose.engineering.board.aero.current', {
-            rimWidth: engineeringReferenceResult?.rimInnerWidthMm ?? rimInnerWidthMm,
-            tireWidth: engineeringReferenceResult?.tireWidthMm ?? tireWidthInput,
-            inflatedWidth: engineeringReferenceResult?.inflatedTireWidthMm.toFixed(1) ?? '—',
-            aeroTarget: engineeringReferenceResult?.aeroTargetOuterWidthMm.toFixed(1) ?? '—',
-          }) }}
-        </span>
-      </div>
-    </section>
-
-    <section class="tire-rim-engineering-workbench__traps-board">
-      <div class="tire-rim-engineering-workbench__board-section-heading">
-        <h4>{{ t('guidesTireChoose.engineering.board.traps.title') }}</h4>
-        <span>{{ t('guidesTireChoose.engineering.board.traps.source') }}</span>
-      </div>
-      <div class="tire-rim-engineering-workbench__traps-grid">
-        <article v-for="trapKey in trapKeys" :key="trapKey">
-          <span class="tire-rim-engineering-workbench__trap-number">
-            {{ t(`guidesTireChoose.engineering.board.traps.items.${trapKey}.number`) }}
-          </span>
-          <h5>{{ t(`guidesTireChoose.engineering.board.traps.items.${trapKey}.title`) }}</h5>
-          <p>{{ t(`guidesTireChoose.engineering.board.traps.items.${trapKey}.body`) }}</p>
-          <strong>{{ t(`guidesTireChoose.engineering.board.traps.items.${trapKey}.rule`) }}</strong>
-        </article>
-      </div>
-    </section>
   </section>
 </template>
 
@@ -468,14 +382,11 @@
 import { computed, ref, watch } from 'vue'
 import { useI18n } from '#imports'
 import { usePageMessages } from '~/composables/usePageMessages'
-import {
-  calculateTireRimEngineeringReference,
-  TIRE_RIM_ENGINEERING_SUPPORTED_RIM_INNER_WIDTHS_MM,
-  TIRE_RIM_ENGINEERING_TIRE_WIDTH_PRESETS_MM,
-  type TireRimEngineeringRimSystem,
-} from '~/data/tireguides/tireRimEngineeringReferenceModel'
-
-type TireRimEngineeringWorkbenchMode = 'rim' | 'tire'
+import { useTireRimWidthReferenceRecommendation } from '~/composables/useTireRimWidthReferenceRecommendation'
+import type { TireRimEngineeringCalculation } from '~/data/tireguides/tireRimWidthReferencePresentation'
+import type { TireRimEngineeringRimSystem } from '~/data/tireguides/tireRimEngineeringReferenceUiOptions'
+import { commonTireWidthInputPresets, type TireWidthInputPreset } from '~/data/tireguides/tireRimWidthInputConversion'
+import TireRimWidthSelectionDialog from '~/components/tireguides/TireRimWidthSelectionDialog.vue'
 
 interface TireRimEngineeringDiagramGeometry {
   centerX: number
@@ -487,23 +398,12 @@ interface TireRimEngineeringDiagramGeometry {
   rimOuterPath: string
   rimCavityPath: string
   rimTapePath: string
-  valveHole: {
-    x1: number
-    x2: number
-    y1: number
-    y2: number
-  }
+  valveHole: { x1: number; x2: number; y1: number; y2: number }
   tireAirChamberPath: string
   tireInnerCasingPath: string
   tireOuterPath: string
   tireStroke: string
-  tireSipes: Array<{
-    id: string
-    x1: number
-    y1: number
-    x2: number
-    y2: number
-  }>
+  tireSipes: Array<{ id: string; x1: number; y1: number; x2: number; y2: number }>
   beadRubberLeftPath: string
   beadRubberRightPath: string
   beadCoreLeft: { cx: number; cy: number }
@@ -520,13 +420,7 @@ interface TireRimEngineeringDiagramGeometry {
     titleY: number
     descriptionY: number
   }
-  beadCallout: {
-    linePath: string
-    dotX: number
-    dotY: number
-    titleY: number
-    descriptionY: number
-  }
+  beadCallout: { linePath: string; dotX: number; dotY: number; titleY: number; descriptionY: number }
   tireLabel: string
   footerNote: string
   tireTopY: number
@@ -535,109 +429,120 @@ interface TireRimEngineeringDiagramGeometry {
 
 const { locale, t } = useI18n()
 const { loadPageMessages } = usePageMessages('guidesTireChoose')
+const { loadPageMessages: loadTireRimHelperMessages } = usePageMessages('guidesTireRimHelper')
 
-await loadPageMessages(locale.value)
+await Promise.all([loadPageMessages(locale.value), loadTireRimHelperMessages(locale.value)])
 
 watch(locale, (nextLocale) => {
   void loadPageMessages(nextLocale)
+  void loadTireRimHelperMessages(nextLocale)
 })
 
-const modeOptions: readonly TireRimEngineeringWorkbenchMode[] = ['rim', 'tire']
 const rimSystemOptions: readonly TireRimEngineeringRimSystem[] = ['hookless', 'hooked']
 const explanationKeys = ['rimSystem', 'nominalWidth', 'aeroProjection'] as const
-const checklistKeys = ['exactSpecifications', 'pressureLimits', 'installationCheck'] as const
-const aeroKeys = ['bulbTire', 'ruleOf105', 'modernSweetSpot'] as const
-const trapKeys = ['nonTleOnHookless', 'emptyTpuInflation', 'oldSealantResidue', 'co2ColdBrittle', 'metalLever', 'beadPinch'] as const
+const fitmentExampleKeys = ['critical', 'reference', 'recommended'] as const
 
-const mode = ref<TireRimEngineeringWorkbenchMode>('rim')
 const rimSystem = ref<TireRimEngineeringRimSystem>('hookless')
 const rimInnerWidthMm = ref<number>(25)
-const tireWidthInput = ref<number>(28)
+const selectedTireWidthMm = ref<number>(28)
+const rimInnerWidthPickerOpen = ref(false)
+const tireWidthPickerOpen = ref(false)
+const selectedSimulationTireWidthPresetId = ref<string | undefined>('28c')
+const selectedSimulationTireWidthSummary = computed(() => {
+  const preset = commonTireWidthInputPresets.find(option => option.id === selectedSimulationTireWidthPresetId.value)
+  const tireWidthMm = selectedTireWidthMm.value
+  const inches = String(Number((tireWidthMm / 25.4).toFixed(2)))
+  return `${preset?.label || `${tireWidthMm} mm`} · ${tireWidthMm} mm · ${inches}″`
+})
 
-const engineeringReferenceResult = computed(() => calculateTireRimEngineeringReference(
-  rimSystem.value,
-  rimInnerWidthMm.value,
-  tireWidthInput.value,
-))
+const selectSimulationTireWidthPreset = (preset: TireWidthInputPreset): void => {
+  selectedSimulationTireWidthPresetId.value = preset.id
+  selectedTireWidthMm.value = preset.millimeters
+}
 
-const formatWidthRange = ({ min, max }: { min: number; max: number }): string => (
-  min === max ? String(min) : `${min}–${max}`
+const selectSimulationTireWidthMillimeters = (widthMm: number): void => {
+  selectedSimulationTireWidthPresetId.value = undefined
+  selectedTireWidthMm.value = widthMm
+}
+
+const selectedTireWidthRequestValue = computed(() => String(selectedTireWidthMm.value))
+
+const {
+  tireRimSuggestion: simulatedPairingSuggestion,
+  recommendationPending,
+  recommendationError: activeRecommendationError,
+  tireWidthOutOfRange: activeTireWidthOutOfRange,
+} = useTireRimWidthReferenceRecommendation(
+  selectedTireWidthRequestValue,
+  rimSystem,
+  undefined,
+  rimInnerWidthMm,
 )
 
-const maxPressure = computed(() => {
-  const inputWidth = Number(tireWidthInput.value)
-  const tireWidth = Number.isFinite(inputWidth) && inputWidth > 0 ? inputWidth : 28
-  if (rimSystem.value === 'hookless') {
-    if (tireWidth <= 24) return { bar: 5.5, psi: 80 }
-    if (tireWidth <= 29) return { bar: 5, psi: 72.5 }
-    if (tireWidth <= 34) return { bar: 4.5, psi: 65 }
-    if (tireWidth <= 39) return { bar: 4, psi: 58 }
-    if (tireWidth <= 44) return { bar: 3.5, psi: 51 }
-    return { bar: 3, psi: 43.5 }
-  }
-  if (tireWidth <= 24) return { bar: 8, psi: 116 }
-  if (tireWidth <= 26) return { bar: 7.5, psi: 110 }
-  if (tireWidth <= 29) return { bar: 6.5, psi: 95 }
-  if (tireWidth <= 34) return { bar: 5.5, psi: 80 }
-  if (tireWidth <= 39) return { bar: 4.5, psi: 65 }
-  if (tireWidth <= 45) return { bar: 3.5, psi: 50 }
-  return { bar: 2.8, psi: 40 }
-})
-
-const tubeRecommendation = computed(() => {
-  const tireWidth = Number(tireWidthInput.value)
-  if (tireWidth >= 38) {
-    return {
-      model: t('guidesTireChoose.engineering.board.metrics.tubes.wideModel'),
-      range: t('guidesTireChoose.engineering.board.metrics.tubes.wideRange'),
-    }
-  }
-  if (tireWidth >= 29) {
-    return {
-      model: t('guidesTireChoose.engineering.board.metrics.tubes.midModel'),
-      range: t('guidesTireChoose.engineering.board.metrics.tubes.midRange'),
-    }
-  }
-  return {
-    model: t('guidesTireChoose.engineering.board.metrics.tubes.roadModel'),
-    range: t('guidesTireChoose.engineering.board.metrics.tubes.roadRange'),
-  }
-})
-
-const diagnosticDescription = computed(() => {
+const engineeringReferenceResult = computed<TireRimEngineeringCalculation | null>(() => (
+  simulatedPairingSuggestion.value?.engineering ?? null
+))
+const diagramHasConfirmedInputPairing = computed(() => engineeringReferenceResult.value !== null)
+const simulationPairingExplanation = computed(() => {
   const result = engineeringReferenceResult.value
-  if (!result) return t('guidesTireChoose.engineering.board.status.empty')
-  const messageKey = result.verdict === 'critical'
-    ? result.verdictReason === 'below_minimum' ? 'criticalBelow' : 'criticalAbove'
-    : result.verdict === 'recommended' ? 'recommended' : 'reference'
-  return t(`guidesTireChoose.engineering.board.status.${messageKey}`, {
+  if (!result) return ''
+  return t(`guidesTireChoose.engineering.reasons.${result.verdictReason}`, {
     rimWidth: result.rimInnerWidthMm,
     tireWidth: result.tireWidthMm,
     allowedMin: result.allowedTireWidthRange.min,
     allowedMax: result.allowedTireWidthRange.max,
-    recommendedMin: result.recommendedTireWidthRange.min,
-    recommendedMax: result.recommendedTireWidthRange.max,
-    maxBar: maxPressure.value.bar.toFixed(1),
+    recommendedMin: result.recommendedTireWidthRange?.min ?? '—',
+    recommendedMax: result.recommendedTireWidthRange?.max ?? '—',
   })
+})
+
+const maxPressure = computed(() => engineeringReferenceResult.value?.maximumPressure ?? null)
+
+const tubeRecommendationRange = computed(() => {
+  const recommendation = engineeringReferenceResult.value?.tubeRecommendation
+  if (!recommendation) return '—'
+  return recommendation.band === 'fat'
+    ? `${recommendation.widthMinMm}–${recommendation.widthMaxMm} mm`
+    : `${recommendation.widthMinMm}–${recommendation.widthMaxMm}C`
+})
+
+const tubeRecommendation = computed(() => {
+  const recommendation = engineeringReferenceResult.value?.tubeRecommendation
+  if (!recommendation) return { model: '—', range: '—' }
+  const band = recommendation.band
+  if (band === 'fat') {
+    return { model: t('guidesTireChoose.engineering.board.metrics.tubes.fatModel'), range: tubeRecommendationRange.value }
+  }
+  if (band === 'wide') {
+    return { model: t('guidesTireChoose.engineering.board.metrics.tubes.wideModel'), range: tubeRecommendationRange.value }
+  }
+  if (band === 'mid') {
+    return { model: t('guidesTireChoose.engineering.board.metrics.tubes.midModel'), range: tubeRecommendationRange.value }
+  }
+  return {
+    model: t('guidesTireChoose.engineering.board.metrics.tubes.roadModel'),
+    range: tubeRecommendationRange.value,
+  }
 })
 
 const diagramGeometry = computed<TireRimEngineeringDiagramGeometry>(() => {
   const centerX = 230
-  const pixelsPerMillimetre = 4.2
   const rimWidth = rimInnerWidthMm.value
-  const parsedTireWidth = Number(tireWidthInput.value)
-  const tireWidth = Number.isFinite(parsedTireWidth) && parsedTireWidth > 0
-    ? Math.max(18, Math.min(127, parsedTireWidth))
-    : 28
+  const tireWidth = selectedTireWidthMm.value
   const result = engineeringReferenceResult.value
   const status = result?.verdict ?? 'reference'
+  // Keep the illustration inside its fixed 460 px viewBox when the same
+  // calculator is used for 65–100 mm snow/fat-bike rims. Road and gravel
+  // widths retain the original scale; only the wide envelope scales down.
+  const tireToRimWidthDifference = Math.max(0, tireWidth - rimWidth)
+  const visualWidthEstimate = tireWidth + tireToRimWidthDifference * 1.2 + 16
+  const pixelsPerMillimetre = Math.min(4.2, 400 / visualWidthEstimate)
   const halfRimWidth = (rimWidth / 2) * pixelsPerMillimetre
   const rimInnerLeftX = centerX - halfRimWidth
   const rimInnerRightX = centerX + halfRimWidth
 
-  // These anchors intentionally match the original HTML workbench. Keeping
-  // the same coordinate system preserves the detailed callouts and section
-  // relationships when the diagram is moved into Vue.
+  // These fixed coordinates define only the illustration's layout. Fitment
+  // status and all engineering measurements come from the backend response.
   const lipY = 118
   const seatY = 142
   const humpY = 138
@@ -716,7 +621,7 @@ const diagramGeometry = computed<TireRimEngineeringDiagramGeometry>(() => {
   const rimTapePath = `M ${leftHumpX - 4},${seatY} L ${leftDropX},${dropY} L ${rightDropX},${dropY} L ${rightHumpX + 4},${seatY}`
   const valveHole = { x1: centerX - 5, x2: centerX + 5, y1: dropY + 1, y2: dropY + 1 }
 
-  const tireBulge = Math.max(8, (tireWidth - rimWidth) * 3.4)
+  const tireBulge = Math.max(8, tireToRimWidthDifference * pixelsPerMillimetre * 0.8)
   const tireHeight = Math.min(105, tireWidth * 2.35)
   const tireTopY = Math.max(38, seatY - tireHeight)
   const shoulderY = tireTopY + 18
@@ -786,8 +691,8 @@ const diagramGeometry = computed<TireRimEngineeringDiagramGeometry>(() => {
       tireWidth,
       allowedMin: result.allowedTireWidthRange.min,
       allowedMax: result.allowedTireWidthRange.max,
-      recommendedMin: result.recommendedTireWidthRange.min,
-      recommendedMax: result.recommendedTireWidthRange.max,
+      recommendedMin: result.recommendedTireWidthRange?.min,
+      recommendedMax: result.recommendedTireWidthRange?.max,
     })
     : t('guidesTireChoose.engineering.diagram.footer.empty')
 
@@ -843,6 +748,7 @@ const diagramGeometry = computed<TireRimEngineeringDiagramGeometry>(() => {
   justify-content: space-between;
 }
 
+
 .tire-rim-engineering-workbench__eyebrow,
 .tire-rim-engineering-workbench__version {
   margin: 0 0 0.35rem;
@@ -867,8 +773,7 @@ const diagramGeometry = computed<TireRimEngineeringDiagramGeometry>(() => {
 .tire-rim-engineering-workbench__title,
 .tire-rim-engineering-workbench__diagnostic h4,
 .tire-rim-engineering-workbench__diagram figcaption,
-.tire-rim-engineering-workbench__explanations h4,
-.tire-rim-engineering-workbench__checklist h4 {
+.tire-rim-engineering-workbench__explanations h4 {
   margin: 0;
   color: var(--tz-text-primary);
   font-weight: 700;
@@ -876,64 +781,6 @@ const diagramGeometry = computed<TireRimEngineeringDiagramGeometry>(() => {
 
 .tire-rim-engineering-workbench__title {
   font-size: 1.1rem;
-}
-
-.tire-rim-engineering-workbench__global-diagnostic {
-  padding: 0.9rem 1rem;
-  border: 1px solid rgb(220 38 38 / 0.42);
-  border-radius: 0.9rem;
-  background: rgb(254 242 242 / 0.85);
-}
-
-.tire-rim-engineering-workbench__global-diagnostic--recommended {
-  border-color: rgb(5 150 105 / 0.42);
-  background: rgb(236 253 245 / 0.85);
-}
-
-.tire-rim-engineering-workbench__global-diagnostic--reference {
-  border-color: rgb(217 119 6 / 0.42);
-  background: rgb(255 251 235 / 0.9);
-}
-
-.tire-rim-engineering-workbench__global-diagnostic-heading {
-  display: flex;
-  gap: 0.7rem;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-}
-
-.tire-rim-engineering-workbench__global-diagnostic-badge {
-  display: inline-flex;
-  padding: 0.32rem 0.55rem;
-  border-radius: 0.35rem;
-  background: #b91c1c;
-  color: #fff;
-  font-family: var(--tz-font-ui);
-  font-size: 0.64rem;
-  font-weight: 900;
-}
-
-.tire-rim-engineering-workbench__global-diagnostic--recommended .tire-rim-engineering-workbench__global-diagnostic-badge {
-  background: #047857;
-}
-
-.tire-rim-engineering-workbench__global-diagnostic--reference .tire-rim-engineering-workbench__global-diagnostic-badge {
-  background: #b45309;
-}
-
-.tire-rim-engineering-workbench__global-diagnostic-source {
-  color: var(--tz-text-muted);
-  font-family: var(--tz-font-ui);
-  font-size: 0.62rem;
-  font-weight: 800;
-}
-
-.tire-rim-engineering-workbench__global-diagnostic p {
-  margin: 0.6rem 0 0;
-  color: var(--tz-text-secondary);
-  font-size: 0.76rem;
-  line-height: 1.65;
 }
 
 .tire-rim-engineering-workbench__board-metrics {
@@ -985,7 +832,6 @@ const diagramGeometry = computed<TireRimEngineeringDiagramGeometry>(() => {
 .tire-rim-engineering-workbench__description,
 .tire-rim-engineering-workbench__diagnostic p,
 .tire-rim-engineering-workbench__explanations p,
-.tire-rim-engineering-workbench__checklist li,
 .tire-rim-engineering-workbench__diagram p {
   margin: 0.45rem 0 0;
   color: var(--tz-text-secondary);
@@ -993,26 +839,14 @@ const diagramGeometry = computed<TireRimEngineeringDiagramGeometry>(() => {
   line-height: 1.6;
 }
 
-.tire-rim-engineering-workbench__mode-tabs,
-.tire-rim-engineering-workbench__segmented-control,
-.tire-rim-engineering-workbench__width-options,
-.tire-rim-engineering-workbench__preset-row {
+.tire-rim-engineering-workbench__segmented-control {
   display: flex;
   flex-wrap: wrap;
   gap: 0.4rem;
   align-items: center;
 }
 
-.tire-rim-engineering-workbench__mode-tabs {
-  padding: 0.25rem;
-  border-radius: 999px;
-  background: var(--tz-form-panel-surface);
-}
-
-.tire-rim-engineering-workbench__mode-tab,
-.tire-rim-engineering-workbench__segment,
-.tire-rim-engineering-workbench__width-option,
-.tire-rim-engineering-workbench__preset {
+.tire-rim-engineering-workbench__segment {
   border: 1px solid var(--tz-form-control-border);
   border-radius: 999px;
   background: var(--tz-form-control-surface);
@@ -1023,34 +857,18 @@ const diagramGeometry = computed<TireRimEngineeringDiagramGeometry>(() => {
   transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease;
 }
 
-.tire-rim-engineering-workbench__mode-tab {
-  flex: 1 1 14rem;
-  padding: 0.55rem 0.8rem;
-}
-
-.tire-rim-engineering-workbench__segment,
-.tire-rim-engineering-workbench__width-option,
-.tire-rim-engineering-workbench__preset {
+.tire-rim-engineering-workbench__segment {
   padding: 0.42rem 0.65rem;
 }
 
-.tire-rim-engineering-workbench__mode-tab:hover,
-.tire-rim-engineering-workbench__mode-tab:focus-visible,
 .tire-rim-engineering-workbench__segment:hover,
-.tire-rim-engineering-workbench__segment:focus-visible,
-.tire-rim-engineering-workbench__width-option:hover,
-.tire-rim-engineering-workbench__width-option:focus-visible,
-.tire-rim-engineering-workbench__preset:hover,
-.tire-rim-engineering-workbench__preset:focus-visible {
+.tire-rim-engineering-workbench__segment:focus-visible {
   border-color: var(--tz-site-accent);
   color: var(--tz-text-primary);
   outline: none;
 }
 
-.tire-rim-engineering-workbench__mode-tab--active,
-.tire-rim-engineering-workbench__segment--active,
-.tire-rim-engineering-workbench__width-option--active,
-.tire-rim-engineering-workbench__preset--active {
+.tire-rim-engineering-workbench__segment--active {
   border-color: var(--tz-site-accent);
   background: var(--tz-site-accent);
   color: #fff;
@@ -1058,8 +876,32 @@ const diagramGeometry = computed<TireRimEngineeringDiagramGeometry>(() => {
 
 .tire-rim-engineering-workbench__controls {
   display: grid;
-  grid-template-columns: minmax(12rem, 0.8fr) minmax(18rem, 1.4fr) minmax(10rem, 0.7fr);
+  grid-template-columns: minmax(12rem, 0.6fr) repeat(2, minmax(0, 1fr));
   gap: 0.85rem;
+}
+
+.tire-rim-engineering-workbench__picker-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  width: 100%;
+  height: 42px;
+  padding: 0 0.75rem;
+  border: 1px solid var(--tz-form-control-border);
+  border-radius: 0.375rem;
+  background: var(--tz-form-control-surface);
+  color: var(--tz-text-primary);
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.06);
+  font-size: 0.75rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.tire-rim-engineering-workbench__picker-trigger:hover,
+.tire-rim-engineering-workbench__picker-trigger:focus-visible {
+  border-color: var(--tz-site-accent);
+  outline: none;
 }
 
 .tire-rim-engineering-workbench__field {
@@ -1069,9 +911,7 @@ const diagramGeometry = computed<TireRimEngineeringDiagramGeometry>(() => {
   border: 0;
 }
 
-.tire-rim-engineering-workbench__field legend,
-.tire-rim-engineering-workbench__field > span:first-child,
-.tire-rim-engineering-workbench__preset-row > span {
+.tire-rim-engineering-workbench__field legend {
   display: block;
   margin-bottom: 0.4rem;
   color: var(--tz-text-secondary);
@@ -1079,61 +919,16 @@ const diagramGeometry = computed<TireRimEngineeringDiagramGeometry>(() => {
   font-weight: 700;
 }
 
-.tire-rim-engineering-workbench__input-wrap {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-}
-
-.tire-rim-engineering-workbench__input-wrap input {
-  width: 100%;
-  min-width: 0;
-  padding: 0.46rem 0.55rem;
-  border: 1px solid var(--tz-form-control-border);
-  border-radius: 0.5rem;
-  background: var(--tz-form-control-surface);
-  color: var(--tz-text-primary);
-  font-size: 0.8rem;
-}
-
-.tire-rim-engineering-workbench__input-wrap input:focus {
-  border-color: var(--tz-site-accent);
-  outline: none;
-}
-
-.tire-rim-engineering-workbench__input-wrap > span {
-  color: var(--tz-text-muted);
-  font-size: 0.72rem;
-}
-
-.tire-rim-engineering-workbench__input-hint {
-  display: block;
-  margin-top: 0.35rem;
-  color: var(--tz-text-muted);
-  font-size: 0.66rem;
-  line-height: 1.4;
-}
-
-.tire-rim-engineering-workbench__preset-row {
-  padding-top: 0.25rem;
-  border-top: 1px solid var(--tz-border-subtle);
-}
-
-.tire-rim-engineering-workbench__preset-row > span {
-  margin: 0 0.15rem 0 0;
-}
-
 .tire-rim-engineering-workbench__result-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(18rem, 0.9fr);
+  grid-template-columns: minmax(0, 1fr);
   gap: 0.85rem;
   align-items: stretch;
 }
 
 .tire-rim-engineering-workbench__diagnostic,
 .tire-rim-engineering-workbench__diagram,
-.tire-rim-engineering-workbench__explanations article,
-.tire-rim-engineering-workbench__checklist {
+.tire-rim-engineering-workbench__explanations article {
   border: 1px solid var(--tz-border-subtle);
   border-radius: 0.9rem;
   background: var(--tz-form-panel-surface);
@@ -1218,6 +1013,13 @@ const diagramGeometry = computed<TireRimEngineeringDiagramGeometry>(() => {
   font-family: var(--tz-font-ui);
   font-size: 0.78rem;
   font-weight: 700;
+}
+
+.tire-rim-engineering-workbench__metrics small {
+  display: block;
+  margin-top: 0.15rem;
+  color: var(--tz-text-muted);
+  font-size: 0.62rem;
 }
 
 .tire-rim-engineering-workbench__diagnostic-note {
@@ -1459,160 +1261,85 @@ const diagramGeometry = computed<TireRimEngineeringDiagramGeometry>(() => {
   gap: 0.75rem;
 }
 
-.tire-rim-engineering-workbench__explanations article,
-.tire-rim-engineering-workbench__checklist {
+.tire-rim-engineering-workbench__explanations article {
   padding: 0.8rem;
 }
 
-.tire-rim-engineering-workbench__explanations h4,
-.tire-rim-engineering-workbench__checklist h4 {
+.tire-rim-engineering-workbench__explanations h4 {
   font-size: 0.78rem;
 }
 
-.tire-rim-engineering-workbench__explanations p,
-.tire-rim-engineering-workbench__checklist li {
+.tire-rim-engineering-workbench__explanations p {
   font-size: 0.7rem;
 }
 
-.tire-rim-engineering-workbench__checklist ul {
+.tire-rim-engineering-workbench__examples {
   display: grid;
-  gap: 0.2rem;
-  margin: 0.45rem 0 0;
-  padding-left: 1.1rem;
-}
-
-.tire-rim-engineering-workbench__aero-board,
-.tire-rim-engineering-workbench__traps-board {
+  gap: 0.7rem;
   padding: 1rem;
-  border: 1px dashed var(--tz-border-subtle);
+  border: 1px solid var(--tz-border-subtle);
   border-radius: 0.95rem;
   background: var(--tz-form-panel-surface);
 }
 
-.tire-rim-engineering-workbench__board-section-heading {
-  display: flex;
-  gap: 0.75rem;
-  align-items: center;
-  justify-content: space-between;
-  padding-bottom: 0.55rem;
-  border-bottom: 1px solid var(--tz-border-subtle);
-}
-
-.tire-rim-engineering-workbench__board-section-heading h4 {
+.tire-rim-engineering-workbench__examples h4 {
   margin: 0;
   color: var(--tz-text-primary);
-  font-size: 0.82rem;
-  font-weight: 900;
-}
-
-.tire-rim-engineering-workbench__board-section-heading span {
-  color: var(--tz-text-muted);
-  font-family: var(--tz-font-ui);
-  font-size: 0.58rem;
+  font-size: 0.85rem;
   font-weight: 800;
-  text-align: right;
 }
 
-.tire-rim-engineering-workbench__board-section-intro {
-  margin: 0.65rem 0 0;
-  color: var(--tz-text-secondary);
-  font-size: 0.72rem;
-  line-height: 1.6;
+.tire-rim-engineering-workbench__examples > div:first-child > p {
+  margin: 0.3rem 0 0;
+  color: var(--tz-text-muted);
+  font-size: 0.7rem;
+  line-height: 1.5;
 }
 
-.tire-rim-engineering-workbench__aero-grid,
-.tire-rim-engineering-workbench__traps-grid {
+.tire-rim-engineering-workbench__examples-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.7rem;
-  margin-top: 0.8rem;
 }
 
-.tire-rim-engineering-workbench__aero-grid article,
-.tire-rim-engineering-workbench__traps-grid article {
+.tire-rim-engineering-workbench__example {
   min-width: 0;
-  padding: 0.75rem;
+  padding: 0.8rem;
   border: 1px solid var(--tz-border-subtle);
   border-radius: 0.75rem;
   background: var(--tz-card-surface);
 }
 
-.tire-rim-engineering-workbench__aero-grid h5,
-.tire-rim-engineering-workbench__traps-grid h5 {
-  margin: 0;
+.tire-rim-engineering-workbench__example--critical {
+  border-color: rgb(220 38 38 / 0.42);
+}
+
+.tire-rim-engineering-workbench__example--reference {
+  border-color: rgb(2 132 199 / 0.35);
+}
+
+.tire-rim-engineering-workbench__example--recommended {
+  border-color: rgb(5 150 105 / 0.4);
+}
+
+.tire-rim-engineering-workbench__example-badge {
+  color: var(--tz-text-muted);
+  font-size: 0.62rem;
+  font-weight: 800;
+}
+
+.tire-rim-engineering-workbench__example h5 {
+  margin: 0.45rem 0 0;
   color: var(--tz-text-primary);
-  font-size: 0.72rem;
+  font-size: 0.73rem;
   line-height: 1.4;
 }
 
-.tire-rim-engineering-workbench__aero-grid strong {
-  display: block;
-  margin-top: 0.45rem;
-  color: var(--tz-text-primary);
-  font-family: var(--tz-font-ui);
-  font-size: 0.66rem;
-  line-height: 1.45;
-}
-
-.tire-rim-engineering-workbench__aero-grid p,
-.tire-rim-engineering-workbench__traps-grid p {
-  margin: 0.45rem 0 0;
+.tire-rim-engineering-workbench__example p {
+  margin: 0.4rem 0 0;
   color: var(--tz-text-secondary);
-  font-size: 0.66rem;
-  line-height: 1.55;
-}
-
-.tire-rim-engineering-workbench__aero-formula {
-  display: flex;
-  gap: 0.7rem;
-  align-items: baseline;
-  flex-wrap: wrap;
-  margin-top: 0.8rem;
-  padding: 0.7rem;
-  border: 1px solid var(--tz-border-subtle);
-  border-radius: 0.7rem;
-  background: var(--tz-card-surface);
-  color: var(--tz-text-secondary);
-  font-size: 0.66rem;
-}
-
-.tire-rim-engineering-workbench__aero-formula strong,
-.tire-rim-engineering-workbench__aero-formula code {
-  color: var(--tz-text-primary);
-  font-family: var(--tz-font-ui);
-  font-weight: 900;
-}
-
-.tire-rim-engineering-workbench__aero-formula code {
-  color: #0284c7;
-}
-
-.tire-rim-engineering-workbench__aero-formula span {
-  flex: 1 1 100%;
+  font-size: 0.68rem;
   line-height: 1.5;
-}
-
-.tire-rim-engineering-workbench__trap-number {
-  display: inline-flex;
-  padding: 0.2rem 0.38rem;
-  border-radius: 0.25rem;
-  background: #fee2e2;
-  color: #b91c1c;
-  font-family: var(--tz-font-ui);
-  font-size: 0.56rem;
-  font-weight: 900;
-}
-
-.tire-rim-engineering-workbench__traps-grid article strong {
-  display: block;
-  margin-top: 0.55rem;
-  padding: 0.45rem;
-  border-left: 3px solid #0284c7;
-  border-radius: 0.3rem;
-  background: rgb(239 246 255 / 0.8);
-  color: #075985;
-  font-size: 0.62rem;
-  line-height: 1.45;
 }
 
 @media (max-width: 900px) {
@@ -1622,8 +1349,7 @@ const diagramGeometry = computed<TireRimEngineeringDiagramGeometry>(() => {
     grid-template-columns: 1fr;
   }
 
-  .tire-rim-engineering-workbench__aero-grid,
-  .tire-rim-engineering-workbench__traps-grid {
+  .tire-rim-engineering-workbench__examples-grid {
     grid-template-columns: 1fr;
   }
 }

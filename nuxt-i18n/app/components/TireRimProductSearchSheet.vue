@@ -25,11 +25,11 @@
             class="tire-rim-search-sheet__panel tz-mobile-dialog-surface tz-surface-card relative pointer-events-auto w-full max-w-none tz-mobile-safe-full-height md:h-[82vh] md:max-h-[900px] rounded-none flex flex-col overflow-hidden"
             role="dialog"
             aria-modal="true"
-            :aria-label="$t('sidebar.searchProducts', 'Search Products')"
+            :aria-label="$t('guidesTireRimHelper.search')"
           >
             <header class="relative z-10 flex items-center justify-between px-4 py-4 md:px-6">
               <h2 class="text-lg font-semibold text-[#059669] md:text-xl">
-                {{ $t('sidebar.searchProducts', 'Search Products') }}
+                {{ $t('guidesTireRimHelper.search') }}
               </h2>
               <button
                 type="button"

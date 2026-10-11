@@ -35,5 +35,8 @@ assert.equal(inferTireWidthInputUnit('2.4'), 'inch')
 assert.equal(inferTireWidthInputUnit('25'), 'mm')
 assert.equal(commonTireWidthInputPresets.find(preset => preset.id === '25c')?.millimeters, 25)
 assert.equal(commonTireWidthInputPresets.find(preset => preset.id === '2-4-inch')?.millimeters, 61)
+assert.equal(commonTireWidthInputPresets.find(preset => preset.id === '18c')?.millimeters, 18)
+assert.equal(commonTireWidthInputPresets.find(preset => preset.id === '5-2-inch')?.millimeters, 132)
+assert.equal(parseTireWidthInputAsMillimeters('5.2″', 'mm'), 132)
 
 console.log('Tire/rim width input conversion tests passed.')

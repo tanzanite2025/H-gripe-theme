@@ -17,6 +17,7 @@ go-backend/site-logo-uploads/
 
 # IDE & OS
 .vscode/
+.vs/
 .idea/
 Thumbs.db
 .gemini/
@@ -48,28 +49,23 @@ deployment/production.env
 
 # Release boundary evidence is retained outside Git
 release-evidence/
-/docs/
-# Keep the Schwalbe governance index versionable while leaving the rest of
-# the local design-document tree ignored.
-!/docs/
-docs/*
-!/docs/design/
-docs/design/*
-!/docs/design/schwalbe-tire/
-docs/design/schwalbe-tire/*
-!/docs/design/schwalbe-tire/README.md
-/html资料/
 /preview-schwalbe-tire-selector.html
 
-# Local confidential documentation (keep out of future commits)
-**/docs/
-**/html资料/
+# Local confidential documentation and HTML reference folders
+**/[dD][oO][cC][sS]/
+**/[hH][tT][mM][lL]资料/
 
-# Versioned architecture and data-contract documents are retained explicitly;
-# other local design notes stay ignored.
-!/docs/
-!/docs/design/
-!/docs/design/tire-pressure-calculator-architecture-and-data-contract.md
-!/docs/design/shipping-service-collection-data-contract.md
-!/docs/design/yanwen/
-!/docs/design/yanwen/yanwen-logistics-hub-integration-architecture.md
+# Local licensed standards and private engineering reference manuals
+/ETRTO_Standard_2024_Tire_Rim_Combinations.pdf
+/ISO-5775-1-2023.pdf
+/ISO-5775-2-2021.pdf
+/ISO_5775_与_ETRTO_2024_自行车轮胎车圈工程标准手册.md
+/ISO_5775与ETRTO全套工程数据完全解密手册.md
+
+# Local reference images previously excluded from releases
+/hooked-rim-tc.jpg
+/hookless-rim-tss.jpg
+/无钩车圈_Hookless_TSS_剖面图.jpg
+/有钩车圈_Hooked_TC_剖面图.jpg
+/nuxt-i18n/public/images/hooked-rim-tc.jpg
+/nuxt-i18n/public/images/hookless-rim-tss.jpg

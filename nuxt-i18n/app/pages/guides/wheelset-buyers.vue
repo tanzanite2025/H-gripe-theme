@@ -486,7 +486,7 @@ const goToTubelessInstallation = () => {
 }
 
 const goToHookedHooklessGuide = () => {
-  openLocalizedRouteInNewTab(localePath('/guides/tireguides/choose'))
+  openLocalizedRouteInNewTab(localePath('/guides/tireguides/tire-rim-width-compatibility'))
 }
 
 const goToTubelessSystemGuide = () => {

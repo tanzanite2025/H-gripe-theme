@@ -36,7 +36,7 @@ func TestListSchwalbeTireCatalogDoesNotExposeSourceURL(t *testing.T) {
 		t.Fatalf("expected 200, got %d: %s", recorder.Code, recorder.Body.String())
 	}
 	body := recorder.Body.String()
-	if strings.Contains(body, "source_url") || strings.Contains(body, "www.schwalbe.com") {
+	if strings.Contains(body, `"source_url"`) || strings.Contains(body, "www.schwalbe.com") {
 		t.Fatalf("public catalog response exposed source URL: %s", body)
 	}
 	for _, expected := range []string{`"article_no":"11111111"`, `"model_name":"Green Marathon"`, `"source_checked_at"`} {
@@ -105,7 +105,9 @@ func TestSearchSchwalbeTireCatalogSelectorKeepsFacetOptionsFromSearchResults(t *
 	if len(payload.Data.FilterOptions.EBikeRatings) != 2 || payload.Data.FilterOptions.EBikeRatings[1].Value != nil {
 		t.Fatalf("expected the E-Bike options to include the published E-25 and unrated value, got %v", payload.Data.FilterOptions.EBikeRatings)
 	}
-	if strings.Contains(recorder.Body.String(), "source_url") || strings.Contains(recorder.Body.String(), "www.schwalbe.com") {
+	// Match the private catalog field exactly, not the engineering model's
+	// separate manufacturer_source_urls provenance field.
+	if strings.Contains(recorder.Body.String(), `"source_url"`) || strings.Contains(recorder.Body.String(), "www.schwalbe.com") {
 		t.Fatalf("selector response exposed source URL: %s", recorder.Body.String())
 	}
 

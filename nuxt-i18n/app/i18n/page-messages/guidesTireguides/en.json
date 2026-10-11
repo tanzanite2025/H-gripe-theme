@@ -20,8 +20,8 @@
       "description": "Tubeless compatibility, setup, and step-by-step installation in one guide."
     },
     "choose": {
-      "label": "How to Choose a Tire",
-      "description": "Guidance for choosing a tire by terrain, frame clearance, and rim compatibility."
+      "label": "Tire and Rim Width Calculator",
+      "description": "Calculate the best tire or rim inner width and check normal fitment ranges."
     },
     "pressure": {
       "label": "Tire pressure",

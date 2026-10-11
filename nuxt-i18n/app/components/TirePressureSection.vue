@@ -1,35 +1,11 @@
 <template>
   <div class="tire-pressure-section">
-    <div
-      class="tire-pressure-section__tabs"
-      role="tablist"
-      :aria-label="t('guidesTirePressure.tabs.label')"
-    >
-      <button
-        id="tire-pressure-tab-calculator"
-        type="button"
-        role="tab"
-        class="tire-pressure-section__tab"
-        :class="{ 'tire-pressure-section__tab--active': activeTab === 'calculator' }"
-        :aria-selected="activeTab === 'calculator'"
-        aria-controls="tire-pressure-panel-calculator"
-        @click="activeTab = 'calculator'"
-      >
-        {{ t('guidesTirePressure.tabs.calculator') }}
-      </button>
-      <button
-        id="tire-pressure-tab-details"
-        type="button"
-        role="tab"
-        class="tire-pressure-section__tab"
-        :class="{ 'tire-pressure-section__tab--active': activeTab === 'details' }"
-        :aria-selected="activeTab === 'details'"
-        aria-controls="tire-pressure-panel-details"
-        @click="activeTab = 'details'"
-      >
-        {{ t('guidesTirePressure.tabs.details') }}
-      </button>
-    </div>
+    <ReusablePageSectionUnderlineTabs
+      :tabs="tirePressureSectionTabs"
+      :active-id="activeTab"
+      :tab-list-label="t('guidesTirePressure.tabs.label')"
+      @select="activeTab = $event"
+    />
 
     <section
       id="tire-pressure-panel-calculator"
@@ -196,10 +172,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from '#imports'
 import { usePageMessages } from '~/composables/usePageMessages'
 import TirePressureCalculator from '~/components/tireguides/tirepressure/TirePressureCalculator.vue'
+import ReusablePageSectionUnderlineTabs from '~/components/ReusablePageSectionUnderlineTabs.vue'
 
 const { locale, t } = useI18n()
 const { loadPageMessages } = usePageMessages('guidesTirePressure')
@@ -211,56 +188,23 @@ watch(locale, (nextLocale) => {
 })
 
 const activeTab = ref<'calculator' | 'details'>('calculator')
+const tirePressureSectionTabs = computed(() => [
+  {
+    id: 'calculator' as const,
+    label: t('guidesTirePressure.tabs.calculator'),
+    tabId: 'tire-pressure-tab-calculator',
+    panelId: 'tire-pressure-panel-calculator',
+  },
+  {
+    id: 'details' as const,
+    label: t('guidesTirePressure.tabs.details'),
+    tabId: 'tire-pressure-tab-details',
+    panelId: 'tire-pressure-panel-details',
+  },
+])
 </script>
 
 <style scoped>
-.tire-pressure-section__tabs {
-  display: flex;
-  gap: 0.25rem;
-  margin-bottom: 0.8rem;
-  border-bottom: 1px solid var(--tz-border-subtle);
-}
-
-.tire-pressure-section__tab {
-  position: relative;
-  border: 0;
-  border-radius: 0.5rem 0.5rem 0 0;
-  background: transparent;
-  color: var(--tz-text-secondary);
-  cursor: pointer;
-  padding: 0.55rem 0.85rem 0.65rem;
-  font-size: 0.78rem;
-  font-weight: 700;
-  line-height: 1.2;
-  transition: background-color 0.18s ease, color 0.18s ease;
-}
-
-.tire-pressure-section__tab::after {
-  position: absolute;
-  right: 0.55rem;
-  bottom: -1px;
-  left: 0.55rem;
-  height: 2px;
-  border-radius: 999px;
-  background: transparent;
-  content: '';
-}
-
-.tire-pressure-section__tab:hover,
-.tire-pressure-section__tab:focus-visible {
-  background: var(--tz-surface-muted);
-  color: var(--tz-text-primary);
-  outline: none;
-}
-
-.tire-pressure-section__tab--active {
-  color: var(--tz-text-accent);
-}
-
-.tire-pressure-section__tab--active::after {
-  background: var(--tz-site-accent);
-}
-
 .tire-pressure-section__panel {
   min-width: 0;
 }

@@ -28,7 +28,7 @@ func schwalbeTireCatalogRimWidthReferenceForRows(
 			}
 			systems = append(systems, system)
 		}
-		guidance := tirerim.BuildTireRimWidthGuidanceForNominalWidth(*row.dimensions.NominalTireWidthMM, systems)
+		guidance := tirerim.BuildTireRimWidthGuidanceForTireWidth(*row.dimensions.NominalTireWidthMM, systems)
 		if len(guidance) > 0 {
 			guidanceByArticle[row.item.ArticleNo] = guidance
 		}

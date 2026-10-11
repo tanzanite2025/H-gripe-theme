@@ -11,6 +11,7 @@ interface TrustedTypesFactory {
     name: string,
     rules: {
       createScriptURL: (value: string) => string
+      createScript?: (value: string) => string
     },
   ) => TrustedScriptURLPolicy
 }
@@ -83,6 +84,29 @@ const allowedScriptUrl = (value: string): string => {
   throw new TypeError(`Refused an unapproved external script URL: ${normalized}`)
 }
 
+export const validateSchemaOrgJsonLdContentForTrustedScriptAssignment = (value: string): string => {
+  let parsedContent: unknown
+  try {
+    parsedContent = JSON.parse(value)
+  } catch {
+    throw new TypeError('Only Schema.org JSON-LD data is allowed as inline script content')
+  }
+  const documents = Array.isArray(parsedContent) ? parsedContent : [parsedContent]
+  if (!documents.length || !documents.every(document => (
+    typeof document === 'object' && document !== null && !Array.isArray(document)
+    && '@context' in document
+    && (document['@context'] === 'https://schema.org' || document['@context'] === 'http://schema.org')
+  ))) {
+    throw new TypeError('Only Schema.org JSON-LD data is allowed as inline script content')
+  }
+  // JSON parsing rejects executable JavaScript. Escape HTML delimiters as well
+  // so accepted data remains safe if embedded in a script element later.
+  return JSON.stringify(parsedContent)
+    .replace(/</g, '\\u003c')
+    .replace(/>/g, '\\u003e')
+    .replace(/&/g, '\\u0026')
+}
+
 const initializeDefaultTrustedTypesPolicy = (): void => {
   if (!import.meta.client || !window.trustedTypes) return
   if (window.__tanzaniteDefaultTrustedTypesPolicyInitialized || window.trustedTypes.defaultPolicy) {
@@ -93,6 +117,7 @@ const initializeDefaultTrustedTypesPolicy = (): void => {
   try {
     window.trustedTypes.createPolicy(DEFAULT_POLICY_NAME, {
       createScriptURL: allowedScriptUrl,
+      createScript: validateSchemaOrgJsonLdContentForTrustedScriptAssignment,
     })
     window.__tanzaniteDefaultTrustedTypesPolicyInitialized = true
   } catch (error) {

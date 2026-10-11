@@ -1,5 +1,5 @@
 {
-  "version": "2026-10-06",
+  "version": "2026-10-11",
   "routes": [
     {
       "key": "home",
@@ -146,10 +146,10 @@
       "is_indexable": true
     },
     {
-      "key": "guides-tireguides-choose",
-      "path": "/guides/tireguides/choose",
+      "key": "guides-tireguides-tire-rim-width-compatibility",
+      "path": "/guides/tireguides/tire-rim-width-compatibility",
       "label": "Tire and rim width reference calculator",
-      "description": "Convert inch tire widths and resolve DT Swiss rim internal width references",
+      "description": "Calculate tire and rim width fit, check ISO normal ranges, and compare published compatibility charts",
       "sitemap_locales": ["en", "zh_cn"],
       "is_searchable": true,
       "is_checkable": true,

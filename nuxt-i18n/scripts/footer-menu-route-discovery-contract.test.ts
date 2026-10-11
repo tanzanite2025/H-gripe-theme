@@ -85,7 +85,7 @@ assert.deepEqual(
     '/guides/tireguides/tire-frame-clearance',
     '/guides/tireguides/schwalbe-tire-circumference',
     '/guides/tireguides/tubeless',
-    '/guides/tireguides/choose',
+    '/guides/tireguides/tire-rim-width-compatibility',
     '/guides/tireguides/tire-pressure',
     '/guides/tireguides/choose-inner-tube',
     '/guides/tireguides/schwalbe-tire-selector',
@@ -95,7 +95,7 @@ assert.deepEqual(
 const wheelsetGuidesGroup = guidesSection.links.find(link => link.to === '/guides/wheelset-buyers')
 assert.ok(wheelsetGuidesGroup, 'Wheelset Guide should retain its real landing page')
 assert.equal(wheelsetGuidesGroup.fallback, 'Wheelset Guide')
-assert.equal(wheelsetGuidesGroup.children?.length, 5, 'All wheelset guide tabs should be listed')
+assert.equal(wheelsetGuidesGroup.children?.length, 6, 'All wheelset guide tabs, including the spoke lacing reference, should be listed')
 
 const spokeGuidesGroup = guidesSection.links.find(link => link.fallback === 'Spoke Guides')
 assert.ok(spokeGuidesGroup, 'Spoke Guides should be represented as a group')
@@ -115,6 +115,7 @@ const guidePaths = allGuideLinks
   .map(link => link.to)
   .filter((path): path is string => Boolean(path))
 assert.equal(new Set(guidePaths).size, guidePaths.length, 'GUIDES must not emit duplicate canonical paths')
+assert.ok(!guidePaths.includes('/guides/tireguides/choose'), 'The retired tire width route must not remain as a footer alias')
 
 const guidesWithoutIndexPage = createFooterMenusFromRoutes([
   createNormalizedFooterTestRoute('/guides/tireguides/tire-pressure', 'guides-tire-pressure', {
