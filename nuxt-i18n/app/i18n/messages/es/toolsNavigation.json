@@ -1,0 +1,8 @@
+{
+  "label": "Herramientas",
+  "eyebrow": "Selección de componentes de bicicleta",
+  "description": "Busca, filtra y compara las especificaciones de los componentes. Cada herramienta incluye explicaciones para interpretar sus resultados.",
+  "openTool": "Abrir herramienta",
+  "schwalbeTireSelectorLabel": "Schwalbe tire selector",
+  "schwalbeTireSelectorDescription": "Busca y filtra el catálogo de neumáticos Schwalbe por modelo y tamaño, con explicaciones sobre su construcción y especificaciones."
+}

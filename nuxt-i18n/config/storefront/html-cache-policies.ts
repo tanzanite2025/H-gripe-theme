@@ -31,6 +31,7 @@ export const storefrontHtmlCachePolicies: StorefrontHtmlCachePolicy[] = [
       '/guides/**',
       '/resources/picture-warehouse/**',
       '/faq',
+      '/tools',
     ],
     ...storefrontHtmlCacheDurations.contentPage,
   },
@@ -59,6 +60,9 @@ export const storefrontNoStorePagePaths = [
   // Query/search/filter state lives in the URL, but the list is data-heavy and
   // changes frequently. Keep it uncached until a query-aware cache strategy is added.
   '/shop',
+  // Catalog results depend on URL filters and API data. Do not reuse HTML
+  // across searches or pagination while a query-aware cache is unavailable.
+  '/tools/schwalbe-tire-selector',
   '/resources/membershipandpoints/**',
   '/guides/spokeguides/spoke-length-calculator/**',
   '/resources/workbench',

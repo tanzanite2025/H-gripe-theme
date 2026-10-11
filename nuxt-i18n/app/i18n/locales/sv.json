@@ -1,4 +1,12 @@
 {
+  "toolsNavigation": {
+    "label": "Verktyg",
+    "eyebrow": "Val av cykelkomponenter",
+    "description": "Sök, filtrera och jämför komponentspecifikationer. Varje verktyg innehåller förklaringar för att tolka resultaten.",
+    "openTool": "Öppna verktyg",
+    "schwalbeTireSelectorLabel": "Schwalbe tire selector",
+    "schwalbeTireSelectorDescription": "Sök och filtrera Schwalbes däckkatalog efter modell och storlek, med förklaringar av konstruktion och specifikationer."
+  },
   "accountSidebar": {
     "addresses": {
       "eyebrow": "Shipping details",

@@ -109,6 +109,7 @@ export const useSchwalbeTireSelector = async () => {
     filterState.value = { ...filterState.value, ...patch }
   }
   const applyFacetFilterState = (facetState: SchwalbeTireCatalogFacetFilterState) => {
+    const serializedFilterStateBeforeApplyingDrawer = JSON.stringify(filterState.value)
     // Assign one complete state object so the route watcher performs a single
     // navigation and the catalog request is not restarted for every control.
     updateFilterState({
@@ -132,6 +133,11 @@ export const useSchwalbeTireSelector = async () => {
       compounds: [],
       casingConstructions: [],
     })
+    // The state watcher does not run when the visible values stay identical.
+    // An explicit apply must still retire legacy query fields on a shared URL.
+    if (serializedFilterStateBeforeApplyingDrawer === JSON.stringify(filterState.value)) {
+      updateRouteFilterState()
+    }
   }
 
   const getFacetFilterState = (): SchwalbeTireCatalogFacetFilterState => ({

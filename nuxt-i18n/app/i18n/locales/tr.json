@@ -1,4 +1,12 @@
 {
+  "toolsNavigation": {
+    "label": "Araçlar",
+    "eyebrow": "Bisiklet bileşeni seçimi",
+    "description": "Bileşen özelliklerini arayın, filtreleyin ve karşılaştırın. Her araç, sonuçları anlamak için gerekli açıklamaları içerir.",
+    "openTool": "Aracı aç",
+    "schwalbeTireSelectorLabel": "Schwalbe tire selector",
+    "schwalbeTireSelectorDescription": "Schwalbe lastik kataloğunu model ve boyuta göre arayın ve filtreleyin; yapı ve özellik açıklamalarını inceleyin."
+  },
   "accountSidebar": {
     "addresses": {
       "eyebrow": "Shipping details",

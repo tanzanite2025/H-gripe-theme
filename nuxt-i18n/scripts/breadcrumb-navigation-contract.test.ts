@@ -124,8 +124,8 @@ const tireGuideRouteTab = resolvePageSubNavigationBreadcrumb(
   '/guides/tireguides/schwalbe-tire-selector',
   [{ path: '/guides/tireguides', tabs: tireGuideTabs }],
 )
-assert.equal(tireGuideRouteTab?.kind, 'tab')
-assert.equal(tireGuideRouteTab?.entry.tabs.length, 8)
+assert.equal(tireGuideRouteTab, null, 'Migrated selector must not retain a virtual guide route')
+assert.equal(tireGuideTabs.length, 7)
 
 const tirePressureGuideRouteTab = resolvePageSubNavigationBreadcrumb(
   '/guides/tireguides/tire-pressure',
@@ -201,7 +201,7 @@ const localizedGuideSiblings = groupBreadcrumbRoutePathsAtLevel(
   [
     '/guides/tireguides/tubeless',
     '/zh_cn/guides/tireguides/tire-pressure',
-    '/zh_cn/guides/tireguides/schwalbe-tire-selector',
+    '/zh_cn/tools/schwalbe-tire-selector',
     '/fr/guides/wheelset-buyers/overview',
   ],
   ['en', 'zh_cn', 'fr'],
@@ -209,7 +209,6 @@ const localizedGuideSiblings = groupBreadcrumbRoutePathsAtLevel(
 assert.deepEqual(localizedGuideSiblings.map(group => group.path), [
   '/guides/tireguides/tubeless',
   '/guides/tireguides/tire-pressure',
-  '/guides/tireguides/schwalbe-tire-selector',
 ])
 
 // A level with one registered path resolves to one group, so it has no sibling

@@ -1,4 +1,12 @@
 {
+  "toolsNavigation": {
+    "label": "ツール",
+    "eyebrow": "自転車部品の選定",
+    "description": "部品の仕様を検索、絞り込み、比較できます。各ツールには結果を理解するための説明が含まれています。",
+    "openTool": "ツールを開く",
+    "schwalbeTireSelectorLabel": "Schwalbe tire selector",
+    "schwalbeTireSelectorDescription": "モデルとサイズで Schwalbe タイヤカタログを検索・絞り込みし、構造と仕様の説明を確認できます。"
+  },
   "accountSidebar": {
     "addresses": {
       "eyebrow": "Shipping details",

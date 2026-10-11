@@ -61,7 +61,12 @@ const immutableAssetRoutePatterns = [
   '/whatsappmodel/**',
 ]
 
-const storefrontRedirects = [
+export const storefrontRedirects = [
+  {
+    from: '/guides/tireguides/schwalbe-tire-selector',
+    to: '/tools/schwalbe-tire-selector',
+    statusCode: 301,
+  },
   {
     from: '/guides/technical',
     to: '/guides',

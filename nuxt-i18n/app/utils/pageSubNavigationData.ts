@@ -101,14 +101,6 @@ export const tireGuideTabs = [
     feedbackTitle: 'Share your feedback about this Tire Guides guide',
     feedbackSubtitleKey: 'feedback.defaultSubtitle',
   },
-  {
-    id: 'schwalbe-tire-selector',
-    labelKey: 'guidesTireguides.tabs.schwalbe.label',
-    fallback: 'Schwalbe tire selector',
-    descriptionKey: 'guidesTireguides.tabs.schwalbe.description',
-    description: 'Search the sourced Schwalbe tire catalog by model and size.',
-    to: '/guides/tireguides/schwalbe-tire-selector',
-  },
 ] as const satisfies readonly PageSubNavigationTab[]
 
 export type TireGuideTabId = (typeof tireGuideTabs)[number]['id']

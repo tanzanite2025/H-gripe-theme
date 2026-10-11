@@ -33,6 +33,14 @@ const sections = createFooterMenusFromRoutes([
   createNormalizedFooterTestRoute('/shop/:slug', 'shop-slug'),
   createNormalizedFooterTestRoute('/shop/:category(.*)*', 'shop-category'),
   createNormalizedFooterTestRoute('/guides', 'guides'),
+  createNormalizedFooterTestRoute('/tools', 'tools', {
+    footerLabelKey: 'toolsNavigation.label',
+    footerLabelFallback: 'Tools',
+  }),
+  createNormalizedFooterTestRoute('/tools/schwalbe-tire-selector', 'tools-schwalbe-tire-selector', {
+    footerLabelKey: 'toolsNavigation.schwalbeTireSelectorLabel',
+    footerLabelFallback: 'Schwalbe tire selector',
+  }),
   createNormalizedFooterTestRoute('/guides/tireguides', 'guides-tireguides', {
     footerLabelKey: 'products.nav.tireSizeCharts',
     footerLabelFallback: 'Tire Guides',
@@ -72,12 +80,18 @@ assert.ok(shopSection, 'SHOP column should remain visible when its category rout
 assert.deepEqual(shopSection.links.map(link => link.to), ['/shop'])
 
 const guidesSection = sections.find(section => section.id === 'guides')
+const toolsSection = sections.find(section => section.id === 'tools')
+assert.ok(toolsSection, 'TOOLS must discover the hub and migrated selector')
+assert.deepEqual(flattenFooterNavigationItems(toolsSection.links).map(link => link.to), [
+  '/tools',
+  '/tools/schwalbe-tire-selector',
+])
 assert.ok(guidesSection, 'GUIDES column should be discovered from its static descendant pages')
 
 const tireGuidesGroup = guidesSection.links.find(link => link.to === '/guides/tireguides')
 assert.ok(tireGuidesGroup, 'Tire Guides should retain its real landing page')
 assert.equal(tireGuidesGroup.fallback, 'Tire Guides')
-assert.equal(tireGuidesGroup.children?.length, 8, 'All tire guide tabs should be listed')
+assert.equal(tireGuidesGroup.children?.length, 7, 'Only remaining tire guide tabs should be listed')
 assert.deepEqual(
   tireGuidesGroup.children?.map(link => link.to),
   [
@@ -88,7 +102,6 @@ assert.deepEqual(
     '/guides/tireguides/tire-rim-width-compatibility',
     '/guides/tireguides/tire-pressure',
     '/guides/tireguides/choose-inner-tube',
-    '/guides/tireguides/schwalbe-tire-selector',
   ],
 )
 

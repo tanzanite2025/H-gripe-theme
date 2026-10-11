@@ -18,7 +18,7 @@
     <div class="rounded-2xl bg-[var(--tz-card-surface)] p-4 text-center shadow-md md:p-5">
       <nav class="tire-size-guide-actions mb-5" :aria-label="t('guidesTireSize.actions.title')">
         <NuxtLink
-          :to="localePath('/guides/tireguides/schwalbe-tire-selector')"
+          :to="localePath('/tools/schwalbe-tire-selector')"
           class="tire-size-guide-action tire-size-guide-action--primary"
         >
           {{ t('guidesTireSize.actions.schwalbeSelector') }}

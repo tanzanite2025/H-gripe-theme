@@ -1,4 +1,12 @@
 {
+  "toolsNavigation": {
+    "label": "工具",
+    "eyebrow": "自行车零部件选型",
+    "description": "搜索、筛选和比较零部件规格。每个工具均保留理解结果所需的说明。",
+    "openTool": "打开工具",
+    "schwalbeTireSelectorLabel": "Schwalbe 外胎选型查询",
+    "schwalbeTireSelectorDescription": "按型号和尺寸搜索、筛选 Schwalbe 外胎目录，并查看胎体结构和规格说明。"
+  },
   "accountSidebar": {
     "addresses": {
       "eyebrow": "Shipping details",

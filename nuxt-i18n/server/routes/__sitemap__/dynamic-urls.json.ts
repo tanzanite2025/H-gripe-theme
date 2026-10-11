@@ -1,4 +1,5 @@
 import locales from '~/i18n/locales.manifest'
+import { storefrontRedirects } from '../../../config/storefront/route-rules'
 
 type ProductSitemapRecord = {
   slug?: string
@@ -141,6 +142,9 @@ const getLastmod = (...values: unknown[]) => {
 
 const addEntry = (entries: SitemapEntry[], seen: Set<string>, entry: SitemapEntry) => {
   const loc = normalizePath(entry.loc)
+  // API route catalogs and FAQ pages can still carry a previous path until
+  // their manifest sync runs. Never advertise a permanent redirect in sitemap.
+  if (storefrontRedirects.some(redirect => redirect.from === stripLocalePrefix(loc))) return
   if (!loc || seen.has(loc)) return
   seen.add(loc)
   entries.push({

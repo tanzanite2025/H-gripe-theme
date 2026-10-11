@@ -1,4 +1,12 @@
 {
+  "toolsNavigation": {
+    "label": "Alat",
+    "eyebrow": "Pemilihan komponen basikal",
+    "description": "Cari, tapis dan bandingkan spesifikasi komponen. Setiap alat menyertakan penerangan untuk memahami hasilnya.",
+    "openTool": "Buka alat",
+    "schwalbeTireSelectorLabel": "Schwalbe tire selector",
+    "schwalbeTireSelectorDescription": "Cari dan tapis katalog tayar Schwalbe mengikut model dan saiz, dengan penerangan binaan dan spesifikasi."
+  },
   "accountSidebar": {
     "addresses": {
       "eyebrow": "Shipping details",

@@ -1,4 +1,4 @@
-export type PrimaryMegaNavId = 'products' | 'resources' | 'support' | 'company' | 'guides'
+export type PrimaryMegaNavId = 'products' | 'resources' | 'support' | 'company' | 'tools' | 'guides'
 
 export type PrimaryMegaNavCardSize = 'feature' | 'wide' | 'standard' | 'compact'
 
@@ -293,6 +293,37 @@ export const primaryMegaNavSections: PrimaryMegaNavSection[] = [
         to: '/company/contact',
         icon: 'lucide:mail',
         size: 'wide',
+        accent: 'emerald',
+      },
+    ],
+  },
+  {
+    id: 'tools',
+    labelKey: 'toolsNavigation.label',
+    labelFallback: 'Tools',
+    routePrefixes: ['/tools'],
+    cards: [
+      {
+        id: 'interactive-tool-catalog',
+        // Complete tool routes are listed as cards below, not inferred from
+        // page filenames that can have an explicit public path override.
+        discoverChildPages: false,
+        labelKey: 'toolsNavigation.label',
+        labelFallback: 'Tools',
+        description: 'Browse interactive tools for bicycle component selection.',
+        to: '/tools',
+        icon: 'lucide:wrench',
+        size: 'wide',
+        accent: 'emerald',
+      },
+      {
+        id: 'schwalbe-tire-selector',
+        labelKey: 'toolsNavigation.schwalbeTireSelectorLabel',
+        labelFallback: 'Schwalbe tire selector',
+        description: 'Search and filter the Schwalbe tire catalog with its reference explanations.',
+        to: '/tools/schwalbe-tire-selector',
+        icon: 'lucide:search',
+        size: 'feature',
         accent: 'emerald',
       },
     ],

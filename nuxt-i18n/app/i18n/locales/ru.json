@@ -1,4 +1,12 @@
 {
+  "toolsNavigation": {
+    "label": "Инструменты",
+    "eyebrow": "Подбор велосипедных компонентов",
+    "description": "Ищите, фильтруйте и сравнивайте характеристики компонентов. Каждый инструмент содержит пояснения к результатам.",
+    "openTool": "Открыть инструмент",
+    "schwalbeTireSelectorLabel": "Schwalbe tire selector",
+    "schwalbeTireSelectorDescription": "Поиск и фильтрация каталога шин Schwalbe по модели и размеру с пояснениями по конструкции и характеристикам."
+  },
   "accountSidebar": {
     "addresses": {
       "eyebrow": "Shipping details",

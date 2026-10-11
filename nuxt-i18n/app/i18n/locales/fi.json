@@ -1,4 +1,12 @@
 {
+  "toolsNavigation": {
+    "label": "Työkalut",
+    "eyebrow": "Polkupyörän osien valinta",
+    "description": "Hae, suodata ja vertaa osien teknisiä tietoja. Jokainen työkalu sisältää selitykset tulosten ymmärtämiseen.",
+    "openTool": "Avaa työkalu",
+    "schwalbeTireSelectorLabel": "Schwalbe tire selector",
+    "schwalbeTireSelectorDescription": "Hae ja suodata Schwalben rengasluetteloa mallin ja koon mukaan sekä tutustu rakenteen ja teknisten tietojen selityksiin."
+  },
   "accountSidebar": {
     "addresses": {
       "eyebrow": "Shipping details",

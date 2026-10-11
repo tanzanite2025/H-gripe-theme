@@ -115,6 +115,13 @@ const footerRouteSections: readonly FooterRouteSectionDefinition[] = [
     titleFallback: 'Company',
   },
   {
+    id: 'tools',
+    path: '/tools',
+    titleKey: 'toolsNavigation.label',
+    titleFallback: 'Tools',
+    includeRoot: true,
+  },
+  {
     id: 'guides',
     path: '/guides',
     titleKey: 'breadcrumbs.guides',

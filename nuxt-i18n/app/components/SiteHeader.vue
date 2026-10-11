@@ -965,6 +965,7 @@ const breadcrumbLabelDefinitions: Record<string, BreadcrumbLabelDefinition> = {
   '/resources/blog': { labelKey: 'breadcrumbs.blog', fallback: 'Blog' },
   '/company': { labelKey: 'footer.menus.company', fallback: 'Company' },
   '/guides': { labelKey: 'breadcrumbs.guides', fallback: 'Guides' },
+  '/tools': { labelKey: 'toolsNavigation.label', fallback: 'Tools' },
   '/resources/membershipandpoints': { labelKey: 'company.nav.membershipPoints', fallback: 'Membership & Points' },
   '/resources/picture-warehouse': { labelKey: 'company.nav.pictureWarehouse', fallback: 'Picture Warehouse' },
   '/policies': { labelKey: 'footer.menus.policies', fallback: 'Policies' },

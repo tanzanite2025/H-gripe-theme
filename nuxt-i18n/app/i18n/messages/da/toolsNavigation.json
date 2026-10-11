@@ -1,0 +1,8 @@
+{
+  "label": "Værktøjer",
+  "eyebrow": "Valg af cykelkomponenter",
+  "description": "Søg, filtrer og sammenlign komponentspecifikationer. Hvert værktøj indeholder forklaringer til at forstå resultaterne.",
+  "openTool": "Åbn værktøj",
+  "schwalbeTireSelectorLabel": "Schwalbe tire selector",
+  "schwalbeTireSelectorDescription": "Søg og filtrer Schwalbes dækkatalog efter model og størrelse med forklaringer om konstruktion og specifikationer."
+}

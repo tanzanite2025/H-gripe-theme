@@ -1,4 +1,12 @@
 {
+  "toolsNavigation": {
+    "label": "Tools",
+    "eyebrow": "Bicycle component selection",
+    "description": "Search, filter, and compare component specifications. Each tool includes the explanations you need to interpret its results.",
+    "openTool": "Open tool",
+    "schwalbeTireSelectorLabel": "Schwalbe tire selector",
+    "schwalbeTireSelectorDescription": "Search and filter the Schwalbe tire catalog by model and size, with tire construction and specification explanations."
+  },
   "accountSidebar": {
     "addresses": {
       "eyebrow": "Shipping details",

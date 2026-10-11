@@ -1,4 +1,12 @@
 {
+  "toolsNavigation": {
+    "label": "Ferramentas",
+    "eyebrow": "Seleção de componentes de bicicleta",
+    "description": "Pesquise, filtre e compare as especificações dos componentes. Cada ferramenta inclui explicações para interpretar os resultados.",
+    "openTool": "Abrir ferramenta",
+    "schwalbeTireSelectorLabel": "Schwalbe tire selector",
+    "schwalbeTireSelectorDescription": "Pesquise e filtre o catálogo de pneus Schwalbe por modelo e tamanho, com explicações sobre construção e especificações."
+  },
   "accountSidebar": {
     "addresses": {
       "eyebrow": "Shipping details",

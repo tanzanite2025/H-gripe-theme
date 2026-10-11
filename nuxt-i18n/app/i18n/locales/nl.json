@@ -1,4 +1,12 @@
 {
+  "toolsNavigation": {
+    "label": "Gereedschappen",
+    "eyebrow": "Selectie van fietsonderdelen",
+    "description": "Zoek, filter en vergelijk onderdeelspecificaties. Elk gereedschap bevat uitleg om de resultaten te begrijpen.",
+    "openTool": "Gereedschap openen",
+    "schwalbeTireSelectorLabel": "Schwalbe tire selector",
+    "schwalbeTireSelectorDescription": "Doorzoek en filter de Schwalbe-bandencatalogus op model en maat, met uitleg over constructie en specificaties."
+  },
   "accountSidebar": {
     "addresses": {
       "eyebrow": "Shipping details",
