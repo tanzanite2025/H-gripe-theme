@@ -18,6 +18,7 @@ import {
   normalizeStorefrontMediaUrl,
 } from '../../app/utils/storefrontMedia'
 import { validateSchemaOrgJsonLdContentForTrustedScriptAssignment } from '../../app/utils/security/trustedScriptUrl'
+import { appendNoTransformDirectiveToHtmlCacheControl } from '../../server/security/html-cache-control-proxy-transformation-protection'
 
 const projectRoot = resolve(import.meta.dirname, '../..')
 const appRoot = resolve(projectRoot, 'app')
@@ -25,6 +26,25 @@ const failures: string[] = []
 
 const assert = (condition: unknown, message: string): void => {
   if (!condition) failures.push(message)
+}
+
+const htmlCacheControlProtectionCases: Array<{
+  input: string | number | string[] | undefined
+  expected: string
+}> = [
+  { input: undefined, expected: 'no-transform' },
+  { input: '', expected: 'no-transform' },
+  { input: 'no-store, max-age=0', expected: 'no-store, max-age=0, no-transform' },
+  { input: 's-maxage=3600, stale-while-revalidate=86400', expected: 's-maxage=3600, stale-while-revalidate=86400, no-transform' },
+  { input: 'public, no-transform', expected: 'public, no-transform' },
+  { input: 'public, No-Transform', expected: 'public, No-Transform' },
+  { input: ['s-maxage=3600', 'no-transform'], expected: 's-maxage=3600, no-transform' },
+]
+for (const protectionCase of htmlCacheControlProtectionCases) {
+  const protectedCacheControl = appendNoTransformDirectiveToHtmlCacheControl(protectionCase.input)
+  assert(protectedCacheControl === protectionCase.expected, 'HTML cache protection must preserve all existing directives')
+  assert(appendNoTransformDirectiveToHtmlCacheControl(protectedCacheControl) === protectedCacheControl,
+    'HTML cache protection must not duplicate no-transform across response hooks')
 }
 
 const sampleSchemaOrgJsonLdContent = JSON.stringify({

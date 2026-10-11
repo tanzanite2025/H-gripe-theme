@@ -133,6 +133,9 @@ const requestCachedPage = async (): Promise<CachedPageResponse> => {
   if (!cacheControl.includes('s-maxage=')) {
     throw new Error(`${targetPath} did not return an SSR route cache header: ${cacheControl || '(empty)'}`)
   }
+  if (!cacheControl.split(',').some(directive => directive.trim().toLowerCase() === 'no-transform')) {
+    throw new Error(`${targetPath} did not protect cached HTML from proxy transformations: ${cacheControl}`)
+  }
   if (!body.trim()) {
     throw new Error(`${targetPath} returned an empty body`)
   }

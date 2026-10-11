@@ -1,5 +1,7 @@
 import { defineNitroPlugin } from 'nitropack/runtime'
+import { getResponseHeader, setResponseHeader } from 'h3'
 import { secureHtmlWithContentSecurityPolicy } from '../security/content-security-policy'
+import { appendNoTransformDirectiveToHtmlCacheControl } from '../security/html-cache-control-proxy-transformation-protection'
 
 interface RenderResponse {
   body?: unknown
@@ -21,9 +23,19 @@ export default defineNitroPlugin((nitroApp) => {
     // documents that `no-transform` prevents this HTML rewrite, so preserve
     // the existing cache directives and add the narrowly scoped directive to
     // keep the response compatible with the site's CSP.
-    const cacheControl = response.headers['cache-control']
-    response.headers['cache-control'] = cacheControl
-      ? `${cacheControl}, no-transform`
-      : 'no-transform'
+    response.headers['cache-control'] = appendNoTransformDirectiveToHtmlCacheControl(response.headers['cache-control'])
+  })
+
+  nitroApp.hooks.hook('beforeResponse', (event, response) => {
+    const contentType = String(getResponseHeader(event, 'content-type') || '').toLowerCase()
+    const hasHtmlBody = typeof response.body === 'string' && response.body.includes('<html')
+    if (!contentType.includes('text/html') && !hasHtmlBody) return
+
+    // Nitro's route-cache wrapper overwrites Cache-Control after render:response.
+    // Apply the directive to the final headers for both cold renders and cache
+    // hits, without changing s-maxage, stale-while-revalidate or no-store.
+    setResponseHeader(event, 'cache-control', appendNoTransformDirectiveToHtmlCacheControl(
+      getResponseHeader(event, 'cache-control'),
+    ))
   })
 })

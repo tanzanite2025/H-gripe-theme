@@ -48,4 +48,6 @@ jobs:
       - name: Verify storefront production artifacts
         if: matrix.name == 'storefront'
         working-directory: nuxt-i18n
-        run: npm run check:production-artifacts
+        run: |
+          npm run check:production-artifacts
+          npm run smoke:html-cache

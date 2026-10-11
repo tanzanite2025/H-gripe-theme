@@ -49,6 +49,7 @@ jobs:
           npm ci
           npm run build
           npm run check:production-artifacts
+          npm run smoke:html-cache
 
       - name: Build admin
         working-directory: go-backend/web/admin
