@@ -82,10 +82,10 @@ assert.deepEqual(shopSection.links.map(link => link.to), ['/shop'])
 const guidesSection = sections.find(section => section.id === 'guides')
 const toolsSection = sections.find(section => section.id === 'tools')
 assert.ok(toolsSection, 'TOOLS must discover the hub and migrated selector')
+assert.equal(toolsSection.titleLinkTo, '/tools', 'TOOLS title must link to the hub')
 assert.deepEqual(flattenFooterNavigationItems(toolsSection.links).map(link => link.to), [
-  '/tools',
   '/tools/schwalbe-tire-selector',
-])
+], 'TOOLS child list must contain only concrete tools, without a duplicate hub')
 assert.ok(guidesSection, 'GUIDES column should be discovered from its static descendant pages')
 
 const tireGuidesGroup = guidesSection.links.find(link => link.to === '/guides/tireguides')

@@ -26,12 +26,38 @@
             class="footer-menus__column"
             :class="{ 'is-open': isOpen(section.id) }"
           >
-            <h3 class="footer-menus__title" @click="toggleSection(section.id)">
-              <span class="footer-menus__title-text">
+            <h3
+              :id="`footer-menu-section-title-${section.id}`"
+              class="footer-menus__title"
+              :class="{ 'footer-menus__title--linked': section.titleLinkTo }"
+              @click="toggleSection(section.id)"
+            >
+              <NuxtLink
+                v-if="section.titleLinkTo"
+                class="footer-menus__title-link"
+                :to="localePath(section.titleLinkTo)"
+                @click.stop
+              >
+                {{ $t(section.titleKey, section.fallback || section.id) }}
+              </NuxtLink>
+              <span v-else class="footer-menus__title-text">
                 {{ $t(section.titleKey, section.fallback || section.id) }}
               </span>
               <!-- Mobile Toggle Icon -->
-              <span class="footer-menus__toggle-icon">
+              <button
+                v-if="section.titleLinkTo && section.links.length"
+                type="button"
+                class="footer-menus__toggle-icon footer-menus__toggle-button"
+                :aria-labelledby="`footer-menu-section-title-${section.id}`"
+                :aria-controls="`footer-menu-section-links-${section.id}`"
+                :aria-expanded="isOpen(section.id)"
+                @click.stop="toggleSection(section.id)"
+              >
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+                  <path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </button>
+              <span v-else-if="!section.titleLinkTo" class="footer-menus__toggle-icon">
                 <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
                 </svg>
@@ -39,7 +65,7 @@
             </h3>
 
             <!-- Route groups, nested pages, and runtime SHOP links. -->
-            <ul class="footer-menus__list mobile-accordion-content">
+            <ul :id="`footer-menu-section-links-${section.id}`" class="footer-menus__list mobile-accordion-content">
               <FooterMenuNavigationItem
                 v-for="(item, itemIndex) in section.links"
                 :key="getFooterMenuNavigationItemKey(item, itemIndex)"
@@ -95,7 +121,7 @@
 
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { useRouter } from '#imports'
+import { useLocalePath, useRouter } from '#imports'
 import FooterMenuNavigationItem from '~/components/FooterMenuNavigationItem.vue'
 import type { FooterNavigationItem, FooterSection } from '~/utils/footerMenus'
 import { createFooterMenusFromRoutes } from '~/utils/footerMenus'
@@ -105,6 +131,7 @@ const props = defineProps<{
 }>()
 
 const router = useRouter()
+const localePath = useLocalePath()
 
 const sections = computed<FooterSection[]>(() => {
   if (props.menus) {
@@ -290,6 +317,34 @@ const getFooterMenuNavigationItemKey = (
      Putting gradient on text node only. */
 }
 
+.footer-menus__title-link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.footer-menus__title-link:hover,
+.footer-menus__title-link:focus-visible {
+  color: var(--tz-text-accent, #059669);
+}
+
+.footer-menus__title-link:focus-visible,
+.footer-menus__toggle-button:focus-visible {
+  outline: 2px solid var(--tz-text-accent, #059669);
+  outline-offset: 3px;
+}
+
+.footer-menus__toggle-button {
+  align-items: center;
+  justify-content: center;
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  padding: 0;
+  border: 0;
+  border-radius: 0.25rem;
+  background: transparent;
+  cursor: pointer;
+}
+
 .footer-menus__toggle-icon {
   display: none; /* Hidden on Desktop */
   color: var(--tz-text-muted);
@@ -378,6 +433,20 @@ const getFooterMenuNavigationItemKey = (
 
   .footer-menus__toggle-icon {
     display: block; /* Show Icon */
+  }
+
+  .footer-menus__title--linked {
+    padding: 0.25rem 0;
+  }
+
+  .footer-menus__title-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2.75rem;
+  }
+
+  .footer-menus__toggle-button {
+    display: inline-flex;
   }
 
   /* Hide content by default, show when open */

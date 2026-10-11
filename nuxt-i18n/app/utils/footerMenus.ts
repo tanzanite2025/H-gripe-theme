@@ -39,6 +39,8 @@ export interface FooterSection {
   titleKey: string
   /** Fallback title used when the locale has not translated the key yet. */
   fallback?: string
+  /** Landing page linked by the column title, separately from its child tools. */
+  titleLinkTo?: string
   links: FooterNavigationItem[]
 }
 
@@ -61,6 +63,8 @@ interface FooterRouteSectionDefinition {
   titleFallback: string
   /** Include the section landing page when the section is data-driven. */
   includeRoot?: boolean
+  /** Use the real section landing route as its title link, without a child duplicate. */
+  titleLinksToRoot?: boolean
 }
 
 type FooterRouteMeta = {
@@ -119,7 +123,7 @@ const footerRouteSections: readonly FooterRouteSectionDefinition[] = [
     path: '/tools',
     titleKey: 'toolsNavigation.label',
     titleFallback: 'Tools',
-    includeRoot: true,
+    titleLinksToRoot: true,
   },
   {
     id: 'guides',
@@ -222,7 +226,7 @@ const getStaticFooterRouteCandidates = (
       meta.footer === false ||
       !route.name ||
       route.redirect ||
-      !((section.includeRoot && isSectionRoot) || isDescendantOfSection) ||
+      !(((section.includeRoot || section.titleLinksToRoot) && isSectionRoot) || isDescendantOfSection) ||
       segments.some(isDynamicRouteSegment)
     ) {
       return
@@ -442,16 +446,20 @@ export const createFooterMenusFromRoutes = (
       }
 
       const candidates = getStaticFooterRouteCandidates(routes, section)
+      const titleRoute = section.titleLinksToRoot
+        ? candidates.find(candidate => candidate.path === normalizeRoutePath(section.path))
+        : undefined
       return {
         id: section.id,
         titleKey: section.titleKey,
         fallback: section.titleFallback,
+        ...(titleRoute ? { titleLinkTo: titleRoute.path } : {}),
         links: section.id === 'shop' && options.shopLinks !== undefined
           ? [...options.shopLinks]
-          : createFlatFooterSectionLinks(candidates, section),
+          : createFlatFooterSectionLinks(candidates.filter(candidate => candidate !== titleRoute), section),
       }
     })
-    .filter(section => section.links.length > 0)
+    .filter(section => section.links.length > 0 || section.titleLinkTo)
 
   return routeSections
 }
