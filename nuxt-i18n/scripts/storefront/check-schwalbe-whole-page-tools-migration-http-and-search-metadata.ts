@@ -34,13 +34,12 @@ for (const { code } of locales) {
   assert.equal(routeRules[expectedSelectorPath]?.headers?.['cache-control'], 'no-store, max-age=0')
   assert.ok(routeRules[`${prefix}/tools`]?.cache)
   assert.equal(routeRules[`${prefix}/tools/future-calculator`], undefined, 'Future calculators must choose their own cache policy')
+  assert.equal(routeRules[`${prefix}${previousSelectorPath}`]?.redirect, undefined, 'Retired selector must not have a compatibility redirect')
 
   for (const query of ['', '?page=2', '?search=Kojak&wheel_size=26-559']) {
     const response = await fetch(`${storefrontOrigin}${prefix}${previousSelectorPath}${query}`, { redirect: 'manual' })
-    assert.equal(response.status, 301, `${code}${query}: server redirect`)
-    const destination = new URL(response.headers.get('location') || '', storefrontOrigin)
-    assert.equal(destination.pathname, expectedSelectorPath)
-    assert.equal(destination.search, query)
+    assert.equal(response.status, 404, `${code}${query}: retired selector URL`)
+    assert.equal(response.headers.get('location'), null, `${code}${query}: no compatibility redirect`)
   }
 }
 
@@ -92,4 +91,4 @@ const sitemapEntries = await sitemapResponse.json() as { loc: string }[]
 assert.ok(sitemapEntries.some(entry => entry.loc === migratedSelectorPath), 'Backend manifest sync must advertise the migrated selector')
 assert.ok(sitemapEntries.some(entry => entry.loc === '/tools'))
 assert.ok(sitemapEntries.every(entry => !entry.loc.includes(previousSelectorPath)), 'Sitemap must omit old routes, including stale FAQ paths')
-console.log('Schwalbe whole-page migration passed: 60 localized redirects, SSR content and SEO states, navigation ownership, cache policy, and sitemap.')
+console.log('Schwalbe whole-page migration passed: 60 retired localized URLs return 404, SSR content and SEO states, navigation ownership, cache policy, and sitemap.')

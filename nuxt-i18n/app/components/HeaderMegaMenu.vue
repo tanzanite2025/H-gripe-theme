@@ -981,7 +981,8 @@ const childAccessibleLabel = (child: PageSubNavigationChild) => {
 @media (max-width: 1279px) {
   .header-mega {
     position: fixed;
-    inset: calc(var(--header-mega-mobile-top, var(--site-header-overlay-offset, 7rem)) + 2px) 2px 2px;
+    /* Match the desktop header-bottom anchor and let content determine height. */
+    inset: calc(var(--site-header-overlay-offset, 7rem) - 1px) 2px auto;
     width: auto;
     transform: none;
     z-index: 10010;

@@ -198,6 +198,21 @@
 						>
 							<Icon name="lucide:shopping-bag" class="h-5 w-5" aria-hidden="true" />
 						</button>
+						<button
+							v-if="mobileToolsSection"
+							type="button"
+							class="site-header-mobile-tools-trigger"
+							:class="{ 'site-header-mobile-tools-trigger--active': currentMegaNavId === mobileToolsSection.id }"
+							:aria-controls="megaPanelId"
+							:aria-expanded="activeMegaNavId === mobileToolsSection.id"
+							aria-haspopup="dialog"
+							:aria-label="mobileToolsLabel"
+							:title="mobileToolsLabel"
+							@click.prevent.stop="toggleMegaNav(mobileToolsSection.id)"
+							@keydown.down.prevent="openMegaNav(mobileToolsSection.id)"
+						>
+							<Icon name="lucide:wrench" class="h-5 w-5" aria-hidden="true" />
+						</button>
 					</div>
 
 					<div class="site-header-mobile-brand-slot flex min-w-0 items-center justify-center">
@@ -261,7 +276,7 @@
 
 				<!-- 第二行：其余四个大类独立于品牌工具栏，保持固定可控的行高。 -->
 				<div class="site-header-mobile-nav-row -mx-4 px-0">
-					<nav ref="mobilePrimaryNavRef" class="site-header-mobile-nav w-full rounded-none px-0 py-0 grid grid-cols-4 gap-0 relative shadow-md" aria-label="Mobile primary navigation">
+					<nav class="site-header-mobile-nav w-full rounded-none px-0 py-0 grid grid-cols-4 gap-0 relative shadow-md" aria-label="Mobile primary navigation">
 					<button
 						v-for="section in mobileSecondaryNavSections"
 						:key="section.id"
@@ -529,7 +544,6 @@ watch(siteLogo, () => {
 
 const headerRootRef = ref<HTMLElement | null>(null)
 const mobileTopbarRef = ref<HTMLElement | null>(null)
-const mobilePrimaryNavRef = ref<HTMLElement | null>(null)
 const desktopContentNavigationTriggerRef = ref<HTMLElement | null>(null)
 const mobileContentNavigationTriggerRef = ref<HTMLElement | null>(null)
 const desktopLanguageTriggerRef = ref<HTMLElement | null>(null)
@@ -553,7 +567,10 @@ const appliedHeaderMetrics = new Map<string, string>()
 const megaPanelId = 'header-primary-mega-menu'
 const activeMegaNavId = ref<PrimaryMegaNavId | null>(null)
 const mobileShopSection = primaryMegaNavSections.find((section) => section.id === 'products') || null
-const mobileSecondaryNavSections = primaryMegaNavSections.filter((section) => section.id !== 'products')
+const mobileToolsSection = primaryMegaNavSections.find((section) => section.id === 'tools') || null
+const mobileSecondaryNavSections = primaryMegaNavSections.filter((section) => (
+  section.id !== 'products' && section.id !== 'tools'
+))
 const activeBreadcrumbSubNavId = ref<string | null>(null)
 const breadcrumbSubNavMobileTop = ref('8.5rem')
 const contentNavigationTransitionOpen = ref(false)
@@ -590,6 +607,12 @@ const mobileShopLabel = computed(() => (
     : 'Shop'
 ))
 
+const mobileToolsLabel = computed(() => (
+  mobileToolsSection
+    ? t(mobileToolsSection.labelKey, mobileToolsSection.labelFallback) as string
+    : 'Tools'
+))
+
 const openMegaNav = (id: PrimaryMegaNavId) => {
   scheduleHeaderOffsetUpdate()
   activeMegaNavId.value = id
@@ -619,8 +642,6 @@ const updateHeaderOffset = () => {
   const offset = Math.max(0, Math.ceil(rect.bottom))
   const mobileTopbarRect = mobileTopbarRef.value?.getBoundingClientRect()
   const mobileLanguageTop = Math.max(0, Math.ceil(mobileTopbarRect?.bottom ?? rect.bottom))
-  const mobileNavRect = mobilePrimaryNavRef.value?.getBoundingClientRect()
-  const mobileMegaTop = Math.max(0, Math.ceil((mobileNavRect?.bottom ?? rect.bottom) + 2))
 
   isCompactViewport.value = window.innerWidth < 1280
 
@@ -628,7 +649,6 @@ const updateHeaderOffset = () => {
     // Overlay geometry may be measured after mount; document-flow spacers must not use it.
     ['--site-header-overlay-offset', `${offset}px`],
     ['--site-header-mobile-topbar-bottom', `${mobileLanguageTop}px`],
-    ['--header-mega-mobile-top', `${mobileMegaTop}px`],
   ] as const
 
   for (const [name, value] of metrics) {
@@ -2623,9 +2643,11 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 
 .site-header-mobile-shop-slot {
 	min-width: 0;
+	gap: 0.125rem;
 }
 
-.site-header-mobile-shop-trigger {
+.site-header-mobile-shop-trigger,
+.site-header-mobile-tools-trigger {
 	display: inline-flex;
 	width: var(--site-header-action-height, 2.25rem);
 	height: var(--site-header-action-height, 2.25rem);
@@ -2645,18 +2667,23 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 
 .site-header-mobile-shop-trigger:hover,
 .site-header-mobile-shop-trigger:focus-visible,
-.site-header-mobile-shop-trigger[aria-expanded='true'] {
+.site-header-mobile-shop-trigger[aria-expanded='true'],
+.site-header-mobile-tools-trigger:hover,
+.site-header-mobile-tools-trigger:focus-visible,
+.site-header-mobile-tools-trigger[aria-expanded='true'] {
 	background: rgba(5, 150, 105, 0.1);
 	color: #059669;
 	transform: translateY(-1px);
 }
 
-.site-header-mobile-shop-trigger:focus-visible {
+.site-header-mobile-shop-trigger:focus-visible,
+.site-header-mobile-tools-trigger:focus-visible {
 	outline: 1px solid rgb(16 185 129 / 0.55);
 	outline-offset: 0.12rem;
 }
 
-.site-header-mobile-shop-trigger--active {
+.site-header-mobile-shop-trigger--active,
+.site-header-mobile-tools-trigger--active {
 	color: #059669;
 }
 

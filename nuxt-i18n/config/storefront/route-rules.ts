@@ -61,12 +61,13 @@ const immutableAssetRoutePatterns = [
   '/whatsappmodel/**',
 ]
 
+// Retired pages have no aliases or redirects and must stay out of sitemap,
+// including when API route catalogs still carry their previous paths.
+export const storefrontRetiredPagePaths: readonly string[] = [
+  '/guides/tireguides/schwalbe-tire-selector',
+]
+
 export const storefrontRedirects = [
-  {
-    from: '/guides/tireguides/schwalbe-tire-selector',
-    to: '/tools/schwalbe-tire-selector',
-    statusCode: 301,
-  },
   {
     from: '/guides/technical',
     to: '/guides',
