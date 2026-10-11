@@ -4,7 +4,7 @@ import "testing"
 
 func TestTireRimWidthSelectionFAQRouteAndIdentityRenamePreservesEditorialContentAndSupportsRollback(t *testing.T) {
 	transaction := createIsolatedTireRimWidthSelectionFAQMigrationTransaction(t)
-	_, err := transaction.Exec(`
+	_, err := transaction.ExecContext(t.Context(), `
 		CREATE TEMP TABLE storefront_route_catalog_entries (
 			route_key TEXT UNIQUE, source_key TEXT, source_type TEXT, locale TEXT,
 			path TEXT, canonical_path TEXT, summary TEXT, manifest_version TEXT,
@@ -31,7 +31,7 @@ func TestTireRimWidthSelectionFAQRouteAndIdentityRenamePreservesEditorialContent
 	}
 	var routePath, pageID, routeKey, title, subtitle, pageStatus string
 	var sortOrder int
-	if err := transaction.QueryRow("SELECT route_path, page_id, route_key, title, subtitle, status, sort_order FROM faq_pages").
+	if err := transaction.QueryRowContext(t.Context(), "SELECT route_path, page_id, route_key, title, subtitle, status, sort_order FROM faq_pages").
 		Scan(&routePath, &pageID, &routeKey, &title, &subtitle, &pageStatus, &sortOrder); err != nil {
 		t.Fatal(err)
 	}
@@ -41,21 +41,21 @@ func TestTireRimWidthSelectionFAQRouteAndIdentityRenamePreservesEditorialContent
 		t.Fatal("route migration failed to align the new identity or changed editorial metadata")
 	}
 	var questionPageID string
-	if err := transaction.QueryRow("SELECT page_id FROM faqs").Scan(&questionPageID); err != nil {
+	if err := transaction.QueryRowContext(t.Context(), "SELECT page_id FROM faqs").Scan(&questionPageID); err != nil {
 		t.Fatal(err)
 	}
 	if questionPageID != pageID {
 		t.Fatal("FAQ questions were not moved to the new page identity")
 	}
 	var oldIdentityCount int
-	if err := transaction.QueryRow("SELECT count(*) FROM faq_pages WHERE page_id = 'guides-tireguides-choose' OR route_path = '/guides/tireguides/choose'").Scan(&oldIdentityCount); err != nil {
+	if err := transaction.QueryRowContext(t.Context(), "SELECT count(*) FROM faq_pages WHERE page_id = 'guides-tireguides-choose' OR route_path = '/guides/tireguides/choose'").Scan(&oldIdentityCount); err != nil {
 		t.Fatal(err)
 	}
 	if oldIdentityCount != 0 {
 		t.Fatal("route migration retained an old route or compatibility page")
 	}
 	var renamedCatalogCount int
-	if err := transaction.QueryRow(`SELECT count(*) FROM storefront_route_catalog_entries
+	if err := transaction.QueryRowContext(t.Context(), `SELECT count(*) FROM storefront_route_catalog_entries
 		WHERE route_key = 'manifest:guides-tireguides-tire-rim-width-compatibility:' || locale
 		AND path = CASE WHEN locale = 'en' THEN '' ELSE '/' || locale END || '/guides/tireguides/tire-rim-width-compatibility'
 		AND canonical_path = path`).Scan(&renamedCatalogCount); err != nil {
@@ -65,7 +65,7 @@ func TestTireRimWidthSelectionFAQRouteAndIdentityRenamePreservesEditorialContent
 		t.Fatal("the sitemap catalog did not align the English and Chinese route identities")
 	}
 	executeTireRimWidthSelectionFAQMigrationSQL(t, transaction, "408_move_tire_rim_width_selection_faq_to_descriptive_guide_route.down.sql")
-	if err := transaction.QueryRow("SELECT route_path FROM faq_pages WHERE page_id = 'guides-tireguides-choose'").Scan(&routePath); err != nil {
+	if err := transaction.QueryRowContext(t.Context(), "SELECT route_path FROM faq_pages WHERE page_id = 'guides-tireguides-choose'").Scan(&routePath); err != nil {
 		t.Fatal(err)
 	}
 	if routePath != "/guides/tireguides/choose" {
@@ -73,7 +73,7 @@ func TestTireRimWidthSelectionFAQRouteAndIdentityRenamePreservesEditorialContent
 	}
 	var question, answer, faqStatus, image string
 	var order int
-	if err := transaction.QueryRow("SELECT page_id, question, answer, status, answer_image_url, \"order\" FROM faqs").
+	if err := transaction.QueryRowContext(t.Context(), "SELECT page_id, question, answer, status, answer_image_url, \"order\" FROM faqs").
 		Scan(&questionPageID, &question, &answer, &faqStatus, &image, &order); err != nil {
 		t.Fatal(err)
 	}

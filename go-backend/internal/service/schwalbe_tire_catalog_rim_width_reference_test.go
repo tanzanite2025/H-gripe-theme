@@ -129,7 +129,7 @@ func TestSchwalbeCatalogGuidanceMatchesExistingSolveAPIAcrossTireWidthInputBound
 				}
 				catalogGuidance := schwalbeTireCatalogRimWidthReferenceForRows(rows, compatibility)[articleNo]
 				requestBody := fmt.Sprintf(`{"tire_width_mm":%d,"rim_system":%q}`, tireWidthMM, system)
-				request := httptest.NewRequest(http.MethodPost, "/api/v1/engineering/tire-rim/solve", strings.NewReader(requestBody))
+				request := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/api/v1/engineering/tire-rim/solve", strings.NewReader(requestBody))
 				request.Header.Set("Content-Type", "application/json")
 				recorder := httptest.NewRecorder()
 				router.ServeHTTP(recorder, request)

@@ -79,14 +79,14 @@ func createIsolatedTireRimWidthSelectionFAQMigrationTransaction(t *testing.T) *s
 
 func executeTireRimWidthSelectionFAQMigrationSQL(t *testing.T, transaction *sql.Tx, filename string) {
 	t.Helper()
-	if _, err := transaction.Exec(readMigrationFile(t, filename)); err != nil {
+	if _, err := transaction.ExecContext(t.Context(), readMigrationFile(t, filename)); err != nil {
 		t.Fatalf("execute FAQ migration %s: %v", filename, err)
 	}
 }
 
 func TestTireRimWidthSelectionFAQMigrationPreservesAdminEditsAndSupportsSafeRollback(t *testing.T) {
 	transaction := createIsolatedTireRimWidthSelectionFAQMigrationTransaction(t)
-	_, err := transaction.Exec(`
+	_, err := transaction.ExecContext(t.Context(), `
 		INSERT INTO faq_pages (page_id, locale, title, subtitle, status, sort_order)
 		VALUES
 			('guides-tireguides-choose', 'en', 'Administrator title', 'Administrator subtitle', 'hidden', 99),
@@ -103,13 +103,13 @@ func TestTireRimWidthSelectionFAQMigrationPreservesAdminEditsAndSupportsSafeRoll
 		executeTireRimWidthSelectionFAQMigrationSQL(t, transaction, "407_add_tire_rim_width_selection_editable_faq_content.up.sql")
 	}
 	var pageCount, itemCount int
-	if err := transaction.QueryRow("SELECT count(*) FROM faq_pages").Scan(&pageCount); err != nil {
+	if err := transaction.QueryRowContext(t.Context(), "SELECT count(*) FROM faq_pages").Scan(&pageCount); err != nil {
 		t.Fatal(err)
 	}
 	if pageCount != 20 {
 		t.Fatalf("expected 20 route-owned locale shells, got %d", pageCount)
 	}
-	if err := transaction.QueryRow("SELECT count(*) FROM faqs WHERE page_id = 'guides-tireguides-choose'").Scan(&itemCount); err != nil {
+	if err := transaction.QueryRowContext(t.Context(), "SELECT count(*) FROM faqs WHERE page_id = 'guides-tireguides-choose'").Scan(&itemCount); err != nil {
 		t.Fatal(err)
 	}
 	if itemCount != 18 {
@@ -117,21 +117,21 @@ func TestTireRimWidthSelectionFAQMigrationPreservesAdminEditsAndSupportsSafeRoll
 	}
 	var title, subtitle, status, routePath string
 	var sortOrder int
-	if err := transaction.QueryRow("SELECT title, subtitle, status, sort_order, route_path FROM faq_pages WHERE locale = 'en'").
+	if err := transaction.QueryRowContext(t.Context(), "SELECT title, subtitle, status, sort_order, route_path FROM faq_pages WHERE locale = 'en'").
 		Scan(&title, &subtitle, &status, &sortOrder, &routePath); err != nil {
 		t.Fatal(err)
 	}
 	if title != "Administrator title" || subtitle != "Administrator subtitle" || status != "hidden" || sortOrder != 99 || routePath != "/guides/tireguides/choose" {
 		t.Fatal("up migration changed administrator metadata or failed to bind the page route")
 	}
-	if err := transaction.QueryRow("SELECT title, subtitle FROM faq_pages WHERE locale = 'zh_cn'").Scan(&title, &subtitle); err != nil {
+	if err := transaction.QueryRowContext(t.Context(), "SELECT title, subtitle FROM faq_pages WHERE locale = 'zh_cn'").Scan(&title, &subtitle); err != nil {
 		t.Fatal(err)
 	}
 	if title != "外胎与车圈宽度选择 FAQ" || subtitle != "了解尺寸选择、标准正常配合范围、最佳宽度与模拟图示" {
 		t.Fatal("legacy generated DT metadata was not replaced with the current Chinese page description")
 	}
 
-	_, err = transaction.Exec(`
+	_, err = transaction.ExecContext(t.Context(), `
 		UPDATE faqs SET question = 'Administrator renamed question', answer = '<p>Edited answer</p>',
 			updated_at = NOW() + INTERVAL '1 second'
 			WHERE page_id = 'guides-tireguides-choose' AND locale = 'en' AND "order" = 110;
@@ -148,7 +148,7 @@ func TestTireRimWidthSelectionFAQMigrationPreservesAdminEditsAndSupportsSafeRoll
 		t.Fatal(err)
 	}
 	executeTireRimWidthSelectionFAQMigrationSQL(t, transaction, "407_add_tire_rim_width_selection_editable_faq_content.up.sql")
-	if err := transaction.QueryRow("SELECT count(*) FROM faqs WHERE page_id = 'guides-tireguides-choose'").Scan(&itemCount); err != nil {
+	if err := transaction.QueryRowContext(t.Context(), "SELECT count(*) FROM faqs WHERE page_id = 'guides-tireguides-choose'").Scan(&itemCount); err != nil {
 		t.Fatal(err)
 	}
 	if itemCount != 18 {
@@ -156,19 +156,19 @@ func TestTireRimWidthSelectionFAQMigrationPreservesAdminEditsAndSupportsSafeRoll
 	}
 	executeTireRimWidthSelectionFAQMigrationSQL(t, transaction, "407_add_tire_rim_width_selection_editable_faq_content.down.sql")
 	var preservedAdminItems, preservedOtherItems int
-	if err := transaction.QueryRow("SELECT count(*) FROM faqs WHERE page_id = 'guides-tireguides-choose'").Scan(&preservedAdminItems); err != nil {
+	if err := transaction.QueryRowContext(t.Context(), "SELECT count(*) FROM faqs WHERE page_id = 'guides-tireguides-choose'").Scan(&preservedAdminItems); err != nil {
 		t.Fatal(err)
 	}
 	if preservedAdminItems != 5 {
 		t.Fatalf("safe rollback must retain all five edited/draft/image/reordered/touched entries, got %d", preservedAdminItems)
 	}
-	if err := transaction.QueryRow("SELECT count(*) FROM faqs WHERE page_id = 'other-guide'").Scan(&preservedOtherItems); err != nil {
+	if err := transaction.QueryRowContext(t.Context(), "SELECT count(*) FROM faqs WHERE page_id = 'other-guide'").Scan(&preservedOtherItems); err != nil {
 		t.Fatal(err)
 	}
 	if preservedOtherItems != 1 {
 		t.Fatal("rollback changed another guide's FAQ")
 	}
-	if err := transaction.QueryRow("SELECT count(*) FROM faq_pages").Scan(&pageCount); err != nil {
+	if err := transaction.QueryRowContext(t.Context(), "SELECT count(*) FROM faq_pages").Scan(&pageCount); err != nil {
 		t.Fatal(err)
 	}
 	if pageCount != 20 {
@@ -178,7 +178,7 @@ func TestTireRimWidthSelectionFAQMigrationPreservesAdminEditsAndSupportsSafeRoll
 
 func TestTireRimWidthSelectionFAQMigrationSeedsOnlyLocalesWithoutExistingContent(t *testing.T) {
 	transaction := createIsolatedTireRimWidthSelectionFAQMigrationTransaction(t)
-	_, err := transaction.Exec(`
+	_, err := transaction.ExecContext(t.Context(), `
 		INSERT INTO faqs (page_id, locale, question, answer, status)
 		VALUES ('guides-tireguides-choose', 'en', 'Existing admin question', '<p>Keep this answer</p>', 'draft');
 	`)
@@ -187,10 +187,10 @@ func TestTireRimWidthSelectionFAQMigrationSeedsOnlyLocalesWithoutExistingContent
 	}
 	executeTireRimWidthSelectionFAQMigrationSQL(t, transaction, "407_add_tire_rim_width_selection_editable_faq_content.up.sql")
 	var englishItems, chineseItems int
-	if err := transaction.QueryRow("SELECT count(*) FROM faqs WHERE page_id = 'guides-tireguides-choose' AND locale = 'en'").Scan(&englishItems); err != nil {
+	if err := transaction.QueryRowContext(t.Context(), "SELECT count(*) FROM faqs WHERE page_id = 'guides-tireguides-choose' AND locale = 'en'").Scan(&englishItems); err != nil {
 		t.Fatal(err)
 	}
-	if err := transaction.QueryRow("SELECT count(*) FROM faqs WHERE page_id = 'guides-tireguides-choose' AND locale = 'zh_cn'").Scan(&chineseItems); err != nil {
+	if err := transaction.QueryRowContext(t.Context(), "SELECT count(*) FROM faqs WHERE page_id = 'guides-tireguides-choose' AND locale = 'zh_cn'").Scan(&chineseItems); err != nil {
 		t.Fatal(err)
 	}
 	if englishItems != 1 || chineseItems != 9 {

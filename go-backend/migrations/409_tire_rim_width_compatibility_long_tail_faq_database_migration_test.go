@@ -9,7 +9,7 @@ import (
 
 func TestTireRimWidthCompatibilityLongTailFAQMigrationPreservesExistingContentAndAdministratorEdits(t *testing.T) {
 	transaction := createIsolatedTireRimWidthSelectionFAQMigrationTransaction(t)
-	_, err := transaction.Exec(`
+	_, err := transaction.ExecContext(t.Context(), `
 		INSERT INTO faq_pages (page_id, locale, route_path, title, status, sort_order)
 		VALUES
 			('guides-tireguides-tire-rim-width-compatibility', 'en', '/guides/tireguides/tire-rim-width-compatibility', 'Administrator title', 'hidden', 42),
@@ -27,7 +27,7 @@ func TestTireRimWidthCompatibilityLongTailFAQMigrationPreservesExistingContentAn
 		executeTireRimWidthSelectionFAQMigrationSQL(t, transaction, "409_add_tire_rim_width_compatibility_long_tail_faq_content.up.sql")
 	}
 	var count int
-	if err := transaction.QueryRow("SELECT count(*) FROM faqs WHERE page_id = 'guides-tireguides-tire-rim-width-compatibility'").Scan(&count); err != nil {
+	if err := transaction.QueryRowContext(t.Context(), "SELECT count(*) FROM faqs WHERE page_id = 'guides-tireguides-tire-rim-width-compatibility'").Scan(&count); err != nil {
 		t.Fatal(err)
 	}
 	if count != 8 {
@@ -35,14 +35,14 @@ func TestTireRimWidthCompatibilityLongTailFAQMigrationPreservesExistingContentAn
 	}
 	var title, pageStatus string
 	var pageOrder int
-	if err := transaction.QueryRow("SELECT title, status, sort_order FROM faq_pages WHERE locale = 'en'").Scan(&title, &pageStatus, &pageOrder); err != nil {
+	if err := transaction.QueryRowContext(t.Context(), "SELECT title, status, sort_order FROM faq_pages WHERE locale = 'en'").Scan(&title, &pageStatus, &pageOrder); err != nil {
 		t.Fatal(err)
 	}
 	if title != "Administrator title" || pageStatus != "hidden" || pageOrder != 42 {
 		t.Fatal("FAQ addition changed administrator page metadata or publication")
 	}
 	var recommendationAnswer string
-	if err := transaction.QueryRow(`SELECT answer FROM faqs WHERE locale = 'en' AND "order" = 90`).Scan(&recommendationAnswer); err != nil {
+	if err := transaction.QueryRowContext(t.Context(), `SELECT answer FROM faqs WHERE locale = 'en' AND "order" = 90`).Scan(&recommendationAnswer); err != nil {
 		t.Fatal(err)
 	}
 	if !strings.Contains(recommendationAnswer, "21 mm") {
@@ -54,7 +54,7 @@ func TestTireRimWidthCompatibilityLongTailFAQMigrationPreservesExistingContentAn
 			t.Fatalf("28C FAQ needs review because the existing %s calculation changed: %#v, %v", rimSystem, recommendation, err)
 		}
 	}
-	_, err = transaction.Exec(`
+	_, err = transaction.ExecContext(t.Context(), `
 		UPDATE faqs SET question = 'Administrator renamed question', answer = '<p>Edited answer</p>',
 			answer_image_url = '/uploads/faq/edited-answer.webp'
 			WHERE locale = 'en' AND "order" = 80;
@@ -66,33 +66,33 @@ func TestTireRimWidthCompatibilityLongTailFAQMigrationPreservesExistingContentAn
 		t.Fatal(err)
 	}
 	executeTireRimWidthSelectionFAQMigrationSQL(t, transaction, "409_add_tire_rim_width_compatibility_long_tail_faq_content.up.sql")
-	if err := transaction.QueryRow("SELECT count(*) FROM faqs WHERE page_id = 'guides-tireguides-tire-rim-width-compatibility'").Scan(&count); err != nil {
+	if err := transaction.QueryRowContext(t.Context(), "SELECT count(*) FROM faqs WHERE page_id = 'guides-tireguides-tire-rim-width-compatibility'").Scan(&count); err != nil {
 		t.Fatal(err)
 	}
 	if count != 8 {
 		t.Fatal("reapplying the migration duplicated an edited or reordered answer")
 	}
 	executeTireRimWidthSelectionFAQMigrationSQL(t, transaction, "409_add_tire_rim_width_compatibility_long_tail_faq_content.down.sql")
-	if err := transaction.QueryRow("SELECT count(*) FROM faqs WHERE page_id = 'guides-tireguides-tire-rim-width-compatibility'").Scan(&count); err != nil {
+	if err := transaction.QueryRowContext(t.Context(), "SELECT count(*) FROM faqs WHERE page_id = 'guides-tireguides-tire-rim-width-compatibility'").Scan(&count); err != nil {
 		t.Fatal(err)
 	}
 	if count != 6 {
 		t.Fatalf("rollback must preserve the two original FAQs and four administrator edits, got %d", count)
 	}
 	var question, answer, image string
-	if err := transaction.QueryRow(`SELECT question, answer, answer_image_url FROM faqs WHERE locale = 'en' AND "order" = 80`).Scan(&question, &answer, &image); err != nil {
+	if err := transaction.QueryRowContext(t.Context(), `SELECT question, answer, answer_image_url FROM faqs WHERE locale = 'en' AND "order" = 80`).Scan(&question, &answer, &image); err != nil {
 		t.Fatal(err)
 	}
 	if question != "Administrator renamed question" || answer != "<p>Edited answer</p>" || image != "/uploads/faq/edited-answer.webp" {
 		t.Fatal("migration or rollback changed the administrator's edited answer")
 	}
-	if err := transaction.QueryRow(`SELECT count(*) FROM faqs WHERE "order" = 150 AND ((locale = 'en' AND question = 'Existing 105% question' AND answer = '<p>Existing calculation explanation</p>' AND status = 'draft') OR (locale = 'zh_cn' AND question = '现有 105% 问答' AND answer = '<p>原计算说明</p>' AND status = 'published'))`).Scan(&count); err != nil {
+	if err := transaction.QueryRowContext(t.Context(), `SELECT count(*) FROM faqs WHERE "order" = 150 AND ((locale = 'en' AND question = 'Existing 105% question' AND answer = '<p>Existing calculation explanation</p>' AND status = 'draft') OR (locale = 'zh_cn' AND question = '现有 105% 问答' AND answer = '<p>原计算说明</p>' AND status = 'published'))`).Scan(&count); err != nil {
 		t.Fatal(err)
 	}
 	if count != 2 {
 		t.Fatal("the existing 105% explanation was modified")
 	}
-	if err := transaction.QueryRow("SELECT count(*) FROM faqs WHERE page_id = 'other-guide'").Scan(&count); err != nil || count != 1 {
+	if err := transaction.QueryRowContext(t.Context(), "SELECT count(*) FROM faqs WHERE page_id = 'other-guide'").Scan(&count); err != nil || count != 1 {
 		t.Fatal("another guide's content was changed")
 	}
 }

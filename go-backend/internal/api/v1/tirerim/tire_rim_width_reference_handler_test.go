@@ -46,7 +46,7 @@ func TestSolveTireRimWidthReferenceReturnsSingleBestPairingThroughExistingEndpoi
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			recorder := httptest.NewRecorder()
-			request := httptest.NewRequest(http.MethodPost, "/api/v1/engineering/tire-rim/solve", strings.NewReader(test.requestBody))
+			request := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/api/v1/engineering/tire-rim/solve", strings.NewReader(test.requestBody))
 			request.Header.Set("Content-Type", "application/json")
 			newTireRimWidthReferenceTestRouter().ServeHTTP(recorder, request)
 			if recorder.Code != http.StatusOK {
@@ -78,7 +78,7 @@ func TestSolveTireRimWidthReferenceReturnsSingleBestPairingThroughExistingEndpoi
 
 func TestSolveTireRimWidthReferenceKeepsCriticalEnteredPairingSeparateFromBestAlternative(t *testing.T) {
 	recorder := httptest.NewRecorder()
-	request := httptest.NewRequest(http.MethodPost, "/api/v1/engineering/tire-rim/solve", strings.NewReader(`{"tire_width_mm":127,"rim_inner_width_mm":35,"rim_system":"hookless","application_profile":"mtb_xc_trail"}`))
+	request := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/api/v1/engineering/tire-rim/solve", strings.NewReader(`{"tire_width_mm":127,"rim_inner_width_mm":35,"rim_system":"hookless","application_profile":"mtb_xc_trail"}`))
 	request.Header.Set("Content-Type", "application/json")
 	newTireRimWidthReferenceTestRouter().ServeHTTP(recorder, request)
 	if recorder.Code != http.StatusOK {
@@ -101,7 +101,7 @@ func TestSolveTireRimWidthReferenceKeepsCriticalEnteredPairingSeparateFromBestAl
 
 func TestSolveTireRimWidthReferenceSerializesNullBestForBlockedLegacyAeroTarget(t *testing.T) {
 	recorder := httptest.NewRecorder()
-	request := httptest.NewRequest(http.MethodPost, "/api/v1/engineering/tire-rim/solve", strings.NewReader(`{"rim_inner_width_mm":19,"rim_system":"hookless"}`))
+	request := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/api/v1/engineering/tire-rim/solve", strings.NewReader(`{"rim_inner_width_mm":19,"rim_system":"hookless"}`))
 	request.Header.Set("Content-Type", "application/json")
 	newTireRimWidthReferenceTestRouter().ServeHTTP(recorder, request)
 	if recorder.Code != http.StatusOK {
@@ -120,7 +120,7 @@ func TestSolveTireRimWidthReferenceSerializesNullBestForBlockedLegacyAeroTarget(
 
 func TestSolveTireRimWidthReferenceReturnsNormalFitmentRangeFor31MmTire(t *testing.T) {
 	recorder := httptest.NewRecorder()
-	request := httptest.NewRequest(http.MethodPost, "/api/v1/engineering/tire-rim/solve", strings.NewReader(`{"tire_width_mm":31,"rim_system":"hookless"}`))
+	request := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/api/v1/engineering/tire-rim/solve", strings.NewReader(`{"tire_width_mm":31,"rim_system":"hookless"}`))
 	request.Header.Set("Content-Type", "application/json")
 	newTireRimWidthReferenceTestRouter().ServeHTTP(recorder, request)
 	if recorder.Code != http.StatusOK {
@@ -160,7 +160,7 @@ func TestSolveTireRimWidthReferenceReturnsNormalFitmentRangeFor31MmTire(t *testi
 
 func TestSolveTireRimWidthReferenceKeepsThe105PercentRuleAt30Mm(t *testing.T) {
 	recorder := httptest.NewRecorder()
-	request := httptest.NewRequest(http.MethodPost, "/api/v1/engineering/tire-rim/solve", strings.NewReader(`{"tire_width_mm":30,"rim_system":"hookless"}`))
+	request := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/api/v1/engineering/tire-rim/solve", strings.NewReader(`{"tire_width_mm":30,"rim_system":"hookless"}`))
 	request.Header.Set("Content-Type", "application/json")
 	newTireRimWidthReferenceTestRouter().ServeHTTP(recorder, request)
 	if recorder.Code != http.StatusOK {
@@ -326,7 +326,7 @@ func TestSolveTireRimWidthReferenceReturnsStandardNormalRangeAndNullBestForHookl
 
 func TestTireRimWidthReferenceMatrixEndpointIsNotRegistered(t *testing.T) {
 	recorder := httptest.NewRecorder()
-	request := httptest.NewRequest(http.MethodGet, "/api/v1/engineering/tire-rim/matrix", nil)
+	request := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/api/v1/engineering/tire-rim/matrix", nil)
 	newTireRimWidthReferenceTestRouter().ServeHTTP(recorder, request)
 	if recorder.Code != http.StatusNotFound {
 		t.Fatalf("expected the display-only DT Swiss matrix endpoint to be absent, got %d: %s", recorder.Code, recorder.Body.String())
@@ -343,7 +343,7 @@ func TestSolveTireRimWidthReferenceRejectsUnknownAndOutOfScopeApplicationProfile
 		`{"rim_system":"hookless","rim_inner_width_mm":30,"application_profile":"road_aero"}`,
 	} {
 		recorder := httptest.NewRecorder()
-		request := httptest.NewRequest(http.MethodPost, "/api/v1/engineering/tire-rim/solve", strings.NewReader(body))
+		request := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/api/v1/engineering/tire-rim/solve", strings.NewReader(body))
 		newTireRimWidthReferenceTestRouter().ServeHTTP(recorder, request)
 		if recorder.Code != http.StatusBadRequest || !strings.Contains(recorder.Body.String(), `"code":"INVALID_FIELD"`) || !strings.Contains(recorder.Body.String(), `"field":"application_profile"`) {
 			t.Fatalf("profile errors must use the existing field-error contract: %d %s", recorder.Code, recorder.Body.String())
@@ -359,7 +359,7 @@ func TestSolveTireRimWidthReferenceSerializesAbsentPurposeRecommendationsAsNullW
 		`{"rim_system":"hooked","rim_inner_width_mm":45,"tire_width_mm":70,"application_profile":"mtb_xc_trail"}`,
 	} {
 		recorder := httptest.NewRecorder()
-		request := httptest.NewRequest(http.MethodPost, "/api/v1/engineering/tire-rim/solve", strings.NewReader(body))
+		request := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/api/v1/engineering/tire-rim/solve", strings.NewReader(body))
 		newTireRimWidthReferenceTestRouter().ServeHTTP(recorder, request)
 		if recorder.Code != http.StatusOK {
 			t.Fatalf("expected a reference result: %d %s", recorder.Code, recorder.Body.String())
@@ -402,7 +402,7 @@ func TestExistingSolveAPIReturnsNullFatOptimaAndPressureWithoutLosingNormalRange
 		`{"rim_system":"hookless","rim_inner_width_mm":100,"tire_width_mm":126}`,
 	} {
 		recorder := httptest.NewRecorder()
-		request := httptest.NewRequest(http.MethodPost, "/api/v1/engineering/tire-rim/solve", strings.NewReader(body))
+		request := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/api/v1/engineering/tire-rim/solve", strings.NewReader(body))
 		newTireRimWidthReferenceTestRouter().ServeHTTP(recorder, request)
 		if recorder.Code != http.StatusOK {
 			t.Fatalf("Fat reference request failed: %d %s", recorder.Code, recorder.Body.String())
@@ -444,7 +444,7 @@ func TestExistingSolveAPIRetainsReviewedFatSuggestionAndRejectsDedicatedOversize
 		`{"rim_system":"hookless","rim_inner_width_mm":85,"tire_width_mm":115}`,
 	} {
 		recorder := httptest.NewRecorder()
-		request := httptest.NewRequest(http.MethodPost, "/api/v1/engineering/tire-rim/solve", strings.NewReader(body))
+		request := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/api/v1/engineering/tire-rim/solve", strings.NewReader(body))
 		newTireRimWidthReferenceTestRouter().ServeHTTP(recorder, request)
 		var payload struct {
 			Data struct {
@@ -475,7 +475,7 @@ func TestExistingSolveAPIRetainsReviewedFatSuggestionAndRejectsDedicatedOversize
 		`{"rim_system":"hookless","rim_inner_width_mm":100,"tire_width_mm":158}`,
 	} {
 		recorder := httptest.NewRecorder()
-		request := httptest.NewRequest(http.MethodPost, "/api/v1/engineering/tire-rim/solve", strings.NewReader(body))
+		request := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/api/v1/engineering/tire-rim/solve", strings.NewReader(body))
 		newTireRimWidthReferenceTestRouter().ServeHTTP(recorder, request)
 		if recorder.Code != http.StatusUnprocessableEntity || !strings.Contains(recorder.Body.String(), `"code":"OUT_OF_RANGE"`) || !strings.Contains(recorder.Body.String(), `"field":"tire_width_mm"`) {
 			t.Fatalf("dedicated 6.2 inch request was clamped or lost the error contract: %s", recorder.Body.String())
@@ -485,7 +485,7 @@ func TestExistingSolveAPIRetainsReviewedFatSuggestionAndRejectsDedicatedOversize
 
 func TestSolveTireRimWidthReferenceRetainsCalibratedManufacturerRolesAndEnteredPairingThroughTheExistingAPI(t *testing.T) {
 	recorder := httptest.NewRecorder()
-	request := httptest.NewRequest(http.MethodPost, "/api/v1/engineering/tire-rim/solve", strings.NewReader(`{"rim_system":"hooked","rim_inner_width_mm":35,"tire_width_mm":65,"application_profile":"mtb_xc_trail"}`))
+	request := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/api/v1/engineering/tire-rim/solve", strings.NewReader(`{"rim_system":"hooked","rim_inner_width_mm":35,"tire_width_mm":65,"application_profile":"mtb_xc_trail"}`))
 	newTireRimWidthReferenceTestRouter().ServeHTTP(recorder, request)
 	if recorder.Code != http.StatusOK {
 		t.Fatalf("expected calibrated result: %d %s", recorder.Code, recorder.Body.String())

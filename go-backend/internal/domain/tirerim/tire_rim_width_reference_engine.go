@@ -347,17 +347,17 @@ func ResolveTireRimWidthReference(width int, system RimSystem, profiles ...TireR
 	if width > TireRimEngineeringAeroRuleMaximumTireWidthMM {
 		return resolveNormalTireRimFitmentForKnownTireWidth(width, system, profile, profileSelection)
 	}
-	result, err := resolveAeroTireRimFitmentForKnownTireWidth(width, system)
+	result := resolveAeroTireRimFitmentForKnownTireWidth(width, system)
 	if result != nil {
 		result.ApplicationProfileSelection = profileSelection
 	}
-	return result, err
+	return result, nil
 }
 
 // resolveAeroTireRimFitmentForKnownTireWidth applies the 105% rule to a tire
 // width within its inclusive <=30C scope. It returns one closest inner-width
 // target and does not use the normal fitment ranges to rank alternatives.
-func resolveAeroTireRimFitmentForKnownTireWidth(width int, system RimSystem) (*Suggestion, error) {
+func resolveAeroTireRimFitmentForKnownTireWidth(width int, system RimSystem) *Suggestion {
 	targetOuterWidthMM := float64(width) / tireRimEngineeringTireToRimWidthRatio
 	targetInnerWidthMM := targetOuterWidthMM - 2*TireRimEngineeringRimWallThicknessEstimatePerSideMM
 	selectedInnerWidthMM := int(math.Round(targetInnerWidthMM))
@@ -395,7 +395,7 @@ func resolveAeroTireRimFitmentForKnownTireWidth(width int, system RimSystem) (*S
 		Limitations:            cloneTireRimWidthReferenceStrings(tireRimEngineeringLimitations),
 		StandardReference:      tireRimStandardReferenceContext,
 		NormalFitmentReference: iso5775Part12023NormalFitmentTableReference,
-	}, nil
+	}
 }
 
 // resolveNormalTireRimFitmentForKnownTireWidth returns every contiguous inner
@@ -488,7 +488,7 @@ func selectBestNormalRimInnerWidthForKnownTireWidth(system RimSystem, tireWidthM
 
 // selectBestNormalTireWidthForKnownRimInnerWidth chooses the nearest integer
 // to the existing recommended-window center, within the normal window and
-// the >30 mm path. Half-millimetre ties round upward. No outer rim width,
+// the >30 mm path. Half-millimeter ties round upward. No outer rim width,
 // wall-thickness assumption, or 105% ratio enters this selection.
 func selectBestNormalTireWidthForKnownRimInnerWidth(system RimSystem, innerWidthMM int, profile TireRimApplicationProfile) *TireRimBestFitment {
 	if innerWidthMM < TireRimEngineeringMinInnerWidthMM || innerWidthMM > TireRimEngineeringMaxInnerWidthMM {
@@ -1009,7 +1009,7 @@ func cloneTireRimFitmentRuleReference(reference TireRimFitmentRuleReference) Tir
 }
 
 // nullableRecommendedTireWidthRange prevents an absent project recommendation
-// from being serialized as a misleading zero-millimetre tire window.
+// from being serialized as a misleading zero-millimeter tire window.
 func nullableRecommendedTireWidthRange(widthRange WidthRange) *WidthRange {
 	if widthRange == (WidthRange{}) {
 		return nil

@@ -49,7 +49,7 @@ func TestKnownWideRimReturnsOneBestTireSeparatelyFromNormalFitmentRange(t *testi
 		expectedTireWidthMM       int
 		expectedTargetTireWidthMM float64
 	}{
-		{"gravel half millimetre tie", RimSystemHookless, 28, 43, 42.5},
+		{"gravel half millimeter tie", RimSystemHookless, 28, 43, 42.5},
 		{"MTB", RimSystemHookless, 35, 67, 67.31},
 		{"wide hooked", RimSystemHooked, 45, 78, 78},
 		{"reviewed fat snow suggestion", RimSystemHookless, 85, 105, 105.41},
@@ -191,14 +191,14 @@ func TestResolveTireRimWidthReferenceReturnsSingleAeroBestInnerWidthAcrossWidths
 		resultKind string
 	}{
 		{
-			name:       "hookless 30 millimetres",
+			name:       "hookless 30 millimeters",
 			width:      30,
 			system:     RimSystemHookless,
 			expected:   []WidthRange{{Min: 23, Max: 23}},
 			resultKind: "engineering_recommended",
 		},
 		{
-			name:       "hooked 28 millimetres",
+			name:       "hooked 28 millimeters",
 			width:      28,
 			system:     RimSystemHooked,
 			expected:   []WidthRange{{Min: 21, Max: 21}},
