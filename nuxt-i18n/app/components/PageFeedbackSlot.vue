@@ -12,9 +12,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 import { useI18n, useRoute } from '#imports'
 import UserFeedbackThread from '~/components/UserFeedbackThread.vue'
+import { pageMessageNamespaces, usePageMessages } from '~/composables/usePageMessages'
 import { normalizeFaqRoutePath } from '~/data/faq/routing'
 import {
   getPageSubNavigationTabFromPath,
@@ -23,7 +24,7 @@ import {
 } from '~/utils/pageSubNavigation'
 
 const route = useRoute()
-const { t } = useI18n()
+const { t, locale } = useI18n()
 
 const routeFeedbackTab = computed<PageSubNavigationTab | null>(() => {
   const routeMeta = route.meta as Record<string, unknown>
@@ -81,6 +82,34 @@ const activeFeedbackTab = computed<PageSubNavigationTab | null>(() => {
   }
 
   return null
+})
+
+const pageFeedbackTranslationMessageHandles = new Map(
+  pageMessageNamespaces.map(namespace => [namespace, usePageMessages(namespace)]),
+)
+
+async function loadPageFeedbackTranslationMessagesBeforeRendering(): Promise<void> {
+  const tab = activeFeedbackTab.value
+  if (!tab) return
+
+  const requestedLocale = locale.value
+  const requiredNamespaces = new Set([
+    tab.feedbackTitleKey,
+    tab.feedbackSubtitleKey,
+    tab.pageTitleKey,
+  ].map(key => key?.split('.')[0]).filter((namespace): namespace is string => Boolean(namespace)))
+
+  await Promise.all([...requiredNamespaces].map(namespace => (
+    pageFeedbackTranslationMessageHandles.get(namespace)?.loadPageMessages(requestedLocale)
+  )))
+}
+
+// Layout slots render independently of the async page component. Its lazy
+// translations may not exist during the first client render, even though SSR
+// already used them. Load this slot's own dependencies before hydrating it.
+await loadPageFeedbackTranslationMessagesBeforeRendering()
+watch([activeFeedbackTab, locale], () => {
+  void loadPageFeedbackTranslationMessagesBeforeRendering()
 })
 
 const translateTabText = (key: string | undefined, fallback: string) => {

@@ -14,6 +14,7 @@
     "test:checkout-state-province-catalog": "tsx scripts/checkout-state-province-catalog-contract.test.ts",
     "test:referral-invitation-share": "tsx scripts/referral-invitation-share.test.ts",
     "test:breadcrumb-navigation": "tsx scripts/breadcrumb-navigation-contract.test.ts",
+    "test:page-feedback-independent-translation-loading": "tsx scripts/page-feedback-slot-independent-lazy-translation-loading-server-rendering-regression.test.ts",
     "test:footer-menu-route-discovery": "tsx scripts/footer-menu-route-discovery-contract.test.ts",
     "test:wheelset-lacing-topology": "tsx scripts/wheelset-lacing-topology.test.ts",
     "test:tire-rim-width-input-conversion": "tsx scripts/tire-rim-width-input-conversion.test.ts",

@@ -51,3 +51,4 @@ jobs:
         run: |
           npm run check:production-artifacts
           npm run smoke:html-cache
+          npm run test:page-feedback-independent-translation-loading
