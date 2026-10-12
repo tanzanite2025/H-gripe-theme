@@ -50,7 +50,7 @@
         class="sizecharts-section"
       >
         <div class="tubeless-installation-guide space-y-12">
-          <TubelessGuide v-if="activeTab === 'tubeless'" @change-tab="setActiveTab" />
+          <TubelessGuide v-if="activeTab === 'tubeless'" />
           <div id="tubeless-installation">
             <InstallationGuide v-if="activeTab === 'tubeless'" />
           </div>

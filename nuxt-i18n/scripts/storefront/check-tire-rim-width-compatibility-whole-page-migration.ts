@@ -12,6 +12,14 @@ if (!storefrontOrigin) {
 
 const targetToolPath = '/tools/tire-rim-width-compatibility-engine'
 const retiredGuidePath = '/guides/tireguides/tire-rim-width-compatibility'
+const tireSizeSectionSource = readFileSync(join(process.cwd(), 'app/components/TireSizeSection.vue'), 'utf8')
+const tubelessGuideSource = readFileSync(join(process.cwd(), 'app/components/tireguides/TubelessGuide.vue'), 'utf8')
+const tireGuidesPageSource = readFileSync(join(process.cwd(), 'app/pages/guides/tireguides.vue'), 'utf8')
+assert.ok(tireSizeSectionSource.includes("localePath('/tools/tire-rim-width-compatibility-engine')"), 'tire size guide must link to the migrated tool')
+assert.ok(!tireSizeSectionSource.includes("localePath('/guides/tireguides/tire-rim-width-compatibility')"), 'tire size guide must not link to the retired guide route')
+assert.ok(tubelessGuideSource.includes("localePath('/tools/tire-rim-width-compatibility-engine')"), 'tubeless guide must link to the migrated tool')
+assert.ok(!tubelessGuideSource.includes("changeTab', 'tire-rim-width-compatibility"), 'tubeless guide must not emit the retired guide tab')
+assert.ok(!tireGuidesPageSource.includes('@change-tab="setActiveTab"'), 'tire guides page must not wire the retired guide tab event')
 const localeCodes = storefrontLocales.map(locale => locale.code)
 const routeRules = buildStorefrontRouteRules({
   internalApiOrigin: 'http://localhost:9200',
