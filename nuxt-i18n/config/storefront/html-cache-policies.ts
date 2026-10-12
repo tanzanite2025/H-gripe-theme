@@ -27,7 +27,6 @@ export const storefrontHtmlCachePolicies: StorefrontHtmlCachePolicy[] = [
     description: 'Editorial and guide pages that change less frequently than product data.',
     paths: [
       '/resources/blog/**',
-      '/guides/spokeguides/brand-wheelset-spoke-specs/**',
       '/guides/**',
       '/resources/picture-warehouse/**',
       '/faq',
@@ -63,6 +62,7 @@ export const storefrontNoStorePagePaths = [
   // Catalog results depend on URL filters and API data. Do not reuse HTML
   // across searches or pagination while a query-aware cache is unavailable.
   '/tools/schwalbe-tire-selector',
+  '/tools/brand-wheelset-spoke-specs',
   '/resources/membershipandpoints/**',
   '/guides/spokeguides/spoke-length-calculator/**',
   '/resources/workbench',

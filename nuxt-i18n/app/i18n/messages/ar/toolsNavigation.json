@@ -4,5 +4,7 @@
   "description": "ابحث عن مواصفات المكونات وصفّها وقارن بينها. تتضمن كل أداة شرحًا يساعدك على فهم نتائجها.",
   "openTool": "فتح الأداة",
   "schwalbeTireSelectorLabel": "Schwalbe tire selector",
-  "schwalbeTireSelectorDescription": "ابحث في كتالوج إطارات Schwalbe وصفّه حسب الطراز والمقاس، مع شرح البنية والمواصفات."
+  "schwalbeTireSelectorDescription": "ابحث في كتالوج إطارات Schwalbe وصفّه حسب الطراز والمقاس، مع شرح البنية والمواصفات.",
+  "brandWheelsetSpokeSpecsLabel": "مواصفات أسلاك العجلات وحلماتها",
+  "brandWheelsetSpokeSpecsDescription": "صفّ حسب العلامة التجارية أو ابحث عن طراز العجلة لمعرفة أطوال الأسلاك وأنماط التشبيك ومواصفات الحلمات، مع ملاحظات أطقم الإصلاح."
 }

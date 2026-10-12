@@ -230,12 +230,12 @@ type WheelsetEntry = PublicBrandWheelsetRecord & {
 }
 
 definePageMeta({
+  path: '/tools/brand-wheelset-spoke-specs',
   layout: 'products',
-  breadcrumbLabelKey: 'brandWheelsetSpokeSpecs.navLabel',
+  breadcrumbLabelKey: 'toolsNavigation.brandWheelsetSpokeSpecsLabel',
   breadcrumbLabelFallback: 'Complete Wheelset Spoke Specs',
-  footerLabelKey: 'brandWheelsetSpokeSpecs.navLabel',
+  footerLabelKey: 'toolsNavigation.brandWheelsetSpokeSpecsLabel',
   footerLabelFallback: 'Complete Wheelset Spoke Specs',
-  footerGroupLabelFallback: 'Spoke Guides',
   pageTitleKey: 'brandWheelsetSpokeSpecs.title',
   pageTitle: 'Wheelset Spoke and Nipple Specifications',
   feedbackThreadKey: 'guides-spokeguides-brand-wheelset-spoke-specs',
@@ -388,7 +388,7 @@ const indexablePaginationPage = computed(() => (
 const localizedSeoRoutes = computed(() => localeManifest
   .filter(entry => supportedSeoLocaleCodes.has(entry.code))
   .map(({ code }) => {
-    const localizedPath = switchLocalePath(code as any) || '/guides/spokeguides/brand-wheelset-spoke-specs'
+    const localizedPath = switchLocalePath(code as any) || '/tools/brand-wheelset-spoke-specs'
     const localizedUrl = new URL(localizedPath, 'https://wheelset-spoke-seo.invalid')
     localizedUrl.search = ''
     if (indexablePaginationPage.value !== null) {
@@ -514,7 +514,7 @@ useHead(() => ({
     { name: 'description', content: t('brandWheelsetSpokeSpecs.seoDescription'), key: 'description' },
     {
       name: 'robots',
-      content: shouldNoIndexQuery.value
+      content: !supportedSeoLocaleCodes.has(locale.value) || shouldNoIndexQuery.value
         ? 'noindex,follow'
         : (publicWheelsets.value.length > 0 ? 'index,follow' : 'noindex,follow'),
       key: 'robots',

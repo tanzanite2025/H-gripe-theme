@@ -5,7 +5,9 @@
     "description": "Search, filter, and compare component specifications. Each tool includes the explanations you need to interpret its results.",
     "openTool": "Open tool",
     "schwalbeTireSelectorLabel": "Schwalbe tire selector",
-    "schwalbeTireSelectorDescription": "Search and filter the Schwalbe tire catalog by model and size, with tire construction and specification explanations."
+    "schwalbeTireSelectorDescription": "Search and filter the Schwalbe tire catalog by model and size, with tire construction and specification explanations.",
+    "brandWheelsetSpokeSpecsLabel": "Wheelset spoke and nipple specifications",
+    "brandWheelsetSpokeSpecsDescription": "Filter by brand or search a wheelset model to find spoke lengths, lacing patterns, and nipple specifications, with repair-kit notes."
   },
   "accountSidebar": {
     "addresses": {

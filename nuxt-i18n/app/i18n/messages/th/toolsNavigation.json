@@ -4,5 +4,7 @@
   "description": "ค้นหา กรอง และเปรียบเทียบข้อมูลจำเพาะของชิ้นส่วน แต่ละเครื่องมือมีคำอธิบายเพื่อช่วยให้เข้าใจผลลัพธ์",
   "openTool": "เปิดเครื่องมือ",
   "schwalbeTireSelectorLabel": "Schwalbe tire selector",
-  "schwalbeTireSelectorDescription": "ค้นหาและกรองแคตตาล็อกยาง Schwalbe ตามรุ่นและขนาด พร้อมคำอธิบายโครงสร้างและข้อมูลจำเพาะ"
+  "schwalbeTireSelectorDescription": "ค้นหาและกรองแคตตาล็อกยาง Schwalbe ตามรุ่นและขนาด พร้อมคำอธิบายโครงสร้างและข้อมูลจำเพาะ",
+  "brandWheelsetSpokeSpecsLabel": "ข้อมูลจำเพาะซี่ลวดและหัวซี่ลวดของชุดล้อ",
+  "brandWheelsetSpokeSpecsDescription": "กรองตามแบรนด์หรือค้นหารุ่นชุดล้อเพื่อดูความยาวซี่ลวด รูปแบบการขึ้นซี่ลวด และข้อมูลจำเพาะหัวซี่ลวด พร้อมคำอธิบายชุดซ่อม"
 }

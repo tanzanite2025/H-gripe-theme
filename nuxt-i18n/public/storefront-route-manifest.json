@@ -293,12 +293,13 @@
     },
     {
       "key": "guides-spokeguides-brand-wheelset-spoke-specs",
-      "path": "/guides/spokeguides/brand-wheelset-spoke-specs",
+      "path": "/tools/brand-wheelset-spoke-specs",
       "label": "Complete Wheelset Spoke Specs",
       "description": "Market-available branded wheelset spoke lengths, types, and lacing references",
+      "sitemap_locales": ["en", "zh_cn"],
       "is_searchable": true,
       "is_checkable": true,
-      "is_indexable": false
+      "is_indexable": true
     },
     {
       "key": "guides-wheelset-buyers-spoke-lacing-topology",

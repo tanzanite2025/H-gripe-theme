@@ -326,6 +326,16 @@ export const primaryMegaNavSections: PrimaryMegaNavSection[] = [
         size: 'feature',
         accent: 'emerald',
       },
+      {
+        id: 'brand-wheelset-spoke-specs',
+        labelKey: 'toolsNavigation.brandWheelsetSpokeSpecsLabel',
+        labelFallback: 'Wheelset spoke and nipple specifications',
+        description: 'Find replacement spoke lengths and nipple specifications by brand and wheelset model.',
+        to: '/tools/brand-wheelset-spoke-specs',
+        icon: 'lucide:table-properties',
+        size: 'standard',
+        accent: 'emerald',
+      },
     ],
   },
   {

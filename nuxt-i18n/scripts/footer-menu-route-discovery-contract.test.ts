@@ -41,6 +41,10 @@ const sections = createFooterMenusFromRoutes([
     footerLabelKey: 'toolsNavigation.schwalbeTireSelectorLabel',
     footerLabelFallback: 'Schwalbe tire selector',
   }),
+  createNormalizedFooterTestRoute('/tools/brand-wheelset-spoke-specs', 'tools-brand-wheelset-spoke-specs', {
+    footerLabelKey: 'toolsNavigation.brandWheelsetSpokeSpecsLabel',
+    footerLabelFallback: 'Wheelset spoke and nipple specifications',
+  }),
   createNormalizedFooterTestRoute('/guides/tireguides', 'guides-tireguides', {
     footerLabelKey: 'products.nav.tireSizeCharts',
     footerLabelFallback: 'Tire Guides',
@@ -85,6 +89,7 @@ assert.ok(toolsSection, 'TOOLS must discover the hub and migrated selector')
 assert.equal(toolsSection.titleLinkTo, '/tools', 'TOOLS title must link to the hub')
 assert.deepEqual(flattenFooterNavigationItems(toolsSection.links).map(link => link.to), [
   '/tools/schwalbe-tire-selector',
+  '/tools/brand-wheelset-spoke-specs',
 ], 'TOOLS child list must contain only concrete tools, without a duplicate hub')
 assert.ok(guidesSection, 'GUIDES column should be discovered from its static descendant pages')
 
@@ -117,7 +122,6 @@ assert.deepEqual(
   spokeGuidesGroup.children?.map(link => link.to),
   [
     '/guides/spokeguides/stainless-steel-microstructural-dislocation-mechanics',
-    '/guides/spokeguides/brand-wheelset-spoke-specs',
     '/guides/spokeguides/spoke-length-calculator',
     '/guides/spokeguides/new-spoke-engineering-guide',
   ],

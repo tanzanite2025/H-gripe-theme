@@ -4,5 +4,7 @@
   "description": "Cari, tapis dan bandingkan spesifikasi komponen. Setiap alat menyertakan penerangan untuk memahami hasilnya.",
   "openTool": "Buka alat",
   "schwalbeTireSelectorLabel": "Schwalbe tire selector",
-  "schwalbeTireSelectorDescription": "Cari dan tapis katalog tayar Schwalbe mengikut model dan saiz, dengan penerangan binaan dan spesifikasi."
+  "schwalbeTireSelectorDescription": "Cari dan tapis katalog tayar Schwalbe mengikut model dan saiz, dengan penerangan binaan dan spesifikasi.",
+  "brandWheelsetSpokeSpecsLabel": "Spesifikasi jejari dan nipel set roda",
+  "brandWheelsetSpokeSpecsDescription": "Tapis mengikut jenama atau cari model set roda untuk melihat panjang jejari, corak anyaman dan spesifikasi nipel bersama nota kit pembaikan."
 }

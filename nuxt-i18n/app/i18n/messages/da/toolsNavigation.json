@@ -4,5 +4,7 @@
   "description": "Søg, filtrer og sammenlign komponentspecifikationer. Hvert værktøj indeholder forklaringer til at forstå resultaterne.",
   "openTool": "Åbn værktøj",
   "schwalbeTireSelectorLabel": "Schwalbe tire selector",
-  "schwalbeTireSelectorDescription": "Søg og filtrer Schwalbes dækkatalog efter model og størrelse med forklaringer om konstruktion og specifikationer."
+  "schwalbeTireSelectorDescription": "Søg og filtrer Schwalbes dækkatalog efter model og størrelse med forklaringer om konstruktion og specifikationer.",
+  "brandWheelsetSpokeSpecsLabel": "Specifikationer for hjuleger og nipler",
+  "brandWheelsetSpokeSpecsDescription": "Filtrer efter mærke eller søg efter hjulmodel for at finde egerlængder, opspændingsmønstre og nippelspecifikationer med noter om reparationssæt."
 }

@@ -161,13 +161,6 @@ export const spokeGuideTabs = [
     to: '/guides/spokeguides/stainless-steel-microstructural-dislocation-mechanics',
   },
   {
-    id: 'brand-wheelset-spoke-specs',
-    labelKey: 'brandWheelsetSpokeSpecs.title',
-    fallback: 'Wheelset spoke and nipple specifications',
-    description: 'Find recorded spoke lengths, crossing patterns, models, and nipple specifications.',
-    to: '/guides/spokeguides/brand-wheelset-spoke-specs',
-  },
-  {
     id: 'spoke-length-calculator',
     labelKey: 'resourcesSpokeCalculator.title',
     fallback: 'Spoke Calculator',

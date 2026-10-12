@@ -5,7 +5,9 @@
     "description": "Busca, filtra y compara las especificaciones de los componentes. Cada herramienta incluye explicaciones para interpretar sus resultados.",
     "openTool": "Abrir herramienta",
     "schwalbeTireSelectorLabel": "Schwalbe tire selector",
-    "schwalbeTireSelectorDescription": "Busca y filtra el catálogo de neumáticos Schwalbe por modelo y tamaño, con explicaciones sobre su construcción y especificaciones."
+    "schwalbeTireSelectorDescription": "Busca y filtra el catálogo de neumáticos Schwalbe por modelo y tamaño, con explicaciones sobre su construcción y especificaciones.",
+    "brandWheelsetSpokeSpecsLabel": "Especificaciones de radios y cabecillas de ruedas",
+    "brandWheelsetSpokeSpecsDescription": "Filtra por marca o busca un modelo de rueda para consultar longitudes de radios, patrones de radiado y especificaciones de cabecillas, con notas sobre kits de reparación."
   },
   "accountSidebar": {
     "addresses": {

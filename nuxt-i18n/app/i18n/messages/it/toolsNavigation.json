@@ -4,5 +4,7 @@
   "description": "Cerca, filtra e confronta le specifiche dei componenti. Ogni strumento include spiegazioni per interpretare i risultati.",
   "openTool": "Apri strumento",
   "schwalbeTireSelectorLabel": "Schwalbe tire selector",
-  "schwalbeTireSelectorDescription": "Cerca e filtra il catalogo pneumatici Schwalbe per modello e misura, con spiegazioni su costruzione e specifiche."
+  "schwalbeTireSelectorDescription": "Cerca e filtra il catalogo pneumatici Schwalbe per modello e misura, con spiegazioni su costruzione e specifiche.",
+  "brandWheelsetSpokeSpecsLabel": "Specifiche di raggi e nippli delle ruote",
+  "brandWheelsetSpokeSpecsDescription": "Filtra per marca o cerca un modello di ruota per consultare lunghezze dei raggi, incroci e specifiche dei nippli, con note sui kit di riparazione."
 }

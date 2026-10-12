@@ -4,5 +4,7 @@
   "description": "Bileşen özelliklerini arayın, filtreleyin ve karşılaştırın. Her araç, sonuçları anlamak için gerekli açıklamaları içerir.",
   "openTool": "Aracı aç",
   "schwalbeTireSelectorLabel": "Schwalbe tire selector",
-  "schwalbeTireSelectorDescription": "Schwalbe lastik kataloğunu model ve boyuta göre arayın ve filtreleyin; yapı ve özellik açıklamalarını inceleyin."
+  "schwalbeTireSelectorDescription": "Schwalbe lastik kataloğunu model ve boyuta göre arayın ve filtreleyin; yapı ve özellik açıklamalarını inceleyin.",
+  "brandWheelsetSpokeSpecsLabel": "Jant seti tel ve nipel özellikleri",
+  "brandWheelsetSpokeSpecsDescription": "Tel uzunluklarını, örgü düzenlerini ve nipel özelliklerini onarım kiti notlarıyla birlikte görmek için markaya göre filtreleyin veya jant modeli arayın."
 }

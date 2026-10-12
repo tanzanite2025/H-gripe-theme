@@ -4,5 +4,7 @@
   "description": "Sök, filtrera och jämför komponentspecifikationer. Varje verktyg innehåller förklaringar för att tolka resultaten.",
   "openTool": "Öppna verktyg",
   "schwalbeTireSelectorLabel": "Schwalbe tire selector",
-  "schwalbeTireSelectorDescription": "Sök och filtrera Schwalbes däckkatalog efter modell och storlek, med förklaringar av konstruktion och specifikationer."
+  "schwalbeTireSelectorDescription": "Sök och filtrera Schwalbes däckkatalog efter modell och storlek, med förklaringar av konstruktion och specifikationer.",
+  "brandWheelsetSpokeSpecsLabel": "Specifikationer för hjulekrar och nipplar",
+  "brandWheelsetSpokeSpecsDescription": "Filtrera efter märke eller sök efter hjulmodell för att hitta ekerlängder, ekermönster och nippelspecifikationer med information om reparationssatser."
 }

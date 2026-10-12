@@ -27,12 +27,10 @@ definePageMeta({
 const { locale, t } = useI18n()
 const spokeDislocationMessages = usePageMessages('guidesSpokeDislocationMechanics')
 const spokeCalculatorMessages = usePageMessages('resourcesSpokeCalculator')
-const wheelsetSpokeSpecsMessages = usePageMessages('brandWheelsetSpokeSpecs')
 
 await Promise.all([
   spokeDislocationMessages.loadPageMessages(locale.value),
   spokeCalculatorMessages.loadPageMessages(locale.value),
-  wheelsetSpokeSpecsMessages.loadPageMessages(locale.value),
 ])
 
 useHead(() => ({

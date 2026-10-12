@@ -4,5 +4,7 @@
   "description": "Cari, saring, dan bandingkan spesifikasi komponen. Setiap alat menyertakan penjelasan untuk memahami hasilnya.",
   "openTool": "Buka alat",
   "schwalbeTireSelectorLabel": "Schwalbe tire selector",
-  "schwalbeTireSelectorDescription": "Cari dan saring katalog ban Schwalbe menurut model dan ukuran, dengan penjelasan konstruksi dan spesifikasi."
+  "schwalbeTireSelectorDescription": "Cari dan saring katalog ban Schwalbe menurut model dan ukuran, dengan penjelasan konstruksi dan spesifikasi.",
+  "brandWheelsetSpokeSpecsLabel": "Spesifikasi jari-jari dan nipel wheelset",
+  "brandWheelsetSpokeSpecsDescription": "Filter menurut merek atau cari model wheelset untuk melihat panjang jari-jari, pola anyaman, dan spesifikasi nipel beserta catatan kit perbaikan."
 }

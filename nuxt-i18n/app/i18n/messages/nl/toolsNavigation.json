@@ -4,5 +4,7 @@
   "description": "Zoek, filter en vergelijk onderdeelspecificaties. Elk gereedschap bevat uitleg om de resultaten te begrijpen.",
   "openTool": "Gereedschap openen",
   "schwalbeTireSelectorLabel": "Schwalbe tire selector",
-  "schwalbeTireSelectorDescription": "Doorzoek en filter de Schwalbe-bandencatalogus op model en maat, met uitleg over constructie en specificaties."
+  "schwalbeTireSelectorDescription": "Doorzoek en filter de Schwalbe-bandencatalogus op model en maat, met uitleg over constructie en specificaties.",
+  "brandWheelsetSpokeSpecsLabel": "Spaak- en nippelspecificaties voor wielsets",
+  "brandWheelsetSpokeSpecsDescription": "Filter op merk of zoek een wielmodel om spaaklengtes, spaakpatronen en nippelspecificaties te vinden, met opmerkingen over reparatiesets."
 }

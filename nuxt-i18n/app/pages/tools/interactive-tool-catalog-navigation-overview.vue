@@ -35,5 +35,10 @@ const availableInteractiveToolCards = computed(() => [{
   label: t('toolsNavigation.schwalbeTireSelectorLabel'),
   description: t('toolsNavigation.schwalbeTireSelectorDescription'),
   to: '/tools/schwalbe-tire-selector',
+}, {
+  id: 'brand-wheelset-spoke-specs',
+  label: t('toolsNavigation.brandWheelsetSpokeSpecsLabel'),
+  description: t('toolsNavigation.brandWheelsetSpokeSpecsDescription'),
+  to: '/tools/brand-wheelset-spoke-specs',
 }])
 </script>

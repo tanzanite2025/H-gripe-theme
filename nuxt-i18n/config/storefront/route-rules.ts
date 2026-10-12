@@ -65,6 +65,7 @@ const immutableAssetRoutePatterns = [
 // including when API route catalogs still carry their previous paths.
 export const storefrontRetiredPagePaths: readonly string[] = [
   '/guides/tireguides/schwalbe-tire-selector',
+  '/guides/spokeguides/brand-wheelset-spoke-specs',
 ]
 
 export const storefrontRedirects = [
