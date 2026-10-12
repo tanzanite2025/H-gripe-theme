@@ -66,6 +66,7 @@ const immutableAssetRoutePatterns = [
 export const storefrontRetiredPagePaths: readonly string[] = [
   '/guides/tireguides/schwalbe-tire-selector',
   '/guides/spokeguides/brand-wheelset-spoke-specs',
+  '/guides/spokeguides/spoke-length-calculator',
 ]
 
 export const storefrontRedirects = [

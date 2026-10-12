@@ -160,13 +160,6 @@ export const spokeGuideTabs = [
     description: 'Calculate axial elongation from spoke material, area, length, and working tension inputs.',
     to: '/guides/spokeguides/stainless-steel-microstructural-dislocation-mechanics',
   },
-  {
-    id: 'spoke-length-calculator',
-    labelKey: 'resourcesSpokeCalculator.title',
-    fallback: 'Spoke Calculator',
-    description: 'Work through hub, rim, lacing, ERD, nipple, and spoke geometry inputs.',
-    to: '/guides/spokeguides/spoke-length-calculator',
-  },
 ] as const satisfies readonly PageSubNavigationTab[]
 
 export type SpokeGuideTabId = (typeof spokeGuideTabs)[number]['id']

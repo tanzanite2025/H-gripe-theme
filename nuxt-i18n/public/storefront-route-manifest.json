@@ -284,9 +284,10 @@
     },
     {
       "key": "guides-spokeguides-spoke-length-calculator",
-      "path": "/guides/spokeguides/spoke-length-calculator",
+      "path": "/tools/spoke-length-calculator",
       "label": "Spoke Calculator",
       "description": "Spoke length calculator",
+      "sitemap_locales": ["en", "zh_cn"],
       "is_searchable": true,
       "is_checkable": true,
       "is_indexable": true

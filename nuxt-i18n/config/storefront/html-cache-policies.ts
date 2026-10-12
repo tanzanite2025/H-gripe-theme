@@ -64,7 +64,7 @@ export const storefrontNoStorePagePaths = [
   '/tools/schwalbe-tire-selector',
   '/tools/brand-wheelset-spoke-specs',
   '/resources/membershipandpoints/**',
-  '/guides/spokeguides/spoke-length-calculator/**',
+  '/tools/spoke-length-calculator',
   '/resources/workbench',
   '/support/test-report',
   '/support/warranty-check',

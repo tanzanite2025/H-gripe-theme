@@ -336,6 +336,16 @@ export const primaryMegaNavSections: PrimaryMegaNavSection[] = [
         size: 'standard',
         accent: 'emerald',
       },
+      {
+        id: 'spoke-length-calculator',
+        labelKey: 'toolsNavigation.spokeLengthCalculatorLabel',
+        labelFallback: 'Spoke length calculator',
+        description: 'Calculate spoke lengths through the complete rim, hub, lacing, and nipple wizard.',
+        to: '/tools/spoke-length-calculator',
+        icon: 'lucide:calculator',
+        size: 'standard',
+        accent: 'emerald',
+      },
     ],
   },
   {

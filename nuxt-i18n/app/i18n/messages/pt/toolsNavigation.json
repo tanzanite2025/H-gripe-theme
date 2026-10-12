@@ -6,5 +6,7 @@
   "schwalbeTireSelectorLabel": "Schwalbe tire selector",
   "schwalbeTireSelectorDescription": "Pesquise e filtre o catálogo de pneus Schwalbe por modelo e tamanho, com explicações sobre construção e especificações.",
   "brandWheelsetSpokeSpecsLabel": "Especificações de raios e niples de rodas",
-  "brandWheelsetSpokeSpecsDescription": "Filtre por marca ou pesquise um modelo de roda para consultar comprimentos de raios, padrões de montagem e especificações de niples, com notas sobre kits de reparo."
+  "brandWheelsetSpokeSpecsDescription": "Filtre por marca ou pesquise um modelo de roda para consultar comprimentos de raios, padrões de montagem e especificações de niples, com notas sobre kits de reparo.",
+  "spokeLengthCalculatorLabel": "Calculadora de comprimento dos raios",
+  "spokeLengthCalculatorDescription": "Calcule o comprimento dos raios dianteiros e traseiros com o assistente completo para aro, cubo, cruzamento, correções e nipples, incluindo orientações de medição e resultados."
 }

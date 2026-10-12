@@ -6,5 +6,7 @@
   "schwalbeTireSelectorLabel": "Schwalbe tire selector",
   "schwalbeTireSelectorDescription": "モデルとサイズで Schwalbe タイヤカタログを検索・絞り込みし、構造と仕様の説明を確認できます。",
   "brandWheelsetSpokeSpecsLabel": "ホイールのスポーク・ニップル仕様",
-  "brandWheelsetSpokeSpecsDescription": "ブランドで絞り込むかホイールモデルを検索し、スポーク長、組み方、ニップル仕様と補修キットの説明を確認できます。"
+  "brandWheelsetSpokeSpecsDescription": "ブランドで絞り込むかホイールモデルを検索し、スポーク長、組み方、ニップル仕様と補修キットの説明を確認できます。",
+  "spokeLengthCalculatorLabel": "スポーク長計算ツール",
+  "spokeLengthCalculatorDescription": "リム、ハブ、組み方、補正、ニップルを設定する完全なウィザードで前後輪のスポーク長を計算し、測定方法と結果の説明を確認できます。"
 }

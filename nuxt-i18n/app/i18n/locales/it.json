@@ -7,7 +7,9 @@
     "schwalbeTireSelectorLabel": "Schwalbe tire selector",
     "schwalbeTireSelectorDescription": "Cerca e filtra il catalogo pneumatici Schwalbe per modello e misura, con spiegazioni su costruzione e specifiche.",
     "brandWheelsetSpokeSpecsLabel": "Specifiche di raggi e nippli delle ruote",
-    "brandWheelsetSpokeSpecsDescription": "Filtra per marca o cerca un modello di ruota per consultare lunghezze dei raggi, incroci e specifiche dei nippli, con note sui kit di riparazione."
+    "brandWheelsetSpokeSpecsDescription": "Filtra per marca o cerca un modello di ruota per consultare lunghezze dei raggi, incroci e specifiche dei nippli, con note sui kit di riparazione.",
+    "spokeLengthCalculatorLabel": "Calcolatore della lunghezza dei raggi",
+    "spokeLengthCalculatorDescription": "Calcola la lunghezza dei raggi anteriori e posteriori con la procedura completa per cerchio, mozzo, incroci, correzioni e nippli, con indicazioni sulle misure e sui risultati."
   },
   "accountSidebar": {
     "addresses": {

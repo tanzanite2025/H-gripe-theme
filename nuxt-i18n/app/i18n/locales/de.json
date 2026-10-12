@@ -7,7 +7,9 @@
     "schwalbeTireSelectorLabel": "Schwalbe tire selector",
     "schwalbeTireSelectorDescription": "Schwalbe-Reifenkatalog nach Modell und Größe durchsuchen und filtern, mit Erläuterungen zu Konstruktion und Spezifikationen.",
     "brandWheelsetSpokeSpecsLabel": "Speichen- und Nippelspezifikationen für Laufräder",
-    "brandWheelsetSpokeSpecsDescription": "Nach Marke filtern oder Laufradmodell suchen, um Speichenlängen, Einspeichmuster und Nippelspezifikationen mit Hinweisen zu Reparatursets zu finden."
+    "brandWheelsetSpokeSpecsDescription": "Nach Marke filtern oder Laufradmodell suchen, um Speichenlängen, Einspeichmuster und Nippelspezifikationen mit Hinweisen zu Reparatursets zu finden.",
+    "spokeLengthCalculatorLabel": "Speichenlängenrechner",
+    "spokeLengthCalculatorDescription": "Berechnen Sie die Speichenlängen für Vorder- und Hinterrad mit dem vollständigen Assistenten für Felge, Nabe, Einspeichung, Korrekturen und Nippel sowie Hinweisen zu Messung und Ergebnissen."
   },
   "accountSidebar": {
     "addresses": {

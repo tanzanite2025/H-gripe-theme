@@ -6,5 +6,7 @@
   "schwalbeTireSelectorLabel": "Schwalbe tire selector",
   "schwalbeTireSelectorDescription": "मॉडल और आकार के अनुसार Schwalbe टायर सूची खोजें और छाँटें, साथ में बनावट और विनिर्देशों की जानकारी देखें।",
   "brandWheelsetSpokeSpecsLabel": "व्हीलसेट स्पोक और निप्पल विनिर्देश",
-  "brandWheelsetSpokeSpecsDescription": "ब्रांड के अनुसार फ़िल्टर करें या व्हीलसेट मॉडल खोजें और स्पोक की लंबाई, लेसिंग पैटर्न, निप्पल विनिर्देश तथा मरम्मत किट संबंधी जानकारी देखें।"
+  "brandWheelsetSpokeSpecsDescription": "ब्रांड के अनुसार फ़िल्टर करें या व्हीलसेट मॉडल खोजें और स्पोक की लंबाई, लेसिंग पैटर्न, निप्पल विनिर्देश तथा मरम्मत किट संबंधी जानकारी देखें।",
+  "spokeLengthCalculatorLabel": "स्पोक लंबाई कैलकुलेटर",
+  "spokeLengthCalculatorDescription": "रिम, हब, स्पोक बुनाई, सुधार और निप्पल के पूरे चरणों से आगे और पीछे के पहियों की स्पोक लंबाई की गणना करें, साथ में माप और परिणाम समझने के निर्देश देखें।"
 }

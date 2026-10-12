@@ -164,9 +164,8 @@ const spokeCalculatorTab = resolvePageSubNavigationBreadcrumb(
   spokeGuideEntries,
   ['en', 'zh_cn'],
 )
-assert.equal(spokeCalculatorTab?.kind, 'tab')
-assert.equal(spokeCalculatorTab?.entry.path, '/guides/spokeguides')
-assert.equal(spokeCalculatorTab?.tab.id, 'spoke-length-calculator')
+assert.equal(spokeCalculatorTab, null, 'Retired calculator must not remain a spoke-guide tab')
+assert.equal(resolvePageSubNavigationBreadcrumb('/zh_cn/tools/spoke-length-calculator', spokeGuideEntries, ['en', 'zh_cn']), null)
 
 const switchSibling = (options: {
   currentPath: string

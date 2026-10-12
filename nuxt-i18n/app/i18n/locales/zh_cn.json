@@ -7,7 +7,9 @@
     "schwalbeTireSelectorLabel": "Schwalbe 外胎选型查询",
     "schwalbeTireSelectorDescription": "按型号和尺寸搜索、筛选 Schwalbe 外胎目录，并查看胎体结构和规格说明。",
     "brandWheelsetSpokeSpecsLabel": "品牌轮组辐条规格速查",
-    "brandWheelsetSpokeSpecsDescription": "按品牌筛选或搜索轮组型号，查询辐条长度、编法及条帽规格，并查看修补包说明。"
+    "brandWheelsetSpokeSpecsDescription": "按品牌筛选或搜索轮组型号，查询辐条长度、编法及条帽规格，并查看修补包说明。",
+    "spokeLengthCalculatorLabel": "辐条长度计算器",
+    "spokeLengthCalculatorDescription": "通过轮圈、花鼓、编法、修正和条帽的完整向导计算前后轮辐条长度，并查看测量说明及结果解释。"
   },
   "accountSidebar": {
     "addresses": {

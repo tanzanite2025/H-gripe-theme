@@ -7,7 +7,9 @@
     "schwalbeTireSelectorLabel": "Schwalbe tire selector",
     "schwalbeTireSelectorDescription": "Schwalbe lastik kataloğunu model ve boyuta göre arayın ve filtreleyin; yapı ve özellik açıklamalarını inceleyin.",
     "brandWheelsetSpokeSpecsLabel": "Jant seti tel ve nipel özellikleri",
-    "brandWheelsetSpokeSpecsDescription": "Tel uzunluklarını, örgü düzenlerini ve nipel özelliklerini onarım kiti notlarıyla birlikte görmek için markaya göre filtreleyin veya jant modeli arayın."
+    "brandWheelsetSpokeSpecsDescription": "Tel uzunluklarını, örgü düzenlerini ve nipel özelliklerini onarım kiti notlarıyla birlikte görmek için markaya göre filtreleyin veya jant modeli arayın.",
+    "spokeLengthCalculatorLabel": "Jant teli uzunluğu hesaplayıcı",
+    "spokeLengthCalculatorDescription": "Ölçüm ve sonuç açıklamalarıyla birlikte jant, göbek, örüm, düzeltme ve nipel adımlarının tamamını kullanarak ön ve arka tekerlek tel uzunluklarını hesaplayın."
   },
   "accountSidebar": {
     "addresses": {

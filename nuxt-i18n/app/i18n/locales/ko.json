@@ -7,7 +7,9 @@
     "schwalbeTireSelectorLabel": "Schwalbe tire selector",
     "schwalbeTireSelectorDescription": "모델과 크기로 Schwalbe 타이어 카탈로그를 검색하고 필터링하며 구조와 사양 설명을 확인하세요.",
     "brandWheelsetSpokeSpecsLabel": "휠셋 스포크 및 니플 규격",
-    "brandWheelsetSpokeSpecsDescription": "브랜드로 필터링하거나 휠셋 모델을 검색하여 스포크 길이, 조립 패턴, 니플 규격과 수리 키트 안내를 확인하세요."
+    "brandWheelsetSpokeSpecsDescription": "브랜드로 필터링하거나 휠셋 모델을 검색하여 스포크 길이, 조립 패턴, 니플 규격과 수리 키트 안내를 확인하세요.",
+    "spokeLengthCalculatorLabel": "스포크 길이 계산기",
+    "spokeLengthCalculatorDescription": "림, 허브, 조립 패턴, 보정 및 니플을 설정하는 전체 마법사로 앞뒤 휠의 스포크 길이를 계산하고 측정 방법과 결과 설명을 확인하세요."
   },
   "accountSidebar": {
     "addresses": {

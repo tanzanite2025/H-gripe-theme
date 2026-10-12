@@ -7,7 +7,9 @@
     "schwalbeTireSelectorLabel": "Schwalbe tire selector",
     "schwalbeTireSelectorDescription": "Doorzoek en filter de Schwalbe-bandencatalogus op model en maat, met uitleg over constructie en specificaties.",
     "brandWheelsetSpokeSpecsLabel": "Spaak- en nippelspecificaties voor wielsets",
-    "brandWheelsetSpokeSpecsDescription": "Filter op merk of zoek een wielmodel om spaaklengtes, spaakpatronen en nippelspecificaties te vinden, met opmerkingen over reparatiesets."
+    "brandWheelsetSpokeSpecsDescription": "Filter op merk of zoek een wielmodel om spaaklengtes, spaakpatronen en nippelspecificaties te vinden, met opmerkingen over reparatiesets.",
+    "spokeLengthCalculatorLabel": "Calculator voor spaaklengte",
+    "spokeLengthCalculatorDescription": "Bereken de spaaklengtes voor het voor- en achterwiel met de volledige wizard voor velg, naaf, spaakpatroon, correcties en nippels, inclusief uitleg over metingen en resultaten."
   },
   "accountSidebar": {
     "addresses": {

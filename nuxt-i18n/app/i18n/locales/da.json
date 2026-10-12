@@ -7,7 +7,9 @@
     "schwalbeTireSelectorLabel": "Schwalbe tire selector",
     "schwalbeTireSelectorDescription": "Søg og filtrer Schwalbes dækkatalog efter model og størrelse med forklaringer om konstruktion og specifikationer.",
     "brandWheelsetSpokeSpecsLabel": "Specifikationer for hjuleger og nipler",
-    "brandWheelsetSpokeSpecsDescription": "Filtrer efter mærke eller søg efter hjulmodel for at finde egerlængder, opspændingsmønstre og nippelspecifikationer med noter om reparationssæt."
+    "brandWheelsetSpokeSpecsDescription": "Filtrer efter mærke eller søg efter hjulmodel for at finde egerlængder, opspændingsmønstre og nippelspecifikationer med noter om reparationssæt.",
+    "spokeLengthCalculatorLabel": "Beregner til egerlængde",
+    "spokeLengthCalculatorDescription": "Beregn egerlængder til for- og baghjul med hele guiden til fælg, nav, egermønster, korrektioner og nipler samt vejledning om målinger og resultater."
   },
   "accountSidebar": {
     "addresses": {

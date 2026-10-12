@@ -7,7 +7,9 @@
     "schwalbeTireSelectorLabel": "Schwalbe tire selector",
     "schwalbeTireSelectorDescription": "Cari dan tapis katalog tayar Schwalbe mengikut model dan saiz, dengan penerangan binaan dan spesifikasi.",
     "brandWheelsetSpokeSpecsLabel": "Spesifikasi jejari dan nipel set roda",
-    "brandWheelsetSpokeSpecsDescription": "Tapis mengikut jenama atau cari model set roda untuk melihat panjang jejari, corak anyaman dan spesifikasi nipel bersama nota kit pembaikan."
+    "brandWheelsetSpokeSpecsDescription": "Tapis mengikut jenama atau cari model set roda untuk melihat panjang jejari, corak anyaman dan spesifikasi nipel bersama nota kit pembaikan.",
+    "spokeLengthCalculatorLabel": "Kalkulator panjang jejari",
+    "spokeLengthCalculatorDescription": "Kira panjang jejari roda hadapan dan belakang melalui panduan lengkap rim, hab, corak anyaman, pembetulan dan puting, termasuk arahan pengukuran dan penerangan hasil."
   },
   "accountSidebar": {
     "addresses": {

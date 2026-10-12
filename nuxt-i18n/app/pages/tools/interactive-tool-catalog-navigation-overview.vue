@@ -40,5 +40,10 @@ const availableInteractiveToolCards = computed(() => [{
   label: t('toolsNavigation.brandWheelsetSpokeSpecsLabel'),
   description: t('toolsNavigation.brandWheelsetSpokeSpecsDescription'),
   to: '/tools/brand-wheelset-spoke-specs',
+}, {
+  id: 'spoke-length-calculator',
+  label: t('toolsNavigation.spokeLengthCalculatorLabel'),
+  description: t('toolsNavigation.spokeLengthCalculatorDescription'),
+  to: '/tools/spoke-length-calculator',
 }])
 </script>

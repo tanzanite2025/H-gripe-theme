@@ -7,7 +7,9 @@
     "schwalbeTireSelectorLabel": "Schwalbe tire selector",
     "schwalbeTireSelectorDescription": "Recherchez et filtrez le catalogue de pneus Schwalbe par modèle et taille, avec des explications sur la construction et les caractéristiques.",
     "brandWheelsetSpokeSpecsLabel": "Spécifications des rayons et écrous de roues",
-    "brandWheelsetSpokeSpecsDescription": "Filtrez par marque ou recherchez un modèle de roue pour consulter les longueurs de rayons, les croisements et les spécifications des écrous, avec les notes sur les kits de réparation."
+    "brandWheelsetSpokeSpecsDescription": "Filtrez par marque ou recherchez un modèle de roue pour consulter les longueurs de rayons, les croisements et les spécifications des écrous, avec les notes sur les kits de réparation.",
+    "spokeLengthCalculatorLabel": "Calculateur de longueur de rayons",
+    "spokeLengthCalculatorDescription": "Calculez la longueur des rayons avant et arrière avec un assistant complet pour la jante, le moyeu, le rayonnage, les corrections et les écrous, avec les conseils de mesure et de lecture des résultats."
   },
   "accountSidebar": {
     "addresses": {

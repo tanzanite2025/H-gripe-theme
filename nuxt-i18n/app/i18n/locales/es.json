@@ -7,7 +7,9 @@
     "schwalbeTireSelectorLabel": "Schwalbe tire selector",
     "schwalbeTireSelectorDescription": "Busca y filtra el catálogo de neumáticos Schwalbe por modelo y tamaño, con explicaciones sobre su construcción y especificaciones.",
     "brandWheelsetSpokeSpecsLabel": "Especificaciones de radios y cabecillas de ruedas",
-    "brandWheelsetSpokeSpecsDescription": "Filtra por marca o busca un modelo de rueda para consultar longitudes de radios, patrones de radiado y especificaciones de cabecillas, con notas sobre kits de reparación."
+    "brandWheelsetSpokeSpecsDescription": "Filtra por marca o busca un modelo de rueda para consultar longitudes de radios, patrones de radiado y especificaciones de cabecillas, con notas sobre kits de reparación.",
+    "spokeLengthCalculatorLabel": "Calculadora de longitud de radios",
+    "spokeLengthCalculatorDescription": "Calcule la longitud de los radios delanteros y traseros con el asistente completo de llanta, buje, radiado, correcciones y cabecillas, con instrucciones de medición e interpretación de resultados."
   },
   "accountSidebar": {
     "addresses": {

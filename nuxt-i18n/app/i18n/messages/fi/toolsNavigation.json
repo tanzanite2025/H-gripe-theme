@@ -6,5 +6,7 @@
   "schwalbeTireSelectorLabel": "Schwalbe tire selector",
   "schwalbeTireSelectorDescription": "Hae ja suodata Schwalben rengasluetteloa mallin ja koon mukaan sekä tutustu rakenteen ja teknisten tietojen selityksiin.",
   "brandWheelsetSpokeSpecsLabel": "Kiekkojen pinnojen ja nippelien tiedot",
-  "brandWheelsetSpokeSpecsDescription": "Suodata merkin mukaan tai etsi kiekkomallia nähdäksesi pinnojen pituudet, puolauksen ja nippelien tiedot sekä korjaussarjojen huomautukset."
+  "brandWheelsetSpokeSpecsDescription": "Suodata merkin mukaan tai etsi kiekkomallia nähdäksesi pinnojen pituudet, puolauksen ja nippelien tiedot sekä korjaussarjojen huomautukset.",
+  "spokeLengthCalculatorLabel": "Pinnan pituuslaskuri",
+  "spokeLengthCalculatorDescription": "Laske etu- ja takapyörän pinnojen pituudet vanteen, navan, puolauksen, korjausten ja nippelien kattavan ohjatun toiminnon avulla sekä tutustu mittaus- ja tulosohjeisiin."
 }

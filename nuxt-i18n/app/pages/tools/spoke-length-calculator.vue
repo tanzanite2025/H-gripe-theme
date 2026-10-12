@@ -118,12 +118,13 @@ import SpokePhysicalCorrectionsStep from '~/components/SpokePhysicalCorrectionsS
 import SpokeRimGeometryStep from '~/components/SpokeRimGeometryStep.vue'
 import UserFeedbackThread from '~/components/UserFeedbackThread.vue'
 
+import { useStorefrontSeoRouteOverride } from '~/composables/seo/useStorefrontSeoLinks'
 import { usePageMessages } from '~/composables/usePageMessages'
 import { useSpokeCalculatorManualOptions } from '~/composables/useSpokeCalculatorManualOptions'
 import { useSpokeCalculatorWizard } from '~/composables/useSpokeCalculatorWizard'
 import type { HubGeometry } from '~/data/spoke-calculator/database'
 import type { SpokeHeadType, SpokeInterlacing, SpokeNippleType } from '~/types/spokeCalculator'
-import { definePageMeta, useAsyncData, useHead, useI18n } from '#imports'
+import { definePageMeta, useAsyncData, useHead, useI18n, useRoute, useSwitchLocalePath } from '#imports'
 import { computed, watch } from 'vue'
 import { useApiRequest } from '~/composables/useApiRequest'
 
@@ -137,6 +138,26 @@ interface SpokeCalculatorEngineeringMetadata {
 }
 
 const { locale, t } = useI18n()
+const spokeCalculatorRoute = useRoute()
+const switchLocalePath = useSwitchLocalePath()
+const spokeCalculatorPublishedLocaleCodes = new Set(['en', 'zh_cn'])
+const spokeCalculatorPublishedSeoRoutes = computed(() => [...spokeCalculatorPublishedLocaleCodes].map(code => ({
+  code,
+  path: new URL(switchLocalePath(code as any) || '/tools/spoke-length-calculator', 'https://spoke-length-seo.invalid').pathname,
+})))
+const spokeCalculatorSeoRouteOverride = useStorefrontSeoRouteOverride(spokeCalculatorPublishedSeoRoutes)
+// Shared SEO consumers clear overrides during client navigation. Restore this
+// page's published languages after those consumers process query/hash changes.
+watch(() => spokeCalculatorRoute.fullPath, () => {
+  spokeCalculatorSeoRouteOverride.value = spokeCalculatorPublishedSeoRoutes.value
+}, { flush: 'post' })
+useHead(() => ({
+  meta: [{
+    key: 'robots',
+    name: 'robots',
+    content: spokeCalculatorPublishedLocaleCodes.has(locale.value) ? 'index,follow' : 'noindex,follow',
+  }],
+}))
 const { loadPageMessages } = usePageMessages('resourcesSpokeCalculator')
 
 const {
@@ -295,12 +316,12 @@ const { data: spokeCalculatorEngineeringMetadata } = await useAsyncData<SpokeCal
 )
 
 definePageMeta({
+  path: '/tools/spoke-length-calculator',
   layout: 'products',
   breadcrumbLabelKey: 'resourcesSpokeCalculator.title',
   breadcrumbLabelFallback: 'Spoke Length Calculator',
-  footerLabelKey: 'support.nav.spokeCalculator',
-  footerLabelFallback: 'Spoke Calculator',
-  footerGroupLabelFallback: 'Spoke Guides',
+  footerLabelKey: 'toolsNavigation.spokeLengthCalculatorLabel',
+  footerLabelFallback: 'Spoke length calculator',
 })
 
 useHead(() => ({

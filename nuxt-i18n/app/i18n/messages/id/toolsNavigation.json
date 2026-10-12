@@ -6,5 +6,7 @@
   "schwalbeTireSelectorLabel": "Schwalbe tire selector",
   "schwalbeTireSelectorDescription": "Cari dan saring katalog ban Schwalbe menurut model dan ukuran, dengan penjelasan konstruksi dan spesifikasi.",
   "brandWheelsetSpokeSpecsLabel": "Spesifikasi jari-jari dan nipel wheelset",
-  "brandWheelsetSpokeSpecsDescription": "Filter menurut merek atau cari model wheelset untuk melihat panjang jari-jari, pola anyaman, dan spesifikasi nipel beserta catatan kit perbaikan."
+  "brandWheelsetSpokeSpecsDescription": "Filter menurut merek atau cari model wheelset untuk melihat panjang jari-jari, pola anyaman, dan spesifikasi nipel beserta catatan kit perbaikan.",
+  "spokeLengthCalculatorLabel": "Kalkulator panjang jari-jari",
+  "spokeLengthCalculatorDescription": "Hitung panjang jari-jari roda depan dan belakang melalui panduan lengkap pelek, hub, pola anyaman, koreksi, dan nipple, beserta petunjuk pengukuran dan penjelasan hasil."
 }
