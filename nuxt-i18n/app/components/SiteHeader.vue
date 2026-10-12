@@ -995,6 +995,7 @@ const breadcrumbLabelDefinitions: Record<string, BreadcrumbLabelDefinition> = {
   '/policies/terms': { fallback: 'Terms of Service' },
   '/shop': { labelKey: 'products.nav.shop', fallback: 'Shop' },
   '/tools/spoke-length-calculator': { labelKey: 'toolsNavigation.spokeLengthCalculatorLabel', fallback: 'Spoke length calculator' },
+  '/tools/dynamic-tire-pressure-calculator': { labelKey: 'toolsNavigation.dynamicTirePressureCalculatorLabel', fallback: 'Dynamic tire pressure calculator' },
   '/support': { labelKey: 'footer.menus.support', fallback: 'Support' },
 }
 

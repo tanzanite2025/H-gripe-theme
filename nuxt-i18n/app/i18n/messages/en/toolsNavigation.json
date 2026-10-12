@@ -10,5 +10,7 @@
   "spokeLengthCalculatorLabel": "Spoke length calculator",
   "spokeLengthCalculatorDescription": "Calculate front and rear spoke lengths with the full rim, hub, lacing, correction, and nipple wizard, including measurement and result guidance.",
   "spokeLacingTopologySimulatorLabel": "Spoke lacing topology simulator",
-  "spokeLacingTopologySimulatorDescription": "Preview spoke hole positions, lacing patterns, G3 and 2:1 layouts, and dual-flange geometry, with explanations and preview limits."
+  "spokeLacingTopologySimulatorDescription": "Preview spoke hole positions, lacing patterns, G3 and 2:1 layouts, and dual-flange geometry, with explanations and preview limits.",
+  "dynamicTirePressureCalculatorLabel": "Dynamic tire pressure calculator",
+  "dynamicTirePressureCalculatorDescription": "Explore how load, pressure, speed, and lean change estimated tire contact area and cornering force."
 }

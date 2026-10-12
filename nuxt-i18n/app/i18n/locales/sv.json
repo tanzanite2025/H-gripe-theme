@@ -11,7 +11,9 @@
     "spokeLengthCalculatorLabel": "Ekerlängdsräknare",
     "spokeLengthCalculatorDescription": "Beräkna ekerlängder för fram- och bakhjul med hela guiden för fälg, nav, ekermönster, korrigeringar och nipplar, inklusive mätningsråd och resultatförklaringar.",
     "spokeLacingTopologySimulatorLabel": "Simulator för ekringsmönster",
-    "spokeLacingTopologySimulatorDescription": "Förhandsvisa ekerhålens lägen, ekringsmönster, G3- och 2:1-layouter samt båda flänsarnas geometri med förklaringar och begränsningar."
+    "spokeLacingTopologySimulatorDescription": "Förhandsvisa ekerhålens lägen, ekringsmönster, G3- och 2:1-layouter samt båda flänsarnas geometri med förklaringar och begränsningar.",
+  "dynamicTirePressureCalculatorLabel": "Dynamisk däcktryckskalkylator",
+  "dynamicTirePressureCalculatorDescription": "Se hur belastning, tryck, hastighet och lutning ändrar den uppskattade kontaktytan och kurvkraften."
   },
   "accountSidebar": {
     "addresses": {

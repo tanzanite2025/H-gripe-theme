@@ -66,15 +66,6 @@
         <HowToChooseGuide v-if="activeTab === 'tire-rim-width-compatibility'" />
       </section>
 
-      <!-- Tire pressure -->
-      <section
-        v-show="activeTab === 'tire-pressure'"
-        id="tire-pressure"
-        class="sizecharts-section"
-      >
-        <TirePressureGuide v-if="activeTab === 'tire-pressure'" />
-      </section>
-
       <!-- How to choose an inner tube -->
       <section
         v-show="activeTab === 'choose-inner-tube'"
@@ -106,7 +97,6 @@ import TireFrameClearanceGuide from '~/components/tireguides/TireFrameClearanceG
 import SchwalbeTireCircumferenceGuide from '~/components/tireguides/SchwalbeTireCircumferenceGuide.vue'
 import TubelessGuide from '~/components/tireguides/TubelessGuide.vue'
 import HowToChooseGuide from '~/components/tireguides/HowToChooseGuide.vue'
-import TirePressureGuide from '~/components/tireguides/TirePressureGuide.vue'
 import InnerTubeGuide from '~/components/tireguides/InnerTubeGuide.vue'
 import InstallationGuide from '~/components/tireguides/InstallationGuide.vue'
 import TireSizeGuide from '~/components/tireguides/TireSizeGuide.vue'

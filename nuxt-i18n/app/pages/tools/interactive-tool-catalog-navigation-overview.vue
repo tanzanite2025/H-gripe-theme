@@ -50,5 +50,10 @@ const availableInteractiveToolCards = computed(() => [{
   label: t('toolsNavigation.spokeLacingTopologySimulatorLabel'),
   description: t('toolsNavigation.spokeLacingTopologySimulatorDescription'),
   to: '/tools/spoke-lacing-topology-simulator',
+}, {
+  id: 'dynamic-tire-pressure-calculator',
+  label: t('toolsNavigation.dynamicTirePressureCalculatorLabel'),
+  description: t('toolsNavigation.dynamicTirePressureCalculatorDescription'),
+  to: '/tools/dynamic-tire-pressure-calculator',
 }])
 </script>

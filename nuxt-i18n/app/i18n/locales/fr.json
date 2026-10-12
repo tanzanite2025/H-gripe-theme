@@ -11,7 +11,9 @@
     "spokeLengthCalculatorLabel": "Calculateur de longueur de rayons",
     "spokeLengthCalculatorDescription": "Calculez la longueur des rayons avant et arrière avec un assistant complet pour la jante, le moyeu, le rayonnage, les corrections et les écrous, avec les conseils de mesure et de lecture des résultats.",
     "spokeLacingTopologySimulatorLabel": "Simulateur de motifs de rayonnage",
-    "spokeLacingTopologySimulatorDescription": "Visualisez les positions des trous, les motifs de rayonnage, les dispositions G3 et 2:1 et la géométrie des deux flasques, avec explications et limites de prévisualisation."
+    "spokeLacingTopologySimulatorDescription": "Visualisez les positions des trous, les motifs de rayonnage, les dispositions G3 et 2:1 et la géométrie des deux flasques, avec explications et limites de prévisualisation.",
+  "dynamicTirePressureCalculatorLabel": "Calculateur dynamique de pression des pneus",
+  "dynamicTirePressureCalculatorDescription": "Découvrez comment la charge, la pression, la vitesse et l’inclinaison modifient la surface de contact et la force en virage estimées."
   },
   "accountSidebar": {
     "addresses": {

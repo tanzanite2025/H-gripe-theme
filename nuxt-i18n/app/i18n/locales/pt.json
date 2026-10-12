@@ -11,7 +11,9 @@
     "spokeLengthCalculatorLabel": "Calculadora de comprimento dos raios",
     "spokeLengthCalculatorDescription": "Calcule o comprimento dos raios dianteiros e traseiros com o assistente completo para aro, cubo, cruzamento, correções e nipples, incluindo orientações de medição e resultados.",
     "spokeLacingTopologySimulatorLabel": "Simulador de padrões de enraiamento",
-    "spokeLacingTopologySimulatorDescription": "Pré-visualize posições dos furos, padrões de enraiamento, disposições G3 e 2:1 e a geometria de ambas as flanges, com explicações e limites da pré-visualização."
+    "spokeLacingTopologySimulatorDescription": "Pré-visualize posições dos furos, padrões de enraiamento, disposições G3 e 2:1 e a geometria de ambas as flanges, com explicações e limites da pré-visualização.",
+  "dynamicTirePressureCalculatorLabel": "Calculadora dinâmica de pressão dos pneus",
+  "dynamicTirePressureCalculatorDescription": "Explore como carga, pressão, velocidade e inclinação alteram a área de contacto e a força em curva estimadas."
   },
   "accountSidebar": {
     "addresses": {

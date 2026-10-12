@@ -121,13 +121,12 @@
         <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-md p-6 text-center flex flex-col justify-center items-center hover:-translate-y-1 transition-transform">
            <h4 class="tz-text-secondary font-bold mb-2">{{ t('guidesTireTubeless.navigation.pressure.title') }}</h4>
            <p class="text-xs tz-text-muted mb-4">{{ t('guidesTireTubeless.navigation.pressure.description') }}</p>
-           <button
-             type="button"
+           <NuxtLink
+             :to="localePath('/tools/dynamic-tire-pressure-calculator')"
               class="rounded-full bg-[var(--tz-card-surface)] border tz-border-subtle px-6 py-2 text-xs font-bold uppercase tracking-wider tz-text-primary shadow-md transition-colors hover:border-[rgba(5, 150, 105,0.28)] hover:tz-surface-subtle hover:text-[var(--tz-site-accent)]"
-             @click="$emit('changeTab', 'tire-pressure')"
            >
              {{ t('guidesTireTubeless.navigation.pressure.button') }}
-           </button>
+           </NuxtLink>
         </div>
     </div>
   </div>
@@ -135,12 +134,12 @@
 
 <script setup lang="ts">
 import { watch } from 'vue'
-import { useI18n } from '#imports'
+import { useI18n, useLocalePath } from '#imports'
 import GuideImage from '~/components/GuideImage.vue'
 import { usePageMessages } from '~/composables/usePageMessages'
-import type { TireGuideTabId } from '~/utils/pageSubNavigation'
 
 const { locale, t } = useI18n()
+const localePath = useLocalePath()
 const { loadPageMessages } = usePageMessages('guidesTireTubeless')
 
 await loadPageMessages(locale.value)
@@ -150,6 +149,6 @@ watch(locale, (nextLocale) => {
 })
 
 defineEmits<{
-  (e: 'changeTab', tab: TireGuideTabId): void
+  (e: 'changeTab', tab: 'tire-rim-width-compatibility'): void
 }>()
 </script>

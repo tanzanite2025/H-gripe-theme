@@ -10,5 +10,7 @@
   "spokeLengthCalculatorLabel": "Pinnan pituuslaskuri",
   "spokeLengthCalculatorDescription": "Laske etu- ja takapyörän pinnojen pituudet vanteen, navan, puolauksen, korjausten ja nippelien kattavan ohjatun toiminnon avulla sekä tutustu mittaus- ja tulosohjeisiin.",
   "spokeLacingTopologySimulatorLabel": "Pinnojen puolauksen simulaattori",
-  "spokeLacingTopologySimulatorDescription": "Esikatsele pinnanreikien sijainteja, puolauskuvioita, G3- ja 2:1-järjestelyjä sekä molempien laippojen geometriaa selityksineen ja rajoituksineen."
+  "spokeLacingTopologySimulatorDescription": "Esikatsele pinnanreikien sijainteja, puolauskuvioita, G3- ja 2:1-järjestelyjä sekä molempien laippojen geometriaa selityksineen ja rajoituksineen.",
+  "dynamicTirePressureCalculatorLabel": "Dynaaminen rengaspaineen laskuri",
+  "dynamicTirePressureCalculatorDescription": "Tutki, miten kuorma, paine, nopeus ja kallistus muuttavat renkaan arvioitua kosketusalaa ja kaarrevoimaa."
 }

@@ -11,7 +11,9 @@
     "spokeLengthCalculatorLabel": "Jant teli uzunluğu hesaplayıcı",
     "spokeLengthCalculatorDescription": "Ölçüm ve sonuç açıklamalarıyla birlikte jant, göbek, örüm, düzeltme ve nipel adımlarının tamamını kullanarak ön ve arka tekerlek tel uzunluklarını hesaplayın.",
     "spokeLacingTopologySimulatorLabel": "Jant teli örüm düzeni simülatörü",
-    "spokeLacingTopologySimulatorDescription": "Tel deliği konumlarını, örüm düzenlerini, G3 ve 2:1 yerleşimlerini ve iki flanşın geometrisini açıklamalar ve önizleme sınırlarıyla inceleyin."
+    "spokeLacingTopologySimulatorDescription": "Tel deliği konumlarını, örüm düzenlerini, G3 ve 2:1 yerleşimlerini ve iki flanşın geometrisini açıklamalar ve önizleme sınırlarıyla inceleyin.",
+  "dynamicTirePressureCalculatorLabel": "Dinamik lastik basıncı hesaplayıcı",
+  "dynamicTirePressureCalculatorDescription": "Yükün, basıncın, hızın ve yatış açısının tahmini lastik temas alanını ve viraj kuvvetini nasıl değiştirdiğini inceleyin."
   },
   "accountSidebar": {
     "addresses": {

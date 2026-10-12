@@ -11,7 +11,9 @@
     "spokeLengthCalculatorLabel": "Calcolatore della lunghezza dei raggi",
     "spokeLengthCalculatorDescription": "Calcola la lunghezza dei raggi anteriori e posteriori con la procedura completa per cerchio, mozzo, incroci, correzioni e nippli, con indicazioni sulle misure e sui risultati.",
     "spokeLacingTopologySimulatorLabel": "Simulatore di schemi di raggiatura",
-    "spokeLacingTopologySimulatorDescription": "Visualizza posizioni dei fori, schemi di raggiatura, configurazioni G3 e 2:1 e geometria di entrambe le flange, con spiegazioni e limiti dell’anteprima."
+    "spokeLacingTopologySimulatorDescription": "Visualizza posizioni dei fori, schemi di raggiatura, configurazioni G3 e 2:1 e geometria di entrambe le flange, con spiegazioni e limiti dell’anteprima.",
+  "dynamicTirePressureCalculatorLabel": "Calcolatore dinamico della pressione degli pneumatici",
+  "dynamicTirePressureCalculatorDescription": "Scopri come carico, pressione, velocità e inclinazione modificano l’area di contatto e la forza in curva stimate."
   },
   "accountSidebar": {
     "addresses": {

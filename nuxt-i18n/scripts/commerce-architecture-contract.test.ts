@@ -27,7 +27,7 @@ assert.match(orderContract, /Notes\s+string\s+`json:"notes"`/)
 
 const tirePressureCalculator = read(appRoot, 'app/components/tireguides/tirepressure/TirePressureCalculator.vue')
 const tirePressureGuideSection = read(appRoot, 'app/components/TirePressureSection.vue')
-const tirePressureGuidePage = read(appRoot, 'app/pages/guides/tire-pressure.vue')
+const tirePressureGuidePage = read(appRoot, 'app/pages/tools/dynamic-tire-pressure-calculator.vue')
 const tirePressureDynamicsRequest = read(appRoot, 'app/composables/useTirePressureCalculatorDynamicsRequest.ts')
 assert.match(tirePressureDynamicsRequest, /\/engineering\/tire-pressure\/dynamics/)
 assert.match(tirePressureDynamicsRequest, /refreshTirePressureGroundFrameDynamicsFromBackend/)

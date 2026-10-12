@@ -184,8 +184,8 @@
     },
     {
       "key": "guides-tireguides-tire-pressure",
-      "path": "/guides/tireguides/tire-pressure",
-      "label": "Tire pressure guide",
+      "path": "/tools/dynamic-tire-pressure-calculator",
+      "label": "Dynamic tire pressure calculator",
       "description": "Explore how rider load, tire pressure, speed, and lean change estimated contact area and cornering force",
       "is_searchable": true,
       "is_checkable": true,

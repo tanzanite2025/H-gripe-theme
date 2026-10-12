@@ -70,6 +70,7 @@ export const storefrontRetiredPagePaths: readonly string[] = [
   '/guides/wheelset-buyers/wheelset-spoke-lacing-topology-and-geometry-reference',
   '/guides/wheelset-spoke-lacing-topology-and-geometry-reference',
   '/resources/wheelset-spoke-lacing-topology-and-geometry-reference',
+  '/guides/tireguides/tire-pressure',
 ]
 
 export const storefrontRedirects = [

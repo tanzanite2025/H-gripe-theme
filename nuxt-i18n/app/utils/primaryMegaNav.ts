@@ -356,6 +356,16 @@ export const primaryMegaNavSections: PrimaryMegaNavSection[] = [
         size: 'standard',
         accent: 'emerald',
       },
+      {
+        id: 'dynamic-tire-pressure-calculator',
+        labelKey: 'toolsNavigation.dynamicTirePressureCalculatorLabel',
+        labelFallback: 'Dynamic tire pressure calculator',
+        description: 'Explore how load, pressure, speed, and lean change estimated tire contact area and cornering force.',
+        to: '/tools/dynamic-tire-pressure-calculator',
+        icon: 'lucide:gauge',
+        size: 'standard',
+        accent: 'emerald',
+      },
     ],
   },
   {

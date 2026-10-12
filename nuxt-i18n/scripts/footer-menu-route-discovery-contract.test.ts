@@ -53,11 +53,11 @@ const sections = createFooterMenusFromRoutes([
     footerLabelKey: 'toolsNavigation.spokeLacingTopologySimulatorLabel',
     footerLabelFallback: 'Spoke lacing topology simulator',
   }),
-  createNormalizedFooterTestRoute('/guides/tireguides', 'guides-tireguides', {
-    footerLabelKey: 'products.nav.tireSizeCharts',
-    footerLabelFallback: 'Tire Guides',
+  createNormalizedFooterTestRoute('/tools/dynamic-tire-pressure-calculator', 'tools-dynamic-tire-pressure-calculator', {
+    footerLabelKey: 'toolsNavigation.dynamicTirePressureCalculatorLabel',
+    footerLabelFallback: 'Dynamic tire pressure calculator',
   }),
-  createNormalizedFooterTestRoute('/guides/tireguides/tire-pressure', 'guides-tire-pressure', {
+  createNormalizedFooterTestRoute('/guides/tireguides', 'guides-tireguides', {
     footerLabelKey: 'products.nav.tireSizeCharts',
     footerLabelFallback: 'Tire Guides',
   }),
@@ -100,13 +100,14 @@ assert.deepEqual(flattenFooterNavigationItems(toolsSection.links).map(link => li
   '/tools/brand-wheelset-spoke-specs',
   '/tools/spoke-length-calculator',
   '/tools/spoke-lacing-topology-simulator',
+  '/tools/dynamic-tire-pressure-calculator',
 ], 'TOOLS child list must contain only concrete tools, without a duplicate hub')
 assert.ok(guidesSection, 'GUIDES column should be discovered from its static descendant pages')
 
 const tireGuidesGroup = guidesSection.links.find(link => link.to === '/guides/tireguides')
 assert.ok(tireGuidesGroup, 'Tire Guides should retain its real landing page')
 assert.equal(tireGuidesGroup.fallback, 'Tire Guides')
-assert.equal(tireGuidesGroup.children?.length, 7, 'Only remaining tire guide tabs should be listed')
+assert.equal(tireGuidesGroup.children?.length, 6, 'Only remaining tire guide tabs should be listed')
 assert.deepEqual(
   tireGuidesGroup.children?.map(link => link.to),
   [
@@ -115,7 +116,6 @@ assert.deepEqual(
     '/guides/tireguides/schwalbe-tire-circumference',
     '/guides/tireguides/tubeless',
     '/guides/tireguides/tire-rim-width-compatibility',
-    '/guides/tireguides/tire-pressure',
     '/guides/tireguides/choose-inner-tube',
   ],
 )
@@ -145,7 +145,7 @@ assert.equal(new Set(guidePaths).size, guidePaths.length, 'GUIDES must not emit 
 assert.ok(!guidePaths.includes('/guides/tireguides/choose'), 'The retired tire width route must not remain as a footer alias')
 
 const guidesWithoutIndexPage = createFooterMenusFromRoutes([
-  createNormalizedFooterTestRoute('/guides/tireguides/tire-pressure', 'guides-tire-pressure', {
+  createNormalizedFooterTestRoute('/guides/tireguides/tubeless', 'guides-tireguides-tubeless', {
     footerLabelKey: 'products.nav.tireSizeCharts',
     footerLabelFallback: 'Tire Guides',
   }),
@@ -155,7 +155,7 @@ const pageLessTireGuidesGroup = guidesWithoutIndexPage
   ?.links.find(link => link.fallback === 'Tire Guides')
 assert.ok(pageLessTireGuidesGroup)
 assert.equal(pageLessTireGuidesGroup.to, undefined)
-assert.ok(pageLessTireGuidesGroup.children?.some(link => link.to === '/guides/tireguides/tire-pressure'))
+assert.ok(pageLessTireGuidesGroup.children?.some(link => link.to === '/guides/tireguides/tubeless'))
 
 const shopCategoryLinks = createFooterShopLinksFromProductCategories([
   {

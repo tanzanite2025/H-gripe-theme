@@ -11,7 +11,9 @@
     "spokeLengthCalculatorLabel": "Speichenlängenrechner",
     "spokeLengthCalculatorDescription": "Berechnen Sie die Speichenlängen für Vorder- und Hinterrad mit dem vollständigen Assistenten für Felge, Nabe, Einspeichung, Korrekturen und Nippel sowie Hinweisen zu Messung und Ergebnissen.",
     "spokeLacingTopologySimulatorLabel": "Simulator für Speichenmuster",
-    "spokeLacingTopologySimulatorDescription": "Speichenlochpositionen, Einspeichmuster, G3- und 2:1-Anordnungen sowie die Geometrie beider Flansche mit Erläuterungen und Vorschaugrenzen ansehen."
+    "spokeLacingTopologySimulatorDescription": "Speichenlochpositionen, Einspeichmuster, G3- und 2:1-Anordnungen sowie die Geometrie beider Flansche mit Erläuterungen und Vorschaugrenzen ansehen.",
+  "dynamicTirePressureCalculatorLabel": "Dynamischer Reifendruckrechner",
+  "dynamicTirePressureCalculatorDescription": "Erkunden Sie, wie Last, Reifendruck, Geschwindigkeit und Neigung die geschätzte Kontaktfläche und Kurvenkraft verändern."
   },
   "accountSidebar": {
     "addresses": {

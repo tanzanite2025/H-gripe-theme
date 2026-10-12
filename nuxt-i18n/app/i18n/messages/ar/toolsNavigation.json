@@ -10,5 +10,7 @@
   "spokeLengthCalculatorLabel": "حاسبة طول الأسلاك",
   "spokeLengthCalculatorDescription": "احسب أطوال أسلاك العجلتين الأمامية والخلفية باستخدام خطوات كاملة للطوق والمحور ونمط التشبيك والتصحيحات والحلمات، مع إرشادات القياس وتفسير النتائج.",
   "spokeLacingTopologySimulatorLabel": "محاكي أنماط تشبيك الأسلاك",
-  "spokeLacingTopologySimulatorDescription": "عاين مواضع ثقوب الأسلاك وأنماط التشبيك وتوزيعات G3 و2:1 وهندسة الحافتين، مع الشروحات وحدود المعاينة."
+  "spokeLacingTopologySimulatorDescription": "عاين مواضع ثقوب الأسلاك وأنماط التشبيك وتوزيعات G3 و2:1 وهندسة الحافتين، مع الشروحات وحدود المعاينة.",
+  "dynamicTirePressureCalculatorLabel": "حاسبة ضغط الإطارات الديناميكية",
+  "dynamicTirePressureCalculatorDescription": "استكشف كيف يغيّر الحمل والضغط والسرعة والميل مساحة تلامس الإطار وقوة الانعطاف المقدّرة."
 }
