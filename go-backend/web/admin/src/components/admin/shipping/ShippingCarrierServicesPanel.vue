@@ -2,8 +2,8 @@
   <TabsContent value="services" class="space-y-3">
     <div class="flex flex-wrap items-end justify-between gap-3">
       <div>
-        <h2 class="text-sm font-black tracking-tighter uppercase">线路服务</h2>
-        <p class="mt-1 text-xs text-muted-foreground">维护承运商下的国际线路、计费口径、首续重、体积重和预计时效。</p>
+        <h2 class="text-sm font-black tracking-tighter uppercase">本地计费线路</h2>
+        <p class="mt-1 text-xs text-muted-foreground">维护承运商下的本地计费线路、计费口径、首续重、体积重和预计时效；结账报价会把它与产品绑定的运费模板组合计算。</p>
       </div>
       <Button
         v-if="canCreate"
@@ -12,7 +12,7 @@
         @click="emit('create')"
       >
         <Plus class="size-3.5" />
-        新增线路服务
+        新增计费线路
       </Button>
     </div>
 
@@ -35,7 +35,7 @@
           <TableEmpty v-if="carrierServices.length === 0" :colspan="9">
             <div class="flex flex-col items-center text-muted-foreground">
               <Route class="mb-2 size-7 opacity-55" />
-              <span class="text-xs">暂无线路服务</span>
+              <span class="text-xs">暂无计费线路</span>
             </div>
           </TableEmpty>
           <TableRow v-for="service in carrierServices" :key="service.id">
@@ -69,7 +69,7 @@
                   v-if="canEdit"
                   variant="ghost"
                   size="icon-sm"
-                  :aria-label="`编辑线路服务 ${service.service_name}`"
+                  :aria-label="`编辑计费线路 ${service.service_name}`"
                   @click="emit('edit', service)"
                 >
                   <Pencil class="size-4" />
@@ -79,7 +79,7 @@
                   variant="ghost"
                   size="icon-sm"
                   class="text-destructive hover:text-destructive"
-                  :aria-label="`删除线路服务 ${service.service_name}`"
+                  :aria-label="`删除计费线路 ${service.service_name}`"
                   @click="emit('delete', service)"
                 >
                   <Trash2 class="size-4" />

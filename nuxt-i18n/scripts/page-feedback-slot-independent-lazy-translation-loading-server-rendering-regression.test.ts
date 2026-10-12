@@ -10,7 +10,16 @@ import { createI18n } from 'vue-i18n'
 
 const frontendDirectory = fileURLToPath(new URL('..', import.meta.url))
 const pageFeedbackTranslationTestContext = {
-  route: { path: '/zh_cn/guides/tireguides/tire-rim-width-compatibility', meta: {} },
+  route: {
+    path: '/zh_cn/tools/tire-rim-width-compatibility-engine',
+    meta: {
+      feedbackThreadKey: 'guides-tireguides',
+      feedbackTitleKey: 'guidesTireguides.feedbackTitle',
+      feedbackSubtitleKey: 'feedback.defaultSubtitle',
+      pageTitleKey: 'guidesTireguides.tabs.choose.label',
+      pageTitle: 'Tire and Rim Width Calculator',
+    },
+  },
   loadedNamespaces: [] as string[],
   loadMessages: async (_namespace: string, _locale: string): Promise<void> => {},
 }
@@ -82,7 +91,7 @@ try {
     const applicationTranslations = createI18n({
       legacy: false, locale, messages: {}, missingWarn: false, fallbackWarn: false,
     })
-    pageFeedbackTranslationTestContext.route.path = `${locale === 'en' ? '' : '/zh_cn'}/guides/tireguides/tire-rim-width-compatibility`
+    pageFeedbackTranslationTestContext.route.path = `${locale === 'en' ? '' : '/zh_cn'}/tools/tire-rim-width-compatibility-engine`
     pageFeedbackTranslationTestContext.loadedNamespaces = []
     pageFeedbackTranslationTestContext.loadMessages = async (namespace, requestedLocale) => {
       await new Promise(resolveDelay => setTimeout(resolveDelay, 25))

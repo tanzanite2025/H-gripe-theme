@@ -18,7 +18,7 @@ services:
       POSTGRES_DB: commerce_platform
       PGDATA: /var/lib/postgresql/data/pgdata
     ports:
-      - "${POSTGRES_HOST_PORT:-9400}:5432"
+      - "${POSTGRES_HOST_PORT:-9410}:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
     networks:

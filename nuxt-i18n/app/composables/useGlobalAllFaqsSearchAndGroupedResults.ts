@@ -36,6 +36,7 @@ export async function useGlobalAllFaqsSearchAndGroupedResults(
   const {
     allPages,
     pending: faqPending,
+    error,
     refreshFaqCatalog,
   } = await faqCatalogPromise
   const activePageId = ref('all')
@@ -121,6 +122,7 @@ export async function useGlobalAllFaqsSearchAndGroupedResults(
   return {
     allPages,
     pending,
+    error,
     refreshAllFaqData: refreshFaqCatalog,
     featuredItems,
     searchQuery,

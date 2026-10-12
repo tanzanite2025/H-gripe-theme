@@ -922,7 +922,9 @@
       "noResults": "没有找到与“{query}”匹配的 FAQ",
       "loadingAnswers": "正在加载答案",
       "illustrationAlt": "FAQ 配图",
-      "selectQuestion": "Select a question to view the answer."
+      "selectQuestion": "Select a question to view the answer.",
+      "loadFailed": "答案暂时无法加载，请重试。",
+      "showingSavedAnswers": "答案暂时无法更新，正在显示上次加载的内容。"
     }
   },
   "feedback": {

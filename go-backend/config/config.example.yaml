@@ -14,7 +14,7 @@ server:
 database:
   driver: "postgres"  # postgres or mysql
   host: "localhost"
-  port: 9400
+  port: 9410
   username: "commerce_platform"
   password: "commerce_platform_password"
   database: "commerce_platform"

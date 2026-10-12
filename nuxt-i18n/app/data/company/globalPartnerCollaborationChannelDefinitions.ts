@@ -1,0 +1,47 @@
+export const globalPartnerCollaborationChannelDefinitions = [
+  {
+    id: 'oem-odm',
+    icon: 'lucide:factory',
+    titleKey: 'companyGlobalPartners.partnershipChannels.oemOdm.title',
+    audienceKey: 'companyGlobalPartners.partnershipChannels.oemOdm.audience',
+    descriptionKey: 'companyGlobalPartners.partnershipChannels.oemOdm.description',
+    featureKeys: [
+      'companyGlobalPartners.partnershipChannels.oemOdm.features.tooling',
+      'companyGlobalPartners.partnershipChannels.oemOdm.features.privateLabelAndWheelsets',
+      'companyGlobalPartners.partnershipChannels.oemOdm.features.drawingsAndSampleTesting',
+    ],
+    ctaKey: 'companyGlobalPartners.partnershipChannels.oemOdm.cta',
+    contactDescriptionKey: 'companyGlobalPartners.partnershipChannels.oemOdm.contactDescription',
+    emailSubjectKey: 'companyGlobalPartners.partnershipChannels.oemOdm.emailSubject',
+  },
+  {
+    id: 'dealer-builder',
+    icon: 'lucide:wrench',
+    titleKey: 'companyGlobalPartners.partnershipChannels.dealerBuilder.title',
+    audienceKey: 'companyGlobalPartners.partnershipChannels.dealerBuilder.audience',
+    descriptionKey: 'companyGlobalPartners.partnershipChannels.dealerBuilder.description',
+    featureKeys: [
+      'companyGlobalPartners.partnershipChannels.dealerBuilder.features.mixedOrders',
+      'companyGlobalPartners.partnershipChannels.dealerBuilder.features.technicalSupport',
+      'companyGlobalPartners.partnershipChannels.dealerBuilder.features.wholesalePricing',
+    ],
+    ctaKey: 'companyGlobalPartners.partnershipChannels.dealerBuilder.cta',
+    contactDescriptionKey: 'companyGlobalPartners.partnershipChannels.dealerBuilder.contactDescription',
+    emailSubjectKey: 'companyGlobalPartners.partnershipChannels.dealerBuilder.emailSubject',
+  },
+  {
+    id: 'teams-ambassadors',
+    icon: 'lucide:flag',
+    titleKey: 'companyGlobalPartners.partnershipChannels.teamsAndAmbassadors.title',
+    audienceKey: 'companyGlobalPartners.partnershipChannels.teamsAndAmbassadors.audience',
+    descriptionKey: 'companyGlobalPartners.partnershipChannels.teamsAndAmbassadors.description',
+    featureKeys: [
+      'companyGlobalPartners.partnershipChannels.teamsAndAmbassadors.features.clubsAndRiders',
+      'companyGlobalPartners.partnershipChannels.teamsAndAmbassadors.features.sponsorship',
+      'companyGlobalPartners.partnershipChannels.teamsAndAmbassadors.features.equipmentValidation',
+    ],
+    ctaKey: 'companyGlobalPartners.partnershipChannels.teamsAndAmbassadors.cta',
+    contactDescriptionKey: 'companyGlobalPartners.partnershipChannels.teamsAndAmbassadors.contactDescription',
+    emailSubjectKey: 'companyGlobalPartners.partnershipChannels.teamsAndAmbassadors.emailSubject',
+  },
+] as const

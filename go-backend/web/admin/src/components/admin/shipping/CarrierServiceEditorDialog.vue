@@ -3,9 +3,9 @@
     <DialogContent size="full" class="max-h-[90dvh] overflow-y-auto" @open-auto-focus.prevent>
       <form class="space-y-6" @submit.prevent="emit('submit')">
         <DialogHeader>
-          <DialogTitle>{{ mode === 'create' ? '新增线路服务' : '编辑线路服务' }}</DialogTitle>
+          <DialogTitle>{{ mode === 'create' ? '新增本地计费线路' : '编辑本地计费线路' }}</DialogTitle>
           <DialogDescription>
-            线路服务连接承运商和运费模板，负责记录国际线路、计费方式、首续重、体积重和时效参数。
+            本地计费线路连接承运商和运费模板，负责记录线路身份、计费方式、首续重、体积重和时效参数。
           </DialogDescription>
         </DialogHeader>
 
@@ -106,7 +106,7 @@
               <span class="text-xs font-bold uppercase tracking-wider">启用线路 / ENABLED</span>
               <p class="mt-0.5 text-xs text-muted-foreground">停用后前台报价不会把它作为可用线路展示。</p>
             </div>
-            <Switch v-model="form.enabled" aria-label="启用线路服务" />
+            <Switch v-model="form.enabled" aria-label="启用本地计费线路" />
           </div>
 
           <AdminFormField
@@ -190,14 +190,14 @@
         </section>
 
         <div class="rounded-lg border bg-muted/35 p-3 text-xs text-muted-foreground">
-          稳定规则：SKU 提供实际重量，包装规则提供箱规尺寸，线路服务提供计费口径。后续接真实报价时按线路服务计算，不再在 Nuxt 里硬编码运费。
+          稳定规则：SKU 提供实际重量，包装规则提供箱规尺寸，本地计费线路提供线路计费口径；结账报价按运费模板与本地计费线路组合计算，不在 Nuxt 里硬编码运费。
         </div>
 
         <DialogFooter>
           <Button type="button" variant="outline" @click="emit('update:open', false)">取消</Button>
           <Button type="submit" :disabled="submitting">
             <LoaderCircle v-if="submitting" class="size-4 animate-spin" />
-            {{ submitting ? '保存中' : '保存线路服务' }}
+            {{ submitting ? '保存中' : '保存本地计费线路' }}
           </Button>
         </DialogFooter>
       </form>

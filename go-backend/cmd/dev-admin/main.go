@@ -173,7 +173,7 @@ func readDatabaseConfig() config.DatabaseConfig {
 	return config.DatabaseConfig{
 		Driver:          envDefaultAny([]string{"DB_DRIVER", "DATABASE_DRIVER"}, "postgres"),
 		Host:            envDefaultAny([]string{"DB_HOST", "DATABASE_HOST"}, "localhost"),
-		Port:            envIntDefaultAny([]string{"DB_PORT", "DATABASE_PORT"}, 9400),
+		Port:            envIntDefaultAny([]string{"DB_PORT", "DATABASE_PORT"}, 9410),
 		Username:        envDefaultAny([]string{"DB_USERNAME", "DATABASE_USERNAME"}, "commerce_platform"),
 		Password:        envDefaultAny([]string{"DB_PASSWORD", "DATABASE_PASSWORD"}, "commerce_platform_password"),
 		Database:        envDefaultAny([]string{"DB_NAME", "DATABASE_NAME"}, "commerce_platform"),

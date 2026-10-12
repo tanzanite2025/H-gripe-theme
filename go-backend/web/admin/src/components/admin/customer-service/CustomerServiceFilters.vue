@@ -1,7 +1,7 @@
 <template>
   <AdminFilterPanel>
-    <form class="grid gap-3 lg:grid-cols-4 lg:gap-2 xl:grid-cols-[minmax(220px,1.4fr)_repeat(5,minmax(110px,1fr))_auto_auto] xl:gap-3" @submit.prevent="emit('apply')">
-      <label class="block min-w-0 space-y-1 lg:col-span-2">
+    <form class="grid gap-3 lg:grid-cols-4 lg:gap-2 xl:grid-cols-[minmax(220px,2.4fr)_repeat(4,minmax(110px,1fr))_auto] xl:gap-3" @submit.prevent="emit('apply')">
+      <label class="block min-w-0 space-y-1 lg:col-span-2 xl:col-span-1">
         <span class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70 block">SEARCH / 搜索</span>
         <div class="relative">
           <Search class="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground/60" />
@@ -58,27 +58,26 @@
         </Select>
       </label>
 
-      <label class="block space-y-1 min-w-0">
-        <span class="block text-[10px] font-black uppercase tracking-widest text-transparent select-none">QUERY</span>
-        <Button type="submit" class="h-9 w-full justify-center rounded-full px-3 font-black text-xs uppercase tracking-wider" :disabled="loading">
+      <div class="flex min-w-0 flex-wrap items-center gap-2 self-end lg:col-span-2 xl:col-span-1 xl:flex-nowrap">
+        <Button type="submit" class="h-9 shrink-0 justify-center rounded-full px-3 font-black text-xs uppercase tracking-wider" :disabled="loading">
           <Search class="size-3.5" />
           查询
         </Button>
-      </label>
-
-      <label class="block space-y-1 min-w-0">
-        <span class="block text-[10px] font-black uppercase tracking-widest text-transparent select-none">ACTION</span>
-        <Button type="button" variant="outline" class="h-9 w-full justify-center rounded-full px-3 font-black text-xs uppercase tracking-wider" @click="emit('reset')">
+        <Button type="button" variant="outline" class="h-9 shrink-0 justify-center rounded-full px-3 font-black text-xs uppercase tracking-wider" @click="emit('reset')">
           <RotateCcw class="size-3.5" />
           重置
         </Button>
-      </label>
+        <Button type="button" variant="outline" class="h-9 shrink-0 justify-center rounded-full px-3 font-black text-xs uppercase tracking-wider" @click="emit('open-notification-settings')">
+          <Bell class="size-3.5" />
+          通知设置
+        </Button>
+      </div>
     </form>
   </AdminFilterPanel>
 </template>
 
 <script setup lang="ts">
-import { RotateCcw, Search } from '@lucide/vue'
+import { Bell, RotateCcw, Search } from '@lucide/vue'
 import AdminFilterPanel from '@/components/admin/AdminFilterPanel.vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -103,5 +102,6 @@ withDefaults(defineProps<{
 const emit = defineEmits<{
   (event: 'apply'): void
   (event: 'reset'): void
+  (event: 'open-notification-settings'): void
 }>()
 </script>

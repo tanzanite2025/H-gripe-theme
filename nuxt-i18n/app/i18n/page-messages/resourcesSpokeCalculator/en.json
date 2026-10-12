@@ -1,5 +1,10 @@
 {
-  "title": "Spoke Calculator",
+  "title": "Bicycle Spoke Length Calculator",
+  "seo": {
+    "title": "Precision Bicycle Spoke Length Calculator {'|'} Straight Pull & J-Bend Wheelbuilding Tool",
+    "description": "Calculate exact spoke lengths for straight-pull and J-bend hubs, carbon and alloy rims. Features asymmetric rim offset, spoke elongation, and crossing compensation.",
+    "imageAlt": "J-bend and straight-pull bicycle spokes with spoke-length measurement reference points"
+  },
   "feedbackTitle": "Share your feedback about the Spoke Calculator",
   "catalog": {
     "eyebrow": "Recorded results",

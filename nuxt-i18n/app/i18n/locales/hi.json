@@ -922,7 +922,9 @@
       "illustrationAlt": "FAQ चित्र",
       "selectQuestion": "Select a question to view the answer.",
       "pagesAriaLabel": "FAQ pages",
-      "pagesLabel": "FAQ pages"
+      "pagesLabel": "FAQ pages",
+      "loadFailed": "उत्तर लोड नहीं हो सके। कृपया फिर प्रयास करें।",
+      "showingSavedAnswers": "उत्तर अपडेट नहीं हो सके। पिछली बार लोड किए गए उत्तर दिखाए जा रहे हैं।"
     }
   },
   "feedback": {

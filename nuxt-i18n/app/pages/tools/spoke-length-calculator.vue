@@ -1,8 +1,11 @@
 <template>
   <div>
-    <h1 class="sr-only">{{ t('resourcesSpokeCalculator.title') }}</h1>
-
     <div class="spoke-page">
+      <header class="spoke-page__intro">
+        <h1 class="spoke-page__title">{{ t('resourcesSpokeCalculator.title') }}</h1>
+        <p class="spoke-page__description">{{ t('resourcesSpokeCalculator.seo.description') }}</p>
+      </header>
+
       <section>
         <SpokeHeadTypeStep
           v-if="activeWizardStep === 1"
@@ -120,10 +123,14 @@ import UserFeedbackThread from '~/components/UserFeedbackThread.vue'
 
 import { useStorefrontSeoRouteOverride } from '~/composables/seo/useStorefrontSeoLinks'
 import { usePageMessages } from '~/composables/usePageMessages'
+import { useSiteTitle } from '~/composables/useSiteTitle'
 import { useSpokeCalculatorManualOptions } from '~/composables/useSpokeCalculatorManualOptions'
 import { useSpokeCalculatorWizard } from '~/composables/useSpokeCalculatorWizard'
+import { useStorefrontSeoLinks } from '~/composables/seo/useStorefrontSeoLinks'
 import type { HubGeometry } from '~/data/spoke-calculator/database'
+import localeManifest from '~/i18n/locales.manifest'
 import type { SpokeHeadType, SpokeInterlacing, SpokeNippleType } from '~/types/spokeCalculator'
+import { createSeoJsonLdScript } from '~/utils/seo/jsonLd'
 import { definePageMeta, useAsyncData, useHead, useI18n, useRoute, useSwitchLocalePath } from '#imports'
 import { computed, watch } from 'vue'
 import { useApiRequest } from '~/composables/useApiRequest'
@@ -159,6 +166,19 @@ useHead(() => ({
   }],
 }))
 const { loadPageMessages } = usePageMessages('resourcesSpokeCalculator')
+const { siteTitle } = useSiteTitle()
+const { canonicalUrl } = useStorefrontSeoLinks()
+const spokeCalculatorSearchTitle = computed(() => {
+  const calculatorTitle = t('resourcesSpokeCalculator.seo.title')
+  const configuredBrandName = siteTitle.value.trim()
+  return configuredBrandName ? `${calculatorTitle} | ${configuredBrandName}` : calculatorTitle
+})
+const spokeCalculatorLanguage = computed(() => (
+  localeManifest.find(entry => entry.code === locale.value)?.iso || locale.value.replace(/_/g, '-')
+))
+const spokeCalculatorSocialImageUrl = computed(() => (
+  new URL('/public/technical/j-bend-spokeandstraightpull-spoke.webp', canonicalUrl.value).toString()
+))
 
 const {
   draft: spokeWizardDraft,
@@ -325,30 +345,72 @@ definePageMeta({
 })
 
 useHead(() => ({
-  title: t('resourcesSpokeCalculator.title'),
+  title: spokeCalculatorSearchTitle.value,
+  meta: [
+    { key: 'description', name: 'description', content: t('resourcesSpokeCalculator.seo.description') },
+    { key: 'og:type', property: 'og:type', content: 'website' },
+    { key: 'og:title', property: 'og:title', content: spokeCalculatorSearchTitle.value },
+    { key: 'og:description', property: 'og:description', content: t('resourcesSpokeCalculator.seo.description') },
+    { key: 'og:url', property: 'og:url', content: canonicalUrl.value },
+    { key: 'og:locale', property: 'og:locale', content: spokeCalculatorLanguage.value.replace(/-/g, '_') },
+    ...(siteTitle.value.trim()
+      ? [{ key: 'og:site_name', property: 'og:site_name', content: siteTitle.value.trim() }]
+      : []),
+    { key: 'og:image', property: 'og:image', content: spokeCalculatorSocialImageUrl.value },
+    { key: 'og:image:type', property: 'og:image:type', content: 'image/webp' },
+    { key: 'og:image:width', property: 'og:image:width', content: '1280' },
+    { key: 'og:image:height', property: 'og:image:height', content: '720' },
+    { key: 'og:image:alt', property: 'og:image:alt', content: t('resourcesSpokeCalculator.seo.imageAlt') },
+    { key: 'twitter:card', name: 'twitter:card', content: 'summary_large_image' },
+    { key: 'twitter:title', name: 'twitter:title', content: spokeCalculatorSearchTitle.value },
+    { key: 'twitter:description', name: 'twitter:description', content: t('resourcesSpokeCalculator.seo.description') },
+    { key: 'twitter:image', name: 'twitter:image', content: spokeCalculatorSocialImageUrl.value },
+    { key: 'twitter:image:alt', name: 'twitter:image:alt', content: t('resourcesSpokeCalculator.seo.imageAlt') },
+  ],
   script: [{
-    type: 'application/ld+json',
-    children: JSON.stringify({
+    key: 'spoke-length-calculator-web-application-schema',
+    id: 'spoke-length-calculator-web-application-schema',
+    ...createSeoJsonLdScript({
       '@context': 'https://schema.org',
-      '@type': 'TechArticle',
-      headline: t('resourcesSpokeCalculator.title'),
-      proficiencyLevel: 'Expert',
-      description: t('resourcesSpokeCalculator.catalog.description'),
+      '@type': 'WebApplication',
+      '@id': `${canonicalUrl.value}#spoke-length-calculator`,
+      url: canonicalUrl.value,
+      mainEntityOfPage: canonicalUrl.value,
+      name: t('resourcesSpokeCalculator.title'),
+      description: t('resourcesSpokeCalculator.seo.description'),
+      image: spokeCalculatorSocialImageUrl.value,
+      applicationCategory: 'EngineeringApplication',
+      operatingSystem: 'Web',
+      isAccessibleForFree: true,
+      offers: {
+        '@type': 'Offer',
+        price: '0',
+        priceCurrency: 'USD',
+        url: canonicalUrl.value,
+      },
+      featureList: [
+        t('resourcesSpokeCalculator.calculator.physicalCorrections.straightPull'),
+        t('resourcesSpokeCalculator.calculator.physicalCorrections.jBend'),
+        t('resourcesSpokeCalculator.calculator.physicalCorrections.rimOffsetFieldLabel'),
+        t('resourcesSpokeCalculator.calculator.physicalCorrections.elongationCompensationLabel'),
+        t('resourcesSpokeCalculator.calculator.physicalCorrections.interlaceCompensation'),
+      ],
       author: {
         '@type': 'Organization',
         name: 'Guangengwang Engineering Lab',
       },
-      inLanguage: locale.value,
+      inLanguage: spokeCalculatorLanguage.value,
       ...(spokeCalculatorEngineeringMetadata.value?.model_version
-        ? { version: spokeCalculatorEngineeringMetadata.value.model_version }
+        ? { softwareVersion: spokeCalculatorEngineeringMetadata.value.model_version }
         : {}),
       ...(spokeCalculatorEngineeringMetadata.value?.knowledge_as_of
         ? { dateModified: spokeCalculatorEngineeringMetadata.value.knowledge_as_of }
         : {}),
       ...(spokeCalculatorEngineeringMetadata.value?.formula_version
         ? {
-            additionalProperty: [{
+            identifier: [{
               '@type': 'PropertyValue',
+              propertyID: 'formulaVersion',
               name: 'formulaVersion',
               value: spokeCalculatorEngineeringMetadata.value.formula_version,
             }],
@@ -362,12 +424,24 @@ useHead(() => ({
 <style src="~/assets/css/guide-sections.css"></style>
 
 <style scoped>
-.support-page__title {
+.spoke-page__intro {
+  margin-bottom: 1.5rem;
+}
+
+.spoke-page__title {
   margin: 0 0 0.75rem;
   font-size: var(--tz-type-page-title);
   line-height: 1.18;
   font-weight: 600;
   color: var(--tz-text-primary);
+}
+
+.spoke-page__description {
+  max-width: 78ch;
+  margin: 0;
+  color: var(--tz-text-secondary);
+  font-size: 0.9375rem;
+  line-height: 1.65;
 }
 
 .support-page__calculator-wrapper {

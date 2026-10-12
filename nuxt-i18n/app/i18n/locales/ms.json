@@ -922,7 +922,9 @@
       "illustrationAlt": "Ilustrasi FAQ",
       "selectQuestion": "Select a question to view the answer.",
       "pagesAriaLabel": "FAQ pages",
-      "pagesLabel": "FAQ pages"
+      "pagesLabel": "FAQ pages",
+      "loadFailed": "Jawapan tidak dapat dimuatkan. Sila cuba lagi.",
+      "showingSavedAnswers": "Jawapan tidak dapat dikemas kini. Memaparkan jawapan terakhir yang dimuatkan."
     }
   },
   "feedback": {

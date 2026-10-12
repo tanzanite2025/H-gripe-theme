@@ -110,7 +110,7 @@ func taxRateSourceConfigurationView(record *taxrate.TaxRateSourceConfig) TaxRate
 		LastCheckedAt:        record.LastCheckedAt,
 		LastSuccessfulSyncAt: record.LastSuccessfulSyncAt,
 		LastSyncError:        record.LastSyncError,
-		CoverageDescription:  "VATcomply currently provides VAT rates for EU member states. It does not cover every storefront market or determine which product-specific rate applies.",
+		CoverageDescription:  "VATcomply currently provides VAT rates for EU member states. It does not cover every shipping-template country or determine which product-specific rate applies.",
 	}
 }
 

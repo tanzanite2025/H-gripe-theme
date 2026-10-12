@@ -922,7 +922,9 @@
       "illustrationAlt": "Ilustración de FAQ",
       "selectQuestion": "Select a question to view the answer.",
       "pagesAriaLabel": "FAQ pages",
-      "pagesLabel": "FAQ pages"
+      "pagesLabel": "FAQ pages",
+      "loadFailed": "No se pudieron cargar las respuestas. Inténtalo de nuevo.",
+      "showingSavedAnswers": "No se pudieron actualizar las respuestas. Se muestran las últimas respuestas cargadas."
     }
   },
   "feedback": {

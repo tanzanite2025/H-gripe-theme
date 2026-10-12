@@ -1,0 +1,5 @@
+{
+  "blocked_user_agents": ["AhrefsBot", "SemrushBot", "SimilarwebBot", "BuiltWith"],
+  "wildcard_user_agent": "*",
+  "wildcard_disallow": ""
+}

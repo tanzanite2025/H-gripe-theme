@@ -1,15 +1,14 @@
 import { computed } from 'vue'
-import { useAsyncData } from '#imports'
+import { useStorefrontFaqAsyncDataWithLastSuccessfulResponse } from '~/composables/useStorefrontFaqAsyncDataWithLastSuccessfulResponse'
 import { fetchFaqData } from '~/data/faq'
 import type { PageFaqProps } from '~/data/faq/types'
 import { useFaqAccordionState } from '~/composables/useFaqAccordionState'
 
 export async function usePageFaq(props: PageFaqProps) {
   const { locale, t } = useI18n()
-  const { data: asyncFaqData } = await useAsyncData(
+  const { data: asyncFaqData, pending, error, refresh } = await useStorefrontFaqAsyncDataWithLastSuccessfulResponse(
     () => `faq-${props.pageId}-${locale.value}`,
     () => props.data ? Promise.resolve(props.data) : fetchFaqData(props.pageId),
-    { watch: [locale] }
   )
   const faqData = computed(() => props.data || asyncFaqData.value || null)
   const displayTitle = computed(() => props.title || faqData.value?.title || t('faq.title'))
@@ -35,6 +34,9 @@ export async function usePageFaq(props: PageFaqProps) {
 
   return {
     faqData,
+    pending,
+    error,
+    refresh,
     displayTitle,
     displayItems,
     expandedItems,

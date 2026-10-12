@@ -124,7 +124,7 @@ for (const imageUrl of checkedSocialPreviewImageUrls) {
   console.log(`Inner-tube guide social preview passed: PNG, 1200 × 630, HTTP 200, ${imageBytes.length} bytes`)
 }
 
-for (const routePath of ['/guides/tireguides', '/guides/tireguides/tire-frame-clearance', '/zh_cn/guides/tireguides/tire-frame-clearance', '/guides/tireguides/tire-rim-width-compatibility']) {
+for (const routePath of ['/guides/tireguides', '/guides/tireguides/tire-frame-clearance', '/zh_cn/guides/tireguides/tire-frame-clearance', '/tools/tire-rim-width-compatibility-engine']) {
   const { elements, title } = await fetchServerRenderedGuideMetadata(routePath)
   assert.doesNotMatch(title, /Bicycle Inner Tube Sizes|自行车内胎选择指南/)
   const metadataContents = elements.filter(element => element.tagName === 'meta')

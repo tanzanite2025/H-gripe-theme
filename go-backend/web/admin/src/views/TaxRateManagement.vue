@@ -36,7 +36,7 @@
         </Button>
         <Button
           v-else
-          :disabled="!canEdit"
+          :disabled="!canEdit || loadingShippingTemplateScopes"
           @click="startCreatingTaxRateRule"
         >
           <Plus class="size-4" />
@@ -44,21 +44,6 @@
         </Button>
       </template>
     </AdminPageHeader>
-
-    <nav class="flex flex-wrap gap-2" aria-label="税率管理页签">
-      <button
-        v-for="tab in taxRateManagementTabs"
-        :key="tab.value"
-        type="button"
-        class="rounded-full border px-4 py-2 text-xs font-black transition-colors"
-        :class="activeTab === tab.value
-          ? 'border-primary bg-primary text-primary-foreground shadow-sm'
-          : 'border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground'"
-        @click="activeTab = tab.value"
-      >
-        {{ tab.label }}
-      </button>
-    </nav>
 
     <template v-if="activeTab === 'config'">
       <section class="rounded-3xl border border-sky-500/20 bg-sky-50/70 p-5 dark:bg-sky-950/20">
@@ -310,8 +295,8 @@
         <div class="flex items-start gap-3">
           <ShieldCheck class="mt-0.5 size-4 shrink-0 text-amber-700 dark:text-amber-300" />
           <div class="space-y-1 text-xs leading-relaxed text-muted-foreground">
-            <p>这里对照后台市场、当前快照和 Checkout 已启用规则。快照只用于发现数据缺口或数值差异；“数值一致”不代表该税率已被确认适用于本店商品和当地纳税义务。</p>
-            <p>Checkout 只读取下方已启用规则。未匹配税率会阻止报价和下单；显式配置的 0% 仍是一条有效规则。</p>
+            <p>这里对照启用运费模板声明的国家、当前快照和 Checkout 已启用规则。快照只用于发现数据缺口或数值差异；“数值一致”不代表该税率已被确认适用于本店商品和当地纳税义务。</p>
+            <p>运输范围通过运费模板校验后，Checkout 才读取下方已启用税率规则。未匹配税率不会把国家从运费模板范围移除，但因为不能按零税结算，本次含税金额会返回 tax_rate_unavailable；显式配置的 0% 仍是一条有效规则。</p>
           </div>
         </div>
       </section>
@@ -320,34 +305,38 @@
         {{ taxRateCoverageError }}
       </section>
 
-      <section v-if="enabledMarketCountryCount === 0 && !loadingTaxRateCoverage && !taxRateCoverageError" class="rounded-2xl border border-rose-500/20 bg-rose-500/5 p-4 text-xs leading-relaxed text-rose-700 dark:text-rose-300">
-        后台目前没有启用且配置国家的销售市场。本页无法据此判断完整销售覆盖范围，请先检查“市场与本地化语种”配置。
+      <section v-if="unresolvedShippingTemplateRegions.length > 0 && !taxRateCoverageError" class="rounded-2xl border border-sky-500/20 bg-sky-500/5 p-4 text-xs leading-relaxed text-sky-800 dark:text-sky-200">
+        有运费模板使用了区域表达式（{{ unresolvedShippingTemplateRegions.join('、') }}），当前页面不会自行复制一套区域国家字典。请在运费模板中核对这些区域，Checkout 仍以运费模板实际匹配结果为准。
+      </section>
+
+      <section v-if="shippingTemplateCountryCount === 0 && !loadingTaxRateCoverage && !taxRateCoverageError" class="rounded-2xl border border-rose-500/20 bg-rose-500/5 p-4 text-xs leading-relaxed text-rose-700 dark:text-rose-300">
+        当前没有启用且声明国家范围的运费模板。本页无法据此判断税率核对范围，请先检查“运费模板”配置。
       </section>
 
       <section v-if="!taxRateCoverageError" class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <div class="rounded-2xl border bg-card p-4">
-          <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground">启用市场国家</p>
-          <p class="mt-2 text-2xl font-black text-foreground">{{ enabledMarketCountryCount }}</p>
+          <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground">运费模板国家</p>
+          <p class="mt-2 text-2xl font-black text-foreground">{{ shippingTemplateCountryCount }}</p>
         </div>
         <div class="rounded-2xl border bg-card p-4">
-          <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground">有国家默认规则</p>
-          <p class="mt-2 text-2xl font-black text-foreground">{{ enabledMarketCountriesWithDefaultRuleCount }}</p>
+          <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground">有国家默认税率</p>
+          <p class="mt-2 text-2xl font-black text-foreground">{{ shippingTemplateCountriesWithDefaultRuleCount }}</p>
         </div>
         <div class="rounded-2xl border bg-card p-4">
-          <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground">仅部分地区有规则</p>
-          <p class="mt-2 text-2xl font-black text-foreground">{{ enabledMarketCountriesWithRegionalRulesOnlyCount }}</p>
+          <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground">仅部分地区有税率</p>
+          <p class="mt-2 text-2xl font-black text-foreground">{{ shippingTemplateCountriesWithRegionalRulesOnlyCount }}</p>
         </div>
         <div class="rounded-2xl border bg-card p-4">
           <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground">快照含标准税率</p>
-          <p class="mt-2 text-2xl font-black text-foreground">{{ enabledMarketCountriesWithSnapshotStandardRateCount }}</p>
+          <p class="mt-2 text-2xl font-black text-foreground">{{ shippingTemplateCountriesWithSnapshotStandardRateCount }}</p>
         </div>
       </section>
 
       <section class="overflow-hidden rounded-3xl border bg-card">
         <div class="flex flex-col gap-3 border-b p-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h2 class="text-sm font-black text-foreground">地区规则覆盖核对</h2>
-            <p class="mt-1 text-xs text-muted-foreground">国家默认规则会作为未命中更具体州省或邮编规则时的回退；仅有州省 / 邮编规则属于部分覆盖。</p>
+            <h2 class="text-sm font-black text-foreground">运费模板范围内的税率核对</h2>
+            <p class="mt-1 text-xs text-muted-foreground">这里只核对启用运费模板声明的国家；运费模板负责国家是否可以下单，税率负责该订单应收多少税。</p>
             <p class="mt-1 text-[10px] text-muted-foreground">
               核对快照：{{ currentSnapshot.snapshot
                 ? `${currentSnapshot.snapshot.version} · ${formatTaxRateSnapshotTimestamp(currentSnapshot.snapshot.captured_at)}`
@@ -363,12 +352,12 @@
           >
         </div>
 
-        <div v-if="loadingTaxRateCoverage" class="p-10 text-center text-sm text-muted-foreground">正在读取市场、快照和 Checkout 规则…</div>
+        <div v-if="loadingTaxRateCoverage" class="p-10 text-center text-sm text-muted-foreground">正在读取运费模板、快照和 Checkout 规则…</div>
         <div v-else-if="!taxRateCoverageError" class="overflow-x-auto">
           <table class="w-full min-w-[1100px] text-left text-xs">
             <thead class="bg-muted/50 text-[10px] font-black uppercase tracking-wider text-muted-foreground">
               <tr>
-                <th class="px-4 py-3">国家 / 市场</th>
+                <th class="px-4 py-3">国家 / 运费模板</th>
                 <th class="px-4 py-3">快照标准税率</th>
                 <th class="px-4 py-3">Checkout 覆盖</th>
                 <th class="px-4 py-3">国家默认规则</th>
@@ -381,11 +370,11 @@
                 <td class="px-4 py-4">
                   <p class="font-black text-foreground">{{ row.countryName }}</p>
                   <p class="mt-1 font-mono text-[10px] text-muted-foreground">{{ row.countryCode }}</p>
-                  <div v-if="row.enabledMarketNames.length || row.disabledMarketNames.length" class="mt-2 flex flex-wrap gap-1">
-                    <span v-for="marketName in row.enabledMarketNames" :key="`enabled-${marketName}`" class="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-[9px] font-bold text-emerald-700 dark:text-emerald-300">{{ marketName }}</span>
-                    <span v-for="marketName in row.disabledMarketNames" :key="`disabled-${marketName}`" class="rounded-full border bg-muted px-2 py-0.5 text-[9px] font-bold text-muted-foreground">{{ marketName }} · 停用</span>
+                  <div v-if="row.enabledShippingTemplateNames.length || row.disabledShippingTemplateNames.length" class="mt-2 flex flex-wrap gap-1">
+                    <span v-for="templateName in row.enabledShippingTemplateNames" :key="`enabled-${templateName}`" class="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-[9px] font-bold text-emerald-700 dark:text-emerald-300">{{ templateName }}</span>
+                    <span v-for="templateName in row.disabledShippingTemplateNames" :key="`disabled-${templateName}`" class="rounded-full border bg-muted px-2 py-0.5 text-[9px] font-bold text-muted-foreground">{{ templateName }} · 停用</span>
                   </div>
-                  <p v-else class="mt-2 text-[10px] text-muted-foreground">不在启用市场中</p>
+                  <p v-else class="mt-2 text-[10px] text-muted-foreground">不在启用运费模板范围中</p>
                 </td>
                 <td class="px-4 py-4">
                   <p v-if="row.snapshotStandardRate !== null" class="font-mono font-black text-foreground">{{ formatTaxRatePercentage(row.snapshotStandardRate) }}</p>
@@ -409,7 +398,7 @@
                 </td>
               </tr>
               <tr v-if="filteredTaxRateCoverageRows.length === 0">
-                <td colspan="6" class="px-4 py-10 text-center text-muted-foreground">没有符合搜索条件的地区。核对范围来自后台市场国家和已有结算规则。</td>
+                <td colspan="6" class="px-4 py-10 text-center text-muted-foreground">没有符合搜索条件的地区。核对范围来自启用运费模板国家和已有结算规则。</td>
               </tr>
             </tbody>
           </table>
@@ -419,8 +408,8 @@
       <section class="rounded-3xl border bg-card p-5">
         <h2 class="text-sm font-black text-foreground">怎么看这个结果</h2>
         <div class="mt-3 grid gap-3 text-xs leading-relaxed text-muted-foreground lg:grid-cols-3">
-          <p class="rounded-2xl border bg-background p-4"><strong class="text-foreground">未配置：</strong>当前没有能匹配该国的启用规则；Checkout 会阻止未匹配地区的报价和下单。</p>
-          <p class="rounded-2xl border bg-background p-4"><strong class="text-foreground">部分覆盖：</strong>只有州省或邮编规则；未命中这些细分规则的地址会被阻止。</p>
+          <p class="rounded-2xl border bg-background p-4"><strong class="text-foreground">未配置：</strong>当前没有能匹配该国的启用规则；Checkout 会返回税率不可用，无法生成含税金额，但不会改变运费模板的配送范围。</p>
+          <p class="rounded-2xl border bg-background p-4"><strong class="text-foreground">部分覆盖：</strong>只有州省或邮编规则；未命中这些细分规则的地址会返回税率不可用。</p>
           <p class="rounded-2xl border bg-background p-4"><strong class="text-foreground">数值一致：</strong>只说明结算国家默认率与快照标准率相同。仍需确认销售方纳税义务、商品税务类别、地区范围和生效日期。</p>
         </div>
       </section>
@@ -432,9 +421,13 @@
           <ShieldCheck class="mt-0.5 size-4 shrink-0 text-amber-700 dark:text-amber-300" />
           <div class="space-y-1 text-xs leading-relaxed text-muted-foreground">
             <p>这里维护 Checkout 实际读取的税率。匹配顺序为精确邮编、州默认、国家默认；外部快照不会自动写入这些规则。</p>
-            <p>显式配置 0% 是有效规则；未匹配到规则时 Checkout 报价和下单会被阻止，并返回“税率不可用”。</p>
+            <p>显式配置 0% 是有效规则；未匹配到规则时 Checkout 无法生成本次含税报价，并返回“税率不可用”。</p>
           </div>
         </div>
+      </section>
+
+      <section v-if="shippingTemplateScopeError" class="rounded-2xl border border-rose-500/20 bg-rose-500/5 p-4 text-xs leading-relaxed text-rose-700 dark:text-rose-300">
+        {{ shippingTemplateScopeError }}
       </section>
 
       <section v-if="editingTaxRateRule" class="rounded-3xl border bg-card p-5">
@@ -457,6 +450,9 @@
               <option value="" disabled>选择国家</option>
               <option v-for="country in taxRateRuleCountryOptions" :key="country.code" :value="country.code">{{ country.name }} ({{ country.code }})</option>
             </select>
+            <span v-if="loadingShippingTemplateScopes" class="mt-1.5 block text-[10px] leading-relaxed text-muted-foreground">正在读取启用运费模板的国家范围…</span>
+            <span v-else-if="taxRateRuleCountryOptions.length === 0" class="mt-1.5 block text-[10px] leading-relaxed text-rose-700 dark:text-rose-300">当前没有可选国家。请先在启用运费模板中声明明确的国家代码；EU 等区域表达式不会在税率页面复制字典。</span>
+            <span v-else class="mt-1.5 block text-[10px] leading-relaxed text-muted-foreground">国家选项来自启用运费模板的已声明范围。</span>
           </label>
           <label>
             <span class="block text-xs font-bold text-foreground">州 / 省代码（可空）</span>
@@ -632,18 +628,20 @@ interface TaxRateRuleView {
   enabled: boolean
 }
 
-interface TaxRateCoverageMarketView {
+interface TaxRateShippingTemplateScopeView {
   code: string
   name: string
   countries: string[]
+  regions: string[]
+  global: boolean
   enabled: boolean
 }
 
 interface TaxRateCoverageCountryRow {
   countryCode: string
   countryName: string
-  enabledMarketNames: string[]
-  disabledMarketNames: string[]
+  enabledShippingTemplateNames: string[]
+  disabledShippingTemplateNames: string[]
   hasSnapshotData: boolean
   snapshotStandardRate: string | null
   enabledCountryDefaultRule: TaxRateRuleView | null
@@ -681,16 +679,9 @@ const refreshIntervalOptions = [
   { hours: 4320, label: '每 180 天' },
   { hours: 8760, label: '每 365 天' },
 ]
-const taxRateManagementTabs = [
-  { value: 'config' as const, label: '数据源配置' },
-  { value: 'snapshot' as const, label: '当前快照' },
-  { value: 'coverage' as const, label: '地区覆盖核对' },
-  { value: 'rules' as const, label: '结算规则' },
-]
-
 const activeTab = useRouteTab({
   defaultValue: 'config',
-  values: ['config', 'snapshot', 'coverage', 'rules'],
+  values: ['config', 'snapshot', 'coverage', 'rules'] as const,
   routes: {
     config: 'TaxRateManagementConfig',
     snapshot: 'TaxRateManagementSnapshot',
@@ -706,18 +697,31 @@ const syncingSnapshot = ref(false)
 const loadingSnapshot = ref(false)
 const loadingTaxRateRules = ref(false)
 const loadingTaxRateCoverage = ref(false)
+const loadingShippingTemplateScopes = ref(false)
 const savingTaxRateRule = ref(false)
 const savedEnabled = ref(false)
 const savedRefreshIntervalHours = ref(720)
 const countrySearchText = ref('')
 const coverageSearchText = ref('')
 const taxRateRules = ref<TaxRateRuleView[]>([])
-const coverageMarkets = ref<TaxRateCoverageMarketView[]>([])
+const shippingTemplateScopes = ref<TaxRateShippingTemplateScopeView[]>([])
+const unresolvedShippingTemplateRegions = ref<string[]>([])
+const shippingTemplateScopeError = ref('')
 const taxRateCoverageError = ref('')
 const editingTaxRateRule = ref<TaxRateRuleDraft | null>(null)
-const taxRateRuleCountryOptions: TaxRateRuleCountryOption[] = allCountries
-  .map(([name, code]) => ({ code, name }))
-  .sort((left, right) => left.name.localeCompare(right.name))
+const taxRateRuleCountryOptions = computed<TaxRateRuleCountryOption[]>(() => {
+  const enabledScopes = shippingTemplateScopes.value.filter(scope => scope.enabled)
+  const countryCodes = new Set(enabledScopes.flatMap(scope => scope.countries))
+  if (enabledScopes.some(scope => scope.global)) {
+    for (const [, countryCode] of allCountries) countryCodes.add(countryCode)
+  }
+  return Array.from(countryCodes)
+    .map(code => ({
+      code,
+      name: allCountries.find(([, countryCode]) => countryCode === code)?.[0] || code,
+    }))
+    .sort((left, right) => left.name.localeCompare(right.name) || left.code.localeCompare(right.code))
+})
 
 const selectedTaxRateRuleRegionOptions = computed<TaxRateRuleRegionOption[]>(() => {
   const selectedCountryCode = editingTaxRateRule.value?.country
@@ -753,7 +757,7 @@ const sourceConfiguration = reactive<TaxRateSourceConfigurationView>({
   enabled: false,
   refresh_interval_hours: 720,
   requires_api_key: false,
-  coverage_description: 'VATcomply currently provides VAT rates for EU member states. It does not cover every storefront market or determine which product-specific rate applies.',
+  coverage_description: 'VATcomply currently provides VAT rates for EU member states. It does not cover every shipping-template country or determine which product-specific rate applies.',
 })
 
 const currentSnapshot = reactive<{
@@ -789,9 +793,9 @@ const taxRateCoverageRows = computed<TaxRateCoverageCountryRow[]>(() => {
     snapshotByCountry.set(countryCode, snapshotCountry)
   }
 
-  for (const market of coverageMarkets.value) {
-    const marketName = market.name?.trim() || market.code.trim().toUpperCase()
-    for (const rawCountryCode of market.countries || []) {
+  for (const templateScope of shippingTemplateScopes.value) {
+    const templateName = templateScope.name?.trim() || templateScope.code.trim().toUpperCase()
+    for (const rawCountryCode of templateScope.countries || []) {
       const countryCode = rawCountryCode.trim().toUpperCase()
       if (!countryCode) continue
       let row = countries.get(countryCode)
@@ -799,8 +803,8 @@ const taxRateCoverageRows = computed<TaxRateCoverageCountryRow[]>(() => {
         row = createTaxRateCoverageCountryRow(countryCode, snapshotByCountry)
         countries.set(countryCode, row)
       }
-      const marketNames = market.enabled ? row.enabledMarketNames : row.disabledMarketNames
-      if (!marketNames.includes(marketName)) marketNames.push(marketName)
+      const templateNames = templateScope.enabled ? row.enabledShippingTemplateNames : row.disabledShippingTemplateNames
+      if (!templateNames.includes(templateName)) templateNames.push(templateName)
     }
   }
 
@@ -835,29 +839,29 @@ const filteredTaxRateCoverageRows = computed(() => {
   return taxRateCoverageRows.value.filter((row) => (
     row.countryName.toLowerCase().includes(query) ||
     row.countryCode.toLowerCase().includes(query) ||
-    row.enabledMarketNames.some(name => name.toLowerCase().includes(query)) ||
-    row.disabledMarketNames.some(name => name.toLowerCase().includes(query))
+    row.enabledShippingTemplateNames.some(name => name.toLowerCase().includes(query)) ||
+    row.disabledShippingTemplateNames.some(name => name.toLowerCase().includes(query))
   ))
 })
 
-const enabledMarketCountryCount = computed(() => taxRateCoverageRows.value.filter(row => row.enabledMarketNames.length > 0).length)
-const enabledMarketCountriesWithDefaultRuleCount = computed(() => taxRateCoverageRows.value.filter(row => row.enabledMarketNames.length > 0 && row.enabledCountryDefaultRule).length)
-const enabledMarketCountriesWithRegionalRulesOnlyCount = computed(() => taxRateCoverageRows.value.filter(row => row.enabledMarketNames.length > 0 && !row.enabledCountryDefaultRule && row.enabledRegionalRuleCount > 0).length)
-const enabledMarketCountriesWithSnapshotStandardRateCount = computed(() => taxRateCoverageRows.value.filter(row => row.enabledMarketNames.length > 0 && row.snapshotStandardRate !== null).length)
+const shippingTemplateCountryCount = computed(() => taxRateCoverageRows.value.filter(row => row.enabledShippingTemplateNames.length > 0).length)
+const shippingTemplateCountriesWithDefaultRuleCount = computed(() => taxRateCoverageRows.value.filter(row => row.enabledShippingTemplateNames.length > 0 && row.enabledCountryDefaultRule).length)
+const shippingTemplateCountriesWithRegionalRulesOnlyCount = computed(() => taxRateCoverageRows.value.filter(row => row.enabledShippingTemplateNames.length > 0 && !row.enabledCountryDefaultRule && row.enabledRegionalRuleCount > 0).length)
+const shippingTemplateCountriesWithSnapshotStandardRateCount = computed(() => taxRateCoverageRows.value.filter(row => row.enabledShippingTemplateNames.length > 0 && row.snapshotStandardRate !== null).length)
 
 const createTaxRateCoverageCountryRow = (
   countryCode: string,
   snapshotByCountry: Map<string, { hasData: boolean; standardRate: string | null }>,
 ): TaxRateCoverageCountryRow => {
   const snapshotCountry = snapshotByCountry.get(countryCode)
-  const countryName = taxRateRuleCountryOptions.find(country => country.code === countryCode)?.name ||
+  const countryName = taxRateRuleCountryOptions.value.find(country => country.code === countryCode)?.name ||
     currentSnapshot.entries.find(entry => entry.country_code.trim().toUpperCase() === countryCode)?.country_name ||
     countryCode
   return {
     countryCode,
     countryName,
-    enabledMarketNames: [],
-    disabledMarketNames: [],
+    enabledShippingTemplateNames: [],
+    disabledShippingTemplateNames: [],
     hasSnapshotData: snapshotCountry?.hasData || false,
     snapshotStandardRate: snapshotCountry?.standardRate || null,
     enabledCountryDefaultRule: null,
@@ -912,6 +916,115 @@ const taxRateSnapshotComparisonClass = (row: TaxRateCoverageCountryRow): string 
 const extractTaxRateAdminResponsePayload = (response: { data?: any }): Record<string, any> => (
   response.data?.data?.data || response.data?.data || response.data || {}
 )
+
+const parseTaxRateShippingScopeValues = (value: unknown): string[] => {
+  if (Array.isArray(value)) return value.flatMap(parseTaxRateShippingScopeValues)
+  if (typeof value !== 'string') return []
+  const trimmed = value.trim()
+  if (!trimmed) return []
+  if (trimmed.startsWith('[')) {
+    try {
+      return parseTaxRateShippingScopeValues(JSON.parse(trimmed))
+    } catch {
+      return []
+    }
+  }
+  return trimmed
+    .split(/[\s,;|]+/)
+    .map(valuePart => valuePart.trim().toUpperCase())
+    .filter(Boolean)
+}
+
+const addTaxRateShippingScopeValues = (
+  countries: Set<string>,
+  regions: Set<string>,
+  value: unknown,
+): void => {
+  for (const scope of parseTaxRateShippingScopeValues(value)) {
+    if (/^[A-Z]{2}$/.test(scope)) countries.add(scope)
+    else regions.add(scope)
+  }
+}
+
+const isTaxRateShippingGlobalRegion = (region: string): boolean => ['*', 'ALL', 'GLOBAL', 'WORLDWIDE'].includes(region)
+
+const shippingTemplateScopeFromRecord = (template: any): TaxRateShippingTemplateScopeView => {
+  const countries = new Set<string>()
+  const regions = new Set<string>()
+  addTaxRateShippingScopeValues(countries, regions, template.free_shipping_countries)
+  for (const service of Array.isArray(template.carrier_services) ? template.carrier_services : []) {
+    if (service.enabled === false) continue
+    addTaxRateShippingScopeValues(countries, regions, service.countries)
+  }
+  for (const rule of Array.isArray(template.rules) ? template.rules : []) addTaxRateShippingScopeValues(countries, regions, rule.region)
+  const isSystemFreeShippingTemplate = String(template.template_kind || '').trim().toLowerCase() === 'system_free_shipping' || String(template.type || '').trim().toLowerCase() === 'free_shipping'
+  return {
+    code: String(template.id || '').trim(),
+    name: String(template.name || template.id || '').trim(),
+    countries: Array.from(countries).sort(),
+    regions: Array.from(regions).sort(),
+    global: Array.from(regions).some(isTaxRateShippingGlobalRegion) || (!isSystemFreeShippingTemplate && countries.size === 0 && regions.size === 0),
+    enabled: template.enabled === true,
+  }
+}
+
+const mergeTaxRateShippingTemplateCarrierServiceScope = (scope: TaxRateShippingTemplateScopeView, carrierService: any): void => {
+  if (!scope || carrierService?.enabled === false || carrierService?.carrier?.enabled === false) return
+  const countries = new Set(scope.countries)
+  const regions = new Set(scope.regions)
+  addTaxRateShippingScopeValues(countries, regions, carrierService.countries)
+  scope.countries = Array.from(countries).sort()
+  scope.regions = Array.from(regions).sort()
+  scope.global = scope.global || scope.regions.some(isTaxRateShippingGlobalRegion)
+}
+
+const extractTaxRateShippingTemplateRecords = (response: { data?: any }): any[] => {
+  const payload = extractTaxRateAdminResponsePayload(response)
+  if (Array.isArray(payload)) return payload
+  return Array.isArray(payload.data) ? payload.data : []
+}
+
+// The tax admin page consumes only the generic shipping country scope. It
+// deliberately ignores carrier-provider identity and never branches on 4PX or
+// Yanwen behavior.
+const fetchTaxRateShippingTemplateScopes = async (): Promise<TaxRateShippingTemplateScopeView[]> => {
+  const [shippingTemplateResponse, carrierServiceResponse] = await Promise.all([
+    axios.get('/api/admin/shipping/templates'),
+    axios.get('/api/admin/shipping/carrier-services?enabled=true'),
+  ])
+  const scopes = extractTaxRateShippingTemplateRecords(shippingTemplateResponse).map(shippingTemplateScopeFromRecord)
+  const scopesByTemplateCode = new Map(scopes.map(scope => [scope.code, scope]))
+  for (const carrierService of extractTaxRateShippingTemplateRecords(carrierServiceResponse)) {
+    const templateCode = String(carrierService.template_id || '').trim()
+    const scope = scopesByTemplateCode.get(templateCode)
+    if (scope) mergeTaxRateShippingTemplateCarrierServiceScope(scope, carrierService)
+  }
+  return scopes
+}
+
+const applyTaxRateShippingTemplateScopes = (scopes: TaxRateShippingTemplateScopeView[]): void => {
+  shippingTemplateScopes.value = scopes
+  unresolvedShippingTemplateRegions.value = Array.from(new Set(
+    scopes
+      .filter(scope => scope.enabled)
+      .flatMap(scope => scope.regions),
+  )).filter(region => !isTaxRateShippingGlobalRegion(region)).sort()
+}
+
+const loadTaxRateShippingTemplateScopes = async (): Promise<void> => {
+  loadingShippingTemplateScopes.value = true
+  shippingTemplateScopeError.value = ''
+  try {
+    applyTaxRateShippingTemplateScopes(await fetchTaxRateShippingTemplateScopes())
+  } catch (error) {
+    console.error('Failed to load shipping template country scope for tax rate rules:', error)
+    shippingTemplateScopes.value = []
+    unresolvedShippingTemplateRegions.value = []
+    shippingTemplateScopeError.value = '启用运费模板国家范围读取失败，因此不能安全创建税率规则。请刷新重试。'
+  } finally {
+    loadingShippingTemplateScopes.value = false
+  }
+}
 
 const loadTaxRateSourceConfiguration = async (): Promise<void> => {
   loadingConfiguration.value = true
@@ -984,41 +1097,38 @@ const loadTaxRateCoverage = async (): Promise<void> => {
   loadingTaxRateCoverage.value = true
   taxRateCoverageError.value = ''
   try {
-    const [marketResponse, ruleResponse, snapshotResponse] = await Promise.all([
-      axios.get('/api/admin/storefront/markets'),
+    const [shippingTemplateScopesResult, ruleResponse, snapshotResponse] = await Promise.all([
+      fetchTaxRateShippingTemplateScopes(),
       axios.get('/api/admin/settings/tax-rates/rules'),
       axios.get('/api/admin/settings/tax-rates/snapshot'),
     ])
-    const marketPayload = extractTaxRateAdminResponsePayload(marketResponse)
-    const marketRecords = Array.isArray(marketPayload)
-      ? marketPayload
-      : Array.isArray(marketPayload.markets)
-        ? marketPayload.markets
-        : []
     const rulePayload = extractTaxRateAdminResponsePayload(ruleResponse)
     const ruleRecords = rulePayload.rules || rulePayload.data
     const snapshotPayload = extractTaxRateAdminResponsePayload(snapshotResponse)
     const snapshotRecord = snapshotPayload.snapshot || null
     const snapshotEntries = Array.isArray(snapshotPayload.entries) ? snapshotPayload.entries : []
 
-    coverageMarkets.value = marketRecords.map((market: any) => ({
-      code: String(market.code || '').trim().toUpperCase(),
-      name: String(market.name || market.code || '').trim(),
-      countries: Array.isArray(market.countries) ? market.countries.map((country: unknown) => String(country).trim().toUpperCase()) : [],
-      enabled: market.enabled === true,
-    }))
+    applyTaxRateShippingTemplateScopes(shippingTemplateScopesResult)
+    shippingTemplateScopeError.value = ''
     taxRateRules.value = Array.isArray(ruleRecords) ? ruleRecords : []
     currentSnapshot.snapshot = snapshotRecord
     currentSnapshot.entries = snapshotEntries
   } catch (error) {
-    console.error('Failed to load tax rate market, snapshot, and checkout coverage:', error)
-    taxRateCoverageError.value = '市场、快照或 Checkout 规则读取失败，因此当前覆盖结果不完整。请刷新重试；读取成功前不会把缺失数据显示为“未配置”。'
+    console.error('Failed to load shipping template, snapshot, and checkout tax coverage:', error)
+    shippingTemplateScopes.value = []
+    unresolvedShippingTemplateRegions.value = []
+    shippingTemplateScopeError.value = '启用运费模板国家范围读取失败，因此当前覆盖结果不完整。请刷新重试。'
+    taxRateCoverageError.value = '运费模板、快照或 Checkout 规则读取失败，因此当前覆盖结果不完整。请刷新重试；读取成功前不会把缺失数据显示为“未配置”。'
   } finally {
     loadingTaxRateCoverage.value = false
   }
 }
 
 const startCreatingTaxRateRule = (): void => {
+  if (taxRateRuleCountryOptions.value.length === 0) {
+    toast.error('请先在启用运费模板中配置明确的国家范围')
+    return
+  }
   editingTaxRateRule.value = {
     id: null,
     name: '',
@@ -1063,7 +1173,7 @@ const saveTaxRateRule = async (): Promise<void> => {
   if (!draft) return
 
   const countryCode = draft.country.trim().toUpperCase()
-  if (!taxRateRuleCountryOptions.some(country => country.code === countryCode)) {
+  if (!taxRateRuleCountryOptions.value.some(country => country.code === countryCode)) {
     toast.error('请选择标准国家代码')
     return
   }
@@ -1216,6 +1326,6 @@ watch(activeTab, async (tab) => {
     await loadTaxRateCoverage()
     return
   }
-  await loadTaxRateRules()
+  await Promise.all([loadTaxRateRules(), loadTaxRateShippingTemplateScopes()])
 }, { immediate: true })
 </script>

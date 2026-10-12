@@ -14,6 +14,8 @@
     "illustrationAlt": "FAQ-Illustration",
     "selectQuestion": "Select a question to view the answer.",
     "pagesAriaLabel": "FAQ pages",
-    "pagesLabel": "FAQ pages"
+    "pagesLabel": "FAQ pages",
+    "loadFailed": "Die Antworten konnten nicht geladen werden. Bitte versuche es erneut.",
+    "showingSavedAnswers": "Die Antworten konnten nicht aktualisiert werden. Die zuletzt geladenen Antworten werden angezeigt."
   }
 }

@@ -922,7 +922,9 @@
       "illustrationAlt": "FAQ-illustration",
       "selectQuestion": "Select a question to view the answer.",
       "pagesAriaLabel": "FAQ pages",
-      "pagesLabel": "FAQ pages"
+      "pagesLabel": "FAQ pages",
+      "loadFailed": "Svaren kunde inte laddas. Försök igen.",
+      "showingSavedAnswers": "Svaren kunde inte uppdateras. De senast laddade svaren visas."
     }
   },
   "feedback": {

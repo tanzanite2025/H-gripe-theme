@@ -172,11 +172,11 @@
         </label>
 
         <label class="block space-y-1">
-          <span class="block text-[10px] font-black uppercase tracking-widest text-muted-foreground/70">SERVICE / 线路</span>
+          <span class="block text-[10px] font-black uppercase tracking-widest text-muted-foreground/70">SERVICE / 计费线路</span>
           <Select v-model="filters.carrier_service_id">
             <SelectTrigger class="h-9 w-full"><SelectValue /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">全部线路服务</SelectItem>
+              <SelectItem value="all">全部计费线路</SelectItem>
               <SelectItem v-for="service in filteredCarrierServices" :key="service.id" :value="String(service.id)">
                 {{ service.service_name }} / {{ service.service_code }}
               </SelectItem>

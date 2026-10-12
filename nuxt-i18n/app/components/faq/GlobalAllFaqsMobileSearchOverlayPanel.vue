@@ -40,14 +40,15 @@
     </div>
 
     <div class="global-all-faqs-mobile-search-overlay-panel__body">
-      <div
-        v-if="pending"
-        class="global-all-faqs-mobile-search-overlay-panel__loading"
-      >
-        {{ t('faq.ui.loadingAnswers', 'Loading FAQs...') }}
-      </div>
+      <StorefrontFaqLoadingAndFailurePlaceholder
+        :loading="pending"
+        :failed="failed"
+        :has-saved-answers="featuredItems.length > 0"
+        :empty="!pending && !failed && featuredItems.length === 0"
+        @retry="emit('retry')"
+      />
 
-      <template v-else-if="hasSearchQuery">
+      <template v-if="featuredItems.length > 0 && hasSearchQuery">
         <div class="global-all-faqs-mobile-search-overlay-panel__search-results">
           <div class="global-all-faqs-mobile-search-overlay-panel__section-heading">
             <div>
@@ -75,7 +76,7 @@
         </div>
       </template>
 
-      <template v-else>
+      <template v-else-if="featuredItems.length > 0">
         <div class="global-all-faqs-mobile-search-overlay-panel__questions-section">
           <div class="global-all-faqs-mobile-search-overlay-panel__section-heading">
             <div>
@@ -100,12 +101,14 @@
 import { computed } from 'vue'
 import { useI18n } from '#imports'
 import GlobalAllFaqsMobileSearchAccordion from '~/components/faq/GlobalAllFaqsMobileSearchAccordion.vue'
+import StorefrontFaqLoadingAndFailurePlaceholder from '~/components/faq/StorefrontFaqLoadingAndFailurePlaceholder.vue'
 import type {
   GlobalAllFaqFlatItem,
 } from '~/data/faq'
 
 const props = defineProps<{
   pending: boolean
+  failed: boolean
   searchQuery: string
   featuredItems: GlobalAllFaqFlatItem[]
   searchResults: GlobalAllFaqFlatItem[]
@@ -117,6 +120,7 @@ const emit = defineEmits<{
   'update:search-query': [value: string]
   'toggle-item': [itemId: string]
   close: []
+  retry: []
 }>()
 
 const { t } = useI18n()

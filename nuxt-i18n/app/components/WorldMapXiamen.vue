@@ -3,9 +3,9 @@
     class="premium-card mt-4 rounded-2xl p-4"
   >
     <div class="mb-3 flex flex-col gap-1">
-      <h3 class="text-sm font-semibold tz-text-primary">
+      <h2 class="text-sm font-semibold tz-text-primary">
         {{ t('companyGlobalPartners.map.title') }}
-      </h3>
+      </h2>
       <p class="text-xs tz-text-secondary">
         {{ t('companyGlobalPartners.map.description') }}
       </p>

@@ -127,7 +127,7 @@ export const trackingProviderName = (mapping: any, trackingProviders: any[] = []
 export const trackingMappingScopeLabel = (scope: string) => {
   const labels: Record<string, string> = {
     carrier: '承运商映射',
-    carrier_service: '线路服务映射',
+    carrier_service: '本地计费线路映射',
   }
   return labels[scope] || scope || '-'
 }

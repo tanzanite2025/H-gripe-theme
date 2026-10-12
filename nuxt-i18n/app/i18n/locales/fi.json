@@ -922,7 +922,9 @@
       "illustrationAlt": "FAQ-kuvitus",
       "selectQuestion": "Select a question to view the answer.",
       "pagesAriaLabel": "FAQ pages",
-      "pagesLabel": "FAQ pages"
+      "pagesLabel": "FAQ pages",
+      "loadFailed": "Vastauksia ei voitu ladata. Yritä uudelleen.",
+      "showingSavedAnswers": "Vastauksia ei voitu päivittää. Näytetään viimeksi ladatut vastaukset."
     }
   },
   "feedback": {

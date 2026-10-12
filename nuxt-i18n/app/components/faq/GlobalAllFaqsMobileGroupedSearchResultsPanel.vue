@@ -57,7 +57,7 @@
             leave-to-class="opacity-0 max-h-0"
           >
             <div
-              v-if="expandedItems.has(item.id)"
+              v-show="expandedItems.has(item.id)"
               class="global-all-faqs-mobile-grouped-search-results-panel__answer-wrap"
             >
               <div class="global-all-faqs-mobile-grouped-search-results-panel__answer">

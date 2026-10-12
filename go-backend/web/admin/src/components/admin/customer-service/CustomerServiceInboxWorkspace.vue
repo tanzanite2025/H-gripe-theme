@@ -1,20 +1,5 @@
 <template>
   <div class="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden">
-    <div class="flex shrink-0 items-center justify-between gap-2">
-      <div class="min-w-0">
-        <p class="truncate text-sm font-black">客服工作台</p>
-      </div>
-      <Button
-        variant="outline"
-        size="sm"
-        class="shrink-0 rounded-full"
-        @click="notificationSettingsOpen = true"
-      >
-        <Bell class="size-3.5" />
-        通知设置
-      </Button>
-    </div>
-
     <div class="flex shrink-0 items-center justify-between gap-2 lg:hidden">
       <div class="inline-flex min-w-0 flex-1 items-center rounded-lg border bg-muted/35 p-1">
         <Button
@@ -56,6 +41,7 @@
         :loading="loading"
         @apply="emit('apply')"
         @reset="emit('reset')"
+        @open-notification-settings="openCustomerServiceNotificationSettingsDialog"
       />
     </div>
 
@@ -166,6 +152,7 @@
           :loading="loading"
           @apply="applyMobileFilters"
           @reset="resetMobileFilters"
+          @open-notification-settings="openCustomerServiceNotificationSettingsDialog"
         />
       </div>
     </SheetContent>
@@ -249,7 +236,7 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { Bell, List, MessageSquare, Monitor, SlidersHorizontal, Volume1, Volume2 } from '@lucide/vue'
+import { List, MessageSquare, Monitor, SlidersHorizontal, Volume1, Volume2 } from '@lucide/vue'
 import CustomerServiceContextDialog from '@/components/admin/customer-service/CustomerServiceContextDialog.vue'
 import CustomerConversationDetailPanel from '@/components/admin/customer-service/CustomerConversationDetailPanel.vue'
 import CustomerConversationListPanel from '@/components/admin/customer-service/CustomerConversationListPanel.vue'
@@ -381,6 +368,11 @@ const openContextDialog = () => {
   if (!props.selectedConversation) return
   contextDialogOpen.value = true
   emit('refresh-context')
+}
+
+const openCustomerServiceNotificationSettingsDialog = (): void => {
+  mobileFiltersOpen.value = false
+  notificationSettingsOpen.value = true
 }
 
 const forwardToggleSelection = (conversation: CustomerConversation, selected: boolean) => {

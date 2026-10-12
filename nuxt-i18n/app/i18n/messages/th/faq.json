@@ -14,6 +14,8 @@
     "illustrationAlt": "ภาพประกอบ FAQ",
     "selectQuestion": "Select a question to view the answer.",
     "pagesAriaLabel": "FAQ pages",
-    "pagesLabel": "FAQ pages"
+    "pagesLabel": "FAQ pages",
+    "loadFailed": "ไม่สามารถโหลดคำตอบได้ โปรดลองอีกครั้ง",
+    "showingSavedAnswers": "ไม่สามารถอัปเดตคำตอบได้ กำลังแสดงคำตอบที่โหลดครั้งล่าสุด"
   }
 }

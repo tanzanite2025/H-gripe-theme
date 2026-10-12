@@ -14,6 +14,8 @@
     "noResults": "No FAQs found matching \"{query}\"",
     "loadingAnswers": "Loading answers",
     "illustrationAlt": "FAQ illustration",
-    "selectQuestion": "Select a question to view the answer."
+    "selectQuestion": "Select a question to view the answer.",
+    "loadFailed": "Answers could not be loaded. Please try again.",
+    "showingSavedAnswers": "Answers could not be updated. Showing the last loaded answers."
   }
 }

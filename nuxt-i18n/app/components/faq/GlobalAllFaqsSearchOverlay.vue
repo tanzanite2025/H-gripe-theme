@@ -22,6 +22,7 @@
         <div class="global-all-faqs-search-overlay__viewport">
           <GlobalAllFaqsDesktopSearchOverlayPanel
             :pending="pending"
+            :failed="Boolean(error)"
             :search-query="searchQuery"
             :featured-items="featuredItems"
             :search-results="searchResults"
@@ -29,10 +30,12 @@
             :expanded-items="expandedItems"
             @update:search-query="searchQuery = $event"
             @toggle-item="toggleItem"
+            @retry="refreshAllFaqData()"
             @close="emit('close')"
           />
           <GlobalAllFaqsMobileSearchOverlayPanel
             :pending="pending"
+            :failed="Boolean(error)"
             :search-query="searchQuery"
             :featured-items="featuredItems"
             :search-results="searchResults"
@@ -40,6 +43,7 @@
             :expanded-items="expandedItems"
             @update:search-query="searchQuery = $event"
             @toggle-item="toggleItem"
+            @retry="refreshAllFaqData()"
             @close="emit('close')"
           />
         </div>
@@ -66,6 +70,7 @@ const emit = defineEmits<{
 const { t } = useI18n()
 const {
   pending,
+  error,
   refreshAllFaqData,
   featuredItems,
   searchQuery,

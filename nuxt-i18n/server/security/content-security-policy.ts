@@ -376,7 +376,10 @@ export const createContentSecurityPolicy = (
   )
   const scriptFallbackSources = uniqueSources(staticScriptSources, cdnOrigins, configuredSources('NUXT_CSP_SCRIPT_SRC'))
   const scriptSources = uniqueSources(scriptTrustSources, "'self'", scriptFallbackSources)
-  const styleSources = uniqueSources(cdnOrigins, configuredSources('NUXT_CSP_STYLE_SRC'), hashes.style)
+  // A hash source makes browsers ignore unsafe-inline. Exclude style hashes in
+  // DEV so adding SSR critical CSS does not disable Vite's injected styles.
+  const inlineStyleSources = environment.NODE_ENV === 'development' ? [] : hashes.style
+  const styleSources = uniqueSources(cdnOrigins, configuredSources('NUXT_CSP_STYLE_SRC'), inlineStyleSources)
   const frameSources = uniqueSources(staticFrameSources, configuredSources('NUXT_CSP_FRAME_SRC'))
   // Vite injects component-scoped styles through runtime <style> elements in
   // development. Keep production hash-only, but allow that dev-only mechanism

@@ -156,7 +156,7 @@ const enUS = {
     shipping: 'Shipping',
     'shipping-templates': 'Freight Templates',
     'shipping-carriers': 'Carriers',
-    'shipping-services': 'Service Lines',
+    'shipping-services': 'Local Billing Routes',
     'shipping-packaging': 'Packaging Rules',
     'shipping-tracking': 'Tracking Configuration',
     'shipping-tracking-shipments': 'Tracking Jobs',

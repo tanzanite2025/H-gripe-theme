@@ -28,7 +28,7 @@ for (const [modulePath, loader] of Object.entries(pageMessageModules)) {
 }
 
 export const pageMessageNamespaces = Array.from(new Set(
-  [...pageMessageLoaders.keys()].map(key => key.split(':')[0]).filter(Boolean),
+  [...pageMessageLoaders.keys()].map(key => key.split(':')[0]).filter((namespace): namespace is string => Boolean(namespace)),
 ))
 
 const isPageMessageValue = (value: unknown): value is PageMessageValue => (

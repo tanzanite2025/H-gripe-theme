@@ -6,6 +6,7 @@
 
     <GuideCategoryChildRouteNavigationCards
       v-if="isGuideCategoryLandingPage"
+      id="wheelset-guide-navigation"
       eyebrow="Wheelset Guides"
       :heading="t('guidesWheelsetBuyers.title')"
       description="Use the wheelset guide sections to compare buying, safety, custom build, appearance, and freehub decisions."
@@ -394,6 +395,10 @@ const goToAboutAppearance = async () => {
 <style src="~/assets/css/guide-sections.css"></style>
 
 <style scoped>
+#wheelset-guide-navigation {
+  scroll-margin-top: calc(var(--tz-site-header-spacer-height) + 1rem);
+}
+
 .products-page__title {
   margin: 0 0 0.75rem;
   font-size: var(--tz-type-page-title);

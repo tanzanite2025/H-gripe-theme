@@ -455,7 +455,7 @@ export const createFooterMenusFromRoutes = (
         titleKey: section.titleKey,
         fallback: section.titleFallback,
         ...(titleRoute ? { titleLinkTo: titleRoute.path } : {}),
-        links: section.id === 'shop' && options.shopLinks !== undefined
+        links: section.id === 'shop' && options.shopLinks !== undefined && options.shopLinks.length > 0
           ? [...options.shopLinks]
           : createFlatFooterSectionLinks(candidates.filter(candidate => candidate !== titleRoute), section),
       }
@@ -499,5 +499,7 @@ export const createFooterShopLinksFromProductCategories = (
     .map(createFooterShopLinkFromProductCategory)
     .filter((link): link is FooterNavigationItem => Boolean(link))
 
-  return links
+  return links.length > 0
+    ? links
+    : [{ labelKey: 'products.nav.shop', fallback: 'Shop', to: '/shop' }]
 }

@@ -28,7 +28,7 @@
           <Badge variant="outline" class="border-amber-200 bg-amber-50 text-amber-700">Phase 4</Badge>
         </div>
         <ul class="mt-4 space-y-2 text-sm text-muted-foreground">
-          <li class="flex gap-2"><CircleCheck class="mt-0.5 size-4 text-emerald-600" />承运商线路服务基础档案、首续重和体积重参数</li>
+          <li class="flex gap-2"><CircleCheck class="mt-0.5 size-4 text-emerald-600" />承运商本地计费线路基础档案、首续重和体积重参数</li>
           <li class="flex gap-2"><CircleCheck class="mt-0.5 size-4 text-emerald-600" />前台结账报价 API 与报价快照</li>
           <li class="flex gap-2"><CircleCheck class="mt-0.5 size-4 text-emerald-600" />17TRACK 等追踪 Provider API 凭证、Webhook、同步策略配置</li>
           <li class="flex gap-2"><CircleCheck class="mt-0.5 size-4 text-emerald-600" />追踪任务面板已承接手动同步、自动轮询和 Webhook 状态落库</li>

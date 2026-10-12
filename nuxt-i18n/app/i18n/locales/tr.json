@@ -922,7 +922,9 @@
       "illustrationAlt": "FAQ görseli",
       "selectQuestion": "Select a question to view the answer.",
       "pagesAriaLabel": "FAQ pages",
-      "pagesLabel": "FAQ pages"
+      "pagesLabel": "FAQ pages",
+      "loadFailed": "Yanıtlar yüklenemedi. Lütfen tekrar deneyin.",
+      "showingSavedAnswers": "Yanıtlar güncellenemedi. Son yüklenen yanıtlar gösteriliyor."
     }
   },
   "feedback": {

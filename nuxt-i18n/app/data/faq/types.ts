@@ -51,6 +51,8 @@ export interface PageFaqProps {
   data?: PageFaqData
   /** Optional custom title override */
   title?: string
+  /** Heading level for the surrounding page's content hierarchy */
+  headingTag?: 'h2' | 'h3'
   /** Theme variant */
   theme?: 'light' | 'dark'
   /** Maximum number of items to display (for preview mode) */

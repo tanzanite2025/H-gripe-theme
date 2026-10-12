@@ -125,7 +125,16 @@ const tireGuideRouteTab = resolvePageSubNavigationBreadcrumb(
   [{ path: '/guides/tireguides', tabs: tireGuideTabs }],
 )
 assert.equal(tireGuideRouteTab, null, 'Migrated selector must not retain a virtual guide route')
-assert.equal(tireGuideTabs.length, 5)
+assert.equal(tireGuideTabs.length, 4)
+
+assert.equal(resolvePageSubNavigationBreadcrumb(
+  '/guides/tireguides/tire-rim-width-compatibility',
+  [{ path: '/guides/tireguides', tabs: tireGuideTabs }],
+), null, 'Migrated tire/rim tool must not retain a virtual guide route')
+assert.equal(resolvePageSubNavigationBreadcrumb(
+  '/tools/tire-rim-width-compatibility-engine',
+  [],
+), null)
 
 
 const clearanceRouteTab = resolvePageSubNavigationBreadcrumb(
@@ -273,12 +282,12 @@ assert.equal(switchSibling({
 // A same-family root switch can retain its selected descendants; a different
 // branch falls back to its registered representative route when no match exists.
 assert.equal(switchSibling({
-  currentPath: '/guides/tireguides/tire-rim-width-compatibility',
+  currentPath: '/guides/tireguides/tubeless',
   breadcrumbPath: '/guides',
   siblingPath: '/guides',
   fallbackPath: '/guides/tireguides',
-  routePatterns: ['/guides/tireguides/:tab(size|tire-rim-width-compatibility)'],
-}), '/guides/tireguides/tire-rim-width-compatibility')
+  routePatterns: ['/guides/tireguides/:tab(tire-size-markings|tubeless)'],
+}), '/guides/tireguides/tubeless')
 assert.equal(switchSibling({
   currentPath: '/guides/tireguides/tire-rim-width-compatibility',
   breadcrumbPath: '/guides',

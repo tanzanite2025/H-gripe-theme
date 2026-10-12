@@ -57,6 +57,10 @@ const sections = createFooterMenusFromRoutes([
     footerLabelKey: 'toolsNavigation.dynamicTirePressureCalculatorLabel',
     footerLabelFallback: 'Dynamic tire pressure calculator',
   }),
+  createNormalizedFooterTestRoute('/tools/tire-rim-width-compatibility-engine', 'tools-tire-rim-width-compatibility-engine', {
+    footerLabelKey: 'toolsNavigation.tireRimWidthCompatibilityEngineLabel',
+    footerLabelFallback: 'Tire and rim width compatibility engine',
+  }),
   createNormalizedFooterTestRoute('/tools/spoke-stress-relief-mechanics', 'tools-spoke-stress-relief-mechanics', {
     footerLabelKey: 'toolsNavigation.spokeStressReliefMechanicsLabel',
     footerLabelFallback: 'Stainless steel spoke stress-relief mechanics',
@@ -97,6 +101,7 @@ assert.deepEqual(flattenFooterNavigationItems(toolsSection.links).map(link => li
   '/tools/spoke-length-calculator',
   '/tools/spoke-lacing-topology-simulator',
   '/tools/dynamic-tire-pressure-calculator',
+  '/tools/tire-rim-width-compatibility-engine',
   '/tools/spoke-stress-relief-mechanics',
   '/tools/valve-length-fitment-calculator',
   '/tools/freehub-cassette-fitment-engine',
@@ -106,7 +111,7 @@ assert.ok(guidesSection, 'GUIDES column should be discovered from its static des
 const tireGuidesGroup = guidesSection.links.find(link => link.to === '/guides/tireguides')
 assert.ok(tireGuidesGroup, 'Tire Guides should retain its real landing page')
 assert.equal(tireGuidesGroup.fallback, 'Tire Guides')
-assert.equal(tireGuidesGroup.children?.length, 5, 'Only remaining tire guide tabs should be listed')
+assert.equal(tireGuidesGroup.children?.length, 4, 'Only remaining tire guide tabs should be listed')
 assert.deepEqual(
   tireGuidesGroup.children?.map(link => link.to),
   [
@@ -114,7 +119,6 @@ assert.deepEqual(
     '/guides/tireguides/tire-frame-clearance',
     '/guides/tireguides/schwalbe-tire-circumference',
     '/guides/tireguides/tubeless',
-    '/guides/tireguides/tire-rim-width-compatibility',
   ],
 )
 
@@ -166,7 +170,10 @@ assert.deepEqual(shopCategoryLinks, [
   },
   { fallback: 'Tires', to: '/shop/tires' },
 ])
-assert.deepEqual(createFooterShopLinksFromProductCategories([]), [])
+assert.deepEqual(
+  createFooterShopLinksFromProductCategories([]),
+  [{ labelKey: 'products.nav.shop', fallback: 'Shop', to: '/shop' }],
+)
 
 const sectionsWithProductCategories = createFooterMenusFromRoutes(
   [
@@ -187,10 +194,12 @@ const sectionsWhileProductCategoriesAreLoading = createFooterMenusFromRoutes(
   ],
   { shopLinks: [] },
 )
-assert.equal(
-  sectionsWhileProductCategoriesAreLoading.find(section => section.id === 'shop'),
-  undefined,
-  'SHOP must not fall back to a generic Shop link while categories are unavailable',
+const shopSectionWhileProductCategoriesAreLoading = sectionsWhileProductCategoriesAreLoading
+  .find(section => section.id === 'shop')
+assert.ok(shopSectionWhileProductCategoriesAreLoading, 'SHOP must remain visible while categories are unavailable')
+assert.deepEqual(
+  shopSectionWhileProductCategoriesAreLoading.links.map(link => link.to),
+  ['/shop'],
 )
 
 console.log('Footer menu route discovery contract passed.')

@@ -67,7 +67,7 @@ The root development command starts local infrastructure and the three app serve
 - Go API: `http://localhost:10241`
 - Admin console: `http://localhost:10242`
 - Site Quality runner: `http://localhost:10243/healthz` (override with `SITE_QUALITY_RUNNER_HOST_PORT`)
-- PostgreSQL host port: `localhost:9400`
+- PostgreSQL host port: `localhost:9410` (override with `POSTGRES_HOST_PORT`)
 - Redis host port: `localhost:10662` (override with `REDIS_HOST_PORT`)
 
 It also clears the app ports before starting and writes logs under `output/dev/`.
@@ -146,7 +146,7 @@ Compose ports:
 - Storefront: `http://localhost:9100`
 - API: `http://localhost:9200`
 - Site Quality runner: `http://localhost:10243/healthz` (override with `SITE_QUALITY_RUNNER_HOST_PORT`)
-- PostgreSQL: `localhost:9400`
+- PostgreSQL: `localhost:9410` (override with `POSTGRES_HOST_PORT`)
 - Redis: `localhost:10662` (override with `REDIS_HOST_PORT`)
 
 The admin console is not a service in the root Compose file; run it manually from `go-backend/web/admin/`.

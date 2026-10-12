@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -218,46 +219,46 @@ func TestCommercialCrawlerProtectionSnapshotIncludesBuiltInIntelligenceSeeds(t *
 	}
 }
 
-func TestCommercialCrawlerRobotsTxtAndNginxStayInSync(t *testing.T) {
+func TestCommercialCrawlerRobotsExclusionPolicyAndNginxStayInSync(t *testing.T) {
 	root := findRepoRoot(t)
 
-	robotsPath := filepath.Join(root, "nuxt-i18n", "public", "robots.txt")
+	robotsPath := filepath.Join(root, "nuxt-i18n", "config", "storefront", "commercialCrawlerRobotsExclusionPolicy.json")
 	nginxPath := filepath.Join(root, "deployment", "nginx", "theme-web.conf")
 
 	robotsContent, err := os.ReadFile(robotsPath)
 	if err != nil {
-		t.Fatalf("read robots.txt: %v", err)
+		t.Fatalf("read robots exclusion policy: %v", err)
 	}
 	nginxContent, err := os.ReadFile(nginxPath)
 	if err != nil {
 		t.Fatalf("read nginx conf: %v", err)
 	}
 
-	robotsText := string(robotsContent)
+	var robotsPolicy struct {
+		BlockedUserAgents []string `json:"blocked_user_agents"`
+		WildcardUserAgent string   `json:"wildcard_user_agent"`
+		WildcardDisallow  string   `json:"wildcard_disallow"`
+	}
+	if err := json.Unmarshal(robotsContent, &robotsPolicy); err != nil {
+		t.Fatalf("parse robots exclusion policy: %v", err)
+	}
 	nginxText := strings.ToLower(string(nginxContent))
 	rules := CommercialCrawlerRules()
+	if len(robotsPolicy.BlockedUserAgents) != len(rules) {
+		t.Fatal("robots exclusion policy must match the API commercial crawler rules")
+	}
 
-	for _, rule := range rules {
-		if !strings.Contains(robotsText, "User-agent: "+rule.UserAgent) {
-			t.Fatalf("robots.txt missing user-agent %q", rule.UserAgent)
+	for index, rule := range rules {
+		if robotsPolicy.BlockedUserAgents[index] != rule.UserAgent {
+			t.Fatalf("robots exclusion policy user-agent = %q, want %q", robotsPolicy.BlockedUserAgents[index], rule.UserAgent)
 		}
 		if !strings.Contains(nginxText, strings.ToLower(rule.UserAgent)) {
 			t.Fatalf("nginx conf missing crawler token %q", rule.UserAgent)
 		}
 	}
 
-	var commercialGroup strings.Builder
-	for _, rule := range rules {
-		commercialGroup.WriteString("User-agent: ")
-		commercialGroup.WriteString(rule.UserAgent)
-		commercialGroup.WriteByte('\n')
-	}
-	commercialGroup.WriteString("Disallow: /")
-	if !strings.Contains(robotsText, commercialGroup.String()) {
-		t.Fatal("robots.txt must disallow the complete commercial crawler group")
-	}
-	if !strings.Contains(robotsText, "User-Agent: *\nDisallow:") {
-		t.Fatal("robots.txt must retain an allow-all wildcard group")
+	if robotsPolicy.WildcardUserAgent != "*" || robotsPolicy.WildcardDisallow != "" {
+		t.Fatal("robots exclusion policy must retain an allow-all wildcard group")
 	}
 }
 
@@ -270,8 +271,8 @@ func TestCommercialCrawlerProtectionSnapshotIncludesRobotsPolicy(t *testing.T) {
 	if policy["path"] != "/robots.txt" {
 		t.Fatalf("robots txt path = %v, want /robots.txt", policy["path"])
 	}
-	if policy["source"] != "nuxt-i18n/public/robots.txt" {
-		t.Fatalf("robots txt source = %v, want nuxt-i18n/public/robots.txt", policy["source"])
+	if policy["source"] != "nuxt-i18n/server/routes/robots.txt.ts" {
+		t.Fatalf("robots txt source = %v, want nuxt-i18n/server/routes/robots.txt.ts", policy["source"])
 	}
 }
 
@@ -283,7 +284,7 @@ func findRepoRoot(t *testing.T) string {
 		t.Fatalf("getwd: %v", err)
 	}
 	for {
-		if _, err := os.Stat(filepath.Join(dir, "nuxt-i18n", "public", "robots.txt")); err == nil {
+		if _, err := os.Stat(filepath.Join(dir, "nuxt-i18n", "config", "storefront", "commercialCrawlerRobotsExclusionPolicy.json")); err == nil {
 			return dir
 		}
 		parent := filepath.Dir(dir)

@@ -542,7 +542,7 @@ func setDefaults() {
 
 	viper.SetDefault("database.driver", "postgres")
 	viper.SetDefault("database.host", "localhost")
-	viper.SetDefault("database.port", 9400)
+	viper.SetDefault("database.port", 9410)
 	viper.SetDefault("database.username", "commerce_platform")
 	viper.SetDefault("database.password", "commerce_platform_password")
 	viper.SetDefault("database.database", "commerce_platform")
