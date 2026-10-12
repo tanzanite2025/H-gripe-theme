@@ -12,5 +12,7 @@
   "spokeLacingTopologySimulatorLabel": "스포크 조립 패턴 시뮬레이터",
   "spokeLacingTopologySimulatorDescription": "스포크 구멍 위치, 조립 패턴, G3 및 2:1 배열과 양쪽 플랜지 형상을 미리 확인할 수 있으며 설명과 미리보기 한계를 제공합니다.",
   "dynamicTirePressureCalculatorLabel": "동적 타이어 압력 계산기",
-  "dynamicTirePressureCalculatorDescription": "하중, 공기압, 속도와 기울기가 추정 접지 면적과 코너링 힘을 어떻게 바꾸는지 확인하세요."
+  "dynamicTirePressureCalculatorDescription": "하중, 공기압, 속도와 기울기가 추정 접지 면적과 코너링 힘을 어떻게 바꾸는지 확인하세요.",
+  "spokeStressReliefMechanicsLabel": "Stainless steel spoke stress-relief mechanics",
+  "spokeStressReliefMechanicsDescription": "Calculate axial spoke elongation from material, section, length, and working tension inputs with the full engineering context."
 }

@@ -12,5 +12,7 @@
   "spokeLacingTopologySimulatorLabel": "Simulatore di schemi di raggiatura",
   "spokeLacingTopologySimulatorDescription": "Visualizza posizioni dei fori, schemi di raggiatura, configurazioni G3 e 2:1 e geometria di entrambe le flange, con spiegazioni e limiti dell’anteprima.",
   "dynamicTirePressureCalculatorLabel": "Calcolatore dinamico della pressione degli pneumatici",
-  "dynamicTirePressureCalculatorDescription": "Scopri come carico, pressione, velocità e inclinazione modificano l’area di contatto e la forza in curva stimate."
+  "dynamicTirePressureCalculatorDescription": "Scopri come carico, pressione, velocità e inclinazione modificano l’area di contatto e la forza in curva stimate.",
+  "spokeStressReliefMechanicsLabel": "Stainless steel spoke stress-relief mechanics",
+  "spokeStressReliefMechanicsDescription": "Calculate axial spoke elongation from material, section, length, and working tension inputs with the full engineering context."
 }

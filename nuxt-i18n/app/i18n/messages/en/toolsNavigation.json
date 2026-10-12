@@ -12,5 +12,7 @@
   "spokeLacingTopologySimulatorLabel": "Spoke lacing topology simulator",
   "spokeLacingTopologySimulatorDescription": "Preview spoke hole positions, lacing patterns, G3 and 2:1 layouts, and dual-flange geometry, with explanations and preview limits.",
   "dynamicTirePressureCalculatorLabel": "Dynamic tire pressure calculator",
-  "dynamicTirePressureCalculatorDescription": "Explore how load, pressure, speed, and lean change estimated tire contact area and cornering force."
+  "dynamicTirePressureCalculatorDescription": "Explore how load, pressure, speed, and lean change estimated tire contact area and cornering force.",
+  "spokeStressReliefMechanicsLabel": "Stainless steel spoke stress-relief mechanics",
+  "spokeStressReliefMechanicsDescription": "Calculate axial spoke elongation from material, section, length, and working tension inputs with the full engineering context."
 }

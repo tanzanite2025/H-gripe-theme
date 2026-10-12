@@ -12,5 +12,7 @@
   "spokeLacingTopologySimulatorLabel": "Simulator för ekringsmönster",
   "spokeLacingTopologySimulatorDescription": "Förhandsvisa ekerhålens lägen, ekringsmönster, G3- och 2:1-layouter samt båda flänsarnas geometri med förklaringar och begränsningar.",
   "dynamicTirePressureCalculatorLabel": "Dynamisk däcktryckskalkylator",
-  "dynamicTirePressureCalculatorDescription": "Se hur belastning, tryck, hastighet och lutning ändrar den uppskattade kontaktytan och kurvkraften."
+  "dynamicTirePressureCalculatorDescription": "Se hur belastning, tryck, hastighet och lutning ändrar den uppskattade kontaktytan och kurvkraften.",
+  "spokeStressReliefMechanicsLabel": "Stainless steel spoke stress-relief mechanics",
+  "spokeStressReliefMechanicsDescription": "Calculate axial spoke elongation from material, section, length, and working tension inputs with the full engineering context."
 }

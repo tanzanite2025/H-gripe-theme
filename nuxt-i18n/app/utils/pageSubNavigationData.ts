@@ -140,18 +140,6 @@ export const wheelsetBuyerTabs = [
 
 export type WheelsetBuyerTabId = (typeof wheelsetBuyerTabs)[number]['id']
 
-export const spokeGuideTabs = [
-  {
-    id: 'stainless-steel-microstructural-dislocation-mechanics',
-    labelKey: 'guidesSpokeDislocationMechanics.title',
-    fallback: 'Stainless steel spoke axial elongation calculator',
-    description: 'Calculate axial elongation from spoke material, area, length, and working tension inputs.',
-    to: '/guides/spokeguides/stainless-steel-microstructural-dislocation-mechanics',
-  },
-] as const satisfies readonly PageSubNavigationTab[]
-
-export type SpokeGuideTabId = (typeof spokeGuideTabs)[number]['id']
-
 export const companyAboutTabs = [
   {
     id: 'factory',
@@ -353,7 +341,6 @@ export type PictureWarehouseTabId = (typeof pictureWarehouseTabs)[number]['id']
 export const virtualPageSubNavigationEntries = [
   { path: '/guides/tireguides', tabs: tireGuideTabs },
   { path: '/guides/wheelset-buyers', tabs: wheelsetBuyerTabs },
-  { path: '/guides/spokeguides', tabs: spokeGuideTabs },
   { path: '/company/about', tabs: companyAboutTabs },
   { path: '/support/warranty', tabs: warrantyTabs },
   { path: '/support/test-report', tabs: testReportTabs },

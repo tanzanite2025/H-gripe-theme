@@ -13,7 +13,9 @@
     "spokeLacingTopologySimulatorLabel": "Simulateur de motifs de rayonnage",
     "spokeLacingTopologySimulatorDescription": "Visualisez les positions des trous, les motifs de rayonnage, les dispositions G3 et 2:1 et la géométrie des deux flasques, avec explications et limites de prévisualisation.",
   "dynamicTirePressureCalculatorLabel": "Calculateur dynamique de pression des pneus",
-  "dynamicTirePressureCalculatorDescription": "Découvrez comment la charge, la pression, la vitesse et l’inclinaison modifient la surface de contact et la force en virage estimées."
+  "dynamicTirePressureCalculatorDescription": "Découvrez comment la charge, la pression, la vitesse et l’inclinaison modifient la surface de contact et la force en virage estimées.",
+    "spokeStressReliefMechanicsLabel": "Stainless steel spoke stress-relief mechanics",
+    "spokeStressReliefMechanicsDescription": "Calculate axial spoke elongation from material, section, length, and working tension inputs with the full engineering context."
   },
   "accountSidebar": {
     "addresses": {

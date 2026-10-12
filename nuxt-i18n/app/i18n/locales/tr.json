@@ -13,7 +13,9 @@
     "spokeLacingTopologySimulatorLabel": "Jant teli örüm düzeni simülatörü",
     "spokeLacingTopologySimulatorDescription": "Tel deliği konumlarını, örüm düzenlerini, G3 ve 2:1 yerleşimlerini ve iki flanşın geometrisini açıklamalar ve önizleme sınırlarıyla inceleyin.",
   "dynamicTirePressureCalculatorLabel": "Dinamik lastik basıncı hesaplayıcı",
-  "dynamicTirePressureCalculatorDescription": "Yükün, basıncın, hızın ve yatış açısının tahmini lastik temas alanını ve viraj kuvvetini nasıl değiştirdiğini inceleyin."
+  "dynamicTirePressureCalculatorDescription": "Yükün, basıncın, hızın ve yatış açısının tahmini lastik temas alanını ve viraj kuvvetini nasıl değiştirdiğini inceleyin.",
+    "spokeStressReliefMechanicsLabel": "Stainless steel spoke stress-relief mechanics",
+    "spokeStressReliefMechanicsDescription": "Calculate axial spoke elongation from material, section, length, and working tension inputs with the full engineering context."
   },
   "accountSidebar": {
     "addresses": {

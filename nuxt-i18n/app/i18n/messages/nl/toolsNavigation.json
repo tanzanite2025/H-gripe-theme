@@ -12,5 +12,7 @@
   "spokeLacingTopologySimulatorLabel": "Simulator voor spaakpatronen",
   "spokeLacingTopologySimulatorDescription": "Bekijk spaakgatposities, spaakpatronen, G3- en 2:1-indelingen en de geometrie van beide flenzen, met uitleg en beperkingen van de voorvertoning.",
   "dynamicTirePressureCalculatorLabel": "Dynamische bandenspanningscalculator",
-  "dynamicTirePressureCalculatorDescription": "Ontdek hoe belasting, bandenspanning, snelheid en hellingshoek het geschatte contactoppervlak en de bochtkracht veranderen."
+  "dynamicTirePressureCalculatorDescription": "Ontdek hoe belasting, bandenspanning, snelheid en hellingshoek het geschatte contactoppervlak en de bochtkracht veranderen.",
+  "spokeStressReliefMechanicsLabel": "Stainless steel spoke stress-relief mechanics",
+  "spokeStressReliefMechanicsDescription": "Calculate axial spoke elongation from material, section, length, and working tension inputs with the full engineering context."
 }

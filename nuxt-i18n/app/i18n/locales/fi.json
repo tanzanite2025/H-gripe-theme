@@ -13,7 +13,9 @@
     "spokeLacingTopologySimulatorLabel": "Pinnojen puolauksen simulaattori",
     "spokeLacingTopologySimulatorDescription": "Esikatsele pinnanreikien sijainteja, puolauskuvioita, G3- ja 2:1-järjestelyjä sekä molempien laippojen geometriaa selityksineen ja rajoituksineen.",
   "dynamicTirePressureCalculatorLabel": "Dynaaminen rengaspaineen laskuri",
-  "dynamicTirePressureCalculatorDescription": "Tutki, miten kuorma, paine, nopeus ja kallistus muuttavat renkaan arvioitua kosketusalaa ja kaarrevoimaa."
+  "dynamicTirePressureCalculatorDescription": "Tutki, miten kuorma, paine, nopeus ja kallistus muuttavat renkaan arvioitua kosketusalaa ja kaarrevoimaa.",
+    "spokeStressReliefMechanicsLabel": "Stainless steel spoke stress-relief mechanics",
+    "spokeStressReliefMechanicsDescription": "Calculate axial spoke elongation from material, section, length, and working tension inputs with the full engineering context."
   },
   "accountSidebar": {
     "addresses": {

@@ -9,7 +9,7 @@ import {
 } from '../app/utils/breadcrumbRouteNavigation.js'
 import { resolvePageSubNavigationBreadcrumb } from '../app/utils/pageSubNavigationBreadcrumb.js'
 import type { PageSubNavigationEntry } from '../app/utils/pageSubNavigationData.js'
-import { spokeGuideTabs, tireGuideTabs, wheelsetBuyerTabs } from '../app/utils/pageSubNavigationData.js'
+import { tireGuideTabs, wheelsetBuyerTabs } from '../app/utils/pageSubNavigationData.js'
 
 const entries: PageSubNavigationEntry[] = [
   {
@@ -147,19 +147,9 @@ assert.equal(wheelsetCanonical?.kind, 'canonical')
 assert.equal(wheelsetCanonical?.entry.path, '/guides/wheelset-buyers')
 assert.notEqual(wheelsetCanonical?.entry, canonical?.entry)
 
-const spokeGuideEntries: PageSubNavigationEntry[] = [
-  { path: '/guides/spokeguides', tabs: spokeGuideTabs },
-]
-const spokeCanonical = resolvePageSubNavigationBreadcrumb('/guides/spokeguides', spokeGuideEntries)
-assert.equal(spokeCanonical?.kind, 'canonical')
-assert.equal(spokeCanonical?.entry.path, '/guides/spokeguides')
-const spokeCalculatorTab = resolvePageSubNavigationBreadcrumb(
-  '/zh_cn/guides/spokeguides/spoke-length-calculator',
-  spokeGuideEntries,
-  ['en', 'zh_cn'],
-)
-assert.equal(spokeCalculatorTab, null, 'Retired calculator must not remain a spoke-guide tab')
-assert.equal(resolvePageSubNavigationBreadcrumb('/zh_cn/tools/spoke-length-calculator', spokeGuideEntries, ['en', 'zh_cn']), null)
+assert.equal(resolvePageSubNavigationBreadcrumb('/guides/spokeguides', [], ['en', 'zh_cn']), null, 'Retired Spoke Guides category must not remain a breadcrumb owner')
+assert.equal(resolvePageSubNavigationBreadcrumb('/zh_cn/guides/spokeguides/stainless-steel-microstructural-dislocation-mechanics', [], ['en', 'zh_cn']), null, 'Retired stainless-steel guide must not remain a virtual guide tab')
+assert.equal(resolvePageSubNavigationBreadcrumb('/zh_cn/tools/spoke-stress-relief-mechanics', [], ['en', 'zh_cn']), null)
 
 assert.equal(resolvePageSubNavigationBreadcrumb(
   '/zh_cn/guides/wheelset-buyers/wheelset-spoke-lacing-topology-and-geometry-reference',

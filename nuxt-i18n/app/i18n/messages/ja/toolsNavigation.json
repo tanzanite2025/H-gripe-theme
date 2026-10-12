@@ -12,5 +12,7 @@
   "spokeLacingTopologySimulatorLabel": "スポーク組み方トポロジーシミュレーター",
   "spokeLacingTopologySimulatorDescription": "スポーク穴位置、組み方、G3・2:1配置、左右フランジの形状を操作して確認できます。説明とプレビューの制限を含みます。",
   "dynamicTirePressureCalculatorLabel": "動的タイヤ空気圧計算ツール",
-  "dynamicTirePressureCalculatorDescription": "荷重、空気圧、速度、リーン角が推定接地面積とコーナリングフォースをどう変えるかを確認できます。"
+  "dynamicTirePressureCalculatorDescription": "荷重、空気圧、速度、リーン角が推定接地面積とコーナリングフォースをどう変えるかを確認できます。",
+  "spokeStressReliefMechanicsLabel": "Stainless steel spoke stress-relief mechanics",
+  "spokeStressReliefMechanicsDescription": "Calculate axial spoke elongation from material, section, length, and working tension inputs with the full engineering context."
 }

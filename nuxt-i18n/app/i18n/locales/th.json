@@ -13,7 +13,9 @@
     "spokeLacingTopologySimulatorLabel": "เครื่องจำลองรูปแบบการขึ้นซี่ล้อ",
     "spokeLacingTopologySimulatorDescription": "ดูตัวอย่างตำแหน่งรูซี่ล้อ รูปแบบการขึ้นซี่ การจัดวาง G3 และ 2:1 และรูปทรงของหน้าแปลนทั้งสอง พร้อมคำอธิบายและข้อจำกัดของภาพตัวอย่าง",
   "dynamicTirePressureCalculatorLabel": "เครื่องคำนวณแรงดันลมยางแบบไดนามิก",
-  "dynamicTirePressureCalculatorDescription": "ดูว่าภาระ แรงดัน ความเร็ว และมุมเอียงเปลี่ยนพื้นที่สัมผัสยางและแรงขณะเข้าโค้งที่ประเมินไว้อย่างไร"
+  "dynamicTirePressureCalculatorDescription": "ดูว่าภาระ แรงดัน ความเร็ว และมุมเอียงเปลี่ยนพื้นที่สัมผัสยางและแรงขณะเข้าโค้งที่ประเมินไว้อย่างไร",
+    "spokeStressReliefMechanicsLabel": "Stainless steel spoke stress-relief mechanics",
+    "spokeStressReliefMechanicsDescription": "Calculate axial spoke elongation from material, section, length, and working tension inputs with the full engineering context."
   },
   "accountSidebar": {
     "addresses": {

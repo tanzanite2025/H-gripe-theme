@@ -12,5 +12,7 @@
   "spokeLacingTopologySimulatorLabel": "Simulator pola susunan jari-jari",
   "spokeLacingTopologySimulatorDescription": "Pratinjau posisi lubang jari-jari, pola susunan, tata letak G3 dan 2:1, serta geometri kedua flensa, lengkap dengan penjelasan dan batas pratinjau.",
   "dynamicTirePressureCalculatorLabel": "Kalkulator tekanan ban dinamis",
-  "dynamicTirePressureCalculatorDescription": "Pelajari bagaimana beban, tekanan, kecepatan, dan kemiringan mengubah perkiraan area kontak ban dan gaya menikung."
+  "dynamicTirePressureCalculatorDescription": "Pelajari bagaimana beban, tekanan, kecepatan, dan kemiringan mengubah perkiraan area kontak ban dan gaya menikung.",
+  "spokeStressReliefMechanicsLabel": "Stainless steel spoke stress-relief mechanics",
+  "spokeStressReliefMechanicsDescription": "Calculate axial spoke elongation from material, section, length, and working tension inputs with the full engineering context."
 }

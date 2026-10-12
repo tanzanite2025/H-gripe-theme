@@ -167,7 +167,7 @@ import type { SpokeInterlacing } from '~/types/spokeCalculator'
 
 const { t } = useI18n()
 const localePath = useLocalePath()
-const spokeElongationGuidePath = localePath('/guides/spokeguides/stainless-steel-microstructural-dislocation-mechanics')
+const spokeElongationGuidePath = localePath('/tools/spoke-stress-relief-mechanics')
 
 const props = withDefaults(defineProps<{
   embedded?: boolean

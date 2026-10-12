@@ -13,7 +13,9 @@
     "spokeLacingTopologySimulatorLabel": "محاكي أنماط تشبيك الأسلاك",
     "spokeLacingTopologySimulatorDescription": "عاين مواضع ثقوب الأسلاك وأنماط التشبيك وتوزيعات G3 و2:1 وهندسة الحافتين، مع الشروحات وحدود المعاينة.",
   "dynamicTirePressureCalculatorLabel": "حاسبة ضغط الإطارات الديناميكية",
-  "dynamicTirePressureCalculatorDescription": "استكشف كيف يغيّر الحمل والضغط والسرعة والميل مساحة تلامس الإطار وقوة الانعطاف المقدّرة."
+  "dynamicTirePressureCalculatorDescription": "استكشف كيف يغيّر الحمل والضغط والسرعة والميل مساحة تلامس الإطار وقوة الانعطاف المقدّرة.",
+    "spokeStressReliefMechanicsLabel": "Stainless steel spoke stress-relief mechanics",
+    "spokeStressReliefMechanicsDescription": "Calculate axial spoke elongation from material, section, length, and working tension inputs with the full engineering context."
   },
   "accountSidebar": {
     "addresses": {

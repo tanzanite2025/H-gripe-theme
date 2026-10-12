@@ -1,5 +1,5 @@
 <template>
-  <article class="spoke-dislocation-page">
+  <article id="stainless-steel-spoke-technical-article" class="spoke-dislocation-page">
     <header class="spoke-dislocation-page__hero">
       <div>
         <p class="spoke-dislocation-page__eyebrow">{{ t('guidesSpokeDislocationMechanics.version') }}</p>
@@ -102,7 +102,7 @@
       </section>
     </div>
 
-    <section class="spoke-dislocation-page__card">
+    <section id="stainless-steel-spoke-axial-elongation-calculator" class="spoke-dislocation-page__card">
       <div class="spoke-dislocation-page__card-heading">
         <h2>{{ t('guidesSpokeDislocationMechanics.calculator.title') }}</h2>
         <span class="spoke-dislocation-page__tag spoke-dislocation-page__tag--emerald">{{ t('guidesSpokeDislocationMechanics.calculator.tag') }}</span>
@@ -331,6 +331,25 @@
               <dd>{{ formatStainlessSteelSpokeNumericValue(materialReference.total_elongation_to_failure_percent, 1) }}%</dd>
             </div>
           </dl>
+          <div
+            v-if="stainlessSteelSpokeMaterialSourceReferences.length"
+            class="spoke-dislocation-page__source-references"
+            aria-labelledby="stainless-steel-spoke-material-source-references-title"
+          >
+            <h3 id="stainless-steel-spoke-material-source-references-title">
+              {{ t('guidesSpokeDislocationMechanics.calculator.sourceReferencesTitle') }}
+            </h3>
+            <ul class="spoke-dislocation-page__source-reference-list">
+              <li v-for="source in stainlessSteelSpokeMaterialSourceReferences" :key="source.url || source.title">
+                <a v-if="source.url" :href="source.url" class="spoke-dislocation-page__source-reference-link" rel="external">
+                  {{ source.title }}
+                </a>
+                <strong v-else>{{ source.title }}</strong>
+                <p v-if="source.location" class="spoke-dislocation-page__material-basis">{{ source.location }}</p>
+                <p v-if="source.role" class="spoke-dislocation-page__material-basis">{{ source.role }}</p>
+              </li>
+            </ul>
+          </div>
         </div>
       </div>
     </section>
@@ -442,19 +461,27 @@
 import { computed, ref, watch } from 'vue'
 import { definePageMeta, useHead, useI18n } from '#imports'
 import { usePageMessages } from '~/composables/usePageMessages'
+import { useSiteTitle } from '~/composables/useSiteTitle'
+import { useStorefrontSeoLinks } from '~/composables/seo/useStorefrontSeoLinks'
 import {
   useStainlessSteelSpokeDislocationMechanicsCalculation,
   type StainlessSteelSpokeModelReference,
 } from '~/composables/useStainlessSteelSpokeDislocationMechanicsCalculation'
+import localeManifest from '~/i18n/locales.manifest'
+import { createSeoJsonLdScript } from '~/utils/seo/jsonLd'
+import {
+  createStainlessSteelSpokeTechnicalArticleAndElongationCalculatorStructuredData,
+  normalizeStainlessSteelSpokeMaterialSourcesForVisibleReferencesAndCitations,
+} from '~/utils/seo/createStainlessSteelSpokeTechnicalArticleAndElongationCalculatorStructuredData'
 
 definePageMeta({
   layout: 'products',
-  breadcrumbLabelKey: 'guidesSpokeDislocationMechanics.title',
-  breadcrumbLabelFallback: 'Stainless Steel Spoke Axial Elongation Calculator',
-  footerLabelKey: 'guidesSpokeDislocationMechanics.title',
-  footerLabelFallback: 'Stainless Steel Spoke Axial Elongation Calculator',
-  footerGroupLabelFallback: 'Spoke Guides',
-  feedbackThreadKey: 'guides-spoke-dislocation-mechanics',
+  path: '/tools/spoke-stress-relief-mechanics',
+  breadcrumbLabelKey: 'toolsNavigation.spokeStressReliefMechanicsLabel',
+  breadcrumbLabelFallback: 'Stainless steel spoke stress-relief mechanics',
+  footerLabelKey: 'toolsNavigation.spokeStressReliefMechanicsLabel',
+  footerLabelFallback: 'Stainless steel spoke stress-relief mechanics',
+  feedbackThreadKey: 'guides-spokeguides-stainless-steel-microstructural-dislocation-mechanics',
   feedbackTitleKey: 'guidesSpokeDislocationMechanics.feedbackTitle',
   feedbackTitle: 'Share your feedback about this spoke elongation calculator',
 })
@@ -488,34 +515,25 @@ const formatStainlessSteelSpokeReferenceForce = (value: unknown) => {
 }
 
 const { locale, t } = useI18n()
-const { loadPageMessages } = usePageMessages('guidesSpokeDislocationMechanics')
+const { loadPageMessages, resolvedLocale } = usePageMessages('guidesSpokeDislocationMechanics')
+const { siteTitle } = useSiteTitle()
+const { canonicalUrl } = useStorefrontSeoLinks()
+const stainlessSteelSpokeArticlePageMessageRevision = ref(0)
+const stainlessSteelSpokeTechnicalArticleSearchTitle = computed(() => {
+  void stainlessSteelSpokeArticlePageMessageRevision.value
+  const articleTitle = t('guidesSpokeDislocationMechanics.seo.title')
+  const publisherName = siteTitle.value.trim()
+  return publisherName ? `${articleTitle} | ${publisherName}` : articleTitle
+})
+const stainlessSteelSpokeTechnicalArticleLanguage = computed(() => (
+  localeManifest.find(entry => entry.code.replace(/_/g, '-').toLowerCase() === resolvedLocale.value)?.iso || 'en-US'
+))
 
 await loadPageMessages(locale.value)
-watch(locale, nextLocale => void loadPageMessages(nextLocale))
-
-useHead(() => ({
-  title: t('guidesSpokeDislocationMechanics.seo.title'),
-  meta: [
-    { name: 'description', content: t('guidesSpokeDislocationMechanics.seo.description') },
-    { property: 'og:type', content: 'website' },
-    { property: 'og:title', content: t('guidesSpokeDislocationMechanics.seo.title') },
-    { property: 'og:description', content: t('guidesSpokeDislocationMechanics.seo.description') },
-  ],
-  script: [{
-    key: 'spoke-dislocation-mechanics-web-application-jsonld',
-    type: 'application/ld+json',
-    children: JSON.stringify({
-      '@context': 'https://schema.org',
-      '@type': 'WebApplication',
-      name: t('guidesSpokeDislocationMechanics.seo.title'),
-      description: t('guidesSpokeDislocationMechanics.seo.description'),
-      applicationCategory: 'EngineeringApplication',
-      operatingSystem: 'Web',
-      isAccessibleForFree: true,
-      inLanguage: locale.value,
-    }),
-  }],
-}))
+watch(locale, async nextLocale => {
+  await loadPageMessages(nextLocale)
+  stainlessSteelSpokeArticlePageMessageRevision.value += 1
+})
 
 const selectedSpokeModel = ref<string>('cx-ray')
 const customSpokeArea = ref<number | null>(null)
@@ -596,6 +614,55 @@ const calculationResult = computed(() => stainlessSteelSpokeDislocationMechanics
 const materialReference = computed(() => calculationResult.value?.material_reference
   || stainlessSteelSpokeDislocationMechanicsMetadata.value?.material_reference
   || null)
+const stainlessSteelSpokeMaterialSourceReferences = computed(() => (
+  normalizeStainlessSteelSpokeMaterialSourcesForVisibleReferencesAndCitations(materialReference.value?.source_references || [])
+))
+
+useHead(() => {
+  void stainlessSteelSpokeArticlePageMessageRevision.value
+  return {
+    title: stainlessSteelSpokeTechnicalArticleSearchTitle.value,
+    meta: [
+      { key: 'description', name: 'description', content: t('guidesSpokeDislocationMechanics.seo.description') },
+      { key: 'og:type', property: 'og:type', content: 'article' },
+      { key: 'og:title', property: 'og:title', content: stainlessSteelSpokeTechnicalArticleSearchTitle.value },
+      { key: 'og:description', property: 'og:description', content: t('guidesSpokeDislocationMechanics.seo.description') },
+      { key: 'og:url', property: 'og:url', content: canonicalUrl.value },
+      { key: 'og:locale', property: 'og:locale', content: stainlessSteelSpokeTechnicalArticleLanguage.value.replace(/-/g, '_') },
+      ...(siteTitle.value.trim()
+        ? [{ key: 'og:site_name', property: 'og:site_name', content: siteTitle.value.trim() }]
+        : []),
+      { key: 'twitter:card', name: 'twitter:card', content: 'summary' },
+      { key: 'twitter:title', name: 'twitter:title', content: stainlessSteelSpokeTechnicalArticleSearchTitle.value },
+      { key: 'twitter:description', name: 'twitter:description', content: t('guidesSpokeDislocationMechanics.seo.description') },
+    ],
+    script: [{
+      key: 'stainless-steel-spoke-technical-article-and-elongation-calculator-schema',
+      id: 'stainless-steel-spoke-technical-article-and-elongation-calculator-schema',
+      ...createSeoJsonLdScript(createStainlessSteelSpokeTechnicalArticleAndElongationCalculatorStructuredData({
+        canonicalUrl: canonicalUrl.value,
+        headline: t('guidesSpokeDislocationMechanics.title'),
+        description: t('guidesSpokeDislocationMechanics.seo.description'),
+        calculatorName: t('guidesSpokeDislocationMechanics.calculator.title'),
+        calculatorDescription: t('guidesSpokeDislocationMechanics.calculator.intro'),
+        calculatorSoftwareVersion: stainlessSteelSpokeDislocationMechanicsMetadata.value?.model_version,
+        inLanguage: stainlessSteelSpokeTechnicalArticleLanguage.value,
+        publisherName: siteTitle.value,
+        articleSections: [
+          t('guidesSpokeDislocationMechanics.materialLadder.title'),
+          t('guidesSpokeDislocationMechanics.microstructure.title'),
+          t('guidesSpokeDislocationMechanics.backendCatalog.title'),
+        ],
+        topics: [
+          t('guidesSpokeDislocationMechanics.tags.material'),
+          t('guidesSpokeDislocationMechanics.microstructure.title'),
+          t('guidesSpokeDislocationMechanics.tags.elongation'),
+        ],
+        sourceReferences: stainlessSteelSpokeMaterialSourceReferences.value,
+      })),
+    }],
+  }
+})
 const referenceCalculation = computed(() => stainlessSteelSpokeDislocationMechanicsMetadata.value?.reference_calculation || null)
 const referenceCalculationResultByModelID = computed(() => new Map(
   (referenceCalculation.value?.results || []).map(result => [result.model_id, result]),
@@ -1182,6 +1249,26 @@ const synchronizeStainlessSteelSpokeCustomAreaSelection = () => {
   font-size: 0.78rem;
   line-height: 1.65;
 }
+.spoke-dislocation-page__source-references {
+  margin-top: 1rem;
+}
+.spoke-dislocation-page__source-references h3 {
+  margin: 0;
+  font-size: 0.85rem;
+}
+.spoke-dislocation-page__source-reference-list {
+  margin: 0.6rem 0 0;
+  padding-inline-start: 1.25rem;
+  overflow-wrap: anywhere;
+}
+.spoke-dislocation-page__source-reference-list li + li {
+  margin-top: 0.75rem;
+}
+.spoke-dislocation-page__source-reference-link {
+  color: var(--spoke-blue);
+  text-decoration: underline;
+}
+
 .spoke-dislocation-page__material-values {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));

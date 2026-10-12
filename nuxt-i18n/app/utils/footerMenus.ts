@@ -383,9 +383,10 @@ const createGuidesNavigationTree = (
     ensureFooterNavigationNodePath(root, basePath, section.path)
 
     entry.tabs.forEach((tab, tabIndex) => {
-      const explicitTabPath = 'to' in tab ? tab.to : undefined
+      const explicitTabPath = (tab as { to?: unknown }).to
       const targetPath = normalizeRoutePath(
-        explicitTabPath || basePath + '/' + encodeURIComponent(tab.id),
+        (typeof explicitTabPath === 'string' ? explicitTabPath : undefined)
+          || basePath + '/' + encodeURIComponent(tab.id),
       )
       if (!isPathWithinSection(targetPath, section.path)) return
 

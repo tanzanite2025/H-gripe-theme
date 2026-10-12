@@ -12,5 +12,7 @@
   "spokeLacingTopologySimulatorLabel": "辐条编法拓扑模拟器",
   "spokeLacingTopologySimulatorDescription": "交互预览孔位、辐条编法、G3 与 2:1 布局和双法兰几何，包含完整说明与预览限制。",
   "dynamicTirePressureCalculatorLabel": "动态胎压计算器",
-  "dynamicTirePressureCalculatorDescription": "探索载荷、胎压、速度和倾角如何改变估算的轮胎接地面积与过弯受力。"
+  "dynamicTirePressureCalculatorDescription": "探索载荷、胎压、速度和倾角如何改变估算的轮胎接地面积与过弯受力。",
+  "spokeStressReliefMechanicsLabel": "不锈钢辐条应力释放力学工具",
+  "spokeStressReliefMechanicsDescription": "根据材料、截面、长度和工作张力计算辐条轴向伸长，并查看完整工程说明。"
 }

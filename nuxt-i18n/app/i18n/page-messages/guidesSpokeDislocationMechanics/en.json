@@ -35,6 +35,7 @@
     "boundary": "All current geometry presets intentionally share the page-defined AISI 304 cold-drawn material state. Selecting a model supplies that model's effective load-bearing cross-sectional area, which is paired with this curve; the model name does not introduce another brand material curve."
   },
   "calculator": {
+    "sourceReferencesTitle": "Material data sources and calculation references",
     "title": "Spoke-body axial elongation calculator",
     "tag": "Calculation result",
     "modelLabel": "Spoke geometry model",

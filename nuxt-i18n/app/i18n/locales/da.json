@@ -13,7 +13,9 @@
     "spokeLacingTopologySimulatorLabel": "Simulator til egernes flettemønstre",
     "spokeLacingTopologySimulatorDescription": "Forhåndsvis egerhuller, flettemønstre, G3- og 2:1-layout samt geometri for begge flanger med forklaringer og begrænsninger.",
   "dynamicTirePressureCalculatorLabel": "Dynamisk dæktryksberegner",
-  "dynamicTirePressureCalculatorDescription": "Se hvordan belastning, dæktryk, hastighed og nedlægning ændrer den estimerede kontaktflade og sidekraft."
+  "dynamicTirePressureCalculatorDescription": "Se hvordan belastning, dæktryk, hastighed og nedlægning ændrer den estimerede kontaktflade og sidekraft.",
+    "spokeStressReliefMechanicsLabel": "Stainless steel spoke stress-relief mechanics",
+    "spokeStressReliefMechanicsDescription": "Calculate axial spoke elongation from material, section, length, and working tension inputs with the full engineering context."
   },
   "accountSidebar": {
     "addresses": {

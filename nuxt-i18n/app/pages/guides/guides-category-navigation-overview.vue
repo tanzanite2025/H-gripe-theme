@@ -39,11 +39,5 @@ const guideCategoryCards = computed(() => [
     description: 'Wheel selection, safety, custom builds, appearance, and freehub guidance.',
     to: '/guides/wheelset-buyers',
   },
-  {
-    id: 'spoke-guides',
-    label: t('products.nav.spokeGuides', 'Spoke Guides'),
-    description: 'Spoke length, wheelset specifications, and stainless steel spoke engineering tools.',
-    to: '/guides/spokeguides',
-  },
 ])
 </script>

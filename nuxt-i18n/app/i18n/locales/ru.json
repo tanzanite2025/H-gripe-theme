@@ -13,7 +13,9 @@
     "spokeLacingTopologySimulatorLabel": "Симулятор схем спицовки",
     "spokeLacingTopologySimulatorDescription": "Просмотр расположения отверстий, схем спицовки, компоновок G3 и 2:1 и геометрии обоих фланцев с пояснениями и ограничениями предварительного просмотра.",
   "dynamicTirePressureCalculatorLabel": "Динамический калькулятор давления в шинах",
-  "dynamicTirePressureCalculatorDescription": "Посмотрите, как нагрузка, давление, скорость и наклон меняют расчётную площадь контакта и силу в повороте."
+  "dynamicTirePressureCalculatorDescription": "Посмотрите, как нагрузка, давление, скорость и наклон меняют расчётную площадь контакта и силу в повороте.",
+    "spokeStressReliefMechanicsLabel": "Stainless steel spoke stress-relief mechanics",
+    "spokeStressReliefMechanicsDescription": "Calculate axial spoke elongation from material, section, length, and working tension inputs with the full engineering context."
   },
   "accountSidebar": {
     "addresses": {

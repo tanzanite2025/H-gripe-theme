@@ -16,9 +16,9 @@
 
 ## 本批实施与后续顺序（2026-10-12）
 
-已完成工具大厅、Schwalbe、品牌轮组辐条规格、辐条长度计算器、轮组编法拓扑与动态胎压整页迁移。大厅展示五项已有完整工具，不预建空分类，不展示规划工具卡片。
+已完成工具大厅、Schwalbe、品牌轮组辐条规格、辐条长度计算器、轮组编法拓扑、动态胎压与不锈钢辐条应力释放力学整页迁移。大厅展示六项已有完整工具，不预建空分类，不展示规划工具卡片。SPOKEGUIDES 已清空，分类路由 `/guides/spokeguides` 与其唯一子页旧路径均退役为 404；后续新增辐条指南必须先有独立完整内容，不得恢复一个空分类路由。
 
-- 新路由：`/tools`、`/tools/schwalbe-tire-selector`、`/tools/brand-wheelset-spoke-specs`、`/tools/spoke-length-calculator`、`/tools/spoke-lacing-topology-simulator`、`/tools/dynamic-tire-pressure-calculator`；已迁移旧路径及其全部语言、查询参数变体退役为 404，不设置 301、路由别名或兼容页面。
+- 新路由：`/tools`、`/tools/schwalbe-tire-selector`、`/tools/brand-wheelset-spoke-specs`、`/tools/spoke-length-calculator`、`/tools/spoke-lacing-topology-simulator`、`/tools/dynamic-tire-pressure-calculator`、`/tools/spoke-stress-relief-mechanics`；已迁移旧路径及其全部语言、查询参数变体退役为 404，不设置 301、路由别名或兼容页面。
 - Schwalbe 介绍、搜索、筛选、结果卡片、原生分页、来源日期和限制继续复用同一个组件。组件目录和翻译 namespace 不因公开路由迁移重命名。回归发现并修复筛选抽屉 `canApply` 默认值导致按钮禁用，以及可见条件不变时旧查询参数未清理的两个既有问题；目录查询与工程算法不变。
 - FAQ manifest key 保留 `guides-tireguides-schwalbe-tire-selector`，page_id 保留 `guides-schwalbe-tire-selector`。后台启动自动同步路由台账与 FAQ；已有问答、标题和编辑分组保留。上线需确认启动同步成功，失败可使用已有 URL 台账同步或 FAQ routes/sync。
 - canonical/hreflang 使用新路径；仅合法 `page=N>1` 保留可收录分页，筛选与搜索为 `noindex,follow`。Sitemap 排除退役旧路径和已有重定向源路径，防止未同步 FAQ 再写入旧 URL。
@@ -28,7 +28,7 @@
 - 辐条长度已完成整页迁移：五步输入向导与第六步计算结果、参数说明、测量图示、数据目录和反馈整体保留。FAQ key、page_id、反馈键均保留 `guides-spokeguides-spoke-length-calculator`；正文只发布中英文，其他 18 种语言可访问但 `noindex,follow`，hreflang 与最终 sitemap 只声明中英文及 x-default。
 - 轮组编法拓扑已整页迁移：头型、孔位、交叉数、2:1/G3、双法兰参数、视图、图层、SVG/剖面及工程说明一起保留。FAQ manifest key 仍为 `guides-wheelset-buyers-spoke-lacing-topology`，真实 page_id 仍为 `resources-wheelset-lacing-topology`，后台编辑分组保留 `guides`；仅中英文正文已发布，其他 18 种语言继续 `noindex,follow`，hreflang 与 sitemap 只声明中英文及 x-default。保留原 TechArticle/FAQPage Schema 和几何预览边界，不新增物理安全承诺。
 - 动态胎压已完成整页迁移：原页面的 `calculator` 与 `details` Tab、外胎型号目录、速度/载荷/倾角/姿势输入、动态受力 API、最低胎压比较、湿地压力演示、模型说明、数据来源、结果解释、风险提示和反馈线程整体保留。FAQ manifest key 与 page_id 继续使用 `guides-tireguides-tire-pressure`，后台分组仍为 `guides`；20 种语言保留可访问页面和对称 canonical/hreflang，旧路径及全部查询变体 404，无 Location。后端算法、参考数据和计算 composable 未修改，新页明确 `no-store`。
-- 胎压迁移前已保存 SSR、head/canonical/hreflang/Schema、FAQ、reference-data、动态 API 与 10 组浏览器交互基线；迁移验收必须逐项对照这些记录，并将迁移差异单独提交。内胎、不锈钢位错和塔基助手仍按各自完整页面边界评估，不能仅为增加工具数量而拆走计算器。
+- 胎压迁移前已保存 SSR、head/canonical/hreflang/Schema、FAQ、reference-data、动态 API 与 10 组浏览器交互基线；迁移验收必须逐项对照这些记录，并将迁移差异单独提交。内胎和塔基助手仍按各自完整页面边界评估，不能仅为增加工具数量而拆走计算器。不锈钢位错页面已按完整页面边界迁移，说明、材料目录、计算器、结果解释和 FAQ 共用一个工具 URL。
 - 胎圈宽度已是计算、模拟、DT Swiss、Schwalbe 四页签工作台，现有 v11 记录 16 组最佳算法与正常范围冲突，本批不协调算法，不把它当静态指南。
 - 塔基助手已通过 Go 接口提供真实交互；它是完整页迁移候选，不再视为纯规划项。内胎页面正在调整 URL/SSR/SEO 策略，待当前改动稳定后按完整页边界再评估。
 
@@ -199,7 +199,7 @@
 | **6** | **多步向导式辐条长度精密计算器** | `app/pages/tools/spoke-length-calculator.vue`<br>`app/components/Spoke*.vue` (五步输入 + 第六步结果)<br>`app/composables/useSpokeCalculator*.ts` | `/tools/spoke-length-calculator`（旧 `/guides/spokeguides/spoke-length-calculator` 已退役） | `/tools/spoke-length-calculator` | **已完成整页迁移**：参数输入、测量说明、目录和结果构成完整任务；算法、交互和数据复用，旧路径全部语言与查询变体为 404。 |
 | **7** | **高端大牌轮组官方出厂辐条规格速查** | `app/pages/tools/brand-wheelset-spoke-specs.vue`<br>`app/data/brand-wheelset-spoke-specs/*` | `/tools/brand-wheelset-spoke-specs` | `/tools/brand-wheelset-spoke-specs` | **第二批已完成整页迁移**：品牌筛选、搜索、分页、完整规格矩阵、修补包商品和说明均保留；公开访问方式不变。旧 `/guides/spokeguides/brand-wheelset-spoke-specs` 已退役为 404，不另造重复指南。 |
 | **8** | **轮组编法拓扑与双法兰几何预览器** | `app/pages/tools/spoke-lacing-topology-simulator.vue` | `/tools/spoke-lacing-topology-simulator`（旧指南路径已退役） | `/tools/spoke-lacing-topology-simulator` | **已完成整页迁移**：复杂 SVG/几何工作台是页面核心交互。工程说明、全部仿真控件、结果解释和几何限制整体保留；移除旧指南特殊路由注册和分类入口。仅用于原有拓扑/几何预览，不以迁移或“仿真器”名称新增法兰物理干涉、安全或长度计算保证。 |
-| **9** | **不锈钢辐条微观位错力学评估器** | `app/pages/guides/spokeguides/stainless-steel-microstructural-dislocation-mechanics.vue`<br>`app/composables/useStainlessSteelSpokeDislocationMechanicsCalculation.ts` | `/guides/spokeguides/stainless-steel-microstructural-dislocation-mechanics` | `/tools/spoke-stress-relief-mechanics` | **整体迁移为工具页**：材料力学说明、计算器、后台数据目录和结果解释共同让工程评估可用；整体迁移，不另建说明页和计算器页两个近重复 URL。 |
+| **9** | **不锈钢辐条微观位错力学评估器** | `app/pages/tools/spoke-stress-relief-mechanics.vue`<br>`app/composables/useStainlessSteelSpokeDislocationMechanicsCalculation.ts` | `/tools/spoke-stress-relief-mechanics`（旧 `/guides/spokeguides/stainless-steel-microstructural-dislocation-mechanics` 已退役） | `/tools/spoke-stress-relief-mechanics` | **第六次整页迁移已完成**：材料力学说明、计算器、后台数据目录、结果解释、FAQ 和结构化数据共同保留；SPOKEGUIDES 分类页删除，不另建说明页和计算器页两个近重复 URL。 |
 | **10** | **车圈气压径向压缩与张力暴跌预测器** | 关联现有力学看板规范与工程数据 | 规划中（当前仓库未发现独立页面） | `/tools/rim-compression-tension-drop-predictor` | **保留规划项**：未有页面、数据契约和回归用例前，不加入可点击工具入口、不加入 sitemap。 |
 
 ---
@@ -223,9 +223,9 @@
   [ LOGO ]    SHOP    TOOLS (新)    GUIDES    ABOUT    [ 搜索 / 语言 / 购物车 ]
   ```
 * **下拉菜单（Mega Menu / Dropdown）三列布局**：
-  点击 `TOOLS` 展开现有 HeaderMegaMenu；未来工具数量足够后再按以下分类组织，当前保留大厅、Schwalbe、品牌规格、辐条长度、轮组拓扑与动态胎压六张卡片：
+  点击 `TOOLS` 展开现有 HeaderMegaMenu；未来工具数量足够后再按以下分类组织，当前保留大厅、Schwalbe、品牌规格、辐条长度、轮组拓扑、动态胎压与不锈钢应力释放力学七张卡片：
   * **第一列：轮胎与气门系统**（只列出已完成整体迁移的胎压和 Schwalbe 工具；车架间隙与内胎参考留在指南导航）
-  * **第二列：轮组与辐条工程**（只列出已完成整体迁移的辐条长度、品牌规格和轮组拓扑工具；微观位错在整页迁移前留在指南导航）
+  * **第二列：轮组与辐条工程**（列出已完成整体迁移的辐条长度、品牌规格、轮组拓扑与不锈钢应力释放力学工具）
   * **第三列：传动与通用系统**（后续完成整页迁移的塔基助手；规划中的 Hookless 工具不展示卡片）
 
 **本批入口与弹层约束（后续开发必须沿用）**：
@@ -262,6 +262,7 @@
 * `/guides/tireguides/tire-pressure` ➔ `/tools/dynamic-tire-pressure-calculator`（第五次整页迁移完成；旧路径全部语言与查询变体 404）
 * `/guides/wheelset-buyers/wheelset-spoke-lacing-topology-and-geometry-reference` ➔ `/tools/spoke-lacing-topology-simulator`（第四次完成；该主路径、旧平铺 `/guides/wheelset-spoke-lacing-topology-and-geometry-reference`、历史 `/resources/wheelset-spoke-lacing-topology-and-geometry-reference` 均退役为 404）
 * `/guides/spokeguides/stainless-steel-microstructural-dislocation-mechanics` ➔ `/tools/spoke-stress-relief-mechanics`
+* `/guides/spokeguides`：SPOKEGUIDES 已无剩余子页，分类路由随本次迁移删除并返回 404，不设置空分类页、别名或重定向。
 * `/guides/tireguides/choose-inner-tube` ➔ `/tools/valve-length-fitment-calculator`（须先核实完整页面边界）
 
 退役路径的各语言前缀和查询参数变体均应返回 404，且没有迁移 Location。退役路径必须显式关闭继承的 HTML cache 并声明 `no-store`，避免删除路由后仍命中旧缓存。同步更新内部链接、页脚、导航、canonical、hreflang、路由台账及 FAQ 公开路径；动态 sitemap 即使收到后台未同步的旧路径，也必须排除。FAQ key、page_id 等内部内容身份可以继续保留，保留问答数据不等于提供旧 URL 兼容。
@@ -274,7 +275,7 @@ SEO 影响：404 不会通过永久重定向承接旧 URL 的外链信号，旧�
 * `/tools/dynamic-tire-pressure-calculator`（原 `/guides/tireguides/tire-pressure`）：已保留现有 `calculator` 与 `details` Tab 的组合页面；说明、交互、结果解释、来源、限制和反馈在同一工具 URL 内。
 * `/guides/tireguides/choose-inner-tube`：保留内胎选型上下文和气门嘴匹配交互；迁移时将页面范围内的说明、交互和结果解释整体放入 `/tools/valve-length-fitment-calculator`，前提是两边范围完全等价。
 * `/tools/spoke-lacing-topology-simulator`：已将原轮组指南拓扑页完整迁入；工程说明和仿真工作台共同保留，不再创建重复指南页或恢复旧路径。
-* `/guides/spokeguides/stainless-steel-microstructural-dislocation-mechanics`：保留材料力学正文、计算器和结果解释；迁移时将完整页面放入 `/tools/spoke-stress-relief-mechanics`。
+* `/tools/spoke-stress-relief-mechanics`（原 `/guides/spokeguides/stainless-steel-microstructural-dislocation-mechanics`）：材料力学正文、计算器、数据目录、结果解释和 FAQ 已整体保留在同一个工具 URL。
 * `/guides/tireguides/tire-frame-clearance`：保留测量说明和参考表；当前未发现独立交互计算器，不创建名义上的工具页。
 
 对于原先内嵌在 `/guides/tireguides/choose-inner-tube`（以及兼容的 `/guides/tireguides?tab=choose-inner-tube`）内部的气门嘴计算器：
@@ -346,8 +347,8 @@ SEO 影响：404 不会通过永久重定向承接旧 URL 的外链信号，旧�
 - [x] 10. 将胎压页面整体迁移至 `app/pages/tools/dynamic-tire-pressure-calculator.vue`，保留 `calculator` 和 `details` 全部内容；旧路径退役为 404，FAQ 身份和后端算法保持不变。
 - [ ] 11. 将内胎气门嘴匹配页面整体迁移至 `app/pages/tools/valve-length-fitment-calculator.vue`，保留完整上下文、说明和交互，不制作精简指南页 + 独立半页工具；
 - [x] 12. 将轮组编法拓扑页面整体迁移至 `app/pages/tools/spoke-lacing-topology-simulator.vue`，保留工程说明、仿真控件和结果解释；
-- [ ] 13. 将不锈钢辐条位错页面整体迁移至 `app/pages/tools/spoke-stress-relief-mechanics.vue`，保留材料说明、计算器、数据目录和结果解释；
-- [x] 14. 整体迁移验收通过后，再退役对应旧 URL，返回 404；轮组拓扑和胎压已完成，内胎气门嘴和不锈钢位错未迁移，继续保留原 URL。
+- [x] 13. 将不锈钢辐条位错页面整体迁移至 `app/pages/tools/spoke-stress-relief-mechanics.vue`，保留材料说明、计算器、数据目录和结果解释；
+- [x] 14. 整体迁移验收通过后，再退役对应旧 URL，返回 404；轮组拓扑、胎压和不锈钢位错已完成，内胎气门嘴继续保留原 URL。
 
 ### 第四批：双向飞轮与收尾验证 (Verification)
 - [ ] 15. 在每个独立工具页确认页面自身已包含完成任务所需的说明、结果解释和限制；只有存在独立指南内容时才添加“前往阅读相关指南”链接；

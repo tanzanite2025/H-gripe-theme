@@ -57,6 +57,10 @@ const sections = createFooterMenusFromRoutes([
     footerLabelKey: 'toolsNavigation.dynamicTirePressureCalculatorLabel',
     footerLabelFallback: 'Dynamic tire pressure calculator',
   }),
+  createNormalizedFooterTestRoute('/tools/spoke-stress-relief-mechanics', 'tools-spoke-stress-relief-mechanics', {
+    footerLabelKey: 'toolsNavigation.spokeStressReliefMechanicsLabel',
+    footerLabelFallback: 'Stainless steel spoke stress-relief mechanics',
+  }),
   createNormalizedFooterTestRoute('/guides/tireguides', 'guides-tireguides', {
     footerLabelKey: 'products.nav.tireSizeCharts',
     footerLabelFallback: 'Tire Guides',
@@ -65,22 +69,6 @@ const sections = createFooterMenusFromRoutes([
     footerLabelKey: 'products.nav.wheelsetBuyersGuide',
     footerLabelFallback: 'Wheelset Guide',
   }),
-  createNormalizedFooterTestRoute('/guides/spokeguides', 'guides-spokeguides', {
-    footerLabelKey: 'products.nav.spokeGuides',
-    footerLabelFallback: 'Spoke Guides',
-  }),
-  createNormalizedFooterTestRoute(
-    '/guides/spokeguides/new-spoke-engineering-guide',
-    'guides-spokeguides-new-guide',
-    {
-      footerLabelFallback: 'New Spoke Engineering Guide',
-      footerGroupLabelFallback: 'Spoke Guides',
-    },
-  ),
-  createNormalizedFooterTestRoute(
-    '/zh_cn/guides/spokeguides/new-spoke-engineering-guide',
-    'zh-guides-spokeguides-new-guide',
-  ),
   createNormalizedFooterTestRoute('/guides/internal-draft', 'guides-internal-draft', { footer: false }),
   createNormalizedFooterTestRoute('/guides/redirect', 'guides-redirect', {}, '/guides/tireguides'),
   createNormalizedFooterTestRoute('/guides/:slug', 'guides-dynamic'),
@@ -101,6 +89,7 @@ assert.deepEqual(flattenFooterNavigationItems(toolsSection.links).map(link => li
   '/tools/spoke-length-calculator',
   '/tools/spoke-lacing-topology-simulator',
   '/tools/dynamic-tire-pressure-calculator',
+  '/tools/spoke-stress-relief-mechanics',
 ], 'TOOLS child list must contain only concrete tools, without a duplicate hub')
 assert.ok(guidesSection, 'GUIDES column should be discovered from its static descendant pages')
 
@@ -126,16 +115,7 @@ assert.equal(wheelsetGuidesGroup.fallback, 'Wheelset Guide')
 assert.equal(wheelsetGuidesGroup.children?.length, 5, 'Only remaining wheelset guide tabs should be listed')
 assert.ok(!flattenFooterNavigationItems(guidesSection.links).some(link => link.to?.includes('wheelset-spoke-lacing-topology-and-geometry-reference')))
 
-const spokeGuidesGroup = guidesSection.links.find(link => link.fallback === 'Spoke Guides')
-assert.ok(spokeGuidesGroup, 'Spoke Guides should be represented as a group')
-assert.equal(spokeGuidesGroup.to, '/guides/spokeguides', 'Spoke Guides should link to its category landing page')
-assert.deepEqual(
-  spokeGuidesGroup.children?.map(link => link.to),
-  [
-    '/guides/spokeguides/stainless-steel-microstructural-dislocation-mechanics',
-    '/guides/spokeguides/new-spoke-engineering-guide',
-  ],
-)
+assert.ok(!flattenFooterNavigationItems(guidesSection.links).some(link => link.to?.startsWith('/guides/spokeguides')), 'Empty Spoke Guides category must not remain in the footer')
 
 const allGuideLinks = flattenFooterNavigationItems(guidesSection.links)
 const guidePaths = allGuideLinks

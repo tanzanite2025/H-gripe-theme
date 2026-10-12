@@ -13,7 +13,9 @@
     "spokeLacingTopologySimulatorLabel": "Simulator corak susunan jejari",
     "spokeLacingTopologySimulatorDescription": "Pratonton kedudukan lubang jejari, corak susunan, susun atur G3 dan 2:1 serta geometri kedua-dua bebibir, dengan penerangan dan had pratonton.",
   "dynamicTirePressureCalculatorLabel": "Kalkulator tekanan tayar dinamik",
-  "dynamicTirePressureCalculatorDescription": "Lihat bagaimana beban, tekanan, kelajuan dan kecondongan mengubah anggaran kawasan sentuhan tayar serta daya membelok."
+  "dynamicTirePressureCalculatorDescription": "Lihat bagaimana beban, tekanan, kelajuan dan kecondongan mengubah anggaran kawasan sentuhan tayar serta daya membelok.",
+    "spokeStressReliefMechanicsLabel": "Stainless steel spoke stress-relief mechanics",
+    "spokeStressReliefMechanicsDescription": "Calculate axial spoke elongation from material, section, length, and working tension inputs with the full engineering context."
   },
   "accountSidebar": {
     "addresses": {
