@@ -1,5 +1,5 @@
 import { computed } from 'vue'
-import { useAsyncData } from '#imports'
+import { useStorefrontFaqAsyncDataWithLastSuccessfulResponse } from '~/composables/useStorefrontFaqAsyncDataWithLastSuccessfulResponse'
 import { fetchAllFaqData, resolvePageFaqDataList } from '~/data/faq'
 
 export async function useFaqCatalog() {
@@ -9,10 +9,9 @@ export async function useFaqCatalog() {
     pending,
     error,
     refresh: refreshFaqCatalog,
-  } = await useAsyncData(
+  } = await useStorefrontFaqAsyncDataWithLastSuccessfulResponse(
     () => `faq-catalog-${locale.value}`,
     () => fetchAllFaqData(),
-    { watch: [locale] },
   )
 
   const allPages = computed(() => resolvePageFaqDataList(asyncAllPages.value || []))

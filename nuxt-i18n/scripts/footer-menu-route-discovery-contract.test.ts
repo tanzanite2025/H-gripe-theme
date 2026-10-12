@@ -33,11 +33,47 @@ const sections = createFooterMenusFromRoutes([
   createNormalizedFooterTestRoute('/shop/:slug', 'shop-slug'),
   createNormalizedFooterTestRoute('/shop/:category(.*)*', 'shop-category'),
   createNormalizedFooterTestRoute('/guides', 'guides'),
-  createNormalizedFooterTestRoute('/guides/tireguides', 'guides-tireguides', {
-    footerLabelKey: 'products.nav.tireSizeCharts',
-    footerLabelFallback: 'Tire Guides',
+  createNormalizedFooterTestRoute('/tools', 'tools', {
+    footerLabelKey: 'toolsNavigation.label',
+    footerLabelFallback: 'Tools',
   }),
-  createNormalizedFooterTestRoute('/guides/tireguides/tire-pressure', 'guides-tire-pressure', {
+  createNormalizedFooterTestRoute('/tools/schwalbe-tire-selector', 'tools-schwalbe-tire-selector', {
+    footerLabelKey: 'toolsNavigation.schwalbeTireSelectorLabel',
+    footerLabelFallback: 'Schwalbe tire selector',
+  }),
+  createNormalizedFooterTestRoute('/tools/brand-wheelset-spoke-specs', 'tools-brand-wheelset-spoke-specs', {
+    footerLabelKey: 'toolsNavigation.brandWheelsetSpokeSpecsLabel',
+    footerLabelFallback: 'Wheelset spoke and nipple specifications',
+  }),
+  createNormalizedFooterTestRoute('/tools/spoke-length-calculator', 'tools-spoke-length-calculator', {
+    footerLabelKey: 'toolsNavigation.spokeLengthCalculatorLabel',
+    footerLabelFallback: 'Spoke length calculator',
+  }),
+  createNormalizedFooterTestRoute('/tools/spoke-lacing-topology-simulator', 'tools-spoke-lacing-topology-simulator', {
+    footerLabelKey: 'toolsNavigation.spokeLacingTopologySimulatorLabel',
+    footerLabelFallback: 'Spoke lacing topology simulator',
+  }),
+  createNormalizedFooterTestRoute('/tools/dynamic-tire-pressure-calculator', 'tools-dynamic-tire-pressure-calculator', {
+    footerLabelKey: 'toolsNavigation.dynamicTirePressureCalculatorLabel',
+    footerLabelFallback: 'Dynamic tire pressure calculator',
+  }),
+  createNormalizedFooterTestRoute('/tools/tire-rim-width-compatibility-engine', 'tools-tire-rim-width-compatibility-engine', {
+    footerLabelKey: 'toolsNavigation.tireRimWidthCompatibilityEngineLabel',
+    footerLabelFallback: 'Tire and rim width compatibility engine',
+  }),
+  createNormalizedFooterTestRoute('/tools/spoke-stress-relief-mechanics', 'tools-spoke-stress-relief-mechanics', {
+    footerLabelKey: 'toolsNavigation.spokeStressReliefMechanicsLabel',
+    footerLabelFallback: 'Stainless steel spoke stress-relief mechanics',
+  }),
+  createNormalizedFooterTestRoute('/tools/valve-length-fitment-calculator', 'tools-valve-length-fitment-calculator', {
+    footerLabelKey: 'toolsNavigation.valveLengthFitmentCalculatorLabel',
+    footerLabelFallback: 'Inner tube valve-length fitment calculator',
+  }),
+  createNormalizedFooterTestRoute('/tools/freehub-cassette-fitment-engine', 'tools-freehub-cassette-fitment-engine', {
+    footerLabelKey: 'toolsNavigation.freehubCassetteFitmentEngineLabel',
+    footerLabelFallback: 'Freehub and cassette fitment engine',
+  }),
+  createNormalizedFooterTestRoute('/guides/tireguides', 'guides-tireguides', {
     footerLabelKey: 'products.nav.tireSizeCharts',
     footerLabelFallback: 'Tire Guides',
   }),
@@ -45,22 +81,6 @@ const sections = createFooterMenusFromRoutes([
     footerLabelKey: 'products.nav.wheelsetBuyersGuide',
     footerLabelFallback: 'Wheelset Guide',
   }),
-  createNormalizedFooterTestRoute('/guides/spokeguides', 'guides-spokeguides', {
-    footerLabelKey: 'products.nav.spokeGuides',
-    footerLabelFallback: 'Spoke Guides',
-  }),
-  createNormalizedFooterTestRoute(
-    '/guides/spokeguides/new-spoke-engineering-guide',
-    'guides-spokeguides-new-guide',
-    {
-      footerLabelFallback: 'New Spoke Engineering Guide',
-      footerGroupLabelFallback: 'Spoke Guides',
-    },
-  ),
-  createNormalizedFooterTestRoute(
-    '/zh_cn/guides/spokeguides/new-spoke-engineering-guide',
-    'zh-guides-spokeguides-new-guide',
-  ),
   createNormalizedFooterTestRoute('/guides/internal-draft', 'guides-internal-draft', { footer: false }),
   createNormalizedFooterTestRoute('/guides/redirect', 'guides-redirect', {}, '/guides/tireguides'),
   createNormalizedFooterTestRoute('/guides/:slug', 'guides-dynamic'),
@@ -72,12 +92,26 @@ assert.ok(shopSection, 'SHOP column should remain visible when its category rout
 assert.deepEqual(shopSection.links.map(link => link.to), ['/shop'])
 
 const guidesSection = sections.find(section => section.id === 'guides')
+const toolsSection = sections.find(section => section.id === 'tools')
+assert.ok(toolsSection, 'TOOLS must discover the hub and migrated selector')
+assert.equal(toolsSection.titleLinkTo, '/tools', 'TOOLS title must link to the hub')
+assert.deepEqual(flattenFooterNavigationItems(toolsSection.links).map(link => link.to), [
+  '/tools/schwalbe-tire-selector',
+  '/tools/brand-wheelset-spoke-specs',
+  '/tools/spoke-length-calculator',
+  '/tools/spoke-lacing-topology-simulator',
+  '/tools/dynamic-tire-pressure-calculator',
+  '/tools/tire-rim-width-compatibility-engine',
+  '/tools/spoke-stress-relief-mechanics',
+  '/tools/valve-length-fitment-calculator',
+  '/tools/freehub-cassette-fitment-engine',
+], 'TOOLS child list must contain only concrete tools, without a duplicate hub')
 assert.ok(guidesSection, 'GUIDES column should be discovered from its static descendant pages')
 
 const tireGuidesGroup = guidesSection.links.find(link => link.to === '/guides/tireguides')
 assert.ok(tireGuidesGroup, 'Tire Guides should retain its real landing page')
 assert.equal(tireGuidesGroup.fallback, 'Tire Guides')
-assert.equal(tireGuidesGroup.children?.length, 8, 'All tire guide tabs should be listed')
+assert.equal(tireGuidesGroup.children?.length, 4, 'Only remaining tire guide tabs should be listed')
 assert.deepEqual(
   tireGuidesGroup.children?.map(link => link.to),
   [
@@ -85,30 +119,16 @@ assert.deepEqual(
     '/guides/tireguides/tire-frame-clearance',
     '/guides/tireguides/schwalbe-tire-circumference',
     '/guides/tireguides/tubeless',
-    '/guides/tireguides/tire-rim-width-compatibility',
-    '/guides/tireguides/tire-pressure',
-    '/guides/tireguides/choose-inner-tube',
-    '/guides/tireguides/schwalbe-tire-selector',
   ],
 )
 
 const wheelsetGuidesGroup = guidesSection.links.find(link => link.to === '/guides/wheelset-buyers')
 assert.ok(wheelsetGuidesGroup, 'Wheelset Guide should retain its real landing page')
 assert.equal(wheelsetGuidesGroup.fallback, 'Wheelset Guide')
-assert.equal(wheelsetGuidesGroup.children?.length, 6, 'All wheelset guide tabs, including the spoke lacing reference, should be listed')
+assert.equal(wheelsetGuidesGroup.children?.length, 4, 'Only remaining wheelset guide tabs should be listed')
+assert.ok(!flattenFooterNavigationItems(guidesSection.links).some(link => link.to?.includes('wheelset-spoke-lacing-topology-and-geometry-reference')))
 
-const spokeGuidesGroup = guidesSection.links.find(link => link.fallback === 'Spoke Guides')
-assert.ok(spokeGuidesGroup, 'Spoke Guides should be represented as a group')
-assert.equal(spokeGuidesGroup.to, '/guides/spokeguides', 'Spoke Guides should link to its category landing page')
-assert.deepEqual(
-  spokeGuidesGroup.children?.map(link => link.to),
-  [
-    '/guides/spokeguides/stainless-steel-microstructural-dislocation-mechanics',
-    '/guides/spokeguides/brand-wheelset-spoke-specs',
-    '/guides/spokeguides/spoke-length-calculator',
-    '/guides/spokeguides/new-spoke-engineering-guide',
-  ],
-)
+assert.ok(!flattenFooterNavigationItems(guidesSection.links).some(link => link.to?.startsWith('/guides/spokeguides')), 'Empty Spoke Guides category must not remain in the footer')
 
 const allGuideLinks = flattenFooterNavigationItems(guidesSection.links)
 const guidePaths = allGuideLinks
@@ -118,7 +138,7 @@ assert.equal(new Set(guidePaths).size, guidePaths.length, 'GUIDES must not emit 
 assert.ok(!guidePaths.includes('/guides/tireguides/choose'), 'The retired tire width route must not remain as a footer alias')
 
 const guidesWithoutIndexPage = createFooterMenusFromRoutes([
-  createNormalizedFooterTestRoute('/guides/tireguides/tire-pressure', 'guides-tire-pressure', {
+  createNormalizedFooterTestRoute('/guides/tireguides/tubeless', 'guides-tireguides-tubeless', {
     footerLabelKey: 'products.nav.tireSizeCharts',
     footerLabelFallback: 'Tire Guides',
   }),
@@ -128,7 +148,7 @@ const pageLessTireGuidesGroup = guidesWithoutIndexPage
   ?.links.find(link => link.fallback === 'Tire Guides')
 assert.ok(pageLessTireGuidesGroup)
 assert.equal(pageLessTireGuidesGroup.to, undefined)
-assert.ok(pageLessTireGuidesGroup.children?.some(link => link.to === '/guides/tireguides/tire-pressure'))
+assert.ok(pageLessTireGuidesGroup.children?.some(link => link.to === '/guides/tireguides/tubeless'))
 
 const shopCategoryLinks = createFooterShopLinksFromProductCategories([
   {
@@ -150,7 +170,10 @@ assert.deepEqual(shopCategoryLinks, [
   },
   { fallback: 'Tires', to: '/shop/tires' },
 ])
-assert.deepEqual(createFooterShopLinksFromProductCategories([]), [])
+assert.deepEqual(
+  createFooterShopLinksFromProductCategories([]),
+  [{ labelKey: 'products.nav.shop', fallback: 'Shop', to: '/shop' }],
+)
 
 const sectionsWithProductCategories = createFooterMenusFromRoutes(
   [
@@ -171,10 +194,12 @@ const sectionsWhileProductCategoriesAreLoading = createFooterMenusFromRoutes(
   ],
   { shopLinks: [] },
 )
-assert.equal(
-  sectionsWhileProductCategoriesAreLoading.find(section => section.id === 'shop'),
-  undefined,
-  'SHOP must not fall back to a generic Shop link while categories are unavailable',
+const shopSectionWhileProductCategoriesAreLoading = sectionsWhileProductCategoriesAreLoading
+  .find(section => section.id === 'shop')
+assert.ok(shopSectionWhileProductCategoriesAreLoading, 'SHOP must remain visible while categories are unavailable')
+assert.deepEqual(
+  shopSectionWhileProductCategoriesAreLoading.links.map(link => link.to),
+  ['/shop'],
 )
 
 console.log('Footer menu route discovery contract passed.')

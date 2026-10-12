@@ -1,45 +1,141 @@
 {
   "title": "全球合作伙伴",
+  "seo": {
+    "title": "全球合作伙伴与 OEM/ODM 制造网络",
+    "factoryTitle": "{brandName} 自行车轮组工厂",
+    "description": "探索我们的全球自行车制造合作网络。总部位于福建厦门，为 {countriesAndRegionsMinimumCount}+ 个国家的 {brandPartnersMinimumCount}+ 个品牌提供 OEM/ODM 碳纤维轮圈、精密编轮与静音花鼓解决方案。"
+  },
   "hero": {
-    "tagline": "受到全球领先品牌信赖",
-    "contactCta": "联系我们洽谈合作"
+    "tagline": "为品牌、车店、自编技师及车队提供轮组部件与合作服务"
+  },
+  "partnershipChannels": {
+    "title": "选择适合您的合作通道",
+    "description": "围绕品牌制造、批发采购与骑行项目，提供三种合作方向。",
+    "conditionsNote": "各通道的合作条件按项目沟通确认；起订量、交期及具体合作细则待更新。",
+    "contactEyebrow": "您的合作咨询方向",
+    "contactPanelTitle": "沟通您的合作需求",
+    "contactPanelDescription": "通过邮件或在线客服介绍您的项目，并沟通对应通道的合作条件。",
+    "oemOdm": {
+      "title": "OEM / ODM 品牌深度代工",
+      "audience": "面向自行车品牌与产品团队",
+      "description": "围绕品牌产品需求，开发私标碳圈与定制整轮。",
+      "features": {
+        "tooling": "专属模具研发与产品设计",
+        "privateLabelAndWheelsets": "私标碳圈及整轮批量定制",
+        "drawingsAndSampleTesting": "工程图纸对接与样品测试"
+      },
+      "cta": "咨询代工起订量与交期",
+      "contactDescription": "请说明产品类型、定制需求与预计采购数量，以沟通代工起订量、样品测试及交期。",
+      "emailSubject": "OEM / ODM 代工咨询：起订量与交期"
+    },
+    "dealerBuilder": {
+      "title": "车店 / 自编技师批发通道",
+      "audience": "面向车店与独立编轮技师",
+      "description": "为车店经营与编轮业务提供轮组部件批发合作。",
+      "features": {
+        "mixedOrders": "支持小批量混合进货",
+        "technicalSupport": "专属选型与轮组编制技术支持",
+        "wholesalePricing": "车店与技师批发价体系"
+      },
+      "cta": "咨询车店 / 技师批发合作",
+      "contactDescription": "请介绍您的车店或编轮业务、采购需求与所在市场，以沟通批发合作、混合进货及技术支持。",
+      "emailSubject": "车店 / 自编技师批发合作咨询"
+    },
+    "teamsAndAmbassadors": {
+      "title": "车队 / 骑行大使支持计划",
+      "audience": "面向俱乐部、职业及业余车手",
+      "description": "围绕训练、骑行与赛事活动，洽谈赞助和器材验证合作。",
+      "features": {
+        "clubsAndRiders": "国内外俱乐部与车手合作",
+        "sponsorship": "赞助与器材支持方案洽谈",
+        "equipmentValidation": "训练及比赛中的器材验证反馈"
+      },
+      "cta": "提交车队 / 大使合作意向",
+      "contactDescription": "请介绍俱乐部或车手背景、活动计划与器材需求，以沟通赞助支持及器材验证合作。",
+      "emailSubject": "车队 / 骑行大使合作意向"
+    }
   },
   "stats": {
+    "asOf": "截至",
     "countries": {
       "label": "国家与地区",
-      "description": "从厦门服务全球市场。"
+      "description": "已服务的国家与地区。"
     },
     "brandPartners": {
-      "label": "品牌合作伙伴",
-      "description": "开展全球 OEM / ODM 合作。"
+      "label": "合作品牌",
+      "description": "曾开展 OEM / ODM 项目合作的品牌。"
     },
     "productsDelivered": {
       "label": "已交付产品",
-      "description": "自上线以来已发运的轮组部件。"
+      "description": "累计发运的轮组部件。"
     }
   },
-  "confidentiality": "出于保密协议的要求，我们不会公开列出合作品牌。所有生产项目均严格保密，以保护客户的商业利益与隐私。",
+  "certificationsAndStandards": {
+    "title": "认证与质量标准",
+    "description": "为适用产品提供赛事合规认证、标准测试与国际出口合规支持。",
+    "uci": {
+      "title": "UCI 赛事合规认证",
+      "description": "获批轮组符合国际自行车联盟赛事使用要求，适用型号与赛事范围以认证资料为准。"
+    },
+    "iso": {
+      "title": "安全与尺寸标准",
+      "description": "产品符合 ISO 4210 自行车安全测试及 ISO 5775 轮胎与轮圈尺寸要求。"
+    },
+    "sgs": {
+      "title": "100,000 次动态滚筒疲劳测试",
+      "description": "轮组通过 SGS 100,000 次动态滚筒疲劳测试，验证重复载荷下的耐久性。"
+    },
+    "exportCompliance": {
+      "title": "国际出口合规",
+      "description": "适用产品具备 TÜV 认证及 CE 合规文件，按目标市场要求对接出口。"
+    },
+    "scopeNote": "认证与测试适用具体产品型号，相关范围和结果以对应证书、报告为准。",
+    "contactCta": "咨询资质与测试报告"
+  },
+  "confidentiality": "合作品牌名称及项目资料按双方约定披露；未经客户许可，不公开相关信息。",
   "whyPartner": {
-    "title": "为什么选择与我们合作",
+    "title": "我们如何配合您的项目",
     "trust": {
-      "title": "长期信任",
-      "description": "为您的产品目录提供可靠交付与稳定品质。"
+      "title": "项目沟通",
+      "description": "围绕产品规格、报价与交期沟通合作需求。"
     },
     "technology": {
-      "title": "技术领先",
-      "description": "持续研发碳纤维轮圈、轮组制造与静音花鼓技术。"
+      "title": "产品开发",
+      "description": "讨论轮圈、花鼓与轮组的设计、样品及制造要求。"
     },
     "support": {
-      "title": "全球支持",
-      "description": "从厦门到您的分销市场，提供跨区域服务支持。"
+      "title": "交付对接",
+      "description": "按项目需求沟通包装、发运与后续问题。"
     }
   },
   "map": {
-    "title": "全球合作网络 - 厦门起点",
-    "description": "所有路线都从中国福建厦门出发，并连接到当前展示的示例城市。",
-    "svgTitle": "从厦门出发的全球合作路线",
-    "svgDescription": "展示从中国福建厦门连接至多个全球城市的动态弧线。",
-    "caption": "此可视化仅用于示意，路线为厦门与部分合作城市之间的风格化连接。"
+    "title": "从厦门出发的市场连接示意",
+    "description": "展示中国厦门与部分城市之间的地理连接。",
+    "svgTitle": "厦门与示例城市的连接示意图",
+    "svgDescription": "以动态线条展示中国厦门与示例城市的连接，仅用于示意。",
+    "caption": "地图仅用于示意，不代表实际合作品牌、客户所在地或运输路线。"
   },
-  "feedbackTitle": "分享您对合作伙伴计划的反馈"
+  "partnershipFaq": {
+    "title": "合作伙伴常见问答",
+    "description": "起订量、交期、样品及关税等合作信息正在整理，具体规则待更新。",
+    "pendingUpdate": "待更新",
+    "minimumOrderQuantity": {
+      "question": "OEM / ODM 订单的起订量（MOQ）是多少？",
+      "answer": "起订数量及适用条件将在确认后补充。"
+    },
+    "leadTime": {
+      "question": "生产及交货期（Lead Time）需要多久？",
+      "answer": "生产周期、交货时间及适用条件待确认后补充。"
+    },
+    "samples": {
+      "question": "如何申请样品，费用和寄送流程是什么？",
+      "answer": "样品申请、费用、寄送方式及后续安排待确认后补充。"
+    },
+    "customsAndDuties": {
+      "question": "海关清关、进口关税及税费由谁承担？",
+      "answer": "清关所需资料、税费责任及适用贸易条款待确认后补充。"
+    },
+    "contactDescription": "如有具体合作项目，欢迎联系我们沟通详情。",
+    "contactCta": "洽谈合作"
+  }
 }

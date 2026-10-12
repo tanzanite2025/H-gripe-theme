@@ -11,13 +11,14 @@
         v-if="displayTitle || faqData?.subtitle"
         class="page-faq__header text-center"
       >
-        <h3
+        <component
+          :is="headingTag"
           v-if="displayTitle"
           class="page-faq__title tz-faq-title"
           :class="theme === 'dark' ? 'tz-text-primary' : 'text-gray-800'"
         >
           {{ displayTitle }}
-        </h3>
+        </component>
         <p
           v-if="faqData?.subtitle"
           class="page-faq__subtitle tz-faq-subtitle max-w-2xl mx-auto"
@@ -27,7 +28,15 @@
         </p>
       </header>
 
-      <div v-if="faqData && displayItems.length > 0" class="page-faq__content">
+      <StorefrontFaqLoadingAndFailurePlaceholder
+        :loading="pending"
+        :failed="Boolean(error)"
+        :has-saved-answers="displayItems.length > 0"
+        :empty="!pending && !error && displayItems.length === 0"
+        @retry="refresh()"
+      />
+
+      <div v-if="faqData && displayItems.length > 0" class="page-faq__content" :aria-busy="pending">
         <DesktopFaqMasterDetail
           class="page-faq__desktop-list"
           :items="displayItems"
@@ -100,16 +109,6 @@
       </div>
 
       <div
-        v-else
-        class="page-faq__empty text-center py-12 rounded-2xl border-2 border-dashed"
-        :class="theme === 'dark'
-          ? 'tz-border-subtle tz-text-muted'
-          : 'border-[var(--tz-form-control-border)] tz-text-muted'"
-      >
-        <p class="text-sm">{{ t('faq.ui.emptySection') }}</p>
-      </div>
-
-      <div
         v-if="showViewAllLink && hasMoreItems"
         class="page-faq__footer text-center mt-8"
       >
@@ -133,6 +132,7 @@ import { computed } from 'vue'
 import { useHead, useLocalePath } from '#imports'
 import FaqAnswerContent from '~/components/FaqAnswerContent.vue'
 import DesktopFaqMasterDetail from '~/components/faq/DesktopFaqMasterDetail.vue'
+import StorefrontFaqLoadingAndFailurePlaceholder from '~/components/faq/StorefrontFaqLoadingAndFailurePlaceholder.vue'
 import { usePageFaq } from '~/composables/usePageFaq'
 import { useStorefrontSeoLinks } from '~/composables/seo/useStorefrontSeoLinks'
 import { getStorefrontLocaleLanguageTag } from '~/utils/storefrontLocales'
@@ -140,6 +140,7 @@ import { createSeoJsonLdScript, createFaqPageJsonLd } from '~/utils/seo/jsonLd'
 import type { PageFaqProps } from '../data/faq/types'
 
 const props = withDefaults(defineProps<PageFaqProps>(), {
+  headingTag: 'h3',
   theme: 'light',
   showViewAllLink: false,
 })
@@ -149,6 +150,9 @@ const localePath = useLocalePath()
 const { canonicalUrl } = useStorefrontSeoLinks()
 const {
   faqData,
+  pending,
+  error,
+  refresh,
   displayTitle,
   displayItems,
   expandedItems,

@@ -1,13 +1,15 @@
 import { expect, test, type Page } from '@playwright/test'
 
 const selectorBaseURL = process.env.SCHWALBE_SELECTOR_BASE_URL ?? 'http://localhost:9100'
-const selectorPath = '/guides/tireguides/schwalbe-tire-selector'
+const selectorPath = '/tools/schwalbe-tire-selector'
 
 const selectorURL = (query = '') => `${selectorBaseURL}${selectorPath}${query}`
 
 const waitForNuxtMount = (page: Page) => page.waitForFunction(() => {
   const root = document.querySelector('#__nuxt')
-  return Boolean(root && Reflect.get(root, '__vue_app__'))
+  const vueApplication = root && Reflect.get(root, '__vue_app__')
+  const nuxtApplication = vueApplication?.config.globalProperties.$nuxt
+  return Boolean(nuxtApplication && !nuxtApplication.isHydrating)
 })
 
 const openCatalogFilters = async (page: Page) => {
@@ -83,6 +85,7 @@ test.describe('Schwalbe selector URL state', () => {
     await filterButton.click()
     const dialog = page.getByRole('dialog', { name: 'Filter catalog' })
     await expect(dialog).toBeVisible()
+    await expect(dialog.getByRole('button', { name: 'Show results' })).toBeEnabled()
     await page.keyboard.press('Escape')
 
     await expect(dialog).toHaveCount(0)
@@ -207,7 +210,7 @@ test.describe('Schwalbe selector URL state', () => {
     await expect(colorTopic.locator('.schwalbe-telemetry__catalog-value')).toHaveText(colorValues)
     await expect(colorTopic.locator('.schwalbe-telemetry__catalog-card')).toHaveCount(colorValues.length)
 
-    const compoundTab = page.getByRole('tab', { name: '🧪 Compound', exact: true })
+    const compoundTab = page.getByRole('tab', { name: 'Compound', exact: true })
     await expect(compoundTab).toBeVisible()
     await compoundTab.click()
 
@@ -354,7 +357,8 @@ test.describe('Schwalbe selector URL state', () => {
 
     const radialOption = page.getByRole('radio', { name: 'Radial', exact: true })
     await expect(radialOption).toBeChecked()
-    await expect(page.locator('fieldset.schwalbe-filter-panel__inline-facet').filter({ hasText: 'Casing orientation' })).toHaveCount(0)
+    await expect(page.locator('fieldset.schwalbe-filter-panel__inline-facet').filter({ hasText: 'Casing orientation' })).toHaveCount(1)
+    await expect(page.getByRole('checkbox', { name: 'Super Race', exact: true })).toHaveCount(0)
     await page.getByRole('button', { name: 'Show results' }).click()
     await expect(page).toHaveURL(url => (
       url.searchParams.get('radial') === '1'
@@ -373,7 +377,7 @@ test.describe('Schwalbe selector URL state', () => {
     await expect(dialog).toBeVisible()
     await expect(dialog.locator('summary.schwalbe-filter-panel__accordion-title').filter({ hasText: 'Tire width' })).toHaveCount(0)
     await expect(dialog.locator('fieldset.schwalbe-filter-panel__inline-facet')).toHaveCount(4)
-    await expect(dialog.locator('fieldset.schwalbe-filter-panel__inline-facet').filter({ hasText: 'Casing orientation' })).toHaveCount(0)
+    await expect(dialog.locator('fieldset.schwalbe-filter-panel__inline-facet').filter({ hasText: 'Casing orientation' })).toHaveCount(1)
     await expect(dialog.locator('fieldset.schwalbe-filter-panel__inline-facet').filter({ hasText: 'E-Bike marking' })).toBeVisible()
     await expect(dialog.locator('fieldset.schwalbe-filter-panel__inline-facet').filter({ hasText: 'Seal' })).toBeVisible()
     await expect(dialog.getByRole('radio', { name: 'ALL', exact: true })).toBeChecked()

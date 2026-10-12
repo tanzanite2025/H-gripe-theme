@@ -1,0 +1,84 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="social-preview-title social-preview-description">
+  <title id="social-preview-title">Bicycle inner tube size, valve and rim-depth guide</title>
+  <desc id="social-preview-description">Presta, Schrader and Dunlop valve illustrations beside a deep-rim diagram showing valve exposure. Material labels list butyl, latex and TPU.</desc>
+  <defs>
+    <linearGradient id="social-preview-background" x2="1" y2="1">
+      <stop stop-color="#ecfdf5"/>
+      <stop offset="1" stop-color="#f0fdfa"/>
+    </linearGradient>
+    <linearGradient id="social-preview-valve-metal">
+      <stop stop-color="#64748b"/>
+      <stop offset="0.45" stop-color="#e2e8f0"/>
+      <stop offset="1" stop-color="#64748b"/>
+    </linearGradient>
+    <marker id="social-preview-measurement-arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0 0 10 5 0 10Z" fill="#059669"/>
+    </marker>
+  </defs>
+  <rect width="1200" height="630" fill="url(#social-preview-background)"/>
+  <circle cx="1180" cy="-60" r="320" fill="#d1fae5" opacity="0.65"/>
+  <rect x="36" y="36" width="1128" height="558" rx="28" fill="#fff"/>
+  <g font-family="Arial, Helvetica, sans-serif">
+    <rect x="72" y="70" width="6" height="84" rx="3" fill="#059669"/>
+    <text x="98" y="96" font-size="15" font-weight="700" letter-spacing="3" fill="#047857">BICYCLE FITMENT GUIDE</text>
+    <text x="94" y="150" font-size="48" font-weight="700" fill="#102b27">Choose the right inner tube</text>
+    <text x="96" y="186" font-size="21" fill="#526660">Size · Valve type · Material · Rim depth</text>
+
+    <rect x="72" y="220" width="555" height="302" rx="20" fill="#f8fafc"/>
+    <text x="96" y="255" font-size="15" font-weight="700" letter-spacing="1.5" fill="#526660">KNOW YOUR VALVE</text>
+    <g stroke="#526660" stroke-width="2">
+      <path d="M154 405V315Q154 305 164 305H174Q184 305 184 315V405Z" fill="url(#social-preview-valve-metal)"/>
+      <rect x="162" y="283" width="14" height="22" rx="3" fill="#94a3b8"/>
+      <path d="M169 270V283" stroke="#b59a52" stroke-width="5"/>
+      <path d="M155 330H183M155 340H183M155 350H183M155 360H183M155 370H183M155 380H183M155 390H183"/>
+      <rect x="145" y="404" width="48" height="12" rx="4" fill="#334155"/>
+      <path d="M145 425Q169 411 193 425" fill="none" stroke="#1e293b" stroke-width="16" stroke-linecap="round"/>
+
+      <rect x="324" y="305" width="46" height="100" rx="6" fill="url(#social-preview-valve-metal)"/>
+      <ellipse cx="347" cy="305" rx="23" ry="8" fill="#cbd5e1"/>
+      <path d="M347 303V310" stroke="#526660" stroke-width="5"/>
+      <path d="M325 322H369M325 332H369M325 342H369"/>
+      <rect x="317" y="404" width="60" height="12" rx="4" fill="#334155"/>
+      <path d="M322 425Q347 411 372 425" fill="none" stroke="#1e293b" stroke-width="16" stroke-linecap="round"/>
+
+      <rect x="499" y="327" width="38" height="78" rx="5" fill="url(#social-preview-valve-metal)"/>
+      <rect x="495" y="314" width="46" height="18" rx="5" fill="#94a3b8"/>
+      <rect x="509" y="285" width="18" height="29" rx="4" fill="url(#social-preview-valve-metal)"/>
+      <path d="M500 349H536M500 359H536M500 369H536M500 379H536M500 389H536"/>
+      <rect x="490" y="404" width="56" height="12" rx="4" fill="#334155"/>
+      <path d="M493 425Q518 411 543 425" fill="none" stroke="#1e293b" stroke-width="16" stroke-linecap="round"/>
+    </g>
+    <g text-anchor="middle">
+      <text x="169" y="466" font-size="21" font-weight="700" fill="#102b27">Presta</text>
+      <text x="169" y="492" font-size="15" fill="#526660">SV / French</text>
+      <text x="347" y="466" font-size="21" font-weight="700" fill="#102b27">Schrader</text>
+      <text x="347" y="492" font-size="15" fill="#526660">AV / Auto</text>
+      <text x="518" y="466" font-size="21" font-weight="700" fill="#102b27">Dunlop</text>
+      <text x="518" y="492" font-size="15" fill="#526660">DV / Woods</text>
+    </g>
+
+    <rect x="651" y="220" width="477" height="302" rx="20" fill="#ecfdf5"/>
+    <text x="675" y="255" font-size="15" font-weight="700" letter-spacing="1.5" fill="#047857">CHECK VALVE EXPOSURE</text>
+    <path d="M810 355H879V445Q845 485 810 445Z" fill="#cbd5e1" stroke="#94a3b8" stroke-width="2"/>
+    <rect x="835" y="294" width="19" height="185" rx="5" fill="url(#social-preview-valve-metal)" stroke="#526660" stroke-width="2"/>
+    <path d="M836 307H853M836 317H853M836 327H853M836 337H853M836 347H853" stroke="#526660" stroke-width="2"/>
+    <path d="M762 492Q845 451 928 492" fill="none" stroke="#1e293b" stroke-width="22" stroke-linecap="round"/>
+    <path d="M894 298H954M894 354H954" stroke="#059669" stroke-width="1.5" stroke-dasharray="4 4"/>
+    <path d="M941 304V348" stroke="#059669" stroke-width="2" marker-start="url(#social-preview-measurement-arrow)" marker-end="url(#social-preview-measurement-arrow)"/>
+    <text x="959" y="322" font-size="16" font-weight="700" fill="#047857">Exposed</text>
+    <text x="959" y="343" font-size="16" fill="#047857">valve</text>
+    <path d="M742 363V449" stroke="#059669" stroke-width="2" marker-start="url(#social-preview-measurement-arrow)" marker-end="url(#social-preview-measurement-arrow)"/>
+    <text x="692" y="401" font-size="16" fill="#047857">Rim</text>
+    <text x="685" y="422" font-size="16" fill="#047857">depth</text>
+
+    <g font-size="16" font-weight="700" text-anchor="middle">
+      <rect x="72" y="542" width="112" height="34" rx="17" fill="#ecfdf5"/>
+      <text x="128" y="565" fill="#047857">BUTYL</text>
+      <rect x="196" y="542" width="112" height="34" rx="17" fill="#ecfdf5"/>
+      <text x="252" y="565" fill="#047857">LATEX</text>
+      <rect x="320" y="542" width="112" height="34" rx="17" fill="#ecfdf5"/>
+      <text x="376" y="565" fill="#047857">TPU</text>
+    </g>
+    <text x="1126" y="565" text-anchor="end" font-size="16" fill="#526660">Sizing reference + valve-length calculator</text>
+  </g>
+</svg>

@@ -1,4 +1,6 @@
 import locales from '~/i18n/locales.manifest'
+import { storefrontRedirects, storefrontRetiredPagePaths } from '../../../config/storefront/route-rules'
+import { isInnerTubeGuideSitemapRouteAllowed } from '~/utils/seo/innerTubeGuidePublishedLocaleIndexingPolicy'
 
 type ProductSitemapRecord = {
   slug?: string
@@ -141,7 +143,12 @@ const getLastmod = (...values: unknown[]) => {
 
 const addEntry = (entries: SitemapEntry[], seen: Set<string>, entry: SitemapEntry) => {
   const loc = normalizePath(entry.loc)
-  if (!loc || seen.has(loc)) return
+  // API route catalogs and FAQ pages can still carry a previous path until
+  // their manifest sync runs. Omit both redirects and retired pages.
+  const unlocalizedPath = stripLocalePrefix(loc)
+  if (storefrontRetiredPagePaths.includes(unlocalizedPath)
+    || storefrontRedirects.some(redirect => redirect.from === unlocalizedPath)) return
+  if (!loc || seen.has(loc) || !isInnerTubeGuideSitemapRouteAllowed(loc)) return
   seen.add(loc)
   entries.push({
     ...entry,

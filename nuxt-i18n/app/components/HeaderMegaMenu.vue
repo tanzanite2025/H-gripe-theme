@@ -8,6 +8,12 @@
       :aria-label="`${sectionLabel} menu`"
       @click.stop
     >
+      <div
+        class="header-mega__below-panel-backdrop"
+        aria-hidden="true"
+        @click="closePanel"
+      ></div>
+
       <div class="header-mega__shell">
         <div class="header-mega__content">
           <div v-if="section.id === 'products'" class="header-mega__products-grid">
@@ -315,18 +321,30 @@ const childAccessibleLabel = (child: PageSubNavigationChild) => {
   transform-origin: top center;
   z-index: 116;
   pointer-events: auto;
-  will-change: opacity, transform, clip-path;
-  clip-path: inset(0 0 0 0);
+  will-change: opacity, transform;
+}
+
+.header-mega__below-panel-backdrop {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  left: 0;
+  z-index: 0;
+  height: 100vh;
+  background: rgba(15, 23, 42, 0.18);
+  pointer-events: auto;
 }
 
 .header-mega__shell {
   position: relative;
+  z-index: 1;
   --header-mega-edge: var(--tz-text-accent, #059669);
   --header-mega-max-height: min(560px, calc(var(--tz-mobile-safe-viewport-height, 100vh) - var(--site-header-overlay-offset, 92px) - 18px));
 
   height: auto;
   max-height: var(--header-mega-max-height);
   overflow: hidden;
+  clip-path: inset(0 0 0 0);
   border-radius: 0;
   border: 1px solid var(--header-mega-edge);
   background: var(--tz-card-surface);
@@ -906,14 +924,22 @@ const childAccessibleLabel = (child: PageSubNavigationChild) => {
 .header-mega-leave-active {
   transition:
     opacity 0.24s ease,
-    transform 0.36s cubic-bezier(0.2, 0.8, 0.2, 1),
-    clip-path 0.36s cubic-bezier(0.2, 0.8, 0.2, 1);
+    transform 0.36s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.header-mega-enter-active .header-mega__shell,
+.header-mega-leave-active .header-mega__shell {
+  transition: clip-path 0.36s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 .header-mega-enter-from,
 .header-mega-leave-to {
   opacity: 0;
   transform: translateX(-50%) translateY(-16px);
+}
+
+.header-mega-enter-from .header-mega__shell,
+.header-mega-leave-to .header-mega__shell {
   clip-path: inset(0 0 100% 0);
 }
 
@@ -921,6 +947,10 @@ const childAccessibleLabel = (child: PageSubNavigationChild) => {
 .header-mega-leave-from {
   opacity: 1;
   transform: translateX(-50%) translateY(0);
+}
+
+.header-mega-enter-to .header-mega__shell,
+.header-mega-leave-from .header-mega__shell {
   clip-path: inset(0 0 0 0);
 }
 
@@ -981,10 +1011,16 @@ const childAccessibleLabel = (child: PageSubNavigationChild) => {
 @media (max-width: 1279px) {
   .header-mega {
     position: fixed;
-    inset: calc(var(--header-mega-mobile-top, var(--site-header-overlay-offset, 7rem)) + 2px) 2px 2px;
+    /* Match the desktop header-bottom anchor and let content determine height. */
+    inset: calc(var(--site-header-overlay-offset, 7rem) - 1px) 2px auto;
     width: auto;
     transform: none;
     z-index: 10010;
+  }
+
+  .header-mega__below-panel-backdrop {
+    right: -2px;
+    left: -2px;
   }
 
   .header-mega__shell {

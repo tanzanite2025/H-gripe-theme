@@ -24,6 +24,8 @@
     "scripts/**/*.d.ts",
     "scripts/i18n/**/*.ts",
     "scripts/seo/check-sitemap-xml.ts",
+    "scripts/seo/check-bicycle-inner-tube-guide-multilingual-indexing-and-sitemap-consistency.ts",
+    "scripts/seo/check-bicycle-inner-tube-guide-content-and-structured-data-server-rendering.ts",
     "scripts/seo/check-drivetrain-geo.ts",
     "scripts/storefront/**/*.ts",
     "tailwind.config.ts"

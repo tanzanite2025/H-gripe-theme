@@ -8,6 +8,11 @@ import {
   useSwitchLocalePath,
 } from '#imports'
 import { toAbsoluteSeoUrl } from '~/utils/seo/urls'
+import { resolveInnerTubeGuideContentPanelFromTabQuery } from '~/utils/innerTubeGuideContentSectionNavigation'
+import {
+  innerTubeGuidePublishedLocaleSeoRoutes,
+  readInnerTubeGuideRouteLocaleCode,
+} from '~/utils/seo/innerTubeGuidePublishedLocaleIndexingPolicy'
 
 export interface StorefrontSeoAlternateLinkEntry {
   code: string
@@ -110,7 +115,22 @@ export const useStorefrontSeoLinks = (options: StorefrontSeoLinksOptions = {}) =
 
   const makeAbsoluteUrl = (path: string) => toAbsoluteSeoUrl(siteOrigin.value, path)
 
+  const innerTubeGuideCalculatorCanonicalQuery = computed(() => (
+    readInnerTubeGuideRouteLocaleCode(route.path) !== null
+      && resolveInnerTubeGuideContentPanelFromTabQuery(route.query) === 'calculator'
+      ? '?tab=calculator'
+      : ''
+  ))
+
   const overrideEntries = computed(() => {
+    // This route's published languages must survive calculator query updates.
+    // Resolve them from the current path rather than mutable shared override state.
+    if (readInnerTubeGuideRouteLocaleCode(route.path) !== null) {
+      return innerTubeGuidePublishedLocaleSeoRoutes.map(entry => ({
+        ...entry,
+        path: `${entry.path}${innerTubeGuideCalculatorCanonicalQuery.value}`,
+      }))
+    }
     if (!Array.isArray(alternateLinksOverride.value) || !alternateLinksOverride.value.length) {
       return null
     }
@@ -121,7 +141,7 @@ export const useStorefrontSeoLinks = (options: StorefrontSeoLinksOptions = {}) =
     const currentOverride = overrideEntries.value?.find(
       (entry) => entry.code === currentLocaleCode.value,
     )
-    return currentOverride?.path || route.path || '/'
+    return currentOverride?.path || `${route.path || '/'}${innerTubeGuideCalculatorCanonicalQuery.value}`
   })
 
   const canonicalUrl = computed(() => makeAbsoluteUrl(canonicalPath.value))

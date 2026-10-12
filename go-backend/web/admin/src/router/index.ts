@@ -527,7 +527,7 @@ const routes: RouteRecordRaw[] = [
         path: 'shipping/services',
         name: 'ShippingServices',
         component: () => import('@/views/Shipping.vue'),
-        meta: { title: '线路服务', permission: 'shipping:view' }
+        meta: { title: '本地计费线路', permission: 'shipping:view' }
       },
       {
         path: 'shipping/packaging',

@@ -1,45 +1,141 @@
 {
   "title": "Global Partners",
+  "seo": {
+    "title": "Global Partners & OEM/ODM Manufacturing Network",
+    "factoryTitle": "{brandName} Bicycle Wheelset Factory",
+    "description": "Explore our global bicycle manufacturing partnerships. Headquartered in Xiamen, we provide OEM/ODM carbon rims, precision wheelbuilding, and silent hub solutions to {brandPartnersMinimumCount}+ brands across {countriesAndRegionsMinimumCount}+ countries."
+  },
   "hero": {
-    "tagline": "Trusted by leading brands worldwide",
-    "contactCta": "Contact us about partnerships"
+    "tagline": "Wheel components and partnerships for brands, dealers, wheel builders and racing teams"
+  },
+  "partnershipChannels": {
+    "title": "Choose Your Partnership Channel",
+    "description": "Three ways to work together, shaped around your business or riding project.",
+    "conditionsNote": "Partnership terms are discussed for each project. MOQ, lead times and detailed cooperation terms are pending update.",
+    "contactEyebrow": "Your partnership enquiry",
+    "contactPanelTitle": "Discuss your partnership needs",
+    "contactPanelDescription": "Use email or service chat to introduce your project and discuss the applicable partnership terms.",
+    "oemOdm": {
+      "title": "OEM / ODM Brand Manufacturing",
+      "audience": "For bicycle brands and product teams",
+      "description": "Develop private-label rims and custom wheelsets around your product requirements.",
+      "features": {
+        "tooling": "Dedicated mould development and product design",
+        "privateLabelAndWheelsets": "Private-label carbon rims and bulk custom wheelsets",
+        "drawingsAndSampleTesting": "Engineering drawings and sample testing"
+      },
+      "cta": "Discuss OEM MOQ & lead times",
+      "contactDescription": "Tell us about your product, customisation requirements and planned order quantity to discuss OEM / ODM minimum orders, sample testing and lead times.",
+      "emailSubject": "OEM / ODM enquiry: minimum orders and lead times"
+    },
+    "dealerBuilder": {
+      "title": "Dealer & Builder Wholesale",
+      "audience": "For bike shops and independent wheel builders",
+      "description": "Source components for your shop or wheel-building business through our wholesale channel.",
+      "features": {
+        "mixedOrders": "Small mixed orders across products",
+        "technicalSupport": "Dedicated product selection and wheel-building support",
+        "wholesalePricing": "Wholesale pricing for dealers and builders"
+      },
+      "cta": "Discuss dealer / builder wholesale",
+      "contactDescription": "Introduce your bike shop or wheel-building business, purchasing needs and market to discuss wholesale cooperation, mixed orders and technical support.",
+      "emailSubject": "Dealer / builder wholesale enquiry"
+    },
+    "teamsAndAmbassadors": {
+      "title": "Racing Teams & Ambassadors",
+      "audience": "For clubs, professional and amateur riders",
+      "description": "Discuss sponsorship and equipment validation through training, riding and racing.",
+      "features": {
+        "clubsAndRiders": "Cooperation with local and international clubs and riders",
+        "sponsorship": "Sponsorship and equipment support proposals",
+        "equipmentValidation": "Equipment validation and feedback from training and races"
+      },
+      "cta": "Propose a team / ambassador partnership",
+      "contactDescription": "Introduce your club or rider background, planned activities and equipment needs to discuss sponsorship support and equipment validation.",
+      "emailSubject": "Racing team / ambassador partnership proposal"
+    }
   },
   "stats": {
+    "asOf": "As of",
     "countries": {
       "label": "Countries / regions",
-      "description": "Served worldwide from Xiamen."
+      "description": "Countries and regions we have served."
     },
     "brandPartners": {
       "label": "Brand partners",
-      "description": "OEM / ODM collaborations globally."
+      "description": "Brands we have worked with on OEM / ODM projects."
     },
     "productsDelivered": {
       "label": "Products delivered",
-      "description": "Wheel components shipped since launch."
+      "description": "Cumulative wheel component shipments."
     }
   },
-  "confidentiality": "Out of respect for confidentiality agreements, we do not list partner brands publicly. All production projects are treated as strictly confidential to protect our customers' commercial interests and privacy.",
+  "certificationsAndStandards": {
+    "title": "Certifications & Standards",
+    "description": "Race approvals, standards testing and export compliance support for applicable products.",
+    "uci": {
+      "title": "UCI race approval",
+      "description": "Approved wheel models meet Union Cycliste Internationale requirements for use in eligible events."
+    },
+    "iso": {
+      "title": "Safety & dimensional standards",
+      "description": "Products meet ISO 4210 bicycle safety testing and ISO 5775 tyre and rim dimensional requirements."
+    },
+    "sgs": {
+      "title": "100,000-cycle drum fatigue test",
+      "description": "Wheelsets have passed SGS dynamic drum fatigue testing over 100,000 cycles to assess durability under repeated loads."
+    },
+    "exportCompliance": {
+      "title": "International export compliance",
+      "description": "Applicable products have TÜV certification and CE conformity documentation for their destination markets."
+    },
+    "scopeNote": "Certifications and tests apply to specific product models. Refer to the corresponding certificates and reports for their scope and results.",
+    "contactCta": "Ask about certificates & test reports"
+  },
+  "confidentiality": "Partner names and project details are shared as agreed with each customer. We do not publish this information without their permission.",
   "whyPartner": {
-    "title": "Why Partner With Us",
+    "title": "How We Work With You",
     "trust": {
-      "title": "Long-term trust",
-      "description": "Reliable delivery and consistent quality for your catalog."
+      "title": "Project communication",
+      "description": "Discuss product specifications, pricing and timelines for your project."
     },
     "technology": {
-      "title": "Technology leadership",
-      "description": "Continuous R&D in carbon rims, wheel builds and silent hubs."
+      "title": "Product development",
+      "description": "Review design, sample and manufacturing requirements for rims, hubs and wheel builds."
     },
     "support": {
-      "title": "Global support",
-      "description": "Cross-regional service from Xiamen to your distribution markets."
+      "title": "Delivery coordination",
+      "description": "Coordinate packaging, shipping and follow-up questions for each project."
     }
   },
   "map": {
-    "title": "Global partnership network - Xiamen origin",
-    "description": "All routes start from Xiamen, Fujian, China and connect to current demo cities.",
-    "svgTitle": "Global partnership routes from Xiamen",
-    "svgDescription": "Animated arcs showing connections from Xiamen, Fujian, China to several global cities.",
-    "caption": "Visualization is illustrative only. Routes are stylized connections from Xiamen to selected partner cities."
+    "title": "Illustrative connections from Xiamen",
+    "description": "A geographic illustration connecting Xiamen, China to selected cities.",
+    "svgTitle": "Illustrative map of connections from Xiamen",
+    "svgDescription": "Animated lines connecting Xiamen, China to example cities. These are illustrative connections.",
+    "caption": "This map is illustrative. It does not identify partner brands, customer locations or actual shipping routes."
   },
-  "feedbackTitle": "Share your feedback about our Partnership Program"
+  "partnershipFaq": {
+    "title": "B2B Partnership FAQ",
+    "description": "Information about minimum orders, lead times, samples and customs is being prepared. Confirmed policies will be added here.",
+    "pendingUpdate": "Pending update",
+    "minimumOrderQuantity": {
+      "question": "What is the minimum order quantity (MOQ) for OEM / ODM orders?",
+      "answer": "Minimum quantities and applicable conditions will be added once confirmed."
+    },
+    "leadTime": {
+      "question": "What are the production and delivery lead times?",
+      "answer": "Production schedules, delivery timelines and applicable conditions will be added once confirmed."
+    },
+    "samples": {
+      "question": "How do I request samples, and what are the costs and shipping process?",
+      "answer": "Sample requests, costs, shipping methods and next steps will be added once confirmed."
+    },
+    "customsAndDuties": {
+      "question": "Who handles customs clearance, import duties and taxes?",
+      "answer": "Customs documentation, responsibility for duties and taxes, and applicable trade terms will be added once confirmed."
+    },
+    "contactDescription": "For a current project, contact us to discuss the details.",
+    "contactCta": "Discuss a partnership"
+  }
 }

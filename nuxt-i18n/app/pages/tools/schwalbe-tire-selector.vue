@@ -13,16 +13,13 @@ import { useStorefrontSeoRouteOverride } from '~/composables/seo/useStorefrontSe
 import localeManifest from '~/i18n/locales.manifest'
 
 definePageMeta({
-  // Keep this page at the Schwalbe selector URL while keeping it out of the
-  // `tireguides.vue` component hierarchy. The parent page renders the default
-  // Tubeless guide itself and has no `<NuxtPage />` outlet.
-  path: '/guides/tireguides/schwalbe-tire-selector',
+  path: '/tools/schwalbe-tire-selector',
   middleware: ['schwalbe-selector-i18n'],
   breadcrumbLabelKey: 'guidesSchwalbeTireSelector.title',
   breadcrumbLabelFallback: 'Schwalbe tire selector',
   layout: 'products',
-  footerLabelKey: 'products.nav.tireSizeCharts',
-  footerLabelFallback: 'Tire Guides',
+  footerLabelKey: 'toolsNavigation.schwalbeTireSelectorLabel',
+  footerLabelFallback: 'Schwalbe tire selector',
 })
 
 const { locale, t } = useI18n()

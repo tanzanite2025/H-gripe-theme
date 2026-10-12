@@ -7,6 +7,8 @@ import {
   normalizeStorefrontMediaUrl,
 } from '~/utils/storefrontMedia'
 
+const faqRequestTimeoutMs = 10_000
+
 function hasFaqContent(page?: PageFaqData): page is PageFaqData {
   return Boolean(page?.items?.length)
 }
@@ -53,9 +55,10 @@ function getFetchStatusCode(error: unknown): number | undefined {
     || candidate?.data?.status
 }
 
-function logFaqFetchError(message: string, error: unknown) {
+function rethrowFaqRequestFailureUnlessPageIsMissing(message: string, error: unknown) {
   if (getFetchStatusCode(error) === 404) return
   console.error(message, error)
+  throw error
 }
 
 /**
@@ -70,6 +73,7 @@ export async function fetchFaqData(pageId: string): Promise<PageFaqData | null> 
       {
         query: { locale: getBackendFaqLocale() },
         headers: { accept: 'application/json' },
+        signal: AbortSignal.timeout(faqRequestTimeoutMs),
       },
       'Failed to fetch structured FAQs',
     )
@@ -78,7 +82,7 @@ export async function fetchFaqData(pageId: string): Promise<PageFaqData | null> 
       : undefined
     if (hasFaqContent(page)) return page
   } catch (error) {
-    logFaqFetchError('Failed to fetch structured FAQs from Go backend:', error)
+    rethrowFaqRequestFailureUnlessPageIsMissing('Failed to fetch structured FAQs from Go backend:', error)
   }
 
   return null
@@ -95,6 +99,7 @@ export async function fetchFaqDataByRoutePath(routePath: string): Promise<PageFa
       {
         query: { route_path: normalizedPath, locale: getBackendFaqLocale() },
         headers: { accept: 'application/json' },
+        signal: AbortSignal.timeout(faqRequestTimeoutMs),
       },
       'Failed to fetch structured FAQ by route',
     )
@@ -103,7 +108,7 @@ export async function fetchFaqDataByRoutePath(routePath: string): Promise<PageFa
       : undefined
     if (hasFaqContent(page)) return page
   } catch (error) {
-    logFaqFetchError('Failed to fetch structured FAQ by route from Go backend:', error)
+    rethrowFaqRequestFailureUnlessPageIsMissing('Failed to fetch structured FAQ by route from Go backend:', error)
   }
 
   return null
@@ -121,13 +126,16 @@ export async function fetchAllFaqData(): Promise<PageFaqData[]> {
       {
         query: { locale: getBackendFaqLocale() },
         headers: { accept: 'application/json' },
+        signal: AbortSignal.timeout(faqRequestTimeoutMs),
       },
       'Failed to fetch structured FAQ pages',
     )
     const pages = (structured.pages || []).map(page => normalizeFaqPageMedia(page, mediaContext))
     if (hasAnyFaqContent(pages)) return pages
   } catch (error) {
-    logFaqFetchError('Failed to fetch structured FAQ pages from Go backend:', error)
+    // The catalog endpoint must exist: even a 404 is an outage, not an empty catalog.
+    console.error('Failed to fetch structured FAQ pages from Go backend:', error)
+    throw error
   }
 
   return []

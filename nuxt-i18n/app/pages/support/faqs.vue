@@ -2,15 +2,23 @@
   <div class="faqs-page">
     <header class="faqs-page__header">
       <div class="faqs-page__header-main">
-        <h2 class="faqs-page__title">{{ t('supportFaqs.title') }}</h2>
+        <h1 class="faqs-page__title">{{ t('supportFaqs.title') }}</h1>
       </div>
       <p class="faqs-page__intro">
         {{ t('supportFaqs.ui.pageIntro') }}
       </p>
     </header>
 
+    <StorefrontFaqLoadingAndFailurePlaceholder
+      :loading="pending"
+      :failed="Boolean(error)"
+      :has-saved-answers="allPages.length > 0"
+      :empty="!pending && !error && allPages.length === 0"
+      @retry="refreshAllFaqData()"
+    />
+
     <!-- 搜索框 -->
-    <div class="faqs-search">
+    <div v-if="allPages.length > 0" class="faqs-search">
       <input
         v-model="searchQuery"
         type="text"
@@ -20,7 +28,7 @@
       <span v-if="searchQuery" class="faqs-search__clear" @click="searchQuery = ''">✕</span>
     </div>
 
-    <div class="faqs-layout">
+    <div v-if="allPages.length > 0" class="faqs-layout">
       <!-- FAQ page filters -->
       <aside class="faqs-sidebar" :aria-label="t('supportFaqs.ui.pagesAriaLabel', 'FAQ pages')">
         <div class="faqs-sidebar__label">{{ t('supportFaqs.ui.pagesLabel', 'FAQ pages') }}</div>
@@ -103,12 +111,16 @@
 </template>
 
 <script setup lang="ts">
-import { watch } from 'vue'
-import { useHead } from '#imports'
+import { computed, watch } from 'vue'
+import { useHead, useI18n } from '#imports'
 import GlobalAllFaqsDesktopGroupedSearchResultsPanel from '~/components/faq/GlobalAllFaqsDesktopGroupedSearchResultsPanel.vue'
 import GlobalAllFaqsMobileGroupedSearchResultsPanel from '~/components/faq/GlobalAllFaqsMobileGroupedSearchResultsPanel.vue'
+import StorefrontFaqLoadingAndFailurePlaceholder from '~/components/faq/StorefrontFaqLoadingAndFailurePlaceholder.vue'
 import { useGlobalAllFaqsSearchAndGroupedResults } from '~/composables/useGlobalAllFaqsSearchAndGroupedResults'
 import { usePageMessages } from '~/composables/usePageMessages'
+import { useStorefrontSeoLinks } from '~/composables/seo/useStorefrontSeoLinks'
+import { createFaqPageJsonLd, createSeoJsonLdScript } from '~/utils/seo/jsonLd'
+import { getStorefrontLocaleLanguageTag } from '~/utils/storefrontLocales'
 
 definePageMeta({
   layout: 'support',
@@ -117,6 +129,7 @@ definePageMeta({
 })
 
 const { locale, t } = useI18n()
+const { canonicalUrl } = useStorefrontSeoLinks()
 const { loadPageMessages } = usePageMessages('supportFaqs')
 
 await loadPageMessages(locale.value)
@@ -125,12 +138,11 @@ watch(locale, (nextLocale) => {
   void loadPageMessages(nextLocale)
 })
 
-useHead({
-  title: () => t('supportFaqs.ui.allFaqsMetaTitle'),
-})
-
 const {
   allPages,
+  pending,
+  error,
+  refreshAllFaqData,
   searchQuery,
   activePageId,
   expandedItems,
@@ -140,6 +152,21 @@ const {
   toggleItem,
   loadMoreGroups,
 } = await useGlobalAllFaqsSearchAndGroupedResults()
+
+const displayedFaqPageStructuredData = computed(() => createFaqPageJsonLd({
+  canonicalUrl: canonicalUrl.value,
+  pageId: 'support-faqs',
+  inLanguage: getStorefrontLocaleLanguageTag(locale.value),
+  visibleQuestionsAndAnswers: displayedGroups.value.flatMap(group => group.items),
+}))
+
+useHead(() => ({
+  title: t('supportFaqs.ui.allFaqsMetaTitle'),
+  meta: [{ name: 'description', content: t('supportFaqs.metaDescription') }],
+  script: displayedFaqPageStructuredData.value
+    ? [{ ...createSeoJsonLdScript(displayedFaqPageStructuredData.value), key: 'support-faqs-structured-data' }]
+    : [],
+}))
 
 const formatPageIndex = (index: number) => String(index + 1).padStart(2, '0')
 </script>
@@ -153,12 +180,21 @@ const formatPageIndex = (index: number) => String(index + 1).padStart(2, '0')
   box-sizing: border-box;
 }
 
-.faqs-page__title,
 .faqs-page__status-badge,
 .faqs-sidebar__label,
 .faqs-tabs__index,
 .faqs-tabs__dot {
   display: none;
+}
+
+.faqs-page__title {
+  margin: 0 0 0.5rem;
+  color: var(--tz-text-primary);
+  font-size: 1.25rem;
+  font-weight: 900;
+  line-height: 1.2;
+  text-align: center;
+  text-transform: uppercase;
 }
 
 .faqs-page__intro {
@@ -255,13 +291,8 @@ const formatPageIndex = (index: number) => String(index + 1).padStart(2, '0')
   }
 
   .faqs-page__title {
-    display: block;
     margin: 0;
-    color: var(--tz-text-primary);
-    font-size: 1.25rem;
-    font-weight: 900;
-    line-height: 1.2;
-    text-transform: uppercase;
+    text-align: left;
   }
 
   .faqs-page__status-badge {

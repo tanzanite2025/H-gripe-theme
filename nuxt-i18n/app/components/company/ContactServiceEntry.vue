@@ -3,13 +3,17 @@
     <div class="contact-service-entry__copy">
       <p class="contact-service-entry__eyebrow">
         <Icon name="lucide:sparkles" class="h-4 w-4" aria-hidden="true" />
-        {{ t('companyContact.serviceEntry.eyebrow') }}
+        {{ t(selectedPartnershipChannel ? 'companyGlobalPartners.partnershipChannels.contactEyebrow' : 'companyContact.serviceEntry.eyebrow') }}
       </p>
-      <h2 id="contact-service-entry-title" class="contact-service-entry__title">
-        {{ t('companyContact.serviceEntry.title') }}
+      <h2
+        id="contact-service-entry-title"
+        class="contact-service-entry__title"
+        :class="{ 'contact-service-entry__title--partnership': selectedPartnershipChannel }"
+      >
+        {{ t(selectedPartnershipChannel?.titleKey || 'companyContact.serviceEntry.title') }}
       </h2>
       <p class="contact-service-entry__description">
-        {{ t('companyContact.serviceEntry.description') }}
+        {{ t(selectedPartnershipChannel?.contactDescriptionKey || 'companyContact.serviceEntry.description') }}
       </p>
 
       <div class="contact-service-entry__actions">
@@ -57,8 +61,8 @@
       <div class="contact-service-entry__panel-icon" aria-hidden="true">
         <Icon name="lucide:headset" class="h-8 w-8" />
       </div>
-      <h3>{{ t('companyContact.serviceEntry.panel.title') }}</h3>
-      <p>{{ t('companyContact.serviceEntry.panel.description') }}</p>
+      <h3>{{ t(selectedPartnershipChannel ? 'companyGlobalPartners.partnershipChannels.contactPanelTitle' : 'companyContact.serviceEntry.panel.title') }}</h3>
+      <p>{{ t(selectedPartnershipChannel ? 'companyGlobalPartners.partnershipChannels.contactPanelDescription' : 'companyContact.serviceEntry.panel.description') }}</p>
       <button type="button" class="contact-service-entry__chat-button" @click="openSupportChat">
         <Icon name="lucide:message-circle" class="h-4 w-4" aria-hidden="true" />
         {{ t('companyContact.serviceEntry.panel.button') }}
@@ -73,35 +77,56 @@ import { useI18n } from '#imports'
 import { useChatWidget } from '~/composables/useChatWidget'
 import { usePageMessages } from '~/composables/usePageMessages'
 import { useSiteSettings } from '~/composables/usePublicSettings'
+import { globalPartnerCollaborationChannelDefinitions } from '~/data/company/globalPartnerCollaborationChannelDefinitions'
 
 const { openChat } = useChatWidget()
 const { siteSettings } = useSiteSettings()
 const { locale, t } = useI18n()
 const { loadPageMessages } = usePageMessages('companyContact')
-
-await loadPageMessages(locale.value)
-
-watch(locale, (nextLocale) => {
-  void loadPageMessages(nextLocale)
-})
+const { loadPageMessages: loadPartnershipPageMessages } = usePageMessages('companyGlobalPartners')
 
 const props = withDefaults(defineProps<{
   chatSource?: string
+  partnershipChannelId?: string
 }>(), {
   chatSource: 'company-contact',
+  partnershipChannelId: '',
 })
 const emit = defineEmits<{
   'email-open': []
   'open-chat': []
 }>()
 
+const selectedPartnershipChannel = computed(() => (
+  globalPartnerCollaborationChannelDefinitions.find(channel => channel.id === props.partnershipChannelId)
+))
+
+async function loadContactAndSelectedPartnershipTranslationMessages(requestedLocale: string): Promise<void> {
+  await Promise.all([
+    loadPageMessages(requestedLocale),
+    selectedPartnershipChannel.value ? loadPartnershipPageMessages(requestedLocale) : Promise.resolve(),
+  ])
+}
+
+await loadContactAndSelectedPartnershipTranslationMessages(locale.value)
+
+watch([locale, selectedPartnershipChannel], ([nextLocale]) => {
+  void loadContactAndSelectedPartnershipTranslationMessages(nextLocale)
+})
+
 const contactEmail = computed(() => siteSettings.value.contactEmail?.trim() || '')
-const emailHref = computed(() => `mailto:${contactEmail.value}`)
+const emailHref = computed(() => {
+  const channel = selectedPartnershipChannel.value
+  const subject = channel ? `?subject=${encodeURIComponent(t(channel.emailSubjectKey))}` : ''
+  return `mailto:${contactEmail.value}${subject}`
+})
 
 const openSupportChat = () => {
   openChat({
     showAgentList: true,
-    source: props.chatSource,
+    source: selectedPartnershipChannel.value
+      ? `${props.chatSource}-${selectedPartnershipChannel.value.id}`
+      : props.chatSource,
   })
   emit('open-chat')
 }
@@ -151,6 +176,12 @@ const openSupportChat = () => {
   color: var(--tz-text-secondary);
   font-size: var(--tz-type-description);
   line-height: 1.65;
+}
+
+.contact-service-entry__title--partnership {
+  max-width: none;
+  font-size: clamp(1.5rem, 2.4vw, 2.5rem);
+  line-height: 1.2;
 }
 
 .contact-service-entry__actions {
@@ -318,6 +349,10 @@ const openSupportChat = () => {
 
   .contact-service-entry__title {
     max-width: 13ch;
+  }
+
+  .contact-service-entry__title--partnership {
+    max-width: none;
   }
 }
 </style>

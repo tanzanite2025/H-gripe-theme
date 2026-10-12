@@ -3,7 +3,7 @@
     <div class="flex flex-wrap items-end justify-between gap-3">
       <div>
         <h2 class="text-sm font-black tracking-tighter uppercase">运费模板</h2>
-        <p class="mt-1 text-xs text-muted-foreground">维护基础计费方式、默认费用、免运门槛和区域规则矩阵；系统免邮模板独立按国家控制下单范围。</p>
+        <p class="mt-1 text-xs text-muted-foreground">维护产品和 SKU 绑定的基础计费方式、默认费用、免运门槛和区域规则矩阵；系统免邮模板独立按国家控制下单范围。</p>
       </div>
       <Button v-if="canCreate" size="sm" @click="emit('create-template')">
         <Plus class="size-3.5" />
@@ -88,7 +88,7 @@
     <div class="flex flex-wrap items-end justify-between gap-3 pt-3">
       <div>
         <h3 class="text-sm font-black tracking-tighter uppercase">承运商代码映射</h3>
-        <p class="mt-1 text-xs text-muted-foreground">把本地承运商或线路服务映射到 Provider carrier code，后续追踪号注册和轨迹同步统一读取这里。</p>
+        <p class="mt-1 text-xs text-muted-foreground">把本地承运商或本地计费线路映射到 Provider carrier code，后续追踪号注册和轨迹同步统一读取这里。</p>
       </div>
       <Button
         v-if="canCreate"

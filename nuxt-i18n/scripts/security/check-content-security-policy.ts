@@ -163,6 +163,27 @@ assert(
   'Deterministic nonce trust chain was not reflected in script-src',
 )
 
+const originalNodeEnvironmentForInlineStyleChecks = process.env.NODE_ENV
+try {
+  for (const nodeEnvironment of ['development', 'production']) {
+    process.env.NODE_ENV = nodeEnvironment
+    const inlineStylePolicy = createContentSecurityPolicy(deterministicNonceHtml, {
+      scriptNonce: 'abcdefghijklmnopqrstuvwx',
+    })
+    const styleElementDirective = inlineStylePolicy.split('; ').find(value => value.startsWith('style-src-elem ')) || ''
+    if (nodeEnvironment === 'development') {
+      assert(styleElementDirective.includes("'unsafe-inline'"), 'DEV must allow Vite runtime styles')
+      assert(!styleElementDirective.includes('sha256-'), 'Style hashes must not disable unsafe-inline in DEV')
+    } else {
+      assert(!styleElementDirective.includes("'unsafe-inline'"), 'Production style elements must remain hash-restricted')
+      for (const styleHash of hashes.style) assert(styleElementDirective.includes(styleHash), 'Production must allow the SSR critical CSS hash')
+    }
+  }
+} finally {
+  if (originalNodeEnvironmentForInlineStyleChecks === undefined) delete process.env.NODE_ENV
+  else process.env.NODE_ENV = originalNodeEnvironmentForInlineStyleChecks
+}
+
 assert(existsSync(resolve(projectRoot, 'app/utils/security/trustedScriptUrl.ts')), 'Trusted script URL policy helper is missing')
 
 const richTextOrigins = safeRichTextMediaOriginsFromRuntimeConfig({

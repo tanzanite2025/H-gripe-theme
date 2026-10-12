@@ -1,4 +1,28 @@
 {
+  "toolsNavigation": {
+    "label": "도구",
+    "eyebrow": "자전거 부품 선택",
+    "description": "부품 사양을 검색, 필터링하고 비교하세요. 각 도구에는 결과를 이해하는 데 필요한 설명이 포함되어 있습니다.",
+    "openTool": "도구 열기",
+    "schwalbeTireSelectorLabel": "Schwalbe tire selector",
+    "schwalbeTireSelectorDescription": "모델과 크기로 Schwalbe 타이어 카탈로그를 검색하고 필터링하며 구조와 사양 설명을 확인하세요.",
+    "brandWheelsetSpokeSpecsLabel": "휠셋 스포크 및 니플 규격",
+    "brandWheelsetSpokeSpecsDescription": "브랜드로 필터링하거나 휠셋 모델을 검색하여 스포크 길이, 조립 패턴, 니플 규격과 수리 키트 안내를 확인하세요.",
+    "spokeLengthCalculatorLabel": "스포크 길이 계산기",
+    "spokeLengthCalculatorDescription": "림, 허브, 조립 패턴, 보정 및 니플을 설정하는 전체 마법사로 앞뒤 휠의 스포크 길이를 계산하고 측정 방법과 결과 설명을 확인하세요.",
+    "spokeLacingTopologySimulatorLabel": "스포크 조립 패턴 시뮬레이터",
+    "spokeLacingTopologySimulatorDescription": "스포크 구멍 위치, 조립 패턴, G3 및 2:1 배열과 양쪽 플랜지 형상을 미리 확인할 수 있으며 설명과 미리보기 한계를 제공합니다.",
+  "dynamicTirePressureCalculatorLabel": "동적 타이어 압력 계산기",
+  "dynamicTirePressureCalculatorDescription": "하중, 공기압, 속도와 기울기가 추정 접지 면적과 코너링 힘을 어떻게 바꾸는지 확인하세요.",
+    "spokeStressReliefMechanicsLabel": "Stainless steel spoke stress-relief mechanics",
+    "spokeStressReliefMechanicsDescription": "Calculate axial spoke elongation from material, section, length, and working tension inputs with the full engineering context.",
+    "valveLengthFitmentCalculatorLabel": "Inner tube valve-length fitment calculator",
+    "valveLengthFitmentCalculatorDescription": "Complete inner-tube size, valve, material, and deep-rim valve-length guidance with an interactive fitment calculator.",
+    "freehubCassetteFitmentEngineLabel": "Freehub and cassette compatibility engine",
+    "freehubCassetteFitmentEngineDescription": "Match cassette standards, freehub bodies, spacers, and mechanical fitment rules with the complete guide.",
+    "tireRimWidthCompatibilityEngineLabel": "Tire and rim width compatibility engine",
+    "tireRimWidthCompatibilityEngineDescription": "Calculate tire and rim width fit, inspect simulations, and compare published compatibility charts"
+  },
   "accountSidebar": {
     "addresses": {
       "eyebrow": "Shipping details",
@@ -898,7 +922,9 @@
       "illustrationAlt": "FAQ 이미지",
       "selectQuestion": "Select a question to view the answer.",
       "pagesAriaLabel": "FAQ pages",
-      "pagesLabel": "FAQ pages"
+      "pagesLabel": "FAQ pages",
+      "loadFailed": "답변을 불러올 수 없습니다. 다시 시도해 주세요.",
+      "showingSavedAnswers": "답변을 업데이트할 수 없습니다. 마지막으로 불러온 답변을 표시합니다."
     }
   },
   "feedback": {

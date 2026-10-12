@@ -47,14 +47,16 @@
 import { nextTick, onBeforeUnmount, ref, useId, watch } from 'vue'
 import { createDialogStackId, useDialogStack } from '~/composables/useDialogStack'
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   id: string
   open: boolean
   title: string
   closeLabel: string
   showResultsLabel: string
   canApply?: boolean
-}>()
+}>(), {
+  canApply: true,
+})
 
 const emit = defineEmits<{
   'update:open': [value: boolean]

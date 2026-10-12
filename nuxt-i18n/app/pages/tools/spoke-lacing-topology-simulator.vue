@@ -292,7 +292,7 @@
 
 <script setup>
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { useAsyncData, useI18n, useSwitchLocalePath } from '#imports'
+import { useAsyncData, useI18n, useRoute, useSwitchLocalePath } from '#imports'
 import { useApiRequest } from '~/composables/useApiRequest'
 import { usePageMessages } from '~/composables/usePageMessages'
 import {
@@ -310,21 +310,23 @@ import {
 } from '~/utils/wheelsetLacingDisplayGeometryContract'
 
 definePageMeta({
+  path: '/tools/spoke-lacing-topology-simulator',
   layout: 'products',
-  footerLabelKey: 'wheelsetLacingTopology.navLabel',
-  footerLabelFallback: 'Wheelset spoke lacing topology',
+  footerLabelKey: 'toolsNavigation.spokeLacingTopologySimulatorLabel',
+  footerLabelFallback: 'Spoke lacing topology simulator',
   breadcrumbLabelKey: 'wheelsetLacingTopology.breadcrumb',
   breadcrumbLabelFallback: 'Wheelset lacing topology',
 })
 
 const { locale, t } = useI18n()
+const wheelsetLacingPageRoute = useRoute()
 const { request } = useApiRequest()
 const switchLocalePath = useSwitchLocalePath()
 const { loadPageMessages } = usePageMessages('wheelsetLacingTopology')
 const pageMessagesVersion = ref(0)
 let isInteractiveBlueprintMounted = false
 
-const wheelsetLacingFaqRoutePath = '/guides/wheelset-buyers/wheelset-spoke-lacing-topology-and-geometry-reference'
+const wheelsetLacingFaqRoutePath = '/tools/spoke-lacing-topology-simulator'
 const { data: wheelsetLacingFaqData } = await useAsyncData(
   'wheelset-lacing-topology-faq-structured-data',
   () => fetchFaqDataByRoutePath(wheelsetLacingFaqRoutePath),
@@ -386,12 +388,17 @@ const localizedSeoRoutes = computed(() => localeManifest
   .filter(entry => supportedSeoLocaleCodes.has(entry.code))
   .map(({ code }) => ({
     code,
-    path: switchLocalePath(code) || '/guides/wheelset-buyers/wheelset-spoke-lacing-topology-and-geometry-reference',
+    path: new URL(switchLocalePath(code) || '/tools/spoke-lacing-topology-simulator', 'https://wheelset-lacing-seo.invalid').pathname,
   })))
 
 const isPublicSeoLocale = computed(() => supportedSeoLocaleCodes.has(locale.value))
 const { canonicalUrl } = useStorefrontSeoLinks()
-useStorefrontSeoRouteOverride(localizedSeoRoutes)
+const wheelsetLacingSeoRouteOverride = useStorefrontSeoRouteOverride(localizedSeoRoutes)
+// Keep the published-locale policy after shared SEO consumers clear state on
+// client query/hash navigation. These parameters do not configure the workbench.
+watch(() => wheelsetLacingPageRoute.fullPath, () => {
+  wheelsetLacingSeoRouteOverride.value = localizedSeoRoutes.value
+}, { flush: 'post' })
 
 const wheelsetLacingFaqSchema = () => {
   const items = wheelsetLacingFaqData.value?.items || []

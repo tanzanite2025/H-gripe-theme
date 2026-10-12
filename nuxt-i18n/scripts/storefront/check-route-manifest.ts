@@ -29,39 +29,19 @@ const customPagePathOverrides = new Map<string, string>([
     join(pagesRoot, 'guides', 'guides-category-navigation-overview.vue'),
   ],
   [
-    '/guides/spokeguides',
-    join(pagesRoot, 'guides', 'spokeguides', 'spoke-guides-category-navigation-overview.vue'),
-  ],
-  [
-    '/guides/wheelset-buyers/wheelset-spoke-lacing-topology-and-geometry-reference',
-    join(pagesRoot, 'guides', 'wheelset-spoke-lacing-topology-and-geometry-reference.vue'),
-  ],
-  [
-    '/guides/tireguides/schwalbe-tire-selector',
-    join(pagesRoot, 'guides', 'schwalbe-tire-selector.vue'),
+    '/tools',
+    join(pagesRoot, 'tools', 'interactive-tool-catalog-navigation-overview.vue'),
   ],
   [
     '/guides/tireguides/tire-frame-clearance',
     join(pagesRoot, 'guides', 'tireguides.vue'),
   ],
   [
-    '/guides/tireguides/tire-pressure',
-    join(pagesRoot, 'guides', 'tire-pressure.vue'),
-  ],
-  [
     '/guides/tireguides/tire-size-markings',
     join(pagesRoot, 'guides', 'tireguides.vue'),
   ],
   [
-    '/guides/tireguides/tire-rim-width-compatibility',
-    join(pagesRoot, 'guides', 'tireguides.vue'),
-  ],
-  [
     '/guides/tireguides/schwalbe-tire-circumference',
-    join(pagesRoot, 'guides', 'tireguides.vue'),
-  ],
-  [
-    '/guides/tireguides/choose-inner-tube',
     join(pagesRoot, 'guides', 'tireguides.vue'),
   ],
 ])

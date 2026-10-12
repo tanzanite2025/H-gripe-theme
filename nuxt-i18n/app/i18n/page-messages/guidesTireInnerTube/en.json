@@ -1,4 +1,45 @@
 {
+  "page": {
+    "title": "How to Choose a Bicycle Inner Tube",
+    "summary": "Match your tire's ETRTO diameter and width range, check Presta, Schrader or Dunlop rim-hole compatibility, and choose between butyl, latex and TPU. Use the rim-depth calculator to compare valve lengths, pump-head grip and extenders before buying.",
+    "publisher": "Published by {brand}",
+    "breadcrumbLabel": "Breadcrumb",
+    "home": "Home",
+    "tools": "Tools",
+    "tireGuides": "Tire Guides",
+    "contentsLabel": "On this page",
+    "contents": {
+      "size": "Size and ETRTO",
+      "valves": "Valve types",
+      "materials": "Materials and models",
+      "installation": "Installation details",
+      "calculator": "Valve-length calculator",
+      "references": "Manufacturer references"
+    }
+  },
+  "references": {
+    "title": "Manufacturer references and fitment limits",
+    "source1": {
+      "title": "Schwalbe: tire dimensions and ETRTO",
+      "description": "Explains tire width and bead-seat diameter markings, plus tire and rim dimension compatibility."
+    },
+    "source2": {
+      "title": "Tubolito: TPU tube FAQ",
+      "description": "Gives product-specific installation, repair and inflation instructions. Tubolito permits CO2, but notes faster gas loss; check the instructions for your particular tube."
+    },
+    "scope": "These sources support the sizing explanation and product-specific TPU guidance. The calculator uses a reference model, not measured certification of a rim, valve or seal. Confirm actual dimensions, rim-brake heat limits, valve-core design and CO2 compatibility with the relevant manufacturer."
+  },
+  "calculatorInstructions": {
+    "title": "How to use the valve-length calculator",
+    "steps": {
+      "measureRim": { "name": "Measure the rim depth", "text": "Enter the rim depth in millimetres from the rim maker's specification or your measurement. Check the valve passage and valve base: nominal rim depth alone does not describe every rim profile." },
+      "measurePumpGrip": { "name": "Check your pump-head grip", "text": "Enter the straight, accessible valve length your pump head needs to grip and seal. Use the requirement for your own pump head rather than assuming all pumps need the same exposure." },
+      "setMeasurementUncertainty": { "name": "Allow for measurement uncertainty", "text": "Set the rim-depth uncertainty to represent your measurement tolerance. Review the exposure and margin across the resulting range." },
+      "chooseSelectionMode": { "name": "Compare automatic and manual selection", "text": "Use automatic mode for a reference recommendation. Switch to manual mode to test a particular base valve and extender combination." },
+      "reviewReferenceMatrix": { "name": "Review exposure and the reference matrix", "text": "Compare the exposed length and fitment margin with the matrix. Prefer a combination with sufficient pump grip across your uncertainty range." },
+      "confirmHardwareCompatibility": { "name": "Confirm the actual valve and extender fit", "text": "Check whether the valve core is removable and which extender design the tube supports. Confirm threading, seals and installation instructions with the manufacturer before buying or inflating." }
+    }
+  },
   "tabs": {
     "ariaLabel": "Inner tube guide sections",
     "introduction": "Introduction",
@@ -9,7 +50,11 @@
   "steps": {
     "size": {
       "title": "Choose Your Size",
-      "description": "All necessary size information, such as ETRTO or inch size, can be found on your tire sidewall."
+      "description": "All necessary size information, such as ETRTO or inch size, can be found on your tire sidewall.",
+      "etrtoExample": "Example: 28-622 means a nominal tire width of 28 mm and a bead-seat diameter of 622 mm. Choose a tube specified for the same 622 mm diameter and a width range that includes 28 mm.",
+      "widthRangeExample": "A tube marked 25–32-622 includes a 28-622 tire within its stated width range. A 35–47-622 tube does not; sharing the 622 mm diameter is not enough.",
+      "markingCaution": "700C and inch labels alone do not establish the correct width range. Confirm the ETRTO marking and the tube maker's compatibility list, then check valve and brake-system compatibility.",
+      "markingsLink": "Learn how to read ETRTO, inch and 700C tire markings"
     },
     "valve": {
       "title": "Select Valve Type"
@@ -26,7 +71,7 @@
     "imageOverviewAlt": "Schwalbe inner tube valve types and lengths: Schrader, Dunlop, and Presta",
     "av": {
       "type": "Auto / Schrader",
-      "description": "Usually uses an approximately 8.5 mm hole. Common on mountain, commuter, and fat bikes, and also used by some tubeless systems; it works with a car-style pump head.",
+      "description": "Usually uses an approximately 8.5 mm hole. Found on some mountain and commuter bikes fitted with inner tubes; use a Schrader-compatible pump head.",
       "fit": "Fit check: confirm that the rim explicitly supports a Schrader/AV hole; do not enlarge a hole or force a large valve into a Presta rim."
     },
     "dv": {
@@ -37,7 +82,7 @@
     "sv": {
       "type": "Presta / French",
       "description": "Usually uses an approximately 6 mm hole. Common on road bikes, gravel bikes, and many deep carbon rims; native lengths include 40, 50, 60, 80, and 100 mm.",
-      "fit": "Fit check: most road tubeless rims use Presta, but tubeless support does not automatically mean Presta; confirm the hole and rim instructions."
+      "fit": "Fit check: road, gravel and mainstream mountain-bike tubeless wheelsets typically use Presta. Match the rim's original valve specification when choosing an inner tube, and check the hole diameter and valve length."
     },
     "measure": {
       "title": "How do I confirm which valve fits the rim?",
@@ -69,8 +114,8 @@
       "note": "These are common reference values, not a universal standard. Chamfers, washers, and the valve base can change the actual fit."
     },
     "tubeless": {
-      "title": "Are tubeless-ready rims always Presta?",
-      "description": "No. Road and gravel tubeless rims commonly use Presta, while some mountain-bike, fat-bike, and other tubeless systems use Schrader. Check the rim-hole diameter, tubeless valve-base seal, and manufacturer instructions instead of relying on the words “tubeless-ready” alone."
+      "title": "Which valve should an inner tube use in a tubeless rim?",
+      "description": "Road, gravel and mainstream mountain-bike tubeless wheelsets typically use Presta. When fitting an inner tube, match the rim's original valve specification and choose a valve long enough for the rim depth and pump head. Also confirm that the tire and rim support installation with an inner tube."
     }
   },
   "materials": {

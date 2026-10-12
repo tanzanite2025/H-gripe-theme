@@ -114,7 +114,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount, watch, computed } from 'vue'
-import { useRoute, useRouter, useAsyncData, useI18n, useLocalePath } from '#imports'
+import { useRoute, useRouter, useAsyncData, useHead, useI18n, useLocalePath } from '#imports'
 import UserFeedbackThread from '~/components/UserFeedbackThread.vue'
 import ShopProductQuickSearchForm from '~/components/shop/ShopProductQuickSearchForm.vue'
 import ShopCatalogFilterDrawer from '~/components/shop/ShopCatalogFilterDrawer.vue'
@@ -130,6 +130,10 @@ import { useStorefrontContext } from '~/composables/useStorefrontContext'
 import { defaultPriceRangeForCurrency, majorToMinor } from '~/utils/money'
 import { useOverlayBackStack } from '~/composables/useOverlayBackStack'
 import type { ShopProduct } from '~/composables/useShopProducts'
+import { usePageMessages } from '~/composables/usePageMessages'
+import { useStorefrontSeoLinks } from '~/composables/seo/useStorefrontSeoLinks'
+import { createSeoJsonLdScript } from '~/utils/seo/jsonLd'
+import { getStorefrontLocaleLanguageTag } from '~/utils/storefrontLocales'
 
 definePageMeta({
   layout: 'products',
@@ -138,7 +142,9 @@ definePageMeta({
 const route = useRoute()
 const router = useRouter()
 const localePath = useLocalePath()
-const { t } = useI18n()
+const { t, locale } = useI18n()
+const { loadPageMessages } = usePageMessages('shopRootCollectionPageSeo')
+const { canonicalUrl } = useStorefrontSeoLinks()
 const { fetchShopProducts } = useShopProducts()
 const { displayCurrency } = useStorefrontContext()
 
@@ -292,17 +298,71 @@ const buildProductQueryParams = (payload?: ShopSearchPayload) => {
   return params
 }
 
-const { data: asyncData, pending, error: asyncError, refresh } = await useAsyncData(
-  'shop-products',
-  () => {
-    const params = buildProductQueryParams(currentSearch.value || undefined)
-    const routeQuery = { ...route.query }
-    delete routeQuery.currency
-    Object.assign(params, routeQuery)
+const [{ data: asyncData, pending, error: asyncError, refresh }] = await Promise.all([
+  useAsyncData(
+    'shop-products',
+    () => {
+      const params = buildProductQueryParams(currentSearch.value || undefined)
+      const routeQuery = { ...route.query }
+      delete routeQuery.currency
+      Object.assign(params, routeQuery)
 
-    return fetchShopProducts(params)
+      return fetchShopProducts(params)
+    },
+  ),
+  loadCategories(),
+  loadPageMessages(locale.value),
+])
+
+watch(locale, nextLocale => {
+  void loadPageMessages(nextLocale)
+})
+
+const shopRootCollectionPageStructuredData = computed(() => {
+  const coreCategoryListItems = categories.value.map((category, index) => ({
+    '@type': 'ListItem',
+    position: index + 1,
+    name: category.name,
+    url: new URL(categoryPath(category), canonicalUrl.value).toString(),
+  }))
+
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'CollectionPage',
+    '@id': `${canonicalUrl.value}#shop-collection`,
+    url: canonicalUrl.value,
+    name: t('shopRootCollectionPageSeo.title'),
+    description: t('shopRootCollectionPageSeo.description'),
+    inLanguage: getStorefrontLocaleLanguageTag(locale.value),
+    ...(coreCategoryListItems.length ? {
+      mainEntity: {
+        '@type': 'ItemList',
+        numberOfItems: coreCategoryListItems.length,
+        itemListElement: coreCategoryListItems,
+      },
+    } : {}),
   }
-)
+})
+
+useHead(() => {
+  const title = t('shopRootCollectionPageSeo.title')
+  const description = t('shopRootCollectionPageSeo.description')
+
+  return {
+    title,
+    meta: [
+      { name: 'description', content: description },
+      { property: 'og:title', content: title },
+      { property: 'og:description', content: description },
+      { property: 'og:type', content: 'website' },
+      { property: 'og:url', content: canonicalUrl.value },
+      { name: 'twitter:card', content: 'summary' },
+      { name: 'twitter:title', content: title },
+      { name: 'twitter:description', content: description },
+    ],
+    script: [{ ...createSeoJsonLdScript(shopRootCollectionPageStructuredData.value), key: 'shop-root-collection-structured-data' }],
+  }
+})
 
 watch(() => route.query, () => {
   syncSelectedCategoryFromRoute()

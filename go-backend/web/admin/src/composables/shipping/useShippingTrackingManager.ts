@@ -162,7 +162,7 @@ export const useShippingTrackingManager = (options: Record<string, any> = {}) =>
       trackingCarrierMappingErrors.carrier_id = '请选择本地承运商'
     }
     if (trackingCarrierMappingForm.scope === 'carrier_service' && !nullablePositiveID(trackingCarrierMappingForm.carrier_service_id)) {
-      trackingCarrierMappingErrors.carrier_service_id = '请选择本地线路服务'
+      trackingCarrierMappingErrors.carrier_service_id = '请选择本地计费线路'
     }
     if (!trackingCarrierMappingForm.provider_carrier_code?.trim()) {
       trackingCarrierMappingErrors.provider_carrier_code = '请输入 Provider Carrier Code'

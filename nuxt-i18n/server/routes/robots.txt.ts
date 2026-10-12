@@ -1,16 +1,15 @@
-import { defineEventHandler, setHeader } from 'h3'
+import { defineEventHandler, getRequestURL, setHeader } from 'h3'
 import { useRuntimeConfig } from '#imports'
-
-const blockedCrawlers = ['AhrefsBot', 'SemrushBot', 'SimilarwebBot', 'BuiltWith']
+import commercialCrawlerRobotsExclusionPolicy from '../../config/storefront/commercialCrawlerRobotsExclusionPolicy.json'
 
 export default defineEventHandler((event) => {
   const config = useRuntimeConfig(event)
   const configuredSiteUrl = String(config.public?.siteUrl || '').trim().replace(/\/+$/, '')
-  const siteUrl = configuredSiteUrl || 'https://learn.gripe'
+  const siteUrl = configuredSiteUrl || getRequestURL(event).origin
   const lines = [
-    ...blockedCrawlers.flatMap((crawler) => [`User-agent: ${crawler}`, 'Disallow: /', '']),
-    'User-agent: *',
-    'Disallow:',
+    ...commercialCrawlerRobotsExclusionPolicy.blocked_user_agents.flatMap((crawler) => [`User-agent: ${crawler}`, 'Disallow: /', '']),
+    `User-agent: ${commercialCrawlerRobotsExclusionPolicy.wildcard_user_agent}`,
+    `Disallow: ${commercialCrawlerRobotsExclusionPolicy.wildcard_disallow}`.trimEnd(),
     '',
     `Sitemap: ${siteUrl}/sitemap.xml`,
     '',

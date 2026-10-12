@@ -14,6 +14,8 @@
     "illustrationAlt": "Ilustrasi FAQ",
     "selectQuestion": "Select a question to view the answer.",
     "pagesAriaLabel": "FAQ pages",
-    "pagesLabel": "FAQ pages"
+    "pagesLabel": "FAQ pages",
+    "loadFailed": "Jawaban tidak dapat dimuat. Silakan coba lagi.",
+    "showingSavedAnswers": "Jawaban tidak dapat diperbarui. Menampilkan jawaban yang terakhir dimuat."
   }
 }

@@ -8,6 +8,16 @@ $ErrorActionPreference = 'Stop'
 $Root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $LogDir = Join-Path $Root 'output/dev'
 
+$postgresHostPort = 9410
+$postgresHostPortOverride = [Environment]::GetEnvironmentVariable('POSTGRES_HOST_PORT', 'Process')
+if (-not [string]::IsNullOrWhiteSpace($postgresHostPortOverride)) {
+  $parsedPostgresHostPort = 0
+  if (-not [int]::TryParse($postgresHostPortOverride, [ref]$parsedPostgresHostPort) -or $parsedPostgresHostPort -lt 1 -or $parsedPostgresHostPort -gt 65535) {
+    throw "POSTGRES_HOST_PORT must be a valid TCP port between 1 and 65535"
+  }
+  $postgresHostPort = $parsedPostgresHostPort
+}
+
 $redisHostPort = 10662
 $redisHostPortOverride = [Environment]::GetEnvironmentVariable('REDIS_HOST_PORT', 'Process')
 if (-not [string]::IsNullOrWhiteSpace($redisHostPortOverride)) {
@@ -33,7 +43,7 @@ $Ports = [ordered]@{
   Api        = 10241
   Admin      = 10242
   SiteQualityRunner = $siteQualityRunnerHostPort
-  Postgres   = 9400
+  Postgres   = $postgresHostPort
   Redis      = $redisHostPort
 }
 

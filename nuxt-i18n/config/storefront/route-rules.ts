@@ -12,7 +12,7 @@ type StorefrontRouteRule = {
     statusCode: 301 | 308
   }
   headers?: Record<string, string>
-  cache?: {
+  cache?: false | {
     base: string
     maxAge: number
     staleMaxAge: number
@@ -61,7 +61,24 @@ const immutableAssetRoutePatterns = [
   '/whatsappmodel/**',
 ]
 
-const storefrontRedirects = [
+// Retired pages have no aliases or redirects and must stay out of sitemap,
+// including when API route catalogs still carry their previous paths.
+export const storefrontRetiredPagePaths: readonly string[] = [
+  '/guides/tireguides/schwalbe-tire-selector',
+  '/guides/spokeguides/brand-wheelset-spoke-specs',
+  '/guides/spokeguides/spoke-length-calculator',
+  '/guides/wheelset-buyers/wheelset-spoke-lacing-topology-and-geometry-reference',
+  '/guides/wheelset-spoke-lacing-topology-and-geometry-reference',
+  '/resources/wheelset-spoke-lacing-topology-and-geometry-reference',
+  '/guides/tireguides/tire-pressure',
+  '/guides/tireguides/choose-inner-tube',
+  '/guides/tireguides/tire-rim-width-compatibility',
+  '/guides/wheelset-buyers/choose-freehub',
+  '/guides/spokeguides',
+  '/guides/spokeguides/stainless-steel-microstructural-dislocation-mechanics',
+]
+
+export const storefrontRedirects = [
   {
     from: '/guides/technical',
     to: '/guides',
@@ -102,7 +119,7 @@ const cacheRule = (policy: Pick<StorefrontHtmlCachePolicy, 'maxAge' | 'staleMaxA
 
 const addLocalizedRule = (
   routeRules: StorefrontRouteRules,
-  paths: string[],
+  paths: readonly string[],
   localeCodes: string[],
   defaultLocale: string,
   rule: StorefrontRouteRule,
@@ -188,6 +205,13 @@ export const buildStorefrontRouteRules = ({
 
   addLocalizedRule(routeRules, storefrontNoStorePagePaths, localeCodes, defaultLocale, {
     headers: noStoreHeaders,
+  })
+
+  // Retired guide paths inherit /guides/** otherwise. Disable route caching
+  // explicitly so an older cached page cannot survive removal of its route.
+  addLocalizedRule(routeRules, storefrontRetiredPagePaths, localeCodes, defaultLocale, {
+    headers: noStoreHeaders,
+    cache: false,
   })
 
   for (const redirect of storefrontRedirects) {

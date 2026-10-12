@@ -9,7 +9,15 @@
         <p class="home-faq__subtitle tz-faq-subtitle">{{ t('faq.ui.quickAnswers') }}</p>
       </div>
 
-      <div class="home-faq__desktop-layout">
+      <StorefrontFaqLoadingAndFailurePlaceholder
+        :loading="pending"
+        :failed="Boolean(error)"
+        :has-saved-answers="previewPages.length > 0"
+        :empty="!pending && !error && previewPages.length === 0"
+        @retry="refreshFaqCatalog()"
+      />
+
+      <div v-if="previewPages.length > 0" class="home-faq__desktop-layout" :aria-busy="pending">
         <aside class="home-faq__sidebar" :aria-label="t('faq.ui.pagesAriaLabel', 'FAQ pages')">
           <div class="home-faq__sidebar-label">{{ t('faq.ui.pagesLabel', 'FAQ pages') }}</div>
           <div class="home-faq__sidebar-tabs">
@@ -54,7 +62,7 @@
         </main>
       </div>
 
-      <div class="home-faq__mobile-preview">
+      <div v-if="previewPages.length > 0" class="home-faq__mobile-preview" :aria-busy="pending">
         <div class="nav-pill-tabs">
           <button
             type="button"
@@ -138,6 +146,7 @@
 import { ref, computed, watch } from 'vue'
 import { useLocalePath } from '#imports'
 import DesktopFaqMasterDetail from '~/components/faq/DesktopFaqMasterDetail.vue'
+import StorefrontFaqLoadingAndFailurePlaceholder from '~/components/faq/StorefrontFaqLoadingAndFailurePlaceholder.vue'
 import { useFaqAccordionState } from '~/composables/useFaqAccordionState'
 import { useFaqCatalog } from '~/composables/useFaqCatalog'
 
@@ -169,7 +178,7 @@ const localePath = useLocalePath()
 
 // 获取所有 FAQ 数据
 const { t } = useI18n()
-const { allPages } = await useFaqCatalog()
+const { allPages, pending, error, refreshFaqCatalog } = await useFaqCatalog()
 const previewPages = computed(() => {
   const pageById = new Map(allPages.value.map(page => [page.pageId, page]))
   const curatedPages = props.preferredPageIds

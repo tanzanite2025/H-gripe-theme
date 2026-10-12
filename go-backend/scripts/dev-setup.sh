@@ -129,7 +129,7 @@ APP_DEBUG=true
 
 # 数据库配置
 DB_HOST=localhost
-DB_PORT=9400
+DB_PORT=9410
 DB_NAME=commerce_platform
 DB_USERNAME=commerce_platform
 DB_PASSWORD=commerce_platform_password
@@ -329,7 +329,7 @@ echo "6. 查看可用命令："
 echo "   ${GREEN}make help${NC}"
 echo ""
 info "数据库连接信息："
-echo "  Host: localhost:9400"
+echo "  Host: localhost:9410"
 echo "  Database: commerce_platform"
 echo "  User: commerce_platform"
 echo "  Password: commerce_platform_password"

@@ -119,7 +119,9 @@ Nuxt SSR 页面在高流量时会消耗 Node.js CPU。指南页、政策页等�
 - `/`
 - `/shop`
 - `/membershipandpoints`
-- `/guides/spokeguides/spoke-length-calculator`
+- `/tools/spoke-length-calculator`
+- `/tools/dynamic-tire-pressure-calculator`
+- `/tools/spoke-lacing-topology-simulator`
 - `/support/test-report`
 - `/support/warranty-check`
 - `/api/**`
@@ -206,6 +208,13 @@ STOREFRONT_HTML_CACHE_PURGE_DEBOUNCE_MS=500
 | `/company/**` | 静态公司内容 + `PageFaq` | FAQ 写操作触发 HTML purge；公司静态文案变更需要重新构建部署 |
 | `/picture-warehouse` | SSR 只输出页面壳；图片库列表、评论和上传在客户端挂载或交互后请求 API | showcase 数据不进 SSR HTML cache；无需触发 HTML purge |
 | `/faq` | Nuxt legacy alias 指向 FAQ 汇总页 | 路由 manifest 变更或 FAQ 写操作触发相应 purge |
+
+FAQ 问答始终来自 Go 后台。前端用 `useStorefrontFaqAsyncDataWithLastSuccessfulResponse`
+保留最多 40 个成功响应，按语言及页面键隔离，在当前 Nuxt 应用内复用 5 分钟；
+服务端状态按请求隔离，不使用进程全局缓存或浏览器持久存储。手动重试直接请求 API，
+成功的空响应会替换旧内容；网络错误不会被当成“没有结果”。DEV 仍关闭 HTML 缓存。
+FAQ 的加载、失败占位及桌面／手机互斥布局有首屏内联 CSS，外部样式或脚本请求失败
+时仍能保留布局。生产环境由 CSP 哈希放行这些样式，DEV 允许 Vite 注入样式。
 
 判断规则：
 

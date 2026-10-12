@@ -9,7 +9,7 @@ import {
 } from '../app/utils/breadcrumbRouteNavigation.js'
 import { resolvePageSubNavigationBreadcrumb } from '../app/utils/pageSubNavigationBreadcrumb.js'
 import type { PageSubNavigationEntry } from '../app/utils/pageSubNavigationData.js'
-import { spokeGuideTabs, tireGuideTabs } from '../app/utils/pageSubNavigationData.js'
+import { tireGuideTabs, wheelsetBuyerTabs } from '../app/utils/pageSubNavigationData.js'
 
 const entries: PageSubNavigationEntry[] = [
   {
@@ -67,40 +67,40 @@ assert.equal(match('/guides'), null)
 assert.equal(match('/guides/tireguides-installation'), null)
 assert.equal(match('/unknown/guides/tireguides'), null)
 
-// On the tire-pressure guide route, the Tire Guides crumb is an ancestor and
+// On the tubeless guide route, the Tire Guides crumb is an ancestor and
 // must keep its /guides sibling menu; only an exact crumb owns page tabs.
 assert.equal(isExactBreadcrumbPageSubNavigationOwner(
   '/guides/tireguides',
-  '/guides/tireguides/tire-pressure',
+  '/guides/tireguides/tubeless',
   ['en', 'zh_cn'],
 ), false)
 assert.equal(isExactBreadcrumbPageSubNavigationOwner(
-  '/guides/tireguides/tire-pressure?source=breadcrumb',
-  '/guides/tireguides/tire-pressure',
+  '/guides/tireguides/tubeless?source=breadcrumb',
+  '/guides/tireguides/tubeless',
   ['en', 'zh_cn'],
 ), true)
 assert.deepEqual(normalizeBreadcrumbRouteSegments(
-  '/guides/tireguides/tire-pressure',
+  '/guides/tireguides/tubeless',
   ['en', 'zh_cn'],
-), ['guides', 'tireguides', 'tire-pressure'])
+), ['guides', 'tireguides', 'tubeless'])
 assert.deepEqual(normalizeBreadcrumbRouteSegments(
-  '/zh_cn/guides/tireguides/tire-pressure?source=breadcrumb',
+  '/zh_cn/guides/tireguides/tubeless?source=breadcrumb',
   ['en', 'zh_cn'],
-), ['guides', 'tireguides', 'tire-pressure'])
+), ['guides', 'tireguides', 'tubeless'])
 assert.deepEqual(normalizeBreadcrumbRouteSegments(
-  '/ZH_CN/guides/tireguides/tire-pressure#calculator',
+  '/ZH_CN/guides/tireguides/tubeless#calculator',
   ['en', 'zh_cn'],
-), ['guides', 'tireguides', 'tire-pressure'])
+), ['guides', 'tireguides', 'tubeless'])
 assert.equal(resolveBreadcrumbSubNavigationOwner({
   breadcrumbPath: '/guides/tireguides',
-  currentRoutePath: '/guides/tireguides/tire-pressure',
+  currentRoutePath: '/guides/tireguides/tubeless',
   siblingPaths: ['/guides/tireguides', '/guides/wheelset-buyers'],
   hasPageSubNavigation: true,
   localeCodes: ['en', 'zh_cn'],
 }), 'same-level-route-siblings')
 assert.equal(resolveBreadcrumbSubNavigationOwner({
   breadcrumbPath: '/zh_cn/guides/tireguides',
-  currentRoutePath: '/zh_cn/guides/tireguides/tire-pressure',
+  currentRoutePath: '/zh_cn/guides/tireguides/tubeless',
   siblingPaths: ['/guides/tireguides', '/guides/wheelset-buyers'],
   hasPageSubNavigation: true,
   localeCodes: ['en', 'zh_cn'],
@@ -114,7 +114,7 @@ assert.equal(resolveBreadcrumbSubNavigationOwner({
 }), 'page-sub-navigation')
 assert.equal(resolveBreadcrumbSubNavigationOwner({
   breadcrumbPath: '/zh_cn/guides/tireguides',
-  currentRoutePath: '/zh_cn/guides/tireguides/tire-pressure',
+  currentRoutePath: '/zh_cn/guides/tireguides/tubeless',
   siblingPaths: ['/guides/tireguides'],
   hasPageSubNavigation: true,
   localeCodes: ['en', 'zh_cn'],
@@ -124,15 +124,18 @@ const tireGuideRouteTab = resolvePageSubNavigationBreadcrumb(
   '/guides/tireguides/schwalbe-tire-selector',
   [{ path: '/guides/tireguides', tabs: tireGuideTabs }],
 )
-assert.equal(tireGuideRouteTab?.kind, 'tab')
-assert.equal(tireGuideRouteTab?.entry.tabs.length, 8)
+assert.equal(tireGuideRouteTab, null, 'Migrated selector must not retain a virtual guide route')
+assert.equal(tireGuideTabs.length, 4)
 
-const tirePressureGuideRouteTab = resolvePageSubNavigationBreadcrumb(
-  '/guides/tireguides/tire-pressure',
+assert.equal(resolvePageSubNavigationBreadcrumb(
+  '/guides/tireguides/tire-rim-width-compatibility',
   [{ path: '/guides/tireguides', tabs: tireGuideTabs }],
-)
-assert.equal(tirePressureGuideRouteTab?.kind, 'tab')
-assert.equal(tirePressureGuideRouteTab?.tab.id, 'tire-pressure')
+), null, 'Migrated tire/rim tool must not retain a virtual guide route')
+assert.equal(resolvePageSubNavigationBreadcrumb(
+  '/tools/tire-rim-width-compatibility-engine',
+  [],
+), null)
+
 
 const clearanceRouteTab = resolvePageSubNavigationBreadcrumb(
   '/guides/tireguides/tire-frame-clearance',
@@ -153,20 +156,15 @@ assert.equal(wheelsetCanonical?.kind, 'canonical')
 assert.equal(wheelsetCanonical?.entry.path, '/guides/wheelset-buyers')
 assert.notEqual(wheelsetCanonical?.entry, canonical?.entry)
 
-const spokeGuideEntries: PageSubNavigationEntry[] = [
-  { path: '/guides/spokeguides', tabs: spokeGuideTabs },
-]
-const spokeCanonical = resolvePageSubNavigationBreadcrumb('/guides/spokeguides', spokeGuideEntries)
-assert.equal(spokeCanonical?.kind, 'canonical')
-assert.equal(spokeCanonical?.entry.path, '/guides/spokeguides')
-const spokeCalculatorTab = resolvePageSubNavigationBreadcrumb(
-  '/zh_cn/guides/spokeguides/spoke-length-calculator',
-  spokeGuideEntries,
+assert.equal(resolvePageSubNavigationBreadcrumb('/guides/spokeguides', [], ['en', 'zh_cn']), null, 'Retired Spoke Guides category must not remain a breadcrumb owner')
+assert.equal(resolvePageSubNavigationBreadcrumb('/zh_cn/guides/spokeguides/stainless-steel-microstructural-dislocation-mechanics', [], ['en', 'zh_cn']), null, 'Retired stainless-steel guide must not remain a virtual guide tab')
+assert.equal(resolvePageSubNavigationBreadcrumb('/zh_cn/tools/spoke-stress-relief-mechanics', [], ['en', 'zh_cn']), null)
+
+assert.equal(resolvePageSubNavigationBreadcrumb(
+  '/zh_cn/guides/wheelset-buyers/wheelset-spoke-lacing-topology-and-geometry-reference',
+  [{ path: '/guides/wheelset-buyers', tabs: wheelsetBuyerTabs }],
   ['en', 'zh_cn'],
-)
-assert.equal(spokeCalculatorTab?.kind, 'tab')
-assert.equal(spokeCalculatorTab?.entry.path, '/guides/spokeguides')
-assert.equal(spokeCalculatorTab?.tab.id, 'spoke-length-calculator')
+), null, 'Retired topology tool must not remain a wheelset guide tab')
 
 const switchSibling = (options: {
   currentPath: string
@@ -183,7 +181,7 @@ const guideSiblings = groupBreadcrumbRoutePathsAtLevel(
   2,
   [
     '/guides/tireguides',
-    '/guides/tireguides/tire-pressure',
+    '/guides/tireguides/tubeless',
     '/guides/wheelset-buyers',
     '/guides/wheelset-buyers/overview',
     '/resources/blog',
@@ -200,16 +198,14 @@ const localizedGuideSiblings = groupBreadcrumbRoutePathsAtLevel(
   3,
   [
     '/guides/tireguides/tubeless',
-    '/zh_cn/guides/tireguides/tire-pressure',
-    '/zh_cn/guides/tireguides/schwalbe-tire-selector',
+    '/zh_cn/guides/tireguides/tubeless',
+    '/zh_cn/tools/schwalbe-tire-selector',
     '/fr/guides/wheelset-buyers/overview',
   ],
   ['en', 'zh_cn', 'fr'],
 )
 assert.deepEqual(localizedGuideSiblings.map(group => group.path), [
   '/guides/tireguides/tubeless',
-  '/guides/tireguides/tire-pressure',
-  '/guides/tireguides/schwalbe-tire-selector',
 ])
 
 // A level with one registered path resolves to one group, so it has no sibling
@@ -261,7 +257,7 @@ assert.equal(switchSibling({
 // Prefixed locale URLs normalize to the same route depth, then re-localize at
 // the component boundary. A sibling route only keeps a suffix it actually has.
 assert.equal(switchSibling({
-  currentPath: '/zh_cn/guides/tireguides/tire-pressure',
+  currentPath: '/zh_cn/guides/tireguides/tubeless',
   breadcrumbPath: '/zh_cn/guides/tireguides',
   siblingPath: '/guides/wheelset-buyers',
   fallbackPath: '/guides/wheelset-buyers',
@@ -286,12 +282,12 @@ assert.equal(switchSibling({
 // A same-family root switch can retain its selected descendants; a different
 // branch falls back to its registered representative route when no match exists.
 assert.equal(switchSibling({
-  currentPath: '/guides/tireguides/tire-rim-width-compatibility',
+  currentPath: '/guides/tireguides/tubeless',
   breadcrumbPath: '/guides',
   siblingPath: '/guides',
   fallbackPath: '/guides/tireguides',
-  routePatterns: ['/guides/tireguides/:tab(size|tire-rim-width-compatibility)'],
-}), '/guides/tireguides/tire-rim-width-compatibility')
+  routePatterns: ['/guides/tireguides/:tab(tire-size-markings|tubeless)'],
+}), '/guides/tireguides/tubeless')
 assert.equal(switchSibling({
   currentPath: '/guides/tireguides/tire-rim-width-compatibility',
   breadcrumbPath: '/guides',

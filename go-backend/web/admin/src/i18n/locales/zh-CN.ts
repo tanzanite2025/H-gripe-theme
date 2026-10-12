@@ -149,7 +149,7 @@ const zhCN = {
     shipping: '物流管理',
     'shipping-templates': '运费模板',
     'shipping-carriers': '承运商',
-    'shipping-services': '线路服务',
+    'shipping-services': '本地计费线路',
     'shipping-packaging': '包装规则',
     'shipping-tracking': '追踪配置',
     'shipping-tracking-shipments': '追踪任务',

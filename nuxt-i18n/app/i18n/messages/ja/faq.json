@@ -14,6 +14,8 @@
     "illustrationAlt": "FAQ画像",
     "selectQuestion": "Select a question to view the answer.",
     "pagesAriaLabel": "FAQ pages",
-    "pagesLabel": "FAQ pages"
+    "pagesLabel": "FAQ pages",
+    "loadFailed": "回答を読み込めませんでした。もう一度お試しください。",
+    "showingSavedAnswers": "回答を更新できませんでした。前回読み込んだ回答を表示しています。"
   }
 }

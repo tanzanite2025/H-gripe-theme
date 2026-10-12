@@ -2,6 +2,37 @@
   "title": "Tire Guides",
   "intro": "Reference charts for common tire and rim sizes.",
   "feedbackTitle": "Share your feedback about this Tire Guides guide",
+  "seo": {
+    "schwalbeCircumference": {
+      "title": "Schwalbe Tire Circumference Chart & Bike Computer Setup",
+      "description": "Find approximate Schwalbe wheel circumference in mm by ETRTO and inch size for Garmin, Wahoo and other bike computers. Measure a loaded wheel roll-out for precise calibration.",
+      "imageAlt": "Schwalbe bicycle tire circumference reference chart with inch sizes, ETRTO sizes and approximate circumference in millimeters."
+    },
+    "tireSizeMarkings": {
+      "title": "Bicycle Tire Size Conversion: ETRTO, Inches & French",
+      "description": "Read bicycle tire size markings and compare ETRTO/ISO, inch and French sizes, including 700C, 650B and 29 inch. Check bead seat diameter before matching a tire to a rim.",
+      "imageAlt": "Bicycle tire size chart comparing ETRTO/ISO, inch and French tire markings."
+    },
+    "tubeless": {
+      "title": "Bicycle Tubeless Tire Installation: Tape, Valves & Sealant",
+      "description": "Learn bicycle tubeless tire basics and installation: prepare the rim, apply tape, fit the valve, mount the tire, add sealant and inflate. Check tire and rim compatibility before setup.",
+      "imageAlt": "Bicycle tubeless tire installation diagram showing tire mounting and bead seating on the rim."
+    },
+    "tirePressure": {
+      "title": "Bicycle Tire Pressure Guide: Rider Weight, Width & Terrain",
+      "description": "Understand how rider weight, tire width, terrain and rim design affect bicycle tire pressure. Review pressure and contact-area demonstrations, and follow the exact tire and rim manufacturer limits."
+    },
+    "innerTubeCalculator": {
+      "title": "Bicycle Inner Tube Valve Length & Extender Calculator",
+      "description": "Calculate inner tube valve and extender lengths for deep rims using rim depth, pump head grip and measurement uncertainty. Compare automatic recommendations and manual fit checks."
+    },
+    "innerTube": {
+      "title": "Bicycle Inner Tube Sizes & Valve Calculator",
+      "description": "Compare Presta, Schrader and Dunlop valves, choose TPU, latex or butyl, and estimate valve length for deep rims. Includes ETRTO sizing guidance.",
+      "imageAlt": "Bicycle inner tube guide: Presta, Schrader and Dunlop valves, tube materials, and a rim-depth and exposed-valve diagram.",
+      "openGraphLocale": "en_US"
+    }
+  },
   "tabs": {
     "tireSizeMarkings": {
       "label": "Tire size markings",

@@ -5,7 +5,7 @@ import shippingApi from '@/api/shipping'
 const titleByType: Record<string, string> = {
   template: '删除运费模板？',
   carrier: '删除承运商？',
-  carrierService: '删除线路服务？',
+  carrierService: '删除本地计费线路？',
   trackingProvider: '删除追踪配置？',
   trackingCarrierMapping: '删除承运商映射？',
   packaging: '删除包装规则？',
@@ -54,7 +54,7 @@ export const useShippingDeleteManager = (refreshers: Record<string, any>) => {
         await refreshers.fetchCarriers?.()
       } else if (deleteType.value === 'carrierService') {
         await shippingApi.deleteCarrierService(deleteTarget.value.id)
-        toast.success('线路服务已删除')
+        toast.success('本地计费线路已删除')
         await refreshers.fetchCarrierServices?.()
       } else if (deleteType.value === 'trackingProvider') {
         await shippingApi.deleteTrackingProvider(deleteTarget.value.id)

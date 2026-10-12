@@ -14,6 +14,8 @@
     "illustrationAlt": "FAQ-afbeelding",
     "selectQuestion": "Select a question to view the answer.",
     "pagesAriaLabel": "FAQ pages",
-    "pagesLabel": "FAQ pages"
+    "pagesLabel": "FAQ pages",
+    "loadFailed": "De antwoorden konden niet worden geladen. Probeer het opnieuw.",
+    "showingSavedAnswers": "De antwoorden konden niet worden bijgewerkt. De laatst geladen antwoorden worden weergegeven."
   }
 }

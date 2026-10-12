@@ -1,4 +1,28 @@
 {
+  "toolsNavigation": {
+    "label": "الأدوات",
+    "eyebrow": "اختيار مكونات الدراجة",
+    "description": "ابحث عن مواصفات المكونات وصفّها وقارن بينها. تتضمن كل أداة شرحًا يساعدك على فهم نتائجها.",
+    "openTool": "فتح الأداة",
+    "schwalbeTireSelectorLabel": "Schwalbe tire selector",
+    "schwalbeTireSelectorDescription": "ابحث في كتالوج إطارات Schwalbe وصفّه حسب الطراز والمقاس، مع شرح البنية والمواصفات.",
+    "brandWheelsetSpokeSpecsLabel": "مواصفات أسلاك العجلات وحلماتها",
+    "brandWheelsetSpokeSpecsDescription": "صفّ حسب العلامة التجارية أو ابحث عن طراز العجلة لمعرفة أطوال الأسلاك وأنماط التشبيك ومواصفات الحلمات، مع ملاحظات أطقم الإصلاح.",
+    "spokeLengthCalculatorLabel": "حاسبة طول الأسلاك",
+    "spokeLengthCalculatorDescription": "احسب أطوال أسلاك العجلتين الأمامية والخلفية باستخدام خطوات كاملة للطوق والمحور ونمط التشبيك والتصحيحات والحلمات، مع إرشادات القياس وتفسير النتائج.",
+    "spokeLacingTopologySimulatorLabel": "محاكي أنماط تشبيك الأسلاك",
+    "spokeLacingTopologySimulatorDescription": "عاين مواضع ثقوب الأسلاك وأنماط التشبيك وتوزيعات G3 و2:1 وهندسة الحافتين، مع الشروحات وحدود المعاينة.",
+  "dynamicTirePressureCalculatorLabel": "حاسبة ضغط الإطارات الديناميكية",
+  "dynamicTirePressureCalculatorDescription": "استكشف كيف يغيّر الحمل والضغط والسرعة والميل مساحة تلامس الإطار وقوة الانعطاف المقدّرة.",
+    "spokeStressReliefMechanicsLabel": "Stainless steel spoke stress-relief mechanics",
+    "spokeStressReliefMechanicsDescription": "Calculate axial spoke elongation from material, section, length, and working tension inputs with the full engineering context.",
+    "valveLengthFitmentCalculatorLabel": "Inner tube valve-length fitment calculator",
+    "valveLengthFitmentCalculatorDescription": "Complete inner-tube size, valve, material, and deep-rim valve-length guidance with an interactive fitment calculator.",
+    "freehubCassetteFitmentEngineLabel": "Freehub and cassette compatibility engine",
+    "freehubCassetteFitmentEngineDescription": "Match cassette standards, freehub bodies, spacers, and mechanical fitment rules with the complete guide.",
+    "tireRimWidthCompatibilityEngineLabel": "Tire and rim width compatibility engine",
+    "tireRimWidthCompatibilityEngineDescription": "Calculate tire and rim width fit, inspect simulations, and compare published compatibility charts"
+  },
   "accountSidebar": {
     "addresses": {
       "eyebrow": "Shipping details",
@@ -898,7 +922,9 @@
       "illustrationAlt": "صورة FAQ",
       "selectQuestion": "Select a question to view the answer.",
       "pagesAriaLabel": "FAQ pages",
-      "pagesLabel": "FAQ pages"
+      "pagesLabel": "FAQ pages",
+      "loadFailed": "تعذر تحميل الإجابات. يرجى المحاولة مجددًا.",
+      "showingSavedAnswers": "تعذر تحديث الإجابات. يتم عرض آخر إجابات تم تحميلها."
     }
   },
   "feedback": {

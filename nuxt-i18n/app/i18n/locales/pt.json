@@ -1,4 +1,28 @@
 {
+  "toolsNavigation": {
+    "label": "Ferramentas",
+    "eyebrow": "Seleção de componentes de bicicleta",
+    "description": "Pesquise, filtre e compare as especificações dos componentes. Cada ferramenta inclui explicações para interpretar os resultados.",
+    "openTool": "Abrir ferramenta",
+    "schwalbeTireSelectorLabel": "Schwalbe tire selector",
+    "schwalbeTireSelectorDescription": "Pesquise e filtre o catálogo de pneus Schwalbe por modelo e tamanho, com explicações sobre construção e especificações.",
+    "brandWheelsetSpokeSpecsLabel": "Especificações de raios e niples de rodas",
+    "brandWheelsetSpokeSpecsDescription": "Filtre por marca ou pesquise um modelo de roda para consultar comprimentos de raios, padrões de montagem e especificações de niples, com notas sobre kits de reparo.",
+    "spokeLengthCalculatorLabel": "Calculadora de comprimento dos raios",
+    "spokeLengthCalculatorDescription": "Calcule o comprimento dos raios dianteiros e traseiros com o assistente completo para aro, cubo, cruzamento, correções e nipples, incluindo orientações de medição e resultados.",
+    "spokeLacingTopologySimulatorLabel": "Simulador de padrões de enraiamento",
+    "spokeLacingTopologySimulatorDescription": "Pré-visualize posições dos furos, padrões de enraiamento, disposições G3 e 2:1 e a geometria de ambas as flanges, com explicações e limites da pré-visualização.",
+  "dynamicTirePressureCalculatorLabel": "Calculadora dinâmica de pressão dos pneus",
+  "dynamicTirePressureCalculatorDescription": "Explore como carga, pressão, velocidade e inclinação alteram a área de contacto e a força em curva estimadas.",
+    "spokeStressReliefMechanicsLabel": "Stainless steel spoke stress-relief mechanics",
+    "spokeStressReliefMechanicsDescription": "Calculate axial spoke elongation from material, section, length, and working tension inputs with the full engineering context.",
+    "valveLengthFitmentCalculatorLabel": "Inner tube valve-length fitment calculator",
+    "valveLengthFitmentCalculatorDescription": "Complete inner-tube size, valve, material, and deep-rim valve-length guidance with an interactive fitment calculator.",
+    "freehubCassetteFitmentEngineLabel": "Freehub and cassette compatibility engine",
+    "freehubCassetteFitmentEngineDescription": "Match cassette standards, freehub bodies, spacers, and mechanical fitment rules with the complete guide.",
+    "tireRimWidthCompatibilityEngineLabel": "Tire and rim width compatibility engine",
+    "tireRimWidthCompatibilityEngineDescription": "Calculate tire and rim width fit, inspect simulations, and compare published compatibility charts"
+  },
   "accountSidebar": {
     "addresses": {
       "eyebrow": "Shipping details",
@@ -898,7 +922,9 @@
       "illustrationAlt": "Ilustração de FAQ",
       "selectQuestion": "Select a question to view the answer.",
       "pagesAriaLabel": "FAQ pages",
-      "pagesLabel": "FAQ pages"
+      "pagesLabel": "FAQ pages",
+      "loadFailed": "Não foi possível carregar as respostas. Tente novamente.",
+      "showingSavedAnswers": "Não foi possível atualizar as respostas. As últimas respostas carregadas são exibidas."
     }
   },
   "feedback": {

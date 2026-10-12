@@ -13,8 +13,8 @@ export interface LocaleManifestEntry {
 }
 
 export const locales: LocaleManifestEntry[] = [
-  { code: 'en', iso: 'en-US', name: 'English', file: 'en.json', fontFamily: 'latin' },
-  { code: 'zh_cn', iso: 'zh-CN', name: '简体中文', file: 'zh_cn.json', fontFamily: 'maple-ui' },
+  { code: 'en', iso: 'en-US', name: 'English', file: 'en.json', fontFamily: 'latin-accent' },
+  { code: 'zh_cn', iso: 'zh-CN', name: '简体中文', file: 'zh_cn.json', fontFamily: 'latin-accent' },
   { code: 'fr', iso: 'fr-FR', name: 'Français', file: 'fr.json', fontFamily: 'latin-accent' },
   { code: 'de', iso: 'de-DE', name: 'Deutsch', file: 'de.json', fontFamily: 'latin-accent' },
   { code: 'es', iso: 'es-ES', name: 'Español', file: 'es.json', fontFamily: 'latin-accent' },

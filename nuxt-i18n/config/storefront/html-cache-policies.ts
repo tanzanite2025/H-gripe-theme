@@ -27,10 +27,10 @@ export const storefrontHtmlCachePolicies: StorefrontHtmlCachePolicy[] = [
     description: 'Editorial and guide pages that change less frequently than product data.',
     paths: [
       '/resources/blog/**',
-      '/guides/spokeguides/brand-wheelset-spoke-specs/**',
       '/guides/**',
       '/resources/picture-warehouse/**',
       '/faq',
+      '/tools',
     ],
     ...storefrontHtmlCacheDurations.contentPage,
   },
@@ -59,8 +59,19 @@ export const storefrontNoStorePagePaths = [
   // Query/search/filter state lives in the URL, but the list is data-heavy and
   // changes frequently. Keep it uncached until a query-aware cache strategy is added.
   '/shop',
+  // Catalog results depend on URL filters and API data. Do not reuse HTML
+  // across searches or pagination while a query-aware cache is unavailable.
+  '/tools/schwalbe-tire-selector',
+  '/tools/brand-wheelset-spoke-specs',
   '/resources/membershipandpoints/**',
-  '/guides/spokeguides/spoke-length-calculator/**',
+  '/tools/spoke-length-calculator',
+  '/tools/dynamic-tire-pressure-calculator',
+  '/tools/freehub-cassette-fitment-engine',
+  '/tools/tire-rim-width-compatibility-engine',
+  '/tools/valve-length-fitment-calculator',
+  '/tools/spoke-stress-relief-mechanics',
+  // Initial geometry and editable FAQ content come from the backend.
+  '/tools/spoke-lacing-topology-simulator',
   '/resources/workbench',
   '/support/test-report',
   '/support/warranty-check',

@@ -15,7 +15,7 @@
         </p>
       </div>
 
-      <ContactServiceEntry />
+      <ContactServiceEntry :partnership-channel-id="requestedPartnershipChannelId" />
 
       <!-- Address Grid -->
       <div class="grid w-full grid-cols-1 gap-6 md:grid-cols-2 md:gap-8">
@@ -107,8 +107,8 @@
 </template>
 
 <script setup lang="ts">
-import { watch } from 'vue'
-import { definePageMeta, useHead, useI18n } from '#imports'
+import { computed, watch } from 'vue'
+import { definePageMeta, useHead, useI18n, useRoute } from '#imports'
 import ContactLocationMap from '~/components/ContactLocationMap.vue'
 import ContactServiceEntry from '~/components/company/ContactServiceEntry.vue'
 import { usePageMessages } from '~/composables/usePageMessages'
@@ -116,6 +116,10 @@ import { contactLocation } from '~/utils/contactLocation'
 import { createSeoJsonLdScript } from '~/utils/seo/jsonLd'
 
 const { locale, t } = useI18n()
+const route = useRoute()
+const requestedPartnershipChannelId = computed(() => (
+  typeof route.query.partnership === 'string' ? route.query.partnership : ''
+))
 const { loadPageMessages } = usePageMessages('companyContact')
 
 await loadPageMessages(locale.value)

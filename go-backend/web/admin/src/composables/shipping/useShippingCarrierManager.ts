@@ -158,7 +158,7 @@ export const useShippingCarrierManager = (options: Record<string, any> = {}) => 
     ]
     const hasNegative = numericFields.some((field) => Number(carrierServiceForm[field] || 0) < 0)
     if (hasNegative) {
-      toast.error('线路服务的数字字段不能小于 0')
+      toast.error('本地计费线路的数字字段不能小于 0')
       return false
     }
 
@@ -199,10 +199,10 @@ export const useShippingCarrierManager = (options: Record<string, any> = {}) => 
       const payload = buildCarrierServicePayload()
       if (carrierServiceDialogMode.value === 'create') {
         await shippingApi.createCarrierService(payload)
-        toast.success('线路服务已创建')
+        toast.success('本地计费线路已创建')
       } else {
         await shippingApi.updateCarrierService(carrierServiceForm.id, payload)
-        toast.success('线路服务已更新')
+        toast.success('本地计费线路已更新')
       }
 
       carrierServiceDialogOpen.value = false

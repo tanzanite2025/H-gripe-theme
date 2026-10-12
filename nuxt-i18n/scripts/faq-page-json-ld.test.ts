@@ -3,7 +3,7 @@ import { createFaqPageJsonLd, createSeoJsonLdScript } from '../app/utils/seo/jso
 
 const faqPageJsonLd = createFaqPageJsonLd(
   {
-    canonicalUrl: 'https://example.com/guides/tireguides/choose-inner-tube',
+    canonicalUrl: 'https://example.com/tools/valve-length-fitment-calculator',
     pageId: 'guides-tireguides-choose-inner-tube',
     inLanguage: 'en',
     visibleQuestionsAndAnswers: [
@@ -21,7 +21,7 @@ assert.equal(faqPageJsonLd['@type'], 'FAQPage')
 assert.equal(faqPageJsonLd.inLanguage, 'en')
 assert.equal(
   faqPageJsonLd['@id'],
-  'https://example.com/guides/tireguides/choose-inner-tube#faq-guides-tireguides-choose-inner-tube',
+  'https://example.com/tools/valve-length-fitment-calculator#faq-guides-tireguides-choose-inner-tube',
 )
 assert.deepEqual(faqPageJsonLd.mainEntity, [
   {

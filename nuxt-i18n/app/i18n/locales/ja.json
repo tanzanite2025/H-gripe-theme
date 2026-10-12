@@ -1,4 +1,28 @@
 {
+  "toolsNavigation": {
+    "label": "ツール",
+    "eyebrow": "自転車部品の選定",
+    "description": "部品の仕様を検索、絞り込み、比較できます。各ツールには結果を理解するための説明が含まれています。",
+    "openTool": "ツールを開く",
+    "schwalbeTireSelectorLabel": "Schwalbe tire selector",
+    "schwalbeTireSelectorDescription": "モデルとサイズで Schwalbe タイヤカタログを検索・絞り込みし、構造と仕様の説明を確認できます。",
+    "brandWheelsetSpokeSpecsLabel": "ホイールのスポーク・ニップル仕様",
+    "brandWheelsetSpokeSpecsDescription": "ブランドで絞り込むかホイールモデルを検索し、スポーク長、組み方、ニップル仕様と補修キットの説明を確認できます。",
+    "spokeLengthCalculatorLabel": "スポーク長計算ツール",
+    "spokeLengthCalculatorDescription": "リム、ハブ、組み方、補正、ニップルを設定する完全なウィザードで前後輪のスポーク長を計算し、測定方法と結果の説明を確認できます。",
+    "spokeLacingTopologySimulatorLabel": "スポーク組み方トポロジーシミュレーター",
+    "spokeLacingTopologySimulatorDescription": "スポーク穴位置、組み方、G3・2:1配置、左右フランジの形状を操作して確認できます。説明とプレビューの制限を含みます。",
+  "dynamicTirePressureCalculatorLabel": "動的タイヤ空気圧計算ツール",
+  "dynamicTirePressureCalculatorDescription": "荷重、空気圧、速度、リーン角が推定接地面積とコーナリングフォースをどう変えるかを確認できます。",
+    "spokeStressReliefMechanicsLabel": "Stainless steel spoke stress-relief mechanics",
+    "spokeStressReliefMechanicsDescription": "Calculate axial spoke elongation from material, section, length, and working tension inputs with the full engineering context.",
+    "valveLengthFitmentCalculatorLabel": "Inner tube valve-length fitment calculator",
+    "valveLengthFitmentCalculatorDescription": "Complete inner-tube size, valve, material, and deep-rim valve-length guidance with an interactive fitment calculator.",
+    "freehubCassetteFitmentEngineLabel": "Freehub and cassette compatibility engine",
+    "freehubCassetteFitmentEngineDescription": "Match cassette standards, freehub bodies, spacers, and mechanical fitment rules with the complete guide.",
+    "tireRimWidthCompatibilityEngineLabel": "Tire and rim width compatibility engine",
+    "tireRimWidthCompatibilityEngineDescription": "Calculate tire and rim width fit, inspect simulations, and compare published compatibility charts"
+  },
   "accountSidebar": {
     "addresses": {
       "eyebrow": "Shipping details",
@@ -898,7 +922,9 @@
       "illustrationAlt": "FAQ画像",
       "selectQuestion": "Select a question to view the answer.",
       "pagesAriaLabel": "FAQ pages",
-      "pagesLabel": "FAQ pages"
+      "pagesLabel": "FAQ pages",
+      "loadFailed": "回答を読み込めませんでした。もう一度お試しください。",
+      "showingSavedAnswers": "回答を更新できませんでした。前回読み込んだ回答を表示しています。"
     }
   },
   "feedback": {

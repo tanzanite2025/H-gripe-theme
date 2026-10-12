@@ -1,4 +1,28 @@
 {
+  "toolsNavigation": {
+    "label": "Værktøjer",
+    "eyebrow": "Valg af cykelkomponenter",
+    "description": "Søg, filtrer og sammenlign komponentspecifikationer. Hvert værktøj indeholder forklaringer til at forstå resultaterne.",
+    "openTool": "Åbn værktøj",
+    "schwalbeTireSelectorLabel": "Schwalbe tire selector",
+    "schwalbeTireSelectorDescription": "Søg og filtrer Schwalbes dækkatalog efter model og størrelse med forklaringer om konstruktion og specifikationer.",
+    "brandWheelsetSpokeSpecsLabel": "Specifikationer for hjuleger og nipler",
+    "brandWheelsetSpokeSpecsDescription": "Filtrer efter mærke eller søg efter hjulmodel for at finde egerlængder, opspændingsmønstre og nippelspecifikationer med noter om reparationssæt.",
+    "spokeLengthCalculatorLabel": "Beregner til egerlængde",
+    "spokeLengthCalculatorDescription": "Beregn egerlængder til for- og baghjul med hele guiden til fælg, nav, egermønster, korrektioner og nipler samt vejledning om målinger og resultater.",
+    "spokeLacingTopologySimulatorLabel": "Simulator til egernes flettemønstre",
+    "spokeLacingTopologySimulatorDescription": "Forhåndsvis egerhuller, flettemønstre, G3- og 2:1-layout samt geometri for begge flanger med forklaringer og begrænsninger.",
+  "dynamicTirePressureCalculatorLabel": "Dynamisk dæktryksberegner",
+  "dynamicTirePressureCalculatorDescription": "Se hvordan belastning, dæktryk, hastighed og nedlægning ændrer den estimerede kontaktflade og sidekraft.",
+    "spokeStressReliefMechanicsLabel": "Stainless steel spoke stress-relief mechanics",
+    "spokeStressReliefMechanicsDescription": "Calculate axial spoke elongation from material, section, length, and working tension inputs with the full engineering context.",
+    "valveLengthFitmentCalculatorLabel": "Inner tube valve-length fitment calculator",
+    "valveLengthFitmentCalculatorDescription": "Complete inner-tube size, valve, material, and deep-rim valve-length guidance with an interactive fitment calculator.",
+    "freehubCassetteFitmentEngineLabel": "Freehub and cassette compatibility engine",
+    "freehubCassetteFitmentEngineDescription": "Match cassette standards, freehub bodies, spacers, and mechanical fitment rules with the complete guide.",
+    "tireRimWidthCompatibilityEngineLabel": "Tire and rim width compatibility engine",
+    "tireRimWidthCompatibilityEngineDescription": "Calculate tire and rim width fit, inspect simulations, and compare published compatibility charts"
+  },
   "accountSidebar": {
     "addresses": {
       "eyebrow": "Shipping details",
@@ -898,7 +922,9 @@
       "illustrationAlt": "FAQ-illustration",
       "selectQuestion": "Select a question to view the answer.",
       "pagesAriaLabel": "FAQ pages",
-      "pagesLabel": "FAQ pages"
+      "pagesLabel": "FAQ pages",
+      "loadFailed": "Svarene kunne ikke indlæses. Prøv igen.",
+      "showingSavedAnswers": "Svarene kunne ikke opdateres. De senest indlæste svar vises."
     }
   },
   "feedback": {

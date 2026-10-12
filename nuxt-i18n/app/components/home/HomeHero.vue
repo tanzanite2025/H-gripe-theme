@@ -26,22 +26,22 @@
             </p>
 
             <div class="mt-5 flex w-full flex-row items-center justify-center gap-2 sm:w-auto sm:gap-3 lg:justify-start">
-              <button
-                type="button"
+              <NuxtLink
+                :to="`${localePath('/guides/wheelset-buyers')}#wheelset-guide-navigation`"
                 class="premium-button premium-button--active home-hero__cta inline-flex min-w-0 flex-1 items-center justify-center sm:w-auto sm:flex-none"
-                @click="scrollToSection('home-buying-path')"
+                @click.capture="scrollToHomepageSectionFromHeroLink($event, 'home-buying-path')"
               >
                 <Icon name="lucide:route" class="mr-2 h-4 w-4" aria-hidden="true" />
                 Find my wheelset
-              </button>
-              <button
-                type="button"
+              </NuxtLink>
+              <NuxtLink
+                :to="`${localePath('/shop/wheelset')}#shop-category-products`"
                 class="premium-button home-hero__cta inline-flex min-w-0 flex-1 items-center justify-center sm:w-auto sm:flex-none"
-                @click="scrollToSection('featured-products')"
+                @click.capture="scrollToHomepageSectionFromHeroLink($event, 'featured-products')"
               >
                 <Icon name="lucide:shopping-bag" class="mr-2 h-4 w-4" aria-hidden="true" />
                 Shop best sellers
-              </button>
+              </NuxtLink>
             </div>
           </div>
 
@@ -86,7 +86,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, useI18n, useRequestHeaders, useState } from '#imports'
+import { computed, useI18n, useLocalePath, useRequestHeaders, useState } from '#imports'
 import StorefrontDataNotice from '~/components/StorefrontDataNotice.vue'
 import HomeHeroVisualShowcaseDesktopCollage from '~/components/home/HomeHeroVisualShowcaseDesktopCollage.vue'
 import HomeHeroVisualShowcaseMobilePairGallery from '~/components/home/HomeHeroVisualShowcaseMobilePairGallery.vue'
@@ -94,6 +94,7 @@ import { useHomeHeroVisualShowcase } from '~/composables/useHomeHeroVisualShowca
 import { isStorefrontMobileUserAgent } from '~/utils/storefrontLoadingPolicy'
 
 const { t } = useI18n()
+const localePath = useLocalePath()
 const {
   homeHeroVisualShowcaseItems,
   homeHeroVisualShowcaseSource,
@@ -127,11 +128,18 @@ const heroTitle = computed(() => {
   }
 })
 
-const scrollToSection = (targetId: string) => {
-  if (!import.meta.client) return
+const scrollToHomepageSectionFromHeroLink = (event: MouseEvent, targetId: string) => {
+  if (!import.meta.client || event.defaultPrevented || event.button !== 0
+    || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
 
-  document.getElementById(targetId)?.scrollIntoView({
-    behavior: 'smooth',
+  const targetSection = document.getElementById(targetId)
+  if (!targetSection) return
+
+  // Handle the local scroll before NuxtLink's navigation, keeping the href
+  // available for crawlers, modified clicks, and navigation without JavaScript.
+  event.preventDefault()
+  targetSection.scrollIntoView({
+    behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
     block: 'start',
   })
 }

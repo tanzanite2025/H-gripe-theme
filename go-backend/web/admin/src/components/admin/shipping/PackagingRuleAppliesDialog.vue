@@ -45,7 +45,7 @@
       </form>
 
       <div class="rounded-lg border bg-muted/35 p-3 text-xs text-muted-foreground">
-        稳定口径：包装规则负责箱规与包装重量，SKU 负责商品实重，线路服务负责计费口径；同一商品可有一个默认规则，并为不同 SKU 配置覆盖规则。
+        稳定口径：包装规则负责箱规与包装重量，SKU 负责商品实重，本地计费线路负责线路计费口径；同一商品可有一个默认规则，并为不同 SKU 配置覆盖规则。
       </div>
 
       <div class="rounded-lg border">

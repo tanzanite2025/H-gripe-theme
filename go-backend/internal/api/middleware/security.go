@@ -152,7 +152,7 @@ func CommercialCrawlerRobotsPolicy() gin.H {
 
 	return gin.H{
 		"path":                "/robots.txt",
-		"source":              "nuxt-i18n/public/robots.txt",
+		"source":              "nuxt-i18n/server/routes/robots.txt.ts",
 		"wildcard_user_agent": "*",
 		"disallow":            "/",
 		"blocked_user_agents": userAgents,

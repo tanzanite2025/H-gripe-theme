@@ -14,6 +14,8 @@
     "illustrationAlt": "Иллюстрация FAQ",
     "selectQuestion": "Select a question to view the answer.",
     "pagesAriaLabel": "FAQ pages",
-    "pagesLabel": "FAQ pages"
+    "pagesLabel": "FAQ pages",
+    "loadFailed": "Не удалось загрузить ответы. Попробуйте ещё раз.",
+    "showingSavedAnswers": "Не удалось обновить ответы. Показаны последние загруженные ответы."
   }
 }

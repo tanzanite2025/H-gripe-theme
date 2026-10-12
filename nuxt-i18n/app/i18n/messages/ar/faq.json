@@ -14,6 +14,8 @@
     "illustrationAlt": "صورة FAQ",
     "selectQuestion": "Select a question to view the answer.",
     "pagesAriaLabel": "FAQ pages",
-    "pagesLabel": "FAQ pages"
+    "pagesLabel": "FAQ pages",
+    "loadFailed": "تعذر تحميل الإجابات. يرجى المحاولة مجددًا.",
+    "showingSavedAnswers": "تعذر تحديث الإجابات. يتم عرض آخر إجابات تم تحميلها."
   }
 }

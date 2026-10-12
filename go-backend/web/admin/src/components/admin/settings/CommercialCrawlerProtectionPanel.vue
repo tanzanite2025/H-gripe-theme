@@ -58,7 +58,7 @@
         <div class="mt-3 grid gap-3 md:grid-cols-3">
           <div>
             <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">源文件</p>
-            <code class="mt-1 block break-all text-xs font-bold text-admin-selected">{{ robotsTxt?.source || 'nuxt-i18n/public/robots.txt' }}</code>
+            <code class="mt-1 block break-all text-xs font-bold text-admin-selected">{{ robotsTxt?.source || 'nuxt-i18n/server/routes/robots.txt.ts' }}</code>
           </div>
           <div>
             <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">TXT 拦截规则</p>

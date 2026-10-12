@@ -215,6 +215,10 @@ import { tireRimDtSwissReferenceData } from '~/data/tireguides/tireRimDtSwissRef
 import { schwalbeEtrto2024TireRimWidthReferenceData } from '~/data/tireguides/schwalbeEtrto2024TireRimWidthReferenceData'
 
 const { locale, t } = useI18n()
+const props = defineProps<{
+  /** Canonical route used by the standalone tool page. */
+  seoCanonicalRoutePath: string
+}>()
 type ChooseGuideTabId = 'calculation' | 'simulation' | 'reference' | 'schwalbeReference'
 const chooseGuideTabIds: readonly ChooseGuideTabId[] = ['calculation', 'simulation', 'reference', 'schwalbeReference']
 const chooseGuideTabHashAnchors: Record<ChooseGuideTabId, string> = {
@@ -280,8 +284,8 @@ const localizedTireRimReferenceSeoRoutes = computed(() => (
     return {
       code,
       path: localizedPath || (code === 'zh_cn'
-        ? '/zh_cn/guides/tireguides/tire-rim-width-compatibility'
-        : '/guides/tireguides/tire-rim-width-compatibility'),
+        ? `/zh_cn${props.seoCanonicalRoutePath}`
+        : props.seoCanonicalRoutePath),
     }
   })
 ))

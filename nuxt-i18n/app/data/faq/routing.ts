@@ -3,6 +3,7 @@ import localeManifest from '~/i18n/locales.manifest'
 const FAQ_AUTO_INSERT_DISABLED_PATHS = new Set([
   '/faq',
   '/support/faqs',
+  '/company/global-partners', // This page renders its own B2B partnership FAQ.
 ])
 
 export function normalizeFaqRoutePath(routePath: string) {

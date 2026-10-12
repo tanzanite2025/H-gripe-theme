@@ -37,7 +37,7 @@
 
       <div class="shop-catalog-main">
         <section class="shop-page-product-collection-display-card shop-products-panel rounded-xl p-2 text-sm tz-text-secondary shadow-[8px_8px_22px_rgb(15_23_42_/_0.08)] md:p-6">
-          <section class="product-category-page__products" aria-live="polite">
+          <section id="shop-category-products" class="product-category-page__products" aria-live="polite">
             <div v-if="pending" class="shop-products-state py-12">
               <p class="tz-text-secondary text-sm">{{ t('shopPage.products.loading', 'Loading products...') }}</p>
             </div>
@@ -380,6 +380,10 @@ watch(pendingSearch, (payload) => {
 </script>
 
 <style scoped>
+#shop-category-products {
+  scroll-margin-top: calc(var(--tz-site-header-spacer-height) + 1rem);
+}
+
 .shop-page {
   --shop-catalog-left-gutter: clamp(0.5rem, 1.2vw, 1.5rem);
   --shop-category-rail-width: clamp(16rem, 20vw, 21rem);
