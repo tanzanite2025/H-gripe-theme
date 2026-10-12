@@ -367,6 +367,16 @@ export const primaryMegaNavSections: PrimaryMegaNavSection[] = [
         accent: 'emerald',
       },
       {
+        id: 'tire-rim-width-compatibility-engine',
+        labelKey: 'toolsNavigation.tireRimWidthCompatibilityEngineLabel',
+        labelFallback: 'Tire and rim width compatibility engine',
+        description: 'Calculate tire and rim widths, inspect the fitment simulation, and compare published reference charts.',
+        to: '/tools/tire-rim-width-compatibility-engine',
+        icon: 'lucide:scan-line',
+        size: 'standard',
+        accent: 'emerald',
+      },
+      {
         id: 'freehub-cassette-fitment-engine',
         labelKey: 'toolsNavigation.freehubCassetteFitmentEngineLabel',
         labelFallback: 'Freehub and cassette compatibility engine',

@@ -73,16 +73,6 @@ export const tireGuideTabs = [
     descriptionKey: 'guidesTireguides.tabs.tubeless.description',
     description: 'Tubeless compatibility, setup, and step-by-step installation in one guide.',
   },
-  {
-    id: 'tire-rim-width-compatibility',
-    labelKey: 'guidesTireguides.tabs.choose.label',
-    fallback: 'Tire and Rim Width Calculator',
-    descriptionKey: 'guidesTireguides.tabs.choose.description',
-    description: 'Calculate the best tire or rim inner width and check normal fitment ranges.',
-    feedbackThreadKey: 'guides-tireguides',
-    feedbackTitleKey: 'guidesTireguides.feedbackTitle',
-    feedbackSubtitleKey: 'feedback.defaultSubtitle',
-  },
 ] as const satisfies readonly PageSubNavigationTab[]
 
 // Migrated tools can still use their guide metadata namespace while they retain

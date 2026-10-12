@@ -350,7 +350,7 @@ const goToTubelessInstallation = () => {
 }
 
 const goToHookedHooklessGuide = () => {
-  openLocalizedRouteInNewTab(localePath('/guides/tireguides/tire-rim-width-compatibility'))
+  openLocalizedRouteInNewTab(localePath('/tools/tire-rim-width-compatibility-engine'))
 }
 
 const goToTubelessSystemGuide = () => {

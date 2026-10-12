@@ -156,9 +156,9 @@
     },
     {
       "key": "guides-tireguides-tire-rim-width-compatibility",
-      "path": "/guides/tireguides/tire-rim-width-compatibility",
-      "label": "Tire and rim width reference calculator",
-      "description": "Calculate tire and rim width fit, check ISO normal ranges, and compare published compatibility charts",
+      "path": "/tools/tire-rim-width-compatibility-engine",
+      "label": "Tire and rim width compatibility engine",
+      "description": "Calculate tire and rim width fit, inspect simulations, and compare published compatibility charts",
       "sitemap_locales": ["en", "zh_cn"],
       "is_searchable": true,
       "is_checkable": true,

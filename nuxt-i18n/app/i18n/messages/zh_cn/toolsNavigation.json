@@ -18,5 +18,7 @@
   "valveLengthFitmentCalculatorLabel": "内胎气嘴长度适配计算器",
   "valveLengthFitmentCalculatorDescription": "完整了解内胎尺寸、气嘴、材质和高框车圈气嘴长度，并使用交互式适配计算器。",
   "freehubCassetteFitmentEngineLabel": "塔基与飞轮兼容助手",
-  "freehubCassetteFitmentEngineDescription": "匹配飞轮标准、塔基、垫圈和机械适配规则，并查看完整兼容说明。"
+  "freehubCassetteFitmentEngineDescription": "匹配飞轮标准、塔基、垫圈和机械适配规则，并查看完整兼容说明。",
+  "tireRimWidthCompatibilityEngineLabel": "车圈与外胎宽度兼容引擎",
+  "tireRimWidthCompatibilityEngineDescription": "计算外胎与车圈宽度配合，查看模拟并对照已发布的兼容图表"
 }

@@ -1,6 +1,6 @@
 <template>
   <div>
-    <h1 v-if="!isGuideCategoryLandingPage && activeTab !== 'tire-rim-width-compatibility'" class="products-page__title products-page__title--sr-only">
+    <h1 v-if="!isGuideCategoryLandingPage" class="products-page__title products-page__title--sr-only">
       {{ activePageTitle }}
     </h1>
     <p v-if="!isGuideCategoryLandingPage" class="products-page__intro products-page__intro--sr-only">
@@ -57,17 +57,8 @@
         </div>
       </section>
 
-      <!-- Tire and rim width compatibility -->
-      <section
-        v-show="activeTab === 'tire-rim-width-compatibility'"
-        id="tire-rim-width-compatibility"
-        class="sizecharts-section"
-      >
-        <HowToChooseGuide v-if="activeTab === 'tire-rim-width-compatibility'" />
-      </section>
-
       <div
-        v-if="activeTab !== 'tire-rim-width-compatibility' && activeTab !== 'tire-size-markings'"
+        v-if="activeTab !== 'tire-size-markings'"
         class="sizecharts-feedback"
       >
         <UserFeedbackThread
@@ -87,7 +78,6 @@ import UserFeedbackThread from '~/components/UserFeedbackThread.vue'
 import TireFrameClearanceGuide from '~/components/tireguides/TireFrameClearanceGuide.vue'
 import SchwalbeTireCircumferenceGuide from '~/components/tireguides/SchwalbeTireCircumferenceGuide.vue'
 import TubelessGuide from '~/components/tireguides/TubelessGuide.vue'
-import HowToChooseGuide from '~/components/tireguides/HowToChooseGuide.vue'
 import InstallationGuide from '~/components/tireguides/InstallationGuide.vue'
 import TireSizeGuide from '~/components/tireguides/TireSizeGuide.vue'
 import { usePageSubNavigationTab } from '~/composables/usePageSubNavigationTab'
@@ -106,14 +96,14 @@ const { locale, t } = useI18n()
 const route = useRoute()
 const localePath = useLocalePath()
 
-// The inner-tube guide was migrated as a complete tool page. Its former
-// virtual-tab URL must stay retired as a real 404 instead of silently falling
-// back to the tire-guide landing page and creating a compatibility alias.
+// Migrated tools must stay retired as real 404s instead of silently falling
+// back to the tire-guide landing page and creating compatibility aliases.
 const requestedTab = route.query.tab
-const requestsRetiredInnerTubeGuideTab = Array.isArray(requestedTab)
-  ? requestedTab.includes('choose-inner-tube')
-  : requestedTab === 'choose-inner-tube'
-if (requestsRetiredInnerTubeGuideTab) {
+const retiredGuideTabIds = new Set(['choose-inner-tube', 'tire-rim-width-compatibility'])
+const requestsRetiredGuideTab = Array.isArray(requestedTab)
+  ? requestedTab.some(tab => typeof tab === 'string' && retiredGuideTabIds.has(tab))
+  : retiredGuideTabIds.has(String(requestedTab || ''))
+if (requestsRetiredGuideTab) {
   throw createError({
     statusCode: 404,
     statusMessage: 'Page Not Found',
@@ -122,21 +112,18 @@ if (requestsRetiredInnerTubeGuideTab) {
 }
 
 const { loadPageMessages } = usePageMessages('guidesTireguides')
-const { loadPageMessages: loadTireRimReferencePageMessages } = usePageMessages('guidesTireChoose')
 const { loadPageMessages: loadTireSizePageMessages } = usePageMessages('guidesTireSize')
 
 const normalizeGuideCategoryLandingRoutePath = (path: string) => path.replace(/\/+$/, '') || '/'
 
 await Promise.all([
   loadPageMessages(locale.value),
-  loadTireRimReferencePageMessages(locale.value),
   loadTireSizePageMessages(locale.value),
 ])
 
 watch(locale, (nextLocale) => {
   void Promise.all([
     loadPageMessages(nextLocale),
-    loadTireRimReferencePageMessages(nextLocale),
     loadTireSizePageMessages(nextLocale),
   ])
 })
@@ -178,9 +165,6 @@ const activePageTitle = computed(() => {
   }
   if (activeTab.value === 'schwalbe-tire-circumference') {
     return t('guidesTireguides.tabs.schwalbeCircumference.label')
-  }
-  if (activeTab.value === 'tire-rim-width-compatibility') {
-    return t('guidesTireChoose.seo.title')
   }
   return t('guidesTireguides.title')
 })

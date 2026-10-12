@@ -18,6 +18,7 @@
     "test:inner-tube-guide-published-locale-policy": "tsx scripts/inner-tube-guide-published-locale-indexing-policy-contract.test.ts",
     "check:inner-tube-whole-page-migration": "tsx scripts/storefront/check-inner-tube-whole-page-tools-migration-and-empty-spoke-guide-retirement.ts",
     "check:freehub-cassette-fitment-whole-page-migration": "tsx scripts/storefront/check-freehub-cassette-fitment-whole-page-migration.ts",
+    "check:tire-rim-width-compatibility-whole-page-migration": "tsx scripts/storefront/check-tire-rim-width-compatibility-whole-page-migration.ts",
     "test:breadcrumb-navigation": "tsx scripts/breadcrumb-navigation-contract.test.ts",
     "test:page-feedback-independent-translation-loading": "tsx scripts/page-feedback-slot-independent-lazy-translation-loading-server-rendering-regression.test.ts",
     "test:footer-menu-route-discovery": "tsx scripts/footer-menu-route-discovery-contract.test.ts",

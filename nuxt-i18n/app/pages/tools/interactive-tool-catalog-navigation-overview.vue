@@ -56,6 +56,11 @@ const availableInteractiveToolCards = computed(() => [{
   description: t('toolsNavigation.dynamicTirePressureCalculatorDescription'),
   to: '/tools/dynamic-tire-pressure-calculator',
 }, {
+  id: 'tire-rim-width-compatibility-engine',
+  label: t('toolsNavigation.tireRimWidthCompatibilityEngineLabel'),
+  description: t('toolsNavigation.tireRimWidthCompatibilityEngineDescription'),
+  to: '/tools/tire-rim-width-compatibility-engine',
+}, {
   id: 'valve-length-fitment-calculator',
   label: t('toolsNavigation.valveLengthFitmentCalculatorLabel'),
   description: t('toolsNavigation.valveLengthFitmentCalculatorDescription'),
