@@ -2157,18 +2157,30 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 	}
 
 	.desktop-header-grid {
-		display: flex !important;
-		grid-template-columns: none;
+		display: grid !important;
+		grid-template-columns: minmax(0, 17.5rem) minmax(0, 1fr) auto;
 		align-items: center;
-		justify-content: space-between;
+		gap: clamp(0.5rem, 1vw, 1rem);
 	}
 
 	.desktop-header-grid > nav[data-header-mega-nav] {
-		position: absolute;
-		top: 50%;
-		left: 50%;
+		position: static;
+		min-width: 0;
 		z-index: 1;
-		transform: translate(-50%, -50%);
+		transform: none;
+		gap: clamp(0.25rem, 0.9vw, 1.25rem);
+	}
+
+	.desktop-header-grid > nav[data-header-mega-nav] > .site-header-menu-laser {
+		min-width: 0;
+		flex: 0 1 auto;
+	}
+
+	.desktop-header-grid .site-header-menu-laser__text {
+		min-width: 0;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
 	}
 
 	.desktop-header-grid > :first-child,
