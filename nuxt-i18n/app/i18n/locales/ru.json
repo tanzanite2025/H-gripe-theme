@@ -15,7 +15,9 @@
   "dynamicTirePressureCalculatorLabel": "Динамический калькулятор давления в шинах",
   "dynamicTirePressureCalculatorDescription": "Посмотрите, как нагрузка, давление, скорость и наклон меняют расчётную площадь контакта и силу в повороте.",
     "spokeStressReliefMechanicsLabel": "Stainless steel spoke stress-relief mechanics",
-    "spokeStressReliefMechanicsDescription": "Calculate axial spoke elongation from material, section, length, and working tension inputs with the full engineering context."
+    "spokeStressReliefMechanicsDescription": "Calculate axial spoke elongation from material, section, length, and working tension inputs with the full engineering context.",
+    "valveLengthFitmentCalculatorLabel": "Inner tube valve-length fitment calculator",
+    "valveLengthFitmentCalculatorDescription": "Complete inner-tube size, valve, material, and deep-rim valve-length guidance with an interactive fitment calculator."
   },
   "accountSidebar": {
     "addresses": {

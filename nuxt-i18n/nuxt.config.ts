@@ -3,6 +3,7 @@ import { defineNuxtConfig } from 'nuxt/config'
 import locales from './app/i18n/locales.manifest'
 import { buildStorefrontRouteRules } from './config/storefront/route-rules'
 import { virtualPageSubNavigationEntries } from './app/utils/pageSubNavigationData'
+import { innerTubeGuideUnpublishedLocaleSitemapExcludes } from './app/utils/seo/innerTubeGuidePublishedLocaleIndexingPolicy'
 
 const env = ((globalThis as unknown as { process?: { env?: Record<string, string | undefined> } }).process?.env) || {}
 const trimTrailingSlash = (value: string) => value.replace(/\/$/, '')
@@ -118,6 +119,7 @@ const unsupportedTechnicalReferenceSitemapExcludes = [
   ...new Set([
     ...wheelsetLacingUnsupportedLocaleSitemapExcludes,
     ...tireRimReferenceUnsupportedLocaleSitemapExcludes,
+    ...innerTubeGuideUnpublishedLocaleSitemapExcludes,
   ]),
 ]
 

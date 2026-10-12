@@ -15,7 +15,9 @@
   "dynamicTirePressureCalculatorLabel": "डायनेमिक टायर प्रेशर कैलकुलेटर",
   "dynamicTirePressureCalculatorDescription": "जानें कि भार, दबाव, गति और झुकाव टायर के अनुमानित संपर्क क्षेत्र और मोड़ बल को कैसे बदलते हैं।",
     "spokeStressReliefMechanicsLabel": "Stainless steel spoke stress-relief mechanics",
-    "spokeStressReliefMechanicsDescription": "Calculate axial spoke elongation from material, section, length, and working tension inputs with the full engineering context."
+    "spokeStressReliefMechanicsDescription": "Calculate axial spoke elongation from material, section, length, and working tension inputs with the full engineering context.",
+    "valveLengthFitmentCalculatorLabel": "Inner tube valve-length fitment calculator",
+    "valveLengthFitmentCalculatorDescription": "Complete inner-tube size, valve, material, and deep-rim valve-length guidance with an interactive fitment calculator."
   },
   "accountSidebar": {
     "addresses": {

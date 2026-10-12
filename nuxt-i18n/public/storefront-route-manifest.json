@@ -193,9 +193,9 @@
     },
     {
       "key": "guides-tireguides-choose-inner-tube",
-      "path": "/guides/tireguides/choose-inner-tube",
-      "label": "How to Choose an Inner Tube",
-      "description": "Choose inner-tube size, valve type, material, and deep-rim valve length",
+      "path": "/tools/valve-length-fitment-calculator",
+      "label": "Inner tube valve-length fitment calculator",
+      "description": "Choose inner-tube size, valve type, material, and deep-rim valve length with the complete guide and calculator",
       "sitemap_locales": ["en", "zh_cn"],
       "is_searchable": true,
       "is_checkable": true,

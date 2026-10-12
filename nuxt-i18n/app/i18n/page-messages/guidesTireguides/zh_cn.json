@@ -2,6 +2,37 @@
   "title": "轮胎指南",
   "intro": "提供常见轮胎与车圈尺寸的参考图表。",
   "feedbackTitle": "分享您对轮胎指南页面的反馈",
+  "seo": {
+    "schwalbeCircumference": {
+      "title": "Schwalbe 轮胎周长对照表：Garmin / Wahoo 码表校准",
+      "description": "按 ETRTO 和英寸胎号查询 Schwalbe 轮胎近似周长（毫米），用于 Garmin、Wahoo 等自行车码表设置。了解骑乘载荷下滚动一圈的测量方法，校准换胎后的轮周参数。",
+      "imageAlt": "Schwalbe 自行车轮胎周长参考图表，列出英寸胎号、ETRTO 尺寸及毫米单位的近似周长。"
+    },
+    "tireSizeMarkings": {
+      "title": "自行车胎标尺寸换算指南：ETRTO、英寸与法制 700C",
+      "description": "读懂自行车轮胎的 ETRTO / ISO、英寸和法制胎标，对照 700C、650B、29 英寸等常见尺寸。通过胎唇座直径 BSD 识别轮圈规格，并查询常见胎号的对应关系。",
+      "imageAlt": "自行车轮胎尺寸对照图表，比较 ETRTO / ISO、英寸和法制胎标。"
+    },
+    "tubeless": {
+      "title": "自行车真空胎安装指南：圈带、气嘴与补胎液",
+      "description": "了解自行车真空胎原理与安装步骤：清洁轮圈、贴圈带、安装气嘴、装胎、注入补胎液和充气就位。安装前核对外胎与轮圈的兼容性，掌握无内胎系统所需配件。",
+      "imageAlt": "自行车真空胎安装示意图，展示轮胎装入轮圈和胎唇就位的方法。"
+    },
+    "tirePressure": {
+      "title": "自行车胎压选择指南：骑手体重、胎宽与路况",
+      "description": "了解骑手体重、胎宽、路况和轮圈结构如何影响自行车胎压，查看胎压与接地面积的演示及日常检查方法。选压时核对具体外胎、轮圈和轮组的厂家范围与限制。"
+    },
+    "innerTubeCalculator": {
+      "title": "自行车内胎气嘴长度与延长嘴计算器",
+      "description": "输入轮圈框高、气筒夹头深度和测量误差，计算深框轮圈所需内胎气嘴与延长嘴长度。支持智能推荐和手动试配，并提供气嘴外露长度与适配参考表。"
+    },
+    "innerTube": {
+      "title": "自行车内胎选择指南：尺寸、气嘴与框高计算器",
+      "description": "了解 ETRTO 内胎尺寸，比较法嘴 Presta、美嘴 Schrader 和英嘴 Dunlop，以及 TPU、乳胶和丁基内胎。通过框高与气筒夹头参数，估算深框轮圈所需气嘴和延长嘴长度。",
+      "imageAlt": "自行车内胎选择指南：法嘴、美嘴和英嘴、内胎材质，以及轮圈框高与气嘴外露长度示意图。",
+      "openGraphLocale": "zh_CN"
+    }
+  },
   "tabs": {
     "tireSizeMarkings": {
       "label": "轮胎尺寸标注",

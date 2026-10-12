@@ -367,6 +367,16 @@ export const primaryMegaNavSections: PrimaryMegaNavSection[] = [
         accent: 'emerald',
       },
       {
+        id: 'valve-length-fitment-calculator',
+        labelKey: 'toolsNavigation.valveLengthFitmentCalculatorLabel',
+        labelFallback: 'Inner tube valve-length fitment calculator',
+        description: 'Match inner-tube size, valve, material, and deep-rim valve length with the complete guide and calculator.',
+        to: '/tools/valve-length-fitment-calculator',
+        icon: 'lucide:circle-gauge',
+        size: 'standard',
+        accent: 'emerald',
+      },
+      {
         id: 'spoke-stress-relief-mechanics',
         labelKey: 'toolsNavigation.spokeStressReliefMechanicsLabel',
         labelFallback: 'Stainless steel spoke stress-relief mechanics',

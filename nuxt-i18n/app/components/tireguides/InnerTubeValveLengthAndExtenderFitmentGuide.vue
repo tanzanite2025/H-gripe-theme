@@ -1,18 +1,18 @@
 <template>
-  <section class="inner-tube-fitment-guide w-full min-w-0 rounded-2xl bg-[var(--tz-card-surface)] p-4 shadow-md md:p-5">
+  <section id="inner-tube-fitment-calculator" tabindex="-1" class="inner-tube-fitment-guide w-full min-w-0 rounded-2xl bg-[var(--tz-card-surface)] p-4 shadow-md md:p-5">
     <div class="sizecharts-section__step-header sizecharts-section__step-header--compact">
       <span class="sizecharts-section__step-badge">4</span>
       <div>
-        <h3 class="sizecharts-section__step-title">
+        <h2 class="sizecharts-section__step-title">
           {{ t('guidesTireInnerTube.fitment.title') }}
-        </h3>
+        </h2>
         <p class="mt-1 text-xs leading-relaxed tz-text-secondary">
           {{ t('guidesTireInnerTube.fitment.description') }}
         </p>
       </div>
     </div>
 
-    <div class="mt-5 grid min-w-0 gap-5 xl:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)] xl:items-start">
+    <div class="mt-5 grid min-w-0 gap-5 xl:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)] xl:items-start" :aria-busy="innerTubeFitmentResultsAreLoading">
       <div class="min-w-0 space-y-4">
         <div class="rounded-xl border tz-border-subtle tz-surface-subtle p-3">
           <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
@@ -24,6 +24,7 @@
                 type="button"
                 class="rounded-full px-3 py-1.5 text-[11px] font-bold transition-colors"
                 :class="fitmentMode === 'automatic' ? 'bg-[var(--tz-action-primary)] text-[var(--tz-action-primary-foreground)]' : 'tz-text-secondary hover:tz-text-primary'"
+                :aria-pressed="fitmentMode === 'automatic'"
                 @click="setInnerTubeFitmentMode('automatic')"
               >
                 {{ t('guidesTireInnerTube.fitment.controls.automaticMode') }}
@@ -32,6 +33,7 @@
                 type="button"
                 class="rounded-full px-3 py-1.5 text-[11px] font-bold transition-colors"
                 :class="fitmentMode === 'manual' ? 'bg-[var(--tz-action-primary)] text-[var(--tz-action-primary-foreground)]' : 'tz-text-secondary hover:tz-text-primary'"
+                :aria-pressed="fitmentMode === 'manual'"
                 @click="setInnerTubeFitmentMode('manual')"
               >
                 {{ t('guidesTireInnerTube.fitment.controls.manualMode') }}
@@ -184,6 +186,7 @@
                 type="button"
                 class="rounded-full border px-2.5 py-1 text-[11px] font-semibold transition-colors"
                 :class="manualValveLength === length ? 'border-[var(--tz-action-primary)] bg-[var(--tz-action-primary)] text-[var(--tz-action-primary-foreground)]' : 'tz-border-subtle tz-text-secondary hover:tz-text-primary'"
+                :aria-pressed="manualValveLength === length"
                 @click="selectManualInnerTubeValveLength(length)"
               >
                 {{ length }} mm
@@ -202,6 +205,7 @@
                 type="button"
                 class="rounded-full border px-2.5 py-1 text-[11px] font-semibold transition-colors"
                 :class="manualExtenderLength === length ? 'border-[var(--tz-action-primary)] bg-[var(--tz-action-primary)] text-[var(--tz-action-primary-foreground)]' : 'tz-border-subtle tz-text-secondary hover:tz-text-primary'"
+                :aria-pressed="manualExtenderLength === length"
                 @click="selectManualInnerTubeExtenderLength(length)"
               >
                 {{ length === 0 ? t('guidesTireInnerTube.fitment.controls.noExtender') : `+${length} mm` }}
@@ -210,7 +214,7 @@
           </div>
         </div>
 
-        <div v-if="activeInnerTubeFitmentResult" class="inner-tube-fitment-status rounded-xl border p-3" :class="fitmentStatusClass" :aria-busy="innerTubeFitmentRequestPending">
+        <div class="inner-tube-fitment-result-status rounded-xl border p-3" :class="activeInnerTubeFitmentResult ? ['inner-tube-fitment-status', fitmentStatusClass] : 'inner-tube-fitment-initial-result-skeleton tz-border-subtle tz-surface-subtle'" :aria-hidden="!activeInnerTubeFitmentResult">
           <div class="flex items-start gap-2">
             <span class="text-lg leading-none" aria-hidden="true">{{ fitmentStatusIcon }}</span>
             <div class="min-w-0">
@@ -229,14 +233,16 @@
           </div>
         </div>
 
-        <p v-if="innerTubeFitmentMatrixPending || innerTubeFitmentRequestPending" class="mt-3 text-xs tz-text-muted" aria-live="polite">
-          {{ t('guidesTireInnerTube.fitment.loading') }}
-        </p>
-        <p v-if="innerTubeFitmentMatrixError || innerTubeFitmentRequestError" class="mt-3 text-xs text-red-600" role="alert">
-          {{ innerTubeFitmentRequestError || t('guidesTireInnerTube.fitment.error') }}
-        </p>
+        <div class="inner-tube-fitment-request-status text-xs" aria-live="polite" aria-atomic="true">
+          <p v-if="innerTubeFitmentResultsAreLoading" class="tz-text-muted">
+            {{ t('guidesTireInnerTube.fitment.loading') }}
+          </p>
+          <p v-else-if="innerTubeFitmentMatrixError || innerTubeFitmentRequestError" class="text-red-600" role="alert">
+            {{ innerTubeFitmentRequestError || t('guidesTireInnerTube.fitment.error') }}
+          </p>
+        </div>
 
-        <div v-if="activeInnerTubeFitmentResult" class="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2">
+        <div class="inner-tube-fitment-result-metrics grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2" :class="{ 'inner-tube-fitment-result-metrics--initial-skeleton': !activeInnerTubeFitmentResult }" :aria-hidden="!activeInnerTubeFitmentResult">
           <div class="min-w-0 rounded-xl border tz-border-subtle tz-surface-subtle p-3">
             <div class="text-[11px] font-semibold tz-text-muted">
               {{ t('guidesTireInnerTube.fitment.metrics.passageDepth') }}
@@ -245,7 +251,7 @@
               {{ formatInnerTubeMillimetres(passageDepth) }}
             </div>
             <div class="mt-1 text-[11px] leading-relaxed tz-text-secondary">
-              {{ t('guidesTireInnerTube.fitment.metrics.passageFormula', { rimDepth, offset: outerLipOffset }) }}
+              {{ t('guidesTireInnerTube.fitment.metrics.passageFormula', { rimDepth: activeInnerTubeFitmentResult?.rim_depth_mm ?? rimDepth, offset: outerLipOffset }) }}
             </div>
           </div>
           <div class="min-w-0 rounded-xl border tz-border-subtle tz-surface-subtle p-3">
@@ -311,11 +317,11 @@
                 : t('guidesTireInnerTube.fitment.loading') }}
             </div>
             <div class="mt-1 text-[11px] leading-relaxed tz-text-secondary">
-              {{ fitmentMode === 'automatic'
+              {{ activeInnerTubeFitmentResultMode === 'automatic'
                 ? t('guidesTireInnerTube.fitment.metrics.automaticRecommendation')
                 : t('guidesTireInnerTube.fitment.metrics.manualSelection') }}
             </div>
-            <div v-if="activeInnerTubeFitmentResult" class="mt-2 rounded-lg border tz-border-subtle bg-[var(--tz-card-surface)] p-2 text-[11px] leading-relaxed tz-text-primary">
+            <div class="mt-2 rounded-lg border tz-border-subtle bg-[var(--tz-card-surface)] p-2 text-[11px] leading-relaxed tz-text-primary">
               {{ t(`guidesTireInnerTube.fitment.recommendationReasons.${activeRecommendationReasonKey}`, {
                 minimumLength: minimumRequiredLength,
                 totalLength: totalAssemblyLength,
@@ -327,12 +333,12 @@
       </div>
 
       <div class="min-w-0 space-y-4">
-        <div v-if="activeInnerTubeFitmentResult" class="overflow-hidden rounded-xl border tz-border-subtle tz-surface-subtle p-3">
+        <div class="inner-tube-fitment-result-visualization overflow-hidden rounded-xl border tz-border-subtle tz-surface-subtle p-3" :class="{ 'inner-tube-fitment-initial-result-skeleton': !activeInnerTubeFitmentResult }" :aria-hidden="!activeInnerTubeFitmentResult">
           <div class="flex flex-wrap items-end justify-between gap-2">
             <div>
-              <h4 class="text-sm font-bold tz-text-primary">
+              <h3 class="text-sm font-bold tz-text-primary">
                 {{ t('guidesTireInnerTube.fitment.visuals.title') }}
-              </h4>
+              </h3>
               <p class="mt-1 text-[11px] leading-relaxed tz-text-secondary">
                 {{ t('guidesTireInnerTube.fitment.visuals.description') }}
               </p>
@@ -400,7 +406,7 @@
               {{ formatInnerTubeMillimetres(passageDepth) }}
             </text>
             <text x="20" :y="innerTubeSvgRimLabelY + 13" class="inner-tube-fitment-svg-label">
-              {{ t('guidesTireInnerTube.fitment.visuals.passageLabel', { rimDepth }) }}
+              {{ t('guidesTireInnerTube.fitment.visuals.passageLabel', { rimDepth: activeInnerTubeFitmentResult?.rim_depth_mm ?? rimDepth }) }}
             </text>
 
             <line x1="160" y1="330" x2="184" y2="330" stroke="var(--tz-site-accent)" stroke-width="1.5" stroke-dasharray="4,3" />
@@ -421,78 +427,75 @@
             </svg>
           </div>
         </div>
-        <div v-else-if="!innerTubeFitmentMatrixError && !innerTubeFitmentRequestError" class="rounded-xl border tz-border-subtle tz-surface-subtle p-6 text-center text-xs tz-text-muted">
-          {{ t('guidesTireInnerTube.fitment.loading') }}
-        </div>
 
-        <div v-if="uncertaintyReview" class="rounded-xl border tz-border-subtle tz-surface-subtle p-3">
+        <div v-if="uncertaintyReview || !activeInnerTubeFitmentResult" class="inner-tube-fitment-result-uncertainty rounded-xl border tz-border-subtle tz-surface-subtle p-3" :class="{ 'inner-tube-fitment-initial-result-skeleton': !activeInnerTubeFitmentResult }" :aria-hidden="!activeInnerTubeFitmentResult">
           <div class="flex flex-wrap items-start justify-between gap-2">
             <div>
-              <h4 class="text-sm font-bold tz-text-primary">
+              <h3 class="text-sm font-bold tz-text-primary">
                 {{ t('guidesTireInnerTube.fitment.uncertainty.title') }}
-              </h4>
+              </h3>
               <p class="mt-1 text-[11px] leading-relaxed tz-text-secondary">
                 {{ t('guidesTireInnerTube.fitment.uncertainty.description', {
-                  lower: uncertaintyReview.lower_bound.rim_depth_mm,
-                  upper: uncertaintyReview.upper_bound.rim_depth_mm,
-                  uncertainty: uncertaintyReview.rim_depth_uncertainty_mm,
+                  lower: uncertaintyReview?.lower_bound.rim_depth_mm,
+                  upper: uncertaintyReview?.upper_bound.rim_depth_mm,
+                  uncertainty: uncertaintyReview?.rim_depth_uncertainty_mm,
                 }) }}
               </p>
             </div>
-            <span class="rounded-full border px-2.5 py-1 text-[10px] font-bold" :class="`inner-tube-fitment-text--${uncertaintyReview.worst_case_status}`">
-              {{ t(`guidesTireInnerTube.fitment.status.${uncertaintyReview.worst_case_status}.title`) }}
+            <span class="rounded-full border px-2.5 py-1 text-[10px] font-bold" :class="`inner-tube-fitment-text--${uncertaintyReview?.worst_case_status ?? 'unsafe'}`">
+              {{ t(`guidesTireInnerTube.fitment.status.${uncertaintyReview?.worst_case_status ?? 'unsafe'}.title`) }}
             </span>
           </div>
           <div class="mt-3 grid min-w-0 gap-2 sm:grid-cols-2">
             <div class="min-w-0 rounded-lg border tz-border-subtle bg-[var(--tz-card-surface)] p-2.5">
               <div class="text-[11px] font-bold tz-text-primary">
-                {{ t('guidesTireInnerTube.fitment.uncertainty.lowerBound', { rimDepth: uncertaintyReview.lower_bound.rim_depth_mm }) }}
+                {{ t('guidesTireInnerTube.fitment.uncertainty.lowerBound', { rimDepth: uncertaintyReview?.lower_bound.rim_depth_mm }) }}
               </div>
               <div class="mt-1 grid grid-cols-2 gap-2 text-[11px]">
                 <div>
                   <div class="tz-text-muted">{{ t('guidesTireInnerTube.fitment.uncertainty.exposedLength') }}</div>
-                  <div class="mt-0.5 font-mono font-bold" :class="`inner-tube-fitment-text--${uncertaintyReview.lower_bound.status}`">
-                    {{ formatInnerTubeMillimetres(uncertaintyReview.lower_bound.effective_exposure_mm) }}
+                  <div class="mt-0.5 font-mono font-bold" :class="`inner-tube-fitment-text--${uncertaintyReview?.lower_bound.status ?? 'unsafe'}`">
+                    {{ formatInnerTubeMillimetres(uncertaintyReview?.lower_bound.effective_exposure_mm ?? 0) }}
                   </div>
                 </div>
                 <div>
                   <div class="tz-text-muted">{{ t('guidesTireInnerTube.fitment.uncertainty.minimumMargin') }}</div>
                   <div class="mt-0.5 font-mono font-bold tz-text-primary">
-                    {{ formatInnerTubeSignedMillimetres(uncertaintyReview.lower_bound.minimum_length_margin_mm) }}
+                    {{ formatInnerTubeSignedMillimetres(uncertaintyReview?.lower_bound.minimum_length_margin_mm ?? 0) }}
                   </div>
                 </div>
               </div>
-              <div class="mt-2 text-[11px] font-semibold" :class="`inner-tube-fitment-text--${uncertaintyReview.lower_bound.status}`">
-                {{ t(`guidesTireInnerTube.fitment.status.${uncertaintyReview.lower_bound.status}.title`) }}
+              <div class="mt-2 text-[11px] font-semibold" :class="`inner-tube-fitment-text--${uncertaintyReview?.lower_bound.status ?? 'unsafe'}`">
+                {{ t(`guidesTireInnerTube.fitment.status.${uncertaintyReview?.lower_bound.status ?? 'unsafe'}.title`) }}
               </div>
             </div>
             <div class="min-w-0 rounded-lg border tz-border-subtle bg-[var(--tz-card-surface)] p-2.5">
               <div class="text-[11px] font-bold tz-text-primary">
-                {{ t('guidesTireInnerTube.fitment.uncertainty.upperBound', { rimDepth: uncertaintyReview.upper_bound.rim_depth_mm }) }}
+                {{ t('guidesTireInnerTube.fitment.uncertainty.upperBound', { rimDepth: uncertaintyReview?.upper_bound.rim_depth_mm }) }}
               </div>
               <div class="mt-1 grid grid-cols-2 gap-2 text-[11px]">
                 <div>
                   <div class="tz-text-muted">{{ t('guidesTireInnerTube.fitment.uncertainty.exposedLength') }}</div>
-                  <div class="mt-0.5 font-mono font-bold" :class="`inner-tube-fitment-text--${uncertaintyReview.upper_bound.status}`">
-                    {{ formatInnerTubeMillimetres(uncertaintyReview.upper_bound.effective_exposure_mm) }}
+                  <div class="mt-0.5 font-mono font-bold" :class="`inner-tube-fitment-text--${uncertaintyReview?.upper_bound.status ?? 'unsafe'}`">
+                    {{ formatInnerTubeMillimetres(uncertaintyReview?.upper_bound.effective_exposure_mm ?? 0) }}
                   </div>
                 </div>
                 <div>
                   <div class="tz-text-muted">{{ t('guidesTireInnerTube.fitment.uncertainty.minimumMargin') }}</div>
                   <div class="mt-0.5 font-mono font-bold tz-text-primary">
-                    {{ formatInnerTubeSignedMillimetres(uncertaintyReview.upper_bound.minimum_length_margin_mm) }}
+                    {{ formatInnerTubeSignedMillimetres(uncertaintyReview?.upper_bound.minimum_length_margin_mm ?? 0) }}
                   </div>
                 </div>
               </div>
-              <div class="mt-2 text-[11px] font-semibold" :class="`inner-tube-fitment-text--${uncertaintyReview.upper_bound.status}`">
-                {{ t(`guidesTireInnerTube.fitment.status.${uncertaintyReview.upper_bound.status}.title`) }}
+              <div class="mt-2 text-[11px] font-semibold" :class="`inner-tube-fitment-text--${uncertaintyReview?.upper_bound.status ?? 'unsafe'}`">
+                {{ t(`guidesTireInnerTube.fitment.status.${uncertaintyReview?.upper_bound.status ?? 'unsafe'}.title`) }}
               </div>
             </div>
           </div>
-          <div class="mt-3 rounded-lg border p-2.5 text-[11px] leading-relaxed" :class="uncertaintyReview.is_status_stable ? 'border-emerald-200 bg-emerald-50 text-emerald-800' : 'border-amber-200 bg-amber-50 text-amber-800'">
-            {{ uncertaintyReview.is_status_stable
+          <div class="mt-3 rounded-lg border p-2.5 text-[11px] leading-relaxed" :class="uncertaintyReview?.is_status_stable ? 'border-emerald-200 bg-emerald-50 text-emerald-800' : 'border-amber-200 bg-amber-50 text-amber-800'">
+            {{ uncertaintyReview?.is_status_stable
               ? t('guidesTireInnerTube.fitment.uncertainty.stable', { status: t(`guidesTireInnerTube.fitment.status.${uncertaintyReview.lower_bound.status}.title`) })
-              : t('guidesTireInnerTube.fitment.uncertainty.unstable', { status: t(`guidesTireInnerTube.fitment.status.${uncertaintyReview.worst_case_status}.title`) }) }}
+              : t('guidesTireInnerTube.fitment.uncertainty.unstable', { status: t(`guidesTireInnerTube.fitment.status.${uncertaintyReview?.worst_case_status ?? 'unsafe'}.title`) }) }}
           </div>
         </div>
 
@@ -517,12 +520,12 @@
           </p>
         </div>
 
-        <div v-if="activeInnerTubeFitmentResult?.alternatives?.length" class="rounded-xl border tz-border-subtle tz-surface-subtle p-3">
+        <div v-if="activeInnerTubeFitmentResult?.alternatives?.length || !activeInnerTubeFitmentResult" class="inner-tube-fitment-result-alternatives rounded-xl border tz-border-subtle tz-surface-subtle p-3">
           <div class="flex flex-wrap items-end justify-between gap-2">
             <div>
-              <h4 class="text-sm font-bold tz-text-primary">
+              <h3 class="text-sm font-bold tz-text-primary">
                 {{ t('guidesTireInnerTube.fitment.alternatives.title') }}
-              </h4>
+              </h3>
               <p class="mt-1 text-[11px] leading-relaxed tz-text-secondary">
                 {{ t('guidesTireInnerTube.fitment.alternatives.description') }}
               </p>
@@ -531,7 +534,7 @@
               {{ t('guidesTireInnerTube.fitment.alternatives.referenceBadge') }}
             </span>
           </div>
-          <div class="mt-3 grid min-w-0 gap-2 sm:grid-cols-2">
+          <div v-if="activeInnerTubeFitmentResult" class="mt-3 grid min-w-0 gap-2 sm:grid-cols-2">
             <button
               v-for="alternative in activeInnerTubeFitmentResult.alternatives"
               :key="`${alternative.valve_length_mm}-${alternative.extender_length_mm}`"
@@ -563,16 +566,29 @@
               </div>
             </button>
           </div>
+          <div v-else class="mt-3 grid min-w-0 gap-2 sm:grid-cols-2" aria-hidden="true">
+            <div v-for="placeholderIndex in 4" :key="placeholderIndex" class="inner-tube-fitment-initial-result-skeleton min-h-[5rem] rounded-lg border tz-border-subtle bg-[var(--tz-card-surface)]" />
+          </div>
         </div>
       </div>
     </div>
 
-    <div v-if="innerTubeFitmentMetadata" class="mt-5 rounded-xl border tz-border-subtle bg-[var(--tz-card-surface)] p-3">
+    <section id="inner-tube-fitment-how-to" tabindex="-1" class="mt-4 rounded-xl border tz-border-subtle p-3">
+      <h3 class="text-sm font-bold tz-text-primary">{{ t('guidesTireInnerTube.calculatorInstructions.title') }}</h3>
+      <ol class="mt-3 grid gap-3 text-sm leading-relaxed md:grid-cols-2">
+        <li v-for="(step, index) in innerTubeFitmentVisibleHowToSteps" :id="step.sectionId" :key="step.sectionId" tabindex="-1">
+          <h4 class="font-semibold tz-text-primary">{{ index + 1 }}. {{ step.name }}</h4>
+          <p class="mt-1 tz-text-secondary">{{ step.text }}</p>
+        </li>
+      </ol>
+    </section>
+
+    <div id="inner-tube-fitment-matrix" v-if="innerTubeFitmentMetadata" tabindex="-1" class="mt-5 rounded-xl border tz-border-subtle bg-[var(--tz-card-surface)] p-3">
       <div class="flex flex-wrap items-end justify-between gap-2">
         <div>
-          <h4 class="text-sm font-bold tz-text-primary">
+              <h3 class="text-sm font-bold tz-text-primary">
             {{ t('guidesTireInnerTube.fitment.matrix.title') }}
-          </h4>
+              </h3>
           <p class="mt-1 text-xs leading-relaxed tz-text-secondary">
             {{ t('guidesTireInnerTube.fitment.matrix.description') }}
           </p>
@@ -648,9 +664,9 @@
 
     <div class="mt-5 grid min-w-0 gap-4 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] lg:items-start">
       <div class="min-w-0 rounded-xl border tz-border-subtle tz-surface-subtle p-3">
-        <h4 class="text-sm font-bold tz-text-primary">
+              <h3 class="text-sm font-bold tz-text-primary">
           {{ t('guidesTireInnerTube.fitment.structure.title') }}
-        </h4>
+              </h3>
         <div class="mt-3 flex flex-wrap gap-1.5">
           <button
             v-for="structure in innerTubeValveStructureOptions"
@@ -705,9 +721,9 @@
       </div>
 
       <div class="min-w-0">
-        <h4 class="text-sm font-bold tz-text-primary">
+              <h3 class="text-sm font-bold tz-text-primary">
           {{ t('guidesTireInnerTube.fitment.pitfalls.title') }}
-        </h4>
+              </h3>
         <div class="mt-3 grid min-w-0 gap-3 sm:grid-cols-2">
           <article
             v-for="pitfall in innerTubeFitmentPitfalls"
@@ -737,9 +753,16 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n, useHead, useRoute, useRouter } from '#imports'
-import { getStorefrontLocaleLanguageTag } from '~/utils/storefrontLocales'
+import { getInnerTubeGuideActualContentLanguageTag } from '~/utils/seo/innerTubeGuidePublishedLocaleIndexingPolicy'
 import { createSeoJsonLdScript } from '~/utils/seo/jsonLd'
 import { useStorefrontSeoLinks } from '~/composables/seo/useStorefrontSeoLinks'
+import {
+  createInnerTubeValveFitmentShareQueryParameters,
+  hasInnerTubeValveFitmentShareQueryParameters,
+  readInnerTubeValveFitmentShareQueryParameterSignature,
+  restoreInnerTubeValveFitmentStateFromShareQuery,
+  type InnerTubeValveFitmentShareState,
+} from '~/utils/innerTubeValveFitmentShareUrlState'
 import {
   useInnerTubeValveFitmentCalculator,
   type InnerTubeValveFitmentAlternative,
@@ -761,7 +784,7 @@ const {
   solveInnerTubeValveFitmentWithBackend,
 } = await useInnerTubeValveFitmentCalculator()
 
-const innerTubeFitmentSchemaLanguage = computed(() => getStorefrontLocaleLanguageTag(locale.value))
+const innerTubeFitmentSchemaLanguage = computed(() => getInnerTubeGuideActualContentLanguageTag(locale.value))
 
 const innerTubeValveStructureOptions: readonly InnerTubeValveStructure[] = [
   'removableCore',
@@ -771,19 +794,27 @@ const innerTubeValveStructureOptions: readonly InnerTubeValveStructure[] = [
 ]
 const innerTubeFitmentPitfalls = ['shortValve', 'overTightenedLocknut', 'fixedCoreExtender', 'carbonHole'] as const
 
-const fitmentMode = ref<InnerTubeValveFitmentMode>('automatic')
-const rimDepth = ref(50)
+const initialInnerTubeFitmentShareState = restoreInnerTubeValveFitmentStateFromShareQuery(route.query, innerTubeFitmentMetadata.value)
+const fitmentMode = ref<InnerTubeValveFitmentMode>(initialInnerTubeFitmentShareState.fitmentMode)
+const rimDepth = ref(initialInnerTubeFitmentShareState.rimDepth)
 const rimDepthInputValue = ref(String(rimDepth.value))
-const manualValveLength = ref(60)
-const manualExtenderLength = ref(0)
-const pumpHeadGripDepth = ref(innerTubeFitmentMetadata.value?.default_pump_head_grip_depth_mm ?? 15)
+const manualValveLength = ref(initialInnerTubeFitmentShareState.manualValveLength)
+const manualExtenderLength = ref(initialInnerTubeFitmentShareState.manualExtenderLength)
+const pumpHeadGripDepth = ref(initialInnerTubeFitmentShareState.pumpHeadGripDepth)
 const pumpHeadGripDepthInputValue = ref(String(pumpHeadGripDepth.value))
-const rimDepthUncertainty = ref(innerTubeFitmentMetadata.value?.default_rim_depth_uncertainty_mm ?? 2)
+const rimDepthUncertainty = ref(initialInnerTubeFitmentShareState.rimDepthUncertainty)
 const rimDepthUncertaintyInputValue = ref(String(rimDepthUncertainty.value))
 const activeValveStructure = ref<InnerTubeValveStructure>('removableCore')
-const activeInnerTubeFitmentResult = ref<InnerTubeValveFitmentResult | null>(defaultInnerTubeFitmentResult.value)
+const activeInnerTubeFitmentResult = ref<InnerTubeValveFitmentResult | null>(
+  hasInnerTubeValveFitmentShareQueryParameters(route.query) ? null : defaultInnerTubeFitmentResult.value,
+)
 const innerTubeFitmentRequestPending = ref(false)
 const innerTubeFitmentRequestError = ref<string | null>(null)
+const activeInnerTubeFitmentResultMode = ref<InnerTubeValveFitmentMode>(fitmentMode.value)
+const innerTubeFitmentResultsAreLoading = computed(() => (
+  innerTubeFitmentMatrixPending.value || innerTubeFitmentRequestPending.value
+  || (!activeInnerTubeFitmentResult.value && !innerTubeFitmentMatrixError.value && !innerTubeFitmentRequestError.value)
+))
 const sharedCalculationCopied = ref(false)
 const sharedCalculationCopyError = ref(false)
 let innerTubeFitmentRequestSequence = 0
@@ -880,83 +911,41 @@ watch(rimDepthUncertainty, (value) => {
   rimDepthUncertaintyInputValue.value = String(value)
 })
 
-const getInnerTubeShareQueryValue = (queryKey: string) => {
-  const queryValue = route.query[queryKey]
-  if (Array.isArray(queryValue)) return queryValue[0] ?? null
-  return queryValue ?? null
-}
+const readCurrentInnerTubeValveFitmentShareState = (): InnerTubeValveFitmentShareState => ({
+  rimDepth: rimDepth.value,
+  fitmentMode: fitmentMode.value,
+  manualValveLength: manualValveLength.value,
+  manualExtenderLength: manualExtenderLength.value,
+  pumpHeadGripDepth: pumpHeadGripDepth.value,
+  rimDepthUncertainty: rimDepthUncertainty.value,
+})
 
-const normalizeInnerTubeShareInteger = (value: string | null, minimum: number, maximum: number, fallback: number) => {
-  if (value === null) return fallback
-  const parsedValue = Number(value)
-  if (!Number.isFinite(parsedValue)) return fallback
-  return Math.min(maximum, Math.max(minimum, Math.round(parsedValue)))
-}
+const restoreCurrentInnerTubeValveFitmentStateFromRoute = () => {
+  const restoredState = restoreInnerTubeValveFitmentStateFromShareQuery(route.query, innerTubeFitmentMetadata.value)
+  const currentState = readCurrentInnerTubeValveFitmentShareState()
+  const stateKeys = Object.keys(restoredState) as Array<keyof InnerTubeValveFitmentShareState>
+  if (stateKeys.every(stateKey => restoredState[stateKey] === currentState[stateKey])) return false
 
-const restoreInnerTubeFitmentStateFromShareUrl = () => {
-  const sharedRimDepth = getInnerTubeShareQueryValue('rim_depth')
-  const sharedFitmentMode = getInnerTubeShareQueryValue('fitment_mode')
-  const sharedValveLength = getInnerTubeShareQueryValue('valve_length')
-  const sharedExtenderLength = getInnerTubeShareQueryValue('extender_length')
-  const sharedPumpHeadGripDepth = getInnerTubeShareQueryValue('pump_head_grip_depth')
-  const sharedRimDepthUncertainty = getInnerTubeShareQueryValue('rim_depth_uncertainty')
-
-  if (sharedRimDepth !== null) {
-    rimDepth.value = normalizeInnerTubeShareInteger(sharedRimDepth, rimDepthMinimum.value, rimDepthMaximum.value, rimDepth.value)
-  }
-  if (sharedFitmentMode === 'automatic' || sharedFitmentMode === 'manual') {
-    fitmentMode.value = sharedFitmentMode
-  }
-
-  const supportedValveLengths = baseValveLengthOptions.value.length > 0 ? baseValveLengthOptions.value : [40, 48, 60, 80]
-  const supportedExtenderLengths = extenderLengthOptions.value.length > 0 ? extenderLengthOptions.value : [0, 20, 30, 40, 60]
-  const parsedValveLength = normalizeInnerTubeShareInteger(sharedValveLength, Math.min(...supportedValveLengths), Math.max(...supportedValveLengths), manualValveLength.value)
-  const parsedExtenderLength = normalizeInnerTubeShareInteger(sharedExtenderLength, Math.min(...supportedExtenderLengths), Math.max(...supportedExtenderLengths), manualExtenderLength.value)
-  if (supportedValveLengths.includes(parsedValveLength)) manualValveLength.value = parsedValveLength
-  if (supportedExtenderLengths.includes(parsedExtenderLength)) manualExtenderLength.value = parsedExtenderLength
-
-  pumpHeadGripDepth.value = normalizeInnerTubeShareInteger(
-    sharedPumpHeadGripDepth,
-    pumpHeadGripDepthMinimum.value,
-    pumpHeadGripDepthMaximum.value,
-    pumpHeadGripDepth.value,
-  )
-  rimDepthUncertainty.value = normalizeInnerTubeShareInteger(
-    sharedRimDepthUncertainty,
-    0,
-    rimDepthUncertaintyMaximum.value,
-    rimDepthUncertainty.value,
-  )
-  rimDepthInputValue.value = String(rimDepth.value)
-  pumpHeadGripDepthInputValue.value = String(pumpHeadGripDepth.value)
-  rimDepthUncertaintyInputValue.value = String(rimDepthUncertainty.value)
-
-  return [
-    sharedRimDepth,
-    sharedFitmentMode,
-    sharedValveLength,
-    sharedExtenderLength,
-    sharedPumpHeadGripDepth,
-    sharedRimDepthUncertainty,
-  ].some(value => value !== null)
-}
-
-const initialInnerTubeFitmentStateWasRestored = restoreInnerTubeFitmentStateFromShareUrl()
-if (initialInnerTubeFitmentStateWasRestored) {
-  activeInnerTubeFitmentResult.value = null
+  rimDepth.value = restoredState.rimDepth
+  fitmentMode.value = restoredState.fitmentMode
+  manualValveLength.value = restoredState.manualValveLength
+  manualExtenderLength.value = restoredState.manualExtenderLength
+  pumpHeadGripDepth.value = restoredState.pumpHeadGripDepth
+  rimDepthUncertainty.value = restoredState.rimDepthUncertainty
+  rimDepthInputValue.value = String(restoredState.rimDepth)
+  pumpHeadGripDepthInputValue.value = String(restoredState.pumpHeadGripDepth)
+  rimDepthUncertaintyInputValue.value = String(restoredState.rimDepthUncertainty)
+  return true
 }
 
 const updateInnerTubeFitmentShareUrl = async () => {
   if (!import.meta.client) return
   await router.replace({
+    path: route.path,
+    hash: route.hash,
     query: {
       ...route.query,
-      rim_depth: String(rimDepth.value),
-      fitment_mode: fitmentMode.value,
-      valve_length: String(manualValveLength.value),
-      extender_length: String(manualExtenderLength.value),
-      pump_head_grip_depth: String(pumpHeadGripDepth.value),
-      rim_depth_uncertainty: String(rimDepthUncertainty.value),
+      ...createInnerTubeValveFitmentShareQueryParameters(readCurrentInnerTubeValveFitmentShareState()),
     },
   })
 }
@@ -1009,7 +998,8 @@ const commitInnerTubeRimDepthInput = () => {
 const requestCurrentInnerTubeFitmentResult = async (options: { updateShareUrl?: boolean } = {}) => {
   if (options.updateShareUrl !== false) void updateInnerTubeFitmentShareUrl()
   const requestSequence = ++innerTubeFitmentRequestSequence
-  activeInnerTubeFitmentResult.value = null
+  // Keep the last successful panels mounted while the next result is pending.
+  const requestedFitmentMode = fitmentMode.value
   innerTubeFitmentRequestPending.value = true
   innerTubeFitmentRequestError.value = null
   sharedCalculationCopied.value = false
@@ -1017,7 +1007,7 @@ const requestCurrentInnerTubeFitmentResult = async (options: { updateShareUrl?: 
   try {
     const result = await solveInnerTubeValveFitmentWithBackend({
       rim_depth_mm: rimDepth.value,
-      mode: fitmentMode.value,
+      mode: requestedFitmentMode,
       pump_head_grip_depth_mm: pumpHeadGripDepth.value,
       rim_depth_uncertainty_mm: rimDepthUncertainty.value,
       ...(fitmentMode.value === 'manual'
@@ -1029,6 +1019,7 @@ const requestCurrentInnerTubeFitmentResult = async (options: { updateShareUrl?: 
     })
     if (requestSequence === innerTubeFitmentRequestSequence) {
       activeInnerTubeFitmentResult.value = result
+      activeInnerTubeFitmentResultMode.value = requestedFitmentMode
     }
   } catch (error) {
     if (requestSequence === innerTubeFitmentRequestSequence) {
@@ -1112,6 +1103,14 @@ const copyInnerTubeFitmentShareLink = async () => {
   }
 }
 
+watch(() => readInnerTubeValveFitmentShareQueryParameterSignature(route.query), () => {
+  // Local edits already issued a solve request before replacing the URL.
+  // History or another shared URL needs a new request, without rewriting it.
+  if (restoreCurrentInnerTubeValveFitmentStateFromRoute()) {
+    void requestCurrentInnerTubeFitmentResult({ updateShareUrl: false })
+  }
+})
+
 onMounted(() => {
   void requestCurrentInnerTubeFitmentResult({ updateShareUrl: false })
 })
@@ -1119,6 +1118,15 @@ onMounted(() => {
 const innerTubeFitmentCalculatorApplicationId = computed(() => `${canonicalUrl.value}#inner-tube-fitment-calculator`)
 const innerTubeFitmentHowToId = computed(() => `${canonicalUrl.value}#inner-tube-fitment-how-to`)
 const innerTubeFitmentMatrixDatasetId = computed(() => `${canonicalUrl.value}#inner-tube-fitment-matrix`)
+
+const innerTubeFitmentVisibleHowToSteps = computed(() => [
+  'measureRim', 'measurePumpGrip', 'setMeasurementUncertainty',
+  'chooseSelectionMode', 'reviewReferenceMatrix', 'confirmHardwareCompatibility',
+].map((stepKey, index) => ({
+  sectionId: `inner-tube-fitment-how-to-step-${index + 1}`,
+  name: t(`guidesTireInnerTube.calculatorInstructions.steps.${stepKey}.name`),
+  text: t(`guidesTireInnerTube.calculatorInstructions.steps.${stepKey}.text`),
+})))
 
 const innerTubeFitmentInputParameterProperties = computed(() => [
   {
@@ -1196,32 +1204,16 @@ const innerTubeFitmentOutputParameterProperties = computed(() => [
 ])
 
 const innerTubeFitmentJsonLd = computed(() => {
-  const articleId = `${canonicalUrl.value}#inner-tube-valve-fitment-engine`
+  const articleId = `${canonicalUrl.value}#inner-tube-guide`
 
   return {
     '@context': 'https://schema.org',
     '@graph': [
       {
-        '@type': 'TechArticle',
-        '@id': articleId,
-        url: canonicalUrl.value,
-        mainEntityOfPage: canonicalUrl.value,
-        mainEntity: { '@id': innerTubeFitmentCalculatorApplicationId.value },
-        headline: t('guidesTireInnerTube.fitment.title'),
-        description: t('guidesTireInnerTube.fitment.description'),
-        proficiencyLevel: 'Expert',
-        inLanguage: innerTubeFitmentSchemaLanguage.value,
-        author: { '@type': 'Organization', name: 'Tanzanite Engineering Laboratory' },
-        articleBody: t('guidesTireInnerTube.fitment.description'),
-        hasPart: [
-          { '@id': innerTubeFitmentHowToId.value },
-          { '@id': innerTubeFitmentMatrixDatasetId.value },
-        ],
-      },
-      {
         '@type': 'WebApplication',
         '@id': innerTubeFitmentCalculatorApplicationId.value,
-        url: canonicalUrl.value,
+        url: innerTubeFitmentCalculatorApplicationId.value,
+        isPartOf: { '@id': articleId },
         mainEntityOfPage: canonicalUrl.value,
         name: t('guidesTireInnerTube.fitment.title'),
         description: t('guidesTireInnerTube.fitment.description'),
@@ -1245,53 +1237,23 @@ const innerTubeFitmentJsonLd = computed(() => {
         '@type': 'HowTo',
         '@id': innerTubeFitmentHowToId.value,
         url: `${canonicalUrl.value}#inner-tube-fitment-how-to`,
-        name: t('guidesTireInnerTube.fitment.title'),
+        name: t('guidesTireInnerTube.calculatorInstructions.title'),
         description: t('guidesTireInnerTube.fitment.description'),
         inLanguage: innerTubeFitmentSchemaLanguage.value,
-        step: [
-          {
-            '@type': 'HowToStep',
-            name: t('guidesTireInnerTube.fitment.controls.measurementNoteTitle'),
-            text: t('guidesTireInnerTube.fitment.controls.measurementNote', { tolerance: rimDepthUncertainty.value }),
-          },
-          {
-            '@type': 'HowToStep',
-            name: t('guidesTireInnerTube.fitment.controls.pumpHeadGripDepth'),
-            text: t('guidesTireInnerTube.fitment.controls.pumpHeadGripDepthRange', {
-              min: pumpHeadGripDepthMinimum.value,
-              max: pumpHeadGripDepthMaximum.value,
-            }),
-          },
-          {
-            '@type': 'HowToStep',
-            name: t('guidesTireInnerTube.fitment.controls.rimDepthUncertainty'),
-            text: t('guidesTireInnerTube.fitment.controls.rimDepthUncertaintyRange', {
-              max: rimDepthUncertaintyMaximum.value,
-            }),
-          },
-          {
-            '@type': 'HowToStep',
-            name: t('guidesTireInnerTube.fitment.controls.modeLabel'),
-            text: `${t('guidesTireInnerTube.fitment.metrics.automaticRecommendation')} ${t('guidesTireInnerTube.fitment.metrics.manualSelection')}`,
-          },
-          {
-            '@type': 'HowToStep',
-            name: t('guidesTireInnerTube.fitment.matrix.title'),
-            text: t('guidesTireInnerTube.fitment.matrix.description'),
-          },
-          {
-            '@type': 'HowToStep',
-            name: t('guidesTireInnerTube.fitment.pitfalls.title'),
-            text: innerTubeFitmentPitfalls
-              .map(pitfall => t(`guidesTireInnerTube.fitment.pitfalls.items.${pitfall}.rule`))
-              .join(' '),
-          },
-        ],
+        isPartOf: { '@id': articleId },
+        step: innerTubeFitmentVisibleHowToSteps.value.map((step, index) => ({
+          '@type': 'HowToStep',
+          position: index + 1,
+          url: `${canonicalUrl.value}#${step.sectionId}`,
+          name: step.name,
+          text: step.text,
+        })),
       },
       {
         '@type': 'Dataset',
         '@id': innerTubeFitmentMatrixDatasetId.value,
-        url: canonicalUrl.value,
+        url: innerTubeFitmentMatrixDatasetId.value,
+        isPartOf: { '@id': articleId },
         name: t('guidesTireInnerTube.fitment.matrix.title'),
         description: t('guidesTireInnerTube.fitment.matrix.description'),
         isAccessibleForFree: true,
@@ -1312,11 +1274,47 @@ const innerTubeFitmentJsonLd = computed(() => {
 })
 
 useHead(() => ({
-  script: [createSeoJsonLdScript(innerTubeFitmentJsonLd.value)],
+  script: [{ ...createSeoJsonLdScript(innerTubeFitmentJsonLd.value), key: 'bicycle-inner-tube-fitment-tool-schema', id: 'bicycle-inner-tube-fitment-tool-schema' }],
 }))
 </script>
 
 <style scoped>
+.inner-tube-fitment-request-status {
+  min-height: 1.25rem;
+}
+
+.inner-tube-fitment-initial-result-skeleton,
+.inner-tube-fitment-result-metrics--initial-skeleton > div {
+  position: relative;
+  overflow: hidden;
+}
+
+.inner-tube-fitment-initial-result-skeleton > *,
+.inner-tube-fitment-result-metrics--initial-skeleton > div > * {
+  visibility: hidden;
+}
+
+.inner-tube-fitment-initial-result-skeleton::after,
+.inner-tube-fitment-result-metrics--initial-skeleton > div::after {
+  position: absolute;
+  inset: 0.75rem;
+  border-radius: 0.5rem;
+  background: repeating-linear-gradient(
+    to bottom,
+    var(--tz-border-subtle) 0 0.75rem,
+    transparent 0.75rem 1.75rem
+  );
+  content: '';
+}
+
+.inner-tube-fitment-result-visualization.inner-tube-fitment-initial-result-skeleton::after {
+  background: var(--tz-border-subtle);
+}
+
+.inner-tube-fitment-guide #inner-tube-fitment-how-to p {
+  text-align: left;
+}
+
 .inner-tube-fitment-svg-label,
 .inner-tube-fitment-svg-value {
   font-family: var(--tz-font-ui);

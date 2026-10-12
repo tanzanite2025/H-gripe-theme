@@ -14,5 +14,7 @@
   "dynamicTirePressureCalculatorLabel": "حاسبة ضغط الإطارات الديناميكية",
   "dynamicTirePressureCalculatorDescription": "استكشف كيف يغيّر الحمل والضغط والسرعة والميل مساحة تلامس الإطار وقوة الانعطاف المقدّرة.",
   "spokeStressReliefMechanicsLabel": "Stainless steel spoke stress-relief mechanics",
-  "spokeStressReliefMechanicsDescription": "Calculate axial spoke elongation from material, section, length, and working tension inputs with the full engineering context."
+  "spokeStressReliefMechanicsDescription": "Calculate axial spoke elongation from material, section, length, and working tension inputs with the full engineering context.",
+  "valveLengthFitmentCalculatorLabel": "Inner tube valve-length fitment calculator",
+  "valveLengthFitmentCalculatorDescription": "Complete inner-tube size, valve, material, and deep-rim valve-length guidance with an interactive fitment calculator."
 }

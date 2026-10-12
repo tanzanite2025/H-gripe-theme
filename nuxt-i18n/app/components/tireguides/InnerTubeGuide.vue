@@ -1,11 +1,23 @@
 <template>
-  <div class="inner-tube-guide space-y-5 md:space-y-6">
+  <article id="inner-tube-guide" tabindex="-1" class="inner-tube-guide space-y-5 md:space-y-6" :lang="innerTubeGuideActualContentLanguageTag">
+    <header class="rounded-2xl bg-[var(--tz-card-surface)] p-4 text-left shadow-md md:p-5">
+      <h1 class="text-2xl font-bold leading-tight tz-text-primary md:text-3xl">{{ t('guidesTireInnerTube.page.title') }}</h1>
+      <p class="mt-3 max-w-4xl text-sm leading-relaxed tz-text-secondary">{{ t('guidesTireInnerTube.page.summary') }}</p>
+      <p v-if="siteTitle.trim()" class="mt-2 text-xs tz-text-muted">{{ t('guidesTireInnerTube.page.publisher', { brand: siteTitle.trim() }) }}</p>
+      <nav :aria-label="t('guidesTireInnerTube.page.contentsLabel')" class="mt-4 border-t tz-border-subtle pt-3">
+        <ul class="flex flex-wrap gap-x-5 gap-y-2 text-xs font-semibold">
+          <li v-for="section in innerTubeGuideContentSectionLinks" :key="section.id">
+            <a :href="router.resolve(createInnerTubeGuideContentSectionRouteLocation(section.id)).href" class="tz-text-primary underline underline-offset-4" @click="navigateToInnerTubeGuideContentSection(section.id, $event)">{{ t(`guidesTireInnerTube.page.contents.${section.labelKey}`) }}</a>
+          </li>
+        </ul>
+      </nav>
+    </header>
     <div class="rounded-2xl bg-[var(--tz-card-surface)] p-2 shadow-md md:p-3">
       <ReusablePageSectionUnderlineTabs
         :tabs="innerTubeGuideSectionTabs"
         :active-id="activeInnerTubeGuideTab"
         :tab-list-label="t('guidesTireInnerTube.tabs.ariaLabel')"
-        @select="activeInnerTubeGuideTab = $event"
+        @select="selectInnerTubeGuideContentPanel"
       />
       <p class="mt-2 px-2 text-center text-xs leading-relaxed tz-text-secondary">
         {{ activeInnerTubeGuideTab === 'introduction'
@@ -16,20 +28,21 @@
 
     <div
       id="inner-tube-introduction-panel"
+      tabindex="-1"
       v-show="activeInnerTubeGuideTab === 'introduction'"
       role="tabpanel"
       aria-labelledby="inner-tube-introduction-tab"
       class="space-y-5 md:space-y-6"
     >
     <!-- Step 1: Search / Intro Card -->
-     <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-md p-3 md:p-4">
+     <section id="inner-tube-size" tabindex="-1" class="rounded-2xl bg-[var(--tz-card-surface)] shadow-md p-3 md:p-4">
        <div class="flex items-center justify-between gap-3">
         <div class="min-w-0 text-left">
           <div class="sizecharts-section__step-header sizecharts-section__step-header--compact !mb-1 justify-start">
             <span class="sizecharts-section__step-badge">1</span>
-            <h3 class="sizecharts-section__step-title">
+            <h2 class="sizecharts-section__step-title">
               {{ t('guidesTireInnerTube.steps.size.title') }}
-            </h3>
+            </h2>
           </div>
 
           <p class="tz-text-secondary text-xs leading-snug">
@@ -47,17 +60,23 @@
         </button>
        </div>
        </div>
-    </div>
+       <div class="mt-3 space-y-2 border-t tz-border-subtle pt-3 text-left text-sm leading-relaxed tz-text-secondary">
+         <p>{{ t('guidesTireInnerTube.steps.size.etrtoExample') }}</p>
+         <p>{{ t('guidesTireInnerTube.steps.size.widthRangeExample') }}</p>
+         <p>{{ t('guidesTireInnerTube.steps.size.markingCaution') }}</p>
+         <NuxtLink :to="localePath('/guides/tireguides/tire-size-markings')" class="inline-block font-semibold tz-text-primary underline underline-offset-4">{{ t('guidesTireInnerTube.steps.size.markingsLink') }}</NuxtLink>
+       </div>
+    </section>
 
 
     <!-- Step 2: Valve Selection Card -->
-    <div class="rounded-2xl bg-[var(--tz-card-surface)] p-4 text-left shadow-md md:p-5">
+    <section id="inner-tube-valves" tabindex="-1" class="rounded-2xl bg-[var(--tz-card-surface)] p-4 text-left shadow-md md:p-5">
       <div class="sizecharts-section__step-header sizecharts-section__step-header--compact justify-start">
         <span class="sizecharts-section__step-badge">2</span>
         <div>
-          <h3 class="sizecharts-section__step-title">
+          <h2 class="sizecharts-section__step-title">
             {{ t('guidesTireInnerTube.steps.valve.title') }}
-          </h3>
+          </h2>
           <p class="mt-1 text-xs leading-relaxed tz-text-secondary">
             {{ t('guidesTireInnerTube.valves.introduction') }}
           </p>
@@ -99,9 +118,9 @@
 
       <div class="mt-4 grid grid-cols-1 gap-3 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
         <section class="rounded-xl border tz-border-subtle p-3">
-          <h4 class="text-sm font-bold tz-text-primary">
+          <h3 class="text-sm font-bold tz-text-primary">
             {{ t('guidesTireInnerTube.valves.measure.title') }}
-          </h4>
+          </h3>
           <ol class="mt-2 space-y-2 text-xs leading-relaxed tz-text-secondary">
             <li class="flex gap-2">
               <span class="font-bold tz-text-primary">1.</span>
@@ -122,9 +141,9 @@
         </section>
 
         <section class="rounded-xl border tz-border-subtle p-3">
-          <h4 class="text-sm font-bold tz-text-primary">
+          <h3 class="text-sm font-bold tz-text-primary">
             {{ t('guidesTireInnerTube.valves.holeReference.title') }}
-          </h4>
+          </h3>
           <div class="mt-2 overflow-hidden rounded-lg border tz-border-subtle">
             <table class="min-w-full text-left text-[11px] leading-relaxed">
               <thead class="tz-surface-muted">
@@ -156,28 +175,28 @@
       </div>
 
       <div class="mt-3 rounded-xl border border-sky-200/70 bg-sky-50/70 p-3">
-        <h4 class="text-sm font-bold text-sky-950">
+        <h3 class="text-sm font-bold text-sky-950">
           {{ t('guidesTireInnerTube.valves.tubeless.title') }}
-        </h4>
+        </h3>
         <p class="mt-1 text-xs leading-relaxed text-sky-950/80">
           {{ t('guidesTireInnerTube.valves.tubeless.description') }}
         </p>
       </div>
-    </div>
+    </section>
 
     <!-- Step 3: Tube Type Selection -->
-     <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-md p-4 md:p-5 text-center">
+     <section id="inner-tube-materials" tabindex="-1" class="rounded-2xl bg-[var(--tz-card-surface)] shadow-md p-4 md:p-5 text-center">
        <div class="sizecharts-section__step-header sizecharts-section__step-header--compact">
          <span class="sizecharts-section__step-badge">3</span>
-           <h3 class="sizecharts-section__step-title">
+           <h2 class="sizecharts-section__step-title">
              {{ t('guidesTireInnerTube.steps.model.title') }}
-           </h3>
+           </h2>
        </div>
 
        <div class="mb-5">
-         <h4 class="text-sm font-semibold tz-text-primary">
+         <h3 class="text-sm font-semibold tz-text-primary">
            {{ t('guidesTireInnerTube.materials.title') }}
-         </h4>
+         </h3>
          <p class="mx-auto mt-1 max-w-3xl text-xs leading-relaxed tz-text-secondary">
            {{ t('guidesTireInnerTube.materials.description') }}
          </p>
@@ -241,15 +260,15 @@
               </p>
           </div>
        </div>
-    </div>
+    </section>
 
-    <div class="rounded-2xl border border-amber-200/70 bg-amber-50/60 p-4 text-left shadow-md md:p-5">
+    <section id="inner-tube-installation-details" tabindex="-1" class="rounded-2xl border border-amber-200/70 bg-amber-50/60 p-4 text-left shadow-md md:p-5">
       <div class="sizecharts-section__step-header sizecharts-section__step-header--compact justify-start">
         <span class="sizecharts-section__step-badge !bg-amber-100 !text-amber-700">!</span>
         <div>
-          <h3 class="sizecharts-section__step-title">
+          <h2 class="sizecharts-section__step-title">
             {{ t('guidesTireInnerTube.advanced.title') }}
-          </h3>
+          </h2>
           <p class="mt-1 text-xs leading-relaxed tz-text-secondary">
             {{ t('guidesTireInnerTube.advanced.description') }}
           </p>
@@ -258,9 +277,9 @@
 
       <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
         <article class="rounded-xl border border-amber-200/70 bg-[var(--tz-card-surface)] p-3">
-          <h4 class="text-sm font-bold tz-text-primary">
+          <h3 class="text-sm font-bold tz-text-primary">
             {{ t('guidesTireInnerTube.advanced.carbonValveHole.title') }}
-          </h4>
+          </h3>
           <p class="mt-1 text-xs leading-relaxed tz-text-secondary">
             {{ t('guidesTireInnerTube.advanced.carbonValveHole.description') }}
           </p>
@@ -270,9 +289,9 @@
         </article>
 
         <article class="rounded-xl border border-amber-200/70 bg-[var(--tz-card-surface)] p-3">
-          <h4 class="text-sm font-bold tz-text-primary">
+          <h3 class="text-sm font-bold tz-text-primary">
             {{ t('guidesTireInnerTube.advanced.co2Seal.title') }}
-          </h4>
+          </h3>
           <p class="mt-1 text-xs leading-relaxed tz-text-secondary">
             {{ t('guidesTireInnerTube.advanced.co2Seal.description') }}
           </p>
@@ -281,12 +300,13 @@
           </p>
         </article>
       </div>
-    </div>
+    </section>
 
     </div>
 
     <div
       id="inner-tube-calculator-panel"
+      tabindex="-1"
       v-show="activeInnerTubeGuideTab === 'calculator'"
       role="tabpanel"
       aria-labelledby="inner-tube-calculator-tab"
@@ -294,20 +314,37 @@
     >
       <InnerTubeValveLengthAndExtenderFitmentGuide />
     </div>
-  </div>
+    <section id="inner-tube-guide-references" tabindex="-1" class="rounded-2xl bg-[var(--tz-card-surface)] p-4 text-left shadow-md md:p-5">
+      <h2 class="text-base font-bold tz-text-primary">{{ t('guidesTireInnerTube.references.title') }}</h2>
+      <ul class="mt-3 space-y-3 text-sm leading-relaxed tz-text-secondary">
+        <li v-for="(referenceUrl, index) in bicycleInnerTubeGuideManufacturerReferenceUrls" :key="referenceUrl">
+          <span class="font-semibold tz-text-primary">{{ t(`guidesTireInnerTube.references.source${index + 1}.title`) }}</span>
+          <p class="mt-1">{{ t(`guidesTireInnerTube.references.source${index + 1}.description`) }}</p>
+        </li>
+      </ul>
+      <p class="mt-3 text-xs leading-relaxed tz-text-muted">{{ t('guidesTireInnerTube.references.scope') }}</p>
+    </section>
+  </article>
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
-import { useI18n } from '#imports'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import { useHead, useI18n, useLocalePath, useRoute, useRouter } from '#imports'
 import GuideImage from '~/components/GuideImage.vue'
 import { useShopSearchSheet } from '~/composables/useShopSearchSheet'
 import { usePageMessages } from '~/composables/usePageMessages'
 import englishInnerTubeGuideMessages from '~/i18n/page-messages/guidesTireInnerTube/en.json'
 import InnerTubeValveLengthAndExtenderFitmentGuide from '~/components/tireguides/InnerTubeValveLengthAndExtenderFitmentGuide.vue'
 import ReusablePageSectionUnderlineTabs from '~/components/ReusablePageSectionUnderlineTabs.vue'
+import { getInnerTubeGuideActualContentLanguageTag, readInnerTubeGuideRouteLocaleCode } from '~/utils/seo/innerTubeGuidePublishedLocaleIndexingPolicy'
+import { innerTubeGuideContentSectionLinks, isInnerTubeGuideContentSectionHash, resolveInnerTubeGuideContentPanelFromRouteLocation, resolveInnerTubeGuideContentPanelFromSectionHash, resolveInnerTubeGuideContentSectionIdFromHash } from '~/utils/innerTubeGuideContentSectionNavigation'
+import { bicycleInnerTubeGuideManufacturerReferenceUrls, createBicycleInnerTubeGuideArticleAndBreadcrumbStructuredData } from '~/utils/seo/createBicycleInnerTubeGuideArticleAndBreadcrumbStructuredData'
+import { useStorefrontSeoLinks } from '~/composables/seo/useStorefrontSeoLinks'
+import { useSiteTitle } from '~/composables/useSiteTitle'
+import { createSeoJsonLdScript } from '~/utils/seo/jsonLd'
 
 const { locale, t, getLocaleMessage, mergeLocaleMessage } = useI18n()
+const innerTubeGuideActualContentLanguageTag = computed(() => getInnerTubeGuideActualContentLanguageTag(locale.value))
 const { loadPageMessages } = usePageMessages('guidesTireInnerTube')
 
 const loadInnerTubeGuideMessagesWithEnglishFallback = async (targetLocale: string) => {
@@ -332,7 +369,89 @@ watch(locale, (nextLocale) => {
 }, { flush: 'sync' })
 
 const { open: openShopSearchSheet } = useShopSearchSheet()
-const activeInnerTubeGuideTab = ref<'introduction' | 'calculator'>('introduction')
+const route = useRoute()
+const router = useRouter()
+const localePath = useLocalePath()
+const { siteTitle } = useSiteTitle()
+const { canonicalUrl } = useStorefrontSeoLinks()
+const isStandaloneInnerTubeToolPage = computed(() => readInnerTubeGuideRouteLocaleCode(route.path) !== null)
+const innerTubeGuideBreadcrumbs = computed(() => [
+  { name: t('guidesTireInnerTube.page.home'), path: localePath('/') },
+  {
+    name: isStandaloneInnerTubeToolPage.value
+      ? t('guidesTireInnerTube.page.tools')
+      : t('guidesTireInnerTube.page.tireGuides'),
+    path: localePath(isStandaloneInnerTubeToolPage.value ? '/tools' : '/guides/tireguides'),
+  },
+  { name: t('guidesTireInnerTube.page.title'), path: new URL(canonicalUrl.value).pathname },
+].map(breadcrumb => ({ ...breadcrumb, url: new URL(breadcrumb.path, canonicalUrl.value).toString() })))
+
+useHead(() => ({
+  script: [{
+    ...createSeoJsonLdScript(createBicycleInnerTubeGuideArticleAndBreadcrumbStructuredData({
+      canonicalUrl: canonicalUrl.value,
+      headline: t('guidesTireInnerTube.page.title'),
+      description: t('guidesTireInnerTube.page.summary'),
+      inLanguage: innerTubeGuideActualContentLanguageTag.value,
+      publisherName: siteTitle.value,
+      imageCaption: t('guidesTireInnerTube.valves.imageOverviewAlt'),
+      breadcrumbs: innerTubeGuideBreadcrumbs.value,
+    })),
+    key: 'bicycle-inner-tube-guide-article-and-breadcrumbs',
+    id: 'bicycle-inner-tube-guide-article-and-breadcrumbs',
+  }],
+}))
+
+// Fragments are not sent to the server. Resolve them after hydration so the
+// initial client markup agrees with SSR, then reveal the requested tab.
+const innerTubeGuideContentNavigationMounted = ref(false)
+const activeInnerTubeGuideTab = computed(() => resolveInnerTubeGuideContentPanelFromRouteLocation(
+  route.query, innerTubeGuideContentNavigationMounted.value ? route.hash : '',
+))
+
+async function revealAndFocusInnerTubeGuideContentSectionFromHash(hash: string) {
+  if (!innerTubeGuideContentNavigationMounted.value || !isInnerTubeGuideContentSectionHash(hash)) return
+  await nextTick()
+  if (route.hash !== hash) return
+  const section = document.getElementById(resolveInnerTubeGuideContentSectionIdFromHash(hash))
+  section?.scrollIntoView({ block: 'start', behavior: 'instant' })
+  section?.focus({ preventScroll: true })
+}
+
+function createInnerTubeGuideContentSectionRouteLocation(sectionId: string) {
+  const hash = `#${sectionId}`
+  const requestedPanel = resolveInnerTubeGuideContentPanelFromSectionHash(hash)
+  return {
+    path: route.path,
+    query: requestedPanel ? { ...route.query, tab: requestedPanel } : route.query,
+    hash,
+  }
+}
+
+async function navigateToInnerTubeGuideContentSection(sectionId: string, event: MouseEvent) {
+  if (event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return
+  event.preventDefault()
+  const targetLocation = createInnerTubeGuideContentSectionRouteLocation(sectionId)
+  if (router.resolve(targetLocation).fullPath === route.fullPath) {
+    await revealAndFocusInnerTubeGuideContentSectionFromHash(targetLocation.hash)
+    return
+  }
+  const isCurrentSectionHash = route.hash === targetLocation.hash
+  await router.push(targetLocation)
+  if (isCurrentSectionHash) await revealAndFocusInnerTubeGuideContentSectionFromHash(targetLocation.hash)
+}
+
+async function selectInnerTubeGuideContentPanel(panel: string) {
+  if (panel !== 'introduction' && panel !== 'calculator') return
+  // Keep both the server-visible tab and browser section intent consistent.
+  await router.push(createInnerTubeGuideContentSectionRouteLocation(`inner-tube-${panel}-panel`))
+}
+
+watch(() => route.hash, hash => { void revealAndFocusInnerTubeGuideContentSectionFromHash(hash) }, { flush: 'post' })
+onMounted(() => {
+  innerTubeGuideContentNavigationMounted.value = true
+  void revealAndFocusInnerTubeGuideContentSectionFromHash(route.hash)
+})
 const innerTubeGuideSectionTabs = computed(() => [
   {
     id: 'introduction' as const,
@@ -364,3 +483,15 @@ const openInnerTubeSearch = () => {
   })
 }
 </script>
+
+<style scoped>
+.inner-tube-guide :deep([id]) {
+  scroll-margin-top: calc(var(--tz-site-header-spacer-height, 0px) + 1rem);
+}
+
+.inner-tube-guide > header p,
+.inner-tube-guide #inner-tube-size p,
+.inner-tube-guide #inner-tube-guide-references p {
+  text-align: left;
+}
+</style>

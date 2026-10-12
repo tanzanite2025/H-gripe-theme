@@ -71,6 +71,7 @@ export const storefrontRetiredPagePaths: readonly string[] = [
   '/guides/wheelset-spoke-lacing-topology-and-geometry-reference',
   '/resources/wheelset-spoke-lacing-topology-and-geometry-reference',
   '/guides/tireguides/tire-pressure',
+  '/guides/tireguides/choose-inner-tube',
   '/guides/spokeguides',
   '/guides/spokeguides/stainless-steel-microstructural-dislocation-mechanics',
 ]

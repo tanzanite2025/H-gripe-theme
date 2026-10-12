@@ -61,6 +61,10 @@ const sections = createFooterMenusFromRoutes([
     footerLabelKey: 'toolsNavigation.spokeStressReliefMechanicsLabel',
     footerLabelFallback: 'Stainless steel spoke stress-relief mechanics',
   }),
+  createNormalizedFooterTestRoute('/tools/valve-length-fitment-calculator', 'tools-valve-length-fitment-calculator', {
+    footerLabelKey: 'toolsNavigation.valveLengthFitmentCalculatorLabel',
+    footerLabelFallback: 'Inner tube valve-length fitment calculator',
+  }),
   createNormalizedFooterTestRoute('/guides/tireguides', 'guides-tireguides', {
     footerLabelKey: 'products.nav.tireSizeCharts',
     footerLabelFallback: 'Tire Guides',
@@ -90,13 +94,14 @@ assert.deepEqual(flattenFooterNavigationItems(toolsSection.links).map(link => li
   '/tools/spoke-lacing-topology-simulator',
   '/tools/dynamic-tire-pressure-calculator',
   '/tools/spoke-stress-relief-mechanics',
+  '/tools/valve-length-fitment-calculator',
 ], 'TOOLS child list must contain only concrete tools, without a duplicate hub')
 assert.ok(guidesSection, 'GUIDES column should be discovered from its static descendant pages')
 
 const tireGuidesGroup = guidesSection.links.find(link => link.to === '/guides/tireguides')
 assert.ok(tireGuidesGroup, 'Tire Guides should retain its real landing page')
 assert.equal(tireGuidesGroup.fallback, 'Tire Guides')
-assert.equal(tireGuidesGroup.children?.length, 6, 'Only remaining tire guide tabs should be listed')
+assert.equal(tireGuidesGroup.children?.length, 5, 'Only remaining tire guide tabs should be listed')
 assert.deepEqual(
   tireGuidesGroup.children?.map(link => link.to),
   [
@@ -105,7 +110,6 @@ assert.deepEqual(
     '/guides/tireguides/schwalbe-tire-circumference',
     '/guides/tireguides/tubeless',
     '/guides/tireguides/tire-rim-width-compatibility',
-    '/guides/tireguides/choose-inner-tube',
   ],
 )
 

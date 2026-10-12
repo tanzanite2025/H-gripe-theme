@@ -14,5 +14,7 @@
   "dynamicTirePressureCalculatorLabel": "เครื่องคำนวณแรงดันลมยางแบบไดนามิก",
   "dynamicTirePressureCalculatorDescription": "ดูว่าภาระ แรงดัน ความเร็ว และมุมเอียงเปลี่ยนพื้นที่สัมผัสยางและแรงขณะเข้าโค้งที่ประเมินไว้อย่างไร",
   "spokeStressReliefMechanicsLabel": "Stainless steel spoke stress-relief mechanics",
-  "spokeStressReliefMechanicsDescription": "Calculate axial spoke elongation from material, section, length, and working tension inputs with the full engineering context."
+  "spokeStressReliefMechanicsDescription": "Calculate axial spoke elongation from material, section, length, and working tension inputs with the full engineering context.",
+  "valveLengthFitmentCalculatorLabel": "Inner tube valve-length fitment calculator",
+  "valveLengthFitmentCalculatorDescription": "Complete inner-tube size, valve, material, and deep-rim valve-length guidance with an interactive fitment calculator."
 }

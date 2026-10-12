@@ -16,9 +16,9 @@
 
 ## 本批实施与后续顺序（2026-10-12）
 
-已完成工具大厅、Schwalbe、品牌轮组辐条规格、辐条长度计算器、轮组编法拓扑、动态胎压与不锈钢辐条应力释放力学整页迁移。大厅展示六项已有完整工具，不预建空分类，不展示规划工具卡片。SPOKEGUIDES 已清空，分类路由 `/guides/spokeguides` 与其唯一子页旧路径均退役为 404；后续新增辐条指南必须先有独立完整内容，不得恢复一个空分类路由。
+已完成工具大厅、Schwalbe、品牌轮组辐条规格、辐条长度计算器、轮组编法拓扑、动态胎压、不锈钢辐条应力释放力学和内胎气门嘴匹配整页迁移。大厅展示八项已有完整工具，不预建空分类，不展示规划工具卡片。SPOKEGUIDES 已清空，分类路由 `/guides/spokeguides` 与其唯一子页旧路径均退役为 404；后续新增辐条指南必须先有独立完整内容，不得恢复一个空分类路由。
 
-- 新路由：`/tools`、`/tools/schwalbe-tire-selector`、`/tools/brand-wheelset-spoke-specs`、`/tools/spoke-length-calculator`、`/tools/spoke-lacing-topology-simulator`、`/tools/dynamic-tire-pressure-calculator`、`/tools/spoke-stress-relief-mechanics`；已迁移旧路径及其全部语言、查询参数变体退役为 404，不设置 301、路由别名或兼容页面。
+- 新路由：`/tools`、`/tools/schwalbe-tire-selector`、`/tools/brand-wheelset-spoke-specs`、`/tools/spoke-length-calculator`、`/tools/spoke-lacing-topology-simulator`、`/tools/dynamic-tire-pressure-calculator`、`/tools/spoke-stress-relief-mechanics`、`/tools/valve-length-fitment-calculator`；已迁移旧路径及其全部语言、查询参数变体退役为 404，不设置 301、路由别名或兼容页面。
 - Schwalbe 介绍、搜索、筛选、结果卡片、原生分页、来源日期和限制继续复用同一个组件。组件目录和翻译 namespace 不因公开路由迁移重命名。回归发现并修复筛选抽屉 `canApply` 默认值导致按钮禁用，以及可见条件不变时旧查询参数未清理的两个既有问题；目录查询与工程算法不变。
 - FAQ manifest key 保留 `guides-tireguides-schwalbe-tire-selector`，page_id 保留 `guides-schwalbe-tire-selector`。后台启动自动同步路由台账与 FAQ；已有问答、标题和编辑分组保留。上线需确认启动同步成功，失败可使用已有 URL 台账同步或 FAQ routes/sync。
 - canonical/hreflang 使用新路径；仅合法 `page=N>1` 保留可收录分页，筛选与搜索为 `noindex,follow`。Sitemap 排除退役旧路径和已有重定向源路径，防止未同步 FAQ 再写入旧 URL。
@@ -28,9 +28,10 @@
 - 辐条长度已完成整页迁移：五步输入向导与第六步计算结果、参数说明、测量图示、数据目录和反馈整体保留。FAQ key、page_id、反馈键均保留 `guides-spokeguides-spoke-length-calculator`；正文只发布中英文，其他 18 种语言可访问但 `noindex,follow`，hreflang 与最终 sitemap 只声明中英文及 x-default。
 - 轮组编法拓扑已整页迁移：头型、孔位、交叉数、2:1/G3、双法兰参数、视图、图层、SVG/剖面及工程说明一起保留。FAQ manifest key 仍为 `guides-wheelset-buyers-spoke-lacing-topology`，真实 page_id 仍为 `resources-wheelset-lacing-topology`，后台编辑分组保留 `guides`；仅中英文正文已发布，其他 18 种语言继续 `noindex,follow`，hreflang 与 sitemap 只声明中英文及 x-default。保留原 TechArticle/FAQPage Schema 和几何预览边界，不新增物理安全承诺。
 - 动态胎压已完成整页迁移：原页面的 `calculator` 与 `details` Tab、外胎型号目录、速度/载荷/倾角/姿势输入、动态受力 API、最低胎压比较、湿地压力演示、模型说明、数据来源、结果解释、风险提示和反馈线程整体保留。FAQ manifest key 与 page_id 继续使用 `guides-tireguides-tire-pressure`，后台分组仍为 `guides`；20 种语言保留可访问页面和对称 canonical/hreflang，旧路径及全部查询变体 404，无 Location。后端算法、参考数据和计算 composable 未修改，新页明确 `no-store`。
-- 胎压迁移前已保存 SSR、head/canonical/hreflang/Schema、FAQ、reference-data、动态 API 与 10 组浏览器交互基线；迁移验收必须逐项对照这些记录，并将迁移差异单独提交。内胎和塔基助手仍按各自完整页面边界评估，不能仅为增加工具数量而拆走计算器。不锈钢位错页面已按完整页面边界迁移，说明、材料目录、计算器、结果解释和 FAQ 共用一个工具 URL。
+- 胎压迁移前已保存 SSR、head/canonical/hreflang/Schema、FAQ、reference-data、动态 API 与 10 组浏览器交互基线；迁移验收必须逐项对照这些记录，并将迁移差异单独提交。不锈钢位错页面已按完整页面边界迁移，说明、材料目录、计算器、结果解释和 FAQ 共用一个工具 URL。
+- 内胎页面已完成整页迁移：ETRTO/尺寸、气嘴孔径与类型、丁基/乳胶/TPU 材质、安装边界、框高与气嘴长度计算器、结果解释、参考矩阵、数据来源、限制和 FAQ 均保留在 `/tools/valve-length-fitment-calculator`。旧 `/guides/tireguides/choose-inner-tube` 及其语言、Tab、分享参数变体返回 404；中英文进入 sitemap，其他语言保留访问但 `noindex,follow`，不拆回指南页。
 - 胎圈宽度已是计算、模拟、DT Swiss、Schwalbe 四页签工作台，现有 v11 记录 16 组最佳算法与正常范围冲突，本批不协调算法，不把它当静态指南。
-- 塔基助手已通过 Go 接口提供真实交互；它是完整页迁移候选，不再视为纯规划项。内胎页面正在调整 URL/SSR/SEO 策略，待当前改动稳定后按完整页边界再评估。
+- 塔基助手已通过 Go 接口提供真实交互；它是下一块完整页迁移候选。迁移前仍须保存其整页边界、FAQ、兼容结果、canonical/hreflang、sitemap 和旧路径 404 基线。
 
 ### 第一批验收记录（工具大厅与 Schwalbe）
 
@@ -87,6 +88,14 @@
 - 旧 `/guides/tireguides/tire-pressure` 及 20 种语言前缀、查询参数和 hash 变体必须 HTTP 404、无 `Location`、无别名、无兼容页面；旧路径显式 `cache:false` 与 `no-store`。新页 canonical/hreflang、robots、Schema、动态 sitemap 和 20 份最终 XML 必须只声明新地址；FAQ page_id、route key 和问答内容保留，旧公开 FAQ 地址不再解析。
 - SSR 正文、两个 Tab、目录和 SEO head 与迁移前基线逐项对照；浏览器 10 组输入与 Tab 状态、reference-data/catalog 和动态 API 结果逐项对照。工具弹层继续从完整页头底部减 1px 展开，内容决定高度，手机/平板扳手与电脑入口共用同一弹层。验收在本地服务完成，不部署生产。
 
+### 第七次整页迁移验收记录（内胎气门嘴匹配）
+
+- 迁移前基线目录为 `C:\Users\P16V\AppData\Local\Temp\inner_tube_valve_fitment_whole_page_migration_baseline_20261013`，保存当前脏工作区快照、内胎组件、计算 composable、SEO/Schema、路由、导航和测试文件；上一提交及无关用户修改没有混入本轮迁移。
+- 内胎完整页面迁移到 `/tools/valve-length-fitment-calculator`：ETRTO 与宽度范围、Presta/Schrader/Dunlop 气嘴、丁基/乳胶/TPU 材质、安装边界、框高与气嘴长度计算器、自动/手动试配、结果解释、参考矩阵、HowTo、数据来源、限制和 FAQ 均保留在同一个页面。没有留下旧指南正文，也没有抽出只有输入面板的半页工具。
+- 工具大厅、桌面 Header、移动端/平板扳手菜单和页脚新增具体工具；页脚“工具”标题仍只链接 `/tools`，不会把大厅作为同级子链接。旧 `/guides/tireguides/choose-inner-tube` 及语言、`tab`、分享参数和 hash 变体返回 404，无 `Location`、别名或兼容页面。
+- route manifest、面包屑、页脚、i18n、脚本 TypeScript、Nuxt 类型检查、内胎分享状态/Tab 导航/发布语言策略、Go FAQ 路由迁移回归均通过。SSR 已验证英文、中文及回退语言的正文、双 Tab、canonical/hreflang、`noindex,follow`、Article、WebApplication、HowTo、Dataset 和社交预览图；本地 Go 后端未启动时动态 sitemap 接口为空，因此该项需在后台启动后再执行最终 sitemap 验收。
+- FAQ page_id、route key 和问答内容保持 `guides-tireguides-choose-inner-tube`；中英文进入 sitemap，其他语言继续可访问但由发布策略标记 `noindex,follow`。下一块按顺序进入塔基与飞轮兼容助手，仍须先保存整页基线，不得只迁移 `FreehubGroupsetHelper`。
+
 ## 目录
 1. [一、 为什么要做这次架构重组（纯信息架构与体验升级）](#一-为什么要做这次架构重组纯信息架构与体验升级)
 2. [二、 “工具 (Tools) + 指南 (Guides)”双飞轮架构](#二-工具-tools--指南-guides双飞轮架构)
@@ -139,7 +148,7 @@
 
 | 资产 | 当前决策 | 允许的下一步 |
 | :--- | :--- | :--- |
-| 内胎气门嘴匹配 | 工具优先；整体页面迁移候选 | 当前先保持完整页面；迁移时将选型上下文、说明、交互、结果和限制整体放入 `/tools`，不另留一张精简指南卡片承接原内容。 |
+| 内胎气门嘴匹配 | 已完成整体迁移 | 新路径 `/tools/valve-length-fitment-calculator`；尺寸、气嘴、材质、安装说明、计算器、结果、参考矩阵、限制和 FAQ 整体保留；旧路径及查询变体 404，后续不得拆回指南。 |
 | 胎压 | 已完成整体迁移 | 新路径 `/tools/dynamic-tire-pressure-calculator`；`calculator` 与 `details`、目录、动态受力、比较演示、说明和反馈整体保留，旧路径全部语言与查询变体 404；后续不得拆回指南。 |
 | Schwalbe 选型器 | 本批整页迁移 | 新路径 `/tools/schwalbe-tire-selector`；全部介绍和交互保留，旧路径退役为 404。 |
 | 车架间隙 | 保留指南/参考页 | 当前不创建不存在的计算器页面；若以后形成真实交互工具，整体迁移完整页面。 |
@@ -183,7 +192,7 @@
 
 | 序号 | 工具名称 | 代码库现有文件位置 | 现有访问路径 | 目标独立路由 | 迁移方案说明 |
 | :---: | :--- | :--- | :--- | :--- | :--- |
-| **1** | **车圈框高与气门嘴/延长嘴穿透匹配器** | `app/components/tireguides/InnerTubeValveLengthAndExtenderFitmentGuide.vue`<br>`app/composables/useInnerTubeValveFitmentCalculator.ts` | `/guides/tireguides/choose-inner-tube`（兼容 `/guides/tireguides?tab=choose-inner-tube`） | `/tools/valve-length-fitment-calculator` | **完整工具页迁移候选**：将内胎选型上下文、参数说明、匹配交互、结果解释和使用限制整体迁移到工具页；若当前路由包含更广的内胎指南内容，先核实边界，不能只搬计算器。 |
+| **1** | **车圈框高与气门嘴/延长嘴穿透匹配器** | `app/components/tireguides/InnerTubeGuide.vue`<br>`app/components/tireguides/InnerTubeValveLengthAndExtenderFitmentGuide.vue`<br>`app/composables/useInnerTubeValveFitmentCalculator.ts` | `/guides/tireguides/choose-inner-tube`（已退役；历史兼容 `/guides/tireguides?tab=choose-inner-tube` 同样 404） | `/tools/valve-length-fitment-calculator` | **第七次整页迁移已完成**：ETRTO/尺寸、气嘴、材质、安装边界、参数说明、匹配交互、结果解释、参考矩阵、数据来源、限制、FAQ 和结构化数据共用一个工具 URL；不保留精简指南页或独立半页计算器。 |
 | **2** | **动态前后轮智能胎压与滚阻计算器** | `app/pages/tools/dynamic-tire-pressure-calculator.vue`<br>`app/components/tireguides/tirepressure/*` | `/tools/dynamic-tire-pressure-calculator`（旧 `/guides/tireguides/tire-pressure` 已退役） | `/tools/dynamic-tire-pressure-calculator` | **第五次整页迁移已完成**：`calculator` 与 `details` Tab、计算、图文说明、目录、比较演示和结果共同保留；20 种语言旧路径 404，FAQ 身份和后端算法不变，不拆正文与计算器。 |
 | **3** | **Schwalbe 官方外胎选型器** | `app/pages/tools/schwalbe-tire-selector.vue`<br>`app/components/tireguides/schwalbe/*` | `/guides/tireguides/schwalbe-tire-selector` | `/tools/schwalbe-tire-selector` | **本批整页迁移**：介绍、搜索、筛选和目录结果全部保留。现行路径为 `/tools/schwalbe-tire-selector`，表内旧访问路径仅用于退役 404 核对。 |
 | **4** | **外胎实测膨胀率与车架安全间隙校验器** | `app/components/tireguides/TireFrameClearanceGuide.vue` | `/guides/tireguides/tire-frame-clearance` | **暂不新建**（候选：`/tools/tire-frame-clearance-checker`） | **先保留参考指南**：当前主要是测量说明、参考表和图片，未确认存在独立交互计算器。不得为了匹配工具目录创建不存在的计算页；若以后补齐真实计算能力，再按工具定位和整页迁移规则评估。 |
@@ -208,7 +217,7 @@
 
 | 序号 | 工具名称 | 代码库现有文件位置 | 现有访问路径 | 目标独立路由 | 迁移方案说明 |
 | :---: | :--- | :--- | :--- | :--- | :--- |
-| **11** | **塔基与飞轮兼容助手** | `app/components/WheelsetChooseFreehubSection.vue`、`app/components/FreehubGroupsetHelper.vue`，复用 Go 兼容性接口 | `/guides/wheelset-buyers/choose-freehub` | `/tools/freehub-cassette-fitment-engine`（候选） | **已有真实交互，待整页边界审查**：保留完整选型说明、输入、兼容结果与限制；本批继续使用旧路由，未迁移前不加入工具大厅或退役清单。 |
+| **11** | **塔基与飞轮兼容助手** | `app/components/WheelsetChooseFreehubSection.vue`、`app/components/FreehubGroupsetHelper.vue`，复用 Go 兼容性接口 | `/guides/wheelset-buyers/choose-freehub` | `/tools/freehub-cassette-fitment-engine`（候选） | **下一块整页迁移候选**：保留完整选型说明、输入、兼容结果与限制；在整页验收前继续使用旧路由，不加入工具大厅或退役清单。 |
 
 ---
 
@@ -223,8 +232,8 @@
   [ LOGO ]    SHOP    TOOLS (新)    GUIDES    ABOUT    [ 搜索 / 语言 / 购物车 ]
   ```
 * **下拉菜单（Mega Menu / Dropdown）三列布局**：
-  点击 `TOOLS` 展开现有 HeaderMegaMenu；未来工具数量足够后再按以下分类组织，当前保留大厅、Schwalbe、品牌规格、辐条长度、轮组拓扑、动态胎压与不锈钢应力释放力学七张卡片：
-  * **第一列：轮胎与气门系统**（只列出已完成整体迁移的胎压和 Schwalbe 工具；车架间隙与内胎参考留在指南导航）
+  点击 `TOOLS` 展开现有 HeaderMegaMenu；未来工具数量足够后再按以下分类组织，当前保留大厅、Schwalbe、品牌规格、辐条长度、轮组拓扑、动态胎压、不锈钢应力释放力学与内胎气门嘴匹配八张卡片：
+  * **第一列：轮胎与气门系统**（列出已完成整体迁移的胎压、Schwalbe 和内胎气门嘴匹配工具；车架间隙继续留在指南导航）
   * **第二列：轮组与辐条工程**（列出已完成整体迁移的辐条长度、品牌规格、轮组拓扑与不锈钢应力释放力学工具）
   * **第三列：传动与通用系统**（后续完成整页迁移的塔基助手；规划中的 Hookless 工具不展示卡片）
 
@@ -239,8 +248,8 @@
 * **路由**: `/tools`
 * **页面形态**: 工业仪表盘风格的工具导航大厅；
 * **内容构成**:
-  * 顶部：清晰的工具集介绍；当前五项工具，暂不增加大厅搜索框；
-  * 主体：只展示已整体迁移且可用的工具；当前为 Schwalbe、品牌规格、辐条长度、轮组拓扑和动态胎压，后续数量足够再按三类任务分组。暂未迁移的页面继续从原导航访问，规划项不展示卡片、不提供启动链接或可索引工具页；
+  * 顶部：清晰的工具集介绍；当前八项工具，暂不增加大厅搜索框；
+  * 主体：只展示已整体迁移且可用的工具；当前为 Schwalbe、品牌规格、辐条长度、轮组拓扑、动态胎压、不锈钢应力释放力学和内胎气门嘴匹配，后续数量足够再按三类任务分组。暂未迁移的页面继续从原导航访问，规划项不展示卡片、不提供启动链接或可索引工具页；
   * 工具大厅以导航和任务选择为主，可保留简短说明；不得为了保持目录数量而复制指南正文、制造第二份计算器页面或把半个页面标记为工具。
 
 ### 3. 面包屑对齐
@@ -263,7 +272,7 @@
 * `/guides/wheelset-buyers/wheelset-spoke-lacing-topology-and-geometry-reference` ➔ `/tools/spoke-lacing-topology-simulator`（第四次完成；该主路径、旧平铺 `/guides/wheelset-spoke-lacing-topology-and-geometry-reference`、历史 `/resources/wheelset-spoke-lacing-topology-and-geometry-reference` 均退役为 404）
 * `/guides/spokeguides/stainless-steel-microstructural-dislocation-mechanics` ➔ `/tools/spoke-stress-relief-mechanics`
 * `/guides/spokeguides`：SPOKEGUIDES 已无剩余子页，分类路由随本次迁移删除并返回 404，不设置空分类页、别名或重定向。
-* `/guides/tireguides/choose-inner-tube` ➔ `/tools/valve-length-fitment-calculator`（须先核实完整页面边界）
+* `/guides/tireguides/choose-inner-tube` ➔ `/tools/valve-length-fitment-calculator`（已完成；旧路径及查询变体 404）
 
 退役路径的各语言前缀和查询参数变体均应返回 404，且没有迁移 Location。退役路径必须显式关闭继承的 HTML cache 并声明 `no-store`，避免删除路由后仍命中旧缓存。同步更新内部链接、页脚、导航、canonical、hreflang、路由台账及 FAQ 公开路径；动态 sitemap 即使收到后台未同步的旧路径，也必须排除。FAQ key、page_id 等内部内容身份可以继续保留，保留问答数据不等于提供旧 URL 兼容。
 
@@ -273,14 +282,14 @@ SEO 影响：404 不会通过永久重定向承接旧 URL 的外链信号，旧�
 
 以下页面在迁移完成前保留完整内容，不能把其中的说明和交互拆成两个半页；迁移时沿用整页策略：
 * `/tools/dynamic-tire-pressure-calculator`（原 `/guides/tireguides/tire-pressure`）：已保留现有 `calculator` 与 `details` Tab 的组合页面；说明、交互、结果解释、来源、限制和反馈在同一工具 URL 内。
-* `/guides/tireguides/choose-inner-tube`：保留内胎选型上下文和气门嘴匹配交互；迁移时将页面范围内的说明、交互和结果解释整体放入 `/tools/valve-length-fitment-calculator`，前提是两边范围完全等价。
+* `/guides/tireguides/choose-inner-tube`：已退役。内胎尺寸、气嘴、材质、安装说明、交互、结果解释、参考矩阵、限制和 FAQ 已整体放入 `/tools/valve-length-fitment-calculator`，没有留下说明页与计算器页的割裂组合。
 * `/tools/spoke-lacing-topology-simulator`：已将原轮组指南拓扑页完整迁入；工程说明和仿真工作台共同保留，不再创建重复指南页或恢复旧路径。
 * `/tools/spoke-stress-relief-mechanics`（原 `/guides/spokeguides/stainless-steel-microstructural-dislocation-mechanics`）：材料力学正文、计算器、数据目录、结果解释和 FAQ 已整体保留在同一个工具 URL。
 * `/guides/tireguides/tire-frame-clearance`：保留测量说明和参考表；当前未发现独立交互计算器，不创建名义上的工具页。
 
 对于原先内嵌在 `/guides/tireguides/choose-inner-tube`（以及兼容的 `/guides/tireguides?tab=choose-inner-tube`）内部的气门嘴计算器：
-* **当前策略**：保留完整内胎选型页面，不把说明、参数解释和结果上下文拆到另一个 URL。
-* **未来整体迁移条件**：只有在确认“直接完成气门嘴匹配”是页面主任务，并准备好完整的工具标题、输入说明、结果解释、数据来源和限制说明后，才将页面范围内的内容整体迁移到 `/tools/valve-length-fitment-calculator`。
+* **当前策略**：已整体迁移到 `/tools/valve-length-fitment-calculator`，说明、参数解释、结果上下文、参考矩阵、数据来源和限制与交互共用一个 URL。
+* **后续约束**：不得把说明留回 `/guides`、只保留一个计算器面板在 `/tools`，也不得为了恢复“指南”标签重新建立旧分类或兼容路由。
 * **迁移后的旧 URL**：完整页面迁移、回归验收及 canonical/hreflang 完成后，旧路径退役为 404；不能因退役旧路径而省略必要的说明和结果上下文。
 
 ---
@@ -345,10 +354,10 @@ SEO 影响：404 不会通过永久重定向承接旧 URL 的外链信号，旧�
 ### 第三批：整体迁移工具优先的混合页面 (Whole-page Migration)
 - [x] 9. 对需要迁移的混合页面先确定完整页面边界，列出标题、说明、参数解释、结果解释、数据来源和限制说明；不先抽走单独计算器；胎压迁移前基线已保存。
 - [x] 10. 将胎压页面整体迁移至 `app/pages/tools/dynamic-tire-pressure-calculator.vue`，保留 `calculator` 和 `details` 全部内容；旧路径退役为 404，FAQ 身份和后端算法保持不变。
-- [ ] 11. 将内胎气门嘴匹配页面整体迁移至 `app/pages/tools/valve-length-fitment-calculator.vue`，保留完整上下文、说明和交互，不制作精简指南页 + 独立半页工具；
+- [x] 11. 将内胎气门嘴匹配页面整体迁移至 `app/pages/tools/valve-length-fitment-calculator.vue`，保留完整上下文、说明和交互，不制作精简指南页 + 独立半页工具；
 - [x] 12. 将轮组编法拓扑页面整体迁移至 `app/pages/tools/spoke-lacing-topology-simulator.vue`，保留工程说明、仿真控件和结果解释；
 - [x] 13. 将不锈钢辐条位错页面整体迁移至 `app/pages/tools/spoke-stress-relief-mechanics.vue`，保留材料说明、计算器、数据目录和结果解释；
-- [x] 14. 整体迁移验收通过后，再退役对应旧 URL，返回 404；轮组拓扑、胎压和不锈钢位错已完成，内胎气门嘴继续保留原 URL。
+- [x] 14. 整体迁移验收通过后，再退役对应旧 URL，返回 404；轮组拓扑、胎压、不锈钢位错和内胎气门嘴已完成，塔基助手仍待下一块。
 
 ### 第四批：双向飞轮与收尾验证 (Verification)
 - [ ] 15. 在每个独立工具页确认页面自身已包含完成任务所需的说明、结果解释和限制；只有存在独立指南内容时才添加“前往阅读相关指南”链接；

@@ -1617,9 +1617,13 @@ const toggleBreadcrumbSubNav = (id: string, event?: MouseEvent) => {
 }
 
 const switchLocalePath = (targetLocale: string) => {
-	const currentFullPath = router.currentRoute.value?.fullPath || '/'
+	const currentRoute = router.currentRoute.value
 	// 宽松断言交给 vue-i18n 处理具体的 locale 类型，避免 TS 联合类型报错
-	return localePath({ path: currentFullPath }, targetLocale as any)
+	return localePath({
+		path: currentRoute.path || '/',
+		query: currentRoute.query,
+		hash: currentRoute.hash,
+	}, targetLocale as any)
 }
 
 const isOpen = ref(false)
@@ -1918,9 +1922,14 @@ const switchLanguage = async (code: string) => {
     }
 
     const overrideTargetPath = alternateLinksOverride.value?.find((entry: { code: string; path: string }) => entry.code === code)?.path
-    const currentFullPath = router.currentRoute.value?.fullPath || ''
+    const currentRoute = router.currentRoute.value
+    const currentFullPath = currentRoute.fullPath || ''
     const fallbackTargetPath = switchLocalePath(code as any)
-    const targetPath = overrideTargetPath || fallbackTargetPath
+    // SEO alternate paths omit calculator and tracking state. Language-menu
+    // navigation must preserve that state even when a page supplied an override.
+    const targetPath = overrideTargetPath
+      ? router.resolve({ path: overrideTargetPath, query: currentRoute.query, hash: currentRoute.hash }).fullPath
+      : fallbackTargetPath
 
     locale.value = code
     await nextTick()

@@ -48,10 +48,6 @@ const customPagePathOverrides = new Map<string, string>([
     '/guides/tireguides/schwalbe-tire-circumference',
     join(pagesRoot, 'guides', 'tireguides.vue'),
   ],
-  [
-    '/guides/tireguides/choose-inner-tube',
-    join(pagesRoot, 'guides', 'tireguides.vue'),
-  ],
 ])
 
 const normalizePath = (value: string) => {

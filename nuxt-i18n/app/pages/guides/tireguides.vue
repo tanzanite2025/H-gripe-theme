@@ -66,17 +66,8 @@
         <HowToChooseGuide v-if="activeTab === 'tire-rim-width-compatibility'" />
       </section>
 
-      <!-- How to choose an inner tube -->
-      <section
-        v-show="activeTab === 'choose-inner-tube'"
-        id="choose-inner-tube"
-        class="sizecharts-section"
-      >
-        <InnerTubeGuide v-if="activeTab === 'choose-inner-tube'" />
-      </section>
-
       <div
-        v-if="activeTab !== 'tire-rim-width-compatibility' && activeTab !== 'choose-inner-tube' && activeTab !== 'tire-size-markings'"
+        v-if="activeTab !== 'tire-rim-width-compatibility' && activeTab !== 'tire-size-markings'"
         class="sizecharts-feedback"
       >
         <UserFeedbackThread
@@ -91,19 +82,19 @@
 
 <script setup lang="ts">
 import { computed, watch } from 'vue'
-import { useHead, useI18n, useLocalePath, useRoute } from '#imports'
+import { createError, useI18n, useLocalePath, useRoute } from '#imports'
 import UserFeedbackThread from '~/components/UserFeedbackThread.vue'
 import TireFrameClearanceGuide from '~/components/tireguides/TireFrameClearanceGuide.vue'
 import SchwalbeTireCircumferenceGuide from '~/components/tireguides/SchwalbeTireCircumferenceGuide.vue'
 import TubelessGuide from '~/components/tireguides/TubelessGuide.vue'
 import HowToChooseGuide from '~/components/tireguides/HowToChooseGuide.vue'
-import InnerTubeGuide from '~/components/tireguides/InnerTubeGuide.vue'
 import InstallationGuide from '~/components/tireguides/InstallationGuide.vue'
 import TireSizeGuide from '~/components/tireguides/TireSizeGuide.vue'
 import { usePageSubNavigationTab } from '~/composables/usePageSubNavigationTab'
 import { pageSubNavigationChildPath, tireGuideTabs } from '~/utils/pageSubNavigation'
 import { usePageMessages } from '~/composables/usePageMessages'
 import GuideCategoryChildRouteNavigationCards from '~/components/GuideCategoryChildRouteNavigationCards.vue'
+import { useTireGuidePageSearchAndSocialMetadata } from '~/composables/seo/useTireGuidePageSearchAndSocialMetadata'
 
 definePageMeta({
   layout: 'products',
@@ -114,6 +105,22 @@ definePageMeta({
 const { locale, t } = useI18n()
 const route = useRoute()
 const localePath = useLocalePath()
+
+// The inner-tube guide was migrated as a complete tool page. Its former
+// virtual-tab URL must stay retired as a real 404 instead of silently falling
+// back to the tire-guide landing page and creating a compatibility alias.
+const requestedTab = route.query.tab
+const requestsRetiredInnerTubeGuideTab = Array.isArray(requestedTab)
+  ? requestedTab.includes('choose-inner-tube')
+  : requestedTab === 'choose-inner-tube'
+if (requestsRetiredInnerTubeGuideTab) {
+  throw createError({
+    statusCode: 404,
+    statusMessage: 'Page Not Found',
+    fatal: true,
+  })
+}
+
 const { loadPageMessages } = usePageMessages('guidesTireguides')
 const { loadPageMessages: loadTireRimReferencePageMessages } = usePageMessages('guidesTireChoose')
 const { loadPageMessages: loadTireSizePageMessages } = usePageMessages('guidesTireSize')
@@ -175,15 +182,13 @@ const activePageTitle = computed(() => {
   if (activeTab.value === 'tire-rim-width-compatibility') {
     return t('guidesTireChoose.seo.title')
   }
-  if (activeTab.value === 'choose-inner-tube') {
-    return t('guidesTireguides.tabs.innerTube.label')
-  }
   return t('guidesTireguides.title')
 })
 
-useHead(() => ({
-  title: activePageTitle.value,
-}))
+useTireGuidePageSearchAndSocialMetadata({
+  fallbackPageTitle: activePageTitle,
+  activeGuideTabId: () => isGuideCategoryLandingPage.value ? null : activeTab.value,
+})
 
 </script>
 

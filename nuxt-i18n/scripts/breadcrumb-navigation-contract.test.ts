@@ -125,7 +125,7 @@ const tireGuideRouteTab = resolvePageSubNavigationBreadcrumb(
   [{ path: '/guides/tireguides', tabs: tireGuideTabs }],
 )
 assert.equal(tireGuideRouteTab, null, 'Migrated selector must not retain a virtual guide route')
-assert.equal(tireGuideTabs.length, 6)
+assert.equal(tireGuideTabs.length, 5)
 
 
 const clearanceRouteTab = resolvePageSubNavigationBreadcrumb(

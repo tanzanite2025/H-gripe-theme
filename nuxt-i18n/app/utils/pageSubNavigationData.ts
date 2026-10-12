@@ -83,22 +83,11 @@ export const tireGuideTabs = [
     feedbackTitleKey: 'guidesTireguides.feedbackTitle',
     feedbackSubtitleKey: 'feedback.defaultSubtitle',
   },
-  {
-    id: 'choose-inner-tube',
-    labelKey: 'guidesTireguides.tabs.innerTube.label',
-    fallback: 'How to Choose an Inner Tube',
-    descriptionKey: 'guidesTireguides.tabs.innerTube.description',
-    description: 'Inner tube sizing, valve types, and selection guidance.',
-    feedbackThreadKey: 'guides-tireguides',
-    feedbackTitleKey: 'guidesTireguides.feedbackTitle',
-    feedbackTitle: 'Share your feedback about this Tire Guides guide',
-    feedbackSubtitleKey: 'feedback.defaultSubtitle',
-  },
 ] as const satisfies readonly PageSubNavigationTab[]
 
 // Migrated tools can still use their guide metadata namespace while they retain
 // their standalone SEO implementation; they are not virtual guide tabs.
-export type TireGuideTabId = (typeof tireGuideTabs)[number]['id'] | 'tire-pressure'
+export type TireGuideTabId = (typeof tireGuideTabs)[number]['id'] | 'tire-pressure' | 'choose-inner-tube'
 
 export const wheelsetBuyerTabs = [
   {

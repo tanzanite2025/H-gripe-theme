@@ -15,7 +15,9 @@
   "dynamicTirePressureCalculatorLabel": "动态胎压计算器",
   "dynamicTirePressureCalculatorDescription": "探索载荷、胎压、速度和倾角如何改变估算的轮胎接地面积与过弯受力。",
     "spokeStressReliefMechanicsLabel": "不锈钢辐条应力释放力学工具",
-    "spokeStressReliefMechanicsDescription": "根据材料、截面、长度和工作张力计算辐条轴向伸长，并查看完整工程说明。"
+    "spokeStressReliefMechanicsDescription": "根据材料、截面、长度和工作张力计算辐条轴向伸长，并查看完整工程说明。",
+    "valveLengthFitmentCalculatorLabel": "内胎气嘴长度适配计算器",
+    "valveLengthFitmentCalculatorDescription": "完整了解内胎尺寸、气嘴、材质和高框车圈气嘴长度，并使用交互式适配计算器。"
   },
   "accountSidebar": {
     "addresses": {

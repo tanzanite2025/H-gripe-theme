@@ -30,7 +30,7 @@
           {{ t('guidesTireSize.actions.chooseTire') }}
         </NuxtLink>
         <NuxtLink
-          :to="localePath('/guides/tireguides/choose-inner-tube')"
+          :to="localePath('/tools/valve-length-fitment-calculator')"
           class="tire-size-guide-action"
         >
           {{ t('guidesTireSize.actions.chooseInnerTube') }}
