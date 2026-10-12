@@ -211,6 +211,15 @@
       "is_indexable": true
     },
     {
+      "key": "guides-wheelset-buyers-choose-freehub",
+      "path": "/tools/freehub-cassette-fitment-engine",
+      "label": "Bicycle freehub body compatibility guide",
+      "description": "Match cassette standards, freehub bodies, spacers, and mechanical fitment rules",
+      "is_searchable": true,
+      "is_checkable": true,
+      "is_indexable": true
+    },
+    {
       "key": "guides-spokeguides-stainless-steel-microstructural-dislocation-mechanics",
       "path": "/tools/spoke-stress-relief-mechanics",
       "label": "Stainless Steel Spoke Stress-Relief Mechanics",

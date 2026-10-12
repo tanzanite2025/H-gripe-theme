@@ -65,6 +65,10 @@ const sections = createFooterMenusFromRoutes([
     footerLabelKey: 'toolsNavigation.valveLengthFitmentCalculatorLabel',
     footerLabelFallback: 'Inner tube valve-length fitment calculator',
   }),
+  createNormalizedFooterTestRoute('/tools/freehub-cassette-fitment-engine', 'tools-freehub-cassette-fitment-engine', {
+    footerLabelKey: 'toolsNavigation.freehubCassetteFitmentEngineLabel',
+    footerLabelFallback: 'Freehub and cassette fitment engine',
+  }),
   createNormalizedFooterTestRoute('/guides/tireguides', 'guides-tireguides', {
     footerLabelKey: 'products.nav.tireSizeCharts',
     footerLabelFallback: 'Tire Guides',
@@ -95,6 +99,7 @@ assert.deepEqual(flattenFooterNavigationItems(toolsSection.links).map(link => li
   '/tools/dynamic-tire-pressure-calculator',
   '/tools/spoke-stress-relief-mechanics',
   '/tools/valve-length-fitment-calculator',
+  '/tools/freehub-cassette-fitment-engine',
 ], 'TOOLS child list must contain only concrete tools, without a duplicate hub')
 assert.ok(guidesSection, 'GUIDES column should be discovered from its static descendant pages')
 
@@ -116,7 +121,7 @@ assert.deepEqual(
 const wheelsetGuidesGroup = guidesSection.links.find(link => link.to === '/guides/wheelset-buyers')
 assert.ok(wheelsetGuidesGroup, 'Wheelset Guide should retain its real landing page')
 assert.equal(wheelsetGuidesGroup.fallback, 'Wheelset Guide')
-assert.equal(wheelsetGuidesGroup.children?.length, 5, 'Only remaining wheelset guide tabs should be listed')
+assert.equal(wheelsetGuidesGroup.children?.length, 4, 'Only remaining wheelset guide tabs should be listed')
 assert.ok(!flattenFooterNavigationItems(guidesSection.links).some(link => link.to?.includes('wheelset-spoke-lacing-topology-and-geometry-reference')))
 
 assert.ok(!flattenFooterNavigationItems(guidesSection.links).some(link => link.to?.startsWith('/guides/spokeguides')), 'Empty Spoke Guides category must not remain in the footer')

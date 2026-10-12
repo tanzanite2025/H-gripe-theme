@@ -12,7 +12,7 @@ if (!rawBaseUrl) {
 }
 
 const baseUrl = new URL(rawBaseUrl)
-const guidePath = '/guides/wheelset-buyers/choose-freehub'
+const guidePath = '/tools/freehub-cassette-fitment-engine'
 
 const fail = (message: string): never => {
   throw new Error(`[drivetrain-geo] ${message}`)

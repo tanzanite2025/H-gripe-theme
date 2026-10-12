@@ -66,6 +66,7 @@ export const storefrontNoStorePagePaths = [
   '/resources/membershipandpoints/**',
   '/tools/spoke-length-calculator',
   '/tools/dynamic-tire-pressure-calculator',
+  '/tools/freehub-cassette-fitment-engine',
   '/tools/valve-length-fitment-calculator',
   '/tools/spoke-stress-relief-mechanics',
   // Initial geometry and editable FAQ content come from the backend.

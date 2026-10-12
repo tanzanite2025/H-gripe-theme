@@ -113,7 +113,7 @@ Run these probes through the real CDN hostname after every edge or WAF change:
 GET /robots.txt       User-Agent: Googlebot
 GET /robots.txt       User-Agent: GPTBot
 GET /sitemap.xml      User-Agent: Bingbot
-GET /guides/wheelset-buyers/choose-freehub
+GET /tools/freehub-cassette-fitment-engine
                       User-Agent: PerplexityBot
 ```
 

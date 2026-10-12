@@ -16,5 +16,7 @@
   "spokeStressReliefMechanicsLabel": "不锈钢辐条应力释放力学工具",
   "spokeStressReliefMechanicsDescription": "根据材料、截面、长度和工作张力计算辐条轴向伸长，并查看完整工程说明。",
   "valveLengthFitmentCalculatorLabel": "内胎气嘴长度适配计算器",
-  "valveLengthFitmentCalculatorDescription": "完整了解内胎尺寸、气嘴、材质和高框车圈气嘴长度，并使用交互式适配计算器。"
+  "valveLengthFitmentCalculatorDescription": "完整了解内胎尺寸、气嘴、材质和高框车圈气嘴长度，并使用交互式适配计算器。",
+  "freehubCassetteFitmentEngineLabel": "塔基与飞轮兼容助手",
+  "freehubCassetteFitmentEngineDescription": "匹配飞轮标准、塔基、垫圈和机械适配规则，并查看完整兼容说明。"
 }

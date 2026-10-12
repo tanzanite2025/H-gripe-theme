@@ -1,7 +1,7 @@
 # 🛠️ 独立工程工具体系 (/tools) 全景架构与迁移实施规范
 ## Architecture & Migration Specification for Engineering Tools Suite
 
-> **文档版本**: `v1.8-Engineering`
+> **文档版本**: `v1.9-Engineering`
 > **文档位置**: `docs/design/tools-category-architecture-and-engineering-suite-specification.md`
 > **适用范围**: 针对现有代码库中已实现的所有计算器、适配器、选型矩阵及仿真看板，判定其应**保留完整混合页面还是整体迁移为工具页面**，并规范后续导航重组。
 >
@@ -14,11 +14,11 @@
 
 ---
 
-## 本批实施与后续顺序（2026-10-12）
+## 本批实施与后续顺序（2026-10-13）
 
-已完成工具大厅、Schwalbe、品牌轮组辐条规格、辐条长度计算器、轮组编法拓扑、动态胎压、不锈钢辐条应力释放力学和内胎气门嘴匹配整页迁移。大厅展示八项已有完整工具，不预建空分类，不展示规划工具卡片。SPOKEGUIDES 已清空，分类路由 `/guides/spokeguides` 与其唯一子页旧路径均退役为 404；后续新增辐条指南必须先有独立完整内容，不得恢复一个空分类路由。
+已完成工具大厅、Schwalbe、品牌轮组辐条规格、辐条长度计算器、轮组编法拓扑、动态胎压、不锈钢辐条应力释放力学、内胎气门嘴匹配和塔基与飞轮兼容助手的整页迁移。工具大厅展示八项已有完整工具，不把大厅自身再列为同级工具卡片，不预建空分类，不展示规划工具卡片。SPOKEGUIDES 已清空，分类路由 `/guides/spokeguides` 与其唯一子页旧路径均退役为 404；后续新增辐条指南必须先有独立完整内容，不得恢复一个空分类路由。
 
-- 新路由：`/tools`、`/tools/schwalbe-tire-selector`、`/tools/brand-wheelset-spoke-specs`、`/tools/spoke-length-calculator`、`/tools/spoke-lacing-topology-simulator`、`/tools/dynamic-tire-pressure-calculator`、`/tools/spoke-stress-relief-mechanics`、`/tools/valve-length-fitment-calculator`；已迁移旧路径及其全部语言、查询参数变体退役为 404，不设置 301、路由别名或兼容页面。
+- 新路由：`/tools`（大厅）以及八个具体工具 `/tools/schwalbe-tire-selector`、`/tools/brand-wheelset-spoke-specs`、`/tools/spoke-length-calculator`、`/tools/spoke-lacing-topology-simulator`、`/tools/dynamic-tire-pressure-calculator`、`/tools/spoke-stress-relief-mechanics`、`/tools/valve-length-fitment-calculator`、`/tools/freehub-cassette-fitment-engine`；已迁移旧路径及其全部语言、查询参数变体退役为 404，不设置 301、路由别名或兼容页面。
 - Schwalbe 介绍、搜索、筛选、结果卡片、原生分页、来源日期和限制继续复用同一个组件。组件目录和翻译 namespace 不因公开路由迁移重命名。回归发现并修复筛选抽屉 `canApply` 默认值导致按钮禁用，以及可见条件不变时旧查询参数未清理的两个既有问题；目录查询与工程算法不变。
 - FAQ manifest key 保留 `guides-tireguides-schwalbe-tire-selector`，page_id 保留 `guides-schwalbe-tire-selector`。后台启动自动同步路由台账与 FAQ；已有问答、标题和编辑分组保留。上线需确认启动同步成功，失败可使用已有 URL 台账同步或 FAQ routes/sync。
 - canonical/hreflang 使用新路径；仅合法 `page=N>1` 保留可收录分页，筛选与搜索为 `noindex,follow`。Sitemap 排除退役旧路径和已有重定向源路径，防止未同步 FAQ 再写入旧 URL。
@@ -31,7 +31,7 @@
 - 胎压迁移前已保存 SSR、head/canonical/hreflang/Schema、FAQ、reference-data、动态 API 与 10 组浏览器交互基线；迁移验收必须逐项对照这些记录，并将迁移差异单独提交。不锈钢位错页面已按完整页面边界迁移，说明、材料目录、计算器、结果解释和 FAQ 共用一个工具 URL。
 - 内胎页面已完成整页迁移：ETRTO/尺寸、气嘴孔径与类型、丁基/乳胶/TPU 材质、安装边界、框高与气嘴长度计算器、结果解释、参考矩阵、数据来源、限制和 FAQ 均保留在 `/tools/valve-length-fitment-calculator`。旧 `/guides/tireguides/choose-inner-tube` 及其语言、Tab、分享参数变体返回 404；中英文进入 sitemap，其他语言保留访问但 `noindex,follow`，不拆回指南页。
 - 胎圈宽度已是计算、模拟、DT Swiss、Schwalbe 四页签工作台，现有 v11 记录 16 组最佳算法与正常范围冲突，本批不协调算法，不把它当静态指南。
-- 塔基助手已通过 Go 接口提供真实交互；它是下一块完整页迁移候选。迁移前仍须保存其整页边界、FAQ、兼容结果、canonical/hreflang、sitemap 和旧路径 404 基线。
+- 塔基与飞轮兼容助手已完成整页迁移：完整选型说明、三步流程、品牌/飞轮输入、兼容结果、实物图片、标准矩阵、动态兼容矩阵、HowTo、FAQ、Schema、结果限制和反馈均保留在 `/tools/freehub-cassette-fitment-engine`；复用 Go 兼容性接口，不修改算法。旧 `/guides/wheelset-buyers/choose-freehub` 及 20 种语言、`tab`、品牌/规格查询变体均返回 404，无 `Location`、别名或兼容页；FAQ 身份保留，动态矩阵接口不可用时页面仍使用静态备用数据并明确验证边界。
 
 ### 第一批验收记录（工具大厅与 Schwalbe）
 
@@ -94,7 +94,15 @@
 - 内胎完整页面迁移到 `/tools/valve-length-fitment-calculator`：ETRTO 与宽度范围、Presta/Schrader/Dunlop 气嘴、丁基/乳胶/TPU 材质、安装边界、框高与气嘴长度计算器、自动/手动试配、结果解释、参考矩阵、HowTo、数据来源、限制和 FAQ 均保留在同一个页面。没有留下旧指南正文，也没有抽出只有输入面板的半页工具。
 - 工具大厅、桌面 Header、移动端/平板扳手菜单和页脚新增具体工具；页脚“工具”标题仍只链接 `/tools`，不会把大厅作为同级子链接。旧 `/guides/tireguides/choose-inner-tube` 及语言、`tab`、分享参数和 hash 变体返回 404，无 `Location`、别名或兼容页面。
 - route manifest、面包屑、页脚、i18n、脚本 TypeScript、Nuxt 类型检查、内胎分享状态/Tab 导航/发布语言策略、Go FAQ 路由迁移回归均通过。SSR 已验证英文、中文及回退语言的正文、双 Tab、canonical/hreflang、`noindex,follow`、Article、WebApplication、HowTo、Dataset 和社交预览图；本地 Go 后端未启动时动态 sitemap 接口为空，因此该项需在后台启动后再执行最终 sitemap 验收。
-- FAQ page_id、route key 和问答内容保持 `guides-tireguides-choose-inner-tube`；中英文进入 sitemap，其他语言继续可访问但由发布策略标记 `noindex,follow`。下一块按顺序进入塔基与飞轮兼容助手，仍须先保存整页基线，不得只迁移 `FreehubGroupsetHelper`。
+- FAQ page_id、route key 和问答内容保持 `guides-tireguides-choose-inner-tube`；中英文进入 sitemap，其他语言继续可访问但由发布策略标记 `noindex,follow`。后续任何混合页面迁移仍须先保存整页基线，不得只迁移单独交互组件。
+- 塔基迁移后 FAQ page_id、route key 和问答内容继续保持 `guides-wheelset-buyers-choose-freehub`；工具页与轮组指南均不再保留内嵌的小计算器，避免说明与交互割裂。工具页使用 `no-store`，大厅、Header、移动端/平板扳手菜单和页脚均只列具体工具，页脚“工具”标题单独链接大厅。
+
+### 第八次整页迁移验收记录（塔基与飞轮兼容助手）
+
+- 迁移前基线目录为 `C:\Users\P16V\AppData\Local\Temp\freehub_cassette_fitment_whole_page_migration_baseline_20261013`，保存 Git/dirty 文件快照、旧路由中英文 SSR、组件与翻译、FAQ、路由、导航、Schema 和 HTTP 代表性变体；本轮只暂存迁移差异，工作区其他修改保持不动。
+- `/tools/freehub-cassette-fitment-engine` 保留完整页面闭环：页面标题与介绍、三步选型说明、品牌与飞轮规格选择、动态兼容结果、静态备用结果、实物图片、标准矩阵、兼容性速查、技术参考、HowTo、FAQ、Schema、结果限制和反馈均在同一 URL；不拆成指南说明页与单独计算器页，也不删除 `WheelsetChooseFreehubSection` 与 `FreehubGroupsetHelper` 的领域交互。
+- 旧 `/guides/wheelset-buyers/choose-freehub` 的 20 种语言、无查询、`tab`、品牌和飞轮规格查询变体共 60 条真实 HTTP 请求均为 404，无 `Location`；旧路由显式 `cache:false`/`no-store`。新页 20 种语言 SSR 200，canonical/hreflang 指向对应工具路径，路由 manifest、工具大厅、桌面 Header、手机/平板扳手菜单和页脚均已更新。
+- Go FAQ 路由迁移回归、Nuxt 脚本 TypeScript、页脚/面包屑合同和 41 条路由清单通过；整页回归脚本通过 60 个退役变体和 20 个工具页面。当前本地后台未启动，动态矩阵 HTTP 返回 502，因此本轮仅以静态 SSR/备用矩阵完成页面回归，Go 接口自身测试已通过；生产部署前仍需在后台可用时复跑动态矩阵和最终 sitemap。
 
 ## 目录
 1. [一、 为什么要做这次架构重组（纯信息架构与体验升级）](#一-为什么要做这次架构重组纯信息架构与体验升级)
@@ -156,6 +164,7 @@
 | 品牌轮组辐条规格 | 第二批已完成整页迁移 | 新路径 `/tools/brand-wheelset-spoke-specs`；筛选、搜索、规格矩阵、修补包和全部说明保留，旧路径 404；下一批不得再抽取说明或改回指南分类。 |
 | 轮组编法拓扑 | 第四次整页迁移已完成 | 新路径 `/tools/spoke-lacing-topology-simulator`；复杂 SVG/几何工作台、工程说明和结果解释整体保留；旧主路径、旧平铺文件路径与历史 resources 路径全部 404，不再拆分或改回指南分类。 |
 | 不锈钢辐条位错 | 工具优先；整体页面迁移候选 | 保留材料说明、计算器、后台数据目录和结果解释；整体迁移，不把原理留在指南页。 |
+| 塔基与飞轮兼容助手 | 第八次整页迁移已完成 | 新路径 `/tools/freehub-cassette-fitment-engine`；三步选型、兼容结果、图片、标准矩阵、动态矩阵、限制、FAQ 和 Schema 整体保留；旧路径及查询变体 404，FAQ 身份保留，不拆回轮组指南。 |
 
 该表是迁移清单的约束来源。任何新增 `/tools/*` 路由、工具大厅卡片或旧路径退役规则，都必须先在本表或对应资产表中更新决策，再进入开发任务。对标记“整体迁移”的资产，任务拆分可以按组件和验收步骤分批，但线上页面不能出现说明留在旧 URL、交互单独迁走的中间产品状态。
 
@@ -217,7 +226,7 @@
 
 | 序号 | 工具名称 | 代码库现有文件位置 | 现有访问路径 | 目标独立路由 | 迁移方案说明 |
 | :---: | :--- | :--- | :--- | :--- | :--- |
-| **11** | **塔基与飞轮兼容助手** | `app/components/WheelsetChooseFreehubSection.vue`、`app/components/FreehubGroupsetHelper.vue`，复用 Go 兼容性接口 | `/guides/wheelset-buyers/choose-freehub` | `/tools/freehub-cassette-fitment-engine`（候选） | **下一块整页迁移候选**：保留完整选型说明、输入、兼容结果与限制；在整页验收前继续使用旧路由，不加入工具大厅或退役清单。 |
+| **11** | **塔基与飞轮兼容助手** | `app/components/WheelsetChooseFreehubSection.vue`、`app/components/FreehubGroupsetHelper.vue`，复用 Go 兼容性接口 | `/guides/wheelset-buyers/choose-freehub`（已退役） | `/tools/freehub-cassette-fitment-engine` | **第八次整页迁移已完成**：三步选型说明、输入、兼容结果、图片、标准矩阵、动态矩阵、HowTo、FAQ、Schema、限制和反馈共用一个工具 URL；轮组指南移除内嵌小计算器，旧路径及 20 种语言/查询变体 404，不拆成说明页与计算器页。 |
 
 ---
 
@@ -232,7 +241,7 @@
   [ LOGO ]    SHOP    TOOLS (新)    GUIDES    ABOUT    [ 搜索 / 语言 / 购物车 ]
   ```
 * **下拉菜单（Mega Menu / Dropdown）三列布局**：
-  点击 `TOOLS` 展开现有 HeaderMegaMenu；未来工具数量足够后再按以下分类组织，当前保留大厅、Schwalbe、品牌规格、辐条长度、轮组拓扑、动态胎压、不锈钢应力释放力学与内胎气门嘴匹配八张卡片：
+  点击 `TOOLS` 展开现有 HeaderMegaMenu；未来工具数量足够后再按以下分类组织，当前保留八个具体工具卡片（大厅是标题入口，不作为同级工具卡片）：Schwalbe、品牌规格、辐条长度、轮组拓扑、动态胎压、内胎气门嘴匹配、塔基与飞轮兼容、不锈钢应力释放力学：
   * **第一列：轮胎与气门系统**（列出已完成整体迁移的胎压、Schwalbe 和内胎气门嘴匹配工具；车架间隙继续留在指南导航）
   * **第二列：轮组与辐条工程**（列出已完成整体迁移的辐条长度、品牌规格、轮组拓扑与不锈钢应力释放力学工具）
   * **第三列：传动与通用系统**（后续完成整页迁移的塔基助手；规划中的 Hookless 工具不展示卡片）
@@ -248,8 +257,8 @@
 * **路由**: `/tools`
 * **页面形态**: 工业仪表盘风格的工具导航大厅；
 * **内容构成**:
-  * 顶部：清晰的工具集介绍；当前八项工具，暂不增加大厅搜索框；
-  * 主体：只展示已整体迁移且可用的工具；当前为 Schwalbe、品牌规格、辐条长度、轮组拓扑、动态胎压、不锈钢应力释放力学和内胎气门嘴匹配，后续数量足够再按三类任务分组。暂未迁移的页面继续从原导航访问，规划项不展示卡片、不提供启动链接或可索引工具页；
+  * 顶部：清晰的工具集介绍；当前八项具体工具，暂不增加大厅搜索框；
+  * 主体：只展示已整体迁移且可用的工具；当前为 Schwalbe、品牌规格、辐条长度、轮组拓扑、动态胎压、内胎气门嘴匹配、塔基与飞轮兼容和不锈钢应力释放力学，后续数量足够再按三类任务分组。大厅作为工具分组标题入口，不在卡片列表中重复出现。暂未迁移的页面继续从原导航访问，规划项不展示卡片、不提供启动链接或可索引工具页；
   * 工具大厅以导航和任务选择为主，可保留简短说明；不得为了保持目录数量而复制指南正文、制造第二份计算器页面或把半个页面标记为工具。
 
 ### 3. 面包屑对齐
@@ -273,6 +282,7 @@
 * `/guides/spokeguides/stainless-steel-microstructural-dislocation-mechanics` ➔ `/tools/spoke-stress-relief-mechanics`
 * `/guides/spokeguides`：SPOKEGUIDES 已无剩余子页，分类路由随本次迁移删除并返回 404，不设置空分类页、别名或重定向。
 * `/guides/tireguides/choose-inner-tube` ➔ `/tools/valve-length-fitment-calculator`（已完成；旧路径及查询变体 404）
+* `/guides/wheelset-buyers/choose-freehub` ➔ `/tools/freehub-cassette-fitment-engine`（第八次整页迁移完成；旧路径及 20 种语言、`tab`、品牌/规格查询变体 404）
 
 退役路径的各语言前缀和查询参数变体均应返回 404，且没有迁移 Location。退役路径必须显式关闭继承的 HTML cache 并声明 `no-store`，避免删除路由后仍命中旧缓存。同步更新内部链接、页脚、导航、canonical、hreflang、路由台账及 FAQ 公开路径；动态 sitemap 即使收到后台未同步的旧路径，也必须排除。FAQ key、page_id 等内部内容身份可以继续保留，保留问答数据不等于提供旧 URL 兼容。
 
@@ -285,6 +295,7 @@ SEO 影响：404 不会通过永久重定向承接旧 URL 的外链信号，旧�
 * `/guides/tireguides/choose-inner-tube`：已退役。内胎尺寸、气嘴、材质、安装说明、交互、结果解释、参考矩阵、限制和 FAQ 已整体放入 `/tools/valve-length-fitment-calculator`，没有留下说明页与计算器页的割裂组合。
 * `/tools/spoke-lacing-topology-simulator`：已将原轮组指南拓扑页完整迁入；工程说明和仿真工作台共同保留，不再创建重复指南页或恢复旧路径。
 * `/tools/spoke-stress-relief-mechanics`（原 `/guides/spokeguides/stainless-steel-microstructural-dislocation-mechanics`）：材料力学正文、计算器、数据目录、结果解释和 FAQ 已整体保留在同一个工具 URL。
+* `/tools/freehub-cassette-fitment-engine`（原 `/guides/wheelset-buyers/choose-freehub`）：塔基与飞轮的三步选型说明、输入、动态/静态兼容结果、实物图片、标准矩阵、动态矩阵、HowTo、FAQ、Schema、限制和反馈整体保留在同一个工具 URL；轮组指南只保留其余独立指南内容，不恢复内嵌小计算器。
 * `/guides/tireguides/tire-frame-clearance`：保留测量说明和参考表；当前未发现独立交互计算器，不创建名义上的工具页。
 
 对于原先内嵌在 `/guides/tireguides/choose-inner-tube`（以及兼容的 `/guides/tireguides?tab=choose-inner-tube`）内部的气门嘴计算器：
@@ -357,13 +368,13 @@ SEO 影响：404 不会通过永久重定向承接旧 URL 的外链信号，旧�
 - [x] 11. 将内胎气门嘴匹配页面整体迁移至 `app/pages/tools/valve-length-fitment-calculator.vue`，保留完整上下文、说明和交互，不制作精简指南页 + 独立半页工具；
 - [x] 12. 将轮组编法拓扑页面整体迁移至 `app/pages/tools/spoke-lacing-topology-simulator.vue`，保留工程说明、仿真控件和结果解释；
 - [x] 13. 将不锈钢辐条位错页面整体迁移至 `app/pages/tools/spoke-stress-relief-mechanics.vue`，保留材料说明、计算器、数据目录和结果解释；
-- [x] 14. 整体迁移验收通过后，再退役对应旧 URL，返回 404；轮组拓扑、胎压、不锈钢位错和内胎气门嘴已完成，塔基助手仍待下一块。
+- [x] 14. 整体迁移验收通过后，再退役对应旧 URL，返回 404；轮组拓扑、胎压、不锈钢位错、内胎气门嘴和塔基与飞轮兼容助手均已完成，旧路径及查询变体已逐项验证。
 
 ### 第四批：双向飞轮与收尾验证 (Verification)
 - [ ] 15. 在每个独立工具页确认页面自身已包含完成任务所需的说明、结果解释和限制；只有存在独立指南内容时才添加“前往阅读相关指南”链接；
 - [ ] 16. 检查动态 Sitemap 只包含已整体迁移、可访问且已确认需要独立 URL 的 `/tools/*` 路由；规划项和仍在旧指南 URL 的页面不得进入工具 sitemap；
 - [ ] 17. 逐个整体迁移候选页面进行功能与内容回归，确认**算法、计算数值、参数联动、主任务、页面说明、结果解释和限制均与迁移前一致**；同时验证已迁移旧 URL 的 404 和未迁移页面的完整保留策略；
-- [ ] 18. 每次新增工具页前更新“本轮评估的决策基线”和资产迁移表，记录整页范围、重复风险、canonical、sitemap 和旧路径退役决策，防止后续任务把完整迁移改成只抽走计算器。
+- [x] 18. 本轮已更新“本轮评估的决策基线”和资产迁移表，记录塔基工具的整页范围、重复风险、canonical、sitemap、FAQ 身份和旧路径退役决策；后续新增工具仍必须先补齐同类记录，防止把完整迁移改成只抽走计算器。
 
 ---
 *文档编制完成。本规范为纯信息架构重组与路由迁移实施指南，所有开发工作严禁篡改现有算法逻辑。*

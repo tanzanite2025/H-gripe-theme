@@ -118,13 +118,6 @@ export const wheelsetBuyerTabs = [
     descriptionKey: 'guidesWheelsetBuyers.tabs.appearanceLogo.description',
     description: 'Decal, finish, and logo customization notes.',
   },
-  {
-    id: 'choose-freehub',
-    labelKey: 'guidesWheelsetBuyers.tabs.chooseFreehub.label',
-    fallback: 'Choose freehub',
-    descriptionKey: 'guidesWheelsetBuyers.tabs.chooseFreehub.description',
-    description: 'Freehub choices and drivetrain compatibility.',
-  },
 ] as const satisfies readonly PageSubNavigationTab[]
 
 export type WheelsetBuyerTabId = (typeof wheelsetBuyerTabs)[number]['id']

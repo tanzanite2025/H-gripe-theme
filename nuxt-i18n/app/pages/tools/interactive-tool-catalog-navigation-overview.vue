@@ -56,6 +56,16 @@ const availableInteractiveToolCards = computed(() => [{
   description: t('toolsNavigation.dynamicTirePressureCalculatorDescription'),
   to: '/tools/dynamic-tire-pressure-calculator',
 }, {
+  id: 'valve-length-fitment-calculator',
+  label: t('toolsNavigation.valveLengthFitmentCalculatorLabel'),
+  description: t('toolsNavigation.valveLengthFitmentCalculatorDescription'),
+  to: '/tools/valve-length-fitment-calculator',
+}, {
+  id: 'freehub-cassette-fitment-engine',
+  label: t('toolsNavigation.freehubCassetteFitmentEngineLabel'),
+  description: t('toolsNavigation.freehubCassetteFitmentEngineDescription'),
+  to: '/tools/freehub-cassette-fitment-engine',
+}, {
   id: 'spoke-stress-relief-mechanics',
   label: t('toolsNavigation.spokeStressReliefMechanicsLabel'),
   description: t('toolsNavigation.spokeStressReliefMechanicsDescription'),

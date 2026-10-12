@@ -367,6 +367,16 @@ export const primaryMegaNavSections: PrimaryMegaNavSection[] = [
         accent: 'emerald',
       },
       {
+        id: 'freehub-cassette-fitment-engine',
+        labelKey: 'toolsNavigation.freehubCassetteFitmentEngineLabel',
+        labelFallback: 'Freehub and cassette compatibility engine',
+        description: 'Match cassette standards, freehub bodies, spacers, and mechanical fitment rules with the complete guide.',
+        to: '/tools/freehub-cassette-fitment-engine',
+        icon: 'lucide:settings-2',
+        size: 'standard',
+        accent: 'emerald',
+      },
+      {
         id: 'valve-length-fitment-calculator',
         labelKey: 'toolsNavigation.valveLengthFitmentCalculatorLabel',
         labelFallback: 'Inner tube valve-length fitment calculator',
