@@ -9,7 +9,9 @@
     "brandWheelsetSpokeSpecsLabel": "Specifikationer för hjulekrar och nipplar",
     "brandWheelsetSpokeSpecsDescription": "Filtrera efter märke eller sök efter hjulmodell för att hitta ekerlängder, ekermönster och nippelspecifikationer med information om reparationssatser.",
     "spokeLengthCalculatorLabel": "Ekerlängdsräknare",
-    "spokeLengthCalculatorDescription": "Beräkna ekerlängder för fram- och bakhjul med hela guiden för fälg, nav, ekermönster, korrigeringar och nipplar, inklusive mätningsråd och resultatförklaringar."
+    "spokeLengthCalculatorDescription": "Beräkna ekerlängder för fram- och bakhjul med hela guiden för fälg, nav, ekermönster, korrigeringar och nipplar, inklusive mätningsråd och resultatförklaringar.",
+    "spokeLacingTopologySimulatorLabel": "Simulator för ekringsmönster",
+    "spokeLacingTopologySimulatorDescription": "Förhandsvisa ekerhålens lägen, ekringsmönster, G3- och 2:1-layouter samt båda flänsarnas geometri med förklaringar och begränsningar."
   },
   "accountSidebar": {
     "addresses": {

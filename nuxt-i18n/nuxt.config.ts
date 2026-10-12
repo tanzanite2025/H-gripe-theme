@@ -91,18 +91,6 @@ const addTabbedPageRoutes = (pages: any[]) => {
   }
 }
 
-const wheelsetLacingTopologyPageRoutePath =
-  '/guides/wheelset-buyers/wheelset-spoke-lacing-topology-and-geometry-reference'
-const wheelsetLacingTopologyPageFileSuffix =
-  '/app/pages/guides/wheelset-spoke-lacing-topology-and-geometry-reference.vue'
-
-const placeWheelsetLacingTopologyPageInWheelsetGuide = (pages: any[]) => {
-  const page = pages.find((candidate) => (
-    String(candidate.file || '').replace(/\\/g, '/').endsWith(wheelsetLacingTopologyPageFileSuffix)
-  ))
-  if (page) page.path = wheelsetLacingTopologyPageRoutePath
-}
-
 const storefrontI18nLocales = locales.map((locale) => {
   const localeFile = locale.file || `${locale.code}.json`
 
@@ -114,7 +102,7 @@ const storefrontI18nLocales = locales.map((locale) => {
   }
 })
 
-const wheelsetLacingReferencePath = '/guides/wheelset-buyers/wheelset-spoke-lacing-topology-and-geometry-reference'
+const wheelsetLacingReferencePath = '/tools/spoke-lacing-topology-simulator'
 const wheelsetLacingPublicSitemapLocales = new Set(['en', 'zh_cn'])
 const wheelsetLacingUnsupportedLocaleSitemapExcludes = storefrontI18nLocales
   .map(locale => String(locale.code || '').trim())
@@ -336,7 +324,6 @@ export default defineNuxtConfig({
 
   hooks: {
     'pages:extend'(pages) {
-      placeWheelsetLacingTopologyPageInWheelsetGuide(pages)
       addTabbedPageRoutes(pages)
     },
     'build:manifest'(manifest) {

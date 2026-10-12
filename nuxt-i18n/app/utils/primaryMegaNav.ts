@@ -346,6 +346,16 @@ export const primaryMegaNavSections: PrimaryMegaNavSection[] = [
         size: 'standard',
         accent: 'emerald',
       },
+      {
+        id: 'spoke-lacing-topology-simulator',
+        labelKey: 'toolsNavigation.spokeLacingTopologySimulatorLabel',
+        labelFallback: 'Spoke lacing topology simulator',
+        description: 'Preview complete spoke-hole mapping and flange geometry with the full workbench and explanations.',
+        to: '/tools/spoke-lacing-topology-simulator',
+        icon: 'lucide:network',
+        size: 'standard',
+        accent: 'emerald',
+      },
     ],
   },
   {

@@ -8,5 +8,7 @@
   "brandWheelsetSpokeSpecsLabel": "Kiekkojen pinnojen ja nippelien tiedot",
   "brandWheelsetSpokeSpecsDescription": "Suodata merkin mukaan tai etsi kiekkomallia nähdäksesi pinnojen pituudet, puolauksen ja nippelien tiedot sekä korjaussarjojen huomautukset.",
   "spokeLengthCalculatorLabel": "Pinnan pituuslaskuri",
-  "spokeLengthCalculatorDescription": "Laske etu- ja takapyörän pinnojen pituudet vanteen, navan, puolauksen, korjausten ja nippelien kattavan ohjatun toiminnon avulla sekä tutustu mittaus- ja tulosohjeisiin."
+  "spokeLengthCalculatorDescription": "Laske etu- ja takapyörän pinnojen pituudet vanteen, navan, puolauksen, korjausten ja nippelien kattavan ohjatun toiminnon avulla sekä tutustu mittaus- ja tulosohjeisiin.",
+  "spokeLacingTopologySimulatorLabel": "Pinnojen puolauksen simulaattori",
+  "spokeLacingTopologySimulatorDescription": "Esikatsele pinnanreikien sijainteja, puolauskuvioita, G3- ja 2:1-järjestelyjä sekä molempien laippojen geometriaa selityksineen ja rajoituksineen."
 }

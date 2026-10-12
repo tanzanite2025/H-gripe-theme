@@ -9,7 +9,9 @@
     "brandWheelsetSpokeSpecsLabel": "Spesifikasi jejari dan nipel set roda",
     "brandWheelsetSpokeSpecsDescription": "Tapis mengikut jenama atau cari model set roda untuk melihat panjang jejari, corak anyaman dan spesifikasi nipel bersama nota kit pembaikan.",
     "spokeLengthCalculatorLabel": "Kalkulator panjang jejari",
-    "spokeLengthCalculatorDescription": "Kira panjang jejari roda hadapan dan belakang melalui panduan lengkap rim, hab, corak anyaman, pembetulan dan puting, termasuk arahan pengukuran dan penerangan hasil."
+    "spokeLengthCalculatorDescription": "Kira panjang jejari roda hadapan dan belakang melalui panduan lengkap rim, hab, corak anyaman, pembetulan dan puting, termasuk arahan pengukuran dan penerangan hasil.",
+    "spokeLacingTopologySimulatorLabel": "Simulator corak susunan jejari",
+    "spokeLacingTopologySimulatorDescription": "Pratonton kedudukan lubang jejari, corak susunan, susun atur G3 dan 2:1 serta geometri kedua-dua bebibir, dengan penerangan dan had pratonton."
   },
   "accountSidebar": {
     "addresses": {

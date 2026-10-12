@@ -9,7 +9,7 @@ import {
 } from '../app/utils/breadcrumbRouteNavigation.js'
 import { resolvePageSubNavigationBreadcrumb } from '../app/utils/pageSubNavigationBreadcrumb.js'
 import type { PageSubNavigationEntry } from '../app/utils/pageSubNavigationData.js'
-import { spokeGuideTabs, tireGuideTabs } from '../app/utils/pageSubNavigationData.js'
+import { spokeGuideTabs, tireGuideTabs, wheelsetBuyerTabs } from '../app/utils/pageSubNavigationData.js'
 
 const entries: PageSubNavigationEntry[] = [
   {
@@ -166,6 +166,12 @@ const spokeCalculatorTab = resolvePageSubNavigationBreadcrumb(
 )
 assert.equal(spokeCalculatorTab, null, 'Retired calculator must not remain a spoke-guide tab')
 assert.equal(resolvePageSubNavigationBreadcrumb('/zh_cn/tools/spoke-length-calculator', spokeGuideEntries, ['en', 'zh_cn']), null)
+
+assert.equal(resolvePageSubNavigationBreadcrumb(
+  '/zh_cn/guides/wheelset-buyers/wheelset-spoke-lacing-topology-and-geometry-reference',
+  [{ path: '/guides/wheelset-buyers', tabs: wheelsetBuyerTabs }],
+  ['en', 'zh_cn'],
+), null, 'Retired topology tool must not remain a wheelset guide tab')
 
 const switchSibling = (options: {
   currentPath: string

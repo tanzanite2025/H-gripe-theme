@@ -8,5 +8,7 @@
   "brandWheelsetSpokeSpecsLabel": "Spaak- en nippelspecificaties voor wielsets",
   "brandWheelsetSpokeSpecsDescription": "Filter op merk of zoek een wielmodel om spaaklengtes, spaakpatronen en nippelspecificaties te vinden, met opmerkingen over reparatiesets.",
   "spokeLengthCalculatorLabel": "Calculator voor spaaklengte",
-  "spokeLengthCalculatorDescription": "Bereken de spaaklengtes voor het voor- en achterwiel met de volledige wizard voor velg, naaf, spaakpatroon, correcties en nippels, inclusief uitleg over metingen en resultaten."
+  "spokeLengthCalculatorDescription": "Bereken de spaaklengtes voor het voor- en achterwiel met de volledige wizard voor velg, naaf, spaakpatroon, correcties en nippels, inclusief uitleg over metingen en resultaten.",
+  "spokeLacingTopologySimulatorLabel": "Simulator voor spaakpatronen",
+  "spokeLacingTopologySimulatorDescription": "Bekijk spaakgatposities, spaakpatronen, G3- en 2:1-indelingen en de geometrie van beide flenzen, met uitleg en beperkingen van de voorvertoning."
 }

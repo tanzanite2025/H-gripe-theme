@@ -9,7 +9,9 @@
     "brandWheelsetSpokeSpecsLabel": "Especificações de raios e niples de rodas",
     "brandWheelsetSpokeSpecsDescription": "Filtre por marca ou pesquise um modelo de roda para consultar comprimentos de raios, padrões de montagem e especificações de niples, com notas sobre kits de reparo.",
     "spokeLengthCalculatorLabel": "Calculadora de comprimento dos raios",
-    "spokeLengthCalculatorDescription": "Calcule o comprimento dos raios dianteiros e traseiros com o assistente completo para aro, cubo, cruzamento, correções e nipples, incluindo orientações de medição e resultados."
+    "spokeLengthCalculatorDescription": "Calcule o comprimento dos raios dianteiros e traseiros com o assistente completo para aro, cubo, cruzamento, correções e nipples, incluindo orientações de medição e resultados.",
+    "spokeLacingTopologySimulatorLabel": "Simulador de padrões de enraiamento",
+    "spokeLacingTopologySimulatorDescription": "Pré-visualize posições dos furos, padrões de enraiamento, disposições G3 e 2:1 e a geometria de ambas as flanges, com explicações e limites da pré-visualização."
   },
   "accountSidebar": {
     "addresses": {

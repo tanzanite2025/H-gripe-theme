@@ -49,6 +49,10 @@ const sections = createFooterMenusFromRoutes([
     footerLabelKey: 'toolsNavigation.spokeLengthCalculatorLabel',
     footerLabelFallback: 'Spoke length calculator',
   }),
+  createNormalizedFooterTestRoute('/tools/spoke-lacing-topology-simulator', 'tools-spoke-lacing-topology-simulator', {
+    footerLabelKey: 'toolsNavigation.spokeLacingTopologySimulatorLabel',
+    footerLabelFallback: 'Spoke lacing topology simulator',
+  }),
   createNormalizedFooterTestRoute('/guides/tireguides', 'guides-tireguides', {
     footerLabelKey: 'products.nav.tireSizeCharts',
     footerLabelFallback: 'Tire Guides',
@@ -95,6 +99,7 @@ assert.deepEqual(flattenFooterNavigationItems(toolsSection.links).map(link => li
   '/tools/schwalbe-tire-selector',
   '/tools/brand-wheelset-spoke-specs',
   '/tools/spoke-length-calculator',
+  '/tools/spoke-lacing-topology-simulator',
 ], 'TOOLS child list must contain only concrete tools, without a duplicate hub')
 assert.ok(guidesSection, 'GUIDES column should be discovered from its static descendant pages')
 
@@ -118,7 +123,8 @@ assert.deepEqual(
 const wheelsetGuidesGroup = guidesSection.links.find(link => link.to === '/guides/wheelset-buyers')
 assert.ok(wheelsetGuidesGroup, 'Wheelset Guide should retain its real landing page')
 assert.equal(wheelsetGuidesGroup.fallback, 'Wheelset Guide')
-assert.equal(wheelsetGuidesGroup.children?.length, 6, 'All wheelset guide tabs, including the spoke lacing reference, should be listed')
+assert.equal(wheelsetGuidesGroup.children?.length, 5, 'Only remaining wheelset guide tabs should be listed')
+assert.ok(!flattenFooterNavigationItems(guidesSection.links).some(link => link.to?.includes('wheelset-spoke-lacing-topology-and-geometry-reference')))
 
 const spokeGuidesGroup = guidesSection.links.find(link => link.fallback === 'Spoke Guides')
 assert.ok(spokeGuidesGroup, 'Spoke Guides should be represented as a group')

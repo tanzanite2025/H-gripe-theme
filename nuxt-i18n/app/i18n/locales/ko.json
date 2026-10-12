@@ -9,7 +9,9 @@
     "brandWheelsetSpokeSpecsLabel": "휠셋 스포크 및 니플 규격",
     "brandWheelsetSpokeSpecsDescription": "브랜드로 필터링하거나 휠셋 모델을 검색하여 스포크 길이, 조립 패턴, 니플 규격과 수리 키트 안내를 확인하세요.",
     "spokeLengthCalculatorLabel": "스포크 길이 계산기",
-    "spokeLengthCalculatorDescription": "림, 허브, 조립 패턴, 보정 및 니플을 설정하는 전체 마법사로 앞뒤 휠의 스포크 길이를 계산하고 측정 방법과 결과 설명을 확인하세요."
+    "spokeLengthCalculatorDescription": "림, 허브, 조립 패턴, 보정 및 니플을 설정하는 전체 마법사로 앞뒤 휠의 스포크 길이를 계산하고 측정 방법과 결과 설명을 확인하세요.",
+    "spokeLacingTopologySimulatorLabel": "스포크 조립 패턴 시뮬레이터",
+    "spokeLacingTopologySimulatorDescription": "스포크 구멍 위치, 조립 패턴, G3 및 2:1 배열과 양쪽 플랜지 형상을 미리 확인할 수 있으며 설명과 미리보기 한계를 제공합니다."
   },
   "accountSidebar": {
     "addresses": {

@@ -8,5 +8,7 @@
   "brandWheelsetSpokeSpecsLabel": "Jant seti tel ve nipel özellikleri",
   "brandWheelsetSpokeSpecsDescription": "Tel uzunluklarını, örgü düzenlerini ve nipel özelliklerini onarım kiti notlarıyla birlikte görmek için markaya göre filtreleyin veya jant modeli arayın.",
   "spokeLengthCalculatorLabel": "Jant teli uzunluğu hesaplayıcı",
-  "spokeLengthCalculatorDescription": "Ölçüm ve sonuç açıklamalarıyla birlikte jant, göbek, örüm, düzeltme ve nipel adımlarının tamamını kullanarak ön ve arka tekerlek tel uzunluklarını hesaplayın."
+  "spokeLengthCalculatorDescription": "Ölçüm ve sonuç açıklamalarıyla birlikte jant, göbek, örüm, düzeltme ve nipel adımlarının tamamını kullanarak ön ve arka tekerlek tel uzunluklarını hesaplayın.",
+  "spokeLacingTopologySimulatorLabel": "Jant teli örüm düzeni simülatörü",
+  "spokeLacingTopologySimulatorDescription": "Tel deliği konumlarını, örüm düzenlerini, G3 ve 2:1 yerleşimlerini ve iki flanşın geometrisini açıklamalar ve önizleme sınırlarıyla inceleyin."
 }

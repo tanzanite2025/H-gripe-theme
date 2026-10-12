@@ -120,6 +120,7 @@ Nuxt SSR 页面在高流量时会消耗 Node.js CPU。指南页、政策页等�
 - `/shop`
 - `/membershipandpoints`
 - `/tools/spoke-length-calculator`
+- `/tools/spoke-lacing-topology-simulator`
 - `/support/test-report`
 - `/support/warranty-check`
 - `/api/**`

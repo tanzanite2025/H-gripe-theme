@@ -8,5 +8,7 @@
   "brandWheelsetSpokeSpecsLabel": "Spécifications des rayons et écrous de roues",
   "brandWheelsetSpokeSpecsDescription": "Filtrez par marque ou recherchez un modèle de roue pour consulter les longueurs de rayons, les croisements et les spécifications des écrous, avec les notes sur les kits de réparation.",
   "spokeLengthCalculatorLabel": "Calculateur de longueur de rayons",
-  "spokeLengthCalculatorDescription": "Calculez la longueur des rayons avant et arrière avec un assistant complet pour la jante, le moyeu, le rayonnage, les corrections et les écrous, avec les conseils de mesure et de lecture des résultats."
+  "spokeLengthCalculatorDescription": "Calculez la longueur des rayons avant et arrière avec un assistant complet pour la jante, le moyeu, le rayonnage, les corrections et les écrous, avec les conseils de mesure et de lecture des résultats.",
+  "spokeLacingTopologySimulatorLabel": "Simulateur de motifs de rayonnage",
+  "spokeLacingTopologySimulatorDescription": "Visualisez les positions des trous, les motifs de rayonnage, les dispositions G3 et 2:1 et la géométrie des deux flasques, avec explications et limites de prévisualisation."
 }

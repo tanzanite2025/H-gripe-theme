@@ -9,7 +9,9 @@
     "brandWheelsetSpokeSpecsLabel": "ホイールのスポーク・ニップル仕様",
     "brandWheelsetSpokeSpecsDescription": "ブランドで絞り込むかホイールモデルを検索し、スポーク長、組み方、ニップル仕様と補修キットの説明を確認できます。",
     "spokeLengthCalculatorLabel": "スポーク長計算ツール",
-    "spokeLengthCalculatorDescription": "リム、ハブ、組み方、補正、ニップルを設定する完全なウィザードで前後輪のスポーク長を計算し、測定方法と結果の説明を確認できます。"
+    "spokeLengthCalculatorDescription": "リム、ハブ、組み方、補正、ニップルを設定する完全なウィザードで前後輪のスポーク長を計算し、測定方法と結果の説明を確認できます。",
+    "spokeLacingTopologySimulatorLabel": "スポーク組み方トポロジーシミュレーター",
+    "spokeLacingTopologySimulatorDescription": "スポーク穴位置、組み方、G3・2:1配置、左右フランジの形状を操作して確認できます。説明とプレビューの制限を含みます。"
   },
   "accountSidebar": {
     "addresses": {

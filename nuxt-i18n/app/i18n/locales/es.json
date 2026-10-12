@@ -9,7 +9,9 @@
     "brandWheelsetSpokeSpecsLabel": "Especificaciones de radios y cabecillas de ruedas",
     "brandWheelsetSpokeSpecsDescription": "Filtra por marca o busca un modelo de rueda para consultar longitudes de radios, patrones de radiado y especificaciones de cabecillas, con notas sobre kits de reparación.",
     "spokeLengthCalculatorLabel": "Calculadora de longitud de radios",
-    "spokeLengthCalculatorDescription": "Calcule la longitud de los radios delanteros y traseros con el asistente completo de llanta, buje, radiado, correcciones y cabecillas, con instrucciones de medición e interpretación de resultados."
+    "spokeLengthCalculatorDescription": "Calcule la longitud de los radios delanteros y traseros con el asistente completo de llanta, buje, radiado, correcciones y cabecillas, con instrucciones de medición e interpretación de resultados.",
+    "spokeLacingTopologySimulatorLabel": "Simulador de patrones de radiado",
+    "spokeLacingTopologySimulatorDescription": "Visualiza posiciones de orificios, patrones de radiado, distribuciones G3 y 2:1 y la geometría de ambas bridas, con explicaciones y límites de la vista previa."
   },
   "accountSidebar": {
     "addresses": {

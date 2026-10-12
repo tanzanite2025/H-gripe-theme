@@ -8,5 +8,7 @@
   "brandWheelsetSpokeSpecsLabel": "品牌轮组辐条规格速查",
   "brandWheelsetSpokeSpecsDescription": "按品牌筛选或搜索轮组型号，查询辐条长度、编法及条帽规格，并查看修补包说明。",
   "spokeLengthCalculatorLabel": "辐条长度计算器",
-  "spokeLengthCalculatorDescription": "通过轮圈、花鼓、编法、修正和条帽的完整向导计算前后轮辐条长度，并查看测量说明及结果解释。"
+  "spokeLengthCalculatorDescription": "通过轮圈、花鼓、编法、修正和条帽的完整向导计算前后轮辐条长度，并查看测量说明及结果解释。",
+  "spokeLacingTopologySimulatorLabel": "辐条编法拓扑模拟器",
+  "spokeLacingTopologySimulatorDescription": "交互预览孔位、辐条编法、G3 与 2:1 布局和双法兰几何，包含完整说明与预览限制。"
 }

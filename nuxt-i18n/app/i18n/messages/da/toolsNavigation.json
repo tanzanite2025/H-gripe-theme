@@ -8,5 +8,7 @@
   "brandWheelsetSpokeSpecsLabel": "Specifikationer for hjuleger og nipler",
   "brandWheelsetSpokeSpecsDescription": "Filtrer efter mærke eller søg efter hjulmodel for at finde egerlængder, opspændingsmønstre og nippelspecifikationer med noter om reparationssæt.",
   "spokeLengthCalculatorLabel": "Beregner til egerlængde",
-  "spokeLengthCalculatorDescription": "Beregn egerlængder til for- og baghjul med hele guiden til fælg, nav, egermønster, korrektioner og nipler samt vejledning om målinger og resultater."
+  "spokeLengthCalculatorDescription": "Beregn egerlængder til for- og baghjul med hele guiden til fælg, nav, egermønster, korrektioner og nipler samt vejledning om målinger og resultater.",
+  "spokeLacingTopologySimulatorLabel": "Simulator til egernes flettemønstre",
+  "spokeLacingTopologySimulatorDescription": "Forhåndsvis egerhuller, flettemønstre, G3- og 2:1-layout samt geometri for begge flanger med forklaringer og begrænsninger."
 }

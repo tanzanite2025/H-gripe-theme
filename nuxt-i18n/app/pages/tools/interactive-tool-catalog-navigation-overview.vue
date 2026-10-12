@@ -45,5 +45,10 @@ const availableInteractiveToolCards = computed(() => [{
   label: t('toolsNavigation.spokeLengthCalculatorLabel'),
   description: t('toolsNavigation.spokeLengthCalculatorDescription'),
   to: '/tools/spoke-length-calculator',
+}, {
+  id: 'spoke-lacing-topology-simulator',
+  label: t('toolsNavigation.spokeLacingTopologySimulatorLabel'),
+  description: t('toolsNavigation.spokeLacingTopologySimulatorDescription'),
+  to: '/tools/spoke-lacing-topology-simulator',
 }])
 </script>

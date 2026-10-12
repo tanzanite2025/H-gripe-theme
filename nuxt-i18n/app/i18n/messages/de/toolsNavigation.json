@@ -8,5 +8,7 @@
   "brandWheelsetSpokeSpecsLabel": "Speichen- und Nippelspezifikationen für Laufräder",
   "brandWheelsetSpokeSpecsDescription": "Nach Marke filtern oder Laufradmodell suchen, um Speichenlängen, Einspeichmuster und Nippelspezifikationen mit Hinweisen zu Reparatursets zu finden.",
   "spokeLengthCalculatorLabel": "Speichenlängenrechner",
-  "spokeLengthCalculatorDescription": "Berechnen Sie die Speichenlängen für Vorder- und Hinterrad mit dem vollständigen Assistenten für Felge, Nabe, Einspeichung, Korrekturen und Nippel sowie Hinweisen zu Messung und Ergebnissen."
+  "spokeLengthCalculatorDescription": "Berechnen Sie die Speichenlängen für Vorder- und Hinterrad mit dem vollständigen Assistenten für Felge, Nabe, Einspeichung, Korrekturen und Nippel sowie Hinweisen zu Messung und Ergebnissen.",
+  "spokeLacingTopologySimulatorLabel": "Simulator für Speichenmuster",
+  "spokeLacingTopologySimulatorDescription": "Speichenlochpositionen, Einspeichmuster, G3- und 2:1-Anordnungen sowie die Geometrie beider Flansche mit Erläuterungen und Vorschaugrenzen ansehen."
 }

@@ -304,7 +304,7 @@
     },
     {
       "key": "guides-wheelset-buyers-spoke-lacing-topology",
-      "path": "/guides/wheelset-buyers/wheelset-spoke-lacing-topology-and-geometry-reference",
+      "path": "/tools/spoke-lacing-topology-simulator",
       "label": "Wheelset spoke lacing topology",
       "description": "Interactive rim-hole mapping and geometric reference for wheelset spoke lacing",
       "sitemap_locales": ["en", "zh_cn"],

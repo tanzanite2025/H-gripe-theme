@@ -9,7 +9,9 @@
     "brandWheelsetSpokeSpecsLabel": "Wheelset spoke and nipple specifications",
     "brandWheelsetSpokeSpecsDescription": "Filter by brand or search a wheelset model to find spoke lengths, lacing patterns, and nipple specifications, with repair-kit notes.",
     "spokeLengthCalculatorLabel": "Spoke length calculator",
-    "spokeLengthCalculatorDescription": "Calculate front and rear spoke lengths with the full rim, hub, lacing, correction, and nipple wizard, including measurement and result guidance."
+    "spokeLengthCalculatorDescription": "Calculate front and rear spoke lengths with the full rim, hub, lacing, correction, and nipple wizard, including measurement and result guidance.",
+    "spokeLacingTopologySimulatorLabel": "Spoke lacing topology simulator",
+    "spokeLacingTopologySimulatorDescription": "Preview spoke hole positions, lacing patterns, G3 and 2:1 layouts, and dual-flange geometry, with explanations and preview limits."
   },
   "accountSidebar": {
     "addresses": {
