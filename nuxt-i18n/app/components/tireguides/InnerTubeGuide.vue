@@ -1,8 +1,9 @@
 <template>
   <article id="inner-tube-guide" tabindex="-1" class="inner-tube-guide space-y-5 md:space-y-6" :lang="innerTubeGuideActualContentLanguageTag">
-    <header class="rounded-2xl bg-[var(--tz-card-surface)] p-4 text-left shadow-md md:p-5">
-      <h1 class="text-2xl font-bold leading-tight tz-text-primary md:text-3xl">{{ t('guidesTireInnerTube.page.title') }}</h1>
-      <p class="mt-3 max-w-4xl text-sm leading-relaxed tz-text-secondary">{{ t('guidesTireInnerTube.page.summary') }}</p>
+    <InteractiveToolPageHeader
+      :title="t('guidesTireInnerTube.page.title')"
+      :description="t('guidesTireInnerTube.page.summary')"
+    >
       <p v-if="siteTitle.trim()" class="mt-2 text-xs tz-text-muted">{{ t('guidesTireInnerTube.page.publisher', { brand: siteTitle.trim() }) }}</p>
       <nav :aria-label="t('guidesTireInnerTube.page.contentsLabel')" class="mt-4 border-t tz-border-subtle pt-3">
         <ul class="flex flex-wrap gap-x-5 gap-y-2 text-xs font-semibold">
@@ -11,7 +12,7 @@
           </li>
         </ul>
       </nav>
-    </header>
+    </InteractiveToolPageHeader>
     <div class="rounded-2xl bg-[var(--tz-card-surface)] p-2 shadow-md md:p-3">
       <ReusablePageSectionUnderlineTabs
         :tabs="innerTubeGuideSectionTabs"
@@ -333,6 +334,7 @@ import { useHead, useI18n, useLocalePath, useRoute, useRouter } from '#imports'
 import GuideImage from '~/components/GuideImage.vue'
 import { useShopSearchSheet } from '~/composables/useShopSearchSheet'
 import { usePageMessages } from '~/composables/usePageMessages'
+import InteractiveToolPageHeader from '~/components/InteractiveToolPageHeader.vue'
 import englishInnerTubeGuideMessages from '~/i18n/page-messages/guidesTireInnerTube/en.json'
 import InnerTubeValveLengthAndExtenderFitmentGuide from '~/components/tireguides/InnerTubeValveLengthAndExtenderFitmentGuide.vue'
 import ReusablePageSectionUnderlineTabs from '~/components/ReusablePageSectionUnderlineTabs.vue'

@@ -1,6 +1,9 @@
 <template>
   <div class="tz-text-secondary">
-    <h2 class="sizecharts-section__title">{{ t('guidesTireSize.title') }}</h2>
+    <InteractiveToolPageHeader
+      :title="t('guidesTireSize.title')"
+      :description="t('guidesTireSize.calculator.description')"
+    />
     <div class="mt-1">
       <TireSizeSection />
     </div>
@@ -11,6 +14,7 @@
 import { watch } from 'vue'
 import { useI18n } from '#imports'
 import TireSizeSection from '~/components/TireSizeSection.vue'
+import InteractiveToolPageHeader from '~/components/InteractiveToolPageHeader.vue'
 import { usePageMessages } from '~/composables/usePageMessages'
 
 const { locale, t } = useI18n()

@@ -1,10 +1,10 @@
 <template>
   <div class="wheelset-spoke-lookup">
-    <header class="wheelset-spoke-lookup__header">
-      <p class="wheelset-spoke-lookup__eyebrow">{{ t('brandWheelsetSpokeSpecs.eyebrow') }}</p>
-      <h1>{{ t('brandWheelsetSpokeSpecs.title') }}</h1>
-      <p class="wheelset-spoke-lookup__intro">{{ t('brandWheelsetSpokeSpecs.intro') }}</p>
-    </header>
+    <InteractiveToolPageHeader
+      :eyebrow="t('brandWheelsetSpokeSpecs.eyebrow')"
+      :title="t('brandWheelsetSpokeSpecs.title')"
+      :description="t('brandWheelsetSpokeSpecs.intro')"
+    />
 
     <section class="wheelset-spoke-lookup__filters" :aria-label="t('brandWheelsetSpokeSpecs.filterTitle')">
       <h2>{{ t('brandWheelsetSpokeSpecs.filterTitle') }}</h2>
@@ -207,6 +207,7 @@ import {
   useSwitchLocalePath,
 } from '#imports'
 import { useApiRequest } from '~/composables/useApiRequest'
+import InteractiveToolPageHeader from '~/components/InteractiveToolPageHeader.vue'
 import BrandWheelsetSpokeRepairKitProductsSection from '~/components/BrandWheelsetSpokeRepairKitProductsSection.vue'
 import {
   publicBrandWheelsetSpokeCatalogs,
@@ -549,7 +550,6 @@ useHead(() => ({
   box-sizing: border-box;
 }
 
-.wheelset-spoke-lookup__header,
 .wheelset-spoke-lookup__filters,
 .wheelset-spoke-lookup__matrix {
   min-width: 0;
@@ -557,36 +557,6 @@ useHead(() => ({
   border-radius: 1.35rem;
   background: var(--spoke-panel);
   box-shadow: 0 8px 24px -18px rgba(15, 23, 42, 0.24);
-}
-
-.wheelset-spoke-lookup__header {
-  padding: 1.4rem clamp(1rem, 2vw, 1.75rem);
-  background:
-    radial-gradient(circle at 8% 18%, rgba(37, 99, 235, 0.07), transparent 44%),
-    #f8fafc;
-}
-
-.wheelset-spoke-lookup__eyebrow {
-  margin: 0 0 0.35rem;
-  color: var(--spoke-blue);
-  font-size: 0.68rem;
-  font-weight: 800;
-  letter-spacing: 0.1em;
-}
-
-.wheelset-spoke-lookup h1 {
-  margin: 0;
-  font-size: clamp(1.35rem, 2.1vw, 1.8rem);
-  font-weight: 850;
-  line-height: 1.22;
-  letter-spacing: -0.025em;
-}
-
-.wheelset-spoke-lookup__intro {
-  margin: 0.4rem 0 0;
-  color: var(--spoke-muted);
-  font-size: 0.86rem;
-  line-height: 1.5;
 }
 
 .wheelset-spoke-lookup__filters {
@@ -1006,7 +976,6 @@ useHead(() => ({
     padding: 0 0.55rem 1.8rem;
   }
 
-  .wheelset-spoke-lookup__header,
   .wheelset-spoke-lookup__filters {
     padding: 0.9rem;
     border-radius: 1rem;

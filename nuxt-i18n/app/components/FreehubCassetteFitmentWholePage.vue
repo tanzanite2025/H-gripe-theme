@@ -1,12 +1,10 @@
 <template>
   <article id="freehub-cassette-fitment-tool" class="freehub-cassette-fitment-page">
-    <header class="freehub-cassette-fitment-page__header">
-      <p class="freehub-cassette-fitment-page__eyebrow">{{ t('guidesWheelsetBuyersChooseFreehub.intro.title') }}</p>
-      <h1>{{ t('guidesWheelsetBuyersChooseFreehub.seo.title') }}</h1>
-      <p class="freehub-cassette-fitment-page__description">
-        {{ t('guidesWheelsetBuyersChooseFreehub.seo.description') }}
-      </p>
-    </header>
+    <InteractiveToolPageHeader
+      :eyebrow="t('guidesWheelsetBuyersChooseFreehub.intro.title')"
+      :title="t('guidesWheelsetBuyersChooseFreehub.seo.title')"
+      :description="t('guidesWheelsetBuyersChooseFreehub.seo.description')"
+    />
 
     <section class="wheelset-section sizecharts-section" aria-labelledby="freehub-cassette-fitment-section-title">
       <h2 id="freehub-cassette-fitment-section-title" class="sizecharts-section__title">
@@ -81,6 +79,7 @@
 </template>
 
 <script setup lang="ts">
+import InteractiveToolPageHeader from '~/components/InteractiveToolPageHeader.vue'
 import { computed } from 'vue'
 import { useI18n } from '#imports'
 import AccordionItem from '~/components/ui/AccordionItem.vue'
@@ -120,38 +119,6 @@ const openFreehubSupportChat = () => {
   --tz-text-accent: var(--tz-site-accent);
   width: 100%;
   margin: 0 auto;
-}
-
-.freehub-cassette-fitment-page__header {
-  display: grid;
-  gap: 0.65rem;
-  width: min(100%, 78rem);
-  margin: 0 auto 2rem;
-  text-align: center;
-}
-
-.freehub-cassette-fitment-page__eyebrow {
-  margin: 0;
-  color: var(--tz-text-accent);
-  font-size: 0.74rem;
-  font-weight: 750;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-
-.freehub-cassette-fitment-page__header h1 {
-  margin: 0;
-  color: var(--tz-text-primary);
-  font-size: clamp(1.55rem, 3vw, 2.35rem);
-  line-height: 1.2;
-}
-
-.freehub-cassette-fitment-page__description {
-  max-width: 68rem;
-  margin: 0 auto;
-  color: var(--tz-text-secondary);
-  font-size: 0.95rem;
-  line-height: 1.7;
 }
 
 .freehub-cassette-fitment-page .sizecharts-section__title {

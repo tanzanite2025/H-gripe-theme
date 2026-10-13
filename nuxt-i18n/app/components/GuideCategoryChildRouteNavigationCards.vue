@@ -1,14 +1,16 @@
 <template>
   <section class="guide-category-child-route-navigation-cards" :aria-labelledby="headingId">
-    <header class="guide-category-child-route-navigation-cards__header">
-      <p class="guide-category-child-route-navigation-cards__eyebrow">{{ eyebrow }}</p>
-      <h1 :id="headingId" class="guide-category-child-route-navigation-cards__title">
-        {{ heading }}
-      </h1>
-      <p v-if="description" class="guide-category-child-route-navigation-cards__description">
-        {{ description }}
-      </p>
-    </header>
+    <slot name="header" :heading-id="headingId">
+      <header class="guide-category-child-route-navigation-cards__header">
+        <p class="guide-category-child-route-navigation-cards__eyebrow">{{ eyebrow }}</p>
+        <h1 :id="headingId" class="guide-category-child-route-navigation-cards__title">
+          {{ heading }}
+        </h1>
+        <p v-if="description" class="guide-category-child-route-navigation-cards__description">
+          {{ description }}
+        </p>
+      </header>
+    </slot>
 
     <ul class="guide-category-child-route-navigation-cards__list">
       <li

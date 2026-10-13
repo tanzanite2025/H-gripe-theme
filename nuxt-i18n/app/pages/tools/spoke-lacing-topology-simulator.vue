@@ -1,23 +1,18 @@
 <template>
 <div class="spoke-lacing-page">
 <!-- ================= 顶部工程页眉 ================= -->
-  <header class="blueprint-header">
-    <div class="header-title-group">
-      <h1>
-        <span class="header-main-title">{{ t('wheelsetLacingTopology.title') }}</span>
-        <span class="header-badge badge-primary">{{ t('wheelsetLacingTopology.versionBadge') }}</span>
-        <span class="header-badge">{{ t('wheelsetLacingTopology.topologyTag') }}</span>
-      </h1>
-      <div class="header-subtitle">
-        {{ t('wheelsetLacingTopology.subtitle') }}
-      </div>
-    </div>
+  <InteractiveToolPageHeader
+    :title="t('wheelsetLacingTopology.title')"
+    :description="t('wheelsetLacingTopology.subtitle')"
+  >
     <div class="header-controls">
+      <span class="header-badge badge-primary">{{ t('wheelsetLacingTopology.versionBadge') }}</span>
+      <span class="header-badge">{{ t('wheelsetLacingTopology.topologyTag') }}</span>
       <span class="header-badge" style="background: rgba(5, 150, 105, 0.06); color: #047857; border-color: rgba(5, 150, 105, 0.2);">
         {{ t('wheelsetLacingTopology.standaloneBadge') }}
       </span>
     </div>
-  </header>
+  </InteractiveToolPageHeader>
 
   <!-- ================= 核心工作台主网格 ================= -->
   <div class="blueprint-grid" :aria-label="t('wheelsetLacingTopology.workbenchLabel')">
@@ -294,6 +289,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useAsyncData, useI18n, useRoute, useSwitchLocalePath } from '#imports'
 import { useApiRequest } from '~/composables/useApiRequest'
+import InteractiveToolPageHeader from '~/components/InteractiveToolPageHeader.vue'
 import { usePageMessages } from '~/composables/usePageMessages'
 import {
   useStorefrontSeoLinks,
@@ -1299,7 +1295,7 @@ onBeforeUnmount(() => {
       --text-dim: #94a3b8;
     }
 
-    .spoke-lacing-page * {
+    .spoke-lacing-page *:where(:not(.interactive-tool-page-header)) {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
@@ -1324,45 +1320,10 @@ onBeforeUnmount(() => {
       margin: 0 auto;
     }
 
-    /* 顶部工程页眉 */
-    .blueprint-header {
-      background: var(--bg-surface);
-      border: var(--border-dashed);
-      border-radius: 32px;
-      padding: 22px 36px;
+    .header-controls {
       display: flex;
-      justify-content: space-between;
-      align-items: center;
-      position: relative;
-      overflow: hidden;
-      box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.05);
-    }
-
-    .blueprint-header::before {
-      content: "";
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(135deg, rgba(5, 150, 105, 0.03), transparent 60%);
-      pointer-events: none;
-    }
-
-    .header-title-group h1 {
-      font-size: 1.15rem;
-      font-weight: 900;
-      letter-spacing: -0.05em;
-      text-transform: uppercase;
-      color: var(--text-main);
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .header-title-group {
-      min-width: 0;
-    }
-
-    .header-main-title {
-      min-width: 0;
+      flex-wrap: wrap;
+      gap: 0.5rem;
     }
 
     .header-badge {
@@ -1385,46 +1346,11 @@ onBeforeUnmount(() => {
       border-color: rgba(5, 150, 105, 0.25);
     }
 
-    .header-subtitle {
-      font-size: 9px;
-      font-weight: 900;
-      text-transform: uppercase;
-      letter-spacing: 0.14em;
-      color: var(--text-muted);
-      opacity: 0.75;
-      margin-top: 4px;
-    }
-
     @media (max-width: 640px) {
       .spoke-lacing-page {
         padding: 16px 0 24px;
       }
 
-      .blueprint-header {
-        flex-direction: column;
-        align-items: stretch;
-        gap: 12px;
-        padding: 18px 20px;
-      }
-
-      .header-title-group {
-        width: 100%;
-      }
-
-      .header-title-group h1 {
-        flex-wrap: wrap;
-        row-gap: 8px;
-        line-height: 1.2;
-      }
-
-      .header-main-title {
-        flex: 1 0 100%;
-        width: 100%;
-      }
-
-      .header-controls {
-        align-self: flex-start;
-      }
     }
 
     /* 顶层主网格排版 */

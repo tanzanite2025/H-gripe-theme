@@ -1,18 +1,17 @@
 <template>
   <article id="stainless-steel-spoke-technical-article" class="spoke-dislocation-page">
-    <header class="spoke-dislocation-page__hero">
-      <div>
-        <p class="spoke-dislocation-page__eyebrow">{{ t('guidesSpokeDislocationMechanics.version') }}</p>
-        <h1>{{ t('guidesSpokeDislocationMechanics.title') }}</h1>
-        <p class="spoke-dislocation-page__subtitle">{{ t('guidesSpokeDislocationMechanics.subtitle') }}</p>
-      </div>
+    <InteractiveToolPageHeader
+      :eyebrow="t('guidesSpokeDislocationMechanics.version')"
+      :title="t('guidesSpokeDislocationMechanics.title')"
+      :description="t('guidesSpokeDislocationMechanics.subtitle')"
+    >
       <div class="spoke-dislocation-page__tags" :aria-label="t('guidesSpokeDislocationMechanics.tags.ariaLabel')">
         <span class="spoke-dislocation-page__tag spoke-dislocation-page__tag--dark">{{ t('guidesSpokeDislocationMechanics.tags.material') }}</span>
         <span class="spoke-dislocation-page__tag spoke-dislocation-page__tag--emerald">{{ t('guidesSpokeDislocationMechanics.tags.backend') }}</span>
         <span class="spoke-dislocation-page__tag spoke-dislocation-page__tag--blue">{{ t('guidesSpokeDislocationMechanics.tags.elongation') }}</span>
         <span class="spoke-dislocation-page__tag spoke-dislocation-page__tag--amber">{{ t('guidesSpokeDislocationMechanics.tags.scope') }}</span>
       </div>
-    </header>
+    </InteractiveToolPageHeader>
 
     <div class="spoke-dislocation-page__two-column">
       <section class="spoke-dislocation-page__card">
@@ -458,6 +457,7 @@
 </template>
 
 <script setup lang="ts">
+import InteractiveToolPageHeader from '~/components/InteractiveToolPageHeader.vue'
 import { computed, ref, watch } from 'vue'
 import { definePageMeta, useHead, useI18n } from '#imports'
 import { usePageMessages } from '~/composables/usePageMessages'
@@ -897,31 +897,12 @@ const synchronizeStainlessSteelSpokeCustomAreaSelection = () => {
   font-size: 0.95rem;
 }
 
-.spoke-dislocation-page__hero,
 .spoke-dislocation-page__card,
 .spoke-dislocation-page__notice {
   border: 1px dashed var(--spoke-border);
   border-radius: 1.25rem;
   background: var(--spoke-card-surface);
   box-shadow: 0 1px 3px rgb(15 23 42 / 0.04);
-}
-
-.spoke-dislocation-page__hero {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  flex-wrap: wrap;
-  margin-bottom: 1rem;
-  padding: clamp(1.1rem, 2vw, 1.75rem);
-}
-
-.spoke-dislocation-page__eyebrow {
-  margin: 0 0 0.35rem;
-  color: var(--spoke-muted);
-  font: 700 0.68rem/1.35 var(--tz-font-ui);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
 }
 
 .spoke-dislocation-page h1,
@@ -931,29 +912,11 @@ const synchronizeStainlessSteelSpokeCustomAreaSelection = () => {
   margin-top: 0;
 }
 
-.spoke-dislocation-page h1 {
-  margin-bottom: 0.35rem;
-  font-size: clamp(1.35rem, 2.5vw, 2rem);
-  font-weight: 800;
-  letter-spacing: -0.035em;
-  line-height: 1.18;
-}
-
-.spoke-dislocation-page__subtitle {
-  max-width: 58rem;
-  margin-bottom: 0;
-  color: var(--spoke-muted);
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
 .spoke-dislocation-page__tags {
   display: flex;
   gap: 0.45rem;
   flex-wrap: wrap;
-  justify-content: flex-end;
+  justify-content: flex-start;
 }
 
 .spoke-dislocation-page__tag {
@@ -1304,7 +1267,6 @@ const synchronizeStainlessSteelSpokeCustomAreaSelection = () => {
 }
 
 @media (max-width: 720px) {
-  .spoke-dislocation-page__hero { align-items: flex-start; }
   .spoke-dislocation-page__tags { justify-content: flex-start; }
   .spoke-dislocation-page__calculator-inputs,
   .spoke-dislocation-page__results { grid-template-columns: 1fr 1fr; }

@@ -1,10 +1,10 @@
 <template>
   <div>
     <div class="spoke-page">
-      <header class="spoke-page__intro">
-        <h1 class="spoke-page__title">{{ t('resourcesSpokeCalculator.title') }}</h1>
-        <p class="spoke-page__description">{{ t('resourcesSpokeCalculator.seo.description') }}</p>
-      </header>
+      <InteractiveToolPageHeader
+        :title="t('resourcesSpokeCalculator.title')"
+        :description="t('resourcesSpokeCalculator.seo.description')"
+      />
 
       <section>
         <SpokeHeadTypeStep
@@ -112,6 +112,7 @@
 </template>
 
 <script setup lang="ts">
+import InteractiveToolPageHeader from '~/components/InteractiveToolPageHeader.vue'
 import SpokeCalculatorBlueprint from '~/components/SpokeCalculatorBlueprint.vue'
 import SpokeCalculatorCatalogPanel from '~/components/SpokeCalculatorCatalogPanel.vue'
 import SpokeHeadTypeStep from '~/components/SpokeHeadTypeStep.vue'
@@ -424,26 +425,6 @@ useHead(() => ({
 <style src="~/assets/css/guide-sections.css"></style>
 
 <style scoped>
-.spoke-page__intro {
-  margin-bottom: 1.5rem;
-}
-
-.spoke-page__title {
-  margin: 0 0 0.75rem;
-  font-size: var(--tz-type-page-title);
-  line-height: 1.18;
-  font-weight: 600;
-  color: var(--tz-text-primary);
-}
-
-.spoke-page__description {
-  max-width: 78ch;
-  margin: 0;
-  color: var(--tz-text-secondary);
-  font-size: 0.9375rem;
-  line-height: 1.65;
-}
-
 .support-page__calculator-wrapper {
   margin-top: 0;
 }

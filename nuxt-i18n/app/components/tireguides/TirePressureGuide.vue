@@ -1,6 +1,9 @@
 <template>
   <div class="tire-pressure-guide">
-    <h2 class="sizecharts-section__title">{{ t('guidesTirePressure.guideTitle') }}</h2>
+    <InteractiveToolPageHeader
+      :title="t('guidesTirePressure.title')"
+      :description="t('guidesTirePressure.description')"
+    />
     <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-md p-5 md:p-6 text-center">
       <TirePressureSection />
     </div>
@@ -11,6 +14,7 @@
 import { watch } from 'vue'
 import { useI18n } from '#imports'
 import TirePressureSection from '~/components/TirePressureSection.vue'
+import InteractiveToolPageHeader from '~/components/InteractiveToolPageHeader.vue'
 import { usePageMessages } from '~/composables/usePageMessages'
 
 const { locale, t } = useI18n()

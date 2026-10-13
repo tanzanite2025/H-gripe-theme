@@ -1,11 +1,11 @@
 <template>
   <section class="schwalbe-selector" aria-labelledby="schwalbe-selector-title">
-    <div class="schwalbe-selector__intro">
-      <p class="schwalbe-selector__kicker">{{ tx('kicker') }}</p>
-      <h1 id="schwalbe-selector-title" class="schwalbe-selector__title schwalbe-selector__title--sr-only">
-        {{ tx('title') }}
-      </h1>
-    </div>
+    <InteractiveToolPageHeader
+      heading-id="schwalbe-selector-title"
+      :eyebrow="tx('kicker')"
+      :title="tx('title')"
+      :description="tx('seo.description')"
+    />
 
     <nav
       class="schwalbe-selector__section-tabs"
@@ -272,6 +272,7 @@
 </template>
 
 <script setup lang="ts">
+import InteractiveToolPageHeader from '~/components/InteractiveToolPageHeader.vue'
 import { computed, reactive, ref, useId, watch } from 'vue'
 import { useI18n, useRoute } from '#imports'
 import SchwalbeTireCard from '~/components/tireguides/schwalbe/SchwalbeTireCard.vue'
@@ -419,44 +420,6 @@ const activeFilterCount = computed(() => [
   display: grid;
   gap: 1.25rem;
   width: 100%;
-}
-
-.schwalbe-selector__intro {
-  max-width: 60rem;
-  margin: 0 auto;
-  text-align: center;
-}
-
-.schwalbe-selector__kicker {
-  margin: 0 0 0.35rem;
-  color: var(--tz-text-accent);
-  font-size: 0.75rem;
-  font-weight: 750;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-}
-
-.schwalbe-selector__title {
-  margin: 0;
-  color: var(--tz-text-primary);
-  font-size: clamp(1.65rem, 3vw, 2.4rem);
-  font-weight: 800;
-  line-height: 1.15;
-}
-
-/* Keep the page title available to screen readers and crawlers without
-   reserving visual space above the two content tabs. */
-.schwalbe-selector__title--sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  clip-path: inset(50%);
-  white-space: nowrap;
-  border: 0;
 }
 
 .schwalbe-selector__section-tabs {

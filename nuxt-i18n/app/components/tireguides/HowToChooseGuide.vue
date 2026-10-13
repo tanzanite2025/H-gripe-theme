@@ -1,11 +1,11 @@
 <template>
   <div class="how-to-choose-guide">
+    <InteractiveToolPageHeader
+      :title="t('guidesTireChoose.seo.title')"
+      :description="t('guidesTireChoose.seo.description')"
+    />
     <!-- Main Premium Card -->
     <div class="rounded-2xl bg-[var(--tz-card-surface)] p-3 text-center shadow-md md:p-6">
-      <h1 class="mb-6 flex items-center justify-center gap-2 text-xl font-bold tz-text-secondary">
-        {{ t('guidesTireChoose.seo.title') }}
-      </h1>
-
       <ReusablePageSectionUnderlineTabs
         :tabs="chooseGuideSectionTabs"
         :active-id="activeChooseGuideTab"
@@ -196,6 +196,7 @@
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useHead, useI18n, useRoute, useRouter, useSwitchLocalePath } from '#imports'
 import TireRimHelper from '~/components/TireRimHelper.vue'
+import InteractiveToolPageHeader from '~/components/InteractiveToolPageHeader.vue'
 import TireRimCalculatorInstallationAerodynamicsAndFailureGuidanceCards from '~/components/tireguides/TireRimCalculatorInstallationAerodynamicsAndFailureGuidanceCards.vue'
 import TireRimEngineeringReferenceWorkbench from '~/components/tireguides/TireRimEngineeringReferenceWorkbench.vue'
 import SchwalbeEtrto2024TireRimWidthReference from '~/components/tireguides/SchwalbeEtrto2024TireRimWidthReference.vue'

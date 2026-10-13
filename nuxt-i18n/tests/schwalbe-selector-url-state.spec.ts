@@ -26,20 +26,21 @@ const openCatalogFilters = async (page: Page) => {
 }
 
 test.describe('Schwalbe selector URL state', () => {
-  test('keeps the page H1 semantic while hiding only its visual presentation', async ({ page }) => {
+  test('shows the page H1 above the introduction and catalog tabs', async ({ page }) => {
     await page.goto(selectorURL())
     await waitForNuxtMount(page)
 
     const title = page.locator('#schwalbe-selector-title')
     await expect(title).toHaveText('Schwalbe tire selector')
-    await expect(title).toHaveAttribute('class', /schwalbe-selector__title--sr-only/)
-    await expect(title).toHaveCSS('position', 'absolute')
-    await expect(title).toHaveCSS('overflow', 'hidden')
+    await expect(title).toBeVisible()
 
     const titleBox = await title.boundingBox()
     expect(titleBox).not.toBeNull()
-    expect(titleBox?.width).toBeLessThanOrEqual(1)
-    expect(titleBox?.height).toBeLessThanOrEqual(1)
+    expect(titleBox!.width).toBeGreaterThan(1)
+    expect(titleBox!.height).toBeGreaterThan(1)
+    const tabsBox = await page.locator('.schwalbe-selector__section-tabs').boundingBox()
+    expect(tabsBox).not.toBeNull()
+    expect(tabsBox!.y).toBeGreaterThan(titleBox!.y + titleBox!.height)
   })
 
   test('separates the introduction and full catalog search into page tabs', async ({ page }) => {

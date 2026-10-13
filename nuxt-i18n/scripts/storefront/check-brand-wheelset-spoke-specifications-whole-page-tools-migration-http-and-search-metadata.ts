@@ -55,7 +55,7 @@ function captureWholePageSpecificationContent(elements: ParsedHtmlElement[], pre
     rows: elements
       .filter(element => element.nodeName === 'tr' && readParsedHtmlElementAttribute(element, 'id').startsWith('wheelset-'))
       .map(element => ({ id: readParsedHtmlElementAttribute(element, 'id'), text: readNormalizedServerRenderedElementText(element) })),
-    introduction: elements.filter(element => hasParsedHtmlElementClass(element, 'wheelset-spoke-lookup__intro'))
+    introduction: elements.filter(element => hasParsedHtmlElementClass(element, 'interactive-tool-page-header__description'))
       .map(readNormalizedServerRenderedElementText),
     shimanoNote: elements.filter(element => hasParsedHtmlElementClass(element, 'brand-wheelset-spoke-repair-kit-products__note'))
       .map(readNormalizedServerRenderedElementText),

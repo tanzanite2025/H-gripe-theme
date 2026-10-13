@@ -5,13 +5,23 @@
     :description="t('toolsNavigation.description')"
     :open-label="t('toolsNavigation.openTool')"
     :cards="availableInteractiveToolCards"
-  />
+  >
+    <template #header="{ headingId }">
+      <InteractiveToolPageHeader
+        :heading-id="headingId"
+        :eyebrow="t('toolsNavigation.eyebrow')"
+        :title="t('toolsNavigation.label')"
+        :description="t('toolsNavigation.description')"
+      />
+    </template>
+  </GuideCategoryChildRouteNavigationCards>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useHead, useI18n } from '#imports'
 import GuideCategoryChildRouteNavigationCards from '~/components/GuideCategoryChildRouteNavigationCards.vue'
+import InteractiveToolPageHeader from '~/components/InteractiveToolPageHeader.vue'
 
 definePageMeta({
   path: '/tools',
