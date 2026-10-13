@@ -138,9 +138,9 @@
     },
     {
       "key": "guides-tireguides-tire-size-markings",
-      "path": "/guides/tireguides/tire-size-markings",
-      "label": "Tire size markings",
-      "description": "Learn to read ETRTO, inch, and French tire markings before checking rim fit",
+      "path": "/tools/tire-size-marking-converter",
+      "label": "Tire size marking converter",
+      "description": "Convert ETRTO, inch, and French tire markings with the complete size reference",
       "is_searchable": true,
       "is_checkable": true,
       "is_indexable": true

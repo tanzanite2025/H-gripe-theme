@@ -17,15 +17,6 @@
     />
 
     <div v-else class="sizecharts-page">
-      <!-- Tire size marking education -->
-      <section
-        v-show="activeTab === 'tire-size-markings'"
-        id="tire-size-markings"
-        class="sizecharts-section tz-text-secondary"
-      >
-        <TireSizeGuide v-if="activeTab === 'tire-size-markings'" />
-      </section>
-
       <!-- Tire frame clearance -->
       <section
         v-show="activeTab === 'tire-frame-clearance'"
@@ -57,10 +48,7 @@
         </div>
       </section>
 
-      <div
-        v-if="activeTab !== 'tire-size-markings'"
-        class="sizecharts-feedback"
-      >
+      <div class="sizecharts-feedback">
         <UserFeedbackThread
           threadKey="guides-tireguides"
           :title="t('guidesTireguides.feedbackTitle')"
@@ -79,7 +67,6 @@ import TireFrameClearanceGuide from '~/components/tireguides/TireFrameClearanceG
 import SchwalbeTireCircumferenceGuide from '~/components/tireguides/SchwalbeTireCircumferenceGuide.vue'
 import TubelessGuide from '~/components/tireguides/TubelessGuide.vue'
 import InstallationGuide from '~/components/tireguides/InstallationGuide.vue'
-import TireSizeGuide from '~/components/tireguides/TireSizeGuide.vue'
 import { usePageSubNavigationTab } from '~/composables/usePageSubNavigationTab'
 import { pageSubNavigationChildPath, tireGuideTabs } from '~/utils/pageSubNavigation'
 import { usePageMessages } from '~/composables/usePageMessages'
@@ -99,7 +86,7 @@ const localePath = useLocalePath()
 // Migrated tools must stay retired as real 404s instead of silently falling
 // back to the tire-guide landing page and creating compatibility aliases.
 const requestedTab = route.query.tab
-const retiredGuideTabIds = new Set(['choose-inner-tube', 'tire-rim-width-compatibility'])
+const retiredGuideTabIds = new Set(['choose-inner-tube', 'tire-rim-width-compatibility', 'tire-size-markings'])
 const requestsRetiredGuideTab = Array.isArray(requestedTab)
   ? requestedTab.some(tab => typeof tab === 'string' && retiredGuideTabIds.has(tab))
   : retiredGuideTabIds.has(String(requestedTab || ''))
@@ -112,20 +99,13 @@ if (requestsRetiredGuideTab) {
 }
 
 const { loadPageMessages } = usePageMessages('guidesTireguides')
-const { loadPageMessages: loadTireSizePageMessages } = usePageMessages('guidesTireSize')
 
 const normalizeGuideCategoryLandingRoutePath = (path: string) => path.replace(/\/+$/, '') || '/'
 
-await Promise.all([
-  loadPageMessages(locale.value),
-  loadTireSizePageMessages(locale.value),
-])
+await loadPageMessages(locale.value)
 
 watch(locale, (nextLocale) => {
-  void Promise.all([
-    loadPageMessages(nextLocale),
-    loadTireSizePageMessages(nextLocale),
-  ])
+  void loadPageMessages(nextLocale)
 })
 
 const tabs = tireGuideTabs
@@ -154,9 +134,6 @@ const activePageTitle = computed(() => {
     return t('guidesTireguides.title')
   }
 
-  if (activeTab.value === 'tire-size-markings') {
-    return t('guidesTireSize.title')
-  }
   if (activeTab.value === 'tubeless') {
     return t('guidesTireguides.tabs.tubeless.label')
   }

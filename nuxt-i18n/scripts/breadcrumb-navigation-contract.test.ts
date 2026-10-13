@@ -125,7 +125,12 @@ const tireGuideRouteTab = resolvePageSubNavigationBreadcrumb(
   [{ path: '/guides/tireguides', tabs: tireGuideTabs }],
 )
 assert.equal(tireGuideRouteTab, null, 'Migrated selector must not retain a virtual guide route')
-assert.equal(tireGuideTabs.length, 4)
+assert.equal(tireGuideTabs.length, 3)
+
+assert.equal(resolvePageSubNavigationBreadcrumb(
+  '/guides/tireguides/tire-size-markings',
+  [{ path: '/guides/tireguides', tabs: tireGuideTabs }],
+), null, 'Migrated tire-size tool must not retain a virtual guide route')
 
 assert.equal(resolvePageSubNavigationBreadcrumb(
   '/guides/tireguides/tire-rim-width-compatibility',
@@ -286,10 +291,10 @@ assert.equal(switchSibling({
   breadcrumbPath: '/guides',
   siblingPath: '/guides',
   fallbackPath: '/guides/tireguides',
-  routePatterns: ['/guides/tireguides/:tab(tire-size-markings|tubeless)'],
+  routePatterns: ['/guides/tireguides/:tab(tire-frame-clearance|tubeless)'],
 }), '/guides/tireguides/tubeless')
 assert.equal(switchSibling({
-  currentPath: '/guides/tireguides/tire-rim-width-compatibility',
+  currentPath: '/tools/tire-size-marking-converter',
   breadcrumbPath: '/guides',
   siblingPath: '/support',
   fallbackPath: '/support/faqs',

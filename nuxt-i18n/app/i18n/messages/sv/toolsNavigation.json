@@ -20,5 +20,7 @@
   "freehubCassetteFitmentEngineLabel": "Freehub and cassette compatibility engine",
   "freehubCassetteFitmentEngineDescription": "Match cassette standards, freehub bodies, spacers, and mechanical fitment rules with the complete guide.",
   "tireRimWidthCompatibilityEngineLabel": "Tire and rim width compatibility engine",
-  "tireRimWidthCompatibilityEngineDescription": "Calculate tire and rim width fit, inspect simulations, and compare published compatibility charts"
+  "tireRimWidthCompatibilityEngineDescription": "Calculate tire and rim width fit, inspect simulations, and compare published compatibility charts",
+  "tireSizeMarkingConverterLabel": "Tire size marking converter",
+  "tireSizeMarkingConverterDescription": "Convert ETRTO, inch, and French tire markings with the complete size reference, explanations, and fitment limits."
 }

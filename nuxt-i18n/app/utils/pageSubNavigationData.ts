@@ -43,16 +43,6 @@ export interface PageSubNavigationTabFromPathOptions {
 
 export const tireGuideTabs = [
   {
-    id: 'tire-size-markings',
-    labelKey: 'guidesTireguides.tabs.tireSizeMarkings.label',
-    fallback: 'Tire size markings',
-    descriptionKey: 'guidesTireguides.tabs.tireSizeMarkings.description',
-    description: 'Learn to read ETRTO, inch, and French tire markings before checking rim fit.',
-    feedbackThreadKey: 'guides-tireguides',
-    feedbackTitleKey: 'guidesTireguides.feedbackTitle',
-    feedbackSubtitleKey: 'feedback.defaultSubtitle',
-  },
-  {
     id: 'tire-frame-clearance',
     labelKey: 'guidesTireguides.tabs.tireFrameClearance.label',
     fallback: 'Tire and frame clearance',
@@ -77,7 +67,7 @@ export const tireGuideTabs = [
 
 // Migrated tools can still use their guide metadata namespace while they retain
 // their standalone SEO implementation; they are not virtual guide tabs.
-export type TireGuideTabId = (typeof tireGuideTabs)[number]['id'] | 'tire-pressure' | 'choose-inner-tube'
+export type TireGuideTabId = (typeof tireGuideTabs)[number]['id'] | 'tire-pressure' | 'choose-inner-tube' | 'tire-size-markings'
 
 export const wheelsetBuyerTabs = [
   {

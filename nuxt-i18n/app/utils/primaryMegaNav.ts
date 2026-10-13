@@ -377,6 +377,16 @@ export const primaryMegaNavSections: PrimaryMegaNavSection[] = [
         accent: 'emerald',
       },
       {
+        id: 'tire-size-marking-converter',
+        labelKey: 'toolsNavigation.tireSizeMarkingConverterLabel',
+        labelFallback: 'Tire size marking converter',
+        description: 'Convert ETRTO, inch, and French tire markings with the complete size reference and fitment limits.',
+        to: '/tools/tire-size-marking-converter',
+        icon: 'lucide:ruler',
+        size: 'standard',
+        accent: 'emerald',
+      },
+      {
         id: 'freehub-cassette-fitment-engine',
         labelKey: 'toolsNavigation.freehubCassetteFitmentEngineLabel',
         labelFallback: 'Freehub and cassette compatibility engine',

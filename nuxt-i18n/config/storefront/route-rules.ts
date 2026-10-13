@@ -73,6 +73,7 @@ export const storefrontRetiredPagePaths: readonly string[] = [
   '/guides/tireguides/tire-pressure',
   '/guides/tireguides/choose-inner-tube',
   '/guides/tireguides/tire-rim-width-compatibility',
+  '/guides/tireguides/tire-size-markings',
   '/guides/wheelset-buyers/choose-freehub',
   '/guides/spokeguides',
   '/guides/spokeguides/stainless-steel-microstructural-dislocation-mechanics',

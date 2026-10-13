@@ -20,5 +20,7 @@
   "freehubCassetteFitmentEngineLabel": "塔基与飞轮兼容助手",
   "freehubCassetteFitmentEngineDescription": "匹配飞轮标准、塔基、垫圈和机械适配规则，并查看完整兼容说明。",
   "tireRimWidthCompatibilityEngineLabel": "车圈与外胎宽度兼容引擎",
-  "tireRimWidthCompatibilityEngineDescription": "计算外胎与车圈宽度配合，查看模拟并对照已发布的兼容图表"
+  "tireRimWidthCompatibilityEngineDescription": "计算外胎与车圈宽度配合，查看模拟并对照已发布的兼容图表",
+  "tireSizeMarkingConverterLabel": "轮胎尺寸标注转换工具",
+  "tireSizeMarkingConverterDescription": "联动转换 ETRTO、英寸和法式尺寸标注，并查看完整尺寸对照、解释和安装前限制。"
 }

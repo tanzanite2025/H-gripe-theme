@@ -64,7 +64,7 @@
          <p>{{ t('guidesTireInnerTube.steps.size.etrtoExample') }}</p>
          <p>{{ t('guidesTireInnerTube.steps.size.widthRangeExample') }}</p>
          <p>{{ t('guidesTireInnerTube.steps.size.markingCaution') }}</p>
-         <NuxtLink :to="localePath('/guides/tireguides/tire-size-markings')" class="inline-block font-semibold tz-text-primary underline underline-offset-4">{{ t('guidesTireInnerTube.steps.size.markingsLink') }}</NuxtLink>
+         <NuxtLink :to="localePath('/tools/tire-size-marking-converter')" class="inline-block font-semibold tz-text-primary underline underline-offset-4">{{ t('guidesTireInnerTube.steps.size.markingsLink') }}</NuxtLink>
        </div>
     </section>
 

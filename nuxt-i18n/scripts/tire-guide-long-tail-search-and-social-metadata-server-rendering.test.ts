@@ -40,7 +40,7 @@ function readUniqueTireGuideSearchOrSocialMetaContent(elements: TireGuideMetadat
 
 const tireGuideRouteMetadataChecks = [
   { tabId: 'schwalbe-tire-circumference', messageKey: 'schwalbeCircumference', expectedSearchTerms: /Garmin.*Wahoo/, expectedImagePath: '/public/tiresizecharts/schwalbe-tire-circumference/exact-circumference-of-tire.webp' },
-  { tabId: 'tire-size-markings', messageKey: 'tireSizeMarkings', expectedSearchTerms: /ETRTO.*700C|700C.*ETRTO/, expectedImagePath: '/public/tiresizecharts/tiresize/schwalbe-tiresize.webp' },
+  { tabId: 'tire-size-markings', routePath: '/tools/tire-size-marking-converter', messageKey: 'tireSizeMarkings', expectedSearchTerms: /ETRTO.*700C|700C.*ETRTO/, expectedImagePath: '/public/tiresizecharts/tiresize/schwalbe-tiresize.webp' },
   { tabId: 'tubeless', messageKey: 'tubeless', expectedSearchTerms: /sealant|补胎液/, expectedImagePath: '/public/tiresizecharts/installation/3/Tubelesstire-installation-diagram-2.webp' },
   { tabId: 'tire-pressure', messageKey: 'tirePressure', expectedSearchTerms: /rider weight|骑手体重/, expectedImagePath: null },
 ]
@@ -53,9 +53,9 @@ for (const localeCode of ['en', 'zh_cn', 'fr'] as const) {
   }
   const descriptionValues = new Set<string>()
   for (const routeCheck of tireGuideRouteMetadataChecks) {
-    const routeBasePath = routeCheck.tabId === 'tire-pressure'
+    const routeBasePath = routeCheck.routePath || (routeCheck.tabId === 'tire-pressure'
       ? '/tools/dynamic-tire-pressure-calculator'
-      : `/guides/tireguides/${routeCheck.tabId}`
+      : `/guides/tireguides/${routeCheck.tabId}`)
     const routePath = `${localeCode === 'en' ? '' : `/${localeCode}`}${routeBasePath}`
     // The inner-tube calculator selector and tracking must not affect other guides.
     const response: Response = await fetch(new URL(`${routePath}?tab=calculator&utm_source=forum`, storefrontBaseUrl), { signal: AbortSignal.timeout(60_000) })
