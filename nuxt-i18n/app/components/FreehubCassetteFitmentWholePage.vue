@@ -1,9 +1,7 @@
 <template>
   <article id="freehub-cassette-fitment-tool" class="freehub-cassette-fitment-page">
     <InteractiveToolPageHeader
-      :eyebrow="t('guidesWheelsetBuyersChooseFreehub.intro.title')"
       :title="t('guidesWheelsetBuyersChooseFreehub.seo.title')"
-      :description="t('guidesWheelsetBuyersChooseFreehub.seo.description')"
     />
 
     <section class="wheelset-section sizecharts-section" aria-labelledby="freehub-cassette-fitment-section-title">

@@ -2,7 +2,6 @@
   <div class="tz-text-secondary">
     <InteractiveToolPageHeader
       :title="t('guidesTireSize.title')"
-      :description="t('guidesTireSize.calculator.description')"
     />
     <div class="mt-1">
       <TireSizeSection />

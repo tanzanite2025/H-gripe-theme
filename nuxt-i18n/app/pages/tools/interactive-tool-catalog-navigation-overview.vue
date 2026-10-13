@@ -9,7 +9,6 @@
     <template #header="{ headingId }">
       <InteractiveToolPageHeader
         :heading-id="headingId"
-        :eyebrow="t('toolsNavigation.eyebrow')"
         :title="t('toolsNavigation.label')"
         :description="t('toolsNavigation.description')"
       />

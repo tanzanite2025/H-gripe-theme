@@ -92,7 +92,7 @@
     "scopeNote": "Certifications and tests apply to specific product models. Refer to the corresponding certificates and reports for their scope and results.",
     "contactCta": "Ask about certificates & test reports"
   },
-  "confidentiality": "Partner names and project details are shared as agreed with each customer. We do not publish this information without their permission.",
+  "confidentiality": "We respect our partners' brand and project confidentiality agreements. Our partnership figures include public and confidential collaborations; the map and directory show only information approved for public display by both parties.",
   "whyPartner": {
     "title": "How We Work With You",
     "trust": {
@@ -109,11 +109,28 @@
     }
   },
   "map": {
-    "title": "Illustrative connections from Xiamen",
-    "description": "A geographic illustration connecting Xiamen, China to selected cities.",
-    "svgTitle": "Illustrative map of connections from Xiamen",
-    "svgDescription": "Animated lines connecting Xiamen, China to example cities. These are illustrative connections.",
-    "caption": "This map is illustrative. It does not identify partner brands, customer locations or actual shipping routes."
+    "title": "Start your partnership in Xiamen",
+    "description": "Wheel components and partnership services for brands, bike shops and cycling teams worldwide.",
+    "directoryTitle": "Partners and contact locations",
+    "directoryHeading": "Public partner directory",
+    "contactEyebrow": "Partnership enquiries",
+    "contactTitle": "Let's work on your next project",
+    "contactDescription": "Brands, bike shops and cycling teams are welcome to discuss products and partnership opportunities with us.",
+    "contactCta": "Discuss a partnership",
+    "locationHeading": "Contact locations",
+    "xiamenLocation": "Xiamen, China",
+    "contactTeam": "Contact team",
+    "xiamenContactMarker": "Xiamen · Contact team",
+    "contactLocationDescription": "Our Xiamen team coordinates product development, sourcing and project enquiries.",
+    "partnerWebsite": "Visit partner website",
+    "svgTitle": "Partner and Xiamen contact team location map",
+    "svgDescription": "A simple world map marking the contact team in Xiamen, China.",
+    "svgDescriptionWithPartners": "A world map marking the Xiamen contact team and partners approved for public display. Select a partner using a map marker or the directory.",
+    "partnerTypes": {
+      "oemOdm": "OEM / ODM brand partner",
+      "dealerBuilder": "Bike shop / wheel builder",
+      "teamsAndAmbassadors": "Team / cycling ambassador"
+    }
   },
   "partnershipFaq": {
     "title": "B2B Partnership FAQ",

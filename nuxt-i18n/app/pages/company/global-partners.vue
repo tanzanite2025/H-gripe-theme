@@ -62,7 +62,7 @@
             {{ t('companyGlobalPartners.partnershipChannels.conditionsNote') }}
           </p>
         </section>
-        <WorldMapXiamen />
+        <GlobalPartnerDirectoryAndLocationMap :partners="globalPartnerPublicDirectoryEntries" />
 
         <!-- Data highlights cards -->
         <section class="mt-6 grid gap-4 sm:grid-cols-3">
@@ -189,15 +189,6 @@
           </div>
         </section>
 
-        <!-- Confidentiality notice for partner brands -->
-        <div
-          class="premium-card mt-4 rounded-2xl p-3 text-center text-sm tz-text-accent"
-        >
-          <p class="m-0">
-            {{ t('companyGlobalPartners.confidentiality') }}
-          </p>
-        </div>
-
         <!-- Value proposition: Why partner with us -->
         <section class="mt-8">
           <h2 class="mb-3 text-sm font-semibold tz-text-primary text-center">
@@ -321,8 +312,9 @@
 <script setup lang="ts">
 import { computed, watch } from 'vue'
 import { definePageMeta, useHead, useI18n, useLocalePath } from '#imports'
-import WorldMapXiamen from '~/components/WorldMapXiamen.vue'
+import GlobalPartnerDirectoryAndLocationMap from '~/components/company/GlobalPartnerDirectoryAndLocationMap.vue'
 import { globalPartnerCollaborationChannelDefinitions } from '~/data/company/globalPartnerCollaborationChannelDefinitions'
+import { globalPartnerPublicDirectoryEntries } from '~/data/company/globalPartnerPublicDirectoryEntries'
 import { usePageMessages } from '~/composables/usePageMessages'
 import { useSiteTitle } from '~/composables/useSiteTitle'
 import { useStorefrontSeoLinks } from '~/composables/seo/useStorefrontSeoLinks'

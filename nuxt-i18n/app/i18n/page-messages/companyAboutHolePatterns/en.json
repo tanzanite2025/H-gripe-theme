@@ -1,49 +1,104 @@
 {
   "title": "Hole Patterns",
-  "intro": "A variety of rim drilling patterns is available to meet different hub geometries and lacing requirements.",
+  "alignmentEyebrow": "Four-angle custom drilling · Straight-Line Alignment",
+  "alignmentHeadline": "Reduce forced bends and fatigue risks",
+  "intro": "We normally simulate spoke directions from the hub drawing and lacing, then match four drilling angles to bring the nipple axis closer to the designed tension line, reducing extra bending moments and seat side loading.",
+  "openVideo": "Play automated angled rim drilling video",
+  "videoCaption": "Automated angled drilling · Watch the machining process",
+  "drillingGeometry": {
+    "axialCapability": {
+      "reference": "WL / WR",
+      "label": "Axial angles for the hub flanges",
+      "description": "Set each side's axial drilling angle to match the distance from the hub center plane to its flange."
+    },
+    "longitudinalCapability": {
+      "reference": "PCD · Hole count · Lacing",
+      "label": "Longitudinal angles for the lacing",
+      "description": "Set the two longitudinal drilling angles to match flange PCD, hole count and the lacing pattern."
+    },
+    "alignmentPrinciple": {
+      "title": "Designed to avoid forced bends",
+      "description": "Match two axial and two longitudinal angles together to reduce forced bending at the nipple exit and bring tension transfer closer to coaxial alignment.",
+      "manufacturingLimit": "Avoiding forced bends is a geometric design goal. Drawing dimensions, machining and assembly tolerances still affect the finished fit; exact coaxial alignment is not guaranteed."
+    }
+  },
+  "drawingSimulationAndManufacturingTolerances": {
+    "title": "From drawing-based simulation to machining",
+    "steps": {
+      "hubDrawingGeometry": {
+        "title": "Simulate geometry from the hub drawing",
+        "description": "We normally use drawing dimensions for WL / WR, left/right flange PCD and spoke exits, together with rim ERD, hole positions and lacing, to model spoke directions in space."
+      },
+      "matchedDrillingAngles": {
+        "title": "Match four drilling angles",
+        "description": "Match two axial and two longitudinal drilling angles to the simulated spoke directions, minimizing forced bends in the design. Drawing revision, hole mapping and the machining plan are confirmed directly."
+      },
+      "manufacturingAndAssemblyTolerances": {
+        "title": "Account for manufacturing and assembly tolerances",
+        "description": "Drawing dimensions have tolerances, and actual hubs, rim molding, drilling and assembly also vary. Nominal dimensions in the simulation cannot be treated as identical to the finished fit."
+      }
+    },
+    "carbonRimInterior": {
+      "title": "Limits of the molded carbon rim interior",
+      "description": "The internal nipple seats of a closed carbon rim are formed during molding and cannot be trued by CNC turning around the full internal circumference. Even a smooth interior has local surface variation that affects nipple contact. Custom drilling can closely match the drawing geometry, but cannot also remove interior variation or assembly deviations."
+    }
+  },
+  "angleAlignmentBenefits": {
+    "title": "Reduce fatigue risks at three load-critical points",
+    "misalignmentExplanation": "When fixed drilling angles do not match the actual hub and lacing, tension can force the nipple to tilt and the spoke to bend at its thread transition. This extra bending and side loading can contribute to nipple-seat cracking and spoke fatigue failure.",
+    "items": {
+      "spokeEndFatigue": {
+        "mechanism": "Less forced bending and extra bending moment",
+        "title": "Lower spoke thread-root failure risk",
+        "description": "Reduce additional bending stress at the spoke thread transition, lowering the risk of local fatigue and breakage under repeated loads."
+      },
+      "nippleSideLoading": {
+        "mechanism": "Better seating and tension transfer",
+        "title": "Less nipple side loading and damage",
+        "description": "Let the nipple follow the spoke's load direction more freely, reducing tilt, one-sided loading and local deformation."
+      },
+      "rimHoleLocalDamage": {
+        "mechanism": "Less seat side loading and stress concentration",
+        "title": "Lower carbon rim nipple-seat cracking risk",
+        "description": "Reduce lateral nipple pressure against the hole wall and seat edge, limiting local stress concentrations and fatigue damage."
+      }
+    },
+    "assemblyContext": "Angle matching works together with suitable nipples, washers where specified by the design, and correct wheel-building tension."
+  },
   "sections": {
     "support": {
-      "title": "Our Support",
+      "title": "Hole counts and drilling options",
       "items": {
         "symmetrical": {
-          "label": "Symmetrical Drilling",
-          "description": "Suitable for standard hubs, providing balanced spoke tension."
+          "label": "Symmetrical axial angles",
+          "description": "For wheels with similar hub geometry and lacing on both sides."
         },
         "asymmetrical": {
-          "label": "Asymmetrical Drilling",
-          "description": "Optimizes tension between the drive and non-drive sides, enhancing stability."
+          "label": "Independent left/right axial angles",
+          "description": "Match each flange direction separately when WL / WR differ."
         },
         "customCounts": {
           "label": "Custom Hole Counts",
           "description": "Available in 16, 20, 24, 28, 32, and 36-hole configurations."
         },
         "angled": {
-          "label": "Angled Drilling",
-          "description": "Hole angles are optimized for specific lacing patterns to reduce spoke stress."
+          "label": "Longitudinal lacing angles",
+          "description": "Match drilling angles in the longitudinal plane to radial or crossed lacing."
         }
       }
     },
     "customization": {
-      "title": "Customization Services",
-      "intro": "We support customers with tailored drilling solutions based on specific needs.",
+      "title": "Custom hub and lacing compatibility",
+      "intro": "Share your hub drawing, hub and rim models, and intended lacing so we can confirm the drilling plan with you directly.",
       "items": {
-        "specialCounts": "Special hole counts",
-        "customLacing": "Custom lacing compatibility",
-        "exclusiveDesigns": "OEM/ODM exclusive designs"
-      }
-    },
-    "automated": {
-      "title": "Advantages of Automated Machinery",
-      "intro": "All drilling processes are carried out using our self-developed automated machinery, ensuring:",
-      "items": {
-        "precision": "High-precision hole placement",
-        "consistency": "Consistency and repeatability",
-        "scalableCapacity": "Fast delivery and scalable production capacity"
+        "holeLayout": "Standard and special hole counts and layouts",
+        "lacingCompatibility": "Radial, crossed and custom lacing compatibility",
+        "oemOdm": "OEM / ODM wheel designs"
       }
     },
     "commitment": {
-      "title": "Our Commitment",
-      "body": "By combining automation with customization, we provide suitable rim drilling solutions for different riders and brands, supporting long-term stability and reliability."
+      "title": "Automated machining and consistency",
+      "body": "Our self-developed automated machinery controls consistency in hole placement and axis direction, enabling repeatable production of custom drilling patterns."
     }
   },
   "closeVideo": "Close video"

@@ -92,7 +92,7 @@
     "scopeNote": "认证与测试适用具体产品型号，相关范围和结果以对应证书、报告为准。",
     "contactCta": "咨询资质与测试报告"
   },
-  "confidentiality": "合作品牌名称及项目资料按双方约定披露；未经客户许可，不公开相关信息。",
+  "confidentiality": "我们尊重合作伙伴的品牌与项目保密约定。合作统计包含已公开及按约定保密的合作，地图与目录仅展示经双方确认可公开的信息。",
   "whyPartner": {
     "title": "我们如何配合您的项目",
     "trust": {
@@ -109,11 +109,28 @@
     }
   },
   "map": {
-    "title": "从厦门出发的市场连接示意",
-    "description": "展示中国厦门与部分城市之间的地理连接。",
-    "svgTitle": "厦门与示例城市的连接示意图",
-    "svgDescription": "以动态线条展示中国厦门与示例城市的连接，仅用于示意。",
-    "caption": "地图仅用于示意，不代表实际合作品牌、客户所在地或运输路线。"
+    "title": "从厦门开始合作",
+    "description": "为各地品牌、车店与骑行团队提供轮组部件和合作服务。",
+    "directoryTitle": "合作伙伴与联络地点",
+    "directoryHeading": "公开合作伙伴",
+    "contactEyebrow": "合作咨询",
+    "contactTitle": "一起开展您的下一个项目",
+    "contactDescription": "欢迎品牌、车店与骑行团队联系我们，沟通产品与合作需求。",
+    "contactCta": "洽谈合作",
+    "locationHeading": "联络地点",
+    "xiamenLocation": "中国 · 厦门",
+    "contactTeam": "联络团队",
+    "xiamenContactMarker": "厦门 · 联络团队",
+    "contactLocationDescription": "由厦门团队对接产品开发、采购与项目合作需求。",
+    "partnerWebsite": "访问合作伙伴网站",
+    "svgTitle": "合作伙伴与厦门联络团队位置地图",
+    "svgDescription": "简洁世界地图，标注位于中国厦门的联络团队。",
+    "svgDescriptionWithPartners": "世界地图上标注厦门联络团队与已获授权公开的合作伙伴。可通过地图标记或左侧目录选择合作伙伴。",
+    "partnerTypes": {
+      "oemOdm": "OEM / ODM 品牌合作",
+      "dealerBuilder": "车店 / 编轮技师",
+      "teamsAndAmbassadors": "车队 / 骑行大使"
+    }
   },
   "partnershipFaq": {
     "title": "合作伙伴常见问答",

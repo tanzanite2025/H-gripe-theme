@@ -1,49 +1,104 @@
 {
   "title": "孔位方案",
-  "intro": "我们提供多种轮圈打孔方案，以适配不同的花鼓结构和编圈需求。",
+  "alignmentEyebrow": "四角度定制打孔 · Straight-Line Alignment",
+  "alignmentHeadline": "减少强制折角，降低开裂与断辐条风险",
+  "intro": "通常依据花鼓图纸与编法模拟辐条走向，再匹配四个孔角度，让条帽轴线尽量贴近设计拉力线，减少角度失配带来的额外弯矩与孔座偏载。",
+  "openVideo": "播放自动化角度打孔视频",
+  "videoCaption": "自动化角度打孔 · 点击查看加工视频",
+  "drillingGeometry": {
+    "axialCapability": {
+      "reference": "WL / WR",
+      "label": "轴向角度，匹配花鼓法兰",
+      "description": "根据花鼓中心面至左右法兰的距离，分别设定两侧轴向打孔角度。"
+    },
+    "longitudinalCapability": {
+      "reference": "PCD · 孔数 · 编法",
+      "label": "纵向角度，匹配辐条编法",
+      "description": "结合法兰 PCD、孔数与编法，设定纵向平面内的两个打孔角度。"
+    },
+    "alignmentPrinciple": {
+      "title": "以零折角为设计目标",
+      "description": "两个轴向角度与两个纵向角度共同匹配，减少辐条在条帽出口处的强制弯折，让拉力沿更接近同轴的方向传递。",
+      "manufacturingLimit": "零折角是几何设计目标；成品配合仍受图纸尺寸、加工及装配公差影响，不代表绝对同轴。"
+    }
+  },
+  "drawingSimulationAndManufacturingTolerances": {
+    "title": "从图纸模拟到实际加工",
+    "steps": {
+      "hubDrawingGeometry": {
+        "title": "依据花鼓图纸模拟尺寸",
+        "description": "通常依据图纸中的 WL / WR、左右法兰 PCD 和出条位置，结合轮圈 ERD、孔位与编法，模拟辐条的空间走向。"
+      },
+      "matchedDrillingAngles": {
+        "title": "匹配四个打孔角度",
+        "description": "以模拟走向匹配两个轴向与两个纵向孔角度，尽量减小设计上的强制折角。图纸版本、孔位与具体加工方案在线下确认。"
+      },
+      "manufacturingAndAssemblyTolerances": {
+        "title": "考虑制造与装配公差",
+        "description": "图纸尺寸有公差，实际花鼓、轮圈成型、打孔与装配也存在偏差。模拟采用的名义尺寸与成品配合不能视为完全一致。"
+      }
+    },
+    "carbonRimInterior": {
+      "title": "碳圈内壁的成型限制",
+      "description": "封闭碳圈的内部孔座表面来自成型，无法用 CNC 在内部沿整圈车削找平。即使内壁较为平顺，局部形貌仍会影响条帽贴合；定制孔角度能尽量匹配图纸几何，但无法一并消除内壁差异与装配偏差。"
+    }
+  },
+  "angleAlignmentBenefits": {
+    "title": "针对三个受力薄弱点，减少疲劳隐患",
+    "misalignmentExplanation": "固定打孔角度若不匹配实际花鼓与编法，张力会迫使条帽偏斜、辐条在螺纹过渡处弯折。这种额外弯曲与偏载，是条帽孔座开裂和辐条疲劳断裂的风险来源之一。",
+    "items": {
+      "spokeEndFatigue": {
+        "mechanism": "减少强制折角与额外弯矩",
+        "title": "降低螺纹根部断裂风险",
+        "description": "减少辐条螺纹过渡处的附加弯曲应力，降低反复载荷下局部疲劳与断裂的风险。"
+      },
+      "nippleSideLoading": {
+        "mechanism": "改善贴合与拉力传递",
+        "title": "减少条帽偏载与损伤",
+        "description": "让条帽更顺畅地沿辐条方向受力，减少偏斜、单侧承压与局部变形。"
+      },
+      "rimHoleLocalDamage": {
+        "mechanism": "减轻孔座偏载与应力集中",
+        "title": "降低碳圈条帽孔开裂风险",
+        "description": "减轻条帽对孔壁和孔座边缘的侧向挤压，减少局部应力集中与疲劳损伤。"
+      }
+    },
+    "assemblyContext": "角度匹配需与合适的辐条帽、按设计选用的垫片及规范编圈张力配合。"
+  },
   "sections": {
     "support": {
-      "title": "我们支持的方案",
+      "title": "孔数与孔位支持",
       "items": {
         "symmetrical": {
-          "label": "对称打孔",
-          "description": "适用于标准花鼓，有助于保持辐条张力平衡。"
+          "label": "左右对称轴向角度",
+          "description": "适配两侧花鼓几何与编法相近的轮组。"
         },
         "asymmetrical": {
-          "label": "非对称打孔",
-          "description": "优化驱动侧与非驱动侧之间的张力，提升整体稳定性。"
+          "label": "左右独立轴向角度",
+          "description": "支持按不同 WL / WR 分别匹配两侧法兰方向。"
         },
         "customCounts": {
           "label": "定制孔数",
           "description": "可提供 16、20、24、28、32 和 36 孔配置。"
         },
         "angled": {
-          "label": "角度打孔",
-          "description": "根据具体编圈方式优化孔位角度，降低辐条应力。"
+          "label": "纵向编法角度",
+          "description": "支持按径向或交叉编法匹配纵向平面的打孔角度。"
         }
       }
     },
     "customization": {
-      "title": "定制服务",
-      "intro": "我们可以根据具体需求提供定制化打孔方案。",
+      "title": "花鼓与编圈方案定制",
+      "intro": "提供花鼓图纸、花鼓与轮圈型号及预期编法，我们可在线下沟通中确认具体打孔方案。",
       "items": {
-        "specialCounts": "特殊孔数",
-        "customLacing": "定制编圈兼容性",
-        "exclusiveDesigns": "OEM/ODM 专属设计"
-      }
-    },
-    "automated": {
-      "title": "自动化设备的优势",
-      "intro": "所有打孔工序都使用自主开发的自动化设备完成，确保：",
-      "items": {
-        "precision": "高精度孔位",
-        "consistency": "一致性与可重复性",
-        "scalableCapacity": "交付快速，产能可扩展"
+        "holeLayout": "常规及特殊孔数、孔位排列",
+        "lacingCompatibility": "径向、交叉及特殊编法适配",
+        "oemOdm": "OEM / ODM 专属轮组方案"
       }
     },
     "commitment": {
-      "title": "我们的承诺",
-      "body": "通过将自动化与定制能力结合，我们为不同骑手和品牌提供合适的轮圈打孔方案，支持长期稳定与可靠使用。"
+      "title": "自动化加工与一致性",
+      "body": "自主开发的自动化设备用于控制孔位与孔轴方向的一致性，让定制打孔方案能够稳定重复加工。"
     }
   },
   "closeVideo": "关闭视频"

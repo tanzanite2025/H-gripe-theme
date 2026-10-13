@@ -3,7 +3,6 @@
     <div class="spoke-page">
       <InteractiveToolPageHeader
         :title="t('resourcesSpokeCalculator.title')"
-        :description="t('resourcesSpokeCalculator.seo.description')"
       />
 
       <section>

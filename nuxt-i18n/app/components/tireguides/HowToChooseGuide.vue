@@ -2,7 +2,6 @@
   <div class="how-to-choose-guide">
     <InteractiveToolPageHeader
       :title="t('guidesTireChoose.seo.title')"
-      :description="t('guidesTireChoose.seo.description')"
     />
     <!-- Main Premium Card -->
     <div class="rounded-2xl bg-[var(--tz-card-surface)] p-3 text-center shadow-md md:p-6">

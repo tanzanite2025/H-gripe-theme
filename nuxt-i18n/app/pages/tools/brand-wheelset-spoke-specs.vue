@@ -1,7 +1,6 @@
 <template>
   <div class="wheelset-spoke-lookup">
     <InteractiveToolPageHeader
-      :eyebrow="t('brandWheelsetSpokeSpecs.eyebrow')"
       :title="t('brandWheelsetSpokeSpecs.title')"
       :description="t('brandWheelsetSpokeSpecs.intro')"
     />

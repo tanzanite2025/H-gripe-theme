@@ -2,9 +2,7 @@
   <section class="schwalbe-selector" aria-labelledby="schwalbe-selector-title">
     <InteractiveToolPageHeader
       heading-id="schwalbe-selector-title"
-      :eyebrow="tx('kicker')"
       :title="tx('title')"
-      :description="tx('seo.description')"
     />
 
     <nav

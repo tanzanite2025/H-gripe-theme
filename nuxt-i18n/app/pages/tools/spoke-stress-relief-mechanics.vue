@@ -1,7 +1,6 @@
 <template>
   <article id="stainless-steel-spoke-technical-article" class="spoke-dislocation-page">
     <InteractiveToolPageHeader
-      :eyebrow="t('guidesSpokeDislocationMechanics.version')"
       :title="t('guidesSpokeDislocationMechanics.title')"
       :description="t('guidesSpokeDislocationMechanics.subtitle')"
     >

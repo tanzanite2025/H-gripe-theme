@@ -9,17 +9,17 @@
     }
   },
   "seo": {
-    "title": "Carbon Rim Finishes: UD, Paintless & Laser Logos",
-    "description": "Explore UD carbon rim finishes, paintless surfaces and laser logos, with custom lead times, 260°C brake track heat resistance and surface treatment choices.",
+    "title": "Carbon Rim Finishes: UD Coating, Paintless & Laser Logos",
+    "description": "Explore UD coatings, also available on 3K carbon fabric rims, paintless surfaces and laser logos, with custom lead times and 260°C brake track heat resistance.",
     "imageAlt": "Laser engraving a logo on a carbon fiber rim",
     "breadcrumbHome": "Home"
   },
-  "intro": "Our current focus is UD carbon, paintless surfaces, and laser-engraved logos. Carbon patterns, surface finishes, and logos can be combined. Other appearances are available by custom order and require additional production time.",
+  "intro": "Our current focus is UD coatings, paintless surfaces, and laser-engraved logos. Choose between a UD coating and a paintless surface, then confirm the logo method for your chosen finish. Other appearances are available by custom order and require additional production time.",
   "primaryAppearance": {
     "label": "Current focus",
     "ud": {
-      "name": "UD (Unidirectional)",
-      "description": "A simple unidirectional carbon pattern, and the main rim appearance we currently offer."
+      "name": "UD Coating",
+      "description": "Our main rim coating option gives the surface a simple appearance. It can also be applied over 3K carbon fabric; consult the specific rim specifications for the underlying material and layup."
     },
     "paintless": {
       "name": "Paintless Surface",
@@ -32,15 +32,15 @@
   },
   "customizationLeadTime": "Other carbon patterns, painted finishes, gloss levels, and crystal effects are still available by custom order, with longer production times than our main options. Confirm availability and the additional time for your rim model and design before ordering.",
   "images": {
-    "weavePatternsAlt": "Comparison of UD, butterfly, marble, 3K, and 12K carbon rim patterns",
-    "weavePatternsCaption": "Pattern reference · UD is our main option; other patterns require customization",
+    "weavePatternsAlt": "Appearance comparison of a UD coating and butterfly, marble, 3K, and 12K carbon rim patterns",
+    "weavePatternsCaption": "Appearance reference · UD coating is our main option; other appearances require customization",
     "surfaceFinishesAlt": "Comparison of matte, satin, glossy, paintless, and crystal carbon rim finishes",
     "surfaceFinishesCaption": "Surface reference · Paintless is our main option; confirm custom lead times for other finishes"
   },
   "sections": {
     "primaryAppearance": "Our Main Appearance Options",
     "customAppearance": "Other Custom Appearances · View Patterns and Finishes",
-    "weavePatterns": "Custom Carbon Patterns",
+    "weavePatterns": "Coating and Pattern Appearance Reference",
     "glossLevels": "Custom Gloss Levels",
     "crystalEffects": "Custom Crystal Effects",
     "brakeTracks": "Brake Track Heat Resistance and Surface Treatment",
@@ -115,7 +115,7 @@
     "laserTradeoff": "Laser treatment also affects the outer carbon fiber layer. Although these configurations have been tested, testing does not make them a perfect solution. Consider this tradeoff before choosing."
   },
   "laser": {
-    "body": "Laser engraving is our main method for adding logos and lettering, and can be combined with UD carbon and a paintless surface. Traditional decals, painted graphics, and other options are available by custom order with additional production time.",
+    "body": "Laser engraving is our main method for adding logos and lettering. After choosing a UD coating or a paintless surface, confirm the logo placement and engraving effect for your specific finish. Traditional decals, painted graphics, and other options are available by custom order with additional production time.",
     "bullets": {
       "0": "Creates the logo on the rim surface without applying a separate decal.",
       "1": "Confirm the artwork, placement, and desired appearance before ordering.",
@@ -128,7 +128,7 @@
   "selectionAdvice": {
     "title": "Choosing Your Appearance",
     "items": {
-      "0": "For our main appearance options, consider UD carbon with a paintless surface and laser-engraved logos.",
+      "0": "Choose a UD coating or a paintless surface, then confirm the laser-engraved logo design. Consult the specific rim specifications for the underlying material and layup.",
       "1": "For other patterns, colors, or logo methods, confirm the design in advance and allow additional production time.",
       "2": "For rim-brake rims, we recommend the standard brake track with its optimized surface. If choosing laser treatment, consider both the friction benefit and the effect on the outer carbon fiber layer."
     },

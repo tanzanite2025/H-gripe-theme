@@ -8,7 +8,7 @@
 		>
 			<!-- 桌面端：全宽单层横向导航（1280px+） -->
 			<div v-if="!isMobileViewport" class="flex flex-col items-stretch">
-				<div class="site-header-mainbar desktop-header-grid w-full grid grid-cols-[220px_1fr_220px] xl:grid-cols-[280px_1fr_280px] items-center gap-4 px-4 lg:px-8 py-0 min-h-[64px]">
+				<div class="site-header-mainbar desktop-header-grid w-full grid items-center gap-4 px-4 lg:px-8 py-0 min-h-[64px]">
 
 					<!-- Logo -->
 					<div class="flex items-center justify-start">
@@ -2145,7 +2145,7 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 .site-header-brand--desktop {
 	width: 17.5rem;
 	height: 3.4rem;
-	max-width: 17.5rem;
+	max-width: 100%;
 	--tz-image-loading-surface: transparent;
 }
 
@@ -2187,8 +2187,13 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 	}
 
 	.desktop-header-grid {
+		--site-header-desktop-side-column-width: clamp(13.75rem, 18vw, 17.5rem);
 		display: grid !important;
-		grid-template-columns: minmax(0, 17.5rem) minmax(0, 1fr) auto;
+		/* Equal side columns keep the navigation centered on the whole header. */
+		grid-template-columns:
+			minmax(0, var(--site-header-desktop-side-column-width))
+			minmax(0, 1fr)
+			minmax(0, var(--site-header-desktop-side-column-width));
 		align-items: center;
 		gap: clamp(0.5rem, 1vw, 1rem);
 	}
@@ -2204,6 +2209,7 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 	.desktop-header-grid > nav[data-header-mega-nav] > .site-header-menu-laser {
 		min-width: 0;
 		flex: 0 1 auto;
+		padding-inline: clamp(0.5rem, 0.6vw, 0.75rem);
 	}
 
 	.desktop-header-grid .site-header-menu-laser__text {
