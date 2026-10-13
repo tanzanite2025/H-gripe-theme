@@ -1,5 +1,5 @@
 {
-  "version": "2026-10-13",
+  "version": "2026-10-14",
   "routes": [
     {
       "key": "tools",
@@ -42,6 +42,33 @@
       "path": "/company/about",
       "label": "About Us",
       "description": "Company and product philosophy",
+      "is_searchable": true,
+      "is_checkable": true,
+      "is_indexable": true
+    },
+    {
+      "key": "company-about-appearance",
+      "path": "/company/about/appearance",
+      "label": "Carbon Rim Appearance and Customization",
+      "description": "UD carbon rim finishes, paintless surfaces, laser logos, custom lead times and brake track heat resistance",
+      "is_searchable": true,
+      "is_checkable": true,
+      "is_indexable": true
+    },
+    {
+      "key": "company-about-factory",
+      "path": "/company/about/factory",
+      "label": "Factory",
+      "description": "Carbon rim factory, production scale and workshop flow",
+      "is_searchable": true,
+      "is_checkable": true,
+      "is_indexable": true
+    },
+    {
+      "key": "company-about-hole-patterns",
+      "path": "/company/about/hole-patterns",
+      "label": "Hole Patterns",
+      "description": "Rim drilling layouts and spoke hole customization",
       "is_searchable": true,
       "is_checkable": true,
       "is_indexable": true

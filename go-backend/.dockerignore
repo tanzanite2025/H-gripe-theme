@@ -56,3 +56,14 @@ Thumbs.db
 
 # Uploads (if in dev)
 uploads/
+
+# Local configuration, caches and confidential reference material
+config/config.yaml
+site-logo-uploads/
+.gocache/
+.tmp-go-build/
+output/
+web/admin/node_modules/
+web/admin/dist/
+**/[dD][oO][cC][sS]
+**/[hH][tT][mM][lL]资料

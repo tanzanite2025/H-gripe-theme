@@ -3,7 +3,7 @@ export interface ProductFormRecord {
   product_specification_template_id: number | string | null
   product_category_id: number | string | null
   brand_id: number | string | null
-  shipping_template_id: number | string | null
+  shipping_template_ids: Array<number | string>
   after_sales_template_id: number | string | null
   packaging_template_id: number | string | null
   customs_classification_profile_id: number | string | null
@@ -57,10 +57,8 @@ export interface ProductVariantForm {
   currency?: string
   price?: string
   price_minor?: number | string
-  sale_price?: string | null
-  sale_price_minor?: number | string | null
   weight_grams?: number | string
-  shipping_template_id?: number | string | null
+  shipping_template_ids?: Array<number | string>
   stock?: number | string
   is_active?: boolean
   option_group_rules?: ProductOptionGroupVariantRuleForm[]
@@ -184,7 +182,6 @@ export interface ProductRecord {
   sku?: string
   name?: string
   media?: unknown
-  sale_price_decimal?: string
   price_decimal?: string
   currency?: string
   stock?: number | string

@@ -14,7 +14,7 @@ func TestPublicProductFromDomainExposesPurchasableSkuFactsWithoutExactInventory(
 	item := productdomain.Product{
 		ID:                             11,
 		ProductSpecificationTemplateID: pointerTo(uint(3)),
-		ShippingTemplateID:             pointerTo(uint(7)),
+		ShippingTemplateIDs:            []uint{7},
 		SKU:                            "PUBLIC-PRODUCT",
 		Name:                           "Public Product",
 		Slug:                           "public-product",
@@ -23,13 +23,13 @@ func TestPublicProductFromDomainExposesPurchasableSkuFactsWithoutExactInventory(
 		ViewCount:                      146,
 		Variants: []productdomain.ProductVariant{
 			{
-				ID:                 12,
-				ProductID:          11,
-				ShippingTemplateID: pointerTo(uint(7)),
-				SKU:                "PUBLIC-PRODUCT-DEFAULT",
-				Stock:              3,
-				Weight:             1400,
-				IsActive:           true,
+				ID:                  12,
+				ProductID:           11,
+				ShippingTemplateIDs: []uint{7},
+				SKU:                 "PUBLIC-PRODUCT-DEFAULT",
+				Stock:               3,
+				Weight:              1400,
+				IsActive:            true,
 			},
 		},
 	}
@@ -46,7 +46,9 @@ func TestPublicProductFromDomainExposesPurchasableSkuFactsWithoutExactInventory(
 	}
 	for _, field := range []string{
 		`"product_specification_template_id"`,
-		`"shipping_template_id"`,
+		`"shipping_template_ids"`,
+		`"sale_price_decimal"`,
+		`"sale_price_minor"`,
 		`"product_id"`,
 		`"status"`,
 		`"locale"`,
@@ -341,7 +343,6 @@ func TestPublicProductFromDomainCanonicalizesFirstPartyMediaURLs(t *testing.T) {
 }
 
 func TestPublicProductDisplayPriceDoesNotUseRuntimeConversion(t *testing.T) {
-	salePrice := int64(8000)
 	item := productdomain.Product{
 		ID:         41,
 		SKU:        "DISPLAY-CURRENCY-PRODUCT",
@@ -352,15 +353,14 @@ func TestPublicProductDisplayPriceDoesNotUseRuntimeConversion(t *testing.T) {
 		Status:     "active",
 		Variants: []productdomain.ProductVariant{
 			{
-				ID:             42,
-				SKU:            "DISPLAY-CURRENCY-VAR",
-				Title:          "Default",
-				Currency:       "EUR",
-				PriceMinor:     10000,
-				SalePriceMinor: &salePrice,
-				Stock:          4,
-				IsDefault:      true,
-				IsActive:       true,
+				ID:         42,
+				SKU:        "DISPLAY-CURRENCY-VAR",
+				Title:      "Default",
+				Currency:   "EUR",
+				PriceMinor: 10000,
+				Stock:      4,
+				IsDefault:  true,
+				IsActive:   true,
 			},
 		},
 	}
@@ -372,9 +372,6 @@ func TestPublicProductDisplayPriceDoesNotUseRuntimeConversion(t *testing.T) {
 	}
 	if publicProduct.PriceDecimal != "100.00" {
 		t.Fatalf("expected public price to follow purchasable variant, got %q", publicProduct.PriceDecimal)
-	}
-	if publicProduct.SalePriceDecimal == nil || *publicProduct.SalePriceDecimal != "80.00" {
-		t.Fatalf("expected public sale price to follow purchasable variant, got %#v", publicProduct.SalePriceDecimal)
 	}
 	if publicProduct.DisplayPrice != nil {
 		t.Fatalf("expected product display price to require a stored snapshot, got %#v", publicProduct.DisplayPrice)
@@ -457,9 +454,8 @@ func TestPublicProductPriceAndSnapshotUseLowestEffectivePriceVariant(t *testing.
 		{AmountDecimal: "125.00", Currency: "USD", QuoteCurrency: "USD", Rate: 1.25, Source: "default_variant"},
 	}, "EUR")
 	startingDisplayPrices := currency.DisplayPriceSnapshotsJSON([]currency.DisplayPriceSnapshot{
-		{AmountDecimal: "88.00", Currency: "USD", QuoteCurrency: "USD", Rate: 1.1, Source: "starting_variant"},
+		{AmountDecimal: "99.00", Currency: "USD", QuoteCurrency: "USD", Rate: 1.1, Source: "starting_variant"},
 	}, "CNY")
-	startingSalePrice := int64(8000)
 	item := productdomain.Product{
 		ID:               61,
 		SKU:              "LEGACY-PRODUCT",
@@ -487,7 +483,6 @@ func TestPublicProductPriceAndSnapshotUseLowestEffectivePriceVariant(t *testing.
 				Title:            "Lowest effective price",
 				Currency:         "CNY",
 				PriceMinor:       9000,
-				SalePriceMinor:   &startingSalePrice,
 				DisplayPriceData: startingDisplayPrices,
 				Stock:            2,
 				IsActive:         true,
@@ -497,13 +492,13 @@ func TestPublicProductPriceAndSnapshotUseLowestEffectivePriceVariant(t *testing.
 
 	publicProduct := PublicProductFromDomainWithDisplayCurrency(item, "USD")
 
-	if publicProduct.PriceDecimal != "90.00" || publicProduct.SalePriceDecimal == nil || *publicProduct.SalePriceDecimal != "80.00" {
-		t.Fatalf("expected product price fields from lowest effective price variant, got price=%v sale_price=%v", publicProduct.PriceDecimal, publicProduct.SalePriceDecimal)
+	if publicProduct.PriceDecimal != "90.00" {
+		t.Fatalf("expected catalog price from lowest active variant, got price=%v", publicProduct.PriceDecimal)
 	}
 	if publicProduct.Currency != "CNY" {
 		t.Fatalf("expected product currency from lowest effective price variant, got %q", publicProduct.Currency)
 	}
-	if publicProduct.DisplayPrice == nil || publicProduct.DisplayPrice.AmountDecimal != "88.00" || publicProduct.DisplayPrice.Source != "starting_variant" {
+	if publicProduct.DisplayPrice == nil || publicProduct.DisplayPrice.AmountDecimal != "99.00" || publicProduct.DisplayPrice.Source != "starting_variant" {
 		t.Fatalf("expected requested display price from lowest effective price variant snapshot, got %#v", publicProduct.DisplayPrice)
 	}
 	if len(publicProduct.DisplayPrices) != 1 || publicProduct.DisplayPrices[0].Source != "starting_variant" {

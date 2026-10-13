@@ -24,7 +24,7 @@ func TestPublicWishlistResponseOmitsCommercialFields(t *testing.T) {
 		Product: &productdomain.Product{
 			ID:                             13,
 			ProductSpecificationTemplateID: &productSpecificationTemplateID,
-			ShippingTemplateID:             &shippingTemplateID,
+			ShippingTemplateIDs:            []uint{shippingTemplateID},
 			SKU:                            "INTERNAL-WISHLIST-SKU",
 			Name:                           "Saved Product",
 			Slug:                           "saved-product",
@@ -72,7 +72,7 @@ func TestPublicWishlistResponseOmitsCommercialFields(t *testing.T) {
 		`"locale"`,
 		`"view_count"`,
 		`"product_specification_template_id"`,
-		`"shipping_template_id"`,
+		`"shipping_template_ids"`,
 		`"media_asset_id"`,
 		`"weight_grams"`,
 	} {

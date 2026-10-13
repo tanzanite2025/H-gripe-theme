@@ -133,6 +133,9 @@ func (s *CheckoutService) QuoteWithRepositories(input CheckoutQuoteInput, repos 
 	if repos.Shipping != nil {
 		shippingService = NewShippingService(repos.Shipping, repos.Product)
 		shippingService.ConfigureExchangeRateService(NewExchangeRateService(repos.ExchangeRate, repos.Setting))
+		if repos.YanwenPublishedChannel != nil {
+			shippingService.ConfigureYanwenPublishedCollectionService(NewYanwenPublishedCollectionService(repos.YanwenPublishedChannel, nil))
+		}
 	}
 	return s.quote(input, checkoutRepositories{
 		productRepo:         repos.Product,
@@ -207,7 +210,7 @@ func (s *CheckoutService) quote(input CheckoutQuoteInput, repos checkoutReposito
 				quoteCurrency = itemCurrency
 			}
 		}
-		priceMoney, err := variant.EffectivePriceMoney()
+		priceMoney, err := variant.PriceMoney()
 		if err != nil {
 			return nil, fmt.Errorf("invalid price for SKU %s: %w", variant.SKU, err)
 		}
@@ -325,7 +328,7 @@ func (s *CheckoutService) quote(input CheckoutQuoteInput, repos checkoutReposito
 		if configuredWeightGrams <= 0 {
 			return nil, fmt.Errorf("shipping weight is missing for SKU %s", variant.SKU)
 		}
-		shippingTemplateID, err := resolveProductShippingTemplateID(product, variant)
+		shippingTemplateIDs, err := resolveProductShippingTemplateIDs(repos.productRepo, product, variant)
 		if err != nil {
 			return nil, err
 		}
@@ -333,7 +336,7 @@ func (s *CheckoutService) quote(input CheckoutQuoteInput, repos checkoutReposito
 			ProductID:                      product.ID,
 			VariantID:                      variantID,
 			ProductSpecificationTemplateID: product.ProductSpecificationTemplateID,
-			ShippingTemplateID:             uintPtr(shippingTemplateID),
+			ShippingTemplateIDs:            append([]uint(nil), shippingTemplateIDs...),
 			Quantity:                       item.Quantity,
 			UnitPriceMinor:                 priceMoney.AmountMinor(),
 			WeightGrams:                    configuredWeightGrams,

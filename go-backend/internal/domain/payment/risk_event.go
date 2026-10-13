@@ -40,12 +40,12 @@ type PaymentRiskEvent struct {
 	OrderID           *uint                `gorm:"index" json:"order_id,omitempty"`
 	TransactionID     *uint                `gorm:"index" json:"transaction_id,omitempty"`
 	AmountMinor       int64                `gorm:"column:amount_minor;not null;default:0" json:"amount_minor"`
-	Currency     string    `gorm:"not null;default:''" json:"currency"`
-	OccurredAt   time.Time `gorm:"index;not null" json:"occurred_at"`
-	Payload      string    `gorm:"type:text" json:"-"`
-	MetadataJSON string    `gorm:"type:text" json:"-"`
-	CreatedAt    time.Time `json:"created_at"`
-	UpdatedAt    time.Time `json:"updated_at"`
+	Currency          string               `gorm:"not null;default:''" json:"currency"`
+	OccurredAt        time.Time            `gorm:"index;not null" json:"occurred_at"`
+	Payload           string               `gorm:"type:text" json:"-"`
+	MetadataJSON      string               `gorm:"type:text" json:"-"`
+	CreatedAt         time.Time            `json:"created_at"`
+	UpdatedAt         time.Time            `json:"updated_at"`
 }
 
 func (e *PaymentRiskEvent) BeforeSave(tx *gorm.DB) error {

@@ -45,13 +45,12 @@ func TestBuildGoogleMerchantProductInputUsesOneSKUAndStorefrontFields(t *testing
 			}},
 		},
 		Variant: &product.ProductVariant{
-			ID:             700,
-			SKU:            "TZ-700",
-			Currency:       "USD",
-			PriceMinor:     129999,
-			SalePriceMinor: func() *int64 { v := int64(119999); return &v }(),
-			Stock:          3,
-			IsActive:       true,
+			ID:         700,
+			SKU:        "TZ-700",
+			Currency:   "USD",
+			PriceMinor: 129999,
+			Stock:      3,
+			IsActive:   true,
 		},
 	}
 
@@ -75,9 +74,6 @@ func TestBuildGoogleMerchantProductInputUsesOneSKUAndStorefrontFields(t *testing
 	}
 	if attributes.Price.AmountMicros != "1299990000" || attributes.Price.CurrencyCode != "USD" {
 		t.Fatalf("unexpected price mapping: %#v", attributes.Price)
-	}
-	if attributes.SalePrice == nil || attributes.SalePrice.AmountMicros != "1199990000" {
-		t.Fatalf("unexpected sale price mapping: %#v", attributes.SalePrice)
 	}
 	if len(attributes.GTINs) != 1 || attributes.GTINs[0] != "0123456789012" || attributes.MPN != "TZ-700" {
 		t.Fatalf("unexpected identifier mapping: %#v", attributes)
@@ -106,13 +102,12 @@ func TestBuildGoogleMerchantProductInputRejectsUnconvertedCrossCurrencyPrices(t 
 			}},
 		},
 		Variant: &product.ProductVariant{
-			ID:             700,
-			SKU:            "TZ-700",
-			Currency:       "USD",
-			PriceMinor:     150000,
-			SalePriceMinor: func() *int64 { v := int64(120000); return &v }(),
-			Stock:          3,
-			IsActive:       true,
+			ID:         700,
+			SKU:        "TZ-700",
+			Currency:   "USD",
+			PriceMinor: 150000,
+			Stock:      3,
+			IsActive:   true,
 		},
 	}
 	service := &GoogleMerchantService{}
@@ -123,21 +118,13 @@ func TestBuildGoogleMerchantProductInputRejectsUnconvertedCrossCurrencyPrices(t 
 
 	priceOverride := int64(230000)
 	offer.PriceOverrideMinor = &priceOverride
-	if _, err := service.buildGoogleMerchantProductInput(offer, "https://example.com"); err == nil || !strings.Contains(err.Error(), "sale_price_override in JPY") {
-		t.Fatalf("buildGoogleMerchantProductInput() error = %v, want JPY sale price override requirement", err)
-	}
 
-	salePriceOverride := int64(184000)
-	offer.SalePriceOverrideMinor = &salePriceOverride
 	input, err := service.buildGoogleMerchantProductInput(offer, "https://example.com")
 	if err != nil {
 		t.Fatalf("buildGoogleMerchantProductInput() error = %v", err)
 	}
 	if input.ProductAttributes.Price.AmountMicros != "230000000000" || input.ProductAttributes.Price.CurrencyCode != "JPY" {
 		t.Fatalf("unexpected overridden price: %#v", input.ProductAttributes.Price)
-	}
-	if input.ProductAttributes.SalePrice == nil || input.ProductAttributes.SalePrice.AmountMicros != "184000000000" || input.ProductAttributes.SalePrice.CurrencyCode != "JPY" {
-		t.Fatalf("unexpected overridden sale price: %#v", input.ProductAttributes.SalePrice)
 	}
 }
 
@@ -163,11 +150,10 @@ func TestBuildGoogleMerchantProductInputUsesConvertedDisplayPriceSnapshot(t *tes
 			}},
 		},
 		Variant: &product.ProductVariant{
-			ID:             701,
-			SKU:            "TZ-701",
-			Currency:       "USD",
-			PriceMinor:     150000,
-			SalePriceMinor: func() *int64 { v := int64(120000); return &v }(),
+			ID:         701,
+			SKU:        "TZ-701",
+			Currency:   "USD",
+			PriceMinor: 150000,
 			DisplayPriceData: currency.DisplayPriceSnapshotsJSON([]currency.DisplayPriceSnapshot{{
 				AmountDecimal: "230000",
 				Currency:      "JPY",
@@ -187,9 +173,6 @@ func TestBuildGoogleMerchantProductInputUsesConvertedDisplayPriceSnapshot(t *tes
 	}
 	if input.ProductAttributes.Price.AmountMicros != "230000000000" || input.ProductAttributes.Price.CurrencyCode != "JPY" {
 		t.Fatalf("unexpected converted price: %#v", input.ProductAttributes.Price)
-	}
-	if input.ProductAttributes.SalePrice == nil || input.ProductAttributes.SalePrice.AmountMicros != "184000000000" || input.ProductAttributes.SalePrice.CurrencyCode != "JPY" {
-		t.Fatalf("unexpected converted sale price: %#v", input.ProductAttributes.SalePrice)
 	}
 }
 

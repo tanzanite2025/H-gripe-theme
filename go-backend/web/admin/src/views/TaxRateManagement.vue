@@ -952,10 +952,7 @@ const shippingTemplateScopeFromRecord = (template: any): TaxRateShippingTemplate
   const countries = new Set<string>()
   const regions = new Set<string>()
   addTaxRateShippingScopeValues(countries, regions, template.free_shipping_countries)
-  for (const service of Array.isArray(template.carrier_services) ? template.carrier_services : []) {
-    if (service.enabled === false) continue
-    addTaxRateShippingScopeValues(countries, regions, service.countries)
-  }
+  if (template.route_group?.enabled === true) addTaxRateShippingScopeValues(countries, regions, template.route_group.countries)
   for (const rule of Array.isArray(template.rules) ? template.rules : []) addTaxRateShippingScopeValues(countries, regions, rule.region)
   const isSystemFreeShippingTemplate = String(template.template_kind || '').trim().toLowerCase() === 'system_free_shipping' || String(template.type || '').trim().toLowerCase() === 'free_shipping'
   return {
@@ -968,16 +965,6 @@ const shippingTemplateScopeFromRecord = (template: any): TaxRateShippingTemplate
   }
 }
 
-const mergeTaxRateShippingTemplateCarrierServiceScope = (scope: TaxRateShippingTemplateScopeView, carrierService: any): void => {
-  if (!scope || carrierService?.enabled === false || carrierService?.carrier?.enabled === false) return
-  const countries = new Set(scope.countries)
-  const regions = new Set(scope.regions)
-  addTaxRateShippingScopeValues(countries, regions, carrierService.countries)
-  scope.countries = Array.from(countries).sort()
-  scope.regions = Array.from(regions).sort()
-  scope.global = scope.global || scope.regions.some(isTaxRateShippingGlobalRegion)
-}
-
 const extractTaxRateShippingTemplateRecords = (response: { data?: any }): any[] => {
   const payload = extractTaxRateAdminResponsePayload(response)
   if (Array.isArray(payload)) return payload
@@ -988,17 +975,8 @@ const extractTaxRateShippingTemplateRecords = (response: { data?: any }): any[] 
 // deliberately ignores carrier-provider identity and never branches on 4PX or
 // Yanwen behavior.
 const fetchTaxRateShippingTemplateScopes = async (): Promise<TaxRateShippingTemplateScopeView[]> => {
-  const [shippingTemplateResponse, carrierServiceResponse] = await Promise.all([
-    axios.get('/api/admin/shipping/templates'),
-    axios.get('/api/admin/shipping/carrier-services?enabled=true'),
-  ])
+  const shippingTemplateResponse = await axios.get('/api/admin/shipping/templates')
   const scopes = extractTaxRateShippingTemplateRecords(shippingTemplateResponse).map(shippingTemplateScopeFromRecord)
-  const scopesByTemplateCode = new Map(scopes.map(scope => [scope.code, scope]))
-  for (const carrierService of extractTaxRateShippingTemplateRecords(carrierServiceResponse)) {
-    const templateCode = String(carrierService.template_id || '').trim()
-    const scope = scopesByTemplateCode.get(templateCode)
-    if (scope) mergeTaxRateShippingTemplateCarrierServiceScope(scope, carrierService)
-  }
   return scopes
 }
 

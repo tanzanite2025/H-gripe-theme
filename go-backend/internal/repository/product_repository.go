@@ -3,12 +3,14 @@ package repository
 import (
 	"commerce-platform/internal/domain/currency"
 	"commerce-platform/internal/domain/product"
+	"commerce-platform/internal/domain/shipping"
 	"context"
 	"fmt"
 	"sort"
 
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type ProductRepository struct {
@@ -241,7 +243,123 @@ func (r *ProductRepository) FindByIDContext(ctx context.Context, id uint) (*prod
 	if err := r.attachProductDisplayPriceSnapshot(&p); err != nil {
 		return nil, err
 	}
+	if err := r.populateProductShippingTemplateBindingProjections(&p); err != nil {
+		return nil, err
+	}
 	return &p, nil
+}
+
+// ReplaceProductShippingTemplateBindings replaces either the product-level or
+// SKU-level customer billing selections atomically. The order supplied by the
+// caller is persisted as priority so Checkout can keep stable alternatives.
+func (r *ProductRepository) ReplaceProductShippingTemplateBindings(productID uint, variantID *uint, templateIDs []uint) error {
+	if r == nil || r.db == nil {
+		return gorm.ErrInvalidDB
+	}
+	if productID == 0 {
+		return fmt.Errorf("product ID is required to save shipping template bindings")
+	}
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		// Serialize replacement for the same product so simultaneous edits cannot
+		// combine two selections or delete a binding another edit just wrote.
+		var owner product.Product
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Select("id").First(&owner, productID).Error; err != nil {
+			return err
+		}
+		if variantID != nil {
+			var variant product.ProductVariant
+			if err := tx.Where("id = ? AND product_id = ?", *variantID, productID).First(&variant).Error; err != nil {
+				return err
+			}
+		}
+		query := tx.Where("product_id = ?", productID)
+		if variantID == nil {
+			query = query.Where("variant_id IS NULL")
+		} else {
+			query = query.Where("variant_id = ?", *variantID)
+		}
+		if err := query.Delete(&product.ProductShippingTemplateBinding{}).Error; err != nil {
+			return err
+		}
+		seen := make(map[uint]struct{}, len(templateIDs))
+		bindings := make([]product.ProductShippingTemplateBinding, 0, len(templateIDs))
+		for priority, templateID := range templateIDs {
+			if templateID == 0 {
+				return fmt.Errorf("shipping template ID must be positive")
+			}
+			if _, exists := seen[templateID]; exists {
+				continue
+			}
+			seen[templateID] = struct{}{}
+			var template shipping.ShippingTemplate
+			if err := tx.Clauses(clause.Locking{Strength: "SHARE"}).Select("id").First(&template, templateID).Error; err != nil {
+				return fmt.Errorf("shipping template %d cannot be bound to product %d: %w", templateID, productID, err)
+			}
+			bindings = append(bindings, product.ProductShippingTemplateBinding{
+				ProductID: productID, VariantID: variantID, ShippingTemplateID: templateID,
+				Priority: priority, Enabled: true,
+			})
+		}
+		if len(bindings) == 0 {
+			return nil
+		}
+		return tx.Create(&bindings).Error
+	})
+}
+
+// FindPurchasableShippingTemplateIDs returns SKU-specific bindings when they
+// exist, otherwise the product-level bindings. It never reads provider route
+// records, keeping the product and Checkout boundary on customer templates.
+func (r *ProductRepository) FindPurchasableShippingTemplateIDs(productID uint, variantID *uint) ([]uint, error) {
+	if r == nil || r.db == nil {
+		return nil, gorm.ErrInvalidDB
+	}
+	if productID == 0 {
+		return nil, fmt.Errorf("product ID is required to read shipping template bindings")
+	}
+	var bindings []product.ProductShippingTemplateBinding
+	if variantID != nil {
+		err := r.db.Where("product_id = ? AND variant_id = ? AND enabled = ? AND deleted_at IS NULL", productID, *variantID, true).
+			Order("priority ASC, id ASC").Find(&bindings).Error
+		if err != nil {
+			return nil, err
+		}
+	}
+	if len(bindings) == 0 {
+		if err := r.db.Where("product_id = ? AND variant_id IS NULL AND enabled = ? AND deleted_at IS NULL", productID, true).
+			Order("priority ASC, id ASC").Find(&bindings).Error; err != nil {
+			return nil, err
+		}
+	}
+	ids := make([]uint, 0, len(bindings))
+	for _, binding := range bindings {
+		if binding.ShippingTemplateID != 0 {
+			ids = append(ids, binding.ShippingTemplateID)
+		}
+	}
+	return ids, nil
+}
+
+func (r *ProductRepository) populateProductShippingTemplateBindingProjections(item *product.Product) error {
+	if item == nil {
+		return nil
+	}
+	productIDs, err := r.FindPurchasableShippingTemplateIDs(item.ID, nil)
+	if err != nil {
+		return err
+	}
+	item.ShippingTemplateIDs = productIDs
+	for index := range item.Variants {
+		var bindings []product.ProductShippingTemplateBinding
+		if err := r.db.Where("product_id = ? AND variant_id = ? AND enabled = ?", item.ID, item.Variants[index].ID, true).Order("priority ASC, id ASC").Find(&bindings).Error; err != nil {
+			return err
+		}
+		item.Variants[index].ShippingTemplateIDs = make([]uint, 0, len(bindings))
+		for _, binding := range bindings {
+			item.Variants[index].ShippingTemplateIDs = append(item.Variants[index].ShippingTemplateIDs, binding.ShippingTemplateID)
+		}
+	}
+	return nil
 }
 
 // ReplaceSpokeRepairKitModels replaces the product-owned compatibility choices.
@@ -362,7 +480,7 @@ func (r *ProductRepository) FindProductsByIDsForCustomerContext(ids []uint) ([]p
 	if len(ids) == 0 {
 		return products, nil
 	}
-	query := r.db.Select("id", "name", "currency", "price_minor", "sale_price_minor").
+	query := r.db.Select("id", "name", "currency", "price_minor").
 		Preload("Media", func(db *gorm.DB) *gorm.DB {
 			return orderProductMedia(db)
 		}).
@@ -380,13 +498,13 @@ func (r *ProductRepository) FindProductsByIDsForCustomerContext(ids []uint) ([]p
 func (r *ProductRepository) ListProductsForDisplayPriceRefresh() ([]product.Product, error) {
 	var products []product.Product
 	query := r.db.
-		Select("id", "currency", "price_minor", "sale_price_minor").
+		Select("id", "currency", "price_minor").
 		Preload("Variants", func(db *gorm.DB) *gorm.DB {
 			return db.
 				// StartingPriceVariant is part of the snapshot source fingerprint.
 				// Keep the fields it uses in this lightweight refresh projection so
 				// read-model hydration selects the same source as the refresh job.
-				Select("id", "product_id", "currency", "price_minor", "sale_price_minor", "is_active", "is_default", "sort_order").
+				Select("id", "product_id", "currency", "price_minor", "is_active", "is_default", "sort_order").
 				Order("sort_order ASC, id ASC")
 		})
 	if err := query.Find(&products).Error; err != nil {
@@ -399,18 +517,16 @@ func (r *ProductRepository) ListProductsForDisplayPriceRefresh() ([]product.Prod
 }
 
 type ProductVariantDisplayPriceSnapshotUpdate struct {
-	VariantID            uint
-	SourceCurrency       string
-	SourcePriceMinor     int64
-	SourceSalePriceMinor *int64
-	DisplayPriceData     datatypes.JSON
+	VariantID        uint
+	SourceCurrency   string
+	SourcePriceMinor int64
+	DisplayPriceData datatypes.JSON
 }
 
 type ProductDisplayPriceSnapshotUpdate struct {
 	ProductID              uint
 	SourceCurrency         string
 	SourcePriceMinor       int64
-	SourceSalePriceMinor   *int64
 	UpdateProduct          bool
 	DisplayPriceData       datatypes.JSON
 	VariantSnapshotUpdates []ProductVariantDisplayPriceSnapshotUpdate
@@ -437,13 +553,12 @@ func (r *ProductRepository) UpdateDisplayPriceSnapshots(updates []ProductDisplay
 				}
 				if update.UpdateProduct {
 					if err := upsertProductDisplayPriceSnapshot(tx, product.ProductDisplayPriceSnapshot{
-						ScopeKey:             fmt.Sprintf("product:%d", update.ProductID),
-						ProductID:            update.ProductID,
-						SourceCurrency:       update.SourceCurrency,
-						SourcePriceMinor:     update.SourcePriceMinor,
-						SourceSalePriceMinor: update.SourceSalePriceMinor,
-						DisplayPriceData:     update.DisplayPriceData,
-					}, update.SourcePriceMinor, update.SourceCurrency, update.SourceSalePriceMinor, nil); err != nil {
+						ScopeKey:         fmt.Sprintf("product:%d", update.ProductID),
+						ProductID:        update.ProductID,
+						SourceCurrency:   update.SourceCurrency,
+						SourcePriceMinor: update.SourcePriceMinor,
+						DisplayPriceData: update.DisplayPriceData,
+					}, update.SourcePriceMinor, update.SourceCurrency, nil); err != nil {
 						return err
 					}
 				}
@@ -452,14 +567,13 @@ func (r *ProductRepository) UpdateDisplayPriceSnapshots(updates []ProductDisplay
 						continue
 					}
 					if err := upsertProductDisplayPriceSnapshot(tx, product.ProductDisplayPriceSnapshot{
-						ScopeKey:             fmt.Sprintf("variant:%d", variantUpdate.VariantID),
-						ProductID:            update.ProductID,
-						VariantID:            &variantUpdate.VariantID,
-						SourceCurrency:       variantUpdate.SourceCurrency,
-						SourcePriceMinor:     variantUpdate.SourcePriceMinor,
-						SourceSalePriceMinor: variantUpdate.SourceSalePriceMinor,
-						DisplayPriceData:     variantUpdate.DisplayPriceData,
-					}, variantUpdate.SourcePriceMinor, variantUpdate.SourceCurrency, variantUpdate.SourceSalePriceMinor, &variantUpdate.VariantID); err != nil {
+						ScopeKey:         fmt.Sprintf("variant:%d", variantUpdate.VariantID),
+						ProductID:        update.ProductID,
+						VariantID:        &variantUpdate.VariantID,
+						SourceCurrency:   variantUpdate.SourceCurrency,
+						SourcePriceMinor: variantUpdate.SourcePriceMinor,
+						DisplayPriceData: variantUpdate.DisplayPriceData,
+					}, variantUpdate.SourcePriceMinor, variantUpdate.SourceCurrency, &variantUpdate.VariantID); err != nil {
 						return err
 					}
 				}
@@ -472,45 +586,37 @@ func (r *ProductRepository) UpdateDisplayPriceSnapshots(updates []ProductDisplay
 	return nil
 }
 
-func upsertProductDisplayPriceSnapshot(tx *gorm.DB, snapshot product.ProductDisplayPriceSnapshot, sourceMinor int64, sourceCurrency string, sourceSaleMinor *int64, variantID *uint) error {
+func upsertProductDisplayPriceSnapshot(tx *gorm.DB, snapshot product.ProductDisplayPriceSnapshot, sourceMinor int64, sourceCurrency string, variantID *uint) error {
 	var source struct {
-		PriceMinor     int64
-		SalePriceMinor *int64
-		Currency       string
+		PriceMinor int64
+		Currency   string
 	}
 	query := tx.Model(&product.Product{})
 	if variantID == nil {
-		if err := query.Select("price_minor, sale_price_minor, currency").Where("id = ?", snapshot.ProductID).Scan(&source).Error; err != nil {
+		if err := query.Select("price_minor, currency").Where("id = ?", snapshot.ProductID).Scan(&source).Error; err != nil {
 			return err
 		}
 		// Product display snapshots use the same starting active variant as the
 		// refresh service. Validate that source fingerprint before persisting.
 		var variants []product.ProductVariant
 		if err := tx.Where("product_id = ? AND deleted_at IS NULL", snapshot.ProductID).
-			Select("id, product_id, currency, price_minor, sale_price_minor, is_active, is_default, sort_order").
+			Select("id, product_id, currency, price_minor, is_active, is_default, sort_order").
 			Order("sort_order ASC, id ASC").Find(&variants).Error; err != nil {
 			return err
 		}
-		item := product.Product{ID: snapshot.ProductID, Currency: source.Currency, PriceMinor: source.PriceMinor, SalePriceMinor: source.SalePriceMinor, Variants: variants}
+		item := product.Product{ID: snapshot.ProductID, Currency: source.Currency, PriceMinor: source.PriceMinor, Variants: variants}
 		if starting := item.StartingPriceVariant(); starting != nil {
-			source.PriceMinor, source.SalePriceMinor, source.Currency = starting.PriceMinor, starting.SalePriceMinor, starting.Currency
+			source.PriceMinor, source.Currency = starting.PriceMinor, starting.Currency
 		}
 	} else {
-		if err := tx.Model(&product.ProductVariant{}).Select("price_minor, sale_price_minor, currency").Where("id = ? AND product_id = ?", *variantID, snapshot.ProductID).Scan(&source).Error; err != nil {
+		if err := tx.Model(&product.ProductVariant{}).Select("price_minor, currency").Where("id = ? AND product_id = ?", *variantID, snapshot.ProductID).Scan(&source).Error; err != nil {
 			return err
 		}
 	}
-	if source.PriceMinor != sourceMinor || currency.NormalizeCode(source.Currency) != currency.NormalizeCode(sourceCurrency) || !salePriceMinorEqual(source.SalePriceMinor, sourceSaleMinor) {
+	if source.PriceMinor != sourceMinor || currency.NormalizeCode(source.Currency) != currency.NormalizeCode(sourceCurrency) {
 		return nil
 	}
 	return tx.Where("scope_key = ?", snapshot.ScopeKey).Assign(snapshot).FirstOrCreate(&snapshot).Error
-}
-
-func salePriceMinorEqual(left, right *int64) bool {
-	if left == nil || right == nil {
-		return left == nil && right == nil
-	}
-	return *left == *right
 }
 
 func (r *ProductRepository) FindProductCacheIdentitiesByIDs(ids []uint) ([]product.Product, error) {
@@ -627,7 +733,6 @@ func productUpdateColumns(p *product.Product) map[string]interface{} {
 		"product_specification_template_id": p.ProductSpecificationTemplateID,
 		"product_category_id":               p.ProductCategoryID,
 		"brand_id":                          p.BrandID,
-		"shipping_template_id":              p.ShippingTemplateID,
 		"after_sales_template_id":           p.AfterSalesTemplateID,
 		"packaging_template_id":             p.PackagingTemplateID,
 		"customs_classification_profile_id": p.CustomsClassificationProfileID,
@@ -641,7 +746,6 @@ func productUpdateColumns(p *product.Product) map[string]interface{} {
 		"short_desc":                        p.ShortDesc,
 		"currency":                          p.Currency,
 		"price_minor":                       p.PriceMinor,
-		"sale_price_minor":                  p.SalePriceMinor,
 		"fulfillment_mode":                  p.FulfillmentMode,
 		"status":                            p.Status,
 		"locale":                            p.Locale,
@@ -751,7 +855,14 @@ func (r *ProductRepository) UpdateWithSpecValuesVariantsOptionValuesAndMedia(
 }
 
 func (r *ProductRepository) Delete(id uint) error {
-	return r.db.Delete(&product.Product{}, id).Error
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		// Delete the product first to acquire its row lock. Concurrent binding
+		// replacements must then reload an active product before writing.
+		if err := tx.Delete(&product.Product{}, id).Error; err != nil {
+			return err
+		}
+		return tx.Where("product_id = ?", id).Delete(&product.ProductShippingTemplateBinding{}).Error
+	})
 }
 
 func (r *ProductRepository) IncrementViewCount(id uint) error {

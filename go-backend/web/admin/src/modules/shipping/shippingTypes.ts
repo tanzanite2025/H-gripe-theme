@@ -41,34 +41,48 @@ export interface ShippingTemplate {
   display_price_snapshots?: ShippingDisplayPriceSnapshots
   description?: string | null
   enabled?: boolean
+  route_group_id?: ShippingID | null
+  route_group?: ShippingRouteAggregate | null
+  customer_billing_mode?: string | null
+  customer_first_weight_grams?: number | string | null
+  customer_additional_weight_grams?: number | string | null
+  customer_min_charge_weight_grams?: number | string | null
+  customer_volumetric_divisor?: number | string | null
+  customer_fuel_surcharge_percent_decimal?: string | null
+  customer_remote_surcharge_minor?: number | string | null
+  customer_remote_postal_codes?: string | null
+  customer_eta_min_days?: number | string | null
+  customer_eta_max_days?: number | string | null
   rules?: ShippingTemplateRule[]
-  carrier_services?: ShippingTemplateCarrierServiceDraft[]
 }
 
-export interface ShippingTemplateCarrierServiceDraft {
+export interface ShippingRouteAggregate {
+  id: ShippingID
+  name?: string | null
+  description?: string | null
+  countries?: string | null
+  enabled?: boolean
+  sort_order?: number | string | null
+  carrier_services?: ShippingCarrierService[]
+}
+
+export interface ShippingRouteAggregateForm {
+  id: ShippingID | null
+  name: string
+  description: string
+  countries: string
+  enabled: boolean
+  sort_order: number
+  carrier_service_ids: ShippingID[]
+  published_carrier_services: ShippingPublishedCarrierRouteSelection[]
+}
+
+export interface ShippingPublishedCarrierRouteSelection {
   id?: ShippingID | null
   carrier_id: ShippingID
   fpx_channel_id?: ShippingID | null
   yanwen_published_channel_id?: ShippingID | null
   provider_code?: string
-  service_code: string
-  service_name: string
-  route_name?: string
-  countries?: string
-  currency?: string
-  billing_mode?: string
-  first_weight_grams?: number
-  additional_weight_grams?: number
-  min_charge_weight_grams?: number
-  volumetric_divisor?: number
-  fuel_surcharge_percent_decimal?: string
-  remote_surcharge_minor?: number
-  remote_postal_codes?: string
-  eta_min_days?: number
-  eta_max_days?: number
-  enabled?: boolean
-  sort_order?: number
-  description?: string
 }
 
 export interface ShippingTemplateForm {
@@ -85,8 +99,18 @@ export interface ShippingTemplateForm {
   display_price_snapshots: ShippingDisplayPriceSnapshots
   description: string
   enabled: boolean
+  route_group_id: ShippingID | null
+  customer_billing_mode: string
+  customer_first_weight_grams: number
+  customer_additional_weight_grams: number
+  customer_min_charge_weight_grams: number
+  customer_volumetric_divisor: number
+  customer_fuel_surcharge_percent_decimal: string
+  customer_remote_surcharge_minor: number
+  customer_remote_postal_codes: string
+  customer_eta_min_days: number
+  customer_eta_max_days: number
   rules: ShippingTemplateRule[]
-  carrier_services: ShippingTemplateCarrierServiceDraft[]
 }
 
 export interface ShippingCarrier {
@@ -117,6 +141,7 @@ export interface ShippingCarrierForm {
 
 export interface ShippingCarrierService {
   id: ShippingID
+  carrier?: ShippingCarrier | null
   carrier_id?: ShippingID | null
   fpx_channel_id?: ShippingID | null
   yanwen_published_channel_id?: ShippingID | null
@@ -125,7 +150,6 @@ export interface ShippingCarrierService {
   service_name?: string | null
   route_name?: string | null
   countries?: unknown
-  template_id?: ShippingID | null
   billing_mode?: string | null
   first_weight_grams?: number | string | null
   additional_weight_grams?: number | string | null
@@ -137,33 +161,6 @@ export interface ShippingCarrierService {
   eta_min_days?: number | string | null
   eta_max_days?: number | string | null
   enabled?: boolean
-}
-
-export interface ShippingCarrierServiceForm {
-  id: ShippingID | null
-  carrier_id: string
-  fpx_channel_id: ShippingID | null
-  yanwen_published_channel_id: ShippingID | null
-  provider_code: string
-  template_id: string
-  service_code: string
-  service_name: string
-  route_name: string
-  countries: string
-  currency: string
-  billing_mode: string
-  first_weight_grams: number
-  additional_weight_grams: number
-  min_charge_weight_grams: number
-  volumetric_divisor: number
-  fuel_surcharge_percent_decimal: string
-  remote_surcharge_minor: number
-  remote_postal_codes: string
-  eta_min_days: number
-  eta_max_days: number
-  enabled: boolean
-  sort_order: number
-  description: string
 }
 
 export interface TrackingProvider {
@@ -339,6 +336,7 @@ export interface TrackingWebhookState {
 }
 
 export interface ShippingLoadingState {
+  routeAggregates: boolean
   templates: boolean
   carriers: boolean
   services: boolean
@@ -349,6 +347,7 @@ export interface ShippingLoadingState {
 }
 
 export type ShippingResource =
+  | ShippingRouteAggregate
   | ShippingTemplate
   | ShippingCarrier
   | ShippingCarrierService

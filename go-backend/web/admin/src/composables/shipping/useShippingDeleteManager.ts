@@ -3,7 +3,8 @@ import { toast } from 'vue-sonner'
 import shippingApi from '@/api/shipping'
 
 const titleByType: Record<string, string> = {
-  template: '删除运费模板？',
+  routeAggregate: '删除聚合线路？',
+  template: '删除线路计费模板？',
   carrier: '删除承运商？',
   carrierService: '删除本地计费线路？',
   trackingProvider: '删除追踪配置？',
@@ -44,9 +45,13 @@ export const useShippingDeleteManager = (refreshers: Record<string, any>) => {
 
     deleteLoading.value = true
     try {
-      if (deleteType.value === 'template') {
+      if (deleteType.value === 'routeAggregate') {
+        await shippingApi.deleteRouteAggregate(deleteTarget.value.id)
+        toast.success('聚合线路已删除')
+        await refreshers.fetchRouteAggregates?.()
+      } else if (deleteType.value === 'template') {
         await shippingApi.deleteTemplate(deleteTarget.value.id)
-        toast.success('运费模板已删除')
+        toast.success('线路计费模板已删除')
         await refreshers.fetchTemplates?.()
       } else if (deleteType.value === 'carrier') {
         await shippingApi.deleteCarrier(deleteTarget.value.id)

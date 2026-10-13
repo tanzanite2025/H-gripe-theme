@@ -7,26 +7,21 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestProductStartingPriceVariantUsesLowestEffectiveActivePrice(t *testing.T) {
-	salePrice := int64(8000)
+func TestProductStartingPriceVariantUsesLowestActiveCatalogPrice(t *testing.T) {
 	item := Product{
 		PriceMinor: 99900,
 		Currency:   "USD",
 		Variants: []ProductVariant{
 			{ID: 1, PriceMinor: 10000, Currency: "USD", IsDefault: true, IsActive: true, SortOrder: 1},
-			{ID: 2, PriceMinor: 12000, SalePriceMinor: &salePrice, Currency: "USD", IsActive: true, SortOrder: 2},
+			{ID: 2, PriceMinor: 12000, Currency: "USD", IsActive: true, SortOrder: 2},
 			{ID: 3, PriceMinor: 2000, Currency: "USD", IsActive: false},
 		},
 	}
 
 	startingVariant := item.StartingPriceVariant()
 	require.NotNil(t, startingVariant)
-	require.Equal(t, uint(2), startingVariant.ID)
-
-	price, sale := item.DisplayPrices()
-	require.Equal(t, "120.00", price)
-	require.NotNil(t, sale)
-	require.Equal(t, "80.00", *sale)
+	require.Equal(t, uint(1), startingVariant.ID)
+	require.Equal(t, "100.00", item.DisplayPriceDecimal())
 	require.Equal(t, "USD", item.DisplayPriceCurrency())
 }
 
@@ -44,19 +39,17 @@ func TestProductStartingPriceVariantPrefersDefaultVariantOnPriceTie(t *testing.T
 }
 
 func TestProductJSONDerivesLegacySummaryFieldsFromVariant(t *testing.T) {
-	sale := int64(8000)
 	raw, err := json.Marshal(Product{
 		SKU:        "legacy-product-sku",
 		PriceMinor: 99900,
 		Stock:      999,
 		Variants: []ProductVariant{{
-			SKU:            "VARIANT-SKU",
-			PriceMinor:     10000,
-			SalePriceMinor: &sale,
-			Stock:          7,
-			IsActive:       true,
-			IsDefault:      true,
-			Currency:       "USD",
+			SKU:        "VARIANT-SKU",
+			PriceMinor: 10000,
+			Stock:      7,
+			IsActive:   true,
+			IsDefault:  true,
+			Currency:   "USD",
 		}},
 	})
 	require.NoError(t, err)
@@ -68,22 +61,12 @@ func TestProductJSONDerivesLegacySummaryFieldsFromVariant(t *testing.T) {
 }
 
 func TestProductMoneyAccessorsRequireCanonicalMinorFields(t *testing.T) {
-	saleMinor := int64(1234)
-	item := Product{Currency: "USD", PriceMinor: 1234, SalePriceMinor: &saleMinor}
+	item := Product{Currency: "USD", PriceMinor: 1234}
 	price, err := item.PriceMoney()
 	require.NoError(t, err)
 	require.Equal(t, int64(1234), price.AmountMinor())
-	sale, err := item.SalePriceMoney()
-	require.NoError(t, err)
-	require.NotNil(t, sale)
-	require.Equal(t, int64(1234), sale.AmountMinor())
-
-	variant := ProductVariant{Currency: "USD", PriceMinor: 1234, SalePriceMinor: &saleMinor}
+	variant := ProductVariant{Currency: "USD", PriceMinor: 1234}
 	price, err = variant.PriceMoney()
 	require.NoError(t, err)
 	require.Equal(t, int64(1234), price.AmountMinor())
-	sale, err = variant.SalePriceMoney()
-	require.NoError(t, err)
-	require.NotNil(t, sale)
-	require.Equal(t, int64(1234), sale.AmountMinor())
 }

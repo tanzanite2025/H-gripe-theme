@@ -21,7 +21,6 @@ func TestProductProfitCalculationRepositoryBulkUpsertUsesProductCodeAsStableKey(
 		ProductName:                  "Initial name",
 		Currency:                     "usd",
 		ListPriceMinor:               10000,
-		SalePriceMinor:               int64PointerForRepositoryTest(9000),
 		EffectiveSellingPriceMinor:   9000,
 		UnitCostMinor:                5000,
 		InboundShippingUnitCostMinor: 200,

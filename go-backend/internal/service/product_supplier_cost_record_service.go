@@ -352,7 +352,6 @@ func (s *ProductSupplierCostRecordService) syncProfitabilitySnapshotInTx(tx *gor
 		SellingCurrency:              snapshot.Currency,
 		CostCurrency:                 record.Currency,
 		ListPriceMinor:               snapshot.ListPriceMinor,
-		SalePriceMinor:               snapshot.SalePriceMinor,
 		UnitCostMinor:                &unitCost,
 		InboundShippingUnitCostMinor: record.InboundShippingUnitCostMinor,
 		PackagingUnitCostMinor:       record.PackagingUnitCostMinor,

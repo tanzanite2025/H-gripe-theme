@@ -66,7 +66,7 @@ type ProductCreateInput struct {
 	ProductSpecificationTemplateID *uint
 	ProductCategoryID              *uint
 	BrandID                        *uint
-	ShippingTemplateID             *uint
+	ShippingTemplateIDs            []uint
 	AfterSalesTemplateID           *uint
 	PackagingTemplateID            *uint
 	CustomsClassificationProfileID *uint
@@ -99,8 +99,8 @@ type ProductUpdateInput struct {
 	UpdateProductCategoryID              bool
 	BrandID                              *uint
 	UpdateBrandID                        bool
-	ShippingTemplateID                   *uint
-	UpdateShippingTemplateID             bool
+	ShippingTemplateIDs                  []uint
+	UpdateShippingTemplateIDs            bool
 	AfterSalesTemplateID                 *uint
 	UpdateAfterSalesTemplateID           bool
 	PackagingTemplateID                  *uint
@@ -279,7 +279,7 @@ func (s *ProductService) CreateAdminProduct(input ProductCreateInput) (*product.
 		ProductSpecificationTemplateID: input.ProductSpecificationTemplateID,
 		ProductCategoryID:              input.ProductCategoryID,
 		BrandID:                        input.BrandID,
-		ShippingTemplateID:             input.ShippingTemplateID,
+		ShippingTemplateIDs:            append([]uint(nil), input.ShippingTemplateIDs...),
 		AfterSalesTemplateID:           input.AfterSalesTemplateID,
 		PackagingTemplateID:            input.PackagingTemplateID,
 		CustomsClassificationProfileID: input.CustomsClassificationProfileID,
@@ -309,6 +309,14 @@ func (s *ProductService) CreateAdminProduct(input ProductCreateInput) (*product.
 			if err := tx.Product.CreateWithSpecValuesVariantsOptionValuesAndMedia(newProduct, specValues, variants, optionValues, mediaItems); err != nil {
 				return mapProductRepositoryMutationError(err)
 			}
+			if err := tx.Product.ReplaceProductShippingTemplateBindings(newProduct.ID, nil, input.ShippingTemplateIDs); err != nil {
+				return err
+			}
+			for index := range variants {
+				if err := tx.Product.ReplaceProductShippingTemplateBindings(newProduct.ID, &variants[index].ID, variants[index].ShippingTemplateIDs); err != nil {
+					return err
+				}
+			}
 			if err := tx.Product.ReplaceSpokeRepairKitModels(newProduct.ID, spokeRepairKitModels); err != nil {
 				return err
 			}
@@ -336,6 +344,14 @@ func (s *ProductService) CreateAdminProduct(input ProductCreateInput) (*product.
 	if err := s.productRepo.WithinTransaction(func(txProduct *repository.ProductRepository) error {
 		if err := txProduct.CreateWithSpecValuesVariantsOptionValuesAndMedia(newProduct, specValues, variants, optionValues, mediaItems); err != nil {
 			return mapProductRepositoryMutationError(err)
+		}
+		if err := txProduct.ReplaceProductShippingTemplateBindings(newProduct.ID, nil, input.ShippingTemplateIDs); err != nil {
+			return err
+		}
+		for index := range variants {
+			if err := txProduct.ReplaceProductShippingTemplateBindings(newProduct.ID, &variants[index].ID, variants[index].ShippingTemplateIDs); err != nil {
+				return err
+			}
 		}
 		return txProduct.ReplaceSpokeRepairKitModels(newProduct.ID, spokeRepairKitModels)
 	}); err != nil {
@@ -386,9 +402,6 @@ func (s *ProductService) UpdateAdminProduct(id uint, input ProductUpdateInput) (
 			return nil, err
 		}
 		existingProduct.BrandID = input.BrandID
-	}
-	if input.UpdateShippingTemplateID {
-		existingProduct.ShippingTemplateID = input.ShippingTemplateID
 	}
 	if input.UpdateAfterSalesTemplateID {
 		existingProduct.AfterSalesTemplateID = input.AfterSalesTemplateID
@@ -604,6 +617,21 @@ func (s *ProductService) UpdateAdminProduct(id uint, input ProductUpdateInput) (
 			if err := tx.Product.UpdateWithSpecValuesVariantsOptionValuesAndMedia(existingProduct, specValues, input.UpdateSpecValues, variants, input.UpdateVariants, optionValues, input.UpdateVariantOptionValues, mediaItems, input.UpdateMedia); err != nil {
 				return mapProductRepositoryMutationError(err)
 			}
+			if input.UpdateShippingTemplateIDs {
+				if err := tx.Product.ReplaceProductShippingTemplateBindings(existingProduct.ID, nil, input.ShippingTemplateIDs); err != nil {
+					return err
+				}
+			}
+			if input.UpdateVariants {
+				for index := range variants {
+					if variants[index].ID == 0 {
+						continue
+					}
+					if err := tx.Product.ReplaceProductShippingTemplateBindings(existingProduct.ID, &variants[index].ID, variants[index].ShippingTemplateIDs); err != nil {
+						return err
+					}
+				}
+			}
 			if updateSpokeRepairKitModels {
 				if err := tx.Product.ReplaceSpokeRepairKitModels(existingProduct.ID, spokeRepairKitModels); err != nil {
 					return err
@@ -641,6 +669,21 @@ func (s *ProductService) UpdateAdminProduct(id uint, input ProductUpdateInput) (
 	if err := s.productRepo.WithinTransaction(func(txProduct *repository.ProductRepository) error {
 		if err := txProduct.UpdateWithSpecValuesVariantsOptionValuesAndMedia(existingProduct, specValues, input.UpdateSpecValues, variants, input.UpdateVariants, optionValues, input.UpdateVariantOptionValues, mediaItems, input.UpdateMedia); err != nil {
 			return mapProductRepositoryMutationError(err)
+		}
+		if input.UpdateShippingTemplateIDs {
+			if err := txProduct.ReplaceProductShippingTemplateBindings(existingProduct.ID, nil, input.ShippingTemplateIDs); err != nil {
+				return err
+			}
+		}
+		if input.UpdateVariants {
+			for index := range variants {
+				if variants[index].ID == 0 {
+					continue
+				}
+				if err := txProduct.ReplaceProductShippingTemplateBindings(existingProduct.ID, &variants[index].ID, variants[index].ShippingTemplateIDs); err != nil {
+					return err
+				}
+			}
 		}
 		if updateSpokeRepairKitModels {
 			return txProduct.ReplaceSpokeRepairKitModels(existingProduct.ID, spokeRepairKitModels)

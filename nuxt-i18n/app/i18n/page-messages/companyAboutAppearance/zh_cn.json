@@ -1,73 +1,91 @@
 {
-  "title": "外观与定制",
-  "intro": "我们提供多种碳纤维编织纹理和表面处理，以满足不同骑手对外观与性能的偏好。所有纹理都是真实的结构碳纤维，并非印刷或覆膜。",
-  "images": {
-    "matteAlt": "碳纤维轮圈哑光表面细节",
-    "matteCaption": "哑光表面细节",
-    "glossyAlt": "碳纤维轮圈亮光表面细节",
-    "glossyCaption": "亮光表面细节"
+  "title": "碳纤维轮圈外观与定制",
+  "navigation": {
+    "ariaLabel": "关于我们页面导航",
+    "tabs": {
+      "factory": "工厂",
+      "appearance": "外观定制",
+      "hole-patterns": "孔位设计"
+    }
   },
-  "sections": {
-    "weavePatterns": "编织纹理",
-    "glossLevels": "光泽等级",
-    "crystalEffects": "水晶效果",
-    "brakeTracks": "刹车边选项",
-    "laserEngraving": "激光雕刻"
+  "seo": {
+    "title": "碳纤维轮圈外观定制：UD、免涂装与激光镭射",
+    "description": "了解碳纤维轮圈的 UD 纹理、免涂装表面和激光镭射标识，比较其他外观定制、制作交期与圈刹刹车边选择。刹车边整体耐温 260°C，优先推荐经过表面优化的常规方案。",
+    "imageAlt": "碳纤维轮圈激光镭射 Logo 的制作过程",
+    "breadcrumbHome": "首页"
   },
-  "rimBrakeOnly": "（仅适用于圈刹）",
-  "crystalIntro": "水晶表面采用微层涂覆技术，呈现独特的光线反射和色彩层次。",
-  "brakeTrackNote": "所有刹车边都经过热处理和耐磨测试，可兼容主流刹车皮。",
-  "weaves": {
+  "intro": "我们目前以 UD 纹理、免涂装表面和激光镭射标识为主。纹理、表面处理和标识可以组合选择；其他外观也可定制，但需要更长的制作时间。",
+  "primaryAppearance": {
+    "label": "目前主推",
     "ud": {
       "name": "UD（单向纤维）",
-      "finish": "哑光",
-      "description": "简洁的直纹，重量极轻。"
+      "description": "以单向碳纤维纹理为主，外观简洁，是我们目前主推的轮圈纹理。"
     },
+    "paintless": {
+      "name": "免涂装表面",
+      "description": "保留碳纤维本身的表面质感，省去额外的涂装工序，是我们目前主推的表面处理方式。"
+    },
+    "laserLogo": {
+      "name": "激光镭射标识",
+      "description": "通过激光镭射制作 Logo 或文字，是我们目前主推的标识方式。标识镭射与刹车边的镭射处理用途不同。"
+    }
+  },
+  "customizationLeadTime": "其他纹理、涂装、光泽和水晶效果仍可定制，制作周期比主推方案更长。具体可行性与增加的时间，请在下单前根据轮圈型号和外观要求确认。",
+  "images": {
+    "weavePatternsAlt": "UD、蝴蝶纹、大理石纹、3K 与 12K 碳纤维轮圈纹理对比",
+    "weavePatternsCaption": "纹理外观参考 · UD 为主推，其他纹理需定制",
+    "surfaceFinishesAlt": "碳纤维轮圈哑光、缎面、亮光、免涂装与水晶效果对比",
+    "surfaceFinishesCaption": "表面效果参考 · 免涂装为主推，其他效果需确认定制交期"
+  },
+  "sections": {
+    "primaryAppearance": "目前主推的外观方案",
+    "customAppearance": "其他外观定制 · 查看纹理与表面选项",
+    "weavePatterns": "定制纹理",
+    "glossLevels": "定制光泽",
+    "crystalEffects": "定制水晶效果",
+    "brakeTracks": "刹车边耐温与表面处理",
+    "laserEngraving": "激光镭射标识"
+  },
+  "rimBrakeOnly": "（仅适用于圈刹）",
+  "crystalIntro": "水晶效果属于外观定制，可按需求确认颜色与表面效果，并需要额外制作时间。",
+  "weaves": {
     "butterfly": {
       "name": "蝴蝶纹",
-      "finish": "哑光",
       "description": "独特的自然纹理，视觉辨识度高。"
     },
     "marble": {
       "name": "大理石纹",
-      "finish": "哑光",
       "description": "类似石材的纹理，个性鲜明。"
     },
     "threeK": {
       "name": "3K",
-      "finish": "缎面",
       "description": "经典棋盘格纹理，视觉平衡。"
     },
     "threeKTwillVertical": {
       "name": "3K 斜纹（纵向）",
-      "finish": "缎面",
       "description": "斜向编织纹理，外观更具动感。"
     },
     "threeKTwillHorizontal": {
       "name": "3K 斜纹（横向）",
-      "finish": "缎面",
       "description": "横向斜纹，风格更现代。"
     },
     "twelveK": {
       "name": "12K",
-      "finish": "缎面",
       "description": "粗纤维编织，纹理表现力强。"
     },
     "twelveKTwillVertical": {
       "name": "12K 斜纹（纵向）",
-      "finish": "缎面",
       "description": "醒目的纵向斜纹布局。"
     },
     "twelveKTwillHorizontal": {
       "name": "12K 斜纹（横向）",
-      "finish": "缎面",
       "description": "横向斜纹，风格更有冲击力。"
     }
   },
   "gloss": {
     "matte": {
       "name": "哑光",
-      "description": "低调细腻，耐刮擦。"
+      "description": "低光泽的表面效果，具体处理方式与定制交期需确认。"
     },
     "satin": {
       "name": "缎面",
@@ -76,10 +94,6 @@
     "glossy": {
       "name": "亮光",
       "description": "高亮表面，质感突出。"
-    },
-    "paintless": {
-      "name": "无漆",
-      "description": "保留原始碳纤维，重量更轻。"
     }
   },
   "crystalEffects": {
@@ -90,31 +104,50 @@
     "blue": "蓝色"
   },
   "brakeTracks": {
-    "resinUd": "高 TG 树脂 UD（仅 UD 纹理）",
-    "resinGraphene": "高 TG 石墨烯树脂",
-    "ac3Grooved": "AC3 开槽（两种样式）",
-    "udCGrooved": "UD C 槽（仅 UD 纹理）",
-    "cGroovedGraphene": "石墨烯 C 槽"
+    "resinTitle": "刹车边整体耐温 · 260°C",
+    "resinDescription": "我们采用经过优化的高温树脂，刹车边整体耐温参数为 260°C。",
+    "recommendedLabel": "优先推荐",
+    "standardTitle": "经过表面优化的常规刹车边",
+    "standardDescription": "我们更推荐本身已经优化表面的常规外观设定，作为刹车边的优先选择。具体表面形式以所选轮圈型号为准。",
+    "optionalLabel": "可选定制 · 需了解取舍",
+    "laserTitle": "镭射刹车边",
+    "laserBenefit": "刹车边可选择镭射等表面处理。镭射的好处是增加表面摩擦力。",
+    "laserTradeoff": "镭射也会对碳纤维表层造成一定影响。虽然相关方案经过测试，但这并不代表它是完美方案，选择前仍需了解这一取舍。"
   },
   "laser": {
-    "body": "除传统贴花和喷漆图案外，我们还支持激光雕刻标识，方案更环保、交付更快。",
+    "body": "激光镭射是我们目前主推的 Logo 和文字标识方式，可与 UD 纹理、免涂装表面组合。传统贴花、喷漆图案等也可定制，但需要更长的制作时间。",
     "bullets": {
-      "0": "无需乙烯基贴花和遮罩，减少塑料废弃物。",
-      "1": "交付周期可缩短 5-7 天。",
-      "2": "形成持久、耐用的表面效果。"
+      "0": "通过激光在轮圈表面制作标识，无需额外粘贴贴花。",
+      "1": "标识内容、位置和效果，请在下单前确认。",
+      "2": "其他标识工艺仍可定制，增加的制作时间需单独确认。"
     },
-    "guideNote": "如需了解激光雕刻与贴花之间的选择，可查看轮组购买指南。",
-    "videoAlt": "激光雕刻工艺视频",
-    "watchVideo": "观看工艺视频"
+    "guideNote": "这里展示的是外观标识镭射工艺；刹车边镭射的摩擦力收益与表层影响，请参阅上方刹车边说明。",
+    "videoAlt": "轮圈 Logo 激光镭射工艺视频",
+    "watchVideo": "观看标识镭射工艺视频"
   },
-  "suggestions": {
-    "title": "展示建议",
+  "selectionAdvice": {
+    "title": "如何选择外观方案",
     "items": {
-      "0": "将选项分为编织纹理、刹车边和表面处理三个清晰部分。",
-      "1": "为每个选项配上高清图片和简洁标签。",
-      "2": "加入推荐组合或客户偏好，帮助用户做决定。"
+      "0": "选择当前主推方案时，可优先考虑 UD 纹理、免涂装表面与激光镭射标识的组合。",
+      "1": "需要其他纹理、颜色或标识工艺时，请提前确认定制细节，并为额外制作时间预留空间。",
+      "2": "圈刹轮圈优先推荐经过表面优化的常规刹车边；如选择镭射，请同时了解其摩擦力收益与对碳纤维表层的影响。"
     },
-    "footer": "针对 OEM 客户、团队订单或定制品牌需求，我们提供标识整合、激光蚀刻和颜色匹配服务。欢迎联系我们获取定制方案。"
+    "footer": "OEM、团队订单或品牌定制，可联系我们确认轮圈型号、标识文件、外观要求和交期。"
+  },
+  "relatedResources": {
+    "title": "相关指南与定制咨询",
+    "buyingGuide": {
+      "title": "轮组外观与标识指南",
+      "description": "进一步了解轮组外观和标识的选择。"
+    },
+    "oemCustomization": {
+      "title": "OEM / ODM 定制服务",
+      "description": "了解团队订单与品牌定制的服务范围。"
+    },
+    "customizationContact": {
+      "title": "确认定制方案与交期",
+      "description": "联系我们确认轮圈型号、标识文件、外观要求与制作时间。"
+    }
   },
   "closeVideo": "关闭视频"
 }

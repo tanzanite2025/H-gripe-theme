@@ -11,7 +11,6 @@ export interface WishlistItem {
     name: string
     slug: string
     price_decimal: string
-    sale_price_decimal?: string | null
     availability: 'in_stock' | 'out_of_stock'
     thumbnail?: string
   }

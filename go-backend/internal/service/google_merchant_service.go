@@ -37,24 +37,23 @@ type GoogleMerchantService struct {
 }
 
 type GoogleMerchantOfferInput struct {
-	ProductID              uint   `json:"product_id"`
-	VariantID              uint   `json:"variant_id"`
-	OfferID                string `json:"offer_id"`
-	Title                  string `json:"title"`
-	Description            string `json:"description"`
-	Brand                  string `json:"brand"`
-	Condition              string `json:"condition"`
-	GoogleProductCategory  string `json:"google_product_category"`
-	GTIN                   string `json:"gtin"`
-	MPN                    string `json:"mpn"`
-	IdentifierExists       *bool  `json:"identifier_exists"`
-	TargetCountry          string `json:"target_country"`
-	ContentLanguage        string `json:"content_language"`
-	CurrencyCode           string `json:"currency_code"`
-	FeedLabel              string `json:"feed_label"`
-	PriceOverrideMinor     *int64 `json:"price_override_minor"`
-	SalePriceOverrideMinor *int64 `json:"sale_price_override_minor"`
-	PublicationStatus      string `json:"publication_status"`
+	ProductID             uint   `json:"product_id"`
+	VariantID             uint   `json:"variant_id"`
+	OfferID               string `json:"offer_id"`
+	Title                 string `json:"title"`
+	Description           string `json:"description"`
+	Brand                 string `json:"brand"`
+	Condition             string `json:"condition"`
+	GoogleProductCategory string `json:"google_product_category"`
+	GTIN                  string `json:"gtin"`
+	MPN                   string `json:"mpn"`
+	IdentifierExists      *bool  `json:"identifier_exists"`
+	TargetCountry         string `json:"target_country"`
+	ContentLanguage       string `json:"content_language"`
+	CurrencyCode          string `json:"currency_code"`
+	FeedLabel             string `json:"feed_label"`
+	PriceOverrideMinor    *int64 `json:"price_override_minor"`
+	PublicationStatus     string `json:"publication_status"`
 }
 
 func NewGoogleMerchantService(
@@ -205,7 +204,6 @@ func googleMerchantOfferSyncPayloadEqual(existing, next *merchant.GoogleMerchant
 		existing.CurrencyCode == next.CurrencyCode &&
 		existing.FeedLabel == next.FeedLabel &&
 		googleMerchantInt64PtrEqual(existing.PriceOverrideMinor, next.PriceOverrideMinor) &&
-		googleMerchantInt64PtrEqual(existing.SalePriceOverrideMinor, next.SalePriceOverrideMinor) &&
 		existing.PublicationStatus == next.PublicationStatus
 }
 
@@ -326,9 +324,6 @@ func (s *GoogleMerchantService) buildOffer(input GoogleMerchantOfferInput) (*mer
 	if input.PriceOverrideMinor != nil && *input.PriceOverrideMinor <= 0 {
 		return nil, fmt.Errorf("%w: price_override_minor must be greater than zero", ErrGoogleMerchantOfferInvalid)
 	}
-	if input.SalePriceOverrideMinor != nil && *input.SalePriceOverrideMinor <= 0 {
-		return nil, fmt.Errorf("%w: sale_price_override_minor must be greater than zero", ErrGoogleMerchantOfferInvalid)
-	}
 
 	targetCountry := strings.ToUpper(strings.TrimSpace(input.TargetCountry))
 	feedLabel := strings.ToUpper(strings.TrimSpace(input.FeedLabel))
@@ -341,25 +336,24 @@ func (s *GoogleMerchantService) buildOffer(input GoogleMerchantOfferInput) (*mer
 	}
 
 	offer := &merchant.GoogleMerchantOffer{
-		ProductID:              item.ID,
-		VariantID:              variant.ID,
-		OfferID:                offerID,
-		Title:                  strings.TrimSpace(input.Title),
-		Description:            strings.TrimSpace(input.Description),
-		Brand:                  brand,
-		Condition:              condition,
-		GoogleProductCategory:  strings.TrimSpace(input.GoogleProductCategory),
-		GTIN:                   gtin,
-		MPN:                    mpn,
-		IdentifierExists:       input.IdentifierExists,
-		TargetCountry:          targetCountry,
-		ContentLanguage:        strings.ToLower(strings.TrimSpace(input.ContentLanguage)),
-		CurrencyCode:           currency.NormalizeCode(input.CurrencyCode),
-		FeedLabel:              feedLabel,
-		PriceOverrideMinor:     input.PriceOverrideMinor,
-		SalePriceOverrideMinor: input.SalePriceOverrideMinor,
-		PublicationStatus:      status,
-		SyncStatus:             "not_synced",
+		ProductID:             item.ID,
+		VariantID:             variant.ID,
+		OfferID:               offerID,
+		Title:                 strings.TrimSpace(input.Title),
+		Description:           strings.TrimSpace(input.Description),
+		Brand:                 brand,
+		Condition:             condition,
+		GoogleProductCategory: strings.TrimSpace(input.GoogleProductCategory),
+		GTIN:                  gtin,
+		MPN:                   mpn,
+		IdentifierExists:      input.IdentifierExists,
+		TargetCountry:         targetCountry,
+		ContentLanguage:       strings.ToLower(strings.TrimSpace(input.ContentLanguage)),
+		CurrencyCode:          currency.NormalizeCode(input.CurrencyCode),
+		FeedLabel:             feedLabel,
+		PriceOverrideMinor:    input.PriceOverrideMinor,
+		PublicationStatus:     status,
+		SyncStatus:            "not_synced",
 	}
 	if status == "ready" {
 		priceSourceOffer := *offer
@@ -403,12 +397,12 @@ func (s *GoogleMerchantService) validateReadyOfferWithStorefrontURL(offer *merch
 	if !currency.IsCatalogCode(offer.CurrencyCode) {
 		return fmt.Errorf("%w: supported currency is required", ErrGoogleMerchantOfferInvalid)
 	}
-	price, sale, err := effectiveGoogleMerchantPrices(offer)
+	price, err := resolveGoogleMerchantOfferPriceMoney(offer)
 	if err != nil {
 		return err
 	}
-	if price.AmountMinor() <= 0 || (sale != nil && (sale.AmountMinor() <= 0 || sale.AmountMinor() >= price.AmountMinor())) {
-		return fmt.Errorf("%w: effective sale price must be below effective price", ErrGoogleMerchantOfferInvalid)
+	if price.AmountMinor() <= 0 {
+		return fmt.Errorf("%w: offer price must be greater than zero", ErrGoogleMerchantOfferInvalid)
 	}
 	if _, err := googleMerchantProductURL(storefrontBaseURL, offer.Product, offer.Variant); err != nil {
 		return fmt.Errorf("%w: %v", ErrGoogleMerchantOfferInvalid, err)
@@ -416,67 +410,37 @@ func (s *GoogleMerchantService) validateReadyOfferWithStorefrontURL(offer *merch
 	return nil
 }
 
-func effectiveGoogleMerchantPrices(offer *merchant.GoogleMerchantOffer) (domainmoney.Money, *domainmoney.Money, error) {
+func resolveGoogleMerchantOfferPriceMoney(offer *merchant.GoogleMerchantOffer) (domainmoney.Money, error) {
 	if offer == nil || offer.Variant == nil {
-		return domainmoney.Money{}, nil, fmt.Errorf("%w: offer source SKU is unavailable", ErrGoogleMerchantOfferInvalid)
+		return domainmoney.Money{}, fmt.Errorf("%w: offer source SKU is unavailable", ErrGoogleMerchantOfferInvalid)
 	}
 	if err := validateGoogleMerchantPriceSources(offer, offer.Variant); err != nil {
-		return domainmoney.Money{}, nil, err
+		return domainmoney.Money{}, err
 	}
-
 	targetCurrency := currency.NormalizeCode(offer.CurrencyCode)
-	sourceCurrency := googleMerchantSourceCurrency(offer, offer.Variant)
-	priceMoney, priceErr := offer.Variant.PriceMoney()
-	if priceErr != nil {
-		return domainmoney.Money{}, nil, fmt.Errorf("%w: invalid source price: %v", ErrGoogleMerchantOfferInvalid, priceErr)
-	}
-	saleMoney, saleErr := offer.Variant.SalePriceMoney()
-	if saleErr != nil {
-		return domainmoney.Money{}, nil, fmt.Errorf("%w: invalid source sale price: %v", ErrGoogleMerchantOfferInvalid, saleErr)
-	}
-	var rate *big.Rat
-	needsRate := offer.PriceOverrideMinor == nil || (saleMoney != nil && offer.SalePriceOverrideMinor == nil)
-	if targetCurrency != sourceCurrency && needsRate {
-		var ok bool
-		rate, ok = googleMerchantVariantDisplayRate(offer.Variant, targetCurrency)
-		if !ok {
-			// validateGoogleMerchantPriceSources already returned an actionable
-			// error for this case; keep this guard for future callers.
-			return domainmoney.Money{}, nil, fmt.Errorf("%w: converted price snapshot is unavailable for %s", ErrGoogleMerchantOfferInvalid, targetCurrency)
-		}
-	}
-
-	resolvedPrice := priceMoney
 	if offer.PriceOverrideMinor != nil {
-		overrideMoney, err := domainmoney.New(*offer.PriceOverrideMinor, targetCurrency)
+		price, err := domainmoney.New(*offer.PriceOverrideMinor, targetCurrency)
 		if err != nil {
-			return domainmoney.Money{}, nil, fmt.Errorf("%w: invalid price override", ErrGoogleMerchantOfferInvalid)
+			return domainmoney.Money{}, fmt.Errorf("%w: invalid price override", ErrGoogleMerchantOfferInvalid)
 		}
-		resolvedPrice = overrideMoney
-	} else if rate != nil {
-		resolvedPrice, priceErr = priceMoney.ConvertAtRat(rate, targetCurrency)
-		if priceErr != nil {
-			return domainmoney.Money{}, nil, fmt.Errorf("%w: convert source price: %v", ErrGoogleMerchantOfferInvalid, priceErr)
-		}
+		return price, nil
 	}
-	var sale *domainmoney.Money
-	if offer.SalePriceOverrideMinor != nil {
-		overrideMoney, err := domainmoney.New(*offer.SalePriceOverrideMinor, targetCurrency)
-		if err != nil {
-			return domainmoney.Money{}, nil, fmt.Errorf("%w: invalid sale price override", ErrGoogleMerchantOfferInvalid)
-		}
-		sale = &overrideMoney
-	} else if saleMoney != nil {
-		resolvedSale := *saleMoney
-		if rate != nil {
-			resolvedSale, saleErr = saleMoney.ConvertAtRat(rate, targetCurrency)
-			if saleErr != nil {
-				return domainmoney.Money{}, nil, fmt.Errorf("%w: convert source sale price: %v", ErrGoogleMerchantOfferInvalid, saleErr)
-			}
-		}
-		sale = &resolvedSale
+	price, err := offer.Variant.PriceMoney()
+	if err != nil {
+		return domainmoney.Money{}, fmt.Errorf("%w: invalid source price: %v", ErrGoogleMerchantOfferInvalid, err)
 	}
-	return resolvedPrice, sale, nil
+	if targetCurrency == googleMerchantSourceCurrency(offer, offer.Variant) {
+		return price, nil
+	}
+	rate, ok := googleMerchantVariantDisplayRate(offer.Variant, targetCurrency)
+	if !ok {
+		return domainmoney.Money{}, fmt.Errorf("%w: converted price snapshot is unavailable for %s", ErrGoogleMerchantOfferInvalid, targetCurrency)
+	}
+	price, err = price.ConvertAtRat(rate, targetCurrency)
+	if err != nil {
+		return domainmoney.Money{}, fmt.Errorf("%w: convert source price: %v", ErrGoogleMerchantOfferInvalid, err)
+	}
+	return price, nil
 }
 
 // validateGoogleMerchantPriceSources prevents a source-currency amount from
@@ -507,18 +471,7 @@ func validateGoogleMerchantPriceSources(offer *merchant.GoogleMerchantOffer, var
 			sourceCurrency,
 		)
 	}
-	saleMoney, saleErr := variant.SalePriceMoney()
-	if saleErr != nil {
-		return fmt.Errorf("%w: invalid source sale price: %v", ErrGoogleMerchantOfferInvalid, saleErr)
-	}
-	if saleMoney != nil && offer.SalePriceOverrideMinor == nil && !hasDisplayRate {
-		return fmt.Errorf(
-			"%w: sale_price_override in %s or a converted display-price snapshot is required when the source SKU has a sale price in %s",
-			ErrGoogleMerchantOfferInvalid,
-			targetCurrency,
-			sourceCurrency,
-		)
-	}
+
 	return nil
 }
 

@@ -5,12 +5,17 @@
     :form="templateForm"
     :errors="templateErrors"
     :submitting="templateSubmitting"
-    :fpx-channels="fpxChannels"
-    :yanwen-published-channels="yanwenPublishedChannels"
-    :carriers="carriers"
+    :route-aggregates="routeAggregates"
     @update:open="emit('update:templateOpen', $event)"
     @submit="emit('save-template')"
     @clear-error="emit('clear-template-error', $event)"
+  />
+
+  <ShippingRouteAggregateEditorDialog
+    :open="routeAggregateOpen" :mode="routeAggregateMode" :form="routeAggregateForm" :errors="routeAggregateErrors"
+    :carrier-services="carrierServices" :carriers="carriers" :fpx-channels="fpxChannels" :yanwen-published-channels="yanwenPublishedChannels"
+    :submitting="routeAggregateSubmitting" @update:open="emit('update:routeAggregateOpen', $event)"
+    @submit="emit('save-route-aggregate')" @clear-error="emit('clear-route-aggregate-error', $event)"
   />
 
   <CarrierEditorDialog
@@ -22,21 +27,6 @@
     @update:open="emit('update:carrierOpen', $event)"
     @submit="emit('save-carrier')"
     @clear-error="emit('clear-carrier-error', $event)"
-  />
-
-  <CarrierServiceEditorDialog
-    :open="carrierServiceOpen"
-    :mode="carrierServiceMode"
-    :form="carrierServiceForm"
-    :errors="carrierServiceErrors"
-    :carriers="carriers"
-    :templates="templates"
-    :fpx-channels="fpxChannels"
-    :yanwen-published-channels="yanwenPublishedChannels"
-    :submitting="carrierServiceSubmitting"
-    @update:open="emit('update:carrierServiceOpen', $event)"
-    @submit="emit('save-carrier-service')"
-    @clear-error="emit('clear-carrier-service-error', $event)"
   />
 
   <TrackingProviderEditorDialog
@@ -97,7 +87,7 @@
 <script setup lang="ts">
 import AdminConfirmDialog from '@/components/admin/AdminConfirmDialog.vue'
 import CarrierEditorDialog from '@/components/admin/shipping/CarrierEditorDialog.vue'
-import CarrierServiceEditorDialog from '@/components/admin/shipping/CarrierServiceEditorDialog.vue'
+import ShippingRouteAggregateEditorDialog from '@/components/admin/shipping/ShippingRouteAggregateEditorDialog.vue'
 import PackagingRuleAppliesDialog from '@/components/admin/shipping/PackagingRuleAppliesDialog.vue'
 import PackagingRuleEditorDialog from '@/components/admin/shipping/PackagingRuleEditorDialog.vue'
 import ShippingTemplateEditorDialog from '@/components/admin/shipping/ShippingTemplateEditorDialog.vue'
@@ -111,10 +101,11 @@ import type {
   ShippingCarrier,
   ShippingCarrierForm,
   ShippingCarrierService,
-  ShippingCarrierServiceForm,
   ShippingDialogMode,
   ShippingErrorMap,
   ShippingTemplate,
+  ShippingRouteAggregate,
+  ShippingRouteAggregateForm,
   ShippingTemplateForm,
   PackagingRule,
   PackagingRuleForm,
@@ -126,6 +117,12 @@ import type {
 
 withDefaults(defineProps<{
   templates?: ShippingTemplate[]
+  routeAggregates?: ShippingRouteAggregate[]
+  routeAggregateOpen?: boolean
+  routeAggregateMode?: ShippingDialogMode
+  routeAggregateSubmitting?: boolean
+  routeAggregateForm: ShippingRouteAggregateForm
+  routeAggregateErrors: ShippingErrorMap
   carriers?: ShippingCarrier[]
   fpxChannels?: FpxPublishedCollectionReference[]
   yanwenPublishedChannels?: YanwenPublishedCollectionReference[]
@@ -141,11 +138,6 @@ withDefaults(defineProps<{
   carrierSubmitting?: boolean
   carrierErrors: ShippingErrorMap
   carrierForm: ShippingCarrierForm
-  carrierServiceOpen?: boolean
-  carrierServiceMode?: ShippingDialogMode
-  carrierServiceSubmitting?: boolean
-  carrierServiceErrors: ShippingErrorMap
-  carrierServiceForm: ShippingCarrierServiceForm
   trackingProviderOpen?: boolean
   trackingProviderMode?: ShippingDialogMode
   trackingProviderSubmitting?: boolean
@@ -169,6 +161,10 @@ withDefaults(defineProps<{
   deleteDescription?: string
 }>(), {
   templates: () => [],
+  routeAggregates: () => [],
+  routeAggregateOpen: false,
+  routeAggregateMode: 'create',
+  routeAggregateSubmitting: false,
   carriers: () => [],
   fpxChannels: () => [],
   yanwenPublishedChannels: () => [],
@@ -180,9 +176,6 @@ withDefaults(defineProps<{
   carrierOpen: false,
   carrierMode: 'create',
   carrierSubmitting: false,
-  carrierServiceOpen: false,
-  carrierServiceMode: 'create',
-  carrierServiceSubmitting: false,
   trackingProviderOpen: false,
   trackingProviderMode: 'create',
   trackingProviderSubmitting: false,
@@ -201,9 +194,11 @@ withDefaults(defineProps<{
 })
 
 const emit = defineEmits<{
+  (event: 'update:routeAggregateOpen', value: boolean): void
+  (event: 'save-route-aggregate'): void
+  (event: 'clear-route-aggregate-error', field: unknown): void
   (event: 'update:templateOpen', value: boolean): void
   (event: 'update:carrierOpen', value: boolean): void
-  (event: 'update:carrierServiceOpen', value: boolean): void
   (event: 'update:trackingProviderOpen', value: boolean): void
   (event: 'update:trackingCarrierMappingOpen', value: boolean): void
   (event: 'update:packagingOpen', value: boolean): void
@@ -211,13 +206,11 @@ const emit = defineEmits<{
   (event: 'update:deleteOpen', value: boolean): void
   (event: 'save-template'): void
   (event: 'save-carrier'): void
-  (event: 'save-carrier-service'): void
   (event: 'save-tracking-provider'): void
   (event: 'save-tracking-carrier-mapping'): void
   (event: 'save-packaging-rule'): void
   (event: 'clear-template-error', field: unknown): void
   (event: 'clear-carrier-error', field: unknown): void
-  (event: 'clear-carrier-service-error', field: unknown): void
   (event: 'clear-tracking-provider-error', field: unknown): void
   (event: 'clear-tracking-carrier-mapping-error', field: unknown): void
   (event: 'clear-packaging-error', field: unknown): void

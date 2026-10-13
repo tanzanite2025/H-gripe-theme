@@ -4,19 +4,11 @@ import shippingApi from '@/api/shipping'
 import {
   clearErrors,
   defaultShippingCarrierForm,
-  defaultShippingCarrierServiceForm,
   resetReactive,
 } from '@/lib/shippingForms'
 
-const nullablePositiveID = (value: any) => {
-  const numericValue = Number(value)
-  return Number.isFinite(numericValue) && numericValue > 0 ? numericValue : null
-}
-
 export const useShippingCarrierManager = (options: Record<string, any> = {}) => {
-  const carriers = options.carriers
   const fetchCarriers = options.fetchCarriers || (() => Promise.resolve())
-  const fetchCarrierServices = options.fetchCarrierServices || (() => Promise.resolve())
 
   const carrierDialogOpen = ref(false)
   const carrierDialogMode = ref<'create' | 'edit'>('create')
@@ -24,20 +16,8 @@ export const useShippingCarrierManager = (options: Record<string, any> = {}) => 
   const carrierErrors = reactive<Record<string, string>>({})
   const carrierForm = reactive(defaultShippingCarrierForm())
 
-  const carrierServiceDialogOpen = ref(false)
-  const carrierServiceDialogMode = ref<'create' | 'edit'>('create')
-  const carrierServiceSubmitting = ref(false)
-  const carrierServiceErrors = reactive<Record<string, string>>({})
-  const carrierServiceForm = reactive(defaultShippingCarrierServiceForm(carriers?.value || []))
-
-  const defaultCarrierServiceForm = () => defaultShippingCarrierServiceForm(carriers?.value || [])
-
   const clearCarrierError = (field: string) => {
     delete carrierErrors[field]
-  }
-
-  const clearCarrierServiceError = (field: string) => {
-    delete carrierServiceErrors[field]
   }
 
   const showCreateCarrierDialog = () => {
@@ -100,119 +80,6 @@ export const useShippingCarrierManager = (options: Record<string, any> = {}) => 
     }
   }
 
-  const showCreateCarrierServiceDialog = () => {
-    carrierServiceDialogMode.value = 'create'
-    resetReactive(carrierServiceForm, defaultCarrierServiceForm())
-    clearErrors(carrierServiceErrors)
-    carrierServiceDialogOpen.value = true
-  }
-
-  const showEditCarrierServiceDialog = (service: any) => {
-    carrierServiceDialogMode.value = 'edit'
-    resetReactive(carrierServiceForm, {
-      ...defaultCarrierServiceForm(),
-      ...service,
-      carrier_id: service.carrier_id ? String(service.carrier_id) : '',
-      provider_code: String(service.provider_code || service.carrier?.code || '').trim().toUpperCase(),
-      fpx_channel_id: service.fpx_channel_id ?? null,
-      yanwen_published_channel_id: service.yanwen_published_channel_id ?? null,
-      template_id: service.template_id ? String(service.template_id) : 'none',
-      first_weight_grams: Number(service.first_weight_grams || 0),
-      additional_weight_grams: Number(service.additional_weight_grams || 0),
-      min_charge_weight_grams: Number(service.min_charge_weight_grams || 0),
-      volumetric_divisor: Number(service.volumetric_divisor || 6000),
-      fuel_surcharge_percent_decimal: String(service.fuel_surcharge_percent_decimal ?? '0'),
-      remote_surcharge_minor: Number(service.remote_surcharge_minor || 0),
-      remote_postal_codes: service.remote_postal_codes || '[]',
-      eta_min_days: Number(service.eta_min_days || 0),
-      eta_max_days: Number(service.eta_max_days || 0),
-      enabled: service.enabled !== false,
-      sort_order: Number(service.sort_order || 0),
-    })
-    clearErrors(carrierServiceErrors)
-    carrierServiceDialogOpen.value = true
-  }
-
-  const validateCarrierService = () => {
-    clearErrors(carrierServiceErrors)
-    if (!nullablePositiveID(carrierServiceForm.carrier_id)) carrierServiceErrors.carrier_id = '请选择承运商'
-    if (!carrierServiceForm.service_code?.trim()) carrierServiceErrors.service_code = '请输入线路代码'
-    if (!carrierServiceForm.service_name?.trim()) carrierServiceErrors.service_name = '请输入线路名称'
-    if (!['actual_weight', 'volumetric_weight', 'greater_of_actual_and_volumetric'].includes(carrierServiceForm.billing_mode)) {
-      carrierServiceErrors.billing_mode = '请选择计费模式'
-    }
-    if (Number(carrierServiceForm.eta_max_days || 0) > 0 && Number(carrierServiceForm.eta_min_days || 0) > 0 && Number(carrierServiceForm.eta_max_days) < Number(carrierServiceForm.eta_min_days)) {
-      carrierServiceErrors.eta_max_days = '最长时效不能小于最短时效'
-    }
-
-    const numericFields = [
-      'first_weight_grams',
-      'additional_weight_grams',
-      'min_charge_weight_grams',
-      'volumetric_divisor',
-      'fuel_surcharge_percent_decimal',
-      'remote_surcharge_minor',
-      'eta_min_days',
-      'eta_max_days',
-      'sort_order',
-    ]
-    const hasNegative = numericFields.some((field) => Number(carrierServiceForm[field] || 0) < 0)
-    if (hasNegative) {
-      toast.error('本地计费线路的数字字段不能小于 0')
-      return false
-    }
-
-    return Object.keys(carrierServiceErrors).length === 0
-  }
-
-  const buildCarrierServicePayload = () => ({
-    carrier_id: nullablePositiveID(carrierServiceForm.carrier_id),
-    fpx_channel_id: nullablePositiveID(carrierServiceForm.fpx_channel_id),
-    yanwen_published_channel_id: nullablePositiveID(carrierServiceForm.yanwen_published_channel_id),
-    provider_code: carrierServiceForm.provider_code?.trim().toUpperCase() || String(carriers?.value?.find((carrier: any) => String(carrier.id) === String(carrierServiceForm.carrier_id))?.code || '').trim().toUpperCase(),
-    template_id: carrierServiceForm.template_id === 'none' ? null : nullablePositiveID(carrierServiceForm.template_id),
-    service_code: carrierServiceForm.service_code?.trim().toUpperCase() || '',
-    service_name: carrierServiceForm.service_name?.trim() || '',
-    route_name: carrierServiceForm.route_name?.trim() || '',
-    countries: carrierServiceForm.countries?.trim() || '[]',
-    currency: carrierServiceForm.currency?.trim().toUpperCase() || '',
-    billing_mode: carrierServiceForm.billing_mode || 'actual_weight',
-    first_weight_grams: Number(carrierServiceForm.first_weight_grams || 0),
-    additional_weight_grams: Number(carrierServiceForm.additional_weight_grams || 0),
-    min_charge_weight_grams: Number(carrierServiceForm.min_charge_weight_grams || 0),
-    volumetric_divisor: Number(carrierServiceForm.volumetric_divisor || 6000),
-    fuel_surcharge_percent_decimal: String(carrierServiceForm.fuel_surcharge_percent_decimal || '0').trim(),
-    remote_surcharge_minor: Number(carrierServiceForm.remote_surcharge_minor || 0),
-    remote_postal_codes: carrierServiceForm.remote_postal_codes?.trim() || '[]',
-    eta_min_days: Number(carrierServiceForm.eta_min_days || 0),
-    eta_max_days: Number(carrierServiceForm.eta_max_days || 0),
-    enabled: Boolean(carrierServiceForm.enabled),
-    sort_order: Number(carrierServiceForm.sort_order || 0),
-    description: carrierServiceForm.description || '',
-  })
-
-  const saveCarrierService = async () => {
-    if (!validateCarrierService()) return
-
-    carrierServiceSubmitting.value = true
-    try {
-      const payload = buildCarrierServicePayload()
-      if (carrierServiceDialogMode.value === 'create') {
-        await shippingApi.createCarrierService(payload)
-        toast.success('本地计费线路已创建')
-      } else {
-        await shippingApi.updateCarrierService(carrierServiceForm.id, payload)
-        toast.success('本地计费线路已更新')
-      }
-
-      carrierServiceDialogOpen.value = false
-      await fetchCarrierServices()
-    } catch (error) {
-      console.error('Failed to save carrier service:', error)
-    } finally {
-      carrierServiceSubmitting.value = false
-    }
-  }
 
   return {
     carrierDialogOpen,
@@ -220,19 +87,10 @@ export const useShippingCarrierManager = (options: Record<string, any> = {}) => 
     carrierSubmitting,
     carrierErrors,
     carrierForm,
-    carrierServiceDialogOpen,
-    carrierServiceDialogMode,
-    carrierServiceSubmitting,
-    carrierServiceErrors,
-    carrierServiceForm,
     clearCarrierError,
-    clearCarrierServiceError,
     showCreateCarrierDialog,
     showEditCarrierDialog,
     saveCarrier,
-    showCreateCarrierServiceDialog,
-    showEditCarrierServiceDialog,
-    saveCarrierService,
   }
 }
 

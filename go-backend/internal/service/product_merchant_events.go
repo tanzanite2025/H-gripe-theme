@@ -84,7 +84,7 @@ func merchantProductUpdateAffectsChannel(input ProductUpdateInput) bool {
 		input.UpdateFulfillmentMode ||
 		input.UpdateVariants ||
 		input.UpdateMedia ||
-		input.UpdateShippingTemplateID ||
+		input.UpdateShippingTemplateIDs ||
 		input.UpdateAfterSalesTemplateID ||
 		input.UpdatePackagingTemplateID
 }
@@ -102,7 +102,6 @@ func merchantProductCoreChanged(previous, next *product.Product) bool {
 		previous.Currency != next.Currency ||
 		previous.FulfillmentMode != next.FulfillmentMode ||
 		previous.PriceMinor != next.PriceMinor ||
-		!int64PointerEqual(previous.SalePriceMinor, next.SalePriceMinor) ||
 		previous.Stock != next.Stock ||
 		previous.Status != next.Status
 }

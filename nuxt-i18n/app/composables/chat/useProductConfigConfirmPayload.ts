@@ -154,12 +154,10 @@ export const buildProductConfigConfirmMetadata = (
   const priceValue = toFiniteNumber(
     selectedVariant?.priceNumber
       ?? selectedVariant?.price_value
-      ?? selectedVariant?.sale_price_decimal
       ?? selectedVariant?.price_decimal
       ?? product?.priceValue
       ?? product?.priceNumber
       ?? product?.price_value
-      ?? product?.prices?.sale
       ?? product?.prices?.regular
   )
   const price = String(

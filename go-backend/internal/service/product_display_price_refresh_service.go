@@ -98,7 +98,7 @@ func (s *ProductService) RefreshDisplayPriceSnapshots(
 
 	for _, item := range products {
 		result.VariantsScanned += len(item.Variants)
-		productSourcePrice, productSourceSalePrice, priceErr := productDisplaySourceMoney(&item)
+		productSourcePrice, priceErr := productDisplaySourceMoney(&item)
 		if priceErr != nil {
 			return result, fmt.Errorf("resolve source price for product %d: %w", item.ID, priceErr)
 		}
@@ -113,7 +113,6 @@ func (s *ProductService) RefreshDisplayPriceSnapshots(
 		if productCanRefresh {
 			productSnapshot = displayPriceSnapshotMoneyJSON(
 				productSourcePrice,
-				productSourceSalePrice,
 				baseCurrency,
 				quoteCurrencies,
 				ratesByQuote,
@@ -130,10 +129,6 @@ func (s *ProductService) RefreshDisplayPriceSnapshots(
 			if sourceMoney, moneyErr := sourceVariant.PriceMoney(); moneyErr == nil {
 				update.SourcePriceMinor = sourceMoney.AmountMinor()
 			}
-			if saleMoney, moneyErr := sourceVariant.SalePriceMoney(); moneyErr == nil && saleMoney != nil {
-				minor := saleMoney.AmountMinor()
-				update.SourceSalePriceMinor = &minor
-			}
 		} else if sourceMoney, moneyErr := item.PriceMoney(); moneyErr == nil {
 			update.SourcePriceMinor = sourceMoney.AmountMinor()
 		}
@@ -144,7 +139,7 @@ func (s *ProductService) RefreshDisplayPriceSnapshots(
 		}
 
 		for _, variant := range item.Variants {
-			variantSourcePrice, variantSourceSalePrice, variantPriceErr := productDisplaySourceMoneyVariant(&variant)
+			variantSourcePrice, variantPriceErr := productDisplaySourceMoneyVariant(&variant)
 			if variantPriceErr != nil {
 				return result, fmt.Errorf("resolve source price for variant %d: %w", variant.ID, variantPriceErr)
 			}
@@ -156,7 +151,6 @@ func (s *ProductService) RefreshDisplayPriceSnapshots(
 
 			variantSnapshot := displayPriceSnapshotMoneyJSON(
 				variantSourcePrice,
-				variantSourceSalePrice,
 				baseCurrency,
 				quoteCurrencies,
 				ratesByQuote,
@@ -169,10 +163,6 @@ func (s *ProductService) RefreshDisplayPriceSnapshots(
 			}
 			if sourceMoney, moneyErr := variant.PriceMoney(); moneyErr == nil {
 				variantUpdate.SourcePriceMinor = sourceMoney.AmountMinor()
-			}
-			if saleMoney, moneyErr := variant.SalePriceMoney(); moneyErr == nil && saleMoney != nil {
-				minor := saleMoney.AmountMinor()
-				variantUpdate.SourceSalePriceMinor = &minor
 			}
 			update.VariantSnapshotUpdates = append(update.VariantSnapshotUpdates, variantUpdate)
 			result.VariantsUpdated++
@@ -210,37 +200,21 @@ func (s *ProductService) RefreshDisplayPriceSnapshots(
 	return result, nil
 }
 
-func productDisplaySourceMoney(item *product.Product) (domainmoney.Money, *domainmoney.Money, error) {
+func productDisplaySourceMoney(item *product.Product) (domainmoney.Money, error) {
 	if item == nil {
-		return domainmoney.Money{}, nil, errors.New("product is required")
+		return domainmoney.Money{}, errors.New("product is required")
 	}
 	if variant := item.StartingPriceVariant(); variant != nil {
-		return productDisplaySourceMoneyVariant(variant)
+		return variant.PriceMoney()
 	}
-	priceMoney, err := item.PriceMoney()
-	if err != nil {
-		return domainmoney.Money{}, nil, err
-	}
-	saleMoney, err := item.SalePriceMoney()
-	if err != nil || saleMoney == nil {
-		return priceMoney, nil, err
-	}
-	return priceMoney, saleMoney, nil
+	return item.PriceMoney()
 }
 
-func productDisplaySourceMoneyVariant(item *product.ProductVariant) (domainmoney.Money, *domainmoney.Money, error) {
+func productDisplaySourceMoneyVariant(item *product.ProductVariant) (domainmoney.Money, error) {
 	if item == nil {
-		return domainmoney.Money{}, nil, errors.New("product variant is required")
+		return domainmoney.Money{}, errors.New("product variant is required")
 	}
-	priceMoney, err := item.PriceMoney()
-	if err != nil {
-		return domainmoney.Money{}, nil, err
-	}
-	saleMoney, err := item.SalePriceMoney()
-	if err != nil || saleMoney == nil {
-		return priceMoney, nil, err
-	}
-	return priceMoney, saleMoney, nil
+	return item.PriceMoney()
 }
 
 func normalizeDisplayPriceRefreshQuotes(values []string, baseCurrency string) []string {
@@ -295,16 +269,12 @@ func displayPriceRateFloat(rate *big.Rat) (float64, bool) {
 
 func displayPriceSnapshotMoneyJSON(
 	price domainmoney.Money,
-	salePrice *domainmoney.Money,
 	baseCurrency string,
 	quoteCurrencies []string,
 	ratesByQuote map[string]*big.Rat,
 	previousSnapshots []currency.DisplayPriceSnapshot,
 ) datatypes.JSON {
 	amount := price
-	if salePrice != nil && salePrice.AmountMinor() > 0 {
-		amount = *salePrice
-	}
 	if amount.AmountMinor() <= 0 || currency.NormalizeCode(amount.Currency().String()) != currency.NormalizeCode(baseCurrency) {
 		return datatypes.JSON([]byte("[]"))
 	}

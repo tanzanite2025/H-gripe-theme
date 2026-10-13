@@ -276,9 +276,8 @@
             {{ specLabel(spec) }}
           </TableHead>
           <TableHead class="w-32">价格</TableHead>
-          <TableHead class="w-32">促销价</TableHead>
           <TableHead class="w-28">重量（克）</TableHead>
-          <TableHead class="w-44">运费模板</TableHead>
+          <TableHead class="w-44">线路计费模板</TableHead>
           <TableHead class="w-24">库存</TableHead>
           <TableHead class="w-20 text-center">启用</TableHead>
           <TableHead class="w-16 text-right">操作</TableHead>
@@ -336,26 +335,19 @@
               <Input v-model="variant.price" inputmode="decimal" type="text" min="0" step="0.01" />
             </TableCell>
             <TableCell>
-              <Input v-model="variant.sale_price" inputmode="decimal" type="text" min="0" step="0.01" placeholder="可选" />
-            </TableCell>
-            <TableCell>
               <Input v-model.number="variant.weight_grams" type="number" min="0" step="1" placeholder="克" />
             </TableCell>
             <TableCell>
-              <Select
-                :model-value="shippingTemplateSelectValue(variant.shipping_template_id)"
-                @update:model-value="setShippingTemplateValue(variant, $event)"
+              <select
+                class="min-h-16 w-full rounded-md border bg-background px-2 py-1 text-xs"
+                multiple
+                :value="shippingTemplateIDs(variant)"
+                @change="setShippingTemplateValue(variant, $event)"
               >
-                <SelectTrigger class="w-full">
-                  <SelectValue placeholder="继承商品" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__inherit__">继承商品</SelectItem>
-                  <SelectItem v-for="template in shippingTemplates" :key="template.id" :value="String(template.id)">
-                    {{ template.name }}{{ template.enabled === false ? '（停用）' : '' }}
-                  </SelectItem>
-                </SelectContent>
-              </Select>
+                <option v-for="template in shippingTemplates" :key="template.id" :value="String(template.id)">
+                  {{ template.name }}{{ template.enabled === false ? '（停用）' : '' }}
+                </option>
+              </select>
             </TableCell>
             <TableCell>
               <Input v-model.number="variant.stock" type="number" min="0" step="1" />
@@ -389,7 +381,7 @@
             </TableCell>
         </TableRow>
         <TableRow v-if="customOptionDefinitions.length" :key="`${variant.id || `variant-${index}`}-custom-rules`">
-          <TableCell :colspan="specDefinitions.length + 10" class="bg-muted/10 p-3">
+          <TableCell :colspan="specDefinitions.length + 8" class="bg-muted/10 p-3">
             <div class="grid gap-2 lg:grid-cols-2">
               <div v-for="spec in customOptionDefinitions" :key="`rule-${variant.id || index}-${spec.id}`" class="rounded-md border bg-background p-2.5">
                 <div class="flex flex-wrap items-center justify-between gap-2">
@@ -660,14 +652,16 @@ const uploadSwatch = async (event: Event, option: ProductVariantOptionValueForm)
   }
 }
 const selectValue = (value: unknown): string => value === undefined || value === null || value === '' ? '__empty__' : String(value)
-const shippingTemplateSelectValue = (value: unknown): string => value === undefined || value === null || value === '' ? '__inherit__' : String(value)
+const shippingTemplateIDs = (variant: ProductVariantForm): string[] => (Array.isArray(variant.shipping_template_ids) ? variant.shipping_template_ids : []).map(value => String(value))
 const checkboxValue = (event: Event): boolean => Boolean((event.target as HTMLInputElement | null)?.checked)
 const setSelectValue = (variant: ProductVariantForm, slug: string, value: unknown): void => {
   variant.option_values[slug] = value === '__empty__' ? '' : value
 }
 
-const setShippingTemplateValue = (variant: ProductVariantForm, value: unknown): void => {
-  variant.shipping_template_id = value === '__inherit__' ? null : Number(value)
+const setShippingTemplateValue = (variant: ProductVariantForm, event: Event): void => {
+  const target = event.target as HTMLSelectElement
+  const ids = Array.from(target.selectedOptions).map(option => Number(option.value)).filter(value => Number.isInteger(value) && value > 0)
+  variant.shipping_template_ids = Array.from(new Set(ids))
 }
 
 </script>

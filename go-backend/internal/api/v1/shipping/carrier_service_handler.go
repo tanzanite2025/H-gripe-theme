@@ -15,7 +15,7 @@ func (h *Handler) ListCarrierServices(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, gin.H{"data": services})
+	response.Success(c, gin.H{"data": buildPublicShippingCarrierServiceIdentityResponses(services)})
 }
 
 func (h *Handler) GetCarrierService(c *gin.Context) {
@@ -31,5 +31,5 @@ func (h *Handler) GetCarrierService(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, service)
+	response.Success(c, buildPublicShippingCarrierServiceIdentityResponse(*service))
 }

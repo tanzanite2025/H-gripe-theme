@@ -32,7 +32,6 @@ type profitabilityItemRequest struct {
 	CostCurrency    string `json:"cost_currency"`
 
 	ListPriceMinor int64  `json:"list_price_minor"`
-	SalePriceMinor *int64 `json:"sale_price_minor"`
 	UnitCostMinor  *int64 `json:"unit_cost_minor"`
 	UnitCostKnown  bool   `json:"unit_cost_known"`
 
@@ -103,7 +102,6 @@ func toProfitabilityInputs(items []profitabilityItemRequest) []service.Profitabi
 			SellingCurrency:              item.SellingCurrency,
 			CostCurrency:                 item.CostCurrency,
 			ListPriceMinor:               item.ListPriceMinor,
-			SalePriceMinor:               item.SalePriceMinor,
 			UnitCostMinor:                item.UnitCostMinor,
 			UnitCostKnown:                item.UnitCostKnown,
 			InboundShippingUnitCostMinor: item.InboundShippingUnitCostMinor,

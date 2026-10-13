@@ -242,6 +242,7 @@ func newTestCartServiceWithDSN(t *testing.T, dsn string, maxOpenConns int) (*gor
 		&product.ProductMedia{},
 		&product.ProductSpecValue{},
 		&product.ProductVariant{},
+		&product.ProductShippingTemplateBinding{},
 		&product.Cart{},
 		&product.CartItem{},
 	))

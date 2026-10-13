@@ -64,9 +64,11 @@
 						<div class="site-header-action-cell site-header-action-cell--search">
 							<button
 								ref="desktopContentNavigationTriggerRef"
+								type="button"
 								class="site-header-action-button site-header-search-trigger"
 								@click.stop="toggleContentNavigationTransition"
 								:aria-label="contentNavigationTriggerLabel"
+								:aria-expanded="contentNavigationTransitionOpen"
 							>
 								<Icon name="lucide:search" class="site-header-search-trigger__icon" />
 							</button>
@@ -240,9 +242,11 @@
 						<div class="site-header-action-cell site-header-action-cell--search">
 							<button
 								ref="mobileContentNavigationTriggerRef"
+								type="button"
 								class="site-header-action-button site-header-search-trigger site-header-search-trigger--mobile"
 								@click.stop="toggleContentNavigationTransition"
 								:aria-label="contentNavigationTriggerLabel"
+								:aria-expanded="contentNavigationTransitionOpen"
 							>
 								<Icon name="lucide:search" class="site-header-search-trigger__icon" />
 							</button>
@@ -1931,9 +1935,9 @@ const switchLanguage = async (code: string) => {
       ? router.resolve({ path: overrideTargetPath, query: currentRoute.query, hash: currentRoute.hash }).fullPath
       : fallbackTargetPath
 
-    locale.value = code
-    await nextTick()
-    try { await setLocale(code) } catch {}
+    // setLocale loads the target messages before changing the active locale.
+    // Assigning locale first makes its same-locale guard skip that lazy load.
+    await setLocale(code)
     if (targetPath && targetPath !== currentFullPath) {
       try {
         await router.push(targetPath)
@@ -1958,9 +1962,22 @@ const isLanguageInteractionTarget = (target: EventTarget | null) => {
   )
 }
 
+const isGlobalContentNavigationPanelOrTriggerTarget = (target: EventTarget | null): boolean => (
+  target instanceof Element
+  && (
+    Boolean(desktopContentNavigationTriggerRef.value?.contains(target))
+    || Boolean(mobileContentNavigationTriggerRef.value?.contains(target))
+    || Boolean(target.closest('.global-content-navigation-transition-overlay__inner'))
+  )
+)
+
 const handlePointerDownOutside = (event: PointerEvent) => {
-  if (!isOpen.value || isLanguageInteractionTarget(event.target)) return
-  closeLanguage('user')
+  if (isOpen.value && !isLanguageInteractionTarget(event.target)) {
+    closeLanguage('user')
+  }
+  if (contentNavigationTransitionOpen.value && !isGlobalContentNavigationPanelOrTriggerTarget(event.target)) {
+    closeContentNavigationTransition('user')
+  }
 }
 
 const handleClickOutside = (event: MouseEvent) => {
@@ -1968,6 +1985,9 @@ const handleClickOutside = (event: MouseEvent) => {
   if (!(target instanceof Element)) return
   if (isOpen.value && !isLanguageInteractionTarget(target)) {
     closeLanguage('user')
+  }
+  if (contentNavigationTransitionOpen.value && !isGlobalContentNavigationPanelOrTriggerTarget(target)) {
+    closeContentNavigationTransition('user')
   }
   if (!target.closest('[data-breadcrumb-subnav]')) {
     closeBreadcrumbSubNav()
@@ -2409,6 +2429,10 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 	flex: 0 0 var(--site-header-action-icon-size);
 	margin: 0;
 	animation: site-header-search-nudge 30s ease-in-out infinite;
+}
+
+.site-header-search-trigger[aria-expanded='true'] .site-header-search-trigger__icon {
+	color: var(--tz-site-accent, #059669);
 }
 
 .site-header-search-trigger__label {

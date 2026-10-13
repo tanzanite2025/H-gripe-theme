@@ -30,26 +30,24 @@ type PublicCartItem struct {
 }
 
 type PublicCartProduct struct {
-	ID               uint              `json:"id"`
-	Name             string            `json:"name"`
-	Slug             string            `json:"slug"`
-	ShortDesc        string            `json:"short_description"`
-	PriceDecimal     string            `json:"price_decimal"`
-	SalePriceDecimal *string           `json:"sale_price_decimal,omitempty"`
-	FulfillmentMode  string            `json:"fulfillment_mode,omitempty"`
-	Availability     string            `json:"availability"`
-	Media            []PublicCartMedia `json:"media,omitempty"`
+	ID              uint              `json:"id"`
+	Name            string            `json:"name"`
+	Slug            string            `json:"slug"`
+	ShortDesc       string            `json:"short_description"`
+	PriceDecimal    string            `json:"price_decimal"`
+	FulfillmentMode string            `json:"fulfillment_mode,omitempty"`
+	Availability    string            `json:"availability"`
+	Media           []PublicCartMedia `json:"media,omitempty"`
 }
 
 type PublicCartVariant struct {
-	ID               uint    `json:"id"`
-	ProductID        uint    `json:"product_id"`
-	Title            string  `json:"title"`
-	OptionValues     string  `json:"option_values"`
-	PriceDecimal     string  `json:"price_decimal"`
-	SalePriceDecimal *string `json:"sale_price_decimal,omitempty"`
-	IsDefault        bool    `json:"is_default"`
-	Availability     string  `json:"availability"`
+	ID           uint   `json:"id"`
+	ProductID    uint   `json:"product_id"`
+	Title        string `json:"title"`
+	OptionValues string `json:"option_values"`
+	PriceDecimal string `json:"price_decimal"`
+	IsDefault    bool   `json:"is_default"`
+	Availability string `json:"availability"`
 }
 
 type PublicCartMedia struct {
@@ -99,36 +97,28 @@ func PublicCartSummaryFromDomain(summary *productdomain.CartSummary, resolvers .
 		if item.Variant != nil {
 			variantPriceMoney, _ := item.Variant.PriceMoney()
 			variantPrice, _ := variantPriceMoney.FormatMajor()
-			var variantSalePrice *string
-			if saleMoney, err := item.Variant.SalePriceMoney(); err == nil && saleMoney != nil {
-				if sale, saleErr := saleMoney.FormatMajor(); saleErr == nil {
-					variantSalePrice = &sale
-				}
-			}
 			publicVariant := PublicCartVariant{
-				ID:               item.Variant.ID,
-				ProductID:        item.Variant.ProductID,
-				Title:            item.Variant.Title,
-				OptionValues:     item.Variant.OptionValues,
-				PriceDecimal:     variantPrice,
-				SalePriceDecimal: variantSalePrice,
-				IsDefault:        item.Variant.IsDefault,
-				Availability:     string(cartAvailabilityForVariant(*item.Variant, fulfillmentMode)),
+				ID:           item.Variant.ID,
+				ProductID:    item.Variant.ProductID,
+				Title:        item.Variant.Title,
+				OptionValues: item.Variant.OptionValues,
+				PriceDecimal: variantPrice,
+				IsDefault:    item.Variant.IsDefault,
+				Availability: string(cartAvailabilityForVariant(*item.Variant, fulfillmentMode)),
 			}
 			publicItem.Variant = &publicVariant
 		}
 		if item.Product != nil {
-			price, salePrice := productPriceDecimals(*item.Product)
+			price := item.Product.DisplayPriceDecimal()
 			publicProduct := PublicCartProduct{
-				ID:               item.Product.ID,
-				Name:             item.Product.Name,
-				Slug:             item.Product.Slug,
-				ShortDesc:        item.Product.ShortDesc,
-				PriceDecimal:     price,
-				SalePriceDecimal: salePrice,
-				FulfillmentMode:  publicCartFulfillmentMode(fulfillmentMode),
-				Availability:     string(cartAvailabilityForProduct(*item.Product)),
-				Media:            publicCartMediaFromDomain(item.Product.Media, resolver),
+				ID:              item.Product.ID,
+				Name:            item.Product.Name,
+				Slug:            item.Product.Slug,
+				ShortDesc:       item.Product.ShortDesc,
+				PriceDecimal:    price,
+				FulfillmentMode: publicCartFulfillmentMode(fulfillmentMode),
+				Availability:    string(cartAvailabilityForProduct(*item.Product)),
+				Media:           publicCartMediaFromDomain(item.Product.Media, resolver),
 			}
 			if publicItem.Variant != nil {
 				publicProduct.Availability = publicItem.Variant.Availability
@@ -184,38 +174,6 @@ func summaryTotalMinor(summary *productdomain.CartSummary) int64 {
 		return 0
 	}
 	return summary.TotalMoney.AmountMinor()
-}
-
-func productPriceDecimals(item productdomain.Product) (string, *string) {
-	variant := item.StartingPriceVariant()
-	if variant != nil {
-		price, err := variant.PriceMoney()
-		if err != nil {
-			return "", nil
-		}
-		formatted, err := price.FormatMajor()
-		if err != nil {
-			return "", nil
-		}
-		sale, err := variant.SalePriceMoney()
-		if err != nil || sale == nil {
-			return formatted, nil
-		}
-		saleFormatted, err := sale.FormatMajor()
-		if err != nil {
-			return formatted, nil
-		}
-		return formatted, &saleFormatted
-	}
-	price, err := item.PriceMoney()
-	if err != nil {
-		return "", nil
-	}
-	formatted, err := price.FormatMajor()
-	if err != nil {
-		return "", nil
-	}
-	return formatted, nil
 }
 
 func publicCartMediaFromDomain(items []productdomain.ProductMedia, resolver publicmedia.Resolver) []PublicCartMedia {

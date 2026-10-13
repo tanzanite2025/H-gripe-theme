@@ -134,7 +134,7 @@
       @confirm-template-sync="confirmTemplateSync"
       @product-category-select="setProductCategory"
       @product-brand-select="setProductBrand"
-      @product-shipping-template-select="setProductShippingTemplate"
+      @product-shipping-template-select="setProductShippingTemplates"
       @product-information-template-select="setProductInformationTemplate"
       @customs-classification-select="handleCustomsClassificationSelect"
       @customs-classification-manual-edit="clearCustomsClassification"
@@ -329,7 +329,7 @@ const {
   getSpecLabel,
   specSelectValue,
   setSpecSelectValue,
-  setProductShippingTemplate,
+  setProductShippingTemplates,
   setProductCategory,
   setProductBrand,
   setProductInformationTemplate,

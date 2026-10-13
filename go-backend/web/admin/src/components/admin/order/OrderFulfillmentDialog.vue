@@ -240,9 +240,9 @@
                   </select>
                 </label>
                 <label class="block space-y-1">
-                  <span class="field-label">SERVICE / 本地计费线路</span>
+                  <span class="field-label">SERVICE / 承运商线路</span>
                   <select v-model="carrierServiceId" class="field-select">
-                    <option value="none">不指定本地计费线路</option>
+                    <option value="none">不指定承运商线路</option>
                     <option v-for="service in filteredCarrierServices" :key="service.id" :value="String(service.id)">
                       {{ service.service_name }} / {{ service.service_code }}
                     </option>
@@ -593,7 +593,7 @@ const submit = (): void => {
   const carrier = toID(carrierId.value)
   const carrierService = toID(carrierServiceId.value)
   if (!carrier && !carrierService) {
-    validationError.value = '请选择本地承运商或本地计费线路。'
+    validationError.value = '请选择本地承运商或承运商线路。'
     return
   }
   if (props.order.signature_required && !signatureConfirmed.value) {

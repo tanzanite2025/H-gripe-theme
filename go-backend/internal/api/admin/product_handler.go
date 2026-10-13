@@ -206,7 +206,7 @@ func (h *ProductHandler) CreateProduct(c *gin.Context) {
 		ProductSpecificationTemplateID: req.ProductSpecificationTemplateID,
 		ProductCategoryID:              req.ProductCategoryID,
 		BrandID:                        req.BrandID,
-		ShippingTemplateID:             req.ShippingTemplateID,
+		ShippingTemplateIDs:            normalizeShippingTemplateIDs(req.ShippingTemplateIDs),
 		AfterSalesTemplateID:           req.AfterSalesTemplateID,
 		PackagingTemplateID:            req.PackagingTemplateID,
 		CustomsClassificationProfileID: req.CustomsClassificationProfileID,
@@ -271,7 +271,7 @@ func (h *ProductHandler) UpdateProduct(c *gin.Context) {
 	_, updateProductSpecificationTemplateID := raw["product_specification_template_id"]
 	_, updateProductCategoryID := raw["product_category_id"]
 	_, updateBrandID := raw["brand_id"]
-	_, updateShippingTemplateID := raw["shipping_template_id"]
+	_, updateShippingTemplateIDs := raw["shipping_template_ids"]
 	_, updateAfterSalesTemplateID := raw["after_sales_template_id"]
 	_, updatePackagingTemplateID := raw["packaging_template_id"]
 	_, updateCustomsClassificationProfileID := raw["customs_classification_profile_id"]
@@ -304,8 +304,8 @@ func (h *ProductHandler) UpdateProduct(c *gin.Context) {
 		UpdateProductCategoryID:              updateProductCategoryID,
 		BrandID:                              req.BrandID,
 		UpdateBrandID:                        updateBrandID,
-		ShippingTemplateID:                   req.ShippingTemplateID,
-		UpdateShippingTemplateID:             updateShippingTemplateID,
+		ShippingTemplateIDs:                  normalizeShippingTemplateIDs(req.ShippingTemplateIDs),
+		UpdateShippingTemplateIDs:            updateShippingTemplateIDs,
 		AfterSalesTemplateID:                 req.AfterSalesTemplateID,
 		UpdateAfterSalesTemplateID:           updateAfterSalesTemplateID,
 		PackagingTemplateID:                  req.PackagingTemplateID,

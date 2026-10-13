@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	ProfitFormulaVersion = "gross-margin-v3-no-customs"
+	ProfitFormulaVersion = "gross-margin-v4-catalog-price-only"
 
 	ProfitStatusReady                = "ready"
 	ProfitStatusWarning              = "warning"
@@ -19,8 +19,6 @@ const (
 	ProfitStatusCurrencyMismatch     = "currency_mismatch"
 	ProfitStatusInvalidSelling       = "invalid_selling_price"
 	ProfitStatusInvalidCost          = "invalid_cost"
-	ProfitWarningSalePriceMissing    = "sale_price_missing"
-	ProfitWarningSalePriceAboveList  = "sale_price_above_list_price"
 	ProfitWarningNegativeGrossProfit = "negative_gross_profit"
 )
 
@@ -40,7 +38,6 @@ type ProfitCalculationInput struct {
 	CostCurrency    string
 
 	ListPriceMinor               int64
-	SalePriceMinor               *int64
 	UnitCostMinor                *int64
 	InboundShippingUnitCostMinor int64
 	PackagingUnitCostMinor       int64
@@ -59,7 +56,6 @@ type ProfitCalculationResult struct {
 	Warnings       []string `json:"warnings"`
 
 	ListPriceMinor               int64    `json:"list_price_minor"`
-	SalePriceMinor               *int64   `json:"sale_price_minor,omitempty"`
 	EffectiveSellingPriceMinor   int64    `json:"effective_selling_price_minor"`
 	UnitCostMinor                *int64   `json:"unit_cost_minor,omitempty"`
 	InboundShippingUnitCostMinor int64    `json:"inbound_shipping_unit_cost_minor"`
@@ -69,7 +65,6 @@ type ProfitCalculationResult struct {
 	GrossProfitMinor             *int64   `json:"gross_profit_minor,omitempty"`
 	GrossMarginBPS               *int     `json:"gross_margin_bps,omitempty"`
 	GrossMarginPercent           *float64 `json:"gross_margin_percent,omitempty"`
-
 }
 
 // CalculateProfit calculates the current estimated gross profit for one SKU.
@@ -115,21 +110,7 @@ func CalculateProfit(input ProfitCalculationInput) (ProfitCalculationResult, err
 	result.ListPriceMinor = listPrice.AmountMinor()
 
 	effectiveSellingPrice := listPrice
-	if input.SalePriceMinor != nil {
-		salePrice, conversionErr := domainmoney.New(*input.SalePriceMinor, sellingCurrency)
-		if conversionErr != nil || salePrice.AmountMinor() <= 0 {
-			result.Status = ProfitStatusInvalidSelling
-			return result, nil
-		}
-		normalizedSalePrice := salePrice.AmountMinor()
-		result.SalePriceMinor = &normalizedSalePrice
-		effectiveSellingPrice = salePrice
-		if salePrice.AmountMinor() > listPrice.AmountMinor() {
-			addProfitWarning(&result, ProfitWarningSalePriceAboveList)
-		}
-	} else {
-		addProfitWarning(&result, ProfitWarningSalePriceMissing)
-	}
+
 	result.EffectiveSellingPriceMinor = effectiveSellingPrice.AmountMinor()
 
 	costs := []int64{

@@ -1004,7 +1004,7 @@ func applyPublicProductSearchFilters(query *gorm.DB, input ProductSearchQuery, d
 			  AND pv_price_min.deleted_at IS NULL
 			  AND pv_price_min.is_active = TRUE
 			AND UPPER(COALESCE(pv_price_min.currency, 'USD')) = UPPER(?)
-			AND COALESCE(pv_price_min.sale_price_minor, pv_price_min.price_minor) >= ?
+			AND pv_price_min.price_minor >= ?
 		)`, input.PriceCurrency, *input.PriceMin)
 	}
 	if input.PriceMax != nil {
@@ -1014,7 +1014,7 @@ func applyPublicProductSearchFilters(query *gorm.DB, input ProductSearchQuery, d
 			  AND pv_price_max.deleted_at IS NULL
 			  AND pv_price_max.is_active = TRUE
 			AND UPPER(COALESCE(pv_price_max.currency, 'USD')) = UPPER(?)
-			AND COALESCE(pv_price_max.sale_price_minor, pv_price_max.price_minor) <= ?
+			AND pv_price_max.price_minor <= ?
 		)`, input.PriceCurrency, *input.PriceMax)
 	}
 	if input.Keyword != "" {

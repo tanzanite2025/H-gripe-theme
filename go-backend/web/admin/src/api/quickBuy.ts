@@ -120,7 +120,6 @@ export interface QuickBuyPreviewProduct {
   slug?: string
   sku?: string
 	price_decimal?: string
-	sale_price_decimal?: string | null
   currency?: string
   display_price?: {
 		amount_decimal?: string

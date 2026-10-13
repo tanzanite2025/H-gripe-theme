@@ -9,19 +9,29 @@ import (
 )
 
 type shippingTemplateRequest struct {
-	Name                  string                                     `json:"name" binding:"required"`
-	Type                  string                                     `json:"type" binding:"required"`
-	TemplateKind          string                                     `json:"template_kind"`
-	Currency              string                                     `json:"currency"`
-	FreeShipping          bool                                       `json:"free_shipping"`
-	FreeThresholdMinor    int64                                      `json:"free_threshold_minor"`
-	DefaultFeeMinor       int64                                      `json:"default_fee_minor"`
-	FreeShippingCountries json.RawMessage                            `json:"free_shipping_countries"`
-	DisplayPriceSnapshots map[string][]currency.DisplayPriceSnapshot `json:"display_price_snapshots"`
-	Description           string                                     `json:"description"`
-	Enabled               *bool                                      `json:"enabled"`
-	Rules                 []shippingRuleRequest                      `json:"rules"`
-	CarrierServices       *[]shippingCarrierServiceRequest           `json:"carrier_services"`
+	Name                                string                                     `json:"name" binding:"required"`
+	Type                                string                                     `json:"type" binding:"required"`
+	TemplateKind                        string                                     `json:"template_kind"`
+	Currency                            string                                     `json:"currency"`
+	FreeShipping                        bool                                       `json:"free_shipping"`
+	FreeThresholdMinor                  int64                                      `json:"free_threshold_minor"`
+	DefaultFeeMinor                     int64                                      `json:"default_fee_minor"`
+	RouteGroupID                        *uint                                      `json:"route_group_id"`
+	CustomerBillingMode                 string                                     `json:"customer_billing_mode"`
+	CustomerFirstWeightGrams            int                                        `json:"customer_first_weight_grams"`
+	CustomerAdditionalWeightGrams       int                                        `json:"customer_additional_weight_grams"`
+	CustomerMinChargeWeightGrams        int                                        `json:"customer_min_charge_weight_grams"`
+	CustomerVolumetricDivisor           int                                        `json:"customer_volumetric_divisor"`
+	CustomerFuelSurchargePercentDecimal string                                     `json:"customer_fuel_surcharge_percent_decimal"`
+	CustomerRemoteSurchargeMinor        int64                                      `json:"customer_remote_surcharge_minor"`
+	CustomerRemotePostalCodes           string                                     `json:"customer_remote_postal_codes"`
+	CustomerEtaMinDays                  int                                        `json:"customer_eta_min_days"`
+	CustomerEtaMaxDays                  int                                        `json:"customer_eta_max_days"`
+	FreeShippingCountries               json.RawMessage                            `json:"free_shipping_countries"`
+	DisplayPriceSnapshots               map[string][]currency.DisplayPriceSnapshot `json:"display_price_snapshots"`
+	Description                         string                                     `json:"description"`
+	Enabled                             *bool                                      `json:"enabled"`
+	Rules                               []shippingRuleRequest                      `json:"rules"`
 }
 
 type shippingRuleRequest struct {
@@ -39,9 +49,11 @@ type shippingRuleRequest struct {
 	DisplayPriceSnapshots map[string][]currency.DisplayPriceSnapshot `json:"display_price_snapshots"`
 }
 
+// shippingCarrierServiceRequest manages provider route identity and internal
+// metadata. Aggregates use the narrower published route selection request;
+// customer pricing is only accepted by shippingTemplateRequest.
 type shippingCarrierServiceRequest struct {
 	CarrierID                   uint   `json:"carrier_id" binding:"required"`
-	TemplateID                  *uint  `json:"template_id"`
 	FpxChannelID                *uint  `json:"fpx_channel_id"`
 	YanwenPublishedChannelID    *uint  `json:"yanwen_published_channel_id"`
 	ProviderCode                string `json:"provider_code"`
@@ -134,18 +146,28 @@ func (r shippingTemplateRequest) toDomain() shippingdomain.ShippingTemplate {
 		freeShippingCountries = string(r.FreeShippingCountries)
 	}
 	template := shippingdomain.ShippingTemplate{
-		Name:                          strings.TrimSpace(r.Name),
-		Type:                          templateType,
-		TemplateKind:                  templateKind,
-		Currency:                      templateCurrency,
-		FreeShipping:                  r.FreeShipping,
-		FreeThresholdMinor:            r.FreeThresholdMinor,
-		DefaultFeeMinor:               r.DefaultFeeMinor,
-		FreeShippingCountries:         freeShippingCountries,
-		FreeShippingCountriesProvided: r.FreeShippingCountries != nil,
-		DisplayPriceData:              shippingdomain.TemplateDisplayPriceSnapshotsJSON(r.DisplayPriceSnapshots),
-		Description:                   strings.TrimSpace(r.Description),
-		Enabled:                       enabled,
+		Name:                                strings.TrimSpace(r.Name),
+		Type:                                templateType,
+		TemplateKind:                        templateKind,
+		Currency:                            templateCurrency,
+		FreeShipping:                        r.FreeShipping,
+		FreeThresholdMinor:                  r.FreeThresholdMinor,
+		DefaultFeeMinor:                     r.DefaultFeeMinor,
+		RouteGroupID:                        r.RouteGroupID,
+		CustomerBillingMode:                 strings.TrimSpace(r.CustomerBillingMode),
+		CustomerFirstWeightGrams:            r.CustomerFirstWeightGrams,
+		CustomerAdditionalWeightGrams:       r.CustomerAdditionalWeightGrams,
+		CustomerMinChargeWeightGrams:        r.CustomerMinChargeWeightGrams,
+		CustomerVolumetricDivisor:           r.CustomerVolumetricDivisor,
+		CustomerFuelSurchargePercentDecimal: strings.TrimSpace(r.CustomerFuelSurchargePercentDecimal),
+		CustomerRemoteSurchargeMinor:        r.CustomerRemoteSurchargeMinor,
+		CustomerRemotePostalCodes:           strings.TrimSpace(r.CustomerRemotePostalCodes),
+		CustomerEtaMinDays:                  r.CustomerEtaMinDays,
+		CustomerEtaMaxDays:                  r.CustomerEtaMaxDays,
+		FreeShippingCountries:               freeShippingCountries,
+		DisplayPriceData:                    shippingdomain.TemplateDisplayPriceSnapshotsJSON(r.DisplayPriceSnapshots),
+		Description:                         strings.TrimSpace(r.Description),
+		Enabled:                             enabled,
 	}
 
 	for _, rule := range r.Rules {
@@ -240,7 +262,6 @@ func (r shippingCarrierServiceRequest) toDomain() shippingdomain.CarrierService 
 
 	return shippingdomain.CarrierService{
 		CarrierID:                   r.CarrierID,
-		TemplateID:                  r.TemplateID,
 		FpxChannelID:                r.FpxChannelID,
 		YanwenPublishedChannelID:    r.YanwenPublishedChannelID,
 		ProviderCode:                strings.ToUpper(strings.TrimSpace(r.ProviderCode)),

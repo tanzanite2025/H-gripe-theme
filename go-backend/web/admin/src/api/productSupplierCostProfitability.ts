@@ -15,7 +15,6 @@ export interface ProfitabilityRecord {
   product_name: string
   currency: string
   list_price_minor: number
-  sale_price_minor?: number
   effective_selling_price_minor: number
   unit_cost_minor: number
   inbound_shipping_unit_cost_minor: number
@@ -47,7 +46,6 @@ export interface ProfitabilityItemPayload {
   currency: string
   cost_currency?: string
   list_price_minor: number
-  sale_price_minor?: number | null
   unit_cost_minor?: number | null
   unit_cost_known: boolean
   inbound_shipping_unit_cost_minor: number
@@ -65,7 +63,6 @@ export interface ProfitabilityPreviewResult {
   formula_version: string
   warnings: string[]
   list_price_minor: number
-  sale_price_minor?: number
   effective_selling_price_minor: number
   unit_cost_minor?: number
   inbound_shipping_unit_cost_minor: number

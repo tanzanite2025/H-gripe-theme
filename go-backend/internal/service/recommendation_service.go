@@ -513,10 +513,7 @@ func (s *RecommendationService) makeRecommendationProduct(
 	reason string,
 	reviewSummaries ...reviewdomain.ReviewSummary,
 ) RecommendationProduct {
-	price, sale := item.DisplayPrices()
-	if sale != nil {
-		price = *sale
-	}
+	price := item.DisplayPriceDecimal()
 	weightGrams := 0
 	if variant := item.DefaultVariant(); variant != nil {
 		weightGrams = variant.Weight

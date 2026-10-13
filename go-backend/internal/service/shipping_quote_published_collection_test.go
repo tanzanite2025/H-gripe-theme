@@ -19,7 +19,7 @@ func TestQuoteCartUsesCurrentFpxCollectionCountryScope(t *testing.T) {
 		ServiceCode: "EU-EXPRESS", DisplayName: "4PX Europe Express", Countries: `["US"]`, Enabled: true,
 	}
 	require.NoError(t, db.Create(&channel).Error)
-	service := seedQuoteCarrierService(t, db, carrier.ID, template.ID, shippingdomain.CarrierService{
+	service := seedQuoteCustomerBillingTemplateAndCarrierRoute(t, db, carrier.ID, template.ID, shippingdomain.CarrierService{
 		FpxChannelID: &channel.ID,
 		ServiceCode:  "EU-EXPRESS", ServiceName: "Old service name", Countries: `["CA"]`,
 		BillingMode: "actual_weight", FirstWeightGrams: 500, AdditionalWeightGrams: 500,
@@ -47,8 +47,8 @@ func TestQuoteCartUsesCurrentFpxCollectionCountryScope(t *testing.T) {
 	channel.Countries = `["CA"]`
 	require.NoError(t, db.Save(&channel).Error)
 	lockedQuote, err := shippingService.QuoteCart(selectedQuoteInput)
-	require.NoError(t, err)
-	assert.Equal(t, service.ID, requireSelectedQuoteLeg(t, lockedQuote).CarrierServiceID)
+	require.ErrorIs(t, err, ErrShippingQuoteStale)
+	assert.Nil(t, lockedQuote)
 
 	_, err = shippingService.QuoteCart(input)
 	require.ErrorIs(t, err, ErrShippingQuotePlanUnavailable)
@@ -88,7 +88,7 @@ func TestQuoteCartSystemFreeShippingIgnoresUnrelatedCarrierCollections(t *testin
 	unrelatedTemplate := createGlobalWeightQuoteTemplateForPublishedCollectionTest(t, db)
 	carrier := seedQuoteCarrier(t, db, "Yanwen", "YANWEN")
 	unrelatedChannelID := uint(9999)
-	seedQuoteCarrierService(t, db, carrier.ID, unrelatedTemplate.ID, shippingdomain.CarrierService{
+	seedQuoteCustomerBillingTemplateAndCarrierRoute(t, db, carrier.ID, unrelatedTemplate.ID, shippingdomain.CarrierService{
 		ProviderCode:             "YANWEN",
 		ServiceCode:              "YANWEN:UNRELATED",
 		YanwenPublishedChannelID: &unrelatedChannelID,
@@ -154,7 +154,7 @@ func TestQuoteCartIgnoresTestEnvironmentFpxChannels(t *testing.T) {
 	require.NoError(t, db.Create(&shippingdomain.FpxChannel{
 		Environment: "test", ServiceCode: "SHARED-ROUTE", DisplayName: "Test route", Countries: `["CA"]`, Enabled: true,
 	}).Error)
-	seedQuoteCarrierService(t, db, carrier.ID, template.ID, shippingdomain.CarrierService{
+	seedQuoteCustomerBillingTemplateAndCarrierRoute(t, db, carrier.ID, template.ID, shippingdomain.CarrierService{
 		FpxChannelID: &productionChannel.ID,
 		ServiceCode:  "SHARED-ROUTE", ServiceName: "Stored route", Countries: `["US","CA"]`,
 		BillingMode: "actual_weight", FirstWeightGrams: 500, AdditionalWeightGrams: 500,
@@ -187,7 +187,7 @@ func TestQuoteCartDoesNotFallBackWhenYanwenCollectionRouteIsDisabled(t *testing.
 		Environment: shippingdomain.YanwenPublishedChannelEnvironmentFAT,
 		ProductCode: "481", DisplayName: "Yanwen FAT standard", Countries: `["CA"]`, Enabled: true, VolumetricDivisor: 8000,
 	}).Error)
-	service := seedQuoteCarrierService(t, db, carrier.ID, template.ID, shippingdomain.CarrierService{
+	service := seedQuoteCustomerBillingTemplateAndCarrierRoute(t, db, carrier.ID, template.ID, shippingdomain.CarrierService{
 		YanwenPublishedChannelID: &channel.ID,
 		ServiceCode:              "YANWEN:481", ServiceName: "Old Yanwen name", Countries: `["US"]`,
 		BillingMode: "actual_weight", FirstWeightGrams: 500, AdditionalWeightGrams: 500,
@@ -223,7 +223,7 @@ func TestQuoteCartDoesNotRebindStableFpxCollectionIDAfterCodeReuse(t *testing.T)
 		Environment: "production", ServiceCode: "REUSED-CODE", DisplayName: "Old collection", Countries: `["US"]`, Enabled: true,
 	}
 	require.NoError(t, db.Create(&oldChannel).Error)
-	service := seedQuoteCarrierService(t, db, carrier.ID, template.ID, shippingdomain.CarrierService{
+	service := seedQuoteCustomerBillingTemplateAndCarrierRoute(t, db, carrier.ID, template.ID, shippingdomain.CarrierService{
 		FpxChannelID: &oldChannel.ID,
 		ServiceCode:  "REUSED-CODE", ServiceName: "Stored route", Countries: `["US"]`,
 		BillingMode: "actual_weight", FirstWeightGrams: 500, AdditionalWeightGrams: 500,
@@ -260,7 +260,7 @@ func TestQuoteCartDoesNotRebindStableYanwenCollectionIDAfterCodeReuse(t *testing
 		ProductCode: "481", DisplayName: "Old Yanwen collection", Countries: `["US"]`, Enabled: true, VolumetricDivisor: 8000,
 	}
 	require.NoError(t, db.Create(&oldChannel).Error)
-	service := seedQuoteCarrierService(t, db, carrier.ID, template.ID, shippingdomain.CarrierService{
+	service := seedQuoteCustomerBillingTemplateAndCarrierRoute(t, db, carrier.ID, template.ID, shippingdomain.CarrierService{
 		YanwenPublishedChannelID: &oldChannel.ID,
 		ServiceCode:              "YANWEN:481", ServiceName: "Stored Yanwen route", Countries: `["US"]`,
 		BillingMode: "actual_weight", FirstWeightGrams: 500, AdditionalWeightGrams: 500,

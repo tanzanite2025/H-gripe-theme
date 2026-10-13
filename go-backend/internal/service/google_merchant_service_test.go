@@ -244,6 +244,7 @@ func newTestGoogleMerchantService(t *testing.T) (*gorm.DB, *GoogleMerchantServic
 		&product.ProductMedia{},
 		&product.ProductSpecValue{},
 		&product.ProductVariant{},
+		&product.ProductShippingTemplateBinding{},
 		&merchant.GoogleMerchantConnection{},
 		&merchant.GoogleMerchantOffer{},
 	); err != nil {
@@ -264,11 +265,11 @@ func newTestGoogleMerchantService(t *testing.T) (*gorm.DB, *GoogleMerchantServic
 		t.Fatalf("create product: %v", err)
 	}
 	variantRecord := product.ProductVariant{
-		ProductID: productRecord.ID,
-		SKU:       "TZ-WHEEL-700C",
-		PriceMinor:  129900,
-		Stock:     5,
-		IsActive:  true,
+		ProductID:  productRecord.ID,
+		SKU:        "TZ-WHEEL-700C",
+		PriceMinor: 129900,
+		Stock:      5,
+		IsActive:   true,
 	}
 	if err := db.Create(&variantRecord).Error; err != nil {
 		t.Fatalf("create variant: %v", err)

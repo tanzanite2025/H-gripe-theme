@@ -145,10 +145,7 @@
             </TableCell>
  <TableCell class="font-mono text-xs">{{ remoteProduct.offer_id || '-'}}</TableCell>
             <TableCell class="font-mono text-xs">
-              <span>{{ formatRemotePrice(remoteProduct.product_attributes?.sale_price || remoteProduct.product_attributes?.price) }}</span>
-              <span v-if="remoteProduct.product_attributes?.sale_price" class="ml-1 text-muted-foreground line-through">
-                {{ formatRemotePrice(remoteProduct.product_attributes?.price) }}
-              </span>
+              <span>{{ formatRemotePrice(remoteProduct.product_attributes?.price) }}</span>
             </TableCell>
             <TableCell><AdminStatusBadge :tone="remoteAvailabilityTone(remoteProduct.product_attributes?.availability)">{{ remoteAvailabilityLabel(remoteProduct.product_attributes?.availability) }}</AdminStatusBadge></TableCell>
             <TableCell><AdminStatusBadge :tone="remoteStatusTone(remoteProduct)">{{ remoteStatusLabel(remoteProduct) }}</AdminStatusBadge></TableCell>
@@ -283,7 +280,6 @@
               </select>
             </AdminFormField>
             <AdminFormField label="市场价格覆盖"><Input v-model="form.price_override_decimal" type="text" inputmode="decimal" placeholder="同币种可留空；跨币种优先使用换算快照" /></AdminFormField>
-            <AdminFormField label="市场促销价覆盖"><Input v-model="form.sale_price_override_decimal" type="text" inputmode="decimal" placeholder="跨币种无换算快照时必填" /></AdminFormField>
           </div>
           <AdminFormField label="同步标题"><Input v-model="form.title" placeholder="留空可后续按站内商品标题映射" /></AdminFormField>
           <AdminFormField label="同步描述"><Textarea v-model="form.description" class="min-h-24" placeholder="填写 Google 渠道描述" /></AdminFormField>
@@ -347,9 +343,7 @@ interface GoogleMerchantOffer {
   currency_code: string
   feed_label: string
   price_override_minor: number | string | null
-  sale_price_override_minor: number | string | null
   price_override_decimal: string
-  sale_price_override_decimal: string
   publication_status: string
   sync_status?: string
   last_validated_at?: string | number | Date | null
@@ -401,7 +395,6 @@ interface RemoteProduct {
     title?: string
     link?: string
     price?: RemoteProductPrice
-    sale_price?: RemoteProductPrice
     availability?: string
   }
 }
@@ -445,9 +438,7 @@ const form = reactive<GoogleMerchantOfferForm>({
   currency_code: '',
   feed_label: '',
   price_override_minor: null,
-  sale_price_override_minor: null,
   price_override_decimal: '',
-  sale_price_override_decimal: '',
   publication_status: 'draft'
 })
 const connection = reactive<GoogleMerchantConnection>({
@@ -478,8 +469,8 @@ const emptyForm = (): GoogleMerchantOfferForm => ({
   id: null, product_id: 0, variant_id: 0, offer_id: '', title: '', description: '', brand: '',
   condition: 'new', google_product_category: '', gtin: '', mpn: '', identifier_exists: null,
   target_country: '', content_language: '', currency_code: '', feed_label: '',
-  price_override_minor: null, sale_price_override_minor: null,
-  price_override_decimal: '', sale_price_override_decimal: '', publication_status: 'draft'
+  price_override_minor: null,
+  price_override_decimal: '', publication_status: 'draft'
 })
 const reset = (values: Partial<GoogleMerchantOfferForm> = {}) => Object.assign(form, emptyForm(), values)
 const applyConnection = (values: Partial<GoogleMerchantConnection> = {}) => {
@@ -619,14 +610,13 @@ const openEdit = (offer: GoogleMerchantOffer) => {
   reset({ ...offer,
     id: offer.id, product_id: offer.product_id, variant_id: offer.variant_id,
     price_override_decimal: offer.price_override_minor == null ? '' : minorToMajorDecimal(offer.price_override_minor, offer.currency_code),
-    sale_price_override_decimal: offer.sale_price_override_minor == null ? '' : minorToMajorDecimal(offer.sale_price_override_minor, offer.currency_code),
   })
   dialogOpen.value = true
 }
 const save = async () => {
   saving.value = true
   try {
-    const { id, product, variant, sync_status, last_validated_at, last_sync_at, last_error, price_override_decimal, sale_price_override_decimal, price_override_minor: _priceOverrideMinor, sale_price_override_minor: _salePriceOverrideMinor, ...rest } = form
+    const { id, product, variant, sync_status, last_validated_at, last_sync_at, last_error, price_override_decimal, price_override_minor: _priceOverrideMinor, ...rest } = form
     const currency = String(form.currency_code || '').trim().toUpperCase()
     const parseOverride = (value: string, label: string): number | null => {
       if (value.trim() === '') return null
@@ -638,7 +628,6 @@ const save = async () => {
     }
     const payload = { ...rest,
       price_override_minor: parseOverride(price_override_decimal, '市场价格覆盖'),
-      sale_price_override_minor: parseOverride(sale_price_override_decimal, '市场促销价覆盖'),
     }
     const result = form.id ? await googleMerchantApi.updateOffer(form.id, payload) : await googleMerchantApi.createOffer(payload)
     toast.success('Google 同步资料已保存')

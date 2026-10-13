@@ -35,7 +35,6 @@ func TestProductProfitabilityHandlerPreviewDoesNotWriteDatabase(t *testing.T) {
 			"product_name": "Handler preview",
 			"currency": "USD",
 			"list_price_minor": 10000,
-			"sale_price_minor": 9000,
 			"unit_cost_minor": 5000,
 			"unit_cost_known": true
 		}]
@@ -50,7 +49,7 @@ func TestProductProfitabilityHandlerPreviewDoesNotWriteDatabase(t *testing.T) {
 	require.NoError(t, json.Unmarshal(response.Body.Bytes(), &payload))
 	require.Len(t, payload.Items, 1)
 	require.NotNil(t, payload.Items[0].GrossProfitMinor)
-	require.Equal(t, int64(4000), *payload.Items[0].GrossProfitMinor)
+	require.Equal(t, int64(5000), *payload.Items[0].GrossProfitMinor)
 
 	var count int64
 	require.NoError(t, db.Model(&suppliercostdomain.ProductProfitCalculation{}).Count(&count).Error)

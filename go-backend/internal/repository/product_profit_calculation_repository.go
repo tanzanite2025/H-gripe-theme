@@ -115,7 +115,6 @@ func (r *ProductProfitCalculationRepository) ReplaceCurrentSnapshotsInTx(
 				"product_name",
 				"currency",
 				"list_price_minor",
-				"sale_price_minor",
 				"effective_selling_price_minor",
 				"purchase_price_minor",
 				"inbound_shipping_unit_cost_minor",

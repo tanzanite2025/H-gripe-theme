@@ -22,7 +22,7 @@ type PaymentProviderInstallmentsSettings struct {
 	Currencies         []string `json:"currencies,omitempty"`
 	MinAmountMinor     int64    `json:"min_amount_minor,omitempty"`
 	MaxAmountMinor     int64    `json:"max_amount_minor,omitempty"`
-	Notes     string  `json:"notes,omitempty"`
+	Notes              string   `json:"notes,omitempty"`
 }
 
 type PaymentProviderInstallmentsUpdateRequest struct {

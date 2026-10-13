@@ -5,7 +5,7 @@
         <DialogHeader>
           <DialogTitle>{{ mode === 'create' ? '新增承运商映射' : '编辑承运商映射' }}</DialogTitle>
           <DialogDescription>
-            把本地承运商或本地计费线路映射到 17TRACK / AfterShip 等 Provider 的 carrier code；后续注册追踪号时统一读取这里。
+            把本地承运商或承运商线路映射到 17TRACK / AfterShip 等 Provider 的 carrier code；后续注册追踪号时统一读取这里。
           </DialogDescription>
         </DialogHeader>
 
@@ -26,7 +26,7 @@
               <SelectTrigger class="w-full"><SelectValue placeholder="请选择层级" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="carrier">承运商</SelectItem>
-                <SelectItem value="carrier_service">本地计费线路</SelectItem>
+                <SelectItem value="carrier_service">承运商线路</SelectItem>
               </SelectContent>
             </Select>
           </AdminFormField>
@@ -42,9 +42,9 @@
             </Select>
           </AdminFormField>
 
-          <AdminFormField v-else label="本地计费线路" required :error="errors.carrier_service_id" class="lg:col-span-2">
+          <AdminFormField v-else label="承运商线路" required :error="errors.carrier_service_id" class="lg:col-span-2">
             <Select v-model="form.carrier_service_id" @update:model-value="emit('clear-error', 'carrier_service_id')">
-              <SelectTrigger class="w-full"><SelectValue placeholder="请选择本地计费线路" /></SelectTrigger>
+              <SelectTrigger class="w-full"><SelectValue placeholder="请选择承运商线路" /></SelectTrigger>
               <SelectContent>
                 <SelectItem v-for="service in carrierServices" :key="service.id" :value="String(service.id)">
                   {{ service.service_name }} / {{ service.service_code }}
@@ -88,7 +88,7 @@
         </section>
 
         <div class="rounded-lg border bg-muted/35 p-3 text-xs text-muted-foreground">
-          稳定规则：本地计费线路映射优先于承运商映射；没有线路级映射时，后续追踪同步可以回退到承运商级映射。
+          稳定规则：承运商线路映射优先于承运商映射；没有线路级映射时，后续追踪同步可以回退到承运商级映射。
         </div>
 
         <DialogFooter>

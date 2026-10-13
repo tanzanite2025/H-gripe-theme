@@ -49,9 +49,9 @@ func TestCheckoutMemberDiscountUsesExactMinorUnitRounding(t *testing.T) {
 func TestCheckoutQuoteAppliesMerchandiseDiscountsBeforeShippingAndTax(t *testing.T) {
 	db, orderService := newTestOrderService(t)
 	productRecord := seedProduct(t, db, 1000, 5)
-	require.NotNil(t, productRecord.ShippingTemplateID)
+	require.NotEmpty(t, productRecord.ShippingTemplateIDs)
 	require.NoError(t, db.Model(&shippingdomain.ShippingTemplate{}).
-		Where("id = ?", *productRecord.ShippingTemplateID).
+		Where("id = ?", productRecord.ShippingTemplateIDs[0]).
 		Update("free_shipping", false).Error)
 	seedUserLoyalty(t, db, 42, 100000)
 	seedCoupon(t, db, "WATERFALL-900", "fixed", 900, 0)
@@ -137,6 +137,35 @@ func TestCheckoutAndOrderCreationRejectAddressWithoutConfiguredTaxRule(t *testin
 	var createdOrderCount int64
 	require.NoError(t, db.Model(&order.Order{}).Count(&createdOrderCount).Error)
 	assert.Zero(t, createdOrderCount)
+}
+
+func TestCheckoutSystemFreeShippingPreservesTaxAndRejectsMissingTaxRule(t *testing.T) {
+	db, orderService := newTestOrderService(t)
+	item := seedProduct(t, db, 100, 5)
+	require.NotEmpty(t, item.ShippingTemplateIDs)
+	require.NoError(t, db.Model(&shippingdomain.ShippingTemplate{}).Where("id = ?", item.ShippingTemplateIDs[0]).Update("free_shipping", false).Error)
+	require.NoError(t, db.Create(&taxratedomain.TaxRate{Name: "CA tax", Country: "US", State: "CA", PostalCode: "90001", RateDecimal: "10", Enabled: true}).Error)
+	input := CheckoutQuoteInput{UserID: 42, Items: []order.OrderItem{{ProductID: item.ID, Quantity: 1}}, ShippingAddress: testAddress()}
+	paid, err := orderService.checkout.Quote(input)
+	require.NoError(t, err)
+	assert.Positive(t, paid.ShippingFeeMinor)
+	assert.Positive(t, paid.TaxMinor)
+
+	freeTemplate := shippingdomain.ShippingTemplate{Name: "US system free shipping", TemplateKind: shippingdomain.ShippingTemplateKindSystemFreeShipping, Type: shippingdomain.ShippingTemplateTypeSystemFreeShipping, FreeShippingCountries: `["US"]`, Currency: "USD", Enabled: true}
+	require.NoError(t, db.Create(&freeTemplate).Error)
+	require.NoError(t, repository.NewProductRepository(db).ReplaceProductShippingTemplateBindings(item.ID, nil, []uint{freeTemplate.ID}))
+	free, err := orderService.checkout.Quote(input)
+	require.NoError(t, err)
+	assert.Zero(t, free.ShippingFeeMinor)
+	assert.Equal(t, paid.SubtotalMinor, free.SubtotalMinor)
+	assert.Equal(t, paid.TaxMinor, free.TaxMinor)
+	assert.Equal(t, paid.TotalMinor-paid.ShippingFeeMinor, free.TotalMinor)
+
+	input.ShippingAddress.State = "NY"
+	input.ShippingAddress.PostalCode = "10001"
+	quote, err := orderService.checkout.Quote(input)
+	require.ErrorIs(t, err, ErrTaxRateUnavailable)
+	assert.Nil(t, quote)
 }
 
 func TestCheckoutCalculateTaxRejectsLocationWithoutTaxRule(t *testing.T) {

@@ -198,7 +198,6 @@ func refreshShippingDisplayPriceMap(
 
 		snapshotJSON := displayPriceSnapshotMoneyJSON(
 			amount,
-			nil,
 			baseCurrency,
 			quoteCurrencies,
 			ratesByQuote,

@@ -7,73 +7,7 @@ import (
 	shippingrating "commerce-platform/internal/domain/shipping/rating"
 	"errors"
 	"fmt"
-	"math"
 )
-
-func (s *ShippingService) CalculateShipping(input ShippingCalculationInput) (*ShippingQuote, error) {
-	template, err := s.GetPublicTemplate(input.TemplateID)
-	if err != nil {
-		return nil, err
-	}
-
-	country, ok := shippingrating.NormalizeCountry(input.Country)
-	if !ok {
-		return nil, fmt.Errorf("%w: country must be an ISO alpha-2 code", ErrInvalidShippingDestination)
-	}
-	input.Country = country
-	if !template.AllowsShippingCountry(country) {
-		return nil, fmt.Errorf("%w: shipping template %q does not include country %s", ErrCountryNotSupported, template.Name, country)
-	}
-	if input.AmountMinor < 0 {
-		return nil, errors.New("shipping amount cannot be negative")
-	}
-	if template.IsSystemFreeShippingTemplate() {
-		return &ShippingQuote{ShippingFeeMinor: 0, Currency: template.Currency, FreeShipping: true}, nil
-	}
-	if template.FreeShipping {
-		threshold, thresholdErr := template.FreeThresholdMoney()
-		amount, amountErr := domainmoney.New(input.AmountMinor, template.Currency)
-		if thresholdErr != nil || amountErr != nil {
-			if thresholdErr != nil {
-				return nil, thresholdErr
-			}
-			return nil, amountErr
-		}
-		if amount.AmountMinor() >= threshold.AmountMinor() {
-			return &ShippingQuote{ShippingFeeMinor: 0, Currency: template.Currency, FreeShipping: true}, nil
-		}
-	}
-
-	amountMoney, amountErr := domainmoney.New(input.AmountMinor, template.Currency)
-	if amountErr != nil {
-		return nil, amountErr
-	}
-	value := input.Weight
-	switch template.Type {
-	case "quantity":
-		value = float64(input.Quantity)
-	}
-	if err := validateTemplateWeightBillingForValue(template, input.Country, value); err != nil {
-		return nil, err
-	}
-
-	shippingFeeMoney, freeShipping, _, err := calculateTemplateShippingFeeWithDisplayPricesMoney(
-		template, input.Country, int(math.Round(input.Weight*1000)), input.Quantity, amountMoney, amountMoney,
-	)
-	if err != nil {
-		return nil, err
-	}
-	shippingFeeDecimal, feeErr := shippingFeeMoney.FormatMajor()
-	if feeErr != nil {
-		return nil, feeErr
-	}
-	return &ShippingQuote{
-		ShippingFeeDecimal: shippingFeeDecimal,
-		ShippingFeeMinor:   shippingFeeMoney.AmountMinor(),
-		Currency:           template.Currency,
-		FreeShipping:       freeShipping,
-	}, nil
-}
 
 func (s *ShippingService) QuoteCart(input ShippingQuoteInput) (*ShippingQuote, error) {
 	if s.productRepo == nil {
@@ -120,28 +54,27 @@ func (s *ShippingService) QuoteCart(input ShippingQuoteInput) (*ShippingQuote, e
 			return nil, fmt.Errorf("shipping weight is missing for configured SKU %s", variant.SKU)
 		}
 
-		templateID, err := resolveProductShippingTemplateID(product, variant)
+		templateIDs, err := resolveProductShippingTemplateIDs(s.productRepo, product, variant)
 		if err != nil {
 			return nil, err
 		}
 
 		resolvedVariantID := variant.ID
-		// The quote currency is the explicit pricing boundary for this
-		// storefront request. The catalog minor snapshot is re-homed into that
-		// currency here; FX conversion is handled by the checkout pricing path.
-		unitPriceMoney, err := domainmoney.New(variant.PriceMinor, quoteCurrency)
+		// Use the same catalog price and strict currency conversion
+		// as Checkout so price rules and free thresholds use real amounts.
+		unitPriceMoney, err := variant.PriceMoney()
 		if err != nil {
 			return nil, fmt.Errorf("invalid price for SKU %s: %w", variant.SKU, err)
 		}
 		if configuration.Delta.AmountMinor() != 0 {
-			deltaMoney, deltaErr := domainmoney.New(configuration.Delta.AmountMinor(), quoteCurrency)
-			if deltaErr != nil {
-				return nil, fmt.Errorf("calculate configured price delta for SKU %s: %w", variant.SKU, deltaErr)
-			}
-			unitPriceMoney, err = unitPriceMoney.Add(deltaMoney)
+			unitPriceMoney, err = unitPriceMoney.Add(configuration.Delta)
 			if err != nil {
 				return nil, fmt.Errorf("calculate configured price for SKU %s: %w", variant.SKU, err)
 			}
+		}
+		unitPriceMoney, err = s.convertShippingMoney(unitPriceMoney, quoteCurrency)
+		if err != nil {
+			return nil, fmt.Errorf("convert catalog price for SKU %s: %w", variant.SKU, err)
 		}
 		lineAmount, err := unitPriceMoney.MultiplyInt(int64(item.Quantity))
 		if err != nil {
@@ -155,7 +88,7 @@ func (s *ShippingService) QuoteCart(input ShippingQuoteInput) (*ShippingQuote, e
 			ProductID:                      product.ID,
 			VariantID:                      &resolvedVariantID,
 			ProductSpecificationTemplateID: product.ProductSpecificationTemplateID,
-			ShippingTemplateID:             uintPtr(templateID),
+			ShippingTemplateIDs:            append([]uint(nil), templateIDs...),
 			Quantity:                       item.Quantity,
 			UnitPriceMinor:                 unitPriceMoney.AmountMinor(),
 			WeightGrams:                    configuredWeight,
@@ -205,7 +138,7 @@ func (s *ShippingService) QuoteResolvedItems(input ShippingQuoteInput) (*Shippin
 	}
 
 	resolvedItems := make([]resolvedShippingItem, 0, len(input.Items))
-	for _, item := range input.Items {
+	for sourceItemIndex, item := range input.Items {
 		if item.ProductID == 0 {
 			return nil, errors.New("shipping quote item product_id is required")
 		}
@@ -219,25 +152,9 @@ func (s *ShippingService) QuoteResolvedItems(input ShippingQuoteInput) (*Shippin
 			return nil, fmt.Errorf("shipping weight is missing for product ID %d", item.ProductID)
 		}
 
-		template := templatesByID[*item.ShippingTemplateID]
-		if template == nil {
-			return nil, fmt.Errorf("shipping template ID %d is not configured", *item.ShippingTemplateID)
-		}
-		if !template.Enabled {
-			return nil, fmt.Errorf("shipping template ID %d is disabled", template.ID)
-		}
-		templateCurrency := currency.NormalizeCode(template.Currency)
-		if !currency.IsCatalogCode(templateCurrency) {
-			return nil, fmt.Errorf("shipping template ID %d has invalid source currency", template.ID)
-		}
-		for _, rule := range template.Rules {
-			ruleCurrency := currency.NormalizeCode(rule.Currency)
-			if !currency.IsCatalogCode(ruleCurrency) {
-				return nil, fmt.Errorf("shipping rule ID %d has invalid source currency", rule.ID)
-			}
-			if ruleCurrency != templateCurrency {
-				return nil, fmt.Errorf("shipping rule ID %d currency %s does not match template currency %s", rule.ID, ruleCurrency, templateCurrency)
-			}
+		templateIDsForItem := item.ShippingTemplateIDs
+		if len(templateIDsForItem) == 0 {
+			return nil, fmt.Errorf("shipping template is missing for product ID %d", item.ProductID)
 		}
 
 		unitPriceMoney, err := domainmoney.New(item.UnitPriceMinor, quoteCurrency)
@@ -254,40 +171,48 @@ func (s *ShippingService) QuoteResolvedItems(input ShippingQuoteInput) (*Shippin
 			return nil, fmt.Errorf("packaging weight cannot be negative for product ID %d", item.ProductID)
 		}
 		chargeWeightGrams := item.WeightGrams + packagingWeightGrams
-		resolvedItems = append(resolvedItems, resolvedShippingItem{
-			ShippingQuoteItemInput: item,
-			Amount:                 amount,
-			Template:               template,
-			PackagingRule:          packagingRule,
-			PackagingWeightGrams:   packagingWeightGrams,
-			ChargeWeightGrams:      chargeWeightGrams,
-		})
+		candidateCountBeforeItem := len(resolvedItems)
+		for _, templateID := range templateIDsForItem {
+			template := templatesByID[templateID]
+			if template == nil {
+				return nil, fmt.Errorf("shipping template ID %d is not configured", templateID)
+			}
+			if !template.Enabled {
+				continue
+			}
+			templateCurrency := currency.NormalizeCode(template.Currency)
+			if !currency.IsCatalogCode(templateCurrency) {
+				return nil, fmt.Errorf("shipping template ID %d has invalid source currency", template.ID)
+			}
+			for _, rule := range template.Rules {
+				ruleCurrency := currency.NormalizeCode(rule.Currency)
+				if !currency.IsCatalogCode(ruleCurrency) {
+					return nil, fmt.Errorf("shipping rule ID %d has invalid source currency", rule.ID)
+				}
+				if ruleCurrency != templateCurrency {
+					return nil, fmt.Errorf("shipping rule ID %d currency %s does not match template currency %s", rule.ID, ruleCurrency, templateCurrency)
+				}
+			}
+			resolvedItem := item
+			resolvedItem.ShippingTemplateIDs = []uint{templateID}
+			resolvedItems = append(resolvedItems, resolvedShippingItem{
+				ShippingQuoteItemInput: resolvedItem,
+				SourceItemIndex:        sourceItemIndex,
+				Amount:                 amount,
+				Template:               template,
+				PackagingRule:          packagingRule,
+				PackagingWeightGrams:   packagingWeightGrams,
+				ChargeWeightGrams:      chargeWeightGrams,
+			})
+		}
+		if len(resolvedItems) == candidateCountBeforeItem {
+			return nil, fmt.Errorf("%w: product ID %d has no enabled customer shipping template", ErrShippingQuotePlanUnavailable, item.ProductID)
+		}
 	}
 
-	groups := make(map[uint]*shippingQuoteGroup)
-	quoteItems := make([]ShippingQuoteItem, len(resolvedItems))
-	for index, item := range resolvedItems {
-		templateID := item.Template.ID
-		group := groups[templateID]
-		if group == nil {
-			group = &shippingQuoteGroup{Template: item.Template}
-			groups[templateID] = group
-		}
-
-		group.ItemIndexes = append(group.ItemIndexes, index)
-		if group.Amount.AmountMinor() == 0 && group.Amount.Currency().String() == "" {
-			group.Amount, err = domainmoney.New(0, quoteCurrency)
-			if err != nil {
-				return nil, err
-			}
-		}
-		group.Amount, err = group.Amount.Add(item.Amount)
-		if err != nil {
-			return nil, fmt.Errorf("accumulate shipping group amount: %w", err)
-		}
-		group.Quantity += item.Quantity
-		group.TotalWeightGrams += item.ChargeWeightGrams * item.Quantity
-
+	quoteItems := make([]ShippingQuoteItem, len(input.Items))
+	quoteItemInitialized := make([]bool, len(input.Items))
+	for _, item := range resolvedItems {
 		var packagingRuleID *uint
 		var packagingRuleName string
 		if item.PackagingRule != nil {
@@ -300,7 +225,11 @@ func (s *ShippingService) QuoteResolvedItems(input ShippingQuoteInput) (*Shippin
 			unitPriceDecimal, _ = value.FormatMajor()
 		}
 		amountDecimal, _ := item.Amount.FormatMajor()
-		quoteItems[index] = ShippingQuoteItem{
+		if quoteItemInitialized[item.SourceItemIndex] {
+			continue
+		}
+		quoteItemInitialized[item.SourceItemIndex] = true
+		quoteItems[item.SourceItemIndex] = ShippingQuoteItem{
 			ProductID:                      item.ProductID,
 			VariantID:                      item.VariantID,
 			ProductSpecificationTemplateID: item.ProductSpecificationTemplateID,
@@ -316,37 +245,11 @@ func (s *ShippingService) QuoteResolvedItems(input ShippingQuoteInput) (*Shippin
 			WeightGrams:                    item.WeightGrams,
 			PackagingWeightGrams:           item.PackagingWeightGrams,
 			ChargeWeightGrams:              item.ChargeWeightGrams,
+			TemplateIDs:                    append([]uint(nil), input.Items[item.SourceItemIndex].ShippingTemplateIDs...),
 		}
 	}
 
-	groupRates := make(map[uint]shippingQuoteGroupRate, len(groups))
-	for _, group := range groups {
-		groupFee, groupFree, groupDisplayPrices, err := s.calculateTemplateShippingFeeForQuoteMoney(
-			group.Template,
-			country,
-			group.TotalWeightGrams,
-			group.Quantity,
-			group.Amount,
-			group.Amount,
-			quoteCurrency,
-		)
-		if err != nil {
-			return nil, err
-		}
-		groupRates[group.Template.ID] = shippingQuoteGroupRate{
-			FeeMinor: groupFee.AmountMinor(), FreeShipping: groupFree, DisplayPrices: groupDisplayPrices,
-		}
-	}
-
-	plans, err := s.quoteShipmentPlans(
-		country,
-		input.PostalCode,
-		quoteCurrency,
-		displayCurrency,
-		resolvedItems,
-		groups,
-		groupRates,
-	)
+	plans, err := s.quoteProductShippingTemplateAlternatives(country, input.PostalCode, quoteCurrency, displayCurrency, resolvedItems)
 	if err != nil {
 		return nil, err
 	}
@@ -381,4 +284,13 @@ func lookupPackagingRule(
 		}
 	}
 	return rules[0]
+}
+
+func containsShippingQuoteItemIndex(indexes []int, target int) bool {
+	for _, index := range indexes {
+		if index == target {
+			return true
+		}
+	}
+	return false
 }

@@ -96,25 +96,25 @@ func TestOrderServiceCreateOrderRejectsExpectedTotalMinorDifference(t *testing.T
 func TestOrderServiceCreateOrderUsesRequestedCarrierServiceForExpectedTotalMinor(t *testing.T) {
 	db, orderService := newTestOrderService(t)
 	productRecord := seedProduct(t, db, 100, 5)
-	require.NotNil(t, productRecord.ShippingTemplateID)
+	require.NotEmpty(t, productRecord.ShippingTemplateIDs)
 	require.NoError(t, db.Model(&shippingdomain.ShippingTemplate{}).
-		Where("id = ?", *productRecord.ShippingTemplateID).
+		Where("id = ?", productRecord.ShippingTemplateIDs[0]).
 		Update("free_shipping", false).Error)
 
 	carrier := shippingdomain.Carrier{Name: "DHL", Code: "DHL", Enabled: true}
 	require.NoError(t, db.Create(&carrier).Error)
 	standardService := shippingdomain.CarrierService{
-		CarrierID: carrier.ID, TemplateID: productRecord.ShippingTemplateID,
+		CarrierID:   carrier.ID,
 		ServiceCode: "DHL-STD", ServiceName: "DHL Standard", Countries: `["US"]`,
 		Currency: "USD", BillingMode: "actual_weight", Enabled: true,
 	}
 	expressService := shippingdomain.CarrierService{
-		CarrierID: carrier.ID, TemplateID: productRecord.ShippingTemplateID,
+		CarrierID:   carrier.ID,
 		ServiceCode: "DHL-EXP", ServiceName: "DHL Express", Countries: `["US"]`,
 		Currency: "USD", BillingMode: "actual_weight", RemoteSurchargeMinor: 10000, Enabled: true,
 	}
-	require.NoError(t, db.Create(&standardService).Error)
-	require.NoError(t, db.Create(&expressService).Error)
+	standardService = seedQuoteCustomerBillingTemplateAndCarrierRoute(t, db, carrier.ID, productRecord.ShippingTemplateIDs[0], standardService)
+	expressService = seedQuoteCustomerBillingTemplateAndCarrierRoute(t, db, carrier.ID, productRecord.ShippingTemplateIDs[0], expressService)
 	checkoutQuote, err := orderService.checkout.Quote(CheckoutQuoteInput{
 		UserID:          42,
 		Items:           []order.OrderItem{{ProductID: productRecord.ID, Quantity: 1}},
@@ -162,9 +162,9 @@ func TestOrderServiceCreateOrderUsesRequestedCarrierServiceForExpectedTotalMinor
 func TestOrderServiceRejectsUnavailableShippingRateBeforeStockDeduction(t *testing.T) {
 	db, orderService := newTestOrderService(t)
 	productRecord := seedProduct(t, db, 1200, 5)
-	require.NotNil(t, productRecord.ShippingTemplateID)
+	require.NotEmpty(t, productRecord.ShippingTemplateIDs)
 	require.NoError(t, db.Model(&shippingdomain.ShippingTemplate{}).
-		Where("id = ?", *productRecord.ShippingTemplateID).
+		Where("id = ?", productRecord.ShippingTemplateIDs[0]).
 		Updates(map[string]interface{}{"free_shipping": false, "default_fee_minor": 0}).Error)
 	shippingAddress := testAddress()
 	shippingAddress.Country = "BR"
@@ -785,16 +785,15 @@ func TestOrderServiceCreateOrderUsesVariantPricingAndStock(t *testing.T) {
 	cacheInvalidator := &recordingProductCacheInvalidator{}
 	orderService.ConfigureProductCacheInvalidator(cacheInvalidator)
 	variant := product.ProductVariant{
-		ProductID:      productRecord.ID,
-		SKU:            "SKU-TEST-BLK-24H",
-		Title:          "Black / 24H",
-		OptionValues:   `{"color":"black","spoke_holes":"24"}`,
-		PriceMinor:     9000,
-		SalePriceMinor: func() *int64 { v := int64(8000); return &v }(),
-		Stock:          3,
-		Weight:         11000,
-		IsDefault:      true,
-		IsActive:       true,
+		ProductID:    productRecord.ID,
+		SKU:          "SKU-TEST-BLK-24H",
+		Title:        "Black / 24H",
+		OptionValues: `{"color":"black","spoke_holes":"24"}`,
+		PriceMinor:   9000,
+		Stock:        3,
+		Weight:       11000,
+		IsDefault:    true,
+		IsActive:     true,
 	}
 	require.NoError(t, db.Create(&variant).Error)
 
@@ -811,8 +810,8 @@ func TestOrderServiceCreateOrderUsesVariantPricingAndStock(t *testing.T) {
 
 	require.NoError(t, err)
 	require.NotNil(t, createdOrder)
-	assert.Equal(t, int64(16000), createdOrder.SubtotalAmountMinor)
-	assert.Equal(t, int64(16000), createdOrder.TotalAmountMinor)
+	assert.Equal(t, int64(18000), createdOrder.SubtotalAmountMinor)
+	assert.Equal(t, int64(18000), createdOrder.TotalAmountMinor)
 
 	var savedOrder order.Order
 	require.NoError(t, db.Preload("Items").First(&savedOrder, createdOrder.ID).Error)
@@ -821,8 +820,8 @@ func TestOrderServiceCreateOrderUsesVariantPricingAndStock(t *testing.T) {
 	assert.Equal(t, variant.ID, *savedOrder.Items[0].VariantID)
 	assert.Equal(t, variant.SKU, savedOrder.Items[0].SKU)
 	assert.NotEmpty(t, savedOrder.Items[0].ConfigurationSnapshotData)
-	assert.Equal(t, int64(8000), savedOrder.Items[0].PriceMinor)
-	assert.Equal(t, int64(16000), savedOrder.Items[0].SubtotalMinor)
+	assert.Equal(t, int64(9000), savedOrder.Items[0].PriceMinor)
+	assert.Equal(t, int64(18000), savedOrder.Items[0].SubtotalMinor)
 
 	var savedVariant product.ProductVariant
 	require.NoError(t, db.First(&savedVariant, variant.ID).Error)
@@ -882,7 +881,6 @@ func TestOrderServiceCreateOrderPersistsSelectedCarrierService(t *testing.T) {
 
 	carrierService := shippingdomain.CarrierService{
 		CarrierID:   carrier.ID,
-		TemplateID:  &template.ID,
 		ServiceCode: "EXP-US",
 		ServiceName: "Express",
 		RouteName:   "US Express",
@@ -892,7 +890,7 @@ func TestOrderServiceCreateOrderPersistsSelectedCarrierService(t *testing.T) {
 		Enabled:     true,
 		Description: "Default checkout route",
 	}
-	require.NoError(t, db.Create(&carrierService).Error)
+	carrierService = seedQuoteCustomerBillingTemplateAndCarrierRoute(t, db, carrier.ID, template.ID, carrierService)
 
 	createdOrder, err := orderService.CreateOrder(
 		context.Background(),
@@ -2105,6 +2103,9 @@ func newTestOrderService(t *testing.T) (*gorm.DB, *OrderService) {
 		&shippingdomain.TrackingCarrierMapping{},
 		&shippingdomain.TrackingShipment{},
 		&shippingdomain.TrackingEvent{},
+		&product.ProductShippingTemplateBinding{},
+		&shippingdomain.ShippingRouteGroup{},
+		&shippingdomain.ShippingRouteGroupCarrierService{},
 		&shippingdomain.ShippingTemplate{},
 		&shippingdomain.ShippingRule{},
 		&shippingdomain.PackagingRule{},
@@ -2205,12 +2206,12 @@ func seedProductWithCurrency(t *testing.T, db *gorm.DB, price float64, stock int
 	record := seedProductShell(t, db, price, stock)
 	record.Currency = currencyCode
 	require.NoError(t, db.Save(&record).Error)
-	if record.ShippingTemplateID != nil {
+	if len(record.ShippingTemplateIDs) > 0 {
 		require.NoError(t, db.Model(&shippingdomain.ShippingTemplate{}).
-			Where("id = ?", *record.ShippingTemplateID).
+			Where("id = ?", record.ShippingTemplateIDs[0]).
 			Update("currency", currencyCode).Error)
 		require.NoError(t, db.Model(&shippingdomain.ShippingRule{}).
-			Where("template_id = ?", *record.ShippingTemplateID).
+			Where("template_id = ?", record.ShippingTemplateIDs[0]).
 			Update("currency", currencyCode).Error)
 	}
 	require.NoError(t, db.Create(&product.ProductVariant{
@@ -2233,14 +2234,17 @@ func seedProductShell(t *testing.T, db *gorm.DB, price float64, stock int) produ
 
 	shippingTemplateID := seedOrderTestShippingTemplateID(t, db)
 	record := product.Product{
-		ShippingTemplateID: shippingTemplateID,
-		SKU:                "SKU-TEST",
-		Name:               "Test Product",
-		Slug:               "test-product",
-		PriceMinor:         int64(price * 100),
-		Stock:              stock,
+		ShippingTemplateIDs: []uint{*shippingTemplateID},
+		SKU:                 "SKU-TEST",
+		Name:                "Test Product",
+		Slug:                "test-product",
+		PriceMinor:          int64(price * 100),
+		Stock:               stock,
 	}
 	require.NoError(t, db.Create(&record).Error)
+	if len(record.ShippingTemplateIDs) > 0 {
+		require.NoError(t, repository.NewProductRepository(db).ReplaceProductShippingTemplateBindings(record.ID, nil, []uint{record.ShippingTemplateIDs[0]}))
+	}
 	return record
 }
 
@@ -2249,17 +2253,18 @@ func seedProductWithSKU(t *testing.T, db *gorm.DB, price float64, stock int, sku
 
 	shippingTemplateID := seedOrderTestShippingTemplateID(t, db)
 	record := product.Product{
-		ShippingTemplateID: shippingTemplateID,
-		SKU:                sku,
-		Name:               sku,
-		Slug:               strings.ToLower(sku),
-		Currency:           "USD",
-		PriceMinor:         int64(price * 100),
-		Stock:              stock,
-		Status:             "active",
-		Locale:             "en",
+		ShippingTemplateIDs: []uint{*shippingTemplateID},
+		SKU:                 sku,
+		Name:                sku,
+		Slug:                strings.ToLower(sku),
+		Currency:            "USD",
+		PriceMinor:          int64(price * 100),
+		Stock:               stock,
+		Status:              "active",
+		Locale:              "en",
 	}
 	require.NoError(t, db.Create(&record).Error)
+	require.NoError(t, repository.NewProductRepository(db).ReplaceProductShippingTemplateBindings(record.ID, nil, []uint{*shippingTemplateID}))
 	require.NoError(t, db.Create(&product.ProductVariant{
 		ProductID:    record.ID,
 		SKU:          sku,

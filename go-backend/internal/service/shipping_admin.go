@@ -9,18 +9,129 @@ import (
 )
 
 func (s *ShippingService) ListTemplates() ([]shipping.ShippingTemplate, error) {
-	return s.shippingRepo.FindAllTemplates()
+	templates, err := s.shippingRepo.FindAllTemplates()
+	if err != nil {
+		return nil, err
+	}
+	groups := make([]shipping.ShippingRouteGroup, 0)
+	indexes := make([]int, 0)
+	for index, template := range templates {
+		if template.RouteGroup != nil {
+			groups = append(groups, *template.RouteGroup)
+			indexes = append(indexes, index)
+		}
+	}
+	if err := s.hydrateShippingRouteAggregatePublishedDestinations(groups); err != nil {
+		return nil, err
+	}
+	for index, templateIndex := range indexes {
+		templates[templateIndex].RouteGroup = &groups[index]
+	}
+	return templates, nil
 }
 
 func (s *ShippingService) GetTemplate(id uint) (*shipping.ShippingTemplate, error) {
-	return s.shippingRepo.FindTemplateByID(id)
+	template, err := s.shippingRepo.FindTemplateByID(id)
+	if err != nil {
+		return nil, err
+	}
+	if template.RouteGroup != nil {
+		groups := []shipping.ShippingRouteGroup{*template.RouteGroup}
+		if err := s.hydrateShippingRouteAggregatePublishedDestinations(groups); err != nil {
+			return nil, err
+		}
+		template.RouteGroup = &groups[0]
+	}
+	return template, nil
+}
+
+func (s *ShippingService) ListShippingRouteGroups() ([]shipping.ShippingRouteGroup, error) {
+	groups, err := s.shippingRepo.FindAllShippingRouteGroups()
+	if err != nil {
+		return nil, err
+	}
+	if err := s.hydrateShippingRouteAggregatePublishedDestinations(groups); err != nil {
+		return nil, err
+	}
+	return groups, nil
+}
+
+func (s *ShippingService) GetShippingRouteGroup(id uint) (*shipping.ShippingRouteGroup, error) {
+	group, err := s.shippingRepo.FindShippingRouteGroupByID(id)
+	if err != nil {
+		return nil, err
+	}
+	groups := []shipping.ShippingRouteGroup{*group}
+	if err := s.hydrateShippingRouteAggregatePublishedDestinations(groups); err != nil {
+		return nil, err
+	}
+	return &groups[0], nil
+}
+
+func (s *ShippingService) CreateShippingRouteGroup(group *shipping.ShippingRouteGroup, carrierServiceIDs []uint, publishedServices ...[]shipping.CarrierService) error {
+	if group == nil || strings.TrimSpace(group.Name) == "" {
+		return errors.New("shipping route aggregate name is required")
+	}
+	group.Name = strings.TrimSpace(group.Name)
+	group.Countries = shipping.NormalizeShippingServiceCollectionCountryCodes(group.Countries)
+	if err := shipping.ValidateShippingCountryCodes(group.Countries); err != nil {
+		return err
+	}
+	services, err := s.preparePublishedRouteAggregateCarrierServices(publishedServices)
+	if err != nil {
+		return err
+	}
+	if len(carrierServiceIDs) == 0 && len(services) == 0 {
+		return errors.New("select at least one published carrier route")
+	}
+	return s.shippingRepo.CreateShippingRouteGroup(group, carrierServiceIDs, services)
+}
+
+func (s *ShippingService) UpdateShippingRouteGroup(group *shipping.ShippingRouteGroup, carrierServiceIDs []uint, publishedServices ...[]shipping.CarrierService) error {
+	if group == nil || group.ID == 0 || strings.TrimSpace(group.Name) == "" {
+		return errors.New("shipping route aggregate name is required")
+	}
+	group.Name = strings.TrimSpace(group.Name)
+	group.Countries = shipping.NormalizeShippingServiceCollectionCountryCodes(group.Countries)
+	if err := shipping.ValidateShippingCountryCodes(group.Countries); err != nil {
+		return err
+	}
+	services, err := s.preparePublishedRouteAggregateCarrierServices(publishedServices)
+	if err != nil {
+		return err
+	}
+	if len(carrierServiceIDs) == 0 && len(services) == 0 {
+		return errors.New("select at least one published carrier route")
+	}
+	if _, err := s.GetShippingRouteGroup(group.ID); err != nil {
+		return err
+	}
+	return s.shippingRepo.UpdateShippingRouteGroup(group, carrierServiceIDs, services)
+}
+
+// Published selections contain identities only. Provider cost fields are deliberately discarded.
+func (s *ShippingService) preparePublishedRouteAggregateCarrierServices(selections [][]shipping.CarrierService) ([]shipping.CarrierService, error) {
+	var services []shipping.CarrierService
+	for _, selected := range selections {
+		for _, item := range selected {
+			services = append(services, shipping.CarrierService{
+				CarrierID: item.CarrierID, FpxChannelID: item.FpxChannelID, YanwenPublishedChannelID: item.YanwenPublishedChannelID,
+				ProviderCode: item.ProviderCode, ServiceCode: item.ServiceCode, ServiceName: item.ServiceName,
+				Currency: "USD", BillingMode: "actual_weight", VolumetricDivisor: 6000, Enabled: true,
+			})
+		}
+	}
+	if err := s.validateAndHydratePublishedCarrierServiceCollections(services); err != nil {
+		return nil, err
+	}
+	return services, nil
+}
+
+func (s *ShippingService) DeleteShippingRouteGroup(id uint) error {
+	return s.shippingRepo.DeleteShippingRouteGroup(id)
 }
 
 func (s *ShippingService) CreateTemplate(template *shipping.ShippingTemplate) error {
-	return s.CreateTemplateWithCarrierServices(template, nil)
-}
-
-func (s *ShippingService) CreateTemplateWithCarrierServices(template *shipping.ShippingTemplate, carrierServices []shipping.CarrierService) error {
 	if template == nil {
 		return errors.New("shipping template is required")
 	}
@@ -29,6 +140,7 @@ func (s *ShippingService) CreateTemplateWithCarrierServices(template *shipping.S
 		return errors.New("system free-shipping template must keep free shipping enabled")
 	}
 	template.ApplySystemFreeShippingTemplatePricingDefaults()
+	prepareCustomerShippingBillingDefaults(template)
 	template.FreeShippingCountries = shipping.NormalizeShippingCountryCodes(template.FreeShippingCountries)
 	if err := shipping.ValidateShippingCountryCodes(template.FreeShippingCountries); err != nil {
 		return err
@@ -41,24 +153,20 @@ func (s *ShippingService) CreateTemplateWithCarrierServices(template *shipping.S
 		if len(template.ShippingCountryCodes()) == 0 {
 			return errors.New("system free-shipping template requires at least one country")
 		}
-		if len(carrierServices) > 0 {
-			return errors.New("system free-shipping template cannot be bound to carrier services")
-		}
 	}
 	if err := s.prepareShippingTemplateCurrencies(template); err != nil {
 		return err
 	}
-	if err := s.validateAndHydratePublishedCarrierServiceCollections(carrierServices); err != nil {
+	if err := template.ValidateCustomerShippingBillingConfiguration(); err != nil {
 		return err
 	}
-	return s.shippingRepo.CreateTemplateWithRulesAndCarrierServices(template, template.Rules, carrierServices)
+	if err := s.validateCustomerShippingTemplateRouteReference(template); err != nil {
+		return err
+	}
+	return s.shippingRepo.CreateTemplateWithRules(template, template.Rules)
 }
 
 func (s *ShippingService) UpdateTemplate(template *shipping.ShippingTemplate) error {
-	return s.UpdateTemplateWithCarrierServices(template, nil)
-}
-
-func (s *ShippingService) UpdateTemplateWithCarrierServices(template *shipping.ShippingTemplate, carrierServices []shipping.CarrierService) error {
 	if template == nil {
 		return errors.New("shipping template is required")
 	}
@@ -80,17 +188,13 @@ func (s *ShippingService) UpdateTemplateWithCarrierServices(template *shipping.S
 		template.TemplateKind = existing.TemplateKind
 		template.Type = shipping.ShippingTemplateTypeSystemFreeShipping
 		template.IsSystemManaged = true
-		if !template.FreeShippingCountriesProvided && len(template.ShippingCountryCodes()) == 0 && len(existing.ShippingCountryCodes()) > 0 {
-			// Preserve the configured scope for legacy clients that predate the
-			// optional free_shipping_countries request field.
-			template.FreeShippingCountries = existing.FreeShippingCountries
-		}
 	}
 	template.NormalizeSystemFreeShippingTemplateIdentity()
 	if template.IsSystemFreeShippingTemplate() && !template.FreeShipping {
 		return errors.New("system free-shipping template must keep free shipping enabled")
 	}
 	template.ApplySystemFreeShippingTemplatePricingDefaults()
+	prepareCustomerShippingBillingDefaults(template)
 	template.FreeShippingCountries = shipping.NormalizeShippingCountryCodes(template.FreeShippingCountries)
 	if err := shipping.ValidateShippingCountryCodes(template.FreeShippingCountries); err != nil {
 		return err
@@ -103,20 +207,57 @@ func (s *ShippingService) UpdateTemplateWithCarrierServices(template *shipping.S
 		if len(template.ShippingCountryCodes()) == 0 {
 			return errors.New("system free-shipping template requires at least one country")
 		}
-		if len(carrierServices) > 0 {
-			return errors.New("system free-shipping template cannot be bound to carrier services")
-		}
-		// Force-detach any legacy accidental binding even when an older client
-		// omits the optional carrier_services field on update.
-		carrierServices = []shipping.CarrierService{}
 	}
 	if err := s.prepareShippingTemplateCurrencies(template); err != nil {
 		return err
 	}
-	if err := s.validateAndHydratePublishedCarrierServiceCollections(carrierServices); err != nil {
+	if err := template.ValidateCustomerShippingBillingConfiguration(); err != nil {
 		return err
 	}
-	return s.shippingRepo.UpdateTemplateWithRulesAndCarrierServices(template, template.Rules, carrierServices)
+	if err := s.validateCustomerShippingTemplateRouteReference(template); err != nil {
+		return err
+	}
+	return s.shippingRepo.UpdateTemplateWithRules(template, template.Rules)
+}
+
+func (s *ShippingService) validateCustomerShippingTemplateRouteReference(template *shipping.ShippingTemplate) error {
+	if template.RouteGroupID == nil {
+		return nil
+	}
+	if template.IsSystemFreeShippingTemplate() {
+		return errors.New("system free shipping cannot reference a route aggregate")
+	}
+	if _, err := s.GetShippingRouteGroup(*template.RouteGroupID); err != nil {
+		return fmt.Errorf("shipping route aggregate does not exist: %w", err)
+	}
+	if template.Type == "weight" {
+		for _, rule := range template.Rules {
+			if err := validateShippingWeightBilling(rule, shippingWeightBilling{
+				firstWeightGrams: template.CustomerFirstWeightGrams, additionalWeightGrams: template.CustomerAdditionalWeightGrams,
+			}); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func prepareCustomerShippingBillingDefaults(template *shipping.ShippingTemplate) {
+	if template == nil {
+		return
+	}
+	if strings.TrimSpace(template.CustomerBillingMode) == "" {
+		template.CustomerBillingMode = "actual_weight"
+	}
+	if template.CustomerVolumetricDivisor == 0 {
+		template.CustomerVolumetricDivisor = 6000
+	}
+	if strings.TrimSpace(template.CustomerFuelSurchargePercentDecimal) == "" {
+		template.CustomerFuelSurchargePercentDecimal = "0"
+	}
+	if strings.TrimSpace(template.CustomerRemotePostalCodes) == "" {
+		template.CustomerRemotePostalCodes = "[]"
+	}
 }
 
 // validateAndHydratePublishedCarrierServiceCollections requires 4PX and Yanwen
@@ -261,22 +402,14 @@ func (s *ShippingService) DeleteTemplate(id uint) error {
 }
 
 func (s *ShippingService) CreateTemplateRule(templateID uint, rule *shipping.ShippingRule) error {
-	if err := s.ensureTemplateSupportsShippingRules(templateID); err != nil {
-		return err
-	}
-	rule.TemplateID = templateID
-	if err := s.prepareShippingRuleCurrency(templateID, rule); err != nil {
+	if err := s.prepareAndValidateCustomerShippingTemplateRuleForSave(templateID, rule); err != nil {
 		return err
 	}
 	return s.shippingRepo.CreateRule(rule)
 }
 
 func (s *ShippingService) UpdateTemplateRule(templateID uint, rule *shipping.ShippingRule) error {
-	if err := s.ensureTemplateSupportsShippingRules(templateID); err != nil {
-		return err
-	}
-	rule.TemplateID = templateID
-	if err := s.prepareShippingRuleCurrency(templateID, rule); err != nil {
+	if err := s.prepareAndValidateCustomerShippingTemplateRuleForSave(templateID, rule); err != nil {
 		return err
 	}
 	return s.shippingRepo.UpdateRuleForTemplate(rule)
@@ -327,7 +460,7 @@ func (s *ShippingService) prepareShippingTemplateCurrencies(template *shipping.S
 	return nil
 }
 
-func (s *ShippingService) prepareShippingRuleCurrency(templateID uint, rule *shipping.ShippingRule) error {
+func (s *ShippingService) prepareAndValidateCustomerShippingTemplateRuleForSave(templateID uint, rule *shipping.ShippingRule) error {
 	if rule == nil {
 		return errors.New("shipping rule is required")
 	}
@@ -335,6 +468,10 @@ func (s *ShippingService) prepareShippingRuleCurrency(templateID uint, rule *shi
 	if err != nil {
 		return err
 	}
+	if template.IsSystemFreeShippingTemplate() {
+		return errors.New("system free-shipping template does not support shipping rules")
+	}
+	rule.TemplateID = templateID
 	templateCurrency := currency.NormalizeCode(template.Currency)
 	ruleCurrency := currency.NormalizeCode(rule.Currency)
 	if ruleCurrency == "" {
@@ -348,6 +485,11 @@ func (s *ShippingService) prepareShippingRuleCurrency(templateID uint, rule *shi
 		return fmt.Errorf("shipping rule currency %s does not match template currency %s", normalized, templateCurrency)
 	}
 	rule.Currency = normalized
+	if template.Type == "weight" {
+		return validateShippingWeightBilling(*rule, shippingWeightBilling{
+			firstWeightGrams: template.CustomerFirstWeightGrams, additionalWeightGrams: template.CustomerAdditionalWeightGrams,
+		})
+	}
 	return nil
 }
 

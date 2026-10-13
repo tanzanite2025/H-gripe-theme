@@ -12,7 +12,7 @@ import (
 	"gorm.io/gorm/logger"
 )
 
-func TestCreateTemplateWithCarrierServicesUsesPublishedFpxCountryScope(t *testing.T) {
+func TestCreateRouteAggregateUsesPublishedFpxCountryScope(t *testing.T) {
 	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{Logger: logger.Default.LogMode(logger.Silent)})
 	require.NoError(t, err)
 	sqlDB, err := db.DB()
@@ -21,6 +21,8 @@ func TestCreateTemplateWithCarrierServicesUsesPublishedFpxCountryScope(t *testin
 	t.Cleanup(func() { _ = sqlDB.Close() })
 	require.NoError(t, db.AutoMigrate(
 		&shippingdomain.Carrier{},
+		&shippingdomain.ShippingRouteGroup{},
+		&shippingdomain.ShippingRouteGroupCarrierService{},
 		&shippingdomain.ShippingTemplate{},
 		&shippingdomain.ShippingRule{},
 		&shippingdomain.CarrierService{},
@@ -39,7 +41,7 @@ func TestCreateTemplateWithCarrierServicesUsesPublishedFpxCountryScope(t *testin
 	require.NoError(t, db.Create(&channel).Error)
 
 	shippingService := NewShippingService(repository.NewShippingRepository(db))
-	template := shippingdomain.ShippingTemplate{Name: "Collection-backed template", Type: "weight", Currency: "USD"}
+	template := shippingdomain.ShippingRouteGroup{Name: "Collection-backed template", Enabled: true}
 	services := []shippingdomain.CarrierService{{
 		CarrierID:         carrier.ID,
 		FpxChannelID:      &channel.ID,
@@ -53,9 +55,9 @@ func TestCreateTemplateWithCarrierServicesUsesPublishedFpxCountryScope(t *testin
 		VolumetricDivisor: 6000,
 	}}
 
-	require.NoError(t, shippingService.CreateTemplateWithCarrierServices(&template, services))
+	require.NoError(t, shippingService.CreateShippingRouteGroup(&template, nil, services))
 	var stored shippingdomain.CarrierService
-	require.NoError(t, db.Where("template_id = ?", template.ID).First(&stored).Error)
+	require.NoError(t, db.First(&stored).Error)
 	require.NotNil(t, stored.FpxChannelID)
 	require.Equal(t, channel.ID, *stored.FpxChannelID)
 	require.Equal(t, "EU-EXPRESS", stored.ServiceCode)
@@ -63,7 +65,7 @@ func TestCreateTemplateWithCarrierServicesUsesPublishedFpxCountryScope(t *testin
 	require.Equal(t, `["DE","FR"]`, stored.Countries)
 }
 
-func TestUpdateSystemFreeShippingTemplatePreservesCountryScopeForLegacyRequests(t *testing.T) {
+func TestUpdateSystemFreeShippingTemplateRequiresExplicitCountryScope(t *testing.T) {
 	_, shippingService, _ := newShippingServiceCollectionTestFixture(t, "GENERIC")
 	template := shippingdomain.ShippingTemplate{
 		Name:                  "System free shipping",
@@ -84,20 +86,17 @@ func TestUpdateSystemFreeShippingTemplatePreservesCountryScopeForLegacyRequests(
 		Enabled:      true,
 		FreeShipping: true,
 	}
-	require.NoError(t, shippingService.UpdateTemplate(&legacyUpdate))
-	require.Equal(t, shippingdomain.ShippingTemplateTypeSystemFreeShipping, legacyUpdate.Type)
-	require.Equal(t, `["US"]`, legacyUpdate.FreeShippingCountries)
+	require.ErrorContains(t, shippingService.UpdateTemplate(&legacyUpdate), "requires at least one country")
 
 	explicitEmptyScope := shippingdomain.ShippingTemplate{
-		ID:                            template.ID,
-		Name:                          "Updated system free shipping",
-		Type:                          shippingdomain.ShippingTemplateTypeSystemFreeShipping,
-		TemplateKind:                  shippingdomain.ShippingTemplateKindSystemFreeShipping,
-		Currency:                      "USD",
-		FreeShipping:                  true,
-		FreeShippingCountries:         `[]`,
-		FreeShippingCountriesProvided: true,
-		Enabled:                       true,
+		ID:                    template.ID,
+		Name:                  "Updated system free shipping",
+		Type:                  shippingdomain.ShippingTemplateTypeSystemFreeShipping,
+		TemplateKind:          shippingdomain.ShippingTemplateKindSystemFreeShipping,
+		Currency:              "USD",
+		FreeShipping:          true,
+		FreeShippingCountries: `[]`,
+		Enabled:               true,
 	}
 	require.ErrorContains(t, shippingService.UpdateTemplate(&explicitEmptyScope), "requires at least one country")
 }
@@ -123,13 +122,13 @@ func TestSystemFreeShippingTemplateRejectsPricingRuleMutations(t *testing.T) {
 
 func TestCreateTemplateRejectsUnpublishedFpxService(t *testing.T) {
 	db, shippingService, carrier := newShippingServiceCollectionTestFixture(t, "4PX")
-	template := shippingdomain.ShippingTemplate{Name: "Unknown 4PX service", Type: "weight", Currency: "USD"}
+	template := shippingdomain.ShippingRouteGroup{Name: "Unknown 4PX service", Enabled: true}
 	services := []shippingdomain.CarrierService{{
 		CarrierID: carrier.ID, ProviderCode: "4PX", ServiceCode: "NOT-PUBLISHED",
 		ServiceName: "Forged service", Countries: `["US"]`, Currency: "USD", Enabled: true,
 	}}
 
-	err := shippingService.CreateTemplateWithCarrierServices(&template, services)
+	err := shippingService.CreateShippingRouteGroup(&template, nil, services)
 	require.ErrorContains(t, err, "select a 4PX service collection record")
 	var templateCount int64
 	require.NoError(t, db.Model(&shippingdomain.ShippingTemplate{}).Count(&templateCount).Error)
@@ -142,14 +141,14 @@ func TestCreateTemplateRejectsDisabledYanwenProduct(t *testing.T) {
 		ProductCode: "481", DisplayName: "Yanwen standard", Countries: `["US"]`, Enabled: false, VolumetricDivisor: 8000,
 	}
 	require.NoError(t, db.Create(&channel).Error)
-	template := shippingdomain.ShippingTemplate{Name: "Disabled Yanwen service", Type: "weight", Currency: "USD"}
+	template := shippingdomain.ShippingRouteGroup{Name: "Disabled Yanwen service", Enabled: true}
 	services := []shippingdomain.CarrierService{{
 		CarrierID: carrier.ID, ProviderCode: "YANWEN", ServiceCode: "YANWEN:481",
 		YanwenPublishedChannelID: &channel.ID,
 		ServiceName:              "Yanwen standard", Countries: `["US"]`, Currency: "USD", Enabled: true,
 	}}
 
-	err := shippingService.CreateTemplateWithCarrierServices(&template, services)
+	err := shippingService.CreateShippingRouteGroup(&template, nil, services)
 	require.ErrorContains(t, err, "is disabled in the service collection")
 	var templateCount int64
 	require.NoError(t, db.Model(&shippingdomain.ShippingTemplate{}).Count(&templateCount).Error)
@@ -158,17 +157,17 @@ func TestCreateTemplateRejectsDisabledYanwenProduct(t *testing.T) {
 
 func TestCreateTemplateRejectsProviderCodeThatDoesNotMatchCarrier(t *testing.T) {
 	_, shippingService, carrier := newShippingServiceCollectionTestFixture(t, "4PX")
-	template := shippingdomain.ShippingTemplate{Name: "Mismatched provider", Type: "weight", Currency: "USD"}
+	template := shippingdomain.ShippingRouteGroup{Name: "Mismatched provider", Enabled: true}
 	services := []shippingdomain.CarrierService{{
 		CarrierID: carrier.ID, ProviderCode: "YANWEN", ServiceCode: "YANWEN:481",
 		ServiceName: "Yanwen standard", Currency: "USD", Enabled: true,
 	}}
 
-	err := shippingService.CreateTemplateWithCarrierServices(&template, services)
+	err := shippingService.CreateShippingRouteGroup(&template, nil, services)
 	require.ErrorContains(t, err, "does not match carrier")
 }
 
-func TestCreateTemplateWithCarrierServicesUsesPublishedYanwenCountryScope(t *testing.T) {
+func TestCreateRouteAggregateUsesPublishedYanwenCountryScope(t *testing.T) {
 	db, shippingService, carrier := newShippingServiceCollectionTestFixture(t, "YANWEN")
 	require.NoError(t, db.Create(&shippingdomain.YanwenPublishedChannel{
 		Environment: shippingdomain.YanwenPublishedChannelEnvironmentFAT,
@@ -179,16 +178,18 @@ func TestCreateTemplateWithCarrierServicesUsesPublishedYanwenCountryScope(t *tes
 		ProductCode: "481", DisplayName: "Yanwen production standard", Countries: `["US","CA"]`, Enabled: true, VolumetricDivisor: 8000,
 	}
 	require.NoError(t, db.Create(&productionChannel).Error)
-	template := shippingdomain.ShippingTemplate{Name: "Yanwen collection template", Type: "weight", Currency: "USD"}
+	template := shippingdomain.ShippingRouteGroup{Name: "Yanwen collection template", Enabled: true}
 	services := []shippingdomain.CarrierService{{
 		CarrierID: carrier.ID, ProviderCode: "YANWEN", ServiceCode: "481",
 		YanwenPublishedChannelID: &productionChannel.ID,
 		ServiceName:              "Client-supplied name", Countries: `["CN"]`, Currency: "USD", Enabled: true,
 	}}
 
-	require.NoError(t, shippingService.CreateTemplateWithCarrierServices(&template, services))
+	require.NoError(t, shippingService.CreateShippingRouteGroup(&template, nil, services))
 	var stored shippingdomain.CarrierService
-	require.NoError(t, db.Where("template_id = ?", template.ID).First(&stored).Error)
+	var membership shippingdomain.ShippingRouteGroupCarrierService
+	require.NoError(t, db.Where("route_group_id = ?", template.ID).First(&membership).Error)
+	require.NoError(t, db.First(&stored, membership.CarrierServiceID).Error)
 	require.NotNil(t, stored.YanwenPublishedChannelID)
 	require.Equal(t, productionChannel.ID, *stored.YanwenPublishedChannelID)
 	require.Equal(t, "YANWEN:481", stored.ServiceCode)
@@ -203,14 +204,14 @@ func TestCreateTemplateRejectsFatOnlyYanwenProduct(t *testing.T) {
 		ProductCode: "481", DisplayName: "Yanwen FAT standard", Countries: `["US"]`, Enabled: true, VolumetricDivisor: 8000,
 	}
 	require.NoError(t, db.Create(&fatChannel).Error)
-	template := shippingdomain.ShippingTemplate{Name: "FAT-only Yanwen service", Type: "weight", Currency: "USD"}
+	template := shippingdomain.ShippingRouteGroup{Name: "FAT-only Yanwen service", Enabled: true}
 	services := []shippingdomain.CarrierService{{
 		CarrierID: carrier.ID, ProviderCode: "YANWEN", ServiceCode: "YANWEN:481",
 		YanwenPublishedChannelID: &fatChannel.ID,
 		ServiceName:              "Yanwen FAT standard", Countries: `["US"]`, Currency: "USD", Enabled: true,
 	}}
 
-	err := shippingService.CreateTemplateWithCarrierServices(&template, services)
+	err := shippingService.CreateShippingRouteGroup(&template, nil, services)
 	require.ErrorContains(t, err, "missing or is not in production")
 	var templateCount int64
 	require.NoError(t, db.Model(&shippingdomain.ShippingTemplate{}).Count(&templateCount).Error)
@@ -227,6 +228,8 @@ func newShippingServiceCollectionTestFixture(t *testing.T, carrierCode string) (
 	t.Cleanup(func() { _ = sqlDB.Close() })
 	require.NoError(t, db.AutoMigrate(
 		&shippingdomain.Carrier{},
+		&shippingdomain.ShippingRouteGroup{},
+		&shippingdomain.ShippingRouteGroupCarrierService{},
 		&shippingdomain.ShippingTemplate{},
 		&shippingdomain.ShippingRule{},
 		&shippingdomain.CarrierService{},

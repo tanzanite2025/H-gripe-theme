@@ -10,18 +10,18 @@ const (
 )
 
 type AfterSalesRefundReview struct {
-	ID             uint       `gorm:"primarykey" json:"id"`
-	CaseID         uint       `gorm:"not null;uniqueIndex" json:"case_id"`
-	Status         string     `gorm:"not null;index" json:"status"`
-	ProposedAmountMinor int64 `gorm:"column:proposed_amount_minor;not null;default:0" json:"proposed_amount_minor"`
-	Currency       string     `gorm:"size:8;not null" json:"currency"`
-	RequestNotes   string     `gorm:"type:text;not null;default:''" json:"request_notes"`
-	DecisionNotes  string     `gorm:"type:text;not null;default:''" json:"decision_notes"`
-	CreatedBy      uint       `gorm:"not null;default:0" json:"created_by"`
-	UpdatedBy      uint       `gorm:"not null;default:0" json:"updated_by"`
-	ReviewedByID   *uint      `gorm:"index" json:"reviewed_by_id,omitempty"`
-	ReviewedAt     *time.Time `json:"reviewed_at,omitempty"`
-	LinkedRefundID *uint      `gorm:"index" json:"linked_refund_id,omitempty"`
+	ID                  uint       `gorm:"primarykey" json:"id"`
+	CaseID              uint       `gorm:"not null;uniqueIndex" json:"case_id"`
+	Status              string     `gorm:"not null;index" json:"status"`
+	ProposedAmountMinor int64      `gorm:"column:proposed_amount_minor;not null;default:0" json:"proposed_amount_minor"`
+	Currency            string     `gorm:"size:8;not null" json:"currency"`
+	RequestNotes        string     `gorm:"type:text;not null;default:''" json:"request_notes"`
+	DecisionNotes       string     `gorm:"type:text;not null;default:''" json:"decision_notes"`
+	CreatedBy           uint       `gorm:"not null;default:0" json:"created_by"`
+	UpdatedBy           uint       `gorm:"not null;default:0" json:"updated_by"`
+	ReviewedByID        *uint      `gorm:"index" json:"reviewed_by_id,omitempty"`
+	ReviewedAt          *time.Time `json:"reviewed_at,omitempty"`
+	LinkedRefundID      *uint      `gorm:"index" json:"linked_refund_id,omitempty"`
 
 	CreatorName  string    `gorm:"-" json:"creator_name,omitempty"`
 	ReviewerName string    `gorm:"-" json:"reviewer_name,omitempty"`

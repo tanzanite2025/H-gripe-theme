@@ -871,7 +871,7 @@ const submitStatus = async (): Promise<void> => {
         return
       }
       if (!carrierID && !carrierServiceID) {
-        toast.error('请选择本地承运商或本地计费线路')
+        toast.error('请选择本地承运商或承运商线路')
         return
       }
 
@@ -902,7 +902,7 @@ const submitStatus = async (): Promise<void> => {
         return
       }
       if (!carrierID && !carrierServiceID) {
-        toast.error('请选择本地承运商或本地计费线路')
+        toast.error('请选择本地承运商或承运商线路')
         return
       }
 
@@ -929,7 +929,7 @@ const submitStatus = async (): Promise<void> => {
         return
       }
       if (!carrierID && !carrierServiceID) {
-        toast.error('请选择本地承运商或本地计费线路')
+        toast.error('请选择本地承运商或承运商线路')
         return
       }
     }

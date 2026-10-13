@@ -142,7 +142,7 @@ func TestProductSupplierCostRecordServiceSyncsAndClearsProfitSnapshotBySKU(t *te
 	require.Equal(t, int64(400), profitRecord.OtherUnitCostMinor)
 	require.Equal(t, int64(3800), profitRecord.LandedCostMinor)
 	require.Equal(t, int64(6200), profitRecord.GrossProfitMinor)
-	require.Equal(t, suppliercostdomain.ProfitStatusWarning, profitRecord.CalculationStatus)
+	require.Equal(t, suppliercostdomain.ProfitStatusReady, profitRecord.CalculationStatus)
 
 	updated, err := service.Update(created.ID, ProductSupplierCostRecordUpdateInput{
 		ProductSupplierCostRecordDetailsInput: ProductSupplierCostRecordDetailsInput{

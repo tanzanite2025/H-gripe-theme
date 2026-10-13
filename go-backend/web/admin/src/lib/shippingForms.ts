@@ -13,33 +13,6 @@ export const defaultShippingCarrierForm = () => ({
   sort_order: 0,
 })
 
-export const defaultShippingCarrierServiceForm = (carriers: any[] = []) => ({
-  id: null,
-  carrier_id: firstId(carriers),
-  fpx_channel_id: null,
-  yanwen_published_channel_id: null,
-  provider_code: '',
-  template_id: 'none',
-  service_code: '',
-  service_name: '',
-  route_name: '',
-  countries: '[]',
-  currency: '',
-  billing_mode: 'actual_weight',
-  first_weight_grams: 0,
-  additional_weight_grams: 0,
-  min_charge_weight_grams: 0,
-  volumetric_divisor: 6000,
-  fuel_surcharge_percent_decimal: '0',
-  remote_surcharge_minor: 0,
-  remote_postal_codes: '[]',
-  eta_min_days: 0,
-  eta_max_days: 0,
-  enabled: true,
-  sort_order: 0,
-  description: '',
-})
-
 export const defaultShippingTrackingProviderForm = () => ({
   id: null,
   provider_code: '17TRACK',
@@ -89,8 +62,29 @@ export const defaultShippingTemplateForm = () => ({
   display_price_snapshots: {},
   description: '',
   enabled: true,
+  route_group_id: null,
+  customer_billing_mode: 'actual_weight',
+  customer_first_weight_grams: 0,
+  customer_additional_weight_grams: 0,
+  customer_min_charge_weight_grams: 0,
+  customer_volumetric_divisor: 6000,
+  customer_fuel_surcharge_percent_decimal: '0',
+  customer_remote_surcharge_minor: 0,
+  customer_remote_postal_codes: '[]',
+  customer_eta_min_days: 0,
+  customer_eta_max_days: 0,
   rules: [],
-  carrier_services: [],
+})
+
+export const defaultShippingRouteAggregateForm = () => ({
+  id: null,
+  name: '',
+  description: '',
+  countries: '[]',
+  enabled: true,
+  sort_order: 0,
+  carrier_service_ids: [],
+  published_carrier_services: [],
 })
 
 export const defaultShippingPackagingForm = () => ({

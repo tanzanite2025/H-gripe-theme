@@ -64,9 +64,9 @@ func TestRefreshDisplayPriceSnapshotsPreservesMismatchedSourceAmounts(t *testing
 	require.NoError(t, db.Create(&productOne).Error)
 	require.NoError(t, db.Create(&productTwo).Error)
 	require.NoError(t, db.Create(&productThree).Error)
-	seedProductDisplaySnapshot(t, db, productOne.ID, nil, productOne.PriceMinor, productOne.Currency, productOne.SalePriceMinor, oldProductSnapshot)
-	seedProductDisplaySnapshot(t, db, productTwo.ID, nil, productTwo.PriceMinor, productTwo.Currency, productTwo.SalePriceMinor, oldProductSnapshot)
-	seedProductDisplaySnapshot(t, db, productThree.ID, nil, productThree.PriceMinor, productThree.Currency, productThree.SalePriceMinor, oldProductSnapshot)
+	seedProductDisplaySnapshot(t, db, productOne.ID, nil, productOne.PriceMinor, productOne.Currency, oldProductSnapshot)
+	seedProductDisplaySnapshot(t, db, productTwo.ID, nil, productTwo.PriceMinor, productTwo.Currency, oldProductSnapshot)
+	seedProductDisplaySnapshot(t, db, productThree.ID, nil, productThree.PriceMinor, productThree.Currency, oldProductSnapshot)
 	var coreBefore struct{ UpdatedAt time.Time }
 	require.NoError(t, db.Model(&product.Product{}).Select("updated_at").Where("id = ?", productOne.ID).Scan(&coreBefore).Error)
 
@@ -106,9 +106,9 @@ func TestRefreshDisplayPriceSnapshotsPreservesMismatchedSourceAmounts(t *testing
 	require.NoError(t, db.Create(&variantOne).Error)
 	require.NoError(t, db.Create(&variantTwo).Error)
 	require.NoError(t, db.Create(&variantThree).Error)
-	seedProductDisplaySnapshot(t, db, variantOne.ProductID, &variantOne.ID, variantOne.PriceMinor, variantOne.Currency, variantOne.SalePriceMinor, oldVariantSnapshot)
-	seedProductDisplaySnapshot(t, db, variantTwo.ProductID, &variantTwo.ID, variantTwo.PriceMinor, variantTwo.Currency, variantTwo.SalePriceMinor, oldVariantSnapshot)
-	seedProductDisplaySnapshot(t, db, variantThree.ProductID, &variantThree.ID, variantThree.PriceMinor, variantThree.Currency, variantThree.SalePriceMinor, oldVariantSnapshot)
+	seedProductDisplaySnapshot(t, db, variantOne.ProductID, &variantOne.ID, variantOne.PriceMinor, variantOne.Currency, oldVariantSnapshot)
+	seedProductDisplaySnapshot(t, db, variantTwo.ProductID, &variantTwo.ID, variantTwo.PriceMinor, variantTwo.Currency, oldVariantSnapshot)
+	seedProductDisplaySnapshot(t, db, variantThree.ProductID, &variantThree.ID, variantThree.PriceMinor, variantThree.Currency, oldVariantSnapshot)
 
 	result, err := productService.RefreshDisplayPriceSnapshots(
 		"CNY",
@@ -259,7 +259,7 @@ func displaySnapshotAmount(raw []byte, quoteCurrency string) float64 {
 	return 0
 }
 
-func seedProductDisplaySnapshot(t *testing.T, db *gorm.DB, productID uint, variantID *uint, sourcePriceMinor int64, sourceCurrency string, sourceSalePriceMinor *int64, displayPrices []byte) {
+func seedProductDisplaySnapshot(t *testing.T, db *gorm.DB, productID uint, variantID *uint, sourcePriceMinor int64, sourceCurrency string, displayPrices []byte) {
 	t.Helper()
 	scopeKey := "product:" + strconv.FormatUint(uint64(productID), 10)
 	if variantID != nil {
@@ -268,7 +268,7 @@ func seedProductDisplaySnapshot(t *testing.T, db *gorm.DB, productID uint, varia
 	require.NoError(t, db.Create(&product.ProductDisplayPriceSnapshot{
 		ScopeKey: scopeKey, ProductID: productID, VariantID: variantID,
 		SourceCurrency: sourceCurrency, SourcePriceMinor: sourcePriceMinor,
-		SourceSalePriceMinor: sourceSalePriceMinor, DisplayPriceData: displayPrices,
+		DisplayPriceData: displayPrices,
 	}).Error)
 }
 

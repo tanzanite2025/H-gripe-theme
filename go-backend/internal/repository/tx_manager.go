@@ -40,6 +40,7 @@ func (m *TxManager) OrderRepository() *OrderRepository {
 }
 
 type TxRepositories struct {
+	YanwenPublishedChannel    *YanwenPublishedChannelRepository
 	Order                     *OrderRepository
 	OrderIdempotency          *OrderIdempotencyRepository
 	OrderAttribution          *OrderAttributionRepository
@@ -256,6 +257,7 @@ func (m *TxManager) WithinTx(fn func(TxRepositories) error) error {
 			cartRepo = m.cartRepo.WithTx(tx)
 		}
 		return fn(TxRepositories{
+			YanwenPublishedChannel:    NewYanwenPublishedChannelRepository(tx),
 			Order:                     m.orderRepo.WithTx(tx),
 			OrderIdempotency:          orderIdempotencyRepo,
 			OrderAttribution:          attributionRepo,

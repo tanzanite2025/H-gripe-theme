@@ -74,13 +74,6 @@ export const carrierServiceCarrierName = (service: any, carriers: any[] = []) =>
   return carrier?.name || `Carrier #${service.carrier_id || '-'}`
 }
 
-export const carrierServiceTemplateName = (service: any, templates: any[] = []) => {
-  if (service.template?.name) return service.template.name
-  if (!service.template_id) return '未绑定模板'
-  const template = templates.find((item) => Number(item.id) === Number(service.template_id))
-  return template?.name || `Template #${service.template_id}`
-}
-
 export const billingModeLabel = (mode: string) => {
   const labels: Record<string, string> = {
     actual_weight: '实重计费',
@@ -127,7 +120,7 @@ export const trackingProviderName = (mapping: any, trackingProviders: any[] = []
 export const trackingMappingScopeLabel = (scope: string) => {
   const labels: Record<string, string> = {
     carrier: '承运商映射',
-    carrier_service: '本地计费线路映射',
+    carrier_service: '承运商线路映射',
   }
   return labels[scope] || scope || '-'
 }

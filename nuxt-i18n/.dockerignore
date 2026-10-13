@@ -9,3 +9,9 @@ output
 playwright-report
 test-results
 .playwright-cli
+
+# Local secrets and confidential reference material
+.env
+.env.*
+**/[dD][oO][cC][sS]
+**/[hH][tT][mM][lL]资料

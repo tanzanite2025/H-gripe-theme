@@ -16,7 +16,7 @@ type productCreateRequest struct {
 	ProductSpecificationTemplateID *uint                               `json:"product_specification_template_id"`
 	ProductCategoryID              *uint                               `json:"product_category_id"`
 	BrandID                        *uint                               `json:"brand_id"`
-	ShippingTemplateID             *uint                               `json:"shipping_template_id"`
+	ShippingTemplateIDs            []uint                              `json:"shipping_template_ids"`
 	AfterSalesTemplateID           *uint                               `json:"after_sales_template_id"`
 	PackagingTemplateID            *uint                               `json:"packaging_template_id"`
 	CustomsClassificationProfileID *uint                               `json:"customs_classification_profile_id"`
@@ -46,7 +46,7 @@ type productUpdateRequest struct {
 	ProductSpecificationTemplateID *uint                               `json:"product_specification_template_id"`
 	ProductCategoryID              *uint                               `json:"product_category_id"`
 	BrandID                        *uint                               `json:"brand_id"`
-	ShippingTemplateID             *uint                               `json:"shipping_template_id"`
+	ShippingTemplateIDs            []uint                              `json:"shipping_template_ids"`
 	AfterSalesTemplateID           *uint                               `json:"after_sales_template_id"`
 	PackagingTemplateID            *uint                               `json:"packaging_template_id"`
 	CustomsClassificationProfileID *uint                               `json:"customs_classification_profile_id"`
@@ -80,21 +80,20 @@ type productOptionValueRelationRequest struct {
 }
 
 type productVariantRequest struct {
-	ID                 *uint                                  `json:"id"`
-	ShippingTemplateID *uint                                  `json:"shipping_template_id"`
-	SKU                string                                 `json:"sku"`
-	Title              string                                 `json:"title"`
-	OptionValues       map[string]interface{}                 `json:"option_values"`
-	Currency           string                                 `json:"currency"`
-	PriceMinor         int64                                  `json:"price_minor" binding:"required"`
-	SalePriceMinor     *int64                                 `json:"sale_price_minor"`
-	Stock              int                                    `json:"stock"`
-	Weight             int                                    `json:"weight_grams"`
-	IsDefault          bool                                   `json:"is_default"`
-	IsActive           *bool                                  `json:"is_active"`
-	SortOrder          int                                    `json:"sort_order"`
-	OptionGroupRules   []productOptionGroupVariantRuleRequest `json:"option_group_rules"`
-	OptionValueRules   []productOptionValueVariantRuleRequest `json:"option_value_rules"`
+	ID                  *uint                                  `json:"id"`
+	ShippingTemplateIDs []uint                                 `json:"shipping_template_ids"`
+	SKU                 string                                 `json:"sku"`
+	Title               string                                 `json:"title"`
+	OptionValues        map[string]interface{}                 `json:"option_values"`
+	Currency            string                                 `json:"currency"`
+	PriceMinor          int64                                  `json:"price_minor" binding:"required"`
+	Stock               int                                    `json:"stock"`
+	Weight              int                                    `json:"weight_grams"`
+	IsDefault           bool                                   `json:"is_default"`
+	IsActive            *bool                                  `json:"is_active"`
+	SortOrder           int                                    `json:"sort_order"`
+	OptionGroupRules    []productOptionGroupVariantRuleRequest `json:"option_group_rules"`
+	OptionValueRules    []productOptionValueVariantRuleRequest `json:"option_value_rules"`
 }
 
 type productOptionGroupVariantRuleRequest struct {
@@ -256,6 +255,22 @@ func normalizeSpokeRepairKitModelKeys(raw []string) []string {
 	return result
 }
 
+func normalizeShippingTemplateIDs(raw []uint) []uint {
+	result := make([]uint, 0, len(raw))
+	seen := make(map[uint]struct{}, len(raw))
+	for _, id := range raw {
+		if id == 0 {
+			continue
+		}
+		if _, exists := seen[id]; exists {
+			continue
+		}
+		seen[id] = struct{}{}
+		result = append(result, id)
+	}
+	return result
+}
+
 func normalizeVariantRequests(raw []productVariantRequest) []service.ProductVariantInput {
 	if len(raw) == 0 {
 		return nil
@@ -264,21 +279,20 @@ func normalizeVariantRequests(raw []productVariantRequest) []service.ProductVari
 	variants := make([]service.ProductVariantInput, 0, len(raw))
 	for _, item := range raw {
 		variants = append(variants, service.ProductVariantInput{
-			ID:                 item.ID,
-			ShippingTemplateID: item.ShippingTemplateID,
-			SKU:                item.SKU,
-			Title:              item.Title,
-			OptionValues:       normalizeRequestSpecs(item.OptionValues),
-			Currency:           item.Currency,
-			PriceMinor:         item.PriceMinor,
-			SalePriceMinor:     item.SalePriceMinor,
-			Stock:              item.Stock,
-			Weight:             item.Weight,
-			IsDefault:          item.IsDefault,
-			IsActive:           item.IsActive,
-			SortOrder:          item.SortOrder,
-			OptionGroupRules:   normalizeOptionGroupVariantRules(item.OptionGroupRules),
-			OptionValueRules:   normalizeOptionValueVariantRules(item.OptionValueRules),
+			ID:                  item.ID,
+			ShippingTemplateIDs: normalizeShippingTemplateIDs(item.ShippingTemplateIDs),
+			SKU:                 item.SKU,
+			Title:               item.Title,
+			OptionValues:        normalizeRequestSpecs(item.OptionValues),
+			Currency:            item.Currency,
+			PriceMinor:          item.PriceMinor,
+			Stock:               item.Stock,
+			Weight:              item.Weight,
+			IsDefault:           item.IsDefault,
+			IsActive:            item.IsActive,
+			SortOrder:           item.SortOrder,
+			OptionGroupRules:    normalizeOptionGroupVariantRules(item.OptionGroupRules),
+			OptionValueRules:    normalizeOptionValueVariantRules(item.OptionValueRules),
 		})
 	}
 	return variants

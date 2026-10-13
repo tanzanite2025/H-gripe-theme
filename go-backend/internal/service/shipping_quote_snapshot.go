@@ -10,6 +10,7 @@ import (
 	"time"
 
 	shippingdomain "commerce-platform/internal/domain/shipping"
+	shippingrating "commerce-platform/internal/domain/shipping/rating"
 	"commerce-platform/internal/repository"
 
 	"github.com/google/uuid"
@@ -19,12 +20,13 @@ import (
 const shippingQuoteLifetime = 15 * time.Minute
 
 type shippingQuoteHashItem struct {
-	ProductID      uint  `json:"product_id"`
-	VariantID      uint  `json:"variant_id"`
-	TemplateID     uint  `json:"template_id"`
-	Quantity       int   `json:"quantity"`
-	UnitPriceMinor int64 `json:"unit_price_minor"`
-	WeightGrams    int   `json:"weight_grams"`
+	ProductID                 uint   `json:"product_id"`
+	VariantID                 uint   `json:"variant_id"`
+	TemplateIDs               []uint `json:"template_ids"`
+	PackagingWeightDeltaGrams int    `json:"packaging_weight_delta_grams"`
+	Quantity                  int    `json:"quantity"`
+	UnitPriceMinor            int64  `json:"unit_price_minor"`
+	WeightGrams               int    `json:"weight_grams"`
 }
 
 type shippingQuoteHashInput struct {
@@ -100,15 +102,15 @@ func (s *ShippingService) restoreShippingQuote(input ShippingQuoteInput) (*Shipp
 	if quote.ID != snapshot.ID || quote.RateVersion != snapshot.RateVersion {
 		return nil, fmt.Errorf("%w: quote %s snapshot metadata is inconsistent", ErrShippingRateConfigurationInvalid, quoteID)
 	}
-	if err := s.validateRestoredShippingQuoteTemplateScopes(input, &quote); err != nil {
-		return nil, err
-	}
 	planID := strings.TrimSpace(input.SelectedQuotePlanID)
 	if planID == "" && quote.SelectedPlan != nil {
 		planID = quote.SelectedPlan.ID
 	}
 	for index := range quote.Plans {
 		if quote.Plans[index].ID == planID {
+			if err := s.validateRestoredShippingQuoteTemplateScopes(input, &quote, quote.Plans[index]); err != nil {
+				return nil, err
+			}
 			applyShippingQuotePlan(&quote, &quote.Plans[index])
 			return &quote, nil
 		}
@@ -117,15 +119,15 @@ func (s *ShippingService) restoreShippingQuote(input ShippingQuoteInput) (*Shipp
 }
 
 // validateRestoredShippingQuoteTemplateScopes closes the gap between a
-// persisted quote and a later checkout when an administrator changes a
-// system free-shipping country scope during the quote lifetime.
-func (s *ShippingService) validateRestoredShippingQuoteTemplateScopes(input ShippingQuoteInput, quote *ShippingQuote) error {
+// persisted quote and a later checkout when a selected template, aggregate,
+// carrier or published country scope is disabled or removed. Prices stay locked.
+func (s *ShippingService) validateRestoredShippingQuoteTemplateScopes(input ShippingQuoteInput, quote *ShippingQuote, selectedPlan ShippingQuotePlan) error {
 	if s == nil || s.shippingRepo == nil || quote == nil {
 		return nil
 	}
-	templateIDs, err := uniqueShippingQuoteTemplateIDs(input.Items)
-	if err != nil {
-		return err
+	templateIDs := make([]uint, 0, len(selectedPlan.Legs))
+	for _, leg := range selectedPlan.Legs {
+		templateIDs = append(templateIDs, leg.TemplateID)
 	}
 	templatesByID, err := s.shippingRepo.FindTemplatesByIDs(templateIDs)
 	if err != nil {
@@ -140,6 +142,36 @@ func (s *ShippingService) validateRestoredShippingQuoteTemplateScopes(input Ship
 			return fmt.Errorf("%w: shipping template %q does not include country %s", ErrCountryNotSupported, template.Name, input.Country)
 		}
 	}
+	routeGroupIDs := make([]uint, 0, len(templateIDs))
+	for _, template := range templatesByID {
+		if template.RouteGroupID != nil {
+			routeGroupIDs = append(routeGroupIDs, *template.RouteGroupID)
+		}
+	}
+	services, err := s.shippingRepo.FindEnabledCarrierServicesForRouteAggregates(routeGroupIDs)
+	if err != nil {
+		return err
+	}
+	services, _, err = s.projectCarrierServicesFromPublishedCollections(services)
+	if err != nil {
+		return err
+	}
+	for _, leg := range selectedPlan.Legs {
+		template := templatesByID[leg.TemplateID]
+		if template.RouteGroupID == nil {
+			continue
+		}
+		available := false
+		for _, route := range services {
+			if route.ID == leg.CarrierServiceID && route.RouteGroupID != nil && *route.RouteGroupID == *template.RouteGroupID && route.Carrier != nil && route.Carrier.Enabled && shippingrating.MatchesRegion(route.Countries, input.Country) {
+				available = true
+				break
+			}
+		}
+		if !available {
+			return fmt.Errorf("%w: selected route for template %q is no longer available in %s", ErrShippingQuoteStale, template.Name, input.Country)
+		}
+	}
 	return nil
 }
 
@@ -150,13 +182,11 @@ func shippingQuoteRequestHash(input ShippingQuoteInput) string {
 		if item.VariantID != nil {
 			variantID = *item.VariantID
 		}
-		templateID := uint(0)
-		if item.ShippingTemplateID != nil {
-			templateID = *item.ShippingTemplateID
-		}
+		templateIDs := append([]uint(nil), item.ShippingTemplateIDs...)
+		sort.Slice(templateIDs, func(i, j int) bool { return templateIDs[i] < templateIDs[j] })
 		unitPriceMinor := item.UnitPriceMinor
 		items = append(items, shippingQuoteHashItem{
-			ProductID: item.ProductID, VariantID: variantID, TemplateID: templateID,
+			ProductID: item.ProductID, VariantID: variantID, TemplateIDs: templateIDs, PackagingWeightDeltaGrams: item.PackagingWeightDeltaGrams,
 			Quantity: item.Quantity, UnitPriceMinor: unitPriceMinor, WeightGrams: item.WeightGrams,
 		})
 	}
@@ -166,9 +196,6 @@ func shippingQuoteRequestHash(input ShippingQuoteInput) string {
 		}
 		if items[i].VariantID != items[j].VariantID {
 			return items[i].VariantID < items[j].VariantID
-		}
-		if items[i].TemplateID != items[j].TemplateID {
-			return items[i].TemplateID < items[j].TemplateID
 		}
 		if items[i].Quantity != items[j].Quantity {
 			return items[i].Quantity < items[j].Quantity

@@ -3,18 +3,22 @@ package service
 import (
 	"commerce-platform/internal/repository"
 	"errors"
+	"fmt"
 )
 
 var (
-	ErrUnsupportedLocale                    = errors.New("unsupported locale")
-	ErrProductOptionRelationInvalid         = errors.New("product option value relation invalid")
-	ErrPostLocaleImmutable                  = errors.New("post locale cannot be changed after creation")
-	ErrFAQNotFound                          = errors.New("faq not found")
-	ErrFAQLocaleImmutable                   = errors.New("FAQ locale cannot be changed after creation")
-	ErrGalleryNotFound                      = errors.New("gallery not found")
-	ErrPaymentNotFound                      = errors.New("payment resource not found")
-	ErrShippingNotFound                     = errors.New("shipping resource not found")
-	ErrShippingRateUnavailable              = errors.New("shipping rate is unavailable")
+	ErrUnsupportedLocale            = errors.New("unsupported locale")
+	ErrProductOptionRelationInvalid = errors.New("product option value relation invalid")
+	ErrPostLocaleImmutable          = errors.New("post locale cannot be changed after creation")
+	ErrFAQNotFound                  = errors.New("faq not found")
+	ErrFAQLocaleImmutable           = errors.New("FAQ locale cannot be changed after creation")
+	ErrGalleryNotFound              = errors.New("gallery not found")
+	ErrPaymentNotFound              = errors.New("payment resource not found")
+	ErrShippingNotFound             = errors.New("shipping resource not found")
+	ErrShippingRateUnavailable      = errors.New("shipping rate is unavailable")
+	// Only an inapplicable template rate may be skipped when quoting alternatives.
+	// Missing exchange rates and other pricing failures remain fatal.
+	ErrShippingTemplateRateNotApplicable    = fmt.Errorf("%w: no applicable template rate", ErrShippingRateUnavailable)
 	ErrTaxRateUnavailable                   = errors.New("tax rate is unavailable")
 	ErrInvalidShippingDestination           = errors.New("shipping destination is invalid")
 	ErrCountryNotSupported                  = errors.New("shipping country is not supported")

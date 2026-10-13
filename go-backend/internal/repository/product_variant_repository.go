@@ -85,6 +85,21 @@ func replaceProductVariants(tx *gorm.DB, productID uint, variants []product.Prod
 		keepIDs = append(keepIDs, variants[i].ID)
 	}
 
+	keptVariantIDs := make(map[uint]struct{}, len(keepIDs))
+	for _, id := range keepIDs {
+		keptVariantIDs[id] = struct{}{}
+	}
+	removedVariantIDs := make([]uint, 0)
+	for _, variant := range existingVariants {
+		if _, kept := keptVariantIDs[variant.ID]; !kept {
+			removedVariantIDs = append(removedVariantIDs, variant.ID)
+		}
+	}
+	if len(removedVariantIDs) > 0 {
+		if err := tx.Where("product_id = ? AND variant_id IN ?", productID, removedVariantIDs).Delete(&product.ProductShippingTemplateBinding{}).Error; err != nil {
+			return err
+		}
+	}
 	deleteQuery := tx.Where("product_id = ?", productID)
 	if len(keepIDs) > 0 {
 		deleteQuery = deleteQuery.Where("id NOT IN ?", keepIDs)

@@ -62,6 +62,31 @@ export const shippingApi = {
     return requireApiAcknowledgement(await axios.delete(endpoint), endpoint)
   },
 
+  async listRouteAggregates() {
+    const endpoint = '/api/admin/shipping/route-aggregates'
+    return readDataArray(await axios.get(endpoint), endpoint)
+  },
+
+  async getRouteAggregate(id: APIID) {
+    const endpoint = `/api/admin/shipping/route-aggregates/${id}`
+    return readEntity(await axios.get(endpoint), endpoint)
+  },
+
+  async createRouteAggregate(payload: APIPayload) {
+    const endpoint = '/api/admin/shipping/route-aggregates'
+    return readEntity(await axios.post(endpoint, payload), endpoint)
+  },
+
+  async updateRouteAggregate(id: APIID, payload: APIPayload) {
+    const endpoint = `/api/admin/shipping/route-aggregates/${id}`
+    return readEntity(await axios.put(endpoint, payload), endpoint)
+  },
+
+  async deleteRouteAggregate(id: APIID) {
+    const endpoint = `/api/admin/shipping/route-aggregates/${id}`
+    return requireApiAcknowledgement(await axios.delete(endpoint), endpoint)
+  },
+
   async listCarriers(params: APIParams = {}) {
     const endpoint = '/api/admin/shipping/carriers'
     return readDataArray(await axios.get(endpoint, { params }), endpoint)

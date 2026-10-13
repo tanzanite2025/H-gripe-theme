@@ -425,9 +425,7 @@ export function useProductDetailVariants(
   })
 
   const effectivePriceMinor = computed(() => {
-    const basePrice = selectedVariant.value?.sale_price_decimal
-      ?? selectedVariant.value?.price_decimal
-      ?? product.value?.sale_price_decimal
+    const basePrice = selectedVariant.value?.price_decimal
       ?? product.value?.price_decimal
       ?? 0
     return majorToMinor(basePrice, currentCurrency.value) + selectedCustomOptionPriceDeltaMinor.value

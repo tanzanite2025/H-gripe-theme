@@ -176,9 +176,6 @@ func (s *ShippingService) CreateCarrierService(service *shipping.CarrierService)
 	if err := s.prepareCarrierServiceCurrency(service); err != nil {
 		return err
 	}
-	if err := s.validateCarrierServiceWeightBilling(service); err != nil {
-		return err
-	}
 	collectionServices := []shipping.CarrierService{*service}
 	if err := s.validateAndHydratePublishedCarrierServiceCollections(collectionServices); err != nil {
 		return err
@@ -191,42 +188,12 @@ func (s *ShippingService) UpdateCarrierService(service *shipping.CarrierService)
 	if err := s.prepareCarrierServiceCurrency(service); err != nil {
 		return err
 	}
-	if err := s.validateCarrierServiceWeightBilling(service); err != nil {
-		return err
-	}
 	collectionServices := []shipping.CarrierService{*service}
 	if err := s.validateAndHydratePublishedCarrierServiceCollections(collectionServices); err != nil {
 		return err
 	}
 	*service = collectionServices[0]
 	return s.shippingRepo.UpdateCarrierService(service)
-}
-
-func (s *ShippingService) validateCarrierServiceWeightBilling(service *shipping.CarrierService) error {
-	if service == nil || service.TemplateID == nil || *service.TemplateID == 0 {
-		return nil
-	}
-	template, err := s.GetTemplate(*service.TemplateID)
-	if err != nil {
-		return err
-	}
-	if template.IsSystemFreeShippingTemplate() {
-		return errors.New("system free-shipping template cannot be bound to a carrier service")
-	}
-	if template.Type != "weight" {
-		return nil
-	}
-	for _, rule := range template.Rules {
-		additional, additionalErr := rule.AdditionalMoney(template.Currency)
-		if additionalErr != nil || additional.AmountMinor() <= 0 {
-			continue
-		}
-		return validateShippingWeightBilling(rule, shippingWeightBilling{
-			firstWeightGrams:      service.FirstWeightGrams,
-			additionalWeightGrams: service.AdditionalWeightGrams,
-		})
-	}
-	return nil
 }
 
 func (s *ShippingService) prepareCarrierServiceCurrency(carrierService *shipping.CarrierService) error {

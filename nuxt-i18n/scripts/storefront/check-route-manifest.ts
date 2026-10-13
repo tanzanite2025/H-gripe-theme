@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises'
 import { join, relative, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import locales from '../../app/i18n/locales.manifest'
+import { virtualPageSubNavigationEntries } from '../../app/utils/pageSubNavigationData'
 
 type ManifestRoute = {
   key?: string
@@ -55,6 +56,14 @@ const pageFileForPath = (path: string) => {
 
   const customPageFile = customPagePathOverrides.get(normalized)
   if (customPageFile && existsSync(customPageFile)) return customPageFile
+
+  const virtualPageEntry = virtualPageSubNavigationEntries.find(entry => entry.tabs.some(
+    tab => `${entry.path}/${tab.id}` === normalized,
+  ))
+  if (virtualPageEntry) {
+    const parentPageFile = join(pagesRoot, virtualPageEntry.path.slice(1)) + '.vue'
+    if (existsSync(parentPageFile)) return parentPageFile
+  }
 
   const segments = normalized === '/' ? [] : normalized.slice(1).split('/')
   const directory = join(pagesRoot, ...segments)

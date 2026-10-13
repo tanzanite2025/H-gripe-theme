@@ -83,11 +83,11 @@
             </label>
 
             <label class="block space-y-1">
-              <span class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70 block">SERVICE / 本地计费线路</span>
+              <span class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70 block">SERVICE / 承运商线路</span>
               <Select v-model="statusForm.carrier_service_id" @update:model-value="(value) => emit('carrier-service-change', String(value))">
-                <SelectTrigger class="w-full"><SelectValue placeholder="可选：选择本地计费线路" /></SelectTrigger>
+                <SelectTrigger class="w-full"><SelectValue placeholder="可选：选择承运商线路" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">不指定本地计费线路</SelectItem>
+                  <SelectItem value="none">不指定承运商线路</SelectItem>
                   <SelectItem v-for="service in filteredStatusCarrierServices" :key="service.id" :value="String(service.id)">
                     {{ service.service_name }} / {{ service.service_code }}
                   </SelectItem>
@@ -97,7 +97,7 @@
           </div>
 
           <div v-if="!trackingCorrection" class="rounded-lg border bg-muted/35 p-3 text-xs text-muted-foreground">
-            保存时系统会按“本地计费线路映射优先、承运商映射其次”解析 Provider Carrier Code。
+            保存时系统会按“承运商线路映射优先、承运商映射其次”解析 Provider Carrier Code。
             当前可预览：<span class="font-mono font-bold text-foreground">{{ resolvedProviderCarrierCodeLabel }}</span>
           </div>
           <div v-else class="rounded-lg border border-amber-500/25 bg-amber-500/10 p-3 text-xs leading-5 text-amber-900">

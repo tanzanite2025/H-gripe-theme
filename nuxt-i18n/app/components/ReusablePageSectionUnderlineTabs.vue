@@ -1,40 +1,57 @@
 <template>
-  <div
+  <component
+    :is="usesRouteLinks ? 'nav' : 'div'"
     class="reusable-page-section-underline-tabs"
-    role="tablist"
-    aria-orientation="horizontal"
+    :role="usesRouteLinks ? undefined : 'tablist'"
+    :aria-orientation="usesRouteLinks ? undefined : 'horizontal'"
     :aria-label="tabListLabel"
   >
-    <button
-      v-for="(tab, tabIndex) in tabs"
-      :id="tab.tabId"
-      :key="tab.id"
-      type="button"
-      role="tab"
-      class="reusable-page-section-underline-tabs__tab"
-      :class="{ 'reusable-page-section-underline-tabs__tab--active': activeId === tab.id }"
-      :aria-selected="activeId === tab.id"
-      :aria-controls="tab.panelId"
-      :tabindex="activeId === tab.id ? 0 : -1"
-      @click="selectPageSectionTab(tab.id)"
-      @keydown="handlePageSectionTabKeyboardNavigation($event, tabIndex)"
-    >
-      {{ tab.label }}
-    </button>
-  </div>
+    <template v-for="(tab, tabIndex) in tabs" :key="tab.id">
+      <NuxtLink
+        v-if="tab.to"
+        :id="tab.tabId"
+        :to="tab.to"
+        class="reusable-page-section-underline-tabs__tab"
+        :class="{ 'reusable-page-section-underline-tabs__tab--active': activeId === tab.id }"
+        :aria-current="activeId === tab.id ? 'page' : undefined"
+      >
+        {{ tab.label }}
+      </NuxtLink>
+      <button
+        v-else
+        :id="tab.tabId"
+        type="button"
+        role="tab"
+        class="reusable-page-section-underline-tabs__tab"
+        :class="{ 'reusable-page-section-underline-tabs__tab--active': activeId === tab.id }"
+        :aria-selected="activeId === tab.id"
+        :aria-controls="tab.panelId"
+        :tabindex="activeId === tab.id ? 0 : -1"
+        @click="selectPageSectionTab(tab.id)"
+        @keydown="handlePageSectionTabKeyboardNavigation($event, tabIndex)"
+      >
+        {{ tab.label }}
+      </button>
+    </template>
+  </component>
 </template>
 
 <script setup lang="ts" generic="TabId extends string">
+import { computed } from 'vue'
+
 const props = defineProps<{
   tabs: readonly {
     id: TabId
     label: string
-    tabId: string
-    panelId: string
+    tabId?: string
+    panelId?: string
+    to?: string
   }[]
   activeId: TabId
   tabListLabel: string
 }>()
+
+const usesRouteLinks = computed(() => props.tabs.some(tab => Boolean(tab.to)))
 
 const emit = defineEmits<{
   select: [id: TabId]
@@ -63,7 +80,7 @@ const handlePageSectionTabKeyboardNavigation = (event: KeyboardEvent, currentTab
   const nextTab = props.tabs[nextTabIndex]
   if (!nextTab) return
   selectPageSectionTab(nextTab.id)
-  document.getElementById(nextTab.tabId)?.focus()
+  if (nextTab.tabId) document.getElementById(nextTab.tabId)?.focus()
 }
 </script>
 
@@ -83,6 +100,9 @@ const handlePageSectionTabKeyboardNavigation = (event: KeyboardEvent, currentTab
 
 .reusable-page-section-underline-tabs__tab {
   position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   flex: 0 0 auto;
   border: 0;
   border-radius: 0.5rem 0.5rem 0 0;
@@ -93,6 +113,7 @@ const handlePageSectionTabKeyboardNavigation = (event: KeyboardEvent, currentTab
   font-size: 0.875rem;
   font-weight: 800;
   line-height: 1.2;
+  text-decoration: none;
   white-space: nowrap;
   transition: background-color 0.18s ease, color 0.18s ease;
 }

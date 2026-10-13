@@ -12,7 +12,7 @@
           </span>
         </div>
         <p class="mt-1 text-xs leading-5 text-muted-foreground">
-          资料按 SKU 保存，不会写入商品目录；预计毛利 = 实际售价 - 单位成本价 - 运费、包装和其他附加成本。
+          资料按 SKU 保存；预计毛利 = 商品售价 - 单位成本价 - 运费、包装和其他附加成本。优惠券优惠在订单结算时计算。
         </p>
       </div>
       <div class="text-right text-xs text-muted-foreground">
@@ -156,8 +156,7 @@
           </div>
 
           <div class="grid grid-cols-2 gap-2 sm:grid-cols-4">
-            <Metric label="常规售价" :value="formatMinorMoney(listPriceMinor(variant, currency), currency)" />
-            <Metric label="实际售价" :value="formatMinorMoney(effectiveSellingPriceMinor(variant, currency), currency)" />
+            <Metric label="商品售价" :value="formatMinorMoney(listPriceMinor(variant, currency), currency)" />
             <Metric label="含附加成本" :value="calculationFor(index).landedCostMinor == null ? '待填写' : formatMinorMoney(calculationFor(index).landedCostMinor, currency)" />
             <Metric label="预计毛利率" :value="calculationFor(index).grossMargin == null ? '待填写' : `${calculationFor(index).grossMargin.toFixed(2)}%`" />
           </div>
@@ -337,18 +336,12 @@ const minorToMajor = (value: unknown, currency: string): number => {
   return minor == null ? 0 : minor / (10 ** minorUnitsForCurrency(currency))
 }
 
-const priceMinor = (variant: ProductVariantForm, field: 'price' | 'sale_price', currency: string): number | null => {
-  const minorField = field === 'price' ? 'price_minor' : 'sale_price_minor'
-  const explicitMinor = finiteNumber(variant[minorField])
-  if (variant[minorField] != null && explicitMinor != null) return Math.trunc(explicitMinor)
-  if (field === 'sale_price' && (variant.sale_price == null || variant.sale_price === '')) return null
-  return majorToMinor(variant[field], currency)
+const listPriceMinor = (variant: ProductVariantForm, currency: string): number => {
+ const explicitMinor = finiteNumber(variant.price_minor)
+ if (variant.price_minor != null && explicitMinor != null) return Math.trunc(explicitMinor)
+ return majorToMinor(variant.price, currency)
 }
-
-const listPriceMinor = (variant: ProductVariantForm, currency: string): number => priceMinor(variant, 'price', currency) || 0
-const effectiveSellingPriceMinor = (variant: ProductVariantForm, currency: string): number => (
-  priceMinor(variant, 'sale_price', currency) ?? listPriceMinor(variant, currency)
-)
+const effectiveSellingPriceMinor = listPriceMinor
 
 const calculationFor = (index: number): LocalCalculation => {
   const draft = draftAt(index)
@@ -357,12 +350,8 @@ const calculationFor = (index: number): LocalCalculation => {
   const costCurrency = rawCostCurrency || currency
   const warnings: string[] = []
   const variant = props.variants[index] as ProductVariantForm | undefined
-  const listPrice = variant ? listPriceMinor(variant, currency) : 0
-  const salePrice = variant ? priceMinor(variant, 'sale_price', currency) : null
   const sellingPrice = variant ? effectiveSellingPriceMinor(variant, currency) : 0
 
-  if (salePrice == null) warnings.push('sale_price_missing')
-  if (salePrice != null && salePrice > listPrice) warnings.push('sale_price_above_list_price')
   if (!/^[A-Z]{3}$/.test(costCurrency)) {
     return { status: 'invalid', landedCostMinor: null, grossProfitMinor: null, grossMargin: null, currencyMismatch: false, warnings: [...warnings, 'invalid_currency'] }
   }
@@ -417,12 +406,10 @@ const statusClass = (status: CalculationStatus): string => ({
 }[status])
 
 const warningLabel = (warning: string): string => ({
-  sale_price_missing: '未填写促销价，当前按常规售价计算。',
-  sale_price_above_list_price: '促销价高于常规售价，请确认价格关系。',
   negative_gross_profit: '预计单位毛利为负，请确认售价或单位成本。',
   missing_unit_cost: '单位成本价未确认，暂不生成利润数值。',
   currency_mismatch: '成本币种与商品币种不一致，后端不会自动换算。',
-  invalid_selling_price: '实际售价必须大于 0。',
+  invalid_selling_price: '商品售价必须大于 0。',
   invalid_cost: '单位成本价和附加成本必须是有效的非负金额。',
   invalid_currency: '成本币种必须填写有效的三位字母币种代码。',
 }[warning] || warning)

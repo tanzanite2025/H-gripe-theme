@@ -1,7 +1,13 @@
 <template>
   <div class="company-page">
 
-    <h1 class="company-page__title company-page__title--sr-only">{{ t('company.nav.about') }}</h1>
+    <ReusablePageSectionUnderlineTabs
+      :tabs="companyAboutSectionNavigationTabs"
+      :active-id="activeTab"
+      :tab-list-label="t('companyAboutAppearance.navigation.ariaLabel')"
+    />
+
+    <h1 v-if="activeTab !== 'appearance'" class="company-page__title company-page__title--sr-only">{{ t('company.nav.about') }}</h1>
 
     <AboutFactory
       v-if="activeTab === 'factory'"
@@ -15,12 +21,6 @@
       v-else-if="activeTab === 'hole-patterns'"
     />
 
-    <AboutFacility v-else-if="activeTab === 'facility'" />
-
-    <AboutManufacture v-else-if="activeTab === 'manufacture'" />
-
-    <AboutQualityControl v-else-if="activeTab === 'qualitycontrol'" />
-
     <div class="company-feedback">
       <UserFeedbackThread
         threadKey="company-ourstory"
@@ -32,24 +32,57 @@
 </template>
 
 <script setup lang="ts">
-import { useHead, definePageMeta, useI18n } from '#imports'
+import { computed, watch } from 'vue'
+import { useHead, definePageMeta, useI18n, useLocalePath } from '#imports'
 import UserFeedbackThread from '~/components/UserFeedbackThread.vue'
+import ReusablePageSectionUnderlineTabs from '~/components/ReusablePageSectionUnderlineTabs.vue'
 import AboutFactory from '~/components/company/AboutFactory.vue'
 import AboutAppearance from '~/components/company/AboutAppearance.vue'
 import AboutHolePatterns from '~/components/company/AboutHolePatterns.vue'
-import AboutFacility from '~/components/company/AboutFacility.vue'
-import AboutManufacture from '~/components/company/AboutManufacture.vue'
-import AboutQualityControl from '~/components/company/AboutQualityControl.vue'
 import { usePageSubNavigationTab } from '~/composables/usePageSubNavigationTab'
 import { companyAboutTabs } from '~/utils/pageSubNavigation'
+import { usePageMessages } from '~/composables/usePageMessages'
+import { useSiteTitle } from '~/composables/useSiteTitle'
+import { useStorefrontSeoLinks } from '~/composables/seo/useStorefrontSeoLinks'
+import { getStorefrontLocaleLanguageTag } from '~/utils/storefrontLocales'
+import { createSeoJsonLdScript } from '~/utils/seo/jsonLd'
 
-const { t } = useI18n()
+const { locale, t } = useI18n()
 const tabs = companyAboutTabs
-const { activeTab } = usePageSubNavigationTab({
+const { activeTab, localizedTabPath } = usePageSubNavigationTab({
   tabs,
   basePath: '/company/about',
   defaultValue: 'factory',
 })
+
+const { loadPageMessages, resolvedLocale } = usePageMessages('companyAboutAppearance')
+const { siteTitle } = useSiteTitle()
+const { canonicalUrl } = useStorefrontSeoLinks()
+const localePath = useLocalePath()
+
+// All About Us sections use the same translated route navigation.
+await loadPageMessages(locale.value)
+
+watch(locale, (requestedLocale) => {
+  void loadPageMessages(requestedLocale)
+})
+
+const companyAboutSectionNavigationTabs = computed(() => tabs.map(tab => ({
+  id: tab.id,
+  label: t(`companyAboutAppearance.navigation.tabs.${tab.id}`),
+  to: localizedTabPath(tab.id),
+})))
+
+const appearanceSearchTitle = computed(() => {
+  const title = t('companyAboutAppearance.seo.title')
+  const brandName = siteTitle.value.trim()
+  return brandName ? `${title} | ${brandName}` : title
+})
+const appearanceSearchDescription = computed(() => t('companyAboutAppearance.seo.description'))
+const appearanceSocialPreviewImageUrl = computed(() => new URL(
+  '/company/aboutus/appearance/carbon-rim-laser-engraving-LOGO.webp',
+  canonicalUrl.value,
+).toString())
 
 definePageMeta({
   layout: 'products',
@@ -57,9 +90,81 @@ definePageMeta({
   footerLabelFallback: 'About Us',
 })
 
-useHead(() => ({
-  title: t('company.nav.about'),
-}))
+useHead(() => {
+  if (activeTab.value !== 'appearance') {
+    return { title: t('company.nav.about'), meta: [], script: [] }
+  }
+
+  const title = appearanceSearchTitle.value
+  const description = appearanceSearchDescription.value
+  const imageUrl = appearanceSocialPreviewImageUrl.value
+  const imageAlt = t('companyAboutAppearance.seo.imageAlt')
+  const renderedLanguage = getStorefrontLocaleLanguageTag(resolvedLocale.value || locale.value, 'en')
+
+  return {
+    title,
+    titleTemplate: null,
+    meta: [
+      { key: 'description', name: 'description', content: description },
+      { key: 'og:type', property: 'og:type', content: 'website' },
+      { key: 'og:title', property: 'og:title', content: title },
+      { key: 'og:description', property: 'og:description', content: description },
+      { key: 'og:url', property: 'og:url', content: canonicalUrl.value },
+      { key: 'og:locale', property: 'og:locale', content: renderedLanguage.replace(/-/g, '_') },
+      ...(siteTitle.value.trim()
+        ? [{ key: 'og:site_name', property: 'og:site_name', content: siteTitle.value.trim() }]
+        : []),
+      { key: 'og:image', property: 'og:image', content: imageUrl },
+      { key: 'og:image:type', property: 'og:image:type', content: 'image/webp' },
+      { key: 'og:image:width', property: 'og:image:width', content: '1280' },
+      { key: 'og:image:height', property: 'og:image:height', content: '720' },
+      { key: 'og:image:alt', property: 'og:image:alt', content: imageAlt },
+      { key: 'twitter:card', name: 'twitter:card', content: 'summary_large_image' },
+      { key: 'twitter:title', name: 'twitter:title', content: title },
+      { key: 'twitter:description', name: 'twitter:description', content: description },
+      { key: 'twitter:image', name: 'twitter:image', content: imageUrl },
+      { key: 'twitter:image:alt', name: 'twitter:image:alt', content: imageAlt },
+    ],
+    script: [{
+      key: 'company-about-appearance-web-page-and-breadcrumb-structured-data',
+      ...createSeoJsonLdScript({
+        '@context': 'https://schema.org',
+        '@graph': [
+          {
+            '@type': 'WebPage',
+            '@id': `${canonicalUrl.value}#appearance-page`,
+            url: canonicalUrl.value,
+            name: t('companyAboutAppearance.title'),
+            description,
+            inLanguage: renderedLanguage,
+            primaryImageOfPage: {
+              '@type': 'ImageObject',
+              contentUrl: imageUrl,
+              caption: imageAlt,
+              width: 1280,
+              height: 720,
+            },
+            breadcrumb: { '@id': `${canonicalUrl.value}#appearance-breadcrumbs` },
+          },
+          {
+            '@type': 'BreadcrumbList',
+            '@id': `${canonicalUrl.value}#appearance-breadcrumbs`,
+            itemListElement: [
+              { name: t('companyAboutAppearance.seo.breadcrumbHome'), path: localePath('/') },
+              { name: t('company.nav.about'), path: localePath('/company/about') },
+              { name: t('companyAboutAppearance.title'), path: localePath('/company/about/appearance') },
+            ].map((item, index) => ({
+              '@type': 'ListItem',
+              position: index + 1,
+              name: item.name,
+              item: new URL(item.path, canonicalUrl.value).toString(),
+            })),
+          },
+        ],
+      }),
+    }],
+  }
+})
 </script>
 
 <style scoped>
@@ -94,8 +199,6 @@ useHead(() => ({
   font-size: 0.95rem;
   color: var(--tz-text-secondary);
 }
-
-/* Page-level tab entry points are rendered by the header/mobile mega menu. */
 
 .company-section {
   margin-top: 0;

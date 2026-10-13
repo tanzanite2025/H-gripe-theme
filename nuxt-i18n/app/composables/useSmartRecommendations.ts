@@ -124,7 +124,6 @@ const createRecommendationFallbackCard = (
     displayPrices: [],
     prices: {
       regular: 0,
-      sale: 0,
     },
     fulfillmentMode: 'stock',
     availability: 'in_stock',

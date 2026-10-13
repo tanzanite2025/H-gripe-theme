@@ -9,19 +9,11 @@ import (
 	"gorm.io/datatypes"
 )
 
-type ShippingCalculationInput struct {
-	TemplateID  uint
-	Weight      float64
-	Quantity    int
-	AmountMinor int64
-	Country     string
-}
-
 type ShippingQuoteItemInput struct {
 	ProductID                      uint           `json:"product_id"`
 	VariantID                      *uint          `json:"variant_id,omitempty"`
 	ProductSpecificationTemplateID *uint          `json:"product_specification_template_id,omitempty"`
-	ShippingTemplateID             *uint          `json:"shipping_template_id,omitempty"`
+	ShippingTemplateIDs            []uint         `json:"shipping_template_ids,omitempty"`
 	Quantity                       int            `json:"quantity"`
 	UnitPriceMinor                 int64          `json:"unit_price_minor"`
 	WeightGrams                    int            `json:"weight_grams"`
@@ -58,6 +50,7 @@ type ShippingQuoteItem struct {
 	ShippingFeeDecimal             string `json:"-"` // display-only projection
 	ShippingFeeMinor               int64  `json:"shipping_fee_minor"`
 	FreeShipping                   bool   `json:"free_shipping"`
+	TemplateIDs                    []uint `json:"template_ids,omitempty"`
 }
 
 type ShippingQuote struct {
@@ -126,6 +119,7 @@ type ShippingQuoteLeg struct {
 
 type resolvedShippingItem struct {
 	ShippingQuoteItemInput
+	SourceItemIndex      int
 	Amount               domainmoney.Money
 	Template             *shipping.ShippingTemplate
 	PackagingRule        *shipping.PackagingRule

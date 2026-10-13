@@ -467,15 +467,13 @@ func TestQuickBuyProductSnapshotCanonicalizesThumbnailURL(t *testing.T) {
 }
 
 func TestQuickBuyProductSnapshotUsesSelectedVariantSummary(t *testing.T) {
-	saleMinor := int64(11000)
 	variant := productdomain.ProductVariant{
-		ID:             12,
-		SKU:            "QB-VARIANT-12",
-		PriceMinor:     12500,
-		SalePriceMinor: &saleMinor,
-		Currency:       "USD",
-		IsActive:       true,
-		IsDefault:      true,
+		ID:         12,
+		SKU:        "QB-VARIANT-12",
+		PriceMinor: 12500,
+		Currency:   "USD",
+		IsActive:   true,
+		IsDefault:  true,
 	}
 	snapshot := quickBuyProductSnapshotForVariant(productdomain.Product{
 		ID:       91,
@@ -487,7 +485,7 @@ func TestQuickBuyProductSnapshotUsesSelectedVariantSummary(t *testing.T) {
 	require.NoError(t, json.Unmarshal(snapshot, &payload))
 	require.Equal(t, "QB-VARIANT-12", payload["sku"])
 	require.Equal(t, "125.00", payload["price"])
-	require.Equal(t, "110.00", payload["sale_price"])
+	require.NotContains(t, payload, "sale_price")
 	require.Equal(t, 12.0, payload["variant_id"])
 }
 
@@ -797,6 +795,7 @@ func newQuickBuyTestService(t *testing.T) (*gorm.DB, *QuickBuyService) {
 		&productdomain.ProductMedia{},
 		&productdomain.ProductSpecValue{},
 		&productdomain.ProductVariant{},
+		&productdomain.ProductShippingTemplateBinding{},
 		&productdomain.ProductVariantOptionValue{},
 		&quickbuy.Flow{},
 		&quickbuy.FlowTranslation{},

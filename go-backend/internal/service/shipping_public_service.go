@@ -88,9 +88,6 @@ func publicCarrierServiceVisible(service *shipping.CarrierService) bool {
 	if service.Carrier == nil || !service.Carrier.Enabled {
 		return false
 	}
-	if service.Template != nil && !service.Template.Enabled {
-		return false
-	}
 	return true
 }
 

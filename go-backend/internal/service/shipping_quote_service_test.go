@@ -34,40 +34,6 @@ func TestShippingServicePublicCatalogFiltersDisabledResources(t *testing.T) {
 	_, err = shippingService.GetPublicTemplate(disabledTemplate.ID)
 	require.ErrorIs(t, err, ErrShippingNotFound)
 
-	_, err = shippingService.CalculateShipping(ShippingCalculationInput{
-		TemplateID: disabledTemplate.ID,
-		Weight:     1,
-		Country:    "US",
-	})
-	require.ErrorIs(t, err, ErrShippingNotFound)
-}
-
-func TestCalculateShippingRequiresCarrierWeightStepForAdditionalFee(t *testing.T) {
-	_, shippingService := newTestShippingQuoteService(t)
-
-	template := shippingdomain.ShippingTemplate{
-		Name:            "First unit shipping",
-		Type:            "weight",
-		DefaultFeeMinor: 9900,
-		Enabled:         true,
-		Rules: []shippingdomain.ShippingRule{
-			{
-				Region:          "US",
-				MinValue:        0,
-				MaxValue:        10,
-				FeeMinor:        1500,
-				AdditionalMinor: 500,
-			},
-		},
-	}
-	require.NoError(t, shippingService.CreateTemplate(&template))
-
-	_, err := shippingService.CalculateShipping(ShippingCalculationInput{
-		TemplateID: template.ID,
-		Weight:     0.8,
-		Country:    "US",
-	})
-	require.ErrorIs(t, err, ErrShippingRateConfigurationInvalid)
 }
 
 func TestQuoteCartChargesCarrierSpecificAdditionalWeightStep(t *testing.T) {
@@ -85,7 +51,7 @@ func TestQuoteCartChargesCarrierSpecificAdditionalWeightStep(t *testing.T) {
 	require.NoError(t, shippingService.CreateTemplate(&template))
 	record, variant := seedQuoteProduct(t, db, 50, 800, template.ID)
 	carrier := seedQuoteCarrier(t, db, "International Line", "INTL")
-	service := seedQuoteCarrierService(t, db, carrier.ID, template.ID, shippingdomain.CarrierService{
+	service := seedQuoteCustomerBillingTemplateAndCarrierRoute(t, db, carrier.ID, template.ID, shippingdomain.CarrierService{
 		ServiceCode:           "INTL-500G",
 		ServiceName:           "International 500g",
 		Countries:             `["US"]`,
@@ -126,7 +92,7 @@ func TestQuoteCartRejectsAdditionalWeightRuleWithoutCarrierScale(t *testing.T) {
 	require.ErrorIs(t, err, ErrShippingRateConfigurationInvalid)
 }
 
-func TestCreateCarrierServiceRejectsMissingWeightScaleForAdditionalRule(t *testing.T) {
+func TestCarrierIdentityDoesNotRequireCustomerWeightScale(t *testing.T) {
 	db, shippingService := newTestShippingQuoteService(t)
 	template := shippingdomain.ShippingTemplate{
 		Name: "Carrier scale required", Type: "weight", Currency: "USD", DefaultFeeMinor: 9900, Enabled: true,
@@ -135,32 +101,12 @@ func TestCreateCarrierServiceRejectsMissingWeightScaleForAdditionalRule(t *testi
 	require.NoError(t, shippingService.CreateTemplate(&template))
 	carrier := seedQuoteCarrier(t, db, "Configuration Carrier", "CONFIG")
 	service := shippingdomain.CarrierService{
-		CarrierID: carrier.ID, TemplateID: &template.ID, ServiceCode: "CONFIG-MISSING-SCALE",
+		CarrierID: carrier.ID, ServiceCode: "CONFIG-MISSING-SCALE",
 		ServiceName: "Missing scale", Currency: "USD", BillingMode: "actual_weight", Enabled: true,
 	}
 
 	err := shippingService.CreateCarrierService(&service)
-	require.ErrorIs(t, err, ErrShippingRateConfigurationInvalid)
-}
-
-func TestCalculateShippingRejectsUnmatchedCountryWithoutPositiveDefaultFee(t *testing.T) {
-	_, shippingService := newTestShippingQuoteService(t)
-	template := shippingdomain.ShippingTemplate{
-		Name: "Core markets only", Type: "weight", DefaultFeeMinor: 0, Enabled: true,
-		Rules: []shippingdomain.ShippingRule{{Region: "US", MinValue: 0, MaxValue: 10, FeeMinor: 2000}},
-	}
-	require.NoError(t, shippingService.CreateTemplate(&template))
-
-	quote, err := shippingService.CalculateShipping(ShippingCalculationInput{
-		TemplateID: template.ID,
-		Weight:     1,
-		Country:    "BR",
-	})
-
-	assert.Nil(t, quote)
-	require.ErrorIs(t, err, ErrCountryNotSupported)
-	assert.Contains(t, err.Error(), `shipping template "Core markets only"`)
-	assert.Contains(t, err.Error(), "country BR")
+	require.NoError(t, err)
 }
 
 func TestQuoteCartRejectsUnmatchedCountryWithoutPositiveDefaultFee(t *testing.T) {
@@ -240,28 +186,25 @@ func TestShippingServicePublicCarrierServicesRequireVisibleAssociations(t *testi
 
 	visibleService := shippingdomain.CarrierService{
 		CarrierID:   enabledCarrier.ID,
-		TemplateID:  &enabledTemplate.ID,
 		ServiceCode: "visible",
 		ServiceName: "Visible",
 		Enabled:     true,
 	}
 	hiddenByCarrier := shippingdomain.CarrierService{
 		CarrierID:   disabledCarrier.ID,
-		TemplateID:  &enabledTemplate.ID,
 		ServiceCode: "hidden-carrier",
 		ServiceName: "Hidden Carrier",
 		Enabled:     true,
 	}
-	hiddenByTemplate := shippingdomain.CarrierService{
+	hiddenByService := shippingdomain.CarrierService{
 		CarrierID:   enabledCarrier.ID,
-		TemplateID:  &disabledTemplate.ID,
-		ServiceCode: "hidden-template",
-		ServiceName: "Hidden Template",
-		Enabled:     true,
+		ServiceCode: "hidden-service",
+		ServiceName: "Disabled Service",
+		Enabled:     false,
 	}
 	require.NoError(t, shippingService.CreateCarrierService(&visibleService))
 	require.NoError(t, shippingService.CreateCarrierService(&hiddenByCarrier))
-	require.NoError(t, shippingService.CreateCarrierService(&hiddenByTemplate))
+	require.NoError(t, shippingService.CreateCarrierService(&hiddenByService))
 
 	services, err := shippingService.ListPublicCarrierServices()
 	require.NoError(t, err)
@@ -271,7 +214,7 @@ func TestShippingServicePublicCarrierServicesRequireVisibleAssociations(t *testi
 	_, err = shippingService.GetPublicCarrierService(hiddenByCarrier.ID)
 	require.ErrorIs(t, err, ErrShippingNotFound)
 
-	_, err = shippingService.GetPublicCarrierService(hiddenByTemplate.ID)
+	_, err = shippingService.GetPublicCarrierService(hiddenByService.ID)
 	require.ErrorIs(t, err, ErrShippingNotFound)
 }
 
@@ -386,8 +329,10 @@ func TestQuoteCartReturnsDisplayPriceFromStoredShippingSnapshots(t *testing.T) {
 	}
 	require.NoError(t, shippingService.CreateTemplate(&template))
 	record, variant := seedQuoteProduct(t, db, 50, 2500, template.ID)
+	require.NoError(t, db.Model(&productdomain.Product{}).Where("id = ?", record.ID).Update("currency", "CNY").Error)
+	require.NoError(t, db.Model(&productdomain.ProductVariant{}).Where("id = ?", variant.ID).Update("currency", "CNY").Error)
 	carrier := seedQuoteCarrier(t, db, "Display Carrier", "DISPLAY")
-	seedQuoteCarrierService(t, db, carrier.ID, template.ID, shippingdomain.CarrierService{
+	seedQuoteCustomerBillingTemplateAndCarrierRoute(t, db, carrier.ID, template.ID, shippingdomain.CarrierService{
 		ServiceCode: "DISPLAY-500G", ServiceName: "Display 500g", Countries: `["US"]`, BillingMode: "actual_weight",
 		FirstWeightGrams: 1000, AdditionalWeightGrams: 1000,
 	})
@@ -437,8 +382,10 @@ func TestQuoteCartOmitsIncompleteShippingDisplayPrice(t *testing.T) {
 	}
 	require.NoError(t, shippingService.CreateTemplate(&template))
 	record, variant := seedQuoteProduct(t, db, 50, 2500, template.ID)
+	require.NoError(t, db.Model(&productdomain.Product{}).Where("id = ?", record.ID).Update("currency", "CNY").Error)
+	require.NoError(t, db.Model(&productdomain.ProductVariant{}).Where("id = ?", variant.ID).Update("currency", "CNY").Error)
 	carrier := seedQuoteCarrier(t, db, "Incomplete Display Carrier", "DISPLAY-INCOMPLETE")
-	seedQuoteCarrierService(t, db, carrier.ID, template.ID, shippingdomain.CarrierService{
+	seedQuoteCustomerBillingTemplateAndCarrierRoute(t, db, carrier.ID, template.ID, shippingdomain.CarrierService{
 		ServiceCode: "DISPLAY-INCOMPLETE-500G", ServiceName: "Display incomplete 500g", Countries: `["US"]`, BillingMode: "actual_weight",
 		FirstWeightGrams: 1000, AdditionalWeightGrams: 1000,
 	})
@@ -525,7 +472,7 @@ func TestQuoteResolvedItemsAddsConfiguredPackagingWeightDelta(t *testing.T) {
 	quote, err := shippingService.QuoteResolvedItems(ShippingQuoteInput{
 		Country: "US", Currency: "USD",
 		Items: []ShippingQuoteItemInput{{
-			ProductID: record.ID, VariantID: &variant.ID, ShippingTemplateID: &template.ID,
+			ProductID: record.ID, VariantID: &variant.ID, ShippingTemplateIDs: []uint{template.ID},
 			Quantity: 1, UnitPriceMinor: 5000, WeightGrams: 900, PackagingWeightDeltaGrams: 75,
 		}},
 	})
@@ -541,7 +488,7 @@ func TestQuoteCartUsesLowestCarrierServiceOptionWhenAvailable(t *testing.T) {
 	record, variant := seedQuoteProduct(t, db, 50, 900, template.ID)
 	carrier := seedQuoteCarrier(t, db, "DHL", "DHL")
 
-	expensiveService := seedQuoteCarrierService(t, db, carrier.ID, template.ID, shippingdomain.CarrierService{
+	expensiveService := seedQuoteCustomerBillingTemplateAndCarrierRoute(t, db, carrier.ID, template.ID, shippingdomain.CarrierService{
 		ServiceCode:                 "DHL-EXP",
 		ServiceName:                 "DHL Express",
 		Countries:                   `["US"]`,
@@ -552,7 +499,7 @@ func TestQuoteCartUsesLowestCarrierServiceOptionWhenAvailable(t *testing.T) {
 		RemoteSurchargeMinor:        100,
 		SortOrder:                   2,
 	})
-	cheapService := seedQuoteCarrierService(t, db, carrier.ID, template.ID, shippingdomain.CarrierService{
+	cheapService := seedQuoteCustomerBillingTemplateAndCarrierRoute(t, db, carrier.ID, template.ID, shippingdomain.CarrierService{
 		ServiceCode:           "DHL-STD",
 		ServiceName:           "DHL Standard",
 		Countries:             `["US"]`,
@@ -593,10 +540,10 @@ func TestQuoteCartUsesRequestedCarrierServiceOption(t *testing.T) {
 	template := seedWeightQuoteTemplate(t, db)
 	record, variant := seedQuoteProduct(t, db, 50, 900, template.ID)
 	carrier := seedQuoteCarrier(t, db, "DHL", "DHL")
-	cheapService := seedQuoteCarrierService(t, db, carrier.ID, template.ID, shippingdomain.CarrierService{
+	cheapService := seedQuoteCustomerBillingTemplateAndCarrierRoute(t, db, carrier.ID, template.ID, shippingdomain.CarrierService{
 		ServiceCode: "DHL-STD", ServiceName: "DHL Standard", Countries: `["US"]`, BillingMode: "actual_weight", FirstWeightGrams: 500, AdditionalWeightGrams: 500,
 	})
-	expressService := seedQuoteCarrierService(t, db, carrier.ID, template.ID, shippingdomain.CarrierService{
+	expressService := seedQuoteCustomerBillingTemplateAndCarrierRoute(t, db, carrier.ID, template.ID, shippingdomain.CarrierService{
 		ServiceCode: "DHL-EXP", ServiceName: "DHL Express", Countries: `["US"]`, BillingMode: "actual_weight", FirstWeightGrams: 500, AdditionalWeightGrams: 500, RemoteSurchargeMinor: 10000,
 	})
 
@@ -625,7 +572,7 @@ func TestQuoteCartRejectsUnavailableRequestedCarrierService(t *testing.T) {
 	template := seedWeightQuoteTemplate(t, db)
 	record, variant := seedQuoteProduct(t, db, 50, 900, template.ID)
 	carrier := seedQuoteCarrier(t, db, "DHL", "DHL")
-	seedQuoteCarrierService(t, db, carrier.ID, template.ID, shippingdomain.CarrierService{
+	seedQuoteCustomerBillingTemplateAndCarrierRoute(t, db, carrier.ID, template.ID, shippingdomain.CarrierService{
 		ServiceCode: "DHL-STD", ServiceName: "DHL Standard", Countries: `["US"]`, BillingMode: "actual_weight", FirstWeightGrams: 500, AdditionalWeightGrams: 500,
 	})
 	quote, err := shippingService.QuoteCart(ShippingQuoteInput{
@@ -647,7 +594,7 @@ func TestQuoteCartRestoresLockedPlanAfterRateChange(t *testing.T) {
 	template := seedWeightQuoteTemplate(t, db)
 	record, variant := seedQuoteProduct(t, db, 50, 900, template.ID)
 	carrier := seedQuoteCarrier(t, db, "Lock Carrier", "LOCK")
-	seedQuoteCarrierService(t, db, carrier.ID, template.ID, shippingdomain.CarrierService{
+	seedQuoteCustomerBillingTemplateAndCarrierRoute(t, db, carrier.ID, template.ID, shippingdomain.CarrierService{
 		ServiceCode: "LOCK-STD", ServiceName: "Locked Standard", Countries: `["US"]`,
 		BillingMode: "actual_weight",
 	})
@@ -737,7 +684,7 @@ func TestQuoteCartBuildsCompleteCarrierPlanCombinations(t *testing.T) {
 		{templateID: secondTemplate.ID, code: "SECOND-A", surcharge: 0},
 		{templateID: secondTemplate.ID, code: "SECOND-B", surcharge: 2},
 	} {
-		seedQuoteCarrierService(t, db, carrier.ID, serviceInput.templateID, shippingdomain.CarrierService{
+		seedQuoteCustomerBillingTemplateAndCarrierRoute(t, db, carrier.ID, serviceInput.templateID, shippingdomain.CarrierService{
 			ServiceCode: serviceInput.code, ServiceName: serviceInput.code, Countries: `["US"]`,
 			BillingMode: "actual_weight", RemoteSurchargeMinor: int64(serviceInput.surcharge * 100),
 		})
@@ -776,10 +723,10 @@ func TestQuoteCartKeepsCarrierOptionsForMultipleShippingTemplates(t *testing.T) 
 	smallProduct, smallVariant := seedQuoteProduct(t, db, 10, 100, smallTemplate.ID)
 	require.NoError(t, db.Model(&productdomain.ProductVariant{}).Where("id = ?", smallVariant.ID).Update("sku", "SKU-QUOTE-ACCESSORY").Error)
 	carrier := seedQuoteCarrier(t, db, "DHL", "DHL")
-	largeService := seedQuoteCarrierService(t, db, carrier.ID, largeTemplate.ID, shippingdomain.CarrierService{
+	largeService := seedQuoteCustomerBillingTemplateAndCarrierRoute(t, db, carrier.ID, largeTemplate.ID, shippingdomain.CarrierService{
 		ServiceCode: "DHL-LARGE", ServiceName: "DHL Large", Countries: `["US"]`, BillingMode: "actual_weight", FirstWeightGrams: 500, AdditionalWeightGrams: 500, RemoteSurchargeMinor: 400,
 	})
-	smallService := seedQuoteCarrierService(t, db, carrier.ID, smallTemplate.ID, shippingdomain.CarrierService{
+	smallService := seedQuoteCustomerBillingTemplateAndCarrierRoute(t, db, carrier.ID, smallTemplate.ID, shippingdomain.CarrierService{
 		ServiceCode: "DHL-SMALL", ServiceName: "DHL Small", Countries: `["US"]`, BillingMode: "actual_weight", FirstWeightGrams: 500, AdditionalWeightGrams: 500, RemoteSurchargeMinor: 100,
 	})
 
@@ -850,9 +797,13 @@ func TestQuoteCartOmitsPartialCarrierDisplayPriceAcrossTemplates(t *testing.T) {
 	require.NoError(t, shippingRepo.CreateTemplateWithRules(&largeTemplate, largeTemplateRules))
 	require.NoError(t, shippingRepo.CreateTemplateWithRules(&smallTemplate, smallTemplateRules))
 	largeProduct, largeVariant := seedQuoteProduct(t, db, 50, 900, largeTemplate.ID)
+	require.NoError(t, db.Model(&productdomain.Product{}).Where("id = ?", largeProduct.ID).Update("currency", "CNY").Error)
+	require.NoError(t, db.Model(&productdomain.ProductVariant{}).Where("id = ?", largeVariant.ID).Update("currency", "CNY").Error)
 	smallProduct, smallVariant := seedQuoteProduct(t, db, 10, 100, smallTemplate.ID)
+	require.NoError(t, db.Model(&productdomain.Product{}).Where("id = ?", smallProduct.ID).Update("currency", "CNY").Error)
+	require.NoError(t, db.Model(&productdomain.ProductVariant{}).Where("id = ?", smallVariant.ID).Update("currency", "CNY").Error)
 	carrier := seedQuoteCarrier(t, db, "DHL", "DHL")
-	seedQuoteCarrierService(t, db, carrier.ID, largeTemplate.ID, shippingdomain.CarrierService{
+	seedQuoteCustomerBillingTemplateAndCarrierRoute(t, db, carrier.ID, largeTemplate.ID, shippingdomain.CarrierService{
 		ServiceCode: "DHL-REMOTE", ServiceName: "DHL Remote", Countries: `["US"]`, Currency: "CNY",
 		BillingMode: "actual_weight", FirstWeightGrams: 500, AdditionalWeightGrams: 500, RemoteSurchargeMinor: 100,
 	})
@@ -926,7 +877,7 @@ func TestQuoteCartAppliesRemoteSurchargeOnlyForConfiguredPostalRange(t *testing.
 	template := seedWeightQuoteTemplate(t, db)
 	record, variant := seedQuoteProduct(t, db, 50, 900, template.ID)
 	carrier := seedQuoteCarrier(t, db, "Postal Carrier", "POSTAL")
-	service := seedQuoteCarrierService(t, db, carrier.ID, template.ID, shippingdomain.CarrierService{
+	service := seedQuoteCustomerBillingTemplateAndCarrierRoute(t, db, carrier.ID, template.ID, shippingdomain.CarrierService{
 		ServiceCode: "POSTAL-REMOTE", ServiceName: "Postal Remote", Countries: `["US"]`,
 		RemoteSurchargeMinor: 700, RemotePostalCodes: `["10000-10009"]`,
 	})
@@ -1000,7 +951,7 @@ func TestQuoteCartUsesPackagingDimensionsForVolumetricCarrierService(t *testing.
 		ProductID: record.ID,
 	}).Error)
 
-	service := seedQuoteCarrierService(t, db, carrier.ID, template.ID, shippingdomain.CarrierService{
+	service := seedQuoteCustomerBillingTemplateAndCarrierRoute(t, db, carrier.ID, template.ID, shippingdomain.CarrierService{
 		ServiceCode:       "YUN-VOL",
 		ServiceName:       "YunExpress Volumetric",
 		Countries:         `["US"]`,
@@ -1055,7 +1006,7 @@ func TestQuoteCartKeepsKnownVolumetricWeightWhenAccessoryLacksPackagingRule(t *t
 		ProductID: wheelset.ID,
 	}).Error)
 
-	service := seedQuoteCarrierService(t, db, carrier.ID, template.ID, shippingdomain.CarrierService{
+	service := seedQuoteCustomerBillingTemplateAndCarrierRoute(t, db, carrier.ID, template.ID, shippingdomain.CarrierService{
 		ServiceCode:       "DHL-WHEELSET",
 		ServiceName:       "DHL Wheelset Express",
 		Countries:         `["US"]`,
@@ -1107,7 +1058,7 @@ func TestQuoteCartOmitsVolumetricOnlyCarrierServiceWhenAccessoryLacksPackagingRu
 		RuleID:    packagingRule.ID,
 		ProductID: wheelset.ID,
 	}).Error)
-	seedQuoteCarrierService(t, db, carrier.ID, template.ID, shippingdomain.CarrierService{
+	seedQuoteCustomerBillingTemplateAndCarrierRoute(t, db, carrier.ID, template.ID, shippingdomain.CarrierService{
 		ServiceCode:       "DHL-VOLUMETRIC-ONLY",
 		ServiceName:       "DHL Volumetric Only",
 		Countries:         `["US"]`,
@@ -1115,7 +1066,7 @@ func TestQuoteCartOmitsVolumetricOnlyCarrierServiceWhenAccessoryLacksPackagingRu
 		VolumetricDivisor: 5000,
 	})
 
-	quote, err := shippingService.QuoteCart(ShippingQuoteInput{
+	_, err := shippingService.QuoteCart(ShippingQuoteInput{
 		Country:  "US",
 		Currency: "USD",
 		Items: []ShippingQuoteItemInput{
@@ -1124,13 +1075,7 @@ func TestQuoteCartOmitsVolumetricOnlyCarrierServiceWhenAccessoryLacksPackagingRu
 		},
 	})
 
-	require.NoError(t, err)
-	require.NotNil(t, quote)
-	require.Len(t, quote.Plans, 1)
-	leg := requireSelectedQuoteLeg(t, quote)
-	assert.Zero(t, leg.CarrierServiceID)
-	assert.Equal(t, "template", leg.BillingMode)
-	assert.Equal(t, "18.00", quote.ShippingFeeDecimal)
+	require.ErrorIs(t, err, ErrShippingQuotePlanUnavailable)
 }
 
 func TestQuoteCartFallsBackToActualWeightWhenGreaterOfLacksVolumetricWeight(t *testing.T) {
@@ -1139,7 +1084,7 @@ func TestQuoteCartFallsBackToActualWeightWhenGreaterOfLacksVolumetricWeight(t *t
 	record, variant := seedQuoteProduct(t, db, 50, 900, template.ID)
 	carrier := seedQuoteCarrier(t, db, "DHL", "DHL")
 
-	service := seedQuoteCarrierService(t, db, carrier.ID, template.ID, shippingdomain.CarrierService{
+	service := seedQuoteCustomerBillingTemplateAndCarrierRoute(t, db, carrier.ID, template.ID, shippingdomain.CarrierService{
 		ServiceCode:       "DHL-GREATER-OF",
 		ServiceName:       "DHL Greater Of",
 		Countries:         `["US"]`,
@@ -1195,9 +1140,7 @@ func TestQuoteCartUsesVariantShippingTemplateOverride(t *testing.T) {
 	productTemplate := seedWeightQuoteTemplate(t, db)
 	variantTemplate := seedWeightQuoteTemplate(t, db)
 	record, variant := seedQuoteProduct(t, db, 50, 900, productTemplate.ID)
-	require.NoError(t, db.Model(&productdomain.ProductVariant{}).
-		Where("id = ?", variant.ID).
-		Update("shipping_template_id", variantTemplate.ID).Error)
+	require.NoError(t, repository.NewProductRepository(db).ReplaceProductShippingTemplateBindings(record.ID, &variant.ID, []uint{variantTemplate.ID}))
 
 	quote, err := shippingService.QuoteCart(ShippingQuoteInput{
 		Country:  "US",
@@ -1250,6 +1193,9 @@ func newTestShippingQuoteService(t *testing.T) (*gorm.DB, *ShippingService) {
 		&productdomain.ProductMedia{},
 		&productdomain.ProductSpecValue{},
 		&productdomain.ProductVariant{},
+		&productdomain.ProductShippingTemplateBinding{},
+		&shippingdomain.ShippingRouteGroup{},
+		&shippingdomain.ShippingRouteGroupCarrierService{},
 		&shippingdomain.ShippingTemplate{},
 		&shippingdomain.ShippingRule{},
 		&shippingdomain.ShippingDisplayPriceSnapshot{},
@@ -1276,10 +1222,6 @@ func seedQuoteProduct(t *testing.T, db *gorm.DB, price float64, weightGrams int,
 	priceMoney, err := domainmoney.FromMajorFloat(price, "USD")
 	require.NoError(t, err)
 
-	var shippingTemplateID *uint
-	if len(shippingTemplateIDs) > 0 {
-		shippingTemplateID = &shippingTemplateIDs[0]
-	}
 	var productCount int64
 	require.NoError(t, db.Model(&productdomain.Product{}).Count(&productCount).Error)
 	suffix := ""
@@ -1287,13 +1229,13 @@ func seedQuoteProduct(t *testing.T, db *gorm.DB, price float64, weightGrams int,
 		suffix = fmt.Sprintf("-%d", productCount+1)
 	}
 	record := productdomain.Product{
-		ShippingTemplateID: shippingTemplateID,
-		SKU:                "SKU-QUOTE" + suffix,
-		Name:               "Quote Product",
-		Slug:               "quote-product" + suffix,
-		PriceMinor:         priceMoney.AmountMinor(),
-		Stock:              10,
-		Status:             "active",
+		ShippingTemplateIDs: append([]uint(nil), shippingTemplateIDs...),
+		SKU:                 "SKU-QUOTE" + suffix,
+		Name:                "Quote Product",
+		Slug:                "quote-product" + suffix,
+		PriceMinor:          priceMoney.AmountMinor(),
+		Stock:               10,
+		Status:              "active",
 	}
 	require.NoError(t, db.Create(&record).Error)
 
@@ -1309,6 +1251,7 @@ func seedQuoteProduct(t *testing.T, db *gorm.DB, price float64, weightGrams int,
 		IsActive:     true,
 	}
 	require.NoError(t, db.Create(&variant).Error)
+	require.NoError(t, repository.NewProductRepository(db).ReplaceProductShippingTemplateBindings(record.ID, nil, shippingTemplateIDs))
 
 	return record, variant
 }
@@ -1350,11 +1293,32 @@ func requireSelectedQuoteLeg(t *testing.T, quote *ShippingQuote) ShippingQuoteLe
 	return quote.SelectedPlan.Legs[0]
 }
 
-func seedQuoteCarrierService(t *testing.T, db *gorm.DB, carrierID uint, templateID uint, input shippingdomain.CarrierService) shippingdomain.CarrierService {
+// The customer settings in this historical fixture shape are explicitly
+// persisted to a customer billing template, independently from route identity.
+func seedQuoteCustomerBillingTemplateAndCarrierRoute(t *testing.T, db *gorm.DB, carrierID uint, templateID uint, input shippingdomain.CarrierService) shippingdomain.CarrierService {
 	t.Helper()
-
+	shippingRepo := repository.NewShippingRepository(db)
+	template, err := shippingRepo.FindTemplateByID(templateID)
+	require.NoError(t, err)
+	hasExistingAggregate := template.RouteGroupID != nil
+	customerTemplate := *template
+	customerTemplate.CustomerBillingMode = input.BillingMode
+	if customerTemplate.CustomerBillingMode == "" {
+		customerTemplate.CustomerBillingMode = "actual_weight"
+	}
+	customerTemplate.CustomerFirstWeightGrams = input.FirstWeightGrams
+	customerTemplate.CustomerAdditionalWeightGrams = input.AdditionalWeightGrams
+	customerTemplate.CustomerMinChargeWeightGrams = input.MinChargeWeightGrams
+	customerTemplate.CustomerVolumetricDivisor = input.VolumetricDivisor
+	if customerTemplate.CustomerVolumetricDivisor == 0 {
+		customerTemplate.CustomerVolumetricDivisor = 6000
+	}
+	customerTemplate.CustomerFuelSurchargePercentDecimal = input.FuelSurchargePercentDecimal
+	customerTemplate.CustomerRemoteSurchargeMinor = input.RemoteSurchargeMinor
+	customerTemplate.CustomerRemotePostalCodes = input.RemotePostalCodes
+	customerTemplate.CustomerEtaMinDays = input.EtaMinDays
+	customerTemplate.CustomerEtaMaxDays = input.EtaMaxDays
 	input.CarrierID = carrierID
-	input.TemplateID = &templateID
 	if input.Countries == "" {
 		input.Countries = "[]"
 	}
@@ -1369,5 +1333,26 @@ func seedQuoteCarrierService(t *testing.T, db *gorm.DB, carrierID uint, template
 	}
 	input.Enabled = true
 	require.NoError(t, db.Create(&input).Error)
+	aggregate := shippingdomain.ShippingRouteGroup{Name: input.ServiceName + " published route", Enabled: true}
+	require.NoError(t, shippingRepo.CreateShippingRouteGroup(&aggregate, []uint{input.ID}))
+	customerTemplate.RouteGroupID = &aggregate.ID
+	if !hasExistingAggregate {
+		require.NoError(t, shippingRepo.UpdateTemplateWithRules(&customerTemplate, customerTemplate.Rules))
+	} else {
+		customerTemplate.ID = 0
+		customerTemplate.Name += " / " + input.ServiceName
+		customerTemplate.RouteGroup = nil
+		customerTemplate.CreatedAt = time.Time{}
+		customerTemplate.UpdatedAt = time.Time{}
+		require.NoError(t, shippingRepo.CreateTemplateWithRules(&customerTemplate, customerTemplate.Rules))
+		var products []productdomain.Product
+		require.NoError(t, db.Where("id IN (?)", db.Model(&productdomain.ProductShippingTemplateBinding{}).Select("product_id").Where("shipping_template_id = ? AND variant_id IS NULL", templateID)).Find(&products).Error)
+		productRepo := repository.NewProductRepository(db)
+		for _, product := range products {
+			ids, err := productRepo.FindPurchasableShippingTemplateIDs(product.ID, nil)
+			require.NoError(t, err)
+			require.NoError(t, productRepo.ReplaceProductShippingTemplateBindings(product.ID, nil, append(ids, customerTemplate.ID)))
+		}
+	}
 	return input
 }

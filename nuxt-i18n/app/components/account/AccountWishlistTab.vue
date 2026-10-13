@@ -84,7 +84,6 @@ interface ProductLike {
   thumbnail?: string
   price_decimal?: string
   currency?: string
-  sale_price_decimal?: string | null
 }
 
 const { t } = useI18n()
@@ -131,7 +130,7 @@ const productPath = (item: WishlistItem) => {
 
 const rawPrice = (item: WishlistItem) => {
   const product = productOf(item)
-  return toNumber(product.sale_price_decimal ?? product.price_decimal)
+  return toNumber(product.price_decimal)
 }
 
 const displayPrice = (item: WishlistItem) => {

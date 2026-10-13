@@ -14,21 +14,20 @@ import (
 )
 
 type ProductVariantInput struct {
-	ID                 *uint
-	ShippingTemplateID *uint
-	SKU                string
-	Title              string
-	OptionValues       map[string]string
-	Currency           string
-	PriceMinor         int64
-	SalePriceMinor     *int64
-	Stock              int
-	Weight             int
-	IsDefault          bool
-	IsActive           *bool
-	SortOrder          int
-	OptionGroupRules   []product.ProductOptionGroupVariantRule
-	OptionValueRules   []product.ProductOptionValueVariantRule
+	ID                  *uint
+	ShippingTemplateIDs []uint
+	SKU                 string
+	Title               string
+	OptionValues        map[string]string
+	Currency            string
+	PriceMinor          int64
+	Stock               int
+	Weight              int
+	IsDefault           bool
+	IsActive            *bool
+	SortOrder           int
+	OptionGroupRules    []product.ProductOptionGroupVariantRule
+	OptionValueRules    []product.ProductOptionValueVariantRule
 }
 
 func (s *ProductService) buildSpecValues(productSpecificationTemplateID *uint, values map[string]string, excludeProductID uint) ([]product.ProductSpecValue, error) {
@@ -191,16 +190,8 @@ func (s *ProductService) buildVariants(productSpecificationTemplateID *uint, inp
 		if input.Stock < 0 {
 			return nil, fmt.Errorf("%w: stock cannot be negative for %s", ErrProductVariantInvalid, input.SKU)
 		}
-		if input.SalePriceMinor != nil && *input.SalePriceMinor < 0 {
-			return nil, fmt.Errorf("%w: sale_price cannot be negative for %s", ErrProductVariantInvalid, input.SKU)
-		}
 		if _, conversionErr := domainmoney.New(input.PriceMinor, variantCurrency); conversionErr != nil {
 			return nil, fmt.Errorf("%w: invalid price for %s", ErrProductVariantInvalid, input.SKU)
-		}
-		if input.SalePriceMinor != nil {
-			if _, saleErr := domainmoney.New(*input.SalePriceMinor, variantCurrency); saleErr != nil {
-				return nil, fmt.Errorf("%w: invalid sale_price for %s", ErrProductVariantInvalid, input.SKU)
-			}
 		}
 		skuKey := strings.ToLower(input.SKU)
 		if _, exists := seenSKU[skuKey]; exists {
@@ -229,20 +220,19 @@ func (s *ProductService) buildVariants(productSpecificationTemplateID *uint, inp
 		}
 
 		variant := product.ProductVariant{
-			ShippingTemplateID: input.ShippingTemplateID,
-			SKU:                input.SKU,
-			Title:              strings.TrimSpace(input.Title),
-			OptionValues:       optionJSON,
-			Currency:           variantCurrency,
-			PriceMinor:         input.PriceMinor,
-			SalePriceMinor:     input.SalePriceMinor,
-			Stock:              input.Stock,
-			Weight:             input.Weight,
-			IsDefault:          input.IsDefault,
-			IsActive:           isActive,
-			SortOrder:          input.SortOrder,
-			OptionGroupRules:   input.OptionGroupRules,
-			OptionValueRules:   input.OptionValueRules,
+			ShippingTemplateIDs: append([]uint(nil), input.ShippingTemplateIDs...),
+			SKU:                 input.SKU,
+			Title:               strings.TrimSpace(input.Title),
+			OptionValues:        optionJSON,
+			Currency:            variantCurrency,
+			PriceMinor:          input.PriceMinor,
+			Stock:               input.Stock,
+			Weight:              input.Weight,
+			IsDefault:           input.IsDefault,
+			IsActive:            isActive,
+			SortOrder:           input.SortOrder,
+			OptionGroupRules:    input.OptionGroupRules,
+			OptionValueRules:    input.OptionValueRules,
 		}
 		if input.ID != nil {
 			variant.ID = *input.ID

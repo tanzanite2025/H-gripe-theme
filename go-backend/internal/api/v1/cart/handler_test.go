@@ -285,11 +285,11 @@ func seedPurchasableProduct(t *testing.T, db *gorm.DB) product.Product {
 	t.Helper()
 
 	productRecord := product.Product{
-		SKU:   "CART-HANDLER-RIM",
-		Name:  "Cart Handler Rim",
-		Slug:  "cart-handler-rim",
+		SKU:        "CART-HANDLER-RIM",
+		Name:       "Cart Handler Rim",
+		Slug:       "cart-handler-rim",
 		PriceMinor: 10000,
-		Stock: 10,
+		Stock:      10,
 	}
 	require.NoError(t, db.Create(&productRecord).Error)
 
@@ -353,6 +353,7 @@ func newCartHandlerTestEnv(t *testing.T) (*gorm.DB, *Handler) {
 		&product.ProductMedia{},
 		&product.ProductSpecValue{},
 		&product.ProductVariant{},
+		&product.ProductShippingTemplateBinding{},
 		&product.Cart{},
 		&product.CartItem{},
 		&visitor.Profile{},

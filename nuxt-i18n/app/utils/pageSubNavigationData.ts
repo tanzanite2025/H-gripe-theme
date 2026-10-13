@@ -124,27 +124,6 @@ export const companyAboutTabs = [
     descriptionKey: 'company.aboutTabs.holePatterns.description',
     description: 'Drilling layouts for rim, spoke, and hub matching.',
   },
-  {
-    id: 'facility',
-    labelKey: 'company.aboutTabs.facility.label',
-    fallback: 'Facility',
-    descriptionKey: 'company.aboutTabs.facility.description',
-    description: 'Equipment, work areas, and production capacity.',
-  },
-  {
-    id: 'manufacture',
-    labelKey: 'company.aboutTabs.manufacture.label',
-    fallback: 'Manufacture',
-    descriptionKey: 'company.aboutTabs.manufacture.description',
-    description: 'Manufacturing process, build steps, and workflow.',
-  },
-  {
-    id: 'qualitycontrol',
-    labelKey: 'company.aboutTabs.qualityControl.label',
-    fallback: 'Quality control',
-    descriptionKey: 'company.aboutTabs.qualityControl.description',
-    description: 'Inspection standards, testing, and QC checkpoints.',
-  },
 ] as const satisfies readonly PageSubNavigationTab[]
 
 export type CompanyAboutTabId = (typeof companyAboutTabs)[number]['id']

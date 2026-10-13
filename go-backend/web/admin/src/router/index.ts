@@ -500,11 +500,11 @@ const routes: RouteRecordRaw[] = [
       },
       {
         path: 'shipping',
-        redirect: domainRedirect('ShippingTemplates', {
-          overview: 'ShippingTemplates',
-          templates: 'ShippingTemplates',
+        redirect: domainRedirect('ShippingRouteAggregates', {
+          overview: 'ShippingRouteAggregates',
+          routeAggregates: 'ShippingRouteAggregates',
+          templates: 'ShippingCustomerBillingTemplates',
           carriers: 'ShippingCarriers',
-          services: 'ShippingServices',
           packaging: 'ShippingPackaging',
           tracking: 'ShippingTracking',
           trackingShipments: 'ShippingTrackingShipments',
@@ -512,10 +512,10 @@ const routes: RouteRecordRaw[] = [
         meta: { permission: 'shipping:view' }
       },
       {
-        path: 'shipping/templates',
-        name: 'ShippingTemplates',
+        path: 'shipping/route-aggregates',
+        name: 'ShippingRouteAggregates',
         component: () => import('@/views/Shipping.vue'),
-        meta: { title: '运费模板', permission: 'shipping:view' }
+        meta: { title: '聚合线路', permission: 'shipping:view' }
       },
       {
         path: 'shipping/carriers',
@@ -524,10 +524,10 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '承运商', permission: 'shipping:view' }
       },
       {
-        path: 'shipping/services',
-        name: 'ShippingServices',
+        path: 'shipping/customer-billing-templates',
+        name: 'ShippingCustomerBillingTemplates',
         component: () => import('@/views/Shipping.vue'),
-        meta: { title: '本地计费线路', permission: 'shipping:view' }
+        meta: { title: '线路计费模板', permission: 'shipping:view' }
       },
       {
         path: 'shipping/packaging',

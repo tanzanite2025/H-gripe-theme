@@ -45,7 +45,6 @@ export interface ShopProduct {
   displayPrices: ShopProductDisplayPrice[]
   prices: {
     regular: number
-    sale: number
   }
   fulfillmentMode: ShopProductFulfillmentMode
   availability: ShopProductAvailability
@@ -112,8 +111,6 @@ export interface ShopProductVariant {
   priceNumber: number
   currency: string
   price_decimal?: string
-  salePriceNumber: number | null
-  sale_price_decimal?: string | null
   displayPrices: ShopProductDisplayPrice[]
   availability: ShopProductAvailability
   weightGrams?: number
@@ -440,9 +437,7 @@ const normalizeVariant = (
   if (!id) return null
 
   const regular = toFiniteNumber(variant?.price_decimal)
-  const sale = toOptionalNumber(variant?.sale_price_decimal)
-  const salePriceNumber = sale && sale > 0 ? sale : null
-  const priceNumber = salePriceNumber ?? regular
+  const priceNumber = regular
   const variantCurrency = normalizeCurrencyCode(variant?.currency) || normalizeCurrencyCode(fallbackCurrency) || 'USD'
   const displayPrices = normalizeDisplayPrices(variant?.display_prices, variantCurrency)
   const optionValues = parseOptionValues(variant?.option_values)
@@ -459,8 +454,6 @@ const normalizeVariant = (
     priceNumber,
     currency: variantCurrency,
     price_decimal: String(variant?.price_decimal ?? ''),
-    salePriceNumber,
-    sale_price_decimal: variant?.sale_price_decimal == null ? null : String(variant.sale_price_decimal),
     displayPrices,
     availability: normalizeAvailability(variant?.availability),
     ...(weightGrams ? { weightGrams } : {}),
@@ -482,11 +475,7 @@ export const normalizeShopProduct = (
     item?.prices?.regular,
     toFiniteNumber(defaultVariant?.price_decimal, toFiniteNumber(item?.price_decimal))
   )
-  const sale = toFiniteNumber(
-    item?.prices?.sale,
-    toFiniteNumber(defaultVariant?.sale_price_decimal, toFiniteNumber(item?.sale_price_decimal))
-  )
-  const priceNumber = sale > 0 ? sale : regular > 0 ? regular : 0
+  const priceNumber = regular > 0 ? regular : 0
   const productCurrency = normalizeCurrencyCode(defaultVariant?.currency || item?.currency) || normalizeCurrencyCode(fallbackCurrency) || 'USD'
   const displayPrice = normalizeDisplayPrice(item?.display_price, priceNumber, productCurrency)
   const displayPrices = normalizeDisplayPrices(item?.display_prices, productCurrency)
@@ -549,7 +538,6 @@ export const normalizeShopProduct = (
     displayPrices,
     prices: {
       regular,
-      sale,
     },
     fulfillmentMode,
     availability: normalizeAvailability(item?.availability),
@@ -677,7 +665,7 @@ export function useShopProducts() {
       : product.variants.find(variant => variant.isDefault) || product.variants[0] || null
     const currency = normalizeCurrencyCode(options.currency || selectedVariant?.currency || product.currency) || baseCurrency.value || 'USD'
     const priceMinor = options.priceMinor ?? majorToMinor(
-      product.prices.sale > 0 ? product.prices.sale : product.priceNumber,
+      product.priceNumber,
       currency,
     )
     const variantThumbnail = selectedVariant?.thumbnail || selectedVariant?.image

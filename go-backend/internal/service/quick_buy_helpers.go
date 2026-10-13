@@ -202,7 +202,7 @@ func (s *QuickBuyService) sessionItemFromSelection(session quickbuy.Session, ver
 	}
 
 	variantID := variant.ID
-	priceMoney, err := variant.EffectivePriceMoney()
+	priceMoney, err := variant.PriceMoney()
 	if err != nil {
 		return nil, false, fmt.Errorf("%w: product %d price is invalid: %v", ErrQuickBuyInvalid, selection.ProductID, err)
 	}

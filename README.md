@@ -238,7 +238,9 @@ If a frontend build fails immediately after checkout, run `npm install` in that 
 - Wheelset fit questionnaire specification: `docs/design/wheelset-fit-questionnaire-specification.md`
 - Distributed locks, task state machine, and idempotency architecture: `docs/design/distributed-lock-task-state-machine-idempotency-architecture.md`
 - Internal payment-provider cost accounting and profit snapshots: `docs/design/payment-provider-cost-accounting-architecture.md`
-- Multi-carrier logistics three-tier short-link architecture and carrier SPI: `docs/design/cross-border-logistics-three-tier-architecture.md`
+- Multi-carrier logistics three-tier short-link architecture: `docs/design/cross-border-logistics-three-tier-architecture.md`
+- Published route identity, customer billing templates, provider-cost isolation and Nuxt contract: `docs/design/shipping-service-collection-data-contract.md`
+- Customer shipping quote plans and price-lock architecture: `docs/design/shipping-quote-plan-architecture.md`
 - Yanwen small-packet cross-border logistics implementation specification: `docs/design/yanwen/yanwen-logistics-hub-integration-architecture.md`
 - 4PX service catalog and gateway integration specification: `docs/design/4px/4px-logistics-hub-integration-architecture.md`
 - Customer service workbench deep interaction bugs and remediation spec: `docs/design/customer-service-workbench-deep-bugs-and-interaction-spec.md`

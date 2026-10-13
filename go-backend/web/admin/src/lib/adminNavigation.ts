@@ -325,9 +325,9 @@ export const adminNavigationItems: AdminNavigationItem[] = [
     icon: Truck,
     permission: 'shipping:view',
     children: [
-      { id: 'shipping-templates', path: '/shipping/templates', routeName: 'ShippingTemplates', label: '运费模板' },
+      { id: 'shipping-route-aggregates', path: '/shipping/route-aggregates', routeName: 'ShippingRouteAggregates', label: '聚合线路' },
       { id: 'shipping-carriers', path: '/shipping/carriers', routeName: 'ShippingCarriers', label: '承运商' },
-      { id: 'shipping-services', path: '/shipping/services', routeName: 'ShippingServices', label: '本地计费线路' },
+      { id: 'shipping-customer-billing-templates', path: '/shipping/customer-billing-templates', routeName: 'ShippingCustomerBillingTemplates', label: '线路计费模板' },
       { id: 'shipping-packaging', path: '/shipping/packaging', routeName: 'ShippingPackaging', label: '包装规则' },
       { id: 'shipping-tracking', path: '/shipping/tracking', routeName: 'ShippingTracking', label: '追踪配置' },
       { id: 'shipping-tracking-shipments', path: '/shipping/trackingshipments', routeName: 'ShippingTrackingShipments', label: '追踪任务' },

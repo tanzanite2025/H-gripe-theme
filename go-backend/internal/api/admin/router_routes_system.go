@@ -143,6 +143,11 @@ func registerSystemRoutes(
 		shippingGroup.POST("/templates/:id/rules", middleware.RequirePermission(auth.PermShippingEdit), shippingHandler.CreateTemplateRule)
 		shippingGroup.PUT("/templates/:id/rules/:ruleId", middleware.RequirePermission(auth.PermShippingEdit), shippingHandler.UpdateTemplateRule)
 		shippingGroup.DELETE("/templates/:id/rules/:ruleId", middleware.RequirePermission(auth.PermShippingEdit), shippingHandler.DeleteTemplateRule)
+		shippingGroup.GET("/route-aggregates", shippingHandler.ListShippingRouteGroups)
+		shippingGroup.GET("/route-aggregates/:id", shippingHandler.GetShippingRouteGroup)
+		shippingGroup.POST("/route-aggregates", middleware.RequirePermission(auth.PermShippingCreate), shippingHandler.CreateShippingRouteGroup)
+		shippingGroup.PUT("/route-aggregates/:id", middleware.RequirePermission(auth.PermShippingEdit), shippingHandler.UpdateShippingRouteGroup)
+		shippingGroup.DELETE("/route-aggregates/:id", middleware.RequirePermission(auth.PermShippingDelete), shippingHandler.DeleteShippingRouteGroup)
 
 		shippingGroup.GET("/packaging-rules", shippingHandler.ListPackagingRules)
 		shippingGroup.GET("/packaging-rules/:id", shippingHandler.GetPackagingRule)

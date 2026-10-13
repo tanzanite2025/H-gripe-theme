@@ -189,8 +189,7 @@ func newProductSupplierCostRecordOptionsHandlerTestDB(t *testing.T) *gorm.DB {
 			sku TEXT NOT NULL,
 			title TEXT,
 			currency TEXT NOT NULL,
-			price REAL NOT NULL,
-			sale_price REAL,
+			price_minor BIGINT NOT NULL,
 			is_active BOOLEAN NOT NULL DEFAULT TRUE,
 			deleted_at DATETIME
 		)
@@ -200,8 +199,8 @@ func newProductSupplierCostRecordOptionsHandlerTestDB(t *testing.T) *gorm.DB {
 			(21, 'Handler option product', 'active', NULL)
 	`).Error)
 	require.NoError(t, db.Exec(`
-		INSERT INTO product_variants (id, product_id, sku, title, currency, price, sale_price, is_active, deleted_at) VALUES
-			(201, 21, 'SKU-HANDLER-OPTION', 'Default', 'USD', 100, 90, TRUE, NULL)
+		INSERT INTO product_variants (id, product_id, sku, title, currency, price_minor, is_active, deleted_at) VALUES
+			(201, 21, 'SKU-HANDLER-OPTION', 'Default', 'USD', 10000, TRUE, NULL)
 	`).Error)
 	return db
 }

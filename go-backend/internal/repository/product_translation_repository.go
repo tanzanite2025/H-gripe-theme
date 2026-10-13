@@ -202,6 +202,31 @@ func (r *ProductRepository) CreateTranslatedCopy(source, target *product.Product
 			}
 		}
 
+		// Copy the canonical selections and map SKU ownership to the new rows.
+		// This does not inspect carrier routes or reinterpret shipping prices.
+		var sourceBindings []product.ProductShippingTemplateBinding
+		if err := tx.Where("product_id = ?", source.ID).Find(&sourceBindings).Error; err != nil {
+			return err
+		}
+		copiedBindings := make([]product.ProductShippingTemplateBinding, 0, len(sourceBindings))
+		for _, binding := range sourceBindings {
+			binding.ID = 0
+			binding.ProductID = target.ID
+			if binding.VariantID != nil {
+				translatedVariantID, exists := variantIDs[*binding.VariantID]
+				if !exists {
+					continue
+				}
+				binding.VariantID = &translatedVariantID
+			}
+			copiedBindings = append(copiedBindings, binding)
+		}
+		if len(copiedBindings) > 0 {
+			if err := tx.Create(&copiedBindings).Error; err != nil {
+				return err
+			}
+		}
+
 		if len(source.Media) > 0 {
 			mediaItems := make([]product.ProductMedia, 0, len(source.Media))
 			for _, sourceMedia := range source.Media {

@@ -75,7 +75,6 @@ type GoogleMerchantRemoteAttributes struct {
 	Condition             string                     `json:"condition"`
 	GoogleProductCategory string                     `json:"google_product_category"`
 	Price                 *GoogleMerchantRemotePrice `json:"price,omitempty"`
-	SalePrice             *GoogleMerchantRemotePrice `json:"sale_price,omitempty"`
 }
 
 type GoogleMerchantRemoteDestinationStatus struct {
@@ -138,7 +137,6 @@ type googleMerchantAPIAttributes struct {
 	Condition             string                  `json:"condition"`
 	GoogleProductCategory string                  `json:"googleProductCategory"`
 	Price                 *googleMerchantAPIPrice `json:"price"`
-	SalePrice             *googleMerchantAPIPrice `json:"salePrice"`
 }
 
 type googleMerchantAPIDestinationStatus struct {
@@ -726,7 +724,6 @@ func toGoogleMerchantRemoteProductPage(apiPage googleMerchantAPIProductPage) *Go
 				Condition:             apiProduct.ProductAttributes.Condition,
 				GoogleProductCategory: apiProduct.ProductAttributes.GoogleProductCategory,
 				Price:                 toGoogleMerchantRemotePrice(apiProduct.ProductAttributes.Price),
-				SalePrice:             toGoogleMerchantRemotePrice(apiProduct.ProductAttributes.SalePrice),
 			},
 			Archived:      apiProduct.Archived,
 			VersionNumber: apiProduct.VersionNumber,

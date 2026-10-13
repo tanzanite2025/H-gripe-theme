@@ -24,25 +24,17 @@ func (s *ShippingService) quoteShipmentPlans(
 		return nil, nil
 	}
 
-	carrierServices, err := s.shippingRepo.FindEnabledCarrierServicesWithTemplates()
+	routeGroupIDs := make([]uint, 0, len(groups))
+	for _, group := range groups {
+		if group != nil && group.Template != nil && group.Template.RouteGroupID != nil {
+			routeGroupIDs = append(routeGroupIDs, *group.Template.RouteGroupID)
+		}
+	}
+	carrierServices, err := s.shippingRepo.FindEnabledCarrierServicesForRouteAggregates(routeGroupIDs)
 	if err != nil {
 		return nil, err
 	}
-	// Only project carrier routes that can participate in this quote. A cart
-	// using the system free-shipping template must remain independent from
-	// unrelated 4PX or Yanwen collection state elsewhere in the catalog.
-	relevantCarrierServices := make([]shipping.CarrierService, 0, len(carrierServices))
-	for _, carrierService := range carrierServices {
-		if carrierService.TemplateID == nil {
-			continue
-		}
-		if _, usedByQuote := groups[*carrierService.TemplateID]; !usedByQuote {
-			continue
-		}
-		relevantCarrierServices = append(relevantCarrierServices, carrierService)
-	}
-	carrierServices = relevantCarrierServices
-	carrierServices, templatesWithPublishedCollectionRoutes, err := s.projectCarrierServicesFromPublishedCollections(carrierServices)
+	carrierServices, aggregatesWithPublishedCollectionRoutes, err := s.projectCarrierServicesFromPublishedCollections(carrierServices)
 	if err != nil {
 		return nil, err
 	}
@@ -50,28 +42,34 @@ func (s *ShippingService) quoteShipmentPlans(
 	legsByTemplate := make(map[uint][]ShippingQuoteLeg, len(groups))
 	for i := range carrierServices {
 		carrierService := carrierServices[i]
-		if carrierService.TemplateID == nil {
-			continue
-		}
-		group := groups[*carrierService.TemplateID]
-		if group == nil {
-			continue
-		}
-		leg, ok, err := s.buildCarrierServiceQuoteLeg(
-			carrierService,
-			group,
-			shippingQuoteGroupItems(group, resolvedItems),
-			country,
-			postalCode,
-			quoteCurrency,
-			displayCurrency,
-			group.Amount,
-		)
-		if err != nil {
-			return nil, err
-		}
-		if ok {
-			legsByTemplate[*carrierService.TemplateID] = append(legsByTemplate[*carrierService.TemplateID], leg)
+		for templateID, group := range groups {
+			if group == nil || group.Template == nil {
+				continue
+			}
+			if group.Template.RouteGroupID != nil {
+				if carrierService.RouteGroupID == nil || *carrierService.RouteGroupID != *group.Template.RouteGroupID {
+					continue
+				}
+			} else {
+				continue
+			}
+			leg, ok, err := s.buildCarrierServiceQuoteLeg(
+				carrierService,
+				group.Template,
+				group,
+				shippingQuoteGroupItems(group, resolvedItems),
+				country,
+				postalCode,
+				quoteCurrency,
+				displayCurrency,
+				group.Amount,
+			)
+			if err != nil {
+				return nil, err
+			}
+			if ok {
+				legsByTemplate[templateID] = append(legsByTemplate[templateID], leg)
+			}
 		}
 	}
 
@@ -81,12 +79,16 @@ func (s *ShippingService) quoteShipmentPlans(
 	}
 	sort.Slice(templateIDs, func(i, j int) bool { return templateIDs[i] < templateIDs[j] })
 
-	plans := []ShippingQuotePlan{{Currency: quoteCurrency}}
+	legsByTemplateWithFallback := make(map[uint][]ShippingQuoteLeg, len(groups))
 	for _, templateID := range templateIDs {
 		group := groups[templateID]
 		legs := legsByTemplate[templateID]
 		if len(legs) == 0 {
-			if _, requiresPublishedCollectionRoute := templatesWithPublishedCollectionRoutes[templateID]; requiresPublishedCollectionRoute {
+			requiresPublishedCollectionRoute := false
+			if group.Template.RouteGroupID != nil {
+				_, requiresPublishedCollectionRoute = aggregatesWithPublishedCollectionRoutes[*group.Template.RouteGroupID]
+			}
+			if requiresPublishedCollectionRoute || group.Template.RouteGroupID != nil {
 				return nil, fmt.Errorf("%w: no active published logistics service for template %q in %s", ErrShippingQuotePlanUnavailable, group.Template.Name, country)
 			}
 			rate := groupRates[templateID]
@@ -135,22 +137,70 @@ func (s *ShippingService) quoteShipmentPlans(
 			return legs[i].CarrierServiceID < legs[j].CarrierServiceID
 		})
 
-		if len(plans)*len(legs) > maxShippingQuotePlans {
-			return nil, fmt.Errorf("%w: shipment plan combinations exceed %d", ErrShippingRateConfigurationInvalid, maxShippingQuotePlans)
+		legsByTemplateWithFallback[templateID] = legs
+	}
+
+	// A product may expose several billing templates. Groups sharing an item
+	// index are alternatives and must never be added to the same plan; groups
+	// covering different items remain combinable for a mixed cart.
+	allItemIndexes := make(map[int]struct{})
+	for _, group := range groups {
+		for _, itemIndex := range group.ItemIndexes {
+			allItemIndexes[itemIndex] = struct{}{}
 		}
-		next := make([]ShippingQuotePlan, 0, len(plans)*len(legs))
-		for _, plan := range plans {
-			for _, leg := range legs {
-				candidate := plan
-				candidate.Legs = append(append([]ShippingQuoteLeg(nil), plan.Legs...), leg)
-				finalized, finalizeErr := finalizeShippingQuotePlan(candidate, displayCurrency)
-				if finalizeErr != nil {
-					return nil, finalizeErr
+	}
+	plans := make([]ShippingQuotePlan, 0)
+	var appendPlans func(groupPosition int, covered map[int]struct{}, plan ShippingQuotePlan) error
+	appendPlans = func(groupPosition int, covered map[int]struct{}, plan ShippingQuotePlan) error {
+		if len(covered) == len(allItemIndexes) {
+			finalized, finalizeErr := finalizeShippingQuotePlan(plan, displayCurrency)
+			if finalizeErr != nil {
+				return finalizeErr
+			}
+			plans = append(plans, finalized)
+			if len(plans) > maxShippingQuotePlans {
+				return fmt.Errorf("%w: shipment plan combinations exceed %d", ErrShippingRateConfigurationInvalid, maxShippingQuotePlans)
+			}
+			return nil
+		}
+		for position := groupPosition; position < len(templateIDs); position++ {
+			templateID := templateIDs[position]
+			group := groups[templateID]
+			if group == nil || len(legsByTemplateWithFallback[templateID]) == 0 {
+				continue
+			}
+			overlaps := false
+			for _, itemIndex := range group.ItemIndexes {
+				if _, exists := covered[itemIndex]; exists {
+					overlaps = true
+					break
 				}
-				next = append(next, finalized)
+			}
+			if overlaps {
+				continue
+			}
+			nextCovered := make(map[int]struct{}, len(covered)+len(group.ItemIndexes))
+			for itemIndex := range covered {
+				nextCovered[itemIndex] = struct{}{}
+			}
+			for _, itemIndex := range group.ItemIndexes {
+				nextCovered[itemIndex] = struct{}{}
+			}
+			for _, leg := range legsByTemplateWithFallback[templateID] {
+				nextPlan := plan
+				nextPlan.Legs = append(append([]ShippingQuoteLeg(nil), plan.Legs...), leg)
+				if err := appendPlans(position+1, nextCovered, nextPlan); err != nil {
+					return err
+				}
 			}
 		}
-		plans = next
+		return nil
+	}
+	if err := appendPlans(0, map[int]struct{}{}, ShippingQuotePlan{Currency: quoteCurrency}); err != nil {
+		return nil, err
+	}
+	if len(plans) == 0 {
+		return nil, ErrShippingQuotePlanUnavailable
 	}
 
 	sort.SliceStable(plans, func(i, j int) bool {
@@ -167,6 +217,7 @@ func (s *ShippingService) quoteShipmentPlans(
 
 func (s *ShippingService) buildCarrierServiceQuoteLeg(
 	service shipping.CarrierService,
+	billingTemplate *shipping.ShippingTemplate,
 	group *shippingQuoteGroup,
 	resolvedItems []resolvedShippingItem,
 	country string,
@@ -175,16 +226,16 @@ func (s *ShippingService) buildCarrierServiceQuoteLeg(
 	displayCurrency string,
 	groupAmount domainmoney.Money,
 ) (ShippingQuoteLeg, bool, error) {
-	if group == nil || service.Template == nil || !service.Enabled || !service.Template.Enabled {
+	if group == nil || billingTemplate == nil || !service.Enabled || !billingTemplate.Enabled {
 		return ShippingQuoteLeg{}, false, nil
 	}
-	if service.Template.IsSystemFreeShippingTemplate() {
-		return ShippingQuoteLeg{}, false, nil
-	}
-	if service.TemplateID == nil || *service.TemplateID != group.Template.ID {
+	if billingTemplate.IsSystemFreeShippingTemplate() {
 		return ShippingQuoteLeg{}, false, nil
 	}
 	if service.Carrier == nil || !service.Carrier.Enabled {
+		return ShippingQuoteLeg{}, false, nil
+	}
+	if service.RouteGroup != nil && !service.RouteGroup.Enabled {
 		return ShippingQuoteLeg{}, false, nil
 	}
 	if !shippingrating.MatchesRegion(service.Countries, country) {
@@ -192,18 +243,16 @@ func (s *ShippingService) buildCarrierServiceQuoteLeg(
 	}
 
 	quoteCurrency := strings.ToUpper(strings.TrimSpace(quoteCurrencyInput))
-	serviceCurrency := strings.ToUpper(strings.TrimSpace(service.Currency))
-	if serviceCurrency == "" {
-		serviceCurrency = quoteCurrency
-	}
-	if !currency.IsCatalogCode(serviceCurrency) {
-		return ShippingQuoteLeg{}, false, fmt.Errorf("%w: carrier service %s has invalid source currency %s", ErrShippingRateConfigurationInvalid, service.ServiceName, serviceCurrency)
+	templateCurrency := currency.NormalizeCode(billingTemplate.Currency)
+	if !currency.IsCatalogCode(templateCurrency) {
+		return ShippingQuoteLeg{}, false, fmt.Errorf("%w: customer shipping template ID %d has invalid source currency %s", ErrShippingRateConfigurationInvalid, billingTemplate.ID, templateCurrency)
 	}
 
 	actualWeightGrams := group.TotalWeightGrams
-	volumetricWeightGrams, dimensionalChargeWeightGrams, hasCompleteVolumetricWeight := carrierServiceVolumetricWeightGrams(service, resolvedItems)
+	volumetricWeightGrams, dimensionalChargeWeightGrams, hasCompleteVolumetricWeight := customerTemplateVolumetricWeightGrams(billingTemplate, resolvedItems)
 	chargeWeightGrams := actualWeightGrams
-	switch service.BillingMode {
+	switch billingTemplate.CustomerBillingMode {
+	case "actual_weight":
 	case "volumetric_weight":
 		if !hasCompleteVolumetricWeight {
 			return ShippingQuoteLeg{}, false, nil
@@ -211,11 +260,13 @@ func (s *ShippingService) buildCarrierServiceQuoteLeg(
 		chargeWeightGrams = volumetricWeightGrams
 	case "greater_of_actual_and_volumetric":
 		chargeWeightGrams = maxInt(actualWeightGrams, dimensionalChargeWeightGrams)
+	default:
+		return ShippingQuoteLeg{}, false, fmt.Errorf("%w: customer shipping template ID %d has invalid billing mode %q", ErrShippingRateConfigurationInvalid, billingTemplate.ID, billingTemplate.CustomerBillingMode)
 	}
 
-	billableWeightGrams := carrierServiceBillableWeightGrams(chargeWeightGrams, service)
+	billableWeightGrams := customerTemplateBillableWeightGrams(chargeWeightGrams, billingTemplate)
 	baseFee, freeShipping, baseDisplayPrices, err := s.calculateTemplateShippingFeeForQuoteMoney(
-		service.Template,
+		billingTemplate,
 		country,
 		billableWeightGrams,
 		group.Quantity,
@@ -223,15 +274,15 @@ func (s *ShippingService) buildCarrierServiceQuoteLeg(
 		groupAmount,
 		quoteCurrency,
 		shippingWeightBilling{
-			firstWeightGrams:      service.FirstWeightGrams,
-			additionalWeightGrams: service.AdditionalWeightGrams,
+			firstWeightGrams:      billingTemplate.CustomerFirstWeightGrams,
+			additionalWeightGrams: billingTemplate.CustomerAdditionalWeightGrams,
 		},
 	)
 	if err != nil {
 		return ShippingQuoteLeg{}, false, err
 	}
 
-	remoteSurcharge, err := carrierServiceRemoteSurchargeMoney(service, postalCode)
+	remoteSurcharge, err := customerTemplateRemoteSurchargeMoney(billingTemplate, postalCode)
 	if err != nil {
 		return ShippingQuoteLeg{}, false, err
 	}
@@ -240,7 +291,7 @@ func (s *ShippingService) buildCarrierServiceQuoteLeg(
 		if err != nil {
 			return ShippingQuoteLeg{}, false, err
 		}
-	} else if serviceCurrency != quoteCurrency {
+	} else if templateCurrency != quoteCurrency {
 		remoteSurcharge, err = s.convertShippingMoney(remoteSurcharge, quoteCurrency)
 		if err != nil {
 			return ShippingQuoteLeg{}, false, err
@@ -255,7 +306,7 @@ func (s *ShippingService) buildCarrierServiceQuoteLeg(
 		return ShippingQuoteLeg{}, false, fuelErr
 	}
 	if !freeShipping {
-		fuelRate, rateErr := service.FuelSurchargeRate()
+		fuelRate, rateErr := billingTemplate.CustomerFuelSurchargeRate()
 		if rateErr != nil {
 			return ShippingQuoteLeg{}, false, rateErr
 		}
@@ -288,10 +339,10 @@ func (s *ShippingService) buildCarrierServiceQuoteLeg(
 		ServiceCode:            service.ServiceCode,
 		ServiceName:            service.ServiceName,
 		RouteName:              service.RouteName,
-		TemplateID:             service.Template.ID,
-		TemplateName:           service.Template.Name,
+		TemplateID:             billingTemplate.ID,
+		TemplateName:           billingTemplate.Name,
 		Currency:               quoteCurrency,
-		BillingMode:            service.BillingMode,
+		BillingMode:            billingTemplate.CustomerBillingMode,
 		ActualWeightGrams:      actualWeightGrams,
 		VolumetricWeightGrams:  volumetricWeightGrams,
 		ChargeWeightGrams:      chargeWeightGrams,
@@ -307,8 +358,8 @@ func (s *ShippingService) buildCarrierServiceQuoteLeg(
 		DisplayPrice:           displayPriceForCurrency(displayCurrency, displayPrices),
 		DisplayPrices:          displayPrices,
 		FreeShipping:           freeShipping,
-		EtaMinDays:             service.EtaMinDays,
-		EtaMaxDays:             service.EtaMaxDays,
+		EtaMinDays:             billingTemplate.CustomerEtaMinDays,
+		EtaMaxDays:             billingTemplate.CustomerEtaMaxDays,
 		SortOrder:              service.SortOrder,
 	}, true, nil
 }
@@ -326,11 +377,13 @@ func shippingQuoteGroupItems(group *shippingQuoteGroup, resolvedItems []resolved
 		return nil
 	}
 	items := make([]resolvedShippingItem, 0, len(group.ItemIndexes))
-	for _, index := range group.ItemIndexes {
-		if index < 0 || index >= len(resolvedItems) {
-			continue
+	for _, sourceIndex := range group.ItemIndexes {
+		for _, item := range resolvedItems {
+			if item.SourceItemIndex == sourceIndex && item.Template != nil && group.Template != nil && item.Template.ID == group.Template.ID {
+				items = append(items, item)
+				break
+			}
 		}
-		items = append(items, resolvedItems[index])
 	}
 	return items
 }

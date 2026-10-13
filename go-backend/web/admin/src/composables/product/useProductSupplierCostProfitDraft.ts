@@ -55,16 +55,10 @@ const majorToMinor = (value: unknown, currency: unknown): number => {
   return Math.round(major * (10 ** minorUnitsForCurrency(currency)))
 }
 
-const variantPriceMinor = (
-  variant: ProductVariantForm,
-  field: 'price' | 'sale_price',
-  currency: string,
-): number | null => {
-  const minorField = field === 'price' ? 'price_minor' : 'sale_price_minor'
-  const explicitMinor = Number(variant[minorField])
-  if (variant[minorField] != null && Number.isFinite(explicitMinor)) return Math.trunc(explicitMinor)
-  if (field === 'sale_price' && (variant.sale_price == null || variant.sale_price === '')) return null
-  return majorToMinor(variant[field], currency)
+const variantPriceMinor = (variant: ProductVariantForm, currency: string): number => {
+ const explicitMinor = Number(variant.price_minor)
+ if (variant.price_minor != null && Number.isFinite(explicitMinor)) return Math.trunc(explicitMinor)
+ return majorToMinor(variant.price, currency)
 }
 
 const createEmptyDraft = (
@@ -291,8 +285,7 @@ export const useProductSupplierCostProfitDraft = () => {
           product_name: productName.trim(),
           currency: normalizeCurrency(currency),
           cost_currency: String(draft.currency || '').trim().toUpperCase() || normalizeCurrency(currency),
-          list_price_minor: variantPriceMinor(variant, 'price', currency) || 0,
-          sale_price_minor: variantPriceMinor(variant, 'sale_price', currency),
+          list_price_minor: variantPriceMinor(variant, currency) || 0,
           unit_cost_minor: draft.unitCostKnown && draft.unitCostMinor != null
             ? Number(draft.unitCostMinor)
             : null,

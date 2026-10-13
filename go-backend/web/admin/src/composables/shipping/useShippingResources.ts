@@ -7,6 +7,7 @@ import {
 } from '@/api/shippingServiceCollectionReferenceApi'
 
 export const useShippingResources = () => {
+  const routeAggregates = ref<any[]>([])
   const templates = ref<any[]>([])
   const carriers = ref<any[]>([])
   const carrierServices = ref<any[]>([])
@@ -18,6 +19,7 @@ export const useShippingResources = () => {
   const packagingRules = ref<any[]>([])
   const refreshing = ref(false)
   const loading = reactive({
+    routeAggregates: false,
     templates: false,
     carriers: false,
     services: false,
@@ -29,6 +31,13 @@ export const useShippingResources = () => {
 
   const handleTrackingShipmentsCountChange = (count: number) => {
     trackingShipmentsCount.value = Number(count || 0)
+  }
+
+  const fetchRouteAggregates = async () => {
+    loading.routeAggregates = true
+    try { routeAggregates.value = await shippingApi.listRouteAggregates() }
+    catch (error) { console.error('Failed to fetch shipping route aggregates:', error) }
+    finally { loading.routeAggregates = false }
   }
 
   const fetchTemplates = async () => {
@@ -118,8 +127,10 @@ export const useShippingResources = () => {
   const refreshCurrentTab = async (activeTab: string, trackingShipmentsPanelRef: any) => {
     refreshing.value = true
     try {
-      if (activeTab === 'templates') {
-        await fetchTemplates()
+      if (activeTab === 'routeAggregates') {
+        await Promise.all([fetchRouteAggregates(), fetchCarriers(), fetchCarrierServices(), fetchFpxPublishedChannels(), fetchYanwenPublishedChannels()])
+      } else if (activeTab === 'templates') {
+        await Promise.all([fetchTemplates(), fetchRouteAggregates()])
       } else if (activeTab === 'carriers') {
         await fetchCarriers()
       } else if (activeTab === 'services') {
@@ -137,6 +148,7 @@ export const useShippingResources = () => {
         await fetchPackagingRules()
       } else {
         await Promise.all([
+          fetchRouteAggregates(),
           fetchTemplates(),
           fetchCarriers(),
           fetchCarrierServices(),
@@ -153,6 +165,7 @@ export const useShippingResources = () => {
   }
 
   const fetchAllShippingResources = () => Promise.all([
+    fetchRouteAggregates(),
     fetchTemplates(),
     fetchCarriers(),
     fetchCarrierServices(),
@@ -164,6 +177,8 @@ export const useShippingResources = () => {
   ])
 
   return {
+    routeAggregates,
+    fetchRouteAggregates,
     templates,
     carriers,
     carrierServices,

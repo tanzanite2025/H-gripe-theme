@@ -184,7 +184,7 @@
             当前汇率目标：<span class="font-mono font-black text-foreground">{{ rateTargetLabel }}</span>
           </p>
           <p class="mt-1">
-            如果把后台录入币种从 CNY 改为 USD，历史商品仍保留原 currency/price/sale_price，下方检测会提示哪些商品需要人工修正。
+            如果把后台录入币种从 CNY 改为 USD，历史商品仍保留原 currency/price，下方检测会提示哪些商品需要人工修正。
           </p>
         </div>
       </div>

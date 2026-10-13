@@ -35,7 +35,6 @@ type PublicProduct struct {
 	ShortDesc                    string                              `json:"short_description"`
 	Currency                     string                              `json:"currency"`
 	PriceDecimal                 string                              `json:"price_decimal"`
-	SalePriceDecimal             *string                             `json:"sale_price_decimal,omitempty"`
 	DisplayPrice                 *PublicDisplayPrice                 `json:"display_price,omitempty"`
 	DisplayPrices                []PublicDisplayPrice                `json:"display_prices,omitempty"`
 	FulfillmentMode              string                              `json:"fulfillment_mode,omitempty"`
@@ -189,7 +188,6 @@ type PublicProductVariant struct {
 	WeightGrams      int                                   `json:"weight_grams,omitempty"`
 	Currency         string                                `json:"currency"`
 	PriceDecimal     string                                `json:"price_decimal"`
-	SalePriceDecimal *string                               `json:"sale_price_decimal,omitempty"`
 	DisplayPrice     *PublicDisplayPrice                   `json:"display_price,omitempty"`
 	DisplayPrices    []PublicDisplayPrice                  `json:"display_prices,omitempty"`
 	IsDefault        bool                                  `json:"is_default"`
@@ -312,7 +310,7 @@ func PublicProductFromDomainWithLocale(item productdomain.Product, displayCurren
 
 func PublicProductFromDomainWithLocaleAndRoutes(item productdomain.Product, displayCurrency, locale string, translationRoutes []productdomain.ProductTranslationRoute, resolvers ...publicmedia.Resolver) PublicProduct {
 	resolver := publicmediaResolver(resolvers)
-	price, salePrice := item.DisplayPrices()
+	price := item.DisplayPriceDecimal()
 	priceCurrency := item.DisplayPriceCurrency()
 	displayPriceData := item.DisplayPriceData
 	if startingVariant := item.StartingPriceVariant(); startingVariant != nil {
@@ -448,7 +446,6 @@ func PublicProductFromDomainWithLocaleAndRoutes(item productdomain.Product, disp
 		ShortDesc:                    item.ShortDesc,
 		Currency:                     priceCurrency,
 		PriceDecimal:                 price,
-		SalePriceDecimal:             salePrice,
 		DisplayPrice:                 displayPriceForCurrency(displayCurrency, displayPrices),
 		DisplayPrices:                displayPrices,
 		FulfillmentMode:              publicFulfillmentMode(fulfillmentMode),
@@ -564,12 +561,6 @@ func publicProductVariantFromDomainWithFulfillmentMode(item productdomain.Produc
 	displayPrices := publicDisplayPricesFromSnapshots(item.DisplayPriceData)
 	priceMoney, _ := item.PriceMoney()
 	price, _ := priceMoney.FormatMajor()
-	var salePrice *string
-	if saleMoney, err := item.SalePriceMoney(); err == nil && saleMoney != nil {
-		if sale, saleErr := saleMoney.FormatMajor(); saleErr == nil {
-			salePrice = &sale
-		}
-	}
 	return PublicProductVariant{
 		ID:               item.ID,
 		SKU:              item.SKU,
@@ -578,7 +569,6 @@ func publicProductVariantFromDomainWithFulfillmentMode(item productdomain.Produc
 		WeightGrams:      item.Weight,
 		Currency:         item.Currency,
 		PriceDecimal:     price,
-		SalePriceDecimal: salePrice,
 		DisplayPrice:     displayPriceForCurrency(displayCurrency, displayPrices),
 		DisplayPrices:    displayPrices,
 		IsDefault:        item.IsDefault,

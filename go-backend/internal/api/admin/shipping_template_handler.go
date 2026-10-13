@@ -50,7 +50,7 @@ func (h *ShippingHandler) CreateTemplate(c *gin.Context) {
 		return
 	}
 
-	if err := h.shippingService.CreateTemplateWithCarrierServices(&template, shippingCarrierServicesFromRequest(req.CarrierServices)); err != nil {
+	if err := h.shippingService.CreateTemplate(&template); err != nil {
 		apierror.RespondBadRequest(c, err.Error())
 		return
 	}
@@ -77,29 +77,13 @@ func (h *ShippingHandler) UpdateTemplate(c *gin.Context) {
 		return
 	}
 
-	var saveErr error
-	if req.CarrierServices == nil {
-		saveErr = h.shippingService.UpdateTemplate(&template)
-	} else {
-		saveErr = h.shippingService.UpdateTemplateWithCarrierServices(&template, shippingCarrierServicesFromRequest(req.CarrierServices))
-	}
+	saveErr := h.shippingService.UpdateTemplate(&template)
 	if saveErr != nil {
 		apierror.RespondBadRequest(c, saveErr.Error())
 		return
 	}
 
 	response.Success(c, template)
-}
-
-func shippingCarrierServicesFromRequest(requests *[]shippingCarrierServiceRequest) []shippingdomain.CarrierService {
-	if requests == nil {
-		return nil
-	}
-	services := make([]shippingdomain.CarrierService, 0, len(*requests))
-	for _, request := range *requests {
-		services = append(services, request.toDomain())
-	}
-	return services
 }
 
 func (h *ShippingHandler) DeleteTemplate(c *gin.Context) {
@@ -236,6 +220,12 @@ func validateShippingTemplate(template shippingdomain.ShippingTemplate) error {
 		}
 	}
 	if !template.IsSystemFreeShippingTemplate() {
+		if template.RouteGroupID == nil || *template.RouteGroupID == 0 {
+			return errors.New("customer shipping billing template requires a route aggregate")
+		}
+		if err := template.ValidateCustomerShippingBillingConfiguration(); err != nil {
+			return err
+		}
 		for _, rule := range template.Rules {
 			if err := validateShippingRule(rule); err != nil {
 				return err

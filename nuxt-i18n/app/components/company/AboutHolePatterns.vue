@@ -1,15 +1,15 @@
 <template>
   <section id="hole-patterns" class="company-section">
-      <div class="company-section__header flex flex-col items-center justify-center text-center mb-10 w-full px-4">
+      <div class="company-section__header flex flex-col items-center justify-center text-center mb-10 w-full">
         <h2 class="sr-only">{{ t('companyAboutHolePatterns.title') }}</h2>
-        <p class="text-[0.95rem] tz-text-secondary max-w-4xl w-full text-center leading-relaxed">
+        <p class="text-[0.95rem] tz-text-secondary w-full text-center leading-relaxed">
           {{ t('companyAboutHolePatterns.intro') }}
         </p>
       </div>
 
       <!-- Video Section -->
       <div class="flex justify-center mb-10">
-         <div class="relative group cursor-pointer rounded-xl overflow-hidden shadow-md border tz-border-subtle max-w-3xl w-full" @click="showHolePatternVideo = true">
+         <div class="relative group cursor-pointer rounded-xl overflow-hidden shadow-md border tz-border-subtle w-full" @click="showHolePatternVideo = true">
             <video 
               class="w-full h-auto object-cover opacity-90 group-hover:opacity-100 transition-opacity duration-300"
               src="/company/ourstory/holepatterns/automated-wheel-rimhole-drilling–customizable-Patterns_medium.webm?v=2"
@@ -28,7 +28,7 @@
       </div>
 
       <!-- Info Grid -->
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl mx-auto">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
          <!-- Card 1: Our Support -->
          <div class="bg-[var(--tz-card-surface)] p-6 rounded-2xl shadow-md border tz-border-subtle">
             <h3 class="text-lg font-bold tz-text-secondary mb-4 border-b tz-border-subtle pb-2">

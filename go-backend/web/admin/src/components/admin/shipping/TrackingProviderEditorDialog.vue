@@ -117,7 +117,7 @@
         </section>
 
         <div class="rounded-lg border bg-muted/35 p-3 text-xs text-muted-foreground">
-          稳定规则：承运商只维护物流公司资料；本地计费线路维护线路计费和渠道；追踪 Provider 只维护第三方追踪 API 凭证和同步策略。
+          稳定规则：承运商只维护物流公司资料；聚合线路维护承运商线路身份和覆盖国家；线路计费模板维护客户运费；追踪 Provider 只维护第三方追踪 API 凭证和同步策略。
         </div>
 
         <DialogFooter>

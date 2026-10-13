@@ -13,6 +13,31 @@ import (
 	"gorm.io/gorm"
 )
 
+func TestQuoteCartUsesConvertedCatalogPriceForFreeShippingThreshold(t *testing.T) {
+	db, shippingService := newTestShippingQuoteService(t)
+	require.NoError(t, db.AutoMigrate(&currency.ExchangeRate{}))
+	require.NoError(t, db.Create(&currency.ExchangeRate{BaseCurrency: "USD", QuoteCurrency: "EUR", RateDecimal: "0.9", Source: "test", FetchedAt: time.Now().UTC()}).Error)
+	shippingService.ConfigureExchangeRateService(serviceExchangeRateForTest(db))
+	template := shippingdomain.ShippingTemplate{Name: "EUR threshold", Type: "quantity", Currency: "EUR", Enabled: true, FreeShipping: true, FreeThresholdMinor: 4700, DefaultFeeMinor: 1000}
+	require.NoError(t, shippingService.CreateTemplate(&template))
+	item, variant := seedQuoteProduct(t, db, 50, 800, template.ID)
+	quote, err := shippingService.QuoteCart(ShippingQuoteInput{Country: "US", Currency: "EUR", Items: []ShippingQuoteItemInput{{ProductID: item.ID, VariantID: &variant.ID, Quantity: 1}}})
+	require.NoError(t, err)
+	assert.Equal(t, int64(4500), quote.Items[0].AmountMinor)
+	assert.Equal(t, int64(1000), quote.ShippingFeeMinor)
+	assert.False(t, quote.FreeShipping)
+}
+
+func TestQuoteCartRejectsMissingExchangeRateForCatalogPrice(t *testing.T) {
+	db, shippingService := newTestShippingQuoteService(t)
+	template := shippingdomain.ShippingTemplate{Name: "EUR billing", Type: "quantity", Currency: "EUR", Enabled: true, DefaultFeeMinor: 1000}
+	require.NoError(t, shippingService.CreateTemplate(&template))
+	item, variant := seedQuoteProduct(t, db, 50, 800, template.ID)
+	quote, err := shippingService.QuoteCart(ShippingQuoteInput{Country: "US", Currency: "EUR", Items: []ShippingQuoteItemInput{{ProductID: item.ID, VariantID: &variant.ID, Quantity: 1}}})
+	require.ErrorIs(t, err, ErrShippingRateUnavailable)
+	assert.Nil(t, quote)
+}
+
 func TestQuoteResolvedItemsConvertsTemplateCurrencyToQuoteCurrency(t *testing.T) {
 	db, shippingService := newTestShippingQuoteService(t)
 	require.NoError(t, db.AutoMigrate(&currency.ExchangeRate{}))
@@ -40,11 +65,11 @@ func TestQuoteResolvedItemsConvertsTemplateCurrencyToQuoteCurrency(t *testing.T)
 		Country:  "DE",
 		Currency: "EUR",
 		Items: []ShippingQuoteItemInput{{
-			ProductID:          1,
-			ShippingTemplateID: &template.ID,
-			Quantity:           1,
-			UnitPriceMinor:     5000,
-			WeightGrams:        1000,
+			ProductID:           1,
+			ShippingTemplateIDs: []uint{template.ID},
+			Quantity:            1,
+			UnitPriceMinor:      5000,
+			WeightGrams:         1000,
 		}},
 	})
 
@@ -83,11 +108,11 @@ func TestQuoteResolvedItemsConvertsPriceRuleThresholdFromQuoteCurrency(t *testin
 		Country:  "DE",
 		Currency: "EUR",
 		Items: []ShippingQuoteItemInput{{
-			ProductID:          1,
-			ShippingTemplateID: &template.ID,
-			Quantity:           1,
-			UnitPriceMinor:     9000,
-			WeightGrams:        1000,
+			ProductID:           1,
+			ShippingTemplateIDs: []uint{template.ID},
+			Quantity:            1,
+			UnitPriceMinor:      9000,
+			WeightGrams:         1000,
 		}},
 	})
 
@@ -123,11 +148,11 @@ func TestQuoteResolvedItemsConvertsFreeShippingThresholdFromQuoteCurrency(t *tes
 		Country:  "DE",
 		Currency: "EUR",
 		Items: []ShippingQuoteItemInput{{
-			ProductID:          1,
-			ShippingTemplateID: &template.ID,
-			Quantity:           1,
-			UnitPriceMinor:     9000,
-			WeightGrams:        1000,
+			ProductID:           1,
+			ShippingTemplateIDs: []uint{template.ID},
+			Quantity:            1,
+			UnitPriceMinor:      9000,
+			WeightGrams:         1000,
 		}},
 	})
 
@@ -158,7 +183,7 @@ func TestQuoteResolvedItemsConvertsCarrierSurchargeToQuoteCurrency(t *testing.T)
 	}
 	require.NoError(t, shippingService.CreateTemplate(&template))
 	carrier := seedQuoteCarrier(t, db, "Test Carrier", "test-carrier")
-	service := seedQuoteCarrierService(t, db, carrier.ID, template.ID, shippingdomain.CarrierService{
+	service := seedQuoteCustomerBillingTemplateAndCarrierRoute(t, db, carrier.ID, template.ID, shippingdomain.CarrierService{
 		ServiceCode:          "test-service",
 		ServiceName:          "Test Service",
 		Countries:            `["DE"]`,
@@ -170,11 +195,11 @@ func TestQuoteResolvedItemsConvertsCarrierSurchargeToQuoteCurrency(t *testing.T)
 		Country:  "DE",
 		Currency: "EUR",
 		Items: []ShippingQuoteItemInput{{
-			ProductID:          1,
-			ShippingTemplateID: &template.ID,
-			Quantity:           1,
-			UnitPriceMinor:     5000,
-			WeightGrams:        1000,
+			ProductID:           1,
+			ShippingTemplateIDs: []uint{template.ID},
+			Quantity:            1,
+			UnitPriceMinor:      5000,
+			WeightGrams:         1000,
 		}},
 	})
 

@@ -131,7 +131,7 @@ func BuildProductSEOReadiness(item productdomain.Product, brand, routePath strin
 	stock := item.Stock
 	if defaultVariant != nil {
 		sku = strings.TrimSpace(defaultVariant.SKU)
-		if money, err := defaultVariant.EffectivePriceMoney(); err == nil {
+		if money, err := defaultVariant.PriceMoney(); err == nil {
 			price, _ = money.FormatMajor()
 		}
 		currencyCode = currency.NormalizeCode(defaultVariant.Currency)
@@ -291,7 +291,7 @@ func buildProductStructuredDataPreview(
 		preview.HasVariant = make([]ProductStructuredDataVariant, 0, len(activeVariants))
 		for _, variant := range activeVariants {
 			variantPrice := "0"
-			if money, err := variant.EffectivePriceMoney(); err == nil {
+			if money, err := variant.PriceMoney(); err == nil {
 				variantPrice, _ = money.FormatMajor()
 			}
 			variantCurrency := currency.NormalizeCode(variant.Currency)

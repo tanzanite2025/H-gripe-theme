@@ -11,16 +11,16 @@ import (
 )
 
 type ProductVariant struct {
-	ID                 uint   `gorm:"primarykey" json:"id"`
-	ProductID          uint   `gorm:"not null;index;uniqueIndex:idx_product_variant_options" json:"product_id"`
-	MasterVariantID    *uint  `gorm:"index" json:"master_variant_id,omitempty"`
-	ShippingTemplateID *uint  `gorm:"index" json:"shipping_template_id"`
-	SKU                string `gorm:"type:varchar(120);uniqueIndex:idx_product_variants_sku_active,where:deleted_at IS NULL;not null" json:"sku"`
-	Title              string `gorm:"type:varchar(160)" json:"title"`
-	OptionValues       string `gorm:"type:jsonb;not null;default:'{}';uniqueIndex:idx_product_variant_options" json:"option_values"`
-	Currency           string `gorm:"size:3;not null;default:'USD';index" json:"currency"`
-	PriceMinor         int64  `gorm:"column:price_minor;not null;default:0" json:"price_minor"`
-	SalePriceMinor     *int64 `gorm:"column:sale_price_minor" json:"sale_price_minor,omitempty"`
+	ID                       uint                             `gorm:"primarykey" json:"id"`
+	ProductID                uint                             `gorm:"not null;index;uniqueIndex:idx_product_variant_options" json:"product_id"`
+	MasterVariantID          *uint                            `gorm:"index" json:"master_variant_id,omitempty"`
+	ShippingTemplateIDs      []uint                           `gorm:"-" json:"shipping_template_ids"`
+	ShippingTemplateBindings []ProductShippingTemplateBinding `gorm:"foreignKey:VariantID;references:ID" json:"shipping_template_bindings,omitempty"`
+	SKU                      string                           `gorm:"type:varchar(120);uniqueIndex:idx_product_variants_sku_active,where:deleted_at IS NULL;not null" json:"sku"`
+	Title                    string                           `gorm:"type:varchar(160)" json:"title"`
+	OptionValues             string                           `gorm:"type:jsonb;not null;default:'{}';uniqueIndex:idx_product_variant_options" json:"option_values"`
+	Currency                 string                           `gorm:"size:3;not null;default:'USD';index" json:"currency"`
+	PriceMinor               int64                            `gorm:"column:price_minor;not null;default:0" json:"price_minor"`
 	// DisplayPriceData is hydrated from ProductDisplayPriceSnapshot by the
 	// repository read model loader. It is intentionally not persisted on the
 	// transactional product_variants table.
@@ -42,38 +42,8 @@ func (ProductVariant) TableName() string {
 	return "product_variants"
 }
 
-func (v *ProductVariant) EffectivePrice() string {
-	value, err := v.EffectivePriceMoney()
-	if err != nil {
-		return ""
-	}
-	major, err := value.FormatMajor()
-	if err != nil {
-		return ""
-	}
-	return major
-}
-
 func (v *ProductVariant) PriceMoney() (domainmoney.Money, error) {
 	return domainmoney.New(v.PriceMinor, v.Currency)
-}
-
-func (v *ProductVariant) SalePriceMoney() (*domainmoney.Money, error) {
-	if v.SalePriceMinor == nil {
-		return nil, nil
-	}
-	value, err := domainmoney.New(*v.SalePriceMinor, v.Currency)
-	if err != nil {
-		return nil, err
-	}
-	return &value, nil
-}
-
-func (v *ProductVariant) EffectivePriceMoney() (domainmoney.Money, error) {
-	if v.SalePriceMinor != nil {
-		return domainmoney.New(*v.SalePriceMinor, v.Currency)
-	}
-	return v.PriceMoney()
 }
 
 func (v *ProductVariant) BeforeCreate(tx *gorm.DB) error {
@@ -111,7 +81,7 @@ func (v *ProductVariant) normalizeCurrency() error {
 	if !currency.IsValidCode(v.Currency) || !currency.IsCatalogCode(v.Currency) {
 		return gorm.ErrInvalidData
 	}
-	if v.PriceMinor < 0 || (v.SalePriceMinor != nil && *v.SalePriceMinor < 0) {
+	if v.PriceMinor < 0 {
 		return gorm.ErrInvalidData
 	}
 	return nil

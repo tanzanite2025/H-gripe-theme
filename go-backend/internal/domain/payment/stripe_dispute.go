@@ -12,13 +12,13 @@ import (
 
 // StripeDispute is the local operational record for a Stripe chargeback.
 type StripeDispute struct {
-	ID              uint   `gorm:"primarykey" json:"id"`
-	StripeDisputeID string `gorm:"uniqueIndex;not null" json:"stripe_dispute_id"`
-	StripeChargeID  string `gorm:"index" json:"stripe_charge_id"`
-	PaymentIntentID string `gorm:"index" json:"payment_intent_id"`
-	OrderID         *uint  `gorm:"index" json:"order_id,omitempty"`
-	TransactionID   *uint  `gorm:"index" json:"transaction_id,omitempty"`
-	AmountMinor     int64  `gorm:"column:amount_minor;not null;default:0" json:"amount_minor"`
+	ID                        uint           `gorm:"primarykey" json:"id"`
+	StripeDisputeID           string         `gorm:"uniqueIndex;not null" json:"stripe_dispute_id"`
+	StripeChargeID            string         `gorm:"index" json:"stripe_charge_id"`
+	PaymentIntentID           string         `gorm:"index" json:"payment_intent_id"`
+	OrderID                   *uint          `gorm:"index" json:"order_id,omitempty"`
+	TransactionID             *uint          `gorm:"index" json:"transaction_id,omitempty"`
+	AmountMinor               int64          `gorm:"column:amount_minor;not null;default:0" json:"amount_minor"`
 	Currency                  string         `gorm:"not null" json:"currency"`
 	Reason                    string         `gorm:"index" json:"reason"`
 	Status                    string         `gorm:"index;not null" json:"status"` // needs_response, warning_needs_response, under_review, won, lost, closed

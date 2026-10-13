@@ -73,7 +73,7 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
     product_specification_template_id: null,
     product_category_id: null,
     brand_id: null,
-    shipping_template_id: null,
+    shipping_template_ids: [],
     after_sales_template_id: null,
     packaging_template_id: null,
     customs_classification_profile_id: null,
@@ -128,7 +128,6 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
   const productSpecTemplateSelectValue = computed(() => productForm.product_specification_template_id == null ? '__none__' : String(productForm.product_specification_template_id))
   const productCategorySelectValue = computed(() => productForm.product_category_id == null ? '__none__' : String(productForm.product_category_id))
   const brandSelectValue = computed(() => productForm.brand_id == null ? '__none__' : String(productForm.brand_id))
-  const shippingTemplateSelectValue = computed(() => productForm.shipping_template_id == null ? '__none__' : String(productForm.shipping_template_id))
   const afterSalesTemplateSelectValue = computed(() => productForm.after_sales_template_id == null ? '__none__' : String(productForm.after_sales_template_id))
   const packagingTemplateSelectValue = computed(() => productForm.packaging_template_id == null ? '__none__' : String(productForm.packaging_template_id))
   const hasMeaningfulTemplateValue = (value: any) => {
@@ -163,9 +162,11 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
     productForm.specs[slug] = value === '__empty__' ? '' : value
     clearFieldError(`spec:${slug}`)
   }
-  const setProductShippingTemplate = (value: string) => {
-    productForm.shipping_template_id = value === '__none__' ? null : Number(value)
-    clearFieldError('shipping_template_id')
+  const setProductShippingTemplates = (values: unknown) => {
+    const raw = Array.isArray(values) ? values : [values]
+    const ids = raw.map((value) => Number(value)).filter((value) => Number.isInteger(value) && value > 0)
+    productForm.shipping_template_ids = Array.from(new Set(ids))
+    clearFieldError('shipping_template_ids')
   }
   const setProductBrand = (value: string) => {
     productForm.brand_id = value === '__none__' ? null : Number(value)
@@ -236,13 +237,12 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
 
   const createEmptyVariant = (overrides: Record<string, any> = {}) => ({
     id: null,
-    shipping_template_id: null,
+    shipping_template_ids: [],
     sku: '',
     title: '',
     option_values: {},
     currency: primaryPriceCurrency(),
     price: '0.00',
-    sale_price: '',
     stock: 0,
     weight_grams: 0,
     is_default: false,
@@ -388,15 +388,13 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
   const buildVariantFormValues = (product: any) => {
     const variants = (product.variants || []).map((variant: any, index: number) => createEmptyVariant({
       id: variant.id || null,
-      shipping_template_id: variant.shipping_template_id ?? null,
+      shipping_template_ids: Array.isArray(variant.shipping_template_ids) ? [...variant.shipping_template_ids] : [],
       sku: variant.sku || '',
       title: variant.title || '',
       option_values: parseVariantOptions(variant),
       currency: validCurrencyCodeOrDefault(variant.currency || product.currency),
       price_minor: Number.isFinite(Number(variant.price_minor)) ? Number(variant.price_minor) : 0,
       price: majorFromMinor(Number.isFinite(Number(variant.price_minor)) ? Number(variant.price_minor) : 0, variant.currency || product.currency),
-      sale_price_minor: variant.sale_price_minor == null ? null : Number(variant.sale_price_minor),
-      sale_price: variant.sale_price_minor == null ? null : majorFromMinor(variant.sale_price_minor, variant.currency || product.currency),
       stock: Number(variant.stock || 0),
       weight_grams: variant.weight_grams ?? variant.weight ?? 0,
       is_default: Boolean(variant.is_default),
@@ -469,15 +467,13 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
       })
       return {
         id: variant.id || undefined,
-        shipping_template_id: variant.shipping_template_id == null || variant.shipping_template_id === '' ? null : Number(variant.shipping_template_id),
+        shipping_template_ids: Array.from(new Set((Array.isArray(variant.shipping_template_ids) ? variant.shipping_template_ids : []).map((value: any) => Number(value)).filter((value: number) => Number.isInteger(value) && value > 0))),
         sku: String(variant.sku || '').trim(),
         title: String(variant.title || '').trim(),
         option_values: optionValues,
         currency: validCurrencyCodeOrDefault(variant.currency || productForm.currency),
         price: String(variant.price ?? ''),
         price_minor: minorFromMajor(variant.price, variant.currency || productForm.currency),
-        sale_price: variant.sale_price === '' || variant.sale_price == null ? null : String(variant.sale_price),
-        sale_price_minor: variant.sale_price === '' || variant.sale_price == null ? null : minorFromMajor(variant.sale_price, variant.currency || productForm.currency),
         stock: Number(variant.stock || 0),
         weight_grams: Number(variant.weight_grams || 0),
         is_default: Boolean(variant.is_default),
@@ -506,7 +502,7 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
     product_specification_template_id: productForm.product_specification_template_id,
     product_category_id: productForm.product_category_id,
     brand_id: productForm.brand_id,
-    shipping_template_id: productForm.shipping_template_id,
+    shipping_template_ids: Array.from(new Set(productForm.shipping_template_ids.map((value: any) => Number(value)).filter((value: number) => Number.isInteger(value) && value > 0))),
     after_sales_template_id: productForm.after_sales_template_id,
     packaging_template_id: productForm.packaging_template_id,
     customs_classification_profile_id: productForm.customs_classification_profile_id || null,
@@ -648,7 +644,7 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
       product_specification_template_id: null,
       product_category_id: null,
       brand_id: null,
-      shipping_template_id: null,
+      shipping_template_ids: [],
       after_sales_template_id: null,
       packaging_template_id: null,
       customs_classification_profile_id: null,
@@ -732,7 +728,7 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
       product_specification_template_id: detail.product_specification_template_id || detail.product_specification_template?.id || null,
       product_category_id: detail.product_category_id ?? detail.product_category?.id ?? null,
       brand_id: detail.brand_id ?? detail.brand?.id ?? null,
-      shipping_template_id: detail.shipping_template_id ?? null,
+      shipping_template_ids: Array.isArray(detail.shipping_template_ids) ? [...detail.shipping_template_ids] : [],
       after_sales_template_id: detail.after_sales_template_id ?? detail.after_sales_template?.id ?? null,
       packaging_template_id: detail.packaging_template_id ?? detail.packaging_template?.id ?? null,
       customs_classification_profile_id: detail.customs_classification_profile_id ?? detail.customs_classification_profile?.id ?? null,
@@ -846,7 +842,6 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
     productSpecTemplateSelectValue,
     productCategorySelectValue,
     brandSelectValue,
-    shippingTemplateSelectValue,
     afterSalesTemplateSelectValue,
     packagingTemplateSelectValue,
     templateScopedValuesTouched,
@@ -855,7 +850,7 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
     getSpecLabel,
     specSelectValue,
     setSpecSelectValue,
-    setProductShippingTemplate,
+    setProductShippingTemplates,
     setProductBrand,
     setProductCategory,
     setProductInformationTemplate,

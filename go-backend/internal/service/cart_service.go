@@ -374,7 +374,7 @@ func purchasablePriceStock(variant *product.ProductVariant) (domainmoney.Money, 
 	if !currency.IsValidCode(itemCurrency) || !currency.IsCatalogCode(itemCurrency) {
 		return domainmoney.Money{}, 0, nil, errors.New("product price currency is invalid")
 	}
-	price, err := variant.EffectivePriceMoney()
+	price, err := variant.PriceMoney()
 	if err != nil {
 		return domainmoney.Money{}, 0, nil, err
 	}

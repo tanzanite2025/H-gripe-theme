@@ -135,7 +135,6 @@ func quickBuyProductSnapshotForVariant(item productdomain.Product, selectedVaria
 	}
 	var sku string
 	price := "0"
-	var salePrice *string
 	var variantID uint
 	if variant != nil {
 		sku = variant.SKU
@@ -143,12 +142,6 @@ func quickBuyProductSnapshotForVariant(item productdomain.Product, selectedVaria
 			price, _ = priceMoney.FormatMajor()
 		}
 		variantID = variant.ID
-		if saleMoney, err := variant.SalePriceMoney(); err == nil && saleMoney != nil {
-			value, valueErr := saleMoney.FormatMajor()
-			if valueErr == nil {
-				salePrice = &value
-			}
-		}
 	}
 	return quickBuyJSON(map[string]interface{}{
 		"id":                                item.ID,
@@ -165,9 +158,8 @@ func quickBuyProductSnapshotForVariant(item productdomain.Product, selectedVaria
 			}
 			return item.DisplayPriceCurrency()
 		}(),
-		"price":      price,
-		"sale_price": salePrice,
-		"status":     item.Status,
+		"price":  price,
+		"status": item.Status,
 	})
 }
 
@@ -197,13 +189,6 @@ func quickBuyVariantSnapshot(item productdomain.ProductVariant) datatypes.JSON {
 	if priceMoney, err := item.PriceMoney(); err == nil {
 		price, _ = priceMoney.FormatMajor()
 	}
-	var salePrice *string
-	if saleMoney, err := item.SalePriceMoney(); err == nil && saleMoney != nil {
-		value, valueErr := saleMoney.FormatMajor()
-		if valueErr == nil {
-			salePrice = &value
-		}
-	}
 	return quickBuyJSON(map[string]interface{}{
 		"id":            item.ID,
 		"product_id":    item.ProductID,
@@ -211,7 +196,6 @@ func quickBuyVariantSnapshot(item productdomain.ProductVariant) datatypes.JSON {
 		"title":         item.Title,
 		"currency":      item.Currency,
 		"price":         price,
-		"sale_price":    salePrice,
 		"stock":         item.Stock,
 		"weight_grams":  item.Weight,
 		"is_default":    item.IsDefault,

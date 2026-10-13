@@ -26,8 +26,8 @@ type Coupon struct {
 	// Currency is the currency in which the canonical minor-unit amounts and
 	// decimal percentage rate are configured. Empty values are normalized to the
 	// configured primary currency at the domain boundary.
-	Currency    string `gorm:"size:3;not null;default:'USD'" json:"currency"`
-	Description string `gorm:"type:text" json:"description"`
+	Currency             string    `gorm:"size:3;not null;default:'USD'" json:"currency"`
+	Description          string    `gorm:"type:text" json:"description"`
 	MinAmountMinor       int64     `gorm:"column:min_amount_minor;not null;default:0" json:"min_amount_minor"`
 	MaxDiscountMinor     int64     `gorm:"column:max_discount_minor;not null;default:0" json:"max_discount_minor"`
 	UsageLimit           int       `gorm:"default:0;check:coupon_usage_limit_non_negative,usage_limit >= 0" json:"usage_limit"` // 0表示无限制
@@ -164,11 +164,11 @@ const (
 )
 
 type CouponUsage struct {
-	ID       uint   `gorm:"primarykey" json:"id"`
-	CouponID uint   `gorm:"not null;index;index:idx_coupon_usage_coupon_user" json:"coupon_id"`
-	UserID   uint   `gorm:"not null;index;index:idx_coupon_usage_coupon_user" json:"user_id"`
-	Email    string `gorm:"size:255;not null;default:'';index:idx_coupon_usage_coupon_email" json:"email"`
-	OrderID  uint   `gorm:"not null;index" json:"order_id"`
+	ID             uint       `gorm:"primarykey" json:"id"`
+	CouponID       uint       `gorm:"not null;index;index:idx_coupon_usage_coupon_user" json:"coupon_id"`
+	UserID         uint       `gorm:"not null;index;index:idx_coupon_usage_coupon_user" json:"user_id"`
+	Email          string     `gorm:"size:255;not null;default:'';index:idx_coupon_usage_coupon_email" json:"email"`
+	OrderID        uint       `gorm:"not null;index" json:"order_id"`
 	DiscountMinor  int64      `gorm:"column:discount_minor;not null;default:0" json:"discount_minor"`
 	Currency       string     `gorm:"size:3;not null;default:'USD'" json:"currency"`
 	Status         string     `gorm:"not null;default:applied;index" json:"status"`

@@ -12,8 +12,6 @@ const RULE_DISPLAY_PRICE_FIELDS = ['min_value', 'max_value', 'fee', 'additional'
 
 export const useShippingTemplateManager = (options: Record<string, any> = {}) => {
   const fetchTemplates = options.fetchTemplates || (() => Promise.resolve())
-  const fetchCarrierServices = options.fetchCarrierServices || (() => Promise.resolve())
-  const carrierServices = options.carrierServices
 
   const templateDialogOpen = ref(false)
   const templateDialogMode = ref<'create' | 'edit'>('create')
@@ -91,32 +89,6 @@ export const useShippingTemplateManager = (options: Record<string, any> = {}) =>
     templateDialogOpen.value = true
   }
 
-  const normalizeTemplateCarrierServices = (services: any[] = []) => services.map((service: any) => ({
-    id: service.id,
-    carrier_id: service.carrier_id,
-    fpx_channel_id: service.fpx_channel_id ?? null,
-    yanwen_published_channel_id: service.yanwen_published_channel_id ?? null,
-    provider_code: String(service.provider_code || service.carrier?.code || (String(service.service_code || '').toUpperCase().startsWith('YANWEN:') ? 'YANWEN' : '')).trim().toUpperCase(),
-    service_code: String(service.service_code || '').trim().toUpperCase(),
-    service_name: String(service.service_name || '').trim(),
-    route_name: String(service.route_name || '').trim(),
-    countries: String(service.countries || '[]'),
-    currency: normalizeCurrencyCode(service.currency) || normalizedTemplateCurrency(),
-    billing_mode: service.billing_mode || 'actual_weight',
-    first_weight_grams: Number(service.first_weight_grams || 0),
-    additional_weight_grams: Number(service.additional_weight_grams || 0),
-    min_charge_weight_grams: Number(service.min_charge_weight_grams || 0),
-    volumetric_divisor: Number(service.volumetric_divisor || 6000),
-    fuel_surcharge_percent_decimal: String(service.fuel_surcharge_percent_decimal ?? '0'),
-    remote_surcharge_minor: Number(service.remote_surcharge_minor || 0),
-    remote_postal_codes: String(service.remote_postal_codes || '[]'),
-    eta_min_days: Number(service.eta_min_days || 0),
-    eta_max_days: Number(service.eta_max_days || 0),
-    enabled: service.enabled !== false,
-    sort_order: Number(service.sort_order || 0),
-    description: String(service.description || ''),
-  }))
-
   const showEditTemplateDialog = (template: any) => {
     templateDialogMode.value = 'edit'
     resetReactive(templateForm, {
@@ -126,15 +98,21 @@ export const useShippingTemplateManager = (options: Record<string, any> = {}) =>
       is_system_managed: template.is_system_managed === true,
       free_shipping_countries: normalizeFreeShippingCountries(template.free_shipping_countries),
       currency: normalizeCurrencyCode(template.currency) || 'USD',
+      route_group_id: template.route_group_id ?? null,
+      customer_billing_mode: String(template.customer_billing_mode || 'actual_weight'),
+      customer_first_weight_grams: Number(template.customer_first_weight_grams || 0),
+      customer_additional_weight_grams: Number(template.customer_additional_weight_grams || 0),
+      customer_min_charge_weight_grams: Number(template.customer_min_charge_weight_grams || 0),
+      customer_volumetric_divisor: Number(template.customer_volumetric_divisor || 6000),
+      customer_fuel_surcharge_percent_decimal: String(template.customer_fuel_surcharge_percent_decimal ?? '0'),
+      customer_remote_surcharge_minor: Number(template.customer_remote_surcharge_minor || 0),
+      customer_remote_postal_codes: String(template.customer_remote_postal_codes || '[]'),
+      customer_eta_min_days: Number(template.customer_eta_min_days || 0),
+      customer_eta_max_days: Number(template.customer_eta_max_days || 0),
       free_threshold_minor: Number(template.free_threshold_minor || 0),
       default_fee_minor: Number(template.default_fee_minor || 0),
       display_price_snapshots: normalizeDisplayPriceSnapshotMap(template.display_price_snapshots, TEMPLATE_DISPLAY_PRICE_FIELDS),
       enabled: template.enabled !== false,
-      carrier_services: normalizeTemplateCarrierServices(
-        Array.isArray(carrierServices?.value)
-          ? carrierServices.value.filter((service: any) => Number(service.template_id) === Number(template.id))
-          : [],
-      ),
       rules: Array.isArray(template.rules) ? template.rules.map((rule: any) => ({
         id: rule.id,
         region: rule.region || '',
@@ -173,6 +151,7 @@ export const useShippingTemplateManager = (options: Record<string, any> = {}) =>
   const validateTemplate = () => {
     clearErrors(templateErrors)
     const isSystemFreeShippingTemplate = templateForm.template_kind === 'system_free_shipping' || templateForm.type === 'free_shipping'
+    if (!isSystemFreeShippingTemplate && !Number(templateForm.route_group_id)) templateErrors.route_group_id = '请选择聚合线路'
     if (!templateForm.name?.trim()) templateErrors.name = '请输入模板名称'
     if (!isSystemFreeShippingTemplate && !['weight', 'quantity', 'price'].includes(templateForm.type)) templateErrors.type = '请选择计费类型'
     if (!normalizeCurrencyCode(templateForm.currency)) templateErrors.currency = '请输入运费录入币种'
@@ -208,6 +187,17 @@ export const useShippingTemplateManager = (options: Record<string, any> = {}) =>
         type: templateForm.type,
         template_kind: templateForm.template_kind === 'system_free_shipping' || templateForm.type === 'free_shipping' ? 'system_free_shipping' : 'carrier',
         currency: normalizedTemplateCurrency(),
+        route_group_id: templateForm.route_group_id ? Number(templateForm.route_group_id) : null,
+        customer_billing_mode: String(templateForm.customer_billing_mode || 'actual_weight'),
+        customer_first_weight_grams: Number(templateForm.customer_first_weight_grams || 0),
+        customer_additional_weight_grams: Number(templateForm.customer_additional_weight_grams || 0),
+        customer_min_charge_weight_grams: Number(templateForm.customer_min_charge_weight_grams || 0),
+        customer_volumetric_divisor: Number(templateForm.customer_volumetric_divisor || 6000),
+        customer_fuel_surcharge_percent_decimal: String(templateForm.customer_fuel_surcharge_percent_decimal || '0'),
+        customer_remote_surcharge_minor: Number(templateForm.customer_remote_surcharge_minor || 0),
+        customer_remote_postal_codes: String(templateForm.customer_remote_postal_codes || '[]'),
+        customer_eta_min_days: Number(templateForm.customer_eta_min_days || 0),
+        customer_eta_max_days: Number(templateForm.customer_eta_max_days || 0),
         free_shipping: templateForm.template_kind === 'system_free_shipping' || templateForm.type === 'free_shipping' ? true : Boolean(templateForm.free_shipping),
         free_threshold_minor: Number(templateForm.free_threshold_minor || 0),
         default_fee_minor: Number(templateForm.default_fee_minor || 0),
@@ -216,22 +206,19 @@ export const useShippingTemplateManager = (options: Record<string, any> = {}) =>
         description: templateForm.description || '',
         enabled: Boolean(templateForm.enabled),
         rules: normalizeTemplateRules(),
-        carrier_services: templateForm.template_kind === 'system_free_shipping' || templateForm.type === 'free_shipping'
-          ? []
-          : normalizeTemplateCarrierServices(templateForm.carrier_services),
+
       }
 
       if (templateDialogMode.value === 'create') {
         await shippingApi.createTemplate(payload)
-        toast.success('运费模板已创建')
+        toast.success('线路计费模板已创建')
       } else {
         await shippingApi.updateTemplate(templateForm.id, payload)
-        toast.success('运费模板已更新')
+        toast.success('线路计费模板已更新')
       }
 
       templateDialogOpen.value = false
       await fetchTemplates()
-      await fetchCarrierServices()
     } catch (error) {
       console.error('Failed to save shipping template:', error)
     } finally {

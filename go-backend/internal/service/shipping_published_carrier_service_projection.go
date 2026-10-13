@@ -17,27 +17,24 @@ func (s *ShippingService) projectCarrierServicesFromPublishedCollections(
 	services []shipping.CarrierService,
 ) ([]shipping.CarrierService, map[uint]struct{}, error) {
 	projectedServices := make([]shipping.CarrierService, 0, len(services))
-	templatesWithPublishedCollectionRoutes := make(map[uint]struct{})
+	aggregatesWithPublishedCollectionRoutes := make(map[uint]struct{})
 	needsFpxCollection := false
 	needsYanwenCollection := false
 
 	for i := range services {
-		if services[i].Template != nil && services[i].Template.IsSystemFreeShippingTemplate() {
-			continue
-		}
 		provider := publishedCarrierServiceProvider(services[i])
 		serviceCode := strings.ToUpper(strings.TrimSpace(services[i].ServiceCode))
 		isYanwenService := provider == "YANWEN" || strings.HasPrefix(serviceCode, "YANWEN:")
 		if isYanwenService {
-			if services[i].TemplateID != nil {
-				templatesWithPublishedCollectionRoutes[*services[i].TemplateID] = struct{}{}
+			if services[i].RouteGroupID != nil {
+				aggregatesWithPublishedCollectionRoutes[*services[i].RouteGroupID] = struct{}{}
 			}
 			needsYanwenCollection = true
 			continue
 		}
 		if provider == "4PX" {
-			if services[i].TemplateID != nil {
-				templatesWithPublishedCollectionRoutes[*services[i].TemplateID] = struct{}{}
+			if services[i].RouteGroupID != nil {
+				aggregatesWithPublishedCollectionRoutes[*services[i].RouteGroupID] = struct{}{}
 			}
 			needsFpxCollection = true
 		}
@@ -70,9 +67,6 @@ func (s *ShippingService) projectCarrierServicesFromPublishedCollections(
 
 	for i := range services {
 		carrierService := services[i]
-		if carrierService.Template != nil && carrierService.Template.IsSystemFreeShippingTemplate() {
-			continue
-		}
 		provider := publishedCarrierServiceProvider(carrierService)
 		serviceCode := strings.ToUpper(strings.TrimSpace(carrierService.ServiceCode))
 		isYanwenCode := strings.HasPrefix(serviceCode, "YANWEN:")
@@ -117,15 +111,15 @@ func (s *ShippingService) projectCarrierServicesFromPublishedCollections(
 		}
 
 		if carrierService.FpxChannelID != nil || carrierService.YanwenPublishedChannelID != nil {
-			if carrierService.TemplateID != nil {
-				templatesWithPublishedCollectionRoutes[*carrierService.TemplateID] = struct{}{}
+			if carrierService.RouteGroupID != nil {
+				aggregatesWithPublishedCollectionRoutes[*carrierService.RouteGroupID] = struct{}{}
 			}
 			continue
 		}
 		projectedServices = append(projectedServices, carrierService)
 	}
 
-	return projectedServices, templatesWithPublishedCollectionRoutes, nil
+	return projectedServices, aggregatesWithPublishedCollectionRoutes, nil
 }
 
 func publishedCarrierServiceProvider(carrierService shipping.CarrierService) string {

@@ -31,19 +31,18 @@ type googleMerchantProductInput struct {
 }
 
 type googleMerchantWriteAttributes struct {
-	Title                 string                  `json:"title"`
-	Description           string                  `json:"description"`
-	Link                  string                  `json:"link"`
-	ImageLink             string                  `json:"imageLink"`
-	Availability          string                  `json:"availability"`
-	Brand                 string                  `json:"brand"`
-	Condition             string                  `json:"condition"`
-	GoogleProductCategory string                  `json:"googleProductCategory"`
-	GTINs                 []string                `json:"gtins,omitempty"`
-	MPN                   string                  `json:"mpn,omitempty"`
-	IdentifierExists      bool                    `json:"identifierExists"`
-	Price                 googleMerchantAPIPrice  `json:"price"`
-	SalePrice             *googleMerchantAPIPrice `json:"salePrice,omitempty"`
+	Title                 string                 `json:"title"`
+	Description           string                 `json:"description"`
+	Link                  string                 `json:"link"`
+	ImageLink             string                 `json:"imageLink"`
+	Availability          string                 `json:"availability"`
+	Brand                 string                 `json:"brand"`
+	Condition             string                 `json:"condition"`
+	GoogleProductCategory string                 `json:"googleProductCategory"`
+	GTINs                 []string               `json:"gtins,omitempty"`
+	MPN                   string                 `json:"mpn,omitempty"`
+	IdentifierExists      bool                   `json:"identifierExists"`
+	Price                 googleMerchantAPIPrice `json:"price"`
 }
 
 const (
@@ -195,7 +194,7 @@ func (s *GoogleMerchantService) buildGoogleMerchantProductInput(offer *merchant.
 		return nil, fmt.Errorf("%w: title and description are required", ErrGoogleMerchantOfferInvalid)
 	}
 
-	price, sale, err := effectiveGoogleMerchantPrices(offer)
+	price, err := resolveGoogleMerchantOfferPriceMoney(offer)
 	if err != nil {
 		return nil, err
 	}
@@ -234,16 +233,6 @@ func (s *GoogleMerchantService) buildGoogleMerchantProductInput(offer *merchant.
 	}
 	if offer.MPN != "" {
 		input.ProductAttributes.MPN = offer.MPN
-	}
-	if sale != nil {
-		saleMicros, err := googleMerchantPriceMicros(*sale)
-		if err != nil {
-			return nil, fmt.Errorf("%w: %v", ErrGoogleMerchantOfferInvalid, err)
-		}
-		input.ProductAttributes.SalePrice = &googleMerchantAPIPrice{
-			AmountMicros: strconv.FormatInt(saleMicros, 10),
-			CurrencyCode: offer.CurrencyCode,
-		}
 	}
 	return input, nil
 }

@@ -49,7 +49,7 @@ func (r *ProductRepository) attachProductDisplayPriceSnapshots(products []produc
 		snapshot := &snapshots[i]
 		if snapshot.VariantID != nil {
 			variant := variantsByID[*snapshot.VariantID]
-			if variant != nil && displayPriceSnapshotMatchesSource(snapshot, variant.Currency, variant.PriceMinor, variant.SalePriceMinor) {
+			if variant != nil && displayPriceSnapshotMatchesSource(snapshot, variant.Currency, variant.PriceMinor) {
 				variant.DisplayPriceData = append(datatypes.JSON(nil), snapshot.DisplayPriceData...)
 				variant.DisplayPriceSnapshot = snapshot
 			}
@@ -60,11 +60,11 @@ func (r *ProductRepository) attachProductDisplayPriceSnapshots(products []produc
 		if item == nil {
 			continue
 		}
-		sourceCurrency, sourcePriceMinor, sourceSalePriceMinor := item.Currency, item.PriceMinor, item.SalePriceMinor
+		sourceCurrency, sourcePriceMinor := item.Currency, item.PriceMinor
 		if variant := item.StartingPriceVariant(); variant != nil {
-			sourceCurrency, sourcePriceMinor, sourceSalePriceMinor = variant.Currency, variant.PriceMinor, variant.SalePriceMinor
+			sourceCurrency, sourcePriceMinor = variant.Currency, variant.PriceMinor
 		}
-		if displayPriceSnapshotMatchesSource(snapshot, sourceCurrency, sourcePriceMinor, sourceSalePriceMinor) {
+		if displayPriceSnapshotMatchesSource(snapshot, sourceCurrency, sourcePriceMinor) {
 			item.DisplayPriceData = append(datatypes.JSON(nil), snapshot.DisplayPriceData...)
 			item.DisplayPriceSnapshot = snapshot
 		}
@@ -96,9 +96,8 @@ func (r *ProductRepository) attachVariantDisplayPriceSnapshot(variant *product.P
 	return nil
 }
 
-func displayPriceSnapshotMatchesSource(snapshot *product.ProductDisplayPriceSnapshot, sourceCurrency string, sourcePriceMinor int64, sourceSalePriceMinor *int64) bool {
+func displayPriceSnapshotMatchesSource(snapshot *product.ProductDisplayPriceSnapshot, sourceCurrency string, sourcePriceMinor int64) bool {
 	return snapshot != nil &&
 		snapshot.SourcePriceMinor == sourcePriceMinor &&
-		currency.NormalizeCode(snapshot.SourceCurrency) == currency.NormalizeCode(sourceCurrency) &&
-		salePriceMinorEqual(snapshot.SourceSalePriceMinor, sourceSalePriceMinor)
+		currency.NormalizeCode(snapshot.SourceCurrency) == currency.NormalizeCode(sourceCurrency)
 }

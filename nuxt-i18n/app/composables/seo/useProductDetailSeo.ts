@@ -179,7 +179,7 @@ export function useProductDetailSeo(options: ProductDetailSeoOptions) {
       const displayPrice = validProductDisplayPrice(variant.display_price)
         || displayPriceSnapshotForCurrency(variant.display_prices, options.displayCurrency.value)
       return {
-        amount: displayPrice?.amount_decimal ?? String(variant.sale_price_decimal ?? variant.price_decimal ?? ''),
+        amount: displayPrice?.amount_decimal ?? String(variant.price_decimal ?? ''),
         currency: displayPrice?.currency
           || normalizeProductCurrencyCode(variant.currency || product.currency)
           || 'USD',

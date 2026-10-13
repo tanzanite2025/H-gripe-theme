@@ -6,6 +6,7 @@ import (
 	"commerce-platform/internal/domain/product"
 	"commerce-platform/internal/domain/shipping"
 	shippingrating "commerce-platform/internal/domain/shipping/rating"
+	"commerce-platform/internal/repository"
 	"errors"
 	"fmt"
 	"math"
@@ -34,6 +35,27 @@ func carrierServiceVolumetricWeightGrams(service shipping.CarrierService, resolv
 	return knownVolumetricWeightGrams, dimensionalChargeWeightGrams, complete && knownVolumetricWeightGrams > 0
 }
 
+func customerTemplateVolumetricWeightGrams(template *shipping.ShippingTemplate, resolvedItems []resolvedShippingItem) (int, int, bool) {
+	if template == nil || template.CustomerVolumetricDivisor <= 0 {
+		return 0, 0, false
+	}
+	knownVolumetricWeightGrams := 0
+	dimensionalChargeWeightGrams := 0
+	complete := len(resolvedItems) > 0
+	for _, item := range resolvedItems {
+		itemVolumetricWeight, ok := packagingRuleVolumetricWeightGrams(item.PackagingRule, template.CustomerVolumetricDivisor)
+		if !ok {
+			dimensionalChargeWeightGrams += item.ChargeWeightGrams * item.Quantity
+			complete = false
+			continue
+		}
+		itemTotalVolumetricWeight := itemVolumetricWeight * item.Quantity
+		knownVolumetricWeightGrams += itemTotalVolumetricWeight
+		dimensionalChargeWeightGrams += itemTotalVolumetricWeight
+	}
+	return knownVolumetricWeightGrams, dimensionalChargeWeightGrams, complete && knownVolumetricWeightGrams > 0
+}
+
 func packagingRuleVolumetricWeightGrams(rule *shipping.PackagingRule, divisor int) (int, bool) {
 	if rule == nil {
 		return 0, false
@@ -48,6 +70,20 @@ func carrierServiceBillableWeightGrams(chargeWeightGrams int, service shipping.C
 		shippingrating.WeightScale{
 			FirstWeightGrams:      service.FirstWeightGrams,
 			AdditionalWeightGrams: service.AdditionalWeightGrams,
+		},
+	)
+}
+
+func customerTemplateBillableWeightGrams(chargeWeightGrams int, template *shipping.ShippingTemplate) int {
+	if template == nil {
+		return chargeWeightGrams
+	}
+	return shippingrating.BillableWeightGrams(
+		chargeWeightGrams,
+		template.CustomerMinChargeWeightGrams,
+		shippingrating.WeightScale{
+			FirstWeightGrams:      template.CustomerFirstWeightGrams,
+			AdditionalWeightGrams: template.CustomerAdditionalWeightGrams,
 		},
 	)
 }
@@ -79,37 +115,48 @@ func uniqueShippingQuoteTemplateIDs(items []ShippingQuoteItemInput) ([]uint, err
 	seen := make(map[uint]struct{})
 	templateIDs := make([]uint, 0, len(items))
 	for _, item := range items {
-		if item.ShippingTemplateID == nil || *item.ShippingTemplateID == 0 {
+		ids := item.ShippingTemplateIDs
+		if len(ids) == 0 {
 			if item.VariantID != nil {
 				return nil, fmt.Errorf("shipping template is missing for variant ID %d", *item.VariantID)
 			}
 			return nil, fmt.Errorf("shipping template is missing for product ID %d", item.ProductID)
 		}
 
-		templateID := *item.ShippingTemplateID
-		if _, ok := seen[templateID]; ok {
-			continue
+		for _, templateID := range ids {
+			if templateID == 0 {
+				continue
+			}
+			if _, ok := seen[templateID]; ok {
+				continue
+			}
+			seen[templateID] = struct{}{}
+			templateIDs = append(templateIDs, templateID)
 		}
-		seen[templateID] = struct{}{}
-		templateIDs = append(templateIDs, templateID)
 	}
 	return templateIDs, nil
 }
 
-func resolveProductShippingTemplateID(p *product.Product, variant *product.ProductVariant) (uint, error) {
-	if variant != nil && variant.ShippingTemplateID != nil && *variant.ShippingTemplateID != 0 {
-		return *variant.ShippingTemplateID, nil
+func resolveProductShippingTemplateIDs(productRepo *repository.ProductRepository, p *product.Product, variant *product.ProductVariant) ([]uint, error) {
+	if productRepo == nil {
+		return nil, errors.New("product shipping template binding repository is not configured")
 	}
-	if p != nil && p.ShippingTemplateID != nil && *p.ShippingTemplateID != 0 {
-		return *p.ShippingTemplateID, nil
+	ids, err := productRepo.FindPurchasableShippingTemplateIDs(p.ID, func() *uint {
+		if variant == nil {
+			return nil
+		}
+		return &variant.ID
+	}())
+	if err != nil {
+		return nil, err
 	}
-	if variant != nil {
-		return 0, fmt.Errorf("shipping template is missing for SKU %s", variant.SKU)
+	if len(ids) == 0 {
+		if variant != nil {
+			return nil, fmt.Errorf("shipping template is missing for SKU %s", variant.SKU)
+		}
+		return nil, fmt.Errorf("shipping template is missing for product ID %d", p.ID)
 	}
-	if p != nil {
-		return 0, fmt.Errorf("shipping template is missing for product ID %d", p.ID)
-	}
-	return 0, errors.New("shipping template is missing")
+	return ids, nil
 }
 
 func packagingRuleWeightGrams(rule *shipping.PackagingRule) int {
@@ -231,7 +278,7 @@ func calculateTemplateShippingFeeForMoneyValue(
 		break
 	}
 	if !matchedRule && defaultFeeMoney.AmountMinor() <= 0 {
-		cause := ErrShippingRateUnavailable
+		cause := ErrShippingTemplateRateNotApplicable
 		if !countryMatched {
 			cause = ErrCountryNotSupported
 		}
@@ -378,7 +425,7 @@ func validateShippingWeightBilling(rule shipping.ShippingRule, billing shippingW
 		FirstWeightGrams: billing.firstWeightGrams, AdditionalWeightGrams: billing.additionalWeightGrams,
 	}); err != nil {
 		return fmt.Errorf(
-			"%w: weight rule ID %d requires positive carrier first/additional weight configuration",
+			"%w: weight rule ID %d requires positive customer template first/additional weight configuration",
 			ErrShippingRateConfigurationInvalid,
 			rule.ID,
 		)
@@ -418,7 +465,7 @@ func validateTemplateWeightBillingForValue(
 		}
 		if len(weightBilling) == 0 {
 			return fmt.Errorf(
-				"%w: weight rule ID %d requires carrier first/additional weight configuration",
+				"%w: weight rule ID %d requires customer template first/additional weight configuration",
 				ErrShippingRateConfigurationInvalid,
 				rule.ID,
 			)
@@ -428,7 +475,7 @@ func validateTemplateWeightBillingForValue(
 	return nil
 }
 
-// shippingWeightBilling carries the carrier-specific weight scale. Weight
+// shippingWeightBilling carries the customer template weight scale. Weight
 // rules with an additional fee must receive this configuration explicitly.
 type shippingWeightBilling struct {
 	firstWeightGrams      int

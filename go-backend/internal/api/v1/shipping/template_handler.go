@@ -19,7 +19,7 @@ func (h *Handler) ListTemplates(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, gin.H{"data": templates})
+	response.Success(c, gin.H{"data": buildPublicShippingCustomerBillingTemplateResponses(templates)})
 }
 
 func (h *Handler) GetTemplate(c *gin.Context) {
@@ -35,51 +35,7 @@ func (h *Handler) GetTemplate(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, template)
-}
-
-func (h *Handler) CalculateShipping(c *gin.Context) {
-	var req struct {
-		TemplateID  uint    `json:"template_id" binding:"required"`
-		Weight      float64 `json:"weight"`
-		Quantity    int     `json:"quantity"`
-		AmountMinor int64   `json:"amount_minor"`
-		Country     string  `json:"country" binding:"required"`
-	}
-	if err := c.ShouldBindJSON(&req); err != nil {
-		apierror.RespondBadRequest(c, err.Error())
-		return
-	}
-
-	quote, err := h.shippingService.CalculateShipping(service.ShippingCalculationInput{
-		TemplateID:  req.TemplateID,
-		Weight:      req.Weight,
-		Quantity:    req.Quantity,
-		AmountMinor: req.AmountMinor,
-		Country:     req.Country,
-	})
-	if err != nil {
-		if errors.Is(err, service.ErrInvalidShippingDestination) {
-			apierror.RespondBadRequest(c, err.Error())
-			return
-		}
-		if errors.Is(err, service.ErrCountryNotSupported) {
-			apierror.RespondError(c, http.StatusUnprocessableEntity, "country_not_supported", err.Error())
-			return
-		}
-		if errors.Is(err, service.ErrShippingRateConfigurationInvalid) {
-			apierror.RespondInternalError(c, err)
-			return
-		}
-		if errors.Is(err, service.ErrShippingRateUnavailable) {
-			apierror.RespondError(c, http.StatusUnprocessableEntity, "shipping_rate_unavailable", err.Error())
-			return
-		}
-		apierror.RespondNotFound(c, "Template")
-		return
-	}
-
-	response.Success(c, quote)
+	response.Success(c, buildPublicShippingCustomerBillingTemplateResponse(*template))
 }
 
 func (h *Handler) QuoteShipping(c *gin.Context) {

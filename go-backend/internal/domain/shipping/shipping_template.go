@@ -3,7 +3,10 @@ package shipping
 import (
 	"commerce-platform/internal/domain/currency"
 	domainmoney "commerce-platform/internal/domain/money"
+	"encoding/json"
 	"errors"
+	"fmt"
+	"math/big"
 	"strings"
 	"time"
 
@@ -45,18 +48,29 @@ type ShippingTemplate struct {
 	// TemplateKind distinguishes the system-owned country-scoped free-shipping
 	// template from ordinary carrier pricing templates. It deliberately has no
 	// relation to a carrier, 4PX channel, or Yanwen channel.
-	TemplateKind       string `gorm:"column:template_kind;size:40;not null;default:'carrier'" json:"template_kind"`
-	IsSystemManaged    bool   `gorm:"column:is_system_managed;not null;default:false" json:"is_system_managed"`
-	Currency           string `gorm:"size:3;not null;default:'USD';index" json:"currency"`
-	FreeShipping       bool   `gorm:"default:false" json:"free_shipping"`
-	FreeThresholdMinor int64  `gorm:"column:free_threshold_minor;not null;default:0" json:"free_threshold_minor"`
-	DefaultFeeMinor    int64  `gorm:"column:default_fee_minor;not null;default:0" json:"default_fee_minor"`
+	TemplateKind    string `gorm:"column:template_kind;size:40;not null;default:'carrier'" json:"template_kind"`
+	IsSystemManaged bool   `gorm:"column:is_system_managed;not null;default:false" json:"is_system_managed"`
+	// RouteGroupID links this customer-facing billing template to a published
+	// route aggregate. Route identity and provider metadata live on that
+	// aggregate; all fields below describe the amount charged to the customer.
+	RouteGroupID                        *uint  `gorm:"column:route_group_id;index" json:"route_group_id,omitempty"`
+	Currency                            string `gorm:"size:3;not null;default:'USD';index" json:"currency"`
+	FreeShipping                        bool   `gorm:"default:false" json:"free_shipping"`
+	FreeThresholdMinor                  int64  `gorm:"column:free_threshold_minor;not null;default:0" json:"free_threshold_minor"`
+	DefaultFeeMinor                     int64  `gorm:"column:default_fee_minor;not null;default:0" json:"default_fee_minor"`
+	CustomerBillingMode                 string `gorm:"column:customer_billing_mode;size:40;not null;default:'actual_weight'" json:"customer_billing_mode"`
+	CustomerFirstWeightGrams            int    `gorm:"column:customer_first_weight_grams;not null;default:0" json:"customer_first_weight_grams"`
+	CustomerAdditionalWeightGrams       int    `gorm:"column:customer_additional_weight_grams;not null;default:0" json:"customer_additional_weight_grams"`
+	CustomerMinChargeWeightGrams        int    `gorm:"column:customer_min_charge_weight_grams;not null;default:0" json:"customer_min_charge_weight_grams"`
+	CustomerVolumetricDivisor           int    `gorm:"column:customer_volumetric_divisor;not null;default:6000" json:"customer_volumetric_divisor"`
+	CustomerFuelSurchargePercentDecimal string `gorm:"column:customer_fuel_surcharge_percent_decimal;type:numeric(30,15);not null;default:0" json:"customer_fuel_surcharge_percent_decimal"`
+	CustomerRemoteSurchargeMinor        int64  `gorm:"column:customer_remote_surcharge_minor;not null;default:0" json:"customer_remote_surcharge_minor"`
+	CustomerRemotePostalCodes           string `gorm:"column:customer_remote_postal_codes;type:text;not null;default:'[]'" json:"customer_remote_postal_codes"`
+	CustomerEtaMinDays                  int    `gorm:"column:customer_eta_min_days;not null;default:0" json:"customer_eta_min_days"`
+	CustomerEtaMaxDays                  int    `gorm:"column:customer_eta_max_days;not null;default:0" json:"customer_eta_max_days"`
 	// FreeShippingCountries is a normalized JSON array of ISO alpha-2 country
 	// codes. It is used only by the system free-shipping template.
 	FreeShippingCountries string `gorm:"column:free_shipping_countries;type:text;not null;default:'[]'" json:"free_shipping_countries"`
-	// FreeShippingCountriesProvided distinguishes an omitted legacy update field
-	// from an explicit empty country selection. It is request metadata only.
-	FreeShippingCountriesProvided bool `gorm:"-" json:"-"`
 	// DisplayPriceData is hydrated from ShippingDisplayPriceSnapshot. It is a
 	// storefront/read-model projection and is never persisted on the
 	// transactional shipping_templates row.
@@ -64,6 +78,7 @@ type ShippingTemplate struct {
 	DisplayPriceSnapshot *ShippingDisplayPriceSnapshot `gorm:"-" json:"-"`
 	Description          string                        `gorm:"type:text" json:"description"`
 	Enabled              bool                          `gorm:"default:true" json:"enabled"`
+	RouteGroup           *ShippingRouteGroup           `gorm:"foreignKey:RouteGroupID" json:"route_group,omitempty"`
 	Rules                []ShippingRule                `gorm:"foreignKey:TemplateID" json:"rules"`
 	CreatedAt            time.Time                     `json:"created_at"`
 	UpdatedAt            time.Time                     `json:"updated_at"`
@@ -83,6 +98,10 @@ func (t *ShippingTemplate) BeforeSave(tx *gorm.DB) error {
 	return t.normalizeAndValidate()
 }
 
+func (t *ShippingTemplate) ValidateCustomerShippingBillingConfiguration() error {
+	return t.normalizeAndValidate()
+}
+
 func (t *ShippingTemplate) normalizeAndValidate() error {
 	t.NormalizeSystemFreeShippingTemplateIdentity()
 	t.ApplySystemFreeShippingTemplatePricingDefaults()
@@ -94,7 +113,66 @@ func (t *ShippingTemplate) normalizeAndValidate() error {
 	if t.FreeThresholdMinor < 0 || t.DefaultFeeMinor < 0 {
 		return errors.New("shipping template monetary fields cannot be negative")
 	}
+	if t.CustomerBillingMode == "" {
+		t.CustomerBillingMode = "actual_weight"
+	}
+	if t.CustomerVolumetricDivisor == 0 {
+		t.CustomerVolumetricDivisor = 6000
+	}
+	if t.CustomerFirstWeightGrams < 0 || t.CustomerAdditionalWeightGrams < 0 || t.CustomerMinChargeWeightGrams < 0 || t.CustomerVolumetricDivisor < 0 || t.CustomerRemoteSurchargeMinor < 0 || t.CustomerEtaMinDays < 0 || t.CustomerEtaMaxDays < 0 {
+		return errors.New("customer shipping billing fields cannot be negative")
+	}
+	switch t.CustomerBillingMode {
+	case "actual_weight", "volumetric_weight", "greater_of_actual_and_volumetric":
+	default:
+		return errors.New("customer billing mode must be actual_weight, volumetric_weight or greater_of_actual_and_volumetric")
+	}
+	var postalRules []string
+	if strings.TrimSpace(t.CustomerRemotePostalCodes) == "" {
+		t.CustomerRemotePostalCodes = "[]"
+	}
+	if err := json.Unmarshal([]byte(t.CustomerRemotePostalCodes), &postalRules); err != nil {
+		return errors.New("customer remote postal codes must be a JSON array of strings")
+	}
+	for _, rule := range postalRules {
+		if strings.TrimSpace(rule) == "" {
+			return errors.New("customer remote postal code rule cannot be empty")
+		}
+	}
+	if t.CustomerEtaMaxDays > 0 && t.CustomerEtaMinDays > 0 && t.CustomerEtaMaxDays < t.CustomerEtaMinDays {
+		return errors.New("customer eta max days cannot be less than min days")
+	}
+	if _, err := t.CustomerFuelSurchargeRate(); err != nil {
+		return err
+	}
 	return nil
+}
+
+// CustomerFuelSurchargeRate parses the exact surcharge configured on the
+// customer billing template. It is deliberately separate from
+// CarrierService.FuelSurchargeRate, which belongs to provider-side data.
+func (t ShippingTemplate) CustomerFuelSurchargeRate() (*big.Rat, error) {
+	value := strings.TrimSpace(t.CustomerFuelSurchargePercentDecimal)
+	if value == "" {
+		value = "0"
+	}
+	if strings.Contains(value, "/") {
+		return nil, fmt.Errorf("customer fuel surcharge percent must be a decimal")
+	}
+	rate, ok := new(big.Rat).SetString(value)
+	if !ok || rate.Sign() < 0 || rate.Cmp(big.NewRat(100, 1)) > 0 {
+		return nil, fmt.Errorf("customer fuel surcharge percent must be between 0 and 100")
+	}
+	scaled := new(big.Rat).Mul(rate, new(big.Rat).SetInt64(1_000_000_000_000_000))
+	if scaled.Denom().Cmp(big.NewInt(1)) != 0 {
+		return nil, errors.New("customer fuel surcharge percent supports at most 15 fractional digits")
+	}
+	return rate, nil
+}
+
+// CustomerRemoteSurchargeMoney returns the customer-facing remote-area fee.
+func (t ShippingTemplate) CustomerRemoteSurchargeMoney() (domainmoney.Money, error) {
+	return domainmoney.New(t.CustomerRemoteSurchargeMinor, currency.NormalizeCode(t.Currency))
 }
 
 // NormalizeSystemFreeShippingTemplateIdentity keeps the built-in template's

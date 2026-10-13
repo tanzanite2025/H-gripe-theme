@@ -14,6 +14,116 @@ type ShippingHandler struct {
 	shippingService *service.ShippingService
 }
 
+type shippingRouteGroupRequest struct {
+	Name                     string                                          `json:"name" binding:"required"`
+	Description              string                                          `json:"description"`
+	Enabled                  *bool                                           `json:"enabled"`
+	SortOrder                int                                             `json:"sort_order"`
+	CarrierServiceIDs        []uint                                          `json:"carrier_service_ids"`
+	PublishedCarrierServices []shippingPublishedCarrierRouteSelectionRequest `json:"published_carrier_services"`
+}
+
+// Published route selections identify records in the provider collection.
+// Customer prices and provider costs are not accepted at this boundary.
+type shippingPublishedCarrierRouteSelectionRequest struct {
+	CarrierID                uint   `json:"carrier_id" binding:"required"`
+	FpxChannelID             *uint  `json:"fpx_channel_id"`
+	YanwenPublishedChannelID *uint  `json:"yanwen_published_channel_id"`
+	ProviderCode             string `json:"provider_code"`
+}
+
+func (r shippingRouteGroupRequest) publishedCarrierRouteIdentities() []shippingdomain.CarrierService {
+	identities := make([]shippingdomain.CarrierService, 0, len(r.PublishedCarrierServices))
+	for _, selection := range r.PublishedCarrierServices {
+		identities = append(identities, shippingdomain.CarrierService{
+			CarrierID: selection.CarrierID, FpxChannelID: selection.FpxChannelID,
+			YanwenPublishedChannelID: selection.YanwenPublishedChannelID, ProviderCode: selection.ProviderCode,
+		})
+	}
+	return identities
+}
+
+func (r shippingRouteGroupRequest) toDomain() shippingdomain.ShippingRouteGroup {
+	enabled := true
+	if r.Enabled != nil {
+		enabled = *r.Enabled
+	}
+	return shippingdomain.ShippingRouteGroup{
+		Name: r.Name, Description: r.Description,
+		Enabled: enabled, SortOrder: r.SortOrder,
+	}
+}
+
+func (h *ShippingHandler) ListShippingRouteGroups(c *gin.Context) {
+	groups, err := h.shippingService.ListShippingRouteGroups()
+	if err != nil {
+		apierror.RespondInternalError(c, err)
+		return
+	}
+	response.Success(c, gin.H{"data": groups})
+}
+
+func (h *ShippingHandler) GetShippingRouteGroup(c *gin.Context) {
+	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		apierror.RespondBadRequest(c, "invalid route aggregate id")
+		return
+	}
+	group, err := h.shippingService.GetShippingRouteGroup(uint(id))
+	if err != nil {
+		apierror.RespondNotFound(c, "Shipping route aggregate")
+		return
+	}
+	response.Success(c, group)
+}
+
+func (h *ShippingHandler) CreateShippingRouteGroup(c *gin.Context) {
+	var req shippingRouteGroupRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		apierror.RespondBadRequest(c, err.Error())
+		return
+	}
+	group := req.toDomain()
+	if err := h.shippingService.CreateShippingRouteGroup(&group, req.CarrierServiceIDs, req.publishedCarrierRouteIdentities()); err != nil {
+		apierror.RespondBadRequest(c, err.Error())
+		return
+	}
+	response.Created(c, group)
+}
+
+func (h *ShippingHandler) UpdateShippingRouteGroup(c *gin.Context) {
+	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		apierror.RespondBadRequest(c, "invalid route aggregate id")
+		return
+	}
+	var req shippingRouteGroupRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		apierror.RespondBadRequest(c, err.Error())
+		return
+	}
+	group := req.toDomain()
+	group.ID = uint(id)
+	if err := h.shippingService.UpdateShippingRouteGroup(&group, req.CarrierServiceIDs, req.publishedCarrierRouteIdentities()); err != nil {
+		apierror.RespondBadRequest(c, err.Error())
+		return
+	}
+	response.Success(c, group)
+}
+
+func (h *ShippingHandler) DeleteShippingRouteGroup(c *gin.Context) {
+	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		apierror.RespondBadRequest(c, "invalid route aggregate id")
+		return
+	}
+	if err := h.shippingService.DeleteShippingRouteGroup(uint(id)); err != nil {
+		apierror.RespondBadRequest(c, err.Error())
+		return
+	}
+	response.SuccessWithMessage(c, "shipping route aggregate deleted", nil)
+}
+
 func NewShippingHandler(shippingService *service.ShippingService) *ShippingHandler {
 	return &ShippingHandler{
 		shippingService: shippingService,

@@ -84,7 +84,6 @@
       :variant-spec-definitions="variantSpecDefinitions"
       :default-variant-index="defaultVariantIndex"
       :product-spec-template-select-value="productSpecTemplateSelectValue"
-      :shipping-template-select-value="shippingTemplateSelectValue"
       :shipping-templates="shippingTemplates"
       :after-sales-template-select-value="afterSalesTemplateSelectValue"
       :packaging-template-select-value="packagingTemplateSelectValue"
@@ -105,7 +104,7 @@
       @schwalbe-tire-model-select="setSchwalbeTireCatalogModel"
       @retry-schwalbe-tire-catalog="fetchSchwalbeTireCatalog"
       @product-brand-select="setProductBrand"
-      @product-shipping-template-select="setProductShippingTemplate"
+      @product-shipping-template-select="setProductShippingTemplates"
       @product-information-template-select="setProductInformationTemplate"
       @customs-classification-select="handleCustomsClassificationSelect"
       @customs-classification-manual-edit="clearCustomsClassification"
@@ -238,7 +237,6 @@ const {
   defaultVariantIndex,
   productSpecTemplateSelectValue,
   brandSelectValue,
-  shippingTemplateSelectValue,
   afterSalesTemplateSelectValue,
   packagingTemplateSelectValue,
   templateScopedValuesTouched,
@@ -247,7 +245,7 @@ const {
   getSpecLabel,
   specSelectValue,
   setSpecSelectValue,
-  setProductShippingTemplate,
+  setProductShippingTemplates,
   setProductBrand,
   setProductInformationTemplate,
   applyCustomsClassification,

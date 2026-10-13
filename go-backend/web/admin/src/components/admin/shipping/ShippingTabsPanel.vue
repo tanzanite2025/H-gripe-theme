@@ -1,22 +1,14 @@
 <template>
   <Tabs :model-value="activeTab" class="gap-4">
-    <ShippingTemplatesPanel
+    <ShippingCustomerBillingTemplatesPanel
       :templates="templates"
-      :tracking-carrier-mappings="trackingCarrierMappings"
-      :tracking-providers="trackingProviders"
-      :carriers="carriers"
-      :carrier-services="carrierServices"
       :loading-templates="loading.templates"
-      :loading-tracking-mappings="loading.trackingMappings"
       :can-create="canCreate"
       :can-edit="canEdit"
       :can-delete="canDelete"
       @create-template="emit('create-template')"
       @edit-template="emit('edit-template', $event)"
       @delete-template="emit('delete', 'template', $event)"
-      @create-mapping="emit('create-mapping')"
-      @edit-mapping="emit('edit-mapping', $event)"
-      @delete-mapping="emit('delete', 'trackingCarrierMapping', $event)"
     />
 
     <ShippingCarriersPanel
@@ -30,17 +22,10 @@
       @delete="emit('delete', 'carrier', $event)"
     />
 
-    <ShippingCarrierServicesPanel
-      :carrier-services="carrierServices"
-      :carriers="carriers"
-      :templates="templates"
-      :loading="loading.services"
-      :can-create="canCreate"
-      :can-edit="canEdit"
-      :can-delete="canDelete"
-      @create="emit('create-carrier-service')"
-      @edit="emit('edit-carrier-service', $event)"
-      @delete="emit('delete', 'carrierService', $event)"
+    <ShippingRouteAggregatesPanel
+      :route-aggregates="routeAggregates" :loading="loading.routeAggregates"
+      :can-create="canCreate" :can-edit="canEdit" :can-delete="canDelete"
+      @create="emit('create-route-aggregate')" @edit="emit('edit-route-aggregate', $event)" @delete="emit('delete', 'routeAggregate', $event)"
     />
 
     <ShippingPackagingPanel
@@ -67,6 +52,15 @@
       @copy-webhook="emit('copy-webhook', $event)"
     />
 
+    <TabsContent value="tracking">
+      <ShippingTrackingCarrierMappingsPanel
+        :tracking-carrier-mappings="trackingCarrierMappings" :tracking-providers="trackingProviders"
+        :carriers="carriers" :carrier-services="carrierServices" :loading-tracking-mappings="loading.trackingMappings"
+        :can-create="canCreate" :can-edit="canEdit" :can-delete="canDelete"
+        @create-mapping="emit('create-mapping')" @edit-mapping="emit('edit-mapping', $event)" @delete-mapping="emit('delete', 'trackingCarrierMapping', $event)"
+      />
+    </TabsContent>
+
     <TabsContent value="trackingShipments">
       <TrackingShipmentsPanel
         ref="trackingShipmentsPanelRef"
@@ -82,10 +76,11 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import ShippingCarrierServicesPanel from '@/components/admin/shipping/ShippingCarrierServicesPanel.vue'
+import ShippingRouteAggregatesPanel from '@/components/admin/shipping/ShippingRouteAggregatesPanel.vue'
+import ShippingTrackingCarrierMappingsPanel from '@/components/admin/shipping/ShippingTrackingCarrierMappingsPanel.vue'
 import ShippingCarriersPanel from '@/components/admin/shipping/ShippingCarriersPanel.vue'
 import ShippingPackagingPanel from '@/components/admin/shipping/ShippingPackagingPanel.vue'
-import ShippingTemplatesPanel from '@/components/admin/shipping/ShippingTemplatesPanel.vue'
+import ShippingCustomerBillingTemplatesPanel from '@/components/admin/shipping/ShippingCustomerBillingTemplatesPanel.vue'
 import TrackingProvidersPanel from '@/components/admin/shipping/TrackingProvidersPanel.vue'
 import TrackingShipmentsPanel from '@/components/admin/shipping/TrackingShipmentsPanel.vue'
 import { Tabs, TabsContent } from '@/components/ui/tabs'
@@ -96,6 +91,7 @@ import type {
   ShippingLoadingState,
   ShippingResource,
   ShippingTemplate,
+  ShippingRouteAggregate,
   TrackingCarrierMapping,
   TrackingProvider
 } from '@/modules/shipping/shippingTypes'
@@ -103,6 +99,7 @@ import type {
 withDefaults(defineProps<{
   activeTab?: string
   templates?: ShippingTemplate[]
+  routeAggregates?: ShippingRouteAggregate[]
   carriers?: ShippingCarrier[]
   carrierServices?: ShippingCarrierService[]
   trackingProviders?: TrackingProvider[]
@@ -113,7 +110,8 @@ withDefaults(defineProps<{
   canEdit?: boolean
   canDelete?: boolean
 }>(), {
-  activeTab: 'templates',
+  activeTab: 'routeAggregates',
+  routeAggregates: () => [],
   templates: () => [],
   carriers: () => [],
   carrierServices: () => [],
@@ -121,6 +119,7 @@ withDefaults(defineProps<{
   trackingCarrierMappings: () => [],
   packagingRules: () => [],
   loading: () => ({
+    routeAggregates: false,
     templates: false,
     carriers: false,
     services: false,
@@ -135,14 +134,14 @@ withDefaults(defineProps<{
 })
 
 const emit = defineEmits<{
+  (event: 'create-route-aggregate'): void
+  (event: 'edit-route-aggregate', aggregate: ShippingRouteAggregate): void
   (event: 'create-template'): void
   (event: 'edit-template', template: ShippingTemplate): void
   (event: 'create-mapping'): void
   (event: 'edit-mapping', mapping: TrackingCarrierMapping): void
   (event: 'create-carrier'): void
   (event: 'edit-carrier', carrier: ShippingCarrier): void
-  (event: 'create-carrier-service'): void
-  (event: 'edit-carrier-service', service: ShippingCarrierService): void
   (event: 'create-packaging'): void
   (event: 'edit-packaging', rule: PackagingRule): void
   (event: 'show-packaging-applies', rule: PackagingRule): void

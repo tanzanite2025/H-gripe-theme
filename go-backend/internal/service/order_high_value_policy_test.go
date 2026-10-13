@@ -6,6 +6,7 @@ import (
 
 	"commerce-platform/internal/domain/order"
 	productdomain "commerce-platform/internal/domain/product"
+	"commerce-platform/internal/repository"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -168,21 +169,22 @@ func seedHighValuePolicyProductWithCategory(
 
 	shippingTemplateID := seedOrderTestShippingTemplateID(t, db)
 	record := productdomain.Product{
-		ProductCategoryID:  &categoryID,
-		ShippingTemplateID: shippingTemplateID,
-		SKU:                sku,
-		Name:               name,
-		Slug:               slugForHighValuePolicyTest(sku),
-		Currency:           "USD",
-		PriceMinor:         priceMinor,
-		Stock:              stock,
-		Status:             "active",
-		Locale:             "en",
+		ProductCategoryID:   &categoryID,
+		ShippingTemplateIDs: []uint{*shippingTemplateID},
+		SKU:                 sku,
+		Name:                name,
+		Slug:                slugForHighValuePolicyTest(sku),
+		Currency:            "USD",
+		PriceMinor:          priceMinor,
+		Stock:               stock,
+		Status:              "active",
+		Locale:              "en",
 	}
 	if categoryID == 0 {
 		record.ProductCategoryID = nil
 	}
 	require.NoError(t, db.Create(&record).Error)
+	require.NoError(t, repository.NewProductRepository(db).ReplaceProductShippingTemplateBindings(record.ID, nil, []uint{*shippingTemplateID}))
 	require.NoError(t, db.Create(&productdomain.ProductVariant{
 		ProductID:    record.ID,
 		SKU:          sku,

@@ -5,8 +5,7 @@ import (
 	"testing"
 )
 
-func TestCalculateProfitUsesSalePriceAndCalculatesGrossMargin(t *testing.T) {
-	salePrice := int64(9000)
+func TestCalculateProfitUsesCatalogPriceAndCalculatesGrossMargin(t *testing.T) {
 	unitCost := int64(5500)
 
 	result, err := CalculateProfit(ProfitCalculationInput{
@@ -15,7 +14,6 @@ func TestCalculateProfitUsesSalePriceAndCalculatesGrossMargin(t *testing.T) {
 		SellingCurrency:              "USD",
 		CostCurrency:                 "USD",
 		ListPriceMinor:               10000,
-		SalePriceMinor:               &salePrice,
 		UnitCostMinor:                &unitCost,
 		InboundShippingUnitCostMinor: 200,
 		PackagingUnitCostMinor:       50,
@@ -28,20 +26,20 @@ func TestCalculateProfitUsesSalePriceAndCalculatesGrossMargin(t *testing.T) {
 	if result.Status != ProfitStatusReady {
 		t.Fatalf("expected ready status, got %q with warnings %#v", result.Status, result.Warnings)
 	}
-	if result.EffectiveSellingPriceMinor != 9000 {
-		t.Fatalf("expected effective selling price 9000, got %d", result.EffectiveSellingPriceMinor)
+	if result.EffectiveSellingPriceMinor != 10000 {
+		t.Fatalf("expected effective selling price 10000, got %d", result.EffectiveSellingPriceMinor)
 	}
 	if result.LandedCostMinor == nil || *result.LandedCostMinor != 5750 {
 		t.Fatalf("expected landed cost 5750, got %#v", result.LandedCostMinor)
 	}
-	if result.GrossProfitMinor == nil || *result.GrossProfitMinor != 3250 {
-		t.Fatalf("expected gross profit 3250, got %#v", result.GrossProfitMinor)
+	if result.GrossProfitMinor == nil || *result.GrossProfitMinor != 4250 {
+		t.Fatalf("expected gross profit 4250, got %#v", result.GrossProfitMinor)
 	}
-	if result.GrossMarginBPS == nil || *result.GrossMarginBPS != 3611 {
-		t.Fatalf("expected gross margin 3611 bps, got %#v", result.GrossMarginBPS)
+	if result.GrossMarginBPS == nil || *result.GrossMarginBPS != 4250 {
+		t.Fatalf("expected gross margin 4250 bps, got %#v", result.GrossMarginBPS)
 	}
-	if result.GrossMarginPercent == nil || *result.GrossMarginPercent != 36.11 {
-		t.Fatalf("expected gross margin 36.11%%, got %#v", result.GrossMarginPercent)
+	if result.GrossMarginPercent == nil || *result.GrossMarginPercent != 42.50 {
+		t.Fatalf("expected gross margin 42.50%%, got %#v", result.GrossMarginPercent)
 	}
 	if result.InboundShippingUnitCostMinor != 200 ||
 		result.PackagingUnitCostMinor != 50 ||
@@ -50,7 +48,7 @@ func TestCalculateProfitUsesSalePriceAndCalculatesGrossMargin(t *testing.T) {
 	}
 }
 
-func TestCalculateProfitFallsBackToListPriceWhenSalePriceIsMissing(t *testing.T) {
+func TestCalculateProfitUsesCatalogPriceWithoutPromotionWarnings(t *testing.T) {
 	unitCost := int64(4000)
 
 	result, err := CalculateProfit(ProfitCalculationInput{
@@ -62,14 +60,14 @@ func TestCalculateProfitFallsBackToListPriceWhenSalePriceIsMissing(t *testing.T)
 		t.Fatalf("calculate profit: %v", err)
 	}
 
-	if result.Status != ProfitStatusWarning {
+	if result.Status != ProfitStatusReady {
 		t.Fatalf("expected warning status, got %q", result.Status)
 	}
 	if result.EffectiveSellingPriceMinor != 10000 {
-		t.Fatalf("expected list-price fallback, got %d", result.EffectiveSellingPriceMinor)
+		t.Fatalf("expected catalog price, got %d", result.EffectiveSellingPriceMinor)
 	}
-	if len(result.Warnings) != 1 || result.Warnings[0] != ProfitWarningSalePriceMissing {
-		t.Fatalf("expected sale price warning, got %#v", result.Warnings)
+	if len(result.Warnings) != 0 {
+		t.Fatalf("expected no warnings, got %#v", result.Warnings)
 	}
 }
 
@@ -92,7 +90,6 @@ func TestCalculateProfitDistinguishesMissingUnitCostFromExplicitZero(t *testing.
 	zeroResult, err := CalculateProfit(ProfitCalculationInput{
 		SellingCurrency: "USD",
 		ListPriceMinor:  10000,
-		SalePriceMinor:  func() *int64 { value := int64(9000); return &value }(),
 		UnitCostMinor:   &zero,
 	})
 	if err != nil {
@@ -104,8 +101,8 @@ func TestCalculateProfitDistinguishesMissingUnitCostFromExplicitZero(t *testing.
 	if zeroResult.LandedCostMinor == nil || *zeroResult.LandedCostMinor != 0 {
 		t.Fatalf("expected zero landed cost, got %#v", zeroResult.LandedCostMinor)
 	}
-	if zeroResult.GrossProfitMinor == nil || *zeroResult.GrossProfitMinor != 9000 {
-		t.Fatalf("expected gross profit 9000, got %#v", zeroResult.GrossProfitMinor)
+	if zeroResult.GrossProfitMinor == nil || *zeroResult.GrossProfitMinor != 10000 {
+		t.Fatalf("expected gross profit 10000, got %#v", zeroResult.GrossProfitMinor)
 	}
 }
 
@@ -136,7 +133,6 @@ func TestCalculateProfitRejectsNegativeCosts(t *testing.T) {
 	result, err := CalculateProfit(ProfitCalculationInput{
 		SellingCurrency:        "USD",
 		ListPriceMinor:         10000,
-		SalePriceMinor:         func() *int64 { value := int64(9000); return &value }(),
 		UnitCostMinor:          &unitCost,
 		PackagingUnitCostMinor: -1,
 	})
@@ -153,12 +149,10 @@ func TestCalculateProfitRejectsNegativeCosts(t *testing.T) {
 
 func TestCalculateProfitReportsNegativeGrossProfit(t *testing.T) {
 	unitCost := int64(11000)
-	salePrice := int64(9000)
 
 	result, err := CalculateProfit(ProfitCalculationInput{
 		SellingCurrency: "USD",
 		ListPriceMinor:  10000,
-		SalePriceMinor:  &salePrice,
 		UnitCostMinor:   &unitCost,
 	})
 	if err != nil {
@@ -168,39 +162,14 @@ func TestCalculateProfitReportsNegativeGrossProfit(t *testing.T) {
 	if result.Status != ProfitStatusWarning {
 		t.Fatalf("expected warning status, got %q", result.Status)
 	}
-	if result.GrossProfitMinor == nil || *result.GrossProfitMinor != -2000 {
-		t.Fatalf("expected gross profit -2000, got %#v", result.GrossProfitMinor)
+	if result.GrossProfitMinor == nil || *result.GrossProfitMinor != -1000 {
+		t.Fatalf("expected gross profit -1000, got %#v", result.GrossProfitMinor)
 	}
-	if result.GrossMarginBPS == nil || *result.GrossMarginBPS != -2222 {
-		t.Fatalf("expected gross margin -2222 bps, got %#v", result.GrossMarginBPS)
+	if result.GrossMarginBPS == nil || *result.GrossMarginBPS != -1000 {
+		t.Fatalf("expected gross margin -1000 bps, got %#v", result.GrossMarginBPS)
 	}
 	if !containsProfitWarning(result.Warnings, ProfitWarningNegativeGrossProfit) {
 		t.Fatalf("expected negative gross profit warning, got %#v", result.Warnings)
-	}
-}
-
-func TestCalculateProfitReportsSalePriceAboveListPrice(t *testing.T) {
-	salePrice := int64(11000)
-	unitCost := int64(5000)
-
-	result, err := CalculateProfit(ProfitCalculationInput{
-		SellingCurrency: "USD",
-		ListPriceMinor:  10000,
-		SalePriceMinor:  &salePrice,
-		UnitCostMinor:   &unitCost,
-	})
-	if err != nil {
-		t.Fatalf("calculate sale price above list price: %v", err)
-	}
-
-	if result.Status != ProfitStatusWarning {
-		t.Fatalf("expected warning status, got %q", result.Status)
-	}
-	if !containsProfitWarning(result.Warnings, ProfitWarningSalePriceAboveList) {
-		t.Fatalf("expected sale price warning, got %#v", result.Warnings)
-	}
-	if result.EffectiveSellingPriceMinor != 11000 {
-		t.Fatalf("expected effective selling price 11000, got %d", result.EffectiveSellingPriceMinor)
 	}
 }
 
@@ -210,7 +179,6 @@ func TestCalculateProfitRoundsAccordingToCurrencyMinorUnits(t *testing.T) {
 	result, err := CalculateProfit(ProfitCalculationInput{
 		SellingCurrency: "JPY",
 		ListPriceMinor:  1501,
-		SalePriceMinor:  func() *int64 { value := int64(1401); return &value }(),
 		UnitCostMinor:   &unitCost,
 	})
 	if err != nil {
@@ -220,14 +188,14 @@ func TestCalculateProfitRoundsAccordingToCurrencyMinorUnits(t *testing.T) {
 	if result.ListPriceMinor != 1501 {
 		t.Fatalf("expected JPY list price 1501, got %d", result.ListPriceMinor)
 	}
-	if result.EffectiveSellingPriceMinor != 1401 {
-		t.Fatalf("expected JPY effective price 1401, got %d", result.EffectiveSellingPriceMinor)
+	if result.EffectiveSellingPriceMinor != 1501 {
+		t.Fatalf("expected JPY effective price 1501, got %d", result.EffectiveSellingPriceMinor)
 	}
 	if result.UnitCostMinor == nil || *result.UnitCostMinor != 1000 {
 		t.Fatalf("expected JPY unit cost 1000, got %#v", result.UnitCostMinor)
 	}
-	if result.GrossProfitMinor == nil || *result.GrossProfitMinor != 401 {
-		t.Fatalf("expected JPY gross profit 401, got %#v", result.GrossProfitMinor)
+	if result.GrossProfitMinor == nil || *result.GrossProfitMinor != 501 {
+		t.Fatalf("expected JPY gross profit 501, got %#v", result.GrossProfitMinor)
 	}
 }
 

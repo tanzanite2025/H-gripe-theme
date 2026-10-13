@@ -78,7 +78,6 @@ export interface ProductVariant {
   option_values?: string | Record<string, string>
   currency?: string
   price_decimal: string
-  sale_price_decimal?: string | null
   display_price?: ProductDisplayPrice
   display_prices?: ProductDisplayPrice[]
   weight_grams?: number | null
@@ -215,7 +214,6 @@ export interface GoProduct {
   sku?: string
   currency?: string
   price_decimal: string
-  sale_price_decimal?: string | null
   display_price?: ProductDisplayPrice
   display_prices?: ProductDisplayPrice[]
   availability?: ProductAvailability

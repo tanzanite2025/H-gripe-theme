@@ -1,0 +1,15 @@
+node_modules/
+dist/
+output/
+.cache/
+.codex-logs/
+.playwright-cli/
+coverage/
+test-results/
+playwright-report/
+*.log
+*.err
+.env
+.env.*
+**/[dD][oO][cC][sS]
+**/[hH][tT][mM][lL]资料

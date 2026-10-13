@@ -1972,6 +1972,7 @@ func newTestProductService(t *testing.T) (*gorm.DB, *ProductService) {
 		&product.ProductMedia{},
 		&product.ProductSpecValue{},
 		&product.ProductVariant{},
+		&product.ProductShippingTemplateBinding{},
 		&product.ProductVariantOptionValue{},
 		&product.ProductCustomOptionPolicy{},
 		&product.ProductOptionGroupVariantRule{},

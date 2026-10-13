@@ -21,7 +21,7 @@ type ProductSupplierCostRecord struct {
 	// Monetary values are persisted as exact minor units. UnitCost maps to the
 	// historical purchase_price concept, but the physical column is now
 	// purchase_price_minor.
-	UnitCostMinor int64 `gorm:"column:purchase_price_minor;not null;default:0" json:"unit_cost_minor"`
+	UnitCostMinor                int64     `gorm:"column:purchase_price_minor;not null;default:0" json:"unit_cost_minor"`
 	Currency                     string    `gorm:"size:3;not null" json:"currency"`
 	SupplierName                 string    `gorm:"size:255;not null" json:"supplier_name"`
 	SupplierContactName          string    `gorm:"size:255" json:"supplier_contact_name"`

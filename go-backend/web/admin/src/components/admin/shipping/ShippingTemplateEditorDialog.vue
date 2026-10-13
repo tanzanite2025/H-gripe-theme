@@ -3,10 +3,10 @@
     <DialogContent size="full" class="max-h-[90dvh] overflow-y-auto" @open-auto-focus.prevent>
       <form class="space-y-6" @submit.prevent="emit('submit')">
         <DialogHeader>
-          <DialogTitle>{{ mode === 'create' ? '新增运费模板' : '编辑运费模板' }}</DialogTitle>
+          <DialogTitle>{{ mode === 'create' ? '新增线路计费模板' : '编辑线路计费模板' }}</DialogTitle>
           <DialogDescription>
             <template v-if="isSystemFreeShippingTemplate">系统免邮模板独立维护国家范围，不绑定 4PX、燕文或其他承运商线路。</template>
-            <template v-else>选择已发布的 4PX 或燕文服务加入模板；配送地区随服务集合带入，模板内只读。</template>
+            <template v-else>选择聚合线路后，独立配置向客户收取的运费。产品和 SKU 只绑定本页的计费模板。</template>
           </DialogDescription>
         </DialogHeader>
 
@@ -78,44 +78,42 @@
           <p v-if="errors.free_shipping_countries" class="text-xs font-medium text-destructive">{{ errors.free_shipping_countries }}</p>
         </section>
 
-        <section v-if="!isSystemFreeShippingTemplate" class="space-y-3 rounded-lg border border-orange-500/25 bg-orange-500/5 p-4">
-          <div class="flex flex-wrap items-end justify-between gap-3">
-            <div>
-              <h3 class="text-sm font-black tracking-tight">从服务集合加入线路</h3>
-              <p class="mt-1 text-xs leading-5 text-muted-foreground">只显示 4PX 和燕文物流域已发布的服务。选择后会带入线路和配送地区；需要调整地区时切换已发布渠道。</p>
-            </div>
-            <div class="flex w-full gap-2 sm:w-auto">
-              <Select v-model="selectedServiceKey" :disabled="availableServiceCollectionChannels.length === 0">
-                <SelectTrigger class="min-w-64"><SelectValue :placeholder="availableServiceCollectionChannels.length ? '选择已发布服务' : '暂无已发布服务'" /></SelectTrigger>
+        <section v-if="!isSystemFreeShippingTemplate" class="space-y-3 rounded-lg border p-4">
+          <AdminFormField label="聚合线路" required :error="errors.route_group_id" description="只引用线路身份和覆盖国家；客户价格由本模板独立定义。">
+            <Select :model-value="String(form.route_group_id || '')" @update:model-value="form.route_group_id = Number($event); emit('clear-error', 'route_group_id')">
+              <SelectTrigger class="w-full"><SelectValue placeholder="选择已启用的聚合线路" /></SelectTrigger>
+              <SelectContent><SelectItem v-for="aggregate in routeAggregates.filter(item => item.enabled)" :key="aggregate.id" :value="String(aggregate.id)">{{ aggregate.name }}</SelectItem></SelectContent>
+            </Select>
+          </AdminFormField>
+          <p class="font-mono text-xs text-muted-foreground">配送国家：{{ selectedRouteAggregate?.countries || '请先选择聚合线路' }}</p>
+        </section>
+
+        <section v-if="!isSystemFreeShippingTemplate" class="space-y-3 rounded-lg border border-blue-500/25 bg-blue-500/5 p-4">
+          <div>
+            <h3 class="text-sm font-black tracking-tight">客户线路计费</h3>
+            <p class="mt-1 text-xs leading-5 text-muted-foreground">这里定义向客户收取多少；4PX、燕文线路上的供应商成本字段不会参与 Checkout 报价。</p>
+          </div>
+          <div class="grid gap-3 md:grid-cols-3">
+            <AdminFormField label="计费口径">
+              <Select v-model="form.customer_billing_mode">
+                <SelectTrigger class="w-full"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem v-for="channel in availableServiceCollectionChannels" :key="channel.selection_key" :value="channel.selection_key">
-                    {{ channel.provider_code }} · {{ channel.display_name }} / {{ channel.service_code }}
-                  </SelectItem>
+                  <SelectItem value="actual_weight">实际重量</SelectItem>
+                  <SelectItem value="volumetric_weight">体积重量</SelectItem>
+                  <SelectItem value="greater_of_actual_and_volumetric">取实际/体积较大值</SelectItem>
                 </SelectContent>
               </Select>
-              <Button type="button" variant="outline" :disabled="!selectedServiceKey" @click="addSelectedServiceToTemplate">
-                <Plus class="size-3.5" />加入模板
-              </Button>
-            </div>
-          </div>
-
-          <p v-if="serviceCollectionError" class="rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive">{{ serviceCollectionError }}</p>
-
-          <div v-if="templateServices.length === 0" class="rounded-md border border-dashed px-4 py-5 text-center text-xs text-muted-foreground">
-            尚未加入服务集合线路
-          </div>
-          <div v-else class="space-y-2">
-            <div v-for="(service, index) in templateServices" :key="service.id || `${service.service_code}-${index}`" class="flex flex-wrap items-center justify-between gap-3 rounded-md border bg-background px-3 py-2.5">
-              <div class="min-w-0">
-                <span class="block truncate text-xs font-bold">{{ service.service_name }}</span>
-                <span class="mt-0.5 block font-mono text-[10px] text-muted-foreground">{{ service.provider_code || serviceProviderCodeForService(service) }} · {{ service.service_code }}</span>
-                <span class="mt-1 flex items-center gap-1 text-[10px] text-muted-foreground" :title="serviceCountriesLabel(service)">
-                  <Globe2 class="size-3" />配送地区：{{ serviceCountriesLabel(service) }}
-                </span>
-              </div>
-              <Button type="button" variant="ghost" size="icon-sm" class="text-destructive hover:text-destructive" :aria-label="`移除线路 ${service.service_name}`" @click="removeTemplateService(index)">
-                <Trash2 class="size-4" />
-              </Button>
+            </AdminFormField>
+            <AdminFormField label="首重（克）"><Input v-model.number="form.customer_first_weight_grams" type="number" min="0" /></AdminFormField>
+            <AdminFormField label="续重（克）"><Input v-model.number="form.customer_additional_weight_grams" type="number" min="0" /></AdminFormField>
+            <AdminFormField label="最低计费重量（克）"><Input v-model.number="form.customer_min_charge_weight_grams" type="number" min="0" /></AdminFormField>
+            <AdminFormField label="体积重除数"><Input v-model.number="form.customer_volumetric_divisor" type="number" min="1" /></AdminFormField>
+            <AdminFormField label="燃油附加费（百分比）"><Input v-model.trim="form.customer_fuel_surcharge_percent_decimal" inputmode="decimal" /></AdminFormField>
+            <AdminFormField label="偏远附加费（minor）"><Input v-model.number="form.customer_remote_surcharge_minor" type="number" min="0" /></AdminFormField>
+            <AdminFormField label="偏远邮编规则"><Input v-model.trim="form.customer_remote_postal_codes" placeholder="JSON 数组" /></AdminFormField>
+            <div class="grid grid-cols-2 gap-2">
+              <AdminFormField label="时效最短天数"><Input v-model.number="form.customer_eta_min_days" type="number" min="0" /></AdminFormField>
+              <AdminFormField label="时效最长天数"><Input v-model.number="form.customer_eta_max_days" type="number" min="0" /></AdminFormField>
             </div>
           </div>
         </section>
@@ -162,7 +160,7 @@
           <div class="flex flex-wrap items-center justify-between gap-3">
             <div>
               <h3 class="text-sm font-black tracking-tighter uppercase text-foreground">规则矩阵</h3>
-              <p class="mt-1 text-[9px] font-black uppercase tracking-widest text-muted-foreground/60">Region 建议填国家/区域代码，例如 US、EU、CN；最大值为 0 表示不设上限。</p>
+              <p class="mt-1 text-[9px] font-black uppercase tracking-widest text-muted-foreground/60">选择聚合线路覆盖的国家；最大值为 0 表示不设上限。</p>
             </div>
             <Button type="button" variant="outline" size="sm" @click="addRule">
               <Plus class="size-3.5" />
@@ -176,7 +174,7 @@
 
           <div v-for="(rule, index) in form.rules" :key="index" class="grid gap-3 rounded-lg border p-3 lg:grid-cols-12">
             <AdminFormField label="Region" class="lg:col-span-2">
-              <Input v-model.trim="rule.region" class="font-mono uppercase" placeholder="US" />
+              <Select v-model="rule.region"><SelectTrigger class="w-full"><SelectValue placeholder="选择国家" /></SelectTrigger><SelectContent><SelectItem v-for="country in routeAggregateCountries" :key="country" :value="country">{{ country }}</SelectItem></SelectContent></Select>
             </AdminFormField>
             <AdminFormField label="最小值" class="lg:col-span-2">
               <Input
@@ -240,25 +238,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import { minorUnitsForCurrency } from '@/lib/dashboardPresentation'
-import type { FpxPublishedCollectionReference, YanwenPublishedCollectionReference } from '@/api/shippingServiceCollectionReferenceApi'
+import type { ShippingRouteAggregate } from '@/modules/shipping/shippingTypes'
 import axios from '@/utils/axios'
-
-type ShippingCarrierOption = {
-  id: number | string
-  code?: string | null
-}
-
-type ServiceCollectionChannel = {
-  id: number | string
-  fpx_channel_id?: number | string | null
-  yanwen_published_channel_id?: number | string | null
-  service_code: string
-  display_name: string
-  countries: string
-  enabled?: boolean
-  provider_code: '4PX' | 'YANWEN'
-  selection_key: string
-}
 
 const props = defineProps({
   open: { type: Boolean, default: false },
@@ -266,84 +247,20 @@ const props = defineProps({
   form: { type: Object, required: true },
   errors: { type: Object, required: true },
   submitting: { type: Boolean, default: false },
-  fpxChannels: { type: Array as PropType<FpxPublishedCollectionReference[]>, default: () => [] },
-  yanwenPublishedChannels: { type: Array as PropType<YanwenPublishedCollectionReference[]>, default: () => [] },
-  carriers: { type: Array as PropType<ShippingCarrierOption[]>, default: () => [] },
+  routeAggregates: { type: Array as PropType<ShippingRouteAggregate[]>, default: () => [] },
 })
 
 const emit = defineEmits(['update:open', 'submit', 'clear-error'])
 const displayPriceLoading = ref(false)
 const displayPriceError = ref('')
 const primaryPricingCurrency = ref('')
-const selectedServiceKey = ref('')
-const serviceCollectionError = ref('')
 const isSystemFreeShippingTemplate = computed(() => (
   String(props.form.template_kind || '').trim() === 'system_free_shipping'
   || String(props.form.type || '').trim() === 'free_shipping'
 ))
 const sourceBaseCurrency = computed(() => normalizeCurrencyCode(props.form.currency) || primaryPricingCurrency.value)
-const templateServices = computed(() => Array.isArray(props.form.carrier_services) ? props.form.carrier_services : [])
-const carrierCodeForService = (service: any) => {
-  const carrier = (Array.isArray(props.carriers) ? props.carriers : []).find((item) => String(item?.id) === String(service?.carrier_id))
-  return String(carrier?.code || '').trim().toUpperCase()
-}
-const serviceProviderCodeForService = (service: any) => {
-  const carrierCode = carrierCodeForService(service)
-  return ['4PX', 'FPX'].includes(carrierCode) ? '4PX' : carrierCode
-}
-const serviceCollectionChannels = computed<ServiceCollectionChannel[]>(() => [
-  ...(Array.isArray(props.fpxChannels) ? props.fpxChannels : []).map((channel) => ({
-    ...channel,
-    provider_code: '4PX' as const,
-    fpx_channel_id: channel.id,
-    service_code: String(channel.service_code || '').trim(),
-    countries: String(channel.countries || '[]'),
-    selection_key: `4PX:${String(channel.id)}`,
-  })),
-  ...(Array.isArray(props.yanwenPublishedChannels) ? props.yanwenPublishedChannels : []).map((channel) => {
-    const productCode = String(channel.product_code || '').trim().replace(/^YANWEN:/i, '')
-    return {
-      ...channel,
-      provider_code: 'YANWEN' as const,
-      yanwen_published_channel_id: channel.id,
-      service_code: `YANWEN:${productCode}`,
-      countries: String(channel.countries || '[]'),
-      selection_key: `YANWEN:${String(channel.id)}`,
-    }
-  }),
-])
-const availableServiceCollectionChannels = computed(() => {
-  const selectedKeys = new Set(templateServices.value.map((service) => {
-    const provider = serviceProviderCodeForService(service)
-    if (provider === '4PX' && service.fpx_channel_id) return `4PX:${String(service.fpx_channel_id)}`
-    if (provider === 'YANWEN' && service.yanwen_published_channel_id) return `YANWEN:${String(service.yanwen_published_channel_id)}`
-    return ''
-  }))
-  return serviceCollectionChannels.value.filter((channel) => (
-    channel.enabled !== false && !selectedKeys.has(channel.selection_key)
-  ))
-})
-
-const normalizedCountryCodes = (value: unknown) => {
-  if (Array.isArray(value)) {
-    return value.map((code) => String(code || '').trim().toUpperCase()).filter(Boolean)
-  }
-  const raw = String(value || '').trim()
-  if (!raw) return []
-  try {
-    const parsed = JSON.parse(raw)
-    if (Array.isArray(parsed)) return normalizedCountryCodes(parsed)
-  } catch {
-    // Older collection records may still use comma-separated country codes.
-  }
-  return raw.split(/[,，;|\s]+/).map((code) => code.trim().toUpperCase()).filter(Boolean)
-}
-
-const serviceCountriesLabel = (service: any) => {
-  const countries = normalizedCountryCodes(service?.countries)
-  return countries.length ? countries.join(', ') : '未限制（服务集合未提供地区）'
-}
-
+const selectedRouteAggregate = computed(() => props.routeAggregates.find(item => String(item.id) === String(props.form.route_group_id)))
+const routeAggregateCountries = computed<string[]>(() => { try { return JSON.parse(String(selectedRouteAggregate.value?.countries || '[]')) } catch { return [] } })
 const displayPriceRows = computed(() => shippingAmountEntries()
   .map(entry => ({
     ...entry,
@@ -356,70 +273,6 @@ const ensureRules = () => {
   if (!Array.isArray(props.form.rules)) {
     props.form.rules = []
   }
-}
-
-const ensureTemplateServices = () => {
-  if (!Array.isArray(props.form.carrier_services)) props.form.carrier_services = []
-  return props.form.carrier_services
-}
-
-const addSelectedServiceToTemplate = () => {
-  serviceCollectionError.value = ''
-  const channel = serviceCollectionChannels.value.find((item) => item.selection_key === selectedServiceKey.value)
-  if (!channel) return
-
-  const carrier = (Array.isArray(props.carriers) ? props.carriers : []).find((item) => {
-    const code = String(item?.code || '').trim().toUpperCase()
-    return channel.provider_code === '4PX' ? ['4PX', 'FPX'].includes(code) : code === 'YANWEN'
-  })
-  if (!carrier?.id) {
-    serviceCollectionError.value = `请先在承运商中创建代码为 ${channel.provider_code} 的承运商`
-    return
-  }
-
-  const selectedTemplateService = ensureTemplateServices().find((service) => {
-    if (serviceProviderCodeForService(service) !== channel.provider_code) return false
-    if (channel.provider_code === '4PX') return !service.fpx_channel_id && String(service.service_code || '').trim().toUpperCase() === channel.service_code.toUpperCase()
-    return !service.yanwen_published_channel_id && String(service.service_code || '').trim().toUpperCase() === channel.service_code.toUpperCase()
-  })
-  const collectionFields = {
-    fpx_channel_id: channel.fpx_channel_id ?? null,
-    yanwen_published_channel_id: channel.yanwen_published_channel_id ?? null,
-    provider_code: channel.provider_code,
-    service_code: channel.service_code,
-    service_name: channel.display_name,
-    route_name: channel.display_name,
-    countries: channel.countries || '[]',
-  }
-  if (selectedTemplateService) {
-    Object.assign(selectedTemplateService, collectionFields)
-    selectedServiceKey.value = ''
-    return
-  }
-
-  ensureTemplateServices().push({
-    carrier_id: carrier.id,
-    ...collectionFields,
-    currency: normalizeCurrencyCode(props.form.currency) || primaryPricingCurrency.value || 'USD',
-    billing_mode: 'actual_weight',
-    first_weight_grams: 0,
-    additional_weight_grams: 0,
-    min_charge_weight_grams: 0,
-    volumetric_divisor: 6000,
-    fuel_surcharge_percent_decimal: '0',
-    remote_surcharge_minor: 0,
-    remote_postal_codes: '[]',
-    eta_min_days: 0,
-    eta_max_days: 0,
-    enabled: true,
-    sort_order: templateServices.value.length,
-    description: `来自 ${channel.provider_code} 服务集合`,
-  })
-  selectedServiceKey.value = ''
-}
-
-const removeTemplateService = (index: number) => {
-  ensureTemplateServices().splice(index, 1)
 }
 
 const addRule = () => {

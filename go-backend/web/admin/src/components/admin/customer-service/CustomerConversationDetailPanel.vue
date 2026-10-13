@@ -841,7 +841,7 @@ const buildProductPath = (slug: string): string => {
 const buildProductMessageMetadata = (product: ProductRecord) => {
   const thumbnail = getProductThumbnail(product)
   const slug = String(product?.slug || '').trim()
-  const priceValue = Number(product?.sale_price_decimal ?? product?.price_decimal ?? 0)
+  const priceValue = Number(product?.price_decimal ?? 0)
   const normalizedPriceValue = Number.isFinite(priceValue) ? priceValue : 0
   const currency = String(product?.currency || '').trim().toUpperCase()
 

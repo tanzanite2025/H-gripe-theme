@@ -47,7 +47,6 @@ type ProfitabilityItemInput struct {
 	CostCurrency    string
 
 	ListPriceMinor int64
-	SalePriceMinor *int64
 	UnitCostMinor  *int64
 	// UnitCostKnown distinguishes an explicit zero cost from an omitted
 	// cost. Unknown cost values are never persisted as a ready snapshot.
@@ -330,7 +329,6 @@ func calculateProfitabilityItem(input ProfitabilityItemInput) (suppliercostdomai
 		SellingCurrency:              input.SellingCurrency,
 		CostCurrency:                 input.CostCurrency,
 		ListPriceMinor:               input.ListPriceMinor,
-		SalePriceMinor:               input.SalePriceMinor,
 		UnitCostMinor:                input.UnitCostMinor,
 		InboundShippingUnitCostMinor: input.InboundShippingUnitCostMinor,
 		PackagingUnitCostMinor:       input.PackagingUnitCostMinor,
@@ -344,7 +342,6 @@ func profitCalculationRecord(result suppliercostdomain.ProfitCalculationResult) 
 		ProductName:                  result.ProductName,
 		Currency:                     result.Currency,
 		ListPriceMinor:               result.ListPriceMinor,
-		SalePriceMinor:               result.SalePriceMinor,
 		EffectiveSellingPriceMinor:   result.EffectiveSellingPriceMinor,
 		InboundShippingUnitCostMinor: result.InboundShippingUnitCostMinor,
 		PackagingUnitCostMinor:       result.PackagingUnitCostMinor,

@@ -78,16 +78,13 @@
             <p v-if="errors.model_keys" class="mt-2 text-xs font-medium text-destructive">{{ errors.model_keys }}</p>
           </AdminFormSection>
 
-          <AdminFormSection title="销售 SKU" description="修补包使用一个销售 SKU；价格、促销价、重量和库存仍按现有 SKU 字段保存。">
+          <AdminFormSection title="销售 SKU" description="修补包使用一个销售 SKU；价格、重量和库存仍按现有 SKU 字段保存。">
             <div class="grid gap-4 md:grid-cols-3 lg:grid-cols-5">
               <AdminFormField label="SKU" required :error="errors.variants">
                 <Input v-model="defaultSpokeRepairKitSalesVariant.sku" class="font-mono" placeholder="例如 DT-SPOKE-KIT" @input="clearSpokeRepairKitFormError('variants')" />
               </AdminFormField>
               <AdminFormField label="价格" required :error="errors.variants">
                 <Input v-model="defaultSpokeRepairKitSalesVariant.price" inputmode="decimal" type="text" placeholder="例如 29.90" @input="clearSpokeRepairKitFormError('variants')" />
-              </AdminFormField>
-              <AdminFormField label="促销价">
-                <Input v-model="defaultSpokeRepairKitSalesVariant.sale_price" inputmode="decimal" type="text" placeholder="可选" />
               </AdminFormField>
               <AdminFormField label="重量（克）">
                 <Input v-model.number="defaultSpokeRepairKitSalesVariant.weight_grams" type="number" min="0" step="1" />
@@ -134,7 +131,7 @@
             :packaging-templates="packagingTemplates"
             id-prefix="spoke-repair-kit"
             description="控制商品的公开状态、物流资料、售后资料和前台精选展示。"
-            @product-shipping-template-select="setSpokeRepairKitProductShippingTemplate"
+            @product-shipping-template-select="setSpokeRepairKitProductShippingTemplates"
             @product-information-template-select="(...args) => setSpokeRepairKitInformationTemplate(...args)"
           />
         </div>
@@ -244,15 +241,13 @@ const errors = reactive<Record<string, string>>({})
 
 const createEmptySpokeRepairKitSalesVariant = (overrides: Record<string, any> = {}): Record<string, any> => ({
   id: null,
-  shipping_template_id: null,
+  shipping_template_ids: [],
   sku: '',
   title: '',
   option_values: {},
   currency: props.currency,
   price: '',
   price_minor: 0,
-  sale_price: '',
-  sale_price_minor: null,
   stock: 0,
   weight_grams: 0,
   is_default: true,
@@ -268,7 +263,7 @@ const form = reactive<any>({
   product_specification_template_id: null,
   product_category_id: null,
   brand_id: null,
-  shipping_template_id: null,
+  shipping_template_ids: [],
   after_sales_template_id: null,
   packaging_template_id: null,
   customs_classification_profile_id: null,
@@ -318,13 +313,6 @@ const readSpokeRepairKitVariantPriceForForm = (variant: any, product: any): stri
     ? String(product?.price_decimal || '')
     : convertSpokeRepairKitMinorAmountToMajorDisplayValue(variant.price_minor, variant?.currency || product?.currency || props.currency)
 }
-const readSpokeRepairKitVariantSalePriceForForm = (variant: any, product: any): string => {
-  const explicit = variant?.sale_price_decimal || variant?.sale_price
-  if (explicit !== undefined && explicit !== null && String(explicit).trim() !== '') return String(explicit)
-  return variant?.sale_price_minor == null
-    ? String(product?.sale_price_decimal || '')
-    : convertSpokeRepairKitMinorAmountToMajorDisplayValue(variant.sale_price_minor, variant?.currency || product?.currency || props.currency)
-}
 const parseSpokeRepairKitVariantOptionValues = (value: unknown): Record<string, any> => {
   if (value && typeof value === 'object') return { ...(value as Record<string, any>) }
   try {
@@ -346,7 +334,7 @@ const populateSpokeRepairKitProductForm = (product: Record<string, any> | null):
     product_specification_template_id: null,
     product_category_id: props.categoryId || null,
     brand_id: product?.brand_id ?? product?.brand?.id ?? null,
-    shipping_template_id: product?.shipping_template_id ?? null,
+    shipping_template_ids: Array.isArray(product?.shipping_template_ids) ? [...product.shipping_template_ids] : [],
     after_sales_template_id: product?.after_sales_template_id ?? product?.after_sales_template?.id ?? null,
     packaging_template_id: product?.packaging_template_id ?? product?.packaging_template?.id ?? null,
     customs_classification_profile_id: product?.customs_classification_profile_id ?? product?.customs_classification_profile?.id ?? null,
@@ -370,15 +358,13 @@ const populateSpokeRepairKitProductForm = (product: Record<string, any> | null):
     media: buildProductMediaFormValues(product),
     variants: [createEmptySpokeRepairKitSalesVariant({
       id: variant?.id || null,
-      shipping_template_id: variant?.shipping_template_id ?? null,
+      shipping_template_ids: Array.isArray(variant?.shipping_template_ids) ? [...variant.shipping_template_ids] : [],
       sku: String(variant?.sku || product?.sku || ''),
       title: String(variant?.title || ''),
       option_values: parseSpokeRepairKitVariantOptionValues(variant?.option_values),
       currency: String(variant?.currency || currency).toUpperCase(),
       price: readSpokeRepairKitVariantPriceForForm(variant, product),
       price_minor: Number(variant?.price_minor || 0),
-      sale_price: readSpokeRepairKitVariantSalePriceForForm(variant, product),
-      sale_price_minor: variant?.sale_price_minor == null ? null : Number(variant.sale_price_minor),
       stock: Number(variant?.stock ?? product?.stock ?? 0),
       weight_grams: Number(variant?.weight_grams ?? variant?.weight ?? 0),
       is_default: true,
@@ -434,7 +420,9 @@ const availableSpokeRepairKitCustomsClassifications = computed(() => props.custo
 )))
 
 const setSpokeRepairKitProductBrand = (value: unknown): void => { form.brand_id = value === '__none__' ? null : Number(value) }
-const setSpokeRepairKitProductShippingTemplate = (value: unknown): void => { form.shipping_template_id = value === '__none__' ? null : Number(value) }
+const setSpokeRepairKitProductShippingTemplates = (values: unknown): void => {
+  form.shipping_template_ids = Array.from(new Set((Array.isArray(values) ? values : []).map(Number).filter((id: number) => Number.isInteger(id) && id > 0)))
+}
 const setSpokeRepairKitInformationTemplate = (field: 'after_sales_template_id' | 'packaging_template_id', value: unknown): void => { form[field] = value === '__none__' ? null : Number(value) }
 const handleSpokeRepairKitCustomsClassificationSelect = (value: unknown): void => {
   if (value === '__none__') {
@@ -456,16 +444,14 @@ const handleSpokeRepairKitCustomsManualEdit = (field: string): void => {
 
 const buildSpokeRepairKitSalesVariantPayload = (): Record<string, any> => {
   const variant = defaultSpokeRepairKitSalesVariant.value
-  const salePriceValue = String(variant.sale_price ?? '').trim()
   return {
     ...(variant.id ? { id: variant.id } : {}),
-    shipping_template_id: variant.shipping_template_id || null,
+    shipping_template_ids: [...variant.shipping_template_ids],
     sku: String(variant.sku || '').trim(),
     title: String(variant.title || '').trim(),
     option_values: {},
     currency: form.currency,
     price_minor: convertSpokeRepairKitMajorAmountToMinorUnits(variant.price, form.currency),
-    sale_price_minor: salePriceValue ? convertSpokeRepairKitMajorAmountToMinorUnits(salePriceValue, form.currency) : null,
     stock: Number(variant.stock || 0),
     weight_grams: Number(variant.weight_grams || 0),
     is_default: true,
@@ -486,7 +472,6 @@ const validateSpokeRepairKitProductForm = (): boolean => {
   if (!form.model_keys.length) errors.model_keys = '至少选择一个适配轮组型号'
   if (!variant.sku.trim()) errors.variants = '请输入 SKU'
   if (convertSpokeRepairKitMajorAmountToMinorUnits(variant.price, form.currency) <= 0) errors.variants = '价格必须大于 0'
-  if (String(variant.sale_price || '').trim() && convertSpokeRepairKitMajorAmountToMinorUnits(variant.sale_price, form.currency) < 0) errors.variants = '促销价不能为负数'
   if (!Number.isFinite(Number(variant.stock)) || Number(variant.stock) < 0) errors.variants = '库存不能为负数'
   if (form.hs_code && !/^\d{6}$/.test(form.hs_code)) errors.hs_code = 'HS Code 必须是 6 位数字'
   if (form.cn_code && !/^\d{8}$/.test(form.cn_code)) errors.cn_code = 'CN Code 必须是 8 位数字'
@@ -510,7 +495,7 @@ const submitSpokeRepairKitProductForm = async (): Promise<void> => {
     product_specification_template_id: null,
     product_category_id: Number(props.categoryId),
     brand_id: form.brand_id ? Number(form.brand_id) : null,
-    shipping_template_id: form.shipping_template_id,
+    shipping_template_ids: [...form.shipping_template_ids],
     after_sales_template_id: form.after_sales_template_id,
     packaging_template_id: form.packaging_template_id,
     customs_classification_profile_id: form.customs_classification_profile_id || null,

@@ -71,8 +71,16 @@ func applyShippingQuotePlan(quote *ShippingQuote, plan *ShippingQuotePlan) {
 	for index := range quote.Items {
 		quote.Items[index].ShippingFeeMinor = 0
 		quote.Items[index].FreeShipping = false
+		quote.Items[index].TemplateID = 0
+		quote.Items[index].TemplateName = ""
 	}
 	for _, leg := range plan.Legs {
+		for _, index := range leg.ItemIndexes {
+			if index >= 0 && index < len(quote.Items) {
+				quote.Items[index].TemplateID = leg.TemplateID
+				quote.Items[index].TemplateName = leg.TemplateName
+			}
+		}
 		distributeShippingQuoteItemFee(
 			leg.ItemIndexes,
 			quote.Items,

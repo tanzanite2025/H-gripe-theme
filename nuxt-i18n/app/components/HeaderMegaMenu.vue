@@ -41,8 +41,12 @@
             class="header-mega__grid"
             :class="[
               `header-mega__grid--${section.id}`,
-              { 'header-mega__grid--separated-columns': shouldUseSeparatedColumns },
+              {
+                'header-mega__grid--separated-columns': shouldUseSeparatedColumns,
+                'header-mega__grid--flat-columns': !shouldUseSeparatedColumns,
+              },
             ]"
+            :style="{ '--header-mega-flat-menu-row-count': Math.max(1, Math.ceil(cardsWithChildren.length / 3)) }"
           >
             <div
               v-for="column in menuColumns"
@@ -907,15 +911,31 @@ const childAccessibleLabel = (child: PageSubNavigationChild) => {
 }
 
 @media (min-width: 1280px) {
+  .header-mega__grid--flat-columns {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-rows: repeat(var(--header-mega-flat-menu-row-count), auto);
+    grid-auto-flow: column;
+    align-items: start;
+    align-content: start;
+    column-count: initial;
+    column-gap: 16px;
+    row-gap: 0;
+  }
+
   .header-mega__grid--separated-columns .header-mega__column--standalone {
     gap: 0;
   }
 
-  .header-mega__grid--separated-columns .header-mega__column--standalone .header-mega-card {
+  .header-mega-card:not(.header-mega-card--has-children) {
     margin: 0;
   }
 
-  .header-mega__grid--separated-columns .header-mega__column--standalone .header-mega-card__main {
+  .header-mega-card:not(.header-mega-card--has-children):lang(zh-CN) {
+    --mega-card-title-size: 16px;
+  }
+
+  .header-mega-card:not(.header-mega-card--has-children) .header-mega-card__main {
     padding: 8px 16px;
   }
 }

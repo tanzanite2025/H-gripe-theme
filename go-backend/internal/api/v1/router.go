@@ -681,7 +681,6 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 			// 公开端点
 			shippingGroup.GET("/templates", shippingHandler.ListTemplates)
 			shippingGroup.GET("/templates/:id", shippingHandler.GetTemplate)
-			shippingGroup.POST("/calculate", middleware.RateLimit(5), shippingHandler.CalculateShipping)
 			shippingGroup.POST("/quote", middleware.RateLimit(5), shippingHandler.QuoteShipping)
 			shippingGroup.GET("/carriers", shippingHandler.ListCarriers)
 			shippingGroup.GET("/carriers/:id", shippingHandler.GetCarrier)

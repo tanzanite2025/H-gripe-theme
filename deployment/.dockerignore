@@ -1,0 +1,8 @@
+.env
+.env.*
+production.env
+*.log
+*.key
+*.pem
+**/[dD][oO][cC][sS]
+**/[hH][tT][mM][lL]资料

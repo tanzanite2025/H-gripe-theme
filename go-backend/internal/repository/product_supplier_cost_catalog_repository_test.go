@@ -99,8 +99,7 @@ func newProductSupplierCostCatalogTestDB(t *testing.T) *gorm.DB {
 			sku TEXT NOT NULL,
 			title TEXT,
 			currency TEXT NOT NULL,
-			price REAL NOT NULL,
-			sale_price REAL,
+			price_minor BIGINT NOT NULL,
 			stock INTEGER NOT NULL DEFAULT 0,
 			is_active BOOLEAN NOT NULL DEFAULT TRUE,
 			deleted_at DATETIME
@@ -114,10 +113,10 @@ func newProductSupplierCostCatalogTestDB(t *testing.T) *gorm.DB {
 			(13, 'Deleted product', 'active', CURRENT_TIMESTAMP)
 	`).Error)
 	require.NoError(t, db.Exec(`
-		INSERT INTO product_variants (id, product_id, sku, title, currency, price, sale_price, stock, is_active, deleted_at) VALUES
-			(101, 11, 'SKU-PICKER-BLACK', 'Black / 700c', 'USD', 100, 90, 999, TRUE, NULL),
-			(102, 12, 'SKU-PICKER-INACTIVE', 'Inactive', 'USD', 80, NULL, 50, FALSE, NULL),
-			(103, 13, 'SKU-PICKER-DELETED', 'Deleted', 'USD', 70, NULL, 30, TRUE, NULL)
+		INSERT INTO product_variants (id, product_id, sku, title, currency, price_minor, stock, is_active, deleted_at) VALUES
+			(101, 11, 'SKU-PICKER-BLACK', 'Black / 700c', 'USD', 10000, 999, TRUE, NULL),
+			(102, 12, 'SKU-PICKER-INACTIVE', 'Inactive', 'USD', 8000, 50, FALSE, NULL),
+			(103, 13, 'SKU-PICKER-DELETED', 'Deleted', 'USD', 7000, 30, TRUE, NULL)
 	`).Error)
 	return db
 }

@@ -25,14 +25,13 @@ func TestProductProfitabilityServicePreviewDoesNotWriteDatabase(t *testing.T) {
 		ProductName:     "Preview item",
 		SellingCurrency: "USD",
 		ListPriceMinor:  10000,
-		SalePriceMinor:  int64PointerForServiceTest(9000),
 		UnitCostMinor:   int64PointerForServiceTest(5000),
 		UnitCostKnown:   true,
 	}})
 	require.NoError(t, err)
 	require.Len(t, results, 1)
 	require.Equal(t, suppliercostdomain.ProfitStatusReady, results[0].Status)
-	require.Equal(t, int64(4000), *results[0].GrossProfitMinor)
+	require.Equal(t, int64(5000), *results[0].GrossProfitMinor)
 
 	var count int64
 	require.NoError(t, db.Model(&suppliercostdomain.ProductProfitCalculation{}).Count(&count).Error)
@@ -141,7 +140,6 @@ func TestProductProfitabilityServiceBulkUpsertUpdatesSameSKU(t *testing.T) {
 		ProductName:                  "Second name",
 		SellingCurrency:              "USD",
 		ListPriceMinor:               10000,
-		SalePriceMinor:               int64PointerForServiceTest(9000),
 		UnitCostMinor:                int64PointerForServiceTest(4000),
 		UnitCostKnown:                true,
 		InboundShippingUnitCostMinor: 500,
@@ -152,7 +150,7 @@ func TestProductProfitabilityServiceBulkUpsertUpdatesSameSKU(t *testing.T) {
 	require.Len(t, second.Records, 1)
 	require.Equal(t, firstID, second.Records[0].ID)
 	require.Equal(t, "Second name", second.Records[0].ProductName)
-	require.Equal(t, int64(3000), second.Records[0].GrossProfitMinor)
+	require.Equal(t, int64(4000), second.Records[0].GrossProfitMinor)
 	require.Equal(t, int64(500), second.Records[0].InboundShippingUnitCostMinor)
 	require.Equal(t, int64(700), second.Records[0].PackagingUnitCostMinor)
 	require.Equal(t, int64(800), second.Records[0].OtherUnitCostMinor)

@@ -5,6 +5,7 @@ import (
 	domainmoney "commerce-platform/internal/domain/money"
 	"commerce-platform/internal/domain/shipping"
 	"encoding/json"
+	"errors"
 	"strings"
 )
 
@@ -35,6 +36,35 @@ func carrierServiceRemoteSurchargeMoney(service shipping.CarrierService, postalC
 		return surchargeMoney, nil
 	}
 	return domainmoney.New(0, currency.NormalizeCode(service.Currency))
+}
+
+func customerTemplateRemoteSurchargeMoney(template *shipping.ShippingTemplate, postalCode string) (domainmoney.Money, error) {
+	if template == nil {
+		return domainmoney.Money{}, errors.New("customer shipping template is required")
+	}
+	surchargeMoney, err := template.CustomerRemoteSurchargeMoney()
+	if err != nil {
+		return domainmoney.Money{}, err
+	}
+	if surchargeMoney.AmountMinor() <= 0 {
+		return surchargeMoney, nil
+	}
+	rulesValue := strings.TrimSpace(template.CustomerRemotePostalCodes)
+	if rulesValue == "" || rulesValue == "[]" || rulesValue == "null" {
+		return surchargeMoney, nil
+	}
+	postalCode = normalizeShippingPostalCode(postalCode)
+	if postalCode == "" {
+		return domainmoney.New(0, currency.NormalizeCode(template.Currency))
+	}
+	matched, ok := remotePostalCodeRulesMatch(postalCode, rulesValue)
+	if !ok {
+		return domainmoney.Money{}, errors.New("invalid customer remote postal code rules")
+	}
+	if !matched {
+		return domainmoney.New(0, currency.NormalizeCode(template.Currency))
+	}
+	return surchargeMoney, nil
 }
 
 func normalizeShippingPostalCode(value string) string {

@@ -4,9 +4,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 
+	"commerce-platform/internal/domain/product"
 	"commerce-platform/internal/domain/shipping"
 
 	"gorm.io/datatypes"
@@ -138,7 +140,7 @@ func int64PointerEqual(value *int64, expected int64) bool {
 // FindTemplateByID 閺嶈宓両D閺屻儲澹樺Ο鈩冩緲
 func (r *ShippingRepository) FindTemplateByID(id uint) (*shipping.ShippingTemplate, error) {
 	var t shipping.ShippingTemplate
-	err := r.db.Preload("Rules", func(db *gorm.DB) *gorm.DB {
+	err := r.db.Preload("RouteGroup.CarrierServices.Carrier").Preload("Rules", func(db *gorm.DB) *gorm.DB {
 		return db.Order("min_value_minor ASC, min_value ASC, id ASC")
 	}).First(&t, id).Error
 	if err != nil {
@@ -159,7 +161,7 @@ func (r *ShippingRepository) FindTemplatesByIDs(ids []uint) (map[uint]*shipping.
 	}
 
 	var templates []shipping.ShippingTemplate
-	if err := r.db.Preload("Rules", func(db *gorm.DB) *gorm.DB {
+	if err := r.db.Preload("RouteGroup.CarrierServices.Carrier").Preload("Rules", func(db *gorm.DB) *gorm.DB {
 		return db.Order("min_value_minor ASC, min_value ASC, id ASC")
 	}).Where("id IN ?", ids).Find(&templates).Error; err != nil {
 		return nil, err
@@ -180,7 +182,7 @@ func (r *ShippingRepository) FindTemplatesByIDs(ids []uint) (map[uint]*shipping.
 // FindAllTemplates 閺屻儲澹橀幍鈧張澶嬆侀弶?
 func (r *ShippingRepository) FindAllTemplates() ([]shipping.ShippingTemplate, error) {
 	var templates []shipping.ShippingTemplate
-	err := r.db.Preload("Rules", func(db *gorm.DB) *gorm.DB {
+	err := r.db.Preload("RouteGroup.CarrierServices.Carrier").Preload("Rules", func(db *gorm.DB) *gorm.DB {
 		return db.Order("min_value_minor ASC, min_value ASC, id ASC")
 	}).Find(&templates).Error
 	if err == nil {
@@ -189,15 +191,170 @@ func (r *ShippingRepository) FindAllTemplates() ([]shipping.ShippingTemplate, er
 	return templates, err
 }
 
-func (r *ShippingRepository) CreateTemplateWithRules(template *shipping.ShippingTemplate, rules []shipping.ShippingRule) error {
-	return r.CreateTemplateWithRulesAndCarrierServices(template, rules, nil)
+func (r *ShippingRepository) FindAllShippingRouteGroups() ([]shipping.ShippingRouteGroup, error) {
+	var groups []shipping.ShippingRouteGroup
+	err := r.db.Preload("CarrierServices", func(db *gorm.DB) *gorm.DB {
+		return db.Order("shipping_carrier_services.sort_order ASC, shipping_carrier_services.id ASC")
+	}).Preload("CarrierServices.Carrier").Order("sort_order ASC, id ASC").Find(&groups).Error
+	return groups, err
 }
 
-func (r *ShippingRepository) CreateTemplateWithRulesAndCarrierServices(template *shipping.ShippingTemplate, rules []shipping.ShippingRule, carrierServices []shipping.CarrierService) error {
+func (r *ShippingRepository) FindShippingRouteGroupByID(id uint) (*shipping.ShippingRouteGroup, error) {
+	var group shipping.ShippingRouteGroup
+	err := r.db.Preload("CarrierServices").Preload("CarrierServices.Carrier").First(&group, id).Error
+	if err != nil {
+		return nil, err
+	}
+	return &group, nil
+}
+
+func (r *ShippingRepository) CreateShippingRouteGroup(group *shipping.ShippingRouteGroup, carrierServiceIDs []uint, publishedServices ...[]shipping.CarrierService) error {
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		enabled := group.Enabled
+		if err := tx.Omit("CarrierServices").Create(group).Error; err != nil {
+			return err
+		}
+		if !enabled {
+			if err := tx.Model(group).Update("enabled", false).Error; err != nil {
+				return err
+			}
+			group.Enabled = false
+		}
+		ids, err := upsertPublishedRouteAggregateCarrierServiceIdentities(tx, carrierServiceIDs, publishedServices)
+		if err != nil {
+			return err
+		}
+		if err := replaceRouteGroupCarrierServiceIDs(tx, group.ID, ids); err != nil {
+			return err
+		}
+		return deriveShippingRouteAggregateCountriesFromMembers(tx, group)
+	})
+}
+
+func (r *ShippingRepository) UpdateShippingRouteGroup(group *shipping.ShippingRouteGroup, carrierServiceIDs []uint, publishedServices ...[]shipping.CarrierService) error {
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Model(&shipping.ShippingRouteGroup{}).Where("id = ?", group.ID).Updates(map[string]interface{}{
+			"name": group.Name, "description": group.Description, "countries": group.Countries,
+			"enabled": group.Enabled, "sort_order": group.SortOrder,
+		}).Error; err != nil {
+			return err
+		}
+		ids, err := upsertPublishedRouteAggregateCarrierServiceIdentities(tx, carrierServiceIDs, publishedServices)
+		if err != nil {
+			return err
+		}
+		if err := replaceRouteGroupCarrierServiceIDs(tx, group.ID, ids); err != nil {
+			return err
+		}
+		return deriveShippingRouteAggregateCountriesFromMembers(tx, group)
+	})
+}
+
+func (r *ShippingRepository) DeleteShippingRouteGroup(id uint) error {
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		var group shipping.ShippingRouteGroup
+		if err := tx.First(&group, id).Error; err != nil {
+			return err
+		}
+		var count int64
+		if err := tx.Model(&shipping.ShippingTemplate{}).Where("route_group_id = ?", id).Count(&count).Error; err != nil {
+			return err
+		}
+		if count > 0 {
+			return errors.New("route aggregate is referenced by customer billing templates")
+		}
+		return tx.Delete(&group).Error
+	})
+}
+
+func upsertPublishedRouteAggregateCarrierServiceIdentities(tx *gorm.DB, existingIDs []uint, selections [][]shipping.CarrierService) ([]uint, error) {
+	ids := append([]uint(nil), existingIDs...)
+	for _, services := range selections {
+		for _, service := range services {
+			var existing shipping.CarrierService
+			err := tx.Where("carrier_id = ? AND service_code = ?", service.CarrierID, service.ServiceCode).First(&existing).Error
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				if err := tx.Create(&service).Error; err != nil {
+					return nil, err
+				}
+				ids = append(ids, service.ID)
+			} else if err != nil {
+				return nil, err
+			} else {
+				// Reusing a published identity never overwrites provider costs or existing quote prices.
+				if err := tx.Model(&existing).Updates(map[string]interface{}{
+					"fpx_channel_id": service.FpxChannelID, "yanwen_published_channel_id": service.YanwenPublishedChannelID,
+					"service_name": service.ServiceName, "countries": service.Countries,
+				}).Error; err != nil {
+					return nil, err
+				}
+				ids = append(ids, existing.ID)
+			}
+		}
+	}
+	return ids, nil
+}
+
+func deriveShippingRouteAggregateCountriesFromMembers(tx *gorm.DB, group *shipping.ShippingRouteGroup) error {
+	var services []shipping.CarrierService
+	if err := tx.Joins("JOIN shipping_route_group_carrier_services membership ON membership.carrier_service_id = shipping_carrier_services.id").
+		Where("membership.route_group_id = ?", group.ID).Find(&services).Error; err != nil {
+		return err
+	}
+	countries := make(map[string]struct{})
+	for _, service := range services {
+		var codes []string
+		if err := json.Unmarshal([]byte(shipping.NormalizeShippingServiceCollectionCountryCodes(service.Countries)), &codes); err != nil {
+			return err
+		}
+		for _, code := range codes {
+			countries[code] = struct{}{}
+		}
+	}
+	codes := make([]string, 0, len(countries))
+	for code := range countries {
+		codes = append(codes, code)
+	}
+	sort.Strings(codes)
+	encoded, err := json.Marshal(codes)
+	if err != nil {
+		return err
+	}
+	group.Countries = string(encoded)
+	return tx.Model(group).Update("countries", group.Countries).Error
+}
+
+func replaceRouteGroupCarrierServiceIDs(tx *gorm.DB, routeGroupID uint, carrierServiceIDs []uint) error {
+	if err := tx.Where("route_group_id = ?", routeGroupID).Delete(&shipping.ShippingRouteGroupCarrierService{}).Error; err != nil {
+		return err
+	}
+	seen := make(map[uint]struct{}, len(carrierServiceIDs))
+	for index, carrierServiceID := range carrierServiceIDs {
+		if carrierServiceID == 0 {
+			return errors.New("carrier service id must be positive")
+		}
+		var service shipping.CarrierService
+		if err := tx.First(&service, carrierServiceID).Error; err != nil {
+			return err
+		}
+		if _, exists := seen[carrierServiceID]; exists {
+			continue
+		}
+		seen[carrierServiceID] = struct{}{}
+		if err := tx.Create(&shipping.ShippingRouteGroupCarrierService{
+			RouteGroupID: routeGroupID, CarrierServiceID: carrierServiceID, SortOrder: index,
+		}).Error; err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (r *ShippingRepository) CreateTemplateWithRules(template *shipping.ShippingTemplate, rules []shipping.ShippingRule) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
 		enabled := template.Enabled
 		template.Rules = nil
-		if err := tx.Create(template).Error; err != nil {
+		if err := tx.Omit("RouteGroup").Create(template).Error; err != nil {
 			return err
 		}
 		if !enabled {
@@ -224,9 +381,6 @@ func (r *ShippingRepository) CreateTemplateWithRulesAndCarrierServices(template 
 				return err
 			}
 		}
-		if err := createTemplateCarrierServices(tx, template.ID, carrierServices); err != nil {
-			return err
-		}
 
 		if err := tx.Preload("Rules").First(template, template.ID).Error; err != nil {
 			return err
@@ -241,23 +395,30 @@ func (r *ShippingRepository) CreateTemplateWithRulesAndCarrierServices(template 
 }
 
 func (r *ShippingRepository) UpdateTemplateWithRules(template *shipping.ShippingTemplate, rules []shipping.ShippingRule) error {
-	return r.UpdateTemplateWithRulesAndCarrierServices(template, rules, nil)
-}
-
-func (r *ShippingRepository) UpdateTemplateWithRulesAndCarrierServices(template *shipping.ShippingTemplate, rules []shipping.ShippingRule, carrierServices []shipping.CarrierService) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
 		updates := map[string]interface{}{
-			"name":                    template.Name,
-			"type":                    template.Type,
-			"template_kind":           template.TemplateKind,
-			"is_system_managed":       template.IsSystemManaged,
-			"currency":                template.Currency,
-			"free_shipping":           template.FreeShipping,
-			"free_threshold_minor":    template.FreeThresholdMinor,
-			"default_fee_minor":       template.DefaultFeeMinor,
-			"free_shipping_countries": template.FreeShippingCountries,
-			"description":             template.Description,
-			"enabled":                 template.Enabled,
+			"name":                                    template.Name,
+			"type":                                    template.Type,
+			"template_kind":                           template.TemplateKind,
+			"is_system_managed":                       template.IsSystemManaged,
+			"route_group_id":                          template.RouteGroupID,
+			"customer_billing_mode":                   template.CustomerBillingMode,
+			"customer_first_weight_grams":             template.CustomerFirstWeightGrams,
+			"customer_additional_weight_grams":        template.CustomerAdditionalWeightGrams,
+			"customer_min_charge_weight_grams":        template.CustomerMinChargeWeightGrams,
+			"customer_volumetric_divisor":             template.CustomerVolumetricDivisor,
+			"customer_fuel_surcharge_percent_decimal": template.CustomerFuelSurchargePercentDecimal,
+			"customer_remote_surcharge_minor":         template.CustomerRemoteSurchargeMinor,
+			"customer_remote_postal_codes":            template.CustomerRemotePostalCodes,
+			"customer_eta_min_days":                   template.CustomerEtaMinDays,
+			"customer_eta_max_days":                   template.CustomerEtaMaxDays,
+			"currency":                                template.Currency,
+			"free_shipping":                           template.FreeShipping,
+			"free_threshold_minor":                    template.FreeThresholdMinor,
+			"default_fee_minor":                       template.DefaultFeeMinor,
+			"free_shipping_countries":                 template.FreeShippingCountries,
+			"description":                             template.Description,
+			"enabled":                                 template.Enabled,
 		}
 		if err := tx.Model(&shipping.ShippingTemplate{}).Where("id = ?", template.ID).Updates(updates).Error; err != nil {
 			return err
@@ -281,9 +442,6 @@ func (r *ShippingRepository) UpdateTemplateWithRulesAndCarrierServices(template 
 				return err
 			}
 		}
-		if err := replaceTemplateCarrierServices(tx, template.ID, carrierServices); err != nil {
-			return err
-		}
 		if err := upsertShippingTemplateDisplayPriceSnapshot(tx, template); err != nil {
 			return err
 		}
@@ -305,109 +463,25 @@ func (r *ShippingRepository) UpdateTemplateWithRulesAndCarrierServices(template 
 	})
 }
 
-func createTemplateCarrierServices(tx *gorm.DB, templateID uint, services []shipping.CarrierService) error {
-	for i := range services {
-		services[i].ID = 0
-		services[i].TemplateID = &templateID
-		if err := tx.Create(&services[i]).Error; err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func replaceTemplateCarrierServices(tx *gorm.DB, templateID uint, services []shipping.CarrierService) error {
-	if services == nil {
-		return nil
-	}
-	var existingServices []shipping.CarrierService
-	if err := tx.Where("template_id = ?", templateID).Find(&existingServices).Error; err != nil {
-		return err
-	}
-
-	requestedIDs := make(map[uint]struct{}, len(services))
-	for i := range services {
-		if services[i].ID == 0 {
-			continue
-		}
-		if _, exists := requestedIDs[services[i].ID]; exists {
-			return fmt.Errorf("carrier service %d is selected more than once", services[i].ID)
-		}
-		requestedIDs[services[i].ID] = struct{}{}
-	}
-	for _, existing := range existingServices {
-		if _, keep := requestedIDs[existing.ID]; keep {
-			continue
-		}
-		if err := tx.Model(&shipping.CarrierService{}).
-			Where("id = ? AND template_id = ?", existing.ID, templateID).
-			Updates(map[string]interface{}{"template_id": nil}).Error; err != nil {
-			return err
-		}
-	}
-	for i := range services {
-		services[i].TemplateID = &templateID
-		if services[i].ID == 0 {
-			if err := tx.Create(&services[i]).Error; err != nil {
-				return err
-			}
-			continue
-		}
-
-		var existing shipping.CarrierService
-		if err := tx.First(&existing, services[i].ID).Error; err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return fmt.Errorf("carrier service %d does not exist", services[i].ID)
-			}
-			return err
-		}
-		if existing.TemplateID != nil && *existing.TemplateID != templateID {
-			return fmt.Errorf("carrier service %d belongs to another shipping template", services[i].ID)
-		}
-		updates := map[string]interface{}{
-			"carrier_id":                     services[i].CarrierID,
-			"template_id":                    templateID,
-			"fpx_channel_id":                 services[i].FpxChannelID,
-			"yanwen_published_channel_id":    services[i].YanwenPublishedChannelID,
-			"service_code":                   services[i].ServiceCode,
-			"service_name":                   services[i].ServiceName,
-			"route_name":                     services[i].RouteName,
-			"countries":                      services[i].Countries,
-			"currency":                       services[i].Currency,
-			"billing_mode":                   services[i].BillingMode,
-			"first_weight_grams":             services[i].FirstWeightGrams,
-			"additional_weight_grams":        services[i].AdditionalWeightGrams,
-			"min_charge_weight_grams":        services[i].MinChargeWeightGrams,
-			"volumetric_divisor":             services[i].VolumetricDivisor,
-			"fuel_surcharge_percent_decimal": services[i].FuelSurchargePercentDecimal,
-			"remote_surcharge_minor":         services[i].RemoteSurchargeMinor,
-			"remote_postal_codes":            services[i].RemotePostalCodes,
-			"eta_min_days":                   services[i].EtaMinDays,
-			"eta_max_days":                   services[i].EtaMaxDays,
-			"enabled":                        services[i].Enabled,
-			"sort_order":                     services[i].SortOrder,
-			"description":                    services[i].Description,
-		}
-		if err := tx.Model(&shipping.CarrierService{}).Where("id = ?", services[i].ID).Updates(updates).Error; err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 func (r *ShippingRepository) DeleteTemplate(id uint) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
+		var template shipping.ShippingTemplate
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).First(&template, id).Error; err != nil {
+			return err
+		}
+		var bindingCount int64
+		if err := tx.Model(&product.ProductShippingTemplateBinding{}).Where("shipping_template_id = ?", id).Count(&bindingCount).Error; err != nil {
+			return err
+		}
+		if bindingCount > 0 {
+			return errors.New("customer billing template is referenced by products or SKUs")
+		}
 		if tx.Migrator().HasTable(&shipping.ShippingDisplayPriceSnapshot{}) {
 			if err := tx.Where("template_id = ?", id).Delete(&shipping.ShippingDisplayPriceSnapshot{}).Error; err != nil {
 				return err
 			}
 		}
 		if err := tx.Where("template_id = ?", id).Delete(&shipping.ShippingRule{}).Error; err != nil {
-			return err
-		}
-		if err := tx.Model(&shipping.CarrierService{}).
-			Where("template_id = ?", id).
-			Updates(map[string]interface{}{"template_id": nil}).Error; err != nil {
 			return err
 		}
 		return tx.Delete(&shipping.ShippingTemplate{}, id).Error
@@ -1562,7 +1636,6 @@ func (r *ShippingRepository) FindAllCarrierServices(enabledOnly bool) ([]shippin
 	var services []shipping.CarrierService
 	query := r.db.
 		Preload("Carrier").
-		Preload("Template").
 		Order("carrier_id ASC").
 		Order("sort_order ASC").
 		Order("service_name ASC")
@@ -1572,69 +1645,45 @@ func (r *ShippingRepository) FindAllCarrierServices(enabledOnly bool) ([]shippin
 	}
 
 	err := query.Find(&services).Error
-	if err == nil {
-		err = r.attachCarrierServiceTemplateSnapshots(services)
-	}
 	return services, err
 }
 
-func (r *ShippingRepository) FindEnabledCarrierServicesWithTemplates() ([]shipping.CarrierService, error) {
-	var services []shipping.CarrierService
-	err := r.db.
+// FindEnabledCarrierServicesForRouteAggregates reads the aggregate membership
+// table. A carrier identity can be reused by multiple independent customer templates.
+type carrierServiceRouteAggregateMembershipProjection struct {
+	shipping.CarrierService
+	AggregateMembershipID uint `gorm:"column:aggregate_membership_id"`
+}
+
+func (r *ShippingRepository) FindEnabledCarrierServicesForRouteAggregates(routeGroupIDs []uint) ([]shipping.CarrierService, error) {
+	services := make([]shipping.CarrierService, 0)
+	if len(routeGroupIDs) == 0 {
+		return services, nil
+	}
+	var memberships []carrierServiceRouteAggregateMembershipProjection
+	err := r.db.Model(&shipping.CarrierService{}).Select("shipping_carrier_services.*, membership.route_group_id AS aggregate_membership_id").
 		Preload("Carrier").
-		Preload("Template.Rules", func(db *gorm.DB) *gorm.DB {
-			return db.Order("min_value_minor ASC, min_value ASC, id ASC")
-		}).
-		Preload("Template").
-		Where("enabled = ?", true).
-		Where("template_id IS NOT NULL").
-		Order("sort_order ASC").
-		Order("id ASC").
-		Find(&services).Error
-	if err == nil {
-		err = r.attachCarrierServiceTemplateSnapshots(services)
+		Joins("JOIN shipping_route_group_carrier_services membership ON membership.carrier_service_id = shipping_carrier_services.id").
+		Joins("JOIN shipping_route_groups aggregates ON aggregates.id = membership.route_group_id AND aggregates.deleted_at IS NULL AND aggregates.enabled = ?", true).
+		Where("membership.route_group_id IN ? AND shipping_carrier_services.enabled = ?", routeGroupIDs, true).
+		Order("membership.sort_order ASC, shipping_carrier_services.id ASC").Find(&memberships).Error
+	if err != nil {
+		return nil, err
 	}
-	return services, err
-}
-
-func (r *ShippingRepository) attachCarrierServiceTemplateSnapshots(services []shipping.CarrierService) error {
-	if len(services) == 0 {
-		return nil
+	for index := range memberships {
+		service := memberships[index].CarrierService
+		service.RouteGroupID = &memberships[index].AggregateMembershipID
+		services = append(services, service)
 	}
-	templates := make([]shipping.ShippingTemplate, 0, len(services))
-	indexes := make(map[uint]int, len(services))
-	for i := range services {
-		if services[i].Template == nil || services[i].Template.ID == 0 {
-			continue
-		}
-		index := len(templates)
-		templates = append(templates, *services[i].Template)
-		indexes[services[i].Template.ID] = index
-	}
-	if err := r.attachShippingDisplayPriceSnapshots(templates); err != nil {
-		return err
-	}
-	for i := range services {
-		if services[i].Template == nil {
-			continue
-		}
-		if index, ok := indexes[services[i].Template.ID]; ok {
-			*services[i].Template = templates[index]
-		}
-	}
-	return nil
+	return services, nil
 }
 
 func (r *ShippingRepository) FindCarrierServiceByID(id uint) (*shipping.CarrierService, error) {
 	var service shipping.CarrierService
 	err := r.db.
 		Preload("Carrier").
-		Preload("Template").
 		First(&service, id).Error
 	if err != nil {
-		return nil, err
-	}
-	if err := r.attachCarrierServiceTemplateSnapshots([]shipping.CarrierService{service}); err != nil {
 		return nil, err
 	}
 	return &service, nil
@@ -1657,7 +1706,6 @@ func (r *ShippingRepository) CreateCarrierService(service *shipping.CarrierServi
 func (r *ShippingRepository) UpdateCarrierService(service *shipping.CarrierService) error {
 	updates := map[string]interface{}{
 		"carrier_id":                     service.CarrierID,
-		"template_id":                    service.TemplateID,
 		"fpx_channel_id":                 service.FpxChannelID,
 		"yanwen_published_channel_id":    service.YanwenPublishedChannelID,
 		"service_code":                   service.ServiceCode,
