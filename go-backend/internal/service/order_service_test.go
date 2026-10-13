@@ -113,7 +113,7 @@ func TestOrderServiceCreateOrderUsesRequestedCarrierServiceForExpectedTotalMinor
 		ServiceCode: "DHL-EXP", ServiceName: "DHL Express", Countries: `["US"]`,
 		Currency: "USD", BillingMode: "actual_weight", RemoteSurchargeMinor: 10000, Enabled: true,
 	}
-	standardService = seedQuoteCustomerBillingTemplateAndCarrierRoute(t, db, carrier.ID, productRecord.ShippingTemplateIDs[0], standardService)
+	seedQuoteCustomerBillingTemplateAndCarrierRoute(t, db, carrier.ID, productRecord.ShippingTemplateIDs[0], standardService)
 	expressService = seedQuoteCustomerBillingTemplateAndCarrierRoute(t, db, carrier.ID, productRecord.ShippingTemplateIDs[0], expressService)
 	checkoutQuote, err := orderService.checkout.Quote(CheckoutQuoteInput{
 		UserID:          42,
@@ -890,7 +890,7 @@ func TestOrderServiceCreateOrderPersistsSelectedCarrierService(t *testing.T) {
 		Enabled:     true,
 		Description: "Default checkout route",
 	}
-	carrierService = seedQuoteCustomerBillingTemplateAndCarrierRoute(t, db, carrier.ID, template.ID, carrierService)
+	seedQuoteCustomerBillingTemplateAndCarrierRoute(t, db, carrier.ID, template.ID, carrierService)
 
 	createdOrder, err := orderService.CreateOrder(
 		context.Background(),

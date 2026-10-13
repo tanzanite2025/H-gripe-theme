@@ -1,9 +1,10 @@
 package service
 
 import (
-	"commerce-platform/internal/domain/shipping"
 	"encoding/json"
 	"sort"
+
+	"commerce-platform/internal/domain/shipping"
 )
 
 // hydrateShippingRouteAggregatePublishedDestinations refreshes identity and

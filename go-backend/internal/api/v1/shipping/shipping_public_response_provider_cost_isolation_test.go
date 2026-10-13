@@ -74,7 +74,7 @@ func TestPublicShippingHTTPResponsesExcludeProviderCostsAndPreserveCustomerPrici
 	} {
 		t.Run(testCase.name, func(t *testing.T) {
 			recorder := httptest.NewRecorder()
-			router.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, testCase.path, nil))
+			router.ServeHTTP(recorder, httptest.NewRequestWithContext(t.Context(), http.MethodGet, testCase.path, nil))
 			require.Equal(t, http.StatusOK, recorder.Code, recorder.Body.String())
 			var envelope map[string]interface{}
 			require.NoError(t, json.Unmarshal(recorder.Body.Bytes(), &envelope))

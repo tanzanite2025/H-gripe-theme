@@ -1,10 +1,11 @@
 package service
 
 import (
-	domainmoney "commerce-platform/internal/domain/money"
 	"errors"
 	"fmt"
 	"sort"
+
+	domainmoney "commerce-platform/internal/domain/money"
 )
 
 // quoteProductShippingTemplateAlternatives chooses exactly one billing template
@@ -22,7 +23,7 @@ func (s *ShippingService) quoteProductShippingTemplateAlternatives(country, post
 	sort.Ints(indexes)
 	plans := make([]ShippingQuotePlan, 0)
 	attempts := 0
-	unavailable := error(ErrShippingQuotePlanUnavailable)
+	unavailable := ErrShippingQuotePlanUnavailable
 	var visit func(int, []resolvedShippingItem) error
 	visit = func(position int, selected []resolvedShippingItem) error {
 		if position < len(indexes) {

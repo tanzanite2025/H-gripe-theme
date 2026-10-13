@@ -1,14 +1,16 @@
 package service
 
 import (
-	productdomain "commerce-platform/internal/domain/product"
-	shippingdomain "commerce-platform/internal/domain/shipping"
-	"commerce-platform/internal/repository"
 	"fmt"
+	"testing"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
-	"testing"
+
+	productdomain "commerce-platform/internal/domain/product"
+	shippingdomain "commerce-platform/internal/domain/shipping"
+	"commerce-platform/internal/repository"
 )
 
 func createIndependentCustomerShippingTemplateForTest(t *testing.T, db *gorm.DB, name string, fee int64, countries string) shippingdomain.ShippingTemplate {

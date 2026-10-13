@@ -285,12 +285,3 @@ func lookupPackagingRule(
 	}
 	return rules[0]
 }
-
-func containsShippingQuoteItemIndex(indexes []int, target int) bool {
-	for _, index := range indexes {
-		if index == target {
-			return true
-		}
-	}
-	return false
-}
