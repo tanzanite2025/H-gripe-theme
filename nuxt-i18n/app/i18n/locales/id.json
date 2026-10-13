@@ -1,28 +1,4 @@
 {
-  "toolsNavigation": {
-    "label": "Alat",
-    "eyebrow": "Pemilihan komponen sepeda",
-    "description": "Cari, saring, dan bandingkan spesifikasi komponen. Setiap alat menyertakan penjelasan untuk memahami hasilnya.",
-    "openTool": "Buka alat",
-    "schwalbeTireSelectorLabel": "Schwalbe tire selector",
-    "schwalbeTireSelectorDescription": "Cari dan saring katalog ban Schwalbe menurut model dan ukuran, dengan penjelasan konstruksi dan spesifikasi.",
-    "brandWheelsetSpokeSpecsLabel": "Spesifikasi jari-jari dan nipel wheelset",
-    "brandWheelsetSpokeSpecsDescription": "Filter menurut merek atau cari model wheelset untuk melihat panjang jari-jari, pola anyaman, dan spesifikasi nipel beserta catatan kit perbaikan.",
-    "spokeLengthCalculatorLabel": "Kalkulator panjang jari-jari",
-    "spokeLengthCalculatorDescription": "Hitung panjang jari-jari roda depan dan belakang melalui panduan lengkap pelek, hub, pola anyaman, koreksi, dan nipple, beserta petunjuk pengukuran dan penjelasan hasil.",
-    "spokeLacingTopologySimulatorLabel": "Simulator pola susunan jari-jari",
-    "spokeLacingTopologySimulatorDescription": "Pratinjau posisi lubang jari-jari, pola susunan, tata letak G3 dan 2:1, serta geometri kedua flensa, lengkap dengan penjelasan dan batas pratinjau.",
-  "dynamicTirePressureCalculatorLabel": "Kalkulator tekanan ban dinamis",
-  "dynamicTirePressureCalculatorDescription": "Pelajari bagaimana beban, tekanan, kecepatan, dan kemiringan mengubah perkiraan area kontak ban dan gaya menikung.",
-    "spokeStressReliefMechanicsLabel": "Stainless steel spoke stress-relief mechanics",
-    "spokeStressReliefMechanicsDescription": "Calculate axial spoke elongation from material, section, length, and working tension inputs with the full engineering context.",
-    "valveLengthFitmentCalculatorLabel": "Inner tube valve-length fitment calculator",
-    "valveLengthFitmentCalculatorDescription": "Complete inner-tube size, valve, material, and deep-rim valve-length guidance with an interactive fitment calculator.",
-    "freehubCassetteFitmentEngineLabel": "Freehub and cassette compatibility engine",
-    "freehubCassetteFitmentEngineDescription": "Match cassette standards, freehub bodies, spacers, and mechanical fitment rules with the complete guide.",
-    "tireRimWidthCompatibilityEngineLabel": "Tire and rim width compatibility engine",
-    "tireRimWidthCompatibilityEngineDescription": "Calculate tire and rim width fit, inspect simulations, and compare published compatibility charts"
-  },
   "accountSidebar": {
     "addresses": {
       "eyebrow": "Shipping details",
@@ -487,7 +463,8 @@
         "paymentPending": "Payment is not complete yet. Please check your order status later.",
         "emailRequired": "Add an email address to your account before checkout.",
         "priceUpdated": "The price or configuration has changed. We loaded the latest total. Please review it and continue when ready.",
-        "checkoutAlreadySubmitted": "This cart was already submitted as an order. Please check your order status before trying again."
+        "checkoutAlreadySubmitted": "This cart was already submitted as an order. Please check your order status before trying again.",
+        "taxRateUnavailable": "Pajak untuk alamat ini belum dapat dihitung. Coba lagi nanti atau hubungi dukungan."
       }
     },
     "order": {
@@ -631,7 +608,8 @@
           "selectCountry": "Select country",
           "unavailable": "Unavailable",
           "calculating": "Calculating...",
-          "free": "Free"
+          "free": "Free",
+          "selectStateProvince": "Pilih negara bagian atau provinsi"
         },
         "zip": "Postal code",
         "method": "Delivery method",
@@ -1951,6 +1929,32 @@
       "spokeCalculator": "Spoke Calculator",
       "testReport": "Test report"
     }
+  },
+  "toolsNavigation": {
+    "label": "Alat",
+    "eyebrow": "Pemilihan komponen sepeda",
+    "description": "Cari, saring, dan bandingkan spesifikasi komponen. Setiap alat menyertakan penjelasan untuk memahami hasilnya.",
+    "openTool": "Buka alat",
+    "schwalbeTireSelectorLabel": "Schwalbe tire selector",
+    "schwalbeTireSelectorDescription": "Cari dan saring katalog ban Schwalbe menurut model dan ukuran, dengan penjelasan konstruksi dan spesifikasi.",
+    "brandWheelsetSpokeSpecsLabel": "Spesifikasi jari-jari dan nipel wheelset",
+    "brandWheelsetSpokeSpecsDescription": "Filter menurut merek atau cari model wheelset untuk melihat panjang jari-jari, pola anyaman, dan spesifikasi nipel beserta catatan kit perbaikan.",
+    "spokeLengthCalculatorLabel": "Kalkulator panjang jari-jari",
+    "spokeLengthCalculatorDescription": "Hitung panjang jari-jari roda depan dan belakang melalui panduan lengkap pelek, hub, pola anyaman, koreksi, dan nipple, beserta petunjuk pengukuran dan penjelasan hasil.",
+    "spokeLacingTopologySimulatorLabel": "Simulator pola susunan jari-jari",
+    "spokeLacingTopologySimulatorDescription": "Pratinjau posisi lubang jari-jari, pola susunan, tata letak G3 dan 2:1, serta geometri kedua flensa, lengkap dengan penjelasan dan batas pratinjau.",
+    "dynamicTirePressureCalculatorLabel": "Kalkulator tekanan ban dinamis",
+    "dynamicTirePressureCalculatorDescription": "Pelajari bagaimana beban, tekanan, kecepatan, dan kemiringan mengubah perkiraan area kontak ban dan gaya menikung.",
+    "spokeStressReliefMechanicsLabel": "Stainless steel spoke stress-relief mechanics",
+    "spokeStressReliefMechanicsDescription": "Calculate axial spoke elongation from material, section, length, and working tension inputs with the full engineering context.",
+    "valveLengthFitmentCalculatorLabel": "Inner tube valve-length fitment calculator",
+    "valveLengthFitmentCalculatorDescription": "Complete inner-tube size, valve, material, and deep-rim valve-length guidance with an interactive fitment calculator.",
+    "freehubCassetteFitmentEngineLabel": "Freehub and cassette compatibility engine",
+    "freehubCassetteFitmentEngineDescription": "Match cassette standards, freehub bodies, spacers, and mechanical fitment rules with the complete guide.",
+    "tireRimWidthCompatibilityEngineLabel": "Tire and rim width compatibility engine",
+    "tireRimWidthCompatibilityEngineDescription": "Calculate tire and rim width fit, inspect simulations, and compare published compatibility charts",
+    "tireSizeMarkingConverterLabel": "Tire size marking converter",
+    "tireSizeMarkingConverterDescription": "Convert ETRTO, inch, and French tire markings with the complete size reference, explanations, and fitment limits."
   },
   "user": {
     "memberCenter": "Pusat Anggota",

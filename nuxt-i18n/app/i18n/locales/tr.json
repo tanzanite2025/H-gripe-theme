@@ -1,28 +1,4 @@
 {
-  "toolsNavigation": {
-    "label": "Araçlar",
-    "eyebrow": "Bisiklet bileşeni seçimi",
-    "description": "Bileşen özelliklerini arayın, filtreleyin ve karşılaştırın. Her araç, sonuçları anlamak için gerekli açıklamaları içerir.",
-    "openTool": "Aracı aç",
-    "schwalbeTireSelectorLabel": "Schwalbe tire selector",
-    "schwalbeTireSelectorDescription": "Schwalbe lastik kataloğunu model ve boyuta göre arayın ve filtreleyin; yapı ve özellik açıklamalarını inceleyin.",
-    "brandWheelsetSpokeSpecsLabel": "Jant seti tel ve nipel özellikleri",
-    "brandWheelsetSpokeSpecsDescription": "Tel uzunluklarını, örgü düzenlerini ve nipel özelliklerini onarım kiti notlarıyla birlikte görmek için markaya göre filtreleyin veya jant modeli arayın.",
-    "spokeLengthCalculatorLabel": "Jant teli uzunluğu hesaplayıcı",
-    "spokeLengthCalculatorDescription": "Ölçüm ve sonuç açıklamalarıyla birlikte jant, göbek, örüm, düzeltme ve nipel adımlarının tamamını kullanarak ön ve arka tekerlek tel uzunluklarını hesaplayın.",
-    "spokeLacingTopologySimulatorLabel": "Jant teli örüm düzeni simülatörü",
-    "spokeLacingTopologySimulatorDescription": "Tel deliği konumlarını, örüm düzenlerini, G3 ve 2:1 yerleşimlerini ve iki flanşın geometrisini açıklamalar ve önizleme sınırlarıyla inceleyin.",
-  "dynamicTirePressureCalculatorLabel": "Dinamik lastik basıncı hesaplayıcı",
-  "dynamicTirePressureCalculatorDescription": "Yükün, basıncın, hızın ve yatış açısının tahmini lastik temas alanını ve viraj kuvvetini nasıl değiştirdiğini inceleyin.",
-    "spokeStressReliefMechanicsLabel": "Stainless steel spoke stress-relief mechanics",
-    "spokeStressReliefMechanicsDescription": "Calculate axial spoke elongation from material, section, length, and working tension inputs with the full engineering context.",
-    "valveLengthFitmentCalculatorLabel": "Inner tube valve-length fitment calculator",
-    "valveLengthFitmentCalculatorDescription": "Complete inner-tube size, valve, material, and deep-rim valve-length guidance with an interactive fitment calculator.",
-    "freehubCassetteFitmentEngineLabel": "Freehub and cassette compatibility engine",
-    "freehubCassetteFitmentEngineDescription": "Match cassette standards, freehub bodies, spacers, and mechanical fitment rules with the complete guide.",
-    "tireRimWidthCompatibilityEngineLabel": "Tire and rim width compatibility engine",
-    "tireRimWidthCompatibilityEngineDescription": "Calculate tire and rim width fit, inspect simulations, and compare published compatibility charts"
-  },
   "accountSidebar": {
     "addresses": {
       "eyebrow": "Shipping details",
@@ -487,7 +463,8 @@
         "paymentPending": "Payment is not complete yet. Please check your order status later.",
         "emailRequired": "Add an email address to your account before checkout.",
         "priceUpdated": "The price or configuration has changed. We loaded the latest total. Please review it and continue when ready.",
-        "checkoutAlreadySubmitted": "This cart was already submitted as an order. Please check your order status before trying again."
+        "checkoutAlreadySubmitted": "This cart was already submitted as an order. Please check your order status before trying again.",
+        "taxRateUnavailable": "Bu adres için vergi şu anda hesaplanamıyor. Lütfen daha sonra tekrar deneyin veya destek ekibiyle iletişime geçin."
       }
     },
     "order": {
@@ -631,7 +608,8 @@
           "selectCountry": "Select country",
           "unavailable": "Unavailable",
           "calculating": "Calculating...",
-          "free": "Free"
+          "free": "Free",
+          "selectStateProvince": "Eyalet veya il seçin"
         },
         "zip": "Postal code",
         "method": "Delivery method",
@@ -1951,6 +1929,32 @@
       "spokeCalculator": "Spoke Calculator",
       "testReport": "Test report"
     }
+  },
+  "toolsNavigation": {
+    "label": "Araçlar",
+    "eyebrow": "Bisiklet bileşeni seçimi",
+    "description": "Bileşen özelliklerini arayın, filtreleyin ve karşılaştırın. Her araç, sonuçları anlamak için gerekli açıklamaları içerir.",
+    "openTool": "Aracı aç",
+    "schwalbeTireSelectorLabel": "Schwalbe tire selector",
+    "schwalbeTireSelectorDescription": "Schwalbe lastik kataloğunu model ve boyuta göre arayın ve filtreleyin; yapı ve özellik açıklamalarını inceleyin.",
+    "brandWheelsetSpokeSpecsLabel": "Jant seti tel ve nipel özellikleri",
+    "brandWheelsetSpokeSpecsDescription": "Tel uzunluklarını, örgü düzenlerini ve nipel özelliklerini onarım kiti notlarıyla birlikte görmek için markaya göre filtreleyin veya jant modeli arayın.",
+    "spokeLengthCalculatorLabel": "Jant teli uzunluğu hesaplayıcı",
+    "spokeLengthCalculatorDescription": "Ölçüm ve sonuç açıklamalarıyla birlikte jant, göbek, örüm, düzeltme ve nipel adımlarının tamamını kullanarak ön ve arka tekerlek tel uzunluklarını hesaplayın.",
+    "spokeLacingTopologySimulatorLabel": "Jant teli örüm düzeni simülatörü",
+    "spokeLacingTopologySimulatorDescription": "Tel deliği konumlarını, örüm düzenlerini, G3 ve 2:1 yerleşimlerini ve iki flanşın geometrisini açıklamalar ve önizleme sınırlarıyla inceleyin.",
+    "dynamicTirePressureCalculatorLabel": "Dinamik lastik basıncı hesaplayıcı",
+    "dynamicTirePressureCalculatorDescription": "Yükün, basıncın, hızın ve yatış açısının tahmini lastik temas alanını ve viraj kuvvetini nasıl değiştirdiğini inceleyin.",
+    "spokeStressReliefMechanicsLabel": "Stainless steel spoke stress-relief mechanics",
+    "spokeStressReliefMechanicsDescription": "Calculate axial spoke elongation from material, section, length, and working tension inputs with the full engineering context.",
+    "valveLengthFitmentCalculatorLabel": "Inner tube valve-length fitment calculator",
+    "valveLengthFitmentCalculatorDescription": "Complete inner-tube size, valve, material, and deep-rim valve-length guidance with an interactive fitment calculator.",
+    "freehubCassetteFitmentEngineLabel": "Freehub and cassette compatibility engine",
+    "freehubCassetteFitmentEngineDescription": "Match cassette standards, freehub bodies, spacers, and mechanical fitment rules with the complete guide.",
+    "tireRimWidthCompatibilityEngineLabel": "Tire and rim width compatibility engine",
+    "tireRimWidthCompatibilityEngineDescription": "Calculate tire and rim width fit, inspect simulations, and compare published compatibility charts",
+    "tireSizeMarkingConverterLabel": "Tire size marking converter",
+    "tireSizeMarkingConverterDescription": "Convert ETRTO, inch, and French tire markings with the complete size reference, explanations, and fitment limits."
   },
   "user": {
     "memberCenter": "Üye Merkezi",

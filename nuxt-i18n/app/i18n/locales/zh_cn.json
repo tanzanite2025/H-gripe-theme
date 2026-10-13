@@ -1,28 +1,4 @@
 {
-  "toolsNavigation": {
-    "label": "工具",
-    "eyebrow": "自行车零部件选型",
-    "description": "搜索、筛选和比较零部件规格。每个工具均保留理解结果所需的说明。",
-    "openTool": "打开工具",
-    "schwalbeTireSelectorLabel": "Schwalbe 外胎选型查询",
-    "schwalbeTireSelectorDescription": "按型号和尺寸搜索、筛选 Schwalbe 外胎目录，并查看胎体结构和规格说明。",
-    "brandWheelsetSpokeSpecsLabel": "品牌轮组辐条规格速查",
-    "brandWheelsetSpokeSpecsDescription": "按品牌筛选或搜索轮组型号，查询辐条长度、编法及条帽规格，并查看修补包说明。",
-    "spokeLengthCalculatorLabel": "辐条长度计算器",
-    "spokeLengthCalculatorDescription": "通过轮圈、花鼓、编法、修正和条帽的完整向导计算前后轮辐条长度，并查看测量说明及结果解释。",
-    "spokeLacingTopologySimulatorLabel": "辐条编法拓扑模拟器",
-    "spokeLacingTopologySimulatorDescription": "交互预览孔位、辐条编法、G3 与 2:1 布局和双法兰几何，包含完整说明与预览限制。",
-  "dynamicTirePressureCalculatorLabel": "动态胎压计算器",
-  "dynamicTirePressureCalculatorDescription": "探索载荷、胎压、速度和倾角如何改变估算的轮胎接地面积与过弯受力。",
-    "spokeStressReliefMechanicsLabel": "不锈钢辐条应力释放力学工具",
-    "spokeStressReliefMechanicsDescription": "根据材料、截面、长度和工作张力计算辐条轴向伸长，并查看完整工程说明。",
-    "valveLengthFitmentCalculatorLabel": "内胎气嘴长度适配计算器",
-    "valveLengthFitmentCalculatorDescription": "完整了解内胎尺寸、气嘴、材质和高框车圈气嘴长度，并使用交互式适配计算器。",
-    "freehubCassetteFitmentEngineLabel": "塔基与飞轮兼容助手",
-    "freehubCassetteFitmentEngineDescription": "匹配飞轮标准、塔基、垫圈和机械适配规则，并查看完整兼容说明。",
-    "tireRimWidthCompatibilityEngineLabel": "车圈与外胎宽度兼容引擎",
-    "tireRimWidthCompatibilityEngineDescription": "计算外胎与车圈宽度配合，查看模拟并对照已发布的兼容图表"
-  },
   "accountSidebar": {
     "addresses": {
       "eyebrow": "Shipping details",
@@ -487,7 +463,8 @@
         "orderFailed": "订单提交失败，请重试",
         "emailRequired": "Add an email address to your account before checkout.",
         "priceUpdated": "The price or configuration has changed. We loaded the latest total. Please review it and continue when ready.",
-        "checkoutAlreadySubmitted": "This cart was already submitted as an order. Please check your order status before trying again."
+        "checkoutAlreadySubmitted": "This cart was already submitted as an order. Please check your order status before trying again.",
+        "taxRateUnavailable": "暂时无法计算此地址的税费，请稍后重试或联系客服。"
       }
     },
     "order": {
@@ -639,7 +616,8 @@
           "selectCountry": "选择国家",
           "unavailable": "不可用",
           "calculating": "正在计算...",
-          "free": "免费"
+          "free": "免费",
+          "selectStateProvince": "选择州或省"
         },
         "zip": "Postal code",
         "method": "Delivery method",
@@ -1951,6 +1929,32 @@
       "spokeCalculator": "辐条计算器",
       "testReport": "测试报告"
     }
+  },
+  "toolsNavigation": {
+    "label": "工具",
+    "eyebrow": "自行车零部件选型",
+    "description": "搜索、筛选和比较零部件规格。每个工具均保留理解结果所需的说明。",
+    "openTool": "打开工具",
+    "schwalbeTireSelectorLabel": "Schwalbe 外胎选型查询",
+    "schwalbeTireSelectorDescription": "按型号和尺寸搜索、筛选 Schwalbe 外胎目录，并查看胎体结构和规格说明。",
+    "brandWheelsetSpokeSpecsLabel": "品牌轮组辐条规格速查",
+    "brandWheelsetSpokeSpecsDescription": "按品牌筛选或搜索轮组型号，查询辐条长度、编法及条帽规格，并查看修补包说明。",
+    "spokeLengthCalculatorLabel": "辐条长度计算器",
+    "spokeLengthCalculatorDescription": "通过轮圈、花鼓、编法、修正和条帽的完整向导计算前后轮辐条长度，并查看测量说明及结果解释。",
+    "spokeLacingTopologySimulatorLabel": "辐条编法拓扑模拟器",
+    "spokeLacingTopologySimulatorDescription": "交互预览孔位、辐条编法、G3 与 2:1 布局和双法兰几何，包含完整说明与预览限制。",
+    "dynamicTirePressureCalculatorLabel": "动态胎压计算器",
+    "dynamicTirePressureCalculatorDescription": "探索载荷、胎压、速度和倾角如何改变估算的轮胎接地面积与过弯受力。",
+    "spokeStressReliefMechanicsLabel": "不锈钢辐条应力释放力学工具",
+    "spokeStressReliefMechanicsDescription": "根据材料、截面、长度和工作张力计算辐条轴向伸长，并查看完整工程说明。",
+    "valveLengthFitmentCalculatorLabel": "内胎气嘴长度适配计算器",
+    "valveLengthFitmentCalculatorDescription": "完整了解内胎尺寸、气嘴、材质和高框车圈气嘴长度，并使用交互式适配计算器。",
+    "freehubCassetteFitmentEngineLabel": "塔基与飞轮兼容助手",
+    "freehubCassetteFitmentEngineDescription": "匹配飞轮标准、塔基、垫圈和机械适配规则，并查看完整兼容说明。",
+    "tireRimWidthCompatibilityEngineLabel": "车圈与外胎宽度兼容引擎",
+    "tireRimWidthCompatibilityEngineDescription": "计算外胎与车圈宽度配合，查看模拟并对照已发布的兼容图表",
+    "tireSizeMarkingConverterLabel": "轮胎尺寸标注转换工具",
+    "tireSizeMarkingConverterDescription": "联动转换 ETRTO、英寸和法式尺寸标注，并查看完整尺寸对照、解释和安装前限制。"
   },
   "user": {
     "memberCenter": "会员中心",
