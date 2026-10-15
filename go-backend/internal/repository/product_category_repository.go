@@ -1,10 +1,12 @@
 package repository
 
 import (
-	"commerce-platform/internal/domain/product"
 	"errors"
 
+	"commerce-platform/internal/domain/product"
+
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type ProductCategoryRepository struct {
@@ -142,11 +144,23 @@ func (r *ProductCategoryRepository) ListProductIDs(categoryIDs []uint) ([]uint, 
 }
 
 func (r *ProductCategoryRepository) Create(category *product.ProductCategory) error {
-	return r.db.Select("*").Create(category).Error
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		if err := lockValidateAndResolveCategoryImageFromRegisteredAsset(tx, category); err != nil {
+			return err
+		}
+		return tx.Select("*").Create(category).Error
+	})
 }
 
 func (r *ProductCategoryRepository) Update(category *product.ProductCategory, descendantDepths map[uint]int) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
+		var current product.ProductCategory
+		if err := tx.Clauses(clause.Locking{Strength: "NO KEY UPDATE"}).First(&current, category.ID).Error; err != nil {
+			return err
+		}
+		if err := lockValidateAndResolveCategoryImageFromRegisteredAsset(tx, category); err != nil {
+			return err
+		}
 		if err := tx.Model(&product.ProductCategory{}).Where("id = ?", category.ID).Updates(map[string]interface{}{
 			"parent_id":            category.ParentID,
 			"name":                 category.Name,

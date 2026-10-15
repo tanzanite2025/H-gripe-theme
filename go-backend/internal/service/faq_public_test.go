@@ -144,5 +144,5 @@ func newTestFAQService(t *testing.T) (*gorm.DB, *FAQService) {
 		&faqdomain.FAQPage{},
 	))
 
-	return db, NewFAQService(repository.NewFAQRepository(db), nil)
+	return db, NewFAQService(repository.NewFAQRepository(db))
 }

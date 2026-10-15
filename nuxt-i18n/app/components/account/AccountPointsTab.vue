@@ -206,7 +206,7 @@ const discountText = computed(() => `${formatBenefitNumber(Number(props.levelDis
 .points-actions button,
 .points-actions a {
   display: inline-flex;
-  min-height: 2.55rem;
+  min-height: var(--tz-pill-button-min-height);
   align-items: center;
   justify-content: center;
   gap: 0.45rem;
@@ -214,6 +214,8 @@ const discountText = computed(() => `${formatBenefitNumber(Number(props.levelDis
   font-size: 0.82rem;
   font-weight: 800;
   text-decoration: none;
+  line-height: var(--tz-pill-button-line-height);
+  padding-block: var(--tz-pill-button-padding-block);
 }
 
 .points-actions button {

@@ -9,40 +9,43 @@ import (
 )
 
 var (
-	ErrMediaAssetNotFound                 = errors.New("media asset not found")
-	ErrUnsupportedMediaType               = errors.New("unsupported media type")
-	ErrUnsupportedMediaStatus             = errors.New("unsupported media status")
-	ErrUnsupportedVisibility              = errors.New("unsupported media visibility")
-	ErrMediaUploadFileRequired            = errors.New("media upload file is required")
-	ErrMediaAssetURLUnavailable           = errors.New("media asset url is unavailable")
-	ErrMediaStorageUnavailable            = errors.New("media storage unavailable")
-	ErrMediaAssetForbidden                = errors.New("media asset is not public")
-	ErrMediaUploadIdentityRequired        = errors.New("media upload identity is required")
-	ErrMediaAccountStorageQuotaExceeded   = errors.New("media account storage quota exceeded")
-	ErrMediaDerivativeGenerationFailed    = errors.New("media derivative generation failed")
-	ErrMediaDerivativePresetUnavailable   = errors.New("media derivative preset configuration is unavailable")
-	ErrInvalidMediaDerivativePreset       = errors.New("invalid media derivative preset")
-	ErrMediaDerivativePresetNotFound      = errors.New("media derivative preset not found")
-	ErrMediaDerivativePresetConflict      = errors.New("media derivative preset already exists")
-	ErrMediaDerivativePresetInUse         = errors.New("media derivative preset has generated files")
-	ErrMediaDerivativePresetProtected     = errors.New("media derivative preset is protected")
-	ErrMediaDerivativePresetCodeImmutable = errors.New("media derivative preset code cannot be changed")
-	ErrMediaDerivativePresetLimitReached  = errors.New("active image conversion limit reached")
+	ErrMediaAssetNotFound                      = errors.New("media asset not found")
+	ErrUnsupportedMediaType                    = errors.New("unsupported media type")
+	ErrUnsupportedMediaStatus                  = errors.New("unsupported media status")
+	ErrUnsupportedVisibility                   = errors.New("unsupported media visibility")
+	ErrMediaUploadFileRequired                 = errors.New("media upload file is required")
+	ErrMediaAssetURLUnavailable                = errors.New("media asset url is unavailable")
+	ErrMediaStorageUnavailable                 = errors.New("media storage unavailable")
+	ErrMediaAssetForbidden                     = errors.New("media asset is not public")
+	ErrMediaUploadIdentityRequired             = errors.New("media upload identity is required")
+	ErrMediaAccountStorageQuotaExceeded        = errors.New("media account storage quota exceeded")
+	ErrMediaVisitorSessionStorageQuotaExceeded = errors.New("media visitor session storage quota exceeded")
+	ErrMediaDerivativeGenerationFailed         = errors.New("media derivative generation failed")
+	ErrMediaDerivativePresetUnavailable        = errors.New("media derivative preset configuration is unavailable")
+	ErrInvalidMediaDerivativePreset            = errors.New("invalid media derivative preset")
+	ErrMediaDerivativePresetNotFound           = errors.New("media derivative preset not found")
+	ErrMediaDerivativePresetConflict           = errors.New("media derivative preset already exists")
+	ErrMediaDerivativePresetInUse              = errors.New("media derivative preset has generated files")
+	ErrMediaDerivativePresetProtected          = errors.New("media derivative preset is protected")
+	ErrMediaDerivativePresetCodeImmutable      = errors.New("media derivative preset code cannot be changed")
+	ErrMediaDerivativePresetLimitReached       = errors.New("active image conversion limit reached")
 )
 
 // MediaService coordinates media-asset operations. Individual workflows live
 // in dedicated files for upload, catalog, access, evidence, references, and
 // deletion so each can grow independently.
 type MediaService struct {
-	repo                     *repository.MediaRepository
-	derivativePresets        *repository.MediaDerivativePresetRepository
-	derivativeRebuildJobs    *repository.MediaDerivativeRebuildJobRepository
-	objectCleanupOutbox      *repository.OutboxRepository
-	storage                  storage.StorageService
-	settings                 *SettingService
-	siteURL                  string
-	accountStorageQuotaBytes int64
-	cdnPurger                *mediaCDNPurger
+	repo                                           *repository.MediaRepository
+	derivativePresets                              *repository.MediaDerivativePresetRepository
+	derivativeRebuildJobs                          *repository.MediaDerivativeRebuildJobRepository
+	objectCleanupOutbox                            *repository.OutboxRepository
+	storage                                        storage.StorageService
+	settings                                       *SettingService
+	siteURL                                        string
+	accountStorageQuotaBytes                       int64
+	visitorSessionStorageQuotaBytes                int64
+	cdnPurger                                      *mediaCDNPurger
+	customerServicePrivateAttachmentUploadsEnabled bool
 }
 
 // PublicMediaURLResolver is the boundary used by public response mappers when
@@ -57,15 +60,25 @@ func NewMediaService(
 	settingSvc *SettingService,
 	siteURL string,
 	accountStorageQuotaBytes int64,
+	quotaOptions ...MediaUploadActorQuotaOptions,
 ) *MediaService {
-	return &MediaService{
-		repo:                     repo,
-		storage:                  storageSvc,
-		settings:                 settingSvc,
-		siteURL:                  strings.TrimRight(strings.TrimSpace(siteURL), "/"),
-		accountStorageQuotaBytes: accountStorageQuotaBytes,
-		cdnPurger:                newMediaCDNPurgerFromEnv(),
+	visitorQuotaBytes := DefaultMediaVisitorSessionStorageQuotaBytes
+	if len(quotaOptions) > 0 {
+		visitorQuotaBytes = quotaOptions[0].VisitorSessionStorageQuotaBytes
 	}
+	service := &MediaService{
+		repo:                            repo,
+		storage:                         storageSvc,
+		settings:                        settingSvc,
+		siteURL:                         strings.TrimRight(strings.TrimSpace(siteURL), "/"),
+		accountStorageQuotaBytes:        accountStorageQuotaBytes,
+		visitorSessionStorageQuotaBytes: visitorQuotaBytes,
+		cdnPurger:                       newMediaCDNPurgerFromEnv(),
+	}
+	if repo != nil {
+		repo.ConfigurePublicBusinessMediaReferenceIdentityResolver(service)
+	}
+	return service
 }
 
 func (s *MediaService) ConfigureDerivativePresetRepository(repo *repository.MediaDerivativePresetRepository) {

@@ -281,7 +281,8 @@ func IsPrivateObjectKey(key string) bool {
 	if !ok {
 		return false
 	}
-	for _, prefix := range []string{"order-evidence/", "warranty/", "after-sales/", "showcase/pending/"} {
+	for _, prefix := range []string{"order-evidence/", "warranty/", "after-sales/", "showcase/pending/",
+		CustomerServiceConversationAttachmentOriginalsPrefix + "/", CustomerServiceConversationAttachmentDerivativesPrefix + "/"} {
 		if strings.HasPrefix(normalized, prefix) {
 			return true
 		}
@@ -294,7 +295,8 @@ func isPrivateUploadPrefix(prefix string) bool {
 	if !ok {
 		return false
 	}
-	for _, namespace := range []string{"order-evidence", "warranty", "after-sales", "showcase/pending"} {
+	for _, namespace := range []string{"order-evidence", "warranty", "after-sales", "showcase/pending",
+		CustomerServiceConversationAttachmentOriginalsPrefix, CustomerServiceConversationAttachmentDerivativesPrefix} {
 		if normalized == namespace || strings.HasPrefix(normalized, namespace+"/") {
 			return true
 		}

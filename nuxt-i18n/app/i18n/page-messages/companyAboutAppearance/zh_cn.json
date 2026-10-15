@@ -1,18 +1,12 @@
 {
   "title": "碳纤维轮圈外观与定制",
-  "navigation": {
-    "ariaLabel": "关于我们页面导航",
-    "tabs": {
-      "factory": "工厂",
-      "appearance": "外观定制",
-      "hole-patterns": "孔位设计"
-    }
-  },
   "seo": {
-    "title": "碳纤维轮圈外观定制：UD 涂装、免涂装与激光镭射",
-    "description": "了解碳纤维轮圈的 UD 涂装、免涂装表面和激光镭射标识。3K 碳布底材也可采用 UD 涂装；可比较其他外观定制、制作交期与圈刹刹车边选择。刹车边整体耐温 260°C，优先推荐经过表面优化的常规方案。",
+    "title": "碳纤维轮圈外观与纹理定制：UD 涂装、免涂装、3K/12K 与激光镭射",
+    "description": "比较碳圈 UD 涂装、免涂装、3K/12K 斜纹与大理石纹，以及哑光、缎面和亮光效果。了解激光镭射标识、圈刹刹车边 260°C 耐温参数与定制交期；底材和工艺以所选轮圈规格为准。",
     "imageAlt": "碳纤维轮圈激光镭射 Logo 的制作过程",
-    "breadcrumbHome": "首页"
+    "breadcrumbHome": "首页",
+    "videoName": "碳纤维轮圈 Logo 激光镭射工艺实拍",
+    "videoDescription": "实拍展示激光设备在碳纤维轮圈表面制作 Logo 标识。视频展示标识工艺；圈刹刹车边激光处理的摩擦力收益与表层影响另行说明。"
   },
   "intro": "我们目前主推 UD 涂装、免涂装表面和激光镭射标识。UD 涂装与免涂装是两种表面方案，可根据外观需求选择，并确认相应的标识工艺；其他外观也可定制，但需要更长的制作时间。",
   "primaryAppearance": {
@@ -30,7 +24,7 @@
       "description": "通过激光镭射制作 Logo 或文字，是我们目前主推的标识方式。标识镭射与刹车边的镭射处理用途不同。"
     }
   },
-  "customizationLeadTime": "其他纹理、涂装、光泽和水晶效果仍可定制，制作周期比主推方案更长。具体可行性与增加的时间，请在下单前根据轮圈型号和外观要求确认。",
+  "customizationLeadTime": "其他纹理、涂装和光泽仍可定制，制作周期比主推方案更长。具体可行性与增加的时间，请在下单前根据轮圈型号和外观要求确认。",
   "images": {
     "weavePatternsAlt": "碳纤维轮圈 UD 涂装与蝴蝶纹、大理石纹、3K、12K 纹理的外观对比",
     "weavePatternsCaption": "外观参考 · UD 涂装为主推，其他外观需定制",
@@ -39,15 +33,13 @@
   },
   "sections": {
     "primaryAppearance": "目前主推的外观方案",
-    "customAppearance": "其他外观定制 · 查看纹理与表面选项",
-    "weavePatterns": "涂装与纹理外观参考",
-    "glossLevels": "定制光泽",
-    "crystalEffects": "定制水晶效果",
+    "customAppearance": "其他外观定制：碳布纹理与表面效果",
+    "weavePatterns": "碳布纹理：3K、12K、斜纹与大理石纹",
+    "glossLevels": "哑光、缎面与亮光：如何选择光泽",
     "brakeTracks": "刹车边耐温与表面处理",
     "laserEngraving": "激光镭射标识"
   },
   "rimBrakeOnly": "（仅适用于圈刹）",
-  "crystalIntro": "水晶效果属于外观定制，可按需求确认颜色与表面效果，并需要额外制作时间。",
   "weaves": {
     "butterfly": {
       "name": "蝴蝶纹",
@@ -96,13 +88,6 @@
       "description": "高亮表面，质感突出。"
     }
   },
-  "crystalEffects": {
-    "black": "黑色",
-    "silver": "银色",
-    "orange": "橙色",
-    "purple": "紫色",
-    "blue": "蓝色"
-  },
   "brakeTracks": {
     "resinTitle": "刹车边整体耐温 · 260°C",
     "resinDescription": "我们采用经过优化的高温树脂，刹车边整体耐温参数为 260°C。",
@@ -126,12 +111,6 @@
     "watchVideo": "观看标识镭射工艺视频"
   },
   "selectionAdvice": {
-    "title": "如何选择外观方案",
-    "items": {
-      "0": "可优先选择 UD 涂装或免涂装表面，再确认激光镭射标识方案；底材与铺层结构请查看具体轮圈规格。",
-      "1": "需要其他纹理、颜色或标识工艺时，请提前确认定制细节，并为额外制作时间预留空间。",
-      "2": "圈刹轮圈优先推荐经过表面优化的常规刹车边；如选择镭射，请同时了解其摩擦力收益与对碳纤维表层的影响。"
-    },
     "footer": "OEM、团队订单或品牌定制，可联系我们确认轮圈型号、标识文件、外观要求和交期。"
   },
   "relatedResources": {

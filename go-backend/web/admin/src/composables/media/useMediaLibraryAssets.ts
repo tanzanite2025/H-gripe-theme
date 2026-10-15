@@ -1,10 +1,14 @@
-import { reactive, ref } from 'vue'
+import { onScopeDispose, reactive, ref } from 'vue'
 import { toast } from 'vue-sonner'
 import mediaApi from '@/api/media'
-import type { MediaAsset } from '@/api/media'
+import type { MediaAsset, MediaAssetListParams, OperationalMediaUploadContext } from '@/api/media'
+import { normalizeMediaLibraryPartitionView, type MediaLibraryPartitionView } from '@/modules/media/mediaLibraryBusinessPartitionUploadOriginAndCustomerServicePurposePresentation'
 import { validateUploadFile } from '@/lib/uploadSpecs'
 
 export interface MediaLibraryFilters {
+  libraryPartition: MediaLibraryPartitionView
+  uploadOrigin: string
+  customerServiceMediaPurpose: 'all' | 'conversation_attachment' | 'reusable_reply'
   search: string
   mediaType: string
   status: string
@@ -16,31 +20,71 @@ export interface MediaLibraryPagination {
   total: number
 }
 
-export const useMediaLibraryAssets = () => {
+export const useMediaLibraryAssets = (initialPartition?: unknown) => {
   const loading = ref(false)
   const uploading = ref(false)
   const saving = ref(false)
   const assets = ref<MediaAsset[]>([])
-  const filters = reactive<MediaLibraryFilters>({ search: '', mediaType: 'all', status: 'all' })
+  const loadError = ref('')
+  const partitionCounts = ref<Record<string, number>>({})
+  const canViewConversationAttachments = ref(false)
+  const filters = reactive<MediaLibraryFilters>({ search: '', mediaType: 'all', status: 'all',
+    libraryPartition: normalizeMediaLibraryPartitionView(initialPartition), uploadOrigin: 'all', customerServiceMediaPurpose: 'all' })
   const pagination = reactive<MediaLibraryPagination>({ page: 1, pageSize: 40, total: 0 })
+  let activeRequest: AbortController | undefined
+  let requestGeneration = 0
+  let disposed = false
 
   const fetchAssets = async (): Promise<void> => {
+    if (disposed) return
+    activeRequest?.abort()
+    const controller = new AbortController()
+    activeRequest = controller
+    const generation = ++requestGeneration
     loading.value = true
+    loadError.value = ''
+    assets.value = []
+    pagination.total = 0
+    partitionCounts.value = {}
+    canViewConversationAttachments.value = false
     try {
-      const result = await mediaApi.listAssets({
+      const params: MediaAssetListParams = {
+        library_partition: filters.libraryPartition,
+        upload_origin: filters.uploadOrigin !== 'all' ? filters.uploadOrigin : undefined,
+        customer_service_media_purpose: filters.customerServiceMediaPurpose !== 'all' ? filters.customerServiceMediaPurpose : undefined,
         page: pagination.page,
         page_size: pagination.pageSize,
         search: filters.search || undefined,
         media_type: filters.mediaType !== 'all' ? filters.mediaType : undefined,
         status: filters.status !== 'all' ? filters.status : undefined,
-      })
+      }
+      const [result, scope] = await Promise.all([
+        mediaApi.listAssets(params, controller.signal), mediaApi.countAssetsByLibraryPartition(params, controller.signal),
+      ])
+      if (disposed || controller.signal.aborted || generation !== requestGeneration) return
       assets.value = result.assets || []
       pagination.total = result.pagination?.total ?? 0
+      partitionCounts.value = scope.counts
+      canViewConversationAttachments.value = scope.canViewConversationAttachments
     } catch (error) {
+      if (disposed || controller.signal.aborted || generation !== requestGeneration) return
       console.error('Failed to load media assets:', error)
+      assets.value = []
+      pagination.total = 0
+      partitionCounts.value = {}
+      canViewConversationAttachments.value = false
+      loadError.value = '媒体资源加载失败，请重试'
     } finally {
-      loading.value = false
+      if (!disposed && generation === requestGeneration) loading.value = false
     }
+  }
+
+  onScopeDispose(() => { disposed = true; requestGeneration++; activeRequest?.abort() })
+
+  const selectLibraryPartition = (value: unknown): void => {
+    filters.libraryPartition = normalizeMediaLibraryPartitionView(value)
+    filters.customerServiceMediaPurpose = 'all'
+    applyFilters()
   }
 
   const applyFilters = (): void => {
@@ -49,7 +93,7 @@ export const useMediaLibraryAssets = () => {
   }
 
   const resetFilters = (): void => {
-    Object.assign(filters, { search: '', mediaType: 'all', status: 'all' })
+    Object.assign(filters, { search: '', mediaType: 'all', status: 'all', uploadOrigin: 'all', customerServiceMediaPurpose: 'all' })
     applyFilters()
   }
 
@@ -64,7 +108,7 @@ export const useMediaLibraryAssets = () => {
     fetchAssets()
   }
 
-  const uploadFile = async (file?: File | null): Promise<void> => {
+  const uploadFile = async (file?: File | null, context?: OperationalMediaUploadContext): Promise<void> => {
     if (!file) return
     if (file.type.startsWith('image/') || /\.(jpe?g|png|webp)$/i.test(file.name)) {
       const validation = await validateUploadFile(file, 'media_library_image')
@@ -80,7 +124,7 @@ export const useMediaLibraryAssets = () => {
       formData.append('file', file)
       formData.append('media_type', file.type.startsWith('video/') ? 'video' : 'image')
       if (!file.type.startsWith('video/')) formData.append('image_purpose', 'media_library_image')
-      await mediaApi.uploadAsset(formData)
+      await mediaApi.uploadAsset(formData, context)
       toast.success('媒体资源已上传')
       await fetchAssets()
     } catch (error) {
@@ -107,6 +151,7 @@ export const useMediaLibraryAssets = () => {
   }
 
   const copyURL = async (asset?: MediaAsset | null, accessURL?: string | null): Promise<void> => {
+    if (asset?.requires_conversation_access) return
     const url = accessURL || asset?.access_url || asset?.url || ''
     if (!url) return
     await navigator.clipboard.writeText(url)
@@ -132,6 +177,9 @@ export const useMediaLibraryAssets = () => {
 
   return {
     assets,
+    loadError,
+    partitionCounts,
+    canViewConversationAttachments,
     filters,
     pagination,
     loading,
@@ -139,6 +187,7 @@ export const useMediaLibraryAssets = () => {
     saving,
     fetchAssets,
     applyFilters,
+    selectLibraryPartition,
     resetFilters,
     updatePage,
     updatePageSize,

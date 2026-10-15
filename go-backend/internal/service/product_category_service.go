@@ -121,7 +121,6 @@ type ProductBreadcrumbView struct {
 
 type ProductCategoryService struct {
 	repo                    *repository.ProductCategoryRepository
-	mediaRepo               *repository.MediaRepository
 	productCacheInvalidator ProductCacheInvalidator
 	htmlCache               *StorefrontHTMLCacheInvalidator
 }
@@ -140,12 +139,8 @@ func (s *ProductCategoryService) SetStorefrontHTMLCacheInvalidator(invalidator *
 	s.htmlCache = invalidator
 }
 
-func NewProductCategoryService(repo *repository.ProductCategoryRepository, mediaRepos ...*repository.MediaRepository) *ProductCategoryService {
-	var mediaRepo *repository.MediaRepository
-	if len(mediaRepos) > 0 {
-		mediaRepo = mediaRepos[0]
-	}
-	return &ProductCategoryService{repo: repo, mediaRepo: mediaRepo}
+func NewProductCategoryService(repo *repository.ProductCategoryRepository) *ProductCategoryService {
+	return &ProductCategoryService{repo: repo}
 }
 
 func (s *ProductCategoryService) List(includeDisabled bool) (*ProductCategoryListView, error) {
@@ -455,9 +450,6 @@ func (s *ProductCategoryService) Create(input ProductCategoryInput) (*ProductCat
 	if err != nil {
 		return nil, err
 	}
-	if err := s.applyCategoryImage(category); err != nil {
-		return nil, err
-	}
 
 	exists, err := s.repo.ExistsBySlug(category.Slug, 0)
 	if err != nil {
@@ -479,6 +471,9 @@ func (s *ProductCategoryService) Create(input ProductCategoryInput) (*ProductCat
 	category.Depth = depth
 
 	if err := s.repo.Create(category); err != nil {
+		if errors.Is(err, repository.ErrProductCategoryImageReferenceInvalid) {
+			return nil, fmt.Errorf("%w: %v", ErrProductCategoryImageInvalid, err)
+		}
 		return nil, err
 	}
 	s.purgeHTMLCache("product category create")
@@ -496,9 +491,6 @@ func (s *ProductCategoryService) Update(id uint, input ProductCategoryInput) (*P
 
 	category, err := normalizeProductCategoryInput(input)
 	if err != nil {
-		return nil, err
-	}
-	if err := s.applyCategoryImage(category); err != nil {
 		return nil, err
 	}
 	category.ID = id
@@ -588,6 +580,12 @@ func (s *ProductCategoryService) Update(id uint, input ProductCategoryInput) (*P
 	}
 
 	if err := s.repo.Update(category, descendantDepths); err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, ErrProductCategoryNotFound
+		}
+		if errors.Is(err, repository.ErrProductCategoryImageReferenceInvalid) {
+			return nil, fmt.Errorf("%w: %v", ErrProductCategoryImageInvalid, err)
+		}
 		return nil, err
 	}
 	affectedCategories := make([]uint, 0, len(descendantDepths))
@@ -676,31 +674,6 @@ func normalizeProductCategoryInput(input ProductCategoryInput) (*product.Product
 		SortOrder:         input.SortOrder,
 		IsEnabled:         input.IsEnabled,
 	}, nil
-}
-
-func (s *ProductCategoryService) applyCategoryImage(category *product.ProductCategory) error {
-	if category == nil || category.ImageMediaAssetID == nil {
-		if category != nil {
-			category.ImageURL = ""
-		}
-		return nil
-	}
-	if *category.ImageMediaAssetID == 0 || s.mediaRepo == nil {
-		return ErrProductCategoryImageInvalid
-	}
-
-	asset, err := s.mediaRepo.FindAssetByID(*category.ImageMediaAssetID)
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return ErrProductCategoryImageInvalid
-		}
-		return err
-	}
-	if asset.MediaType != "image" || asset.Status != "active" || asset.Visibility != "public" || strings.TrimSpace(asset.URL) == "" {
-		return ErrProductCategoryImageInvalid
-	}
-	category.ImageURL = strings.TrimSpace(asset.URL)
-	return nil
 }
 
 func nextProductCategoryDepth(parentID *uint, byID map[uint]product.ProductCategory) (int, error) {

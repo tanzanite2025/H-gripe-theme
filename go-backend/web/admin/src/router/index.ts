@@ -86,6 +86,12 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '仪表板' }
       },
       {
+        path: 'dashboard/business-follow-ups',
+        name: 'DashboardBusinessFollowUpReminders',
+        component: () => import('@/views/DashboardBusinessFollowUpReminders.vue'),
+        meta: { title: '业务跟进提醒', anyPermissions: ['ops:view', 'order:view', 'ticket:view', 'product:view', 'merchant:view'] }
+      },
+      {
         path: 'tools/image-vectorizer',
         name: 'ImageVectorizer',
         component: () => import('@/views/ImageVectorizer.vue'),
@@ -675,8 +681,7 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'support/conversations',
         name: 'SupportConversations',
-        component: () => import('@/components/admin/customer-service/CustomerServiceInboxWorkbench.vue'),
-        props: { showHeader: true, showStats: true },
+        component: () => import('@/views/CustomerServiceConversationRoutePage.vue'),
         meta: { title: '客服对话', permission: 'ticket:view' }
       },
       {
@@ -1142,6 +1147,8 @@ router.beforeEach(async (to, from, next) => {
   } else if (to.name === 'Login' && authStore.isAuthenticated) {
     next({ name: 'Dashboard' })
   } else if (permission && !authStore.hasPermission(permission)) {
+    next({ name: 'Dashboard' })
+  } else if (to.meta.anyPermissions && !to.meta.anyPermissions.some(permission => authStore.hasPermission(permission))) {
     next({ name: 'Dashboard' })
   } else {
     next()

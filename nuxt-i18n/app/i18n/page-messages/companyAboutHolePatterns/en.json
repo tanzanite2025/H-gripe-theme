@@ -1,15 +1,24 @@
 {
-  "title": "Hole Patterns",
+  "title": "Custom Carbon Rim Hole Patterns & Drilling Angles",
   "alignmentEyebrow": "Four-angle custom drilling · Straight-Line Alignment",
-  "alignmentHeadline": "Reduce forced bends and fatigue risks",
-  "intro": "We normally simulate spoke directions from the hub drawing and lacing, then match four drilling angles to bring the nipple axis closer to the designed tension line, reducing extra bending moments and seat side loading.",
+  "intro": "We normally model the hub drawing, rim dimensions and lacing to customize hole positions and angles that follow the spoke directions.",
+  "layoutLabels": {
+    "manufacturingWorkflow": "Manufacturing process",
+    "alignmentBenefits": "Load alignment & durability",
+    "customization": "Custom drilling"
+  },
   "openVideo": "Play automated angled rim drilling video",
   "videoCaption": "Automated angled drilling · Watch the machining process",
+  "lacingPhotoWall": {
+    "title": "Drilled rim and lacing photos",
+    "paginationLabel": "Choose a lacing photo group",
+    "showPage": "Show photo group {page} of {total}"
+  },
   "drillingGeometry": {
     "axialCapability": {
       "reference": "WL / WR",
-      "label": "Axial angles for the hub flanges",
-      "description": "Set each side's axial drilling angle to match the distance from the hub center plane to its flange."
+      "label": "Left/right offset holes and axial angles",
+      "description": "We support left/right offset rim holes, matching each axial drilling angle to the hole position and corresponding hub flange offset."
     },
     "longitudinalCapability": {
       "reference": "PCD · Hole count · Lacing",
@@ -19,7 +28,46 @@
     "alignmentPrinciple": {
       "title": "Designed to avoid forced bends",
       "description": "Match two axial and two longitudinal angles together to reduce forced bending at the nipple exit and bring tension transfer closer to coaxial alignment.",
-      "manufacturingLimit": "Avoiding forced bends is a geometric design goal. Drawing dimensions, machining and assembly tolerances still affect the finished fit; exact coaxial alignment is not guaranteed."
+      "manufacturingLimit": "Avoiding forced bends is a design goal, not a guarantee of exact coaxial alignment in the finished wheel."
+    }
+  },
+  "staticDrillingIllustrations": {
+    "title": "Choose a lacing pattern to see drilling directions",
+    "introduction": "Read the lacing and crossing count on one flange, then compare the local details to understand drilling directions.",
+    "additionalSupportedPatterns": "These three common lacing patterns are examples. We also support 2:1, G3 and other layouts. Use the “{simulatorButtonLabel}” button to explore more patterns.",
+    "openSimulator": "Open spoke lacing topology simulator",
+    "selectionLabel": "Choose a lacing pattern for the static drilling illustrations",
+    "wheelViewLabel": "32-hole wheel · 16 spokes on one flange",
+    "spokeDirectionLegend": "Local details · Solid: spoke direction",
+    "drillingAxisLegend": "Local details · Dashed: matched hole axis",
+    "longitudinalViewTitle": "Longitudinal angles · Local hole detail",
+    "longitudinalViewDescription": "Green and blue show one seat from each flange, with each hole axis following its spoke through the rim wall.",
+    "axialViewTitle": "Left/right offset holes · Axial angles",
+    "axialViewDescription": "We support left/right offset rim holes (L / R) with axial angles matched to the flanges. WL / WR measure each flange's distance from the hub center plane.",
+    "axialImageAlt": "Axial projection of left/right offset rim holes. L and R identify holes on either side of the rim centerline, with each hole axis pointing toward its hub flange. WL and WR show the flange offsets.",
+    "drawingLimit": "These illustrations show direction relationships only. Actual hole angles require drawing and dimension modeling. The topology simulator displays lacing; it does not output machining angles.",
+    "examples": {
+      "radial": {
+        "label": "Radial lacing",
+        "crossingGuide": "The green reference spoke runs radially to the rim without crossing another spoke on the same flange.",
+        "description": "In the front projection, spokes run radially between flange and rim. Longitudinal hole axes follow them, while axial alignment still depends on both flange positions.",
+        "wheelImageAlt": "One-flange view of a 32-hole radially laced wheel, showing all 16 spokes on that flange. The green reference spoke has no same-flange crossings.",
+        "longitudinalImageAlt": "Separate local details of two radial-lacing seats, with longitudinal hole axes following radial spokes through the rim wall."
+      },
+      "twoCross": {
+        "label": "Two-cross lacing",
+        "crossingGuide": "Follow the green reference spoke from hub to rim: 1 and 2 mark crossings with spokes on the same flange.",
+        "description": "Two-cross means each spoke crosses two other spokes attached to the same flange. Its approach to the rim tilts away from the local radius, so the longitudinal hole axis must follow the spoke.",
+        "wheelImageAlt": "One-flange view of a 32-hole two-cross wheel, showing all 16 spokes on that flange. Crossings 1 and 2 are marked along the green reference spoke from hub to rim.",
+        "longitudinalImageAlt": "Separate local details of two two-cross seats, with each hole axis following its spoke's tilt through the rim wall."
+      },
+      "threeCross": {
+        "label": "Three-cross lacing",
+        "crossingGuide": "Follow the green reference spoke from hub to rim: 1, 2 and 3 mark crossings with spokes on the same flange.",
+        "description": "Three-cross means each spoke crosses three other spokes attached to the same flange. Its approach to the rim differs from two-cross lacing, so the longitudinal drilling angles must be matched again.",
+        "wheelImageAlt": "One-flange view of a 32-hole three-cross wheel, showing all 16 spokes on that flange. Crossings 1, 2 and 3 are marked along the green reference spoke from hub to rim.",
+        "longitudinalImageAlt": "Separate local details of two three-cross seats, with longitudinal hole axes adjusted to the spoke approach directions."
+      }
     }
   },
   "drawingSimulationAndManufacturingTolerances": {
@@ -31,7 +79,7 @@
       },
       "matchedDrillingAngles": {
         "title": "Match four drilling angles",
-        "description": "Match two axial and two longitudinal drilling angles to the simulated spoke directions, minimizing forced bends in the design. Drawing revision, hole mapping and the machining plan are confirmed directly."
+        "description": "Convert the modeled spoke directions into hole positions and axes. Drawing revision, hole layout and the machining plan are confirmed directly."
       },
       "manufacturingAndAssemblyTolerances": {
         "title": "Account for manufacturing and assembly tolerances",
@@ -67,33 +115,29 @@
   },
   "sections": {
     "support": {
-      "title": "Hole counts and drilling options",
+      "title": "Hole counts and customization scope",
       "items": {
-        "symmetrical": {
-          "label": "Symmetrical axial angles",
-          "description": "For wheels with similar hub geometry and lacing on both sides."
-        },
-        "asymmetrical": {
-          "label": "Independent left/right axial angles",
-          "description": "Match each flange direction separately when WL / WR differ."
-        },
         "customCounts": {
           "label": "Custom Hole Counts",
           "description": "Available in 16, 20, 24, 28, 32, and 36-hole configurations."
         },
-        "angled": {
-          "label": "Longitudinal lacing angles",
-          "description": "Match drilling angles in the longitudinal plane to radial or crossed lacing."
+        "holeLayout": {
+          "label": "Hole layouts and left/right offsets",
+          "description": "Left/right offset holes, standard and special arrangements are supported. Hole offsets and axial angles are confirmed from the drawings and wheel design."
+        },
+        "oemOdm": {
+          "label": "OEM / ODM",
+          "description": "Custom compatibility with hub and lacing designs."
         }
       }
     },
     "customization": {
-      "title": "Custom hub and lacing compatibility",
-      "intro": "Share your hub drawing, hub and rim models, and intended lacing so we can confirm the drilling plan with you directly.",
+      "title": "Details needed for custom drilling",
+      "intro": "Prepare these details so we can confirm the drilling plan directly:",
       "items": {
-        "holeLayout": "Standard and special hole counts and layouts",
-        "lacingCompatibility": "Radial, crossed and custom lacing compatibility",
-        "oemOdm": "OEM / ODM wheel designs"
+        "hubDrawingAndRevision": "Hub drawing and revision, including WL / WR, flange PCDs and spoke exits",
+        "rimDimensionsAndHoleCount": "Rim model, ERD, hole count and left/right hole offset requirements",
+        "lacingAndNippleAssembly": "Intended lacing, nipples and washer arrangement"
       }
     },
     "commitment": {
@@ -101,5 +145,19 @@
       "body": "Our self-developed automated machinery controls consistency in hole placement and axis direction, enabling repeatable production of custom drilling patterns."
     }
   },
-  "closeVideo": "Close video"
+  "closeVideo": "Close video",
+  "seo": {
+    "title": "Custom Carbon Rim Drilling: Hub Drawings & Lacing Angles",
+    "description": "Match two axial and two longitudinal rim drilling angles to hub drawings and spoke lacing. Explore 16–36 hole options, tolerances and fatigue risk reduction.",
+    "imageAlt": "Automated equipment drilling a carbon rim spoke hole at a specified angle",
+    "breadcrumbHome": "Home",
+    "videoName": "Automated angled spoke-hole drilling for carbon rims",
+    "videoDescription": "Factory footage of automated equipment drilling a carbon rim spoke hole along a specified direction. Hole positions and angles are confirmed from hub drawings, rim dimensions and spoke lacing."
+  },
+  "consultation": {
+    "title": "Confirm drilling for your hub and lacing",
+    "description": "Prepare your hub drawing, rim model, hole count and intended lacing. Contact us to review matching geometry and machining requirements.",
+    "provideDrawings": "Consult with your drawings",
+    "contactSupport": "Contact support"
+  }
 }

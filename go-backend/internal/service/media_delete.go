@@ -2,18 +2,17 @@ package service
 
 import (
 	"bytes"
-	"commerce-platform/internal/domain/media"
-	"commerce-platform/internal/domain/outbox"
-	"commerce-platform/internal/repository"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
 	"os"
-	"strconv"
 	"strings"
 	"time"
+
+	"commerce-platform/internal/domain/media"
+	"commerce-platform/internal/repository"
 
 	"gorm.io/gorm"
 )
@@ -60,37 +59,7 @@ func (s *MediaService) DeleteAsset(ctx context.Context, id uint, confirmation st
 			}
 			return err
 		}
-		references, err := repo.FindAssetReferences(asset)
-		if err != nil {
-			return err
-		}
-		if len(references) > 0 {
-			return &MediaAssetInUseError{References: references}
-		}
-
-		objectKeys := make([]string, 0, len(asset.Derivatives)+1)
-		if key := storageObjectKey(s.storage, asset.URL); key != "" {
-			objectKeys = append(objectKeys, key)
-		}
-		for _, derivative := range asset.Derivatives {
-			if key := storageObjectKey(s.storage, derivative.URL); key != "" {
-				objectKeys = append(objectKeys, key)
-			}
-		}
-		event, err := newObjectStorageCleanupEvent(
-			objectCleanupResourceMediaAsset,
-			strconv.FormatUint(uint64(asset.ID), 10),
-			outbox.AggregateTypeMediaAsset,
-			strconv.FormatUint(uint64(asset.ID), 10),
-			objectKeys,
-		)
-		if err != nil {
-			return err
-		}
-		if err := repo.DeleteAsset(asset.ID); err != nil {
-			return fmt.Errorf("mark media asset deleted: %w", err)
-		}
-		return s.objectCleanupOutbox.WithTx(tx).CreateEvent(event)
+		return s.retireUnreferencedMediaAssetWithinTransaction(repo, tx, asset)
 	})
 	if err != nil {
 		return err
@@ -116,17 +85,38 @@ func (s *MediaService) cleanupDeletedAsset(ctx context.Context, id uint) error {
 	if !asset.DeletedAt.Valid {
 		return nil
 	}
+	if asset.CustomerServiceDerivativeWriteExpiresAt != nil && asset.CustomerServiceDerivativeWriteExpiresAt.After(time.Now().UTC()) {
+		return ErrCustomerServiceAttachmentWritesInProgress
+	}
+	references, err := s.repo.FindAssetReferences(asset)
+	if err != nil {
+		return err
+	}
+	if len(references) > 0 {
+		return &MediaAssetInUseError{References: references}
+	}
+	if err := s.cleanupRetiredCustomerServiceAttachmentDerivativeNamespace(ctx, asset); err != nil {
+		return err
+	}
 
 	for _, derivative := range asset.Derivatives {
-		if strings.TrimSpace(derivative.URL) == "" {
+		key := derivative.StorageKey
+		if key == "" {
+			key = storageObjectKey(s.storage, derivative.URL)
+		}
+		if key == "" {
 			continue
 		}
-		if err := s.storage.Delete(ctx, derivative.URL); err != nil {
+		if err := s.storage.Delete(ctx, key); err != nil {
 			return fmt.Errorf("delete media derivative object: %w", err)
 		}
 	}
-	if strings.TrimSpace(asset.URL) != "" {
-		if err := s.storage.Delete(ctx, asset.URL); err != nil {
+	key, keyErr := s.mediaAssetOriginalStorageKeyForDurableCleanup(asset)
+	if keyErr != nil {
+		return keyErr
+	}
+	if key != "" {
+		if err := s.storage.Delete(ctx, key); err != nil {
 			return fmt.Errorf("delete media object: %w", err)
 		}
 	}

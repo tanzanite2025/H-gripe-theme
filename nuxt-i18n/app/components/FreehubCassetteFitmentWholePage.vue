@@ -5,9 +5,6 @@
     />
 
     <section class="wheelset-section sizecharts-section" aria-labelledby="freehub-cassette-fitment-section-title">
-      <h2 id="freehub-cassette-fitment-section-title" class="sizecharts-section__title">
-        {{ t('guidesWheelsetBuyersChooseFreehub.intro.title') }}
-      </h2>
       <WheelsetChooseFreehubSection>
         <template #after-helper>
           <section class="wheelset-freehub-guide-intro" aria-labelledby="freehub-guide-intro-title">
@@ -117,13 +114,6 @@ const openFreehubSupportChat = () => {
   --tz-text-accent: var(--tz-site-accent);
   width: 100%;
   margin: 0 auto;
-}
-
-.freehub-cassette-fitment-page .sizecharts-section__title {
-  margin: 0 0 2rem;
-  color: var(--tz-text-primary);
-  font-weight: 650;
-  text-align: center;
 }
 
 .wheelset-freehub-guide-intro {
@@ -269,7 +259,7 @@ const openFreehubSupportChat = () => {
 
 .wheelset-guide-button {
   display: inline-flex;
-  min-height: 2.25rem;
+  min-height: var(--tz-pill-button-min-height);
   align-items: center;
   justify-content: center;
   gap: 0.4rem;
@@ -277,10 +267,10 @@ const openFreehubSupportChat = () => {
   border-radius: 9999px;
   background: var(--tz-action-primary);
   color: var(--tz-action-primary-foreground);
-  padding: 0.6rem 1rem;
+  padding: var(--tz-pill-button-padding-block) 1rem;
   font-size: 0.82rem;
   font-weight: 700;
-  line-height: 1.25;
+  line-height: var(--tz-pill-button-line-height);
   transition: background-color 0.16s ease, border-color 0.16s ease, color 0.16s ease;
 }
 

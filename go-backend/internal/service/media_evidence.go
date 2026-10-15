@@ -35,14 +35,15 @@ type CopyrightEvidenceManifest struct {
 }
 
 type CopyrightEvidenceAsset struct {
-	ID               uint      `json:"id"`
-	OriginalFilename string    `json:"original_filename"`
-	MimeType         string    `json:"mime_type"`
-	MediaType        string    `json:"media_type"`
-	Size             int64     `json:"size"`
-	SourceURL        string    `json:"source_url"`
-	RecordedAt       time.Time `json:"recorded_at"`
-	UploaderID       uint      `json:"uploader_id"`
+	ID                uint                       `json:"id"`
+	OriginalFilename  string                     `json:"original_filename"`
+	MimeType          string                     `json:"mime_type"`
+	MediaType         string                     `json:"media_type"`
+	Size              int64                      `json:"size"`
+	SourceURL         string                     `json:"source_url"`
+	RecordedAt        time.Time                  `json:"recorded_at"`
+	UploaderID        uint                       `json:"uploader_id"`
+	UploaderActorType media.MediaUploadActorType `json:"uploader_actor_type,omitempty"`
 }
 
 type CopyrightEvidenceVerification struct {
@@ -53,36 +54,41 @@ type CopyrightEvidenceVerification struct {
 }
 
 type CopyrightEvidenceClaim struct {
-	SiteName           string    `json:"site_name"`
-	SiteURL            string    `json:"site_url"`
-	SiteDomain         string    `json:"site_domain"`
-	RightsHolder       string    `json:"rights_holder"`
-	CopyrightNotice    string    `json:"copyright_notice"`
-	CopyrightPolicyURL string    `json:"copyright_policy_url"`
-	OriginalFilename   string    `json:"original_filename"`
-	OriginalSHA256     string    `json:"original_sha256"`
-	UploaderID         uint      `json:"uploader_id"`
-	ServerReceivedAt   time.Time `json:"server_received_at"`
+	SiteName           string                     `json:"site_name"`
+	SiteURL            string                     `json:"site_url"`
+	SiteDomain         string                     `json:"site_domain"`
+	RightsHolder       string                     `json:"rights_holder"`
+	CopyrightNotice    string                     `json:"copyright_notice"`
+	CopyrightPolicyURL string                     `json:"copyright_policy_url"`
+	OriginalFilename   string                     `json:"original_filename"`
+	OriginalSHA256     string                     `json:"original_sha256"`
+	UploaderID         uint                       `json:"uploader_id"`
+	UploaderActorType  media.MediaUploadActorType `json:"uploader_actor_type,omitempty"`
+	ServerReceivedAt   time.Time                  `json:"server_received_at"`
 }
 
 func (s *MediaService) buildCopyrightClaim(input MediaUploadInput, contentSHA256 string) (string, error) {
 	claim := CopyrightEvidenceClaim{
-		OriginalFilename: input.File.Filename,
-		OriginalSHA256:   contentSHA256,
-		UploaderID:       input.UploaderID,
-		ServerReceivedAt: time.Now().UTC(),
+		OriginalFilename:  input.File.Filename,
+		OriginalSHA256:    contentSHA256,
+		UploaderID:        input.UploaderID,
+		UploaderActorType: input.UploadActorIdentity.ActorType,
+		ServerReceivedAt:  time.Now().UTC(),
 	}
 
+	isCustomerSubmission := input.UploadActorIdentity.ActorType == media.MediaUploadActorCustomer || input.UploadActorIdentity.ActorType == media.MediaUploadActorVisitor || input.UploadOrigin == media.MediaUploadOriginCustomerServiceConversation
 	if s.settings != nil {
 		claim.SiteName = settingValue(s.settings, "site_name")
-		claim.RightsHolder = settingValue(s.settings, "copyright_holder")
-		claim.CopyrightNotice = settingValue(s.settings, "copyright_notice")
-		claim.CopyrightPolicyURL = settingValue(s.settings, "copyright_url")
+		if !isCustomerSubmission {
+			claim.RightsHolder = settingValue(s.settings, "copyright_holder")
+			claim.CopyrightNotice = settingValue(s.settings, "copyright_notice")
+			claim.CopyrightPolicyURL = settingValue(s.settings, "copyright_url")
+		}
 	}
 
 	claim.SiteURL = s.siteURL
 	claim.SiteDomain = siteDomainFromURL(claim.SiteURL)
-	if strings.TrimSpace(claim.RightsHolder) == "" {
+	if !isCustomerSubmission && strings.TrimSpace(claim.RightsHolder) == "" {
 		claim.RightsHolder = claim.SiteName
 	}
 	if strings.TrimSpace(claim.CopyrightNotice) == "" && strings.TrimSpace(claim.RightsHolder) != "" {
@@ -152,6 +158,9 @@ func (s *MediaService) ExportCopyrightEvidence(ctx context.Context, id uint) ([]
 	if err != nil {
 		return nil, "", err
 	}
+	if IsCustomerServiceConversationOwnedMediaAsset(asset) {
+		return nil, "", ErrMediaAssetForbidden
+	}
 
 	reader, size, err := s.openEvidenceReader(ctx, asset)
 	if err != nil {
@@ -179,20 +188,22 @@ func (s *MediaService) ExportCopyrightEvidence(ctx context.Context, id uint) ([]
 		Format:      "copyright-evidence/v1",
 		GeneratedAt: time.Now().UTC(),
 		Asset: CopyrightEvidenceAsset{
-			ID:               asset.ID,
-			OriginalFilename: asset.OriginalFilename,
-			MimeType:         asset.MimeType,
-			MediaType:        asset.MediaType,
-			Size:             int64(original.Len()),
-			SourceURL:        asset.URL,
-			RecordedAt:       asset.CreatedAt.UTC(),
-			UploaderID:       asset.UploaderID,
+			ID:                asset.ID,
+			OriginalFilename:  asset.OriginalFilename,
+			MimeType:          asset.MimeType,
+			MediaType:         asset.MediaType,
+			Size:              int64(original.Len()),
+			SourceURL:         asset.URL,
+			RecordedAt:        asset.CreatedAt.UTC(),
+			UploaderID:        asset.UploaderID,
+			UploaderActorType: asset.UploaderActorType,
 		},
 		Copyright: CopyrightEvidenceClaim{
-			OriginalFilename: asset.OriginalFilename,
-			OriginalSHA256:   computedSHA256,
-			UploaderID:       asset.UploaderID,
-			ServerReceivedAt: asset.CreatedAt.UTC(),
+			OriginalFilename:  asset.OriginalFilename,
+			OriginalSHA256:    computedSHA256,
+			UploaderID:        asset.UploaderID,
+			UploaderActorType: asset.UploaderActorType,
+			ServerReceivedAt:  asset.CreatedAt.UTC(),
 		},
 		Verification: CopyrightEvidenceVerification{
 			Algorithm:        "SHA-256",

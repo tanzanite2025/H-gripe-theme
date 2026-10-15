@@ -51,7 +51,7 @@ func TestReconcileStorefrontRoutesRepairsPathsCreatesShellsAndPreservesContent(t
 		Status:   "published",
 	}).Error)
 
-	service := NewFAQService(repository.NewFAQRepository(db), nil)
+	service := NewFAQService(repository.NewFAQRepository(db))
 	summary, err := service.ReconcileStorefrontRoutes(context.Background(), seodomain.StorefrontRouteManifest{
 		Version: "test-manifest",
 		Routes: []seodomain.StorefrontRouteManifestRoute{

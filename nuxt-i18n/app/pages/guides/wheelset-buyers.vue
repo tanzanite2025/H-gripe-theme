@@ -1,15 +1,11 @@
 <template>
   <div>
-    <h2 v-if="!isGuideCategoryLandingPage" class="products-page__title products-page__title--sr-only">
-      {{ t('guidesWheelsetBuyers.title') }}
-    </h2>
-
     <GuideCategoryChildRouteNavigationCards
       v-if="isGuideCategoryLandingPage"
       id="wheelset-guide-navigation"
       eyebrow="Wheelset Guides"
       :heading="t('guidesWheelsetBuyers.title')"
-      description="Use the wheelset guide sections to compare buying, safety, custom build, appearance, and freehub decisions."
+      :description="wheelsetGuidePageDescription"
       open-label="Open guide"
       :cards="wheelsetGuideNavigationCards"
     />
@@ -17,13 +13,13 @@
     <div v-else class="wheelset-page">
       <!-- Buying overview -->
       <section
-        v-show="activeTab === 'overview'"
+        v-if="activeTab === 'overview'"
         id="overview"
         class="wheelset-section sizecharts-section"
       >
-        <h2 class="sizecharts-section__title">
+        <h1 class="sizecharts-section__title">
           {{ t('guidesWheelsetBuyersOverview.title') }}
-        </h2>
+        </h1>
         <div class="wheelset-buying-action">
           <div class="wheelset-buying-action__copy">
             <strong>{{ t('guidesWheelsetBuyersOverview.readyTitle') }}</strong>
@@ -47,9 +43,9 @@
           <article class="wheelset-guide-step">
             <div class="wheelset-guide-step__number">1</div>
             <div class="wheelset-guide-step__content">
-              <h3 class="wheelset-guide-step__title">
+              <h2 class="wheelset-guide-step__title">
                 {{ t('guidesWheelsetBuyersOverview.step1.title') }}
-              </h3>
+              </h2>
               <p class="wheelset-guide-step__body">
                 {{ t('guidesWheelsetBuyersOverview.step1.body') }}
               </p>
@@ -77,9 +73,9 @@
           <article class="wheelset-guide-step">
             <div class="wheelset-guide-step__number">2</div>
             <div class="wheelset-guide-step__content">
-              <h3 class="wheelset-guide-step__title">
+              <h2 class="wheelset-guide-step__title">
                 {{ t('guidesWheelsetBuyersOverview.step2.title') }}
-              </h3>
+              </h2>
               <p class="wheelset-guide-step__body">
                 {{ t('guidesWheelsetBuyersOverview.step2.body') }}
               </p>
@@ -143,9 +139,9 @@
           <article class="wheelset-guide-step">
             <div class="wheelset-guide-step__number">3</div>
             <div class="wheelset-guide-step__content">
-              <h3 class="wheelset-guide-step__title">
+              <h2 class="wheelset-guide-step__title">
                 {{ t('guidesWheelsetBuyersOverview.step3.title') }}
-              </h3>
+              </h2>
               <p class="wheelset-guide-step__body">
                 {{ t('guidesWheelsetBuyersOverview.step3.body') }}
               </p>
@@ -207,9 +203,9 @@
         id="safety-instructions"
         class="wheelset-section sizecharts-section"
       >
-        <h2 class="sizecharts-section__title">
+        <h1 class="sizecharts-section__title">
           {{ t('guidesWheelsetBuyers.tabs.safetyInstructions.label') }}
-        </h2>
+        </h1>
         <WheelsetSafetyInstructionsSection
           :goToTubelessInstallation="goToTubelessInstallation"
           :goToTechnicalTension="goToTechnicalTension"
@@ -223,9 +219,9 @@
         id="sample-assembly"
         class="wheelset-section sizecharts-section wheelset-section--sample"
       >
-        <h2 class="sizecharts-section__title">
+        <h1 class="sizecharts-section__title">
           {{ t('guidesWheelsetBuyers.tabs.sampleAssembly.label') }}
-        </h2>
+        </h1>
         <WheelsetSampleAssemblySection
           :openWhatsAppChat="openWhatsAppChat"
           :openQuickBuy="openQuickBuy"
@@ -240,9 +236,9 @@
         id="appearance-logo"
         class="wheelset-section sizecharts-section"
       >
-        <h2 class="sizecharts-section__title">
+        <h1 class="sizecharts-section__title">
           {{ t('guidesWheelsetBuyers.tabs.appearanceLogo.label') }}
-        </h2>
+        </h1>
         <WheelsetAppearanceLogoSection :goToAboutAppearance="goToAboutAppearance" />
       </section>
 
@@ -270,6 +266,7 @@ import { usePageSubNavigationTab } from '~/composables/usePageSubNavigationTab'
 import { pageSubNavigationChildPath, wheelsetBuyerTabs } from '~/utils/pageSubNavigation'
 import { usePageMessages } from '~/composables/usePageMessages'
 import GuideCategoryChildRouteNavigationCards from '~/components/GuideCategoryChildRouteNavigationCards.vue'
+import { useStorefrontSeoLinks } from '~/composables/seo/useStorefrontSeoLinks'
 
 definePageMeta({
   layout: 'products',
@@ -279,6 +276,7 @@ definePageMeta({
 
 const { locale, t } = useI18n()
 const route = useRoute()
+const { canonicalUrl } = useStorefrontSeoLinks()
 const localePath = useLocalePath()
 const tabs = wheelsetBuyerTabs
 const normalizeGuideCategoryLandingRoutePath = (path: string) => path.replace(/\/+$/, '') || '/'
@@ -311,8 +309,34 @@ const { activeTab, setActiveTab } = usePageSubNavigationTab({
 const { openChat } = useChatWidget()
 const router = useRouter()
 
+const wheelsetGuidePageTitle = computed(() => {
+  const guideTitle = t('guidesWheelsetBuyers.title')
+  if (isGuideCategoryLandingPage.value) return guideTitle
+
+  const activeSection = tabs.find(tab => tab.id === activeTab.value) || tabs[0]
+  const sectionTitle = activeTab.value === 'overview'
+    ? t('guidesWheelsetBuyersOverview.title')
+    : t(activeSection.labelKey, activeSection.fallback)
+  return `${sectionTitle} | ${guideTitle}`
+})
+const wheelsetGuidePageDescription = computed(() => t(
+  isGuideCategoryLandingPage.value
+    ? 'guidesWheelsetBuyers.seo.description'
+    : `guidesWheelsetBuyers.seo.sections.${activeTab.value}.description`,
+))
+
 useHead(() => ({
-  title: t('guidesWheelsetBuyers.title'),
+  title: wheelsetGuidePageTitle.value,
+  meta: [
+    { name: 'description', content: wheelsetGuidePageDescription.value },
+    { property: 'og:title', content: wheelsetGuidePageTitle.value },
+    { property: 'og:description', content: wheelsetGuidePageDescription.value },
+    { property: 'og:type', content: 'website' },
+    { property: 'og:url', content: canonicalUrl.value },
+    { name: 'twitter:card', content: 'summary' },
+    { name: 'twitter:title', content: wheelsetGuidePageTitle.value },
+    { name: 'twitter:description', content: wheelsetGuidePageDescription.value },
+  ],
 }))
 
 const ctaNotes = computed(() => ({
@@ -397,26 +421,6 @@ const goToAboutAppearance = async () => {
 <style scoped>
 #wheelset-guide-navigation {
   scroll-margin-top: calc(var(--tz-site-header-spacer-height) + 1rem);
-}
-
-.products-page__title {
-  margin: 0 0 0.75rem;
-  font-size: var(--tz-type-page-title);
-  line-height: 1.18;
-  font-weight: 600;
-  color: var(--tz-text-primary);
-}
-
-.products-page__title--sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
 }
 
 .products-page__intro {
@@ -636,17 +640,17 @@ const goToAboutAppearance = async () => {
 .wheelset-guide-button,
 .wheelset-page :deep(.wheelset-guide-button) {
   display: inline-flex;
-  min-height: 2.25rem;
+  min-height: var(--tz-pill-button-min-height);
   align-items: center;
   justify-content: center;
   border: 1px solid var(--tz-action-primary);
   border-radius: 9999px;
   background: var(--tz-action-primary);
   color: var(--tz-action-primary-foreground);
-  padding: 0.6rem 1rem;
+  padding: var(--tz-pill-button-padding-block) 1rem;
   font-size: 0.82rem;
   font-weight: 700;
-  line-height: 1.25;
+  line-height: var(--tz-pill-button-line-height);
   letter-spacing: 0;
   text-transform: none;
   white-space: normal;

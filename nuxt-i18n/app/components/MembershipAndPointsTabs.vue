@@ -362,8 +362,7 @@ onMounted(() => {
 
  /* 按钮样式 */
   .btn-primary {
-   height: 40px;
-   padding: 0 20px;
+   padding: var(--tz-pill-button-padding-block) 20px;
    border-radius: 999px;
    background: var(--tz-site-accent);
     color: #ffffff;
@@ -372,6 +371,11 @@ onMounted(() => {
    border: none;
    cursor: pointer;
    transition: all 0.2s;
+   display: inline-flex;
+   align-items: center;
+   justify-content: center;
+   min-height: var(--tz-pill-button-min-height);
+   line-height: var(--tz-pill-button-line-height);
  }
 
  .btn-primary:hover {
@@ -379,8 +383,7 @@ onMounted(() => {
  }
 
   .btn-secondary {
-   height: 40px;
-   padding: 0 20px;
+   padding: var(--tz-pill-button-padding-block) 20px;
    border-radius: 999px;
     background: var(--membership-card-subtle);
     color: var(--tz-text-primary);
@@ -392,6 +395,11 @@ onMounted(() => {
       0 2px 6px -3px rgba(20, 32, 43, 0.12),
       0 0 6px rgba(20, 32, 43, 0.06);
    transition: all 0.2s;
+   display: inline-flex;
+   align-items: center;
+   justify-content: center;
+   min-height: var(--tz-pill-button-min-height);
+   line-height: var(--tz-pill-button-line-height);
  }
 
   .btn-secondary:hover {
@@ -402,8 +410,7 @@ onMounted(() => {
  }
 
  .btn-danger {
-   height: 40px;
-   padding: 0 20px;
+   padding: var(--tz-pill-button-padding-block) 20px;
    border-radius: 999px;
    background: #dc2626;
    color: #fff;
@@ -412,6 +419,11 @@ onMounted(() => {
    border: none;
    cursor: pointer;
    transition: all 0.2s;
+   display: inline-flex;
+   align-items: center;
+   justify-content: center;
+   min-height: var(--tz-pill-button-min-height);
+   line-height: var(--tz-pill-button-line-height);
  }
 
  .btn-danger:hover {

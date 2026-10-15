@@ -143,6 +143,12 @@ func (s *MediaService) generateAssetDerivativesFromSource(
 	if asset.MediaType != "image" || len(presets) == 0 {
 		return nil, nil
 	}
+	writeContext, releaseWriteLease, err := s.acquireCustomerServicePrivateDerivativeWriteLease(ctx, asset)
+	if err != nil {
+		return nil, err
+	}
+	defer releaseWriteLease()
+	ctx = writeContext
 
 	release, err := acquireMediaDerivativeGenerationSlot(ctx)
 	if err != nil {
@@ -169,7 +175,7 @@ func (s *MediaService) generateAssetDerivativesFromSource(
 			return nil, err
 		}
 
-		url, err := uploadDerivativeObject(ctx, s.storage, bytes.NewReader(payload), filename, derivativePrefixForAsset(asset.ID, preset.Name, mediaDerivativePresetVersion(preset)))
+		url, err := uploadMediaDerivativeObjectUsingAssetAccessPolicy(ctx, s.storage, asset, bytes.NewReader(payload), filename, preset.Name, mediaDerivativePresetVersion(preset))
 		if err != nil {
 			deleteUploadedMediaObjectsBestEffort(ctx, s.storage, uploadedURLs)
 			return nil, fmt.Errorf("%w: upload %s derivative: %v", ErrMediaDerivativeGenerationFailed, preset.Name, err)
@@ -538,7 +544,7 @@ func deleteUploadedMediaObjectsBestEffort(ctx context.Context, storageService st
 
 func IsMediaDerivativeStorageKey(key string) bool {
 	key = strings.Trim(strings.ReplaceAll(key, "\\", "/"), "/")
-	return strings.HasPrefix(key, mediaDerivativePrefix+"/")
+	return strings.HasPrefix(key, mediaDerivativePrefix+"/") || storage.IsCustomerServiceConversationAttachmentDerivativeObjectKey(key)
 }
 
 func (s *MediaService) activeMediaDerivativePresetDefinitions() ([]MediaDerivativePresetDefinition, error) {

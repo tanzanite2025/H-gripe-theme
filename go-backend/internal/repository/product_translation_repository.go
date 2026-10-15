@@ -119,6 +119,11 @@ func (r *ProductRepository) CreateTranslatedCopy(source, target *product.Product
 	}
 
 	return r.db.Transaction(func(tx *gorm.DB) error {
+		// A translation creates new placements and must revalidate the current
+		// asset lifecycle, rather than trusting a previously loaded source copy.
+		if err := r.validateAndCanonicalizeCombinedProductMediaBindings(tx, target, &product.Product{}, source.Media, true, source.VariantOptionValues, true); err != nil {
+			return err
+		}
 		variants := make([]product.ProductVariant, 0, len(source.Variants))
 		for _, sourceVariant := range source.Variants {
 			sku := strings.TrimSpace(variantSKUs[sourceVariant.ID])
@@ -143,7 +148,7 @@ func (r *ProductRepository) CreateTranslatedCopy(source, target *product.Product
 			variants = append(variants, clonedVariant)
 		}
 
-		if err := tx.Create(target).Error; err != nil {
+		if err := tx.Omit("Media", "VariantOptionValues").Create(target).Error; err != nil {
 			return err
 		}
 

@@ -243,19 +243,22 @@ onBeforeUnmount(() => {
 }
 
 .schwalbe-wheel-size-tabs__tab {
-  min-height: 2.35rem;
+  min-height: var(--tz-pill-button-min-height);
   flex: 0 0 auto;
   border: 1px solid var(--tz-border-subtle);
   border-radius: 999px;
   background: var(--tz-card-surface);
   color: var(--tz-text-secondary);
-  padding: 0.45rem 0.8rem;
+  padding: var(--tz-pill-button-padding-block) 0.8rem;
   font: inherit;
   font-size: 0.78rem;
   font-weight: 700;
-  line-height: 1.2;
+  line-height: var(--tz-pill-button-line-height);
   white-space: nowrap;
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .schwalbe-wheel-size-tabs__tab:hover {

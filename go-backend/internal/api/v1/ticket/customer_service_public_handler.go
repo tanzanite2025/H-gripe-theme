@@ -1,13 +1,18 @@
 package ticket
 
 import (
-	"commerce-platform/internal/pkg/locales"
-	"commerce-platform/internal/pkg/upload"
-	"commerce-platform/internal/service"
+	"errors"
 	"log"
 	"net/http"
 	"strconv"
 	"strings"
+
+	"commerce-platform/internal/api/restrictedmediaresponse"
+	ticketdomain "commerce-platform/internal/domain/ticket"
+	"commerce-platform/internal/pkg/locales"
+	"commerce-platform/internal/pkg/upload"
+	"commerce-platform/internal/repository"
+	"commerce-platform/internal/service"
 
 	"github.com/gin-gonic/gin"
 )
@@ -15,6 +20,7 @@ import (
 const publicCustomerServiceAttachmentMaxRequestBytes = 6 << 20
 
 func (h *Handler) EnsurePublicCustomerServiceConversation(c *gin.Context) {
+	restrictedmediaresponse.SetConversationAttachmentPrivateResponseHeaders(c)
 	var req struct {
 		AgentID string `json:"agent_id"`
 		Locale  string `json:"locale"`
@@ -53,7 +59,7 @@ func (h *Handler) EnsurePublicCustomerServiceConversation(c *gin.Context) {
 	if autoReplyErr != nil {
 		log.Printf("customer-service welcome auto reply failed: conversation=%s error=%v", conversationID, autoReplyErr)
 	} else if autoReplyMessage != nil {
-		autoReplyPayload := publicCustomerServiceMessageResponse(*autoReplyMessage, conversationID, "", "", nil, h.mediaService)
+		autoReplyPayload := publicCustomerServiceMessageResponse(*autoReplyMessage, conversationID, "", h.mediaService, h.conversationAttachmentAccess)
 		h.publishPublicCustomerServiceMessageCreated(
 			t,
 			autoReplyMessage.ID,
@@ -101,18 +107,20 @@ func (h *Handler) HasPublicCustomerServiceConversation(c *gin.Context) {
 }
 
 func (h *Handler) SendPublicCustomerServiceMessage(c *gin.Context) {
+	restrictedmediaresponse.SetConversationAttachmentPrivateResponseHeaders(c)
 	var req struct {
-		ConversationID string      `json:"conversation_id"`
-		Message        string      `json:"message" binding:"required"`
-		SenderType     string      `json:"sender_type"`
-		SenderName     string      `json:"sender_name" binding:"required"`
-		SenderEmail    string      `json:"sender_email"`
-		AgentID        string      `json:"agent_id"`
-		Locale         string      `json:"locale"`
-		MessageType    string      `json:"message_type"`
-		Metadata       interface{} `json:"metadata"`
-		AttachmentURL  string      `json:"attachment_url"`
-		Attachments    []string    `json:"attachments"`
+		ConversationID   string                                                             `json:"conversation_id"`
+		Message          string                                                             `json:"message" binding:"required"`
+		SenderType       string                                                             `json:"sender_type"`
+		SenderName       string                                                             `json:"sender_name" binding:"required"`
+		SenderEmail      string                                                             `json:"sender_email"`
+		AgentID          string                                                             `json:"agent_id"`
+		Locale           string                                                             `json:"locale"`
+		MessageType      string                                                             `json:"message_type"`
+		Metadata         interface{}                                                        `json:"metadata"`
+		AttachmentURL    string                                                             `json:"attachment_url"`
+		Attachments      []string                                                           `json:"attachments"`
+		MediaAttachments []ticketdomain.CustomerServiceMessageMediaAttachmentBindingRequest `json:"media_attachments"`
 	}
 	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, ticketMessageJSONMaxBytes)
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -135,10 +143,16 @@ func (h *Handler) SendPublicCustomerServiceMessage(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "[CRITICAL] invalid message metadata"})
 		return
 	}
-	attachmentValues, err := h.sanitizeTicketMessageAttachments(
-		mergeTicketAttachmentInputs(req.AttachmentURL, req.Attachments),
-		publicCustomerServiceMessageAttachmentLimit(c),
-	)
+	attachmentInputs := mergeTicketAttachmentInputs(req.AttachmentURL, req.Attachments)
+	mediaBindings, err := h.conversationAttachmentAccess.PrepareCustomerServiceMediaAttachmentBindingRequests(attachmentInputs, req.MediaAttachments, conversationID, 0, publicCustomerServiceMessageAttachmentLimit(c))
+	if err != nil {
+		respondPublicCustomerServiceAttachmentError(c, err)
+		return
+	}
+	var attachmentValues []string
+	if len(mediaBindings) == 0 {
+		attachmentValues, err = h.sanitizeTicketMessageAttachments(attachmentInputs, publicCustomerServiceMessageAttachmentLimit(c))
+	}
 	if err != nil {
 		respondPublicCustomerServiceAttachmentError(c, err)
 		return
@@ -155,8 +169,13 @@ func (h *Handler) SendPublicCustomerServiceMessage(c *gin.Context) {
 		messageType,
 		metadata,
 		attachments,
+		mediaBindings...,
 	)
 	if err != nil {
+		if errors.Is(err, repository.ErrCustomerServiceAttachmentBindingUnavailable) {
+			respondPublicCustomerServiceAttachmentError(c, err)
+			return
+		}
 		writePublicCustomerServiceError(c, err)
 		return
 	}
@@ -167,7 +186,7 @@ func (h *Handler) SendPublicCustomerServiceMessage(c *gin.Context) {
 
 	conversationID = publicConversationID(t)
 	h.touchCustomerServiceVisitorProfile(c, owner, req.SenderEmail, "public_chat", req.Locale)
-	response := publicCustomerServiceMessageResponse(*msg, conversationID, senderName, "", nil, h.mediaService)
+	response := publicCustomerServiceMessageResponse(*msg, conversationID, senderName, h.mediaService, h.conversationAttachmentAccess)
 	h.publishPublicCustomerServiceMessageCreated(
 		t,
 		msg.ID,
@@ -197,7 +216,7 @@ func (h *Handler) SendPublicCustomerServiceMessage(c *gin.Context) {
 	if autoReplyErr != nil {
 		log.Printf("customer-service auto reply failed: conversation=%s error=%v", conversationID, autoReplyErr)
 	} else if autoReplyMessage != nil {
-		autoReplyPayload := publicCustomerServiceMessageResponse(*autoReplyMessage, conversationID, "", "", nil, h.mediaService)
+		autoReplyPayload := publicCustomerServiceMessageResponse(*autoReplyMessage, conversationID, "", h.mediaService, h.conversationAttachmentAccess)
 		h.publishPublicCustomerServiceMessageCreated(
 			t,
 			autoReplyMessage.ID,
@@ -246,31 +265,10 @@ func (h *Handler) UploadPublicCustomerServiceAttachment(c *gin.Context) {
 	}
 
 	owner := h.existingPublicCustomerOwner(c)
-	if _, err := h.ticketService.GetPublicCustomerServiceConversation(conversationID, owner); err != nil {
-		writePublicCustomerServiceError(c, err)
-		return
-	}
 
 	file, err := c.FormFile("file")
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "file is required"})
-		return
-	}
-	if err := upload.ValidateSpecFile(file, string(upload.SpecCustomerServiceAttachment)); err != nil {
-		c.JSON(upload.HTTPStatus(err), gin.H{
-			"success": false,
-			"message": err.Error(),
-			"code":    upload.ErrorCode(err),
-		})
-		return
-	}
-	width, height, err := upload.ReadImageDimensions(file)
-	if err != nil {
-		c.JSON(upload.HTTPStatus(err), gin.H{
-			"success": false,
-			"message": err.Error(),
-			"code":    upload.ErrorCode(err),
-		})
 		return
 	}
 
@@ -279,29 +277,44 @@ func (h *Handler) UploadPublicCustomerServiceAttachment(c *gin.Context) {
 		source = "library"
 	}
 
-	uploaderID := uint(0)
-	if owner.UserID != nil {
-		uploaderID = *owner.UserID
-	}
-
-	asset, err := h.mediaService.UploadAsset(c.Request.Context(), service.MediaUploadInput{
-		File:       file,
-		MediaType:  "image",
-		Alt:        "Customer service attachment",
-		UploaderID: uploaderID,
-		Width:      width,
-		Height:     height,
-	})
+	asset, err := h.conversationAttachmentUploads.UploadVerifiedCustomerServiceConversationAttachment(c.Request.Context(), conversationID, owner, file)
 	if err != nil {
+		if errors.Is(err, service.ErrCustomerServiceConversationAccessDenied) || errors.Is(err, service.ErrCustomerServiceOwnerRequired) {
+			writePublicCustomerServiceError(c, err)
+			return
+		}
+		if errors.Is(err, service.ErrMediaVisitorSessionStorageQuotaExceeded) || errors.Is(err, service.ErrMediaAccountStorageQuotaExceeded) {
+			code := "account_storage_quota_exceeded"
+			if errors.Is(err, service.ErrMediaVisitorSessionStorageQuotaExceeded) {
+				code = "visitor_session_storage_quota_exceeded"
+			}
+			c.JSON(http.StatusRequestEntityTooLarge, gin.H{"success": false, "message": err.Error(), "code": code})
+			return
+		}
+		if errors.Is(err, service.ErrMediaUploadIdentityRequired) {
+			c.JSON(http.StatusUnauthorized, gin.H{"success": false, "message": err.Error(), "code": "upload_identity_required"})
+			return
+		}
+		var validationError *upload.ValidationError
+		if errors.As(err, &validationError) {
+			c.JSON(upload.HTTPStatus(err), gin.H{"success": false, "message": err.Error(), "code": upload.ErrorCode(err)})
+			return
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "failed to upload customer-service attachment"})
 		return
 	}
 
+	accessURL := h.mediaService.CanonicalPublicMediaURL(asset.URL)
+	if asset.PendingCustomerServiceUploadSessionID != "" {
+		accessURL = h.conversationAttachmentAccess.PublicCustomerServicePendingUploadPreviewURL(conversationID, asset.PendingCustomerServiceUploadSessionID)
+	}
+	restrictedmediaresponse.SetConversationAttachmentPrivateResponseHeaders(c)
 	c.JSON(http.StatusCreated, gin.H{
 		"success": true,
 		"asset": gin.H{
 			"id":                asset.ID,
-			"url":               h.mediaService.CanonicalPublicMediaURL(asset.URL),
+			"url":               accessURL,
+			"upload_session_id": asset.PendingCustomerServiceUploadSessionID,
 			"original_filename": asset.OriginalFilename,
 			"mime_type":         asset.MimeType,
 			"size":              asset.Size,
@@ -440,6 +453,7 @@ func publicCustomerServiceLocale(c *gin.Context, explicit ...string) string {
 }
 
 func (h *Handler) GetPublicCustomerServiceMessages(c *gin.Context) {
+	restrictedmediaresponse.SetConversationAttachmentPrivateResponseHeaders(c)
 	conversationID := strings.TrimSpace(c.Param("conversation_id"))
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "50"))
 	offset, _ := strconv.Atoi(c.DefaultQuery("offset", "0"))
@@ -475,7 +489,7 @@ func (h *Handler) GetPublicCustomerServiceMessages(c *gin.Context) {
 
 	items := make([]gin.H, 0, len(messages))
 	for _, item := range messages {
-		items = append(items, publicCustomerServiceMessageResponse(item, conversationID, "", "", nil, h.mediaService))
+		items = append(items, publicCustomerServiceMessageResponse(item, conversationID, "", h.mediaService, h.conversationAttachmentAccess))
 	}
 
 	c.JSON(http.StatusOK, gin.H{

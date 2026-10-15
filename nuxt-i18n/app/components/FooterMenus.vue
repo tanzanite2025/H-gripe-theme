@@ -121,8 +121,9 @@
 
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { useLocalePath, useRouter } from '#imports'
+import { useI18n, useLocalePath, useRouter } from '#imports'
 import FooterMenuNavigationItem from '~/components/FooterMenuNavigationItem.vue'
+import { pageMessageNamespaces, usePageMessages } from '~/composables/usePageMessages'
 import type { FooterNavigationItem, FooterSection } from '~/utils/footerMenus'
 import { createFooterMenusFromRoutes } from '~/utils/footerMenus'
 
@@ -132,12 +133,49 @@ const props = defineProps<{
 
 const router = useRouter()
 const localePath = useLocalePath()
+const { locale } = useI18n()
 
 const sections = computed<FooterSection[]>(() => {
   if (props.menus) {
     return props.menus
   }
   return createFooterMenusFromRoutes(router.getRoutes())
+})
+
+const footerNavigationTranslationMessageHandles = new Map(
+  pageMessageNamespaces.map(namespace => [namespace, usePageMessages(namespace)]),
+)
+const footerNavigationTranslationMessageNamespaces = computed(() => {
+  const namespaces = new Set<string>()
+  const collectFooterNavigationItemTranslationMessageNamespaces = (
+    items: readonly FooterNavigationItem[],
+  ): void => {
+    for (const item of items) {
+      if (item.labelKey) namespaces.add(item.labelKey.split('.')[0] || '')
+      if (item.children) collectFooterNavigationItemTranslationMessageNamespaces(item.children)
+    }
+  }
+
+  for (const section of sections.value) {
+    namespaces.add(section.titleKey.split('.')[0] || '')
+    collectFooterNavigationItemTranslationMessageNamespaces(section.links)
+  }
+
+  return [...namespaces].filter(namespace => footerNavigationTranslationMessageHandles.has(namespace))
+})
+
+async function loadFooterNavigationTranslationMessagesBeforeRendering(): Promise<void> {
+  const requestedLocale = locale.value
+  await Promise.all(footerNavigationTranslationMessageNamespaces.value.map(namespace => (
+    footerNavigationTranslationMessageHandles.get(namespace)?.loadPageMessages(requestedLocale)
+  )))
+}
+
+// The footer appears on every page and cannot depend on a sibling page or
+// header loading the translations used by its nested guide links.
+await loadFooterNavigationTranslationMessagesBeforeRendering()
+watch([footerNavigationTranslationMessageNamespaces, locale], () => {
+  void loadFooterNavigationTranslationMessagesBeforeRendering()
 })
 
 const compactSections = computed<FooterSection[]>(() => (

@@ -49,11 +49,13 @@ const onClick = (event: MouseEvent) => {
   align-items: center;
   justify-content: center;
   gap: 0.4rem;
-  padding: 0.625rem 3.1rem 0.625rem 1.2rem;
+  min-height: var(--tz-pill-button-min-height);
+  padding: var(--tz-pill-button-padding-block) 3.1rem var(--tz-pill-button-padding-block) 1.2rem;
   border-radius: 9999px;
   border: 1px solid rgba(5, 150, 105, 0.28);
   cursor: pointer;
   font-size: 0.9rem;
+  line-height: var(--tz-pill-button-line-height);
   font-weight: 600;
   letter-spacing: 0.02em;
   transition:
@@ -80,9 +82,9 @@ const onClick = (event: MouseEvent) => {
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 2.1rem;
-  width: 2.1rem;
-  border-radius: 0.9rem;
+  height: 1.6rem;
+  width: 1.6rem;
+  border-radius: 9999px;
 }
 
 .chat-start-button__icon {
@@ -142,7 +144,7 @@ const onClick = (event: MouseEvent) => {
 /* Mobile / touch devices: static CTA without overlay animation */
 @media (hover: none) and (pointer: coarse) {
   .chat-start-button {
-    padding: 0.625rem 1rem;
+    padding: var(--tz-pill-button-padding-block) 1rem;
     color: var(--tz-text-primary);
     background: var(--tz-card-surface);
     box-shadow:

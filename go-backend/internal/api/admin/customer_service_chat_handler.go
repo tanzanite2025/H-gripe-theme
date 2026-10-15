@@ -1,15 +1,18 @@
 package admin
 
 import (
-	"commerce-platform/internal/domain/ticket"
-	"commerce-platform/internal/pkg/apierror"
-	"commerce-platform/internal/pkg/pagination"
-	"commerce-platform/internal/pkg/response"
-	"commerce-platform/internal/service"
 	"encoding/json"
 	"errors"
 	"strconv"
 	"strings"
+
+	"commerce-platform/internal/api/restrictedmediaresponse"
+	"commerce-platform/internal/domain/ticket"
+	"commerce-platform/internal/pkg/apierror"
+	"commerce-platform/internal/pkg/pagination"
+	"commerce-platform/internal/pkg/response"
+	"commerce-platform/internal/repository"
+	"commerce-platform/internal/service"
 
 	"github.com/gin-gonic/gin"
 )
@@ -302,6 +305,7 @@ func respondCustomerServiceRetentionError(c *gin.Context, err error) {
 
 // GetCustomerServiceConversationMessages returns messages for one conversation.
 func (h *TicketHandler) GetCustomerServiceConversationMessages(c *gin.Context) {
+	restrictedmediaresponse.SetConversationAttachmentPrivateResponseHeaders(c)
 	ticketID, ok := parseAdminCustomerServiceConversationID(c)
 	if !ok {
 		return
@@ -321,7 +325,7 @@ func (h *TicketHandler) GetCustomerServiceConversationMessages(c *gin.Context) {
 
 	items := make([]gin.H, 0, len(messages))
 	for _, item := range messages {
-		items = append(items, adminCustomerServiceMessageResponse(item))
+		items = append(items, adminCustomerServiceMessageResponse(item, h.conversationAttachmentAccess))
 	}
 
 	response.Success(c, gin.H{
@@ -333,17 +337,19 @@ func (h *TicketHandler) GetCustomerServiceConversationMessages(c *gin.Context) {
 
 // CreateCustomerServiceConversationMessage sends a staff reply from the admin chat inbox.
 func (h *TicketHandler) CreateCustomerServiceConversationMessage(c *gin.Context) {
+	restrictedmediaresponse.SetConversationAttachmentPrivateResponseHeaders(c)
 	ticketID, ok := parseAdminCustomerServiceConversationID(c)
 	if !ok {
 		return
 	}
 
 	var req struct {
-		Message       string      `json:"message" binding:"required"`
-		MessageType   string      `json:"message_type"`
-		Metadata      interface{} `json:"metadata"`
-		AttachmentURL string      `json:"attachment_url"`
-		Attachments   []string    `json:"attachments"`
+		Message          string                                                       `json:"message" binding:"required"`
+		MessageType      string                                                       `json:"message_type"`
+		Metadata         interface{}                                                  `json:"metadata"`
+		AttachmentURL    string                                                       `json:"attachment_url"`
+		Attachments      []string                                                     `json:"attachments"`
+		MediaAttachments []ticket.CustomerServiceMessageMediaAttachmentBindingRequest `json:"media_attachments"`
 	}
 	limitAdminCustomerServiceJSONBody(c)
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -357,7 +363,15 @@ func (h *TicketHandler) CreateCustomerServiceConversationMessage(c *gin.Context)
 		respondAdminJSONBindError(c, err)
 		return
 	}
-	attachments, err := h.sanitizeAdminCustomerServiceAttachments(req.AttachmentURL, req.Attachments)
+	mediaBindings, err := h.conversationAttachmentAccess.PrepareCustomerServiceMediaAttachmentBindingRequests(mergeAdminAttachmentInputs(req.AttachmentURL, req.Attachments), req.MediaAttachments, "", ticketID, adminCustomerServiceAttachmentMaxCount)
+	if err != nil {
+		respondAdminAttachmentError(c, err)
+		return
+	}
+	var attachments []string
+	if len(mediaBindings) == 0 {
+		attachments, err = h.sanitizeAdminCustomerServiceAttachments(req.AttachmentURL, req.Attachments)
+	}
 	if err != nil {
 		respondAdminAttachmentError(c, err)
 		return
@@ -365,22 +379,27 @@ func (h *TicketHandler) CreateCustomerServiceConversationMessage(c *gin.Context)
 	attachmentsJSON, _ := json.Marshal(attachments)
 
 	msg := &ticket.TicketMessage{
-		TicketID:    ticketID,
-		UserID:      &agentUserID,
-		IsStaff:     true,
-		Content:     strings.TrimSpace(req.Message),
-		MessageType: normalizeAdminCustomerServiceMessageType(req.MessageType),
-		Metadata:    metadata,
-		Attachments: string(attachmentsJSON),
-		IsRead:      false,
-		IsInternal:  false,
+		TicketID:                         ticketID,
+		UserID:                           &agentUserID,
+		IsStaff:                          true,
+		Content:                          strings.TrimSpace(req.Message),
+		MessageType:                      normalizeAdminCustomerServiceMessageType(req.MessageType),
+		Metadata:                         metadata,
+		Attachments:                      string(attachmentsJSON),
+		IsRead:                           false,
+		IsInternal:                       false,
+		RequestedMediaAttachmentBindings: mediaBindings,
 	}
 	if err := h.ticketService.AddCustomerServiceAgentMessage(msg, agentUserID, canViewAll); err != nil {
+		if errors.Is(err, repository.ErrCustomerServiceAttachmentBindingUnavailable) {
+			respondAdminAttachmentError(c, err)
+			return
+		}
 		respondAdminCustomerServiceError(c, err)
 		return
 	}
 
-	messagePayload := adminCustomerServiceMessageResponse(*msg)
+	messagePayload := adminCustomerServiceMessageResponse(*msg, h.conversationAttachmentAccess)
 	if conversation, err := h.ticketService.GetCustomerServiceConversationForAgent(ticketID, agentUserID, canViewAll); err == nil {
 		h.publishAdminCustomerServiceMessageCreated(
 			conversation,

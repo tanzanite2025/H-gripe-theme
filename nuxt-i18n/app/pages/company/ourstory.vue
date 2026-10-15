@@ -57,7 +57,7 @@
             </div>
 
             <NuxtLink
-              class="ourstory-factory-link group inline-flex shrink-0 items-center gap-2 rounded-full px-5 py-2.5 text-sm font-medium tz-text-primary transition-all"
+              class="ourstory-factory-link tz-pill-button-standard-size group shrink-0 gap-2 rounded-full px-5 text-sm font-medium tz-text-primary transition-all"
               :to="factoryTabTo"
             >
               <span>{{ t('companyOurStory.cta.button') }}</span>

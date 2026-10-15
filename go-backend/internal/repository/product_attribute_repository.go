@@ -166,6 +166,9 @@ func (r *ProductRepository) ProductSpecificationTemplateSlugExists(slug string, 
 
 func (r *ProductRepository) CreateProductSpecificationTemplate(productSpecificationTemplate *product.ProductSpecificationTemplate) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
+		if err := r.lockValidateAndCanonicalizeTemplateOptionSwatchMediaBindings(tx, productSpecificationTemplate, false); err != nil {
+			return err
+		}
 		definitions := productSpecificationTemplate.SpecDefinitions
 		isEnabled := productSpecificationTemplate.IsEnabled
 		productSpecificationTemplate.SpecDefinitions = nil
@@ -191,6 +194,9 @@ func (r *ProductRepository) CreateProductSpecificationTemplate(productSpecificat
 
 func (r *ProductRepository) UpdateProductSpecificationTemplate(productSpecificationTemplate *product.ProductSpecificationTemplate, removedSpecIDs []uint) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
+		if err := r.lockValidateAndCanonicalizeTemplateOptionSwatchMediaBindings(tx, productSpecificationTemplate, true); err != nil {
+			return err
+		}
 		result := tx.Model(&product.ProductSpecificationTemplate{}).Where("id = ?", productSpecificationTemplate.ID).Updates(map[string]interface{}{
 			"name":        productSpecificationTemplate.Name,
 			"slug":        productSpecificationTemplate.Slug,

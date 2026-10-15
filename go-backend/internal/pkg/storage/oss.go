@@ -86,14 +86,8 @@ func (s *ossStorageImpl) UploadWithPrefix(ctx context.Context, file *multipart.F
 }
 
 func (s *ossStorageImpl) UploadWithPrefixPrivate(ctx context.Context, file *multipart.FileHeader, prefix string) (string, error) {
-	if !isPrivateUploadPrefix(prefix) {
-		return "", fmt.Errorf("private upload prefix must use a private namespace")
-	}
-	if strings.TrimSpace(s.config.PrivateBucket) == "" || strings.TrimSpace(s.config.PrivateBucket) == strings.TrimSpace(s.config.Bucket) {
-		return "", fmt.Errorf("private storage bucket is not configured")
-	}
-	if strings.TrimSpace(s.config.PrivateBaseURL) != "" && strings.EqualFold(strings.TrimRight(strings.TrimSpace(s.config.PrivateBaseURL), "/"), strings.TrimRight(strings.TrimSpace(s.config.BaseURL), "/")) {
-		return "", fmt.Errorf("private storage base URL must be separate from public base URL")
+	if err := validatePrivateBucketUploadNamespaceAndConfiguration(s.config, prefix); err != nil {
+		return "", err
 	}
 	return s.uploadWithPrefix(ctx, file, prefix, true, "")
 }
@@ -133,7 +127,7 @@ func (s *ossStorageImpl) uploadWithPrefix(ctx context.Context, file *multipart.F
 	options := []oss.Option{
 		oss.ContentType(contentType),
 	}
-	if private {
+	if private || IsPrivateObjectKey(filename) {
 		options = append(options, oss.ObjectACL(oss.ACLPrivate))
 	}
 	if cacheControl = strings.TrimSpace(cacheControl); cacheControl != "" {
@@ -162,7 +156,12 @@ func (s *ossStorageImpl) UploadFromReaderWithPrefix(ctx context.Context, reader 
 	return s.UploadFromReaderWithPrefixAndCacheControl(ctx, reader, filename, prefix, "")
 }
 
-func (s *ossStorageImpl) UploadFromReaderWithPrefixAndCacheControl(_ context.Context, reader io.Reader, filename string, prefix string, cacheControl string) (string, error) {
+func (s *ossStorageImpl) UploadFromReaderWithPrefixAndCacheControl(ctx context.Context, reader io.Reader, filename string, prefix string, cacheControl string) (string, error) {
+	if isPrivateUploadPrefix(prefix) {
+		if err := validatePrivateBucketUploadNamespaceAndConfiguration(s.config, prefix); err != nil {
+			return "", err
+		}
+	}
 	// 生成唯一文件名
 	newFilename, err := generateObjectKey(filename, prefix)
 	if err != nil {
@@ -176,6 +175,10 @@ func (s *ossStorageImpl) UploadFromReaderWithPrefixAndCacheControl(_ context.Con
 	options := []oss.Option{
 		oss.ContentType(contentType),
 	}
+	if IsPrivateObjectKey(newFilename) {
+		options = append(options, oss.ObjectACL(oss.ACLPrivate))
+	}
+	options = append(options, oss.WithContext(ctx))
 	if cacheControl = strings.TrimSpace(cacheControl); cacheControl != "" {
 		options = append(options, oss.CacheControl(cacheControl))
 	}

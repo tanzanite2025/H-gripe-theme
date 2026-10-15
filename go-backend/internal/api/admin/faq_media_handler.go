@@ -1,9 +1,11 @@
 package admin
 
 import (
-	"commerce-platform/internal/pkg/upload"
 	"net/http"
 	"strings"
+
+	"commerce-platform/internal/domain/media"
+	"commerce-platform/internal/pkg/upload"
 
 	"github.com/gin-gonic/gin"
 )
@@ -34,9 +36,9 @@ func (h *FAQHandler) UploadAnswerImage(c *gin.Context) {
 		return
 	}
 
-	url, err := h.faqService.UploadAnswerImage(c.Request.Context(), file)
+	url, err := h.faqService.UploadAnswerImage(c.Request.Context(), file, media.MediaUploadActorIdentity{ActorType: media.MediaUploadActorAdministrator, AccountID: currentUserID(c)}, c.PostForm("alt"))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to upload FAQ answer image"})
+		respondMediaError(c, err)
 		return
 	}
 	c.JSON(http.StatusCreated, gin.H{

@@ -26,7 +26,12 @@ func applyPublicFAQPageScope(query *gorm.DB) *gorm.DB {
 
 // Create 创建FAQ
 func (r *FAQRepository) Create(f *faq.FAQ) error {
-	return r.db.Create(f).Error
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		if err := r.validateAndCanonicalizeFAQAnswerLinksAndImageInOneAssetLockPlan(tx, f, &faq.FAQ{}); err != nil {
+			return err
+		}
+		return tx.Create(f).Error
+	})
 }
 
 // FindByID 根据ID查找FAQ
@@ -40,8 +45,30 @@ func (r *FAQRepository) FindByID(id uint) (*faq.FAQ, error) {
 }
 
 // Update 更新FAQ
-func (r *FAQRepository) Update(f *faq.FAQ) error {
-	return r.db.Save(f).Error
+func (r *FAQRepository) Update(f *faq.FAQ, mutations ...FAQMediaFieldMutation) error {
+	if f.ID == 0 {
+		return gorm.ErrRecordNotFound
+	}
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		var previous faq.FAQ
+		if err := tx.Clauses(clause.Locking{Strength: "NO KEY UPDATE"}).First(&previous, f.ID).Error; err != nil {
+			return err
+		}
+		if len(mutations) > 0 {
+			if !mutations[0].UpdateAnswer {
+				f.Answer = previous.Answer
+			}
+			if !mutations[0].UpdateAnswerImage {
+				f.AnswerImageURL, f.AnswerImageAlt = previous.AnswerImageURL, previous.AnswerImageAlt
+				f.AnswerImageWidth, f.AnswerImageHeight = previous.AnswerImageWidth, previous.AnswerImageHeight
+			}
+		}
+		if err := r.validateAndCanonicalizeFAQAnswerLinksAndImageInOneAssetLockPlan(tx, f, &previous); err != nil {
+			return err
+		}
+		// Updates must never upsert a deleted FAQ.
+		return tx.Model(&faq.FAQ{}).Where("id = ?", f.ID).Select("*").Omit("id", "created_at", "deleted_at").Updates(f).Error
+	})
 }
 
 // Delete 删除FAQ（软删除）

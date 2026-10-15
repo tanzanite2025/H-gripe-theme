@@ -5,9 +5,9 @@
         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
       </div>
       <div class="wheelset-guide-step__content">
-        <h3 class="wheelset-guide-step__title wheelset-safety-notice__title">
+        <h2 class="wheelset-guide-step__title wheelset-safety-notice__title">
           {{ t('guidesWheelsetBuyersSafety.notice.title') }}
-        </h3>
+        </h2>
         <p class="wheelset-guide-step__body">
           {{ t('guidesWheelsetBuyersSafety.notice.body') }}
         </p>
@@ -20,9 +20,9 @@
     <article class="wheelset-guide-step">
       <div class="wheelset-guide-step__number">1</div>
       <div class="wheelset-guide-step__content">
-        <h3 class="wheelset-guide-step__title">
+        <h2 class="wheelset-guide-step__title">
           {{ t('guidesWheelsetBuyersSafety.installation.title') }}
-        </h3>
+        </h2>
         <div class="wheelset-guide-panel-grid">
           <div class="wheelset-guide-panel">
             <strong>{{ t('guidesWheelsetBuyersSafety.installation.professional.title') }}</strong>
@@ -52,9 +52,9 @@
     <article class="wheelset-guide-step">
       <div class="wheelset-guide-step__number">2</div>
       <div class="wheelset-guide-step__content">
-        <h3 class="wheelset-guide-step__title">
+        <h2 class="wheelset-guide-step__title">
           {{ t('guidesWheelsetBuyersSafety.riding.title') }}
-        </h3>
+        </h2>
         <div class="wheelset-guide-panel-grid">
           <div class="wheelset-guide-panel">
             <strong>{{ t('guidesWheelsetBuyersSafety.riding.weight.title') }}</strong>
@@ -79,9 +79,9 @@
     <article class="wheelset-guide-step">
       <div class="wheelset-guide-step__number">3</div>
       <div class="wheelset-guide-step__content">
-        <h3 class="wheelset-guide-step__title">
+        <h2 class="wheelset-guide-step__title">
           {{ t('guidesWheelsetBuyersSafety.maintenance.title') }}
-        </h3>
+        </h2>
         <div class="wheelset-guide-panel-grid">
           <div class="wheelset-guide-panel">
             <strong>{{ t('guidesWheelsetBuyersSafety.maintenance.inspection.title') }}</strong>
@@ -111,9 +111,9 @@
     <article class="wheelset-guide-step">
       <div class="wheelset-guide-step__number">4</div>
       <div class="wheelset-guide-step__content">
-        <h3 class="wheelset-guide-step__title">
+        <h2 class="wheelset-guide-step__title">
           {{ t('guidesWheelsetBuyersSafety.emergency.title') }}
-        </h3>
+        </h2>
         <div class="wheelset-guide-panel-grid">
           <div class="wheelset-guide-panel">
             <strong>{{ t('guidesWheelsetBuyersSafety.emergency.prohibited.title') }}</strong>

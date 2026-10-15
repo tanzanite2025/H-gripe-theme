@@ -85,8 +85,8 @@ func configureS3ClientOptions(cfg *Config) func(*s3.Options) {
 			return
 		}
 
-		// This SDK version uses the legacy EndpointResolver interface. Setting
-		// only UsePathStyle would still send requests to AWS's default endpoint.
+		// Preserve explicit provider endpoints. Setting only UsePathStyle would
+		// still send requests to AWS's default endpoint.
 		options.EndpointResolver = s3.EndpointResolverFromURL(strings.TrimRight(strings.TrimSpace(cfg.Endpoint), "/"))
 		options.UsePathStyle = true
 	}
@@ -147,14 +147,8 @@ func (s *s3StorageImpl) uploadWithPrefix(ctx context.Context, file *multipart.Fi
 }
 
 func (s *s3StorageImpl) UploadWithPrefixPrivate(ctx context.Context, file *multipart.FileHeader, prefix string) (string, error) {
-	if !isPrivateUploadPrefix(prefix) {
-		return "", fmt.Errorf("private upload prefix must use a private namespace")
-	}
-	if strings.TrimSpace(s.config.PrivateBucket) == "" || strings.TrimSpace(s.config.PrivateBucket) == strings.TrimSpace(s.config.Bucket) {
-		return "", fmt.Errorf("private storage bucket is not configured")
-	}
-	if strings.TrimSpace(s.config.PrivateBaseURL) != "" && strings.EqualFold(strings.TrimRight(strings.TrimSpace(s.config.PrivateBaseURL), "/"), strings.TrimRight(strings.TrimSpace(s.config.BaseURL), "/")) {
-		return "", fmt.Errorf("private storage base URL must be separate from public base URL")
+	if err := validatePrivateBucketUploadNamespaceAndConfiguration(s.config, prefix); err != nil {
+		return "", err
 	}
 	return s.uploadWithPrefix(ctx, file, prefix, "", true)
 }
@@ -163,7 +157,7 @@ func (s *s3StorageImpl) bucketForKey(key string) string {
 	if s == nil || s.config == nil {
 		return ""
 	}
-	if IsPrivateObjectKey(key) {
+	if IsPrivateObjectKey(key) || isPrivateUploadPrefix(key) {
 		return strings.TrimSpace(s.config.PrivateBucket)
 	}
 	return s.config.Bucket
@@ -171,7 +165,8 @@ func (s *s3StorageImpl) bucketForKey(key string) string {
 
 func (s *s3StorageImpl) requireBucketForKey(key string) (string, error) {
 	bucket := s.bucketForKey(key)
-	if IsPrivateObjectKey(key) {
+	// Listing a namespace root must use the same bucket as its child objects.
+	if IsPrivateObjectKey(key) || isPrivateUploadPrefix(key) {
 		if strings.TrimSpace(bucket) == "" || strings.EqualFold(strings.TrimSpace(bucket), strings.TrimSpace(s.config.Bucket)) {
 			return "", fmt.Errorf("private storage bucket is not configured")
 		}
@@ -431,7 +426,7 @@ func (s *s3StorageImpl) Open(ctx context.Context, key string) (*StoredObject, er
 		ReadCloser: object.Body,
 		Name:       filepath.Base(normalizedKey),
 		MimeType:   aws.ToString(object.ContentType),
-		Size:       object.ContentLength,
+		Size:       aws.ToInt64(object.ContentLength),
 		ModTime:    modTime,
 	}, nil
 }
@@ -508,7 +503,7 @@ func (s *s3StorageImpl) ListObjects(ctx context.Context, prefix string, maxKeys 
 	input := &s3.ListObjectsV2Input{
 		Bucket:  aws.String(bucket),
 		Prefix:  aws.String(prefix),
-		MaxKeys: maxKeys,
+		MaxKeys: aws.Int32(maxKeys),
 	}
 
 	result, err := s.client.ListObjectsV2(ctx, input)

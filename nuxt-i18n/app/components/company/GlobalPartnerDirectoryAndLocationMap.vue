@@ -69,7 +69,7 @@
           </button>
           <NuxtLink
             :to="localePath('/company/contact')"
-            class="premium-button premium-button--active mt-3 min-h-11 w-full justify-center gap-2 text-xs"
+            class="premium-button premium-button--active mt-3 w-full justify-center gap-2 text-xs"
           >
             <span>{{ t('companyGlobalPartners.map.contactCta') }}</span>
             <Icon name="lucide:arrow-right" class="h-4 w-4" aria-hidden="true" />

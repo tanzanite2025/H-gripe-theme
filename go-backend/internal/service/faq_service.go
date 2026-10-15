@@ -1,26 +1,23 @@
 package service
 
 import (
-	"commerce-platform/internal/domain/faq"
-	"commerce-platform/internal/pkg/storage"
-	"commerce-platform/internal/repository"
-	"context"
 	"fmt"
-	"mime/multipart"
+
+	"commerce-platform/internal/domain/faq"
+	"commerce-platform/internal/repository"
 )
 
 type FAQService struct {
 	faqRepo                          *repository.FAQRepository
 	storefrontHTMLCacheInvalidator   *StorefrontHTMLCacheInvalidator
 	storefrontContentReleaseNotifier *StorefrontContentReleaseNotifier
-	storage                          storage.StorageService
+	mediaService                     *MediaService
 	mediaURLResolver                 PublicMediaURLResolver
 }
 
-func NewFAQService(faqRepo *repository.FAQRepository, storageSvc storage.StorageService) *FAQService {
+func NewFAQService(faqRepo *repository.FAQRepository) *FAQService {
 	return &FAQService{
 		faqRepo: faqRepo,
-		storage: storageSvc,
 	}
 }
 
@@ -29,6 +26,10 @@ func (s *FAQService) ConfigureMediaService(mediaService *MediaService) {
 		return
 	}
 	s.mediaURLResolver = mediaService
+	s.mediaService = mediaService
+	if s.faqRepo != nil {
+		s.faqRepo.ConfigurePublicBusinessMediaReferenceIdentityResolver(mediaService)
+	}
 }
 
 func (s *FAQService) SetStorefrontHTMLCacheInvalidator(invalidator *StorefrontHTMLCacheInvalidator) {
@@ -55,13 +56,6 @@ func hasPublishedFAQStatus(items ...*faq.FAQ) bool {
 		}
 	}
 	return false
-}
-
-func (s *FAQService) UploadAnswerImage(ctx context.Context, file *multipart.FileHeader) (string, error) {
-	if s.storage == nil {
-		return "", fmt.Errorf("FAQ image storage is not configured")
-	}
-	return s.storage.Upload(ctx, file)
 }
 
 // GetByID 根据ID获取FAQ
@@ -110,13 +104,13 @@ func (s *FAQService) Create(f *faq.FAQ) error {
 }
 
 // Update 更新FAQ
-func (s *FAQService) Update(f *faq.FAQ) error {
+func (s *FAQService) Update(f *faq.FAQ, mutations ...repository.FAQMediaFieldMutation) error {
 	previousFAQ, err := s.faqRepo.FindByID(f.ID)
 	if err != nil {
 		return err
 	}
 
-	if err := s.normalizeFAQContent(f); err != nil {
+	if err := s.normalizeFAQContent(f, mutations...); err != nil {
 		return err
 	}
 	locale, err := requireSupportedLocale(f.Locale)
@@ -127,7 +121,7 @@ func (s *FAQService) Update(f *faq.FAQ) error {
 	if err := s.validateFAQPage(f.PageID, f.Locale); err != nil {
 		return err
 	}
-	if err := s.faqRepo.Update(f); err != nil {
+	if err := s.faqRepo.Update(f, mutations...); err != nil {
 		return err
 	}
 	if hasPublishedFAQStatus(previousFAQ, f) {
@@ -169,7 +163,7 @@ func (s *FAQService) UpdateAdminFAQ(id uint, input FAQAdminUpdateInput) (*faq.FA
 	}
 	existingFAQ.Order = input.Order
 
-	if err := s.Update(existingFAQ); err != nil {
+	if err := s.Update(existingFAQ, repository.FAQMediaFieldMutation{UpdateAnswer: input.Answer != "", UpdateAnswerImage: input.AnswerImageSet}); err != nil {
 		return nil, err
 	}
 

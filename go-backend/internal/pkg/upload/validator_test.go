@@ -7,10 +7,9 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
-	"os"
-	"path/filepath"
-	"runtime"
 	"testing"
+
+	"commerce-platform/internal/testfixtures"
 )
 
 func TestValidateFileRejectsScriptRenamedAsVideo(t *testing.T) {
@@ -131,7 +130,7 @@ func TestValidateFileAcceptsFixedDimensionWebP(t *testing.T) {
 }
 
 func TestValidateFileAcceptsSiteLogoWebP(t *testing.T) {
-	file := testFileHeader(t, "site-logo.webp", siteLogoWebPFixture(t))
+	file := testFileHeader(t, "site-logo.webp", testfixtures.SiteLogoAndFaviconUploadLifecycle512By512LosslessWebPFixtureBytes())
 
 	if err := ValidateFile(file, SiteLogoImageRule); err != nil {
 		t.Fatalf("expected 512x512 WebP to be accepted, got %v", err)
@@ -186,22 +185,6 @@ func validWebPFixture(t *testing.T) []byte {
 	data, err := base64.StdEncoding.DecodeString(encoded)
 	if err != nil {
 		t.Fatalf("decode WebP fixture: %v", err)
-	}
-	return data
-}
-
-func siteLogoWebPFixture(t *testing.T) []byte {
-	t.Helper()
-
-	_, currentFile, _, ok := runtime.Caller(0)
-	if !ok {
-		t.Fatal("resolve validator test file path")
-	}
-
-	fixturePath := filepath.Join(filepath.Dir(currentFile), "..", "..", "..", "..", "nuxt-i18n", "public", "images", "chat-logo.webp")
-	data, err := os.ReadFile(fixturePath)
-	if err != nil {
-		t.Fatalf("read site logo WebP fixture: %v", err)
 	}
 	return data
 }

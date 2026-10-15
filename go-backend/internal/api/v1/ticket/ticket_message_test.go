@@ -1,12 +1,13 @@
 package ticket
 
 import (
-	"commerce-platform/internal/domain/ticket"
-	"commerce-platform/internal/service"
 	"encoding/json"
 	"errors"
 	"strings"
 	"testing"
+
+	"commerce-platform/internal/domain/ticket"
+	"commerce-platform/internal/service"
 
 	"commerce-platform/internal/pkg/ugc"
 
@@ -65,7 +66,7 @@ func TestPublicCustomerServiceMessageResponseCanonicalizesStoredMedia(t *testing
 		Metadata:    `{"thumbnail":"http://media.internal:8080/uploads/chat/thumb.webp","answer_image_url":"http://media.internal:8080/uploads/faq/answer.webp","url":"/support/faqs"}`,
 	}
 
-	response := publicCustomerServiceMessageResponse(item, "conversation-1", "", "", nil, resolver)
+	response := publicCustomerServiceMessageResponse(item, "conversation-1", "", resolver)
 	payload, err := json.Marshal(response)
 	if err != nil {
 		t.Fatalf("marshal public message response: %v", err)

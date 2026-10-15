@@ -3,6 +3,7 @@ package admin
 import (
 	"commerce-platform/internal/api/middleware"
 	"commerce-platform/internal/domain/auth"
+	"commerce-platform/internal/domain/media"
 
 	"github.com/gin-gonic/gin"
 )
@@ -294,9 +295,19 @@ func registerMediaAndPreflightRoutes(
 		mediaGroup.POST("/derivative-rebuild-jobs", middleware.RequirePermission(auth.PermMediaConfigure), mediaHandler.RequestDerivativeRebuild)
 
 		mediaGroup.GET("/assets", mediaHandler.ListAssets)
+		mediaGroup.GET("/assets/library-partition-counts", mediaHandler.CountMediaAssetsByLibraryPartition)
+		operationalUploads := mediaGroup.Group("/uploads")
+		operationalUploads.Use(middleware.RequirePermission(auth.PermMediaCreate), middleware.RateLimitByUserPerMinute(3, 2))
+		operationalUploads.POST("/catalog", middleware.RequireAnyPermission(auth.PermProductCreate, auth.PermProductEdit), mediaHandler.UploadOperationalMediaAssetForAuthorizedOrigin(media.MediaUploadOriginAdministratorCatalog))
+		operationalUploads.POST("/content", middleware.RequireAnyPermission(auth.PermContentCreate, auth.PermContentEdit), mediaHandler.UploadOperationalMediaAssetForAuthorizedOrigin(media.MediaUploadOriginAdministratorContent))
+		operationalUploads.POST("/website-profile", middleware.RequirePermission(auth.PermSettingsEdit), mediaHandler.UploadOperationalMediaAssetForAuthorizedOrigin(media.MediaUploadOriginAdministratorWebsiteProfile))
+		operationalUploads.POST("/shared", mediaHandler.UploadOperationalMediaAssetForAuthorizedOrigin(media.MediaUploadOriginAdministratorShared))
+		operationalUploads.POST("/customer-service-reusable", middleware.RequirePermission(auth.PermTicketEdit), mediaHandler.UploadOperationalMediaAssetForAuthorizedOrigin(media.MediaUploadOriginAdministratorReusableCustomerService))
 		mediaGroup.GET("/assets/:id/file", mediaHandler.ServeAssetFile)
 		mediaGroup.GET("/assets/:id/copyright-evidence", middleware.RequirePermission(auth.PermMediaEdit), mediaHandler.ExportCopyrightEvidence)
 		mediaGroup.GET("/assets/:id/references", mediaHandler.GetAssetReferences)
+		mediaGroup.GET("/assets/:id/library-classification-review", middleware.RequirePermission(auth.PermMediaConfigure), mediaHandler.ReviewMediaAssetLibraryOwnershipForManualClassification)
+		mediaGroup.PATCH("/assets/:id/library-classification", middleware.RequirePermission(auth.PermMediaConfigure), mediaHandler.ReclassifyMediaAssetLibraryOwnershipWithTransactionalAudit)
 		mediaGroup.GET("/assets/:id", mediaHandler.GetAsset)
 		mediaGroup.POST(
 			"/assets",

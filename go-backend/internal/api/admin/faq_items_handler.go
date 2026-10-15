@@ -1,10 +1,11 @@
 package admin
 
 import (
-	"commerce-platform/internal/domain/faq"
-	"commerce-platform/internal/service"
 	"net/http"
 	"strconv"
+
+	"commerce-platform/internal/domain/faq"
+	"commerce-platform/internal/service"
 
 	"github.com/gin-gonic/gin"
 )
@@ -145,14 +146,18 @@ func (h *FAQHandler) UpdateFAQ(c *gin.Context) {
 		return
 	}
 
+	answerImageURL := ""
+	if req.AnswerImageURL != nil {
+		answerImageURL = *req.AnswerImageURL
+	}
 	updatedFAQ, err := h.faqService.UpdateAdminFAQ(uint(id), service.FAQAdminUpdateInput{
 		Question:          req.Question,
 		Answer:            req.Answer,
-		AnswerImageURL:    req.AnswerImageURL,
+		AnswerImageURL:    answerImageURL,
 		AnswerImageAlt:    req.AnswerImageAlt,
 		AnswerImageWidth:  req.AnswerImageWidth,
 		AnswerImageHeight: req.AnswerImageHeight,
-		AnswerImageSet:    true,
+		AnswerImageSet:    req.AnswerImageURL != nil,
 		PageID:            req.PageID,
 		Locale:            req.Locale,
 		Status:            req.Status,

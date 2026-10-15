@@ -253,7 +253,7 @@ const resetForm = () => {
 }
 
 .warranty-check__login-btn {
-  padding: 0.75rem 2rem;
+  padding: var(--tz-pill-button-padding-block) 2rem;
   background: var(--tz-action-primary);
   border: 1px solid var(--tz-action-primary);
   border-radius: 9999px;
@@ -262,6 +262,11 @@ const resetForm = () => {
   cursor: pointer;
   box-shadow: 0 4px 12px rgb(15 23 42 / 0.16);
   transition: transform 0.18s ease, box-shadow 0.18s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--tz-pill-button-min-height);
+  line-height: var(--tz-pill-button-line-height);
 }
 
 .warranty-check__login-btn:hover {
@@ -312,7 +317,7 @@ const resetForm = () => {
 }
 
 .warranty-check__submit-btn {
-  padding: 0.75rem 1.5rem;
+  padding: var(--tz-pill-button-padding-block) 1.5rem;
   background: var(--tz-action-primary);
   border: 1px solid var(--tz-action-primary);
   border-radius: 9999px;
@@ -322,6 +327,11 @@ const resetForm = () => {
   min-width: 100px;
   box-shadow: 0 4px 12px rgb(15 23 42 / 0.16);
   transition: opacity 0.2s, transform 0.18s ease, box-shadow 0.18s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--tz-pill-button-min-height);
+  line-height: var(--tz-pill-button-line-height);
 }
 
 .warranty-check__submit-btn:disabled {
@@ -400,8 +410,8 @@ const resetForm = () => {
 }
 
 .warranty-check__contact-btn {
-  display: inline-block;
-  padding: 0.5rem 1.5rem;
+  display: inline-flex;
+  padding: var(--tz-pill-button-padding-block) 1.5rem;
   background: var(--tz-surface-subtle);
   border: none;
   border-radius: 9999px;
@@ -410,6 +420,10 @@ const resetForm = () => {
   font-size: 0.85rem;
   box-shadow: 0 6px 16px rgba(20, 32, 43, 0.08);
   transition: all 0.18s ease;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--tz-pill-button-min-height);
+  line-height: var(--tz-pill-button-line-height);
 }
 
 .warranty-check__contact-btn:hover {
@@ -567,7 +581,7 @@ const resetForm = () => {
 
 .warranty-check__action-btn {
   flex: 1;
-  padding: 0.6rem 1rem;
+  padding: var(--tz-pill-button-padding-block) 1rem;
   border-radius: 9999px;
   font-size: 0.85rem;
   font-weight: 500;
@@ -575,6 +589,11 @@ const resetForm = () => {
   text-decoration: none;
   cursor: pointer;
   transition: all 0.18s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--tz-pill-button-min-height);
+  line-height: var(--tz-pill-button-line-height);
 }
 
 .warranty-check__action-btn:not(.warranty-check__action-btn--secondary) {

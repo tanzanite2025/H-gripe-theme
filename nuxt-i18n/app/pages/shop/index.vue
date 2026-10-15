@@ -1,6 +1,10 @@
 <template>
   <main class="shop-page w-full pt-0 pb-16 space-y-6">
-<section class="rounded-xl tz-surface-card p-4 text-sm tz-text-secondary shadow-[8px_8px_22px_rgb(15_23_42_/_0.08)]">
+    <h1 class="tz-page-title text-center tz-text-primary">
+      {{ t('shopRootCollectionPageSeo.heading') }}
+    </h1>
+
+    <section class="rounded-xl tz-surface-card p-4 text-sm tz-text-secondary shadow-[8px_8px_22px_rgb(15_23_42_/_0.08)]">
       <ShopProductQuickSearchForm
         density="page"
         show-filter-button
@@ -94,13 +98,10 @@
       </div>
     </section>
 
-    <ProductRecommendations
+    <ShopCatalogProductRecommendations
       surface="shop_index_bottom"
-      :title="$t('recommendations.shopTitle', 'Recommended products')"
-      :category-id="shopRecommendationCategoryId"
-      :query="shopRecommendationQuery"
-      :exclude-product-ids="visibleProductIds"
-      :limit="8"
+      :visible-products="products"
+      :search-query="currentSearch?.query || ''"
     />
 
     <section class="mt-10">
@@ -120,7 +121,7 @@ import ShopProductQuickSearchForm from '~/components/shop/ShopProductQuickSearch
 import ShopCatalogFilterDrawer from '~/components/shop/ShopCatalogFilterDrawer.vue'
 import ShopCategoryVerticalMenu from '~/components/shop/ShopCategoryVerticalMenu.vue'
 import ShopProductDisplayCard from '~/components/shop/ShopProductDisplayCard.vue'
-import ProductRecommendations from '~/components/shop/ProductRecommendations.vue'
+import ShopCatalogProductRecommendations from '~/components/shop/ShopCatalogProductRecommendations.vue'
 import { useWishlist } from '~/composables/useWishlist'
 import { useProductCategories } from '~/composables/useProductCategories'
 import type { ProductCategory } from '~/composables/useProductCategories'
@@ -376,12 +377,6 @@ const products = computed<ShopProduct[]>(() => {
   }
   return []
 })
-
-const visibleProductIds = computed(() => products.value.map(product => product.id).filter(id => Number.isInteger(id) && id > 0))
-// Recommendation API category IDs still refer to legacy product specification templates.
-// Keep the new product-category filter isolated from that contract.
-const shopRecommendationCategoryId = computed(() => null)
-const shopRecommendationQuery = computed(() => buildProductKeyword(currentSearch.value || undefined))
 
 const productPagination = computed(() => {
   const raw = asyncData.value?.raw as any

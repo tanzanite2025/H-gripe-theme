@@ -156,11 +156,16 @@ const features = [
 
 .account-login-prompt__primary,
 .account-login-prompt__secondary {
-  min-height: 2.75rem;
+  min-height: var(--tz-pill-button-min-height);
   border-radius: 999px;
   font-size: 0.86rem;
   font-weight: 800;
   transition: transform 0.18s ease, filter 0.18s ease, background 0.18s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: var(--tz-pill-button-line-height);
+  padding-block: var(--tz-pill-button-padding-block);
 }
 
 .account-login-prompt__primary {

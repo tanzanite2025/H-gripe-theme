@@ -10,6 +10,7 @@ import {
 } from '@/utils/apiResponse'
 import { adminApiBaseUrl } from '@/lib/adminUrl'
 import type { CustomerConversationMessage } from '@/modules/customer-service/customerServiceTypes'
+import type { MediaAsset } from '@/api/media'
 
 export interface CustomerServiceRetentionEligibility {
   ticket_id: number
@@ -41,14 +42,18 @@ const readField = <T = unknown>(response: unknown, path: string, field: string):
 }
 
 export const customerServiceApi = {
+  async uploadConversationAttachment(conversationId: number | string, formData: FormData, signal?: AbortSignal): Promise<MediaAsset> {
+    const path = `/api/admin/customer-service/conversations/${encodeURIComponent(String(conversationId))}/attachment-uploads`
+    return requireApiObjectField<MediaAsset>(readObjectPayload(await axios.post(path, formData, { signal }), path), 'asset', path)
+  },
   async getAnalytics(params: Record<string, any> = {}) {
     const path = '/api/admin/customer-service/analytics'
     return requireApiObject(readField(await axios.get(path, { params }), path, 'analytics'), path, 'field "analytics"')
   },
 
-  async listConversations(params: Record<string, any> = {}) {
+  async listConversations(params: Record<string, any> = {}, suppressGlobalErrorToast = false) {
     const path = '/api/admin/customer-service/conversations'
-    const response = await axios.get(path, { params })
+    const response = await axios.get(path, { params, suppressGlobalErrorToast })
     const body = requireApiObject(response.data, path, 'response body')
     const payload = requireApiObject(unwrapApiPayload(response, path), path)
     requireApiArrayField(payload, 'conversations', path)
@@ -124,14 +129,14 @@ export const customerServiceApi = {
     return url.toString()
   },
 
-  async listMessages(conversationId: number | string) {
+  async listMessages(conversationId: number | string, suppressGlobalErrorToast = false) {
     const path = `/api/admin/customer-service/conversations/${conversationId}/messages`
-    return requireApiArrayField(readObjectPayload(await axios.get(path), path), 'messages', path)
+    return requireApiArrayField(readObjectPayload(await axios.get(path, { suppressGlobalErrorToast }), path), 'messages', path)
   },
 
-  async markMessagesRead(conversationId: number | string) {
+  async markMessagesRead(conversationId: number | string, suppressGlobalErrorToast = false) {
     const path = `/api/admin/customer-service/conversations/${conversationId}/messages/mark-read`
-    return requireApiAcknowledgement(await axios.post(path), path)
+    return requireApiAcknowledgement(await axios.post(path, undefined, { suppressGlobalErrorToast }), path)
   },
 
   async sendMessage(

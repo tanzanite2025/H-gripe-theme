@@ -824,6 +824,21 @@
     },
     "pages": {
       "placeholder": "Content coming soon."
+    },
+    "aboutTabs": {
+      "ariaLabel": "关于我们页面导航",
+      "factory": {
+        "label": "工厂",
+        "description": "生产规模、车间流程与工厂介绍。"
+      },
+      "appearance": {
+        "label": "外观",
+        "description": "碳圈表面处理、标识与外观定制。"
+      },
+      "holePatterns": {
+        "label": "孔位设计",
+        "description": "根据花鼓图纸与辐条编法匹配定制打孔角度。"
+      }
     }
   },
   "contactLocation": {
@@ -1694,7 +1709,8 @@
         "legacy": "旧型号",
         "viewSpecs": "查看辐条长度",
         "viewSpecsAria": "查看 {model} 的精确辐条规格"
-      }
+      },
+      "rimAppearanceGuide": "了解碳圈外观工艺：纹理、光泽与 Logo"
     }
   },
   "profile": {

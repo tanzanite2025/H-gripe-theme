@@ -231,7 +231,7 @@
                   </div>
                   <button
                     type="button"
-                    class="mt-1 inline-flex items-center justify-center px-4 py-2.5 rounded-full bg-white text-xs font-medium text-slate-950 border tz-border-strong/70 hover:bg-white/90 transition-colors"
+                    class="tz-pill-button-standard-size mt-1 inline-flex items-center justify-center px-4 rounded-full bg-white text-xs font-medium text-slate-950 border tz-border-strong/70 hover:bg-white/90 transition-colors"
                     @click="handleConfirmConfig"
                   >
                     发送配置给客服

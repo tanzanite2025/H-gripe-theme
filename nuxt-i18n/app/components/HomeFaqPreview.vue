@@ -343,7 +343,7 @@ const formatPageIndex = (index: number) => String(index + 1).padStart(2, '0')
 
 .home-faq .nav-pill-item {
   flex: 0 0 auto;
-  padding: 0.5rem 0.85rem;
+  padding: var(--tz-pill-button-padding-block) 0.85rem;
   font-size: 0.75rem;
 }
 
@@ -456,7 +456,7 @@ const formatPageIndex = (index: number) => String(index + 1).padStart(2, '0')
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.6rem 1.5rem;
+  padding: var(--tz-pill-button-padding-block) 1.5rem;
   border-radius: 9999px;
   font-size: 0.85rem;
   font-weight: 700;
@@ -467,6 +467,9 @@ const formatPageIndex = (index: number) => String(index + 1).padStart(2, '0')
   text-decoration: none;
   transition: all 0.2s ease;
   letter-spacing: 0.025em;
+  justify-content: center;
+  min-height: var(--tz-pill-button-min-height);
+  line-height: var(--tz-pill-button-line-height);
 }
 
 .home-faq__link:hover {

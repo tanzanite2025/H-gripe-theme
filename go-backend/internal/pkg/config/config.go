@@ -1,7 +1,6 @@
 package config
 
 import (
-	"commerce-platform/internal/pkg/locales"
 	"encoding/json"
 	"fmt"
 	"net"
@@ -10,6 +9,8 @@ import (
 	"os"
 	"strings"
 	"time"
+
+	"commerce-platform/internal/pkg/locales"
 
 	"github.com/spf13/viper"
 )
@@ -450,7 +451,9 @@ type FeedbackRateLimitConfig struct {
 }
 
 type MediaUploadConfig struct {
-	AccountStorageQuotaBytes int64 `mapstructure:"account_storage_quota_bytes"`
+	CustomerServicePrivateAttachmentsEnabled bool  `mapstructure:"customer_service_private_attachments_enabled"`
+	AccountStorageQuotaBytes                 int64 `mapstructure:"account_storage_quota_bytes"`
+	VisitorSessionStorageQuotaBytes          int64 `mapstructure:"visitor_session_storage_quota_bytes"`
 }
 
 type ShowcaseUploadProtectionConfig struct {
@@ -855,6 +858,8 @@ func setDefaults() {
 	viper.SetDefault("feedback_rate_limit.fail_open", false)
 
 	viper.SetDefault("media_upload.account_storage_quota_bytes", 20<<30)
+	viper.SetDefault("media_upload.visitor_session_storage_quota_bytes", 20<<20)
+	viper.SetDefault("media_upload.customer_service_private_attachments_enabled", false)
 
 	viper.SetDefault("showcase_upload_protection.enabled", true)
 	viper.SetDefault("showcase_upload_protection.window_seconds", 60)
@@ -1159,6 +1164,8 @@ func bindEnvironment() {
 	_ = viper.BindEnv("feedback_rate_limit.fail_open", "FEEDBACK_RATE_LIMIT_FAIL_OPEN")
 
 	_ = viper.BindEnv("media_upload.account_storage_quota_bytes", "MEDIA_UPLOAD_ACCOUNT_STORAGE_QUOTA_BYTES")
+	_ = viper.BindEnv("media_upload.visitor_session_storage_quota_bytes", "MEDIA_UPLOAD_VISITOR_SESSION_STORAGE_QUOTA_BYTES")
+	_ = viper.BindEnv("media_upload.customer_service_private_attachments_enabled", "MEDIA_UPLOAD_CUSTOMER_SERVICE_PRIVATE_ATTACHMENTS_ENABLED")
 
 	_ = viper.BindEnv("showcase_upload_protection.enabled", "SHOWCASE_UPLOAD_PROTECTION_ENABLED")
 	_ = viper.BindEnv("showcase_upload_protection.window_seconds", "SHOWCASE_UPLOAD_WINDOW_SECONDS")
@@ -1746,6 +1753,9 @@ func validateConfig(cfg *Config) error {
 	}
 	if cfg.MediaUpload.AccountStorageQuotaBytes <= 0 {
 		return fmt.Errorf("media upload account storage quota must be positive")
+	}
+	if cfg.MediaUpload.VisitorSessionStorageQuotaBytes <= 0 {
+		return fmt.Errorf("media upload visitor session storage quota must be positive")
 	}
 	if cfg.ShowcaseUploadProtection.Enabled {
 		if cfg.ShowcaseUploadProtection.WindowSeconds <= 0 ||

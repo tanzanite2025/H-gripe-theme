@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"commerce-platform/internal/domain/currency"
+	"commerce-platform/internal/domain/media"
 	"commerce-platform/internal/domain/product"
 	"commerce-platform/internal/domain/setting"
 	"commerce-platform/internal/pkg/cache"
@@ -839,6 +840,8 @@ func TestProductServiceDistributedCacheMissesShareOneDatabaseLoad(t *testing.T) 
 
 func TestProductServiceCreateAdminProductPersistsProductScopedVisualVariantOptions(t *testing.T) {
 	db, productService := newTestProductService(t)
+	require.NoError(t, db.AutoMigrate(&media.MediaAsset{}))
+	require.NoError(t, db.Create(&media.MediaAsset{Filename: "ruby-red.webp", StorageKey: "swatches/ruby-red.webp", URL: "/uploads/swatches/ruby-red.webp", MediaType: "image", Visibility: "public", Status: "active"}).Error)
 
 	productSpecificationTemplate := product.ProductSpecificationTemplate{
 		Name:      "Finish Product",
@@ -1023,6 +1026,8 @@ func TestProductServiceCreateAdminProductRejectsInvalidMediaLocale(t *testing.T)
 func TestProductServiceCreateAdminProductNormalizesMediaLocaleAlias(t *testing.T) {
 	db, productService := newTestProductService(t)
 	productSpecificationTemplate := seedCarbonRimType(t, db)
+	require.NoError(t, db.AutoMigrate(&media.MediaAsset{}))
+	createRegisteredPublicImageForProductMediaBindingTest(t, db, "products/media-locale-alias.webp")
 
 	createdProduct, err := productService.CreateAdminProduct(ProductCreateInput{
 		ProductSpecificationTemplateID: &productSpecificationTemplate.ID,
@@ -1804,6 +1809,8 @@ func TestProductServiceValidatesProductTranslationRelationships(t *testing.T) {
 func TestProductServiceCopyAdminProductTranslationCreatesGroupedCopyWithUniqueSlugAndSKU(t *testing.T) {
 	db, productService := newTestProductService(t)
 	productSpecificationTemplate := seedCarbonRimType(t, db)
+	require.NoError(t, db.AutoMigrate(&media.MediaAsset{}))
+	createRegisteredPublicImageForProductMediaBindingTest(t, db, "products/source-rim.webp")
 	brakeSpec := findSpecDefinitionBySlug(t, db, productSpecificationTemplate.ID, "brake_type")
 
 	source, err := productService.CreateAdminProduct(ProductCreateInput{

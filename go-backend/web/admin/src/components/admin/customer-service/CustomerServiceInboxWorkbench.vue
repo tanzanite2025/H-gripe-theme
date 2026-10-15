@@ -7,16 +7,26 @@
       :description="description"
     >
       <template #actions>
-        <Button variant="outline" size="sm" class="rounded-full font-black uppercase tracking-wider" :disabled="loading" @click="refreshInbox">
+        <Button variant="outline" size="sm" class="rounded-full font-black uppercase tracking-wider" :disabled="loading" @click="refreshCustomerConversationInboxFromHeader">
           <RefreshCw :class="['size-3.5', { 'animate-spin': loading }]" />
           刷新
         </Button>
       </template>
     </AdminPageHeader>
 
-    <AdminStatsGrid v-if="showStats" class="shrink-0" :items="statItems" />
+    <div v-if="conversationListError" role="alert" class="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
+      <p class="font-semibold">暂时无法查看客服会话</p>
+      <p class="mt-2">{{ conversationListError }}</p>
+      <Button variant="outline" size="sm" class="mt-3" :disabled="loading" @click="reloadCustomerConversationListAndSelectNavigationTarget">
+        <RefreshCw :class="['size-3.5', { 'animate-spin': loading }]" />
+        重新加载
+      </Button>
+    </div>
+
+    <AdminStatsGrid v-if="showStats && !conversationListError" class="shrink-0 max-sm:grid-cols-2" :items="statItems" />
 
     <CustomerServiceInboxWorkspace
+      v-if="!conversationListError"
       v-model:transfer-to="transferTo"
       v-model:reply-message="replyMessage"
       :filters="filters"
@@ -28,6 +38,8 @@
       :loading="loading"
       :messages="messages"
       :messages-loading="messagesLoading"
+      :messages-error="messagesError"
+      :message-read-receipt-error="messageReadReceiptError"
       :selected-customer-typing="selectedCustomerTyping"
       :assignable-agents="assignableAgents"
       :transferring="transferring"
@@ -55,6 +67,7 @@
       @send-reply="sendReply"
       @send-message="sendCustomerServiceMessage"
       @refresh-context="refreshSelectedContext"
+      @refresh-messages="refreshSelectedCustomerConversationMessageHistoryAndReadReceipt"
       @typing-input="handleReplyTypingInput"
     />
   </div>
@@ -84,18 +97,20 @@ import {
 import { useCustomerServiceTyping } from '@/composables/customerService/useCustomerServiceTyping'
 import { useAuthStore } from '@/stores/auth'
 import { statusDisplayValue } from '@/lib/customerServicePresentation'
-import type { CustomerConversation, CustomerServiceSendMessagePayload } from '@/modules/customer-service/customerServiceTypes'
+import type { CustomerConversation, CustomerServiceSendMessagePayload, CustomerServiceConversationNavigationTarget } from '@/modules/customer-service/customerServiceTypes'
 
-withDefaults(defineProps<{
+const props = withDefaults(defineProps<{
   showHeader?: boolean
   showStats?: boolean
   title?: string
   description?: string
+  conversationNavigationTarget?: CustomerServiceConversationNavigationTarget | null
 }>(), {
   showHeader: false,
   showStats: false,
   title: '客服对话',
   description: '处理网页 Public Chat 会话；客户侧只创建和读取自己的对话，客服侧在这里回复',
+  conversationNavigationTarget: null,
 })
 
 const authStore = useAuthStore()
@@ -103,13 +118,18 @@ const replying = ref(false)
 const transferring = ref(false)
 const batchArchiving = ref(false)
 const selectedConversationIds = ref<string[]>([])
+let customerServiceWorkbenchUnmounted = false
+let conversationTargetNavigationSequence = 0
 
 const hasPermission = (permission) => authStore.hasPermission(permission)
 const { suppressDesktopWhenFocused } = useCustomerServiceNotificationSettings()
 
 const {
   loading,
+  conversationListError,
   messagesLoading,
+  messagesError,
+  messageReadReceiptError,
   contextLoading,
   contextError,
   contextLastUpdatedAt,
@@ -135,6 +155,7 @@ const {
   applyFilters,
   resetFilters,
   clearCurrentDraft,
+  clearSelectedCustomerConversationAndInvalidatePendingReads,
 } = useCustomerServiceInbox()
 
 const statItems = computed(() => {
@@ -287,6 +308,11 @@ const selectConversation = async (conversation: CustomerConversation): Promise<v
 const refreshSelectedContext = () => {
   if (!selectedConversation.value?.id) return
   void fetchContext(selectedConversation.value.id)
+}
+
+const refreshSelectedCustomerConversationMessageHistoryAndReadReceipt = (): void => {
+  if (!selectedConversation.value?.id) return
+  void fetchMessages(selectedConversation.value.id)
 }
 
 watch(
@@ -517,14 +543,62 @@ watch(
 )
 
 onMounted(async () => {
-  await refreshInbox()
+  await reloadCustomerConversationListAndSelectNavigationTarget()
+  if (customerServiceWorkbenchUnmounted) return
   connectInboxRealtime()
   if (selectedConversation.value?.id) {
     connectCustomerServiceRealtime()
   }
 })
 
+async function reloadCustomerConversationListAndSelectNavigationTarget(): Promise<void> {
+  const currentNavigation = ++conversationTargetNavigationSequence
+  if (props.conversationNavigationTarget) clearSelectedCustomerConversationAndInvalidatePendingReads()
+  applyCustomerConversationSearchFromNavigationTarget()
+  const listAvailable = await refreshInbox()
+  if (!listAvailable || customerServiceWorkbenchUnmounted || currentNavigation !== conversationTargetNavigationSequence) return
+  await selectCustomerConversationFromNavigationTarget()
+}
+
+async function refreshCustomerConversationInboxFromHeader(): Promise<void> {
+  if (conversationListError.value) {
+    await reloadCustomerConversationListAndSelectNavigationTarget()
+    return
+  }
+  await refreshInbox()
+}
+
+function applyCustomerConversationSearchFromNavigationTarget(): void {
+  const target = props.conversationNavigationTarget
+  if (!target || target.invalidId) return
+  filters.search = target.searchTerm
+  filters.view = 'all'
+  pagination.page = 1
+}
+
+async function selectCustomerConversationFromNavigationTarget(): Promise<void> {
+  const target = props.conversationNavigationTarget
+  if (customerServiceWorkbenchUnmounted || !target) return
+  if (target.invalidId || target.conversationId === null) {
+    toast.error('关联客服会话编号无效，请检查打开链接')
+    return
+  }
+  const conversation = conversations.value.find((record) => Number(record.id) === target.conversationId)
+  if (!conversation) {
+    toast.error('当前无法定位该会话，请核实会话是否仍可访问')
+    return
+  }
+  await selectConversation(conversation)
+}
+
+watch(() => props.conversationNavigationTarget, async () => {
+  clearSelectedCustomerConversationAndInvalidatePendingReads()
+  await reloadCustomerConversationListAndSelectNavigationTarget()
+})
+
 onBeforeUnmount(() => {
+  customerServiceWorkbenchUnmounted = true
+  conversationTargetNavigationSequence += 1
   notifyAgentTyping(false)
   closeCustomerServiceRealtime()
   closeInboxRealtime()

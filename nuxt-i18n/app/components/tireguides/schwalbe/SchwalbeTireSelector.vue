@@ -433,16 +433,20 @@ const activeFilterCount = computed(() => [
 }
 
 .schwalbe-selector__section-tab {
-  min-height: 2.65rem;
+  min-height: var(--tz-pill-button-min-height);
   border: 1px solid transparent;
   border-radius: 999px;
   background: transparent;
   color: var(--tz-text-secondary);
-  padding: 0.5rem 0.9rem;
+  padding: var(--tz-pill-button-padding-block) 0.9rem;
   font: inherit;
   font-size: 0.88rem;
   font-weight: 750;
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: var(--tz-pill-button-line-height);
 }
 
 .schwalbe-selector__section-tab:hover {

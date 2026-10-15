@@ -1,15 +1,16 @@
 package service
 
 import (
-	"commerce-platform/internal/domain/product"
-	"commerce-platform/internal/pkg/cache"
-	"commerce-platform/internal/pkg/safehtml"
-	"commerce-platform/internal/repository"
 	"context"
 	"errors"
 	"fmt"
 	"strings"
 	"time"
+
+	"commerce-platform/internal/domain/product"
+	"commerce-platform/internal/pkg/cache"
+	"commerce-platform/internal/pkg/safehtml"
+	"commerce-platform/internal/repository"
 
 	"golang.org/x/sync/singleflight"
 	"gorm.io/gorm"
@@ -119,6 +120,10 @@ func (s *ProductService) ConfigureMediaService(mediaService mediaAssetDeleter) {
 		return
 	}
 	s.mediaService = mediaService
+	if s.productRepo != nil {
+		resolver, _ := mediaService.(repository.ProductMediaTransactionalAssetBindingResolver)
+		s.productRepo.ConfigureProductMediaTransactionalAssetBindingResolver(resolver)
+	}
 }
 
 func (s *ProductService) ConfigureProductCategoryRepository(repo *repository.ProductCategoryRepository) {

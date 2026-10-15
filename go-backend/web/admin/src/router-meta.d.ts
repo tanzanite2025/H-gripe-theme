@@ -5,6 +5,7 @@ declare module 'vue-router' {
     requiresAuth?: boolean
     title?: string
     permission?: string
+    anyPermissions?: string[]
     standaloneTool?: boolean
   }
 }

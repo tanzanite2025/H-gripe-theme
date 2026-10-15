@@ -2,9 +2,9 @@
   <div class="space-y-8">
     <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-md p-5 md:p-6 text-center border-t-4 border-slate-500">
       <div class="flex flex-col items-center">
-        <h3 class="text-lg font-bold tz-text-primary mb-2">
+        <h2 id="freehub-cassette-fitment-section-title" class="text-lg font-bold tz-text-primary mb-2">
           {{ t('guidesWheelsetBuyersChooseFreehub.intro.title') }}
-        </h3>
+        </h2>
         <p class="text-sm tz-text-secondary leading-relaxed max-w-2xl mx-auto mb-4">
           {{ t('guidesWheelsetBuyersChooseFreehub.intro.body') }}
         </p>

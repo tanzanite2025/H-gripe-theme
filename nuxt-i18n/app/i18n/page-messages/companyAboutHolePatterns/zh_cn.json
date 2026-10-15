@@ -1,15 +1,24 @@
 {
-  "title": "孔位方案",
+  "title": "定制碳圈孔位与打孔角度",
   "alignmentEyebrow": "四角度定制打孔 · Straight-Line Alignment",
-  "alignmentHeadline": "减少强制折角，降低开裂与断辐条风险",
-  "intro": "通常依据花鼓图纸与编法模拟辐条走向，再匹配四个孔角度，让条帽轴线尽量贴近设计拉力线，减少角度失配带来的额外弯矩与孔座偏载。",
+  "intro": "通常依据花鼓图纸、轮圈尺寸与编法模拟，定制与辐条走向匹配的孔位和角度。",
+  "layoutLabels": {
+    "manufacturingWorkflow": "制造流程",
+    "alignmentBenefits": "受力与耐久",
+    "customization": "定制配合"
+  },
   "openVideo": "播放自动化角度打孔视频",
   "videoCaption": "自动化角度打孔 · 点击查看加工视频",
+  "lacingPhotoWall": {
+    "title": "钻孔后的编法实拍",
+    "paginationLabel": "切换编法实拍图片组",
+    "showPage": "查看第 {page} 组图片，共 {total} 组"
+  },
   "drillingGeometry": {
     "axialCapability": {
       "reference": "WL / WR",
-      "label": "轴向角度，匹配花鼓法兰",
-      "description": "根据花鼓中心面至左右法兰的距离，分别设定两侧轴向打孔角度。"
+      "label": "左右偏孔与轴向角度",
+      "description": "支持轮圈左右偏孔，结合孔位与花鼓两侧法兰距离，分别匹配轴向打孔角度。"
     },
     "longitudinalCapability": {
       "reference": "PCD · 孔数 · 编法",
@@ -19,7 +28,46 @@
     "alignmentPrinciple": {
       "title": "以零折角为设计目标",
       "description": "两个轴向角度与两个纵向角度共同匹配，减少辐条在条帽出口处的强制弯折，让拉力沿更接近同轴的方向传递。",
-      "manufacturingLimit": "零折角是几何设计目标；成品配合仍受图纸尺寸、加工及装配公差影响，不代表绝对同轴。"
+      "manufacturingLimit": "零折角是设计目标，不代表成品绝对同轴。"
+    }
+  },
+  "staticDrillingIllustrations": {
+    "title": "选择编法，查看打孔方向",
+    "introduction": "先看单侧辐条的编法与交叉数，再对照局部图理解打孔方向。",
+    "additionalSupportedPatterns": "这里只展示 3 种常见编法示例。我们也支持 2:1、G3 等孔位与编法方案，更多方案可通过“{simulatorButtonLabel}”查看。",
+    "openSimulator": "打开辐条编法拓扑模拟器",
+    "selectionLabel": "选择静态打孔示意图的编法",
+    "wheelViewLabel": "32 孔轮组 · 单侧 16 根辐条",
+    "spokeDirectionLegend": "局部图实线：辐条走向",
+    "drillingAxisLegend": "局部图虚线：匹配的孔轴线",
+    "longitudinalViewTitle": "纵向孔角度 · 孔座局部",
+    "longitudinalViewDescription": "绿色、蓝色分别示意两侧的一个孔座，孔轴线沿各自的辐条方向穿过圈壁。",
+    "axialViewTitle": "左右偏孔 · 轴向孔角度",
+    "axialViewDescription": "支持轮圈左右偏孔（L / R），并按两侧法兰位置匹配轴向孔角度；WL / WR 为两侧法兰到花鼓中心面的距离。",
+    "axialImageAlt": "轮圈左右偏孔及轴向打孔示意图：L、R 标出轮圈中心线两侧的偏置孔位，两侧孔轴线分别朝向对应花鼓法兰，WL、WR 表示两侧法兰距离。",
+    "drawingLimit": "示意图仅说明方向关系，实际孔角度需按图纸与尺寸模拟。拓扑模拟器展示编法，不直接输出加工角度。",
+    "examples": {
+      "radial": {
+        "label": "径向编法",
+        "crossingGuide": "绿色为参考辐条，沿径向直达轮圈，没有同侧交叉点。",
+        "description": "正视投影中，辐条沿径向连接法兰与圈孔；纵向孔轴线随之匹配，轴向仍需考虑两侧法兰位置。",
+        "wheelImageAlt": "32 孔轮组的单侧径向编法示意图，显示同一法兰的 16 根辐条，绿色参考辐条没有同侧交叉点。",
+        "longitudinalImageAlt": "径向编法的两个孔座局部展开图，纵向孔轴线沿径向辐条方向穿过圈壁。"
+      },
+      "twoCross": {
+        "label": "两交叉编法",
+        "crossingGuide": "沿绿色参考辐条从花鼓向轮圈看，编号 1、2 是与同侧辐条的交叉点。",
+        "description": "“两交叉”指每根辐条与同侧法兰的两根辐条交叉。辐条入圈时偏离局部径向，纵向孔轴线需沿对应辐条方向匹配。",
+        "wheelImageAlt": "32 孔轮组的单侧两交叉编法示意图，显示同一法兰的 16 根辐条，绿色参考辐条由花鼓向轮圈依次经过编号 1、2 的两个同侧交叉点。",
+        "longitudinalImageAlt": "两交叉编法的两个孔座局部展开图，孔轴线沿两根辐条各自的倾斜方向穿过圈壁。"
+      },
+      "threeCross": {
+        "label": "三交叉编法",
+        "crossingGuide": "沿绿色参考辐条从花鼓向轮圈看，编号 1、2、3 是与同侧辐条的交叉点。",
+        "description": "“三交叉”指每根辐条与同侧法兰的三根辐条交叉。相比两交叉，辐条入圈方向会改变，纵向孔角度也需重新匹配。",
+        "wheelImageAlt": "32 孔轮组的单侧三交叉编法示意图，显示同一法兰的 16 根辐条，绿色参考辐条由花鼓向轮圈依次经过编号 1、2、3 的三个同侧交叉点。",
+        "longitudinalImageAlt": "三交叉编法的两个孔座局部展开图，纵向孔轴线随辐条入圈方向调整。"
+      }
     }
   },
   "drawingSimulationAndManufacturingTolerances": {
@@ -31,7 +79,7 @@
       },
       "matchedDrillingAngles": {
         "title": "匹配四个打孔角度",
-        "description": "以模拟走向匹配两个轴向与两个纵向孔角度，尽量减小设计上的强制折角。图纸版本、孔位与具体加工方案在线下确认。"
+        "description": "将模拟走向转化为孔位与孔轴设置；图纸版本、孔位布置及具体加工方案在线下确认。"
       },
       "manufacturingAndAssemblyTolerances": {
         "title": "考虑制造与装配公差",
@@ -67,33 +115,29 @@
   },
   "sections": {
     "support": {
-      "title": "孔数与孔位支持",
+      "title": "孔数与定制范围",
       "items": {
-        "symmetrical": {
-          "label": "左右对称轴向角度",
-          "description": "适配两侧花鼓几何与编法相近的轮组。"
-        },
-        "asymmetrical": {
-          "label": "左右独立轴向角度",
-          "description": "支持按不同 WL / WR 分别匹配两侧法兰方向。"
-        },
         "customCounts": {
           "label": "定制孔数",
           "description": "可提供 16、20、24、28、32 和 36 孔配置。"
         },
-        "angled": {
-          "label": "纵向编法角度",
-          "description": "支持按径向或交叉编法匹配纵向平面的打孔角度。"
+        "holeLayout": {
+          "label": "孔位布置与左右偏孔",
+          "description": "支持左右偏孔、常规及特殊孔位排列，具体偏移量与轴向孔角度按图纸和轮组方案确认。"
+        },
+        "oemOdm": {
+          "label": "OEM / ODM",
+          "description": "支持花鼓与编圈方案的定制配合。"
         }
       }
     },
     "customization": {
-      "title": "花鼓与编圈方案定制",
-      "intro": "提供花鼓图纸、花鼓与轮圈型号及预期编法，我们可在线下沟通中确认具体打孔方案。",
+      "title": "定制前需提供的资料",
+      "intro": "准备以下资料，便于在线下确认打孔方案：",
       "items": {
-        "holeLayout": "常规及特殊孔数、孔位排列",
-        "lacingCompatibility": "径向、交叉及特殊编法适配",
-        "oemOdm": "OEM / ODM 专属轮组方案"
+        "hubDrawingAndRevision": "花鼓图纸及版本，包括 WL / WR、左右 PCD 与出条位置",
+        "rimDimensionsAndHoleCount": "轮圈型号、ERD、孔数及左右偏孔要求",
+        "lacingAndNippleAssembly": "预期编法、辐条帽及垫片方案"
       }
     },
     "commitment": {
@@ -101,5 +145,19 @@
       "body": "自主开发的自动化设备用于控制孔位与孔轴方向的一致性，让定制打孔方案能够稳定重复加工。"
     }
   },
-  "closeVideo": "关闭视频"
+  "closeVideo": "关闭视频",
+  "seo": {
+    "title": "碳圈定制打孔：花鼓图纸与辐条编法角度匹配",
+    "description": "根据花鼓图纸的 WL / WR、法兰 PCD、轮圈尺寸与辐条编法匹配两个轴向和两个纵向打孔角度。支持 16–36 孔配置，说明制造公差与降低条帽孔开裂、辐条根部疲劳风险的设计原则。",
+    "imageAlt": "自动化设备按设定角度加工碳圈辐条孔的实拍画面",
+    "breadcrumbHome": "首页",
+    "videoName": "碳圈辐条孔自动化角度打孔实拍",
+    "videoDescription": "实拍展示自动化钻孔设备按设定方向加工碳圈辐条孔；具体孔位与角度根据花鼓图纸、轮圈尺寸和辐条编法确认。"
+  },
+  "consultation": {
+    "title": "为你的花鼓与编法确认打孔方案",
+    "description": "准备花鼓图纸、轮圈型号、孔数与预期编法，联系我们确认匹配方案及加工要求。",
+    "provideDrawings": "提供图纸咨询",
+    "contactSupport": "联系客服"
+  }
 }

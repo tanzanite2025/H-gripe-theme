@@ -15,3 +15,6 @@ test-results
 .env.*
 **/[dD][oO][cC][sS]
 **/[hH][tT][mM][lL]资料
+
+# Local photo placement instructions are not website content
+public/media/company/about/hole-patterns/drilled-rim-lacing-photos/PHOTO-WALL-IMAGE-PLACEMENT-AND-NAMING-GUIDE.md

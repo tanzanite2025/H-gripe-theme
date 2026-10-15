@@ -86,8 +86,9 @@
               leave-from-class="opacity-100 max-h-[60rem]"
               leave-to-class="opacity-0 max-h-0"
             >
+              <!-- Render every answer during SSR; expansion controls visibility only. -->
               <div
-                v-if="expandedItems.has(item.id)"
+                v-show="expandedItems.has(item.id)"
                 :id="answerId(item.id)"
                 class="page-faq__answer-wrap"
                 role="region"
@@ -114,7 +115,7 @@
       >
         <NuxtLink
           :to="localePath('/support/faqs')"
-          class="inline-flex items-center gap-2 px-6 py-2.5 rounded-full text-sm font-bold transition-all shadow-lg hover:-translate-y-0.5"
+          class="tz-pill-button-standard-size gap-2 px-6 rounded-full text-sm font-bold transition-all shadow-lg hover:-translate-y-0.5"
           :class="theme === 'dark'
             ? 'tz-surface-panel tz-text-secondary hover:tz-surface-panel hover:tz-text-primary hover:shadow-md'
             : 'bg-[var(--tz-action-primary)] text-white hover:bg-[var(--tz-action-primary-hover)] hover:shadow-[0_8px_18px_rgba(15,23,42,0.16)]'"

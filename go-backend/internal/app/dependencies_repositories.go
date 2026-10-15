@@ -126,6 +126,9 @@ func newDependencyRepositories(db *gorm.DB) (Repositories, error) {
 		RecommendationEvent:            repository.NewRecommendationEventRepository(db),
 		VisitorRiskFact:                repository.NewVisitorRiskFactRepository(db),
 		Outbox:                         repository.NewOutboxRepository(db),
+
+		DashboardOutboxBusinessFollowUpRead:           repository.NewDashboardOutboxBusinessFollowUpReadRepository(db),
+		DashboardBusinessFollowUpBusinessIdentityRead: repository.NewDashboardBusinessFollowUpBusinessIdentityReadRepository(db),
 	}
 
 	repos.Spoke.ConfigureProductBrandRepository(repos.ProductBrand)

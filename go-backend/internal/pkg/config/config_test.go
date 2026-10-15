@@ -891,7 +891,8 @@ func validTestConfig() *Config {
 			ProductLockTTL: 5,
 		},
 		MediaUpload: MediaUploadConfig{
-			AccountStorageQuotaBytes: 20 << 30,
+			AccountStorageQuotaBytes:        20 << 30,
+			VisitorSessionStorageQuotaBytes: 20 << 20,
 		},
 		PaymentThreeDS: PaymentThreeDSConfig{
 			AVSBillingShippingMismatchHighValueThresholdMinor: 80000,

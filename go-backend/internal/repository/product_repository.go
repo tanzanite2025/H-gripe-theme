@@ -1,12 +1,13 @@
 package repository
 
 import (
-	"commerce-platform/internal/domain/currency"
-	"commerce-platform/internal/domain/product"
-	"commerce-platform/internal/domain/shipping"
 	"context"
 	"fmt"
 	"sort"
+
+	"commerce-platform/internal/domain/currency"
+	"commerce-platform/internal/domain/product"
+	"commerce-platform/internal/domain/shipping"
 
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
@@ -14,7 +15,8 @@ import (
 )
 
 type ProductRepository struct {
-	db *gorm.DB
+	db                        *gorm.DB
+	mediaAssetBindingResolver ProductMediaTransactionalAssetBindingResolver
 }
 
 func NewProductRepository(db *gorm.DB) *ProductRepository {
@@ -23,7 +25,7 @@ func NewProductRepository(db *gorm.DB) *ProductRepository {
 
 // WithTx 澶嶇敤浜嬪姟 db 瀹炰緥
 func (r *ProductRepository) WithTx(tx *gorm.DB) *ProductRepository {
-	return &ProductRepository{db: tx}
+	return &ProductRepository{db: tx, mediaAssetBindingResolver: r.mediaAssetBindingResolver}
 }
 
 // WithinTransaction executes a product mutation against one database
@@ -118,7 +120,12 @@ func (r *ProductRepository) preloadProductCategory(db *gorm.DB) *gorm.DB {
 
 // Create 鍒涘缓浜у搧
 func (r *ProductRepository) Create(p *product.Product) error {
-	return r.db.Create(p).Error
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		if err := r.validateAndCanonicalizeCombinedProductMediaBindings(tx, p, &product.Product{}, p.Media, true, p.VariantOptionValues, true); err != nil {
+			return err
+		}
+		return tx.Create(p).Error
+	})
 }
 
 func (r *ProductRepository) CreateWithSpecValues(p *product.Product, specValues []product.ProductSpecValue) error {
@@ -141,7 +148,10 @@ func (r *ProductRepository) CreateWithSpecValuesVariantsOptionValuesAndMedia(
 	mediaItems []product.ProductMedia,
 ) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Create(p).Error; err != nil {
+		if err := r.validateAndCanonicalizeCombinedProductMediaBindings(tx, p, &product.Product{}, mediaItems, true, optionValues, true); err != nil {
+			return err
+		}
+		if err := tx.Omit("Media", "VariantOptionValues").Create(p).Error; err != nil {
 			return err
 		}
 
@@ -713,7 +723,12 @@ func (r *ProductRepository) Update(p *product.Product) error {
 	if p == nil || p.ID == 0 {
 		return gorm.ErrInvalidData
 	}
-	return r.db.Model(&product.Product{}).Where("id = ?", p.ID).Updates(productUpdateColumns(p)).Error
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		if err := r.lockCurrentProductAndValidateMediaMutation(tx, p, nil, false, nil, false, nil); err != nil {
+			return err
+		}
+		return tx.Model(&product.Product{}).Where("id = ?", p.ID).Updates(productUpdateColumns(p)).Error
+	})
 }
 
 // UpdateSEO mutates only SEO columns. SEO writes must never persist a stale
@@ -779,8 +794,12 @@ func (r *ProductRepository) UpdateWithSpecValuesVariantsOptionValuesAndMedia(
 	replaceOptionValues bool,
 	mediaItems []product.ProductMedia,
 	replaceMedia bool,
+	richTextMutation ...ProductRichTextFieldMutation,
 ) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
+		if err := r.lockCurrentProductAndValidateMediaMutation(tx, p, mediaItems, replaceMedia, optionValues, replaceOptionValues, richTextMutation); err != nil {
+			return err
+		}
 		variantRules := make([]struct {
 			groups []product.ProductOptionGroupVariantRule
 			values []product.ProductOptionValueVariantRule
@@ -845,7 +864,7 @@ func (r *ProductRepository) UpdateWithSpecValuesVariantsOptionValuesAndMedia(
 		}
 
 		if replaceMedia {
-			if err := replaceProductMedia(tx, p.ID, mediaItems); err != nil {
+			if err := r.replaceProductMedia(tx, p.ID, mediaItems, true); err != nil {
 				return err
 			}
 		}

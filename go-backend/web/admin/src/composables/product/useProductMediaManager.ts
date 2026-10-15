@@ -89,7 +89,7 @@ export const useProductMediaManager = (productForm: any, options: Record<string,
         formData.append('file', file)
         formData.append('media_type', type)
         if (type === 'image') formData.append('image_purpose', 'product_image')
-        const asset = await mediaApi.uploadAsset(formData)
+        const asset = await mediaApi.uploadAsset(formData, 'catalog')
         appendUploadedMedia(asset, type)
       }
       clearFieldError('media')

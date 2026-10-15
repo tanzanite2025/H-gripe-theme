@@ -1,12 +1,13 @@
 package admin
 
 import (
-	"commerce-platform/internal/pkg/pagination"
-	"commerce-platform/internal/pkg/response"
-	"commerce-platform/internal/service"
 	"fmt"
 	"net/http"
 	"strings"
+
+	"commerce-platform/internal/pkg/pagination"
+	"commerce-platform/internal/pkg/response"
+	"commerce-platform/internal/service"
 
 	"github.com/gin-gonic/gin"
 )
@@ -14,6 +15,8 @@ import (
 func (h *MediaHandler) ListAssets(c *gin.Context) {
 	params := pagination.ParsePagination(c)
 	assets, total, err := h.mediaService.ListAssets(service.MediaAssetListInput{
+		LibraryPartition: c.Query("library_partition"), UploadOrigin: c.Query("upload_origin"), CustomerServiceMediaPurpose: c.Query("customer_service_media_purpose"),
+		ExcludeConversationAttachments: !canViewAllCustomerServiceAttachmentMetadataInMediaLibrary(c), ReusableAssetsOnly: c.Query("selection_context") == "reusable",
 		Page:       params.Page,
 		PageSize:   params.PageSize,
 		Search:     c.Query("search"),
@@ -26,6 +29,9 @@ func (h *MediaHandler) ListAssets(c *gin.Context) {
 		return
 	}
 
+	for index := range assets {
+		redactCustomerServiceConversationOwnedMediaAssetLibraryDeliveryFields(&assets[index])
+	}
 	response.Paged(c, gin.H{"assets": assets}, params.Page, params.PageSize, total)
 }
 
@@ -40,12 +46,24 @@ func (h *MediaHandler) GetAsset(c *gin.Context) {
 		respondMediaError(c, err)
 		return
 	}
+	if !h.authorizeCustomerServiceMediaAssetMetadataAccess(c, asset) {
+		return
+	}
+	redactCustomerServiceConversationOwnedMediaAssetLibraryDeliveryFields(asset)
 	response.Success(c, gin.H{"asset": asset})
 }
 
 func (h *MediaHandler) GetAssetReferences(c *gin.Context) {
 	id, ok := parseMediaAssetID(c)
 	if !ok {
+		return
+	}
+	asset, err := h.mediaService.GetAsset(id)
+	if err != nil {
+		respondMediaError(c, err)
+		return
+	}
+	if !h.authorizeCustomerServiceMediaAssetMetadataAccess(c, asset) {
 		return
 	}
 

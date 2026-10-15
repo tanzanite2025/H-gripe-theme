@@ -1,5 +1,6 @@
 <template>
   <section id="factory" class="company-section">
+    <h1 class="text-xl sm:text-2xl font-bold tz-text-primary mb-6">{{ t('companyAboutFactory.title') }}</h1>
     <!-- Intro Stats Grid -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-12 lg:mb-16">
       <div v-for="item in factoryIntro" :key="item.title" class="premium-card p-6 flex flex-col gap-3">
@@ -63,11 +64,22 @@
 import { computed, watch } from 'vue'
 import { useI18n } from '#imports'
 import { usePageMessages } from '~/composables/usePageMessages'
+import { useCompanyAboutSectionSearchSocialAndStructuredData } from '~/composables/seo/useCompanyAboutSectionSearchSocialAndStructuredData'
 
 const { locale, t } = useI18n()
-const { loadPageMessages } = usePageMessages('companyAboutFactory')
+const { loadPageMessages, resolvedLocale } = usePageMessages('companyAboutFactory')
 
 await loadPageMessages(locale.value)
+
+useCompanyAboutSectionSearchSocialAndStructuredData({
+  sectionId: 'factory',
+  messageNamespace: 'companyAboutFactory',
+  resolvedContentLocale: resolvedLocale,
+  socialPreviewImage: {
+    path: '/company/ourstory/factory/factory-cncmachiningworkshop9.webp',
+    mimeType: 'image/webp', width: 800, height: 600,
+  },
+})
 
 watch(locale, (nextLocale) => {
   void loadPageMessages(nextLocale)

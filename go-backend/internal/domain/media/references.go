@@ -20,6 +20,7 @@ type AssetReference struct {
 	ParentResourceID uint              `json:"parent_resource_id,omitempty"`
 	Label            string            `json:"label"`
 	Field            string            `json:"field"`
+	UsageState       string            `json:"usage_state,omitempty"`
 }
 
 type AssetReferenceReport struct {

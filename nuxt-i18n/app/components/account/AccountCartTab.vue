@@ -181,10 +181,15 @@ const cartImage = (item: CartItem) => item.thumbnail || item.image || ''
   border-radius: 999px;
   background: var(--tz-action-primary);
   color: #ffffff;
-  padding: 0.65rem 1rem;
+  padding: var(--tz-pill-button-padding-block) 1rem;
   font-size: 0.8rem;
   font-weight: 850;
   text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--tz-pill-button-min-height);
+  line-height: var(--tz-pill-button-line-height);
 }
 
 .account-cart-list {
@@ -329,12 +334,17 @@ const cartImage = (item: CartItem) => item.thumbnail || item.image || ''
 }
 
 .account-cart-checkout {
-  min-height: 2.7rem;
+  min-height: var(--tz-pill-button-min-height);
   border-radius: 999px;
   background: var(--tz-action-primary);
   color: var(--tz-action-primary-foreground);
   font-size: 0.86rem;
   font-weight: 900;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: var(--tz-pill-button-line-height);
+  padding-block: var(--tz-pill-button-padding-block);
 }
 
 @keyframes cart-spin {

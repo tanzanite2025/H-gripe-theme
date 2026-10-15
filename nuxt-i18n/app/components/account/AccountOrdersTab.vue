@@ -428,7 +428,7 @@ watch(() => props.active, (active) => {
 .account-loading :deep(svg) { width: 1.4rem; height: 1.4rem; }
 .account-empty :deep(svg) { width: 2.2rem; height: 2.2rem; color: rgba(5, 150, 105, 0.72); }
 .account-empty strong { color: var(--tz-text-primary); font-size: 0.95rem; }
-.account-empty a { margin-top: 0.3rem; border-radius: 999px; background: var(--tz-action-primary); color: #ffffff; padding: 0.65rem 1rem; font-size: 0.8rem; font-weight: 850; text-decoration: none; }
+.account-empty a { margin-top: 0.3rem; border-radius: 999px; background: var(--tz-action-primary); color: #ffffff; padding: var(--tz-pill-button-padding-block) 1rem; font-size: 0.8rem; font-weight: 850; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; min-height: var(--tz-pill-button-min-height); line-height: var(--tz-pill-button-line-height); }
 .orders-icon-button { display: inline-flex; width: 2.25rem; height: 2.25rem; align-items: center; justify-content: center; border: 1px solid var(--tz-border-subtle); border-radius: 0.7rem; background: var(--tz-input-surface); color: var(--tz-text-secondary); }
 .orders-icon-button:disabled { cursor: not-allowed; opacity: 0.5; }
 .orders-icon-button :deep(svg) { width: 1rem; height: 1rem; }

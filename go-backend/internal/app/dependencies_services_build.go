@@ -62,7 +62,7 @@ func (b *dependencyServicesBuilder) build() error {
 		b.repos.ProductProfitCalculation,
 		b.repos.ProductSupplierCostRecord,
 	)
-	productCategoryService := service.NewProductCategoryService(b.repos.ProductCategory, b.repos.Media)
+	productCategoryService := service.NewProductCategoryService(b.repos.ProductCategory)
 	productBrandService := service.NewProductBrandService(b.repos.ProductBrand)
 	productInformationTemplateService := service.NewProductInformationTemplateService(b.repos.ProductInformationTemplate)
 	customsClassificationService := service.NewCustomsClassificationService(b.repos.CustomsClassification, settingService)
@@ -255,7 +255,9 @@ func (b *dependencyServicesBuilder) build() error {
 			ProviderRequestInterval:  time.Duration(b.cfg.Worker.SiteQualityProviderSpacingSeconds) * time.Second,
 		},
 	)
-	mediaService := service.NewMediaService(b.repos.Media, storageSvc, settingService, storefrontBaseURL, b.cfg.MediaUpload.AccountStorageQuotaBytes)
+	mediaService := service.NewMediaService(b.repos.Media, storageSvc, settingService, storefrontBaseURL, b.cfg.MediaUpload.AccountStorageQuotaBytes,
+		service.MediaUploadActorQuotaOptions{VisitorSessionStorageQuotaBytes: b.cfg.MediaUpload.VisitorSessionStorageQuotaBytes})
+	mediaService.ConfigureCustomerServicePrivateAttachmentUploads(b.cfg.MediaUpload.CustomerServicePrivateAttachmentsEnabled)
 	service.ConfigureMediaDerivativeGenerationCapacity(b.cfg.Worker.MediaDerivativeGenerationCapacity)
 	mediaService.ConfigureDerivativePresetRepository(b.repos.MediaDerivativePresets)
 	mediaService.ConfigureDerivativeRebuildJobRepository(b.repos.MediaDerivativeRebuildJobs)
@@ -396,7 +398,7 @@ func (b *dependencyServicesBuilder) build() error {
 		StorefrontContext:                 service.NewStorefrontContextServiceWithMarkets(currencyPolicyService, storefrontMarketService),
 		GoogleMerchant:                    googleMerchantService,
 		SocialOAuth:                       socialOAuthService,
-		FAQ:                               service.NewFAQService(b.repos.FAQ, storageSvc),
+		FAQ:                               service.NewFAQService(b.repos.FAQ),
 		Gallery:                           service.NewGalleryService(b.repos.Gallery, b.repos.Media),
 		Media:                             mediaService,
 		SiteLogo:                          siteLogoService,
@@ -446,9 +448,10 @@ func (b *dependencyServicesBuilder) build() error {
 		SuggestionFeedback: service.NewSuggestionFeedbackService(
 			b.repos.SuggestionFeedback,
 		),
-		User:      service.NewUserService(b.repos.User),
-		Dashboard: service.NewDashboardService(b.repos.Order, b.repos.User, b.repos.Subscription),
-		Audit:     service.NewAuditService(b.repos.Audit),
+		User:                          service.NewUserService(b.repos.User),
+		Dashboard:                     service.NewDashboardService(b.repos.Order, b.repos.User, b.repos.Subscription),
+		DashboardBusinessFollowUpRead: service.NewDashboardBusinessFollowUpReadService(b.repos.DashboardOutboxBusinessFollowUpRead, service.NewDashboardBusinessFollowUpBusinessReferenceResolver(b.repos.DashboardBusinessFollowUpBusinessIdentityRead)),
+		Audit:                         service.NewAuditService(b.repos.Audit),
 		OpsOverview: service.NewOpsOverviewService(
 			b.repos.OpsDomainBinding,
 			b.repos.OpsConnector,

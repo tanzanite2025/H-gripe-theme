@@ -163,8 +163,11 @@ cache:
   settings_ttl: 7200
 
 media_upload:
+  customer_service_private_attachments_enabled: false
   # Per authenticated uploader; 20 GiB in bytes.
   account_storage_quota_bytes: 21474836480
+  # Per verified customer-service visitor session; 20 MiB of originals.
+  visitor_session_storage_quota_bytes: 20971520
 
 quick_buy_rate_limit:
   enabled: true

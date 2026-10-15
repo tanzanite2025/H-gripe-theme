@@ -1,17 +1,19 @@
 package repository
 
 import (
-	"commerce-platform/internal/domain/media"
-	productdomain "commerce-platform/internal/domain/product"
 	"fmt"
 	"strings"
+
+	"commerce-platform/internal/domain/media"
+	productdomain "commerce-platform/internal/domain/product"
 
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
 
 type MediaRepository struct {
-	db *gorm.DB
+	db                             *gorm.DB
+	businessMediaReferenceResolver PublicBusinessMediaReferenceObjectKeyResolver
 }
 
 func NewMediaRepository(db *gorm.DB) *MediaRepository {
@@ -19,7 +21,11 @@ func NewMediaRepository(db *gorm.DB) *MediaRepository {
 }
 
 func (r *MediaRepository) WithTx(tx *gorm.DB) *MediaRepository {
-	return &MediaRepository{db: tx}
+	return &MediaRepository{db: tx, businessMediaReferenceResolver: r.businessMediaReferenceResolver}
+}
+
+func (r *MediaRepository) ConfigurePublicBusinessMediaReferenceIdentityResolver(resolver PublicBusinessMediaReferenceObjectKeyResolver) {
+	r.businessMediaReferenceResolver = resolver
 }
 
 func (r *MediaRepository) WithTransaction(fn func(repo *MediaRepository, tx *gorm.DB) error) error {
@@ -51,12 +57,17 @@ func (r *MediaRepository) AssetStorageUsageByUploaderID(uploaderID uint) (int64,
 }
 
 type MediaAssetFilter struct {
-	Page       int
-	PageSize   int
-	Search     string
-	MediaType  string
-	Status     string
-	Visibility string
+	LibraryPartition               string
+	UploadOrigin                   string
+	CustomerServiceMediaPurpose    string
+	ExcludeConversationAttachments bool
+	ReusableAssetsOnly             bool
+	Page                           int
+	PageSize                       int
+	Search                         string
+	MediaType                      string
+	Status                         string
+	Visibility                     string
 }
 
 type MediaImageDimensionFilter struct {
@@ -73,24 +84,7 @@ type MediaDerivativeRequirement struct {
 }
 
 func (r *MediaRepository) ListAssets(filter MediaAssetFilter) ([]media.MediaAsset, int64, error) {
-	query := r.db.Model(&media.MediaAsset{})
-
-	if mediaType := strings.TrimSpace(filter.MediaType); mediaType != "" {
-		query = query.Where("media_type = ?", mediaType)
-	}
-	if status := strings.TrimSpace(filter.Status); status != "" {
-		query = query.Where("status = ?", status)
-	}
-	if visibility := strings.TrimSpace(filter.Visibility); visibility != "" {
-		query = query.Where("visibility = ?", visibility)
-	}
-	if search := strings.TrimSpace(filter.Search); search != "" {
-		like := "%" + strings.ToLower(search) + "%"
-		query = query.Where(
-			"LOWER(COALESCE(filename, '')) LIKE ? OR LOWER(COALESCE(original_filename, '')) LIKE ? OR LOWER(COALESCE(alt, '')) LIKE ? OR LOWER(COALESCE(caption, '')) LIKE ? OR LOWER(COALESCE(url, '')) LIKE ?",
-			like, like, like, like, like,
-		)
-	}
+	query := r.mediaAssetLibraryListQueryWithBusinessPartitionAndAccessScope(filter)
 
 	var total int64
 	if err := query.Count(&total).Error; err != nil {
@@ -179,7 +173,10 @@ func (r *MediaRepository) UpdateAssetDimensions(id uint, width int, height int) 
 }
 
 func (r *MediaRepository) imageDimensionQuery(search string, state string, requiredDerivatives []MediaDerivativeRequirement) *gorm.DB {
-	query := r.db.Model(&media.MediaAsset{}).Where("media_assets.media_type = ?", "image")
+	// Operational preflight must not disclose or repair conversation-owned files.
+	// Reuse the library exclusion predicates for both results and summary counts.
+	query := r.mediaAssetLibraryListQueryWithBusinessPartitionAndAccessScope(MediaAssetFilter{ExcludeConversationAttachments: true}).
+		Where("media_assets.media_type = ?", "image")
 	if search = strings.TrimSpace(search); search != "" {
 		like := "%" + strings.ToLower(search) + "%"
 		query = query.Where(
@@ -284,15 +281,16 @@ func escapeLikePattern(value string) string {
 	return strings.ReplaceAll(value, `_`, `\_`)
 }
 
-func (r *MediaRepository) UpdateAsset(asset *media.MediaAsset) error {
-	return r.db.Save(asset).Error
-}
-
 func (r *MediaRepository) CreateAssetDerivatives(derivatives []media.MediaAssetDerivative) error {
 	if len(derivatives) == 0 {
 		return nil
 	}
-	return r.db.Create(&derivatives).Error
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		if err := lockActiveMediaAssetsBeforePersistingDerivativeMetadata(tx, derivatives); err != nil {
+			return err
+		}
+		return tx.Create(&derivatives).Error
+	})
 }
 
 func (r *MediaRepository) ReplaceAssetDerivatives(derivatives []media.MediaAssetDerivative) ([]string, error) {
@@ -305,6 +303,9 @@ func (r *MediaRepository) ReplaceAssetDerivatives(derivatives []media.MediaAsset
 
 	oldURLs := make([]string, 0, len(derivatives))
 	err := r.db.Transaction(func(tx *gorm.DB) error {
+		if err := lockActiveMediaAssetsBeforePersistingDerivativeMetadata(tx, derivatives); err != nil {
+			return err
+		}
 		for _, derivative := range derivatives {
 			if derivative.MediaAssetID == 0 || strings.TrimSpace(derivative.Preset) == "" {
 				continue
@@ -534,5 +535,12 @@ func (r *MediaRepository) DeleteAsset(id uint) error {
 }
 
 func (r *MediaRepository) HardDeleteAsset(id uint) error {
-	return r.db.Unscoped().Delete(&media.MediaAsset{}, id).Error
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		if r.WithTx(tx).hasAssetDerivativesTable() {
+			if err := tx.Unscoped().Where("media_asset_id = ?", id).Delete(&media.MediaAssetDerivative{}).Error; err != nil {
+				return err
+			}
+		}
+		return tx.Unscoped().Delete(&media.MediaAsset{}, id).Error
+	})
 }

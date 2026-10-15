@@ -76,6 +76,8 @@
         :customer-context="customerContext"
         :messages="messages"
         :messages-loading="messagesLoading"
+        :messages-error="messagesError"
+        :message-read-receipt-error="messageReadReceiptError"
         :selected-customer-typing="selectedCustomerTyping"
         :assignable-agents="assignableAgents"
         :transferring="transferring"
@@ -87,6 +89,7 @@
         @send-reply="emit('send-reply')"
         @send-message="emit('send-message', $event)"
         @open-context="openContextDialog"
+        @refresh-messages="emit('refresh-messages')"
         @typing-input="emit('typing-input')"
       />
     </section>
@@ -124,6 +127,8 @@
         :customer-context="customerContext"
         :messages="messages"
         :messages-loading="messagesLoading"
+        :messages-error="messagesError"
+        :message-read-receipt-error="messageReadReceiptError"
         :selected-customer-typing="selectedCustomerTyping"
         :assignable-agents="assignableAgents"
         :transferring="transferring"
@@ -135,6 +140,7 @@
         @send-reply="emit('send-reply')"
         @send-message="emit('send-message', $event)"
         @open-context="openContextDialog"
+        @refresh-messages="emit('refresh-messages')"
         @typing-input="emit('typing-input')"
       />
     </section>
@@ -270,6 +276,8 @@ const props = withDefaults(defineProps<{
   replyMessage?: string
   messages?: CustomerConversationMessage[]
   messagesLoading?: boolean
+  messagesError?: string | null
+  messageReadReceiptError?: string | null
   selectedCustomerTyping?: CustomerTypingState | null
   assignableAgents?: AssignableAgent[]
   transferring?: boolean
@@ -291,6 +299,8 @@ const props = withDefaults(defineProps<{
   replyMessage: '',
   messages: () => [],
   messagesLoading: false,
+  messagesError: null,
+  messageReadReceiptError: null,
   selectedCustomerTyping: null,
   assignableAgents: () => [],
   transferring: false,
@@ -323,6 +333,7 @@ const emit = defineEmits<{
   (event: 'send-reply'): void
   (event: 'send-message', payload: CustomerServiceSendMessagePayload): void
   (event: 'refresh-context'): void
+  (event: 'refresh-messages'): void
   (event: 'typing-input'): void
 }>()
 

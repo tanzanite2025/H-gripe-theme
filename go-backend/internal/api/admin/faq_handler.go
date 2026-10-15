@@ -1,11 +1,12 @@
 package admin
 
 import (
-	"commerce-platform/internal/service"
 	"context"
 	"errors"
 	"net/http"
 	"strings"
+
+	"commerce-platform/internal/service"
 
 	"github.com/gin-gonic/gin"
 )
@@ -48,6 +49,7 @@ func (h *FAQHandler) SyncRoutes(c *gin.Context) {
 func isFAQValidationError(err error) bool {
 	message := err.Error()
 	return errors.Is(err, service.ErrUnsupportedLocale) ||
+		errors.Is(err, service.ErrFAQMediaReferenceInvalid) ||
 		errors.Is(err, service.ErrFAQLocaleImmutable) ||
 		strings.Contains(message, "required") ||
 		strings.Contains(message, "does not exist") ||

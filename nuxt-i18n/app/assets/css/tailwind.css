@@ -91,6 +91,10 @@
     --tz-type-description: clamp(0.8125rem, 0.12vw + 0.78rem, 0.9rem);
     --tz-type-caption: clamp(0.75rem, 0.08vw + 0.73rem, 0.8125rem);
     --tz-type-micro-label: clamp(0.6875rem, 0.06vw + 0.67rem, 0.75rem);
+    /* Match the compact pill buttons in the page feedback card. */
+    --tz-pill-button-min-height: 2.25rem;
+    --tz-pill-button-line-height: 1.25rem;
+    --tz-pill-button-padding-block: calc(0.5rem - 1px);
     /*
       Shared top rhythm for storefront content below the fixed header/section
       navigation. Page roots must not add their own arbitrary top offsets.
@@ -765,8 +769,17 @@
 
   /* 全局统一的高级按钮样式 (Pill Button) */
   /* 用于 Read More, View All, Tabs 等 */
+  .tz-pill-button-standard-size {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: var(--tz-pill-button-min-height);
+    padding-block: var(--tz-pill-button-padding-block);
+    line-height: var(--tz-pill-button-line-height);
+  }
+
   .premium-button {
-    @apply border-none rounded-full px-5 py-2 text-[0.8rem] font-semibold cursor-pointer transition-all duration-200 inline-flex items-center no-underline;
+    @apply tz-pill-button-standard-size border-none rounded-full px-5 text-[0.8rem] font-semibold cursor-pointer transition-all duration-200 no-underline;
     background: var(--tz-surface-card);
     color: var(--tz-text-secondary);
     border: 1px solid var(--tz-border-strong);

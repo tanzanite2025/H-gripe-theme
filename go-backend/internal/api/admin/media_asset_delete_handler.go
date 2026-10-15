@@ -17,6 +17,9 @@ func (h *MediaHandler) DeleteAsset(c *gin.Context) {
 	if !ok {
 		return
 	}
+	if h.rejectMediaLibraryMutationOfConversationOwnedAttachment(c, id) {
+		return
+	}
 
 	var req mediaAssetDeleteRequest
 	if err := c.ShouldBindJSON(&req); err != nil {

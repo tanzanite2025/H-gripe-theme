@@ -42,6 +42,9 @@ func (s *MediaService) OpenAssetFile(ctx context.Context, id uint) (*MediaAssetF
 	if err != nil {
 		return nil, err
 	}
+	if IsCustomerServiceConversationOwnedMediaAsset(asset) {
+		return nil, ErrMediaAssetForbidden
+	}
 
 	key := s.mediaAssetObjectKey(asset)
 	if key == "" {
@@ -379,6 +382,10 @@ func (s *MediaService) hydrateAssetListAccessURL(assets []media.MediaAsset) {
 
 func (s *MediaService) hydrateAssetAccessURL(asset *media.MediaAsset) {
 	if asset == nil {
+		return
+	}
+	if storage.IsCustomerServiceConversationAttachmentOriginalObjectKey(assetStorageKey(asset)) {
+		asset.AccessURL = ""
 		return
 	}
 	if asset.Visibility == "private" {

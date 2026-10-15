@@ -1,10 +1,11 @@
 package admin
 
 import (
-	"commerce-platform/internal/service"
 	"errors"
 	"net/http"
 	"strconv"
+
+	"commerce-platform/internal/service"
 
 	"github.com/gin-gonic/gin"
 )
@@ -36,9 +37,13 @@ func parseMediaAssetID(c *gin.Context) (uint, bool) {
 
 func respondMediaError(c *gin.Context, err error) {
 	switch {
+	case errors.Is(err, service.ErrMediaLibraryClassificationRevisionConflict):
+		c.JSON(http.StatusConflict, gin.H{"error": err.Error(), "code": "media_library_classification_revision_conflict"})
+	case errors.Is(err, service.ErrMediaLibraryClassificationReasonRequired):
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error(), "code": "media_library_classification_reason_required"})
 	case errors.Is(err, service.ErrMediaAssetNotFound):
 		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
-	case errors.Is(err, service.ErrUnsupportedMediaType), errors.Is(err, service.ErrUnsupportedMediaStatus), errors.Is(err, service.ErrUnsupportedVisibility):
+	case errors.Is(err, service.ErrUnsupportedMediaType), errors.Is(err, service.ErrUnsupportedMediaStatus), errors.Is(err, service.ErrUnsupportedVisibility), errors.Is(err, service.ErrUnsupportedMediaLibraryClassification):
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 	case errors.Is(err, service.ErrMediaStorageUnavailable):
 		c.JSON(http.StatusBadGateway, gin.H{"error": err.Error()})

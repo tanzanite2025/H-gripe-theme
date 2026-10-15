@@ -19,6 +19,14 @@ export const mediaReferenceTypeLabel = (type?: string | null): string => {
   switch (type) {
     case 'product_media':
       return '商品媒体'
+    case 'product_category':
+      return '商品分类图片'
+    case 'product_rich_text':
+      return '商品详情与简述'
+    case 'product_option_swatch':
+      return '商品选项色板'
+    case 'product_template_option_swatch':
+      return '规格模板色板'
     case 'faq':
       return 'FAQ'
     case 'gallery_cover':
@@ -39,6 +47,8 @@ export const mediaReferenceTypeLabel = (type?: string | null): string => {
       return '客服自动回复'
     case 'ticket_message':
       return '工单消息'
+    case 'media_upload_session':
+      return '待发送附件'
     default:
       return '内容引用'
   }

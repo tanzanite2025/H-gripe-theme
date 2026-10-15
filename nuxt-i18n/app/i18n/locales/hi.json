@@ -824,6 +824,21 @@
     },
     "pages": {
       "placeholder": "Content coming soon."
+    },
+    "aboutTabs": {
+      "ariaLabel": "About Us page navigation",
+      "factory": {
+        "label": "Factory",
+        "description": "Production scale, workshop flow, and factory context."
+      },
+      "appearance": {
+        "label": "Appearance",
+        "description": "Carbon rim finishes, logos, and surface customization."
+      },
+      "holePatterns": {
+        "label": "Hole Patterns",
+        "description": "Custom drilling angles matched to hub drawings and spoke lacing."
+      }
     }
   },
   "contactLocation": {
@@ -1694,7 +1709,8 @@
         "legacy": "Legacy",
         "viewSpecs": "View spoke lengths",
         "viewSpecsAria": "View exact spoke specifications for {model}"
-      }
+      },
+      "rimAppearanceGuide": "Compare carbon rim finishes, weave patterns & logos"
     }
   },
   "profile": {

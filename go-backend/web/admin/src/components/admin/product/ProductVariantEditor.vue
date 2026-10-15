@@ -640,7 +640,7 @@ const uploadSwatch = async (event: Event, option: ProductVariantOptionValueForm)
     formData.append('file', file)
     formData.append('media_type', 'image')
     formData.append('image_purpose', 'product_variant_swatch')
-    const asset = await mediaApi.uploadAsset(formData)
+    const asset = await mediaApi.uploadAsset(formData, 'catalog')
     option.swatch_media_asset_id = asset?.id || null
     option.swatch_url = String(asset?.url || asset?.access_url || '')
     toast.success('展示图片已上传')

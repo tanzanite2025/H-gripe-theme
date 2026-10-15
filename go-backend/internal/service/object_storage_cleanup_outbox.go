@@ -144,6 +144,8 @@ func (h *ObjectStorageCleanupOutboxHandler) Handle(ctx context.Context, event ou
 	switch payload.ResourceType {
 	case objectCleanupResourceMediaAsset:
 		return h.cleanupMediaAsset(ctx, payload.ResourceID)
+	case objectCleanupResourceCustomerServiceUnregisteredUpload:
+		return h.media.cleanupRetiredUnregisteredCustomerServiceUploadOriginal(ctx, payload.ObjectKeys)
 	case objectCleanupResourceSiteLogo:
 		return h.cleanupSiteLogo(ctx, payload.ObjectKeys)
 	case objectCleanupResourceSiteFavicon:

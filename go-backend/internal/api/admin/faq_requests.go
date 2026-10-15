@@ -14,16 +14,16 @@ type createFAQRequest struct {
 }
 
 type updateFAQRequest struct {
-	Question          string `json:"question"`
-	Answer            string `json:"answer"`
-	AnswerImageURL    string `json:"answer_image_url"`
-	AnswerImageAlt    string `json:"answer_image_alt"`
-	AnswerImageWidth  int    `json:"answer_image_width"`
-	AnswerImageHeight int    `json:"answer_image_height"`
-	PageID            string `json:"page_id"`
-	Locale            string `json:"locale"`
-	Status            string `json:"status" binding:"omitempty,oneof=draft published"`
-	Order             int    `json:"order"`
+	Question          string  `json:"question"`
+	Answer            string  `json:"answer"`
+	AnswerImageURL    *string `json:"answer_image_url"`
+	AnswerImageAlt    string  `json:"answer_image_alt"`
+	AnswerImageWidth  int     `json:"answer_image_width"`
+	AnswerImageHeight int     `json:"answer_image_height"`
+	PageID            string  `json:"page_id"`
+	Locale            string  `json:"locale"`
+	Status            string  `json:"status" binding:"omitempty,oneof=draft published"`
+	Order             int     `json:"order"`
 }
 
 type faqPageRequest struct {

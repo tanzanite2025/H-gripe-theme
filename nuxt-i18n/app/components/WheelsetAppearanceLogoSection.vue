@@ -2,9 +2,9 @@
   <div class="space-y-6">
     <!-- Intro / Recommendation Card -->
     <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-md p-5 md:p-6 text-center border-t-4 border-emerald-500">
-       <h3 class="text-lg font-bold tz-text-primary mb-3">
+       <h2 class="text-lg font-bold tz-text-primary mb-3">
          {{ t('guidesWheelsetBuyersAppearance.recommendation.title') }}
-       </h3>
+       </h2>
        <p class="text-sm tz-text-secondary leading-relaxed max-w-2xl mx-auto mb-4">
           {{ t('guidesWheelsetBuyersAppearance.recommendation.body') }}
        </p>
@@ -24,9 +24,9 @@
        <!-- Option 1: Custom Decals (Violet) -->
        <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-md p-5 md:p-6 hover:translate-y-[-2px] transition-transform duration-300 group">
           <div class="flex items-center gap-3 mb-4 pb-3 border-b border-emerald-200">
-             <h3 class="text-base font-bold tz-text-primary">
+             <h2 class="text-base font-bold tz-text-primary">
                {{ t('guidesWheelsetBuyersAppearance.decals.title') }}
-             </h3>
+             </h2>
           </div>
           
            <p class="text-sm tz-text-secondary leading-relaxed mb-4">
@@ -49,9 +49,9 @@
        <!-- Option 2: Laser Engraving (Teal) -->
        <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-md p-5 md:p-6 hover:translate-y-[-2px] transition-transform duration-300 group">
           <div class="flex items-center gap-3 mb-4 pb-3 border-b border-emerald-200">
-             <h3 class="text-base font-bold tz-text-primary">
+             <h2 class="text-base font-bold tz-text-primary">
                {{ t('guidesWheelsetBuyersAppearance.laser.title') }}
-             </h3>
+             </h2>
           </div>
           
           <div class="absolute top-5 right-5">
@@ -81,9 +81,9 @@
 
     <!-- Gallery 1: Laser Examples -->
     <div>
-        <h4 class="text-xs font-bold tz-text-muted uppercase tracking-widest mb-3 pl-1">
+        <h2 class="text-xs font-bold tz-text-muted uppercase tracking-widest mb-3 pl-1">
           {{ t('guidesWheelsetBuyersAppearance.gallery.title') }}
-        </h4>
+        </h2>
         <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           <GuideImage
             src="/public/wheelsetbuyersguide/appearancelogo/Carbon-rim-laser-engraving-LOGO.webp"
@@ -112,9 +112,9 @@
     <!-- Advanced Finishes Card -->
     <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-md p-5 md:p-6 mt-6">
        <div class="flex items-center justify-between mb-4 pb-3 border-b tz-border-subtle">
-           <h3 class="text-base font-bold tz-text-primary">
+           <h2 class="text-base font-bold tz-text-primary">
              {{ t('guidesWheelsetBuyersAppearance.advanced.title') }}
-           </h3>
+           </h2>
            <span class="tz-micro-label tz-surface-panel tz-text-muted px-2 py-1 rounded border tz-border-subtle">
              {{ t('guidesWheelsetBuyersAppearance.advanced.badge') }}
            </span>

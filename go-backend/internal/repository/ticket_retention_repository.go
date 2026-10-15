@@ -5,10 +5,12 @@ import (
 	"strings"
 	"time"
 
+	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
+
 	"commerce-platform/internal/domain/audit"
 	"commerce-platform/internal/domain/outbox"
 	"commerce-platform/internal/domain/ticket"
-	"gorm.io/gorm"
 )
 
 const customerServiceTicketCategory = "customer_service"
@@ -161,6 +163,7 @@ func (r *TicketRepository) purgeCustomerServiceConversationWithOutbox(
 	id uint,
 	entry *audit.AuditLog,
 	cleanupEvent *outbox.Event,
+	managedAttachmentRetirement ...func(*TicketRepository, *gorm.DB, ticket.Ticket) error,
 ) error {
 	if r == nil || r.db == nil {
 		return gorm.ErrInvalidDB
@@ -170,11 +173,23 @@ func (r *TicketRepository) purgeCustomerServiceConversationWithOutbox(
 	}
 	return r.db.Transaction(func(tx *gorm.DB) error {
 		var target ticket.Ticket
-		if err := tx.Unscoped().Where("id = ? AND category = ?", id, customerServiceTicketCategory).First(&target).Error; err != nil {
+		if err := tx.Unscoped().Clauses(clause.Locking{Strength: "UPDATE"}).Where("id = ? AND category = ?", id, customerServiceTicketCategory).First(&target).Error; err != nil {
 			return err
 		}
 		if !target.DeletedAt.Valid {
 			return gorm.ErrRecordNotFound
+		}
+		managed, managedErr := r.WithTx(tx).HasCustomerServiceConversationManagedAttachmentLifecycleHold(id)
+		if managedErr != nil {
+			return managedErr
+		}
+		if managed && len(managedAttachmentRetirement) == 0 {
+			return ErrCustomerServiceAttachmentBindingUnavailable
+		}
+		if len(managedAttachmentRetirement) > 0 {
+			if err := managedAttachmentRetirement[0](r.WithTx(tx), tx, target); err != nil {
+				return err
+			}
 		}
 		if err := tx.Unscoped().Where("ticket_id = ?", id).Delete(&ticket.TicketMessage{}).Error; err != nil {
 			return err
@@ -201,4 +216,14 @@ func (r *TicketRepository) purgeCustomerServiceConversationWithOutbox(
 		}
 		return nil
 	})
+}
+
+func (r *TicketRepository) PurgeCustomerServiceConversationWithAuditCleanupAndManagedAttachmentRetirement(
+	id uint, entry *audit.AuditLog, cleanupEvent *outbox.Event,
+	retireAttachments func(*TicketRepository, *gorm.DB, ticket.Ticket) error,
+) error {
+	if entry == nil || cleanupEvent == nil || retireAttachments == nil {
+		return gorm.ErrInvalidData
+	}
+	return r.purgeCustomerServiceConversationWithOutbox(id, entry, cleanupEvent, retireAttachments)
 }

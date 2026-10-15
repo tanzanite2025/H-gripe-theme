@@ -1,14 +1,9 @@
 package service
 
 import (
-	"bytes"
 	"context"
-	"mime/multipart"
-	"net/http"
-	"net/http/httptest"
 	"os"
 	"path/filepath"
-	"runtime"
 	"testing"
 
 	"commerce-platform/internal/domain/outbox"
@@ -35,7 +30,7 @@ func TestSiteLogoUploadCurrentReplacesAndDestroysPrevious(t *testing.T) {
 
 	logos := NewSiteLogoService(repository.NewSiteLogoRepository(db), storageService, "https://shop.example.test")
 	logos.ConfigureObjectCleanupOutbox(repository.NewOutboxRepository(db))
-	first, err := logos.UploadCurrent(context.Background(), siteLogoTestFileHeader(t, "first.webp"), 11)
+	first, err := logos.UploadCurrent(context.Background(), createSiteLogoAndFaviconLifecycleMultipartHeaderFromBackendOwnedWebPFixture(t, "first.webp"), 11)
 	if err != nil {
 		t.Fatalf("upload first logo: %v", err)
 	}
@@ -44,7 +39,7 @@ func TestSiteLogoUploadCurrentReplacesAndDestroysPrevious(t *testing.T) {
 		t.Fatalf("expected first logo object to exist: %v", err)
 	}
 
-	second, err := logos.UploadCurrent(context.Background(), siteLogoTestFileHeader(t, "second.webp"), 12)
+	second, err := logos.UploadCurrent(context.Background(), createSiteLogoAndFaviconLifecycleMultipartHeaderFromBackendOwnedWebPFixture(t, "second.webp"), 12)
 	if err != nil {
 		t.Fatalf("upload replacement logo: %v", err)
 	}
@@ -96,7 +91,7 @@ func TestSiteLogoDeleteCurrentDestroysObjectAndRow(t *testing.T) {
 
 	logos := NewSiteLogoService(repository.NewSiteLogoRepository(db), storageService, "https://shop.example.test")
 	logos.ConfigureObjectCleanupOutbox(repository.NewOutboxRepository(db))
-	current, err := logos.UploadCurrent(context.Background(), siteLogoTestFileHeader(t, "current.webp"), 11)
+	current, err := logos.UploadCurrent(context.Background(), createSiteLogoAndFaviconLifecycleMultipartHeaderFromBackendOwnedWebPFixture(t, "current.webp"), 11)
 	if err != nil {
 		t.Fatalf("upload current logo: %v", err)
 	}
@@ -179,42 +174,4 @@ func newSiteLogoTestDB(t *testing.T) *gorm.DB {
 		t.Fatalf("migrate site logo assets: %v", err)
 	}
 	return db
-}
-
-func siteLogoTestFileHeader(t *testing.T, filename string) *multipart.FileHeader {
-	t.Helper()
-
-	_, currentFile, _, ok := runtime.Caller(0)
-	if !ok {
-		t.Fatal("resolve site logo service test file path")
-	}
-	fixturePath := filepath.Join(filepath.Dir(currentFile), "..", "..", "..", "nuxt-i18n", "public", "images", "chat-logo.webp")
-	contents, err := os.ReadFile(fixturePath)
-	if err != nil {
-		t.Fatalf("read site logo WebP fixture: %v", err)
-	}
-
-	body := &bytes.Buffer{}
-	writer := multipart.NewWriter(body)
-	part, err := writer.CreateFormFile("file", filename)
-	if err != nil {
-		t.Fatalf("create form file: %v", err)
-	}
-	if _, err := part.Write(contents); err != nil {
-		t.Fatalf("write form file: %v", err)
-	}
-	if err := writer.Close(); err != nil {
-		t.Fatalf("close multipart writer: %v", err)
-	}
-
-	request := httptest.NewRequest(http.MethodPost, "/", body)
-	request.Header.Set("Content-Type", writer.FormDataContentType())
-	if err := request.ParseMultipartForm(int64(body.Len() + 1024)); err != nil {
-		t.Fatalf("parse multipart form: %v", err)
-	}
-	files := request.MultipartForm.File["file"]
-	if len(files) != 1 {
-		t.Fatalf("expected 1 uploaded file, got %d", len(files))
-	}
-	return files[0]
 }

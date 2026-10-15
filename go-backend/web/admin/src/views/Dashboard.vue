@@ -2,6 +2,8 @@
   <div class="space-y-4 animate-in fade-in duration-500">
     <DashboardHeader :current-date="currentDate" />
 
+    <DashboardBusinessFollowUpHomePreview v-if="['ops:view', 'order:view', 'ticket:view', 'product:view', 'merchant:view'].some(permission => authStore.hasPermission(permission))" />
+
     <DashboardMetricGrid
       :metric-cards="metricCards"
       :metric-tone-class="metricToneClass"
@@ -52,6 +54,7 @@ import {
 import DashboardActivityPanel from '@/components/admin/dashboard/DashboardActivityPanel.vue'
 import DashboardHeader from '@/components/admin/dashboard/DashboardHeader.vue'
 import DashboardMetricGrid from '@/components/admin/dashboard/DashboardMetricGrid.vue'
+import DashboardBusinessFollowUpHomePreview from '@/components/admin/dashboard/DashboardBusinessFollowUpHomePreview.vue'
 import DashboardQuickActionsPanel from '@/components/admin/dashboard/DashboardQuickActionsPanel.vue'
 import DashboardSalesChartPanel from '@/components/admin/dashboard/DashboardSalesChartPanel.vue'
 import type {

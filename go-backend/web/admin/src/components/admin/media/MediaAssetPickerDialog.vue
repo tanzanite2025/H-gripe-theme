@@ -3,7 +3,7 @@
     <DialogContent size="xl" class="gap-0 p-0" @open-auto-focus.prevent>
       <DialogHeader class="border-b px-5 py-4 pr-12">
         <DialogTitle>选择媒体库{{ dialogMediaTypeLabel }}</DialogTitle>
-        <DialogDescription>从通用媒体库选择{{ dialogMediaTypeLabel }}资源，图库不再作为附件仓库。</DialogDescription>
+        <DialogDescription>选择启用且可公开复用的{{ dialogMediaTypeLabel }}素材；会话附件请在对应会话中查看。</DialogDescription>
       </DialogHeader>
 
       <div class="flex min-h-[30rem] max-h-[74dvh] min-w-0 flex-col overflow-hidden">
@@ -12,16 +12,7 @@
             <Search class="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
             <Input v-model="filters.search" class="pl-8" placeholder="搜索文件名、ALT、说明或 URL" @keyup.enter="reload" />
           </div>
-          <Select v-model="filters.status">
-            <SelectTrigger class="w-32">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="active">启用</SelectItem>
-              <SelectItem value="archived">归档</SelectItem>
-              <SelectItem value="all">全部状态</SelectItem>
-            </SelectContent>
-          </Select>
+          <span class="text-xs text-muted-foreground">仅启用素材</span>
           <Button variant="outline" size="sm" :disabled="loading" @click="reload">
             <RefreshCw :class="['size-3.5', { 'animate-spin': loading }]" />
             刷新
@@ -30,6 +21,10 @@
 
         <div v-if="loading" class="flex min-h-0 flex-1 items-center justify-center text-xs font-bold text-muted-foreground">
           正在加载媒体库
+        </div>
+        <div v-else-if="loadError" role="alert" class="flex min-h-0 flex-1 items-center justify-center gap-3 text-xs text-muted-foreground">
+          {{ loadError }}
+          <Button variant="outline" size="sm" @click="reload">重试</Button>
         </div>
         <div v-else-if="assets.length === 0" class="flex min-h-0 flex-1 flex-col items-center justify-center gap-2 text-muted-foreground">
           <Video v-if="mediaType === 'video'" class="size-8 opacity-50" />
@@ -104,7 +99,6 @@ import AdminPagination from '@/components/admin/AdminPagination.vue'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useMediaAssetPicker } from '@/composables/media/useMediaAssetPicker'
 import { assetAccessURL, assetTitle, formatMediaDimensions, formatMediaSize, mediaTypeLabel } from '@/lib/mediaPresentation'
 import type { MediaAsset } from '@/api/media'
@@ -134,6 +128,7 @@ const mediaType = toRef(props, 'mediaType')
 const dialogMediaTypeLabel = computed(() => mediaTypeLabel(mediaType.value))
 const {
   loading,
+  loadError,
   assets,
   filters,
   pagination,

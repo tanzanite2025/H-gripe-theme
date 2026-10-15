@@ -11,6 +11,8 @@ func (r *MediaRepository) assetReferenceScanners() []mediaAssetReferenceScanner 
 	return []mediaAssetReferenceScanner{
 		r.productCategoryImageReferences,
 		r.productMediaReferences,
+		r.productRichTextMediaAttributeReferences,
+		r.productAndTemplateOptionSwatchReferences,
 		r.galleryReferences,
 		r.faqReferences,
 		r.postReferences,
@@ -20,5 +22,7 @@ func (r *MediaRepository) assetReferenceScanners() []mediaAssetReferenceScanner 
 		r.suggestionFeedbackReferences,
 		r.ticketAutoReplyReferences,
 		r.ticketMessageReferences,
+		r.customerServiceMessageMediaAssetBindingReferences,
+		r.customerServicePendingUploadSessionAssetReferences,
 	}
 }

@@ -369,4 +369,6 @@ feedback_rate_limit:
   fail_open: false
 
 media_upload:
+  customer_service_private_attachments_enabled: false
   account_storage_quota_bytes: 21474836480
+  visitor_session_storage_quota_bytes: 20971520

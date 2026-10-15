@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="420" height="200" viewBox="0 0 420 200">
+  <!-- Schematic direction projection, not production geometry. Generated from the lacing simulator backend. -->
+  <defs>
+    <pattern id="rim-wall-hatching" width="8" height="8" patternUnits="userSpaceOnUse"><path d="M-2 8 8-2M6 10 10 6" stroke="#cbd5e1" stroke-width="1"/></pattern>
+  </defs>
+  <rect width="420" height="200" fill="#f8fafc"/>
+  <path d="M35 60h150v38h-150Z" fill="#e2e8f0"/>
+    <path d="M35 60h150v38h-150Z" fill="url(#rim-wall-hatching)" stroke="#94a3b8" stroke-width="1.5"/>
+    <line x1="110" y1="30" x2="110" y2="177" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="3 4"/>
+    <path d="M115.04 60 105.47 98" stroke="#f8fafc" stroke-width="13"/>
+    <path d="M115.04 60 105.47 98" stroke="#047857" stroke-opacity="0.2" stroke-width="13"/>
+    <path d="M109.04 60 99.47 98M121.04 60 111.47 98" stroke="#047857" stroke-width="1.5"/>
+    <line x1="105.47" y1="98" x2="85.83" y2="176" stroke="#047857" stroke-width="3"/>
+    <line x1="123.85" y1="25" x2="101.44" y2="114" stroke="#047857" stroke-width="2" stroke-dasharray="5 4"/>
+<path d="M235 60h150v38h-150Z" fill="#e2e8f0"/>
+    <path d="M235 60h150v38h-150Z" fill="url(#rim-wall-hatching)" stroke="#94a3b8" stroke-width="1.5"/>
+    <line x1="310" y1="30" x2="310" y2="177" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="3 4"/>
+    <path d="M306.06 60 313.55 98" stroke="#f8fafc" stroke-width="13"/>
+    <path d="M306.06 60 313.55 98" stroke="#0369a1" stroke-opacity="0.2" stroke-width="13"/>
+    <path d="M300.06 60 307.55 98M312.06 60 319.55 98" stroke="#0369a1" stroke-width="1.5"/>
+    <line x1="313.55" y1="98" x2="328.91" y2="176" stroke="#0369a1" stroke-width="3"/>
+    <line x1="299.16" y1="25" x2="316.7" y2="114" stroke="#0369a1" stroke-width="2" stroke-dasharray="5 4"/>
+</svg>

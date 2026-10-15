@@ -21,6 +21,9 @@ func (h *MediaHandler) UpdateAsset(c *gin.Context) {
 	if !ok {
 		return
 	}
+	if h.rejectMediaLibraryMutationOfConversationOwnedAttachment(c, id) {
+		return
+	}
 
 	var req mediaAssetUpdateRequest
 	if err := c.ShouldBindJSON(&req); err != nil {

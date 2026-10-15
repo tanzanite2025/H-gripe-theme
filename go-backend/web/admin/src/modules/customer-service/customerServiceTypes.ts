@@ -392,3 +392,9 @@ export interface FAQSelection {
   page: FAQPage
   faq: FAQItem
 }
+
+export interface CustomerServiceConversationNavigationTarget {
+  conversationId: number | null
+  searchTerm: string
+  invalidId: boolean
+}

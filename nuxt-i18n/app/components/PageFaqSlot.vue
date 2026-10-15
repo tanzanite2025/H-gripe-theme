@@ -14,7 +14,7 @@
       v-if="resolvedFaqData && resolvedFaqPageId"
       :page-id="resolvedFaqPageId"
       :data="resolvedFaqData"
-      :heading-tag="faqLookupRoutePath === innerTubeGuideCanonicalRoutePath ? 'h2' : 'h3'"
+      :heading-tag="faqLookupRoutePath === innerTubeGuideCanonicalRoutePath || faqLookupRoutePath === '/company/about/appearance' || faqLookupRoutePath === '/company/about/hole-patterns' || faqLookupRoutePath === '/tools/freehub-cassette-fitment-engine' ? 'h2' : 'h3'"
     />
   </div>
 </template>

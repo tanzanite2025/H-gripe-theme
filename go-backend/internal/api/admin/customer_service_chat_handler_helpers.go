@@ -1,15 +1,16 @@
 package admin
 
 import (
+	"encoding/json"
+	"errors"
+	"strconv"
+	"strings"
+
 	"commerce-platform/internal/domain/ticket"
 	userdomain "commerce-platform/internal/domain/user"
 	"commerce-platform/internal/pkg/apierror"
 	"commerce-platform/internal/repository"
 	"commerce-platform/internal/service"
-	"encoding/json"
-	"errors"
-	"strconv"
-	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -275,28 +276,37 @@ func adminCustomerServiceFallbackSummary(item ticket.Ticket, customerName string
 	return summary
 }
 
-func adminCustomerServiceMessageResponse(item ticket.TicketMessage) gin.H {
+func adminCustomerServiceMessageResponse(item ticket.TicketMessage, attachmentAccessServices ...*service.CustomerServiceConversationMessageAttachmentAccessService) gin.H {
 	attachmentURL := ""
 	attachments := []string{}
 	if err := json.Unmarshal([]byte(item.Attachments), &attachments); err == nil && len(attachments) > 0 {
 		attachmentURL = attachments[0]
 	}
+	var attachmentMedia []service.CustomerServiceMessageAttachmentAccessDescription
+	if len(attachmentAccessServices) > 0 {
+		attachments, attachmentMedia = attachmentAccessServices[0].DescribeAgentCustomerServiceMessageAttachments(item)
+		attachmentURL = ""
+		if len(attachments) > 0 {
+			attachmentURL = attachments[0]
+		}
+	}
 
 	return gin.H{
-		"id":              item.ID,
-		"conversation_id": item.TicketID,
-		"sender_id":       item.UserID,
-		"sender_name":     adminMessageSenderName(item),
-		"message":         item.Content,
-		"content":         item.Content,
-		"message_type":    normalizeAdminCustomerServiceMessageType(item.MessageType),
-		"metadata":        parseAdminCustomerServiceMessageMetadata(item.Metadata),
-		"source":          adminCustomerServiceMessageSource(item.Metadata),
-		"attachment_url":  attachmentURL,
-		"attachments":     attachments,
-		"created_at":      item.CreatedAt,
-		"is_read":         item.IsRead,
-		"is_agent":        item.IsStaff,
+		"id":               item.ID,
+		"conversation_id":  item.TicketID,
+		"sender_id":        item.UserID,
+		"sender_name":      adminMessageSenderName(item),
+		"message":          item.Content,
+		"content":          item.Content,
+		"message_type":     normalizeAdminCustomerServiceMessageType(item.MessageType),
+		"metadata":         parseAdminCustomerServiceMessageMetadata(item.Metadata),
+		"source":           adminCustomerServiceMessageSource(item.Metadata),
+		"attachment_url":   attachmentURL,
+		"attachments":      attachments,
+		"attachment_media": attachmentMedia,
+		"created_at":       item.CreatedAt,
+		"is_read":          item.IsRead,
+		"is_agent":         item.IsStaff,
 	}
 }
 

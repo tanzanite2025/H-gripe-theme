@@ -1,5 +1,22 @@
 {
   "title": "Wheelset Buyers Guide",
+  "seo": {
+    "description": "Choose bicycle wheelsets for road, gravel or MTB riding. Check tire and freehub compatibility, wheel safety, custom building services and finish options.",
+    "sections": {
+      "overview": {
+        "description": "Compare road, gravel and MTB wheelsets by riding needs. Check rim and tire fit, axle and freehub compatibility, and custom build options before buying."
+      },
+      "safety-instructions": {
+        "description": "Review bicycle wheelset safety checks for installation, tire pressure, spoke tension and maintenance, including when to seek professional inspection."
+      },
+      "sample-assembly": {
+        "description": "Explore bicycle wheel building and custom builds: service coverage, mullet setups, replacement wheels, mixed rims, supplied parts and assembly fees."
+      },
+      "appearance-logo": {
+        "description": "Compare carbon wheelset finishes, decals and laser-engraved logos. Explore customization options and appearance examples before choosing your wheelset."
+      }
+    }
+  },
   "feedbackTitle": "Share your feedback or leave a message about the Wheelset Buyers Guide",
   "tabs": {
     "overview": {

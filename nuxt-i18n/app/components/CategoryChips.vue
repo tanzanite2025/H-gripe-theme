@@ -93,16 +93,16 @@ const handleSelect = (category: ShopCategory | null) => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 2.35rem;
+  min-height: var(--tz-pill-button-min-height);
   max-width: 100%;
-  padding: 0.48rem 0.9rem;
+  padding: var(--tz-pill-button-padding-block) 0.9rem;
   border: 1px solid var(--tz-border-strong);
   border-radius: 9999px;
   background: var(--tz-surface-muted);
   color: var(--tz-text-secondary);
   font-size: clamp(0.85rem, 2.8vw, 1rem);
   font-weight: 600;
-  line-height: 1.1;
+  line-height: var(--tz-pill-button-line-height);
   white-space: nowrap;
   transition:
     border-color 0.18s ease,

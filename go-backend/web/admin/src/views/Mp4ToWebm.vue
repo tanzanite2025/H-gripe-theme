@@ -266,35 +266,52 @@
                 </label>
               </div>
               <span class="text-[10px] font-bold leading-4 text-muted-foreground">{{ t('mp4ToWebm.outputSizeHelp') }}</span>
+              <label class="mt-2 grid gap-1.5">
+                <span class="text-[10px] font-bold text-muted-foreground">{{ t('mp4ToWebm.resizeMode') }}</span>
+                <select
+                  v-model="settings.resizeMode"
+                  :disabled="!sourceFile || converting"
+                  class="h-9 w-full min-w-0 rounded-xl border-none bg-muted/50 px-3 text-xs font-bold outline-none focus-visible:ring-2 focus-visible:ring-ring/50 disabled:opacity-50"
+                >
+                  <option value="contain">{{ t('mp4ToWebm.resizeModeContain') }}</option>
+                  <option value="cover">{{ t('mp4ToWebm.resizeModeCover') }}</option>
+                  <option value="stretch">{{ t('mp4ToWebm.resizeModeStretch') }}</option>
+                </select>
+              </label>
+              <span class="text-[10px] font-bold leading-4 text-muted-foreground">{{ resizeModeDescription }}</span>
             </div>
 
-            <label class="grid gap-1.5">
+            <div class="grid gap-1.5">
               <span class="flex items-center justify-between gap-3 text-[10px] font-black uppercase tracking-wider">
-                <span>{{ t('mp4ToWebm.quality') }}</span>
-                <output class="font-mono text-primary">{{ settings.quality }}</output>
+                <label for="mp4-to-webm-video-quality-range">{{ t('mp4ToWebm.quality') }}</label>
+                <output class="font-mono text-primary">{{ settings.qualityPercent }} / 100</output>
               </span>
               <div class="grid grid-cols-[minmax(0,1fr)_4.5rem] items-center gap-2">
                 <input
-                  v-model.number="settings.quality"
+                  id="mp4-to-webm-video-quality-range"
+                  v-model.number="settings.qualityPercent"
                   type="range"
-                  min="18"
-                  max="45"
+                  min="1"
+                  max="100"
                   step="1"
+                  aria-describedby="mp4-to-webm-video-quality-help"
                   class="h-2 w-full cursor-pointer accent-primary"
                   :disabled="!sourceFile || converting"
                 />
                 <Input
-                  v-model.number="settings.quality"
+                  v-model.number="settings.qualityPercent"
                   type="number"
-                  min="18"
-                  max="45"
+                  min="1"
+                  max="100"
                   step="1"
+                  :aria-label="t('mp4ToWebm.quality')"
+                  aria-describedby="mp4-to-webm-video-quality-help"
                   :disabled="!sourceFile || converting"
                   class="text-right"
                 />
               </div>
-              <span class="text-[10px] font-bold leading-4 text-muted-foreground">{{ t('mp4ToWebm.qualityHelp') }}</span>
-            </label>
+              <span id="mp4-to-webm-video-quality-help" class="text-[10px] font-bold leading-4 text-muted-foreground">{{ t('mp4ToWebm.qualityHelp') }}</span>
+            </div>
 
             <div class="flex items-center justify-between gap-4 border border-border/70 bg-muted/20 px-3 py-2.5">
               <div class="min-w-0">
@@ -338,18 +355,21 @@ import { Switch } from '@/components/ui/switch'
 import { useAdminI18n } from '@/i18n'
 
 type ConversionStage = 'idle' | 'loading' | 'preparing' | 'encoding'
+type VideoResizeMode = 'contain' | 'cover' | 'stretch'
 
 interface VideoSettings {
   targetWidth: number | null
   targetHeight: number | null
-  quality: number
+  resizeMode: VideoResizeMode
+  qualityPercent: number
   keepAudio: boolean
 }
 
 interface NormalizedVideoSettings {
   targetWidth: number
   targetHeight: number
-  quality: number
+  resizeMode: VideoResizeMode
+  qualityPercent: number
   keepAudio: boolean
 }
 
@@ -380,15 +400,22 @@ const conversionRunID = ref(0)
 const settings = reactive<VideoSettings>({
   targetWidth: null,
   targetHeight: null,
-  quality: 32,
+  resizeMode: 'contain',
+  qualityPercent: 70,
   keepAudio: true,
 })
 
 let ffmpeg: FFmpeg | null = null
 let ffmpegLoadPromise: Promise<FFmpeg> | null = null
 let ffmpegLogTail: string[] = []
+let ffmpegReportedUnsupportedAv1Decoding = false
 
 const outputBytes = computed(() => outputBlob.value?.size || 0)
+const resizeModeDescription = computed(() => {
+  if (settings.resizeMode === 'cover') return t('mp4ToWebm.resizeModeCoverHelp')
+  if (settings.resizeMode === 'stretch') return t('mp4ToWebm.resizeModeStretchHelp')
+  return t('mp4ToWebm.resizeModeContainHelp')
+})
 const displayOutputDuration = computed(() => outputDuration.value || sourceDuration.value)
 const processingLabel = computed(() => {
   if (conversionStage.value === 'loading') return t('mp4ToWebm.loadingEngine')
@@ -487,14 +514,27 @@ const normalizedSettings = (): NormalizedVideoSettings | null => {
   const targetHeight = normalizeDimension(settings.targetHeight, sourceHeight.value)
   if (!targetWidth || !targetHeight) return null
 
-  const normalized = {
+  const normalized: NormalizedVideoSettings = {
     targetWidth,
     targetHeight,
-    quality: clampInteger(settings.quality, 18, 45, 32),
+    resizeMode: settings.resizeMode === 'cover' || settings.resizeMode === 'stretch' ? settings.resizeMode : 'contain',
+    qualityPercent: clampInteger(settings.qualityPercent, 1, 100, 70),
     keepAudio: Boolean(settings.keepAudio),
   }
   Object.assign(settings, normalized)
   return normalized
+}
+
+const buildFfmpegVideoResizeFilterForRequestedOutputDimensions = (videoSettings: NormalizedVideoSettings): string => {
+  const { targetWidth, targetHeight, resizeMode } = videoSettings
+  if (resizeMode === 'stretch') return `scale=${targetWidth}:${targetHeight}:flags=lanczos,setsar=1`
+
+  // Use display aspect ratio so anamorphic sources retain their intended proportions.
+  // Normalize pixel aspect ratio after resizing so browsers report the requested dimensions.
+  if (resizeMode === 'cover') {
+    return `scale=w='ceil(max(${targetWidth},${targetHeight}*dar)/2)*2':h='ceil(max(${targetHeight},${targetWidth}/dar)/2)*2':flags=lanczos,crop=${targetWidth}:${targetHeight}:(iw-ow)/2:(ih-oh)/2,setsar=1`
+  }
+  return `scale=w='max(2,trunc(min(${targetWidth},${targetHeight}*dar)/2)*2)':h='max(2,trunc(min(${targetHeight},${targetWidth}/dar)/2)*2)':flags=lanczos,pad=${targetWidth}:${targetHeight}:(ow-iw)/2:(oh-ih)/2:color=black,setsar=1`
 }
 
 const handleFfmpegProgress = ({ progress }: { progress: number }): void => {
@@ -504,7 +544,22 @@ const handleFfmpegProgress = ({ progress }: { progress: number }): void => {
 
 const handleFfmpegLog = ({ message }: { message: string }): void => {
   if (!message.trim()) return
+  // Decoder errors appear before stream metadata and can leave the bounded log tail.
+  if (/Your platform .*AV1 decoding/i.test(message)) ffmpegReportedUnsupportedAv1Decoding = true
   ffmpegLogTail = [...ffmpegLogTail.slice(-19), message]
+}
+
+const getVideoConversionFailureMessage = (error: unknown): string => {
+  if (ffmpegReportedUnsupportedAv1Decoding) return t('mp4ToWebm.av1Unsupported')
+  if (conversionStage.value === 'loading') return t('mp4ToWebm.engineLoadFailed')
+
+  // Worker errors arrive as strings rather than Error instances.
+  const details = error instanceof Error ? error.message : String(error)
+  if (details === 'ffmpeg-output-empty') return t('mp4ToWebm.emptyOutput')
+  if (/memory access out of bounds|out of memory|unreachable|Aborted\(/i.test(details)) {
+    return t('mp4ToWebm.engineRuntimeFailed')
+  }
+  return t('mp4ToWebm.convertFailed')
 }
 
 const ensureFfmpeg = async (): Promise<FFmpeg> => {
@@ -621,6 +676,7 @@ const convertCurrent = async (): Promise<void> => {
   errorMessage.value = ''
   releaseOutput()
   ffmpegLogTail = []
+  ffmpegReportedUnsupportedAv1Decoding = false
 
   let instance: FFmpeg | null = null
   try {
@@ -632,18 +688,25 @@ const convertCurrent = async (): Promise<void> => {
     if (runID !== conversionRunID.value) return
 
     conversionStage.value = 'encoding'
+    const vp8MaximumQuantizer = Math.round((100 - normalized.qualityPercent) * 63 / 100)
+    const vp8VideoBitrateBudget = Math.min(2_000_000_000, normalized.targetWidth * normalized.targetHeight * 60)
     const args = [
       '-i', inputName,
       '-map', '0:v:0',
       ...(normalized.keepAudio ? ['-map', '0:a:0?'] : ['-an']),
-      '-vf', `scale=${normalized.targetWidth}:${normalized.targetHeight}:flags=lanczos`,
+      '-vf', buildFfmpegVideoResizeFilterForRequestedOutputDimensions(normalized),
       '-c:v', 'libvpx',
-      '-crf', String(normalized.quality),
-      '-b:v', '0',
+      '-crf', String(vp8MaximumQuantizer),
+      // VP8 needs an explicit bitrate. Its zero-bitrate fallback crushes detail at 256 kbps.
+      '-b:v', String(vp8VideoBitrateBudget),
+      // Bound quantization so rate control cannot sacrifice the selected quality.
+      '-qmin', '0',
+      '-qmax', String(vp8MaximumQuantizer),
       '-deadline', 'good',
       '-cpu-used', '4',
       '-pix_fmt', 'yuv420p',
-      ...(normalized.keepAudio ? ['-c:a', 'libopus', '-b:a', '96k'] : []),
+      // This WASM build can crash on stereo Opus with its default 20 ms frames.
+      ...(normalized.keepAudio ? ['-c:a', 'libopus', '-b:a', '96k', '-frame_duration', '10'] : []),
       '-f', 'webm',
       outputName,
     ]
@@ -669,9 +732,9 @@ const convertCurrent = async (): Promise<void> => {
   } catch (error) {
     if (runID !== conversionRunID.value) return
     console.error('[mp4-to-webm]', error, ffmpegLogTail.slice(-8).join('\n'))
-    errorMessage.value = error instanceof Error && error.message === 'ffmpeg-output-empty'
-      ? t('mp4ToWebm.emptyOutput')
-      : t('mp4ToWebm.convertFailed')
+    errorMessage.value = getVideoConversionFailureMessage(error)
+    // A failed WASM instance can still report loaded=true after a fatal decoder error.
+    disposeFfmpeg()
   } finally {
     if (instance) await cleanupFfmpegFiles(instance, inputName, outputName)
     if (runID === conversionRunID.value) {

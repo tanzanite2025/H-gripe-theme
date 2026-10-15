@@ -10,14 +10,14 @@
       <div class="membership-and-points-modal-actions flex flex-col items-center justify-center py-3 pb-4 pointer-events-auto gap-3">
         <div class="flex flex-wrap gap-2 md:gap-3 items-center justify-center">
           <button
-            class="membership-and-points-view-full-button h-10 px-[18px] rounded-full inline-flex items-center justify-center tz-surface-subtle tz-text-primary border tz-border-strong text-sm pointer-events-auto hover:tz-surface-muted transition-all shadow-[0_4px_12px_-4px_rgb(15_23_42_/_0.12)]"
+            class="tz-pill-button-standard-size membership-and-points-view-full-button px-[18px] rounded-full inline-flex items-center justify-center tz-surface-subtle tz-text-primary border tz-border-strong text-sm pointer-events-auto hover:tz-surface-muted transition-all shadow-[0_4px_12px_-4px_rgb(15_23_42_/_0.12)]"
             type="button"
             @click="handleMemberCenter"
           >
             {{ $t('member.viewAll', 'View Full') }}
           </button>
           <button
-            class="h-10 px-[18px] rounded-full inline-flex items-center justify-center tz-surface-card tz-text-secondary border tz-border-strong text-sm pointer-events-auto shadow-[0_2px_6px_-3px_rgb(15_23_42_/_0.1)] hover:tz-surface-subtle hover:shadow-[0_4px_12px_-4px_rgb(15_23_42_/_0.14)] transition-all"
+            class="tz-pill-button-standard-size px-[18px] rounded-full inline-flex items-center justify-center tz-surface-card tz-text-secondary border tz-border-strong text-sm pointer-events-auto shadow-[0_2px_6px_-3px_rgb(15_23_42_/_0.1)] hover:tz-surface-subtle hover:shadow-[0_4px_12px_-4px_rgb(15_23_42_/_0.14)] transition-all"
             type="button"
             @click="handlePrivacy"
           >

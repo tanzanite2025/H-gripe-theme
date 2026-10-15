@@ -262,12 +262,17 @@ watch(
 }
 
 .address-form__actions button {
-  min-height: 2.55rem;
+  min-height: var(--tz-pill-button-min-height);
   border-radius: 999px;
   background: var(--tz-action-primary);
   color: var(--tz-action-primary-foreground);
   font-size: 0.8rem;
   font-weight: 900;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: var(--tz-pill-button-line-height);
+  padding-block: var(--tz-pill-button-padding-block);
 }
 
 .address-form__actions .address-form__ghost {

@@ -384,7 +384,7 @@ const handleUpload = async (target: UploadTarget, event: Event): Promise<void> =
     formData.append('file', file)
     formData.append('media_type', 'image')
     formData.append('image_purpose', purpose)
-    const asset = await mediaApi.uploadAsset(formData)
+    const asset = await mediaApi.uploadAsset(formData, 'website-profile')
     const url = String(assetAccessURL(asset) || '').trim()
     if (!url) {
       toast.error('上传成功但没有返回图片地址')

@@ -657,11 +657,14 @@ export default {
     const endpoint = '/api/admin/ops/outbox/failures';
     return readOutboxFailuresPayload(await axios.get(endpoint, { params }), endpoint);
   },
-  async getOutboxFailure(id: number): Promise<OutboxFailureEvent> {
+  async getOutboxFailure(id: number, suppressGlobalErrorToast = false): Promise<OutboxFailureEvent> {
     const endpoint = `/api/admin/ops/outbox/failures/${id}`;
-    const payload = readObjectPayload(await axios.get(endpoint), endpoint);
+    const payload = readObjectPayload(await axios.get(endpoint, { suppressGlobalErrorToast }), endpoint);
     requireApiNumberField(payload, 'id', endpoint);
     requireApiStringField(payload, 'status', endpoint);
+    if (payload.id !== id || !['failed', 'dead_letter'].includes(payload.status)) {
+      throw new Error('Outbox 详情编号或失败状态与请求不匹配');
+    }
     return payload as OutboxFailureEvent;
   },
   async retryOutboxFailure(id: number, note: string): Promise<void> {

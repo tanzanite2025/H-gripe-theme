@@ -109,6 +109,10 @@ export const companyAboutTabs = [
     fallback: 'Factory',
     descriptionKey: 'company.aboutTabs.factory.description',
     description: 'Production scale, workshop flow, and factory context.',
+    feedbackThreadKey: 'company-about-factory',
+    feedbackTitleKey: 'feedback.defaultTitle',
+    feedbackSubtitleKey: 'feedback.defaultSubtitle',
+    pageTitleKey: 'company.aboutTabs.factory.label',
   },
   {
     id: 'appearance',
@@ -116,6 +120,10 @@ export const companyAboutTabs = [
     fallback: 'Appearance',
     descriptionKey: 'company.aboutTabs.appearance.description',
     description: 'Brand visuals, finishes, decals, and surface details.',
+    feedbackThreadKey: 'company-about-appearance',
+    feedbackTitleKey: 'feedback.defaultTitle',
+    feedbackSubtitleKey: 'feedback.defaultSubtitle',
+    pageTitleKey: 'company.aboutTabs.appearance.label',
   },
   {
     id: 'hole-patterns',
@@ -123,6 +131,10 @@ export const companyAboutTabs = [
     fallback: 'Hole Patterns',
     descriptionKey: 'company.aboutTabs.holePatterns.description',
     description: 'Drilling layouts for rim, spoke, and hub matching.',
+    feedbackThreadKey: 'company-about-hole-patterns',
+    feedbackTitleKey: 'feedback.defaultTitle',
+    feedbackSubtitleKey: 'feedback.defaultSubtitle',
+    pageTitleKey: 'company.aboutTabs.holePatterns.label',
   },
 ] as const satisfies readonly PageSubNavigationTab[]
 

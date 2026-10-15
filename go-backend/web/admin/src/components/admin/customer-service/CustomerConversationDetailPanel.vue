@@ -58,6 +58,12 @@
         </div>
       </CardHeader>
 
+      <div v-if="messagesError || messageReadReceiptError" role="alert" class="shrink-0 border-b border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+        <p class="font-semibold">{{ messagesError ? '暂时无法确认最新消息' : '消息已读状态尚未确认' }}</p>
+        <p class="mt-1">{{ messagesError || messageReadReceiptError }}</p>
+        <Button variant="outline" size="sm" class="mt-2" :disabled="messagesLoading" @click="emit('refresh-messages')">重新读取消息</Button>
+      </div>
+
       <CardContent class="grid min-h-0 flex-1 grid-rows-[minmax(0,1fr)_auto] gap-0 p-0">
         <div
           ref="messageContainerRef"
@@ -67,7 +73,7 @@
           <div v-if="messagesLoading" class="absolute inset-0 z-10 flex items-center justify-center bg-card/75">
             <LoaderCircle class="size-5 animate-spin text-primary" />
           </div>
-          <div v-else-if="messages.length === 0" class="flex h-72 flex-col items-center justify-center text-muted-foreground">
+          <div v-else-if="messages.length === 0 && !messagesError" class="flex h-72 flex-col items-center justify-center text-muted-foreground">
             <MessageCircleOff class="mb-2 size-7 opacity-55" />
             <span class="text-xs">暂无消息记录</span>
           </div>
@@ -581,7 +587,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
-import mediaApi from '@/api/media'
+import { useConversationAttachmentUploadWithinCurrentAuthorizedConversation } from '@/composables/customerService/useConversationAttachmentUploadWithinCurrentAuthorizedConversation'
 import { useAuthStore } from '@/stores/auth'
 import { assetTitle } from '@/lib/mediaPresentation'
 import { getProductThumbnail } from '@/lib/productMedia'
@@ -627,6 +633,8 @@ const props = withDefaults(defineProps<{
   customerContext?: CustomerContext | null
   messages?: CustomerConversationMessage[]
   messagesLoading?: boolean
+  messagesError?: string | null
+  messageReadReceiptError?: string | null
   selectedCustomerTyping?: CustomerTypingState | null
   assignableAgents?: AssignableAgent[]
   transferTo?: string
@@ -639,6 +647,8 @@ const props = withDefaults(defineProps<{
   customerContext: null,
   messages: () => [],
   messagesLoading: false,
+  messagesError: null,
+  messageReadReceiptError: null,
   selectedCustomerTyping: null,
   assignableAgents: () => [],
   transferTo: '',
@@ -655,6 +665,7 @@ const emit = defineEmits<{
   (event: 'send-reply'): void
   (event: 'send-message', payload: CustomerServiceSendMessagePayload): void
   (event: 'open-context'): void
+  (event: 'refresh-messages'): void
   (event: 'typing-input'): void
 }>()
 
@@ -664,7 +675,7 @@ const productPickerOpen = ref(false)
 const orderPickerOpen = ref(false)
 const imageFileInput = ref<HTMLInputElement | null>(null)
 const videoFileInput = ref<HTMLInputElement | null>(null)
-const attachmentUploading = ref(false)
+const { attachmentUploading, uploadAttachmentForCurrentConversation } = useConversationAttachmentUploadWithinCurrentAuthorizedConversation(() => props.selectedConversation?.id)
 const lightboxOpen = ref(false)
 const lightboxImages = ref<string[]>([])
 const lightboxIndex = ref(0)
@@ -962,28 +973,11 @@ const openLocalVideoPicker = (): void => {
 
 const sendUploadedAttachment = async (file: File, mediaType: 'image' | 'video'): Promise<void> => {
   if (!props.selectedConversation || props.replying || attachmentUploading.value) return
-  attachmentUploading.value = true
-  try {
-    const formData = new FormData()
-    formData.append('file', file)
-    formData.append('media_type', mediaType)
-    if (mediaType === 'image') {
-      formData.append('image_purpose', 'customer_service_attachment')
-    }
-
-    const asset = await mediaApi.uploadAsset(formData)
-    const url = String(asset.url || asset.access_url || '').trim()
-    if (!url) {
-      toast.error('上传成功，但附件地址不可用')
-      return
-    }
-
-    sendMediaSelection(createMediaSelection(asset, url), mediaType)
-  } catch (error) {
-    console.error('Failed to upload customer-service attachment:', error)
-    toast.error(mediaType === 'image' ? '图片上传失败' : '视频上传失败')
-  } finally {
-    attachmentUploading.value = false
+  const uploadConversationId = props.selectedConversation.id
+  const asset = await uploadAttachmentForCurrentConversation(file, mediaType)
+  if (asset && !props.replying && String(props.selectedConversation?.id) === String(uploadConversationId)) {
+    const uploadedMediaType = asset.media_type === 'video' ? 'video' : 'image'
+    sendMediaSelection(createMediaSelection(asset, String(asset.url)), uploadedMediaType)
   }
 }
 

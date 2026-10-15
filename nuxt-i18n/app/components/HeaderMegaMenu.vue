@@ -298,12 +298,12 @@ const shouldShowCardLabel = (card: PrimaryMegaNavCard) => {
 }
 
 const childLabel = (child: PageSubNavigationChild) => {
-  if (child.labelKey) return t(child.labelKey, child.fallback || child.label || child.id) as string
+  if (child.labelKey && te(child.labelKey)) return t(child.labelKey) as string
   return child.label || child.fallback || child.id
 }
 
 const childDescription = (child: PageSubNavigationChild) => {
-  if (child.descriptionKey) return t(child.descriptionKey, child.description || '') as string
+  if (child.descriptionKey && te(child.descriptionKey)) return t(child.descriptionKey) as string
   return child.description || ''
 }
 
@@ -1044,8 +1044,13 @@ const childAccessibleLabel = (child: PageSubNavigationChild) => {
   }
 
   .header-mega__shell {
+    --header-mega-max-height: calc(var(--tz-mobile-safe-viewport-height, 100vh) - var(--site-header-overlay-offset, 7rem) - 18px);
+    --header-mega-collapse-reserved-height: calc(54px + env(safe-area-inset-bottom));
+
     height: auto;
     max-height: var(--header-mega-max-height);
+    /* Keep the collapse button outside the menu's scrolling area. */
+    padding-bottom: var(--header-mega-collapse-reserved-height);
     border: 1px solid var(--header-mega-edge);
     border-radius: 14px;
     box-sizing: border-box;
@@ -1056,8 +1061,8 @@ const childAccessibleLabel = (child: PageSubNavigationChild) => {
 
   .header-mega__content {
     height: auto;
-    max-height: var(--header-mega-max-height);
-    padding: 10px 10px calc(48px + env(safe-area-inset-bottom));
+    max-height: calc(var(--header-mega-max-height) - var(--header-mega-collapse-reserved-height) - 2px);
+    padding: 10px;
   }
 
   .header-mega__collapse {

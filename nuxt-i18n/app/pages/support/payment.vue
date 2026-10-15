@@ -27,7 +27,7 @@
           :to="localePath('/company/ourstory')"
           target="_blank"
           rel="noopener"
-class="inline-flex items-center justify-center rounded-full tz-surface-muted px-4 py-2.5 text-sm font-semibold tz-text-secondary shadow-[0_8px_20px_rgba(15,23,42,0.1)] transition-colors hover:tz-surface-subtle hover:tz-text-primary"
+class="tz-pill-button-standard-size inline-flex items-center justify-center rounded-full tz-surface-muted px-4 text-sm font-semibold tz-text-secondary shadow-[0_8px_20px_rgba(15,23,42,0.1)] transition-colors hover:tz-surface-subtle hover:tz-text-primary"
         >
           {{ t('supportPayment.hero.links.ourStory') }}
         </NuxtLink>
@@ -35,7 +35,7 @@ class="inline-flex items-center justify-center rounded-full tz-surface-muted px-
           :to="localePath('/support/shipping')"
           target="_blank"
           rel="noopener"
-          class="inline-flex items-center justify-center rounded-full tz-surface-muted px-4 py-2.5 text-sm font-semibold tz-text-secondary shadow-[0_8px_20px_rgba(20,32,43,0.1)] transition-colors hover:tz-surface-subtle hover:tz-text-primary"
+          class="tz-pill-button-standard-size inline-flex items-center justify-center rounded-full tz-surface-muted px-4 text-sm font-semibold tz-text-secondary shadow-[0_8px_20px_rgba(20,32,43,0.1)] transition-colors hover:tz-surface-subtle hover:tz-text-primary"
         >
           {{ t('supportPayment.hero.links.shipping') }}
         </NuxtLink>
@@ -43,7 +43,7 @@ class="inline-flex items-center justify-center rounded-full tz-surface-muted px-
           :to="localePath('/support/test-report')"
           target="_blank"
           rel="noopener"
-          class="inline-flex items-center justify-center rounded-full tz-surface-muted px-4 py-2.5 text-sm font-semibold tz-text-secondary shadow-[0_8px_20px_rgba(20,32,43,0.1)] transition-colors hover:tz-surface-subtle hover:tz-text-primary"
+          class="tz-pill-button-standard-size inline-flex items-center justify-center rounded-full tz-surface-muted px-4 text-sm font-semibold tz-text-secondary shadow-[0_8px_20px_rgba(20,32,43,0.1)] transition-colors hover:tz-surface-subtle hover:tz-text-primary"
         >
           {{ t('supportPayment.hero.links.testReport') }}
         </NuxtLink>

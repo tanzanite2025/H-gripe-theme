@@ -98,7 +98,7 @@
     >
       <button
         type="button"
-        class="inline-flex items-center gap-2 px-8 py-3 rounded-full text-sm font-bold bg-[var(--tz-action-primary)] text-white hover:bg-[var(--tz-action-primary-hover)] hover:shadow-[0_8px_18px_rgba(15,23,42,0.16)] transition-all"
+          class="tz-pill-button-standard-size gap-2 px-8 rounded-full text-sm font-bold bg-[var(--tz-action-primary)] text-white hover:bg-[var(--tz-action-primary-hover)] hover:shadow-[0_8px_18px_rgba(15,23,42,0.16)] transition-all"
         @click="loadMoreGroups"
       >
         {{ t('supportFaqs.ui.viewMoreContent') }}

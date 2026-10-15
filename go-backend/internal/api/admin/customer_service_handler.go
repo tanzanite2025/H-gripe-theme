@@ -1,20 +1,22 @@
 package admin
 
 import (
+	"strings"
+
 	"commerce-platform/internal/api/realtime"
 	"commerce-platform/internal/service"
-	"strings"
 )
 
 type TicketHandler struct {
-	ticketService            *service.TicketService
-	customerServiceContext   *service.CustomerServiceContextService
-	customerServiceAnalytics *service.CustomerServiceAnalyticsService
-	customerServiceRetention *service.CustomerServiceRetentionService
-	customerServiceEvents    *service.CustomerServiceEventHub
-	mediaService             *service.MediaService
-	allowedOrigins           []string
-	webSocketLimiter         *realtime.CustomerServiceWebSocketLimiter
+	ticketService                *service.TicketService
+	customerServiceContext       *service.CustomerServiceContextService
+	customerServiceAnalytics     *service.CustomerServiceAnalyticsService
+	customerServiceRetention     *service.CustomerServiceRetentionService
+	customerServiceEvents        *service.CustomerServiceEventHub
+	mediaService                 *service.MediaService
+	conversationAttachmentAccess *service.CustomerServiceConversationMessageAttachmentAccessService
+	allowedOrigins               []string
+	webSocketLimiter             *realtime.CustomerServiceWebSocketLimiter
 }
 
 func (h *TicketHandler) ConfigureCustomerServiceRetention(retention *service.CustomerServiceRetentionService) {
@@ -48,11 +50,12 @@ func NewTicketHandler(
 		mediaSvc = mediaService[0]
 	}
 	return &TicketHandler{
-		ticketService:            ticketService,
-		customerServiceContext:   customerServiceContext,
-		customerServiceAnalytics: customerServiceAnalytics,
-		customerServiceEvents:    customerServiceEvents,
-		mediaService:             mediaSvc,
+		ticketService:                ticketService,
+		customerServiceContext:       customerServiceContext,
+		customerServiceAnalytics:     customerServiceAnalytics,
+		customerServiceEvents:        customerServiceEvents,
+		mediaService:                 mediaSvc,
+		conversationAttachmentAccess: service.NewCustomerServiceConversationMessageAttachmentAccessService(ticketService, mediaSvc),
 	}
 }
 

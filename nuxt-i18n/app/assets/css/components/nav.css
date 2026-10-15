@@ -10,7 +10,11 @@
 }
 
 .nav-pill-item {
-  @apply border-none rounded-full px-5 py-2 text-[0.8rem] font-semibold cursor-pointer transition-all duration-200 inline-flex items-center no-underline;
+  @apply border-none rounded-full px-5 text-[0.8rem] font-semibold cursor-pointer transition-all duration-200 inline-flex items-center no-underline;
+  justify-content: center;
+  min-height: var(--tz-pill-button-min-height);
+  padding-block: var(--tz-pill-button-padding-block);
+  line-height: var(--tz-pill-button-line-height);
   background: #ffffff;
   color: var(--tz-text-secondary);
   border: 1px solid var(--tz-border-strong);

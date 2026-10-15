@@ -5,7 +5,7 @@
       class="footer-menu-navigation-item__link"
       :to="localePath(item.to)"
     >
-      {{ item.labelKey ? $t(item.labelKey, item.fallback || item.labelKey) : item.fallback }}
+      {{ footerNavigationItemDisplayLabel }}
     </NuxtLink>
     <a
       v-else-if="item.to && item.external"
@@ -14,13 +14,13 @@
       target="_blank"
       rel="noopener noreferrer"
     >
-      {{ item.labelKey ? $t(item.labelKey, item.fallback || item.labelKey) : item.fallback }}
+      {{ footerNavigationItemDisplayLabel }}
     </a>
     <span
       v-else
       class="footer-menu-navigation-item__group-label"
     >
-      {{ item.labelKey ? $t(item.labelKey, item.fallback || item.labelKey) : item.fallback }}
+      {{ footerNavigationItemDisplayLabel }}
     </span>
 
     <ul
@@ -37,16 +37,22 @@
 </template>
 
 <script setup lang="ts">
-import { useLocalePath } from '#imports'
+import { computed } from 'vue'
+import { useI18n, useLocalePath } from '#imports'
 import type { FooterNavigationItem } from '~/utils/footerMenus'
 
 defineOptions({ name: 'FooterMenuNavigationItem' })
 
-defineProps<{
+const props = defineProps<{
   item: FooterNavigationItem
 }>()
 
 const localePath = useLocalePath()
+const { t, te } = useI18n()
+const footerNavigationItemDisplayLabel = computed(() => {
+  const { labelKey, fallback } = props.item
+  return labelKey && te(labelKey) ? t(labelKey) : fallback || labelKey || ''
+})
 
 const getFooterMenuNavigationItemKey = (
   item: FooterNavigationItem,

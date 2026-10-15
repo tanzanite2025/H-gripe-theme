@@ -27,8 +27,22 @@
       </div>
       <div class="flex shrink-0 items-center gap-2 text-[10px] font-bold text-muted-foreground">
         <Badge variant="outline" class="whitespace-nowrap">TOTAL {{ total }}</Badge>
-        <Badge variant="outline" class="whitespace-nowrap">媒体文件与引用关系独立管理</Badge>
       </div>
+      <Select :model-value="uploadOrigin" @update:model-value="(value) => emit('update:upload-origin', String(value))">
+        <SelectTrigger class="w-44"><SelectValue placeholder="上传来源" /></SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">全部上传来源</SelectItem>
+          <SelectItem v-for="origin in mediaLibraryUploadOriginOptions" :key="origin.value" :value="origin.value">{{ origin.label }}</SelectItem>
+        </SelectContent>
+      </Select>
+      <Select v-if="libraryPartition === 'customer_service'" :model-value="customerServiceMediaPurpose" @update:model-value="(value) => emit('update:customer-service-media-purpose', String(value))">
+        <SelectTrigger class="w-40"><SelectValue /></SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">全部客服资料</SelectItem>
+          <SelectItem value="reusable_reply">常用素材</SelectItem>
+          <SelectItem v-if="canViewConversationAttachments" value="conversation_attachment">会话附件</SelectItem>
+        </SelectContent>
+      </Select>
       <div class="ml-auto flex shrink-0 items-center gap-2">
         <Button variant="outline" size="sm" @click="emit('reset')">重置</Button>
         <Button size="sm" @click="emit('apply')">应用筛选</Button>
@@ -47,6 +61,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { mediaLibraryUploadOriginOptions } from '@/modules/media/mediaLibraryBusinessPartitionUploadOriginAndCustomerServicePurposePresentation'
 
 withDefaults(defineProps<{
   search?: string
@@ -54,18 +69,25 @@ withDefaults(defineProps<{
   status?: string
   total?: number
   loading?: boolean
+  uploadOrigin?: string
+  libraryPartition?: string
+  customerServiceMediaPurpose?: string
+  canViewConversationAttachments?: boolean
 }>(), {
   search: '',
   mediaType: 'all',
   status: 'all',
   total: 0,
-  loading: false
+  loading: false,
+  uploadOrigin: 'all', libraryPartition: 'operational', customerServiceMediaPurpose: 'all', canViewConversationAttachments: false,
 })
 
 const emit = defineEmits<{
   (event: 'update:search', value: string): void
   (event: 'update:media-type', value: string): void
   (event: 'update:status', value: string): void
+  (event: 'update:upload-origin', value: string): void
+  (event: 'update:customer-service-media-purpose', value: string): void
   (event: 'apply'): void
   (event: 'reset'): void
   (event: 'refresh'): void

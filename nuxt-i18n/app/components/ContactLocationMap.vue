@@ -24,7 +24,7 @@
             v-if="googleDirectionsUrl || googleMapsUrl"
             target="_blank"
             rel="noopener noreferrer"
-            class="flex min-h-10 w-full items-center justify-center rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-950 transition-colors hover:bg-white/90"
+            class="tz-pill-button-standard-size flex w-full items-center justify-center rounded-full bg-white px-4 text-sm font-semibold text-slate-950 transition-colors hover:bg-white/90"
           >
             {{ t('contactLocation.getDirections') }}
           </a>
@@ -33,7 +33,7 @@
             :href="googleMapsUrl"
             target="_blank"
             rel="noopener noreferrer"
-            class="flex min-h-10 w-full items-center justify-center rounded-full border tz-border-subtle tz-surface-subtle px-4 py-2 text-sm font-semibold tz-text-primary/85 transition-colors hover:tz-surface-subtle hover:tz-text-primary"
+            class="tz-pill-button-standard-size flex w-full items-center justify-center rounded-full border tz-border-subtle tz-surface-subtle px-4 text-sm font-semibold tz-text-primary/85 transition-colors hover:tz-surface-subtle hover:tz-text-primary"
           >
             {{ t('contactLocation.openGoogle') }}
           </a>
@@ -42,7 +42,7 @@
             :href="appleMapsUrl"
             target="_blank"
             rel="noopener noreferrer"
-            class="flex min-h-10 w-full items-center justify-center rounded-full border tz-border-subtle tz-surface-subtle px-4 py-2 text-sm font-semibold tz-text-primary/85 transition-colors hover:tz-surface-subtle hover:tz-text-primary"
+            class="tz-pill-button-standard-size flex w-full items-center justify-center rounded-full border tz-border-subtle tz-surface-subtle px-4 text-sm font-semibold tz-text-primary/85 transition-colors hover:tz-surface-subtle hover:tz-text-primary"
           >
             {{ t('contactLocation.openApple') }}
           </a>

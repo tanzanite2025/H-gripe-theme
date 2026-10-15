@@ -10,6 +10,7 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"commerce-platform/internal/domain/media"
 	"commerce-platform/internal/pkg/upload"
 	mediaservice "commerce-platform/internal/service"
 
@@ -189,13 +190,14 @@ func (s *Service) UploadMedia(ctx context.Context, uploaderID uint, file *multip
 		return nil, err
 	}
 	asset, err := s.media.UploadAsset(ctx, mediaservice.MediaUploadInput{
-		File:          file,
-		MediaType:     "image",
-		Caption:       strings.TrimSpace(caption),
-		UploaderID:    uploaderID,
-		Width:         width,
-		Height:        height,
-		StoragePrefix: "workbench-feed",
+		UploadOrigin:        media.MediaUploadOriginAdministratorWorkbenchFeed,
+		File:                file,
+		MediaType:           "image",
+		Caption:             strings.TrimSpace(caption),
+		UploadActorIdentity: media.MediaUploadActorIdentity{ActorType: media.MediaUploadActorAdministrator, AccountID: uploaderID},
+		Width:               width,
+		Height:              height,
+		StoragePrefix:       "workbench-feed",
 	})
 	if err != nil {
 		return nil, err

@@ -81,6 +81,7 @@ func (s *CustomerServiceRetentionScheduler) Start(ctx context.Context) {
 				logger.Info("customer-service retention scheduler stopped")
 				return
 			case <-timer.C:
+				s.expirePendingCustomerServiceAttachmentUploadsOnce(runCtx)
 				cfg, err := s.retentionService.RuntimeConfig()
 				if err == nil && cfg.Enabled && (lastRun.IsZero() || time.Since(lastRun) >= time.Duration(cfg.IntervalSeconds)*time.Second) {
 					s.cleanupOnce()
@@ -89,6 +90,29 @@ func (s *CustomerServiceRetentionScheduler) Start(ctx context.Context) {
 			}
 		}
 	}()
+}
+
+// Upload expiry is independent from the operator's conversation-retention
+// policy. It uses this scheduler and the existing shared Outbox dispatcher.
+func (s *CustomerServiceRetentionScheduler) RunCustomerServiceAttachmentUploadExpiryOnce(ctx context.Context) (service.CustomerServicePendingAttachmentUploadExpiryBatchResult, error) {
+	if s == nil || s.retentionService == nil {
+		return service.CustomerServicePendingAttachmentUploadExpiryBatchResult{}, nil
+	}
+	return s.retentionService.ExpireUnboundCustomerServiceAttachmentUploads(ctx, s.batchLimit)
+}
+
+func (s *CustomerServiceRetentionScheduler) expirePendingCustomerServiceAttachmentUploadsOnce(ctx context.Context) {
+	passContext, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+	result, err := s.RunCustomerServiceAttachmentUploadExpiryOnce(passContext)
+	if err != nil {
+		logger.Error("customer-service pending attachment expiry failed", zap.Error(err))
+		return
+	}
+	if result.Scanned > 0 || result.Errors > 0 {
+		logger.Info("customer-service pending attachment expiry completed", zap.Int("scanned", result.Scanned), zap.Int("retired", result.Retired),
+			zap.Int("blocked", result.Blocked), zap.Int("errors", result.Errors))
+	}
 }
 
 func (s *CustomerServiceRetentionScheduler) Stop() {

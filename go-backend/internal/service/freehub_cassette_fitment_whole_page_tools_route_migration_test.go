@@ -41,7 +41,7 @@ func TestFreehubCassetteFitmentToolsRouteMigrationPreservesWholePageFAQContent(t
 		}).Error)
 	}
 
-	faqService := NewFAQService(repository.NewFAQRepository(db), nil)
+	faqService := NewFAQService(repository.NewFAQRepository(db))
 	_, err = faqService.ReconcileStorefrontRoutes(context.Background(), manifest)
 	require.NoError(t, err)
 

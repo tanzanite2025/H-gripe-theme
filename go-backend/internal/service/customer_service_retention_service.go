@@ -11,6 +11,8 @@ import (
 	"strings"
 	"time"
 
+	"gorm.io/datatypes"
+
 	"commerce-platform/internal/domain/aftersales"
 	"commerce-platform/internal/domain/audit"
 	"commerce-platform/internal/domain/outbox"
@@ -18,7 +20,6 @@ import (
 	"commerce-platform/internal/pkg/metrics"
 	"commerce-platform/internal/pkg/storage"
 	"commerce-platform/internal/repository"
-	"gorm.io/datatypes"
 )
 
 var (
@@ -483,6 +484,10 @@ func (s *CustomerServiceRetentionService) purgeConversationWithAudit(ticketID ui
 		if eventErr != nil {
 			return eventErr
 		}
+		if s.managedCustomerServiceAttachmentRetirementAvailable() {
+			return s.ticketRepo.PurgeCustomerServiceConversationWithAuditCleanupAndManagedAttachmentRetirement(ticketID, entry, cleanupEvent,
+				s.retireManagedCustomerServiceConversationAttachmentsWithinTransaction)
+		}
 		return s.ticketRepo.PurgeCustomerServiceConversationWithAuditAndCleanup(ticketID, entry, cleanupEvent)
 	}
 	if err := s.cleanupConversationProjections(context.Background(), ticketID, scan.References); err != nil {
@@ -518,6 +523,13 @@ func (s *CustomerServiceRetentionService) cleanupConversationProjections(ctx con
 	if s.attachmentStorage != nil {
 		for _, ref := range refs {
 			if s.mediaService != nil {
+				managed, managedErr := s.shouldPreserveRegisteredAttachmentObjectDuringLegacyProjectionCleanup(ref)
+				if managedErr != nil {
+					return managedErr
+				}
+				if managed {
+					continue
+				}
 				shared, shareErr := s.mediaService.customerServiceAttachmentReferencedElsewhere(ref, ticketID)
 				if shareErr != nil {
 					return fmt.Errorf("check customer-service attachment references: %w", shareErr)
@@ -608,6 +620,24 @@ func (s *CustomerServiceRetentionService) evaluateRecord(record ticket.Ticket, n
 }
 
 func (s *CustomerServiceRetentionService) dependencyHold(record ticket.Ticket) string {
+	if s.ticketRepo != nil {
+		managed, managedErr := s.ticketRepo.HasCustomerServiceConversationManagedAttachmentLifecycleHold(record.ID)
+		if managedErr != nil {
+			return "attachment retention check failed"
+		}
+		if managed && !s.managedCustomerServiceAttachmentRetirementAvailable() {
+			return "attachment retention hold"
+		}
+		if managed && s.managedCustomerServiceAttachmentRetirementAvailable() {
+			writing, err := s.ticketRepo.HasCustomerServiceConversationAttachmentWritesInProgress(record.ID, s.currentTime())
+			if err != nil {
+				return "attachment write check failed"
+			}
+			if writing {
+				return "attachment writes in progress"
+			}
+		}
+	}
 	if s.orderRepo == nil || record.CustomerUserID == nil || *record.CustomerUserID == 0 {
 		return ""
 	}

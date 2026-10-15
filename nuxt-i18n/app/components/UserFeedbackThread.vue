@@ -144,7 +144,7 @@
         <div class="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
           <button
             type="submit"
-            class="inline-flex items-center justify-center rounded-full bg-[#059669] px-5 py-2.5 text-sm font-semibold text-white shadow-md transition-all hover:bg-[#047857] disabled:cursor-not-allowed disabled:opacity-60"
+            class="tz-pill-button-standard-size rounded-full bg-[#059669] px-5 text-sm font-semibold text-white shadow-md transition-all hover:bg-[#047857] disabled:cursor-not-allowed disabled:opacity-60"
             :disabled="loadingSubmit || !message.trim()"
           >
             <span v-if="loadingSubmit">

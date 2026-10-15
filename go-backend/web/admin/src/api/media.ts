@@ -11,6 +11,9 @@ import {
 
 export type MediaID = string | number
 
+export type MediaLibraryPartition = 'catalog' | 'content' | 'shared' | 'customer_service' | 'customer_submissions' | 'unclassified'
+export type OperationalMediaUploadContext = 'catalog' | 'content' | 'website-profile' | 'shared' | 'customer-service-reusable'
+
 export interface MediaAsset {
   id: MediaID
   filename?: string | null
@@ -21,6 +24,14 @@ export interface MediaAsset {
   media_type?: string | null
   status?: string | null
   visibility?: string | null
+  library_partition?: MediaLibraryPartition | null
+  upload_origin?: string | null
+  classification_method?: 'historical_unknown' | 'recorded_upload_context' | 'manual_reviewed' | null
+  classification_revision?: number
+  customer_service_media_purpose?: 'conversation_attachment' | 'reusable_reply' | '' | null
+  upload_purpose?: string | null
+  requires_conversation_access?: boolean
+  upload_session_id?: string | null
   size?: number | string | null
   width?: number | string | null
   height?: number | string | null
@@ -89,6 +100,10 @@ export interface MediaPagination {
 }
 
 export interface MediaAssetListParams {
+  library_partition?: MediaLibraryPartition | 'all' | 'operational'
+  upload_origin?: string
+  customer_service_media_purpose?: 'conversation_attachment' | 'reusable_reply'
+  selection_context?: 'reusable'
   page?: number
   page_size?: number
   search?: string
@@ -103,6 +118,7 @@ export interface MediaAssetListResult {
 }
 
 export interface MediaReference {
+  usage_state?: 'active' | 'retained_deleted_parent' | 'missing_parent' | 'pending_upload' | null
   resource_type?: string | null
   resource_id?: string | number | null
   field?: string | null
@@ -116,7 +132,55 @@ export interface MediaReferenceReport {
   total: number
 }
 
+export interface MediaAssetLibraryClassificationSnapshot {
+  media_asset_id: number
+  library_partition: MediaLibraryPartition
+  upload_origin: string
+  classification_method: NonNullable<MediaAsset['classification_method']>
+  customer_service_media_purpose: string
+  classification_revision: number
+}
+
+export interface MediaAssetLibraryOwnershipChoice {
+  library_partition: MediaLibraryPartition
+  customer_service_media_purpose: string
+}
+
+export interface MediaAssetLibraryOwnershipReview {
+  current: MediaAssetLibraryClassificationSnapshot
+  can_reclassify: boolean
+  restriction_reason?: string
+  allowed_choices: MediaAssetLibraryOwnershipChoice[]
+  suggested_ownership?: MediaAssetLibraryOwnershipChoice
+  suggestion_basis: string
+  reference_coverage: 'recognized_business_sources_only'
+  recognized_reference_total: number
+  reference_category_counts: Record<string, number>
+  retained_deleted_parent_references: number
+  missing_parent_references: number
+}
+
+export interface MediaAssetManualLibraryClassificationChange {
+  library_partition: MediaLibraryPartition
+  customer_service_media_purpose: string
+  expected_revision: number
+  reason: string
+}
+
 export const mediaApi = {
+  async reviewAssetLibraryOwnership(id: MediaID, signal?: AbortSignal): Promise<MediaAssetLibraryOwnershipReview> {
+    const path = `/api/admin/media/assets/${id}/library-classification-review`
+    const payload = requireApiObject(unwrapApiPayload(await axios.get(path, { signal, suppressGlobalErrorToast: true }), path), path)
+    const review = requireApiObjectField<MediaAssetLibraryOwnershipReview>(payload, 'review', path)
+    if (!Number.isSafeInteger(review.current?.classification_revision) || review.current.classification_revision < 0) throw new Error('Invalid media classification revision')
+    return review
+  },
+
+  async reclassifyAssetLibraryOwnership(id: MediaID, change: MediaAssetManualLibraryClassificationChange, signal?: AbortSignal): Promise<MediaAsset> {
+    const path = `/api/admin/media/assets/${id}/library-classification`
+    const payload = requireApiObject(unwrapApiPayload(await axios.patch(path, change, { signal, suppressGlobalErrorToast: true }), path), path)
+    return requireApiObjectField<MediaAsset>(payload, 'asset', path)
+  },
   async listDerivativePresets(): Promise<MediaDerivativePreset[]> {
     const path = '/api/admin/media/derivative-presets'
     const payload = requireApiObject(unwrapApiPayload(await axios.get(path), path), path)
@@ -158,9 +222,9 @@ export const mediaApi = {
     return requireApiObjectField<MediaDerivativeRebuildJob>(result, 'job', path)
   },
 
-  async listAssets(params: MediaAssetListParams = {}): Promise<MediaAssetListResult> {
+  async listAssets(params: MediaAssetListParams = {}, signal?: AbortSignal): Promise<MediaAssetListResult> {
     const path = '/api/admin/media/assets'
-    const response = await axios.get(path, { params })
+    const response = await axios.get(path, { params, signal })
     const body = requireApiObject(response.data, path, 'response body')
     const payload = unwrapApiPayload(response, path)
     const payloadObject = requireApiObject(payload, path)
@@ -171,14 +235,23 @@ export const mediaApi = {
     }
   },
 
+  async countAssetsByLibraryPartition(params: MediaAssetListParams = {}, signal?: AbortSignal): Promise<{ counts: Record<string, number>; canViewConversationAttachments: boolean }> {
+    const path = '/api/admin/media/assets/library-partition-counts'
+    const payload = requireApiObject(unwrapApiPayload(await axios.get(path, { params, signal }), path), path)
+    const counts = requireApiObjectField<Record<string, number>>(payload, 'partition_counts', path)
+    if (Object.values(counts).some((count) => !Number.isSafeInteger(count) || count < 0)) throw new Error('Invalid media partition counts')
+    if (typeof payload.can_view_conversation_attachments !== 'boolean') throw new Error('Missing media conversation access scope')
+    return { counts, canViewConversationAttachments: payload.can_view_conversation_attachments }
+  },
+
   async getAsset(id: MediaID): Promise<MediaAsset> {
     const path = `/api/admin/media/assets/${id}`
     const payload = requireApiObject(unwrapApiPayload(await axios.get(path), path), path)
     return requireApiObjectField<MediaAsset>(payload, 'asset', path)
   },
 
-  async uploadAsset(formData: FormData): Promise<MediaAsset> {
-    const path = '/api/admin/media/assets'
+  async uploadAsset(formData: FormData, context?: OperationalMediaUploadContext): Promise<MediaAsset> {
+    const path = context ? `/api/admin/media/uploads/${context}` : '/api/admin/media/assets'
     const payload = requireApiObject(unwrapApiPayload(await axios.post(path, formData), path), path)
     return requireApiObjectField<MediaAsset>(payload, 'asset', path)
   },

@@ -182,7 +182,7 @@ const uploadAndInsert = async (event: Event, type: 'image' | 'video') => {
     formData.append('file', file)
     formData.append('media_type', type)
     if (type === 'image') formData.append('image_purpose', 'product_description_image')
-    const asset = await mediaApi.uploadAsset(formData)
+    const asset = await mediaApi.uploadAsset(formData, 'catalog')
     const url = String(asset?.url || '').trim()
     if (!url) {
       toast.error('上传成功但没有返回媒体地址')

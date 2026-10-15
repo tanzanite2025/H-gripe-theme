@@ -1,9 +1,11 @@
 package repository
 
 import (
-	"commerce-platform/internal/domain/media"
 	"fmt"
 	"strings"
+	"time"
+
+	"commerce-platform/internal/domain/media"
 )
 
 func (r *MediaRepository) productMediaReferences(query mediaAssetReferenceQuery) ([]media.AssetReference, error) {
@@ -12,19 +14,24 @@ func (r *MediaRepository) productMediaReferences(query mediaAssetReferenceQuery)
 	}
 
 	type row struct {
-		ID           uint
-		ProductID    uint
-		MediaAssetID *uint
-		URL          string
-		ThumbnailURL string
-		PosterURL    string
+		ID               uint
+		ProductID        uint
+		MediaAssetID     *uint
+		URL              string
+		ThumbnailURL     string
+		PosterURL        string
+		ExistingParentID *uint
+		ParentDeletedAt  *time.Time
 	}
 	var rows []row
-	err := r.db.Table("product_media").
-		Select("id, product_id, media_asset_id, url, thumbnail_url, poster_url").
-		Where("deleted_at IS NULL").
-		Where("media_asset_id = ? OR url IN ? OR thumbnail_url IN ? OR poster_url IN ?", query.AssetID, query.URLs, query.URLs, query.URLs).
-		Find(&rows).Error
+	parentStateAvailable := r.hasTable("products")
+	scan := r.db.Table("product_media").Select("product_media.id, product_media.product_id, product_media.media_asset_id, product_media.url, product_media.thumbnail_url, product_media.poster_url")
+	if parentStateAvailable {
+		scan = scan.Select("product_media.id, product_media.product_id, product_media.media_asset_id, product_media.url, product_media.thumbnail_url, product_media.poster_url, products.id AS existing_parent_id, products.deleted_at AS parent_deleted_at").
+			Joins("LEFT JOIN products ON products.id = product_media.product_id")
+	}
+	err := scan.Where("product_media.deleted_at IS NULL").
+		Where("product_media.media_asset_id = ? OR product_media.url IN ? OR product_media.thumbnail_url IN ? OR product_media.poster_url IN ?", query.AssetID, query.URLs, query.URLs, query.URLs).Find(&rows).Error
 	if err != nil {
 		return nil, err
 	}
@@ -44,14 +51,25 @@ func (r *MediaRepository) productMediaReferences(query mediaAssetReferenceQuery)
 		if containsMediaReferenceURL(query.URLs, item.PosterURL) {
 			fields = append(fields, "poster_url")
 		}
-		references = append(references, newMediaReference(
+		reference := newMediaReference(
 			media.ReferenceCategoryCatalog,
 			"product_media",
 			item.ID,
 			item.ProductID,
 			fmt.Sprintf("商品 #%d 的媒体 #%d", item.ProductID, item.ID),
 			strings.Join(fields, ", "),
-		))
+		)
+		if parentStateAvailable {
+			reference.UsageState = "active"
+			if item.ExistingParentID == nil {
+				reference.UsageState = "missing_parent"
+				reference.Label += "（商品记录不存在）"
+			} else if item.ParentDeletedAt != nil {
+				reference.UsageState = "retained_deleted_parent"
+				reference.Label += "（已删除商品保留）"
+			}
+		}
+		references = append(references, reference)
 	}
 	return references, nil
 }

@@ -2,17 +2,20 @@ package main
 
 import (
 	"bytes"
-	"commerce-platform/internal/domain/faq"
-	"commerce-platform/internal/pkg/config"
-	"commerce-platform/internal/pkg/database"
-	"commerce-platform/internal/repository"
-	"commerce-platform/internal/service"
 	"encoding/json"
 	"flag"
 	"fmt"
 	"log"
 	"os"
+	"strings"
 	"time"
+
+	"commerce-platform/internal/domain/faq"
+	"commerce-platform/internal/pkg/config"
+	"commerce-platform/internal/pkg/database"
+	"commerce-platform/internal/pkg/storage"
+	"commerce-platform/internal/repository"
+	"commerce-platform/internal/service"
 )
 
 // FAQImport 导入的FAQ结构
@@ -87,7 +90,22 @@ func main() {
 
 	// 创建 repository
 	faqRepo := repository.NewFAQRepository(db)
-	faqService := service.NewFAQService(faqRepo, nil)
+	faqService := service.NewFAQService(faqRepo)
+	if !*dryRun {
+		storageConfig := storage.LoadConfigFromEnv()
+		if _, configured := os.LookupEnv("STORAGE_BASE_URL"); !configured {
+			storageConfig.BaseURL = cfg.Server.BaseURL
+		}
+		storageService, err := storage.NewStorageService(storageConfig)
+		if err != nil {
+			log.Fatalf("initialize FAQ import media identity validation: %v", err)
+		}
+		storefrontBaseURL := strings.TrimSpace(os.Getenv("STOREFRONT_BASE_URL"))
+		if storefrontBaseURL == "" {
+			storefrontBaseURL = cfg.Server.BaseURL
+		}
+		faqService.ConfigureMediaService(service.NewMediaService(repository.NewMediaRepository(db), storageService, nil, storefrontBaseURL, cfg.MediaUpload.AccountStorageQuotaBytes))
+	}
 
 	// 导入 FAQ
 	fmt.Println("开始导入...")
@@ -144,7 +162,9 @@ func main() {
 			existing.Status = importFAQ.Status
 			existing.ViewCount = importFAQ.ViewCount
 
-			if err := faqService.Update(existing); err != nil {
+			// This import format has no image fields. Reload them in the save
+			// transaction instead of restoring a stale pre-import snapshot.
+			if err := faqService.Update(existing, repository.FAQMediaFieldMutation{UpdateAnswer: true}); err != nil {
 				log.Printf("❌ 更新 FAQ 失败 [%s]: %v", importFAQ.Question, err)
 				stats["skipped"]++
 			} else {

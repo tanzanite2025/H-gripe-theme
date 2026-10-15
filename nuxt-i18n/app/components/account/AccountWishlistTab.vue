@@ -293,10 +293,15 @@ watch(
   border-radius: 999px;
   background: var(--tz-action-primary);
   color: var(--tz-action-primary-foreground);
-  padding: 0.65rem 1rem;
+  padding: var(--tz-pill-button-padding-block) 1rem;
   font-size: 0.8rem;
   font-weight: 850;
   text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--tz-pill-button-min-height);
+  line-height: var(--tz-pill-button-line-height);
 }
 
 .account-item-list {

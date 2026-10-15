@@ -1,16 +1,22 @@
 package repository
 
 import (
-	"commerce-platform/internal/domain/product"
 	"fmt"
+
+	"commerce-platform/internal/domain/product"
 
 	"gorm.io/gorm"
 )
 
-func replaceProductMedia(tx *gorm.DB, productID uint, mediaItems []product.ProductMedia) error {
+func (r *ProductRepository) replaceProductMedia(tx *gorm.DB, productID uint, mediaItems []product.ProductMedia, bindingsAlreadyValidated bool) error {
 	var existingItems []product.ProductMedia
 	if err := tx.Where("product_id = ?", productID).Find(&existingItems).Error; err != nil {
 		return err
+	}
+	if !bindingsAlreadyValidated {
+		if err := r.lockValidateAndCanonicalizeProductMediaAssetBindings(tx, mediaItems, existingItems); err != nil {
+			return err
+		}
 	}
 	if err := ensureProductMediaReferencesBelongToProduct(tx, productID, mediaItems); err != nil {
 		return err
@@ -26,7 +32,7 @@ func replaceProductMedia(tx *gorm.DB, productID uint, mediaItems []product.Produ
 		mediaItems[i].ProductID = productID
 		if mediaItems[i].ID != 0 {
 			if _, ok := existingByID[mediaItems[i].ID]; !ok {
-				return fmt.Errorf("media %d does not belong to product %d", mediaItems[i].ID, productID)
+				return fmt.Errorf("%w: media %d does not belong to product %d", ErrProductMediaReferenceInvalid, mediaItems[i].ID, productID)
 			}
 			if err := tx.Save(&mediaItems[i]).Error; err != nil {
 				return err

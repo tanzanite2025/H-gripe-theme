@@ -1,19 +1,22 @@
 package admin
 
 import (
-	"commerce-platform/internal/service"
 	"net/http"
+
+	"commerce-platform/internal/service"
 
 	"github.com/gin-gonic/gin"
 )
 
 type DashboardHandler struct {
-	dashboardService *service.DashboardService
+	dashboardService            *service.DashboardService
+	businessFollowUpReadService *service.DashboardBusinessFollowUpReadService
 }
 
-func NewDashboardHandler(dashboardService *service.DashboardService) *DashboardHandler {
+func NewDashboardHandler(dashboardService *service.DashboardService, businessFollowUpReadService *service.DashboardBusinessFollowUpReadService) *DashboardHandler {
 	return &DashboardHandler{
-		dashboardService: dashboardService,
+		dashboardService:            dashboardService,
+		businessFollowUpReadService: businessFollowUpReadService,
 	}
 }
 

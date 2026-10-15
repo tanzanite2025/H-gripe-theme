@@ -116,7 +116,7 @@
     <section class="text-center mb-6">
       <h3 class="text-xl font-bold tz-text-primary mb-3">{{ t('companyOemOdm.cta.title') }}</h3>
       <p class="tz-text-secondary mb-6 max-w-2xl mx-auto text-sm">{{ t('companyOemOdm.cta.description') }}</p>
-      <NuxtLink :to="localePath('/company/contact')" class="inline-block bg-amber-500 hover:bg-amber-400 text-slate-900 font-bold py-2.5 px-6 rounded-full shadow-lg hover:shadow-amber-500/25 transition-all transform hover:-translate-y-0.5 text-sm">
+      <NuxtLink :to="localePath('/company/contact')" class="tz-pill-button-standard-size bg-amber-500 hover:bg-amber-400 text-slate-900 font-bold px-6 rounded-full shadow-lg hover:shadow-amber-500/25 transition-all transform hover:-translate-y-0.5 text-sm">
         {{ t('companyOemOdm.cta.button') }}
       </NuxtLink>
     </section>

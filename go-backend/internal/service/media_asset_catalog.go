@@ -11,12 +11,17 @@ import (
 )
 
 type MediaAssetListInput struct {
-	Page       int
-	PageSize   int
-	Search     string
-	MediaType  string
-	Status     string
-	Visibility string
+	LibraryPartition               string
+	UploadOrigin                   string
+	CustomerServiceMediaPurpose    string
+	ExcludeConversationAttachments bool
+	ReusableAssetsOnly             bool
+	Page                           int
+	PageSize                       int
+	Search                         string
+	MediaType                      string
+	Status                         string
+	Visibility                     string
 }
 
 type MediaAssetUpdateInput struct {
@@ -27,27 +32,12 @@ type MediaAssetUpdateInput struct {
 }
 
 func (s *MediaService) ListAssets(input MediaAssetListInput) ([]media.MediaAsset, int64, error) {
-	mediaType, err := normalizeOptionalMediaType(input.MediaType)
+	filter, err := normalizeMediaAssetListBusinessPartitionAndAccessScope(input)
 	if err != nil {
 		return nil, 0, err
 	}
-	status, err := normalizeOptionalMediaStatus(input.Status)
-	if err != nil {
-		return nil, 0, err
-	}
-	visibility, err := normalizeOptionalVisibility(input.Visibility)
-	if err != nil {
-		return nil, 0, err
-	}
-
-	assets, total, err := s.repo.ListAssets(repository.MediaAssetFilter{
-		Page:       input.Page,
-		PageSize:   input.PageSize,
-		Search:     strings.TrimSpace(input.Search),
-		MediaType:  mediaType,
-		Status:     status,
-		Visibility: visibility,
-	})
+	filter.Page, filter.PageSize = input.Page, input.PageSize
+	assets, total, err := s.repo.ListAssets(filter)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -68,11 +58,6 @@ func (s *MediaService) GetAsset(id uint) (*media.MediaAsset, error) {
 }
 
 func (s *MediaService) UpdateAsset(id uint, input MediaAssetUpdateInput) (*media.MediaAsset, error) {
-	asset, err := s.GetAsset(id)
-	if err != nil {
-		return nil, err
-	}
-
 	status, err := normalizeMediaStatus(input.Status)
 	if err != nil {
 		return nil, err
@@ -81,13 +66,28 @@ func (s *MediaService) UpdateAsset(id uint, input MediaAssetUpdateInput) (*media
 	if err != nil {
 		return nil, err
 	}
-
-	asset.Alt = strings.TrimSpace(input.Alt)
-	asset.Caption = strings.TrimSpace(input.Caption)
-	asset.Status = status
-	asset.Visibility = visibility
-
-	if err := s.repo.UpdateAsset(asset); err != nil {
+	var asset *media.MediaAsset
+	err = s.repo.WithTransaction(func(repo *repository.MediaRepository, _ *gorm.DB) error {
+		lockedAsset, err := repo.FindAssetByIDForUpdate(id)
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return ErrMediaAssetNotFound
+		}
+		if err != nil {
+			return err
+		}
+		if IsCustomerServiceConversationOwnedMediaAsset(lockedAsset) {
+			return ErrMediaAssetForbidden
+		}
+		lockedAsset.Alt = strings.TrimSpace(input.Alt)
+		lockedAsset.Caption = strings.TrimSpace(input.Caption)
+		lockedAsset.Status, lockedAsset.Visibility = status, visibility
+		if err := repo.UpdateMediaAssetEditableMetadataWithoutReplacingLibraryClassification(lockedAsset); err != nil {
+			return err
+		}
+		asset = lockedAsset
+		return nil
+	})
+	if err != nil {
 		return nil, err
 	}
 	s.hydrateAssetAccessURL(asset)

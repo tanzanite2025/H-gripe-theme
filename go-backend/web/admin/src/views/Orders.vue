@@ -196,8 +196,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useOrderDetailRouteQueryNavigation } from '@/composables/orders/useOrderDetailRouteQueryNavigation'
 import { toast } from 'vue-sonner'
 import {
   Banknote,
@@ -317,6 +318,9 @@ const syncingTracking = ref(false)
 const savingCustomsItemID = ref<OrderID | null>(null)
 const exportingCustoms = ref(false)
 const currentOrder = ref<OrderRecord | null>(null)
+let orderDetailRequestSequence = 0
+let orderDisputeAnalysisRequestSequence = 0
+let orderDetailsUnmounted = false
 const fulfillmentOrder = ref<OrderRecord | null>(null)
 const fulfillmentEvidenceResult = ref<OrderEvidencePackageResult | null>(null)
 const disputeEmailOrderID = ref<OrderID | null>(null)
@@ -554,6 +558,7 @@ const fetchOrderTrackingEvents = async (
   trackingNumber: string | null | undefined,
 ): Promise<void> => {
   const normalizedTrackingNumber = trackingNumber?.trim() || ''
+  const detailRequestSequence = orderDetailRequestSequence
   if (!orderID || !normalizedTrackingNumber) {
     currentTrackingEvents.value = []
     return
@@ -563,8 +568,10 @@ const fetchOrderTrackingEvents = async (
     const response = await axios.get<TrackingEventsResponse>(`/api/admin/shipping/tracking-shipments/${orderID}/events`, {
       params: { tracking_number: normalizedTrackingNumber },
     })
+    if (orderDetailsUnmounted || detailRequestSequence !== orderDetailRequestSequence || String(currentOrder.value?.id) !== String(orderID) || selectedTrackingNumber.value !== normalizedTrackingNumber) return
     currentTrackingEvents.value = unwrapTrackingEvents(response)
   } catch (error) {
+    if (orderDetailsUnmounted || detailRequestSequence !== orderDetailRequestSequence || String(currentOrder.value?.id) !== String(orderID) || selectedTrackingNumber.value !== normalizedTrackingNumber) return
     currentTrackingEvents.value = []
     console.error('Failed to fetch order tracking events:', error)
   }
@@ -593,36 +600,59 @@ const updateDisputePageSize = (pageSize: number): void => {
 }
 
 const fetchOrderDisputeAnalysis = async (orderID: OrderID): Promise<void> => {
+  if (orderDetailsUnmounted || String(currentOrder.value?.id) !== String(orderID)) return
+  const currentRequest = ++orderDisputeAnalysisRequestSequence
   disputeAnalysisLoading.value = true
   currentDisputeAnalysis.value = null
   try {
-    currentDisputeAnalysis.value = await ordersApi.getDisputeAnalysis(orderID)
+    const analysis = await ordersApi.getDisputeAnalysis(orderID)
+    if (orderDetailsUnmounted || currentRequest !== orderDisputeAnalysisRequestSequence || String(currentOrder.value?.id) !== String(orderID)) return
+    currentDisputeAnalysis.value = analysis
   } catch (error) {
-    console.error('Failed to fetch order dispute analysis:', error)
+    if (!orderDetailsUnmounted && currentRequest === orderDisputeAnalysisRequestSequence) console.error('Failed to fetch order dispute analysis:', error)
   } finally {
-    disputeAnalysisLoading.value = false
+    if (!orderDetailsUnmounted && currentRequest === orderDisputeAnalysisRequestSequence) disputeAnalysisLoading.value = false
   }
 }
 
-const showOrderDetail = async (order: OrderRecord): Promise<void> => {
+function resetOrderDetailSelectionAndInvalidatePendingRequests(): void {
+  orderDetailRequestSequence += 1
+  orderDisputeAnalysisRequestSequence += 1
+  detailDialogVisible.value = false
+  currentOrder.value = null
+  currentDisputeAnalysis.value = null
+  disputeAnalysisLoading.value = false
+  currentTrackingShipments.value = []
+  currentTrackingEvents.value = []
+  selectedTrackingNumber.value = ''
+}
+
+const showOrderDetail = async (order: Pick<OrderRecord, 'id' | 'order_number'>): Promise<void> => {
+  if (orderDetailsUnmounted) return
+  resetOrderDetailSelectionAndInvalidatePendingRequests()
+  const currentRequest = orderDetailRequestSequence
   try {
-    currentTrackingShipments.value = []
-    currentTrackingEvents.value = []
-    selectedTrackingNumber.value = ''
-    currentDisputeAnalysis.value = null
     const [response] = await Promise.all([
       axios.get<OrderDetailResponse>(`/api/admin/orders/${order.id}`),
-      fetchShippingLookups(),
-      fetchOrderDisputeAnalysis(order.id)
+      fetchShippingLookups()
     ])
-    currentOrder.value = response.data.order || null
+    if (orderDetailsUnmounted || currentRequest !== orderDetailRequestSequence) return
+    const loadedOrder = response.data?.order
+    if (!loadedOrder || String(loadedOrder.id) !== String(order.id)) {
+      toast.error('订单详情缺失或编号不匹配，请刷新重试或联系订单负责人')
+      return
+    }
+    currentOrder.value = loadedOrder
     currentTrackingShipments.value = response.data.tracking_shipments || []
     // No package is promoted to an order-level default. The operator selects
     // the exact shipment whose events or sync task should be inspected.
     adminNoteForm.admin_note = currentOrder.value.admin_note || ''
     detailDialogVisible.value = true
+    void fetchOrderDisputeAnalysis(order.id)
   } catch (error) {
+    if (orderDetailsUnmounted || currentRequest !== orderDetailRequestSequence) return
     console.error('Failed to fetch order detail:', error)
+    toast.error('订单详情暂时无法读取，请刷新重试或联系订单负责人')
   }
 }
 
@@ -1131,8 +1161,20 @@ onMounted(() => {
   void fetchShippingLookups()
 })
 
+useOrderDetailRouteQueryNavigation({
+  orderIdQuery: () => route.query.order_id,
+  openOrderDetailById: (orderId) => showOrderDetail({ id: orderId }),
+  clearOrderDetailSelection: resetOrderDetailSelectionAndInvalidatePendingRequests,
+  reportInvalidOrderId: () => { toast.error('关联订单编号无效，请检查打开链接') },
+})
+
 watch(activeOrderTab, () => {
   refreshActiveOrderTab()
+})
+
+onBeforeUnmount(() => {
+  orderDetailsUnmounted = true
+  resetOrderDetailSelectionAndInvalidatePendingRequests()
 })
 </script>
 

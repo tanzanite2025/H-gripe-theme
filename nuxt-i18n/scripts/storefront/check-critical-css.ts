@@ -1,4 +1,5 @@
 import { spawn } from 'node:child_process'
+import { createHash } from 'node:crypto'
 import { existsSync, readFileSync } from 'node:fs'
 import { gzipSync } from 'node:zlib'
 import { dirname, resolve } from 'node:path'
@@ -56,6 +57,32 @@ const hasEntryCssPreload = (html: string): boolean => (
 const hasEntryCssLoader = (html: string): boolean => (
   /<script\b[^>]*\bdata-storefront-critical-css-loader=(['"])entry\1[^>]*>/i.test(html)
 )
+
+const assertServerRenderedHeaderLayoutAndContentSecurityPolicy = (html: string, contentSecurityPolicy: string): string => {
+  const headerLayoutCss = html.match(/<style\b[^>]*\bdata-storefront-header-critical-layout(?:=(['"])[^'"]*\1)?[^>]*>([\s\S]*?)<\/style>/i)?.[2]
+  if (!headerLayoutCss) {
+    throw new Error('Header layout must be available in the server HTML before external CSS or hydration')
+  }
+
+  const requiredLayoutSelectors = [
+    '.site-header-mainbar',
+    '.site-header-brand__image',
+    '.site-header-mobile-topbar',
+    '.site-header-mobile-nav',
+    '.site-header-search-hint',
+    '.site-header-layout-spacer',
+  ]
+  for (const selector of requiredLayoutSelectors) {
+    if (!headerLayoutCss.includes(selector)) throw new Error(`Header critical layout is missing ${selector}`)
+  }
+
+  const headerStyleHash = `'sha256-${createHash('sha256').update(headerLayoutCss).digest('base64')}'`
+  const styleElementDirective = contentSecurityPolicy.split(';').find(directive => directive.trim().startsWith('style-src-elem ')) || ''
+  if (!styleElementDirective.includes(headerStyleHash)) {
+    throw new Error('Production CSP must allow the server-rendered header layout style')
+  }
+  return headerLayoutCss
+}
 
 const waitForReady = async (): Promise<void> => {
   for (let attempt = 0; attempt < 60; attempt += 1) {
@@ -120,6 +147,11 @@ try {
     throw new Error(`Homepage returned HTTP ${response.status}`)
   }
 
+  const headerLayoutCss = assertServerRenderedHeaderLayoutAndContentSecurityPolicy(html, response.headers.get('content-security-policy') || '')
+  const shopResponse = await fetch(`${origin}/shop`)
+  if (shopResponse.status !== 200) throw new Error(`Shop returned HTTP ${shopResponse.status}`)
+  assertServerRenderedHeaderLayoutAndContentSecurityPolicy(await shopResponse.text(), shopResponse.headers.get('content-security-policy') || '')
+
   const stylesheets = findStylesheetHrefs(html)
   const blockingEntryStylesheets = stylesheets.filter(href => new URL(href, origin).pathname.startsWith('/_nuxt/entry.'))
   if (blockingEntryStylesheets.length > 0) {
@@ -140,10 +172,11 @@ try {
     throw new Error('Homepage entry CSS async loader was not rendered')
   }
 
-  const inlineCriticalCssGzipBytes = gzipSync(inlineCriticalCss).byteLength
+  const headerLayoutCssGzipBytes = gzipSync(headerLayoutCss).byteLength
+  const inlineCriticalCssGzipBytes = gzipSync(inlineCriticalCss + headerLayoutCss).byteLength
   if (inlineCriticalCssGzipBytes > maxInlineCriticalCssGzipBytes) {
     throw new Error(
-      `Homepage inline critical CSS is ${(inlineCriticalCssGzipBytes / 1024).toFixed(2)} KiB gzip; `
+      `Homepage entry and header critical CSS is ${(inlineCriticalCssGzipBytes / 1024).toFixed(2)} KiB gzip; `
       + `budget is ${(maxInlineCriticalCssGzipBytes / 1024).toFixed(0)} KiB`,
     )
   }
@@ -173,7 +206,8 @@ try {
   console.log(
     `[critical-css] OK: ${stylesheets.length} blocking stylesheet(s), `
     + `${(blockingCssGzipBytes / 1024).toFixed(2)} KiB blocking gzip, `
-    + `${(inlineCriticalCssGzipBytes / 1024).toFixed(2)} KiB inline critical gzip`,
+    + `${(inlineCriticalCssGzipBytes / 1024).toFixed(2)} KiB entry and header critical gzip `
+    + `(${(headerLayoutCssGzipBytes / 1024).toFixed(2)} KiB header)`,
   )
 } catch (error: unknown) {
   console.error(`[critical-css] FAILED: ${error instanceof Error ? error.message : String(error)}`)

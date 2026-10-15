@@ -137,6 +137,9 @@ func (s *MediaService) ReconcileImageDimensions(
 	if asset.MediaType != "image" {
 		return nil, ErrUnsupportedMediaType
 	}
+	if IsCustomerServiceConversationOwnedMediaAsset(asset) {
+		return nil, ErrMediaAssetForbidden
+	}
 
 	if err := s.syncImageAssetDimensions(ctx, asset); err != nil {
 		return nil, err

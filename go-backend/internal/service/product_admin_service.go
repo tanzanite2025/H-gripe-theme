@@ -1,12 +1,13 @@
 package service
 
 import (
+	"errors"
+	"fmt"
+
 	"commerce-platform/internal/domain/currency"
 	"commerce-platform/internal/domain/product"
 	"commerce-platform/internal/pkg/safehtml"
 	"commerce-platform/internal/repository"
-	"errors"
-	"fmt"
 )
 
 type ProductMediaInput struct {
@@ -614,7 +615,7 @@ func (s *ProductService) UpdateAdminProduct(id uint, input ProductUpdateInput) (
 			if tx.Product == nil {
 				return errors.New("transactional product repository is not configured")
 			}
-			if err := tx.Product.UpdateWithSpecValuesVariantsOptionValuesAndMedia(existingProduct, specValues, input.UpdateSpecValues, variants, input.UpdateVariants, optionValues, input.UpdateVariantOptionValues, mediaItems, input.UpdateMedia); err != nil {
+			if err := tx.Product.UpdateWithSpecValuesVariantsOptionValuesAndMedia(existingProduct, specValues, input.UpdateSpecValues, variants, input.UpdateVariants, optionValues, input.UpdateVariantOptionValues, mediaItems, input.UpdateMedia, repository.ProductRichTextFieldMutation{UpdateDescription: input.Description != nil, UpdateShortDescription: input.ShortDesc != nil}); err != nil {
 				return mapProductRepositoryMutationError(err)
 			}
 			if input.UpdateShippingTemplateIDs {
@@ -667,7 +668,7 @@ func (s *ProductService) UpdateAdminProduct(id uint, input ProductUpdateInput) (
 	}
 
 	if err := s.productRepo.WithinTransaction(func(txProduct *repository.ProductRepository) error {
-		if err := txProduct.UpdateWithSpecValuesVariantsOptionValuesAndMedia(existingProduct, specValues, input.UpdateSpecValues, variants, input.UpdateVariants, optionValues, input.UpdateVariantOptionValues, mediaItems, input.UpdateMedia); err != nil {
+		if err := txProduct.UpdateWithSpecValuesVariantsOptionValuesAndMedia(existingProduct, specValues, input.UpdateSpecValues, variants, input.UpdateVariants, optionValues, input.UpdateVariantOptionValues, mediaItems, input.UpdateMedia, repository.ProductRichTextFieldMutation{UpdateDescription: input.Description != nil, UpdateShortDescription: input.ShortDesc != nil}); err != nil {
 			return mapProductRepositoryMutationError(err)
 		}
 		if input.UpdateShippingTemplateIDs {

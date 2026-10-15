@@ -566,6 +566,8 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 			customerServiceGroup.POST("/attachments", middleware.OptionalAuthMiddleware(authService), middleware.RateLimitByUserPerMinute(6, 2), ticketHandler.UploadPublicCustomerServiceAttachment)
 			customerServiceGroup.POST("/messages", middleware.OptionalAuthMiddleware(authService), middleware.RateLimitByUser(5), ticketHandler.SendPublicCustomerServiceMessage)
 			customerServiceGroup.GET("/messages/:conversation_id", middleware.OptionalAuthMiddleware(authService), ticketHandler.GetPublicCustomerServiceMessages)
+			customerServiceGroup.GET("/conversations/:conversation_id/messages/:message_id/attachments/:attachment_index/file", middleware.OptionalAuthMiddleware(authService), ticketHandler.ServePublicCustomerServiceMessageAttachmentFile)
+			customerServiceGroup.GET("/conversations/:conversation_id/attachment-uploads/:upload_session_id/file", middleware.OptionalAuthMiddleware(authService), ticketHandler.ServePublicCustomerServicePendingAttachmentUploadPreview)
 			customerServiceGroup.GET("/auto-reply/welcome", middleware.OptionalAuthMiddleware(authService), ticketHandler.GetWelcomeMessage)
 			customerServiceGroup.POST("/auto-reply/match", middleware.OptionalAuthMiddleware(authService), middleware.RateLimitByUser(5), ticketHandler.MatchKeywordMessage)
 			customerServiceGroup.GET("/ws", middleware.OptionalAuthMiddleware(authService), middleware.RateLimit(10), ticketHandler.StreamPublicCustomerServiceWebSocket)

@@ -1,18 +1,12 @@
 {
   "title": "Carbon Rim Appearance & Customization",
-  "navigation": {
-    "ariaLabel": "About Us page navigation",
-    "tabs": {
-      "factory": "Factory",
-      "appearance": "Appearance",
-      "hole-patterns": "Hole Patterns"
-    }
-  },
   "seo": {
-    "title": "Carbon Rim Finishes: UD Coating, Paintless & Laser Logos",
-    "description": "Explore UD coatings, also available on 3K carbon fabric rims, paintless surfaces and laser logos, with custom lead times and 260°C brake track heat resistance.",
+    "title": "Carbon Rim Finishes & Weave Patterns: UD, Paintless, 3K/12K & Laser Logos",
+    "description": "Compare UD coatings, raw/paintless carbon finishes, 3K/12K twill and marble patterns, and matte vs glossy rims. Explore laser logos and custom lead times.",
     "imageAlt": "Laser engraving a logo on a carbon fiber rim",
-    "breadcrumbHome": "Home"
+    "breadcrumbHome": "Home",
+    "videoName": "Laser engraving a logo on a carbon bicycle rim",
+    "videoDescription": "Factory footage showing laser equipment engraving a logo on a carbon bicycle rim. This is logo engraving; laser treatment of a brake track has separate friction and carbon-surface tradeoffs."
   },
   "intro": "Our current focus is UD coatings, paintless surfaces, and laser-engraved logos. Choose between a UD coating and a paintless surface, then confirm the logo method for your chosen finish. Other appearances are available by custom order and require additional production time.",
   "primaryAppearance": {
@@ -30,7 +24,7 @@
       "description": "Our main method for adding logos and lettering. Logo engraving serves a different purpose from laser treatment of a brake track."
     }
   },
-  "customizationLeadTime": "Other carbon patterns, painted finishes, gloss levels, and crystal effects are still available by custom order, with longer production times than our main options. Confirm availability and the additional time for your rim model and design before ordering.",
+  "customizationLeadTime": "Other carbon patterns, painted finishes, and gloss levels are still available by custom order, with longer production times than our main options. Confirm availability and the additional time for your rim model and design before ordering.",
   "images": {
     "weavePatternsAlt": "Appearance comparison of a UD coating and butterfly, marble, 3K, and 12K carbon rim patterns",
     "weavePatternsCaption": "Appearance reference · UD coating is our main option; other appearances require customization",
@@ -39,15 +33,13 @@
   },
   "sections": {
     "primaryAppearance": "Our Main Appearance Options",
-    "customAppearance": "Other Custom Appearances · View Patterns and Finishes",
-    "weavePatterns": "Coating and Pattern Appearance Reference",
-    "glossLevels": "Custom Gloss Levels",
-    "crystalEffects": "Custom Crystal Effects",
+    "customAppearance": "Custom Carbon Weave Patterns & Surface Finishes",
+    "weavePatterns": "Carbon Fiber Weave Patterns: 3K, 12K, Twill & Marble",
+    "glossLevels": "Matte vs Satin vs Glossy Carbon Rims",
     "brakeTracks": "Brake Track Heat Resistance and Surface Treatment",
     "laserEngraving": "Laser-Engraved Logos"
   },
   "rimBrakeOnly": "(Rim Brake Only)",
-  "crystalIntro": "Crystal effects are custom appearance options. Confirm the color and surface effect for your order and allow additional production time.",
   "weaves": {
     "butterfly": {
       "name": "Butterfly",
@@ -96,13 +88,6 @@
       "description": "High shine with a premium look."
     }
   },
-  "crystalEffects": {
-    "black": "Black",
-    "silver": "Silver",
-    "orange": "Orange",
-    "purple": "Purple",
-    "blue": "Blue"
-  },
   "brakeTracks": {
     "resinTitle": "Brake Track Heat Resistance: 260°C",
     "resinDescription": "We use an optimized high-temperature resin system. The heat-resistance specification for the brake track as a whole is 260°C.",
@@ -126,12 +111,6 @@
     "watchVideo": "Watch Logo Engraving Video"
   },
   "selectionAdvice": {
-    "title": "Choosing Your Appearance",
-    "items": {
-      "0": "Choose a UD coating or a paintless surface, then confirm the laser-engraved logo design. Consult the specific rim specifications for the underlying material and layup.",
-      "1": "For other patterns, colors, or logo methods, confirm the design in advance and allow additional production time.",
-      "2": "For rim-brake rims, we recommend the standard brake track with its optimized surface. If choosing laser treatment, consider both the friction benefit and the effect on the outer carbon fiber layer."
-    },
     "footer": "For OEM, team, or branding orders, contact us to confirm the rim model, logo artwork, appearance requirements, and lead time."
   },
   "relatedResources": {

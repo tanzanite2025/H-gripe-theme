@@ -51,7 +51,7 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 	}
 	authHandler := NewAuthHandler(authService, cookieOptions)
 	adminAccountHandler := NewAdminAccountHandler(services.AdminAccountMaintenance)
-	dashboardHandler := NewDashboardHandler(dashboardService)
+	dashboardHandler := NewDashboardHandler(dashboardService, services.DashboardBusinessFollowUpRead)
 	userHandler := NewUserHandler(userService)
 	customerHandler := NewCustomerHandler(userService)
 	productHandler := NewProductHandler(productService)

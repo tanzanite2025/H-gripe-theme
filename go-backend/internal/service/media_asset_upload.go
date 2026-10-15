@@ -2,13 +2,17 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"mime/multipart"
 	"path"
 	"strings"
+	"time"
 
 	"commerce-platform/internal/domain/media"
+	"commerce-platform/internal/pkg/storage"
 	"commerce-platform/internal/pkg/upload"
+	"commerce-platform/internal/repository"
 )
 
 var trustedMediaUploadImageRule = upload.FileRule{
@@ -21,16 +25,24 @@ var trustedMediaUploadImageRule = upload.FileRule{
 }
 
 type MediaUploadInput struct {
-	File       *multipart.FileHeader
-	MediaType  string
-	Alt        string
-	Caption    string
-	UploaderID uint
-	Width      int
-	Height     int
+	// Internal service context, selected by authorized routes; never bound from JSON/form origin fields.
+	UploadOrigin        media.MediaAssetUploadOrigin
+	UploadPurpose       string
+	File                *multipart.FileHeader
+	MediaType           string
+	Alt                 string
+	Caption             string
+	UploaderID          uint
+	UploadActorIdentity media.MediaUploadActorIdentity
+	Width               int
+	Height              int
 	// StoragePrefix scopes an upload to a feature-owned storage directory.
 	// Empty keeps the legacy storage layout unchanged.
 	StoragePrefix string
+	// Internal-only prepared receipt. The session and exact private object key
+	// must already exist before writing bytes; callers cannot select visibility.
+	PreparedCustomerServiceUploadSessionID   string
+	PreparedCustomerServiceOriginalObjectKey string
 }
 
 func (s *MediaService) UploadAsset(ctx context.Context, input MediaUploadInput) (*media.MediaAsset, error) {
@@ -42,10 +54,28 @@ func (s *MediaService) UploadAsset(ctx context.Context, input MediaUploadInput) 
 	if err != nil {
 		return nil, err
 	}
-	if input.UploaderID == 0 {
-		return nil, ErrMediaUploadIdentityRequired
+	input.MediaType = mediaType
+	input.UploadPurpose = strings.TrimSpace(input.UploadPurpose)
+	if mediaType == "video" {
+		input.UploadPurpose = ""
 	}
-	if err := s.ensureUploaderStorageQuota(input.UploaderID, input.File.Size); err != nil {
+	identity, err := resolveMediaUploadActorIdentity(input)
+	if err != nil {
+		return nil, err
+	}
+	input.UploaderID = identity.AccountID
+	input.UploadActorIdentity = identity
+	classification, err := resolveMediaAssetClassificationFromTrustedUploadOrigin(input, identity)
+	if err != nil {
+		return nil, err
+	}
+	if classification.originalPrefix != "" && input.PreparedCustomerServiceUploadSessionID == "" {
+		if input.StoragePrefix != "" && input.StoragePrefix != classification.originalPrefix {
+			return nil, ErrUnsupportedMediaLibraryClassification
+		}
+		input.StoragePrefix = classification.originalPrefix
+	}
+	if err := s.ensureMediaUploadActorStorageQuota(identity, input.File.Size); err != nil {
 		return nil, err
 	}
 
@@ -60,7 +90,29 @@ func (s *MediaService) UploadAsset(ctx context.Context, input MediaUploadInput) 
 	}
 
 	var url string
-	if prefix := strings.TrimSpace(input.StoragePrefix); prefix != "" {
+	if input.PreparedCustomerServiceUploadSessionID != "" {
+		if !storage.IsCustomerServiceConversationAttachmentOriginalObjectKey(input.PreparedCustomerServiceOriginalObjectKey) {
+			return nil, ErrMediaAssetForbidden
+		}
+		writer, ok := s.storage.(storage.PreallocatedPrivateObjectWriter)
+		if !ok {
+			return nil, ErrMediaStorageUnavailable
+		}
+		session, sessionErr := s.repo.FindCustomerServiceMediaUploadSession(ctx, input.PreparedCustomerServiceUploadSessionID)
+		if sessionErr != nil || session.ObjectKey != input.PreparedCustomerServiceOriginalObjectKey || session.Status != "uploading" || session.UploadActorIdentity() != identity ||
+			!session.ExpiresAt.After(time.Now().UTC()) || !session.CustomerServiceAttachmentUploadWriteDeadline().After(time.Now().UTC()) {
+			return nil, repository.ErrCustomerServiceAttachmentBindingUnavailable
+		}
+		var cancelPreparedUpload context.CancelFunc
+		ctx, cancelPreparedUpload = context.WithDeadline(ctx, session.CustomerServiceAttachmentUploadWriteDeadline())
+		defer cancelPreparedUpload()
+		source, openErr := input.File.Open()
+		if openErr != nil {
+			return nil, openErr
+		}
+		url, err = writer.WritePrivateObjectAtPreallocatedKey(ctx, source, session.ObjectKey)
+		_ = source.Close()
+	} else if prefix := strings.TrimSpace(input.StoragePrefix); prefix != "" {
 		url, err = s.storage.UploadWithPrefix(ctx, input.File, prefix)
 	} else {
 		url, err = s.storage.Upload(ctx, input.File)
@@ -79,26 +131,39 @@ func (s *MediaService) UploadAsset(ctx context.Context, input MediaUploadInput) 
 	}
 
 	asset := &media.MediaAsset{
-		Filename:           path.Base(url),
-		OriginalFilename:   input.File.Filename,
-		URL:                url,
-		StorageKey:         storageObjectKey(s.storage, url),
-		MimeType:           trustedMimeType,
-		MediaType:          mediaType,
-		Size:               input.File.Size,
-		Width:              input.Width,
-		Height:             input.Height,
-		ContentSHA256:      contentSHA256,
-		CopyrightClaimJSON: copyrightClaim,
-		Alt:                strings.TrimSpace(input.Alt),
-		Caption:            strings.TrimSpace(input.Caption),
-		UploaderID:         input.UploaderID,
-		Status:             "active",
-		Visibility:         "public",
+		Filename:                    path.Base(url),
+		OriginalFilename:            input.File.Filename,
+		URL:                         url,
+		StorageKey:                  storageObjectKey(s.storage, url),
+		MimeType:                    trustedMimeType,
+		MediaType:                   mediaType,
+		Size:                        input.File.Size,
+		Width:                       input.Width,
+		Height:                      input.Height,
+		ContentSHA256:               contentSHA256,
+		CopyrightClaimJSON:          copyrightClaim,
+		Alt:                         strings.TrimSpace(input.Alt),
+		Caption:                     strings.TrimSpace(input.Caption),
+		UploaderID:                  input.UploaderID,
+		UploaderActorType:           identity.ActorType,
+		UploaderVisitorSessionHash:  identity.VisitorSessionHash,
+		Status:                      "active",
+		Visibility:                  "public",
+		LibraryPartition:            classification.partition,
+		UploadOrigin:                classification.origin,
+		ClassificationMethod:        classification.method,
+		CustomerServiceMediaPurpose: classification.customerServicePurpose,
+		UploadPurpose:               strings.TrimSpace(input.UploadPurpose),
+	}
+	if input.PreparedCustomerServiceUploadSessionID != "" {
+		asset.Visibility = "private"
 	}
 
-	if err := s.repo.CreateAsset(asset); err != nil {
+	if err := s.repo.CreateAssetWithinUploadActorStorageQuota(ctx, asset, s.storageQuotaBytesForMediaUploadActor(identity), input.PreparedCustomerServiceUploadSessionID); err != nil {
 		_ = s.storage.Delete(ctx, url)
+		if errors.Is(err, repository.ErrMediaUploadActorStorageQuotaExceeded) {
+			return nil, mediaStorageQuotaExceededErrorForUploadActor(identity)
+		}
 		return nil, err
 	}
 
@@ -126,24 +191,6 @@ func (s *MediaService) UploadAsset(ctx context.Context, input MediaUploadInput) 
 
 	s.hydrateAssetAccessURL(asset)
 	return asset, nil
-}
-
-func (s *MediaService) ensureUploaderStorageQuota(uploaderID uint, incomingSize int64) error {
-	if s.accountStorageQuotaBytes <= 0 {
-		return ErrMediaAccountStorageQuotaExceeded
-	}
-	if incomingSize <= 0 {
-		return ErrMediaUploadFileRequired
-	}
-
-	used, err := s.repo.AssetStorageUsageByUploaderID(uploaderID)
-	if err != nil {
-		return fmt.Errorf("get media storage usage: %w", err)
-	}
-	if used >= s.accountStorageQuotaBytes || incomingSize > s.accountStorageQuotaBytes-used {
-		return ErrMediaAccountStorageQuotaExceeded
-	}
-	return nil
 }
 
 func trustedMediaUploadMimeType(file *multipart.FileHeader, mediaType string) (string, error) {

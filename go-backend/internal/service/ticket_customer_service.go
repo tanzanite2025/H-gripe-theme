@@ -1,14 +1,15 @@
 package service
 
 import (
-	"commerce-platform/internal/domain/ticket"
-	"commerce-platform/internal/domain/user"
-	"commerce-platform/internal/pkg/metrics"
-	"commerce-platform/internal/repository"
 	"errors"
 	"sort"
 	"strings"
 	"time"
+
+	"commerce-platform/internal/domain/ticket"
+	"commerce-platform/internal/domain/user"
+	"commerce-platform/internal/pkg/metrics"
+	"commerce-platform/internal/repository"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -171,7 +172,7 @@ func (s *TicketService) AddCustomerServiceAgentMessage(m *ticket.TicketMessage, 
 	m.IsStaff = true
 	m.MessageType = normalizeCustomerServiceMessageType(m.MessageType)
 	actorUserID := agentUserID
-	return s.persistCustomerServiceMessage(t, m, CustomerServiceRealtimeActor{Kind: "agent", UserID: &actorUserID})
+	return s.persistCustomerServiceMessage(t, m, CustomerServiceRealtimeActor{Kind: "agent", UserID: &actorUserID}, canViewAll)
 }
 
 func (s *TicketService) MarkCustomerServiceMessagesReadForAgent(ticketID uint, agentUserID uint, canViewAll bool) error {
@@ -731,22 +732,23 @@ func (s *TicketService) GetOrCreatePublicCustomerServiceConversation(owner Custo
 	return t, nil
 }
 
-func (s *TicketService) AddPublicCustomerServiceMessage(conversationID string, owner CustomerServiceOwner, message string, agentID uint, messageType string, metadata string, attachments string) (*ticket.Ticket, *ticket.TicketMessage, error) {
+func (s *TicketService) AddPublicCustomerServiceMessage(conversationID string, owner CustomerServiceOwner, message string, agentID uint, messageType string, metadata string, attachments string, mediaBindings ...ticket.CustomerServiceMessageMediaAttachmentBindingRequest) (*ticket.Ticket, *ticket.TicketMessage, error) {
 	t, err := s.getOrCreateAccessibleCustomerServiceConversation(conversationID, owner, agentID)
 	if err != nil {
 		return nil, nil, err
 	}
 
 	msg := &ticket.TicketMessage{
-		TicketID:    t.ID,
-		UserID:      owner.UserID,
-		IsStaff:     false,
-		Content:     message,
-		MessageType: normalizeCustomerServiceMessageType(messageType),
-		Metadata:    metadata,
-		Attachments: attachments,
-		IsRead:      false,
-		IsInternal:  false,
+		TicketID:                         t.ID,
+		UserID:                           owner.UserID,
+		IsStaff:                          false,
+		Content:                          message,
+		MessageType:                      normalizeCustomerServiceMessageType(messageType),
+		Metadata:                         metadata,
+		Attachments:                      attachments,
+		IsRead:                           false,
+		IsInternal:                       false,
+		RequestedMediaAttachmentBindings: mediaBindings,
 	}
 	actor := CustomerServiceRealtimeActor{
 		Kind:      "customer",
@@ -764,6 +766,7 @@ func (s *TicketService) persistCustomerServiceMessage(
 	conversation *ticket.Ticket,
 	message *ticket.TicketMessage,
 	actor CustomerServiceRealtimeActor,
+	agentViewAllScopes ...bool,
 ) error {
 	if s == nil || s.ticketRepo == nil {
 		return errors.New("customer-service ticket repository is unavailable")
@@ -784,8 +787,39 @@ func (s *TicketService) persistCustomerServiceMessage(
 		if current.Category != customerServiceTicketCategory {
 			return ErrCustomerServiceConversationAccessDenied
 		}
+		if actor.Kind == "agent" {
+			if actor.UserID == nil {
+				return ErrCustomerServiceAgentAccessDenied
+			}
+			canViewAll := len(agentViewAllScopes) > 0 && agentViewAllScopes[0]
+			if err := validateAgentCustomerServiceConversation(current, *actor.UserID, canViewAll); err != nil {
+				return err
+			}
+		}
+		if actor.Kind == "customer" && !customerServiceOwnerMatches(current, CustomerServiceOwner{UserID: actor.UserID, VisitorSessionHash: conversation.VisitorSessionHash}) {
+			return ErrCustomerServiceConversationAccessDenied
+		}
+		if len(message.RequestedMediaAttachmentBindings) > 0 {
+			if len(parseCustomerServiceMessageAttachmentReferences(message.Attachments)) > 0 {
+				return repository.ErrCustomerServiceAttachmentBindingUnavailable
+			}
+			message.AttachmentReferenceFormat = ticket.TicketMessageMediaAssetBindings
+			message.Attachments = ""
+			if message.MessageType == "image" || message.MessageType == "video" {
+				message.Metadata = customerServiceMessageMetadataWithoutDuplicateAttachmentURLs(message.Metadata)
+			}
+		}
 		if err := ticketRepo.CreateTicketMessage(message); err != nil {
 			return err
+		}
+		if len(message.RequestedMediaAttachmentBindings) > 0 {
+			identity, identityErr := customerServiceMessageAttachmentBindingActorIdentity(current, actor)
+			if identityErr != nil {
+				return identityErr
+			}
+			if err := ticketRepo.BindCustomerServiceMessageMediaAssetsWithinTransaction(current.ID, message.ID, identity, message.RequestedMediaAttachmentBindings); err != nil {
+				return err
+			}
 		}
 
 		changedAt := time.Now().UTC()

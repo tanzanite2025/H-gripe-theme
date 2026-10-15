@@ -29,7 +29,7 @@ func TestSiteFaviconLifecycleKeepsSettingAndObjectCleanupConsistent(t *testing.T
 	favicons.ConfigureObjectCleanupOutbox(repository.NewOutboxRepository(db))
 	favicons.ConfigureSettingService(settings)
 
-	first, err := favicons.UploadCurrent(context.Background(), siteLogoTestFileHeader(t, "first.webp"), 11)
+	first, err := favicons.UploadCurrent(context.Background(), createSiteLogoAndFaviconLifecycleMultipartHeaderFromBackendOwnedWebPFixture(t, "first.webp"), 11)
 	if err != nil {
 		t.Fatalf("upload first favicon: %v", err)
 	}
@@ -42,7 +42,7 @@ func TestSiteFaviconLifecycleKeepsSettingAndObjectCleanupConsistent(t *testing.T
 		t.Fatalf("expected setting to point at first favicon, setting=%#v err=%v", stored, err)
 	}
 
-	second, err := favicons.UploadCurrent(context.Background(), siteLogoTestFileHeader(t, "second.webp"), 12)
+	second, err := favicons.UploadCurrent(context.Background(), createSiteLogoAndFaviconLifecycleMultipartHeaderFromBackendOwnedWebPFixture(t, "second.webp"), 12)
 	if err != nil {
 		t.Fatalf("upload replacement favicon: %v", err)
 	}

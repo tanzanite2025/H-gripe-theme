@@ -277,17 +277,18 @@ useHead(() => ({
 .workbench-page__state-action,
 .workbench-page__load-more-button {
   display: inline-flex;
-  min-height: 2.35rem;
+  min-height: var(--tz-pill-button-min-height);
   align-items: center;
   justify-content: center;
   gap: 0.4rem;
-  padding: 0.45rem 0.75rem;
+  padding: var(--tz-pill-button-padding-block) 0.75rem;
   border: 1px solid var(--tz-border-strong);
   border-radius: 999px;
   color: var(--tz-text-primary);
   background: var(--tz-surface-subtle);
   font-size: 0.75rem;
   font-weight: 800;
+  line-height: var(--tz-pill-button-line-height);
 }
 
 .workbench-page__load-more-button:hover:not(:disabled),

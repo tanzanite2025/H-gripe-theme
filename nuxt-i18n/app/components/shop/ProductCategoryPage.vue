@@ -1,5 +1,9 @@
 <template>
   <section v-if="category" class="shop-page w-full pt-0 pb-16 space-y-6">
+    <h1 class="tz-page-title text-center tz-text-primary">
+      {{ category.name }}
+    </h1>
+
     <section class="rounded-xl tz-surface-card p-4 text-sm tz-text-secondary shadow-[8px_8px_22px_rgb(15_23_42_/_0.08)]">
       <ShopProductQuickSearchForm
         density="page"
@@ -65,6 +69,12 @@
         </section>
       </div>
     </section>
+
+    <ShopCatalogProductRecommendations
+      surface="shop_category_bottom"
+      :visible-products="products"
+      :search-query="currentSearch?.query || ''"
+    />
   </section>
 </template>
 
@@ -84,6 +94,7 @@ import {
 import ShopProductQuickSearchForm from '~/components/shop/ShopProductQuickSearchForm.vue'
 import ShopCatalogFilterDrawer from '~/components/shop/ShopCatalogFilterDrawer.vue'
 import ShopCategoryVerticalMenu from '~/components/shop/ShopCategoryVerticalMenu.vue'
+import ShopCatalogProductRecommendations from '~/components/shop/ShopCatalogProductRecommendations.vue'
 import {
   useProductCategories,
   type ProductCategory,

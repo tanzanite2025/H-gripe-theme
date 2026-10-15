@@ -142,6 +142,9 @@ type Repositories struct {
 	RecommendationEvent            *repository.RecommendationEventRepository
 	VisitorRiskFact                *repository.VisitorRiskFactRepository
 	Outbox                         *repository.OutboxRepository
+
+	DashboardOutboxBusinessFollowUpRead           *repository.DashboardOutboxBusinessFollowUpReadRepository
+	DashboardBusinessFollowUpBusinessIdentityRead *repository.DashboardBusinessFollowUpBusinessIdentityReadRepository
 }
 
 type Services struct {
@@ -216,6 +219,7 @@ type Services struct {
 	SuggestionFeedback                 *service.SuggestionFeedbackService
 	User                               *service.UserService
 	Dashboard                          *service.DashboardService
+	DashboardBusinessFollowUpRead      *service.DashboardBusinessFollowUpReadService
 	Audit                              *service.AuditService
 	Shipping                           *service.ShippingService
 	FpxAPI                             *service.FpxAPIService

@@ -1,22 +1,33 @@
 package service
 
 import (
-	"commerce-platform/internal/domain/faq"
-	"commerce-platform/internal/pkg/faqcontent"
 	"fmt"
 	"strings"
 	"unicode"
+
+	"commerce-platform/internal/domain/faq"
+	"commerce-platform/internal/pkg/faqcontent"
+	"commerce-platform/internal/repository"
 )
 
-func (s *FAQService) normalizeFAQContent(item *faq.FAQ) error {
-	answer, err := faqcontent.SanitizeAnswer(item.Answer)
-	if err != nil {
-		return err
+func (s *FAQService) normalizeFAQContent(item *faq.FAQ, mutations ...repository.FAQMediaFieldMutation) error {
+	mutation := repository.FAQMediaFieldMutation{UpdateAnswer: true, UpdateAnswerImage: true}
+	if len(mutations) > 0 {
+		mutation = mutations[0]
 	}
-	if !faqcontent.HasVisibleText(answer) {
-		return fmt.Errorf("answer is required")
+	if mutation.UpdateAnswer {
+		answer, err := faqcontent.SanitizeAnswer(item.Answer)
+		if err != nil {
+			return err
+		}
+		if !faqcontent.HasVisibleText(answer) {
+			return fmt.Errorf("answer is required")
+		}
+		item.Answer = answer
 	}
-	item.Answer = answer
+	if !mutation.UpdateAnswerImage {
+		return nil
+	}
 
 	item.AnswerImageURL = strings.TrimSpace(item.AnswerImageURL)
 	item.AnswerImageAlt = strings.TrimSpace(item.AnswerImageAlt)
@@ -26,12 +37,8 @@ func (s *FAQService) normalizeFAQContent(item *faq.FAQ) error {
 		item.AnswerImageHeight = 0
 		return nil
 	}
-	if !strings.HasPrefix(item.AnswerImageURL, "/uploads/") && !strings.Contains(item.AnswerImageURL, "/uploads/") {
-		return fmt.Errorf("answer image must be a managed upload")
-	}
-	if !strings.HasSuffix(strings.ToLower(strings.Split(item.AnswerImageURL, "?")[0]), ".webp") {
-		return fmt.Errorf("answer image must be WebP")
-	}
+	// Identity, MIME type and actual dimensions are checked from the locked
+	// media asset in the repository, never inferred from URL substrings.
 	if item.AnswerImageWidth != 800 || item.AnswerImageHeight != 800 {
 		return fmt.Errorf("answer image must be exactly 800x800 pixels")
 	}

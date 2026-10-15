@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200">
+  <!-- Schematic direction projection, not production geometry. Generated from the lacing simulator backend. -->
+  <defs>
+    <pattern id="rim-wall-hatching" width="8" height="8" patternUnits="userSpaceOnUse"><path d="M-2 8 8-2M6 10 10 6" stroke="#cbd5e1" stroke-width="1"/></pattern>
+  </defs>
+  <rect width="200" height="200" fill="#f8fafc"/>
+  <g transform="translate(-110 0)">
+  <path d="M178 24h64v57h-64Z" fill="#e2e8f0" stroke="#94a3b8" stroke-width="1.5"/>
+  <path d="M178 24h64v57h-64Z" fill="url(#rim-wall-hatching)"/>
+  <path d="M190 36h40v23h-40Z" fill="#f8fafc" stroke="#94a3b8" stroke-width="1"/>
+  <line x1="210" y1="14" x2="210" y2="181" stroke="#94a3b8" stroke-width="1" stroke-dasharray="4 4"/>
+  <path d="M142 143H260" stroke="#94a3b8" stroke-width="6" stroke-linecap="round"/>
+  <path d="M204.25 59 193.75 81" stroke="#f8fafc" stroke-width="10"/>
+    <path d="M204.25 59 193.75 81" stroke="#0369a1" stroke-opacity="0.25" stroke-width="10"/>
+    <line x1="193.75" y1="81" x2="168" y2="135" stroke="#0369a1" stroke-width="2.5"/>
+    <line x1="212.35" y1="42" x2="186.12" y2="97" stroke="#0369a1" stroke-width="2" stroke-dasharray="5 4"/>
+    <path d="M168 112v44" stroke="#64748b" stroke-width="5" stroke-linecap="round"/>
+    <circle cx="168" cy="135" r="3.5" fill="#0369a1"/>
+<path d="M218.80 59 223.20 81" stroke="#f8fafc" stroke-width="10"/>
+    <path d="M218.80 59 223.20 81" stroke="#047857" stroke-opacity="0.25" stroke-width="10"/>
+    <line x1="223.20" y1="81" x2="234" y2="135" stroke="#047857" stroke-width="2.5"/>
+    <line x1="215.40" y1="42" x2="226.40" y2="97" stroke="#047857" stroke-width="2" stroke-dasharray="5 4"/>
+    <path d="M234 112v44" stroke="#64748b" stroke-width="5" stroke-linecap="round"/>
+    <circle cx="234" cy="135" r="3.5" fill="#047857"/>
+  <g data-rim-hole-lateral-offset="left" stroke="#0369a1" stroke-width="1.2" fill="none">
+    <path d="M160 48h30l9 22"/>
+    <circle cx="199" cy="70" r="3" fill="#f8fafc"/>
+  </g>
+  <g data-rim-hole-lateral-offset="right" stroke="#047857" stroke-width="1.2" fill="none">
+    <path d="M260 48h-30l-9 22"/>
+    <circle cx="221" cy="70" r="3" fill="#f8fafc"/>
+  </g>
+  <g font-family="Arial, sans-serif" font-size="12" font-weight="600" text-anchor="middle">
+    <text x="151" y="52" fill="#0369a1">L</text>
+    <text x="269" y="52" fill="#047857">R</text>
+  </g>
+  <g stroke="#64748b" stroke-width="1" fill="none">
+    <path d="M168 162v17m42 -17v17m24 -17v17M168 170H234"/>
+  </g>
+  <g fill="#475569" font-family="Arial, sans-serif" font-size="12" text-anchor="middle">
+    <text x="189" y="190">WL</text>
+    <text x="222" y="190">WR</text>
+  </g>
+  </g>
+</svg>

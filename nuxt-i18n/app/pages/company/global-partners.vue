@@ -50,7 +50,7 @@
               <div class="mt-auto border-t tz-border-subtle pt-4">
                 <NuxtLink
                   :to="localePath({ path: '/company/contact', query: { partnership: channel.id } })"
-                  class="premium-button premium-button--active min-h-12 w-full justify-center gap-2 text-center leading-relaxed"
+                  class="premium-button premium-button--active w-full justify-center gap-2 text-center"
                 >
                   <span>{{ t(channel.ctaKey) }}</span>
                   <Icon name="lucide:arrow-right" class="h-4 w-4 shrink-0" aria-hidden="true" />

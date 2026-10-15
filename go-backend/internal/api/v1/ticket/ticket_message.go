@@ -1,18 +1,24 @@
 package ticket
 
 import (
-	"commerce-platform/internal/api/v1/publicmedia"
-	"commerce-platform/internal/domain/ticket"
 	"encoding/json"
 	"strings"
+
+	"commerce-platform/internal/api/v1/publicmedia"
+	"commerce-platform/internal/domain/ticket"
+	"commerce-platform/internal/service"
 
 	"github.com/gin-gonic/gin"
 )
 
 // ============ 客服消息响应 ============
 
-func publicCustomerServiceMessageResponse(item ticket.TicketMessage, conversationID, senderName, messageType string, metadata interface{}, resolver publicmedia.Resolver) gin.H {
+func publicCustomerServiceMessageResponse(item ticket.TicketMessage, conversationID, senderName string, resolver publicmedia.Resolver, attachmentAccessServices ...*service.CustomerServiceConversationMessageAttachmentAccessService) gin.H {
 	attachments := publicTicketMessageAttachments(item.Attachments, resolver)
+	var attachmentMedia []service.CustomerServiceMessageAttachmentAccessDescription
+	if len(attachmentAccessServices) > 0 {
+		attachments, attachmentMedia = attachmentAccessServices[0].DescribePublicCustomerServiceMessageAttachments(item, conversationID)
+	}
 	attachmentURL := firstTicketMessageAttachment(attachments)
 
 	if strings.TrimSpace(senderName) == "" {
@@ -25,29 +31,24 @@ func publicCustomerServiceMessageResponse(item ticket.TicketMessage, conversatio
 			senderName = displayName(item.User.FirstName, item.User.LastName, item.User.Username, item.User.Email)
 		}
 	}
-	if strings.TrimSpace(messageType) == "" {
-		messageType = item.MessageType
-	}
-	messageType = normalizeTicketMessageType(messageType)
-	if metadata == nil {
-		metadata = parseTicketMessageMetadata(item.Metadata)
-	}
-	metadata = publicTicketMessageMetadata(metadata, resolver)
+	messageType := normalizeTicketMessageType(item.MessageType)
+	metadata := publicTicketMessageMetadata(parseTicketMessageMetadata(item.Metadata), resolver)
 
 	return gin.H{
-		"id":              item.ID,
-		"conversation_id": conversationID,
-		"sender_id":       item.UserID,
-		"sender_name":     senderName,
-		"sender_email":    "",
-		"message":         item.Content,
-		"message_type":    messageType,
-		"metadata":        metadata,
-		"source":          ticketMessageSource(item.Metadata),
-		"attachment_url":  attachmentURL,
-		"attachments":     attachments,
-		"created_at":      item.CreatedAt,
-		"is_agent":        item.IsStaff,
+		"id":               item.ID,
+		"conversation_id":  conversationID,
+		"sender_id":        item.UserID,
+		"sender_name":      senderName,
+		"sender_email":     "",
+		"message":          item.Content,
+		"message_type":     messageType,
+		"metadata":         metadata,
+		"source":           ticketMessageSource(item.Metadata),
+		"attachment_url":   attachmentURL,
+		"attachments":      attachments,
+		"attachment_media": attachmentMedia,
+		"created_at":       item.CreatedAt,
+		"is_agent":         item.IsStaff,
 	}
 }
 

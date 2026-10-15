@@ -8,9 +8,9 @@
     <article class="wheelset-guide-step">
       <div class="wheelset-guide-step__number">1</div>
       <div class="wheelset-guide-step__content">
-        <h3 class="wheelset-guide-step__title">
+        <h2 class="wheelset-guide-step__title">
           {{ t('guidesWheelsetBuyersSample.professional.title') }}
-        </h3>
+        </h2>
         <p class="wheelset-guide-step__body">
           {{ t('guidesWheelsetBuyersSample.professional.body') }}
         </p>
@@ -41,9 +41,9 @@
     <article class="wheelset-guide-step">
       <div class="wheelset-guide-step__number">2</div>
       <div class="wheelset-guide-step__content">
-        <h3 class="wheelset-guide-step__title">
+        <h2 class="wheelset-guide-step__title">
           {{ t('guidesWheelsetBuyersSample.process.title') }}
-        </h3>
+        </h2>
         <div class="wheelset-guide-panel-grid">
           <div class="wheelset-guide-panel">
             <strong>{{ t('guidesWheelsetBuyersSample.process.shipping.title') }}</strong>
@@ -68,9 +68,9 @@
     <article class="wheelset-guide-step">
       <div class="wheelset-guide-step__number">3</div>
       <div class="wheelset-guide-step__content">
-        <h3 class="wheelset-guide-step__title">
+        <h2 class="wheelset-guide-step__title">
           {{ t('guidesWheelsetBuyersSample.scope.title') }}
-        </h3>
+        </h2>
         <div class="wheelset-guide-panel-grid">
           <div class="wheelset-guide-panel">
             <strong>{{ t('guidesWheelsetBuyersSample.scope.acceptedTitle') }}</strong>
@@ -95,9 +95,9 @@
     <article class="wheelset-guide-step">
       <div class="wheelset-guide-step__number">4</div>
       <div class="wheelset-guide-step__content">
-        <h3 class="wheelset-guide-step__title">
+        <h2 class="wheelset-guide-step__title">
           {{ t('guidesWheelsetBuyersSample.ownBuild.title') }}
-        </h3>
+        </h2>
         <p class="wheelset-guide-step__body">
           {{ t('guidesWheelsetBuyersSample.ownBuild.body') }}
         </p>
@@ -116,9 +116,9 @@
     <article class="wheelset-guide-step">
       <div class="wheelset-guide-step__number">5</div>
       <div class="wheelset-guide-step__content">
-        <h3 class="wheelset-guide-step__title">
+        <h2 class="wheelset-guide-step__title">
           {{ t('guidesWheelsetBuyersSample.customBuilds.mullet.title') }}
-        </h3>
+        </h2>
         <p class="wheelset-guide-step__body">
           {{ t('guidesWheelsetBuyersSample.customBuilds.mullet.body') }}
         </p>
@@ -151,9 +151,9 @@
     <article class="wheelset-guide-step">
       <div class="wheelset-guide-step__number">6</div>
       <div class="wheelset-guide-step__content">
-        <h3 class="wheelset-guide-step__title">
+        <h2 class="wheelset-guide-step__title">
           {{ t('guidesWheelsetBuyersSample.customBuilds.singleWheel.title') }}
-        </h3>
+        </h2>
         <p class="wheelset-guide-step__body">
           {{ t('guidesWheelsetBuyersSample.customBuilds.singleWheel.body') }}
         </p>
@@ -182,9 +182,9 @@
     <article class="wheelset-guide-step">
       <div class="wheelset-guide-step__number">7</div>
       <div class="wheelset-guide-step__content">
-        <h3 class="wheelset-guide-step__title">
+        <h2 class="wheelset-guide-step__title">
           {{ t('guidesWheelsetBuyersSample.customBuilds.mixedRim.title') }}
-        </h3>
+        </h2>
         <WheelsetMixedRimSection
           :openQuickBuy="openQuickBuy"
           :openWhatsAppChat="openWhatsAppChat"

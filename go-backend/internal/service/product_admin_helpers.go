@@ -1,13 +1,14 @@
 package service
 
 import (
-	"commerce-platform/internal/domain/currency"
-	"commerce-platform/internal/domain/product"
-	"commerce-platform/internal/repository"
 	"errors"
 	"fmt"
 	"regexp"
 	"strings"
+
+	"commerce-platform/internal/domain/currency"
+	"commerce-platform/internal/domain/product"
+	"commerce-platform/internal/repository"
 
 	"gorm.io/gorm"
 )
@@ -314,18 +315,6 @@ func (s *ProductService) buildProductMedia(input []ProductMediaInput) ([]product
 		}
 		thumbnailURL := strings.TrimSpace(item.ThumbnailURL)
 		imageVariants := map[string]product.ProductMediaImageVariant{}
-		if mediaType == "image" && item.MediaAssetID != nil && *item.MediaAssetID > 0 {
-			if resolver, ok := s.mediaService.(productMediaImageVariantResolver); ok {
-				variants, derivativeThumbnail, err := resolver.ProductMediaImageVariants(*item.MediaAssetID)
-				if err != nil {
-					return nil, fmt.Errorf("%w: resolve media derivatives: %v", ErrProductMediaInvalid, err)
-				}
-				imageVariants = variants
-				if thumbnailURL == "" {
-					thumbnailURL = derivativeThumbnail
-				}
-			}
-		}
 
 		items = append(items, product.ProductMedia{
 			ID:                   id,

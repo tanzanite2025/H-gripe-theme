@@ -1,15 +1,16 @@
 package service
 
 import (
-	"commerce-platform/internal/domain/currency"
-	"commerce-platform/internal/domain/product"
-	"commerce-platform/internal/repository"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"regexp"
 	"sort"
 	"strings"
+
+	"commerce-platform/internal/domain/currency"
+	"commerce-platform/internal/domain/product"
+	"commerce-platform/internal/repository"
 
 	"gorm.io/gorm"
 )
@@ -146,7 +147,7 @@ func (s *ProductService) CreateProductSpecificationTemplate(input ProductSpecifi
 	}
 
 	if err := s.productRepo.CreateProductSpecificationTemplate(productSpecificationTemplate); err != nil {
-		return nil, err
+		return nil, mapTemplateSwatchMediaMutationError(err)
 	}
 	s.invalidateStorefrontHTMLCache("admin product specification template create")
 	return s.productRepo.FindProductSpecificationTemplateByID(productSpecificationTemplate.ID)
@@ -217,6 +218,7 @@ func (s *ProductService) UpdateProductSpecificationTemplate(id uint, input Produ
 				return errors.New("transactional product repository is not configured")
 			}
 			if err := tx.Product.UpdateProductSpecificationTemplate(productSpecificationTemplate, removedIDs); err != nil {
+				err = mapTemplateSwatchMediaMutationError(err)
 				if err == gorm.ErrRecordNotFound {
 					return ErrProductSpecificationTemplateNotFound
 				}
@@ -237,6 +239,7 @@ func (s *ProductService) UpdateProductSpecificationTemplate(id uint, input Produ
 	}
 
 	if err := s.productRepo.UpdateProductSpecificationTemplate(productSpecificationTemplate, removedIDs); err != nil {
+		err = mapTemplateSwatchMediaMutationError(err)
 		if err == gorm.ErrRecordNotFound {
 			return nil, ErrProductSpecificationTemplateNotFound
 		}
@@ -568,4 +571,11 @@ func normalizeSpecOptionItems(input []ProductSpecOptionItemInput, legacyKeys []s
 		})
 	}
 	return items, nil
+}
+
+func mapTemplateSwatchMediaMutationError(err error) error {
+	if errors.Is(err, repository.ErrProductMediaReferenceInvalid) {
+		return fmt.Errorf("%w: %v", ErrProductSpecInvalid, err)
+	}
+	return err
 }

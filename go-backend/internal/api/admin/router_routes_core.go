@@ -44,6 +44,14 @@ func registerAuthenticatedCoreRoutes(
 		authGroup.GET("/permissions", authHandler.GetPermissions)
 	}
 
+	// Read-only business explanations are filtered by the viewer's domain permissions
+	// in the service, including counts and direct detail access.
+	followUps := authenticated.Group("/dashboard")
+	followUps.Use(middleware.RequireAnyPermission(auth.PermOpsView, auth.PermOrderView, auth.PermTicketView, auth.PermProductView, auth.PermMerchantView))
+	followUps.GET("/command-center", dashboardHandler.GetCommandCenterOutboxFailures)
+	followUps.GET("/business-follow-ups", dashboardHandler.GetBusinessFollowUpList)
+	followUps.GET("/business-follow-ups/:id", dashboardHandler.GetBusinessFollowUpDetail)
+
 	// 仪表板（所有管理员都可以访问）
 	dashboardGroup := authenticated.Group("/dashboard")
 	dashboardGroup.Use(middleware.RequireAnyPermission(auth.PermOrderView, auth.PermUserView, auth.PermTicketView, auth.PermSubscriptionView))

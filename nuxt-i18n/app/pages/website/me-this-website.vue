@@ -339,17 +339,19 @@ useHead(() => ({
   border: 1px solid rgba(5, 150, 105, 0.28);
   border-radius: 9999px;
   background: rgba(5, 150, 105, 0.08);
-  padding: 0.68rem 1rem;
+  padding: var(--tz-pill-button-padding-block) 1rem;
   color: var(--tz-text-primary);
   font-size: 0.78rem;
   font-weight: 750;
-  line-height: 1.2;
+  line-height: var(--tz-pill-button-line-height);
   text-decoration: none;
   transition:
     background-color 180ms ease,
     border-color 180ms ease,
     color 180ms ease,
     transform 180ms ease;
+  justify-content: center;
+  min-height: var(--tz-pill-button-min-height);
 }
 
 .website-factory__link:hover,

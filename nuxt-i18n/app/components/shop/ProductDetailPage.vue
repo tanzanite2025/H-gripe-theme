@@ -89,6 +89,10 @@
           @select-custom-option="({ slug, value }) => selectCustomOption(slug, value)"
         />
 
+        <ProductCarbonRimAppearanceGuideLink
+          :product-specification-template-slug="product.product_specification_template?.slug || ''"
+        />
+
         <ProductDetailQuantityActions
           :quantity="selectedQuantity"
           :max-quantity="maxProductQuantity"
@@ -228,6 +232,7 @@ import ProductDetailPaymentSelector from '~/components/shop/product-detail/Produ
 import ProductDetailQuantityActions from '~/components/shop/product-detail/ProductDetailQuantityActions.vue'
 import ProductDetailSpecifications from '~/components/shop/product-detail/ProductDetailSpecifications.vue'
 import ProductDetailVariantSelector from '~/components/shop/product-detail/ProductDetailVariantSelector.vue'
+import ProductCarbonRimAppearanceGuideLink from '~/components/shop/product-detail/ProductCarbonRimAppearanceGuideLink.vue'
 import ProductRecommendations from '~/components/shop/ProductRecommendations.vue'
 import ProductReviewsSection from '~/components/shop/ProductReviewsSection.vue'
 import { isMadeToOrderFulfillment } from '~/utils/fulfillmentPresentation'

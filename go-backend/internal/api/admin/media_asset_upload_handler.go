@@ -7,6 +7,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
+	"commerce-platform/internal/domain/media"
 	"commerce-platform/internal/pkg/response"
 	"commerce-platform/internal/pkg/upload"
 	"commerce-platform/internal/service"
@@ -29,7 +30,7 @@ func (h *MediaHandler) UploadRefundCancellationPolicyImage(c *gin.Context) {
 	h.uploadAsset(c, string(upload.SpecRefundCancellationImage))
 }
 
-func (h *MediaHandler) uploadAsset(c *gin.Context, forcedPurpose string) {
+func (h *MediaHandler) uploadAsset(c *gin.Context, forcedPurpose string, trustedOrigin ...media.MediaAssetUploadOrigin) {
 	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, mediaMaxRequestBytes)
 	if err := c.Request.ParseMultipartForm(mediaMultipartMemory); err != nil {
 		if isRequestBodyTooLarge(err) {
@@ -92,13 +93,14 @@ func (h *MediaHandler) uploadAsset(c *gin.Context, forcedPurpose string) {
 	}
 
 	asset, err := h.mediaService.UploadAsset(c.Request.Context(), service.MediaUploadInput{
-		File:       file,
-		MediaType:  mediaType,
-		Alt:        alt,
-		Caption:    caption,
-		UploaderID: currentUserID(c),
-		Width:      width,
-		Height:     height,
+		UploadOrigin: mediaAssetUploadOriginSelectedByAuthorizedHandler(forcedPurpose, trustedOrigin), UploadPurpose: requestedPurpose,
+		File:                file,
+		MediaType:           mediaType,
+		Alt:                 alt,
+		Caption:             caption,
+		UploadActorIdentity: media.MediaUploadActorIdentity{ActorType: media.MediaUploadActorAdministrator, AccountID: currentUserID(c)},
+		Width:               width,
+		Height:              height,
 	})
 	if err != nil {
 		respondMediaError(c, err)

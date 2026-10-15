@@ -6,13 +6,15 @@ import (
 )
 
 type Handler struct {
-	ticketService         *service.TicketService
-	mediaService          *service.MediaService
-	visitorProfileService *service.VisitorProfileService
-	customerServiceEvents *service.CustomerServiceEventHub
-	allowedOrigins        []string
-	visitorSecret         []byte
-	webSocketLimiter      *realtime.CustomerServiceWebSocketLimiter
+	ticketService                 *service.TicketService
+	mediaService                  *service.MediaService
+	conversationAttachmentUploads *service.CustomerServiceConversationAttachmentUploadService
+	conversationAttachmentAccess  *service.CustomerServiceConversationMessageAttachmentAccessService
+	visitorProfileService         *service.VisitorProfileService
+	customerServiceEvents         *service.CustomerServiceEventHub
+	allowedOrigins                []string
+	visitorSecret                 []byte
+	webSocketLimiter              *realtime.CustomerServiceWebSocketLimiter
 }
 
 type Options struct {
@@ -30,12 +32,14 @@ func NewHandler(ticketService *service.TicketService, opts ...Options) *Handler 
 		options = opts[0]
 	}
 	return &Handler{
-		ticketService:         ticketService,
-		mediaService:          options.MediaService,
-		visitorProfileService: options.VisitorProfileService,
-		customerServiceEvents: options.CustomerServiceEvents,
-		allowedOrigins:        append([]string(nil), options.AllowedOrigins...),
-		visitorSecret:         []byte(options.VisitorSecret),
-		webSocketLimiter:      options.CustomerServiceWebSocketLimiter,
+		ticketService:                 ticketService,
+		mediaService:                  options.MediaService,
+		conversationAttachmentUploads: service.NewCustomerServiceConversationAttachmentUploadService(ticketService, options.MediaService),
+		conversationAttachmentAccess:  service.NewCustomerServiceConversationMessageAttachmentAccessService(ticketService, options.MediaService),
+		visitorProfileService:         options.VisitorProfileService,
+		customerServiceEvents:         options.CustomerServiceEvents,
+		allowedOrigins:                append([]string(nil), options.AllowedOrigins...),
+		visitorSecret:                 []byte(options.VisitorSecret),
+		webSocketLimiter:              options.CustomerServiceWebSocketLimiter,
 	}
 }
