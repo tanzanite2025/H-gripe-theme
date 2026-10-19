@@ -8,6 +8,13 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/gin-gonic/gin"
+	"github.com/glebarez/sqlite"
+	"github.com/google/uuid"
+	"github.com/stretchr/testify/require"
+	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
+
 	"commerce-platform/internal/api/middleware"
 	"commerce-platform/internal/domain/auth"
 	"commerce-platform/internal/domain/media"
@@ -16,12 +23,6 @@ import (
 	"commerce-platform/internal/pkg/storage"
 	"commerce-platform/internal/repository"
 	"commerce-platform/internal/service"
-	"github.com/gin-gonic/gin"
-	"github.com/glebarez/sqlite"
-	"github.com/google/uuid"
-	"github.com/stretchr/testify/require"
-	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
 )
 
 func TestRemotePrivateVideoRangeS3ReadsRequireCurrentAgentAssignmentPermissionAndNonzeroIdentity(t *testing.T) {
@@ -91,7 +92,7 @@ func TestRemotePrivateVideoRangeS3ReadsRequireCurrentAgentAssignmentPermissionAn
 			})
 			router.GET("/api/admin/customer-service/conversations/:id/messages/:message_id/attachments/:attachment_index/file",
 				middleware.RequirePermission(auth.PermTicketView), handler.ServeAgentCustomerServiceMessageAttachmentFile)
-			request := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/api/admin/customer-service/conversations/%d/messages/%d/attachments/0/file?can_view_all=true&object_key=ignored", conversation.ID, message.ID), nil)
+			request := httptest.NewRequestWithContext(t.Context(), http.MethodGet, fmt.Sprintf("/api/admin/customer-service/conversations/%d/messages/%d/attachments/0/file?can_view_all=true&object_key=ignored", conversation.ID, message.ID), nil)
 			request.Header.Set("Range", "bytes=2-5")
 			if scenario.expectedStatus == http.StatusNotFound {
 				request.Header.Set("If-None-Match", `"staff-video-version"`)

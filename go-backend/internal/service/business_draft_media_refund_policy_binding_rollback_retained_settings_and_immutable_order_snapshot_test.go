@@ -5,13 +5,14 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+	"gorm.io/gorm"
+
 	"commerce-platform/internal/domain/media"
 	"commerce-platform/internal/domain/order"
 	"commerce-platform/internal/domain/refundcancellation"
 	"commerce-platform/internal/domain/setting"
 	"commerce-platform/internal/repository"
-	"github.com/stretchr/testify/require"
-	"gorm.io/gorm"
 )
 
 func configureBusinessDraftMediaRefundPolicyTestService(t *testing.T, env businessDraftMediaReceiptTestEnvironment) (*RefundCancellationPolicyService, *repository.SettingRepository) {

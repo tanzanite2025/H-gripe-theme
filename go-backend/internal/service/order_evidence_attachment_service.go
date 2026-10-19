@@ -208,7 +208,7 @@ func (s *OrderEvidenceAttachmentService) RegisterReference(
 		return nil, ErrOrderEvidenceStoreUnavailable
 	}
 	var attachment *orderevidence.OrderEvidenceAttachment
-	err := repos.OrderEvidence.WithLockedOrderEvidenceAttachmentLifecycleTransaction(nil, func(lockedContext context.Context, repo *repository.OrderEvidenceRepository) error {
+	err := repos.OrderEvidence.WithLockedOrderEvidenceAttachmentLifecycleTransaction(context.Background(), func(lockedContext context.Context, repo *repository.OrderEvidenceRepository) error {
 		var registerErr error
 		attachment, registerErr = s.registerOrderEvidenceReferenceAfterLifecycleLock(lockedContext, repo, input)
 		return registerErr

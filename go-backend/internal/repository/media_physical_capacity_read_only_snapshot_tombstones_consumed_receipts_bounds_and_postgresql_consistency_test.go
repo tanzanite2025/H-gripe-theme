@@ -6,14 +6,15 @@ import (
 	"testing"
 	"time"
 
-	"commerce-platform/internal/domain/media"
-	"commerce-platform/internal/domain/outbox"
 	"github.com/glebarez/sqlite"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
+
+	"commerce-platform/internal/domain/media"
+	"commerce-platform/internal/domain/outbox"
 )
 
 func prepareMediaPhysicalCapacityReadOnlySnapshotTestTables(t *testing.T, db *gorm.DB) {

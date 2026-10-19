@@ -10,14 +10,15 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+	"gorm.io/gorm"
+
 	"commerce-platform/internal/domain/media"
 	"commerce-platform/internal/domain/outbox"
 	"commerce-platform/internal/domain/product"
 	"commerce-platform/internal/domain/ticket"
 	"commerce-platform/internal/pkg/storage"
 	"commerce-platform/internal/repository"
-	"github.com/stretchr/testify/require"
-	"gorm.io/gorm"
 )
 
 func createRetiredMediaDerivativeWithDurableCleanupEventForTest(t *testing.T, db *gorm.DB, assets *MediaService, root string) (*media.MediaAsset, media.MediaAssetDerivative, media.MediaAssetDerivative, outbox.Event) {
@@ -95,9 +96,10 @@ func TestRetiredMediaDerivativeCleanupRetainsExactHistoricalConsumersAndRetriesO
 					require.NoError(t, db.Create(&unrelated).Error)
 				}
 				conflict := media.MediaAsset{Filename: "conflict.png", URL: old.URL + "?other=1", StorageKey: old.StorageKey}
-				if source == "retained-url-only-original" {
+				switch source {
+				case "retained-url-only-original":
 					conflict.StorageKey = ""
-				} else if source == "windows-key-original" {
+				case "windows-key-original":
 					conflict.StorageKey = strings.ReplaceAll(old.StorageKey, "/", "\\")
 				}
 				require.NoError(t, db.Create(&conflict).Error)
@@ -230,15 +232,16 @@ func TestFailedMediaUploadCompensationPersistsBeforeDeleteRetainsClaimsAndRetrie
 			}
 			writeMediaCleanupOwnershipConflictTestObjects(t, root, key)
 			var conflict any
-			if scenario == "registered-original" {
+			switch scenario {
+			case "registered-original":
 				owner := &media.MediaAsset{Filename: "claim", StorageKey: key, URL: provider.GetURL(key)}
 				require.NoError(t, db.Create(owner).Error)
 				conflict = owner
-			} else if scenario == "same-parent-derivative" {
+			case "same-parent-derivative":
 				derivative := &media.MediaAssetDerivative{MediaAssetID: parent.ID, Preset: "card", StorageKey: key, URL: provider.GetURL(key)}
 				require.NoError(t, db.Create(derivative).Error)
 				conflict = derivative
-			} else if scenario == "legacy-business-reference" {
+			case "legacy-business-reference":
 				owner := &product.Product{SKU: "legacy", Slug: "legacy", Name: "Legacy", Description: `<img src="` + provider.GetURL(key) + `">`}
 				require.NoError(t, db.Create(owner).Error)
 				conflict = owner

@@ -7,12 +7,13 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/gin-gonic/gin"
+	"github.com/stretchr/testify/require"
+
 	"commerce-platform/internal/domain/gallery"
 	"commerce-platform/internal/domain/media"
 	"commerce-platform/internal/repository"
 	"commerce-platform/internal/service"
-	"github.com/gin-gonic/gin"
-	"github.com/stretchr/testify/require"
 )
 
 func TestGalleryMediaHTTPRejectsIneligibleSelectionsAndPreservesOmittedImageFields(t *testing.T) {

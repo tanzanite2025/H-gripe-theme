@@ -4,9 +4,10 @@ import (
 	"errors"
 	"fmt"
 
+	"gorm.io/gorm"
+
 	"commerce-platform/internal/domain/post"
 	"commerce-platform/internal/pkg/safehtml"
-	"gorm.io/gorm"
 )
 
 var ErrPostMediaReferenceInvalid = errors.New("post media reference is invalid")

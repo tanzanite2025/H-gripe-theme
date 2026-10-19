@@ -9,11 +9,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
+	"gorm.io/gorm"
+
 	"commerce-platform/internal/domain/order"
 	"commerce-platform/internal/domain/orderevidence"
 	"commerce-platform/internal/repository"
-	"github.com/stretchr/testify/require"
-	"gorm.io/gorm"
 )
 
 func TestPostgreSQLImmutableSnapshotPayPalInvoiceExportRetainsSameOrderHistoryAfterReceiptConsumption(t *testing.T) {
@@ -85,11 +86,12 @@ func TestPostgreSQLImmutableSnapshotLegacyHashesSurviveJSONBRoundtripWithoutChan
 					break
 				}
 			}
-			if kind == "initial" {
+			switch kind {
+			case "initial":
 				require.Error(t, (orderevidence.OrderEvidenceSnapshot{SnapshotData: tampered, SnapshotSHA256: storedDigest}).VerifyIntegrity())
-			} else if kind == "stripe" || kind == "paypal" {
+			case "stripe", "paypal":
 				require.Error(t, (orderevidence.OrderEvidenceSubmissionSnapshot{Provider: kind, SnapshotData: tampered, SnapshotSHA256: storedDigest}).VerifyIntegrity())
-			} else {
+			default:
 				require.Error(t, (orderevidence.OrderEvidenceExportSnapshot{SnapshotData: tampered, SnapshotSHA256: storedDigest}).VerifyIntegrity())
 			}
 		})
@@ -145,7 +147,7 @@ func TestPostgreSQLImmutableSnapshotFourWriteEntriesSerializeRichTextBindingAndP
 				release := func() { releaseOnce.Do(func() { close(released) }) }
 				defer release()
 				pause := func(tx *gorm.DB) {
-					pauseOnce.Do(func() { pausePostgreSQLMediaObjectOwnershipTransactionUntilReleased(t, ctx, tx, acquired, released) })
+					pauseOnce.Do(func() { pausePostgreSQLMediaObjectOwnershipTransactionUntilReleased(ctx, t, tx, acquired, released) })
 				}
 				const callback = "pause_immutable_snapshot_cleanup_race"
 				if firstOperation == "snapshot" {
@@ -173,7 +175,7 @@ func TestPostgreSQLImmutableSnapshotFourWriteEntriesSerializeRichTextBindingAndP
 				} else {
 					go cleanup()
 				}
-				blocker := awaitPostgreSQLMediaObjectOwnershipTransactionPID(t, ctx, acquired)
+				blocker := awaitPostgreSQLMediaObjectOwnershipTransactionPID(ctx, t, acquired)
 				if firstOperation == "snapshot" {
 					go cleanup()
 				} else {
@@ -185,8 +187,8 @@ func TestPostgreSQLImmutableSnapshotFourWriteEntriesSerializeRichTextBindingAndP
 					return err == nil && blocked
 				}, 4*time.Second, 20*time.Millisecond)
 				release()
-				writeErr := awaitPostgreSQLMediaObjectOwnershipOperationResult(t, ctx, writer)
-				cleanupErr := awaitPostgreSQLMediaObjectOwnershipOperationResult(t, ctx, cleaner)
+				writeErr := awaitPostgreSQLMediaObjectOwnershipOperationResult(ctx, t, writer)
+				cleanupErr := awaitPostgreSQLMediaObjectOwnershipOperationResult(ctx, t, cleaner)
 				if firstOperation == "snapshot" {
 					require.NoError(t, writeErr)
 					require.ErrorIs(t, cleanupErr, ErrMediaAssetInUse)

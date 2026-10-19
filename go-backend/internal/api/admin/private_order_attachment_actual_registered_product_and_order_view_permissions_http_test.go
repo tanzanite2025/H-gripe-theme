@@ -7,16 +7,17 @@ import (
 	"strings"
 	"testing"
 
-	"commerce-platform/internal/domain/auth"
-	"commerce-platform/internal/domain/warranty"
-	"commerce-platform/internal/pkg/storage"
-	"commerce-platform/internal/repository"
-	"commerce-platform/internal/service"
 	"github.com/gin-gonic/gin"
 	"github.com/glebarez/sqlite"
 	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
+
+	"commerce-platform/internal/domain/auth"
+	"commerce-platform/internal/domain/warranty"
+	"commerce-platform/internal/pkg/storage"
+	"commerce-platform/internal/repository"
+	"commerce-platform/internal/service"
 )
 
 func TestPrivateOrderAttachmentActualAdministratorRoutesRetainProductAndOrderReadPermissions(t *testing.T) {
@@ -51,7 +52,7 @@ func TestPrivateOrderAttachmentActualAdministratorRoutesRetainProductAndOrderRea
 				{"/api/admin/after-sales/0/attachments/0", auth.PermOrderView},
 			} {
 				recorder := httptest.NewRecorder()
-				router.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, fixture.path, nil))
+				router.ServeHTTP(recorder, httptest.NewRequestWithContext(t.Context(), http.MethodGet, fixture.path, nil))
 				if !auth.Role(role).HasPermission(fixture.permission) {
 					require.Equal(t, http.StatusForbidden, recorder.Code)
 				} else if strings.Contains(fixture.path, "/claims/") {

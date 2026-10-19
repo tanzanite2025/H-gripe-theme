@@ -6,12 +6,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
+	"gorm.io/gorm"
+
 	"commerce-platform/internal/domain/orderevidence"
 	"commerce-platform/internal/domain/outbox"
 	"commerce-platform/internal/pkg/storage"
 	"commerce-platform/internal/repository"
-	"github.com/stretchr/testify/require"
-	"gorm.io/gorm"
 )
 
 func createIsolatedPostgreSQLSuggestionAndPayPalAttachmentReceiptEnvironment(t *testing.T) (*gorm.DB, *SuggestionAndPayPalAttachmentUploadService, *suggestionAndPayPalAttachmentControlledStorage) {
@@ -72,7 +73,7 @@ func TestPostgreSQLSuggestionAndPayPalAttachmentReceiptIsCommittedBeforeIOAndCan
 			case <-time.After(10 * time.Second):
 				t.Fatal("provider was not reached")
 			}
-			pid := awaitPostgreSQLMediaObjectOwnershipTransactionPID(t, t.Context(), captured)
+			pid := awaitPostgreSQLMediaObjectOwnershipTransactionPID(t.Context(), t, captured)
 			event, payload := findSuggestionOrPayPalAttachmentReceiptForRegression(t, db, provider.writtenKeys[0])
 			require.Equal(t, "uploading", payload.UploadState)
 			require.Equal(t, []string{provider.writtenKeys[0]}, payload.ObjectKeys)
@@ -84,7 +85,7 @@ func TestPostgreSQLSuggestionAndPayPalAttachmentReceiptIsCommittedBeforeIOAndCan
 			go func() {
 				contender <- uploads.outbox.WithSuggestionOrPayPalAttachmentLifecycleLockUntilProviderReturns(t.Context(), func(*gorm.DB) error { return nil })
 			}()
-			requireDedicatedObjectLifecyclePostgreSQLTransactionActuallyBlocks(t, t.Context(), db, pid)
+			requireDedicatedObjectLifecyclePostgreSQLTransactionActuallyBlocks(t.Context(), t, db, pid)
 			release()
 			select {
 			case err := <-writer:

@@ -2,8 +2,9 @@ package admin
 
 import (
 	"encoding/json"
-	"github.com/stretchr/testify/require"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestCarbonRimRequestRejectsUnknownEngineeringFieldsAndPreservesFalse(t *testing.T) {

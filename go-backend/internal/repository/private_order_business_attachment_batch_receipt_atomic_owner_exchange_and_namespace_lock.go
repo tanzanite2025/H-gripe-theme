@@ -10,11 +10,12 @@ import (
 	"strings"
 	"time"
 
-	"commerce-platform/internal/domain/outbox"
-	"commerce-platform/internal/pkg/storage"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
+
+	"commerce-platform/internal/domain/outbox"
+	"commerce-platform/internal/pkg/storage"
 )
 
 const PrivateOrderBusinessAttachmentReceiptEventKeyPrefix = "private-order-business-attachment-write:"
@@ -117,9 +118,9 @@ func (m *EmailChallengeTxManager) WithPrivateOrderBusinessAttachmentTransaction(
 	if m == nil {
 		return nil
 	}
-	copy := *m
-	copy.db = tx
-	return &copy
+	clonedValue := *m
+	clonedValue.db = tx
+	return &clonedValue
 }
 
 func (m *EmailChallengeTxManager) WithinPrivateOrderBusinessAttachmentMutationLock(operation func(*gorm.DB) error) error {
@@ -133,9 +134,9 @@ func (m *TxManager) WithPrivateOrderBusinessAttachmentTransaction(tx *gorm.DB) *
 	if m == nil {
 		return nil
 	}
-	copy := *m
-	copy.db = tx
-	return &copy
+	clonedValue := *m
+	clonedValue.db = tx
+	return &clonedValue
 }
 
 func (m *TxManager) WithinPrivateOrderBusinessAttachmentMutationLock(operation func(*gorm.DB) error) error {

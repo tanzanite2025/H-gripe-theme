@@ -1,11 +1,12 @@
 package warranty
 
 import (
-	"commerce-platform/internal/api/v1/publicmedia"
-	domainwarranty "commerce-platform/internal/domain/warranty"
 	"encoding/json"
 	"fmt"
 	"strings"
+
+	"commerce-platform/internal/api/v1/publicmedia"
+	domainwarranty "commerce-platform/internal/domain/warranty"
 )
 
 func publicWarrantyClaimFromDomain(

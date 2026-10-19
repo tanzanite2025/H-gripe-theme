@@ -7,9 +7,10 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"commerce-platform/internal/domain/gallery"
 	"commerce-platform/internal/domain/media"
-	"github.com/stretchr/testify/require"
 )
 
 func TestMediaAssociationDiagnosisHTTPUsesActualPermissionsAndRedactsRestrictedReferences(t *testing.T) {
@@ -22,7 +23,7 @@ func TestMediaAssociationDiagnosisHTTPUsesActualPermissionsAndRedactsRestrictedR
 			require.NoError(t, db.Exec("INSERT INTO ticket_messages VALUES(876543,765432,?)", `["`+asset.URL+`"]`).Error)
 			router := createMediaLibraryPartitionHTTPRouterWithActualRegisteredPermissions(handler, role)
 			result := httptest.NewRecorder()
-			router.ServeHTTP(result, httptest.NewRequest(http.MethodGet, fmt.Sprintf("/api/admin/media/assets/%d/association-diagnosis?allow_all_references=true", asset.ID), nil))
+			router.ServeHTTP(result, httptest.NewRequestWithContext(t.Context(), http.MethodGet, fmt.Sprintf("/api/admin/media/assets/%d/association-diagnosis?allow_all_references=true", asset.ID), nil))
 			if role == "user" {
 				require.Equal(t, http.StatusForbidden, result.Code)
 				return
@@ -46,7 +47,7 @@ func TestMissingGalleryParentRepairHTTPRejectsPermissionAndUntrustedRequestField
 			router := createMediaLibraryPartitionHTTPRouterWithActualRegisteredPermissions(handler, role)
 			for _, suffix := range []string{"missing-gallery-parent-repair-previews", "missing-gallery-parent-repairs"} {
 				result := httptest.NewRecorder()
-				router.ServeHTTP(result, httptest.NewRequest(http.MethodPost, "/api/admin/media/assets/1/"+suffix, strings.NewReader(`{"image_id":"1","destination_gallery_id":"2"}`)))
+				router.ServeHTTP(result, httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/api/admin/media/assets/1/"+suffix, strings.NewReader(`{"image_id":"1","destination_gallery_id":"2"}`)))
 				require.Equal(t, http.StatusForbidden, result.Code, result.Body.String())
 			}
 		})
@@ -55,7 +56,7 @@ func TestMissingGalleryParentRepairHTTPRejectsPermissionAndUntrustedRequestField
 		t.Run(fmt.Sprintf("invalid payload %d", len(payload)), func(t *testing.T) {
 			_, handler := createMediaLibraryPartitionHTTPTestEnvironment(t)
 			result := httptest.NewRecorder()
-			createMediaLibraryPartitionHTTPRouterWithActualRegisteredPermissions(handler, "admin").ServeHTTP(result, httptest.NewRequest(http.MethodPost, "/api/admin/media/assets/1/missing-gallery-parent-repair-previews", strings.NewReader(payload)))
+			createMediaLibraryPartitionHTTPRouterWithActualRegisteredPermissions(handler, "admin").ServeHTTP(result, httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/api/admin/media/assets/1/missing-gallery-parent-repair-previews", strings.NewReader(payload)))
 			require.Equal(t, http.StatusBadRequest, result.Code, result.Body.String())
 		})
 	}
@@ -73,14 +74,14 @@ func TestMissingGalleryParentPreviewHTTPReturnsOnlyReviewedIdentitiesAndStaleHis
 	router := createMediaLibraryPartitionHTTPRouterWithActualRegisteredPermissions(handler, "manager")
 	requestBody := fmt.Sprintf(`{"image_id":"%d","destination_gallery_id":"%d"}`, image.ID, destination.ID)
 	result := httptest.NewRecorder()
-	router.ServeHTTP(result, httptest.NewRequest(http.MethodPost, fmt.Sprintf("/api/admin/media/assets/%d/missing-gallery-parent-repair-previews", asset.ID), strings.NewReader(requestBody)))
+	router.ServeHTTP(result, httptest.NewRequestWithContext(t.Context(), http.MethodPost, fmt.Sprintf("/api/admin/media/assets/%d/missing-gallery-parent-repair-previews", asset.ID), strings.NewReader(requestBody)))
 	require.Equal(t, http.StatusOK, result.Code, result.Body.String())
 	require.Contains(t, result.Body.String(), "Selected draft")
 	require.Contains(t, result.Body.String(), "fingerprint")
 	require.NotContains(t, result.Body.String(), asset.URL)
 	require.NoError(t, db.Delete(&image).Error)
 	result = httptest.NewRecorder()
-	router.ServeHTTP(result, httptest.NewRequest(http.MethodPost, fmt.Sprintf("/api/admin/media/assets/%d/missing-gallery-parent-repair-previews", asset.ID), strings.NewReader(requestBody)))
+	router.ServeHTTP(result, httptest.NewRequestWithContext(t.Context(), http.MethodPost, fmt.Sprintf("/api/admin/media/assets/%d/missing-gallery-parent-repair-previews", asset.ID), strings.NewReader(requestBody)))
 	require.Equal(t, http.StatusConflict, result.Code, result.Body.String())
 	require.Contains(t, result.Body.String(), "media_association_repair_conflict")
 }

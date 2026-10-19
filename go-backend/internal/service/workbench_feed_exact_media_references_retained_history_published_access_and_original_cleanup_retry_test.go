@@ -8,11 +8,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
+	"gorm.io/gorm"
+
 	"commerce-platform/internal/domain/media"
 	"commerce-platform/internal/domain/outbox"
 	"commerce-platform/internal/repository"
-	"github.com/stretchr/testify/require"
-	"gorm.io/gorm"
 )
 
 func createWorkbenchFeedReferenceRetentionTestTables(t *testing.T, db *gorm.DB, withParents bool) {

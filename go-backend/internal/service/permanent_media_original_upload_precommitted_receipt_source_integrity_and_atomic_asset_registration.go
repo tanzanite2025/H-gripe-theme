@@ -8,11 +8,12 @@ import (
 	"path"
 	"strings"
 
+	"github.com/google/uuid"
+	"gorm.io/gorm"
+
 	"commerce-platform/internal/domain/media"
 	"commerce-platform/internal/pkg/storage"
 	"commerce-platform/internal/repository"
-	"github.com/google/uuid"
-	"gorm.io/gorm"
 )
 
 func (s *MediaService) uploadPermanentMediaOriginalWithPrecommittedReceiptAndAtomicAssetRegistration(ctx context.Context, input MediaUploadInput, classification trustedMediaAssetUploadClassification, mimeType, contentHash string) (*media.MediaAsset, error) {

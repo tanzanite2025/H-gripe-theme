@@ -7,16 +7,17 @@ import (
 	"strings"
 	"testing"
 
-	"commerce-platform/internal/domain/aftersales"
-	orderdomain "commerce-platform/internal/domain/order"
-	"commerce-platform/internal/pkg/storage"
-	"commerce-platform/internal/repository"
-	"commerce-platform/internal/service"
 	"github.com/gin-gonic/gin"
 	"github.com/glebarez/sqlite"
 	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
+
+	"commerce-platform/internal/domain/aftersales"
+	orderdomain "commerce-platform/internal/domain/order"
+	"commerce-platform/internal/pkg/storage"
+	"commerce-platform/internal/repository"
+	"commerce-platform/internal/service"
 )
 
 func TestCustomerAfterSalesAttachmentHTTPChecksCurrentOrderOwnerAndLocatorBeforeReading(t *testing.T) {
@@ -64,7 +65,7 @@ func TestCustomerAfterSalesAttachmentHTTPChecksCurrentOrderOwnerAndLocatorBefore
 			})
 			router.GET("/orders/:order_number/after-sales/attachments/:attachment_locator", handler.ServeAfterSalesAttachmentForCurrentOrderOwner)
 			recorder := httptest.NewRecorder()
-			router.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, fmt.Sprintf("/orders/%s/after-sales/attachments/%s", fixture.orderNumber, fixture.locator), nil))
+			router.ServeHTTP(recorder, httptest.NewRequestWithContext(t.Context(), http.MethodGet, fmt.Sprintf("/orders/%s/after-sales/attachments/%s", fixture.orderNumber, fixture.locator), nil))
 			require.Equal(t, fixture.status, recorder.Code, recorder.Body.String())
 			require.Equal(t, "private, no-store", recorder.Header().Get("Cache-Control"))
 			require.NotContains(t, recorder.Body.String(), reference)

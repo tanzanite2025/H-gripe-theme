@@ -30,7 +30,7 @@ func loadUGCShowcasePrecommittedWriteReceiptAndPayload(t *testing.T, db *gorm.DB
 	return event, payload
 }
 
-func uploadUGCShowcaseTwoImagesThroughPrecommittedEntryPoint(t *testing.T, env ugcShowcaseDurableCompensationRegressionEnvironment, ctx context.Context) (*ugcshowcase.UGCShowcase, error) {
+func uploadUGCShowcaseTwoImagesThroughPrecommittedEntryPoint(ctx context.Context, t *testing.T, env ugcShowcaseDurableCompensationRegressionEnvironment) (*ugcshowcase.UGCShowcase, error) {
 	t.Helper()
 	return env.service.UploadPhotos(ctx, 7, 91, []*multipart.FileHeader{
 		createSiteLogoAndFaviconLifecycleMultipartHeaderFromBackendOwnedWebPFixture(t, "first.webp"),
@@ -50,7 +50,7 @@ func processUGCShowcaseWriteReceiptsWithExistingWorker(t *testing.T, env ugcShow
 func TestUGCShowcasePrecommittedUploadAndPublicationExchangeReceiptsForRealOwnersAndPreservePendingPrivacy(t *testing.T) {
 	env := createUGCShowcaseDurableCompensationRegressionEnvironment(t)
 	configureEligibleOrderForUGCShowcaseUploadCompensationRegression(t, env)
-	item, err := uploadUGCShowcaseTwoImagesThroughPrecommittedEntryPoint(t, env, t.Context())
+	item, err := uploadUGCShowcaseTwoImagesThroughPrecommittedEntryPoint(t.Context(), t, env)
 	require.NoError(t, err)
 	var pending []string
 	require.NoError(t, json.Unmarshal(item.Images, &pending))
@@ -139,7 +139,7 @@ func TestUGCShowcasePrecommittedPendingUploadFailuresKeepAllExactKeysAndNeverBin
 				}))
 				t.Cleanup(func() { _ = env.db.Callback().Delete().Remove(callback) })
 			}
-			item, err := uploadUGCShowcaseTwoImagesThroughPrecommittedEntryPoint(t, env, ctx)
+			item, err := uploadUGCShowcaseTwoImagesThroughPrecommittedEntryPoint(ctx, t, env)
 			require.Error(t, err)
 			require.Nil(t, item)
 			event, payload := loadUGCShowcasePrecommittedWriteReceiptAndPayload(t, env.db)
@@ -193,7 +193,7 @@ func TestUGCShowcasePrecommittedReceiptFailureUnsupportedWriterAndExternalTransa
 					env.service.ConfigureObjectCleanupOutbox(nil)
 				}
 				if operation == "upload" {
-					_, err := uploadUGCShowcaseTwoImagesThroughPrecommittedEntryPoint(t, env, t.Context())
+					_, err := uploadUGCShowcaseTwoImagesThroughPrecommittedEntryPoint(t.Context(), t, env)
 					require.Error(t, err)
 				} else {
 					require.Error(t, env.service.Approve(t.Context(), owner.ID))
@@ -207,7 +207,7 @@ func TestUGCShowcasePrecommittedReceiptFailureUnsupportedWriterAndExternalTransa
 		env := createUGCShowcaseDurableCompensationRegressionEnvironment(t)
 		configureEligibleOrderForUGCShowcaseUploadCompensationRegression(t, env)
 		env.service.storage = struct{ storage.StorageService }{env.provider}
-		_, err := uploadUGCShowcaseTwoImagesThroughPrecommittedEntryPoint(t, env, t.Context())
+		_, err := uploadUGCShowcaseTwoImagesThroughPrecommittedEntryPoint(t.Context(), t, env)
 		require.ErrorIs(t, err, ErrShowcaseStorageUnavailable)
 		require.Empty(t, env.provider.preallocatedPendingKeys)
 	})
@@ -302,7 +302,7 @@ func TestUGCShowcasePrecommittedFailedWriteRetainsHistoricalReferencesAndReplays
 			if operation == "upload" {
 				configureEligibleOrderForUGCShowcaseUploadCompensationRegression(t, env)
 				env.provider.uploadError = errors.New("write response lost")
-				_, err := uploadUGCShowcaseTwoImagesThroughPrecommittedEntryPoint(t, env, t.Context())
+				_, err := uploadUGCShowcaseTwoImagesThroughPrecommittedEntryPoint(t.Context(), t, env)
 				require.Error(t, err)
 			} else {
 				writeUGCShowcaseRegressionObject(t, env, env.key)

@@ -3,9 +3,10 @@ package repository
 import (
 	"errors"
 
+	"gorm.io/gorm"
+
 	"commerce-platform/internal/domain/media"
 	"commerce-platform/internal/pkg/storage"
-	"gorm.io/gorm"
 )
 
 // Public uploads made before private upload receipts are enabled have uploader

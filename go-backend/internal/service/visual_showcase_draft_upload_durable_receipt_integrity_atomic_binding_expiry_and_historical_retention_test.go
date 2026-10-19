@@ -256,14 +256,15 @@ func TestVisualShowcaseDraftBindingFailureRestoresBothReceiptsAndPreviousOwner(t
 				original.DesktopOrder = 1
 			}
 			original.ThumbnailURL = thumbnail.ImageURL
-			if failure == "thumbnail expired" {
+			switch failure {
+			case "thumbnail expired":
 				event, payload := loadVisualShowcaseDraftUploadReceiptAndPayload(t, db, thumbnail.StorageKey)
 				expired := time.Now().Add(-time.Minute)
 				payload.DraftExpiresAt = &expired
 				encoded, err := json.Marshal(payload)
 				require.NoError(t, err)
 				require.NoError(t, db.Model(&event).Update("payload", encoded).Error)
-			} else if failure == "owner write" {
+			case "owner write":
 				callback := "reject_visual_draft_owner_write_" + uuid.NewString()
 				require.NoError(t, db.Callback().Update().Before("gorm:update").Register(callback, func(tx *gorm.DB) {
 					if tx.Statement.Table == "visual_showcase_items" {
@@ -271,7 +272,7 @@ func TestVisualShowcaseDraftBindingFailureRestoresBothReceiptsAndPreviousOwner(t
 					}
 				}))
 				t.Cleanup(func() { _ = db.Callback().Update().Remove(callback) })
-			} else {
+			default:
 				svc.ConfigureObjectCleanupOutbox(nil)
 			}
 			var before []outbox.Event

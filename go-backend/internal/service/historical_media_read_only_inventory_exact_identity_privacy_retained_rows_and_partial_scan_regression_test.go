@@ -5,14 +5,15 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+	"gorm.io/gorm"
+
 	"commerce-platform/internal/domain/gallery"
 	"commerce-platform/internal/domain/media"
 	"commerce-platform/internal/domain/post"
 	"commerce-platform/internal/domain/product"
 	"commerce-platform/internal/domain/setting"
 	"commerce-platform/internal/pkg/storage"
-	"github.com/stretchr/testify/require"
-	"gorm.io/gorm"
 )
 
 func createHistoricalMediaReadOnlyInventoryRegressionEnvironment(t *testing.T) (*gorm.DB, *HistoricalMediaReadOnlyInventoryService) {

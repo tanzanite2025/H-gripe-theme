@@ -1,10 +1,12 @@
 package product
 
 import (
-	productdomain "commerce-platform/internal/domain/product"
 	"encoding/json"
-	"github.com/stretchr/testify/require"
 	"testing"
+
+	"github.com/stretchr/testify/require"
+
+	productdomain "commerce-platform/internal/domain/product"
 )
 
 func TestCarbonRimPublicFactsHaveNoTemplateOrExactInventoryAndOmitUnknownLimits(t *testing.T) {

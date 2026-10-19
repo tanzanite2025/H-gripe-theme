@@ -8,8 +8,9 @@ import (
 	"strings"
 	"time"
 
-	"commerce-platform/internal/pkg/storage"
 	"github.com/gin-gonic/gin"
+
+	"commerce-platform/internal/pkg/storage"
 )
 
 func parseConversationAuthorizedSingleVideoByteRange(value string, size int64) (start, length int64, partial, unsatisfiable bool) {
@@ -21,7 +22,7 @@ func parseConversationAuthorizedSingleVideoByteRange(value string, size int64) (
 	if !found || size <= 0 {
 		return 0, 0, false, true
 	}
-	parseDigits := func(value string) (uint64, bool, bool) {
+	parseDigits := func(value string) (int64, bool, bool) {
 		if value == "" {
 			return 0, false, false
 		}
@@ -30,7 +31,7 @@ func parseConversationAuthorizedSingleVideoByteRange(value string, size int64) (
 				return 0, false, false
 			}
 		}
-		parsed, err := strconv.ParseUint(value, 10, 64)
+		parsed, err := strconv.ParseInt(value, 10, 64)
 		return parsed, true, err != nil
 	}
 	if first == "" {
@@ -38,16 +39,16 @@ func parseConversationAuthorizedSingleVideoByteRange(value string, size int64) (
 		if !valid || (!overflow && suffix == 0) {
 			return 0, 0, false, true
 		}
-		if overflow || suffix > uint64(size) {
-			suffix = uint64(size)
+		if overflow || suffix > size {
+			suffix = size
 		}
-		return size - int64(suffix), int64(suffix), true, false
+		return size - suffix, suffix, true, false
 	}
 	position, valid, overflow := parseDigits(first)
-	if !valid || overflow || position >= uint64(size) {
+	if !valid || overflow || position >= size {
 		return 0, 0, false, true
 	}
-	end := uint64(size - 1)
+	end := size - 1
 	if last != "" {
 		requestedEnd, valid, overflow := parseDigits(last)
 		if !valid || (!overflow && requestedEnd < position) {
@@ -57,7 +58,7 @@ func parseConversationAuthorizedSingleVideoByteRange(value string, size int64) (
 			end = requestedEnd
 		}
 	}
-	return int64(position), int64(end - position + 1), true, false
+	return position, end - position + 1, true, false
 }
 
 func conversationAuthorizedVideoIfRangeMatches(value string, metadata storage.ObjectByteRangeMetadata) bool {

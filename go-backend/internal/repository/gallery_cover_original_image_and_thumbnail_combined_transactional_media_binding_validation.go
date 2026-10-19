@@ -4,9 +4,10 @@ import (
 	"errors"
 	"fmt"
 
+	"gorm.io/gorm"
+
 	"commerce-platform/internal/domain/gallery"
 	"commerce-platform/internal/domain/media"
-	"gorm.io/gorm"
 )
 
 var (

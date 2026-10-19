@@ -4,11 +4,12 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/gin-gonic/gin"
+
 	"commerce-platform/internal/domain/auth"
 	"commerce-platform/internal/domain/media"
 	"commerce-platform/internal/repository"
 	"commerce-platform/internal/service"
-	"github.com/gin-gonic/gin"
 )
 
 func mediaUsageSummaryReferenceScopeForAuthenticatedAdministrator(c *gin.Context) service.MediaUsageSummaryAccessScope {

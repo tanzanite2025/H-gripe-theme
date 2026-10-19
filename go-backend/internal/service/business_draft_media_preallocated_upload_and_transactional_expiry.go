@@ -12,11 +12,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
+	"gorm.io/gorm"
+
 	"commerce-platform/internal/domain/media"
 	"commerce-platform/internal/pkg/storage"
 	"commerce-platform/internal/repository"
-	"github.com/google/uuid"
-	"gorm.io/gorm"
 )
 
 const businessDraftMediaUploadLifetime = 24 * time.Hour

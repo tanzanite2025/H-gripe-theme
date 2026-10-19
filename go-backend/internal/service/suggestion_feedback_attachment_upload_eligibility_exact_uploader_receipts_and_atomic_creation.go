@@ -5,11 +5,12 @@ import (
 	"mime/multipart"
 	"strings"
 
+	"gorm.io/gorm"
+
 	"commerce-platform/internal/domain/outbox"
 	"commerce-platform/internal/domain/suggestionfeedback"
 	"commerce-platform/internal/pkg/storage"
 	"commerce-platform/internal/repository"
-	"gorm.io/gorm"
 )
 
 func (s *SuggestionFeedbackService) ConfigureSuggestionAttachmentDurableUploads(uploads *SuggestionAndPayPalAttachmentUploadService) {

@@ -8,16 +8,17 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"commerce-platform/internal/domain/media"
-	"commerce-platform/internal/domain/post"
-	"commerce-platform/internal/pkg/storage"
-	"commerce-platform/internal/repository"
-	"commerce-platform/internal/service"
 	"github.com/gin-gonic/gin"
 	"github.com/glebarez/sqlite"
 	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
+
+	"commerce-platform/internal/domain/media"
+	"commerce-platform/internal/domain/post"
+	"commerce-platform/internal/pkg/storage"
+	"commerce-platform/internal/repository"
+	"commerce-platform/internal/service"
 )
 
 func createPostManagedMediaHTTPContractTestHandler(t *testing.T) (*gorm.DB, *ContentHandler, *service.MediaService) {

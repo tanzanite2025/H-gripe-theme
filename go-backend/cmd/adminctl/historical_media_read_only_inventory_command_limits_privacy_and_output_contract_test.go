@@ -5,8 +5,9 @@ import (
 	"errors"
 	"testing"
 
-	"commerce-platform/internal/service"
 	"github.com/stretchr/testify/require"
+
+	"commerce-platform/internal/service"
 )
 
 func TestHistoricalMediaReadOnlyInventoryCommandValidatesArgumentsBeforeDatabaseConnection(t *testing.T) {

@@ -7,10 +7,11 @@ import (
 	"sort"
 	"strings"
 
+	"gorm.io/gorm"
+
 	"commerce-platform/internal/domain/orderevidence"
 	"commerce-platform/internal/pkg/safehtml"
 	"commerce-platform/internal/pkg/storage"
-	"gorm.io/gorm"
 )
 
 var ErrImmutableOrderEvidenceSnapshotMediaReferenceUnavailable = errors.New("immutable order evidence snapshot media reference is unavailable or outside its owner scope")

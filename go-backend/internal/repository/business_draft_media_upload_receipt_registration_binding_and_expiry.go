@@ -8,10 +8,11 @@ import (
 	"strings"
 	"time"
 
-	"commerce-platform/internal/domain/media"
-	"commerce-platform/internal/pkg/storage"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
+
+	"commerce-platform/internal/domain/media"
+	"commerce-platform/internal/pkg/storage"
 )
 
 var ErrBusinessDraftMediaUploadReceiptUnavailable = errors.New("business draft media upload receipt is unavailable or expired")

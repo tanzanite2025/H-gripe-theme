@@ -7,11 +7,12 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"commerce-platform/internal/domain/aftersales"
 	"commerce-platform/internal/domain/order"
 	"commerce-platform/internal/domain/warranty"
 	"commerce-platform/internal/pkg/storage"
-	"github.com/stretchr/testify/require"
 )
 
 func assertAuthorizedPrivateAttachmentHasReadableBytesAndClose(t *testing.T, object *storage.StoredObject, err error) {

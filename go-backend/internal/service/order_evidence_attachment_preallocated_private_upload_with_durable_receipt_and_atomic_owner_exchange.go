@@ -6,11 +6,12 @@ import (
 	"fmt"
 	"mime/multipart"
 
+	"github.com/google/uuid"
+	"gorm.io/gorm"
+
 	"commerce-platform/internal/domain/orderevidence"
 	"commerce-platform/internal/pkg/storage"
 	"commerce-platform/internal/repository"
-	"github.com/google/uuid"
-	"gorm.io/gorm"
 )
 
 func (s *OrderEvidenceAttachmentService) uploadOrderEvidenceAttachmentWithPrecommittedExactKeyAndAtomicOwnerExchange(ctx context.Context, orderID uint, plannedItem *orderevidence.OrderEvidenceItem, file *multipart.FileHeader, uploadedBy uint, mimeType, digest string, sizeBytes int64) (*orderevidence.OrderEvidenceAttachment, error) {

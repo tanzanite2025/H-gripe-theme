@@ -7,12 +7,13 @@ import (
 	"strings"
 	"testing"
 
-	"commerce-platform/internal/domain/audit"
-	"commerce-platform/internal/domain/gallery"
-	"commerce-platform/internal/domain/media"
 	"github.com/stretchr/testify/require"
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
+
+	"commerce-platform/internal/domain/audit"
+	"commerce-platform/internal/domain/gallery"
+	"commerce-platform/internal/domain/media"
 )
 
 func createMediaAssociationRepairReviewFixture(t *testing.T, db *gorm.DB, assets *MediaService) (*media.MediaAsset, *gallery.GalleryImage, *gallery.Gallery) {
@@ -21,7 +22,7 @@ func createMediaAssociationRepairReviewFixture(t *testing.T, db *gorm.DB, assets
 	if !db.Migrator().HasTable(&audit.AuditLog{}) {
 		require.NoError(t, db.AutoMigrate(&audit.AuditLog{}))
 	}
-	if db.Dialector.Name() == "postgres" {
+	if db.Name() == "postgres" {
 		// Reproduce legacy corruption only inside this test's isolated schema.
 		require.NoError(t, db.Exec("ALTER TABLE gallery_images DROP CONSTRAINT IF EXISTS fk_galleries_images").Error)
 	}

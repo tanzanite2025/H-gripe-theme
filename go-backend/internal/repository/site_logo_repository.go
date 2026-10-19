@@ -19,15 +19,15 @@ func NewSiteLogoRepository(db *gorm.DB) *SiteLogoRepository {
 }
 
 func (r *SiteLogoRepository) WithTx(tx *gorm.DB) *SiteLogoRepository {
-	copy := *r
-	copy.db = tx
-	return &copy
+	clonedValue := *r
+	clonedValue.db = tx
+	return &clonedValue
 }
 
 func (r *SiteLogoRepository) WithContext(ctx context.Context) *SiteLogoRepository {
-	copy := *r
-	copy.db = r.db.WithContext(ctx)
-	return &copy
+	clonedValue := *r
+	clonedValue.db = r.db.WithContext(ctx)
+	return &clonedValue
 }
 
 func (r *SiteLogoRepository) ConfigureTransactionalSiteLogoObjectValidation(validate func(context.Context, *sitelogodomain.Asset) error) {

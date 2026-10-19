@@ -11,13 +11,14 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+	"gorm.io/gorm"
+
 	"commerce-platform/internal/domain/media"
 	"commerce-platform/internal/domain/outbox"
 	"commerce-platform/internal/domain/ticket"
 	"commerce-platform/internal/pkg/storage"
 	"commerce-platform/internal/pkg/upload"
-	"github.com/stretchr/testify/require"
-	"gorm.io/gorm"
 )
 
 func syntheticCustomerServiceAgentVideoMP4HeaderBytes() []byte {

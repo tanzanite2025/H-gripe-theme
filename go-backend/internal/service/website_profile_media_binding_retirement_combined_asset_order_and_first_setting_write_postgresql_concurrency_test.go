@@ -8,13 +8,14 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
+	"github.com/stretchr/testify/require"
+	"gorm.io/gorm"
+
 	"commerce-platform/internal/domain/media"
 	"commerce-platform/internal/domain/outbox"
 	"commerce-platform/internal/domain/setting"
 	"commerce-platform/internal/repository"
-	"github.com/google/uuid"
-	"github.com/stretchr/testify/require"
-	"gorm.io/gorm"
 )
 
 func TestPostgreSQLWebsiteProfileImagesAndRichTextCreateAndUpdateSerializeBindingAndRetirement(t *testing.T) {

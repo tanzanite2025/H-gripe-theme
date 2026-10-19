@@ -6,13 +6,14 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
+	"github.com/stretchr/testify/require"
+	"gorm.io/gorm"
+
 	"commerce-platform/internal/domain/aftersales"
 	"commerce-platform/internal/domain/order"
 	"commerce-platform/internal/domain/outbox"
 	"commerce-platform/internal/repository"
-	"github.com/google/uuid"
-	"github.com/stretchr/testify/require"
-	"gorm.io/gorm"
 )
 
 func createIsolatedPostgreSQLPrivateOrderBusinessAttachmentReceiptEnvironment(t *testing.T) privateOrderBusinessAttachmentReceiptTestEnvironment {
@@ -60,7 +61,7 @@ func TestPostgreSQLPrivateOrderBusinessAttachmentReceiptVisibleBeforeIOWorkerSki
 			captured := capturePrivateOrderBusinessAttachmentWriterPostgreSQLBackendPID(t, env.db)
 			env.provider.afterWrite = func(context.Context, string) { close(entered); <-released }
 			writer := make(chan error, 1)
-			go func() { writer <- env.uploadTwoPrivateBusinessAttachmentFiles(t, ctx, owner) }()
+			go func() { writer <- env.uploadTwoPrivateBusinessAttachmentFiles(ctx, t, owner) }()
 			select {
 			case <-entered:
 			case err := <-writer:
@@ -68,7 +69,7 @@ func TestPostgreSQLPrivateOrderBusinessAttachmentReceiptVisibleBeforeIOWorkerSki
 			case <-time.After(10 * time.Second):
 				t.Fatal("private attachment provider did not accept bytes")
 			}
-			pid := awaitPostgreSQLMediaObjectOwnershipTransactionPID(t, t.Context(), captured)
+			pid := awaitPostgreSQLMediaObjectOwnershipTransactionPID(t.Context(), t, captured)
 			receipt, payload := loadPrivateOrderBusinessAttachmentReceipt(t, env.db)
 			require.Contains(t, payload.ObjectKeys, env.provider.keys[0])
 			claimed, err := repository.NewOutboxRepository(env.db).ClaimReadyEvents(time.Now().Add(6*time.Minute), "private-business-receipt-worker", 100, time.Minute)
@@ -79,7 +80,7 @@ func TestPostgreSQLPrivateOrderBusinessAttachmentReceiptVisibleBeforeIOWorkerSki
 			handler := NewObjectStorageCleanupOutboxHandler(nil, nil, nil, nil)
 			handler.ConfigurePrivateOrderBusinessAttachmentUploads(env.uploads)
 			go func() { cleanup <- handler.Handle(t.Context(), receipt) }()
-			requireDedicatedObjectLifecyclePostgreSQLTransactionActuallyBlocks(t, t.Context(), env.db, pid)
+			requireDedicatedObjectLifecyclePostgreSQLTransactionActuallyBlocks(t.Context(), t, env.db, pid)
 			release()
 			select {
 			case err := <-writer:
@@ -126,10 +127,10 @@ func TestPostgreSQLPrivateOrderBusinessAttachmentWaitingWriterRejectsClaimedComp
 					return nil
 				})
 			}()
-			pid := awaitPostgreSQLMediaObjectOwnershipTransactionPID(t, t.Context(), locked)
+			pid := awaitPostgreSQLMediaObjectOwnershipTransactionPID(t.Context(), t, locked)
 			writer := make(chan error, 1)
-			go func() { writer <- env.uploadTwoPrivateBusinessAttachmentFiles(t, t.Context(), "shipment") }()
-			requireDedicatedObjectLifecyclePostgreSQLTransactionActuallyBlocks(t, t.Context(), env.db, pid)
+			go func() { writer <- env.uploadTwoPrivateBusinessAttachmentFiles(t.Context(), t, "shipment") }()
+			requireDedicatedObjectLifecyclePostgreSQLTransactionActuallyBlocks(t.Context(), t, env.db, pid)
 			receipt, _ := loadPrivateOrderBusinessAttachmentReceipt(t, env.db)
 			query := env.db.Model(&outbox.Event{}).Where("id = ?", receipt.ID)
 			switch fence {
@@ -163,15 +164,15 @@ func TestPostgreSQLPrivateShipmentConcurrentAppendPreservesBothSuccessfulAttachm
 	captured := capturePrivateOrderBusinessAttachmentWriterPostgreSQLBackendPID(t, env.db)
 	env.provider.beforeWrite = func(context.Context, string) { blockOnce.Do(func() { close(entered); <-released }) }
 	first, second := make(chan error, 1), make(chan error, 1)
-	go func() { first <- env.uploadTwoPrivateBusinessAttachmentFiles(t, t.Context(), "shipment") }()
+	go func() { first <- env.uploadTwoPrivateBusinessAttachmentFiles(t.Context(), t, "shipment") }()
 	select {
 	case <-entered:
 	case <-time.After(10 * time.Second):
 		t.Fatal("first shipment append did not reach provider")
 	}
-	pid := awaitPostgreSQLMediaObjectOwnershipTransactionPID(t, t.Context(), captured)
-	go func() { second <- env.uploadTwoPrivateBusinessAttachmentFiles(t, t.Context(), "shipment") }()
-	requireDedicatedObjectLifecyclePostgreSQLTransactionActuallyBlocks(t, t.Context(), env.db, pid)
+	pid := awaitPostgreSQLMediaObjectOwnershipTransactionPID(t.Context(), t, captured)
+	go func() { second <- env.uploadTwoPrivateBusinessAttachmentFiles(t.Context(), t, "shipment") }()
+	requireDedicatedObjectLifecyclePostgreSQLTransactionActuallyBlocks(t.Context(), t, env.db, pid)
 	release()
 	require.NoError(t, <-first)
 	require.NoError(t, <-second)

@@ -54,7 +54,7 @@ func TestHistoricalUnclassifiedTicketAttachmentLegacyOriginHistoryAndRangeRequir
 			})
 			router.GET("/api/v1/customer-service/messages/:conversation_id", handler.GetPublicCustomerServiceMessages)
 			router.GET("/api/v1/customer-service/conversations/:conversation_id/messages/:message_id/attachments/:attachment_index/file", handler.ServePublicCustomerServiceMessageAttachmentFile)
-			historyRequest := httptest.NewRequest(http.MethodGet, "/api/v1/customer-service/messages/"+*env.conversation.ConversationID, nil)
+			historyRequest := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/api/v1/customer-service/messages/"+*env.conversation.ConversationID, nil)
 			historyRequest.AddCookie(env.cookie)
 			historyRequest.Header.Set("X-Test-Member-Identity", "owner")
 			history := httptest.NewRecorder()
@@ -68,7 +68,7 @@ func TestHistoricalUnclassifiedTicketAttachmentLegacyOriginHistoryAndRangeRequir
 			path := fmt.Sprintf("/api/v1/customer-service/conversations/%s/messages/%d/attachments/0/file", *env.conversation.ConversationID, env.message.ID)
 			for _, preset := range []string{"", "?preset=thumbnail"} {
 				for _, authorized := range []bool{true, false} {
-					request := httptest.NewRequest(http.MethodGet, path+preset, nil)
+					request := httptest.NewRequestWithContext(t.Context(), http.MethodGet, path+preset, nil)
 					request.Header.Set("Range", "bytes=0-9")
 					if authorized {
 						request.AddCookie(env.cookie)

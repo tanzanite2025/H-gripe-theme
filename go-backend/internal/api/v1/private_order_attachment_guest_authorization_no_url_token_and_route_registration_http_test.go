@@ -7,13 +7,14 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/gin-gonic/gin"
+	"github.com/stretchr/testify/require"
+
 	"commerce-platform/internal/app"
 	"commerce-platform/internal/domain/warranty"
 	"commerce-platform/internal/pkg/config"
 	"commerce-platform/internal/pkg/storage"
 	"commerce-platform/internal/service"
-	"github.com/gin-gonic/gin"
-	"github.com/stretchr/testify/require"
 )
 
 func TestPrivateOrderAttachmentActualRoutesRequireAuthenticationAndHeaderBoundGuestClaimToken(t *testing.T) {
@@ -44,7 +45,7 @@ func TestPrivateOrderAttachmentActualRoutesRequireAuthenticationAndHeaderBoundGu
 		{"customer after-sales route", "/api/v1/orders/ORDER/after-sales/attachments/opaque", "", http.StatusUnauthorized},
 	} {
 		t.Run(fixture.name, func(t *testing.T) {
-			request := httptest.NewRequest(http.MethodGet, fixture.path, nil)
+			request := httptest.NewRequestWithContext(t.Context(), http.MethodGet, fixture.path, nil)
 			if fixture.token != "" {
 				request.Header.Set("X-Warranty-Claim-Token", fixture.token)
 			}

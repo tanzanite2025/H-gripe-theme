@@ -124,7 +124,7 @@ func TestLegacyOrderEvidenceCompensationPersistsPartialProviderFailureAndRetries
 			if canceled {
 				cancel()
 			}
-			_, err := env.service.uploadLegacyOrderEvidenceAttachmentWithReturnedIdentityForRegression(ctx, env.item.OrderID, env.item.ID, newEvidencePNGFileHeader(t, "proof.png"), 7)
+			err := env.service.uploadLegacyOrderEvidenceAttachmentWithReturnedIdentityForRegression(ctx, env.item.OrderID, env.item.ID, newEvidencePNGFileHeader(t, "proof.png"), 7)
 			require.ErrorIs(t, err, env.provider.uploadError)
 			var events []outbox.Event
 			require.NoError(t, env.db.Find(&events).Error)
@@ -160,7 +160,7 @@ func TestLegacyOrderEvidenceCompensationNeverDeletesWithoutDurableEventOrExactAt
 			case "legacy directory":
 				env.provider.uploadResultOverride = "order-evidence/1/1/old-proof.png"
 			}
-			_, err := env.service.uploadLegacyOrderEvidenceAttachmentWithReturnedIdentityForRegression(t.Context(), env.item.OrderID, env.item.ID, newEvidencePNGFileHeader(t, "proof.png"), 7)
+			err := env.service.uploadLegacyOrderEvidenceAttachmentWithReturnedIdentityForRegression(t.Context(), env.item.OrderID, env.item.ID, newEvidencePNGFileHeader(t, "proof.png"), 7)
 			require.Error(t, err)
 			require.Zero(t, env.provider.deleteCalls)
 			key, err := env.provider.ObjectKey(env.provider.lastUploadReference)
@@ -179,7 +179,7 @@ func TestLegacyOrderEvidenceRegistrationRollbackUsesDurableCompensation(t *testi
 		}
 	}))
 	t.Cleanup(func() { _ = env.db.Callback().Create().Remove(callback) })
-	_, err := env.service.uploadLegacyOrderEvidenceAttachmentWithReturnedIdentityForRegression(t.Context(), env.item.OrderID, env.item.ID, newEvidencePNGFileHeader(t, "proof.png"), 7)
+	err := env.service.uploadLegacyOrderEvidenceAttachmentWithReturnedIdentityForRegression(t.Context(), env.item.OrderID, env.item.ID, newEvidencePNGFileHeader(t, "proof.png"), 7)
 	require.ErrorContains(t, err, "registration rolled back")
 	var count int64
 	require.NoError(t, env.db.Unscoped().Model(&orderevidence.OrderEvidenceAttachment{}).Count(&count).Error)

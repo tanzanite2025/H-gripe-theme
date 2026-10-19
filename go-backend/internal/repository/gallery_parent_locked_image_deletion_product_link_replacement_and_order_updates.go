@@ -1,8 +1,9 @@
 package repository
 
 import (
-	"commerce-platform/internal/domain/gallery"
 	"gorm.io/gorm"
+
+	"commerce-platform/internal/domain/gallery"
 )
 
 func (r *GalleryRepository) deleteGalleryAndRetainItsSoftDeletedImageRecords(id uint) error {

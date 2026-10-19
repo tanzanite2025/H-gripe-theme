@@ -1,8 +1,9 @@
 package service
 
 import (
-	"commerce-platform/internal/domain/product"
 	"fmt"
+
+	"commerce-platform/internal/domain/product"
 )
 
 func (s *ProductService) rejectNewBindingToRetiredCarbonRimTemplate(templateID, existingTemplateID *uint) error {

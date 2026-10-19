@@ -82,7 +82,7 @@ func acquireDedicatedPublicObjectNamespaceLockWithinTransaction(tx *gorm.DB, nam
 		return fmt.Errorf("dedicated object ownership requires read committed transaction isolation")
 	}
 	digest := sha256.Sum256([]byte("dedicated-public-object-lifecycle/" + namespace))
-	lockID := int64(binary.BigEndian.Uint64(digest[:8]))
+	lockID := int64(binary.BigEndian.Uint64(digest[:8])) // #nosec G115 -- Preserve all digest bits as a stable signed PostgreSQL advisory lock identity.
 	if err := tx.Exec("SELECT pg_advisory_xact_lock(?)", lockID).Error; err != nil {
 		return fmt.Errorf("lock dedicated public object namespace %s: %w", namespace, err)
 	}

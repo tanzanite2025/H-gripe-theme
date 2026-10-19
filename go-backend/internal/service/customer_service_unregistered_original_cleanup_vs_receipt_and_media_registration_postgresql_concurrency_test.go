@@ -12,13 +12,14 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
+	"github.com/stretchr/testify/require"
+	"gorm.io/gorm"
+
 	"commerce-platform/internal/domain/media"
 	"commerce-platform/internal/domain/outbox"
 	"commerce-platform/internal/pkg/storage"
 	"commerce-platform/internal/repository"
-	"github.com/google/uuid"
-	"github.com/stretchr/testify/require"
-	"gorm.io/gorm"
 )
 
 func createRetiredRegisteredCustomerServicePrivateOriginalAndDurableCleanupEventForTest(t *testing.T, env customerServicePrivateAttachmentAccessTestEnvironment, key string) outbox.Event {
@@ -55,9 +56,10 @@ func TestPostgreSQLCustomerServiceUnregisteredOriginalCleanupSerializesReceiptAn
 				}
 				receiptAdmission := claimKind == "receipt" || claimKind == "whole-asset-receipt"
 				claim := media.MediaAsset{Filename: "concurrent-original.png", URL: provider.GetURL(key) + "?new-claim=1", StorageKey: key, Visibility: "private", Status: "active"}
-				if claimKind == "windows-key-original" {
+				switch claimKind {
+				case "windows-key-original":
 					claim.StorageKey = strings.ReplaceAll(key, "/", "\\")
-				} else if claimKind == "url-only-original" {
+				case "url-only-original":
 					claim.StorageKey = ""
 				}
 				receipt := media.MediaUploadSession{ID: uuid.NewString(), BusinessContextType: media.MediaUploadSessionCustomerServiceContext,
@@ -89,7 +91,7 @@ func TestPostgreSQLCustomerServiceUnregisteredOriginalCleanupSerializesReceiptAn
 					require.NoError(t, db.Callback().Create().After("gorm:create").Register(callbackName, func(tx *gorm.DB) {
 						if tx.Statement.Table == table {
 							pauseOnce.Do(func() {
-								pausePostgreSQLMediaObjectOwnershipTransactionUntilReleased(t, ctx, tx, acquired, releaseFirst)
+								pausePostgreSQLMediaObjectOwnershipTransactionUntilReleased(ctx, t, tx, acquired, releaseFirst)
 							})
 						}
 					}))
@@ -98,7 +100,7 @@ func TestPostgreSQLCustomerServiceUnregisteredOriginalCleanupSerializesReceiptAn
 					require.NoError(t, db.Callback().Query().Before("gorm:query").Register(callbackName, func(tx *gorm.DB) {
 						if tx.Statement.Table == "media_upload_sessions" || tx.Statement.Table == "uploads" {
 							pauseOnce.Do(func() {
-								pausePostgreSQLMediaObjectOwnershipTransactionUntilReleased(t, ctx, tx, acquired, releaseFirst)
+								pausePostgreSQLMediaObjectOwnershipTransactionUntilReleased(ctx, t, tx, acquired, releaseFirst)
 							})
 						}
 					}))
@@ -111,7 +113,7 @@ func TestPostgreSQLCustomerServiceUnregisteredOriginalCleanupSerializesReceiptAn
 				} else {
 					go func() { cleanupResult <- handler.Handle(ctx, event) }()
 				}
-				pid := awaitPostgreSQLMediaObjectOwnershipTransactionPID(t, ctx, acquired)
+				pid := awaitPostgreSQLMediaObjectOwnershipTransactionPID(ctx, t, acquired)
 				if first == "claim" {
 					go func() { cleanupResult <- handler.Handle(ctx, event) }()
 				} else {
@@ -119,8 +121,8 @@ func TestPostgreSQLCustomerServiceUnregisteredOriginalCleanupSerializesReceiptAn
 				}
 				waitForPostgreSQLGalleryMutationToBlockOnTransaction(t, db, pid, "pg_advisory_xact_lock")
 				release()
-				claimError := awaitPostgreSQLMediaObjectOwnershipOperationResult(t, ctx, claimResult)
-				cleanupError := awaitPostgreSQLMediaObjectOwnershipOperationResult(t, ctx, cleanupResult)
+				claimError := awaitPostgreSQLMediaObjectOwnershipOperationResult(ctx, t, claimResult)
+				cleanupError := awaitPostgreSQLMediaObjectOwnershipOperationResult(ctx, t, cleanupResult)
 				if first == "claim" {
 					require.NoError(t, claimError)
 					require.ErrorIs(t, cleanupError, ErrMediaAssetInUse, "recheck the claim committed while cleanup waited")
@@ -193,7 +195,7 @@ func TestPostgreSQLCustomerServiceUnregisteredOriginalCleanupAndReceiptAdmission
 				require.NoError(t, db.Callback().Query().Before("gorm:query").Register(callbackName, func(tx *gorm.DB) {
 					if tx.Statement.Table == "media_upload_sessions" {
 						pauseOnce.Do(func() {
-							pausePostgreSQLMediaObjectOwnershipTransactionUntilReleased(t, ctx, tx, acquired, releaseFirst)
+							pausePostgreSQLMediaObjectOwnershipTransactionUntilReleased(ctx, t, tx, acquired, releaseFirst)
 						})
 					}
 				}))
@@ -202,7 +204,7 @@ func TestPostgreSQLCustomerServiceUnregisteredOriginalCleanupAndReceiptAdmission
 				require.NoError(t, db.Callback().Create().After("gorm:create").Register(callbackName, func(tx *gorm.DB) {
 					if tx.Statement.Table == "media_upload_sessions" {
 						pauseOnce.Do(func() {
-							pausePostgreSQLMediaObjectOwnershipTransactionUntilReleased(t, ctx, tx, acquired, releaseFirst)
+							pausePostgreSQLMediaObjectOwnershipTransactionUntilReleased(ctx, t, tx, acquired, releaseFirst)
 							if failure == "rolled-back-receipt" {
 								tx.AddError(rollback)
 							}
@@ -220,7 +222,7 @@ func TestPostgreSQLCustomerServiceUnregisteredOriginalCleanupAndReceiptAdmission
 			} else {
 				go func() { claimResult <- env.mediaService.repo.CreateCustomerServicePendingUploadSession(ctx, &receipt) }()
 			}
-			pid := awaitPostgreSQLMediaObjectOwnershipTransactionPID(t, ctx, acquired)
+			pid := awaitPostgreSQLMediaObjectOwnershipTransactionPID(ctx, t, acquired)
 			if failure == "canceled-receipt" {
 				go func() {
 					claimResult <- env.mediaService.repo.CreateCustomerServicePendingUploadSession(waitingContext, &receipt)
@@ -229,24 +231,25 @@ func TestPostgreSQLCustomerServiceUnregisteredOriginalCleanupAndReceiptAdmission
 				go func() { cleanupResult <- handler.Handle(waitingContext, event) }()
 			}
 			waitForPostgreSQLGalleryMutationToBlockOnTransaction(t, db, pid, "pg_advisory_xact_lock")
-			if failure == "canceled-receipt" {
+			switch failure {
+			case "canceled-receipt":
 				cancelWaiting()
-				require.ErrorIs(t, awaitPostgreSQLMediaObjectOwnershipOperationResult(t, ctx, claimResult), context.Canceled)
-			} else if failure == "canceled-cleanup" {
+				require.ErrorIs(t, awaitPostgreSQLMediaObjectOwnershipOperationResult(ctx, t, claimResult), context.Canceled)
+			case "canceled-cleanup":
 				cancelWaiting()
-				require.ErrorIs(t, awaitPostgreSQLMediaObjectOwnershipOperationResult(t, ctx, cleanupResult), context.Canceled)
+				require.ErrorIs(t, awaitPostgreSQLMediaObjectOwnershipOperationResult(ctx, t, cleanupResult), context.Canceled)
 				require.FileExists(t, filepath.Join(env.privateRoot, filepath.FromSlash(key)))
 			}
 			release()
 			if failure == "canceled-cleanup" {
-				require.NoError(t, awaitPostgreSQLMediaObjectOwnershipOperationResult(t, ctx, claimResult))
+				require.NoError(t, awaitPostgreSQLMediaObjectOwnershipOperationResult(ctx, t, claimResult))
 				require.ErrorIs(t, handler.Handle(ctx, event), ErrMediaAssetInUse)
 				require.NoError(t, db.Delete(&receipt).Error)
 			} else {
 				if failure == "rolled-back-receipt" {
-					require.ErrorIs(t, awaitPostgreSQLMediaObjectOwnershipOperationResult(t, ctx, claimResult), rollback)
+					require.ErrorIs(t, awaitPostgreSQLMediaObjectOwnershipOperationResult(ctx, t, claimResult), rollback)
 				}
-				require.NoError(t, awaitPostgreSQLMediaObjectOwnershipOperationResult(t, ctx, cleanupResult))
+				require.NoError(t, awaitPostgreSQLMediaObjectOwnershipOperationResult(ctx, t, cleanupResult))
 			}
 			require.NoError(t, handler.Handle(ctx, event))
 			require.NoFileExists(t, filepath.Join(env.privateRoot, filepath.FromSlash(key)))
@@ -302,9 +305,10 @@ func verifyPostgreSQLMediaCleanupKeepsLocksUntilCanceledProviderDeleteReturns(t 
 	ctx, cancel := context.WithTimeout(t.Context(), 20*time.Second)
 	defer cancel()
 	key, event := createRetiredUnregisteredCustomerServiceOriginalAndDurableCleanupEventForTest(t, env)
-	if cleanupKind == "registered-private-asset" {
+	switch cleanupKind {
+	case "registered-private-asset":
 		event = createRetiredRegisteredCustomerServicePrivateOriginalAndDurableCleanupEventForTest(t, env, key)
-	} else if cleanupKind == "failed-shared-original" {
+	case "failed-shared-original":
 		key = "catalog/canceled-provider-delete.png"
 		writeMediaCleanupOwnershipConflictTestObjects(t, env.publicRoot, key)
 		queued, err := newObjectStorageCleanupEvent(objectCleanupResourceUnregisteredMediaUpload, uuid.NewString(), "test", "test", []string{key})
@@ -339,7 +343,7 @@ func verifyPostgreSQLMediaCleanupKeepsLocksUntilCanceledProviderDeleteReturns(t 
 	go func() {
 		cleanupResult <- NewObjectStorageCleanupOutboxHandler(env.mediaService, nil, nil, nil).Handle(cleanupContext, event)
 	}()
-	pid := awaitPostgreSQLMediaObjectOwnershipTransactionPID(t, ctx, acquired)
+	pid := awaitPostgreSQLMediaObjectOwnershipTransactionPID(ctx, t, acquired)
 	select {
 	case <-entered:
 	case <-ctx.Done():
@@ -366,9 +370,9 @@ func verifyPostgreSQLMediaCleanupKeepsLocksUntilCanceledProviderDeleteReturns(t 
 	case <-time.After(200 * time.Millisecond):
 	}
 	release()
-	require.ErrorIs(t, awaitPostgreSQLMediaObjectOwnershipOperationResult(t, ctx, cleanupResult), context.Canceled)
+	require.ErrorIs(t, awaitPostgreSQLMediaObjectOwnershipOperationResult(ctx, t, cleanupResult), context.Canceled)
 	if !claimReturnedEarly {
-		claimError := awaitPostgreSQLMediaObjectOwnershipOperationResult(t, ctx, claimResult)
+		claimError := awaitPostgreSQLMediaObjectOwnershipOperationResult(ctx, t, claimResult)
 		if cleanupKind == "failed-shared-original" {
 			require.ErrorIs(t, claimError, ErrMediaAssetURLUnavailable)
 		} else {

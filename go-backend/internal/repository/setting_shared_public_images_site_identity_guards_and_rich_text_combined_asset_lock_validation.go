@@ -6,12 +6,13 @@ import (
 	"fmt"
 	"strings"
 
+	"gorm.io/gorm"
+
 	"commerce-platform/internal/domain/media"
 	"commerce-platform/internal/domain/refundcancellation"
 	"commerce-platform/internal/domain/setting"
 	"commerce-platform/internal/pkg/safehtml"
 	"commerce-platform/internal/pkg/websitecontent"
-	"gorm.io/gorm"
 )
 
 var ErrSettingMediaReferenceInvalid = errors.New("setting media reference is invalid")

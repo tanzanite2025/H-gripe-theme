@@ -8,8 +8,9 @@ import (
 	"testing"
 	"time"
 
-	"commerce-platform/internal/domain/order"
 	"github.com/stretchr/testify/require"
+
+	"commerce-platform/internal/domain/order"
 )
 
 func TestImmutableSnapshotLegacyJSONBSerializationRestoresOnlyAuthenticatedCompleteContent(t *testing.T) {

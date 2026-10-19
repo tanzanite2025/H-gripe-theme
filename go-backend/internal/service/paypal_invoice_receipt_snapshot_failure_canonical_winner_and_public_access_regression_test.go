@@ -6,12 +6,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
+	"gorm.io/gorm"
+
 	"commerce-platform/internal/domain/outbox"
 	"commerce-platform/internal/domain/suggestionfeedback"
 	"commerce-platform/internal/pkg/storage"
 	"commerce-platform/internal/repository"
-	"github.com/stretchr/testify/require"
-	"gorm.io/gorm"
 )
 
 func TestPayPalInvoiceReceiptSnapshotBindingRollbackAndConcurrentCanonicalWinnerPreserveUnusedObjects(t *testing.T) {

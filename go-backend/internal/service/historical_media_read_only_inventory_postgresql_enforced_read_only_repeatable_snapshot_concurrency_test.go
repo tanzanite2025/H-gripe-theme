@@ -6,11 +6,12 @@ import (
 	"testing"
 	"time"
 
-	"commerce-platform/internal/domain/product"
-	"commerce-platform/internal/pkg/storage"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
+
+	"commerce-platform/internal/domain/product"
+	"commerce-platform/internal/pkg/storage"
 )
 
 func TestPostgreSQLHistoricalMediaInventoryUsesEnforcedReadOnlyRepeatableSnapshotDuringConcurrentWrites(t *testing.T) {

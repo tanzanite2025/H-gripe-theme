@@ -9,11 +9,12 @@ import (
 	"strings"
 	"time"
 
+	"gorm.io/gorm"
+
 	"commerce-platform/internal/domain/media"
 	"commerce-platform/internal/domain/outbox"
 	"commerce-platform/internal/pkg/storage"
 	"commerce-platform/internal/repository"
-	"gorm.io/gorm"
 )
 
 const (

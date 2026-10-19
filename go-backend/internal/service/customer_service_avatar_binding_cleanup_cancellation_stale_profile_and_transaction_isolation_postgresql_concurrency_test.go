@@ -84,17 +84,17 @@ func TestPostgreSQLCustomerServiceAvatarBindingAndCleanupSerializeInBothOrdersAn
 					}
 				}
 				go cleanup()
-				pid = awaitPostgreSQLMediaObjectOwnershipTransactionPID(t, ctx, captured)
+				pid = awaitPostgreSQLMediaObjectOwnershipTransactionPID(ctx, t, captured)
 				go bind()
 			} else {
 				go bind()
-				pid = awaitPostgreSQLMediaObjectOwnershipTransactionPID(t, ctx, locked)
+				pid = awaitPostgreSQLMediaObjectOwnershipTransactionPID(ctx, t, locked)
 				go cleanup()
 			}
-			requireDedicatedObjectLifecyclePostgreSQLTransactionActuallyBlocks(t, ctx, env.db, pid)
+			requireDedicatedObjectLifecyclePostgreSQLTransactionActuallyBlocks(ctx, t, env.db, pid)
 			release()
-			bindingError := awaitPostgreSQLMediaObjectOwnershipOperationResult(t, ctx, bindingResult)
-			cleanupError := awaitPostgreSQLMediaObjectOwnershipOperationResult(t, ctx, cleanupResult)
+			bindingError := awaitPostgreSQLMediaObjectOwnershipOperationResult(ctx, t, bindingResult)
+			cleanupError := awaitPostgreSQLMediaObjectOwnershipOperationResult(ctx, t, cleanupResult)
 			if first == "binding" {
 				require.NoError(t, bindingError)
 				require.ErrorIs(t, cleanupError, ErrMediaAssetInUse)
@@ -131,7 +131,7 @@ func TestPostgreSQLCustomerServiceAvatarCleanupKeepsNamespaceLockUntilCanceledPr
 	captured := captureCustomerServiceAvatarCleanupNamespaceLockBackendPID(t, env)
 	cleanupResult, bindingResult := make(chan error, 1), make(chan error, 1)
 	go func() { cleanupResult <- env.handler.Handle(cleanupContext, event) }()
-	pid := awaitPostgreSQLMediaObjectOwnershipTransactionPID(t, ctx, captured)
+	pid := awaitPostgreSQLMediaObjectOwnershipTransactionPID(ctx, t, captured)
 	select {
 	case <-entered:
 	case <-ctx.Done():
@@ -141,7 +141,7 @@ func TestPostgreSQLCustomerServiceAvatarCleanupKeepsNamespaceLockUntilCanceledPr
 		_, err := env.service.userRepo.WithContext(ctx).ReplaceCustomerServiceAgentAvatar(*env.profile.UserID, env.provider.uploadReference, nil)
 		bindingResult <- err
 	}()
-	requireDedicatedObjectLifecyclePostgreSQLTransactionActuallyBlocks(t, ctx, env.db, pid)
+	requireDedicatedObjectLifecyclePostgreSQLTransactionActuallyBlocks(ctx, t, env.db, pid)
 	cancelCleanup()
 	returnedEarly := false
 	select {
@@ -151,9 +151,9 @@ func TestPostgreSQLCustomerServiceAvatarCleanupKeepsNamespaceLockUntilCanceledPr
 	case <-time.After(200 * time.Millisecond):
 	}
 	release()
-	require.ErrorIs(t, awaitPostgreSQLMediaObjectOwnershipOperationResult(t, ctx, cleanupResult), context.Canceled)
+	require.ErrorIs(t, awaitPostgreSQLMediaObjectOwnershipOperationResult(ctx, t, cleanupResult), context.Canceled)
 	if !returnedEarly {
-		require.ErrorIs(t, awaitPostgreSQLMediaObjectOwnershipOperationResult(t, ctx, bindingResult), ErrMediaAssetURLUnavailable)
+		require.ErrorIs(t, awaitPostgreSQLMediaObjectOwnershipOperationResult(ctx, t, bindingResult), ErrMediaAssetURLUnavailable)
 	}
 	requireDedicatedPublicUploadCompensationObjectMissing(t, env.provider, env.key)
 	env.handler.storage = env.provider
@@ -176,17 +176,17 @@ func TestPostgreSQLCustomerServiceAvatarCanceledCleanupWaiterDoesNotDeleteAndRel
 		})
 		bindingResult <- err
 	}()
-	pid := awaitPostgreSQLMediaObjectOwnershipTransactionPID(t, ctx, locked)
+	pid := awaitPostgreSQLMediaObjectOwnershipTransactionPID(ctx, t, locked)
 	waitContext, cancelWait := context.WithCancel(ctx)
 	defer cancelWait()
 	cleanupResult := make(chan error, 1)
 	go func() { cleanupResult <- env.handler.Handle(waitContext, event) }()
-	requireDedicatedObjectLifecyclePostgreSQLTransactionActuallyBlocks(t, ctx, env.db, pid)
+	requireDedicatedObjectLifecyclePostgreSQLTransactionActuallyBlocks(ctx, t, env.db, pid)
 	cancelWait()
-	require.Error(t, awaitPostgreSQLMediaObjectOwnershipOperationResult(t, ctx, cleanupResult))
+	require.Error(t, awaitPostgreSQLMediaObjectOwnershipOperationResult(ctx, t, cleanupResult))
 	require.Empty(t, env.provider.deletedKeys)
 	release()
-	require.NoError(t, awaitPostgreSQLMediaObjectOwnershipOperationResult(t, ctx, bindingResult))
+	require.NoError(t, awaitPostgreSQLMediaObjectOwnershipOperationResult(ctx, t, bindingResult))
 	require.ErrorIs(t, env.handler.Handle(ctx, event), ErrMediaAssetInUse)
 	require.NoError(t, env.service.Remove(ctx, *env.profile.UserID))
 	require.NoError(t, env.handler.Handle(ctx, event))
@@ -222,7 +222,7 @@ func TestPostgreSQLCustomerServiceAvatarStaleProfileMetadataSaveDuringCleanupCan
 	stale.Name = "Updated while cleanup runs"
 	require.NoError(t, env.service.userRepo.WithContext(ctx).UpdateCustomerServiceAgentProfile(&stale))
 	release()
-	require.NoError(t, awaitPostgreSQLMediaObjectOwnershipOperationResult(t, ctx, cleanupResult))
+	require.NoError(t, awaitPostgreSQLMediaObjectOwnershipOperationResult(ctx, t, cleanupResult))
 	var saved user.AgentProfile
 	require.NoError(t, env.db.First(&saved, stale.ID).Error)
 	require.Equal(t, stale.Name, saved.Name)

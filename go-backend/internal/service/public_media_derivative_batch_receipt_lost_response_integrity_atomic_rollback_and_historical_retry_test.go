@@ -12,14 +12,15 @@ import (
 	"testing"
 	"time"
 
-	"commerce-platform/internal/domain/media"
-	"commerce-platform/internal/domain/outbox"
-	"commerce-platform/internal/pkg/storage"
-	"commerce-platform/internal/repository"
 	"github.com/glebarez/sqlite"
 	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
+
+	"commerce-platform/internal/domain/media"
+	"commerce-platform/internal/domain/outbox"
+	"commerce-platform/internal/pkg/storage"
+	"commerce-platform/internal/repository"
 )
 
 type publicMediaDerivativeReceiptProviderWithInjectedFailures struct {

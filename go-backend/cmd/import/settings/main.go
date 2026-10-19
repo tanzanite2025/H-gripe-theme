@@ -1,17 +1,18 @@
 package main
 
 import (
-	"commerce-platform/internal/pkg/config"
-	"commerce-platform/internal/pkg/database"
-	"commerce-platform/internal/pkg/storage"
-	"commerce-platform/internal/repository"
-	"commerce-platform/internal/service"
 	"encoding/json"
 	"flag"
 	"fmt"
 	"log"
 	"os"
 	"strings"
+
+	"commerce-platform/internal/pkg/config"
+	"commerce-platform/internal/pkg/database"
+	"commerce-platform/internal/pkg/storage"
+	"commerce-platform/internal/repository"
+	"commerce-platform/internal/service"
 )
 
 // SettingImport 导入的设置结构

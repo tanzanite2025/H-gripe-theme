@@ -3,8 +3,9 @@ package service
 import (
 	"testing"
 
-	"commerce-platform/internal/domain/product"
 	"github.com/stretchr/testify/require"
+
+	"commerce-platform/internal/domain/product"
 )
 
 func createCarbonRimProductServiceTestInput() ProductCreateInput {

@@ -10,10 +10,11 @@ import (
 	"strings"
 	"time"
 
-	"commerce-platform/internal/domain/media"
-	"commerce-platform/internal/pkg/storage"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
+
+	"commerce-platform/internal/domain/media"
+	"commerce-platform/internal/pkg/storage"
 )
 
 type HistoricalMediaReadOnlyInventoryOptions struct {
@@ -118,7 +119,7 @@ func (s *HistoricalMediaReadOnlyInventoryService) AuditHistoricalRegistrationsAn
 		ExcludedSources:           []string{"community_and_private_attachment_payloads", "unrecognized_custom_fields_and_retired_unconfigured_origins", "physical_storage_and_unregistered_objects", "cleanup_queue_and_upload_receipts"},
 		RegistrationIndexComplete: true, RequestedSourcesComplete: true, IssueCounts: make(map[string]int), Sources: make([]HistoricalMediaReadOnlyInventorySourceCoverage, 0), Issues: make([]HistoricalMediaReadOnlyInventoryIssue, 0),
 	}
-	if s.db.Dialector.Name() == "sqlite" {
+	if s.db.Name() == "sqlite" {
 		report.SnapshotMode = "sqlite_test_transaction"
 	}
 	// PostgreSQL/MySQL enforce read-only and one consistent snapshot. No migration,

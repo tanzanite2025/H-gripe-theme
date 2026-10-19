@@ -23,7 +23,7 @@ func AllocateSuggestionOrPayPalAttachmentObjectKey(namespace string, ownerID uin
 func SuggestionOrPayPalAttachmentObjectIdentity(key string) (namespace string, ownerID uint, receiptID string, valid bool) {
 	normalized, ok := NormalizeObjectKey(key)
 	if !ok || normalized != key {
-		return
+		return namespace, ownerID, receiptID, valid
 	}
 	for _, candidate := range []string{SuggestionFeedbackAttachmentNamespace, PayPalDisputeInvoiceAttachmentNamespace} {
 		if strings.HasPrefix(key, candidate+"/") {
@@ -32,7 +32,7 @@ func SuggestionOrPayPalAttachmentObjectIdentity(key string) (namespace string, o
 		}
 	}
 	if namespace == "" {
-		return
+		return namespace, ownerID, receiptID, valid
 	}
 	parts := strings.Split(strings.TrimPrefix(key, namespace+"/"), "/")
 	if len(parts) != 2 {

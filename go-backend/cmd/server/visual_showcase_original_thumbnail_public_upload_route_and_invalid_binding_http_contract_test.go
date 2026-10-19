@@ -64,7 +64,7 @@ func TestLocalUploadRouteServesConfiguredVisualShowcaseOriginalAndThumbnailAndRe
 			"title": "Hero", "alt_text": "Hero image", "width": 600, "height": 600,
 		}})
 		require.NoError(t, err)
-		request := httptest.NewRequest(http.MethodPut, "/test/showcases/home-hero/slots/1", bytes.NewReader(body))
+		request := httptest.NewRequestWithContext(t.Context(), http.MethodPut, "/test/showcases/home-hero/slots/1", bytes.NewReader(body))
 		request.Header.Set("Content-Type", "application/json")
 		response := httptest.NewRecorder()
 		router.ServeHTTP(response, request)
@@ -72,7 +72,7 @@ func TestLocalUploadRouteServesConfiguredVisualShowcaseOriginalAndThumbnailAndRe
 	}
 	get := func(key string, status int) {
 		response := httptest.NewRecorder()
-		router.ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/uploads/"+key, nil))
+		router.ServeHTTP(response, httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/uploads/"+key, nil))
 		require.Equal(t, status, response.Code, response.Body.String())
 		if status == http.StatusOK {
 			require.Equal(t, encoded.Bytes(), response.Body.Bytes())

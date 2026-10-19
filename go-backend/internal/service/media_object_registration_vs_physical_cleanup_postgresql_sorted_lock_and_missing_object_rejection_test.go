@@ -22,7 +22,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func pausePostgreSQLMediaObjectOwnershipTransactionUntilReleased(t *testing.T, ctx context.Context, tx *gorm.DB, acquired chan<- int, release <-chan struct{}) {
+func pausePostgreSQLMediaObjectOwnershipTransactionUntilReleased(ctx context.Context, t *testing.T, tx *gorm.DB, acquired chan<- int, release <-chan struct{}) {
 	t.Helper()
 	var pid int
 	if err := tx.Session(&gorm.Session{NewDB: true}).Raw("SELECT pg_backend_pid()").Scan(&pid).Error; err != nil {
@@ -37,7 +37,7 @@ func pausePostgreSQLMediaObjectOwnershipTransactionUntilReleased(t *testing.T, c
 	}
 }
 
-func awaitPostgreSQLMediaObjectOwnershipTransactionPID(t *testing.T, ctx context.Context, acquired <-chan int) int {
+func awaitPostgreSQLMediaObjectOwnershipTransactionPID(ctx context.Context, t *testing.T, acquired <-chan int) int {
 	t.Helper()
 	select {
 	case pid := <-acquired:
@@ -48,7 +48,7 @@ func awaitPostgreSQLMediaObjectOwnershipTransactionPID(t *testing.T, ctx context
 	}
 }
 
-func awaitPostgreSQLMediaObjectOwnershipOperationResult(t *testing.T, ctx context.Context, result <-chan error) error {
+func awaitPostgreSQLMediaObjectOwnershipOperationResult(ctx context.Context, t *testing.T, result <-chan error) error {
 	t.Helper()
 	select {
 	case err := <-result:
@@ -154,7 +154,7 @@ func TestPostgreSQLMediaObjectRegistrationAndPhysicalCleanupSerializeBothOrdersW
 					require.NoError(t, db.Callback().Create().After("gorm:create").Register(callbackName, func(tx *gorm.DB) {
 						if tx.Statement.Table == table {
 							pauseOnce.Do(func() {
-								pausePostgreSQLMediaObjectOwnershipTransactionUntilReleased(t, ctx, tx, acquired, releaseFirst)
+								pausePostgreSQLMediaObjectOwnershipTransactionUntilReleased(ctx, t, tx, acquired, releaseFirst)
 							})
 						}
 					}))
@@ -163,7 +163,7 @@ func TestPostgreSQLMediaObjectRegistrationAndPhysicalCleanupSerializeBothOrdersW
 					require.NoError(t, db.Callback().Delete().Before("gorm:delete").Register(callbackName, func(tx *gorm.DB) {
 						if tx.Statement.Table == "media_assets" && tx.Statement.Unscoped {
 							pauseOnce.Do(func() {
-								pausePostgreSQLMediaObjectOwnershipTransactionUntilReleased(t, ctx, tx, acquired, releaseFirst)
+								pausePostgreSQLMediaObjectOwnershipTransactionUntilReleased(ctx, t, tx, acquired, releaseFirst)
 							})
 						}
 					}))
@@ -176,7 +176,7 @@ func TestPostgreSQLMediaObjectRegistrationAndPhysicalCleanupSerializeBothOrdersW
 				} else {
 					go func() { cleanupResult <- handler.Handle(ctx, event) }()
 				}
-				pid := awaitPostgreSQLMediaObjectOwnershipTransactionPID(t, ctx, acquired)
+				pid := awaitPostgreSQLMediaObjectOwnershipTransactionPID(ctx, t, acquired)
 				if firstOperation == "register" {
 					go func() { cleanupResult <- handler.Handle(ctx, event) }()
 				} else {
@@ -184,8 +184,8 @@ func TestPostgreSQLMediaObjectRegistrationAndPhysicalCleanupSerializeBothOrdersW
 				}
 				waitForPostgreSQLGalleryMutationToBlockOnTransaction(t, db, pid, "pg_advisory_xact_lock")
 				release()
-				registrationError := awaitPostgreSQLMediaObjectOwnershipOperationResult(t, ctx, registerResult)
-				cleanupError := awaitPostgreSQLMediaObjectOwnershipOperationResult(t, ctx, cleanupResult)
+				registrationError := awaitPostgreSQLMediaObjectOwnershipOperationResult(ctx, t, registerResult)
+				cleanupError := awaitPostgreSQLMediaObjectOwnershipOperationResult(ctx, t, cleanupResult)
 				if firstOperation == "register" {
 					require.NoError(t, registrationError)
 					require.ErrorIs(t, cleanupError, ErrMediaAssetInUse)
@@ -244,7 +244,7 @@ func TestPostgreSQLMediaDerivativeObjectRegistrationUsesOneSortedLockPlanForOppo
 	callbackName := "pause_first_media_object_lock_" + uuid.NewString()
 	require.NoError(t, db.Callback().Raw().After("gorm:raw").Register(callbackName, func(tx *gorm.DB) {
 		if strings.Contains(tx.Statement.SQL.String(), "SELECT pg_advisory_xact_lock") && observedFirstLock.CompareAndSwap(false, true) {
-			pausePostgreSQLMediaObjectOwnershipTransactionUntilReleased(t, ctx, tx, acquired, releaseFirst)
+			pausePostgreSQLMediaObjectOwnershipTransactionUntilReleased(ctx, t, tx, acquired, releaseFirst)
 		}
 	}))
 	t.Cleanup(func() { _ = db.Callback().Raw().Remove(callbackName) })
@@ -256,12 +256,12 @@ func TestPostgreSQLMediaDerivativeObjectRegistrationUsesOneSortedLockPlanForOppo
 	}
 	firstResult, secondResult := make(chan error, 1), make(chan error, 1)
 	go func() { firstResult <- register(owners[0].ID, keys[0], keys[1]) }()
-	pid := awaitPostgreSQLMediaObjectOwnershipTransactionPID(t, ctx, acquired)
+	pid := awaitPostgreSQLMediaObjectOwnershipTransactionPID(ctx, t, acquired)
 	go func() { secondResult <- register(owners[1].ID, keys[1], keys[0]) }()
 	waitForPostgreSQLGalleryMutationToBlockOnTransaction(t, db, pid, "pg_advisory_xact_lock")
 	release()
-	require.NoError(t, awaitPostgreSQLMediaObjectOwnershipOperationResult(t, ctx, firstResult))
-	require.NoError(t, awaitPostgreSQLMediaObjectOwnershipOperationResult(t, ctx, secondResult))
+	require.NoError(t, awaitPostgreSQLMediaObjectOwnershipOperationResult(ctx, t, firstResult))
+	require.NoError(t, awaitPostgreSQLMediaObjectOwnershipOperationResult(ctx, t, secondResult))
 }
 
 func TestPostgreSQLMediaObjectRegistrationRejectsStaleSnapshotTransactions(t *testing.T) {

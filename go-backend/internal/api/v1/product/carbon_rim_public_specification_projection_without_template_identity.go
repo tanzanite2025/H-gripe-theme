@@ -1,9 +1,10 @@
 package product
 
 import (
-	productdomain "commerce-platform/internal/domain/product"
 	"strconv"
 	"strings"
+
+	productdomain "commerce-platform/internal/domain/product"
 )
 
 // Project the dedicated facts into the existing read-only specification rows;

@@ -4,9 +4,10 @@ import (
 	"errors"
 	"strings"
 
-	"commerce-platform/internal/domain/post"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
+
+	"commerce-platform/internal/domain/post"
 )
 
 var ErrPostCategoryRelationshipInvalid = errors.New("post category relationship is invalid")

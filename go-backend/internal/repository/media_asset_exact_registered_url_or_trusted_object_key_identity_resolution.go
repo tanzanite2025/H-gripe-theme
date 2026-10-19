@@ -5,8 +5,9 @@ import (
 	"net/url"
 	"strings"
 
-	"commerce-platform/internal/domain/media"
 	"gorm.io/gorm"
+
+	"commerce-platform/internal/domain/media"
 )
 
 var ErrRegisteredMediaObjectOwnershipAmbiguous = errors.New("media address has ambiguous registered ownership")

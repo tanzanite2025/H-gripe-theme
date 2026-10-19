@@ -66,14 +66,14 @@ func TestPostgreSQLMediaObjectCleanupDuplicateWorkersCanceledRegistrationAndSame
 			require.NoError(t, db.Callback().Delete().Before("gorm:delete").Register(callbackName, func(tx *gorm.DB) {
 				if tx.Statement.Table == "media_assets" && tx.Statement.Unscoped {
 					pauseOnce.Do(func() {
-						pausePostgreSQLMediaObjectOwnershipTransactionUntilReleased(t, ctx, tx, acquired, releaseFirst)
+						pausePostgreSQLMediaObjectOwnershipTransactionUntilReleased(ctx, t, tx, acquired, releaseFirst)
 					})
 				}
 			}))
 			t.Cleanup(func() { _ = db.Callback().Delete().Remove(callbackName) })
 			cleanupResult := make(chan error, 1)
 			go func() { cleanupResult <- assets.cleanupDeletedAsset(ctx, asset.ID) }()
-			pid := awaitPostgreSQLMediaObjectOwnershipTransactionPID(t, ctx, acquired)
+			pid := awaitPostgreSQLMediaObjectOwnershipTransactionPID(ctx, t, acquired)
 			secondResult := make(chan error, 1)
 			switch competingOperation {
 			case "duplicate-cleanup-worker":
@@ -88,23 +88,29 @@ func TestPostgreSQLMediaObjectCleanupDuplicateWorkersCanceledRegistrationAndSame
 				}()
 				waitForPostgreSQLGalleryMutationToBlockOnTransaction(t, db, pid, "pg_advisory_xact_lock")
 				cancelWriter()
-				require.ErrorIs(t, awaitPostgreSQLMediaObjectOwnershipOperationResult(t, ctx, secondResult), context.Canceled)
+				require.ErrorIs(t, awaitPostgreSQLMediaObjectOwnershipOperationResult(ctx, t, secondResult), context.Canceled)
 			case "same-filename-neighbor":
 				key := "catalog/second/image.png"
 				writeMediaCleanupOwnershipConflictTestObjects(t, env.publicRoot, key)
 				neighbor := &media.MediaAsset{Filename: "image.png", URL: provider.GetURL(key), StorageKey: key}
 				writer := NewMediaService(repository.NewMediaRepository(db), provider, nil, "", 20<<30)
 				go func() { secondResult <- writer.repo.CreateAsset(neighbor) }()
-				require.NoError(t, awaitPostgreSQLMediaObjectOwnershipOperationResult(t, ctx, secondResult), "unrelated paths must complete while cleanup still holds its locks")
+				require.NoError(t, awaitPostgreSQLMediaObjectOwnershipOperationResult(ctx, t, secondResult), "unrelated paths must complete while cleanup still holds its locks")
 				require.NotZero(t, neighbor.ID)
 				require.FileExists(t, filepath.Join(env.publicRoot, filepath.FromSlash(key)))
 			}
 			release()
-			require.NoError(t, awaitPostgreSQLMediaObjectOwnershipOperationResult(t, ctx, cleanupResult))
+			require.NoError(t, awaitPostgreSQLMediaObjectOwnershipOperationResult(ctx, t, cleanupResult))
 			if competingOperation == "duplicate-cleanup-worker" {
-				require.NoError(t, awaitPostgreSQLMediaObjectOwnershipOperationResult(t, ctx, secondResult))
+				require.NoError(t, awaitPostgreSQLMediaObjectOwnershipOperationResult(ctx, t, secondResult))
 			}
-			require.EqualValues(t, 1, counter.deleteCalls.Load(), "the second worker must reload after obtaining the asset row lock")
+			expectedDeleteAttempts := 1
+			if competingOperation == "duplicate-cleanup-worker" {
+				// After reloading the removed registration, the durable receipt
+				// retries its exact key to collect any late arriving object bytes.
+				expectedDeleteAttempts++
+			}
+			require.EqualValues(t, expectedDeleteAttempts, counter.deleteCalls.Load(), "the durable receipt must preserve exact-key cleanup after registration removal")
 			require.NoFileExists(t, filepath.Join(env.publicRoot, filepath.FromSlash(asset.StorageKey)))
 		})
 	}
@@ -127,7 +133,7 @@ func TestPostgreSQLMediaObjectCleanupWaitsForRolledBackRegistrationThenRetriesTh
 	require.NoError(t, db.Callback().Create().After("gorm:create").Register(callbackName, func(tx *gorm.DB) {
 		if tx.Statement.Table == "media_assets" {
 			pauseOnce.Do(func() {
-				pausePostgreSQLMediaObjectOwnershipTransactionUntilReleased(t, ctx, tx, acquired, releaseFirst)
+				pausePostgreSQLMediaObjectOwnershipTransactionUntilReleased(ctx, t, tx, acquired, releaseFirst)
 				tx.AddError(registrationFailure)
 			})
 		}
@@ -136,14 +142,14 @@ func TestPostgreSQLMediaObjectCleanupWaitsForRolledBackRegistrationThenRetriesTh
 	registerResult, cleanupResult := make(chan error, 1), make(chan error, 1)
 	candidate := &media.MediaAsset{Filename: "rollback.png", URL: provider.GetURL(asset.StorageKey) + "?rollback=1", StorageKey: asset.StorageKey}
 	go func() { registerResult <- assets.repo.CreateAsset(candidate) }()
-	pid := awaitPostgreSQLMediaObjectOwnershipTransactionPID(t, ctx, acquired)
+	pid := awaitPostgreSQLMediaObjectOwnershipTransactionPID(ctx, t, acquired)
 	go func() {
 		cleanupResult <- NewObjectStorageCleanupOutboxHandler(assets, nil, nil, nil).Handle(ctx, event)
 	}()
 	waitForPostgreSQLGalleryMutationToBlockOnTransaction(t, db, pid, "pg_advisory_xact_lock")
 	release()
-	require.ErrorIs(t, awaitPostgreSQLMediaObjectOwnershipOperationResult(t, ctx, registerResult), registrationFailure)
-	require.NoError(t, awaitPostgreSQLMediaObjectOwnershipOperationResult(t, ctx, cleanupResult))
+	require.ErrorIs(t, awaitPostgreSQLMediaObjectOwnershipOperationResult(ctx, t, registerResult), registrationFailure)
+	require.NoError(t, awaitPostgreSQLMediaObjectOwnershipOperationResult(ctx, t, cleanupResult))
 	var count int64
 	require.NoError(t, db.Unscoped().Model(&media.MediaAsset{}).Where("url = ?", candidate.URL).Count(&count).Error)
 	require.Zero(t, count)

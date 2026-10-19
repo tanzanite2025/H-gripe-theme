@@ -9,13 +9,14 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
+	"github.com/stretchr/testify/require"
+	"gorm.io/gorm"
+
 	"commerce-platform/internal/domain/media"
 	"commerce-platform/internal/domain/outbox"
 	"commerce-platform/internal/pkg/storage"
 	"commerce-platform/internal/repository"
-	"github.com/google/uuid"
-	"github.com/stretchr/testify/require"
-	"gorm.io/gorm"
 )
 
 type permanentMediaOriginalPostgreSQLProviderWithWriteBarrier struct {
@@ -108,7 +109,7 @@ func TestPostgreSQLPermanentMediaOriginalReceiptVisibilityWorkerSkipAndCancellat
 	go func() {
 		cleanup <- NewObjectStorageCleanupOutboxHandler(service, nil, nil, nil).Handle(t.Context(), receipt)
 	}()
-	requireDedicatedObjectLifecyclePostgreSQLTransactionActuallyBlocks(t, t.Context(), db, pid)
+	requireDedicatedObjectLifecyclePostgreSQLTransactionActuallyBlocks(t.Context(), t, db, pid)
 	select {
 	case err := <-cleanup:
 		t.Fatalf("cleanup escaped provider lock: %v", err)
@@ -196,7 +197,7 @@ func TestPostgreSQLPermanentMediaOriginalCleanupClaimFencesWriterWaitingForExact
 			case <-ctx.Done():
 				t.Fatal("object blocker did not start")
 			}
-			requireDedicatedObjectLifecyclePostgreSQLTransactionActuallyBlocks(t, ctx, db, pid)
+			requireDedicatedObjectLifecyclePostgreSQLTransactionActuallyBlocks(ctx, t, db, pid)
 			receipt := permanentMediaOriginalUploadOnlyReceipt(t, service.repo)
 			events := repository.NewOutboxRepository(db)
 			claimed, err := events.ClaimReadyEvents(time.Now().Add(6*time.Minute), "permanent-original-fence-worker", 100, time.Minute)
@@ -249,7 +250,7 @@ func TestPostgreSQLPermanentMediaOriginalConcurrentQuotaRecheckAllowsOneWriteAnd
 		t.Fatal("writer PID missing")
 	}
 	go func() { _, err := service.UploadAsset(ctx, input); second <- err }()
-	requireDedicatedObjectLifecyclePostgreSQLTransactionActuallyBlocks(t, ctx, db, pid)
+	requireDedicatedObjectLifecyclePostgreSQLTransactionActuallyBlocks(ctx, t, db, pid)
 	var receipts int64
 	require.NoError(t, db.Model(&outbox.Event{}).Where("event_key LIKE ?", repository.PermanentMediaOriginalUploadReceiptEventKeyPrefix+"%").Count(&receipts).Error)
 	require.EqualValues(t, 2, receipts)

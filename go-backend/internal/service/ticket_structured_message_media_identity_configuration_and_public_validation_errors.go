@@ -1,9 +1,10 @@
 package service
 
 import (
-	"commerce-platform/internal/repository"
 	"errors"
 	"fmt"
+
+	"commerce-platform/internal/repository"
 )
 
 var ErrCustomerServiceMessageMediaReferenceInvalid = repository.ErrTicketStructuredMediaReferenceInvalid

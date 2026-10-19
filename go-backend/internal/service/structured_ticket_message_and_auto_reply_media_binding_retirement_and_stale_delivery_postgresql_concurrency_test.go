@@ -8,17 +8,18 @@ import (
 	"testing"
 	"time"
 
-	"commerce-platform/internal/domain/media"
-	"commerce-platform/internal/domain/outbox"
-	"commerce-platform/internal/domain/ticket"
-	"commerce-platform/internal/repository"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
+
+	"commerce-platform/internal/domain/media"
+	"commerce-platform/internal/domain/outbox"
+	"commerce-platform/internal/domain/ticket"
+	"commerce-platform/internal/repository"
 )
 
-func createIsolatedPostgreSQLStructuredMessageMediaTestServices(t *testing.T, ctx context.Context) (customerServicePrivateAttachmentAccessTestEnvironment, *TicketService, *media.MediaAsset) {
+func createIsolatedPostgreSQLStructuredMessageMediaTestServices(ctx context.Context, t *testing.T) (customerServicePrivateAttachmentAccessTestEnvironment, *TicketService, *media.MediaAsset) {
 	t.Helper()
 	env, _, pending := createIsolatedPostgreSQLCustomerServiceAttachmentRetirementTestEnvironment(t)
 	require.NoError(t, env.db.AutoMigrate(&ticket.AutoReplyRule{}))
@@ -44,7 +45,7 @@ func createPostgreSQLStructuredMessageImageWithConfiguredStorageURL(t *testing.T
 	return asset
 }
 
-func pauseFirstStructuredMessageMediaTestAssetRowLock(t *testing.T, db *gorm.DB, ctx context.Context) (<-chan structuredMessageMediaTestAcquiredAssetLock, func()) {
+func pauseFirstStructuredMessageMediaTestAssetRowLock(ctx context.Context, t *testing.T, db *gorm.DB) (<-chan structuredMessageMediaTestAcquiredAssetLock, func()) {
 	t.Helper()
 	locked := make(chan structuredMessageMediaTestAcquiredAssetLock, 1)
 	resume := make(chan struct{})
@@ -79,7 +80,7 @@ func pauseFirstStructuredMessageMediaTestAssetRowLock(t *testing.T, db *gorm.DB,
 	return locked, release
 }
 
-func awaitStructuredMessageMediaTestAssetRowLock(t *testing.T, ctx context.Context, locked <-chan structuredMessageMediaTestAcquiredAssetLock) structuredMessageMediaTestAcquiredAssetLock {
+func awaitStructuredMessageMediaTestAssetRowLock(ctx context.Context, t *testing.T, locked <-chan structuredMessageMediaTestAcquiredAssetLock) structuredMessageMediaTestAcquiredAssetLock {
 	t.Helper()
 	select {
 	case result := <-locked:
@@ -90,7 +91,7 @@ func awaitStructuredMessageMediaTestAssetRowLock(t *testing.T, ctx context.Conte
 	}
 }
 
-func awaitStructuredMessageMediaTestMutationResult(t *testing.T, ctx context.Context, results <-chan error) error {
+func awaitStructuredMessageMediaTestMutationResult(ctx context.Context, t *testing.T, results <-chan error) error {
 	t.Helper()
 	select {
 	case err := <-results:
@@ -107,7 +108,7 @@ func TestPostgreSQLStructuredMetadataRuleAndAgentOrPublicMessageBindingsSerializ
 			t.Run(mutation+"/"+first+"-first", func(t *testing.T) {
 				ctx, cancel := context.WithTimeout(t.Context(), 20*time.Second)
 				defer cancel()
-				env, tickets, _ := createIsolatedPostgreSQLStructuredMessageMediaTestServices(t, ctx)
+				env, tickets, _ := createIsolatedPostgreSQLStructuredMessageMediaTestServices(ctx, t)
 				asset := createPostgreSQLStructuredMessageImageWithConfiguredStorageURL(t, env, "content/structured-race.png")
 				if mutation == "legacy-public-attachment" {
 					require.NoError(t, env.db.Model(asset).Updates(map[string]any{"upload_origin": media.MediaUploadOriginCustomerServiceConversation, "uploader_actor_type": media.MediaUploadActorVisitor, "uploader_visitor_session_hash": env.owner.VisitorSessionHash, "library_partition": media.MediaLibraryPartitionCustomerSubmissions}).Error)
@@ -137,7 +138,7 @@ func TestPostgreSQLStructuredMetadataRuleAndAgentOrPublicMessageBindingsSerializ
 						return err
 					}
 				}
-				locked, release := pauseFirstStructuredMessageMediaTestAssetRowLock(t, env.db, ctx)
+				locked, release := pauseFirstStructuredMessageMediaTestAssetRowLock(ctx, t, env.db)
 				bindResults, retireResults := make(chan error, 1), make(chan error, 1)
 				startBinding := func() { go func() { bindResults <- bind() }() }
 				startRetirement := func() {
@@ -150,7 +151,7 @@ func TestPostgreSQLStructuredMetadataRuleAndAgentOrPublicMessageBindingsSerializ
 				} else {
 					startRetirement()
 				}
-				acquired := awaitStructuredMessageMediaTestAssetRowLock(t, ctx, locked)
+				acquired := awaitStructuredMessageMediaTestAssetRowLock(ctx, t, locked)
 				require.Equal(t, asset.ID, acquired.AssetID)
 				if first == "binding" {
 					startRetirement()
@@ -159,8 +160,8 @@ func TestPostgreSQLStructuredMetadataRuleAndAgentOrPublicMessageBindingsSerializ
 				}
 				waitForPostgreSQLGalleryMutationToBlockOnTransaction(t, env.db, acquired.BackendPID, "media_assets")
 				release()
-				bindErr := awaitStructuredMessageMediaTestMutationResult(t, ctx, bindResults)
-				retireErr := awaitStructuredMessageMediaTestMutationResult(t, ctx, retireResults)
+				bindErr := awaitStructuredMessageMediaTestMutationResult(ctx, t, bindResults)
+				retireErr := awaitStructuredMessageMediaTestMutationResult(ctx, t, retireResults)
 				var cleanupEvents, messages, realtimeEvents int64
 				require.NoError(t, env.db.Model(&outbox.Event{}).Where("event_type = ? AND aggregate_id = ?", outbox.EventTypeObjectStorageCleanup, fmt.Sprint(asset.ID)).Count(&cleanupEvents).Error)
 				require.NoError(t, env.db.Model(&ticket.TicketMessage{}).Where("content = ?", "Racing structured card").Count(&messages).Error)
@@ -194,23 +195,23 @@ func TestPostgreSQLStructuredMetadataRuleAndAgentOrPublicMessageBindingsSerializ
 func TestPostgreSQLStructuredMetadataAndLegacyAttachmentsUseOneAscendingLockOrderAcrossOppositeFieldOrders(t *testing.T) {
 	ctx, cancel := context.WithTimeout(t.Context(), 20*time.Second)
 	defer cancel()
-	env, tickets, _ := createIsolatedPostgreSQLStructuredMessageMediaTestServices(t, ctx)
+	env, tickets, _ := createIsolatedPostgreSQLStructuredMessageMediaTestServices(ctx, t)
 	low := createPostgreSQLStructuredMessageImageWithConfiguredStorageURL(t, env, "content/structured-low.png")
 	high := createPostgreSQLStructuredMessageImageWithConfiguredStorageURL(t, env, "content/structured-high.png")
 	first := structuredAutoReplyInputForMediaTest(structuredProductMetadataForMediaTest(t, high.URL))
 	first.Attachments = fmt.Sprintf(`[%q]`, low.URL)
 	second := structuredAutoReplyInputForMediaTest(structuredProductMetadataForMediaTest(t, low.URL))
 	second.Attachments = fmt.Sprintf(`[%q]`, high.URL)
-	locked, release := pauseFirstStructuredMessageMediaTestAssetRowLock(t, env.db, ctx)
+	locked, release := pauseFirstStructuredMessageMediaTestAssetRowLock(ctx, t, env.db)
 	results := make(chan error, 2)
 	go func() { _, err := tickets.CreateAutoReplyRule(first); results <- err }()
-	acquired := awaitStructuredMessageMediaTestAssetRowLock(t, ctx, locked)
+	acquired := awaitStructuredMessageMediaTestAssetRowLock(ctx, t, locked)
 	require.Equal(t, low.ID, acquired.AssetID)
 	go func() { _, err := tickets.CreateAutoReplyRule(second); results <- err }()
 	waitForPostgreSQLGalleryMutationToBlockOnTransaction(t, env.db, acquired.BackendPID, "media_assets")
 	release()
-	require.NoError(t, awaitStructuredMessageMediaTestMutationResult(t, ctx, results))
-	require.NoError(t, awaitStructuredMessageMediaTestMutationResult(t, ctx, results))
+	require.NoError(t, awaitStructuredMessageMediaTestMutationResult(ctx, t, results))
+	require.NoError(t, awaitStructuredMessageMediaTestMutationResult(ctx, t, results))
 	for _, asset := range []*media.MediaAsset{low, high} {
 		report, err := env.mediaService.GetAssetReferences(asset.ID)
 		require.NoError(t, err)
@@ -221,7 +222,7 @@ func TestPostgreSQLStructuredMetadataAndLegacyAttachmentsUseOneAscendingLockOrde
 func TestPostgreSQLStructuredCardMediaAndPrivateUploadSessionShareAssetLockOrderWithoutConsumingReceiptEarly(t *testing.T) {
 	ctx, cancel := context.WithTimeout(t.Context(), 20*time.Second)
 	defer cancel()
-	env, tickets, pending := createIsolatedPostgreSQLStructuredMessageMediaTestServices(t, ctx)
+	env, tickets, pending := createIsolatedPostgreSQLStructuredMessageMediaTestServices(ctx, t)
 	card := createPostgreSQLStructuredMessageImageWithConfiguredStorageURL(t, env, "content/card-with-private-attachment.png")
 	require.Less(t, pending.ID, card.ID)
 	blocker := env.db.Begin()
@@ -247,7 +248,7 @@ func TestPostgreSQLStructuredCardMediaAndPrivateUploadSessionShareAssetLockOrder
 	require.NoError(t, err)
 	require.Equal(t, "ready", session.Status)
 	require.NoError(t, blocker.Commit().Error)
-	require.NoError(t, awaitStructuredMessageMediaTestMutationResult(t, ctx, results))
+	require.NoError(t, awaitStructuredMessageMediaTestMutationResult(ctx, t, results))
 	session, err = env.mediaService.repo.FindCustomerServiceMediaUploadSession(ctx, pending.PendingCustomerServiceUploadSessionID)
 	require.NoError(t, err)
 	require.Equal(t, "bound", session.Status)
@@ -268,7 +269,7 @@ func TestPostgreSQLStructuredAutoReplyRechecksLockedRuleAfterConcurrentDetachmen
 		t.Run(mutation, func(t *testing.T) {
 			ctx, cancel := context.WithTimeout(t.Context(), 20*time.Second)
 			defer cancel()
-			env, tickets, _ := createIsolatedPostgreSQLStructuredMessageMediaTestServices(t, ctx)
+			env, tickets, _ := createIsolatedPostgreSQLStructuredMessageMediaTestServices(ctx, t)
 			asset := createPostgreSQLStructuredMessageImageWithConfiguredStorageURL(t, env, "content/stale-rule.png")
 			rule, err := tickets.CreateAutoReplyRule(structuredAutoReplyInputForMediaTest(structuredProductMetadataForMediaTest(t, asset.URL)))
 			require.NoError(t, err)
@@ -297,7 +298,7 @@ func TestPostgreSQLStructuredAutoReplyRechecksLockedRuleAfterConcurrentDetachmen
 			}()
 			waitForPostgreSQLGalleryMutationToBlockOnTransaction(t, env.db, pid, "ticket_auto_replies")
 			require.NoError(t, blocker.Commit().Error)
-			require.NoError(t, awaitStructuredMessageMediaTestMutationResult(t, ctx, results))
+			require.NoError(t, awaitStructuredMessageMediaTestMutationResult(ctx, t, results))
 			var events, replies int64
 			require.NoError(t, env.db.Model(&outbox.Event{}).Where("event_type = ?", outbox.EventTypeCustomerServiceRealtime).Count(&events).Error)
 			require.NoError(t, env.db.Model(&ticket.TicketMessage{}).Where("is_staff = ?", true).Count(&replies).Error)
@@ -310,7 +311,7 @@ func TestPostgreSQLStructuredAutoReplyRechecksLockedRuleAfterConcurrentDetachmen
 func TestPostgreSQLStructuredAutoReplyFreshCreateAndUpdateSnapshotsRespectDatabaseTimestampPrecision(t *testing.T) {
 	ctx, cancel := context.WithTimeout(t.Context(), 20*time.Second)
 	defer cancel()
-	env, tickets, _ := createIsolatedPostgreSQLStructuredMessageMediaTestServices(t, ctx)
+	env, tickets, _ := createIsolatedPostgreSQLStructuredMessageMediaTestServices(ctx, t)
 	asset := createPostgreSQLStructuredMessageImageWithConfiguredStorageURL(t, env, "content/fresh-rule.png")
 	for _, mutation := range []string{"create", "update"} {
 		input := structuredAutoReplyInputForMediaTest(structuredProductMetadataForMediaTest(t, asset.URL))

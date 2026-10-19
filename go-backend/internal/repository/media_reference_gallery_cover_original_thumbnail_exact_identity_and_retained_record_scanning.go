@@ -1,10 +1,11 @@
 package repository
 
 import (
-	"commerce-platform/internal/domain/media"
 	"fmt"
 	"strings"
 	"time"
+
+	"commerce-platform/internal/domain/media"
 )
 
 func (r *MediaRepository) galleryReferences(query mediaAssetReferenceQuery) ([]media.AssetReference, error) {

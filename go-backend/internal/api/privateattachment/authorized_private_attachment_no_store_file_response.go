@@ -6,8 +6,9 @@ import (
 	"path"
 	"strings"
 
-	"commerce-platform/internal/pkg/storage"
 	"github.com/gin-gonic/gin"
+
+	"commerce-platform/internal/pkg/storage"
 )
 
 func SetPrivateAttachmentResponseHeaders(c *gin.Context) {

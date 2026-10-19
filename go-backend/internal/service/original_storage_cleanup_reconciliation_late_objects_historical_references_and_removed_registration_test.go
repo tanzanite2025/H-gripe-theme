@@ -64,7 +64,7 @@ func TestOriginalStorageCleanupReconciliationRemovesObjectsArrivingAfterRepeated
 func TestOriginalStorageCleanupReconciliationRetainsOriginalTaskWhileHistoricalContentReferencesExist(t *testing.T) {
 	for _, namespace := range []string{SiteLogoStoragePrefix, SiteFaviconStoragePrefix, "visual-showcase"} {
 		t.Run(namespace, func(t *testing.T) {
-			db, provider, handler, event, key := createDedicatedPublicObjectRetainedHistoryCleanupTestEnvironment(t, namespace)
+			db, _, handler, event, key := createDedicatedPublicObjectRetainedHistoryCleanupTestEnvironment(t, namespace)
 			root := t.TempDir()
 			provider, err := storage.NewStorageService(&storage.Config{Type: storage.StorageTypeLocal, LocalPath: root, BaseURL: "https://dedicated.example.test/assets"})
 			require.NoError(t, err)

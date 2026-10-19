@@ -10,14 +10,15 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
+	"github.com/stretchr/testify/require"
+	"gorm.io/gorm"
+
 	"commerce-platform/internal/domain/media"
 	"commerce-platform/internal/domain/outbox"
 	"commerce-platform/internal/domain/product"
 	"commerce-platform/internal/pkg/storage"
 	"commerce-platform/internal/repository"
-	"github.com/google/uuid"
-	"github.com/stretchr/testify/require"
-	"gorm.io/gorm"
 )
 
 func TestPostgreSQLFailedUploadAndRetiredDerivativeCleanupSerializeAgainstNewOwnershipInBothOrders(t *testing.T) {
@@ -86,7 +87,7 @@ func TestPostgreSQLFailedUploadAndRetiredDerivativeCleanupSerializeAgainstNewOwn
 						require.NoError(t, db.Callback().Create().After("gorm:create").Register(callbackName, func(tx *gorm.DB) {
 							if tx.Statement.Table == table {
 								pauseOnce.Do(func() {
-									pausePostgreSQLMediaObjectOwnershipTransactionUntilReleased(t, ctx, tx, acquired, releaseFirst)
+									pausePostgreSQLMediaObjectOwnershipTransactionUntilReleased(ctx, t, tx, acquired, releaseFirst)
 								})
 							}
 						}))
@@ -95,7 +96,7 @@ func TestPostgreSQLFailedUploadAndRetiredDerivativeCleanupSerializeAgainstNewOwn
 						require.NoError(t, db.Callback().Query().Before("gorm:query").Register(callbackName, func(tx *gorm.DB) {
 							if tx.Statement.Table == "media_assets" && strings.Contains(strings.Join(tx.Statement.Selects, " "), "AS retained_deleted") {
 								pauseOnce.Do(func() {
-									pausePostgreSQLMediaObjectOwnershipTransactionUntilReleased(t, ctx, tx, acquired, releaseFirst)
+									pausePostgreSQLMediaObjectOwnershipTransactionUntilReleased(ctx, t, tx, acquired, releaseFirst)
 								})
 							}
 						}))
@@ -108,7 +109,7 @@ func TestPostgreSQLFailedUploadAndRetiredDerivativeCleanupSerializeAgainstNewOwn
 					} else {
 						go func() { cleanupResult <- handler.Handle(ctx, *event) }()
 					}
-					pid := awaitPostgreSQLMediaObjectOwnershipTransactionPID(t, ctx, acquired)
+					pid := awaitPostgreSQLMediaObjectOwnershipTransactionPID(ctx, t, acquired)
 					if first == "registration" {
 						go func() { cleanupResult <- handler.Handle(ctx, *event) }()
 					} else {
@@ -116,8 +117,8 @@ func TestPostgreSQLFailedUploadAndRetiredDerivativeCleanupSerializeAgainstNewOwn
 					}
 					waitForPostgreSQLGalleryMutationToBlockOnTransaction(t, db, pid, "pg_advisory_xact_lock")
 					release()
-					registrationError := awaitPostgreSQLMediaObjectOwnershipOperationResult(t, ctx, registrationResult)
-					cleanupError := awaitPostgreSQLMediaObjectOwnershipOperationResult(t, ctx, cleanupResult)
+					registrationError := awaitPostgreSQLMediaObjectOwnershipOperationResult(ctx, t, registrationResult)
+					cleanupError := awaitPostgreSQLMediaObjectOwnershipOperationResult(ctx, t, cleanupResult)
 					if first == "registration" {
 						require.NoError(t, registrationError)
 						require.ErrorIs(t, cleanupError, ErrMediaAssetInUse)

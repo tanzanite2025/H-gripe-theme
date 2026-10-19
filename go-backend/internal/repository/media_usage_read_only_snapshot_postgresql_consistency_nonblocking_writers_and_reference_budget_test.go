@@ -4,10 +4,11 @@ import (
 	"testing"
 	"time"
 
-	"commerce-platform/internal/domain/media"
 	"github.com/stretchr/testify/require"
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
+
+	"commerce-platform/internal/domain/media"
 )
 
 func TestPostgreSQLReadOnlyMediaUsageSnapshotKeepsCandidatesAndReferencesConsistentWithoutBlockingWriters(t *testing.T) {

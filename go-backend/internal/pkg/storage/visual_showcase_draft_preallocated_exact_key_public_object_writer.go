@@ -44,7 +44,7 @@ func VisualShowcaseDraftUploadReceiptIDFromObjectKey(key string) (string, bool) 
 			return "", false
 		}
 		for _, ch := range segment {
-			if !(ch >= 'a' && ch <= 'z' || ch >= '0' && ch <= '9' || ch == '-' || ch == '_') {
+			if (ch < 'a' || ch > 'z') && (ch < '0' || ch > '9') && ch != '-' && ch != '_' {
 				return "", false
 			}
 		}

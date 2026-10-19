@@ -34,41 +34,40 @@ func (s *CustomerServiceConversationMessageAttachmentAccessService) structuredMe
 	return document.Fields, offset, nil
 }
 
-func (s *CustomerServiceConversationMessageAttachmentAccessService) resolveRegisteredStructuredMetadataMediaReference(reference string) (*media.MediaAsset, string, string, error) {
+func (s *CustomerServiceConversationMessageAttachmentAccessService) resolveRegisteredStructuredMetadataMediaReference(reference string) (*media.MediaAsset, string, error) {
 	parsed, err := url.Parse(reference)
 	if err != nil || parsed.User != nil {
-		return nil, "", "", ErrCustomerServiceMessageAttachmentUnavailable
+		return nil, "", ErrCustomerServiceMessageAttachmentUnavailable
 	}
 	parsed.RawQuery, parsed.Fragment, parsed.RawFragment, parsed.ForceQuery = "", "", "", false
 	key, err := s.media.ResolveRegisteredMediaObjectKeyForCleanupOwnership(parsed.String())
 	if err != nil {
-		return nil, "", "", ErrCustomerServiceMessageAttachmentUnavailable
+		return nil, "", ErrCustomerServiceMessageAttachmentUnavailable
 	}
 	if key == "" {
 		key = s.media.reviewedHistoricalCustomerServiceAttachmentObjectKey(reference)
 	}
 	asset, derivative, err := s.media.repo.FindUniquelyRegisteredMediaObjectForExistingConsumerReadIncludingRetiredDerivative(reference, key)
 	if err != nil || asset == nil {
-		return nil, "", "", ErrCustomerServiceMessageAttachmentUnavailable
+		return nil, "", ErrCustomerServiceMessageAttachmentUnavailable
 	}
 	resolvedAsset, originalKey, err := s.resolveRegisteredCustomerServiceMessageAttachment(asset.URL)
 	if err != nil {
-		return nil, "", "", err
+		return nil, "", err
 	}
-	preset := ""
 	if derivative != nil {
 		derivativeKey, err := s.validCustomerServiceAttachmentDerivativeStorageKey(resolvedAsset, *derivative)
 		if err != nil {
-			return nil, "", "", err
+			return nil, "", err
 		}
 		// This membership identifies an exact historical generation. It must
 		// still work if that preset was disabled or its current version changed.
 		consumerAsset := *resolvedAsset
 		consumerAsset.MimeType = derivative.MimeType
 		consumerAsset.OriginalFilename = path.Base(derivativeKey)
-		return &consumerAsset, derivativeKey, "", nil
+		return &consumerAsset, derivativeKey, nil
 	}
-	return resolvedAsset, originalKey, preset, nil
+	return resolvedAsset, originalKey, nil
 }
 
 func (s *CustomerServiceConversationMessageAttachmentAccessService) MetadataWithAuthorizedProtectedMediaURLsForPublicMessage(message ticket.TicketMessage, descriptions []CustomerServiceMessageAttachmentAccessDescription, conversationID string) string {
@@ -98,7 +97,7 @@ func (s *CustomerServiceConversationMessageAttachmentAccessService) metadataWith
 	}
 	combined := append([]CustomerServiceMessageAttachmentAccessDescription(nil), descriptions...)
 	for index, field := range fields {
-		asset, _, _, err := s.resolveRegisteredStructuredMetadataMediaReference(field.URL)
+		asset, _, err := s.resolveRegisteredStructuredMetadataMediaReference(field.URL)
 		if err != nil {
 			document.Fields[index].URL = s.media.CanonicalPublicMediaURL(field.URL)
 			continue
@@ -133,12 +132,9 @@ func (s *CustomerServiceConversationMessageAttachmentAccessService) openStructur
 	if index < 0 || index >= len(fields) {
 		return nil, true, ErrCustomerServiceMessageAttachmentUnavailable
 	}
-	asset, key, defaultPreset, err := s.resolveRegisteredStructuredMetadataMediaReference(fields[index].URL)
+	asset, key, err := s.resolveRegisteredStructuredMetadataMediaReference(fields[index].URL)
 	if err != nil {
 		return nil, true, err
-	}
-	if preset == "" {
-		preset = defaultPreset
 	}
 	file, err := s.openCustomerServiceAttachmentAssetFile(ctx, asset, key, preset)
 	return file, true, err

@@ -5,11 +5,12 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+	"gorm.io/gorm"
+
 	"commerce-platform/internal/domain/gallery"
 	"commerce-platform/internal/domain/media"
 	"commerce-platform/internal/repository"
-	"github.com/stretchr/testify/require"
-	"gorm.io/gorm"
 )
 
 func createGalleryTransactionalMediaBindingTestServices(t *testing.T) (*gorm.DB, *GalleryService, *MediaService) {
@@ -136,9 +137,9 @@ func TestGalleryLegacyFieldsRemainLocalAndOmittedImageFieldsReloadInsideTransact
 	require.NoError(t, err)
 	_, err = galleries.UpdateAdminGalleryImage(legacy.ID, GalleryImageAdminUpdateInput{Title: &title})
 	require.NoError(t, err)
-	copy := *legacy
-	copy.ID = 0
-	require.ErrorIs(t, galleries.repo.CreateGalleryImage(&copy), ErrGalleryMediaAssetInvalid)
+	clonedValue := *legacy
+	clonedValue.ID = 0
+	require.ErrorIs(t, galleries.repo.CreateGalleryImage(&clonedValue), ErrGalleryMediaAssetInvalid)
 	changed := *legacy
 	changed.Thumbnail = legacy.URL
 	require.ErrorIs(t, galleries.UpdateGalleryImage(&changed), ErrGalleryMediaAssetInvalid)

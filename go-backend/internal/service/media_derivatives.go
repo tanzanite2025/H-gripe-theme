@@ -17,11 +17,12 @@ import (
 	"strings"
 	"sync"
 
+	"gorm.io/gorm"
+
 	mediadomain "commerce-platform/internal/domain/media"
 	productdomain "commerce-platform/internal/domain/product"
 	"commerce-platform/internal/pkg/storage"
 	"commerce-platform/internal/repository"
-	"gorm.io/gorm"
 
 	xdraw "golang.org/x/image/draw"
 	_ "golang.org/x/image/webp"

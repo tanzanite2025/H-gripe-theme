@@ -55,7 +55,7 @@ func TestHistoricalUnclassifiedTicketAttachmentOriginalAndDerivativeAnonymousHTT
 	registerLocalUploadsRoute(router, deps)
 	for _, key := range []string{asset.StorageKey, derivative.StorageKey, other.StorageKey} {
 		response := httptest.NewRecorder()
-		request := httptest.NewRequest(http.MethodGet, "/uploads/"+key, nil)
+		request := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/uploads/"+key, nil)
 		request.Header.Set("Range", "bytes=0-3")
 		router.ServeHTTP(response, request)
 		if key == other.StorageKey {

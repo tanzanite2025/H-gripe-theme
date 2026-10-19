@@ -58,7 +58,7 @@ func uploadDedicatedImmediateOwnerObjectWithWriteAheadCleanupReceiptAndTransacti
 		if err != nil {
 			return err
 		}
-		defer reader.Close()
+		defer func() { _ = reader.Close() }()
 		url, err := writer.WriteDedicatedImmediateOwnerObjectAtPreallocatedKey(tx.Statement.Context, reader, key, storage.DedicatedImmediateOwnerUploadCacheControl)
 		if err != nil {
 			return err

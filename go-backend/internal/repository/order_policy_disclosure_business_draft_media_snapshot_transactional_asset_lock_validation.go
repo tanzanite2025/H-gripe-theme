@@ -6,10 +6,11 @@ import (
 	"net/url"
 	"strings"
 
+	"gorm.io/gorm"
+
 	"commerce-platform/internal/domain/order"
 	"commerce-platform/internal/domain/refundcancellation"
 	"commerce-platform/internal/pkg/storage"
-	"gorm.io/gorm"
 )
 
 // Snapshot bytes and their hash remain immutable. Only the new draft namespace

@@ -7,12 +7,13 @@ import (
 	"testing"
 	"time"
 
-	"commerce-platform/internal/domain/outbox"
-	"commerce-platform/internal/domain/product"
-	"commerce-platform/internal/repository"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
+
+	"commerce-platform/internal/domain/outbox"
+	"commerce-platform/internal/domain/product"
+	"commerce-platform/internal/repository"
 )
 
 func TestPostgreSQLProductBrandLogoCreateAndUpdateSerializeBindingAndMediaRetirement(t *testing.T) {

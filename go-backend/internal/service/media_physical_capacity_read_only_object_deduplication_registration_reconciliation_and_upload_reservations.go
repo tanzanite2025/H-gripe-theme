@@ -196,6 +196,11 @@ func reconcileReadOnlyMediaPhysicalCapacitySnapshot(ctx context.Context, snapsho
 		}
 		if reference != "" {
 			resolvedKey, err := primary.ObjectKey(reference)
+			if err != nil {
+				report.UnresolvedRecordLocations++
+				issues["registration_location_or_key_conflict"] = true
+				return nil
+			}
 			if key == "" {
 				key = resolvedKey
 			}

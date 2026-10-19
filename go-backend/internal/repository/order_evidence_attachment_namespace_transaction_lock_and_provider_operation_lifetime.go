@@ -4,8 +4,9 @@ import (
 	"context"
 	"errors"
 
-	"commerce-platform/internal/domain/orderevidence"
 	"gorm.io/gorm"
+
+	"commerce-platform/internal/domain/orderevidence"
 )
 
 const orderEvidenceAttachmentLifecycleNamespace = "order-evidence"

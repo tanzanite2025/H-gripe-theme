@@ -153,7 +153,7 @@ func (r *MediaRepository) lockMediaObjectKeysAndPrivateDerivativeNamespacesWithi
 	uniqueLockIDs := make(map[int64]struct{}, len(lockNames))
 	for name := range lockNames {
 		digest := sha256.Sum256([]byte("media-object-registration-and-physical-cleanup/v1/" + name))
-		uniqueLockIDs[int64(binary.BigEndian.Uint64(digest[:8]))] = struct{}{}
+		uniqueLockIDs[int64(binary.BigEndian.Uint64(digest[:8]))] = struct{}{} // #nosec G115 -- Preserve all digest bits as a stable signed PostgreSQL advisory lock identity.
 	}
 	lockIDs := make([]int64, 0, len(uniqueLockIDs))
 	for id := range uniqueLockIDs {

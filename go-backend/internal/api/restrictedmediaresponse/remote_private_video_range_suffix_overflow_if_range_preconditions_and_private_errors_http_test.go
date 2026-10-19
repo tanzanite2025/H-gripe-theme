@@ -10,10 +10,11 @@ import (
 	"testing"
 	"time"
 
-	"commerce-platform/internal/pkg/storage"
-	"commerce-platform/internal/service"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/require"
+
+	"commerce-platform/internal/pkg/storage"
+	"commerce-platform/internal/service"
 )
 
 type syntheticRemotePrivateVideoByteRangeSource struct {
@@ -64,7 +65,7 @@ func TestRemotePrivateVideoRangeEmptyObjectsAvoidBodyReadsAndInterruptedBodiesRe
 			})
 			server := httptest.NewServer(router)
 			defer server.Close()
-			request, err := http.NewRequest(http.MethodGet, server.URL+"/authorized", nil)
+			request, err := http.NewRequestWithContext(t.Context(), http.MethodGet, server.URL+"/authorized", nil)
 			require.NoError(t, err)
 			request.Header.Set("Range", scenario.byteRange)
 			response, err := server.Client().Do(request)
@@ -142,7 +143,7 @@ func TestRemotePrivateVideoRangeHTTPHandlesExactSingleRangesAndPrivateFailuresWi
 				c.Header("Vary", "Origin")
 				StreamConversationAuthorizedMediaFile(c, &service.MediaAssetFile{ReadCloser: source, ByteRangeSource: source, MimeType: "video/mp4", Filename: "video.mp4", Size: 10})
 			})
-			request := httptest.NewRequest(scenario.method, "/authorized", nil)
+			request := httptest.NewRequestWithContext(t.Context(), scenario.method, "/authorized", nil)
 			request.Header.Set("Range", scenario.byteRange)
 			request.Header.Set("If-Range", scenario.ifRange)
 			response := httptest.NewRecorder()
@@ -186,7 +187,7 @@ func TestRemotePrivateVideoRangeConditionalRequestsEvaluateOnlyAfterAuthorizatio
 			router.GET("/authorized", func(c *gin.Context) {
 				StreamConversationAuthorizedMediaFile(c, &service.MediaAssetFile{ReadCloser: source, ByteRangeSource: source, MimeType: "video/mp4"})
 			})
-			request := httptest.NewRequest("GET", "/authorized", nil)
+			request := httptest.NewRequestWithContext(t.Context(), "GET", "/authorized", nil)
 			request.Header.Set(scenario.header, scenario.value)
 			request.Header.Set("Range", "bytes=2-5")
 			response := httptest.NewRecorder()

@@ -4,8 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	"commerce-platform/internal/pkg/storage"
 	"gorm.io/gorm"
+
+	"commerce-platform/internal/pkg/storage"
 )
 
 // Use the dedicated owner's database and URL resolver. The shared library may

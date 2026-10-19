@@ -1,16 +1,18 @@
 package service
 
 import (
+	"context"
+	"errors"
+	"fmt"
+	"mime/multipart"
+	"strings"
+
+	"github.com/google/uuid"
+
 	"commerce-platform/internal/domain/orderevidence"
 	"commerce-platform/internal/pkg/storage"
 	"commerce-platform/internal/pkg/upload"
 	"commerce-platform/internal/repository"
-	"context"
-	"errors"
-	"fmt"
-	"github.com/google/uuid"
-	"mime/multipart"
-	"strings"
 )
 
 // Preserves historical returned-identity upload compensation coverage.
@@ -20,22 +22,22 @@ func (s *OrderEvidenceAttachmentService) uploadLegacyOrderEvidenceAttachmentWith
 	itemID uint,
 	file *multipart.FileHeader,
 	uploadedBy uint,
-) (*orderevidence.OrderEvidenceAttachment, error) {
+) error {
 	if s == nil || s.txManager == nil || s.evidenceRepo == nil || s.storage == nil || s.outbox == nil {
-		return nil, ErrOrderEvidenceAttachmentUnavailable
+		return ErrOrderEvidenceAttachmentUnavailable
 	}
 	if orderID == 0 || itemID == 0 || uploadedBy == 0 {
-		return nil, errors.New("order id, evidence item id, and uploader are required")
+		return errors.New("order id, evidence item id, and uploader are required")
 	}
 	item, pkg, err := s.evidenceRepo.FindItemAndPackageByIDForOrder(itemID, orderID)
 	if repository.IsRecordNotFound(err) {
-		return nil, ErrOrderEvidenceAttachmentItemNotFound
+		return ErrOrderEvidenceAttachmentItemNotFound
 	}
 	if err != nil {
-		return nil, err
+		return err
 	}
 	if err := pkg.EnsureMutable(); err != nil {
-		return nil, err
+		return err
 	}
 	validationRule := upload.WarrantyImageRule.FileRule
 	if item.ItemType == orderevidence.EvidenceItemTypeSignedPOD {
@@ -43,23 +45,23 @@ func (s *OrderEvidenceAttachmentService) uploadLegacyOrderEvidenceAttachmentWith
 		// PDFs that can be forwarded to PayPal as official documents.
 		contentType, detectErr := upload.DetectContentType(file)
 		if detectErr != nil {
-			return nil, detectErr
+			return detectErr
 		}
 		if strings.EqualFold(strings.TrimSpace(contentType), "application/pdf") {
 			validationRule = upload.OrderEvidencePODDocumentRule
 		}
 	}
 	if err := upload.ValidateFile(file, validationRule); err != nil {
-		return nil, err
+		return err
 	}
 
 	sha256Value, sizeBytes, err := hashMultipartFile(file)
 	if err != nil {
-		return nil, fmt.Errorf("hash order evidence attachment: %w", err)
+		return fmt.Errorf("hash order evidence attachment: %w", err)
 	}
 	mimeType, err := upload.DetectContentType(file)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// A fresh attempt namespace grants no authority over pre-upgrade objects,
@@ -67,20 +69,20 @@ func (s *OrderEvidenceAttachmentService) uploadLegacyOrderEvidenceAttachmentWith
 	prefix := fmt.Sprintf("order-evidence/%d/%d/owned-upload-%s", orderID, itemID, uuid.NewString())
 	privateUploader, ok := s.storage.(storage.PrivateObjectUploader)
 	if !ok {
-		return nil, fmt.Errorf("%w: private evidence storage is required", ErrOrderEvidenceAttachmentUnavailable)
+		return fmt.Errorf("%w: private evidence storage is required", ErrOrderEvidenceAttachmentUnavailable)
 	}
 	referenceURL, uploadErr := privateUploader.UploadWithPrefixPrivate(ctx, file, prefix)
 	if uploadErr != nil {
 		if referenceURL == "" {
-			return nil, fmt.Errorf("upload order evidence attachment: %w", uploadErr)
+			return fmt.Errorf("upload order evidence attachment: %w", uploadErr)
 		}
-		return nil, errors.Join(fmt.Errorf("upload order evidence attachment: %w", uploadErr), s.persistFailedOrderEvidenceUploadBeforeOwnerCheckedCompensation(ctx, prefix, referenceURL))
+		return errors.Join(fmt.Errorf("upload order evidence attachment: %w", uploadErr), s.persistFailedOrderEvidenceUploadBeforeOwnerCheckedCompensation(ctx, prefix, referenceURL))
 	}
 
 	storageKey, err := resolveCanonicalDedicatedUploadedObjectKeyFromOwningProvider(s.storage, prefix, referenceURL)
 	if err != nil {
 		// No trustworthy identity means no authority to delete another object.
-		return nil, fmt.Errorf("resolve order evidence attachment key: %w", err)
+		return fmt.Errorf("resolve order evidence attachment key: %w", err)
 	}
 	attachmentInput := OrderEvidenceAttachmentReferenceInput{
 		EvidenceItemID:   item.ID,
@@ -92,14 +94,12 @@ func (s *OrderEvidenceAttachmentService) uploadLegacyOrderEvidenceAttachmentWith
 		UploadedBy:       uploadedBy,
 	}
 
-	var attachment *orderevidence.OrderEvidenceAttachment
 	err = s.evidenceRepo.WithLockedOrderEvidenceAttachmentLifecycleTransaction(ctx, func(lockedContext context.Context, repo *repository.OrderEvidenceRepository) error {
-		var registerErr error
-		attachment, registerErr = s.registerOrderEvidenceReferenceAfterLifecycleLock(lockedContext, repo, attachmentInput)
+		_, registerErr := s.registerOrderEvidenceReferenceAfterLifecycleLock(lockedContext, repo, attachmentInput)
 		return registerErr
 	})
 	if err != nil {
-		return nil, errors.Join(err, s.persistFailedOrderEvidenceUploadBeforeOwnerCheckedCompensation(ctx, prefix, referenceURL))
+		return errors.Join(err, s.persistFailedOrderEvidenceUploadBeforeOwnerCheckedCompensation(ctx, prefix, referenceURL))
 	}
-	return attachment, nil
+	return nil
 }

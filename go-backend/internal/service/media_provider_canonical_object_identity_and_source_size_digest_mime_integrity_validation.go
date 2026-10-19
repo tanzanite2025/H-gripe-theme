@@ -2,15 +2,16 @@ package service
 
 import (
 	"bufio"
-	"commerce-platform/internal/domain/media"
-	"commerce-platform/internal/pkg/storage"
-	"commerce-platform/internal/pkg/upload"
 	"context"
 	"crypto/sha256"
 	"errors"
 	"fmt"
 	"io"
 	"strings"
+
+	"commerce-platform/internal/domain/media"
+	"commerce-platform/internal/pkg/storage"
+	"commerce-platform/internal/pkg/upload"
 )
 
 func (s *MediaService) validateMediaProviderReturnedCanonicalURLAndExactObjectKey(reference, expectedKey string) error {

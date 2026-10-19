@@ -3,9 +3,10 @@ package repository
 import (
 	"fmt"
 
+	"gorm.io/gorm"
+
 	"commerce-platform/internal/domain/setting"
 	"commerce-platform/internal/pkg/storage"
-	"gorm.io/gorm"
 )
 
 // Every writer takes these locks before any settings row, including first-write

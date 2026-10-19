@@ -10,13 +10,14 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
+	"github.com/stretchr/testify/require"
+	"gorm.io/gorm"
+
 	"commerce-platform/internal/domain/orderevidence"
 	"commerce-platform/internal/domain/outbox"
 	"commerce-platform/internal/pkg/storage"
 	"commerce-platform/internal/repository"
-	"github.com/google/uuid"
-	"github.com/stretchr/testify/require"
-	"gorm.io/gorm"
 )
 
 func loadOrderEvidencePrecommittedUploadReceiptAndPayload(t *testing.T, db *gorm.DB) (outbox.Event, outbox.ObjectStorageCleanupPayload) {

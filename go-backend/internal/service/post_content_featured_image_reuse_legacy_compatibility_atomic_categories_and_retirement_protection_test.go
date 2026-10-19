@@ -6,11 +6,12 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+	"gorm.io/gorm"
+
 	"commerce-platform/internal/domain/media"
 	"commerce-platform/internal/domain/post"
 	"commerce-platform/internal/repository"
-	"github.com/stretchr/testify/require"
-	"gorm.io/gorm"
 )
 
 func createPostTransactionalMediaAndCategoryBindingTestServices(t *testing.T) (*gorm.DB, *PostService, *MediaService) {
@@ -156,9 +157,9 @@ func TestPostHistoricalPlacementsRemainLocalAndOmittedFieldsCannotRestoreDetache
 	moved := "/uploads/old-unregistered.png"
 	_, err = articles.UpdateAdminPost(legacy.ID, PostUpdateInput{FeaturedImg: &moved})
 	require.ErrorIs(t, err, ErrPostMediaReferenceInvalid)
-	copy := createPostInputForTransactionalMediaBindingTest("legacy-fr")
-	copy.Locale, copy.Content, copy.FeaturedImg, copy.TranslationGroupID = "fr", changed, legacy.FeaturedImg, &legacy.ID
-	_, err = articles.CreateAdminPost(copy)
+	clonedValue := createPostInputForTransactionalMediaBindingTest("legacy-fr")
+	clonedValue.Locale, clonedValue.Content, clonedValue.FeaturedImg, clonedValue.TranslationGroupID = "fr", changed, legacy.FeaturedImg, &legacy.ID
+	_, err = articles.CreateAdminPost(clonedValue)
 	require.ErrorIs(t, err, ErrPostMediaReferenceInvalid)
 	asset := createRegisteredPublicImageForProductMediaBindingTest(t, db, "content/stale.png")
 	input := createPostInputForTransactionalMediaBindingTest("stale")

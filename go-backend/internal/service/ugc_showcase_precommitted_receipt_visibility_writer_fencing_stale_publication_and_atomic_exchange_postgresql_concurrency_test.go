@@ -102,7 +102,7 @@ func TestPostgreSQLUGCShowcasePrecommittedReceiptIsVisibleBeforeIOAndCanceledPro
 			go func() {
 				cleanup <- NewObjectStorageCleanupOutboxHandler(nil, nil, nil, env.service).Handle(t.Context(), receipt)
 			}()
-			requireDedicatedObjectLifecyclePostgreSQLTransactionActuallyBlocks(t, t.Context(), env.db, pid)
+			requireDedicatedObjectLifecyclePostgreSQLTransactionActuallyBlocks(t.Context(), t, env.db, pid)
 			release()
 			select {
 			case err := <-result:

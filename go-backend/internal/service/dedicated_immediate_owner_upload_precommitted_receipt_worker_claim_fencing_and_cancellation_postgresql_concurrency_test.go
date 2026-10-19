@@ -78,7 +78,7 @@ func TestPostgreSQLDedicatedImmediateOwnerUploadReceiptCommitsBeforeIOAndKeepsNa
 			cancel()
 			cleanupResult := make(chan error, 1)
 			go func() { cleanupResult <- env.handle(t.Context(), receipt) }()
-			requireDedicatedObjectLifecyclePostgreSQLTransactionActuallyBlocks(t, t.Context(), env.db, pid)
+			requireDedicatedObjectLifecyclePostgreSQLTransactionActuallyBlocks(t.Context(), t, env.db, pid)
 			select {
 			case err := <-cleanupResult:
 				t.Fatalf("cleanup escaped canceled writer's namespace lock: %v", err)

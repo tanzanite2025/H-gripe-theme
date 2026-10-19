@@ -5,9 +5,10 @@ import (
 	"database/sql"
 	"errors"
 
+	"gorm.io/gorm"
+
 	"commerce-platform/internal/domain/media"
 	"commerce-platform/internal/domain/outbox"
-	"gorm.io/gorm"
 )
 
 var ErrMediaPhysicalCapacitySnapshotLimitExceeded = errors.New("media capacity registration snapshot exceeded its row limit")

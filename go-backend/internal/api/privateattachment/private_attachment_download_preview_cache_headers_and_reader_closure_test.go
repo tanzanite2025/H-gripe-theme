@@ -6,9 +6,10 @@ import (
 	"strings"
 	"testing"
 
-	"commerce-platform/internal/pkg/storage"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/require"
+
+	"commerce-platform/internal/pkg/storage"
 )
 
 type privateAttachmentResponseClosureRecorder struct {
@@ -32,7 +33,7 @@ func TestAuthorizedPrivateAttachmentResponseNeverCachesAndOnlyPreviewsSupportedC
 		t.Run(fixture.name, func(t *testing.T) {
 			recorder := httptest.NewRecorder()
 			c, _ := gin.CreateTestContext(recorder)
-			c.Request = httptest.NewRequest("GET", "/file"+fixture.query, nil)
+			c.Request = httptest.NewRequestWithContext(t.Context(), "GET", "/file"+fixture.query, nil)
 			reader := &privateAttachmentResponseClosureRecorder{Reader: strings.NewReader("private evidence")}
 			ServeAuthorizedPrivateAttachmentFile(c, &storage.StoredObject{ReadCloser: reader, Name: "../../客户证据.png", MimeType: fixture.contentType, Size: 16})
 			require.Equal(t, 200, recorder.Code)

@@ -19,15 +19,15 @@ func NewSiteFaviconRepository(db *gorm.DB) *SiteFaviconRepository {
 }
 
 func (r *SiteFaviconRepository) WithTx(tx *gorm.DB) *SiteFaviconRepository {
-	copy := *r
-	copy.db = tx
-	return &copy
+	clonedValue := *r
+	clonedValue.db = tx
+	return &clonedValue
 }
 
 func (r *SiteFaviconRepository) WithContext(ctx context.Context) *SiteFaviconRepository {
-	copy := *r
-	copy.db = r.db.WithContext(ctx)
-	return &copy
+	clonedValue := *r
+	clonedValue.db = r.db.WithContext(ctx)
+	return &clonedValue
 }
 
 func (r *SiteFaviconRepository) ConfigureTransactionalSiteFaviconObjectValidation(validate func(context.Context, *sitefavicondomain.Asset) error) {
@@ -62,8 +62,8 @@ func (r *SiteFaviconRepository) ReplaceCurrent(asset *sitefavicondomain.Asset, a
 		err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("id = ?", asset.ID).First(&current).Error
 		var previous *sitefavicondomain.Asset
 		if err == nil {
-			copy := current
-			previous = &copy
+			clonedValue := current
+			previous = &clonedValue
 		} else if err != gorm.ErrRecordNotFound {
 			return err
 		}

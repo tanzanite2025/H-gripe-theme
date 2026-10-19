@@ -5,8 +5,9 @@ import (
 	"database/sql"
 	"errors"
 
-	"commerce-platform/internal/domain/media"
 	"gorm.io/gorm"
+
+	"commerce-platform/internal/domain/media"
 )
 
 var ErrMediaUsageSnapshotLimitExceeded = errors.New("media usage snapshot exceeded its candidate or reference limit")

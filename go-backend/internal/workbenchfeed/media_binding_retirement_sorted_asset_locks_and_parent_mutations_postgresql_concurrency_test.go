@@ -11,17 +11,18 @@ import (
 	"testing"
 	"time"
 
-	"commerce-platform/internal/domain/media"
-	"commerce-platform/internal/domain/outbox"
-	mediaservice "commerce-platform/internal/service"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
+
+	"commerce-platform/internal/domain/media"
+	"commerce-platform/internal/domain/outbox"
+	mediaservice "commerce-platform/internal/service"
 )
 
-func createIsolatedPostgreSQLWorkbenchFeedMediaConcurrencyDatabase(t *testing.T, ctx context.Context) *gorm.DB {
+func createIsolatedPostgreSQLWorkbenchFeedMediaConcurrencyDatabase(ctx context.Context, t *testing.T) *gorm.DB {
 	t.Helper()
 	host, username, databaseName := os.Getenv("DB_HOST"), os.Getenv("DB_USERNAME"), os.Getenv("DB_NAME")
 	if host == "" || username == "" {
@@ -100,7 +101,7 @@ func TestPostgreSQLWorkbenchFeedCreateAndUpdateSerializeNewMediaBindingAgainstRe
 			t.Run(mutation+"/"+first+" first", func(t *testing.T) {
 				ctx, cancel := context.WithTimeout(t.Context(), 20*time.Second)
 				defer cancel()
-				db := createIsolatedPostgreSQLWorkbenchFeedMediaConcurrencyDatabase(t, ctx)
+				db := createIsolatedPostgreSQLWorkbenchFeedMediaConcurrencyDatabase(ctx, t)
 				db, feed, assets, root := createWorkbenchFeedMediaBindingTestServices(t, db)
 				asset := createWorkbenchFeedRegisteredImageAndPhysicalObject(t, db, root, "workbench-feed/race.png")
 				entry, err := feed.Create(workbenchFeedEntryInputWithImagePaths())
@@ -178,7 +179,7 @@ func TestPostgreSQLWorkbenchFeedCreateAndUpdateSerializeNewMediaBindingAgainstRe
 func TestPostgreSQLWorkbenchFeedMultipleImagesUseOneAscendingMediaAssetLockPlan(t *testing.T) {
 	ctx, cancel := context.WithTimeout(t.Context(), 20*time.Second)
 	defer cancel()
-	db := createIsolatedPostgreSQLWorkbenchFeedMediaConcurrencyDatabase(t, ctx)
+	db := createIsolatedPostgreSQLWorkbenchFeedMediaConcurrencyDatabase(ctx, t)
 	db, feed, _, root := createWorkbenchFeedMediaBindingTestServices(t, db)
 	low := createWorkbenchFeedRegisteredImageAndPhysicalObject(t, db, root, "content/low.png")
 	high := createWorkbenchFeedRegisteredImageAndPhysicalObject(t, db, root, "content/high.png")
@@ -233,7 +234,7 @@ func TestPostgreSQLWorkbenchFeedStatusAndDeletionSerializeWithEntryAndChildrenRe
 		t.Run(scenario, func(t *testing.T) {
 			ctx, cancel := context.WithTimeout(t.Context(), 20*time.Second)
 			defer cancel()
-			db := createIsolatedPostgreSQLWorkbenchFeedMediaConcurrencyDatabase(t, ctx)
+			db := createIsolatedPostgreSQLWorkbenchFeedMediaConcurrencyDatabase(ctx, t)
 			db, feed, _, _ := createWorkbenchFeedMediaBindingTestServices(t, db)
 			entry, err := feed.Create(workbenchFeedEntryInputWithImagePaths("https://external.example.test/before.png"))
 			require.NoError(t, err)

@@ -1,12 +1,13 @@
 package warranty
 
 import (
-	"commerce-platform/internal/api/privateattachment"
 	"encoding/json"
 	"fmt"
 	"net/url"
 	"strings"
 	"time"
+
+	"commerce-platform/internal/api/privateattachment"
 
 	shippingdomain "commerce-platform/internal/domain/shipping"
 	"commerce-platform/internal/pkg/apierror"

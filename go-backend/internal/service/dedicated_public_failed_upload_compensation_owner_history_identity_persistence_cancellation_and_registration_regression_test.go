@@ -88,7 +88,7 @@ func createDedicatedPublicUploadFailureCompensationRegressionEnvironment(t *test
 	return dedicatedPublicUploadFailureCompensationRegressionEnvironment{db, provider, logos, favicons, visuals, handler, key, namespace}
 }
 
-func (env dedicatedPublicUploadFailureCompensationRegressionEnvironment) uploadThroughDedicatedService(t *testing.T, ctx context.Context) error {
+func (env dedicatedPublicUploadFailureCompensationRegressionEnvironment) uploadThroughDedicatedService(ctx context.Context, t *testing.T) error {
 	t.Helper()
 	file := createSiteLogoAndFaviconLifecycleMultipartHeaderFromBackendOwnedWebPFixture(t, "upload.webp")
 	switch env.namespace {
@@ -146,9 +146,10 @@ func TestLegacyDedicatedPublicFailedUploadPersistsBeforeDeletionAndRetainsOwners
 				uploadFailure := errors.New("upload reported a failure after returning an object address")
 				env.provider.uploadError = uploadFailure
 				detach := func() {}
-				if retainedBy == "current owner" {
+				switch retainedBy {
+				case "current owner":
 					detach = env.seedCurrentDedicatedOwnerAndReturnDetachment(t)
-				} else if retainedBy == "historical post" {
+				case "historical post":
 					detach = insertRetainedHistoricalDedicatedObjectConsumerAndReturnDetachment(t, env.db, env.key, "post_content")
 				}
 				// Querying the SQLite DB from inside its one-connection cleanup
@@ -345,7 +346,7 @@ func TestDedicatedSiteIdentityUploadOwnerMirrorFailureLeavesPreallocatedReceiptA
 					}
 				}))
 				t.Cleanup(func() { _ = env.db.Callback().Create().Remove(callback) })
-				require.ErrorIs(t, env.uploadThroughDedicatedService(t, t.Context()), mirrorFailure)
+				require.ErrorIs(t, env.uploadThroughDedicatedService(t.Context(), t), mirrorFailure)
 				var events []outbox.Event
 				require.NoError(t, env.db.Find(&events).Error)
 				require.Len(t, events, 1)

@@ -11,15 +11,16 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/glebarez/sqlite"
+	"github.com/stretchr/testify/require"
+	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
+
 	"commerce-platform/internal/domain/media"
 	"commerce-platform/internal/domain/outbox"
 	"commerce-platform/internal/pkg/storage"
 	"commerce-platform/internal/repository"
 	mediaservice "commerce-platform/internal/service"
-	"github.com/glebarez/sqlite"
-	"github.com/stretchr/testify/require"
-	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
 )
 
 func createWorkbenchFeedMediaBindingTestServices(t *testing.T, db *gorm.DB) (*gorm.DB, *Service, *mediaservice.MediaService, string) {
@@ -71,7 +72,7 @@ func TestWorkbenchFeedImageUploadRegistrationBindingAndRetirementProtection(t *t
 	_, err = part.Write(content.Bytes())
 	require.NoError(t, err)
 	require.NoError(t, writer.Close())
-	request := httptest.NewRequest("POST", "/upload", &body)
+	request := httptest.NewRequestWithContext(t.Context(), "POST", "/upload", &body)
 	request.Header.Set("Content-Type", writer.FormDataContentType())
 	require.NoError(t, request.ParseMultipartForm(1<<20))
 	t.Cleanup(func() { _ = request.MultipartForm.RemoveAll() })
@@ -121,7 +122,7 @@ func TestWorkbenchFeedNewInvalidImageBindingsRollBackCreateAndEntireUpdate(t *te
 				case "dedicated-logo", "dedicated-registered":
 					path = "/uploads/site-logo/historical.png"
 					if scenario == "dedicated-registered" {
-						asset = createWorkbenchFeedRegisteredImageAndPhysicalObject(t, db, root, "site-logo/historical.png")
+						createWorkbenchFeedRegisteredImageAndPhysicalObject(t, db, root, "site-logo/historical.png")
 					}
 				case "dedicated-favicon":
 					path = "/uploads/site-favicon/historical.png"

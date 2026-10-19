@@ -1,10 +1,11 @@
 package orderevidence
 
 import (
-	"commerce-platform/internal/domain/order"
-	"commerce-platform/internal/domain/shipping"
 	"encoding/json"
 	"time"
+
+	"commerce-platform/internal/domain/order"
+	"commerce-platform/internal/domain/shipping"
 )
 
 // These payload contracts also preserve the original Go field order used by

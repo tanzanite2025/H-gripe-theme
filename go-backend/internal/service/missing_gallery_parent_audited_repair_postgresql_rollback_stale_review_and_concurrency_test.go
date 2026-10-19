@@ -9,12 +9,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
+	"gorm.io/gorm"
+
 	"commerce-platform/internal/domain/audit"
 	"commerce-platform/internal/domain/gallery"
 	"commerce-platform/internal/domain/media"
 	"commerce-platform/internal/repository"
-	"github.com/stretchr/testify/require"
-	"gorm.io/gorm"
 )
 
 func createIsolatedPostgreSQLMissingGalleryParentRepairFixture(t *testing.T) (*gorm.DB, *MediaService, *media.MediaAsset, *gallery.GalleryImage, *gallery.Gallery) {
@@ -167,7 +168,7 @@ func TestPostgreSQLMissingGalleryParentRepairUsesBoundedTableLockWaitAndLeavesNo
 	}
 	_, err = assets.ReattachMissingGalleryParentWithFreshPreviewAndRequiredAudit(ctx, asset.ID, image.ID, destination.ID, preview.Fingerprint, "等待并发图库编辑", mediaAssociationGalleryOnlyReviewScope(), func() *audit.AuditLog { return &audit.AuditLog{UserID: 42} })
 	close(release)
-	require.NoError(t, awaitPostgreSQLMediaObjectOwnershipOperationResult(t, ctx, writerResult))
+	require.NoError(t, awaitPostgreSQLMediaObjectOwnershipOperationResult(ctx, t, writerResult))
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "lock timeout")
 	var after gallery.GalleryImage
@@ -219,7 +220,7 @@ func TestPostgreSQLMissingGalleryParentRepairProtectsAbsentParentAgainstConcurre
 	callbackName := "pause_missing_gallery_parent_repair_before_audit"
 	require.NoError(t, db.Callback().Create().Before("gorm:create").Register(callbackName, func(tx *gorm.DB) {
 		if tx.Statement.Table == "audit_logs" {
-			pausePostgreSQLMediaObjectOwnershipTransactionUntilReleased(t, ctx, tx, entered, release)
+			pausePostgreSQLMediaObjectOwnershipTransactionUntilReleased(ctx, t, tx, entered, release)
 		}
 	}))
 	defer db.Callback().Create().Remove(callbackName)
@@ -228,15 +229,15 @@ func TestPostgreSQLMissingGalleryParentRepairProtectsAbsentParentAgainstConcurre
 		_, err := assets.ReattachMissingGalleryParentWithFreshPreviewAndRequiredAudit(ctx, asset.ID, image.ID, destination.ID, preview.Fingerprint, "确认缺失父图库", mediaAssociationGalleryOnlyReviewScope(), func() *audit.AuditLog { return &audit.AuditLog{UserID: 42} })
 		repaired <- err
 	}()
-	pid := awaitPostgreSQLMediaObjectOwnershipTransactionPID(t, ctx, entered)
+	pid := awaitPostgreSQLMediaObjectOwnershipTransactionPID(ctx, t, entered)
 	inserted := make(chan error, 1)
 	go func() {
 		inserted <- db.WithContext(ctx).Create(&gallery.Gallery{ID: image.GalleryID, Name: "Concurrent restore", Slug: "concurrent-restore"}).Error
 	}()
 	waitForPostgreSQLGalleryMutationToBlockOnTransaction(t, db, pid, "galleries")
 	close(release)
-	require.NoError(t, awaitPostgreSQLMediaObjectOwnershipOperationResult(t, ctx, repaired))
-	require.NoError(t, awaitPostgreSQLMediaObjectOwnershipOperationResult(t, ctx, inserted))
+	require.NoError(t, awaitPostgreSQLMediaObjectOwnershipOperationResult(ctx, t, repaired))
+	require.NoError(t, awaitPostgreSQLMediaObjectOwnershipOperationResult(ctx, t, inserted))
 	var after gallery.GalleryImage
 	require.NoError(t, db.First(&after, image.ID).Error)
 	require.Equal(t, destination.ID, after.GalleryID)

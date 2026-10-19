@@ -37,7 +37,7 @@ func BusinessDraftMediaReceiptIDFromObjectKey(key string) (string, bool) {
 	}
 	// Generated object names contain no URL syntax, escaping or subdirectories.
 	for _, ch := range parts[2] {
-		if !(ch >= 'a' && ch <= 'z' || ch >= 'A' && ch <= 'Z' || ch >= '0' && ch <= '9' || ch == '-' || ch == '.') {
+		if (ch < 'a' || ch > 'z') && (ch < 'A' || ch > 'Z') && (ch < '0' || ch > '9') && ch != '-' && ch != '.' {
 			return "", false
 		}
 	}

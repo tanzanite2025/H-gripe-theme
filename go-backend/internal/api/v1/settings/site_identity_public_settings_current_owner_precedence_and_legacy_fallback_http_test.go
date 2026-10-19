@@ -5,16 +5,17 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	settingdomain "commerce-platform/internal/domain/setting"
-	sitefavicondomain "commerce-platform/internal/domain/site_favicon"
-	sitelogodomain "commerce-platform/internal/domain/site_logo"
-	"commerce-platform/internal/repository"
-	"commerce-platform/internal/service"
 	"github.com/gin-gonic/gin"
 	"github.com/glebarez/sqlite"
 	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
+
+	settingdomain "commerce-platform/internal/domain/setting"
+	sitefavicondomain "commerce-platform/internal/domain/site_favicon"
+	sitelogodomain "commerce-platform/internal/domain/site_logo"
+	"commerce-platform/internal/repository"
+	"commerce-platform/internal/service"
 )
 
 func TestSiteIdentityPublicSettingsHTTPUsesCurrentOwnersAcrossLocalesAndPreservesOnlySharedLegacyLogoFallbacks(t *testing.T) {
@@ -45,7 +46,7 @@ func TestSiteIdentityPublicSettingsHTTPUsesCurrentOwnersAcrossLocalesAndPreserve
 	for _, locale := range []string{"en", "zh_cn"} {
 		for _, path := range []string{"/site", "/group/site", "/single/site_logo"} {
 			response := httptest.NewRecorder()
-			router.ServeHTTP(response, httptest.NewRequest(http.MethodGet, path+"?locale="+locale, nil))
+			router.ServeHTTP(response, httptest.NewRequestWithContext(t.Context(), http.MethodGet, path+"?locale="+locale, nil))
 			require.Equal(t, http.StatusOK, response.Code, response.Body.String())
 			require.Contains(t, response.Body.String(), "https://shop.example.test/uploads/site-logo/current.webp")
 			require.NotContains(t, response.Body.String(), "stale.png")

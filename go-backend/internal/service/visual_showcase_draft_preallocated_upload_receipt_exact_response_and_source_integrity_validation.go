@@ -52,7 +52,7 @@ func (s *HomeVisualTileService) uploadVisualShowcaseDraftImageWithPrecommittedEx
 		if err != nil {
 			return err
 		}
-		defer reader.Close()
+		defer func() { _ = reader.Close() }()
 		url, err := writer.WriteVisualShowcaseDraftObjectAtPreallocatedKey(tx.Statement.Context, reader, key)
 		if err != nil {
 			return err

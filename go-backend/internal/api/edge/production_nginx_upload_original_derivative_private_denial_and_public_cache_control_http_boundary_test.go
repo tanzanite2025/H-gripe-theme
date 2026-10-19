@@ -87,7 +87,9 @@ func TestProductionNginxPreservesPublicUploadCachingAndPrivateDenialsWithoutDupl
 	deadline := time.Now().Add(20 * time.Second)
 	ready := false
 	for time.Now().Before(deadline) {
-		response, err := client.Get(baseURL + "/healthz")
+		request, err := http.NewRequestWithContext(t.Context(), http.MethodGet, baseURL+"/healthz", nil)
+		require.NoError(t, err)
+		response, err := client.Do(request)
 		if err == nil {
 			response.Body.Close()
 			if response.StatusCode == http.StatusOK {
@@ -119,7 +121,7 @@ func TestProductionNginxPreservesPublicUploadCachingAndPrivateDenialsWithoutDupl
 			}
 			for _, variant := range requestVariants {
 				t.Run(prefix+fixture.name+"/"+variant, func(t *testing.T) {
-					request, err := http.NewRequest(http.MethodGet, baseURL+prefix+fixture.name, nil)
+					request, err := http.NewRequestWithContext(t.Context(), http.MethodGet, baseURL+prefix+fixture.name, nil)
 					require.NoError(t, err)
 					request.Host = "upload-cache-boundary.example.test"
 					if variant == "range" {

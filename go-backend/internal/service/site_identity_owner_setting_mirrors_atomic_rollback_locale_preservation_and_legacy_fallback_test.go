@@ -113,21 +113,22 @@ func TestSiteIdentityOwnerMirrorAndOutboxFailuresRollBackMetadataAndOnlyCompensa
 							previousURL = favicons.CurrentPublicURL()
 						}
 					}
-					if failure == "deleted locale" {
+					switch failure {
+					case "deleted locale":
 						row := setting.Setting{Key: key, Locale: "en"}
 						require.NoError(t, db.Where("key = ? AND locale = ?", key, "en").Delete(&setting.Setting{}).Error)
 						if operation == "first upload" {
 							require.NoError(t, db.Create(&row).Error)
 							require.NoError(t, db.Delete(&row).Error)
 						}
-					} else if failure == "mirror write" {
+					case "mirror write":
 						require.NoError(t, db.Callback().Update().Before("gorm:update").Register("reject_site_identity_mirror", func(tx *gorm.DB) {
 							if tx.Statement.Table == "settings" {
 								tx.AddError(errors.New("injected mirror failure"))
 							}
 						}))
 						t.Cleanup(func() { _ = db.Callback().Update().Remove("reject_site_identity_mirror") })
-					} else {
+					default:
 						require.NoError(t, db.Callback().Create().Before("gorm:create").Register("reject_site_identity_outbox", func(tx *gorm.DB) {
 							if tx.Statement.Table == "outbox_events" {
 								tx.AddError(errors.New("injected outbox failure"))

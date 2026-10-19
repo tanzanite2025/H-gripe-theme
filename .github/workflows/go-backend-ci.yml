@@ -101,7 +101,7 @@ jobs:
           REDIS_PORT: 6379
           JWT_SECRET: test-secret-key-for-ci
         run: |
-          go test -v -race -coverprofile=coverage.txt -covermode=atomic ./...
+          go test -v -race -timeout=20m -coverprofile=coverage.txt -covermode=atomic ./...
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4

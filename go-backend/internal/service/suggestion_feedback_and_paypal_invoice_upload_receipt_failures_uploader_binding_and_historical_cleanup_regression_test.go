@@ -9,12 +9,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
+	"gorm.io/gorm"
+
 	"commerce-platform/internal/domain/loyalty"
 	"commerce-platform/internal/domain/outbox"
 	"commerce-platform/internal/domain/suggestionfeedback"
 	"commerce-platform/internal/pkg/storage"
-	"github.com/stretchr/testify/require"
-	"gorm.io/gorm"
 )
 
 func TestSuggestionAttachmentRequiresEligibleUploaderReceiptAndBindsTrustedMetadataAtomically(t *testing.T) {

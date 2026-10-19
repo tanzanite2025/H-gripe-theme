@@ -6,10 +6,11 @@ import (
 	"fmt"
 	"strings"
 
-	"commerce-platform/internal/domain/media"
-	"commerce-platform/internal/domain/ticket"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
+
+	"commerce-platform/internal/domain/media"
+	"commerce-platform/internal/domain/ticket"
 )
 
 var ErrTicketStructuredMediaReferenceInvalid = errors.New("customer-service message media reference is invalid")

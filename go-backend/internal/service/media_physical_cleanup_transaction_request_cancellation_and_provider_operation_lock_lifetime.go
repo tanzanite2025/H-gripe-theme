@@ -4,8 +4,9 @@ import (
 	"context"
 	"errors"
 
-	"commerce-platform/internal/repository"
 	"gorm.io/gorm"
+
+	"commerce-platform/internal/repository"
 )
 
 func (s *MediaService) withinMediaPhysicalCleanupTransactionHoldingLocksUntilProviderReturns(ctx context.Context, operation func(*repository.MediaRepository, *gorm.DB) error) error {

@@ -1,10 +1,11 @@
 package repository
 
 import (
-	"commerce-platform/internal/domain/gallery"
-	"commerce-platform/internal/pkg/storage"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
+
+	"commerce-platform/internal/domain/gallery"
+	"commerce-platform/internal/pkg/storage"
 )
 
 type galleryTransactionalSaveOptions struct {

@@ -5,9 +5,10 @@ import (
 	"sort"
 	"strings"
 
+	"gorm.io/gorm"
+
 	"commerce-platform/internal/domain/setting"
 	"commerce-platform/internal/pkg/storage"
-	"gorm.io/gorm"
 )
 
 // The dedicated owner, not a supplied URL or a generic import, determines every

@@ -78,7 +78,7 @@ func TestPostgreSQLVisualShowcaseDraftUploadCommitsReceiptBeforeIOAndKeepsLocksU
 	go func() {
 		cleanupResult <- NewObjectStorageCleanupOutboxHandler(nil, nil, svc, nil).Handle(t.Context(), receipt)
 	}()
-	requireDedicatedObjectLifecyclePostgreSQLTransactionActuallyBlocks(t, t.Context(), db, pid)
+	requireDedicatedObjectLifecyclePostgreSQLTransactionActuallyBlocks(t.Context(), t, db, pid)
 	release()
 	select {
 	case err := <-uploadResult:
@@ -252,7 +252,7 @@ func TestPostgreSQLVisualShowcaseDraftSaveAndExpiryWorkerSerializeClaimAndOwnerA
 					require.Zero(t, result.Processed)
 				} else {
 					go save()
-					requireDedicatedObjectLifecyclePostgreSQLTransactionActuallyBlocks(t, ctx, db, pid)
+					requireDedicatedObjectLifecyclePostgreSQLTransactionActuallyBlocks(ctx, t, db, pid)
 					release()
 					require.NoError(t, <-workerResult)
 					require.ErrorIs(t, <-saveResult, ErrHomeVisualTileImageInvalid)

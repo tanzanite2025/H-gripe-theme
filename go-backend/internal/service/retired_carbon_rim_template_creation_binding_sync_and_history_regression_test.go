@@ -1,9 +1,11 @@
 package service
 
 import (
-	"commerce-platform/internal/domain/product"
-	"github.com/stretchr/testify/require"
 	"testing"
+
+	"github.com/stretchr/testify/require"
+
+	"commerce-platform/internal/domain/product"
 )
 
 func TestRetiredCarbonRimTemplateRejectsNewEntryAndMutationButPreservesHistoricalProduct(t *testing.T) {

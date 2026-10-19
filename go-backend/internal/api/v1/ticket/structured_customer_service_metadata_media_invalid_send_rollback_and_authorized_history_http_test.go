@@ -10,12 +10,13 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/google/uuid"
+	"github.com/stretchr/testify/require"
+
 	"commerce-platform/internal/domain/media"
 	"commerce-platform/internal/domain/outbox"
 	ticketdomain "commerce-platform/internal/domain/ticket"
 	"commerce-platform/internal/pkg/visitorcookie"
-	"github.com/google/uuid"
-	"github.com/stretchr/testify/require"
 )
 
 func TestStructuredCustomerServiceInvalidManagedMediaReturnsHTTP400WithoutMessageOrOutboxWrites(t *testing.T) {
@@ -28,7 +29,7 @@ func TestStructuredCustomerServiceInvalidManagedMediaReturnsHTTP400WithoutMessag
 		require.NoError(t, err)
 		body, err := json.Marshal(map[string]any{"conversation_id": *conversation.ConversationID, "message": "Invalid card", "sender_name": "Synthetic visitor", "message_type": "product", "metadata": json.RawMessage(metadata)})
 		require.NoError(t, err)
-		request := httptest.NewRequest(http.MethodPost, "/messages", bytes.NewReader(body))
+		request := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/messages", bytes.NewReader(body))
 		request.Header.Set("Content-Type", "application/json")
 		request.AddCookie(&http.Cookie{Name: customerServiceVisitorCookie, Value: handler.signVisitorSessionID(visitorID)})
 		response := httptest.NewRecorder()
@@ -54,7 +55,7 @@ func TestStructuredCustomerServiceHTTPMediaBindingCanonicalizesAliasAndPreserves
 	metadata := json.RawMessage(`{"thumbnail":"/uploads/content/card.png","url":"/products/card","product_id":9007199254740997}`)
 	body, err := json.Marshal(map[string]any{"conversation_id": *conversation.ConversationID, "message": "Valid card", "sender_name": "Synthetic visitor", "message_type": "product", "metadata": metadata})
 	require.NoError(t, err)
-	request := httptest.NewRequest(http.MethodPost, "/messages", bytes.NewReader(body))
+	request := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/messages", bytes.NewReader(body))
 	request.Header.Set("Content-Type", "application/json")
 	request.AddCookie(&http.Cookie{Name: customerServiceVisitorCookie, Value: handler.signVisitorSessionID(visitorID)})
 	response := httptest.NewRecorder()
@@ -73,7 +74,7 @@ func TestStructuredCustomerServiceMetadataOnlyPrivateMediaHistoryAndFileRoutesRe
 			env := createCustomerServicePrivateAttachmentHTTPTestEnvironment(t, member)
 			metadata := fmt.Sprintf(`{"thumbnail":%q,"product_id":9007199254740997,"url":"/products/example"}`, env.asset.URL)
 			require.NoError(t, env.db.Model(&env.message).Updates(map[string]any{"message_type": "product", "attachments": "[]", "metadata": metadata}).Error)
-			historyRequest := httptest.NewRequest(http.MethodGet, "/api/v1/customer-service/messages/"+*env.conversation.ConversationID, nil)
+			historyRequest := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/api/v1/customer-service/messages/"+*env.conversation.ConversationID, nil)
 			historyRequest.AddCookie(env.cookie)
 			if member {
 				historyRequest.Header.Set("X-Test-Member-Identity", "owner")
@@ -98,7 +99,7 @@ func TestStructuredCustomerServiceMetadataOnlyPrivateMediaHistoryAndFileRoutesRe
 			require.NoError(t, err)
 			require.Contains(t, parsed.Path, fmt.Sprintf("/messages/%d/attachments/0/file", env.message.ID))
 			for _, authorized := range []bool{true, false} {
-				request := httptest.NewRequest(http.MethodGet, parsed.RequestURI(), nil)
+				request := httptest.NewRequestWithContext(t.Context(), http.MethodGet, parsed.RequestURI(), nil)
 				if authorized {
 					request.AddCookie(env.cookie)
 					if member {
@@ -117,7 +118,7 @@ func TestStructuredCustomerServiceMetadataOnlyPrivateMediaHistoryAndFileRoutesRe
 			}
 			// Previously issued links must stop working after this exact message field detaches.
 			require.NoError(t, env.db.Model(&env.message).Update("metadata", "{}").Error)
-			request := httptest.NewRequest(http.MethodGet, parsed.RequestURI(), strings.NewReader(""))
+			request := httptest.NewRequestWithContext(t.Context(), http.MethodGet, parsed.RequestURI(), strings.NewReader(""))
 			request.AddCookie(env.cookie)
 			if member {
 				request.Header.Set("X-Test-Member-Identity", "owner")

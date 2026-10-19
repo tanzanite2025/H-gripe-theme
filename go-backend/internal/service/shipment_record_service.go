@@ -6,9 +6,10 @@ import (
 	"strings"
 	"time"
 
+	"gorm.io/gorm"
+
 	shippingdomain "commerce-platform/internal/domain/shipping"
 	"commerce-platform/internal/repository"
-	"gorm.io/gorm"
 )
 
 var ErrShipmentRecordUnavailable = errors.New("shipment record service is unavailable")
@@ -81,10 +82,10 @@ func (s *ShipmentRecordService) Update(id uint, input ShipmentRecordUpdateInput)
 	}
 	var result *shippingdomain.ShipmentRecord
 	err := s.repo.WithPrivateOrderBusinessAttachmentMutationLock(func(tx *gorm.DB) error {
-		copy := *s
-		copy.repo = s.repo.WithTx(tx)
+		clonedValue := *s
+		clonedValue.repo = s.repo.WithTx(tx)
 		var err error
-		result, err = copy.updateShipmentRecordAfterPrivateAttachmentNamespaceLock(id, input)
+		result, err = clonedValue.updateShipmentRecordAfterPrivateAttachmentNamespaceLock(id, input)
 		return err
 	})
 	if err != nil {
@@ -169,10 +170,10 @@ func (s *ShipmentRecordService) AddImages(id uint, imageURLs []string) (*shippin
 	}
 	var result *shippingdomain.ShipmentRecord
 	err := s.repo.WithPrivateOrderBusinessAttachmentMutationLock(func(tx *gorm.DB) error {
-		copy := *s
-		copy.repo = s.repo.WithTx(tx)
+		clonedValue := *s
+		clonedValue.repo = s.repo.WithTx(tx)
 		var err error
-		result, err = copy.addShipmentImagesAfterPrivateAttachmentNamespaceLock(id, imageURLs)
+		result, err = clonedValue.addShipmentImagesAfterPrivateAttachmentNamespaceLock(id, imageURLs)
 		return err
 	})
 	if err != nil {

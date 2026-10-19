@@ -8,6 +8,12 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/gin-gonic/gin"
+	"github.com/glebarez/sqlite"
+	"github.com/stretchr/testify/require"
+	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
+
 	"commerce-platform/internal/domain/media"
 	"commerce-platform/internal/domain/outbox"
 	"commerce-platform/internal/domain/ticket"
@@ -15,11 +21,6 @@ import (
 	"commerce-platform/internal/pkg/storage"
 	"commerce-platform/internal/repository"
 	"commerce-platform/internal/service"
-	"github.com/gin-gonic/gin"
-	"github.com/glebarez/sqlite"
-	"github.com/stretchr/testify/require"
-	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
 )
 
 func createStructuredAdminCustomerServiceMediaHTTPTestEnvironment(t *testing.T) (*gorm.DB, *gin.Engine, *ticket.AutoReplyRule, ticket.Ticket) {
@@ -70,7 +71,7 @@ func TestStructuredAdminCustomerServiceAndAutoReplyInvalidMediaReturnHTTP400AndR
 			}
 			encoded, err := json.Marshal(body)
 			require.NoError(t, err)
-			request := httptest.NewRequest(method, path, bytes.NewReader(encoded))
+			request := httptest.NewRequestWithContext(t.Context(), method, path, bytes.NewReader(encoded))
 			request.Header.Set("Content-Type", "application/json")
 			response := httptest.NewRecorder()
 			router.ServeHTTP(response, request)
@@ -98,7 +99,7 @@ func TestStructuredAdminCustomerServiceMediaCanonicalizationPreservesLargeIDsThr
 	metadata := json.RawMessage(`{"thumbnail":"/uploads/content/agent-card.png","url":"/products/card","product_id":9007199254740997}`)
 	encoded, err := json.Marshal(map[string]any{"message": "Valid agent card", "message_type": "product", "metadata": metadata})
 	require.NoError(t, err)
-	request := httptest.NewRequest(http.MethodPost, fmt.Sprintf("/conversations/%d/messages", conversation.ID), bytes.NewReader(encoded))
+	request := httptest.NewRequestWithContext(t.Context(), http.MethodPost, fmt.Sprintf("/conversations/%d/messages", conversation.ID), bytes.NewReader(encoded))
 	request.Header.Set("Content-Type", "application/json")
 	response := httptest.NewRecorder()
 	router.ServeHTTP(response, request)

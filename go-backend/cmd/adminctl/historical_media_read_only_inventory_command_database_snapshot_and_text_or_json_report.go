@@ -15,12 +15,13 @@ import (
 	"strings"
 	"time"
 
-	"commerce-platform/internal/pkg/storage"
-	"commerce-platform/internal/service"
 	"gorm.io/driver/mysql"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
+
+	"commerce-platform/internal/pkg/storage"
+	"commerce-platform/internal/service"
 )
 
 func runHistoricalMediaReadOnlyInventoryCommand(args []string, stdout, stderr io.Writer) error {
@@ -70,7 +71,7 @@ func runHistoricalMediaReadOnlyInventoryCommand(args []string, stdout, stderr io
 	if err != nil {
 		return err
 	}
-	defer sqlDB.Close()
+	defer func() { _ = sqlDB.Close() }()
 	sqlDB.SetMaxOpenConns(1)
 	shared := storage.LoadConfigFromEnv()
 	storefrontURL := envDefault("STOREFRONT_BASE_URL", shared.BaseURL)

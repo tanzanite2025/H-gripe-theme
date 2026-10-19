@@ -33,7 +33,7 @@ func pauseDedicatedObjectLifecyclePostgreSQLTransactionAndReportBackendPID(ctx c
 	}
 }
 
-func requireDedicatedObjectLifecyclePostgreSQLTransactionActuallyBlocks(t *testing.T, ctx context.Context, db *gorm.DB, blockerPID int) {
+func requireDedicatedObjectLifecyclePostgreSQLTransactionActuallyBlocks(ctx context.Context, t *testing.T, db *gorm.DB, blockerPID int) {
 	t.Helper()
 	require.Eventually(t, func() bool {
 		var blocked bool
@@ -104,7 +104,7 @@ func TestPostgreSQLDedicatedSiteLogoAndFaviconConcurrentFirstUploadsRetainCleanu
 				t.Fatal("first upload did not reach the locked write")
 			}
 			go func() { second <- uploadCurrent(false) }()
-			requireDedicatedObjectLifecyclePostgreSQLTransactionActuallyBlocks(t, ctx, env.db, blocker)
+			requireDedicatedObjectLifecyclePostgreSQLTransactionActuallyBlocks(ctx, t, env.db, blocker)
 			releaseFirst()
 			firstResult, secondResult := <-first, <-second
 			require.NoError(t, firstResult.err)
@@ -256,7 +256,7 @@ func TestPostgreSQLVisualShowcaseOriginalAndThumbnailRebindingSerializeWithClean
 					} else {
 						go bind()
 					}
-					requireDedicatedObjectLifecyclePostgreSQLTransactionActuallyBlocks(t, ctx, env.db, blocker)
+					requireDedicatedObjectLifecyclePostgreSQLTransactionActuallyBlocks(ctx, t, env.db, blocker)
 					releaseFirst()
 					bindErr, cleanupErr := <-bindResult, <-cleanupResult
 					require.NoError(t, cleanupErr)

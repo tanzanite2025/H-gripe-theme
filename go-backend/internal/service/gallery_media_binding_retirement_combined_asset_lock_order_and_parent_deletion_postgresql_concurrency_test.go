@@ -9,16 +9,17 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
+	"github.com/stretchr/testify/require"
+	"gorm.io/gorm"
+
 	"commerce-platform/internal/domain/gallery"
 	"commerce-platform/internal/domain/media"
 	"commerce-platform/internal/domain/outbox"
 	"commerce-platform/internal/repository"
-	"github.com/google/uuid"
-	"github.com/stretchr/testify/require"
-	"gorm.io/gorm"
 )
 
-func createIsolatedPostgreSQLGalleryMediaConcurrencyTestServices(t *testing.T, ctx context.Context) (*gorm.DB, *repository.GalleryRepository, *MediaService) {
+func createIsolatedPostgreSQLGalleryMediaConcurrencyTestServices(ctx context.Context, t *testing.T) (*gorm.DB, *repository.GalleryRepository, *MediaService) {
 	t.Helper()
 	env, _, _ := createIsolatedPostgreSQLCustomerServiceAttachmentRetirementTestEnvironment(t)
 	require.NoError(t, env.db.AutoMigrate(&gallery.Gallery{}, &gallery.GalleryImage{}))
@@ -50,7 +51,7 @@ func TestPostgreSQLGalleryCoverOriginalAndThumbnailAllWriteEntrypointsSerializeB
 				t.Run(field+"/"+mutation+"/"+firstOperation+" first", func(t *testing.T) {
 					ctx, cancel := context.WithTimeout(t.Context(), 15*time.Second)
 					defer cancel()
-					db, galleries, assets := createIsolatedPostgreSQLGalleryMediaConcurrencyTestServices(t, ctx)
+					db, galleries, assets := createIsolatedPostgreSQLGalleryMediaConcurrencyTestServices(ctx, t)
 					asset := createRegisteredPublicImageForProductMediaBindingTest(t, db, "content/gallery-race.png")
 					parent := &gallery.Gallery{Name: "Existing", Slug: "existing"}
 					require.NoError(t, galleries.CreateGallery(parent))
@@ -62,14 +63,15 @@ func TestPostgreSQLGalleryCoverOriginalAndThumbnailAllWriteEntrypointsSerializeB
 						item := &gallery.Gallery{ID: parent.ID, Name: "Bound", Slug: parent.Slug}
 						image := gallery.GalleryImage{GalleryID: parent.ID, URL: "https://external.example.test/image.png", Thumbnail: "https://external.example.test/thumb.png"}
 						reference := "/uploads/" + asset.StorageKey
-						if field == "cover" {
+						switch field {
+						case "cover":
 							item.CoverImage = reference
-						} else if field == "original" {
+						case "original":
 							image.URL = reference
 							if mutation != "import gallery" {
 								image.MediaAssetID, image.URL = &asset.ID, ""
 							}
-						} else {
+						default:
 							image.Thumbnail = reference
 						}
 						switch mutation {
@@ -215,7 +217,7 @@ func TestPostgreSQLGalleryCoverOriginalAndThumbnailAllWriteEntrypointsSerializeB
 func TestPostgreSQLGalleryCoverOriginalAndThumbnailUseOneAscendingAssetLockPlan(t *testing.T) {
 	ctx, cancel := context.WithTimeout(t.Context(), 15*time.Second)
 	defer cancel()
-	db, galleries, _ := createIsolatedPostgreSQLGalleryMediaConcurrencyTestServices(t, ctx)
+	db, galleries, _ := createIsolatedPostgreSQLGalleryMediaConcurrencyTestServices(ctx, t)
 	low := createRegisteredPublicImageForProductMediaBindingTest(t, db, "content/gallery-low.png")
 	middle := createRegisteredPublicImageForProductMediaBindingTest(t, db, "content/gallery-middle.png")
 	high := createRegisteredPublicImageForProductMediaBindingTest(t, db, "content/gallery-high.png")
@@ -277,7 +279,7 @@ func TestPostgreSQLGalleryParentDeletionSerializesSingleBatchUpdateAndImportMuta
 			t.Run(mutation+"/"+firstOperation+" first", func(t *testing.T) {
 				ctx, cancel := context.WithTimeout(t.Context(), 15*time.Second)
 				defer cancel()
-				db, galleries, _ := createIsolatedPostgreSQLGalleryMediaConcurrencyTestServices(t, ctx)
+				db, galleries, _ := createIsolatedPostgreSQLGalleryMediaConcurrencyTestServices(ctx, t)
 				parent := &gallery.Gallery{Name: "Parent", Slug: "parent"}
 				require.NoError(t, galleries.CreateGallery(parent))
 				existing := &gallery.GalleryImage{GalleryID: parent.ID, URL: "https://external.example.test/before.png"}

@@ -10,12 +10,13 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+	"gorm.io/gorm"
+
 	"commerce-platform/internal/domain/media"
 	"commerce-platform/internal/domain/outbox"
 	"commerce-platform/internal/domain/ticket"
 	"commerce-platform/internal/pkg/storage"
-	"github.com/stretchr/testify/require"
-	"gorm.io/gorm"
 )
 
 func createStructuredTicketMediaBindingTestServices(t *testing.T) (*gorm.DB, *TicketService, *MediaService, ticket.Ticket, string) {

@@ -18,9 +18,9 @@ func (r *UserRepository) WithContext(ctx context.Context) *UserRepository {
 	if ctx == nil {
 		ctx = context.Background()
 	}
-	copy := *r
-	copy.db = r.db.WithContext(ctx)
-	return &copy
+	clonedValue := *r
+	clonedValue.db = r.db.WithContext(ctx)
+	return &clonedValue
 }
 
 func NewUserRepository(db *gorm.DB) *UserRepository {
@@ -28,9 +28,9 @@ func NewUserRepository(db *gorm.DB) *UserRepository {
 }
 
 func (r *UserRepository) WithTx(tx *gorm.DB) *UserRepository {
-	copy := *r
-	copy.db = tx
-	return &copy
+	clonedValue := *r
+	clonedValue.db = tx
+	return &clonedValue
 }
 
 // Create 创建用户

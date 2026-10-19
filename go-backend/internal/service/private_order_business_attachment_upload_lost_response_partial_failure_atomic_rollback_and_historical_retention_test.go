@@ -12,6 +12,10 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/google/uuid"
+	"github.com/stretchr/testify/require"
+	"gorm.io/gorm"
+
 	"commerce-platform/internal/domain/aftersales"
 	"commerce-platform/internal/domain/order"
 	"commerce-platform/internal/domain/outbox"
@@ -20,9 +24,6 @@ import (
 	"commerce-platform/internal/domain/warranty"
 	"commerce-platform/internal/pkg/storage"
 	"commerce-platform/internal/repository"
-	"github.com/google/uuid"
-	"github.com/stretchr/testify/require"
-	"gorm.io/gorm"
 )
 
 type privateOrderBusinessAttachmentReceiptTestProvider struct {
@@ -88,8 +89,8 @@ type privateOrderBusinessAttachmentReceiptTestEnvironment struct {
 func configurePrivateOrderBusinessAttachmentReceiptTestEnvironment(t *testing.T, db *gorm.DB, afterSales *AfterSalesService) privateOrderBusinessAttachmentReceiptTestEnvironment {
 	t.Helper()
 	fixtureDDL := db.Session(&gorm.Session{})
-	fixtureDDL.Config.DisableForeignKeyConstraintWhenMigrating = true
-	fixtureDDL.Config.IgnoreRelationshipsWhenMigrating = true
+	fixtureDDL.DisableForeignKeyConstraintWhenMigrating = true
+	fixtureDDL.IgnoreRelationshipsWhenMigrating = true
 	for _, model := range []any{&warranty.WarrantyClaim{}, &warranty.WarrantyServiceRecord{}, &verification.EmailChallenge{}, &shippingdomain.ShipmentRecord{}, &shippingdomain.TrackingProviderConfig{}, &shippingdomain.TrackingShipment{}, &outbox.Event{}} {
 		if !db.Migrator().HasTable(model) {
 			require.NoError(t, fixtureDDL.Migrator().CreateTable(model), "create private attachment fixture model %T", model)
@@ -127,7 +128,7 @@ func createPrivateOrderBusinessAttachmentReceiptTestEnvironment(t *testing.T) pr
 	return configurePrivateOrderBusinessAttachmentReceiptTestEnvironment(t, db, afterSales)
 }
 
-func (e privateOrderBusinessAttachmentReceiptTestEnvironment) uploadTwoPrivateBusinessAttachmentFiles(t *testing.T, ctx context.Context, owner string) error {
+func (e privateOrderBusinessAttachmentReceiptTestEnvironment) uploadTwoPrivateBusinessAttachmentFiles(ctx context.Context, t *testing.T, owner string) error {
 	t.Helper()
 	files := PrivateOrderBusinessAttachmentUploadFiles{Images: []*multipart.FileHeader{newEvidencePNGFileHeader(t, "first.png"), newEvidencePNGFileHeader(t, "second.png")}}
 	switch owner {
@@ -168,7 +169,7 @@ func TestPrivateOrderBusinessAttachmentBatchDurableReceiptRollbackAndRetryForAll
 					}))
 					defer env.db.Callback().Delete().Remove("fail_private_attachment_receipt_exchange")
 				}
-				require.Error(t, env.uploadTwoPrivateBusinessAttachmentFiles(t, t.Context(), owner))
+				require.Error(t, env.uploadTwoPrivateBusinessAttachmentFiles(t.Context(), t, owner))
 				require.NotEmpty(t, env.provider.keys, "the provider must actually have accepted bytes in this failure scenario")
 				receipt, payload := loadPrivateOrderBusinessAttachmentReceipt(t, env.db)
 				require.Len(t, payload.ObjectKeys, 2)
@@ -192,7 +193,7 @@ func TestPrivateOrderBusinessAttachmentBatchDurableReceiptRollbackAndRetryForAll
 					require.NoError(t, env.db.Callback().Delete().Remove("fail_private_attachment_receipt_exchange"))
 				}
 				env.provider.mode = ""
-				require.NoError(t, env.uploadTwoPrivateBusinessAttachmentFiles(t, t.Context(), owner))
+				require.NoError(t, env.uploadTwoPrivateBusinessAttachmentFiles(t.Context(), t, owner))
 				retained, _ := loadPrivateOrderBusinessAttachmentReceipt(t, env.db)
 				require.Equal(t, receipt.ID, retained.ID)
 			})
@@ -205,7 +206,7 @@ func TestPrivateOrderBusinessAttachmentCleanupRetainsActiveAndHistoricalBindings
 		t.Run(owner, func(t *testing.T) {
 			env := createPrivateOrderBusinessAttachmentReceiptTestEnvironment(t)
 			env.provider.mode = "lost response"
-			require.Error(t, env.uploadTwoPrivateBusinessAttachmentFiles(t, t.Context(), owner))
+			require.Error(t, env.uploadTwoPrivateBusinessAttachmentFiles(t.Context(), t, owner))
 			receipt, payload := loadPrivateOrderBusinessAttachmentReceipt(t, env.db)
 			reference := env.provider.GetURL(payload.ObjectKeys[0])
 			encoded, err := json.Marshal([]string{reference})
@@ -257,7 +258,7 @@ func TestPrivateOrderBusinessAttachmentReceiptPersistenceAndBusinessValidationFa
 						env.order.ID = 99999
 					}
 				}
-				require.Error(t, env.uploadTwoPrivateBusinessAttachmentFiles(t, t.Context(), owner))
+				require.Error(t, env.uploadTwoPrivateBusinessAttachmentFiles(t.Context(), t, owner))
 				require.Empty(t, env.provider.keys)
 				require.Zero(t, env.provider.deleteCalls)
 			})
@@ -267,7 +268,7 @@ func TestPrivateOrderBusinessAttachmentReceiptPersistenceAndBusinessValidationFa
 
 func TestPrivateOrderBusinessAttachmentRejectsCopiedPreallocatedReferencesAndOtherCustomerUploads(t *testing.T) {
 	env := createPrivateOrderBusinessAttachmentReceiptTestEnvironment(t)
-	require.NoError(t, env.uploadTwoPrivateBusinessAttachmentFiles(t, t.Context(), "shipment"))
+	require.NoError(t, env.uploadTwoPrivateBusinessAttachmentFiles(t.Context(), t, "shipment"))
 	record, err := env.shipment.GetAdmin(env.order.ID)
 	require.NoError(t, err)
 	images, err := decodeShipmentStringList(record.ShippingImages)

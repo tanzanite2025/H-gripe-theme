@@ -8,11 +8,12 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"commerce-platform/internal/domain/media"
 	"commerce-platform/internal/pkg/storage"
 	"commerce-platform/internal/repository"
 	"commerce-platform/internal/service"
-	"github.com/stretchr/testify/require"
 )
 
 func TestReadOnlyPhysicalCapacityHTTPRequiresMediaConfigurationPermissionBeforeReadingSources(t *testing.T) {
@@ -21,7 +22,7 @@ func TestReadOnlyPhysicalCapacityHTTPRequiresMediaConfigurationPermissionBeforeR
 			_, handler := createMediaLibraryPartitionHTTPTestEnvironment(t)
 			router := createMediaLibraryPartitionHTTPRouterWithActualRegisteredPermissions(handler, role)
 			response := httptest.NewRecorder()
-			router.ServeHTTP(response, httptest.NewRequest(http.MethodPost, "/api/admin/media/storage-capacity-audits", nil))
+			router.ServeHTTP(response, httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/api/admin/media/storage-capacity-audits", nil))
 			require.Equal(t, http.StatusForbidden, response.Code, response.Body.String())
 		})
 	}
@@ -40,7 +41,7 @@ func TestReadOnlyPhysicalCapacityHTTPReturnsOnlySafeAggregatesWithoutChangingDat
 	handler := NewMediaHandler(service.NewMediaService(repository.NewMediaRepository(db), provider, nil, "https://capacity.example.test", 20<<30))
 	router := createMediaLibraryPartitionHTTPRouterWithActualRegisteredPermissions(handler, "admin")
 	response := httptest.NewRecorder()
-	router.ServeHTTP(response, httptest.NewRequest(http.MethodPost, "/api/admin/media/storage-capacity-audits", nil))
+	router.ServeHTTP(response, httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/api/admin/media/storage-capacity-audits", nil))
 	require.Equal(t, http.StatusOK, response.Code, response.Body.String())
 	require.Equal(t, "no-store", response.Header().Get("Cache-Control"))
 	for _, sensitive := range []string{root, privateRoot, key, "capacity.example.test"} {

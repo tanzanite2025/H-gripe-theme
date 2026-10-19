@@ -8,13 +8,14 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
+	"github.com/stretchr/testify/require"
+	"gorm.io/gorm"
+
 	"commerce-platform/internal/domain/media"
 	"commerce-platform/internal/domain/product"
 	"commerce-platform/internal/domain/refundcancellation"
 	"commerce-platform/internal/repository"
-	"github.com/google/uuid"
-	"github.com/stretchr/testify/require"
-	"gorm.io/gorm"
 )
 
 func createIsolatedPostgreSQLBusinessDraftMediaReceiptEnvironment(t *testing.T) businessDraftMediaReceiptTestEnvironment {
@@ -65,7 +66,7 @@ func TestPostgreSQLBusinessDraftMediaRefundPolicySaveAndOrderSnapshotCreationSer
 				callback := "pause_business_draft_policy_" + uuid.NewString()
 				rollback := errors.New("policy binding intentionally rolled back")
 				pause := func(tx *gorm.DB) {
-					pausePostgreSQLMediaObjectOwnershipTransactionUntilReleased(t, ctx, tx, acquired, release)
+					pausePostgreSQLMediaObjectOwnershipTransactionUntilReleased(ctx, t, tx, acquired, release)
 					if first == "rolled back binding" {
 						tx.AddError(rollback)
 					}
@@ -98,16 +99,16 @@ func TestPostgreSQLBusinessDraftMediaRefundPolicySaveAndOrderSnapshotCreationSer
 				} else {
 					go func() { bindingResult <- bind() }()
 				}
-				pid := awaitPostgreSQLMediaObjectOwnershipTransactionPID(t, ctx, acquired)
+				pid := awaitPostgreSQLMediaObjectOwnershipTransactionPID(ctx, t, acquired)
 				if first == "cleanup" {
 					go func() { bindingResult <- bind() }()
 				} else {
 					go func() { cleanupResult <- cleanup() }()
 				}
-				requireDedicatedObjectLifecyclePostgreSQLTransactionActuallyBlocks(t, ctx, env.db, pid)
+				requireDedicatedObjectLifecyclePostgreSQLTransactionActuallyBlocks(ctx, t, env.db, pid)
 				releaseFirst()
-				bindErr := awaitPostgreSQLMediaObjectOwnershipOperationResult(t, ctx, bindingResult)
-				cleanupErr := awaitPostgreSQLMediaObjectOwnershipOperationResult(t, ctx, cleanupResult)
+				bindErr := awaitPostgreSQLMediaObjectOwnershipOperationResult(ctx, t, bindingResult)
+				cleanupErr := awaitPostgreSQLMediaObjectOwnershipOperationResult(ctx, t, cleanupResult)
 				if first == "binding" {
 					require.NoError(t, bindErr)
 					if source == "order snapshot" {
@@ -149,14 +150,14 @@ func TestPostgreSQLBusinessDraftMediaBindingAndExpirySerializeInBothOrdersAndBus
 			if first == "expiry" {
 				require.NoError(t, env.db.Callback().Delete().After("gorm:delete").Register(callback, func(tx *gorm.DB) {
 					if tx.Statement.Table == "media_assets" {
-						pausePostgreSQLMediaObjectOwnershipTransactionUntilReleased(t, ctx, tx, acquired, release)
+						pausePostgreSQLMediaObjectOwnershipTransactionUntilReleased(ctx, t, tx, acquired, release)
 					}
 				}))
 				t.Cleanup(func() { _ = env.db.Callback().Delete().Remove(callback) })
 			} else {
 				require.NoError(t, env.db.Callback().Create().After("gorm:create").Register(callback, func(tx *gorm.DB) {
 					if tx.Statement.Table == "product_categories" {
-						pausePostgreSQLMediaObjectOwnershipTransactionUntilReleased(t, ctx, tx, acquired, release)
+						pausePostgreSQLMediaObjectOwnershipTransactionUntilReleased(ctx, t, tx, acquired, release)
 						if first == "rolled back binding" {
 							tx.AddError(rollback)
 						}
@@ -180,16 +181,16 @@ func TestPostgreSQLBusinessDraftMediaBindingAndExpirySerializeInBothOrdersAndBus
 			} else {
 				go bind()
 			}
-			pid := awaitPostgreSQLMediaObjectOwnershipTransactionPID(t, ctx, acquired)
+			pid := awaitPostgreSQLMediaObjectOwnershipTransactionPID(ctx, t, acquired)
 			if first == "expiry" {
 				go bind()
 			} else {
 				go expire()
 			}
-			requireDedicatedObjectLifecyclePostgreSQLTransactionActuallyBlocks(t, ctx, env.db, pid)
+			requireDedicatedObjectLifecyclePostgreSQLTransactionActuallyBlocks(ctx, t, env.db, pid)
 			releaseFirst()
-			bindErr := awaitPostgreSQLMediaObjectOwnershipOperationResult(t, ctx, bindingResult)
-			require.NoError(t, awaitPostgreSQLMediaObjectOwnershipOperationResult(t, ctx, expiryResult))
+			bindErr := awaitPostgreSQLMediaObjectOwnershipOperationResult(ctx, t, bindingResult)
+			require.NoError(t, awaitPostgreSQLMediaObjectOwnershipOperationResult(ctx, t, expiryResult))
 			require.Zero(t, expired.Errors)
 			if first == "binding" {
 				require.NoError(t, bindErr)
@@ -251,7 +252,7 @@ func TestPostgreSQLBusinessDraftMediaExpiryWaitsForCanceledLateProviderWriteBefo
 	uploadResult := make(chan error, 1)
 	input := businessDraftMediaReceiptTestInput(t)
 	go func() { _, err := env.service.UploadBusinessDraftMediaAsset(uploadContext, input); uploadResult <- err }()
-	pid := awaitPostgreSQLMediaObjectOwnershipTransactionPID(t, ctx, acquired)
+	pid := awaitPostgreSQLMediaObjectOwnershipTransactionPID(ctx, t, acquired)
 	select {
 	case <-writeStarted:
 	case <-ctx.Done():
@@ -268,14 +269,14 @@ func TestPostgreSQLBusinessDraftMediaExpiryWaitsForCanceledLateProviderWriteBefo
 		expired, err = env.service.ExpireUnboundBusinessDraftMediaUploads(ctx, 10)
 		expiryResult <- err
 	}()
-	requireDedicatedObjectLifecyclePostgreSQLTransactionActuallyBlocks(t, ctx, env.db, pid)
+	requireDedicatedObjectLifecyclePostgreSQLTransactionActuallyBlocks(ctx, t, env.db, pid)
 	cancelUpload()
 	// Cancellation cannot release the transaction while synchronous Put can
 	// still finish. The waiting expiry must remain blocked on the same PID.
-	requireDedicatedObjectLifecyclePostgreSQLTransactionActuallyBlocks(t, ctx, env.db, pid)
+	requireDedicatedObjectLifecyclePostgreSQLTransactionActuallyBlocks(ctx, t, env.db, pid)
 	releaseProvider()
-	require.ErrorIs(t, awaitPostgreSQLMediaObjectOwnershipOperationResult(t, ctx, uploadResult), context.Canceled)
-	require.NoError(t, awaitPostgreSQLMediaObjectOwnershipOperationResult(t, ctx, expiryResult))
+	require.ErrorIs(t, awaitPostgreSQLMediaObjectOwnershipOperationResult(ctx, t, uploadResult), context.Canceled)
+	require.NoError(t, awaitPostgreSQLMediaObjectOwnershipOperationResult(ctx, t, expiryResult))
 	require.Equal(t, 1, expired.Retired)
 	require.Zero(t, expired.Errors)
 	replayBusinessDraftMediaReceiptTestCleanupEvents(t, env)

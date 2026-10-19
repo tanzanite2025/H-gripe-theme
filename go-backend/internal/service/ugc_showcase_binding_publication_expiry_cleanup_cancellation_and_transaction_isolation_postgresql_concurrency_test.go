@@ -109,17 +109,17 @@ func TestPostgreSQLUGCShowcasePendingAndApprovedBindingSerializeWithCleanupInBot
 						}
 					}
 					go cleanup()
-					pid = awaitPostgreSQLMediaObjectOwnershipTransactionPID(t, ctx, captured)
+					pid = awaitPostgreSQLMediaObjectOwnershipTransactionPID(ctx, t, captured)
 					go bind()
 				} else {
 					go bind()
-					pid = awaitPostgreSQLMediaObjectOwnershipTransactionPID(t, ctx, locked)
+					pid = awaitPostgreSQLMediaObjectOwnershipTransactionPID(ctx, t, locked)
 					go cleanup()
 				}
-				requireDedicatedObjectLifecyclePostgreSQLTransactionActuallyBlocks(t, ctx, env.db, pid)
+				requireDedicatedObjectLifecyclePostgreSQLTransactionActuallyBlocks(ctx, t, env.db, pid)
 				release()
-				bindingErr := awaitPostgreSQLMediaObjectOwnershipOperationResult(t, ctx, bindingResult)
-				cleanupErr := awaitPostgreSQLMediaObjectOwnershipOperationResult(t, ctx, cleanupResult)
+				bindingErr := awaitPostgreSQLMediaObjectOwnershipOperationResult(ctx, t, bindingResult)
+				cleanupErr := awaitPostgreSQLMediaObjectOwnershipOperationResult(ctx, t, cleanupResult)
 				if first == "binding" {
 					require.NoError(t, bindingErr)
 					require.ErrorIs(t, cleanupErr, ErrMediaAssetInUse)
@@ -171,7 +171,7 @@ func TestPostgreSQLUGCShowcasePublicationAndRejectionOrExpirySerializeAndRecheck
 						}
 					}
 					go publish()
-					pid = awaitPostgreSQLMediaObjectOwnershipTransactionPID(t, ctx, captured)
+					pid = awaitPostgreSQLMediaObjectOwnershipTransactionPID(ctx, t, captured)
 					go compete()
 				} else {
 					locked := make(chan int, 1)
@@ -186,13 +186,13 @@ func TestPostgreSQLUGCShowcasePublicationAndRejectionOrExpirySerializeAndRecheck
 					}))
 					t.Cleanup(func() { _ = env.db.Callback().Update().Remove(callback) })
 					go compete()
-					pid = awaitPostgreSQLMediaObjectOwnershipTransactionPID(t, ctx, locked)
+					pid = awaitPostgreSQLMediaObjectOwnershipTransactionPID(ctx, t, locked)
 					go publish()
 				}
-				requireDedicatedObjectLifecyclePostgreSQLTransactionActuallyBlocks(t, ctx, env.db, pid)
+				requireDedicatedObjectLifecyclePostgreSQLTransactionActuallyBlocks(ctx, t, env.db, pid)
 				release()
-				publicationErr := awaitPostgreSQLMediaObjectOwnershipOperationResult(t, ctx, publicationResult)
-				competitorErr := awaitPostgreSQLMediaObjectOwnershipOperationResult(t, ctx, competitorResult)
+				publicationErr := awaitPostgreSQLMediaObjectOwnershipOperationResult(ctx, t, publicationResult)
+				competitorErr := awaitPostgreSQLMediaObjectOwnershipOperationResult(ctx, t, competitorResult)
 				if first == "publish" {
 					require.NoError(t, publicationErr)
 					if competitor == "reject" {
@@ -229,7 +229,7 @@ func TestPostgreSQLUGCShowcaseCanceledProviderDeletionRetainsLockUntilReturnAndR
 	go func() {
 		cleanupResult <- NewObjectStorageCleanupOutboxHandler(nil, nil, nil, &cleanupService).Handle(cleanupContext, event)
 	}()
-	pid := awaitPostgreSQLMediaObjectOwnershipTransactionPID(t, ctx, captured)
+	pid := awaitPostgreSQLMediaObjectOwnershipTransactionPID(ctx, t, captured)
 	select {
 	case <-entered:
 	case <-ctx.Done():
@@ -239,7 +239,7 @@ func TestPostgreSQLUGCShowcaseCanceledProviderDeletionRetainsLockUntilReturnAndR
 	go func() {
 		bindingResult <- env.service.repo.WithContext(ctx).Create(&ugcshowcase.UGCShowcase{UserID: 7, Status: ugcshowcase.StatusPending, Images: encoded})
 	}()
-	requireDedicatedObjectLifecyclePostgreSQLTransactionActuallyBlocks(t, ctx, env.db, pid)
+	requireDedicatedObjectLifecyclePostgreSQLTransactionActuallyBlocks(ctx, t, env.db, pid)
 	cancelCleanup()
 	returnedEarly := false
 	select {
@@ -249,9 +249,9 @@ func TestPostgreSQLUGCShowcaseCanceledProviderDeletionRetainsLockUntilReturnAndR
 	case <-time.After(200 * time.Millisecond):
 	}
 	release()
-	require.ErrorIs(t, awaitPostgreSQLMediaObjectOwnershipOperationResult(t, ctx, cleanupResult), context.Canceled)
+	require.ErrorIs(t, awaitPostgreSQLMediaObjectOwnershipOperationResult(ctx, t, cleanupResult), context.Canceled)
 	if !returnedEarly {
-		require.ErrorIs(t, awaitPostgreSQLMediaObjectOwnershipOperationResult(t, ctx, bindingResult), ErrMediaAssetURLUnavailable)
+		require.ErrorIs(t, awaitPostgreSQLMediaObjectOwnershipOperationResult(ctx, t, bindingResult), ErrMediaAssetURLUnavailable)
 	}
 	requireUGCShowcaseRegressionObjectExists(t, env, env.key, false)
 	_, err := env.service.cleanupUGCShowcaseObjectsWithRetainedReferencesAndLockedRejectedOwner(ctx, 0, []string{env.key}, true)
@@ -274,7 +274,7 @@ func TestPostgreSQLUGCShowcaseCanceledPublicationCopyRetainsNamespaceUntilProvid
 	captured := captureUGCShowcaseNamespaceLockHolderPostgreSQLBackendPID(t, env)
 	publicationResult, bindingResult := make(chan error, 1), make(chan error, 1)
 	go func() { publicationResult <- env.service.Approve(publicationContext, owner.ID) }()
-	pid := awaitPostgreSQLMediaObjectOwnershipTransactionPID(t, ctx, captured)
+	pid := awaitPostgreSQLMediaObjectOwnershipTransactionPID(ctx, t, captured)
 	select {
 	case <-entered:
 	case <-ctx.Done():
@@ -284,7 +284,7 @@ func TestPostgreSQLUGCShowcaseCanceledPublicationCopyRetainsNamespaceUntilProvid
 	go func() {
 		bindingResult <- env.service.repo.WithContext(ctx).Create(&ugcshowcase.UGCShowcase{UserID: 7, Status: ugcshowcase.StatusPending, Images: encoded})
 	}()
-	requireDedicatedObjectLifecyclePostgreSQLTransactionActuallyBlocks(t, ctx, env.db, pid)
+	requireDedicatedObjectLifecyclePostgreSQLTransactionActuallyBlocks(ctx, t, env.db, pid)
 	cancelPublication()
 	returnedEarly := false
 	select {
@@ -294,9 +294,9 @@ func TestPostgreSQLUGCShowcaseCanceledPublicationCopyRetainsNamespaceUntilProvid
 	case <-time.After(200 * time.Millisecond):
 	}
 	release()
-	require.ErrorIs(t, awaitPostgreSQLMediaObjectOwnershipOperationResult(t, ctx, publicationResult), context.Canceled)
+	require.ErrorIs(t, awaitPostgreSQLMediaObjectOwnershipOperationResult(ctx, t, publicationResult), context.Canceled)
 	if !returnedEarly {
-		require.NoError(t, awaitPostgreSQLMediaObjectOwnershipOperationResult(t, ctx, bindingResult))
+		require.NoError(t, awaitPostgreSQLMediaObjectOwnershipOperationResult(ctx, t, bindingResult))
 	}
 	requireUGCShowcaseRegressionObjectExists(t, env, env.key, true)
 }

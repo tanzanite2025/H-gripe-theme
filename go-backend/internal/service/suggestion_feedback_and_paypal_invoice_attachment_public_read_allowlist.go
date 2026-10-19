@@ -6,11 +6,12 @@ import (
 	"errors"
 	"time"
 
+	"gorm.io/gorm"
+
 	"commerce-platform/internal/domain/orderevidence"
 	"commerce-platform/internal/domain/outbox"
 	"commerce-platform/internal/domain/suggestionfeedback"
 	"commerce-platform/internal/pkg/storage"
-	"gorm.io/gorm"
 )
 
 func (h *ObjectStorageCleanupOutboxHandler) ConfigureSuggestionAndPayPalAttachmentUploads(uploads *SuggestionAndPayPalAttachmentUploadService) {

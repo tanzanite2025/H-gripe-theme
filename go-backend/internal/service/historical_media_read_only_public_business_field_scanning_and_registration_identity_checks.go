@@ -5,6 +5,8 @@ import (
 	"net/url"
 	"strings"
 
+	"gorm.io/gorm"
+
 	"commerce-platform/internal/domain/media"
 	"commerce-platform/internal/domain/setting"
 	"commerce-platform/internal/domain/ticket"
@@ -12,7 +14,6 @@ import (
 	"commerce-platform/internal/pkg/safehtml"
 	"commerce-platform/internal/pkg/storage"
 	"commerce-platform/internal/pkg/websitecontent"
-	"gorm.io/gorm"
 )
 
 type historicalMediaReadOnlyBusinessFieldSource struct {
@@ -137,9 +138,10 @@ func (s *HistoricalMediaReadOnlyInventoryService) scanHistoricalMediaBusinessFie
 				if row.MediaAssetID != nil {
 					issue.AssetID = *row.MediaAssetID
 				}
-				if source.Markup == "" {
+				switch source.Markup {
+				case "":
 					s.inspectHistoricalMediaBusinessReferenceIdentity(index, report, source, issue, row.Reference, source.ExpectedType, row.StorageKey)
-				} else if source.Markup == "structured_message" {
+				case "structured_message":
 					document, err := ticket.ParseStructuredMessageMetadataKnownMediaFields(row.MessageType, row.Reference)
 					if err != nil {
 						issue.Code = "business_structured_media_could_not_be_parsed"
@@ -151,7 +153,7 @@ func (s *HistoricalMediaReadOnlyInventoryService) scanHistoricalMediaBusinessFie
 							s.inspectHistoricalMediaBusinessReferenceIdentity(index, report, source, fieldIssue, field.URL, field.ExpectedMediaType, "")
 						}
 					}
-				} else {
+				default:
 					markup := row.Reference
 					var err error
 					switch source.Markup {

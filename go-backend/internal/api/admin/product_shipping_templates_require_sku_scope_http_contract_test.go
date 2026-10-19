@@ -20,7 +20,7 @@ func TestProductMutationsRejectProductLevelShippingTemplatesEvenWhenEmpty(t *tes
 				router.POST("/products/1", handler.CreateProduct)
 				router.PUT("/products/:id", handler.UpdateProduct)
 				recorder := httptest.NewRecorder()
-				request := httptest.NewRequest(method, "/products/1", strings.NewReader(`{"name":"Rim","slug":"rim","status":"active","shipping_template_ids":`+value+`}`))
+				request := httptest.NewRequestWithContext(t.Context(), method, "/products/1", strings.NewReader(`{"name":"Rim","slug":"rim","status":"active","shipping_template_ids":`+value+`}`))
 				request.Header.Set("Content-Type", "application/json")
 				router.ServeHTTP(recorder, request)
 				require.Equal(t, http.StatusBadRequest, recorder.Code)

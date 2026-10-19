@@ -7,10 +7,11 @@ import (
 	"net/url"
 	"strings"
 
+	"gorm.io/gorm"
+
 	"commerce-platform/internal/domain/aftersales"
 	shippingdomain "commerce-platform/internal/domain/shipping"
 	"commerce-platform/internal/domain/warranty"
-	"gorm.io/gorm"
 )
 
 func (s *WarrantyService) ConfigurePrivateOrderBusinessAttachmentUploads(uploads *PrivateOrderBusinessAttachmentUploadService) {
@@ -32,15 +33,15 @@ func (s *WarrantyService) CreateWarrantyClaimForOrder(input WarrantyClaimByOrder
 	}
 	var result *warranty.WarrantyClaim
 	err := s.txManager.WithinPrivateOrderBusinessAttachmentMutationLock(func(tx *gorm.DB) error {
-		copy := *s
-		copy.txManager = s.txManager.WithPrivateOrderBusinessAttachmentTransaction(tx)
-		copy.warrantyRepo = s.warrantyRepo.WithTx(tx)
-		copy.orderRepo = s.orderRepo.WithTx(tx)
+		clonedValue := *s
+		clonedValue.txManager = s.txManager.WithPrivateOrderBusinessAttachmentTransaction(tx)
+		clonedValue.warrantyRepo = s.warrantyRepo.WithTx(tx)
+		clonedValue.orderRepo = s.orderRepo.WithTx(tx)
 		if s.shipmentRepo != nil {
-			copy.shipmentRepo = s.shipmentRepo.WithTx(tx)
+			clonedValue.shipmentRepo = s.shipmentRepo.WithTx(tx)
 		}
 		var err error
-		result, err = copy.createWarrantyClaimAfterPrivateAttachmentNamespaceLock(input)
+		result, err = clonedValue.createWarrantyClaimAfterPrivateAttachmentNamespaceLock(input)
 		return err
 	})
 	if err != nil {
@@ -59,17 +60,17 @@ func (s *WarrantyService) CreateVerifiedWarrantyClaimWithPrivateAttachmentFiles(
 	}
 	var result *warranty.WarrantyClaim
 	err := s.privateAttachmentUploads.uploadPrivateOrderBusinessAttachmentBatchAndBindOwner(ctx, "warranty/claims", files, func(tx *gorm.DB, prepared []preparedPrivateOrderBusinessAttachment) error {
-		copy := *s
-		copy.acceptPreallocatedPrivateAttachmentBinding = true
-		copy.txManager = s.txManager.WithPrivateOrderBusinessAttachmentTransaction(tx)
-		copy.warrantyRepo = s.warrantyRepo.WithTx(tx)
-		copy.orderRepo = s.orderRepo.WithTx(tx)
+		clonedValue := *s
+		clonedValue.acceptPreallocatedPrivateAttachmentBinding = true
+		clonedValue.txManager = s.txManager.WithPrivateOrderBusinessAttachmentTransaction(tx)
+		clonedValue.warrantyRepo = s.warrantyRepo.WithTx(tx)
+		clonedValue.orderRepo = s.orderRepo.WithTx(tx)
 		if s.shipmentRepo != nil {
-			copy.shipmentRepo = s.shipmentRepo.WithTx(tx)
+			clonedValue.shipmentRepo = s.shipmentRepo.WithTx(tx)
 		}
 		input.ImageURLs, input.VideoURL = privateOrderBusinessAttachmentURLs(prepared)
 		var err error
-		result, err = copy.createWarrantyClaimAfterPrivateAttachmentNamespaceLock(input)
+		result, err = clonedValue.createWarrantyClaimAfterPrivateAttachmentNamespaceLock(input)
 		return err
 	})
 	if err != nil {
@@ -88,9 +89,9 @@ func (s *AfterSalesService) CreateCustomerAfterSalesRequestWithPrivateAttachment
 	}
 	var result *aftersales.AfterSalesCase
 	err := s.privateAttachmentUploads.uploadPrivateOrderBusinessAttachmentBatchAndBindOwner(ctx, "after-sales/pending", files, func(tx *gorm.DB, prepared []preparedPrivateOrderBusinessAttachment) error {
-		copy := s.afterSalesServiceWithPrivateAttachmentTransaction(tx)
-		copy.acceptPreallocatedPrivateAttachmentBinding = true
-		owner, err := copy.orderRepo.FindByIDForUpdateWithItems(input.OrderID)
+		clonedValue := s.afterSalesServiceWithPrivateAttachmentTransaction(tx)
+		clonedValue.acceptPreallocatedPrivateAttachmentBinding = true
+		owner, err := clonedValue.orderRepo.FindByIDForUpdateWithItems(input.OrderID)
 		if err != nil {
 			return err
 		}
@@ -98,7 +99,7 @@ func (s *AfterSalesService) CreateCustomerAfterSalesRequestWithPrivateAttachment
 			return ErrAfterSalesOrderNotFound
 		}
 		input.Attachments = privateOrderBusinessAfterSalesAttachments(prepared)
-		result, err = copy.createCustomerRequestAfterPrivateAttachmentNamespaceLock(input)
+		result, err = clonedValue.createCustomerRequestAfterPrivateAttachmentNamespaceLock(input)
 		return err
 	})
 	if err != nil {
@@ -108,17 +109,17 @@ func (s *AfterSalesService) CreateCustomerAfterSalesRequestWithPrivateAttachment
 }
 
 func (s *AfterSalesService) afterSalesServiceWithPrivateAttachmentTransaction(tx *gorm.DB) *AfterSalesService {
-	copy := *s
-	copy.txManager = s.txManager.WithPrivateOrderBusinessAttachmentTransaction(tx)
-	copy.caseRepo = s.caseRepo.WithTx(tx)
-	copy.orderRepo = s.orderRepo.WithTx(tx)
+	clonedValue := *s
+	clonedValue.txManager = s.txManager.WithPrivateOrderBusinessAttachmentTransaction(tx)
+	clonedValue.caseRepo = s.caseRepo.WithTx(tx)
+	clonedValue.orderRepo = s.orderRepo.WithTx(tx)
 	if s.userRepo != nil {
-		copy.userRepo = s.userRepo.WithTx(tx)
+		clonedValue.userRepo = s.userRepo.WithTx(tx)
 	}
 	if s.refundReviewRepo != nil {
-		copy.refundReviewRepo = s.refundReviewRepo.WithTx(tx)
+		clonedValue.refundReviewRepo = s.refundReviewRepo.WithTx(tx)
 	}
-	return &copy
+	return &clonedValue
 }
 
 func (s *AfterSalesService) CreateCustomerRequest(input CreateCustomerAfterSalesRequestInput) (*aftersales.AfterSalesCase, error) {
@@ -151,12 +152,12 @@ func (s *ShipmentRecordService) AddPrivateShipmentImageFilesWithAtomicOwnerBindi
 	var result *shippingdomain.ShipmentRecord
 	var urls []string
 	err := s.privateAttachmentUploads.uploadPrivateOrderBusinessAttachmentBatchAndBindOwner(ctx, fmt.Sprintf("warranty/shipment/%d", orderID), PrivateOrderBusinessAttachmentUploadFiles{Images: images}, func(tx *gorm.DB, prepared []preparedPrivateOrderBusinessAttachment) error {
-		copy := *s
-		copy.repo = s.repo.WithTx(tx)
-		copy.acceptPreallocatedPrivateAttachmentBinding = true
+		clonedValue := *s
+		clonedValue.repo = s.repo.WithTx(tx)
+		clonedValue.acceptPreallocatedPrivateAttachmentBinding = true
 		urls, _ = privateOrderBusinessAttachmentURLs(prepared)
 		var err error
-		result, err = copy.addShipmentImagesAfterPrivateAttachmentNamespaceLock(orderID, urls)
+		result, err = clonedValue.addShipmentImagesAfterPrivateAttachmentNamespaceLock(orderID, urls)
 		return err
 	})
 	if err != nil {

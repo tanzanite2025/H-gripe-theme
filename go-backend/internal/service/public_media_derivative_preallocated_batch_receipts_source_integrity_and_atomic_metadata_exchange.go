@@ -8,12 +8,13 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/google/uuid"
+	"gorm.io/gorm"
+
 	"commerce-platform/internal/domain/media"
 	"commerce-platform/internal/domain/outbox"
 	"commerce-platform/internal/pkg/storage"
 	"commerce-platform/internal/repository"
-	"github.com/google/uuid"
-	"gorm.io/gorm"
 )
 
 var ErrPublicMediaDerivativeRegistrationExchangeFailed = errors.New("public media derivative registration exchange failed")

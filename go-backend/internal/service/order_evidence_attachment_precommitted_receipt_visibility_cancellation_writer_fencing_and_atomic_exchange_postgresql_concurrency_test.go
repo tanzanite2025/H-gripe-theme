@@ -8,12 +8,13 @@ import (
 	"testing"
 	"time"
 
-	"commerce-platform/internal/domain/orderevidence"
-	"commerce-platform/internal/domain/outbox"
-	"commerce-platform/internal/repository"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
+
+	"commerce-platform/internal/domain/orderevidence"
+	"commerce-platform/internal/domain/outbox"
+	"commerce-platform/internal/repository"
 )
 
 func TestPostgreSQLOrderEvidencePrecommittedReceiptVisibleBeforeIOAndCancellationHoldsLocksUntilProviderReturns(t *testing.T) {
@@ -66,7 +67,7 @@ func TestPostgreSQLOrderEvidencePrecommittedReceiptVisibleBeforeIOAndCancellatio
 	handler := NewObjectStorageCleanupOutboxHandler(nil, nil, nil, nil)
 	handler.ConfigureOrderEvidenceAttachmentService(env.service)
 	go func() { cleanup <- handler.Handle(t.Context(), receipt) }()
-	requireDedicatedObjectLifecyclePostgreSQLTransactionActuallyBlocks(t, t.Context(), env.db, pid)
+	requireDedicatedObjectLifecyclePostgreSQLTransactionActuallyBlocks(t.Context(), t, env.db, pid)
 	release()
 	select {
 	case err := <-result:
@@ -199,7 +200,7 @@ func TestPostgreSQLOrderEvidencePrecommittedWaitingUploadRechecksLockedSupersede
 			file := newEvidencePNGFileHeader(t, "proof.png")
 			result := make(chan error, 1)
 			go func() { _, err := env.service.Upload(ctx, env.item.OrderID, env.item.ID, file, 7); result <- err }()
-			requireDedicatedObjectLifecyclePostgreSQLTransactionActuallyBlocks(t, ctx, env.db, pid)
+			requireDedicatedObjectLifecyclePostgreSQLTransactionActuallyBlocks(ctx, t, env.db, pid)
 			receipt, payload := loadOrderEvidencePrecommittedUploadReceiptAndPayload(t, env.db)
 			require.NotZero(t, receipt.ID)
 			release()

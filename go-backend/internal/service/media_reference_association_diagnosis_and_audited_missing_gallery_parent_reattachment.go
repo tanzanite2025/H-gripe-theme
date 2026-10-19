@@ -11,12 +11,13 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"gorm.io/gorm"
+
 	"commerce-platform/internal/domain/audit"
 	"commerce-platform/internal/domain/gallery"
 	"commerce-platform/internal/domain/media"
 	"commerce-platform/internal/pkg/storage"
 	"commerce-platform/internal/repository"
-	"gorm.io/gorm"
 )
 
 var ErrMediaAssociationRepairInvalidInput = errors.New("repair requires positive IDs, a current preview and a reason of 3 to 1000 characters")

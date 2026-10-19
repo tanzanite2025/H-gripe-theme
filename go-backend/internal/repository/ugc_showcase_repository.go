@@ -23,9 +23,9 @@ func NewUGCShowcaseRepository(db *gorm.DB) *UGCShowcaseRepository {
 }
 
 func (r *UGCShowcaseRepository) WithTx(tx *gorm.DB) *UGCShowcaseRepository {
-	copy := *r
-	copy.db = tx
-	return &copy
+	clonedValue := *r
+	clonedValue.db = tx
+	return &clonedValue
 }
 
 func (r *UGCShowcaseRepository) Create(item *ugcshowcase.UGCShowcase) error {

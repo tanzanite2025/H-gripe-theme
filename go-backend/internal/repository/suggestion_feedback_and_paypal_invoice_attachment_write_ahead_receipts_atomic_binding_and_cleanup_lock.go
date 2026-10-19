@@ -9,10 +9,11 @@ import (
 	"reflect"
 	"time"
 
-	"commerce-platform/internal/domain/outbox"
-	"commerce-platform/internal/pkg/storage"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
+
+	"commerce-platform/internal/domain/outbox"
+	"commerce-platform/internal/pkg/storage"
 )
 
 const suggestionAndPayPalAttachmentLifecycleNamespace = "suggestion-and-paypal-attachment-uploads"

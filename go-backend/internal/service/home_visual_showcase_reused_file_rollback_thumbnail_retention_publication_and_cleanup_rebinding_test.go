@@ -224,13 +224,13 @@ func TestVisualShowcaseRepositoryRejectsMissingValidatorAndDoesNotOverwriteCalle
 	require.NoError(t, err)
 	var first homevisualtile.Tile
 	require.NoError(t, db.First(&first).Error)
-	copy := first
-	copy.Locale = "zh_cn"
-	copy.Title = "Another locale"
-	require.ErrorIs(t, repository.NewHomeVisualTileRepository(db).SaveSingleVisualShowcaseItem(&copy, nil), repository.ErrVisualShowcaseTransactionalImageBindingValidationUnavailable)
-	copy.ID = first.ID
-	require.NoError(t, service.repo.SaveSingleVisualShowcaseItem(&copy, nil))
-	require.NotEqual(t, first.ID, copy.ID)
+	clonedValue := first
+	clonedValue.Locale = "zh_cn"
+	clonedValue.Title = "Another locale"
+	require.ErrorIs(t, repository.NewHomeVisualTileRepository(db).SaveSingleVisualShowcaseItem(&clonedValue, nil), repository.ErrVisualShowcaseTransactionalImageBindingValidationUnavailable)
+	clonedValue.ID = first.ID
+	require.NoError(t, service.repo.SaveSingleVisualShowcaseItem(&clonedValue, nil))
+	require.NotEqual(t, first.ID, clonedValue.ID)
 	var unchanged homevisualtile.Tile
 	require.NoError(t, db.First(&unchanged, first.ID).Error)
 	require.Equal(t, "en", unchanged.Locale)

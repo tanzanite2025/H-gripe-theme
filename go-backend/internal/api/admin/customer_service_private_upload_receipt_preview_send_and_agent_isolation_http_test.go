@@ -213,7 +213,7 @@ func TestAdminCustomerServicePrivateUploadPreviewAndSendEnforceUploaderAssignmen
 	require.Equal(t, photoBytes.Bytes(), recorder.Body.Bytes())
 	// The video follows the same receipt -> authorized preview -> atomic binding
 	// flow, and the existing UI's preview URL must be removed from stored metadata.
-	videoPreview := httptest.NewRequest(http.MethodGet, privateVideoReceipt.Asset.URL, nil)
+	videoPreview := httptest.NewRequestWithContext(t.Context(), http.MethodGet, privateVideoReceipt.Asset.URL, nil)
 	videoPreview.Header.Set("Range", "bytes=4-7")
 	recorder = httptest.NewRecorder()
 	router.ServeHTTP(recorder, videoPreview)
@@ -223,7 +223,7 @@ func TestAdminCustomerServicePrivateUploadPreviewAndSendEnforceUploaderAssignmen
 	videoPayload, err := json.Marshal(gin.H{"message": "[视频]", "message_type": "video", "attachments": []string{privateVideoReceipt.Asset.URL},
 		"metadata": gin.H{"kind": "video_reference", "title": "Agent video", "url": privateVideoReceipt.Asset.URL, "media_type": "video"}})
 	require.NoError(t, err)
-	videoSend := httptest.NewRequest(http.MethodPost, messagePath, bytes.NewReader(videoPayload))
+	videoSend := httptest.NewRequestWithContext(t.Context(), http.MethodPost, messagePath, bytes.NewReader(videoPayload))
 	videoSend.Header.Set("Content-Type", "application/json")
 	recorder = httptest.NewRecorder()
 	router.ServeHTTP(recorder, videoSend)
@@ -237,9 +237,9 @@ func TestAdminCustomerServicePrivateUploadPreviewAndSendEnforceUploaderAssignmen
 	require.NoError(t, db.First(&session, "id = ?", privateVideoReceipt.Asset.UploadSessionID).Error)
 	require.Equal(t, "bound", session.Status)
 	recorder = httptest.NewRecorder()
-	router.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, privateVideoReceipt.Asset.URL, nil))
+	router.ServeHTTP(recorder, httptest.NewRequestWithContext(t.Context(), http.MethodGet, privateVideoReceipt.Asset.URL, nil))
 	require.Equal(t, http.StatusNotFound, recorder.Code)
-	videoRead := httptest.NewRequest(http.MethodGet, fmt.Sprintf("%s/%d/attachments/0/file", messagePath, videoMessage.ID), nil)
+	videoRead := httptest.NewRequestWithContext(t.Context(), http.MethodGet, fmt.Sprintf("%s/%d/attachments/0/file", messagePath, videoMessage.ID), nil)
 	videoRead.Header.Set("Range", "bytes=4-7")
 	recorder = httptest.NewRecorder()
 	createRouter(agent.ID+100, "manager").ServeHTTP(recorder, videoRead)

@@ -62,7 +62,7 @@ func TestPostgreSQLOrderEvidenceAttachmentBindingAndCleanupSerializeInBothOrders
 				callback := "pause_order_evidence_registration_" + uuid.NewString()
 				require.NoError(t, env.db.Callback().Create().After("gorm:create").Register(callback, func(tx *gorm.DB) {
 					if tx.Statement.Table == "order_evidence_attachments" {
-						pausePostgreSQLMediaObjectOwnershipTransactionUntilReleased(t, ctx, tx, acquired, release)
+						pausePostgreSQLMediaObjectOwnershipTransactionUntilReleased(ctx, t, tx, acquired, release)
 						if first == "rolled back binding" {
 							tx.AddError(rollback)
 						}
@@ -88,11 +88,11 @@ func TestPostgreSQLOrderEvidenceAttachmentBindingAndCleanupSerializeInBothOrders
 					}
 				}
 				go cleanup()
-				pid = awaitPostgreSQLMediaObjectOwnershipTransactionPID(t, ctx, captured)
+				pid = awaitPostgreSQLMediaObjectOwnershipTransactionPID(ctx, t, captured)
 				go bind()
 			} else {
 				go bind()
-				pid = awaitPostgreSQLMediaObjectOwnershipTransactionPID(t, ctx, acquired)
+				pid = awaitPostgreSQLMediaObjectOwnershipTransactionPID(ctx, t, acquired)
 				go cleanup()
 			}
 			waitForPostgreSQLGalleryMutationToBlockOnTransaction(t, env.db, pid, "pg_advisory_xact_lock")
@@ -134,7 +134,7 @@ func TestPostgreSQLOrderEvidenceCanceledCleanupHoldsNamespaceUntilProviderReturn
 	go func() {
 		cleanupResult <- env.service.cleanupFailedOrderEvidenceUploadWithImmutableHistoryRetention(ctx, prefix, []string{input.StorageKey})
 	}()
-	pid := awaitPostgreSQLMediaObjectOwnershipTransactionPID(t, t.Context(), captured)
+	pid := awaitPostgreSQLMediaObjectOwnershipTransactionPID(t.Context(), t, captured)
 	select {
 	case <-providerEntered:
 	case <-time.After(5 * time.Second):
@@ -178,7 +178,7 @@ func TestPostgreSQLOrderEvidencePackageLockRejectsConcurrentRegistrationAndDetac
 			callback := "pause_order_evidence_package_lock_" + uuid.NewString()
 			require.NoError(t, env.db.Callback().Update().After("gorm:update").Register(callback, func(tx *gorm.DB) {
 				if tx.Statement.Table == "order_evidence_packages" {
-					pausePostgreSQLMediaObjectOwnershipTransactionUntilReleased(t, ctx, tx, acquired, release)
+					pausePostgreSQLMediaObjectOwnershipTransactionUntilReleased(ctx, t, tx, acquired, release)
 				}
 			}))
 			t.Cleanup(func() { _ = env.db.Callback().Update().Remove(callback) })
@@ -187,7 +187,7 @@ func TestPostgreSQLOrderEvidencePackageLockRejectsConcurrentRegistrationAndDetac
 				_, _, err := env.service.evidenceRepo.LockPackage(env.pkg.ID, time.Now().UTC())
 				lockResult <- err
 			}()
-			pid := awaitPostgreSQLMediaObjectOwnershipTransactionPID(t, ctx, acquired)
+			pid := awaitPostgreSQLMediaObjectOwnershipTransactionPID(ctx, t, acquired)
 			go func() {
 				if mutation == "register" {
 					_, err := env.service.RegisterReference(repository.TxRepositories{OrderEvidence: env.service.evidenceRepo}, input)

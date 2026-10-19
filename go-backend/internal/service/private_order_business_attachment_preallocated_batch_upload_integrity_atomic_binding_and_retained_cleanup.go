@@ -10,13 +10,14 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/google/uuid"
+	"gorm.io/gorm"
+
 	"commerce-platform/internal/domain/aftersales"
 	"commerce-platform/internal/domain/media"
 	"commerce-platform/internal/pkg/storage"
 	"commerce-platform/internal/pkg/upload"
 	"commerce-platform/internal/repository"
-	"github.com/google/uuid"
-	"gorm.io/gorm"
 )
 
 type PrivateOrderBusinessAttachmentUploadFiles struct {

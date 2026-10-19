@@ -49,11 +49,11 @@ func TestDedicatedCarbonRimMigrationPreservesTemplateProductsRejectsMissingVersi
 	tx := createIsolatedCarbonRimSpecificationMigrationTransaction(t)
 	up := readMigrationFile(t, "429_add_dedicated_carbon_rim_product_and_variant_specifications.up.sql")
 	down := readMigrationFile(t, "429_add_dedicated_carbon_rim_product_and_variant_specifications.down.sql")
-	if _, err := tx.Exec(up); err != nil {
+	if _, err := tx.ExecContext(t.Context(), up); err != nil {
 		t.Fatal(err)
 	}
 	var preserved bool
-	if err := tx.QueryRow("SELECT product_type = '' AND carbon_rim_specification IS NULL AND product_specification_template_id = 77 FROM products WHERE id = 1").Scan(&preserved); err != nil || !preserved {
+	if err := tx.QueryRowContext(t.Context(), "SELECT product_type = '' AND carbon_rim_specification IS NULL AND product_specification_template_id = 77 FROM products WHERE id = 1").Scan(&preserved); err != nil || !preserved {
 		t.Fatalf("legacy template changed: %v", err)
 	}
 	for _, invalid := range []string{
@@ -63,34 +63,34 @@ func TestDedicatedCarbonRimMigrationPreservesTemplateProductsRejectsMissingVersi
 	} {
 		expectCarbonRimMigrationStatementRejection(t, tx, invalid)
 	}
-	if _, err := tx.Exec("INSERT INTO products(product_type, carbon_rim_specification, deleted_at) VALUES ('carbon_rim', '{\"schema_version\":1}', NOW())"); err != nil {
+	if _, err := tx.ExecContext(t.Context(), "INSERT INTO products(product_type, carbon_rim_specification, deleted_at) VALUES ('carbon_rim', '{\"schema_version\":1}', NOW())"); err != nil {
 		t.Fatal(err)
 	}
 	expectCarbonRimMigrationStatementRejection(t, tx, down)
-	if _, err := tx.Exec("DELETE FROM products WHERE product_type = 'carbon_rim'; INSERT INTO product_variants(carbon_rim_specification) VALUES ('{}')"); err != nil {
+	if _, err := tx.ExecContext(t.Context(), "DELETE FROM products WHERE product_type = 'carbon_rim'; INSERT INTO product_variants(carbon_rim_specification) VALUES ('{}')"); err != nil {
 		t.Fatal(err)
 	}
 	expectCarbonRimMigrationStatementRejection(t, tx, down)
-	if _, err := tx.Exec("DELETE FROM product_variants"); err != nil {
+	if _, err := tx.ExecContext(t.Context(), "DELETE FROM product_variants"); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := tx.Exec(down); err != nil {
+	if _, err := tx.ExecContext(t.Context(), down); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := tx.Exec(up); err != nil {
+	if _, err := tx.ExecContext(t.Context(), up); err != nil {
 		t.Fatal(err)
 	}
 }
 
 func expectCarbonRimMigrationStatementRejection(t *testing.T, tx *sql.Tx, statement string) {
 	t.Helper()
-	if _, err := tx.Exec("SAVEPOINT expected_carbon_rim_rejection"); err != nil {
+	if _, err := tx.ExecContext(t.Context(), "SAVEPOINT expected_carbon_rim_rejection"); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := tx.Exec(statement); err == nil {
+	if _, err := tx.ExecContext(t.Context(), statement); err == nil {
 		t.Fatal("expected statement to reject invalid state or unsafe rollback")
 	}
-	if _, err := tx.Exec("ROLLBACK TO SAVEPOINT expected_carbon_rim_rejection"); err != nil {
+	if _, err := tx.ExecContext(t.Context(), "ROLLBACK TO SAVEPOINT expected_carbon_rim_rejection"); err != nil {
 		t.Fatal(err)
 	}
 }

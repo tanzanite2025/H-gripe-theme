@@ -24,9 +24,9 @@ func NewHomeVisualTileRepository(db *gorm.DB) *HomeVisualTileRepository {
 }
 
 func (r *HomeVisualTileRepository) WithTx(tx *gorm.DB) *HomeVisualTileRepository {
-	copy := *r
-	copy.db = tx
-	return &copy
+	clonedValue := *r
+	clonedValue.db = tx
+	return &clonedValue
 }
 
 func (r *HomeVisualTileRepository) ConfigureTransactionalVisualShowcaseImageBindingValidation(validate func(*gorm.DB, []homevisualtile.Tile, []homevisualtile.Tile) error) {
@@ -34,9 +34,9 @@ func (r *HomeVisualTileRepository) ConfigureTransactionalVisualShowcaseImageBind
 }
 
 func (r *HomeVisualTileRepository) WithContext(ctx context.Context) *HomeVisualTileRepository {
-	copy := *r
-	copy.db = r.db.WithContext(ctx)
-	return &copy
+	clonedValue := *r
+	clonedValue.db = r.db.WithContext(ctx)
+	return &clonedValue
 }
 
 func (r *HomeVisualTileRepository) WithLockedVisualShowcaseReferencesForObjectCleanup(ctx context.Context, operation func(*HomeVisualTileRepository, *MediaRepository) error) error {

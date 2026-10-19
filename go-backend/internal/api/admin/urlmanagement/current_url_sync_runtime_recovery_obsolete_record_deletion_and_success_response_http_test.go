@@ -20,7 +20,7 @@ import (
 	"gorm.io/gorm/logger"
 )
 
-func createCurrentURLStateHTTPTestServices(t *testing.T) (*gorm.DB, *service.StorefrontRouteCatalogService, *service.StorefrontURLIssueService, seodomain.StorefrontRouteCatalogEntry) {
+func createCurrentURLStateHTTPTestServices(t *testing.T) (*gorm.DB, *service.StorefrontRouteCatalogService, *service.StorefrontURLIssueService) {
 	t.Helper()
 	t.Setenv("STOREFRONT_ROUTE_MANIFEST_PATH", "")
 	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{Logger: logger.Default.LogMode(logger.Silent)})
@@ -52,13 +52,13 @@ func createCurrentURLStateHTTPTestServices(t *testing.T) (*gorm.DB, *service.Sto
 	require.NoError(t, catalogRepository.SaveCheck(&previousCheck))
 	_, err = repository.NewStorefrontURLIssueRepository(db).RecordDetection(entry.ID, "not_found", "high", &previousCheck.ID, time.Now().UTC())
 	require.NoError(t, err)
-	return db, catalog, issues, entry
+	return db, catalog, issues
 }
 
 func TestRecoveredURLIssueRecheckAndVerificationReturnSuccessAfterDeletingProblemRecord(t *testing.T) {
 	for _, action := range []string{"recheck", "verify"} {
 		t.Run(action, func(t *testing.T) {
-			db, catalog, issues, _ := createCurrentURLStateHTTPTestServices(t)
+			db, catalog, issues := createCurrentURLStateHTTPTestServices(t)
 			var issue urlmanagementdomain.StorefrontURLIssue
 			require.NoError(t, db.First(&issue).Error)
 			if action == "verify" {
@@ -69,7 +69,7 @@ func TestRecoveredURLIssueRecheckAndVerificationReturnSuccessAfterDeletingProble
 			router.POST("/:id/recheck", handler.Recheck)
 			router.POST("/:id/verify", handler.Verify)
 			response := httptest.NewRecorder()
-			router.ServeHTTP(response, httptest.NewRequest(http.MethodPost, fmt.Sprintf("/%d/%s", issue.ID, action), nil))
+			router.ServeHTTP(response, httptest.NewRequestWithContext(t.Context(), http.MethodPost, fmt.Sprintf("/%d/%s", issue.ID, action), nil))
 			require.Equal(t, http.StatusOK, response.Code, response.Body.String())
 			var body struct {
 				Data struct {
@@ -90,13 +90,13 @@ func TestRecoveredURLIssueRecheckAndVerificationReturnSuccessAfterDeletingProble
 }
 
 func TestURLCheckHTTPTaskSynchronizesCurrentManifestDeletesRemovedURLsAndReplacesOldErrorWithHealthyState(t *testing.T) {
-	db, catalog, _, _ := createCurrentURLStateHTTPTestServices(t)
+	db, catalog, _ := createCurrentURLStateHTTPTestServices(t)
 	removedEntry := seodomain.StorefrontRouteCatalogEntry{RouteKey: "manifest:removed:en", Path: "/removed", Locale: "en", SourceType: "static", EntryStatus: "stale", LastSeenAt: time.Now().UTC().Add(-time.Hour)}
 	require.NoError(t, db.Create(&removedEntry).Error)
 	router := gin.New()
 	router.POST("/check", NewRoutesHandler(catalog).Check)
 	response := httptest.NewRecorder()
-	router.ServeHTTP(response, httptest.NewRequest(http.MethodPost, "/check?locale=en&include_aliases=true", nil))
+	router.ServeHTTP(response, httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/check?locale=en&include_aliases=true", nil))
 	require.Equal(t, http.StatusAccepted, response.Code, response.Body.String())
 	var body struct {
 		Data service.StorefrontRouteCatalogCheckTask `json:"data"`

@@ -6,13 +6,14 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
+	"github.com/stretchr/testify/require"
+	"gorm.io/gorm"
+
 	"commerce-platform/internal/domain/setting"
 	sitefavicondomain "commerce-platform/internal/domain/site_favicon"
 	sitelogodomain "commerce-platform/internal/domain/site_logo"
 	"commerce-platform/internal/repository"
-	"github.com/google/uuid"
-	"github.com/stretchr/testify/require"
-	"gorm.io/gorm"
 )
 
 func TestPostgreSQLSiteIdentityDedicatedMutationsAndGenericStaleSettingWritesSerializeInBothOrders(t *testing.T) {
@@ -104,7 +105,7 @@ func TestPostgreSQLSiteIdentityDedicatedMutationsAndGenericStaleSettingWritesSer
 					} else {
 						go dedicated()
 					}
-					requireDedicatedObjectLifecyclePostgreSQLTransactionActuallyBlocks(t, ctx, db, blocker)
+					requireDedicatedObjectLifecyclePostgreSQLTransactionActuallyBlocks(ctx, t, db, blocker)
 					release()
 					require.NoError(t, <-dedicatedResult)
 					genericError := <-genericResult
@@ -190,7 +191,7 @@ func TestPostgreSQLSiteLogoSharedFallbackBindingAndRetirementUseTheSameAssetLock
 			} else {
 				go bind()
 			}
-			requireDedicatedObjectLifecyclePostgreSQLTransactionActuallyBlocks(t, ctx, db, blocker)
+			requireDedicatedObjectLifecyclePostgreSQLTransactionActuallyBlocks(ctx, t, db, blocker)
 			release()
 			bindError, retireError := <-bindResult, <-retireResult
 			if first == "bind" {
@@ -240,7 +241,7 @@ func TestPostgreSQLSiteIdentitySettingBatchesWithReversedInputAcquireNamespacesA
 		t.Fatal("first identity batch did not acquire its locks")
 	}
 	go func() { secondResult <- settings.BatchSet(secondValues) }()
-	requireDedicatedObjectLifecyclePostgreSQLTransactionActuallyBlocks(t, ctx, db, blocker)
+	requireDedicatedObjectLifecyclePostgreSQLTransactionActuallyBlocks(ctx, t, db, blocker)
 	release()
 	require.NoError(t, <-firstResult)
 	require.NoError(t, <-secondResult)

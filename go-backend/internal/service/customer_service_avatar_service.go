@@ -11,11 +11,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
+
 	"commerce-platform/internal/domain/outbox"
 	"commerce-platform/internal/pkg/storage"
 	"commerce-platform/internal/pkg/upload"
 	"commerce-platform/internal/repository"
-	"github.com/google/uuid"
 
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
@@ -84,7 +85,7 @@ func (s *CustomerServiceAvatarService) Upload(ctx context.Context, userID uint, 
 	return uploadDedicatedImmediateOwnerObjectWithWriteAheadCleanupReceiptAndTransactionalBinding(ctx, s.outbox, s.storage, CustomerServiceAvatarStoragePrefix, profileID, file, func(tx *gorm.DB, avatarURL, _ string) error {
 		transactionalService := *s
 		transactionalService.userRepo = s.userRepo.WithTx(tx)
-		_, err := transactionalService.replaceAvatarReference(tx.Statement.Context, userID, avatarURL)
+		err := transactionalService.replaceAvatarReference(tx.Statement.Context, userID, avatarURL)
 		return err
 	})
 }
@@ -94,7 +95,7 @@ func (s *CustomerServiceAvatarService) Remove(ctx context.Context, userID uint) 
 		return ErrCustomerServiceAvatarStorageUnavailable
 	}
 
-	_, err := s.replaceAvatarReference(ctx, userID, "")
+	err := s.replaceAvatarReference(ctx, userID, "")
 	if err != nil {
 		return err
 	}
@@ -123,12 +124,12 @@ func (s *CustomerServiceAvatarService) CanServePublicAvatar(ctx context.Context,
 	return s.userRepo.WithContext(ctx).HasLiveCustomerServiceAgentAvatarReferenceForExactObject(normalized, s.storage.GetURL(normalized), &MediaService{storage: s.storage, siteURL: s.siteURL})
 }
 
-func (s *CustomerServiceAvatarService) replaceAvatarReference(ctx context.Context, userID uint, avatarURL string) (string, error) {
+func (s *CustomerServiceAvatarService) replaceAvatarReference(ctx context.Context, userID uint, avatarURL string) error {
 	if s == nil || s.userRepo == nil || s.outbox == nil {
-		return "", ErrCustomerServiceAvatarStorageUnavailable
+		return ErrCustomerServiceAvatarStorageUnavailable
 	}
 
-	previousAvatarURL, err := s.userRepo.WithContext(ctx).ReplaceCustomerServiceAgentAvatar(
+	_, err := s.userRepo.WithContext(ctx).ReplaceCustomerServiceAgentAvatar(
 		userID,
 		avatarURL,
 		func(tx *gorm.DB, profileID uint, previousAvatarURL string) error {
@@ -140,9 +141,9 @@ func (s *CustomerServiceAvatarService) replaceAvatarReference(ctx context.Contex
 		},
 	)
 	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return "", ErrCustomerServiceAvatarProfileNotFound
+		return ErrCustomerServiceAvatarProfileNotFound
 	}
-	return previousAvatarURL, err
+	return err
 }
 
 func (s *CustomerServiceAvatarService) requireProfile(ctx context.Context, userID uint) (uint, error) {

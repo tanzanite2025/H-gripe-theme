@@ -40,7 +40,7 @@ func createHistoricalDedicatedObjectReplacementMultipartWebPHeader(t *testing.T)
 	_, err = part.Write(testfixtures.SiteLogoAndFaviconUploadLifecycle512By512LosslessWebPFixtureBytes())
 	require.NoError(t, err)
 	require.NoError(t, writer.Close())
-	request := httptest.NewRequest(http.MethodPost, "/test-upload", &body)
+	request := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/test-upload", &body)
 	request.Header.Set("Content-Type", writer.FormDataContentType())
 	require.NoError(t, request.ParseMultipartForm(2<<20))
 	t.Cleanup(func() { _ = request.MultipartForm.RemoveAll() })
@@ -107,7 +107,7 @@ func TestHistoricalDedicatedUploadsRemainReadableAfterReplacementOnlyWhilePublis
 			registerLocalUploadsRoute(router, &app.Dependencies{Services: app.Services{PublicUploadAccess: access}})
 			get := func(status int) {
 				response := httptest.NewRecorder()
-				router.ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/uploads/"+key, nil))
+				router.ServeHTTP(response, httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/uploads/"+key, nil))
 				require.Equal(t, status, response.Code, response.Body.String())
 				if status == http.StatusOK {
 					require.Equal(t, originalBytes, response.Body.Bytes(), "serve bytes from the owning store")

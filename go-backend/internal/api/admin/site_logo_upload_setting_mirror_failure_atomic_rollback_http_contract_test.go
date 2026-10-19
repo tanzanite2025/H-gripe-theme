@@ -8,6 +8,12 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/gin-gonic/gin"
+	"github.com/glebarez/sqlite"
+	"github.com/stretchr/testify/require"
+	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
+
 	"commerce-platform/internal/domain/outbox"
 	"commerce-platform/internal/domain/setting"
 	sitelogodomain "commerce-platform/internal/domain/site_logo"
@@ -15,11 +21,6 @@ import (
 	"commerce-platform/internal/repository"
 	"commerce-platform/internal/service"
 	"commerce-platform/internal/testfixtures"
-	"github.com/gin-gonic/gin"
-	"github.com/glebarez/sqlite"
-	"github.com/stretchr/testify/require"
-	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
 )
 
 func TestSiteLogoHTTPUploadAndDeleteCommitOwnerAndRequestedLocaleMirrorTogether(t *testing.T) {
@@ -48,7 +49,7 @@ func TestSiteLogoHTTPUploadAndDeleteCommitOwnerAndRequestedLocaleMirrorTogether(
 		response := httptest.NewRecorder()
 		context, _ := gin.CreateTestContext(response)
 		context.Set("user_id", uint(11))
-		context.Request = httptest.NewRequest(http.MethodPost, "/logo?locale=fr", &body)
+		context.Request = httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/logo?locale=fr", &body)
 		context.Request.Header.Set("Content-Type", writer.FormDataContentType())
 		handler.Upload(context)
 		return response
@@ -69,14 +70,14 @@ func TestSiteLogoHTTPUploadAndDeleteCommitOwnerAndRequestedLocaleMirrorTogether(
 	require.Equal(t, previousURL, logos.CurrentPublicURL())
 	response = httptest.NewRecorder()
 	context, _ := gin.CreateTestContext(response)
-	context.Request = httptest.NewRequest(http.MethodDelete, "/logo?locale=fr", nil)
+	context.Request = httptest.NewRequestWithContext(t.Context(), http.MethodDelete, "/logo?locale=fr", nil)
 	handler.Delete(context)
 	require.Equal(t, http.StatusInternalServerError, response.Code)
 	require.Equal(t, previousURL, logos.CurrentPublicURL())
 	require.NoError(t, db.Callback().Update().Remove("reject_logo_http_mirror"))
 	response = httptest.NewRecorder()
 	context, _ = gin.CreateTestContext(response)
-	context.Request = httptest.NewRequest(http.MethodDelete, "/logo?locale=fr", nil)
+	context.Request = httptest.NewRequestWithContext(t.Context(), http.MethodDelete, "/logo?locale=fr", nil)
 	handler.Delete(context)
 	require.Equal(t, http.StatusOK, response.Code, response.Body.String())
 	require.Empty(t, logos.CurrentPublicURL())

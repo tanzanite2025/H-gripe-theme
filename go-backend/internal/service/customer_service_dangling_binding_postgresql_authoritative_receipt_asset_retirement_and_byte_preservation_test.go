@@ -6,9 +6,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
+
 	"commerce-platform/internal/domain/media"
 	"commerce-platform/internal/domain/ticket"
-	"github.com/stretchr/testify/require"
 )
 
 func TestPostgreSQLCustomerServiceDanglingBindingAndBoundReceiptBlockAssetRetirementUntilBothOwnersAreRemoved(t *testing.T) {

@@ -1,8 +1,9 @@
 package service
 
 import (
-	"commerce-platform/internal/domain/setting"
 	"gorm.io/gorm"
+
+	"commerce-platform/internal/domain/setting"
 )
 
 func (s *SettingService) synchronizeDedicatedSiteIdentityMirrorsFromOwnerTransaction(tx *gorm.DB, key, locale, publicSiteBaseURL string) ([]setting.Setting, error) {

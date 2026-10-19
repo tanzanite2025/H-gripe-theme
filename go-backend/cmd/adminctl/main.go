@@ -332,7 +332,7 @@ func printUsage(w io.Writer) {
 	fmt.Fprintln(w, "Usage: adminctl ensure-admin [-config path] [-operator label]")
 	_, _ = fmt.Fprintln(w, "       adminctl audit-pricing-snapshots [-config path] [-batch-size N] [-max-orders N] [-format text|json]")
 	fmt.Fprintln(w, "       adminctl audit-schwalbe-catalog-refresh -snapshot path [-config path] [-format text|json]")
-	fmt.Fprintln(w, "       adminctl audit-historical-media [-config path] [-batch-size N] [-max-records-per-source N] [-max-issues N] [-timeout 5m] [-format text|json]")
+	_, _ = fmt.Fprintln(w, "       adminctl audit-historical-media [-config path] [-batch-size N] [-max-records-per-source N] [-max-issues N] [-timeout 5m] [-format text|json]")
 	fmt.Fprintln(w, "")
 	fmt.Fprintln(w, "Required environment:")
 	fmt.Fprintln(w, "  ADMIN_EMAIL")

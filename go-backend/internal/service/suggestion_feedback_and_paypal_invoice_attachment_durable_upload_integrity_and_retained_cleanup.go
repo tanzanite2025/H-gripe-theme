@@ -12,12 +12,13 @@ import (
 	"path"
 	"reflect"
 
+	"gorm.io/gorm"
+
 	"commerce-platform/internal/domain/media"
 	"commerce-platform/internal/domain/outbox"
 	"commerce-platform/internal/pkg/storage"
 	"commerce-platform/internal/pkg/upload"
 	"commerce-platform/internal/repository"
-	"gorm.io/gorm"
 )
 
 type SuggestionAndPayPalAttachmentUploadService struct {

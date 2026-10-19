@@ -7,6 +7,12 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/gin-gonic/gin"
+	"github.com/glebarez/sqlite"
+	"github.com/stretchr/testify/require"
+	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
+
 	"commerce-platform/internal/app"
 	"commerce-platform/internal/domain/media"
 	"commerce-platform/internal/domain/product"
@@ -14,11 +20,6 @@ import (
 	"commerce-platform/internal/pkg/storage"
 	"commerce-platform/internal/repository"
 	"commerce-platform/internal/service"
-	"github.com/gin-gonic/gin"
-	"github.com/glebarez/sqlite"
-	"github.com/stretchr/testify/require"
-	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
 )
 
 func TestRetiredMediaDerivativeHTTPReadRetainsPublishedConsumersAndRevokesAfterLastDetachment(t *testing.T) {
@@ -72,7 +73,7 @@ func TestRetiredMediaDerivativeHTTPReadRetainsPublishedConsumersAndRevokesAfterL
 			registerLocalUploadsRoute(router, &app.Dependencies{Services: app.Services{PublicUploadAccess: service.NewPublicUploadAccessService(assets, nil)}})
 			get := func(expected int) {
 				response := httptest.NewRecorder()
-				request := httptest.NewRequest(http.MethodGet, "/uploads/"+key, nil)
+				request := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/uploads/"+key, nil)
 				request.Header.Set("Range", "bytes=0-7")
 				router.ServeHTTP(response, request)
 				require.Equal(t, expected, response.Code, response.Body.String())

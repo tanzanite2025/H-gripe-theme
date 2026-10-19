@@ -41,7 +41,7 @@ func PreallocatedPublicMediaDerivativeParentAssetID(key string) (uint, bool) {
 		return 0, false
 	}
 	for _, character := range parts[2] {
-		if !(character >= 'a' && character <= 'z' || character >= '0' && character <= '9' || character == '_' || character == '-') {
+		if (character < 'a' || character > 'z') && (character < '0' || character > '9') && character != '_' && character != '-' {
 			return 0, false
 		}
 	}

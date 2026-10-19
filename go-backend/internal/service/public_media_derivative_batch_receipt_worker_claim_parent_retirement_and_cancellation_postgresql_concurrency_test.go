@@ -8,12 +8,13 @@ import (
 	"testing"
 	"time"
 
-	"commerce-platform/internal/domain/media"
-	"commerce-platform/internal/domain/outbox"
-	"commerce-platform/internal/repository"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
+
+	"commerce-platform/internal/domain/media"
+	"commerce-platform/internal/domain/outbox"
+	"commerce-platform/internal/repository"
 )
 
 func createPublicMediaDerivativePostgreSQLReceiptTestEnvironment(t *testing.T) (*gorm.DB, *MediaService, *publicMediaDerivativeReceiptProviderWithInjectedFailures, *media.MediaAsset, []byte) {
@@ -109,7 +110,7 @@ func TestPostgreSQLPublicMediaDerivativeBatchReceiptsAreVisibleSkippedByWorkerAn
 			go func() {
 				cleanup <- NewObjectStorageCleanupOutboxHandler(service, nil, nil, nil).Handle(t.Context(), exact)
 			}()
-			requireDedicatedObjectLifecyclePostgreSQLTransactionActuallyBlocks(t, t.Context(), db, pid)
+			requireDedicatedObjectLifecyclePostgreSQLTransactionActuallyBlocks(t.Context(), t, db, pid)
 			select {
 			case err := <-cleanup:
 				t.Fatalf("cleanup escaped in-flight derivative writer: %v", err)
@@ -198,7 +199,7 @@ func TestPostgreSQLPublicMediaDerivativeClaimCompletionOrParentRetirementFencesW
 				_, err := generatePublicMediaDerivativeReceiptTestBatch(ctx, service, parent, payload)
 				result <- err
 			}()
-			requireDedicatedObjectLifecyclePostgreSQLTransactionActuallyBlocks(t, ctx, db, pid)
+			requireDedicatedObjectLifecyclePostgreSQLTransactionActuallyBlocks(ctx, t, db, pid)
 			receipts := findPublicMediaDerivativeReceiptsForTest(t, db)
 			require.Len(t, receipts, 3)
 			if scenario != "parent-retired" {

@@ -47,7 +47,7 @@ func (r *OutboxRepository) ClaimOriginalObjectStorageCleanupReceiptsForDurableRe
 	err := r.db.Transaction(func(tx *gorm.DB) error {
 		dueTimeExpression := "COALESCE(reconcile_after, processed_at, updated_at, created_at)"
 		dueTimeParameter := "?"
-		if tx.Dialector.Name() == "sqlite" {
+		if tx.Name() == "sqlite" {
 			// SQLite stores offsets as text; compare instants across historical
 			// local-time timestamps and new UTC schedules.
 			dueTimeExpression = "julianday(" + dueTimeExpression + ")"
@@ -56,7 +56,7 @@ func (r *OutboxRepository) ClaimOriginalObjectStorageCleanupReceiptsForDurableRe
 		query := objectStorageCleanupReconciliationEligibleOriginalReceipts(tx.Model(&outbox.Event{})).
 			Where(dueTimeExpression+" <= "+dueTimeParameter, now)
 		var leaseTime interface{} = now
-		if tx.Dialector.Name() == "postgres" {
+		if tx.Name() == "postgres" {
 			query = query.Where("locked_at IS NULL OR locked_at <= NOW() - (CAST(? AS double precision) * INTERVAL '1 second')", lockTimeout.Seconds())
 			leaseTime = gorm.Expr("clock_timestamp()")
 		} else {
@@ -83,7 +83,7 @@ func (r *OutboxRepository) ClaimOriginalObjectStorageCleanupReceiptsForDurableRe
 
 func (r *OutboxRepository) RefreshOriginalObjectStorageCleanupReconciliationLease(eventID uint, leaseToken string, now time.Time) error {
 	var leaseTime interface{} = now.UTC()
-	if r.db.Dialector.Name() == "postgres" {
+	if r.db.Name() == "postgres" {
 		leaseTime = gorm.Expr("clock_timestamp()")
 	}
 	result := objectStorageCleanupReconciliationEligibleOriginalReceipts(r.db.Model(&outbox.Event{})).

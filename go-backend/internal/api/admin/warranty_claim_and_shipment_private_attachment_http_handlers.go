@@ -3,10 +3,11 @@ package admin
 import (
 	"strconv"
 
+	"github.com/gin-gonic/gin"
+
 	"commerce-platform/internal/api/privateattachment"
 	"commerce-platform/internal/pkg/apierror"
 	"commerce-platform/internal/service"
-	"github.com/gin-gonic/gin"
 )
 
 func (h *WarrantyHandler) ServeWarrantyClaimAttachmentForAdministrator(c *gin.Context) {

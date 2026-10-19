@@ -1,8 +1,9 @@
 package repository
 
 import (
-	"commerce-platform/internal/domain/post"
 	"gorm.io/gorm"
+
+	"commerce-platform/internal/domain/post"
 )
 
 func (r *PostRepository) UpdatePostSEOMetadataFields(id uint, title, description, canonicalURL *string) error {

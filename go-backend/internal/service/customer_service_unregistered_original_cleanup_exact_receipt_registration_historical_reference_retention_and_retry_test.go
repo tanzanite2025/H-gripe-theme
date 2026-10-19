@@ -10,15 +10,16 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
+	"github.com/stretchr/testify/require"
+	"gorm.io/gorm"
+
 	"commerce-platform/internal/domain/media"
 	"commerce-platform/internal/domain/outbox"
 	"commerce-platform/internal/domain/product"
 	"commerce-platform/internal/domain/ticket"
 	"commerce-platform/internal/pkg/storage"
 	"commerce-platform/internal/repository"
-	"github.com/google/uuid"
-	"github.com/stretchr/testify/require"
-	"gorm.io/gorm"
 )
 
 func createRetiredUnregisteredCustomerServiceOriginalAndDurableCleanupEventForTest(t *testing.T, env customerServicePrivateAttachmentAccessTestEnvironment) (string, outbox.Event) {
@@ -55,9 +56,10 @@ func TestCustomerServiceUnregisteredOriginalCleanupRetainsExactHistoricalClaimsA
 			switch source {
 			case "original", "deleted-url-only-original", "windows-key-original":
 				claim := media.MediaAsset{Filename: "retained.png", URL: reference + "?retained=1", StorageKey: key, Visibility: "private", Status: "active"}
-				if source == "deleted-url-only-original" {
+				switch source {
+				case "deleted-url-only-original":
 					claim.StorageKey = ""
-				} else if source == "windows-key-original" {
+				case "windows-key-original":
 					claim.StorageKey = strings.ReplaceAll(key, "/", "\\")
 				}
 				require.NoError(t, env.db.Create(&claim).Error)
@@ -192,14 +194,15 @@ func TestCustomerServiceUnregisteredOriginalCleanupRetainsOriginalEventOnScanPro
 			defer cancel()
 			injected := errors.New("injected receipt scan failure")
 			callbackName := "reject_exact_customer_service_receipt_scan_" + uuid.NewString()
-			if failure == "reference-scan" {
+			switch failure {
+			case "reference-scan":
 				require.NoError(t, env.db.Callback().Query().Before("gorm:query").Register(callbackName, func(tx *gorm.DB) {
 					if tx.Statement.Table == "media_upload_sessions" {
 						tx.AddError(injected)
 					}
 				}))
 				t.Cleanup(func() { _ = env.db.Callback().Query().Remove(callbackName) })
-			} else if failure == "canceled-request" {
+			case "canceled-request":
 				cancel()
 			}
 			handler := NewObjectStorageCleanupOutboxHandler(env.mediaService, nil, nil, nil)

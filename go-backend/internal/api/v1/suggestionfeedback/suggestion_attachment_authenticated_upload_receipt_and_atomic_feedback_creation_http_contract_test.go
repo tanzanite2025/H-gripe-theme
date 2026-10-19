@@ -11,17 +11,18 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/gin-gonic/gin"
+	"github.com/glebarez/sqlite"
+	"github.com/google/uuid"
+	"github.com/stretchr/testify/require"
+	"gorm.io/gorm"
+
 	"commerce-platform/internal/domain/loyalty"
 	"commerce-platform/internal/domain/outbox"
 	"commerce-platform/internal/domain/suggestionfeedback"
 	"commerce-platform/internal/pkg/storage"
 	"commerce-platform/internal/repository"
 	"commerce-platform/internal/service"
-	"github.com/gin-gonic/gin"
-	"github.com/glebarez/sqlite"
-	"github.com/google/uuid"
-	"github.com/stretchr/testify/require"
-	"gorm.io/gorm"
 )
 
 func TestSuggestionAttachmentHTTPUploadAndCreateRequireEligibleSameUploaderAndConsumeDurableReceipt(t *testing.T) {
@@ -53,7 +54,7 @@ func TestSuggestionAttachmentHTTPUploadAndCreateRequireEligibleSameUploaderAndCo
 	var imageBytes bytes.Buffer
 	require.NoError(t, png.Encode(&imageBytes, image.NewRGBA(image.Rect(0, 0, 24, 24))))
 	createRequest := func(method, path string, user uint, payload []byte, contentType string) *httptest.ResponseRecorder {
-		request := httptest.NewRequest(method, path, bytes.NewReader(payload))
+		request := httptest.NewRequestWithContext(t.Context(), method, path, bytes.NewReader(payload))
 		request.Header.Set("Content-Type", contentType)
 		if user != 0 {
 			request.Header.Set("X-Synthetic-Test-User", strconv.FormatUint(uint64(user), 10))

@@ -8,12 +8,13 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/gin-gonic/gin"
+	"github.com/stretchr/testify/require"
+
 	"commerce-platform/internal/domain/media"
 	"commerce-platform/internal/domain/product"
 	"commerce-platform/internal/repository"
 	"commerce-platform/internal/service"
-	"github.com/gin-gonic/gin"
-	"github.com/stretchr/testify/require"
 )
 
 func performProductBrandLogoJSONContractRequest(t *testing.T, handler *ProductBrandHandler, id uint, payload map[string]any) *httptest.ResponseRecorder {

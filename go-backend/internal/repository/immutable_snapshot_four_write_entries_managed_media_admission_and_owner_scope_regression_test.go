@@ -10,13 +10,14 @@ import (
 	"testing"
 	"time"
 
-	"commerce-platform/internal/domain/media"
-	"commerce-platform/internal/domain/orderevidence"
-	"commerce-platform/internal/pkg/storage"
 	"github.com/glebarez/sqlite"
 	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
+
+	"commerce-platform/internal/domain/media"
+	"commerce-platform/internal/domain/orderevidence"
+	"commerce-platform/internal/pkg/storage"
 )
 
 type immutableSnapshotAdmissionObjectIdentityAndExistenceTestResolver struct{}

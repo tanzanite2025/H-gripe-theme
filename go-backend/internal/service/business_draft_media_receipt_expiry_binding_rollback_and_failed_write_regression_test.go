@@ -10,16 +10,17 @@ import (
 	"testing"
 	"time"
 
-	"commerce-platform/internal/domain/media"
-	"commerce-platform/internal/domain/outbox"
-	"commerce-platform/internal/domain/product"
-	"commerce-platform/internal/pkg/storage"
-	"commerce-platform/internal/repository"
 	"github.com/glebarez/sqlite"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
+
+	"commerce-platform/internal/domain/media"
+	"commerce-platform/internal/domain/outbox"
+	"commerce-platform/internal/domain/product"
+	"commerce-platform/internal/pkg/storage"
+	"commerce-platform/internal/repository"
 )
 
 type businessDraftMediaReceiptTestEnvironment struct {

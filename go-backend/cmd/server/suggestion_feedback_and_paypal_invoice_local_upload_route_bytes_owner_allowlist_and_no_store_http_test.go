@@ -14,6 +14,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/gin-gonic/gin"
+	"github.com/glebarez/sqlite"
+	"github.com/stretchr/testify/require"
+	"gorm.io/gorm"
+
 	suggestionapi "commerce-platform/internal/api/v1/suggestionfeedback"
 	"commerce-platform/internal/app"
 	"commerce-platform/internal/domain/loyalty"
@@ -23,10 +28,6 @@ import (
 	"commerce-platform/internal/pkg/storage"
 	"commerce-platform/internal/repository"
 	"commerce-platform/internal/service"
-	"github.com/gin-gonic/gin"
-	"github.com/glebarez/sqlite"
-	"github.com/stretchr/testify/require"
-	"gorm.io/gorm"
 )
 
 func TestSuggestionAndPayPalAttachmentLocalRouteServesExactOwnedBytesAndPreservesNoStoreAcrossUploadAndBinding(t *testing.T) {
@@ -66,7 +67,7 @@ func TestSuggestionAndPayPalAttachmentLocalRouteServesExactOwnedBytesAndPreserve
 	_, err = part.Write(source.Bytes())
 	require.NoError(t, err)
 	require.NoError(t, form.Close())
-	request := httptest.NewRequest(http.MethodPost, "/test/feedback/upload", &body)
+	request := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/test/feedback/upload", &body)
 	request.Header.Set("Content-Type", form.FormDataContentType())
 	response := httptest.NewRecorder()
 	router.ServeHTTP(response, request)
@@ -77,7 +78,7 @@ func TestSuggestionAndPayPalAttachmentLocalRouteServesExactOwnedBytesAndPreserve
 	require.NoError(t, err)
 	readObject := func(path string, status int, expected []byte) {
 		response := httptest.NewRecorder()
-		router.ServeHTTP(response, httptest.NewRequest(http.MethodGet, path, nil))
+		router.ServeHTTP(response, httptest.NewRequestWithContext(t.Context(), http.MethodGet, path, nil))
 		require.Equal(t, status, response.Code, response.Body.String())
 		require.Equal(t, "private, no-store", response.Header().Get("Cache-Control"))
 		if status == http.StatusOK {

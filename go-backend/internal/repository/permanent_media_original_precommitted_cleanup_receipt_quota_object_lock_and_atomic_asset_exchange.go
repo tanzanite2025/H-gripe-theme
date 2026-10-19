@@ -10,12 +10,13 @@ import (
 	"strings"
 	"time"
 
-	"commerce-platform/internal/domain/media"
-	"commerce-platform/internal/domain/outbox"
-	"commerce-platform/internal/pkg/storage"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
+
+	"commerce-platform/internal/domain/media"
+	"commerce-platform/internal/domain/outbox"
+	"commerce-platform/internal/pkg/storage"
 )
 
 const PermanentMediaOriginalUploadReceiptEventKeyPrefix = "permanent-media-original-upload:"

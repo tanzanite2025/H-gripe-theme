@@ -1,13 +1,14 @@
 package order
 
 import (
-	"commerce-platform/internal/api/privateattachment"
 	"encoding/json"
 	"errors"
 	"mime/multipart"
 	"net/http"
 	"strconv"
 	"strings"
+
+	"commerce-platform/internal/api/privateattachment"
 
 	orderdomain "commerce-platform/internal/domain/order"
 	"commerce-platform/internal/pkg/apierror"

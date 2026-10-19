@@ -7,10 +7,11 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"commerce-platform/internal/domain/media"
-	"commerce-platform/internal/service"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/require"
+
+	"commerce-platform/internal/domain/media"
+	"commerce-platform/internal/service"
 )
 
 func TestReadOnlyMediaUsageSummaryHTTPRequiresMediaViewAndHidesConversationMetadataOutsideFullScope(t *testing.T) {
@@ -27,7 +28,7 @@ func TestReadOnlyMediaUsageSummaryHTTPRequiresMediaViewAndHidesConversationMetad
 			require.NoError(t, db.Exec("INSERT INTO ticket_messages(id,ticket_id,attachments) VALUES(987654,876543,?)", `["`+public.URL+`"]`).Error)
 			router := createMediaLibraryPartitionHTTPRouterWithActualRegisteredPermissions(handler, role)
 			response := httptest.NewRecorder()
-			router.ServeHTTP(response, httptest.NewRequest(http.MethodPost, "/api/admin/media/usage-summaries?exclude_conversation_attachments=false&allow_all_references=true", nil))
+			router.ServeHTTP(response, httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/api/admin/media/usage-summaries?exclude_conversation_attachments=false&allow_all_references=true", nil))
 			if role == "user" {
 				require.Equal(t, http.StatusForbidden, response.Code)
 				return
@@ -60,7 +61,7 @@ func TestReadOnlyMediaUsageSummaryHTTPRequiresMediaViewAndHidesConversationMetad
 			require.True(t, public.UpdatedAt.Equal(after.UpdatedAt))
 			// The existing detail endpoint must not bypass summary redaction.
 			inspection := httptest.NewRecorder()
-			router.ServeHTTP(inspection, httptest.NewRequest(http.MethodGet, fmt.Sprintf("/api/admin/media/assets/%d/references", public.ID), nil))
+			router.ServeHTTP(inspection, httptest.NewRequestWithContext(t.Context(), http.MethodGet, fmt.Sprintf("/api/admin/media/assets/%d/references", public.ID), nil))
 			require.Equal(t, http.StatusOK, inspection.Code, inspection.Body.String())
 			require.Equal(t, "no-store", inspection.Header().Get("Cache-Control"))
 			if role != "admin" && role != "manager" {
@@ -72,7 +73,7 @@ func TestReadOnlyMediaUsageSummaryHTTPRequiresMediaViewAndHidesConversationMetad
 			}
 			if role == "manager" || role == "admin" {
 				reviewResponse := httptest.NewRecorder()
-				router.ServeHTTP(reviewResponse, httptest.NewRequest(http.MethodGet, fmt.Sprintf("/api/admin/media/assets/%d/library-classification-review", public.ID), nil))
+				router.ServeHTTP(reviewResponse, httptest.NewRequestWithContext(t.Context(), http.MethodGet, fmt.Sprintf("/api/admin/media/assets/%d/library-classification-review", public.ID), nil))
 				require.Equal(t, http.StatusOK, reviewResponse.Code, reviewResponse.Body.String())
 				require.Contains(t, reviewResponse.Body.String(), `"recognized_reference_total":1`)
 			}
@@ -92,7 +93,7 @@ func TestReadOnlyMediaUsageSummaryRedactionAlsoProtectsDeletionConflictResponses
 		}})
 	})
 	response := httptest.NewRecorder()
-	router.ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/test-media-deletion-conflict", nil))
+	router.ServeHTTP(response, httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/test-media-deletion-conflict", nil))
 	require.Equal(t, http.StatusConflict, response.Code)
 	require.Equal(t, "no-store", response.Header().Get("Cache-Control"))
 	require.Contains(t, response.Body.String(), "media_asset_in_use")
@@ -111,7 +112,7 @@ func TestReadOnlyMediaUsageSummaryOwnershipReviewDoesNotExposePrivateCustomerRef
 	require.NoError(t, db.Exec("INSERT INTO suggestion_feedback(id,attachments) VALUES(876543,?),(987654,?)", `["`+asset.URL+`"]`, `["`+asset.URL+`"]`).Error)
 	response := httptest.NewRecorder()
 	createMediaLibraryPartitionHTTPRouterWithActualRegisteredPermissions(handler, "manager").ServeHTTP(response,
-		httptest.NewRequest(http.MethodGet, fmt.Sprintf("/api/admin/media/assets/%d/library-classification-review", asset.ID), nil))
+		httptest.NewRequestWithContext(t.Context(), http.MethodGet, fmt.Sprintf("/api/admin/media/assets/%d/library-classification-review", asset.ID), nil))
 	require.Equal(t, http.StatusOK, response.Code, response.Body.String())
 	require.Equal(t, "no-store", response.Header().Get("Cache-Control"))
 	require.Contains(t, response.Body.String(), `"has_restricted_references":true`)
@@ -127,7 +128,7 @@ func TestReadOnlyMediaUsageSummaryHTTPRejectsForgedConversationScopeAndInvalidFi
 	for _, query := range []string{"library_partition=unknown", "media_type=script", "status=deleted", "visibility=secret", "customer_service_media_purpose=conversation_attachment"} {
 		t.Run(query, func(t *testing.T) {
 			response := httptest.NewRecorder()
-			router.ServeHTTP(response, httptest.NewRequest(http.MethodPost, "/api/admin/media/usage-summaries?"+query, nil))
+			router.ServeHTTP(response, httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/api/admin/media/usage-summaries?"+query, nil))
 			require.Contains(t, []int{http.StatusBadRequest, http.StatusForbidden}, response.Code, response.Body.String())
 			require.NotContains(t, response.Body.String(), `"report"`)
 		})
@@ -140,7 +141,7 @@ func TestReadOnlyMediaUsageSummaryHTTPScannerFailureDoesNotReturnZeroReferencesO
 	require.NoError(t, db.Exec("CREATE TABLE suggestion_feedback(id INTEGER PRIMARY KEY,attachments TEXT,deleted_at DATETIME)").Error)
 	require.NoError(t, db.Exec("INSERT INTO suggestion_feedback(id,attachments) VALUES(1,'{broken')").Error)
 	response := httptest.NewRecorder()
-	createMediaLibraryPartitionHTTPRouterWithActualRegisteredPermissions(handler, "admin").ServeHTTP(response, httptest.NewRequest(http.MethodPost, "/api/admin/media/usage-summaries", nil))
+	createMediaLibraryPartitionHTTPRouterWithActualRegisteredPermissions(handler, "admin").ServeHTTP(response, httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/api/admin/media/usage-summaries", nil))
 	require.Equal(t, http.StatusServiceUnavailable, response.Code)
 	require.Contains(t, response.Body.String(), "media_usage_summary_unavailable")
 	for _, internal := range []string{"suggestion_feedback", "attachments", "broken", `"report"`, `"rows"`} {

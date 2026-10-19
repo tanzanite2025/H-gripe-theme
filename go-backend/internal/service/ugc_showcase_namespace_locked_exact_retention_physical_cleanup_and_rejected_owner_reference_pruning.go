@@ -33,7 +33,7 @@ func (s *UGCShowcaseService) cleanupUGCShowcaseObjectsWithRetainedReferencesAndL
 		lockedService := *s
 		lockedService.repo = repo
 		for _, key := range keys {
-			if !showcaseStorageKeyIsPending(key) && !(failedUpload && showcaseStorageKeyIsApproved(key)) {
+			if !showcaseStorageKeyIsPending(key) && (!failedUpload || !showcaseStorageKeyIsApproved(key)) {
 				continue
 			}
 			if key == showcasePendingUploadPrefix || key == showcaseApprovedUploadPrefix {

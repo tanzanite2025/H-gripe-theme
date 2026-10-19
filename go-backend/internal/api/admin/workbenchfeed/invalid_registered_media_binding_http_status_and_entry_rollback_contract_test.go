@@ -8,13 +8,14 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"commerce-platform/internal/domain/media"
-	feed "commerce-platform/internal/workbenchfeed"
 	"github.com/gin-gonic/gin"
 	"github.com/glebarez/sqlite"
 	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
+
+	"commerce-platform/internal/domain/media"
+	feed "commerce-platform/internal/workbenchfeed"
 )
 
 func TestWorkbenchFeedInvalidMediaBindingReturnsBadRequestWithoutPartialEntryOrChildWrites(t *testing.T) {
@@ -36,7 +37,7 @@ func TestWorkbenchFeedInvalidMediaBindingReturnsBadRequestWithoutPartialEntryOrC
 	for _, mutation := range []struct{ method, url string }{{http.MethodPost, "/entries"}, {http.MethodPut, fmt.Sprintf("/entries/%d", entry.ID)}} {
 		body, err := json.Marshal(map[string]any{"content": "Must roll back", "status": "published", "media": []map[string]any{{"file_path": "/uploads/workbench-feed/missing.png", "width": 64, "height": 32}}})
 		require.NoError(t, err)
-		request := httptest.NewRequest(mutation.method, mutation.url, bytes.NewReader(body))
+		request := httptest.NewRequestWithContext(t.Context(), mutation.method, mutation.url, bytes.NewReader(body))
 		request.Header.Set("Content-Type", "application/json")
 		response := httptest.NewRecorder()
 		router.ServeHTTP(response, request)

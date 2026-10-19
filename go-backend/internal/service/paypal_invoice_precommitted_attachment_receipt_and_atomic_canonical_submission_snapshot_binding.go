@@ -3,11 +3,12 @@ package service
 import (
 	"context"
 
+	"gorm.io/gorm"
+
 	"commerce-platform/internal/domain/orderevidence"
 	"commerce-platform/internal/domain/outbox"
 	"commerce-platform/internal/pkg/storage"
 	"commerce-platform/internal/repository"
-	"gorm.io/gorm"
 )
 
 func (s *PaymentService) ConfigurePayPalInvoiceDurableAttachmentUploads(uploads *SuggestionAndPayPalAttachmentUploadService) {
@@ -19,9 +20,9 @@ func (s *PaymentService) ConfigurePayPalInvoiceDurableAttachmentUploads(uploads 
 func (s *PaymentService) configurePayPalInvoiceDurableUploadProvider(provider PayPalDisputeEvidenceDocumentStorage) {
 	// The old UploadFromReader-only capability cannot authorize an upload.
 	// Use an independent configuration copy so feedback keeps its own provider.
-	copy := *s.paypalDisputeAttachmentUploads
-	copy.storage, _ = provider.(storage.StorageService)
-	s.paypalDisputeAttachmentUploads = &copy
+	clonedValue := *s.paypalDisputeAttachmentUploads
+	clonedValue.storage, _ = provider.(storage.StorageService)
+	s.paypalDisputeAttachmentUploads = &clonedValue
 }
 
 func (s *PaymentService) createCanonicalPayPalSubmissionSnapshotAndBindNewInvoiceReceipts(ctx context.Context, candidate *orderevidence.OrderEvidenceSubmissionSnapshot, documents []PayPalDisputeEvidenceDocument) (*orderevidence.OrderEvidenceSubmissionSnapshot, error) {

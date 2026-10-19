@@ -4,14 +4,15 @@ import (
 	"bytes"
 	"context"
 
-	"github.com/aliyun/aliyun-oss-go-sdk/oss"
-	"github.com/stretchr/testify/require"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/aliyun/aliyun-oss-go-sdk/oss"
+	"github.com/stretchr/testify/require"
 )
 
 func TestOrderEvidencePreallocatedPrivateWriteUsesExactKeyPrivateBucketNoStoreAndCancellation(t *testing.T) {

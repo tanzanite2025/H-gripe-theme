@@ -5,10 +5,11 @@ import (
 	"database/sql"
 	"errors"
 
-	"commerce-platform/internal/domain/gallery"
-	"commerce-platform/internal/domain/media"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
+
+	"commerce-platform/internal/domain/gallery"
+	"commerce-platform/internal/domain/media"
 )
 
 var ErrMediaAssociationRepairConflict = errors.New("media association changed or is outside the supported repair scope")
@@ -25,7 +26,7 @@ func (r *MediaRepository) ReadMediaAssociationDiagnosisSnapshot(ctx context.Cont
 // short, bounded table locks; every normal gallery writer participates through
 // PostgreSQL's ordinary table locks, including writers unaware of this feature.
 func (r *MediaRepository) LockMissingGalleryParentRepairTables() error {
-	if r.db.Dialector.Name() != "postgres" {
+	if r.db.Name() != "postgres" {
 		return ErrMediaAssociationRepairConflict
 	}
 	if err := r.db.Exec("SET LOCAL lock_timeout = '2s'").Error; err != nil {

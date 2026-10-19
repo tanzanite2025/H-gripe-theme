@@ -1,10 +1,12 @@
 package repository
 
 import (
-	"commerce-platform/internal/domain/gallery"
+	"sort"
+
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
-	"sort"
+
+	"commerce-platform/internal/domain/gallery"
 )
 
 func (r *GalleryRepository) createGalleryImagesWithParentAndAssetLocks(images []gallery.GalleryImage) error {

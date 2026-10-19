@@ -4,9 +4,10 @@ import (
 	"errors"
 	"sort"
 
-	"commerce-platform/internal/domain/setting"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
+
+	"commerce-platform/internal/domain/setting"
 )
 
 func (r *SettingRepository) ConfigurePublicBusinessMediaReferenceIdentityResolver(resolver PublicBusinessMediaReferenceObjectKeyResolver) {

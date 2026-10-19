@@ -4,8 +4,9 @@ import (
 	"errors"
 	"fmt"
 
-	"commerce-platform/internal/domain/product"
 	"gorm.io/gorm"
+
+	"commerce-platform/internal/domain/product"
 )
 
 var ErrProductBrandLogoReferenceInvalid = errors.New("product brand logo reference is invalid")

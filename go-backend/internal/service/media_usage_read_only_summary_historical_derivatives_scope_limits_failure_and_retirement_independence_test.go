@@ -7,11 +7,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
+	"gorm.io/datatypes"
+
 	"commerce-platform/internal/domain/media"
 	"commerce-platform/internal/domain/product"
 	"commerce-platform/internal/repository"
-	"github.com/stretchr/testify/require"
-	"gorm.io/datatypes"
 )
 
 func TestReadOnlyMediaUsageSummaryIncludesRetainedDerivativeReferencesCrossBusinessAndMissingParentsWithoutChangingRows(t *testing.T) {

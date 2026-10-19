@@ -121,17 +121,17 @@ func TestPostgreSQLDedicatedPublicOwnerAdmissionAndCleanupSerializeInBothOrdersA
 						}
 					}
 					go cleanup()
-					pid = awaitPostgreSQLMediaObjectOwnershipTransactionPID(t, ctx, captured)
+					pid = awaitPostgreSQLMediaObjectOwnershipTransactionPID(ctx, t, captured)
 					go bind()
 				} else {
 					go bind()
-					pid = awaitPostgreSQLMediaObjectOwnershipTransactionPID(t, ctx, locked)
+					pid = awaitPostgreSQLMediaObjectOwnershipTransactionPID(ctx, t, locked)
 					go cleanup()
 				}
-				requireDedicatedObjectLifecyclePostgreSQLTransactionActuallyBlocks(t, ctx, env.db, pid)
+				requireDedicatedObjectLifecyclePostgreSQLTransactionActuallyBlocks(ctx, t, env.db, pid)
 				releaseFirst()
-				ownerError := awaitPostgreSQLMediaObjectOwnershipOperationResult(t, ctx, ownerResult)
-				require.NoError(t, awaitPostgreSQLMediaObjectOwnershipOperationResult(t, ctx, cleanupResult))
+				ownerError := awaitPostgreSQLMediaObjectOwnershipOperationResult(ctx, t, ownerResult)
+				require.NoError(t, awaitPostgreSQLMediaObjectOwnershipOperationResult(ctx, t, cleanupResult))
 				switch first {
 				case "owner":
 					require.NoError(t, ownerError)
@@ -178,7 +178,7 @@ func TestPostgreSQLDedicatedPublicCleanupRetainsNamespaceLockUntilCanceledProvid
 			captured := captureDedicatedPublicCleanupTransactionBackendPIDBeforeProviderDeletion(t, env)
 			cleanupResult, ownerResult := make(chan error, 1), make(chan error, 1)
 			go func() { cleanupResult <- env.handler.Handle(cleanupContext, event) }()
-			pid := awaitPostgreSQLMediaObjectOwnershipTransactionPID(t, ctx, captured)
+			pid := awaitPostgreSQLMediaObjectOwnershipTransactionPID(ctx, t, captured)
 			select {
 			case <-entered:
 			case <-ctx.Done():
@@ -187,7 +187,7 @@ func TestPostgreSQLDedicatedPublicCleanupRetainsNamespaceLockUntilCanceledProvid
 			go func() {
 				ownerResult <- replaceDedicatedPublicOwnerAfterNamespaceLockWithOptionalTransactionalCallback(ctx, env, env.db, nil)
 			}()
-			requireDedicatedObjectLifecyclePostgreSQLTransactionActuallyBlocks(t, ctx, env.db, pid)
+			requireDedicatedObjectLifecyclePostgreSQLTransactionActuallyBlocks(ctx, t, env.db, pid)
 			cancelCleanup()
 			returnedEarly := false
 			select {
@@ -197,9 +197,9 @@ func TestPostgreSQLDedicatedPublicCleanupRetainsNamespaceLockUntilCanceledProvid
 			case <-time.After(200 * time.Millisecond):
 			}
 			release()
-			require.ErrorIs(t, awaitPostgreSQLMediaObjectOwnershipOperationResult(t, ctx, cleanupResult), context.Canceled)
+			require.ErrorIs(t, awaitPostgreSQLMediaObjectOwnershipOperationResult(ctx, t, cleanupResult), context.Canceled)
 			if !returnedEarly {
-				requireDedicatedPublicOwnerAdmissionRejectedBecauseObjectIsMissing(t, namespace, awaitPostgreSQLMediaObjectOwnershipOperationResult(t, ctx, ownerResult))
+				requireDedicatedPublicOwnerAdmissionRejectedBecauseObjectIsMissing(t, namespace, awaitPostgreSQLMediaObjectOwnershipOperationResult(ctx, t, ownerResult))
 			}
 			requireDedicatedPublicUploadCompensationObjectMissing(t, env.provider, env.key)
 			env.logos.storage, env.favicons.storage, env.visuals.storage = env.provider, env.provider, env.provider

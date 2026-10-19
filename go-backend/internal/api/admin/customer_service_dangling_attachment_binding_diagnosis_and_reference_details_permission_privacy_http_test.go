@@ -6,8 +6,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"commerce-platform/internal/domain/media"
 	"github.com/stretchr/testify/require"
+
+	"commerce-platform/internal/domain/media"
 )
 
 func TestCustomerServiceDanglingBindingHTTPDiagnosisAndDetailsRequireFullConversationMetadataScope(t *testing.T) {
@@ -25,7 +26,7 @@ func TestCustomerServiceDanglingBindingHTTPDiagnosisAndDetailsRequireFullConvers
 					path = "/api/admin/media/usage-summaries"
 				}
 				response := httptest.NewRecorder()
-				router.ServeHTTP(response, httptest.NewRequest(operation.method, path+"?allow_all_references=true", nil))
+				router.ServeHTTP(response, httptest.NewRequestWithContext(t.Context(), operation.method, path+"?allow_all_references=true", nil))
 				if role == "user" {
 					require.Equal(t, http.StatusForbidden, response.Code)
 					continue

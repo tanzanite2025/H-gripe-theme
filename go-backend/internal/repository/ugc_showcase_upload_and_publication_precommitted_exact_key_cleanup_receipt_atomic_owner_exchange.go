@@ -46,7 +46,7 @@ func (r *OutboxRepository) RunUGCShowcaseObjectWritesWithPrecommittedCleanupRece
 	seen := make(map[string]bool)
 	for _, key := range payload.ObjectKeys {
 		normalized, valid := storage.NormalizeObjectKey(key)
-		if !valid || normalized != key || seen[key] || !(strings.HasPrefix(key, "showcase/pending/") || strings.HasPrefix(key, "showcase/approved/")) {
+		if !valid || normalized != key || seen[key] || (!strings.HasPrefix(key, "showcase/pending/") && !strings.HasPrefix(key, "showcase/approved/")) {
 			return ErrUGCShowcaseObjectWriteReceiptNoLongerWritable
 		}
 		seen[key] = true

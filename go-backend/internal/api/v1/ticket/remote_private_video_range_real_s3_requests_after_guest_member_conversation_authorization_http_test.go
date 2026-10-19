@@ -9,10 +9,11 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"commerce-platform/internal/pkg/storage"
 	"commerce-platform/internal/repository"
 	"commerce-platform/internal/service"
-	"github.com/stretchr/testify/require"
 )
 
 func TestRemotePrivateVideoRangeHTTPFetchesOnlyRequestedS3BytesAfterRealConversationAuthorization(t *testing.T) {
@@ -52,7 +53,7 @@ func TestRemotePrivateVideoRangeHTTPFetchesOnlyRequestedS3BytesAfterRealConversa
 			require.NoError(t, env.db.Model(&env.message).Updates(map[string]any{"attachments": string(attachments), "message_type": "video", "is_internal": scenario == "internal message"}).Error)
 			mediaService := service.NewMediaService(repository.NewMediaRepository(env.db), store, nil, "https://shop.example.test", 20<<30)
 			env.handler.conversationAttachmentAccess = service.NewCustomerServiceConversationMessageAttachmentAccessService(env.handler.ticketService, mediaService)
-			request := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/api/v1/customer-service/conversations/%s/messages/%d/attachments/0/file?object_key=ignored", *env.conversation.ConversationID, env.message.ID), nil)
+			request := httptest.NewRequestWithContext(t.Context(), http.MethodGet, fmt.Sprintf("/api/v1/customer-service/conversations/%s/messages/%d/attachments/0/file?object_key=ignored", *env.conversation.ConversationID, env.message.ID), nil)
 			request.Header.Set("Range", "bytes=2-5")
 			if scenario == "unsatisfiable" {
 				request.Header.Set("Range", "bytes=10-")
