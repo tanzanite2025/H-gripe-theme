@@ -72,6 +72,14 @@ func (s *ProductService) CopyAdminProductTranslation(id uint, targetLocale strin
 	if err := s.validateCarbonRimProductTypeAndSystemCategoryBinding(source.ProductType, source.ProductCategoryID); err != nil {
 		return nil, nil, err
 	}
+	if source.ProductType == product.ProductTypeCarbonRim {
+		if err := product.ValidateCarbonRimSpecification(source.CarbonRimSpecification); err != nil {
+			return nil, nil, fmt.Errorf("%w: %v", ErrProductSpecInvalid, err)
+		}
+		if err := product.ValidateCarbonRimWheelSizeMaterialAndRidingUses(source.CarbonRimSpecification, true); err != nil {
+			return nil, nil, fmt.Errorf("%w: %v", ErrProductSpecInvalid, err)
+		}
+	}
 
 	locale, err := requireSupportedLocale(targetLocale)
 	if err != nil {

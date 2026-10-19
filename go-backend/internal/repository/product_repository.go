@@ -114,7 +114,7 @@ func (r *ProductRepository) preloadProductOptionValueRelations(db *gorm.DB) *gor
 
 func (r *ProductRepository) preloadProductCategory(db *gorm.DB) *gorm.DB {
 	if r.db.Migrator().HasTable(&product.ProductCategory{}) {
-		return db.Preload("ProductCategory")
+		return db.Preload("ProductCategory.Translations")
 	}
 	return db
 }

@@ -13,10 +13,8 @@ export const requireCarbonRimSystemCategory = (categories: ProductCategoryRecord
   return category
 }
 
-export const isProtectedSystemProductCategory = (slug: string): boolean => (
-  ['wheelset', 'wheel-components', 'tire', 'spoke-repair-kits', carbonRimSystemCategorySlug].includes(slug)
-)
-
-export const hasProtectedSystemProductCategoryParent = (slug: string): boolean => (
-  isProtectedSystemProductCategory(slug) && slug !== 'wheelset'
-)
+export const buildCarbonRimRequiredSystemCategoryDisplayPath = (categories: ProductCategoryRecord[]): string => {
+  const category = requireCarbonRimSystemCategory(categories)
+  const parent = categories.find(item => item.id === category.parent_id)!
+  return `${parent.name} → ${category.name}`
+}

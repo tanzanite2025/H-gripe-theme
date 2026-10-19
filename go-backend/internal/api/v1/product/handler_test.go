@@ -156,6 +156,7 @@ func TestListProductsFiltersFeaturedResultsByProductCategory(t *testing.T) {
 	}
 	if err := db.AutoMigrate(
 		&productdomain.ProductCategory{},
+		&productdomain.ProductCategoryTranslation{},
 		&productdomain.Product{},
 		&productdomain.ProductMedia{},
 		&productdomain.ProductVariant{},
@@ -249,6 +250,7 @@ func TestListProductsTireGuideCategoryUsesCategoryTreeInsteadOfKeywordOrTemplate
 	}
 	if err := db.AutoMigrate(
 		&productdomain.ProductCategory{},
+		&productdomain.ProductCategoryTranslation{},
 		&productdomain.ProductSpecificationTemplate{},
 		&productdomain.SpecDefinition{},
 		&productdomain.Product{},

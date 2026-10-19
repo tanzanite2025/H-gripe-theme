@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { ProductCategoryRecord } from '@/api/productCategories'
-import { requireCarbonRimSystemCategory, isProtectedSystemProductCategory, hasProtectedSystemProductCategoryParent } from './carbonRimRequiredSystemCategorySelectionAndProtection'
+import { requireCarbonRimSystemCategory, buildCarbonRimRequiredSystemCategoryDisplayPath } from './carbonRimRequiredSystemCategorySelection'
 
 const createSystemCategoryRecords = (): ProductCategoryRecord[] => [
   { id: 317, parent_id: null, name: '车轮配件', slug: 'wheel-components', description: '', depth: 1, sort_order: 0, is_enabled: true, children: [] },
@@ -23,11 +23,10 @@ describe('required carbon rim system category', () => {
     expect(() => requireCarbonRimSystemCategory(records)).toThrow('碳圈系统分类不可用')
   })
 
-  it('protects system identities while retaining the wheelset parent editing rule', () => {
-    expect(isProtectedSystemProductCategory('carbon-rim')).toBe(true)
-    expect(hasProtectedSystemProductCategoryParent('carbon-rim')).toBe(true)
-    expect(isProtectedSystemProductCategory('wheelset')).toBe(true)
-    expect(hasProtectedSystemProductCategoryParent('wheelset')).toBe(false)
-    expect(isProtectedSystemProductCategory('custom')).toBe(false)
+  it('uses editable category names from the same records that determine the binding', () => {
+    const records = createSystemCategoryRecords()
+    expect(buildCarbonRimRequiredSystemCategoryDisplayPath(records)).toBe('车轮配件 → 碳纤维车圈')
+    records[1]!.name = 'Carbon Fiber Rims'
+    expect(buildCarbonRimRequiredSystemCategoryDisplayPath(records)).toBe('车轮配件 → Carbon Fiber Rims')
   })
 })

@@ -123,7 +123,7 @@
 <script setup lang="ts">
 import { CornerDownRight, Folder, ImagePlus, Languages, ListPlus, LockKeyhole, Pencil, PlusSquare, Trash2, X } from '@lucide/vue'
 import { computed, ref, watch } from 'vue'
-import { isProtectedSystemProductCategory, hasProtectedSystemProductCategoryParent } from '@/modules/product/carbonRimRequiredSystemCategorySelectionAndProtection'
+import { isProtectedSystemProductCategory, hasProtectedSystemProductCategoryParent } from '@/modules/product/productSystemCategoryIdentityAndParentProtection'
 import type { DraftCategoryRow, ProductCategoryParentOption } from '@/modules/product/productCategoryTypes'
 import { rootProductCategoryParentValue } from '@/composables/product/useProductCategoryTreeEditor'
 import { Button } from '@/components/ui/button'

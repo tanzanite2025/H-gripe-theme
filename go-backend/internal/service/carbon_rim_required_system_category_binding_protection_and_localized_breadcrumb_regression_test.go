@@ -90,3 +90,34 @@ func TestCarbonRimSystemCategoryProtectsIdentityAndLocalizesActualBreadcrumbRela
 	require.Equal(t, "碳纤维车圈", breadcrumb.Items[3].Name)
 	require.Equal(t, "/zh_cn/shop/wheel-components/carbon-rim", breadcrumb.Items[3].Path)
 }
+
+func TestCarbonRimUpdatesAndTranslationCopiesRequireCompleteWheelSizeMaterialAndRidingUses(t *testing.T) {
+	for _, missingField := range []string{"wheel_size", "material", "riding_uses"} {
+		t.Run(missingField, func(t *testing.T) {
+			db, svc := newTestProductService(t)
+			created, err := svc.CreateAdminProduct(createCarbonRimProductServiceTestInput(t, db))
+			require.NoError(t, err)
+			incomplete := *created.CarbonRimSpecification
+			switch missingField {
+			case "wheel_size":
+				incomplete.WheelSize = ""
+			case "material":
+				incomplete.Material = ""
+				incomplete.MaterialDetails = ""
+			case "riding_uses":
+				incomplete.RidingUses = nil
+			}
+			_, err = svc.UpdateAdminProduct(created.ID, ProductUpdateInput{UpdateCarbonRimSpecification: true, CarbonRimSpecification: &incomplete})
+			require.ErrorIs(t, err, ErrProductSpecInvalid)
+			require.NoError(t, db.Model(&product.Product{}).Where("id = ?", created.ID).Select("CarbonRimSpecification").Updates(&product.Product{CarbonRimSpecification: &incomplete}).Error)
+			_, err = svc.UpdateAdminProduct(created.ID, ProductUpdateInput{UpdateCarbonRimSpecification: true, CarbonRimSpecification: &incomplete})
+			require.ErrorIs(t, err, ErrProductSpecInvalid)
+			_, err = svc.UpdateAdminProduct(created.ID, ProductUpdateInput{})
+			require.ErrorIs(t, err, ErrProductSpecInvalid)
+			_, _, err = svc.CopyAdminProductTranslation(created.ID, "fr")
+			require.ErrorIs(t, err, ErrProductSpecInvalid)
+			_, err = svc.UpdateAdminProduct(created.ID, ProductUpdateInput{UpdateCarbonRimSpecification: true, CarbonRimSpecification: created.CarbonRimSpecification})
+			require.NoError(t, err)
+		})
+	}
+}

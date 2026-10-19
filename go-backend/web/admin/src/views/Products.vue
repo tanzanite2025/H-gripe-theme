@@ -94,6 +94,7 @@
       :selected-schwalbe-tire-article-no="selectedSchwalbeTireArticleNo"
       :brands="brands"
       :product-categories="standardProductCategories"
+      :carbon-rim-system-category-display-path="carbonRimSystemCategoryDisplayPath"
       :selected-product-spec-template="selectedProductSpecTemplate"
       :brand-select-value="brandSelectValue"
       :selected-spec-definitions="selectedSpecDefinitions"
@@ -317,6 +318,7 @@ const {
   defaultVariantIndex,
   productSpecTemplateSelectValue,
   productCategorySelectValue,
+  carbonRimSystemCategoryDisplayPath,
   brandSelectValue,
   templateScopedValuesTouched,
   templateSyncDialogVisible,

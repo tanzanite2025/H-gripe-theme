@@ -457,7 +457,7 @@ func PublicProductFromDomainWithLocaleAndRoutes(item productdomain.Product, disp
 		MetaTitle:                    item.MetaTitle,
 		MetaDesc:                     item.MetaDesc,
 		Brand:                        publicProductBrandFromDomain(item.Brand, resolver),
-		Category:                     publicProductCategoryFromDomain(item.ProductCategory),
+		Category:                     publicProductCategoryFromDomainWithLocale(item.ProductCategory, locale),
 		AfterSalesTemplate:           publicProductInformationTemplateFromDomain(item.AfterSalesTemplate),
 		PackagingTemplate:            publicProductInformationTemplateFromDomain(item.PackagingTemplate),
 		Availability:                 availabilityForProduct(item),
@@ -471,11 +471,11 @@ func PublicProductFromDomainWithLocaleAndRoutes(item productdomain.Product, disp
 	}
 }
 
-func publicProductCategoryFromDomain(item *productdomain.ProductCategory) *PublicProductCategory {
+func publicProductCategoryFromDomainWithLocale(item *productdomain.ProductCategory, locale string) *PublicProductCategory {
 	if item == nil || strings.TrimSpace(item.Slug) == "" {
 		return nil
 	}
-	return &PublicProductCategory{ID: item.ID, Name: item.Name, Slug: item.Slug}
+	return &PublicProductCategory{ID: item.ID, Name: item.LocalizedDisplayName(locale), Slug: item.Slug}
 }
 
 func publicProductBrandFromDomain(item *productdomain.ProductBrand, resolver publicmedia.Resolver) *PublicProductBrand {

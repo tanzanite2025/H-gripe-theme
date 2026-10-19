@@ -56,13 +56,13 @@
                 </Select>
               </AdminFormField>
               <AdminFormField label="商品分类" :required="isDedicatedCarbonRim" :error="errors.product_category_id" :description="isDedicatedCarbonRim ? '碳圈商品固定归入此分类。' : '可选；商品可以不设置分类。'">
-                <Input v-if="isDedicatedCarbonRim" model-value="Wheel Components → Carbon Rim" disabled />
+                <Input v-if="isDedicatedCarbonRim" :model-value="carbonRimSystemCategoryDisplayPath" disabled />
                 <Select v-else :model-value="productCategorySelectValue" @update:model-value="emit('product-category-select', $event)">
                   <SelectTrigger class="w-full"><SelectValue placeholder="未设置分类" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="__none__">未设置分类</SelectItem>
                     <SelectItem
-                      v-for="category in productCategories.filter(item => item.slug !== 'carbon-rim')"
+                      v-for="category in productCategories.filter(item => item.slug !== carbonRimSystemCategorySlug)"
                       :key="category.id"
                       :value="String(category.id)"
                       :disabled="category.is_enabled === false && String(form.product_category_id) !== String(category.id)"
@@ -397,6 +397,7 @@
 import { computed, nextTick, ref, watch } from 'vue'
 import CarbonRimDedicatedProductSpecificationFields from './CarbonRimDedicatedProductSpecificationFields.vue'
 import type { PropType } from 'vue'
+import { carbonRimSystemCategorySlug } from '@/modules/product/carbonRimRequiredSystemCategorySelection'
 import { RouterLink } from 'vue-router'
 import { LoaderCircle, Tags } from '@lucide/vue'
 import AdminFormField from '@/components/admin/AdminFormField.vue'
@@ -531,6 +532,7 @@ const props = defineProps({
   defaultVariantIndex: { type: Number, default: 0 },
   productSpecTemplateSelectValue: { type: String, default: '__none__' },
   productCategorySelectValue: { type: String, default: '__none__' },
+  carbonRimSystemCategoryDisplayPath: { type: String, required: true },
   brandSelectValue: { type: String, default: '__none__' },
   shippingTemplates: { type: Array as PropType<ShippingTemplateRecord[]>, default: () => [] },
   afterSalesTemplates: { type: Array as PropType<InformationTemplateRecord[]>, default: () => [] },

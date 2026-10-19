@@ -75,14 +75,16 @@ func (s *ProductService) validateDedicatedCarbonRimUpdate(existing *product.Prod
 		if err := product.ValidateCarbonRimSpecification(input.CarbonRimSpecification); err != nil {
 			return fmt.Errorf("%w: %v", ErrProductSpecInvalid, err)
 		}
-		if existing.CarbonRimSpecification != nil && (existing.CarbonRimSpecification.WheelSize != "" || len(existing.CarbonRimSpecification.RidingUses) > 0) {
-			if err := product.ValidateCarbonRimWheelSizeMaterialAndRidingUses(input.CarbonRimSpecification, true); err != nil {
-				return fmt.Errorf("%w: %v", ErrProductSpecInvalid, err)
-			}
-		}
 		if existing.ParentID != nil && !reflect.DeepEqual(input.CarbonRimSpecification, existing.CarbonRimSpecification) {
 			return fmt.Errorf("%w: edit shared carbon rim engineering facts on the source-language product", ErrProductSpecInvalid)
 		}
+	}
+	effectiveSpecification := existing.CarbonRimSpecification
+	if input.UpdateCarbonRimSpecification {
+		effectiveSpecification = input.CarbonRimSpecification
+	}
+	if err := product.ValidateCarbonRimWheelSizeMaterialAndRidingUses(effectiveSpecification, true); err != nil {
+		return fmt.Errorf("%w: %v", ErrProductSpecInvalid, err)
 	}
 	if !input.UpdateVariants {
 		return nil

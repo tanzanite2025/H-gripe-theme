@@ -4,7 +4,7 @@ import { createEmptyCarbonRimSpecificationForm, createEmptyCarbonRimVariantSpeci
 import { toast } from 'vue-sonner'
 import productApi from '@/api/products'
 import productCategoryApi from '@/api/productCategories'
-import { requireCarbonRimSystemCategory } from '@/modules/product/carbonRimRequiredSystemCategorySelectionAndProtection'
+import { requireCarbonRimSystemCategory, buildCarbonRimRequiredSystemCategoryDisplayPath } from '@/modules/product/carbonRimRequiredSystemCategorySelection'
 import productSpecificationTemplateApi from '@/api/productSpecificationTemplates'
 import schwalbeTireCatalogApi, { type SchwalbeTireCatalogItem } from '@/api/schwalbeTireCatalog'
 import { useProductMediaManager } from '@/composables/product/useProductMediaManager'
@@ -58,6 +58,13 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
   }
 
   const productSpecTemplates = ref<any[]>([])
+  const carbonRimSystemCategoryDisplayPath = ref('')
+  const loadRequiredCarbonRimSystemCategory = async () => {
+    const categories = (await productCategoryApi.list({ include_disabled: true })).flat
+    const category = requireCarbonRimSystemCategory(categories)
+    carbonRimSystemCategoryDisplayPath.value = buildCarbonRimRequiredSystemCategoryDisplayPath(categories)
+    return category
+  }
   const schwalbeTireCatalogItems = ref<SchwalbeTireCatalogItem[]>([])
   const schwalbeTireCatalogLoading = ref(false)
   const schwalbeTireCatalogError = ref('')
@@ -723,7 +730,7 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
     let carbonRimCategoryID: number | null = null
     if (productType === 'carbon_rim') {
       try {
-        carbonRimCategoryID = requireCarbonRimSystemCategory((await productCategoryApi.list({ include_disabled: true })).flat).id
+        carbonRimCategoryID = (await loadRequiredCarbonRimSystemCategory()).id
       } catch (error) {
         toast.error(error instanceof Error ? error.message : '读取碳圈系统分类失败，请重试')
         return
@@ -752,7 +759,7 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
       if (product.product_type !== 'carbon_rim' && productSpecTemplates.value.length === 0) await fetchProductSpecTemplates()
       detail = await productApi.get(product.id)
       if (detail.product_type === 'carbon_rim') {
-        const category = requireCarbonRimSystemCategory((await productCategoryApi.list({ include_disabled: true })).flat)
+        const category = await loadRequiredCarbonRimSystemCategory()
         if (detail.product_category_id !== category.id) throw new Error('碳圈商品分类不正确，请先检查数据库迁移')
       }
       if (detail.product_specification_template && !productSpecTemplates.value.some((template) => template.id === detail.product_specification_template.id)) {
@@ -841,7 +848,7 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
     try {
       const payload = buildProductPayload()
       if (payload.product_type === 'carbon_rim') {
-        const category = requireCarbonRimSystemCategory((await productCategoryApi.list({ include_disabled: true })).flat)
+        const category = await loadRequiredCarbonRimSystemCategory()
         if (payload.product_category_id !== category.id) {
           formErrors.product_category_id = '碳圈商品必须属于 Wheel Components → Carbon Rim'
           toast.error(formErrors.product_category_id)
@@ -883,6 +890,7 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
 
   return {
     productSpecTemplates,
+    carbonRimSystemCategoryDisplayPath,
     schwalbeTireCatalogItems,
     schwalbeTireCatalogLoading,
     schwalbeTireCatalogError,

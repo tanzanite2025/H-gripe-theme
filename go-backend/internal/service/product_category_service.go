@@ -882,12 +882,10 @@ func productCategoryToView(category product.ProductCategory) ProductCategoryView
 
 func productCategoryToLocalizedView(category product.ProductCategory, locale string) ProductCategoryView {
 	view := productCategoryToView(category)
+	view.Name = category.LocalizedDisplayName(locale)
 	for _, translation := range category.Translations {
 		if locales.Normalize(translation.Locale) != locale {
 			continue
-		}
-		if name := strings.TrimSpace(translation.Name); name != "" {
-			view.Name = name
 		}
 		if description := strings.TrimSpace(translation.Description); description != "" {
 			view.Description = description

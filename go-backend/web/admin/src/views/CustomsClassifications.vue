@@ -78,6 +78,7 @@
       :schwalbe-tire-catalog-error="schwalbeTireCatalogError"
       :selected-schwalbe-tire-article-no="selectedSchwalbeTireArticleNo"
       :brands="brands"
+      :carbon-rim-system-category-display-path="carbonRimSystemCategoryDisplayPath"
       :selected-product-spec-template="selectedProductSpecTemplate"
       :brand-select-value="brandSelectValue"
       :selected-spec-definitions="selectedSpecDefinitions"
@@ -263,6 +264,7 @@ const {
   fetchSchwalbeTireCatalog,
   fetchProductSpecTemplates: fetchEditorProductSpecTemplates,
   showEditDialog,
+  carbonRimSystemCategoryDisplayPath,
   submitForm,
 } = useProductEditor({
   refreshProducts: refreshWorkbench,
