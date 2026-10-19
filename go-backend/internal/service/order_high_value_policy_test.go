@@ -92,7 +92,7 @@ func TestOrderServiceHighValueIsBasedOnOrderTotalAcrossMultipleItems(t *testing.
 
 func TestOrderServiceHighValueIgnoresProductNameAndCategory(t *testing.T) {
 	db, orderService := newTestOrderService(t)
-	require.NoError(t, db.AutoMigrate(&productdomain.ProductCategory{}))
+	require.NoError(t, db.AutoMigrate(&productdomain.ProductCategory{}, &productdomain.ProductCategoryTranslation{}))
 
 	wheelCategory := productdomain.ProductCategory{
 		Name:      "Wheels",
