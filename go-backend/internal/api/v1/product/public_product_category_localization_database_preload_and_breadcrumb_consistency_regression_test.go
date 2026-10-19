@@ -8,9 +8,12 @@ import (
 
 	"commerce-platform/internal/api/middleware"
 	productdomain "commerce-platform/internal/domain/product"
+	"commerce-platform/internal/pkg/cache"
+	"commerce-platform/internal/pkg/config"
 	"commerce-platform/internal/repository"
 	"commerce-platform/internal/service"
 
+	"github.com/alicebob/miniredis/v2"
 	"github.com/gin-gonic/gin"
 	"github.com/glebarez/sqlite"
 	"github.com/stretchr/testify/require"
@@ -50,7 +53,11 @@ func TestPublicCarbonRimCategoryLoadsTranslationsForProductDetailListsAndBreadcr
 		}
 		require.NoError(t, db.Create(&item).Error)
 	}
-	productService := service.NewProductService(repository.NewProductRepository(db), nil, 0)
+	redisServer := miniredis.RunT(t)
+	redisCache, err := cache.Init(config.RedisConfig{Addrs: []string{redisServer.Addr()}})
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = redisCache.Close() })
+	productService := service.NewProductService(repository.NewProductRepository(db), redisCache, 60)
 	handler := NewHandler(productService)
 	handler.ConfigureProductCategoryService(service.NewProductCategoryService(repository.NewProductCategoryRepository(db)))
 	router := gin.New()
@@ -67,6 +74,7 @@ func TestPublicCarbonRimCategoryLoadsTranslationsForProductDetailListsAndBreadcr
 				response := httptest.NewRecorder()
 				router.ServeHTTP(response, request)
 				require.Equal(t, http.StatusOK, response.Code, response.Body.String())
+				require.NotContains(t, response.Body.String(), `"category_translations"`)
 				require.NoError(t, json.Unmarshal(response.Body.Bytes(), envelope))
 			}
 			var detail struct{ Data PublicProduct }
@@ -90,6 +98,13 @@ func TestPublicCarbonRimCategoryLoadsTranslationsForProductDetailListsAndBreadcr
 			require.NotNil(t, detail.Data.Breadcrumb)
 			require.Equal(t, "ready", detail.Data.Breadcrumb.Status)
 			require.Equal(t, scenario.name, detail.Data.Breadcrumb.Items[3].Name)
+			require.True(t, redisServer.Exists("product:slug:r45-"+scenario.locale+":"+scenario.locale))
+			require.NoError(t, db.Model(&productdomain.Product{}).Where("slug = ?", "r45-"+scenario.locale).Update("name", "Database change after cache population").Error)
+			var cachedDetail struct{ Data PublicProduct }
+			requestPublicProduct("/products/r45-"+scenario.locale, &cachedDetail)
+			require.NotNil(t, cachedDetail.Data.Category)
+			require.Equal(t, "R45", cachedDetail.Data.Name, "the second response must come from Redis")
+			require.Equal(t, scenario.name, cachedDetail.Data.Category.Name, "category translation must survive a Redis cache hit")
 			for _, path := range []string{"/products", "/products?product_category=carbon-rim", "/products?product_category=wheel-components"} {
 				var list struct{ Data []PublicProduct }
 				requestPublicProduct(path, &list)

@@ -456,11 +456,11 @@ func (s *ProductService) loadAndCacheProduct(ctx context.Context, cacheKey strin
 	}); ok {
 		lock, acquired, lockErr := barrier.AcquireLock(ctx, productCacheLockKey(cacheKey), s.cacheLockTTL)
 		if lockErr == nil && acquired {
-			_ = s.cache.SetContext(ctx, cacheKey, result, s.cacheTTL)
+			_ = s.cache.SetContext(ctx, cacheKey, buildProductDetailCacheDocumentWithCategoryTranslations(result), s.cacheTTL)
 			_ = lock.Release(context.Background())
 		}
 	} else {
-		_ = s.cache.SetContext(ctx, cacheKey, result, s.cacheTTL)
+		_ = s.cache.SetContext(ctx, cacheKey, buildProductDetailCacheDocumentWithCategoryTranslations(result), s.cacheTTL)
 	}
 	return result, nil
 }
@@ -499,7 +499,7 @@ func (s *ProductService) loadAndCacheProductWithLease(ctx context.Context, cache
 	result, err := loader(loadCtx)
 	if err == nil {
 		result = sanitizeProductHTML(result)
-		if cacheErr := s.cache.SetContext(loadCtx, cacheKey, result, s.cacheTTL); cacheErr != nil {
+		if cacheErr := s.cache.SetContext(loadCtx, cacheKey, buildProductDetailCacheDocumentWithCategoryTranslations(result), s.cacheTTL); cacheErr != nil {
 			// A cache write failure should not turn a successful database read into
 			// an application failure; the next request will retry under the lock.
 			_ = cacheErr
@@ -519,9 +519,12 @@ func (s *ProductService) loadAndCacheProductWithLease(ctx context.Context, cache
 }
 
 func (s *ProductService) getCachedProduct(ctx context.Context, cacheKey string) (*product.Product, bool) {
-	var cachedProduct product.Product
-	if s.cache != nil && s.cache.GetContext(ctx, cacheKey, &cachedProduct) == nil {
-		return sanitizeProductHTML(&cachedProduct), true
+	var document productDetailCacheDocumentWithCategoryTranslations
+	if s.cache != nil && s.cache.GetContext(ctx, cacheKey, &document) == nil && document.Product.ID > 0 {
+		if document.Product.ProductCategory != nil {
+			document.Product.ProductCategory.Translations = document.CategoryTranslations
+		}
+		return sanitizeProductHTML(&document.Product), true
 	}
 	return nil, false
 }
