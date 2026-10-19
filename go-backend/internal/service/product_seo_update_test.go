@@ -34,10 +34,12 @@ func (p *recordingMerchantPublisher) EnqueueOfferRevalidate(offerID uint, reason
 func TestProductSEOUpdateUsesDedicatedBoundaryWithoutMerchantEvent(t *testing.T) {
 	_, productService := newTestProductService(t)
 	created, err := productService.CreateAdminProduct(ProductCreateInput{
-		Name:   "SEO Boundary Product",
-		Slug:   "seo-boundary-product",
-		Status: "active",
-		Locale: "en",
+		MerchantProductIdentifier:     "TEST-MERCHANT-PRODUCT",
+		ManufacturerProductIdentifier: "TEST-MANUFACTURER-PRODUCT",
+		Name:                          "SEO Boundary Product",
+		Slug:                          "seo-boundary-product",
+		Status:                        "active",
+		Locale:                        "en",
 		Variants: []ProductVariantInput{{
 			SKU:        "SEO-BOUNDARY-001",
 			PriceMinor: 99,

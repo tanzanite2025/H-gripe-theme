@@ -20,7 +20,7 @@ func TestVATComplyTaxRateSourceAdapterRejectsRedirectsOutsideConfiguredHost(t *t
 		return response, nil
 	})
 
-	_, _, err := adapter.FetchVATComplyTaxRateEntries(context.Background(), time.Now().UTC())
+	_, _, _, err := adapter.FetchVATComplyTaxRateEntries(context.Background(), time.Now().UTC())
 	require.Error(t, err)
 	require.Contains(t, strings.ToLower(err.Error()), "redirected outside")
 	require.Equal(t, 1, transportCalls, "the adapter must not send a request to the redirected host")

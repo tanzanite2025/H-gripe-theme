@@ -13,6 +13,10 @@ import (
 )
 
 type productCreateRequest struct {
+	MerchantProductIdentifier     string `json:"merchant_product_identifier"`
+	ManufacturerProductIdentifier string `json:"manufacturer_product_identifier"`
+	StandardProductIdentifier     string `json:"standard_product_identifier"`
+
 	ProductType                    *string                               `json:"product_type"`
 	CarbonRimSpecification         *productdomain.CarbonRimSpecification `json:"carbon_rim_specification"`
 	ProductSpecificationTemplateID *uint                                 `json:"product_specification_template_id"`
@@ -44,6 +48,10 @@ type productCreateRequest struct {
 }
 
 type productUpdateRequest struct {
+	MerchantProductIdentifier     *string `json:"merchant_product_identifier"`
+	ManufacturerProductIdentifier *string `json:"manufacturer_product_identifier"`
+	StandardProductIdentifier     *string `json:"standard_product_identifier"`
+
 	ProductType                    *string                               `json:"product_type"`
 	CarbonRimSpecification         *productdomain.CarbonRimSpecification `json:"carbon_rim_specification"`
 	ProductSpecificationTemplateID *uint                                 `json:"product_specification_template_id"`

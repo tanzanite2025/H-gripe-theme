@@ -16,7 +16,9 @@ func createCarbonRimProductServiceTestInput(t *testing.T, db *gorm.DB) ProductCr
 	kind := product.ProductTypeCarbonRim
 	tubeless := true
 	return ProductCreateInput{
-		ProductType: &kind, ProductCategoryID: &category.ID, Name: "Carbon rim 45", Slug: "dedicated-carbon-rim-45", Locale: "en", Status: "active", Currency: "USD",
+		MerchantProductIdentifier:     "TEST-MERCHANT-PRODUCT",
+		ManufacturerProductIdentifier: "TEST-MANUFACTURER-PRODUCT",
+		ProductType:                   &kind, ProductCategoryID: &category.ID, Name: "Carbon rim 45", Slug: "dedicated-carbon-rim-45", Locale: "en", Status: "active", Currency: "USD",
 		CarbonRimSpecification: &product.CarbonRimSpecification{SchemaVersion: 1, Model: "R45", WheelSize: "700c", Material: "carbon_fiber", MaterialDetails: "T700 / T800", RidingUses: []string{"road", "gravel"}, BeadSeatDiameterMM: 622, DepthMM: 45, InternalWidthMM: 25, ExternalWidthMM: 32, BeadStructure: "hooked", TubelessReady: &tubeless},
 		Variants: []ProductVariantInput{
 			{SKU: "DEDICATED-R45-24", PriceMinor: 19900, Stock: 4, Weight: 450, IsDefault: true, CarbonRimSpecification: &product.CarbonRimVariantSpecification{SpokeHoleCount: 24, DrillingPattern: "uniform", FinishCode: "matte-black", NetWeightGrams: 430}},

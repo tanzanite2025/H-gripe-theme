@@ -174,6 +174,11 @@ function clearCustomsForm() {
       <p class="mt-1 max-w-3xl text-xs leading-5 text-muted-foreground">韩国 PCCC 和美国地址调用燕文官方校验；IOSS、EORI 仅在真实建单时按燕文官方报文字段映射，不把本地格式结果当成官方通过。</p>
     </div>
 
+    <section class="rounded-2xl border border-emerald-500/30 bg-emerald-500/5 p-4 text-xs leading-5">
+      <h3 class="font-bold">商品申报识别码 PID（已接入）</h3>
+      <p class="mt-1 text-muted-foreground">MPID、NSPID 和 SPID 自动读取产品编辑中的清关资料。欧盟 27 国订单缺少商家产品识别码 MPID 或制造商产品识别码 NSPID 时，单笔、批量推单都会阻断并提示具体商品；SPID 有则发送，三个编码最多 70 个字符。请先补齐产品资料后重试。</p>
+      <p class="mt-1 text-muted-foreground">必填和长度检查不代表海关已放行，实际提交的识别码会随运单保存。</p>
+    </section>
     <div class="grid gap-4 xl:grid-cols-[minmax(280px,0.95fr)_minmax(0,1.05fr)]">
       <section class="space-y-4 rounded-[24px] border border-dashed border-border/80 bg-muted/20 p-4">
         <div class="flex items-center justify-between gap-3"><h3 class="text-sm font-black">前置校验项目</h3><ClipboardCheck class="size-4 text-muted-foreground" aria-hidden="true" /></div>

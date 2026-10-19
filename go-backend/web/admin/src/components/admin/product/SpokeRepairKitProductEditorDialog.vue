@@ -154,6 +154,7 @@
 </template>
 
 <script setup lang="ts">
+import { validateProductDeclarationIdentifiers } from '@/modules/product/productRequiredMerchantManufacturerAndOptionalStandardIdentifierValidation'
 import { computed, nextTick, reactive, ref, watch } from 'vue'
 import { LoaderCircle } from '@lucide/vue'
 import { toast } from 'vue-sonner'
@@ -276,6 +277,9 @@ const form = reactive<any>({
   cn_code: '',
   country_of_origin: '',
   customs_description: '',
+  merchant_product_identifier: '',
+  manufacturer_product_identifier: '',
+  standard_product_identifier: '',
   name: '',
   slug: '',
   description: '',
@@ -346,6 +350,9 @@ const populateSpokeRepairKitProductForm = (product: Record<string, any> | null):
     cn_code: String(product?.cn_code || ''),
     country_of_origin: String(product?.country_of_origin || ''),
     customs_description: String(product?.customs_description || ''),
+    merchant_product_identifier: String(product?.merchant_product_identifier || ''),
+    manufacturer_product_identifier: String(product?.manufacturer_product_identifier || ''),
+    standard_product_identifier: String(product?.standard_product_identifier || ''),
     name: String(product?.name || ''),
     slug: String(product?.slug || ''),
     description: String(product?.description || ''),
@@ -465,6 +472,7 @@ const buildSpokeRepairKitSalesVariantPayload = (): Record<string, any> => {
 
 const validateSpokeRepairKitProductForm = (): boolean => {
   clearSpokeRepairKitFormErrors()
+  Object.assign(errors, validateProductDeclarationIdentifiers(form))
   const variant = defaultSpokeRepairKitSalesVariant.value
   if (!form.name.trim()) errors.name = '请输入商品名称'
   if (!/^[a-z0-9]+(?:[_-][a-z0-9]+)*$/.test(form.slug.trim())) errors.slug = '请输入小写字母、数字、下划线或短横线组成的 slug'
@@ -503,6 +511,9 @@ const submitSpokeRepairKitProductForm = async (): Promise<void> => {
     cn_code: String(form.cn_code || '').trim(),
     country_of_origin: String(form.country_of_origin || '').trim().toUpperCase(),
     customs_description: String(form.customs_description || '').trim(),
+    merchant_product_identifier: String(form.merchant_product_identifier || '').trim(),
+    manufacturer_product_identifier: String(form.manufacturer_product_identifier || '').trim(),
+    standard_product_identifier: String(form.standard_product_identifier || '').trim(),
     name: form.name.trim(),
     slug: form.slug.trim().toLowerCase(),
     description: form.description,

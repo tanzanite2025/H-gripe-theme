@@ -84,7 +84,7 @@ const {
           <div class="flex items-end"><Button variant="ghost" size="sm" class="w-full" @click="resetWaybillFilters">重置筛选</Button></div>
         </div>
 
-        <p v-if="waybillActionMessage" class="rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-xs leading-5 text-amber-700 dark:text-amber-300">{{ waybillActionMessage }}</p>
+        <p v-if="waybillActionMessage" class="whitespace-pre-line rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-xs leading-5 text-amber-700 dark:text-amber-300">{{ waybillActionMessage }}</p>
 
         <section class="overflow-hidden rounded-[24px] border border-dashed border-border/80">
           <div class="flex items-center justify-between gap-3 border-b border-dashed border-border/80 px-5 py-4">
@@ -106,6 +106,8 @@ const {
       <Dialog v-model:open="createWaybillDialogOpen">
         <DialogContent>
           <DialogHeader><DialogTitle>创建真实燕文运单</DialogTitle><DialogDescription>请求会使用订单快照、已启用服务集合和官方交货仓调用 express.order.create。韩国和美国订单会在建单前由服务端重新调用燕文官方关务校验；关务 TAB 的浏览器状态不会直接授权建单。</DialogDescription></DialogHeader>
+          <p class="rounded-xl border border-border bg-muted/30 p-3 text-xs leading-5">商品申报识别码自动读取产品清关资料：MPID、NSPID 和选填 SPID。欧盟 27 国订单缺少 MPID 或 NSPID 时无法推单；编码最多 70 个字符，请先在产品编辑中维护。</p>
+          <p v-if="waybillActionMessage" role="alert" class="max-h-48 overflow-y-auto whitespace-pre-line rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-xs leading-5 text-amber-700 dark:text-amber-300">{{ waybillActionMessage }}</p>
           <div class="grid gap-4 py-2">
             <label class="space-y-1.5"><span class="text-xs font-semibold">订单 ID</span><Input v-model="createWaybillForm.orderId" inputmode="numeric" placeholder="真实订单 ID" /></label>
             <label class="space-y-1.5"><span class="text-xs font-semibold">已启用燕文渠道</span><select v-model="createWaybillForm.channelId" class="h-9 w-full rounded-md border border-border bg-background px-3 text-sm"><option value="">选择服务集合渠道</option><option v-for="channel in curatedChannels" :key="channel.id" :value="String(channel.id)">{{ channel.display_name }} · {{ channel.product_code }}</option></select></label>
@@ -125,6 +127,8 @@ const {
       <Dialog v-model:open="batchCreateWaybillDialogOpen">
         <DialogContent class="max-w-5xl">
           <DialogHeader><DialogTitle>批量推送燕文真实运单</DialogTitle><DialogDescription>本批次只选择一个已启用燕文渠道和一个官方交货仓，最多提交 50 个订单。服务端会先校验整个批次，再逐票调用燕文 express.order.create；失败订单会逐票返回原因，成功订单会写入燕文运单台账。</DialogDescription></DialogHeader>
+          <p class="rounded-xl border border-border bg-muted/30 p-3 text-xs leading-5">商品申报识别码自动读取产品清关资料：MPID、NSPID 和选填 SPID。欧盟 27 国订单缺少 MPID 或 NSPID 时无法推单；编码最多 70 个字符，请先在产品编辑中维护。</p>
+          <p v-if="waybillActionMessage" role="alert" class="max-h-48 overflow-y-auto whitespace-pre-line rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-xs leading-5 text-amber-700 dark:text-amber-300">{{ waybillActionMessage }}</p>
           <div class="grid gap-4 py-2">
             <div class="grid gap-3 sm:grid-cols-2">
               <label class="space-y-1.5"><span class="text-xs font-semibold">本批次燕文渠道</span><select v-model="batchCreateWaybillForm.channelId" class="h-9 w-full rounded-md border border-border bg-background px-3 text-sm"><option value="">选择服务集合渠道</option><option v-for="channel in curatedChannels" :key="channel.id" :value="String(channel.id)">{{ channel.display_name }} · {{ channel.product_code }}</option></select></label>

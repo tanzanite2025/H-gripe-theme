@@ -360,13 +360,15 @@ const createYanwenBatchWaybills = async () => {
   batchCreateWaybillSaving.value = true
   waybillActionMessage.value = ''
   try {
+    const submittedRows = batchCreateWaybillRows.value.map((row) => ({ ...row }))
     const result = await yanwenLogisticsAdminApi.createYanwenWaybills(requests)
-    batchCreateWaybillDialogOpen.value = false
-    batchCreateWaybillRows.value = []
+    const failures = result.items.filter((item) => item.error)
+    const successfulIndexes = new Set(result.items.filter((item) => !item.error && item.waybill_id).map((item) => item.request_index))
+    batchCreateWaybillRows.value = submittedRows.filter((_, index) => !successfulIndexes.has(index))
+    batchCreateWaybillDialogOpen.value = batchCreateWaybillRows.value.length > 0
     await refreshWaybills()
-    const firstFailure = result.items.find((item) => item.error)?.error
-    waybillActionMessage.value = firstFailure
-      ? `批量推单完成：成功 ${result.succeeded} 条，失败 ${result.failed} 条。${firstFailure}`
+    waybillActionMessage.value = batchCreateWaybillRows.value.length
+      ? [`批量推单结果：成功 ${result.succeeded} 条，失败 ${result.failed} 条。未确认成功的订单已保留，请核对结果或修正资料后重试。`, ...failures.map((item) => `订单 ID ${item.order_id}：${item.error}`)].join('\n')
       : `已完成 ${result.succeeded} 条燕文批量推单。`
   } catch (error: any) {
     waybillActionMessage.value = error?.message || '燕文批量推单失败。'

@@ -119,6 +119,9 @@ func (c *YanwenGatewayClient) CreateYanwenOrder(
 	if strings.TrimSpace(request.ChannelID) == "" || strings.TrimSpace(request.OrderSource) == "" || strings.TrimSpace(request.OrderNumber) == "" {
 		return YanwenCreateOrderResponse{}, errors.New("Yanwen create order requires channelId, orderSource and orderNumber")
 	}
+	if err := normalizeAndValidateYanwenProductDeclarationIdentifiers(&request); err != nil {
+		return YanwenCreateOrderResponse{}, err
+	}
 	data, err := json.Marshal(request)
 	if err != nil {
 		return YanwenCreateOrderResponse{}, fmt.Errorf("encode Yanwen create order request: %w", err)

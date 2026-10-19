@@ -111,6 +111,10 @@ func (s *ProductService) CopyAdminProductTranslation(id uint, targetLocale strin
 	}
 	parentID := rootID
 	target := &product.Product{
+		MerchantProductIdentifier:     source.MerchantProductIdentifier,
+		ManufacturerProductIdentifier: source.ManufacturerProductIdentifier,
+		StandardProductIdentifier:     source.StandardProductIdentifier,
+
 		ProductType:                    source.ProductType,
 		CarbonRimSpecification:         source.CarbonRimSpecification,
 		ProductSpecificationTemplateID: source.ProductSpecificationTemplateID,
@@ -136,6 +140,10 @@ func (s *ProductService) CopyAdminProductTranslation(id uint, targetLocale strin
 	if len(source.Variants) > 0 {
 		// The translated rows do not own stock; inventory remains on the master
 		// variants cloned below.
+	}
+
+	if err := normalizeAndValidateRequiredProductIdentifiers(target); err != nil {
+		return nil, nil, err
 	}
 
 	if err := s.productRepo.CreateTranslatedCopy(source, target, variantSKUs); err != nil {

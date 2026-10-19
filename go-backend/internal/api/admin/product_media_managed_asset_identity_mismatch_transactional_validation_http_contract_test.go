@@ -35,7 +35,7 @@ func TestAdminProductCreateReturnsBadRequestForTransactionalMediaAssetIdentityMi
 	handler := NewProductHandler(products)
 	router := gin.New()
 	router.POST("/api/admin/products", handler.CreateProduct)
-	body := fmt.Sprintf(`{"name":"Media identity","slug":"media-identity","status":"active","locale":"en","variants":[{"sku":"MEDIA-IDENTITY","price_minor":399,"is_active":true,"is_default":true}],"media":[{"media_type":"image","media_asset_id":%d,"url":"https://foreign.example.test/uploads/catalog/photo.png"}]}`, asset.ID)
+	body := fmt.Sprintf(`{"merchant_product_identifier":"TEST-MERCHANT-PRODUCT","manufacturer_product_identifier":"TEST-MANUFACTURER-PRODUCT","name":"Media identity","slug":"media-identity","status":"active","locale":"en","variants":[{"sku":"MEDIA-IDENTITY","price_minor":399,"is_active":true,"is_default":true}],"media":[{"media_type":"image","media_asset_id":%d,"url":"https://foreign.example.test/uploads/catalog/photo.png"}]}`, asset.ID)
 	request := httptest.NewRequestWithContext(context.Background(), http.MethodPost, "/api/admin/products", strings.NewReader(body))
 	request.Header.Set("Content-Type", "application/json")
 	response := httptest.NewRecorder()

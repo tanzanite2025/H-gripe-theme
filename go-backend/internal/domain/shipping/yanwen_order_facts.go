@@ -2,7 +2,7 @@ package shipping
 
 import "time"
 
-// YanwenOrderFacts contains only the immutable order facts required to build
+// YanwenOrderFacts contains order facts and current product identifiers required to build
 // an express.order.create request. It is a read-only cross-domain projection;
 // the Yanwen domain must not receive the complete order aggregate.
 type YanwenOrderFacts struct {
@@ -33,12 +33,15 @@ type YanwenOrderFactAddress struct {
 
 // YanwenOrderFactItem contains the declaration fields sent to Yanwen.
 type YanwenOrderFactItem struct {
-	ProductName            string
-	SKU                    string
-	Quantity               int
-	WeightGrams            int
-	HSCode                 string
-	CustomsDescription     string
-	DeclaredValueMinor     *int64
-	DeclaredValueConfirmed bool
+	MerchantProductIdentifier     string
+	ManufacturerProductIdentifier string
+	StandardProductIdentifier     string
+	ProductName                   string
+	SKU                           string
+	Quantity                      int
+	WeightGrams                   int
+	HSCode                        string
+	CustomsDescription            string
+	DeclaredValueMinor            *int64
+	DeclaredValueConfirmed        bool
 }

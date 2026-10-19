@@ -48,6 +48,7 @@ type vatcomplyCountryTaxRatesResponse struct {
 	Currency         string                   `json:"currency"`
 	MemberState      bool                     `json:"member_state"`
 	RateCategories   map[string][]json.Number `json:"rate_categories"`
+	RateComments     map[string][]string      `json:"rate_comments"`
 }
 
 func newVATComplyTaxRateSourceAdapter() *vatcomplyTaxRateSourceAdapter {
@@ -67,46 +68,47 @@ func newVATComplyTaxRateSourceAdapter() *vatcomplyTaxRateSourceAdapter {
 func (adapter *vatcomplyTaxRateSourceAdapter) FetchVATComplyTaxRateEntries(
 	ctx context.Context,
 	capturedAt time.Time,
-) ([]taxrate.TaxRateSourceSnapshotEntry, int, error) {
+) ([]taxrate.TaxRateSourceSnapshotEntry, int, taxrate.TaxRateSourceCountryRateComments, error) {
 	if adapter == nil || adapter.httpClient == nil {
-		return nil, 0, errors.New("VATcomply tax rate adapter is not configured")
+		return nil, 0, nil, errors.New("VATcomply tax rate adapter is not configured")
 	}
 	request, err := http.NewRequestWithContext(ctx, http.MethodGet, vatcomplyTaxRateAPIEndpoint, nil)
 	if err != nil {
-		return nil, 0, fmt.Errorf("create VATcomply request: %w", err)
+		return nil, 0, nil, fmt.Errorf("create VATcomply request: %w", err)
 	}
 	request.Header.Set("Accept", "application/json")
 	request.Header.Set("User-Agent", "TanzaniteCommerce-TaxRateSnapshot/1.0")
 	response, err := adapter.httpClient.Do(request)
 	if err != nil {
-		return nil, 0, fmt.Errorf("request VATcomply tax rates: %w", err)
+		return nil, 0, nil, fmt.Errorf("request VATcomply tax rates: %w", err)
 	}
 	defer func() { _ = response.Body.Close() }()
 	if response.StatusCode < http.StatusOK || response.StatusCode >= http.StatusMultipleChoices {
-		return nil, 0, fmt.Errorf("VATcomply tax rate API returned HTTP %d", response.StatusCode)
+		return nil, 0, nil, fmt.Errorf("VATcomply tax rate API returned HTTP %d", response.StatusCode)
 	}
 	body, err := io.ReadAll(io.LimitReader(response.Body, taxRateSourceMaximumBodySize+1))
 	if err != nil {
-		return nil, 0, fmt.Errorf("read VATcomply response: %w", err)
+		return nil, 0, nil, fmt.Errorf("read VATcomply response: %w", err)
 	}
 	if len(body) > taxRateSourceMaximumBodySize {
-		return nil, 0, fmt.Errorf("VATcomply response exceeds %d bytes", taxRateSourceMaximumBodySize)
+		return nil, 0, nil, fmt.Errorf("VATcomply response exceeds %d bytes", taxRateSourceMaximumBodySize)
 	}
 
 	decoder := json.NewDecoder(bytes.NewReader(body))
 	decoder.UseNumber()
 	var providerCountries []vatcomplyCountryTaxRatesResponse
 	if err := decoder.Decode(&providerCountries); err != nil {
-		return nil, 0, fmt.Errorf("decode VATcomply response: %w", err)
+		return nil, 0, nil, fmt.Errorf("decode VATcomply response: %w", err)
 	}
 	var trailingData interface{}
 	if err := decoder.Decode(&trailingData); !errors.Is(err, io.EOF) {
 		if err == nil {
-			return nil, 0, errors.New("VATcomply response contains trailing JSON data")
+			return nil, 0, nil, errors.New("VATcomply response contains trailing JSON data")
 		}
-		return nil, 0, fmt.Errorf("decode trailing VATcomply response data: %w", err)
+		return nil, 0, nil, fmt.Errorf("decode trailing VATcomply response data: %w", err)
 	}
 
+	countryRateComments := make(taxrate.TaxRateSourceCountryRateComments)
 	entries := make([]taxrate.TaxRateSourceSnapshotEntry, 0, len(providerCountries)*4)
 	countryCodes := make(map[string]struct{}, len(providerCountries))
 	rateEntryKeys := make(map[string]struct{}, len(providerCountries)*4)
@@ -118,15 +120,34 @@ func (adapter *vatcomplyTaxRateSourceAdapter) FetchVATComplyTaxRateEntries(
 		countryCode := normalizeVATComplyCountryCode(sourceCountryCode)
 		countryName := strings.TrimSpace(country.CountryName)
 		if !isTwoLetterCountryCode(countryCode) || countryName == "" || len([]rune(countryName)) > 120 {
-			return nil, 0, fmt.Errorf("VATcomply response contains an invalid country code or name %q", sourceCountryCode)
+			return nil, 0, nil, fmt.Errorf("VATcomply response contains an invalid country code or name %q", sourceCountryCode)
 		}
 		if _, exists := countryCodes[countryCode]; exists {
-			return nil, 0, fmt.Errorf("VATcomply response contains duplicate normalized country %s", countryCode)
+			return nil, 0, nil, fmt.Errorf("VATcomply response contains duplicate normalized country %s", countryCode)
 		}
 		countryCodes[countryCode] = struct{}{}
+		countryRateComments[countryCode] = make(map[string][]string)
+		commentRateKeys := make([]string, 0, len(country.RateComments))
+		for rateKey := range country.RateComments {
+			commentRateKeys = append(commentRateKeys, rateKey)
+		}
+		sort.Strings(commentRateKeys)
+		for _, rateKey := range commentRateKeys {
+			decimal, err := normalizeTaxRatePercentage(json.Number(rateKey))
+			if err != nil {
+				return nil, 0, nil, fmt.Errorf("VATcomply rate comment for %s: %w", countryCode, err)
+			}
+			// Preserve wording, newlines and sequence, including continuation notes.
+			// Retain comment-only rates even when no category has that rate.
+			for _, comment := range country.RateComments[rateKey] {
+				if strings.TrimSpace(comment) != "" {
+					countryRateComments[countryCode][decimal] = append(countryRateComments[countryCode][decimal], comment)
+				}
+			}
+		}
 		currencyCode := strings.ToUpper(strings.TrimSpace(country.Currency))
 		if currencyCode != "" && !isThreeLetterCurrencyCode(currencyCode) {
-			return nil, 0, fmt.Errorf("VATcomply response contains invalid currency %q for %s", currencyCode, countryCode)
+			return nil, 0, nil, fmt.Errorf("VATcomply response contains invalid currency %q for %s", currencyCode, countryCode)
 		}
 
 		appendTaxRateSnapshotEntry := func(rateType, rateCategory string, value json.Number) error {
@@ -153,21 +174,21 @@ func (adapter *vatcomplyTaxRateSourceAdapter) FetchVATComplyTaxRateEntries(
 		}
 
 		if err := appendTaxRateSnapshotEntry("standard", "", country.StandardRate); err != nil {
-			return nil, 0, err
+			return nil, 0, nil, err
 		}
 		for _, rate := range country.ReducedRates {
 			if err := appendTaxRateSnapshotEntry("reduced", "", rate); err != nil {
-				return nil, 0, err
+				return nil, 0, nil, err
 			}
 		}
 		if country.SuperReducedRate != nil {
 			if err := appendTaxRateSnapshotEntry("super_reduced", "", *country.SuperReducedRate); err != nil {
-				return nil, 0, err
+				return nil, 0, nil, err
 			}
 		}
 		if country.ParkingRate != nil {
 			if err := appendTaxRateSnapshotEntry("parking", "", *country.ParkingRate); err != nil {
-				return nil, 0, err
+				return nil, 0, nil, err
 			}
 		}
 		categoryNames := make([]string, 0, len(country.RateCategories))
@@ -178,20 +199,20 @@ func (adapter *vatcomplyTaxRateSourceAdapter) FetchVATComplyTaxRateEntries(
 		for _, category := range categoryNames {
 			category = strings.TrimSpace(category)
 			if category == "" || len([]rune(category)) > 96 {
-				return nil, 0, fmt.Errorf("VATcomply response contains invalid product rate category for %s", countryCode)
+				return nil, 0, nil, fmt.Errorf("VATcomply response contains invalid product rate category for %s", countryCode)
 			}
 			for _, rate := range country.RateCategories[category] {
 				if err := appendTaxRateSnapshotEntry("product_category", category, rate); err != nil {
-					return nil, 0, err
+					return nil, 0, nil, err
 				}
 			}
 		}
 	}
 	if err := validateVATComplyMemberStateCoverage(countryCodes); err != nil {
-		return nil, 0, err
+		return nil, 0, nil, err
 	}
 	if len(entries) == 0 {
-		return nil, 0, errors.New("VATcomply response contains no tax rate entries")
+		return nil, 0, nil, errors.New("VATcomply response contains no tax rate entries")
 	}
 	sort.Slice(entries, func(left, right int) bool {
 		if entries[left].CountryCode != entries[right].CountryCode {
@@ -205,7 +226,7 @@ func (adapter *vatcomplyTaxRateSourceAdapter) FetchVATComplyTaxRateEntries(
 		}
 		return entries[left].RateDecimal < entries[right].RateDecimal
 	})
-	return entries, len(countryCodes), nil
+	return entries, len(countryCodes), countryRateComments, nil
 }
 
 func validateVATComplyMemberStateCoverage(actualCountryCodes map[string]struct{}) error {

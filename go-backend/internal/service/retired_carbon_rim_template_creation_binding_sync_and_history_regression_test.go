@@ -16,10 +16,10 @@ func TestRetiredCarbonRimTemplateRejectsNewEntryAndMutationButPreservesHistorica
 	require.ErrorIs(t, err, ErrProductSpecificationTemplateInvalid)
 	_, err = svc.UpdateProductSpecificationTemplate(template.ID, ProductSpecificationTemplateInput{Name: "Renamed", Slug: "generic"})
 	require.ErrorIs(t, err, ErrProductSpecificationTemplateInvalid)
-	input := ProductCreateInput{Name: "Historical", Slug: "historical", Locale: "en", Status: "active", Currency: "USD", ProductSpecificationTemplateID: &template.ID}
+	input := ProductCreateInput{MerchantProductIdentifier: "TEST-MERCHANT-PRODUCT", ManufacturerProductIdentifier: "TEST-MANUFACTURER-PRODUCT", Name: "Historical", Slug: "historical", Locale: "en", Status: "active", Currency: "USD", ProductSpecificationTemplateID: &template.ID}
 	_, err = svc.CreateAdminProduct(input)
 	require.ErrorIs(t, err, ErrProductSpecificationTemplateInvalid)
-	legacy := product.Product{Name: "Historical", Slug: "historical", Locale: "en", Currency: "USD", ProductSpecificationTemplateID: &template.ID}
+	legacy := product.Product{MerchantProductIdentifier: "TEST-MERCHANT-PRODUCT", ManufacturerProductIdentifier: "TEST-MANUFACTURER-PRODUCT", Name: "Historical", Slug: "historical", Locale: "en", Currency: "USD", ProductSpecificationTemplateID: &template.ID}
 	require.NoError(t, db.Create(&legacy).Error)
 	title := "Historical name corrected"
 	updated, err := svc.UpdateAdminProduct(legacy.ID, ProductUpdateInput{Name: &title})

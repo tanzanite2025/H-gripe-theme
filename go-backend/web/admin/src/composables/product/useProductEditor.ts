@@ -1,3 +1,4 @@
+import { validateProductDeclarationIdentifiers } from '@/modules/product/productRequiredMerchantManufacturerAndOptionalStandardIdentifierValidation'
 import { computed, reactive, ref } from 'vue'
 import { createEmptyCarbonRimSpecificationForm, createEmptyCarbonRimVariantSpecificationForm, normalizeCarbonRimSpecificationForSubmission, normalizeCarbonRimVariantSpecificationForSubmission, validateCarbonRimDedicatedProductSubmission } from '@/modules/product/carbonRimDedicatedSpecificationFormValuesAndValidation'
 import { toast } from 'vue-sonner'
@@ -86,6 +87,9 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
     cn_code: '',
     country_of_origin: '',
     customs_description: '',
+    merchant_product_identifier: '',
+    manufacturer_product_identifier: '',
+    standard_product_identifier: '',
     name: '',
     slug: '',
     description: '',
@@ -516,6 +520,9 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
     cn_code: String(productForm.cn_code || '').trim(),
     country_of_origin: String(productForm.country_of_origin || '').trim().toUpperCase(),
     customs_description: String(productForm.customs_description || '').trim(),
+    merchant_product_identifier: String(productForm.merchant_product_identifier || '').trim(),
+    manufacturer_product_identifier: String(productForm.manufacturer_product_identifier || '').trim(),
+    standard_product_identifier: String(productForm.standard_product_identifier || '').trim(),
     name: productForm.name.trim(),
     slug: productForm.slug.trim(),
     description: productForm.description,
@@ -533,6 +540,7 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
 
   const validateForm = (payload: any) => {
     clearFormErrors()
+    Object.assign(formErrors, validateProductDeclarationIdentifiers(payload))
     if (payload.product_type === 'carbon_rim') Object.assign(formErrors, validateCarbonRimDedicatedProductSubmission(payload))
     if (!payload.name) formErrors.name = '请输入商品名称'
     if (!payload.slug) formErrors.slug = '请输入 URL slug'
@@ -661,6 +669,9 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
       cn_code: '',
       country_of_origin: '',
       customs_description: '',
+      merchant_product_identifier: '',
+      manufacturer_product_identifier: '',
+      standard_product_identifier: '',
       name: '',
       slug: '',
       description: '',
@@ -767,6 +778,9 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
       cn_code: String(detail.cn_code || ''),
       country_of_origin: String(detail.country_of_origin || ''),
       customs_description: String(detail.customs_description || ''),
+      merchant_product_identifier: String(detail.merchant_product_identifier || ''),
+      manufacturer_product_identifier: String(detail.manufacturer_product_identifier || ''),
+      standard_product_identifier: String(detail.standard_product_identifier || ''),
       name: detail.name || '',
       slug: detail.slug || '',
       description: detail.description || '',

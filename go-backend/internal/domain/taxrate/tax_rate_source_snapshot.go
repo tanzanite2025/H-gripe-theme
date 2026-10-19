@@ -26,19 +26,25 @@ func (TaxRateSourceConfig) TableName() string {
 	return "tax_rate_source_configs"
 }
 
+// TaxRateSourceCountryRateComments groups annotations by ISO country and rate.
+// Notes are not automatically applicable to every category at the same rate.
+type TaxRateSourceCountryRateComments map[string]map[string][]string
+
 // TaxRateSourceSnapshot is an immutable, versioned copy of one provider
 // response after normalization. It is an audit/reference record and is not a
 // checkout tax-rate source.
 type TaxRateSourceSnapshot struct {
-	ID             uint      `gorm:"primaryKey" json:"id"`
-	ProviderCode   string    `gorm:"size:40;not null;index:idx_tax_rate_source_snapshots_provider_created,priority:1" json:"provider_code"`
-	SourceEndpoint string    `gorm:"size:255;not null" json:"source_endpoint"`
-	Version        string    `gorm:"size:100;not null;uniqueIndex" json:"version"`
-	ContentSHA256  string    `gorm:"size:64;not null" json:"content_sha256"`
-	CapturedAt     time.Time `gorm:"not null;index:idx_tax_rate_source_snapshots_provider_created,priority:2,sort:desc" json:"captured_at"`
-	CountryCount   int       `gorm:"not null" json:"country_count"`
-	RateCount      int       `gorm:"not null" json:"rate_count"`
-	CreatedAt      time.Time `json:"created_at"`
+	// Nil identifies historical snapshots captured before annotations were collected.
+	CountryRateComments TaxRateSourceCountryRateComments `gorm:"serializer:json;type:jsonb" json:"country_rate_comments"`
+	ID                  uint                             `gorm:"primaryKey" json:"id"`
+	ProviderCode        string                           `gorm:"size:40;not null;index:idx_tax_rate_source_snapshots_provider_created,priority:1" json:"provider_code"`
+	SourceEndpoint      string                           `gorm:"size:255;not null" json:"source_endpoint"`
+	Version             string                           `gorm:"size:100;not null;uniqueIndex" json:"version"`
+	ContentSHA256       string                           `gorm:"size:64;not null" json:"content_sha256"`
+	CapturedAt          time.Time                        `gorm:"not null;index:idx_tax_rate_source_snapshots_provider_created,priority:2,sort:desc" json:"captured_at"`
+	CountryCount        int                              `gorm:"not null" json:"country_count"`
+	RateCount           int                              `gorm:"not null" json:"rate_count"`
+	CreatedAt           time.Time                        `json:"created_at"`
 }
 
 func (TaxRateSourceSnapshot) TableName() string {

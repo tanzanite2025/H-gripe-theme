@@ -32,6 +32,8 @@ func TestProductServiceCreateAdminProductPersistsTemplateSpecs(t *testing.T) {
 	productSpecificationTemplate := seedGenericTemplateForProductSpecificationAndVariantRegression(t, db)
 
 	createdProduct, err := productService.CreateAdminProduct(ProductCreateInput{
+		MerchantProductIdentifier:      "TEST-MERCHANT-PRODUCT",
+		ManufacturerProductIdentifier:  "TEST-MANUFACTURER-PRODUCT",
 		ProductSpecificationTemplateID: &productSpecificationTemplate.ID,
 		Name:                           "Carbon Rim 45",
 		Slug:                           "carbon-rim-45",
@@ -75,12 +77,14 @@ func TestProductServiceKeepsSpokeRepairKitProductTypeOnDedicatedChain(t *testing
 	otherCategory := seedProductCategoryForProductServiceTest(t, db, "Other Components", "other-components", &parent.ID)
 
 	productRecord, err := productService.CreateAdminProduct(ProductCreateInput{
-		ProductCategoryID:       &repairKitCategory.ID,
-		Name:                    "DT Swiss spoke repair kit",
-		Slug:                    "dt-swiss-spoke-repair-kit",
-		Status:                  "active",
-		Locale:                  "en",
-		SpokeRepairKitModelKeys: []string{"dt-swiss:arc-1100-dicut-db-38"},
+		MerchantProductIdentifier:     "TEST-MERCHANT-PRODUCT",
+		ManufacturerProductIdentifier: "TEST-MANUFACTURER-PRODUCT",
+		ProductCategoryID:             &repairKitCategory.ID,
+		Name:                          "DT Swiss spoke repair kit",
+		Slug:                          "dt-swiss-spoke-repair-kit",
+		Status:                        "active",
+		Locale:                        "en",
+		SpokeRepairKitModelKeys:       []string{"dt-swiss:arc-1100-dicut-db-38"},
 		Variants: []ProductVariantInput{{
 			SKU:        "DT-REPAIR-KIT-001",
 			PriceMinor: 2500,
@@ -106,6 +110,8 @@ func TestProductServiceKeepsSpokeRepairKitProductTypeOnDedicatedChain(t *testing
 	require.ErrorIs(t, err, ErrSpokeRepairKitProductTypeImmutable)
 
 	_, err = productService.CreateAdminProduct(ProductCreateInput{
+		MerchantProductIdentifier:      "TEST-MERCHANT-PRODUCT",
+		ManufacturerProductIdentifier:  "TEST-MANUFACTURER-PRODUCT",
 		ProductSpecificationTemplateID: &template.ID,
 		ProductCategoryID:              &repairKitCategory.ID,
 		Name:                           "Invalid generic repair kit",
@@ -230,6 +236,8 @@ func TestProductServiceSavesSchwalbeFactsDirectlyOnProduct(t *testing.T) {
 		invalidFacts := cloneFacts(tireFacts)
 		invalidFacts[testCase.slug] = testCase.value
 		_, err := productService.CreateAdminProduct(ProductCreateInput{
+			MerchantProductIdentifier:      "TEST-MERCHANT-PRODUCT",
+			ManufacturerProductIdentifier:  "TEST-MANUFACTURER-PRODUCT",
 			ProductSpecificationTemplateID: &template.ID,
 			Name:                           "Invalid Test Tire",
 			Slug:                           fmt.Sprintf("invalid-test-tire-%d", index),
@@ -260,6 +268,8 @@ func TestProductServiceSavesSchwalbeFactsDirectlyOnProduct(t *testing.T) {
 			invalidFacts["min_pressure_psi"], invalidFacts["max_pressure_psi"] = testCase.min, testCase.max
 		}
 		_, err := productService.CreateAdminProduct(ProductCreateInput{
+			MerchantProductIdentifier:      "TEST-MERCHANT-PRODUCT",
+			ManufacturerProductIdentifier:  "TEST-MANUFACTURER-PRODUCT",
 			ProductSpecificationTemplateID: &template.ID,
 			Name:                           "Invalid Pressure Test Tire",
 			Slug:                           "invalid-pressure-test-tire-" + strings.ReplaceAll(testCase.name, " ", "-"),
@@ -276,6 +286,8 @@ func TestProductServiceSavesSchwalbeFactsDirectlyOnProduct(t *testing.T) {
 		require.ErrorIs(t, err, ErrProductSpecInvalid, testCase.name)
 	}
 	created, err := productService.CreateAdminProduct(ProductCreateInput{
+		MerchantProductIdentifier:      "TEST-MERCHANT-PRODUCT",
+		ManufacturerProductIdentifier:  "TEST-MANUFACTURER-PRODUCT",
 		ProductSpecificationTemplateID: &template.ID,
 		Name:                           "Test Tire",
 		Slug:                           "test-tire",
@@ -315,6 +327,8 @@ func TestProductServiceSavesSchwalbeFactsDirectlyOnProduct(t *testing.T) {
 
 	duplicateFacts := cloneFacts(tireFacts)
 	_, err = productService.CreateAdminProduct(ProductCreateInput{
+		MerchantProductIdentifier:      "TEST-MERCHANT-PRODUCT",
+		ManufacturerProductIdentifier:  "TEST-MANUFACTURER-PRODUCT",
 		ProductSpecificationTemplateID: &template.ID,
 		Name:                           "Duplicate Article Test Tire",
 		Slug:                           "duplicate-article-test-tire",
@@ -333,6 +347,8 @@ func TestProductServiceSavesSchwalbeFactsDirectlyOnProduct(t *testing.T) {
 	otherFacts := cloneFacts(tireFacts)
 	otherFacts["article_no"] = "OTHER-ARTICLE"
 	otherProduct, err := productService.CreateAdminProduct(ProductCreateInput{
+		MerchantProductIdentifier:      "TEST-MERCHANT-PRODUCT",
+		ManufacturerProductIdentifier:  "TEST-MANUFACTURER-PRODUCT",
 		ProductSpecificationTemplateID: &template.ID,
 		Name:                           "Other Test Tire",
 		Slug:                           "other-test-tire",
@@ -362,10 +378,12 @@ func TestProductServiceNormalizesAdminProductSlugOnCreateAndUpdate(t *testing.T)
 	_, productService := newTestProductService(t)
 
 	createdProduct, err := productService.CreateAdminProduct(ProductCreateInput{
-		Name:   "Carbon Rim",
-		Slug:   " Carbon_Rim ",
-		Status: "active",
-		Locale: "en",
+		MerchantProductIdentifier:     "TEST-MERCHANT-PRODUCT",
+		ManufacturerProductIdentifier: "TEST-MANUFACTURER-PRODUCT",
+		Name:                          "Carbon Rim",
+		Slug:                          " Carbon_Rim ",
+		Status:                        "active",
+		Locale:                        "en",
 		Variants: []ProductVariantInput{
 			{
 				SKU:        "SLUG-NORMALIZE-001",
@@ -413,10 +431,12 @@ func TestProductServiceRejectsUnsafeAdminProductSlugs(t *testing.T) {
 	for index, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			_, err := productService.CreateAdminProduct(ProductCreateInput{
-				Name:   "Unsafe Slug Product",
-				Slug:   tt.slug,
-				Status: "active",
-				Locale: "en",
+				MerchantProductIdentifier:     "TEST-MERCHANT-PRODUCT",
+				ManufacturerProductIdentifier: "TEST-MANUFACTURER-PRODUCT",
+				Name:                          "Unsafe Slug Product",
+				Slug:                          tt.slug,
+				Status:                        "active",
+				Locale:                        "en",
 				Variants: []ProductVariantInput{
 					{
 						SKU:        "UNSAFE-SLUG-" + strconv.Itoa(index),
@@ -437,10 +457,12 @@ func TestProductServiceRejectsUnsafeAdminProductSlugUpdate(t *testing.T) {
 	_, productService := newTestProductService(t)
 
 	createdProduct, err := productService.CreateAdminProduct(ProductCreateInput{
-		Name:   "Safe Product",
-		Slug:   "safe-product",
-		Status: "active",
-		Locale: "en",
+		MerchantProductIdentifier:     "TEST-MERCHANT-PRODUCT",
+		ManufacturerProductIdentifier: "TEST-MANUFACTURER-PRODUCT",
+		Name:                          "Safe Product",
+		Slug:                          "safe-product",
+		Status:                        "active",
+		Locale:                        "en",
 		Variants: []ProductVariantInput{
 			{
 				SKU:        "SAFE-SLUG-001",
@@ -472,6 +494,8 @@ func TestProductServiceListsOnlyWheelsetDynamicValuesForCategoryTree(t *testing.
 	productSpecificationTemplate := seedGenericTemplateForProductSpecificationAndVariantRegression(t, db)
 
 	_, err := productService.CreateAdminProduct(ProductCreateInput{
+		MerchantProductIdentifier:      "TEST-MERCHANT-PRODUCT",
+		ManufacturerProductIdentifier:  "TEST-MANUFACTURER-PRODUCT",
 		ProductSpecificationTemplateID: &productSpecificationTemplate.ID,
 		ProductCategoryID:              &childCategory.ID,
 		Name:                           "Wheelset 30",
@@ -495,6 +519,8 @@ func TestProductServiceListsOnlyWheelsetDynamicValuesForCategoryTree(t *testing.
 	require.NoError(t, err)
 
 	_, err = productService.CreateAdminProduct(ProductCreateInput{
+		MerchantProductIdentifier:      "TEST-MERCHANT-PRODUCT",
+		ManufacturerProductIdentifier:  "TEST-MANUFACTURER-PRODUCT",
 		ProductSpecificationTemplateID: &productSpecificationTemplate.ID,
 		ProductCategoryID:              &childCategory.ID,
 		Name:                           "Wheelset 45",
@@ -518,6 +544,8 @@ func TestProductServiceListsOnlyWheelsetDynamicValuesForCategoryTree(t *testing.
 	require.NoError(t, err)
 
 	_, err = productService.CreateAdminProduct(ProductCreateInput{
+		MerchantProductIdentifier:      "TEST-MERCHANT-PRODUCT",
+		ManufacturerProductIdentifier:  "TEST-MANUFACTURER-PRODUCT",
 		ProductSpecificationTemplateID: &productSpecificationTemplate.ID,
 		ProductCategoryID:              &otherCategory.ID,
 		Name:                           "Tire 99",
@@ -553,14 +581,16 @@ func TestProductServiceAdminProductPersistsCustomsInformation(t *testing.T) {
 	db, productService := newTestProductService(t)
 
 	createdProduct, err := productService.CreateAdminProduct(ProductCreateInput{
-		Name:               "Customs Product",
-		Slug:               "customs-product",
-		Status:             "active",
-		Locale:             "en",
-		HSCode:             "871499",
-		CNCode:             "87149990",
-		CountryOfOrigin:    "cn",
-		CustomsDescription: "Bicycle frame",
+		MerchantProductIdentifier:     "TEST-MERCHANT-PRODUCT",
+		ManufacturerProductIdentifier: "TEST-MANUFACTURER-PRODUCT",
+		Name:                          "Customs Product",
+		Slug:                          "customs-product",
+		Status:                        "active",
+		Locale:                        "en",
+		HSCode:                        "871499",
+		CNCode:                        "87149990",
+		CountryOfOrigin:               "cn",
+		CustomsDescription:            "Bicycle frame",
 		Variants: []ProductVariantInput{
 			{
 				SKU:        "CUSTOMS-001",
@@ -626,6 +656,8 @@ func TestProductServiceBindsIndependentCustomsProfileAndClearsOnlyOnManualOverri
 	require.NoError(t, db.Create(&profile).Error)
 
 	createdProduct, err := productService.CreateAdminProduct(ProductCreateInput{
+		MerchantProductIdentifier:      "TEST-MERCHANT-PRODUCT",
+		ManufacturerProductIdentifier:  "TEST-MANUFACTURER-PRODUCT",
 		ProductSpecificationTemplateID: &productSpecificationTemplate.ID,
 		CustomsClassificationProfileID: &profile.ID,
 		HSCode:                         "000000",
@@ -682,12 +714,14 @@ func TestProductServiceRejectsInvalidCustomsInformation(t *testing.T) {
 	_, productService := newTestProductService(t)
 
 	_, err := productService.CreateAdminProduct(ProductCreateInput{
-		Name:            "Invalid Customs Product",
-		Slug:            "invalid-customs-product",
-		Status:          "active",
-		Locale:          "en",
-		HSCode:          "1234",
-		CountryOfOrigin: "CHN",
+		MerchantProductIdentifier:     "TEST-MERCHANT-PRODUCT",
+		ManufacturerProductIdentifier: "TEST-MANUFACTURER-PRODUCT",
+		Name:                          "Invalid Customs Product",
+		Slug:                          "invalid-customs-product",
+		Status:                        "active",
+		Locale:                        "en",
+		HSCode:                        "1234",
+		CountryOfOrigin:               "CHN",
 		Variants: []ProductVariantInput{
 			{
 				SKU:        "CUSTOMS-INVALID-001",
@@ -866,6 +900,8 @@ func TestProductServiceCreateAdminProductPersistsProductScopedVisualVariantOptio
 	require.NoError(t, db.Create(&finishSpec).Error)
 
 	createdProduct, err := productService.CreateAdminProduct(ProductCreateInput{
+		MerchantProductIdentifier:      "TEST-MERCHANT-PRODUCT",
+		ManufacturerProductIdentifier:  "TEST-MANUFACTURER-PRODUCT",
 		ProductSpecificationTemplateID: &productSpecificationTemplate.ID,
 		Name:                           "Ruby Finish Product",
 		Slug:                           "ruby-finish-product",
@@ -919,6 +955,8 @@ func TestProductServiceCreateAdminProductRejectsMediaBoundToOtherProductVariantO
 	brakeSpec := findSpecDefinitionBySlug(t, db, productSpecificationTemplate.ID, "brake_type")
 
 	sourceProduct, err := productService.CreateAdminProduct(ProductCreateInput{
+		MerchantProductIdentifier:      "TEST-MERCHANT-PRODUCT",
+		ManufacturerProductIdentifier:  "TEST-MANUFACTURER-PRODUCT",
 		ProductSpecificationTemplateID: &productSpecificationTemplate.ID,
 		Name:                           "Source Rim",
 		Slug:                           "source-rim",
@@ -952,6 +990,8 @@ func TestProductServiceCreateAdminProductRejectsMediaBoundToOtherProductVariantO
 	foreignOptionValueID := sourceProduct.VariantOptionValues[0].ID
 
 	createdProduct, err := productService.CreateAdminProduct(ProductCreateInput{
+		MerchantProductIdentifier:      "TEST-MERCHANT-PRODUCT",
+		ManufacturerProductIdentifier:  "TEST-MANUFACTURER-PRODUCT",
 		ProductSpecificationTemplateID: &productSpecificationTemplate.ID,
 		Name:                           "Bad Media Binding Rim",
 		Slug:                           "bad-media-binding-rim",
@@ -992,6 +1032,8 @@ func TestProductServiceCreateAdminProductRejectsInvalidMediaLocale(t *testing.T)
 	productSpecificationTemplate := seedGenericTemplateForProductSpecificationAndVariantRegression(t, db)
 
 	createdProduct, err := productService.CreateAdminProduct(ProductCreateInput{
+		MerchantProductIdentifier:      "TEST-MERCHANT-PRODUCT",
+		ManufacturerProductIdentifier:  "TEST-MANUFACTURER-PRODUCT",
 		ProductSpecificationTemplateID: &productSpecificationTemplate.ID,
 		Name:                           "Bad Media Locale Rim",
 		Slug:                           "bad-media-locale-rim",
@@ -1030,6 +1072,8 @@ func TestProductServiceCreateAdminProductNormalizesMediaLocaleAlias(t *testing.T
 	createRegisteredPublicImageForProductMediaBindingTest(t, db, "products/media-locale-alias.webp")
 
 	createdProduct, err := productService.CreateAdminProduct(ProductCreateInput{
+		MerchantProductIdentifier:      "TEST-MERCHANT-PRODUCT",
+		ManufacturerProductIdentifier:  "TEST-MANUFACTURER-PRODUCT",
 		ProductSpecificationTemplateID: &productSpecificationTemplate.ID,
 		Name:                           "Media Locale Alias Rim",
 		Slug:                           "media-locale-alias-rim",
@@ -1074,11 +1118,13 @@ func TestProductServiceCreateAdminProductUsesPrimaryPricingCurrency(t *testing.T
 	productService.ConfigureCurrencyPolicy(policy)
 
 	createdProduct, err := productService.CreateAdminProduct(ProductCreateInput{
-		Name:     "Carbon Rim CNY",
-		Slug:     "carbon-rim-cny",
-		Currency: "CNY",
-		Status:   "active",
-		Locale:   "en",
+		MerchantProductIdentifier:     "TEST-MERCHANT-PRODUCT",
+		ManufacturerProductIdentifier: "TEST-MANUFACTURER-PRODUCT",
+		Name:                          "Carbon Rim CNY",
+		Slug:                          "carbon-rim-cny",
+		Currency:                      "CNY",
+		Status:                        "active",
+		Locale:                        "en",
 		Variants: []ProductVariantInput{
 			{
 				SKU:        "RIM-CNY-001",
@@ -1124,11 +1170,13 @@ func TestProductServiceCreateAdminProductRejectsCrossCurrencyProductAndVariantPr
 			productService.ConfigureCurrencyPolicy(policy)
 
 			createdProduct, err := productService.CreateAdminProduct(ProductCreateInput{
-				Name:     "Cross Currency Rim",
-				Slug:     "cross-currency-rim-" + test.name,
-				Currency: test.productCurrency,
-				Status:   "active",
-				Locale:   "en",
+				MerchantProductIdentifier:     "TEST-MERCHANT-PRODUCT",
+				ManufacturerProductIdentifier: "TEST-MANUFACTURER-PRODUCT",
+				Name:                          "Cross Currency Rim",
+				Slug:                          "cross-currency-rim-" + test.name,
+				Currency:                      test.productCurrency,
+				Status:                        "active",
+				Locale:                        "en",
 				Variants: []ProductVariantInput{
 					{
 						SKU:        "CROSS-CURRENCY-" + test.name,
@@ -1158,11 +1206,13 @@ func TestProductServiceCreateAdminProductDoesNotAcceptDisplayPriceSnapshots(t *t
 	productService.ConfigureCurrencyPolicy(policy)
 
 	createdProduct, err := productService.CreateAdminProduct(ProductCreateInput{
-		Name:     "Carbon Rim Display Prices",
-		Slug:     "carbon-rim-display-prices",
-		Currency: "CNY",
-		Status:   "active",
-		Locale:   "en",
+		MerchantProductIdentifier:     "TEST-MERCHANT-PRODUCT",
+		ManufacturerProductIdentifier: "TEST-MANUFACTURER-PRODUCT",
+		Name:                          "Carbon Rim Display Prices",
+		Slug:                          "carbon-rim-display-prices",
+		Currency:                      "CNY",
+		Status:                        "active",
+		Locale:                        "en",
 		Variants: []ProductVariantInput{
 			{
 				SKU:        "RIM-DISPLAY-001",
@@ -1234,6 +1284,8 @@ func TestProductServiceCreateAdminProductRejectsInvalidTemplateSpec(t *testing.T
 	productSpecificationTemplate := seedGenericTemplateForProductSpecificationAndVariantRegression(t, db)
 
 	createdProduct, err := productService.CreateAdminProduct(ProductCreateInput{
+		MerchantProductIdentifier:      "TEST-MERCHANT-PRODUCT",
+		ManufacturerProductIdentifier:  "TEST-MANUFACTURER-PRODUCT",
 		ProductSpecificationTemplateID: &productSpecificationTemplate.ID,
 		Name:                           "Invalid Carbon Rim",
 		Slug:                           "invalid-carbon-rim",
@@ -1430,6 +1482,8 @@ func TestProductServiceCreateAdminProductRejectsAllInactiveVariants(t *testing.T
 	inactive := false
 
 	createdProduct, err := productService.CreateAdminProduct(ProductCreateInput{
+		MerchantProductIdentifier:      "TEST-MERCHANT-PRODUCT",
+		ManufacturerProductIdentifier:  "TEST-MANUFACTURER-PRODUCT",
 		ProductSpecificationTemplateID: &productSpecificationTemplate.ID,
 		Name:                           "Inactive SKU Rim",
 		Slug:                           "inactive-sku-rim",
@@ -1463,6 +1517,8 @@ func TestProductServiceCreateAdminProductRequiresVariant(t *testing.T) {
 	productSpecificationTemplate := seedGenericTemplateForProductSpecificationAndVariantRegression(t, db)
 
 	createdProduct, err := productService.CreateAdminProduct(ProductCreateInput{
+		MerchantProductIdentifier:      "TEST-MERCHANT-PRODUCT",
+		ManufacturerProductIdentifier:  "TEST-MANUFACTURER-PRODUCT",
 		ProductSpecificationTemplateID: &productSpecificationTemplate.ID,
 		Name:                           "No Variant Rim",
 		Slug:                           "no-variant-rim",
@@ -1652,6 +1708,8 @@ func TestProductServicePublicCatalogRespectsProductLocale(t *testing.T) {
 	db, productService := newTestProductService(t)
 	productSpecificationTemplate := seedGenericTemplateForProductSpecificationAndVariantRegression(t, db)
 	createdProduct, err := productService.CreateAdminProduct(ProductCreateInput{
+		MerchantProductIdentifier:      "TEST-MERCHANT-PRODUCT",
+		ManufacturerProductIdentifier:  "TEST-MANUFACTURER-PRODUCT",
 		ProductSpecificationTemplateID: &productSpecificationTemplate.ID,
 		Name:                           "Unified Rim",
 		Slug:                           "global-rim",
@@ -1770,6 +1828,8 @@ func TestProductServiceValidatesProductTranslationRelationships(t *testing.T) {
 
 	createTranslation := func(locale, sku, slug string, parentID *uint) (*product.Product, error) {
 		return productService.CreateAdminProduct(ProductCreateInput{
+			MerchantProductIdentifier:      "TEST-MERCHANT-PRODUCT",
+			ManufacturerProductIdentifier:  "TEST-MANUFACTURER-PRODUCT",
 			ProductSpecificationTemplateID: &productSpecificationTemplate.ID,
 			Name:                           sku,
 			Slug:                           slug,
@@ -1814,6 +1874,8 @@ func TestProductServiceCopyAdminProductTranslationCreatesGroupedCopyWithUniqueSl
 	brakeSpec := findSpecDefinitionBySlug(t, db, productSpecificationTemplate.ID, "brake_type")
 
 	source, err := productService.CreateAdminProduct(ProductCreateInput{
+		MerchantProductIdentifier:      "TEST-MERCHANT-PRODUCT",
+		ManufacturerProductIdentifier:  "TEST-MANUFACTURER-PRODUCT",
 		ProductSpecificationTemplateID: &productSpecificationTemplate.ID,
 		Name:                           "Translation Copy Rim",
 		Slug:                           "translation-copy-rim",
@@ -1865,6 +1927,8 @@ func TestProductServiceCopyAdminProductTranslationCreatesGroupedCopyWithUniqueSl
 	}).Error)
 
 	_, err = productService.CreateAdminProduct(ProductCreateInput{
+		MerchantProductIdentifier:      "TEST-MERCHANT-PRODUCT",
+		ManufacturerProductIdentifier:  "TEST-MANUFACTURER-PRODUCT",
 		ProductSpecificationTemplateID: &productSpecificationTemplate.ID,
 		Name:                           "French Occupant",
 		Slug:                           "translation-copy-rim",
@@ -1922,6 +1986,8 @@ func TestProductServiceCopyAdminProductTranslationRejectsExistingGroupLocale(t *
 	}, map[string]string{"brake_type": "disc"})
 	parentID := root.ID
 	_, err := productService.CreateAdminProduct(ProductCreateInput{
+		MerchantProductIdentifier:      "TEST-MERCHANT-PRODUCT",
+		ManufacturerProductIdentifier:  "TEST-MANUFACTURER-PRODUCT",
 		ProductSpecificationTemplateID: &productSpecificationTemplate.ID,
 		Name:                           "Existing French Rim",
 		Slug:                           "copy-exists-rim-fr",
@@ -2068,6 +2134,8 @@ func createProductWithSpecs(t *testing.T, productService *ProductService, produc
 	t.Helper()
 
 	createdProduct, err := productService.CreateAdminProduct(ProductCreateInput{
+		MerchantProductIdentifier:      "TEST-MERCHANT-PRODUCT",
+		ManufacturerProductIdentifier:  "TEST-MANUFACTURER-PRODUCT",
 		ProductSpecificationTemplateID: &productSpecificationTemplateID,
 		Name:                           sku,
 		Slug:                           slug,

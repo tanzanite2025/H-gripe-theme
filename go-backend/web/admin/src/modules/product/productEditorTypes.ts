@@ -10,6 +10,9 @@ export interface ProductFormRecord {
   cn_code: string
   country_of_origin: string
   customs_description: string
+  merchant_product_identifier: string
+  manufacturer_product_identifier: string
+  standard_product_identifier: string
   name: string
   slug: string
   locale: string

@@ -27,12 +27,14 @@ func TestCreateAdminSpokeRepairKitRollsBackWhenModelBindingFails(t *testing.T) {
 	`).Error)
 
 	_, err := productService.CreateAdminProduct(ProductCreateInput{
-		ProductCategoryID:       &repairKitCategory.ID,
-		Name:                    "DT Swiss spoke repair kit",
-		Slug:                    "dt-swiss-spoke-repair-kit-atomicity",
-		Status:                  "active",
-		Locale:                  "en",
-		SpokeRepairKitModelKeys: []string{"dt-swiss:arc-1100-dicut-db-38"},
+		MerchantProductIdentifier:     "TEST-MERCHANT-PRODUCT",
+		ManufacturerProductIdentifier: "TEST-MANUFACTURER-PRODUCT",
+		ProductCategoryID:             &repairKitCategory.ID,
+		Name:                          "DT Swiss spoke repair kit",
+		Slug:                          "dt-swiss-spoke-repair-kit-atomicity",
+		Status:                        "active",
+		Locale:                        "en",
+		SpokeRepairKitModelKeys:       []string{"dt-swiss:arc-1100-dicut-db-38"},
 		Variants: []ProductVariantInput{{
 			SKU:        "DT-REPAIR-KIT-ATOMICITY",
 			PriceMinor: 2500,

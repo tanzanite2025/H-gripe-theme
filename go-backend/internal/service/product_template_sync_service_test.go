@@ -106,6 +106,8 @@ func TestSyncProductTemplateMaterializesConfirmedRevisionAndArchivesRemovedValue
 	require.NoError(t, err)
 
 	created, err := productService.CreateAdminProduct(ProductCreateInput{
+		MerchantProductIdentifier:      "TEST-MERCHANT-PRODUCT",
+		ManufacturerProductIdentifier:  "TEST-MANUFACTURER-PRODUCT",
 		ProductSpecificationTemplateID: &template.ID,
 		Name:                           "Sync Product",
 		Slug:                           "sync-product",

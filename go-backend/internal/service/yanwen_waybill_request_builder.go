@@ -132,14 +132,17 @@ func buildYanwenCreateOrderRequestFromFacts(
 			return YanwenCreateOrderRequest{}, "", 0, 0, fmt.Errorf("order item %d declared value: %w", index, err)
 		}
 		products = append(products, YanwenProductDeclare{
-			GoodsNameChinese: productName,
-			GoodsNameEnglish: declarationDescription,
-			Price:            unitPrice,
-			PriceExport:      unitPrice,
-			HSCode:           strings.TrimSpace(item.HSCode),
-			Quantity:         item.Quantity,
-			Weight:           item.WeightGrams,
-			SKU:              strings.TrimSpace(item.SKU),
+			MerchantProductIdentifier:     strings.TrimSpace(item.MerchantProductIdentifier),
+			ManufacturerProductIdentifier: strings.TrimSpace(item.ManufacturerProductIdentifier),
+			StandardProductIdentifier:     strings.TrimSpace(item.StandardProductIdentifier),
+			GoodsNameChinese:              productName,
+			GoodsNameEnglish:              declarationDescription,
+			Price:                         unitPrice,
+			PriceExport:                   unitPrice,
+			HSCode:                        strings.TrimSpace(item.HSCode),
+			Quantity:                      item.Quantity,
+			Weight:                        item.WeightGrams,
+			SKU:                           strings.TrimSpace(item.SKU),
 		})
 		totalQuantity += item.Quantity
 		totalWeight += item.WeightGrams * item.Quantity
@@ -185,6 +188,9 @@ func buildYanwenCreateOrderRequestFromFacts(
 	}
 	if orderFacts.PaidAt != nil {
 		request.DateOfReceipt = orderFacts.PaidAt.UTC().Format("2006-01-02")
+	}
+	if err := normalizeAndValidateYanwenProductDeclarationIdentifiers(&request); err != nil {
+		return YanwenCreateOrderRequest{}, "", 0, 0, err
 	}
 	return request, description, totalQuantity, totalWeight, nil
 }

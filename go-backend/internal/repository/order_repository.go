@@ -77,7 +77,8 @@ func (r *OrderRepository) FindByID(id uint) (*order.Order, error) {
 }
 
 // FindYanwenOrderFactsByID returns only the paid-order, recipient, currency,
-// and declaration facts required by the Yanwen waybill workflow. Keeping this
+// and declaration facts plus current catalog product identifiers required by
+// the Yanwen waybill workflow. Keeping this
 // projection in the order repository prevents the Yanwen service from
 // depending on the complete order aggregate or repository API.
 func (r *OrderRepository) FindYanwenOrderFactsByID(id uint) (*shipping.YanwenOrderFacts, error) {
@@ -86,17 +87,25 @@ func (r *OrderRepository) FindYanwenOrderFactsByID(id uint) (*shipping.YanwenOrd
 		return nil, err
 	}
 
+	productIdentifiers, err := r.findCurrentProductDeclarationIdentifiersForYanwenOrder(orderRecord.Items)
+	if err != nil {
+		return nil, err
+	}
 	items := make([]shipping.YanwenOrderFactItem, 0, len(orderRecord.Items))
 	for _, item := range orderRecord.Items {
+		identifiers := productIdentifiers[item.ProductID]
 		items = append(items, shipping.YanwenOrderFactItem{
-			ProductName:            item.ProductName,
-			SKU:                    item.SKU,
-			Quantity:               item.Quantity,
-			WeightGrams:            item.WeightGrams,
-			HSCode:                 item.HSCode,
-			CustomsDescription:     item.CustomsDescription,
-			DeclaredValueMinor:     item.DeclaredValueMinor,
-			DeclaredValueConfirmed: item.DeclaredValueConfirmed,
+			MerchantProductIdentifier:     identifiers.MerchantProductIdentifier,
+			ManufacturerProductIdentifier: identifiers.ManufacturerProductIdentifier,
+			StandardProductIdentifier:     identifiers.StandardProductIdentifier,
+			ProductName:                   item.ProductName,
+			SKU:                           item.SKU,
+			Quantity:                      item.Quantity,
+			WeightGrams:                   item.WeightGrams,
+			HSCode:                        item.HSCode,
+			CustomsDescription:            item.CustomsDescription,
+			DeclaredValueMinor:            item.DeclaredValueMinor,
+			DeclaredValueConfirmed:        item.DeclaredValueConfirmed,
 		})
 	}
 

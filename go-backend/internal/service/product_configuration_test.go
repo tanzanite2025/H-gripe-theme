@@ -240,7 +240,9 @@ func TestResolveProductConfigurationRejectsInvalidProductionPolicy(t *testing.T)
 func TestAdminProductPersistsComponentInventoryPolicy(t *testing.T) {
 	db, productService := newTestProductService(t)
 	component, err := productService.CreateAdminProduct(ProductCreateInput{
-		Name: "Valve Component", Slug: "valve-component", Locale: "en", Status: "active", Currency: "USD",
+		MerchantProductIdentifier:     "TEST-MERCHANT-PRODUCT",
+		ManufacturerProductIdentifier: "TEST-MANUFACTURER-PRODUCT",
+		Name:                          "Valve Component", Slug: "valve-component", Locale: "en", Status: "active", Currency: "USD",
 		Variants: []ProductVariantInput{{SKU: "VALVE-COMP-01", PriceMinor: 500, Currency: "USD", Stock: 10, IsActive: boolPtr(true), IsDefault: true}},
 	})
 	require.NoError(t, err)
@@ -251,6 +253,8 @@ func TestAdminProductPersistsComponentInventoryPolicy(t *testing.T) {
 	require.NoError(t, err)
 	definitionID := template.SpecDefinitions[0].ID
 	created, err := productService.CreateAdminProduct(ProductCreateInput{
+		MerchantProductIdentifier:      "TEST-MERCHANT-PRODUCT",
+		ManufacturerProductIdentifier:  "TEST-MANUFACTURER-PRODUCT",
 		ProductSpecificationTemplateID: &template.ID,
 		Name:                           "Configured Wheel", Slug: "configured-wheel", Locale: "en", Status: "active", Currency: "USD",
 		Variants:            []ProductVariantInput{{SKU: "CONFIG-WHEEL-01", PriceMinor: 10000, Currency: "USD", Stock: 3, IsActive: boolPtr(true), IsDefault: true}},
@@ -295,6 +299,8 @@ func TestAdminProductVariantOptionRulesPersistAcrossCreateAndUpdateReload(t *tes
 	definitionID := template.SpecDefinitions[0].ID
 
 	created, err := productService.CreateAdminProduct(ProductCreateInput{
+		MerchantProductIdentifier:      "TEST-MERCHANT-PRODUCT",
+		ManufacturerProductIdentifier:  "TEST-MANUFACTURER-PRODUCT",
 		ProductSpecificationTemplateID: &template.ID,
 		Name:                           "Rule Matrix Product",
 		Slug:                           "rule-matrix-product",

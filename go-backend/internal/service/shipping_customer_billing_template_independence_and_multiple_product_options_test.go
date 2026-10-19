@@ -340,6 +340,8 @@ func TestAdminProductCreateNewSKUUpdateAndTranslationCopyPreserveShippingSelecti
 	require.NoError(t, db.Create(&first).Error)
 	require.NoError(t, db.Create(&second).Error)
 	created, err := productService.CreateAdminProduct(ProductCreateInput{
+		MerchantProductIdentifier:      "TEST-MERCHANT-PRODUCT",
+		ManufacturerProductIdentifier:  "TEST-MANUFACTURER-PRODUCT",
 		ProductSpecificationTemplateID: &productSpecificationTemplate.ID,
 		Name:                           "shipping selections", Slug: "shipping-selections", Status: "active", Locale: "en",
 		SpecValues: map[string]string{"outer_width_mm": "30"},

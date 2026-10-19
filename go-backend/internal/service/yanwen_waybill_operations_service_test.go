@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"commerce-platform/internal/domain/order"
+	"commerce-platform/internal/domain/product"
 	"commerce-platform/internal/domain/shipping"
 	"commerce-platform/internal/repository"
 
@@ -263,7 +264,7 @@ func TestYanwenAPIServiceCreatesAndPersistsRealWaybillIdempotently(t *testing.T)
 	sqlDB.SetMaxOpenConns(1)
 	t.Cleanup(func() { _ = sqlDB.Close() })
 	require.NoError(t, db.AutoMigrate(
-		&order.Order{}, &order.OrderItem{},
+		&product.Product{}, &order.Order{}, &order.OrderItem{},
 		&shipping.YanwenAPIConfig{}, &shipping.YanwenProductCatalogEntry{}, &shipping.YanwenCountryCatalogEntry{},
 		&shipping.YanwenWarehouseCatalogEntry{}, &shipping.YanwenPublishedChannel{}, &shipping.YanwenWaybill{},
 	))
@@ -875,7 +876,7 @@ func TestYanwenAPIServiceBatchCreationContinuesAfterOneOfficialFailureAndKeepsEx
 	sqlDB.SetMaxOpenConns(1)
 	t.Cleanup(func() { _ = sqlDB.Close() })
 	require.NoError(t, db.AutoMigrate(
-		&order.Order{}, &order.OrderItem{}, &shipping.YanwenAPIConfig{},
+		&product.Product{}, &order.Order{}, &order.OrderItem{}, &shipping.YanwenAPIConfig{},
 		&shipping.YanwenProductCatalogEntry{}, &shipping.YanwenCountryCatalogEntry{},
 		&shipping.YanwenWarehouseCatalogEntry{}, &shipping.YanwenPublishedChannel{},
 		&shipping.YanwenWaybill{},
@@ -1025,8 +1026,11 @@ func TestBuildYanwenCreateOrderRequestMapsYanwenCustomsIdentifiersToOfficialFiel
 		}},
 	}
 
-	request, _, _, _, err := buildYanwenCreateOrderRequestWithCustomsDeclaration(
-		orderRecord,
+	facts := newYanwenOrderFactsFromOrder(orderRecord)
+	facts.Items[0].MerchantProductIdentifier = "SHOP-SPOKE"
+	facts.Items[0].ManufacturerProductIdentifier = "FACTORY-SPOKE"
+	request, _, _, _, err := buildYanwenCreateOrderRequestFromFacts(
+		facts,
 		"481",
 		"WH01",
 		"",
@@ -1052,7 +1056,7 @@ func TestBuildYanwenCreateOrderRequestMapsYanwenCustomsIdentifiersToOfficialFiel
 		"orderNumber":"ORDER-YANWEN-CUSTOMS-FIELDS",
 		"companyCode":"WH01",
 		"receiverInfo":{"name":"Rider Example","country":"DE","address":"1 Main Street","taxNumber":"DE123456789"},
-		"parcelInfo":{"hasBattery":0,"currency":"EUR","totalQuantity":1,"totalWeight":100,"ioss":"IM1234567890","productList":[{"goodsNameCh":"车轮辐条","goodsNameEn":"Bicycle spoke","price":45.00,"priceExport":45.00,"quantity":1,"weight":100}]},
+		"parcelInfo":{"hasBattery":0,"currency":"EUR","totalQuantity":1,"totalWeight":100,"ioss":"IM1234567890","productList":[{"mpid":"SHOP-SPOKE","nspid":"FACTORY-SPOKE","goodsNameCh":"车轮辐条","goodsNameEn":"Bicycle spoke","price":45.00,"priceExport":45.00,"quantity":1,"weight":100}]},
 		"importCustomsInfo":{"eori":"DE987654321000"},
 		"salesPlatform":"tanzanite-theme"
 	}`, string(encodedRequest))

@@ -207,6 +207,10 @@ func (h *ProductHandler) CreateProduct(c *gin.Context) {
 	}
 
 	newProduct, err := h.productService.CreateAdminProduct(service.ProductCreateInput{
+		MerchantProductIdentifier:     req.MerchantProductIdentifier,
+		ManufacturerProductIdentifier: req.ManufacturerProductIdentifier,
+		StandardProductIdentifier:     req.StandardProductIdentifier,
+
 		ProductType:                    req.ProductType,
 		CarbonRimSpecification:         req.CarbonRimSpecification,
 		ProductSpecificationTemplateID: req.ProductSpecificationTemplateID,
@@ -288,6 +292,10 @@ func (h *ProductHandler) UpdateProduct(c *gin.Context) {
 	_, updateCNCode := raw["cn_code"]
 	_, updateCountryOfOrigin := raw["country_of_origin"]
 	_, updateCustomsDescription := raw["customs_description"]
+	_, updateMerchantProductIdentifier := raw["merchant_product_identifier"]
+	_, updateManufacturerProductIdentifier := raw["manufacturer_product_identifier"]
+	_, updateStandardProductIdentifier := raw["standard_product_identifier"]
+
 	_, updateCurrency := raw["currency"]
 	_, updateFulfillmentMode := raw["fulfillment_mode"]
 	_, updateSpecs := raw["specs"]
@@ -307,6 +315,13 @@ func (h *ProductHandler) UpdateProduct(c *gin.Context) {
 	}
 
 	updatedProduct, err := h.productService.UpdateAdminProduct(uint(id), service.ProductUpdateInput{
+		MerchantProductIdentifier:           req.MerchantProductIdentifier,
+		UpdateMerchantProductIdentifier:     updateMerchantProductIdentifier,
+		ManufacturerProductIdentifier:       req.ManufacturerProductIdentifier,
+		UpdateManufacturerProductIdentifier: updateManufacturerProductIdentifier,
+		StandardProductIdentifier:           req.StandardProductIdentifier,
+		UpdateStandardProductIdentifier:     updateStandardProductIdentifier,
+
 		ProductType:                          req.ProductType,
 		CarbonRimSpecification:               req.CarbonRimSpecification,
 		UpdateCarbonRimSpecification:         updateCarbonRimSpecification,

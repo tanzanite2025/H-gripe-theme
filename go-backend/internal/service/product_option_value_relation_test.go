@@ -126,6 +126,8 @@ func createOptionValueRelationProduct(t *testing.T, productService *ProductServi
 	t.Helper()
 	active := true
 	created, err := productService.CreateAdminProduct(ProductCreateInput{
+		MerchantProductIdentifier:      "TEST-MERCHANT-PRODUCT",
+		ManufacturerProductIdentifier:  "TEST-MANUFACTURER-PRODUCT",
 		ProductSpecificationTemplateID: &templateID,
 		Name:                           slug,
 		Slug:                           slug,

@@ -38,7 +38,7 @@ func createRegisteredPublicImageForProductMediaBindingTest(t *testing.T, db *gor
 }
 
 func createProductInputForTransactionalMediaBindingTest(items ...ProductMediaInput) ProductCreateInput {
-	return ProductCreateInput{Name: "Media binding test", Slug: "media-binding-test", Locale: "en", Status: "draft", Media: items,
+	return ProductCreateInput{MerchantProductIdentifier: "TEST-MERCHANT-PRODUCT", ManufacturerProductIdentifier: "TEST-MANUFACTURER-PRODUCT", Name: "Media binding test", Slug: "media-binding-test", Locale: "en", Status: "draft", Media: items,
 		Variants: []ProductVariantInput{{SKU: "MEDIA-BINDING-TEST", PriceMinor: 399, Stock: 5, IsDefault: true, IsActive: boolPtr(true)}},
 	}
 }

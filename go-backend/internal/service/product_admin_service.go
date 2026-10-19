@@ -64,6 +64,10 @@ type ProductOptionValueRelationInput struct {
 }
 
 type ProductCreateInput struct {
+	MerchantProductIdentifier     string
+	ManufacturerProductIdentifier string
+	StandardProductIdentifier     string
+
 	ProductType                    *string
 	CarbonRimSpecification         *product.CarbonRimSpecification
 	UpdateCarbonRimSpecification   bool
@@ -96,6 +100,13 @@ type ProductCreateInput struct {
 }
 
 type ProductUpdateInput struct {
+	MerchantProductIdentifier           *string
+	UpdateMerchantProductIdentifier     bool
+	ManufacturerProductIdentifier       *string
+	UpdateManufacturerProductIdentifier bool
+	StandardProductIdentifier           *string
+	UpdateStandardProductIdentifier     bool
+
 	ProductType                          *string
 	CarbonRimSpecification               *product.CarbonRimSpecification
 	UpdateCarbonRimSpecification         bool
@@ -286,6 +297,10 @@ func (s *ProductService) CreateAdminProduct(input ProductCreateInput) (*product.
 	}
 
 	newProduct := &product.Product{
+		MerchantProductIdentifier:     input.MerchantProductIdentifier,
+		ManufacturerProductIdentifier: input.ManufacturerProductIdentifier,
+		StandardProductIdentifier:     input.StandardProductIdentifier,
+
 		ProductType:                    dedicatedProductTypeValue(input.ProductType),
 		CarbonRimSpecification:         input.CarbonRimSpecification,
 		ProductSpecificationTemplateID: input.ProductSpecificationTemplateID,
@@ -309,6 +324,10 @@ func (s *ProductService) CreateAdminProduct(input ProductCreateInput) (*product.
 		Locale:                         locale,
 		ParentID:                       input.ParentID,
 		Featured:                       input.Featured,
+	}
+
+	if err := normalizeAndValidateRequiredProductIdentifiers(newProduct); err != nil {
+		return nil, err
 	}
 
 	if s.txManager != nil {
@@ -621,6 +640,28 @@ func (s *ProductService) UpdateAdminProduct(id uint, input ProductUpdateInput) (
 		if err != nil {
 			return nil, err
 		}
+	}
+
+	if input.UpdateMerchantProductIdentifier {
+		existingProduct.MerchantProductIdentifier = ""
+		if input.MerchantProductIdentifier != nil {
+			existingProduct.MerchantProductIdentifier = *input.MerchantProductIdentifier
+		}
+	}
+	if input.UpdateManufacturerProductIdentifier {
+		existingProduct.ManufacturerProductIdentifier = ""
+		if input.ManufacturerProductIdentifier != nil {
+			existingProduct.ManufacturerProductIdentifier = *input.ManufacturerProductIdentifier
+		}
+	}
+	if input.UpdateStandardProductIdentifier {
+		existingProduct.StandardProductIdentifier = ""
+		if input.StandardProductIdentifier != nil {
+			existingProduct.StandardProductIdentifier = *input.StandardProductIdentifier
+		}
+	}
+	if err := normalizeAndValidateRequiredProductIdentifiers(existingProduct); err != nil {
+		return nil, err
 	}
 
 	if s.txManager != nil {

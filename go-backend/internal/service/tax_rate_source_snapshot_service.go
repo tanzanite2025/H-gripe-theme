@@ -45,7 +45,7 @@ type TaxRateSourceConfiguration struct {
 	RequiresAPIKey       bool       `json:"requires_api_key"`
 	LastCheckedAt        *time.Time `json:"last_checked_at,omitempty"`
 	LastSuccessfulSyncAt *time.Time `json:"last_successful_sync_at,omitempty"`
-	LastSyncError        string     `json:"last_sync_error,omitempty"`
+	LastSyncError        string     `json:"last_sync_error"`
 	CoverageDescription  string     `json:"coverage_description"`
 }
 
@@ -174,7 +174,7 @@ func (s *TaxRateSourceSnapshotService) Sync(ctx context.Context) (*TaxRateSource
 	if err := s.repository.RecordSyncStarted(checkedAt); err != nil {
 		return nil, err
 	}
-	entries, countryCount, err := s.providerAdapter.FetchVATComplyTaxRateEntries(ctx, checkedAt)
+	entries, countryCount, countryRateComments, err := s.providerAdapter.FetchVATComplyTaxRateEntries(ctx, checkedAt)
 	if err != nil {
 		if statusErr := s.repository.RecordSyncFailure(time.Now().UTC(), err.Error()); statusErr != nil {
 			return nil, fmt.Errorf("%w (record sync failure: %v)", err, statusErr)
@@ -182,7 +182,7 @@ func (s *TaxRateSourceSnapshotService) Sync(ctx context.Context) (*TaxRateSource
 		return nil, err
 	}
 
-	contentHash, err := taxRateSourceSnapshotContentSHA256(entries)
+	contentHash, err := taxRateSourceSnapshotContentSHA256(entries, countryRateComments)
 	if err != nil {
 		if statusErr := s.repository.RecordSyncFailure(time.Now().UTC(), err.Error()); statusErr != nil {
 			return nil, fmt.Errorf("%w (record sync failure: %v)", err, statusErr)
@@ -190,14 +190,15 @@ func (s *TaxRateSourceSnapshotService) Sync(ctx context.Context) (*TaxRateSource
 		return nil, err
 	}
 	snapshot := &taxrate.TaxRateSourceSnapshot{
-		ProviderCode:   vatcomplyTaxRateProviderCode,
-		SourceEndpoint: vatcomplyTaxRateAPIEndpoint,
-		Version:        fmt.Sprintf("vatcomply-%s-%s", checkedAt.Format("20060102T150405.000000000Z"), contentHash[:12]),
-		ContentSHA256:  contentHash,
-		CapturedAt:     checkedAt,
-		CountryCount:   countryCount,
-		RateCount:      len(entries),
-		CreatedAt:      checkedAt,
+		CountryRateComments: countryRateComments,
+		ProviderCode:        vatcomplyTaxRateProviderCode,
+		SourceEndpoint:      vatcomplyTaxRateAPIEndpoint,
+		Version:             fmt.Sprintf("vatcomply-%s-%s", checkedAt.Format("20060102T150405.000000000Z"), contentHash[:12]),
+		ContentSHA256:       contentHash,
+		CapturedAt:          checkedAt,
+		CountryCount:        countryCount,
+		RateCount:           len(entries),
+		CreatedAt:           checkedAt,
 	}
 	published, changed, err := s.repository.CreateSnapshotWhenContentChanges(snapshot, entries)
 	if err != nil {
@@ -241,7 +242,7 @@ func (s *TaxRateSourceSnapshotService) SyncIfDue(ctx context.Context) (*TaxRateS
 	return result, err == nil, err
 }
 
-func taxRateSourceSnapshotContentSHA256(entries []taxrate.TaxRateSourceSnapshotEntry) (string, error) {
+func taxRateSourceSnapshotContentSHA256(entries []taxrate.TaxRateSourceSnapshotEntry, countryRateComments taxrate.TaxRateSourceCountryRateComments) (string, error) {
 	type contentEntry struct {
 		CountryCode       string `json:"country_code"`
 		SourceCountryCode string `json:"source_country_code"`
@@ -263,7 +264,10 @@ func taxRateSourceSnapshotContentSHA256(entries []taxrate.TaxRateSourceSnapshotE
 			RateDecimal:       entry.RateDecimal,
 		})
 	}
-	encoded, err := json.Marshal(content)
+	encoded, err := json.Marshal(struct {
+		Entries             []contentEntry                           `json:"entries"`
+		CountryRateComments taxrate.TaxRateSourceCountryRateComments `json:"country_rate_comments"`
+	}{Entries: content, CountryRateComments: countryRateComments})
 	if err != nil {
 		return "", fmt.Errorf("marshal normalized tax rate snapshot: %w", err)
 	}

@@ -98,15 +98,18 @@ type YanwenImportCustomsInfo struct {
 }
 
 type YanwenProductDeclare struct {
-	GoodsNameChinese string      `json:"goodsNameCh"`
-	GoodsNameEnglish string      `json:"goodsNameEn"`
-	Price            interface{} `json:"price"`
-	PriceExport      interface{} `json:"priceExport"`
-	HSCode           string      `json:"hscode,omitempty"`
-	Material         string      `json:"material,omitempty"`
-	Quantity         int         `json:"quantity"`
-	Weight           int         `json:"weight"`
-	SKU              string      `json:"sku,omitempty"`
+	MerchantProductIdentifier     string      `json:"mpid,omitempty"`
+	ManufacturerProductIdentifier string      `json:"nspid,omitempty"`
+	StandardProductIdentifier     string      `json:"spid,omitempty"`
+	GoodsNameChinese              string      `json:"goodsNameCh"`
+	GoodsNameEnglish              string      `json:"goodsNameEn"`
+	Price                         interface{} `json:"price"`
+	PriceExport                   interface{} `json:"priceExport"`
+	HSCode                        string      `json:"hscode,omitempty"`
+	Material                      string      `json:"material,omitempty"`
+	Quantity                      int         `json:"quantity"`
+	Weight                        int         `json:"weight"`
+	SKU                           string      `json:"sku,omitempty"`
 }
 
 type YanwenCreateOrderResponse struct {

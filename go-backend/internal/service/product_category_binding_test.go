@@ -23,11 +23,13 @@ func TestProductServiceAdminProductCategoryBindingCanBeCleared(t *testing.T) {
 	require.NoError(t, db.Create(&category).Error)
 
 	created, err := productService.CreateAdminProduct(ProductCreateInput{
-		ProductCategoryID: &category.ID,
-		Name:              "Carbon Wheelset",
-		Slug:              "carbon-wheelset",
-		Status:            "active",
-		Locale:            "en",
+		MerchantProductIdentifier:     "TEST-MERCHANT-PRODUCT",
+		ManufacturerProductIdentifier: "TEST-MANUFACTURER-PRODUCT",
+		ProductCategoryID:             &category.ID,
+		Name:                          "Carbon Wheelset",
+		Slug:                          "carbon-wheelset",
+		Status:                        "active",
+		Locale:                        "en",
 		Variants: []ProductVariantInput{{
 			SKU:        "WHEELSET-001",
 			PriceMinor: 499,
@@ -87,11 +89,13 @@ func TestProductServiceSearchPublicFiltersByCategorySubtree(t *testing.T) {
 	create := func(categoryID uint, sku, slug string) *product.Product {
 		categoryIDCopy := categoryID
 		created, err := productService.CreateAdminProduct(ProductCreateInput{
-			ProductCategoryID: &categoryIDCopy,
-			Name:              sku,
-			Slug:              slug,
-			Status:            "active",
-			Locale:            "en",
+			MerchantProductIdentifier:     "TEST-MERCHANT-PRODUCT",
+			ManufacturerProductIdentifier: "TEST-MANUFACTURER-PRODUCT",
+			ProductCategoryID:             &categoryIDCopy,
+			Name:                          sku,
+			Slug:                          slug,
+			Status:                        "active",
+			Locale:                        "en",
 			Variants: []ProductVariantInput{{
 				SKU:        sku + "-VAR",
 				PriceMinor: 100,

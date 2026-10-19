@@ -59,6 +59,23 @@
         <Input v-model="form.customs_description" maxlength="255" :placeholder="customsDescriptionPlaceholder" @input="handleProductCustomsFieldManualEdit('customs_description')" />
       </AdminFormField>
     </div>
+    <div class="space-y-3 rounded-xl border border-border p-4">
+      <div>
+        <h4 class="text-sm font-bold">商品申报识别码</h4>
+        <p class="mt-1 text-xs leading-5 text-muted-foreground">用于各物流渠道申报。商家产品识别码和制造商产品识别码为产品必填资料，请按真实产品资料填写。</p>
+      </div>
+      <div class="grid gap-4 md:grid-cols-3">
+        <AdminFormField label="商家产品识别码（MPID）" for-id="product-merchant-identifier" required description="填写商家实际使用的产品识别码，最多 70 个字符" :error="errors.merchant_product_identifier">
+          <Input id="product-merchant-identifier" v-model="form.merchant_product_identifier" aria-required="true" :aria-invalid="Boolean(errors.merchant_product_identifier)" placeholder="填写商家产品识别码" @input="emit('clear-error', 'merchant_product_identifier')" />
+        </AdminFormField>
+        <AdminFormField label="制造商产品识别码（NSPID）" for-id="product-manufacturer-identifier" required description="填写制造商提供的真实产品编码，最多 70 个字符" :error="errors.manufacturer_product_identifier">
+          <Input id="product-manufacturer-identifier" v-model="form.manufacturer_product_identifier" aria-required="true" :aria-invalid="Boolean(errors.manufacturer_product_identifier)" placeholder="填写制造商产品识别码" @input="emit('clear-error', 'manufacturer_product_identifier')" />
+        </AdminFormField>
+        <AdminFormField label="国际标准商品编码（SPID）" for-id="product-standard-identifier" description="有则填写，没有可留空，最多 70 个字符" :error="errors.standard_product_identifier">
+          <Input id="product-standard-identifier" v-model="form.standard_product_identifier" :aria-invalid="Boolean(errors.standard_product_identifier)" placeholder="选填：国际标准商品编码" @input="emit('clear-error', 'standard_product_identifier')" />
+        </AdminFormField>
+      </div>
+    </div>
   </AdminFormSection>
 </template>
 

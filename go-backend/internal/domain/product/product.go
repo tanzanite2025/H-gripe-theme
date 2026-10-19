@@ -51,6 +51,9 @@ type Product struct {
 	CNCode                         string                  `gorm:"column:cn_code;size:12" json:"cn_code"`
 	CountryOfOrigin                string                  `gorm:"column:country_of_origin;size:2" json:"country_of_origin"`
 	CustomsDescription             string                  `gorm:"column:customs_description;size:255" json:"customs_description"`
+	MerchantProductIdentifier      string                  `gorm:"size:70;not null;default:''" json:"merchant_product_identifier"`
+	ManufacturerProductIdentifier  string                  `gorm:"size:70;not null;default:''" json:"manufacturer_product_identifier"`
+	StandardProductIdentifier      string                  `gorm:"size:70;not null;default:''" json:"standard_product_identifier"`
 	// Product identity belongs to product_variants.SKU. This field is a
 	// presentation-only projection kept for in-memory catalog responses.
 	SKU         string `gorm:"-" json:"-"`

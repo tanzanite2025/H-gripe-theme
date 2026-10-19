@@ -9,10 +9,12 @@ import (
 func TestProductServiceReusesSoftDeletedProductAndVariantIdentifiers(t *testing.T) {
 	db, productService := newTestProductService(t)
 	created, err := productService.CreateAdminProduct(ProductCreateInput{
-		Name:   "Soft Delete Reuse",
-		Slug:   "soft-delete-reuse",
-		Status: "active",
-		Locale: "en",
+		MerchantProductIdentifier:     "TEST-MERCHANT-PRODUCT",
+		ManufacturerProductIdentifier: "TEST-MANUFACTURER-PRODUCT",
+		Name:                          "Soft Delete Reuse",
+		Slug:                          "soft-delete-reuse",
+		Status:                        "active",
+		Locale:                        "en",
 		Variants: []ProductVariantInput{{
 			SKU:        "SOFT-DELETE-REUSE-VAR",
 			PriceMinor: 99,
@@ -28,10 +30,12 @@ func TestProductServiceReusesSoftDeletedProductAndVariantIdentifiers(t *testing.
 	require.NoError(t, db.Delete(created).Error)
 
 	recreated, err := productService.CreateAdminProduct(ProductCreateInput{
-		Name:   "Soft Delete Reuse Again",
-		Slug:   "soft-delete-reuse",
-		Status: "active",
-		Locale: "en",
+		MerchantProductIdentifier:     "TEST-MERCHANT-PRODUCT",
+		ManufacturerProductIdentifier: "TEST-MANUFACTURER-PRODUCT",
+		Name:                          "Soft Delete Reuse Again",
+		Slug:                          "soft-delete-reuse",
+		Status:                        "active",
+		Locale:                        "en",
 		Variants: []ProductVariantInput{{
 			SKU:        "SOFT-DELETE-REUSE-VAR",
 			PriceMinor: 99,

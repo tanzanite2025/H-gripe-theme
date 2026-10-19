@@ -215,7 +215,7 @@
           <div class="flex flex-col gap-3 border-b p-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h2 class="text-sm font-black text-foreground">各国税率快照</h2>
-              <p class="mt-1 text-xs text-muted-foreground">标准税率、其他税率及 API 返回的商品类别参考税率。</p>
+              <p class="mt-1 text-xs text-muted-foreground">标准税率、商品与服务类别，以及数据源提供的适用范围附注。</p>
             </div>
             <input
               v-model="countrySearchText"
@@ -234,7 +234,7 @@
                   <th class="px-4 py-3">币种</th>
                   <th class="px-4 py-3">标准税率</th>
                   <th class="px-4 py-3">其他税率</th>
-                  <th class="px-4 py-3">商品类别参考税率</th>
+                  <th class="px-4 py-3">商品与服务类别 / 适用范围附注</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-border">
@@ -268,6 +268,7 @@
                       </div>
                     </details>
                     <span v-else class="text-muted-foreground">—</span>
+                    <TaxRateCountryScopeNotes :comments="currentSnapshot.snapshot.country_rate_comments?.[country.countryCode]" />
                   </td>
                 </tr>
                 <tr v-if="filteredTaxRateCountryRows.length === 0">
@@ -570,6 +571,7 @@ import { Button } from '@/components/ui/button'
 import { useRouteTab } from '@/composables/useRouteTab'
 import { useAuthStore } from '@/stores/auth'
 import axios from '@/utils/axios'
+import TaxRateCountryScopeNotes from '@/components/admin/TaxRateCountryScopeNotes.vue'
 
 interface TaxRateSourceConfigurationView {
   provider_code: string
@@ -586,6 +588,7 @@ interface TaxRateSourceConfigurationView {
 }
 
 interface TaxRateSourceSnapshotView {
+  country_rate_comments?: Record<string, Record<string, string[]>> | null
   id: number
   provider_code: string
   source_endpoint: string
@@ -1010,7 +1013,7 @@ const loadTaxRateSourceConfiguration = async (): Promise<void> => {
     const response = await axios.get('/api/admin/settings/tax-rates/config')
     const configuration = response.data?.data?.config || response.data?.config
     if (!configuration) throw new Error('税率数据源配置响应为空')
-    Object.assign(sourceConfiguration, configuration)
+    Object.assign(sourceConfiguration, configuration, { last_sync_error: configuration.last_sync_error || '' })
     savedEnabled.value = Boolean(configuration.enabled)
     savedRefreshIntervalHours.value = Number(configuration.refresh_interval_hours) || 720
   } catch (error) {
@@ -1029,7 +1032,7 @@ const saveTaxRateSourceConfiguration = async (): Promise<void> => {
       refresh_interval_hours: sourceConfiguration.refresh_interval_hours,
     })
     const configuration = response.data?.data?.config || response.data?.config
-    if (configuration) Object.assign(sourceConfiguration, configuration)
+    if (configuration) Object.assign(sourceConfiguration, configuration, { last_sync_error: configuration.last_sync_error || '' })
     savedEnabled.value = Boolean(sourceConfiguration.enabled)
     savedRefreshIntervalHours.value = Number(sourceConfiguration.refresh_interval_hours)
     toast.success('税率数据源配置已保存')
