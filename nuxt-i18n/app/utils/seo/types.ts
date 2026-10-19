@@ -44,6 +44,7 @@ export interface ProductSeoPropertyValue {
 }
 
 export interface ProductSeoInput {
+  category?: string | null
   size?: string
   material?: string
   weightGrams?: number
@@ -111,6 +112,7 @@ export interface ProductSeoShippingDetails {
 }
 
 export interface ProductSeoSchema {
+  category?: string
   size?: string
   material?: string
   weight?: { '@type': 'QuantitativeValue'; value: number; unitCode: 'GRM' }
@@ -132,6 +134,7 @@ export interface ProductSeoSchema {
 }
 
 export interface ProductSeoProductGroupSchema {
+  category?: string
   size?: string
   material?: string
   '@id'?: string

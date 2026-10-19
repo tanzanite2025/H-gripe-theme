@@ -29,7 +29,7 @@ func TestRetiredCarbonRimTemplateRejectsNewEntryAndMutationButPreservesHistorica
 	require.ErrorIs(t, err, ErrProductSpecificationTemplateInvalid)
 	_, _, err = svc.CopyAdminProductTranslation(legacy.ID, "fr")
 	require.ErrorIs(t, err, ErrProductSpecificationTemplateInvalid)
-	dedicated, err := svc.CreateAdminProduct(createCarbonRimProductServiceTestInput())
+	dedicated, err := svc.CreateAdminProduct(createCarbonRimProductServiceTestInput(t, db))
 	require.NoError(t, err)
 	_, err = svc.UpdateAdminProduct(dedicated.ID, ProductUpdateInput{UpdateProductSpecificationTemplateID: true, ProductSpecificationTemplateID: &template.ID})
 	require.Error(t, err)

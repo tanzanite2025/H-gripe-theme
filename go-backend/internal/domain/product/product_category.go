@@ -7,6 +7,10 @@ import "time"
 // admin, storefront, Quick Buy, and category services cannot drift apart.
 const SpokeRepairKitProductCategorySlug = "spoke-repair-kits"
 
+// CarbonRimProductCategorySlug identifies the system category owned by the
+// dedicated carbon rim workflow. Database IDs and translated labels may vary.
+const CarbonRimProductCategorySlug = "carbon-rim"
+
 type ProductCategory struct {
 	ID                uint                         `gorm:"primarykey" json:"id"`
 	ParentID          *uint                        `gorm:"index" json:"parent_id"`

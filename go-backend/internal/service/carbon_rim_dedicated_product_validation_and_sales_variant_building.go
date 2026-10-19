@@ -25,7 +25,10 @@ func (s *ProductService) validateDedicatedCarbonRimCreation(input ProductCreateI
 		if input.CarbonRimSpecification != nil {
 			return fmt.Errorf("%w: carbon rim specification requires carbon_rim product_type", ErrProductSpecInvalid)
 		}
-		return rejectCarbonRimSpecificationsOnGenericVariants(input.Variants)
+		if err := rejectCarbonRimSpecificationsOnGenericVariants(input.Variants); err != nil {
+			return err
+		}
+		return s.validateCarbonRimProductTypeAndSystemCategoryBinding(kind, input.ProductCategoryID)
 	}
 	if err := product.ValidateCarbonRimSpecification(input.CarbonRimSpecification); err != nil {
 		return fmt.Errorf("%w: %v", ErrProductSpecInvalid, err)
@@ -36,7 +39,7 @@ func (s *ProductService) validateDedicatedCarbonRimCreation(input ProductCreateI
 	if input.ProductSpecificationTemplateID != nil || len(input.SpecValues) != 0 || len(input.VariantOptionValues) != 0 || len(input.SpokeRepairKitModelKeys) != 0 || input.ParentID != nil {
 		return fmt.Errorf("%w: carbon rims cannot bind a specification template, generic options, repair-kit models or a manual translation parent", ErrProductSpecInvalid)
 	}
-	return s.validateCarbonRimCategoryBoundary(input.ProductCategoryID)
+	return s.validateCarbonRimProductTypeAndSystemCategoryBinding(kind, input.ProductCategoryID)
 }
 
 func rejectCarbonRimSpecificationsOnGenericVariants(inputs []ProductVariantInput) error {
@@ -48,23 +51,16 @@ func rejectCarbonRimSpecificationsOnGenericVariants(inputs []ProductVariantInput
 	return nil
 }
 
-func (s *ProductService) validateCarbonRimCategoryBoundary(categoryID *uint) error {
-	if categoryID == nil || s.productCategoryRepo == nil {
-		return nil
-	}
-	category, err := s.productCategoryRepo.FindByID(*categoryID)
-	if err != nil {
-		return err
-	}
-	if category.Slug == product.SpokeRepairKitProductCategorySlug {
-		return fmt.Errorf("%w: a carbon rim cannot use the spoke repair-kit category", ErrProductCategoryInvalid)
-	}
-	return nil
-}
-
 func (s *ProductService) validateDedicatedCarbonRimUpdate(existing *product.Product, input *ProductUpdateInput) error {
 	if input.ProductType != nil && *input.ProductType != existing.ProductType {
 		return fmt.Errorf("%w: product_type is immutable; existing template products require an explicit migration", ErrProductSpecInvalid)
+	}
+	effectiveCategoryID := existing.ProductCategoryID
+	if input.UpdateProductCategoryID {
+		effectiveCategoryID = input.ProductCategoryID
+	}
+	if err := s.validateCarbonRimProductTypeAndSystemCategoryBinding(existing.ProductType, effectiveCategoryID); err != nil {
+		return err
 	}
 	if existing.ProductType != product.ProductTypeCarbonRim {
 		if input.UpdateCarbonRimSpecification || input.CarbonRimSpecification != nil {
@@ -74,11 +70,6 @@ func (s *ProductService) validateDedicatedCarbonRimUpdate(existing *product.Prod
 	}
 	if input.ProductSpecificationTemplateID != nil || len(input.SpecValues) != 0 || len(input.VariantOptionValues) != 0 || len(input.OptionValueRelations) != 0 || len(input.SpokeRepairKitModelKeys) != 0 || input.UpdateParentID {
 		return fmt.Errorf("%w: carbon rim specifications cannot be replaced by a template, generic options, repair-kit models or another translation parent", ErrProductSpecInvalid)
-	}
-	if input.UpdateProductCategoryID {
-		if err := s.validateCarbonRimCategoryBoundary(input.ProductCategoryID); err != nil {
-			return err
-		}
 	}
 	if input.UpdateCarbonRimSpecification {
 		if err := product.ValidateCarbonRimSpecification(input.CarbonRimSpecification); err != nil {

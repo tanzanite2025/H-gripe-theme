@@ -69,6 +69,9 @@ func (s *ProductService) CopyAdminProductTranslation(id uint, targetLocale strin
 	if err := s.rejectNewBindingToRetiredCarbonRimTemplate(source.ProductSpecificationTemplateID, nil); err != nil {
 		return nil, nil, err
 	}
+	if err := s.validateCarbonRimProductTypeAndSystemCategoryBinding(source.ProductType, source.ProductCategoryID); err != nil {
+		return nil, nil, err
+	}
 
 	locale, err := requireSupportedLocale(targetLocale)
 	if err != nil {

@@ -24,6 +24,7 @@ const seo = buildProductSeoDocument(
   {
     name: 'Demo Product',
     brand: 'HACK-GRIPE',
+    category: ' 碳纤维车圈 ',
     metaTitle: 'Demo Product | Brand',
     metaDescription: '<p>Clean <strong>description</strong>.</p>',
     imageUrls: ['/media/demo.jpg', '', null, '/media/demo.jpg'],
@@ -57,6 +58,7 @@ assert.equal(seo.description, 'Clean description.')
 assert.deepEqual(seo.images, ['https://example.com/media/demo.jpg'])
 assert.equal(seo.canonicalUrl, 'https://example.com/zh_cn/products/demo-product')
 assert.equal(seo.schema?.name, 'Demo Product')
+assert.equal(seo.schema?.category, '碳纤维车圈')
 assert.deepEqual(seo.schema?.brand, { '@type': 'Brand', name: 'HACK-GRIPE' })
 if (seo.schema?.['@type'] !== 'Product') {
   throw new Error('Expected a Product schema for a single configuration.')
@@ -92,6 +94,7 @@ assert.deepEqual(seo.schema.offers?.shippingDetails, {
 const groupSeo = buildProductSeoDocument(
   {
     name: 'Variant Product',
+    category: 'Carbon Fiber Rims',
     productGroupId: 'product-42',
     variesBy: ['https://schema.org/color'],
     imageUrls: ['/media/variant.jpg'],
@@ -127,6 +130,8 @@ if (groupSeo.schema?.['@type'] !== 'ProductGroup') {
   throw new Error('Expected a ProductGroup schema for multiple variants.')
 }
 assert.equal(groupSeo.schema.productGroupID, 'product-42')
+assert.equal(groupSeo.schema.category, 'Carbon Fiber Rims')
+assert.ok(groupSeo.schema.hasVariant.every(variant => variant.category === 'Carbon Fiber Rims'))
 assert.equal(groupSeo.schema.hasVariant.length, 2)
 assert.deepEqual(groupSeo.schema.image, ['https://example.com/media/variant.jpg'])
 assert.deepEqual(groupSeo.schema.hasVariant[0]?.image, ['https://example.com/media/variant.jpg'])

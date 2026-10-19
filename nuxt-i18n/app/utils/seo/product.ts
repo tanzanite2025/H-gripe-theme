@@ -168,6 +168,7 @@ export const buildProductJsonLd = (
   }
 
   if (description) schema.description = description
+  if (cleanText(input.category)) schema.category = cleanText(input.category)
   if (input.additionalProperties?.length) schema.additionalProperty = input.additionalProperties
   if (cleanText(input.size)) schema.size = cleanText(input.size)
   if (cleanText(input.material)) schema.material = cleanText(input.material)
@@ -235,6 +236,7 @@ export const buildProductGroupJsonLd = (
     }
   }
   if (description) group.description = description
+  if (cleanText(input.category)) group.category = cleanText(input.category)
   if (input.additionalProperties?.length) group.additionalProperty = input.additionalProperties
   if (cleanText(input.size)) group.size = cleanText(input.size)
   if (cleanText(input.material)) group.material = cleanText(input.material)

@@ -55,13 +55,14 @@
                   </SelectContent>
                 </Select>
               </AdminFormField>
-              <AdminFormField label="商品分类" description="可选；商品可以不设置分类。">
-                <Select :model-value="productCategorySelectValue" @update:model-value="emit('product-category-select', $event)">
+              <AdminFormField label="商品分类" :required="isDedicatedCarbonRim" :error="errors.product_category_id" :description="isDedicatedCarbonRim ? '碳圈商品固定归入此分类。' : '可选；商品可以不设置分类。'">
+                <Input v-if="isDedicatedCarbonRim" model-value="Wheel Components → Carbon Rim" disabled />
+                <Select v-else :model-value="productCategorySelectValue" @update:model-value="emit('product-category-select', $event)">
                   <SelectTrigger class="w-full"><SelectValue placeholder="未设置分类" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="__none__">未设置分类</SelectItem>
                     <SelectItem
-                      v-for="category in productCategories"
+                      v-for="category in productCategories.filter(item => item.slug !== 'carbon-rim')"
                       :key="category.id"
                       :value="String(category.id)"
                       :disabled="category.is_enabled === false && String(form.product_category_id) !== String(category.id)"
@@ -461,6 +462,7 @@ interface ProductBrandRecord {
 
 interface ProductCategoryRecord {
   id: number
+  slug: string
   name: string
   depth: number
   is_enabled?: boolean

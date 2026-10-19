@@ -2,6 +2,8 @@ import { computed, reactive, ref } from 'vue'
 import { createEmptyCarbonRimSpecificationForm, createEmptyCarbonRimVariantSpecificationForm, normalizeCarbonRimSpecificationForSubmission, normalizeCarbonRimVariantSpecificationForSubmission, validateCarbonRimDedicatedProductSubmission } from '@/modules/product/carbonRimDedicatedSpecificationFormValuesAndValidation'
 import { toast } from 'vue-sonner'
 import productApi from '@/api/products'
+import productCategoryApi from '@/api/productCategories'
+import { requireCarbonRimSystemCategory } from '@/modules/product/carbonRimRequiredSystemCategorySelectionAndProtection'
 import productSpecificationTemplateApi from '@/api/productSpecificationTemplates'
 import schwalbeTireCatalogApi, { type SchwalbeTireCatalogItem } from '@/api/schwalbeTireCatalog'
 import { useProductMediaManager } from '@/composables/product/useProductMediaManager'
@@ -170,6 +172,7 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
     clearFieldError('brand_id')
   }
   const setProductCategory = (value: string) => {
+    if (productForm.product_type === 'carbon_rim') return
     productForm.product_category_id = value === '__none__' ? null : Number(value)
     clearFieldError('product_category_id')
   }
@@ -706,11 +709,21 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
   }
 
   const showCreateDialog = async (productType = '') => {
+    let carbonRimCategoryID: number | null = null
+    if (productType === 'carbon_rim') {
+      try {
+        carbonRimCategoryID = requireCarbonRimSystemCategory((await productCategoryApi.list({ include_disabled: true })).flat).id
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : '读取碳圈系统分类失败，请重试')
+        return
+      }
+    }
     await fetchPrimaryPricingCurrency()
     dialogMode.value = 'create'
     resetForm()
     if (productType === 'carbon_rim') {
       productForm.product_type = productType
+      productForm.product_category_id = carbonRimCategoryID
       productForm.carbon_rim_specification = createEmptyCarbonRimSpecificationForm()
       productForm.variants = [createEmptyVariant({ is_default: true })]
     }
@@ -727,11 +740,15 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
       await fetchPrimaryPricingCurrency()
       if (product.product_type !== 'carbon_rim' && productSpecTemplates.value.length === 0) await fetchProductSpecTemplates()
       detail = await productApi.get(product.id)
+      if (detail.product_type === 'carbon_rim') {
+        const category = requireCarbonRimSystemCategory((await productCategoryApi.list({ include_disabled: true })).flat)
+        if (detail.product_category_id !== category.id) throw new Error('碳圈商品分类不正确，请先检查数据库迁移')
+      }
       if (detail.product_specification_template && !productSpecTemplates.value.some((template) => template.id === detail.product_specification_template.id)) {
         productSpecTemplates.value.push(detail.product_specification_template)
       }
     } catch (error) {
-      toast.error('获取商品详情失败，请重试后再编辑')
+      toast.error(error instanceof Error ? error.message : '获取商品详情失败，请重试后再编辑')
       return
     }
     const formSpecs = buildSpecFormValues(detail)
@@ -806,10 +823,18 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
 
   const submitForm = async () => {
     if (submitting.value || uploadingMedia.value) return
-    const payload = buildProductPayload()
-    if (!validateForm(payload)) return
     submitting.value = true
     try {
+      const payload = buildProductPayload()
+      if (payload.product_type === 'carbon_rim') {
+        const category = requireCarbonRimSystemCategory((await productCategoryApi.list({ include_disabled: true })).flat)
+        if (payload.product_category_id !== category.id) {
+          formErrors.product_category_id = '碳圈商品必须属于 Wheel Components → Carbon Rim'
+          toast.error(formErrors.product_category_id)
+          return
+        }
+      }
+      if (!validateForm(payload)) return
       let savedProduct: any
       if (dialogMode.value === 'create') {
         savedProduct = await productApi.create(payload)
@@ -830,7 +855,7 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
       if (!afterSaveResult.keepDialogOpen) dialogVisible.value = false
       await refreshProducts()
     } catch (error: any) {
-      formErrors.submit = error?.response?.data?.error || '商品保存失败，请检查资料后重试'
+      formErrors.submit = error?.response?.data?.error || error?.message || '商品保存失败，请检查资料后重试'
       toast.error(formErrors.submit)
       console.error('Failed to save product:', error)
     } finally {

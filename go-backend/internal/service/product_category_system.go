@@ -11,6 +11,7 @@ const SystemProductCategoryWheelsetSlug = "wheelset"
 const SystemProductCategoryWheelComponentsSlug = "wheel-components"
 const SystemProductCategoryTireSlug = "tire"
 const SystemProductCategorySpokeRepairKitsSlug = product.SpokeRepairKitProductCategorySlug
+const SystemProductCategoryCarbonRimSlug = product.CarbonRimProductCategorySlug
 
 type systemProductCategoryDefinition struct {
 	Slug   string
@@ -19,6 +20,11 @@ type systemProductCategoryDefinition struct {
 }
 
 var systemProductCategoryDefinitions = map[string]systemProductCategoryDefinition{
+	SystemProductCategoryCarbonRimSlug: {
+		Slug:   SystemProductCategoryCarbonRimSlug,
+		Parent: SystemProductCategoryWheelComponentsSlug,
+		Depth:  2,
+	},
 	SystemProductCategoryWheelsetSlug: {
 		Slug: SystemProductCategoryWheelsetSlug,
 	},

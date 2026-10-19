@@ -36,10 +36,10 @@
       </Button>
     </div>
 
-    <Input :model-value="row.slug" class="min-w-0 font-mono" placeholder="slug" :disabled="saving || !isEditing" @update:model-value="updateField('slug', String($event))" @blur="emit('normalize-slug', row)" />
+    <Input :model-value="row.slug" class="min-w-0 font-mono" placeholder="slug" :disabled="saving || !isEditing || systemCategoryProtected" @update:model-value="updateField('slug', String($event))" @blur="emit('normalize-slug', row)" />
 
     <div class="min-w-0">
-      <Select :model-value="row.parent_key || rootParentValue" :disabled="saving || !isEditing" @update:model-value="emit('change-parent', row, String($event))">
+      <Select :model-value="row.parent_key || rootParentValue" :disabled="saving || !isEditing || systemCategoryParentProtected" @update:model-value="emit('change-parent', row, String($event))">
         <SelectTrigger class="w-full"><SelectValue placeholder="顶级分类" /></SelectTrigger>
         <SelectContent>
           <SelectItem :value="rootParentValue">顶级分类</SelectItem>
@@ -79,12 +79,12 @@
         :model-value="row.is_enabled"
         size="sm"
         :aria-label="row.is_enabled ? '停用分类' : '启用分类'"
-        :disabled="saving || !isEditing"
+        :disabled="saving || !isEditing || systemCategoryProtected"
         @update:model-value="updateField('is_enabled', Boolean($event))"
       />
     </div>
 
-    <div class="flex items-center justify-end gap-1">
+    <div class="flex flex-wrap items-center justify-end gap-1">
       <Button
         variant="ghost"
         size="icon"
@@ -113,7 +113,7 @@
       <Button v-if="canCreate" variant="ghost" size="icon" aria-label="添加下级分类" :disabled="saving || row.depth >= maxDepth" @click="emit('add-child', row)">
         <ListPlus class="size-4" />
       </Button>
-      <Button v-if="canDelete" variant="ghost" size="icon" aria-label="删除分类" :disabled="saving" @click="emit('delete', row)">
+      <Button v-if="canDelete" variant="ghost" size="icon" aria-label="删除分类" :disabled="saving || systemCategoryProtected" @click="emit('delete', row)">
         <Trash2 class="size-4 text-destructive" />
       </Button>
     </div>
@@ -122,7 +122,8 @@
 
 <script setup lang="ts">
 import { CornerDownRight, Folder, ImagePlus, Languages, ListPlus, LockKeyhole, Pencil, PlusSquare, Trash2, X } from '@lucide/vue'
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
+import { isProtectedSystemProductCategory, hasProtectedSystemProductCategoryParent } from '@/modules/product/carbonRimRequiredSystemCategorySelectionAndProtection'
 import type { DraftCategoryRow, ProductCategoryParentOption } from '@/modules/product/productCategoryTypes'
 import { rootProductCategoryParentValue } from '@/composables/product/useProductCategoryTreeEditor'
 import { Button } from '@/components/ui/button'
@@ -143,6 +144,8 @@ const props = defineProps<{
 }>()
 
 const isEditing = ref(props.row.is_new)
+const systemCategoryProtected = computed(() => !props.row.is_new && isProtectedSystemProductCategory(props.row.slug))
+const systemCategoryParentProtected = computed(() => !props.row.is_new && hasProtectedSystemProductCategoryParent(props.row.slug))
 
 const emit = defineEmits<{
   'add-sibling': [row: DraftCategoryRow]

@@ -225,6 +225,7 @@ export function useProductDetailSeo(options: ProductDetailSeoOptions) {
           ...(options.activeVariants.value.length === 1 ? buildCarbonRimSalesVariantEngineeringProperties(options.selectedVariant.value?.carbon_rim_specification) : []),
         ] : undefined,
         name: product.name,
+        category: product.product_category?.name,
         brand: product.brand?.name,
         metaTitle: product.meta_title,
         metaDescription: product.meta_description,

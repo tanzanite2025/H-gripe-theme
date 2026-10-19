@@ -4,15 +4,19 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"gorm.io/gorm"
 
 	"commerce-platform/internal/domain/product"
 )
 
-func createCarbonRimProductServiceTestInput() ProductCreateInput {
+func createCarbonRimProductServiceTestInput(t *testing.T, db *gorm.DB) ProductCreateInput {
+	t.Helper()
+	root := seedProductCategoryForProductServiceTest(t, db, "Wheel Components", SystemProductCategoryWheelComponentsSlug, nil)
+	category := seedProductCategoryForProductServiceTest(t, db, "Carbon Rim", SystemProductCategoryCarbonRimSlug, &root.ID)
 	kind := product.ProductTypeCarbonRim
 	tubeless := true
 	return ProductCreateInput{
-		ProductType: &kind, Name: "Carbon rim 45", Slug: "dedicated-carbon-rim-45", Locale: "en", Status: "active", Currency: "USD",
+		ProductType: &kind, ProductCategoryID: &category.ID, Name: "Carbon rim 45", Slug: "dedicated-carbon-rim-45", Locale: "en", Status: "active", Currency: "USD",
 		CarbonRimSpecification: &product.CarbonRimSpecification{SchemaVersion: 1, Model: "R45", WheelSize: "700c", Material: "carbon_fiber", MaterialDetails: "T700 / T800", RidingUses: []string{"road", "gravel"}, BeadSeatDiameterMM: 622, DepthMM: 45, InternalWidthMM: 25, ExternalWidthMM: 32, BeadStructure: "hooked", TubelessReady: &tubeless},
 		Variants: []ProductVariantInput{
 			{SKU: "DEDICATED-R45-24", PriceMinor: 19900, Stock: 4, Weight: 450, IsDefault: true, CarbonRimSpecification: &product.CarbonRimVariantSpecification{SpokeHoleCount: 24, DrillingPattern: "uniform", FinishCode: "matte-black", NetWeightGrams: 430}},
@@ -22,8 +26,8 @@ func createCarbonRimProductServiceTestInput() ProductCreateInput {
 }
 
 func TestDedicatedCarbonRimCreationUpdateRoundTripAndOrderConfigurationEvidence(t *testing.T) {
-	_, svc := newTestProductService(t)
-	input := createCarbonRimProductServiceTestInput()
+	db, svc := newTestProductService(t)
+	input := createCarbonRimProductServiceTestInput(t, db)
 	created, err := svc.CreateAdminProduct(input)
 	require.NoError(t, err)
 	require.Equal(t, product.ProductTypeCarbonRim, created.ProductType)
@@ -67,7 +71,7 @@ func TestDedicatedCarbonRimCreationUpdateRoundTripAndOrderConfigurationEvidence(
 
 func TestDedicatedCarbonRimRejectsDataLossAndCrossProductVariantMutation(t *testing.T) {
 	db, svc := newTestProductService(t)
-	input := createCarbonRimProductServiceTestInput()
+	input := createCarbonRimProductServiceTestInput(t, db)
 	created, err := svc.CreateAdminProduct(input)
 	require.NoError(t, err)
 
@@ -99,7 +103,7 @@ func TestDedicatedCarbonRimRejectsInvalidCreationWithoutPersistingProduct(t *tes
 	for _, scenario := range []string{"duplicate-configuration", "wrong-width", "missing-tubeless", "missing-sku-specification", "generic-type", "template-binding", "two-defaults", "missing-wheel-size", "wheel-size-bsd-conflict", "missing-riding-uses", "wrong-material"} {
 		t.Run(scenario, func(t *testing.T) {
 			db, svc := newTestProductService(t)
-			input := createCarbonRimProductServiceTestInput()
+			input := createCarbonRimProductServiceTestInput(t, db)
 			switch scenario {
 			case "missing-wheel-size":
 				input.CarbonRimSpecification.WheelSize = ""
@@ -135,14 +139,21 @@ func TestDedicatedCarbonRimRejectsInvalidCreationWithoutPersistingProduct(t *tes
 }
 
 func TestDedicatedCarbonRimTranslationUsesSourceEngineeringFactsAndMasterInventory(t *testing.T) {
-	_, svc := newTestProductService(t)
-	input := createCarbonRimProductServiceTestInput()
+	db, svc := newTestProductService(t)
+	input := createCarbonRimProductServiceTestInput(t, db)
 	source, err := svc.CreateAdminProduct(input)
 	require.NoError(t, err)
 	translated, _, err := svc.CopyAdminProductTranslation(source.ID, "fr")
 	require.NoError(t, err)
 	require.Equal(t, product.ProductTypeCarbonRim, translated.ProductType)
 	require.Equal(t, source.CarbonRimSpecification, translated.CarbonRimSpecification)
+	require.Equal(t, source.ProductCategoryID, translated.ProductCategoryID)
+	for _, categorySlug := range []string{SystemProductCategoryCarbonRimSlug, SystemProductCategoryWheelComponentsSlug} {
+		listed, total, searchErr := svc.SearchPublic(ProductSearchInput{Locale: "fr", CategorySlug: categorySlug, Page: 1, PageSize: 20})
+		require.NoError(t, searchErr)
+		require.EqualValues(t, 1, total)
+		require.Equal(t, translated.ID, listed[0].ID)
+	}
 	require.Equal(t, source.Variants[0].ID, *translated.Variants[0].MasterVariantID)
 	sourceSpecification := *source.CarbonRimSpecification
 	sourceSpecification.DepthMM = 47
@@ -166,7 +177,7 @@ func TestDedicatedCarbonRimTranslationUsesSourceEngineeringFactsAndMasterInvento
 
 func TestDedicatedCarbonRimLateVariantDatabaseFailureRollsBackProductAndSpecifications(t *testing.T) {
 	db, svc := newTestProductService(t)
-	input := createCarbonRimProductServiceTestInput()
+	input := createCarbonRimProductServiceTestInput(t, db)
 	created, err := svc.CreateAdminProduct(input)
 	require.NoError(t, err)
 	require.NoError(t, db.Exec(`CREATE TRIGGER reject_carbon_rim_variant_update BEFORE UPDATE ON product_variants BEGIN SELECT RAISE(ABORT, 'simulated late variant write failure'); END`).Error)
